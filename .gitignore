@@ -18,5 +18,8 @@ ps_runs_export.csv
 # football/__test.html would publish a copy of the game at runthe.gg with the real
 # auth client swapped out for a stub. They are build output, not source -- delete
 # them freely, the harness writes them again.
-__test*.html
+# The prefix, not one name: the next throwaway will not be called __test either. One
+# called __smoke has already been written here, and it was only kept out of a commit by
+# being listed by hand.
+__*.html
 __authstub.js
