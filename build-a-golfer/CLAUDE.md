@@ -16049,3 +16049,42 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   verified by running each against `origin/main:golf/index.html`, so they are the known stale fixtures, not
   this change. All inline script blocks parse (block 0 is the JSON-LD tag, fails identically on baseline).
 - Tunable: `dupeRefund()` is the whole rule; `PACK_DUPE_REFUND` is still the rarity table.
+
+### THE OVERLAY CLOSE BUTTON WAS NEVER STYLED (owner: "the X in the top right corner on chrome was
+### giving me problems")
+- **It was a raw, unstyled native `<button>`.** `.ov .x` only ever set position, z-index and a box-shadow —
+  no size, no colour, no font, `appearance:auto`. Every browser drew its own default, which is exactly why
+  it looked fine on iOS Safari (a light rounded pill) and misbehaved on Chrome: measured at
+  **27.2 × 21 px, 13px Arial, a 2px outset bevel** — a tap target less than half the 44px iOS-HIG /
+  Material minimum, pinned 10px from the top edge. The project had already done a 44px tap-target pass
+  (task #15); this button was missed because nothing in the CSS referenced it.
+- Now an explicit **32px disc** in the game's palette (`--oncard` glyph, `--pillb` border, dark translucent
+  fill) with `appearance:none` so it renders identically everywhere, plus `touch-action:manipulation` (kills
+  the double-tap-zoom click delay) and a visible `:focus-visible` ring.
+- **The 44px tap target comes from an invisible `::after`, not from the button's own box.** Growing the
+  visible button to 44px was tried first and it pushed down over the overlay subtitle on a narrow phone —
+  caught by the audit below, which is why the paint stays at 32px and only the touch area grows to 44.
+- `top` is now `max(12px, calc(10px + env(safe-area-inset-top,0px)))`. iOS keeps its notch behaviour
+  unchanged; the floor only matters where the inset is 0, which is **every** Chrome device — `env(safe-area-
+  inset-top)` there is 0 even with `viewport-fit=cover`, so the button previously sat in the top 31px strip.
+- **Two variants share `.x`** and the fix had to keep them apart: the bare icon button (What's New, Roster
+  Updates, Tour News, the pack summaries) and `<button class="btn ghost x">Close ✕</button>` (leaderboard,
+  account, passport, course records, Tour Pass, ~12 places). The disc styling is scoped `.ov .x:not(.btn)`
+  — an unscoped rule would have put a 50% border-radius and a dark fill on every "Close ✕" pill. The
+  labelled variant keeps its ghost look and only gains the hit area.
+- Also fixed while in this rule: at **320px** the wide "Close ✕" overlapped long titles (Course Records,
+  Course Passport, Pick a username). `@media (max-width:360px){.ov:not(.ov-shop) h3{padding-right:104px}}`
+  reserves the corner so the title wraps instead. **This was pre-existing**, not a regression — confirmed by
+  running the audit against `origin/main:golf/index.html`.
+- Verified: a 184-check audit — 11 overlays × 4 viewports (390px Chrome/no inset, 393px notched at 59px,
+  320px, 1280px desktop), asserting for each that the **effective** tap target is ≥44×44 (probed with
+  `elementFromPoint` walking outward from the centre, since the rect no longer describes the hit area), the
+  button is fully on screen, clear of the top edge, nothing covers it, and it covers no overlay **text**
+  (measured with `Range.getClientRects()` — an element box was useless here, since a block `<h3>` always
+  spans the full content width and so always "overlaps" a top-right button). **184 pass, 0 fail, 0 page
+  errors; the same audit on the deployed baseline is 117 pass, 67 fail.**
+- Regressions green: `dupe_test` 21/21, `frontier_test` 28/28, `tour_test` 17/17, `news_test` 18/18,
+  `regress_final`, `shoptabs`, `pack_dev_test`. (`news_test` and `shoptabs` need `python3 -m http.server
+  8099` running in `build-a-golfer/` — they load over http, not `file://`.)
+- Tunable: the `.ov .x` block. To change the tap target, change `::after`'s `max(100%,44px)`, not the
+  button's width/height — the visible size is constrained by the overlay subtitle beneath it.

@@ -2245,8 +2245,43 @@ window.GA_ID='G-L29P5MRWKE';
   .ov h3{font-family:var(--display); font-weight:400; font-size:26px; color:var(--gold); margin:6px 0 12px; text-transform:uppercase}
   .ov ol{margin:0 0 14px; padding-left:18px; color:#dbe6ee} .ov li{margin:7px 0}
   /* CS356c: fixed (not absolute) so the top Close stays pinned + tappable even when a long overlay
-     (e.g. Trophy Room) is scrolled down; z-index above the overlay's own scrolling content. */
-  .ov .x{position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:max(14px, calc((100% - 600px)/2)); z-index:3; box-shadow:0 2px 10px rgba(0,0,0,.5)}
+     (e.g. Trophy Room) is scrolled down; z-index above the overlay's own scrolling content.
+     Owner: "the X in the top right corner on chrome was giving me problems". It was an entirely
+     UNSTYLED native button - it only ever got position/z-index/shadow here, so every browser drew its
+     own default. Chrome rendered a 27x21 grey bevel with a 13px Arial glyph (iOS Safari's default is a
+     light rounded pill, which is why it looked fine there), i.e. a tap target less than half the 44px
+     iOS-HIG / Material minimum, pinned 10px from the top edge - and on Chrome env(safe-area-inset-top)
+     is 0, so it sat in the very top strip where the browser toolbar and pull-to-refresh gesture live.
+     Now an explicitly styled 44x44 control that draws and taps identically on every browser. The top
+     offset keeps its notch behaviour on iOS and gains a floor everywhere else. */
+  /* shared by BOTH close variants: where it sits, plus an INVISIBLE ::after that pads the hit area out
+     to the 44px iOS-HIG / Material minimum without changing the button's own box. Growing the visible
+     button instead would push it down over the overlay's subtitle on a narrow phone, so the paint stays
+     compact and only the touch target grows. */
+  .ov .x{position:fixed; top:max(12px, calc(10px + env(safe-area-inset-top, 0px)));
+    right:max(14px, calc((100% - 600px)/2)); z-index:3; box-shadow:0 2px 10px rgba(0,0,0,.5);
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent}
+  .ov .x::after{content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:max(100%,44px); height:max(100%,44px)}
+  .ov .x:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  /* the BARE ICON variant (What's New, Roster Updates, Tour News, the pack summaries). This is the one
+     the owner hit: it carried NO styling of its own - only position/z-index/shadow - so every browser
+     drew its native default, and Chrome's is a 27x21 grey bevel with a 13px Arial glyph (iOS Safari's
+     is a light rounded pill, which is why it looked fine there). Now an explicit disc in the game's own
+     palette, sized to clear the overlay subtitle, with the 44px hit area from the rule above. */
+  .ov .x:not(.btn){appearance:none; -webkit-appearance:none; width:32px; height:32px; padding:0; margin:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--body); font-size:16px; font-weight:700; line-height:1;
+    color:var(--oncard); background:rgba(6,32,15,.86); border:1px solid var(--pillb); border-radius:50%;
+    cursor:pointer}
+  .ov .x:not(.btn):active{background:rgba(6,32,15,.97); transform:scale(.92)}
+  /* the LABELLED variant (<button class="btn ghost x">Close ✕</button>) keeps its ghost pill look and
+     its inline width/padding untouched; it just gains the same 44px hit area. */
+  .ov .btn.x{display:inline-flex; align-items:center; justify-content:center}
+  /* On a 320px phone the wide "Close ✕" button overlapped long overlay titles (Course Records,
+     Course Passport, Pick a username). Reserve its corner so the title wraps instead of running under it.
+     The shop overlay is excluded - its header lives in its own sticky bar. */
+  @media (max-width:360px){ .ov:not(.ov-shop) h3{padding-right:104px} }
 
   /* ---- Pro Shop / locker ---- */
   /* pin flush to the very top: safe-area is padded INSIDE (opaque bg fills the notch band) so no item tile can
