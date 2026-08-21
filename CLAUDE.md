@@ -114,6 +114,54 @@ node scripts/setlist/check_data.mjs
 node setlist/verify-scoring.mjs
 ```
 
+## Run The Floor, the NBA game
+
+`hoops/`, at `/hoops/`. The football and college football skeleton reskinned for
+basketball, and the direct sibling of `baseball/`, which is the previous reskin
+of the same thing. Unlike the two one-file games above, it is split the way the
+football and college games are: `engine.js` and `run.js` load beside the page and
+carry cache versions, so **read the cache-busting section above before editing
+either**.
+
+It is an **unlaunched preview**, on the same footing as the wrestling game:
+
+| | wrestling | hoops | setlist |
+|---|---|---|---|
+| in `sitemap.xml` | no | no | **yes** |
+| indexable | no, noindexed | no, noindexed | **yes** |
+| carries the AdSense tag | no | no | yes |
+| linked from the homepage or nav | no | no | no |
+
+That noindex is doing more work than it looks like. `scripts/check-adsense.mjs`
+audits every INDEXABLE page and skips noindexed ones, so the robots tag is the
+only thing keeping an unfinished game out of the surface AdSense reviews. Remove
+it and nothing fails: hoops silently becomes the 32nd indexable page, and the
+checker then starts demanding an ad tag on it. `hoops/check-posture.mjs` asserts
+all four rows of that column, so launching the game means editing a guard on
+purpose.
+
+The regression suite, none of which needs a network:
+
+```
+node hoops/check-posture.mjs      discoverability, per the table above
+node hoops/build/check-fetch.mjs  the scraper's parsers, against saved markup
+node hoops/verify.mjs             draft legality, seed replay, and calibration
+```
+
+`verify.mjs` prints a **TARGETS** block. Read it after any change to the data or
+the constants: it states what the balance is supposed to look like and flags what
+is outside its band. Two targets are deliberately out of band today, because the
+data is a hand-entered seed. See `hoops/build/README.md`.
+
+The data is **not real yet**. `hoops/data/players.json` is built from
+`hoops/build/seed-rosters.mjs`, 171 player-seasons entered from memory and
+rounded, and nothing in it should be shown to a player as a fact about a real
+season. The real pipeline is written and needs Basketball-Reference, which is
+blocked from the dev sandbox and open in CI, exactly as `build-register.mjs`
+documents.
+
+## Segue's data
+
 Its data refreshes itself daily at 6am Eastern
 (`.github/workflows/setlist-data.yml`) and commits three files:
 `goose.csv` (performances), `goose_shows.csv` (every show, past and future,

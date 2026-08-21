@@ -1,0 +1,20 @@
+{
+  "_note": "Curated real relationships the position and team formula in engine.js cannot infer. A family link fires across any club and any season, which is the whole reason it has to be written down: two brothers who never played together share no team, no season and no college, so nothing else in the model can see them. IDs are Basketball-Reference player ids, which is what both the seed and the fetch key on. A family whose ids are not in the data simply never fires, which is harmless but also invisible, so build-players.mjs reports every unresolved id rather than letting a typo sit here forever.",
+  "families": [
+    { "label": "Thompson father and son", "ids": ["thompmy01", "thompkl01"] },
+    { "label": "Curry family", "ids": ["curryde01", "curryst01", "curryse01"] },
+    { "label": "Gasol brothers", "ids": ["gasolpa01", "gasolma01"] },
+    { "label": "Antetokounmpo brothers", "ids": ["antetgi01", "antetth01", "antetko01", "antetal01"] },
+    { "label": "Holiday brothers", "ids": ["holidjr01", "holidaa01", "holidju01"] },
+    { "label": "Lopez twins", "ids": ["lopezbr01", "lopezro01"] },
+    { "label": "Morris twins", "ids": ["morrima02", "morrima03"] },
+    { "label": "Ball brothers", "ids": ["balllo01", "ballla01", "ballli01"] },
+    { "label": "Barry family", "ids": ["barryri01", "barrybr01", "barryjo01", "barrydr01", "barrysc01"] },
+    { "label": "Rivers father and son", "ids": ["riverdo01", "riverau01"] },
+    { "label": "Bryant father and son", "ids": ["bryanjo01", "bryanko01"] },
+    { "label": "Payton father and son", "ids": ["paytoga01", "paytoga02"] },
+    { "label": "Hardaway father and son", "ids": ["hardati01", "hardati02"] },
+    { "label": "Wagner brothers", "ids": ["wagnefr01", "wagnemo01"] },
+    { "label": "Martin father and son", "ids": ["martike01", "martike02"] }
+  ]
+}

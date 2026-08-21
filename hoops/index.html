@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- NOT FOR SEARCH, AND NOT AN OVERSIGHT.
+     An unlaunched preview: real code and real engine, linked from nowhere, absent from
+     sitemap.xml, and carrying no ad tag. Same treatment as /wrestling/ and /baseball/,
+     and it is deliberate on all three counts.
+
+     WHY IT MATTERS BEYOND THIS PAGE. scripts/check-adsense.mjs walks every indexable
+     page on the site and asserts it can carry an ad and can reach the policy pages,
+     and it skips anything noindexed. So this robots tag is what keeps an unfinished
+     game out of an AdSense review of runthe.gg rather than in it as one more thin
+     page. Two rejections have already been traced to pages that quietly failed that
+     audit. Take the noindex off and this page joins the reviewed site, and it is not
+     ready to be reviewed. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Run The Floor: NBA Draft Game | RunThe.GG</title>
+<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $145M cap, then play all 82 games and chase a ring. In development.">
+<meta name="theme-color" content="#0d1117">
+<link rel="canonical" href="https://runthe.gg/hoops/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0d1117; --card:#161b26; --cardb:#242c3d; --ink:#eef2f9; --mut:#94a3b8;
+    --dim:#6b7a90; --orange:#f0782d; --orange-dk:#c25916; --gold:#f2c14e;
+    --green:#22c55e; --red:#ef4444; --line:rgba(255,255,255,.09);
+    --display:'Anton',Impact,'Arial Narrow',sans-serif;
+    --body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{background:var(--bg);-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--body); color:var(--ink); line-height:1.5; min-height:100vh;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    background:
+      radial-gradient(1100px 520px at 50% -8%, rgba(240,120,45,.15), transparent 60%),
+      radial-gradient(900px 460px at 88% 6%, rgba(242,193,78,.08), transparent 55%),
+      linear-gradient(180deg,#101725 0%, var(--bg) 48%, #090d13 100%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:660px;margin:0 auto;padding:20px 16px 64px;}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  .dim{color:var(--mut);}
+
+  /* The development banner. It is the first thing on the page because the data
+     under this game is hand entered and approximate, and a visitor who somehow
+     reaches an unlisted URL should be told that before reading a stat line. */
+  .devbar{
+    background:linear-gradient(180deg,#3a2410,#2a1a0c); border:1px solid #5d3a15;
+    border-radius:10px; padding:11px 14px; margin:0 0 18px; font-size:13px; color:#f0c9a0;
+  }
+  .devbar b{color:var(--gold);font-weight:800;}
+
+  header.mast{text-align:center;margin:0 0 16px;}
+  header.mast .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--orange);font-weight:800;}
+  header.mast h1{font-family:var(--display);font-weight:400;text-transform:uppercase;
+    font-size:clamp(30px,8vw,46px);line-height:1;margin:4px 0 6px;letter-spacing:.01em;}
+  header.mast h1 span{color:var(--orange);}
+  header.mast p{margin:0;color:var(--mut);font-size:14px;}
+
+  .card{background:linear-gradient(180deg,var(--card),#10151f);border:1px solid var(--cardb);
+    border-radius:12px;padding:16px;margin:0 0 14px;}
+  h2{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:.02em;
+    font-size:20px;margin:0 0 12px;display:flex;justify-content:space-between;
+    align-items:baseline;gap:10px;flex-wrap:wrap;}
+  h2 .sub{font-family:var(--body);font-size:12px;letter-spacing:0;text-transform:none;
+    color:var(--dim);font-weight:600;}
+
+  button{font-family:var(--body);font-weight:800;font-size:14px;cursor:pointer;
+    border-radius:9px;padding:11px 20px;border:1px solid var(--orange);
+    background:linear-gradient(180deg,var(--orange),var(--orange-dk));color:#fff;
+    transition:filter .12s,opacity .12s;}
+  button:hover:not(:disabled){filter:brightness(1.08);}
+  button:disabled{opacity:.38;cursor:not-allowed;}
+  button.ghost{background:transparent;border-color:var(--cardb);color:var(--mut);}
+  button.ghost:hover:not(:disabled){background:rgba(255,255,255,.05);color:var(--ink);}
+  button.big{width:100%;padding:15px;font-size:16px;text-transform:uppercase;letter-spacing:.04em;}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;}
+
+  .screen{display:none;} .screen.active{display:block;}
+
+  /* budget strip */
+  .hud{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;}
+  .hud .cell{flex:1 1 0;min-width:92px;background:rgba(255,255,255,.035);
+    border:1px solid var(--line);border-radius:9px;padding:8px 10px;}
+  .hud .label{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--dim);font-weight:800;}
+  .hud .value{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:1px;}
+  .hud .value.warn{color:var(--gold);} .hud .value.bad{color:var(--red);}
+
+  /* the roster */
+  .slots{display:grid;gap:6px;}
+  .slot{display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:center;
+    background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;min-height:46px;}
+  .slot.empty{border-style:dashed;opacity:.55;}
+  .slot .pos{font-family:var(--display);font-size:15px;color:var(--orange);letter-spacing:.04em;}
+  .slot .who{font-weight:700;font-size:14px;line-height:1.25;}
+  .slot .who small{display:block;font-weight:600;color:var(--dim);font-size:11.5px;}
+  .slot .cost{font-family:var(--mono);font-size:13px;color:var(--mut);}
+
+  /* the board */
+  .board{display:grid;gap:6px;margin:10px 0 0;}
+  .pick{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+    width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--cardb);
+    border-radius:8px;padding:9px 11px;color:var(--ink);font-weight:700;}
+  .pick:hover:not(:disabled){background:rgba(240,120,45,.13);border-color:var(--orange);}
+  .pick small{display:block;font-weight:600;color:var(--dim);font-size:11.5px;
+    margin-top:1px;letter-spacing:.01em;}
+  .pick .price{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--gold);white-space:nowrap;}
+  .pick:disabled{opacity:.4;}
+  .pick:disabled .price{color:var(--red);}
+
+  .drawhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    flex-wrap:wrap;padding:10px 12px;border-radius:9px;margin:0 0 4px;
+    background:linear-gradient(90deg,rgba(240,120,45,.20),rgba(240,120,45,.04));
+    border:1px solid rgba(240,120,45,.35);}
+  .drawhead .club{font-family:var(--display);font-size:21px;letter-spacing:.02em;text-transform:uppercase;}
+  .drawhead .rec{font-family:var(--mono);font-size:12px;color:var(--mut);}
+
+  .links{margin:10px 0 0;padding:0;list-style:none;}
+  .links li{font-size:12.5px;color:var(--mut);padding:3px 0 3px 16px;position:relative;}
+  .links li:before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;
+    border-radius:50%;background:var(--green);}
+  .links li b{color:var(--ink);}
+
+  table.season{width:100%;border-collapse:collapse;font-size:13px;}
+  table.season td{padding:4px 6px;border-bottom:1px solid var(--line);}
+  table.season td.w{color:var(--green);font-weight:800;}
+  table.season td.l{color:var(--red);font-weight:800;}
+  table.season td.sc{font-family:var(--mono);text-align:right;white-space:nowrap;}
+  .scroll{max-height:280px;overflow-y:auto;overflow-x:auto;}
+
+  .verdict{font-family:var(--display);font-size:clamp(24px,6.5vw,34px);text-transform:uppercase;
+    letter-spacing:.02em;margin:0 0 4px;}
+  .verdict.good{color:var(--gold);} .verdict.bad{color:var(--mut);}
+  .record{font-family:var(--mono);font-size:30px;font-weight:700;margin:0 0 10px;}
+
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;}
+  .tag{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;
+    border:1px solid var(--line);color:var(--mut);}
+  .tag.good{color:var(--green);border-color:rgba(34,197,94,.4);}
+  .tag.bad{color:var(--red);border-color:rgba(239,68,68,.4);}
+
+  footer.legal{margin-top:26px;text-align:center;font-size:12.5px;color:var(--dim);line-height:2;}
+  footer.legal a{color:#9db0cb;text-decoration:none;font-weight:700;}
+  footer.legal a:hover{color:var(--ink);}
+  footer.legal span{margin:0 7px;color:#3c4a60;}
+  footer.legal .src{font-size:11.5px;line-height:1.6;margin-top:8px;color:#5b6b80;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="devbar">
+  <b>In development.</b> This page is a working skeleton, not a finished game. The player
+  data behind it is a hand-entered placeholder: 171 seasons off 22 clubs, with win share
+  splits and per-game lines entered from memory and rounded. Treat nothing here as a fact
+  about a real season until the data pipeline has run.
+</div>
+
+<header class="mast">
+  <div class="eyebrow">RunThe.GG</div>
+  <h1>Run The <span>Floor</span></h1>
+  <p>Spin for a season and a club. Draft six. Play 82 and chase a ring.</p>
+</header>
+
+<!-- ── home ─────────────────────────────────────────────────────────────── -->
+<div class="screen active" id="s-home">
+  <div class="card">
+    <h2>How a run goes <span class="sub">six spins, one cap</span></h2>
+    <p class="dim" style="font-size:14px;margin:0 0 10px">
+      The wheel gives you a club and a season. You sign one player off that roster, and
+      you do it six times to fill a point guard, a shooting guard, a small forward, a
+      power forward, a centre and a sixth man. Every signing comes out of a
+      <b style="color:var(--ink)">$145M</b> cap, and the cap is the whole game: the best
+      man on every board runs to about $300M, so it cannot be done.
+    </p>
+    <p class="dim" style="font-size:14px;margin:0 0 14px">
+      Players who really did share a club, a college or a draft class build chemistry,
+      which is worth a few points of net rating. Then you play all 82 games against real
+      teams out of the same data, and if you finish well enough you get a run at a title.
+    </p>
+    <button class="big" id="b-start">Start a run</button>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="ghost" id="b-reset" style="flex:1">Reset</button>
+    </div>
+  </div>
+  <div class="card" id="loadbox">
+    <p class="dim mono" style="margin:0;font-size:13px" id="loadmsg">Loading the league...</p>
+  </div>
+</div>
+
+<!-- ── draft ────────────────────────────────────────────────────────────── -->
+<div class="screen" id="s-draft">
+  <div class="hud">
+    <div class="cell"><div class="label">Cap space</div><div class="value" id="h-cap">$145.0M</div></div>
+    <div class="cell"><div class="label">Spendable</div><div class="value" id="h-spend">$0.0M</div></div>
+    <div class="cell"><div class="label">Slots left</div><div class="value" id="h-slots">6</div></div>
+    <div class="cell"><div class="label">Re-spins</div><div class="value" id="h-respin">3</div></div>
+  </div>
+
+  <div class="card">
+    <div class="drawhead">
+      <div class="club" id="d-club">Spin the wheel</div>
+      <div class="rec" id="d-rec"></div>
+    </div>
+    <div class="board" id="d-board"></div>
+    <div class="btnrow" style="margin-top:12px">
+      <button id="b-spin" style="flex:1">Spin</button>
+      <button class="ghost" id="b-respin">Re-spin</button>
+    </div>
+    <p class="dim" style="font-size:12px;margin:9px 0 0" id="d-note"></p>
+  </div>
+
+  <div class="card">
+    <h2>Your rotation <span class="sub" id="r-chem"></span></h2>
+    <div class="slots" id="r-slots"></div>
+    <ul class="links" id="r-links"></ul>
+  </div>
+</div>
+
+<!-- ── season ───────────────────────────────────────────────────────────── -->
+<div class="screen" id="s-season">
+  <div class="card">
+    <h2>The season <span class="sub" id="p-proj"></span></h2>
+    <div class="hud">
+      <div class="cell"><div class="label">Offense</div><div class="value" id="p-ortg">-</div></div>
+      <div class="cell"><div class="label">Defense</div><div class="value" id="p-drtg">-</div></div>
+      <div class="cell"><div class="label">Rating</div><div class="value" id="p-rating">-</div></div>
+    </div>
+    <button class="big" id="b-play">Play all 82</button>
+  </div>
+</div>
+
+<!-- ── results ──────────────────────────────────────────────────────────── -->
+<div class="screen" id="s-over">
+  <div class="card">
+    <div class="verdict" id="o-verdict">-</div>
+    <div class="record mono" id="o-record">-</div>
+    <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
+    <div class="tags" id="o-tags"></div>
+  </div>
+
+  <div class="card">
+    <h2>The playoffs <span class="sub" id="o-porounds"></span></h2>
+    <div id="o-playoffs"></div>
+  </div>
+
+  <div class="card">
+    <h2>Your draft <span class="sub" id="o-grade"></span></h2>
+    <div class="slots" id="o-slots"></div>
+    <p class="dim" style="font-size:12.5px;margin:10px 0 0" id="o-best"></p>
+  </div>
+
+  <div class="card">
+    <h2>Every game</h2>
+    <div class="scroll"><table class="season"><tbody id="o-games"></tbody></table></div>
+  </div>
+
+  <button class="big" id="b-again">Run it back</button>
+</div>
+
+<footer class="legal">
+  <p><a href="/privacy.html" target="_blank" rel="noopener">Privacy</a><span>&middot;</span><a
+    href="/terms.html" target="_blank" rel="noopener">Terms</a><span>&middot;</span><a
+    href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a
+    href="/" target="_blank" rel="noopener">More games</a></p>
+  <p class="src">An unofficial fan project in development, not affiliated with or endorsed by
+    the NBA or any club. Player data is a hand-entered placeholder and is not a record of any
+    real season.</p>
+</footer>
+
+</div>
+
+<!-- SIBLING SCRIPTS CARRY A HAND WRITTEN CACHE VERSION. index.html revalidates on every
+     visit and these do not, so changing one of them without moving its ?v= serves a
+     RETURNING visitor the new page against the JavaScript they already had. Bump the
+     number in the same commit as the edit, then run:
+       node scripts/check-cachebust.mjs --update
+     CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
+<script src="engine.js?v=1"></script>
+<script src="run.js?v=1"></script>
+<script>
+(function(){
+'use strict';
+
+var E = window.RTF_ENGINE, R = window.RTF_RUN;
+var DATA = null, run = null, board = [];
+
+var $ = function(id){ return document.getElementById(id); };
+var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
+
+function show(id){
+  var all = document.querySelectorAll('.screen');
+  for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
+  $(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── loading ────────────────────────────────────────────────────────────────
+
+function boot(){
+  Promise.all([
+    fetch('data/players.json?v=1').then(function(r){ return r.json(); }),
+    fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); }).catch(function(){ return null; })
+  ]).then(function(res){
+    if (res[1]) E.setCuratedChemistry(res[1]);
+    DATA = R.indexData(res[0]);
+    $('loadmsg').textContent = DATA.players.length + ' player-seasons across '
+      + DATA.teamSeasons.length + ' clubs. Ready.';
+    $('b-start').disabled = false;
+    // A run in progress picks up where it was left, on whatever screen that was.
+    if (restore()) $('b-start').textContent = 'Start a new run';
+  }).catch(function(err){
+    $('loadmsg').textContent = 'The league did not load: ' + err.message;
+  });
+}
+
+// ── the draft ──────────────────────────────────────────────────────────────
+
+function startRun(){
+  run = R.createRun({});
+  save();
+  show('s-draft');
+  renderDraft();
+  spin();
+}
+
+function spin(){
+  try {
+    R.spin(run, DATA);
+  } catch (err) {
+    $('d-note').textContent = err.message;
+    return;
+  }
+  renderDraft();
+  save();
+}
+
+function respin(){
+  try {
+    R.respin(run, DATA);
+  } catch (err) {
+    $('d-note').textContent = err.message;
+    return;
+  }
+  renderDraft();
+  save();
+}
+
+var BLOCK_TEXT = {
+  drafted: 'already signed',
+  no_spot: 'no open slot',
+  position_full: 'position full',
+  price: 'cannot afford'
+};
+
+function renderDraft(){
+  var left = R.slotsLeft(run);
+  var remaining = R.remaining(run);
+  var spendable = R.spendable(run);
+
+  $('h-cap').textContent = money(remaining);
+  $('h-cap').className = 'value' + (remaining < 20 ? ' warn' : '');
+  $('h-spend').textContent = money(Math.max(0, spendable));
+  $('h-spend').className = 'value' + (spendable < 6 ? ' bad' : spendable < 18 ? ' warn' : '');
+  $('h-slots').textContent = String(left);
+  $('h-respin').textContent = String(E.CONSTANTS.MAX_RESPINS - run.respinsUsed);
+
+  var draw = run.currentDraw;
+  var boardEl = $('d-board');
+  boardEl.textContent = '';
+  board = [];
+
+  if (!draw) {
+    $('d-club').textContent = 'Spin the wheel';
+    $('d-rec').textContent = '';
+  } else {
+    $('d-club').textContent = draw.display;
+    $('d-rec').textContent = 'filling ' + draw.openSlots.join(' / ');
+
+    for (var i = 0; i < draw.board.length; i++) {
+      (function(entry){
+        var p = DATA.allPlayers[entry.key];
+        if (!p) return;
+        var b = document.createElement('button');
+        b.className = 'pick';
+        b.disabled = !!entry.block;
+
+        var name = document.createElement('span');
+        var strong = document.createElement('b');
+        strong.textContent = p.n;
+        name.appendChild(strong);
+        var small = document.createElement('small');
+        small.textContent = p.ep.split(';').join('/') + ' · ' + p.pts + ' pts, '
+          + p.reb + ' reb, ' + p.ast + ' ast · ' + p.w + ' win shares'
+          + (entry.block ? ' · ' + (BLOCK_TEXT[entry.block] || entry.block) : '');
+        name.appendChild(small);
+
+        var price = document.createElement('span');
+        price.className = 'price';
+        price.textContent = money(p.p);
+
+        b.appendChild(name);
+        b.appendChild(price);
+        if (!entry.block) b.onclick = function(){ sign(p); };
+        boardEl.appendChild(b);
+      })(draw.board[i]);
+    }
+  }
+
+  var canSpin = !draw && run.phase === R.PHASES.DRAFT;
+  $('b-spin').disabled = !canSpin;
+  $('b-spin').textContent = canSpin ? 'Spin' : 'Pick a player';
+
+  var re = R.canRespin(run);
+  $('b-respin').disabled = !re.ok || !draw;
+  $('b-respin').textContent = 'Re-spin (' + money(re.cost) + ')';
+  $('d-note').textContent = re.ok ? '' : (draw ? re.reason : '');
+
+  renderRoster($('r-slots'), $('r-links'));
+}
+
+function sign(p){
+  try {
+    R.sign(run, p);
+  } catch (err) {
+    $('d-note').textContent = err.message;
+    return;
+  }
+  save();
+  if (run.phase === R.PHASES.SEASON) { toSeason(); return; }
+  spin();
+}
+
+function renderRoster(slotsEl, linksEl){
+  slotsEl.textContent = '';
+
+  var filled = {};
+  for (var i = 0; i < run.roster.length; i++) filled[run.slotIndex[i]] = run.roster[i];
+
+  for (var s = 0; s < E.SLOTS.length; s++) {
+    var p = filled[s];
+    var row = document.createElement('div');
+    row.className = 'slot' + (p ? '' : ' empty');
+
+    var pos = document.createElement('div');
+    pos.className = 'pos';
+    pos.textContent = E.SLOTS[s];
+
+    var who = document.createElement('div');
+    who.className = 'who';
+    if (p) {
+      who.appendChild(document.createTextNode(p.n));
+      var sub = document.createElement('small');
+      sub.textContent = p.s + ' ' + E.teamName(p.t) + ' · ' + p.ow.toFixed(1)
+        + ' off / ' + p.dw.toFixed(1) + ' def win shares';
+      who.appendChild(sub);
+    } else {
+      who.textContent = 'open';
+    }
+
+    var cost = document.createElement('div');
+    cost.className = 'cost';
+    cost.textContent = p ? money(p.p) : '';
+
+    row.appendChild(pos); row.appendChild(who); row.appendChild(cost);
+    slotsEl.appendChild(row);
+  }
+
+  if (!linksEl) return;
+  var chem = E.resolveChemistry(run.roster);
+  var head = document.getElementById('r-chem');
+  if (head) {
+    head.textContent = run.roster.length < 2 ? ''
+      : 'chemistry ' + (chem.bonus >= 0 ? '+' : '') + chem.bonus.toFixed(2) + ' rating';
+  }
+
+  linksEl.textContent = '';
+  var seen = {};
+  for (var k = 0; k < chem.links.length; k++) {
+    var l = chem.links[k];
+    if (seen[l.label]) continue;
+    seen[l.label] = 1;
+    var li = document.createElement('li');
+    var b = document.createElement('b');
+    b.textContent = l.label;
+    li.appendChild(b);
+    li.appendChild(document.createTextNode(': ' + l.a + ' and ' + l.b));
+    linksEl.appendChild(li);
+  }
+}
+
+// ── the season ─────────────────────────────────────────────────────────────
+
+function toSeason(){
+  show('s-season');
+  var proj = R.projectSeason(run, 120);
+  var tagged = run.roster.map(function(p, i){
+    var c = {}; for (var k in p) c[k] = p[k];
+    c._slot = E.SLOTS[run.slotIndex[i]];
+    return c;
+  });
+  var chem = E.resolveChemistry(tagged);
+  var st = E.rosterStructure(tagged);
+  var ortg = E.rosterOffense(tagged, chem.bonus, st.bonus);
+  var drtg = E.rosterDefense(tagged, chem.bonus);
+
+  $('p-ortg').textContent = ortg.toFixed(1);
+  $('p-drtg').textContent = drtg.toFixed(1);
+  $('p-rating').textContent = E.overallRating(E.teamWinPct(ortg, drtg)).toFixed(0);
+  $('p-proj').textContent = st.archetype.name + ' · projected '
+    + proj.typical + '-' + (82 - proj.typical) + ', title ' + proj.titlePct + '%';
+}
+
+function playSeason(){
+  var out = R.playSeason(run);
+  save();
+  renderOver(out);
+  show('s-over');
+}
+
+// ── results ────────────────────────────────────────────────────────────────
+
+/* Where the season actually ended, in the words a fan would use. */
+function headline(out){
+  if (out.titleWon) return 'Champions';
+  if (!run.playoffs || !run.playoffs.rounds.length) return 'Missed the playoffs';
+  var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
+  if (last.round === 'Play-In') return 'Lost the play-in';
+  if (last.round === 'NBA Finals') return 'Lost the Finals';
+  return 'Out in the ' + last.round;
+}
+
+function getOrdinal(n){
+  var mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return 'th';
+  return ['th', 'st', 'nd', 'rd'][n % 10] || 'th';
+}
+
+function renderOver(out){
+  /* THE HEADLINE IS WHAT HAPPENED, NOT WHAT THE ROSTER RATED. Those are two
+     different questions and printing the second as the headline produced a
+     results screen reading "Play-in team" over the words "Lottery", because the
+     coach's verdict comes off the rating and the seeding comes off the actual
+     record. The rating still gets said, underneath, where it cannot contradict
+     the scoreboard. */
+  var v = $('o-verdict');
+  v.textContent = headline(out);
+  v.className = 'verdict ' + (out.titleWon ? 'good' : 'bad');
+
+  $('o-record').textContent = out.wins + '-' + out.losses;
+  /* The coach's verdict is deliberately NOT here. It is a read on the roster
+     and the seed label is a read on the season, and side by side they collided
+     into "Play-in · Play-in team". The rating says the same thing in a number,
+     and the coach earns his place in the tags underneath. */
+  $('o-seed').textContent = out.seedLabel
+    + ' · rating ' + out.rating.toFixed(0)
+    + ' · offense ' + out.ortg.toFixed(1) + ', defense ' + out.drtg.toFixed(1)
+    + (out.allTimeRank
+      ? ' · ' + out.allTimeRank + getOrdinal(out.allTimeRank) + ' of '
+        + DATA.ratingTable.length + ' all time'
+      : '');
+
+  var tags = $('o-tags');
+  tags.textContent = '';
+  function tag(text, kind){
+    var el = document.createElement('span');
+    el.className = 'tag' + (kind ? ' ' + kind : '');
+    el.textContent = text;
+    tags.appendChild(el);
+  }
+  if (out.beatRecord) tag('Beat 72 wins', 'good');
+  if (out.isGOAT) tag('74 wins', 'good');
+  /* The shape always gets said, even when it earned no bonus. A roster that is
+     neither a strength nor a weakness anywhere still has an identity, and an
+     empty tag row reads as something failing to render. A shape that DID earn a
+     bonus is already in the strengths below, so it is not said twice. */
+  var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
+  if (shape && out.coach.strengths.indexOf(shape) === -1) tag(shape);
+  for (var i = 0; i < out.coach.strengths.length; i++) tag(out.coach.strengths[i], 'good');
+  for (var j = 0; j < out.coach.weaknesses.length; j++) tag(out.coach.weaknesses[j], 'bad');
+
+  // playoffs
+  var po = $('o-playoffs');
+  po.textContent = '';
+  if (!run.playoffs) {
+    $('o-porounds').textContent = '';
+    var none = document.createElement('p');
+    none.className = 'dim';
+    none.style.cssText = 'margin:0;font-size:13.5px';
+    none.textContent = 'Missed them. ' + E.CONSTANTS.PLAY_IN_WINS
+      + ' wins gets you into the play-in, ' + E.CONSTANTS.TOP_SIX_WINS + ' gets you a seed.';
+    po.appendChild(none);
+  } else {
+    $('o-porounds').textContent = run.playoffs.rounds.length + ' rounds';
+    var tbl = document.createElement('table');
+    tbl.className = 'season';
+    var tb = document.createElement('tbody');
+    for (var r = 0; r < run.playoffs.rounds.length; r++) {
+      var rd = run.playoffs.rounds[r];
+      var tr = document.createElement('tr');
+      var a = document.createElement('td');
+      a.textContent = rd.round;
+      var b = document.createElement('td');
+      b.className = rd.won ? 'w' : 'l';
+      b.textContent = rd.won ? 'WON' : 'LOST';
+      var c = document.createElement('td');
+      c.className = 'sc';
+      c.textContent = rd.yourWins + '-' + rd.oppWins;
+      tr.appendChild(a); tr.appendChild(b); tr.appendChild(c);
+      tb.appendChild(tr);
+    }
+    tbl.appendChild(tb);
+    po.appendChild(tbl);
+  }
+
+  renderRoster($('o-slots'), null);
+
+  var squad = R.bestPossibleSquad(run, DATA);
+  if (squad) {
+    $('o-grade').textContent = 'draft efficiency ' + squad.efficiency.toFixed(0) + '%';
+    $('o-best').textContent = 'You signed ' + squad.actualWs.toFixed(1)
+      + ' win shares. The best legal six out of the clubs you actually spun was '
+      + squad.bestWs.toFixed(1) + ', for ' + money(squad.spend) + '.';
+  } else {
+    $('o-grade').textContent = '';
+    $('o-best').textContent = '';
+  }
+
+  var games = $('o-games');
+  games.textContent = '';
+  for (var g = 0; g < run.season.length; g++) {
+    var gm = run.season[g], sc = run.schedule[g];
+    var row = document.createElement('tr');
+    var n = document.createElement('td');
+    n.textContent = String(gm.game);
+    var opp = document.createElement('td');
+    opp.textContent = (sc.home ? 'vs ' : 'at ') + (sc.oppName || 'opponent')
+      + (sc.marquee ? ' ★' : '');
+    var res = document.createElement('td');
+    res.className = gm.won ? 'w' : 'l';
+    res.textContent = gm.won ? 'W' : 'L';
+    var score = document.createElement('td');
+    score.className = 'sc';
+    score.textContent = gm.yourPoints + '-' + gm.oppPoints + (gm.ot ? ' OT' : '');
+    row.appendChild(n); row.appendChild(opp); row.appendChild(res); row.appendChild(score);
+    games.appendChild(row);
+  }
+}
+
+// ── saving ─────────────────────────────────────────────────────────────────
+
+/* A run is a plain serializable object plus a seed, so storing it is just
+   JSON. Wrapped because a private window throws on the accessor itself rather
+   than returning empty, and a game that will not start because storage is off
+   is a worse game than one that will not resume. */
+var KEY = 'runthefloor_run_v1';
+
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(run)); } catch (e) {}
+}
+
+function restore(){
+  var saved;
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (!raw) return false;
+    saved = JSON.parse(raw);
+  } catch (e) { return false; }
+  if (!saved || saved.version !== 1) return false;
+
+  run = saved;
+  if (run.phase === R.PHASES.DRAFT) { show('s-draft'); renderDraft(); return true; }
+  if (run.phase === R.PHASES.SEASON) { toSeason(); return true; }
+  /* A finished run replays from its own outcome rather than being re-simulated:
+     the season is already in the run object, and re-running it would consume the
+     RNG stream again and print a DIFFERENT season under the same record. */
+  if (run.phase === R.PHASES.OVER && run.outcome && run.season) {
+    renderOver(run.outcome);
+    show('s-over');
+    return true;
+  }
+  run = null;
+  return false;
+}
+
+function reset(){
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  run = null;
+  show('s-home');
+}
+
+// ── wiring ─────────────────────────────────────────────────────────────────
+
+$('b-start').disabled = true;
+$('b-start').onclick = startRun;
+$('b-reset').onclick = reset;
+$('b-spin').onclick = spin;
+$('b-respin').onclick = respin;
+$('b-play').onclick = playSeason;
+$('b-again').onclick = startRun;
+
+boot();
+})();
+</script>
+</body>
+</html>
