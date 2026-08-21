@@ -96,6 +96,22 @@
     game: it lives in <code>mockups/helmets/</code> so it can be looked at, argued with and
     thrown away without touching a thing.</p>
 
+  <h2>Which angle?</h2>
+  <p class="sub">This is the part a mockup cannot reason its way to. Seven silhouettes went
+    past before this page admitted it was guessing at the one you have in your head, so both
+    of the readings that are actually different are kept and the whole page switches between
+    them. Pick one and everything below redraws.</p>
+  <div class="toggle" id="shape"></div>
+  <div class="card sizes" id="angles"></div>
+  <p class="sub" style="margin-top:14px"><b>Side</b> is dead on from the side. The cage reads
+    as a cage because it hangs in front of the shell with daylight through it, and this is
+    the version a person recognises fastest. The stripe is nearly edge on and the far side of
+    the helmet is invisible.<br>
+    <b>Front</b> is turned toward you. You get the crown, so the stripe is a stripe, and you
+    see the mask square on. What it costs is that the bars and their openings start reading
+    as eyes and a mouth at small sizes, and the shell behind them reads as round rather than
+    as a helmet.</p>
+
   <h2>The idea</h2>
   <p class="sub">A helmet is not eighty three drawings. The shell, the ear hole, the crown,
     the cage and where a mark sits are the same for every school; what changes is four colours,
@@ -195,10 +211,11 @@
   const $ = (id) => document.getElementById(id);
   const H = window.PixelHelmet;
   const schools = await window.KITS.load('../../cfb/data/cfb_team_seasons.json');
+  let shape = 'side';
 
   function mk(kit, scale) {
     const c = document.createElement('canvas');
-    H.render(c, kit, scale);
+    H.render(c, kit, scale, shape);
     return c;
   }
 
@@ -211,7 +228,7 @@
     ['face', 'Face', 'dark whatever the shell is, because it is the inside of a helmet'],
   ];
   function paintAnatomy(kit) {
-    H.render($('anat-big'), kit, 8);
+    H.render($('anat-big'), kit, 8, shape);
     const val = {
       shell: kit.shell, mask: kit.mask,
       stripeMain: (kit.stripe || [])[0] || kit.shell,
@@ -269,6 +286,7 @@
     current = kit;
     paintAnatomy(kit);
     paintSizes(kit);
+    if ($('angles').children.length) paintAngles();
     $('bub-head').innerHTML = '';
     $('bub-head').appendChild(mk(kit, 1));
     [...document.querySelectorAll('#league .cell')].forEach((c) =>
@@ -296,6 +314,37 @@
       });
     if (current) select(current);
   }
+  /* The angle switch. Everything on the page is drawn from the same paint jobs, so
+     changing it is a repaint and not a second set of art. */
+  function paintAngles() {
+    $('angles').innerHTML = '';
+    ['side', 'front'].forEach((name) => {
+      const f = document.createElement('figure');
+      const c = document.createElement('canvas');
+      H.render(c, current || schools[0], 5, name);
+      f.appendChild(c);
+      const cap = document.createElement('figcaption');
+      cap.textContent = name + (name === shape ? ' (showing)' : '');
+      f.appendChild(cap);
+      $('angles').appendChild(f);
+    });
+  }
+  $('shape').innerHTML = '';
+  ['side', 'front'].forEach((name) => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.className = name === shape ? 'on' : '';
+    b.onclick = () => {
+      shape = name;
+      [...$('shape').children].forEach((x) => x.classList.toggle('on', x === b));
+      paintLeague();
+      paintVault();
+      paintBoard();
+      paintAngles();
+    };
+    $('shape').appendChild(b);
+  });
+
   $('filter').innerHTML = '';
   CONFS.forEach((name) => {
     const b = document.createElement('button');
@@ -310,12 +359,16 @@
   });
   paintLeague();
 
-  window.KITS.vault.forEach((v) => {
-    $('vault').appendChild(cell(v.kit, {
-      locked: v.locked, tag: v.locked ? 'lock' : v.kind, tagText: v.locked ? 'Locked' : v.kind,
-      how: v.how,
-    }));
-  });
+  function paintVault() {
+    $('vault').innerHTML = '';
+    window.KITS.vault.forEach((v) => {
+      $('vault').appendChild(cell(v.kit, {
+        locked: v.locked, tag: v.locked ? 'lock' : v.kind, tagText: v.locked ? 'Locked' : v.kind,
+        how: v.how,
+      }));
+    });
+  }
+  paintVault();
 
   const BOARD = [
     ['bigmike', '15-0', 'Alabama', true], ['coachprime', '14-1', 'Oregon'],
@@ -324,6 +377,7 @@
   ];
   const byName = {};
   schools.forEach((k) => { byName[k.name] = k; });
+  function paintBoard() {
   $('rows').innerHTML = '';
   BOARD.forEach(([name, rec, school, me], i) => {
     const kit = byName[school] || schools[0];
@@ -343,8 +397,11 @@
     r.appendChild(rc);
     $('rows').appendChild(r);
   });
+  }
+  paintBoard();
 
   select(byName.Alabama || schools[0]);
+  paintAngles();
 })();
 </script>
 </body>

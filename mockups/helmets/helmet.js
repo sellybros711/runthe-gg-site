@@ -48,7 +48,34 @@
    *   M  cage bar    e  an opening, dark whatever the shell is
    *   E  ear hole ring       g  ear hole
    */
-  const HELMET = [
+  /* ── THE ANGLE IS AN OPEN QUESTION, so all three are here ─────────────────────
+   *
+   * Seven silhouettes went past before this file admitted it was guessing. The note that
+   * sent it back each time was about the angle, and the angle is the one thing a mockup
+   * cannot reason its way to: it is a taste call about which reading of a helmet a person
+   * has in their head. So the three that are actually different are kept, drawn from the
+   * same paint job, and the page shows them together.
+   *
+   *   side     dead on from the side. The cage is a cage because it hangs in front of the
+   *            shell with daylight through it, and this is the version that reads as a
+   *            helmet fastest. The stripe is nearly edge on and the far cheek is invisible.
+   *
+   *   turned   rotated toward the viewer. You get the crown, so the stripe is a stripe, and
+   *            a sliver of the far side of the shell past the cage. The cage flattens.
+   *
+   *   front    turned further again, the cage square on over the face. The most information
+   *            about the mask and the least about the helmet: at small sizes the bars and
+   *            the openings start reading as a face rather than a facemask.
+   *
+   * WHAT EACH SHAPE CARRIES is its own grid, its own logo box and its own dome for the
+   * lighting, because a shape whose lighting was fitted to a different silhouette looks
+   * lit from somewhere else.
+   */
+  const SHAPES = {
+    side: {
+      logo: { x: 12, y: 9, w: 9, h: 7 },
+      dome: { cx: 13.5, cy: 13.5, rx: 13.0, ry: 12.0 },
+      grid: [
     '..............................',
     '..............................',
     '.........#-====-#.............',
@@ -79,12 +106,48 @@
     '..............................',
     '..............................',
     '..............................',
-  ];
+  ],
+    },
+    front: {
+      logo: { x: 5, y: 16, w: 9, h: 7 },
+      dome: { cx: 15.0, cy: 13.5, rx: 14.0, ry: 12.0 },
+      grid: [
+    '................................',
+    '................................',
+    '...........##-====-##...........',
+    '.........###-====-#####.........',
+    '.......####-====-########.......',
+    '......####-====-^^#########.....',
+    '.....####-====-^^###########....',
+    '....####-====-###############...',
+    '...####-====-################...',
+    '...###-====-#################...',
+    '..###-====-###################..',
+    '..############################..',
+    '..############################..',
+    '..###E############eeeeeee###....',
+    '..#EgE#########MMMMMMMMMMMMM#...',
+    '..###E##########eeeeMeeee###....',
+    '..##############eeeeMeeee###....',
+    '..##############eeeeeeeee##.....',
+    '..#############MMMMMMMMMMMMM....',
+    '...##############eeeeeeee##.....',
+    '...###############eeeeee##......',
+    '....############MMMMMMMMMMM.....',
+    '.....############MMMMMMMM.......',
+    '.......###########MMMMM.........',
+    '.........ooooooooo..............',
+    '...........oooo.................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+  ],
+    },
+  };
 
-  /* Where the mark sits, and how big a box it gets. Every logo is drawn inside this box, so
-     a mark too big for a helmet is caught by the box rather than by somebody noticing it
-     later. On the side of the shell, clear of the stripe above it and the cage in front. */
-  const LOGO_BOX = { x: 11, y: 11, w: 9, h: 7 };
 
   /* ── a tiny alphabet ──────────────────────────────────────────────────────────
    * 3x5, because a helmet's side is nine pixels across and two letters plus a gap is
@@ -153,11 +216,14 @@
       for (let r = 0; r < 5; r++) rows[r] += (i ? '0' : '') + FONT[c][r];
     });
     const w = rows[0].length;
-    const pad = Math.max(0, Math.floor((LOGO_BOX.w - w) / 2));
+    /* Every shape's logo box is nine across, which is not a coincidence: a mark drawn for
+       one angle has to fit the others or the whole point of sharing glyphs is lost. */
+    const BOX_W = 9;
+    const pad = Math.max(0, Math.floor((BOX_W - w) / 2));
     const out = ['.........'];
     for (let r = 0; r < 5; r++) {
       out.push(('.'.repeat(pad) + rows[r].replace(/0/g, '.').replace(/1/g, '1'))
-        .padEnd(LOGO_BOX.w, '.').slice(0, LOGO_BOX.w));
+        .padEnd(BOX_W, '.').slice(0, BOX_W));
     }
     out.push('.........');
     return out;
@@ -206,9 +272,8 @@
    * rather than float in front of it.
    */
   const LIGHT = { x: -0.52, y: -0.66, z: 0.54 };
-  const DOME = { cx: 13.5, cy: 13.5, rx: 13.0, ry: 12.0 };
 
-  function domeLevel(x, y) {
+  function domeLevel(x, y, DOME) {
     const nx = (x + 0.5 - DOME.cx) / DOME.rx;
     const ny = (y + 0.5 - DOME.cy) / DOME.ry;
     const nz = Math.sqrt(Math.max(0.05, 1 - Math.min(1, nx * nx + ny * ny)));
@@ -229,7 +294,9 @@
    * or {word:'GB'}), ink (the logo's colors), pattern (an optional glyph drawn across the
    * whole shell, for a club whose shell is not one flat color).
    */
-  function paint(ctx, kit, scale, ox, oy) {
+  function paint(ctx, kit, scale, ox, oy, shapeName) {
+    const SHAPE = SHAPES[shapeName || (kit && kit.shape) || 'side'] || SHAPES.side;
+    const HELMET = SHAPE.grid, LOGO_BOX = SHAPE.logo, DOME = SHAPE.dome;
     const shell = kit.shell || '#ffffff';
     const put = (x, y, color) => {
       ctx.fillStyle = color;
@@ -282,7 +349,7 @@
         /* Where the shell turns away at the edge it loses another tone. Only on the dark
            side: the top left edge is where the light lands and darkening it there would
            put a shadow on the brightest part of the helmet. */
-        let L = domeLevel(x, y);
+        let L = domeLevel(x, y, DOME);
         const edge = !solid(x - 1, y) || !solid(x + 1, y) || !solid(x, y - 1) || !solid(x, y + 1);
         if (edge && L <= 2) L = Math.max(0, L - 1);
 
@@ -302,7 +369,7 @@
         else if (c === '_') put(x, y, tone(stripe[2] || stripe[0], L));
         /* The cage is not on the dome, it hangs in front of it, so it is lit by height
            instead: the top bar catches the light, the chin bar is in its own shadow. */
-        else if (c === 'M') put(x, y, tone(mask, y <= 13 ? 3 : y <= 19 ? 2 : 1));
+        else if (c === 'M') put(x, y, tone(mask, y <= 14 ? 3 : y <= 18 ? 2 : 1));
         else if (c === 'm') put(x, y, tone(mask, 1));
         /* The face opening is dark whatever the shell is: it is the inside of a helmet
            with a head in it, not a tinted version of the paint. */
@@ -321,7 +388,7 @@
         for (let x = 0; x < HELMET[y].length; x++) {
           if (HELMET[y][x] !== '#') continue;
           const p = g[y % g.length][x % g[0].length];
-          if (p === '1') put(x, y, tone(kit.patternInk || '#000000', domeLevel(x, y)));
+          if (p === '1') put(x, y, tone(kit.patternInk || '#000000', domeLevel(x, y, DOME)));
         }
       }
     }
@@ -334,22 +401,23 @@
         if (c === '.') continue;
         const gx = LOGO_BOX.x + x, gy = LOGO_BOX.y + y;
         if ((HELMET[gy] || '')[gx] !== '#') continue;   // never paint outside the shell
-        put(gx, gy, tone(c === '2' ? (ink[1] || ink[0]) : ink[0], domeLevel(gx, gy)));
+        put(gx, gy, tone(c === '2' ? (ink[1] || ink[0]) : ink[0], domeLevel(gx, gy, DOME)));
       }
     }
   }
 
-  function render(canvas, kit, scale) {
-    const w = HELMET[0].length, h = HELMET.length;
+  function render(canvas, kit, scale, shapeName) {
+    const SHAPE = SHAPES[shapeName || (kit && kit.shape) || 'side'] || SHAPES.side;
+    const w = SHAPE.grid[0].length, h = SHAPE.grid.length;
     canvas.width = w * scale;
     canvas.height = h * scale;
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    paint(ctx, kit, scale, 0, 0);
+    paint(ctx, kit, scale, 0, 0, shapeName);
     return canvas;
   }
 
-  window.PixelHelmet = { HELMET, GLYPHS, FONT, LOGO_BOX, render, paint, wordGlyph,
+  window.PixelHelmet = { SHAPES, GLYPHS, FONT, render, paint, wordGlyph,
     shade, tone, domeLevel };
 })();
