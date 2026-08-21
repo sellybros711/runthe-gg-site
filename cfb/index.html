@@ -1371,6 +1371,13 @@ window.GA_ID='G-L29P5MRWKE';
   .seed-panel.bowl:after{background:linear-gradient(90deg,transparent,rgba(192,132,252,.5),transparent)}
   .seed-panel>*{position:relative;z-index:1}
   @media(max-width:599px){.seed-panel{padding:16px 18px 18px}}
+  /* The playoff gate sits UNDER the seed panel rather than replacing it, because the
+     chips above are the thing being offered: a player is looking at the No. 6 seed
+     they earned while being asked what it takes to play it. Swapping the panel out
+     for the ask would sell an account against a blank card. */
+  .seed-gate{margin-top:14px;border-radius:16px;padding:16px 18px;
+    border:1px solid var(--line);background:var(--panel)}
+  .seed-gate .sg-lead{margin:0 0 12px;font-size:13.5px;line-height:1.5;color:var(--dim)}
   .seed-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
   .seed-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;
     font-family:var(--fn);font-size:12.5px;font-weight:700;letter-spacing:.08em;
@@ -3219,11 +3226,20 @@ or endorsed by the NCAA, the CFP or any school.
       <p class="seed-desc" id="sd-sub"></p>
       <div class="po-tracker" id="sd-tracker" role="list"></div>
     </div>
+    <!-- The playoff gate, for a guest who just qualified. Hidden for everybody
+         else, and never in the way of a bowl or a season that ended. -->
+    <div class="seed-gate" id="sd-gate" hidden>
+      <p class="sg-lead" id="sd-gate-lead"></p>
+      <div class="perks" id="sd-gate-perks"></div>
+    </div>
     <div style="margin-top:16px">
       <button class="btn seed-cta" id="b-po">Start the playoffs</button>
     </div>
     <div style="margin-top:8px;text-align:center">
       <button class="btn-text" id="b-po-skip">Sim to the end</button>
+    </div>
+    <div style="margin-top:8px;text-align:center">
+      <button class="btn-text" id="b-po-hold" hidden>Not now</button>
     </div>
   </div>
 
@@ -4998,6 +5014,17 @@ function bootAuth(){
        glass. Repainted rather than just unlocked, because a name arriving also changes what
        the board says about you. */
     if($('s-board').classList.contains('on')) paintBoard();
+    /* SIGNING IN AT THE PLAYOFF GATE TAKES THE WALL DOWN WHERE IT STANDS. Somebody who
+       signs in with a password never leaves the page, so nothing else would repaint this
+       and they would be looking at the ask they had just answered. It runs the other way
+       too, for the seeding screen painted in the seconds before auth answered at all. */
+    if(run&&run.phase===R.PHASES.SEEDING&&$('s-seed').classList.contains('on')){
+      const wasUp=!$('sd-gate').hidden;
+      paintSeed();
+      /* Only when the wall actually came down. A token refresh on a screen where somebody
+         has the account sheet open on purpose must not slam it shut. */
+      if(wasUp&&!playoffGate()) closeSheet();
+    }
     /* Signing in with a finished season on screen takes it over. */
     /* SIGNING IN HAS TO VISIBLY PAY OFF. Claiming the season silently and
        repainting a placing is not an answer to "what did I just get". The NFL game
@@ -6465,7 +6492,9 @@ async function boot(){
        one thing that would make the whole screen feel cheap. */
     const spent=((window.performance&&performance.now)?performance.now():0)-t0;
     if(spent>380) await new Promise(r=>setTimeout(r,240));
-    if(!routeChallenge()) show('s-intro');
+    /* A CHALLENGE LINK WINS. It is somebody else's message and the reason this page was
+       opened; a held season is this player's own and will still be here afterwards. */
+    if(!routeChallenge()&&!resumeHeld()) show('s-intro');
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */
@@ -6977,6 +7006,10 @@ function guestPitch(){
     ['Your name on the leaderboard', 'Nameless seasons are ranked but never listed.'],
     ['It takes one tap', 'Pick a name and you are on there.'],
   ]:[
+    /* THE PLAYOFF LEADS, because it is the only one of these that will actually stop
+       them, and being told about it here is the difference between a wall they were
+       warned about and one that turns up in week thirteen. */
+    ['The playoffs', 'A guest season stops once the field is set.'],
     ['Your name on the leaderboard', 'Guest seasons are ranked but never listed.'],
     ['Conference Draft', 'Draft a single Power 5 conference.'],
     [badges?('All '+badges+' badges'):'Every badge in the game', 'Guests earn none of them.'],
@@ -7016,6 +7049,9 @@ function beginDraft(conference,seed){
   pendingChallenge=false;
   /* A new draft is a new chance to ask, and the old one is over. */
   squadPitchShown=false; squadPitchWanted=false;
+  /* Starting a fresh one is how a player says they are done with a held season, and it
+     is the only way out of the loop where every load reopens the same seeding screen. */
+  gateSeen=false; dropHold();
   if(conference!==undefined) nextConference=conference&&E.isPowerConference(conference)?conference:null;
   newRun(seed);
   ga('game_started',{mode:runMode(run)});
@@ -7879,6 +7915,85 @@ function after(){
   }
 }
 
+/* ── THE PLAYOFF GATE, AND HOLDING THE SEASON BEHIND IT ───────────────────────
+ * A guest who makes the playoff is asked for an account before playing it out. It is
+ * the one gate in the game and it is here because it is the only moment the ask is
+ * worth anything to the player: they have twelve games and a seed in hand, and the
+ * thing on the other side of the button is the postseason they just earned.
+ *
+ * A BOWL IS NOT GATED, and neither is a season that ended in week twelve. Only the
+ * playoff, and only when the field has them in it.
+ *
+ * IT IS NEVER SHOWN WHEN ACCOUNTS ARE OFFLINE. gateState() is empty while the sign-in
+ * library is still landing and empty for good if it never lands, usually an ad
+ * blocker, so a blocked browser plays the playoffs exactly as it did before. A wall in
+ * front of something the browser is refusing to let them do would be unplayable.
+ *
+ * AND THE SEASON IS NOT DESTROYED BY THE ANSWER. This is the part that would have made
+ * the gate worse than nothing: two of the three ways in leave the page. Google is a
+ * full redirect and a new account is an email confirmation, and the run lives in one
+ * variable that does not survive either. So the run is written to localStorage the
+ * moment the gate goes up and read back on the next load, which is what turns "sign in
+ * to finish this" into a promise the game keeps. A run is plain data by construction:
+ * the seed and a call count stand in for the generator, so a JSON round trip is the
+ * whole of it, and cfb/build/test/test_hold_season.mjs pins that the playoffs come out
+ * the same either side of one.
+ */
+const HOLD_KEY='cfb_held_season';
+/* Long enough to cover an email confirmation that gets opened the next evening, short
+   enough that a season abandoned a fortnight ago does not ambush a new visit. */
+const HOLD_MAX_AGE=14*24*60*60*1000;
+
+/* Counted once a season, not once a repaint: the panel is redrawn every time auth
+   changes its mind and three of those in a row is not three players seeing a wall. */
+let gateSeen=false;
+
+/* Whether this seeding screen is a wall rather than a kickoff. */
+function playoffGate(){
+  return !!(run&&run.playoffSeed&&run.playoffSeed.made&&gateState()==='guest');
+}
+
+function holdSeason(){
+  if(!run||run.phase!==R.PHASES.SEEDING) return;
+  try{ localStorage.setItem(HOLD_KEY,JSON.stringify({v:1,at:Date.now(),run})); }catch(e){}
+}
+function dropHold(){ try{ localStorage.removeItem(HOLD_KEY); }catch(e){} }
+
+/* Everything that has to be true before a stored blob is allowed to become the run on
+   screen. A held season is the ONLY thing this reads back, so anything that is not one
+   is dropped rather than repaired: a half-written record, a run from a build whose
+   shape has moved, a season already played out. */
+function readHold(){
+  let h=null;
+  try{ const raw=localStorage.getItem(HOLD_KEY); h=raw?JSON.parse(raw):null; }catch(e){ return null; }
+  if(!h||h.v!==1||!h.run) return null;
+  if(!(typeof h.at==='number'&&Date.now()-h.at<HOLD_MAX_AGE)) return null;
+  const r=h.run;
+  if(r.phase!==R.PHASES.SEEDING) return null;
+  if(!r.playoffSeed||!r.playoffSeed.made) return null;
+  if(!Array.isArray(r.roster)||r.roster.length!==E.SLOTS.length) return null;
+  if(!r.season||!Array.isArray(r.season.results)||!Array.isArray(r.schedule)) return null;
+  return r;
+}
+
+/* THE ROSTER COMES BACK AS THE DATA'S OWN OBJECTS, not copies of them. Nothing in the
+   engine compares players by identity, but the squad and player sheets are written
+   against the objects indexData built, and one screen quietly reading a stale copy is
+   the kind of bug that only shows up on the one path nobody replays. Cheap to rule out. */
+function rehydrate(r){
+  if(BYKEY) r.roster=r.roster.map((p)=>BYKEY.get(p.player_id+'|'+p.season)||p);
+  return r;
+}
+
+function resumeHeld(){
+  const held=readHold();
+  if(!held) return false;
+  try{ run=rehydrate(held); }catch(e){ dropHold(); return false; }
+  ga('season_resumed',{});
+  paintSeed();
+  return true;
+}
+
 /* ── seeding ─────────────────────────────────────────────────── */
 function paintSeed(){
   const sd=run.playoffSeed;
@@ -7887,6 +8002,10 @@ function paintSeed(){
 
   const badges=$('sd-badges');badges.innerHTML='';
   const check='<svg viewBox="0 0 10 10"><polyline points="2,5.5 4.2,7.8 8,2.5"/></svg>';
+  /* Painted below, and off for everything except a gated playoff. Cleared here so a
+     repaint after a sign-in cannot leave the wall standing over an unlocked button. */
+  $('sd-gate').hidden=true;
+  $('b-po-hold').hidden=true;
 
   if(sd.made){
     /* Playoff */
@@ -7919,10 +8038,37 @@ function paintSeed(){
     });
 
     const nextRound=sd.roundNames[0];
-    $('b-po').textContent=nextRound?'Play the '+nextRound.replace('CFP ','')
-      .replace('Championship','National Championship'):'Start the playoffs';
-    $('b-po').hidden=false;
-    $('b-po-skip').hidden=false;
+    if(playoffGate()){
+      /* THE SEED AND THE TRACKER STAY ON SCREEN. What is being asked for is an account,
+         and what is being offered is the bracket directly above the ask. */
+      const ACH=window.PS_CFB_ACH;
+      const nb=ACH&&ACH.CATALOG?ACH.CATALOG.length:0;
+      $('sd-gate-lead').textContent='This is as far as a guest goes. Sign in or make a '+
+        'free account and the playoffs pick up right here.';
+      const perks=[
+        ['Play the playoffs out','The field is set and your first game is waiting.'],
+        ['Your name on the leaderboard','Guest seasons are ranked but never listed.'],
+        [nb?('All '+nb+' badges'):'Every badge in the game','Guests earn none of them.'],
+      ];
+      $('sd-gate-perks').innerHTML=perks.map(([t,d])=>
+        '<div class="perk"><span class="pk"></span><div><b>'+esc(t)+'</b><span>'+esc(d)+
+        '</span></div></div>').join('');
+      $('sd-gate').hidden=false;
+      $('b-po').textContent='Sign in or sign up';
+      $('b-po').hidden=false;
+      /* Both ways past the wall are off: simming to the end is the playoffs too. */
+      $('b-po-skip').hidden=true;
+      $('b-po-hold').hidden=false;
+      /* Written before anything is clicked, because the two sign-in paths that leave the
+         page do not come back through this function. */
+      holdSeason();
+      if(!gateSeen){ gateSeen=true; ga('playoff_gate_shown',{seed:sd.seed}); }
+    }else{
+      $('b-po').textContent=nextRound?'Play the '+nextRound.replace('CFP ','')
+        .replace('Championship','National Championship'):'Start the playoffs';
+      $('b-po').hidden=false;
+      $('b-po-skip').hidden=false;
+    }
   }else if(sd.bowl){
     /* Bowl game. THE TIER IS NAMED WITH THE RANK THAT EARNED IT, so the line
        reads as a verdict on the season: ranked No. 14, and that is a New
@@ -7960,7 +8106,16 @@ function paintSeed(){
 
 $('b-po').onclick=()=>{
   const sd=run.playoffSeed;
+  /* The wall is up, so this button is the way through it and not the kickoff. */
+  if(playoffGate()){
+    holdSeason();
+    ga('gate_clicked',{from:'playoffs',state:'guest'});
+    openProfile('account');
+    return;
+  }
   if(sd.made){
+    /* Past seeding the stored copy is a season that no longer exists. */
+    dropHold();
     R.startPlayoffs(run);
     runPlayoffs();
   }else if(sd.bowl){
@@ -7969,9 +8124,19 @@ $('b-po').onclick=()=>{
   }
 };
 $('b-po-skip').onclick=()=>{
+  dropHold();
   R.startPlayoffs(run);
   show('s-season');
   fastForward();
+};
+/* NOT NOW IS A REAL ANSWER, and it does not cost the season. The run is already
+   written, so home is a way out of the ask rather than out of the playoffs: the next
+   visit to this page opens on this same screen with the same bracket. */
+$('b-po-hold').onclick=()=>{
+  holdSeason();
+  ga('playoff_gate_parked',{});
+  goHome();
+  toast('Season held. Sign in and it is right here');
 };
 
 /* ── playoff broadcast ───────────────────────────────────────── */
