@@ -5420,7 +5420,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=20"></script>
+<script src="board.js?v=21"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -12891,7 +12891,7 @@ function avatarHash(s){
    `name` may be null for a guest, in which case there is nothing to derive from and the
    circle is deliberately empty: a guest has no identity to show, and inventing initials
    for one would put a stranger's monogram on somebody else's run. */
-function avatarOf(name,color,initials){
+function avatarOf(name,color,initials,crest){
   const nm=(name||'').trim();
   if(!nm) return {bg:'rgba(255,255,255,.05)',ring:'',fg:'transparent',text:'',anon:true};
   /* Stored initials win, and they are already validated to one or two of A-Z0-9 by the
@@ -12911,22 +12911,30 @@ function avatarOf(name,color,initials){
   /* `name` is carried through so a caller can ask whose circle this is. avatarHTML needs it
      to know whether to draw a crest: the crest is built from the signed-in player's own run
      history, and there is no such history for anybody else's row. */
+  /* `crest` is the pair a BOARD ROW carries: the mark that row's owner was wearing when it
+     was recorded, and how far up that club's ladder they were. Absent for your own circle,
+     which is drawn from your own history instead, and absent on a database that has not run
+     88, where every row falls back to the flat disc it drew before. */
+  const cr=crest&&(crest.mark||crest.rung)?{mark:crest.mark||null,rung:+crest.rung||0}:null;
   return {bg:c.primary,ring:c.secondary,fg:c.on,text:two,anon:false,key,name:nm,
-    team:E.nickname(key),chosen};
+    team:E.nickname(key),chosen,crest:cr};
 }
 
 /* ---- WHO SEES THE CREST ----
    The same two-gate shape as canPlayDefense above, and the long argument for why a list of
    names in the page is a feature flag rather than a permission is written out there.
 
-   The difference worth naming: DEFENSE_LIVE is false until a migration is applied, because
-   the database rejects the runs until then. This one has no database side at all yet. The
-   crest is drawn from rows the client already fetched for the badge cabinet, so a tester
-   sees the real thing on production against real data, and NOTHING IS STORED: the chosen
-   mark lives in this browser until the migration that denormalises it onto ps_runs lands.
-   That is also why only your own circle changes. Everybody else's row carries a colour and
-   two letters and nothing else, so drawing them a crest would mean inventing one. */
-const CREST_LIVE=false;
+   LIVE FOR EVERYBODY since supabase/88_football_crests.sql. The tester list stays as the
+   way back: flipping CREST_LIVE to false puts the crest behind those three names again
+   without touching anything else, which is what a kill switch is for.
+
+   88 IS NOT REQUIRED FOR THIS TO BE SAFE, and that is deliberate. Without it the two crest
+   columns are missing, board.js drops them from its select on the first 400 and remembers,
+   and every row falls back to the flat disc it drew before. What 88 buys is everybody
+   ELSE's crest and a mark that follows the account between devices. Your own crest has
+   never needed it: it is drawn from rows this browser already fetched for the badge
+   cabinet. */
+const CREST_LIVE=true;
 const CREST_TESTERS=['malikwillislover','runnyj','slimeyb3'];
 const canUseCrest=()=>{
   if(!window.PS_CREST) return false;
@@ -12940,8 +12948,14 @@ const canUseCrest=()=>{
    Null until the rows are in, which is most of the first second of the page, and every
    reader treats null as "draw the flat disc" rather than waiting. */
 let myCrest=null;
-/* Which mark they are wearing. Local to this browser for now, and keyed by account so two
-   people on one machine do not wear each other's. */
+/* Which mark they are wearing. THE ACCOUNT OWNS IT, since 88: a mark picked on a phone
+   should be on the crest when the same person opens the game on a laptop, and it has to
+   reach ps_runs anyway or nobody else's board row can draw it.
+
+   THE BROWSER COPY IS STILL WRITTEN, and it is not a duplicate of the account's. It is what
+   the crest is drawn from between the tap and the round trip, and what it falls back to on
+   a database that has not run 88 yet, where the RPC is not there at all. Keyed by account
+   so two people on one machine do not wear each other's. */
 let myMark=null;
 const crestMarkKey=()=>'ps_crest_mark:'+String(authState.name||'').trim().toLowerCase();
 function loadMyMark(){
@@ -12953,6 +12967,18 @@ function saveMyMark(k){
     if(k) localStorage.setItem(crestMarkKey(),k);
     else localStorage.removeItem(crestMarkKey());
   }catch(_){}
+  /* Not awaited, and that is the point: the crest is already redrawn by the caller, so the
+     tap is instant and the write catches up. A failure costs the OTHER half, which is
+     everybody else's board rows showing the old mark until the next successful write, and
+     never this player's own view of it. */
+  if(authState.signedIn&&B&&typeof B.setCrest==='function'){
+    B.setCrest(k||'').then((r)=>{
+      if(!r||r.error) return;
+      /* The rung comes back with it, because a backfill or a club change can have moved it
+         since this browser last worked it out, and the server is the one that knows. */
+      if(myCrest&&r.rung!==undefined&&r.rung!==null) myCrest.rung=+r.rung;
+    }).catch(()=>{});
+  }
 }
 /* ---- WHAT YOU HAVE UNLOCKED AND NOT YET LOOKED AT ----
    Everything on the Customize page is earned somewhere else: a mark by a badge, a ring by a
@@ -13042,11 +13068,22 @@ function crestRungFor(club){
 /* The crest options for one circle, or null if this circle is not getting one. Only your
    own, and only when the rows behind it have arrived. */
 function crestFor(a,size){
-  if(!a||a.anon||!canUseCrest()||!myCrest) return null;
+  if(!a||a.anon||!canUseCrest()) return null;
   const me=String(authState.name||'').trim().toLowerCase();
-  if(!me||String(a.name||'').trim().toLowerCase()!==me) return null;
-  return { club:myCrest.club, rung:myCrest.rung, mark:wornMark(), ring:myCrest.ring,
-    tier:myCrest.tier, size:size, text:a.text };
+  /* YOUR OWN, IN FULL. Your ring and your rank come out of your own run history, which this
+     browser has and the row does not carry, so your circle is the only one that can wear
+     all five layers. */
+  if(me&&String(a.name||'').trim().toLowerCase()===me&&myCrest){
+    return { club:myCrest.club, rung:myCrest.rung, mark:wornMark(), ring:myCrest.ring,
+      tier:myCrest.tier, size:size, text:a.text };
+  }
+  /* ANYBODY ELSE'S, from the two fields their row carries. No ring and no rank seal, and
+     that costs nothing: both render at 40px and up, and every crest that is not yours is
+     drawn at 26px on a board row or 34px on a podium step. See supabase/88, which stores
+     these two and not the other three for exactly that reason. */
+  if(!a.crest||!a.chosen) return null;
+  return { club:a.key, rung:a.crest.rung, mark:a.crest.mark||'init', ring:'club',
+    tier:null, size:size, text:a.text };
 }
 
 /* One circle, as markup. `cls` lets the caller size it: the board rows, the podium and the
@@ -13134,6 +13171,11 @@ async function loadMyAvatar(){
   const a=await B.myAvatar(authState.userId);
   if(!a) return;                     // unreadable: keep the derived default, say nothing
   myAvatar={color:a.color,initials:a.initials,loaded:true};
+  /* THE ACCOUNT'S MARK WINS over whatever this browser last wrote, because the account is
+     where it lives now. Only when the column answered: `mark` is undefined on a database
+     that has not run 88, and taking undefined as "no mark" would wipe the local choice of
+     everybody whose project is one file behind. */
+  if(a.mark!==undefined){ myMark=a.mark||null; }
   paintAvatar();
 }
 
@@ -15584,7 +15626,8 @@ function paintPodium(rows){
       :lbSort==='diff'?'point diff'
       :lbSort==='pa'?'allowed a game'
       :(row.perfect?'perfect':row.seed_label.toLowerCase());
-    const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
+    const pf=avatarOf(row.display_name,row.display_color,row.display_initials,
+    {mark:row.display_mark,rung:row.display_rung});
     return '<div class="pod p'+place+(mine?' mine':'')+(just?' just':'')+
       (row.perfect?' perfect':'')+'" data-i="'+i+'">'+
       '<span class="pl">'+place+'</span>'+
@@ -15807,7 +15850,8 @@ function boardRow(row,i){
   /* The circle goes between the number and the name, which is where a face sits on every
      other leaderboard anybody has used. Drawn from the ROW's own columns, never from the
      viewer's: two people who both chose teal both show teal. */
-  const pf=avatarOf(row.display_name,row.display_color,row.display_initials);
+  const pf=avatarOf(row.display_name,row.display_color,row.display_initials,
+    {mark:row.display_mark,rung:row.display_rung});
   return '<div class="lbr'+(lead?' gold':'')+(mine?' mine':'')+(just?' just':'')+
     '" data-i="'+i+'">'+
     '<span class="rk">'+rank+'</span>'+

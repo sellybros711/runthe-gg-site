@@ -85,10 +85,16 @@
      real state where everything else is there and these are not, and losing them should cost
      three numbers on a defense run rather than the whole board. */
   let defColumns = true;
+  /* The crest pair, from 88. Optional in exactly the same way as the four sets above and
+     for the same reason: a database one file behind should cost the board its crests, not
+     the board. Without them every row draws the flat disc, which is what it drew before
+     88 existed. */
+  let crestColumns = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
     (avatarColumns ? ',display_color,display_initials' : '') +
     (tradeColumns ? ',gm_rating,trade_moves' : '') +
-    (defColumns ? ',def_takeaways,def_tds,points_allowed' : '');
+    (defColumns ? ',def_takeaways,def_tds,points_allowed' : '') +
+    (crestColumns ? ',display_mark,display_rung' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
@@ -97,6 +103,7 @@
   const missingNameColumn = (body) => missingCol(body, /display_name/);
   const missingTradeColumn = (body) => missingCol(body, /gm_rating|trade_moves/);
   const missingDefColumn = (body) => missingCol(body, /def_takeaways|def_tds|points_allowed/);
+  const missingCrestColumn = (body) => missingCol(body, /display_mark|display_rung/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -639,13 +646,16 @@
       (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {
       let res = await timed(url(), { headers: headers() });
-      /* UP TO FOUR RETRIES, one per optional set, narrowest first. Each pass reads the
+      /* ONE RETRY PER OPTIONAL SET, narrowest first. Each pass reads the
          body before deciding, so a genuinely broken query still surfaces as itself rather
          than being mistaken for a schema one file behind. The loop cannot run away: each
          branch permanently clears the flag that let it in. */
-      for (let pass = 0; pass < 4 && !res.ok && res.status === 400; pass++) {
+      /* FIVE PASSES NOW, one per optional set, narrowest first. */
+      for (let pass = 0; pass < 5 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (defColumns && missingDefColumn(body)) {
+        if (crestColumns && missingCrestColumn(body)) {
+          crestColumns = false;
+        } else if (defColumns && missingDefColumn(body)) {
           defColumns = false;
         } else if (tradeColumns && missingTradeColumn(body)) {
           tradeColumns = false;
@@ -764,17 +774,28 @@
   async function myAvatar(userId) {
     if (!userId) return null;
     try {
-      const q = base() + 'profiles?select=avatar_color,avatar_initials&id=eq.' +
-        encodeURIComponent(userId);
-      const res = await timed(q, { headers: headers() });
-      /* A project that has not run 53 yet has no such columns, and that is not an error
-         worth surfacing: it is the same "one file behind" state top() handles, and the
-         answer is the same, which is that nothing has been chosen. */
-      if (!res.ok) { if (res.status === 400) return { color: null, initials: null }; 
-        return await fail('avatar', res); }
-      const rows = await res.json().catch(() => null);
-      const r = (Array.isArray(rows) && rows[0]) || {};
-      return { color: r.avatar_color || null, initials: r.avatar_initials || null };
+      /* THE CREST MARK COMES BACK WITH THE COLOUR, and it has to come from here rather
+         than from this browser: it is a choice that belongs to the account, so a player who
+         picks a mark on their phone should be wearing it when they open the game on a
+         laptop. Asked for separately so a project one file behind loses the mark and keeps
+         the colour, rather than the whole select 400ing. */
+      const one = async (cols) => {
+        const res = await timed(base() + 'profiles?select=' + cols + '&id=eq.' +
+          encodeURIComponent(userId), { headers: headers() });
+        if (!res.ok) return res.status === 400 ? null : Promise.reject(res);
+        const rows = await res.json().catch(() => null);
+        return (Array.isArray(rows) && rows[0]) || {};
+      };
+      let r = crestColumns ? await one('avatar_color,avatar_initials,crest_mark') : null;
+      /* Null means 400, which on this table means the column is not there yet. */
+      if (r === null && crestColumns) { crestColumns = false; }
+      if (r === null) r = await one('avatar_color,avatar_initials');
+      /* A project that has not run 53 yet has no such columns either, and that is not an
+         error worth surfacing: it is the same "one file behind" state top() handles, and
+         the answer is the same, which is that nothing has been chosen. */
+      if (r === null) return { color: null, initials: null, mark: null };
+      return { color: r.avatar_color || null, initials: r.avatar_initials || null,
+        mark: r.crest_mark || null };
     } catch (e) { return failThrown('avatar', e); }
   }
 
@@ -783,6 +804,36 @@
      the same transaction, so the board never shows one player in two colors. What it
      returns is what it stored, which is what the caller should then draw: sending 'xyz' and
      rendering 'xyz' while the database holds 'XY' is how a settings screen starts lying. */
+  /* ---------------- the crest mark ----------------
+     ps_set_crest stores the mark and returns the pair it actually holds, mark AND rung,
+     because the rung is derived server-side and the client has no way to know that a
+     backfill or a club change moved it.
+
+     Missing-function handling is deliberately the SAME flag setAvatar uses. Both are the
+     profile writer, both are missing for exactly one reason (a migration has not been run),
+     and one flag means the diagnostics have one sentence to say rather than two. */
+  async function setCrest(mark) {
+    try {
+      const res = await timed(base() + 'rpc/ps_set_crest', {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({ p_mark: mark || '' }) });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        lastError = { where: 'crest', status: res.status, code: (body && body.code) || '',
+          message: (body && (body.message || body.hint)) || res.statusText || 'no message' };
+        if (res.status === 404 || lastError.code === 'PGRST202') avatarFnMissing = true;
+        return { error: lastError.message, code: lastError.code, status: res.status,
+          missing: avatarFnMissing };
+      }
+      const row = Array.isArray(body) ? body[0] : body;
+      return { mark: (row && row.mark) || null,
+        rung: (row && row.rung !== null && row.rung !== undefined) ? Number(row.rung) : 0 };
+    } catch (e) {
+      lastError = { where: 'crest', status: 0, code: '', message: String(e && e.message || e) };
+      return { error: lastError.message };
+    }
+  }
+
   async function setAvatar(color, initials) {
     try {
       const res = await timed(base() + 'rpc/ps_set_avatar', {
@@ -846,7 +897,7 @@
   window.PS_BOARD = {
     API_VERSION: 9,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
-    SORTS, probe, myAvatar, setAvatar,
+    SORTS, probe, myAvatar, setAvatar, setCrest,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
