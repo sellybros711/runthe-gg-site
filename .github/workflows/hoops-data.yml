@@ -32,9 +32,15 @@ on:
         description: 'Commit the rebuilt data back to this branch?'
         type: boolean
         default: true
-  # Once a year, after the season ends, so a finished season joins the game.
-  schedule:
-    - cron: '0 9 5 7 *'
+  # NO SCHEDULE YET, AND THAT IS DELIBERATE. A scheduled run fires against the
+  # DEFAULT branch, and hoops/ does not exist there while the game is still on
+  # its feature branch: an annual cron would be an annual guaranteed red build
+  # on main. Turn this on in the same commit that merges the game:
+  #
+  #   schedule:
+  #     - cron: '0 9 5 7 *'   # July 5th, once the season is finished
+  #
+  # Until then this is dispatch-only, which is all the first run needs.
 
 permissions:
   contents: write
