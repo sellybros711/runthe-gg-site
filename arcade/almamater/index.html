@@ -123,7 +123,24 @@
     margin-right:6px; background:var(--tp,var(--gold)); box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;}
   .pcard .pname{position:relative; font-family:var(--hero); font-weight:400; font-size:36px; line-height:1.04; color:var(--ink); letter-spacing:.01em;}
   @media (max-width:400px){ .pcard .pname{font-size:30px;} }
-  .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:16px;}
+  /* One line carries four different messages: a hint, a spelling complaint,
+     the score for a right answer and the reveal on a wrong one. The score is
+     the only one that is a REWARD, and it was being whispered in the same 12px
+     grey as the nagging. It gets its own size and colour, and the height is
+     reserved for the tallest state so landing a point does not shove the
+     choice buttons down the page. */
+  .subprompt{text-align:center; font-size:12px; font-weight:700; color:var(--mut); margin:-6px 0 12px; min-height:34px;
+    display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;}
+  .subprompt.score,.subprompt.miss{font-size:15px; font-weight:800; color:var(--ink);}
+  /* --greenT, not --green: the text-safe variant is the one that survives the
+     light theme, where the badge green goes illegible on white. */
+  .subprompt .pts{font-family:var(--hero); font-weight:400; font-size:30px; line-height:1; color:var(--greenT);
+    letter-spacing:.01em;}
+  .subprompt.miss .pts{color:var(--red); font-size:15px; font-family:inherit; font-weight:800;}
+  .subprompt .school{color:var(--ink); font-weight:800;}
+  .subprompt.score .pts{animation:ptsPop .42s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes ptsPop{0%{transform:scale(.6); opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1); opacity:1;}}
+  @media (prefers-reduced-motion:reduce){ .subprompt.score .pts{animation:none;} }
   .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   /* Held so the JS fill doesn't throw the hint line and leaderboard down the
      page a second after first paint - a fixed-count list, so its height is
@@ -436,6 +453,14 @@ window.GA_ID='G-L29P5MRWKE';
   function ri(n){ return Math.floor(rng()*n); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=ri(i+1); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  /* The one line under the answer bar. `cls` is 'score' on a right answer and
+     'miss' on a wrong one; everything else is a plain grey note. Always set
+     both the class and the html so a state can never be left behind. */
+  function setSub(html, cls){
+    var el=document.getElementById('subprompt'); if(!el) return;
+    el.className='subprompt'+(cls?' '+cls:'');
+    el.innerHTML=html||'';
+  }
 
   /* ---- pool: every NBA/NFL/MLB player with a known college. Sources:
      - the curated corpus + folded-in former players (GRID_ENTITIES, via data.js)
@@ -585,7 +610,7 @@ window.GA_ID='G-L29P5MRWKE';
   }
   function renderRound(){
     if(idx>=SEQ.length){ finish(); return; }
-    document.getElementById('subprompt').textContent='';
+    setSub('');
     if(factEl){ factEl.textContent=''; factEl.classList.remove('on'); }
     var r=SEQ[idx];
     bailed=false; answerIn.value=''; choicesEl.hidden=true; choicesEl.innerHTML='';
@@ -617,7 +642,7 @@ window.GA_ID='G-L29P5MRWKE';
     choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(c)+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(r.opts[+bt.dataset.i]===r.col, bt); }); });
     setAnswerEnabled(true);
-    document.getElementById('subprompt').textContent='One of these four. Worth 1.';
+    setSub('One of these four. Worth 1.');
     saveResume();
   }
   bailBtn.addEventListener('click', bail);
@@ -639,7 +664,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(!text.trim()) return;
     var right = window.RTGType ? RTGType.sameCollege(text, r.col) : (text.trim().toLowerCase()===String(r.col).toLowerCase());
     if(!right && !knownSchool(text)){
-      document.getElementById('subprompt').textContent='No school by that name here. Check the spelling and try again.';
+      setSub('No school by that name here. Check the spelling and try again.');
       if(window.RTGSound && RTGSound.soft) RTGSound.soft();
       return;
     }
@@ -681,13 +706,13 @@ window.GA_ID='G-L29P5MRWKE';
     if(right){
       ANSLOG.push(String(got));
       run+=got; document.getElementById('runN').textContent=run;
-      document.getElementById('subprompt').textContent='+'+got+(got===1?' point. ':' points. ')+r.col+'.';
+      setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(r.col)+'</span>', 'score');
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1400);
     } else {
       ANSLOG.push('x');
-      document.getElementById('subprompt').textContent='It was '+r.col+'.';
+      setSub('<span class="pts">Miss.</span> <span class="school">It was '+esc(r.col)+'.</span>', 'miss');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 2000);
     }
@@ -707,7 +732,7 @@ window.GA_ID='G-L29P5MRWKE';
     if(isReplay){ seedRandom(); SEQ=buildRounds(false); } else { seedDaily(); SEQ=buildRounds(true); servedDaily=true; }
     idx=0; run=0; done=false; busy=false; started=false; startTs=0; elapsed=0; charged=false; attemptFirst=false; ANSLOG=[];
     document.getElementById('runN').textContent='0';
-    document.getElementById('subprompt').textContent='';
+    setSub('');
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     choicesEl.style.pointerEvents=''; choicesEl.style.opacity='';
     renderRound(); updateHint();

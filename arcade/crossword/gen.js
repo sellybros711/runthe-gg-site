@@ -291,22 +291,37 @@
       if (eraS) out.push({ kind: 'oneclub', t: cap(role) + ' of the ' + eraS + ' who spent his whole career with the ' + tn,
                  used: { sport: e.sport, pos: e.pos || null, only: tn, team: tn, era: d0 } });
     }
+    /* PAST TENSE, ALWAYS, WHEREVER A CLUB APPEARS.
+       "Timberwolves center in number 32" is a claim about today's roster, and
+       our team list is a CAREER: the man it described had already moved to New
+       York. Every club anchor below therefore leads with the player and puts
+       the club inside a relative clause, which is true of a man who left in
+       2024 and equally true of one who never has. The decade goes in front of
+       him for the same reason it does on the path shapes: hang it off the end
+       and it lands on the club instead. */
+    function clubAnchor(kind, head, tail, used) {
+      out.push({ kind: kind, t: head + ' ' + tail, used: used });
+      if (eraS) out.push({ kind: kind, t: head + ' of the ' + eraS + ' ' + tail,
+                           used: merge(used, { era: d0 }) });
+    }
     // the number, when the file holds exactly one and cannot be picking wrong
     if (tn && pos && e.j && e.j.length === 1) {
-      out.push({ kind: 'number', t: tn + ' ' + pos + ' in number ' + e.j[0],
-                 used: { team: tn, pos: e.pos, jersey: e.j[0] } });
+      clubAnchor('number', cap(pos), 'who wore number ' + e.j[0] + ' for the ' + tn,
+                 { team: tn, pos: e.pos, jersey: e.j[0] });
     }
     /* "Otterbein product who played outfielder for the Reds" is not a sentence
-       anybody says. Club and position first, where a fan starts, and the school
-       as the tail that narrows it. */
+       anybody says. The man and his position first, where a fan starts, then
+       the school, then the club that narrows it. */
     if (e.col && tn && pos) {
-      out.push({ kind: 'college', t: tn + ' ' + pos + ' out of ' + colName(e.col),
+      out.push({ kind: 'college', t: cap(pos) + ' out of ' + colName(e.col) + ' who played for the ' + tn,
                  used: { team: tn, pos: e.pos, col: colKey(e.col) } });
     }
+    // A Hall of Famer is retired by definition, so this one club-first phrasing
+    // cannot claim a roster spot he does not hold.
     if (e.hof && tn) out.push({ kind: 'hofclub', t: tn + ' Hall of Famer', used: { sport: e.sport, hof: true, team: tn } });
-    if (tn && pos && dist) out.push({ kind: 'clubaward', t: tn + ' ' + pos + ' and ' + dist, used: { team: tn, pos: e.pos, aw: true } });
-    if (tn && dist) out.push({ kind: 'clubaward', t: tn + ' ' + dist, used: { team: tn, aw: true } });
-    if (tn && pos) out.push({ kind: 'clubpos', t: tn + ' ' + pos, used: { team: tn, pos: e.pos } });
+    if (tn && pos && dist) clubAnchor('clubaward', dist, 'who played ' + pos + ' for the ' + tn, { team: tn, pos: e.pos, aw: true });
+    if (tn && dist) clubAnchor('clubaward', dist, 'who played for the ' + tn, { team: tn, aw: true });
+    if (tn && pos) clubAnchor('clubpos', cap(pos), 'who played for the ' + tn, { team: tn, pos: e.pos });
     if (e.hof) out.push({ kind: 'league', t: e.sport + ' Hall of Famer', used: { sport: e.sport, hof: true } });
     if (dist) out.push({ kind: 'league', t: e.sport + ' ' + dist, used: { sport: e.sport, aw: true } });
     if (pos) out.push({ kind: 'league', t: e.sport + ' ' + pos, used: { sport: e.sport, pos: e.pos } });
@@ -314,8 +329,10 @@
   }
   /* Which anchors can take " of the 1990s" on the end. Only the ones that
      finish on a plain noun phrase: hang it off a number or a club list and the
-     decade lands on the wrong noun. */
-  var ERA_OK = { hofclub: 1, clubaward: 1, clubpos: 1, league: 1 };
+     decade lands on the wrong noun. The club shapes are absent because they
+     build their own era variant in anchors(), where the decade can go in front
+     of the man rather than after his club. */
+  var ERA_OK = { hofclub: 1, league: 1 };
   function cap(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
   function list(a) {
     return a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];

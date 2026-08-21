@@ -127,24 +127,29 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .board{display:grid; gap:2px; width:100%; aspect-ratio:1/1;
   background:var(--grid-line); border:2px solid var(--grid-line); border-radius:8px; padding:2px;
   box-shadow:var(--shadow); overflow:hidden;}
+/* NEVER --ink inside a cell. The grid is paper white in both themes (see
+   --cell above), but --ink flips with the theme, so a rule that reaches for it
+   paints near-white letters onto a white square in dark mode and the solver
+   cannot read back what they typed. --cell-ink is the token for anything
+   sitting on a lit cell, and it is fixed dark on purpose. */
 .cell{position:relative; min-width:0; min-height:0; overflow:hidden;
   background:var(--cell); border-radius:2px; display:flex; align-items:center; justify-content:center;
   font-family:var(--pix); font-weight:800; user-select:none; cursor:pointer; text-transform:uppercase;
-  color:var(--ink); transition:background .12s ease;}
+  color:var(--cell-ink); transition:background .12s ease;}
 .cell.block{background:#0b1522; cursor:default;}
 .cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.5); line-height:1;}
 .cell .num{font-size:max(calc(17cqw / var(--n,5)), 7px);}
-.cell .ch{font-size:min(6.4vw,30px); line-height:1; color:var(--ink);}
+.cell .ch{font-size:min(6.4vw,30px); line-height:1; color:var(--cell-ink);}
 .cell .ch{font-size:calc(56cqw / var(--n,5));}
 .cell.inword{background:var(--word);}
 .cell.inword .num{color:rgba(10,20,32,.5);}
-.cell.sel{background:var(--sel); color:var(--ink);}
+.cell.sel{background:var(--sel); color:var(--cell-ink);}
 .cell.sel .num{color:rgba(10,20,32,.7);}
 .cell.good .ch{color:#1f8b39;}
 .cell.bad .ch{color:#d23a22;}
-.cell.sel.good .ch,.cell.sel.bad .ch{color:var(--ink);}
+.cell.sel.good .ch,.cell.sel.bad .ch{color:var(--cell-ink);}
 .cell.revealed .ch{color:#b07d0a;}
-.cell.sel.revealed .ch{color:var(--ink);}
+.cell.sel.revealed .ch{color:var(--cell-ink);}
 /* micro-animation: a pulse wave across a word as you finish filling it */
 .cell.wordpop{ z-index:3; animation:cellPop .5s cubic-bezier(.34,1.56,.64,1) var(--d,0ms); }
 @keyframes cellPop{0%{transform:scale(1);}45%{transform:scale(1.13);}100%{transform:scale(1);}}
@@ -236,10 +241,20 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .key.del{color:var(--redT);}
 
 /* ---------- modal ---------- */
+/* A fixed, centring flex box with no overflow is a trap: the moment the result
+   card is taller than the phone (solve time, streak dots, leaderboard, the
+   other-games list) the ends hang outside the box with nothing to scroll, so
+   the player can see Close and can never reach Play another game. Every other
+   arcade page scrolls its scrim; this one did not.
+   align-items:flex-start plus auto margins on the card, NOT align-items:center,
+   because a centred flex item that overflows loses its top to the scroll
+   container. The auto margins still centre it whenever it does fit. */
 .scrim{position:fixed; inset:0; background:rgba(3,9,18,.66); backdrop-filter:blur(3px);
-  display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  display:flex; align-items:flex-start; justify-content:center; z-index:50;
+  padding:max(20px,env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+  overflow:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;}
 .modal{width:100%; max-width:360px; background:var(--card); border:1px solid var(--line2); border-radius:16px;
-  box-shadow:0 24px 60px -18px rgba(24,36,48,.5); padding:22px 20px; text-align:center;}
+  box-shadow:0 24px 60px -18px rgba(24,36,48,.5); padding:22px 20px; text-align:center; margin:auto 0;}
 .modal .trophy{font-size:40px;}
 .modal h2{font-family:var(--pix); font-size:19px; font-weight:800; letter-spacing:.5px; margin:8px 0 2px; color:var(--ink);}
 .modal p{color:var(--mut); font-size:14px; margin:0 0 16px;}
@@ -537,7 +552,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/supplement.js?v=4"></script>
 <script src="/arcade/cluebank.js?v=2"></script>
 <script src="/arcade/data.js?v=2"></script>
-<script src="gen.js?v=9"></script>
+<script src="gen.js?v=10"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/funnel.js?v=7"></script>
 <script src="/arcade/share.js?v=7"></script>
