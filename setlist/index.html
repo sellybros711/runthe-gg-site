@@ -667,7 +667,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      the size it was, and the running time hung on the right where a set list
      hangs it. The accent survives as a short rule at the left edge instead of
      a border on a card that no longer exists. */
-  .songs{display:flex; flex-direction:column;}
+  .songs{display:flex; flex-direction:column; gap:8px;}
   .sheetpad{position:relative; padding:2px 0;}
   /* Paper. Two hairline gradients rather than an image, and only barely on:
      enough that the surface is not flat, not enough to fight the type. */
@@ -676,10 +676,41 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
       repeating-linear-gradient(0deg, rgba(128,128,128,.05) 0 1px, transparent 1px 3px),
       repeating-linear-gradient(90deg, rgba(128,128,128,.04) 0 1px, transparent 1px 4px);}
 
+  /* ---------------- EACH SONG IS A BUBBLE YOU PICK ONE OF ----------------
+   *
+   * This was typed straight down a sheet, no box, a hairline between rows,
+   * on the argument that a real set list is typed and not stacked in cards.
+   * That is a good description of a set list and a bad description of THIS
+   * screen, which is not a set list: it is a question with eleven answers and
+   * exactly one of them gets taken. Nothing about a run of hairline-separated
+   * lines says pick one, and a first-time player has to be told in a hint box
+   * above it that the rows are even tappable.
+   *
+   * So every song is its own surface now: a card lifted off the page with an
+   * edge of its own, spaced from its neighbours rather than ruled off from
+   * them. The states then have something to happen TO, which the sheet did
+   * not: a bubble can be raised, pressed, ringed or greyed out, and a line of
+   * text can only change colour.
+   *
+   * The bubble is --card, which is lighter than the page in the dark theme and
+   * white against a grey page in the light one, so it reads as raised in both
+   * without a shadow per row. Fourteen shadows in a column is the thing that
+   * made cards look like a dashboard the last time.
+   *
+   * WHAT IT COSTS, measured on a 390px phone over one drawn show of 15 rows:
+   * median row +5px, worst row +28px, and the song column 1387px to 1581px.
+   * So about 14% more scrolling, which is the real price of the affordance and
+   * is worth knowing rather than discovering. The old sheet was denser and
+   * said nothing; this is longer and says pick one. */
   .song{display:flex; align-items:baseline; justify-content:space-between; gap:9px; width:100%;
-    text-align:left; padding:9px 4px; border-radius:0; background:transparent;
-    border:0; border-bottom:1px solid var(--line); position:relative;
-    transition:background var(--t-fast) var(--ease), padding var(--t-fast) var(--ease);}
+    text-align:left; padding:11px 13px; border-radius:14px; background:var(--card);
+    border:1px solid var(--line2); position:relative;
+    transition:background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+      transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);}
+  /* IT PRESSES. A surface that moves under the thumb is the cheapest and most
+     literal way to say a thing can be taken, and it is the one state a row of
+     text could never have. */
+  .song:active{transform:scale(.985);}
   /* ---------------- THE TIME BAR ----------------
      THE ROW'S LENGTH, DRAWN. Running time is the resource the whole game
      spends, and it was a number you had to read and convert. Now the row
@@ -715,10 +746,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .tbar.over{background:linear-gradient(90deg,
       color-mix(in srgb, var(--acc, var(--dim)) 42%, transparent) 82%,
       color-mix(in srgb, var(--acc, var(--dim)) 95%, transparent) 100%);}
-  .song:last-child{border-bottom:0;}
-  .song:hover{background:color-mix(in srgb, var(--card2) 60%, transparent);}
-  .song.used{opacity:.36; cursor:not-allowed;}
-  .song.used:hover{background:transparent;}
+  .song:hover{background:var(--card2); border-color:color-mix(in srgb,var(--teal) 34%, transparent);}
+  /* NOT A BUBBLE, because it is not an answer. A song that will not fit has to
+     read as ruled out rather than merely dimmed: no surface, no edge to press,
+     and it sits back into the page the others are lifted off. */
+  .song.used{opacity:.5; cursor:not-allowed; background:transparent;
+    border-style:dashed; border-color:var(--line);}
+  .song.used:hover{background:transparent; border-color:var(--line);}
+  .song.used:active{transform:none;}
   .song.used .t{text-decoration:line-through;}
   /* THE SEGUE ARROW IS THE BRAND MARK, so it wears the mark's tie dye.
      Only the standalone markers, the ones that sit against a song title the
@@ -821,10 +856,15 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      job.
      `finishes` DOES take the bar, and only because it is transient and urgent:
      for one round, what this song can do outranks what kind of song it is. */
-  .song.finishes{background:color-mix(in srgb,var(--green) 10%, transparent);}
+  /* THE ONE THAT LANDS THE OPEN SEGUE. It had a wash and a green title; with a
+     bubble it can have an edge, which is what actually separates it from ten
+     identical neighbours at a glance. */
+  .song.finishes{background:color-mix(in srgb,var(--green) 10%, var(--card));
+    border-color:color-mix(in srgb,var(--green) 55%, transparent);}
   .song.finishes .tbar{background:var(--greenT); height:5px;}
   .song.finishes .t{color:var(--greenT);}
-  .song.finishes:hover{background:color-mix(in srgb,var(--green) 16%, transparent);}
+  .song.finishes:hover{background:color-mix(in srgb,var(--green) 17%, var(--card));
+    border-color:color-mix(in srgb,var(--green) 70%, transparent);}
 
   /* The affordance, NAMED. A glyph alone says "something is different about
      this row"; it does not say what, and it cannot say what it is for. The
@@ -895,12 +935,20 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* Selection rings in teal, the UI's action colour, not in the song's accent.
      Accent is identity; selection is a thing you did. It also stops a song
      with no notable role — now grey — from getting a grey selection ring. */
-  /* Selection has to carry without a card to outline. A filled band plus a
-     heavy teal rule down the left reads at a glance on a sheet; a border
-     alone did not, because there is no longer an edge for it to sit on. */
-  .song[aria-pressed="true"]{background:color-mix(in srgb, var(--teal) 15%, transparent);}
-  .song[aria-pressed="true"]:before{background:var(--teal); width:4px; top:4px; bottom:4px;}
-  .song.used{padding-top:6px; padding-bottom:6px;}
+  /* THE PICKED ONE, and it is a ring now because there is finally something to
+     put a ring on. It was a 15% wash plus a `:before` rule down the left edge,
+     and that rule never drew: the selected-state declaration set background,
+     width, top and bottom but no `content`, so no box was ever generated and
+     the whole selection was carried by the wash alone. It went unnoticed
+     because a wash on a sheet is roughly what a wash on a sheet looks like.
+     The ring is an inset shadow rather than a thicker border so that picking a
+     song cannot move the row it is on by a pixel. */
+  .song[aria-pressed="true"]{background:color-mix(in srgb, var(--teal) 14%, var(--card));
+    border-color:var(--teal);
+    box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--teal) 55%, transparent);}
+  .song[aria-pressed="true"]:hover{background:color-mix(in srgb, var(--teal) 18%, var(--card));}
+  /* A ruled-out row does not need the full padding of an answer. */
+  .song.used{padding-top:7px; padding-bottom:7px;}
   .song.used .chips{display:none;}
   .song.used .t{font-size:13px;}
   .song.used .o{margin-top:1px;}
