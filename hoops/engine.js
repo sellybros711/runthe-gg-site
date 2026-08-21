@@ -1890,13 +1890,21 @@ function titlesByCode(teams) {
   const at = Object.create(null), lineage = Object.create(null);
   if (!teams) return { at, lineage };
 
-  /* Follow `became` to the row the franchise is today. The guard is for a
-     cycle in hand-maintained data, which would otherwise hang the boot. */
+  /* Follow `became` to the row the franchise is today.
+   *
+   * STOPS AT THE LAST ROW THAT EXISTS, never at the name of one that does not.
+   * A `became` pointing at a code nobody wrote is a typo in a hand-maintained
+   * table, and walking into it would file the franchise under a phantom root
+   * whose titles array is empty, dropping every championship it has won without
+   * anything failing. Stopping short keeps them on the row that listed them.
+   *
+   * The hop limit is for a cycle in the same hand-maintained table, which would
+   * otherwise hang the boot. */
   const rootOf = (code) => {
     let c = code;
     for (let hop = 0; hop < 12; hop++) {
       const t = teams[c];
-      if (!t || !t.became || t.became === c) return c;
+      if (!t || !t.became || t.became === c || !teams[t.became]) return c;
       c = t.became;
     }
     return c;
