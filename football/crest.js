@@ -1001,7 +1001,14 @@ function crest(o){
   /* Chevrons and stars at 26px are mush, and mush over the mark is worse than nothing: it
      costs the shape that says WHO this is to say something the colour already said. */
   const sealGlyph=rich;
-  const ringId=rich?(o.ring||'club'):'club';
+  /* THE HONOUR RING DRAWS AT EVERY SIZE, for the reason the seal does. It was gated to 40px
+     with the pattern on the grounds that both are texture, and that was wrong about this
+     one: a pattern is a surface treatment and this is a gold band around the outside, which
+     is the single most visible thing on a 26px disc rather than the least. What it says is
+     also a fact about the person and not a decoration: a title, two in a row, a perfect
+     season. Dropping it on the board meant it never appeared on the board, which is the one
+     screen where you are looking at other people. */
+  const ringId=o.ring||'club';
   /* A pattern is detail, and detail is the first thing the board row cannot hold. Below
      40px every crest falls back to the plain lit field. It is also the club's OWN pattern
      or nothing: there is no picking somebody else's. */

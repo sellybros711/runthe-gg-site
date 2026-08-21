@@ -17,7 +17,7 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $135M cap, then play all 82 games and chase a ring. In development.">
+<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $135M cap, then play all 82 games and chase a ring.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
@@ -62,17 +62,6 @@
   .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
   .dim{color:var(--mut);}
 
-  /* The development banner. It is the first thing on the page because a visitor who
-     somehow reaches an unlisted URL deserves to know what state the game is in before
-     they judge it. It used to warn that the numbers were hand entered and approximate,
-     which was true of the 171 row seed and is not true of the fetched data. Saying so
-     now would be false in the other direction, and a game that understates its own
-     sources teaches people not to trust the ones it does have. */
-  .devbar{
-    background:linear-gradient(180deg,#3a2410,#2a1a0c); border:1px solid #5d3a15;
-    border-radius:10px; padding:11px 14px; margin:0 0 18px; font-size:13px; color:#f0c9a0;
-  }
-  .devbar b{color:var(--gold);font-weight:800;}
 
   header.mast{text-align:center;margin:0 0 16px;}
   header.mast .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;
@@ -435,17 +424,45 @@
     *,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;
       transition-duration:.001ms!important;scroll-behavior:auto!important;}
   }
+
+  /* ══ THE HOME PAGE ═════════════════════════════════════════════════════
+     A landing screen with something on it, rather than a paragraph and a
+     button. What a returning player wants first is the run they left and the
+     record they are trying to beat, so both are above the fold and neither is
+     behind a click. */
+  .hero{background:
+      radial-gradient(120% 100% at 50% 0%,rgba(240,120,45,.14),transparent 62%),
+      linear-gradient(180deg,var(--card),#10151f);}
+  .resume{border:1px solid rgba(240,120,45,.4);background:rgba(240,120,45,.07);
+    border-radius:11px;padding:12px 13px;margin:0 0 13px;}
+  .resume .rh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin:0 0 8px;}
+  .resume .rh b{font-size:14.5px;}
+  .resume .rh span{font-size:11.5px;color:var(--mut);}
+  .resume .who{font-size:12.5px;color:var(--mut);margin:0 0 10px;line-height:1.5;}
+  .resume .who b{color:var(--ink);font-weight:700;}
+
+  /* The league, as three numbers. It is the answer to "what am I drafting
+     from", which is the first thing a basketball fan wants to know. */
+  .leaguestats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 0;}
+  .lstat{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:10px;
+    padding:11px 9px;text-align:center;}
+  .lstat b{display:block;font-family:var(--mono);font-size:19px;font-weight:700;line-height:1.1;}
+  .lstat span{display:block;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim);font-weight:800;margin-top:3px;}
+
+  /* The career strip, which only exists once there is a career. */
+  .cstrip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .cstrip .big-n{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;}
+  .cstrip .lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);
+    font-weight:800;}
+  .lastrun{font-size:13px;color:var(--mut);margin:10px 0 0;line-height:1.5;}
+  .lastrun b{color:var(--ink);}
+  .ring{color:var(--gold);}
 </style>
 </head>
 <body>
 <div class="wrap">
-
-<div class="devbar">
-  <b>In development.</b> This page is not a finished game: the balance is still being
-  tuned and it is linked from nowhere on the site. The data behind it IS real, 16,057
-  player-seasons from 1974 to 2025 out of Basketball-Reference, so a stat line on a card
-  is that player's actual season.
-</div>
 
 <header class="mast">
   <div class="eyebrow">RunThe.GG</div>
@@ -455,6 +472,54 @@
 
 <!-- ── home ─────────────────────────────────────────────────────────────── -->
 <div class="screen active" id="s-home">
+  <div class="card hero">
+    <!-- A RUN IN PROGRESS IS THE FIRST THING, and only when there is one. The
+         page used to jump straight back into it on load, which meant a returning
+         player never saw this screen at all and had no way to abandon a draft
+         that had gone badly except a button labelled Reset. -->
+    <div class="resume" id="home-resume" style="display:none">
+      <div class="rh"><b id="rz-title">Run in progress</b><span id="rz-where"></span></div>
+      <p class="who" id="rz-who"></p>
+      <div class="btnrow">
+        <button id="b-resume" style="flex:2">Resume</button>
+        <button class="ghost" id="b-abandon">Abandon</button>
+      </div>
+    </div>
+
+    <button class="big" id="b-start">Start a run</button>
+    <div class="btnrow" style="margin-top:8px">
+      <a class="ghostlink" href="/hoops/how-to-play.html">How to play</a>
+      <button class="ghost" id="b-prof">Career</button>
+    </div>
+  </div>
+
+  <!-- WHAT YOU ARE DRAFTING FROM. Filled from the data once it loads, so the
+       numbers are the file's rather than a claim typed into the markup. -->
+  <div class="card">
+    <h2>The league <span class="sub" id="home-era">1974 to 2025</span></h2>
+    <div class="leaguestats">
+      <div class="lstat"><b id="ls-players">-</b><span>Player-seasons</span></div>
+      <div class="lstat"><b id="ls-clubs">-</b><span>Club seasons</span></div>
+      <div class="lstat"><b id="ls-teams">-</b><span>Franchises</span></div>
+    </div>
+    <p class="dim" style="font-size:13px;margin:11px 0 0" id="loadmsg">Loading the league...</p>
+  </div>
+
+  <!-- The career strip, which is hidden until there is a career to show. An
+       empty stat block on a first visit is worse than no stat block. -->
+  <div class="card" id="home-career" style="display:none">
+    <h2>Your career <span class="sub" id="hc-sub"></span></h2>
+    <div class="cstrip">
+      <span><span class="big-n" id="hc-runs">0</span> <span class="lab">runs</span></span>
+      <span><span class="big-n ring" id="hc-rings">0</span> <span class="lab">rings</span></span>
+      <span><span class="big-n" id="hc-best">-</span> <span class="lab">best</span></span>
+    </div>
+    <p class="lastrun" id="hc-last"></p>
+    <div class="btnrow" style="margin-top:11px">
+      <button class="ghost" id="b-prof3" style="flex:1">Career record</button>
+    </div>
+  </div>
+
   <div class="card">
     <h2>How a run goes <span class="sub">six spins, one cap</span></h2>
     <p class="dim" style="font-size:14px;margin:0 0 10px">
@@ -464,17 +529,13 @@
       <b style="color:var(--ink)">$135M</b> cap, and the cap is the whole game: the best
       man on every board runs to about $300M, so it cannot be done.
     </p>
-    <p class="dim" style="font-size:14px;margin:0 0 14px">
-      Players who really did share a club, a college or a draft class build chemistry,
-      which is worth a few points of net rating. Then you play all 82 games against real
-      teams out of the same data, and if you finish well enough you get a run at a title.
+    <p class="dim" style="font-size:14px;margin:0 0 4px">
+      Price is what a front office would have paid for that box score, and value is win
+      shares, which is a different number. So the board has bargains on it and the
+      bargains are the men who won something without scoring. Players who really did
+      share a club, a college or a draft class build chemistry on top of that. Then you
+      play all 82 against real teams out of the same data.
     </p>
-    <button class="big" id="b-start">Start a run</button>
-    <div class="btnrow" style="margin-top:8px">
-      <a class="ghostlink" href="/hoops/how-to-play.html">How to play</a>
-      <button class="ghost" id="b-prof">Career</button>
-      <button class="ghost" id="b-reset">Reset</button>
-    </div>
   </div>
 
   <!-- REAL CONTENT, IN THE MARKUP, NOT BEHIND A START BUTTON.
@@ -525,9 +586,6 @@
       too: six volume scorers are not a system, they are Too Many Mouths.
       <a href="/hoops/how-to-play.html">The full rules are here.</a>
     </p>
-  </div>
-  <div class="card" id="loadbox">
-    <p class="dim mono" style="margin:0;font-size:13px" id="loadmsg">Loading the league...</p>
   </div>
 </div>
 
@@ -667,6 +725,7 @@
   <button class="big" id="b-again">Run it back</button>
   <div class="btnrow" style="margin-top:8px">
     <button class="ghost" id="b-prof2">Career record</button>
+    <button class="ghost" id="b-home">Home</button>
   </div>
 </div>
 
@@ -698,7 +757,7 @@
     href="/disclaimer.html" target="_blank" rel="noopener">Disclaimer</a><span>&middot;</span><a
     href="/hoops/how-to-play.html">How to play</a><span>&middot;</span><a
     href="/" target="_blank" rel="noopener">More games</a></p>
-  <p class="src">An unofficial fan project in development, not affiliated with or endorsed by
+  <p class="src">An unofficial fan project, not affiliated with or endorsed by
     the NBA or any club. Player and franchise data from Basketball-Reference, used for a
     non-commercial fan project.</p>
 </footer>
@@ -747,11 +806,30 @@ function boot(){
        during indexing and a 1995 Vancouver roster has to read as Vancouver. */
     if (res[2]) E.setTeams(res[2]);
     DATA = R.indexData(res[0]);
-    $('loadmsg').textContent = DATA.players.length + ' player-seasons across '
-      + DATA.teamSeasons.length + ' clubs. Ready.';
+
+    var seasons = {}, franchises = {};
+    for (var i = 0; i < DATA.teamSeasons.length; i++) {
+      seasons[DATA.teamSeasons[i].season] = 1;
+      franchises[DATA.teamSeasons[i].team] = 1;
+    }
+    var yrs = Object.keys(seasons).map(Number).sort(function(a, b){ return a - b; });
+    $('ls-players').textContent = DATA.players.length.toLocaleString();
+    $('ls-clubs').textContent = DATA.teamSeasons.length.toLocaleString();
+    $('ls-teams').textContent = String(Object.keys(franchises).length);
+    if (yrs.length) $('home-era').textContent = yrs[0] + ' to ' + yrs[yrs.length - 1];
+    $('loadmsg').textContent = 'Every line is that player\'s real season, from Basketball-Reference.';
     $('b-start').disabled = false;
-    // A run in progress picks up where it was left, on whatever screen that was.
-    if (restore()) $('b-start').textContent = 'Start a new run';
+
+    /* A SAVED RUN NO LONGER HIJACKS THE LOAD. It used to jump straight to
+       whatever screen the run was on, so a returning player never saw this page
+       and the only way out of a draft that had gone wrong was a button called
+       Reset. Now the run is offered, and the offer says where it got to. */
+    restore();
+    renderHome();
+    /* A RELOAD RESTORES THE OLD SCROLL POSITION, and the old position was
+       somewhere down a draft board. Landing on the home page already scrolled
+       past its own masthead reads as a broken page rather than a restored one. */
+    window.scrollTo(0, 0);
   }).catch(function(err){
     $('loadmsg').textContent = 'The league did not load: ' + err.message;
   });
@@ -1623,6 +1701,11 @@ function recordRun(out){
     c.bestLabel = out.wins + '-' + out.losses;
   }
   if (out.rating > c.bestRating) c.bestRating = out.rating;
+  c.last = {
+    wins: out.wins, losses: out.losses, label: out.wins + '-' + out.losses,
+    headline: headline(out),
+    shape: out.structure && out.structure.archetype ? out.structure.archetype.name : ''
+  };
 
   var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
   if (shape) c.shapes[shape] = (c.shapes[shape] || 0) + 1;
@@ -1695,6 +1778,76 @@ function clearCareer(){
   renderCareer();
 }
 
+// ── the home page ──────────────────────────────────────────────────────────
+
+/* WHAT A RETURNING PLAYER WANTS FIRST: the run they left, and the record they
+ * are trying to beat. Both are rendered here rather than behind a button, and
+ * both are allowed to be absent, because a first visit has neither and an empty
+ * stat block is worse than no stat block.
+ */
+function renderHome(){
+  var rz = $('home-resume');
+
+  if (run && run.phase !== R.PHASES.OVER) {
+    rz.style.display = '';
+    var drafting = run.phase === R.PHASES.DRAFT;
+    $('rz-title').textContent = drafting ? 'Draft in progress' : 'Season not played';
+    $('rz-where').textContent = drafting
+      ? run.roster.length + ' of 6 signed'
+      : 'six signed, 82 to play';
+
+    /* Who is actually on it, because "3 of 6" is a progress bar and the names
+       are the reason to come back. */
+    var names = [];
+    for (var i = 0; i < run.roster.length; i++) names.push(run.roster[i].n);
+    $('rz-who').textContent = '';
+    if (names.length) {
+      var b = document.createElement('b');
+      b.textContent = names.join(', ');
+      $('rz-who').appendChild(b);
+      /* Its own line, because the separator kept ending up stranded at the end
+         of a wrapped list of names with the money on the row below it. */
+      $('rz-who').appendChild(document.createElement('br'));
+      $('rz-who').appendChild(document.createTextNode(
+        money(R.remaining(run)) + ' of the cap left, ' + R.slotsLeft(run) + ' to fill'));
+    } else {
+      $('rz-who').textContent = 'Nobody signed yet.';
+    }
+    $('b-start').textContent = 'Start a new run';
+  } else {
+    rz.style.display = 'none';
+    $('b-start').textContent = run ? 'Run it back' : 'Start a run';
+  }
+
+  var c = loadCareer();
+  var box = $('home-career');
+  if (!c || !c.runs) { box.style.display = 'none'; return; }
+
+  box.style.display = '';
+  $('hc-runs').textContent = String(c.runs);
+  $('hc-rings').textContent = String(c.rings);
+  $('hc-best').textContent = c.bestLabel || '-';
+  $('hc-sub').textContent = c.rings
+    ? c.rings + (c.rings === 1 ? ' ring' : ' rings') + ' in ' + c.runs
+    : 'still chasing the first ring';
+
+  /* THE LINE THAT GIVES A REASON TO PLAY AGAIN. A personal best is a target,
+     and a target is the whole of a single player game's endgame. */
+  $('hc-last').textContent = '';
+  if (c.last) {
+    var lead = document.createElement('b');
+    lead.textContent = 'Last run: ' + c.last.label;
+    $('hc-last').appendChild(lead);
+    $('hc-last').appendChild(document.createTextNode(
+      ' · ' + c.last.headline + (c.last.shape ? ' · ' + c.last.shape : '')));
+    if (c.bestWins > c.last.wins) {
+      $('hc-last').appendChild(document.createElement('br'));
+      $('hc-last').appendChild(document.createTextNode(
+        'Your best is ' + c.bestLabel + '. Beat it.'));
+    }
+  }
+}
+
 // ── saving ─────────────────────────────────────────────────────────────────
 
 /* A run is a plain serializable object plus a seed, so storing it is just
@@ -1717,23 +1870,27 @@ function restore(){
   if (!saved || saved.version !== 1) return false;
 
   run = saved;
-  if (run.phase === R.PHASES.DRAFT) { show('s-draft'); renderDraft(); return true; }
-  if (run.phase === R.PHASES.SEASON) { toSeason(); return true; }
+  if (run.phase === R.PHASES.DRAFT || run.phase === R.PHASES.SEASON) return true;
   /* A finished run replays from its own outcome rather than being re-simulated:
      the season is already in the run object, and re-running it would consume the
      RNG stream again and print a DIFFERENT season under the same record. */
-  if (run.phase === R.PHASES.OVER && run.outcome && run.season) {
-    renderOver(run.outcome);
-    show('s-over');
-    return true;
-  }
+  if (run.phase === R.PHASES.OVER && run.outcome && run.season) return true;
   run = null;
   return false;
 }
 
-function reset(){
+/* Pick up the saved run on whatever screen it belongs to. */
+function resumeRun(){
+  if (!run) return;
+  if (run.phase === R.PHASES.DRAFT) { show('s-draft'); renderDraft(); return; }
+  if (run.phase === R.PHASES.SEASON) { toSeason(); return; }
+  if (run.phase === R.PHASES.OVER) { renderOver(run.outcome); show('s-over'); }
+}
+
+function abandonRun(){
   try { localStorage.removeItem(KEY); } catch (e) {}
   run = null;
+  renderHome();
   show('s-home');
 }
 
@@ -1741,7 +1898,10 @@ function reset(){
 
 $('b-start').disabled = true;
 $('b-start').onclick = startRun;
-$('b-reset').onclick = reset;
+$('b-resume').onclick = resumeRun;
+$('b-abandon').onclick = abandonRun;
+$('b-prof3').onclick = openProfile;
+$('b-home').onclick = function(){ renderHome(); show('s-home'); };
 $('b-spin').onclick = spin;
 $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
