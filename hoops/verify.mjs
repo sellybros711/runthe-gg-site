@@ -767,16 +767,39 @@ if (ceilings.length) {
 
   if (off.length) {
     console.log(`
-  ${off.length} of ${targets.length} are outside their band, and on the hand-entered SEED that is
-  expected rather than alarming. The seed is 171 players off 22 all-time teams, so
-  it holds no cheap useful player: every roster in it is one or two stars and four
-  minimum contracts, and the cap cannot buy a 60 win six out of that. The finished
-  dataset is a whole league, most of it average, which is exactly where a $12M
-  starter worth 7 win shares comes from.
+  ${off.length} of ${targets.length} are outside their band. TWO OF THESE BANDS ARE KNOWN TO BE IN
+  TENSION WITH EACH OTHER, so read this before moving a constant to close one.
 
-  SO: re-read this block after the first real fetch, before touching a constant.
-  If the ceiling is still short of its band on real data, the dial is CAP_MUSD and
-  the two REPLACEMENT ratings in engine.js, in that order.`);
+  The ratings are no longer guessed. They are fitted to twenty-two real records
+  from 1983 to 2023 at 3.5 wins rms, and rating all 1403 team-seasons puts the
+  worst at 10.5 wins (the 2012 Bobcats, who really were the worst team the league
+  has had) and the best at 73.8 (the 1996 Bulls, who won 72). A roster in this
+  game is now worth what that roster was worth in life.
+
+  THE OPEN PROBLEM IS THE GAP, NOT THE LEVEL. Sweeping the cap from $145M down to
+  $95M moves greedy and ceiling together and never separates them by more than
+  about six wins:
+
+      cap    greedy   ceiling
+      $145M    57.2      65.2
+      $125M    54.3      60.3
+      $105M    48.1      52.7
+
+  The bands ask for greedy at 40-50 and the ceiling at 58-66, a gap of ten to
+  twenty. No cap delivers that, because the cap moves both ends at once.
+
+  WHY THE GAP IS SMALL, which is the thing to fix if anybody wants to: price is a
+  monotone function of win shares (build-players.mjs prices off p.w alone), so
+  every player is fairly priced by construction and there is almost no arbitrage
+  for a thinking drafter to find. Taking the best man on the board is close to
+  optimal because the board has no bargains in it. What the draft decision is
+  actually worth today is chemistry, roster fit and positional scarcity, and
+  those are capped at +2.5 and -6 rating points, which is a few wins.
+
+  So the lever is NOT the cap and NOT the replacement ratings. It is either
+  pricing that is not a pure function of value (age, minutes, era, position
+  scarcity) or a wider band for what shape is worth. Both are design changes
+  rather than a constant, and neither should be done by nudging a number here.`);
   }
 }
 console.log('');

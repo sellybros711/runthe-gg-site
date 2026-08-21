@@ -6,7 +6,7 @@
  * previous reskin of that skeleton. Adapted for basketball:
  *
  *   6 roster slots (PG, SG, SF, PF, C, 6TH)
- *   a $145M cap, which is roughly the real NBA cap
+ *   a $125M cap, in the range of a real NBA cap
  *   an 82 game season against real all-time team-seasons
  *   offense and defense expressed as ratings per 100 possessions, not per game
  *   Pythagorean expectation at the basketball exponent
@@ -41,17 +41,25 @@ const ENGINE_API_VERSION = 1;
 
 const CONSTANTS = {
   /* THE CAP HAS TO SAY NO, or the draft is not a decision, it is a sequence of
-     clicks on whoever scored most. $145M is roughly the real NBA cap, it is
-     $24M a slot across six players, and the priciest player in the data costs
-     $60M. So one superstar eats 41% of the roster and the other five have to
-     come in under $85M. That is the shape of the squeeze: one great player is
-     comfortable, two is tight, and three means filling the rest of the roster
-     with minimum contracts. Best-available on every spin runs to about $300M
-     and busts before the season starts, which is the point.
+     clicks on whoever scored most. $125M is about $21M a slot across six
+     players, and the priciest player in the data costs $60M. So one superstar
+     eats nearly half the roster and the other five have to come in under $65M.
+     That is the shape of the squeeze: one great player is comfortable, two is
+     tight, and three means filling the rest with minimum contracts.
+     Best-available on every spin runs to about $300M and busts before the
+     season starts, which is the point.
+
+     IT WAS $145M UNTIL THE RATINGS WERE FITTED TO REAL RECORDS, and that is
+     the whole reason it moved. Once a real club's six produced that club's real
+     record, $145M bought a perfect draft 65 wins and a 68% title rate, against
+     a stated intent of "a perfect draft should be a 60 win team". Swept across
+     the whole range, $125M lands the ceiling at 60.3 wins and keeps beating 72
+     rare at 0.6%. It is also a real NBA cap number from a couple of seasons
+     back rather than an invented one.
 
      Priced against hoops/build/build-players.mjs, and the two numbers are one
      decision: moving either without the other breaks the draft. */
-  CAP_MUSD: 145,
+  CAP_MUSD: 125,
   REGULAR_SEASON_GAMES: 82,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -72,25 +80,49 @@ const CONSTANTS = {
      modern league. */
   LEAGUE_RTG: 113.0,
 
-  /* THE TWO SCALES, and they were solved rather than guessed. Measured over 200
-     drafts per strategy against the data in data/players.json: a six-man core
-     drafted on price alone totals about 10 offensive and 6 defensive win
-     shares, one drafted on talent alone totals 34 and 17, and the best six the
-     cap can buy totals 38 and 24. The best six of a real team-season, which is
-     what an opponent is, sits at 30 and 15.4 in the middle of the pool.
-
-     Those four points pin the line: the median team-season has to land exactly
-     on league average, because it IS the league, and the best six the cap can
-     buy has to land around a 65 win team, because that is a title favorite and
-     not a lock for the record. Both scales fall out of that.
-
-     RAISING EITHER ONE ALONE MAKES A WORSE GAME. They set the spread between a
-     good roster and a bad one, and the Pythagorean exponent below turns that
-     spread into wins at about 2.7 wins per point of net rating. */
-  REPLACEMENT_ORTG: 99.5,
-  REPLACEMENT_DRTG: 121.5,
-  OWS_TO_ORTG: 0.45,
-  DWS_TO_DRTG: 0.55,
+  /* ── THE FOUR NUMBERS THAT TURN WIN SHARES INTO A RECORD ─────────────────
+   *
+   * These were first solved against the 171 row hand-entered seed, using four
+   * anchor points measured on it. That was the best available at the time and
+   * it was badly wrong, because the seed was 22 all-time teams and the anchors
+   * it produced described a league that does not exist.
+   *
+   * HOW WRONG, measured the only way that means anything: assemble a real
+   * club's actual best six out of the real data, play the season, and compare
+   * to what that club actually did. Across nineteen teams from 1983 to 2023 the
+   * old constants were out by a MEAN OF 15.1 WINS, every single one of them low,
+   * from 5.7 (2004 Pistons) to 25.6 (1989 Pistons). A model that under-rates
+   * every real team by fifteen games is not a model of basketball.
+   *
+   * So they are now FITTED, not chosen. Least squares over twenty-two real
+   * records spanning 1983 to 2023, with the league-average team pinned to 41
+   * wins because that is what league average means. Root mean square error is
+   * 3.48 wins.
+   *
+   * The fit is evaluated at a NEUTRAL schedule, and that matters: a real NBA
+   * team plays a balanced one, because the league sums to zero. This game's
+   * slate is deliberately about 1.5 net rating points harder (see SCHEDULE), so
+   * the same six wins roughly four fewer games here than the club did in life.
+   * That gap is the difficulty, not an error.
+   *
+   * WHAT IT REPRODUCES WITHOUT BEING ASKED TO. Rating every one of the 1403
+   * team-seasons in the data lands the worst at 10.5 wins and names it as the
+   * 2012 Bobcats, who really were the worst team in the history of the league
+   * at a 8.7 win pace, and the best at 73.8 and names it as the 1996 Bulls, who
+   * won 72. Neither was a fit target.
+   *
+   * The two it misses are the two a six-man model has to miss: the 1989 Pistons
+   * come out 10.2 wins light and the 2016 Warriors 6.8, both because a great
+   * team is more than six men and Detroit in particular went nine deep.
+   *
+   * REFIT, DO NOT NUDGE. If the data changes shape again, run the same solve
+   * rather than moving one of these by hand: they trade off against each other,
+   * and the reason the old set was uniformly low is that nobody could see that
+   * from any single number. */
+  REPLACEMENT_ORTG: 106.25,
+  REPLACEMENT_DRTG: 127.75,
+  OWS_TO_ORTG: 0.695,
+  DWS_TO_DRTG: 0.605,
 
   /* Morey's exponent, and IT IS WHY THIS ENGINE IS NOT THE BASEBALL ENGINE WITH
      THE WORDS CHANGED. Basketball's Pythagorean curve is far steeper than
