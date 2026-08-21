@@ -3154,13 +3154,30 @@ or endorsed by the NCAA, the CFP or any school.
          closed details at full weight. -->
     <style>
     .cfb-about{max-width:660px;margin:34px auto 0;padding:0 16px;border-top:1px solid rgba(255,255,255,.1);text-align:left;}
-    .cfb-about>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:17px;padding:16px 0;-webkit-tap-highlight-color:transparent;}
+    /* QUIET, LIKE EVERYTHING ELSE DOWN HERE. This was Anton at 17px uppercase, which is the
+       treatment the page gives its own headings, and it sat a couple of inches under the
+       buttons somebody came to press. Nothing about it earns that: it is a closed drawer of
+       copy written for search engines, so it should read as a label rather than a headline.
+       Same font, size, spacing and color as .eyebrow, which is what the rest of this page
+       uses to name a thing without shouting. The NFL game hit this and fixed it the same
+       way; the text is unchanged and so is the SEO. */
+    .cfb-about>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:var(--fn);font-weight:700;letter-spacing:.16em;text-transform:uppercase;font-size:11px;color:var(--dim-2);padding:14px 0;-webkit-tap-highlight-color:transparent;}
+    /* It is still a control, so it still answers to a finger. */
+    .cfb-about>summary:hover,.cfb-about[open]>summary{color:var(--dim);}
     .cfb-about>summary::-webkit-details-marker{display:none;}
-    .cfb-about>summary .ab-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;border-right:2px solid currentColor;border-bottom:2px solid currentColor;opacity:.65;transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
+    .cfb-about>summary .ab-chev{margin-left:auto;width:7px;height:7px;flex:0 0 auto;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s ease;margin-right:3px;}
     .cfb-about[open]>summary .ab-chev{transform:rotate(-135deg);}
+    /* This game's name is nine characters longer than the NFL game's, so the label at the
+       tracking the rest of the page uses runs 355px and a 390px phone has 310 to give it.
+       The tracking and a point of size are what give, not the words: the label is what
+       search reads. Measured at 320, 360, 390 and 430: one line on all but the 320, where
+       it takes two, which is what a 320px phone does to most of this page and is a quiet
+       enough label to let do it. */
+    .cfb-about>summary .ab-t{flex:0 1 auto;min-width:0;}
+    @media(max-width:430px){ .cfb-about>summary{letter-spacing:.02em;font-size:10px;} }
     </style>
     <details class="cfb-about">
-      <summary>About Perfect Season: College Football<span class="ab-chev" aria-hidden="true"></span></summary>
+      <summary><span class="ab-t">About Perfect Season: College Football</span><span class="ab-chev" aria-hidden="true"></span></summary>
       <div style="padding-bottom:12px;">
       <p style="font-size:14px;line-height:1.6;opacity:.85;margin:0 0 10px;">Perfect Season: College Football is a free college football roster game. A wheel hands you
         a year and a school, you sign one player from that team, and six spins later you have a
