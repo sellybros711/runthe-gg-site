@@ -119,6 +119,8 @@
     if (used.sport && x.sport !== used.sport) return false;
     if (used.hof && !x.hof) return false;
     if (used.team && !hasTeam(x, used.team)) return false;
+    // the club he left for: a rival only fits if he wore that one too
+    if (used.team2 && !hasTeam(x, used.team2)) return false;
     if (used.jersey != null && (x.j || []).indexOf(used.jersey) < 0) return false;
     if (used.era != null && (x.decade || []).indexOf(used.era) < 0) return false;
     if (used.pos && x.pos !== used.pos) return false;
@@ -291,69 +293,59 @@
       if (eraS) out.push({ kind: 'oneclub', t: cap(role) + ' of the ' + eraS + ' who spent his whole career with the ' + tn,
                  used: { sport: e.sport, pos: e.pos || null, only: tn, team: tn, era: d0 } });
     }
-    /* A CLUB IS NEVER STATED IN THE PRESENT TENSE.
+    /* ONE WORD DECIDES WHETHER A CLUB LINE IS TRUE.
        "Timberwolves center in number 32" is a claim about today's roster, and
        our team list is a CAREER: the man it described had already moved to New
-       York. "Former Timberwolves center" is the same clue, one word longer,
-       and true.
+       York. "Former Timberwolves center" is the same clue and true.
 
-       But "former" is only printed where the file can PROVE he left, which is
-       when the last club on his record is not the one being named. A long list
-       is not proof on its own: Lillard went Blazers, Bucks, Blazers, and he is
-       a Blazer now. Where it cannot be proved, the club goes inside a relative
-       clause instead ("Center who played for the Timberwolves"), which is true
-       of a man who left and equally true of one who never has, and the decade
-       then goes in FRONT of him, because hung off the end it lands on the
-       club. */
+       So `was` is the club with "Former" in front of it, and the prefix goes on
+       only where the record can PROVE he left, which is when the last club on
+       his sheet is not the one being named. A long list is not proof on its
+       own: Lillard went Blazers, Bucks, Blazers and is a Blazer today, so he
+       stays a Blazers guard, exactly like Curry and Mahomes and everybody else
+       who never moved.
+
+       And when he did leave, the club he left FOR is the sharpest thing we
+       hold about that career, so it gets a shape of its own: "Former Mets
+       pitcher who left for the Rangers" is the sentence a fan would actually
+       say. path[1] is where he went, because path is his clubs in the order he
+       joined them. */
     var lastClub = teams.length ? nick(teams[teams.length - 1]) : null;
     var gone = !!(tn && lastClub && lastClub !== tn);
-    function clubAnchor(kind, compact, head, tail, used) {
-      out.push({ kind: kind, t: gone ? 'Former ' + compact : head + ' ' + tail, used: used });
-    }
-    function clubAnchorEra(kind, compact, head, tail, used) {
-      clubAnchor(kind, compact, head, tail, used);
-      if (!eraS) return;
-      out.push({ kind: kind,
-                 t: gone ? 'Former ' + compact + ' of the ' + eraS : head + ' of the ' + eraS + ' ' + tail,
-                 used: merge(used, { era: d0 }) });
-    }
+    var wentTo = gone && path.length > 1 ? path[1] : null;
+    var was = gone ? 'Former ' + tn : tn;
     // the number, when the file holds exactly one and cannot be picking wrong
     if (tn && pos && e.j && e.j.length === 1) {
-      var numUsed = { team: tn, pos: e.pos, jersey: e.j[0] };
-      clubAnchor('number', tn + ' ' + pos + ' in number ' + e.j[0],
-                 cap(pos), 'who wore number ' + e.j[0] + ' for the ' + tn, numUsed);
-      // era only on the clause form: a decade after a shirt number reads as if
-      // the NUMBER had the decade
-      if (eraS && !gone) {
-        out.push({ kind: 'number', t: cap(pos) + ' of the ' + eraS + ' who wore number ' + e.j[0] + ' for the ' + tn,
-                   used: merge(numUsed, { era: d0 }) });
-      }
+      out.push({ kind: 'number', t: was + ' ' + pos + ' in number ' + e.j[0],
+                 used: { team: tn, pos: e.pos, jersey: e.j[0] } });
     }
     /* "Otterbein product who played outfielder for the Reds" is not a sentence
        anybody says. Club and position first, where a fan starts, and the school
        as the tail that narrows it. */
     if (e.col && tn && pos) {
-      clubAnchor('college', tn + ' ' + pos + ' out of ' + colName(e.col),
-                 cap(pos) + ' out of ' + colName(e.col), 'who played for the ' + tn,
-                 { team: tn, pos: e.pos, col: colKey(e.col) });
+      out.push({ kind: 'college', t: was + ' ' + pos + ' out of ' + colName(e.col),
+                 used: { team: tn, pos: e.pos, col: colKey(e.col) } });
     }
-    // No "former" on a Hall of Famer: a man in Canton is on nobody's roster,
-    // so the bare club-first form cannot claim a place he does not hold.
+    // the move itself
+    if (wentTo && pos) {
+      out.push({ kind: 'left', t: was + ' ' + pos + ' who left for the ' + wentTo,
+                 used: { team: tn, pos: e.pos, team2: wentTo } });
+    }
+    // No "Former" on a Hall of Famer: a man in Canton is on nobody's roster,
+    // so the bare club form was never claiming a place he does not hold.
     if (e.hof && tn) out.push({ kind: 'hofclub', t: tn + ' Hall of Famer', used: { sport: e.sport, hof: true, team: tn } });
-    if (tn && pos && dist) clubAnchorEra('clubaward', tn + ' ' + pos + ' and ' + dist, dist, 'who played ' + pos + ' for the ' + tn, { team: tn, pos: e.pos, aw: true });
-    if (tn && dist) clubAnchorEra('clubaward', tn + ' ' + dist, dist, 'who played for the ' + tn, { team: tn, aw: true });
-    if (tn && pos) clubAnchorEra('clubpos', tn + ' ' + pos, cap(pos), 'who played for the ' + tn, { team: tn, pos: e.pos });
+    if (tn && pos && dist) out.push({ kind: 'clubaward', t: was + ' ' + pos + ' and ' + dist, used: { team: tn, pos: e.pos, aw: true } });
+    if (tn && dist) out.push({ kind: 'clubaward', t: was + ' ' + dist, used: { team: tn, aw: true } });
+    if (tn && pos) out.push({ kind: 'clubpos', t: was + ' ' + pos, used: { team: tn, pos: e.pos } });
     if (e.hof) out.push({ kind: 'league', t: e.sport + ' Hall of Famer', used: { sport: e.sport, hof: true } });
     if (dist) out.push({ kind: 'league', t: e.sport + ' ' + dist, used: { sport: e.sport, aw: true } });
     if (pos) out.push({ kind: 'league', t: e.sport + ' ' + pos, used: { sport: e.sport, pos: e.pos } });
     return out;
   }
   /* Which anchors can take " of the 1990s" on the end. Only the ones that
-     finish on a plain noun phrase: hang it off a number or a club list and the
-     decade lands on the wrong noun. The club shapes are absent because they
-     build their own era variant in anchors(), where the decade can go in front
-     of the man rather than after his club. */
-  var ERA_OK = { hofclub: 1, league: 1 };
+     finish on a plain noun phrase: hang it off a number, a school, a club list
+     or the club he left for and the decade lands on the wrong noun. */
+  var ERA_OK = { hofclub: 1, clubaward: 1, clubpos: 1, league: 1 };
   function cap(s) { return String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1); }
   function list(a) {
     return a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
@@ -367,7 +359,7 @@
      and the word simply loses its place in the pool rather than being asked
      with "MLB All-Star" written beside it. */
   function infoScore(used) {
-    return (used.team ? 3 : 0) + (used.pos ? 2 : 0) + (used.aw || used.hof ? 2 : 0) +
+    return (used.team ? 3 : 0) + (used.team2 ? 3 : 0) + (used.pos ? 2 : 0) + (used.aw || used.hof ? 2 : 0) +
            (used.era != null ? 1 : 0) + (used.ml ? 2 : 0) + (used.curated ? 6 : 0) +
            // a club list and a one-club career are worth more than the club
            // alone, which is the whole reason they exist
