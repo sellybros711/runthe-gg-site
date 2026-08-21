@@ -73,7 +73,18 @@ jobs:
             --from "${{ inputs.from_season || '1974' }}" \
             --to "${{ inputs.to_season || '2025' }}"
 
+      # NON-FATAL, AND THAT IS A DELIBERATE DEMOTION. Draft year and college feed
+      # exactly two chemistry links out of eight. The player data is the point of
+      # this workflow, and it has already been fetched by the time this runs, so
+      # letting a secondary enrichment abort the run threw away six minutes of
+      # good data twice in a row. Without it those two links stay silent, which
+      # is the documented harmless state rather than a wrong one.
+      #
+      # It still fails loudly IN ITS OWN LOG, and build-players.mjs prints
+      # whether it found the file, so a quiet failure here is visible rather
+      # than invisible.
       - name: Draft years and colleges
+        continue-on-error: true
         run: node hoops/build/fetch-draft.mjs --from 1960 --to "${{ inputs.to_season || '2025' }}"
 
       # Franchises change: a club relocates, renames, or wins a title. Refreshed

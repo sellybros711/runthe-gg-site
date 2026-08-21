@@ -74,11 +74,26 @@ async function main() {
 
   const byPlayer = {};
   let empty = 0;
+  let first = true;
 
   for (let year = from; year <= to; year++) {
     const html = await get(`${BBR}/draft/NBA_${year}.html`);
     await sleep(BBR_WAIT);
     if (!html) { console.log(`  ${year}  no page`); continue; }
+
+    /* SAY WHAT CAME BACK WHEN NOTHING PARSES. Two runs of this returned zero
+       picks for every year with no way to tell whether the page was a draft
+       page, a redirect, a block page, or a draft page whose markup moved. A
+       scraper that cannot be debugged from its own log costs a six minute
+       round trip per guess. */
+    if (first && !bbrRows(html).length) {
+      first = false;
+      const title = (/<title>([\s\S]*?)<\/title>/i.exec(html) || [])[1] || '(no title)';
+      console.log(`    nothing parsed. title: ${title.trim().slice(0, 90)}`);
+      console.log(`    bytes: ${html.length}, <tr> count: ${(html.match(/<tr/gi) || []).length}`);
+      const link = /href="?\/players\/[a-z]\/[a-z0-9.'-]+\.html"?/i.exec(html);
+      console.log(`    first player link: ${link ? link[0] : 'NONE FOUND'}`);
+    }
 
     let n = 0;
     for (const r of bbrRows(html)) {
@@ -104,7 +119,8 @@ async function main() {
   if (empty > 3 || total < (to - from) * 20) {
     console.error(`\n${empty} year(s) returned no picks and ${total} players were found in total.`);
     console.error('A real NBA draft year has 30 to 200 picks. This is a broken parser or a');
-    console.error('blocked fetch. Nothing was written.');
+    console.error('blocked fetch. Nothing was written, so the two chemistry links that need');
+    console.error('this data stay silent, which is harmless. The player data is unaffected.');
     process.exit(1);
   }
 
