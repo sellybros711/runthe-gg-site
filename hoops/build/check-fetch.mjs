@@ -382,6 +382,15 @@ is(league[0].slugs[0], 'jordami01', 'and the first of them is the first player c
 is(league[1].code, 'an2', 'the second team row is the second team');
 is(league[2].code, 'an3', 'the third team row is the third team');
 
+/* "1st Team" is the same tier as "1st". Which of the two BBRef prints is a
+   presentation choice, and a parser that only accepts one of them returns an
+   empty All-NBA list the day they change it. */
+const TEAM_SUFFIXED = ALL_LEAGUE
+  .replace('>1st<', '>1st Team<').replace('>2nd<', '>2nd Team<').replace('>3rd<', '>3rd Team<');
+const suffixed = parseTeams(TEAM_SUFFIXED, { '1st': 'an1', '2nd': 'an2', '3rd': 'an3' });
+is(suffixed.length, 3, 'the tier is read whether it says "1st" or "1st Team"');
+is(suffixed[0].code, 'an1', 'and it is still the first team');
+
 /* A page whose tier map has no 3rd team must not invent one. All-Defensive has
    two teams and has never had three. */
 const defense = parseTeams(ALL_LEAGUE, { '1st': 'ad1', '2nd': 'ad2' });

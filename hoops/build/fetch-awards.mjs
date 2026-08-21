@@ -172,7 +172,9 @@ export function parseSolo(html) {
   return out;
 }
 
-const TIER_TEXT = />\s*(1st|2nd|3rd)\s*</i;
+/* "1st", and also "1st Team", because which of those BBRef writes is a
+   presentation choice and the tier is the same tier either way. */
+const TIER_TEXT = />\s*(1st|2nd|3rd)(?:\s+Team)?\s*</i;
 
 /** An All-NBA or All-Defensive page: (season, tier, slugs) per row. */
 export function parseTeams(html, tiers) {
@@ -299,10 +301,30 @@ async function main() {
   const problems = [];
   if (empty.length) problems.push(`${empty.length} page(s) yielded nothing: ${empty.join(', ')}`);
   const years = to - from + 1;
+  /* BOUNDED ON BOTH SIDES, and the upper bound is the one that matters.
+   *
+   * Too few is a parser that found nothing, which is loud. Too many is a parser
+   * that found the WRONG TABLE, which is silent and worse: if one of these pages
+   * ever carries the full ballot rather than the winner, every player who got a
+   * third-place vote comes back an MVP, the file is bigger rather than smaller,
+   * and the game shows a visitor a false claim about a real person.
+   *
+   * One a season is the floor. The ceiling allows for the ABA, which awarded its
+   * own MVP alongside the NBA's until 1976, and for a shared award, and nothing
+   * beyond that. */
   for (const code of ['mvp', 'fmvp', 'dpoy', 'roy']) {
-    if ((counts[code] || 0) < years * 0.8) {
-      problems.push(`${code}: ${counts[code] || 0} winners across ${years} seasons, expected about one a year`);
+    const n = counts[code] || 0;
+    if (n < years * 0.8) {
+      problems.push(`${code}: ${n} winners across ${years} seasons, expected about one a year`);
     }
+    if (n > years * 1.6) {
+      problems.push(`${code}: ${n} winners across ${years} seasons, which is far more than one a year. `
+        + 'This reads as a ballot table rather than a winners table.');
+    }
+  }
+  /* Five a season on a first team, and never appreciably more. Same reasoning. */
+  if ((counts.an1 || 0) > years * 9) {
+    problems.push(`All-NBA 1st: ${counts.an1}, which is more than five a season across ${years} seasons`);
   }
   if ((counts.an1 || 0) < years * 4) problems.push(`All-NBA 1st: ${counts.an1 || 0}, expected 5 a season`);
   if (starYears < years * 0.85) problems.push(`only ${starYears} of ${years} seasons produced an All-Star roster`);
