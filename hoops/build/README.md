@@ -11,11 +11,15 @@ Everything in this directory exists to produce the first of those.
 
 ## The state it is in right now
 
-`data/players.json` is built from **a hand-entered seed**, not from a fetch. It
-is 171 player-seasons off 22 all-time team-seasons, the win share splits and the
-per-game lines are entered from memory and rounded, and none of it should ever
-be shown to a player as a fact about a real season. See the header of
-`seed-rosters.mjs`, which says the same thing at more length.
+`data/players.json` is built **from the real fetch**: 16,057 player-seasons from
+1974 to 2025, 14,612 of them with a draft year and 13,109 with a college.
+
+The hand-entered seed in `seed-rosters.mjs` is still here and is still the
+fallback when `build-players.mjs` runs with no `--from`. It is 171 player-seasons
+off 22 all-time team-seasons with the win share splits and per-game lines entered
+from memory and rounded, and none of THAT should ever be shown to a player as a
+fact about a real season. If `players.json` ever drops back to 171 rows, that is
+what it is showing.
 
 The seed exists because Basketball-Reference is blocked from the development
 sandbox and open from GitHub's runners, which is the same split

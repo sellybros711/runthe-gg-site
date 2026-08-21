@@ -722,14 +722,22 @@ for (let i = 0; i < 60; i++) {
   if (squad.spend > E.CONSTANTS.CAP_MUSD) { failures.push('bestPossibleSquad broke the cap'); break; }
 
   let wins = 0, titles = 0, record = 0, rating = 0;
-  for (let k = 0; k < 40; k++) {
-    const out = E.playRun(squad.lineup, E.createSeededRNG(60000 + i * 40 + k), E.SLOTS, data.oppPool);
+  /* A HUNDRED AND TWENTY SEASONS PER DRAFT, not forty, and the reason is that
+     two of the four targets are RATES near a band edge. Beating 72 is supposed
+     to happen a few percent of the time, so at forty seasons a draft the whole
+     measurement carried enough binomial noise to move it across its own
+     threshold between runs: 6.2 and 5.3 against a limit of 6.0 on two
+     neighbouring cap settings. A target that flips on the seed is not a target.
+     The expensive part of a ceiling draft is the knapsack, and that still runs
+     once per draft, so this costs a couple of seconds. */
+  for (let k = 0; k < 120; k++) {
+    const out = E.playRun(squad.lineup, E.createSeededRNG(60000 + i * 120 + k), E.SLOTS, data.oppPool);
     wins += out.record.wins;
     if (out.titleWon) titles++;
     if (out.beatRecord) record++;
     rating = out.rating;
   }
-  ceilings.push({ wins: wins / 40, titlePct: 100 * titles / 40, recordPct: 100 * record / 40, rating,
+  ceilings.push({ wins: wins / 120, titlePct: 100 * titles / 120, recordPct: 100 * record / 120, rating,
     ws: squad.bestWs, spend: squad.spend });
 }
 
@@ -753,7 +761,8 @@ if (ceilings.length) {
      person who runs the fetch is not necessarily the person who tuned this. */
   const targets = [
     ['ceiling wins', ceilWins, 58, 66, 'a perfect draft should be a 60 win team'],
-    ['ceiling title', ceilTitle, 6, 18, 'a ring in roughly one perfect run in ten'],
+    ['ceiling title', ceilTitle, 6, 18,
+      'a real 60 win club took the ring 20% of the time; a drafted six has no bench, so this sits a little under'],
     ['ceiling beats 72', ceilRecord, 0.5, 6, 'the record has to be reachable and rare'],
     ['greedy wins', q(wins, 0.5), 40, 50, 'best-available alone should miss the top six seed'],
   ];
@@ -765,41 +774,54 @@ if (ceilings.length) {
     console.log(`    ${mark}${what}: ${Number(v).toFixed(1)}, want ${lo} to ${hi}. ${why}`);
   }
 
+  if (!off.length) {
+    console.log(`
+  All four inside their bands. Every number above is anchored to something real
+  rather than to a preference, so if one drifts, go and look at what moved:
+
+    the ratings   fitted to 22 real NBA records at 3.5 wins rms, with the
+                  league-average club pinned to 41 wins
+    the bracket   fitted to the actual title rate of every team-season in the
+                  data, read off the championship years in teams.json
+    the prices    a market score off the counting stats, so value and cost are
+                  no longer the same number and the board has bargains in it
+    the cap       swept across its whole range, not nudged
+
+  THE GAP IS THE POINT. A thoughtless draft lands around ${q(wins, 0.5).toFixed(0)} wins and a perfect
+  one around ${ceilWins.toFixed(0)}. That spread is what a player's basketball knowledge is worth,
+  and it was six wins when price was a function of value. Watch it: if it
+  narrows, the draft has stopped being a decision, whatever else still passes.`);
+  }
+
   if (off.length) {
     console.log(`
-  ${off.length} of ${targets.length} are outside their band. TWO OF THESE BANDS ARE KNOWN TO BE IN
-  TENSION WITH EACH OTHER, so read this before moving a constant to close one.
+  ${off.length} of ${targets.length} are outside their band. Read this before moving a constant.
 
-  The ratings are no longer guessed. They are fitted to twenty-two real records
-  from 1983 to 2023 at 3.5 wins rms, and rating all 1403 team-seasons puts the
-  worst at 10.5 wins (the 2012 Bobcats, who really were the worst team the league
-  has had) and the best at 73.8 (the 1996 Bulls, who won 72). A roster in this
-  game is now worth what that roster was worth in life.
+  EVERY ONE OF THESE IS ANCHORED TO SOMETHING MEASURED, so the first question is
+  never "which constant do I move" but "which anchor moved".
 
-  THE OPEN PROBLEM IS THE GAP, NOT THE LEVEL. Sweeping the cap from $145M down to
-  $95M moves greedy and ceiling together and never separates them by more than
-  about six wins:
+    the ratings   fitted to 22 real NBA records at 3.5 wins rms, league-average
+                  club pinned to 41 wins. Rating all 1403 team-seasons puts the
+                  2012 Bobcats last at 10.5 wins and the 1996 Bulls first at
+                  73.8, neither of which was a fit target.
+    the bracket   ROUND_NET and TITLE.SERIES_SD are fitted to the real title
+                  rate of every team-season, read off the championship years in
+                  teams.json: 20.3% for a 60 to 65 win club, 8.6% at 55 to 60,
+                  3.8% at 50 to 55, 1.4% at 45 to 50.
+    the prices    a market score off the counting stats, deliberately NOT a
+                  function of win shares.
+    the cap       swept across its whole range each time one of the above moved.
 
-      cap    greedy   ceiling
-      $145M    57.2      65.2
-      $125M    54.3      60.3
-      $105M    48.1      52.7
+  THE ONE TO WATCH IS THE GAP between greedy and ceiling. It is what a player's
+  basketball knowledge is worth, and it was SIX WINS while price was a monotone
+  function of value: every player was the same deal, the board held no bargains,
+  and clicking the biggest number was near optimal. Pricing on fame instead took
+  it to about seventeen. If a change narrows it again the draft has quietly
+  stopped being a decision, and no other target in this list will say so.
 
-  The bands ask for greedy at 40-50 and the ceiling at 58-66, a gap of ten to
-  twenty. No cap delivers that, because the cap moves both ends at once.
-
-  WHY THE GAP IS SMALL, which is the thing to fix if anybody wants to: price is a
-  monotone function of win shares (build-players.mjs prices off p.w alone), so
-  every player is fairly priced by construction and there is almost no arbitrage
-  for a thinking drafter to find. Taking the best man on the board is close to
-  optimal because the board has no bargains in it. What the draft decision is
-  actually worth today is chemistry, roster fit and positional scarcity, and
-  those are capped at +2.5 and -6 rating points, which is a few wins.
-
-  So the lever is NOT the cap and NOT the replacement ratings. It is either
-  pricing that is not a pure function of value (age, minutes, era, position
-  scarcity) or a wider band for what shape is worth. Both are design changes
-  rather than a constant, and neither should be done by nudging a number here.`);
+  REFIT, DO NOT NUDGE. These trade off against each other, which is exactly why
+  the previous rating set could be uniformly fifteen wins low without any single
+  number looking wrong.`);
   }
 }
 console.log('');

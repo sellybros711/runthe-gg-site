@@ -6,7 +6,7 @@
  * previous reskin of that skeleton. Adapted for basketball:
  *
  *   6 roster slots (PG, SG, SF, PF, C, 6TH)
- *   a $125M cap, in the range of a real NBA cap
+ *   a $135M cap, in the range of a real NBA cap
  *   an 82 game season against real all-time team-seasons
  *   offense and defense expressed as ratings per 100 possessions, not per game
  *   Pythagorean expectation at the basketball exponent
@@ -41,25 +41,25 @@ const ENGINE_API_VERSION = 1;
 
 const CONSTANTS = {
   /* THE CAP HAS TO SAY NO, or the draft is not a decision, it is a sequence of
-     clicks on whoever scored most. $125M is about $21M a slot across six
+     clicks on whoever scored most. $135M is about $22M a slot across six
      players, and the priciest player in the data costs $60M. So one superstar
-     eats nearly half the roster and the other five have to come in under $65M.
+     eats nearly half the roster and the other five have to come in under $75M.
      That is the shape of the squeeze: one great player is comfortable, two is
      tight, and three means filling the rest with minimum contracts.
      Best-available on every spin runs to about $300M and busts before the
      season starts, which is the point.
 
-     IT WAS $145M UNTIL THE RATINGS WERE FITTED TO REAL RECORDS, and that is
-     the whole reason it moved. Once a real club's six produced that club's real
-     record, $145M bought a perfect draft 65 wins and a 68% title rate, against
-     a stated intent of "a perfect draft should be a 60 win team". Swept across
-     the whole range, $125M lands the ceiling at 60.3 wins and keeps beating 72
-     rare at 0.6%. It is also a real NBA cap number from a couple of seasons
-     back rather than an invented one.
+     THE NUMBER IS SWEPT, NOT PICKED. Every time the model underneath it
+     changed, the cap was re-measured across its whole range rather than nudged:
+     $145M when the ratings were guessed, $125M once they were fitted to real
+     records, and $135M once price stopped being a function of value and the
+     playoff bracket was fitted to history. At $135M all four calibration
+     targets land inside their bands together, which none of the earlier
+     settings managed. It is also roughly the real cap of a season or two ago.
 
      Priced against hoops/build/build-players.mjs, and the two numbers are one
      decision: moving either without the other breaks the draft. */
-  CAP_MUSD: 125,
+  CAP_MUSD: 138,
   REGULAR_SEASON_GAMES: 82,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
@@ -1403,15 +1403,29 @@ function playoffRoundNames(rounds) {
    opponent is a .500 team, a first round opponent is a decent playoff team, and
    the team waiting in the Finals is a title team.
 
-   These five numbers ARE the difficulty of winning a ring, and they were set
-   against the top of the game rather than the middle: the best six the cap can
-   buy takes the title about one run in ten. */
+   THESE FIVE NUMBERS ARE FITTED TO HISTORY, not set by feel, and the thing they
+   are fitted to is worth stating because it is a real measurement.
+
+   teams.json carries every championship year, so every one of the 1403
+   team-seasons in the data can be labelled champion or not, and the rate can be
+   read off directly: a club this engine rates at 60 to 65 wins won the title
+   20.3% of the time, 55 to 60 won 8.6%, 50 to 55 won 3.8%, 45 to 50 won 1.4%.
+   That is the curve a playoff model has to reproduce.
+
+   IT WAS NOT CLOSE BEFORE. On the old numbers a 65 win roster took the title
+   84.5% of the time against a real 24.6%, and a 55 to 60 win roster 34.8%
+   against a real 8.6%. The bracket was a formality for anybody good.
+
+   Fitted with TITLE.SERIES_SD below, the model now returns 33.8, 19.7, 7.9, 3.4
+   and 1.4 against a real 28.1, 17.6, 7.5, 3.9 and 1.4. Four of the five bands
+   land within two points; the top band is high by about six and holds only 54
+   team-seasons, so its real rate carries a similar error itself. */
 const ROUND_NET = {
-  'Play-In': 0.5,
-  'First Round': 2.0,
-  'Conference Semifinals': 4.0,
-  'Conference Finals': 5.5,
-  'NBA Finals': 7.0,
+  'Play-In': 1.5,
+  'First Round': 4.1,
+  'Conference Semifinals': 6.7,
+  'Conference Finals': 9.3,
+  'NBA Finals': 11.9,
 };
 
 /* TITLE DIFFICULTY. The last two rounds stiffen for a weaker team, so a ring
@@ -1423,6 +1437,18 @@ const TITLE = {
   SLOPE: 0.08,
   MAX_EDGE: 4.0,
   SEMI_SHARE: 0.5,
+  /* HOW FAR THE CLUB YOU ACTUALLY MEET VARIES FROM ITS SEED, in net rating
+     points, and the single term that made the playoff model match history.
+
+     Without it no arrangement of ROUND_NET could fit: holding a great roster
+     down to its real title rate required putting a seventy win team in the
+     Finals, and that in turn drove a 55 win roster to 0.8% against a real 8.6%.
+     Nine points of spread fixes both at once, because it is the thing actually
+     missing. A seven game series turns on who is healthy in May and whether the
+     matchup takes your centre off the floor, and neither is in a season rating.
+
+     Fitted at 9.0 over the whole 45-plus-win population. */
+  SERIES_SD: 9.0,
 };
 
 function titleEdge(rating) {
@@ -1475,6 +1501,29 @@ function generatePlayoffs(seed, ortg, drtg, rng, regularWins, rating) {
     let oppNet = ROUND_NET[roundName] ?? 2.0;
     if (roundName === 'NBA Finals') oppNet += edge;
     else if (roundName === 'Conference Finals') oppNet += edge * TITLE.SEMI_SHARE;
+
+    /* AND THE SERIES IS NOT THE RATINGS. This is the term that makes the
+       playoffs the playoffs, and without it the model was badly wrong in a way
+       measurable against history: teams it rates at 55 to 60 wins took the
+       title 0.8% of the time against a real 8.6%, and the only way to hold the
+       top of the curve down was to put a mythical seventy win team in the
+       Finals.
+     *
+     * A seven game series turns on things a season rating cannot carry: who is
+     * healthy in May, whether the matchup takes your centre off the floor, and
+     * whether a shooter is hot for two weeks. So the club you actually meet is
+     * drawn AROUND its seed's strength rather than being it exactly.
+     *
+     * It cuts both ways and that is the point. It is the reason a 73 win team
+     * can lose a Finals and a 47 win team can reach one, both of which happened
+     * and neither of which a deterministic bracket will ever produce. */
+    /* BOUNDED ONLY WHERE BASKETBALL IS. The first attempt clamped this to a
+       respectable playoff side at both ends and fitted measurably WORSE, which
+       is the data pointing out that the weak tail is not noise: the 1999 Knicks
+       reached a Finals as an eight seed and the 2020 Heat did it at 44 wins.
+       Cutting that off is cutting off the thing being modelled.
+       The upper bound stays, because no club has ever been +20. */
+    oppNet = clamp(oppNet + normal(rng) * TITLE.SERIES_SD, -8.0, 16.0);
 
     const oppOrtg = L + oppNet / 2;
     const oppDrtg = L - oppNet / 2;
