@@ -46,6 +46,24 @@ const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x?'   '+x:''));};
 
+/* EVERY BADGE THE PAGE ANNOUNCES, not a single reading of the stack: a toast is on screen
+   for six seconds and then removes itself, so a poll at the wrong moment would call a
+   cascade of three "no badges announced". Recorded as they are added. */
+async function watchToasts(p){
+  await p.evaluate(()=>{
+    window.__toasts=[];
+    new MutationObserver((ms)=>ms.forEach((m)=>m.addedNodes.forEach((n)=>{
+      if(n.nodeType===1) window.__toasts.push({
+        text:(n.textContent||'').replace(/\s+/g,' ').trim(),
+        name:(n.querySelector('.at-n')||{}).textContent||'',
+        desc:(n.querySelector('.at-d')||{}).textContent||'',
+        id:n.dataset.a||'',
+      });
+    }))).observe(document.getElementById('achtoasts'),{childList:true});
+  });
+}
+const toastsSeen=(p)=>p.evaluate(()=>window.__toasts||[]);
+
 /* One season, start to finish, the way a player plays it. Returns at the results screen.
  *
  * `worst` DRAFTS THE CHEAPEST MAN OFFERED EVERY ROUND, and the guest blocks below need
@@ -121,21 +139,13 @@ console.log('\n=== a guest finishes a season ===');
   await p.addInitScript(stub(false));
   await p.goto('http://localhost:8080/cfb/index.html',{waitUntil:'domcontentloaded',timeout:40000});
   await p.waitForTimeout(2800);
-  /* Every headline the page raises from the moment the season ends, not a single reading
-     of it: the banner shows for 2.4s and clears itself, so a poll at the wrong moment
-     would call a run of three "no badges announced". */
-  await p.evaluate(()=>{
-    window.__heads=[];
-    const el=document.getElementById('headline');
-    new MutationObserver(()=>{ if(el.classList.contains('on')) window.__heads.push(el.textContent||''); })
-      .observe(el,{attributes:true,childList:true,characterData:true,subtree:true});
-  });
+  await watchToasts(p);
   await playSeason(p,true);
-  await p.waitForTimeout(9000);   // past achAnnounce's 900ms + 2100ms spacing for three
-  const heads=await p.evaluate(()=>window.__heads||[]);
+  await p.waitForTimeout(9000);   // past achAnnounce's 900ms + 700ms cascade and the 6s hold
+  const heads=await toastsSeen(p);
   ok('the season finished', !!(await p.$('#s-over.on')));
-  ok('and NOT ONE badge was announced', !heads.some(t=>/achievement/i.test(t)),
-    heads.join(' | ')||'nothing raised');
+  ok('and NOT ONE badge was announced', heads.length===0,
+    heads.map(t=>t.name).join(' | ')||'nothing raised');
   /* The other half of the rule. Losing the season as well would mean an account earned
      nothing for the seasons played before it. */
   const hist=await p.evaluate(()=>{try{return JSON.parse(localStorage.getItem('cfb_history')||'[]').length}catch(e){return -1}});
@@ -157,18 +167,38 @@ console.log('\n=== a member finishes a season ===');
      recorded silently on purpose and would otherwise read exactly like the guest case. */
   await p.evaluate((uid)=>localStorage.setItem('cfb_ach_seen',
     JSON.stringify({[uid]:['__nothing_real__']})),UID);
-  await p.evaluate(()=>{
-    window.__heads=[];
-    const el=document.getElementById('headline');
-    new MutationObserver(()=>{ if(el.classList.contains('on')) window.__heads.push(el.textContent||''); })
-      .observe(el,{attributes:true,childList:true,characterData:true,subtree:true});
-  });
+  await watchToasts(p);
   await playSeason(p);
-  await p.waitForTimeout(9000);
-  const heads=await p.evaluate(()=>window.__heads||[]);
+  await p.waitForTimeout(4000);   // past the 900ms delay and the 700ms cascade, inside the 6s hold
+  const heads=await toastsSeen(p);
   ok('the season finished', !!(await p.$('#s-over.on')));
-  ok('and the badges it earned are announced', heads.some(t=>/achievement/i.test(t)),
-    heads.join(' | ')||'nothing raised');
+  ok('and the badges it earned are announced', heads.length>0,
+    heads.map(t=>t.name).join(' | ')||'nothing raised');
+  /* WHAT YOU DID, NOT JUST WHAT IT IS CALLED. Half this cabinet is named for the line
+     rather than the deed, so a toast that only names the badge announces nothing. */
+  ok('  each one says what it was', heads.every(t=>t.desc.trim().length>4),
+    heads.map(t=>t.name+': '+t.desc).join(' | '));
+  ok('  and offers to show you it', heads.every(t=>/tap to see it/i.test(t.text)));
+  /* Stacked rather than queued: three at 700ms apart are all still on screen together at
+     four seconds, where one at a time would have put the third at 5.1s and the first gone. */
+  ok('  they stack rather than queue',
+    (await p.$$eval('#achtoasts .achtoast',e=>e.length))===heads.length,
+    (await p.$$eval('#achtoasts .achtoast',e=>e.length))+' up of '+heads.length+' raised');
+  await p.screenshot({path:SS+'gate_badge_toasts.png'});
+  /* TAPPING ONE OPENS IT IN THE CASE. Not the top of the case: eight collapsed groups and
+     246 badges, so landing somebody at the top is not taking them to it. */
+  const want=heads[0];
+  await p.click('#achtoasts .achtoast'); await p.waitForTimeout(2500);
+  ok('  tapping one opens the trophy case', !!(await p.$('#sheet.on')));
+  ok('  and clears the rest of the stack off it',
+    (await p.$$eval('#achtoasts .achtoast',e=>e.length))===0);
+  const found=await p.$('.ach[data-a="'+want.id+'"]');
+  ok('  the badge it named is on screen', !!found, want.id);
+  ok('    inside a group that has been opened for it',
+    !!(await p.$('.achgrp.open .ach[data-a="'+want.id+'"]')));
+  ok('    and marked, so the eye finds it after the scroll',
+    !!(await p.$('.ach.achfound[data-a="'+want.id+'"]')));
+  await p.screenshot({path:SS+'gate_badge_revealed.png'});
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();

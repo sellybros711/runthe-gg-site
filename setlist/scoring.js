@@ -1001,41 +1001,69 @@ export function setOpenLine(setIdx) {
 
 // ── the one that got away ────────────────────────────────────────────────────
 /**
- * The best song a player was shown and did not play.
+ * THE SWAP YOU COULD HAVE MADE, and it has to be a swap or it is a taunt.
  *
- * Scored against the role it would most likely have filled, so the number is
- * comparable with what they did play rather than a raw song value. Every show
- * that appeared is a candidate, minus what actually made the setlist — a song
- * offered twice and never taken should still only surface once.
+ * This used to take the best of every song ever shown, scored in the best of
+ * six hypothetical roles, and print the number beside a setlist whose songs
+ * were each scored in the one role they actually landed in. Measured over 300
+ * random games it beat every song the player played in 296 of them: median 166
+ * against a best-played of 93 and a median song of 43. A card that says "you
+ * missed something better than anything you did" every single game carries no
+ * information, and the number had no peer anywhere on the page.
  *
- * @param {Array} seen        every performance row the player was shown
+ * It is now one round, one slot, one swap. For each pick, the alternatives are
+ * the other songs in THE SAME SHOW, scored in THE SAME ROLE the pick ended up
+ * filling, and capped at the length of the song actually taken so the swap was
+ * certainly affordable. The regret reported is the biggest of those gaps.
+ *
+ * That makes the two numbers comparable by construction: same slot, same role,
+ * same clock, one song different. It is also a smaller and more useful claim,
+ * because it names a decision the player actually made.
+ *
+ * @param {Array} drafted     {show, perf, si} per pick, in the order taken
  * @param {Array<Array>} sets what they actually played
  */
-export function theOneThatGotAway(seen, sets) {
+export function theOneThatGotAway(drafted, sets) {
   const played = new Set(sets.flat().map(p => p.song_id));
-  let best = null, bestScore = -1;
+  let best = null;
 
-  for (const p of seen) {
-    if (played.has(p.song_id)) continue;
-    if (!lenOf(p)) continue;
-    // Judge it in the role it suits best — the fairest reading of what it was
-    // worth, rather than punishing it for a slot the player never offered it.
-    // One role of each kind the game can produce. roleAt(1,2,4) is the only way
-    // to reach a pure Peak — at length 3 the last index is the Closer instead,
-    // which was labelling every peak song a closer.
-    for (const role of [roleAt(0, 0, 3),   // Opener
-                        roleAt(0, 2, 3),   // Set I Closer  (closer|jam)
-                        roleAt(1, 2, 4),   // Set II Peak
-                        roleAt(1, 3, 4),   // Set II Closer (closer|peak)
-                        roleAt(2, 0, 1),   // Encore
-                        roleAt(0, 1, 3)]){ // Mid — where a ballad belongs
-      const sc = scorePerf(p, role);
-      if (sc.subtotal > bestScore) { bestScore = sc.subtotal; best = { perf: p, score: sc, role }; }
+  // Where each pick ended up sitting, so it can be scored in its real role.
+  const at = [0, 0, 0];
+
+  for (const d of drafted || []) {
+    if (!d || !d.perf || !d.show) continue;
+    const si = d.si;
+    const idx = at[si]++;
+    const len = lenOf(d.perf);
+    if (!len) continue;
+    const role = roleAt(si, idx, (sets[si] || []).length);
+    const took = scorePerf(d.perf, role);
+
+    for (const alt of d.show.songs || []) {
+      if (alt === d.perf) continue;
+      if (played.has(alt.song_id)) continue;      // you got it in the end
+      const al = lenOf(alt);
+      // NO LONGER THAN WHAT YOU SPENT THERE. The taken song fitted, so anything
+      // this length or shorter certainly fitted too. Without the cap the card
+      // can report a regret that was never actually available, which is the
+      // whole failure being fixed.
+      if (!al || al > len) continue;
+      /* AND NOT A TEASE. The cap above lets anything short through, so 13% of
+         the regrets it surfaced were takes under three minutes: the card read
+         "you took SALT for 36, this was worth 64" about a 1:23 snippet. This
+         file already has a name for those and does not count them as songs
+         anywhere else, and "you should have played the 83 second one" is not a
+         note anybody wants on their night. */
+      if (al < TEASE_SECONDS) continue;
+      const sc = scorePerf(alt, role);
+      const gap = sc.subtotal - took.subtotal;
+      if (gap <= 0) continue;
+      if (!best || gap > best.gap) best = { perf: alt, score: sc, role, gap, took, instead: d.perf };
     }
   }
-  // Only claim a role when the song actually suits one. When every role scores
-  // the same the winner is just whichever was tested first, and "as opener it
-  // was worth 161" about a twenty-two minute jam reads as nonsense.
+  // Only claim a role when the song actually suits one. When the fit is neutral
+  // the role name is describing the slot rather than the song, and "as opener
+  // it was worth 71" about a song that opens nothing reads as nonsense.
   if (best && best.score.fit === 'neutral') best.role = null;
   return best;
 }

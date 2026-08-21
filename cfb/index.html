@@ -1855,6 +1855,12 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid var(--line);transition:border-color .12s ease,transform .08s ease}
   .pfrow:hover{border-color:var(--line-2)}
   .pfrow:active{transform:scale(.985)}
+  /* The icon leads the row at the same weight as the chevron that closes it, so the two
+     bracket the label rather than competing with it. */
+  .pfrow .ic{flex:0 0 auto;display:grid;place-items:center;width:22px;height:22px}
+  .pfrow .ic svg{width:22px;height:22px;display:block;fill:none;stroke:var(--dim);
+    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .pfrow:hover .ic svg{stroke:var(--ink)}
   .pfrow .t{flex:1;min-width:0}
   .pfrow .t b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:600;
     color:var(--ink)}
@@ -2002,6 +2008,50 @@ window.GA_ID='G-L29P5MRWKE';
     text-align:center;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
   .headline.on{opacity:1}
   .headline.big{color:var(--ink);border-color:rgba(148,163,184,.4)}
+
+  /* ---------- A BADGE, ANNOUNCED ----------
+     Its own element rather than the headline above it. That one is a canned one-line string
+     with in-run timing; this is two lines, tappable, and on screen four times as long, which
+     is enough divergence that sharing an element would mean one serving two jobs badly.
+     Same rules as the NFL game's, in this game's tier colors. */
+  .achtoasts{position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:601;
+    display:flex;flex-direction:column;gap:7px;align-items:center;width:max-content;
+    max-width:min(92vw,380px);pointer-events:none}
+  .achtoast{pointer-events:auto;display:block;width:100%;text-align:left;
+    padding:9px 13px;border-radius:11px;background:rgba(19,26,43,.96);
+    border:1px solid var(--line-2);box-shadow:var(--shadow);color:inherit;font:inherit;
+    opacity:0;transform:translateY(-8px);transition:opacity .28s ease,transform .28s ease}
+  .achtoast.on{opacity:1;transform:none}
+  .achtoast .at-k{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--dim-2)}
+  .achtoast .at-n{display:block;font-family:var(--fd);font-size:15px;font-weight:700;
+    letter-spacing:.02em;color:var(--ink);margin-top:2px;line-height:1.15}
+  /* THE LINE THAT SAYS WHAT YOU DID. Not clamped and not ellipsised: a badge description is
+     one short sentence and it is the whole reason this toast is two lines instead of one. */
+  .achtoast .at-d{display:block;font-size:11.5px;color:var(--dim);line-height:1.35;
+    margin-top:3px}
+  .achtoast .at-go{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-top:5px}
+  /* The four tiers, the same four colors the cards in the cabinet wear, so the toast and the
+     badge it takes you to are recognisably the same object. */
+  .achtoast.legend{border-color:rgba(168,85,247,.6)}
+  .achtoast.legend .at-k{color:#c084fc}
+  .achtoast.gold{border-color:rgba(251,191,36,.55)}
+  .achtoast.gold .at-k{color:#fbbf24}
+  .achtoast.silver{border-color:rgba(203,213,225,.55)}
+  .achtoast.bronze{border-color:rgba(180,120,70,.55)}
+  .achtoast:active{transform:scale(.98)}
+  /* Where a tapped toast lands. Long enough to find with your eye after a smooth scroll,
+     short enough that it is gone before it becomes decoration. */
+  .achfound{animation:achFound 2.6s ease-out}
+  @keyframes achFound{
+    0%,60%{ box-shadow:0 0 0 2px #fbbf24, 0 0 18px -2px rgba(251,191,36,.6) }
+    100%{ box-shadow:0 0 0 0 rgba(251,191,36,0) }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .achtoast{transition:none}
+    .achfound{animation:none;box-shadow:0 0 0 2px #fbbf24}
+  }
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(90px);z-index:99;
     background:var(--panel-2);border:1px solid var(--line-2);padding:12px 18px;border-radius:10px;
     font-weight:700;font-size:14px;opacity:0;transition:all .25s ease;pointer-events:none}
@@ -2037,6 +2087,13 @@ window.GA_ID='G-L29P5MRWKE';
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .seg button+button{border-left:1px solid var(--line)}
   .seg button.on{color:var(--ink);background:rgba(16,185,129,.14)}
+  /* The draft board's own sort. Not full width like the leaderboard's: this one sits over a
+     list it orders rather than under the heading of a page, so it shrinks to its labels and
+     goes to the right, which is where a column header's control belongs. */
+  .optbar{display:flex;justify-content:flex-end;margin:8px 0 9px}
+  .seg.compact{flex:0 0 auto}
+  .seg.compact button{flex:0 0 auto;padding:9px 11px;font-size:10.5px;letter-spacing:.05em}
+  @media(max-width:380px){ .seg.compact button{padding:9px 8px;font-size:10px} }
   /* 320px leaves about 100px an axis and "Team overall" wants more. One step down in
      size and letter-spacing rather than an abbreviation, because these labels name
      quantities and a shortened quantity is a guess. */
@@ -3187,6 +3244,17 @@ or endorsed by the NCAA, the CFP or any school.
          on a desktop they run the full width and on a phone they simply follow
          on in the single column, which is the order they were already in. -->
     <div class="tabwrap"><div class="tabs" id="tabs"></div></div>
+    <!-- HOW THE BOARD IS ORDERED, above the board and to the right of it. The tabs pick
+         WHICH players are listed and this picks the order they come in, so it belongs
+         between the two rather than inside the scrolling tab row, where it would slide
+         out of reach on a phone. -->
+    <div class="optbar">
+      <div class="seg compact" id="opt-sort">
+        <button data-os="pos">Position</button>
+        <button data-os="fppg">FPPG</button>
+        <button data-os="salary">Salary</button>
+      </div>
+    </div>
     <div class="opts" id="opts"></div>
   </div>
 
@@ -3583,6 +3651,11 @@ or endorsed by the NCAA, the CFP or any school.
      Same element and the same job as the NFL game's: the toast is for things you did on
      purpose and this is for something the game noticed. -->
 <div class="headline" id="headline"></div>
+<!-- BADGES EARNED ON THE SEASON THAT JUST FINISHED. Its own element rather than the headline
+     above it: that one is a canned one-line string with in-run timing, and this is two lines,
+     tappable, and on screen four times as long. Stacked rather than queued, so three badges
+     are three seconds of cascade instead of fifteen seconds of one at a time. -->
+<div class="achtoasts" id="achtoasts" aria-live="polite"></div>
 
 <!-- The tutorial coach bar, and the panel that closes it out. -->
 <div class="tut" id="tut" hidden>
@@ -4158,9 +4231,16 @@ const pfHubOk=()=>!!(A()&&authState.ready&&authState.signedIn&&authState.name);
 let pfPaint=0;
 
 const PF_PAGES={account:1,school:1,case:1,seasons:1};
-function openProfile(tab){
+/* `badge` is a badge id to land on, which is what a tapped toast passes. It survives the
+   case's own repaint: trophyCaseHtml paints a spinner while the seasons are fetched and
+   calls back through here with no argument, so the wanted id is parked rather than passed,
+   and consumed by whichever paint is the one that actually has the cabinet in it. */
+let achRevealWanted=null;
+function openProfile(tab,badge){
   if(!DATA) return;
+  if(badge) achRevealWanted=badge;
   const page=PF_PAGES[tab]?tab:(pfHubOk()?'hub':'account');
+  if(page!=='case') achRevealWanted=null;
   if(page==='hub') return pfHub();
   if(page==='seasons') return pfSeasons('recent');
   if(page==='school') return pfLook();
@@ -4174,8 +4254,32 @@ function pfHead(title){
     (pfHubOk()?'<button class="pfback" id="pf-back" aria-label="Back to your profile">&lsaquo;</button>':'')+
     '<span class="pftitle">'+esc(title)+'</span></div>';
 }
-function pfNavRow(id,title,sub){
-  return '<button class="pfrow" id="'+id+'"><span class="t"><b>'+esc(title)+'</b>'+
+/* THE FOUR ICONS, on the same 24 grid and in the same stroke weight as every other icon in
+   this page, so the hub does not read as a control panel borrowed from somewhere else. The
+   NFL game's hub carries the same set and these are the same drawings: one account plays
+   both games, and the row that means Account should not be two different pictures.
+
+   Each one is the thing the page contains rather than a metaphor for it: a list of seasons,
+   a medal, two sliders, a person. The person is the same path the header button draws when
+   there is no name on the account yet, on purpose. */
+const PF_ICON={
+  seasons:'M4 7h2M9 7h11M4 12h2M9 12h11M4 17h2M9 17h7',
+  case:'M8.6 13.6 7 21l5-2.7 5 2.7-1.6-7.4',
+  look:'M4 8h8M4 16h6M16 8h4M14 16h6',
+  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4'
+};
+/* Three of them need a circle as well as a path, and a circle is not expressible as one. */
+const PF_ICON_EXTRA={
+  case:'<circle cx="12" cy="9" r="5.2"/>',
+  look:'<circle cx="14" cy="8" r="2.1"/><circle cx="12" cy="16" r="2.1"/>',
+  acct:'<circle cx="12" cy="8.6" r="4"/>'
+};
+function pfNavRow(id,title,sub,icon){
+  const ic=icon&&PF_ICON[icon]
+    ?'<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+
+      (PF_ICON_EXTRA[icon]||'')+'<path d="'+PF_ICON[icon]+'"/></svg></span>'
+    :'';
+  return '<button class="pfrow" id="'+id+'">'+ic+'<span class="t"><b>'+esc(title)+'</b>'+
     '<span>'+esc(sub)+'</span></span><span class="go">&rsaquo;</span></button>';
 }
 const pfClose=()=>'<div style="margin-top:14px"><button class="btn ghost sm" id="sp-x" '+
@@ -4226,10 +4330,10 @@ function pfHub(){
       '<div class="pfstat"><b id="pf-best">&hellip;</b><span>Best overall</span></div>'+
     '</div>'+
     '<div class="pfnav">'+
-      pfNavRow('pf-go-seasons','Your seasons','Recent, best overall and best record')+
-      pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges')+
-      pfNavRow('pf-go-look','Customize','The school colors you play in')+
-      pfNavRow('pf-go-acct','Account','Your name, feedback, signing out')+
+      pfNavRow('pf-go-seasons','Your seasons','Recent, best overall and best record','seasons')+
+      pfNavRow('pf-go-case','Trophy case','Your career, your streaks and your badges','case')+
+      pfNavRow('pf-go-look','Customize','The school colors you play in','look')+
+      pfNavRow('pf-go-acct','Account','Your name, feedback, signing out','acct')+
     '</div>'+pfClose();
   openSheet(); pfWire(box);
   $('pf-go-seasons').onclick=()=>openProfile('seasons');
@@ -4453,6 +4557,11 @@ function pfCase(){
      pass and not on the one that has nothing to evaluate. */
   const res=(careerRows||!authState.signedIn)?achState(careerRows||null):null;
   if(res) achAnnounce(authState.userId,res,true);
+  /* A badge a toast asked for. The spinner pass hands it on to the paint that has the
+     cabinet in it; every other pass consumes it, found or not, so a badge that cannot be
+     located here does not lie in wait and fire on some later visit to the case. */
+  const loading=authState.signedIn&&!careerRows&&!careerFailed;
+  if(achRevealWanted&&!loading){ achReveal(box,achRevealWanted); achRevealWanted=null; }
 }
 function pfLook(msg,ok){
   profileTab='school'; pfPaint++;
@@ -5522,7 +5631,12 @@ function achShelves(res){
   const A=window.PS_CFB_ACH;
   const pct=(n,d)=>d?Math.round(n/d*100):0;
   const bar=(n,d)=>'<div class="achbar"><i style="width:'+pct(n,d)+'%"></i></div>';
-  const chip=(a,got)=>'<div class="ach '+a.tier+(got?'':' off')+'">'+
+  /* data-a IS HOW A TOAST FINDS ITS BADGE. Every card carries it, the locked ones included:
+     a badge earned on the season being announced is earned, but the same lookup is used from
+     elsewhere and pointing only at what you own would make it fail on exactly the case
+     somebody is most likely to go looking for. */
+  const chip=(a,got,solo)=>'<div class="ach '+a.tier+(got?'':' off')+'"'+
+    (solo?'':' data-a="'+esc(a.id)+'"')+'>'+
     '<div class="ach-n">'+esc(a.name)+'</div><div class="ach-d">'+esc(a.desc)+'</div></div>';
 
   let h='<p class="shsec">Achievements <span class="cnt">'+res.earned.length+' of '+
@@ -5531,8 +5645,10 @@ function achShelves(res){
   const showcase=res.earned.filter(a=>a.tier==='legend'||a.tier==='gold')
     .sort((a,b)=>A.TIER_ORDER[b.tier]-A.TIER_ORDER[a.tier]).slice(0,6);
   if(showcase.length){
+    /* solo: the shelf repeats badges that also appear in their own group below, and a lookup
+       should land on the one among its neighbours rather than on the trophy shelf. */
     h+='<div class="achshelf-h">Your best</div><div class="achlist achshelf">'+
-      showcase.map(a=>chip(a,true)).join('')+'</div>';
+      showcase.map(a=>chip(a,true,true)).join('')+'</div>';
   }
 
   A.GROUPS.forEach((g)=>{
@@ -5604,21 +5720,85 @@ function achAnnounce(userId,res,silent){
      `silent` is the cabinet saying the same thing for a different reason: you are looking
      straight at the badges, so announcing them over the top of themselves is noise. */
   if(silent||firstSighting) return fresh;
-  /* Three at most, spaced, because the banner is one line and a queue of eleven is a wall
-     rather than a reward. The timings are the NFL game's, so a player who moves between
-     them is not learning a second rhythm. */
-  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>{
-    showAchHeadline('Achievement: '+a.name);
-  },900+i*2100));
+  /* STACKED, NOT QUEUED. One at a time meant each badge waited out the one before it, so
+     three of them was fifteen seconds of banner and the third arrived long after anybody had
+     stopped looking. They cascade in seven tenths of a second apart and sit there together,
+     which is both shorter overall and easier to read. Three at most: a queue of eleven is a
+     wall rather than a reward. The timings are the NFL game's, so a player who moves between
+     the two is not learning a second rhythm. */
+  fresh.slice(0,3).forEach((a,i)=>setTimeout(()=>showAchToast(a),900+i*700));
   fresh.forEach(a=>ga('achievement_earned',{id:a.id,tier:a.tier,group:a.group}));
   return fresh;
 }
-function showAchHeadline(text){
-  const el=$('headline'); if(!el) return;
-  el.textContent=text;
-  el.className='headline on big';
+
+/* SIX SECONDS, not two and a half. The old timing was sized for a one-line canned string and
+   this carries a name, a sentence and an invitation to tap it, which nobody reads in 2400ms,
+   let alone decides to act on. */
+const ACH_TOAST_MS=6000;
+function showAchToast(a){
+  const host=$('achtoasts'); if(!host||!a) return;
+  const el=document.createElement('button');
+  el.type='button';
+  el.className='achtoast '+(a.tier||'');
+  el.dataset.a=a.id;
+  /* THE DESCRIPTION IS THE POINT. "Achievement: Bowl eligible" names a thing without saying
+     what it was, and a good half of this cabinet is named for the line rather than the deed:
+     Storm the field, Blue blood, Nobody's schedule. The badge's own description goes
+     underneath, so the toast reads "Blue blood / Win the title with a team from a program
+     that has won one." */
+  el.innerHTML='<span class="at-k">Achievement unlocked</span>'+
+    '<span class="at-n">'+esc(a.name)+'</span>'+
+    '<span class="at-d">'+esc(a.desc||'')+'</span>'+
+    '<span class="at-go">Tap to see it &rsaquo;</span>';
+  el.onclick=()=>{
+    /* ALL OF THEM, not just this one. Tapping opens the case over the top of the stack, so
+       the ones left behind sit on the page they just took you to, covering the badge they
+       sent you to look at. Acting on one is being done with the banner. */
+    clearAchToasts();
+    ga('achievement_toast_tap',{id:a.id,tier:a.tier});
+    /* Straight to the badge, not to the top of the case. */
+    openProfile('case',a.id);
+  };
+  host.appendChild(el);
+  /* A frame before the class, or the element is inserted already at its final state and the
+     transition has nothing to run from. */
+  requestAnimationFrame(()=>el.classList.add('on'));
+  el._h=setTimeout(()=>dismissAchToast(el),ACH_TOAST_MS);
+}
+function clearAchToasts(){
+  const host=$('achtoasts'); if(!host) return;
+  [...host.children].forEach(dismissAchToast);
+}
+function dismissAchToast(el){
+  if(!el||el._gone) return;
+  el._gone=true;
   clearTimeout(el._h);
-  el._h=setTimeout(()=>el.classList.remove('on'),2400);
+  el.classList.remove('on');
+  /* Removed after the fade rather than at once, so the stack does not jump under the ones
+     still on screen. */
+  setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); },320);
+}
+
+/* OPEN THE GROUP THE BADGE IS IN, put it on screen, and mark it for a moment.
+   AFTER A FRAME, AND TWO OF THEM, because the group body animates from 0fr to 1fr: asking
+   for its position in the same tick that opens it measures a box with no height and scrolls
+   to the wrong place. */
+function achReveal(root,id){
+  const el=root&&root.querySelector('[data-a="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
+  if(!el) return false;
+  const grp=el.closest('.achgrp');
+  if(grp&&!grp.classList.contains('open')){
+    grp.classList.add('open');
+    const head=grp.querySelector('.achgrp-h');
+    if(head) head.setAttribute('aria-expanded','true');
+  }
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    try{ el.scrollIntoView({block:'center',behavior:'smooth'}); }
+    catch(e){ el.scrollIntoView(); }
+    el.classList.add('achfound');
+    setTimeout(()=>el.classList.remove('achfound'),2600);
+  }));
+  return true;
 }
 
 /* WHAT THE RUN JUST EARNED, announced over the results screen. Called ONCE per run, from
@@ -7250,6 +7430,61 @@ function destination(p){
   return slot===null?null:E.SLOTS[slot];
 }
 
+/* ---- HOW THE BOARD IS ORDERED ----
+   Three orders, and the control that picks between them sits above the list. The NFL game
+   has the same three and this is that, in this game's vocabulary.
+
+   THE PREFERENCE IS REMEMBERED rather than re-chosen every spin: somebody who reads a board
+   by salary reads every board by salary, and making them say so six times a draft is work,
+   not a decision.
+
+   IN THIS BROWSER, not on the account. It is a display preference for a screen that works
+   signed out, so putting it behind the account would mean a guest cannot keep one and a
+   signed-in player loses theirs the moment the network is slow. Its own key rather than the
+   NFL game's, because the two games share an origin and share localStorage: one key would
+   have each of them quietly re-sorting the other's board. */
+const OPT_SORTS=['pos','fppg','salary'];
+const OPT_SORT_KEY='cfb_draft_sort';
+let optSort='pos';
+try{
+  const v=localStorage.getItem(OPT_SORT_KEY);
+  if(OPT_SORTS.indexOf(v)>=0) optSort=v;
+}catch(e){}
+function saveOptSort(k){
+  optSort=k;
+  try{ localStorage.setItem(OPT_SORT_KEY,k); }catch(e){}
+}
+
+/* The comparator for the order currently chosen, blocked players aside: that rule is added
+   once by the caller, because a man you cannot sign should never outrank one you can
+   whichever way the list is pointed.
+
+   EVERY ORDER HAS A SECOND KEY, and it is not decoration. Prices cluster hard at the
+   replacement floor and a whole tab can share one, so salary alone would leave the cheap end
+   of a board in whatever order the rows arrived in. Points break those ties, and price
+   breaks the points ties for the same reason.
+
+   POSITION ORDER RANKS BY POINTS INSIDE EACH POSITION, which is the comparison that means
+   something: a quarterback outscores a tight end by a mile, so points across positions is
+   not a ranking, it is a board of quarterbacks. Within one position it is like for like. A
+   man who played two positions sorts under the earlier of them rather than wherever the
+   list happened to reach him. */
+function optCompare(){
+  if(optSort==='fppg'){
+    return (a,b)=>b.p.ppr_ppg_mean-a.p.ppr_ppg_mean||b.p.price_musd-a.p.price_musd;
+  }
+  if(optSort==='salary'){
+    return (a,b)=>b.p.price_musd-a.p.price_musd||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean;
+  }
+  const idx=(p)=>{
+    let best=99;
+    E.positionsOf(p).forEach((x)=>{ const i=POSITIONS.indexOf(x); if(i>=0&&i<best) best=i; });
+    return best;
+  };
+  return (a,b)=>idx(a.p)-idx(b.p)||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean
+    ||b.p.price_musd-a.p.price_musd;
+}
+
 function optionGroups(draw){
   const groups=new Map(POSITIONS.map(p=>[p,[]]));
   const all=[];
@@ -7260,21 +7495,28 @@ function optionGroups(draw){
     groups.get(p.position).push({p,block:row.block});
     all.push({p,block:row.block});
   }
-  /* A POSITION TAB IS SORTED BY WHAT IT IS: everyone at that spot, best FPPG first,
-     with the ones you cannot sign sunk to the bottom. That is unchanged. */
-  for(const rows of groups.values()){
-    rows.sort((a,b)=>(a.block?1:0)-(b.block?1:0)||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
-  }
+  /* Signable first, then blocked, each half in the order the player chose. The blocked rule
+     is applied here rather than inside optCompare so all three orders inherit it and none of
+     them can forget: a man you cannot sign must never outrank one you can. */
+  const cmp=optCompare();
+  const byBlock=(a,b)=>(a.block?1:0)-(b.block?1:0)||cmp(a,b);
+  for(const rows of groups.values()) rows.sort(byBlock);
   for(const [k,v] of [...groups]) if(!v.length) groups.delete(k);
-  /* ALL IS SORTED BY PRICE, HIGH TO LOW, the way the NFL game's default tab is. It used
-     to group by position, which read as four little lists stacked in a fixed order and
-     buried a board's most expensive man wherever his position happened to fall. Price
-     descending puts the decision the budget forces, who is worth the money, at the top
-     where it is made. Blocked rows still sink, so the tab opens on what you can actually
-     sign; FPPG breaks ties between two players at the same price. */
-  all.sort((a,b)=>(a.block?1:0)-(b.block?1:0)
-    ||b.p.price_musd-a.p.price_musd
-    ||b.p.ppr_ppg_mean-a.p.ppr_ppg_mean);
+  /* EVERY TAB TAKES THE SAME ORDER, because it is a choice now rather than a ruling. What
+     follows is the argument that decided ALL when there was no control, kept because it is
+     still what the three options are worth knowing about.
+
+     ALL grouped by position once, which read as four little lists stacked in a fixed order
+     and buried a board's most expensive man wherever his position happened to fall. So it
+     became price order, on the reasoning that price is the only cross-position ranking
+     there is: it is value over replacement AT the man's own position, so it already knows a
+     quarterback is measured against other quarterbacks.
+
+     Both readings are right and they answer different questions, which is exactly the case
+     for a control instead of a verdict. A position tab used to sort by points and now sorts
+     by whatever is chosen, which for two of the three orders is what it did anyway: inside
+     one position, points order and position order are the same list. */
+  all.sort(byBlock);
   return new Map([[ALL,all],...groups]);
 }
 
@@ -7368,6 +7610,10 @@ function paintOpts(draw){
       n+'<span class="n">'+count+'</span></button>';
   }).join('');
   $('opts').innerHTML=(groups.get(activeTab)||[]).map((r,i)=>optTile({...r,i})).join('');
+  /* Which order is on, marked here rather than in the click handler, so the control is right
+     on a board that has just been spun as well as on one that has just been re-sorted. */
+  document.querySelectorAll('#opt-sort button').forEach((b)=>
+    b.classList.toggle('on',b.dataset.os===optSort));
   const proto=activeTab===ALL?null:(groups.get(activeTab)||[]).find(r=>!r.block);
   const targetIdx=proto?R.slotForPlayer(run,proto.p):null;
   document.querySelectorAll('#field .chip').forEach(c=>{
@@ -7405,6 +7651,15 @@ function paintRespins(){
   });
 }
 
+/* Re-sorting is a repaint of the board already on screen, not a new one: nothing about the
+   draw changes, only the order it is read in. run.currentDraw is what paintOpts is handed
+   everywhere else, so this is the same call the tab row makes. */
+$('opt-sort').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||b.dataset.os===optSort) return;
+  saveOptSort(b.dataset.os);
+  ga('draft_sort',{sort:optSort});
+  if(run&&run.currentDraw) paintOpts(run.currentDraw);
+});
 $('tabs').addEventListener('click',e=>{
   const t=e.target.closest('.tab'); if(!t)return;
   activeTab=t.dataset.t;
