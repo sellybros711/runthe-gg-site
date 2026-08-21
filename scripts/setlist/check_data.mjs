@@ -926,6 +926,53 @@ console.log('the archive notes');
   check(!rows.some(r => /[\n\r]/.test(r.footnote) || /[\n\r]/.test(r.show_notes)),
     'notes are stored as one line');
 }
+/* WHAT A FIRST-TIME PLAYER ACTUALLY HIT, reported by one in her own words and
+ * confirmed by a second person sitting next to her. Four separate defects, and
+ * none of them is about the rules being wrong: they are about the game never
+ * saying what it just did.
+ */
+console.log('the first five minutes');
+/* ONE VERB FOR ONE ACTION. The panel header said "Add to Set I" and the button
+   under it said "Play it": "Add to set 1 makes sense bc that's what I thought I
+   was doing, building a setlist. But then Play it confused me bc I thought I
+   was adding it." */
+check(/Add to \$\{esc\(cfg\.label\)\} \(\$\{fmtClock\(lenOf\(S\.pickedSong\)\)\}\)/.test(gameBare),
+  'the confirm button and the panel above it use the same verb');
+check(!/`Play it \(/.test(gameBare), 'and "Play it" is gone');
+/* THE RECEIPT. Confirming a song used to drop you straight into a full-screen
+   slot machine labelled "Spinning the archive" with nothing about the song just
+   added, and two people read it as the game restarting: "it spun the wheel
+   again and I didn't think I was resetting anything, I thought I was adding". */
+check(/class="added"/.test(gameBare), 'the next show is preceded by what you just added');
+check(/Added to \$\{esc\(SETS\[just\.si\]\.label\)\}/.test(gameBare),
+  'naming the set it went into');
+check(/song\$\{inSet === 1 \? '' : 's'\} in/.test(gameBare),
+  'and how many are in that set now');
+check(/Drawing your next show/.test(gameBare),
+  'and the reels say they are drawing the NEXT one, not spinning from scratch');
+/* A METER, NOT TABS: "At first I thought set 1 and two were tab buttons." */
+check(/\.nightstrip\{[^}]*pointer-events:none/.test(game),
+  'the set meter cannot be pressed');
+check(/\.ns-seg\{[^}]*height:7px/.test(game), 'and is a bar rather than a row of boxes');
+check(/\.ns-seg i\{[^}]*position:absolute/.test(game),
+  'with its labels under the track rather than centred inside like button text');
+/* Clipping the track clips those labels, which is how they vanished once. */
+check(!/\.nightstrip\{[^}]*overflow:hidden/.test(game),
+  'and the track does not clip them away');
+/* THE HELP WHERE IT WAS ASKED FOR: "I think this screen is where you need the
+   prompt for help." The draft screen had none. */
+check(/class="firsthint"/.test(gameBare), 'the draft screen says what to do with the list');
+check(/!S\.sets\.flat\(\)\.length \? `<div class="firsthint">/.test(gameBare),
+  'only until the first song lands');
+/* AND NOT A WALL ON THE BUTTON ITSELF: "too much wording there that no one will
+   read and they will be tempted to just click". */
+{
+  const i = gameBare.indexOf("hd: 'Press this one first'");
+  const step = gameBare.slice(i, gameBare.indexOf('extra:', i));
+  check(i > -1 && (step.match(/<p>/g) || []).length === 1,
+    'the start step is one paragraph, not three');
+}
+
 /* THE DRIFT GATE HAS TO COUNT LENGTH AS AN INPUT.
  *
  * data_drift lets a derived value move only for a song whose own inputs moved.

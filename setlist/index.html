@@ -487,6 +487,20 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     text-transform:uppercase; color:var(--mut);}
   .reveal-cue{font-size:13px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
     color:var(--mut);}
+  /* THE RECEIPT for the song you just added, above the next show. Green and
+     ticked, because the one thing this screen has to say before it says
+     anything else is "that worked, it went in". */
+  .added{margin:0 0 14px; padding:11px 14px; border-radius:var(--r-md);
+    background:color-mix(in srgb,var(--green) 12%, transparent);
+    border:1px solid color-mix(in srgb,var(--green) 34%, transparent);}
+  .added-t{font-size:10.5px; font-weight:900; letter-spacing:1.6px;
+    text-transform:uppercase; color:var(--greenT);}
+  .added-t:before{content:'\2713'; margin-right:6px; font-weight:900;}
+  .added-s{margin-top:3px; font-size:16px; font-weight:800; color:var(--ink);
+    line-height:1.25;}
+  .added-s span{margin-left:8px; font-size:13px; font-weight:700; color:var(--mut);
+    font-variant-numeric:tabular-nums;}
+  .added-n{margin-top:2px; font-size:11.5px; font-weight:700; color:var(--mut);}
 
   /* ---------------- draft ---------------- */
   /* THE CLOCK IS THE GAME. Everything here exists to say one thing: this is
@@ -526,15 +540,34 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   /* The night, to scale. Two sets and an encore, each block as wide as its own
      budget, so where you are is a place in the evening and not just a label. */
-  .nightstrip{display:flex; gap:3px; margin-top:7px;}
-  .ns-seg{height:16px; border-radius:3px; display:flex; align-items:center;
-    justify-content:center; overflow:hidden; background:color-mix(in srgb, var(--ink) 8%, transparent);}
-  .ns-seg i{font-style:normal; font-size:8.5px; font-weight:900; letter-spacing:1.2px;
-    text-transform:uppercase; color:var(--dim); white-space:nowrap;}
-  .ns-seg.done{background:color-mix(in srgb, var(--ink) 22%, transparent);}
+  /* A METER, NOT A ROW OF TABS. It was three filled rounded boxes of centred
+     uppercase text sitting under the clock, which is what a segmented control
+     looks like, and a first-time player said so: "At first I thought set 1 and
+     two were tab buttons." It shows which of the night's three parts you are
+     in and how big each is; nothing about it is pressable.
+     So: one continuous track rather than three separate pills, the labels
+     dropped underneath as an axis instead of centred inside like button text,
+     and pointer-events off so a tap on it does nothing rather than nothing
+     visible. */
+  /* NO overflow:hidden ON THE TRACK. It was the obvious way to round the ends
+     of a segmented bar, and it silently ate the labels: they hang BELOW the
+     strip now, so clipping the track clips them too. The radius lives on the
+     end segments instead. */
+  .nightstrip{display:flex; gap:2px; margin-top:9px; pointer-events:none;}
+  .ns-seg{height:7px; display:flex; align-items:flex-end; justify-content:center;
+    position:relative;
+    background:color-mix(in srgb, var(--ink) 12%, transparent);}
+  .ns-seg:first-child{border-radius:99px 0 0 99px;}
+  .ns-seg:last-child{border-radius:0 99px 99px 0;}
+  .ns-seg i{position:absolute; top:9px; font-style:normal; font-size:8.5px;
+    font-weight:900; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--dim); white-space:nowrap;}
+  .ns-seg.done{background:color-mix(in srgb, var(--ink) 30%, transparent);}
   .ns-seg.done i{color:var(--mut);}
   .ns-seg.now{background:var(--teal);}
-  .ns-seg.now i{color:var(--bg);}
+  .ns-seg.now i{color:var(--tealT);}
+  /* The labels hang below the track, so the HUD has to make room for them. */
+  .hud .nightstrip{margin-bottom:13px;}
   .pips{display:flex; gap:5px;}
   .pip{width:9px; height:9px; border-radius:50%; background:var(--line2);}
   .pip.done{background:var(--mut);} .pip.now{background:var(--teal); transform:scale(1.25);}
@@ -769,6 +802,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .sf-len{color:var(--mut); font-weight:700; font-variant-numeric:tabular-nums; font-size:11.5px;}
   .sf-none{font-size:12px; font-weight:600; color:var(--dim); padding:2px 0 3px;}
 
+  /* The one instruction the draft screen was missing, and only until the first
+     song lands. Teal because it is guidance rather than a warning, and it sits
+     directly above the list it is talking about. */
+  .firsthint{margin-bottom:10px; padding:10px 13px; border-radius:var(--r-sm);
+    font-size:12.5px; font-weight:600; line-height:1.5; color:var(--mut);
+    background:color-mix(in srgb,var(--teal) 11%, transparent);
+    border:1px solid color-mix(in srgb,var(--teal) 30%, transparent);}
+  .firsthint b{display:block; color:var(--ink); font-weight:800; margin-bottom:2px;}
   .hunt{margin-bottom:10px; padding:9px 12px; border-radius:var(--r-sm); font-size:12.5px;
     font-weight:700; line-height:1.5; color:var(--mut);
     background:color-mix(in srgb,var(--green) 10%, transparent);
@@ -2706,13 +2747,17 @@ const GUIDE_STEPS = [
     aim: () => document.querySelector('.band:not(.soon) [data-start]'),
     eyebrow: 'Start here',
     hd: 'Press this one first',
-    body: `<p>You get a random night from the archive. Pick a song off it and it
-        joins your set, spending <b>its real running time</b>, so a 20 minute jam
-        costs you 20 minutes.</p>
-      <p>You decide when a set ends. Rare songs, great versions and songs that
-        really did segue are worth the most.</p>
-      <p>Time you do not use is not lost: close a set early and the minutes
-        left over <b>carry into the next one</b>.</p>`,
+    /* ONE SENTENCE ON THE BUTTON YOU ARE ABOUT TO PRESS. This was three
+       paragraphs plus the grid, and a first-time player told us exactly what
+       happens to three paragraphs at the moment of action: "I like the quick
+       start concept but there's too much wording there that no one will read
+       and they will be tempted to just click". She clicked, and arrived on the
+       draft screen with none of it retained.
+       So the rules that only matter once you are playing (when a set ends,
+       what scores, that time carries over) are taught on the draft screen where
+       they apply, not stacked in front of the door. */
+    body: `<p>You get a random night from the archive. Take <b>one song</b> off
+        it, and it costs you <b>its real running time</b>.</p>`,
     extra: `<div class="g-budget">
         <div><b>75</b><span>Min set I</span></div>
         <div><b>70</b><span>Min set II</span></div>
@@ -3069,12 +3114,38 @@ function renderReveal(){
   const pool = drawableShows(S.data.shows);
   const si = Math.max(0, currentSet());
 
+  /* WHAT YOU JUST DID, BEFORE WHAT COMES NEXT.
+   *
+   * This screen used to open on a slot machine labelled "Spinning the archive"
+   * with nothing on it about the song just added, and two first-time players
+   * read it as the game starting over: "clicking play it confused me even more
+   * bc it spun the wheel again and I didn't think I was resetting anything, I
+   * thought I was adding" and "he was also confused why that brought up the
+   * spin function".
+   *
+   * They were right to be confused. The set was growing off screen: the
+   * setlist panel that shows it lives on the draft screen, so between choosing
+   * a song and seeing it land there was a full-screen animation that said
+   * nothing. The banner below is the receipt, and the reels underneath are
+   * plainly the NEXT show rather than a reset. */
+  const just = S.drafted.length ? S.drafted[S.drafted.length - 1] : null;
+  const inSet = just ? S.sets[just.si].length : 0;
+
   app.innerHTML = `
     <div class="reveal" id="revealRoot">
-      <div class="eyebrow">${esc(SETS[si].label)} · pick ${S.round + 1}</div>
+      ${just ? `<div class="added">
+        <div class="added-t">Added to ${esc(SETS[just.si].label)}</div>
+        <div class="added-s">${esc(just.perf.song)}
+          <span>${fmtClock(lenOf(just.perf))}</span></div>
+        <div class="added-n">${inSet} song${inSet === 1 ? '' : 's'} in
+          ${esc(SETS[just.si].label)} now</div>
+      </div>` : ''}
+      <div class="eyebrow">${just ? 'Next up &middot; ' : ''}${
+        esc(SETS[si].label)} &middot; pick ${S.round + 1}</div>
       <div class="reveal-win landed" id="revealWin">
         <div class="reveal-bar">
-          <span class="eyebrow" id="revealLbl">Spinning the archive</span>
+          <span class="eyebrow" id="revealLbl">${just
+            ? 'Drawing your next show' : 'Spinning the archive'}</span>
           <span class="n">${String(S.round + 1).padStart(2, '0')}</span>
         </div>
         <div class="reveal-body">
@@ -3485,6 +3556,17 @@ function renderDraft(){
                 canRespin(S.sets, si, S.respins, S.closed, S.spent)
                   ? `. A respin costs ${fmtClock(respinCost(S.respins))}` : ''}.`}
         </div>` : ''}
+        ${/* THE HELP WHERE IT IS NEEDED. Asked for in exactly these words about
+              exactly this screen: "I think this screen is where you need the
+              prompt for help. Just a pop over hint." Before it, the draft
+              screen said nothing about what to do with the list below it.
+              Shown only while the night is still empty, so it teaches the one
+              action and then gets out of the way for good without needing a
+              dismiss button or a flag to remember. */''}
+        ${!S.sets.flat().length ? `<div class="firsthint">
+          <b>Tap any song below to add it to ${esc(cfg.label)}.</b>
+          Its running time comes off your clock, and you decide when the set ends.
+        </div>` : ''}
         ${fits.length ? '' : `<div class="warn">Nothing here fits ${esc(cfg.label)}.
           Close the set and move on.</div>`}
         ${songsHTML}
@@ -3499,8 +3581,17 @@ function renderDraft(){
             : 'Two sets and an encore to fill.'}</div>
           ${setsPanelHTML({ live: true })}
           <div class="lockbar">
+            ${/* ONE VERB FOR ONE ACTION. The panel above says "Add to Set I"
+                  and this button used to say "Play it", so a first-time player
+                  read them as two different things: "Add to set 1 makes sense
+                  bc that's what I thought I was doing, building a setlist. But
+                  then Play it confused me bc I thought I was adding it." The
+                  header was the one matching the mental model, so the button
+                  matches the header. */''}
             <button class="btn primary" type="button" id="lockBtn" ${S.pickedSong ? '' : 'disabled'}>
-              ${S.pickedSong ? `Play it (${fmtClock(lenOf(S.pickedSong))})` : 'Pick a song'}
+              ${S.pickedSong
+                ? `Add to ${esc(cfg.label)} (${fmtClock(lenOf(S.pickedSong))})`
+                : 'Tap a song below'}
             </button>
             ${S.pickedSong && String(S.pickedSong.is_segue) === 'true' ? `
               <!-- AN INVITATION, NOT A WARNING. This read "you'll need to land
