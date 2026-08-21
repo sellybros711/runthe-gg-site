@@ -4476,8 +4476,15 @@ const ARCADE_GAMES=[
   ['Number Game','#F2B632'],['Odd One Out','#B79BF6'],['Career Path','#48D17A'],['Rank It','#F778AE'],
   ['Alma Mater','#96B93C'],['High Low','#FF8A3D']
 ];
+/* Owner: "can we remove the arcade pop up ad from the run the tour home page?" — no, it no longer
+   opens itself on the title screen. Flip this to true to bring it back: the overlay, its styling and
+   the ?arcadead=1 device check are all still here and still work, so this is a one-word restore.
+   Scope note: this is the RunTheTour popup only. The site-wide house ad described above (shared keys
+   with /assets/arcade-ad.js, used by the homepage and the NFL game) is a separate surface, untouched. */
+const ARCADE_AD_ENABLED=false;
 function maybeArcadeAd(force){ try{
   if(!force){
+    if(!ARCADE_AD_ENABLED) return;                        // owner: taken off the home screen
     if(arcadeAdOff() || arcadeAdSeenThisSession()) return;
     if(S.overlay || S.screen!=='title') return;
     if(typeof tourRunning==='function' && tourRunning()) return;              // a guided tour (e.g. the Roster hint) owns the screen — never stack the ad on it
@@ -9326,9 +9333,24 @@ function footer(){
   // Real anchors, not overlay buttons: a crawler (and an ad-network reviewer) has to be able to
   // reach the guide and the policy pages from the page itself, which an in-app overlay never gives them.
   links.appendChild($(`<a href="/golf/how-to-play.html" style="color:inherit;text-decoration:none;cursor:pointer">How to play</a>`));
-  links.appendChild(mk('About',()=>{S.overlay='about';render();}));
-  links.appendChild(mk('Privacy',()=>{S.overlay='privacy';render();}));
-  links.appendChild(mk('Terms',()=>{S.overlay='terms';render();}));
+  /* About, Privacy and Terms are anchors that behave like the overlay buttons they used to be.
+     They were plain <button>s, which meant the paragraph above this was describing something the
+     code did not do: a crawler, and an AdSense reviewer, found no link to the policy pages
+     anywhere on this page. The only privacy href in the file sat inside <noscript>, invisible to
+     anyone running JavaScript. The href is what a reviewer and a crawler follow; the click
+     handler keeps a player who is mid-run in the overlay, because there is no mid-run save and
+     navigating away would throw the run out. Cmd/ctrl/middle-click fall through to the href. */
+  const mkLink=(t,href,fn)=>{
+    const a=$(`<a href="${href}" style="color:inherit;text-decoration:none;cursor:pointer">${t}</a>`);
+    a.onclick=(e)=>{
+      if(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button) return;   // let the browser open it
+      e.preventDefault(); fn();
+    };
+    return a;
+  };
+  links.appendChild(mkLink('About','/about.html',()=>{S.overlay='about';render();}));
+  links.appendChild(mkLink('Privacy','/privacy.html',()=>{S.overlay='privacy';render();}));
+  links.appendChild(mkLink('Terms','/terms.html',()=>{S.overlay='terms';render();}));
   links.appendChild($(`<a href="/disclaimer.html" style="color:inherit;text-decoration:none;cursor:pointer">Disclaimer</a>`));
   links.appendChild($(`<a href="/contact.html" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
   links.appendChild(mk('Feedback',()=>openFeedback()));

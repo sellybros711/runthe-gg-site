@@ -16088,3 +16088,34 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   8099` running in `build-a-golfer/` — they load over http, not `file://`.)
 - Tunable: the `.ov .x` block. To change the tap target, change `::after`'s `max(100%,44px)`, not the
   button's width/height — the visible size is constrained by the overlay subtitle beneath it.
+
+### THE ARCADE POPUP IS OFF (owner: "can we remove the arcade pop up ad from the run the tour home page?")
+- **`const ARCADE_AD_ENABLED=false`**, checked first inside `maybeArcadeAd()`'s non-forced branch. The
+  overlay, its CSS, `ARCADE_GAMES` and the `?arcadead=1` device check are all still in place and still
+  work, so bringing it back is one word. The title-chain call site at the end of `renderTitle` is
+  deliberately left in place for the same reason — it just early-returns now.
+- Scope: **RunTheTour only.** The site-wide house ad this shares storage keys with (`rtg_arcade_ad_*`,
+  `/assets/arcade-ad.js`, used by the homepage and the NFL game) is a separate surface and is untouched.
+  Note that file is *not* in this repo — only the game's own copy of the promo is.
+- The popup was the **only** Arcade entry point inside the game; there is no menu item or tile. Turning it
+  off removes RunTheTour's cross-promo to `/arcade/` entirely. Flagged for the owner, who asked for it gone.
+- **Writing the test for this was the actual work, and the first two versions were worthless.** The check
+  "the ad never appears on the home screen" passed on the OLD build twice, for two different wrong reasons:
+  a fresh browser profile is a new player and `isNewPlayer()` suppresses the ad on its own; and once that
+  was handled, the S1 launch popup claimed `S.overlay` first, which trips `maybeArcadeAd`'s
+  `if(S.overlay) return`. **Any "X no longer happens" test must be run against the baseline and be seen to
+  FAIL there** — otherwise it is only asserting that the setup was wrong. The final version pre-clears
+  `bag_tour_done` + `bag_s1_launch_seen` before load and stubs the *preconditions* (`isNewPlayer`,
+  `welcomePackPending`, `s1LaunchPending`) so every gate is open, then calls the real non-forced
+  `maybeArcadeAd()`.
+- Verified: 9 checks, **0 fail, 0 page errors** on the change, and the deciding check **fails on the
+  deployed baseline** (`overlay:'arcadead'`, dialog rendered, session flags burned) while passing here
+  (`overlay:null`, nothing rendered, flags untouched). Also asserted: it never appears across ~4.2s of
+  sitting on the title, the rest of the popup chain is intact, the new-player guided tour still fires, and
+  the overlay still renders with all 9 game chips when forced — i.e. the restore path is proven, not assumed.
+- **`aa_race` and `arcade_ad` now fail by design** — they assert the ad shows. They are obsolete unless the
+  flag is flipped back; not deleted, since they are the regression suite for the restore. `adtour_test`,
+  `aa_optout` and `aa_tap` still pass.
+- Regressions green: `closex_test` 184/184, `dupe_test` 21/21, `frontier_test` 28/28, `tour_test` 17/17,
+  `news_test` 18/18, `regress_final`, `shoptabs`.
+- Tunable: `ARCADE_AD_ENABLED`.
