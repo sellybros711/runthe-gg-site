@@ -382,8 +382,30 @@ window.GA_ID='G-L29P5MRWKE';
   /* The spots you would actually fill, which is the whole difference between the two halves
      and the one thing a name alone does not say. It is the only thing under the name now, so
      it can afford the tracking it wanted all along. */
-  .hp-side-sub{position:relative;font-family:var(--fn);font-size:10px;font-weight:600;
+  /* ALL SIX SPOTS, IN TWO ROWS OF THREE, and the two rows are not a compromise on the way to
+     one row: six tokens separated by middots do not fit on one line at ANY width the game is
+     played at. Measured with the real node cloned in place, against the width that still
+     clears the "or" chip on the seam (the half's content box plus its padding, less the
+     chip's 30px and a little air):
+
+       320   needs 158   budget 107
+       390   needs 196   budget 142
+       430   needs 196   budget 162
+      1280   needs 222   budget 166
+
+     Left to wrap on its own it broke as five tokens then "· FLEX" alone, with the middle of
+     the line running underneath the chip. Broken 3 and 3 by hand, each row is about 82 wide,
+     both halves get the same shape, and it reads as six spots rather than as a run-on.
+
+     The row count was wrong as well as the punctuation: this said QB RB WR TE FLEX and
+     DL LB DB FLEX, which is five and four. E.SLOTS is QB RB WR WR TE FLEX and
+     E.DEFENSE_SLOTS is DL DL LB DB DB FLEX. Both are six, which is what the headline three
+     lines up has always promised. */
+  .hp-side-sub{position:relative;display:flex;flex-direction:column;align-items:center;
+    gap:2px;font-family:var(--fn);font-size:10px;font-weight:600;
     letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+  /* nowrap on the rows: the hand break is the only break either of them may take. */
+  .hp-side-sub span{display:block;white-space:nowrap}
   /* THE CAPTION OVER THE PAIR. The two halves are a choice, and nothing on the page said
      so: the headline sells the game and the buttons name two words. One quiet line does the
      job the two stickers were half doing, and it says the actual thing rather than implying
@@ -4636,7 +4658,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="hp-split" id="hp-split" hidden>
       <button class="hp-side hp-off" id="b-start-off">
         <span class="hp-side-name">Offense</span>
-        <span class="hp-side-sub">QB RB WR TE FLEX</span>
+        <span class="hp-side-sub"><span>QB &middot; RB &middot; WR</span><span>WR &middot; TE &middot; FLEX</span></span>
       </button>
       <button class="hp-side hp-def" id="b-start-def">
         <!-- Hidden in the markup and revealed by script inside its window, the same way the
@@ -4644,7 +4666,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
              smaller lie than one that says NEW forever. See DEFENSE_NEW_UNTIL. -->
         <span class="hp-tag" id="hp-def-new" hidden>New</span>
         <span class="hp-side-name">Defense</span>
-        <span class="hp-side-sub">DL LB DB FLEX</span>
+        <span class="hp-side-sub"><span>DL &middot; DL &middot; LB</span><span>DB &middot; DB &middot; FLEX</span></span>
       </button>
     </div>
     <button class="btn hp-secondary locked" id="b-teams">More ways to play<svg class="lk"
