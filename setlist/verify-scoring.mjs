@@ -672,34 +672,97 @@ group('fan headline', () => {
   eq(typeof scoreShow([[], [], []], new Set()).headline, 'string', 'an empty night still gets a line');
 });
 
+/* THE CARD IS A SWAP, and every assertion here is about that being a fair one.
+   It used to take the best song ever offered, judged in the best of six roles,
+   and print the number next to a setlist scored one role per song: measured
+   over 300 random games it beat every song the player played in 296 of them.
+   Same show, same slot, same role, and no longer than what was spent there. */
 group('the one that got away', () => {
-  const seen = [
-    perf({ song_id: 'a', song: 'Ordinary', crowd: 30, len: 600 }),
-    perf({ song_id: 'b', song: 'The Monster', crowd: 75, len: 1400, rec: 1, tags: 'peak' }),
-    perf({ song_id: 'c', song: 'Fine', crowd: 45, len: 700 }),
-  ];
-  const played = [[seen[0]], [], []];
-  const miss = theOneThatGotAway(seen, played);
-  eq(miss.perf.song, 'The Monster', 'the best thing left behind is what surfaces');
-  eq(miss.score.subtotal > 100, true, 'and it is scored, not just named');
-  eq(miss.role && miss.role.name, 'Peak', 'a peak song is named as a peak');
+  const ordinary = perf({ song_id: 'a', song: 'Ordinary', crowd: 30, len: 600 });
+  const monster  = perf({ song_id: 'b', song: 'The Monster', crowd: 75, len: 600,
+                          rec: 1, tags: 'peak' });
+  const fine     = perf({ song_id: 'c', song: 'Fine', crowd: 45, len: 600 });
+  const show = { show_id: 's1', songs: [ordinary, monster, fine] };
+  const draft = p => [{ show, perf: p, si: 0 }];
 
-  // A song that suits no role in particular must not be labelled one.
-  const bland = [perf({ song_id: 'q', song: 'Bland', crowd: 70, len: 800 })];
-  eq(theOneThatGotAway(bland, [[], [], []]).role, null,
-     'a song with no role fit is not given a role it does not have');
+  const miss = theOneThatGotAway(draft(ordinary), [[ordinary], [], []]);
+  eq(miss.perf.song, 'The Monster', 'the better song in the same show surfaces');
+  eq(miss.instead.song, 'Ordinary', 'named against the song actually taken');
+  eq(miss.took.subtotal, miss.score.subtotal - miss.gap,
+     'and the gap is the difference between the two');
+  eq(miss.gap > 0, true, 'only a song that would have scored MORE is a regret');
 
-  eq(theOneThatGotAway(seen, [[seen[0]], [seen[1]], [seen[2]]]), null,
-     'nothing got away when everything was played');
-  eq(theOneThatGotAway([], [[], [], []]), null, 'nothing seen, nothing missed');
+  /* THE TWO NUMBERS ARE COMPARABLE BY CONSTRUCTION, which is the whole fix:
+     both are scorePerf of one song in one role, and it is the same role. */
+  eq(miss.score.role, miss.took.role, 'both scored in the same role');
 
-  // A song shown twice and never played should not beat itself.
-  const twice = [seen[1], seen[1]];
-  eq(theOneThatGotAway(twice, [[], [], []]).perf.song, 'The Monster', 'duplicates are fine');
+  /* THE CAP IS LOAD-BEARING. A longer alternative might not have fitted the
+     clock, and reporting a regret that was never available is exactly what
+     made the old card a taunt. */
+  const huge = perf({ song_id: 'd', song: 'Twenty Two Minutes', crowd: 75,
+                      len: 1400, rec: 1, tags: 'peak' });
+  const bigShow = { show_id: 's2', songs: [ordinary, huge] };
+  eq(theOneThatGotAway([{ show: bigShow, perf: ordinary, si: 0 }], [[ordinary], [], []]),
+     null, 'a song longer than the one you took is not counted as missed');
+  /* The cap is a ceiling, not a floor. A long DULL pick leaves room for a
+     short strong one, and that is a real regret. Dull rather than the peak
+     song above, because the version multiplier tiers on length: a 23-minute
+     take of anything outscores a 10-minute take of the same thing, so a long
+     great song is not something a short great song beats. */
+  const longDull = perf({ song_id: 'e', song: 'Long Dull One', crowd: 30, len: 1400 });
+  const roomy = { show_id: 's3', songs: [longDull, monster] };
+  eq(theOneThatGotAway([{ show: roomy, perf: longDull, si: 0 }], [[longDull], [], []]).perf.song,
+     'The Monster', 'but a shorter one against a long weak pick is');
+
+  /* THE SLOT ADVANCES WITH THE PICKS. Judging every round in the first slot's
+     role passes every single-pick test above, so this one has two picks in one
+     set and an alternative whose fit depends on which of them it is measured
+     against: with a set of two, index 0 is the Opener and index 1 the Closer,
+     and a closer-tagged song is only a big regret against the second. */
+  const dullA = perf({ song_id: 'm', song: 'Filler One', crowd: 30, len: 600 });
+  const dullB = perf({ song_id: 'n', song: 'Filler Two', crowd: 30, len: 600 });
+  const opens = perf({ song_id: 'o', song: 'The Opener', crowd: 45, len: 600, tags: 'opener' });
+  const shuts = perf({ song_id: 'p', song: 'The Closer', crowd: 75, len: 600,
+                       rec: 1, tags: 'closer' });
+  const twoSlot = { show_id: 's6', songs: [dullA, dullB, opens, shuts] };
+  const both = theOneThatGotAway(
+    [{ show: twoSlot, perf: dullA, si: 0 }, { show: twoSlot, perf: dullB, si: 0 }],
+    [[dullA, dullB], [], []]);
+  eq(both.perf.song, 'The Closer', 'a later pick is judged in the slot it really filled');
+  eq(both.instead.song, 'Filler Two', 'and named against the song taken in that slot');
+
+  /* A song you took LATER is not one that got away. */
+  eq(theOneThatGotAway(draft(ordinary), [[ordinary], [monster], [fine]]), null,
+     'nothing got away when everything was played somewhere');
+  eq(theOneThatGotAway([], [[], [], []]), null, 'nothing drafted, nothing missed');
+  eq(theOneThatGotAway(null, [[], [], []]), null, 'and no drafted list at all is safe');
+
+  /* GOOD PLAY MAKES IT DISAPPEAR, which is the property the old card lacked:
+     it fired every game regardless of how well anybody did. */
+  eq(theOneThatGotAway(draft(monster), [[monster], [], []]), null,
+     'taking the best song in the show leaves no regret');
+
+  /* A TEASE IS NOT A SONG YOU MISSED. The length cap lets anything short
+     through, so 13% of the regrets it surfaced were takes under three minutes:
+     "you took SALT for 36, this was worth 64" about a 1:23 snippet. */
+  const snippet = perf({ song_id: 't', song: 'Snippet', crowd: 75, len: 83,
+                         rec: 1, tags: 'peak' });
+  eq(theOneThatGotAway([{ show: { show_id: 's7', songs: [ordinary, snippet] },
+     perf: ordinary, si: 0 }], [[ordinary], [], []]), null,
+     'a take under three minutes is a tease, not a song you missed');
 
   // An untimed song can never be played, so it never counts as missed.
-  eq(theOneThatGotAway([perf({ song_id: 'z', song: 'No Clock', len: 0, crowd: 75 })],
-     [[], [], []]), null, 'an untimed song was never really on offer');
+  const noClock = perf({ song_id: 'z', song: 'No Clock', len: 0, crowd: 75 });
+  eq(theOneThatGotAway([{ show: { show_id: 's4', songs: [ordinary, noClock] },
+     perf: ordinary, si: 0 }], [[ordinary], [], []]), null,
+     'an untimed song was never really on offer');
+
+  // A song that suits no role in particular must not be labelled one.
+  const bland = perf({ song_id: 'q', song: 'Bland', crowd: 70, len: 600 });
+  const dull  = perf({ song_id: 'r', song: 'Duller', crowd: 30, len: 600 });
+  const b = theOneThatGotAway([{ show: { show_id: 's5', songs: [dull, bland] },
+    perf: dull, si: 0 }], [[dull], [], []]);
+  eq(b && b.role, null, 'a song with no role fit is not given a role it does not have');
 });
 
 group('fan reactions are keyed to why', () => {

@@ -295,10 +295,29 @@ for (const href of ['/', '/about.html', '/privacy.html', '/terms.html',
    playing against. It shipped once with the set name and the countdown at the
    same size over a full green bar, which reads as healthy progress. */
 check(/\.hc-n\{[^}]*font-size:4\dpx/.test(game), 'the countdown is the biggest thing in the HUD');
-check(/>Respin<\/button>/.test(game), 'the respin button just says Respin');
-check(!/Respin\s*&middot;\s*\$\{fmtClock\(cost\)\}/.test(game),
-      'and does not carry its price in the label');
-check(/class="respin-cost"/.test(game), 'the price is on the confirm instead');
+/* THE RESPIN BUTTON CARRIES ITS PRICE, BUT NOT AS A CLOCK.
+ *
+ * It read "Respin · 5:00" once and the price was taken off, for a good reason
+ * that still holds: an mm:ss beside a 44px mm:ss countdown is a second clock in
+ * a HUD whose whole job is to make the first one the thing you play against.
+ *
+ * But hiding the price entirely put it in a hover title, which a phone never
+ * shows, so the one control on the screen that spends the game's only resource
+ * looked free and could only be priced by pressing it. Both of those are real,
+ * and minutes settle it: the cost is on the face, and with no colon and no
+ * seconds it cannot be misread as the countdown. */
+check(/>Respin <b>\$\{Math\.round\(cost \/ 60\)\} min<\/b><\/button>/.test(game),
+      'the respin button says what it costs');
+check(!/Respin[^<]*\$\{fmtClock\(cost\)\}/.test(game),
+      'in minutes, not as a second clock in the HUD');
+check(/aria-label="\$\{can/.test(game),
+      'and a screen reader gets the whole trade, not just the number');
+check(/class="respin-cost"/.test(game), 'the confirm still spells the price out');
+/* "Time" named the clock it sat beside rather than what pressing it does, which
+   is open the setlist you have built so far. */
+check(/id="openSets"[\s\S]{0,160}?>Setlist<\/button>/.test(game),
+      'and the button beside it is named after what it opens');
+check(!/id="openSets">Time<\/button>/.test(game), 'not after the clock next to it');
 check(/class="nightstrip"/.test(game), 'the HUD shows the shape of the night');
 
 /* The home page's block gaps were six different numbers before they were put
@@ -569,6 +588,57 @@ check(/class="segout"/.test(game) && /class="segmark"/.test(game),
   // The setlist has to come before the regret: you read what you built first.
   check(body.indexOf('<div class="card setlist"') < body.indexOf('<div class="card gotaway"'),
     'and your own setlist outranks the one that got away');
+
+  /* THE REGRET IS A SWAP, and the card has to show both halves of it.
+   *
+   * It used to print one number, "it was worth 176", beside a setlist whose
+   * songs scored 27 to 59, because it took the best song ever offered and
+   * judged it in the best of six roles it never had to earn. Measured over 300
+   * random games it beat every song the player played in 296 of them: median
+   * 166 against a best-played of 93. A card that always says you missed
+   * something better than anything you did is not a finding, and the number it
+   * printed had no peer anywhere on the page.
+   *
+   * Both numbers, the song it is measured against, and the clause saying the
+   * swap was affordable. Any one of them missing and it is a taunt again. */
+  const ga = body.slice(body.indexOf('<div class="card gotaway">'),
+                        body.indexOf('<div class="card wherefrom">'));
+  check(/S\.missed\.took\.subtotal/.test(ga), 'the card shows what the song you took scored');
+  check(/S\.missed\.score\.subtotal/.test(ga), 'and what the one you left scored');
+  check(/S\.missed\.instead\.song/.test(ga), 'naming the song it is measured against');
+  check(/class="ga-fine"/.test(ga) && /no longer than the one you took/.test(ga),
+    'and saying the clock was never what stopped you');
+}
+/* THE SWAP IS BUILT FROM THE PICKS, not from everything ever shown. Passing the
+   flat seen list still runs and still returns a song, so this is asserted at the
+   call site rather than left to the shape of the data. */
+check(/theOneThatGotAway\(S\.drafted, S\.sets\)/.test(gameBare),
+  'the regret is worked out from the rounds you actually played');
+{
+  const sc = read('setlist/scoring.js');
+  const fn = sc.slice(sc.indexOf('export function theOneThatGotAway('),
+                      sc.indexOf('// ── scoring a whole show'));
+  check(fn.length > 200, 'theOneThatGotAway is findable');
+  /* SAME ROLE for both halves, or the two numbers are not comparable and the
+     card is back to grading one song on a curve the other never got. */
+  check(/const role = roleAt\(si, idx, \(sets\[si\] \|\| \[\]\)\.length\);/.test(fn),
+    'the slot the pick really filled decides the role');
+  check(/const took = scorePerf\(d\.perf, role\);/.test(fn)
+    && /const sc = scorePerf\(alt, role\);/.test(fn),
+    'and both songs are scored in it');
+  check(/const idx = at\[si\]\+\+;/.test(fn), 'the slot advances with the picks');
+  /* AFFORDABLE, or the regret was never on offer. */
+  check(/if \(!al \|\| al > len\) continue;/.test(fn),
+    'an alternative longer than the song taken is not a missed chance');
+  /* And the cap lets anything SHORT through, which surfaced a 1:23 snippet as
+     the night's regret in 13% of measured games. This file already has a word
+     for those and does not count them as songs anywhere else. */
+  check(/if \(al < TEASE_SECONDS\) continue;/.test(fn),
+    'nor is a take the game itself calls a tease');
+  /* AND IT HAS TO BE ABLE TO FIND NOTHING. The old card fired every game. */
+  check(/if \(gap <= 0\) continue;/.test(fn), 'only a better song is a regret');
+  check(!/roleAt\(1, 2, 4\)/.test(fn),
+    'no hypothetical best-of-six role is tried on the song you did not play');
 }
 /* FOLDED, NOT DELETED. A <details> so the full working is one tap away, and a
    summary that says what is inside rather than "details". */
@@ -778,6 +848,37 @@ check((gameBare.match(/bankGoesTo\(si\)/g) || []).length >= 3,
      without it an untouched night reports an encore budget of 2h35m. */
   check(/if \(closed && !closed\[i\]\) break;/.test(fn),
     'an open set stops the chain rather than being skipped over');
+}
+
+/* AND THE COPY DOES NOT SELL IT AS A PRIZE.
+ *
+ * The close button read "Banks 12:34 for Set II" and the rules read "you decide
+ * when a set ends". Measured over 400 identical show sequences played greedily,
+ * closing a set early cost points at every threshold tried and cost more the
+ * earlier it happened: Set I -8 at four minutes out to -19 at twenty-five, Set
+ * II -5 out to -29. 100% of sets ended on the clock, none on the eight song
+ * cap. The cascade is not broken; there is simply nothing banking buys, since
+ * the time score pays on budget used and the carried minutes inflate the next
+ * set's budget as well.
+ *
+ * So no player-facing string may present unspent time as a gain on its own.
+ * "carries" is a fact about where it goes; "banks" is a promise about what it
+ * is worth, and the game cannot keep it. */
+{
+  const say = gameBare.replace(/\s+/g, ' ');
+  check(!/\bBanks? \$\{fmtClock/.test(say) && !/\bBank \$\{fmtClock/.test(say),
+    'no button offers to bank the clock');
+  check(!/you decide when (a|the) set ends/i.test(say),
+    'and the rules do not promise a decision the scoring punishes');
+  /* The cost has to be said where the choice is made, or leaving it out is the
+     same omission in the other direction. */
+  check(/a short set scores less/.test(say),
+    'the close button states what a short set costs');
+  check(/the crowd notices a short set/.test(say),
+    'and so does the hint beside it');
+  /* WHERE it goes is still true and still said: the cascade is real. */
+  check(/carries to \$\{esc\(bankGoesTo\(si\)\)\}/.test(gameBare),
+    'while still saying where the time actually goes');
 }
 
 /* THE SHARE IS THE SETLIST. Under it sat three more lines: a stat line, the
