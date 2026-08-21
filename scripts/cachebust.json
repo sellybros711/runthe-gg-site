@@ -105,6 +105,16 @@
       "sha": "3d4ad645c837cb0f"
     }
   },
+  "setlist/index.html": {
+    "scoring.js": {
+      "v": "40",
+      "sha": "0c273e46cd6b4a32"
+    },
+    "dataLoader.js": {
+      "v": "40",
+      "sha": "30180c7247719f6c"
+    }
+  },
   "touchdown/index.html": {
     "drive_generator.js": {
       "v": "20260723m",

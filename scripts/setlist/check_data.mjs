@@ -609,6 +609,41 @@ check(/class="segout"/.test(game) && /class="segmark"/.test(game),
   check(/class="ga-fine"/.test(ga) && /no longer than the one you took/.test(ga),
     'and saying the clock was never what stopped you');
 }
+/* THE TWO MODULES CARRY A CACHE VERSION, and it has to be covered.
+ *
+ * index.html revalidates on every visit; scoring.js and dataLoader.js do not, so
+ * the page reaches them as `./scoring.js?v=N` after a cached index.html met a
+ * fresh scoring.js and served a blank page (#157).
+ *
+ * check-cachebust.mjs is what holds the version to the file, and until now it
+ * only matched `<script src>` tags, so these two imports were invisible to it:
+ * it reported "26 versioned scripts ok" while both files changed three times
+ * under a frozen v=39. This asserts the import form the checker looks for is
+ * the form the page actually uses, because a passing checker that reads
+ * nothing is worse than no checker.
+ */
+console.log('the module cache version');
+{
+  const cb = read('scripts/check-cachebust.mjs');
+  check(/const MOD = /.test(cb), 'the checker looks at module imports as well as script tags');
+  check(/for \(const re of \[TAG, MOD\]\)/.test(cb), 'and runs both over every page');
+  const mods = [...gameBare.matchAll(/from '\.\/([A-Za-z0-9_.-]+\.js)\?v=(\d+)'/g)];
+  check(mods.length >= 2, `the page versions ${mods.length} sibling modules`);
+  /* The checker's own regex, run against the page, has to find what the page
+     has. Reading MOD out of the checker rather than restating it: a guard that
+     writes its own copy of the pattern proves only that the copy works. */
+  const src = (cb.match(/const MOD = \/(.*)\/gm;/) || [])[1];
+  check(!!src, 'the module pattern is readable');
+  const seen = src ? [...read('setlist/index.html').matchAll(new RegExp(src, 'gm'))] : [];
+  check(seen.length === mods.length,
+    `and the checker's own pattern finds all ${mods.length} of them`,
+    `found ${seen.length}`);
+  const man = JSON.parse(read('scripts/cachebust.json'));
+  const page = man['setlist/index.html'] || {};
+  for (const [, name] of mods)
+    check(!!page[name], `  ${name} is recorded in the manifest`);
+}
+
 /* THE SWAP IS BUILT FROM THE PICKS, not from everything ever shown. Passing the
    flat seen list still runs and still returns a song, so this is asserted at the
    call site rather than left to the shape of the data. */
