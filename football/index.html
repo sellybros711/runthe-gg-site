@@ -1068,25 +1068,71 @@ window.GA_ID='G-L29P5MRWKE';
     color:var(--dim-2);cursor:pointer}
   .wnchk input{width:15px;height:15px;accent-color:#F4B413;flex:0 0 auto}
   /* ---------- THE CREST CONTROLS ---------- */
-  .crestrung{margin:5px 0 0;font-size:11.5px;color:var(--dim);line-height:1.45}
-  .crestrung b{color:var(--ink)}
-  .markgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;
-    margin-top:8px}
-  .markpick{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 5px 8px;
+  /* THE THREE STEPS PER CLUB. This replaced a line that said "rung 2 of 3", which told
+     nobody which two, what they were for, or what the third one costs. */
+  .steps{list-style:none;margin:7px 0 0;padding:0;display:grid;gap:5px}
+  .steps li{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:10px;
+    background:var(--panel);border:1px solid var(--line)}
+  .steps li.got{border-color:rgba(74,222,128,.34)}
+  .steps .sic{flex:0 0 auto;width:17px;height:17px}
+  .steps .sic svg{width:17px;height:17px;display:block;fill:none;stroke:var(--dim-2);
+    stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .steps li.got .sic svg{stroke:#4ade80}
+  .steps .sl{min-width:0}
+  .steps .sl b{display:block;font-family:var(--fn);font-size:12px;font-weight:600;
+    color:var(--dim)}
+  .steps li.got .sl b{color:var(--ink)}
+  .steps .sl span{display:block;font-size:10.5px;color:var(--dim-2);margin-top:1px}
+  .stepnote{margin:11px 0 0;font-family:var(--fn);font-size:12px;font-weight:600;
+    color:var(--dim)}
+  .stepnote b{color:var(--ink)}
+  /* A PADLOCK ON A CLUB YOU HAVE NOT DRAFTED WITH, over its own colours rather than instead
+     of them: the point is that those colours exist and are gettable. */
+  .swatch.locked i{position:relative}
+  .swatch.locked i:after{content:'';position:absolute;inset:0;border-radius:50%;
+    background:rgba(6,10,20,.62)}
+  .swatch.locked i svg{position:absolute;left:50%;top:50%;width:13px;height:13px;
+    margin:-6.5px 0 0 -6.5px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;
+    stroke-linejoin:round;opacity:.9;z-index:1}
+  .swatch.locked span{color:var(--dim-2)}
+  /* Two columns rather than three. A badge description is a full sentence and it is the
+     whole point of a locked tile, so the tile has to be wide enough to hold one. */
+  .markgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;
+    margin-top:4px}
+  .markpick{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px 9px;
     background:var(--panel);border:1px solid var(--line);border-radius:12px;cursor:pointer;
-    color:inherit;font:inherit;text-align:center;min-width:0}
+    color:inherit;font:inherit;text-align:center;min-width:0;position:relative}
   .markpick svg{display:block}
-  .markpick .mn{font-family:var(--fn);font-size:11px;font-weight:600;color:var(--ink);
-    line-height:1.2}
-  /* The unlock line wraps to two and stops. A badge description is a full sentence and the
-     tile is 96px wide, so without the clamp one long one sets the height of the whole row. */
-  .markpick .mu{font-size:10px;color:var(--dim);line-height:1.3;display:-webkit-box;
-    -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .markpick .mi{position:relative;display:block;line-height:0}
+  .markpick .mn{font-family:var(--fn);font-size:11.5px;font-weight:600;color:var(--ink);
+    line-height:1.2;margin-top:2px}
+  .markpick .mu{font-size:10px;color:var(--dim);line-height:1.3}
+  /* What it takes, unclipped. Truncating this is worse than not printing it: the number is
+     the requirement, and "Build a team rated 1..." leaves somebody with no idea what it wants. */
+  .markpick .mh{font-size:10px;color:var(--dim-2);line-height:1.35;margin-top:1px}
+  .markpick .worn{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:#F4B413;margin-top:2px}
   .markpick.on{border-color:#F4B413;box-shadow:0 0 0 1px #F4B413 inset}
   /* LOCKED IS DIMMED, NOT REDRAWN. The crest under it is the real one in the player's own
-     colours, so what they are being shown is the thing they would get. */
-  .markpick.locked svg{opacity:.28;filter:saturate(.35)}
+     colours, so what they are being shown is the thing they would get, with a padlock over
+     it saying they cannot have it yet. */
+  .markpick.locked .mi svg{opacity:.24;filter:saturate(.3)}
+  .markpick.locked .lk{position:absolute;left:50%;top:50%;width:19px;height:19px;
+    margin:-9.5px 0 0 -9.5px;line-height:0}
+  /* The padlock sits ON the crest rather than instead of it, so it needs to hold against
+     whatever is under it: a monogram, a bright club primary, a pattern. White with a shadow
+     does that on all three; the dim slate it started as vanished into the lighter ones. */
+  .markpick.locked .lk svg{width:19px;height:19px;opacity:1;fill:none;stroke:#eef2f9;
+    stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+    filter:drop-shadow(0 1px 2.5px rgba(0,0,0,.95))}
   .markpick.locked .mn{color:var(--dim)}
+  /* The rings are a status board, not a picker, so they are not buttons and do not lift. */
+  .markgrid.rings .markpick{cursor:default}
+  /* A LOCKED RING IS DIMMED LESS THAN A LOCKED MARK, and it has to be. What separates these
+     four tiles is a rim two units wide; at the mark's dimming that rim disappears entirely
+     and the row becomes four padlocks, which is the one thing this section exists not to be.
+     You should be able to see the ring you have not got. */
+  .markgrid.rings .markpick.locked .mi svg{opacity:.52;filter:saturate(.62)}
   .pfpteam{margin:9px 0 0;font-family:var(--fn);font-size:12px;font-weight:600;
     color:var(--dim)}
   .pfpteam b{color:var(--ink)}
@@ -5322,7 +5368,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
-<script src="crest.js?v=1"></script>
+<script src="crest.js?v=2"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=1"></script>
@@ -13024,20 +13070,85 @@ function crestPreview(a,size){
   return svg?'<span class="pfp huge crested" aria-hidden="true">'+svg+'</span>':null;
 }
 
-/* WHERE YOU ARE ON THIS CLUB'S LADDER, in one sentence, and it has to be the sentence for
-   the club under the cursor rather than the one saved: somebody comparing two clubs is
-   asking exactly this question about both of them. */
-const RUNG_LINE=[
-  'Play one draft with them and the crest takes their colors.',
-  'Their colors are yours. Reach the playoffs with them for the ring.',
-  'Colors and ring. Win it all with them and their own pattern unlocks.',
-  'Colors, ring and their own pattern. There is nothing left to earn here.'
+/* WHAT THIS CLUB HAS GIVEN YOU AND WHAT IS LEFT, as three lines you can tick off.
+
+   This replaced "rung 2 of 3", which was my own word for the ladder leaking onto the screen.
+   Nobody outside this file knows what a rung is, and even after you are told, "2 of 3" does
+   not say which two, what they were for, or what the third one costs. Three lines with a
+   tick or a padlock on each answer all of that without a word of jargon, and they answer it
+   for the club being tried on rather than the club saved, because somebody comparing two
+   clubs is asking exactly this about both. */
+const CLUB_STEPS=[
+  { need:'Play a draft with them', gets:'their colors' },
+  { need:'Reach the playoffs with them', gets:'their second color, as the ring' },
+  { need:'Win the Super Bowl with them', gets:'their own pattern' }
 ];
-function paintRungLine(a){
-  const el=$('crest-rung'); if(!el) return;
-  if(!a.chosen){ el.innerHTML='Pick a club and the ladder starts.'; return; }
-  const r=crestRungFor(a.key);
-  el.innerHTML='<b>'+esc(a.team)+'</b> &middot; rung '+r+' of 3. '+RUNG_LINE[r];
+const TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+const LOCK='<svg viewBox="0 0 24 24" aria-hidden="true">'+
+  '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/>'+
+  '<path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></svg>';
+function paintClubSteps(a){
+  const el=$('crest-steps'); if(!el) return;
+  if(!a.chosen){
+    el.innerHTML='<p class="stepnote">No club picked. Choose one above and these three '+
+      'are what it takes to wear their colors.</p>'+stepList(0);
+    return;
+  }
+  el.innerHTML='<p class="stepnote">Playing for the <b>'+esc(a.team)+'</b></p>'+
+    stepList(crestRungFor(a.key));
+}
+function stepList(done){
+  return '<ul class="steps">'+CLUB_STEPS.map(function(s,i){
+    const got=i<done;
+    return '<li class="'+(got?'got':'')+'"><span class="sic">'+(got?TICK:LOCK)+'</span>'+
+      '<span class="sl"><b>'+esc(s.need)+'</b><span>'+esc(s.gets)+'</span></span></li>';
+  }).join('')+'</ul>';
+}
+
+/* THE RING IS NOT A CHOICE, so this is a status board rather than a picker, and it has to
+   say so or it reads as four buttons that do not work. Everything you have is lit; the best
+   one you have is the one worn. */
+function paintRingRow(){
+  const host=$('crest-rings'); if(!host||!myCrest||!window.PS_CREST) return;
+  const C=window.PS_CREST;
+  const a=avatarOf(authState.name,pfpPend.color,pfpPend.initials);
+  const club=a.chosen?a.key:null;
+  const rung=crestRungFor(club);
+  host.innerHTML=C.RINGS.map(function(r){
+    const got=r.id==='club'||ringEarned(r.id);
+    const worn=r.id===myCrest.ring;
+    let svg='';
+    /* Drawn with the monogram and no seal, so the ring is the only thing that changes down
+       the row. Same argument as the mark grid: a picker whose tiles differ in three ways at
+       once is not showing you the one way you are being asked about.
+       Bigger than the mark tiles, at 60, and that is not decoration. The difference between
+       these four IS the rim: a second ring outside the club one, and whether the light on it
+       moves. At 44 the doubled ring is two hairlines a pixel apart and all four tiles look
+       like the same crest four times. */
+    try{ svg=C.crest({ club:club, rung:rung, mark:'init', ring:r.id, tier:null,
+      size:60, text:a.text }); }catch(_){ svg=''; }
+    return '<div class="markpick'+(got?'':' locked')+(worn?' on':'')+'">'+
+      '<span class="mi">'+svg+(got?'':'<span class="lk">'+LOCK+'</span>')+'</span>'+
+      '<span class="mn">'+esc(r.t||r.name)+'</span>'+
+      '<span class="'+(got?'mu':'mh')+'">'+esc(ringNeed(r.id))+'</span>'+
+      (worn?'<span class="worn">Worn now</span>':'')+'</div>';
+  }).join('');
+}
+/* Both of these ask the cabinet rather than answering for themselves, exactly as the marks
+   do, so there is no second copy of what a ring costs. */
+function ringEarned(id){
+  if(!myCrest||!window.PS_CREST) return false;
+  const map=window.PS_CREST.RING_BADGE_BY_ID;
+  const b=map&&map[id];
+  return b?myCrest.earned.indexOf(b)>=0:false;
+}
+function ringNeed(id){
+  if(id==='club') return 'Every crest starts here.';
+  const C=window.PS_CREST;
+  const b=C&&C.RING_BADGE_BY_ID&&C.RING_BADGE_BY_ID[id];
+  const cat=C&&window.PS_ACH&&window.PS_ACH.CATALOG;
+  const ach=cat?cat.filter(function(x){ return x.id===b; })[0]:null;
+  return ach?ach.desc:'';
 }
 
 /* The marks, unlocked ones first and in the order they are defined, because that order is
@@ -13070,12 +13181,18 @@ function paintMarkGrid(){
        what is offered is the real thing and not an approximation of it. */
     try{ svg=C.crest({ club:club, rung:rung, mark:k, ring:'club', tier:null,
       size:44, text:a.text }); }catch(_){ svg=''; }
+    /* A LOCKED TILE SAYS WHAT TO GO AND DO, IN FULL. Truncating that line to "Build a team
+       rated 1..." is worse than not printing it: the number IS the requirement, and cutting
+       it off leaves somebody with a mark they cannot get and no idea what it wants. So the
+       badge name is one line, its description sits under it unclipped, and the padlock is
+       what carries "locked" rather than the text having to. */
     return '<button type="button" class="markpick'+(got?'':' locked')+
       (k===worn?' on':'')+'" data-m="'+k+'"'+(got?'':' aria-disabled="true"')+
-      ' title="'+esc(m.name||k)+'">'+svg+
+      ' title="'+esc(m.name||k)+'"><span class="mi">'+svg+
+      (got?'':'<span class="lk">'+LOCK+'</span>')+'</span>'+
       '<span class="mn">'+esc(m.name||k)+'</span>'+
-      '<span class="mu">'+esc(got?(u.name||'Yours from the start')
-        :(u.name?u.name+': '+u.desc:'Locked'))+'</span></button>';
+      '<span class="mu">'+esc(u.name||'Yours from the start')+'</span>'+
+      (got?'':'<span class="mh">'+esc(u.desc||'')+'</span>')+'</button>';
   }).join('');
   host.onclick=(e)=>{
     const b=e.target.closest('.markpick'); if(!b) return;
@@ -13133,19 +13250,33 @@ function paintPfpEdit(nm){
         ? 'Playing for the <b>'+esc(a.team)+'</b>'
         : 'No team picked, so you are showing <b>'+esc(a.team)+'</b> colors for now';
     }
-    paintRungLine(a);
+    paintClubSteps(a);
     paintMarkGrid();
+    paintRingRow();
   };
+  /* A PADLOCK ON THE CLUBS YOU HAVE NOT DRAFTED WITH. Without it the grid offers thirty two
+     clubs and silently gives you a grey crest for thirty of them, which reads as a bug in
+     the picker rather than as a thing to go and earn. Only when the crest is on: for
+     everybody else this grid is still just a colour choice and nothing here is locked. */
+  const gate=canUseCrest()&&!!myCrest;
   swatches.innerHTML=AVATAR_TEAMS.map(k=>{
     const c=E.teamColors(k);
-    return '<button type="button" class="swatch" data-c="'+k+'" '+
-      'aria-label="'+esc(E.nickname(k))+'" title="'+esc(E.nickname(k))+'" '+
-      'style="--ring:'+c.secondary+'">'+
-      '<i style="background:'+c.primary+';box-shadow:inset 0 0 0 2px '+c.secondary+'"></i>'+
+    const locked=gate&&crestRungFor(k)===0;
+    return '<button type="button" class="swatch'+(locked?' locked':'')+'" data-c="'+k+'" '+
+      'aria-label="'+esc(E.nickname(k))+(locked?', locked':'')+'" '+
+      'title="'+esc(E.nickname(k))+'" style="--ring:'+c.secondary+'">'+
+      '<i style="background:'+c.primary+';box-shadow:inset 0 0 0 2px '+c.secondary+'">'+
+      (locked?LOCK:'')+'</i>'+
       '<span>'+esc(k)+'</span></button>';
   }).join('');
   swatches.onclick=(e)=>{
     const b=e.target.closest('.swatch'); if(!b) return;
+    if(b.classList.contains('locked')){
+      /* Not silence, and not a selection either: picking a club whose colours you cannot
+         wear would leave you looking at a grey crest with no idea why. */
+      toast('Play a draft with the '+E.nickname(b.dataset.c)+' in One Franchise mode');
+      return;
+    }
     /* Tapping the club already chosen clears it, which is the only way back to no club once
        one has been picked. */
     pfpPend.color=(pfpPend.color===b.dataset.c)?null:b.dataset.c;
@@ -13722,19 +13853,34 @@ function pfLook(){
           'placeholder="'+esc(nm.slice(0,2).toUpperCase())+'">'+
       '</div>'+
     '</div>'+
-    '<p class="pfpteam" id="pfp-team"></p>'+
-    (canUseCrest()?'<p class="crestrung" id="crest-rung"></p>':'')+
+    /* "Playing for the Dolphins" only when the crest is off. With it on, the steps block
+       under the grid names the club and then says what it has given you, and printing the
+       name twice two hundred pixels apart reads as a page that repeats itself. */
+    (canUseCrest()?'':'<p class="pfpteam" id="pfp-team"></p>')+
+    (canUseCrest()?'<p class="shsec" style="margin-top:16px">Your club</p>'+
+      '<p class="dim" style="font-size:11.5px;margin:0 0 7px">A club\'s colors are earned, '+
+        'not picked. <b>Play one draft with a club in One Franchise mode and their colors '+
+        'are yours.</b> The locked ones below are the clubs you have not drafted with yet.</p>'
+      :'')+
     '<div class="swatches" id="a-swatches"></div>'+
-    '<p class="dim" style="font-size:11.5px;margin:9px 0 0">Pick the team whose colors you '+
-      'want beside your name, or tap it again for none. Initials are two letters or numbers, '+
+    (canUseCrest()?'<div id="crest-steps"></div>':'')+
+    '<p class="dim" style="font-size:11.5px;margin:9px 0 0">'+
+      (canUseCrest()?'Tap the club again for none. ':'Pick the team whose colors you want '+
+        'beside your name, or tap it again for none. ')+
+      'Initials are two letters or numbers, '+
       'or leave them blank for the first two of your name.</p>'+
     '<div style="margin-top:9px"><button class="btn sm" id="a-savepfp">Save my circle</button></div>'+
     (canUseCrest()
-      ?'<p class="shsec" style="margin-top:18px">Your mark</p>'+
-       '<p class="dim" style="font-size:11.5px;margin:0 0 4px">The shape inside the circle. '+
-         'Every one of them is a badge you already have, and the locked ones say what opens '+
-         'them. This one saves as you tap it.</p>'+
-       '<div class="markgrid" id="crest-marks"></div>'
+      ?'<p class="shsec" style="margin-top:20px">Your mark</p>'+
+       '<p class="dim" style="font-size:11.5px;margin:0 0 6px">The shape inside the circle. '+
+         'Each one is opened by a badge, and every locked one below says which. Tap an '+
+         'unlocked one to wear it: this saves as you tap, there is no button.</p>'+
+       '<div class="markgrid" id="crest-marks"></div>'+
+       '<p class="shsec" style="margin-top:20px">Your ring</p>'+
+       '<p class="dim" style="font-size:11.5px;margin:0 0 6px">The outer edge of the circle. '+
+         '<b>Nothing to choose here.</b> The best one you have earned is worn automatically, '+
+         'and this is the whole list so you can see what the other ones take.</p>'+
+       '<div class="markgrid rings" id="crest-rings"></div>'
       :'')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon(); paintPfpEdit(nm);

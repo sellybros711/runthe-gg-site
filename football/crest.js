@@ -435,7 +435,10 @@ function tierGlyph(t,col){
 }
 
 const RINGS=[
-  { id:'club', name:'Club Colours', got:true, t:'Club colours, on their own',
+  /* THE ONE PLACE THIS FILE SPELLS THINGS THE GAME'S WAY. Everything else here is a
+     comment and can say colour; `t` is printed on screen, and the rest of the page says
+     color. A picker that switches spelling halfway down reads as two people wrote it. */
+  { id:'club', name:'Club colors', got:true, t:'Just your club colors',
     note:'The default, and thirty two of them. This is the layer that already ships.',
     rare:'1.00', tier:null },
   { id:'gold', name:'The Ring', got:true, t:'The Ring',
@@ -858,7 +861,7 @@ function clubPatternSVG(club,base,sec,ink,u){
    to be a real design rather than a broken one. */
 const SLATE=['#2b3550','#5b6b8c','#e8eefb','No club'];
 const RUNGS=[
-  { n:0, t:'No club yet', d:'Generic slate. No club colours at all, and it should still look like it was designed.' },
+  { n:0, t:'No club yet', d:'Generic slate. No club colors at all, and it should still look like it was designed.' },
   { n:1, t:'Play a draft with it', d:'The club primary is yours. The ring stays neutral.' },
   { n:2, t:'Make the playoffs with it', d:'The club secondary unlocks and becomes the ring.' },
   { n:3, t:'Win the Super Bowl with it', d:'That club\'s own pattern unlocks.' }
@@ -1143,6 +1146,10 @@ const RING_BADGE=[
   { id:'btb',     badge:'title_streak_2' }, /* titles in two straight seasons */
   { id:'gold',    badge:'title_1' }         /* a title */
 ];
+/* The same table by id, because the picker asks "what does THIS one cost" and the loop above
+   answers "which is the best one earned". Derived rather than written twice. */
+const RING_BADGE_BY_ID={};
+RING_BADGE.forEach(function(r){ RING_BADGE_BY_ID[r.id]=r.badge; });
 
 /* THE LADDER, off the rows themselves.
 
@@ -1188,6 +1195,10 @@ function unlocks(rows,res,club){
   const t=tierFromBadges(badges);
   return {
     marks:marks, ring:ring, badges:badges, total:achTotal(),
+    /* The whole earned list, not just the counts. The ring picker has to answer "do I have
+       this one" for four rings rather than "which is my best", and recomputing that from
+       rows a second time is a second place for it to be wrong. */
+    earned:Array.from(earned),
     tier:t?t.id:null, rung:clubRung(rows,club), club:club||null
   };
 }
@@ -1214,7 +1225,7 @@ if(!Object.keys(CLUBS).length) return;
 window.PS_CREST={
   crest:crest, unlocks:unlocks, markUnlock:markUnlock, clubRung:clubRung,
   MARKS:MARKS, MARK_KEYS:MARK_KEYS, MARK_BADGE:MARK_BADGE,
-  RINGS:RINGS, RUNGS:RUNGS, TIERS:TIERS,
+  RINGS:RINGS, RUNGS:RUNGS, TIERS:TIERS, RING_BADGE_BY_ID:RING_BADGE_BY_ID,
   tierFromBadges:tierFromBadges, tierAt:tierAt, nextTierAt:nextTierAt, achTotal:achTotal,
   CLUB_PATTERN:CLUB_PATTERN, CLUBS:CLUBS
 };
