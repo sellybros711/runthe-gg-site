@@ -4472,24 +4472,69 @@ function myMove(){
 }
 function noteMove(id){ MS.recent=MS.recent||[]; MS.recent.unshift(id); if(MS.recent.length>4) MS.recent.pop(); }
 // the opponent's moves carry a family too, so their animations read the same way
-const OPP_MOVES=[
-  {name:'a clothesline',cat:'runner'},   {name:'a belly-to-back suplex',cat:'suplex'},
-  {name:'a back elbow',cat:'strike'},    {name:'a running boot',cat:'runner'},
-  {name:'a snap powerslam',cat:'slam'},  {name:'a knee strike',cat:'strike'},
-  {name:'a chop block',cat:'technical'}, {name:'a spinebuster',cat:'slam'},
-  {name:'a neckbreaker',cat:'technical'},{name:'a DDT',cat:'slam'},
-  {name:'a diving elbow drop',cat:'aerial'}, {name:'an armbar',cat:'submission'},
-  {name:'a vertical suplex',cat:'suplex'},{name:'a chair shot',cat:'hardcore'},
-  {name:'a knife-edge chop',cat:'strike'},{name:'a german suplex',cat:'suplex'},
-  {name:'a Boston crab',cat:'submission'},{name:'a rear naked choke',cat:'submission'},
-  {name:'an ankle lock',cat:'submission'},{name:'a Fujiwara armbar',cat:'submission'},
-  {name:'a triangle choke',cat:'submission'},{name:'a headlock',cat:'submission'},
+/* Each opponent draws from a base kit of stock moves plus a style kit weighted
+   heavily in their favour, so a brawler swings forearms and a technician goes
+   to holds. The opponent's own finisher lands on top of this in the stretch
+   (see the isFin path in runFight). Without this, everybody wrestled the same
+   grey template match; the character sheet lied about what they did. */
+const OPP_MOVES_BASE=[
+  {name:'a back elbow',cat:'strike'},    {name:'a knife-edge chop',cat:'strike'},
+  {name:'a running boot',cat:'runner'},  {name:'a clothesline',cat:'runner'},
+  {name:'a snapmare',cat:'technical'},   {name:'a scoop slam',cat:'slam'},
 ];
+const OPP_MOVES_BY_STYLE={
+  brawler:[
+    {name:'a stiff forearm',cat:'strike'},{name:'a jab',cat:'strike'},
+    {name:'a bicycle knee',cat:'strike'},{name:'an elbow to the head',cat:'strike'},
+    {name:'a discus lariat',cat:'runner'},{name:'a running knee',cat:'runner'},
+    {name:'a chair shot',cat:'hardcore'},{name:'a rake to the eyes',cat:'strike'},
+    {name:'a headbutt',cat:'strike'},{name:'a chest kick',cat:'strike'},
+  ],
+  powerhouse:[
+    {name:'a spinebuster',cat:'slam'},{name:'a fallaway slam',cat:'slam'},
+    {name:'a delayed vertical suplex',cat:'suplex'},{name:'a belly-to-belly',cat:'suplex'},
+    {name:'a snap powerslam',cat:'slam'},{name:'a chokeslam',cat:'slam'},
+    {name:'a german suplex',cat:'suplex'},{name:'a military press slam',cat:'slam'},
+    {name:'a running powerslam',cat:'slam'},{name:'a bearhug',cat:'slam'},
+  ],
+  technician:[
+    {name:'a neckbreaker',cat:'technical'},{name:'a snap DDT',cat:'slam'},
+    {name:'an armbar',cat:'submission'},{name:'a Boston crab',cat:'submission'},
+    {name:'an ankle lock',cat:'submission'},{name:'a Fujiwara armbar',cat:'submission'},
+    {name:'a triangle choke',cat:'submission'},{name:'a wrist lock',cat:'submission'},
+    {name:'a chop block',cat:'technical'},{name:'a rear naked choke',cat:'submission'},
+    {name:'a headlock takedown',cat:'submission'},{name:'a dragon screw',cat:'technical'},
+  ],
+  highflyer:[
+    {name:'a diving elbow drop',cat:'aerial'},{name:'a springboard dropkick',cat:'aerial'},
+    {name:'a hurricanrana',cat:'aerial'},{name:'a moonsault',cat:'aerial'},
+    {name:'a suicide dive',cat:'aerial'},{name:'a corkscrew plancha',cat:'aerial'},
+    {name:'a top-rope crossbody',cat:'aerial'},{name:'a springboard elbow',cat:'aerial'},
+    {name:'a running dropkick',cat:'runner'},{name:'a leg lariat',cat:'runner'},
+  ],
+  showman:[
+    {name:'a strut and a slap',cat:'strike'},{name:'a stalling suplex',cat:'suplex'},
+    {name:'a hip toss with the pose',cat:'technical'},{name:'a jumping fist drop',cat:'aerial'},
+    {name:'a piece of business',cat:'showman'},{name:'a chinlock and a wink',cat:'submission'},
+    {name:'a rope-shake big boot',cat:'strike'},{name:'a cover and a wave',cat:'showman'},
+  ],
+};
+// legacy alias used elsewhere; the flattened union covers stipulation fallbacks
+const OPP_MOVES=[].concat(OPP_MOVES_BASE, ...Object.values(OPP_MOVES_BY_STYLE));
 function oppMove(){
   const ph=phaseNow();
-  const tierOf2=m=>({strike:1,runner:2,technical:2,submission:3,suplex:3,slam:3,aerial:4,hardcore:4})[m.cat]||2;
-  let band=OPP_MOVES.filter(m=>tierOf2(m)<=ph.tier[1]);
-  if(!band.length) band=OPP_MOVES;
+  const tierOf2=m=>({strike:1,runner:2,technical:2,submission:2,suplex:3,slam:3,aerial:3,hardcore:3,showman:2})[m.cat]||2;
+  // Every opponent draws from their style kit first, base kit as fallback.
+  // That is why a Foul-Mouthed Scrapper throws forearms and chair shots and
+  // a Submission Specialist works the arm all night.
+  const oppChar = charById(MS.o.oppId);
+  const style = (oppChar && oppChar.style) || 'brawler';
+  const styleKit = OPP_MOVES_BY_STYLE[style] || OPP_MOVES_BY_STYLE.brawler;
+  // 3:1 style-to-base in general; 4:1 in the stretch, so signatures show
+  const stretchy = ph.id==='stretch' || ph.id==='heat';
+  const pool = rnd() < (stretchy?0.82:0.72) ? styleKit : OPP_MOVES_BASE;
+  let band = pool.filter(m=>tierOf2(m)<=ph.tier[1]);
+  if(!band.length) band = pool;
   // Sub match: the opponent works holds too, so the finish reads honest.
   const rules=stipRules(MS.o);
   if(rules.ends.length===1 && rules.ends[0]==='sub'){
