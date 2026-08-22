@@ -6104,7 +6104,12 @@ const CHIP_BANK=[
       : `I have held this company's top belt ${c.me.reigns} times. I know exactly what it costs.`},
   {id:'boast_tier',      tag:'boast', phase:['thesis','meat'],
     when:c=>c.me.tier,
-    fn:c=>`I am ${c.me.tier} in this business. I did not get here by accident.`},
+    fn:c=>({
+      'Indie Circuit':`I ran the indies for a reason. Every date I worked, I earned.`,
+      'Regional Scene':`I climbed to the regional scene the hard way. Ask anyone who saw me on the indies.`,
+      'National TV':`I made it to national television. Nobody in this locker room got here by accident.`,
+      'Global Main Event':`This is the main event of the business, and I main-event it.`,
+    }[c.me.tier] || `I did not come this far to make friends.`)},
 
   // ----- QUESTIONS: rhetorical, do not let them off -----
   {id:'q_earned',        tag:'question', phase:['meat','personal'],
@@ -6158,12 +6163,18 @@ function chipsFor(phase){
   const ctx=PMCTX;
   const used=PM.usedChips||{};
   const pool=CHIP_BANK.filter(ch=>ch.phase.includes(phase) && ch.when(ctx) && !used[ch.id]);
-  // shuffle and take up to 6, keeping at least one reference if there is any
+  // shuffle and take up to 6, keeping at least one reference if there is any.
+  // Cap each tag at 2 in a single draw so the reader never sees two BOASTs
+  // starting with "I am" back to back.
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
   const refs=pool.filter(c=>c.tag==='ref');
-  const picked=[];
-  if(refs.length && phase!=='close') picked.push(refs[0]);
-  for(const c of pool){ if(picked.length>=6) break; if(!picked.includes(c)) picked.push(c); }
+  const picked=[], tagCount={};
+  const push=c=>{ if(picked.includes(c)) return false; if((tagCount[c.tag]||0)>=2) return false;
+    picked.push(c); tagCount[c.tag]=(tagCount[c.tag]||0)+1; return true; };
+  if(refs.length && phase!=='close') push(refs[0]);
+  for(const c of pool){ if(picked.length>=6) break; push(c); }
+  // second sweep in case the cap kept the pool short (e.g. only Boasts left)
+  if(picked.length<4) for(const c of pool){ if(picked.length>=6) break; if(!picked.includes(c)) picked.push(c); }
   return picked;
 }
 function chipLabel(tag){
@@ -6548,6 +6559,16 @@ async function pmSay(payload){
   const extra=[read.specific?'you made it personal':'',read.crowd?'you spoke to the room':'']
     .concat(sh.notes||[]).filter(Boolean);
   const tail=extra.length?` · ${extra.join(' · ')}`:'';
+  // The default hit rotates so identical wording does not stack over five
+  // beats. The special modes above are rare enough to keep their own copy.
+  const DEFAULT_HITS=[
+    `They bite. Reaction +${sh.gain}${tail}.`,
+    `That one lands. Reaction +${sh.gain}${tail}.`,
+    `The room stays with it. Reaction +${sh.gain}${tail}.`,
+    `You have their attention. Reaction +${sh.gain}${tail}.`,
+    `Held them there. Reaction +${sh.gain}${tail}.`,
+    `You get a rumble for that one. Reaction +${sh.gain}${tail}.`,
+  ];
   pmLog(
     sh.mode==='swerve'   ? `<span class="hi">Nobody saw that coming. The building is stunned. Reaction +${sh.gain}${tail}. Keep going and this becomes a turn.</span>`
   : sh.mode==='tease'    ? `<span class="hi">You dangled it in front of them and pulled it away. Reaction +${sh.gain}${tail}. They will remember that if you ever mean it.</span>`
@@ -6556,7 +6577,7 @@ async function pmSay(payload){
   : sh.mode==='pander'   ? `<span class="hint">They pop for it because they always do. Reaction +${sh.gain}${tail}.</span>`
   : sh.mode==='flipflop' ? `<span class="bad">You have said three different things in three weeks. They have stopped taking you seriously. Reaction +${sh.gain}.</span>`
   : sh.mode==='wobble'   ? `<span class="bad">Half-hearted, and off from what you have been doing. It landed on nobody.</span>`
-  :                        `<span class="hint">They bite. Reaction +${sh.gain}${tail}.</span>`);
+  :                        `<span class="hint">${DEFAULT_HITS[PM.beat % DEFAULT_HITS.length]}</span>`);
   // a turn completes when you have stayed with it
   const turned=maybeTurn();
   if(turned){ await flashScreen(); await pmCall('THE TURN','#C6392C');
@@ -6587,9 +6608,10 @@ async function pmSay(payload){
     pmLog(fit<=-0.6
       ? `<span class="bad">Wrong beat for that line. The room reads you as scattered.</span>`
       : `<span class="hint">A cheap way to fill that beat, and the office notices.</span>`);
-  } else {
-    pmLog(`<span class="hint">The right kind of line for this beat. Landed.</span>`);
   }
+  // Chips are always on-phase by construction; the "it fit" affirmation was
+  // firing every single beat and reading as noise. If a line hits, the
+  // crowd feedback above already says so.
   // and how well it honored the office's ask
   const cmp=complianceOf(read,PM.directive);
   PM.complySum+=cmp; PM.complyN++;
