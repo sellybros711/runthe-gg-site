@@ -1034,13 +1034,43 @@ function nationalRank(resume, prepared) {
    longer describes a line. Check it against `probe_economy.mjs record`: 12-0
    should rank about 1st, 11-1 about 4th, 10-2 about 10th, 9-3 outside the field.
    Re-check after any move to SCALE, the cap, DEFENSE_WEIGHT or the consistency
-   pair, because all of them change what a margin looks like. */
-const MARGIN_GAIN = 1.30;
+   pair, because all of them change what a margin looks like.
+
+   TWO CONSTANTS NOW, AND THE SECOND IS WHY. A player wrote in: "I never get the middle
+   seeds in the playoffs. I'm always top 4 or bottom 3." They were right, and the ladder
+   above is the reason. A seed IS a national rank; a rank comes off the resume; and one
+   win is worth WIN + LOSS = 7.5 of resume while ranks 5 to 10 are 5.2 of resume wide,
+   because that part of the real country is densely packed. So one win LEAPS the middle
+   of the field, and the only way to land in it is to be an unusual example of your
+   record.
+
+   A REAL TEAM IS UNUSUAL OFTEN AND A PLAYER WAS NOT. Season to season inside one record,
+   a real team's z has an sd around 0.47; at gain 1.30 a player's had an sd of 0.19. Less
+   than half, so a player's resume moved in near-lockstep with their record: every 11-1
+   landed within a rank or two of every other 11-1, and there was nothing left over to
+   carry anybody into the gap. Measured over 3,600 seasons, seeds 6 and 7 never came up
+   at all and the eleven seed took 49% of the whole field.
+
+   So the gain is raised to where the spread MATCHES the country's, and MARGIN_SHIFT holds
+   the ladder where it was while that happens: raising the gain alone lifts every mean as
+   well as widening it, which would have made the playoff easier rather than fairer. The
+   pair is fitted by cfb/build/test/probe_seeds.mjs, which sweeps them against two things
+   that must not move, the playoff rate and the record ladder, and one that must: how
+   evenly the twelve seats are handed out. Reading after: every seed reachable, the eleven
+   seed down from 49% to 26%, playoff 14.78% against 14.83%, and 12-0, 11-1, 10-2 and 9-3
+   still ranking 1st, 4th, 10th and 20th.
+
+   The cost is real and it is the point. A 10-2 that wins ugly can now miss the field
+   (97% in, against 100%), and a 9-3 that wins big can now make it (3%, against 0%).
+   Margin was worth almost nothing next to a record and is now worth about a third of a
+   win at one standard deviation. */
+const MARGIN_GAIN = 3.90;
+const MARGIN_SHIFT = -0.25;
 
 function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
   const mu = prepared && prepared.pointDiffMean != null ? prepared.pointDiffMean : 0;
   const sd = prepared && prepared.pointDiffSd ? prepared.pointDiffSd : 1;
-  const z = (marginPerGame - mu) / sd * MARGIN_GAIN;
+  const z = (marginPerGame - mu) / sd * MARGIN_GAIN + MARGIN_SHIFT;
   const sos = scheduleStrength(oppZs, prepared);
   const resume = resumeScore(wins, losses, z, sos);
   return { z, sos, resume, rank: nationalRank(resume, prepared) };
@@ -2837,7 +2867,7 @@ const publicAPI = {
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
   rosterStructure, STRUCTURE, coachReport, structureCosts, reportBand, REPORT_BANDS,
-  selectBowl, BOWLS, bowlKey, bowlName, MARGIN_GAIN,
+  selectBowl, BOWLS, bowlKey, bowlName, MARGIN_GAIN, MARGIN_SHIFT,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
   SCHEME_TAGLINES: Object.fromEntries(SCHEMES.map(s => {
     const cut = s.strength.indexOf('. ');

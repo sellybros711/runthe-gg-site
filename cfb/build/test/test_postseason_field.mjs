@@ -161,5 +161,66 @@ console.log('\n=== who you played counts, at the same record ===');
     'deals ' + dealt.toFixed(2) + ', par ' + P.meanScheduleLosses.toFixed(2));
 }
 
+/* ── EVERY SEAT IN THE FIELD IS ONE SOMEBODY CAN GET ──────────────────────────
+ * A player wrote in: "I never get the middle seeds in the playoffs. I'm always top 4 or
+ * bottom 3." They were right. A seed IS a national rank, one win is worth 7.5 of resume,
+ * and ranks 5 to 10 are 5.2 of resume wide, so one win leapt the middle of the field. The
+ * only thing that could have carried anybody into the gap was an unusual margin, and a
+ * player's margin was half as varied as a real team's: seeds 6 and 7 never came up at all
+ * and the eleven seed took 49% of the field.
+ *
+ * MARGIN_GAIN and MARGIN_SHIFT are what fixed it, fitted by probe_seeds.mjs. This is the
+ * outcome pinned, because the two constants are one edit away from undoing it and nothing
+ * else in the suite would notice: every seed still plays, every bracket still resolves,
+ * and the game would simply stop dealing half of its own field again. */
+console.log('\n=== every seed is one somebody can get ===');
+{
+  const rd2 = (f) => JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_' + f, 'utf8'));
+  const LEAGUE = rd2('league_context.json').league_avg_pts_allowed_by_season;
+  const CAL = rd2('display_calibration.json');
+  const CTX = { battery: rd2('battery.json'), coaches: rd2('coaches.json'), curated: rd2('curated.json') };
+  const seeds = new Array(13).fill(0);
+  let played = 0, made = 0;
+  for (let i = 0; played < 900 && i < 2400; i++) {
+    const run = R.createRun({ seed: E.hashSeed('seedspread|' + i) });
+    let okr = true;
+    for (let j = 0; j < 14 && run.roster.length < E.SLOTS.length; j++) {
+      let draw;
+      try { draw = R.spin(run, data); } catch (e) { okr = false; break; }
+      const list = data.playersByTeamSeason[draw.team_season_id] || [];
+      const opts = draw.options
+        .map((k) => { const [id, s] = k.split('|');
+          return list.find((p) => String(p.player_id) === id && String(p.season) === s); })
+        .filter(Boolean).filter((p) => R.slotForPlayer(run, p) !== null);
+      if (!opts.length) { okr = false; break; }
+      R.sign(run, opts.reduce((b, p) => (p.ppr_ppg_mean > b.ppr_ppg_mean ? p : b)));
+    }
+    if (!okr || run.roster.length !== E.SLOTS.length) continue;
+    R.startSeason(run, data, CTX);
+    while (run.phase === R.PHASES.SEASON) R.advanceWeek(run, data, LEAGUE, CAL);
+    played++;
+    if (run.playoffSeed.made) { made++; seeds[run.playoffSeed.seed]++; }
+  }
+  const share = (s) => seeds[s] * 100 / Math.max(1, made);
+  const empty = [];
+  for (let s = 1; s <= 12; s++) if (!seeds[s]) empty.push(s);
+  const bars = Array.from({ length: 12 }, (_, i) => (i + 1) + ':' + share(i + 1).toFixed(0)).join(' ');
+  /* Ten of twelve rather than all twelve: the one and two seeds want a 12-0 season and
+     nine hundred seasons deal about twenty of those, so a run of this size can miss one of
+     them honestly. Six and seven are the seats that were structurally unreachable, and
+     those are named. */
+  ok('at least ten of the twelve seeds come up', 12 - empty.length >= 10,
+    empty.length ? 'never dealt: ' + empty.join(',') : 'all twelve');
+  ok('  including the middle of the field, which used to be unreachable',
+    !!(seeds[6] && seeds[7]), '6:' + seeds[6] + ' 7:' + seeds[7]);
+  /* The eleven seed took 49% before. A third is the bar: the field is not meant to be flat,
+     because a player's record is not, but no single seat should be half of it. */
+  let worst = 1;
+  for (let s = 2; s <= 12; s++) if (seeds[s] > seeds[worst]) worst = s;
+  ok('  and no one seat is more than a third of the field', share(worst) <= 33,
+    'the ' + worst + ' seed takes ' + share(worst).toFixed(0) + '%');
+  console.log('        ' + bars + '   (' + made + ' of ' + played + ' seasons made it)');
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);
