@@ -4436,6 +4436,8 @@ async function startFight(o){
   $('fStip').textContent=(o.stakes==='title'?'🏆 TITLE MATCH · ':o.stakes==='defense'?'🏆 TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
+  const startGen=MS.gen;
+  const stale=()=>!MS||MS.gen!==startGen;
   go('fight');
   stageInit(); dressArena($('arena'),myPromoId());
   figLook('me',G.w.look);
@@ -4446,7 +4448,9 @@ async function startFight(o){
   fmv('me',{pose:'run',fwd:-ST.W*0.62},0); fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
   await sleep(40);
   fmv('me',{pose:'run',fwd:0},640); fmv('opp',{pose:'run',fwd:0},640); await sleep(660);
+  if(stale()) return;
   fmv('me',{pose:'taunt'},220); fmv('opp',{pose:'taunt'},220); await sleep(420);
+  if(stale()) return;
   fmv('me',{pose:'ready'},220); fmv('opp',{pose:'ready'},220);
   refTo(Math.round(ST.W*0.30),'refIdle',420,0.86);
   busy(false);
@@ -4464,7 +4468,9 @@ async function startFight(o){
   busy(true);
   fmv('me',{pose:'lockup',fwd:ST.close*0.9},320); fmv('opp',{pose:'lockup',fwd:ST.close*0.9},320);
   await callout('FIGHT!');
+  if(stale()) return;
   await settle(260);
+  if(stale()) return;
   fLog(`The bell rings. <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
   if(MS.studied) fLog(`<span class="hi">You studied the tape all week. You know what is coming.</span>`);
   runFight();
@@ -4755,12 +4761,15 @@ async function refSlap(){                     // the hand comes up, then flat on
   shake();
 }
 async function pinSequence(iAmPinning, three, power, mvName, isFin){
+  const gen=MS&&MS.gen;
+  const stale=()=>!MS||MS.gen!==gen;
   const A=iAmPinning?'me':'opp', D=iAmPinning?'opp':'me';
   busy(true);
   const arena=$('arena');
   // ---- the cover, staged toward the middle of the ring so it reads ----
   const px=Math.round(atX(D)*0.30);
   fmv(D,{pose:'prone',x:px,up:0,rot:0,sc:1},280); await sleep(260);
+  if(stale()) return false;
   dustAt(D);
   FIG[A].el.classList.add('up');
   fmv(A,{pose:'pin',x:px-FIG[A].dir*22,up:0,rot:0,sc:1},280);
@@ -4771,6 +4780,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   FIG.ref.el.classList.add('up');
   refTo(px + side*Math.round(ST.W*0.14),'refUp',440,0.9);
   await sleep(460);
+  if(stale()) return false;
   arena.classList.add('tense');
 
   const upAt = three?3 : power>50?3 : power>26?2 : 1;
@@ -4779,11 +4789,13 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 
   for(let n=1;n<=counts;n++){
     await refSlap();
+    if(stale()) return false;
     showCount(n, n>=2);
     fmv(A,{sc:1.03},90); await sleep(120); fmv(A,{sc:1},90);
     // the gap before two is longer than the gap before one, and the gap
     // after two is the longest of all. That is the suspense
     await sleep(n===1?520:700);
+    if(stale()) return false;
   }
 
   if(nearFall){
@@ -4794,6 +4806,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
        raised hand and the length of the pause, and the 2.9 burst below is what
        names it afterwards. */
     poseSet('ref','refUp'); await sleep(430);
+    if(stale()) return false;
     fmv(D,{pose:'proneUp',rot:-10},110);
     fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},240);
     poseSet('ref','refNo');
@@ -4811,6 +4824,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 
   if(three){
     await refSlap();
+    if(stale()) return false;
     showCount(3, true);
     await flashScreen();
     MS.finish={type:'pin',by:iAmPinning,move:mvName,fin:isFin};
@@ -4838,6 +4852,8 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 
 async function endFight(iWon){
   if(MS.ended) return; MS.ended=true;
+  const gen=MS.gen;
+  const stale=()=>!MS||MS.gen!==gen;
   const W=iWon?'me':'opp', Lz=iWon?'opp':'me';
   busy(true);
   $('arena').classList.remove('tense');
@@ -4845,8 +4861,10 @@ async function endFight(iWon){
   fmv(W,{pose:'celebrate',fwd:0,up:0,rot:0,sc:1.04},300);
   FIG[W].el.classList.add('glow');
   await flashScreen();
+  if(stale()) return;
   const f=MS.finish||{type:'pin',by:iWon};
   await callout(f.type==='sub'?(iWon?'SUBMISSION!':'YOU TAPPED'):iWon?'WINNER!':'DEFEATED');
+  if(stale()) return;
   // ---- the official raises the winner's arm ----
   if(FIG.ref){
     const wx=Math.round(FIG[W].home*0.42);          // step toward the middle for the pose-down
