@@ -392,6 +392,43 @@
   .ppvchip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-faint);background:rgba(255,255,255,.05);padding:3px 9px;border-radius:8px;margin-left:8px;vertical-align:middle;}
   .ppvchip.soon{color:var(--gold);background:rgba(224,179,65,.14);}
   .ppvchip.live{color:#fff;background:linear-gradient(180deg,#c6392c,#8a1c1c);animation:ppvPulse 1.6s ease-in-out infinite;}
+  .dossier{color:var(--text);}
+  .dos-top{display:flex;gap:12px;align-items:center;padding:10px 12px;background:rgba(0,0,0,.24);border-radius:10px;}
+  .dos-fig{width:80px;height:100px;flex:none;}
+  .dos-fig svg{width:100%;height:100%;}
+  .dos-id{flex:1;min-width:0;}
+  .dos-name{font-family:var(--display);font-size:22px;color:var(--cream);line-height:1;}
+  .dos-nick{font-size:12px;color:var(--text-dim);margin-top:2px;font-style:italic;}
+  .dos-tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;}
+  .dos-tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:6px;color:var(--text-dim);display:inline-flex;align-items:center;gap:4px;}
+  .dos-tag.gold{background:rgba(224,179,65,.18);color:var(--gold);border-color:rgba(224,179,65,.5);}
+  .dos-tag.red{background:rgba(198,57,44,.18);color:var(--brandred-bright);border-color:rgba(198,57,44,.5);}
+  .dos-over{margin-top:6px;font-size:12px;color:var(--text-dim);}
+  .dos-gimmick{margin-top:10px;padding:9px 12px;background:rgba(255,255,255,.03);border-left:2px solid var(--line);font-size:13px;color:var(--text);font-style:italic;border-radius:0 6px 6px 0;line-height:1.5;}
+  .dos-h2h{margin-top:12px;}
+  .dos-h2h-k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin-bottom:6px;}
+  .dos-h2h-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;}
+  .dos-h2h-num{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:8px;padding:8px 6px;text-align:center;}
+  .dos-h2h-num b{display:block;font-family:var(--mono);font-size:22px;color:var(--cream);line-height:1;}
+  .dos-h2h-num span{font-size:9px;letter-spacing:.14em;color:var(--text-faint);text-transform:uppercase;font-weight:800;margin-top:3px;display:block;}
+  .dos-meters{margin-top:12px;display:grid;gap:8px;}
+  .dos-meter-lab{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:3px;}
+  .dos-meter-lab b{color:var(--cream);font-family:var(--mono);}
+  .dos-bar{height:8px;background:rgba(0,0,0,.5);border-radius:999px;overflow:hidden;}
+  .dos-bar i{display:block;height:100%;transition:width .4s;}
+  .dos-bar i.red{background:linear-gradient(90deg,#c6392c,#f0907f);}
+  .dos-bar i.green{background:linear-gradient(90deg,#2f7a4a,#5bb083);}
+  .dos-hist{margin-top:12px;}
+  .dos-hist-k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin-bottom:6px;}
+  .dos-hist-row{font-size:12px;color:var(--text-dim);padding:5px 0;border-top:1px dashed rgba(255,255,255,.06);display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;}
+  .dos-hist-row:first-of-type{border-top:none;}
+  .dos-hist-yw{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);}
+  .dos-hist-res{font-weight:800;font-family:var(--mono);}
+  .dos-hist-res.w{color:var(--green);} .dos-hist-res.l{color:#f0907f;}
+  .dos-hist-q{color:var(--cream);font-family:var(--mono);}
+  .dos-hist-st{color:var(--text);}
+  .bs-vs b{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;}
+  .bs-vs b:hover{color:var(--gold);}
   @keyframes ppvPulse{0%,100%{box-shadow:0 0 0 rgba(198,57,44,.6);} 50%{box-shadow:0 0 20px rgba(198,57,44,.7);}}
   .bs-rules{font-size:12px;color:var(--text);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.04);border-left:2px solid rgba(224,179,65,.55);border-radius:3px;}
   .bs-rules b{color:var(--cream);letter-spacing:.12em;font-size:10px;text-transform:uppercase;}
@@ -3829,7 +3866,7 @@ function renderWeek(){
       ${o.ppv?`<div class="bs-ppv">${pico('starBig',14)} Tonight, at <b>${o.ppv}</b></div>`:''}
       <div class="bs-k">You are booked</div>
       <div class="bs-t">${o.stipLabel}</div>
-      <div class="bs-vs">vs <b>${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
+      <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''} <span class="hint" style="font-size:10px;">(tap for dossier)</span></div>
       <div class="bs-pos ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${o.card}${
         o.stakes==='title'?' · for the title':o.stakes==='defense'?' · title defence':
         o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':''}</div>
@@ -6138,6 +6175,71 @@ const CARD_FRAMES={ indie:{c:'#a8602c',label:'Indie Circuit'}, regional:{c:'#b6a
                     national:{c:'#6aa7c4',label:'National'}, global:{c:'#e0b341',label:'Global'} };
 let CARD_FLIPPED=false;
 function openCard(){ CARD_FLIPPED=false; drawCard(); $('cardOv').classList.add('open'); }
+
+/* Dossier for a named opponent. Everything the game already tracks about them
+   plus your shared history: the record between you, bad blood, respect, last
+   match rating, whether you are in a feud, whether they hold a belt. */
+function openDossier(id){
+  const c = charById(id); if(!c) return;
+  const R = rel(c.id);
+  const hist = (G.hist||[]).filter(h=>h.opp===c.name);
+  const best = hist.length? hist.reduce((a,b)=>b.q>a.q?b:a) : null;
+  const st = story(); const feud = st && st.charId===c.id ? st : null;
+  const ch = (typeof champOf==='function') ? champOf() : null;
+  const holdsBelt = ch && !ch.you && ch.id===c.id;
+  const promoObj = (window.RTR_PROMOS||[]).find(p=>p.id===c.promo) || {short:'',color:'#8a8177'};
+  const wins = R.wins||0, losses = R.losses||0, matches = R.matches||0;
+  const winsHere = matches? Math.round(wins/matches*100) : 0;
+  const barHeat = Math.round(R.heat||0), barRespect = Math.round(R.respect||0);
+  const alignLabel = c.align==='heel'?'Heel':c.align==='face'?'Face':'Tweener';
+  const recentLines = hist.slice(0,4).map(h=>{
+    const res = h.win===true?'W':h.win===false?'L':'D';
+    return `<div class="dos-hist-row"><span class="dos-hist-yw">Y${h.y}·W${h.w}</span> <span class="dos-hist-res ${res==='W'?'w':res==='L'?'l':''}">${res}</span> <span class="dos-hist-q">${h.q}</span> · <span class="dos-hist-st">${h.stip}</span>${h.title?' '+pico('crown',10):''}</div>`;
+  }).join('');
+  const body = `
+    <div class="dossier">
+      <div class="dos-top" style="border-left:3px solid ${promoObj.color}">
+        <div class="dos-fig">${wrestlerSVG(c.look)}</div>
+        <div class="dos-id">
+          <div class="dos-name">${c.name}</div>
+          <div class="dos-nick">${c.nick?`"${c.nick}"`:''}</div>
+          <div class="dos-tags">
+            <span class="dos-tag">${alignLabel}</span>
+            <span class="dos-tag">${cap(c.style||'brawler')}</span>
+            <span class="dos-tag">${promoObj.short||''}</span>
+            ${holdsBelt?`<span class="dos-tag gold">${pico('crown',12)} Champion</span>`:''}
+            ${feud?`<span class="dos-tag red">${pico('fire',12)} Feud · stage ${feud.stage+1}</span>`:''}
+          </div>
+          <div class="dos-over">${pico('star',14)} <b>OVR ${c.over||55}</b> · Finisher: <b>${c.finisher||'not booked yet'}</b></div>
+        </div>
+      </div>
+      <div class="dos-gimmick">${c.gimmick||''}</div>
+      <div class="dos-h2h">
+        <div class="dos-h2h-k">Head to head</div>
+        <div class="dos-h2h-row">
+          <div class="dos-h2h-num"><b>${wins}</b><span>your wins</span></div>
+          <div class="dos-h2h-num"><b>${losses}</b><span>their wins</span></div>
+          <div class="dos-h2h-num"><b>${matches}</b><span>matches</span></div>
+          ${best?`<div class="dos-h2h-num"><b>${best.q}</b><span>best match</span></div>`:''}
+        </div>
+      </div>
+      <div class="dos-meters">
+        <div class="dos-meter">
+          <div class="dos-meter-lab"><span>Bad blood</span><b>${barHeat}/100</b></div>
+          <div class="dos-bar"><i class="red" style="width:${barHeat}%"></i></div>
+        </div>
+        <div class="dos-meter">
+          <div class="dos-meter-lab"><span>Respect</span><b>${barRespect}/100</b></div>
+          <div class="dos-bar"><i class="green" style="width:${barRespect}%"></i></div>
+        </div>
+      </div>
+      ${recentLines?`<div class="dos-hist">
+        <div class="dos-hist-k">Recent between you</div>
+        ${recentLines}
+      </div>`:'<div class="hint" style="margin-top:8px;">You have not stood across from them yet.</div>'}
+    </div>`;
+  modal(`${c.name}`, body, [{label:'Close',fn:closeModal}]);
+}
 function closeCard(){ $('cardOv').classList.remove('open'); }
 function flipCard(){ CARD_FLIPPED=!CARD_FLIPPED; const el=document.querySelector('.pcard3d'); if(el) el.classList.toggle('flipped',CARD_FLIPPED); }
 function drawCard(){
