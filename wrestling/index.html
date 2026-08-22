@@ -1268,7 +1268,7 @@
       <div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">Payoff</h3><div id="mRewards" class="log"></div></div>
     </div>
   </div>
-  <div class="row" style="margin-top:18px;"><button class="big" onclick="go('career')">Continue →</button></div>
+  <div class="row" style="margin-top:18px;"><button class="big" onclick="go('career')">Continue →</button><span id="postMicSlot"></span></div>
 </div>
 
 <!-- ============ ARSENAL / MOVES ============ -->
@@ -4692,6 +4692,37 @@ function oppLook(id,name){
 }
 
 function fLog(html,cls){ const el=$('fLog'); const d=document.createElement('div'); if(cls)d.className=cls; d.innerHTML=html; el.appendChild(d); el.scrollTop=el.scrollHeight; }
+/* Commentator colour: one voice for each move category, one for phase turns.
+   Fired sparingly so the log stays readable, keyed to the moment. */
+const COLOR_LINES={
+  strike:      ['"He is walking into these hard."','"That woke the front row up."','"The chops are coming in bunches."'],
+  slam:        ['"BAH GAWD, he FOLDED him in half."','"That is a five-star spot right there."','"Nobody is kicking out of that one."'],
+  submission:  ['"He is pulling on it. He is really pulling on it."','"That hold has been tested in every basement of the country."','"The referee is checking. That is a submission attempt."'],
+  aerial:      ['"He is going upstairs."','"You do not see that at 240 pounds."','"He nailed the landing. That is impossible."'],
+  technical:   ['"That is textbook. Wrestling matters."','"He is teaching in there."','"He is picking his opponent apart. Piece. By. Piece."'],
+  hardcore:    ['"Oh, he is bleeding hard-way there."','"That was a shot heard in the back."','"Somebody is going to have to answer for that later."'],
+  brawl:       ['"They are throwing bombs."','"This has become a fight, not a match."','"Neither one of these two is backing off an inch."'],
+};
+const COLOR_PHASE={
+  shine:   ['"Beautiful chain wrestling to open."','"You can feel the energy in this building."','"He is playing to them, and they love it."'],
+  heat:    ['"Now the cutoff. Beautifully timed."','"The champ is working the leg. That is smart wrestling."','"You feel the mood shift in the room."'],
+  stretch: ['"Business is picking up."','"The finish stretch. Anything can happen."','"Both wrestlers are pulling out everything they have."'],
+  finish:  ['"He is going for it here."','"This could be it."','"He is going home."'],
+};
+function commLine(cat, phase){
+  if(!G.prefs||!G.prefs.commentary){ G.prefs=G.prefs||{}; if(G.prefs.commentary===undefined) G.prefs.commentary=true; }
+  if(G.prefs.commentary===false) return;
+  const bank = cat && COLOR_LINES[cat] ? COLOR_LINES[cat]
+             : phase && COLOR_PHASE[phase] ? COLOR_PHASE[phase] : null;
+  if(!bank) return;
+  const line = bank[Math.floor(rnd()*bank.length)];
+  const el = $('fLog'); if(!el) return;
+  const d = document.createElement('div');
+  d.style.color = '#c8b273';
+  d.style.fontStyle = 'italic';
+  d.innerHTML = line;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
 function setBar(id,pct){ const el=$(id); el.style.width=clamp(pct)+'%';
   el.classList.toggle('low',pct<=45&&pct>20); el.classList.toggle('crit',pct<=20); }
 function setMom(){ const m=MS.mom; // -100..100
@@ -5292,6 +5323,7 @@ function phaseTurn(ph){
 async function announcePhase(ph){
   $('fPhase').textContent=ph.name.toUpperCase();
   fLog(`<span class="phase">· ${ph.name} ·</span> <span class="hint">${ph.say}</span>`);
+  commLine(null, ph.id);
   if(ph.id==='heat'||ph.id==='stretch') await sleep(240);
 }
 // a wrestler picks a body part and works it. That is the whole craft.
@@ -5324,6 +5356,7 @@ async function runFight(){
       hurtLimb(MS.opp, limbFor(mv.cat, MS.me), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
       lastMove=mv.name; lastCat=mv.cat; if(isFin) MS.finisherHit++;
+      if(isFin || rnd()<0.18) commLine(mv.cat, null);
     } else {
       const mv=oppMove();
       // they have a finisher too, and they save it for the stretch
@@ -6435,11 +6468,19 @@ function renderMatch(o,res){
   });
   $('mRewards').innerHTML=rw;
   setTimeout(()=>{ const e=$('mXpFill'); if(e) e.style.width=clamp(G.w.xp,0,100)+'%'; },120);
-
+  // Post-match hot mic: a big win + a live opponent = a chance to grab the mic
+  const pmSlot=$('postMicSlot');
+  if(pmSlot){
+    const canMic = res.win && res.quality>=70 && (o.stakes==='title'||o.stakes==='defense'||o.stakes==='rivalry'||classic);
+    pmSlot.innerHTML = canMic ? `<button class="ghost" style="margin-left:8px;" onclick="postMatchMic('${o.oppId}')">${pico('microphone',14)} Grab the mic</button>` : '';
+  }
   // the room celebrates with you
   if(o.stakes==='title'&&res.win) confetti(150);
   else if(classic) confetti(100);
   setTimeout(showMoments,750);
+}
+function postMatchMic(oppId){
+  beginPromo('face', oppId);
 }
 function matchStory(o,res){
   const q=res.quality, n=o.oppName, f=res.finish||{};
@@ -6745,7 +6786,95 @@ function maybeBackstage(){
   if(st && st.stage<4 && G.car.week % 3 === 0) return backstageEvent();
   // no active feud: allies and mid-carders can still stop you in the hall
   if(!st && G.car.week % 5 === 0 && rnd()<0.55) return nonRivalBackstage();
+  // life outside the ring: interviews, endorsements, small drama, hometown
+  if(!st && G.car.week % 7 === 0 && rnd()<0.45) return lifeEvent();
   return false;
+}
+/* Off-screen life. Fires between shows on quiet weeks. Nothing about the ring,
+   just the parts of the job the tape never sees. Choices move fame and rep. */
+function lifeEvent(){
+  const c=G.car, w=G.w;
+  const P=(c.pop||30), S=(c.standing||50);
+  const EVENTS=[
+    { key:'podcast', head:`A wrestling podcast wants you on for an hour`,
+      body:`Bring some old stories and be prepared to answer for a few things. <span class="say">"Nothing off limits. Just talk."</span>`,
+      opts:[
+        {n:'Go on and be candid',d:'Fans love the truth, the boys will read it.',fx:{pop:5,respect:-2}},
+        {n:'Go on and stay in kayfabe',d:'Give them the character.',fx:{pop:3,mom:2}},
+        {n:'Turn it down',d:'Not the right week.',fx:{pop:-1,standing:1}}]},
+    { key:'sponsor', head:`An energy drink wants your face on a can`,
+      body:`Six-figure deal, one photo shoot, three social posts. <span class="hint">Merch, not gear.</span>`,
+      opts:[
+        {n:'Sign it',d:'A paycheck a title reign cannot beat.',fx:{coins:8000,pop:2}},
+        {n:'Ask for more',d:'Move the number.',fx:{coins:14000,standing:-2}},
+        {n:'Pass',d:'Your name is not for rent.',fx:{respect:4}}]},
+    { key:'signing', head:`Autograph signing at a comic con this weekend`,
+      body:`Two hours, folding chair, Sharpie in hand. The kids will remember.`,
+      opts:[
+        {n:'Do the full session',d:'Stay for every fan.',fx:{pop:4,cond:-3}},
+        {n:'Show up briefly',d:'Handle the appearance.',fx:{pop:1,coins:600}},
+        {n:'Cancel',d:'You are not in the mood.',fx:{pop:-3}}]},
+    { key:'hometown', head:`Your hometown is throwing you a homecoming`,
+      body:`City hall, a small parade route, a key to the city if you'll take it. <span class="say">"You put us on the map."</span>`,
+      opts:[
+        {n:'Go home',d:'Take the key. Kiss the babies.',fx:{pop:6,mom:8}},
+        {n:'Send a video',d:'You are on the road. They understand.',fx:{pop:2}},
+        {n:'Ignore it',d:'That was a long time ago.',fx:{pop:-4,respect:-4}}]},
+    { key:'scandal', head:`A leaked clip of you at a bar is doing the rounds`,
+      body:`Nothing illegal. Just loud, ugly and yours. <span class="hint">The office is watching.</span>`,
+      opts:[
+        {n:'Address it head-on',d:'A statement, and move on.',fx:{pop:-2,standing:3}},
+        {n:'Ignore it',d:'Nobody remembers next week.',fx:{pop:-4}},
+        {n:'Lean into it',d:'The character absorbs it.',fx:{pop:4,mom:6,standing:-4}}]},
+    { key:'talkshow', head:`A morning talk show wants a five-minute segment`,
+      body:`Bright lights, a two-question host, a sitcom couch. It is what it is.`,
+      opts:[
+        {n:'Go on and put over the sport',d:'Straight ambassador stuff.',fx:{pop:3,standing:2}},
+        {n:'Go on and cut a promo',d:'You are always working.',fx:{pop:5,respect:-1}},
+        {n:'Pass',d:'It is beneath you today.',fx:{standing:-1}}]},
+    { key:'documentary', head:`A filmmaker wants three days of your life on tape`,
+      body:`No script, camera in the gym, in the car, at the diner. Streaming in six months.`,
+      opts:[
+        {n:'Say yes',d:'Every wrestler needs a documentary.',fx:{pop:6,rep:200,cond:-2}},
+        {n:'Say yes, one day',d:'A supervised look.',fx:{pop:3,rep:80}},
+        {n:'No',d:'Some things belong to you.',fx:{}}]},
+  ];
+  // scandal is more likely when things are hot, otherwise weight by fit
+  const pool=EVENTS.filter(e=>{
+    if(e.key==='sponsor') return P>=45;
+    if(e.key==='scandal') return P>=40 && rnd()<0.35;
+    if(e.key==='hometown') return P>=55;
+    if(e.key==='documentary') return P>=70;
+    return true;
+  });
+  if(!pool.length) return false;
+  const ev=pool[Math.floor(rnd()*pool.length)];
+  modal(`LIFE · ${ev.head}`,
+    `<div class="log" style="margin-bottom:12px;">${ev.body}</div>
+     <div class="decgrid">${ev.opts.map((o,i)=>`<div class="decopt" data-i="${i}">
+       <div class="dn">${o.n}</div><div class="dd">${o.d}</div></div>`).join('')}</div>`,
+    []);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const o=ev.opts[+d.dataset.i], f=o.fx||{};
+      if(f.pop) c.pop=clamp(c.pop+f.pop,1,100);
+      if(f.standing) c.standing=clamp((c.standing||50)+f.standing);
+      if(f.mom) c.mom=clamp(c.mom+f.mom);
+      if(f.cond) c.cond=clamp(c.cond+f.cond);
+      if(f.coins) G.bag.coins=Math.max(0,G.bag.coins+f.coins);
+      if(f.rep) c.rep=(c.rep||0)+f.rep;
+      if(f.respect){
+        // spread respect across the locker room, small amount each
+        const roster=CHARS.filter(x=>x.promo===myPromo().id);
+        roster.slice(0,4).forEach(x=>{ const R=rel(x.id); R.respect=clamp(R.respect+f.respect,0,100); });
+      }
+      closeModal();
+      pushInboxItem({ico:pico('starBig',18),sev:'story',txt:`<b>${ev.head}.</b> You went with "${o.n.toLowerCase()}".`});
+      G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:`Life: ${ev.head} (${o.n.toLowerCase()})`});
+      save(); renderCareer();
+    });
+  },0);
+  return true;
 }
 // Backstage moments that are not about a feud. Allies, mid-carders and
 // veterans stop you in the hall with small, self-contained scenes. The
@@ -8364,8 +8493,10 @@ function beginPromo(mode,targetId){
   const step=Math.round(ST.home*0.42);
   fmv('me',{pose:'point',fwd:target?step:Math.round(ST.home*0.9),up:0,rot:0,sc:1},0);
   if(target) fmv('opp',{pose:'ready',fwd:step,up:0,rot:0,sc:1},0);
-  $('pmTitle').textContent = target? `${G.w.name} · ${target.name}` : 'LIVE MIC';
+  $('pmTitle').textContent = mode==='talkshow' ? `The ${G.w.name.split(' ')[0]} Show`
+    : target? `${G.w.name} · ${target.name}` : 'LIVE MIC';
   $('pmSub').textContent = mode==='title'? 'Calling for a championship match'
+    : mode==='talkshow'? 'A framed segment on your own show'
     : mode==='crowd'? 'Open mic: character work'
     : target? `Face to face with ${target.name}` : '';
   $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
@@ -8948,6 +9079,22 @@ async function pmFinish(suppressPop){
   c.promos=c.promos||[]; c.promos.unshift({y:c.year,w:c.week,q:Math.round(q),t:t?t.name:'the crowd'});
   if(c.promos.length>20) c.promos.pop();
   checkUnlocks();
+  // Hot-mic interruption: if you have a live rival who is not who you were
+  // talking about, they may crash the segment. It advances the story and
+  // costs a hit of momentum.
+  const st=story();
+  if(st && st.charId!==(t&&t.id) && rnd()<0.30){
+    const rc=charById(st.charId);
+    if(rc){
+      const R=rel(rc.id);
+      pmLog(`<span class="bad">The music cuts. <b>${rc.name}</b>'s music hits. They are marching down the aisle.</span>`);
+      await sleep(600);
+      pmLog(`<span class="say">"${(rc.lines.taunt[0]||'This is not about you tonight.')}"</span>`);
+      R.heat=clamp(R.heat+10,0,100); advanceStory();
+      c.mom=clamp(c.mom-8);
+      pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>${rc.name} interrupted your promo.</b> Bad blood spikes.`});
+    }
+  }
   await sleep(700);
   $('pmChoices').innerHTML=`<button class="big" onclick="pmDone()">Back to the Hub →</button>`;
 }
@@ -8977,6 +9124,10 @@ function openPromoPicker(){
   if(!G.car.title) h+=`<div class="pmopt" onclick="closeModal();beginPromo('title',null)">
       <div class="po-k k-crowd">CHALLENGE</div><div class="po-t">Demand a shot at the ${belt}</div>
       <div class="po-d">Puts you in the title picture while it is fresh.</div></div>`;
+  // Talk show framing: a booked segment on your own show
+  h+=`<div class="pmopt" onclick="closeModal();beginPromo('talkshow',null)">
+      <div class="po-k k-crowd">TALK SHOW</div><div class="po-t">The desk, the chairs, the crowd</div>
+      <div class="po-d">A framed segment on your own show. Guest respect drives what happens.</div></div>`;
   promoTargets().forEach(x=>{
     h+=`<div class="pmopt" onclick="closeModal();beginPromo('face','${x.c.id}')">
       <div class="po-k k-heel">CONFRONT</div>
