@@ -1246,6 +1246,33 @@ window.GA_ID='G-L29P5MRWKE';
   .oscard.warn .oscard-hd{color:#f0b49f}
   .oscard-sub{font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.32}
   .oscard-lock{font-size:10.5px; color:var(--gold); margin-top:5px}
+  /* SEASON SHEET — three to five contract-style targets, sized to your career stage. Card lives
+     in the season screen (compact) and on the season summary Overview tab (with a grade). */
+  .sgcard{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px 10px;
+    margin:8px auto 12px; max-width:520px; font-family:var(--body)}
+  .sgcard.compact{padding:10px 12px 8px; margin:6px auto 10px}
+  .sg-hd{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
+  .sg-hd-l{display:flex; align-items:baseline; gap:9px; min-width:0}
+  .sg-tag{font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase; color:var(--gold)}
+  .sg-tier{font:600 11.5px/1 var(--body); color:var(--muted)}
+  .sg-hd-r{display:flex; align-items:center; gap:8px; flex:0 0 auto}
+  .sg-count{font:800 12px/1 var(--body); color:var(--oncard); font-variant-numeric:tabular-nums}
+  .sg-grade{font-family:var(--display); font-weight:400; font-size:20px; line-height:1;
+    padding:3px 10px; border:1.5px solid; border-radius:6px; letter-spacing:.03em}
+  .sg-list{display:flex; flex-direction:column; gap:5px}
+  .sg-row{display:grid; grid-template-columns:16px 1fr auto; gap:9px; align-items:center;
+    padding:5px 0; border-top:1px solid rgba(244,227,201,.06); font-size:13.5px; line-height:1.3}
+  .sg-row:first-child{border-top:0}
+  .sg-check{color:var(--muted); font-weight:800; text-align:center; font-size:14px}
+  .sg-row.hit .sg-check{color:#35d6a0}
+  .sg-lbl{color:var(--oncard); min-width:0; overflow:hidden; text-overflow:ellipsis}
+  .sg-row.hit .sg-lbl{color:#8fe0c4}
+  .sg-val{font-family:var(--mono); font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+  .sg-val b{color:var(--oncard); font-weight:700}
+  .sg-row.hit .sg-val b{color:#35d6a0}
+  .sg-tgt{color:rgba(172,202,187,.65)}
+  .sg-foot{margin-top:10px; padding-top:8px; border-top:1px dashed rgba(244,227,201,.09);
+    font:700 12px/1.4 var(--body); text-align:center}
   .oslabel{max-width:520px; margin:2px auto 5px; font:800 10px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); text-align:left; padding-left:2px}
   .osstat{max-width:520px; margin:0 auto 8px; text-align:center; font-size:12px; color:var(--muted); line-height:1.45}
   /* CS341: bigger, more-noticeable wheel with an inviting glow */
@@ -5002,7 +5029,8 @@ function autoSaveSeason(){
       contracts:S.season.contracts, briefs:S.season.briefs, briefsDone:S.season.briefsDone,
       skipped:S.season.skipped, coinRaw0:S.season.coinRaw0, proving:S.season.proving,
       stops:S.season.stops, momentsShown:S.season.momentsShown, grudgeShown:S.season.grudgeShown, sideMoney:S.season.sideMoney, _lastStopEvt:S.season._lastStopEvt,
-      confidence:S.season.confidence, followers0:S.season.followers0 } } });
+      confidence:S.season.confidence, followers0:S.season.followers0,
+      goals:S.season.goals } } });   // Season Sheet is deterministic-per-year but stashed so a mid-season resume shows the exact same sheet
 }
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
 // one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
@@ -5035,7 +5063,8 @@ function saveMidSeasonAndExit(){
   if(!S.career || S.daily || !S.season){ clearTimeout(seasonTimer); reset(); render(); return; }
   // ensure S.career reflects this year before snapshotting (career object is created at the first summary)
   const saved=saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
-    season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
+    season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
+      goals:S.season.goals } } });
   track('career_mid_save',{year:S.year,evt:S.evtIndex,saved});
   clearTimeout(seasonTimer); reset(); render();
   toast(saved?'Career saved. Resume from the home screen':'Sign in to save & resume your career');
@@ -15349,6 +15378,216 @@ function fieldSample(n){
   const a=FIELDPOOL.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
   return a.slice(0,n);
 }
+/* ══════ SEASON GOALS — contract-style targets, sized to your career stage ══════════════════════
+   Every real golf career has a shape to it (make my card, hold my card, break through, contend,
+   win the big one, defend, chase the record). We track all the stats but never asked the player to
+   commit to any of them, so every season felt shapeless. This adds three to five targets each
+   season — tuned to your CURRENT tier (rookie → GOAT-chase, computed at season start and pinned
+   for the year) — tracked live from S.season.totals + results, and graded A–F at year end.
+
+   Consequences ride existing systems: careerStory().feed picks up a beat, S.career.lastGoalGrade
+   is left behind for the next season's sponsors to react to, and the season row on
+   S.career.seasons carries the graded sheet so a future history screen can render it.
+
+   Regular career only. The Legend Circuit has its own shape (12-year window, its own difficulty
+   tuning) and Daily has none of this scaffolding. Design notes in CLAUDE.md.
+*/
+
+// LIVE metrics for goal grading. Optionally pass a finalSeason row (from S.career.seasons[i]) to
+// grade against the exact end-of-season numbers instead of the mid-season totals view — the last
+// event's row isn't always mirrored back to totals before the summary renders.
+function goalMetrics(finalSeason){
+  const meName = (S.season && S.season.me && S.season.me.name) || S.name || '';
+  const totals = (S.season && S.season.totals) || {};
+  const me = totals[meName] || {};
+  const results = (S.season && S.season.results) || [];
+  let wins=0, majors=0, sigWins=0, top10=0, top25=0, made=0, played=results.length;
+  let majorCut=0, majorTop10=0, majorTop25=0, sigTop10=0;
+  results.forEach(r=>{
+    const meR = r.order && r.order.find(o=>o.p && o.p.you); if(!meR) return;
+    if(meR.made){ made++; if(meR.pos<=10) top10++; if(meR.pos<=25) top25++; }
+    if(meR.pos===1) wins++;
+    if(r.evt && r.evt.major){
+      if(meR.made){ majorCut++; if(meR.pos<=10) majorTop10++; if(meR.pos<=25) majorTop25++; }
+      if(meR.pos===1) majors++;
+    }
+    if(r.evt && r.evt.type==='sig'){
+      if(meR.made && meR.pos<=10) sigTop10++;
+      if(meR.pos===1) sigWins++;
+    }
+  });
+  // MONEY-list rank against everyone we've tracked totals for this season
+  let moneyRank = null;
+  const rows = Object.entries(totals).map(([n,v])=>({n, m:v.money||0})).sort((a,b)=>b.m-a.m);
+  if(rows.length){ const i=rows.findIndex(x=>x.n===meName); if(i>=0) moneyRank=i+1; }
+  // The FINAL numbers win where provided (the last event's row is authoritative on the summary)
+  if(finalSeason){
+    if(finalSeason.wins   != null) wins   = finalSeason.wins;
+    if(finalSeason.majors != null) majors = finalSeason.majors;
+    if(finalSeason.top10  != null) top10  = finalSeason.top10;
+    if(finalSeason.made   != null) made   = finalSeason.made;
+    if(finalSeason.played != null) played = finalSeason.played;
+    if(finalSeason.rank   != null) moneyRank = finalSeason.rank;
+  }
+  const money = (finalSeason && finalSeason.money!=null) ? finalSeason.money : (me.money||0);
+  const worldRank = (typeof worldRankOfName==='function') ? worldRankOfName(meName) : null;
+  return { wins, majors, sigWins, top10, top25, made, played, majorCut, majorTop10, majorTop25,
+           sigTop10, moneyRank, money, worldRank };
+}
+
+// Tier is picked from status coming IN to the season and pinned to that season, so a rookie who
+// wins majors in year one still finishes rookie goals — they signed up for a rookie sheet.
+function seasonGoalTier(){
+  const c = S.career || {};
+  const yrs = (c.seasons||[]).length;   // PRIOR seasons completed
+  const w = c.wins||0, m = c.majors||0;
+  if(yrs>=5 && w>=15 && m>=5) return 'goat';
+  if(yrs>=3 && w>=5  && m>=1) return 'star';
+  if(yrs>=2 && w>=1)          return 'regular';
+  return 'rookie';
+}
+
+// Every goal is: {label, short, get(m), target, hitLow?, fmt?}
+// hitLow: smaller is better (money-list rank, world rank). Otherwise bigger is better.
+const GOAL_DEFS = {
+  // rookie pool ─ six templates, five are picked per season (seeded)
+  makeCuts10:  {label:'Make 10 cuts this season',        short:'10 cuts',           get:m=>m.made,      target:10},
+  moneyTop100: {label:'Finish top 100 on the money list',short:'Top 100 money',     get:m=>m.moneyRank, target:100, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  firstTop10:  {label:'Post your first top-10',          short:'A top 10',          get:m=>m.top10,     target:1},
+  majorTop25:  {label:'Best finish top-25 at a major',   short:'Major top-25',      get:m=>m.majorTop25,target:1},
+  keepCard:    {label:'Keep your card (top 125 money)',  short:'Keep card',         get:m=>m.moneyRank, target:125, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  playFull:    {label:'Play a full slate (18+ starts)',  short:'18 starts',         get:m=>m.played,    target:18},
+
+  // established
+  moneyTop60:  {label:'Finish top 60 on the money list', short:'Top 60 money',      get:m=>m.moneyRank, target:60,  hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  threeTop10s: {label:'Post 3 top-10 finishes',          short:'3 top-10s',         get:m=>m.top10,     target:3},
+  winEvent:    {label:'Win a tournament',                short:'A win',             get:m=>m.wins,      target:1},
+  majorCut:    {label:'Make the cut at a major',         short:'A major cut',       get:m=>m.majorCut,  target:1},
+  sigTop10:    {label:'Top-10 at a signature event',     short:'Signature top-10',  get:m=>m.sigTop10,  target:1},
+  fifteenCuts: {label:'Make 15 cuts',                    short:'15 cuts',           get:m=>m.made,      target:15},
+
+  // star
+  moneyTop30:  {label:'Finish top 30 on the money list', short:'Top 30 money',      get:m=>m.moneyRank, target:30,  hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  winTwo:      {label:'Win 2 tournaments',               short:'2 wins',            get:m=>m.wins,      target:2},
+  twoMajorT10: {label:'Two top-10 finishes at majors',   short:'2 major top-10s',   get:m=>m.majorTop10,target:2},
+  winSig:      {label:'Win a signature event',           short:'Signature win',     get:m=>m.sigWins,   target:1},
+  worldTop10:  {label:'Break the world top 10',          short:'World top 10',      get:m=>m.worldRank, target:10, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  eightTop10s: {label:'Post 8 top-10s',                  short:'8 top-10s',         get:m=>m.top10,     target:8},
+
+  // GOAT chase
+  moneyTop5:   {label:'Finish top 5 on the money list',  short:'Top 5 money',       get:m=>m.moneyRank, target:5,   hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  winThree:    {label:'Win 3 tournaments',               short:'3 wins',            get:m=>m.wins,      target:3},
+  winMajor:    {label:'Win a major',                     short:'A major',           get:m=>m.majors,    target:1},
+  earn25M:     {label:'Earn $25M for the season',        short:'$25M year',         get:m=>m.money,     target:25e6, fmt:v=>'$'+fmtShort(v||0)},
+  defendNo1:   {label:'Defend World No. 1',              short:'Stay No. 1',        get:m=>m.worldRank, target:1, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  twelveTop10s:{label:'Post 12 top-10s',                 short:'12 top-10s',        get:m=>m.top10,     target:12},
+};
+
+const GOAL_TIERS = {
+  rookie:  {label:'Rookie season',   pool:['makeCuts10','moneyTop100','firstTop10','majorTop25','keepCard','playFull']},
+  regular: {label:'Established',     pool:['moneyTop60','threeTop10s','winEvent','majorCut','sigTop10','fifteenCuts']},
+  star:    {label:'Star player',     pool:['moneyTop30','winTwo','twoMajorT10','winSig','worldTop10','eightTop10s']},
+  goat:    {label:'Chasing history', pool:['moneyTop5','winThree','winMajor','earn25M','defendNo1','twelveTop10s']},
+};
+
+// Pick five from the six-template pool, seeded by careerSeed + year — a career sees a stable sheet
+// on resume and different combinations across seasons (5 of 6 → 6 distinct rotations per tier).
+function generateSeasonGoals(){
+  if(S.daily || S.circuitMode || !S.career) return null;
+  const tier = seasonGoalTier();
+  const pool = (GOAL_TIERS[tier]||GOAL_TIERS.rookie).pool.slice();
+  const seed = (((S.careerSeed||1)>>>0) ^ (((S.year||1) * 0x9e3779b1)>>>0)) >>> 0;
+  const rng = mulberry32(seed);
+  for(let i=pool.length-1; i>0; i--){ const j=Math.floor(rng()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+  return { tier, ids: pool.slice(0, 5) };
+}
+
+function goalHit(id, m){
+  const def = GOAL_DEFS[id]; if(!def) return false;
+  const v = def.get(m); if(v==null) return false;
+  return def.hitLow ? (v<=def.target) : (v>=def.target);
+}
+
+function gradeSeasonGoals(sg, m){
+  if(!sg || !sg.ids || !sg.ids.length) return null;
+  const hits = sg.ids.filter(id=>goalHit(id, m)).length;
+  const n = sg.ids.length;
+  const grade = hits===n ? 'A' : hits>=n-1 ? 'B' : hits>=Math.max(2, Math.floor(n*0.5)) ? 'C' : hits>=1 ? 'D' : 'F';
+  return { hits, of:n, grade };
+}
+
+// Runs ONCE per season, inside scrSummary's !S.recorded record block, right after the season row
+// is pushed onto S.career.seasons. Writes the graded sheet onto that row (for a future history
+// view), stamps S.career.lastGoalGrade for next season's sponsors to read, and pushes a story-feed
+// beat on the loud outcomes (A / D / F) — a C season is a quiet one, no news is news.
+function applySeasonGoalConsequences(){
+  const sg = S.season && S.season.goals; if(!sg) return null;
+  // Grade against the FINAL season row we just pushed (authoritative), not the mid-season view
+  const c = S.career;
+  const finalRow = c && c.seasons && c.seasons.length ? c.seasons[c.seasons.length-1] : null;
+  const m = goalMetrics(finalRow);
+  const result = gradeSeasonGoals(sg, m);
+  if(!result) return null;
+  if(finalRow) finalRow.sg = { tier:sg.tier, ids:sg.ids, hits:result.hits, of:result.of, grade:result.grade };
+  if(c) c.lastGoalGrade = result.grade;
+  try{
+    const st = careerStory();
+    const feed = st.feed = st.feed || [];
+    const y = S.year || 1;
+    if(result.grade === 'A')      feed.push({y, k:'goals', txt:`Aced the season goals · ${result.hits}/${result.of}.`});
+    else if(result.grade === 'D') feed.push({y, k:'goals', txt:`A quiet year · only ${result.hits}/${result.of} season goals hit.`});
+    else if(result.grade === 'F') feed.push({y, k:'goals', txt:`Missed every season goal · the tour will notice.`});
+  }catch(e){}
+  return result;
+}
+
+// The Season Sheet card. Used in-season (compact:true, no grade shown yet) and on the summary
+// Overview tab (with the final grade + a one-line reaction). Reads live metrics unless the summary
+// passes in the frozen final-season row.
+function seasonGoalsCard(opts){
+  const sg = S.season && S.season.goals; if(!sg || !sg.ids || !sg.ids.length) return null;
+  opts = opts || {};
+  const finalRow = opts.finalSeason || null;
+  const m = goalMetrics(finalRow);
+  const graded = finalRow ? gradeSeasonGoals(sg, m) : null;
+  const hits = sg.ids.filter(id=>goalHit(id, m)).length;
+  const tierName = (GOAL_TIERS[sg.tier]||GOAL_TIERS.rookie).label;
+  const gCol = graded ? ({A:'#35d6a0',B:'#8fe0c4',C:'#ffd45e',D:'#e07a5f',F:'#e14a33'}[graded.grade]) : 'var(--gold)';
+  const rows = sg.ids.map(id=>{
+    const def = GOAL_DEFS[id]; if(!def) return '';
+    const cur = def.get(m);
+    const hit = goalHit(id, m);
+    const curTxt = def.fmt ? def.fmt(cur) : (cur==null?'—':String(cur));
+    const tgtTxt = def.fmt ? def.fmt(def.target) : (def.hitLow?'≤'+def.target:def.target);
+    return `<div class="sg-row${hit?' hit':''}">
+      <span class="sg-check">${hit?'✓':'·'}</span>
+      <span class="sg-lbl">${esc(def.label)}</span>
+      <span class="sg-val"><b>${curTxt}</b><span class="sg-tgt"> / ${tgtTxt}</span></span>
+    </div>`;
+  }).join('');
+  const footTxt = graded ? ({
+    A:'🏆 A perfect sheet — sponsors will notice.',
+    B:'A strong year — offers will hold.',
+    C:'A workmanlike year — steady as she goes.',
+    D:'A quiet year — expect the phone to go quiet too.',
+    F:'A season to forget — sponsors will cool off.',
+  })[graded.grade] : '';
+  return $(`<div class="sgcard${opts.compact?' compact':''}">
+    <div class="sg-hd">
+      <div class="sg-hd-l">
+        <span class="sg-tag">Season goals</span>
+        <span class="sg-tier">${esc(tierName)}</span>
+      </div>
+      <div class="sg-hd-r">
+        ${graded?`<span class="sg-grade" style="color:${gCol};border-color:${gCol}">${graded.grade}</span>`:''}
+        <span class="sg-count" style="color:${graded?gCol:'var(--oncard)'}">${hits}/${sg.ids.length}</span>
+      </div>
+    </div>
+    <div class="sg-list">${rows}</div>
+    ${footTxt?`<div class="sg-foot" style="color:${gCol}">${footTxt}</div>`:''}
+  </div>`);
+}
+
 function startSeason(majorsOnly){
   // ensure a per-career seed exists before building the schedule so the rotating slate is stable
   // within a save (resume-safe), ensureWorld() also sets this, but the schedule is built first.
@@ -15397,6 +15636,9 @@ function startSeason(majorsOnly){
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.season.proving=(!S.daily && !S.circuitMode && onProvingTour());   // stamped at the start: the card can flip at season END, the costs must follow the season you actually played
+  // Season Sheet: 3-5 contract-style goals sized to your career tier, pinned for the year (see the
+  // Season Goals module above). Regular career only; majorsOnly / daily / circuit skip it.
+  if(!S.daily && !S.circuitMode && !majorsOnly){ try{ S.season.goals = generateSeasonGoals(); }catch(e){} }
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.curBracket=null; S._brIdx=null; S.brRound=0; S.season.bracketChampion=null;   // Match Play Championship state
   // TOUR NEWS: the season the tour actually introduces the Match Play Championship gets an announcement
@@ -21613,6 +21855,7 @@ function scrSeason(){
     else { S._confBar=null; S._respBar=null; } }
   { const rail=seasonRailNode(); if(rail) add(rail); }
   { const st=statusStripNode(); if(st) add(st); }   // conditional status / the Proving Tour order of merit
+  { const sg=(typeof seasonGoalsCard==='function')?seasonGoalsCard({compact:true}):null; if(sg) add(sg); }   // Season Sheet: live progress against this year's contract-style goals
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
   // CS241: the live tournament (leaderboard + scorecard) now sits right under the season-stat bar so a
   // player watching the sim sees the standings immediately - no scrolling past a wall of Race-to-the-Cup /
@@ -22312,6 +22555,9 @@ function scrSummary(){
       ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
       if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
     S.career.seasons.push({year:S.year||1,net:netTotal,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
+    // Season Sheet grading (regular career only). Runs AFTER the season row is pushed so the grader
+    // reads the authoritative final numbers; writes the graded sheet onto that same row + a story beat.
+    try{ if(!S.circuitMode) applySeasonGoalConsequences(); }catch(e){}
     // track this career's PEAK build (full 8-skill snapshot, not just the overall number), this is
     // the golfer a Legend Token freezes and hands back to you in the Daily Challenge if this career
     // goes on to qualify (see endCareer). Compared against ovr so a later decline year can't overwrite it.
@@ -22757,7 +23003,11 @@ function scrSummary(){
     // a legacy unlock LEADS the summary: it is the rarest thing that can happen in a season and the whole
     // point is that the accomplishment visibly changed the career
     const legacyCard=(!S.daily && !S.circuitMode)?legacyFreshNode():null;
-    [statusCard, legacyCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
+    // Season Sheet grading — the headline of the year for players who signed up to targets: sits
+    // right under a legacy unlock (rarer, gets top billing) and above the stat masthead.
+    const finalRow=(S.career&&S.career.seasons&&S.career.seasons.length)?S.career.seasons[S.career.seasons.length-1]:null;
+    const goalsCard=(!S.daily && !S.circuitMode && typeof seasonGoalsCard==='function')?seasonGoalsCard({finalSeason:finalRow}):null;
+    [statusCard, legacyCard, goalsCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
   }
   // CS481 (owner): rivalry belongs on the REPUTATION tab.
   __cur=reC;

@@ -16187,3 +16187,61 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   real view change still animates (the strip is not permanent). Multi-overlay smoke test: all six overlays
   open, 0 page errors. **The concurrent-render check fails on the pre-fix baseline**, so it's a real fix.
 - Tunable: the `vnew`/`_vnewT` block at the top of `render()`; the 420ms window; `rttFade`/`rttRise` CSS.
+
+### SEASON GOALS: contract-style targets sized to career stage (owner: green-lit after the Career
+### Mode Canon study — the #1 gap in that audit, and the biggest single win the career mode was
+### missing)
+- **The gap the study found:** every canon career mode (Tiger Woods 05–13, EA 2023, PGA 2K25) gives
+  you targets to sign up for. We tracked every stat and never asked the player to commit to any of
+  them, so seasons had no shape — no "40th right now, need 30th by year's end" tension. Season Goals
+  fills it.
+- **The design in one paragraph:** at each season's start `startSeason()` calls `generateSeasonGoals()`,
+  which reads `seasonGoalTier()` — a computed tier from PRIOR seasons + career wins + majors, pinned
+  to the season so a rookie who breaks out mid-year still finishes rookie goals — picks its tier's
+  six-template pool (rookie / regular / star / goat), and deterministically shuffles it with a
+  `mulberry32` seeded by `careerSeed ^ (year × golden ratio prime)` to hand out five goals. Same
+  seed + same year → same sheet on resume; different years give different combinations, so a career
+  sees variety across seasons but no randomness between saves.
+- **The 24 goal templates** (six per tier) each define `{label, short, get(m), target, hitLow?, fmt?}`.
+  `hitLow` inverts the comparison for smaller-is-better goals (money-list rank, world rank).
+  `fmt` styles the display value (money-list "#42", earnings "$25M"). Grades come from `hits/of`:
+  all → A, one short → B, at-least-half → C, at-least-one → D, zero → F.
+- **Live tracking + the archived sheet.** `goalMetrics()` reads live from `S.season.totals` and
+  `S.season.results`, adding computed values (top-10s, cuts made, major cuts + top-10s + top-25s,
+  signature top-10s + wins, money-list rank against everyone tracked, world rank). It accepts an
+  optional `finalSeason` row (the just-pushed row on `S.career.seasons`) so the summary grader reads
+  the authoritative final numbers instead of a mid-season view — the last event isn't always mirrored
+  back to totals before the summary renders.
+- **The card, `seasonGoalsCard({compact, finalSeason})`**. Compact mode drops padding + removes the
+  grade badge (used in-season); non-compact carries the grade + a one-line reaction ("A perfect
+  sheet — sponsors will notice"). Called from `scrSeason` (after the status strip; every event
+  advance updates it live) and from `scrSummary`'s Overview compose (right after any legacy unlock
+  and above the stat masthead, so the grade is the headline of the year).
+- **Consequences ride existing systems.** `applySeasonGoalConsequences()` runs ONCE per season
+  inside `scrSummary`'s `!S.recorded` block, right after the season row is pushed onto
+  `S.career.seasons` — the row now carries `sg:{tier,ids,hits,of,grade}` for a future history view.
+  `S.career.lastGoalGrade` is stamped so next season's sponsors can bump or cool their offers off
+  it. And `careerStory().feed` picks up a beat on A / D / F — a C season is a quiet one, no news
+  is news.
+- **Save/resume.** The full `S.season` rides `summaryResumeExtra` untouched. The two field-filtered
+  mid-season paths (`autoSaveSeason` + `saveMidSeasonAndExit`) now carry `goals` too, so an
+  in-progress season resume shows the exact same sheet (deterministic generation would have
+  produced it anyway, but persisting means the tier — which reads career state — stays consistent
+  even if a follow-up patch changes tier thresholds).
+- **Scope guards.** Daily and Circuit + `majorsOnly` startSeason all skip goal generation. The
+  Circuit has its own difficulty scaffolding (halved spins, faster decline) — mixing regimes would
+  double up. `applySeasonGoalConsequences` also gates on `!S.circuitMode`.
+- **Tunable in one place.** The whole module lives as one contiguous block right before
+  `startSeason`. Add a template: one row in `GOAL_DEFS` + one id in the relevant tier's pool. Tune
+  a tier's thresholds: two lines in `seasonGoalTier`. Change grading curve: one line in
+  `gradeSeasonGoals`. Change the consequences: `applySeasonGoalConsequences`.
+- **Verified: 25 checks, 0 fail, 0 page errors** — the module exists and its four tiers each carry
+  a six-goal pool of only-defined ids; tier calc gives right answer across 6 scenarios (including
+  the intentional case where a rookie's-year mega-stats still count as rookie tier because tier
+  gates on years); generator is deterministic and same-year-yields-same-sheet AND different-years-
+  yield-different-sheets; grading correctly handles both hitLow and hitHigh; a rigged year-1 season
+  ends with a 5/5 A grade written both to the archived row AND to `S.career.lastGoalGrade`; the
+  story-feed beat is present on loud grades; the card renders on both surfaces with the right
+  variant; and Daily / Circuit / majorsOnly all correctly skip. Baseline (pre-feature) crashes with
+  `GOAL_TIERS is not defined` on the first substantive check, so the test genuinely discriminates.
+- **Regressions green:** goals_test 25, daily_glitch 5, circuit_test 14, morris_test 16.
