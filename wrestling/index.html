@@ -3205,17 +3205,72 @@ function areRivalPromos(a,b){
 }
 function initWorld(){
   if(G.world) return;
-  const world = { news:[], champions:{}, teams:[], turns:{}, retired:{}, factionFeud:null };
-  // seed each promotion with its house champions
+  const c=G.car;
+  const world = { news:[], champions:{}, teams:[], turns:{}, retired:{}, factionFeud:null,
+                  brands:{}, lineage:{}, debuts:0, releases:0 };
   PROMOS.forEach(p=>{
-    const house = CHARS.filter(c=>c.promo===p.id).sort((a,b)=>(b.over||0)-(a.over||0));
+    const house = CHARS.filter(x=>x.promo===p.id).sort((a,b)=>(b.over||0)-(a.over||0));
     if(!house.length) return;
     world.champions[p.id] = {
-      world: house[0] && house[0].id || null,
-      secondary: house[1] && house[1].id || null,
+      world:     { holder: house[0]&&house[0].id||null,    since:{y:c.year,w:c.week}, defenses:0, kind:'world' },
+      secondary: { holder: house[1]&&house[1].id||null,    since:{y:c.year,w:c.week}, defenses:0, kind:'secondary' },
     };
+    world.lineage[p.id] = { world:[], secondary:[] };
+    // brand split for the biggest houses: half red, half blue
+    if(p.tier==='national' || p.tier==='global'){
+      const shuffled=house.slice().sort(()=>rnd()-0.5);
+      const half=Math.ceil(shuffled.length/2);
+      world.brands[p.id]={ red:shuffled.slice(0,half).map(x=>x.id), blue:shuffled.slice(half).map(x=>x.id),
+        redName:'Red Brand', blueName:'Blue Brand' };
+    }
   });
   G.world = world;
+}
+// Old saves may have world.champions[promo][kind] as a raw string. Upgrade to
+// the object shape so lineage tracking works everywhere.
+function migrateChampions(){
+  const w=G.world; if(!w||!w.champions) return;
+  const now={y:G.car.year,w:G.car.week};
+  Object.keys(w.champions).forEach(pid=>{
+    const ch=w.champions[pid];
+    ['world','secondary'].forEach(kind=>{
+      const v=ch[kind];
+      if(v && typeof v==='string') ch[kind]={holder:v, since:now, defenses:0, kind};
+      else if(!v) ch[kind]={holder:null, since:now, defenses:0, kind};
+    });
+  });
+  if(!w.lineage) w.lineage={};
+  Object.keys(w.champions).forEach(pid=>{ if(!w.lineage[pid]) w.lineage[pid]={world:[],secondary:[]}; });
+  if(!w.brands) w.brands={};
+  if(!w.debuts) w.debuts=0;
+  if(!w.releases) w.releases=0;
+}
+// Which brand a given wrestler belongs to. Non-branded promotions return null.
+function brandOf(charId){
+  const w=G.world; if(!w||!w.brands) return null;
+  for(const pid of Object.keys(w.brands)){
+    const b=w.brands[pid];
+    if((b.red||[]).includes(charId)) return {promoId:pid, brand:'red', name:b.redName};
+    if((b.blue||[]).includes(charId)) return {promoId:pid, brand:'blue', name:b.blueName};
+  }
+  return null;
+}
+// A rookie shows up. Generated on demand from the name banks and slotted into
+// the target promotion. Their id is guaranteed unique against CHARS.
+function spawnRookie(promoId){
+  const A=NAME_A, B=NAME_B;
+  const nm = A[Math.floor(rnd()*A.length)]+' '+B[Math.floor(rnd()*B.length)];
+  let id='r_'+nm.toLowerCase().replace(/\s+/g,'_')+'_'+Math.floor(rnd()*9999);
+  while(CHARS.find(x=>x.id===id)) id=id+'x';
+  const styles=STYLES.map(s=>s.id);
+  const style=styles[Math.floor(rnd()*styles.length)];
+  const align=rnd()<0.5?'face':'heel';
+  const over=35+Math.floor(rnd()*20);
+  const rookie={id, name:nm, nick:'The Newcomer', promo:promoId, style, align, over,
+    look:oppLook(id,nm), lines:{ taunt:['I am here now.'], win:['Told you.'], lose:['Not tonight.'], respect:['You are the real thing.'] },
+    debut:{y:G.car.year,w:G.car.week}};
+  CHARS.push(rookie);
+  return rookie;
 }
 function newsPush(entry){
   if(!G.world) initWorld();
@@ -3225,6 +3280,7 @@ function newsPush(entry){
 }
 function worldTick(){
   if(!G.world) initWorld();
+  migrateChampions();
   const c=G.car; const w=G.world;
   // A title change happens somewhere in the world every few weeks.
   if(rnd()<0.10){
@@ -3232,18 +3288,60 @@ function worldTick(){
     if(promo.id===myPromoId()) return;                        // your promotion is player-driven
     const house = CHARS.filter(x=>x.promo===promo.id && !w.retired[x.id]);
     if(house.length<2) return;
-    const belt = rnd()<0.7 ? 'world' : 'secondary';
-    const beltName = beltsForPromo(promo.id)[belt];
+    const kind = rnd()<0.7 ? 'world' : 'secondary';
+    const beltName = beltsForPromo(promo.id)[kind];
     if(!beltName) return;
-    const holder = w.champions[promo.id] && w.champions[promo.id][belt];
-    // pick a challenger from the house who is not the current holder
-    const chal = house.filter(x=>x.id!==holder)[Math.floor(rnd()*Math.max(1,house.length-1))];
-    if(!chal) return;
     if(!w.champions[promo.id]) w.champions[promo.id]={};
-    w.champions[promo.id][belt] = chal.id;
-    const oldName = (charById(holder)||{}).name || 'the champion';
+    const ch = w.champions[promo.id][kind] || {holder:null, since:{y:c.year,w:c.week}, defenses:0, kind};
+    const prevHolder = ch.holder;
+    const chal = house.filter(x=>x.id!==prevHolder)[Math.floor(rnd()*Math.max(1,house.length-1))];
+    if(!chal) return;
+    // write lineage: the previous reign is stamped with an end date
+    if(prevHolder){
+      if(!w.lineage[promo.id]) w.lineage[promo.id]={world:[],secondary:[]};
+      w.lineage[promo.id][kind].unshift({
+        holder:prevHolder, name:(charById(prevHolder)||{}).name||'a champion',
+        from:ch.since, to:{y:c.year,w:c.week}, defenses:ch.defenses||0 });
+      if(w.lineage[promo.id][kind].length>40) w.lineage[promo.id][kind].pop();
+    }
+    w.champions[promo.id][kind] = { holder:chal.id, since:{y:c.year,w:c.week}, defenses:0, kind };
+    const oldName = (charById(prevHolder)||{}).name || 'the champion';
     newsPush({ico:pico('crown',14), kind:'title',
       text:`<b>${chal.name}</b> beat ${oldName} for the <b>${beltName}</b> at ${promo.short}.`});
+    return;
+  }
+  // Roster churn: a rookie debuts, a signing, a release.
+  if(rnd()<0.03){
+    const target = PROMOS[Math.floor(rnd()*PROMOS.length)];
+    if(target.id===myPromoId()) return;
+    const rookie = spawnRookie(target.id);
+    w.debuts++;
+    newsPush({ico:pico('star',14), kind:'debut',
+      text:`<b>${rookie.name}</b> made their debut at ${target.short}. First time in front of a real crowd.`});
+    return;
+  }
+  if(rnd()<0.02){
+    // Somebody moves companies. Only movers whose current promotion is not yours.
+    const eligible = CHARS.filter(x=>!w.retired[x.id] && x.promo!==myPromoId() && (x.over||55)<80 && (x.over||55)>=50);
+    if(!eligible.length) return;
+    const who = eligible[Math.floor(rnd()*eligible.length)];
+    const options = PROMOS.filter(p=>p.id!==who.promo && p.id!==myPromoId());
+    if(!options.length) return;
+    const to = options[Math.floor(rnd()*options.length)];
+    const from = promoById(who.promo);
+    who.promo = to.id;
+    newsPush({ico:pico('swap',14), kind:'sign',
+      text:`<b>${who.name}</b> has left ${from&&from.short||'their old company'}. All signs point to <b>${to.short}</b>.`});
+    return;
+  }
+  if(rnd()<0.012){
+    const eligible = CHARS.filter(x=>!w.retired[x.id] && x.promo!==myPromoId() && (x.over||55)<62);
+    if(!eligible.length) return;
+    const who = eligible[Math.floor(rnd()*eligible.length)];
+    w.releases++;
+    w.retired[who.id]={y:c.year,w:c.week,released:true};
+    newsPush({ico:pico('impact',14), kind:'release',
+      text:`<b>${who.name}</b> was released by ${(promoById(who.promo)||{}).short||'their promotion'}. A career at a crossroads.`});
     return;
   }
   // A team forms.
@@ -3889,6 +3987,7 @@ function continueCareer(){ G=load(); if(!G){ renderHome(); return; }
   if(!G.car.plan) G.car.plan={a:'strike',b:'technical'};
   G.w.custom=G.w.custom||[]; mergeCustomMoves();
   if(!G.world) initWorld();               // living world state for older saves
+  migrateChampions();                     // upgrade champion shape for older saves
   RNG=(G.car.year*104729+G.car.week*7919+1)>>>0;
   go(G.car.retired?'hof':'career'); }
 
@@ -9170,20 +9269,37 @@ function renderWorld(){
   let h=pagerBar('world',chips,renderWorld);
   const i=pagerIdx('world',chips.length);
   if(i<promos.length){
-    const p=promos[i], roster=CHARS.filter(c=>c.promo===p.id);
+    const p=promos[i], roster=CHARS.filter(c=>c.promo===p.id && !(G.world&&G.world.retired&&G.world.retired[c.id]));
     const TN={indie:'Indie Circuit',regional:'Regional',national:'National TV',global:'Global'};
+    // Champions + belt lineage buttons for this promotion
+    const ch = (G.world&&G.world.champions&&G.world.champions[p.id])||{};
+    const beltsMap = beltsForPromo(p.id);
+    const champLine = ['world','secondary'].filter(k=>ch[k]&&ch[k].holder).map(k=>{
+      const holder = (charById(ch[k].holder)||{}).name || 'vacant';
+      const bn = beltsMap[k]||k;
+      const def = ch[k].defenses?` · ${ch[k].defenses} def`:'';
+      return `<span class="badge b-leg">${pico('crown',12)} ${bn}: <b>${holder}</b>${def}</span> <a href="#" style="font-size:10.5px;" onclick="showLineage('${p.id}','${k}');return false;">history</a>`;
+    }).join(' · ') || `<span class="hint">All titles vacant.</span>`;
+    // Brand split view
+    const bs = G.world&&G.world.brands&&G.world.brands[p.id];
+    const brandHeader = bs
+      ? `<div class="hint" style="margin-bottom:6px;">Brand split: <b style="color:#e04a4a">${bs.redName}</b> and <b style="color:#4a7ce0">${bs.blueName}</b></div>` : '';
     h+=`<div class="promocard" style="border-left:4px solid ${p.color}">
       <div class="ph"><div><span class="pshort" style="color:${p.color}">${p.short}</span> <b>${p.name}</b></div>
         <span class="hint">${TN[p.tier]} · ${p.region}</span></div>
       <div class="hint" style="margin-bottom:6px;">${p.product}${p.id===here?' · <span style="color:var(--gold)">you work here</span>':''}</div>
+      <div style="margin-bottom:8px;">${champLine}</div>
+      ${brandHeader}
       <div class="pblurb">${p.blurb}</div>
       <div class="charrow">`+
       roster.map(c=>{
         const r=rel(c.id), lb=relLabel(r);
+        const b=bs ? (bs.red.includes(c.id)?'red':bs.blue.includes(c.id)?'blue':null) : null;
+        const bBadge = b ? ` <span class="badge" style="background:${b==='red'?'#3a1010':'#101a3a'};color:${b==='red'?'#f0907f':'#8ab5f0'};padding:1px 5px;font-size:9px;">${b.toUpperCase()}</span>` : '';
         return `<div class="charcard" onclick="charProfile('${c.id}')">
           <div class="cav">${wrestlerSVG(c.look,{frame:'head'})}</div>
-          <div class="cnm">${c.name}</div>
-          <div class="cnk">${c.nick}</div>
+          <div class="cnm">${c.name}${bBadge}</div>
+          <div class="cnk">${c.nick||''}</div>
           <div class="crel" style="color:${lb.c}">${lb.t}${r.matches?` · ${r.wins}-${r.losses}`:''}</div>
         </div>`;
       }).join('')+`</div></div>`;
@@ -9205,6 +9321,19 @@ function renderWorld(){
       }).join('')+`</div></div>`;
   });
   $('worldBody').innerHTML=h;
+}
+function showLineage(promoId, kind){
+  const p=promoById(promoId); if(!p) return;
+  const bn=(beltsForPromo(promoId)||{})[kind]||kind;
+  const ch=(G.world&&G.world.champions&&G.world.champions[promoId])||{};
+  const cur=ch[kind]||{};
+  const lin=((G.world&&G.world.lineage&&G.world.lineage[promoId])||{})[kind]||[];
+  const curName = cur.holder ? (charById(cur.holder)||{}).name || 'unknown' : 'vacant';
+  const curStr = cur.holder
+    ? `<div class="pchip gold" style="margin-bottom:8px;">Now: <b>${curName}</b> since Y${cur.since.y}W${cur.since.w}${cur.defenses?` · ${cur.defenses} defences`:''}</div>` : '';
+  const rows = lin.map(l=>`<div class="hint" style="padding:5px 0;border-top:1px dashed rgba(255,255,255,.08);">
+      <b style="color:var(--cream)">${l.name}</b> · Y${l.from.y}W${l.from.w} to Y${l.to.y}W${l.to.w}${l.defenses?` · ${l.defenses} def`:''}</div>`).join('');
+  modal(`${bn} Lineage`, `${curStr}${rows||'<p class="hint">No past champions on record yet.</p>'}`, [{label:'Close',fn:closeModal}]);
 }
 function charProfile(id){
   const c=charById(id); if(!c) return;
