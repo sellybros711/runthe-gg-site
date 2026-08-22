@@ -369,6 +369,11 @@
   @keyframes sheetIn{from{opacity:0;transform:translateY(-8px) scale(.985);}}
   .bs-office{font-size:12px;font-style:italic;color:var(--text-dim);margin-top:6px;
     border-left:2px solid rgba(224,179,65,.4);padding-left:9px;}
+  .bs-office-src{font-style:normal;font-size:10.5px;color:var(--text-faint);margin-top:3px;letter-spacing:.04em;}
+  .fa-clauses{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .fa-cl{font-size:10.5px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;color:var(--text-dim);display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,.22);}
+  .fa-cl.good{border-color:rgba(91,176,131,.55);color:var(--green);}
+  .fa-cl.red{border-color:rgba(198,57,44,.55);color:#f0907f;}
   .bksheet.promo{border-color:rgba(63,127,191,.5);background:linear-gradient(180deg,rgba(63,127,191,.12),rgba(0,0,0,.24));}
   .bksheet.dark{border-color:var(--line);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.2));}
   .bs-k{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:800;}
@@ -1773,9 +1778,18 @@ function freeAgentOffers(){
     if(want<6) return;
     const years=ti>=2 ? (rnd()<0.5?3:2) : (rnd()<0.6?2:1);
     const guar=dealValue(p,c.pop,c.rep,c.standing)*(0.86+want/230);
+    // Contract nuance. A cold offer is bare bones; a hot one lets the
+    // promotion put money on the table to lock you in.
+    // signingBonus: one-time cash on signing
+    // noCompete: months you cannot work rival shows
+    // downside: minimum weekly regardless of bookings
+    const signingBonus = want>60 ? Math.round(guar*Math.min(6,years+1)*0.4/100)*100 : 0;
+    const noCompete = ti>=2 ? (rnd()<0.55?6:3) : (rnd()<0.35?3:0);
+    const downside = Math.round(guar*(want>60?0.85:0.55)/10)*10;
     o.push({ promo:p.id, years, weekly:Math.round(guar/10)*10,
       creative: want>72 || (ti<=1&&rnd()<0.5),
       merch: +(0.06+Math.min(0.16,want/560)+(ti>=2?0.02:0)).toFixed(3),
+      signingBonus, noCompete, downside,
       want:Math.round(want),
       pitch: p.id===cur.id ? `${p.name} want to keep you.` : `${p.name} have made an offer.` });
   });
@@ -3939,7 +3953,7 @@ function renderWeek(){
         o.stakes==='title'?' · for the title':o.stakes==='defense'?' · title defence':
         o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':''}</div>
       <div class="bs-rules"><b>Rules.</b> ${stipRules(o).desc}</div>
-      ${b.line?`<div class="bs-office">"${b.line}"</div>`:''}
+      ${b.line?`<div class="bs-office">"${b.line}"<div class="bs-office-src">from ${b.bookerName||'the office'}</div></div>`:''}
       <div class="bk-odds" style="margin-top:10px;">
         <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
         <div class="bk-olab"><span>You <b>${Math.round(w*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(w*100)}%</b> them</span></div>
@@ -5508,13 +5522,13 @@ function bookWeek(){
   } else {
     c.booking={type:'dark'};
   }
-  // the memo has a voice: how the office frames the week tells you where you stand
+  // the memo has a voice: the booker of your promotion writes to you by name,
+  // and you learn their personality (protector, sports, showman, wildcard, traditionalist)
+  // by what they ask for week after week.
   const bk=c.booking;
   if(bk.type==='match'){
-    const lines = bk.o.card==='Main Event' ? ['Creative has plans for you. Do not waste them.','Top of the card. Top of the bill. Deliver.','The building is yours to send home happy.']
-      : bk.o.card==='Opener' ? ['Warm them up properly and someone will notice.','First out. Set the temperature for the night.','Short and loud. Make them look up from their chips.']
-      : ['Steady the middle of the card for us.','Give us ten good minutes.','Make the segment matter.'];
-    bk.line=lines[Math.floor(rnd()*lines.length)];
+    bk.line = bookerMemo(bookerFor(myPromoId()), bk.o.card, bk.o.stakes);
+    bk.bookerName = bookerFor(myPromoId()).name;
     // the firsts that a career is remembered by
     if(bk.o.card==='Main Event') award('Your first main event.',pico('starBig',36));
     if(bk.o.stakes==='title') award('Your first title shot.',pico('trophy',36));
@@ -7250,14 +7264,60 @@ const DIRECTIVES={
   feud:   {icon:pico('swords',20), kicker:'Build the feud',  how:'Make the whole building want to see this settled.', wants:{hostile:-.5,specifics:1}},
   push:   {icon:pico('starBig',20), kicker:'Push yourself',   how:'Get yourself over. Stake a claim.', wants:{intensity:.7,crowd:1,hostile:.2}},
 };
+/* Every promotion has a named creative head. The booker's personality
+   biases the directive they hand you each week (protectors want soft
+   sells, sports-bookers want serious workrate, wildcards want you off
+   script) and their voice colours the office memo on the booking sheet.
+   The player learns their booker over time. */
+const BOOKERS = {
+  gcw:    {name:'Marlon "Digger" Hoyt',   arch:'wildcard',      voice:'Digger runs GCW like a shift at the docks. Blunt notes, no polish.', likes:['heat','feud']},
+  cdp:    {name:'Sabine Ortega',          arch:'protector',     voice:'Sabine protects her workers. She trusts you if you trust the room.', likes:['sell','build']},
+  sbcw:   {name:'"Big Boone" Talbert',    arch:'traditionalist',voice:'Boone books like it is 1985 and every card ends with a handshake.', likes:['sell','build']},
+  scw:    {name:'Vic Sunday',             arch:'showman',       voice:'Vic wants stars, spectacle and something to put in the trailer.',    likes:['push','sell']},
+  rose:   {name:'Naoko Kishi',            arch:'sports',        voice:'Naoko cares about wins and losses. Pageantry irritates her.',      likes:['build','feud']},
+  acw:    {name:'Aaron Fell',             arch:'sports',        voice:'Aaron treats this like a league office. Every word on record.',   likes:['build','sell']},
+  kaiju:  {name:'Ren Takahashi',          arch:'traditionalist',voice:'Ren watches from the back and says almost nothing. Then he moves you.', likes:['feud','build']},
+  eterna: {name:'"El Cronista" Rivas',    arch:'protector',     voice:'Rivas writes for the legacy. Everything ties to what came before.',  likes:['feud','sell']},
+  cwf:    {name:'Ellis Reeve',            arch:'wildcard',      voice:'Ellis pitches ten swerves a week and shoots down eleven of yours.',  likes:['heat','push']},
+};
+function bookerFor(pid){ return BOOKERS[pid] || {name:'The Office', arch:'protector', voice:'The office has a plan.', likes:['sell']}; }
 function pickDirective(mode,target){
   const c=G.car, l=leanOf();
+  const bk=bookerFor(myPromoId());
   if(mode==='title') return 'build';
-  if(target){ const R=rel(target.id); return R.heat>=40?'feud':'build'; }
-  if(l<-30 && G.w.align==='face') return 'soften';           // you have gone off-piste
-  if(l>30 && G.w.align==='heel')  return 'heat';             // they want their villain back
-  if(c.standing<48) return 'push';
-  return 'sell';
+  if(target){ const R=rel(target.id); if(R.heat>=40) return 'feud'; }
+  if(l<-30 && G.w.align==='face') return 'soften';
+  if(l>30 && G.w.align==='heel')  return 'heat';
+  // With no clean signal, defer to what THIS booker cares about.
+  if(c.standing<48) return bk.likes.indexOf('push')>=0 ? 'push' : bk.likes[0];
+  return bk.likes[0] || 'sell';
+}
+/* Booker-flavoured version of the week's office memo line. The message the
+   office writes on the booking sheet reads in Sabine's voice or Digger's
+   voice or Vic's voice, so the player learns who they work for. */
+function bookerMemo(bk, card, stakes){
+  const b = bookerFor(myPromoId());
+  const meLine = card==='Main Event' ? {
+    protector:      ['Top of the card. Do not make me regret it.','Main event. Send them home the way we told you to.','You are the finish tonight. Do the work.'],
+    sports:         ['Main event. The rating comes off this match.','You headline. Wrestle like a champion, whether you are one or not.','Top spot. The tape gets scouted.'],
+    showman:        ['You are the pull tonight. Give them a reason.','Main event. Sell me a poster.','Top of the bill. Do something they will talk about.'],
+    traditionalist: ['You go home tonight. Take care of him.','Main event. Old rules apply. Tell a story.','You wrestle a match tonight. A real one.'],
+    wildcard:       ['You are last out. Blow this thing up.','Main event. If you play it safe I bury you next week.','Top of the bill. Surprise me.'],
+  } : card==='Opener' ? {
+    protector:      ['First out. Warm them up right and I will remember it.','Opener. Set the tone.','You open. Get us going.'],
+    sports:         ['Opener. Wrestle a tight ten and we will talk.','You open. Ten minutes, no filler.','First match. Show me you can go.'],
+    showman:        ['Opener. Loud entrance, hot finish.','First out. Give them something to shout about.','You open. Wake this building up.'],
+    traditionalist: ['Opener. Set the tempo the way the veterans did.','First out. A clean match makes the whole card.','You open. Do it right.'],
+    wildcard:       ['First out. Do something weird. I want them curious.','Opener. Surprise the crowd early.','First match. Set a fire.'],
+  } : {
+    protector:      ['Steady the middle. Ten minutes, one story.','Middle of the card. Give us what we asked for.','Hold the fort in the middle.'],
+    sports:         ['Middle of the card. Wrestle a clean match.','Solid ten minutes, no cheap finish.','Middle spot. Show us something.'],
+    showman:        ['Give the middle of the card a moment they remember.','Mid-card. Turn a head or two.','Middle spot. Add a signature.'],
+    traditionalist: ['Middle of the card. Tell a real match.','Old-school in the middle tonight.','Hold up the middle the right way.'],
+    wildcard:       ['Middle of the card. Try something. Ask forgiveness later.','Mid-card. Do a swerve if you can find one.','Middle spot. Live a little.'],
+  };
+  const arr = meLine[b.arch] || meLine.protector;
+  return arr[Math.floor(rnd()*arr.length)];
 }
 // how much your line honored what the office asked for, -1..+1
 function complianceOf(read,directive){
@@ -8177,13 +8237,21 @@ function renderDeal(){
     if(!c.faOffers.length) c.faOffers=[{promo:PROMOS.filter(x=>x.tier==='indie')[0].id,years:1,weekly:300,creative:false,merch:0.05,want:5,pitch:'A one-year deal to get you back on shows.'}];
     c.faOffers.forEach((o,i)=>{
       const pr=promoById(o.promo), up=promoTierIdx(pr)>promoTierIdx(p);
+      const bk=bookerFor(pr.id);
+      const bonus=o.signingBonus||0, downside=o.downside||0, nc=o.noCompete||0;
       h+=`<div class="opt" onclick="signDeal(${i})" style="border-left:3px solid ${pr.color}">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
           <h4>${pr.name}</h4>
           <span class="badge ${up?'b-leg':'b-com'}">${cap(pr.tier)}${up?' · STEP UP':''}</span></div>
         <div class="meta">${money(o.weekly)}/week · ${o.years} year${o.years>1?'s':''} · ${Math.round(o.merch*100)}% merch${o.creative?' · creative control':''}</div>
         <p>${o.pitch} <span class="hint">${pr.product}: ${pr.blurb}</span></p>
-        <div class="hint" style="margin-top:6px;">Guaranteed over the term: <b>${money(o.weekly*WEEKS_PER_YEAR*o.years)}</b> · interest ${o.want}</div>
+        <div class="hint" style="margin-top:4px;font-style:italic;">Booked by <b style="color:${pr.color}">${bk.name}</b>. ${bk.voice}</div>
+        <div class="fa-clauses">
+          ${bonus?`<span class="fa-cl good">${pico('money',12)} ${money(bonus)} signing bonus</span>`:''}
+          <span class="fa-cl">${pico('shield',12)} ${money(downside)} weekly downside</span>
+          ${nc?`<span class="fa-cl ${nc>=6?'red':''}">${pico('clipboard',12)} ${nc}mo no-compete</span>`:'<span class="fa-cl good">no no-compete</span>'}
+        </div>
+        <div class="hint" style="margin-top:6px;">Guaranteed over the term: <b>${money((o.weekly*WEEKS_PER_YEAR*o.years)+bonus)}</b> · interest ${o.want}</div>
       </div>`;
     });
     h+=`</div>`;
@@ -8249,8 +8317,12 @@ function signDeal(i){
   const c=G.car, o=c.faOffers[i]; if(!o) return;
   const pr=promoById(o.promo), old=myPromo();
   c.deal={ promo:o.promo, years:o.years, weeksLeft:WEEKS_PER_YEAR*o.years, weekly:o.weekly,
-           sched:(c.deal&&c.deal.sched)||'regular', creative:o.creative, merch:o.merch, signedY:c.year };
+           sched:(c.deal&&c.deal.sched)||'regular', creative:o.creative, merch:o.merch, signedY:c.year,
+           downside:o.downside||o.weekly, noCompete:o.noCompete||0, signingBonus:o.signingBonus||0 };
   c.freeAgent=false; c.faOffers=null; c.offers=null;
+  // signing bonus lands in the bank on signing day
+  if(o.signingBonus){ G.bag.coins += o.signingBonus; c.earnings += o.signingBonus;
+    pushInboxItem({ico:pico('money',18),sev:'good',txt:`<b>Signing bonus.</b> ${money(o.signingBonus)} on signing day.`}); }
   if(pr.id!==old.id){
     // you do not take the belt with you
     if(c.title){ pushLog(`You had to relinquish the ${c.title} on the way out of ${old.short}.`); c.title=null; c.defenses=0; }
