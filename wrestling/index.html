@@ -536,7 +536,8 @@
   .pm-rec{display:inline-block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;padding:2px 7px;background:rgba(224,179,65,.18);color:var(--gold);border-radius:6px;}
   .pm-rec.pm-remem{background:rgba(63,127,191,.18);color:#7fb2e0;}
   .pmrhy{border:1.5px solid rgba(224,179,65,.55);border-radius:12px;padding:14px 14px 12px;background:linear-gradient(180deg,rgba(224,179,65,.08),rgba(0,0,0,.28));}
-  .pmrhy .pmr-k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:6px;}
+  .pmrhy .pmr-k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .pmrhy .pmr-stage{font-size:9px;letter-spacing:.14em;color:var(--text-faint);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:6px;}
   .pmrhy .pmr-preview{font-size:14px;color:var(--cream);line-height:1.5;font-style:italic;margin-bottom:10px;}
   .pmrhy .pmr-hint{font-size:11.5px;color:var(--text-dim);margin-bottom:8px;}
   .pmrhy .pmr-bar{position:relative;height:26px;background:rgba(0,0,0,.5);border:1.5px solid var(--line);border-radius:999px;overflow:hidden;margin-bottom:10px;}
@@ -7570,17 +7571,42 @@ async function pmRhythm(){
   PM.beat = PM.maxBeats;
   await pmFinish();
 }
+/* How the stage shapes the promo. Company tier scales the payoff a great cut
+   earns, and the stakes tighten the timing windows on the rhythm minigame:
+   a blow-off in a global arena should feel harder to nail and pay more when
+   you do than a weekly callout at the indies. */
+function promoStagePres(){
+  const tier = tierIdx();
+  const stakes = stakesForPromo(PMCTX);
+  const bandMult = stakes.indexOf('feud_end')>=0 ? 0.7
+                 : stakes.indexOf('title_defense')>=0 ? 0.8
+                 : stakes.indexOf('title_call')>=0 ? 0.85
+                 : 1;
+  const tierMult = [0.85, 1.0, 1.2, 1.5][tier] || 1;
+  const label = ['CLUB','ARENA','TV STUDIO','STADIUM'][tier] || 'ARENA';
+  return {tier, tierMult, bandMult, stakes, label};
+}
+function promoBigFx(){
+  // scale the "PERFECT" fx on rhythm to the stage
+  const p = promoStagePres();
+  if(p.tier>=2){
+    const el = $('pmArena'); if(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),340); }
+    const f = document.createElement('div'); f.className='flash go';
+    const host = $('pmArena')||$('arena'); if(host){ host.appendChild(f); setTimeout(()=>f.remove(),320); }
+  }
+}
 /* One beat of the rhythm minigame. Returns a hit score 0..1. */
 async function pmRhythmBeat(cut, previewLine, idx, total){
-  const band = 0.16 - idx*0.02;
+  const pres = promoStagePres();
+  const band = (0.16 - idx*0.02) * pres.bandMult;
   const center = 0.62 + (rnd()-0.5)*0.10;
   const duration = 1500 + idx*100;
   const label = ['HOOK','PUNCH LINE','CLOSE'][idx] || `BEAT ${idx+1}`;
   $('pmChoices').innerHTML = `
     <div class="pmrhy">
-      <div class="pmr-k">Beat ${idx+1} of ${total} · ${label}</div>
+      <div class="pmr-k">Beat ${idx+1} of ${total} · ${label} <span class="pmr-stage">${pres.label}</span></div>
       <div class="pmr-preview">"${previewLine}"</div>
-      <div class="pmr-hint">Tap when the meter hits the gold band.</div>
+      <div class="pmr-hint">${pres.bandMult<1?'The window is tight. This one matters. ':''}Tap when the meter hits the gold band.</div>
       <div class="pmr-bar" id="pmrBar">
         <div class="pmr-band" style="left:${Math.round((center-band/2)*100)}%;width:${Math.round(band*100)}%;"></div>
         <div class="pmr-cursor" id="pmrCursor"></div>
@@ -7613,7 +7639,7 @@ async function pmRhythmBeat(cut, previewLine, idx, total){
     else if(dist<=half*2.5) hit = clamp(1 - (dist-half)/(half*1.5)*0.75, 0.3, 0.75);
     else hit = 0;
   }
-  if(hit>=0.9) res.innerHTML = '<b style="color:var(--gold)">PERFECT</b>';
+  if(hit>=0.9){ res.innerHTML = '<b style="color:var(--gold)">PERFECT</b>'; promoBigFx(); }
   else if(hit>=0.6) res.innerHTML = '<b style="color:var(--green)">landed</b>';
   else if(hit>=0.3) res.innerHTML = '<span style="color:var(--text-dim)">flat</span>';
   else res.innerHTML = '<b style="color:#f0907f">died</b>';
@@ -7627,10 +7653,15 @@ async function pmFinish(suppressPop){
   const fitAvg=PM.fitSum/Math.max(1,PM.maxBeats);          // -0.6 .. +1
   const structure=Math.round(clamp((fitAvg+0.6)/1.6,0,1)*22);
   const q=clamp(PM.score/PM.maxBeats*62 + w.attrs.ch*0.28 + PM.specifics*5 + PM.crowdWork*4 + structure, 0, 100);
-  c.pop=clamp(c.pop+q*0.035,1,100);
-  if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + 6 + q*0.10, 0, 100);
+  // Company tier scales what a great cut is worth. A classic at a Global
+  // Main Event is a career moment; a classic at the indies is still a good
+  // week but not the same paycheck of rep, pop and standing.
+  const pres = promoStagePres();
+  const bigCut = q>=75 ? pres.tierMult : 1;
+  c.pop=clamp(c.pop+q*0.035*bigCut,1,100);
+  if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + 6 + q*0.10*bigCut, 0, 100);
   w.mastery.showman=(w.mastery.showman||0)+Math.round(8+q*0.12);
-  c.rep+=Math.round(20+q*0.9);
+  c.rep+=Math.round((20+q*0.9)*bigCut);
   // The office reads the room. Doing what they asked is safe. Going off-script
   // and having it work gets you a bigger push than compliance ever would.
   // Going off-script and eating it gets you a real problem with the office.
