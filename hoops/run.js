@@ -724,7 +724,10 @@ function indexData(players) {
 // ─── exports ────────────────────────────────────────────────────────────────
 
 const publicAPI = {
-  API_VERSION: 1,
+  /* Moves with engine.js, not independently: index.html asks both files for the
+     SAME number, so one version means one answer to "is this page and its
+     scripts the same age". */
+  API_VERSION: 2,
   PHASES, TUNING, BLOCK,
   createRun, spin, respin, sign,
   playSeason, advanceGame, finalizeSeason,

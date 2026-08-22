@@ -322,6 +322,16 @@
   .reelbox.hit .reel-win{animation:bandhit .5s ease-out;}
   .reelbox.hit .reel-i.land{animation:facehit .42s cubic-bezier(.2,1.5,.35,1);}
 
+  .toast{position:fixed;left:50%;bottom:calc(var(--dock) + 22px);transform:translateX(-50%);
+    z-index:95;background:#1b2333;border:1px solid var(--cardb);color:var(--ink);
+    padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.5);}
+  .toast.on{opacity:1;}
+  .crash{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:90;
+    background:#7f1d1d;color:#fff;border:1px solid #b91c1c;border-radius:10px;
+    padding:11px 13px;font-size:13px;line-height:1.4;cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.5);}
+
   /* ── THE WHEEL WEARS THE CLUB ──────────────────────────────────────────
      The moment the club reel lands, BOTH boxes take that club's colors: the
      fill is its primary, the band around the winning row is its secondary, and
@@ -776,6 +786,12 @@
 <body>
 <div class="wrap">
 
+<!-- Where an unhandled error in our own code goes. Hidden until there is one,
+     and dismissible, because a banner you cannot get rid of is worse than the
+     bug it is reporting. -->
+<div class="crash" id="crash" role="alert" onclick="this.style.display='none'"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <!-- THE TOP BAR. Where you are, what the run is doing, and a way out. It is
      sticky, so the way out is never a scroll away, and it paints its own
      backdrop across the whole window rather than across the wrap. The wordmark
@@ -1076,6 +1092,7 @@
   <!-- Career record used to sit here as well, an inch below the Career button
        in the bar above it. The bar owns the record now, on every screen. -->
   <div class="btnrow" style="margin-top:8px">
+    <button class="ghost" id="b-share" style="flex:1">Share this run</button>
     <button class="ghost" id="b-home" style="flex:1">Home</button>
   </div>
 </div>
@@ -1128,8 +1145,8 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=8"></script>
-<script src="run.js?v=1"></script>
+<script src="engine.js?v=9"></script>
+<script src="run.js?v=2"></script>
 <script>
 (function(){
 'use strict';
@@ -1144,6 +1161,68 @@ var bold = function(text){
   b.textContent = text;
   return b;
 };
+
+/* ── THE PAGE AND ITS SCRIPTS HAVE TO BE THE SAME AGE ──────────────────────
+ *
+ * index.html revalidates on every visit and engine.js and run.js do not, which
+ * is the whole reason those two carry a hand-written ?v= and why CI checks it.
+ * The version is the FIX; this is the net underneath it.
+ *
+ * A returning visitor can hold a cached engine.js against a current page, and
+ * the two do not have to be compatible. That has already shipped once on this
+ * site, in the football game, as a draft screen that threw with no players on
+ * it and nothing on screen to say why. It is invisible on a development machine
+ * because a developer's browser has never seen the old file.
+ *
+ * So: reload ONCE with a fresh query to shake the cache, and if the copy that
+ * comes back still disagrees, say so in words instead of dying quietly. One
+ * retry, so this can never become a reload loop.
+ */
+var NEED_VERSION = 2;
+(function bootCheck(){
+  if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
+  if (!/[?&]fresh=/.test(location.search)) {
+    location.replace(location.pathname + '?fresh=' + Date.now());
+    throw new Error('reloading for a fresh copy');
+  }
+  document.body.innerHTML = '<div class="wrap"><div class="card" style="margin-top:40px">'
+    + '<h2>Out of date</h2><p class="dim" style="font-size:14px;margin:8px 0 0">This page is '
+    + 'running an old copy of the game that your browser saved. Close the tab and open it '
+    + 'again to pick up the current version.</p></div></div>';
+  throw new Error('version mismatch: page needs ' + NEED_VERSION
+    + ', engine ' + (E && E.API_VERSION) + ', run ' + (R && R.API_VERSION));
+})();
+
+/* AN UNHANDLED ERROR IN OUR CODE SAYS SO ON SCREEN. A silent throw mid-draft
+ * looks exactly like the game being broken with no explanation, which is how
+ * the cache problem above went unreported for as long as it did.
+ *
+ * IT HAS TO BE OUR CODE. The same banner in the football game fired over a
+ * perfectly good results screen reading "Something broke: Script error.", which
+ * is the browser's sanitized report of an error inside a CROSS-ORIGIN script: a
+ * content blocker, an extension, or the code an in-app browser injects when a
+ * link is opened from a messaging app. The spec strips the message, the file
+ * and the line from those deliberately, so there is nothing to act on and
+ * nothing worth telling anybody. Alarming a player because their messaging app
+ * ran its own script is worse than saying nothing at all.
+ *
+ * Three things are filtered and everything else still shows:
+ *   a resource that would not load, which arrives on this same event with an
+ *     element as the target and no message
+ *   an opaque cross-origin script error, recognizable by having no filename
+ *   an error whose filename is not on this origin
+ */
+window.addEventListener('error', function(ev){
+  if (ev.target && ev.target !== window) return;
+  var msg = ev.message || '';
+  if (!msg) return;
+  if (/^script error/i.test(msg) && !ev.filename) return;
+  if (ev.filename && ev.filename.indexOf(location.origin) !== 0) return;
+  var el = $('crash');
+  if (!el || el.style.display === 'block') return;
+  el.style.display = 'block';
+  el.textContent = 'Something broke: ' + msg + '. Tap to dismiss, or reload to start again.';
+});
 
 /* THE TITLE BELONGS ON THE TITLE SCREEN. It is 230px of masthead above every
    screen in the game, which on a phone is most of the space between the top of
@@ -2811,6 +2890,323 @@ function renderMonths(){
   }
 }
 
+// ── sharing ────────────────────────────────────────────────────────────────
+
+/* A RUN NOBODY CAN SHOW ANYBODY IS A RUN THAT HAPPENED TO ONE PERSON. This is
+ * the football game's share card rebuilt for basketball: two lines of text that
+ * read before the link does, and a portrait card drawn to a canvas.
+ *
+ * Trailing slash, matching the canonical link. /hoops is a directory, so the
+ * bare path is a 301 and this URL gets pasted into a chat by every share: a
+ * redirect hop on each one, and two URLs for the same page for anything that
+ * counts links.
+ */
+var SHARE_URL = 'https://runthe.gg/hoops/';
+
+/* THE LINE THAT MAKES IT A DARE RATHER THAN A SCOREBOARD. A shared result with
+   no invitation in it gives the person reading it nothing to do. Which dare
+   depends on what happened: telling somebody who won 74 games to draft better
+   is nonsense. */
+function shareDare(out){
+  if (out.isGOAT) return 'Can you win 74?';
+  if (out.titleWon) return 'Can you win a ring?';
+  return 'Can you build a better six?';
+}
+
+function shareText(out){
+  var head = 'Run The Floor: ' + out.wins + '-' + out.losses + '. ' + headline(out) + '.';
+  var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
+  var mode = shape && shape !== 'No Identity' ? ' ' + shape + '.' : '';
+  return head + mode + ' Rating ' + out.rating.toFixed(0) + '.\n'
+    + shareDare(out) + '\n' + SHARE_URL;
+}
+
+/* THE CARD, DRAWN TO A CANVAS AT 1080x1350.
+ *
+ * Portrait 4:5 because that is what survives being posted anywhere: it is the
+ * tall limit on most feeds and it still reads as a thumbnail in a message.
+ *
+ * EVERY VERTICAL POSITION IS A NAMED CONSTANT rather than an accumulator. The
+ * football card's first version added up as it went and its footer landed on
+ * top of its stats row, printing one line straight through another. With the
+ * anchors written down, a six man card always lands the same and the gaps
+ * between blocks can be read off without running it.
+ */
+var CARD = {
+  W: 1080, H: 1350, PAD: 76,
+  TITLE: 96, TAG: 126,
+  REC: 372, VERDICT: 436,
+  RULE1: 482,
+  ROWS: 552, ROW: 92,          // six players, last baseline 1012
+  RULE2: 1064,
+  STAT: 1150, STAT_LABEL: 1192,
+  DARE: 1258,
+  LINK_T: 1282, LINK_H: 58,
+  KEEL: 10
+};
+
+function hexAt(hex, a){
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h.split('').map(function(c){ return c + c; }).join('');
+  var n = parseInt(h, 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+/* WHOSE COLORS THE CARD WEARS. Six players from six different clubs, so there
+   is no one franchise to take them from the way the football game does in One
+   Franchise mode. The anchor is the club of the best man on the roster by win
+   shares: he is the reason the season went how it went, and it means two people
+   with the same record still get cards that look like their own team. */
+function cardClub(){
+  var best = null;
+  for (var i = 0; i < run.roster.length; i++) {
+    if (!best || run.roster[i].w > best.w) best = run.roster[i];
+  }
+  return best ? best.t : null;
+}
+
+function drawShareCard(){
+  var c = document.createElement('canvas');
+  c.width = CARD.W; c.height = CARD.H;
+  var x = c.getContext('2d');
+  var out = run.outcome;
+  var code = cardClub();
+  var skin = code ? E.clubSkin(code) : { bg: '#7a2f0a', accent: '#f0782d', on: '#ffffff' };
+  var PAD = CARD.PAD, mid = CARD.W / 2;
+
+  // Ground: near-black with one wash of the club's color at the top.
+  x.fillStyle = '#0d1117'; x.fillRect(0, 0, CARD.W, CARD.H);
+  var g = x.createRadialGradient(mid, -150, 40, mid, -150, CARD.W * 1.15);
+  g.addColorStop(0, skin.bg); g.addColorStop(1, 'rgba(13,17,23,0)');
+  x.globalAlpha = 0.75; x.fillStyle = g; x.fillRect(0, 0, CARD.W, CARD.H * 0.6); x.globalAlpha = 1;
+
+  /* THE HALF COURT, VERY FAINTLY, UNDER EVERYTHING. The same lines the game
+     draws on its own court. At these alphas it is texture rather than a
+     picture, which is the point: it has to say basketball without competing
+     with a 210px record sitting on top of it. */
+  x.save();
+  x.strokeStyle = hexAt(skin.accent, 0.09); x.lineWidth = 3;
+  var cy = 300, keyW = 300, keyH = 340;
+  x.strokeRect(mid - keyW / 2, cy, keyW, keyH);                       // the paint
+  x.beginPath(); x.arc(mid, cy + keyH, 92, 0, Math.PI * 2); x.stroke(); // free throw circle
+  x.beginPath(); x.arc(mid, cy + 62, 250, 0.18 * Math.PI, 0.82 * Math.PI); x.stroke();  // the arc
+  x.beginPath(); x.arc(mid, cy + 62, 20, 0, Math.PI * 2); x.stroke();  // the rim
+  x.restore();
+
+  // The keel: one bar of the club's second color down the left edge.
+  x.fillStyle = skin.accent; x.fillRect(0, 0, CARD.KEEL, CARD.H);
+
+  x.textAlign = 'left';
+  x.fillStyle = '#eef2f9';
+  x.font = '700 42px Archivo, system-ui, sans-serif';
+  x.fillText('RUN THE FLOOR', PAD, CARD.TITLE);
+  x.fillStyle = hexAt('#94a3b8', 0.95);
+  x.font = '600 25px Archivo, system-ui, sans-serif';
+  x.fillText('Six NBA seasons, one cap, 82 games.', PAD, CARD.TAG);
+
+  // The record, which is the whole point of the card.
+  x.textAlign = 'center';
+  x.fillStyle = '#ffffff';
+  x.font = '700 210px Archivo, system-ui, sans-serif';
+  x.fillText(out.wins + '-' + out.losses, mid, CARD.REC);
+  x.fillStyle = out.titleWon ? '#f2c14e' : skin.accent;
+  x.font = '700 44px Archivo, system-ui, sans-serif';
+  x.fillText(headline(out).toUpperCase(), mid, CARD.VERDICT);
+
+  var rule = function(y){
+    x.fillStyle = hexAt(skin.accent, 0.3);
+    x.fillRect(PAD, y, CARD.W - PAD * 2, 2);
+  };
+  rule(CARD.RULE1);
+
+  /* THE SIX, in the order they fill the floor rather than the order they were
+     signed, so two cards of the same roster read the same way. Each carries the
+     colour its position wears everywhere else in the game. */
+  var filled = {};
+  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
+  for (var i = 0; i < E.SLOTS.length; i++) {
+    var slot = E.SLOTS[i], p = filled[slot];
+    var y = CARD.ROWS + i * CARD.ROW;
+    x.textAlign = 'left';
+    // the position chip
+    x.fillStyle = POS_HEX[slot] || '#6366f1';
+    roundRect(x, PAD, y - 34, 78, 44, 9); x.fill();
+    x.fillStyle = '#0d1117';
+    x.font = '700 25px Archivo, system-ui, sans-serif';
+    x.textAlign = 'center';
+    x.fillText(slot, PAD + 39, y);
+    if (!p) continue;
+    x.textAlign = 'left';
+    x.fillStyle = '#eef2f9';
+    x.font = '700 38px Archivo, system-ui, sans-serif';
+    x.fillText(clip(x, p.n, 560), PAD + 100, y);
+    x.fillStyle = '#94a3b8';
+    x.font = '600 26px Archivo, system-ui, sans-serif';
+    x.fillText(p.s + ' ' + E.teamName(p.t), PAD + 100, y + 33);
+    x.textAlign = 'right';
+    x.fillStyle = skin.accent;
+    x.font = '700 34px Archivo, system-ui, sans-serif';
+    x.fillText('$' + p.p.toFixed(1) + 'M', CARD.W - PAD, y);
+  }
+
+  rule(CARD.RULE2);
+
+  // Three numbers, evenly spaced, each with its label underneath.
+  var spend = E.CONSTANTS.CAP_MUSD - R.remaining(run);
+  var chemBonus = (out.chemistry && typeof out.chemistry.bonus === 'number')
+    ? out.chemistry.bonus : 0;
+  var stats = [
+    [out.rating.toFixed(0), 'TEAM RATING'],
+    /* .bonus, not the object. Chemistry travels as {bonus, links, ...} and
+       every other reader in this file already knew that; this one did not, and
+       the throw was swallowed by the catch below, so the card silently became
+       no card at all. */
+    [(chemBonus >= 0 ? '+' : '') + chemBonus.toFixed(2), 'CHEMISTRY'],
+    ['$' + spend.toFixed(0) + 'M', 'SPENT OF $' + E.CONSTANTS.CAP_MUSD + 'M']
+  ];
+  x.textAlign = 'center';
+  for (var s2 = 0; s2 < stats.length; s2++) {
+    var cx = PAD + (CARD.W - PAD * 2) * (s2 + 0.5) / stats.length;
+    x.fillStyle = '#eef2f9';
+    x.font = '700 50px Archivo, system-ui, sans-serif';
+    x.fillText(stats[s2][0], cx, CARD.STAT);
+    x.fillStyle = '#94a3b8';
+    x.font = '700 21px Archivo, system-ui, sans-serif';
+    x.fillText(stats[s2][1], cx, CARD.STAT_LABEL);
+  }
+
+  x.fillStyle = '#94a3b8';
+  x.font = '600 27px Archivo, system-ui, sans-serif';
+  x.fillText(shareDare(out), mid, CARD.DARE);
+
+  // The link, as a pill, because that is where the dare gets accepted.
+  var pillW = 430, pillX = mid - pillW / 2;
+  x.fillStyle = hexAt(skin.accent, 0.16);
+  roundRect(x, pillX, CARD.LINK_T, pillW, CARD.LINK_H, CARD.LINK_H / 2); x.fill();
+  x.strokeStyle = hexAt(skin.accent, 0.5); x.lineWidth = 2; x.stroke();
+  x.fillStyle = '#eef2f9';
+  x.font = '700 28px Archivo, system-ui, sans-serif';
+  x.fillText('RUNTHE.GG/HOOPS', mid, CARD.LINK_T + 39);
+
+  return c;
+}
+
+/* The position colours as flat hex. The page paints these as gradients off CSS
+   custom properties, which a canvas cannot read, so the values live here too.
+   verify.mjs asserts the two agree. */
+var POS_HEX = { PG: '#3b82f6', SG: '#06b6d4', SF: '#22c55e', PF: '#f59e0b',
+  C: '#ef4444', '6TH': '#a855f7', G: '#6366f1', F: '#84cc16' };
+
+function roundRect(x, left, top, w, h, r){
+  x.beginPath();
+  x.moveTo(left + r, top);
+  x.arcTo(left + w, top, left + w, top + h, r);
+  x.arcTo(left + w, top + h, left, top + h, r);
+  x.arcTo(left, top + h, left, top, r);
+  x.arcTo(left, top, left + w, top, r);
+  x.closePath();
+}
+
+/* A long name has to stop rather than run under the price beside it. */
+function clip(x, text, max){
+  if (x.measureText(text).width <= max) return text;
+  var t = text;
+  while (t.length > 1 && x.measureText(t + '…').width > max) t = t.slice(0, -1);
+  return t + '…';
+}
+
+var toastTimer = null;
+function toast(msg){
+  var el = $('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('on'); }, 2200);
+}
+
+var canvasBlob = function(c){
+  return new Promise(function(res){ c.toBlob(res, 'image/png'); });
+};
+
+/* THREE WAYS DOWN, AND THE FIRST ONE THAT WORKS WINS. A phone gets the share
+   sheet with the picture in it. A desktop browser with a share sheet but no
+   file support gets the text. Everything else gets the text on the clipboard
+   and the picture as a download, which is the path that has to work because it
+   is the one a laptop takes. */
+function shareRun(){
+  if (!run || !run.outcome) return;
+  var text = shareText(run.outcome);
+  /* THE FONTS HAVE TO BE IN BEFORE ANYTHING IS MEASURED, or the card lays
+     itself out against a fallback face and every column lands in the wrong
+     place. */
+  var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+
+  return ready.then(function(){
+    /* A CARD THAT FAILS TO DRAW MUST NOT EAT ITS OWN REASON. The first version
+       returned null here and said nothing, so a typo in one field turned into
+       "the picture just does not appear", which took a patched build to find.
+       The share still goes ahead as text, which is the right fallback, but the
+       throw goes to the console where somebody can read it. */
+    try {
+      return canvasBlob(drawShareCard());
+    } catch (e) {
+      if (window.console && console.error) console.error('share card failed to draw', e);
+      return null;
+    }
+  }).then(function(blob){
+    var file = null;
+    try { if (blob) file = new File([blob], 'run-the-floor.png', { type: 'image/png' }); }
+    catch (e) { file = null; }
+
+    var sheet;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      sheet = navigator.share({ text: text, files: [file] });
+    } else if (navigator.share) {
+      sheet = navigator.share({ text: text });
+    } else {
+      sheet = Promise.reject(new Error('no share sheet'));
+    }
+
+    /* ONE BLOB, RENDERED ONCE, CARRIED INTO THE FALLBACK. The first version
+       drew the card a second time down here and the download never fired: by
+       then the click that started all this had been through two promise turns,
+       and a programmatic download wants a live user gesture. Reusing the blob
+       is fewer moving parts AND it is the picture the share sheet was offered,
+       so the two paths cannot hand out different cards. */
+    return sheet.catch(function(err){
+      if (err && err.name === 'AbortError') return;   // they closed the sheet
+      copyAndDownload(text, blob);
+    });
+  });
+}
+
+/* The path a laptop takes, and therefore the one that has to work: the text on
+   the clipboard and the picture as a file. The anchor is put INTO the document
+   before it is clicked, because a detached one is ignored in some browsers,
+   and taken out again straight after. */
+function copyAndDownload(text, blob){
+  var save = function(){
+    if (!blob) return;
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'run-the-floor.png';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text)
+      .then(function(){ toast(blob ? 'Copied, and the card is downloading' : 'Copied'); save(); })
+      .catch(function(){ toast('Could not copy'); save(); });
+  }
+  toast(blob ? 'Downloading the card' : 'Could not copy');
+  save();
+}
+
 // ── career, on this device ─────────────────────────────────────────────────
 
 /* EVERY ACCESS IS WRAPPED, and not out of habit. A private window throws on the
@@ -3052,6 +3448,7 @@ $('b-resume').onclick = resumeRun;
 $('b-abandon').onclick = abandonRun;
 $('b-mark').onclick = function(){ renderHome(); show('s-home'); };
 $('b-home').onclick = function(){ renderHome(); show('s-home'); };
+$('b-share').onclick = shareRun;
 $('b-spin').onclick = spin;
 $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;

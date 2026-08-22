@@ -35,7 +35,11 @@
 'use strict';
 (function() {
 
-const ENGINE_API_VERSION = 1;
+/* Bumped when the page and this file can no longer be mixed. index.html checks
+   it at boot and reloads once, because a returning visitor CAN hold a cached
+   copy of this file against a current page. 2: playerTags() removed, wheel
+   colors and title resolution added. */
+const ENGINE_API_VERSION = 2;
 
 // ─── constants ──────────────────────────────────────────────────────────────
 
