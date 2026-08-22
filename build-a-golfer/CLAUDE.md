@@ -16289,3 +16289,50 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   another helper alongside `recordsMajorsHTML` reading a `wins` field if we add one. Tighten the
   legend cutoff: one number in `recordsLegends`. Change the top-shown count: one number
   (`SHOW_TOP=12`) in `recordsMajorsHTML`.
+
+### THE NAMED OPENING RIVAL: a Career Nemesis from move one (owner: green-lit as the #5 pick from
+### the Career Mode Canon audit, completing three of the top five gaps in a single session)
+- **The gap this closes:** the emergent rival system (`S.career.rival`) needs 3 seasons of H2H
+  data before it names a rival — right for the friction-with-a-peer arc that develops over time,
+  but leaves the FIRST years of a career without a named foe. Every great career-mode story has
+  one from move one. This picks a Career Nemesis at turn-pro and freezes them as your ceiling.
+- **Two rival systems, complementary, not in conflict:**
+  - `S.career.openingRival` — the new NAMED nemesis, snapshot-frozen at turn-pro, one for the
+    whole career. This is the generational story.
+  - `S.career.rival` — the existing EMERGENT rival, forms after 3 seasons from H2H tallies,
+    outgrows and refreshes as you climb. This is the year-to-year friction.
+  - They share the SAME H2H table (`S.career.h2h`), which `accrueH2H` already fills for every
+    opponent, so the record against the named rival accrues automatically from day one with no
+    extra plumbing.
+- **`pickOpeningRival()`** filters the live world roster to a plausible chase: a peer **5–14 OVR
+  ahead** of you, aged **28–42** (established stars with career ahead of them, not soon-to-retire
+  veterans). If nothing fits (fresh 90-OVR player), fallback is "anyone higher than you," then
+  "top OVR alive." Returns a frozen snapshot `{name, ovr, age, nation, sinceYear, startMyOvr}`.
+- **`ensureOpeningRival()`** is safe to call every startSeason: it silent-no-ops unless
+  (a) not daily/circuit, (b) no openingRival already assigned, (c) `S.year===1`, and
+  (d) `S.career.seasons.length===0`. **Legacy mid-career saves are left alone** — no 15-year
+  veteran suddenly gets a brand-new "opening rival."
+- **The naming beat** goes into `careerStory().feed` on assignment (`"The tour has a face on your
+  career: Scottie Scheffler (OVR 91)."`), and a `track('opening_rival_named', ...)` event fires.
+- **Display: `openingRivalCardHTML()`** — a coral-bordered strip at the TOP of the Records tab,
+  above the Chase hero. Same visual vocabulary as `.rbchase` (display type, gold-family) but split
+  down the middle with a "VS" divider. Their name on the left, yours on the right. Meta lines
+  show OVR + gap ("**12 OVR back**" is the label — an early pass used "12 behind" which reads as
+  "12 events behind" or "12 majors behind" beside "OVR 80"; caught in the first eyeball and
+  clarified). Foot line reads live H2H: "Career H2H · **1–9** across 13 shared events · year 1 of
+  the chase" or "No shared events yet — the tour is on the stage · rookie year".
+- **Ordering on the Records tab:** Nemesis first (the personal frame), Chase second (the historic
+  frame), Majors leaderboard third, Milestones fourth. Personal-then-historic is the story of a
+  career — you fight your era's rival on the way to chasing the record book.
+- **Verified: 17 checks pass, 0 page errors.** Fresh career gets a rival named; the rival is
+  stronger than you but within reach; snapshot-frozen at your OVR; deterministic same-seed;
+  legacy mid-career save gets NO retroactive assignment; year-2 startSeason doesn't overwrite;
+  story-feed beat present; card renders with both names + ordering (Nemesis above Chase); H2H
+  tally accrues after a played season (13 shared events → 1–9 H2H); daily / circuit both skip.
+- **Regressions all green:** rival_test 17, records_test 24, goals_test 25, daily_glitch 5,
+  circuit_test 14, morris_test 16 — 101 total, 0 page errors.
+- **Tunable in one place.** Ceiling of the OVR band: two numbers in `pickOpeningRival` (currently
+  +5 to +14). Age window: two numbers same function (28–42). Card copy + placement: two lines.
+  Nothing else in the game references `openingRival`, so adding features that consume it
+  (a "Beat the Nemesis" season goal, a farewell moment on their retirement, a Records-Book
+  "won the head-to-head this year" toast) is additive from here.
