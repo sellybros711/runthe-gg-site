@@ -2066,7 +2066,8 @@ $('cardOv').addEventListener('click',e=>{ if(e.target===$('cardOv')) closeCard()
 
 /* ---------- data helpers ---------- */
 function corrected(w){ const c=(window.RTR_CORRECTIONS||{})[w.id]; return c?Object.assign({},w,c):w; }
-const ROSTER=(window.RTR_ROSTER||[]).map(corrected);
+// (ROSTER used to be defined here from window.RTR_ROSTER; it had no callers,
+//  so it was removed. Every roster lookup goes through CHARS below.)
 const MOVES=window.RTR_MOVES||[], MCATS=window.RTR_MOVE_CATS||[], MTIERS=window.RTR_TIERS||[];
 const COSM=window.RTR_COSMETICS||[], RAR=window.RTR_RARITY||{}, PACKS=window.RTR_PACKS||[], PAL=window.RTR_PALETTE||{};
 const ERAS=window.RTR_ERAS||[], MENTORS=window.RTR_LEGENDS||[];
@@ -3940,10 +3941,12 @@ function renderHome(){
   homeRing();
   const s=load(); const el=$('homeCont');
   if(!s){
+    const hasBackup = (()=>{ try{ return !!localStorage.getItem(SAVE+'_prev'); }catch(_e){ return false; } })();
     el.innerHTML=`<div class="startcard">
       <div class="sc-kick">Start your journey<br>to greatness</div>
       <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring, never bought.</div>
       <button class="big btnglow" style="font-size:18px;padding:15px 36px;" onclick="go('start')">Start Career →</button>
+      ${hasBackup?`<button class="ghost" style="margin-top:10px;padding:8px 16px;font-size:12px;" onclick="restoreBackup()">Restore last career</button>`:''}
       <div class="featstrip">
         <div class="feat"><b>${MOVES.length}</b><span>moves to earn</span></div>
         <div class="feat"><b>${CHARS.length}</b><span>rivals to face</span></div>
@@ -4728,6 +4731,69 @@ function setBar(id,pct){ const el=$(id); el.style.width=clamp(pct)+'%';
 function setMom(){ const m=MS.mom; // -100..100
   $('momMe').style.width=(m>0?m/2:0)+'%'; $('momOpp').style.width=(m<0?-m/2:0)+'%'; }
 async function callout(t){ const c=$('fCall'); c.textContent=t; c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); await sleep(520); }
+/* Sound. Small procedural cues via Web Audio: a bell, a pop, a boo, an impact.
+   No assets, no CSP violation. Wrapped in try/catch so a browser that blocks
+   audio (or a headless environment) is quietly a no-op. */
+let SFX_CTX=null;
+function sfxCtx(){
+  if(SFX_CTX) return SFX_CTX;
+  try{ SFX_CTX = new (window.AudioContext||window.webkitAudioContext)(); }catch(_e){ SFX_CTX=null; }
+  return SFX_CTX;
+}
+function sfx(kind){
+  if(G && G.prefs && G.prefs.sound===false) return;
+  const c=sfxCtx(); if(!c) return;
+  try{
+    const now=c.currentTime;
+    if(kind==='bell'){
+      // three-strike bell using a triangle wave
+      [0, 0.10, 0.20].forEach(off=>{
+        const o=c.createOscillator(), g=c.createGain();
+        o.type='triangle'; o.frequency.value=880;
+        g.gain.value=0; g.gain.setValueAtTime(0.001, now+off);
+        g.gain.exponentialRampToValueAtTime(0.28, now+off+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now+off+0.55);
+        o.connect(g).connect(c.destination);
+        o.start(now+off); o.stop(now+off+0.6);
+      });
+    } else if(kind==='pop'){
+      // major triad, quick swell
+      [440,554,659].forEach(f=>{
+        const o=c.createOscillator(), g=c.createGain();
+        o.type='sawtooth'; o.frequency.value=f;
+        g.gain.value=0; g.gain.setValueAtTime(0.001, now);
+        g.gain.exponentialRampToValueAtTime(0.14, now+0.03);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.28);
+        o.connect(g).connect(c.destination);
+        o.start(now); o.stop(now+0.32);
+      });
+    } else if(kind==='boo'){
+      const o=c.createOscillator(), g=c.createGain();
+      o.type='sawtooth'; o.frequency.value=90;
+      o.frequency.linearRampToValueAtTime(60, now+0.5);
+      g.gain.value=0; g.gain.linearRampToValueAtTime(0.20, now+0.04);
+      g.gain.linearRampToValueAtTime(0.001, now+0.55);
+      o.connect(g).connect(c.destination);
+      o.start(now); o.stop(now+0.6);
+    } else if(kind==='impact'){
+      // short noise burst
+      const buf=c.createBuffer(1, 2200, c.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/900);
+      const s=c.createBufferSource(); s.buffer=buf;
+      const g=c.createGain(); g.gain.value=0.35;
+      s.connect(g).connect(c.destination); s.start(now);
+    } else if(kind==='count'){
+      const o=c.createOscillator(), g=c.createGain();
+      o.type='square'; o.frequency.value=520;
+      g.gain.value=0; g.gain.setValueAtTime(0.001, now);
+      g.gain.exponentialRampToValueAtTime(0.20, now+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now+0.18);
+      o.connect(g).connect(c.destination);
+      o.start(now); o.stop(now+0.2);
+    }
+  }catch(_e){}
+}
 // The theme cue for a wrestler. You picked yours from the create screen;
 // everybody else gets one deterministically from their id, so it stays consistent.
 const THEME_LINE={metal:'guitars, war chant',punk:'fast, angry, loud',hiphop:'booming bass, swagger',orchestral:'slow build, main-event',electronic:'synth wave, cold',country:'honky-tonk, boots on the floor',funk:'brass, groove, showman',silent:'lights out, no music'};
@@ -5243,7 +5309,7 @@ async function startFight(o){
        opp:{hp:100,name:o.oppName,ovr:o.oppOvr,limb:newLimbs(),target:null},
        usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null,
        phase:0, phaseBeat:0, stretch:0, covers:0, nearFalls:0, finisherHit:0,
-       clock:0,
+       clock:0, ally:false, mgrHit:false, hotTag:false, runIn:false,
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   chooseTarget(MS.me); chooseTarget(MS.opp);
@@ -5302,6 +5368,7 @@ async function startFight(o){
   // ---- the lock-up: they meet in the middle before the bell ----
   busy(true);
   fmv('me',{pose:'lockup',fwd:ST.close*0.9},320); fmv('opp',{pose:'lockup',fwd:ST.close*0.9},320);
+  sfx('bell');
   await callout('FIGHT!');
   if(stale()) return;
   await settle(260);
@@ -5431,13 +5498,25 @@ async function runFight(){
       await sleep(360);
       return endFight(false);
     }
+    // ---- your manager at ringside earns their spot once per match ----
+    if(!MS.ended && !MS.mgrHit && myManager() && MS.mom<-25 && MS.phase>=2 && rnd()<0.20){
+      MS.mgrHit=true;
+      const mgr=myManager();
+      shake(); await callout(mgr.name.toUpperCase()+' AT RINGSIDE');
+      fLog(`<span class="hi">${mgr.name} climbs onto the apron and buys you the second you needed. Referee turns; you steal a shot.</span>`);
+      MS.mom=clamp(MS.mom+30,-100,100); setMom();
+      MS.opp.hp=clamp(MS.opp.hp-6); setBar('hpOpp',MS.opp.hp);
+      MS.quality+=3;
+      sfx('impact');
+      await sleep(360);
+    }
     // ---- a faction ally can turn the tide ----
     if(!MS.ended && !MS.ally && MS.mom<-30 && (myFaction()||myStable()) && rnd()<(myStable()?0.30:facBonus('interfere',0))){
       MS.ally=true;
       const _st=myStable();
       const f=_st? {name:_st.name} : myFaction();
       const mate=(_st? stableMembers() : facMembers(myFaction())).filter(m=>m.id!==MS.o.oppId)[0];
-      if(mate){ shake(); burst(0,'INTERFERENCE!'); impact(atX('opp'),36,2); await callout(f.name.toUpperCase()+'!');
+      if(mate){ shake(); sfx('impact'); burst(0,'INTERFERENCE!'); impact(atX('opp'),36,2); await callout(f.name.toUpperCase()+'!');
         fLog(`<span class="hi">${mate.name} hits the ring. ${f.name} has your back!</span>`);
         MS.mom=clamp(MS.mom+52,-100,100); MS.opp.hp=clamp(MS.opp.hp-12); setBar('hpOpp',MS.opp.hp); setMom();
         MS.quality+=8; await sleep(420); }
@@ -5826,8 +5905,10 @@ async function endFight(iWon){
            : f.type==='dq'    ? (iWon?'DISQUALIFIED!':'DQ, ON YOU')
            : f.type==='nc'    ? 'NO CONTEST'
            : iWon?'WINNER!':'DEFEATED';
-  await callout(cw);
+  sfx('bell'); await callout(cw);
   if(stale()) return;
+  if(iWon===true) sfx('pop');
+  else if(f.type==='dq' || f.type==='nc') sfx('boo');
   // ---- the official raises the winner's arm (skip if no winner) ----
   if(FIG.ref && !noWinner){
     const wx=Math.round(FIG[W].home*0.42);          // step toward the middle for the pose-down
@@ -7061,11 +7142,22 @@ function archiveToLegends(){
   list.unshift(entry);
   saveLegends(list);
 }
-function newCareerConfirm(){ modal('Start a new career?','Your current wrestler will be retired permanently and a new career begins.',
+function newCareerConfirm(){ modal('Start a new career?','Your current wrestler will be retired permanently and a new career begins. The previous save is kept in a backup slot in case you misclicked.',
   [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'New Career',fn:()=>{
     // If they haven't already been archived, keep them anyway as an unfinished run
     try{ archiveToLegends(); }catch(_e){}
+    // And keep the raw save one step back so a misclick is recoverable
+    try{ const cur=localStorage.getItem(SAVE); if(cur) localStorage.setItem(SAVE+'_prev', cur); }catch(_e){}
     closeModal(); localStorage.removeItem(SAVE); G=null; go('home');}}]); }
+// Recover the last career from the auto-backup slot (available on the home screen).
+function restoreBackup(){
+  try{
+    const prev=localStorage.getItem(SAVE+'_prev');
+    if(!prev){ toast('No backup on file'); return; }
+    localStorage.setItem(SAVE, prev);
+    toast('Backup restored'); continueCareer();
+  }catch(_e){ toast('Could not restore backup'); }
+}
 
 /* ============================================================
    TRAINING / MOVES / MENTORS / SHOP / RECORD
