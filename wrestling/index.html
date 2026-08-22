@@ -526,6 +526,24 @@
   .k-heel{color:#f0907f;} .k-face{color:#5bb083;} .k-cool{color:#6aa7c4;} .k-crowd{color:#e0b341;}
   .pmwrite{display:flex;gap:8px;margin-top:2px;}
   .pmwrite input{flex:1;}
+  /* the office directive at the top of a segment */
+  .pmdir{border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:10px 13px;
+    background:linear-gradient(180deg,rgba(224,179,65,.12),rgba(0,0,0,.22));}
+  .pd-k{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  .pd-t{font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;line-height:1.1;margin:3px 0 2px;}
+  .pd-d{font-size:13px;color:var(--text-dim);}
+  .pms-comply{border-color:rgba(91,176,131,.5);} .pms-wrinkle{border-color:rgba(224,179,65,.5);} .pms-off{border-color:rgba(198,57,44,.55);}
+  /* the beat header, top of every choice screen */
+  .pmphase{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    padding:9px 12px;border:1px solid var(--line);border-radius:11px;margin-bottom:10px;background:rgba(0,0,0,.24);}
+  .pp-k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  .pp-h{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+  .pp-d{font-size:11.5px;color:var(--text-dim);text-align:right;line-height:1.5;}
+  .pp-s{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;font-weight:800;border:1px solid var(--line);}
+  .pp-s.pms-comply{color:var(--green);border-color:rgba(91,176,131,.5);}
+  .pp-s.pms-wrinkle{color:var(--gold);border-color:rgba(224,179,65,.5);}
+  .pp-s.pms-off{color:#f0907f;border-color:rgba(198,57,44,.55);}
   @media(max-width:640px){ .arena.promo{height:262px;} .bubble{max-width:56%;font-size:12px;padding:7px 9px;} }
 
   /* ---- the week's decision, made legible ---- */
@@ -5768,24 +5786,67 @@ const PROMO_LINES={
     ()=>`I am done waiting my turn. Put the championship in front of me and watch what happens.`,
     o=>`${o} can keep the belt warm. I am coming for it.`]},
 };
-function promoKinds(target,mode){
+/* ---- THE FIVE-PART PROMO ----
+   From Heyman on down, the studied craft is: HOOK, THESIS, MEAT,
+   PERSONAL, CLOSE. Each beat wants a different kind of line, and
+   what "fits" the beat is what the crowd (and the office) reads as
+   competent promo work. Getting them out of order (a call to action
+   in the hook, a cheap pop where the thesis goes) is the amateur
+   mistake we let the player make and pay for. */
+const PPHASES={
+  hook:     {n:'The Hook',       d:'Grab them. Not logistics: a statement.',        fits:['boast','callout','challenge','cool','mock','rally']},
+  thesis:   {n:'The Thesis',     d:'Say why you are out here, and what you want.',  fits:['challenge','callout','rally','boast']},
+  meat:     {n:'The Meat',       d:'Build them up as a threat, then dismiss it.',    fits:['respect','mock','threat','callout']},
+  personal: {n:'The Personal',   d:'From the gut. Something the crowd can feel.',    fits:['respect','rally','shoot','ally','teaseHeel','teaseFace']},
+  close:    {n:'The Call To Action', d:'Promise. Warning. Challenge. Send them home wanting the match.', fits:['challenge','threat','callout','cool']},
+};
+const PPHASE_ORDER=['hook','thesis','meat','personal','close'];
+function promoKinds(target,mode,phase){
   const l=leanOf(), established=Math.abs(l)>=32;
-  const k=[];
-  if(mode==='title') k.push('challenge','boast','callout','cool');
-  else if(mode==='crowd') k.push('rally','boast','mock','cool');
-  else if(!target) k.push('rally','boast','cool');
-  else {
-    k.push('callout','mock','threat','respect','cool','boast');
-    const R=rel(target.id);
-    if(R.respect>=45||R.matches>=2) k.push('ally');
-  }
-  // You can only play with a crowd that has already made its mind up about
-  // you. Nobody is shocked when a man they have no opinion of acts out.
-  if(established) k.push(l>0?'teaseHeel':'teaseFace');
-  // the shortcuts, always available and always cheapening
+  const fits=(PPHASES[phase]||PPHASES.hook).fits.slice();
+  // trim what does not apply to the situation
+  const k=fits.filter(x=>{
+    if(x==='ally' && target){ const R=rel(target.id); return R.respect>=45||R.matches>=2; }
+    if(x==='ally') return false;
+    if(x==='shoot') return G.w.attrs.ch>=55;
+    if(x==='teaseHeel') return established && l>0;
+    if(x==='teaseFace') return established && l<0;
+    if((x==='callout'||x==='mock'||x==='threat'||x==='respect') && !target && mode!=='title') return false;
+    return true;
+  });
+  // the shortcut is always available, and always cheapening
   k.push(l<=0?'cheap':'pander');
-  if(G.w.attrs.ch>=55) k.push('shoot');
-  return k;
+  return [...new Set(k)];
+}
+
+/* ---- THE OFFICE DIRECTIVE ----
+   Every live segment is booked with a purpose. The office picks one of
+   these, and the player picks how to run with it. */
+const DIRECTIVES={
+  build:  {icon:'📈', kicker:'Build the match', how:'Get people talking about this fight.', wants:{intensity:.6,specifics:1,hostile:0}},
+  sell:   {icon:'🎟️', kicker:'Sell the show',  how:'Put the marquee event over.',        wants:{intensity:.6,crowd:1,hostile:-.2}},
+  soften: {icon:'🕊️', kicker:'Cool it down',   how:'Get back on the good side of the room.', wants:{hostile:.4,crowd:1}},
+  heat:   {icon:'🔥', kicker:'Get some heat',   how:'They want the crowd to boo you louder.', wants:{hostile:-.6,intensity:.7}},
+  feud:   {icon:'⚔️', kicker:'Build the feud',  how:'Make the whole building want to see this settled.', wants:{hostile:-.5,specifics:1}},
+  push:   {icon:'⭐', kicker:'Push yourself',   how:'Get yourself over. Stake a claim.', wants:{intensity:.7,crowd:1,hostile:.2}},
+};
+function pickDirective(mode,target){
+  const c=G.car, l=leanOf();
+  if(mode==='title') return 'build';
+  if(target){ const R=rel(target.id); return R.heat>=40?'feud':'build'; }
+  if(l<-30 && G.w.align==='face') return 'soften';           // you have gone off-piste
+  if(l>30 && G.w.align==='heel')  return 'heat';             // they want their villain back
+  if(c.standing<48) return 'push';
+  return 'sell';
+}
+// how much your line honored what the office asked for, -1..+1
+function complianceOf(read,directive){
+  const w=DIRECTIVES[directive]?.wants||{}; let s=0, n=0;
+  if(w.intensity!=null){ s+=read.intensity>=w.intensity?1:-0.5; n++; }
+  if(w.hostile!=null){ s+=(Math.sign(read.hostile)===Math.sign(w.hostile)||w.hostile===0)?1:-1; n++; }
+  if(w.crowd) { s+=read.crowd?1:-0.4; n++; }
+  if(w.specifics) { s+=read.specific?1:-0.3; n++; }
+  return n?s/n:0;
 }
 
 /* ---- reading a written line ----
@@ -5869,16 +5930,16 @@ function champName(pid){ const ch=champOf(pid); return ch?(ch.you?'you':ch.name)
 
 function beginPromo(mode,targetId){
   let target=targetId?charById(targetId):null;
-  // calling for a title shot means calling out whoever is holding it
   if(!target && mode==='title'){ const ch=champOf(); if(ch&&!ch.you) target=ch; }
-  PM={mode,target,beat:0,maxBeats:3,score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,done:false};
+  const directive=pickDirective(mode,target);
+  PM={mode,target,directive,stance:null,phase:'hook',beat:0,maxBeats:PPHASE_ORDER.length,
+      score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,fitSum:0,complySum:0,complyN:0,done:false};
   go('promo');
-  stageInit('pmArena'); dressArena($('pmArena'),myPromoId());   // same rig and ring as a match
+  stageInit('pmArena'); dressArena($('pmArena'),myPromoId());
   figLook('me',G.w.look);
   if(target){ figLook('opp',target.look); FIG.opp.el.style.display=''; }
   else FIG.opp.el.style.display='none';
   FIG.ref.el.style.display='none';
-  // stand them closer than a match: this is a face-to-face, not a lock-up
   const step=Math.round(ST.home*0.42);
   fmv('me',{pose:'point',fwd:target?step:Math.round(ST.home*0.9),up:0,rot:0,sc:1},0);
   if(target) fmv('opp',{pose:'ready',fwd:step,up:0,rot:0,sc:1},0);
@@ -5888,21 +5949,58 @@ function beginPromo(mode,targetId){
     : target? `Face to face with ${target.name}` : '';
   $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
   pmLog(`The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}`,'open');
+  pmDirective();     // the office speaks first
+}
+function pmDirective(){
+  const d=DIRECTIVES[PM.directive];
+  $('pmChoices').innerHTML=`
+    <div class="pmdir">
+      <div class="pd-k">Backstage · the office</div>
+      <div class="pd-t">${d.icon} ${d.kicker}</div>
+      <div class="pd-d">${d.how}</div>
+    </div>
+    <div class="flab" style="margin-top:12px;">How do you play it?</div>
+    <div class="grid" style="gap:9px;">
+      <div class="pmopt pms-comply" onclick="pmStance('comply')">
+        <div class="po-k k-face">Do what they asked</div>
+        <div class="po-t">Play it exactly the way the office wanted. Safe. The office remembers.</div>
+      </div>
+      <div class="pmopt pms-wrinkle" onclick="pmStance('wrinkle')">
+        <div class="po-k k-crowd">Their idea, your way</div>
+        <div class="po-t">Hit the beats they asked for, but on your terms. A little edge, a little risk.</div>
+      </div>
+      <div class="pmopt pms-off" onclick="pmStance('off')">
+        <div class="po-k k-heel">Go off script</div>
+        <div class="po-t">Ignore the memo. Say what you actually want to say. The room decides if it worked.</div>
+      </div>
+    </div>`;
+}
+function pmStance(s){
+  PM.stance=s;
+  pmLog(`<span class="hint">${s==='comply'?'You give them what they asked for.':s==='wrinkle'?'You take their notes and add your own.':'You throw the notes away.'}</span>`);
   pmChoices();
 }
 function pmChoices(){
   if(PM.done) return;
   const t=PM.target, oppName=t?t.name:'whoever they put in front of me';
-  const html=promoKinds(t,PM.mode).map(k=>{
+  const kinds=promoKinds(t,PM.mode,PM.phase);
+  const html=kinds.map(k=>{
     const d=PROMO_LINES[k]; if(!d) return '';
     const line=d.lines[Math.floor(rnd()*d.lines.length)](oppName);
-    const pay=JSON.stringify({k,line}).replace(/"/g,'&quot;');
     return `<div class="pmopt" onclick="pmSay('${encodeURIComponent(JSON.stringify({k,line}))}')">
       <div class="po-k k-${d.c}">${d.k}</div>
       <div class="po-t">“${line}”</div>
       ${PROMO_NOTE[k]?`<div class="po-d">${PROMO_NOTE[k]}</div>`:''}</div>`;
   }).join('');
-  $('pmChoices').innerHTML=`<div class="grid" style="gap:9px;">${html}</div>
+  const ph=PPHASES[PM.phase]||PPHASES.hook;
+  const phaseName=`Beat ${PM.beat+1} of 5 · ${ph.n}`;
+  $('pmChoices').innerHTML=`
+    <div class="pmphase">
+      <div><div class="pp-k">${phaseName}</div><div class="pp-h">${ph.d}</div></div>
+      <div class="pp-d">${DIRECTIVES[PM.directive].icon} ${DIRECTIVES[PM.directive].kicker}
+        <span class="pp-s pms-${PM.stance}">${PM.stance==='comply'?'on script':PM.stance==='wrinkle'?'your wrinkle':'off script'}</span></div>
+    </div>
+    <div class="grid" style="gap:9px;">${html}</div>
     <div class="flab" style="margin-top:12px;">Or say it your own way</div>
     <div class="pmwrite">
       <input type="text" id="pmCustom" maxlength="180" placeholder="Write your own line…" onkeydown="if(event.key==='Enter')pmCustom()">
@@ -5981,24 +6079,55 @@ async function pmSay(payload){
     await sleep(1750);
   }
   pmClearBubbles();
+  // did that line belong where it was said?
+  const kind=(k==='custom') ? (read.kind||'') : k;
+  const fits=(PPHASES[PM.phase]||PPHASES.hook).fits;
+  const fit = fits.includes(kind) ? 1 : (kind==='cheap'||kind==='pander') ? -0.4 : -0.6;
+  PM.fitSum += fit;
+  if(fit<0){
+    pmLog(fit<=-0.6
+      ? `<span class="bad">Wrong beat for that line. The room reads you as scattered.</span>`
+      : `<span class="hint">A cheap way to fill that beat, and the office notices.</span>`);
+  } else {
+    pmLog(`<span class="hint">The right kind of line for this beat. Landed.</span>`);
+  }
+  // and how well it honored the office's ask
+  const cmp=complianceOf(read,PM.directive);
+  PM.complySum+=cmp; PM.complyN++;
   PM.beat++;
+  PM.phase = PPHASE_ORDER[PM.beat] || 'close';
   if(PM.beat>=PM.maxBeats) return pmFinish();
   pmChoices();
 }
 async function pmFinish(){
   PM.done=true;
   const c=G.car, w=G.w, t=PM.target;
-  const q=clamp(PM.score/PM.maxBeats*62 + w.attrs.ch*0.28 + PM.specifics*5 + PM.crowdWork*4, 0, 100);
+  // structure bonus: getting the beats in the right order is what a pro sounds like
+  const fitAvg=PM.fitSum/Math.max(1,PM.maxBeats);          // -0.6 .. +1
+  const structure=Math.round(clamp((fitAvg+0.6)/1.6,0,1)*22);
+  const q=clamp(PM.score/PM.maxBeats*62 + w.attrs.ch*0.28 + PM.specifics*5 + PM.crowdWork*4 + structure, 0, 100);
   c.pop=clamp(c.pop+q*0.035,1,100);
   if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + 6 + q*0.10, 0, 100);
   w.mastery.showman=(w.mastery.showman||0)+Math.round(8+q*0.12);
   c.rep+=Math.round(20+q*0.9);
-  c.standing=clamp(c.standing+(q>=60?1.6:q<35?-1:0.4));
+  // The office reads the room. Doing what they asked is safe. Going off-script
+  // and having it work gets you a bigger push than compliance ever would.
+  // Going off-script and eating it gets you a real problem with the office.
+  const comply=PM.complySum/Math.max(1,PM.complyN);       // -1 .. +1
+  const stanceMult = PM.stance==='comply' ? 1 : PM.stance==='wrinkle' ? 1.3 : 1.8;
+  const standingSwing = (q>=60 ? 1.4 : q<35 ? -1.2 : 0.3) * (PM.stance==='off'?stanceMult:1)
+                      + comply*(PM.stance==='comply'?2:PM.stance==='wrinkle'?1:-0.5);
+  c.standing=clamp(c.standing+standingSwing);
   w.xp+=Math.round(18+q*0.35); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
   const cl=crowdLabel();
   fmv('me',{pose:q>=60?'celebrate':'ready',fwd:0},280);
   await pmCall(q>=75?'THEY ARE ON THEIR FEET':q>=45?'THAT LANDED':'FLAT','#e0b341');
   pmLog(`<b>Segment rating ${Math.round(q)}.</b> <span class="hint">Reaction ${Math.round(reactionOf())} · ${cl.t}</span>`);
+  pmLog(`<span class="hint">Structure ${structure}/22 · office directive ${comply>=0.35?'delivered':comply<=-0.35?'ignored':'partial'}${PM.stance==='off'?' (off script)':''}.</span>`);
+  if(PM.stance==='off'){
+    if(q>=70) pmLog(`<span class="hi">You went off script and the room was with you. The office will remember.</span>`);
+    else if(q<40) pmLog(`<span class="bad">You went off script and it did not land. The office will remember that too.</span>`);
+  }
   if(t){
     const R=rel(t.id);
     if(!c.rivalId && !story() && R.heat>=40){
