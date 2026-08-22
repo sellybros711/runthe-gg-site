@@ -527,6 +527,17 @@
     font-size:30px;letter-spacing:.05em;text-transform:uppercase;opacity:0;z-index:7;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.8);}
   .crowdcall.show{animation:callA 1.15s ease-out;}
   .pmbottom{margin-top:12px;display:grid;gap:10px;}
+  .pmmode-grid{display:grid;gap:8px;grid-template-columns:1fr;margin-bottom:6px;}
+  .pmmode{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;transition:.14s;position:relative;}
+  .pmmode:hover{border-color:var(--brandred);background:rgba(198,57,44,.10);transform:translateY(-1px);}
+  .pmmode .pmm-k{font-family:var(--display);font-size:15px;color:var(--cream);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+  .pmmode .pmm-t{font-size:12.5px;color:var(--text);line-height:1.45;}
+  .pmmode .pmm-b{margin-top:6px;min-height:14px;}
+  .pm-rec{display:inline-block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;padding:2px 7px;background:rgba(224,179,65,.18);color:var(--gold);border-radius:6px;}
+  .pm-rec.pm-remem{background:rgba(63,127,191,.18);color:#7fb2e0;}
+  .pmwatch{border:1px dashed rgba(224,179,65,.5);border-radius:12px;padding:16px 14px;background:linear-gradient(180deg,rgba(224,179,65,.06),rgba(0,0,0,.24));text-align:center;}
+  .pmwatch .pmw-k{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:6px;}
+  .pmwatch .pmw-t{font-size:14px;color:var(--cream);}
   .pmopt{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;cursor:pointer;transition:.13s;}
   .pmopt:hover{border-color:var(--brandred);background:rgba(198,57,44,.10);transform:translateY(-2px);}
   .pmopt .po-k{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:3px;}
@@ -5262,7 +5273,9 @@ function bookWeek(){
   let pMatch=0.44+standing/220+(sc.pop||0)*0.12+tierIdx()*0.03;
   if(story()) pMatch+=0.12;                       // a live feud has to be paid off
   if(c.streak<=-3) pMatch-=0.08;                  // cold acts get quietly rested
-  const pPromo=0.16+(gimHeat()<40?0.07:0)+(story()?0.05:0);
+  // Promos got rarer on purpose. A promo every other week is filler; a promo
+  // every four or five weeks lands like the event a real cut promo is.
+  const pPromo=0.07+(gimHeat()<40?0.04:0)+(story()?0.05:0);
   const r=rnd();
   if(r<clamp(pMatch,0.30,0.86)){
     if(!c.offers) c.offers=makeOffers();
@@ -7073,7 +7086,9 @@ function beginPromo(mode,targetId){
   PM={mode,target,directive,stance:null,phase:'hook',beat:0,maxBeats:PPHASE_ORDER.length,
       score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,fitSum:0,complySum:0,complyN:0,done:false,
       // for the build-a-promo chip system
-      picking:[], usedChips:{}, usedLines:{}, usedCuts:{}};
+      picking:[], usedChips:{}, usedLines:{}, usedCuts:{},
+      // how the player is choosing to cut this segment: skip | quick | build
+      play:null};
   PMCTX=buildPromoCtx(target);
   go('promo');
   stageInit('pmArena'); dressArena($('pmArena'),myPromoId());
@@ -7090,7 +7105,50 @@ function beginPromo(mode,targetId){
     : target? `Face to face with ${target.name}` : '';
   $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
   pmLog(`The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}`,'open');
-  pmDirective();     // the office speaks first
+  pmModePicker();    // player picks how deep to go before the office speaks
+}
+
+/* ---- HOW DEEP DO YOU WANT TO GO?
+   Every promo now opens with a mode choice. Weekly filler doesn't need the
+   full chip system, and the biggest promos of a career deserve more than a
+   skip. The default is the player's last choice, remembered across careers,
+   so somebody who loves the depth is never made to reselect it.
+   The stakes and the stage decide which mode is RECOMMENDED. */
+function pmModePicker(){
+  const stakes = stakesForPromo(PMCTX);
+  const isBig = stakes.some(s=>['title_call','title_defense','feud_end','main_event','title_chase'].indexOf(s)>=0);
+  const isEventish = isBig || stakes.some(s=>['feud','callout','rematch','open_mic'].indexOf(s)>=0);
+  const remembered = (G && G.prefs && G.prefs.promoPlay) || 'quick';
+  const rec = isBig ? 'build' : isEventish ? 'quick' : 'quick';
+  const badgeFor = m=> m===rec ? `<span class="pm-rec">recommended</span>` : m===remembered ? `<span class="pm-rec pm-remem">your usual</span>` : '';
+  const cta = m => remembered===m ? 'style="border-color:var(--gold);background:linear-gradient(180deg,rgba(224,179,65,.10),rgba(0,0,0,.28));"' : '';
+  $('pmChoices').innerHTML=`
+    <div class="flab">Cut the promo</div>
+    <div class="pmmode-grid">
+      <div class="pmmode" ${cta('skip')} onclick="pmChoosePlay('skip')">
+        <div class="pmm-k">Skip</div>
+        <div class="pmm-t">Handle it. Take the median result and get on with the week.</div>
+        <div class="pmm-b">${badgeFor('skip')}</div>
+      </div>
+      <div class="pmmode" ${cta('quick')} onclick="pmChoosePlay('quick')">
+        <div class="pmm-k">Quick Cut ${isEventish?'':'<span class="pm-rec">weekly</span>'}</div>
+        <div class="pmm-t">Play the segment. About ten seconds, hands-off, big result card at the end.</div>
+        <div class="pmm-b">${badgeFor('quick')}</div>
+      </div>
+      <div class="pmmode" ${cta('build')} onclick="pmChoosePlay('build')">
+        <div class="pmm-k">Build the Promo</div>
+        <div class="pmm-t">Full control: pick your stance, pick your beats, respond to what they throw back. The high-ceiling cut.</div>
+        <div class="pmm-b">${badgeFor('build')}</div>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:6px;">${isBig?'This one matters. A built cut on a moment like this pushes harder than any skip can.':'Nothing on the line here. A quick cut still hits.'}</div>`;
+}
+function pmChoosePlay(mode){
+  PM.play=mode;
+  G.prefs = G.prefs||{}; G.prefs.promoPlay = mode; save();
+  if(mode==='skip')  return pmSkipResolve();
+  if(mode==='quick') return pmQuickCut();
+  return pmDirective();
 }
 function pmDirective(){
   const d=DIRECTIVES[PM.directive];
@@ -7342,7 +7400,98 @@ async function pmSay(payload){
   if(PM.beat>=PM.maxBeats) return pmFinish();
   pmChoices();
 }
-async function pmFinish(){
+/* ---- SKIP: take the median result and move on.
+   The quality is anchored to your charisma + standing so the outcome is
+   never a surprise. No fake variance to make it feel earned; the point of
+   skipping is that it does not feel earned, it just gets you out. */
+async function pmSkipResolve(){
+  const w=G.w, c=G.car;
+  const ch = w.attrs.ch||40, stand = c.standing||50;
+  const base = 24 + ch*0.35 + stand*0.10 + Math.floor(rnd()*8);
+  PM.score = clamp(base,10,90);
+  // synthesize the scoring inputs so pmFinish's rating math still works
+  PM.fitSum = 0.4*PM.maxBeats;         // treated as competent structure
+  PM.specifics = 1; PM.crowdWork = 0;
+  PM.stance='comply'; PM.complySum=0.4; PM.complyN=1;
+  await pmCall('handled','#c8bfa8');
+  await pmFinish(true);   // suppressPop: skip does not get the celebration lift
+}
+
+/* ---- QUICK CUT: watch the segment play out.
+   Three or four authored cuts fire back-to-back with real crowd reaction and
+   the opponent talks back between them. No player input in the middle. The
+   payoff card at the end is the dopamine finisher. */
+async function pmQuickCut(){
+  const t = PM.target;
+  const cuts = pmPickQuickCutList();
+  PM.stance='wrinkle'; PM.complyN=cuts.length;
+  $('pmChoices').innerHTML=`<div class="pmwatch">
+    <div class="pmw-k">Live segment</div>
+    <div class="pmw-t">${G.w.name} is on the microphone.</div>
+  </div>`;
+  for(let i=0;i<cuts.length;i++){
+    const cut = cuts[i]; if(!cut) continue;
+    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    if(!line) continue;
+    // "phase" this cut lives in, so any downstream reads make sense
+    PM.phase = cut.phase && cut.phase[0] || PPHASE_ORDER[Math.min(i,PPHASE_ORDER.length-1)];
+    const tags = cut.tags||[];
+    const hostile = cut.hostile!=null?cut.hostile:-0.1;
+    const intensity = cut.intensity!=null?cut.intensity:0.75;
+    // deliver the line as a bubble + fx, no chip UI
+    fmv('me',{pose:intensity>0.7?'point':'taunt',fwd:0},220);
+    pmBubble('me',G.w.name,line);
+    const sh = crowdShift(hostile,intensity,G.w.attrs.ch,{kind:tags.indexOf('twist')>=0?'swerve':tags.indexOf('callback')>=0?'signature':''});
+    PM.score += intensity*(1+(sh.consistent?0.3:0))*(0.7+G.w.attrs.ch/160);
+    PM.fitSum += 0.7;   // authored cuts fit their phase
+    PM.specifics++; if(tags.indexOf('crowd')>=0) PM.crowdWork++;
+    PM.complySum += 0.4;
+    PM.hostile += hostile; PM.intensity += intensity;
+    // audio-visual pop / boo
+    if(sh.mode==='swerve'){ await flashScreen(); await pmCall('WHAT?!','#e0b341'); }
+    else if(hostile<=-0.45) await pmCall('BOOOOO!','#f0907f');
+    else if(hostile>=0.45)  await pmCall('CHEERS','#5bb083');
+    else                    await pmCall('the room listens','#e0b341');
+    pmMeter();
+    await sleep(700);
+    // and let the opponent hit back mid-segment
+    if(t && i < cuts.length-1){
+      const reply = promoReply(t,{hostile,intensity,tags,specific:true,crowd:tags.indexOf('crowd')>=0});
+      fmv('opp',{pose:reply.mode==='threat'?'point':reply.mode==='dismiss'?'taunt':'ready',fwd:0},220);
+      pmBubble('opp',t.name,reply.text);
+      const R=rel(t.id); R.met=true;
+      if(hostile<=-0.4){ R.heat=clamp(R.heat+(6+intensity*8),0,100); R.respect=clamp(R.respect-2,0,100); }
+      else if(hostile>=0.4){ R.respect=clamp(R.respect+(6+intensity*6),0,100); R.heat=clamp(R.heat-3,0,100); }
+      await sleep(1100);
+      pmClearBubbles();
+    } else {
+      await sleep(400); pmClearBubbles();
+    }
+  }
+  PM.beat = PM.maxBeats;
+  await pmFinish();
+}
+function pmPickQuickCutList(){
+  const phases=['hook','thesis','meat','close'];
+  const picked=[];
+  const used={};
+  for(const ph of phases){
+    // fake PM.phase so cutsFor picks phase-appropriate cuts
+    PM.phase = ph;
+    const opts = cutsFor(ph).filter(c=>!used[c.id]);
+    if(!opts.length) continue;
+    const cut = opts[0];
+    used[cut.id]=true; picked.push(cut);
+  }
+  // as a last resort, take any evergreen cuts if we found nothing
+  if(!picked.length){
+    const generic = CUT_BANK.filter(c=>!c.stakes && (!c.when || c.when(PMCTX))).slice(0,3);
+    generic.forEach(c=>picked.push(c));
+  }
+  return picked;
+}
+
+async function pmFinish(suppressPop){
   PM.done=true;
   const c=G.car, w=G.w, t=PM.target;
   // structure bonus: getting the beats in the right order is what a pro sounds like
@@ -7364,7 +7513,7 @@ async function pmFinish(){
   w.xp+=Math.round(18+q*0.35); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
   const cl=crowdLabel();
   fmv('me',{pose:q>=60?'celebrate':'ready',fwd:0},280);
-  await pmCall(q>=75?'THEY ARE ON THEIR FEET':q>=45?'THAT LANDED':'FLAT','#e0b341');
+  if(!suppressPop) await pmCall(q>=75?'THEY ARE ON THEIR FEET':q>=45?'THAT LANDED':'FLAT','#e0b341');
   pmLog(`<b>Segment rating ${Math.round(q)}.</b> <span class="hint">Reaction ${Math.round(reactionOf())} · ${cl.t}</span>`);
   pmLog(`<span class="hint">Structure ${structure}/22 · office directive ${comply>=0.35?'delivered':comply<=-0.35?'ignored':'partial'}${PM.stance==='off'?' (off script)':''}.</span>`);
   if(PM.stance==='off'){
