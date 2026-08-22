@@ -1117,13 +1117,13 @@
 <!-- ============ LOCKER ============ -->
 <div class="screen" id="s-locker">
   <div class="gnav" data-scr="locker"></div>
-  <h2>Locker Room <span class="sub2">equip what you own · locked items come from the Pro Shop</span></h2>
+  <h2>Locker Room <span class="sub2">equip what you own · locked items come from the Merch Stand</span></h2>
   <div class="custom-wrap">
     <div>
       <div class="avwrap big" id="lockAv"></div>
       <div class="row" style="margin-top:10px;justify-content:center;">
         <button class="ghost" onclick="randomizeLook()">🎲 Randomize</button>
-        <button class="ghost" onclick="go('shop')">Pro Shop →</button>
+        <button class="ghost" onclick="go('shop')">Merch Stand →</button>
       </div>
     </div>
     <div id="lockBody"></div>
@@ -1133,7 +1133,7 @@
 <!-- ============ SHOP ============ -->
 <div class="screen" id="s-shop">
   <div class="gnav" data-scr="shop"></div>
-  <h2>Pro Shop <span class="sub2">cosmetics only: skills are earned, never sold</span></h2>
+  <h2>Merch Stand <span class="sub2">cosmetics only: skills are earned, never sold</span></h2>
   <div id="shopBody"></div>
 </div>
 
@@ -2780,7 +2780,7 @@ function pagerBar(id,labels,fn){
 const NAVG=[
   {id:'hub',    label:'Hub',    subs:[['career','Hub']]},
   {id:'skills', label:'Skills', subs:[['moves','Arsenal'],['train','Training'],['mentors','Mentors']]},
-  {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Pro Shop'],['card','My Card']]},
+  {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Merch Stand'],['card','My Card']]},
   {id:'roster', label:'Roster', subs:[['crew','Locker Room'],['world','The World']]},
   {id:'legacy', label:'Career', subs:[['deal','Business'],['record','Record']]},
 ];
@@ -2825,7 +2825,7 @@ const TOURS={
   {sel:'[data-nav="skills"]', title:'Skills: get better',
    body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up through Signature and Finisher tiers. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
   {sel:'[data-nav="gear"]', title:'Gear: how you look',
-   body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Pro Shop</b>. This is cosmetics only. No skill is ever for sale, and duplicates become shards you can forge exactly what you want with.'},
+   body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Merch Stand</b>. This is cosmetics only. No skill is ever for sale, and duplicates become shards you can forge exactly what you want with.'},
   {sel:'[data-nav="roster"]', title:'Roster: who is out there',
    body:'The <b>Locker Room</b> is your allies, tag team, stable, and everyone with a grudge. Earn enough respect and you can team up, or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
   {sel:'[data-nav="legacy"]', title:'Career: the paperwork',
