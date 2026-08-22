@@ -30,6 +30,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;overscroll-behavior-y:none;}
+  html{scrollbar-gutter:stable;}   /* the page does not shift when a scrollbar comes and goes */
   body{background:var(--bg); color:var(--text); font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.45;}
   body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--pagebg);pointer-events:none;}
   .mono{font-family:var(--mono); font-variant-numeric:tabular-nums;}
@@ -2182,22 +2183,22 @@ function wrestlerSVG(L,opt){
   const footCol = L.boots==='barefoot' ? sk : shade(trim,-46);
   // thigh leaves its bottom open for the knee; the small overhang past the
   // shin still gets capped so the silhouette stays closed when standing
-  B.thighL+=PIECE([[23,52,8,16]],legCol,{bottom:false})+P(22,68,2,1,OUTLINE)+thighPat(23);
-  B.thighR+=PIECE([[33,52,8,16]],splitCol,{bottom:false})+P(40,68,2,1,OUTLINE)+thighPat(33);
+  B.thighL+=PIECE([[23-bw,52,8+bw,16]],legCol,{bottom:false})+P(22-bw,68,2,1,OUTLINE)+thighPat(23-bw);
+  B.thighR+=PIECE([[33,52,8+bw,16]],splitCol,{bottom:false})+P(40+bw,68,2,1,OUTLINE)+thighPat(33);
   if(L.attire==='chaps'){ // leather chaps over bare legs
     const ch=shade(gear,-30);
-    B.thighL+=OL(22,52,9,16)+LIMB(22,52,9,16,ch)+P(22,54,2,14,shade(trim,-10));
-    B.thighR+=OL(33,52,9,16)+LIMB(33,52,9,16,ch)+P(40,54,2,14,shade(trim,-10));
+    B.thighL+=OL(22-bw,52,9+bw,16)+LIMB(22-bw,52,9+bw,16,ch)+P(22-bw,54,2,14,shade(trim,-10));
+    B.thighR+=OL(33,52,9+bw,16)+LIMB(33,52,9+bw,16,ch)+P(40+bw,54,2,14,shade(trim,-10));
   }
   if(L.tattoo==='leg'){ const lk=shade(sk,-62);
-    if(!tightsFull){ B.thighL+=P(24,55,6,2,lk)+P(25,59,4,4,lk); B.thighR+=P(34,55,6,2,lk)+P(35,59,4,4,lk); } }
-  if(L.boots==='pads'){ B.thighL+=OL(24,64,7,4)+LIMB(24,64,7,4,shade(trim,-30)); B.thighR+=OL(33,64,7,4)+LIMB(33,64,7,4,shade(trim,-30)); }
-  if(L.acc==='knee'){ B.thighL+=OL(24,63,7,5)+LIMB(24,63,7,5,trim); B.thighR+=OL(33,63,7,5)+LIMB(33,63,7,5,trim); }
+    if(!tightsFull){ B.thighL+=P(24-bw,55,6,2,lk)+P(25-bw,59,4,4,lk); B.thighR+=P(34,55,6,2,lk)+P(35,59,4,4,lk); } }
+  if(L.boots==='pads'){ B.thighL+=OL(24-bw,64,7+bw,4)+LIMB(24-bw,64,7+bw,4,shade(trim,-30)); B.thighR+=OL(33,64,7+bw,4)+LIMB(33,64,7+bw,4,shade(trim,-30)); }
+  if(L.acc==='knee'){ B.thighL+=OL(24-bw,63,7+bw,5)+LIMB(24-bw,63,7+bw,5,trim); B.thighR+=OL(33,63,7+bw,5)+LIMB(33,63,7+bw,5,trim); }
   // shin and foot are one bone, so they are one silhouette
-  B.shinL+=PIECE([[24,68,7,13],[21,81,11,6,footCol]],legCol,{top:false})+shinPat(23);
-  B.shinR+=PIECE([[33,68,7,13],[32,81,11,6,footCol]],splitCol,{top:false})+shinPat(33);
+  B.shinL+=PIECE([[24-bw,68,7+bw,13],[21-bw,81,11+bw,6,footCol]],legCol,{top:false})+shinPat(23-bw);
+  B.shinR+=PIECE([[33,68,7+bw,13],[32,81,11+bw,6,footCol]],splitCol,{top:false})+shinPat(33);
   if(L.attire==='chaps'){ const ch=shade(gear,-30);
-    B.shinL+=LIMB(23,68,8,10,ch)+P(22,68,1,10,OUTLINE); B.shinR+=LIMB(33,68,8,10,ch)+P(41,68,1,10,OUTLINE); }
+    B.shinL+=LIMB(23-bw,68,8+bw,10,ch)+P(22-bw,68,1,10,OUTLINE); B.shinR+=LIMB(33,68,8+bw,10,ch)+P(41+bw,68,1,10,OUTLINE); }
   const boot=(x)=>{
     if(L.boots==='barefoot') return '';
     let o=P(x,bootTop,7,81-bootTop,trim)+P(x,bootTop,1,81-bootTop,shade(trim,22))
@@ -2210,10 +2211,10 @@ function wrestlerSVG(L,opt){
     if(L.boots==='steel') o+=P(x,78,7,3,'#9aa0a6')+P(x,78,7,1,'#c8ced4');
     if(L.boots==='spiked'){ o+=P(x-1,72,2,3,'#c8ced4')+P(x+6,72,2,3,'#c8ced4')+P(x-1,77,2,3,'#c8ced4')+P(x+6,77,2,3,'#c8ced4'); }
     return o; };
-  B.shinL+=boot(24); B.shinR+=boot(33);
-  if(L.boots==='barefoot'){ B.shinL+=P(21,82,1,3,skD)+P(23,81,1,2,skD)+P(25,81,1,2,skD); B.shinR+=P(42,82,1,3,skD)+P(40,81,1,2,skD)+P(38,81,1,2,skD); }
-  if(L.boots==='platform'){ B.shinL+=OL(21,81,11,3)+LIMB(21,81,11,3,shade(trim,-30)); B.shinR+=OL(32,81,11,3)+LIMB(32,81,11,3,shade(trim,-30)); }
-  if(L.boots==='cowboy'){ B.shinL+=P(21,85,4,4,OUTLINE)+P(22,85,3,3,shade(trim,-56)); B.shinR+=P(39,85,4,4,OUTLINE)+P(39,85,3,3,shade(trim,-56)); }
+  B.shinL+=boot(24-bw); B.shinR+=boot(33);
+  if(L.boots==='barefoot'){ B.shinL+=P(21-bw,82,1,3,skD)+P(23-bw,81,1,2,skD)+P(25-bw,81,1,2,skD); B.shinR+=P(42+bw,82,1,3,skD)+P(40+bw,81,1,2,skD)+P(38+bw,81,1,2,skD); }
+  if(L.boots==='platform'){ B.shinL+=OL(21-bw,81,11+bw,3)+LIMB(21-bw,81,11+bw,3,shade(trim,-30)); B.shinR+=OL(32,81,11+bw,3)+LIMB(32,81,11+bw,3,shade(trim,-30)); }
+  if(L.boots==='cowboy'){ B.shinL+=P(21-bw,85,4,4,OUTLINE)+P(22-bw,85,3,3,shade(trim,-56)); B.shinR+=P(39+bw,85,4,4,OUTLINE)+P(39+bw,85,3,3,shade(trim,-56)); }
 
   // ================= TORSO =================
   const tX=21-bw, tW=22+bw*2, tCol=covered?gear:sk;
