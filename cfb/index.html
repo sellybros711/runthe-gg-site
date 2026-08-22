@@ -3999,8 +3999,16 @@ const SPOTS={
   /* Up to THREE, because both flex spots can take a back. The table stopped at two
      and row() clamps past the end, so a third back was handed the second one's
      coordinate exactly and the two chips sat perfectly on top of each other. */
+  /* A LONE BACK IS OFFSET, not behind the quarterback. At 50 he was in the same column,
+     and a chip is a disc plus a name plus a team plate: measured at 390px the quarterback's
+     box ran to y171 and the back's began at y172, one pixel apart, so the plate under the
+     name sat against the disc below it and the two read as one crowded stack. Moving him to
+     28 is the offset set a real single back plays from, and it costs nothing: two backs
+     already put the first one there, so signing a second no longer slides the first across
+     the field. The three-back row is left alone because POSITION_MAX caps backs at two and
+     nothing in play can reach it; it is here so row() has something to clamp to. */
   RB: [[],
-    [{ x: 50, y: 79 }],
+    [{ x: 28, y: 79 }],
     [{ x: 28, y: 79 }, { x: 72, y: 79 }],
     [{ x: 17, y: 79 }, { x: 50, y: 79 }, { x: 83, y: 79 }]],
 };
