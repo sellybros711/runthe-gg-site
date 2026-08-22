@@ -348,6 +348,33 @@
   .hero .reelbox{height:70px;}
   @media(max-height:720px){ .hero .reelbox{height:58px;} .herocourt{aspect-ratio:1/0.48;} }
 
+  /* ── AND SO DOES THE PAGE AROUND IT ────────────────────────────────────
+     Once a club has landed, the chrome you draft inside takes its colours: the
+     cap panel's edge and the wash behind it, the money bar, and the floor those
+     six men stand on. body.clubbed is set when the reels land and cleared when
+     the next spin starts, so the page and the wheel are never claiming
+     different clubs.
+
+     WHAT DELIBERATELY DOES NOT CHANGE. The position pills, the discs on the
+     court and the slot pips keep their own six colours everywhere, because a
+     position colour means one thing across the whole game and a club cannot be
+     allowed to repaint it. The cap bar's gold and red warning states are
+     untouched for the same reason: those two colours are a message about money,
+     not decoration. Only the healthy bar takes the club. */
+  body.clubbed .capwrap{border-color:var(--club2);
+    background:linear-gradient(180deg,rgba(var(--club1rgb),.5),#10151f 62%);}
+  body.clubbed .capbar:not(.tight):not(.broke) i{
+    background:linear-gradient(90deg,var(--club1),var(--club2));}
+  body.clubbed .court{background:radial-gradient(120% 80% at 50% 0%,
+    rgba(var(--club1rgb),.62) 0%,#1a1109 58%,#120c07 100%);border-color:var(--club2);}
+  body.clubbed .court .rim{border-color:var(--club2);}
+  body.clubbed .court .arc3,body.clubbed .court .key,body.clubbed .court .circ{
+    border-color:rgba(255,255,255,.2);}
+  /* The transitions are on the properties that move, not on "all", so a spin
+     does not animate the layout of everything inside these panels. */
+  .capwrap,.court{transition:border-color .35s ease,background .35s ease;}
+  .capbar i{transition:width .3s ease,background .35s ease;}
+
   /* ── THE WHEEL WEARS THE CLUB ──────────────────────────────────────────
      The moment the club reel lands, BOTH boxes take that club's colors: the
      fill is its primary, the band around the winning row is its secondary, and
@@ -411,6 +438,13 @@
   .spot .nm{display:block;font-size:9.5px;font-weight:700;margin-top:3px;line-height:1.15;
     color:var(--ink);text-shadow:0 1px 3px rgba(0,0,0,.9);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* A LONG SURNAME WRAPS RATHER THAN CLIPPING. Last names fit in 74px down to
+     about thirteen characters. Nine in the league are longer and every one of
+     them is hyphenated: Gilgeous-Alexander, Hollis-Jefferson, Carter-Williams.
+     Shrinking the type was tried first and measured: at 8.2px eight of the nine
+     STILL clipped, and 7px is not a size anybody reads on a phone. Two lines
+     broken at the hyphen is what those names look like on a jersey anyway. */
+  .spot .nm.long{white-space:normal;overflow-wrap:anywhere;font-size:8.8px;line-height:1.1;}
   .spot .yr{display:block;font-size:8.5px;color:var(--mut);}
   .spot:not(.on) .nm,.spot:not(.on) .yr{color:var(--dim);}
 
@@ -1284,6 +1318,10 @@ function show(id){
      forever, on a phone. */
   stopSim();
   if (id === 's-home') heroStart(); else heroStop();
+  /* The club belongs to the draft. The season, the results and the home screen
+     have no club, and a results screen still wearing the last team you spun is
+     claiming that team played the season. */
+  if (id !== 's-draft') undressPage();
   var all = document.querySelectorAll('.screen');
   for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
   $(id).classList.add('active');
@@ -1474,6 +1512,9 @@ function drawInto(fn){
   if (!draw) { renderDraft(); return; }
 
   reelBusy = true;
+  /* Out of the last club's colours before the reels start moving, so the page
+     and the wheel are never claiming different clubs mid-spin. */
+  undressPage();
   renderDraft();
   $('tabs').textContent = '';
   $('opts').textContent = '';
@@ -1494,6 +1535,7 @@ function drawInto(fn){
          early: the color says Bulls before the second reel has said Bulls. */
       dressReel($('box-s'), draw.team);
       dressReel($('box-c'), draw.team);
+      dressPage(draw.team);
       settled();
     });
   }, 130);
@@ -1517,6 +1559,7 @@ function showDraw(draw){
     box.classList.add('done');
     dressReel(box, draw.team);
   });
+  dressPage(draw.team);
 }
 
 function spin(){ drawInto(function(){ R.spin(run, DATA); }); }
@@ -1851,6 +1894,28 @@ function undressReel(boxEl){
   boxEl.classList.remove('clubbed');
 }
 
+/* THE PAGE, NOT JUST THE WHEEL. The cap panel, the money bar and the floor take
+   the club as well, off four properties on body.
+   CLEARED ON THE WAY OUT, always. A run that ends in Denver navy and then
+   restarts must not draft its first Boston player on a navy floor, and the
+   home screen has no club at all. */
+var PAGE_VARS = ['--club1', '--club1rgb', '--club2', '--clubon'];
+
+function dressPage(code){
+  var skin = E.clubSkin(code), b = document.body;
+  b.style.setProperty('--club1', skin.bg);
+  b.style.setProperty('--club1rgb', rgbChannels(skin.bg));
+  b.style.setProperty('--club2', skin.accent);
+  b.style.setProperty('--clubon', skin.on);
+  b.classList.add('clubbed');
+}
+
+function undressPage(){
+  var b = document.body;
+  for (var i = 0; i < PAGE_VARS.length; i++) b.style.removeProperty(PAGE_VARS[i]);
+  b.classList.remove('clubbed');
+}
+
 /* "122,10,39", for the rgba() the vignette is built from. A custom property
    holding "#7a0a27" cannot be handed to rgba(), so the channels travel
    separately from the hex. */
@@ -1952,7 +2017,7 @@ function renderCourt(justSlot, into){
  * nobody is playing, and the alternative was a second copy of this loop that
  * would have drifted the first time a spot moved. The front page has to look
  * like the game, which it cannot do if it is drawing its own picture of it. */
-function paintCourt(el, filled, justSlot, lastOnly){
+function paintCourt(el, filled, justSlot){
   if (!el) return;
   var old = el.querySelectorAll('.spot');
   for (var i = 0; i < old.length; i++) old[i].remove();
@@ -1972,12 +2037,14 @@ function paintCourt(el, filled, justSlot, lastOnly){
 
     var nm = document.createElement('span');
     nm.className = 'nm';
-    /* LAST NAMES ON THE FRONT PAGE, full names in the draft. A spot is about
-       90px wide and the hero's is smaller again, so "Charles Barkley" arrived
-       as "Charles Ba...". In the draft the full name earns that space, because
-       you are deciding whether to sign him. On the front page he is scenery and
-       "Barkley" is the part that does the work. */
-    nm.textContent = p ? (lastOnly ? lastName(p.n) : p.n) : 'open';
+    /* LAST NAMES, ON BOTH COURTS. A spot is 74px wide, so a full name does not
+       fit on either of them: this went in as last-name-on-the-front-page-only,
+       on the theory that the draft earns the full name because that is where
+       you are deciding, and the very next screenshot showed "Damian Lill..."
+       on the draft court. A truncated name earns nothing. The full name is on
+       the board tile, which is where the decision is actually made; the floor
+       is a glance. */
+    nm.textContent = p ? lastName(p.n) : 'open';
     sp.appendChild(nm);
 
     if (p) {
@@ -1987,6 +2054,18 @@ function paintCourt(el, filled, justSlot, lastOnly){
       sp.appendChild(yr);
     }
     el.appendChild(sp);
+  }
+
+  /* WHICH NAMES NEED TWO LINES IS MEASURED, NOT COUNTED.
+     This went in as "longer than thirteen characters", which is wrong, and
+     measuring every one of the 1,624 distinct surnames in the data said so:
+     Vandeweghe clips at ten while other names fit at twelve. Width is pixels
+     and a character count is a proxy that is wrong in both directions. One
+     layout read per spot, six per paint, and it is right for every name in the
+     data at every width, including whichever one arrives next season. */
+  var names = el.querySelectorAll('.spot .nm');
+  for (var n = 0; n < names.length; n++) {
+    if (names[n].scrollWidth > names[n].clientWidth + 1) names[n].className = 'nm long';
   }
 }
 
@@ -2093,7 +2172,7 @@ function heroPicks(){
 var heroRun = 0;            // bumped to cancel whatever loop is in flight
 var heroFilled = {};
 
-function heroPaint(){ paintCourt($('h-court'), heroFilled, null, true); }
+function heroPaint(){ paintCourt($('h-court'), heroFilled); }
 
 function heroReset(){
   heroFilled = {};
