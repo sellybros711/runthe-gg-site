@@ -2906,18 +2906,7 @@ function placeTour(el){
 }
 // the closing card: what you are working toward and the single best next move
 function tourGoalsHTML(){
-  if(!G) return '';
-  const a=weekAdvice(), goals=nextGoals();
-  let h=`<div class="tb">Here is where your career stands right now.</div>`;
-  h+=`<div class="tourgoal go"><div class="gl">Do this first</div>
-    <div class="gv">${a.ico} ${a.cta?a.cta.l:'Take a match'}</div>
-    <div class="gs">${a.t}</div></div>`;
-  goals.slice(0,2).forEach(g=>{
-    h+=`<div class="tourgoal"><div class="gl">Working toward</div>
-      <div class="gv">${g.l}</div><div class="gs">${g.sub}</div></div>`;
-  });
-  h+=`<div class="tb" style="margin-top:10px;">Everything in depth lives in the <b>Rulebook</b>, under the Help button.</div>`;
-  return h;
+  return `<div class="tb">That is the whole loop. Everything in depth, with the real numbers behind it, lives in the <b>Rulebook</b> under the <b>Help</b> button up top.</div>`;
 }
 window.addEventListener('resize',()=>{ if(TOUR_I>=0){ const st=(TOURS[TOURN]||TOURS.hub)[TOUR_I];
   placeTour(st&&st.sel?document.querySelector(st.sel):null); } });
