@@ -1021,7 +1021,7 @@
         <label class="fld"><div class="flab">Ring Name</div>
           <div class="row" style="gap:8px;flex-wrap:nowrap;">
             <input type="text" id="cName" placeholder="Kid Dynamite" maxlength="22">
-            <button class="ghost" style="padding:8px 12px;" onclick="rollName()" title="Random name">🎲</button>
+            <button class="ghost" style="padding:8px 12px;" onclick="rollName()" title="Random name">Roll</button>
           </div></label>
         <label class="fld"><div class="flab">Nickname <span class="hint">(optional)</span></div><input type="text" id="cNick" placeholder="The Alley Cat" maxlength="26"></label>
         <div class="grid g2" style="gap:10px;">
@@ -1049,7 +1049,7 @@
       <div>
         <div class="avwrap big" id="cAvWrap"></div>
         <div class="row" style="margin-top:10px;justify-content:center;">
-          <button class="ghost" onclick="randomizeLook()">🎲 Randomize</button>
+          <button class="ghost" onclick="randomizeLook()">Randomize</button>
         </div>
       </div>
       <div id="cCustom"></div>
@@ -1176,7 +1176,7 @@
     <div>
       <div class="avwrap big" id="lockAv"></div>
       <div class="row" style="margin-top:10px;justify-content:center;">
-        <button class="ghost" onclick="randomizeLook()">🎲 Randomize</button>
+        <button class="ghost" onclick="randomizeLook()">Randomize</button>
         <button class="ghost" onclick="go('shop')">Merch Stand →</button>
       </div>
     </div>
@@ -1259,7 +1259,7 @@
 
 <div class="modalback" id="modalBack"><div class="modal"><h3 id="modalTitle"></h3><div id="modalBody"></div><div class="row" style="justify-content:flex-end;margin-top:16px;" id="modalBtns"></div></div></div>
 <div class="momentback" id="momentBack"><div class="momentcard">
-  <div class="mo-i" id="moIco">🏅</div>
+  <div class="mo-i" id="moIco"></div>
   <div class="mo-k" id="moKick">Career Milestone</div>
   <div class="mo-t" id="moTitle"></div>
   <div class="mo-s" id="moSub" style="display:none;"></div>
@@ -1563,8 +1563,8 @@ function completeTurn(to,why){
   c.standing=clamp(c.standing+5); c.mom=clamp(c.mom+12);
   c.voice=[];                                            // the slate is clean from here
   pushLog(`<b>The turn is complete.</b> ${why} ${w.name} is a ${to} now, working as <b>${g.n}</b>.`);
-  pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'}, working as ${g.n}.`});
-  award(`Turned ${to} as ${g.n}.`,'🔄');
+  pushInboxItem({ico:pico('swap',18),sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'}, working as ${g.n}.`});
+  award(`Turned ${to} as ${g.n}.`,pico('swap',36));
   return g;
 }
 function maybeTurn(){
@@ -1620,10 +1620,12 @@ const PRODUCT_FIT={
 function award(txt,ico,quiet){
   const c=G.car; c.accolades=c.accolades||[];
   if(c.accolades.some(a=>a.txt===txt)) return;
-  c.accolades.unshift({txt,ico:ico||'🏅',y:c.year,w:c.week});
-  pushInboxItem({ico:ico||'🏅',sev:'good',txt:`<b>Career milestone.</b> ${txt}`});
-  pushLog(`${ico||'🏅'} ${txt}`);
-  if(!quiet) queueMoment(ico||'🏅',txt);   // quiet: a bigger ceremony is covering it
+  const iconAcc = ico || pico('medal',36);
+  const iconInbox = ico || pico('medal',18);
+  c.accolades.unshift({txt,ico:iconAcc,y:c.year,w:c.week});
+  pushInboxItem({ico:iconInbox,sev:'good',txt:`<b>Career milestone.</b> ${txt}`});
+  pushLog(`${iconInbox} ${txt}`);
+  if(!quiet) queueMoment(iconAcc,txt);   // quiet: a bigger ceremony is covering it
 }
 /* ---------- MOMENTS: milestones deserve a spotlight, not an inbox row ---------- */
 let MOMENT_Q=[];
@@ -1650,15 +1652,15 @@ function showCeremony(){
   const c=G.car, pc=c.pendingCeremony;
   if(!pc) return false;
   const golds=[];
-  if(pc.moty) golds.push(`🏆 Match of the Year · vs ${pc.best.opp}`);
-  if(pc.woty) golds.push('👑 Wrestler of the Year');
-  if(pc.rookie) golds.push('🌟 Rookie of the Year');
+  if(pc.moty) golds.push(pico('trophy',14)+` Match of the Year · vs ${pc.best.opp}`);
+  if(pc.woty) golds.push(pico('crown',14)+' Wrestler of the Year');
+  if(pc.rookie) golds.push(pico('starBig',14)+' Rookie of the Year');
   const rows=[];
-  rows.push(`📅 <b>${pc.matches}</b> match${pc.matches===1?'':'es'} · went <b>${pc.w}-${pc.l}${pc.d?'-'+pc.d:''}</b>`);
-  if(pc.best) rows.push(`⭐ Best night: <b>${pc.best.q}</b> (${starsOf(pc.best.q)}★) vs ${pc.best.opp}`);
-  rows.push(`📈 Average rating <b>${pc.avg}</b>`);
+  rows.push(pico('clipboard',14)+` <b>${pc.matches}</b> match${pc.matches===1?'':'es'} · went <b>${pc.w}-${pc.l}${pc.d?'-'+pc.d:''}</b>`);
+  if(pc.best) rows.push(pico('star',14)+` Best night: <b>${pc.best.q}</b> (${starsOf(pc.best.q)}★) vs ${pc.best.opp}`);
+  rows.push(pico('graphUp',14)+` Average rating <b>${pc.avg}</b>`);
   if(pc.growth&&pc.growth.length)
-    rows.push(`🏋️ The body, one year on: ${pc.growth.map(g=>`<b style="color:${g[1]>0?'var(--green)':'#f0907f'}">${g[1]>0?'+':''}${g[1]}</b> ${g[0]}`).join(' · ')}`);
+    rows.push(pico('dumbbell',14)+` The body, one year on: ${pc.growth.map(g=>`<b style="color:${g[1]>0?'var(--green)':'#f0907f'}">${g[1]>0?'+':''}${g[1]}</b> ${g[0]}`).join(' · ')}`);
   $('ceremonyCard').innerHTML=`
     <div class="mo-k" style="text-align:center;">The Year-End Awards</div>
     <div class="mo-t" style="text-align:center;">Year ${pc.y} in review</div>
@@ -1817,7 +1819,7 @@ function checkRecruit(){
     closeModal();
     if(d.dataset.a==='join'){ joinFaction(f.id); }
     else { G.car.facCooldown=(G.car.year*1000+G.car.week)+40; rel(f.leader).respect=clamp(rel(f.leader).respect-12,0,100);
-      pushInboxItem({ico:'🚪',sev:'info',txt:`You turned down <b>${f.name}</b>. ${lead.name} took it personally.`}); }
+      pushInboxItem({ico:pico('check',18),sev:'info',txt:`You turned down <b>${f.name}</b>. ${lead.name} took it personally.`}); }
     save(); renderCareer();
   }); },0);
   return true;
@@ -1828,7 +1830,7 @@ function joinFaction(id){
   facMembers(f).forEach(m=>{ const r=rel(m.id); r.respect=clamp(r.respect+22,0,100); r.heat=clamp(r.heat-18,0,100); });
   (f.rivals||[]).forEach(rid=>{ const rf=facById(rid); if(rf) facMembers(rf).forEach(m=>{ rel(m.id).heat=clamp(rel(m.id).heat+22,0,100); }); });
   G.car.pop=clamp(G.car.pop+5,1,100);
-  pushInboxItem({ico:'🤝',sev:'good',txt:`You are now part of <b>${f.name}</b>. ${f.perk}`});
+  pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`You are now part of <b>${f.name}</b>. ${f.perk}`});
   pushLog(`Joined <b>${f.name}</b>.`);
   G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Joined ${f.name}`});
 }
@@ -1842,11 +1844,11 @@ function leaveFaction(betray){
   if(betray){
     G.car.pop=clamp(G.car.pop+8,1,100);
     const lead=charById(f.leader);
-    pushInboxItem({ico:'🔪',sev:'bad',txt:`You turned on <b>${f.name}</b>. ${lead?lead.name:'They'} will come for you, and the whole locker room saw it.`});
+    pushInboxItem({ico:pico('knife',18),sev:'bad',txt:`You turned on <b>${f.name}</b>. ${lead?lead.name:'They'} will come for you, and the whole locker room saw it.`});
     G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Betrayed ${f.name}`});
     if(!story()) startStory(f.leader,'wants blood after your betrayal.');
   } else {
-    pushInboxItem({ico:'🚪',sev:'info',txt:`You left <b>${f.name}</b> on decent terms.`});
+    pushInboxItem({ico:pico('check',18),sev:'info',txt:`You left <b>${f.name}</b> on decent terms.`});
     G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Left ${f.name}`});
   }
   save(); renderCareer();
@@ -1916,8 +1918,8 @@ function formAlliance(id){
   allies().push({id,since:c_now(),loyalty:58+Math.round(rel(id).respect*0.25),tag:false,teamName:null});
   rel(id).respect=clamp(rel(id).respect+8,0,100);
   pushLog(`<b>${c.name}</b> has your back from here.`);
-  pushInboxItem({ico:'🤝',sev:'good',txt:`<b>Alliance.</b> ${c.name} is in your corner.`});
-  award(`Formed an alliance with ${c.name}.`,'🤝');
+  pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>Alliance.</b> ${c.name} is in your corner.`});
+  award(`Formed an alliance with ${c.name}.`,pico('handshake',36));
 }
 function c_now(){ return G.car.year*100+G.car.week; }
 function formTeam(id,name){
@@ -1926,8 +1928,8 @@ function formTeam(id,name){
   a.loyalty=clamp(a.loyalty+8,0,100);
   G.car.teamRec=G.car.teamRec||{w:0,l:0};
   pushLog(`<b>${a.teamName}</b>. You and ${c.name} are a tag team.`);
-  pushInboxItem({ico:'👯',sev:'good',txt:`<b>${a.teamName}.</b> You and ${c.name} are a team now.`});
-  award(`Formed ${a.teamName} with ${c.name}.`,'👯');
+  pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>${a.teamName}.</b> You and ${c.name} are a team now.`});
+  award(`Formed ${a.teamName} with ${c.name}.`,pico('handshake',36));
 }
 function foundStable(name){
   if(!canStable()) return;
@@ -1936,8 +1938,8 @@ function foundStable(name){
   allies().forEach(a=>a.loyalty=clamp(a.loyalty+6,0,100));
   G.car.reaction=clamp(reactionOf()+5,0,100);
   pushLog(`<b>${G.car.stable.name}</b> is formed. ${stableMembers().map(m=>m.name).join(', ')} stand with you.`);
-  pushInboxItem({ico:'🛡️',sev:'story',txt:`<b>${G.car.stable.name}.</b> You have a stable, ${G.car.stable.members.length} strong.`});
-  award(`Founded ${G.car.stable.name}.`,'🛡️');
+  pushInboxItem({ico:pico('shield',18),sev:'story',txt:`<b>${G.car.stable.name}.</b> You have a stable, ${G.car.stable.members.length} strong.`});
+  award(`Founded ${G.car.stable.name}.`,pico('shield',36));
 }
 // the moment the whole thing exists for
 function betray(id){
@@ -1956,8 +1958,8 @@ function betray(id){
   if(G.w.align==='face') completeTurn('heel',`You turned on ${c.name} in front of everybody.`);
   startStory(id,'will not forget what you did.');
   pushLog(`<b>You turned on ${c.name}.</b> ${was} is finished, and the building will be talking about it for a year.`);
-  pushInboxItem({ico:'🔪',sev:'story',txt:`<b>The betrayal.</b> You turned on ${c.name}. Nobody saw it coming.`});
-  award(`Betrayed ${c.name}.`,'🔪');
+  pushInboxItem({ico:pico('knife',18),sev:'story',txt:`<b>The betrayal.</b> You turned on ${c.name}. Nobody saw it coming.`});
+  award(`Betrayed ${c.name}.`,pico('knife',36));
   // the rest of the locker room notices
   allies().forEach(x=>x.loyalty=clamp(x.loyalty-22,0,100));
 }
@@ -1974,7 +1976,7 @@ function checkBetrayal(){
     G.car.reaction=clamp(reactionOf()+7,0,100);
     G.car.mom=clamp(G.car.mom-14);
     if(!story()) startStory(a.id,'was never really with you.');
-    pushInboxItem({ico:'🔪',sev:'bad',txt:`<b>Betrayed.</b> ${c.name} turned on you. You never saw it coming.`});
+    pushInboxItem({ico:pico('knife',18),sev:'bad',txt:`<b>Betrayed.</b> ${c.name} turned on you. You never saw it coming.`});
     pushLog(`<b>${c.name} turned on you.</b> Every camera in the building caught it.`);
     return c;
   }
@@ -3478,7 +3480,7 @@ function renderHome(){
         <span class="rc-stat"><b>${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</b> record</span>
         <span class="rc-stat"><b>${c.reigns.length}</b> title${c.reigns.length===1?'':'s'}</span>
         <span class="rc-stat"><b>${Math.round(c.reaction==null?c.pop:c.reaction)}</b> crowd</span>
-        ${c.title?`<span class="rc-stat" style="border-color:rgba(224,179,65,.5);color:var(--gold)">👑 Champion</span>`:''}
+        ${c.title?`<span class="rc-stat" style="border-color:rgba(224,179,65,.5);color:var(--gold)">${pico('crown',12)} Champion</span>`:''}
         <span class="rc-go">Resume ▸</span>
       </div>
       ${s.savedAt?`<div class="rc-saved">Last saved ${savedAgo(s.savedAt)}</div>`:''}
@@ -3521,9 +3523,9 @@ function renderCareer(){
     ['Condition', Math.round(c.cond), `<div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div>`],
     ['Momentum', Math.round(c.mom), `<div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div>`],
     ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`,
-      c.streak>=3?`<div class="hint" style="color:#f0b060;font-weight:800;">🔥 ${c.streak}-match win streak</div>`
+      c.streak>=3?`<div class="hint" style="color:#f0b060;font-weight:800;">${pico('fire',14)} ${c.streak}-match win streak</div>`
       :c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
-    ['Title', c.title?'👑 Held':'-', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
+    ['Title', c.title?pico('crown',14)+' Held':'-', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
   // secondary detail lives behind a pager so the week's decision stays on screen
   const HUB=['Business','Attributes'];
@@ -3648,30 +3650,31 @@ function tagOffers(offs){
    useful thing available and says it in a sentence. */
 function weekAdvice(){
   const c=G.car, w=G.w;
-  if(c.freeAgent) return {ico:'✍️',t:'Your contract is up. Sign somewhere before you can be booked.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
-  if(c.injWeeks>0) return {ico:'🏥',t:`You are hurt. Rest until the ${(c.hurt&&c.hurt.part||'injury').toLowerCase()} is cleared. Working through it makes it worse.`,sev:'bad'};
-  if(w.tp>0) return {ico:'⭐',t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
-  if(c.cond<45) return {ico:'🩹',t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury. Take the week off.`,sev:'bad'};
-  if(gimStale()) return {ico:'🎭',t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
-  if(reactionOf()<22 && c.year+c.week>2) return {ico:'🔇',t:'Nobody is reacting to you either way, and indifference is worse than being hated. Next time they put a microphone in your hand, give them something.',sev:'bad'};
-  if(voiceFlip()>=0.5) return {ico:'🎭',t:'You have said three different things in three weeks. Pick a character and stay with it. The crowd cannot get behind somebody who changes every time they hold a microphone.',sev:'bad'};
+  const P=s=>pico(s,22);
+  if(c.freeAgent) return {ico:P('pen'),t:'Your contract is up. Sign somewhere before you can be booked.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
+  if(c.injWeeks>0) return {ico:P('cross'),t:`You are hurt. Rest until the ${(c.hurt&&c.hurt.part||'injury').toLowerCase()} is cleared. Working through it makes it worse.`,sev:'bad'};
+  if(w.tp>0) return {ico:P('star'),t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
+  if(c.cond<45) return {ico:P('bandage'),t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury. Take the week off.`,sev:'bad'};
+  if(gimStale()) return {ico:P('mask'),t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
+  if(reactionOf()<22 && c.year+c.week>2) return {ico:P('microphone'),t:'Nobody is reacting to you either way, and indifference is worse than being hated. Next time they put a microphone in your hand, give them something.',sev:'bad'};
+  if(voiceFlip()>=0.5) return {ico:P('mask'),t:'You have said three different things in three weeks. Pick a character and stay with it. The crowd cannot get behind somebody who changes every time they hold a microphone.',sev:'bad'};
   const tp=turnProgress();
-  if(tp.to&&tp.p>0.25) return {ico:'🔄',t:`You have been talking like a ${tp.to}. One more promo in that voice completes the turn. You are ${Math.round(tp.p*100)}% of the way there.`,sev:'act'};
-  if(alignMismatch()) return {ico:'🎭',t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back the next time you are on the mic.`,sev:'warn'};
+  if(tp.to&&tp.p>0.25) return {ico:P('swap'),t:`You have been talking like a ${tp.to}. One more promo in that voice completes the turn. You are ${Math.round(tp.p*100)}% of the way there.`,sev:'act'};
+  if(alignMismatch()) return {ico:P('mask'),t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back the next time you are on the mic.`,sev:'warn'};
   const st=story();
-  if(st&&st.stage>=3) return {ico:'🔥',t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
+  if(st&&st.stage>=3) return {ico:P('fire'),t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
   const _weak=allies().find(a=>a.loyalty<25);
   if(_weak){ const wc=charById(_weak.id);
-    return {ico:'🔪',t:`${wc?wc.name:'One of your allies'} is barely with you any more. Win something together or they will turn, and you will not get a warning.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
-  if(canStable()) return {ico:'🛡️',t:`You have ${allies().length} people in your corner. Put a name on it and you have a stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
+    return {ico:P('knife'),t:`${wc?wc.name:'One of your allies'} is barely with you any more. Win something together or they will turn, and you will not get a warning.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
+  if(canStable()) return {ico:P('shield'),t:`You have ${allies().length} people in your corner. Put a name on it and you have a stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
   const _cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id))[0];
-  if(_cand) return {ico:'🤝',t:`${_cand.name} rates you enough to work together. That is how tag teams and stables start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
-  if(c.deal&&c.deal.weeksLeft<=6) return {ico:'📄',t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
+  if(_cand) return {ico:P('handshake'),t:`${_cand.name} rates you enough to work together. That is how tag teams and stables start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
+  if(c.deal&&c.deal.weeksLeft<=6) return {ico:P('clipboard'),t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
   if(c.booking&&c.booking.type==='match'&&!c.prep&&!c.booking.studied)
-    return {ico:'📼',t:`You have not prepared this week. Studying ${c.booking.o.oppName}'s tape raises your odds tonight.`,sev:'act'};
+    return {ico:P('tape'),t:`You have not prepared this week. Studying ${c.booking.o.oppName}'s tape raises your odds tonight.`,sev:'act'};
   const t=workTier(), belt=beltName(t);
-  if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:'🏆',t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
-  return {ico:'🤼',t:'Check what the office has you doing, then make the most of it. Your game plan is what you get better at.',sev:'ok'};
+  if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:P('trophy'),t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
+  return {ico:P('fist'),t:'Check what the office has you doing, then make the most of it. Your game plan is what you get better at.',sev:'ok'};
 }
 /* what you are working toward, so progress is visible week to week */
 function nextGoals(){
@@ -3712,7 +3715,7 @@ function renderWeek(){
     const h=c.hurt;
     const canWork=h && c.injWeeks<=Math.ceil(h.wk*0.55) && (c.cond>=42);
     el.innerHTML=`<div class="injcard">
-        <div class="ih">🏥 ${h?h.part:'Injured'}</div>
+        <div class="ih">${pico('cross',16)} ${h?h.part:'Injured'}</div>
         <div class="id">${h?cap(h.nm):'You are hurt'} · <b>${c.injWeeks}</b> week${c.injWeeks>1?'s':''} of rehab left</div>
         ${h?`<div class="hint" style="margin-top:5px;">Carrying −${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]} until you are cleared.</div>`:''}
       </div>
@@ -3750,12 +3753,12 @@ function renderWeek(){
         <div class="bk-olab"><span>You <b>${Math.round(w*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(w*100)}%</b> them</span></div>
       </div>
       <div class="bk-rw" style="margin-top:8px;">
-        <span>💰 <b>${money(o.purse)}</b></span>
-        <span>📈 <b>+${rep}</b> rep</span>
-        <span class="${risk>0.18?'hot':''}">🩹 <b>${Math.round(risk*100)}%</b> risk</span>
-        ${b.moreTime?'<span style="color:var(--gold)">⏱ extra time</span>':''}
-        ${b.promised?'<span style="color:var(--gold)">🤝 going over</span>':''}
-        ${b.studied?'<span style="color:var(--gold)">📼 did the homework</span>':''}
+        <span>${pico('money',14)} <b>${money(o.purse)}</b></span>
+        <span>${pico('graphUp',14)} <b>+${rep}</b> rep</span>
+        <span class="${risk>0.18?'hot':''}">${pico('bandage',14)} <b>${Math.round(risk*100)}%</b> risk</span>
+        ${b.moreTime?`<span style="color:var(--gold)">${pico('star',14)} extra time</span>`:''}
+        ${b.promised?`<span style="color:var(--gold)">${pico('handshake',14)} going over</span>`:''}
+        ${b.studied?`<span style="color:var(--gold)">${pico('tape',14)} did the homework</span>`:''}
       </div>
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
       ${p>0?`<button class="ghost" style="width:100%;margin-top:7px;" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'You have had your say':'Have a word with the office'}</button>`:
@@ -4004,7 +4007,7 @@ function startStory(charId,reason){
   G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year };
   G.car.rivalId=charId; G.car.offers=null;   // rebook the week around the feud
   pushLog(`<b>${c.name}</b>: ${reason}`);
-  pushInboxItem({ico:'🔥',sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
+  pushInboxItem({ico:pico('fire',18),sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
 }
 function advanceStory(){
   const st=story(); if(!st) return;
@@ -4013,7 +4016,7 @@ function advanceStory(){
   st.lastAdv=wk;
   st.stage=Math.min(4,st.stage+1);
   const c=charById(st.charId);
-  if(st.stage===3) pushInboxItem({ico:'💥',sev:'story',txt:`It is time to settle it with <b>${c.name}</b>. Take the blow-off match.`});
+  if(st.stage===3) pushInboxItem({ico:pico('impact',18),sev:'story',txt:`It is time to settle it with <b>${c.name}</b>. Take the blow-off match.`});
 }
 function endStory(resolution){
   const st=story(); if(!st) return;
@@ -4021,11 +4024,11 @@ function endStory(resolution){
   st.stage=4;
   if(resolution==='respect'){
     R.respect=clamp(R.respect+30,0,100); R.heat=clamp(R.heat-40,0,100);
-    pushInboxItem({ico:'🤝',sev:'good',txt:`You and <b>${c.name}</b> shake on it. That one will be remembered.`});
+    pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`You and <b>${c.name}</b> shake on it. That one will be remembered.`});
     pushLog(`Settled it with <b>${c.name}</b>, and earned their respect.`);
   } else {
     R.heat=clamp(R.heat+20,0,100);
-    pushInboxItem({ico:'🩸',sev:'bad',txt:`<b>${c.name}</b> will never let this go. Neither will you.`});
+    pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>${c.name}</b> will never let this go. Neither will you.`});
     pushLog(`Your war with <b>${c.name}</b> ended in bad blood that never healed.`);
   }
   R.cooldown=(G.car.year*1000+G.car.week)+45;   // this one is settled for a good while
@@ -4089,7 +4092,7 @@ function backstageEvent(){
       closeModal();
       if(o.resolve){ endStory(o.resolve); }
       else if(st.stage<3) advanceStory();
-      pushInboxItem({ico:'🎬',sev:'story',txt:`<b>${ev.head}.</b> ${o.say}`});
+      pushInboxItem({ico:pico('starBig',18),sev:'story',txt:`<b>${ev.head}.</b> ${o.say}`});
       save(); renderCareer();
     });
   },0);
@@ -4607,7 +4610,8 @@ async function startFight(o){
   const oc=charById(o.oppId);
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
-  $('fStip').textContent=(o.stakes==='title'?'🏆 TITLE MATCH · ':o.stakes==='defense'?'🏆 TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
+  const beltIco = pico('trophy',12);
+  $('fStip').innerHTML=(o.stakes==='title'?beltIco+' TITLE MATCH · ':o.stakes==='defense'?beltIco+' TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
   $('fRules').textContent=stipRules(o).desc;
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
@@ -5359,11 +5363,11 @@ function doAsk(id){
     if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1],['Last Man Standing','lms',1.35]][Math.floor(rnd()*5)];
       b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2]; }
     if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
-    pushInboxItem({ico:'🤝',sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got')}.`});
+    pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got')}.`});
     toast('They went for it');
   } else {
     c.standing=clamp(c.standing-(id==='finish'?6:3));
-    pushInboxItem({ico:'📄',sev:'bad',txt:`<b>Turned down.</b> You asked, they said no, and they remember being asked.`});
+    pushInboxItem({ico:pico('clipboard',18),sev:'bad',txt:`<b>Turned down.</b> You asked, they said no, and they remember being asked.`});
     toast('They said no');
   }
   save(); renderCareer();
@@ -5466,7 +5470,7 @@ function applyMatch(o,res){
   if(rnd()<risk){
     const h=takeInjury(cats,o.mult,c.workedHurt?0.30:0);
     injMsg=`You suffered <b>${h.nm}</b>, out ${h.wk} week${h.wk>1?'s':''} (−${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]}).`;
-    pushInboxItem({ico:'🏥',sev:'bad',txt:`<b>${h.part} injury.</b> ${h.nm}, ${h.wk} weeks.`});
+    pushInboxItem({ico:pico('cross',18),sev:'bad',txt:`<b>${h.part} injury.</b> ${h.nm}, ${h.wk} weeks.`});
   } else if(c.workedHurt && c.hurt){
     c.injWeeks+=rint(1,3);
     injMsg=`You got through it, but working hurt cost you. The ${c.hurt.part.toLowerCase()} needs longer.`;
@@ -5559,7 +5563,7 @@ function renderMatch(o,res){
       <span><b>${res.nearFalls||0}</b> near-fall${(res.nearFalls||0)===1?'':'s'}</span>
       <span><b>${res.used.length}</b> moves called</span>
       ${res.limb?`<span>worked the <b>${LIMB_NAME[res.limb]||res.limb}</b></span>`:''}
-      ${res.win&&c.streak>=2?`<span class="streakchip">🔥 ${c.streak} straight</span>`:''}
+      ${res.win&&c.streak>=2?`<span class="streakchip">${pico('fire',12)} ${c.streak} straight</span>`:''}
     </div>
     ${rowsOf(res.good||[],'good','▲')}
     ${rowsOf(res.bad||[],'bad','▼')}
@@ -5572,7 +5576,7 @@ function renderMatch(o,res){
   chips.push(`<b>+${res.xp}</b> XP`);
   chips.push(`+mastery · ${catById(c.plan.a).name}`);
   if(G.w.tp>0) chips.push({t:`<b>${G.w.tp}</b> training point${G.w.tp>1?'s':''} ready to spend`,cls:'gold'});
-  if(res.injMsg) chips.push({t:`🏥 ${res.injMsg}`,cls:'red'});
+  if(res.injMsg) chips.push({t:pico('cross',12)+` ${res.injMsg}`,cls:'red'});
   let rw=`<div class="paychips">`+chips.map((ch,i)=>{
     const t=ch.t||ch, cls=ch.cls||'';
     return `<span class="pchip ${cls}" style="animation-delay:${(0.2+i*0.14).toFixed(2)}s">${t}</span>`;
@@ -5628,7 +5632,7 @@ function advanceWeek(){
     const g=G.w.gimmick;
     g.heat=clamp(g.heat - (0.55+sc.pop*0.35) + (c.pop>60?0.18:0), 0, 100);
     if(g.heat<30 && !c._staleWarned){ c._staleWarned=true;
-      pushInboxItem({ico:'📉',sev:'bad',txt:`<b>The act is cold.</b> ${g.name} is not moving merchandise any more. The office wants something new: repackage or turn.`}); }
+      pushInboxItem({ico:pico('graphDown',18),sev:'bad',txt:`<b>The act is cold.</b> ${g.name} is not moving merchandise any more. The office wants something new: repackage or turn.`}); }
     if(g.heat>=45) c._staleWarned=false;
   }
   // fame can't outrun the stage you work on, drift toward the tier's ceiling
@@ -5665,7 +5669,7 @@ function healUp(){
   }
   G.w.attrs[def.attr]=clamp(G.w.attrs[def.attr]+back);
   c.hurt=null;
-  pushInboxItem({ico:'🩺',sev:'info',txt:`<b>Medically cleared.</b> ${msg}`});
+  pushInboxItem({ico:pico('cross',18),sev:'info',txt:`<b>Medically cleared.</b> ${msg}`});
   pushLog(msg);
 }
 // pick and apply a real injury, weighted by what you were actually doing
@@ -6024,7 +6028,7 @@ function drawCard(){
           <div class="pcb-sub">${fr.label}${c.title?' · Champion':''}</div>
           <div class="pcb-sec">Career</div>
           ${rows.map(r=>`<div class="pcb-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}
-          ${c.title?`<div class="pcb-sec">Championship</div><div class="pcb-row"><span>👑 ${c.title}</span><b>${c.defenses||0} def</b></div>`:''}
+          ${c.title?`<div class="pcb-sec">Championship</div><div class="pcb-row"><span>${pico('crown',14)} ${c.title}</span><b>${c.defenses||0} def</b></div>`:''}
           ${f?`<div class="pcb-sec">Faction</div><div class="pcb-row"><span>${f.name}</span><b style="color:${f.color}">●</b></div>`:''}
           ${hi.length?`<div class="pcb-sec">Defining Moments</div>${hi.map(x=>`<div class="pcb-hi">• ${x.t}</div>`).join('')}`:''}
           <div class="pcb-foot">LEGACY <b style="color:${fr.c}">${legacy}</b> · ${st.name}</div>
@@ -7379,7 +7383,7 @@ async function pmFinish(){
     }
   }
   if(PM.mode==='title'){ c.titleCall=c.year*100+c.week; pmLog(`<span class="hi">The office heard you. A title shot is more likely while that is fresh.</span>`); }
-  pushInboxItem({ico:'🎤',sev:q>=60?'good':'info',txt:`<b>Promo segment.</b> Rated ${Math.round(q)} · ${cl.t.toLowerCase()}.`});
+  pushInboxItem({ico:pico('microphone',18),sev:q>=60?'good':'info',txt:`<b>Promo segment.</b> Rated ${Math.round(q)} · ${cl.t.toLowerCase()}.`});
   c.promos=c.promos||[]; c.promos.unshift({y:c.year,w:c.week,q:Math.round(q),t:t?t.name:'the crowd'});
   if(c.promos.length>20) c.promos.pop();
   checkUnlocks();
@@ -7436,13 +7440,13 @@ function renderCrew(){
   // ---- the one thing to do ----
   const cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id));
   if(!allies().length&&!cand.length){
-    h+=`<div class="advice ok"><span class="ad-i">🤝</span><span class="ad-t">Nobody in this locker room rates you enough yet. Wrestle them, or get on the mic and show them respect. An alliance opens up at 55 respect.</span>
+    h+=`<div class="advice ok"><span class="ad-i">${pico('handshake',22)}</span><span class="ad-t">Nobody in this locker room rates you enough yet. Wrestle them, or get on the mic and show them respect. An alliance opens up at 55 respect.</span>
       <button class="ad-b" onclick="openPromoPicker()">Cut a promo →</button></div>`;
   } else if(cand.length){
-    h+=`<div class="advice act"><span class="ad-i">🤝</span><span class="ad-t"><b>${cand[0].name}</b> rates you enough to work together. That is how tag teams and stables start.</span>
+    h+=`<div class="advice act"><span class="ad-i">${pico('handshake',22)}</span><span class="ad-t"><b>${cand[0].name}</b> rates you enough to work together. That is how tag teams and stables start.</span>
       <button class="ad-b" onclick="askAlly('${cand[0].id}')">Ask them →</button></div>`;
   } else if(canStable()){
-    h+=`<div class="advice act"><span class="ad-i">🛡️</span><span class="ad-t">You have ${allies().length} people behind you. That is enough to put a name on it and form a stable.</span>
+    h+=`<div class="advice act"><span class="ad-i">${pico('shield',22)}</span><span class="ad-t">You have ${allies().length} people behind you. That is enough to put a name on it and form a stable.</span>
       <button class="ad-b" onclick="askStable()">Found a stable →</button></div>`;
   }
 
@@ -7606,10 +7610,10 @@ function renderDeal(){
       <div class="tile"><div class="lab">Injuries</div><div class="val">${inj.length}</div></div>
     </div>
     ${chron.length?`<div class="flab" style="margin-top:12px;">Permanent damage</div>
-      <div class="hint" style="line-height:1.9;">${chron.map(x=>`🦴 ${x.part}: −${x.pen} ${(ATTRS.find(a=>a[0]===x.attr)||['','?'])[1]} <span style="opacity:.6">(Year ${x.y})</span>`).join('<br>')}</div>`
+      <div class="hint" style="line-height:1.9;">${chron.map(x=>`${pico('bandage',14)} ${x.part}: −${x.pen} ${(ATTRS.find(a=>a[0]===x.attr)||['','?'])[1]} <span style="opacity:.6">(Year ${x.y})</span>`).join('<br>')}</div>`
       :`<div class="hint" style="margin-top:10px;">Nothing permanent yet. It will come.</div>`}
     ${inj.length?`<div class="flab" style="margin-top:12px;">Injury history</div>
-      <div class="hint" style="line-height:1.9;">${inj.slice(0,8).map(x=>`🏥 Y${x.y}W${x.w}: ${x.nm} (${x.wk} wks)`).join('<br>')}</div>`:''}
+      <div class="hint" style="line-height:1.9;">${inj.slice(0,8).map(x=>`${pico('cross',14)} Y${x.y}W${x.w}: ${x.nm} (${x.wk} wks)`).join('<br>')}</div>`:''}
   </div>`;
   $('dealBody').innerHTML=h;
 }
@@ -7625,9 +7629,9 @@ function signDeal(i){
     c.standing=clamp(48+(o.want-40)*0.20);
     c.rivalId=null; G.story=null; c.faction=null;
     pushLog(`You sign with <b>${pr.name}</b>, ${o.years} year${o.years>1?'s':''} at ${money(o.weekly)}/week.`);
-    pushInboxItem({ico:'✍️',sev:'good',txt:`<b>Signed.</b> ${pr.name}, ${o.years} year${o.years>1?'s':''}, ${money(o.weekly)} a week.`});
+    pushInboxItem({ico:pico('pen',18),sev:'good',txt:`<b>Signed.</b> ${pr.name}, ${o.years} year${o.years>1?'s':''}, ${money(o.weekly)} a week.`});
     const stepUp=promoTierIdx(pr)>promoTierIdx(old);
-    if(stepUp) award(`Signed with ${pr.name}.`,'✍️',true);   // the signing moment below covers it
+    if(stepUp) award(`Signed with ${pr.name}.`,pico('pen',36),true);   // the signing moment below covers it
     queueMoment(pico('pen',44), pr.name, {kick:'Contract signed',
       sub:`${o.years} year${o.years>1?'s':''} · ${money(o.weekly)} a week guaranteed${stepUp?' · a step up the ladder':''}`});
   } else {
@@ -7646,10 +7650,10 @@ function renegotiate(){
         d.renegotiated=true;
         const p=clamp(0.30+(c.standing-50)*0.012+(c.pop-40)*0.006+(c.title?0.16:0),0.05,0.92);
         if(rnd()<p){ d.weekly=ask; c.standing=clamp(c.standing-3);
-          pushInboxItem({ico:'💰',sev:'good',txt:`<b>New terms.</b> ${money(ask)} a week.`});
+          pushInboxItem({ico:pico('money',18),sev:'good',txt:`<b>New terms.</b> ${money(ask)} a week.`});
           toast('They paid up'); }
         else { c.standing=clamp(c.standing-9);
-          pushInboxItem({ico:'📄',sev:'bad',txt:'<b>Turned down.</b> The office remembers you asked.'});
+          pushInboxItem({ico:pico('clipboard',18),sev:'bad',txt:'<b>Turned down.</b> The office remembers you asked.'});
           toast('They said no'); }
         save(); renderDeal(); }}]);
 }
@@ -7667,8 +7671,8 @@ function doTurn(){
        const drop=clamp(6+c.pop*0.14,4,18);
        c.pop=clamp(c.pop-drop,1,100); c.standing=clamp(c.standing+4); c.mom=clamp(c.mom+10);
        pushLog(`You turned ${to}. The new act is <b>${g.n}</b>. The building did not know what to do with itself.`);
-       pushInboxItem({ico:'🔄',sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'}, working as ${g.n}.`});
-       award(`Turned ${to} as ${g.n}.`,'🔄');
+       pushInboxItem({ico:pico('swap',18),sev:'story',txt:`<b>The turn.</b> ${w.name} is ${to==='heel'?'the bad guy now':'one of us again'}, working as ${g.n}.`});
+       award(`Turned ${to} as ${g.n}.`,pico('swap',36));
        save(); renderDeal(); toast(`You are a ${to} now`); }}]);
 }
 function openRepackage(){
@@ -7689,7 +7693,7 @@ function doRepackage(id){
   const drop=clamp(4+c.pop*0.10,3,14);
   c.pop=clamp(c.pop-drop,1,100);
   pushLog(`Repackaged as <b>${g.n}</b>. New music, new gear, new everything.`);
-  pushInboxItem({ico:'🎭',sev:'story',txt:`<b>Repackaged.</b> ${w.name} is now ${g.n}.`});
+  pushInboxItem({ico:pico('mask',18),sev:'story',txt:`<b>Repackaged.</b> ${w.name} is now ${g.n}.`});
   save(); renderDeal(); toast('New character: '+g.n);
 }
 
@@ -7781,11 +7785,11 @@ function renderRecord(){
   if(pg===0){
     h+= G.hist.length? G.hist.slice(0,12).map(m=>`<div class="movecard ${m.win?'have':'lock'}">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <span class="nm">${m.win?'W':'L'} vs ${m.opp}${m.title?' 🏆':''}</span>
+          <span class="nm">${m.win?'W':'L'} vs ${m.opp}${m.title?' '+pico('trophy',12):''}</span>
           <span class="rq">Y${m.y} W${m.w} · ${m.stip} · rating ${m.q}</span></div></div>`).join('')
       : `<p class="hint">No matches yet.</p>`;
   } else if(pg===1){
-    h+= c.reigns.length? c.reigns.map(r=>`<div class="movecard have"><span class="nm">👑 ${r.title}</span> <span class="rq">won Y${r.year} W${r.week}${r.defenses?` · ${r.defenses} defence${r.defenses>1?'s':''}`:''}</span></div>`).join('')
+    h+= c.reigns.length? c.reigns.map(r=>`<div class="movecard have"><span class="nm">${pico('crown',14)} ${r.title}</span> <span class="rq">won Y${r.year} W${r.week}${r.defenses?` · ${r.defenses} defence${r.defenses>1?'s':''}`:''}</span></div>`).join('')
       : `<p class="hint">No championships yet.</p>`;
   } else {
     h+= acc.length? acc.map(a=>`<div class="movecard have"><span class="nm">${a.ico} ${a.txt}</span> <span class="rq">Year ${a.y}</span></div>`).join('')
@@ -7812,7 +7816,7 @@ function renderHof(){
         <div class="tile"><div class="lab">Legacy Grade</div><div class="val" style="color:var(--gold)">${grade}</div></div>
         <div class="tile"><div class="lab">Legacy Score</div><div class="val">${legacy}</div></div>
       </div>
-      ${inducted?`<p style="color:var(--gold);font-weight:800;margin-top:12px;">🏛️ Inducted into the Hall of Immortals.</p>`
+      ${inducted?`<p style="color:var(--gold);font-weight:800;margin-top:12px;">${pico('trophy',16)} Inducted into the Hall of Immortals.</p>`
         :`<p class="hint" style="margin-top:12px;">Fell short of the Hall. Build a bigger legend next time.</p>`}
     </div>
     <div class="grid g2" style="margin-top:12px;">${[
