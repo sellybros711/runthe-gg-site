@@ -297,6 +297,17 @@
   @keyframes dmgA{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(-46px);opacity:0}}
   .callout{position:absolute;left:0;right:0;top:26%;text-align:center;font-family:var(--display);font-size:40px;letter-spacing:.04em;
     color:var(--cream);text-transform:uppercase;text-shadow:0 0 22px rgba(198,57,44,.9),0 4px 0 #6d1a13;opacity:0;z-index:6;pointer-events:none;}
+  .entbanner{position:absolute;left:0;right:0;bottom:8%;text-align:center;z-index:6;pointer-events:none;opacity:0;transition:opacity .28s;}
+  .entbanner.show{opacity:1;}
+  .entbanner .theme{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;color:#c8b273;text-transform:uppercase;margin-bottom:4px;text-shadow:0 2px 0 #000;}
+  .entbanner .name{font-family:var(--display);font-size:24px;letter-spacing:.06em;color:var(--cream);text-transform:uppercase;text-shadow:0 0 18px rgba(0,0,0,.9),0 3px 0 #000;}
+  .entbanner .nick{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--text-dim);text-transform:uppercase;margin-top:2px;text-shadow:0 2px 0 #000;}
+  .vidpack{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.94),rgba(10,4,4,.94));display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9;padding:20px;opacity:0;transition:opacity .35s;text-align:center;pointer-events:none;}
+  .vidpack.show{opacity:1;}
+  .vidpack .vp-k{font-family:var(--mono);font-size:10.5px;letter-spacing:.32em;color:#c6392c;text-transform:uppercase;margin-bottom:12px;}
+  .vidpack .vp-t{font-family:var(--display);font-size:28px;letter-spacing:.04em;color:var(--cream);text-transform:uppercase;line-height:1.15;max-width:560px;text-shadow:0 3px 0 #000;}
+  .vidpack .vp-s{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--text-dim);margin-top:14px;max-width:520px;line-height:1.5;}
+  .vidpack .vp-b{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;color:var(--gold);margin-top:16px;}
   .callout.show{animation:callA 1.05s ease-out;}
   @keyframes callA{0%{opacity:0;transform:scale(.5)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
   .pincount{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:120px;color:#fff;
@@ -1233,6 +1244,8 @@
     <div class="fxlayer" id="fFx"></div>
     <div class="callout" id="fCall"></div>
     <div class="pincount" id="fPin"></div>
+    <div class="entbanner" id="fEnt"><div class="theme" id="fEntTheme"></div><div class="name" id="fEntName"></div><div class="nick" id="fEntNick"></div></div>
+    <div class="vidpack" id="fVid"><div class="vp-k" id="fVidK"></div><div class="vp-t" id="fVidT"></div><div class="vp-s" id="fVidS"></div><div class="vp-b" id="fVidB"></div></div>
   </div>
 
   <div class="fbottom">
@@ -4088,6 +4101,7 @@ function renderWeek(){
         ${b.moreTime?`<span style="color:var(--gold)">${pico('star',14)} extra time</span>`:''}
         ${b.promised?`<span style="color:var(--gold)">${pico('handshake',14)} going over</span>`:''}
         ${b.studied?`<span style="color:var(--gold)">${pico('tape',14)} did the homework</span>`:''}
+        ${b.sparred?`<span style="color:var(--gold)">${pico('fist',14)} sparred with an ally</span>`:''}
       </div>
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
       ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' ? `<button class="ghost" style="width:100%;margin-top:7px;border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in Money in the Bank →</button>`:''}
@@ -4504,6 +4518,50 @@ function setBar(id,pct){ const el=$(id); el.style.width=clamp(pct)+'%';
 function setMom(){ const m=MS.mom; // -100..100
   $('momMe').style.width=(m>0?m/2:0)+'%'; $('momOpp').style.width=(m<0?-m/2:0)+'%'; }
 async function callout(t){ const c=$('fCall'); c.textContent=t; c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); await sleep(520); }
+// The theme cue for a wrestler. You picked yours from the create screen;
+// everybody else gets one deterministically from their id, so it stays consistent.
+const THEME_LINE={metal:'guitars, war chant',punk:'fast, angry, loud',hiphop:'booming bass, swagger',orchestral:'slow build, main-event',electronic:'synth wave, cold',country:'honky-tonk, boots on the floor',funk:'brass, groove, showman',silent:'lights out, no music'};
+function themeFor(w){
+  if(w && w.entrance && THEME_LINE[w.entrance]) return w.entrance;
+  const src=(w && (w.id||w.name)||'x')+''; let h=0;
+  for(let i=0;i<src.length;i++) h=(h*31+src.charCodeAt(i))>>>0;
+  const keys=Object.keys(THEME_LINE); return keys[h%keys.length];
+}
+async function playEntrance(nameEl, themeText, nameText, nickText){
+  const el=$('fEnt');
+  $('fEntTheme').textContent = '♪ '+themeText;
+  $('fEntName').textContent  = nameText;
+  $('fEntNick').textContent  = nickText||'';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  await sleep(1000);
+  el.classList.remove('show'); await sleep(220);
+}
+// A video package: the story boiled down to a screen. Only for the matches
+// that deserve it: a title match, a rivalry blow-off, or any PPV main event.
+function bigMatchLine(o){
+  const _st=story();
+  if(_st && _st.charId===o.oppId){
+    const stg=STORY_STAGES[Math.min(4,_st.stage)];
+    return {k:stg.name.toUpperCase()+' · TONIGHT', t:_st.stage>=3?`Settle it with ${o.oppName}.`:`Your feud with ${o.oppName} escalates.`,
+            s:`It started ${_st.startWeek?'weeks ago':'months ago'}. Every match since has been building to this one. Tonight, it ends.`};
+  }
+  if(o.stakes==='title')  return {k:'FOR THE GOLD',   t:`Beat ${o.oppName}, walk out champion.`, s:`Every hand raised, every mile driven, every night in an empty gym. All of it, for tonight.`};
+  if(o.stakes==='defense')return {k:'THE CHAMPION DEFENDS', t:`Keep the ${G.car.title||'belt'}.`, s:`The belt does not care how you got it. It cares whether you can keep it. ${o.oppName} is the reason you find out tonight.`};
+  if(o.stakes==='secondary')return {k:'THE MID-CARD CROWN', t:`Take the ${o.belt||'title'} off ${o.oppName}.`, s:`Not the world title. Not yet. But the one everybody watches to see who is coming.`};
+  if(o.ppv)                return {k:o.ppv.toUpperCase(), t:`${o.oppName}. Tonight.`, s:`The biggest show of the quarter. Everyone is watching. Give them a reason to remember it.`};
+  return null;
+}
+async function playVideoPackage(o){
+  const line=bigMatchLine(o); if(!line) return;
+  const el=$('fVid');
+  $('fVidK').textContent = line.k;
+  $('fVidT').textContent = line.t;
+  $('fVidS').textContent = line.s;
+  $('fVidB').textContent = o.ppv ? 'LIVE FROM '+(myPromo().short||'THE ARENA') : 'TONIGHT';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  await sleep(1800);
+  el.classList.remove('show'); await sleep(320);
+}
 function shake(){ const a=$('arena'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),340); }
 async function flashScreen(){ const f=document.createElement('div'); f.className='flash go'; $('arena').appendChild(f); setTimeout(()=>f.remove(),320); }
 
@@ -4979,6 +5037,8 @@ async function startFight(o){
   chooseTarget(MS.me); chooseTarget(MS.opp);
   // tape study walks to the ring with you: an early edge and a better story
   if(G.car.booking&&G.car.booking.o===o&&G.car.booking.studied){ MS.mom=8; MS.quality+=4; MS.studied=true; }
+  // sparring earlier in the week: a small edge that the announcers won't mention
+  if(G.car.booking&&G.car.booking.sparred){ MS.quality+=3; MS.sparred=true; }
   const oc=charById(o.oppId);
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
@@ -4994,11 +5054,21 @@ async function startFight(o){
   figLook('me',G.w.look);
   figLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
   $('fClock').textContent='BELL';
-  // ---- entrances: both wrestlers walk down the aisle and play to the crowd ----
+  // ---- video package (big matches only), then entrances ----
   busy(true);
-  fmv('me',{pose:'run',fwd:-ST.W*0.62},0); fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
+  await playVideoPackage(o);
+  if(stale()) return;
+  // opponent enters first, then you. Each entrance shows a theme cue banner.
+  const _opc=charById(o.oppId);
+  fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
   await sleep(40);
-  fmv('me',{pose:'run',fwd:0},640); fmv('opp',{pose:'run',fwd:0},640); await sleep(660);
+  fmv('opp',{pose:'run',fwd:0},700);
+  await playEntrance('opp', THEME_LINE[themeFor(_opc||{id:o.oppId,name:o.oppName})], o.oppName, _opc&&_opc.nick||'');
+  if(stale()) return;
+  fmv('me',{pose:'run',fwd:-ST.W*0.62},0);
+  await sleep(40);
+  fmv('me',{pose:'run',fwd:0},700);
+  await playEntrance('me', THEME_LINE[themeFor(G.w)], G.w.name, G.w.nick||'');
   if(stale()) return;
   fmv('me',{pose:'taunt'},220); fmv('opp',{pose:'taunt'},220); await sleep(420);
   if(stale()) return;
@@ -5633,6 +5703,13 @@ const PULL_LABEL=['No say in it','A word now and then','They listen to you','Cre
 function bookWeek(){
   const c=G.car;
   if(c.booking || c.freeAgent || c.injWeeks>0 || c.mentorWeeks>0 || c.retired) return;
+  // a booked tour beats whatever the office had planned
+  if(c.tourPending){
+    const to=fireTourWeek();
+    if(to){ c.booking={type:'match', o:to, asked:false, tour:true,
+      line:`${to.tour.region}. One night. Come home with a story.`, bookerName:to.tour.region+' promoter'};
+      save(); return; }
+  }
   const sc=schedOf(c.deal&&c.deal.sched);
   const standing=c.standing||50;
   // they use the people they rate. Sitting at home is what happens to
@@ -5686,6 +5763,9 @@ function prepOptions(){
   ];
   if(b.type==='match')
     opts.push({id:'tape', ico:pico('tape'), l:'Study the tape', d:`Scout ${b.o.oppName}. Better odds, better match.`});
+  // sparring: an ally in the gym gives you a real training partner
+  if(allies().length) opts.push({id:'spar', ico:pico('fist'), l:'Spar with an ally',
+    d:'Run bumps and calls together. Small edge tonight, and it tightens the corner.'});
   opts.push({id:'rest', ico:pico('bed'), l:'Put your feet up', d:dark?'+20 condition. Come back new.':'+10 condition before the show.'});
   opts.push({id:'room', ico:pico('handshake'), l:'Work the room', d:'Backstage politics. The office remembers faces.'});
   return opts;
@@ -5699,6 +5779,18 @@ function doPrep(id){
   if(id==='tape'){ b.studied=true; toast('You know what is coming now'); }
   if(id==='rest'){ c.cond=clamp(c.cond+(dark?20:10)); c.morale=clamp((c.morale||70)+3); toast('Feeling fresh'); }
   if(id==='room'){ c.standing=clamp((c.standing||50)+1.6); toast('The office noticed you today'); }
+  if(id==='spar'){
+    const a=allies().sort((x,y)=>y.loyalty-x.loyalty)[0];
+    if(a){
+      const ch=charById(a.id);
+      c.sparred={id:a.id,name:ch?ch.name:'a stablemate'};
+      nudgeLoyalty(a.id,6);
+      G.w.attrs.ps=clamp((G.w.attrs.ps||30)+1);
+      c.cond=clamp(c.cond-3);
+      if(b.type==='match') b.sparred=true;
+      toast(`Sparred with ${ch?ch.name:'an ally'}`);
+    } else { toast('No allies to spar with'); }
+  }
   save(); renderCareer();
 }
 // a dark week ends when you say it does
@@ -5858,6 +5950,14 @@ function applyMatch(o,res){
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
       c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100); }
+  }
+  // ---- cross-promo tour: fame that reaches home ----
+  if(o.stakes==='tour'){
+    const tourPop=8+Math.round(res.quality/16);
+    c.pop=clamp(c.pop+tourPop,1,Math.min(100,([38,64,85,100][tierIdx()]||38)+10));
+    c.rep+=Math.round(240+res.quality*2);
+    pushInboxItem({ico:pico('starBig',18),sev:'good',txt:`<b>${o.tour&&o.tour.region||'The tour'} tape is doing numbers back home.</b> +${tourPop} fame.`});
+    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:`Toured ${o.tour&&o.tour.region||'abroad'}: ${res.win?'won':'lost'} vs ${o.oppName}`});
   }
   // ---- Money in the Bank: winning the climb grants the briefcase ----
   if(o.stip==='mitb' && res.win){
@@ -6116,8 +6216,52 @@ function advanceWeek(){
   if(c.deal && c.deal.weeksLeft<=0){ c.freeAgent=true; c.faOffers=freeAgentOffers(); }
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   worldTick();       // rest of the wrestling world keeps happening
+  maybeTourOffer();  // a promoter overseas rings up now and then
   save();
   setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
+}
+/* Cross-promotional tours: a promoter overseas books you for one night.
+   The purse is bigger, the crowd is somebody else's, and a win pays back in
+   fame the way nothing at home does. */
+const TOUR_OFFERS=[
+  {id:'jpn',name:'Osaka Special',region:'Japan',oppName:'Katsuo "The Steelworker" Fujino',ovr:76,style:'strong-style singles that everyone taped'},
+  {id:'jpn2',name:'Tokyo Dome undercard',region:'Japan',oppName:'Ryuji Kanda',ovr:80,style:'a five-star classic if you both bring it'},
+  {id:'mex',name:'Arena Monterrey one-shot',region:'Mexico',oppName:'El Vórtice',ovr:73,style:'a lucha match, high spots, hot crowd'},
+  {id:'uk', name:'Cardiff one-night stand',region:'UK', oppName:'Rhys "The Anvil" Talbot',ovr:74,style:'a British-style scientific match'},
+  {id:'aus',name:'Sydney invitational',region:'Australia',oppName:'Braxton "Roo" Kelly',ovr:71,style:'a hard-hitting brawler kind of night'},
+];
+function maybeTourOffer(){
+  const c=G.car;
+  if(c.tourPending || c.tourCooldown>c.year*1000+c.week) return;
+  // rare enough to feel like a phone call: about once every 18 weeks, and only
+  // after you've made a name for yourself.
+  if((c.rep||0)<800 || rnd()>0.06) return;
+  const t=TOUR_OFFERS[Math.floor(rnd()*TOUR_OFFERS.length)];
+  const purse=Math.round((workTier().purse[1])*2.4+rnd()*400);
+  c.tourOffer={id:t.id,name:t.name,region:t.region,oppName:t.oppName,ovr:t.ovr,style:t.style,purse};
+  pushInboxItem({ico:pico('starBig',18),sev:'act',txt:`<b>${t.region} calling.</b> ${t.name} wants you on a one-shot against ${t.oppName}. <a href="#" onclick="openTourOffer();return false;">See offer →</a>`});
+}
+function openTourOffer(){
+  const t=G.car.tourOffer; if(!t) return;
+  modal(`${t.region} calling: ${t.name}`,
+    `<p class="log">${t.oppName}, OVR ${t.ovr}. ${t.style}.</p>
+     <p class="log">Purse <b style="color:var(--gold)">${money(t.purse)}</b>. One night, a plane there and back, and the tape travels.</p>
+     <p class="hint">You skip a week at home. Your promotion knows about it.</p>`,
+    [{label:'Turn it down',cls:'ghost',fn:()=>{closeModal(); G.car.tourOffer=null; G.car.tourCooldown=(G.car.year*1000+G.car.week)+8; save(); renderCareer();}},
+     {label:'Book it',fn:()=>{closeModal(); acceptTour(); save(); renderCareer();}}]);
+}
+function acceptTour(){
+  const t=G.car.tourOffer; if(!t) return;
+  G.car.tourPending=t; G.car.tourOffer=null;
+  pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>Booked.</b> ${t.region} is on your calendar for next week.`});
+}
+function fireTourWeek(){
+  const c=G.car, t=c.tourPending; if(!t) return null;
+  const o={oppId:'tour_'+t.id,oppName:t.oppName,oppNick:t.region,oppPromo:'foreign',oppOvr:t.ovr,
+           stip:'singles',stipLabel:'Singles Match',mult:1.15,purse:t.purse,stakes:'tour',card:'Main Event',
+           tour:t, blurb:`${t.region} · ${t.name}: ${t.oppName}, one night only.`};
+  c.tourPending=null; c.tourCooldown=(c.year*1000+c.week)+22;
+  return o;
 }
 // come back from an injury: the attribute hit lifts, but not always all of it
 function healUp(){
