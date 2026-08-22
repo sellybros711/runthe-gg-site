@@ -97,12 +97,16 @@
   },
   "hoops/index.html": {
     "engine.js": {
-      "v": "8",
-      "sha": "d80deb6316002a94"
+      "v": "9",
+      "sha": "bb0107f0f25cbf20"
     },
     "run.js": {
+      "v": "2",
+      "sha": "2c2f2e22892838ce"
+    },
+    "badges.js": {
       "v": "1",
-      "sha": "3d4ad645c837cb0f"
+      "sha": "0b4588cf96acbdd3"
     }
   },
   "ideas/index.html": {

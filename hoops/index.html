@@ -322,6 +322,90 @@
   .reelbox.hit .reel-win{animation:bandhit .5s ease-out;}
   .reelbox.hit .reel-i.land{animation:facehit .42s cubic-bezier(.2,1.5,.35,1);}
 
+  .story{margin:2px 0 8px;font-size:14.5px;line-height:1.45;color:var(--ink);
+    font-weight:600;max-width:34em;}
+  /* ── THE BADGE CABINET ─────────────────────────────────────────────── */
+  .ptabs{display:flex;gap:6px;margin:14px 0 10px;}
+  .ptab{flex:1;background:transparent;border:1px solid var(--cardb);color:var(--mut);
+    font-size:12.5px;font-weight:800;padding:0 10px;height:36px;min-height:36px;border-radius:9px;}
+  .ptab.on{background:var(--card);color:var(--ink);border-color:var(--line);}
+  .ptab span{font-family:var(--mono);font-weight:700;opacity:.75;}
+  .badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
+    max-height:44vh;overflow-y:auto;padding-right:2px;}
+  .bdg{border:1px solid var(--cardb);border-radius:10px;padding:9px 9px 8px;background:#10151f;
+    min-width:0;}
+  /* LOCKED IS DIM, NOT HIDDEN. A cabinet of empty squares is a list of things
+     to go and do; a cabinet that hides what you have not earned is a cabinet
+     that looks finished on day one. */
+  .bdg.off{opacity:.42;}
+  .bdg .bn{display:block;font-size:11.5px;font-weight:800;line-height:1.25;color:var(--ink);}
+  .bdg .bw{display:block;font-size:10px;line-height:1.35;color:var(--dim);margin-top:3px;}
+  .bdg .bp{display:block;margin-top:6px;height:4px;border-radius:99px;
+    background:rgba(255,255,255,.08);overflow:hidden;}
+  .bdg .bp i{display:block;height:100%;border-radius:99px;background:var(--mut);}
+  .bdg .bnum{display:block;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:4px;}
+  /* Four metals, so a cabinet reads at a glance as mostly-bronze or
+     mostly-gold rather than as a wall of identical squares. */
+  .bdg.on.bronze{border-color:#a1662f;background:linear-gradient(180deg,rgba(161,102,47,.2),#10151f);}
+  .bdg.on.silver{border-color:#9aa6b8;background:linear-gradient(180deg,rgba(154,166,184,.2),#10151f);}
+  .bdg.on.gold{border-color:#d19410;background:linear-gradient(180deg,rgba(209,148,16,.22),#10151f);}
+  .bdg.on.ring{border-color:#f2c14e;background:linear-gradient(180deg,rgba(242,193,78,.28),#10151f);
+    box-shadow:0 0 0 1px rgba(242,193,78,.25);}
+  .bdg.on .bp i{background:var(--gold);}
+
+  .toast{position:fixed;left:50%;bottom:calc(var(--dock) + 22px);transform:translateX(-50%);
+    z-index:95;background:#1b2333;border:1px solid var(--cardb);color:var(--ink);
+    padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
+    opacity:0;pointer-events:none;transition:opacity .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.5);}
+  .toast.on{opacity:1;}
+  .crash{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:90;
+    background:#7f1d1d;color:#fff;border:1px solid #b91c1c;border-radius:10px;
+    padding:11px 13px;font-size:13px;line-height:1.4;cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.5);}
+
+  /* The hero: the two reels over a half court, on the home screen only. */
+  .hero{margin:0 0 16px;}
+  /* On a wide screen the wrap is 660px and a court at that width is most of the
+     window before the game has said its own name. The art is a shop window, not
+     the page. */
+  @media(min-width:700px){ .hero{max-width:520px;margin:0 auto 18px;} }
+  .heroreels{margin-bottom:8px;}
+  .herocourt{aspect-ratio:1/0.55;}
+  .herocourt .spot .nm{font-size:10.5px;}
+  .herocourt .spot .yr{font-size:9px;}
+  /* A HERO REEL IS SHORTER THAN A DRAFT REEL. The draft's is 104px because it
+     is the thing you are waiting on; up here it is scenery over the headline
+     and a third of the screen is too much to give it. */
+  .hero .reelbox{height:70px;}
+  @media(max-height:720px){ .hero .reelbox{height:58px;} .herocourt{aspect-ratio:1/0.48;} }
+
+  /* ── AND SO DOES THE PAGE AROUND IT ────────────────────────────────────
+     Once a club has landed, the chrome you draft inside takes its colours: the
+     cap panel's edge and the wash behind it, the money bar, and the floor those
+     six men stand on. body.clubbed is set when the reels land and cleared when
+     the next spin starts, so the page and the wheel are never claiming
+     different clubs.
+
+     WHAT DELIBERATELY DOES NOT CHANGE. The position pills, the discs on the
+     court and the slot pips keep their own six colours everywhere, because a
+     position colour means one thing across the whole game and a club cannot be
+     allowed to repaint it. The cap bar's gold and red warning states are
+     untouched for the same reason: those two colours are a message about money,
+     not decoration. Only the healthy bar takes the club. */
+  body.clubbed .capwrap{border-color:var(--club2);
+    background:linear-gradient(180deg,rgba(var(--club1rgb),.5),#10151f 62%);}
+  body.clubbed .capbar:not(.tight):not(.broke) i{
+    background:linear-gradient(90deg,var(--club1),var(--club2));}
+  body.clubbed .court{background:radial-gradient(120% 80% at 50% 0%,
+    rgba(var(--club1rgb),.62) 0%,#1a1109 58%,#120c07 100%);border-color:var(--club2);}
+  body.clubbed .court .rim{border-color:var(--club2);}
+  body.clubbed .court .arc3,body.clubbed .court .key,body.clubbed .court .circ{
+    border-color:rgba(255,255,255,.2);}
+  /* The transitions are on the properties that move, not on "all", so a spin
+     does not animate the layout of everything inside these panels. */
+  .capwrap,.court{transition:border-color .35s ease,background .35s ease;}
+  .capbar i{transition:width .3s ease,background .35s ease;}
+
   /* ── THE WHEEL WEARS THE CLUB ──────────────────────────────────────────
      The moment the club reel lands, BOTH boxes take that club's colors: the
      fill is its primary, the band around the winning row is its secondary, and
@@ -385,6 +469,13 @@
   .spot .nm{display:block;font-size:9.5px;font-weight:700;margin-top:3px;line-height:1.15;
     color:var(--ink);text-shadow:0 1px 3px rgba(0,0,0,.9);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* A LONG SURNAME WRAPS RATHER THAN CLIPPING. Last names fit in 74px down to
+     about thirteen characters. Nine in the league are longer and every one of
+     them is hyphenated: Gilgeous-Alexander, Hollis-Jefferson, Carter-Williams.
+     Shrinking the type was tried first and measured: at 8.2px eight of the nine
+     STILL clipped, and 7px is not a size anybody reads on a phone. Two lines
+     broken at the hyphen is what those names look like on a jersey anyway. */
+  .spot .nm.long{white-space:normal;overflow-wrap:anywhere;font-size:8.8px;line-height:1.1;}
   .spot .yr{display:block;font-size:8.5px;color:var(--mut);}
   .spot:not(.on) .nm,.spot:not(.on) .yr{color:var(--dim);}
 
@@ -441,6 +532,9 @@
     background:rgba(255,255,255,.03);animation:optin .3s ease-out both;}
   .brow .rd{font-size:13px;font-weight:700;}
   .brow .opp{font-size:11px;color:var(--dim);display:block;font-weight:400;}
+  /* The same caption in the results table, where the cell is a td rather than
+     a .brow. */
+  .season td .opp{font-size:11px;color:var(--dim);font-weight:400;}
   .brow .res{font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:5px;}
   .brow .res.w{color:var(--green);background:rgba(34,197,94,.12);}
   .brow .res.l{color:var(--red);background:rgba(239,68,68,.12);}
@@ -776,6 +870,12 @@
 <body>
 <div class="wrap">
 
+<!-- Where an unhandled error in our own code goes. Hidden until there is one,
+     and dismissible, because a banner you cannot get rid of is worse than the
+     bug it is reporting. -->
+<div class="crash" id="crash" role="alert" onclick="this.style.display='none'"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <!-- THE TOP BAR. Where you are, what the run is doing, and a way out. It is
      sticky, so the way out is never a scroll away, and it paints its own
      backdrop across the whole window rather than across the wrap. The wordmark
@@ -792,7 +892,38 @@
   </div>
 </div>
 
+<!-- ── THE FRONT PAGE PLAYS THE GAME ────────────────────────────────────────
+     The wheels and the court were two separate ideas for this screen. Shown one
+     at a time neither says what the game is: the wheels are a mechanic with no
+     stated purpose and the court is a result with no stated cause. Run in
+     sequence they explain each other, which is the whole job of a front page.
+
+     Every element here is the same markup the draft uses, and the spin is the
+     game's own spinReel(), so this cannot drift away from what playing actually
+     looks like. -->
 <header class="mast">
+  <div class="hero" id="hero">
+    <div class="reels heroreels">
+      <div class="reelbox season waiting" id="h-box-s" aria-hidden="true">
+        <div class="reel-strip" id="h-reel-s"></div>
+        <div class="reel-win"></div>
+      </div>
+      <div class="reelbox club waiting" id="h-box-c" aria-hidden="true">
+        <div class="reel-strip" id="h-reel-c"></div>
+        <div class="reel-win"></div>
+      </div>
+    </div>
+    <div class="court herocourt" id="h-court" role="img"
+         aria-label="A roster being built, one signing at a time">
+      <div class="base"></div>
+      <div class="ln arc3"></div>
+      <div class="ln key"></div>
+      <div class="ln circ"></div>
+      <div class="rim"></div>
+      <div class="side"></div>
+      <div class="benchlbl">Bench</div>
+    </div>
+  </div>
   <div class="eyebrow">RunThe.GG</div>
   <h1>Run The <span>Floor</span></h1>
   <p>Spin for a season and a club. Draft six. Play 82 and chase a ring.</p>
@@ -1036,6 +1167,7 @@
   </div>
   <div class="verdict" id="o-verdict">-</div>
     <div class="record mono" id="o-record">-</div>
+    <p class="story" id="o-story"></p>
     <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
     <div class="tags" id="o-tags"></div>
   </div>
@@ -1076,6 +1208,7 @@
   <!-- Career record used to sit here as well, an inch below the Career button
        in the bar above it. The bar owns the record now, on every screen. -->
   <div class="btnrow" style="margin-top:8px">
+    <button class="ghost" id="b-share" style="flex:1">Share this run</button>
     <button class="ghost" id="b-home" style="flex:1">Home</button>
   </div>
 </div>
@@ -1093,6 +1226,17 @@
       <div class="pstat"><span class="lbl">Best</span><b id="pf-best">-</b></div>
     </div>
     <ul class="plist" id="pf-list"></ul>
+
+    <!-- THE CABINET. Two tabs rather than two screens, because the career and
+         the badges are the same question asked twice and a sheet with a
+         navigation stack in it is a sheet nobody gets out of. -->
+    <div class="ptabs" role="tablist">
+      <button class="ptab on" id="pt-record" role="tab" aria-selected="true">Record</button>
+      <button class="ptab" id="pt-badges" role="tab" aria-selected="false">Badges <span id="pt-count"></span></button>
+    </div>
+    <div class="badgegrid" id="pf-badges" hidden></div>
+    <p class="dim" id="pf-badgenote" hidden style="font-size:11.5px;margin:10px 0 0"></p>
+
     <div class="btnrow" style="margin-top:14px">
       <button class="ghost" id="b-prof-clear">Clear career</button>
       <button id="b-prof-x" style="flex:1">Close</button>
@@ -1128,8 +1272,9 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=8"></script>
-<script src="run.js?v=1"></script>
+<script src="engine.js?v=9"></script>
+<script src="run.js?v=2"></script>
+<script src="badges.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -1145,6 +1290,68 @@ var bold = function(text){
   return b;
 };
 
+/* ── THE PAGE AND ITS SCRIPTS HAVE TO BE THE SAME AGE ──────────────────────
+ *
+ * index.html revalidates on every visit and engine.js and run.js do not, which
+ * is the whole reason those two carry a hand-written ?v= and why CI checks it.
+ * The version is the FIX; this is the net underneath it.
+ *
+ * A returning visitor can hold a cached engine.js against a current page, and
+ * the two do not have to be compatible. That has already shipped once on this
+ * site, in the football game, as a draft screen that threw with no players on
+ * it and nothing on screen to say why. It is invisible on a development machine
+ * because a developer's browser has never seen the old file.
+ *
+ * So: reload ONCE with a fresh query to shake the cache, and if the copy that
+ * comes back still disagrees, say so in words instead of dying quietly. One
+ * retry, so this can never become a reload loop.
+ */
+var NEED_VERSION = 2;
+(function bootCheck(){
+  if (E && R && E.API_VERSION === NEED_VERSION && R.API_VERSION === NEED_VERSION) return;
+  if (!/[?&]fresh=/.test(location.search)) {
+    location.replace(location.pathname + '?fresh=' + Date.now());
+    throw new Error('reloading for a fresh copy');
+  }
+  document.body.innerHTML = '<div class="wrap"><div class="card" style="margin-top:40px">'
+    + '<h2>Out of date</h2><p class="dim" style="font-size:14px;margin:8px 0 0">This page is '
+    + 'running an old copy of the game that your browser saved. Close the tab and open it '
+    + 'again to pick up the current version.</p></div></div>';
+  throw new Error('version mismatch: page needs ' + NEED_VERSION
+    + ', engine ' + (E && E.API_VERSION) + ', run ' + (R && R.API_VERSION));
+})();
+
+/* AN UNHANDLED ERROR IN OUR CODE SAYS SO ON SCREEN. A silent throw mid-draft
+ * looks exactly like the game being broken with no explanation, which is how
+ * the cache problem above went unreported for as long as it did.
+ *
+ * IT HAS TO BE OUR CODE. The same banner in the football game fired over a
+ * perfectly good results screen reading "Something broke: Script error.", which
+ * is the browser's sanitized report of an error inside a CROSS-ORIGIN script: a
+ * content blocker, an extension, or the code an in-app browser injects when a
+ * link is opened from a messaging app. The spec strips the message, the file
+ * and the line from those deliberately, so there is nothing to act on and
+ * nothing worth telling anybody. Alarming a player because their messaging app
+ * ran its own script is worse than saying nothing at all.
+ *
+ * Three things are filtered and everything else still shows:
+ *   a resource that would not load, which arrives on this same event with an
+ *     element as the target and no message
+ *   an opaque cross-origin script error, recognizable by having no filename
+ *   an error whose filename is not on this origin
+ */
+window.addEventListener('error', function(ev){
+  if (ev.target && ev.target !== window) return;
+  var msg = ev.message || '';
+  if (!msg) return;
+  if (/^script error/i.test(msg) && !ev.filename) return;
+  if (ev.filename && ev.filename.indexOf(location.origin) !== 0) return;
+  var el = $('crash');
+  if (!el || el.style.display === 'block') return;
+  el.style.display = 'block';
+  el.textContent = 'Something broke: ' + msg + '. Tap to dismiss, or reload to start again.';
+});
+
 /* THE TITLE BELONGS ON THE TITLE SCREEN. It is 230px of masthead above every
    screen in the game, which on a phone is most of the space between the top of
    the draft and the first player on the board. Home keeps it; the screens you
@@ -1153,8 +1360,15 @@ function show(id){
   document.body.classList.toggle('inplay', id !== 's-home');
   /* A running reveal belongs to the screen it started on. Leaving without
      stopping it leaves an interval painting cells nobody can see, and on the
-     way back it would race the fresh one. */
+     way back it would race the fresh one. The front page's animation is the
+     same problem in the other direction: it spins reels behind the draft,
+     forever, on a phone. */
   stopSim();
+  if (id === 's-home') heroStart(); else heroStop();
+  /* The club belongs to the draft. The season, the results and the home screen
+     have no club, and a results screen still wearing the last team you spun is
+     claiming that team played the season. */
+  if (id !== 's-draft') undressPage();
   var all = document.querySelectorAll('.screen');
   for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
   $(id).classList.add('active');
@@ -1291,6 +1505,18 @@ function boot(){
       franchises[DATA.teamSeasons[i].team] = 1;
     }
     var yrs = Object.keys(seasons).map(Number).sort(function(a, b){ return a - b; });
+    /* THE COLLECTIONS COUNT WHAT IS ACTUALLY IN THE DATA. badges.js ships with
+       52 seasons and 45 clubs written down, which is right today and will be
+       wrong the first July a new season lands. Telling it what the file holds
+       means "every season since 1974" stays a complete set rather than becoming
+       permanently one short. */
+    if (window.RTF_BADGES) {
+      window.RTF_BADGES.setTotals({
+        seasons: yrs.length,
+        clubs: Object.keys(franchises).length,
+        shapes: (E.SYSTEMS && E.SYSTEMS.length) || 0
+      });
+    }
     $('ls-players').textContent = DATA.players.length.toLocaleString();
     $('ls-clubs').textContent = DATA.teamSeasons.length.toLocaleString();
     $('ls-teams').textContent = String(Object.keys(franchises).length);
@@ -1304,6 +1530,9 @@ function boot(){
        Reset. Now the run is offered, and the offer says where it got to. */
     restore();
     renderHome();
+    /* The front page can only play the game once the game has data to play
+       with, which is here and not at boot. */
+    heroStart();
     /* A RELOAD RESTORES THE OLD SCROLL POSITION, and the old position was
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
@@ -1342,6 +1571,9 @@ function drawInto(fn){
   if (!draw) { renderDraft(); return; }
 
   reelBusy = true;
+  /* Out of the last club's colours before the reels start moving, so the page
+     and the wheel are never claiming different clubs mid-spin. */
+  undressPage();
   renderDraft();
   $('tabs').textContent = '';
   $('opts').textContent = '';
@@ -1362,6 +1594,7 @@ function drawInto(fn){
          early: the color says Bulls before the second reel has said Bulls. */
       dressReel($('box-s'), draw.team);
       dressReel($('box-c'), draw.team);
+      dressPage(draw.team);
       settled();
     });
   }, 130);
@@ -1385,6 +1618,7 @@ function showDraw(draw){
     box.classList.add('done');
     dressReel(box, draw.team);
   });
+  dressPage(draw.team);
 }
 
 function spin(){ drawInto(function(){ R.spin(run, DATA); }); }
@@ -1534,10 +1768,18 @@ function drawRail(){
 
 // ── the ring ───────────────────────────────────────────────────────────────
 
+/* ASKED ONCE, IN ONE PLACE. Two callers now (the confetti and the front page's
+   animation), and a second copy of a media query string is a second thing to
+   get wrong. Read live rather than cached, because a reader can change this
+   setting without reloading the page. */
+function reduceMotion(){
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
 /* WINNING USED TO CHANGE ONE WORD ON THE SCREEN. Off by default for anybody who
    has asked their system for less motion, and it removes itself. */
 function fireConfetti(){
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (reduceMotion()) return;
   var colors = ['#f2c14e', '#f0782d', '#ffffff', '#fde68a', '#22c55e'];
   var dpr = Math.min(2, window.devicePixelRatio || 1);
   var cv = document.createElement('canvas');
@@ -1711,6 +1953,28 @@ function undressReel(boxEl){
   boxEl.classList.remove('clubbed');
 }
 
+/* THE PAGE, NOT JUST THE WHEEL. The cap panel, the money bar and the floor take
+   the club as well, off four properties on body.
+   CLEARED ON THE WAY OUT, always. A run that ends in Denver navy and then
+   restarts must not draft its first Boston player on a navy floor, and the
+   home screen has no club at all. */
+var PAGE_VARS = ['--club1', '--club1rgb', '--club2', '--clubon'];
+
+function dressPage(code){
+  var skin = E.clubSkin(code), b = document.body;
+  b.style.setProperty('--club1', skin.bg);
+  b.style.setProperty('--club1rgb', rgbChannels(skin.bg));
+  b.style.setProperty('--club2', skin.accent);
+  b.style.setProperty('--clubon', skin.on);
+  b.classList.add('clubbed');
+}
+
+function undressPage(){
+  var b = document.body;
+  for (var i = 0; i < PAGE_VARS.length; i++) b.style.removeProperty(PAGE_VARS[i]);
+  b.classList.remove('clubbed');
+}
+
 /* "122,10,39", for the rgba() the vignette is built from. A custom property
    holding "#7a0a27" cannot be handed to rgba(), so the channels travel
    separately from the hex. */
@@ -1735,7 +1999,8 @@ function reelFill(stripEl, items, landIndex){
 /* A strip long enough to look like motion, ending on the answer. The window
    sits at the middle of the box, so the landing offset backs the chosen row up
    to it rather than to the top. */
-function spinReel(boxEl, stripEl, pool, answer, done){
+function spinReel(boxEl, stripEl, pool, answer, done, ms){
+  var dur = ms || SPIN_MS;
   var items = [], n = 14;
   for (var i = 0; i < n; i++) {
     items.push(pool.length ? pool[Math.floor(Math.random() * pool.length)] : answer);
@@ -1758,7 +2023,7 @@ function spinReel(boxEl, stripEl, pool, answer, done){
      and the reel jumps to the answer with no travel. */
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
-      stripEl.style.transition = 'transform ' + SPIN_MS + 'ms cubic-bezier(.15,.85,.25,1)';
+      stripEl.style.transition = 'transform ' + dur + 'ms cubic-bezier(.15,.85,.25,1)';
       stripEl.style.transform = 'translateY(' + (mid - land * ROW_H) + 'px)';
     });
   });
@@ -1774,7 +2039,7 @@ function spinReel(boxEl, stripEl, pool, answer, done){
   /* A belt and braces timer, because a transitionend that never fires (a
      background tab, a reduced-motion setting that zeroes the duration) would
      otherwise leave the draft permanently mid-spin and unclickable. */
-  setTimeout(function(){ if (boxEl.classList.contains('spin')) settle(); }, SPIN_MS + 220);
+  setTimeout(function(){ if (boxEl.classList.contains('spin')) settle(); }, dur + 220);
 }
 
 function reelPools(){
@@ -1800,13 +2065,21 @@ var SPOTS = {
 };
 
 function renderCourt(justSlot, into){
-  var el = into || $('court');
+  var filled = {};
+  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
+  paintCourt(into || $('court'), filled, justSlot);
+}
+
+/* THE PAINTER, taking a roster rather than reading the run.
+ *
+ * Split out so the landing screen can use it. That screen builds a roster
+ * nobody is playing, and the alternative was a second copy of this loop that
+ * would have drifted the first time a spot moved. The front page has to look
+ * like the game, which it cannot do if it is drawing its own picture of it. */
+function paintCourt(el, filled, justSlot){
   if (!el) return;
   var old = el.querySelectorAll('.spot');
   for (var i = 0; i < old.length; i++) old[i].remove();
-
-  var filled = {};
-  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
 
   for (var s = 0; s < E.SLOTS.length; s++) {
     var slot = E.SLOTS[s], pos = SPOTS[slot], p = filled[slot];
@@ -1823,7 +2096,14 @@ function renderCourt(justSlot, into){
 
     var nm = document.createElement('span');
     nm.className = 'nm';
-    nm.textContent = p ? p.n : 'open';
+    /* LAST NAMES, ON BOTH COURTS. A spot is 74px wide, so a full name does not
+       fit on either of them: this went in as last-name-on-the-front-page-only,
+       on the theory that the draft earns the full name because that is where
+       you are deciding, and the very next screenshot showed "Damian Lill..."
+       on the draft court. A truncated name earns nothing. The full name is on
+       the board tile, which is where the decision is actually made; the floor
+       is a glance. */
+    nm.textContent = p ? lastName(p.n) : 'open';
     sp.appendChild(nm);
 
     if (p) {
@@ -1834,7 +2114,220 @@ function renderCourt(justSlot, into){
     }
     el.appendChild(sp);
   }
+
+  /* WHICH NAMES NEED TWO LINES IS MEASURED, NOT COUNTED.
+     This went in as "longer than thirteen characters", which is wrong, and
+     measuring every one of the 1,624 distinct surnames in the data said so:
+     Vandeweghe clips at ten while other names fit at twelve. Width is pixels
+     and a character count is a proxy that is wrong in both directions. One
+     layout read per spot, six per paint, and it is right for every name in the
+     data at every width, including whichever one arrives next season. */
+  var names = el.querySelectorAll('.spot .nm');
+  for (var n = 0; n < names.length; n++) {
+    if (names[n].scrollWidth > names[n].clientWidth + 1) names[n].className = 'nm long';
+  }
 }
+
+// ── the front page, playing itself ─────────────────────────────────────────
+
+/* THE LANDING ANIMATION.
+ *
+ * It drives the game's own spinReel(), dressReel() and paintCourt(), so there
+ * is no second implementation of the spin or the floor to keep in step with the
+ * first. Three signings, then it holds the roster it built and starts over.
+ *
+ * THE ROSTER IT BUILDS HAS TO BE ONE THE GAME WOULD ALLOW. The football game's
+ * front page shipped with three hardcoded names adding up to $144M against a
+ * $140M cap: a roster the game itself would have refused, advertised on the
+ * page you arrive at. So these are drawn from the real data, under the real
+ * position rules, and the running total is checked against the real cap.
+ */
+/* THE BEAT AFTER A SIGNING IS NOT DECORATION. Without it the next season reel
+   starts tumbling in the same frame the player lands on the floor, so the draw
+   and the man it produced are never on screen together, and the sequence stops
+   explaining itself: it becomes two animations that happen near each other. */
+var HERO = { season: 620, stagger: 240, club: 760, sign: 560, beat: 900,
+             hold: 2200, gap: 260 };
+
+/* WHICH PLAYERS SIGN ON THE FRONT PAGE. Drawn fresh every loop, so somebody who
+   watches it twice sees two different teams being built rather than the same
+   three names forever.
+   TOP N RATHER THAN THE WHOLE POOL, because this is a shop window. A random
+   draw from 16,057 player-seasons mostly surfaces people nobody recognizes,
+   which makes the game look like it is about obscure players when it is about
+   the famous ones.
+   NINETY AND NOT FORTY, measured. Forty gave a two-man roster in four draws out
+   of five even after each pick was held to a fair share of the cap: the top of
+   the league by win shares is expensive by construction, so a tight pool has
+   nothing left to fill a third spot with. Ninety fills three in 400 draws out
+   of 400 and is still 90 seasons out of 16,057. */
+var HERO_TOP_N = 90;
+var heroPoolCache = null;
+
+function heroPool(){
+  if (heroPoolCache) return heroPoolCache;
+  var by = {};
+  for (var i = 0; i < DATA.players.length; i++) {
+    var p = DATA.players[i];
+    var slots = E.SLOTS.filter(function(s){ return E.canFillSlot(p, s); });
+    for (var j = 0; j < slots.length; j++) (by[slots[j]] = by[slots[j]] || []).push(p);
+  }
+  for (var k in by) {
+    by[k].sort(function(a, b){ return b.w - a.w; });
+    by[k] = by[k].slice(0, HERO_TOP_N);
+  }
+  heroPoolCache = by;
+  return heroPoolCache;
+}
+
+/* Three signings on three different spots, each filled by somebody who can
+   actually play there, nobody signed twice, and the three of them inside the
+   cap the real game would hold them to. */
+function heroPicks(){
+  var pool = heroPool();
+  var slots = E.SLOTS.slice();
+  for (var i = slots.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = slots[i]; slots[i] = slots[j]; slots[j] = t;
+  }
+  var out = [], used = {}, spent = 0;
+  var cap = E.CONSTANTS.CAP_MUSD;
+  /* Room left for the three spots this will NOT fill, at the game's own
+     minimum, so the three shown could genuinely be the first three of a legal
+     six rather than a roster that has already broken the cap. */
+  var reserve = 3 * (E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD || 2);
+
+  /* AFFORDABLE FIRST, THEN RANDOM AMONG THOSE. The first version drew at random
+     and skipped the pick when the man it drew did not fit, which meant the
+     front page regularly showed TWO signings instead of three: the pool is the
+     top of the league by win shares, so it is expensive by construction, and
+     two big contracts leave nothing a third elite player fits into. Filtering
+     to what the remaining budget can actually take means a third man is found
+     whenever one exists, and he is still a random one. */
+  for (var s = 0; s < slots.length && out.length < 3; s++) {
+    var cand = pool[slots[s]];
+    if (!cand || !cand.length) continue;
+    /* A FAIR SHARE OF WHAT IS LEFT, not all of it.
+       Filtering on the whole remaining budget was not enough on its own: this
+       pool is the top of the league by win shares and is therefore expensive by
+       construction, so the first two picks ate the cap and the front page showed
+       TWO men in four draws out of five. Each pick may take its share of the
+       money the picks still to come have to split, plus a third again so the
+       roster is not three identically priced players. */
+    var left = 3 - out.length;
+    var room = Math.min(cap - reserve - spent, (cap - reserve - spent) / left * 1.35);
+    var afford = [];
+    for (var c = 0; c < cand.length; c++) {
+      if (!used[cand[c].i] && cand[c].p <= room) afford.push(cand[c]);
+    }
+    if (!afford.length) continue;
+    var p = afford[Math.floor(Math.random() * afford.length)];
+    used[p.i] = 1; spent += p.p;
+    out.push({ slot: slots[s], p: p });
+  }
+  return out;
+}
+
+var heroRun = 0;            // bumped to cancel whatever loop is in flight
+var heroFilled = {};
+
+function heroPaint(){ paintCourt($('h-court'), heroFilled); }
+
+function heroReset(){
+  heroFilled = {};
+  heroPaint();
+  ['h-box-s', 'h-box-c'].forEach(function(id){
+    var box = $(id);
+    undressReel(box);
+    box.className = 'reelbox ' + (id === 'h-box-s' ? 'season' : 'club') + ' waiting';
+  });
+  $('h-reel-s').textContent = '';
+  $('h-reel-c').textContent = '';
+}
+
+var heroNap = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+var heroSpin = function(boxId, stripId, pool, answer, ms){
+  return new Promise(function(res){ spinReel($(boxId), $(stripId), pool, answer, res, ms); });
+};
+
+/* NO ANIMATION AT ALL for anyone who has asked their device for less of it.
+   They get the end of the sequence, held still, which carries exactly the same
+   information: three men on a floor and the club the last one came from. */
+function heroStatic(){
+  var picks = heroPicks();
+  if (!picks.length) return;
+  heroFilled = {};
+  for (var i = 0; i < picks.length; i++) heroFilled[picks[i].slot] = picks[i].p;
+  heroPaint();
+  var last = picks[picks.length - 1].p;
+  reelFill($('h-reel-s'), [String(last.s)], 0);
+  reelFill($('h-reel-c'), [E.teamName(last.t)], 0);
+  var mid = ($('h-box-s').clientHeight - ROW_H) / 2;
+  ['h-box-s', 'h-box-c'].forEach(function(id, n){
+    var box = $(id), strip = $(n ? 'h-reel-c' : 'h-reel-s');
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateY(' + mid + 'px)';
+    box.className = 'reelbox ' + (n ? 'club' : 'season') + ' done';
+    dressReel(box, last.t);
+  });
+}
+
+function heroLoop(seq){
+  var live = function(){ return seq === heroRun; };
+  var picks = heroPicks();
+  var step = function(i){
+    if (!live()) return Promise.resolve();
+    if (i >= picks.length) {
+      return heroNap(HERO.hold).then(function(){
+        if (!live()) return;
+        heroReset();
+        return heroNap(HERO.gap).then(function(){ if (live()) heroLoop(seq); });
+      });
+    }
+    var pk = picks[i];
+    var pools = reelPools();
+    /* THE TWO REELS OVERLAP HERE AND NOT IN THE DRAFT. The draft spins the
+       season, waits, and only then spins the club, because the answer to the
+       second question depends on the first. That is right there and wrong
+       here: it left half the picture blank and dim for a third of every beat,
+       which reads as a broken render rather than a pending one. The club reel
+       is already tumbling while the season settles and still lands after it,
+       so the ORDER the answers arrive in, which is the part that carries the
+       meaning, is unchanged. */
+    var spinS = heroSpin('h-box-s', 'h-reel-s', pools.seasons, String(pk.p.s), HERO.season);
+    return heroNap(HERO.stagger).then(function(){
+      if (!live()) return;
+      var spinC = heroSpin('h-box-c', 'h-reel-c', pools.clubs, E.teamName(pk.p.t), HERO.club);
+      return Promise.all([spinS, spinC]);
+    }).then(function(){
+      if (!live()) return;
+      dressReel($('h-box-s'), pk.p.t);
+      dressReel($('h-box-c'), pk.p.t);
+      return heroNap(HERO.sign);
+    }).then(function(){
+      if (!live()) return;
+      heroFilled[pk.slot] = pk.p;
+      heroPaint();
+      return heroNap(HERO.beat);
+    }).then(function(){
+      if (!live()) return;
+      return step(i + 1);
+    });
+  };
+  return step(0);
+}
+
+function heroStart(){
+  if (!DATA || !$('h-court')) return;
+  heroRun++;
+  heroReset();
+  if (reduceMotion()) { heroStatic(); return; }
+  heroLoop(heroRun);
+}
+
+/* STOPPED THE MOMENT THE HOME SCREEN IS NOT ON SCREEN. A loop left running
+   behind the draft is spinning reels nobody can see, on a phone, forever. */
+function heroStop(){ heroRun++; }
 
 // ── the pinned HUD ─────────────────────────────────────────────────────────
 
@@ -2549,7 +3042,29 @@ function playSeason(){
       left.appendChild(nm);
       var opp = document.createElement('span');
       opp.className = 'opp';
-      opp.textContent = 'opponent rated ' + (rd.oppNet >= 0 ? '+' : '') + rd.oppNet + ' net';
+      /* WHAT THE OPPONENT WAS, IN WINS. "Opponent rated +3.4 net" is the model
+         talking to itself: net rating per hundred possessions is the currency
+         the engine runs on and it is not a thing a fan carries around. The same
+         number through the same Pythagorean the season uses says "a 55 win
+         team", which is the sentence somebody would actually say about the
+         club that just knocked them out.
+         The opponent is deliberately NOT named as a real club. The bracket
+         draws a strength, not a team, and printing "the 1996 Bulls" over a
+         number the model rolled would be telling somebody they beat a team that
+         was never in the room.
+         PLAYED LIKE, NOT WAS, and that word is doing real work. The bracket
+         draws the opponent AROUND the round's strength rather than at it,
+         because a seven game series turns on who is healthy in May and whether
+         a shooter is hot for a fortnight, and the whole model was refitted for
+         that reason. So the draw occasionally hands the play-in a club
+         performing at 72 wins, which cannot be a play-in team's SEASON and can
+         absolutely be two weeks of one. Printing "a 72 win team" there was the
+         only line on this screen that read as a mistake.
+         Home court is not mentioned either: in this model you always have it,
+         because the 2-2-1-1-1 pattern is fixed and what varies with your record
+         is how MUCH it is worth. Saying you had it would be true of every round
+         of every run, which makes it noise. */
+      opp.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
       left.appendChild(opp);
       var res = document.createElement('span');
       res.className = 'res ' + (rd.won ? 'w' : 'l');
@@ -2586,6 +3101,15 @@ function headline(out){
   return 'Out in the ' + last.round;
 }
 
+/* A net rating, said as the number of games that club would win over 82. Uses
+   the engine's own Pythagorean, so this cannot drift from the number the season
+   was actually played against. */
+function oppWins(net){
+  var L = E.CONSTANTS.LEAGUE_RTG;
+  var pct = E.teamWinPct(L + net / 2, L - net / 2);
+  return Math.round(pct * E.CONSTANTS.REGULAR_SEASON_GAMES);
+}
+
 function getOrdinal(n){
   var mod100 = n % 100;
   if (mod100 >= 11 && mod100 <= 13) return 'th';
@@ -2604,6 +3128,9 @@ function renderOver(out){
   v.className = 'verdict ' + (out.titleWon ? 'good' : 'bad');
 
   $('o-record').textContent = out.wins + '-' + out.losses;
+  var story = seasonStory(out);
+  $('o-story').textContent = story;
+  $('o-story').style.display = story ? '' : 'none';
   /* The coach's verdict is deliberately NOT here. It is a read on the roster
      and the seed label is a read on the season, and side by side they collided
      into "Play-in · Play-in team". The rating says the same thing in a number,
@@ -2656,6 +3183,16 @@ function renderOver(out){
       var tr = document.createElement('tr');
       var a = document.createElement('td');
       a.textContent = rd.round;
+      /* THE SAME LINE THE SIM CARD SHOWS, on the screen people actually read.
+         The reveal during the season says who you played; this table is the one
+         that is still on screen a minute later, and it said only the round and
+         the score. A run that ends in the conference finals should say what
+         ended it. */
+      var lvl = document.createElement('span');
+      lvl.className = 'opp';
+      lvl.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
+      a.appendChild(document.createElement('br'));
+      a.appendChild(lvl);
       var b = document.createElement('td');
       b.className = rd.won ? 'w' : 'l';
       b.textContent = rd.won ? 'WON' : 'LOST';
@@ -2811,6 +3348,393 @@ function renderMonths(){
   }
 }
 
+/* ── ONE TRUE SENTENCE ABOUT THE SEASON ────────────────────────────────────
+ *
+ * A results screen made of numbers is a box score. The football game ends its
+ * seasons on words, and this is that: a line under the record that names the
+ * most interesting thing that actually happened, chosen from facts the season
+ * already knows about itself.
+ *
+ * EVERY BRANCH BELOW IS A FACT AND NOT A FLOURISH. It says "won 11 straight in
+ * the new year" only if there is an eleven game streak in run.season, and the
+ * dates come off the schedule. Writing a season a player did not have is worse
+ * than printing nothing, so the last branch is deliberately plain.
+ */
+function seasonStory(out){
+  var games = run.season || [];
+  if (!games.length) return '';
+
+  // The longest winning and losing runs, and where they started.
+  var bestW = { n: 0, at: 0 }, worstL = { n: 0, at: 0 }, w = 0, l = 0;
+  for (var i = 0; i < games.length; i++) {
+    if (games[i].won) { l = 0; w++; if (w > bestW.n) bestW = { n: w, at: i - w + 1 }; }
+    else { w = 0; l++; if (l > worstL.n) worstL = { n: l, at: i - l + 1 }; }
+  }
+
+  var marqW = 0, marqL = 0;
+  for (var m = 0; m < games.length; m++) {
+    var sc = (run.schedule && run.schedule[m]) || {};
+    if (!sc.marquee) continue;
+    if (games[m].won) marqW++; else marqL++;
+  }
+
+  /* Where in the season a run of games sat, in words. 82 games is roughly
+     October to April, so a sixth of the way in is November. */
+  var when = function(idx){
+    var f = idx / games.length;
+    return f < 0.17 ? 'out of the gate' : f < 0.34 ? 'before Christmas'
+      : f < 0.5 ? 'in the new year' : f < 0.67 ? 'through the trade deadline'
+      : f < 0.84 ? 'in March' : 'down the stretch';
+  };
+
+  var bits = [];
+  if (bestW.n >= 8) bits.push('Won ' + bestW.n + ' straight ' + when(bestW.at) + '.');
+  if (worstL.n >= 8) bits.push('Lost ' + worstL.n + ' in a row ' + when(worstL.at) + '.');
+  if (marqW + marqL >= 6) {
+    if (marqW >= marqL * 2) bits.push('Beat the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
+    else if (marqL >= marqW * 2) bits.push('Feasted on the weak and went ' + marqW + '-' + marqL + ' against the good ones.');
+  }
+
+  /* How it ended, which is the part worth saying last. */
+  if (out.titleWon) {
+    bits.push(out.isGOAT ? 'Then won ' + out.wins + ' games and the ring.' : 'Then won the ring.');
+  } else if (run.playoffs && run.playoffs.rounds.length) {
+    var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
+    if (!last.won) {
+      var close = last.yourWins + '-' + last.oppWins;
+      bits.push(last.round === 'NBA Finals'
+        ? 'Lost the Finals ' + close + '.'
+        : 'Out in the ' + last.round.toLowerCase() + ', ' + close + '.');
+    }
+  } else if (out.wins >= E.CONSTANTS.PLAY_IN_WINS - 3) {
+    bits.push('Missed the play-in by ' + (E.CONSTANTS.PLAY_IN_WINS - out.wins)
+      + ' game' + (E.CONSTANTS.PLAY_IN_WINS - out.wins === 1 ? '' : 's') + '.');
+  }
+
+  /* At most two, because three is a paragraph and this is a caption. The
+     ending is kept when there is one, since it is the sentence somebody came
+     to this screen for. */
+  if (bits.length > 2) bits = [bits[0], bits[bits.length - 1]];
+  return bits.join(' ');
+}
+
+// ── sharing ────────────────────────────────────────────────────────────────
+
+/* A RUN NOBODY CAN SHOW ANYBODY IS A RUN THAT HAPPENED TO ONE PERSON. This is
+ * the football game's share card rebuilt for basketball: two lines of text that
+ * read before the link does, and a portrait card drawn to a canvas.
+ *
+ * Trailing slash, matching the canonical link. /hoops is a directory, so the
+ * bare path is a 301 and this URL gets pasted into a chat by every share: a
+ * redirect hop on each one, and two URLs for the same page for anything that
+ * counts links.
+ */
+var SHARE_URL = 'https://runthe.gg/hoops/';
+
+/* THE LINE THAT MAKES IT A DARE RATHER THAN A SCOREBOARD. A shared result with
+   no invitation in it gives the person reading it nothing to do. Which dare
+   depends on what happened: telling somebody who won 74 games to draft better
+   is nonsense. */
+function shareDare(out){
+  if (out.isGOAT) return 'Can you win 74?';
+  if (out.titleWon) return 'Can you win a ring?';
+  return 'Can you build a better six?';
+}
+
+function shareText(out){
+  var head = 'Run The Floor: ' + out.wins + '-' + out.losses + '. ' + headline(out) + '.';
+  var shape = out.structure && out.structure.archetype ? out.structure.archetype.name : null;
+  var mode = shape && shape !== 'No Identity' ? ' ' + shape + '.' : '';
+  return head + mode + ' Rating ' + out.rating.toFixed(0) + '.\n'
+    + shareDare(out) + '\n' + SHARE_URL;
+}
+
+/* THE CARD, DRAWN TO A CANVAS AT 1080x1350.
+ *
+ * Portrait 4:5 because that is what survives being posted anywhere: it is the
+ * tall limit on most feeds and it still reads as a thumbnail in a message.
+ *
+ * EVERY VERTICAL POSITION IS A NAMED CONSTANT rather than an accumulator. The
+ * football card's first version added up as it went and its footer landed on
+ * top of its stats row, printing one line straight through another. With the
+ * anchors written down, a six man card always lands the same and the gaps
+ * between blocks can be read off without running it.
+ */
+var CARD = {
+  W: 1080, H: 1350, PAD: 76,
+  TITLE: 96, TAG: 126,
+  REC: 372, VERDICT: 436,
+  RULE1: 482,
+  ROWS: 552, ROW: 92,          // six players, last baseline 1012
+  RULE2: 1064,
+  STAT: 1150, STAT_LABEL: 1192,
+  DARE: 1258,
+  LINK_T: 1282, LINK_H: 58,
+  KEEL: 10
+};
+
+function hexAt(hex, a){
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h.split('').map(function(c){ return c + c; }).join('');
+  var n = parseInt(h, 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+/* WHOSE COLORS THE CARD WEARS. Six players from six different clubs, so there
+   is no one franchise to take them from the way the football game does in One
+   Franchise mode. The anchor is the club of the best man on the roster by win
+   shares: he is the reason the season went how it went, and it means two people
+   with the same record still get cards that look like their own team. */
+function cardClub(){
+  var best = null;
+  for (var i = 0; i < run.roster.length; i++) {
+    if (!best || run.roster[i].w > best.w) best = run.roster[i];
+  }
+  return best ? best.t : null;
+}
+
+function drawShareCard(){
+  var c = document.createElement('canvas');
+  c.width = CARD.W; c.height = CARD.H;
+  var x = c.getContext('2d');
+  var out = run.outcome;
+  var code = cardClub();
+  var skin = code ? E.clubSkin(code) : { bg: '#7a2f0a', accent: '#f0782d', on: '#ffffff' };
+  var PAD = CARD.PAD, mid = CARD.W / 2;
+
+  // Ground: near-black with one wash of the club's color at the top.
+  x.fillStyle = '#0d1117'; x.fillRect(0, 0, CARD.W, CARD.H);
+  var g = x.createRadialGradient(mid, -150, 40, mid, -150, CARD.W * 1.15);
+  g.addColorStop(0, skin.bg); g.addColorStop(1, 'rgba(13,17,23,0)');
+  x.globalAlpha = 0.75; x.fillStyle = g; x.fillRect(0, 0, CARD.W, CARD.H * 0.6); x.globalAlpha = 1;
+
+  /* THE HALF COURT, VERY FAINTLY, UNDER EVERYTHING. The same lines the game
+     draws on its own court. At these alphas it is texture rather than a
+     picture, which is the point: it has to say basketball without competing
+     with a 210px record sitting on top of it. */
+  x.save();
+  x.strokeStyle = hexAt(skin.accent, 0.09); x.lineWidth = 3;
+  var cy = 300, keyW = 300, keyH = 340;
+  x.strokeRect(mid - keyW / 2, cy, keyW, keyH);                       // the paint
+  x.beginPath(); x.arc(mid, cy + keyH, 92, 0, Math.PI * 2); x.stroke(); // free throw circle
+  x.beginPath(); x.arc(mid, cy + 62, 250, 0.18 * Math.PI, 0.82 * Math.PI); x.stroke();  // the arc
+  x.beginPath(); x.arc(mid, cy + 62, 20, 0, Math.PI * 2); x.stroke();  // the rim
+  x.restore();
+
+  // The keel: one bar of the club's second color down the left edge.
+  x.fillStyle = skin.accent; x.fillRect(0, 0, CARD.KEEL, CARD.H);
+
+  x.textAlign = 'left';
+  x.fillStyle = '#eef2f9';
+  x.font = '700 42px Archivo, system-ui, sans-serif';
+  x.fillText('RUN THE FLOOR', PAD, CARD.TITLE);
+  x.fillStyle = hexAt('#94a3b8', 0.95);
+  x.font = '600 25px Archivo, system-ui, sans-serif';
+  x.fillText('Six NBA seasons, one cap, 82 games.', PAD, CARD.TAG);
+
+  // The record, which is the whole point of the card.
+  x.textAlign = 'center';
+  x.fillStyle = '#ffffff';
+  x.font = '700 210px Archivo, system-ui, sans-serif';
+  x.fillText(out.wins + '-' + out.losses, mid, CARD.REC);
+  x.fillStyle = out.titleWon ? '#f2c14e' : skin.accent;
+  x.font = '700 44px Archivo, system-ui, sans-serif';
+  x.fillText(headline(out).toUpperCase(), mid, CARD.VERDICT);
+
+  var rule = function(y){
+    x.fillStyle = hexAt(skin.accent, 0.3);
+    x.fillRect(PAD, y, CARD.W - PAD * 2, 2);
+  };
+  rule(CARD.RULE1);
+
+  /* THE SIX, in the order they fill the floor rather than the order they were
+     signed, so two cards of the same roster read the same way. Each carries the
+     colour its position wears everywhere else in the game. */
+  var filled = {};
+  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
+  for (var i = 0; i < E.SLOTS.length; i++) {
+    var slot = E.SLOTS[i], p = filled[slot];
+    var y = CARD.ROWS + i * CARD.ROW;
+    x.textAlign = 'left';
+    // the position chip
+    x.fillStyle = POS_HEX[slot] || '#6366f1';
+    roundRect(x, PAD, y - 34, 78, 44, 9); x.fill();
+    x.fillStyle = '#0d1117';
+    x.font = '700 25px Archivo, system-ui, sans-serif';
+    x.textAlign = 'center';
+    x.fillText(slot, PAD + 39, y);
+    if (!p) continue;
+    x.textAlign = 'left';
+    x.fillStyle = '#eef2f9';
+    x.font = '700 38px Archivo, system-ui, sans-serif';
+    x.fillText(clip(x, p.n, 560), PAD + 100, y);
+    x.fillStyle = '#94a3b8';
+    x.font = '600 26px Archivo, system-ui, sans-serif';
+    x.fillText(p.s + ' ' + E.teamName(p.t), PAD + 100, y + 33);
+    x.textAlign = 'right';
+    x.fillStyle = skin.accent;
+    x.font = '700 34px Archivo, system-ui, sans-serif';
+    x.fillText('$' + p.p.toFixed(1) + 'M', CARD.W - PAD, y);
+  }
+
+  rule(CARD.RULE2);
+
+  // Three numbers, evenly spaced, each with its label underneath.
+  var spend = E.CONSTANTS.CAP_MUSD - R.remaining(run);
+  var chemBonus = (out.chemistry && typeof out.chemistry.bonus === 'number')
+    ? out.chemistry.bonus : 0;
+  var stats = [
+    [out.rating.toFixed(0), 'TEAM RATING'],
+    /* .bonus, not the object. Chemistry travels as {bonus, links, ...} and
+       every other reader in this file already knew that; this one did not, and
+       the throw was swallowed by the catch below, so the card silently became
+       no card at all. */
+    [(chemBonus >= 0 ? '+' : '') + chemBonus.toFixed(2), 'CHEMISTRY'],
+    ['$' + spend.toFixed(0) + 'M', 'SPENT OF $' + E.CONSTANTS.CAP_MUSD + 'M']
+  ];
+  x.textAlign = 'center';
+  for (var s2 = 0; s2 < stats.length; s2++) {
+    var cx = PAD + (CARD.W - PAD * 2) * (s2 + 0.5) / stats.length;
+    x.fillStyle = '#eef2f9';
+    x.font = '700 50px Archivo, system-ui, sans-serif';
+    x.fillText(stats[s2][0], cx, CARD.STAT);
+    x.fillStyle = '#94a3b8';
+    x.font = '700 21px Archivo, system-ui, sans-serif';
+    x.fillText(stats[s2][1], cx, CARD.STAT_LABEL);
+  }
+
+  x.fillStyle = '#94a3b8';
+  x.font = '600 27px Archivo, system-ui, sans-serif';
+  x.fillText(shareDare(out), mid, CARD.DARE);
+
+  // The link, as a pill, because that is where the dare gets accepted.
+  var pillW = 430, pillX = mid - pillW / 2;
+  x.fillStyle = hexAt(skin.accent, 0.16);
+  roundRect(x, pillX, CARD.LINK_T, pillW, CARD.LINK_H, CARD.LINK_H / 2); x.fill();
+  x.strokeStyle = hexAt(skin.accent, 0.5); x.lineWidth = 2; x.stroke();
+  x.fillStyle = '#eef2f9';
+  x.font = '700 28px Archivo, system-ui, sans-serif';
+  x.fillText('RUNTHE.GG/HOOPS', mid, CARD.LINK_T + 39);
+
+  return c;
+}
+
+/* The position colours as flat hex. The page paints these as gradients off CSS
+   custom properties, which a canvas cannot read, so the values live here too.
+   verify.mjs asserts the two agree. */
+var POS_HEX = { PG: '#3b82f6', SG: '#06b6d4', SF: '#22c55e', PF: '#f59e0b',
+  C: '#ef4444', '6TH': '#a855f7', G: '#6366f1', F: '#84cc16' };
+
+function roundRect(x, left, top, w, h, r){
+  x.beginPath();
+  x.moveTo(left + r, top);
+  x.arcTo(left + w, top, left + w, top + h, r);
+  x.arcTo(left + w, top + h, left, top + h, r);
+  x.arcTo(left, top + h, left, top, r);
+  x.arcTo(left, top, left + w, top, r);
+  x.closePath();
+}
+
+/* A long name has to stop rather than run under the price beside it. */
+function clip(x, text, max){
+  if (x.measureText(text).width <= max) return text;
+  var t = text;
+  while (t.length > 1 && x.measureText(t + '…').width > max) t = t.slice(0, -1);
+  return t + '…';
+}
+
+var toastTimer = null;
+function toast(msg){
+  var el = $('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('on'); }, 2200);
+}
+
+var canvasBlob = function(c){
+  return new Promise(function(res){ c.toBlob(res, 'image/png'); });
+};
+
+/* THREE WAYS DOWN, AND THE FIRST ONE THAT WORKS WINS. A phone gets the share
+   sheet with the picture in it. A desktop browser with a share sheet but no
+   file support gets the text. Everything else gets the text on the clipboard
+   and the picture as a download, which is the path that has to work because it
+   is the one a laptop takes. */
+function shareRun(){
+  if (!run || !run.outcome) return;
+  var text = shareText(run.outcome);
+  /* THE FONTS HAVE TO BE IN BEFORE ANYTHING IS MEASURED, or the card lays
+     itself out against a fallback face and every column lands in the wrong
+     place. */
+  var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+
+  return ready.then(function(){
+    /* A CARD THAT FAILS TO DRAW MUST NOT EAT ITS OWN REASON. The first version
+       returned null here and said nothing, so a typo in one field turned into
+       "the picture just does not appear", which took a patched build to find.
+       The share still goes ahead as text, which is the right fallback, but the
+       throw goes to the console where somebody can read it. */
+    try {
+      return canvasBlob(drawShareCard());
+    } catch (e) {
+      if (window.console && console.error) console.error('share card failed to draw', e);
+      return null;
+    }
+  }).then(function(blob){
+    var file = null;
+    try { if (blob) file = new File([blob], 'run-the-floor.png', { type: 'image/png' }); }
+    catch (e) { file = null; }
+
+    var sheet;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      sheet = navigator.share({ text: text, files: [file] });
+    } else if (navigator.share) {
+      sheet = navigator.share({ text: text });
+    } else {
+      sheet = Promise.reject(new Error('no share sheet'));
+    }
+
+    /* ONE BLOB, RENDERED ONCE, CARRIED INTO THE FALLBACK. The first version
+       drew the card a second time down here and the download never fired: by
+       then the click that started all this had been through two promise turns,
+       and a programmatic download wants a live user gesture. Reusing the blob
+       is fewer moving parts AND it is the picture the share sheet was offered,
+       so the two paths cannot hand out different cards. */
+    return sheet.catch(function(err){
+      if (err && err.name === 'AbortError') return;   // they closed the sheet
+      copyAndDownload(text, blob);
+    });
+  });
+}
+
+/* The path a laptop takes, and therefore the one that has to work: the text on
+   the clipboard and the picture as a file. The anchor is put INTO the document
+   before it is clicked, because a detached one is ignored in some browsers,
+   and taken out again straight after. */
+function copyAndDownload(text, blob){
+  var save = function(){
+    if (!blob) return;
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'run-the-floor.png';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text)
+      .then(function(){ toast(blob ? 'Copied, and the card is downloading' : 'Copied'); save(); })
+      .catch(function(){ toast('Could not copy'); save(); });
+  }
+  toast(blob ? 'Downloading the card' : 'Could not copy');
+  save();
+}
+
 // ── career, on this device ─────────────────────────────────────────────────
 
 /* EVERY ACCESS IS WRAPPED, and not out of habit. A private window throws on the
@@ -2831,7 +3755,8 @@ function loadCareer(){
 
 function blankCareer(){
   return { version: 1, runs: 0, rings: 0, playoffs: 0, bestWins: 0, bestRating: 0,
-    bestLabel: '', totalWins: 0, totalLosses: 0, clubs: {}, shapes: {}, beat72: 0 };
+    bestLabel: '', totalWins: 0, totalLosses: 0, clubs: {}, shapes: {}, beat72: 0,
+    seasons: {}, colleges: {}, rows: [] };
 }
 
 /* Called once, when a run reaches a result. Recording it anywhere earlier would
@@ -2861,6 +3786,73 @@ function recordRun(out){
     var nm = E.teamName(run.roster[i].t);
     c.clubs[nm] = (c.clubs[nm] || 0) + 1;
   }
+
+  /* ── WHAT THE CABINET READS ────────────────────────────────────────────
+   * Two shapes of memory, and the split is deliberate.
+   *
+   * The SETS above and below are cumulative counts the career has always kept
+   * or can keep cheaply, and they are what the collections read. They are also
+   * why somebody who has been playing for weeks opens the cabinet and finds it
+   * partly filled rather than empty.
+   *
+   * The ROWS are one compact line per finished run, and they are what the
+   * one-off feats read. Storing them rather than storing "has won a cheap ring"
+   * means a badge added next month needs no migration and no change to this
+   * function: every run already on the device answers the new question.
+   *
+   * NO VERSION BUMP. loadCareer only accepts version 1, so raising it would
+   * throw away every existing career on every device. New fields are added and
+   * every reader in badges.js treats a missing one as "not known".
+   */
+  c.seasons = c.seasons || {};
+  c.colleges = c.colleges || {};
+  for (var q = 0; q < run.roster.length; q++) {
+    var pl = run.roster[q];
+    c.seasons[pl.s] = (c.seasons[pl.s] || 0) + 1;
+    if (pl.col) c.colleges[pl.col] = (c.colleges[pl.col] || 0) + 1;
+  }
+
+  var lastRd = (run.playoffs && run.playoffs.rounds.length)
+    ? run.playoffs.rounds[run.playoffs.rounds.length - 1] : null;
+  var awards = {}, decorated = 0, top = 0, pairs = 0;
+  for (var a = 0; a < run.roster.length; a++) {
+    var pr = run.roster[a];
+    if (pr.p > top) top = pr.p;
+    var aw = pr.aw || [];
+    if (aw.length) decorated++;
+    for (var k = 0; k < aw.length; k++) awards[aw[k]] = 1;
+    /* Two men off the same club AND the same season, which is the pairing the
+       chemistry model rewards most and the one a fan notices. */
+    for (var b2 = a + 1; b2 < run.roster.length; b2++) {
+      if (run.roster[b2].t === pr.t && run.roster[b2].s === pr.s) pairs++;
+    }
+  }
+
+  c.rows = Array.isArray(c.rows) ? c.rows : [];
+  c.rows.push({
+    w: out.wins, l: out.losses,
+    ring: !!out.titleWon,
+    po: !!(run.playoffs && run.playoffs.rounds.length),
+    rating: Math.round(out.rating),
+    chem: out.chemistry && typeof out.chemistry.bonus === 'number'
+      ? Math.round(out.chemistry.bonus * 100) / 100 : 0,
+    spend: Math.round((E.CONSTANTS.CAP_MUSD - R.remaining(run)) * 10) / 10,
+    left: Math.round(R.remaining(run) * 10) / 10,
+    top: Math.round(top * 10) / 10,
+    pairs: pairs,
+    aw: Object.keys(awards),
+    decorated: decorated,
+    swept: !!(lastRd && !lastRd.won && lastRd.oppWins === 4 && lastRd.yourWins === 0),
+    lostFinals: !!(lastRd && !lastRd.won && lastRd.round === 'NBA Finals')
+  });
+  /* CAPPED, because localStorage is finite and a row is worth about 160 bytes.
+     250 runs is more than anybody will play and about 40KB, which is under one
+     per cent of the budget. The OLDEST go, so a long-running career keeps its
+     most recent evidence. Every badge above is a "has ever", so trimming can
+     in principle take a feat away: at 250 runs that is a trade worth making
+     against a career that stops saving at all. */
+  if (c.rows.length > 250) c.rows = c.rows.slice(-250);
+
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
   return c;
 }
@@ -2917,6 +3909,8 @@ function renderCareer(){
 
 function openProfile(){
   renderCareer();
+  renderBadges();
+  showProfileTab(badgeTab);
   $('sheet').classList.add('open');
 }
 function closeProfile(){ $('sheet').classList.remove('open'); }
@@ -2924,6 +3918,104 @@ function closeProfile(){ $('sheet').classList.remove('open'); }
 function clearCareer(){
   try { localStorage.removeItem(PKEY); } catch (e) {}
   renderCareer();
+}
+
+/* ── THE CABINET ───────────────────────────────────────────────────────────
+ *
+ * Rendered from badges.js, which computes everything off the career rather
+ * than storing a single flag when something is earned. Locked badges are shown
+ * dim rather than hidden: a cabinet of empty squares is a list of things to go
+ * and do, and one that hides what you have not earned looks finished on day one.
+ */
+var badgeTab = 'record';
+
+function renderBadges(){
+  var grid = $('pf-badges'), note = $('pf-badgenote'), B = window.RTF_BADGES;
+  if (!grid || !B) return;
+  var c = loadCareer() || {};
+  var all = B.evaluate(c);
+  var got = all.filter(function(b){ return b.got; }).length;
+  if ($('pt-count')) $('pt-count').textContent = got + '/' + all.length;
+
+  grid.textContent = '';
+  /* EARNED FIRST, BEST FIRST. Then the ones NOT earned, CLOSEST first.
+     Those two halves want opposite orders and the first version used one for
+     both, so the locked half opened on "Win five titles" and "Every season
+     since 1974" while "Scout 15 clubs, 10 of 15" was three rows further down.
+     A cabinet should show somebody the next thing they can get, not the last
+     thing they ever will. */
+  var rank = { ring: 0, gold: 1, silver: 2, bronze: 3 };
+  var near = function(b){ return b.need > 1 ? b.have / b.need : 0; };
+  all.sort(function(a, b){
+    if (a.got !== b.got) return a.got ? -1 : 1;
+    if (a.got) return (rank[a.tier] || 9) - (rank[b.tier] || 9);
+    if (near(b) !== near(a)) return near(b) - near(a);
+    return (rank[b.tier] || 9) - (rank[a.tier] || 9);
+  });
+
+  for (var i = 0; i < all.length; i++) {
+    var b = all[i];
+    var el = document.createElement('div');
+    el.className = 'bdg ' + (b.got ? 'on ' + b.tier : 'off');
+    var nm = document.createElement('span');
+    nm.className = 'bn';
+    nm.textContent = b.name;
+    el.appendChild(nm);
+    var why = document.createElement('span');
+    why.className = 'bw';
+    why.textContent = b.why;
+    el.appendChild(why);
+    /* A PROGRESS BAR ONLY WHERE THERE IS PROGRESS TO SHOW. On a one-off feat
+       the bar is either empty or full and says nothing the border has not
+       already said. */
+    if (b.collection && b.need > 1) {
+      var track = document.createElement('span');
+      track.className = 'bp';
+      var fill = document.createElement('i');
+      fill.style.width = Math.round(100 * Math.min(1, b.have / b.need)) + '%';
+      track.appendChild(fill);
+      el.appendChild(track);
+      var n = document.createElement('span');
+      n.className = 'bnum';
+      n.textContent = b.have + ' of ' + b.need;
+      el.appendChild(n);
+    }
+    grid.appendChild(el);
+  }
+
+  /* WHAT IS AND IS NOT RETROACTIVE, said out loud. The career has always
+     counted clubs and shapes, so those collections fill in for somebody who
+     has been playing for weeks. Everything else reads the per-run rows, which
+     only exist for runs finished since the cabinet shipped. Somebody with a
+     ring and no Champions badge deserves to know why. */
+  var runs = num0(c.runs), stored = (c.rows && c.rows.length) || 0;
+  if (note) {
+    if (runs > stored) {
+      note.hidden = false;
+      note.textContent = 'Clubs and systems count every run you have played. The rest read the '
+        + stored + ' run' + (stored === 1 ? '' : 's') + ' recorded in detail, which started when '
+        + 'badges did, so ' + (runs - stored) + ' earlier run'
+        + (runs - stored === 1 ? '' : 's') + ' cannot be checked against them.';
+    } else {
+      note.hidden = false;
+      note.textContent = 'Kept in this browser, like the record above. Clearing site data loses them.';
+    }
+  }
+}
+
+var num0 = function(v){ return (typeof v === 'number' && isFinite(v)) ? v : 0; };
+
+function showProfileTab(which){
+  badgeTab = which;
+  var record = which === 'record';
+  $('pf-list').hidden = !record;
+  $('pf-badges').hidden = record;
+  $('pf-badgenote').hidden = record;
+  $('pt-record').className = 'ptab' + (record ? ' on' : '');
+  $('pt-badges').className = 'ptab' + (record ? '' : ' on');
+  $('pt-record').setAttribute('aria-selected', record ? 'true' : 'false');
+  $('pt-badges').setAttribute('aria-selected', record ? 'false' : 'true');
+  if (!record) renderBadges();
 }
 
 // ── the home page ──────────────────────────────────────────────────────────
@@ -3052,11 +4144,14 @@ $('b-resume').onclick = resumeRun;
 $('b-abandon').onclick = abandonRun;
 $('b-mark').onclick = function(){ renderHome(); show('s-home'); };
 $('b-home').onclick = function(){ renderHome(); show('s-home'); };
+$('b-share').onclick = shareRun;
 $('b-spin').onclick = spin;
 $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
 $('b-again').onclick = startRun;
 $('b-prof-x').onclick = closeProfile;
+$('pt-record').onclick = function(){ showProfileTab('record'); };
+$('pt-badges').onclick = function(){ showProfileTab('badges'); };
 $('b-prof-clear').onclick = clearCareer;
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */

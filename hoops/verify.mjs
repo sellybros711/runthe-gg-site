@@ -147,6 +147,38 @@ for (const slot of E.SLOTS) {
   ok(uncolored.length === 0, `every club in the data has its own colors${uncolored.length ? ` (missing ${uncolored.join(', ')})` : ''}`);
 }
 
+/* ── THE SHARE CARD'S PALETTE IS A SECOND COPY OF THE POSITION COLOURS ─────
+ *
+ * The page paints a position pill as a gradient off a CSS custom property. A
+ * canvas cannot read one, so the card carries the same six colours again as
+ * flat hex. Two copies of anything drift, and this pair drifts SILENTLY: the
+ * card still renders, it just hands somebody a picture where the centre is a
+ * different red from the one they were looking at when they signed him.
+ *
+ * Read as text rather than executed, which is all this needs to answer.
+ */
+{
+  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const cssBlock = /--pg:([^;]+);\s*--sg:([^;]+);\s*--sf:([^;]+);\s*--pf:([^;]+);\s*--c:([^;]+);\s*\n?\s*--sixth:([^;]+);\s*--g:([^;]+);\s*--f:([^;]+);/.exec(src);
+  ok(!!cssBlock, 'the page declares the position colours as custom properties');
+  const hexBlock = /var POS_HEX = \{([\s\S]*?)\};/.exec(src);
+  ok(!!hexBlock, 'the share card carries a flat copy of the position colours');
+  if (cssBlock && hexBlock) {
+    const css = { PG: cssBlock[1], SG: cssBlock[2], SF: cssBlock[3], PF: cssBlock[4],
+      C: cssBlock[5], '6TH': cssBlock[6], G: cssBlock[7], F: cssBlock[8] };
+    const flat = {};
+    for (const m of hexBlock[1].matchAll(/'?([A-Z0-9]+)'?\s*:\s*'(#[0-9a-f]{6})'/gi)) flat[m[1]] = m[2];
+    const drift = [];
+    for (const [slot, hex] of Object.entries(css)) {
+      const want = hex.trim().toLowerCase();
+      const got = (flat[slot] || '').toLowerCase();
+      if (got !== want) drift.push(`${slot}: page ${want}, card ${got || 'missing'}`);
+    }
+    ok(drift.length === 0,
+      `the share card paints positions the colour the page does${drift.length ? `\n      ${drift.join('\n      ')}` : ''}`);
+  }
+}
+
 /* ── HARDWARE ──────────────────────────────────────────────────────────────
  *
  * Awards are DECORATION: the engine never reads them and no rating moves

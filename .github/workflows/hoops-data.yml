@@ -157,6 +157,13 @@ jobs:
       - name: Discoverability posture
         run: node hoops/check-posture.mjs
 
+      # The badges read the same data everything else does, so a refresh that
+      # moved the price curve or the award join can quietly make one of them
+      # unreachable. That failure is silent by construction: the cabinet still
+      # renders and the square just never lights.
+      - name: Badges are reachable
+        run: node hoops/check-badges.mjs
+
       - name: Commit
         if: ${{ inputs.commit }}
         run: |

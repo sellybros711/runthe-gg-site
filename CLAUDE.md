@@ -146,7 +146,18 @@ The regression suite, none of which needs a network:
 node hoops/check-posture.mjs      discoverability, per the table above
 node hoops/build/check-fetch.mjs  the scraper's parsers, against saved markup
 node hoops/verify.mjs             draft legality, seed replay, and calibration
+node hoops/check-badges.mjs       every badge is reachable, against real runs
 ```
+
+`check-badges.mjs` takes about two minutes, because proving a badge is reachable
+means playing 900 seasons six different ways. It earns that: the first badge
+catalog asked for three things this game cannot produce (six decorated players
+on one roster, a chemistry bonus of +2, missing the playoffs at a rating of 80),
+and **nothing failed**. The cabinet rendered, the squares stayed dark, and the
+only symptom was three achievements nobody would ever earn. Two more looked
+unreachable and were not: no strategy in the check was chasing chemistry or
+building under the cap, which is a gap in the CHECK. The fix there was adding
+the strategies a player would use, never loosening a threshold to suit a bot.
 
 `verify.mjs` prints a **TARGETS** block. Read it after any change to the data or
 the constants: it states what the balance is supposed to look like and flags what
