@@ -1856,9 +1856,78 @@ function nextMoment(){
   MOMENT_Q.shift(); $('momentBack').classList.remove('open');
   if(MOMENT_Q.length) setTimeout(showMoments,280);
 }
+/* ---------- MID-YEAR REPORT CARD: a smaller ceremony at the halfway mark ---------- */
+function checkMidYear(){
+  const c=G.car;
+  if(c.week!==20 || c.midYearYear===c.year) return;
+  const yl=(c.yearLog||[]).slice();
+  if(!yl.length) return;
+  const best=yl.reduce((a,b)=>b.q>a.q?b:a);
+  const avg=Math.round(yl.reduce((s,m)=>s+m.q,0)/yl.length);
+  const wins=yl.filter(m=>m.win).length, loss=yl.filter(m=>m.win===false).length, draws=yl.filter(m=>m.win==null).length;
+  c.midYearYear=c.year;
+  c.pendingMidYear={ y:c.year, matches:yl.length, w:wins, l:loss, d:draws,
+    best:{opp:best.opp,q:best.q}, avg, pop:Math.round(c.pop), standing:Math.round(c.standing||50),
+    rep:c.rep, streak:c.streak };
+  // a proper mid-year push: fame, standing, if you have earned it
+  if(avg>=76 && wins>=5){ c.pop=clamp(c.pop+3,1,100); c.standing=clamp(c.standing+5); }
+}
+/* ---------- POWER RANKINGS: the roster ranked, monthly, on the news feed ---------- */
+function postPowerRankings(){
+  const c=G.car;
+  if(c.week%4!==0 || c.lastRanksWeek===c.year*1000+c.week) return;
+  c.lastRanksWeek=c.year*1000+c.week;
+  const me=myPromo(); if(!me) return;
+  const house=CHARS.filter(x=>x.promo===me.id);
+  const scoreOf = ch=>{
+    const R=rel(ch.id);
+    return (ch.over||55)*0.65 + (R.wins||0)*3 - (R.losses||0)*1 + rnd()*4;
+  };
+  const meScore = ovr(G.w)*0.72 + (c.streak>0?c.streak*2:0) + (c.pop||30)*0.18 + (c.rec.w||0)*0.3 + rnd()*4;
+  const list = house.map(ch=>({id:ch.id,name:ch.name,s:scoreOf(ch)}));
+  list.push({id:'me',name:G.w.name,s:meScore, me:true});
+  list.sort((a,b)=>b.s-a.s);
+  const top5=list.slice(0,5);
+  const myRank=list.findIndex(x=>x.me)+1;
+  const lines=top5.map((x,i)=>`<b>${i+1}.</b> ${x.me?'<span style="color:var(--gold)">'+x.name+'</span>':x.name}`).join(' · ');
+  const mine = myRank<=5 ? '' : ` · You are <b>#${myRank}</b>.`;
+  newsPush({ico:pico('graphUp',14),cat:'ranks',t:`<b>${me.short} Power Rankings.</b> ${lines}${mine}`});
+  if(myRank<=3 && !c._rankHigh){ c._rankHigh=true;
+    pushInboxItem({ico:pico('graphUp',18),sev:'good',txt:`<b>Top three in the rankings.</b> The office is watching.`}); }
+  if(myRank>=8) c._rankHigh=false;
+}
 /* ---------- THE YEAR-END AWARDS: a podium, not a log line ---------- */
 function showCeremony(){
-  const c=G.car, pc=c.pendingCeremony;
+  const c=G.car;
+  // Mid-year takes precedence when it fires, so it does not sit under year end.
+  if(c.pendingMidYear){
+    const my=c.pendingMidYear;
+    const golds=[];
+    if(my.avg>=78) golds.push(pico('starBig',14)+` First half wrestler you have been`);
+    if(my.streak>=4) golds.push(pico('fire',14)+` Riding a ${my.streak}-match streak into the second half`);
+    if(my.best.q>=85) golds.push(pico('star',14)+` A ${my.best.q}-rated night against ${my.best.opp}`);
+    const rows=[
+      pico('clipboard',14)+` <b>${my.matches}</b> match${my.matches===1?'':'es'} · went <b>${my.w}-${my.l}${my.d?'-'+my.d:''}</b>`,
+      pico('graphUp',14)+` Average rating <b>${my.avg}</b>`,
+      pico('crown',14)+` Fame ${my.pop} · Office standing ${my.standing}`,
+    ];
+    $('ceremonyCard').innerHTML=`
+      <div class="mo-k" style="text-align:center;">The Half-Year Report</div>
+      <div class="mo-t" style="text-align:center;">Year ${my.y}, twenty weeks in</div>
+      ${golds.map((t,i)=>`<div class="pchip gold" style="display:block;text-align:center;font-size:14px;padding:9px 12px;animation-delay:${(0.25+i*0.22).toFixed(2)}s">${t}</div>`).join('')}
+      ${golds.length?'':'<div class="hint" style="text-align:center;">A quiet first half. The second half is where careers are made.</div>'}
+      <div class="paychips" style="flex-direction:column;margin-top:10px;">
+        ${rows.map((t,i)=>`<span class="pchip" style="animation-delay:${(0.35+golds.length*0.22+i*0.15).toFixed(2)}s">${t}</span>`).join('')}
+      </div>
+      <div class="row" style="justify-content:center;margin-top:16px;">
+        <button class="big" onclick="closeCeremony()">Second Half →</button>
+      </div>`;
+    $('ceremonyBack').classList.add('open');
+    if(golds.length) confetti(90);
+    delete c.pendingMidYear; save();
+    return true;
+  }
+  const pc=c.pendingCeremony;
   if(!pc) return false;
   const golds=[];
   if(pc.moty) golds.push(pico('trophy',14)+` Match of the Year · vs ${pc.best.opp}`);
@@ -6217,6 +6286,8 @@ function advanceWeek(){
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   worldTick();       // rest of the wrestling world keeps happening
   maybeTourOffer();  // a promoter overseas rings up now and then
+  postPowerRankings();  // monthly ranking of the roster on the news feed
+  checkMidYear();       // half-year report card at week 20
   save();
   setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
 }
