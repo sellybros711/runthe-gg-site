@@ -5998,12 +5998,22 @@ const PROMO_NOTE={
 let PMCTX=null;
 function buildPromoCtx(target){
   const c=G.car, w=G.w;
+  // style comes off the plan; a wrestler is what they do most nights.
+  const styleKey = (c.plan && (c.plan.a||c.plan.b)) || 'strike';
+  const style = ({strike:'brawler', slam:'powerhouse', suplex:'technician', submission:'technician',
+                  aerial:'flyer', technical:'technician', hardcore:'brawler', showman:'showman'})[styleKey]||'brawler';
+  const gimmickName = w.gimmick && w.gimmick.name;
+  const gimmickId = w.gimmick && w.gimmick.id;
   const me={
     name:w.name, nick:w.nick||'',
-    align:w.align, gimmick:w.gimmick&&w.gimmick.name, streak:c.streak||0,
+    align:w.align, gimmick:gimmickName, gimmickId, style,
+    streak:c.streak||0,
     standing:c.standing||50, rep:c.rep||0, pop:c.pop||0, reaction:reactionOf(),
-    title:c.title||null, reigns:(c.reigns||[]).length, wins:c.rec.w||0, losses:c.rec.l||0,
+    title:c.title||null, reigns:(c.reigns||[]).length,
+    wins:c.rec.w||0, losses:c.rec.l||0, defenses:c.defenses||0,
+    finisher:(moveById(w.finisher)||{}).name||'my finish',
     tier:tierOf(c.rep).name,
+    age:c.age||21, year:c.year||1,
   };
   const p=myPromo();
   const venue={ promoShort:p.short, promoName:p.name, region:p.region, product:p.product };
@@ -6024,6 +6034,10 @@ function buildPromoCtx(target){
   const last = hist[0]||null;
   const feud = story();
   const feudWith = (feud && t && feud.charId===t.id) ? feud : null;
+  // What is on the line right now: the promo mode, and any match booked for
+  // the week that these words are meant to sell.
+  const upcoming = c.booking && c.booking.type==='match' ? c.booking.o : null;
+  const stakes = upcoming ? upcoming.stakes : (PM&&PM.mode==='title'?'title':'standard');
   return {
     me, opp, venue, belt,
     champion: ch ? {name:ch.you?me.name:ch.name, you:!!ch.you} : null,
@@ -6031,6 +6045,9 @@ function buildPromoCtx(target){
     feud:feudWith ? {stage:feudWith.stage, weeks:(c.year*40+c.week)-(feudWith.startYear*40+feudWith.startWeek)} : null,
     directive: PM && PM.directive,
     stance: PM && PM.stance,
+    mode: PM && PM.mode,
+    stakes,
+    upcoming,
     weekCount: (c.year-1)*40+c.week,
   };
 }
@@ -6053,50 +6070,122 @@ function pronounsFor(align){
    which is what a real cut promo sounds like. Dedup is enforced
    at the chip id level for the whole segment.
    ============================================================ */
+/* Each chip is a fired clause. `fn(ctx)` returns either a single line or an
+   array of wordings the picker rotates through, so the same chip in two
+   promos does not read verbatim. Optional filters (`align`, `style`,
+   `gimmick`) narrow who the chip is FOR; `when(ctx)` narrows when the
+   chip APPLIES. */
 const CHIP_BANK=[
-  // ----- REFERENCES: things that actually happened -----
-  {id:'ref_prev_win',    tag:'ref',   phase:['hook','thesis','meat','personal'],
+  // ---------- REFERENCES: things that are on the record ----------
+  {id:'ref_prev_win',    tag:'ref', phase:['hook','thesis','meat','personal'],
     when:c=>c.opp&&c.hist.wins>0,
-    fn:c=>`I have already beaten ${c.opp.name}. Ask ${c.opp.name}.`},
-  {id:'ref_prev_loss',   tag:'ref',   phase:['thesis','meat','personal'],
+    fn:c=>[
+      `I have already beaten ${c.opp.name}. Ask ${c.opp.name}.`,
+      `${c.opp.name} has stood across from me before and eaten the same finish. Nothing has changed.`,
+      `Every one of you can look up my record against ${c.opp.name}. Do that before you pick a side.`,
+    ]},
+  {id:'ref_prev_loss',   tag:'ref', phase:['thesis','meat','personal'],
     when:c=>c.opp&&c.hist.losses>0,
-    fn:c=>`Last time ${c.opp.name} beat me, I told everyone I would come back for it. I am back for it.`},
-  {id:'ref_best_match',  tag:'ref',   phase:['personal','meat'],
+    fn:c=>[
+      `Last time ${c.opp.name} beat me, I told this room I would come back for it. I am back for it.`,
+      `${c.opp.name} caught me last time. It is the only thing I have thought about since.`,
+      `${c.opp.name} has one over on me. One. Tonight that goes back on the shelf.`,
+    ]},
+  {id:'ref_best_match',  tag:'ref', phase:['personal','meat'],
     when:c=>c.opp&&c.hist.best&&c.hist.best.q>=70,
     fn:c=>`You and I put on a ${c.hist.best.q}-rated match in ${c.venue.promoShort}, and we both know it. We could do it again tonight.`},
-  {id:'ref_series',      tag:'ref',   phase:['hook','meat'],
+  {id:'ref_series',      tag:'ref', phase:['hook','meat'],
     when:c=>c.opp&&c.hist.count>=2,
-    fn:c=>`We have done this ${c.hist.count} times now. Everybody in this building has an opinion.`},
-  {id:'ref_venue',       tag:'ref',   phase:['hook','personal'],
+    fn:c=>[
+      `We have done this ${c.hist.count} times now. Everybody in this building has an opinion.`,
+      `${c.hist.count} matches between us and everybody in the back is tired of hearing about it.`,
+    ]},
+  {id:'ref_venue',       tag:'ref', phase:['hook','personal'],
     when:c=>true,
-    fn:c=>`Everybody in ${c.venue.promoShort} knows what I am here for.`},
-  {id:'ref_streak',      tag:'ref',   phase:['thesis','meat'],
+    fn:c=>[
+      `Everybody in ${c.venue.promoShort} knows what I am here for.`,
+      `This building has seen me before. It knows what I do.`,
+    ]},
+  {id:'ref_streak',      tag:'ref', phase:['thesis','meat'],
     when:c=>c.me.streak>=3,
-    fn:c=>`I have won ${c.me.streak} in a row. Not close, not scraped: won.`},
-  {id:'ref_title',       tag:'ref',   phase:['hook','thesis','close'],
+    fn:c=>[
+      `I have won ${c.me.streak} in a row. Not close, not scraped: won.`,
+      `${c.me.streak} straight. Line them up.`,
+      `Check the tape. ${c.me.streak} matches, ${c.me.streak} finishes.`,
+    ]},
+  {id:'ref_cold_streak', tag:'ref', phase:['personal','thesis'],
+    when:c=>c.me.streak<=-2,
+    fn:c=>[
+      `I have lost my last few. I am not hiding it. I am going to fix it tonight.`,
+      `Nobody in this building has had a worse month than I have, and nobody is standing here anyway.`,
+    ]},
+  {id:'ref_title',       tag:'ref', phase:['hook','thesis','close'],
     when:c=>c.me.title,
-    fn:c=>`I am the ${c.me.title}. Nobody in this room takes that from me tonight.`},
-  {id:'ref_belt_target', tag:'ref',   phase:['hook','thesis','close'],
+    fn:c=>[
+      `I am the ${c.me.title}. Nobody in this room takes that from me tonight.`,
+      `I did not win the ${c.me.title} to give it back to somebody like you.`,
+    ]},
+  {id:'ref_defenses',    tag:'ref', phase:['thesis','meat'],
+    when:c=>c.me.title&&c.me.defenses>=2,
+    fn:c=>[
+      `${c.me.defenses} defences. Every one of them tried what you are about to try.`,
+      `${c.me.defenses} people have already walked out of this building without this belt. Get in line.`,
+    ]},
+  {id:'ref_belt_target', tag:'ref', phase:['hook','thesis','close'],
     when:c=>c.opp&&c.opp.holdsBelt,
     fn:c=>`${c.opp.name} carries a title I know I can win. Everyone in this building can see it.`},
-  {id:'ref_feud',        tag:'ref',   phase:['thesis','meat','personal'],
+  {id:'ref_feud',        tag:'ref', phase:['thesis','meat','personal'],
     when:c=>c.feud,
-    fn:c=>`This started ${c.feud.weeks} weeks ago and it ends the way I say it ends.`},
+    fn:c=>[
+      `This started ${c.feud.weeks} weeks ago and it ends the way I say it ends.`,
+      `${c.feud.weeks} weeks of this. Everybody in ${c.venue.promoShort} wants it settled tonight.`,
+    ]},
+  {id:'ref_upcoming',    tag:'ref', phase:['hook','close'],
+    when:c=>c.upcoming&&c.upcoming.stipLabel,
+    fn:c=>[
+      `A ${c.upcoming.stipLabel.toLowerCase()}. That is what has been booked. That is what I asked for.`,
+      `They put us in a ${c.upcoming.stipLabel.toLowerCase()}. Nobody talked me out of it.`,
+    ]},
+  {id:'ref_promo',       tag:'ref', phase:['hook','personal'],
+    when:c=>true,
+    fn:c=>[
+      `${c.venue.promoShort} is my home. I get to say things here I would not say anywhere else.`,
+      `Nowhere else in this business would give me this microphone. ${c.venue.promoShort} did.`,
+    ]},
+  {id:'ref_opp_veteran', tag:'ref', phase:['meat','personal'],
+    when:c=>c.opp&&(c.opp.matches>=3||c.opp.overness>=70),
+    fn:c=>`${c.opp.name} has been in this business longer than most people in this building. That will not save them tonight.`},
+  {id:'ref_opp_rookie',  tag:'ref', phase:['meat','personal'],
+    when:c=>c.opp&&c.opp.matches<=1&&c.opp.overness<=55,
+    fn:c=>`${c.opp.name} is new here. Somebody has to be the one to welcome them properly.`},
 
-  // ----- CONCESSIONS: giving credit is what makes the shot land -----
+  // ---------- CONCESSIONS: credit is what makes the punch land ----------
   {id:'conc_respect',    tag:'concession', phase:['personal','meat'],
     when:c=>c.opp,
-    fn:c=>`${c.opp.name} is good. I have never denied that. That is what makes what I am about to do matter.`},
+    fn:c=>[
+      `${c.opp.name} is good. I have never denied that. That is what makes what I am about to do matter.`,
+      `Nobody in this business puts ${c.opp.name} over the way I am about to. Then I am going to end them.`,
+    ]},
   {id:'conc_worked',     tag:'concession', phase:['personal'],
     when:c=>c.opp,
     fn:c=>`${c.opp.name} worked for this too. This is not about who cares more.`},
+  {id:'conc_belt',       tag:'concession', phase:['personal','meat'],
+    when:c=>c.opp&&c.opp.holdsBelt,
+    fn:c=>`That belt on ${c.opp.name}'s shoulder was not gifted. I know exactly what it costs.`},
+  {id:'conc_locker',     tag:'concession', phase:['personal'],
+    when:c=>c.opp&&c.opp.overness>=65,
+    fn:c=>`This locker room respects ${c.opp.name}. That is not a small thing to say around here.`},
 
-  // ----- BOASTS: about you -----
+  // ---------- BOASTS: about you ----------
   {id:'boast_iam',       tag:'boast', phase:['hook','thesis','meat'],
     when:c=>true,
     fn:c=>c.me.align==='heel'
-      ? `Look at me. I am the reason this company still has an audience.`
-      : `I am ${c.me.name}, and I did not come this far to make friends.`},
+      ? [`Look at me. I am the reason this company still has an audience.`,
+         `I am ${c.me.name}. I am not here to be liked and I do not need you to try.`,
+         `Nobody in this building draws money the way I draw money.`]
+      : [`I am ${c.me.name}, and I did not come this far to make friends.`,
+         `I am ${c.me.name}. I have earned every second of this microphone.`,
+         `My name is ${c.me.name}, and I take this seriously enough to say it out loud.`]},
   {id:'boast_reigns',    tag:'boast', phase:['meat','close'],
     when:c=>c.me.reigns>=1,
     fn:c=>c.me.reigns===1
@@ -6110,59 +6199,168 @@ const CHIP_BANK=[
       'National TV':`I made it to national television. Nobody in this locker room got here by accident.`,
       'Global Main Event':`This is the main event of the business, and I main-event it.`,
     }[c.me.tier] || `I did not come this far to make friends.`)},
+  {id:'boast_style_brawler',   tag:'boast', phase:['thesis','meat'], style:'brawler',
+    when:c=>true,
+    fn:c=>[
+      `I hit people harder than anyone on this roster. Ask the doctor.`,
+      `You do not get out of a fight with me. You get through it. Nobody yet has.`,
+    ]},
+  {id:'boast_style_flyer',     tag:'boast', phase:['thesis','meat'], style:'flyer',
+    when:c=>true,
+    fn:c=>[
+      `Nobody in this company moves the way I move. Nobody.`,
+      `I do things in this ring that the rest of this locker room cannot spell.`,
+    ]},
+  {id:'boast_style_technician',tag:'boast', phase:['thesis','meat'], style:'technician',
+    when:c=>true,
+    fn:c=>[
+      `What I do in there is chess. What the rest of this roster does is checkers.`,
+      `I take people apart piece by piece. Nobody gets to the end still whole.`,
+    ]},
+  {id:'boast_style_showman',   tag:'boast', phase:['thesis','meat'], style:'showman',
+    when:c=>true,
+    fn:c=>[
+      `Every one of you paid to see me. Do not pretend otherwise.`,
+      `This is a business, and I am the one moving the units.`,
+    ]},
+  {id:'boast_style_power',     tag:'boast', phase:['thesis','meat'], style:'powerhouse',
+    when:c=>true,
+    fn:c=>[
+      `I pick people up and put them down. That is the whole job.`,
+      `There is not a body in this locker room I have not thrown across a ring.`,
+    ]},
+  {id:'boast_finisher',        tag:'boast', phase:['meat','close'],
+    when:c=>c.me.finisher&&c.me.finisher!=='my finish',
+    fn:c=>[
+      `${c.me.finisher}. That is what happens tonight. Nothing more complicated than that.`,
+      `They keep asking me how it ends. It ends with ${c.me.finisher}. Same as it always does.`,
+    ]},
 
-  // ----- QUESTIONS: rhetorical, do not let them off -----
+  // ---------- QUESTIONS: rhetorical, do not let them off ----------
   {id:'q_earned',        tag:'question', phase:['meat','personal'],
     when:c=>c.opp,
-    fn:c=>`What exactly has ${c.opp.name} earned that puts them across from me?`},
+    fn:c=>[
+      `What exactly has ${c.opp.name} earned that puts them across from me?`,
+      `Name one thing ${c.opp.name} has done this year that got them here.`,
+    ]},
   {id:'q_ready',         tag:'question', phase:['thesis','meat'],
     when:c=>c.opp,
-    fn:c=>`How long is ${c.opp.name} going to pretend they are ready for this?`},
+    fn:c=>[
+      `How long is ${c.opp.name} going to pretend they are ready for this?`,
+      `Does anybody in this building actually think ${c.opp.name} came here to win?`,
+    ]},
   {id:'q_room',          tag:'question', phase:['personal','meat'],
     when:c=>true,
-    fn:c=>`Ask anyone in this room who they came to see. Then ask them why.`},
+    fn:c=>[
+      `Ask anyone in this room who they came to see. Then ask them why.`,
+      `Look at the ticket in your hand. My name is on it. Not theirs.`,
+    ]},
+  {id:'q_home',          tag:'question', phase:['hook','personal'],
+    when:c=>true,
+    fn:c=>[
+      `${c.venue.promoShort}, when was the last time somebody stood in this ring and told you the truth?`,
+      `Where else in wrestling do you get somebody who means what they say?`,
+    ]},
 
-  // ----- THREATS + PROMISES -----
+  // ---------- THREATS + PROMISES ----------
   {id:'thr_leave',       tag:'threat', phase:['close','meat'],
     when:c=>c.opp,
-    fn:c=>`I am going to leave ${c.opp.name} flat on this mat. Everyone in ${c.venue.promoShort} sees it.`},
+    fn:c=>[
+      `I am going to leave ${c.opp.name} flat on this mat. Everyone in ${c.venue.promoShort} sees it.`,
+      `${c.opp.name} is going to hear a ten-count with their face against this canvas.`,
+    ]},
   {id:'thr_finish',      tag:'threat', phase:['close'],
     when:c=>c.opp,
     fn:c=>c.me.align==='heel'
-      ? `When I am done with ${c.opp.name} tonight, they will thank the referee for making it stop.`
-      : `I am going to finish ${c.opp.name} tonight. And the room is going to be on its feet.`},
+      ? [`When I am done with ${c.opp.name} tonight, they will thank the referee for making it stop.`,
+         `${c.opp.name} is going to spend a week in a hospital and I am going to send flowers.`]
+      : [`I am going to finish ${c.opp.name} tonight. And the room is going to be on its feet.`,
+         `We are going to give this building the finish it paid for. I promise you that.`]},
   {id:'thr_title',       tag:'threat', phase:['close'],
     when:c=>c.opp&&c.opp.holdsBelt,
     fn:c=>`I am walking out of this building with that belt. Bet on anything else.`},
+  {id:'thr_run',         tag:'threat', phase:['close','meat'],
+    when:c=>c.me.streak>=3||c.me.title,
+    fn:c=>`This does not stop tonight. I have got a run going and it does not stop for anybody.`},
+  {id:'thr_next',        tag:'threat', phase:['close'],
+    when:c=>c.champion&&!c.champion.you,
+    fn:c=>`After tonight, ${c.champion.name}, I want the belt. Do not act surprised.`},
 
-  // ----- CALLBACKS: the repeatable phrase, only in Close -----
+  // ---------- CALLBACKS: the repeatable phrase, only in Close ----------
   {id:'cb_signature',    tag:'callback', phase:['close'],
     when:c=>true,
     fn:c=>c.me.gimmick
-      ? `That is what ${c.me.gimmick} does. That is what ${c.me.gimmick} has always done.`
-      : `I told you what I was here for. I do not repeat myself.`},
+      ? [`That is what ${c.me.gimmick} does. That is what ${c.me.gimmick} has always done.`,
+         `${c.me.gimmick}. Say it out loud. That is the answer to the question you came in with.`]
+      : [`I told you what I was here for. I do not repeat myself.`,
+         `Same story, same ending. Nobody has written a new one for me yet.`]},
 
-  // ----- TWISTS: swerve the direction of what came before -----
+  // ---------- TWISTS: swerve the direction of what came before ----------
   {id:'tw_notyou',       tag:'twist', phase:['meat','personal'],
     when:c=>c.opp,
-    fn:c=>`But this is not about ${c.opp.name}. This never was.`},
+    fn:c=>[
+      `But this is not about ${c.opp.name}. This never was.`,
+      `${c.opp.name} is a name. Tonight is about a lot more than a name.`,
+    ]},
   {id:'tw_realtarget',   tag:'twist', phase:['personal','close'],
     when:c=>c.champion&&!c.champion.you&&(!c.opp||c.champion.name!==c.opp.name),
     fn:c=>`The person I actually came for is standing backstage with a belt on their shoulder. ${c.champion.name}, I am coming.`},
+  {id:'tw_office',       tag:'twist', phase:['personal','meat'],
+    when:c=>c.me.standing<=45,
+    fn:c=>`This company knows exactly who I am, and they have decided to test me for another year. Fine.`},
+  {id:'tw_business',     tag:'twist', phase:['personal','close'],
+    when:c=>true,
+    fn:c=>`Wrestling. That is what we are supposed to be doing here. Not politics, not favors. Wrestling. I still believe in it.`},
 
-  // ----- CROWD WORK: face and heel grammar diverges here -----
+  // ---------- CROWD WORK: face and heel grammar diverges here ----------
   {id:'crowd_thanks',    tag:'crowd', phase:['personal','close'],
     when:c=>c.me.align!=='heel',
-    fn:c=>`Every night you show up. Every night you are the reason I do too.`},
+    fn:c=>[
+      `Every night you show up. Every night you are the reason I do too.`,
+      `${c.venue.promoShort}, this room means something to me. Do not think for a second it does not.`,
+    ]},
   {id:'crowd_scorn',     tag:'crowd', phase:['personal','close'],
     when:c=>c.me.align==='heel',
-    fn:c=>`You people paid to boo me and I am fine with that. You paid.`},
+    fn:c=>[
+      `You people paid to boo me and I am fine with that. You paid.`,
+      `Every one of you thought about staying home tonight. You still came. Ask yourself why.`,
+    ]},
+  {id:'crowd_challenge', tag:'crowd', phase:['personal'],
+    when:c=>c.me.align!=='heel',
+    fn:c=>`If you want it, I want it. Make it loud enough that they cannot cut around it.`},
 ];
 function chipTag(tag){ return {ref:'k-crowd',boast:'k-heel',threat:'k-heel',question:'k-cool',concession:'k-face',callback:'k-crowd',twist:'k-cool',crowd:'k-face'}[tag]||'k-cool'; }
+/* Chips can return either a string or an array of wordings. The picker is
+   seeded by chip id + current beat so a chip renders the same wording in
+   its preview and when it is delivered, but a chip picked in a later promo
+   comes up different. */
+function chipLine(ch,ctx){
+  let out;
+  try{ out = ch.fn(ctx); }
+  catch(e){ console.warn('RTR: chip',ch.id,'threw',e); return ''; }
+  if(Array.isArray(out)){
+    if(!out.length) return '';
+    // FNV-1a over chip id + phase + week; the string-based hash guarantees a
+    // real shuffle across variants, so two phases in the same promo pick a
+    // different wording of the same chip, and two promos in different weeks
+    // do too.
+    const key = ch.id+'|'+((PM&&PM.phase)||'hook')+'|'+((PMCTX&&PMCTX.weekCount)||0);
+    let h = 2166136261;
+    for(let i=0;i<key.length;i++) h = ((h ^ key.charCodeAt(i))*16777619) >>> 0;
+    return out[h % out.length] || '';
+  }
+  return out||'';
+}
 function chipsFor(phase){
   const ctx=PMCTX;
   const used=PM.usedChips||{};
-  const pool=CHIP_BANK.filter(ch=>ch.phase.includes(phase) && ch.when(ctx) && !used[ch.id]);
+  const okVoice=ch=>{
+    if(ch.align && ch.align!==ctx.me.align) return false;
+    if(ch.style && ch.style!==ctx.me.style) return false;
+    if(ch.gimmick && ch.gimmick!==ctx.me.gimmickId) return false;
+    return true;
+  };
+  const pool=CHIP_BANK.filter(ch=>ch.phase.includes(phase) && okVoice(ch) && ch.when(ctx) && !used[ch.id]);
   // shuffle and take up to 6, keeping at least one reference if there is any.
   // Cap each tag at 2 in a single draw so the reader never sees two BOASTs
   // starting with "I am" back to back.
@@ -6447,7 +6645,7 @@ function pmChoices(){
   // ---- pick 2-3 chips this beat; assembly is period-separated so it reads as a paragraph ----
   const chips=chipsFor(PM.phase);
   const maxThis = PM.phase==='meat'||PM.phase==='personal' ? 3 : 2;
-  const preview = (PM.picking||[]).map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?ch.fn(PMCTX):''; }).filter(Boolean).join(' ');
+  const preview = (PM.picking||[]).map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?chipLine(ch,PMCTX):''; }).filter(Boolean).join(' ');
   const canSay = (PM.picking||[]).length>=Math.min(2,maxThis);
   const chipHTML = chips.length ? chips.map(ch=>{
     const on=(PM.picking||[]).includes(ch.id);
@@ -6455,7 +6653,7 @@ function pmChoices(){
     return `<div class="chip ${on?'on':''} ${clickable?'':'off'}"
       onclick="${clickable?`pmToggleChip('${ch.id}')`:''}">
       <div class="ch-k ${chipTag(ch.tag)}">${chipLabel(ch.tag)}</div>
-      <div class="ch-t">${ch.fn(PMCTX)}</div>
+      <div class="ch-t">${chipLine(ch,PMCTX)}</div>
     </div>`;
   }).join('') : `<div class="hint">No fresh chips for this beat. Write your own below.</div>`;
   $('pmChoices').innerHTML=`
@@ -6492,7 +6690,7 @@ function pmClearPick(){ PM.picking=[]; pmChoices(); }
 function pmSayChips(){
   const ids=(PM.picking||[]).slice();
   if(!ids.length) return;
-  const line=ids.map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?ch.fn(PMCTX):''; }).filter(Boolean).join(' ');
+  const line=ids.map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?chipLine(ch,PMCTX):''; }).filter(Boolean).join(' ');
   // read the composite line and tag its tone from the chips that built it
   const chipsInPlay=ids.map(id=>CHIP_BANK.find(c=>c.id===id)).filter(Boolean);
   const tags=chipsInPlay.map(c=>c.tag);
