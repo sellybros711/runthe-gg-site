@@ -5,7 +5,8 @@
  *                          asks for a free account first.
  *   FREE ACCOUNT         → the four free games, one play each per day:
  *                          Daily Crossword, Sportegories, Alma Mater, Career Path.
- *                          The other eight are Arcade Card only.
+ *                          PLUS one free play of each of the other eight, once,
+ *                          ever. Taken, it locks for good.
  *   ARCADE CARD (paid)   → all twelve, unlimited, plus the Archive.
  *
  * This replaces the old shared wallet (guest 1/day, account 3/day). The cap is
@@ -53,6 +54,67 @@
   // One play per free game per day. Not a pool: four games, four separate ones.
   var PER_GAME_DAILY = 1;
 
+  /* ONE FREE LOOK AT EVERY CARD GAME, ONCE, EVER.
+   *
+   * The eight card games used to be a closed door with a price on it, which
+   * asks a free player to buy eight things they have never played. Now each
+   * one opens once per ACCOUNT, for a single play, and then locks for good.
+   * The offer that follows lands on somebody who knows what it is worth.
+   *
+   * Once ever, not once a day: a daily trial is just a bigger free tier, and
+   * the whole point is that the door closes. The server is what closes it
+   * (arcade_game_trial, keyed on the account, see 91_arcade_trial.sql); this
+   * blob is a mirror so the hub can paint a tile without a round trip, and a
+   * cleared browser learns the truth again on the next reconcile.
+   *
+   * Sport editions share one trial: 'career_nba' and 'career' are the same
+   * door, matching how the free list treats them.
+   */
+  var TKEY = 'rtg:trial:v1';
+  function baseGame(g){ return String(g||'').replace(/_(nba|nfl|mlb)$/, ''); }
+  function readTrial(){
+    var s; try{ s=JSON.parse(LS.getItem(TKEY)); }catch(e){ s=null; }
+    if(!s || typeof s!=='object' || !s.used || typeof s.used!=='object') s={ used:{} };
+    return s;
+  }
+  function writeTrial(s){ try{ LS.setItem(TKEY, JSON.stringify(s)); }catch(e){} return s; }
+  function trialUsed(game){ return !!readTrial().used[baseGame(game)]; }
+  function markTrialUsed(game){
+    var s=readTrial(), b=baseGame(game);
+    if(!s.used[b]){ s.used[b]=1; writeTrial(s); emit('rtg:tokens'); }
+  }
+  // Server truth from arcade_game_status().trials_used. Additive on purpose: a
+  // trial spent on this device but not yet acknowledged by the server must not
+  // be handed back by a status read that raced it.
+  function setServerTrials(list){
+    if(!list || !list.length) return;
+    var s=readTrial(), touched=false;
+    for(var i=0;i<list.length;i++){
+      var b=baseGame(list[i]);
+      if(b && !s.used[b]){ s.used[b]=1; touched=true; }
+    }
+    if(touched){ writeTrial(s); emit('rtg:tokens'); }
+  }
+  // Is there a free look at this game available right now? Cardholders do not
+  // need one and free games do not have one.
+  function trialOpen(game){
+    if(unlimited() || !signedIn()) return false;
+    if(isFreeGame(game)) return false;
+    return !trialUsed(game);
+  }
+  /* Is a free look ON OFFER to whoever is looking at this tile? Not the same
+     question as trialOpen, and the difference is the signed-out visitor.
+     There is no account to ask about them, so trialOpen has to say no, and a
+     hub built on that answer padlocks all eight card games and sells the card
+     to somebody who has played none of them. What they will actually get is a
+     free look at every one, because that is what a new account comes with, so
+     that is what the tile says. Display and funnel use this; spending never
+     does. */
+  function trialOffer(game){
+    if(unlimited() || isFreeGame(game)) return false;
+    return signedIn() ? !trialUsed(game) : true;
+  }
+
   // Supabase session key (mirrors auth.js). Presence of a session blob = signed in.
   var SB_SESSION_KEY = 'sb-jcrrxqfpdelrmvjuihnm-auth-token';
 
@@ -97,14 +159,16 @@
   function unlocked(game){
     if(unlimited()) return true;
     if(!signedIn()) return false;
-    return isFreeGame(game);
+    return isFreeGame(game) || trialOpen(game);
   }
   function locked(game){ return !unlocked(game); }
   // "Is this game behind the card for this player?" - unlike locked(), a signed
   // OUT visitor is not locked out of the free four, they just need an account.
   // The hub shows locks with this, so a visitor sees four games on offer and eight
   // to buy, rather than twelve closed doors.
-  function cardOnly(game){ return !unlimited() && !isFreeGame(game); }
+  // A game with a free look left is not behind the card YET, so it does not
+  // wear a padlock: the hub shows it as something to go and try.
+  function cardOnly(game){ return !unlimited() && !isFreeGame(game) && !trialOffer(game); }
 
   // Lifetime totals (never reset at midnight) - powers the Arcade Card's
   // achievements + "most played", and the recency order on the hub for members.
@@ -201,6 +265,8 @@
   function capOf(game){
     if(unlimited()) return Infinity;
     if(!unlocked(game)) return 0;
+    // the free look: one play, and it is not topped up by anything
+    if(!isFreeGame(game)) return 1;
     // A free game gets its one daily play plus any referral bonus earned today.
     // The bonus lifts every free game, matching the server (arcade_spend_game
     // computes the same 1 + bonus), so the client never offers a play the
@@ -210,10 +276,17 @@
   function remainingOf(game){ var c=capOf(game); return c===Infinity?Infinity:Math.max(0, c-playsOf(game)); }
   // Wallet-wide view, kept for the odd caller that wants "anything left at all".
   function cap(){ if(unlimited()) return Infinity; return signedIn() ? FREE_LIST.length*(PER_GAME_DAILY+bonusToday()) : 0; }
+  /* "How many games can I go and play right now?" - the number the top bar
+     counts. The free four with a go left, PLUS every card game still holding
+     its one free look, because those are games this player can open today just
+     the same. Counting only the four told a fresh account it had 4 when it
+     could in fact play all twelve. */
   function remaining(game){
     if(game) return remainingOf(game);
     if(unlimited()) return Infinity;
-    var n=0; for(var i=0;i<FREE_LIST.length;i++) n+=remainingOf(FREE_LIST[i]);
+    var n=0, i;
+    for(i=0;i<FREE_LIST.length;i++) n+=remainingOf(FREE_LIST[i]);
+    for(i=0;i<GAMES.length;i++) if(trialOpen(GAMES[i])) n++;
     return n;
   }
   // Raise the server-used floor for one game (never lowers it within a day).
@@ -238,7 +311,10 @@
     if(unlimited()) return true;
     if(!signedIn()) return false;
     if(!game) return remaining()>0;                // no game named: anything left?
-    if(!isFreeGame(game)) return false;
+    // A card game is playable exactly once: while the free look is open, and
+    // not again after it has been taken (this run included, so the Play Again
+    // button turns into the offer the moment the trial play ends).
+    if(!isFreeGame(game)) return trialOpen(game) && playsOf(game) < 1;
     return playsOf(game) < capOf(game);            // capOf folds in today's bonus
   }
 
@@ -285,8 +361,12 @@
     }catch(e){}
   }
 
+  /* Which wall to show. Four now, not three, because "you have had your free
+     look at this one" is a different sentence from "this is a card game" and
+     lands on a very different player: one of them has played it. */
   function why(game){
     if(!signedIn()) return 'signin';
+    if(!isFreeGame(game) && !unlimited() && trialUsed(game)) return 'tried';
     if(!unlocked(game)) return 'card';
     return 'spent';
   }
@@ -313,10 +393,16 @@
     }
     if(!canPlay(game)){ gaGame('arcade_play_blocked', game, { reason:String(why(game)||'') });
       return { ok:false, tryNo:before, first:false, bonus:false, left:0, reason:why(game) }; }
+    // The free look is spent the moment the play starts, not when it ends: a
+    // trial you can abandon and restart is not one play, it is unlimited plays
+    // with an extra step. The pregame gate says so before Start is pressed, so
+    // nobody spends theirs by opening a page.
+    var wasTrial = trialOpen(game);
+    if(wasTrial) markTrialUsed(game);
     s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
-    gaGame('arcade_game_started', game, { tier:'free', try_no:before+1 });
+    gaGame('arcade_game_started', game, { tier: wasTrial ? 'trial' : 'free', try_no:before+1 });
     serverSpend(game);
-    return { ok:true, tryNo:before+1, first:(before===0), bonus:false, left:remainingOf(game) };
+    return { ok:true, tryNo:before+1, first:(before===0), bonus:false, trial:wasTrial, left:remainingOf(game) };
   }
   // May this attempt's result reach a board at all? False only when the server
   // refused a play the client had no right to. Offline, card and replay plays
@@ -332,7 +418,7 @@
     if(hasCard()) return 'Arcade Card · unlimited';
     if(TESTING)   return 'Testing · unlimited';
     if(!signedIn()) return 'Free account to play';
-    if(!isFreeGame(game)) return 'Arcade Card game';
+    if(!isFreeGame(game)) return trialOpen(game) ? 'One free play' : 'Arcade Card game';
     return remainingOf(game)>0 ? 'Your free play' : 'Free play used';
   }
   // Short "why you can't play" text for a toast or a disabled button. There are
@@ -342,6 +428,7 @@
   function blockMsg(game){
     var r=why(game);
     if(r==='signin') return 'Free account to play';
+    if(r==='tried')  return 'That was your free play';
     if(r==='card')   return 'Arcade Card game';
     return 'That was today’s go';
   }
@@ -350,11 +437,13 @@
   function lockLine(game){
     var r=why(game);
     if(r==='signin') return 'Create a free account to play.';
+    if(r==='tried')  return 'That was your free play. The Arcade Card keeps it open.';
     if(r==='card')   return 'This one is on the Arcade Card.';
     return 'That was today’s go. Back tomorrow.';
   }
 
-  // The full phrase games print after " · ". Only the counted states take "today".
+  // The full phrase games print after " · ". Only the counted states take "today",
+  // and a free look never does: it is not a daily allowance, it is the only one.
   function hint(game){
     var l=label(game);
     if(hasCard() || TESTING) return l;
@@ -378,6 +467,11 @@
     locked: locked,
     cardOnly: cardOnly,
     why: why,
+    // the one free look at a card game
+    trialOpen: trialOpen,
+    trialOffer: trialOffer,
+    trialUsed: trialUsed,
+    setServerTrials: setServerTrials,
     // plays
     cap: cap,
     capOf: capOf,

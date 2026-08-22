@@ -23,7 +23,10 @@
 
   function gameKey(){ var m=(location.pathname||'').match(/\/arcade\/([a-z]+)\//); return m?m[1]:null; }
   var GAME = gameKey();
-  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1, sportegories:1, rollcall:1, chain:1 };
+  // High Low was the one game missing from this list, and it is an Arcade Card
+  // game, so it was the one that could spend a player's single free look with
+  // no screen in front of it at all.
+  var KNOWN = { table:1, match:1, career:1, oddone:1, rankit:1, almamater:1, guess:1, crossword:1, sportegories:1, rollcall:1, chain:1, highlow:1 };
   if (!GAME || !KNOWN[GAME]) return;
   if (window.RTGArchive && RTGArchive.active && RTGArchive.active()) return;   // archive practice: no gate
 
@@ -40,6 +43,7 @@
     sportegories: ['One letter, eight categories, two minutes.', 'Every answer has to start with that letter. Rarer names score more.'],
     rollcall:   ['One club, one season, ninety seconds.', 'Name as many of that roster as you can. Wrong names cost nothing but the clock.'],
     chain:      ['Two players, two teammates in between.', 'Each name has to have played alongside the one above it. Four wrong and the chain breaks.'],
+    highlow:    ['One stat, two players. Higher or lower?', 'Call every athlete that follows. There is no finish line, only your best.'],
   };
   // Personal-best source per game (localStorage). t:true = time in seconds.
   var BEST = {
@@ -54,6 +58,7 @@
     sportegories:{k:'rtg_sportegories_v1', f:'best',    cap:'best score' },
     rollcall:   { k:'rtg_rollcall_v1',  f:'best',       cap:'most named' },
     chain:      { k:'rtg_chain_v1',     f:'best',       cap:'fastest chain', t:true },
+    highlow:    { k:'rtg:highlow:v1',   f:'best',       cap:'best run' },
   };
 
   var T = window.RTGTokens;
@@ -62,6 +67,11 @@
   function remaining(){ return T && T.remaining ? T.remaining(GAME) : Infinity; }
   function signedIn(){ return !!(T && T.signedIn && T.signedIn()); }
   function unlocked(){ return T && T.unlocked ? T.unlocked(GAME) : true; }
+  // The one free look at an Arcade Card game. Open = they have it and have not
+  // taken it; used = they have played this game once and that was that.
+  function trialOpen(){ return !!(T && T.trialOpen && T.trialOpen(GAME)); }
+  function trialUsed(){ return !!(T && T.trialUsed && !hasCard() && T.trialUsed(GAME)
+                                  && T.isFreeGame && !T.isFreeGame(GAME)); }
   // Inviting needs a signed-in account (that is where the code comes from) and
   // the referral module present. Cardholders are unlimited, so they never see
   // the out-of-plays screen this sits on.
@@ -203,7 +213,12 @@
     // at all - land them straight on a ready board. The play is still charged on
     // first interaction, and each game shows the paywall itself if the server
     // later disagrees. The overlay only appears when they cannot play.
-    if (hasCard() || canPlay()) { dismissed = true; return; }
+    //
+    // The free look at a card game is the exception, and it is the one screen
+    // this file exists for. That play is spent on the first tap and never comes
+    // back, so it is the one time the player has to be TOLD before they start.
+    // Landing them silently on the board would burn it on a mis-tap.
+    if (hasCard() || (canPlay() && !trialOpen())) { dismissed = true; return; }
     injectStyles();
     scrim=document.createElement('div'); scrim.className='rtgpg-scrim';
     var m=meta();
@@ -240,6 +255,25 @@
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Continue</button>';
       $('rtgpgGo').onclick=done;
       fillBoard();
+      return;
+    }
+
+    if(trialOpen()){
+      /* THE FREE LOOK. One play of a card game, once, ever. Say all three of
+         those things plainly, because the worst version of this screen is the
+         one where a player finds out afterwards. Rules always show here, card
+         game or not: this is the first time they have seen it. */
+      b.innerHTML=
+        '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
+        '<div class="rtgpg-tag">Your free play</div>'+
+        introBody()+
+        '<div class="rtgpg-note">This one is on the Arcade Card, and you get one play of it free. Once you start, that is your go: it locks after this.</div>'+
+        '<button class="rtgpg-go" id="rtgpgGo" type="button">Play it free</button>'+
+        '<div class="rtgpg-note2">Not now? It will still be here. <a class="rtgpg-link" id="rtgpgCard">See the Arcade Card</a> for all twelve, unlimited.</div>'+
+        '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
+      $('rtgpgGo').onclick=done;
+      $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
+      if($('rtgpgCard')) $('rtgpgCard').onclick=function(){ openCard('trial'); };
       return;
     }
 
@@ -287,9 +321,13 @@
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         intro()+
+        /* A card game is now the STRONGER sign-up pitch, not the weaker one:
+           the account is what hands them a play of the thing they came for.
+           Telling them instead to go and play four other games was answering a
+           question they had not asked. */
         '<div class="rtgpg-note">'+(isFree
           ? 'Free to play with a free account. One go a day, on this and three other games.'
-          : 'This one is part of the Arcade Card. Start with a free account and play the four free games today.')+'</div>'+
+          : 'This one is on the Arcade Card, and a free account gets you one play of it, plus a play of every other card game and four games free every day.')+'</div>'+
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Create a free account</button>'+
         '<div><button class="rtgpg-ghost" id="rtgpgSignin" type="button">Already have one? Sign in</button></div>'+
         '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
@@ -300,12 +338,20 @@
     }
 
     if(!unlocked()){
-      // FREE ACCOUNT, CARD-ONLY GAME. Not "you ran out" - they never had it.
-      // Say what it is, say what the card opens, point at what they can play now.
+      /* FREE ACCOUNT, CARD-ONLY GAME. Two players land here and they are not
+         the same person. One has never seen this game, so the rules ARE the
+         pitch. The other just played it on their free look, so repeating the
+         rules at them is noise: they know what it is, they liked it enough to
+         come back, and the only honest line is that this is the door and the
+         card is the key. */
+      var tried = trialUsed();
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
-        '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Arcade Card game</span></div>'+
-        introBody()+
+        (tried
+          ? '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Free play used</span></div>'+
+            '<div class="rtgpg-note">You have had your free play of '+esc(name)+'. The Arcade Card opens it again, as often as you like.</div>'
+          : '<div class="rtgpg-tag"><span class="rtgpg-lock">'+LOCK+'Arcade Card game</span></div>'+
+            introBody())+
         '<ul class="rtgpg-perks">'+
           '<li><b>›</b><span>All twelve games, as often as you like</span></li>'+
           '<li><b>›</b><span>NBA, NFL and MLB editions of five of them</span></li>'+
