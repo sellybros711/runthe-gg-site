@@ -323,6 +323,10 @@
   @keyframes logA{to{opacity:1}}
   .flog b{color:var(--cream);} .flog .hi{color:var(--gold);font-weight:800;}
   .flog .bad{color:#f0907f;}
+  /* the opener of a segment: a stage direction, not a mumbled aside */
+  .flog .open{color:var(--cream);font-family:var(--display);font-size:15px;letter-spacing:.03em;
+    text-transform:uppercase;padding:3px 0 7px;border-bottom:1px solid rgba(224,179,65,.35);margin-bottom:6px;}
+  .flog .open::before{content:"● ";color:var(--brandred);}
   .fdec{display:none;}
   .fdec.on{display:block;background:linear-gradient(180deg,rgba(198,57,44,.20),rgba(0,0,0,.25));border:1.5px solid var(--brandred);border-radius:14px;padding:14px;animation:decA .3s ease-out;}
   @keyframes decA{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
@@ -5875,7 +5879,7 @@ function beginPromo(mode,targetId){
     : mode==='crowd'? 'Open mic: character work'
     : target? `Face to face with ${target.name}` : '';
   $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
-  pmLog(`<span class="hint">The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}</span>`);
+  pmLog(`The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}`,'open');
   pmChoices();
 }
 function pmChoices(){
