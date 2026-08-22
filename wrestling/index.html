@@ -537,6 +537,12 @@
   .pmwrite input{flex:1;}
   /* chip picker */
   .chipgrid{display:grid;gap:8px;margin-bottom:12px;}
+  .cutgrid{display:grid;gap:8px;margin-bottom:12px;}
+  .cutcard{background:linear-gradient(180deg,rgba(224,179,65,.14),rgba(198,57,44,.09));
+    border:1.5px solid rgba(224,179,65,.55);border-radius:11px;padding:10px 13px;cursor:pointer;transition:.13s;}
+  .cutcard:hover{border-color:var(--gold);transform:translateY(-1px);box-shadow:0 0 24px rgba(224,179,65,.15);}
+  .cutcard .cc-k{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;margin-bottom:5px;color:var(--gold);}
+  .cutcard .cc-t{font-size:14px;color:var(--cream);line-height:1.5;font-weight:500;}
   .chip{background:var(--panel);border:1.5px solid var(--line);border-radius:11px;padding:9px 12px;cursor:pointer;
     transition:.13s;position:relative;}
   .chip:hover{border-color:rgba(224,179,65,.5);transform:translateY(-1px);}
@@ -6538,6 +6544,150 @@ const CHIP_BANK=[
     ]},
 ];
 function chipTag(tag){ return {ref:'k-crowd',boast:'k-heel',threat:'k-heel',question:'k-cool',concession:'k-face',callback:'k-crowd',twist:'k-cool',crowd:'k-face'}[tag]||'k-cool'; }
+
+/* ============================================================
+   SIGNATURE CUTS
+   ------------------------------------------------------------
+   A cut is a full authored line for one beat, written for one
+   specific stakes/phase/voice combination. Where the chip system
+   is Lego, cuts are the pre-formed set pieces. They render as
+   the marquee option at the top of a beat's shortlist, and a
+   single click delivers the whole beat. The chip pool stays
+   below as the build-your-own alternative.
+   ============================================================ */
+const CUT_BANK=[
+  // ----- FIRST-MEETING cuts -----
+  {id:'cut_first_open',   phase:['hook'],   stakes:['first'], tags:['boast','ref'],
+    hostile:-0.2, intensity:0.7,
+    line:c=>c.opp
+      ? `${c.opp.name}, this is the first time you and I have stood in the same ring. Take a good look. I want you to remember exactly what you were doing when your night got hard.`
+      : `First time out on this microphone. I have waited a long time for this five minutes. Nobody in this room is going to have to guess who I am when I am done.`},
+  {id:'cut_first_thesis', phase:['thesis'], stakes:['first'], tags:['boast','ref'],
+    hostile:-0.1, intensity:0.75,
+    line:c=>c.opp
+      ? `I have watched every match ${c.opp.name} has had in ${c.venue.promoShort} this year. Every one. I know the moves. I know the tells. I know the ninety-second stretch where they get gassed. And I am the wrestler who is going to make them tap out at minute eleven.`
+      : `I do not need an introduction. My tape is doing the talking. If you have watched it you already know why I am on this microphone.`},
+  {id:'cut_first_close',  phase:['close'],  stakes:['first'], tags:['threat','callback'],
+    hostile:-0.55, intensity:0.85,
+    line:c=>c.opp
+      ? `${c.opp.name}, welcome to the deep end. Nobody in this building is going to help you out of it, and I am the one holding your head under.`
+      : `Everybody has a first impression to make. This is mine. Get used to it. You are going to see a lot of it.`},
+
+  // ----- REMATCH cuts -----
+  {id:'cut_re_open',      phase:['hook'],   stakes:['rematch','series'], tags:['ref','threat'],
+    hostile:-0.35, intensity:0.8,
+    line:c=>c.opp
+      ? `${c.opp.name} and I have unfinished business, and every one of you in this building knows exactly what it is. Do not pretend you came here for anything else tonight.`
+      : `We are back. Same ring, different chapter. If you were here last time, you already know why this matters.`},
+  {id:'cut_re_learned',   phase:['meat'],   stakes:['rematch'], tags:['ref','boast'],
+    hostile:-0.2, intensity:0.75,
+    line:c=>c.opp
+      ? `I have watched our last match a hundred and eleven times. I have paused it. I have written notes on it. I have shown it to my coach and asked what I did wrong. ${c.opp.name} has done none of that. That is the difference tonight.`
+      : `I studied. That is the whole story. When I say it goes different tonight, I mean I did the work to make it go different.`},
+  {id:'cut_meat_break',   phase:['meat'],   tags:['question','threat'],
+    hostile:-0.4, intensity:0.85,
+    line:c=>c.opp
+      ? `Everybody in this building has an opinion on ${c.opp.name}. Half of you think they are the future. Half of you think they are done. I am the wrestler about to settle it in front of both halves at the same time.`
+      : `Somebody in this locker room needs to hear me say this out loud, because they will not hear it in the meeting. So here it is, on this microphone, in front of witnesses.`},
+  {id:'cut_meat_history', phase:['meat'],   tags:['ref','boast'],
+    hostile:-0.2, intensity:0.8,
+    line:c=>c.opp
+      ? `Look at both records. Look at what I have done this year and look at what ${c.opp.name} has done this year. If you are honest about what those two columns say, you already know how tonight ends.`
+      : `Wrestling has a way of settling debates. Every one of them. It always has. That is what tonight is for.`},
+
+  {id:'cut_personal_gut', phase:['personal'], tags:['twist','concession'],
+    hostile:-0.05, intensity:0.85,
+    line:c=>c.opp
+      ? `The truth. Nobody in the back thinks I am supposed to be here yet. I know that. I hear it. And it is exactly why I train the way I train and cut the promos I cut and take the matches ${c.opp.name} would not take. Because I am going to make them wrong about me.`
+      : `The truth: this business breaks people. It has taken people I love and it has taken years of my life. I am still here. I do not know how to explain that except to keep being here.`},
+  {id:'cut_personal_room',phase:['personal'], tags:['crowd','concession'],
+    hostile:0.15, intensity:0.75,
+    line:c=>c.me.align==='heel'
+      ? `Every one of you has a reason for booing me. I have read your signs. I have heard your podcasts. And I am here to tell you: keep going. It is the highest compliment this industry has.`
+      : `Every one of you here tonight is the reason I do this job. Not for the paycheck, not for the merch. Because when you are loud in this building I hear it in the ring and it makes me a better wrestler. So keep being loud.`},
+  {id:'cut_personal_price',phase:['personal'], tags:['twist','threat'],
+    hostile:-0.4, intensity:0.9,
+    line:c=>c.opp
+      ? `Everybody wants to know what I hate about ${c.opp.name}. I do not hate them. I do not have that kind of energy to waste. I just cannot look at them and see somebody who deserves what I want.`
+      : `I have paid enough for this job that I get to say what I actually think on this microphone. So I am going to.`},
+
+  // ----- BLOW-OFF cuts -----
+  {id:'cut_feud_open',    phase:['hook'],   stakes:['feud_end'], tags:['threat','ref'],
+    hostile:-0.75, intensity:0.95,
+    line:c=>c.opp
+      ? `${c.feud?c.feud.weeks:'weeks and'} weeks. That is how long ${c.opp.name} has been in my head. My family stopped asking about it. My friends stopped asking about it. Tonight I get to take my head back, and I take it back over your body.`
+      : `This ends tonight. That is all this segment is. I am done circling.`},
+  {id:'cut_feud_personal',phase:['personal'],stakes:['feud_end'], tags:['twist','threat'],
+    hostile:-0.6, intensity:0.9,
+    line:c=>c.opp
+      ? `I do not hate a lot of people in this business. It is not sustainable. But I hate ${c.opp.name}. I hate what they did. I hate that they are still standing here talking. After tonight I do not have to hate them any more, because after tonight they are not going to be standing.`
+      : `You get one feud in a career that means this much. You do not walk away from it early. Not even when it gets ugly. Especially not when it gets ugly.`},
+  {id:'cut_feud_close',   phase:['close'],  stakes:['feud_end'], tags:['threat','callback'],
+    hostile:-0.7, intensity:0.95,
+    line:c=>c.opp
+      ? `${c.opp.name}. Look at me. Bell to bell tonight. No draws. No count-outs. One of us walks. It will be me.`
+      : `The bell is about to ring on this whole thing. I am ready. I have been ready for a month.`},
+
+  // ----- TITLE CHASE cuts -----
+  {id:'cut_chase_open',   phase:['hook'],   stakes:['title_chase','title_call'], tags:['boast','ref'],
+    hostile:-0.15, intensity:0.85,
+    line:c=>[
+      `Every match on this show has a story. Mine is short. I am here to be the champion. That belt around ${c.champion?c.champion.name+"'s":'their'} waist has an expiration date and it is written in my handwriting.`,
+      `You want to know what I have been working for since I got signed here? That belt. That is the whole answer. That is the entire promo.`,
+    ][c.me.streak>=3?1:0]},
+  {id:'cut_chase_close',  phase:['close'],  stakes:['title_chase','title_call'], tags:['threat'],
+    hostile:-0.4, intensity:0.9,
+    line:c=>`I am going to make it so uncomfortable to be the champion of this company that they call my name because it is easier than saying no. ${c.champion?c.champion.name:'Whoever is carrying it'} can hold that title as long as it takes me to get to them. It will not be very long.`},
+
+  // ----- TITLE DEFENSE cuts -----
+  {id:'cut_def_open',     phase:['hook'],   stakes:['title_defense'], tags:['boast','callback'],
+    hostile:-0.2, intensity:0.9,
+    line:c=>`I am the ${c.me.title||'champion of this company'}. I have been the ${c.me.title||'champion'} for ${c.me.defenses||'every one of those'} defences. This is not a segment where I explain what I am going to do to ${c.opp?c.opp.name:'the challenger'}. It is a segment where I remind you why nobody has been able to stop it yet.`},
+  {id:'cut_def_close',    phase:['close'],  stakes:['title_defense'], tags:['threat','callback'],
+    hostile:-0.35, intensity:0.9,
+    line:c=>`Same finish. Same result. Same champion walking out. Somebody wake me up when this locker room produces a challenger who is actually going to change the ending.`},
+
+  // ----- CHAMPIONSHIP-WIN-INCOMING cuts (title match) -----
+  {id:'cut_title_open',   phase:['hook'],   stakes:['title_call'], tags:['boast','ref'],
+    hostile:-0.1, intensity:0.9,
+    line:c=>`Every wrestler in this business tells themselves the same story. That the belt is coming. That the moment is coming. Most of them are lying to themselves. I am not. My moment is booked. It is on the card. It is tonight.`},
+
+  // ----- OPEN-MIC cuts -----
+  {id:'cut_open_call',    phase:['hook'],   stakes:['open_mic','callout'], tags:['boast','threat'],
+    hostile:-0.3, intensity:0.85,
+    line:c=>c.champion&&!c.champion.you
+      ? `${c.champion.name}. This microphone is open, and it is calling your name. You have a title on your shoulder and I have a problem with that. Come out here and disagree.`
+      : `Nobody put me on this show for the segment. Somebody put me on this show for the microphone. This is why. Listen close.`},
+
+  // ----- CALLOUT cuts -----
+  {id:'cut_callout_open', phase:['hook'],   stakes:['callout'], tags:['boast','ref'],
+    hostile:-0.4, intensity:0.85,
+    line:c=>c.opp
+      ? `I did not come out here to have a nice conversation. I came out here to name ${c.opp.name}, because they have been avoiding me, and this microphone is the one thing they cannot walk away from.`
+      : `Somebody in this locker room is about to hear their name from this microphone. They have been earning it. Sit tight.`},
+  {id:'cut_callout_close',phase:['close'],  stakes:['callout'], tags:['threat','callback'],
+    hostile:-0.55, intensity:0.9,
+    line:c=>c.opp
+      ? `${c.opp.name}. You. Me. This ring. Any night, any stipulation, any building. Say the word. And know that when you do, I have got the answer already written down.`
+      : `I said what I said. Anybody in the back who wants to argue with it, this microphone is open for a minute longer. Then it is not.`},
+
+  // ----- MAIN EVENT cuts -----
+  {id:'cut_me_open',      phase:['hook'],   stakes:['main_event'], tags:['boast','crowd'],
+    hostile:0, intensity:0.8,
+    line:c=>`${c.venue.promoShort}. Main event of the evening. You paid the ticket price for this specific hour of your night. So let us make it worth it.`},
+
+  // ----- GENERIC EVERGREEN cuts (any phase, any stakes) -----
+  {id:'cut_ev_hook',      phase:['hook'],   tags:['boast','crowd'],
+    hostile:-0.05, intensity:0.75,
+    line:c=>c.me.align==='heel'
+      ? `Nobody in this building came to hear me be quiet. So let us not waste each other's time.`
+      : `Every one of you in this building. Thank you. Now let me tell you why I am standing here.`},
+  {id:'cut_ev_close',     phase:['close'],  tags:['callback','threat'],
+    hostile:-0.25, intensity:0.85,
+    line:c=>c.me.gimmick
+      ? `${c.me.gimmick}. That is the whole answer. That is the only thing anyone needs to remember from this segment.`
+      : `Everything I said tonight, I meant. Every word. Take it to the bank.`},
+];
 /* Chips can return either a string or an array of wordings. The picker is
    seeded by chip id + current beat so a chip renders the same wording in
    its preview and when it is delivered, but a chip picked in a later promo
@@ -6695,6 +6845,33 @@ const PPHASES={
   close:    {n:'The Call To Action', d:'Promise. Warning. Challenge. Send them home wanting the match.', fits:['challenge','threat','callout','cool']},
 };
 const PPHASE_ORDER=['hook','thesis','meat','personal','close'];
+function cutsFor(phase){
+  const ctx=PMCTX;
+  const stakes=stakesForPromo(ctx);
+  const used=(PM&&PM.usedCuts)||{};
+  const ok=cut=>{
+    if(cut.phase && !cut.phase.includes(phase)) return false;
+    if(cut.align && cut.align!==ctx.me.align) return false;
+    if(cut.style && cut.style!==ctx.me.style) return false;
+    if(cut.gimmick && cut.gimmick!==ctx.me.gimmickId) return false;
+    if(cut.stakes && !cut.stakes.some(s=>stakes.indexOf(s)>=0)) return false;
+    if(cut.when && !cut.when(ctx)) return false;
+    return !used[cut.id];
+  };
+  // Prefer cuts whose stakes actually apply; only fall back to generic (no
+  // stakes tag) if nothing situational is available.
+  const situational=CUT_BANK.filter(c=>ok(c)&&c.stakes);
+  const generic=CUT_BANK.filter(c=>ok(c)&&!c.stakes);
+  // Deterministic pick per beat so the marquee cut is stable while the beat
+  // is being deliberated. Situational first, then a generic to round it out.
+  const salt = ((PM&&PM.beat)||0)*7 + ((PMCTX&&PMCTX.weekCount)||0);
+  const pickN = (arr,n)=>{ const out=[]; for(let i=0;i<Math.min(n,arr.length);i++){
+      const idx=(salt+i*13)%arr.length; if(!out.includes(arr[idx])) out.push(arr[idx]); }
+    // if the modulo collision left it short, fill in order
+    for(const c of arr){ if(out.length>=n) break; if(!out.includes(c)) out.push(c); }
+    return out; };
+  return pickN(situational,2).concat(pickN(generic,1)).slice(0,3);
+}
 function promoKinds(target,mode,phase){
   const l=leanOf(), established=Math.abs(l)>=32;
   const fits=(PPHASES[phase]||PPHASES.hook).fits.slice();
@@ -6892,7 +7069,7 @@ function beginPromo(mode,targetId){
   PM={mode,target,directive,stance:null,phase:'hook',beat:0,maxBeats:PPHASE_ORDER.length,
       score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,fitSum:0,complySum:0,complyN:0,done:false,
       // for the build-a-promo chip system
-      picking:[], usedChips:{}, usedLines:{}};
+      picking:[], usedChips:{}, usedLines:{}, usedCuts:{}};
   PMCTX=buildPromoCtx(target);
   go('promo');
   stageInit('pmArena'); dressArena($('pmArena'),myPromoId());
@@ -6946,6 +7123,16 @@ function pmChoices(){
   const t=PM.target, oppName=t?t.name:'whoever they put in front of me';
   const ph=PPHASES[PM.phase]||PPHASES.hook;
   const phaseName=`Beat ${PM.beat+1} of 5 · ${ph.n}`;
+  // ---- signature cuts: authored one-click beats for this stakes/phase ----
+  const cuts=cutsFor(PM.phase);
+  const cutHTML = cuts.length ? cuts.map(cut=>{
+    let line=''; try{ line=cut.line(PMCTX); }catch(e){}
+    if(!line) return '';
+    return `<div class="cutcard" onclick="pmSayCut('${cut.id}')">
+      <div class="cc-k">Signature cut</div>
+      <div class="cc-t">${line}</div>
+    </div>`;
+  }).filter(Boolean).join('') : '';
   // ---- pick 2-3 chips this beat; assembly is period-separated so it reads as a paragraph ----
   const chips=chipsFor(PM.phase);
   const maxThis = PM.phase==='meat'||PM.phase==='personal' ? 3 : 2;
@@ -6966,7 +7153,10 @@ function pmChoices(){
       <div class="pp-d">${DIRECTIVES[PM.directive].icon} ${DIRECTIVES[PM.directive].kicker}
         <span class="pp-s pms-${PM.stance}">${PM.stance==='comply'?'on script':PM.stance==='wrinkle'?'your wrinkle':'off script'}</span></div>
     </div>
-    <div class="flab" style="display:flex;justify-content:space-between;">Build the line
+    ${cutHTML?`<div class="flab" style="display:flex;justify-content:space-between;">Cut a signature line
+      <span class="hint" style="text-transform:none;letter-spacing:0;">One click. Delivers the whole beat.</span></div>
+    <div class="cutgrid">${cutHTML}</div>`:''}
+    <div class="flab" style="display:flex;justify-content:space-between;margin-top:${cutHTML?'12px':'0'};">${cutHTML?'Or build the line':'Build the line'}
       <span class="hint" style="text-transform:none;letter-spacing:0;">Pick ${maxThis===3?'2 or 3':'2'} phrases in order. They will be delivered as one paragraph.</span></div>
     <div class="chipgrid">${chipHTML}</div>
     <div class="pmpreview ${canSay?'on':''}">
@@ -6989,6 +7179,24 @@ function pmToggleChip(id){
   const i=PM.picking.indexOf(id);
   if(i>=0) PM.picking.splice(i,1); else PM.picking.push(id);
   pmChoices();
+}
+function pmSayCut(id){
+  const cut=CUT_BANK.find(c=>c.id===id); if(!cut) return;
+  const line=cut.line(PMCTX); if(!line) return;
+  PM.usedCuts[id]=true;
+  const tags=cut.tags||[];
+  // A cut is a hand-authored full beat, so it always fits its phase and reads
+  // as specific and committed. The read object carries that.
+  const read={
+    hostile: cut.hostile!=null?cut.hostile:-0.1,
+    intensity: cut.intensity!=null?cut.intensity:0.8,
+    specific: true, crowd: tags.indexOf('crowd')>=0,
+    wantsTitle: tags.indexOf('threat')>=0 && PMCTX.opp && PMCTX.opp.holdsBelt,
+    kind: tags.indexOf('twist')>=0 ? 'swerve' : tags.indexOf('callback')>=0 ? 'signature' : '',
+    tags, words: line.split(/\s+/).length,
+  };
+  PM.picking=[];
+  pmSay(encodeURIComponent(JSON.stringify({k:'chips',line,read})));
 }
 function pmClearPick(){ PM.picking=[]; pmChoices(); }
 function pmSayChips(){
