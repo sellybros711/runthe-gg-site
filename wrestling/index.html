@@ -3928,8 +3928,10 @@ function renderCareer(){
       :c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
     ['Titles', (heldBelts().length||'-'), (()=>{ const held=heldBelts();
       const mb = c.mitb ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} Money in the Bank: ${c.mitb.belt}</div>` : '';
-      if(!held.length) return `<div class="hint">${beltName(t,'secondary')} and ${beltName(t)} in this house</div>${mb}`;
-      return `<div class="hint">${held.map(b=>`${pico('crown',12)} ${b.name}${b.defenses?` <span style="opacity:.7">(${b.defenses} def)</span>`:''}`).join('<br>')}</div>${mb}`;
+      const ts = c.titleShot ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} Title shot in hand: from ${c.titleShot.from}</div>` : '';
+      const tn = c.tourn ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} In ${c.tourn.name}: round ${c.tourn.round} of ${c.tourn.rounds}</div>` : '';
+      if(!held.length) return `<div class="hint">${beltName(t,'secondary')} and ${beltName(t)} in this house</div>${mb}${ts}${tn}`;
+      return `<div class="hint">${held.map(b=>`${pico('crown',12)} ${b.name}${b.defenses?` <span style="opacity:.7">(${b.defenses} def)</span>`:''}`).join('<br>')}</div>${mb}${ts}${tn}`;
     })()],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
   // secondary detail lives behind a pager so the week's decision stays on screen
@@ -4331,6 +4333,8 @@ function makeOffers(){
     const trusted=G.car.standing>=52 && gimHeat()>=40;
     const midCarder=G.car.standing>=42 && reactionOf()>=Math.min(46,10+tierIdx()*10);
     if(i===2 && holds && rnd()<0.78) stakes='defense';
+    // a promised title shot always gets used on the top of the card
+    else if(i===2 && !holds && G.car.titleShot && ppv){ stakes='title'; }
     else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
     // Secondary belt: a mid-carder shot, or a defence of one you hold.
     else if(i===1 && holdsSec && rnd()<0.72) stakes='secondary_defense';
@@ -4371,6 +4375,12 @@ function makeOffers(){
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
             : `${card}: a ${st[0].toLowerCase()} against ${opp.name}.` });
+  }
+  // PPV rumble: replace the third slot with a Battle Royal on a chance,
+  // but never bump a promised title shot off the card
+  if(ppv && (G.car.standing||50)>=50 && !G.car.titleShot){
+    const rumble = maybeRumbleOffer(offs, pool);
+    if(rumble && offs.length>=3) offs[2] = rumble;
   }
   return offs;
 }
@@ -5079,6 +5089,8 @@ function decide(head,sub,opts){
 }
 
 async function startFight(o){
+  // rumble runs its own compact eliminations loop, no shine/heat/stretch cycle
+  if(o && o.stip==='rumble'){ return runRumble(o); }
   // your first ever match: say what is about to happen before the bell, not after
   if(!G.car.seenFight){
     G.car.seenFight=true; save();
@@ -5859,6 +5871,16 @@ function bookWeek(){
       line:`${to.tour.region}. One night. Come home with a story.`, bookerName:to.tour.region+' promoter'};
       save(); return; }
   }
+  // a tournament in progress beats the regular booking too
+  if(c.tourn && c.tourn.next){
+    const to=fireTournMatch();
+    if(to){ c.booking={type:'match', o:to, asked:false, tourn:true,
+      line:`${c.tourn.name}, round ${c.tourn.round} of ${c.tourn.rounds}. Advance or go home.`,
+      bookerName:'the tournament committee'};
+      save(); return; }
+  }
+  // Occasionally the office rolls a tournament instead of the regular card
+  maybeStartTourn();
   const sc=schedOf(c.deal&&c.deal.sched);
   const standing=c.standing||50;
   // they use the people they rate. Sitting at home is what happens to
@@ -6076,6 +6098,7 @@ function applyMatch(o,res){
   // title
   let titleMsg=null;
   const tt=workTier(), belt=beltName(tt), secBelt=beltName(tt,'secondary');
+  if(o.stakes==='title' && c.titleShot){ c.titleShot=null; }
   if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0; c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0});
     titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
@@ -6099,6 +6122,17 @@ function applyMatch(o,res){
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
       c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100); }
+  }
+  // ---- tournament progress ----
+  if(o.stakes==='tourn' || o.stakes==='tourn_final'){
+    res.oppName=o.oppName;
+    advanceTourn(res);
+  }
+  // ---- Battle Royal / Rumble: winning grants a real title shot ----
+  if(o.stakes==='rumble' && res.win){
+    c.titleShot={promoId:myPromo().id, from:'the Battle Royal', y:c.year, w:c.week};
+    pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>You won the Battle Royal.</b> Guaranteed title shot on the books.`});
+    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won the Battle Royal'});
   }
   // ---- cross-promo tour: fame that reaches home ----
   if(o.stakes==='tour'){
@@ -6416,6 +6450,156 @@ function fireTourWeek(){
            tour:t, blurb:`${t.region} · ${t.name}: ${t.oppName}, one night only.`};
   c.tourPending=null; c.tourCooldown=(c.year*1000+c.week)+22;
   return o;
+}
+/* ============================================================
+   TOURNAMENTS: eight-name single-elimination brackets that run for
+   three weeks. The office slots you in and gives you the opponent
+   who advanced. Winning three straight puts a trophy on the wall
+   and a real number on your reputation.
+   ============================================================ */
+const TOURN_NAMES=[
+  {id:'kotr', name:'King of the Ring', rounds:3, prize:'a title shot at the next PPV'},
+  {id:'g1',   name:'The Summer Cup',   rounds:3, prize:'a title shot at the next PPV'},
+  {id:'bosj', name:'Best of the Super Juniors', rounds:3, prize:'the Junior trophy and 500 rep'},
+  {id:'cwc',  name:'The Cruiserweight Classic', rounds:3, prize:'the Cruiserweight trophy'},
+];
+function maybeStartTourn(){
+  const c=G.car;
+  if(c.tourn || c.tournCooldown>c.year*1000+c.week) return;
+  // rare: after you've made enough of a name that the office trusts you in one
+  if((c.rep||0)<1200 || (c.standing||50)<52 || rnd()>0.05) return;
+  const t=TOURN_NAMES[Math.floor(rnd()*TOURN_NAMES.length)];
+  const me=myPromo();
+  const pool=CHARS.filter(x=>x.promo===me.id).sort(()=>rnd()-0.5).slice(0,7);
+  c.tourn={id:t.id,name:t.name,rounds:t.rounds,prize:t.prize,round:1,
+    bracket:pool.map(x=>x.id), next:pool[0]?pool[0].id:CHARS[0].id, wins:0, promoId:me.id};
+  pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>${t.name}.</b> The office has entered you. Round 1 next week vs <b>${(charById(c.tourn.next)||{}).name||'a first-round opponent'}</b>.`});
+  newsPush({ico:pico('trophy',14),cat:'tourn',t:`<b>${me.short} announces ${t.name}.</b> ${G.w.name} is in the bracket.`});
+}
+function fireTournMatch(){
+  const c=G.car, tn=c.tourn; if(!tn||!tn.next) return null;
+  const opp=charById(tn.next); if(!opp){ c.tourn=null; return null; }
+  const tt=workTier();
+  const oppOvr=Math.round(clamp((opp.over||55)+(rnd()*6-3),18,99));
+  const purse=Math.round(tt.purse[1]*1.2*(1+tn.round*0.15));
+  const o={oppId:opp.id,oppName:opp.name,oppNick:opp.nick,oppPromo:opp.promo,oppOvr,
+           stip:'singles',stipLabel:`${tn.name} · Round ${tn.round}`,mult:1.15+tn.round*0.05,purse,
+           stakes:tn.round===tn.rounds?'tourn_final':'tourn',card:'Main Event',tourn:tn,
+           blurb:tn.round===tn.rounds?`${tn.name} FINAL: ${opp.name}. Win it and it is yours.`:`${tn.name} round ${tn.round} of ${tn.rounds} vs ${opp.name}.`};
+  tn.currentOpp=opp.id;
+  return o;
+}
+function advanceTourn(res){
+  const c=G.car, tn=c.tourn; if(!tn) return;
+  if(res.win){
+    tn.wins++;
+    if(tn.round>=tn.rounds){
+      // won it all
+      c.rep+=Math.round(500+res.quality*3);
+      c.pop=clamp(c.pop+5,1,100); c.standing=clamp(c.standing+8);
+      c.trophies=c.trophies||[]; c.trophies.unshift({t:tn.name,y:c.year,w:c.week});
+      award(`Won ${tn.name}.`,pico('trophy',36));
+      pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>You won ${tn.name}.</b> ${tn.prize}.`});
+      newsPush({ico:pico('trophy',14),cat:'tourn',t:`<b>${G.w.name} wins ${tn.name}.</b>`});
+      // some tournaments cash a title shot
+      if(/title shot/i.test(tn.prize)){
+        c.titleShot={promoId:tn.promoId, from:tn.name, y:c.year, w:c.week};
+      }
+      G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:`Won ${tn.name}`});
+      c.tourn=null; c.tournCooldown=(c.year*1000+c.week)+40;
+    } else {
+      tn.round++;
+      // next opponent: someone who has not been beaten yet, else random remaining
+      const beaten=(tn.beaten||[]).concat([tn.currentOpp]); tn.beaten=beaten;
+      const remaining=tn.bracket.filter(id=>!beaten.includes(id));
+      tn.next=remaining[Math.floor(rnd()*remaining.length)] || null;
+      if(!tn.next){ c.tourn=null; return; }
+      const nxt=charById(tn.next);
+      pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Round ${tn.round}.</b> You advance. Next up: <b>${nxt?nxt.name:'the next round'}</b>.`});
+    }
+  } else {
+    pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>Out of ${tn.name}.</b> ${res.oppName||'They'} advance.`});
+    newsPush({ico:pico('impact',14),cat:'tourn',t:`<b>${res.oppName||'A rival'} eliminates ${G.w.name} from ${tn.name}.</b>`});
+    c.tourn=null; c.tournCooldown=(c.year*1000+c.week)+16;
+  }
+}
+/* Battle Royal / Rumble: fired at PPVs, one shot. Winner gets a title shot. */
+function maybeRumbleOffer(offs, oppPool){
+  const c=G.car;
+  if(!isPpvWeek() || c.rumbleShot || rnd()>0.20) return null;
+  const me=myPromo();
+  const entrants=oppPool.slice(0,7).map(x=>({id:x.id,name:x.name,ovr:x.over||55}));
+  entrants.push({id:'you',name:G.w.name,ovr:ovr(G.w),you:true});
+  return {oppId:'rumble',oppName:'the field',oppOvr:70,stip:'rumble',stipLabel:'Battle Royal',mult:1.4,purse:Math.round(workTier().purse[1]*2),
+    stakes:'rumble',card:'Main Event',ppv:ppvNameFor(me.id, c.week),
+    rumble:{entrants}, blurb:`Battle Royal: eight in, one left. Winner gets a title shot.`};
+}
+/* Run the Rumble simulation in a compact eliminations sequence. */
+async function runRumble(o){
+  const ent=o.rumble.entrants.slice();
+  MS={o, gen:(FIGHT_GEN=(FIGHT_GEN||0)+1), mom:0, beat:0, decisions:0, decWon:0, big:0, ended:false,
+      me:{hp:100,name:G.w.name,ovr:ovr(G.w),limb:newLimbs(),target:null},
+      opp:{hp:100,name:'the field',ovr:70,limb:newLimbs(),target:null},
+      usedMoves:[], recent:[], oppRecent:[], quality:60, finish:null, phase:0, phaseBeat:0,
+      stretch:0, covers:0, nearFalls:0, finisherHit:0, clock:0, shineMe:true, rumble:true, elims:[]};
+  $('fMeName').textContent=G.w.name; $('fOppName').textContent='THE FIELD';
+  $('fMeSub').textContent='OVR '+ovr(G.w); $('fOppSub').textContent=`${ent.length} entrants`;
+  $('fStip').innerHTML=pico('trophy',12)+' BATTLE ROYAL · '+ent.length+' IN';
+  $('fRules').textContent='Eliminate everyone by dumping them over the top rope. Last one standing wins a title shot.';
+  $('fLog').innerHTML='';
+  MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
+  go('fight'); stageInit(); dressArena($('arena'),myPromoId());
+  figLook('me',G.w.look); figLook('opp',oppLook(ent[0].id,ent[0].name));
+  await callout('BATTLE ROYAL');
+  fLog(`<b>${ent.length}</b> in the ring. Last one standing wins.`);
+  await sleep(500);
+  // eliminate one per beat until you or one other is left
+  let survivors = ent.slice();
+  let me = survivors.find(x=>x.you);
+  while(survivors.length>2){
+    // pick a victim, weighted inverse of OVR
+    const nonMe=survivors.filter(x=>!x.you);
+    const weights=nonMe.map(x=>1/(x.ovr*0.8));
+    const total=weights.reduce((s,w)=>s+w,0);
+    let r=rnd()*total, idx=0; for(let i=0;i<weights.length;i++){ r-=weights[i]; if(r<=0){ idx=i; break; } }
+    const victim=nonMe[idx];
+    // Occasionally you eliminate somebody
+    const iElim = rnd()<0.30 + Math.max(0,(ovr(G.w)-60))/200;
+    const by = iElim ? me : (nonMe[Math.floor(rnd()*nonMe.length)]);
+    survivors = survivors.filter(x=>x.id!==victim.id);
+    MS.elims.push({by:by&&by.name, out:victim.name});
+    fLog(`<span class="hi">${by&&by.name||'Someone'}</span> dumps <b>${victim.name}</b> over the top. (${survivors.length} left)`);
+    if(iElim){ MS.quality+=3; MS.decWon++; MS.decisions++; }
+    else MS.decisions++;
+    await sleep(360);
+  }
+  // final two
+  const other = survivors.find(x=>!x.you);
+  await callout('FINAL TWO');
+  fLog(`It's down to <b>${G.w.name}</b> and <b>${other?other.name:'one other'}</b>.`);
+  await sleep(500);
+  // roll for winner: you vs one wrestler by OVR + rnd
+  const meScore = ovr(G.w) + rnd()*20;
+  const otherScore = (other?other.ovr:60) + rnd()*20;
+  const iWin = meScore > otherScore;
+  const outName = iWin ? (other?other.name:'them') : G.w.name;
+  const winName = iWin ? G.w.name : (other?other.name:'The field');
+  if(iWin){
+    fLog(`<span class="hi">${winName} tosses ${outName} over the top. It is over.</span>`);
+    MS.quality+=8;
+  } else {
+    fLog(`<span class="bad">${outName} dumps you. It's over.</span>`);
+  }
+  MS.finish={type:'rumble', by:iWin, move:'the elimination'};
+  MS.ended=true;
+  // build a res and pump it through applyMatch
+  const res={quality:Math.min(94,Math.round(MS.quality+20)), win:iWin, good:iWin?['won a Battle Royal']:['worked a battle royal'], bad:[],
+    used:bestMoves(4), decWon:MS.decWon, decisions:MS.decisions, finish:MS.finish, time:'',
+    nearFalls:0, limb:null, draw:false, rumble:o.rumble, elims:MS.elims};
+  // count-based finish rendering: fix time using clockStr fallback
+  res.time = ('~'+Math.max(6,Math.round(o.rumble.entrants.length*1.4))+':00');
+  applyMatch(o,res);
+  renderMatch(o,res); go('match');
 }
 // come back from an injury: the attribute hit lifts, but not always all of it
 function healUp(){
