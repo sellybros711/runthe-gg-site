@@ -3440,7 +3440,13 @@ const ACH=[].concat(
    // Prime cards: 2K-style peak versions of modern stars, pulled on the draft wheel. Track distinct Primes rolled.
    {id:'dr_prime5', cat:'The Draft',name:'Prime Time',      desc:'Roll 5 different Prime cards on the draft wheel.',  goal:5, pts:50, get:m=>m.primesPulled},
    {id:'dr_prime10',cat:'The Draft',name:'Prime Collector', desc:'Roll 10 different Prime cards on the draft wheel.', goal:10,pts:90, get:m=>m.primesPulled},
-   {id:'dr_prime25',cat:'The Draft',name:'Prime Everything',desc:'Roll every Prime card on the draft wheel (all 27).',  goal:27,pts:200,get:m=>m.primesPulled}],
+   {id:'dr_prime25',cat:'The Draft',name:'Prime Everything',desc:'Roll every Prime card on the draft wheel (all 27).',  goal:27,pts:200,get:m=>m.primesPulled},
+   /* The Morrises. Old Tom laid out half the courses in the game and won four Opens; Young Tom won four
+      in a row by 21. Two tiers because the odds are wildly different: over a career you'll see one of
+      them in about 1 bag in 14, but rolling BOTH into the same eight slots is ~1 in 900 (measured against
+      the real draw). So the lifetime one is the achievement and the same-bag one is the trophy. */
+   {id:'dr_morris', cat:'The Draft',name:'Father and Son',  desc:'Draft a skill from Old Tom Morris and from Young Tom Morris.', goal:1,pts:30, get:m=>m.morrisBoth},
+   {id:'dr_morris1',cat:'The Draft',name:'Keep It in the Family',desc:'Carry both Old and Young Tom Morris in the same bag.',    goal:1,pts:90, get:m=>m.morrisSameBag}],
   // ================= EXPANSION 2: every game mode has feats to chase =================
   // ---- Online (1v1 / Best Ball / Scramble / Free-for-All) ----
   [{id:'h2h_play',cat:'Online',name:'Online Debut',      desc:'Play your first online match.',              goal:1,pts:15, get:m=>m.h2hMatches},
@@ -3688,7 +3694,10 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     maxFans:f.maxFans||0, maxRespect:f.maxRespect||0, repComplete:f.repComplete||0,
     brandAmbassadors:f.brandAmbassadors||0, bothSponsors:f.bothSponsors||0,
     // distinct Prime cards rolled on the draft wheel (own account-scoped store, cloud-synced)
-    primesPulled:(function(){try{return primesPulledCount();}catch(e){return 0;}})() }); }
+    primesPulled:(function(){try{return primesPulledCount();}catch(e){return 0;}})(),
+    // the Morrises: `morrisBoth` is lifetime (either one, any career, both eventually); `morrisSameBag`
+    // needed them in one bag. Both flags ride bag_ach, so they survive careers and cross-device sync.
+    morrisBoth:(f.draftedOldTom&&f.draftedYoungTom)?1:0, morrisSameBag:f.morrisSameBag||0 }); }
 // per-round daily feats (eagles, bogey-free, low rounds, course records, courses seen) → achievement flags
 function captureDailyFeats(holes,total,courseKey,isRec){ const st=achState(), f=st.flags;
   let eag=0,alb=0,ace=0,bf=true; (holes||[]).forEach(h=>{ if(h.toPar<=-2)eag++; if(h.toPar<=-3)alb++; if(h.par===3&&(h.par+h.toPar)===1)ace++; if(h.toPar>0)bf=false; });
@@ -7110,6 +7119,14 @@ const START_AGE=22, PEAK_END_AGE=35, CAREER_MAX_YEARS=30, FIELD_RETIRE_AGE=55;
 // steeper every year to DECLINE_FULL_YEAR (the last Legend Circuit year), never capping before then.
 const DECLINE_START_YEAR=15, DECLINE_FULL_YEAR=42;
 const DECLINE_RAMP_MIN=0.35, DECLINE_RAMP_MAX=2.5;   // per-year severity multiplier: year 15 → year 42
+// LEGEND CIRCUIT difficulty (owner: "the legends tour is too easy... you were making yourself too good").
+// Two independent levers, both circuit-only:
+//   • age erodes your bag FASTER on the circuit (you're already well past your prime out there), and
+//   • an off-season spin only closes HALF the gap to the drafted golfer's stat (80 → pick 90 → 85; 82 →
+//     pick 88 → 85), so you can no longer spin your way back to a 99 every year.
+// Tune these two numbers to make the circuit harder/easier; nothing else changes.
+const CIRCUIT_DECLINE_MULT=1.8;   // circuit stats fall 1.8× as fast as a regular career's
+const CIRCUIT_SPIN_GAIN=0.5;      // a circuit spin gives half the upgrade (0.5 = halfway to the drafted value)
 const DECLINE_RATE={dist:2.1,acc:1.15,app:1.15,sht:0.8,scr:0.8,bnk:0.8,put:0.7,clu:0.25};
 function playerAge(){ return (typeof careerStartAge==='function'?careerStartAge():START_AGE) + ((S.year||1)-1); }
 // how the season just finished went vs the field: -1 (poor) .. +1 (dominant). Wins/majors keep you sharp.
@@ -7131,7 +7148,8 @@ function applyPlayerDecline(){   // once per off-season; severity ramps with the
   // Legacy perks (Ageless, Never Off His Game) SOFTEN the ramp - a great career fades slower, floored so
   // even a decorated one still fades.
   const ramp=(DECLINE_RAMP_MIN + t*(DECLINE_RAMP_MAX-DECLINE_RAMP_MIN)) * (typeof legacyDecline==='function'?legacyDecline():1);
-  CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod)); });
+  const circuitMult = S.circuitMode ? CIRCUIT_DECLINE_MULT : 1;   // the Legend Circuit erodes faster
+  CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod*circuitMult)); });
 }
 function playerRetires(){ return (S.year||1) >= (typeof careerYears==='function'?careerYears():CAREER_MAX_YEARS); }   // forced at the end of the shelf life your entry path bought you
 // CS384 (owner revision): the off-season always grants 3 RE-SPINS, no matter what. The number of CHANGES
@@ -22352,6 +22370,12 @@ function scrSummary(){
       const gnames=slots.map(s=>s.golfer);
       if(gnames.length===8 && new Set(gnames).size===8) sev.set.allEight=1;
       if(gnames.some(g=>GOLFER_RARITY[g]==='Legendary')) sev.set.legendaryDrafted=1;
+      // The Morrises: each father/son flag is sticky across careers (that's the attainable one), and the
+      // same-bag flag needs both of them in THIS season's eight slots.
+      const oldTom=gnames.indexOf('Old Tom Morris')>=0, youngTom=gnames.indexOf('Young Tom Morris')>=0;
+      if(oldTom) sev.set.draftedOldTom=1;
+      if(youngTom) sev.set.draftedYoungTom=1;
+      if(oldTom&&youngTom) sev.set.morrisSameBag=1;
       recordAchEvent(sev);
       const fresh=evaluateAch(); if(fresh.length) S.freshAch=(S.freshAch||[]).concat(fresh);
     }
@@ -22809,11 +22833,17 @@ function scrSummary(){
   // (CS413: the season leaderboard-rank card moved up to right above Tournaments Won.)
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
-    caC.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
+    // In the Legend Circuit S.career is the FROZEN 30-year tour career and circuit seasons live in
+    // S.circuitCareer, so the two are already separate in the data - this tab just shows both. Regular
+    // career first (relabelled "Tour Career" on the circuit so the two blocks read distinctly), then the
+    // Legend Circuit block below (owner: "you should see your regular career earnings, but your legend
+    // career stats should also be separated to see those").
+    const inCircuit=!!S.circuitMode;
+    caC.appendChild($(`<h2 style="margin:16px 0 8px">${inCircuit?'Tour Career':'Career'} · ${c.seasons.length} years${inCircuit?'':` (through Year ${S.year})`}</h2>`));
     const ct=$(`<div class="tiles"></div>`);
     ct.appendChild($(`<div class="tile"><div class="k">Net worth</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
     ct.appendChild(tile('Career earnings',fmt(c.money),true));
-    ct.appendChild(tile('Career rank',cRank+' / '+careerList.length));
+    if(!inCircuit) ct.appendChild(tile('Career rank',cRank+' / '+careerList.length));   // the live rank is the circuit's out here, not the tour career's
     ct.appendChild(tile('Career wins',c.wins+''));
     ct.appendChild(tile('Career majors',c.majors+''));
     ct.appendChild(tile('Top 10s',c.top10+''));
@@ -22821,6 +22851,21 @@ function scrSummary(){
     const bestS=(c.seasons||[]).filter(s=>s&&isFinite(s.money)).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
     if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
     caC.appendChild(ct);
+    // ---- Legend Circuit: its own separated block, only once you've played a circuit season ----
+    if(inCircuit && S.circuitCareer && (S.circuitCareer.seasons||[]).length){
+      const cc=S.circuitCareer, lcol=cc.net>=0?'#35d6a0':'#E14A33';
+      caC.appendChild($(`<h2 style="margin:20px 0 8px;color:var(--teal)">Legend Circuit · ${cc.seasons.length} of ${CIRCUIT_MAX_YEARS} years</h2>`));
+      const lt=$(`<div class="tiles"></div>`);
+      lt.appendChild($(`<div class="tile"><div class="k">Circuit net</div><div class="v" style="color:${lcol}">${fmtSigned(cc.net||0)}</div></div>`));
+      lt.appendChild(tile('Circuit earnings',fmt(cc.money||0),true));
+      if(careerList.length) lt.appendChild(tile('Circuit rank',cRank+' / '+careerList.length));   // omit until the field list has loaded (never show 0/0)
+      lt.appendChild(tile('Circuit wins',(cc.wins||0)+''));
+      lt.appendChild(tile('Circuit majors',(cc.majors||0)+''));
+      lt.appendChild(tile('Top 10s',(cc.top10||0)+''));
+      const bestC=(cc.seasons||[]).filter(s=>s&&isFinite(s.money)).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
+      if(bestC) lt.appendChild($(`<div class="tile"><div class="k">Circuit best</div><div class="v cream" style="font-size:17px">${fmt(bestC.money)}</div></div>`));
+      caC.appendChild(lt);
+    }
     // CS483: the detailed career stat sheet moved to the Analytics tab's Season|Career toggle (mobile fit).
     caC.appendChild($(`<div class="small muted center" style="margin-top:8px">Full career stats → the <b style="color:var(--gold)">Analytics</b> tab (switch it to Career).</div>`));
     { const tl=careerTimelineNode(c); if(tl) hiC.appendChild(tl); }   // CS265 career milestone timeline
@@ -23180,11 +23225,21 @@ function finishOffseason(){ if(S.career) S.career.sponsorOffers=[];   // undecid
   track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ S.offConfirm=null; if(S.current||S.spinning)return; reveal(); }
 function offReSpin(){ S.offConfirm=null; if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); saveCareer(offseasonResumeExtra()); reveal(); }
+// The value a spin actually confers. On a regular career you get the drafted golfer's stat outright; on the
+// Legend Circuit you only close HALF the gap to it (CIRCUIT_SPIN_GAIN), so the off-season can't rebuild a
+// faded bag back to elite in one spin. Used by BOTH the off-season preview tiles and offTake, so what you
+// see is what you get. `cur` is your current value for that slot, `picked` the drafted golfer's.
+function spinGainValue(cur, picked){
+  if(!S.circuitMode) return picked;
+  if(cur==null) return picked;
+  return Math.round(cur + (picked - cur) * CIRCUIT_SPIN_GAIN);
+}
 function offTake(k){
   S.offConfirm=null;
   if(!S.offseason.locked) S.offseason.locked=[];
   if(S.offseason.locked.includes(k)) return;          // a stat can be changed only once per off-season
-  S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++;
+  const _cur=S.slots[k]?S.slots[k].value:REPLACEMENT;
+  S.slots[k]={golfer:S.current.name,value:spinGainValue(_cur,S.current[k])}; S.offseason.changes++;
   S.offseason.locked.push(k);                          // lock this stat for the rest of the off-season
   if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); saveCareer(offseasonResumeExtra()); render(); }
 // CS337: compact, mobile-first off-season. The 8-tile skill grid is ALWAYS present (shows your current bag)
@@ -23288,7 +23343,7 @@ function scrOffseason(){
   CATS.forEach(cat=>{
     const f=S.slots[cat.k], cur=f?f.value:REPLACEMENT, d=decl[cat.k]||0, locked=lockedNow.includes(cat.k);
     if(spun && S.offConfirm===cat.k && !locked){   // inline lock-in confirm (CS273), on the tile
-      const nv=S.current[cat.k], dd=nv-cur, dcol=dd>0?'#35d6a0':(dd<0?'#e07a5f':'var(--muted)');
+      const nv=spinGainValue(cur,S.current[cat.k]), dd=nv-cur, dcol=dd>0?'#35d6a0':(dd<0?'#e07a5f':'var(--muted)');
       const bt=$(`<div class="attr confirming" role="group" aria-label="Confirm ${cat.short} change">
         <div class="oc-top"><span class="lab">${cat.short}</span><span class="oc-swap"><span style="color:var(--muted)">${cur}</span> → <span style="color:${dcol}">${nv}</span> <span style="color:${dcol};font-family:var(--mono)">${dd>0?'▲+'+dd:(dd<0?'▼'+Math.abs(dd):'·')}</span></span></div>
         <div class="oc-row"><span class="oc-msg">Lock in this downgrade?</span>
@@ -23302,7 +23357,7 @@ function scrOffseason(){
       return;
     }
     if(spun){
-      const nv=S.current[cat.k], dd=nv-cur, dcol=dd>0?'#35d6a0':(dd<0?'#e07a5f':'#8fa7b3');
+      const nv=spinGainValue(cur,S.current[cat.k]), dd=nv-cur, dcol=dd>0?'#35d6a0':(dd<0?'#e07a5f':'#8fa7b3');
       const bt=$(`<button class="attr osswap" aria-label="Swap ${cat.short} to ${nv}, ${dd>=0?'up':'down'} ${Math.abs(dd)}">
         <span class="lab">${cat.short}</span><span class="val">${cur}</span>
         <span class="osnew" style="color:${dcol}">→ ${nv} <b>${dd>0?'▲+'+dd:(dd<0?'▼'+Math.abs(dd):'·')}</b></span></button>`);

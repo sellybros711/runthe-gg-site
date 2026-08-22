@@ -16119,3 +16119,45 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Regressions green: `closex_test` 184/184, `dupe_test` 21/21, `frontier_test` 28/28, `tour_test` 17/17,
   `news_test` 18/18, `regress_final`, `shoptabs`.
 - Tunable: `ARCADE_AD_ENABLED`.
+
+### THE MORRISES (owner: "add an achievement for drafting both Old and Young Tom Morris lol")
+- Two achievements in **The Draft**: **Father and Son** (30 pts, draft a skill from Old Tom AND Young Tom,
+  lifetime across careers) and **Keep It in the Family** (90 pts, carry both in the SAME bag).
+- Two tiers because the odds differ wildly: simulating 20,000 real 8-pick drafts, both-in-one-bag is
+  **0.11%** (~1 career in 900) while *either* shows up in **7.4%**. Lifetime is the achievement, same-bag the
+  trophy. Also of note: both roster rows say `"rarity":"Epic"` but that field is vestigial (rarity is
+  recomputed from skill at load), so **Old Tom is a Common card, Young Tom a Rare**.
+- Capture rides the season-end block in `scrSummary()` next to `allEight`/`legendaryDrafted`: sticky
+  `draftedOldTom`/`draftedYoungTom` flags plus a `morrisSameBag` flag needing both in one season's slots;
+  `achMetrics()` exposes `morrisBoth`/`morrisSameBag`. All in `bag_ach`, so they cross-device sync.
+- Verified: 16 checks driving real seasons (one alone doesn't unlock, the second in a separate career does
+  and correctly not the same-bag trophy, both-in-bag grants both, near-miss names don't count, both unlock
+  and render in the expanded category). Tunable: the two rows in the `'The Draft'` block.
+
+### LEGEND CIRCUIT: HARDER, AND ITS STATS SHOWN SEPARATELY (owner: "the legends tour is too easy... the
+### spins are making you too good" + "your legend career stats should also be separated")
+- The circuit already keeps two separate careers: `startCircuit()` freezes `S.career` (the 30-year tour
+  career) and writes circuit seasons to `S.circuitCareer`. The Career tab just never showed the second.
+- **Two circuit-only difficulty levers, single tunable constants** (by the decline block):
+  `CIRCUIT_SPIN_GAIN=0.5` — a new helper `spinGainValue(cur,picked)` returns `picked` on a regular career
+  but `round(cur+(picked-cur)*0.5)` on the circuit, so an off-season spin closes only HALF the gap (80→pick
+  90→85; 82→pick 88→85). Used in BOTH `offTake` and the two preview tiles, so the tile's "→85 ▲+5" is what
+  you get. `CIRCUIT_DECLINE_MULT=1.8` — `applyPlayerDecline()` multiplies the age drop by this on the
+  circuit. The spin lever matters more (decline hits all 8 skills, a spin only what you change).
+- **Career tab now shows both, separated**: regular block relabelled **"Tour Career · N years"** (drops its
+  rank tile, since the live rank out there is the circuit's), then a teal **"Legend Circuit · N of 12
+  years"** block reading `S.circuitCareer` (net/earnings/rank/wins/majors/top-10s/best; rank omitted until
+  the field list loads, never "0 / 0").
+- Verified: 14 checks driving the real paths (circuit spin lands on 85, regular stays 90, preview == commit,
+  decline exactly 1.8×, a real circuit season renders both blocks). Fails 8 on the pre-change baseline.
+- Tunable: `CIRCUIT_DECLINE_MULT`, `CIRCUIT_SPIN_GAIN`; the Legend Circuit block in `scrSummary`.
+
+### NOTE: an environment reset ate two commits mid-session, and they were rebuilt
+- During a multi-hour GitHub write-path outage this container was reclaimed and re-provisioned. The Morris
+  and Legend-Circuit commits had been made LOCALLY but never pushed, so they were lost (the local git object
+  store went with the container); the scratchpad test files went too. Everything already pushed was safe:
+  `origin/main:golf/index.html` still carried every earlier deploy through the Arcade removal.
+- Both features above were **rebuilt losslessly from the exact edits in the session transcript** and
+  re-verified (14/14 and 16/16, same as before the loss). The lesson for next time: on a long push outage,
+  assume the container can vanish; there is no way to persist an unpushed commit here, so the transcript is
+  the backup. Nothing structural to fix, just recorded so the gap in history makes sense.
