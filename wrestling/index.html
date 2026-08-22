@@ -3465,12 +3465,21 @@ function offerOdds(o){
   if(c.booking&&c.booking.o===o&&c.booking.studied) p+=0.06;   // you did the homework
   return clamp(p,0.05,0.95);
 }
-function offerRisk(o){
+// Injuries are only a real risk when you push yourself past what your body can
+// take. Fresh, well-conditioned, safe-stipulation weeks are close to zero. The
+// live match uses the same formula (finalizeFight), so this figure never lies
+// to the player: what the sheet shows is what actually gets rolled.
+function injuryRisk(o){
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
-  const best=bestMoves(5);
-  const mRisk=best.length? best.reduce((s,m)=>s+m.risk,0)/best.length : 0.05;
-  return clamp((mRisk + (o.mult-1)*0.42 + o.mult*0.04 + (100-c.cond)/380 + (c.wear||0)/1500)*sc.inj*0.34, 0.01, 0.6);
+  const stipRisky = o.stip==='hardcore'||o.stip==='ladder'||o.stip==='cage';
+  const stipPart  = stipRisky ? (o.mult-1)*0.50 + 0.03 : 0;
+  const condPart  = Math.max(0, 65-c.cond)/65 * 0.22;        // below 65 cond
+  const wearPart  = Math.max(0, (c.wear||0)-40)/120 * 0.14;  // multiplies other risks
+  const workedHurt= c.workedHurt ? 0.55 : 0;
+  const chronic   = ((c.chronic||[]).length) * 0.02;
+  return clamp((stipPart + condPart + wearPart + workedHurt + chronic) * sc.inj, 0, 0.85);
 }
+function offerRisk(o){ return injuryRisk(o); }
 function offerRep(o){
   // a night's work is worth more against a better opponent and under a stipulation
   const q=44 + o.oppOvr*0.20 + (o.mult-1)*14;
@@ -5102,12 +5111,11 @@ function applyMatch(o,res){
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100); }
   }
-  // ---- injury: a real one, in a real place, with real consequences ----
+  // ---- injury: only when you actually pushed it (see injuryRisk) ----
   let injMsg=null;
   const cats=res.used.map(m=>m.cat).concat([o.stip==='hardcore'||o.stip==='ladder'?'hardcore':'strike']);
-  const risk=(res.used.reduce((s,m)=>s+m.risk,0)/Math.max(1,res.used.length)
-    + o.mult*0.04 + (100-c.cond)/380 + (c.wear||0)/1500) * sc.inj * (c.workedHurt?2.2:1);
-  if(rnd()<risk*0.34){
+  const risk=injuryRisk(o);
+  if(rnd()<risk){
     const h=takeInjury(cats,o.mult,c.workedHurt?0.30:0);
     injMsg=`You suffered <b>${h.nm}</b>, out ${h.wk} week${h.wk>1?'s':''} (−${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]}).`;
     pushInboxItem({ico:'🏥',sev:'bad',txt:`<b>${h.part} injury.</b> ${h.nm}, ${h.wk} weeks.`});
