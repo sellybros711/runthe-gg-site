@@ -322,6 +322,8 @@
   .reelbox.hit .reel-win{animation:bandhit .5s ease-out;}
   .reelbox.hit .reel-i.land{animation:facehit .42s cubic-bezier(.2,1.5,.35,1);}
 
+  .story{margin:2px 0 8px;font-size:14.5px;line-height:1.45;color:var(--ink);
+    font-weight:600;max-width:34em;}
   .toast{position:fixed;left:50%;bottom:calc(var(--dock) + 22px);transform:translateX(-50%);
     z-index:95;background:#1b2333;border:1px solid var(--cardb);color:var(--ink);
     padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
@@ -501,6 +503,9 @@
     background:rgba(255,255,255,.03);animation:optin .3s ease-out both;}
   .brow .rd{font-size:13px;font-weight:700;}
   .brow .opp{font-size:11px;color:var(--dim);display:block;font-weight:400;}
+  /* The same caption in the results table, where the cell is a td rather than
+     a .brow. */
+  .season td .opp{font-size:11px;color:var(--dim);font-weight:400;}
   .brow .res{font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:5px;}
   .brow .res.w{color:var(--green);background:rgba(34,197,94,.12);}
   .brow .res.l{color:var(--red);background:rgba(239,68,68,.12);}
@@ -1133,6 +1138,7 @@
   </div>
   <div class="verdict" id="o-verdict">-</div>
     <div class="record mono" id="o-record">-</div>
+    <p class="story" id="o-story"></p>
     <p class="dim" style="margin:0;font-size:13.5px" id="o-seed"></p>
     <div class="tags" id="o-tags"></div>
   </div>
@@ -2983,7 +2989,29 @@ function playSeason(){
       left.appendChild(nm);
       var opp = document.createElement('span');
       opp.className = 'opp';
-      opp.textContent = 'opponent rated ' + (rd.oppNet >= 0 ? '+' : '') + rd.oppNet + ' net';
+      /* WHAT THE OPPONENT WAS, IN WINS. "Opponent rated +3.4 net" is the model
+         talking to itself: net rating per hundred possessions is the currency
+         the engine runs on and it is not a thing a fan carries around. The same
+         number through the same Pythagorean the season uses says "a 55 win
+         team", which is the sentence somebody would actually say about the
+         club that just knocked them out.
+         The opponent is deliberately NOT named as a real club. The bracket
+         draws a strength, not a team, and printing "the 1996 Bulls" over a
+         number the model rolled would be telling somebody they beat a team that
+         was never in the room.
+         PLAYED LIKE, NOT WAS, and that word is doing real work. The bracket
+         draws the opponent AROUND the round's strength rather than at it,
+         because a seven game series turns on who is healthy in May and whether
+         a shooter is hot for a fortnight, and the whole model was refitted for
+         that reason. So the draw occasionally hands the play-in a club
+         performing at 72 wins, which cannot be a play-in team's SEASON and can
+         absolutely be two weeks of one. Printing "a 72 win team" there was the
+         only line on this screen that read as a mistake.
+         Home court is not mentioned either: in this model you always have it,
+         because the 2-2-1-1-1 pattern is fixed and what varies with your record
+         is how MUCH it is worth. Saying you had it would be true of every round
+         of every run, which makes it noise. */
+      opp.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
       left.appendChild(opp);
       var res = document.createElement('span');
       res.className = 'res ' + (rd.won ? 'w' : 'l');
@@ -3020,6 +3048,15 @@ function headline(out){
   return 'Out in the ' + last.round;
 }
 
+/* A net rating, said as the number of games that club would win over 82. Uses
+   the engine's own Pythagorean, so this cannot drift from the number the season
+   was actually played against. */
+function oppWins(net){
+  var L = E.CONSTANTS.LEAGUE_RTG;
+  var pct = E.teamWinPct(L + net / 2, L - net / 2);
+  return Math.round(pct * E.CONSTANTS.REGULAR_SEASON_GAMES);
+}
+
 function getOrdinal(n){
   var mod100 = n % 100;
   if (mod100 >= 11 && mod100 <= 13) return 'th';
@@ -3038,6 +3075,9 @@ function renderOver(out){
   v.className = 'verdict ' + (out.titleWon ? 'good' : 'bad');
 
   $('o-record').textContent = out.wins + '-' + out.losses;
+  var story = seasonStory(out);
+  $('o-story').textContent = story;
+  $('o-story').style.display = story ? '' : 'none';
   /* The coach's verdict is deliberately NOT here. It is a read on the roster
      and the seed label is a read on the season, and side by side they collided
      into "Play-in · Play-in team". The rating says the same thing in a number,
@@ -3090,6 +3130,16 @@ function renderOver(out){
       var tr = document.createElement('tr');
       var a = document.createElement('td');
       a.textContent = rd.round;
+      /* THE SAME LINE THE SIM CARD SHOWS, on the screen people actually read.
+         The reveal during the season says who you played; this table is the one
+         that is still on screen a minute later, and it said only the round and
+         the score. A run that ends in the conference finals should say what
+         ended it. */
+      var lvl = document.createElement('span');
+      lvl.className = 'opp';
+      lvl.textContent = 'played like a ' + oppWins(rd.oppNet) + ' win team';
+      a.appendChild(document.createElement('br'));
+      a.appendChild(lvl);
       var b = document.createElement('td');
       b.className = rd.won ? 'w' : 'l';
       b.textContent = rd.won ? 'WON' : 'LOST';
@@ -3243,6 +3293,76 @@ function renderMonths(){
     $('o-monthsub').textContent = 'best stretch ' + best.w + '-' + best.l
       + ', games ' + (best.from + 1) + ' to ' + best.to;
   }
+}
+
+/* ── ONE TRUE SENTENCE ABOUT THE SEASON ────────────────────────────────────
+ *
+ * A results screen made of numbers is a box score. The football game ends its
+ * seasons on words, and this is that: a line under the record that names the
+ * most interesting thing that actually happened, chosen from facts the season
+ * already knows about itself.
+ *
+ * EVERY BRANCH BELOW IS A FACT AND NOT A FLOURISH. It says "won 11 straight in
+ * the new year" only if there is an eleven game streak in run.season, and the
+ * dates come off the schedule. Writing a season a player did not have is worse
+ * than printing nothing, so the last branch is deliberately plain.
+ */
+function seasonStory(out){
+  var games = run.season || [];
+  if (!games.length) return '';
+
+  // The longest winning and losing runs, and where they started.
+  var bestW = { n: 0, at: 0 }, worstL = { n: 0, at: 0 }, w = 0, l = 0;
+  for (var i = 0; i < games.length; i++) {
+    if (games[i].won) { l = 0; w++; if (w > bestW.n) bestW = { n: w, at: i - w + 1 }; }
+    else { w = 0; l++; if (l > worstL.n) worstL = { n: l, at: i - l + 1 }; }
+  }
+
+  var marqW = 0, marqL = 0;
+  for (var m = 0; m < games.length; m++) {
+    var sc = (run.schedule && run.schedule[m]) || {};
+    if (!sc.marquee) continue;
+    if (games[m].won) marqW++; else marqL++;
+  }
+
+  /* Where in the season a run of games sat, in words. 82 games is roughly
+     October to April, so a sixth of the way in is November. */
+  var when = function(idx){
+    var f = idx / games.length;
+    return f < 0.17 ? 'out of the gate' : f < 0.34 ? 'before Christmas'
+      : f < 0.5 ? 'in the new year' : f < 0.67 ? 'through the trade deadline'
+      : f < 0.84 ? 'in March' : 'down the stretch';
+  };
+
+  var bits = [];
+  if (bestW.n >= 8) bits.push('Won ' + bestW.n + ' straight ' + when(bestW.at) + '.');
+  if (worstL.n >= 8) bits.push('Lost ' + worstL.n + ' in a row ' + when(worstL.at) + '.');
+  if (marqW + marqL >= 6) {
+    if (marqW >= marqL * 2) bits.push('Beat the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
+    else if (marqL >= marqW * 2) bits.push('Feasted on the weak and went ' + marqW + '-' + marqL + ' against the good ones.');
+  }
+
+  /* How it ended, which is the part worth saying last. */
+  if (out.titleWon) {
+    bits.push(out.isGOAT ? 'Then won ' + out.wins + ' games and the ring.' : 'Then won the ring.');
+  } else if (run.playoffs && run.playoffs.rounds.length) {
+    var last = run.playoffs.rounds[run.playoffs.rounds.length - 1];
+    if (!last.won) {
+      var close = last.yourWins + '-' + last.oppWins;
+      bits.push(last.round === 'NBA Finals'
+        ? 'Lost the Finals ' + close + '.'
+        : 'Out in the ' + last.round.toLowerCase() + ', ' + close + '.');
+    }
+  } else if (out.wins >= E.CONSTANTS.PLAY_IN_WINS - 3) {
+    bits.push('Missed the play-in by ' + (E.CONSTANTS.PLAY_IN_WINS - out.wins)
+      + ' game' + (E.CONSTANTS.PLAY_IN_WINS - out.wins === 1 ? '' : 's') + '.');
+  }
+
+  /* At most two, because three is a paragraph and this is a caption. The
+     ending is kept when there is one, since it is the sentence somebody came
+     to this screen for. */
+  if (bits.length > 2) bits = [bits[0], bits[bits.length - 1]];
+  return bits.join(' ');
 }
 
 // ── sharing ────────────────────────────────────────────────────────────────
