@@ -16161,3 +16161,29 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   re-verified (14/14 and 16/16, same as before the loss). The lesson for next time: on a long push outage,
   assume the container can vanish; there is no way to persist an unpushed commit here, so the transcript is
   the backup. Nothing structural to fix, just recorded so the gap in history makes sense.
+
+### THE DAILY-REWARDS POPUP FLICKERED ON LOGIN (owner: "the game glitches when it is opening your daily
+### rewards, right when you log onto the page")
+- **Root cause, reproduced:** `render()` rebuilds all of `#app` (`app.innerHTML=''`) every call, and the
+  entry animation is driven by a `vnew` class on `#app` that is held for **420ms on a timer** (so a genuine
+  view change gets to animate even if an async loader re-renders mid-flight). The side effect: any SAME-VIEW
+  rebuild inside that 420ms window creates a fresh `.ov` node that re-matches `#app.vnew .ov{animation:
+  rttFade}` and **replays the entry fade (and `rttRise` on the h3/tag) from zero**. On boot this is exactly
+  the daily-rewards glitch: `maybeLoginBonus()` fires from the `cloudPull().finally(...)` chain (at network
+  latency, after the title has settled), opens the login overlay (newView → fade in), and then a *concurrent*
+  boot render — the rest of that reward chain (`maybeBucketRewards` calls `render()`), `loadWallet`,
+  `purchaseCheck`, or the title's own 420ms popup chain — rebuilds the same view and the popup flickers.
+- **Fix (one line, in `render()`'s vnew block):** on a `!newView` render, if `vnew` is still on `#app`,
+  strip it (and clear the timer) *before* the rebuild, so the recreated DOM shows its final state instead of
+  replaying. A genuine view change is untouched — it still adds `vnew` and animates.
+- **Trade-off, deliberate:** an overlay that async-reloads the SAME view (leaderboard/course records via
+  `lbLoad` etc.) no longer *re-fades* when its data arrives — it was the one case the old timer protected.
+  The FIRST open still animates; only the redundant re-fade on data-load is gone, which reads as "content
+  appeared" rather than a regression, and is far better than the boot flicker. This is global to every
+  overlay/screen, which is correct — the replay-on-rebuild bug was latent everywhere, just most visible for
+  boot popups where concurrent renders cluster.
+- Verified: 5 checks — a clean open still plays the fade, a concurrent boot render does NOT replay it
+  (replayedCount 0 vs 1 on the pre-fix baseline), the overlay survives the concurrent render, and a later
+  real view change still animates (the strip is not permanent). Multi-overlay smoke test: all six overlays
+  open, 0 page errors. **The concurrent-render check fails on the pre-fix baseline**, so it's a real fix.
+- Tunable: the `vnew`/`_vnewT` block at the top of `render()`; the 420ms window; `rttFade`/`rttRise` CSS.

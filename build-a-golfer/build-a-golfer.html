@@ -9445,10 +9445,16 @@ function render(){
   const animKey=view+'|'+[S.shopSec,S.shopCat,S.shopDrop,S.summaryTab,S.statsTab,S.lbTab,S.lbSort,S.lbWindow,
     S.profileTab,S.crTab,S.setupCat,S.setupSec,S.h2hTab].map(v=>v==null?'':v).join('~');
   const newView=(animKey!==_lastAnim); _lastAnim=animKey;
-  // Held on a timer rather than cleared by the next render: several overlays (leaderboard, course
-  // records) kick an async loader that re-renders the SAME view a beat later, which would otherwise
-  // strip the flag and kill the animation before it was ever seen.
+  // Held on a timer rather than cleared by the next render so a genuine view change gets its full 420ms
+  // to animate even if an async loader (leaderboard, course records) re-fetches and re-renders mid-flight.
+  // BUT a same-view rebuild must STRIP vnew first: render() empties #app and rebuilds every node, so a
+  // fresh .ov created while #app still carries vnew re-matches `#app.vnew .ov` and REPLAYS its entry
+  // animation from zero. On boot that's the daily-rewards glitch the owner reported — maybeLoginBonus opens
+  // the login overlay (newView → fade in), then a concurrent boot render (the cloud-pull reward chain,
+  // wallet load, purchaseCheck) rebuilds the SAME view inside the window and the popup flickers/re-fades.
+  // Clearing vnew on a same-view rebuild means the recreated DOM shows its final state instead of replaying.
   if(newView){ app.classList.add('vnew'); clearTimeout(_vnewT); _vnewT=setTimeout(()=>{ try{ app.classList.remove('vnew'); }catch(e){} }, 420); }
+  else if(app.classList.contains('vnew')){ app.classList.remove('vnew'); clearTimeout(_vnewT); }
   app.innerHTML='';
   // opaque status-bar mask (mounted once on <body>, persists across renders) so scrolling content
   // never smears under the translucent iOS status bar.
