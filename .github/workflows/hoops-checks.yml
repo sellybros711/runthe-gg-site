@@ -7,6 +7,7 @@ name: Hoops checks
 #   node hoops/check-posture.mjs        the game stays out of the indexed site
 #   node hoops/build/check-fetch.mjs    the scraper's parsers, against fixtures
 #   node hoops/verify.mjs               draft rules, replay, and the calibration
+#   node hoops/check-badges.mjs         every badge is reachable, against real runs
 #
 # No secrets, no network, no deploy.
 
@@ -59,3 +60,10 @@ jobs:
       # block in the log after any change to the data or the constants.
       - name: Engine and draft rules
         run: node hoops/verify.mjs
+
+      # Every badge about the shape of one run has to be REACHABLE, asserted
+      # against 900 simulated seasons played six different ways. The first cut
+      # of the catalog asked for three things this game cannot produce and
+      # nothing failed: the cabinet rendered and the squares just stayed dark.
+      - name: Badges are reachable
+        run: node hoops/check-badges.mjs

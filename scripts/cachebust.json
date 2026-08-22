@@ -103,6 +103,10 @@
     "run.js": {
       "v": "2",
       "sha": "2c2f2e22892838ce"
+    },
+    "badges.js": {
+      "v": "1",
+      "sha": "0b4588cf96acbdd3"
     }
   },
   "ideas/index.html": {

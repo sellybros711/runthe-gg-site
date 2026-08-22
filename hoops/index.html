@@ -324,6 +324,35 @@
 
   .story{margin:2px 0 8px;font-size:14.5px;line-height:1.45;color:var(--ink);
     font-weight:600;max-width:34em;}
+  /* ── THE BADGE CABINET ─────────────────────────────────────────────── */
+  .ptabs{display:flex;gap:6px;margin:14px 0 10px;}
+  .ptab{flex:1;background:transparent;border:1px solid var(--cardb);color:var(--mut);
+    font-size:12.5px;font-weight:800;padding:0 10px;height:36px;min-height:36px;border-radius:9px;}
+  .ptab.on{background:var(--card);color:var(--ink);border-color:var(--line);}
+  .ptab span{font-family:var(--mono);font-weight:700;opacity:.75;}
+  .badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;
+    max-height:44vh;overflow-y:auto;padding-right:2px;}
+  .bdg{border:1px solid var(--cardb);border-radius:10px;padding:9px 9px 8px;background:#10151f;
+    min-width:0;}
+  /* LOCKED IS DIM, NOT HIDDEN. A cabinet of empty squares is a list of things
+     to go and do; a cabinet that hides what you have not earned is a cabinet
+     that looks finished on day one. */
+  .bdg.off{opacity:.42;}
+  .bdg .bn{display:block;font-size:11.5px;font-weight:800;line-height:1.25;color:var(--ink);}
+  .bdg .bw{display:block;font-size:10px;line-height:1.35;color:var(--dim);margin-top:3px;}
+  .bdg .bp{display:block;margin-top:6px;height:4px;border-radius:99px;
+    background:rgba(255,255,255,.08);overflow:hidden;}
+  .bdg .bp i{display:block;height:100%;border-radius:99px;background:var(--mut);}
+  .bdg .bnum{display:block;font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:4px;}
+  /* Four metals, so a cabinet reads at a glance as mostly-bronze or
+     mostly-gold rather than as a wall of identical squares. */
+  .bdg.on.bronze{border-color:#a1662f;background:linear-gradient(180deg,rgba(161,102,47,.2),#10151f);}
+  .bdg.on.silver{border-color:#9aa6b8;background:linear-gradient(180deg,rgba(154,166,184,.2),#10151f);}
+  .bdg.on.gold{border-color:#d19410;background:linear-gradient(180deg,rgba(209,148,16,.22),#10151f);}
+  .bdg.on.ring{border-color:#f2c14e;background:linear-gradient(180deg,rgba(242,193,78,.28),#10151f);
+    box-shadow:0 0 0 1px rgba(242,193,78,.25);}
+  .bdg.on .bp i{background:var(--gold);}
+
   .toast{position:fixed;left:50%;bottom:calc(var(--dock) + 22px);transform:translateX(-50%);
     z-index:95;background:#1b2333;border:1px solid var(--cardb);color:var(--ink);
     padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
@@ -1197,6 +1226,17 @@
       <div class="pstat"><span class="lbl">Best</span><b id="pf-best">-</b></div>
     </div>
     <ul class="plist" id="pf-list"></ul>
+
+    <!-- THE CABINET. Two tabs rather than two screens, because the career and
+         the badges are the same question asked twice and a sheet with a
+         navigation stack in it is a sheet nobody gets out of. -->
+    <div class="ptabs" role="tablist">
+      <button class="ptab on" id="pt-record" role="tab" aria-selected="true">Record</button>
+      <button class="ptab" id="pt-badges" role="tab" aria-selected="false">Badges <span id="pt-count"></span></button>
+    </div>
+    <div class="badgegrid" id="pf-badges" hidden></div>
+    <p class="dim" id="pf-badgenote" hidden style="font-size:11.5px;margin:10px 0 0"></p>
+
     <div class="btnrow" style="margin-top:14px">
       <button class="ghost" id="b-prof-clear">Clear career</button>
       <button id="b-prof-x" style="flex:1">Close</button>
@@ -1234,6 +1274,7 @@
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
 <script src="engine.js?v=9"></script>
 <script src="run.js?v=2"></script>
+<script src="badges.js?v=1"></script>
 <script>
 (function(){
 'use strict';
@@ -1464,6 +1505,18 @@ function boot(){
       franchises[DATA.teamSeasons[i].team] = 1;
     }
     var yrs = Object.keys(seasons).map(Number).sort(function(a, b){ return a - b; });
+    /* THE COLLECTIONS COUNT WHAT IS ACTUALLY IN THE DATA. badges.js ships with
+       52 seasons and 45 clubs written down, which is right today and will be
+       wrong the first July a new season lands. Telling it what the file holds
+       means "every season since 1974" stays a complete set rather than becoming
+       permanently one short. */
+    if (window.RTF_BADGES) {
+      window.RTF_BADGES.setTotals({
+        seasons: yrs.length,
+        clubs: Object.keys(franchises).length,
+        shapes: (E.SYSTEMS && E.SYSTEMS.length) || 0
+      });
+    }
     $('ls-players').textContent = DATA.players.length.toLocaleString();
     $('ls-clubs').textContent = DATA.teamSeasons.length.toLocaleString();
     $('ls-teams').textContent = String(Object.keys(franchises).length);
@@ -3702,7 +3755,8 @@ function loadCareer(){
 
 function blankCareer(){
   return { version: 1, runs: 0, rings: 0, playoffs: 0, bestWins: 0, bestRating: 0,
-    bestLabel: '', totalWins: 0, totalLosses: 0, clubs: {}, shapes: {}, beat72: 0 };
+    bestLabel: '', totalWins: 0, totalLosses: 0, clubs: {}, shapes: {}, beat72: 0,
+    seasons: {}, colleges: {}, rows: [] };
 }
 
 /* Called once, when a run reaches a result. Recording it anywhere earlier would
@@ -3732,6 +3786,73 @@ function recordRun(out){
     var nm = E.teamName(run.roster[i].t);
     c.clubs[nm] = (c.clubs[nm] || 0) + 1;
   }
+
+  /* ── WHAT THE CABINET READS ────────────────────────────────────────────
+   * Two shapes of memory, and the split is deliberate.
+   *
+   * The SETS above and below are cumulative counts the career has always kept
+   * or can keep cheaply, and they are what the collections read. They are also
+   * why somebody who has been playing for weeks opens the cabinet and finds it
+   * partly filled rather than empty.
+   *
+   * The ROWS are one compact line per finished run, and they are what the
+   * one-off feats read. Storing them rather than storing "has won a cheap ring"
+   * means a badge added next month needs no migration and no change to this
+   * function: every run already on the device answers the new question.
+   *
+   * NO VERSION BUMP. loadCareer only accepts version 1, so raising it would
+   * throw away every existing career on every device. New fields are added and
+   * every reader in badges.js treats a missing one as "not known".
+   */
+  c.seasons = c.seasons || {};
+  c.colleges = c.colleges || {};
+  for (var q = 0; q < run.roster.length; q++) {
+    var pl = run.roster[q];
+    c.seasons[pl.s] = (c.seasons[pl.s] || 0) + 1;
+    if (pl.col) c.colleges[pl.col] = (c.colleges[pl.col] || 0) + 1;
+  }
+
+  var lastRd = (run.playoffs && run.playoffs.rounds.length)
+    ? run.playoffs.rounds[run.playoffs.rounds.length - 1] : null;
+  var awards = {}, decorated = 0, top = 0, pairs = 0;
+  for (var a = 0; a < run.roster.length; a++) {
+    var pr = run.roster[a];
+    if (pr.p > top) top = pr.p;
+    var aw = pr.aw || [];
+    if (aw.length) decorated++;
+    for (var k = 0; k < aw.length; k++) awards[aw[k]] = 1;
+    /* Two men off the same club AND the same season, which is the pairing the
+       chemistry model rewards most and the one a fan notices. */
+    for (var b2 = a + 1; b2 < run.roster.length; b2++) {
+      if (run.roster[b2].t === pr.t && run.roster[b2].s === pr.s) pairs++;
+    }
+  }
+
+  c.rows = Array.isArray(c.rows) ? c.rows : [];
+  c.rows.push({
+    w: out.wins, l: out.losses,
+    ring: !!out.titleWon,
+    po: !!(run.playoffs && run.playoffs.rounds.length),
+    rating: Math.round(out.rating),
+    chem: out.chemistry && typeof out.chemistry.bonus === 'number'
+      ? Math.round(out.chemistry.bonus * 100) / 100 : 0,
+    spend: Math.round((E.CONSTANTS.CAP_MUSD - R.remaining(run)) * 10) / 10,
+    left: Math.round(R.remaining(run) * 10) / 10,
+    top: Math.round(top * 10) / 10,
+    pairs: pairs,
+    aw: Object.keys(awards),
+    decorated: decorated,
+    swept: !!(lastRd && !lastRd.won && lastRd.oppWins === 4 && lastRd.yourWins === 0),
+    lostFinals: !!(lastRd && !lastRd.won && lastRd.round === 'NBA Finals')
+  });
+  /* CAPPED, because localStorage is finite and a row is worth about 160 bytes.
+     250 runs is more than anybody will play and about 40KB, which is under one
+     per cent of the budget. The OLDEST go, so a long-running career keeps its
+     most recent evidence. Every badge above is a "has ever", so trimming can
+     in principle take a feat away: at 250 runs that is a trade worth making
+     against a career that stops saving at all. */
+  if (c.rows.length > 250) c.rows = c.rows.slice(-250);
+
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
   return c;
 }
@@ -3788,6 +3909,8 @@ function renderCareer(){
 
 function openProfile(){
   renderCareer();
+  renderBadges();
+  showProfileTab(badgeTab);
   $('sheet').classList.add('open');
 }
 function closeProfile(){ $('sheet').classList.remove('open'); }
@@ -3795,6 +3918,104 @@ function closeProfile(){ $('sheet').classList.remove('open'); }
 function clearCareer(){
   try { localStorage.removeItem(PKEY); } catch (e) {}
   renderCareer();
+}
+
+/* ── THE CABINET ───────────────────────────────────────────────────────────
+ *
+ * Rendered from badges.js, which computes everything off the career rather
+ * than storing a single flag when something is earned. Locked badges are shown
+ * dim rather than hidden: a cabinet of empty squares is a list of things to go
+ * and do, and one that hides what you have not earned looks finished on day one.
+ */
+var badgeTab = 'record';
+
+function renderBadges(){
+  var grid = $('pf-badges'), note = $('pf-badgenote'), B = window.RTF_BADGES;
+  if (!grid || !B) return;
+  var c = loadCareer() || {};
+  var all = B.evaluate(c);
+  var got = all.filter(function(b){ return b.got; }).length;
+  if ($('pt-count')) $('pt-count').textContent = got + '/' + all.length;
+
+  grid.textContent = '';
+  /* EARNED FIRST, BEST FIRST. Then the ones NOT earned, CLOSEST first.
+     Those two halves want opposite orders and the first version used one for
+     both, so the locked half opened on "Win five titles" and "Every season
+     since 1974" while "Scout 15 clubs, 10 of 15" was three rows further down.
+     A cabinet should show somebody the next thing they can get, not the last
+     thing they ever will. */
+  var rank = { ring: 0, gold: 1, silver: 2, bronze: 3 };
+  var near = function(b){ return b.need > 1 ? b.have / b.need : 0; };
+  all.sort(function(a, b){
+    if (a.got !== b.got) return a.got ? -1 : 1;
+    if (a.got) return (rank[a.tier] || 9) - (rank[b.tier] || 9);
+    if (near(b) !== near(a)) return near(b) - near(a);
+    return (rank[b.tier] || 9) - (rank[a.tier] || 9);
+  });
+
+  for (var i = 0; i < all.length; i++) {
+    var b = all[i];
+    var el = document.createElement('div');
+    el.className = 'bdg ' + (b.got ? 'on ' + b.tier : 'off');
+    var nm = document.createElement('span');
+    nm.className = 'bn';
+    nm.textContent = b.name;
+    el.appendChild(nm);
+    var why = document.createElement('span');
+    why.className = 'bw';
+    why.textContent = b.why;
+    el.appendChild(why);
+    /* A PROGRESS BAR ONLY WHERE THERE IS PROGRESS TO SHOW. On a one-off feat
+       the bar is either empty or full and says nothing the border has not
+       already said. */
+    if (b.collection && b.need > 1) {
+      var track = document.createElement('span');
+      track.className = 'bp';
+      var fill = document.createElement('i');
+      fill.style.width = Math.round(100 * Math.min(1, b.have / b.need)) + '%';
+      track.appendChild(fill);
+      el.appendChild(track);
+      var n = document.createElement('span');
+      n.className = 'bnum';
+      n.textContent = b.have + ' of ' + b.need;
+      el.appendChild(n);
+    }
+    grid.appendChild(el);
+  }
+
+  /* WHAT IS AND IS NOT RETROACTIVE, said out loud. The career has always
+     counted clubs and shapes, so those collections fill in for somebody who
+     has been playing for weeks. Everything else reads the per-run rows, which
+     only exist for runs finished since the cabinet shipped. Somebody with a
+     ring and no Champions badge deserves to know why. */
+  var runs = num0(c.runs), stored = (c.rows && c.rows.length) || 0;
+  if (note) {
+    if (runs > stored) {
+      note.hidden = false;
+      note.textContent = 'Clubs and systems count every run you have played. The rest read the '
+        + stored + ' run' + (stored === 1 ? '' : 's') + ' recorded in detail, which started when '
+        + 'badges did, so ' + (runs - stored) + ' earlier run'
+        + (runs - stored === 1 ? '' : 's') + ' cannot be checked against them.';
+    } else {
+      note.hidden = false;
+      note.textContent = 'Kept in this browser, like the record above. Clearing site data loses them.';
+    }
+  }
+}
+
+var num0 = function(v){ return (typeof v === 'number' && isFinite(v)) ? v : 0; };
+
+function showProfileTab(which){
+  badgeTab = which;
+  var record = which === 'record';
+  $('pf-list').hidden = !record;
+  $('pf-badges').hidden = record;
+  $('pf-badgenote').hidden = record;
+  $('pt-record').className = 'ptab' + (record ? ' on' : '');
+  $('pt-badges').className = 'ptab' + (record ? '' : ' on');
+  $('pt-record').setAttribute('aria-selected', record ? 'true' : 'false');
+  $('pt-badges').setAttribute('aria-selected', record ? 'false' : 'true');
+  if (!record) renderBadges();
 }
 
 // ── the home page ──────────────────────────────────────────────────────────
@@ -3929,6 +4150,8 @@ $('b-respin').onclick = respin;
 $('b-play').onclick = playSeason;
 $('b-again').onclick = startRun;
 $('b-prof-x').onclick = closeProfile;
+$('pt-record').onclick = function(){ showProfileTab('record'); };
+$('pt-badges').onclick = function(){ showProfileTab('badges'); };
 $('b-prof-clear').onclick = clearCareer;
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
