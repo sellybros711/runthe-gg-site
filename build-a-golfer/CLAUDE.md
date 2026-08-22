@@ -16245,3 +16245,47 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   variant; and Daily / Circuit / majorsOnly all correctly skip. Baseline (pre-feature) crashes with
   `GOAL_TIERS is not defined` on the first substantive check, so the test genuinely discriminates.
 - **Regressions green:** goals_test 25, daily_glitch 5, circuit_test 14, morris_test 16.
+
+### THE RECORDS BOOK: the majors chase, and your career milestones (owner: green-lit as the #2 pick
+### from the Career Mode Canon audit, right after Season Goals shipped)
+- **The gap this closes:** Season Goals gave every year a shape; the Records Book gives the whole
+  CAREER a shape. Turns "8 majors" into "6 behind Watson, 10 behind Nicklaus." Lives in the Profile
+  overlay's new **Records** tab (fifth tab, next to Achievements).
+- **What's honest about the data:** GOLFERS legends carry a `majors` field but no `wins`/`earnings`
+  (era-mismatched anyway — Snead's 82 tour wins aren't comparable to a modern career), so v1 is
+  majors-only. Your career milestones sit alongside as a companion block from `career().lt` (the
+  lifetime aggregate across every career you've run).
+- **`recordsLegends()`** filters GOLFERS to `era==='leg' && majors>=5` and sorts descending — that's
+  21 legends today, from Nicklaus (18) down to Peter Thomson / James Braid / JH Taylor / Ballesteros
+  / Prime Koepka (5). The 5-major floor keeps the list to the ~20 golfers who shaped the record book.
+- **`recordsChase()`** returns `{you, rank, next, gap, top}` — the whole compare-vs-legends
+  computation in one call. Three states in `recordsChaseHTML()`:
+  - **0 majors** → "The Chase for Jack Nicklaus · Get on the board"
+  - **1+ majors** → "The Chase for [next name up] · N behind"
+  - **tied or above #1** → "You've caught the field · +N clear of [runner-up]"
+- **`recordsMajorsHTML()`** builds the leaderboard: top 12 legends by majors, YOU spliced in inline
+  if you'd land inside the top-12 group (rank ≤ 13); otherwise the top-12 legends followed by a
+  **"Your rank"** divider and your row. A fresh account (0 majors) omits the YOU row entirely — no
+  fabricated zero-row at the bottom, since the Chase hero already carries that story.
+- **`recordsMilestonesHTML()`** — an 8-tile grid (Majors / Wins / Top 10s / Seasons / Cuts made /
+  Careers / Earnings / Net worth), all reading from `career().lt`. Zeros display as `—` so a fresh
+  account renders as invitation, not emptiness. **Careful note on `fmtShort`**: it already prefixes
+  `$` (`$340.00M`), so the tile must NOT add its own — the first pass had `$$340.00M`, caught in the
+  first screenshot, fixed.
+- **Wiring is three lines:** allowlist adds `'records'`, the segrow gains a Records button, and the
+  body-selector routes `records` → `recordsTabHTML()`. The rest is pure content generation with no
+  side effects — the tab is safe to render at any time, from any career state.
+- **Verified: 24 checks pass, 0 page errors.** Chase computation checked across six career-stage
+  scenarios: fresh account ranks below the whole list (#22, gap 5 to JH Taylor), 14 majors is 1
+  behind Prime Tiger, 18 majors ties Nicklaus at rank 1 (no next name), 20 majors puts you clear.
+  UI wiring: tab button present + highlights when active; Chase / list / milestones all render;
+  Nicklaus + Watson appear in the leaderboard; YOU row highlighted at the right rank; 13 rows total
+  (top 12 + you); 8 milestone tiles. Fresh-account state shows "Get on the board" and no YOU row;
+  a deep-rank player (2 majors) gets a "Your rank" divider with the YOU row AFTER it. **Baseline
+  crashes on `recordsLegends is not defined`** — real discrimination.
+- **Regressions green:** records_test 24, goals_test 25, daily_glitch 5, circuit_test 14,
+  morris_test 16 — 84 total, 0 page errors.
+- **Tunable in one place.** The whole module lives above `overlayRecord`. Add a wins leaderboard:
+  another helper alongside `recordsMajorsHTML` reading a `wins` field if we add one. Tighten the
+  legend cutoff: one number in `recordsLegends`. Change the top-shown count: one number
+  (`SHOW_TOP=12`) in `recordsMajorsHTML`.

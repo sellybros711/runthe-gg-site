@@ -2131,6 +2131,41 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes authspin{to{transform:rotate(360deg)}}
   .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
   .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
+  /* THE RECORDS BOOK — the majors chase (top of the game's greats vs YOU), with your career
+     milestones as a companion block. Lives in the Profile overlay's Records tab. */
+  .rbchase{background:linear-gradient(180deg,rgba(241,208,74,.14),rgba(241,208,74,.04)); border:1px solid rgba(241,208,74,.42);
+    border-radius:13px; padding:14px 16px; margin:0 0 14px; font-family:var(--body)}
+  .rbchase-hd{font:800 10.5px/1 var(--body); letter-spacing:.18em; text-transform:uppercase; color:var(--gold); margin-bottom:9px}
+  .rbchase-body{display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center}
+  .rbchase-num{font-family:var(--display); font-weight:400; font-size:34px; line-height:1; color:var(--oncard); letter-spacing:.02em}
+  .rbchase-num.gap{color:var(--gold); font-size:22px; line-height:1.15}
+  .rbchase-lbl{font-size:11px; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; margin-top:5px; font-weight:700}
+  .rbchase-arr{color:rgba(241,208,74,.55); font-size:22px; font-weight:400}
+  .rbchase.tied{background:linear-gradient(180deg,rgba(53,214,160,.16),rgba(53,214,160,.05)); border-color:rgba(53,214,160,.5)}
+  .rbchase.tied .rbchase-hd, .rbchase.tied .rbchase-num.gap{color:#35d6a0}
+  .rblist{display:flex; flex-direction:column; gap:3px; margin:8px 0 4px}
+  .rbrow{display:grid; grid-template-columns:30px 1fr 42px; gap:9px; align-items:center;
+    padding:7px 10px; background:var(--panel); border:1px solid var(--line); border-radius:8px; font-family:var(--body)}
+  .rbrow.you{background:linear-gradient(180deg,rgba(241,208,74,.16),rgba(241,208,74,.05)); border-color:var(--gold); box-shadow:0 0 0 1px rgba(241,208,74,.2)}
+  .rbrow-r{font-family:var(--mono); font-weight:800; font-size:12px; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+  .rbrow.you .rbrow-r{color:var(--gold)}
+  .rbrow-mid{min-width:0}
+  .rbrow-nm{font:700 13.5px/1.15 var(--body); color:var(--oncard); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .rbrow.you .rbrow-nm{color:var(--gold)}
+  .rbrow-bar{height:5px; margin-top:5px; background:rgba(255,255,255,.05); border-radius:2px; overflow:hidden}
+  .rbrow-bar>span{display:block; height:100%; background:linear-gradient(90deg,#c9a520,var(--gold)); border-radius:2px}
+  .rbrow.you .rbrow-bar>span{background:linear-gradient(90deg,var(--gold),#ffe08a)}
+  .rbrow-cnt{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--oncard); text-align:right; font-variant-numeric:tabular-nums}
+  .rbrow.you .rbrow-cnt{color:var(--gold)}
+  .rb-divider{display:flex; align-items:center; gap:8px; margin:5px 2px; font:700 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+  .rb-divider::before, .rb-divider::after{content:''; flex:1; height:1px; background:var(--line)}
+  .rbmiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:6px 0 4px}
+  .rbmile{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 12px 9px}
+  .rbmile-k{font:700 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+  .rbmile-v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); font-variant-numeric:tabular-nums}
+  .rbmile-v.gold{color:var(--gold)}
+  .rbmile-sub{font-size:10.5px; color:var(--muted); margin-top:2px}
+  .rb-empty{font-size:13px; color:var(--muted); margin:16px 0; text-align:center; padding:14px 12px; border:1px dashed var(--line); border-radius:10px}
   .sstat .v.gold{color:var(--gold); font-size:22px}
   /* CS264: Career Hub dashboard - franchise-mode banner (avatar · name · year/age + stats) + season event rail */
   .careerbanner{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px; padding:12px 15px;
@@ -9934,6 +9969,147 @@ function overlayRecordGuest(screen){
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
 }
+/* ══════ THE RECORDS BOOK — the majors chase, and your career milestones ═════════════════════════
+   Every golf video game since Tiger Woods PGA Tour 06 has had one form of this: your career sitting
+   beside the game's greats so you can see who you're chasing. Ours turns "8 majors" into "6 behind
+   Watson, 10 behind Nicklaus." Lives in the Profile overlay's Records tab.
+
+   The data source is honest — legends in GOLFERS carry `majors` but no `wins`/`earnings` (era-mismatched
+   anyway), so the leaderboard is majors-only for now. Your career milestones sit alongside as a
+   companion block, read from career().lt (the lifetime aggregate across every career you have run).
+   All fields degrade to '—' when absent, so a fresh account renders cleanly.
+*/
+
+// Legends we can rank against (majors >= 5 keeps the list to the ~20 that shaped the record book).
+function recordsLegends(){
+  try{ return GOLFERS.filter(g=>g.era==='leg' && (g.majors||0) >= 5).sort((a,b)=>(b.majors||0)-(a.majors||0)); }
+  catch(e){ return []; }
+}
+
+// Compute where the player would rank on the all-time majors list and who is the next name up.
+function recordsChase(){
+  const legs = recordsLegends();
+  const you = (typeof career==='function' && career().lt && (career().lt.majors||0)) || 0;
+  // Rank = 1 + count of legends whose majors STRICTLY exceed yours (ties share the number below)
+  const above = legs.filter(g=>(g.majors||0) > you).length;
+  const rank = above + 1;   // where you'd land on this list
+  const next = above > 0 ? legs[above-1] : null;   // the name just above you (null if you're tied for #1)
+  const gap = next ? ((next.majors||0) - you) : 0;
+  return { you, rank, next, gap, top: legs[0] };
+}
+
+// Build the majors leaderboard HTML. Shows the top N legends + inserts YOU at your rank. If your
+// rank is deep, a "..." divider separates the top from your position so the list stays legible.
+function recordsMajorsHTML(){
+  const legs = recordsLegends();
+  if(!legs.length) return '';
+  const you = (typeof career==='function' && career().lt && (career().lt.majors||0)) || 0;
+  const topMax = legs[0].majors || 1;
+  const above = legs.filter(g=>(g.majors||0) > you).length;
+  const rank = above + 1;
+  const SHOW_TOP = 12;
+  const shownLegs = legs.slice(0, SHOW_TOP);
+  // where does YOU slot in relative to the shown list?
+  const youShown = rank <= SHOW_TOP + 1 && you > 0;   // if inside the top-12 group (or immediately below), show inline
+  const rows = [];
+  // legend rows
+  shownLegs.forEach((g, i) => {
+    const pos = i + 1;
+    // If YOU are in the middle of the shown list, splice your row in at your rank
+    if(youShown && pos === rank){
+      rows.push(recordsRow(rank, S.name||'You', you, topMax, true));
+    }
+    rows.push(recordsRow(pos, g.name, g.majors||0, topMax, false));
+  });
+  // If YOU rank just after the last shown legend (rank = SHOW_TOP+1), append inline
+  if(youShown && rank === SHOW_TOP + 1){
+    rows.push(recordsRow(rank, S.name||'You', you, topMax, true));
+  }
+  // If YOU're deeper than the shown list, add a divider + your row
+  if(!youShown && you > 0){
+    rows.push(`<div class="rb-divider">Your rank</div>`);
+    rows.push(recordsRow(rank, S.name||'You', you, topMax, true));
+  }
+  // If YOU have zero majors, don't fabricate a row — the chase hero above already carries the story
+  return `<div class="rblist">${rows.join('')}</div>`;
+}
+function recordsRow(pos, name, cnt, maxCnt, isYou){
+  const pct = Math.max(3, Math.round((cnt / Math.max(1, maxCnt)) * 100));
+  return `<div class="rbrow${isYou?' you':''}">
+    <span class="rbrow-r">${pos}</span>
+    <div class="rbrow-mid">
+      <div class="rbrow-nm">${esc(name)}</div>
+      <div class="rbrow-bar"><span style="width:${pct}%"></span></div>
+    </div>
+    <span class="rbrow-cnt">${cnt}</span>
+  </div>`;
+}
+
+// The Chase hero — one glance answer to "who am I chasing." Renders three states:
+//   • no majors yet: "TARGET · your first major"
+//   • chasing someone: "N BEHIND · next name up"
+//   • tied for or ahead of #1: "N AHEAD · closest chaser"
+function recordsChaseHTML(){
+  const c = recordsChase();
+  if(!c.top) return '';
+  if(c.you === 0){
+    return `<div class="rbchase">
+      <div class="rbchase-hd">The Chase for ${esc(c.top.name)}</div>
+      <div class="rbchase-body">
+        <div><div class="rbchase-num">0</div><div class="rbchase-lbl">your majors</div></div>
+        <div class="rbchase-arr">→</div>
+        <div><div class="rbchase-num gap">Get on the board</div><div class="rbchase-lbl">${esc(c.top.name)} · ${c.top.majors||0} majors</div></div>
+      </div></div>`;
+  }
+  if(c.next){
+    return `<div class="rbchase">
+      <div class="rbchase-hd">The Chase for ${esc(c.next.name)}</div>
+      <div class="rbchase-body">
+        <div><div class="rbchase-num">${c.you}</div><div class="rbchase-lbl">your majors · #${c.rank} all-time</div></div>
+        <div class="rbchase-arr">→</div>
+        <div><div class="rbchase-num gap">${c.gap} behind</div><div class="rbchase-lbl">${esc(c.next.name)} · ${c.next.majors||0} majors</div></div>
+      </div></div>`;
+  }
+  // tied with or clear of #1
+  const runner = recordsLegends()[1];   // the closest chaser BEHIND you
+  const chase = runner ? ((c.you) - (runner.majors||0)) : c.you;
+  return `<div class="rbchase tied">
+    <div class="rbchase-hd">You've caught the field</div>
+    <div class="rbchase-body">
+      <div><div class="rbchase-num">${c.you}</div><div class="rbchase-lbl">your majors · #1 all-time</div></div>
+      <div class="rbchase-arr">→</div>
+      <div><div class="rbchase-num gap">${chase >= 0 ? '+'+chase+' clear' : 'Tied at the top'}</div><div class="rbchase-lbl">${runner?esc(runner.name)+' · '+(runner.majors||0)+' majors':'the record book'}</div></div>
+    </div></div>`;
+}
+
+// Career milestones — read from the lifetime aggregate on career().lt so figures reflect EVERY
+// career you have run, not just the active one. Sits below the chase as a companion block.
+function recordsMilestonesHTML(){
+  const lt = (typeof career==='function' && career().lt) || {};
+  const fmt = (typeof fmtShort==='function') ? fmtShort : (n=>n||0);
+  const tile = (k, v, sub) => `<div class="rbmile"><div class="rbmile-k">${esc(k)}</div><div class="rbmile-v${(v==='—')?'':' gold'}">${v}</div>${sub?`<div class="rbmile-sub">${esc(sub)}</div>`:''}</div>`;
+  return `<h2 style="margin:18px 0 8px">Your career milestones</h2>
+    <div class="rbmiles">
+      ${tile('Majors',   (lt.majors||0)===0 ? '—' : String(lt.majors||0),        'career total')}
+      ${tile('Wins',     (lt.wins||0)  ===0 ? '—' : String(lt.wins||0),          'career total')}
+      ${tile('Top 10s',  (lt.top10||0) ===0 ? '—' : String(lt.top10||0),         'career total')}
+      ${tile('Seasons',  (lt.seasons||0)===0 ? '—' : String(lt.seasons||0),      'played')}
+      ${tile('Cuts made',(lt.made||0)  ===0 ? '—' : `${lt.made||0}/${lt.played||0}`, 'career')}
+      ${tile('Careers',  (lt.careers||0)===0 ? '—' : String(lt.careers||0),      'completed')}
+      ${tile('Earnings', (lt.earnings||0)===0 ? '—' : fmt(lt.earnings||0),   'lifetime')}
+      ${tile('Net worth',(lt.net==null||lt.net===0) ? '—' : (lt.net<0?'−'+fmt(Math.abs(lt.net)):fmt(lt.net)), 'lifetime')}
+    </div>`;
+}
+
+// Full Records tab. Wired into the profile overlay's tab bar as the fifth entry.
+function recordsTabHTML(){
+  return `${recordsChaseHTML()}
+    <h2 style="margin:6px 0 8px">The Majors Leaderboard</h2>
+    ${recordsMajorsHTML()}
+    ${recordsMilestonesHTML()}
+    <div class="small muted" style="margin-top:12px;line-height:1.55;text-align:center">More categories to come — wins by tour and career longevity. For now the record that decides golf history is majors, so majors leads.</div>`;
+}
+
 function overlayRecord(screen){
   if(!sbSignedIn()){ overlayRecordGuest(screen); return; }   // guests see the unlock preview, not a local record
   evaluateAch();   // retroactively credit anything already earned so the checklist + Tour Rep are current
@@ -9964,7 +10140,7 @@ function overlayRecord(screen){
   // CS484: PROFILE (renamed from Trophy Room) reorganized into tabs so it isn't one giant scroll (owner:
   // "rename ... to Profile, enhance and reorganize the page so there is less scrolling"). A compact always-on
   // header (avatar → Closet, name, title, Tour Rep rank) + account card, then Stats / Trophies / Achievements.
-  const tab = ['stats','history','trophies','ach'].includes(S.profileTab) ? S.profileTab : 'stats';
+  const tab = ['stats','history','trophies','ach','records'].includes(S.profileTab) ? S.profileTab : 'stats';
   S.profileTab=tab;
   let rankName=''; try{ rankName=repTier().tier.name; }catch(e){}
   const statsTab=`
@@ -9982,13 +10158,14 @@ function overlayRecord(screen){
   const historyTab=profileHistoryHTML();
   const trophiesTab=`${cabinet}${legendTokensHTML()}`;
   const achTab=`${repHeaderHTML()}${achListHTML()}`;
-  const body = tab==='stats'?statsTab : (tab==='history'?historyTab : (tab==='trophies'?trophiesTab : achTab));
+  const recordsTab = recordsTabHTML();
+  const body = tab==='stats'?statsTab : (tab==='history'?historyTab : (tab==='trophies'?trophiesTab : (tab==='ach'?achTab : recordsTab)));
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Profile</h3>
     <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px"><button type="button" class="profav" aria-label="Open your Closet to dress your golfer" style="background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;position:relative">${avatarHTML()}</button><button type="button" class="profav-hint" style="background:rgba(22,181,166,.14);border:1px solid #16b5a6;color:#4fe0d0;font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">✎ Open Closet</button><button type="button" class="profcard-btn" style="background:rgba(241,208,74,.12);border:1px solid var(--gold);color:var(--gold);font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">★ Player Card</button><div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard);margin-top:3px">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${rankName?`<div class="small muted" style="margin-top:0">${(sbSignedIn()&&sbUsername)?'RunThe.GG member · ':''}Tour Rep <b style="color:var(--gold)">${esc(rankName)}</b></div>`:''}</div>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">${acctCard}</div>
-    <div class="segrow proftabs" style="margin:0 0 14px"><button class="${tab==='stats'?'on':''}" data-ptab="stats">Stats</button><button class="${tab==='history'?'on':''}" data-ptab="history">History</button><button class="${tab==='trophies'?'on':''}" data-ptab="trophies">Trophies</button><button class="${tab==='ach'?'on':''}" data-ptab="ach">Achievements</button></div>
+    <div class="segrow proftabs" style="margin:0 0 14px"><button class="${tab==='stats'?'on':''}" data-ptab="stats">Stats</button><button class="${tab==='history'?'on':''}" data-ptab="history">History</button><button class="${tab==='trophies'?'on':''}" data-ptab="trophies">Trophies</button><button class="${tab==='ach'?'on':''}" data-ptab="ach">Achievements</button><button class="${tab==='records'?'on':''}" data-ptab="records">Records</button></div>
     ${body}
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
