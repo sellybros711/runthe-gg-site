@@ -5,7 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Ideas | RunThe.GG</title>
 <meta name="description" content="Suggest a feature for any RunThe.GG game and vote on what everyone else wants. The most-wanted ideas rise to the top." />
-<meta name="robots" content="index, follow" />
+<!-- NOINDEX, AND NO AD TAG, AND THE TWO GO TOGETHER.
+     scripts/check-adsense.mjs audits every INDEXABLE page and skips noindexed ones, so this
+     line is what keeps the board out of the surface AdSense reviews. Remove it and the
+     checker immediately asks for a publisher tag, Consent Mode defaults and 250 words here,
+     which is the right question to be asked and the wrong one to answer by padding.
+
+     Two reasons it should stay off that surface for now, and neither is the checklist:
+
+     THE BOARD IS EMPTY. On day one this page is a heading, ten chips and the words
+     "Nothing here yet". That is the definition of the thin content AdSense turns sites down
+     for, and it would be submitted as a representative page of the site.
+
+     IT IS OTHER PEOPLE'S WRITING. Every word of the content here is submitted by whoever
+     signed up, and the publisher owns what sits beside an ad. Moderation today is one
+     `hidden` flag somebody has to notice and set by hand. Ads against unmoderated user text
+     is the risk that costs an account rather than a page.
+
+     WHAT WOULD HAVE TO BE TRUE to flip this to index and carry ads: real ideas on the board
+     rather than an empty state, and something that catches an abusive post before a person
+     does. Then add the publisher tag, the Consent Mode defaults and a sitemap entry, and
+     check-adsense will tell you if any of the three is missing. -->
+<meta name="robots" content="noindex, follow" />
 <meta name="theme-color" content="#0d1b2e" />
 <link rel="canonical" href="https://runthe.gg/ideas/" />
 
@@ -232,11 +253,20 @@
 
   <div class="ic-list" id="ic-list"></div>
 
+  <!-- THE POLICY PAGES ARE REACHABLE EVEN THOUGH THIS PAGE IS NOINDEXED. check-adsense only
+       demands them on indexable pages, so this is not here to pass a check: it is here
+       because a page that collects what people write should say where the rules are, and
+       because it is three links that would otherwise have to be remembered on the day the
+       board goes indexable. -->
   <p class="ic-foot">
     <a href="/">RunThe.GG</a> &middot;
     <a href="/football/">The Perfect Season</a> &middot;
     <a href="/cfb/">College Football</a> &middot;
     <a href="/arcade/">Run The Arcade</a>
+    <br>
+    <a href="/privacy.html">Privacy</a> &middot;
+    <a href="/terms.html">Terms</a> &middot;
+    <a href="/contact.html">Contact</a>
   </p>
 </div>
 
