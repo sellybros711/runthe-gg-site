@@ -531,6 +531,22 @@
   .k-heel{color:#f0907f;} .k-face{color:#5bb083;} .k-cool{color:#6aa7c4;} .k-crowd{color:#e0b341;}
   .pmwrite{display:flex;gap:8px;margin-top:2px;}
   .pmwrite input{flex:1;}
+  /* chip picker */
+  .chipgrid{display:grid;gap:8px;margin-bottom:12px;}
+  .chip{background:var(--panel);border:1.5px solid var(--line);border-radius:11px;padding:9px 12px;cursor:pointer;
+    transition:.13s;position:relative;}
+  .chip:hover{border-color:rgba(224,179,65,.5);transform:translateY(-1px);}
+  .chip.on{border-color:var(--gold);background:rgba(224,179,65,.11);}
+  .chip.on::before{content:"✓";position:absolute;top:6px;right:9px;color:var(--gold);font-weight:900;}
+  .chip.off{opacity:.35;cursor:default;} .chip.off:hover{transform:none;border-color:var(--line);}
+  .chip .ch-k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:3px;}
+  .chip .ch-t{font-size:13.5px;color:var(--cream);line-height:1.45;font-weight:500;}
+  .pmpreview{border:1px dashed var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;background:rgba(0,0,0,.24);
+    transition:.15s;}
+  .pmpreview.on{border-color:var(--gold);border-style:solid;background:linear-gradient(180deg,rgba(224,179,65,.10),rgba(0,0,0,.28));}
+  .pv-k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin-bottom:4px;}
+  .pmpreview.on .pv-k{color:var(--gold);}
+  .pv-t{font-size:14px;color:var(--text);line-height:1.55;font-style:italic;}
   /* the office directive at the top of a segment */
   .pmdir{border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:10px 13px;
     background:linear-gradient(180deg,rgba(224,179,65,.12),rgba(0,0,0,.22));}
@@ -5815,6 +5831,190 @@ const PROMO_NOTE={
   ally:'Offer to work together. Builds respect instead of heat.',
   challenge:'Put yourself in the title picture while it is fresh.',
 };
+/* ============================================================
+   PROMO CONTEXT (data layer for A and C)
+   ------------------------------------------------------------
+   Wrestling promos live on specifics. This gathers everything a
+   line or a chip could reference: your career, your opponent,
+   your shared history, your venue, the belt picture. Recomputed
+   at the start of every segment, cached on PMCTX.
+   ============================================================ */
+let PMCTX=null;
+function buildPromoCtx(target){
+  const c=G.car, w=G.w;
+  const me={
+    name:w.name, nick:w.nick||'',
+    align:w.align, gimmick:w.gimmick&&w.gimmick.name, streak:c.streak||0,
+    standing:c.standing||50, rep:c.rep||0, pop:c.pop||0, reaction:reactionOf(),
+    title:c.title||null, reigns:(c.reigns||[]).length, wins:c.rec.w||0, losses:c.rec.l||0,
+    tier:tierOf(c.rep).name,
+  };
+  const p=myPromo();
+  const venue={ promoShort:p.short, promoName:p.name, region:p.region, product:p.product };
+  const ch=(typeof champOf==='function')?champOf():null;
+  const belt=beltName();
+  const t=target||null;
+  const R=t?rel(t.id):null;
+  const opp = t ? {
+    id:t.id, name:t.name, nick:t.nick||'',
+    align:t.align, gimmick:t.gimmick||'', overness:t.over||55,
+    wins:(R&&R.wins)||0, losses:(R&&R.losses)||0, matches:(R&&R.matches)||0,
+    heat:(R&&R.heat)||0, respect:(R&&R.respect)||0,
+    holdsBelt:ch&&!ch.you&&ch.id===t.id,
+  } : null;
+  // shared moments: the best match between you, the venue you last met in, wins in a row
+  const hist=(G.hist||[]).filter(x=>t&&x.opp===t.name);
+  const best = hist.length ? hist.reduce((a,b)=>b.q>a.q?b:a) : null;
+  const last = hist[0]||null;
+  const feud = story();
+  const feudWith = (feud && t && feud.charId===t.id) ? feud : null;
+  return {
+    me, opp, venue, belt,
+    champion: ch ? {name:ch.you?me.name:ch.name, you:!!ch.you} : null,
+    hist:{ count:hist.length, best, last, wins:hist.filter(x=>x.win===true).length, losses:hist.filter(x=>x.win===false).length },
+    feud:feudWith ? {stage:feudWith.stage, weeks:(c.year*40+c.week)-(feudWith.startYear*40+feudWith.startWeek)} : null,
+    directive: PM && PM.directive,
+    stance: PM && PM.stance,
+    weekCount: (c.year-1)*40+c.week,
+  };
+}
+// pronoun helpers so the game speaks in someone's voice, not from nowhere
+function pronounsFor(align){
+  // face talks TO the crowd ABOUT the opponent, heel talks ABOUT itself AT the crowd
+  return align==='face' ? {you:'us', me:'me', them:'they', room:'you people'} : {you:'you people', me:'I', them:'they', room:'you people'};
+}
+
+/* ============================================================
+   THE CHIP SYSTEM (option C: build a promo one phrase at a time)
+   ------------------------------------------------------------
+   Every beat, you pick 2 or 3 chips from a shortlist. Each chip
+   is a clause tagged by function (Reference, Boast, Threat,
+   Question, Callback, Concession, Twist). Text is generated at
+   pick-time from PMCTX, so a chip about "Osaka last year" only
+   shows if you actually wrestled there.
+
+   Assembly is period-separated: the chips read as a paragraph,
+   which is what a real cut promo sounds like. Dedup is enforced
+   at the chip id level for the whole segment.
+   ============================================================ */
+const CHIP_BANK=[
+  // ----- REFERENCES: things that actually happened -----
+  {id:'ref_prev_win',    tag:'ref',   phase:['hook','thesis','meat','personal'],
+    when:c=>c.opp&&c.hist.wins>0,
+    fn:c=>`I have already beaten ${c.opp.name}. Ask ${c.opp.name}.`},
+  {id:'ref_prev_loss',   tag:'ref',   phase:['thesis','meat','personal'],
+    when:c=>c.opp&&c.hist.losses>0,
+    fn:c=>`Last time ${c.opp.name} beat me, I told everyone I would come back for it. I am back for it.`},
+  {id:'ref_best_match',  tag:'ref',   phase:['personal','meat'],
+    when:c=>c.opp&&c.hist.best&&c.hist.best.q>=70,
+    fn:c=>`You and I put on a ${c.hist.best.q}-rated match in ${c.venue.promoShort}, and we both know it. We could do it again tonight.`},
+  {id:'ref_series',      tag:'ref',   phase:['hook','meat'],
+    when:c=>c.opp&&c.hist.count>=2,
+    fn:c=>`We have done this ${c.hist.count} times now. Everybody in this building has an opinion.`},
+  {id:'ref_venue',       tag:'ref',   phase:['hook','personal'],
+    when:c=>true,
+    fn:c=>`Everybody in ${c.venue.promoShort} knows what I am here for.`},
+  {id:'ref_streak',      tag:'ref',   phase:['thesis','meat'],
+    when:c=>c.me.streak>=3,
+    fn:c=>`I have won ${c.me.streak} in a row. Not close, not scraped: won.`},
+  {id:'ref_title',       tag:'ref',   phase:['hook','thesis','close'],
+    when:c=>c.me.title,
+    fn:c=>`I am the ${c.me.title}. Nobody in this room takes that from me tonight.`},
+  {id:'ref_belt_target', tag:'ref',   phase:['hook','thesis','close'],
+    when:c=>c.opp&&c.opp.holdsBelt,
+    fn:c=>`${c.opp.name} carries a title I know I can win. Everyone in this building can see it.`},
+  {id:'ref_feud',        tag:'ref',   phase:['thesis','meat','personal'],
+    when:c=>c.feud,
+    fn:c=>`This started ${c.feud.weeks} weeks ago and it ends the way I say it ends.`},
+
+  // ----- CONCESSIONS: giving credit is what makes the shot land -----
+  {id:'conc_respect',    tag:'concession', phase:['personal','meat'],
+    when:c=>c.opp,
+    fn:c=>`${c.opp.name} is good. I have never denied that. That is what makes what I am about to do matter.`},
+  {id:'conc_worked',     tag:'concession', phase:['personal'],
+    when:c=>c.opp,
+    fn:c=>`${c.opp.name} worked for this too. This is not about who cares more.`},
+
+  // ----- BOASTS: about you -----
+  {id:'boast_iam',       tag:'boast', phase:['hook','thesis','meat'],
+    when:c=>true,
+    fn:c=>c.me.align==='heel'
+      ? `Look at me. I am the reason this company still has an audience.`
+      : `I am ${c.me.name}, and I did not come this far to make friends.`},
+  {id:'boast_reigns',    tag:'boast', phase:['meat','close'],
+    when:c=>c.me.reigns>=1,
+    fn:c=>c.me.reigns===1
+      ? `I have carried this company's championship before. I know what it costs.`
+      : `I have held this company's top belt ${c.me.reigns} times. I know exactly what it costs.`},
+  {id:'boast_tier',      tag:'boast', phase:['thesis','meat'],
+    when:c=>c.me.tier,
+    fn:c=>`I am ${c.me.tier} in this business. I did not get here by accident.`},
+
+  // ----- QUESTIONS: rhetorical, do not let them off -----
+  {id:'q_earned',        tag:'question', phase:['meat','personal'],
+    when:c=>c.opp,
+    fn:c=>`What exactly has ${c.opp.name} earned that puts them across from me?`},
+  {id:'q_ready',         tag:'question', phase:['thesis','meat'],
+    when:c=>c.opp,
+    fn:c=>`How long is ${c.opp.name} going to pretend they are ready for this?`},
+  {id:'q_room',          tag:'question', phase:['personal','meat'],
+    when:c=>true,
+    fn:c=>`Ask anyone in this room who they came to see. Then ask them why.`},
+
+  // ----- THREATS + PROMISES -----
+  {id:'thr_leave',       tag:'threat', phase:['close','meat'],
+    when:c=>c.opp,
+    fn:c=>`I am going to leave ${c.opp.name} flat on this mat. Everyone in ${c.venue.promoShort} sees it.`},
+  {id:'thr_finish',      tag:'threat', phase:['close'],
+    when:c=>c.opp,
+    fn:c=>c.me.align==='heel'
+      ? `When I am done with ${c.opp.name} tonight, they will thank the referee for making it stop.`
+      : `I am going to finish ${c.opp.name} tonight. And the room is going to be on its feet.`},
+  {id:'thr_title',       tag:'threat', phase:['close'],
+    when:c=>c.opp&&c.opp.holdsBelt,
+    fn:c=>`I am walking out of this building with that belt. Bet on anything else.`},
+
+  // ----- CALLBACKS: the repeatable phrase, only in Close -----
+  {id:'cb_signature',    tag:'callback', phase:['close'],
+    when:c=>true,
+    fn:c=>c.me.gimmick
+      ? `That is what ${c.me.gimmick} does. That is what ${c.me.gimmick} has always done.`
+      : `I told you what I was here for. I do not repeat myself.`},
+
+  // ----- TWISTS: swerve the direction of what came before -----
+  {id:'tw_notyou',       tag:'twist', phase:['meat','personal'],
+    when:c=>c.opp,
+    fn:c=>`But this is not about ${c.opp.name}. This never was.`},
+  {id:'tw_realtarget',   tag:'twist', phase:['personal','close'],
+    when:c=>c.champion&&!c.champion.you&&(!c.opp||c.champion.name!==c.opp.name),
+    fn:c=>`The person I actually came for is standing backstage with a belt on their shoulder. ${c.champion.name}, I am coming.`},
+
+  // ----- CROWD WORK: face and heel grammar diverges here -----
+  {id:'crowd_thanks',    tag:'crowd', phase:['personal','close'],
+    when:c=>c.me.align!=='heel',
+    fn:c=>`Every night you show up. Every night you are the reason I do too.`},
+  {id:'crowd_scorn',     tag:'crowd', phase:['personal','close'],
+    when:c=>c.me.align==='heel',
+    fn:c=>`You people paid to boo me and I am fine with that. You paid.`},
+];
+function chipTag(tag){ return {ref:'k-crowd',boast:'k-heel',threat:'k-heel',question:'k-cool',concession:'k-face',callback:'k-crowd',twist:'k-cool',crowd:'k-face'}[tag]||'k-cool'; }
+function chipsFor(phase){
+  const ctx=PMCTX;
+  const used=PM.usedChips||{};
+  const pool=CHIP_BANK.filter(ch=>ch.phase.includes(phase) && ch.when(ctx) && !used[ch.id]);
+  // shuffle and take up to 6, keeping at least one reference if there is any
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const refs=pool.filter(c=>c.tag==='ref');
+  const picked=[];
+  if(refs.length && phase!=='close') picked.push(refs[0]);
+  for(const c of pool){ if(picked.length>=6) break; if(!picked.includes(c)) picked.push(c); }
+  return picked;
+}
+function chipLabel(tag){
+  return {ref:'REAL HISTORY', concession:'GIVE CREDIT', boast:'BOAST', question:'QUESTION',
+          threat:'PROMISE', callback:'CATCHPHRASE', twist:'SWERVE', crowd:'TO THE CROWD'}[tag]||'LINE';
+}
+
 const PROMO_LINES={
   callout:{k:'CALL THEM OUT',c:'heel',host:-0.8,int:0.85,lines:[
     o=>`${o}. You have been ducking me for weeks and everybody in this building knows it.`,
@@ -6021,7 +6221,10 @@ function beginPromo(mode,targetId){
   if(!target && mode==='title'){ const ch=champOf(); if(ch&&!ch.you) target=ch; }
   const directive=pickDirective(mode,target);
   PM={mode,target,directive,stance:null,phase:'hook',beat:0,maxBeats:PPHASE_ORDER.length,
-      score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,fitSum:0,complySum:0,complyN:0,done:false};
+      score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,fitSum:0,complySum:0,complyN:0,done:false,
+      // for the build-a-promo chip system
+      picking:[], usedChips:{}, usedLines:{}};
+  PMCTX=buildPromoCtx(target);
   go('promo');
   stageInit('pmArena'); dressArena($('pmArena'),myPromoId());
   figLook('me',G.w.look);
@@ -6070,31 +6273,72 @@ function pmStance(s){
 }
 function pmChoices(){
   if(PM.done) return;
+  PMCTX=buildPromoCtx(PM.target);         // refresh at each beat: state can move
   const t=PM.target, oppName=t?t.name:'whoever they put in front of me';
-  const kinds=promoKinds(t,PM.mode,PM.phase);
-  const html=kinds.map(k=>{
-    const d=PROMO_LINES[k]; if(!d) return '';
-    const line=d.lines[Math.floor(rnd()*d.lines.length)](oppName);
-    return `<div class="pmopt" onclick="pmSay('${encodeURIComponent(JSON.stringify({k,line}))}')">
-      <div class="po-k k-${d.c}">${d.k}</div>
-      <div class="po-t">“${line}”</div>
-      ${PROMO_NOTE[k]?`<div class="po-d">${PROMO_NOTE[k]}</div>`:''}</div>`;
-  }).join('');
   const ph=PPHASES[PM.phase]||PPHASES.hook;
   const phaseName=`Beat ${PM.beat+1} of 5 · ${ph.n}`;
+  // ---- pick 2-3 chips this beat; assembly is period-separated so it reads as a paragraph ----
+  const chips=chipsFor(PM.phase);
+  const maxThis = PM.phase==='meat'||PM.phase==='personal' ? 3 : 2;
+  const preview = (PM.picking||[]).map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?ch.fn(PMCTX):''; }).filter(Boolean).join(' ');
+  const canSay = (PM.picking||[]).length>=Math.min(2,maxThis);
+  const chipHTML = chips.length ? chips.map(ch=>{
+    const on=(PM.picking||[]).includes(ch.id);
+    const clickable=on || (PM.picking||[]).length<maxThis;
+    return `<div class="chip ${on?'on':''} ${clickable?'':'off'}"
+      onclick="${clickable?`pmToggleChip('${ch.id}')`:''}">
+      <div class="ch-k ${chipTag(ch.tag)}">${chipLabel(ch.tag)}</div>
+      <div class="ch-t">${ch.fn(PMCTX)}</div>
+    </div>`;
+  }).join('') : `<div class="hint">No fresh chips for this beat. Write your own below.</div>`;
   $('pmChoices').innerHTML=`
     <div class="pmphase">
       <div><div class="pp-k">${phaseName}</div><div class="pp-h">${ph.d}</div></div>
       <div class="pp-d">${DIRECTIVES[PM.directive].icon} ${DIRECTIVES[PM.directive].kicker}
         <span class="pp-s pms-${PM.stance}">${PM.stance==='comply'?'on script':PM.stance==='wrinkle'?'your wrinkle':'off script'}</span></div>
     </div>
-    <div class="grid" style="gap:9px;">${html}</div>
+    <div class="flab" style="display:flex;justify-content:space-between;">Build the line
+      <span class="hint" style="text-transform:none;letter-spacing:0;">Pick ${maxThis===3?'2 or 3':'2'} phrases in order. They will be delivered as one paragraph.</span></div>
+    <div class="chipgrid">${chipHTML}</div>
+    <div class="pmpreview ${canSay?'on':''}">
+      <div class="pv-k">You are going to say</div>
+      <div class="pv-t">${preview?`"${preview}"`:'<span class="hint">Nothing yet. Pick a phrase above to start the line.</span>'}</div>
+      <div class="row" style="justify-content:flex-end;gap:8px;margin-top:8px;">
+        <button class="ghost" onclick="pmClearPick()" ${(PM.picking||[]).length?'':'disabled'}>Clear</button>
+        <button onclick="pmSayChips()" ${canSay?'':'disabled'}>Cut it →</button>
+      </div>
+    </div>
     <div class="flab" style="margin-top:12px;">Or say it your own way</div>
     <div class="pmwrite">
       <input type="text" id="pmCustom" maxlength="180" placeholder="Write your own line…" onkeydown="if(event.key==='Enter')pmCustom()">
       <button onclick="pmCustom()">Say it</button>
     </div>
     <div class="hint" style="margin-top:5px;">The room reads your tone: how hard you commit, whether you speak to <i>them</i>, and whether what you say about ${oppName} is actually true.</div>`;
+}
+function pmToggleChip(id){
+  PM.picking=PM.picking||[];
+  const i=PM.picking.indexOf(id);
+  if(i>=0) PM.picking.splice(i,1); else PM.picking.push(id);
+  pmChoices();
+}
+function pmClearPick(){ PM.picking=[]; pmChoices(); }
+function pmSayChips(){
+  const ids=(PM.picking||[]).slice();
+  if(!ids.length) return;
+  const line=ids.map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?ch.fn(PMCTX):''; }).filter(Boolean).join(' ');
+  // read the composite line and tag its tone from the chips that built it
+  const chipsInPlay=ids.map(id=>CHIP_BANK.find(c=>c.id===id)).filter(Boolean);
+  const tags=chipsInPlay.map(c=>c.tag);
+  const hostile = tags.includes('threat')?-0.8 : tags.includes('boast')?-0.15 : tags.includes('concession')?0.55 : tags.includes('crowd')?0.35 : 0;
+  const intensity = tags.includes('threat')||tags.includes('boast')?0.85 : tags.includes('question')?0.7 : 0.6;
+  const specific = tags.includes('ref') || tags.includes('twist');
+  const crowd = tags.includes('crowd');
+  const kind = tags.includes('twist')?'swerve' : tags.includes('callback')?'signature' : '';
+  // dedup for the rest of the segment. The catchphrase chip is a deliberate
+  // callback and stays reusable, everything else fires once.
+  chipsInPlay.forEach(ch=>{ if(ch.tag!=='callback') PM.usedChips[ch.id]=true; });
+  PM.picking=[];
+  pmSay(encodeURIComponent(JSON.stringify({k:'chips',line,read:{hostile,intensity,specific,crowd,wantsTitle:tags.some(t=>t==='threat')&&PMCTX.opp&&PMCTX.opp.holdsBelt,kind,words:line.split(/\s+/).length}})));
 }
 function pmCustom(){
   const el=$('pmCustom'), v=(el&&el.value||'').trim();
@@ -6103,10 +6347,19 @@ function pmCustom(){
 }
 async function pmSay(payload){
   if(PM.done) return;
-  const {k,line}=JSON.parse(decodeURIComponent(payload));
+  const parsed=JSON.parse(decodeURIComponent(payload));
+  const {k,line}=parsed;
+  // dedup: a body beat that repeats a line reads as forgetting where you are.
+  // The catchphrase (kind:'signature' / callback chip) is the exception.
+  if(PM.usedLines[line] && !(parsed.read&&parsed.read.kind==='signature')){
+    toast('You already said that. Pick a different line.');
+    pmChoices(); return;
+  }
+  PM.usedLines[line]=true;
   $('pmChoices').innerHTML='<div class="hint">…</div>';
   const t=PM.target;
-  const read = k==='custom' ? readPromoLine(line,t)
+  const read = parsed.read ? parsed.read
+    : k==='custom' ? readPromoLine(line,t)
     : (()=>{ const d=PROMO_LINES[k];
         return {hostile:d.host,intensity:d.int,crowd:(k==='rally'||k==='boast'||k==='cheap'||k==='pander'),
                 specific:k!=='cool'&&k!=='boast'&&k!=='cheap'&&k!=='pander',wantsTitle:k==='challenge',
@@ -6168,9 +6421,11 @@ async function pmSay(payload){
   }
   pmClearBubbles();
   // did that line belong where it was said?
-  const kind=(k==='custom') ? (read.kind||'') : k;
+  // chips already assemble on-phase, so treat them as fitting. Old system uses k.
+  const kind=(k==='custom') ? (read.kind||'') : k==='chips' ? '__fits__' : k;
+  const fitsCheat = kind==='__fits__';
   const fits=(PPHASES[PM.phase]||PPHASES.hook).fits;
-  const fit = fits.includes(kind) ? 1 : (kind==='cheap'||kind==='pander') ? -0.4 : -0.6;
+  const fit = fitsCheat ? 1 : fits.includes(kind) ? 1 : (kind==='cheap'||kind==='pander') ? -0.4 : -0.6;
   PM.fitSum += fit;
   if(fit<0){
     pmLog(fit<=-0.6
