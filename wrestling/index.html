@@ -237,6 +237,7 @@
   .fsub{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:3px;}
   .fmid{text-align:center;}
   .fstip{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);font-weight:800;}
+  .frules{font-size:10px;color:var(--text-faint);margin:2px 0 4px;line-height:1.25;max-width:34ch;margin-left:auto;margin-right:auto;}
   .fclock{font-family:var(--display);font-size:24px;color:var(--brandred-bright);line-height:1;}
 
   .momwrap{margin-bottom:10px;}
@@ -376,6 +377,8 @@
   .bs-vs{font-size:14px;color:var(--text);} .bs-vs b{color:var(--cream);}
   .bs-pos{font-size:11.5px;color:var(--text-dim);margin-top:3px;}
   .bs-pos.me{color:var(--gold);font-weight:800;} .bs-pos.op{color:var(--text-faint);}
+  .bs-rules{font-size:12px;color:var(--text);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.04);border-left:2px solid rgba(224,179,65,.55);border-radius:3px;}
+  .bs-rules b{color:var(--cream);letter-spacing:.12em;font-size:10px;text-transform:uppercase;}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -1082,6 +1085,7 @@
     </div>
     <div class="fmid">
       <div class="fstip" id="fStip">SINGLES MATCH</div>
+      <div class="frules" id="fRules"></div>
       <div class="fclock" id="fClock">0:00</div>
       <div class="fphase" id="fPhase">BELL</div>
     </div>
@@ -3572,8 +3576,8 @@ function offerOdds(o){
 // to the player: what the sheet shows is what actually gets rolled.
 function injuryRisk(o){
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
-  const stipRisky = o.stip==='hardcore'||o.stip==='ladder'||o.stip==='cage';
-  const stipPart  = stipRisky ? (o.mult-1)*0.50 + 0.03 : 0;
+  const danger = (STIP_RULES[o.stip]||{}).danger || 0;
+  const stipPart  = danger>0 ? ((o.mult-1)*0.50 + 0.03) * danger : 0;
   const condPart  = Math.max(0, 65-c.cond)/65 * 0.22;        // below 65 cond
   const wearPart  = Math.max(0, (c.wear||0)-40)/120 * 0.14;  // multiplies other risks
   const workedHurt= c.workedHurt ? 0.55 : 0;
@@ -3702,6 +3706,7 @@ function renderWeek(){
       <div class="bs-pos ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${o.card}${
         o.stakes==='title'?' · for the title':o.stakes==='defense'?' · title defence':
         o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':''}</div>
+      <div class="bs-rules"><b>Rules.</b> ${stipRules(o).desc}</div>
       ${b.line?`<div class="bs-office">"${b.line}"</div>`:''}
       <div class="bk-odds" style="margin-top:10px;">
         <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
@@ -3886,6 +3891,58 @@ function makeOffers(){
 /* ============================================================
    MATCH SIM
    ============================================================ */
+
+/* The rules that actually govern a match. Each stipulation lists
+   the ways it can end and what the referee will let go. `ends` is
+   the only list the finish path is allowed to draw from, so the
+   engine cannot produce a pinfall in a Submission Match or a tap
+   in Last Man Standing. `desc` is the one-line summary shown to
+   the player at the bell and on the booking sheet. */
+const STIP_RULES = {
+  singles: { label:'Singles Match',      desc:'One-on-one, referee\'s enforcement. Pinfall or submission.',
+             ends:['pin','sub'],           danger:0, mod:0 },
+  tag:     { label:'Tag Team Match',     desc:'Legal wrestler only. Tag the corner to sub in.',
+             ends:['pin','sub'],           danger:0, mod:-2 },
+  hardcore:{ label:'Hardcore Match',     desc:'No disqualification. Weapons legal, anything counts.',
+             ends:['pin','sub'],           danger:1, mod:3 },
+  ladder:  { label:'Ladder Match',       desc:'The prize hangs above the ring. Climb the ladder and take it down.',
+             ends:['climb'],               danger:1, mod:4 },
+  cage:    { label:'Steel Cage',         desc:'No count-outs. Escape by pinfall, submission, or over the top of the cage.',
+             ends:['pin','sub','climb'],   danger:.6, mod:2 },
+  sub:     { label:'Submission Match',   desc:'The only way to win is to make them tap. Pinfalls do nothing.',
+             ends:['sub'],                 danger:0, mod:1 },
+  lms:     { label:'Last Man Standing',  desc:'No pinfalls. Beat them down and win by ten-count when they cannot rise.',
+             ends:['ko'],                  danger:1, mod:3 },
+  grudge:  { label:'Grudge Match',       desc:'Personal issue. The referee will let a lot go before calling for the bell.',
+             ends:['pin','sub'],           danger:.6, mod:2 },
+};
+function stipRules(o){ return STIP_RULES[o&&o.stip] || STIP_RULES.singles; }
+// Take the finish the engine wants to record and rewrite it to whatever the
+// stipulation actually allows. A pin in a Submission Match becomes a tap; a
+// long-count knockdown in Last Man Standing wins instead of a three-count.
+function commitFinish(base){
+  const o=MS&&MS.o; const rl=stipRules(o); const ends=rl.ends;
+  let f=Object.assign({},base);
+  if(ends.length===1 && ends[0]==='ko'){
+    // LMS: whatever put them down, it was the 10-count that decided it.
+    f={type:'ko', by:base.by, move:base.move||'a heavy shot', fin:!!base.fin, part:base.part||null};
+  } else if(ends.length===1 && ends[0]==='sub' && f.type!=='sub'){
+    // Sub-only: the last submission move used, if any, is what did it.
+    // If nobody in the match ever went to a hold, leave the move name empty
+    // and let the finish line read "won by submission at TIME".
+    const lastSub = (MS.usedMoves||[]).slice().reverse().find(m=>m&&m.cat==='submission');
+    f={type:'sub', by:base.by, move:(lastSub&&lastSub.name)||'', part:base.part||null};
+  } else if(ends.length===1 && ends[0]==='climb'){
+    // Ladder: the finish is possession of the prize hanging above.
+    f={type:'climb', by:base.by, move:'the climb', fin:false};
+  } else if(!ends.includes(f.type)){
+    // Fall back to whatever the rules first allow.
+    const pref=ends[0];
+    f={type:pref, by:base.by, move:base.move||(pref==='sub'?'a hold':'a cover'), fin:!!base.fin, part:base.part||null};
+  }
+  MS.finish=f;
+  return f;
+}
 /* ============================================================
    RIVALRY STORYLINES: multi-match arcs with backstage moments
    ------------------------------------------------------------
@@ -3902,7 +3959,7 @@ const STORY_STAGES=[
   {n:3,name:'Blow-Off',    label:'It ends. One way or another.'},
   {n:4,name:'Settled',     label:'Whatever it was, it is finished.'},
 ];
-const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','hardcore',1.25],['Steel Cage','cage',1.2],['Last Man Standing','hardcore',1.35]];
+const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Steel Cage','cage',1.2],['Last Man Standing','lms',1.35]];
 
 function story(){ return G.story||null; }
 function startStory(charId,reason){
@@ -4449,6 +4506,7 @@ async function startFight(o){
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
   $('fStip').textContent=(o.stakes==='title'?'🏆 TITLE MATCH · ':o.stakes==='defense'?'🏆 TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
+  $('fRules').textContent=stipRules(o).desc;
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
   const startGen=MS.gen;
@@ -4568,6 +4626,10 @@ async function runFight(){
     } else if(!MS.ended && rnd()<coverChance(byMe,isFin)){
       await coverAttempt(byMe, lastMove, isFin);
     }
+    // ---- some matches are won by escape rather than by pinfall ----
+    if(!MS.ended && ph.id==='stretch' && stipRules(o).ends.includes('climb')){
+      await climbAttempt();
+    }
 
     // ---- decisions land on the story beats where they belong ----
     if(!MS.ended && ph.id==='stretch' && !MS.finishTried && MS.stretch>=2){ await finishDecision(); }
@@ -4618,7 +4680,10 @@ async function coverAttempt(byMe, mvName, isFin){
   // The finish belongs at the finish. Before the stretch a fall only comes
   // off a finisher, and even then it is a genuine upset.
   if(MS.phase<4) p3 *= isFin ? 0.30 : 0;
-  const three=rnd()<p3;
+  // In stipulations where a pinfall does not end the match, the pin can bring
+  // a near-fall but never the three: the finish will come by tap or ten-count.
+  const rulesAllowPin = stipRules(MS.o).ends.includes('pin');
+  const three = rulesAllowPin && rnd()<p3;
   await pinSequence(byMe, three, power, mvName, isFin);
 }
 
@@ -4640,10 +4705,11 @@ async function submissionAttempt(byMe, mvName){
            :`<b>${MS.opp.name}</b> has the ${bare(mvName)} cinched in on your ${LIMB_NAME[part]}.`,byMe?'':'bad');
   for(let i=0;i<3;i++){ fmv(A,{sc:1.05},95); fmv(D,{rot:i%2?6:-6},95); await sleep(110); fmv(A,{sc:1},95); fmv(D,{rot:0},95); await sleep(95); }
   const pTap=clamp((power-58)/56,0,0.88);
-  if(MS.phase>=3 && rnd()<pTap){
+  const rulesAllowSub = stipRules(MS.o).ends.includes('sub');
+  if(rulesAllowSub && MS.phase>=3 && rnd()<pTap){
     await callout('TAP! TAP! TAP!');
     fLog(byMe?`<span class="hi">${MS.opp.name} taps out!</span>`:`<span class="bad">You had to tap.</span>`);
-    MS.finish={type:'sub',by:byMe,move:mvName,part};
+    commitFinish({type:'sub',by:byMe,move:mvName,part});
     MS.quality+=16;
     await endFight(byMe); return;
   }
@@ -4661,12 +4727,54 @@ async function forceFinish(){
   if(MS.ended) return;
   const iWin = MS.mom>=0;
   const last = MS.usedMoves[MS.usedMoves.length-1];
-  MS.finish={type:(last&&last.cat==='submission')?'sub':'pin', by:iWin,
-             move:last?last.name:'a cover', fin:!!(last&&last.tier>=4),
-             part:(iWin?MS.me:MS.opp).target};
+  commitFinish({type:(last&&last.cat==='submission')?'sub':'pin', by:iWin,
+                move:last?last.name:'a cover', fin:!!(last&&last.tier>=4),
+                part:(iWin?MS.me:MS.opp).target});
   MS.ended=true;
   fLog(`<span class="hi">They cannot go any more. Somebody has to lose.</span>`);
   await endFight(iWin);
+}
+
+// Cage and ladder matches can end with the leading wrestler getting over the
+// top. Momentum is the whole story here: the one on top has the seconds to
+// climb, the one on the mat cannot stop them without recovering first.
+async function climbAttempt(){
+  if(MS.ended) return;
+  const iAmClimbing = MS.mom >= 0;
+  const edge = Math.abs(MS.mom);
+  const ends = stipRules(MS.o).ends;
+  // Ladder is climb-only, so it fires more often than a cage where pin/sub
+  // are still on the table. Below a real momentum edge, it never fires.
+  const only = ends.length===1 && ends[0]==='climb';
+  if(edge<24) return;
+  const base = only ? 0.10 : 0.05;
+  const p = clamp(base + (edge-24)/300 + MS.stretch*0.008, 0, only?0.42:0.22);
+  if(rnd()>p) return;
+  const A=iAmClimbing?'me':'opp', D=iAmClimbing?'opp':'me';
+  busy(true);
+  fmv(A,{pose:'climb',up:-30},420);
+  fmv(D,{pose:'prone',fwd:0,rot:0},260);
+  await callout(only?'GOING FOR IT!':'CLIMBING!');
+  fLog(iAmClimbing?`<span class="hi">You are climbing. Nobody there to stop you.</span>`
+                  :`<span class="bad">${MS.opp.name} is on the way up. Get up. Get up.</span>`);
+  await sleep(720);
+  // The one on the mat has a puncher's chance to reach up and drag them back.
+  const dragPow = (100 - (iAmClimbing?MS.opp.hp:MS.me.hp))*0.4;
+  const escape = only ? 0.60 : 0.45;
+  if(rnd() < escape - dragPow/240){
+    // they get over
+    commitFinish({type:'climb', by:iAmClimbing, move:'the climb', fin:false});
+    MS.ended=true;
+    fmv(A,{up:-60},260); await sleep(280);
+    await endFight(iAmClimbing);
+    return;
+  }
+  // dragged back down and it becomes an exchange
+  fLog(`<span class="hint">Caught before the top. Dragged back into the ring.</span>`);
+  fmv(A,{pose:'prone',fwd:0,rot:0,up:0},280); fmv(D,{pose:'ready',up:0},220);
+  MS.mom=clamp(MS.mom - (iAmClimbing?18:-18), -100, 100); setMom();
+  MS.quality+=4;
+  await settle(280);
 }
 
 async function finishDecision(){
@@ -4844,7 +4952,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     if(stale()) return false;
     showCount(3, true);
     await flashScreen();
-    MS.finish={type:'pin',by:iAmPinning,move:mvName,fin:isFin};
+    commitFinish({type:'pin',by:iAmPinning,move:mvName,fin:isFin});
     arena.classList.remove('tense');
     await sleep(520);
     FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
@@ -4880,7 +4988,11 @@ async function endFight(iWon){
   await flashScreen();
   if(stale()) return;
   const f=MS.finish||{type:'pin',by:iWon};
-  await callout(f.type==='sub'?(iWon?'SUBMISSION!':'YOU TAPPED'):iWon?'WINNER!':'DEFEATED');
+  const cw = f.type==='sub'   ? (iWon?'SUBMISSION!':'YOU TAPPED')
+           : f.type==='ko'    ? (iWon?'TEN COUNT!':'STAYED DOWN')
+           : f.type==='climb' ? (iWon?'ESCAPE!':'BEATEN OUT')
+           : iWon?'WINNER!':'DEFEATED';
+  await callout(cw);
   if(stale()) return;
   // ---- the official raises the winner's arm ----
   if(FIG.ref){
@@ -4898,10 +5010,20 @@ async function endFight(iWon){
       fmv(W,{up:0},170); fmv('ref',{up:0},170); await sleep(180);
     }
   }
-  fLog(f.type==='sub'
-      ? (iWon?`<span class="hi">${MS.opp.name} tapped to the ${bare(f.move)}.</span>`:`<span class="bad">You tapped to the ${bare(f.move)}.</span>`)
-      : (iWon?`<span class="hi">Three count. ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
-             :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`));
+  if(f.type==='sub'){
+    const via = f.move ? ` to the ${bare(f.move)}` : '';
+    fLog(iWon?`<span class="hi">${MS.opp.name} tapped${via}.</span>`
+             :`<span class="bad">You tapped${via}.</span>`);
+  } else if(f.type==='ko'){
+    fLog(iWon?`<span class="hi">${MS.opp.name} stayed down. Referee counted ten.</span>`
+             :`<span class="bad">You could not answer the count. The bell rings.</span>`);
+  } else if(f.type==='climb'){
+    fLog(iWon?`<span class="hi">${MS.me.name} got over the top and hit the floor first.</span>`
+             :`<span class="bad">${MS.opp.name} beat you to it. Feet on the floor before yours.</span>`);
+  } else {
+    fLog(iWon?`<span class="hi">Three count. ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
+             :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`);
+  }
   fLog(`<span class="hint">Time of the fall: ${clockStr()}${MS.nearFalls?` · ${MS.nearFalls} near-fall${MS.nearFalls>1?'s':''}`:''}</span>`);
   $('fClock').textContent=clockStr();
   const pc=charById(MS.o.oppId);
@@ -4921,7 +5043,7 @@ function finalizeFight(iWon){
   const used=MS.usedMoves.length?MS.usedMoves:bestMoves(3);
   const ars=used.reduce((s,m)=>s+(m.dmg*0.5+m.pop*0.5),0)/Math.max(1,used.length);
   const govt=used.reduce((s,m)=>s+(a[(catById(m.cat)||{attr:'po'}).attr]||0),0)/Math.max(1,used.length);
-  const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
+  const stipMod=(STIP_RULES[o.stip]||{}).mod||0;
   const good=[], bad=[];
   // normalise the running tally to a reference-length match: a long match is
   // not automatically a better one, and a short one is not automatically worse
@@ -4971,9 +5093,10 @@ function groupMoves(used){
 }
 function finishLine(res){
   const f=res.finish||{};
-  if(res.draw||f.type==='draw') return `Time-limit draw at ${res.time}`;
   const who=f.by?'You':(MS&&MS.opp?MS.opp.name:'They');
-  if(f.type==='sub') return `${who} won by submission at ${res.time} with the ${bare(f.move)}`;
+  if(f.type==='sub')   return `${who} won by submission at ${res.time}${f.move?` with the ${bare(f.move)}`:''}`;
+  if(f.type==='ko')    return `${who} won by ten-count knockout at ${res.time}`;
+  if(f.type==='climb') return `${who} won by escape at ${res.time}`;
   return `${who} won by pinfall at ${res.time}${f.move?`, after the ${bare(f.move)}`:''}`;
 }
 
@@ -4995,8 +5118,8 @@ function skipFight(){
   const win=rnd()<clamp(p,0.05,0.95);
   // it still has to end the way a wrestling match ends
   const fin=(win?MS.usedMoves.filter(m=>m.tier>=4).pop():null)||MS.usedMoves[MS.usedMoves.length-1];
-  MS.finish={type:(fin&&fin.cat==='submission')?'sub':'pin',by:win,move:fin?fin.name:'a cover',
-             fin:!!(fin&&fin.tier>=4),part:(win?MS.me:MS.opp).target};
+  commitFinish({type:(fin&&fin.cat==='submission')?'sub':'pin',by:win,move:fin?fin.name:'a cover',
+             fin:!!(fin&&fin.tier>=4),part:(win?MS.me:MS.opp).target});
   finalizeFight(win);
 }
 
@@ -5131,7 +5254,7 @@ function doAsk(id){
   if(won){
     if(id==='time'){ b.o.mult=Math.round((b.o.mult+0.25)*100)/100; b.moreTime=true; }
     if(id==='opp'){ const alt=makeOffers().find(x=>x.oppId!==b.o.oppId); if(alt){ alt.card=b.o.card; b.o=alt; } }
-    if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2]][Math.floor(rnd()*3)];
+    if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1],['Last Man Standing','lms',1.35]][Math.floor(rnd()*5)];
       b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2]; }
     if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
     pushInboxItem({ico:'🤝',sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got')}.`});
@@ -5155,7 +5278,7 @@ function simMatch(o){
   const planMoves=w.moves.map(moveById).filter(m=>m&&plan.includes(m.cat)).sort((x,y)=>(y.dmg+y.pop)-(x.dmg+x.pop)).slice(0,5);
   const used=planMoves.length?planMoves:bestMoves(3);
   const ars=used.length? used.reduce((s,m)=>s+(m.dmg*0.5+m.pop*0.5),0)/used.length : 18;
-  const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
+  const stipMod=(STIP_RULES[o.stip]||{}).mod||0;
   // execution: governing attrs of the categories used
   const govt=used.length? used.reduce((s,m)=>s+(a[catById(m.cat).attr]||0),0)/used.length : 30;
   // psychology gate: a match needs a storyteller
@@ -5236,7 +5359,7 @@ function applyMatch(o,res){
   }
   // ---- injury: only when you actually pushed it (see injuryRisk) ----
   let injMsg=null;
-  const cats=res.used.map(m=>m.cat).concat([o.stip==='hardcore'||o.stip==='ladder'?'hardcore':'strike']);
+  const cats=res.used.map(m=>m.cat).concat([(STIP_RULES[o.stip]||{}).danger?'hardcore':'strike']);
   const risk=injuryRisk(o);
   if(rnd()<risk){
     const h=takeInjury(cats,o.mult,c.workedHurt?0.30:0);
@@ -5370,8 +5493,9 @@ function matchStory(o,res){
   const q=res.quality, n=o.oppName, f=res.finish||{};
   const open=q>=80?`You and ${n} tore the house down.`:q>=62?`A strong outing with ${n}.`:q>=45?`A solid, workmanlike match with ${n}.`:`It never clicked with ${n}.`;
   let mid;
-  if(res.draw||res.win===null) mid=` Neither of you could put it away before the bell.`;
-  else if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
+  if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
+  else if(f.type==='ko') mid=res.win?` You beat them down and they could not answer the ten count.`:` You could not beat the count. It was over on the floor.`;
+  else if(f.type==='climb') mid=res.win?` You got over the top first, feet on the floor before them.`:` ${n} beat you to the top and dropped clear.`;
   else if(res.win) mid=f.fin?` The finisher did it. Three seconds later it was over.`:` You caught them flat and stole the three.`;
   else mid=f.fin?` They hit the ${bare(f.move)} and that was that.`:` ${n} had an answer when it mattered.`;
   const nf=(res.nearFalls||0)>=3?' The near-falls down the stretch had them out of their seats.':'';
