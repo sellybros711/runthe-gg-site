@@ -2102,6 +2102,19 @@ function loyaltyLabel(v){
 function canAlly(id){ const R=rel(id); return !isAlly(id) && R.respect>=55 && R.heat<40; }
 function canTag(id){ const a=allyOf(id); return a && !a.tag && !myTeam(); }
 function canStable(){ return !myStable() && allies().length>=2; }
+// A manager is an ally standing at ringside. They will not wrestle, but they
+// steady the act (small quality bonus) and get one interference this year.
+function myManager(){ const id=G.car&&G.car.managerId; return id? charById(id) : null; }
+function managerAlly(){ const id=G.car&&G.car.managerId; return id? allyOf(id) : null; }
+function canManage(id){ const a=allyOf(id); return !!a && !a.tag && G.car.managerId!==id; }
+function assignManager(id){
+  G.car.managerId=id; const c=charById(id); nudgeLoyalty(id,6);
+  pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>${c.name}</b> is in your corner from tonight on. Every match, at ringside.`});
+}
+function dismissManager(){
+  const c=myManager(); G.car.managerId=null;
+  if(c){ nudgeLoyalty(c.id,-8); pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`You cut <b>${c.name}</b> loose from ringside. They noticed.`}); }
+}
 
 const TEAM_WORDS=[['The','Brotherhood'],['The','Syndicate'],['The','Outfit'],['The','Pact'],['The','Firm'],
   ['Blood','Money'],['The','Reckoning'],['Iron','Union'],['The','Cartel'],['Hostile','Takeover']];
@@ -3832,8 +3845,9 @@ function renderCareer(){
       c.streak>=3?`<div class="hint" style="color:#f0b060;font-weight:800;">${pico('fire',14)} ${c.streak}-match win streak</div>`
       :c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
     ['Titles', (heldBelts().length||'-'), (()=>{ const held=heldBelts();
-      if(!held.length) return `<div class="hint">${beltName(t,'secondary')} and ${beltName(t)} in this house</div>`;
-      return `<div class="hint">${held.map(b=>`${pico('crown',12)} ${b.name}${b.defenses?` <span style="opacity:.7">(${b.defenses} def)</span>`:''}`).join('<br>')}</div>`;
+      const mb = c.mitb ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} Money in the Bank: ${c.mitb.belt}</div>` : '';
+      if(!held.length) return `<div class="hint">${beltName(t,'secondary')} and ${beltName(t)} in this house</div>${mb}`;
+      return `<div class="hint">${held.map(b=>`${pico('crown',12)} ${b.name}${b.defenses?` <span style="opacity:.7">(${b.defenses} def)</span>`:''}`).join('<br>')}</div>${mb}`;
     })()],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
   // secondary detail lives behind a pager so the week's decision stays on screen
@@ -4070,11 +4084,13 @@ function renderWeek(){
         <span>${pico('money',14)} <b>${money(o.purse)}</b></span>
         <span>${pico('graphUp',14)} <b>+${rep}</b> rep</span>
         <span class="${risk>0.18?'hot':''}">${pico('bandage',14)} <b>${Math.round(risk*100)}%</b> risk</span>
+        ${myManager()?`<span style="color:var(--gold)">${pico('handshake',14)} ${myManager().name} in your corner</span>`:''}
         ${b.moreTime?`<span style="color:var(--gold)">${pico('star',14)} extra time</span>`:''}
         ${b.promised?`<span style="color:var(--gold)">${pico('handshake',14)} going over</span>`:''}
         ${b.studied?`<span style="color:var(--gold)">${pico('tape',14)} did the homework</span>`:''}
       </div>
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
+      ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' ? `<button class="ghost" style="width:100%;margin-top:7px;border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in Money in the Bank →</button>`:''}
       ${p>0?`<button class="ghost" style="width:100%;margin-top:7px;" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'You have had your say':'Have a word with the office'}</button>`:
              `<div class="hint" style="text-align:center;margin-top:7px;">You have no say in the card yet. Earn it.</div>`}
     </div>`;
@@ -4208,9 +4224,15 @@ function makeOffers(){
     if(_story && i===0){ const rc=charById(_story.charId); if(rc) opp=rc; }   // the feud headlines
     const stips=[['Singles Match','singles',1],['Tag Team Match','tag',0.9],['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1]];
     let st=stips[Math.floor(rnd()*stips.length)];
+    // PPV nights get the marquee stipulations. The office only puts you in one
+    // if you have earned the spot, and only on the biggest match of the card.
+    if(ppv && i===2 && G.car.standing>=48 && rnd()<0.55){
+      const mm=[['Iron Man Match','iron',1.5],['Elimination Chamber','chamber',1.55],['Money in the Bank','mitb',1.5],['Tables, Ladders, Chairs','tlc',1.45]];
+      st = mm[Math.floor(rnd()*mm.length)];
+    }
     // a tag team gets booked as a tag team
     const _tm=myTeam();
-    if(_tm && rnd()<0.55) st=['Tag Team Match','tag',0.9];
+    if(_tm && !((STIP_RULES[st[1]]||{}).marquee) && rnd()<0.55) st=['Tag Team Match','tag',0.9];
     else if(!_tm && st[1]==='tag') st=stips[0];
     // Opponent level is anchored to the TIER, then rises toward you as you outgrow
     // it: promoters book you tougher as you get better, so matches stay competitive
@@ -4297,6 +4319,14 @@ const STIP_RULES = {
              ends:['ko'],                  danger:1, mod:3 },
   grudge:  { label:'Grudge Match',       desc:'Personal issue. The referee will let a lot go before calling for the bell.',
              ends:['pin','sub'],           danger:.6, mod:2 },
+  iron:    { label:'Iron Man Match',      desc:'Most decisions inside the time limit wins. Every fall is by pin or submission.',
+             ends:['pin','sub'],           danger:.4, mod:5, marquee:true },
+  chamber: { label:'Elimination Chamber', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
+             ends:['pin','sub'],           danger:1,   mod:6, marquee:true },
+  mitb:    { label:'Money in the Bank',   desc:'Ladders and a briefcase above the ring. Win it, cash in on any champion, any time.',
+             ends:['climb'],               danger:1,   mod:5, marquee:true },
+  tlc:     { label:'Tables, Ladders, Chairs', desc:'Every weapon legal, prize hanging above. Climb to take it, put someone through everything on the way.',
+             ends:['climb'],               danger:1.2, mod:5, marquee:true },
 };
 function stipRules(o){ return STIP_RULES[o&&o.stip] || STIP_RULES.singles; }
 // Take the finish the engine wants to record and rewrite it to whatever the
@@ -5503,7 +5533,9 @@ function finalizeFight(iWon){
   // Craft is what makes a match good; the night's story modifies it. A green
   // wrestler cannot produce a classic just by being in a long match.
   const craft = ars*0.26 + govt*0.30 + a.ps*0.22 + o.oppOvr*0.18;
-  let quality = 12 + craft*0.62 + paceQ*0.14 + stipMod;
+  const mgrBonus = myManager() ? 3 : 0;
+  let quality = 12 + craft*0.62 + paceQ*0.14 + stipMod + mgrBonus;
+  if(mgrBonus) good.push(`${myManager().name} at ringside kept you focused`);
   // ---- the things that actually make a match good ----
   const nf=MS.nearFalls||0;
   if(nf){ const b=Math.min(9,nf*3); quality+=b; good.push(`${nf} near-fall${nf>1?'s':''} the crowd bought`); }
@@ -5739,8 +5771,10 @@ function simMatch(o){
   const psychFloor=34+o.mult*6;
   // Scale: a competent rookie match lands ~48-52, a great one 80+. The base floor
   // represents simply being a trained professional in front of a paying crowd.
-  let quality = 30 + ars*0.22 + govt*0.20 + a.ps*0.14 + o.oppOvr*0.14 + stipMod;
+  const mgrBonus2 = myManager() ? 3 : 0;
+  let quality = 30 + ars*0.22 + govt*0.20 + a.ps*0.14 + o.oppOvr*0.14 + stipMod + mgrBonus2;
   const good=[], bad=[];
+  if(mgrBonus2) good.push(`${myManager().name} at ringside kept you focused`);
   if(a.ps<psychFloor){ const p=(psychFloor-a.ps)*0.45; quality-=p; bad.push(`ring psychology too green (${a.ps} vs ${Math.round(psychFloor)} needed)`); }
   const stamNeed=used.reduce((s,m)=>s+m.stam,0)+o.mult*10;
   if(a.st<stamNeed){ const p=(stamNeed-a.st)*0.35; quality-=p; bad.push(`gassed late (stamina ${a.st} vs ${Math.round(stamNeed)} needed)`); }
@@ -5824,6 +5858,13 @@ function applyMatch(o,res){
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
       c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100); }
+  }
+  // ---- Money in the Bank: winning the climb grants the briefcase ----
+  if(o.stip==='mitb' && res.win){
+    c.mitb={ year:c.year, week:c.week, promoId:myPromo().id, belt:beltName(tt) };
+    titleMsg=(titleMsg?titleMsg+' ':'')+`You have the <b>Money in the Bank</b> briefcase. Cash it in on any champion, any time.`;
+    pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Briefcase in hand.</b> You can cash in the ${c.mitb.belt} whenever you want.`});
+    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won Money in the Bank'});
   }
   // ---- injury: only when you actually pushed it (see injuryRisk) ----
   let injMsg=null;
@@ -6119,10 +6160,90 @@ function takeInjury(cats,stipMult,severityBoost){
 }
 // a live feud produces a backstage moment every few weeks
 function maybeBackstage(){
-  const st=story(); if(!st) return false;
-  if(G.car.week % 3 !== 0) return false;
-  if(st.stage>=4) return false;
-  return backstageEvent();
+  const st=story();
+  if(st && st.stage<4 && G.car.week % 3 === 0) return backstageEvent();
+  // no active feud: allies and mid-carders can still stop you in the hall
+  if(!st && G.car.week % 5 === 0 && rnd()<0.55) return nonRivalBackstage();
+  return false;
+}
+// Backstage moments that are not about a feud. Allies, mid-carders and
+// veterans stop you in the hall with small, self-contained scenes. The
+// choices move loyalty, respect and the office's opinion of you.
+function nonRivalBackstage(){
+  const c=G.car, me=myPromo(); if(!me) return false;
+  const roster=CHARS.filter(x=>x.promo===me.id);
+  const pool=[];
+  const list=allies();
+  list.forEach(a=>{ const ch=charById(a.id); if(ch) pool.push({type:'ally',c:ch,ally:a}); });
+  const mids=roster.filter(x=>!isAlly(x.id) && (!story()||story().charId!==x.id));
+  mids.slice(0,6).forEach(ch=>pool.push({type:'mid',c:ch}));
+  if(!pool.length) return false;
+  const pick=pool[Math.floor(rnd()*pool.length)];
+  const ch=pick.c, R=rel(ch.id);
+  const EVENTS={
+    ally_help:{
+      head:`${ch.name} pulls you aside`,
+      body:`They saw the last card. They have a note or two, if you want them. <span class="say">"Say the word and I'll sit on it, boss."</span>`,
+      opts:[
+        {n:'Take the note',d:'Grow together.',fx:{ally:8,ps:1},say:'You listen. Both of you leave the room a little sharper.'},
+        {n:'Send them at somebody',d:'Point them at a rival.',fx:{ally:4,pop:2},say:'You mark a target. They light up.'},
+        {n:'Wave it off',d:'You had it under control.',fx:{ally:-8,mom:-2},say:'You cut them off. They walk out quieter than they came in.'}]},
+    ally_favor:{
+      head:`${ch.name} needs a favour`,
+      body:`Their car broke down. Their number's not on the show. Their kid's sick. <span class="say">"Only asking because it's you."</span>`,
+      opts:[
+        {n:'Handle it',d:'Costs a little, buys a lot.',fx:{ally:14,coins:-200},say:`You take care of it. ${ch.name} owes you now, and knows it.`},
+        {n:'Talk to the office for them',d:'Spend a favour.',fx:{ally:10,standing:-2},say:'You put a word in. The office sighs, but says yes.'},
+        {n:'Not this week',d:'You have your own week.',fx:{ally:-10},say:'You say no. They nod like it was fine. It was not.'}]},
+    mid_respect:{
+      head:`A veteran stops you in the corridor`,
+      body:`${ch.name} watched your last one. <span class="say">"You've got it. Don't waste it."</span>`,
+      opts:[
+        {n:'Ask them how',d:'A minute of the good stuff.',fx:{ps:2,respect:6},say:'You listen. It rewires how you see the next one.'},
+        {n:'Thank them and go',d:'Take the win.',fx:{respect:4},say:'You take the compliment. Nothing else needs saying.'},
+        {n:'Tell them you already know',d:'A young man\'s answer.',fx:{respect:-10,heat:6},say:'They laugh, once, and walk on. You will hear about that laugh again.'}]},
+    mid_workout:{
+      head:`${ch.name} asks to run through spots`,
+      body:`Empty ring, two willing bodies. <span class="say">"Twenty minutes. I'll take the bumps."</span>`,
+      opts:[
+        {n:'Get in there',d:'Sharpen the craft.',fx:{ps:2,cond:-4,respect:6},say:'You run it. You leave the ring a better wrestler than you walked into it.'},
+        {n:'Just talk it through',d:'No bumps taken.',fx:{ps:1,respect:3},say:'You call spots without taking any. Half the value, none of the wear.'},
+        {n:'Not tonight',d:'Save it.',fx:{respect:-3},say:'You beg off. They find somebody else who says yes.'}]},
+    mid_gossip:{
+      head:`${ch.name} has locker room news`,
+      body:`They lean in like it's a secret. It probably is. <span class="say">"Between you and me."</span>`,
+      opts:[
+        {n:'Listen',d:'Information is currency.',fx:{standing:1,respect:3},say:'You listen. You file it away. It will be useful, later.'},
+        {n:'Change the subject',d:'You do not touch gossip.',fx:{respect:5},say:'You steer it somewhere else. They respect that, actually.'},
+        {n:'Repeat it, loudly',d:'Bad idea.',fx:{heat:8,respect:-8},say:'You say it where three people hear. It gets back to who it was about, of course it does.'}]},
+  };
+  let key;
+  if(pick.type==='ally') key = rnd()<0.5?'ally_help':'ally_favor';
+  else key = ['mid_respect','mid_workout','mid_gossip'][Math.floor(rnd()*3)];
+  const ev=EVENTS[key];
+  modal(`BACKSTAGE · ${ev.head}`,
+    `<div class="log" style="margin-bottom:12px;">${ev.body}</div>
+     <div class="decgrid">${ev.opts.map((o,i)=>`<div class="decopt" data-i="${i}">
+        <div class="dn">${o.n}</div><div class="dd">${o.d}</div></div>`).join('')}</div>`,
+    []);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const o=ev.opts[+d.dataset.i], f=o.fx||{};
+      if(f.ally && pick.ally) nudgeLoyalty(pick.ally.id,f.ally);
+      if(f.respect) R.respect=clamp(R.respect+f.respect,0,100);
+      if(f.heat) R.heat=clamp(R.heat+f.heat,0,100);
+      if(f.pop) c.pop=clamp(c.pop+f.pop,1,100);
+      if(f.mom) c.mom=clamp(c.mom+f.mom);
+      if(f.standing) c.standing=clamp((c.standing||50)+f.standing);
+      if(f.cond) c.cond=clamp(c.cond+f.cond);
+      if(f.coins) G.bag.coins=Math.max(0,G.bag.coins+f.coins);
+      if(f.ps) G.w.attrs.ps=clamp((G.w.attrs.ps||30)+f.ps);
+      closeModal();
+      pushInboxItem({ico:pico('starBig',18),sev:'story',txt:`<b>${ev.head}.</b> ${o.say}`});
+      save(); renderCareer();
+    });
+  },0);
+  return true;
 }
 function doRest(){ const c=G.car; c.cond=clamp(c.cond+22); c.morale=clamp(c.morale+4); advanceWeek(); toast('Rested up'); go('career'); }
 function doTrainWeek(){ const w=G.w;
@@ -8247,12 +8368,12 @@ function openPromoPicker(){
    who is with you, how solid they are, and the one thing you can do
    about each of them. The numbers are there for anyone who wants them. */
 function renderCrew(){
-  const c=G.car, team=myTeam(), st=myStable();
+  const c=G.car, team=myTeam(), st=myStable(), mgr=myManager();
   let h='';
   // ---- what you have ----
   h+=`<div class="grid g3" style="margin-bottom:14px;">
     ${[['Allies',allies().length],['Tag team',team?team.name:'-'],['Stable',st?st.name:'-'],
-       ['Team record',c.teamRec?`${c.teamRec.w}-${c.teamRec.l}`:'0-0']]
+       ['Manager',mgr?mgr.name:'-'],['Team record',c.teamRec?`${c.teamRec.w}-${c.teamRec.l}`:'0-0']]
       .map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val" style="font-size:${String(v).length>9?'15px':'22px'}">${v}</div></div>`).join('')}</div>`;
 
   // ---- the one thing to do ----
@@ -8287,6 +8408,9 @@ function renderCrew(){
       <div class="hint" style="margin-top:5px;">Respect ${Math.round(R.respect)} · ${R.wins||0}-${R.losses||0} against them</div>
       <div class="row" style="margin-top:9px;gap:6px;">
         ${canTag(a.id)?`<button class="ghost" style="padding:5px 10px;font-size:11px;" onclick="askTeam('${a.id}')">Form a tag team</button>`:''}
+        ${c.managerId===a.id
+          ? `<button class="ghost" style="padding:5px 10px;font-size:11px;border-color:var(--gold);color:var(--gold);" onclick="dismissManager();save();renderCrew();toast('${(charById(a.id)||{}).name||''} steps back');">In your corner ✓</button>`
+          : (canManage(a.id)?`<button class="ghost" style="padding:5px 10px;font-size:11px;" onclick="askManager('${a.id}')">Put them in your corner</button>`:'')}
         <button class="ghost" style="padding:5px 10px;font-size:11px;border-color:#8a3226;color:#f0907f;" onclick="askBetray('${a.id}')">Turn on them</button>
       </div>
     </div>`;
@@ -8343,6 +8467,34 @@ function askStable(){
     [{label:'Cancel',cls:'ghost',fn:closeModal},
      {label:'Found it',fn:()=>{const n=($('stableName')&&$('stableName').value||'').trim()||sug;
        closeModal(); foundStable(n); save(); renderCrew(); toast(n+' is born');}}]);
+}
+function askManager(id){
+  const c=charById(id); if(!c) return;
+  const prev=myManager();
+  modal(`Put ${c.name} in your corner?`,
+    `<p class="log">A manager stands at ringside every match. They steady the act, and once in a while they even the odds when it counts.</p>
+     ${prev?`<p class="hint">${prev.name} is there now. Bringing in ${c.name} bumps them.</p>`:''}
+     <ul class="mlist"><li><span class="i">▲</span>Small quality bonus on every match</li>
+     <li><span class="i">▲</span>One free interference to save you a year</li>
+     <li><span class="i">▼</span>Whoever you bump remembers it</li></ul>`,
+    [{label:'Not this time',cls:'ghost',fn:closeModal},
+     {label:'They are in',fn:()=>{closeModal(); assignManager(id); save(); renderCrew(); toast(c.name+' is at ringside');}}]);
+}
+function askCashIn(){
+  const b=G.car.booking; if(!b||b.type!=='match') return;
+  const o=b.o, mb=G.car.mitb;
+  modal('Cash in the briefcase?',
+    `<p class="log">The briefcase is guaranteed. Tonight against <b>${o.oppName}</b>, whatever the stipulation, if you win, the <b>${mb.belt}</b> is yours.</p>
+     <p class="hint">You only get one shot with this. Miss and it is gone.</p>`,
+    [{label:'Hold it',cls:'ghost',fn:closeModal},
+     {label:'Cash in tonight',fn:()=>{
+       closeModal();
+       o.stakes='title'; o.card='Main Event'; o.belt=mb.belt;
+       o.blurb=`Cashing in Money in the Bank: beat ${o.oppName} and the ${mb.belt} is yours.`;
+       G.car.mitb=null;
+       pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Cashing in tonight.</b> The ${mb.belt} is on the line.`});
+       save(); renderCareer();
+     }}]);
 }
 function askBetray(id){
   const c=charById(id), a=allyOf(id);
