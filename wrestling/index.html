@@ -4449,6 +4449,17 @@ function myMove(){
   if(!all.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
   const planned=all.filter(m=>plan.includes(m.cat));
   let pool=planned.length>=3?planned:all;
+  // In a Submission Match, the wrestler works holds regardless of their plan.
+  // Otherwise a wrestler booked into a sub match won by pinfall would produce
+  // a "won by submission" finish line with no actual sub move on the tape.
+  const rules=stipRules(MS.o);
+  const subOnly = rules.ends.length===1 && rules.ends[0]==='sub';
+  if(subOnly){
+    const subs=all.filter(m=>m.cat==='submission');
+    if(subs.length) pool = subs.concat(pool.filter(m=>m.cat!=='submission'));
+    // in the stretch, favour subs 3:1 so the finish reads honest
+    if(ph.id==='stretch' && subs.length && rnd()<0.75) pool = subs;
+  }
   // fundamentals early, signatures late. You do not open with your finisher
   let band=pool.filter(m=>m.tier>=ph.tier[0]&&m.tier<=ph.tier[1]);
   if(ph.id!=='stretch') band=band.filter(m=>m.id!==G.w.finisher);
@@ -4470,12 +4481,21 @@ const OPP_MOVES=[
   {name:'a diving elbow drop',cat:'aerial'}, {name:'an armbar',cat:'submission'},
   {name:'a vertical suplex',cat:'suplex'},{name:'a chair shot',cat:'hardcore'},
   {name:'a knife-edge chop',cat:'strike'},{name:'a german suplex',cat:'suplex'},
+  {name:'a Boston crab',cat:'submission'},{name:'a rear naked choke',cat:'submission'},
+  {name:'an ankle lock',cat:'submission'},{name:'a Fujiwara armbar',cat:'submission'},
+  {name:'a triangle choke',cat:'submission'},{name:'a headlock',cat:'submission'},
 ];
 function oppMove(){
   const ph=phaseNow();
   const tierOf2=m=>({strike:1,runner:2,technical:2,submission:3,suplex:3,slam:3,aerial:4,hardcore:4})[m.cat]||2;
   let band=OPP_MOVES.filter(m=>tierOf2(m)<=ph.tier[1]);
   if(!band.length) band=OPP_MOVES;
+  // Sub match: the opponent works holds too, so the finish reads honest.
+  const rules=stipRules(MS.o);
+  if(rules.ends.length===1 && rules.ends[0]==='sub'){
+    const subs=OPP_MOVES.filter(m=>m.cat==='submission');
+    if(subs.length && (ph.id==='stretch'?rnd()<0.75:rnd()<0.5)) band=subs;
+  }
   const recent=MS.oppRecent||[];
   const fresh=band.filter(m=>!recent.includes(m.name));
   const pick2=(fresh.length?fresh:band)[Math.floor(rnd()*(fresh.length?fresh.length:band.length))];
