@@ -2821,7 +2821,7 @@ const TOURS={
   {sel:'#carTiles', title:'Your vitals',
    body:'<b>Reputation</b> climbs the card. <b>Crowd</b> is how loudly they react, and being <i>hated</i> counts just as much as being loved (being <i>ignored</i> is the killer). <b>Condition</b> drops as you work, and working hurt is how careers end early.'},
   {sel:'.hud', title:'The clock is running',
-   body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30</b>, then decline, and the more road miles you put on the sooner that starts. You can retire from <b>36</b>. This career has an ending, so bank your prime.'},
+   body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30-32</b>, then decline, and mileage brings that forward. A careful main-eventer can work at world-class level well into their forties, and legends have gone longer. You can walk away any time from <b>34</b>; the ones who never quit end up in somebody else\'s corner years later, still on the road.'},
   {sel:'[data-nav="skills"]', title:'Skills: get better',
    body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up through Signature and Finisher tiers. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
   {sel:'[data-nav="gear"]', title:'Gear: how you look',
@@ -2970,7 +2970,7 @@ const RULES=[
     <li><b>Moves unlock</b> when you hit both an attribute gate and a mastery gate. Tiers run Fundamentals (0 mastery), Refined (70), Advanced (200), Signature (420), Finisher (750).</li>
     <li><b>Mentors</b> cost three weeks of your career and hand you a legend's signature move plus a permanent attribute boost.</li>
   </ul>
-  <p class="log">Attributes also grow on their own each year until your mid twenties, then stop, then decline. Spend your prime wisely.</p>`},
+  <p class="log">Attributes grow on their own each year until your mid twenties, peak around <b>30-32</b>, then decline. Careful main-eventers still work at world-class level into their forties, and legends have gone on into their fifties and sixties. You can retire any time from <b>34</b>, and the Hall of Immortals will grade you on everything you did.</p>`},
  {n:'Crowd & Character', h:`
   <p class="log">The crowd is measured on <b>two separate axes</b>, and confusing them is the most common mistake.</p>
   <ul class="ruleul">
@@ -5363,7 +5363,10 @@ function yearEnd(){
   // decline at different rates depending on how hard they worked the road and
   // how much of their body they left in the ring.
   const mileage=(c.wear||0)/100;
-  const declineAge=Math.max(29, 35 - Math.floor(mileage*1.6));
+  // decline starts in the mid-thirties for a careful wrestler, earlier if the miles
+  // have piled up. Peaks stay around 30-32, and plenty of wrestlers still work at
+  // world-class level into their forties (Cena, AJ Styles, Nakamura, Owens, Sting)
+  const declineAge=Math.max(31, 38 - Math.floor(mileage*1.4));
   const peak=Math.max(26, 31 - Math.floor(mileage));
   const preAttrs={}; ATTRS.forEach(([k])=>preAttrs[k]=w.attrs[k]);
   ATTRS.forEach(([k])=>{
@@ -5401,9 +5404,13 @@ function yearEnd(){
   c.yearLog=[];
   const msgs=[`<b>Year ${c.year}</b> begins. You're ${c.age}.`];
   if(c.age>declineAge) msgs.push(`The miles are adding up (${Math.round(c.wear||0)} on the clock).`);
-  if(c.age>=34) msgs.push('Retirement is on the table any time.');
+  if(c.age>=34) msgs.push('Retirement is on the table any time. Or stay on as a manager when you are done.');
   G.log.unshift(msgs.join(' '));
-  const retireOdds = (c.age>=38?0.14:0) + (c.age>=42?0.24:0) + mileage*0.055 + ((c.chronic||[]).length)*0.04;
+  // Wrestlers keep going longer than every other pro sport if the body will hold. A
+  // careful main-eventer can work into their late forties or beyond, but every
+  // chronic injury and every mile makes the walk-away odds real.
+  const retireOdds = (c.age>=40?0.05:0) + (c.age>=44?0.08:0) + (c.age>=48?0.14:0)
+                    + mileage*0.030 + ((c.chronic||[]).length)*0.05;
   if(c.age>=36 && rnd()<retireOdds){ retire('Your body finally called it. Too many miles, too many landings.'); }
 }
 function retire(reason){ G.car.retired=true; G.car.retireReason=reason||'You walked away on your own terms.'; save(); go('hof'); }
@@ -5425,7 +5432,7 @@ function renderTrain(){
       <button ${G.w.tp<cost||v>=99?'disabled':''} onclick="spendTP('${k}')">+1</button></div></div>
       <div class="bar" style="margin-top:8px;"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`</div>
-  <p class="hint" style="margin-top:14px;">Training points come from matches and training weeks. Attributes also grow naturally each year until about 30, then decline, so bank your prime.</p>`;
+  <p class="hint" style="margin-top:14px;">Training points come from matches and training weeks. Attributes also grow naturally each year until around 30-32, then decline, so bank your prime while you have it.</p>`;
 }
 function gateHint(k){
   const cats=MCATS.filter(c=>c.attr===k).map(c=>c.name);
