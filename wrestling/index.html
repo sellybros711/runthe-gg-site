@@ -443,6 +443,7 @@
   .rc-stat{background:rgba(0,0,0,.30);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-dim);}
   .rc-stat b{color:var(--cream);font-family:var(--mono);}
   .rc-go{margin-left:auto;align-self:center;color:var(--gold);font-weight:800;font-size:12px;}
+  .rc-saved{font-size:10.5px;color:var(--text-faint);margin-top:9px;text-align:right;font-family:var(--mono);}
 
   /* ---- start screen: pick how you want to be made ---- */
   .starthead{text-align:center;margin:10px 0 4px;}
@@ -2004,10 +2005,31 @@ function moveById(id){ return MOVES.find(m=>m.id===id); }
 function catById(id){ return MCATS.find(c=>c.id===id); }
 function cosmById(id){ return COSM.find(c=>c.id===id); }
 
-/* ---------- persistence ---------- */
-function save(){ if(G) try{ localStorage.setItem(SAVE,JSON.stringify(G)); }catch(e){} }
-function load(){ try{ const r=localStorage.getItem(SAVE); if(!r)return null; const o=JSON.parse(r);
-  return (o&&o.schema===SCHEMA)? migrate(o) : null; }catch(e){ return null; } }
+/* ---------- persistence ----------
+   save() is called at every state transition (see go(), advanceWeek()
+   and every button that mutates G), so under normal use disk is
+   current. The listeners below are the belt-and-braces case: on any
+   path where the tab is closed or backgrounded before the next save
+   call, the current state still hits localStorage. Without them, a
+   user who closes the tab in the middle of a screen transition can
+   come back to a slightly stale career. */
+function save(){
+  if(!G) return;
+  try{
+    G.savedAt = Date.now();
+    localStorage.setItem(SAVE,JSON.stringify(G));
+  }catch(e){ console.warn('RTR: save failed',e); }
+}
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE); if(!r) return null;
+    const o=JSON.parse(r);
+    return (o&&o.schema===SCHEMA)? migrate(o) : null;
+  }catch(e){ console.warn('RTR: load failed',e); return null; }
+}
+addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') save(); });
+addEventListener('pagehide', save);
+addEventListener('beforeunload', save);
 // bring a career started before the business systems existed up to date
 function migrate(o){
   const c=o.car, w=o.w; if(!c||!w) return o;
@@ -2031,6 +2053,14 @@ function migrate(o){
   return o;
 }
 function tierOfRep(rep){ let id='indie'; TIERS.forEach(t=>{ if((rep||0)>=t.rep) id=t.id; }); return id; }
+function savedAgo(ts){
+  if(!ts) return '';
+  const s=Math.max(0,Math.floor((Date.now()-ts)/1000));
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+' minute'+(s>=120?'s':'')+' ago';
+  if(s<86400){ const h=Math.floor(s/3600); return h+' hour'+(h>1?'s':'')+' ago'; }
+  const d=Math.floor(s/86400); return d+' day'+(d>1?'s':'')+' ago';
+}
 
 /* ============================================================
    PIXEL WRESTLER RENDERER  (pure SVG rects, no assets)
@@ -3445,6 +3475,7 @@ function renderHome(){
         ${c.title?`<span class="rc-stat" style="border-color:rgba(224,179,65,.5);color:var(--gold)">👑 Champion</span>`:''}
         <span class="rc-go">Resume ▸</span>
       </div>
+      ${s.savedAt?`<div class="rc-saved">Last saved ${savedAgo(s.savedAt)}</div>`:''}
     </button>
     <div class="row" style="margin-top:12px;justify-content:center;">
       <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('start')">Start a new career</button>
