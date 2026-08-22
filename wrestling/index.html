@@ -4719,11 +4719,13 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   }
 
   if(nearFall){
-    // the hand starts down for three and never gets there
-    poseSet('ref','refUp'); await sleep(300);
-    showCount('3', true);                                     // begins to fall…
-    await sleep(150);
-    $('fPin').classList.remove('show');
+    /* The hand goes up for three and never comes down.
+       It must NOT show the numeral. A three count that appears on screen and
+       is then taken away says the referee counted three and the match carried
+       on, which is not a near fall, it is a blown finish. The suspense is the
+       raised hand and the length of the pause, and the 2.9 burst below is what
+       names it afterwards. */
+    poseSet('ref','refUp'); await sleep(430);
     fmv(D,{pose:'proneUp',rot:-10},110);
     fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},240);
     poseSet('ref','refNo');
