@@ -2130,11 +2130,11 @@ const JOINT={
    angle swings the limb out to the left; the screen-right side mirrors it. */
 const POSES={
   stand:    {},
-  ready:    { shL:16, elL:-34, shR:-16, elR:34, hipL:5, hipR:-5, body:[0,1,0] },
+  ready:    { shL:16, elL:-34, shR:-16, elR:34, body:[0,1,0] },
   run:      { shL:-44, elL:-46, shR:38, elR:-52, hipL:-30, knL:34, hipR:28, knR:-44, body:[0,-2,-6] },
   runBack:  { shL:44, elL:46, shR:-38, elR:52, hipL:30, knL:-34, hipR:-28, knR:44, body:[0,-2,6] },
-  grapple:  { shL:100, elL:-44, shR:-100, elR:44, hipL:8, hipR:-8, body:[0,0,0] },
-  lockup:   { shL:112, elL:-30, shR:-112, elR:30, hipL:14, knL:-16, hipR:-10, body:[0,2,-4] },
+  grapple:  { shL:100, elL:-44, shR:-100, elR:44, hipL:-6, hipR:6, body:[0,0,0] },
+  lockup:   { shL:112, elL:-30, shR:-112, elR:30, hipL:-8, hipR:8, body:[0,2,-4] },
   strike:   { shR:-96, elR:-10, shL:22, elL:-42, torso:5, body:[1,0,3] },
   wind:     { shR:-24, elR:-96, shL:14, elL:-30, torso:-7, body:[-2,0,-4] },
   chop:     { shR:-146, elR:34, shL:20, elL:-30, torso:4, body:[1,-1,3] },
@@ -2158,7 +2158,7 @@ const POSES={
   // stretched out behind. The old pin was a starfish rotated onto its back.
   pin:      { body:[0,22,84], shL:150, elL:-20, shR:-40, elR:-70, hipL:8, knL:-14, hipR:-8, knR:12, head:-14 },
   submit:   { body:[0,8,-14], shL:-58, elL:-44, shR:-88, elR:-28, hipL:66, knL:-92, hipR:-12, knR:22, head:-10 },
-  taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:6, hipR:-6, body:[0,-2,0] },
+  taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:-6, hipR:6, body:[0,-2,0] },
   celebrate:{ shL:176, elL:-6, shR:-176, elR:6, hipL:-14, hipR:14, body:[0,-5,0] },
   point:    { shR:-98, elR:-4, shL:22, elL:-40, torso:4, head:4 },
   stagger:  { body:[0,1,-14], head:9, torso:-6, shL:-42, elL:22, shR:28, elR:-18, hipL:18, knL:-22, hipR:-8 },
@@ -2170,7 +2170,7 @@ const POSES={
   // the winner, arm held aloft by the official
   raised:   { shL:172, elL:-6, shR:-18, elR:8, torso:2, body:[0,-1,0] },
   // ---- the referee ----
-  refIdle:  { shL:22, elL:-40, shR:-22, elR:40, hipL:5, hipR:-5 },
+  refIdle:  { shL:22, elL:-40, shR:-22, elR:40 },
   refWatch: { body:[0,2,-7], shL:40, elL:-70, shR:-30, elR:50, hipL:12, knL:-14, head:6 },
   // down on the mat: arm cocked, then slammed flat for the count
   refUp:    { body:[0,16,0], hipL:80, knL:-106, hipR:-14, knR:26, torso:-10, shL:26, elL:-34, shR:-142, elR:26, head:8 },
@@ -3046,7 +3046,6 @@ const RULES=[
   <ul class="ruleul">
     <li><b>Pinfall.</b> A cover, a referee count, and a kickout at one, two or two and a half. Only a finisher in the closing stretch is likely to get three.</li>
     <li><b>Submission.</b> Work a limb all night and the hold pays it off.</li>
-    <li><b>Time-limit draw.</b> Neither a win nor a loss on your record.</li>
   </ul>
   <p class="log">The bars at the top are <b>damage taken</b>, not lives. Nobody loses by running out of health. <b>Momentum</b> in the middle is who is in control right now.</p>
   <p class="log">A match moves through phases: the feeling-out, the shine, the heat, the comeback, the finish stretch. Big moves only land late, because you do not open with your finisher.</p>
@@ -4425,7 +4424,7 @@ async function startFight(o){
       <p class="log">The match wrestles itself out live. A few things to watch:</p>
       <ul class="ruleul">
         <li>The bars up top are <b>damage taken</b>, not lives. Nobody loses by running out of health.</li>
-        <li>Matches end by <b>pinfall</b>, <b>submission</b> or the <b>time limit</b>, exactly like the real thing.</li>
+        <li>Matches end by <b>pinfall</b>, <b>submission</b> or a stoppage. There are no draws.</li>
         <li><b>Momentum</b> in the middle is who is in control right now.</li>
         <li>Now and then it will stop and ask you to <b>call a spot</b>. That is your part.</li>
       </ul>
@@ -4440,7 +4439,7 @@ async function startFight(o){
        opp:{hp:100,name:o.oppName,ovr:o.oppOvr,limb:newLimbs(),target:null},
        usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null,
        phase:0, phaseBeat:0, stretch:0, covers:0, nearFalls:0, finisherHit:0,
-       clock:0, timeLimit:(o.stakes==='title'||o.stakes==='defense')?1800:1200,
+       clock:0,
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   chooseTarget(MS.me); chooseTarget(MS.opp);
@@ -4578,8 +4577,9 @@ async function runFight(){
     // ---- advance the story ----
     if(!MS.ended && MS.phaseBeat>=ph.beats && MS.phase<PHASES.length-1){ MS.phase++; MS.phaseBeat=0; }
     // ---- the bell can beat you ----
-    if(!MS.ended && MS.clock>=MS.timeLimit){ await timeLimitDraw(); }
-    if(!MS.ended && MS.stretch>26){ await timeLimitDraw(); }   // safety net
+    // Matches never end in a draw. If the finish stretch has run wildly long,
+    // force somebody to lose: whoever is behind on momentum eats a pin.
+    if(!MS.ended && MS.stretch>26){ await forceFinish(); }
   }
 }
 
@@ -4655,17 +4655,18 @@ async function submissionAttempt(byMe, mvName){
   await settle(280);
 }
 
-async function timeLimitDraw(){
+// The stretch has run absurdly long. Someone has to lose. Whoever is behind on
+// momentum wears one, with the last big move on record as the finish.
+async function forceFinish(){
   if(MS.ended) return;
-  MS.finish={type:'draw'};
+  const iWin = MS.mom>=0;
+  const last = MS.usedMoves[MS.usedMoves.length-1];
+  MS.finish={type:(last&&last.cat==='submission')?'sub':'pin', by:iWin,
+             move:last?last.name:'a cover', fin:!!(last&&last.tier>=4),
+             part:(iWin?MS.me:MS.opp).target};
   MS.ended=true;
-  await callout('TIME LIMIT!');
-  fLog(`<span class="hi">The bell. ${Math.floor(MS.timeLimit/60)}-minute time limit. It is a draw.</span>`);
-  $('fClock').textContent='DRAW';
-  busy(true);
-  fmv('me',{pose:'stagger',fwd:0},300); fmv('opp',{pose:'stagger',fwd:0},300);
-  await sleep(1100);
-  finalizeFight(null);
+  fLog(`<span class="hi">They cannot go any more. Somebody has to lose.</span>`);
+  await endFight(iWin);
 }
 
 async function finishDecision(){
