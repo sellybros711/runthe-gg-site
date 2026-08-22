@@ -332,6 +332,22 @@
     padding:11px 13px;font-size:13px;line-height:1.4;cursor:pointer;
     box-shadow:0 6px 20px rgba(0,0,0,.5);}
 
+  /* The hero: the two reels over a half court, on the home screen only. */
+  .hero{margin:0 0 16px;}
+  /* On a wide screen the wrap is 660px and a court at that width is most of the
+     window before the game has said its own name. The art is a shop window, not
+     the page. */
+  @media(min-width:700px){ .hero{max-width:520px;margin:0 auto 18px;} }
+  .heroreels{margin-bottom:8px;}
+  .herocourt{aspect-ratio:1/0.55;}
+  .herocourt .spot .nm{font-size:10.5px;}
+  .herocourt .spot .yr{font-size:9px;}
+  /* A HERO REEL IS SHORTER THAN A DRAFT REEL. The draft's is 104px because it
+     is the thing you are waiting on; up here it is scenery over the headline
+     and a third of the screen is too much to give it. */
+  .hero .reelbox{height:70px;}
+  @media(max-height:720px){ .hero .reelbox{height:58px;} .herocourt{aspect-ratio:1/0.48;} }
+
   /* ── THE WHEEL WEARS THE CLUB ──────────────────────────────────────────
      The moment the club reel lands, BOTH boxes take that club's colors: the
      fill is its primary, the band around the winning row is its secondary, and
@@ -808,7 +824,38 @@
   </div>
 </div>
 
+<!-- ── THE FRONT PAGE PLAYS THE GAME ────────────────────────────────────────
+     The wheels and the court were two separate ideas for this screen. Shown one
+     at a time neither says what the game is: the wheels are a mechanic with no
+     stated purpose and the court is a result with no stated cause. Run in
+     sequence they explain each other, which is the whole job of a front page.
+
+     Every element here is the same markup the draft uses, and the spin is the
+     game's own spinReel(), so this cannot drift away from what playing actually
+     looks like. -->
 <header class="mast">
+  <div class="hero" id="hero">
+    <div class="reels heroreels">
+      <div class="reelbox season waiting" id="h-box-s" aria-hidden="true">
+        <div class="reel-strip" id="h-reel-s"></div>
+        <div class="reel-win"></div>
+      </div>
+      <div class="reelbox club waiting" id="h-box-c" aria-hidden="true">
+        <div class="reel-strip" id="h-reel-c"></div>
+        <div class="reel-win"></div>
+      </div>
+    </div>
+    <div class="court herocourt" id="h-court" role="img"
+         aria-label="A roster being built, one signing at a time">
+      <div class="base"></div>
+      <div class="ln arc3"></div>
+      <div class="ln key"></div>
+      <div class="ln circ"></div>
+      <div class="rim"></div>
+      <div class="side"></div>
+      <div class="benchlbl">Bench</div>
+    </div>
+  </div>
   <div class="eyebrow">RunThe.GG</div>
   <h1>Run The <span>Floor</span></h1>
   <p>Spin for a season and a club. Draft six. Play 82 and chase a ring.</p>
@@ -1232,8 +1279,11 @@ function show(id){
   document.body.classList.toggle('inplay', id !== 's-home');
   /* A running reveal belongs to the screen it started on. Leaving without
      stopping it leaves an interval painting cells nobody can see, and on the
-     way back it would race the fresh one. */
+     way back it would race the fresh one. The front page's animation is the
+     same problem in the other direction: it spins reels behind the draft,
+     forever, on a phone. */
   stopSim();
+  if (id === 's-home') heroStart(); else heroStop();
   var all = document.querySelectorAll('.screen');
   for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
   $(id).classList.add('active');
@@ -1383,6 +1433,9 @@ function boot(){
        Reset. Now the run is offered, and the offer says where it got to. */
     restore();
     renderHome();
+    /* The front page can only play the game once the game has data to play
+       with, which is here and not at boot. */
+    heroStart();
     /* A RELOAD RESTORES THE OLD SCROLL POSITION, and the old position was
        somewhere down a draft board. Landing on the home page already scrolled
        past its own masthead reads as a broken page rather than a restored one. */
@@ -1613,10 +1666,18 @@ function drawRail(){
 
 // ── the ring ───────────────────────────────────────────────────────────────
 
+/* ASKED ONCE, IN ONE PLACE. Two callers now (the confetti and the front page's
+   animation), and a second copy of a media query string is a second thing to
+   get wrong. Read live rather than cached, because a reader can change this
+   setting without reloading the page. */
+function reduceMotion(){
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
 /* WINNING USED TO CHANGE ONE WORD ON THE SCREEN. Off by default for anybody who
    has asked their system for less motion, and it removes itself. */
 function fireConfetti(){
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (reduceMotion()) return;
   var colors = ['#f2c14e', '#f0782d', '#ffffff', '#fde68a', '#22c55e'];
   var dpr = Math.min(2, window.devicePixelRatio || 1);
   var cv = document.createElement('canvas');
@@ -1814,7 +1875,8 @@ function reelFill(stripEl, items, landIndex){
 /* A strip long enough to look like motion, ending on the answer. The window
    sits at the middle of the box, so the landing offset backs the chosen row up
    to it rather than to the top. */
-function spinReel(boxEl, stripEl, pool, answer, done){
+function spinReel(boxEl, stripEl, pool, answer, done, ms){
+  var dur = ms || SPIN_MS;
   var items = [], n = 14;
   for (var i = 0; i < n; i++) {
     items.push(pool.length ? pool[Math.floor(Math.random() * pool.length)] : answer);
@@ -1837,7 +1899,7 @@ function spinReel(boxEl, stripEl, pool, answer, done){
      and the reel jumps to the answer with no travel. */
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
-      stripEl.style.transition = 'transform ' + SPIN_MS + 'ms cubic-bezier(.15,.85,.25,1)';
+      stripEl.style.transition = 'transform ' + dur + 'ms cubic-bezier(.15,.85,.25,1)';
       stripEl.style.transform = 'translateY(' + (mid - land * ROW_H) + 'px)';
     });
   });
@@ -1853,7 +1915,7 @@ function spinReel(boxEl, stripEl, pool, answer, done){
   /* A belt and braces timer, because a transitionend that never fires (a
      background tab, a reduced-motion setting that zeroes the duration) would
      otherwise leave the draft permanently mid-spin and unclickable. */
-  setTimeout(function(){ if (boxEl.classList.contains('spin')) settle(); }, SPIN_MS + 220);
+  setTimeout(function(){ if (boxEl.classList.contains('spin')) settle(); }, dur + 220);
 }
 
 function reelPools(){
@@ -1879,13 +1941,21 @@ var SPOTS = {
 };
 
 function renderCourt(justSlot, into){
-  var el = into || $('court');
+  var filled = {};
+  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
+  paintCourt(into || $('court'), filled, justSlot);
+}
+
+/* THE PAINTER, taking a roster rather than reading the run.
+ *
+ * Split out so the landing screen can use it. That screen builds a roster
+ * nobody is playing, and the alternative was a second copy of this loop that
+ * would have drifted the first time a spot moved. The front page has to look
+ * like the game, which it cannot do if it is drawing its own picture of it. */
+function paintCourt(el, filled, justSlot, lastOnly){
   if (!el) return;
   var old = el.querySelectorAll('.spot');
   for (var i = 0; i < old.length; i++) old[i].remove();
-
-  var filled = {};
-  for (var r = 0; r < run.roster.length; r++) filled[E.SLOTS[run.slotIndex[r]]] = run.roster[r];
 
   for (var s = 0; s < E.SLOTS.length; s++) {
     var slot = E.SLOTS[s], pos = SPOTS[slot], p = filled[slot];
@@ -1902,7 +1972,12 @@ function renderCourt(justSlot, into){
 
     var nm = document.createElement('span');
     nm.className = 'nm';
-    nm.textContent = p ? p.n : 'open';
+    /* LAST NAMES ON THE FRONT PAGE, full names in the draft. A spot is about
+       90px wide and the hero's is smaller again, so "Charles Barkley" arrived
+       as "Charles Ba...". In the draft the full name earns that space, because
+       you are deciding whether to sign him. On the front page he is scenery and
+       "Barkley" is the part that does the work. */
+    nm.textContent = p ? (lastOnly ? lastName(p.n) : p.n) : 'open';
     sp.appendChild(nm);
 
     if (p) {
@@ -1914,6 +1989,207 @@ function renderCourt(justSlot, into){
     el.appendChild(sp);
   }
 }
+
+// ── the front page, playing itself ─────────────────────────────────────────
+
+/* THE LANDING ANIMATION.
+ *
+ * It drives the game's own spinReel(), dressReel() and paintCourt(), so there
+ * is no second implementation of the spin or the floor to keep in step with the
+ * first. Three signings, then it holds the roster it built and starts over.
+ *
+ * THE ROSTER IT BUILDS HAS TO BE ONE THE GAME WOULD ALLOW. The football game's
+ * front page shipped with three hardcoded names adding up to $144M against a
+ * $140M cap: a roster the game itself would have refused, advertised on the
+ * page you arrive at. So these are drawn from the real data, under the real
+ * position rules, and the running total is checked against the real cap.
+ */
+/* THE BEAT AFTER A SIGNING IS NOT DECORATION. Without it the next season reel
+   starts tumbling in the same frame the player lands on the floor, so the draw
+   and the man it produced are never on screen together, and the sequence stops
+   explaining itself: it becomes two animations that happen near each other. */
+var HERO = { season: 620, stagger: 240, club: 760, sign: 560, beat: 900,
+             hold: 2200, gap: 260 };
+
+/* WHICH PLAYERS SIGN ON THE FRONT PAGE. Drawn fresh every loop, so somebody who
+   watches it twice sees two different teams being built rather than the same
+   three names forever.
+   TOP N RATHER THAN THE WHOLE POOL, because this is a shop window. A random
+   draw from 16,057 player-seasons mostly surfaces people nobody recognizes,
+   which makes the game look like it is about obscure players when it is about
+   the famous ones.
+   NINETY AND NOT FORTY, measured. Forty gave a two-man roster in four draws out
+   of five even after each pick was held to a fair share of the cap: the top of
+   the league by win shares is expensive by construction, so a tight pool has
+   nothing left to fill a third spot with. Ninety fills three in 400 draws out
+   of 400 and is still 90 seasons out of 16,057. */
+var HERO_TOP_N = 90;
+var heroPoolCache = null;
+
+function heroPool(){
+  if (heroPoolCache) return heroPoolCache;
+  var by = {};
+  for (var i = 0; i < DATA.players.length; i++) {
+    var p = DATA.players[i];
+    var slots = E.SLOTS.filter(function(s){ return E.canFillSlot(p, s); });
+    for (var j = 0; j < slots.length; j++) (by[slots[j]] = by[slots[j]] || []).push(p);
+  }
+  for (var k in by) {
+    by[k].sort(function(a, b){ return b.w - a.w; });
+    by[k] = by[k].slice(0, HERO_TOP_N);
+  }
+  heroPoolCache = by;
+  return heroPoolCache;
+}
+
+/* Three signings on three different spots, each filled by somebody who can
+   actually play there, nobody signed twice, and the three of them inside the
+   cap the real game would hold them to. */
+function heroPicks(){
+  var pool = heroPool();
+  var slots = E.SLOTS.slice();
+  for (var i = slots.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = slots[i]; slots[i] = slots[j]; slots[j] = t;
+  }
+  var out = [], used = {}, spent = 0;
+  var cap = E.CONSTANTS.CAP_MUSD;
+  /* Room left for the three spots this will NOT fill, at the game's own
+     minimum, so the three shown could genuinely be the first three of a legal
+     six rather than a roster that has already broken the cap. */
+  var reserve = 3 * (E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD || 2);
+
+  /* AFFORDABLE FIRST, THEN RANDOM AMONG THOSE. The first version drew at random
+     and skipped the pick when the man it drew did not fit, which meant the
+     front page regularly showed TWO signings instead of three: the pool is the
+     top of the league by win shares, so it is expensive by construction, and
+     two big contracts leave nothing a third elite player fits into. Filtering
+     to what the remaining budget can actually take means a third man is found
+     whenever one exists, and he is still a random one. */
+  for (var s = 0; s < slots.length && out.length < 3; s++) {
+    var cand = pool[slots[s]];
+    if (!cand || !cand.length) continue;
+    /* A FAIR SHARE OF WHAT IS LEFT, not all of it.
+       Filtering on the whole remaining budget was not enough on its own: this
+       pool is the top of the league by win shares and is therefore expensive by
+       construction, so the first two picks ate the cap and the front page showed
+       TWO men in four draws out of five. Each pick may take its share of the
+       money the picks still to come have to split, plus a third again so the
+       roster is not three identically priced players. */
+    var left = 3 - out.length;
+    var room = Math.min(cap - reserve - spent, (cap - reserve - spent) / left * 1.35);
+    var afford = [];
+    for (var c = 0; c < cand.length; c++) {
+      if (!used[cand[c].i] && cand[c].p <= room) afford.push(cand[c]);
+    }
+    if (!afford.length) continue;
+    var p = afford[Math.floor(Math.random() * afford.length)];
+    used[p.i] = 1; spent += p.p;
+    out.push({ slot: slots[s], p: p });
+  }
+  return out;
+}
+
+var heroRun = 0;            // bumped to cancel whatever loop is in flight
+var heroFilled = {};
+
+function heroPaint(){ paintCourt($('h-court'), heroFilled, null, true); }
+
+function heroReset(){
+  heroFilled = {};
+  heroPaint();
+  ['h-box-s', 'h-box-c'].forEach(function(id){
+    var box = $(id);
+    undressReel(box);
+    box.className = 'reelbox ' + (id === 'h-box-s' ? 'season' : 'club') + ' waiting';
+  });
+  $('h-reel-s').textContent = '';
+  $('h-reel-c').textContent = '';
+}
+
+var heroNap = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+var heroSpin = function(boxId, stripId, pool, answer, ms){
+  return new Promise(function(res){ spinReel($(boxId), $(stripId), pool, answer, res, ms); });
+};
+
+/* NO ANIMATION AT ALL for anyone who has asked their device for less of it.
+   They get the end of the sequence, held still, which carries exactly the same
+   information: three men on a floor and the club the last one came from. */
+function heroStatic(){
+  var picks = heroPicks();
+  if (!picks.length) return;
+  heroFilled = {};
+  for (var i = 0; i < picks.length; i++) heroFilled[picks[i].slot] = picks[i].p;
+  heroPaint();
+  var last = picks[picks.length - 1].p;
+  reelFill($('h-reel-s'), [String(last.s)], 0);
+  reelFill($('h-reel-c'), [E.teamName(last.t)], 0);
+  var mid = ($('h-box-s').clientHeight - ROW_H) / 2;
+  ['h-box-s', 'h-box-c'].forEach(function(id, n){
+    var box = $(id), strip = $(n ? 'h-reel-c' : 'h-reel-s');
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateY(' + mid + 'px)';
+    box.className = 'reelbox ' + (n ? 'club' : 'season') + ' done';
+    dressReel(box, last.t);
+  });
+}
+
+function heroLoop(seq){
+  var live = function(){ return seq === heroRun; };
+  var picks = heroPicks();
+  var step = function(i){
+    if (!live()) return Promise.resolve();
+    if (i >= picks.length) {
+      return heroNap(HERO.hold).then(function(){
+        if (!live()) return;
+        heroReset();
+        return heroNap(HERO.gap).then(function(){ if (live()) heroLoop(seq); });
+      });
+    }
+    var pk = picks[i];
+    var pools = reelPools();
+    /* THE TWO REELS OVERLAP HERE AND NOT IN THE DRAFT. The draft spins the
+       season, waits, and only then spins the club, because the answer to the
+       second question depends on the first. That is right there and wrong
+       here: it left half the picture blank and dim for a third of every beat,
+       which reads as a broken render rather than a pending one. The club reel
+       is already tumbling while the season settles and still lands after it,
+       so the ORDER the answers arrive in, which is the part that carries the
+       meaning, is unchanged. */
+    var spinS = heroSpin('h-box-s', 'h-reel-s', pools.seasons, String(pk.p.s), HERO.season);
+    return heroNap(HERO.stagger).then(function(){
+      if (!live()) return;
+      var spinC = heroSpin('h-box-c', 'h-reel-c', pools.clubs, E.teamName(pk.p.t), HERO.club);
+      return Promise.all([spinS, spinC]);
+    }).then(function(){
+      if (!live()) return;
+      dressReel($('h-box-s'), pk.p.t);
+      dressReel($('h-box-c'), pk.p.t);
+      return heroNap(HERO.sign);
+    }).then(function(){
+      if (!live()) return;
+      heroFilled[pk.slot] = pk.p;
+      heroPaint();
+      return heroNap(HERO.beat);
+    }).then(function(){
+      if (!live()) return;
+      return step(i + 1);
+    });
+  };
+  return step(0);
+}
+
+function heroStart(){
+  if (!DATA || !$('h-court')) return;
+  heroRun++;
+  heroReset();
+  if (reduceMotion()) { heroStatic(); return; }
+  heroLoop(heroRun);
+}
+
+/* STOPPED THE MOMENT THE HOME SCREEN IS NOT ON SCREEN. A loop left running
+   behind the draft is spinning reels nobody can see, on a phone, forever. */
+function heroStop(){ heroRun++; }
 
 // ── the pinned HUD ─────────────────────────────────────────────────────────
 
