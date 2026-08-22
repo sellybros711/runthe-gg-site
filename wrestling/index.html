@@ -377,6 +377,22 @@
   .bs-vs{font-size:14px;color:var(--text);} .bs-vs b{color:var(--cream);}
   .bs-pos{font-size:11.5px;color:var(--text-dim);margin-top:3px;}
   .bs-pos.me{color:var(--gold);font-weight:800;} .bs-pos.op{color:var(--text-faint);}
+  .bksheet.ppv{border-color:var(--gold);background:linear-gradient(180deg,rgba(224,179,65,.16),rgba(0,0,0,.32));box-shadow:0 0 30px rgba(224,179,65,.15);}
+  .bs-ppv{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .ppvcard{border:1.5px solid rgba(224,179,65,.55);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:linear-gradient(180deg,rgba(224,179,65,.11),rgba(0,0,0,.30));}
+  .ppvcard .ppv-k{font-family:var(--display);font-size:15px;letter-spacing:.06em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .ppvcard .ppv-me-label,.ppvcard .ppv-under-label{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin:8px 0 4px;}
+  .ppvcard .ppv-me-label{color:var(--gold);}
+  .ppv-row{font-size:13px;color:var(--text);padding:6px 0;line-height:1.4;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;border-top:1px dashed rgba(255,255,255,.06);}
+  .ppv-row:first-of-type{border-top:none;}
+  .ppv-row.ppv-me{background:rgba(224,179,65,.10);padding:9px 10px;border-radius:8px;border:none;font-size:14px;}
+  .ppv-w{color:var(--cream);font-weight:700;}
+  .ppv-l{color:var(--text-dim);}
+  .ppv-s{margin-left:auto;color:var(--gold);font-family:var(--mono);font-size:12px;}
+  .ppvchip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-faint);background:rgba(255,255,255,.05);padding:3px 9px;border-radius:8px;margin-left:8px;vertical-align:middle;}
+  .ppvchip.soon{color:var(--gold);background:rgba(224,179,65,.14);}
+  .ppvchip.live{color:#fff;background:linear-gradient(180deg,#c6392c,#8a1c1c);animation:ppvPulse 1.6s ease-in-out infinite;}
+  @keyframes ppvPulse{0%,100%{box-shadow:0 0 0 rgba(198,57,44,.6);} 50%{box-shadow:0 0 20px rgba(198,57,44,.7);}}
   .bs-rules{font-size:12px;color:var(--text);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.04);border-left:2px solid rgba(224,179,65,.55);border-radius:3px;}
   .bs-rules b{color:var(--cream);letter-spacing:.12em;font-size:10px;text-transform:uppercase;}
   .bksheet .pchip{cursor:pointer;}
@@ -1391,6 +1407,46 @@ function gimById(id){ return GIMMICKS.find(g=>g.id===id)||GIMMICKS[0]; }
    are booked, and negotiate creative control and a merch cut. */
 function myDeal(){ return G&&G.car.deal; }
 function myPromo(){ const d=myDeal(); return (d&&promoById(d.promo))||PROMOS[0]; }
+/* ============================================================
+   PPVs / SUPERCARDS
+   ------------------------------------------------------------
+   Every promotion runs a quarterly supercard: weeks 10, 20, 30, 40.
+   Each promotion has its own PPV rotation with names that fit its
+   voice. Feuds build toward the next PPV, that is where blow-off
+   matches and title switches happen, and the results card after a
+   PPV summarises the whole night so the roster feels alive.
+   ============================================================ */
+const PPV_WEEKS=[10,20,30,40];
+const PPV_ROTATION={
+  gcw:    ['Barbed Wire Bacchanal','Blood Feast','Nail Bed Night','Bury the Hatchet'],
+  cdp:    ['Best of the Best','Slow Burn','Symposium','Encore'],
+  sbcw:   ['Iron King','Fair Grounds','Homecoming','Ring King'],
+  scw:    ['Sunset Boulevard','Star Card','Neon Nights','Blockbuster'],
+  rose:   ['Crimson Blossom','Wildcard','Blood Sisters','Empress'],
+  acw:    ['Championship Series','Ranking Rumble','Contender\'s Cup','Wrestle Final'],
+  kaiju:  ['Cataclysm','Iron Man','God of War','Yearning'],
+  eterna: ['Máscara Contra Máscara','Fiesta Grande','Los Muertos','Torneo del Rey'],
+  cwf:    ['Iron Blood','Kingdom','Zenith','Ceremony'],
+};
+function ppvNameFor(promoId, week){
+  const arr = PPV_ROTATION[promoId] || ['Anniversary Show','Summer Slam','Fall Brawl','Grand Slam'];
+  const idx = PPV_WEEKS.indexOf(week);
+  return idx>=0 ? arr[idx] : arr[0];
+}
+function isPpvWeek(w){ return PPV_WEEKS.indexOf(w||G.car.week)>=0; }
+function nextPpv(){
+  const c=G.car;
+  const nextW = PPV_WEEKS.find(w=>w>=c.week);
+  if(nextW){
+    return {week:nextW, weeksUntil:nextW-c.week, name:ppvNameFor(c.deal&&c.deal.promo, nextW), year:c.year};
+  }
+  // wrap to next year's first PPV
+  return {week:PPV_WEEKS[0], weeksUntil:(WEEKS_PER_YEAR-c.week)+PPV_WEEKS[0], name:ppvNameFor(c.deal&&c.deal.promo, PPV_WEEKS[0]), year:c.year+1};
+}
+function currentPpv(){
+  if(!isPpvWeek(G.car.week)) return null;
+  return {week:G.car.week, name:ppvNameFor(G.car.deal&&G.car.deal.promo, G.car.week), year:G.car.year};
+}
 function promoTierIdx(p){ return Math.max(0,TIERS.findIndex(t=>t.id===(p||myPromo()).tier)); }
 // The tier you actually work is the lower of what you have earned and
 // what your promotion can offer. You cannot main-event a stadium on an
@@ -3528,7 +3584,13 @@ function renderCareer(){
   const c=G.car;
   const t=workTier(), ti=tierIdx(), next=TIERS[ti+1];
   const earned=tierOf(c.rep), ei=TIERS.findIndex(x=>x.id===earned.id);
-  $('carTitle').innerHTML=`${t.name} <span class="sub2">${myPromo().short} · Year ${c.year}, Week ${c.week} of ${WEEKS_PER_YEAR}</span>`;
+  const _npv = nextPpv();
+  const _ppvChip = _npv.weeksUntil===0
+    ? `<span class="ppvchip live">${pico('starBig',12)} ${_npv.name} · TONIGHT</span>`
+    : _npv.weeksUntil<=3
+    ? `<span class="ppvchip soon">${pico('starBig',12)} ${_npv.name} in ${_npv.weeksUntil} wk${_npv.weeksUntil===1?'':'s'}</span>`
+    : `<span class="ppvchip">${pico('starBig',12)} Next PPV: ${_npv.name} in ${_npv.weeksUntil} wks</span>`;
+  $('carTitle').innerHTML=`${t.name} <span class="sub2">${myPromo().short} · Year ${c.year}, Week ${c.week} of ${WEEKS_PER_YEAR}</span> ${_ppvChip}`;
   $('carAv').innerHTML=wrestlerSVG(G.w.look);
   // Reputation buys you the next rung; your promotion decides whether you can climb it.
   const et=TIERS[ei], nextEarn=TIERS[ei+1];
@@ -3763,7 +3825,8 @@ function renderWeek(){
     const o=b.o, w=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
     const dLab = w>=0.66?'Favoured':w>=0.54?'Slight edge':w>=0.46?'Even':w>=0.34?'Underdog':'Way above you';
     const dCol = w>=0.54?'var(--green)':w>=0.46?'var(--gold)':'#f0907f';
-    sheet=`<div class="bksheet">
+    sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
+      ${o.ppv?`<div class="bs-ppv">${pico('starBig',14)} Tonight, at <b>${o.ppv}</b></div>`:''}
       <div class="bs-k">You are booked</div>
       <div class="bs-t">${o.stipLabel}</div>
       <div class="bs-vs">vs <b>${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
@@ -3907,6 +3970,10 @@ function makeOffers(){
   // your bitterest rival muscles onto the card
   const rivalId=G.car.rivalId;
   const _story=story();
+  // A PPV week: the card is bigger, the stakes are bigger, the office
+  // moves things up. Every offer is Main Event tier, purses double,
+  // and if you have a live feud its blow-off happens tonight.
+  const ppv = isPpvWeek();
   for(let i=0;i<3;i++){
     const taken=offs.map(x=>x.oppId);
     let cand=pool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
@@ -3921,8 +3988,8 @@ function makeOffers(){
     // Opponent level is anchored to the TIER, then rises toward you as you outgrow
     // it: promoters book you tougher as you get better, so matches stay competitive
     // without ever throwing a rookie to a main-eventer.
-    const mid=55, me=ovr(G.w);
-    const anchor=t.base+Math.max(0,me-t.base)*0.72;
+    const mid=55, myOvr=ovr(G.w);
+    const anchor=t.base+Math.max(0,myOvr-t.base)*0.72;
     const oppOvr=Math.round(clamp(anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5),12,99));
     let stakes='standard';
     const belt=beltName(t), holds = G.car.title===belt;
@@ -3935,15 +4002,28 @@ function makeOffers(){
     const _s=story();
     if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
       st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
+    // PPV night: a live feud is booked to blow off, and every offer moves up to Main Event.
+    if(ppv){
+      if(_s && _s.charId===opp.id && _s.stage<3) _s.stage=3;   // force to blow-off intensity
+      if(!holds && trusted && reactionOf()>=Math.min(60,10+tierIdx()*14) && stakes==='standard' && rnd()<0.45) stakes='title';
+    }
     // your position on the card follows your standing and how hot the act is
     const draw=(G.car.standing*0.34 + gimHeat()*0.22 + reactionOf()*0.44);
-    const card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
+    let card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
                : draw>=62 ? 'Main Event' : draw>=40 ? 'Mid-Card' : 'Opener';
+    if(ppv) card = 'Main Event';                               // PPV nights are all top of the card
     const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
-    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
+    const ppvMult = ppv ? 2.2 : 1;
+    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*ppvMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
+    const ppvName = ppv ? ppvNameFor(me.id, G.car.week) : null;
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
       tag: st[1]==='tag' && !!myTeam(),
-      blurb: stakes==='title'?`Beat ${opp.name} and the ${belt} is yours.`
+      ppv: ppvName,
+      blurb: ppv ? (stakes==='title'?`At ${ppvName}: beat ${opp.name} and the ${belt} is yours.`
+                 : stakes==='defense'?`At ${ppvName}: defend the ${belt} against ${opp.name}.`
+                 : stakes==='rivalry'?`At ${ppvName}: settle it with ${opp.name}.`
+                 : `${ppvName}: ${opp.name} in the ${st[0].toLowerCase()}.`)
+            : stakes==='title'?`Beat ${opp.name} and the ${belt} is yours.`
             : stakes==='defense'?`Defend the ${belt} against ${opp.name}.`
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
@@ -5539,6 +5619,40 @@ function applyMatch(o,res){
   res.coins=coins; res.repGain=repGain; res.popGain=popGain; res.xp=xp; res.unlocked=unlocked; res.titleMsg=titleMsg; res.injMsg=injMsg;
   advanceWeek();
 }
+/* PPV RESULTS CARD.
+   After the player's PPV match, we render a full-show summary so the
+   viewer sees the night as a night: your match highlighted, three or
+   four undercard results with names off the roster. Makes the roster
+   feel like a company having a supercard, not just you on stage alone. */
+function ppvCardHTML(o,res){
+  if(!o.ppv) return '';
+  const me = myPromo();
+  const roster = CHARS.filter(x=>x.promo===me.id && x.id!==o.oppId);
+  // pick a handful of pairs (up to 3)
+  const shuffled = roster.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+  const pairs = [];
+  for(let i=0;i+1<shuffled.length && pairs.length<3;i+=2) pairs.push([shuffled[i],shuffled[i+1]]);
+  // each undercard match gets a stipulation-flavoured outcome and a star rating
+  const undercards = pairs.map(([a,b])=>{
+    const q = 45 + Math.floor(rnd()*40);
+    const winner = rnd()<0.5 ? a : b;
+    const loser  = winner===a ? b : a;
+    const s = starsOf(q);
+    const finishes = ['pinned','submitted','ran through','edged out','put away'];
+    const f = finishes[Math.floor(rnd()*finishes.length)];
+    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> ${f} <span class="ppv-l">${loser.name}</span> <span class="ppv-s">${s.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</span></div>`;
+  }).join('');
+  const meLine = `<div class="ppv-row ppv-me">
+      <span class="ppv-w">${res.win?G.w.name:o.oppName}</span> ${res.win?'beat':'defeated'} <span class="ppv-l">${res.win?o.oppName:G.w.name}</span>
+      <span class="ppv-s">${starsOf(res.quality).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</span>
+    </div>`;
+  return `<div class="ppvcard">
+    <div class="ppv-k">${pico('starBig',14)} ${o.ppv} · Year ${G.car.year} · Full Card</div>
+    <div class="ppv-me-label">MAIN EVENT</div>
+    ${meLine}
+    ${pairs.length?'<div class="ppv-under-label">Also on the card</div>'+undercards:''}
+  </div>`;
+}
 function renderMatch(o,res){
   const c=G.car;
   const draw=res.draw||res.win===null;
@@ -5571,7 +5685,7 @@ function renderMatch(o,res){
   const starLine=(s.toFixed(2).replace(/0+$/,'').replace(/\.$/,''))+'★';
   const rowsOf=(items,cls,ico)=>items.length
     ? `<ul class="mlist ${cls}">${items.map(t=>`<li><span class="i">${ico}</span>${t}</li>`).join('')}</ul>` : '';
-  $('mBody').innerHTML=banner+`
+  $('mBody').innerHTML=ppvCardHTML(o,res)+banner+`
     <div class="starbox${classic?' classic':''}">
       <div class="sb-lab">Match Rating</div>
       <div class="starrow">${starRowHTML(s)}</div>
