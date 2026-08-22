@@ -6393,6 +6393,109 @@ const CHIP_BANK=[
   {id:'crowd_challenge', tag:'crowd', phase:['personal'],
     when:c=>c.me.align!=='heel',
     fn:c=>`If you want it, I want it. Make it loud enough that they cannot cut around it.`},
+
+  // ---------- FIRST-MEETING chips ----------
+  {id:'first_intro',      tag:'boast', phase:['hook','thesis'], stakes:['first'],
+    when:c=>c.opp,
+    fn:c=>[
+      `${c.opp.name} and I have never stood in the same ring. Tonight, that changes.`,
+      `${c.opp.name} does not know me yet. By the end of this, they will.`,
+      `We are meeting for the first time and it is going to be the only fight ${c.opp.name} remembers this year.`,
+    ]},
+  {id:'first_warn',       tag:'threat', phase:['meat','close'], stakes:['first'],
+    when:c=>c.opp,
+    fn:c=>[
+      `First impressions matter. ${c.opp.name} is about to get one that ruins their week.`,
+      `Everyone in ${c.opp.name}'s life will ask them tomorrow how this went. I want them to have to explain it.`,
+    ]},
+  {id:'first_studied',    tag:'ref', phase:['thesis','meat'], stakes:['first'],
+    when:c=>c.opp,
+    fn:c=>[
+      `I have studied ${c.opp.name}. Every match on tape. I know what they do and I know when they do it.`,
+      `${c.opp.name} thinks they are walking into a fair fight. I have done the homework. They have not.`,
+    ]},
+
+  // ---------- REMATCH chips ----------
+  {id:'re_unfinished',    tag:'ref', phase:['hook','thesis'], stakes:['rematch'],
+    when:c=>c.opp&&c.hist.count>=1,
+    fn:c=>[
+      `${c.opp.name} and I are not finished. Everyone in this building knows why.`,
+      `We have stood across from each other before. Tonight we settle what got left behind.`,
+    ]},
+  {id:'re_learned',       tag:'ref', phase:['meat','personal'], stakes:['rematch'],
+    when:c=>c.opp&&c.hist.count>=1,
+    fn:c=>[
+      `I have watched our last match a hundred times. I know exactly what to do different tonight.`,
+      `Last time taught me every one of ${c.opp.name}'s tells. They have not learned any of mine.`,
+    ]},
+  {id:'series_over',      tag:'threat', phase:['close'], stakes:['series','feud_end'],
+    when:c=>c.opp&&c.hist.count>=3,
+    fn:c=>[
+      `Three matches in and I am done playing. Tonight ${c.opp.name} does not walk out of here on their own.`,
+      `This is match number ${c.hist.count+1}. Believe me when I tell you it will be the last one you need to watch.`,
+    ]},
+
+  // ---------- FEUD BLOW-OFF chips ----------
+  {id:'feud_final',       tag:'threat', phase:['hook','close'], stakes:['feud_end'],
+    when:c=>c.opp&&c.feud,
+    fn:c=>[
+      `${c.feud.weeks} weeks of this. Tonight is the last one. I bury ${c.opp.name} and I get on with my career.`,
+      `I have said everything there is to say about ${c.opp.name}. Tonight we do the version that has consequences.`,
+    ]},
+  {id:'feud_hate',        tag:'twist', phase:['personal'], stakes:['feud_end','feud'],
+    when:c=>c.opp,
+    fn:c=>[
+      `Nobody in this business has made me feel about them the way ${c.opp.name} has. That ends tonight.`,
+      `I do not want to look at ${c.opp.name} tomorrow. That is the truth. Tonight is how I make sure I do not have to.`,
+    ]},
+
+  // ---------- TITLE CHASE chips ----------
+  {id:'chase_belt',       tag:'boast', phase:['hook','thesis'], stakes:['title_chase','title_call'],
+    when:c=>true,
+    fn:c=>[
+      `This company has a top belt and I am going to be the one wearing it.`,
+      `Every one of you knows my name. It is time it was on that title.`,
+      `I have worked my whole career for one belt. This one. I am done waiting.`,
+    ]},
+  {id:'chase_wait',       tag:'twist', phase:['personal'], stakes:['title_chase','title_call'],
+    when:c=>c.me.standing<70,
+    fn:c=>[
+      `This company is going to wait until I break something before they give me the shot. Fine. Let us break something.`,
+      `The office has been sitting on my name for a long time. Tonight I make sitting on it impossible.`,
+    ]},
+
+  // ---------- TITLE DEFENSE chips ----------
+  {id:'def_still',        tag:'boast', phase:['hook','close'], stakes:['title_defense'],
+    when:c=>c.me.title,
+    fn:c=>[
+      `I am the ${c.me.title} and I am staying the ${c.me.title}. That is the entire promo.`,
+      `Nobody has walked out of this building with this belt yet, and it is not starting tonight.`,
+    ]},
+  {id:'def_paid',         tag:'ref', phase:['thesis','meat'], stakes:['title_defense'],
+    when:c=>c.me.defenses>=1,
+    fn:c=>[
+      `${c.me.defenses} people have already tried what ${c.opp?c.opp.name:'this next one'} is about to try. They are all in the loss column.`,
+      `You want to know how tonight ends? Look at my last ${c.me.defenses} title matches. Same finish, every time.`,
+    ]},
+
+  // ---------- OPEN MIC (no target) chips ----------
+  {id:'open_business',    tag:'twist', phase:['thesis','meat'], stakes:['open_mic'],
+    when:c=>true,
+    fn:c=>[
+      `There is nobody in this locker room who has said what I am about to say. That is why they gave me the microphone tonight.`,
+      `Everybody knows the state of this company. I am going to say it out loud so we can all stop pretending.`,
+    ]},
+  {id:'open_target',      tag:'threat', phase:['close'], stakes:['open_mic'],
+    when:c=>c.champion&&!c.champion.you,
+    fn:c=>`${c.champion.name}, this is your notice. I will see you in this ring, in front of this building, with that title on the line.`},
+
+  // ---------- MAIN EVENT chips ----------
+  {id:'me_deserved',      tag:'boast', phase:['hook','close'], stakes:['main_event'],
+    when:c=>true,
+    fn:c=>[
+      `The main event of tonight's show. That is where I am. That is where I belong.`,
+      `${c.venue.promoShort} put me in the main event because nobody sells this building the way I do.`,
+    ]},
 ];
 function chipTag(tag){ return {ref:'k-crowd',boast:'k-heel',threat:'k-heel',question:'k-cool',concession:'k-face',callback:'k-crowd',twist:'k-cool',crowd:'k-face'}[tag]||'k-cool'; }
 /* Chips can return either a string or an array of wordings. The picker is
@@ -6416,13 +6519,40 @@ function chipLine(ch,ctx){
   }
   return out||'';
 }
+/* Tag the current promo with every stakes label that applies. A chip that
+   declares `stakes:['feud_end']` only fires when this list contains that
+   tag, so blow-off chips do not appear in a random weekly callout, and a
+   rematch chip does not show the first time two people meet. */
+function stakesForPromo(ctx){
+  const tags = ['standard'];
+  const c = G.car;
+  const isFirst = !ctx.hist || ctx.hist.count===0;
+  if(isFirst && ctx.opp) tags.push('first');
+  if(ctx.hist && ctx.hist.count>=1) tags.push('rematch');
+  if(ctx.hist && ctx.hist.count>=3) tags.push('series');
+  if(ctx.feud){
+    tags.push('feud');
+    if(ctx.feud.stage<=1) tags.push('feud_early');
+    if(ctx.feud.stage>=3) tags.push('feud_end');
+  }
+  if(ctx.opp && ctx.opp.holdsBelt) tags.push('title_chase');
+  if(ctx.me.title && ctx.stakes==='defense') tags.push('title_defense');
+  if(ctx.mode==='title') tags.push('title_call');
+  if(ctx.mode==='callout') tags.push('callout');
+  if(ctx.mode==='crowd' && !ctx.opp) tags.push('open_mic');
+  if(ctx.upcoming && ctx.upcoming.card==='Main Event') tags.push('main_event');
+  return tags;
+}
 function chipsFor(phase){
   const ctx=PMCTX;
   const used=PM.usedChips||{};
+  const stakes = stakesForPromo(ctx);
   const okVoice=ch=>{
     if(ch.align && ch.align!==ctx.me.align) return false;
     if(ch.style && ch.style!==ctx.me.style) return false;
     if(ch.gimmick && ch.gimmick!==ctx.me.gimmickId) return false;
+    // stakes gate: if a chip declares stakes, at least one must match.
+    if(ch.stakes && !ch.stakes.some(s=>stakes.indexOf(s)>=0)) return false;
     return true;
   };
   const pool=CHIP_BANK.filter(ch=>ch.phase.includes(phase) && okVoice(ch) && ch.when(ctx) && !used[ch.id]);
