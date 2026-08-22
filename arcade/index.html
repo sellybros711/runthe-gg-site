@@ -418,6 +418,13 @@
   .tile .status.members{border-color:var(--gold); background:var(--gold); color:var(--onAccent,#160B02); text-shadow:none;
     display:inline-flex; align-items:center; gap:4px;}
   .tile .status.members svg{width:9px; height:9px; flex:0 0 auto;}
+  /* A card game with its one free play still waiting. Deliberately NOT the
+     teal "Free" badge: this is not a free game, it is a card game with a door
+     briefly open, and a player who reads it as free will feel cheated on the
+     second visit. Gold, like the card it belongs to, but outlined rather than
+     filled, so it reads as an invitation and not as a price. */
+  .tile .status.tryfree{border-color:var(--gold); color:var(--goldT,var(--gold)); background:color-mix(in srgb,var(--card) 78%, transparent);
+    display:inline-flex; align-items:center; gap:4px;}
   .tile .status .bshort{display:none;}   /* the narrow-row wording; see the mobile block */
   .tile .body{display:flex; flex-direction:column; flex:1; padding:15px 15px 15px;}
   .tile .nm{font-weight:900; font-style:italic; font-size:21px; line-height:1; letter-spacing:-.01em; color:var(--ink);}
@@ -956,7 +963,7 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=9"></script>
+<script src="/arcade/tokens.js?v=10"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=18"></script>
@@ -964,7 +971,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/mycard.js?v=9"></script>
 <script src="/arcade/topbanner.js?v=6"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=15"></script>
+<script src="/arcade/card.js?v=16"></script>
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/nav.js?v=1"></script>
 <script src="/arcade/calendar.js?v=15"></script>
@@ -1096,15 +1103,24 @@ window.GA_ID='G-L29P5MRWKE';
           el.classList.toggle('locked', lock);
           var play = el.querySelector('.play');
           if(lock && play) play.innerHTML = LOCK+'ARCADE CARD';
+          // The arrow is spelled out rather than reusing ARW: this block is its
+          // own IIFE and runs before ARW is assigned, so the shared constant is
+          // still undefined here.
+          else if(play && !member && (TOK.trialOffer && TOK.trialOffer(k))) play.innerHTML = 'PLAY IT FREE <span class="arw">→</span>';
           var st = el.querySelector('.status');
           if(!st) return;
           // Solved today outranks the price chip. mark() sets .solved, and it
           // runs after the first paint, so re-check the tile rather than the
           // chip's own class.
           if(el.classList.contains('solved')) return;
+          var tryFree = !lock && !member && !!(TOK.trialOffer && TOK.trialOffer(k));
           if(lock){
             st.className='status members';
             st.innerHTML=LOCK+'<span class="bfull">Members only</span><span class="bshort">Members</span>';
+          } else if(tryFree){
+            // a card game whose one free play is still there for the taking
+            st.className='status tryfree';
+            st.innerHTML='<span class="bfull">1 free play</span><span class="bshort">Try free</span>';
           } else if(!member){
             st.className='status free'; st.textContent='Free';
           }
@@ -1273,8 +1289,12 @@ window.GA_ID='G-L29P5MRWKE';
       play.innerHTML = CHART_SVG + 'VIEW RESULT';
       card.classList.add('recap'); card.setAttribute('data-recap', key);
     } else if (!done) {
-      // Not played yet (free or cardholder): PLAY.
-      play.innerHTML = 'PLAY' + ARW;
+      // Not played yet (free or cardholder): PLAY. A card game the player still
+      // has their one free look at says so on the button, because that is the
+      // whole invitation and a tile that just says PLAY hides it.
+      var tryFree = false;
+      try { tryFree = !hasCard() && !!(TOK && TOK.trialOffer && TOK.trialOffer(key)); } catch (e) {}
+      play.innerHTML = (tryFree ? 'PLAY IT FREE' : 'PLAY') + ARW;
     }
   }
   // Career Path, Odd One Out and Alma Mater post POINTS now, not a count of

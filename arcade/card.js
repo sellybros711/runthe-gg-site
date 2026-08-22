@@ -491,6 +491,8 @@
       if(s.unlimited){ try{ localStorage.setItem('runthegrid_pro','1'); }catch(e){} }
       else if(window.RTGTokens){
         if(s.plays && RTGTokens.setServerPlays) RTGTokens.setServerPlays(s.plays);
+        // which card games this account has already had its one free look at
+        if(s.trials_used && RTGTokens.setServerTrials) RTGTokens.setServerTrials(s.trials_used);
         // today's referral bonus travels on the same status read, so the wallet
         // learns about a reward the moment any page reconciles.
         if(RTGTokens.setServerBonus) RTGTokens.setServerBonus(s.bonus||0);
