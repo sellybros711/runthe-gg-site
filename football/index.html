@@ -1532,7 +1532,22 @@ window.GA_ID='G-L29P5MRWKE';
   /* position so the columns measure from the rail rather than from the wrapper: nbrkFocus
      reads offsetLeft to scroll the round being played into view, and that is only a stable
      number when the rail is the offset parent. */
+  /* CENTRED WHEN IT FITS, SCROLLING WHEN IT DOES NOT, and this is the one screen in the game
+     that sits OUTSIDE .wrap. Everything else is inside a 600px column that centres itself, so
+     nothing else had to think about this. The bracket is outside on purpose, because four
+     columns want more than 600px on a desktop and a rail capped at 600 would scroll on a
+     screen with room to spare. What it never got was the other half of that bargain: with no
+     max-width AND no centring it drew hard against the left edge of the window, so at 1440 it
+     was 635px of bracket and 803px of nothing.
+
+     width:fit-content plus margin:0 auto rather than justify-content:center, which is the
+     obvious way to write this and is broken on a scroll container: when the content overflows,
+     a centred flex row puts the first column at a NEGATIVE offset that no scroll position can
+     reach, so a phone would lose the Wild Card column entirely. fit-content shrinks the box to
+     the bracket when the bracket fits and max-width caps it when it does not, so the same two
+     lines centre the desktop case and leave the phone case scrolling from zero. */
   .nbrk{position:relative;display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 12px;
+    width:fit-content;max-width:100%;margin:0 auto;
     scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
   .nbrk::-webkit-scrollbar{height:6px}
   .nbrk::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
@@ -1570,6 +1585,43 @@ window.GA_ID='G-L29P5MRWKE';
   .nbrk-t.tbd .nm{color:var(--dim-2);font-weight:600;font-style:italic}
   .nbrk-note{text-align:center;font-size:12px;color:var(--dim-2);margin:6px 0 0;min-height:16px}
   @media (max-width:400px){ .nbrk-col{flex:0 0 140px} }
+  /* THE DESKTOP BRACKET. 152px columns and 11.5px rows are sized for a phone, where the rail
+     scrolls and the only question is how many columns fit. On a wide screen the whole bracket
+     is on screen at once and there is nothing to scroll, so the constraint is gone and the
+     numbers were just small: fourteen team names set at 11.5px in the middle of a 1440px
+     window, with the year and the seed smaller still.
+
+     Same breakpoint the draft screen uses to go two column, so the game changes shape once
+     rather than at four different widths on the way up. At 232px a column the whole bracket
+     is about 980px, which still centres inside a 1440 window with room either side. */
+  @media (min-width:920px){
+    .nbrk{gap:14px;padding:6px 4px 16px}
+    /* FLUID, CAPPED AT BOTH ENDS. A flat 232 was the first version and it overflowed at 920:
+       four of them plus the gaps is 978, and 920 has 892 to give. The clamp lets the column
+       take whatever a quarter of the free width is, never below the phone's 152 and never
+       above 232, past which a two-line game card is just a wide box with a name in it. */
+    .nbrk-col{flex:0 0 clamp(152px,calc((100vw - 78px) / 4),232px);gap:10px}
+    .nbrk-h{font-size:11.5px;letter-spacing:.13em;padding-bottom:4px}
+    .nbrk-conf{font-size:10.5px;margin-top:5px}
+    .nbrk-g{border-radius:11px}
+    .nbrk-t{gap:8px;padding:9px 11px;font-size:14px;min-height:38px}
+    .nbrk-t .sd{flex:0 0 18px;font-size:11px}
+    .nbrk-t .yr{font-size:11px}
+    .nbrk-note{font-size:13.5px;margin-top:10px}
+  }
+  /* THE SIDE RAILS TAKE 184px OFF EACH EDGE FROM 1200 UP, and a bracket that is only
+     centred does not know that: measured before this rule, the Wild Card and Super Bowl
+     columns ran 73px under the rails at 1200 and 33px at 1280, clean again at 1440. It is
+     the same squeeze the draft screen answers by dropping to one column between 1200 and
+     1259; a bracket has no such fallback, so it narrows instead.
+
+     400 rather than 368 leaves 16px of air between the bracket and each rail. The column
+     clamp is the same shape as the one above with the rails' share taken out of the free
+     width, so the whole bracket still fits without scrolling at every width in this band. */
+  @media (min-width:1200px){
+    .nbrk{max-width:min(100%,calc(100vw - 400px))}
+    .nbrk-col{flex:0 0 clamp(152px,calc((100vw - 450px) / 4),232px)}
+  }
 
   /* Emerald for the defense card. The other three modes are the game's own blues and
      reds; a defense is the side that stops things, and it gets the one colour on the
@@ -3097,6 +3149,11 @@ window.GA_ID='G-L29P5MRWKE';
     .wrap:has(#s-po.on),
     .wrap:has(#s-seed.on),
     .wrap:has(#s-over.on){max-width:860px}
+    /* BODY, NOT WRAP, and only for this one. Every other screen in this list is inside the
+       wrap so :has can find it from there; the bracket is the one screen that is not, which
+       is why it can be wider than 600 in the first place. Without this the header sat in a
+       600px column above a 970px bracket and the two read as different pages. */
+    body:has(#s-nbrk.on) .wrap{max-width:1040px}
     .dcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
       column-gap:24px;align-items:start}
     .opts{grid-template-columns:repeat(3,minmax(0,1fr))}
