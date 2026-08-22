@@ -385,6 +385,8 @@
   .bksheet.ppv{border-color:var(--gold);background:linear-gradient(180deg,rgba(224,179,65,.16),rgba(0,0,0,.32));box-shadow:0 0 30px rgba(224,179,65,.15);}
   .bs-ppv{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
   .ppvcard{border:1.5px solid rgba(224,179,65,.55);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:linear-gradient(180deg,rgba(224,179,65,.11),rgba(0,0,0,.30));}
+  .ppvcard.nightcard{border:1px dashed var(--line);background:rgba(0,0,0,.22);}
+  .ppvcard.nightcard .ppv-k{color:var(--text-faint);font-size:11px;}
   .ppvcard .ppv-k{font-family:var(--display);font-size:15px;letter-spacing:.06em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
   .ppvcard .ppv-me-label,.ppvcard .ppv-under-label{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin:8px 0 4px;}
   .ppvcard .ppv-me-label{color:var(--gold);}
@@ -3076,6 +3078,7 @@ function finishCreate(){
   G.w.gimmick={ id:g.id, name:g.n, heat:78, since:1 };
   G.car.deal.weekly=dealValue(myPromo(),5,0,50);
   pushLog(`You sign a one-year developmental deal with <b>${myPromo().name}</b> at ${money(G.car.deal.weekly)}/week.`);
+  initWorld();
   save(); go('career'); toast('Welcome to the business, '+name);
 }
 // the indie that takes a chance on a rookie of your type
@@ -3084,6 +3087,106 @@ function startingPromotion(style){
   const best=indies.map(p=>({p,f:(PRODUCT_FIT[p.product]||{})[style]||0}))
                    .sort((a,b)=>b.f-a.f);
   return (best[0]&&best[0].p.id)||PROMOS[0].id;
+}
+
+/* ============================================================
+   LIVING WORLD
+   ------------------------------------------------------------
+   The roster is not a static list any more. Every week the world
+   ticks: title changes elsewhere, wrestlers turn, teams form,
+   veterans retire, rookies come up. A News Feed collects it all
+   so the player scrolls their week in wrestling, not just their
+   own segment. Two promotions can be RIVALS: signing with one
+   burns respect at the other.
+   ============================================================ */
+const PROMO_RIVALRIES = [
+  ['cwf','acw'],       // the two national/global powers
+  ['gcw','cdp'],       // rival indies
+  ['sbcw','scw'],      // rival regional scenes
+  ['kaiju','eterna'],  // both national but different products
+];
+function areRivalPromos(a,b){
+  return PROMO_RIVALRIES.some(pair=>(pair[0]===a&&pair[1]===b)||(pair[0]===b&&pair[1]===a));
+}
+function initWorld(){
+  if(G.world) return;
+  const world = { news:[], champions:{}, teams:[], turns:{}, retired:{}, factionFeud:null };
+  // seed each promotion with its house champions
+  PROMOS.forEach(p=>{
+    const house = CHARS.filter(c=>c.promo===p.id).sort((a,b)=>(b.over||0)-(a.over||0));
+    if(!house.length) return;
+    world.champions[p.id] = {
+      world: house[0] && house[0].id || null,
+      secondary: house[1] && house[1].id || null,
+    };
+  });
+  G.world = world;
+}
+function newsPush(entry){
+  if(!G.world) initWorld();
+  const c=G.car;
+  G.world.news.unshift(Object.assign({y:c.year, w:c.week}, entry));
+  if(G.world.news.length>120) G.world.news.pop();
+}
+function worldTick(){
+  if(!G.world) initWorld();
+  const c=G.car; const w=G.world;
+  // A title change happens somewhere in the world every few weeks.
+  if(rnd()<0.10){
+    const promo = PROMOS[Math.floor(rnd()*PROMOS.length)];
+    if(promo.id===myPromoId()) return;                        // your promotion is player-driven
+    const house = CHARS.filter(x=>x.promo===promo.id && !w.retired[x.id]);
+    if(house.length<2) return;
+    const belt = rnd()<0.7 ? 'world' : 'secondary';
+    const beltName = beltsForPromo(promo.id)[belt];
+    if(!beltName) return;
+    const holder = w.champions[promo.id] && w.champions[promo.id][belt];
+    // pick a challenger from the house who is not the current holder
+    const chal = house.filter(x=>x.id!==holder)[Math.floor(rnd()*Math.max(1,house.length-1))];
+    if(!chal) return;
+    if(!w.champions[promo.id]) w.champions[promo.id]={};
+    w.champions[promo.id][belt] = chal.id;
+    const oldName = (charById(holder)||{}).name || 'the champion';
+    newsPush({ico:pico('crown',14), kind:'title',
+      text:`<b>${chal.name}</b> beat ${oldName} for the <b>${beltName}</b> at ${promo.short}.`});
+    return;
+  }
+  // A team forms.
+  if(rnd()<0.04){
+    const promo = PROMOS[Math.floor(rnd()*PROMOS.length)];
+    const house = CHARS.filter(x=>x.promo===promo.id && !w.retired[x.id]);
+    if(house.length<3) return;
+    const a = house[Math.floor(rnd()*house.length)];
+    const b = house.filter(x=>x.id!==a.id)[Math.floor(rnd()*(house.length-1))];
+    if(!b) return;
+    if(w.teams.some(t=>(t.a===a.id&&t.b===b.id)||(t.a===b.id&&t.b===a.id))) return;
+    const teamName = pick(['The Signal','Two Coasts','The Weekender','Iron Legion','The Bootleg','The Long Hours','Concrete & Cotton','Homefield']);
+    w.teams.push({a:a.id, b:b.id, name:teamName, formed:{y:c.year,w:c.week}});
+    newsPush({ico:pico('handshake',14), kind:'team',
+      text:`<b>${a.name}</b> and <b>${b.name}</b> announced they are teaming as <b>${teamName}</b> at ${promo.short}.`});
+    return;
+  }
+  // A wrestler turns.
+  if(rnd()<0.03){
+    const pool = CHARS.filter(x=>!w.retired[x.id] && x.promo!==myPromoId());
+    if(!pool.length) return;
+    const target = pool[Math.floor(rnd()*pool.length)];
+    const cur = w.turns[target.id] || target.align;
+    const to = cur==='heel'?'face':'heel';
+    w.turns[target.id] = to;
+    newsPush({ico:pico('swap',14), kind:'turn',
+      text:`<b>${target.name}</b> turned <b>${to}</b> at ${(promoById(target.promo)||{}).short||''}. The building was stunned.`});
+    return;
+  }
+  // A retirement (rare).
+  if(rnd()<0.008){
+    const pool = CHARS.filter(x=>!w.retired[x.id] && x.promo!==myPromoId() && (x.over||55)>=55);
+    if(!pool.length) return;
+    const target = pool[Math.floor(rnd()*pool.length)];
+    w.retired[target.id] = {y:c.year,w:c.week};
+    newsPush({ico:pico('medal',14), kind:'retire',
+      text:`<b>${target.name}</b> announced their retirement. A memorable career at ${(promoById(target.promo)||{}).short||'the promotion'}.`});
+  }
 }
 
 /* ============================================================
@@ -3690,6 +3793,7 @@ function mergeCustomMoves(){ (G.w.custom||[]).forEach(mv=>{ if(!MOVES.find(x=>x.
 function continueCareer(){ G=load(); if(!G){ renderHome(); return; }
   if(!G.car.plan) G.car.plan={a:'strike',b:'technical'};
   G.w.custom=G.w.custom||[]; mergeCustomMoves();
+  if(!G.world) initWorld();               // living world state for older saves
   RNG=(G.car.year*104729+G.car.week*7919+1)>>>0;
   go(G.car.retired?'hof':'career'); }
 
@@ -3794,6 +3898,10 @@ function renderStoryPanel(){
   }
   if(inbox.length) h+=`<div class="card" style="margin-top:10px;"><div class="flab">Recent</div>`+
     inbox.map(i=>`<div class="inbox-item sev-${i.sev||'info'}"><span class="ico">${i.ico||'•'}</span><span class="txt">${i.txt}</span></div>`).join('')+`</div>`;
+  // The Ropes Report: what happened elsewhere in the wrestling world this week.
+  const worldNews = (G.world&&G.world.news)||[];
+  if(worldNews.length) h+=`<div class="card" style="margin-top:10px;"><div class="flab">The Ropes Report <span class="hint" style="text-transform:none;letter-spacing:0;">news from around the wrestling world</span></div>`+
+    worldNews.slice(0,5).map(n=>`<div class="inbox-item sev-info"><span class="ico">${n.ico||'•'}</span><span class="txt">${n.text} <span class="hint" style="margin-left:6px;">Y${n.y}W${n.w}</span></span></div>`).join('')+`</div>`;
   el.innerHTML=h;
   if(st&&feudAdv){
     const card=$('feudCard'), bar=$('feudBar');
@@ -5772,6 +5880,27 @@ function applyMatch(o,res){
    viewer sees the night as a night: your match highlighted, three or
    four undercard results with names off the roster. Makes the roster
    feel like a company having a supercard, not just you on stage alone. */
+/* Weekly night card: lighter than the PPV card but shows the whole show so
+   the roster feels like a company running a night. Non-PPV weeks get up to
+   two other match results from your promotion's undercard. */
+function nightCardHTML(o,res){
+  if(o.ppv) return '';   // PPVs get their own bigger card
+  const me = myPromo();
+  const roster = CHARS.filter(x=>x.promo===me.id && x.id!==o.oppId);
+  if(roster.length<4) return '';
+  const shuffled = roster.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+  const pairs=[]; for(let i=0;i+1<shuffled.length && pairs.length<2;i+=2) pairs.push([shuffled[i],shuffled[i+1]]);
+  const under = pairs.map(([a,b])=>{
+    const q = 42 + Math.floor(rnd()*30);
+    const winner = rnd()<0.5 ? a : b;
+    const loser  = winner===a ? b : a;
+    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> beat <span class="ppv-l">${loser.name}</span> <span class="ppv-s">${starsOf(q).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</span></div>`;
+  }).join('');
+  return `<div class="ppvcard nightcard">
+    <div class="ppv-k">Also on tonight's show</div>
+    ${under}
+  </div>`;
+}
 function ppvCardHTML(o,res){
   if(!o.ppv) return '';
   const me = myPromo();
@@ -5839,7 +5968,7 @@ function renderMatch(o,res){
   const starLine=(s.toFixed(2).replace(/0+$/,'').replace(/\.$/,''))+'★';
   const rowsOf=(items,cls,ico)=>items.length
     ? `<ul class="mlist ${cls}">${items.map(t=>`<li><span class="i">${ico}</span>${t}</li>`).join('')}</ul>` : '';
-  $('mBody').innerHTML=ppvCardHTML(o,res)+banner+`
+  $('mBody').innerHTML=ppvCardHTML(o,res)+nightCardHTML(o,res)+banner+`
     <div class="starbox${classic?' classic':''}">
       <div class="sb-lab">Match Rating</div>
       <div class="starrow">${starRowHTML(s)}</div>
@@ -5945,6 +6074,7 @@ function advanceWeek(){
   const turned=checkBetrayal();
   if(c.deal && c.deal.weeksLeft<=0){ c.freeAgent=true; c.faOffers=freeAgentOffers(); }
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
+  worldTick();       // rest of the wrestling world keeps happening
   save();
   setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
 }
