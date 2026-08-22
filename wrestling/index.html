@@ -4389,27 +4389,27 @@ const STIP_RULES = {
   singles: { label:'Singles Match',      desc:'One-on-one, referee\'s enforcement. Pinfall or submission.',
              ends:['pin','sub'],           danger:0, mod:0 },
   tag:     { label:'Tag Team Match',     desc:'Legal wrestler only. Tag the corner to sub in.',
-             ends:['pin','sub'],           danger:0, mod:-2 },
+             ends:['pin','sub'],           danger:0, mod:-2, format:'tag' },
   hardcore:{ label:'Hardcore Match',     desc:'No disqualification. Weapons legal, anything counts.',
-             ends:['pin','sub'],           danger:1, mod:3 },
+             ends:['pin','sub'],           danger:1, mod:3, noDQ:true },
   ladder:  { label:'Ladder Match',       desc:'The prize hangs above the ring. Climb the ladder and take it down.',
              ends:['climb'],               danger:1, mod:4 },
   cage:    { label:'Steel Cage',         desc:'No count-outs. Escape by pinfall, submission, or over the top of the cage.',
-             ends:['pin','sub','climb'],   danger:.6, mod:2 },
+             ends:['pin','sub','climb'],   danger:.6, mod:2, noCount:true, noDQ:true },
   sub:     { label:'Submission Match',   desc:'The only way to win is to make them tap. Pinfalls do nothing.',
              ends:['sub'],                 danger:0, mod:1 },
   lms:     { label:'Last Man Standing',  desc:'No pinfalls. Beat them down and win by ten-count when they cannot rise.',
-             ends:['ko'],                  danger:1, mod:3 },
+             ends:['ko'],                  danger:1, mod:3, noDQ:true, noCount:true },
   grudge:  { label:'Grudge Match',       desc:'Personal issue. The referee will let a lot go before calling for the bell.',
-             ends:['pin','sub'],           danger:.6, mod:2 },
+             ends:['pin','sub'],           danger:.6, mod:2, lenient:true },
   iron:    { label:'Iron Man Match',      desc:'Most decisions inside the time limit wins. Every fall is by pin or submission.',
              ends:['pin','sub'],           danger:.4, mod:5, marquee:true },
   chamber: { label:'Elimination Chamber', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
-             ends:['pin','sub'],           danger:1,   mod:6, marquee:true },
+             ends:['pin','sub'],           danger:1,   mod:6, marquee:true, noDQ:true, noCount:true },
   mitb:    { label:'Money in the Bank',   desc:'Ladders and a briefcase above the ring. Win it, cash in on any champion, any time.',
              ends:['climb'],               danger:1,   mod:5, marquee:true },
   tlc:     { label:'Tables, Ladders, Chairs', desc:'Every weapon legal, prize hanging above. Climb to take it, put someone through everything on the way.',
-             ends:['climb'],               danger:1.2, mod:5, marquee:true },
+             ends:['climb'],               danger:1.2, mod:5, marquee:true, noDQ:true },
 };
 function stipRules(o){ return STIP_RULES[o&&o.stip] || STIP_RULES.singles; }
 // Take the finish the engine wants to record and rewrite it to whatever the
@@ -4418,20 +4418,21 @@ function stipRules(o){ return STIP_RULES[o&&o.stip] || STIP_RULES.singles; }
 function commitFinish(base){
   const o=MS&&MS.o; const rl=stipRules(o); const ends=rl.ends;
   let f=Object.assign({},base);
+  // count-out / DQ / no-contest are not part of `ends`; they short-circuit the
+  // regular finish path when the stipulation allows them at all.
+  if(f.type==='count' || f.type==='dq' || f.type==='nc'){
+    if(f.type==='count' && rl.noCount) f.type='pin';
+    else if(f.type==='dq' && rl.noDQ)  f.type='pin';
+    else { MS.finish=f; return f; }
+  }
   if(ends.length===1 && ends[0]==='ko'){
-    // LMS: whatever put them down, it was the 10-count that decided it.
     f={type:'ko', by:base.by, move:base.move||'a heavy shot', fin:!!base.fin, part:base.part||null};
   } else if(ends.length===1 && ends[0]==='sub' && f.type!=='sub'){
-    // Sub-only: the last submission move used, if any, is what did it.
-    // If nobody in the match ever went to a hold, leave the move name empty
-    // and let the finish line read "won by submission at TIME".
     const lastSub = (MS.usedMoves||[]).slice().reverse().find(m=>m&&m.cat==='submission');
     f={type:'sub', by:base.by, move:(lastSub&&lastSub.name)||'', part:base.part||null};
   } else if(ends.length===1 && ends[0]==='climb'){
-    // Ladder: the finish is possession of the prize hanging above.
     f={type:'climb', by:base.by, move:'the climb', fin:false};
   } else if(!ends.includes(f.type)){
-    // Fall back to whatever the rules first allow.
     const pref=ends[0];
     f={type:pref, by:base.by, move:base.move||(pref==='sub'?'a hold':'a cover'), fin:!!base.fin, part:base.part||null};
   }
@@ -5112,7 +5113,9 @@ async function startFight(o){
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
   const beltIco = pico('trophy',12);
-  $('fStip').innerHTML=(o.stakes==='title'?beltIco+' TITLE MATCH · ':o.stakes==='defense'?beltIco+' TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
+  const _tm = (o.tag && myTeam()) ? myTeam() : null;
+  const _tmTag = _tm ? ` · ${_tm.name.toUpperCase()}` : '';
+  $('fStip').innerHTML=(o.stakes==='title'?beltIco+' TITLE MATCH · ':o.stakes==='defense'?beltIco+' TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase()+_tmTag;
   $('fRules').textContent=stipRules(o).desc;
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
@@ -5226,6 +5229,64 @@ async function runFight(){
     renderLimbs();
     if(MS.beat%3===0) refDrift();
 
+    // ---- hot tag: in a tag match, your partner tags in and cleans house ----
+    if(!MS.ended && !MS.hotTag && o.tag && myTeam() && ph.id==='heat' && MS.mom<-15 && MS.phaseBeat>=1){
+      MS.hotTag=true;
+      const mate=myTeam().mate;
+      const boost = 20 + Math.round(((mate&&mate.over)||55)*0.12);
+      shake(); burst(0,'HOT TAG!'); await callout(mate?(mate.name.toUpperCase()+' IN!'):'HOT TAG!');
+      fLog(`<span class="hi">${mate?mate.name:'Your partner'} gets the tag and clears house. The building comes to life.</span>`);
+      MS.mom=clamp(MS.mom+boost,-100,100); setMom();
+      MS.opp.hp=clamp(MS.opp.hp-9); setBar('hpOpp',MS.opp.hp);
+      MS.quality+=6;
+      await sleep(420);
+    }
+    // ---- a live rival can run in and ruin somebody's night ----
+    // If you have a story with a wrestler who is NOT tonight's opponent, they
+    // may crash the match. In a hardcore/no-DQ world it becomes a no-contest;
+    // otherwise the ref calls for the bell and someone eats a disqualification.
+    if(!MS.ended && !MS.runIn && MS.phase>=2 && story() && story().charId!==o.oppId && rnd()<0.08){
+      const rid=story().charId, rc=charById(rid);
+      if(rc){
+        MS.runIn=true;
+        const rl=stipRules(o), noDQ=rl.noDQ;
+        shake(); burst(0,'RUN-IN!'); impact(atX('me'),36,2);
+        await callout(rc.name.toUpperCase()+' HITS THE RING');
+        fLog(`<span class="bad">${rc.name} sprints down the aisle and lays you out. The referee has seen enough.</span>`);
+        MS.quality-=6;   // a bad taste, not a great match
+        // heat spikes with the rival
+        const R=rel(rid); R.heat=clamp(R.heat+16,0,100);
+        if(story()) advanceStory();
+        // in a no-DQ setting, wave it off; otherwise the rival's interference
+        // hands YOUR opponent a DQ win (they benefit at your expense).
+        if(noDQ){ commitFinish({type:'nc',by:null,reason:`${rc.name} interfered`}); }
+        else    { commitFinish({type:'dq',by:false,reason:`${rc.name}'s interference`}); }
+        MS.ended=true;
+        await sleep(360);
+        return endFight(MS.finish.by);
+      }
+    }
+    // ---- count-out spot: if opponent is on the floor and hurt, ref can count them out ----
+    if(!MS.ended && !stipRules(o).noCount && MS.phase>=2 && MS.mom>60 && MS.opp.hp<25 && rnd()<0.05){
+      shake(); await callout('COUNTING TEN ON THE FLOOR');
+      fLog(`<span class="hi">${MS.opp.name} rolled to the floor and cannot make it back. The referee gets to ten.</span>`);
+      commitFinish({type:'count',by:true});
+      MS.ended=true;
+      await sleep(360);
+      return endFight(true);
+    }
+    // ---- self-inflicted DQ: taking it too far in a match with a ref ----
+    // Only fires when you swung wildly outside your alignment and the rules
+    // do not permit weapons. Adds an escape hatch for badly losing matches at
+    // a real cost.
+    if(!MS.ended && !stipRules(o).noDQ && !stipRules(o).lenient && MS.mom<-40 && MS.opp.hp>50 && rnd()<0.02){
+      await callout('DISQUALIFIED');
+      fLog(`<span class="bad">You crossed the line. The referee had no choice.</span>`);
+      commitFinish({type:'dq',by:false,reason:'a low blow behind the ref'});
+      MS.ended=true;
+      await sleep(360);
+      return endFight(false);
+    }
     // ---- a faction ally can turn the tide ----
     if(!MS.ended && !MS.ally && MS.mom<-30 && (myFaction()||myStable()) && rnd()<(myStable()?0.30:facBonus('interfere',0))){
       MS.ally=true;
@@ -5597,26 +5658,34 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 }
 
 async function endFight(iWon){
-  if(MS.ended) return; MS.ended=true;
+  if(MS.ended && !MS.finish) return; MS.ended=true;
   const gen=MS.gen;
   const stale=()=>!MS||MS.gen!==gen;
+  const noWinner=(iWon==null);
   const W=iWon?'me':'opp', Lz=iWon?'opp':'me';
   busy(true);
   $('arena').classList.remove('tense');
-  fmv(Lz,{pose:'prone',fwd:0,up:0,rot:0,sc:1},300);
-  fmv(W,{pose:'celebrate',fwd:0,up:0,rot:0,sc:1.04},300);
-  FIG[W].el.classList.add('glow');
+  if(!noWinner){
+    fmv(Lz,{pose:'prone',fwd:0,up:0,rot:0,sc:1},300);
+    fmv(W,{pose:'celebrate',fwd:0,up:0,rot:0,sc:1.04},300);
+    FIG[W].el.classList.add('glow');
+  } else {
+    fmv('me',{pose:'prone'},300); fmv('opp',{pose:'prone'},300);
+  }
   await flashScreen();
   if(stale()) return;
   const f=MS.finish||{type:'pin',by:iWon};
   const cw = f.type==='sub'   ? (iWon?'SUBMISSION!':'YOU TAPPED')
            : f.type==='ko'    ? (iWon?'TEN COUNT!':'STAYED DOWN')
            : f.type==='climb' ? (iWon?'ESCAPE!':'BEATEN OUT')
+           : f.type==='count' ? (iWon?'COUNT-OUT!':'COUNTED OUT')
+           : f.type==='dq'    ? (iWon?'DISQUALIFIED!':'DQ, ON YOU')
+           : f.type==='nc'    ? 'NO CONTEST'
            : iWon?'WINNER!':'DEFEATED';
   await callout(cw);
   if(stale()) return;
-  // ---- the official raises the winner's arm ----
-  if(FIG.ref){
+  // ---- the official raises the winner's arm (skip if no winner) ----
+  if(FIG.ref && !noWinner){
     const wx=Math.round(FIG[W].home*0.42);          // step toward the middle for the pose-down
     fmv(W,{pose:'ready',x:wx,up:0,rot:0,sc:1},320);
     FIG.ref.el.classList.remove('up');
@@ -5641,6 +5710,14 @@ async function endFight(iWon){
   } else if(f.type==='climb'){
     fLog(iWon?`<span class="hi">${MS.me.name} got over the top and hit the floor first.</span>`
              :`<span class="bad">${MS.opp.name} beat you to it. Feet on the floor before yours.</span>`);
+  } else if(f.type==='count'){
+    fLog(iWon?`<span class="hi">${MS.opp.name} could not make it back. Count of ten.</span>`
+             :`<span class="bad">You could not make it back in time. Ten count on the floor.</span>`);
+  } else if(f.type==='dq'){
+    fLog(iWon?`<span class="hi">Ring the bell. ${MS.opp.name} disqualified.</span>`
+             :`<span class="bad">Ring the bell. Disqualified. ${f.reason||''}</span>`);
+  } else if(f.type==='nc'){
+    fLog(`<span class="say">No contest. ${f.reason||'The referee waves it off.'}</span>`);
   } else {
     fLog(iWon?`<span class="hi">Three count. ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
              :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`);
@@ -5720,6 +5797,9 @@ function finishLine(res){
   if(f.type==='sub')   return `${who} won by submission at ${res.time}${f.move?` with the ${bare(f.move)}`:''}`;
   if(f.type==='ko')    return `${who} won by ten-count knockout at ${res.time}`;
   if(f.type==='climb') return `${who} won by escape at ${res.time}`;
+  if(f.type==='count') return `${who} won by count-out at ${res.time}`;
+  if(f.type==='dq')    return `${who} won by disqualification at ${res.time}${f.reason?` (${f.reason})`:''}`;
+  if(f.type==='nc')    return `No contest at ${res.time}${f.reason?` (${f.reason})`:''}`;
   return `${who} won by pinfall at ${res.time}${f.move?`, after the ${bare(f.move)}`:''}`;
 }
 
@@ -6235,6 +6315,9 @@ function matchStory(o,res){
   if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
   else if(f.type==='ko') mid=res.win?` You beat them down and they could not answer the ten count.`:` You could not beat the count. It was over on the floor.`;
   else if(f.type==='climb') mid=res.win?` You got over the top first, feet on the floor before them.`:` ${n} beat you to the top and dropped clear.`;
+  else if(f.type==='count') mid=res.win?` ${n} took a walk you did not follow. Ten count on the floor.`:` You could not make it back. The count reached ten while you were still climbing to your feet.`;
+  else if(f.type==='dq') mid=res.win?` ${n} lost the plot and got themselves disqualified. Points on the board, hollow ones.`:` You crossed the line and the referee had no choice.${f.reason?' '+cap(f.reason)+'.':''}`;
+  else if(f.type==='nc') mid=` The referee waved it off before anybody could win.${f.reason?' '+cap(f.reason)+'.':''}`;
   else if(res.win) mid=f.fin?` The finisher did it. Three seconds later it was over.`:` You caught them flat and stole the three.`;
   else mid=f.fin?` They hit the ${bare(f.move)} and that was that.`:` ${n} had an answer when it mattered.`;
   const nf=(res.nearFalls||0)>=3?' The near-falls down the stretch had them out of their seats.':'';
