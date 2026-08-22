@@ -2166,6 +2166,23 @@ window.GA_ID='G-L29P5MRWKE';
   .rbmile-v.gold{color:var(--gold)}
   .rbmile-sub{font-size:10.5px; color:var(--muted); margin-top:2px}
   .rb-empty{font-size:13px; color:var(--muted); margin:16px 0; text-align:center; padding:14px 12px; border:1px dashed var(--line); border-radius:10px}
+  /* NAMED OPENING RIVAL — a "Career Nemesis" strip. Sits at the top of the Records tab as the
+     most personal frame on the career, above the broader all-time majors chase. Same visual
+     vocabulary as .rbchase (gold border, display type) but split down the middle for the vs. */
+  .orival{background:linear-gradient(180deg,rgba(224,122,95,.14),rgba(224,122,95,.04)); border:1px solid rgba(224,122,95,.5);
+    border-radius:13px; padding:14px 16px; margin:0 0 14px; font-family:var(--body)}
+  .orival-hd{font:800 10.5px/1 var(--body); letter-spacing:.18em; text-transform:uppercase; color:#e07a5f; margin-bottom:11px}
+  .orival-body{display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:center}
+  .orival-them, .orival-you{min-width:0}
+  .orival-them{text-align:left}
+  .orival-you{text-align:right}
+  .orival-nm{font-family:var(--display); font-weight:400; font-size:20px; line-height:1.1; color:var(--oncard); letter-spacing:.02em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .orival-them .orival-nm{color:#f0b49f}
+  .orival-you .orival-nm{color:var(--gold)}
+  .orival-meta{font-size:11px; color:var(--muted); letter-spacing:.03em; margin-top:5px; font-weight:600; font-variant-numeric:tabular-nums}
+  .orival-vs{font-family:var(--display); font-weight:400; font-size:14px; color:rgba(224,122,95,.7); letter-spacing:.08em}
+  .orival-foot{margin-top:10px; padding-top:8px; border-top:1px dashed rgba(224,122,95,.16); font-size:12px; color:var(--muted); text-align:center; font-variant-numeric:tabular-nums}
+  .orival-foot b{color:var(--oncard); font-weight:700}
   .sstat .v.gold{color:var(--gold); font-size:22px}
   /* CS264: Career Hub dashboard - franchise-mode banner (avatar · name · year/age + stats) + season event rail */
   .careerbanner{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px; padding:12px 15px;
@@ -10103,11 +10120,103 @@ function recordsMilestonesHTML(){
 
 // Full Records tab. Wired into the profile overlay's tab bar as the fifth entry.
 function recordsTabHTML(){
-  return `${recordsChaseHTML()}
+  return `${openingRivalCardHTML()}${recordsChaseHTML()}
     <h2 style="margin:6px 0 8px">The Majors Leaderboard</h2>
     ${recordsMajorsHTML()}
     ${recordsMilestonesHTML()}
     <div class="small muted" style="margin-top:12px;line-height:1.55;text-align:center">More categories to come — wins by tour and career longevity. For now the record that decides golf history is majors, so majors leads.</div>`;
+}
+
+/* ══════ THE NAMED OPENING RIVAL — a "Career Nemesis" from move one ══════════════════════════════
+   The audit's #5 gap: emergent rivals form after 3 seasons of H2H data, which is right for the
+   real friction-with-a-peer story but leaves the FIRST years of a career without a named foe. Every
+   great career-mode story has one — Nicklaus vs Palmer, Tiger vs the field, your rookie's version
+   of the same. This picks one at turn-pro and freezes them as your ceiling to chase.
+
+   Doesn't conflict with the emergent rival system (S.career.rival): openingRival lives on its own
+   key, is snapshot-frozen at naming, and shares the same H2H tally table (S.career.h2h) so the
+   record against them accrues automatically — every event you both play is banked, day one.
+
+   Legacy saves are LEFT ALONE. Naming only runs on a genuine fresh career (year 1, no seasons
+   completed) so a 15-year veteran doesn't wake up one morning with a brand-new "opening rival."
+*/
+function pickOpeningRival(){
+  if(S.daily || S.circuitMode || !S.career) return null;
+  const w = (typeof ensureWorld==='function') ? ensureWorld() : null;
+  if(!w || !w.active || !w.active.length) return null;
+  let myOvr = 82;
+  try { myOvr = Math.round(buildPlayer().skill); } catch(e){}
+  // Preferred pool: established stars ahead of you by a fair margin but not out of reach — the
+  // whole point is a plausible chase. Aged 28-42 so they have career ahead of them too.
+  const preferred = w.active.filter(g => {
+    if(!g || g.retiredYear) return false;
+    const ov = g.lov || 0, age = g.lage || 30;
+    return ov >= myOvr + 5 && ov <= myOvr + 14 && age >= 28 && age <= 42;
+  }).sort((a,b) => (b.lov||0) - (a.lov||0));
+  if(preferred.length) return _snapshotOpeningRival(preferred[0], myOvr);
+  // Fallbacks: anyone higher than you, then the top OVR alive
+  const higher = w.active.filter(g => g && !g.retiredYear && (g.lov||0) > myOvr).sort((a,b) => (b.lov||0) - (a.lov||0));
+  if(higher.length) return _snapshotOpeningRival(higher[0], myOvr);
+  const top = w.active.slice().filter(g => g && !g.retiredYear).sort((a,b) => (b.lov||0) - (a.lov||0))[0];
+  return top ? _snapshotOpeningRival(top, myOvr) : null;
+}
+function _snapshotOpeningRival(g, myOvr){
+  return {
+    name: g.name,
+    ovr: g.lov || 80,
+    age: g.lage || null,
+    nation: g.nation || 'INT',
+    sinceYear: S.year || 1,
+    startMyOvr: myOvr,
+  };
+}
+// Called from startSeason on year-1 of a fresh career. Silent no-op otherwise, so it's safe to
+// call unconditionally.
+function ensureOpeningRival(){
+  if(S.daily || S.circuitMode || !S.career) return;
+  if(S.career.openingRival) return;                                    // already assigned this career
+  if((S.year||1) !== 1) return;                                        // only at true turn-pro
+  if(S.career.seasons && S.career.seasons.length > 0) return;          // never retroactive for legacy saves mid-career
+  const r = pickOpeningRival(); if(!r) return;
+  S.career.openingRival = r;
+  try {
+    const st = careerStory();
+    st.feed = st.feed || [];
+    st.feed.push({ y: r.sinceYear, k: 'rival', txt: `The tour has a face on your career: ${r.name} (OVR ${r.ovr}).` });
+  } catch(e) {}
+  try { track('opening_rival_named', { name:r.name, ovr:r.ovr, myOvr:r.startMyOvr }); } catch(e) {}
+}
+
+// Records tab card for the named nemesis. Reads live H2H from S.career.h2h[name] which accrueH2H
+// tallies for EVERY opponent, so the record is present from year 1 with no extra plumbing.
+function openingRivalCardHTML(){
+  const r = S.career && S.career.openingRival; if(!r) return '';
+  const h = (S.career.h2h && S.career.h2h[r.name]) || null;
+  let myOvrNow = r.startMyOvr;
+  try { myOvrNow = Math.round(buildPlayer().skill); } catch(e){}
+  const yrs = Math.max(1, (S.year||1) - (r.sinceYear||1) + 1);
+  const gap = (r.ovr||0) - myOvrNow;
+  // The gap is OVR-vs-OVR; label it explicitly so it doesn't read as "N events behind" or "N majors behind"
+  const gapTxt = gap>0 ? `${gap} OVR back` : (gap<0 ? `${Math.abs(gap)} OVR ahead` : `dead level`);
+  const h2hLine = h && (h.meAhead||h.themAhead)
+    ? `Career H2H · <b>${h.meAhead||0}–${h.themAhead||0}</b> across ${h.ev||0} shared events`
+    : (h && h.ev ? `${h.ev} shared events, still tied 0–0` : `No shared events yet — the tour is on the stage`);
+  const yrLine = yrs>1 ? ` · year ${yrs} of the chase` : ` · rookie year`;
+  return `<div class="orival">
+    <div class="orival-hd">Career Nemesis · named at turn-pro</div>
+    <div class="orival-body">
+      <div class="orival-them">
+        <div class="orival-nm">${esc(r.name)}</div>
+        <div class="orival-meta">OVR ${r.ovr}${r.age?` · age ${r.age}`:''}${r.nation?` · ${esc(r.nation)}`:''}</div>
+      </div>
+      <div class="orival-vs">VS</div>
+      <div class="orival-you">
+        <div class="orival-nm">${esc(S.name||'You')}</div>
+        <div class="orival-meta">OVR ${myOvrNow} · ${gapTxt}</div>
+      </div>
+    </div>
+    <div class="orival-foot">${h2hLine}${yrLine}</div>
+  </div>`;
 }
 
 function overlayRecord(screen){
@@ -15792,6 +15901,9 @@ function startSeason(majorsOnly){
   S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
+  // Name your Career Nemesis at turn-pro (fresh year-1 career only; silent no-op otherwise, so
+  // this is safe to call every startSeason and never re-fires or retroactively assigns).
+  try{ if(!S.daily && !S.circuitMode && !majorsOnly) ensureOpeningRival(); }catch(e){}
   // Field: daily uses the static seeded SG field; career/free-play uses the LIVING WORLD
   // (aging, retiring, rookie-refilled per year, career spec §4/§7); the Legend Circuit draws instead
   // from golfers who've themselves retired from that world. Each carries all 8 living skills so
