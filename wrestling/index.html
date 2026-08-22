@@ -1116,6 +1116,18 @@
             <button class="ghost" style="padding:8px 12px;" onclick="rollName()" title="Random name">Roll</button>
           </div></label>
         <label class="fld"><div class="flab">Nickname <span class="hint">(optional)</span></div><input type="text" id="cNick" placeholder="The Alley Cat" maxlength="26"></label>
+        <label class="fld"><div class="flab">Finisher Name <span class="hint">(what the announcer calls your finish, optional)</span></div><input type="text" id="cFinName" placeholder="The Spiral Driver" maxlength="30"></label>
+        <label class="fld"><div class="flab">Entrance Theme <span class="hint">(what the music sounds like)</span></div>
+          <select id="cEntrance">
+            <option value="metal">Metal · guitars, war chant</option>
+            <option value="punk">Punk · fast, angry, loud</option>
+            <option value="hiphop">Hip-hop · booming bass, swagger</option>
+            <option value="orchestral">Orchestral · slow build, main-event</option>
+            <option value="electronic">Electronic · synth wave, cold</option>
+            <option value="country">Country · honky-tonk, boots on the floor</option>
+            <option value="funk">Funk · brass, groove, showman</option>
+            <option value="silent">Silent · lights out, no music</option>
+          </select></label>
         <div class="grid g2" style="gap:10px;">
           <label class="fld"><div class="flab">Alignment</div>
             <select id="cAlign"><option value="face">Face (fan favourite)</option><option value="heel">Heel (villain)</option><option value="tweener">Tweener</option></select></label>
@@ -1507,7 +1519,43 @@ function workTier(){
   const earned=TIERS.findIndex(t=>t.id===tierOf(G.car.rep).id);
   return TIERS[Math.max(0,Math.min(earned,promoTierIdx()))];
 }
-function beltName(t){ const p=myPromo(); return `${p.short} ${(t||workTier()).title}`; }
+/* Championship hierarchy per promotion. Every promotion has a world belt,
+   a secondary/mid-card belt and (where relevant) tag titles. Each belt has
+   its own reign track, so a career can chase the mid-card belt on the way
+   up and defend it while working toward the world title. */
+const BELT_CONFIG = {
+  gcw:    { world:'GCW Hardcore Championship',        secondary:'GCW King of the Death Belt',       tag:'GCW Tag Titles' },
+  cdp:    { world:'CDP Indie Championship',           secondary:'CDP Openweight Title',             tag:'CDP Tag Titles' },
+  sbcw:   { world:'SBCW Regional Championship',       secondary:'SBCW Territory Cup',               tag:'SBCW Southern Tag Titles' },
+  scw:    { world:'SCW West Coast Championship',      secondary:'SCW Neon Title',                   tag:null },
+  rose:   { world:'CR Empress Championship',          secondary:'CR Rookie Title',                  tag:null },
+  acw:    { world:'ACW World Championship',           secondary:'ACW Contenders Championship',      tag:'ACW Tag Titles' },
+  kaiju:  { world:'KJP Godhand Championship',         secondary:'KJP Junior Heavyweight Title',     tag:'KJP Twin Towers Tag' },
+  eterna: { world:'LE Universal Championship',        secondary:'LE Trios Cup',                     tag:null },
+  cwf:    { world:'CWF World Heavyweight Championship',secondary:'CWF International Championship',  tag:'CWF World Tag Team Titles' },
+};
+function beltsForPromo(pid){
+  return BELT_CONFIG[pid] || {
+    world: `${(promoById(pid)||{}).short||''} World Championship`.trim(),
+    secondary: `${(promoById(pid)||{}).short||''} Contenders Title`.trim(),
+    tag: null,
+  };
+}
+function beltName(t, kind){
+  const p=myPromo();
+  const belts=beltsForPromo(p.id);
+  if(kind==='secondary') return belts.secondary || `${p.short} Secondary Title`;
+  if(kind==='tag')       return belts.tag       || `${p.short} Tag Titles`;
+  return belts.world || `${p.short} ${(t||workTier()).title}`;
+}
+/* Compact holdings summary for HUD chips. */
+function heldBelts(){
+  const c=G.car; const list=[];
+  if(c.title)       list.push({kind:'world',    name:c.title,       defenses:c.defenses||0});
+  if(c.secondary)   list.push({kind:'secondary',name:c.secondary,   defenses:c.secDefenses||0});
+  if(c.tagTitle)    list.push({kind:'tag',      name:c.tagTitle,    defenses:c.tagDefenses||0});
+  return list;
+}
 // weekly downside a promotion will guarantee someone of your standing
 function dealValue(p,pop,rep,standing){
   const ti=promoTierIdx(p);
@@ -2993,7 +3041,9 @@ function finishCreate(){
   const mastery={}; MCATS.forEach(c=>mastery[c.id]=0);
   G={ schema:SCHEMA, screen:'career',
     w:{ name, nick:($('cNick').value||'').trim(), align:$('cAlign').value, era:$('cEra').value, style:CREATE.style,
-        look:Object.assign({},CREATE.look), attrs, mastery, moves:(window.RTR_STARTER_MOVES||[]).slice(), custom:[], finisher:null, tp:0, xp:0 },
+        look:Object.assign({},CREATE.look), attrs, mastery, moves:(window.RTR_STARTER_MOVES||[]).slice(), custom:[], finisher:null, tp:0, xp:0,
+        finisherName:($('cFinName').value||'').trim()||null,
+        entrance:($('cEntrance').value||'metal') },
     car:{ age:21, year:1, week:1, rep:0, pop:5, cond:100, morale:70, mom:50,
           rec:{w:0,l:0,d:0}, title:null, reigns:[], earnings:0, streak:0, rivalId:null,
           plan:Object.assign({a:'strike',b:'technical'},st.plan||{}), mentor:null, mentorWeeks:0, injWeeks:0, retired:false, offers:null, milestones:[],
@@ -3612,7 +3662,7 @@ function renderHome(){
         <span class="rc-stat"><b>${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</b> record</span>
         <span class="rc-stat"><b>${c.reigns.length}</b> title${c.reigns.length===1?'':'s'}</span>
         <span class="rc-stat"><b>${Math.round(c.reaction==null?c.pop:c.reaction)}</b> crowd</span>
-        ${c.title?`<span class="rc-stat" style="border-color:rgba(224,179,65,.5);color:var(--gold)">${pico('crown',12)} Champion</span>`:''}
+        ${(c.title||c.secondary||c.tagTitle)?`<span class="rc-stat" style="border-color:rgba(224,179,65,.5);color:var(--gold)">${pico('crown',12)} ${heldBelts().length===1?'Champion':heldBelts().length+' belts'}</span>`:''}
         <span class="rc-go">Resume ▸</span>
       </div>
       ${s.savedAt?`<div class="rc-saved">Last saved ${savedAgo(s.savedAt)}</div>`:''}
@@ -3663,7 +3713,10 @@ function renderCareer(){
     ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`,
       c.streak>=3?`<div class="hint" style="color:#f0b060;font-weight:800;">${pico('fire',14)} ${c.streak}-match win streak</div>`
       :c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
-    ['Title', c.title?pico('crown',14)+' Held':'-', c.title?`<div class="hint">${c.title}</div>`:`<div class="hint">${beltName(t)} available</div>`],
+    ['Titles', (heldBelts().length||'-'), (()=>{ const held=heldBelts();
+      if(!held.length) return `<div class="hint">${beltName(t,'secondary')} and ${beltName(t)} in this house</div>`;
+      return `<div class="hint">${held.map(b=>`${pico('crown',12)} ${b.name}${b.defenses?` <span style="opacity:.7">(${b.defenses} def)</span>`:''}`).join('<br>')}</div>`;
+    })()],
   ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
   // secondary detail lives behind a pager so the week's decision stays on screen
   const HUB=['Business','Attributes'];
@@ -4045,11 +4098,16 @@ function makeOffers(){
     const oppOvr=Math.round(clamp(anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5),12,99));
     let stakes='standard';
     const belt=beltName(t), holds = G.car.title===belt;
+    const secBelt=beltName(t,'secondary'), holdsSec = G.car.secondary===secBelt;
     // The office only puts the belt on someone the crowd wants and the office
     // trusts. Being good is not enough on its own.
     const trusted=G.car.standing>=52 && gimHeat()>=40;
+    const midCarder=G.car.standing>=42 && reactionOf()>=Math.min(46,10+tierIdx()*10);
     if(i===2 && holds && rnd()<0.78) stakes='defense';
     else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
+    // Secondary belt: a mid-carder shot, or a defence of one you hold.
+    else if(i===1 && holdsSec && rnd()<0.72) stakes='secondary_defense';
+    else if(i===1 && !holdsSec && !holds && midCarder && rnd()<0.28) stakes='secondary';
     else if(rivalId===opp.id) stakes='rival';
     const _s=story();
     if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
@@ -4062,21 +4120,27 @@ function makeOffers(){
     // your position on the card follows your standing and how hot the act is
     const draw=(G.car.standing*0.34 + gimHeat()*0.22 + reactionOf()*0.44);
     let card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
+               : (stakes==='secondary'||stakes==='secondary_defense') ? 'Mid-Card'
                : draw>=62 ? 'Main Event' : draw>=40 ? 'Mid-Card' : 'Opener';
     if(ppv) card = 'Main Event';                               // PPV nights are all top of the card
     const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
     const ppvMult = ppv ? 2.2 : 1;
-    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*ppvMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='rivalry'?1.8:1)*st[2]);
+    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*ppvMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='secondary'||stakes==='secondary_defense'?1.5:stakes==='rivalry'?1.8:1)*st[2]);
     const ppvName = ppv ? ppvNameFor(me.id, G.car.week) : null;
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
       tag: st[1]==='tag' && !!myTeam(),
       ppv: ppvName,
+      belt: (stakes==='title'||stakes==='defense')?belt:(stakes==='secondary'||stakes==='secondary_defense')?secBelt:null,
       blurb: ppv ? (stakes==='title'?`At ${ppvName}: beat ${opp.name} and the ${belt} is yours.`
                  : stakes==='defense'?`At ${ppvName}: defend the ${belt} against ${opp.name}.`
+                 : stakes==='secondary'?`At ${ppvName}: beat ${opp.name} for the ${secBelt}.`
+                 : stakes==='secondary_defense'?`At ${ppvName}: defend the ${secBelt} against ${opp.name}.`
                  : stakes==='rivalry'?`At ${ppvName}: settle it with ${opp.name}.`
                  : `${ppvName}: ${opp.name} in the ${st[0].toLowerCase()}.`)
             : stakes==='title'?`Beat ${opp.name} and the ${belt} is yours.`
             : stakes==='defense'?`Defend the ${belt} against ${opp.name}.`
+            : stakes==='secondary'?`Beat ${opp.name} for the ${secBelt}.`
+            : stakes==='secondary_defense'?`Defend the ${secBelt} against ${opp.name}.`
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
             : `${card}: a ${st[0].toLowerCase()} against ${opp.name}.` });
@@ -4850,7 +4914,8 @@ async function runFight(){
       const skill=(G.w.attrs[catById(mv.cat)?catById(mv.cat).attr:'po']||40);
       const dmg=clamp((mv.dmg*0.30 + skill*0.10 + rnd()*6)*(styleOf().out||1), 4, 40);
       isFin = mv.id===G.w.finisher || mv.tier>=5;
-      await exchange(true, mv.name, dmg, 7+mv.pop*0.06, isFin?'FINISHER!':mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
+      const moveNameForLog = (isFin && G.w.finisherName) ? G.w.finisherName : mv.name;
+      await exchange(true, moveNameForLog, dmg, 7+mv.pop*0.06, isFin?'FINISHER!':mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
       hurtLimb(MS.opp, limbFor(mv.cat, MS.me), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
       lastMove=mv.name; lastCat=mv.cat; if(isFin) MS.finisherHit++;
@@ -4883,10 +4948,13 @@ async function runFight(){
     }
 
     // ---- the finish is attempted, not accumulated ----
+    // When the wrestler's own finisher landed, log the custom finisher name
+    // (if they gave it one at creation) instead of the raw move name.
+    const finishName = (byMe && isFin && G.w.finisherName) ? G.w.finisherName : lastMove;
     if(!MS.ended && lastCat==='submission' && rnd()<(MS.phase>=3?0.85:0.5)){
-      await submissionAttempt(byMe, lastMove);
+      await submissionAttempt(byMe, finishName);
     } else if(!MS.ended && rnd()<coverChance(byMe,isFin)){
-      await coverAttempt(byMe, lastMove, isFin);
+      await coverAttempt(byMe, finishName, isFin);
     }
     // ---- some matches are won by escape rather than by pinfall ----
     if(!MS.ended && ph.id==='stretch' && stipRules(o).ends.includes('climb')){
@@ -5610,7 +5678,7 @@ function applyMatch(o,res){
   [c.plan.a,c.plan.b].forEach((cat,i)=>{ w.mastery[cat]=(w.mastery[cat]||0)+Math.round(gain*(i===0?1:0.6)*mastMult(cat)*facBonus('mastery')); });
   // title
   let titleMsg=null;
-  const tt=workTier(), belt=beltName(tt);
+  const tt=workTier(), belt=beltName(tt), secBelt=beltName(tt,'secondary');
   if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0; c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0});
     titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
@@ -5620,6 +5688,20 @@ function applyMatch(o,res){
       titleMsg=`Successful defence #${c.defenses}.`; }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100); }
+  }
+  else if(o.stakes==='secondary'&&res.win){ c.secondary=secBelt; c.secDefenses=0;
+    c.reigns.push({title:secBelt,year:c.year,week:c.week,defenses:0,kind:'secondary'});
+    titleMsg=`You are the new <b>${secBelt}</b>!`; c.pop=clamp(c.pop+3,1,100); c.standing=clamp(c.standing+4);
+    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+6,0,100); }
+  else if(o.stakes==='secondary_defense'){
+    if(res.win){ c.secDefenses=(c.secDefenses||0)+1;
+      const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
+      if(r) r.defenses=c.secDefenses;
+      titleMsg=`Successful defence of the ${c.secondary} · #${c.secDefenses}.`; }
+    else { titleMsg=`You <b>lost</b> the ${c.secondary} to ${o.oppName}.`;
+      const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
+      if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
+      c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100); }
   }
   // ---- injury: only when you actually pushed it (see injuryRisk) ----
   let injMsg=null;
@@ -5731,6 +5813,12 @@ function renderMatch(o,res){
     banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${c.title}<span style="color:var(--gold)"> · defence #${c.defenses||0}</span></div></div>`;
   else if(o.stakes==='defense')
     banner=`<div class="champbanner lost"><div class="cb-kick">Title lost</div><div class="cb-t">${o.oppName} takes the belt</div></div>`;
+  else if(o.stakes==='secondary'&&res.win)
+    banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-t">${c.secondary||beltName(workTier(),'secondary')}</div></div>`;
+  else if(o.stakes==='secondary_defense'&&res.win)
+    banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${c.secondary}<span style="color:var(--gold)"> · defence #${c.secDefenses||0}</span></div></div>`;
+  else if(o.stakes==='secondary_defense')
+    banner=`<div class="champbanner lost"><div class="cb-kick">Title lost</div><div class="cb-t">${o.oppName} takes the ${o.belt||'belt'}</div></div>`;
 
   // ---- the star rating is the hero: it is how wrestling keeps score ----
   const s=starsOf(res.quality), classic=s>=4.75;
@@ -6343,7 +6431,7 @@ function buildPromoCtx(target){
     standing:c.standing||50, rep:c.rep||0, pop:c.pop||0, reaction:reactionOf(),
     title:c.title||null, reigns:(c.reigns||[]).length,
     wins:c.rec.w||0, losses:c.rec.l||0, defenses:c.defenses||0,
-    finisher:(moveById(w.finisher)||{}).name||'my finish',
+    finisher:w.finisherName||(moveById(w.finisher)||{}).name||'my finish',
     tier:tierOf(c.rep).name,
     age:c.age||21, year:c.year||1,
   };
