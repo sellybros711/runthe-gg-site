@@ -6496,6 +6496,46 @@ const CHIP_BANK=[
       `The main event of tonight's show. That is where I am. That is where I belong.`,
       `${c.venue.promoShort} put me in the main event because nobody sells this building the way I do.`,
     ]},
+
+  // ---------- RESPONSE chips: only surface when the opponent just did X ----------
+  // The `respond` field is read by chipsFor; only opponents create these openings.
+  {id:'resp_threat_back',  tag:'threat', phase:['thesis','meat','personal','close'],
+    respond:'threat',
+    when:c=>c.opp,
+    fn:c=>[
+      `You want to threaten me. Say the actual words. Say what you are going to do to me. I am waiting.`,
+      `${c.opp.name} threatens people they cannot beat. That is how I know we are getting to the truth.`,
+      `Talk about hurting me. I have been hurt by better than you.`,
+    ]},
+  {id:'resp_boast_cut',    tag:'boast', phase:['meat','personal','close'],
+    respond:'boast',
+    when:c=>c.opp,
+    fn:c=>[
+      `Everything you just said about yourself, I already knew. And I still came out here.`,
+      `${c.opp.name} thinks I am scared of a highlight reel. I have watched all of them. I am not.`,
+      `Great résumé. Read it to me while you are on your back.`,
+    ]},
+  {id:'resp_dismiss',      tag:'twist', phase:['meat','personal','close'],
+    respond:'dismiss',
+    when:c=>c.opp,
+    fn:c=>[
+      `${c.opp.name} thinks this is beneath them. Go home then. Nobody would notice.`,
+      `Cool. Dismiss me. The room can see me. You cannot.`,
+    ]},
+  {id:'resp_respect_up',   tag:'concession', phase:['personal','close'],
+    respond:'respect',
+    when:c=>c.opp,
+    fn:c=>[
+      `That is the most honest thing ${c.opp.name} has said all year. Alright. Same to you.`,
+      `Now we can actually wrestle. Not because we like each other. Because we both want it.`,
+    ]},
+  {id:'resp_answer_q',     tag:'concession', phase:['thesis','meat','personal'],
+    respond:'question',
+    when:c=>c.opp,
+    fn:c=>[
+      `${c.opp.name} asked me a question and I am going to answer it, because that is what a professional does.`,
+      `Fair question. Here is the honest answer, on this microphone, in front of this room.`,
+    ]},
 ];
 function chipTag(tag){ return {ref:'k-crowd',boast:'k-heel',threat:'k-heel',question:'k-cool',concession:'k-face',callback:'k-crowd',twist:'k-cool',crowd:'k-face'}[tag]||'k-cool'; }
 /* Chips can return either a string or an array of wordings. The picker is
@@ -6553,6 +6593,8 @@ function chipsFor(phase){
     if(ch.gimmick && ch.gimmick!==ctx.me.gimmickId) return false;
     // stakes gate: if a chip declares stakes, at least one must match.
     if(ch.stakes && !ch.stakes.some(s=>stakes.indexOf(s)>=0)) return false;
+    // response chips only surface if the opponent just did that thing.
+    if(ch.respond && ch.respond !== (PM && PM.lastOppMode)) return false;
     return true;
   };
   const pool=CHIP_BANK.filter(ch=>ch.phase.includes(phase) && okVoice(ch) && ch.when(ctx) && !used[ch.id]);
@@ -6561,9 +6603,13 @@ function chipsFor(phase){
   // starting with "I am" back to back.
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
   const refs=pool.filter(c=>c.tag==='ref');
+  const responses=pool.filter(c=>c.respond);
   const picked=[], tagCount={};
   const push=c=>{ if(picked.includes(c)) return false; if((tagCount[c.tag]||0)>=2) return false;
     picked.push(c); tagCount[c.tag]=(tagCount[c.tag]||0)+1; return true; };
+  // Response chips first. They specifically answer what the opponent just did,
+  // so they read as a comeback rather than a fresh monologue.
+  responses.forEach(c=>{ if(picked.length<2) push(c); });
   if(refs.length && phase!=='close') push(refs[0]);
   for(const c of pool){ if(picked.length>=6) break; push(c); }
   // second sweep in case the cap kept the pool short (e.g. only Boasts left)
@@ -6731,18 +6777,81 @@ function readPromoLine(txt,target){
   return {hostile,intensity,crowd,specific,wantsTitle,words};
 }
 // the character answers you, in their voice, according to how you came at them
+/* Style-flavoured fallback bank. When a character's custom lines run out
+   (or the tone did not match what they had written), we still want an
+   authentic-sounding reply, not "Talk is cheap." for every opponent. */
+const REPLY_BANK={
+  brawler:{
+    threat:['You want to fight? We can go right now.',`Talking is what you do. Bleeding is what I do.`,`I have been hit by real people. This does nothing.`],
+    boast :[`Big words from somebody who has not been in a real fight yet.`,`I have heard louder promos from smaller men.`],
+    respect:[`You have some sand. I will give you that.`,`Alright. Now go get in the ring and mean it.`],
+    dismiss:[`You are wasting my time. Move.`,`Say something worth answering.`],
+    question:[`I do not owe you an answer. I owe you a beating.`],
+  },
+  powerhouse:{
+    threat:[`You are not big enough to hurt me.`,`Come and try.`,`I will pick you up and I will put you down. Talk about that.`],
+    boast :[`I have thrown men your size out of this ring for less.`,`Your name does not scare me. Your body will not either.`],
+    respect:[`Careful. That almost sounded like sense.`,`Say that after the bell and I might believe you.`],
+    dismiss:[`Move. Or I will move you.`,`I am bored of your voice.`],
+    question:[`I do not answer questions from smaller people.`],
+  },
+  technician:{
+    threat:[`Threats. From you. That is cute.`,`You cannot even spell what I am going to do to you.`,`I do not need to threaten. I need one minute.`],
+    boast :[`Your CV is thin.`,`You are describing yourself the way an amateur describes a professional.`,`I am not impressed and my patience is running out.`],
+    respect:[`Better. A little.`,`If you had said that six months ago I would have listened.`],
+    dismiss:[`Speak faster or stop speaking.`,`This is the tape everyone laughs at later.`],
+    question:[`Every question you have has been answered by my last match. Watch it.`],
+  },
+  highflyer:{
+    threat:[`You cannot catch me. That is the problem.`,`Blink and I will already be on the top rope.`,`Go ahead. Miss.`],
+    boast :[`Boast louder. It moves nothing. I move.`,`You talk like a man who wrestles slow. Because you are.`],
+    respect:[`See? Was that so hard.`,`Alright. Alright. I will take that.`],
+    dismiss:[`You are the warm-up. I am the main event.`,`I have got things to jump off. Are we done?`],
+    question:[`I do not stop moving long enough to answer questions.`],
+  },
+  showman:{
+    threat:[`Turn it up. You are bad at this.`,`Try that with the room actually listening.`,`Threaten me. Louder. Nobody heard.`],
+    boast :[`I sell more merch in a bad week than you have this year.`,`Every one of them paid to see me. Every one.`,`You are on this show because I am on this show.`],
+    respect:[`Now you are talking. Keep going.`,`Almost worth the price of admission.`],
+    dismiss:[`Boo him. Go on. Boo him.`,`Do we cut to a commercial or does this end on its own?`],
+    question:[`The answer is: buy the shirt.`],
+  },
+};
+function _oppStyle(target){ const c=charById(target.id)||target; return (c&&c.style)||'brawler'; }
+function _oppAlign(target){ const c=charById(target.id)||target; return (c&&c.align)||'heel'; }
 function promoReply(target,read){
-  if(!target) return null;
+  if(!target) return {text:null,mode:'silence'};
   const L=target.lines||{};
-  const pick=(a)=>Array.isArray(a)&&a.length? a[Math.floor(rnd()*a.length)] : null;
-  if(read.hostile>=0.45){
-    return pick(L.respect) || pick(L.lose) || `You will not hear me argue with any of that.`;
-  }
-  if(read.hostile<=-0.55){
-    const t=pick(L.taunt);
-    return t ? t : `Say it again to my face and see what it costs you.`;
-  }
-  return pick(L.taunt) || pick(L.win) || `Talk is cheap. I will see you out there.`;
+  const pick=a=>Array.isArray(a)&&a.length? a[Math.floor(rnd()*a.length)] : null;
+  const style=_oppStyle(target);
+  const bank=REPLY_BANK[style]||REPLY_BANK.brawler;
+  const tags=(read&&read.tags)||[];
+  const pickFrom=(k,customPool)=>{
+    // 55/45 mix: their custom lines if they exist for the mood, otherwise
+    // style-flavoured fallbacks so nobody just says "Talk is cheap".
+    if(customPool && customPool.length && rnd()<0.55) return pick(customPool);
+    return pick(bank[k]);
+  };
+  // Decide MODE: how the opponent came back, so the next beat can respond to it.
+  // A concession invites respect; a threat gets threat back; a question gets
+  // dismissed or answered; a boast gets cut down.
+  let mode = 'listen';
+  if(read.hostile>=0.45 || tags.indexOf('concession')>=0) mode='respect';
+  else if(tags.indexOf('threat')>=0)                     mode='threat';
+  else if(tags.indexOf('question')>=0)                   mode='question';
+  else if(tags.indexOf('boast')>=0 || tags.indexOf('callback')>=0) mode='boast';
+  else if(read.hostile<=-0.55)                            mode='threat';
+  else if(tags.indexOf('twist')>=0 || tags.indexOf('crowd')>=0)    mode='dismiss';
+  else                                                    mode='dismiss';
+  // Where the character has line pools we can lean on for that mode, use them.
+  const custom = mode==='respect' ? L.respect
+              :  mode==='threat'  ? L.taunt
+              :  mode==='boast'   ? L.taunt
+              :  mode==='question'? L.taunt
+              :  mode==='dismiss' ? L.win
+              :  L.taunt;
+  const text = pickFrom(mode,custom) || pick(L.taunt) || pick(L.win) || `We will see you out there.`;
+  return {text, mode};
 }
 
 /* ---- running the segment ---- */
@@ -6898,7 +7007,7 @@ function pmSayChips(){
   // callback and stays reusable, everything else fires once.
   chipsInPlay.forEach(ch=>{ if(ch.tag!=='callback') PM.usedChips[ch.id]=true; });
   PM.picking=[];
-  pmSay(encodeURIComponent(JSON.stringify({k:'chips',line,read:{hostile,intensity,specific,crowd,wantsTitle:tags.some(t=>t==='threat')&&PMCTX.opp&&PMCTX.opp.holdsBelt,kind,words:line.split(/\s+/).length}})));
+  pmSay(encodeURIComponent(JSON.stringify({k:'chips',line,read:{hostile,intensity,specific,crowd,wantsTitle:tags.some(t=>t==='threat')&&PMCTX.opp&&PMCTX.opp.holdsBelt,kind,tags,words:line.split(/\s+/).length}})));
 }
 function pmCustom(){
   const el=$('pmCustom'), v=(el&&el.value||'').trim();
@@ -6981,8 +7090,16 @@ async function pmSay(payload){
 
   if(t){
     const reply=promoReply(t,read);
-    fmv('opp',{pose:read.hostile<=-0.45?'point':'ready',fwd:0},220);
-    pmBubble('opp',t.name,reply);
+    // Remember how they came back. The next beat's chip shortlist will surface
+    // response-chips that specifically answer this mode, so the segment reads
+    // as an exchange, not two monologues.
+    PM.lastOppMode = reply.mode || 'listen';
+    const pose = (reply.mode==='threat') ? 'point'
+               : (reply.mode==='dismiss') ? 'taunt'
+               : (reply.mode==='respect') ? 'ready'
+               : 'ready';
+    fmv('opp',{pose,fwd:0},220);
+    pmBubble('opp',t.name,reply.text);
     const R=rel(t.id); R.met=true;
     if(read.hostile<=-0.4){ R.heat=clamp(R.heat+(8+read.intensity*10),0,100); R.respect=clamp(R.respect-2,0,100); }
     else if(read.hostile>=0.4){ R.respect=clamp(R.respect+(7+read.intensity*8),0,100); R.heat=clamp(R.heat-4,0,100); }
