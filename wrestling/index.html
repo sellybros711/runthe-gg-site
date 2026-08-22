@@ -31,6 +31,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;overscroll-behavior-y:none;}
   html{scrollbar-gutter:stable;}   /* the page does not shift when a scrollbar comes and goes */
+  .pico{vertical-align:-4px;image-rendering:pixelated;image-rendering:crisp-edges;}
   body{background:var(--bg); color:var(--text); font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.45;}
   body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--pagebg);pointer-events:none;}
   .mono{font-family:var(--mono); font-variant-numeric:tabular-nums;}
@@ -503,15 +504,19 @@
   .cm-tick{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.3);}
   .cm-bar b{position:absolute;top:-3px;width:6px;height:19px;border-radius:3px;background:var(--cream);
     box-shadow:0 0 8px rgba(0,0,0,.9);margin-left:-3px;transition:left .45s ease;left:50%;}
-  .arena.promo{height:310px;}
+  /* the promo arena wraps the ring AND a bubble zone at the top, so nothing a
+     wrestler says ever sits across their face */
+  .arena.promo{position:relative;height:400px;padding-top:120px;}
+  .arena.promo .ringback,.arena.promo .ringfront{height:280px;}
+  .arena.promo .fighter{width:210px;margin-left:-105px;bottom:9%;}
   .bubble{position:absolute;max-width:44%;background:#F4E8DB;color:#1a1512;border-radius:13px;
     padding:9px 13px;font-size:13.5px;line-height:1.45;font-weight:600;z-index:6;
     box-shadow:0 6px 16px rgba(0,0,0,.6);opacity:0;transform:translateY(8px) scale(.94);
     transition:opacity .18s,transform .18s;pointer-events:none;}
   .bubble.show{opacity:1;transform:none;}
   .bubble::after{content:"";position:absolute;bottom:-8px;border:9px solid transparent;border-top-color:#F4E8DB;border-bottom:0;}
-  .bubble.me{left:4%;top:3%;} .bubble.me::after{left:26px;}
-  .bubble.opp{right:4%;top:3%;background:#e6d2c6;} .bubble.opp::after{right:26px;border-top-color:#e6d2c6;}
+  .bubble.me{left:4%;top:8px;} .bubble.me::after{left:26px;}
+  .bubble.opp{right:4%;top:8px;background:#e6d2c6;} .bubble.opp::after{right:26px;border-top-color:#e6d2c6;}
   .bubble .who{display:block;font-family:var(--display);font-size:10.5px;letter-spacing:.09em;
     text-transform:uppercase;color:#8a5a2b;margin-bottom:2px;}
   .crowdcall{position:absolute;left:0;right:0;top:44%;text-align:center;font-family:var(--display);
@@ -544,7 +549,7 @@
   .pp-s.pms-comply{color:var(--green);border-color:rgba(91,176,131,.5);}
   .pp-s.pms-wrinkle{color:var(--gold);border-color:rgba(224,179,65,.5);}
   .pp-s.pms-off{color:#f0907f;border-color:rgba(198,57,44,.55);}
-  @media(max-width:640px){ .arena.promo{height:262px;} .bubble{max-width:56%;font-size:12px;padding:7px 9px;} }
+  @media(max-width:640px){ .arena.promo{height:334px;padding-top:104px;} .arena.promo .ringback,.arena.promo .ringfront{height:230px;} .arena.promo .fighter{width:172px;margin-left:-86px;} .bubble{max-width:60%;font-size:12px;padding:7px 9px;} }
 
   /* ---- the week's decision, made legible ---- */
   .advice{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:12px;margin-bottom:14px;
@@ -1601,7 +1606,8 @@ function showMoments(){
   const back=$('momentBack'); if(back.classList.contains('open')) return;
   if($('ceremonyBack').classList.contains('open')) return;
   const m=MOMENT_Q[0];
-  $('moIco').textContent=m.ico;
+  // pixel icons come through as raw SVG; stock emojis stay as text
+  if(/^</.test(m.ico)) $('moIco').innerHTML=m.ico; else $('moIco').textContent=m.ico;
   $('moKick').textContent=m.kick||'Career Milestone';
   $('moTitle').innerHTML=m.txt;
   const s=$('moSub'); s.innerHTML=m.sub||''; s.style.display=m.sub?'block':'none';
@@ -1718,18 +1724,18 @@ function pressQuote(o,res,s){
 }
 function checkMilestones(res){
   const c=G.car, w=G.w, n=c.rec.w+c.rec.l+c.rec.d;
-  if(c.rec.w===1) award('First professional victory.','✊');
-  [10,50,100,250,500].forEach(m=>{ if(n===m) award(`${m} professional matches.`,'📅'); });
+  if(c.rec.w===1) award('First professional victory.',pico('star',36));
+  [10,50,100,250,500].forEach(m=>{ if(n===m) award(`${m} professional matches.`,pico('clipboard',36)); });
   if(res&&res.quality>=90&&res.quality>(c.bestMatch||89)){
     c.bestMatch=res.quality;
-    award(`A ${res.quality}-rated classic against ${res.oppName||'a worthy opponent'}.`,'⭐'); }
-  if(c.reigns.length===1&&c.title) award(`First championship: ${c.title}.`,'🏆');
-  if((c.defenses||0)>=5) award(`Five straight defences of the ${c.title}.`,'🛡️');
-  if(c.streak>=10) award('A ten-match winning streak.','🔥');
-  if(c.earnings>=250000) award('A quarter of a million earned in the business.','💰');
-  if(c.pop>=90) award('A genuine household name.','📺');
-  if(promoTierIdx()>=3) award('Signed to the biggest company on earth.','🌍');
-  if(c.year>=10) award('Ten years in the business.','⏳');
+    award(`A ${res.quality}-rated classic against ${res.oppName||'a worthy opponent'}.`,pico('starBig',36)); }
+  if(c.reigns.length===1&&c.title) award(`First championship: ${c.title}.`,pico('trophy',36));
+  if((c.defenses||0)>=5) award(`Five straight defences of the ${c.title}.`,pico('shield',36));
+  if(c.streak>=10) award('A ten-match winning streak.',pico('fire',36));
+  if(c.earnings>=250000) award('A quarter of a million earned in the business.',pico('money',36));
+  if(c.pop>=90) award('A genuine household name.',pico('starBig',36));
+  if(promoTierIdx()>=3) award('Signed to the biggest company on earth.',pico('trophy',36));
+  if(c.year>=10) award('Ten years in the business.',pico('clipboard',36));
 }
 
 let G=null, RNG=1;
@@ -2011,6 +2017,68 @@ function tierOfRep(rep){ let id='indie'; TIERS.forEach(t=>{ if((rep||0)>=t.rep) 
    ============================================================ */const DEFLOOK={ skin:'#e8bd95', hair:'#4a2f1b', gear:'#C6392C', trim:'#F4E8DB',
   hairStyle:'short', face:'none', mask:'none', attire:'trunks', boots:'tall', acc:'wrist', pattern:'solid', build:'athletic', tattoo:'none', aura:'none' };
 const OUTLINE='#120f0f';
+
+/* ============================================================
+   PIXEL ICONS
+   ------------------------------------------------------------
+   Stock system emojis look like phone chrome next to the pixel
+   wrestlers. These are drawn from the same 1-pixel-per-square
+   language: a 16x16 grid, coloured rects, outlined for legibility
+   at any size. Not a font, so they hold their colour and their
+   pixels crisp when the browser scales them up.
+
+   `pico(id, size?)` returns an inline SVG that renders at `size`
+   px (default 22), pixelated. Fall back to the emoji if an id
+   the code asks for is not in the table.
+   ============================================================ */
+const PICO={
+  // ---- outlined helper: box + soft shadow (all icons share the same feel)
+  _wrap:(w,inner)=>`<svg class="pico" viewBox="0 0 16 16" width="${w}" height="${w}" shape-rendering="crispEdges" aria-hidden="true">${inner}</svg>`,
+  trophy:  `<rect x="4" y="2" width="8" height="6" fill="#e0b341"/><rect x="4" y="2" width="8" height="1" fill="#f4c95b"/><rect x="4" y="7" width="8" height="1" fill="#a37518"/><rect x="2" y="3" width="2" height="3" fill="#a37518"/><rect x="12" y="3" width="2" height="3" fill="#a37518"/><rect x="6" y="8" width="4" height="2" fill="#c69732"/><rect x="5" y="10" width="6" height="1" fill="#a37518"/><rect x="4" y="11" width="8" height="2" fill="#e0b341"/><rect x="3" y="13" width="10" height="1" fill="#8a5a1a"/>`,
+  crown:   `<rect x="2" y="6" width="12" height="1" fill="#8a5a1a"/><rect x="2" y="7" width="12" height="4" fill="#e0b341"/><rect x="2" y="11" width="12" height="1" fill="#a37518"/><rect x="2" y="3" width="2" height="4" fill="#e0b341"/><rect x="7" y="1" width="2" height="6" fill="#e0b341"/><rect x="12" y="3" width="2" height="4" fill="#e0b341"/><rect x="3" y="2" width="1" height="1" fill="#c6392c"/><rect x="7" y="0" width="2" height="1" fill="#c6392c"/><rect x="12" y="2" width="1" height="1" fill="#c6392c"/><rect x="4" y="9" width="1" height="1" fill="#c6392c"/><rect x="8" y="9" width="1" height="1" fill="#c6392c"/><rect x="11" y="9" width="1" height="1" fill="#c6392c"/>`,
+  fire:    `<rect x="7" y="1" width="2" height="2" fill="#f4c95b"/><rect x="6" y="3" width="4" height="1" fill="#e0b341"/><rect x="5" y="4" width="6" height="1" fill="#e07b39"/><rect x="4" y="5" width="8" height="2" fill="#c6392c"/><rect x="3" y="7" width="10" height="4" fill="#e07b39"/><rect x="4" y="11" width="8" height="2" fill="#c6392c"/><rect x="5" y="13" width="6" height="1" fill="#8a1c1c"/><rect x="7" y="6" width="2" height="4" fill="#f4c95b"/>`,
+  medal:   `<rect x="4" y="1" width="2" height="4" fill="#3f7fbf"/><rect x="10" y="1" width="2" height="4" fill="#c6392c"/><rect x="5" y="5" width="6" height="1" fill="#8a5a1a"/><rect x="4" y="6" width="8" height="7" fill="#e0b341"/><rect x="4" y="6" width="8" height="1" fill="#f4c95b"/><rect x="4" y="12" width="8" height="1" fill="#a37518"/><rect x="6" y="8" width="4" height="3" fill="#c69732"/><rect x="7" y="9" width="2" height="1" fill="#8a5a1a"/>`,
+  swap:    `<rect x="2" y="4" width="10" height="1" fill="#e0b341"/><rect x="10" y="2" width="1" height="1" fill="#e0b341"/><rect x="11" y="3" width="1" height="1" fill="#e0b341"/><rect x="11" y="5" width="1" height="1" fill="#e0b341"/><rect x="10" y="6" width="1" height="1" fill="#e0b341"/><rect x="4" y="11" width="10" height="1" fill="#e0b341"/><rect x="5" y="9" width="1" height="1" fill="#e0b341"/><rect x="4" y="10" width="1" height="1" fill="#e0b341"/><rect x="4" y="12" width="1" height="1" fill="#e0b341"/><rect x="5" y="13" width="1" height="1" fill="#e0b341"/>`,
+  shield:  `<rect x="4" y="2" width="8" height="1" fill="#8a5a1a"/><rect x="3" y="3" width="10" height="1" fill="#c6392c"/><rect x="3" y="4" width="10" height="6" fill="#c6392c"/><rect x="4" y="10" width="8" height="1" fill="#8a1c1c"/><rect x="5" y="11" width="6" height="1" fill="#8a1c1c"/><rect x="6" y="12" width="4" height="1" fill="#5d1210"/><rect x="7" y="13" width="2" height="1" fill="#5d1210"/><rect x="6" y="5" width="4" height="4" fill="#F4E8DB"/><rect x="7" y="6" width="2" height="2" fill="#c6392c"/>`,
+  knife:   `<rect x="3" y="2" width="1" height="1" fill="#8a5a1a"/><rect x="4" y="3" width="1" height="1" fill="#8a5a1a"/><rect x="5" y="4" width="1" height="1" fill="#c8ced4"/><rect x="6" y="5" width="1" height="1" fill="#c8ced4"/><rect x="7" y="6" width="1" height="1" fill="#c8ced4"/><rect x="8" y="7" width="1" height="1" fill="#c8ced4"/><rect x="9" y="8" width="1" height="1" fill="#c8ced4"/><rect x="10" y="9" width="1" height="1" fill="#c8ced4"/><rect x="11" y="10" width="2" height="2" fill="#8a5a1a"/><rect x="12" y="12" width="2" height="2" fill="#5d3a22"/><rect x="4" y="4" width="1" height="1" fill="#c8ced4"/><rect x="5" y="5" width="1" height="1" fill="#c8ced4"/><rect x="6" y="6" width="1" height="1" fill="#c8ced4"/><rect x="7" y="7" width="1" height="1" fill="#c8ced4"/><rect x="8" y="8" width="1" height="1" fill="#c8ced4"/><rect x="9" y="9" width="1" height="1" fill="#c8ced4"/><rect x="10" y="10" width="1" height="1" fill="#c8ced4"/><rect x="3" y="3" width="1" height="1" fill="#c6392c"/>`,
+  cross:   `<rect x="4" y="1" width="8" height="14" fill="#F4E8DB"/><rect x="1" y="4" width="14" height="8" fill="#F4E8DB"/><rect x="5" y="2" width="6" height="12" fill="#c6392c"/><rect x="2" y="5" width="12" height="6" fill="#c6392c"/>`,
+  graphUp: `<rect x="2" y="13" width="12" height="1" fill="#8a8177"/><rect x="2" y="2" width="1" height="12" fill="#8a8177"/><rect x="4" y="10" width="2" height="3" fill="#5bb083"/><rect x="7" y="7" width="2" height="6" fill="#5bb083"/><rect x="10" y="4" width="2" height="9" fill="#5bb083"/><rect x="11" y="2" width="3" height="1" fill="#5bb083"/><rect x="13" y="3" width="1" height="1" fill="#5bb083"/>`,
+  graphDown:`<rect x="2" y="13" width="12" height="1" fill="#8a8177"/><rect x="2" y="2" width="1" height="12" fill="#8a8177"/><rect x="4" y="4" width="2" height="9" fill="#f0907f"/><rect x="7" y="7" width="2" height="6" fill="#f0907f"/><rect x="10" y="10" width="2" height="3" fill="#f0907f"/><rect x="11" y="12" width="3" height="1" fill="#f0907f"/><rect x="13" y="11" width="1" height="1" fill="#f0907f"/>`,
+  mask:    `<rect x="3" y="4" width="10" height="1" fill="#8a5a1a"/><rect x="2" y="5" width="12" height="6" fill="#e0b341"/><rect x="2" y="11" width="12" height="1" fill="#a37518"/><rect x="3" y="12" width="2" height="1" fill="#8a5a1a"/><rect x="11" y="12" width="2" height="1" fill="#8a5a1a"/><rect x="4" y="7" width="3" height="2" fill="#120f0f"/><rect x="9" y="7" width="3" height="2" fill="#120f0f"/><rect x="7" y="9" width="2" height="1" fill="#8a5a1a"/>`,
+  dice:    `<rect x="2" y="2" width="12" height="12" fill="#F4E8DB"/><rect x="2" y="2" width="12" height="1" fill="#c8bfa8"/><rect x="2" y="13" width="12" height="1" fill="#8a8177"/><rect x="4" y="4" width="2" height="2" fill="#c6392c"/><rect x="10" y="4" width="2" height="2" fill="#c6392c"/><rect x="7" y="7" width="2" height="2" fill="#c6392c"/><rect x="4" y="10" width="2" height="2" fill="#c6392c"/><rect x="10" y="10" width="2" height="2" fill="#c6392c"/>`,
+  star:    `<rect x="7" y="1" width="2" height="2" fill="#e0b341"/><rect x="6" y="3" width="4" height="1" fill="#e0b341"/><rect x="5" y="4" width="6" height="2" fill="#e0b341"/><rect x="2" y="6" width="12" height="2" fill="#e0b341"/><rect x="3" y="8" width="10" height="2" fill="#e0b341"/><rect x="4" y="10" width="3" height="2" fill="#e0b341"/><rect x="9" y="10" width="3" height="2" fill="#e0b341"/><rect x="3" y="12" width="3" height="2" fill="#e0b341"/><rect x="10" y="12" width="3" height="2" fill="#e0b341"/><rect x="6" y="6" width="4" height="3" fill="#f4c95b"/>`,
+  money:   `<rect x="5" y="2" width="6" height="1" fill="#8a5a1a"/><rect x="4" y="3" width="8" height="1" fill="#a37518"/><rect x="3" y="4" width="10" height="10" fill="#5bb083"/><rect x="3" y="4" width="10" height="1" fill="#7fc899"/><rect x="3" y="13" width="10" height="1" fill="#2f7a4a"/><rect x="7" y="6" width="2" height="1" fill="#F4E8DB"/><rect x="6" y="7" width="4" height="1" fill="#F4E8DB"/><rect x="7" y="8" width="2" height="1" fill="#F4E8DB"/><rect x="6" y="9" width="4" height="1" fill="#F4E8DB"/><rect x="7" y="10" width="2" height="1" fill="#F4E8DB"/><rect x="7" y="5" width="2" height="1" fill="#F4E8DB"/><rect x="7" y="11" width="2" height="1" fill="#F4E8DB"/>`,
+  dumbbell:`<rect x="1" y="6" width="2" height="4" fill="#8a8177"/><rect x="3" y="4" width="2" height="8" fill="#5a6675"/><rect x="5" y="7" width="6" height="2" fill="#8a8177"/><rect x="11" y="4" width="2" height="8" fill="#5a6675"/><rect x="13" y="6" width="2" height="4" fill="#8a8177"/>`,
+  bed:     `<rect x="1" y="8" width="14" height="4" fill="#8a5533"/><rect x="1" y="12" width="14" height="1" fill="#5d3a22"/><rect x="1" y="7" width="1" height="6" fill="#5d3a22"/><rect x="14" y="7" width="1" height="6" fill="#5d3a22"/><rect x="2" y="9" width="4" height="2" fill="#F4E8DB"/><rect x="6" y="9" width="8" height="2" fill="#c6392c"/>`,
+  handshake:`<rect x="2" y="7" width="4" height="1" fill="#d29b6e"/><rect x="1" y="8" width="5" height="2" fill="#d29b6e"/><rect x="2" y="10" width="4" height="1" fill="#d29b6e"/><rect x="10" y="7" width="4" height="1" fill="#e8bd95"/><rect x="10" y="8" width="5" height="2" fill="#e8bd95"/><rect x="10" y="10" width="4" height="1" fill="#e8bd95"/><rect x="6" y="7" width="4" height="4" fill="#d29b6e"/><rect x="7" y="7" width="2" height="4" fill="#e8bd95"/><rect x="6" y="6" width="1" height="1" fill="#8a5533"/><rect x="9" y="6" width="1" height="1" fill="#8a5533"/>`,
+  microphone:`<rect x="6" y="1" width="4" height="6" fill="#8a8177"/><rect x="6" y="1" width="4" height="1" fill="#c8ced4"/><rect x="5" y="2" width="1" height="4" fill="#5a6675"/><rect x="10" y="2" width="1" height="4" fill="#5a6675"/><rect x="6" y="7" width="4" height="1" fill="#c6392c"/><rect x="7" y="8" width="2" height="4" fill="#5a6675"/><rect x="5" y="12" width="6" height="1" fill="#5a6675"/><rect x="4" y="13" width="8" height="2" fill="#3a4250"/>`,
+  pen:     `<rect x="10" y="2" width="2" height="2" fill="#e0b341"/><rect x="9" y="3" width="2" height="2" fill="#c69732"/><rect x="8" y="4" width="2" height="2" fill="#c6392c"/><rect x="7" y="5" width="2" height="2" fill="#c6392c"/><rect x="6" y="6" width="2" height="2" fill="#c6392c"/><rect x="5" y="7" width="2" height="2" fill="#c6392c"/><rect x="4" y="8" width="2" height="2" fill="#c6392c"/><rect x="3" y="9" width="2" height="2" fill="#c6392c"/><rect x="2" y="10" width="2" height="2" fill="#F4E8DB"/><rect x="2" y="12" width="1" height="1" fill="#120f0f"/>`,
+  tape:    `<rect x="1" y="4" width="14" height="7" fill="#120f0f"/><rect x="1" y="4" width="14" height="1" fill="#3a2f2a"/><rect x="1" y="10" width="14" height="1" fill="#000"/><rect x="3" y="6" width="4" height="3" fill="#c8ced4"/><rect x="9" y="6" width="4" height="3" fill="#c8ced4"/><rect x="4" y="7" width="2" height="1" fill="#5a6675"/><rect x="10" y="7" width="2" height="1" fill="#5a6675"/><rect x="1" y="11" width="2" height="2" fill="#3a2f2a"/><rect x="13" y="11" width="2" height="2" fill="#3a2f2a"/>`,
+  clipboard:`<rect x="6" y="1" width="4" height="2" fill="#8a8177"/><rect x="3" y="2" width="10" height="12" fill="#F4E8DB"/><rect x="3" y="2" width="10" height="1" fill="#c8bfa8"/><rect x="6" y="1" width="4" height="1" fill="#5a6675"/><rect x="5" y="5" width="6" height="1" fill="#8a8177"/><rect x="5" y="7" width="4" height="1" fill="#8a8177"/><rect x="5" y="9" width="6" height="1" fill="#8a8177"/><rect x="5" y="11" width="3" height="1" fill="#8a8177"/>`,
+  check:   `<rect x="3" y="7" width="1" height="1" fill="#5bb083"/><rect x="4" y="8" width="1" height="1" fill="#5bb083"/><rect x="5" y="9" width="1" height="1" fill="#5bb083"/><rect x="6" y="10" width="1" height="1" fill="#5bb083"/><rect x="7" y="9" width="1" height="1" fill="#5bb083"/><rect x="8" y="8" width="1" height="1" fill="#5bb083"/><rect x="9" y="7" width="1" height="1" fill="#5bb083"/><rect x="10" y="6" width="1" height="1" fill="#5bb083"/><rect x="11" y="5" width="1" height="1" fill="#5bb083"/><rect x="12" y="4" width="1" height="1" fill="#5bb083"/>`,
+  ticket:  `<rect x="1" y="4" width="14" height="8" fill="#e0b341"/><rect x="1" y="4" width="14" height="1" fill="#f4c95b"/><rect x="1" y="11" width="14" height="1" fill="#a37518"/><rect x="7" y="4" width="1" height="8" fill="#a37518" stroke-dasharray="2,1"/><rect x="7" y="4" width="1" height="1" fill="#a37518"/><rect x="7" y="6" width="1" height="1" fill="#a37518"/><rect x="7" y="8" width="1" height="1" fill="#a37518"/><rect x="7" y="10" width="1" height="1" fill="#a37518"/><rect x="3" y="7" width="1" height="2" fill="#8a5a1a"/><rect x="10" y="7" width="4" height="1" fill="#8a5a1a"/>`,
+  dove:    `<rect x="4" y="4" width="6" height="4" fill="#F4E8DB"/><rect x="10" y="6" width="2" height="2" fill="#F4E8DB"/><rect x="12" y="7" width="1" height="1" fill="#F4E8DB"/><rect x="11" y="6" width="1" height="1" fill="#e0b341"/><rect x="4" y="8" width="5" height="2" fill="#F4E8DB"/><rect x="5" y="10" width="3" height="2" fill="#F4E8DB"/><rect x="3" y="5" width="1" height="3" fill="#c8bfa8"/><rect x="6" y="12" width="1" height="1" fill="#F4E8DB"/><rect x="4" y="6" width="1" height="1" fill="#120f0f"/>`,
+  swords:  `<rect x="2" y="2" width="1" height="1" fill="#8a5a1a"/><rect x="3" y="3" width="1" height="1" fill="#c8ced4"/><rect x="4" y="4" width="1" height="1" fill="#c8ced4"/><rect x="5" y="5" width="1" height="1" fill="#c8ced4"/><rect x="6" y="6" width="1" height="1" fill="#c8ced4"/><rect x="7" y="7" width="2" height="2" fill="#c8ced4"/><rect x="9" y="6" width="1" height="1" fill="#c8ced4"/><rect x="10" y="5" width="1" height="1" fill="#c8ced4"/><rect x="11" y="4" width="1" height="1" fill="#c8ced4"/><rect x="12" y="3" width="1" height="1" fill="#c8ced4"/><rect x="13" y="2" width="1" height="1" fill="#8a5a1a"/><rect x="2" y="13" width="1" height="1" fill="#8a5a1a"/><rect x="3" y="12" width="1" height="1" fill="#c8ced4"/><rect x="4" y="11" width="1" height="1" fill="#c8ced4"/><rect x="5" y="10" width="1" height="1" fill="#c8ced4"/><rect x="6" y="9" width="1" height="1" fill="#c8ced4"/><rect x="9" y="10" width="1" height="1" fill="#c8ced4"/><rect x="10" y="11" width="1" height="1" fill="#c8ced4"/><rect x="11" y="12" width="1" height="1" fill="#c8ced4"/><rect x="12" y="13" width="1" height="1" fill="#c8ced4"/><rect x="13" y="13" width="1" height="1" fill="#8a5a1a"/>`,
+  starBig: `<rect x="7" y="1" width="2" height="2" fill="#f4c95b"/><rect x="6" y="3" width="4" height="1" fill="#e0b341"/><rect x="1" y="6" width="14" height="1" fill="#e0b341"/><rect x="5" y="4" width="6" height="2" fill="#e0b341"/><rect x="2" y="6" width="12" height="2" fill="#f4c95b"/><rect x="3" y="8" width="10" height="1" fill="#e0b341"/><rect x="4" y="9" width="8" height="1" fill="#e0b341"/><rect x="3" y="10" width="3" height="2" fill="#e0b341"/><rect x="10" y="10" width="3" height="2" fill="#e0b341"/><rect x="2" y="12" width="3" height="2" fill="#c69732"/><rect x="11" y="12" width="3" height="2" fill="#c69732"/>`,
+  bandage: `<rect x="2" y="7" width="12" height="3" fill="#f0d5b0" transform="rotate(-20 8 8)"/><rect x="4" y="6" width="2" height="5" fill="#e0b898" transform="rotate(-20 8 8)"/><rect x="10" y="6" width="2" height="5" fill="#e0b898" transform="rotate(-20 8 8)"/><rect x="6" y="7" width="1" height="1" fill="#c8a888" transform="rotate(-20 8 8)"/><rect x="8" y="8" width="1" height="1" fill="#c8a888" transform="rotate(-20 8 8)"/><rect x="7" y="9" width="1" height="1" fill="#c8a888" transform="rotate(-20 8 8)"/>`,
+  // ---- move categories ----
+  fist:    `<rect x="4" y="5" width="8" height="7" fill="#e8bd95"/><rect x="4" y="5" width="8" height="1" fill="#d29b6e"/><rect x="4" y="11" width="8" height="1" fill="#8a5533"/><rect x="5" y="7" width="1" height="1" fill="#d29b6e"/><rect x="7" y="7" width="1" height="1" fill="#d29b6e"/><rect x="9" y="7" width="1" height="1" fill="#d29b6e"/><rect x="4" y="12" width="1" height="3" fill="#e8bd95"/><rect x="11" y="12" width="1" height="3" fill="#e8bd95"/><rect x="4" y="4" width="1" height="1" fill="#d29b6e"/><rect x="11" y="4" width="1" height="1" fill="#d29b6e"/>`,
+  impact:  `<rect x="7" y="1" width="2" height="2" fill="#e0b341"/><rect x="4" y="4" width="1" height="1" fill="#c6392c"/><rect x="11" y="4" width="1" height="1" fill="#c6392c"/><rect x="6" y="3" width="4" height="1" fill="#e0b341"/><rect x="5" y="5" width="6" height="1" fill="#e0b341"/><rect x="3" y="6" width="10" height="4" fill="#c6392c"/><rect x="4" y="10" width="8" height="2" fill="#8a1c1c"/><rect x="1" y="7" width="1" height="1" fill="#c6392c"/><rect x="14" y="7" width="1" height="1" fill="#c6392c"/><rect x="5" y="12" width="2" height="2" fill="#e0b341"/><rect x="9" y="12" width="2" height="2" fill="#e0b341"/><rect x="6" y="14" width="1" height="1" fill="#c6392c"/><rect x="9" y="14" width="1" height="1" fill="#c6392c"/>`,
+  spin:    `<rect x="4" y="2" width="8" height="2" fill="#e0b341"/><rect x="12" y="2" width="1" height="4" fill="#e0b341"/><rect x="13" y="3" width="1" height="2" fill="#e0b341"/><rect x="11" y="5" width="1" height="1" fill="#e0b341"/><rect x="4" y="6" width="8" height="4" fill="#c69732"/><rect x="4" y="6" width="8" height="1" fill="#e0b341"/><rect x="4" y="9" width="8" height="1" fill="#8a5a1a"/><rect x="4" y="12" width="8" height="2" fill="#e0b341"/><rect x="3" y="10" width="1" height="4" fill="#e0b341"/><rect x="2" y="11" width="1" height="2" fill="#e0b341"/><rect x="4" y="10" width="1" height="1" fill="#e0b341"/>`,
+  lock:    `<rect x="5" y="3" width="6" height="1" fill="#8a5a1a"/><rect x="4" y="4" width="1" height="4" fill="#8a5a1a"/><rect x="11" y="4" width="1" height="4" fill="#8a5a1a"/><rect x="5" y="7" width="1" height="1" fill="#8a5a1a"/><rect x="10" y="7" width="1" height="1" fill="#8a5a1a"/><rect x="3" y="8" width="10" height="6" fill="#e0b341"/><rect x="3" y="8" width="10" height="1" fill="#f4c95b"/><rect x="3" y="13" width="10" height="1" fill="#a37518"/><rect x="7" y="10" width="2" height="2" fill="#5d3a22"/><rect x="7" y="11" width="2" height="2" fill="#5d3a22"/>`,
+  bird:    `<rect x="2" y="6" width="1" height="1" fill="#3a4250"/><rect x="3" y="7" width="1" height="1" fill="#3a4250"/><rect x="4" y="5" width="2" height="4" fill="#3a4250"/><rect x="6" y="4" width="4" height="6" fill="#3a4250"/><rect x="10" y="5" width="2" height="4" fill="#3a4250"/><rect x="12" y="6" width="1" height="2" fill="#3a4250"/><rect x="13" y="7" width="1" height="1" fill="#3a4250"/><rect x="6" y="3" width="2" height="1" fill="#3a4250"/><rect x="8" y="4" width="1" height="1" fill="#e0b341"/><rect x="9" y="4" width="1" height="1" fill="#3a4250"/><rect x="9" y="3" width="1" height="1" fill="#3a4250"/><rect x="7" y="5" width="1" height="1" fill="#F4E8DB"/><rect x="6" y="10" width="4" height="1" fill="#3a4250"/><rect x="7" y="11" width="2" height="2" fill="#3a4250"/>`,
+  brain:   `<rect x="5" y="3" width="6" height="1" fill="#d2687a"/><rect x="4" y="4" width="8" height="1" fill="#e58fa0"/><rect x="3" y="5" width="10" height="7" fill="#e58fa0"/><rect x="4" y="12" width="8" height="1" fill="#d2687a"/><rect x="5" y="13" width="6" height="1" fill="#c8556a"/><rect x="7" y="5" width="1" height="7" fill="#d2687a"/><rect x="8" y="5" width="1" height="7" fill="#d2687a"/><rect x="4" y="7" width="3" height="1" fill="#d2687a"/><rect x="9" y="7" width="3" height="1" fill="#d2687a"/><rect x="4" y="9" width="2" height="1" fill="#d2687a"/><rect x="10" y="9" width="2" height="1" fill="#d2687a"/>`,
+  chair:   `<rect x="3" y="1" width="10" height="2" fill="#8a5533"/><rect x="3" y="3" width="10" height="4" fill="#a06943"/><rect x="3" y="7" width="10" height="1" fill="#5d3a22"/><rect x="3" y="8" width="1" height="6" fill="#a06943"/><rect x="12" y="8" width="1" height="6" fill="#a06943"/><rect x="3" y="14" width="1" height="1" fill="#5d3a22"/><rect x="12" y="14" width="1" height="1" fill="#5d3a22"/><rect x="4" y="8" width="8" height="1" fill="#5d3a22"/>`,
+  // showman uses the microphone we already have
+};
+function pico(id,size){
+  const p=PICO[id]; if(!p) return '';
+  const s=size||22;
+  return `<svg class="pico" viewBox="0 0 16 16" width="${s}" height="${s}" shape-rendering="crispEdges" aria-hidden="true">${p}</svg>`;
+}
+// map move category ids to pixel-icon ids
+const CAT_PICO={strike:'fist',slam:'impact',suplex:'spin',submission:'lock',aerial:'bird',technical:'brain',hardcore:'chair',showman:'microphone'};
+function catIcon(id,size){ return pico(CAT_PICO[id]||'',size||22); }
 function P(x,y,w,h,f){ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`; }
 function shade(hex,amt){ hex=(hex||'#888888'); const n=parseInt(hex.slice(1),16); let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
   r=clamp(r,0,255); g=clamp(g,0,255); b=clamp(b,0,255); return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); }
@@ -3075,7 +3143,7 @@ function refreshHud(){ if(!G) return;
   const o=ovr(G.w), c=G.car;
   if(c._seenOvr==null) c._seenOvr=o;
   if(o>c._seenOvr){
-    [50,60,70,80,90].forEach(t=>{ if(c._seenOvr<t&&o>=t) award(`Broke ${t} overall.`,'📈'); });
+    [50,60,70,80,90].forEach(t=>{ if(c._seenOvr<t&&o>=t) award(`Broke ${t} overall.`,pico('graphUp',36)); });
     c._seenOvr=o;
     const el=$('hOvr'); el.classList.remove('statpop'); void el.offsetWidth; el.classList.add('statpop');
     toast('Overall up: '+o);
@@ -3664,7 +3732,7 @@ function renderWeek(){
         <div class="wa-n">${o.ico} ${o.l}${done?' ✓':''}</div><div class="wa-d">${o.d}</div></div>`;
     }).join('')}</div>`;
 
-  const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.icon} ${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
+  const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
   const catA=catById(c.plan.a)||MCATS[0], catB=catById(c.plan.b)||MCATS[1];
   el.innerHTML=`
     <div class="advice ${adv.sev}">
@@ -3684,7 +3752,7 @@ function renderWeek(){
     <div class="planwhy">
       ${[catA,catB].map((x,i)=>{
         const m=G.w.mastery[x.id]||0, t=masteryTier(x.id), nx=MTIERS.find(y=>y.t===t+1);
-        return `<div class="pw"><div class="pw-h">${x.icon} ${x.name} <span class="hint">${i===0?'primary':'secondary'} · governed by ${ATTRS.find(a=>a[0]===x.attr)[1]}</span></div>
+        return `<div class="pw"><div class="pw-h">${catIcon(x.id,20)} ${x.name} <span class="hint">${i===0?'primary':'secondary'} · governed by ${ATTRS.find(a=>a[0]===x.attr)[1]}</span></div>
           <div class="bar gd"><i style="width:${nx?clamp(m/nx.mastery*100):100}%"></i></div>
           <div class="hint">Mastery ${m}${nx?` / ${nx.mastery} → Tier ${t+1} moves`:' · maxed'}</div></div>`;
       }).join('')}
@@ -4956,8 +5024,8 @@ function bookWeek(){
       : ['Steady the middle of the card for us.','Give us ten good minutes.','Make the segment matter.'];
     bk.line=lines[Math.floor(rnd()*lines.length)];
     // the firsts that a career is remembered by
-    if(bk.o.card==='Main Event') award('Your first main event.','🌟');
-    if(bk.o.stakes==='title') award('Your first title shot.','🏆');
+    if(bk.o.card==='Main Event') award('Your first main event.',pico('starBig',36));
+    if(bk.o.stakes==='title') award('Your first title shot.',pico('trophy',36));
   }
   save();
 }
@@ -4968,12 +5036,12 @@ function bookWeek(){
 function prepOptions(){
   const c=G.car, b=c.booking||{type:'dark'}, dark=b.type==='dark';
   const opts=[
-    {id:'gym',  ico:'🏋️', l:'Hit the gym', d:dark?'+55 XP. Nothing but time this week.':'+30 XP before the show.'},
+    {id:'gym',  ico:pico('dumbbell'), l:'Hit the gym', d:dark?'+55 XP. Nothing but time this week.':'+30 XP before the show.'},
   ];
   if(b.type==='match')
-    opts.push({id:'tape', ico:'📼', l:'Study the tape', d:`Scout ${b.o.oppName}. Better odds, better match.`});
-  opts.push({id:'rest', ico:'🛌', l:'Put your feet up', d:dark?'+20 condition. Come back new.':'+10 condition before the show.'});
-  opts.push({id:'room', ico:'🤝', l:'Work the room', d:'Backstage politics. The office remembers faces.'});
+    opts.push({id:'tape', ico:pico('tape'), l:'Study the tape', d:`Scout ${b.o.oppName}. Better odds, better match.`});
+  opts.push({id:'rest', ico:pico('bed'), l:'Put your feet up', d:dark?'+20 condition. Come back new.':'+10 condition before the show.'});
+  opts.push({id:'room', ico:pico('handshake'), l:'Work the room', d:'Backstage politics. The office remembers faces.'});
   return opts;
 }
 function doPrep(id){
@@ -5410,10 +5478,10 @@ function yearEnd(){
     c.awards=c.awards||[];
     let moty=false, woty=false, rookie=false;
     if(best.q>=88){ c.awards.unshift({y:c.year,t:'Match of the Year',d:`vs ${best.opp} (${best.q})`});
-      award(`Match of the Year vs ${best.opp}.`,'⭐',true); c.pop=clamp(c.pop+3,1,100); c.rep+=380; moty=true; }
+      award(`Match of the Year vs ${best.opp}.`,pico('starBig',36),true); c.pop=clamp(c.pop+3,1,100); c.rep+=380; moty=true; }
     if(avg>=78 && c.pop>=68 && yl.length>=8){ c.awards.unshift({y:c.year,t:'Wrestler of the Year',d:`avg ${avg.toFixed(0)} across ${yl.length} matches`});
-      award('Wrestler of the Year.','👑',true); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); woty=true; }
-    if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.','🌟',true); c.rep+=260; rookie=true; }
+      award('Wrestler of the Year.',pico('crown',36),true); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); woty=true; }
+    if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.',pico('star',36),true); c.rep+=260; rookie=true; }
     const growth=ATTRS.map(([k,label])=>[label,Math.round((w.attrs[k]-preAttrs[k])*10)/10])
       .filter(g=>Math.abs(g[1])>=0.5);
     c.pendingCeremony={ y:c.year-1, matches:yl.length,
@@ -5467,14 +5535,14 @@ function renderMoves(){
   const chips=MCATS.map(c=>{
     const owned=MOVES.filter(m=>m.cat===c.id&&moveUnlocked(m)).length;
     const all=MOVES.filter(m=>m.cat===c.id).length;
-    return {t:`${c.icon} ${c.name} <span class="pgr-x">${owned}/${all}</span>`};
+    return {t:`${catIcon(c.id,16)} ${c.name} <span class="pgr-x">${owned}/${all}</span>`};
   });
   let h=pagerBar('moves',chips,renderMoves);
   const c=MCATS[pagerIdx('moves',MCATS.length)];
   const m0=G.w.mastery[c.id]||0, t=masteryTier(c.id), nx=MTIERS.find(x=>x.t===t+1);
   h+=`<div class="card" style="margin-bottom:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-      <div style="font-weight:800;color:var(--cream);">${c.icon} ${c.name}
+      <div style="font-weight:800;color:var(--cream);">${catIcon(c.id,20)} ${c.name}
         ${mastMult(c.id)>1.05?`<span class="badge b-leg" style="margin-left:4px;">×${mastMult(c.id).toFixed(1)}</span>`:''}</div>
       <span class="badge b-com">T${t} ${MTIERS[t-1].name}</span></div>
     <div class="hint" style="margin-top:4px;">${c.blurb}</div>
@@ -5730,7 +5798,7 @@ const PROMO_NOTE={
 const PROMO_LINES={
   callout:{k:'CALL THEM OUT',c:'heel',host:-0.8,int:0.85,lines:[
     o=>`${o}. You have been ducking me for weeks and everybody in this building knows it.`,
-    o=>`I am not leaving this ring until ${o} comes out here and faces me like a professional.`,
+    o=>`Look at ${o}. Look me in the eye and tell me you belong on my level.`,
     o=>`${o}, you and me. No excuses left.`]},
   mock:{k:'MOCK THEM',c:'heel',host:-1,int:0.7,lines:[
     o=>`I have seen tribute acts with more to offer than ${o}.`,
@@ -5823,12 +5891,12 @@ function promoKinds(target,mode,phase){
    Every live segment is booked with a purpose. The office picks one of
    these, and the player picks how to run with it. */
 const DIRECTIVES={
-  build:  {icon:'📈', kicker:'Build the match', how:'Get people talking about this fight.', wants:{intensity:.6,specifics:1,hostile:0}},
-  sell:   {icon:'🎟️', kicker:'Sell the show',  how:'Put the marquee event over.',        wants:{intensity:.6,crowd:1,hostile:-.2}},
-  soften: {icon:'🕊️', kicker:'Cool it down',   how:'Get back on the good side of the room.', wants:{hostile:.4,crowd:1}},
-  heat:   {icon:'🔥', kicker:'Get some heat',   how:'They want the crowd to boo you louder.', wants:{hostile:-.6,intensity:.7}},
-  feud:   {icon:'⚔️', kicker:'Build the feud',  how:'Make the whole building want to see this settled.', wants:{hostile:-.5,specifics:1}},
-  push:   {icon:'⭐', kicker:'Push yourself',   how:'Get yourself over. Stake a claim.', wants:{intensity:.7,crowd:1,hostile:.2}},
+  build:  {icon:pico('graphUp',20), kicker:'Build the match', how:'Get people talking about this fight.', wants:{intensity:.6,specifics:1,hostile:0}},
+  sell:   {icon:pico('ticket',20), kicker:'Sell the show',  how:'Put the marquee event over.',        wants:{intensity:.6,crowd:1,hostile:-.2}},
+  soften: {icon:pico('dove',20), kicker:'Cool it down',   how:'Get back on the good side of the room.', wants:{hostile:.4,crowd:1}},
+  heat:   {icon:pico('fire',20), kicker:'Get some heat',   how:'They want the crowd to boo you louder.', wants:{hostile:-.6,intensity:.7}},
+  feud:   {icon:pico('swords',20), kicker:'Build the feud',  how:'Make the whole building want to see this settled.', wants:{hostile:-.5,specifics:1}},
+  push:   {icon:pico('starBig',20), kicker:'Push yourself',   how:'Get yourself over. Stake a claim.', wants:{intensity:.7,crowd:1,hostile:.2}},
 };
 function pickDirective(mode,target){
   const c=G.car, l=leanOf();
@@ -6389,7 +6457,7 @@ function signDeal(i){
     pushInboxItem({ico:'✍️',sev:'good',txt:`<b>Signed.</b> ${pr.name}, ${o.years} year${o.years>1?'s':''}, ${money(o.weekly)} a week.`});
     const stepUp=promoTierIdx(pr)>promoTierIdx(old);
     if(stepUp) award(`Signed with ${pr.name}.`,'✍️',true);   // the signing moment below covers it
-    queueMoment('🖋️', pr.name, {kick:'Contract signed',
+    queueMoment(pico('pen',44), pr.name, {kick:'Contract signed',
       sub:`${o.years} year${o.years>1?'s':''} · ${money(o.weekly)} a week guaranteed${stepUp?' · a step up the ladder':''}`});
   } else {
     pushLog(`You re-sign with <b>${pr.name}</b> at ${money(o.weekly)}/week.`);
