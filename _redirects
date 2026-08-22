@@ -3,10 +3,15 @@
 
 # /ideas/ IS NOT SERVED WHILE AN ADSENSE REVIEW IS OPEN.
 #
-# The board is built and tested (supabase/92_ideas_board.sql, and ideas/ in commit 7479e737)
-# but 92 has not been run, so what a visitor got at runthe.gg/ideas/ was a heading and the
-# sentence "The ideas board is not set up on this project yet." A broken feature page is the
-# worst thing a reviewer can land on, so the two files were taken out of the deployed tree.
+# THE SCHEMA IS NOW LIVE. supabase/92_ideas_board.sql has been run on the project, so the
+# reason this rule was first written (a visitor got a heading and the sentence "The ideas
+# board is not set up on this project yet.", which is the worst thing a reviewer can land
+# on) no longer applies. The board would work today.
+#
+# The open review is the ONLY thing still holding it, and it is holding it on purpose: a
+# page of user-submitted text that appears mid-review is a new surface the reviewer did not
+# start on, and there is nothing on it yet for them to read. Nothing has to be fixed before
+# it goes up. It goes up when the review closes.
 #
 # THIS RULE IS THE SECOND LOCK, not the first. Cloudflare's own docs are unreachable from
 # the sandbox this was written in, so whether _redirects wins over a matching static asset
@@ -17,9 +22,15 @@
 # NOT robots.txt Disallow, which was the other idea and is worse: robots.txt is public, so a
 # Disallow line advertises the path to exactly the reviewer it is meant to hide it from.
 #
-# TO TURN THE BOARD ON: run supabase/92_ideas_board.sql, restore the page with
-#   git checkout 7479e737 -- ideas/
-# delete these two lines, and read the comment at the top of ideas/index.html about what has
-# to be true before it can be indexed or carry ads.
+# TO TURN THE BOARD ON: restore the page, delete these two lines, and read the comment at
+# the top of ideas/index.html about what has to be true before it can be indexed or carry
+# ads. The schema step is already done.
+#
+#   git checkout claude/perfect-season-curve-banner-n4z2md -- ideas/
+#
+# TAKE IT FROM THE BRANCH, NOT FROM COMMIT 7479e737, which is where this line used to point.
+# The page was rewritten after that commit (renamed to Community Ideas, developer text
+# taken off, its own runthe.gg header instead of the arcade banner), so 7479e737 restores a
+# working page that is the wrong one, and nothing would fail to tell you.
 /ideas /404.html 404
 /ideas/* /404.html 404
