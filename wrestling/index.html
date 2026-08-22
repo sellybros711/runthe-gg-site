@@ -429,6 +429,21 @@
   .dos-hist-st{color:var(--text);}
   .bs-vs b{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;}
   .bs-vs b:hover{color:var(--gold);}
+  .story{border-left:2px solid rgba(255,255,255,.10);margin:10px 0 0 8px;padding:0 0 0 14px;position:relative;}
+  .story-year{font-family:var(--display);font-size:16px;color:var(--gold);letter-spacing:.05em;text-transform:uppercase;margin:14px 0 6px -14px;padding:0 8px;background:var(--bg);display:inline-block;}
+  .story-item{display:flex;align-items:baseline;gap:8px;padding:7px 0;border-top:1px dashed rgba(255,255,255,.06);position:relative;}
+  .story-item:first-of-type{border-top:none;}
+  .story-item::before{content:'';position:absolute;left:-19px;top:12px;width:8px;height:8px;border-radius:50%;background:var(--text-faint);}
+  .story-when{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);min-width:26px;}
+  .story-ico{display:inline-flex;align-items:center;}
+  .story-t{font-size:13px;color:var(--text);line-height:1.4;flex:1;min-width:0;}
+  .story-item.kind-title::before{background:var(--gold);box-shadow:0 0 8px rgba(224,179,65,.55);}
+  .story-item.kind-title .story-t{color:var(--cream);}
+  .story-item.kind-classic::before{background:var(--brandred-bright);}
+  .story-item.kind-classic .story-t{color:var(--cream);}
+  .story-item.kind-milestone::before{background:var(--green);}
+  .story-item.kind-promo::before{background:#7fb2e0;}
+  .story-item.kind-lost::before{background:#f0907f;}
   @keyframes ppvPulse{0%,100%{box-shadow:0 0 0 rgba(198,57,44,.6);} 50%{box-shadow:0 0 20px rgba(198,57,44,.7);}}
   .bs-rules{font-size:12px;color:var(--text);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.04);border-left:2px solid rgba(224,179,65,.55);border-radius:3px;}
   .bs-rules b{color:var(--cream);letter-spacing:.12em;font-size:10px;text-transform:uppercase;}
@@ -8293,6 +8308,39 @@ function charProfile(id){
     [{label:'Close',fn:closeModal}]);
 }
 
+/* Chronological career timeline. Pulls from every stream the game already
+   writes to (matches, title reigns, accolades, promos) and sorts them into
+   one "story so far" the player can scroll. */
+function storySoFar(){
+  const c=G.car;
+  const events=[];
+  (G.hist||[]).forEach(m=>{
+    const notable = m.title || m.q>=78;
+    if(!notable) return;
+    events.push({
+      y:m.y, w:m.w,
+      kind:m.title?'title':m.q>=88?'classic':'big',
+      icon: m.title?pico('trophy',14):m.q>=88?pico('starBig',14):pico('star',14),
+      text: (m.win?'W':'L')+` vs ${m.opp} · ${m.stip} · <b>${m.q}</b>-rated${m.title?' <b style="color:var(--gold)">for the title</b>':''}`,
+    });
+  });
+  (c.reigns||[]).forEach(r=>{
+    events.push({y:r.year, w:r.week, kind:'title', icon:pico('crown',14),
+      text:`Won the <b>${r.title}</b>${r.defenses?` (${r.defenses} defence${r.defenses>1?'s':''})`:''}`});
+    if(r.lostYear) events.push({y:r.lostYear, w:r.lostWeek, kind:'lost', icon:pico('graphDown',14),
+      text:`Lost the <b>${r.title}</b>`});
+  });
+  (c.accolades||[]).forEach(a=>{
+    events.push({y:a.y, w:a.w||1, kind:'milestone', icon:a.ico||pico('medal',14),
+      text:a.txt});
+  });
+  (c.promos||[]).filter(p=>p.q>=75).forEach(p=>{
+    events.push({y:p.y, w:p.w, kind:'promo', icon:pico('microphone',14),
+      text:`Promo segment vs ${p.t} · rated <b>${p.q}</b>`});
+  });
+  events.sort((a,b)=> (b.y-a.y) || (b.w-a.w));
+  return events;
+}
 function renderRecord(){
   const c=G.car;
   let h=`<div class="grid g4">`+[
@@ -8302,18 +8350,36 @@ function renderRecord(){
     ['Years Active',c.year],['Age',c.age],
   ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')+`</div>`;
   const acc=c.accolades||[];
-  const chips=[{t:`Matches <span class="pgr-x">${G.hist.length}</span>`},
+  const story=storySoFar();
+  const chips=[{t:`Story So Far <span class="pgr-x">${story.length}</span>`},
+               {t:`Matches <span class="pgr-x">${G.hist.length}</span>`},
                {t:`Titles <span class="pgr-x">${c.reigns.length}</span>`},
                {t:`Accolades <span class="pgr-x">${acc.length}</span>`}];
   h+=`<div style="margin-top:14px;">`+pagerBar('rec',chips,renderRecord)+`</div>`;
   const pg=pagerIdx('rec',chips.length);
   if(pg===0){
+    if(!story.length){
+      h+=`<p class="hint">The story writes itself once you have notable matches, title wins, career milestones and killer promos to look back on.</p>`;
+    } else {
+      let lastYear=null;
+      h+=`<div class="story">`;
+      story.forEach(e=>{
+        if(e.y!==lastYear){ h+=`<div class="story-year">Year ${e.y}</div>`; lastYear=e.y; }
+        h+=`<div class="story-item kind-${e.kind}">
+          <span class="story-when">W${e.w}</span>
+          <span class="story-ico">${e.icon}</span>
+          <span class="story-t">${e.text}</span>
+        </div>`;
+      });
+      h+=`</div>`;
+    }
+  } else if(pg===1){
     h+= G.hist.length? G.hist.slice(0,12).map(m=>`<div class="movecard ${m.win?'have':'lock'}">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
           <span class="nm">${m.win?'W':'L'} vs ${m.opp}${m.title?' '+pico('trophy',12):''}</span>
           <span class="rq">Y${m.y} W${m.w} · ${m.stip} · rating ${m.q}</span></div></div>`).join('')
       : `<p class="hint">No matches yet.</p>`;
-  } else if(pg===1){
+  } else if(pg===2){
     h+= c.reigns.length? c.reigns.map(r=>`<div class="movecard have"><span class="nm">${pico('crown',14)} ${r.title}</span> <span class="rq">won Y${r.year} W${r.week}${r.defenses?` · ${r.defenses} defence${r.defenses>1?'s':''}`:''}</span></div>`).join('')
       : `<p class="hint">No championships yet.</p>`;
   } else {
