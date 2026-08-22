@@ -16,6 +16,8 @@
  */
 
 import { bbrRows, cell, positions, seasonTables } from './fetch-nba.mjs';
+import { parseSolo, parseTeams, parseAllStars, seasonIn, slugsIn, AWARDS, AWARD_RANK }
+  from './fetch-awards.mjs';
 
 let pass = 0;
 const bad = [];
@@ -298,6 +300,131 @@ is(positions('G'), ['G'], 'a coarse position from an old season passes straight 
 is(positions(''), null, 'a row with no position is not a player this game can use');
 is(positions('XX'), null, 'a position the slot table has never heard of is refused');
 ok(positions('PF-SF')[0] === 'PF', 'the FIRST position listed is the primary, which POSITION_MAX counts on');
+
+// ─── the award pages ────────────────────────────────────────────────────────
+
+/* Every fixture below is written in the shape Basketball-Reference actually
+ * serves, INCLUDING the parts the parsers deliberately ignore: an absolute
+ * origin on one link, single quotes on another, a fragment after .html on a
+ * third. The draft fetch returned zero picks for four runs because its parser
+ * quietly assumed all three of those, so the fixtures assert that none of them
+ * matters rather than assuming it. */
+
+/* ---------- a single-winner page: one row a season ---------- */
+const MVP_PAGE = `
+<table id="mvp_NBA"><thead>
+<tr><th data-stat="season">Season</th><th data-stat="player">Player</th></tr>
+</thead><tbody>
+<tr><th data-stat="season"><a href="/leagues/NBA_1996.html">1995-96</a></th>
+<td data-stat="player"><a href="/players/j/jordami01.html">Michael Jordan</a></td>
+<td data-stat="team_id"><a href="/teams/CHI/1996.html">CHI</a></td>
+<td data-stat="pts_won">986.0</td></tr>
+<tr><th data-stat="season"><a href="/leagues/NBA_2000.html">1999-00</a></th>
+<td data-stat="player"><a href='https://www.basketball-reference.com/players/o/onealsh01.html'>Shaquille O'Neal</a></td>
+<td data-stat="team_id"><a href="/teams/LAL/2000.html">LAL</a></td></tr>
+<tr><th data-stat="season">2015-16</th>
+<td data-stat="player"><a href="/players/c/curryst01.html#all_totals">Stephen Curry</a></td>
+<td data-stat="team_id">GSW</td></tr>
+</tbody></table>`;
+
+const mvp = parseSolo(MVP_PAGE);
+is(mvp.length, 3, 'every winner row on the MVP page is read');
+is(mvp[0], { season: 1996, slug: 'jordami01' }, '1995-96 is the 1996 season, and Jordan won it');
+is(mvp[1], { season: 2000, slug: 'onealsh01' },
+  'an absolute origin on the link changes nothing about who the row is about');
+is(mvp[2], { season: 2016, slug: 'curryst01' },
+  'and neither does a fragment after .html, with the season read from the text');
+
+/* THE CENTURY ROLL. 1999-00 is the season ending in 2000 and 1995-96 is not the
+ * season ending in 1995. A parser that takes the first four-digit number gets
+ * one of those wrong, and every award it files lands a year early with nothing
+ * about the output looking broken. */
+is(seasonIn('<th>1999-00</th>'), 2000, '1999-00 is the 2000 season');
+is(seasonIn('<th>1995-96</th>'), 1996, '1995-96 is the 1996 season');
+is(seasonIn('<th>2019-20</th>'), 2020, '2019-20 is the 2020 season');
+is(seasonIn('<th>1973-74</th>'), 1974, '1973-74 is the 1974 season');
+is(seasonIn('<a href="/leagues/NBA_1978.html">1977-78</a>'), 1978,
+  'and the league link is preferred over the text when both are there');
+is(seasonIn('<td>no season here</td>'), null, 'a row with no season in it says so');
+
+/* A header row carries no player, so it is not a winner. */
+is(parseSolo('<tr><th data-stat="season">Season</th><th data-stat="player">Player</th></tr>').length, 0,
+  'a header row on an award page wins nothing');
+/* Nor is a row with a player and no season: that is the career-totals footer. */
+is(parseSolo('<tr><td><a href="/players/j/jordami01.html">Michael Jordan</a></td></tr>').length, 0,
+  'a row with a player but no season is not a season');
+
+/* ---------- an All-NBA page: one row a season PER TIER, five men on it ------- */
+const ALL_LEAGUE = `
+<table id="awards_all_league"><tbody>
+<tr><th data-stat="season"><a href="/leagues/NBA_1996.html">1995-96</a></th>
+<td data-stat="lg_id">NBA</td><td data-stat="team">1st</td>
+<td data-stat="player_1"><a href="/players/j/jordami01.html">Michael Jordan</a></td>
+<td data-stat="player_2"><a href="/players/p/pippesc01.html">Scottie Pippen</a></td>
+<td data-stat="player_3"><a href="/players/m/malonka01.html">Karl Malone</a></td>
+<td data-stat="player_4"><a href="/players/o/olajuha01.html">Hakeem Olajuwon</a></td>
+<td data-stat="player_5"><a href="/players/p/pentoga01.html">Gary Payton</a></td></tr>
+<tr><th data-stat="season"><a href="/leagues/NBA_1996.html">1995-96</a></th>
+<td data-stat="lg_id">NBA</td><td data-stat="team">2nd</td>
+<td data-stat="player_1"><a href="/players/h/hardaan01.html">Anfernee Hardaway</a></td>
+<td data-stat="player_2"><a href="/players/r/robinda01.html">David Robinson</a></td></tr>
+<tr><th data-stat="season"><a href="/leagues/NBA_1996.html">1995-96</a></th>
+<td data-stat="lg_id">NBA</td><td data-stat="team">3rd</td>
+<td data-stat="player_1"><a href="/players/b/barklch01.html">Charles Barkley</a></td></tr>
+</tbody></table>`;
+
+const league = parseTeams(ALL_LEAGUE, { '1st': 'an1', '2nd': 'an2', '3rd': 'an3' });
+is(league.length, 3, 'all three All-NBA tiers are read from one season');
+is(league[0].code, 'an1', 'the 1st team row is the first team');
+is(league[0].season, 1996, 'and it knows which season it is');
+is(league[0].slugs.length, 5, 'a first team is five men, not one');
+is(league[0].slugs[0], 'jordami01', 'and the first of them is the first player cell');
+is(league[1].code, 'an2', 'the second team row is the second team');
+is(league[2].code, 'an3', 'the third team row is the third team');
+
+/* "1st Team" is the same tier as "1st". Which of the two BBRef prints is a
+   presentation choice, and a parser that only accepts one of them returns an
+   empty All-NBA list the day they change it. */
+const TEAM_SUFFIXED = ALL_LEAGUE
+  .replace('>1st<', '>1st Team<').replace('>2nd<', '>2nd Team<').replace('>3rd<', '>3rd Team<');
+const suffixed = parseTeams(TEAM_SUFFIXED, { '1st': 'an1', '2nd': 'an2', '3rd': 'an3' });
+is(suffixed.length, 3, 'the tier is read whether it says "1st" or "1st Team"');
+is(suffixed[0].code, 'an1', 'and it is still the first team');
+
+/* A page whose tier map has no 3rd team must not invent one. All-Defensive has
+   two teams and has never had three. */
+const defense = parseTeams(ALL_LEAGUE, { '1st': 'ad1', '2nd': 'ad2' });
+is(defense.length, 2, 'a two-tier award does not acquire a third team from a three-tier page');
+
+/* ---------- an All-Star page ---------- */
+const ALL_STAR = `
+<div class="nav"><a href="/players/j/jamesle01.html">LeBron James career</a></div>
+<table id="EAST"><tbody>
+<tr><td data-stat="player"><a href="/players/j/jordami01.html">Michael Jordan</a></td>
+<td data-stat="pts">20</td></tr>
+<tr><td data-stat="player"><a href="/players/p/pippesc01.html">Scottie Pippen</a></td>
+<td data-stat="pts">4</td></tr>
+<tr><td data-stat="player"><a href="/players/j/jordami01.html">Michael Jordan</a></td>
+<td data-stat="pts">20</td></tr>
+</tbody></table>`;
+
+const stars = parseAllStars(ALL_STAR);
+is(stars.length, 2, 'a man listed on two rows of the box score is one All-Star');
+ok(stars.includes('jordami01') && stars.includes('pippesc01'), 'and both of them are read');
+ok(!stars.includes('jamesle01'),
+  'a player link in the page navigation is not an All-Star selection');
+
+/* ---------- slugsIn ---------- */
+is(slugsIn('<td><a href="/players/j/jordami01.html">MJ</a></td>'), ['jordami01'],
+  'a plain relative link yields its slug');
+/* The apostrophe is in the NAME, never in the slug: BBRef ids are letters and
+   digits. What this asserts is that the text of the link cannot confuse the
+   path, which is the only part being read. */
+is(slugsIn("<td><a href='/players/o/onealsh01.html'>Shaquille O'Neal</a></td>"), ['onealsh01'],
+  'an apostrophe in the name does not disturb the slug in the path');
+is(slugsIn('<td><a href="/players/v/vanhoke01.html">Keith Van Horn</a></td>'), ['vanhoke01'],
+  'and a two-word surname is one slug like any other');
+is(slugsIn('<td>no links at all</td>'), [], 'a row with no player links yields none');
 
 // ─── report ─────────────────────────────────────────────────────────────────
 

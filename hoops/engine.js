@@ -1119,44 +1119,29 @@ function rosterProfile(roster) {
   };
 }
 
-/* WHAT THIS MAN IS FOR, in the words the game charges for.
+/* THE BOARD USED TO DESCRIBE EACH PLAYER, and playerTags() is what did it:
+ * Shooter, Rim protector, Creator, Rebounder, Ball hawk, No range, each read
+ * off this season's rate stats against the same thresholds rosterFit charges.
  *
- * The fit model is only strategy if a player can look at a board and see which
- * of these five names is missing from his roster. Showing the SIGNED CHANGE to
- * each component instead was the first attempt and it was useless: on a two man
- * roster every candidate reads as a huge improvement to everything, because
- * what is actually being measured is that the roster has four empty slots.
+ * It is gone rather than unused, and the reasons are worth keeping because they
+ * are reasons not to build it again.
  *
- * So a board says what a player IS, and the roster panel says what the roster
- * still NEEDS, and the two meet in the middle. Thresholds are the same ones
- * rosterFit charges against, so a badge is never a claim the model disagrees
- * with. Pace-adjusted, so a 1972 line and a 2023 line earn the same badge on
- * the same evidence.
+ * IT PRINTED THIS MODEL'S ANSWER ON EVERY TILE. Everything below charges a
+ * roster for having no rim protection, no creation and no spacing, and a board
+ * that labels each candidate with which of those he supplies turns the draft
+ * into collecting one of each colour. The fit model is only interesting while
+ * working out who supplies what is the player's job.
+ *
+ * AND A RATE STAT FROM ONE SEASON IS NOT A FACT ABOUT A MAN. Karl-Anthony
+ * Towns took 1.1 threes a game in 2016 and came back marked "No range", which
+ * is a defensible reading of that column and an absurd claim about one of the
+ * best shooting big men who has ever played. The tile is the wrong place for an
+ * inference stated as a description.
+ *
+ * The board carries HARDWARE now: what the man actually won that season, which
+ * is a fact, is what a fan already knows, and gives the model's homework away
+ * to nobody. See hoops/build/fetch-awards.mjs.
  */
-function playerTags(player) {
-  const tags = [];
-  const si = spacingIndex(player);
-  const fga = paceAdjust(player.fga || 0, player.s);
-  const ast = paceAdjust(player.ast || 0, player.s);
-  const blk = paceAdjust(player.blk || 0, player.s);
-  const reb = paceAdjust(player.reb || 0, player.s);
-  const stl = paceAdjust(player.stl || 0, player.s);
-
-  if (si >= 1.35) tags.push({ key: 'shooter', label: 'Shooter', good: true });
-  if (blk >= FIT.RIM_ANCHOR) tags.push({ key: 'rim', label: 'Rim protector', good: true });
-  if (ast >= FIT.CREATOR) tags.push({ key: 'creator', label: 'Creator', good: true });
-  if (reb >= 9.5) tags.push({ key: 'glass', label: 'Rebounder', good: true });
-  if (stl >= 1.8) tags.push({ key: 'hands', label: 'Ball hawk', good: true });
-
-  /* THE ONE THAT COSTS. A high volume scorer is not a bad player, he is an
-     expensive one in a currency that is not dollars, and the badge is there so
-     that cost is visible before the click rather than after the season. */
-  if (fga >= 17) tags.push({ key: 'volume', label: `${fga.toFixed(0)} shots`, good: false });
-  if (si < 0.35 && eraOf(player.s).tpa > 0) {
-    tags.push({ key: 'nonshooter', label: 'No range', good: false });
-  }
-  return tags;
-}
 
 /* A component's contribution, in rating points: nothing in the dead band, a
    linear penalty below it, a linear (and smaller) bonus above. */
@@ -1684,28 +1669,181 @@ const TEAM_NAMES = {
   SEA: 'SuperSonics', NJN: 'Nets', VAN: 'Grizzlies', CHH: 'Hornets',
   WSB: 'Bullets', KCK: 'Kings', SDC: 'Clippers', NOH: 'Hornets', NOK: 'Hornets',
   BAL: 'Bullets', BUF: 'Braves', CIN: 'Royals', SFW: 'Warriors', STL: 'Hawks',
+  CAP: 'Bullets', CHA: 'Bobcats', KCO: 'Kings', NOJ: 'Jazz', NYN: 'Nets',
+  CHP: 'Packers', CHZ: 'Zephyrs', FTW: 'Pistons', MLH: 'Hawks', MNL: 'Lakers',
+  PHW: 'Warriors', ROC: 'Royals', SDA: 'Sails', SDR: 'Rockets',
+  SYR: 'Nationals', TRI: 'Blackhawks', NYA: 'Nets',
 };
 
+/* [primary, secondary] for every club the wheel can land on, under the code
+ * Basketball-Reference uses for it. Defunct clubs carry the colors they wore,
+ * not their successor's: the Buffalo Braves were orange and black and it would
+ * be a strange thing to draw them in Milwaukee's green.
+ *
+ * A club's own palette is often more than two colors. What goes here is the
+ * pair a fan would name if you asked, because that is what the wheel is
+ * claiming when it paints itself. */
 const TEAM_COLORS = {
-  ATL: ['#E03A3E', '#26282A'], BOS: ['#007A33', '#BA9653'], BRK: ['#000000', '#FFFFFF'],
+  ATL: ['#E03A3E', '#C1D32F'], BOS: ['#007A33', '#BA9653'], BRK: ['#000000', '#FFFFFF'],
   CHI: ['#CE1141', '#000000'], CHO: ['#1D1160', '#00788C'], CLE: ['#860038', '#FDBB30'],
-  DAL: ['#00538C', '#002B5E'], DEN: ['#0E2240', '#FEC524'], DET: ['#C8102E', '#1D42BA'],
-  GSW: ['#1D428A', '#FFC72C'], HOU: ['#CE1141', '#000000'], IND: ['#002D62', '#FDBB30'],
-  LAC: ['#C8102E', '#1D428A'], LAL: ['#552583', '#FDB927'], MEM: ['#5D76A9', '#12173F'],
-  MIA: ['#98002E', '#F9A01B'], MIL: ['#00471B', '#EEE1C6'], MIN: ['#0C2340', '#236192'],
+  DAL: ['#00538C', '#B8C4CA'], DEN: ['#0E2240', '#FEC524'], DET: ['#C8102E', '#1D42BA'],
+  GSW: ['#1D428A', '#FFC72C'], HOU: ['#CE1141', '#C4CED4'], IND: ['#002D62', '#FDBB30'],
+  LAC: ['#C8102E', '#1D428A'], LAL: ['#552583', '#FDB927'], MEM: ['#5D76A9', '#F5B112'],
+  MIA: ['#98002E', '#F9A01B'], MIL: ['#00471B', '#EEE1C6'], MIN: ['#0C2340', '#78BE20'],
   NOP: ['#0C2340', '#C8102E'], NYK: ['#006BB6', '#F58426'], OKC: ['#007AC1', '#EF3B24'],
   ORL: ['#0077C0', '#C4CED4'], PHI: ['#006BB6', '#ED174C'], PHO: ['#1D1160', '#E56020'],
-  POR: ['#E03A3E', '#000000'], SAC: ['#5A2D81', '#63727A'], SAS: ['#C4CED4', '#000000'],
-  TOR: ['#CE1141', '#000000'], UTA: ['#002B5C', '#00471B'], WAS: ['#002B5C', '#E31837'],
-  SEA: ['#00653A', '#FFC200'], NJN: ['#002A60', '#DA2032'], VAN: ['#00B2A9', '#E43C40'],
-  CHH: ['#1D1160', '#00778B'], WSB: ['#002B5C', '#E31837'], KCK: ['#5A2D81', '#63727A'],
-  SDC: ['#C8102E', '#1D428A'], NOH: ['#0C2340', '#C8102E'], NOK: ['#0C2340', '#C8102E'],
-  BAL: ['#002B5C', '#E31837'], BUF: ['#00471B', '#EEE1C6'], CIN: ['#5A2D81', '#63727A'],
+  POR: ['#E03A3E', '#000000'], SAC: ['#5A2D81', '#63727A'], SAS: ['#000000', '#C4CED4'],
+  TOR: ['#CE1141', '#000000'], UTA: ['#002B5C', '#F9A01B'], WAS: ['#002B5C', '#E31837'],
+  // Franchises in the colors they wore under the name they wore.
+  SEA: ['#00653A', '#FFC200'], NJN: ['#002A60', '#DA2032'], VAN: ['#00B2A9', '#BC7844'],
+  CHH: ['#00778B', '#280071'], WSB: ['#002B5C', '#E31837'], KCK: ['#00509D', '#C8102E'],
+  SDC: ['#E35205', '#00285E'], NOH: ['#00778B', '#1D1160'], NOK: ['#00778B', '#1D1160'],
+  BAL: ['#002B5C', '#E31837'], BUF: ['#F47B20', '#000000'], CIN: ['#C8102E', '#00509D'],
   SFW: ['#1D428A', '#FFC72C'], STL: ['#E03A3E', '#26282A'],
+  CAP: ['#002B5C', '#E31837'], CHA: ['#F9423A', '#00778B'], KCO: ['#00509D', '#C8102E'],
+  NOJ: ['#5A2D81', '#FDB927'], NYN: ['#CE1141', '#002A60'], NYA: ['#CE1141', '#002A60'],
+  CHP: ['#002B5C', '#E31837'],
+  CHZ: ['#002B5C', '#E31837'], FTW: ['#C8102E', '#1D42BA'], MLH: ['#E03A3E', '#26282A'],
+  MNL: ['#552583', '#FDB927'], PHW: ['#1D428A', '#FFC72C'], ROC: ['#C8102E', '#00509D'],
+  SDA: ['#E35205', '#00285E'], SDR: ['#CE1141', '#C4CED4'], SYR: ['#006BB6', '#ED174C'],
+  TRI: ['#E03A3E', '#26282A'],
 };
 
 function teamColors(code) {
   return TEAM_COLORS[code] || ['#2b2b33', '#c9ccd6'];
+}
+
+/* ── PAINTING THE WHEEL IN A CLUB'S COLORS ──────────────────────────────────
+ *
+ * Ported from cfb/engine.js, which solved this for 130-odd schools. The problem
+ * is the same one and it is not "use the hex the club publishes":
+ *
+ *   A dark ground is not a white one. This page is #0d1117. San Antonio's black
+ *   and Brooklyn's black are the club's real primary and they are invisible on
+ *   it, and so is every navy: Denver, Minnesota, Utah, Washington and the two
+ *   Pelicans codes are all within a hair of the page.
+ *
+ *   A neutral second color cannot be drawn as itself either. Chicago's black on
+ *   Chicago's red is a band nobody can see, and Portland's black on Portland's
+ *   red is the same. But San Antonio's silver and Brooklyn's white are the whole
+ *   point of those clubs and have to survive.
+ *
+ * So a color with real hue keeps its hue exactly and gets its saturation floored
+ * and its lightness set; a color with no hue is treated as what it is. A dark
+ * neutral falls back to the club's OWN primary, lifted, which is still the
+ * club's palette and is actually visible. A light neutral stays light, which is
+ * how the Spurs keep their silver.
+ */
+const CHROMA_FLOOR = 20;
+/* How far the band has to stand off the fill it sits on. 2.6:1 is above the 3:1
+   bar for a graphical object read at a glance, which a 1.5px border is not, and
+   below the point where every club's second color has to be lifted into pastel
+   to reach it. Six clubs need the lift; the rest clear it as they are. */
+const ACCENT_MIN = 2.6;
+
+function chromaOf(hex) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16),
+        b = parseInt(hex.slice(5, 7), 16);
+  return Math.max(r, g, b) - Math.min(r, g, b);
+}
+
+function hexToHsl(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  let h = 0, s = 0;
+  if (d) {
+    s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s * 100, l * 100];
+}
+
+function hslToHex(h, s, l) {
+  const S = s / 100, L = l / 100;
+  const c = (1 - Math.abs(2 * L - 1)) * S;
+  const x = c * (1 - Math.abs((((h % 360) + 360) % 360 / 60) % 2 - 1));
+  const m = L - c / 2;
+  const seg = Math.floor((((h % 360) + 360) % 360) / 60);
+  const rgb = [[c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x]][seg];
+  return '#' + rgb.map((v) => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+}
+
+function relativeLuminance(hex) {
+  const ch = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+
+function contrast(a, b) {
+  const hi = Math.max(relativeLuminance(a), relativeLuminance(b));
+  const lo = Math.min(relativeLuminance(a), relativeLuminance(b));
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** One club color, floored into a range that shows. Hue never moves: hue is the
+ *  identity. A color with no hue at all returns a grey at neutralL, because an
+ *  invented hue would be a lie about the club. */
+function wheelColor(hex, minS, targetL, neutralL) {
+  if (chromaOf(hex) < CHROMA_FLOOR) {
+    return hslToHex(0, 0, neutralL === undefined ? targetL : neutralL);
+  }
+  const [h, s] = hexToHsl(hex);
+  return hslToHex(h, Math.min(100, Math.max(s, minS)), targetL);
+}
+
+/**
+ * The pair the reel paints itself with: a fill dark enough to carry white text,
+ * and an accent bright enough to be a band around it.
+ */
+function wheelColors(primaryHex, secondaryHex) {
+  const primary = primaryHex || '#334155';
+  const secondary = secondaryHex || primary;
+  // A neutral primary lands near black rather than at mid grey, because a club
+  // that wears black should read black: San Antonio, Brooklyn.
+  const bg = wheelColor(primary, 55, 26, 13);
+  let accent;
+  if (chromaOf(secondary) < CHROMA_FLOOR) {
+    const l = hexToHsl(secondary)[2];
+    // Light neutral stays light, which is the Spurs' silver and the Nets' white.
+    // Dark neutral would be a band nobody can see, so it becomes the club's own
+    // primary lifted off the fill instead.
+    accent = l >= 50 ? wheelColor(secondary, 70, 55, 86)
+                     : wheelColor(primary, 55, 58, 62);
+  } else {
+    accent = wheelColor(secondary, 70, 55);
+  }
+  /* THEN LIFT IT UNTIL IT IS ACTUALLY VISIBLE, measured against the fill rather
+   * than assumed from the number we just set.
+   *
+   * HSL lightness is not brightness. A violet at lightness 55 is DARKER to the
+   * eye than a teal at 26, so the original Hornets came back as a purple band on
+   * a teal box at 1.16:1, which is one flat color with a seam in it. Vancouver's
+   * bronze on Vancouver's turquoise did the same at 1.57.
+   *
+   * So the hue and the saturation stay exactly where the club put them and only
+   * the lightness climbs, two points at a time, until the band clears the fill.
+   * Every club that already passed is untouched, because the loop does not run. */
+  for (let guard = 0; guard < 24 && contrast(accent, bg) < ACCENT_MIN; guard++) {
+    const [h, s, l] = hexToHsl(accent);
+    if (l >= 92) break;
+    accent = hslToHex(h, s, Math.min(92, l + 2));
+  }
+  // Whichever of white or near-black actually survives on the fill, measured
+  // rather than assumed. A hand-written list of "bright" clubs is wrong for
+  // about a fifth of any league.
+  const on = contrast(bg, '#ffffff') >= contrast(bg, '#0b1220') ? '#ffffff' : '#0b1220';
+  return { bg, accent, on };
+}
+
+/** The whole palette for one club code, ready to hand to CSS. */
+function clubSkin(code) {
+  const [primary, secondary] = teamColors(code);
+  const w = wheelColors(primary, secondary);
+  return { primary, secondary, bg: w.bg, accent: w.accent, on: w.on };
 }
 
 /* REAL FRANCHISE DATA, when the page has loaded it.
@@ -1717,8 +1855,91 @@ function teamColors(code) {
  * which is what lets verify.mjs and the fixtures run without one.
  */
 let TEAMS = null;
+/* `${code}|${season}` for every club that won the title THAT season, under the
+   code it wore at the time. Built once, at setTeams. See titlesByCode. */
+let TITLE_AT = null;
+/* Every title the whole franchise has won, reachable from any of its codes. */
+let LINEAGE_TITLES = null;
+
 function setTeams(json) {
   TEAMS = (json && json.teams) || null;
+  const built = titlesByCode(TEAMS);
+  TITLE_AT = built.at;
+  LINEAGE_TITLES = built.lineage;
+}
+
+/* ── A TITLE BELONGS TO THE CLUB THAT WORE THE NAME ────────────────────────
+ *
+ * teams.json files every championship under the franchise's CURRENT code,
+ * because that is how a franchise table is written: one row of honours per
+ * club as it exists today. Basketball-Reference does not name a season that
+ * way, and neither does anybody else.
+ *
+ * So `WAS` carries 1978 and the 1978 roster is filed under `WSB`. `OKC`
+ * carries 1979 and the 1979 roster is Seattle. Both of those rings simply did
+ * not join to anybody, and neither did anything fail: the roster note for the
+ * 1978 Bullets read "founded 1974 · later the Washington Wizards" and never
+ * mentioned that they were the reigning champions of the world.
+ *
+ * This walks each franchise's aliases and hands each title year to the record
+ * whose own lifetime contains it, preferring the NARROWEST window when two
+ * overlap, since the alias is always more specific than the modern row it
+ * eventually became.
+ */
+function titlesByCode(teams) {
+  const at = Object.create(null), lineage = Object.create(null);
+  if (!teams) return { at, lineage };
+
+  /* Follow `became` to the row the franchise is today.
+   *
+   * STOPS AT THE LAST ROW THAT EXISTS, never at the name of one that does not.
+   * A `became` pointing at a code nobody wrote is a typo in a hand-maintained
+   * table, and walking into it would file the franchise under a phantom root
+   * whose titles array is empty, dropping every championship it has won without
+   * anything failing. Stopping short keeps them on the row that listed them.
+   *
+   * The hop limit is for a cycle in the same hand-maintained table, which would
+   * otherwise hang the boot. */
+  const rootOf = (code) => {
+    let c = code;
+    for (let hop = 0; hop < 12; hop++) {
+      const t = teams[c];
+      if (!t || !t.became || t.became === c || !teams[t.became]) return c;
+      c = t.became;
+    }
+    return c;
+  };
+
+  const family = Object.create(null);
+  for (const code of Object.keys(teams)) {
+    const root = rootOf(code);
+    (family[root] || (family[root] = [])).push(code);
+  }
+
+  for (const root of Object.keys(family)) {
+    const titles = (teams[root] && teams[root].titles) || [];
+    for (const code of family[root]) lineage[code] = titles;
+    for (const year of titles) {
+      let best = root, bestWidth = Infinity;
+      for (const code of family[root]) {
+        const t = teams[code];
+        if (!t) continue;
+        const from = t.founded, to = t.folded;
+        if (typeof from === 'number' && year < from) continue;
+        if (typeof to === 'number' && year > to) continue;
+        const width = (typeof to === 'number' ? to : 9999) - (typeof from === 'number' ? from : 0);
+        if (width < bestWidth) { best = code; bestWidth = width; }
+      }
+      at[`${best}|${year}`] = true;
+    }
+  }
+  return { at, lineage };
+}
+
+/** Did this club, under this code, win the championship in this season? */
+function wonTitle(code, season) {
+  if (!TITLE_AT) return false;
+  return TITLE_AT[`${code}|${season}`] === true;
 }
 
 function team(code) {
@@ -1747,10 +1968,15 @@ function teamNote(code, season) {
   const t = team(code);
   const bits = [];
   if (t.founded) bits.push(`founded ${t.founded}`);
-  if (t.titles && t.titles.length) {
+  /* THE FRANCHISE'S TITLES, not the row's. A club that has since been renamed
+     carries an empty titles array, because teams.json files the honours under
+     the modern code, so the 1978 Bullets used to be described as a club that
+     had never won anything in the season they won it. */
+  const owned = (LINEAGE_TITLES && LINEAGE_TITLES[code]) || t.titles;
+  if (owned && owned.length) {
     /* Titles won BY this season, because a 1987 roster has not won the ones
        that came later and saying otherwise is just wrong. */
-    const won = typeof season === 'number' ? t.titles.filter(y => y <= season) : t.titles;
+    const won = typeof season === 'number' ? owned.filter(y => y <= season) : owned;
     if (won.length) {
       bits.push(won.length === 1 ? '1 championship' : `${won.length} championships`);
       if (won.length <= 3) bits.push(`(${won.join(', ')})`);
@@ -1778,7 +2004,6 @@ const publicAPI = {
   pairLinks, resolveChemistry, setCuratedChemistry,
   rosterOffense, rosterDefense, rosterFit, detectSystem, minutesShare,
   rosterProfile, spacingIndex, paceAdjust, eraOf, ERA_CONTEXT, SYSTEMS, FIT,
-  playerTags,
   teamWinPct, overallRating, nationalRank, pythagorean,
   buildOpponentPool, generateSchedule, gameMeans,
   resolveGame, playoffSeries, generatePlayoffs, playRun, homeAdvantage,
@@ -1787,7 +2012,8 @@ const publicAPI = {
   respinCost, respinFees,
   coachReport, lastNameOf,
   TEAM_NAMES, TEAM_COLORS, teamColors, teamName,
-  setTeams, team, teamDisplay, teamNote,
+  wheelColors, clubSkin, contrast, chromaOf, hexToHsl, hslToHex,
+  setTeams, team, teamDisplay, teamNote, wonTitle, titlesByCode,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

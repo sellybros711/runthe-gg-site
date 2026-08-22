@@ -30,6 +30,8 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;overscroll-behavior-y:none;}
+  html{scrollbar-gutter:stable;}   /* the page does not shift when a scrollbar comes and goes */
+  .pico{vertical-align:-4px;image-rendering:pixelated;image-rendering:crisp-edges;}
   body{background:var(--bg); color:var(--text); font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.45;}
   body::before{content:"";position:fixed;inset:0;z-index:-1;background:var(--pagebg);pointer-events:none;}
   .mono{font-family:var(--mono); font-variant-numeric:tabular-nums;}
@@ -235,6 +237,7 @@
   .fsub{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:3px;}
   .fmid{text-align:center;}
   .fstip{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);font-weight:800;}
+  .frules{font-size:10px;color:var(--text-faint);margin:2px 0 4px;line-height:1.25;max-width:34ch;margin-left:auto;margin-right:auto;}
   .fclock{font-family:var(--display);font-size:24px;color:var(--brandred-bright);line-height:1;}
 
   .momwrap{margin-bottom:10px;}
@@ -322,6 +325,10 @@
   @keyframes logA{to{opacity:1}}
   .flog b{color:var(--cream);} .flog .hi{color:var(--gold);font-weight:800;}
   .flog .bad{color:#f0907f;}
+  /* the opener of a segment: a stage direction, not a mumbled aside */
+  .flog .open{color:var(--cream);font-family:var(--display);font-size:15px;letter-spacing:.03em;
+    text-transform:uppercase;padding:3px 0 7px;border-bottom:1px solid rgba(224,179,65,.35);margin-bottom:6px;}
+  .flog .open::before{content:"● ";color:var(--brandred);}
   .fdec{display:none;}
   .fdec.on{display:block;background:linear-gradient(180deg,rgba(198,57,44,.20),rgba(0,0,0,.25));border:1.5px solid var(--brandred);border-radius:14px;padding:14px;animation:decA .3s ease-out;}
   @keyframes decA{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
@@ -370,6 +377,8 @@
   .bs-vs{font-size:14px;color:var(--text);} .bs-vs b{color:var(--cream);}
   .bs-pos{font-size:11.5px;color:var(--text-dim);margin-top:3px;}
   .bs-pos.me{color:var(--gold);font-weight:800;} .bs-pos.op{color:var(--text-faint);}
+  .bs-rules{font-size:12px;color:var(--text);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.04);border-left:2px solid rgba(224,179,65,.55);border-radius:3px;}
+  .bs-rules b{color:var(--cream);letter-spacing:.12em;font-size:10px;text-transform:uppercase;}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -434,6 +443,7 @@
   .rc-stat{background:rgba(0,0,0,.30);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-dim);}
   .rc-stat b{color:var(--cream);font-family:var(--mono);}
   .rc-go{margin-left:auto;align-self:center;color:var(--gold);font-weight:800;font-size:12px;}
+  .rc-saved{font-size:10.5px;color:var(--text-faint);margin-top:9px;text-align:right;font-family:var(--mono);}
 
   /* ---- start screen: pick how you want to be made ---- */
   .starthead{text-align:center;margin:10px 0 4px;}
@@ -498,15 +508,19 @@
   .cm-tick{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,.3);}
   .cm-bar b{position:absolute;top:-3px;width:6px;height:19px;border-radius:3px;background:var(--cream);
     box-shadow:0 0 8px rgba(0,0,0,.9);margin-left:-3px;transition:left .45s ease;left:50%;}
-  .arena.promo{height:310px;}
+  /* the promo arena wraps the ring AND a bubble zone at the top, so nothing a
+     wrestler says ever sits across their face */
+  .arena.promo{position:relative;height:400px;padding-top:120px;}
+  .arena.promo .ringback,.arena.promo .ringfront{height:280px;}
+  .arena.promo .fighter{width:210px;margin-left:-105px;bottom:9%;}
   .bubble{position:absolute;max-width:44%;background:#F4E8DB;color:#1a1512;border-radius:13px;
     padding:9px 13px;font-size:13.5px;line-height:1.45;font-weight:600;z-index:6;
     box-shadow:0 6px 16px rgba(0,0,0,.6);opacity:0;transform:translateY(8px) scale(.94);
     transition:opacity .18s,transform .18s;pointer-events:none;}
   .bubble.show{opacity:1;transform:none;}
   .bubble::after{content:"";position:absolute;bottom:-8px;border:9px solid transparent;border-top-color:#F4E8DB;border-bottom:0;}
-  .bubble.me{left:4%;top:3%;} .bubble.me::after{left:26px;}
-  .bubble.opp{right:4%;top:3%;background:#e6d2c6;} .bubble.opp::after{right:26px;border-top-color:#e6d2c6;}
+  .bubble.me{left:4%;top:8px;} .bubble.me::after{left:26px;}
+  .bubble.opp{right:4%;top:8px;background:#e6d2c6;} .bubble.opp::after{right:26px;border-top-color:#e6d2c6;}
   .bubble .who{display:block;font-family:var(--display);font-size:10.5px;letter-spacing:.09em;
     text-transform:uppercase;color:#8a5a2b;margin-bottom:2px;}
   .crowdcall{position:absolute;left:0;right:0;top:44%;text-align:center;font-family:var(--display);
@@ -521,7 +535,41 @@
   .k-heel{color:#f0907f;} .k-face{color:#5bb083;} .k-cool{color:#6aa7c4;} .k-crowd{color:#e0b341;}
   .pmwrite{display:flex;gap:8px;margin-top:2px;}
   .pmwrite input{flex:1;}
-  @media(max-width:640px){ .arena.promo{height:262px;} .bubble{max-width:56%;font-size:12px;padding:7px 9px;} }
+  /* chip picker */
+  .chipgrid{display:grid;gap:8px;margin-bottom:12px;}
+  .chip{background:var(--panel);border:1.5px solid var(--line);border-radius:11px;padding:9px 12px;cursor:pointer;
+    transition:.13s;position:relative;}
+  .chip:hover{border-color:rgba(224,179,65,.5);transform:translateY(-1px);}
+  .chip.on{border-color:var(--gold);background:rgba(224,179,65,.11);}
+  .chip.on::before{content:"✓";position:absolute;top:6px;right:9px;color:var(--gold);font-weight:900;}
+  .chip.off{opacity:.35;cursor:default;} .chip.off:hover{transform:none;border-color:var(--line);}
+  .chip .ch-k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:3px;}
+  .chip .ch-t{font-size:13.5px;color:var(--cream);line-height:1.45;font-weight:500;}
+  .pmpreview{border:1px dashed var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;background:rgba(0,0,0,.24);
+    transition:.15s;}
+  .pmpreview.on{border-color:var(--gold);border-style:solid;background:linear-gradient(180deg,rgba(224,179,65,.10),rgba(0,0,0,.28));}
+  .pv-k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin-bottom:4px;}
+  .pmpreview.on .pv-k{color:var(--gold);}
+  .pv-t{font-size:14px;color:var(--text);line-height:1.55;font-style:italic;}
+  /* the office directive at the top of a segment */
+  .pmdir{border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:10px 13px;
+    background:linear-gradient(180deg,rgba(224,179,65,.12),rgba(0,0,0,.22));}
+  .pd-k{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  .pd-t{font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;line-height:1.1;margin:3px 0 2px;}
+  .pd-d{font-size:13px;color:var(--text-dim);}
+  .pms-comply{border-color:rgba(91,176,131,.5);} .pms-wrinkle{border-color:rgba(224,179,65,.5);} .pms-off{border-color:rgba(198,57,44,.55);}
+  /* the beat header, top of every choice screen */
+  .pmphase{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    padding:9px 12px;border:1px solid var(--line);border-radius:11px;margin-bottom:10px;background:rgba(0,0,0,.24);}
+  .pp-k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:800;}
+  .pp-h{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+  .pp-d{font-size:11.5px;color:var(--text-dim);text-align:right;line-height:1.5;}
+  .pp-s{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;font-size:9.5px;letter-spacing:.14em;
+    text-transform:uppercase;font-weight:800;border:1px solid var(--line);}
+  .pp-s.pms-comply{color:var(--green);border-color:rgba(91,176,131,.5);}
+  .pp-s.pms-wrinkle{color:var(--gold);border-color:rgba(224,179,65,.5);}
+  .pp-s.pms-off{color:#f0907f;border-color:rgba(198,57,44,.55);}
+  @media(max-width:640px){ .arena.promo{height:334px;padding-top:104px;} .arena.promo .ringback,.arena.promo .ringfront{height:230px;} .arena.promo .fighter{width:172px;margin-left:-86px;} .bubble{max-width:60%;font-size:12px;padding:7px 9px;} }
 
   /* ---- the week's decision, made legible ---- */
   .advice{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:12px;margin-bottom:14px;
@@ -1038,6 +1086,7 @@
     </div>
     <div class="fmid">
       <div class="fstip" id="fStip">SINGLES MATCH</div>
+      <div class="frules" id="fRules"></div>
       <div class="fclock" id="fClock">0:00</div>
       <div class="fphase" id="fPhase">BELL</div>
     </div>
@@ -1116,13 +1165,13 @@
 <!-- ============ LOCKER ============ -->
 <div class="screen" id="s-locker">
   <div class="gnav" data-scr="locker"></div>
-  <h2>Locker Room <span class="sub2">equip what you own · locked items come from the Pro Shop</span></h2>
+  <h2>Locker Room <span class="sub2">equip what you own · locked items come from the Merch Stand</span></h2>
   <div class="custom-wrap">
     <div>
       <div class="avwrap big" id="lockAv"></div>
       <div class="row" style="margin-top:10px;justify-content:center;">
         <button class="ghost" onclick="randomizeLook()">🎲 Randomize</button>
-        <button class="ghost" onclick="go('shop')">Pro Shop →</button>
+        <button class="ghost" onclick="go('shop')">Merch Stand →</button>
       </div>
     </div>
     <div id="lockBody"></div>
@@ -1132,7 +1181,7 @@
 <!-- ============ SHOP ============ -->
 <div class="screen" id="s-shop">
   <div class="gnav" data-scr="shop"></div>
-  <h2>Pro Shop <span class="sub2">cosmetics only: skills are earned, never sold</span></h2>
+  <h2>Merch Stand <span class="sub2">cosmetics only: skills are earned, never sold</span></h2>
   <div id="shopBody"></div>
 </div>
 
@@ -1578,7 +1627,8 @@ function showMoments(){
   const back=$('momentBack'); if(back.classList.contains('open')) return;
   if($('ceremonyBack').classList.contains('open')) return;
   const m=MOMENT_Q[0];
-  $('moIco').textContent=m.ico;
+  // pixel icons come through as raw SVG; stock emojis stay as text
+  if(/^</.test(m.ico)) $('moIco').innerHTML=m.ico; else $('moIco').textContent=m.ico;
   $('moKick').textContent=m.kick||'Career Milestone';
   $('moTitle').innerHTML=m.txt;
   const s=$('moSub'); s.innerHTML=m.sub||''; s.style.display=m.sub?'block':'none';
@@ -1695,18 +1745,18 @@ function pressQuote(o,res,s){
 }
 function checkMilestones(res){
   const c=G.car, w=G.w, n=c.rec.w+c.rec.l+c.rec.d;
-  if(c.rec.w===1) award('First professional victory.','✊');
-  [10,50,100,250,500].forEach(m=>{ if(n===m) award(`${m} professional matches.`,'📅'); });
+  if(c.rec.w===1) award('First professional victory.',pico('star',36));
+  [10,50,100,250,500].forEach(m=>{ if(n===m) award(`${m} professional matches.`,pico('clipboard',36)); });
   if(res&&res.quality>=90&&res.quality>(c.bestMatch||89)){
     c.bestMatch=res.quality;
-    award(`A ${res.quality}-rated classic against ${res.oppName||'a worthy opponent'}.`,'⭐'); }
-  if(c.reigns.length===1&&c.title) award(`First championship: ${c.title}.`,'🏆');
-  if((c.defenses||0)>=5) award(`Five straight defences of the ${c.title}.`,'🛡️');
-  if(c.streak>=10) award('A ten-match winning streak.','🔥');
-  if(c.earnings>=250000) award('A quarter of a million earned in the business.','💰');
-  if(c.pop>=90) award('A genuine household name.','📺');
-  if(promoTierIdx()>=3) award('Signed to the biggest company on earth.','🌍');
-  if(c.year>=10) award('Ten years in the business.','⏳');
+    award(`A ${res.quality}-rated classic against ${res.oppName||'a worthy opponent'}.`,pico('starBig',36)); }
+  if(c.reigns.length===1&&c.title) award(`First championship: ${c.title}.`,pico('trophy',36));
+  if((c.defenses||0)>=5) award(`Five straight defences of the ${c.title}.`,pico('shield',36));
+  if(c.streak>=10) award('A ten-match winning streak.',pico('fire',36));
+  if(c.earnings>=250000) award('A quarter of a million earned in the business.',pico('money',36));
+  if(c.pop>=90) award('A genuine household name.',pico('starBig',36));
+  if(promoTierIdx()>=3) award('Signed to the biggest company on earth.',pico('trophy',36));
+  if(c.year>=10) award('Ten years in the business.',pico('clipboard',36));
 }
 
 let G=null, RNG=1;
@@ -1955,10 +2005,31 @@ function moveById(id){ return MOVES.find(m=>m.id===id); }
 function catById(id){ return MCATS.find(c=>c.id===id); }
 function cosmById(id){ return COSM.find(c=>c.id===id); }
 
-/* ---------- persistence ---------- */
-function save(){ if(G) try{ localStorage.setItem(SAVE,JSON.stringify(G)); }catch(e){} }
-function load(){ try{ const r=localStorage.getItem(SAVE); if(!r)return null; const o=JSON.parse(r);
-  return (o&&o.schema===SCHEMA)? migrate(o) : null; }catch(e){ return null; } }
+/* ---------- persistence ----------
+   save() is called at every state transition (see go(), advanceWeek()
+   and every button that mutates G), so under normal use disk is
+   current. The listeners below are the belt-and-braces case: on any
+   path where the tab is closed or backgrounded before the next save
+   call, the current state still hits localStorage. Without them, a
+   user who closes the tab in the middle of a screen transition can
+   come back to a slightly stale career. */
+function save(){
+  if(!G) return;
+  try{
+    G.savedAt = Date.now();
+    localStorage.setItem(SAVE,JSON.stringify(G));
+  }catch(e){ console.warn('RTR: save failed',e); }
+}
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE); if(!r) return null;
+    const o=JSON.parse(r);
+    return (o&&o.schema===SCHEMA)? migrate(o) : null;
+  }catch(e){ console.warn('RTR: load failed',e); return null; }
+}
+addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') save(); });
+addEventListener('pagehide', save);
+addEventListener('beforeunload', save);
 // bring a career started before the business systems existed up to date
 function migrate(o){
   const c=o.car, w=o.w; if(!c||!w) return o;
@@ -1982,12 +2053,82 @@ function migrate(o){
   return o;
 }
 function tierOfRep(rep){ let id='indie'; TIERS.forEach(t=>{ if((rep||0)>=t.rep) id=t.id; }); return id; }
+function savedAgo(ts){
+  if(!ts) return '';
+  const s=Math.max(0,Math.floor((Date.now()-ts)/1000));
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+' minute'+(s>=120?'s':'')+' ago';
+  if(s<86400){ const h=Math.floor(s/3600); return h+' hour'+(h>1?'s':'')+' ago'; }
+  const d=Math.floor(s/86400); return d+' day'+(d>1?'s':'')+' ago';
+}
 
 /* ============================================================
    PIXEL WRESTLER RENDERER  (pure SVG rects, no assets)
    ============================================================ */const DEFLOOK={ skin:'#e8bd95', hair:'#4a2f1b', gear:'#C6392C', trim:'#F4E8DB',
   hairStyle:'short', face:'none', mask:'none', attire:'trunks', boots:'tall', acc:'wrist', pattern:'solid', build:'athletic', tattoo:'none', aura:'none' };
 const OUTLINE='#120f0f';
+
+/* ============================================================
+   PIXEL ICONS
+   ------------------------------------------------------------
+   Stock system emojis look like phone chrome next to the pixel
+   wrestlers. These are drawn from the same 1-pixel-per-square
+   language: a 16x16 grid, coloured rects, outlined for legibility
+   at any size. Not a font, so they hold their colour and their
+   pixels crisp when the browser scales them up.
+
+   `pico(id, size?)` returns an inline SVG that renders at `size`
+   px (default 22), pixelated. Fall back to the emoji if an id
+   the code asks for is not in the table.
+   ============================================================ */
+const PICO={
+  // ---- outlined helper: box + soft shadow (all icons share the same feel)
+  _wrap:(w,inner)=>`<svg class="pico" viewBox="0 0 16 16" width="${w}" height="${w}" shape-rendering="crispEdges" aria-hidden="true">${inner}</svg>`,
+  trophy:  `<rect x="4" y="2" width="8" height="6" fill="#e0b341"/><rect x="4" y="2" width="8" height="1" fill="#f4c95b"/><rect x="4" y="7" width="8" height="1" fill="#a37518"/><rect x="2" y="3" width="2" height="3" fill="#a37518"/><rect x="12" y="3" width="2" height="3" fill="#a37518"/><rect x="6" y="8" width="4" height="2" fill="#c69732"/><rect x="5" y="10" width="6" height="1" fill="#a37518"/><rect x="4" y="11" width="8" height="2" fill="#e0b341"/><rect x="3" y="13" width="10" height="1" fill="#8a5a1a"/>`,
+  crown:   `<rect x="2" y="6" width="12" height="1" fill="#8a5a1a"/><rect x="2" y="7" width="12" height="4" fill="#e0b341"/><rect x="2" y="11" width="12" height="1" fill="#a37518"/><rect x="2" y="3" width="2" height="4" fill="#e0b341"/><rect x="7" y="1" width="2" height="6" fill="#e0b341"/><rect x="12" y="3" width="2" height="4" fill="#e0b341"/><rect x="3" y="2" width="1" height="1" fill="#c6392c"/><rect x="7" y="0" width="2" height="1" fill="#c6392c"/><rect x="12" y="2" width="1" height="1" fill="#c6392c"/><rect x="4" y="9" width="1" height="1" fill="#c6392c"/><rect x="8" y="9" width="1" height="1" fill="#c6392c"/><rect x="11" y="9" width="1" height="1" fill="#c6392c"/>`,
+  fire:    `<rect x="8" y="0" width="1" height="1" fill="#e07b39"/><rect x="8" y="1" width="1" height="2" fill="#f4c95b"/><rect x="7" y="3" width="3" height="1" fill="#f4c95b"/><rect x="6" y="4" width="1" height="1" fill="#e07b39"/><rect x="7" y="4" width="3" height="1" fill="#e0b341"/><rect x="10" y="4" width="1" height="1" fill="#e07b39"/><rect x="5" y="5" width="2" height="1" fill="#c6392c"/><rect x="7" y="5" width="3" height="1" fill="#f4c95b"/><rect x="10" y="5" width="2" height="1" fill="#c6392c"/><rect x="4" y="6" width="2" height="1" fill="#c6392c"/><rect x="6" y="6" width="4" height="1" fill="#f4c95b"/><rect x="10" y="6" width="2" height="1" fill="#c6392c"/><rect x="4" y="7" width="2" height="2" fill="#c6392c"/><rect x="6" y="7" width="4" height="2" fill="#f4c95b"/><rect x="10" y="7" width="2" height="2" fill="#c6392c"/><rect x="5" y="9" width="1" height="1" fill="#c6392c"/><rect x="6" y="9" width="4" height="1" fill="#f4c95b"/><rect x="10" y="9" width="1" height="1" fill="#c6392c"/><rect x="5" y="10" width="6" height="1" fill="#c6392c"/><rect x="6" y="11" width="4" height="1" fill="#8a1c1c"/><rect x="7" y="12" width="2" height="1" fill="#5d1210"/><rect x="3" y="7" width="1" height="2" fill="#e07b39"/><rect x="12" y="7" width="1" height="2" fill="#e07b39"/>`,
+  medal:   `<rect x="3" y="0" width="2" height="1" fill="#3f7fbf"/><rect x="3" y="1" width="2" height="1" fill="#3f7fbf"/><rect x="4" y="2" width="1" height="1" fill="#3f7fbf"/><rect x="5" y="3" width="1" height="1" fill="#3f7fbf"/><rect x="6" y="4" width="1" height="1" fill="#2a5a80"/><rect x="11" y="0" width="2" height="1" fill="#c6392c"/><rect x="11" y="1" width="2" height="1" fill="#c6392c"/><rect x="11" y="2" width="1" height="1" fill="#c6392c"/><rect x="10" y="3" width="1" height="1" fill="#c6392c"/><rect x="9" y="4" width="1" height="1" fill="#8a1c1c"/><rect x="6" y="4" width="4" height="1" fill="#a37518"/><rect x="5" y="5" width="6" height="1" fill="#e0b341"/><rect x="4" y="6" width="8" height="6" fill="#e0b341"/><rect x="5" y="12" width="6" height="1" fill="#a37518"/><rect x="4" y="6" width="8" height="1" fill="#f4c95b"/><rect x="4" y="11" width="8" height="1" fill="#a37518"/><rect x="6" y="7" width="4" height="4" fill="#c69732"/><rect x="7" y="6" width="2" height="6" fill="#c6392c"/><rect x="5" y="8" width="6" height="2" fill="#c6392c"/>`,
+  swap:    `<rect x="2" y="4" width="10" height="1" fill="#e0b341"/><rect x="10" y="2" width="1" height="1" fill="#e0b341"/><rect x="11" y="3" width="1" height="1" fill="#e0b341"/><rect x="11" y="5" width="1" height="1" fill="#e0b341"/><rect x="10" y="6" width="1" height="1" fill="#e0b341"/><rect x="4" y="11" width="10" height="1" fill="#e0b341"/><rect x="5" y="9" width="1" height="1" fill="#e0b341"/><rect x="4" y="10" width="1" height="1" fill="#e0b341"/><rect x="4" y="12" width="1" height="1" fill="#e0b341"/><rect x="5" y="13" width="1" height="1" fill="#e0b341"/>`,
+  shield:  `<rect x="4" y="2" width="8" height="1" fill="#8a5a1a"/><rect x="3" y="3" width="10" height="1" fill="#c6392c"/><rect x="3" y="4" width="10" height="6" fill="#c6392c"/><rect x="4" y="10" width="8" height="1" fill="#8a1c1c"/><rect x="5" y="11" width="6" height="1" fill="#8a1c1c"/><rect x="6" y="12" width="4" height="1" fill="#5d1210"/><rect x="7" y="13" width="2" height="1" fill="#5d1210"/><rect x="6" y="5" width="4" height="4" fill="#F4E8DB"/><rect x="7" y="6" width="2" height="2" fill="#c6392c"/>`,
+  knife:   `<rect x="3" y="2" width="1" height="1" fill="#8a5a1a"/><rect x="4" y="3" width="1" height="1" fill="#8a5a1a"/><rect x="5" y="4" width="1" height="1" fill="#c8ced4"/><rect x="6" y="5" width="1" height="1" fill="#c8ced4"/><rect x="7" y="6" width="1" height="1" fill="#c8ced4"/><rect x="8" y="7" width="1" height="1" fill="#c8ced4"/><rect x="9" y="8" width="1" height="1" fill="#c8ced4"/><rect x="10" y="9" width="1" height="1" fill="#c8ced4"/><rect x="11" y="10" width="2" height="2" fill="#8a5a1a"/><rect x="12" y="12" width="2" height="2" fill="#5d3a22"/><rect x="4" y="4" width="1" height="1" fill="#c8ced4"/><rect x="5" y="5" width="1" height="1" fill="#c8ced4"/><rect x="6" y="6" width="1" height="1" fill="#c8ced4"/><rect x="7" y="7" width="1" height="1" fill="#c8ced4"/><rect x="8" y="8" width="1" height="1" fill="#c8ced4"/><rect x="9" y="9" width="1" height="1" fill="#c8ced4"/><rect x="10" y="10" width="1" height="1" fill="#c8ced4"/><rect x="3" y="3" width="1" height="1" fill="#c6392c"/>`,
+  cross:   `<rect x="4" y="1" width="8" height="14" fill="#F4E8DB"/><rect x="1" y="4" width="14" height="8" fill="#F4E8DB"/><rect x="5" y="2" width="6" height="12" fill="#c6392c"/><rect x="2" y="5" width="12" height="6" fill="#c6392c"/>`,
+  graphUp: `<rect x="2" y="13" width="12" height="1" fill="#8a8177"/><rect x="2" y="2" width="1" height="12" fill="#8a8177"/><rect x="4" y="10" width="2" height="3" fill="#5bb083"/><rect x="7" y="7" width="2" height="6" fill="#5bb083"/><rect x="10" y="4" width="2" height="9" fill="#5bb083"/><rect x="11" y="2" width="3" height="1" fill="#5bb083"/><rect x="13" y="3" width="1" height="1" fill="#5bb083"/>`,
+  graphDown:`<rect x="2" y="13" width="12" height="1" fill="#8a8177"/><rect x="2" y="2" width="1" height="12" fill="#8a8177"/><rect x="4" y="4" width="2" height="9" fill="#f0907f"/><rect x="7" y="7" width="2" height="6" fill="#f0907f"/><rect x="10" y="10" width="2" height="3" fill="#f0907f"/><rect x="11" y="12" width="3" height="1" fill="#f0907f"/><rect x="13" y="11" width="1" height="1" fill="#f0907f"/>`,
+  mask:    `<rect x="3" y="4" width="10" height="1" fill="#8a5a1a"/><rect x="2" y="5" width="12" height="6" fill="#e0b341"/><rect x="2" y="11" width="12" height="1" fill="#a37518"/><rect x="3" y="12" width="2" height="1" fill="#8a5a1a"/><rect x="11" y="12" width="2" height="1" fill="#8a5a1a"/><rect x="4" y="7" width="3" height="2" fill="#120f0f"/><rect x="9" y="7" width="3" height="2" fill="#120f0f"/><rect x="7" y="9" width="2" height="1" fill="#8a5a1a"/>`,
+  dice:    `<rect x="2" y="2" width="12" height="12" fill="#F4E8DB"/><rect x="2" y="2" width="12" height="1" fill="#c8bfa8"/><rect x="2" y="13" width="12" height="1" fill="#8a8177"/><rect x="4" y="4" width="2" height="2" fill="#c6392c"/><rect x="10" y="4" width="2" height="2" fill="#c6392c"/><rect x="7" y="7" width="2" height="2" fill="#c6392c"/><rect x="4" y="10" width="2" height="2" fill="#c6392c"/><rect x="10" y="10" width="2" height="2" fill="#c6392c"/>`,
+  star:    `<rect x="7" y="1" width="2" height="2" fill="#e0b341"/><rect x="6" y="3" width="4" height="1" fill="#e0b341"/><rect x="5" y="4" width="6" height="2" fill="#e0b341"/><rect x="2" y="6" width="12" height="2" fill="#e0b341"/><rect x="3" y="8" width="10" height="2" fill="#e0b341"/><rect x="4" y="10" width="3" height="2" fill="#e0b341"/><rect x="9" y="10" width="3" height="2" fill="#e0b341"/><rect x="3" y="12" width="3" height="2" fill="#e0b341"/><rect x="10" y="12" width="3" height="2" fill="#e0b341"/><rect x="6" y="6" width="4" height="3" fill="#f4c95b"/>`,
+  money:   `<rect x="5" y="2" width="6" height="1" fill="#8a5a1a"/><rect x="4" y="3" width="8" height="1" fill="#a37518"/><rect x="3" y="4" width="10" height="10" fill="#5bb083"/><rect x="3" y="4" width="10" height="1" fill="#7fc899"/><rect x="3" y="13" width="10" height="1" fill="#2f7a4a"/><rect x="7" y="6" width="2" height="1" fill="#F4E8DB"/><rect x="6" y="7" width="4" height="1" fill="#F4E8DB"/><rect x="7" y="8" width="2" height="1" fill="#F4E8DB"/><rect x="6" y="9" width="4" height="1" fill="#F4E8DB"/><rect x="7" y="10" width="2" height="1" fill="#F4E8DB"/><rect x="7" y="5" width="2" height="1" fill="#F4E8DB"/><rect x="7" y="11" width="2" height="1" fill="#F4E8DB"/>`,
+  dumbbell:`<rect x="1" y="6" width="2" height="4" fill="#8a8177"/><rect x="3" y="4" width="2" height="8" fill="#5a6675"/><rect x="5" y="7" width="6" height="2" fill="#8a8177"/><rect x="11" y="4" width="2" height="8" fill="#5a6675"/><rect x="13" y="6" width="2" height="4" fill="#8a8177"/>`,
+  bed:     `<rect x="1" y="3" width="2" height="7" fill="#5d3a22"/><rect x="1" y="3" width="2" height="1" fill="#8a5533"/><rect x="3" y="5" width="4" height="3" fill="#F4E8DB"/><rect x="3" y="5" width="4" height="1" fill="#c8bfa8"/><rect x="3" y="7" width="4" height="1" fill="#c8bfa8"/><rect x="7" y="6" width="8" height="3" fill="#c6392c"/><rect x="7" y="6" width="8" height="1" fill="#e07b39"/><rect x="7" y="8" width="8" height="1" fill="#8a1c1c"/><rect x="3" y="8" width="12" height="2" fill="#a06943"/><rect x="3" y="9" width="12" height="1" fill="#5d3a22"/><rect x="3" y="10" width="1" height="3" fill="#5d3a22"/><rect x="14" y="10" width="1" height="3" fill="#5d3a22"/>`,
+  handshake:`<rect x="0" y="12" width="2" height="3" fill="#3f7fbf"/><rect x="0" y="12" width="2" height="1" fill="#5a9dd8"/><rect x="1" y="10" width="2" height="3" fill="#3f7fbf"/><rect x="2" y="9" width="2" height="2" fill="#3f7fbf"/><rect x="14" y="12" width="2" height="3" fill="#8a1c1c"/><rect x="14" y="12" width="2" height="1" fill="#c6392c"/><rect x="13" y="10" width="2" height="3" fill="#8a1c1c"/><rect x="12" y="9" width="2" height="2" fill="#8a1c1c"/><rect x="3" y="8" width="4" height="2" fill="#d29b6e"/><rect x="3" y="8" width="4" height="1" fill="#e8bd95"/><rect x="9" y="8" width="4" height="2" fill="#e8bd95"/><rect x="9" y="8" width="4" height="1" fill="#f0d5b0"/><rect x="4" y="5" width="4" height="4" fill="#d29b6e"/><rect x="4" y="5" width="4" height="1" fill="#e8bd95"/><rect x="8" y="5" width="4" height="4" fill="#e8bd95"/><rect x="8" y="5" width="4" height="1" fill="#f0d5b0"/><rect x="7" y="5" width="1" height="4" fill="#8a5533"/><rect x="5" y="3" width="2" height="2" fill="#d29b6e"/><rect x="5" y="3" width="2" height="1" fill="#e8bd95"/><rect x="9" y="3" width="2" height="2" fill="#e8bd95"/><rect x="9" y="3" width="2" height="1" fill="#f0d5b0"/><rect x="4" y="6" width="1" height="1" fill="#8a5533"/><rect x="11" y="6" width="1" height="1" fill="#a06943"/><rect x="4" y="8" width="1" height="1" fill="#8a5533"/><rect x="11" y="8" width="1" height="1" fill="#a06943"/>`,
+  microphone:`<rect x="6" y="1" width="4" height="6" fill="#8a8177"/><rect x="6" y="1" width="4" height="1" fill="#c8ced4"/><rect x="5" y="2" width="1" height="4" fill="#5a6675"/><rect x="10" y="2" width="1" height="4" fill="#5a6675"/><rect x="6" y="7" width="4" height="1" fill="#c6392c"/><rect x="7" y="8" width="2" height="4" fill="#5a6675"/><rect x="5" y="12" width="6" height="1" fill="#5a6675"/><rect x="4" y="13" width="8" height="2" fill="#3a4250"/>`,
+  pen:     `<rect x="10" y="2" width="2" height="2" fill="#e0b341"/><rect x="9" y="3" width="2" height="2" fill="#c69732"/><rect x="8" y="4" width="2" height="2" fill="#c6392c"/><rect x="7" y="5" width="2" height="2" fill="#c6392c"/><rect x="6" y="6" width="2" height="2" fill="#c6392c"/><rect x="5" y="7" width="2" height="2" fill="#c6392c"/><rect x="4" y="8" width="2" height="2" fill="#c6392c"/><rect x="3" y="9" width="2" height="2" fill="#c6392c"/><rect x="2" y="10" width="2" height="2" fill="#F4E8DB"/><rect x="2" y="12" width="1" height="1" fill="#120f0f"/>`,
+  tape:    `<rect x="1" y="4" width="14" height="7" fill="#120f0f"/><rect x="1" y="4" width="14" height="1" fill="#3a2f2a"/><rect x="1" y="10" width="14" height="1" fill="#000"/><rect x="3" y="6" width="4" height="3" fill="#c8ced4"/><rect x="9" y="6" width="4" height="3" fill="#c8ced4"/><rect x="4" y="7" width="2" height="1" fill="#5a6675"/><rect x="10" y="7" width="2" height="1" fill="#5a6675"/><rect x="1" y="11" width="2" height="2" fill="#3a2f2a"/><rect x="13" y="11" width="2" height="2" fill="#3a2f2a"/>`,
+  clipboard:`<rect x="6" y="1" width="4" height="2" fill="#8a8177"/><rect x="3" y="2" width="10" height="12" fill="#F4E8DB"/><rect x="3" y="2" width="10" height="1" fill="#c8bfa8"/><rect x="6" y="1" width="4" height="1" fill="#5a6675"/><rect x="5" y="5" width="6" height="1" fill="#8a8177"/><rect x="5" y="7" width="4" height="1" fill="#8a8177"/><rect x="5" y="9" width="6" height="1" fill="#8a8177"/><rect x="5" y="11" width="3" height="1" fill="#8a8177"/>`,
+  check:   `<rect x="3" y="7" width="1" height="1" fill="#5bb083"/><rect x="4" y="8" width="1" height="1" fill="#5bb083"/><rect x="5" y="9" width="1" height="1" fill="#5bb083"/><rect x="6" y="10" width="1" height="1" fill="#5bb083"/><rect x="7" y="9" width="1" height="1" fill="#5bb083"/><rect x="8" y="8" width="1" height="1" fill="#5bb083"/><rect x="9" y="7" width="1" height="1" fill="#5bb083"/><rect x="10" y="6" width="1" height="1" fill="#5bb083"/><rect x="11" y="5" width="1" height="1" fill="#5bb083"/><rect x="12" y="4" width="1" height="1" fill="#5bb083"/>`,
+  ticket:  `<rect x="1" y="4" width="14" height="8" fill="#e0b341"/><rect x="1" y="4" width="14" height="1" fill="#f4c95b"/><rect x="1" y="11" width="14" height="1" fill="#a37518"/><rect x="7" y="4" width="1" height="8" fill="#a37518" stroke-dasharray="2,1"/><rect x="7" y="4" width="1" height="1" fill="#a37518"/><rect x="7" y="6" width="1" height="1" fill="#a37518"/><rect x="7" y="8" width="1" height="1" fill="#a37518"/><rect x="7" y="10" width="1" height="1" fill="#a37518"/><rect x="3" y="7" width="1" height="2" fill="#8a5a1a"/><rect x="10" y="7" width="4" height="1" fill="#8a5a1a"/>`,
+  dove:    `<rect x="9" y="4" width="4" height="3" fill="#F4E8DB"/><rect x="12" y="5" width="1" height="1" fill="#120f0f"/><rect x="13" y="5" width="2" height="1" fill="#e0b341"/><rect x="6" y="2" width="4" height="2" fill="#F4E8DB"/><rect x="4" y="3" width="2" height="1" fill="#F4E8DB"/><rect x="5" y="4" width="6" height="2" fill="#F4E8DB"/><rect x="3" y="6" width="10" height="3" fill="#F4E8DB"/><rect x="2" y="7" width="12" height="2" fill="#F4E8DB"/><rect x="4" y="9" width="8" height="1" fill="#F4E8DB"/><rect x="5" y="10" width="5" height="1" fill="#c8bfa8"/><rect x="1" y="7" width="3" height="1" fill="#F4E8DB"/><rect x="2" y="8" width="3" height="1" fill="#c8bfa8"/><rect x="3" y="9" width="2" height="1" fill="#c8bfa8"/><rect x="9" y="6" width="1" height="1" fill="#c8bfa8"/><rect x="15" y="4" width="1" height="1" fill="#5bb083"/><rect x="15" y="6" width="1" height="1" fill="#5bb083"/><rect x="14" y="7" width="1" height="1" fill="#e0b341"/>`,
+  swords:  `<rect x="0" y="0" width="3" height="1" fill="#a37518"/><rect x="0" y="1" width="3" height="1" fill="#e0b341"/><rect x="1" y="2" width="3" height="1" fill="#c69732"/><rect x="2" y="3" width="2" height="1" fill="#c8ced4"/><rect x="3" y="4" width="2" height="1" fill="#c8ced4"/><rect x="4" y="5" width="2" height="1" fill="#c8ced4"/><rect x="5" y="6" width="2" height="1" fill="#c8ced4"/><rect x="6" y="7" width="4" height="2" fill="#c8ced4"/><rect x="9" y="9" width="2" height="1" fill="#c8ced4"/><rect x="10" y="10" width="2" height="1" fill="#c8ced4"/><rect x="11" y="11" width="2" height="1" fill="#c8ced4"/><rect x="12" y="12" width="2" height="1" fill="#e07b39"/><rect x="12" y="13" width="3" height="1" fill="#5d3a22"/><rect x="13" y="14" width="3" height="1" fill="#5d3a22"/><rect x="12" y="15" width="3" height="1" fill="#a37518"/><rect x="13" y="0" width="3" height="1" fill="#a37518"/><rect x="13" y="1" width="3" height="1" fill="#e0b341"/><rect x="12" y="2" width="3" height="1" fill="#c69732"/><rect x="12" y="3" width="2" height="1" fill="#c8ced4"/><rect x="11" y="4" width="2" height="1" fill="#c8ced4"/><rect x="10" y="5" width="2" height="1" fill="#c8ced4"/><rect x="9" y="6" width="2" height="1" fill="#c8ced4"/><rect x="5" y="9" width="2" height="1" fill="#c8ced4"/><rect x="4" y="10" width="2" height="1" fill="#c8ced4"/><rect x="3" y="11" width="2" height="1" fill="#c8ced4"/><rect x="2" y="12" width="2" height="1" fill="#e07b39"/><rect x="1" y="13" width="3" height="1" fill="#5d3a22"/><rect x="0" y="14" width="3" height="1" fill="#5d3a22"/><rect x="1" y="15" width="3" height="1" fill="#a37518"/><rect x="7" y="7" width="2" height="2" fill="#f4c95b"/>`,
+  starBig: `<rect x="7" y="1" width="2" height="2" fill="#f4c95b"/><rect x="6" y="3" width="4" height="1" fill="#e0b341"/><rect x="1" y="6" width="14" height="1" fill="#e0b341"/><rect x="5" y="4" width="6" height="2" fill="#e0b341"/><rect x="2" y="6" width="12" height="2" fill="#f4c95b"/><rect x="3" y="8" width="10" height="1" fill="#e0b341"/><rect x="4" y="9" width="8" height="1" fill="#e0b341"/><rect x="3" y="10" width="3" height="2" fill="#e0b341"/><rect x="10" y="10" width="3" height="2" fill="#e0b341"/><rect x="2" y="12" width="3" height="2" fill="#c69732"/><rect x="11" y="12" width="3" height="2" fill="#c69732"/>`,
+  bandage: `<rect x="2" y="7" width="12" height="3" fill="#f0d5b0" transform="rotate(-20 8 8)"/><rect x="4" y="6" width="2" height="5" fill="#e0b898" transform="rotate(-20 8 8)"/><rect x="10" y="6" width="2" height="5" fill="#e0b898" transform="rotate(-20 8 8)"/><rect x="6" y="7" width="1" height="1" fill="#c8a888" transform="rotate(-20 8 8)"/><rect x="8" y="8" width="1" height="1" fill="#c8a888" transform="rotate(-20 8 8)"/><rect x="7" y="9" width="1" height="1" fill="#c8a888" transform="rotate(-20 8 8)"/>`,
+  // ---- move categories ----
+  fist:    `<rect x="4" y="3" width="8" height="1" fill="#d29b6e"/><rect x="4" y="4" width="8" height="2" fill="#e8bd95"/><rect x="4" y="4" width="8" height="1" fill="#f0d5b0"/><rect x="4" y="6" width="8" height="1" fill="#d29b6e"/><rect x="4" y="7" width="8" height="2" fill="#e8bd95"/><rect x="4" y="9" width="8" height="1" fill="#d29b6e"/><rect x="4" y="10" width="8" height="2" fill="#e8bd95"/><rect x="4" y="12" width="8" height="1" fill="#8a5533"/><rect x="3" y="7" width="4" height="3" fill="#d29b6e"/><rect x="3" y="7" width="4" height="1" fill="#e8bd95"/><rect x="3" y="9" width="4" height="1" fill="#8a5533"/><rect x="5" y="13" width="6" height="2" fill="#d29b6e"/><rect x="5" y="14" width="6" height="1" fill="#8a5533"/>`,
+  impact:  `<rect x="7" y="0" width="2" height="3" fill="#e07b39"/><rect x="7" y="13" width="2" height="3" fill="#e07b39"/><rect x="0" y="7" width="3" height="2" fill="#e07b39"/><rect x="13" y="7" width="3" height="2" fill="#e07b39"/><rect x="2" y="2" width="2" height="2" fill="#e07b39"/><rect x="12" y="2" width="2" height="2" fill="#e07b39"/><rect x="2" y="12" width="2" height="2" fill="#e07b39"/><rect x="12" y="12" width="2" height="2" fill="#e07b39"/><rect x="1" y="1" width="1" height="1" fill="#f4c95b"/><rect x="14" y="1" width="1" height="1" fill="#f4c95b"/><rect x="1" y="14" width="1" height="1" fill="#f4c95b"/><rect x="14" y="14" width="1" height="1" fill="#f4c95b"/><rect x="4" y="4" width="8" height="8" fill="#c6392c"/><rect x="3" y="5" width="10" height="6" fill="#c6392c"/><rect x="5" y="3" width="6" height="10" fill="#c6392c"/><rect x="6" y="6" width="4" height="4" fill="#f4c95b"/><rect x="7" y="5" width="2" height="6" fill="#f4c95b"/><rect x="5" y="7" width="6" height="2" fill="#f4c95b"/>`,
+  spin:    `<rect x="4" y="2" width="8" height="2" fill="#e0b341"/><rect x="12" y="2" width="1" height="4" fill="#e0b341"/><rect x="13" y="3" width="1" height="2" fill="#e0b341"/><rect x="11" y="5" width="1" height="1" fill="#e0b341"/><rect x="4" y="6" width="8" height="4" fill="#c69732"/><rect x="4" y="6" width="8" height="1" fill="#e0b341"/><rect x="4" y="9" width="8" height="1" fill="#8a5a1a"/><rect x="4" y="12" width="8" height="2" fill="#e0b341"/><rect x="3" y="10" width="1" height="4" fill="#e0b341"/><rect x="2" y="11" width="1" height="2" fill="#e0b341"/><rect x="4" y="10" width="1" height="1" fill="#e0b341"/>`,
+  lock:    `<rect x="5" y="3" width="6" height="1" fill="#8a5a1a"/><rect x="4" y="4" width="1" height="4" fill="#8a5a1a"/><rect x="11" y="4" width="1" height="4" fill="#8a5a1a"/><rect x="5" y="7" width="1" height="1" fill="#8a5a1a"/><rect x="10" y="7" width="1" height="1" fill="#8a5a1a"/><rect x="3" y="8" width="10" height="6" fill="#e0b341"/><rect x="3" y="8" width="10" height="1" fill="#f4c95b"/><rect x="3" y="13" width="10" height="1" fill="#a37518"/><rect x="7" y="10" width="2" height="2" fill="#5d3a22"/><rect x="7" y="11" width="2" height="2" fill="#5d3a22"/>`,
+  bird:    `<rect x="2" y="6" width="1" height="1" fill="#3a4250"/><rect x="3" y="7" width="1" height="1" fill="#3a4250"/><rect x="4" y="5" width="2" height="4" fill="#3a4250"/><rect x="6" y="4" width="4" height="6" fill="#3a4250"/><rect x="10" y="5" width="2" height="4" fill="#3a4250"/><rect x="12" y="6" width="1" height="2" fill="#3a4250"/><rect x="13" y="7" width="1" height="1" fill="#3a4250"/><rect x="6" y="3" width="2" height="1" fill="#3a4250"/><rect x="8" y="4" width="1" height="1" fill="#e0b341"/><rect x="9" y="4" width="1" height="1" fill="#3a4250"/><rect x="9" y="3" width="1" height="1" fill="#3a4250"/><rect x="7" y="5" width="1" height="1" fill="#F4E8DB"/><rect x="6" y="10" width="4" height="1" fill="#3a4250"/><rect x="7" y="11" width="2" height="2" fill="#3a4250"/>`,
+  brain:   `<rect x="3" y="3" width="4" height="2" fill="#e58fa0"/><rect x="9" y="3" width="4" height="2" fill="#e58fa0"/><rect x="2" y="4" width="6" height="1" fill="#e58fa0"/><rect x="8" y="4" width="6" height="1" fill="#e58fa0"/><rect x="2" y="5" width="12" height="7" fill="#e58fa0"/><rect x="3" y="12" width="10" height="1" fill="#d2687a"/><rect x="4" y="13" width="8" height="1" fill="#c8556a"/><rect x="7" y="3" width="2" height="10" fill="#c8556a"/><rect x="4" y="6" width="2" height="1" fill="#c8556a"/><rect x="10" y="6" width="2" height="1" fill="#c8556a"/><rect x="3" y="8" width="3" height="1" fill="#c8556a"/><rect x="10" y="8" width="3" height="1" fill="#c8556a"/><rect x="4" y="10" width="2" height="1" fill="#c8556a"/><rect x="10" y="10" width="2" height="1" fill="#c8556a"/><rect x="2" y="5" width="12" height="1" fill="#f0a8b5"/><rect x="3" y="3" width="1" height="1" fill="#f0a8b5"/><rect x="12" y="3" width="1" height="1" fill="#f0a8b5"/>`,
+  chair:   `<rect x="3" y="1" width="10" height="2" fill="#8a5533"/><rect x="3" y="3" width="10" height="4" fill="#a06943"/><rect x="3" y="7" width="10" height="1" fill="#5d3a22"/><rect x="3" y="8" width="1" height="6" fill="#a06943"/><rect x="12" y="8" width="1" height="6" fill="#a06943"/><rect x="3" y="14" width="1" height="1" fill="#5d3a22"/><rect x="12" y="14" width="1" height="1" fill="#5d3a22"/><rect x="4" y="8" width="8" height="1" fill="#5d3a22"/>`,
+  // showman uses the microphone we already have
+};
+function pico(id,size){
+  const p=PICO[id]; if(!p) return '';
+  const s=size||22;
+  return `<svg class="pico" viewBox="0 0 16 16" width="${s}" height="${s}" shape-rendering="crispEdges" aria-hidden="true">${p}</svg>`;
+}
+// map move category ids to pixel-icon ids
+const CAT_PICO={strike:'fist',slam:'impact',suplex:'spin',submission:'lock',aerial:'bird',technical:'brain',hardcore:'chair',showman:'microphone'};
+function catIcon(id,size){ return pico(CAT_PICO[id]||'',size||22); }
 function P(x,y,w,h,f){ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`; }
 function shade(hex,amt){ hex=(hex||'#888888'); const n=parseInt(hex.slice(1),16); let r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;
   r=clamp(r,0,255); g=clamp(g,0,255); b=clamp(b,0,255); return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1); }
@@ -2023,11 +2164,11 @@ const JOINT={
    angle swings the limb out to the left; the screen-right side mirrors it. */
 const POSES={
   stand:    {},
-  ready:    { shL:16, elL:-34, shR:-16, elR:34, hipL:5, hipR:-5, body:[0,1,0] },
+  ready:    { shL:16, elL:-34, shR:-16, elR:34, body:[0,1,0] },
   run:      { shL:-44, elL:-46, shR:38, elR:-52, hipL:-30, knL:34, hipR:28, knR:-44, body:[0,-2,-6] },
   runBack:  { shL:44, elL:46, shR:-38, elR:52, hipL:30, knL:-34, hipR:-28, knR:44, body:[0,-2,6] },
-  grapple:  { shL:100, elL:-44, shR:-100, elR:44, hipL:8, hipR:-8, body:[0,0,0] },
-  lockup:   { shL:112, elL:-30, shR:-112, elR:30, hipL:14, knL:-16, hipR:-10, body:[0,2,-4] },
+  grapple:  { shL:100, elL:-44, shR:-100, elR:44, hipL:-6, hipR:6, body:[0,0,0] },
+  lockup:   { shL:112, elL:-30, shR:-112, elR:30, hipL:-8, hipR:8, body:[0,2,-4] },
   strike:   { shR:-96, elR:-10, shL:22, elL:-42, torso:5, body:[1,0,3] },
   wind:     { shR:-24, elR:-96, shL:14, elL:-30, torso:-7, body:[-2,0,-4] },
   chop:     { shR:-146, elR:34, shL:20, elL:-30, torso:4, body:[1,-1,3] },
@@ -2051,7 +2192,7 @@ const POSES={
   // stretched out behind. The old pin was a starfish rotated onto its back.
   pin:      { body:[0,22,84], shL:150, elL:-20, shR:-40, elR:-70, hipL:8, knL:-14, hipR:-8, knR:12, head:-14 },
   submit:   { body:[0,8,-14], shL:-58, elL:-44, shR:-88, elR:-28, hipL:66, knL:-92, hipR:-12, knR:22, head:-10 },
-  taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:6, hipR:-6, body:[0,-2,0] },
+  taunt:    { shL:166, elL:-16, shR:-166, elR:16, hipL:-6, hipR:6, body:[0,-2,0] },
   celebrate:{ shL:176, elL:-6, shR:-176, elR:6, hipL:-14, hipR:14, body:[0,-5,0] },
   point:    { shR:-98, elR:-4, shL:22, elL:-40, torso:4, head:4 },
   stagger:  { body:[0,1,-14], head:9, torso:-6, shL:-42, elL:22, shR:28, elR:-18, hipL:18, knL:-22, hipR:-8 },
@@ -2063,7 +2204,7 @@ const POSES={
   // the winner, arm held aloft by the official
   raised:   { shL:172, elL:-6, shR:-18, elR:8, torso:2, body:[0,-1,0] },
   // ---- the referee ----
-  refIdle:  { shL:22, elL:-40, shR:-22, elR:40, hipL:5, hipR:-5 },
+  refIdle:  { shL:22, elL:-40, shR:-22, elR:40 },
   refWatch: { body:[0,2,-7], shL:40, elL:-70, shR:-30, elR:50, hipL:12, knL:-14, head:6 },
   // down on the mat: arm cocked, then slammed flat for the count
   refUp:    { body:[0,16,0], hipL:80, knL:-106, hipR:-14, knR:26, torso:-10, shL:26, elL:-34, shR:-142, elR:26, head:8 },
@@ -2182,22 +2323,22 @@ function wrestlerSVG(L,opt){
   const footCol = L.boots==='barefoot' ? sk : shade(trim,-46);
   // thigh leaves its bottom open for the knee; the small overhang past the
   // shin still gets capped so the silhouette stays closed when standing
-  B.thighL+=PIECE([[23,52,8,16]],legCol,{bottom:false})+P(22,68,2,1,OUTLINE)+thighPat(23);
-  B.thighR+=PIECE([[33,52,8,16]],splitCol,{bottom:false})+P(40,68,2,1,OUTLINE)+thighPat(33);
+  B.thighL+=PIECE([[23-bw,52,8+bw,16]],legCol,{bottom:false})+P(22-bw,68,2,1,OUTLINE)+thighPat(23-bw);
+  B.thighR+=PIECE([[33,52,8+bw,16]],splitCol,{bottom:false})+P(40+bw,68,2,1,OUTLINE)+thighPat(33);
   if(L.attire==='chaps'){ // leather chaps over bare legs
     const ch=shade(gear,-30);
-    B.thighL+=OL(22,52,9,16)+LIMB(22,52,9,16,ch)+P(22,54,2,14,shade(trim,-10));
-    B.thighR+=OL(33,52,9,16)+LIMB(33,52,9,16,ch)+P(40,54,2,14,shade(trim,-10));
+    B.thighL+=OL(22-bw,52,9+bw,16)+LIMB(22-bw,52,9+bw,16,ch)+P(22-bw,54,2,14,shade(trim,-10));
+    B.thighR+=OL(33,52,9+bw,16)+LIMB(33,52,9+bw,16,ch)+P(40+bw,54,2,14,shade(trim,-10));
   }
   if(L.tattoo==='leg'){ const lk=shade(sk,-62);
-    if(!tightsFull){ B.thighL+=P(24,55,6,2,lk)+P(25,59,4,4,lk); B.thighR+=P(34,55,6,2,lk)+P(35,59,4,4,lk); } }
-  if(L.boots==='pads'){ B.thighL+=OL(24,64,7,4)+LIMB(24,64,7,4,shade(trim,-30)); B.thighR+=OL(33,64,7,4)+LIMB(33,64,7,4,shade(trim,-30)); }
-  if(L.acc==='knee'){ B.thighL+=OL(24,63,7,5)+LIMB(24,63,7,5,trim); B.thighR+=OL(33,63,7,5)+LIMB(33,63,7,5,trim); }
+    if(!tightsFull){ B.thighL+=P(24-bw,55,6,2,lk)+P(25-bw,59,4,4,lk); B.thighR+=P(34,55,6,2,lk)+P(35,59,4,4,lk); } }
+  if(L.boots==='pads'){ B.thighL+=OL(24-bw,64,7+bw,4)+LIMB(24-bw,64,7+bw,4,shade(trim,-30)); B.thighR+=OL(33,64,7+bw,4)+LIMB(33,64,7+bw,4,shade(trim,-30)); }
+  if(L.acc==='knee'){ B.thighL+=OL(24-bw,63,7+bw,5)+LIMB(24-bw,63,7+bw,5,trim); B.thighR+=OL(33,63,7+bw,5)+LIMB(33,63,7+bw,5,trim); }
   // shin and foot are one bone, so they are one silhouette
-  B.shinL+=PIECE([[24,68,7,13],[21,81,11,6,footCol]],legCol,{top:false})+shinPat(23);
-  B.shinR+=PIECE([[33,68,7,13],[32,81,11,6,footCol]],splitCol,{top:false})+shinPat(33);
+  B.shinL+=PIECE([[24-bw,68,7+bw,13],[21-bw,81,11+bw,6,footCol]],legCol,{top:false})+shinPat(23-bw);
+  B.shinR+=PIECE([[33,68,7+bw,13],[32,81,11+bw,6,footCol]],splitCol,{top:false})+shinPat(33);
   if(L.attire==='chaps'){ const ch=shade(gear,-30);
-    B.shinL+=LIMB(23,68,8,10,ch)+P(22,68,1,10,OUTLINE); B.shinR+=LIMB(33,68,8,10,ch)+P(41,68,1,10,OUTLINE); }
+    B.shinL+=LIMB(23-bw,68,8+bw,10,ch)+P(22-bw,68,1,10,OUTLINE); B.shinR+=LIMB(33,68,8+bw,10,ch)+P(41+bw,68,1,10,OUTLINE); }
   const boot=(x)=>{
     if(L.boots==='barefoot') return '';
     let o=P(x,bootTop,7,81-bootTop,trim)+P(x,bootTop,1,81-bootTop,shade(trim,22))
@@ -2210,10 +2351,10 @@ function wrestlerSVG(L,opt){
     if(L.boots==='steel') o+=P(x,78,7,3,'#9aa0a6')+P(x,78,7,1,'#c8ced4');
     if(L.boots==='spiked'){ o+=P(x-1,72,2,3,'#c8ced4')+P(x+6,72,2,3,'#c8ced4')+P(x-1,77,2,3,'#c8ced4')+P(x+6,77,2,3,'#c8ced4'); }
     return o; };
-  B.shinL+=boot(24); B.shinR+=boot(33);
-  if(L.boots==='barefoot'){ B.shinL+=P(21,82,1,3,skD)+P(23,81,1,2,skD)+P(25,81,1,2,skD); B.shinR+=P(42,82,1,3,skD)+P(40,81,1,2,skD)+P(38,81,1,2,skD); }
-  if(L.boots==='platform'){ B.shinL+=OL(21,81,11,3)+LIMB(21,81,11,3,shade(trim,-30)); B.shinR+=OL(32,81,11,3)+LIMB(32,81,11,3,shade(trim,-30)); }
-  if(L.boots==='cowboy'){ B.shinL+=P(21,85,4,4,OUTLINE)+P(22,85,3,3,shade(trim,-56)); B.shinR+=P(39,85,4,4,OUTLINE)+P(39,85,3,3,shade(trim,-56)); }
+  B.shinL+=boot(24-bw); B.shinR+=boot(33);
+  if(L.boots==='barefoot'){ B.shinL+=P(21-bw,82,1,3,skD)+P(23-bw,81,1,2,skD)+P(25-bw,81,1,2,skD); B.shinR+=P(42+bw,82,1,3,skD)+P(40+bw,81,1,2,skD)+P(38+bw,81,1,2,skD); }
+  if(L.boots==='platform'){ B.shinL+=OL(21-bw,81,11+bw,3)+LIMB(21-bw,81,11+bw,3,shade(trim,-30)); B.shinR+=OL(32,81,11+bw,3)+LIMB(32,81,11+bw,3,shade(trim,-30)); }
+  if(L.boots==='cowboy'){ B.shinL+=P(21-bw,85,4,4,OUTLINE)+P(22-bw,85,3,3,shade(trim,-56)); B.shinR+=P(39+bw,85,4,4,OUTLINE)+P(39+bw,85,3,3,shade(trim,-56)); }
 
   // ================= TORSO =================
   const tX=21-bw, tW=22+bw*2, tCol=covered?gear:sk;
@@ -2779,7 +2920,7 @@ function pagerBar(id,labels,fn){
 const NAVG=[
   {id:'hub',    label:'Hub',    subs:[['career','Hub']]},
   {id:'skills', label:'Skills', subs:[['moves','Arsenal'],['train','Training'],['mentors','Mentors']]},
-  {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Pro Shop'],['card','My Card']]},
+  {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Merch Stand'],['card','My Card']]},
   {id:'roster', label:'Roster', subs:[['crew','Locker Room'],['world','The World']]},
   {id:'legacy', label:'Career', subs:[['deal','Business'],['record','Record']]},
 ];
@@ -2814,19 +2955,19 @@ const TOURS={
   {sel:'#weekBody .bksheet', title:'The office books you',
    body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing, and the sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
   {sel:'#weekBody .bksheet', title:'Winning is not the point',
-   body:'This surprises everybody. You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
+   body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
   {sel:'#weekBody select', title:'Your game plan',
    body:'These two picks are what you <b>emphasise in every match</b>. They decide which move categories you build <b>mastery</b> in, and mastery is what unlocks your better moves. Change them whenever you want to grow in a new direction.'},
   {sel:'#carTiles', title:'Your vitals',
    body:'<b>Reputation</b> climbs the card. <b>Crowd</b> is how loudly they react, and being <i>hated</i> counts just as much as being loved (being <i>ignored</i> is the killer). <b>Condition</b> drops as you work, and working hurt is how careers end early.'},
   {sel:'.hud', title:'The clock is running',
-   body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30</b>, then decline, and the more road miles you put on the sooner that starts. You can retire from <b>36</b>. This career has an ending, so bank your prime.'},
+   body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30-32</b>, then decline, and mileage brings that forward. A careful main-eventer can work at world-class level well into their forties, and legends have gone longer. You can walk away any time from <b>34</b>; the ones who never quit end up in somebody else\'s corner years later, still on the road.'},
   {sel:'[data-nav="skills"]', title:'Skills: get better',
    body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> you spend on attributes here. Attributes plus mastery unlock new <b>moves</b> in your Arsenal, up through Signature and Finisher tiers. <b>Mentors</b> cost three weeks and teach you a legend\'s finisher outright.'},
   {sel:'[data-nav="gear"]', title:'Gear: how you look',
-   body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Pro Shop</b>. This is cosmetics only. No skill is ever for sale, and duplicates become shards you can forge exactly what you want with.'},
+   body:'Change your look any week in the <b>Locker</b>, and open packs in the <b>Merch Stand</b>.'},
   {sel:'[data-nav="roster"]', title:'Roster: who is out there',
-   body:'The <b>Locker Room</b> is your allies, tag team, stable, and everyone with a grudge. Earn enough respect and you can team up, or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
+   body:'The <b>Locker Room</b> has your allies, your tag team, your stable, and everyone with a grudge against you. Earn enough respect and you can team up, or turn on them. <b>The World</b> is all nine promotions and everyone on them.'},
   {sel:'[data-nav="legacy"]', title:'Career: the paperwork',
    body:'<b>Business</b> holds your contract, your schedule, your character and your injuries. <b>Record</b> is every match, title reign and accolade you have earned.'},
   {sel:null, title:'Where to start', goals:true},
@@ -2905,18 +3046,7 @@ function placeTour(el){
 }
 // the closing card: what you are working toward and the single best next move
 function tourGoalsHTML(){
-  if(!G) return '';
-  const a=weekAdvice(), goals=nextGoals();
-  let h=`<div class="tb">Here is where your career stands right now.</div>`;
-  h+=`<div class="tourgoal go"><div class="gl">Do this first</div>
-    <div class="gv">${a.ico} ${a.cta?a.cta.l:'Take a match'}</div>
-    <div class="gs">${a.t}</div></div>`;
-  goals.slice(0,2).forEach(g=>{
-    h+=`<div class="tourgoal"><div class="gl">Working toward</div>
-      <div class="gv">${g.l}</div><div class="gs">${g.sub}</div></div>`;
-  });
-  h+=`<div class="tb" style="margin-top:10px;">Everything in depth lives in the <b>Rulebook</b>, under the Help button.</div>`;
-  return h;
+  return `<div class="tb">That is the whole loop. Everything in depth, with the real numbers behind it, lives in the <b>Rulebook</b> under the <b>Help</b> button up top.</div>`;
 }
 window.addEventListener('resize',()=>{ if(TOUR_I>=0){ const st=(TOURS[TOURN]||TOURS.hub)[TOUR_I];
   placeTour(st&&st.sel?document.querySelector(st.sel):null); } });
@@ -2950,7 +3080,6 @@ const RULES=[
   <ul class="ruleul">
     <li><b>Pinfall.</b> A cover, a referee count, and a kickout at one, two or two and a half. Only a finisher in the closing stretch is likely to get three.</li>
     <li><b>Submission.</b> Work a limb all night and the hold pays it off.</li>
-    <li><b>Time-limit draw.</b> Neither a win nor a loss on your record.</li>
   </ul>
   <p class="log">The bars at the top are <b>damage taken</b>, not lives. Nobody loses by running out of health. <b>Momentum</b> in the middle is who is in control right now.</p>
   <p class="log">A match moves through phases: the feeling-out, the shine, the heat, the comeback, the finish stretch. Big moves only land late, because you do not open with your finisher.</p>
@@ -2969,7 +3098,7 @@ const RULES=[
     <li><b>Moves unlock</b> when you hit both an attribute gate and a mastery gate. Tiers run Fundamentals (0 mastery), Refined (70), Advanced (200), Signature (420), Finisher (750).</li>
     <li><b>Mentors</b> cost three weeks of your career and hand you a legend's signature move plus a permanent attribute boost.</li>
   </ul>
-  <p class="log">Attributes also grow on their own each year until your mid twenties, then stop, then decline. Spend your prime wisely.</p>`},
+  <p class="log">Attributes grow on their own each year until your mid twenties, peak around <b>30-32</b>, then decline. Careful main-eventers still work at world-class level into their forties, and legends have gone on into their fifties and sixties. You can retire any time from <b>34</b>, and the Hall of Immortals will grade you on everything you did.</p>`},
  {n:'Crowd & Character', h:`
   <p class="log">The crowd is measured on <b>two separate axes</b>, and confusing them is the most common mistake.</p>
   <ul class="ruleul">
@@ -3063,7 +3192,7 @@ function refreshHud(){ if(!G) return;
   const o=ovr(G.w), c=G.car;
   if(c._seenOvr==null) c._seenOvr=o;
   if(o>c._seenOvr){
-    [50,60,70,80,90].forEach(t=>{ if(c._seenOvr<t&&o>=t) award(`Broke ${t} overall.`,'📈'); });
+    [50,60,70,80,90].forEach(t=>{ if(c._seenOvr<t&&o>=t) award(`Broke ${t} overall.`,pico('graphUp',36)); });
     c._seenOvr=o;
     const el=$('hOvr'); el.classList.remove('statpop'); void el.offsetWidth; el.classList.add('statpop');
     toast('Overall up: '+o);
@@ -3346,6 +3475,7 @@ function renderHome(){
         ${c.title?`<span class="rc-stat" style="border-color:rgba(224,179,65,.5);color:var(--gold)">👑 Champion</span>`:''}
         <span class="rc-go">Resume ▸</span>
       </div>
+      ${s.savedAt?`<div class="rc-saved">Last saved ${savedAgo(s.savedAt)}</div>`:''}
     </button>
     <div class="row" style="margin-top:12px;justify-content:center;">
       <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('start')">Start a new career</button>
@@ -3471,12 +3601,21 @@ function offerOdds(o){
   if(c.booking&&c.booking.o===o&&c.booking.studied) p+=0.06;   // you did the homework
   return clamp(p,0.05,0.95);
 }
-function offerRisk(o){
+// Injuries are only a real risk when you push yourself past what your body can
+// take. Fresh, well-conditioned, safe-stipulation weeks are close to zero. The
+// live match uses the same formula (finalizeFight), so this figure never lies
+// to the player: what the sheet shows is what actually gets rolled.
+function injuryRisk(o){
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
-  const best=bestMoves(5);
-  const mRisk=best.length? best.reduce((s,m)=>s+m.risk,0)/best.length : 0.05;
-  return clamp((mRisk + (o.mult-1)*0.42 + o.mult*0.04 + (100-c.cond)/380 + (c.wear||0)/1500)*sc.inj*0.34, 0.01, 0.6);
+  const danger = (STIP_RULES[o.stip]||{}).danger || 0;
+  const stipPart  = danger>0 ? ((o.mult-1)*0.50 + 0.03) * danger : 0;
+  const condPart  = Math.max(0, 65-c.cond)/65 * 0.22;        // below 65 cond
+  const wearPart  = Math.max(0, (c.wear||0)-40)/120 * 0.14;  // multiplies other risks
+  const workedHurt= c.workedHurt ? 0.55 : 0;
+  const chronic   = ((c.chronic||[]).length) * 0.02;
+  return clamp((stipPart + condPart + wearPart + workedHurt + chronic) * sc.inj, 0, 0.85);
 }
+function offerRisk(o){ return injuryRisk(o); }
 function offerRep(o){
   // a night's work is worth more against a better opponent and under a stipulation
   const q=44 + o.oppOvr*0.20 + (o.mult-1)*14;
@@ -3598,6 +3737,7 @@ function renderWeek(){
       <div class="bs-pos ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${o.card}${
         o.stakes==='title'?' · for the title':o.stakes==='defense'?' · title defence':
         o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':''}</div>
+      <div class="bs-rules"><b>Rules.</b> ${stipRules(o).desc}</div>
       ${b.line?`<div class="bs-office">"${b.line}"</div>`:''}
       <div class="bk-odds" style="margin-top:10px;">
         <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
@@ -3643,7 +3783,7 @@ function renderWeek(){
         <div class="wa-n">${o.ico} ${o.l}${done?' ✓':''}</div><div class="wa-d">${o.d}</div></div>`;
     }).join('')}</div>`;
 
-  const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.icon} ${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
+  const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
   const catA=catById(c.plan.a)||MCATS[0], catB=catById(c.plan.b)||MCATS[1];
   el.innerHTML=`
     <div class="advice ${adv.sev}">
@@ -3663,7 +3803,7 @@ function renderWeek(){
     <div class="planwhy">
       ${[catA,catB].map((x,i)=>{
         const m=G.w.mastery[x.id]||0, t=masteryTier(x.id), nx=MTIERS.find(y=>y.t===t+1);
-        return `<div class="pw"><div class="pw-h">${x.icon} ${x.name} <span class="hint">${i===0?'primary':'secondary'} · governed by ${ATTRS.find(a=>a[0]===x.attr)[1]}</span></div>
+        return `<div class="pw"><div class="pw-h">${catIcon(x.id,20)} ${x.name} <span class="hint">${i===0?'primary':'secondary'} · governed by ${ATTRS.find(a=>a[0]===x.attr)[1]}</span></div>
           <div class="bar gd"><i style="width:${nx?clamp(m/nx.mastery*100):100}%"></i></div>
           <div class="hint">Mastery ${m}${nx?` / ${nx.mastery} → Tier ${t+1} moves`:' · maxed'}</div></div>`;
       }).join('')}
@@ -3782,6 +3922,58 @@ function makeOffers(){
 /* ============================================================
    MATCH SIM
    ============================================================ */
+
+/* The rules that actually govern a match. Each stipulation lists
+   the ways it can end and what the referee will let go. `ends` is
+   the only list the finish path is allowed to draw from, so the
+   engine cannot produce a pinfall in a Submission Match or a tap
+   in Last Man Standing. `desc` is the one-line summary shown to
+   the player at the bell and on the booking sheet. */
+const STIP_RULES = {
+  singles: { label:'Singles Match',      desc:'One-on-one, referee\'s enforcement. Pinfall or submission.',
+             ends:['pin','sub'],           danger:0, mod:0 },
+  tag:     { label:'Tag Team Match',     desc:'Legal wrestler only. Tag the corner to sub in.',
+             ends:['pin','sub'],           danger:0, mod:-2 },
+  hardcore:{ label:'Hardcore Match',     desc:'No disqualification. Weapons legal, anything counts.',
+             ends:['pin','sub'],           danger:1, mod:3 },
+  ladder:  { label:'Ladder Match',       desc:'The prize hangs above the ring. Climb the ladder and take it down.',
+             ends:['climb'],               danger:1, mod:4 },
+  cage:    { label:'Steel Cage',         desc:'No count-outs. Escape by pinfall, submission, or over the top of the cage.',
+             ends:['pin','sub','climb'],   danger:.6, mod:2 },
+  sub:     { label:'Submission Match',   desc:'The only way to win is to make them tap. Pinfalls do nothing.',
+             ends:['sub'],                 danger:0, mod:1 },
+  lms:     { label:'Last Man Standing',  desc:'No pinfalls. Beat them down and win by ten-count when they cannot rise.',
+             ends:['ko'],                  danger:1, mod:3 },
+  grudge:  { label:'Grudge Match',       desc:'Personal issue. The referee will let a lot go before calling for the bell.',
+             ends:['pin','sub'],           danger:.6, mod:2 },
+};
+function stipRules(o){ return STIP_RULES[o&&o.stip] || STIP_RULES.singles; }
+// Take the finish the engine wants to record and rewrite it to whatever the
+// stipulation actually allows. A pin in a Submission Match becomes a tap; a
+// long-count knockdown in Last Man Standing wins instead of a three-count.
+function commitFinish(base){
+  const o=MS&&MS.o; const rl=stipRules(o); const ends=rl.ends;
+  let f=Object.assign({},base);
+  if(ends.length===1 && ends[0]==='ko'){
+    // LMS: whatever put them down, it was the 10-count that decided it.
+    f={type:'ko', by:base.by, move:base.move||'a heavy shot', fin:!!base.fin, part:base.part||null};
+  } else if(ends.length===1 && ends[0]==='sub' && f.type!=='sub'){
+    // Sub-only: the last submission move used, if any, is what did it.
+    // If nobody in the match ever went to a hold, leave the move name empty
+    // and let the finish line read "won by submission at TIME".
+    const lastSub = (MS.usedMoves||[]).slice().reverse().find(m=>m&&m.cat==='submission');
+    f={type:'sub', by:base.by, move:(lastSub&&lastSub.name)||'', part:base.part||null};
+  } else if(ends.length===1 && ends[0]==='climb'){
+    // Ladder: the finish is possession of the prize hanging above.
+    f={type:'climb', by:base.by, move:'the climb', fin:false};
+  } else if(!ends.includes(f.type)){
+    // Fall back to whatever the rules first allow.
+    const pref=ends[0];
+    f={type:pref, by:base.by, move:base.move||(pref==='sub'?'a hold':'a cover'), fin:!!base.fin, part:base.part||null};
+  }
+  MS.finish=f;
+  return f;
+}
 /* ============================================================
    RIVALRY STORYLINES: multi-match arcs with backstage moments
    ------------------------------------------------------------
@@ -3798,7 +3990,7 @@ const STORY_STAGES=[
   {n:3,name:'Blow-Off',    label:'It ends. One way or another.'},
   {n:4,name:'Settled',     label:'Whatever it was, it is finished.'},
 ];
-const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','hardcore',1.25],['Steel Cage','cage',1.2],['Last Man Standing','hardcore',1.35]];
+const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Steel Cage','cage',1.2],['Last Man Standing','lms',1.35]];
 
 function story(){ return G.story||null; }
 function startStory(charId,reason){
@@ -4320,7 +4512,7 @@ async function startFight(o){
       <p class="log">The match wrestles itself out live. A few things to watch:</p>
       <ul class="ruleul">
         <li>The bars up top are <b>damage taken</b>, not lives. Nobody loses by running out of health.</li>
-        <li>Matches end by <b>pinfall</b>, <b>submission</b> or the <b>time limit</b>, exactly like the real thing.</li>
+        <li>Matches end by <b>pinfall</b>, <b>submission</b> or a stoppage. There are no draws.</li>
         <li><b>Momentum</b> in the middle is who is in control right now.</li>
         <li>Now and then it will stop and ask you to <b>call a spot</b>. That is your part.</li>
       </ul>
@@ -4335,7 +4527,7 @@ async function startFight(o){
        opp:{hp:100,name:o.oppName,ovr:o.oppOvr,limb:newLimbs(),target:null},
        usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null,
        phase:0, phaseBeat:0, stretch:0, covers:0, nearFalls:0, finisherHit:0,
-       clock:0, timeLimit:(o.stakes==='title'||o.stakes==='defense')?1800:1200,
+       clock:0,
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   chooseTarget(MS.me); chooseTarget(MS.opp);
@@ -4345,8 +4537,11 @@ async function startFight(o){
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
   $('fStip').textContent=(o.stakes==='title'?'🏆 TITLE MATCH · ':o.stakes==='defense'?'🏆 TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase();
+  $('fRules').textContent=stipRules(o).desc;
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
+  const startGen=MS.gen;
+  const stale=()=>!MS||MS.gen!==startGen;
   go('fight');
   stageInit(); dressArena($('arena'),myPromoId());
   figLook('me',G.w.look);
@@ -4357,7 +4552,9 @@ async function startFight(o){
   fmv('me',{pose:'run',fwd:-ST.W*0.62},0); fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
   await sleep(40);
   fmv('me',{pose:'run',fwd:0},640); fmv('opp',{pose:'run',fwd:0},640); await sleep(660);
+  if(stale()) return;
   fmv('me',{pose:'taunt'},220); fmv('opp',{pose:'taunt'},220); await sleep(420);
+  if(stale()) return;
   fmv('me',{pose:'ready'},220); fmv('opp',{pose:'ready'},220);
   refTo(Math.round(ST.W*0.30),'refIdle',420,0.86);
   busy(false);
@@ -4375,7 +4572,9 @@ async function startFight(o){
   busy(true);
   fmv('me',{pose:'lockup',fwd:ST.close*0.9},320); fmv('opp',{pose:'lockup',fwd:ST.close*0.9},320);
   await callout('FIGHT!');
+  if(stale()) return;
   await settle(260);
+  if(stale()) return;
   fLog(`The bell rings. <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
   if(MS.studied) fLog(`<span class="hi">You studied the tape all week. You know what is coming.</span>`);
   runFight();
@@ -4458,6 +4657,10 @@ async function runFight(){
     } else if(!MS.ended && rnd()<coverChance(byMe,isFin)){
       await coverAttempt(byMe, lastMove, isFin);
     }
+    // ---- some matches are won by escape rather than by pinfall ----
+    if(!MS.ended && ph.id==='stretch' && stipRules(o).ends.includes('climb')){
+      await climbAttempt();
+    }
 
     // ---- decisions land on the story beats where they belong ----
     if(!MS.ended && ph.id==='stretch' && !MS.finishTried && MS.stretch>=2){ await finishDecision(); }
@@ -4467,8 +4670,9 @@ async function runFight(){
     // ---- advance the story ----
     if(!MS.ended && MS.phaseBeat>=ph.beats && MS.phase<PHASES.length-1){ MS.phase++; MS.phaseBeat=0; }
     // ---- the bell can beat you ----
-    if(!MS.ended && MS.clock>=MS.timeLimit){ await timeLimitDraw(); }
-    if(!MS.ended && MS.stretch>26){ await timeLimitDraw(); }   // safety net
+    // Matches never end in a draw. If the finish stretch has run wildly long,
+    // force somebody to lose: whoever is behind on momentum eats a pin.
+    if(!MS.ended && MS.stretch>26){ await forceFinish(); }
   }
 }
 
@@ -4507,7 +4711,10 @@ async function coverAttempt(byMe, mvName, isFin){
   // The finish belongs at the finish. Before the stretch a fall only comes
   // off a finisher, and even then it is a genuine upset.
   if(MS.phase<4) p3 *= isFin ? 0.30 : 0;
-  const three=rnd()<p3;
+  // In stipulations where a pinfall does not end the match, the pin can bring
+  // a near-fall but never the three: the finish will come by tap or ten-count.
+  const rulesAllowPin = stipRules(MS.o).ends.includes('pin');
+  const three = rulesAllowPin && rnd()<p3;
   await pinSequence(byMe, three, power, mvName, isFin);
 }
 
@@ -4529,10 +4736,11 @@ async function submissionAttempt(byMe, mvName){
            :`<b>${MS.opp.name}</b> has the ${bare(mvName)} cinched in on your ${LIMB_NAME[part]}.`,byMe?'':'bad');
   for(let i=0;i<3;i++){ fmv(A,{sc:1.05},95); fmv(D,{rot:i%2?6:-6},95); await sleep(110); fmv(A,{sc:1},95); fmv(D,{rot:0},95); await sleep(95); }
   const pTap=clamp((power-58)/56,0,0.88);
-  if(MS.phase>=3 && rnd()<pTap){
+  const rulesAllowSub = stipRules(MS.o).ends.includes('sub');
+  if(rulesAllowSub && MS.phase>=3 && rnd()<pTap){
     await callout('TAP! TAP! TAP!');
     fLog(byMe?`<span class="hi">${MS.opp.name} taps out!</span>`:`<span class="bad">You had to tap.</span>`);
-    MS.finish={type:'sub',by:byMe,move:mvName,part};
+    commitFinish({type:'sub',by:byMe,move:mvName,part});
     MS.quality+=16;
     await endFight(byMe); return;
   }
@@ -4544,17 +4752,60 @@ async function submissionAttempt(byMe, mvName){
   await settle(280);
 }
 
-async function timeLimitDraw(){
+// The stretch has run absurdly long. Someone has to lose. Whoever is behind on
+// momentum wears one, with the last big move on record as the finish.
+async function forceFinish(){
   if(MS.ended) return;
-  MS.finish={type:'draw'};
+  const iWin = MS.mom>=0;
+  const last = MS.usedMoves[MS.usedMoves.length-1];
+  commitFinish({type:(last&&last.cat==='submission')?'sub':'pin', by:iWin,
+                move:last?last.name:'a cover', fin:!!(last&&last.tier>=4),
+                part:(iWin?MS.me:MS.opp).target});
   MS.ended=true;
-  await callout('TIME LIMIT!');
-  fLog(`<span class="hi">The bell. ${Math.floor(MS.timeLimit/60)}-minute time limit. It is a draw.</span>`);
-  $('fClock').textContent='DRAW';
+  fLog(`<span class="hi">They cannot go any more. Somebody has to lose.</span>`);
+  await endFight(iWin);
+}
+
+// Cage and ladder matches can end with the leading wrestler getting over the
+// top. Momentum is the whole story here: the one on top has the seconds to
+// climb, the one on the mat cannot stop them without recovering first.
+async function climbAttempt(){
+  if(MS.ended) return;
+  const iAmClimbing = MS.mom >= 0;
+  const edge = Math.abs(MS.mom);
+  const ends = stipRules(MS.o).ends;
+  // Ladder is climb-only, so it fires more often than a cage where pin/sub
+  // are still on the table. Below a real momentum edge, it never fires.
+  const only = ends.length===1 && ends[0]==='climb';
+  if(edge<24) return;
+  const base = only ? 0.10 : 0.05;
+  const p = clamp(base + (edge-24)/300 + MS.stretch*0.008, 0, only?0.42:0.22);
+  if(rnd()>p) return;
+  const A=iAmClimbing?'me':'opp', D=iAmClimbing?'opp':'me';
   busy(true);
-  fmv('me',{pose:'stagger',fwd:0},300); fmv('opp',{pose:'stagger',fwd:0},300);
-  await sleep(1100);
-  finalizeFight(null);
+  fmv(A,{pose:'climb',up:-30},420);
+  fmv(D,{pose:'prone',fwd:0,rot:0},260);
+  await callout(only?'GOING FOR IT!':'CLIMBING!');
+  fLog(iAmClimbing?`<span class="hi">You are climbing. Nobody there to stop you.</span>`
+                  :`<span class="bad">${MS.opp.name} is on the way up. Get up. Get up.</span>`);
+  await sleep(720);
+  // The one on the mat has a puncher's chance to reach up and drag them back.
+  const dragPow = (100 - (iAmClimbing?MS.opp.hp:MS.me.hp))*0.4;
+  const escape = only ? 0.60 : 0.45;
+  if(rnd() < escape - dragPow/240){
+    // they get over
+    commitFinish({type:'climb', by:iAmClimbing, move:'the climb', fin:false});
+    MS.ended=true;
+    fmv(A,{up:-60},260); await sleep(280);
+    await endFight(iAmClimbing);
+    return;
+  }
+  // dragged back down and it becomes an exchange
+  fLog(`<span class="hint">Caught before the top. Dragged back into the ring.</span>`);
+  fmv(A,{pose:'prone',fwd:0,rot:0,up:0},280); fmv(D,{pose:'ready',up:0},220);
+  MS.mom=clamp(MS.mom - (iAmClimbing?18:-18), -100, 100); setMom();
+  MS.quality+=4;
+  await settle(280);
 }
 
 async function finishDecision(){
@@ -4666,12 +4917,15 @@ async function refSlap(){                     // the hand comes up, then flat on
   shake();
 }
 async function pinSequence(iAmPinning, three, power, mvName, isFin){
+  const gen=MS&&MS.gen;
+  const stale=()=>!MS||MS.gen!==gen;
   const A=iAmPinning?'me':'opp', D=iAmPinning?'opp':'me';
   busy(true);
   const arena=$('arena');
   // ---- the cover, staged toward the middle of the ring so it reads ----
   const px=Math.round(atX(D)*0.30);
   fmv(D,{pose:'prone',x:px,up:0,rot:0,sc:1},280); await sleep(260);
+  if(stale()) return false;
   dustAt(D);
   FIG[A].el.classList.add('up');
   fmv(A,{pose:'pin',x:px-FIG[A].dir*22,up:0,rot:0,sc:1},280);
@@ -4682,6 +4936,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   FIG.ref.el.classList.add('up');
   refTo(px + side*Math.round(ST.W*0.14),'refUp',440,0.9);
   await sleep(460);
+  if(stale()) return false;
   arena.classList.add('tense');
 
   const upAt = three?3 : power>50?3 : power>26?2 : 1;
@@ -4690,19 +4945,24 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 
   for(let n=1;n<=counts;n++){
     await refSlap();
+    if(stale()) return false;
     showCount(n, n>=2);
     fmv(A,{sc:1.03},90); await sleep(120); fmv(A,{sc:1},90);
     // the gap before two is longer than the gap before one, and the gap
     // after two is the longest of all. That is the suspense
     await sleep(n===1?520:700);
+    if(stale()) return false;
   }
 
   if(nearFall){
-    // the hand starts down for three and never gets there
-    poseSet('ref','refUp'); await sleep(300);
-    showCount('3', true);                                     // begins to fall…
-    await sleep(150);
-    $('fPin').classList.remove('show');
+    /* The hand goes up for three and never comes down.
+       It must NOT show the numeral. A three count that appears on screen and
+       is then taken away says the referee counted three and the match carried
+       on, which is not a near fall, it is a blown finish. The suspense is the
+       raised hand and the length of the pause, and the 2.9 burst below is what
+       names it afterwards. */
+    poseSet('ref','refUp'); await sleep(430);
+    if(stale()) return false;
     fmv(D,{pose:'proneUp',rot:-10},110);
     fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},240);
     poseSet('ref','refNo');
@@ -4720,9 +4980,10 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 
   if(three){
     await refSlap();
+    if(stale()) return false;
     showCount(3, true);
     await flashScreen();
-    MS.finish={type:'pin',by:iAmPinning,move:mvName,fin:isFin};
+    commitFinish({type:'pin',by:iAmPinning,move:mvName,fin:isFin});
     arena.classList.remove('tense');
     await sleep(520);
     FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
@@ -4747,6 +5008,8 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 
 async function endFight(iWon){
   if(MS.ended) return; MS.ended=true;
+  const gen=MS.gen;
+  const stale=()=>!MS||MS.gen!==gen;
   const W=iWon?'me':'opp', Lz=iWon?'opp':'me';
   busy(true);
   $('arena').classList.remove('tense');
@@ -4754,8 +5017,14 @@ async function endFight(iWon){
   fmv(W,{pose:'celebrate',fwd:0,up:0,rot:0,sc:1.04},300);
   FIG[W].el.classList.add('glow');
   await flashScreen();
+  if(stale()) return;
   const f=MS.finish||{type:'pin',by:iWon};
-  await callout(f.type==='sub'?(iWon?'SUBMISSION!':'YOU TAPPED'):iWon?'WINNER!':'DEFEATED');
+  const cw = f.type==='sub'   ? (iWon?'SUBMISSION!':'YOU TAPPED')
+           : f.type==='ko'    ? (iWon?'TEN COUNT!':'STAYED DOWN')
+           : f.type==='climb' ? (iWon?'ESCAPE!':'BEATEN OUT')
+           : iWon?'WINNER!':'DEFEATED';
+  await callout(cw);
+  if(stale()) return;
   // ---- the official raises the winner's arm ----
   if(FIG.ref){
     const wx=Math.round(FIG[W].home*0.42);          // step toward the middle for the pose-down
@@ -4772,10 +5041,20 @@ async function endFight(iWon){
       fmv(W,{up:0},170); fmv('ref',{up:0},170); await sleep(180);
     }
   }
-  fLog(f.type==='sub'
-      ? (iWon?`<span class="hi">${MS.opp.name} tapped to the ${bare(f.move)}.</span>`:`<span class="bad">You tapped to the ${bare(f.move)}.</span>`)
-      : (iWon?`<span class="hi">Three count. ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
-             :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`));
+  if(f.type==='sub'){
+    const via = f.move ? ` to the ${bare(f.move)}` : '';
+    fLog(iWon?`<span class="hi">${MS.opp.name} tapped${via}.</span>`
+             :`<span class="bad">You tapped${via}.</span>`);
+  } else if(f.type==='ko'){
+    fLog(iWon?`<span class="hi">${MS.opp.name} stayed down. Referee counted ten.</span>`
+             :`<span class="bad">You could not answer the count. The bell rings.</span>`);
+  } else if(f.type==='climb'){
+    fLog(iWon?`<span class="hi">${MS.me.name} got over the top and hit the floor first.</span>`
+             :`<span class="bad">${MS.opp.name} beat you to it. Feet on the floor before yours.</span>`);
+  } else {
+    fLog(iWon?`<span class="hi">Three count. ${MS.me.name} wins it with the ${bare(f.move)||'cover'}.</span>`
+             :`<span class="bad">Three count. ${MS.opp.name} takes it with the ${bare(f.move)||'cover'}.</span>`);
+  }
   fLog(`<span class="hint">Time of the fall: ${clockStr()}${MS.nearFalls?` · ${MS.nearFalls} near-fall${MS.nearFalls>1?'s':''}`:''}</span>`);
   $('fClock').textContent=clockStr();
   const pc=charById(MS.o.oppId);
@@ -4795,7 +5074,7 @@ function finalizeFight(iWon){
   const used=MS.usedMoves.length?MS.usedMoves:bestMoves(3);
   const ars=used.reduce((s,m)=>s+(m.dmg*0.5+m.pop*0.5),0)/Math.max(1,used.length);
   const govt=used.reduce((s,m)=>s+(a[(catById(m.cat)||{attr:'po'}).attr]||0),0)/Math.max(1,used.length);
-  const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
+  const stipMod=(STIP_RULES[o.stip]||{}).mod||0;
   const good=[], bad=[];
   // normalise the running tally to a reference-length match: a long match is
   // not automatically a better one, and a short one is not automatically worse
@@ -4845,9 +5124,10 @@ function groupMoves(used){
 }
 function finishLine(res){
   const f=res.finish||{};
-  if(res.draw||f.type==='draw') return `Time-limit draw at ${res.time}`;
   const who=f.by?'You':(MS&&MS.opp?MS.opp.name:'They');
-  if(f.type==='sub') return `${who} won by submission at ${res.time} with the ${bare(f.move)}`;
+  if(f.type==='sub')   return `${who} won by submission at ${res.time}${f.move?` with the ${bare(f.move)}`:''}`;
+  if(f.type==='ko')    return `${who} won by ten-count knockout at ${res.time}`;
+  if(f.type==='climb') return `${who} won by escape at ${res.time}`;
   return `${who} won by pinfall at ${res.time}${f.move?`, after the ${bare(f.move)}`:''}`;
 }
 
@@ -4869,8 +5149,8 @@ function skipFight(){
   const win=rnd()<clamp(p,0.05,0.95);
   // it still has to end the way a wrestling match ends
   const fin=(win?MS.usedMoves.filter(m=>m.tier>=4).pop():null)||MS.usedMoves[MS.usedMoves.length-1];
-  MS.finish={type:(fin&&fin.cat==='submission')?'sub':'pin',by:win,move:fin?fin.name:'a cover',
-             fin:!!(fin&&fin.tier>=4),part:(win?MS.me:MS.opp).target};
+  commitFinish({type:(fin&&fin.cat==='submission')?'sub':'pin',by:win,move:fin?fin.name:'a cover',
+             fin:!!(fin&&fin.tier>=4),part:(win?MS.me:MS.opp).target});
   finalizeFight(win);
 }
 
@@ -4935,8 +5215,8 @@ function bookWeek(){
       : ['Steady the middle of the card for us.','Give us ten good minutes.','Make the segment matter.'];
     bk.line=lines[Math.floor(rnd()*lines.length)];
     // the firsts that a career is remembered by
-    if(bk.o.card==='Main Event') award('Your first main event.','🌟');
-    if(bk.o.stakes==='title') award('Your first title shot.','🏆');
+    if(bk.o.card==='Main Event') award('Your first main event.',pico('starBig',36));
+    if(bk.o.stakes==='title') award('Your first title shot.',pico('trophy',36));
   }
   save();
 }
@@ -4947,12 +5227,12 @@ function bookWeek(){
 function prepOptions(){
   const c=G.car, b=c.booking||{type:'dark'}, dark=b.type==='dark';
   const opts=[
-    {id:'gym',  ico:'🏋️', l:'Hit the gym', d:dark?'+55 XP. Nothing but time this week.':'+30 XP before the show.'},
+    {id:'gym',  ico:pico('dumbbell'), l:'Hit the gym', d:dark?'+55 XP. Nothing but time this week.':'+30 XP before the show.'},
   ];
   if(b.type==='match')
-    opts.push({id:'tape', ico:'📼', l:'Study the tape', d:`Scout ${b.o.oppName}. Better odds, better match.`});
-  opts.push({id:'rest', ico:'🛌', l:'Put your feet up', d:dark?'+20 condition. Come back new.':'+10 condition before the show.'});
-  opts.push({id:'room', ico:'🤝', l:'Work the room', d:'Backstage politics. The office remembers faces.'});
+    opts.push({id:'tape', ico:pico('tape'), l:'Study the tape', d:`Scout ${b.o.oppName}. Better odds, better match.`});
+  opts.push({id:'rest', ico:pico('bed'), l:'Put your feet up', d:dark?'+20 condition. Come back new.':'+10 condition before the show.'});
+  opts.push({id:'room', ico:pico('handshake'), l:'Work the room', d:'Backstage politics. The office remembers faces.'});
   return opts;
 }
 function doPrep(id){
@@ -5005,7 +5285,7 @@ function doAsk(id){
   if(won){
     if(id==='time'){ b.o.mult=Math.round((b.o.mult+0.25)*100)/100; b.moreTime=true; }
     if(id==='opp'){ const alt=makeOffers().find(x=>x.oppId!==b.o.oppId); if(alt){ alt.card=b.o.card; b.o=alt; } }
-    if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2]][Math.floor(rnd()*3)];
+    if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1],['Last Man Standing','lms',1.35]][Math.floor(rnd()*5)];
       b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2]; }
     if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
     pushInboxItem({ico:'🤝',sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got')}.`});
@@ -5029,7 +5309,7 @@ function simMatch(o){
   const planMoves=w.moves.map(moveById).filter(m=>m&&plan.includes(m.cat)).sort((x,y)=>(y.dmg+y.pop)-(x.dmg+x.pop)).slice(0,5);
   const used=planMoves.length?planMoves:bestMoves(3);
   const ars=used.length? used.reduce((s,m)=>s+(m.dmg*0.5+m.pop*0.5),0)/used.length : 18;
-  const stipMod={singles:0,tag:-2,hardcore:3,ladder:4,cage:2,sub:1}[o.stip]||0;
+  const stipMod=(STIP_RULES[o.stip]||{}).mod||0;
   // execution: governing attrs of the categories used
   const govt=used.length? used.reduce((s,m)=>s+(a[catById(m.cat).attr]||0),0)/used.length : 30;
   // psychology gate: a match needs a storyteller
@@ -5108,12 +5388,11 @@ function applyMatch(o,res){
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100); }
   }
-  // ---- injury: a real one, in a real place, with real consequences ----
+  // ---- injury: only when you actually pushed it (see injuryRisk) ----
   let injMsg=null;
-  const cats=res.used.map(m=>m.cat).concat([o.stip==='hardcore'||o.stip==='ladder'?'hardcore':'strike']);
-  const risk=(res.used.reduce((s,m)=>s+m.risk,0)/Math.max(1,res.used.length)
-    + o.mult*0.04 + (100-c.cond)/380 + (c.wear||0)/1500) * sc.inj * (c.workedHurt?2.2:1);
-  if(rnd()<risk*0.34){
+  const cats=res.used.map(m=>m.cat).concat([(STIP_RULES[o.stip]||{}).danger?'hardcore':'strike']);
+  const risk=injuryRisk(o);
+  if(rnd()<risk){
     const h=takeInjury(cats,o.mult,c.workedHurt?0.30:0);
     injMsg=`You suffered <b>${h.nm}</b>, out ${h.wk} week${h.wk>1?'s':''} (−${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]}).`;
     pushInboxItem({ico:'🏥',sev:'bad',txt:`<b>${h.part} injury.</b> ${h.nm}, ${h.wk} weeks.`});
@@ -5245,8 +5524,9 @@ function matchStory(o,res){
   const q=res.quality, n=o.oppName, f=res.finish||{};
   const open=q>=80?`You and ${n} tore the house down.`:q>=62?`A strong outing with ${n}.`:q>=45?`A solid, workmanlike match with ${n}.`:`It never clicked with ${n}.`;
   let mid;
-  if(res.draw||res.win===null) mid=` Neither of you could put it away before the bell.`;
-  else if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
+  if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
+  else if(f.type==='ko') mid=res.win?` You beat them down and they could not answer the ten count.`:` You could not beat the count. It was over on the floor.`;
+  else if(f.type==='climb') mid=res.win?` You got over the top first, feet on the floor before them.`:` ${n} beat you to the top and dropped clear.`;
   else if(res.win) mid=f.fin?` The finisher did it. Three seconds later it was over.`:` You caught them flat and stole the three.`;
   else mid=f.fin?` They hit the ${bare(f.move)} and that was that.`:` ${n} had an answer when it mattered.`;
   const nf=(res.nearFalls||0)>=3?' The near-falls down the stretch had them out of their seats.':'';
@@ -5362,7 +5642,10 @@ function yearEnd(){
   // decline at different rates depending on how hard they worked the road and
   // how much of their body they left in the ring.
   const mileage=(c.wear||0)/100;
-  const declineAge=Math.max(29, 35 - Math.floor(mileage*1.6));
+  // decline starts in the mid-thirties for a careful wrestler, earlier if the miles
+  // have piled up. Peaks stay around 30-32, and plenty of wrestlers still work at
+  // world-class level into their forties (Cena, AJ Styles, Nakamura, Owens, Sting)
+  const declineAge=Math.max(31, 38 - Math.floor(mileage*1.4));
   const peak=Math.max(26, 31 - Math.floor(mileage));
   const preAttrs={}; ATTRS.forEach(([k])=>preAttrs[k]=w.attrs[k]);
   ATTRS.forEach(([k])=>{
@@ -5387,10 +5670,10 @@ function yearEnd(){
     c.awards=c.awards||[];
     let moty=false, woty=false, rookie=false;
     if(best.q>=88){ c.awards.unshift({y:c.year,t:'Match of the Year',d:`vs ${best.opp} (${best.q})`});
-      award(`Match of the Year vs ${best.opp}.`,'⭐',true); c.pop=clamp(c.pop+3,1,100); c.rep+=380; moty=true; }
+      award(`Match of the Year vs ${best.opp}.`,pico('starBig',36),true); c.pop=clamp(c.pop+3,1,100); c.rep+=380; moty=true; }
     if(avg>=78 && c.pop>=68 && yl.length>=8){ c.awards.unshift({y:c.year,t:'Wrestler of the Year',d:`avg ${avg.toFixed(0)} across ${yl.length} matches`});
-      award('Wrestler of the Year.','👑',true); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); woty=true; }
-    if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.','🌟',true); c.rep+=260; rookie=true; }
+      award('Wrestler of the Year.',pico('crown',36),true); c.pop=clamp(c.pop+6,1,100); c.rep+=900; c.standing=clamp(c.standing+10); woty=true; }
+    if(yl.length>=6 && avg>=64 && c.year<=3){ award('Rookie of the Year.',pico('star',36),true); c.rep+=260; rookie=true; }
     const growth=ATTRS.map(([k,label])=>[label,Math.round((w.attrs[k]-preAttrs[k])*10)/10])
       .filter(g=>Math.abs(g[1])>=0.5);
     c.pendingCeremony={ y:c.year-1, matches:yl.length,
@@ -5400,9 +5683,13 @@ function yearEnd(){
   c.yearLog=[];
   const msgs=[`<b>Year ${c.year}</b> begins. You're ${c.age}.`];
   if(c.age>declineAge) msgs.push(`The miles are adding up (${Math.round(c.wear||0)} on the clock).`);
-  if(c.age>=34) msgs.push('Retirement is on the table any time.');
+  if(c.age>=34) msgs.push('Retirement is on the table any time. Or stay on as a manager when you are done.');
   G.log.unshift(msgs.join(' '));
-  const retireOdds = (c.age>=38?0.14:0) + (c.age>=42?0.24:0) + mileage*0.055 + ((c.chronic||[]).length)*0.04;
+  // Wrestlers keep going longer than every other pro sport if the body will hold. A
+  // careful main-eventer can work into their late forties or beyond, but every
+  // chronic injury and every mile makes the walk-away odds real.
+  const retireOdds = (c.age>=40?0.05:0) + (c.age>=44?0.08:0) + (c.age>=48?0.14:0)
+                    + mileage*0.030 + ((c.chronic||[]).length)*0.05;
   if(c.age>=36 && rnd()<retireOdds){ retire('Your body finally called it. Too many miles, too many landings.'); }
 }
 function retire(reason){ G.car.retired=true; G.car.retireReason=reason||'You walked away on your own terms.'; save(); go('hof'); }
@@ -5424,7 +5711,7 @@ function renderTrain(){
       <button ${G.w.tp<cost||v>=99?'disabled':''} onclick="spendTP('${k}')">+1</button></div></div>
       <div class="bar" style="margin-top:8px;"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`</div>
-  <p class="hint" style="margin-top:14px;">Training points come from matches and training weeks. Attributes also grow naturally each year until about 30, then decline, so bank your prime.</p>`;
+  <p class="hint" style="margin-top:14px;">Training points come from matches and training weeks. Attributes also grow naturally each year until around 30-32, then decline, so bank your prime while you have it.</p>`;
 }
 function gateHint(k){
   const cats=MCATS.filter(c=>c.attr===k).map(c=>c.name);
@@ -5440,14 +5727,14 @@ function renderMoves(){
   const chips=MCATS.map(c=>{
     const owned=MOVES.filter(m=>m.cat===c.id&&moveUnlocked(m)).length;
     const all=MOVES.filter(m=>m.cat===c.id).length;
-    return {t:`${c.icon} ${c.name} <span class="pgr-x">${owned}/${all}</span>`};
+    return {t:`${catIcon(c.id,16)} ${c.name} <span class="pgr-x">${owned}/${all}</span>`};
   });
   let h=pagerBar('moves',chips,renderMoves);
   const c=MCATS[pagerIdx('moves',MCATS.length)];
   const m0=G.w.mastery[c.id]||0, t=masteryTier(c.id), nx=MTIERS.find(x=>x.t===t+1);
   h+=`<div class="card" style="margin-bottom:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-      <div style="font-weight:800;color:var(--cream);">${c.icon} ${c.name}
+      <div style="font-weight:800;color:var(--cream);">${catIcon(c.id,20)} ${c.name}
         ${mastMult(c.id)>1.05?`<span class="badge b-leg" style="margin-left:4px;">×${mastMult(c.id).toFixed(1)}</span>`:''}</div>
       <span class="badge b-com">T${t} ${MTIERS[t-1].name}</span></div>
     <div class="hint" style="margin-top:4px;">${c.blurb}</div>
@@ -5700,10 +5987,205 @@ const PROMO_NOTE={
   ally:'Offer to work together. Builds respect instead of heat.',
   challenge:'Put yourself in the title picture while it is fresh.',
 };
+/* ============================================================
+   PROMO CONTEXT (data layer for A and C)
+   ------------------------------------------------------------
+   Wrestling promos live on specifics. This gathers everything a
+   line or a chip could reference: your career, your opponent,
+   your shared history, your venue, the belt picture. Recomputed
+   at the start of every segment, cached on PMCTX.
+   ============================================================ */
+let PMCTX=null;
+function buildPromoCtx(target){
+  const c=G.car, w=G.w;
+  const me={
+    name:w.name, nick:w.nick||'',
+    align:w.align, gimmick:w.gimmick&&w.gimmick.name, streak:c.streak||0,
+    standing:c.standing||50, rep:c.rep||0, pop:c.pop||0, reaction:reactionOf(),
+    title:c.title||null, reigns:(c.reigns||[]).length, wins:c.rec.w||0, losses:c.rec.l||0,
+    tier:tierOf(c.rep).name,
+  };
+  const p=myPromo();
+  const venue={ promoShort:p.short, promoName:p.name, region:p.region, product:p.product };
+  const ch=(typeof champOf==='function')?champOf():null;
+  const belt=beltName();
+  const t=target||null;
+  const R=t?rel(t.id):null;
+  const opp = t ? {
+    id:t.id, name:t.name, nick:t.nick||'',
+    align:t.align, gimmick:t.gimmick||'', overness:t.over||55,
+    wins:(R&&R.wins)||0, losses:(R&&R.losses)||0, matches:(R&&R.matches)||0,
+    heat:(R&&R.heat)||0, respect:(R&&R.respect)||0,
+    holdsBelt:ch&&!ch.you&&ch.id===t.id,
+  } : null;
+  // shared moments: the best match between you, the venue you last met in, wins in a row
+  const hist=(G.hist||[]).filter(x=>t&&x.opp===t.name);
+  const best = hist.length ? hist.reduce((a,b)=>b.q>a.q?b:a) : null;
+  const last = hist[0]||null;
+  const feud = story();
+  const feudWith = (feud && t && feud.charId===t.id) ? feud : null;
+  return {
+    me, opp, venue, belt,
+    champion: ch ? {name:ch.you?me.name:ch.name, you:!!ch.you} : null,
+    hist:{ count:hist.length, best, last, wins:hist.filter(x=>x.win===true).length, losses:hist.filter(x=>x.win===false).length },
+    feud:feudWith ? {stage:feudWith.stage, weeks:(c.year*40+c.week)-(feudWith.startYear*40+feudWith.startWeek)} : null,
+    directive: PM && PM.directive,
+    stance: PM && PM.stance,
+    weekCount: (c.year-1)*40+c.week,
+  };
+}
+// pronoun helpers so the game speaks in someone's voice, not from nowhere
+function pronounsFor(align){
+  // face talks TO the crowd ABOUT the opponent, heel talks ABOUT itself AT the crowd
+  return align==='face' ? {you:'us', me:'me', them:'they', room:'you people'} : {you:'you people', me:'I', them:'they', room:'you people'};
+}
+
+/* ============================================================
+   THE CHIP SYSTEM (option C: build a promo one phrase at a time)
+   ------------------------------------------------------------
+   Every beat, you pick 2 or 3 chips from a shortlist. Each chip
+   is a clause tagged by function (Reference, Boast, Threat,
+   Question, Callback, Concession, Twist). Text is generated at
+   pick-time from PMCTX, so a chip about "Osaka last year" only
+   shows if you actually wrestled there.
+
+   Assembly is period-separated: the chips read as a paragraph,
+   which is what a real cut promo sounds like. Dedup is enforced
+   at the chip id level for the whole segment.
+   ============================================================ */
+const CHIP_BANK=[
+  // ----- REFERENCES: things that actually happened -----
+  {id:'ref_prev_win',    tag:'ref',   phase:['hook','thesis','meat','personal'],
+    when:c=>c.opp&&c.hist.wins>0,
+    fn:c=>`I have already beaten ${c.opp.name}. Ask ${c.opp.name}.`},
+  {id:'ref_prev_loss',   tag:'ref',   phase:['thesis','meat','personal'],
+    when:c=>c.opp&&c.hist.losses>0,
+    fn:c=>`Last time ${c.opp.name} beat me, I told everyone I would come back for it. I am back for it.`},
+  {id:'ref_best_match',  tag:'ref',   phase:['personal','meat'],
+    when:c=>c.opp&&c.hist.best&&c.hist.best.q>=70,
+    fn:c=>`You and I put on a ${c.hist.best.q}-rated match in ${c.venue.promoShort}, and we both know it. We could do it again tonight.`},
+  {id:'ref_series',      tag:'ref',   phase:['hook','meat'],
+    when:c=>c.opp&&c.hist.count>=2,
+    fn:c=>`We have done this ${c.hist.count} times now. Everybody in this building has an opinion.`},
+  {id:'ref_venue',       tag:'ref',   phase:['hook','personal'],
+    when:c=>true,
+    fn:c=>`Everybody in ${c.venue.promoShort} knows what I am here for.`},
+  {id:'ref_streak',      tag:'ref',   phase:['thesis','meat'],
+    when:c=>c.me.streak>=3,
+    fn:c=>`I have won ${c.me.streak} in a row. Not close, not scraped: won.`},
+  {id:'ref_title',       tag:'ref',   phase:['hook','thesis','close'],
+    when:c=>c.me.title,
+    fn:c=>`I am the ${c.me.title}. Nobody in this room takes that from me tonight.`},
+  {id:'ref_belt_target', tag:'ref',   phase:['hook','thesis','close'],
+    when:c=>c.opp&&c.opp.holdsBelt,
+    fn:c=>`${c.opp.name} carries a title I know I can win. Everyone in this building can see it.`},
+  {id:'ref_feud',        tag:'ref',   phase:['thesis','meat','personal'],
+    when:c=>c.feud,
+    fn:c=>`This started ${c.feud.weeks} weeks ago and it ends the way I say it ends.`},
+
+  // ----- CONCESSIONS: giving credit is what makes the shot land -----
+  {id:'conc_respect',    tag:'concession', phase:['personal','meat'],
+    when:c=>c.opp,
+    fn:c=>`${c.opp.name} is good. I have never denied that. That is what makes what I am about to do matter.`},
+  {id:'conc_worked',     tag:'concession', phase:['personal'],
+    when:c=>c.opp,
+    fn:c=>`${c.opp.name} worked for this too. This is not about who cares more.`},
+
+  // ----- BOASTS: about you -----
+  {id:'boast_iam',       tag:'boast', phase:['hook','thesis','meat'],
+    when:c=>true,
+    fn:c=>c.me.align==='heel'
+      ? `Look at me. I am the reason this company still has an audience.`
+      : `I am ${c.me.name}, and I did not come this far to make friends.`},
+  {id:'boast_reigns',    tag:'boast', phase:['meat','close'],
+    when:c=>c.me.reigns>=1,
+    fn:c=>c.me.reigns===1
+      ? `I have carried this company's championship before. I know what it costs.`
+      : `I have held this company's top belt ${c.me.reigns} times. I know exactly what it costs.`},
+  {id:'boast_tier',      tag:'boast', phase:['thesis','meat'],
+    when:c=>c.me.tier,
+    fn:c=>({
+      'Indie Circuit':`I ran the indies for a reason. Every date I worked, I earned.`,
+      'Regional Scene':`I climbed to the regional scene the hard way. Ask anyone who saw me on the indies.`,
+      'National TV':`I made it to national television. Nobody in this locker room got here by accident.`,
+      'Global Main Event':`This is the main event of the business, and I main-event it.`,
+    }[c.me.tier] || `I did not come this far to make friends.`)},
+
+  // ----- QUESTIONS: rhetorical, do not let them off -----
+  {id:'q_earned',        tag:'question', phase:['meat','personal'],
+    when:c=>c.opp,
+    fn:c=>`What exactly has ${c.opp.name} earned that puts them across from me?`},
+  {id:'q_ready',         tag:'question', phase:['thesis','meat'],
+    when:c=>c.opp,
+    fn:c=>`How long is ${c.opp.name} going to pretend they are ready for this?`},
+  {id:'q_room',          tag:'question', phase:['personal','meat'],
+    when:c=>true,
+    fn:c=>`Ask anyone in this room who they came to see. Then ask them why.`},
+
+  // ----- THREATS + PROMISES -----
+  {id:'thr_leave',       tag:'threat', phase:['close','meat'],
+    when:c=>c.opp,
+    fn:c=>`I am going to leave ${c.opp.name} flat on this mat. Everyone in ${c.venue.promoShort} sees it.`},
+  {id:'thr_finish',      tag:'threat', phase:['close'],
+    when:c=>c.opp,
+    fn:c=>c.me.align==='heel'
+      ? `When I am done with ${c.opp.name} tonight, they will thank the referee for making it stop.`
+      : `I am going to finish ${c.opp.name} tonight. And the room is going to be on its feet.`},
+  {id:'thr_title',       tag:'threat', phase:['close'],
+    when:c=>c.opp&&c.opp.holdsBelt,
+    fn:c=>`I am walking out of this building with that belt. Bet on anything else.`},
+
+  // ----- CALLBACKS: the repeatable phrase, only in Close -----
+  {id:'cb_signature',    tag:'callback', phase:['close'],
+    when:c=>true,
+    fn:c=>c.me.gimmick
+      ? `That is what ${c.me.gimmick} does. That is what ${c.me.gimmick} has always done.`
+      : `I told you what I was here for. I do not repeat myself.`},
+
+  // ----- TWISTS: swerve the direction of what came before -----
+  {id:'tw_notyou',       tag:'twist', phase:['meat','personal'],
+    when:c=>c.opp,
+    fn:c=>`But this is not about ${c.opp.name}. This never was.`},
+  {id:'tw_realtarget',   tag:'twist', phase:['personal','close'],
+    when:c=>c.champion&&!c.champion.you&&(!c.opp||c.champion.name!==c.opp.name),
+    fn:c=>`The person I actually came for is standing backstage with a belt on their shoulder. ${c.champion.name}, I am coming.`},
+
+  // ----- CROWD WORK: face and heel grammar diverges here -----
+  {id:'crowd_thanks',    tag:'crowd', phase:['personal','close'],
+    when:c=>c.me.align!=='heel',
+    fn:c=>`Every night you show up. Every night you are the reason I do too.`},
+  {id:'crowd_scorn',     tag:'crowd', phase:['personal','close'],
+    when:c=>c.me.align==='heel',
+    fn:c=>`You people paid to boo me and I am fine with that. You paid.`},
+];
+function chipTag(tag){ return {ref:'k-crowd',boast:'k-heel',threat:'k-heel',question:'k-cool',concession:'k-face',callback:'k-crowd',twist:'k-cool',crowd:'k-face'}[tag]||'k-cool'; }
+function chipsFor(phase){
+  const ctx=PMCTX;
+  const used=PM.usedChips||{};
+  const pool=CHIP_BANK.filter(ch=>ch.phase.includes(phase) && ch.when(ctx) && !used[ch.id]);
+  // shuffle and take up to 6, keeping at least one reference if there is any.
+  // Cap each tag at 2 in a single draw so the reader never sees two BOASTs
+  // starting with "I am" back to back.
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const refs=pool.filter(c=>c.tag==='ref');
+  const picked=[], tagCount={};
+  const push=c=>{ if(picked.includes(c)) return false; if((tagCount[c.tag]||0)>=2) return false;
+    picked.push(c); tagCount[c.tag]=(tagCount[c.tag]||0)+1; return true; };
+  if(refs.length && phase!=='close') push(refs[0]);
+  for(const c of pool){ if(picked.length>=6) break; push(c); }
+  // second sweep in case the cap kept the pool short (e.g. only Boasts left)
+  if(picked.length<4) for(const c of pool){ if(picked.length>=6) break; if(!picked.includes(c)) picked.push(c); }
+  return picked;
+}
+function chipLabel(tag){
+  return {ref:'REAL HISTORY', concession:'GIVE CREDIT', boast:'BOAST', question:'QUESTION',
+          threat:'PROMISE', callback:'CATCHPHRASE', twist:'SWERVE', crowd:'TO THE CROWD'}[tag]||'LINE';
+}
+
 const PROMO_LINES={
   callout:{k:'CALL THEM OUT',c:'heel',host:-0.8,int:0.85,lines:[
     o=>`${o}. You have been ducking me for weeks and everybody in this building knows it.`,
-    o=>`I am not leaving this ring until ${o} comes out here and faces me like a professional.`,
+    o=>`Look at ${o}. Look me in the eye and tell me you belong on my level.`,
     o=>`${o}, you and me. No excuses left.`]},
   mock:{k:'MOCK THEM',c:'heel',host:-1,int:0.7,lines:[
     o=>`I have seen tribute acts with more to offer than ${o}.`,
@@ -5759,24 +6241,67 @@ const PROMO_LINES={
     ()=>`I am done waiting my turn. Put the championship in front of me and watch what happens.`,
     o=>`${o} can keep the belt warm. I am coming for it.`]},
 };
-function promoKinds(target,mode){
+/* ---- THE FIVE-PART PROMO ----
+   From Heyman on down, the studied craft is: HOOK, THESIS, MEAT,
+   PERSONAL, CLOSE. Each beat wants a different kind of line, and
+   what "fits" the beat is what the crowd (and the office) reads as
+   competent promo work. Getting them out of order (a call to action
+   in the hook, a cheap pop where the thesis goes) is the amateur
+   mistake we let the player make and pay for. */
+const PPHASES={
+  hook:     {n:'The Hook',       d:'Grab them. Not logistics: a statement.',        fits:['boast','callout','challenge','cool','mock','rally']},
+  thesis:   {n:'The Thesis',     d:'Say why you are out here, and what you want.',  fits:['challenge','callout','rally','boast']},
+  meat:     {n:'The Meat',       d:'Build them up as a threat, then dismiss it.',    fits:['respect','mock','threat','callout']},
+  personal: {n:'The Personal',   d:'From the gut. Something the crowd can feel.',    fits:['respect','rally','shoot','ally','teaseHeel','teaseFace']},
+  close:    {n:'The Call To Action', d:'Promise. Warning. Challenge. Send them home wanting the match.', fits:['challenge','threat','callout','cool']},
+};
+const PPHASE_ORDER=['hook','thesis','meat','personal','close'];
+function promoKinds(target,mode,phase){
   const l=leanOf(), established=Math.abs(l)>=32;
-  const k=[];
-  if(mode==='title') k.push('challenge','boast','callout','cool');
-  else if(mode==='crowd') k.push('rally','boast','mock','cool');
-  else if(!target) k.push('rally','boast','cool');
-  else {
-    k.push('callout','mock','threat','respect','cool','boast');
-    const R=rel(target.id);
-    if(R.respect>=45||R.matches>=2) k.push('ally');
-  }
-  // You can only play with a crowd that has already made its mind up about
-  // you. Nobody is shocked when a man they have no opinion of acts out.
-  if(established) k.push(l>0?'teaseHeel':'teaseFace');
-  // the shortcuts, always available and always cheapening
+  const fits=(PPHASES[phase]||PPHASES.hook).fits.slice();
+  // trim what does not apply to the situation
+  const k=fits.filter(x=>{
+    if(x==='ally' && target){ const R=rel(target.id); return R.respect>=45||R.matches>=2; }
+    if(x==='ally') return false;
+    if(x==='shoot') return G.w.attrs.ch>=55;
+    if(x==='teaseHeel') return established && l>0;
+    if(x==='teaseFace') return established && l<0;
+    if((x==='callout'||x==='mock'||x==='threat'||x==='respect') && !target && mode!=='title') return false;
+    return true;
+  });
+  // the shortcut is always available, and always cheapening
   k.push(l<=0?'cheap':'pander');
-  if(G.w.attrs.ch>=55) k.push('shoot');
-  return k;
+  return [...new Set(k)];
+}
+
+/* ---- THE OFFICE DIRECTIVE ----
+   Every live segment is booked with a purpose. The office picks one of
+   these, and the player picks how to run with it. */
+const DIRECTIVES={
+  build:  {icon:pico('graphUp',20), kicker:'Build the match', how:'Get people talking about this fight.', wants:{intensity:.6,specifics:1,hostile:0}},
+  sell:   {icon:pico('ticket',20), kicker:'Sell the show',  how:'Put the marquee event over.',        wants:{intensity:.6,crowd:1,hostile:-.2}},
+  soften: {icon:pico('dove',20), kicker:'Cool it down',   how:'Get back on the good side of the room.', wants:{hostile:.4,crowd:1}},
+  heat:   {icon:pico('fire',20), kicker:'Get some heat',   how:'They want the crowd to boo you louder.', wants:{hostile:-.6,intensity:.7}},
+  feud:   {icon:pico('swords',20), kicker:'Build the feud',  how:'Make the whole building want to see this settled.', wants:{hostile:-.5,specifics:1}},
+  push:   {icon:pico('starBig',20), kicker:'Push yourself',   how:'Get yourself over. Stake a claim.', wants:{intensity:.7,crowd:1,hostile:.2}},
+};
+function pickDirective(mode,target){
+  const c=G.car, l=leanOf();
+  if(mode==='title') return 'build';
+  if(target){ const R=rel(target.id); return R.heat>=40?'feud':'build'; }
+  if(l<-30 && G.w.align==='face') return 'soften';           // you have gone off-piste
+  if(l>30 && G.w.align==='heel')  return 'heat';             // they want their villain back
+  if(c.standing<48) return 'push';
+  return 'sell';
+}
+// how much your line honored what the office asked for, -1..+1
+function complianceOf(read,directive){
+  const w=DIRECTIVES[directive]?.wants||{}; let s=0, n=0;
+  if(w.intensity!=null){ s+=read.intensity>=w.intensity?1:-0.5; n++; }
+  if(w.hostile!=null){ s+=(Math.sign(read.hostile)===Math.sign(w.hostile)||w.hostile===0)?1:-1; n++; }
+  if(w.crowd) { s+=read.crowd?1:-0.4; n++; }
+  if(w.specifics) { s+=read.specific?1:-0.3; n++; }
+  return n?s/n:0;
 }
 
 /* ---- reading a written line ----
@@ -5860,16 +6385,19 @@ function champName(pid){ const ch=champOf(pid); return ch?(ch.you?'you':ch.name)
 
 function beginPromo(mode,targetId){
   let target=targetId?charById(targetId):null;
-  // calling for a title shot means calling out whoever is holding it
   if(!target && mode==='title'){ const ch=champOf(); if(ch&&!ch.you) target=ch; }
-  PM={mode,target,beat:0,maxBeats:3,score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,done:false};
+  const directive=pickDirective(mode,target);
+  PM={mode,target,directive,stance:null,phase:'hook',beat:0,maxBeats:PPHASE_ORDER.length,
+      score:0,hostile:0,intensity:0,specifics:0,crowdWork:0,fitSum:0,complySum:0,complyN:0,done:false,
+      // for the build-a-promo chip system
+      picking:[], usedChips:{}, usedLines:{}};
+  PMCTX=buildPromoCtx(target);
   go('promo');
-  stageInit('pmArena'); dressArena($('pmArena'),myPromoId());   // same rig and ring as a match
+  stageInit('pmArena'); dressArena($('pmArena'),myPromoId());
   figLook('me',G.w.look);
   if(target){ figLook('opp',target.look); FIG.opp.el.style.display=''; }
   else FIG.opp.el.style.display='none';
   FIG.ref.el.style.display='none';
-  // stand them closer than a match: this is a face-to-face, not a lock-up
   const step=Math.round(ST.home*0.42);
   fmv('me',{pose:'point',fwd:target?step:Math.round(ST.home*0.9),up:0,rot:0,sc:1},0);
   if(target) fmv('opp',{pose:'ready',fwd:step,up:0,rot:0,sc:1},0);
@@ -5878,28 +6406,106 @@ function beginPromo(mode,targetId){
     : mode==='crowd'? 'Open mic: character work'
     : target? `Face to face with ${target.name}` : '';
   $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
-  pmLog(`<span class="hint">The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}</span>`);
+  pmLog(`The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}`,'open');
+  pmDirective();     // the office speaks first
+}
+function pmDirective(){
+  const d=DIRECTIVES[PM.directive];
+  $('pmChoices').innerHTML=`
+    <div class="pmdir">
+      <div class="pd-k">Backstage · the office</div>
+      <div class="pd-t">${d.icon} ${d.kicker}</div>
+      <div class="pd-d">${d.how}</div>
+    </div>
+    <div class="flab" style="margin-top:12px;">How do you play it?</div>
+    <div class="grid" style="gap:9px;">
+      <div class="pmopt pms-comply" onclick="pmStance('comply')">
+        <div class="po-k k-face">Do what they asked</div>
+        <div class="po-t">Play it exactly the way the office wanted. Safe. The office remembers.</div>
+      </div>
+      <div class="pmopt pms-wrinkle" onclick="pmStance('wrinkle')">
+        <div class="po-k k-crowd">Their idea, your way</div>
+        <div class="po-t">Hit the beats they asked for, but on your terms. A little edge, a little risk.</div>
+      </div>
+      <div class="pmopt pms-off" onclick="pmStance('off')">
+        <div class="po-k k-heel">Go off script</div>
+        <div class="po-t">Ignore the memo. Say what you actually want to say. The room decides if it worked.</div>
+      </div>
+    </div>`;
+}
+function pmStance(s){
+  PM.stance=s;
+  pmLog(`<span class="hint">${s==='comply'?'You give them what they asked for.':s==='wrinkle'?'You take their notes and add your own.':'You throw the notes away.'}</span>`);
   pmChoices();
 }
 function pmChoices(){
   if(PM.done) return;
+  PMCTX=buildPromoCtx(PM.target);         // refresh at each beat: state can move
   const t=PM.target, oppName=t?t.name:'whoever they put in front of me';
-  const html=promoKinds(t,PM.mode).map(k=>{
-    const d=PROMO_LINES[k]; if(!d) return '';
-    const line=d.lines[Math.floor(rnd()*d.lines.length)](oppName);
-    const pay=JSON.stringify({k,line}).replace(/"/g,'&quot;');
-    return `<div class="pmopt" onclick="pmSay('${encodeURIComponent(JSON.stringify({k,line}))}')">
-      <div class="po-k k-${d.c}">${d.k}</div>
-      <div class="po-t">“${line}”</div>
-      ${PROMO_NOTE[k]?`<div class="po-d">${PROMO_NOTE[k]}</div>`:''}</div>`;
-  }).join('');
-  $('pmChoices').innerHTML=`<div class="grid" style="gap:9px;">${html}</div>
+  const ph=PPHASES[PM.phase]||PPHASES.hook;
+  const phaseName=`Beat ${PM.beat+1} of 5 · ${ph.n}`;
+  // ---- pick 2-3 chips this beat; assembly is period-separated so it reads as a paragraph ----
+  const chips=chipsFor(PM.phase);
+  const maxThis = PM.phase==='meat'||PM.phase==='personal' ? 3 : 2;
+  const preview = (PM.picking||[]).map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?ch.fn(PMCTX):''; }).filter(Boolean).join(' ');
+  const canSay = (PM.picking||[]).length>=Math.min(2,maxThis);
+  const chipHTML = chips.length ? chips.map(ch=>{
+    const on=(PM.picking||[]).includes(ch.id);
+    const clickable=on || (PM.picking||[]).length<maxThis;
+    return `<div class="chip ${on?'on':''} ${clickable?'':'off'}"
+      onclick="${clickable?`pmToggleChip('${ch.id}')`:''}">
+      <div class="ch-k ${chipTag(ch.tag)}">${chipLabel(ch.tag)}</div>
+      <div class="ch-t">${ch.fn(PMCTX)}</div>
+    </div>`;
+  }).join('') : `<div class="hint">No fresh chips for this beat. Write your own below.</div>`;
+  $('pmChoices').innerHTML=`
+    <div class="pmphase">
+      <div><div class="pp-k">${phaseName}</div><div class="pp-h">${ph.d}</div></div>
+      <div class="pp-d">${DIRECTIVES[PM.directive].icon} ${DIRECTIVES[PM.directive].kicker}
+        <span class="pp-s pms-${PM.stance}">${PM.stance==='comply'?'on script':PM.stance==='wrinkle'?'your wrinkle':'off script'}</span></div>
+    </div>
+    <div class="flab" style="display:flex;justify-content:space-between;">Build the line
+      <span class="hint" style="text-transform:none;letter-spacing:0;">Pick ${maxThis===3?'2 or 3':'2'} phrases in order. They will be delivered as one paragraph.</span></div>
+    <div class="chipgrid">${chipHTML}</div>
+    <div class="pmpreview ${canSay?'on':''}">
+      <div class="pv-k">You are going to say</div>
+      <div class="pv-t">${preview?`"${preview}"`:'<span class="hint">Nothing yet. Pick a phrase above to start the line.</span>'}</div>
+      <div class="row" style="justify-content:flex-end;gap:8px;margin-top:8px;">
+        <button class="ghost" onclick="pmClearPick()" ${(PM.picking||[]).length?'':'disabled'}>Clear</button>
+        <button onclick="pmSayChips()" ${canSay?'':'disabled'}>Cut it →</button>
+      </div>
+    </div>
     <div class="flab" style="margin-top:12px;">Or say it your own way</div>
     <div class="pmwrite">
       <input type="text" id="pmCustom" maxlength="180" placeholder="Write your own line…" onkeydown="if(event.key==='Enter')pmCustom()">
       <button onclick="pmCustom()">Say it</button>
     </div>
     <div class="hint" style="margin-top:5px;">The room reads your tone: how hard you commit, whether you speak to <i>them</i>, and whether what you say about ${oppName} is actually true.</div>`;
+}
+function pmToggleChip(id){
+  PM.picking=PM.picking||[];
+  const i=PM.picking.indexOf(id);
+  if(i>=0) PM.picking.splice(i,1); else PM.picking.push(id);
+  pmChoices();
+}
+function pmClearPick(){ PM.picking=[]; pmChoices(); }
+function pmSayChips(){
+  const ids=(PM.picking||[]).slice();
+  if(!ids.length) return;
+  const line=ids.map(id=>{ const ch=CHIP_BANK.find(c=>c.id===id); return ch?ch.fn(PMCTX):''; }).filter(Boolean).join(' ');
+  // read the composite line and tag its tone from the chips that built it
+  const chipsInPlay=ids.map(id=>CHIP_BANK.find(c=>c.id===id)).filter(Boolean);
+  const tags=chipsInPlay.map(c=>c.tag);
+  const hostile = tags.includes('threat')?-0.8 : tags.includes('boast')?-0.15 : tags.includes('concession')?0.55 : tags.includes('crowd')?0.35 : 0;
+  const intensity = tags.includes('threat')||tags.includes('boast')?0.85 : tags.includes('question')?0.7 : 0.6;
+  const specific = tags.includes('ref') || tags.includes('twist');
+  const crowd = tags.includes('crowd');
+  const kind = tags.includes('twist')?'swerve' : tags.includes('callback')?'signature' : '';
+  // dedup for the rest of the segment. The catchphrase chip is a deliberate
+  // callback and stays reusable, everything else fires once.
+  chipsInPlay.forEach(ch=>{ if(ch.tag!=='callback') PM.usedChips[ch.id]=true; });
+  PM.picking=[];
+  pmSay(encodeURIComponent(JSON.stringify({k:'chips',line,read:{hostile,intensity,specific,crowd,wantsTitle:tags.some(t=>t==='threat')&&PMCTX.opp&&PMCTX.opp.holdsBelt,kind,words:line.split(/\s+/).length}})));
 }
 function pmCustom(){
   const el=$('pmCustom'), v=(el&&el.value||'').trim();
@@ -5908,10 +6514,19 @@ function pmCustom(){
 }
 async function pmSay(payload){
   if(PM.done) return;
-  const {k,line}=JSON.parse(decodeURIComponent(payload));
+  const parsed=JSON.parse(decodeURIComponent(payload));
+  const {k,line}=parsed;
+  // dedup: a body beat that repeats a line reads as forgetting where you are.
+  // The catchphrase (kind:'signature' / callback chip) is the exception.
+  if(PM.usedLines[line] && !(parsed.read&&parsed.read.kind==='signature')){
+    toast('You already said that. Pick a different line.');
+    pmChoices(); return;
+  }
+  PM.usedLines[line]=true;
   $('pmChoices').innerHTML='<div class="hint">…</div>';
   const t=PM.target;
-  const read = k==='custom' ? readPromoLine(line,t)
+  const read = parsed.read ? parsed.read
+    : k==='custom' ? readPromoLine(line,t)
     : (()=>{ const d=PROMO_LINES[k];
         return {hostile:d.host,intensity:d.int,crowd:(k==='rally'||k==='boast'||k==='cheap'||k==='pander'),
                 specific:k!=='cool'&&k!=='boast'&&k!=='cheap'&&k!=='pander',wantsTitle:k==='challenge',
@@ -5944,6 +6559,16 @@ async function pmSay(payload){
   const extra=[read.specific?'you made it personal':'',read.crowd?'you spoke to the room':'']
     .concat(sh.notes||[]).filter(Boolean);
   const tail=extra.length?` · ${extra.join(' · ')}`:'';
+  // The default hit rotates so identical wording does not stack over five
+  // beats. The special modes above are rare enough to keep their own copy.
+  const DEFAULT_HITS=[
+    `They bite. Reaction +${sh.gain}${tail}.`,
+    `That one lands. Reaction +${sh.gain}${tail}.`,
+    `The room stays with it. Reaction +${sh.gain}${tail}.`,
+    `You have their attention. Reaction +${sh.gain}${tail}.`,
+    `Held them there. Reaction +${sh.gain}${tail}.`,
+    `You get a rumble for that one. Reaction +${sh.gain}${tail}.`,
+  ];
   pmLog(
     sh.mode==='swerve'   ? `<span class="hi">Nobody saw that coming. The building is stunned. Reaction +${sh.gain}${tail}. Keep going and this becomes a turn.</span>`
   : sh.mode==='tease'    ? `<span class="hi">You dangled it in front of them and pulled it away. Reaction +${sh.gain}${tail}. They will remember that if you ever mean it.</span>`
@@ -5952,7 +6577,7 @@ async function pmSay(payload){
   : sh.mode==='pander'   ? `<span class="hint">They pop for it because they always do. Reaction +${sh.gain}${tail}.</span>`
   : sh.mode==='flipflop' ? `<span class="bad">You have said three different things in three weeks. They have stopped taking you seriously. Reaction +${sh.gain}.</span>`
   : sh.mode==='wobble'   ? `<span class="bad">Half-hearted, and off from what you have been doing. It landed on nobody.</span>`
-  :                        `<span class="hint">They bite. Reaction +${sh.gain}${tail}.</span>`);
+  :                        `<span class="hint">${DEFAULT_HITS[PM.beat % DEFAULT_HITS.length]}</span>`);
   // a turn completes when you have stayed with it
   const turned=maybeTurn();
   if(turned){ await flashScreen(); await pmCall('THE TURN','#C6392C');
@@ -5972,24 +6597,58 @@ async function pmSay(payload){
     await sleep(1750);
   }
   pmClearBubbles();
+  // did that line belong where it was said?
+  // chips already assemble on-phase, so treat them as fitting. Old system uses k.
+  const kind=(k==='custom') ? (read.kind||'') : k==='chips' ? '__fits__' : k;
+  const fitsCheat = kind==='__fits__';
+  const fits=(PPHASES[PM.phase]||PPHASES.hook).fits;
+  const fit = fitsCheat ? 1 : fits.includes(kind) ? 1 : (kind==='cheap'||kind==='pander') ? -0.4 : -0.6;
+  PM.fitSum += fit;
+  if(fit<0){
+    pmLog(fit<=-0.6
+      ? `<span class="bad">Wrong beat for that line. The room reads you as scattered.</span>`
+      : `<span class="hint">A cheap way to fill that beat, and the office notices.</span>`);
+  }
+  // Chips are always on-phase by construction; the "it fit" affirmation was
+  // firing every single beat and reading as noise. If a line hits, the
+  // crowd feedback above already says so.
+  // and how well it honored the office's ask
+  const cmp=complianceOf(read,PM.directive);
+  PM.complySum+=cmp; PM.complyN++;
   PM.beat++;
+  PM.phase = PPHASE_ORDER[PM.beat] || 'close';
   if(PM.beat>=PM.maxBeats) return pmFinish();
   pmChoices();
 }
 async function pmFinish(){
   PM.done=true;
   const c=G.car, w=G.w, t=PM.target;
-  const q=clamp(PM.score/PM.maxBeats*62 + w.attrs.ch*0.28 + PM.specifics*5 + PM.crowdWork*4, 0, 100);
+  // structure bonus: getting the beats in the right order is what a pro sounds like
+  const fitAvg=PM.fitSum/Math.max(1,PM.maxBeats);          // -0.6 .. +1
+  const structure=Math.round(clamp((fitAvg+0.6)/1.6,0,1)*22);
+  const q=clamp(PM.score/PM.maxBeats*62 + w.attrs.ch*0.28 + PM.specifics*5 + PM.crowdWork*4 + structure, 0, 100);
   c.pop=clamp(c.pop+q*0.035,1,100);
   if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + 6 + q*0.10, 0, 100);
   w.mastery.showman=(w.mastery.showman||0)+Math.round(8+q*0.12);
   c.rep+=Math.round(20+q*0.9);
-  c.standing=clamp(c.standing+(q>=60?1.6:q<35?-1:0.4));
+  // The office reads the room. Doing what they asked is safe. Going off-script
+  // and having it work gets you a bigger push than compliance ever would.
+  // Going off-script and eating it gets you a real problem with the office.
+  const comply=PM.complySum/Math.max(1,PM.complyN);       // -1 .. +1
+  const stanceMult = PM.stance==='comply' ? 1 : PM.stance==='wrinkle' ? 1.3 : 1.8;
+  const standingSwing = (q>=60 ? 1.4 : q<35 ? -1.2 : 0.3) * (PM.stance==='off'?stanceMult:1)
+                      + comply*(PM.stance==='comply'?2:PM.stance==='wrinkle'?1:-0.5);
+  c.standing=clamp(c.standing+standingSwing);
   w.xp+=Math.round(18+q*0.35); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
   const cl=crowdLabel();
   fmv('me',{pose:q>=60?'celebrate':'ready',fwd:0},280);
   await pmCall(q>=75?'THEY ARE ON THEIR FEET':q>=45?'THAT LANDED':'FLAT','#e0b341');
   pmLog(`<b>Segment rating ${Math.round(q)}.</b> <span class="hint">Reaction ${Math.round(reactionOf())} · ${cl.t}</span>`);
+  pmLog(`<span class="hint">Structure ${structure}/22 · office directive ${comply>=0.35?'delivered':comply<=-0.35?'ignored':'partial'}${PM.stance==='off'?' (off script)':''}.</span>`);
+  if(PM.stance==='off'){
+    if(q>=70) pmLog(`<span class="hi">You went off script and the room was with you. The office will remember.</span>`);
+    else if(q<40) pmLog(`<span class="bad">You went off script and it did not land. The office will remember that too.</span>`);
+  }
   if(t){
     const R=rel(t.id);
     if(!c.rivalId && !story() && R.heat>=40){
@@ -6251,7 +6910,7 @@ function signDeal(i){
     pushInboxItem({ico:'✍️',sev:'good',txt:`<b>Signed.</b> ${pr.name}, ${o.years} year${o.years>1?'s':''}, ${money(o.weekly)} a week.`});
     const stepUp=promoTierIdx(pr)>promoTierIdx(old);
     if(stepUp) award(`Signed with ${pr.name}.`,'✍️',true);   // the signing moment below covers it
-    queueMoment('🖋️', pr.name, {kick:'Contract signed',
+    queueMoment(pico('pen',44), pr.name, {kick:'Contract signed',
       sub:`${o.years} year${o.years>1?'s':''} · ${money(o.weekly)} a week guaranteed${stepUp?' · a step up the ladder':''}`});
   } else {
     pushLog(`You re-sign with <b>${pr.name}</b> at ${money(o.weekly)}/week.`);

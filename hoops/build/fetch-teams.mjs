@@ -161,6 +161,77 @@ async function main() {
     process.exit(1);
   }
 
+  /* ── TITLES THE UPSTREAM TABLE HAS NOT CAUGHT UP WITH ─────────────────────
+   *
+   * The championship list comes from nba_api's static franchise table, which is
+   * generated upstream on whatever schedule its maintainers keep. It carried
+   * 2025 and not 2024, so Boston stood at sixteen rings and every man on the
+   * 2024 roster was not a champion.
+   *
+   * NOTHING FAILED ON THAT, and nothing would have. A missing title is a
+   * shorter array: the game still played, the bracket still ran, and the only
+   * symptom was ten cards quietly not saying the thing they should say. It was
+   * found by the completeness check below and not by anybody looking.
+   *
+   * So: a hand-written supplement, applied on top, and a check that every
+   * season in living memory has exactly one champion. Add to it when the check
+   * complains, and remove an entry once upstream carries it, which the merge
+   * below makes harmless either way. */
+  const SUPPLEMENT = {
+    BOS: [2024],
+  };
+  const supplemented = [];
+  for (const [code, years] of Object.entries(SUPPLEMENT)) {
+    const t = teams[code];
+    if (!t) { console.error(`  supplement names ${code}, which is not a franchise here`); continue; }
+    for (const y of years) {
+      if (t.titles.includes(y)) continue;
+      t.titles.push(y);
+      supplemented.push(`${code} ${y}`);
+    }
+    t.titles.sort((a, b) => a - b);
+  }
+  if (supplemented.length) {
+    console.log(`  supplemented ${supplemented.length} title(s) the source did not carry: ${supplemented.join(', ')}`);
+  }
+
+  /* ── EVERY SEASON HAS EXACTLY ONE CHAMPION ────────────────────────────────
+   *
+   * Checked back to 1974, which is where this game's data starts, and forward
+   * to LAST year rather than this one: a season is named for the calendar year
+   * it ends in, so the current year's champion may not be crowned yet and
+   * demanding one would fail every spring.
+   *
+   * Fatal, because these years are not decoration. verify.mjs asserts that
+   * every season in the player data has a champion in it, and the playoff model
+   * is fitted against the real title rate read off this very list, so a gap
+   * here quietly moves the calibration as well as the cards. */
+  const lastSettled = new Date().getUTCFullYear() - 1;
+  const byYear = new Map();
+  for (const t of Object.values(teams)) {
+    for (const y of t.titles) {
+      if (y < 1974 || y > lastSettled) continue;
+      byYear.set(y, [...(byYear.get(y) || []), t.code]);
+    }
+  }
+  const missing = [], doubled = [];
+  for (let y = 1974; y <= lastSettled; y++) {
+    const who = byYear.get(y) || [];
+    if (!who.length) missing.push(y);
+    else if (who.length > 1) doubled.push(`${y} (${who.join(', ')})`);
+  }
+  if (missing.length || doubled.length) {
+    console.error('\nTHE CHAMPIONSHIP LIST HAS A HOLE IN IT, and nothing has been written.\n');
+    if (missing.length) console.error(`  no champion recorded for: ${missing.join(', ')}`);
+    if (doubled.length) console.error(`  two champions recorded for: ${doubled.join(', ')}`);
+    console.error('\nThe source is a generated upstream file and it can lag a season. Add the');
+    console.error('missing year to SUPPLEMENT above, which is what it is there for. A missing');
+    console.error('title is invisible in the output: the game plays, the bracket runs, and the');
+    console.error('only symptom is a roster that quietly stops being champions.');
+    process.exit(1);
+  }
+  console.log(`  every season from 1974 to ${lastSettled} has exactly one champion`);
+
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const out = path.join(DATA_DIR, 'teams.json');
   fs.writeFileSync(out, JSON.stringify({

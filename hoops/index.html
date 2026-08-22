@@ -145,12 +145,31 @@
      started, what they had won BY THAT SEASON, and who they later became. */
   .clubnote{margin:6px 2px 0;font-size:12px;color:var(--dim);}
 
-  /* role badges on the board */
-  .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
-  .badge{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
-    padding:2px 7px;border-radius:999px;background:rgba(34,197,94,.14);color:#5fd98a;
-    border:1px solid rgba(34,197,94,.32);}
-  .badge.cost{background:rgba(239,68,68,.12);color:#f08a8a;border-color:rgba(239,68,68,.3);}
+  /* ── HARDWARE ───────────────────────────────────────────────────────────
+     What a player WON, on the board, where the role badges used to be.
+
+     Those badges (RIM PROTECTOR, CREATOR, NO RANGE) were the fit model reading
+     its own homework out loud, which turned a basketball decision into matching
+     coloured labels, and a rate stat from one season is not a fact about a man:
+     Karl-Anthony Towns took 1.1 threes a game in 2016 and came back marked NO
+     RANGE. An award has neither problem. It is a fact rather than an inference,
+     and recognising it is the knowledge the game is meant to reward.
+
+     A FILLED PLATE, NOT AN OUTLINED PILL, on the football game's pattern. Every
+     other chip on a tile is an outline around a number, so hardware has to be
+     the one thing that is not, or it reads as another statistic. */
+  .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;align-items:center;}
+  .awd{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.05em;
+    text-transform:uppercase;padding:3px 7px;border-radius:5px;
+    background:linear-gradient(180deg,#fde68a,#d19410);color:#2a1b02;
+    border:1px solid #f0c25a;box-shadow:0 1px 4px rgba(0,0,0,.45);
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* Still a plate, just duller metal. A roster with six All-Stars must not read
+     like a roster with six MVPs. */
+  .awd.minor{background:linear-gradient(180deg,#e3c883,#a67c24);border-color:#c2a04a;
+    box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .awdmore{font-size:9.5px;font-weight:800;letter-spacing:.04em;color:#e0b64a;
+    flex:0 0 auto;}
 
   /* the fit read-out */
   .fitbox{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
@@ -302,6 +321,33 @@
   .reelbox.club.done .reel-win{border-color:rgba(240,120,45,.55);background:rgba(240,120,45,.08);}
   .reelbox.hit .reel-win{animation:bandhit .5s ease-out;}
   .reelbox.hit .reel-i.land{animation:facehit .42s cubic-bezier(.2,1.5,.35,1);}
+
+  /* ── THE WHEEL WEARS THE CLUB ──────────────────────────────────────────
+     The moment the club reel lands, BOTH boxes take that club's colors: the
+     fill is its primary, the band around the winning row is its secondary, and
+     the text is whichever of white or near-black actually survives on the fill.
+     The football and college games do this and it is the difference between a
+     wheel that reports a result and a wheel that hands you a team.
+
+     --c1rgb carries the fill as three channels rather than a hex, because the
+     vignette over the top has to be that same color at four opacities and
+     rgba() cannot take a hex from a custom property. */
+  .reelbox.clubbed{background:var(--c1);border-color:var(--c2);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.13);}
+  /* HARDER THAN THE GREY ONE, and the club fill is why. The plain reel fades
+     its neighbours behind a near-black vignette, where a 50% grey row is a
+     smudge. Behind a club's own mid-tone fill the same row is legible, so the
+     Nuggets sat above the Heat looking like a second answer. */
+  .reelbox.clubbed:after{background:linear-gradient(180deg,
+    rgb(var(--c1rgb)) 10%, rgba(var(--c1rgb),.9) 32%, rgba(var(--c1rgb),.04) 50%,
+    rgba(var(--c1rgb),.9) 68%, rgb(var(--c1rgb)) 90%);}
+  .reelbox.clubbed .reel-i{color:var(--on);opacity:.18;}
+  .reelbox.clubbed .reel-i.land{opacity:1;}
+  /* Beats the .done rules above, which paint the band in the game's own gold
+     and orange. A club's colors are the more specific claim. */
+  .reelbox.season.clubbed .reel-win,.reelbox.club.clubbed .reel-win,
+  .reelbox.season.clubbed.done .reel-win,.reelbox.club.clubbed.done .reel-win{
+    border-color:var(--c2);border-width:1.5px;background:rgba(255,255,255,.07);}
   @keyframes bandhit{0%{box-shadow:0 0 0 0 rgba(240,120,45,.55)}100%{box-shadow:0 0 0 13px rgba(240,120,45,0)}}
   @keyframes facehit{0%{transform:scale(.72)}60%{transform:scale(1.1)}100%{transform:none}}
   .drawnote{font-size:11.5px;color:var(--dim);margin:8px 0 0;min-height:15px;}
@@ -1082,7 +1128,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=6"></script>
+<script src="engine.js?v=8"></script>
 <script src="run.js?v=1"></script>
 <script>
 (function(){
@@ -1093,6 +1139,11 @@ var DATA = null, run = null, board = [];
 
 var $ = function(id){ return document.getElementById(id); };
 var money = function(v){ return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'M'; };
+var bold = function(text){
+  var b = document.createElement('b');
+  b.textContent = text;
+  return b;
+};
 
 /* THE TITLE BELONGS ON THE TITLE SCREEN. It is 230px of masthead above every
    screen in the game, which on a phone is most of the space between the top of
@@ -1219,11 +1270,11 @@ function renderAppBar(screen){
 
 function boot(){
   Promise.all([
-    fetch('data/players.json?v=2').then(function(r){ return r.json(); })
+    fetch('data/players.json?v=3').then(function(r){ return r.json(); })
       .then(function(v){ bootStep('Players loaded.'); return v; }),
     fetch('data/chemistry.json?v=1').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; }),
-    fetch('data/teams.json?v=1').then(function(r){ return r.json(); })
+    fetch('data/teams.json?v=2').then(function(r){ return r.json(); })
       .then(function(v){ bootStep(); return v; }).catch(function(){ bootStep(); return null; })
   ]).then(function(res){
     if (res[1]) E.setCuratedChemistry(res[1]);
@@ -1305,8 +1356,35 @@ function drawInto(fn){
   /* The club lands a beat after the season, which is the order the question is
      asked in: which year, and then whose team. */
   setTimeout(function(){
-    spinReel($('box-c'), $('reel-c'), pools.clubs, E.teamName(draw.team), settled);
+    spinReel($('box-c'), $('reel-c'), pools.clubs, E.teamName(draw.team), function(){
+      /* BOTH boxes, and only once the CLUB has landed. Dressing the season box
+         at the same moment its own reel stops would give the answer away a beat
+         early: the color says Bulls before the second reel has said Bulls. */
+      dressReel($('box-s'), draw.team);
+      dressReel($('box-c'), draw.team);
+      settled();
+    });
   }, 130);
+}
+
+/* WHAT YOU DREW, WITHOUT THE ANIMATION. A run restored mid-draft has a club and
+   a season already drawn and no spin coming, and the reels used to sit empty
+   and grey through it: the board underneath said which six men were on offer
+   and nothing on the page said whose team they were. */
+function showDraw(draw){
+  if (!draw) return;
+  var name = E.teamName(draw.team);
+  reelFill($('reel-s'), [String(draw.season)], 0);
+  reelFill($('reel-c'), [name], 0);
+  var mid = ($('box-s').clientHeight - ROW_H) / 2;
+  [['box-s', 'reel-s'], ['box-c', 'reel-c']].forEach(function(pair){
+    var box = $(pair[0]), strip = $(pair[1]);
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateY(' + mid + 'px)';
+    box.classList.remove('waiting', 'spin', 'hit');
+    box.classList.add('done');
+    dressReel(box, draw.team);
+  });
 }
 
 function spin(){ drawInto(function(){ R.spin(run, DATA); }); }
@@ -1605,6 +1683,41 @@ function dealOf(p){
 var ROW_H = 34, SPIN_MS = 560;
 var reelBusy = false;
 
+/* ── DRESSING THE WHEEL IN THE CLUB'S COLORS ────────────────────────────────
+ *
+ * Both boxes, not just the club one: the season and the club are two halves of
+ * one draw, and a 1996 in the game's own gold beside a Bulls red is two
+ * results rather than one team.
+ *
+ * The palette is worked out in engine.js, where every one of the 45 franchises
+ * this game can draw was measured against this page. What arrives here is a
+ * fill, a band and a text color that are already known to work.
+ */
+var CLUB_VARS = ['--c1', '--c1rgb', '--c2', '--on'];
+
+function dressReel(boxEl, code){
+  if (!boxEl) return;
+  var skin = E.clubSkin(code);
+  boxEl.style.setProperty('--c1', skin.bg);
+  boxEl.style.setProperty('--c1rgb', rgbChannels(skin.bg));
+  boxEl.style.setProperty('--c2', skin.accent);
+  boxEl.style.setProperty('--on', skin.on);
+  boxEl.classList.add('clubbed');
+}
+
+function undressReel(boxEl){
+  if (!boxEl) return;
+  for (var i = 0; i < CLUB_VARS.length; i++) boxEl.style.removeProperty(CLUB_VARS[i]);
+  boxEl.classList.remove('clubbed');
+}
+
+/* "122,10,39", for the rgba() the vignette is built from. A custom property
+   holding "#7a0a27" cannot be handed to rgba(), so the channels travel
+   separately from the hex. */
+function rgbChannels(hex){
+  return [1, 3, 5].map(function(i){ return parseInt(hex.substr(i, 2), 16); }).join(',');
+}
+
 function reelFill(stripEl, items, landIndex){
   stripEl.textContent = '';
   for (var i = 0; i < items.length; i++) {
@@ -1635,6 +1748,9 @@ function spinReel(boxEl, stripEl, pool, answer, done){
   stripEl.style.transition = 'none';
   stripEl.style.transform = 'translateY(' + mid + 'px)';
   boxEl.classList.remove('waiting', 'done', 'hit');
+  /* Out of the LAST club's colors before this spin starts, or a re-spin runs
+     the whole way in the colors of the team you just rejected. */
+  undressReel(boxEl);
   boxEl.classList.add('spin');
 
   /* Two frames, not one: the first commits the reset transform, the second
@@ -1744,15 +1860,27 @@ function renderHud(justSlot){
   var per = $('c-per');
   per.textContent = '';
   per.className = 'perslot';
-  if (left > 0) {
-    per.appendChild(document.createTextNode('Up to '));
-    var sb = document.createElement('b');
-    sb.textContent = money(Math.max(0, spendable));
-    per.appendChild(sb);
-    per.appendChild(document.createTextNode(' on this pick, then ' + (left - 1)
-      + ' more slot' + (left === 1 ? '' : 's') + ' at ' + money(E.CONSTANTS.MIN_CONTRACT_MUSD || 2) + ' minimum'));
-  } else {
+  if (left <= 0) {
     per.textContent = 'Rotation full.';
+  } else if (left === 1) {
+    /* One slot left, so the average IS the money and there is nothing to
+       average it over. Saying "$14.2M a man across 1 slot" is arithmetic
+       performed on the reader for no reason. */
+    per.appendChild(document.createTextNode('All of it on the last slot: up to '));
+    per.appendChild(bold(money(Math.max(0, spendable))));
+  } else {
+    /* THE AVERAGE FIRST, because it is the number the next pick is actually
+       measured against. "$124M available" is true and it is not the question:
+       spend it here and the other five men are minimum-salary filler. What a
+       player has to be WORTH is the money divided by the slots it still has to
+       cover, and nobody works that out in their head mid-draft.
+       The ceiling comes second because it is a rule rather than a guide: it is
+       what the cap will actually let through on this pick once the cheapest
+       legal player for every other slot is set aside. */
+    per.appendChild(bold(money(remaining / left)));
+    per.appendChild(document.createTextNode(' a man across ' + left + ' slots · up to '));
+    per.appendChild(bold(money(Math.max(0, spendable))));
+    per.appendChild(document.createTextNode(' on this one'));
   }
 
   var note = $('c-note');
@@ -1812,7 +1940,14 @@ function renderDraft(justSlot){
     $('d-note2').textContent = 'Spin for a season and a club.';
     $('tabs').textContent = '';
     $('opts').textContent = '';
-  } else {
+  } else if (!reelBusy && !$('reel-c').firstChild) {
+    /* A draw with nothing on the reels is a restored run: the spin that would
+       have filled them happened in a tab that is gone. Put the answer up
+       without animating it. Guarded on reelBusy so this can never fire in the
+       middle of a live spin, where the strip is deliberately mid-flight. */
+    showDraw(draw);
+  }
+  if (draw) {
     var note = E.teamNote(draw.team, draw.season);
     $('d-note2').textContent = 'Filling ' + draw.openSlots.join(' / ')
       + (note ? ' · ' + note : '');
@@ -1978,6 +2113,69 @@ function renderSortBar(draw){
   $('opts').appendChild(bar);
 }
 
+/* ── HARDWARE ──────────────────────────────────────────────────────────────
+ *
+ * The board used to describe each player with badges worked out from his own
+ * box score: RIM PROTECTOR, CREATOR, NO RANGE. Both halves of that were wrong.
+ *
+ * It printed the fit model's answer on every tile, so a draft became a matching
+ * exercise (collect one of each colour) rather than a basketball decision, and
+ * the knowledge a fan brings is supposed to be the whole edge.
+ *
+ * And a badge inferred from one season's rate stats makes claims about a PLAYER
+ * that his career flatly contradicts. Karl-Anthony Towns took 1.1 threes a game
+ * in 2016, which is a fair reading of that column and an absurd thing to say
+ * about one of the best shooting big men who has ever played.
+ *
+ * What a man WON has neither problem. It is a fact rather than an inference,
+ * it is the thing a fan already carries in their head, and a 1990 Celtics tile
+ * that says five-time All-Star is rewarding recall instead of replacing it.
+ *
+ * Codes rather than names in the data file, because this ships to every visitor
+ * 16,000 times and "All-Defensive 2nd Team" is 22 bytes of the same three
+ * words. The list on each player is already sorted by prestige at BUILD time,
+ * so the first entry is the best one and nothing here has to rank anything.
+ */
+var AWARD_LABEL = {
+  mvp: 'MVP', fmvp: 'Finals MVP', an1: 'All-NBA 1st', dpoy: 'Defensive POY',
+  ring: 'Champion', an2: 'All-NBA 2nd', an3: 'All-NBA 3rd', roy: 'Rookie of the Year',
+  smoy: 'Sixth Man', mip: 'Most Improved', ad1: 'All-Defensive 1st',
+  ad2: 'All-Defensive 2nd', star: 'All-Star'
+};
+/* The full plate is for the five a fan would lead with. Everything else keeps
+   the shape in a duller metal, so six All-Stars do not read as six MVPs. */
+var AWARD_MAJOR = { mvp: 1, fmvp: 1, an1: 1, dpoy: 1, ring: 1 };
+
+function awardChip(code){
+  var el = document.createElement('span');
+  el.className = 'awd' + (AWARD_MAJOR[code] ? '' : ' minor');
+  el.textContent = AWARD_LABEL[code] || code;
+  return el;
+}
+
+/* Up to `max` plates and a count for the rest. A tile is four lines tall and a
+   man with an MVP, a ring, a first team and an All-Star nod would take two of
+   them on hardware alone. Returns null when there is nothing to show, which is
+   most players: the row is only added when it has something in it. */
+function awardRow(p, max){
+  var won = p.aw;
+  if (!won || !won.length) return null;
+  var row = document.createElement('span');
+  row.className = 'badges';
+  var shown = Math.min(max || won.length, won.length);
+  for (var i = 0; i < shown; i++) row.appendChild(awardChip(won[i]));
+  if (won.length > shown) {
+    var more = document.createElement('span');
+    more.className = 'awdmore';
+    more.textContent = '+' + (won.length - shown);
+    /* The full list for a screen reader and for a hover, since the plate it is
+       standing in for is the only place the name exists. */
+    more.title = won.slice(shown).map(function(c){ return AWARD_LABEL[c] || c; }).join(', ');
+    row.appendChild(more);
+  }
+  return row;
+}
+
 function statBit(value, label, key){
   var st = document.createElement('span');
   st.className = 'st' + (key ? ' key' : '');
@@ -2033,18 +2231,8 @@ function playerTile(p, block, tooDear, idx){
   stats.appendChild(statBit(String(p.ast), 'ast'));
   b.appendChild(stats);
 
-  var tags = E.playerTags(p);
-  if (tags.length) {
-    var row = document.createElement('span');
-    row.className = 'badges';
-    for (var t = 0; t < tags.length; t++) {
-      var b2 = document.createElement('span');
-      b2.className = 'badge' + (tags[t].good ? '' : ' cost');
-      b2.textContent = tags[t].label;
-      row.appendChild(b2);
-    }
-    b.appendChild(row);
-  }
+  var hardware = awardRow(p, 2);
+  if (hardware) b.appendChild(hardware);
 
   if (block || tooDear) {
     var why = document.createElement('span');
@@ -2184,6 +2372,11 @@ function renderRoster(slotsEl){
       sub.textContent = p.s + ' ' + E.teamName(p.t) + ' · ' + p.ow.toFixed(1)
         + ' off / ' + p.dw.toFixed(1) + ' def win shares';
       who.appendChild(sub);
+      /* THE WHOLE LIST HERE, not the two a board tile has room for. This is the
+         roster you built, read at leisure, and "MVP · Champion · All-NBA 1st"
+         is the sentence a fan wants about the man they just signed. */
+      var hardware = awardRow(p);
+      if (hardware) who.appendChild(hardware);
     } else {
       who.textContent = 'open';
     }

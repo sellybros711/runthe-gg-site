@@ -2,7 +2,7 @@
    RunTheRopes: Build-A-Wrestler Cosmetics, Packs & Store (v1)
    ------------------------------------------------------------
    Everything here is drawn procedurally by the pixel renderer,
-   no image assets. Items unlock via the Pro Shop (coins) or by
+   no image assets. Items unlock via the Merch Stand (coins) or by
    opening packs earned through your career.
 
    slots: hair | face | mask | attire | boots | acc | pattern
