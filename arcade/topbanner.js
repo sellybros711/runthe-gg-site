@@ -114,15 +114,37 @@
     }
     var pf = document.getElementById('rtbProf');
     if (pf) {
+      /* FOUR STATES, AND EACH ONE IS THE TRUTH ABOUT THE ACCOUNT. This used to be two:
+         `signedIn && name` showed the name and EVERYTHING ELSE showed "Sign in". Both of the
+         states that fell through are ordinary, and both told the player a lie.
+
+           signed in with a name    the name
+           signed in without one    the figure, and the word Account. A null username is the
+                                    normal state right after a Google sign-up (this file's own
+                                    auth.js says so, above loadProfile) and it is also what a
+                                    slow or failed profile fetch leaves behind. Saying "Sign
+                                    in" to somebody who is signed in sends them to sign in
+                                    again, which is the complaint this started from.
+           signed out, and known    the figure, and Sign in
+           not answered yet         the figure alone, no label. auth.js resolves only when
+                                    getSession comes back off the network; `ready` is true
+                                    long before that, so painting "Sign in" on `ready` flashes
+                                    it at every returning player on every load. A silent
+                                    figure is true whichever way the answer lands. */
       var st = (A() && A().state) ? A().state() : null;
+      pf.className = 'rtb-prof out';
       if (st && st.signedIn && st.name) {
-        pf.className = 'rtb-prof out';
         pf.innerHTML = '<span class="rtb-plab">' + esc(st.name) + '</span>';
         pf.setAttribute('aria-label', 'Signed in as ' + st.name);
-      } else {
-        pf.className = 'rtb-prof out';
+      } else if (st && st.signedIn) {
+        pf.innerHTML = PERSON + '<span class="rtb-plab">Account</span>';
+        pf.setAttribute('aria-label', 'Your account');
+      } else if (st && st.resolved) {
         pf.innerHTML = PERSON + '<span class="rtb-plab">Sign in</span>';
         pf.setAttribute('aria-label', 'Sign in');
+      } else {
+        pf.innerHTML = PERSON;
+        pf.setAttribute('aria-label', 'Your account');
       }
     }
   }

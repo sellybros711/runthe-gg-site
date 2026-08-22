@@ -30582,6 +30582,13 @@ let crCacheLegend=null, dbCacheLegend=null;   // Legend-tier course records / bo
 let crCacheSpot=null, dbCacheSpot=null, _pendingSpot=null;   // Monthly Spotlight course records / board (own bucket)
 let dailyAttemptsCheckedDay=null;   // guards reconcileDailyAttempts() to once per day per session
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
+/* THE KEY EVERY OTHER GAME ON THE SITE SHARES. supabase-js stores a session at
+   sb-<projectRef>-auth-token per ORIGIN, and Football, the college game, the Arcade, Segue
+   and RunThePitch all take that default. RunTheTour deliberately does not (see sbInit), so
+   this game is the only one that has to think about the other key at all.
+   Named once, here, because it is written in one place and cleared in another and the two
+   drifting apart is how the bug below happened. */
+const HOME_AUTH_KEY='sb-jcrrxqfpdelrmvjuihnm-auth-token';
 function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
 function setRemember(on){ try{ localStorage.setItem('rtt_chose_remember','1'); on?localStorage.setItem('rtt_remember','1'):localStorage.removeItem('rtt_remember'); }catch(e){} }
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -30622,9 +30629,19 @@ async function sbApply(session){
   try{ flushFeedback(); }catch(e){}   // post any feedback queued while offline / before the migration went live (guests too)
   sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
   try{
-    const homeKey='sb-jcrrxqfpdelrmvjuihnm-auth-token';
-    if(session){ const v=localStorage.getItem(RTT_AUTH_KEY); if(v) localStorage.setItem(homeKey,v); }
-    else localStorage.removeItem(homeKey);
+    /* MIRRORING IS ONE WAY, AND ONLY UPWARD. Signing in here hands the session to the key
+       the rest of the site reads, so RunTheTour carries you into Football and the Arcade.
+
+       WHAT IS NOT DONE HERE IS CLEARING IT. This used to be `else remove(homeKey)`, and
+       sbApply runs on BOOT off getSession(), where a null session means only "RunTheTour has
+       no saved session of its own" -- which is the normal state for anyone who signed in on
+       another game, because that sign-in never writes RTT_AUTH_KEY. So simply OPENING the
+       golf game signed you out of Football, the college game, Segue and the Arcade. Measured:
+       one localStorage.removeItem on the shared key, every load.
+
+       Clearing belongs in sbSignOut, where an actual sign-out happens, and that is where it
+       is now. Same place football/auth.js puts its own, for the same reason. */
+    if(session){ const v=localStorage.getItem(RTT_AUTH_KEY); if(v) localStorage.setItem(HOME_AUTH_KEY,v); }
   }catch(e){}
   let oauth=false; try{ if(localStorage.getItem('rtt_oauth_pending')&&sbUser){ oauth=true; localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
   if(sbUser&&sb){
@@ -30698,6 +30715,12 @@ async function sbSignOut(){
   // purge RunTheTour's own saved session + remember flag so nothing re-adopts it on reload.
   // (RunThePitch's separate session key is left untouched.)
   try{ localStorage.removeItem(RTT_AUTH_KEY); localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
+  /* AND THE SHARED KEY, because signing out is meant to sign you out everywhere and this is
+     the only moment that is true. Done here rather than left to the SIGNED_OUT event for the
+     reason football/auth.js gives about its own: the event follows a call that can throw, and
+     a sign-out that leaves a live token behind is somebody else's account still open on a
+     shared device. A no-op when the key is already gone. */
+  try{ localStorage.removeItem(HOME_AUTH_KEY); }catch(e){}
   setRemember(false);
   sbUser=null; sbUsername=null; sbProfile=null; sbNameFlag=null; lbCache={}; lbDailyCache={}; lbWeekCache={}; _pendingSeason=null;
   _pendingDaily=null; _pendingSpot=null; crCache=null; dbCache=null; crCacheSpot=null; dbCacheSpot=null;

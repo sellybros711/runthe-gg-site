@@ -34,10 +34,19 @@
   var recovery = false;               // true after arriving via a password-reset link
   var listeners = [];
 
+  /* HAS THE AUTH LIBRARY ACTUALLY ANSWERED YET. `ready` cannot say: it is !!sb, which is
+     true the instant createClient returns and therefore true a long time before getSession()
+     comes back off the network. Anything painting a signed-out state off `ready` paints it
+     at every returning player on every load and then corrects itself, which is the "header
+     flashes Sign in" flicker. This flips once, on the first real answer, whichever way that
+     answer goes. */
+  var resolved = false;
+  function resolve() { resolved = true; }
   function fire() { for (var i = 0; i < listeners.length; i++) { try { listeners[i](state()); } catch (e) {} } }
   function state() {
     return {
       ready: !!sb,
+      resolved: resolved,
       signedIn: !!session,
       email: session && session.user && session.user.email,
       userId: session && session.user && session.user.id,
@@ -181,14 +190,16 @@
       // and must not touch storage.
       if (evt === 'SIGNED_OUT' && session) wipeLocal();
       session = s || null;
+      resolve();
       if (session) bridgeSession(); else bridgeClear();
       if (session) loadProfile().then(fire); else { profile = null; fire(); }
     });
     sb.auth.getSession().then(function (r) {
       session = (r && r.data && r.data.session) || null;
+      resolve();
       if (session) { bridgeSession(); return loadProfile().then(fire); }
       fire();
-    }).catch(fire);
+    }).catch(function () { resolve(); fire(); });
     return true;
   }
 
