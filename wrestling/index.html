@@ -4276,6 +4276,7 @@ function renderWeek(){
     const dCol = w>=0.54?'var(--green)':w>=0.46?'var(--gold)':'#f0907f';
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
       ${o.ppv?`<div class="bs-ppv">${pico('starBig',14)} Tonight, at <b>${o.ppv}</b></div>`:''}
+      ${c.retireOnWeek?`<div class="bs-ppv" style="background:linear-gradient(90deg,#3a2a10,#221a10);color:var(--gold)">${pico('trophy',14)} FAREWELL TOUR · last week Y${c.retireOnWeek.y}W${c.retireOnWeek.w}</div>`:''}
       <div class="bs-k">You are booked</div>
       <div class="bs-t">${o.stipLabel}</div>
       <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''} <span class="hint" style="font-size:10px;">(tap for dossier)</span></div>
@@ -4410,7 +4411,24 @@ function renderBizPanel(){
       <div class="hint" style="margin-top:6px;">${chron.length? chron.map(x=>`${x.part} (−${x.pen})`).join(' · ') : 'No lasting damage yet'}</div>
     </div>
   </div>
-  <div class="hint" style="margin-top:8px;">Last week: ${money((c.weekPay&&c.weekPay.down)||0)} downside + ${money((c.weekPay&&c.weekPay.merch)||0)} merch.</div>`;
+  <div class="hint" style="margin-top:8px;">Last week: ${money((c.weekPay&&c.weekPay.down)||0)} downside + ${money((c.weekPay&&c.weekPay.merch)||0)} merch.</div>
+  ${((c.milestones||[]).length>=3 && !c.styleRefitDone)?`<div class="advice act" style="margin-top:12px;"><span class="ad-i">${pico('swap',22)}</span><span class="ad-t">Three camps deep. You could refit your working style now if you wanted a different lane.</span><button class="ad-b" onclick="openStyleRefit()">Refit style →</button></div>`:''}`;
+}
+function openStyleRefit(){
+  const cur = (styleOf()||{}).id || 'brawler';
+  const opts = STYLES.filter(s=>s.id!==cur).slice(0,6);
+  const h = `<p class="log">Change how you work the ring. A week off the road, and you come back with a new lane. Everything you have earned stays.</p>
+    <div class="grid" style="gap:8px;margin-top:12px;">${opts.map(s=>`<div class="opt" onclick="doStyleRefit('${s.id}')"><h4>${s.name}</h4><p>${s.perk?s.perk.d:''}</p></div>`).join('')}</div>`;
+  modal('Refit your style', h, [{label:'Close',cls:'ghost',fn:closeModal}]);
+}
+function doStyleRefit(styleId){
+  closeModal();
+  const c=G.car, w=G.w;
+  w.style = styleId;
+  c.styleRefitDone = true;
+  c.cond = clamp(c.cond - 8);   // a week's cost
+  pushInboxItem({ico:pico('swap',18),sev:'good',txt:`<b>Style refit.</b> You are working as a ${(styleOf()||{}).name||styleId} now.`});
+  save(); renderCareer(); toast('New working style: '+(styleOf()||{}).name);
 }
 function makeOffers(){
   const t=workTier(), me=myPromo();
@@ -4496,7 +4514,8 @@ function makeOffers(){
     if(ppv) card = 'Main Event';                               // PPV nights are all top of the card
     const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
     const ppvMult = ppv ? 2.2 : 1;
-    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*ppvMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='secondary'||stakes==='secondary_defense'?1.5:stakes==='tag_title'||stakes==='tag_defense'?1.6:stakes==='rivalry'?1.8:1)*st[2]);
+    const farewellMult = G.car.retireOnWeek ? 1.4 : 1;
+    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*ppvMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='secondary'||stakes==='secondary_defense'?1.5:stakes==='tag_title'||stakes==='tag_defense'?1.6:stakes==='rivalry'?1.8:1)*st[2]*farewellMult);
     const ppvName = ppv ? ppvNameFor(me.id, G.car.week) : null;
     const beltForOffer = (stakes==='title'||stakes==='defense')?belt
                         :(stakes==='secondary'||stakes==='secondary_defense')?secBelt
@@ -6825,6 +6844,15 @@ function advanceWeek(){
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
   c.week++; c.offers=null; c.booking=null; c.prep=null;   // the office starts the week fresh
   c._pendingNext=null;                                      // "who's next" only counts for the week you called it
+  // Farewell tour reached its date: the last match has been wrestled, walk away.
+  if(c.retireOnWeek){
+    const r=c.retireOnWeek;
+    if(c.year>r.y || (c.year===r.y && c.week>r.w)){
+      c.retireOnWeek=null;
+      retire('The farewell tour ended on your own terms.');
+      return;
+    }
+  }
   // ---- the road: recovery is slower the harder you work ----
   c.cond=clamp(c.cond + (11 - sc.wear*4) - (c.hurt?3:0));
   c.mom=c.mom+(50-c.mom)*0.10;
@@ -6842,7 +6870,8 @@ function advanceWeek(){
     const g=G.w.gimmick;
     g.heat=clamp(g.heat - (0.55+sc.pop*0.35) + (c.pop>60?0.18:0), 0, 100);
     if(g.heat<30 && !c._staleWarned){ c._staleWarned=true;
-      pushInboxItem({ico:pico('graphDown',18),sev:'bad',txt:`<b>The act is cold.</b> ${g.name} is not moving merchandise any more. The office wants something new: repackage or turn.`}); }
+      pushInboxItem({ico:pico('graphDown',18),sev:'bad',
+        txt:`<b>The act is cold.</b> ${g.name} is not moving merchandise. The office wants something new. <a href="#" onclick="openRepackage();return false;">Repackage</a> or <a href="#" onclick="doTurn();return false;">turn</a>.`}); }
     if(g.heat>=45) c._staleWarned=false;
   }
   // fame can't outrun the stage you work on, drift toward the tier's ceiling
@@ -7292,10 +7321,22 @@ function nonRivalBackstage(){
         {n:'Listen',d:'Information is currency.',fx:{standing:1,respect:3},say:'You listen. You file it away. It will be useful, later.'},
         {n:'Change the subject',d:'You do not touch gossip.',fx:{respect:5},say:'You steer it somewhere else. They respect that, actually.'},
         {n:'Repeat it, loudly',d:'Bad idea.',fx:{heat:8,respect:-8},say:'You say it where three people hear. It gets back to who it was about, of course it does.'}]},
+    vet_meeting:{
+      head:`${ch.name} pulls you aside about your last match`,
+      body:`A veteran, arms folded. <span class="say">"You cut a corner. Do not do that again in front of me."</span>`,
+      opts:[
+        {n:'Apologise, mean it',d:'Take the note.',fx:{respect:8,ps:1},say:'You take the note flat and clean. They nod once and walk on.'},
+        {n:'Argue your case',d:'Push back.',fx:{respect:-6,heat:4},say:'You defend the finish. Neither of you leaves the room happier.'},
+        {n:'Ignore it',d:'You know what you did.',fx:{respect:-14,standing:-3},say:'You wave them off. Every ear in the room heard it, and remembered it.'}]},
   };
   let key;
   if(pick.type==='ally') key = rnd()<0.5?'ally_help':'ally_favor';
-  else key = ['mid_respect','mid_workout','mid_gossip'][Math.floor(rnd()*3)];
+  else {
+    // Recent match was a shortcut win? A vet meets you about it, else regular pool.
+    const lastMatch = (G.hist||[])[0];
+    const shortcut = lastMatch && lastMatch.win && lastMatch.q<50;
+    key = shortcut ? 'vet_meeting' : ['mid_respect','mid_workout','mid_gossip'][Math.floor(rnd()*3)];
+  }
   const ev=EVENTS[key];
   modal(`BACKSTAGE · ${ev.head}`,
     `<div class="log" style="margin-bottom:12px;">${ev.body}</div>
@@ -7409,6 +7450,37 @@ function yearEnd(){
 function retire(reason){ G.car.retired=true; G.car.retireReason=reason||'You walked away on your own terms.';
   archiveToLegends();     // record this career to the cross-save Hall of Legends
   save(); go('hof'); }
+// Announce a retirement date. Every match between now and that week gets a
+// FAREWELL tag on the marquee and a fatter purse, and the final week fires
+// retire() automatically. Only one announcement per career.
+function announceRetirement(weeksAway){
+  const c=G.car; if(c.retireOnWeek || c.retired) return;
+  const total = c.week + weeksAway;
+  const y = c.year + Math.floor((total-1)/WEEKS_PER_YEAR);
+  const w = ((total-1)%WEEKS_PER_YEAR)+1;
+  c.retireOnWeek = {y, w};
+  pushInboxItem({ico:pico('trophy',18),sev:'act',
+    txt:`<b>Farewell tour announced.</b> Last match Y${y}W${w}. Every night between now and then reads different.`});
+  pushLog(`You announced your retirement. Y${y}W${w} is the last time you walk down the aisle.`);
+  save();
+}
+function confirmFarewell(){
+  const c=G.car;
+  if(c.retireOnWeek){ toast('Already on the farewell tour'); return; }
+  modal('Announce a retirement date?',
+    `<p class="log">Pick how long the farewell tour runs. Every match between now and then gets a FAREWELL marquee tag and a bigger purse. The last one is your final walk down the aisle.</p>
+     <div class="decgrid">
+       <div class="decopt" data-w="4"><div class="dn">One month (4 wks)</div><div class="dd">Short and clean.</div></div>
+       <div class="decopt" data-w="12"><div class="dn">Three months (12 wks)</div><div class="dd">A tour, not a rush.</div></div>
+       <div class="decopt" data-w="26"><div class="dn">Six months (26 wks)</div><div class="dd">A proper goodbye.</div></div>
+     </div>`,
+    [{label:'Not yet',cls:'ghost',fn:closeModal}]);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const wk=+d.dataset.w; closeModal(); announceRetirement(wk); renderCareer();
+    });
+  },0);
+}
 /* Hall of Legends: every completed career, stored in a second localStorage key
    so it survives starting a new career. Keyed by wrestler name + retire year. */
 const LEGENDS_KEY='rtr_baw_legends_v1';
@@ -10070,7 +10142,7 @@ function renderRecord(){
           +(tierRows?`<div class="flab" style="margin-top:14px;">By night</div>`+tierRows:'')
           +yaHtml;
   }
-  h+=`<div class="row" style="margin-top:18px;"><button onclick="openCard()">View Player Card</button><button class="ghost" onclick="showLegends()">Hall of Legends</button><button class="ghost" onclick="confirmRetire()">Retire</button></div>`;
+  h+=`<div class="row" style="margin-top:18px;"><button onclick="openCard()">View Player Card</button><button class="ghost" onclick="showLegends()">Hall of Legends</button>${c.retireOnWeek?`<button class="ghost" style="border-color:var(--gold);color:var(--gold);" disabled>Farewell tour · last week Y${c.retireOnWeek.y}W${c.retireOnWeek.w}</button>`:`<button class="ghost" onclick="confirmFarewell()">Announce farewell tour</button>`}<button class="ghost" onclick="confirmRetire()">Retire now</button></div>`;
   $('recBody').innerHTML=h;
 }
 function confirmRetire(){ modal('Hang up the boots?','You can retire any time. Your career will be graded and enshrined.',
