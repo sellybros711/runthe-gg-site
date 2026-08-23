@@ -1890,6 +1890,15 @@ window.GA_ID='G-L29P5MRWKE';
   .hvbfoot{border-top:1px solid rgba(255,255,255,.12);margin-top:3px;padding:4px 3px 0;
     font:800 8.5px/1 var(--body);letter-spacing:.08em;color:#d6c191;text-align:left}
   .hvbfoot b{color:var(--gold);font-family:var(--mono);margin-left:3px}
+  /* Match play per-hole box score: last up-to-9 played holes, YOU vs opp, W/H/L per hole */
+  .mpholes{display:flex;flex-wrap:wrap;gap:2px;margin-top:5px;padding-top:5px;
+    border-top:1px solid rgba(255,255,255,.1)}
+  .mph{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 3px;
+    background:rgba(255,255,255,.04);border-radius:4px;min-width:24px}
+  .mph .mphn{font:800 7.5px/1 var(--mono);color:#c7b489;letter-spacing:.04em}
+  .mph .mphs{font:800 9px/1 var(--mono);color:#eef4ee}
+  .mph .mphd{color:#8fa39a;margin:0 1px;font-weight:600}
+  .mph .mphw{font:900 8.5px/1 var(--mono);letter-spacing:.04em}
   /* CS251: simple round-play controls (owner mockup) - PREV SHOT · big PLAY/PAUSE · NEXT SHOT + caption */
   .hvctrl{max-width:540px;margin:12px auto 0;background:linear-gradient(180deg,rgba(9,26,19,.6),rgba(6,18,13,.6));
     border:1px solid rgba(241,208,74,.22);border-radius:16px;padding:13px 6px 9px;
@@ -6734,10 +6743,18 @@ function bracketStartMatch(B, mp){
   track('bracket_match_start',{round:ri, opp:oppP.name});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
-// where the match stands, read straight off the holes actually played
+// where the match stands, read straight off the holes actually played.
+// The currently-revealing/sinking hole is EXCLUDED - its final score is pre-computed but not yet
+// shown, so counting it makes the board disagree with the scorecard (owner: "I'm +1 but it says
+// I'm even in this matchup" - the played-through hole 10 was silently folded into the total).
 function matchState(){
   const mp=S.matchPlay; if(!mp) return null;
-  const hs=S.dailyHoles;
+  let hs=S.dailyHoles;
+  if(hs.length){
+    const last=hs[hs.length-1], shN=(last&&last.shots)?last.shots.length:0;
+    const rev=(S.dailyRevealN!=null && S.dailyRevealN<shN) || !!S.dailySinking;
+    if(rev) hs=hs.slice(0,-1);
+  }
   let up=0;
   const reg=Math.min(hs.length,18);
   for(let i=0;i<reg;i++){ const a=hs[i].toPar, b=mp.oppHoles[i]; if(a<b)up++; else if(b<a)up--; }
@@ -6757,6 +6774,40 @@ function matchStatusTxt(st){
   if(!st) return '';
   if(st.up===0) return 'ALL SQUARE';
   return Math.abs(st.up)+(st.up>0?' UP':' DOWN');
+}
+// The opponent's shot sequence for a given hole - lazily built + cached on S.matchPlay._oppShots.
+// The opponent's per-hole score (oppHoles[i]) is already pre-drawn at match start; this just expands
+// that integer into a plausible shot sequence using the same dShotSeq engine your ball uses.
+function matchOppShotsFor(holeIdx){
+  const mp=S.matchPlay; if(!mp||holeIdx==null) return null;
+  const c=DAILY_COURSES[S.dailyCourse]; if(!c) return null;
+  if(!mp._oppShots) mp._oppShots={};
+  if(mp._oppShots[holeIdx]) return mp._oppShots[holeIdx];
+  const inReg=holeIdx<18, tp = inReg?mp.oppHoles[holeIdx]:mp.oppExtra[holeIdx-18];
+  if(tp==null) return null;
+  const ci=inReg?holeIdx:MATCH_EXTRA_HOLES[(holeIdx-18)%MATCH_EXTRA_HOLES.length], h=c.holes[ci];
+  const salt=inReg?0x7c11:(0xE00+(holeIdx-18));
+  try{ mp._oppShots[holeIdx]=dShotSeq(h[0],h[1],h[0]+tp,matchOppRng(ci,salt),mp.oppSk,{clubTag:clubSetTag(null)}); }
+  catch(e){ mp._oppShots[holeIdx]=null; }
+  return mp._oppShots[holeIdx];
+}
+// The opponent's played hole as a dim red ghost trace over the tracer, so you see BOTH balls on
+// the current hole (owner: "you should see both balls"). Their whole path shows dimmed under yours;
+// the numbered chips show at rest positions off the green. Plot geometry is built on a shallow
+// clone of `g` so a drowned opponent ball can't invent a pond that also shows in the terrain YOU
+// see. The player's shots are drawn brighter by hvNode itself, so the two never fight for read.
+function matchOppOverlaySVG(hole, holeIdx, courseKey){
+  const shots=matchOppShotsFor(holeIdx); if(!shots||!shots.length) return '';
+  const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
+  if(!hole._hv){ const gg=hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
+    hole._hv={g:gg, plots:[]}; }
+  const g=hole._hv.g;
+  const gc=Object.assign({}, g);   // hvPlots may mutate g.water; keep the player's terrain pristine
+  let plots; try{ plots=hvPlots(gc, shots, seedN); }catch(e){ return ''; }
+  const OPP_COL='#ef4444';   // matches the red dot next to the opponent's name on the board
+  let s='';
+  for(let i=0;i<plots.length;i++) s+=hvDoneShot(g, plots[i], true, false, OPP_COL);
+  return s;
 }
 // the match is over: hand the result to the bracket and go back to watch the rest of the day
 function finishMatchRound(){
@@ -27462,7 +27513,15 @@ function scrDailyRound(){
   // draws the tracer window + floating HUD (hole chip, YOU-vs-pro board, one shot description). Shared
   // by the normal reveal AND the par-4/5 approach-decision drive (S.dailyProv).
   function drawWindow(hole, reveal, holeIdx, latest, holePauseFlag, descShot, revNonce, dec, overlay){
-    const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null, overlay||null);
+    // Match play: overlay the opponent's ball on the tracer as a dim red ghost trace, so both
+    // balls read on the current hole (owner: "you should see both balls"). Prepended to any
+    // caller-supplied overlay (e.g. the approach-decision address golfer) so both compose.
+    let ovAll = overlay || '';
+    if(S.matchPlay && holeIdx!=null && S.dailyCourse){
+      const mpOv = matchOppOverlaySVG(hole, holeIdx, S.dailyCourse);
+      if(mpOv) ovAll = mpOv + ovAll;
+    }
+    const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null, ovAll||null);
     if(!hvn) return;
     const shell=hvn.querySelector('.hvshell'), h=hole;
     // (CS246: the themed accent frame now lives on the svg itself via hvFrameStyle, so the whole window is framed)
@@ -27491,16 +27550,33 @@ function scrDailyRound(){
       const noDesc=!(descShot && descShot.d && !holePauseFlag);   // board drops to the very bottom when no shot-desc bar
       const bd=$(`<div class="hvob hvboard${noDesc?' nodesc':''}"></div>`);
       if(S.matchPlay){
-        // MATCH PLAY: the only two numbers that matter are the two of you and how many holes are left
+        // MATCH PLAY: your total, their total, holes left, and a per-hole strip below so you can
+        // see the box score of each played hole - both scores + who won it - not just the running
+        // match state (owner: "you should see both balls and both box scores").
+        // The window is stB.reg (matchState already excludes the currently-revealing hole), so the
+        // board can never disagree with the scorecard's THRU count.
         const mpB=S.matchPlay, stB=matchState()||{up:0,reg:0,left:18,extras:0};
-        const meTot=S.dailyHoles.slice(0,18).reduce((s2,h)=>s2+h.toPar,0);
-        const opTot=mpB.oppHoles.slice(0,Math.min(stB.reg,18)).reduce((s2,v)=>s2+v,0);
+        const winN=Math.min(stB.reg,18);
+        const meTot=S.dailyHoles.slice(0,winN).reduce((s2,h)=>s2+h.toPar,0);
+        const opTot=mpB.oppHoles.slice(0,winN).reduce((s2,v)=>s2+v,0);
         bd.appendChild($(`<div class="hvbcap">${stB.extras>0?('SUDDEN DEATH · HOLE '+(18+stB.extras)):('MATCH · THRU '+stB.reg)}</div>`));
         const upCol=stB.up>0?'#4be3a8':stB.up<0?'#ff9d8f':'#ffd76a';
         bd.appendChild($(`<div class="hvbtarget" style="color:${upCol}">${matchStatusTxt(stB)}</div>`));
         const rowsM=[{nm:'YOU', v:meTot, mine:true, col:'#3b82f6'},
                      {nm:dShort(mpB.oppName).toUpperCase(), v:opTot, mine:false, col:'#ef4444'}];
         rowsM.forEach((r,rj)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${rj+1}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.v)}">${dtp(r.v)}</span></div>`)));
+        // hole-by-hole box score: last up-to-9 played holes with YOU/OPP strokes + who won that hole
+        if(winN>0){
+          const strip=$(`<div class="mpholes"></div>`);
+          const startH=Math.max(0, winN-9);
+          for(let i=startH;i<winN;i++){
+            const me=S.dailyHoles[i], meS=me.par+me.toPar, opS=me.par+mpB.oppHoles[i];
+            const w=meS<opS?'W':(meS>opS?'L':'H');
+            const wcol=w==='W'?'#4be3a8':w==='L'?'#ff9d8f':'#e8efe9';
+            strip.appendChild($(`<div class="mph"><span class="mphn">${i+1}</span><span class="mphs">${meS}<span class="mphd">–</span>${opS}</span><span class="mphw" style="color:${wcol}">${w}</span></div>`));
+          }
+          bd.appendChild(strip);
+        }
         bd.appendChild($(`<div class="hvbfoot">${stB.decided?'MATCH OVER':(stB.left>0?stB.left+' TO PLAY':'ALL SQUARE')}</div>`));
       } else if(S.moment && S.momentPO){
         // sudden-death playoff: show the players still alive, tied at the lead
