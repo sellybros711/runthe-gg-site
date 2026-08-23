@@ -19525,7 +19525,10 @@ function poBuildPlan(ce, contenders){
     const low=scored.filter(s=>s.tp<=best+1e-9);
     const advancing=(low.length<scored.length)?low:scored;   // all tied → all play on
     const shotsArr=scored.map(s=>s.shots);
+    const yourIdx=scored.findIndex(s=>s.a.you);
+    const yourShots=yourIdx>=0 ? scored[yourIdx].shots : (scored[0] ? scored[0].shots : []);
     holes.push({ n:hi+1, par, yards, shots:shotsArr, order:buildPoOrder(shotsArr),
+      yourIdx, yourShots,
       cols:scored.map(s=>s.a.col), names:scored.map(s=>s.a.name),
       alive:scored.map(s=>({ o:s.a.o, name:s.a.name, col:s.a.col, tp:s.tp, you:s.a.you,
         advances:advancing.indexOf(s)>=0, low:s.tp<=best+1e-9 })) });
@@ -19558,14 +19561,17 @@ function poWatchStep(){
   if(W.hole>=holes.length){ W.done=true; render();   // winner decided → show the result
     if(W.auto||W.reduce) _poWTimer=setTimeout(poWatchFinish, W.reduce?20:2400);
     return; }
-  const ph=holes[W.hole], nst=ph.order.length;
-  if(W.step<nst){                          // reveal the next shot in the merged play order
+  // OWNER (2026-08-23): career playoff shows ONLY YOUR ball on the tracer; opponents'
+  // scores are revealed on the board when your hole finishes. Pacing now runs through
+  // YOUR shot count, not the merged multi-ball order.
+  const ph=holes[W.hole], nst=(ph.yourShots||[]).length;
+  if(W.step<nst){                          // reveal the next YOUR shot
     W.step++; render();
-    const cur=ph.order[W.step-1], sh=ph.shots[cur.u][cur.i], allHoled=W.step>=nst;
-    _poWTimer=setTimeout(poWatchStep, W.reduce?20:(allHoled?Math.max(1500,hvShotMs(sh)):hvShotMs(sh)));
-  } else {                                  // every ball in → beat, then the next extra hole
+    const sh=ph.yourShots[W.step-1], allHoled=W.step>=nst;
+    _poWTimer=setTimeout(poWatchStep, W.reduce?20:(allHoled?Math.max(1900,hvShotMs(sh)):hvShotMs(sh)));
+  } else {                                  // your ball is in → dwell on the revealed scores, then next hole
     W.hole++; W.step=0; _hvbRects=null; render();
-    _poWTimer=setTimeout(poWatchStep, W.reduce?20:1100);
+    _poWTimer=setTimeout(poWatchStep, W.reduce?20:1300);
   }
 }
 function poWatchSkip(){ if(_poWTimer){clearTimeout(_poWTimer);_poWTimer=null;} const W=S.poW; if(!W) return;
@@ -19611,19 +19617,23 @@ function scrPlayoffWatch(){
   }
   if(!W.done && W.hole<plan.holes.length){
     const ph=plan.holes[W.hole];
-    const multi={shots:ph.shots, order:ph.order, cols:ph.cols, names:ph.names.map((n,i)=>ph.alive[i].you?'YOU':n)};
-    const holeObj={n:ph.n, par:ph.par, yards:ph.yards, shots:ph.shots};
-    const hvn=hvNode(holeObj, W.step, ph.n-1, key, multi);
+    // OWNER (2026-08-23): only YOUR ball plays out on the tracer in a career playoff.
+    // Opponents' scores are revealed on the board when your hole finishes ("...and the field").
+    const yourShots=ph.yourShots||[];
+    const yourIdx=(ph.yourIdx!=null?ph.yourIdx:0);
+    const nst=yourShots.length;
+    const holeObj={n:ph.n, par:ph.par, yards:ph.yards, shots:yourShots};
+    const hvn=hvNode(holeObj, W.step, ph.n-1, key);
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
       shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · PLAYOFF HOLE ${W.hole+1} · PAR ${ph.par}</div>`));
-      const holed=h2hHoledUnits(ph, W.step);
-      const curP=ph.order[Math.max(0,Math.min(W.step||1,ph.order.length)-1)], stP=curP?ph.shots[curP.u][curP.i]:null;
-      const bd=$(`<div class="hvob hvboard${(stP&&stP.d)?'':' nodesc'}"><div class="hvbcap" style="color:#ffd0c8">PLAYOFF HOLE ${W.hole+1}</div></div>`);
-      ph.alive.forEach((a,ai)=>{ const isIn=holed.has(ai);
+      const holedYou=(W.step>=nst);   // your ball is in the cup → reveal the field
+      const curSh=(W.step>0 && W.step<=nst)?yourShots[W.step-1]:null;
+      const bd=$(`<div class="hvob hvboard${(curSh&&curSh.d)?'':' nodesc'}"><div class="hvbcap" style="color:#ffd0c8">PLAYOFF HOLE ${W.hole+1}</div></div>`);
+      ph.alive.forEach((a,ai)=>{ const isIn=(a.you?holedYou:holedYou);   // opponents' scores revealed when YOUR ball is in
         bd.appendChild($(`<div class="hvbrow ${a.you?'mine':''}"><span class="cdot" style="background:${a.col}"></span><span class="nm">${a.you?'YOU':esc(a.name)}</span><span class="tp" style="color:${isIn?(a.low?'var(--gold)':'#ff9d8f'):'#8fa39a'}">${isIn?esc(dResultLong(ph.par,a.tp)):'…'}</span></div>`)); });
       shell.appendChild(bd);
-      if(stP && stP.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${ph.cols[curP.u]}">${ph.alive[curP.u]&&ph.alive[curP.u].you?'YOU':esc(ph.names[curP.u])}</b> · ${esc(stP.d)}</div>`));
+      if(curSh && curSh.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${ph.cols[yourIdx]||'#3b82f6'}">YOU</b> · ${esc(curSh.d)}</div>`));
       add(hvn);
     } else { add($(`<div class="center muted" style="padding:24px 8px">Sudden-death playoff…</div>`)); }
     if(!W.reduce){ const sk=$(`<button class="btn ghost" style="max-width:320px;margin:12px auto 0">Skip to result ▸</button>`); sk.onclick=poWatchSkip; add(sk); }
@@ -25607,12 +25617,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const holed=(showN>=total);
     if(live && curP) inner+=hvLiveShot(g,curP,small,multi.cols[cur.u]);
     else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
-    // H2H PLAYOFF FIX: seed the initial viewBox on the CURRENT shot's camera, not the previous
-    // one - otherwise a tight green-close-up left by the opponent's putt persists into your next
-    // shot, clipping your ball/tracer outside the frame while hvKick tweens out. Owner report:
-    // "I only see the lines of the other golfer" in the sudden-death playoff. hvKick still tweens
-    // in from the previous camera when it can, so the transition is preserved.
-    const cam=live?hvCamFor2(g,curP||prevP):HV_CAM;
+    const cam=live?hvCamFor2(g,prevP):HV_CAM;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
     const detailCam=hvDetailCam(camTarget, live&&!!curP);
     const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
@@ -32689,6 +32694,19 @@ function h2hHoledUnits(hole, step){ const done=new Set(), c={};
     if(hole.shots[o.u] && c[o.u]>=hole.shots[o.u].length) done.add(o.u); }
   return done; }
 function h2hTpTxt(tp){ return tp<0?String(tp):tp>0?'+'+tp:'E'; }
+// H2H live-board delta: shows YOUR row as match-play "UP N / DOWN N / AS" instead of a raw
+// to-par (owner 2026-08-23). Alone leader → "UP N" (lead over 2nd), tied for the lead → "AS",
+// trailing → "DOWN N" behind the leader.
+function h2hMatchTxt(myTp, allTps){
+  if(!allTps || !allTps.length) return h2hTpTxt(myTp);
+  let leader=allTps[0]; for(let i=1;i<allTps.length;i++) if(allTps[i]<leader) leader=allTps[i];
+  const gap=myTp-leader;
+  if(gap>0) return 'DOWN '+gap;
+  let next=Infinity, tiedCount=0;
+  for(let i=0;i<allTps.length;i++){ if(allTps[i]===leader) tiedCount++; else if(allTps[i]<next) next=allTps[i]; }
+  if(tiedCount>1) return 'AS';
+  return next===Infinity ? 'AS' : 'UP '+(next-leader);
+}
 function h2hTpColor(tp){ return tp<0?'#35d6a0':tp>0?'#e88':'var(--oncard)'; }
 // one standings row for a unit (player or team) at a running to-par
 function h2hUnitRow(u, tp, opts){
@@ -32825,8 +32843,14 @@ function scrH2HWatch(){
       // current hole's score for any unit whose ball is already in the cup at this reveal step.
       const holed=h2hHoledUnits(h, S.h2h.wStep);
       const rows=S.h2h.units.map((u,ui)=>({u, ui, tp:h2hSum(u.scores,played)+(holed.has(ui)?(u.scores[played]||0):0)})).sort((a,b)=>a.tp-b.tp);
+      const allTps=rows.map(r=>r.tp);
       rows.forEach((r,i)=>{ const mine=r.u.members.some(p=>p.user_id===h2hUid());
-        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${h2hUnitNm(r.ui)}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
+        // OWNER (2026-08-23): H2H is a head-to-head, so YOUR row reads as match-play
+        // ("UP 1", "DOWN 2", "AS") not raw to-par. Opponents keep the to-par tally.
+        const txt = mine ? h2hMatchTxt(r.tp, allTps) : h2hTpTxt(r.tp);
+        const col = mine ? (r.tp<=Math.min.apply(null,allTps) ? '#4be3a8' : '#ff9d8f')
+                         : (r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9');
+        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${h2hUnitNm(r.ui)}</span><span class="tp" style="color:${col}">${txt}</span></div>`));
       });
       shell.appendChild(bd);
       // ONE clear shot description that swaps to whoever is playing as the shots simulate
