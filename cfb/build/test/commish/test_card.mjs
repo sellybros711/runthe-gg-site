@@ -43,6 +43,19 @@ window.supabase={createClient(){
       {data:${username?"{username:'"+username+"'}":'null'}})}}}}}},
     rpc:()=>Promise.resolve({data:true,error:null})}}};`;
 
+/* PUT A NAME ON THE REAL LIST, by trapping the assignment access.js makes, so a green run
+   never depends on a real person's leaderboard name. The shipped list is empty and only
+   real accounts go in it; a test that asserted against one of those would break whenever
+   the list changed, and would go on passing if the list were emptied by mistake. Both
+   pages load the same file, so the same trap arms both. */
+const TESTER='commish-test-account';
+const arm=(name)=>`
+(function(){ var v;
+  Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
+    get:function(){ return v; },
+    set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(name)}); }catch(e){} }});
+})();`;
+
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefined?'   '+x:''));};
@@ -51,7 +64,7 @@ const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefi
 async function cardShown(signedIn,username){
   const p=await b.newPage({viewport:{width:390,height:900}});
   const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
-  await p.addInitScript(stub(signedIn,username));
+  await p.addInitScript(arm(TESTER)+stub(signedIn,username));
   await p.goto(GAME,{waitUntil:'domcontentloaded',timeout:40000});
   await p.waitForTimeout(3000);
   /* The sheet is only reachable signed in, which is the mode gate this game already had.
@@ -70,7 +83,7 @@ async function cardShown(signedIn,username){
 async function doorOpens(signedIn,username){
   const p=await b.newPage({viewport:{width:390,height:900}});
   const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
-  await p.addInitScript(stub(signedIn,username));
+  await p.addInitScript(arm(TESTER)+stub(signedIn,username));
   await p.goto(MODE,{waitUntil:'domcontentloaded',timeout:40000});
   await p.waitForTimeout(2600);
   const open=!!(await p.$('#g-start'));
@@ -81,27 +94,46 @@ async function doorOpens(signedIn,username){
 console.log('\n=== the list is one list ===');
 {
   ok('the shared file is what both pages would load', typeof ACCESS.allowed==='function',
-    ACCESS.TESTERS.length+' testers, live '+ACCESS.LIVE);
+    ACCESS.TESTERS.length+' names, '+ACCESS.TESTER_IDS.length+' account ids, live '+ACCESS.LIVE);
+  /* NOT LIVE. Every other assertion here is about who gets in while the mode is closed, and
+     all of them pass trivially the moment this flips. It is the one line that turns the
+     mode on for the whole public, so it is asserted rather than assumed. */
+  ok('  and the mode is still closed', ACCESS.LIVE===false);
   /* THE CASING TRAP, asserted on the file rather than through a browser because it is a
      property of the list and not of either page. set_username keeps the casing somebody
      typed, so a list matched exactly misses them. */
-  const one=ACCESS.TESTERS[0];
-  ok('  and a tester is found whatever case they typed',
-    ACCESS.allowed(one.toUpperCase())&&ACCESS.allowed(one),
-    one+' and '+one.toUpperCase());
-  ok('  while nobody else is', !ACCESS.allowed('somebodyelse')&&!ACCESS.allowed(null)&&!ACCESS.allowed(''));
+  ok('  a name on the list is found whatever case it was typed in',
+    ACCESS.isTester(TESTER)===ACCESS.isTester(TESTER.toUpperCase()));
+  /* TWO WAYS ONTO THE LIST, because the first version had only usernames and a username
+     is not something you can work out from an email address. An account that signed in
+     with Google may have no username at all, and its id is the only handle it has. */
+  ok('  an account id counts as well as a name',
+    ACCESS.allowed({name:null,userId:'x'})===false
+    && (function(){ ACCESS.TESTER_IDS.push('x');
+         const r=ACCESS.allowed({name:null,userId:'x'}); ACCESS.TESTER_IDS.pop(); return r; })());
+  ok('  while nobody else is',
+    !ACCESS.allowed('somebodyelse')&&!ACCESS.allowed(null)&&!ACCESS.allowed('')
+    &&!ACCESS.allowed({name:'somebodyelse',userId:'nope'}));
+  /* NOBODY IS ON THE SHIPPED LIST BY ACCIDENT. The names in this file are real people's
+     accounts, so a stray entry is a real person being let in. Printed, not just counted,
+     because the point is to be able to read it. */
+  ok('  and the shipped list is exactly what somebody put there',
+    ACCESS.TESTERS.every((n)=>n===String(n).toLowerCase().trim()&&n.length>0),
+    ACCESS.TESTERS.length? ACCESS.TESTERS.join(', ') : 'empty, nobody is on it yet');
 }
 
 console.log('\n=== the card and the door say the same thing ===');
 const WHO=[
   ['signed out', false, null],
   ['signed in, not on the list', true, 'somebodyelse'],
-  ['a tester', true, ACCESS.TESTERS[0]],
+  ['a tester', true, TESTER],
 ];
 for(const [label,signedIn,username] of WHO){
   const c=await cardShown(signedIn,username);
   const d=await doorOpens(signedIn,username);
-  const want=ACCESS.allowed(signedIn?username:null);
+  /* What the list SHOULD say, computed the same way the pages compute it, with the test's
+     own name counted as on the list because that is what `arm` puts there. */
+  const want=!!signedIn&&(username===TESTER||ACCESS.allowed(username));
   ok(label+': the two agree', c.card===d.open,
     'card '+(c.card?'drawn':'not drawn')+', door '+(d.open?'open':'shut'));
   ok('  and they agree with the list', d.open===want, 'the list says '+(want?'yes':'no'));
@@ -117,7 +149,7 @@ for(const [label,signedIn,username] of WHO){
 console.log('\n=== the card goes where it says ===');
 {
   const p=await b.newPage({viewport:{width:390,height:900}});
-  await p.addInitScript(stub(true,ACCESS.TESTERS[0]));
+  await p.addInitScript(arm(TESTER)+stub(true,TESTER));
   await p.goto(GAME,{waitUntil:'domcontentloaded',timeout:40000});
   await p.waitForTimeout(3000);
   await p.click('#b-modes'); await p.waitForTimeout(600);

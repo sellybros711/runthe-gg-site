@@ -58,6 +58,15 @@
   h2{font-family:var(--fd);font-size:23px;line-height:1.08;text-transform:uppercase;
     letter-spacing:.01em;margin:4px 0 8px}
   p.lede{color:var(--dim);font-size:15px;margin-bottom:14px}
+  /* THE ACCOUNT AS THE GATE SEES IT, for somebody who has been told they are not on the
+     list and needs to say which account that is. A uuid is 36 characters and must not
+     reflow into something that gets half-copied, so it breaks anywhere and wraps. */
+  .whoami{border:1px dashed var(--line-2);border-radius:11px;padding:12px 13px;margin-bottom:11px}
+  .whoami b{display:block;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--dim-2);margin-bottom:8px}
+  .whoami code{display:block;font-size:12px;line-height:1.5;color:var(--ink);
+    word-break:break-all;-webkit-user-select:all;user-select:all}
+  .whoami .btn{margin-top:9px;width:100%}
 
   .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:15px;
     padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
@@ -260,7 +269,7 @@
 </div>
 
 <script src="/cfb/engine.js?v=34"></script>
-<script src="access.js?v=1"></script>
+<script src="access.js?v=2"></script>
 <script src="ledger.js?v=1"></script>
 <script src="blocs.js?v=1"></script>
 <script src="docket.js?v=2"></script>
@@ -294,7 +303,7 @@ const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }}
    is most of what there is to test: the dials, writing your own ruling, taking office in
    an older sport. A tester locked out of it would be testing the half that is easy. */
 let authState={ready:false,waiting:true,signedIn:false};
-const allowed=()=>ACCESS.allowed(authState.name);
+const allowed=()=>ACCESS.allowed(authState);
 /* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
    means the half of the design most likely to be got wrong is the half nobody on the list
    can look at: what a free player is shown, what is drawn and dead, and whether the offer
@@ -623,7 +632,29 @@ function gate(){
   if(!allowed()){
     say.textContent='Commish Simulator is in testing and this account is not on the list yet. '
       +'Nothing is missing from the game you were playing.';
-    act.innerHTML='<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center">Back to the game</a>';
+    /* WHAT THE LIST IS ACTUALLY MATCHING ON, printed, because the first version of this
+       screen said "not on the list" and stopped. The list holds usernames, a username is
+       not an email address, and an account that signed in with Google may have no username
+       at all. A tester reading "not on the list" has no way to tell which of those is
+       happening to them, and neither does anybody they report it to. So show the account
+       as this page sees it: that is the thing to send to get added, and it is also the
+       answer to "why does it say no". No email address here, only what the gate reads. */
+    const me=ACCESS.identityOf(authState)||{};
+    act.innerHTML='<div class="whoami" id="whoami">'
+      +'<b>To be added, send this</b>'
+      +'<code id="who-name">username: '+esc(me.name||'not set on this account')+'</code>'
+      +'<code id="who-id">account: '+esc(me.userId||'unknown')+'</code>'
+      +'<button class="btn ghost sm" id="who-copy">Copy</button></div>'
+      +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center">Back to the game</a>';
+    const c=$('who-copy');
+    if(c) c.onclick=()=>{
+      const t='username: '+(me.name||'not set')+'\naccount: '+(me.userId||'unknown');
+      /* Clipboard is blocked in plenty of contexts, so a failure has to say so rather than
+         look like a copy that worked. The text is on screen either way. */
+      const done=(ok)=>{ c.textContent=ok?'Copied':'Select the text above and copy it'; };
+      try{ navigator.clipboard.writeText(t).then(()=>done(true),()=>done(false)); }
+      catch(e){ done(false); }
+    };
     return;
   }
   say.textContent='You run college football. Who is in which conference, how many teams '

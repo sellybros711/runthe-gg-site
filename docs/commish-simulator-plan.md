@@ -444,6 +444,16 @@ applies with no exceptions: the edit, the bump and the record in one commit.
    list and after `COMMISH_LIVE` is everybody. The list lives in `cfb/commish/access.js`
    and both the card and the mode's own door read it, because a list written twice drifts
    and both directions are bad: a card that refuses to open, or a mode nobody can find.
+
+   **An account is listed by username or by account id, and never by email.** The first
+   version took usernames only, and the first username in it was inferred from an email
+   address, which matched nobody: the card refused to draw and the door refused to open,
+   both correctly. A username is what somebody typed on the leaderboard, and an account
+   that signed in with Google may not have one at all, so the account id is the handle that
+   always exists. `access.js` is served publicly at `/cfb/commish/access.js`, so writing an
+   email address in it would publish that address; a username is already public and an
+   account id is opaque. The gate screen prints the signed-in account's username and id so
+   they can be read off and added.
    `cfb/build/test/commish/test_card.mjs` puts the same three accounts in front of the
    sheet and in front of the mode and fails if the two ever disagree.
 

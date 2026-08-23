@@ -14,9 +14,15 @@
  *     see and cannot turn is the clearest a paywall ever gets
  *   a term survives the browser being closed
  *
- * The tester list is a constant in the page, so the stub signs in AS a tester rather than
- * the test editing the list. If the list changes and this stops passing, that is the test
- * telling the truth.
+ * THE TESTER LIST IS EMPTY IN THE REPO and only real accounts ever go in it, so this test
+ * puts its own name on the list rather than asserting against somebody's real account. It
+ * does that through the same array the page reads, not by patching the page: access.js
+ * assigns window.PS_CFB_COMMISH_ACCESS, and `arm` traps that assignment and pushes a name.
+ * The gate the test passes through is therefore the real gate.
+ *
+ * The earlier version signed in AS a named tester, which tied a green test run to one
+ * person's leaderboard name. That broke the moment the list changed, and it would have
+ * gone on passing if the list were emptied by mistake.
  */
 import { chromium } from 'playwright';
 const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
@@ -36,6 +42,20 @@ window.supabase={createClient(){
     from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve(
       {data:${username?"{username:'"+username+"'}":'null'}})}}}}}},
     rpc:()=>Promise.resolve({data:true,error:null})}}};`;
+
+/* PUT A NAME ON THE REAL LIST, by trapping the assignment access.js makes. Deterministic:
+   the name is added the instant the file defines the object, which is before any page code
+   asks the question. Nothing in the shipped list changes, and no production code has a
+   hook in it for the benefit of a test. */
+const TESTER='commish-test-account';
+const arm=(name)=>`
+(function(){ var v;
+  Object.defineProperty(window,'PS_CFB_COMMISH_ACCESS',{configurable:true,
+    get:function(){ return v; },
+    set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(name)}); }catch(e){} }});
+})();`;
+/* Signed in as that account, and on the list. */
+const tester=()=>arm(TESTER)+stub(true,TESTER);
 
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
 let bad=0;
@@ -72,13 +92,31 @@ console.log('\n=== the door ===');
   ok('  and it does not make them feel they are missing the game',
     /nothing is missing/i.test(await txt(p,'#gate-say')), await txt(p,'#gate-say'));
   ok('  the badge still says testing', (await txt(p,'#tag'))==='In testing');
+  /* AND IT SAYS WHICH ACCOUNT IT IS REFUSING. The list holds usernames, a username is not
+     an email address, and an account signed in with Google may have none. The first list
+     shipped with a username inferred from an email, matched nobody, and the screen said
+     only "not on the list": nothing on it could tell a tester which of those had happened,
+     or what to send to be added. This is that. */
+  ok('  and it names the account it is refusing', !!(await p.$('#whoami')));
+  ok('    with the username the list matches on',
+    /somebodyelse/.test(await txt(p,'#who-name')), await txt(p,'#who-name'));
+  /* The id is the handle that exists even when the username does not, so it is the one
+     that has to be here. */
+  ok('    and the account id, which exists either way',
+    /[0-9a-f-]{36}/.test(await txt(p,'#who-id')), await txt(p,'#who-id'));
+  ok('    and a way to copy it', !!(await p.$('#who-copy')));
+  /* NO EMAIL ON THIS SCREEN. The gate reads a username and an id, so those are what it
+     shows; putting the address here would mean testers pasting it into a chat to be added. */
+  ok('    and it does not print an email address',
+    !/@/.test(await txt(p,'#whoami')), await txt(p,'#whoami'));
+  await p.screenshot({path:SS+'commish_notlisted.png'});
   if(errs.length) bad++;
   await p.close();
 }
 
 console.log('\n=== a tester takes the job ===');
 {
-  const {p,errs}=await open(stub(true,'sellybros711'));
+  const {p,errs}=await open(tester());
   ok('the door opens', !!(await p.$('#g-start')));
   ok('  and the badge says so', (await txt(p,'#tag'))==='Tester');
   await p.screenshot({path:SS+'commish_gate.png'});
@@ -151,7 +189,7 @@ console.log('\n=== what a free player is shown ===');
      as paying. `?tier=free` is the switch, and this is the check that it shows the offer
      rather than hiding it: a setting drawn and dead is the clearest a paywall ever gets,
      and a setting simply missing teaches nothing. */
-  const {p,errs}=await open(stub(true,'sellybros711')+'',390);
+  const {p,errs}=await open(tester(),390);
   await p.goto(URL+'?tier=free',{waitUntil:'domcontentloaded'});
   await p.waitForTimeout(2600);
   ok('a tester can look at the free version', !!(await p.$('#g-start')));
@@ -197,7 +235,7 @@ console.log('\n=== what a free player is shown ===');
 
 console.log('\n=== a season, and it survives the browser closing ===');
 {
-  const {p,errs}=await open(stub(true,'sellybros711'));
+  const {p,errs}=await open(tester());
   await p.click('#g-start'); await p.waitForTimeout(600);
   /* Play until the year turns, which is the year in review. */
   let guard=0;
