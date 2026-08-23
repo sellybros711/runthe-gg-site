@@ -1137,6 +1137,12 @@
         <label class="fld"><div class="flab">Finisher Name <span class="hint">(what the announcer calls your finish, optional)</span></div><input type="text" id="cFinName" placeholder="The Spiral Driver" maxlength="30"></label>
         <label class="fld"><div class="flab">Second Finisher Name <span class="hint">(the one you reach for when the first is scouted)</span></div><input type="text" id="cFinNameB" placeholder="The Reject" maxlength="30"></label>
         <label class="fld"><div class="flab">Catchphrase <span class="hint">(what you say to the crowd, optional)</span></div><input type="text" id="cCatch" placeholder="Believe that." maxlength="60"></label>
+        <label class="fld"><div class="flab">Difficulty</div>
+          <select id="cDiff">
+            <option value="rookie">Rookie · Opponents dial back a little</option>
+            <option value="pro" selected>Pro · Balanced</option>
+            <option value="legend">Legend · Opponents come at you harder</option>
+          </select></label>
         <label class="fld"><div class="flab">Entrance Theme <span class="hint">(what the music sounds like)</span></div>
           <select id="cEntrance">
             <option value="metal">Metal · guitars, war chant</option>
@@ -3209,6 +3215,7 @@ function finishCreate(){
         finisherNameB:(($('cFinNameB')&&$('cFinNameB').value)||'').trim()||null,
         catch:(($('cCatch')&&$('cCatch').value)||'').trim()||null,
         entrance:($('cEntrance').value||'metal') },
+      prefs:{ difficulty: (($('cDiff')&&$('cDiff').value)||'pro') },
     car:{ age:21, year:1, week:1, rep:0, pop:5, cond:100, morale:70, mom:50,
           rec:{w:0,l:0,d:0}, title:null, reigns:[], earnings:0, streak:0, rivalId:null,
           plan:Object.assign({a:'strike',b:'technical'},st.plan||{}), mentor:null, mentorWeeks:0, injWeeks:0, retired:false, offers:null, milestones:[],
@@ -4341,6 +4348,7 @@ function renderWeek(){
       <div class="bk-odds" style="margin-top:10px;">
         <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
         <div class="bk-olab"><span>You <b>${Math.round(w*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(w*100)}%</b> them</span></div>
+        <div class="hint" style="margin-top:3px;text-align:center;">Vegas has you <b>${w>=0.5?('-'+Math.round(100*w/(1-w))):('+'+Math.round(100*(1-w)/w))}</b></div>
       </div>
       <div class="bk-rw" style="margin-top:8px;">
         <span>${pico('money',14)} <b>${money(o.purse)}</b></span>
@@ -4465,7 +4473,39 @@ function renderBizPanel(){
     </div>
   </div>
   <div class="hint" style="margin-top:8px;">Last week: ${money((c.weekPay&&c.weekPay.down)||0)} downside + ${money((c.weekPay&&c.weekPay.merch)||0)} merch.</div>
+  <div class="row" style="margin-top:10px;gap:6px;">
+    <button class="ghost" style="padding:5px 10px;font-size:11px;" onclick="openInbox()">${pico('clipboard',12)} Full inbox &amp; news</button>
+    <button class="ghost" style="padding:5px 10px;font-size:11px;" onclick="openDifficulty()">${pico('star',12)} Difficulty: ${diffLabel()}</button>
+  </div>
   ${((c.milestones||[]).length>=3 && !c.styleRefitDone)?`<div class="advice act" style="margin-top:12px;"><span class="ad-i">${pico('swap',22)}</span><span class="ad-t">Three camps deep. You could refit your working style now if you wanted a different lane.</span><button class="ad-b" onclick="openStyleRefit()">Refit style →</button></div>`:''}`;
+}
+function openInbox(){
+  const c=G.car;
+  const inbox=(c.inbox||[]).slice(0,40);
+  const news=(G.world&&G.world.news||[]).slice(0,20);
+  const inboxHtml = inbox.length ? inbox.map(x=>`<div class="inbox-item sev-${x.sev||'info'}"><span class="ico">${x.ico||'•'}</span><span class="txt">${x.txt}</span></div>`).join('') : '<p class="hint">Nothing new.</p>';
+  const newsHtml = news.length ? news.map(n=>`<div class="inbox-item sev-info"><span class="ico">${n.ico||'•'}</span><span class="txt">${(n.text||n.t||'')} <span class="hint" style="margin-left:6px;">Y${n.y}W${n.w}</span></span></div>`).join('') : '<p class="hint">Quiet week around the wrestling world.</p>';
+  modal('Inbox &amp; News',
+    `<div class="flab" style="margin-top:0;">Your inbox <span class="hint">(${inbox.length})</span></div>${inboxHtml}
+     <div class="flab" style="margin-top:14px;">The Ropes Report <span class="hint">(${news.length})</span></div>${newsHtml}`,
+    [{label:'Close',fn:closeModal}]);
+}
+function openDifficulty(){
+  const cur = (G.prefs&&G.prefs.difficulty)||'pro';
+  const opts=[
+    {id:'rookie', l:'Rookie', d:'Opponents dial back a little. The road is a little kinder.'},
+    {id:'pro',    l:'Pro',    d:'Balanced. The intended experience.'},
+    {id:'legend', l:'Legend', d:'Opponents come at you harder. The Hall respects you more.'},
+  ];
+  const h = `<p class="log">Change how tough the office books you against. Takes effect on the next weekly card.</p>
+    <div class="decgrid">${opts.map(o=>`<div class="decopt${cur===o.id?' on':''}" data-id="${o.id}"><div class="dn">${o.l}${cur===o.id?' ✓':''}</div><div class="dd">${o.d}</div></div>`).join('')}</div>`;
+  modal('Difficulty', h, [{label:'Close',fn:closeModal}]);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      G.prefs=G.prefs||{}; G.prefs.difficulty=d.dataset.id;
+      save(); closeModal(); toast('Difficulty: '+diffLabel()); renderCareer();
+    });
+  },0);
 }
 function openStyleRefit(){
   const cur = (styleOf()||{}).id || 'brawler';
@@ -4482,6 +4522,15 @@ function doStyleRefit(styleId){
   c.cond = clamp(c.cond - 8);   // a week's cost
   pushInboxItem({ico:pico('swap',18),sev:'good',txt:`<b>Style refit.</b> You are working as a ${(styleOf()||{}).name||styleId} now.`});
   save(); renderCareer(); toast('New working style: '+(styleOf()||{}).name);
+}
+// Difficulty scaling: rookie/pro/legend multiplies opponent OVR.
+function diffOppMult(){
+  const d = (G && G.prefs && G.prefs.difficulty) || 'pro';
+  return d==='rookie' ? 0.92 : d==='legend' ? 1.10 : 1;
+}
+function diffLabel(){
+  const d = (G && G.prefs && G.prefs.difficulty) || 'pro';
+  return d==='rookie' ? 'Rookie' : d==='legend' ? 'Legend' : 'Pro';
 }
 function makeOffers(){
   const t=workTier(), me=myPromo();
@@ -4534,7 +4583,7 @@ function makeOffers(){
     // without ever throwing a rookie to a main-eventer.
     const mid=55, myOvr=ovr(G.w);
     const anchor=t.base+Math.max(0,myOvr-t.base)*0.72;
-    const oppOvr=Math.round(clamp(anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5),12,99));
+    const oppOvr=Math.round(clamp((anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5))*diffOppMult(),12,99));
     let stakes='standard';
     const belt=beltName(t), holds = G.car.title===belt;
     const secBelt=beltName(t,'secondary'), holdsSec = G.car.secondary===secBelt;
@@ -6749,6 +6798,12 @@ function applyMatch(o,res){
     if(_tm2){ _tm2.ally.chem = clamp((_tm2.ally.chem||0) + 1 + (res.quality>=75?1:0), 0, 100); }
   }
   res.oppName=o.oppName; checkMilestones(res, o);
+  // Defied the odds: if Vegas had you a real underdog and you still won,
+  // enshrine the scalp on the accolades wall.
+  if(res.win && !res.draw){
+    let _p=0.5; try{ _p = offerOdds(o); }catch(_e){}
+    if(_p<=0.30) award(`Defied the odds against ${o.oppName}.`, pico('starBig',36));
+  }
   c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
   G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title'});
   if(G.hist.length>120) G.hist.pop();
