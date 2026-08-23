@@ -4894,7 +4894,7 @@ function weekDayRange(){ const start=weekKey()*7*86400000, pk=ms=>{ const d=new 
 const DAILY_QUEST_XP=120;      // Tour Rep awarded once/day for finishing all the day's daily quests
 const WEEKLY_CHAL_XP=250;      // Tour Rep awarded per weekly challenge completed
 const WEEKLY_PACK_N=2;         // how many of the week's challenges pay a free pack (the rest pay coins)
-const WEEKLY_CHAL_COINS=1500;  // coins paid by a weekly challenge that doesn't carry a pack
+const WEEKLY_CHAL_COINS=750;   // coins paid by a weekly challenge that doesn't carry a pack (halved from 1500, cf. economy trim)
 // Shard faucets. A shard is worth RARITY_PRICE/SHARD_COST in coins — a RARE shard is 15,000 and an EPIC
 // 27,500 (3.4× a Base pack) — so these two lines were quietly the largest reward faucet in the game
 // (~215,000 coins/week between them, i.e. ~3 hand-picked items every week). Halved: the daily all-done
@@ -27415,7 +27415,7 @@ function finishDailyRound(){
   if(won){ sfx('win'); buzz([0,30,40,50]); } else { sfx('streak'); buzz([0,25]); }
   // coins for playing the daily, scaled by performance: base + beat-the-pro bonus + a margin bonus for how
   // far under the tour average you finished (CS392: every mode rewards by how you performed).
-  if(signedIn){ const margin=won?Math.min(400, Math.round(Math.max(0, avg-total)*30)):0;
+  if(signedIn){ const margin=won?Math.min(200, Math.round(Math.max(0, avg-total)*30)):0;   // margin cap 400→200 (economy trim)
     const _xp=COIN_DAILY_XP + (won?COIN_DAILY_XP_BEAT:0); addXp(_xp); S.dailyXpGain=_xp;   // CS400: + Tour Rep (XP) for completing
     const dcoins=decisionPayoutCoins(S.dailyHoles, 1.0);   // CS436: coins for bold calls that paid off
     // CS401: the Sunday-to-Sunday streak-week reward track (once per new day)
@@ -29489,8 +29489,8 @@ function shardSummaryHTML(){ const parts=PACK_RANK.map(r=>{ const b=shardBal(r);
 // ══════ SHARD EXCHANGE — an upgrade LADDER (owner): trade EXCHANGE_COST shards of a rarity for a WHEEL of the NEXT
 // rarity up. Common → Rare wheel, Rare → Epic wheel, Epic → Legendary wheel. EXCHANGE_COST Legendary shards cash in
 // for the capstone: coins + a themed pack + a choose-1-of-3-legendaries (see all 3, keep one). Replaces
-// the old redeem-a-specific-item path. A won item you already own refunds coins + 1 shard of THAT rarity,
-// so a duplicate still advances you toward the next rung. ══════════════════════════════════════════════
+// the old redeem-a-specific-item path. A won item you already own refunds 1 shard of THAT rarity (a
+// shard-only cycle - see grantExchangeItem), so a duplicate still advances toward the next rung. ═════
 const EXCHANGE_COST=10;
 const NEXT_RARITY={common:'rare', rare:'epic', epic:'legendary'};
 const LEG_EXCHANGE_COINS=25000;
@@ -29511,10 +29511,12 @@ function dupeRefund(rarity, paid){
   if(!paid) return 0;
   var c=PACK_DUPE_REFUND[rarity]||1000; addBonusCoins(c,{silent:true}); return c;
 }
-// grant a won exchange item (or, if already owned, the same coin + shard-of-its-rarity refund a pack dupe gives).
-// The exchange is always a PAID path - the player spent EXCHANGE_COST shards to spin it - so it still refunds coins.
+// grant a won exchange item (or, if already owned, the same shard-of-its-rarity refund a pack dupe gives).
+// The exchange is a SHARD-ONLY cycle - the player spent EXCHANGE_COST shards to spin it, no coins in - so
+// a dupe pays only the shard (paid:false). Closes the loophole where 10 free-pack dupe shards buy an
+// exchange spin whose dupe minted coins from nothing.
 function grantExchangeItem(item){ var dupe=packOwns(item), refund=0;
-  if(dupe) refund=dupeRefund(item.rarity, true);
+  if(dupe) refund=dupeRefund(item.rarity, false);   // shard only, no coin refund
   else packGrant(item);
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund}; }
 function buildExchangeReel(winItem, target){ var TOTAL=54, WIN=48, reel=[];
@@ -29571,7 +29573,7 @@ function legChoosePick(idx){ var lc=S.legChoice; if(!lc||lc.chosen!=null||!lc.pi
 // The Shards section body: a card per rarity with the trade-up button (5 → next-rarity wheel; legendary → capstone).
 function shardExchangeNode(){
   var wrap=$('<div style="max-width:520px;margin:0 auto"></div>');
-  wrap.appendChild($('<div class="small muted" style="text-align:center;line-height:1.55;margin:0 0 14px">Trade up your shards. Five shards of a rarity spin a wheel of the next rarity up, guaranteed. Duplicates refund coins plus a shard of that rarity, so you always climb.</div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;line-height:1.55;margin:0 0 14px">Trade up your shards. '+EXCHANGE_COST+' shards of a rarity spin a wheel of the next rarity up, guaranteed. Duplicates give back a shard of that rarity, so you always climb.</div>'));
   ['common','rare','epic','legendary'].forEach(function(r){
     var bal=shardBal(r), can=bal>=EXCHANGE_COST, rc=ACC_RARITY[r].c, next=NEXT_RARITY[r];
     var sub=(r==='legendary')?'5 → coins + a pack + pick 1 of 3 Legendaries':'5 → a random '+ACC_RARITY[next].label+' item';
@@ -29606,7 +29608,7 @@ function overlayLegendaryChoice(screen){
       +(boost?'<span class="small" style="color:#8fe0c4;font-size:10px">'+esc(boost)+'</span>':'<span class="small muted" style="font-size:10px">Cosmetic</span>')
       +'</button>'; }).join('');
   var head=(chosen==null)?'Choose your Legendary':'Legendary claimed!';
-  var sub=(chosen==null)?'See all three, then keep the one you want.':(res&&res.dupe?('You already owned it — refunded '+coinFmt(res.refund)+' coins + a Legendary shard.'):(esc((res&&res.item&&res.item.name)||'')+' is yours.'));
+  var sub=(chosen==null)?'See all three, then keep the one you want.':(res&&res.dupe?('You already owned it, refunded a Legendary shard.'):(esc((res&&res.item&&res.item.name)||'')+' is yours.'));
   var ov=$('<div class="ov" role="dialog" aria-modal="true" style="text-align:center">'
     +'<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>'
     +'<div class="tag" style="color:'+LC+';border-color:'+LC+';margin:0 auto">◆ Legendary Exchange</div>'
@@ -30336,10 +30338,11 @@ function overlayPackWheel(app){
         +(catName?'<div class="prmeta">'+esc(catName)+(pt.id!=='base'?' · '+esc(pt.name):'')+'</div>':'')
         +(lore?'<div class="prlore">\u201c'+esc(lore)+'\u201d</div>':'')
         +'<div class="prboost'+(bObj?'':' none')+'">'+(bObj?shopBoostTxt(bObj):'Cosmetic · pure style')+'</div>'
-        // a free pack's duplicate still pays its shard, but no coins - so the coin chip only shows when there IS a refund
+        // a free pack's duplicate still pays its shard, but no coins - so the coin chip only shows when there IS a refund.
+        // An exchange spin is a shard-only cycle (no coins in, no coins out), so its dupe reads "shard only".
         +(win.dupe?('<div class="prdupe">'
           +(win.refund>0?'<span class="prchip" style="color:#ffd45e;border-color:#ffd45e">Duplicate · +'+coinFmt(win.refund)+' coins</span>'
-                        :'<span class="prchip" style="color:#b8c4bd;border-color:#b8c4bd">Duplicate · free pack, no coins</span>')
+                        :'<span class="prchip" style="color:#b8c4bd;border-color:#b8c4bd">Duplicate · '+(w.exchange?'shard only':'free pack, no coins')+'</span>')
           +'<span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+'</span></div>'):'')
       +'</div></div>'));
     var btns=$('<div class="packbtns"></div>');
