@@ -2264,6 +2264,22 @@ function foundStable(name){
   pushInboxItem({ico:pico('shield',18),sev:'story',txt:`<b>${G.car.stable.name}.</b> You have a stable, ${G.car.stable.members.length} strong.`});
   award(`Founded ${G.car.stable.name}.`,pico('shield',36));
 }
+// When the tag team dissolves for any reason (betrayal, dismissed ally,
+// team-mate turns on you), any tag title reign ends the same night. Anything
+// else would leave you as "champion" of a team that no longer exists.
+function vacateTagIfNoPartner(reason){
+  const c=G.car;
+  if(!c.tagTitle) return;
+  if(myTeam()) return;
+  const belt=c.tagTitle;
+  const r=c.reigns.slice().reverse().find(x=>x.title===belt&&!x.lostYear);
+  if(r){ r.lostYear=c.year; r.lostWeek=c.week; r.vacated=true; r.endReason=reason||'team dissolved'; }
+  c.tagTitle=null; c.tagDefenses=0;
+  pushInboxItem({ico:pico('impact',18),sev:'bad',
+    txt:`<b>The ${belt} are vacated.</b> ${reason||'The team is finished, and the belts go with it.'}`});
+  newsPush({ico:pico('impact',14),cat:'title',
+    text:`<b>${belt} vacated.</b> ${G.w.name}'s team is finished.`});
+}
 // the moment the whole thing exists for
 function betray(id){
   const c=charById(id), a=allyOf(id); if(!c) return;
@@ -2271,6 +2287,7 @@ function betray(id){
   G.car.allies=allies().filter(x=>x.id!==id);
   const s=myStable();
   if(s){ s.members=s.members.filter(x=>x!==id); if(s.members.length<1) G.car.stable=null; }
+  vacateTagIfNoPartner('You turned on your partner.');
   const R=rel(id);
   R.heat=100; R.respect=clamp(R.respect-45,0,100); R.betrayed=true;
   // this is the loudest thing a wrestler can do
@@ -2295,6 +2312,7 @@ function checkBetrayal(){
     const c=charById(a.id); if(!c) continue;
     G.car.allies=list.filter(x=>x.id!==a.id);
     const s=myStable(); if(s){ s.members=s.members.filter(x=>x!==a.id); if(!s.members.length) G.car.stable=null; }
+    vacateTagIfNoPartner(`${c.name} walked out on the team.`);
     const R=rel(a.id); R.heat=clamp(R.heat+55,0,100); R.respect=clamp(R.respect-25,0,100); R.betrayedMe=true;
     G.car.reaction=clamp(reactionOf()+7,0,100);
     G.car.mom=clamp(G.car.mom-14);
@@ -3299,7 +3317,11 @@ function spawnRookie(promoId){
   const align=rnd()<0.5?'face':'heel';
   const over=35+Math.floor(rnd()*20);
   const rookie={id, name:nm, nick:'The Newcomer', promo:promoId, style, align, over,
-    look:oppLook(id,nm), lines:{ taunt:['I am here now.'], win:['Told you.'], lose:['Not tonight.'], respect:['You are the real thing.'] },
+    look:oppLook(id,nm),
+    gimmick:'A rookie still working out who they are in the ring.',
+    finisher:'No signature finish on tape yet.',
+    traits:['Newcomer'],
+    lines:{ taunt:['I am here now.'], win:['Told you.'], lose:['Not tonight.'], respect:['You are the real thing.'] },
     debut:{y:G.car.year,w:G.car.week}};
   CHARS.push(rookie);
   return rookie;
@@ -3361,6 +3383,12 @@ function worldTick(){
     if(target.id===mine){
       pushInboxItem({ico:pico('star',18),sev:'info',
         txt:`<b>New face in the locker room.</b> ${rookie.name} debuted this week. Get in the ring with them and see what they've got.`});
+      // Seed a small amount of initial respect on both sides so the "ask them
+      // to team up" path is reachable without a match, and stash a pending
+      // "introduce yourself" event that fires on the next quiet week.
+      const R=rel(rookie.id); R.met=true; R.respect=Math.max(R.respect,18);
+      G.car.pendingRookies = G.car.pendingRookies || [];
+      G.car.pendingRookies.push(rookie.id);
     }
     return;
   }
@@ -6493,7 +6521,12 @@ function applyMatch(o,res){
   // title
   let titleMsg=null;
   const tt=workTier(), belt=beltName(tt), secBelt=beltName(tt,'secondary');
-  if(o.stakes==='title' && c.titleShot){ c.titleShot=null; }
+  if(o.stakes==='title' && c.titleShot){
+    c.titleShot=null;
+    // A promised rematch queued behind a guaranteed shot slides forward now.
+    if(c.titleShotPending){ c.titleShot=c.titleShotPending; c.titleShotPending=null;
+      pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`Your rematch clause is back on the books.`}); }
+  }
   if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0; c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0});
     titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
@@ -6505,8 +6538,10 @@ function applyMatch(o,res){
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
       // Rematch clause: a title loss is not the end of the story. The office
       // owes you one shot before this rival can defend against anyone else.
-      c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'world'};
-      pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause is in.</b> You have a shot at the ${belt} back at the next PPV, or it burns.`});
+      const _npv = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'world',
+                   dueBy:{y:_npv.year, w:_npv.week}, belt:belt};
+      pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause is in.</b> One shot at the ${belt} back by Y${_npv.year}W${_npv.week} or it burns.`});
     }
   }
   else if(o.stakes==='secondary'&&res.win){ c.secondary=secBelt; c.secDefenses=0;
@@ -6523,8 +6558,10 @@ function applyMatch(o,res){
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
       const lostBelt = c.secondary;
       c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100);
-      c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'secondary', belt:lostBelt};
-      pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause.</b> One shot at the ${lostBelt} back before it burns.`});
+      const _npv2 = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'secondary', belt:lostBelt,
+                   dueBy:{y:_npv2.year, w:_npv2.week}};
+      pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause.</b> One shot at the ${lostBelt} back by Y${_npv2.year}W${_npv2.week} or it burns.`});
     }
   }
   else if(o.stakes==='tag_title' && res.win){
@@ -6560,7 +6597,14 @@ function applyMatch(o,res){
     if(res.win){
       // "Guaranteed" is not a promise the office breaks. When this shot fires,
       // the match starts with the crowd on your side and a real momentum bump.
+      // If a rematch clause was pending, the office keeps both open: they slot
+      // into the next two PPVs so no promised opportunity is silently lost.
+      const prev = c.titleShot;
       c.titleShot={promoId:myPromo().id, from:'the Battle Royal', y:c.year, w:c.week, guaranteed:true};
+      if(prev && !prev.guaranteed){
+        c.titleShotPending = prev;   // queued behind the guaranteed shot
+        pushInboxItem({ico:pico('trophy',18),sev:'info',txt:`Your rematch clause has been slotted for the PPV after the Battle Royal cash-in.`});
+      }
       pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>You won the Battle Royal.</b> Guaranteed title shot on the books.`});
       G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won the Battle Royal'});
     }
@@ -6627,8 +6671,9 @@ function applyMatch(o,res){
   const unlocked=checkUnlocks();
   if(o.tag && myTeam()){
     c.teamRec=c.teamRec||{w:0,l:0};
-    if(draw){} else if(res.win){ c.teamRec.w++; nudgeLoyalty(myTeam().ally.id,4); }
-    else { c.teamRec.l++; nudgeLoyalty(myTeam().ally.id,-3); }
+    const _tm2 = myTeam();
+    if(draw){} else if(res.win){ c.teamRec.w++; if(_tm2) nudgeLoyalty(_tm2.ally.id,4); }
+    else { c.teamRec.l++; if(_tm2) nudgeLoyalty(_tm2.ally.id,-3); }
   }
   res.oppName=o.oppName; checkMilestones(res, o);
   c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
@@ -6872,6 +6917,15 @@ function advanceWeek(){
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
   c.week++; c.offers=null; c.booking=null; c.prep=null;   // the office starts the week fresh
   c._pendingNext=null;                                      // "who's next" only counts for the week you called it
+  // A title shot with an expired deadline burns silently. Guaranteed shots
+  // (rumble/MITB) do not carry a deadline; the office honours them on request.
+  if(c.titleShot && c.titleShot.dueBy && !c.titleShot.guaranteed){
+    const d=c.titleShot.dueBy;
+    if(c.year>d.y || (c.year===d.y && c.week>d.w)){
+      pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>The rematch clause expired.</b> The office moved on.`});
+      c.titleShot=null;
+    }
+  }
   // Farewell tour reached its date: the last match has been wrestled, walk away.
   if(c.retireOnWeek){
     const r=c.retireOnWeek;
@@ -7208,6 +7262,12 @@ function takeInjury(cats,stipMult,severityBoost){
 function maybeBackstage(){
   const st=story();
   if(st && st.stage<4 && G.car.week % 3 === 0) return backstageEvent();
+  // new rookie in the room? Meet them the next quiet week we can.
+  if(!st && (G.car.pendingRookies||[]).length && rnd()<0.7){
+    const id = G.car.pendingRookies.shift();
+    const ch = charById(id);
+    if(ch) return rookieMeetEvent(ch);
+  }
   // no active feud: allies and mid-carders can still stop you in the hall
   if(!st && G.car.week % 5 === 0 && rnd()<0.55) return nonRivalBackstage();
   // life outside the ring: interviews, endorsements, small drama, hometown.
@@ -7216,6 +7276,37 @@ function maybeBackstage(){
   const busy = G.car.tourPending || G.car.tourn;
   if(!st && !busy && G.car.week % 7 === 0 && rnd()<0.45) return lifeEvent();
   return false;
+}
+// Meet a new rookie in the corridor. Choices move initial respect and set a
+// tone for the relationship, all without needing to book them.
+function rookieMeetEvent(ch){
+  const c=G.car;
+  const opts=[
+    {n:'Shake their hand',d:'Welcome them to the room.',fx:{respect:14,pop:1},say:'You shake their hand and say the name back to them. They will remember that.'},
+    {n:'Size them up',d:'Give them the veteran look.',fx:{respect:6,heat:2},say:'You look them up and down and say nothing. It works both ways.'},
+    {n:'Test them right there',d:'Run a spot in the empty ring.',fx:{respect:10,cond:-3,ps:1},say:'You take them to the ring for ten minutes. They watch every step you make.'},
+    {n:'Ignore them',d:'Not your problem.',fx:{respect:-8},say:'You walk past. They notice. The room notices.'},
+  ];
+  const R=rel(ch.id);
+  modal(`BACKSTAGE · ${ch.name} introduces themselves`,
+    `<div class="log" style="margin-bottom:12px;">A new face steps in front of you. <span class="say">"I have been watching your tape for a year. Big fan."</span></div>
+     <div class="decgrid">${opts.map((o,i)=>`<div class="decopt" data-i="${i}">
+        <div class="dn">${o.n}</div><div class="dd">${o.d}</div></div>`).join('')}</div>`,
+    []);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const o=opts[+d.dataset.i], f=o.fx||{};
+      if(f.respect) R.respect=clamp(R.respect+f.respect,0,100);
+      if(f.heat) R.heat=clamp(R.heat+f.heat,0,100);
+      if(f.pop) c.pop=clamp(c.pop+f.pop,1,100);
+      if(f.cond) c.cond=clamp(c.cond+f.cond);
+      if(f.ps) G.w.attrs.ps=clamp((G.w.attrs.ps||30)+f.ps);
+      closeModal();
+      pushInboxItem({ico:pico('handshake',18),sev:'story',txt:`<b>Met ${ch.name}.</b> ${o.say}`});
+      save(); renderCareer();
+    });
+  },0);
+  return true;
 }
 /* Off-screen life. Fires between shows on quiet weeks. Nothing about the ring,
    just the parts of the job the tape never sees. Choices move fame and rep. */
@@ -10034,12 +10125,16 @@ function charProfile(id){
   const c=charById(id); if(!c) return;
   const r=rel(id), lb=relLabel(r), p=promoById(c.promo);
   const bar=(k,v)=>`<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-dim)">${k}</span><span class="mono">${v}</span></div><div class="bar"><i style="width:${v}%"></i></div>`;
+  const gim = c.gimmick || (c.debut?'A rookie still working out who they are in the ring.':'');
+  const fin = c.finisher || 'No signature finish on tape yet.';
+  const taunt = (c.lines&&c.lines.taunt&&c.lines.taunt[0]) || (c.nick?'Say the name.':'');
+  const nick = c.nick || '';
   modal(c.name, `<div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
       <div style="width:110px;flex:none;">${wrestlerSVG(c.look)}</div>
       <div style="flex:1;min-width:180px;">
-        <div style="font-family:var(--display);font-size:16px;color:var(--gold);text-transform:uppercase;">${c.nick}</div>
-        <div class="hint" style="margin:2px 0 8px;">${p?p.short+' · '+p.name:''}</div>
-        <p class="log" style="font-size:13px;">${c.gimmick}</p>
+        <div style="font-family:var(--display);font-size:16px;color:var(--gold);text-transform:uppercase;">${nick}</div>
+        <div class="hint" style="margin:2px 0 8px;">${p?p.short+' · '+p.name:''}${c.debut?` · debuted Y${c.debut.y}W${c.debut.w}`:''}</div>
+        <p class="log" style="font-size:13px;">${gim}</p>
         <div class="row" style="gap:6px;margin-top:6px;">${(c.traits||[]).map(t=>`<span class="badge b-com">${t}</span>`).join('')}</div>
       </div>
     </div>
@@ -10051,8 +10146,8 @@ function charProfile(id){
       ${bar('Respect',Math.round(r.respect))}${bar('Bad blood',Math.round(r.heat))}
       <div class="hint" style="margin-top:6px;">${r.matches?`${r.matches} meeting${r.matches!==1?'s':''} · you lead ${r.wins}-${r.losses}`:'You have never faced them.'}</div>
     </div>
-    <div style="margin-top:12px;"><div class="flab">Finisher</div><div style="color:var(--cream);font-weight:800;">${c.finisher}</div></div>
-    <div style="margin-top:10px;"><div class="flab">They say</div><div class="say" style="font-style:italic;">"${c.lines.taunt[0]}"</div></div>`,
+    <div style="margin-top:12px;"><div class="flab">Finisher</div><div style="color:var(--cream);font-weight:800;">${fin}</div></div>
+    ${taunt?`<div style="margin-top:10px;"><div class="flab">They say</div><div class="say" style="font-style:italic;">"${taunt}"</div></div>`:''}`,
     [{label:'Close',fn:closeModal}]);
 }
 
