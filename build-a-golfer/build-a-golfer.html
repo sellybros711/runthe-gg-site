@@ -12,15 +12,15 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/golf/">
-<meta property="og:title" content="Run The Tour — Free Daily Golf Simulation Game">
+<meta property="og:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta property="og:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
 <meta property="og:image" content="https://runthe.gg/golf/og.png?v=8">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Run The Tour — a free daily golf simulation game. Draft skills from real pro golfers and beat the daily course.">
+<meta property="og:image:alt" content="Run The Tour, a free daily golf simulation game. Draft skills from real pro golfers and beat the daily course.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@RunTheGG">
-<meta name="twitter:title" content="Run The Tour — Free Daily Golf Simulation Game">
+<meta name="twitter:title" content="Run The Tour, Free Daily Golf Simulation Game">
 <meta name="twitter:description" content="A free daily golf simulation game. Draft a skill from each real pro to build your own golfer, then beat the pro on a new course every day, run a full career, and play head-to-head online.">
 <meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=8">
 <!-- Structured data: a VideoGame + BreadcrumbList graph so search engines and AI crawlers can render
@@ -7651,7 +7651,7 @@ const ACCESSORIES=[
   {id:'ball_soft',   slot:'ball',  name:'Tour-Soft Ball',      rarity:'rare',     price:1800, boost:{scr:3},        desc:'Checks up on a dime.'},
   {id:'ball_ureth',  slot:'ball',  name:'Urethane Tour Ball',  rarity:'epic',     price:5500, boost:{app:3,scr:2},  desc:'Total command of your flight.'},
   {id:'ball_proto',  slot:'ball',  name:'Prototype Tour Ball', rarity:'legendary',price:14000,boost:{app:4,scr:3},  desc:'Not available in stores. Except this one.'},
-  {id:'ball_rungames',slot:'ball', name:'Run The Games Tour Ball',rarity:'legendary',price:16000,boost:{app:3,scr:2,clu:1},desc:'The house ball — all-around command, tee to green.'},
+  {id:'ball_rungames',slot:'ball', name:'Run The Games Tour Ball',rarity:'legendary',price:16000,boost:{app:3,scr:2,clu:1},desc:'The house ball, all-around command, tee to green.'},
   {id:'charm_tee',   slot:'charm', name:'Lucky Tee',           rarity:'common',   price:400,  boost:{scr:2},        desc:'You just get up-and-down more.'},
   {id:'charm_mark',  slot:'charm', name:'Ball-Marker Coin',    rarity:'rare',     price:1800, boost:{clu:3},        desc:'A little swagger on the greens.'},
   {id:'charm_divot', slot:'charm', name:'Divot-Tool Charm',    rarity:'epic',     price:5500, boost:{scr:3,clu:2},  desc:'Fix the green, fix your nerves.'},
@@ -9210,7 +9210,7 @@ function cosmeticItems(cat){
   if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}];   // CS411
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });   // one club, one list
   if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }));   // CS414
-  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit — green flash, navy sole'}];   // CS414
+  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}];   // CS414
   if(cat==='plate')  return PLATES.map(o=>({id:o.id,name:o.name,plate:1,hist:o.hist}));
   if(cat==='cardbg') return CARDBGS.map(o=>({id:o.id,name:o.name,cardbg:1,hist:o.hist}));
   return [];
@@ -9584,7 +9584,9 @@ function render(){
   // round-trips. Show a visible "finishing" pill so the wait reads as in-progress instead of
   // "sign-in is broken" (otherwise the confirmation can land mid-sim and feel like a bug).
   if(S.authPending){
-    app.appendChild($(`<div style="position:fixed;left:50%;bottom:calc(26px + var(--botnav-space,0px));transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px"><span class="authspin"></span>Finishing Google sign-in…</div>`));
+    // CS472 iOS-drift avoidance: fixed elements are centred via left:0/right:0/margin:0 auto WITHOUT a
+    // transform. A transform on a position:fixed element makes iOS anchor it to the document mid-scroll.
+    app.appendChild($(`<div style="position:fixed;left:0;right:0;margin:0 auto;width:max-content;bottom:calc(26px + var(--botnav-space,0px));z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px"><span class="authspin"></span>Finishing Google sign-in…</div>`));
   }
   RT=screen;
   // overlays attach to #app (top level), NOT the screen, the screen lives inside .card
@@ -9637,7 +9639,7 @@ function render(){
     try{ track('screen_render_error',{overlay:S.overlay,message:(err&&err.message)||String(err)}); }catch(e){}
     const broken=S.overlay; S.overlay=null;
     const stray=app.querySelector('.ov'); if(stray) stray.remove();
-    const errCard=$(`<div role="status" aria-live="polite" title="Tap to dismiss" style="position:fixed;left:50%;bottom:calc(26px + var(--botnav-space,0px));transform:translateX(-50%);z-index:45;max-width:90vw;cursor:pointer;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+    const errCard=$(`<div role="status" aria-live="polite" title="Tap to dismiss" style="position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:90vw;bottom:calc(26px + var(--botnav-space,0px));z-index:45;cursor:pointer;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
       <b style="color:#E14A33">That popup broke, closed it.</b>
       <div class="small muted" style="margin-top:3px;word-break:break-word">${esc(broken)}: ${esc((err&&err.message)||String(err))}</div></div>`);
     errCard.addEventListener('click',()=>errCard.remove());   // tap-to-dismiss...
@@ -9930,13 +9932,13 @@ function scrRules(){
 
   perkSection('🪙 Coins','var(--gold)','Earn coins by playing',null,[
     ['🏆','Win to earn','Bank coins for winning tournaments and majors, completing the daily (more for beating the pro), winning online matches and finishing seasons. The game tells you the moment you earn.'],
-    ['🎁','Free to play','The game is completely free — earn coins just by playing. Optional coin upgrades are available if you want to speed things up; coins have no real-world cash value.'],
+    ['🎁','Free to play','The game is completely free, earn coins just by playing. Optional coin upgrades are available if you want to speed things up; coins have no real-world cash value.'],
     ['🛍️','Spend at the Pro Shop','Use coins on cosmetics or packs. Tap the coins pill at the top right any time to jump straight to the packs.'],
   ]);
 
-  perkSection('🛍️ Pro Shop','var(--gold)','Gear up your golfer','Colors and clubs are yours to buy. The unique gear is a chase — pull it from packs or redeem shards.',[
+  perkSection('🛍️ Pro Shop','var(--gold)','Gear up your golfer','Colors and clubs are yours to buy. The unique gear is a chase, pull it from packs or redeem shards.',[
     ['🎨','Buy the basics','Shirt, hat, trouser and shoe colors, simple patterns and the store club sets are always direct-buy with coins.'],
-    ['🎁','Pack Exclusives','Unique headwear, eyewear, special patterns, glow effects, clubs, balls and more can\'t be bought with coins — they come from packs. That\'s the collection everyone shows off.'],
+    ['🎁','Pack Exclusives','Unique headwear, eyewear, special patterns, glow effects, clubs, balls and more can\'t be bought with coins, they come from packs. That\'s the collection everyone shows off.'],
     ['◆','Shard Exchange','Duplicate pulls earn shards. Trade '+EXCHANGE_COST+' shards of a rarity to spin a wheel for an item of the next rarity up, commons build to a rare, rares to an epic, epics to a legendary. Cash in '+EXCHANGE_COST+' legendary shards for the capstone reward.'],
     ['✨','Never miss new gear','A red dot and a "NEW" ribbon flag anything you\'ve unlocked but not looked at yet, so your latest gear is easy to find.'],
   ]);
@@ -10156,7 +10158,7 @@ function recordsTabHTML(){
     ${recordsMajorsHTML()}
     ${recordsMilestonesHTML()}
     ${clubProgressCardHTML()}
-    <div class="small muted" style="margin-top:12px;line-height:1.55;text-align:center">More categories to come — wins by tour and career longevity. For now the record that decides golf history is majors, so majors leads.</div>`;
+    <div class="small muted" style="margin-top:12px;line-height:1.55;text-align:center">More categories to come, wins by tour and career longevity. For now the record that decides golf history is majors, so majors leads.</div>`;
 }
 
 /* ══════ THE NAMED OPENING RIVAL — a "Career Nemesis" from move one ══════════════════════════════
@@ -11505,7 +11507,7 @@ function overlayDailyDone(screen){
   const tok=dailyTokens();
   const moreSell=(TOKENS_ENABLED||TOURPASS_ENABLED);   // only pitch "get more plays" once the products are live
   const moreHTML = !sbSignedIn() ? '' : (tok>0
-    ? `<button class="btn blue" id="dd-token" style="margin-bottom:8px">▶ Play again — use a token (${tok} left)</button>`
+    ? `<button class="btn blue" id="dd-token" style="margin-bottom:8px">▶ Play again, use a token (${tok} left)</button>`
     : (moreSell
       ? `<div class="scout" style="text-align:center;margin:4px 0 10px;border-color:#5bcfe8"><b style="color:#5bcfe8">Want more plays?</b><div class="small muted" style="margin:3px 0 9px">${TOKENS_ENABLED?'Buy extra Daily Tokens':''}${(TOKENS_ENABLED&&TOURPASS_ENABLED)?', or ':''}${TOURPASS_ENABLED?'get the Tour Pass for unlimited plays all season':''}.</div>
          <div style="display:flex;gap:8px;justify-content:center">${TOKENS_ENABLED?`<button class="btn" id="dd-buytok" style="width:auto;padding:9px 14px;font-size:13px;background:#5bcfe8;color:#0c1f16;font-weight:900">Buy Tokens</button>`:''}${TOURPASS_ENABLED?`<button class="btn" id="dd-pass" style="width:auto;padding:9px 14px;font-size:13px;background:#a24be0;color:#fff;font-weight:900">Tour Pass</button>`:''}</div></div>`
@@ -11616,7 +11618,7 @@ function overlayMenu(screen){
   const acct=$(`<div style="margin-bottom:16px"></div>`);
   acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
   acct.appendChild(menuRow(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career & post to the leaderboards',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })));
-  acct.appendChild(menuRow('🎁','Invite a Friend','Share your link — you BOTH get a free pack',()=>{ S.overlay=null; render(); referralShare(); }));
+  acct.appendChild(menuRow('🎁','Invite a Friend','Share your link, you BOTH get a free pack',()=>{ S.overlay=null; render(); referralShare(); }));
   acct.appendChild(menuRow('↺','Reset','Retire your current golfer & start over',go(()=>{S.overlay='confirmReset';})));
   if(signedIn) acct.appendChild(menuRow('↩','Sign Out','End your session on this device',()=>{ S.overlay=null; sbSignOut().then(()=>{ S.screen='title'; render(); toast('Signed out'); }); }));
   ov.appendChild(acct);
@@ -11807,7 +11809,7 @@ function overlayTerms(screen){
     <p class="lede">RunTheTour is a free-to-play, fan-made golf simulation game with optional upgrades. By playing, creating an account, making a purchase, or appearing on the leaderboard, you agree to these terms.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
       <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any professional golfer; all tournaments, venues, cups and sponsor brands in the game are fictional, and any resemblance to a real event, company, or organization is coincidental. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
-      <li><b>Free to play, with optional upgrades.</b> The game is completely free to play. We also offer optional upgrades — coin packages you can buy with real money through our payment processor (Stripe). <b>All sales are final</b> and purchases are non-refundable except where required by law. Purchased coins are added to your account, have no cash value, and can't be transferred or cashed out.</li>
+      <li><b>Free to play, with optional upgrades.</b> The game is completely free to play. We also offer optional upgrades, coin packages you can buy with real money through our payment processor (Stripe). <b>All sales are final</b> and purchases are non-refundable except where required by law. Purchased coins are added to your account, have no cash value, and can't be transferred or cashed out.</li>
       <li><b>Entertainment only.</b> Coins, prize money, and rankings have no real-world cash value, can't be cashed out or transferred, and aren't a form of gambling or wagering.</li>
       <li><b>Randomized packs.</b> The Pro Shop offers optional "packs" that grant a random cosmetic or gear item, opened with coins (earned by playing or purchased). The drop-rate odds for each rarity are published in-game on the pack screen. Items have no real-world value.</li>
       <li><b>Your account.</b> Choose a username that isn't offensive, impersonating, or misleading. We reserve the right to rename, suspend, or remove accounts, leaderboard entries, or usernames that violate this, or that we determine were used to abuse or manipulate the leaderboard.</li>
@@ -12262,8 +12264,11 @@ function tourSteps(){ return [
     body:'Everything you play feeds this. Sixty tiers of rewards, free the whole way down, with a paid lane if you want the rest of it.',
     target:'#rttnav [data-nav="pass"]' },
   { title:'What you earn',
-    body:'Coins, packs and gear live in the Shop. Your trophies, records and lifetime stats live in Profile, right next door.',
+    body:'Coins, packs and gear live in the Shop. Rewards from every mode drop here.',
     target:'#rttnav [data-nav="shop"]' },
+  { title:'Your record',
+    body:'Trophies, achievements, the majors leaderboard, your career history and every lifetime stat live in Profile. Come back here to see where the run stands.',
+    target:'#rttnav [data-nav="profile"]' },
   { title:'Start here',
     body:'Play one Daily round first. It takes five minutes and teaches you the swing, the courses and the scoring, so your career starts with all of it already familiar.',
     target:'#rttnav [data-nav="daily"]',
@@ -15376,14 +15381,14 @@ function seasonGoalTier(){
 const GOAL_DEFS = {
   // rookie pool ─ six templates, five are picked per season (seeded)
   makeCuts10:  {label:'Make 10 cuts this season',        short:'10 cuts',           get:m=>m.made,      target:10},
-  moneyTop100: {label:'Finish top 100 on the money list',short:'Top 100 money',     get:m=>m.moneyRank, target:100, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  moneyTop100: {label:'Finish top 100 on the money list',short:'Top 100 money',     get:m=>m.moneyRank, target:100, hitLow:true, fmt:v=>v==null?'-':('#'+v)},
   firstTop10:  {label:'Post your first top-10',          short:'A top 10',          get:m=>m.top10,     target:1},
   majorTop25:  {label:'Best finish top-25 at a major',   short:'Major top-25',      get:m=>m.majorTop25,target:1},
-  keepCard:    {label:'Keep your card (top 90 money)',   short:'Keep card',         get:m=>m.moneyRank, target:90,  hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  keepCard:    {label:'Keep your card (top 90 money)',   short:'Keep card',         get:m=>m.moneyRank, target:90,  hitLow:true, fmt:v=>v==null?'-':('#'+v)},
   playFull:    {label:'Play a full slate (15+ starts)',  short:'15 starts',         get:m=>m.played,    target:15},
 
   // established
-  moneyTop60:  {label:'Finish top 60 on the money list', short:'Top 60 money',      get:m=>m.moneyRank, target:60,  hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  moneyTop60:  {label:'Finish top 60 on the money list', short:'Top 60 money',      get:m=>m.moneyRank, target:60,  hitLow:true, fmt:v=>v==null?'-':('#'+v)},
   threeTop10s: {label:'Post 3 top-10 finishes',          short:'3 top-10s',         get:m=>m.top10,     target:3},
   winEvent:    {label:'Win a tournament',                short:'A win',             get:m=>m.wins,      target:1},
   majorCut:    {label:'Make the cut at a major',         short:'A major cut',       get:m=>m.majorCut,  target:1},
@@ -15391,19 +15396,19 @@ const GOAL_DEFS = {
   fifteenCuts: {label:'Make 15 cuts',                    short:'15 cuts',           get:m=>m.made,      target:15},
 
   // star
-  moneyTop30:  {label:'Finish top 30 on the money list', short:'Top 30 money',      get:m=>m.moneyRank, target:30,  hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  moneyTop30:  {label:'Finish top 30 on the money list', short:'Top 30 money',      get:m=>m.moneyRank, target:30,  hitLow:true, fmt:v=>v==null?'-':('#'+v)},
   winTwo:      {label:'Win 2 tournaments',               short:'2 wins',            get:m=>m.wins,      target:2},
   twoMajorT10: {label:'Two top-10 finishes at majors',   short:'2 major top-10s',   get:m=>m.majorTop10,target:2},
   winSig:      {label:'Win a signature event',           short:'Signature win',     get:m=>m.sigWins,   target:1},
-  worldTop10:  {label:'Break the world top 10',          short:'World top 10',      get:m=>m.worldRank, target:10, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  worldTop10:  {label:'Break the world top 10',          short:'World top 10',      get:m=>m.worldRank, target:10, hitLow:true, fmt:v=>v==null?'-':('#'+v)},
   eightTop10s: {label:'Post 8 top-10s',                  short:'8 top-10s',         get:m=>m.top10,     target:8},
 
   // GOAT chase
-  moneyTop5:   {label:'Finish top 5 on the money list',  short:'Top 5 money',       get:m=>m.moneyRank, target:5,   hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  moneyTop5:   {label:'Finish top 5 on the money list',  short:'Top 5 money',       get:m=>m.moneyRank, target:5,   hitLow:true, fmt:v=>v==null?'-':('#'+v)},
   winThree:    {label:'Win 3 tournaments',               short:'3 wins',            get:m=>m.wins,      target:3},
   winMajor:    {label:'Win a major',                     short:'A major',           get:m=>m.majors,    target:1},
   earn25M:     {label:'Earn $25M for the season',        short:'$25M year',         get:m=>m.money,     target:25e6, fmt:v=>'$'+fmtShort(v||0)},
-  defendNo1:   {label:'Defend World No. 1',              short:'Stay No. 1',        get:m=>m.worldRank, target:1, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  defendNo1:   {label:'Defend World No. 1',              short:'Stay No. 1',        get:m=>m.worldRank, target:1, hitLow:true, fmt:v=>v==null?'-':('#'+v)},
   twelveTop10s:{label:'Post 12 top-10s',                 short:'12 top-10s',        get:m=>m.top10,     target:12},
 };
 
@@ -15482,7 +15487,7 @@ function seasonGoalsCard(opts){
     const def = GOAL_DEFS[id]; if(!def) return '';
     const cur = def.get(m);
     const hit = goalHit(id, m);
-    const curTxt = def.fmt ? def.fmt(cur) : (cur==null?'—':String(cur));
+    const curTxt = def.fmt ? def.fmt(cur) : (cur==null?'-':String(cur));
     const tgtTxt = def.fmt ? def.fmt(def.target) : (def.hitLow?'≤'+def.target:def.target);
     return `<div class="sg-row${hit?' hit':''}">
       <span class="sg-check">${hit?'✓':'·'}</span>
@@ -15491,11 +15496,11 @@ function seasonGoalsCard(opts){
     </div>`;
   }).join('');
   const footTxt = graded ? ({
-    A:'🏆 A perfect sheet — sponsors will notice.',
-    B:'A strong year — offers will hold.',
-    C:'A workmanlike year — steady as she goes.',
-    D:'A quiet year — expect the phone to go quiet too.',
-    F:'A season to forget — sponsors will cool off.',
+    A:'🏆 A perfect sheet, sponsors will notice.',
+    B:'A strong year, offers will hold.',
+    C:'A workmanlike year, steady as she goes.',
+    D:'A quiet year, expect the phone to go quiet too.',
+    F:'A season to forget, sponsors will cool off.',
   })[graded.grade] : '';
   return $(`<div class="sgcard${opts.compact?' compact':''}">
     <div class="sg-hd">
@@ -18515,7 +18520,7 @@ const BRANDS=[
   {name:'Empire Athletic', tier:5, cat:'apparel', color:'#c94a3a', tag:'Build a dynasty.', trait:'loyal'},
   {name:'Aurum', tier:5, cat:'luxury', color:'#d4a63a', tag:'Pure gold.', trait:'demanding'},
   {name:'Legacy Global', tier:5, cat:'finance', color:'#3f9f8a', tag:'Written in history.', trait:'loyal'},
-  // THE HOUSE BRAND — Run The Games, the game's own label. An Icon-tier flagship deal: it only comes calling
+  // THE HOUSE BRAND, Run The Games, the game's own label. An Icon-tier flagship deal: it only comes calling
   // once you're a legend, and signing it means you've reached the very top. Signing unlocks the Run The Games
   // nameplate + card background (see CARD_EARN / rtgSigned). All brands here are fictional.
   {name:'Run The Games', tier:5, cat:'gaming', color:'#80ff76', tag:'Play them all.', trait:'marketing', house:true}
@@ -18649,7 +18654,7 @@ function ensureSponsors(){ const c=(S.career=S.career||{});
     else { const lc=c.lastContract;   // legacy in-progress single deal → migrate to the shirt slot
       if(lc && lc.sponsor){ const tier=(BRAND_BY_NAME[lc.sponsor]?brandInfo(lc.sponsor).tier:0);
         c.sponsors.shirt={brand:lc.sponsor, tier, rel:Math.max(1,Math.min(SPONSOR_REL_MAX,1+(lc.renewals||0))), seasons:(lc.renewals||0)+1}; }
-      // CS351: a brand-new career starts UNSPONSORED (both slots open). Nobody has signed you yet — a brand
+      // CS351: a brand-new career starts UNSPONSORED (both slots open). Nobody has signed you yet, a brand
       // has to come calling and you choose to sign (see the off-season sponsor-offer moment). No auto-seed.
     }
   }
@@ -19959,7 +19964,7 @@ function drawMajorWinCard(cv, info){
 function shareMajorWin(evt,o){
   const me=S.season.me; const cv=document.createElement('canvas');
   drawMajorWinCard(cv,{name:me.name, ovr:Math.round(me.skill), evt:evt.name, score:par(o&&o.score!=null?o.score:0), year:S.year||1, accent:majorTheme(evt.name).accent});
-  const cap=`${me.name} just won ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''} 🏆\nRunTheTour: Daily Golf Game — build a golfer, chase majors.\nThink you can do better? https://runthe.gg/golf`;
+  const cap=`${me.name} just won ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''} 🏆\nRunTheTour: Daily Golf Game, build a golfer, chase majors.\nThink you can do better? https://runthe.gg/golf`;
   track('major_win_shared',{event:evt.name}); shareCard(cv,cap,me.name,'major-win');
 }
 let _celebStop=null;
@@ -20329,7 +20334,7 @@ function scrCaptainPairs(day){
   const form = (day===2 && S.curTeam && S.curTeam.sessions) ? cupPlayerForm([S.curTeam.sessions[0], S.curTeam.sessions[1]], myCupSide()) : null;
   add($(`<div class="center" style="margin-top:6px"><span class="tag" style="color:${th.accent};border-color:${th.border};background:${th.bg}">${th.emoji} Captain · Day ${day} pairings</span></div>`));
   add($(`<h2 class="center" style="margin:10px 0 2px;font-size:19px">Set your Day ${day} pairings</h2>`));
-  add($(`<p class="small muted center" style="margin:0 0 10px;max-width:470px">Tap two players to pair them. Send out 4 pairs — the other ${Math.max(0,team.length-8)} sit today. ${day===1?'This lineup plays both of today’s sessions; you can shuffle it for Day 2.':'Keep the pairings that are hot, switch the ones that struggled Day 1 (their record is shown), and rest a few legs.'}</p>`));
+  add($(`<p class="small muted center" style="margin:0 0 10px;max-width:470px">Tap two players to pair them. Send out 4 pairs, the other ${Math.max(0,team.length-8)} sit today. ${day===1?'This lineup plays both of today’s sessions; you can shuffle it for Day 2.':'Keep the pairings that are hot, switch the ones that struggled Day 1 (their record is shown), and rest a few legs.'}</p>`));
   const slots=$(`<div style="max-width:520px;margin:0 auto 10px;display:grid;gap:6px"></div>`);
   for(let i=0;i<4;i++){ const pr=bd.pairs[i];
     slots.appendChild($(`<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid ${pr?'var(--gold)':'var(--line)'};border-radius:11px;background:${pr?'rgba(235,208,74,.08)':'#0a2740'}">
@@ -23006,7 +23011,7 @@ function scrSummary(){
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const finTxt=(t.wins>0?`${t.wins} win${t.wins>1?'s':''}`:`best ${bestTxt(t.best)}`);
   const headLine=HL?`${HL.lead.icon} ${HL.lead.head}, `:'';
-  const share=`RunTheTour: Daily Golf Game — ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? https://runthe.gg/golf`;
+  const share=`RunTheTour: Daily Golf Game, ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? https://runthe.gg/golf`;
   right.appendChild($(`<h2 style="margin:2px 0 2px">Share your season</h2>`));
   right.appendChild($(`<p class="small muted" style="margin:0 0 8px">Post your card and dare a friend to beat your number.</p>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
@@ -26609,7 +26614,7 @@ function finishSpotlightRound(){
   S.screen='dailyresult'; render();
 }
 function spotlightShareText(r,sp){ const c=DAILY_COURSES[r.course];
-  return `RunTheTour: Daily Golf Game — ${sp.month} Spotlight\n${dShort(c.v)} · ${dTot(r.total, c.par)}${r.won?' · beat the pro ✓':''}\nCan you beat it? https://runthe.gg/golf`; }
+  return `RunTheTour: Daily Golf Game, ${sp.month} Spotlight\n${dShort(c.v)} · ${dTot(r.total, c.par)}${r.won?' · beat the pro ✓':''}\nCan you beat it? https://runthe.gg/golf`; }
 function scrSpotlightResult(){
   const sp=S.spotCfg||monthlySpotlight(todayKey()), mk=sp.mk;
   const _spDay=sp.liveDayKey;
@@ -27573,7 +27578,7 @@ function scrDailyResult(){
       : [ (isMineRec?(S.look||DEFLOOK):((rec&&rec.look)||DEFLOOK)) ];
     // holder names parallel to recLooks - shown (cycling) under the golfer figure
     const recNames = (rec&&rec.names&&rec.names.length) ? rec.names.slice()
-      : (rec ? [rec.name||(isMineRec?'You':'—')] : []);
+      : (rec ? [rec.name||(isMineRec?'You':'-')] : []);
     const leftKick = practice ? 'This round · practice' : 'Your best today';
     const leftScore = practice ? dTot(total, c.par) : (best?dTot(best.total, best.par!=null?best.par:c.par):dTot(total, c.par));
     const leftSub = practice ? 'No attempt used · nothing logged'
@@ -28067,7 +28072,7 @@ function overlayTourPass(screen){
       cta.appendChild($(`<div class="tps-sec" style="margin-top:12px"><div class="tps-perks">${passPerksHTML()}</div></div>`));
       cta.appendChild($(`<div class="tps-cta" style="margin-top:14px">${passBuyButtonHTML('Unlock the PRO lane')}</div>`));
     } else {
-      cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">Pro lane</b> <span class="small muted">· unlocks with the Tour Pass — coming soon</span></div>`));
+      cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">Pro lane</b> <span class="small muted">· unlocks with the Tour Pass, coming soon</span></div>`));
     }
   }
   else cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">✓ Pro active${devMode()&&!dailyPassActive()?' (dev)':''} · Season ${ssn.n}</b> <span class="small muted">· claim both lanes on every tier you reach</span></div>`));
@@ -28281,7 +28286,7 @@ function shopPreviewRarity(pv){ try{
     if(pv.kind==='cos') return packRarityOf(cosmeticPriceBase(pv.cat,pv.id));
     if(pv.kind==='acc'){ const it=ACC_BY_ID[pv.id]; return (it&&SHARD_COST[it.rarity])?it.rarity:null; }
   }catch(e){} return null; }
-// (removed per-item shard redemption) — shards now feed the tiered Shard Exchange upgrade ladder.
+// (removed per-item shard redemption), shards now feed the tiered Shard Exchange upgrade ladder.
 // Kept as a safe route so any stray caller lands on the exchange instead of the old redeem path.
 function shopRedeemShards(){ S.shopPreview=null; S.overlay='shop'; S.shopSec='shards'; render(); }
 // the preview+confirm card for a pending shop purchase (shared by the Pro Shop + the setup screen).
@@ -28301,7 +28306,7 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
       ${rarChip2}
       ${lore2?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore2)}”</div>`:''}
       ${boostTxt2?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt2}</div>`:''}
-      <div class="small" style="margin-top:9px;color:#bcd3c6">This one can't be bought with coins — <b>pull it from packs</b>.</div>
+      <div class="small" style="margin-top:9px;color:#bcd3c6">This one can't be bought with coins, <b>pull it from packs</b>.</div>
       <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Got duplicate shards? Trade 5 up a rarity in the <b>Shard Exchange</b>.</div>
       <div class="small" style="margin-top:5px;color:#8fe0c4">Previewing on your golfer above.</div>
       <div style="display:flex;gap:10px;margin-top:14px">
@@ -28393,7 +28398,7 @@ function cosTileHTML(cat,o){
     const sub=`<span style="color:#c9a520">🔒 ${esc(cardE.hint)}</span>`;
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(cardE.hint)}"`});
   }
-  if(cosRewardOnly(cat,o.id) && !owned){   // COLLECTION REWARD: never buyable/pullable — show the chase
+  if(cosRewardOnly(cat,o.id) && !owned){   // COLLECTION REWARD: never buyable/pullable, show the chase
     const rd=rewardDrop(cat,o.id), pr=rd?dropProgress(rd):null;
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,rar:'legendary',
       sub:`<span style="color:#F1D04A">🏆 Collection reward${pr?' · '+pr.own+'/'+pr.tot+' collected':''}</span>`,
@@ -28551,7 +28556,7 @@ function passThemeName(){ try{ return 'Season '+passSeason().n+' Tour Pass'; }ca
 // Coins/tokens/pass are credited ONLY by the signed webhook — the client never grants them.
 function beginCheckout(pkgId, ev){
   if(!sbSignedIn()){ toast('Sign in to buy'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }
-  if(!sb){ toast('Store unavailable right now — try again shortly.'); return; }
+  if(!sb){ toast('Store unavailable right now, try again shortly.'); return; }
   try{ track(ev||'checkout',{id:pkgId}); }catch(e){}
   toast('Starting secure checkout…');
   try{
@@ -28660,7 +28665,7 @@ const DROPS=[
   items:[['fx','phoenix'],['fx','celestial'],['pat','moltengold'],['pat','dragonscale'],['pat','runes'],['hw','knight'],['ew','goldshades'],
    ['ball','obsidian'],['club','scepter']]},
  {id:'rungames', name:'Run The Games Collection', kicker:'The House Kit', accent:'#80ff76',
-  blurb:'The official RunThe.GG kit — signature green, house navy and the RGB pixel mark. Collect the full set to unlock the Run The Games nameplate, the Arena card background and 100,000 coins.',
+  blurb:'The official RunThe.GG kit, signature green, house navy and the RGB pixel mark. Collect the full set to unlock the Run The Games nameplate, the Arena card background and 100,000 coins.',
   items:[['fx','rungames'],['ball','rungames'],['shirt','rtggreen'],['hat','rtgnavy'],['pants','rtgnavy'],['cleats','rungames']]},
  {id:'summer', name:'Summer Smash', kicker:'Poolside Season', accent:'#ff9d3a', window:[[7,1],[8,31]],
   blurb:'Sun’s out. Floppy hats, sunset fades and beach shades, live for the hottest stretch of the year. Complete it to unlock the Endless Summer card backdrop, the Rubber Ducky Floatie and 100,000 coins.',
@@ -28758,7 +28763,7 @@ function celebrateDropReward(d,r){
       <div class="small" style="color:var(--oncard);margin-bottom:8px">You collected all ${d.items.length} ${esc(d.name)} items</div>
       <img style="height:200px;image-rendering:pixelated;display:block;margin:2px auto 8px" src="${pxGolferURL(look)}" alt="">
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">${itemRows}${coinRow}</div>
-      <div class="small muted" style="margin-bottom:14px">Collection exclusives — they can't be bought, pulled from packs, or shard-redeemed. Yours forever.</div>
+      <div class="small muted" style="margin-bottom:14px">Collection exclusives, they can't be bought, pulled from packs, or shard-redeemed. Yours forever.</div>
       ${wear?'<button class="btn goldfill" data-wear style="max-width:280px;margin:0 auto">Wear it now ▸</button>':''}
       <button class="btn ${wear?'ghost':'goldfill'}" data-keep style="max-width:280px;margin:${wear?'8px':'0'} auto 0">${wear?'Keep it in the Closet':'Awesome ▸'}</button>
     </div></div>`);
@@ -29131,7 +29136,7 @@ function maybePassRewards(){ try{
     if(period==='S1' && tier!=='base' && tier!=='tour' && !st.tierFix && n>0 && typeof grantFreePack==='function'){
       st.tierFix=true; LS.set(acctKey('bag_pass'), st); grantFreePack(n,{tier:tier, silent:true});
       try{ cloudPush(); }catch(e){}
-      try{ toast('🎁 Your '+n+' '+esc(packType(tier).name)+'s from the Tour Pass are ready — Pro Shop → Packs.', 4600); }catch(e){}
+      try{ toast('🎁 Your '+n+' '+esc(packType(tier).name)+'s from the Tour Pass are ready, Pro Shop → Packs.', 4600); }catch(e){}
     }
     return;
   }
@@ -29856,7 +29861,7 @@ function bucketShopNode(focus){
     wrap.appendChild(card);
   });
   }
-  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play — purchases are optional upgrades that support development.<br><a href="#" class="pissue" style="color:var(--muted);text-decoration:underline">Problem with a purchase? Contact us</a></div>'));
+  wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:400px;margin:16px auto 0;line-height:1.5">Secure checkout by Stripe · prices in USD. All sales are final. Coins &amp; tokens have no cash value and can’t be cashed out. RunThe.GG is free to play, purchases are optional upgrades that support development.<br><a href="#" class="pissue" style="color:var(--muted);text-decoration:underline">Problem with a purchase? Contact us</a></div>'));
   var _pi=wrap.querySelector('.pissue'); if(_pi) _pi.onclick=function(e){ e.preventDefault(); S.fbText=''; fbReset('purchase'); render(); };
   if(sbSignedIn()){ var chB=$('<button class="btn ghost" style="width:auto;margin:12px auto 0;padding:8px 14px;font-size:12.5px;display:block">🧾 Coin history ▸</button>');
     chB.onclick=function(){ openCoinLog('shop'); }; wrap.appendChild(chB); }
@@ -29869,7 +29874,7 @@ function packShopNode(){
   wrap.appendChild($('<div class="small muted" style="text-align:center;max-width:380px;margin:6px auto 2px;line-height:1.5">Spin the wheel, land on an item from the whole locker. Higher tiers have better odds. (Earned Legend gear never drops.)</div>'));
   if(free||credits>0){
     wrap.appendChild($('<div style="max-width:380px;margin:8px auto 0;text-align:center;font:800 12.5px var(--body);color:var(--gold)">'
-      +(free?'🎁 Your first pack is on us — open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready — open a Base pack, from your challenges &amp; streak!'))+'</div>'));
+      +(free?'🎁 Your first pack is on us, open the Base pack free!':('🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready, open a Base pack, from your challenges &amp; streak!'))+'</div>'));
   }
   // CS406 — tier cards (base / tour / champion) + any live seasonal pack, escalating odds + price
   var tiers=packTierList();
@@ -29956,7 +29961,9 @@ function overlayShop(screen){
     .concat(TOKENS_ENABLED?['tokens']:[]);
   let sec=S.shopSec;
   if(sec==='buckets'&&!BUCKETS_ENABLED) sec=packsOn()?'packs':'apparel';
-  if(SHOP_SECS.indexOf(sec)<0) sec='apparel';
+  // First-time (or invalid) landing: prefer Tour Pass -> Packs -> Apparel, so the flagship offerings lead
+  // instead of the closet. Once the player chooses a tab it sticks for the rest of the session.
+  if(SHOP_SECS.indexOf(sec)<0) sec = TOURPASS_ENABLED ? 'tourpass' : (packsOn()?'packs':'apparel');
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
   const ACCS=[['ball','Balls'],['cleats','Cleats']];   // clubs (looks) live on the Clubs tab with the boost tiers
   const FXCATS=[['fx','Aura']];
@@ -30133,7 +30140,7 @@ function overlayShop(screen){
   if(sec==='apparel'||sec==='accessories'||sec==='effects'){ markCatSeen(cat); }
   else if(sec==='bag'){ markCatSeen('club'); }
   else if(sec==='owned'){ COS_CATS.forEach(c=>markCatSeen(c.k)); }
-  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap a locked item to preview it on your golfer, then confirm to buy. <span style="color:#7fd3b0">Items you own are marked green</span> — equip them in your Closet.</div>`));
+  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap a locked item to preview it on your golfer, then confirm to buy. <span style="color:#7fd3b0">Items you own are marked green</span> - equip them in your Closet.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
   sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
   sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopCat=x.getAttribute('data-cat'); render(); });
@@ -30221,7 +30228,7 @@ function overlayCourseRecords(screen){
   { const c=DAILY_COURSES[today]||{};
     const rec=(tab==='legend'?courseRecordsLegend():courseRecords())[today];
     const recLooks=(rec&&rec.looks&&rec.looks.length)?rec.looks.map(l=>l||DEFLOOK):[ (rec&&rec.look)||DEFLOOK ];
-    const recNames=(rec&&rec.names&&rec.names.length)?rec.names.slice():(rec?[rec.name||'—']:[]);
+    const recNames=(rec&&rec.names&&rec.names.length)?rec.names.slice():(rec?[rec.name||'-']:[]);
     const inner = rec
       ? `<div style="display:flex;align-items:center;justify-content:center;gap:11px;margin-top:6px">
           <div style="flex:0 0 auto">${crCycleFigureHTML(recLooks,48,recNames)}</div>
@@ -30440,7 +30447,7 @@ function scrCareerEnd(){
     add(seasonRepNode(achPoints()-gained, S.careerFreshAch));
   }
   if(S.freshRep){ add($(repUpHTML(S.freshRep))); }
-  const share=`RunTheTour: Daily Golf Game — ${S.name||'Your Golfer'}'s career\n${e.years} seasons · ${c.wins} wins · ${c.majors} majors · net worth ${fmtSigned(c.net)}\nThink you can build a better legend? https://runthe.gg/golf`;
+  const share=`RunTheTour: Daily Golf Game, ${S.name||'Your Golfer'}'s career\n${e.years} seasons · ${c.wins} wins · ${c.majors} majors · net worth ${fmtSigned(c.net)}\nThink you can build a better legend? https://runthe.gg/golf`;
   const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
   const sh=$(`<button class="btn gold">↗ Share Career</button>`);
   sh.onclick=()=>{track('career_end_shared',{years:e.years}); shareCard(cv,share,S.name,'career');};
@@ -30559,7 +30566,7 @@ function scrCircuitEnd(){
   // CS483t (owner): where the tour career ranks on the global career board - Today / This week / All-time.
   { const rc=careerRankCard(); if(rc) add(rc);
     else if(sbSignedIn() && S._careerRankLoading!=='circuit'){ S._careerRankLoading='circuit'; loadCareerRank(career.net); } }
-  const share=`RunTheTour: Daily Golf Game — ${S.name||'Your Golfer'} on the Legend Circuit\n${e.years} seasons · ${c.wins} wins · ${c.majors} majors · net worth ${fmtSigned(c.net)}\nThink you can build a better legend? https://runthe.gg/golf`;
+  const share=`RunTheTour: Daily Golf Game, ${S.name||'Your Golfer'} on the Legend Circuit\n${e.years} seasons · ${c.wins} wins · ${c.majors} majors · net worth ${fmtSigned(c.net)}\nThink you can build a better legend? https://runthe.gg/golf`;
   const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
@@ -31621,7 +31628,7 @@ async function h2hFillBots(){
 }
 /* ---- "match ready" alerts: in-app banner always + a browser notification if you've tabbed away ---- */
 function h2hBanner(title, body){
-  const el=$(`<div id="h2hbanner" style="position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:50;max-width:92vw;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);cursor:pointer">
+  const el=$(`<div id="h2hbanner" style="position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:92vw;top:calc(12px + env(safe-area-inset-top,0px));z-index:50;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);cursor:pointer">
     <div style="font-weight:800;color:var(--gold)">${esc(title)}</div><div class="small" style="margin-top:2px">${esc(body||'')}</div></div>`);
   const old=document.getElementById('h2hbanner'); if(old) old.remove();
   el.onclick=()=>el.remove(); document.body.appendChild(el); setTimeout(()=>{ if(el.isConnected) el.remove(); }, 6000);
@@ -31660,9 +31667,9 @@ function referralLink(){ const code=referralCode(); if(!code) return '';
 function referralShare(){
   if(!sbSignedIn()){ toast('Sign in to get your invite link'); S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); return; }
   if(!sbUsername){ toast('Set a username first to get your invite link'); S.overlay='account'; S.acctMode='username'; render(); return; }
-  const url=referralLink(), text='Play RunTheTour: Daily Golf Game with me — build a golfer, chase majors, become the G.O.A.T. Sign up with my link and we each get a free pack! '+url;
+  const url=referralLink(), text='Play RunTheTour: Daily Golf Game with me, build a golfer, chase majors, become the G.O.A.T. Sign up with my link and we each get a free pack! '+url;
   if(navigator.share){ navigator.share({title:'RunTheTour: Daily Golf Game', text, url}).then(()=>{},()=>{}); }
-  else { try{ navigator.clipboard.writeText(text); toast('Invite link copied — send it to a friend!'); }catch(e){ toast(url); } }
+  else { try{ navigator.clipboard.writeText(text); toast('Invite link copied, send it to a friend!'); }catch(e){ toast(url); } }
   track('referral_share');
 }
 function refCheck(){
@@ -31687,7 +31694,7 @@ function purchaseCheck(){
   if(!st) return;
   _purchaseHandled=true;
   try{ const u=new URL(location.href); u.searchParams.delete('purchase'); history.replaceState(null,'',u.pathname+(u.search||'')+(u.hash||'')); }catch(e){}
-  if(st==='cancelled'){ try{ toast('Checkout cancelled — no charge was made.', 3600); }catch(e){} return; }
+  if(st==='cancelled'){ try{ toast('Checkout cancelled, no charge was made.', 3600); }catch(e){} return; }
   try{ track('purchase_return',{status:'success'}); }catch(e){}
   // poll the wallet a few times so the freshly-credited coins/tokens/pass appear even if the webhook lands
   // after we return from Stripe. A coin pack raises paidCoins; a token pack raises tokens; a pass flips
@@ -31730,7 +31737,7 @@ async function maybeReferralFlow(){
   try{ const {data,error}=await sb.rpc('runtour_claim_rewards');
     const n=(typeof data==='number')?data:0;
     if(!error && n>0){ if(typeof grantFreePack==='function') grantFreePack(n,{silent:true});
-      if(!justRedeemed) toast('🎁 '+n+' free pack'+(n>1?'s':'')+' — a friend joined with your invite link!', 5200); }
+      if(!justRedeemed) toast('🎁 '+n+' free pack'+(n>1?'s':'')+' - a friend joined with your invite link!', 5200); }
   }catch(e){}
 }
 // parse ?h2h=CODE (or #h2h=CODE) on load, stash it, and try to join (prompting sign-in if needed)
