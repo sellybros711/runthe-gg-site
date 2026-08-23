@@ -48,6 +48,10 @@
     }
   },
   "cfb/commish/index.html": {
+    "access.js": {
+      "v": "1",
+      "sha": "61ed6f5914d95fa9"
+    },
     "ledger.js": {
       "v": "1",
       "sha": "3c20364441cf0ce6"

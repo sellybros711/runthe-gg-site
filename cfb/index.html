@@ -2612,6 +2612,19 @@ window.GA_ID='G-L29P5MRWKE';
   .modecard.mc-alma{border-color:rgba(242,182,50,.38);text-decoration:none}
   .modecard.mc-alma .mc-icon{background:linear-gradient(135deg,#f2b632 0%,#a16207 100%)}
   .modecard.mc-alma .mc-title{color:#f2b632}
+  /* COMMISH SIMULATOR, in purple because that is the colour the mode's own page uses for
+     the half of it you pay for, and a card that changes colour between the list and the
+     thing it opens reads as two different features. An anchor, not a button: it goes to
+     another page, so middle-click and open-in-new-tab should work. */
+  .modecard.mc-commish{border-color:rgba(168,85,247,.38);text-decoration:none}
+  .modecard.mc-commish .mc-icon{background:linear-gradient(135deg,#a855f7 0%,#6d28d9 100%)}
+  .modecard.mc-commish .mc-title{color:#c084fc}
+  /* THE STICKER SAYS TESTING, not New, and it is not the green one. Green "New" is what
+     this sheet puts on something anybody can play; this card is only drawn for people on
+     the list, and telling them it is finished would be a lie they then report as a bug. */
+  .modecard.mc-commish .mc-sticker{background:linear-gradient(150deg,#d8b4fe 0%,#c084fc 45%,#a855f7 100%);
+    color:#2a0a45;box-shadow:0 6px 18px -4px rgba(168,85,247,.85),0 2px 6px rgba(0,0,0,.55);
+    animation:none}
 
   /* The five conferences, once the card is tapped. */
   .confgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
@@ -3746,6 +3759,10 @@ or endorsed by the NCAA, the CFP or any school.
 <script src="achievements.js?v=11"></script>
 <script src="auth.js?v=3"></script>
 <script src="board.js?v=6"></script>
+<!-- The tester list for Commish Simulator, which this page reads to decide whether to draw
+     the card on the modes sheet and cfb/commish/ reads to decide whether to open at all.
+     One file so the two can never disagree. -->
+<script src="commish/access.js?v=1"></script>
 <!-- NO ARCADE HOUSE AD ON THIS GAME. /assets/arcade-ad.js still runs on the homepage,
      the NFL game and the golf game; this one asks nobody. Somebody arriving here has come
      to draft a team, and the front page has its own way to the arcade in "More ways to
@@ -4993,6 +5010,16 @@ const PADLOCK='<svg class="mc-pad" viewBox="0 0 24 24" aria-hidden="true">'+
    signed-in features is worth more than a special case here. */
 const modesLocked=()=>!(authState.ready&&authState.signedIn);
 
+/* WHETHER TO DRAW THE COMMISH SIMULATOR CARD, off the same file the mode's own door reads
+   (cfb/commish/access.js), so the card and the door can never disagree about who is on the
+   list. Guarded rather than assumed: this page must still open if that script is blocked,
+   the way it opens when the sign-in script is blocked, and the cost of it being missing is
+   one card fewer rather than a dead sheet. */
+const commishOn=()=>{
+  const a=window.PS_CFB_COMMISH_ACCESS;
+  return !!(a&&a.allowed(authState.signedIn?authState.name:null));
+};
+
 /* The padlock on the home screen's button, so the lock is visible before the tap.
    Re-run on every auth change, because the page paints long before auth answers and a
    member should never see a lock on something they own. */
@@ -5028,6 +5055,27 @@ function modeMenu(){
       '</'+(locked?'div':'button')+'>'+
       (locked?gateCard({with:'Conference Draft comes with an account',
                         needs:'Conference Draft needs an account.'}):'')+
+      /* COMMISH SIMULATOR IS A MODE OF THIS GAME, so this sheet is where it lives rather
+         than the site's front page. It is drawn only for people who can actually open it,
+         which today is the tester list in cfb/commish/access.js and after COMMISH_LIVE is
+         everybody. A "coming soon" card for the rest is a different decision than the one
+         that was made: this game is live, indexed and carries ads, and advertising an
+         unfinished mode on it is a launch. Flipping the flag in that one file turns both
+         the card and the door on together, which is the whole reason the list is there
+         and not written out twice. */
+      (commishOn()?
+        '<a class="modecard mc-commish" href="/cfb/commish/" id="b-mc-commish">'+
+          '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
+            /* A GAVEL. Not a trophy and not a pennant: the other cards on this sheet are
+               about playing, and this one is about ruling. */
+            '<path d="M14.5 3.5l6 6"/><path d="M17.5 2l4 4-3 3-4-4z"/>'+
+            '<path d="M15.5 7.5L7 16"/><path d="M4 21h9"/><path d="M8.5 12.5l3 3"/>'+
+          '</svg></div><div class="mc-title">Commish Simulator</div>'+ARROW+'</div>'+
+          '<span class="mc-sticker">Testing</span>'+
+          '<p>Run college football instead of playing it. Expand the playoff, split the '+
+          'money, let a conference die. Nine blocs answer every ruling, and the sport you '+
+          'changed is the one you have to run next year.</p>'+
+        '</a>':'')+
     '</div>'+
     '<div class="xpromo">'+
       '<p class="xp-h">Love pro football?</p>'+
@@ -5076,6 +5124,8 @@ function modeMenu(){
   const conf=$('b-mc-conf'); if(conf) conf.onclick=conferenceMenu;
   const gin=$('sheet-in').querySelector('#gate-in');
   if(gin) gin.onclick=()=>{ ga('gate_clicked',{from:'modes'}); openProfile('account'); };
+  const cm=$('b-mc-commish');
+  if(cm) cm.onclick=()=>ga('mode_opened',{mode:'commish'});
   $('b-mc-nfl').onclick=()=>ga('crosspromo_clicked',{to:'football'});
   $('b-mc-alma').onclick=()=>ga('crosspromo_clicked',{to:'almamater'});
   $('mm-x').onclick=closeSheet;

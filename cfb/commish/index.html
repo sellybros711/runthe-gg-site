@@ -260,6 +260,7 @@
 </div>
 
 <script src="/cfb/engine.js?v=34"></script>
+<script src="access.js?v=1"></script>
 <script src="ledger.js?v=1"></script>
 <script src="blocs.js?v=1"></script>
 <script src="docket.js?v=2"></script>
@@ -278,17 +279,22 @@ const L=window.PS_CFB_LEDGER, B=window.PS_CFB_BLOCS, D=window.PS_CFB_DOCKET, E=w
    in this browser for now and says so on the screen: nothing can be rejected because
    nothing is being sent.
 
-   LOWERCASED, because set_username stores the casing somebody typed and an exact-case
-   match silently misses them. 72_comp_passes.sql hit this and wrote it down. */
-const COMMISH_TESTERS=['sellybros711'];
-const COMMISH_LIVE=false;
+   THE LIST ITSELF IS IN access.js, not here, because the game at /cfb/ decides whether to
+   draw the card off the same answer this page uses to decide whether to open the door. Two
+   copies drift, and both ways it drifts are bad: a card nobody can act on, or a mode
+   nobody can find. One file, both pages, one flag to flip when it goes live. */
+/* IF THAT FILE IS NOT THERE, THE DOOR STAYS SHUT rather than the page dying. An ad blocker
+   or a bad deploy can take any script on this site, which is why sign-in and school colours
+   both degrade instead of throwing. Reading .allowed off undefined would take the whole
+   mode down with a blank screen; falling back to a closed door is wrong in the harmless
+   direction, and the door already says what to do about it. */
+const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
 /* TESTERS ARE TREATED AS PAYING, on purpose and only while this is closed. The paid tier
    is most of what there is to test: the dials, writing your own ruling, taking office in
    an older sport. A tester locked out of it would be testing the half that is easy. */
-const isTester=(name)=>COMMISH_TESTERS.indexOf(String(name||'').toLowerCase())>=0;
 let authState={ready:false,waiting:true,signedIn:false};
-const allowed=()=>COMMISH_LIVE||isTester(authState.name);
+const allowed=()=>ACCESS.allowed(authState.name);
 /* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
    means the half of the design most likely to be got wrong is the half nobody on the list
    can look at: what a free player is shown, what is drawn and dead, and whether the offer

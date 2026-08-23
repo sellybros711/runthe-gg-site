@@ -364,8 +364,14 @@ rejected by a constraint they cannot see.
 
 1. Migration first, so a commissioner term can be saved before anybody is invited.
 2. Deploy with names in `COMMISH_TESTERS`, who get the real mode against the real database.
-   Everybody else sees the card and a "Coming soon".
-3. Flip `COMMISH_LIVE` when it is ready for everybody.
+   Everybody else sees nothing: no card on the modes sheet and a door that does not open.
+3. Flip `COMMISH_LIVE` when it is ready for everybody, which turns on the card and the door
+   together because both read the same file.
+
+**Everybody else sees nothing, rather than a "Coming soon".** That was the plan and it is
+not any more. `/cfb/` is live, indexed and carries ads: a card on it naming a mode that
+does not open is an announcement, and announcing this is a decision to make deliberately
+rather than a side effect of putting testers on it. The flag is where that decision goes.
 
 ### Later: paid
 
@@ -432,7 +438,17 @@ applies with no exceptions: the edit, the bump and the record in one commit.
    change, not a rebuild.
 3. ~~Era.~~ **Decided by the tiers:** the present day for free, any year from 2005 for
    paying. Stage 0 already proves both open on the real sport of their year.
-4. **Where does it live?** A mode card inside `/cfb/`, or its own entry on the site's front
-   page? It is a different game to the draft, and the front page is how anybody finds it.
+4. ~~Where does it live?~~ **Decided: a mode inside `/cfb/`.** The card is on the game's
+   "More ways to play" sheet, beside Conference Draft, and there is no front-page entry.
+   It is drawn only for accounts that can actually open the mode, which today is the tester
+   list and after `COMMISH_LIVE` is everybody. The list lives in `cfb/commish/access.js`
+   and both the card and the mode's own door read it, because a list written twice drifts
+   and both directions are bad: a card that refuses to open, or a mode nobody can find.
+   `cfb/build/test/commish/test_card.mjs` puts the same three accounts in front of the
+   sheet and in front of the mode and fails if the two ever disagree.
+
+   **No "coming soon" card for everybody else, deliberately.** `/cfb/` is live, indexed and
+   carries ads, so a card on it announcing an unfinished mode is a launch rather than a
+   test. That is a decision to make on purpose when the mode is ready, by flipping one flag.
 5. **Price.** Its own subscription, or is it what the existing Arcade Card grows into?
    One card across the site is a much easier thing to sell than a second card.
