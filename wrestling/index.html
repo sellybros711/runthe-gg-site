@@ -1878,7 +1878,7 @@ function postPowerRankings(){
   if(c.week%4!==0 || c.lastRanksWeek===c.year*1000+c.week) return;
   c.lastRanksWeek=c.year*1000+c.week;
   const me=myPromo(); if(!me) return;
-  const house=CHARS.filter(x=>x.promo===me.id);
+  const house=houseRoster(me.id);
   const scoreOf = ch=>{
     const R=rel(ch.id);
     return (ch.over||55)*0.65 + (R.wins||0)*3 - (R.losses||0)*1 + rnd()*4;
@@ -2068,6 +2068,16 @@ $('cardOv').addEventListener('click',e=>{ if(e.target===$('cardOv')) closeCard()
 function corrected(w){ const c=(window.RTR_CORRECTIONS||{})[w.id]; return c?Object.assign({},w,c):w; }
 // (ROSTER used to be defined here from window.RTR_ROSTER; it had no callers,
 //  so it was removed. Every roster lookup goes through CHARS below.)
+// The active roster of a promotion, excluding anybody the world has retired.
+// Every booking site (offers, promo targets, PPV cards, crew page, backstage,
+// power rankings) should route through this helper. A retired legend must not
+// be booked next week.
+function houseRoster(promoId){
+  const w=G&&G.world; const ret=(w&&w.retired)||{};
+  return CHARS.filter(x=>x.promo===promoId && !ret[x.id]);
+}
+// c_now() is defined further down (year*100+week) and used by the allies /
+// stables / rivals code. Callers here reuse it.
 const MOVES=window.RTR_MOVES||[], MCATS=window.RTR_MOVE_CATS||[], MTIERS=window.RTR_TIERS||[];
 const COSM=window.RTR_COSMETICS||[], RAR=window.RTR_RARITY||{}, PACKS=window.RTR_PACKS||[], PAL=window.RTR_PALETTE||{};
 const ERAS=window.RTR_ERAS||[], MENTORS=window.RTR_LEGENDS||[];
@@ -3311,14 +3321,26 @@ function worldTick(){
       text:`<b>${chal.name}</b> beat ${oldName} for the <b>${beltName}</b> at ${promo.short}.`});
     return;
   }
-  // Roster churn: a rookie debuts, a signing, a release.
+  // Roster churn: a rookie debuts, a signing, a release. Rookies can debut
+  // at YOUR promotion too, because otherwise your house just shrinks over a
+  // decade. When one lands in your promotion the inbox notices, so the fresh
+  // face doesn't just appear in the crowd list unannounced.
   if(rnd()<0.03){
-    const target = PROMOS[Math.floor(rnd()*PROMOS.length)];
-    if(target.id===myPromoId()) return;
+    // Prefer promotions with a thin roster; heavily favour yours if it has been drained
+    const mine = myPromoId();
+    const houseSize = pid => houseRoster(pid).length;
+    const thin = PROMOS.filter(p=>houseSize(p.id)<8);
+    const target = (houseSize(mine)<10 && rnd()<0.35) ? promoById(mine)
+                 : thin.length ? thin[Math.floor(rnd()*thin.length)]
+                 : PROMOS[Math.floor(rnd()*PROMOS.length)];
     const rookie = spawnRookie(target.id);
     w.debuts++;
     newsPush({ico:pico('star',14), kind:'debut',
       text:`<b>${rookie.name}</b> made their debut at ${target.short}. First time in front of a real crowd.`});
+    if(target.id===mine){
+      pushInboxItem({ico:pico('star',18),sev:'info',
+        txt:`<b>New face in the locker room.</b> ${rookie.name} debuted this week. Get in the ring with them and see what they've got.`});
+    }
     return;
   }
   if(rnd()<0.02){
@@ -4393,8 +4415,19 @@ function renderBizPanel(){
 function makeOffers(){
   const t=workTier(), me=myPromo();
   // you are booked against the people you actually work with. Outsiders only
-  // show up on the rare inter-promotional shot.
-  const house=CHARS.filter(x=>x.promo===me.id);
+  // show up on the rare inter-promotional shot. Retired names never do.
+  let house=houseRoster(me.id);
+  // Brand split: when the house is divided into Red and Blue, the office keeps
+  // you on your own brand for regular shows. PPV nights are supershows, so the
+  // brand filter comes off.
+  const myBrand = brandOf(G.w.id);
+  const isPpvNow = isPpvWeek();
+  if(myBrand && !isPpvNow){
+    const bs=G.world.brands[myBrand.promoId];
+    const brandIds = new Set((myBrand.brand==='red'?bs.red:bs.blue).slice());
+    const filtered = house.filter(x=>brandIds.has(x.id));
+    if(filtered.length>=3) house=filtered;
+  }
   const pool=house.length>=3 ? house : charsForTier(t.id);
   const offs=[];
   // your bitterest rival muscles onto the card
@@ -4434,10 +4467,15 @@ function makeOffers(){
     // trusts. Being good is not enough on its own.
     const trusted=G.car.standing>=52 && gimHeat()>=40;
     const midCarder=G.car.standing>=42 && reactionOf()>=Math.min(46,10+tierIdx()*10);
+    const tagBelt=beltName(t,'tag'), holdsTag = G.car.tagTitle===tagBelt;
     if(i===2 && holds && rnd()<0.78) stakes='defense';
     // a promised title shot always gets used on the top of the card
     else if(i===2 && !holds && G.car.titleShot && ppv){ stakes='title'; }
     else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
+    // Tag titles: a team defence or a shot at them. Only on tag matches, and
+    // only when your promotion actually has tag titles.
+    else if(st[1]==='tag' && myTeam() && tagBelt && holdsTag && rnd()<0.65) stakes='tag_defense';
+    else if(st[1]==='tag' && myTeam() && tagBelt && !holdsTag && G.car.standing>=45 && rnd()<0.32){ stakes='tag_title'; st[0]='Tag Team Title Match'; }
     // Secondary belt: a mid-carder shot, or a defence of one you hold.
     else if(i===1 && holdsSec && rnd()<0.72) stakes='secondary_defense';
     else if(i===1 && !holdsSec && !holds && midCarder && rnd()<0.28) stakes='secondary';
@@ -4458,22 +4496,29 @@ function makeOffers(){
     if(ppv) card = 'Main Event';                               // PPV nights are all top of the card
     const cardMult={'Opener':0.6,'Mid-Card':1,'Main Event':1.6}[card];
     const ppvMult = ppv ? 2.2 : 1;
-    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*ppvMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='secondary'||stakes==='secondary_defense'?1.5:stakes==='rivalry'?1.8:1)*st[2]);
+    const purse=Math.round((t.purse[0]+rnd()*(t.purse[1]-t.purse[0]))*cardMult*ppvMult*(stakes==='title'||stakes==='defense'?2.2:stakes==='secondary'||stakes==='secondary_defense'?1.5:stakes==='tag_title'||stakes==='tag_defense'?1.6:stakes==='rivalry'?1.8:1)*st[2]);
     const ppvName = ppv ? ppvNameFor(me.id, G.car.week) : null;
+    const beltForOffer = (stakes==='title'||stakes==='defense')?belt
+                        :(stakes==='secondary'||stakes==='secondary_defense')?secBelt
+                        :(stakes==='tag_title'||stakes==='tag_defense')?tagBelt:null;
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
       tag: st[1]==='tag' && !!myTeam(),
       ppv: ppvName,
-      belt: (stakes==='title'||stakes==='defense')?belt:(stakes==='secondary'||stakes==='secondary_defense')?secBelt:null,
+      belt: beltForOffer,
       blurb: ppv ? (stakes==='title'?`At ${ppvName}: beat ${opp.name} and the ${belt} is yours.`
                  : stakes==='defense'?`At ${ppvName}: defend the ${belt} against ${opp.name}.`
                  : stakes==='secondary'?`At ${ppvName}: beat ${opp.name} for the ${secBelt}.`
                  : stakes==='secondary_defense'?`At ${ppvName}: defend the ${secBelt} against ${opp.name}.`
+                 : stakes==='tag_title'?`At ${ppvName}: your team goes for the ${tagBelt}.`
+                 : stakes==='tag_defense'?`At ${ppvName}: defend the ${tagBelt}.`
                  : stakes==='rivalry'?`At ${ppvName}: settle it with ${opp.name}.`
                  : `${ppvName}: ${opp.name} in the ${st[0].toLowerCase()}.`)
             : stakes==='title'?`Beat ${opp.name} and the ${belt} is yours.`
             : stakes==='defense'?`Defend the ${belt} against ${opp.name}.`
             : stakes==='secondary'?`Beat ${opp.name} for the ${secBelt}.`
             : stakes==='secondary_defense'?`Defend the ${secBelt} against ${opp.name}.`
+            : stakes==='tag_title'?`Your team gets a shot at the ${tagBelt}.`
+            : stakes==='tag_defense'?`Defend the ${tagBelt} tonight.`
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
             : `${card}: a ${st[0].toLowerCase()} against ${opp.name}.` });
@@ -4603,6 +4648,15 @@ function endStory(resolution){
   R.heat=Math.min(R.heat,resolution==='respect'?12:34);
   G.car.pop=clamp(G.car.pop+6,1,100);
   G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Blow-off with ${c.name}: ${resolution==='respect'?'settled with respect':'settled in blood'}`});
+  // Record the resolved feud so the HOF Character grade and Feud of the Year
+  // award have something to read. Include an average quality of the matches
+  // fought against this rival, so a real war reads differently to a squash.
+  const matches=(G.hist||[]).filter(m=>m.opp===c.name);
+  const avg = matches.length ? Math.round(matches.reduce((s,m)=>s+m.q,0)/matches.length) : 0;
+  G.car.storiesResolved = G.car.storiesResolved || [];
+  G.car.storiesResolved.unshift({y:G.car.year, w:G.car.week, charId:st.charId, name:c.name,
+    resolution, matches:matches.length, avg, beats:(st.beats||[]).length});
+  if(G.car.storiesResolved.length>60) G.car.storiesResolved.pop();
   G.story=null; G.car.rivalId=null;
 }
 
@@ -4824,6 +4878,11 @@ function bigMatchLine(o){
   if(o.stakes==='title')  return {k:'FOR THE GOLD',   t:`Beat ${o.oppName}, walk out champion.`, s:`Every hand raised, every mile driven, every night in an empty gym. All of it, for tonight.`};
   if(o.stakes==='defense')return {k:'THE CHAMPION DEFENDS', t:`Keep the ${G.car.title||'belt'}.`, s:`The belt does not care how you got it. It cares whether you can keep it. ${o.oppName} is the reason you find out tonight.`};
   if(o.stakes==='secondary')return {k:'THE MID-CARD CROWN', t:`Take the ${o.belt||'title'} off ${o.oppName}.`, s:`Not the world title. Not yet. But the one everybody watches to see who is coming.`};
+  if(o.stakes==='tag_title') return {k:'FOR THE TAG TITLES', t:`Your team goes for the ${o.belt||'tag belts'}.`, s:`Two brothers, two straps, one aisle to walk.`};
+  if(o.stakes==='tag_defense') return {k:'DEFENDING THE TAG TITLES', t:`Keep the ${o.belt||'tag belts'}.`, s:`They came for the straps. Send them home empty.`};
+  if(o.stakes==='rumble') return {k:'THE BATTLE ROYAL',  t:`Last one standing wins a title shot.`, s:`Every worker in the back has been rehearsing their over-the-top spot for weeks. The winner picks the champion they cash in on.`};
+  if(o.stakes==='tourn_final') return {k:(o.tourn&&o.tourn.name?o.tourn.name.toUpperCase():'THE FINAL'), t:`Win it. The trophy is yours.`, s:`Three rounds, three opponents, three weeks. One left. Take the last one and everything you did in this bracket meant something.`};
+  if(o.stakes==='tourn') return {k:(o.tourn&&o.tourn.name?o.tourn.name.toUpperCase():'TOURNAMENT'), t:`Round ${(o.tourn&&o.tourn.round)||'?'}. Advance or go home.`, s:`Nobody remembers the second round unless you make them.`};
   if(o.ppv)                return {k:o.ppv.toUpperCase(), t:`${o.oppName}. Tonight.`, s:`The biggest show of the quarter. Everyone is watching. Give them a reason to remember it.`};
   return null;
 }
@@ -6336,16 +6395,41 @@ function applyMatch(o,res){
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
       c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100); }
   }
+  else if(o.stakes==='tag_title' && res.win){
+    const tb = o.belt || beltName(tt,'tag');
+    c.tagTitle = tb; c.tagDefenses = 0;
+    c.reigns.push({title:tb,year:c.year,week:c.week,defenses:0,kind:'tag'});
+    titleMsg = `You and ${(myTeam()&&myTeam().name)||'your partner'} are the new <b>${tb}</b>!`;
+    c.pop=clamp(c.pop+4,1,100); c.standing=clamp(c.standing+4);
+    if(myTeam()) nudgeLoyalty(myTeam().ally.id, 10);
+  }
+  else if(o.stakes==='tag_defense'){
+    if(res.win){ c.tagDefenses=(c.tagDefenses||0)+1;
+      const r=c.reigns.slice().reverse().find(r=>r.title===c.tagTitle&&!r.lostYear);
+      if(r) r.defenses=c.tagDefenses;
+      titleMsg = `Successful defence of the ${c.tagTitle} · #${c.tagDefenses}.`;
+    } else {
+      titleMsg = `You <b>lost</b> the ${c.tagTitle} to ${o.oppName} and their partner.`;
+      const r=c.reigns.slice().reverse().find(r=>r.title===c.tagTitle&&!r.lostYear);
+      if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
+      c.tagTitle=null; c.tagDefenses=0; c.pop=clamp(c.pop-2,1,100);
+    }
+  }
   // ---- tournament progress ----
   if(o.stakes==='tourn' || o.stakes==='tourn_final'){
     res.oppName=o.oppName;
     advanceTourn(res);
   }
   // ---- Battle Royal / Rumble: winning grants a real title shot ----
-  if(o.stakes==='rumble' && res.win){
-    c.titleShot={promoId:myPromo().id, from:'the Battle Royal', y:c.year, w:c.week};
-    pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>You won the Battle Royal.</b> Guaranteed title shot on the books.`});
-    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won the Battle Royal'});
+  if(o.stakes==='rumble'){
+    // Either outcome sets a cooldown so a Battle Royal is a moment, not a
+    // weekly card slot.
+    c.rumbleCooldown = c.year*100 + c.week + 42;
+    if(res.win){
+      c.titleShot={promoId:myPromo().id, from:'the Battle Royal', y:c.year, w:c.week};
+      pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>You won the Battle Royal.</b> Guaranteed title shot on the books.`});
+      G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won the Battle Royal'});
+    }
   }
   // ---- cross-promo tour: fame that reaches home ----
   if(o.stakes==='tour'){
@@ -6423,7 +6507,7 @@ function applyMatch(o,res){
 function nightCardHTML(o,res){
   if(o.ppv) return '';   // PPVs get their own bigger card
   const me = myPromo();
-  const roster = CHARS.filter(x=>x.promo===me.id && x.id!==o.oppId);
+  const roster = houseRoster(me.id).filter(x=>x.id!==o.oppId);
   if(roster.length<4) return '';
   const shuffled = roster.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
   const pairs=[]; for(let i=0;i+1<shuffled.length && pairs.length<2;i+=2) pairs.push([shuffled[i],shuffled[i+1]]);
@@ -6441,7 +6525,7 @@ function nightCardHTML(o,res){
 function ppvCardHTML(o,res){
   if(!o.ppv) return '';
   const me = myPromo();
-  const roster = CHARS.filter(x=>x.promo===me.id && x.id!==o.oppId);
+  const roster = houseRoster(me.id).filter(x=>x.id!==o.oppId);
   // pick a handful of pairs (up to 3)
   const shuffled = roster.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
   const pairs = [];
@@ -6691,7 +6775,7 @@ function maybeStartTourn(){
   if((c.rep||0)<1200 || (c.standing||50)<52 || rnd()>0.05) return;
   const t=TOURN_NAMES[Math.floor(rnd()*TOURN_NAMES.length)];
   const me=myPromo();
-  const pool=CHARS.filter(x=>x.promo===me.id).sort(()=>rnd()-0.5).slice(0,7);
+  const pool=houseRoster(me.id).sort(()=>rnd()-0.5).slice(0,7);
   c.tourn={id:t.id,name:t.name,rounds:t.rounds,prize:t.prize,round:1,
     bracket:pool.map(x=>x.id), next:pool[0]?pool[0].id:CHARS[0].id, wins:0, promoId:me.id};
   pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>${t.name}.</b> The office has entered you. Round 1 next week vs <b>${(charById(c.tourn.next)||{}).name||'a first-round opponent'}</b>.`});
@@ -6747,7 +6831,8 @@ function advanceTourn(res){
 /* Battle Royal / Rumble: fired at PPVs, one shot. Winner gets a title shot. */
 function maybeRumbleOffer(offs, oppPool){
   const c=G.car;
-  if(!isPpvWeek() || c.rumbleShot || rnd()>0.20) return null;
+  const now=c.year*100+c.week;
+  if(!isPpvWeek() || (c.rumbleCooldown && now<c.rumbleCooldown) || rnd()>0.20) return null;
   const me=myPromo();
   const entrants=oppPool.slice(0,7).map(x=>({id:x.id,name:x.name,ovr:x.over||55}));
   entrants.push({id:'you',name:G.w.name,ovr:ovr(G.w),you:true});
@@ -6771,6 +6856,10 @@ async function runRumble(o){
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
   go('fight'); stageInit(); dressArena($('arena'),myPromoId());
   figLook('me',G.w.look); figLook('opp',oppLook(ent[0].id,ent[0].name));
+  // A Battle Royal is a marquee. Package it like one.
+  await playVideoPackage(o);
+  await playEntrance('me', THEME_LINE[themeFor(G.w)], G.w.name, G.w.nick||'');
+  sfx('bell');
   await callout('BATTLE ROYAL');
   fLog(`<b>${ent.length}</b> in the ring. Last one standing wins.`);
   await sleep(500);
@@ -6790,12 +6879,13 @@ async function runRumble(o){
     survivors = survivors.filter(x=>x.id!==victim.id);
     MS.elims.push({by:by&&by.name, out:victim.name});
     fLog(`<span class="hi">${by&&by.name||'Someone'}</span> dumps <b>${victim.name}</b> over the top. (${survivors.length} left)`);
-    if(iElim){ MS.quality+=3; MS.decWon++; MS.decisions++; }
-    else MS.decisions++;
+    if(iElim){ MS.quality+=3; MS.decWon++; MS.decisions++; sfx('pop'); }
+    else { MS.decisions++; sfx('impact'); }
     await sleep(360);
   }
   // final two
   const other = survivors.find(x=>!x.you);
+  sfx('pop');
   await callout('FINAL TWO');
   fLog(`It's down to <b>${G.w.name}</b> and <b>${other?other.name:'one other'}</b>.`);
   await sleep(500);
@@ -6807,9 +6897,10 @@ async function runRumble(o){
   const winName = iWin ? G.w.name : (other?other.name:'The field');
   if(iWin){
     fLog(`<span class="hi">${winName} tosses ${outName} over the top. It is over.</span>`);
-    MS.quality+=8;
+    MS.quality+=8; sfx('bell'); sfx('pop');
   } else {
     fLog(`<span class="bad">${outName} dumps you. It's over.</span>`);
+    sfx('bell'); sfx('boo');
   }
   MS.finish={type:'rumble', by:iWin, move:'the elimination'};
   MS.ended=true;
@@ -6962,7 +7053,7 @@ function lifeEvent(){
 // choices move loyalty, respect and the office's opinion of you.
 function nonRivalBackstage(){
   const c=G.car, me=myPromo(); if(!me) return false;
-  const roster=CHARS.filter(x=>x.promo===me.id);
+  const roster=houseRoster(me.id);
   const pool=[];
   const list=allies();
   list.forEach(a=>{ const ch=charById(a.id); if(ch) pool.push({type:'ally',c:ch,ally:a}); });
@@ -9200,7 +9291,7 @@ function promoTargets(){
   const me=myPromo(), out=[];
   const st=story(); if(st){ const c=charById(st.charId); if(c) out.push({c,why:'Your active feud: this is how you build it'}); }
   if(G.car.rivalId && (!st||st.charId!==G.car.rivalId)){ const c=charById(G.car.rivalId); if(c) out.push({c,why:'Your rival'}); }
-  const house=CHARS.filter(x=>x.promo===me.id && !out.some(o=>o.c.id===x.id));
+  const house=houseRoster(me.id).filter(x=>!out.some(o=>o.c.id===x.id));
   house.sort((a,b)=>{ const ra=rel(a.id), rb=rel(b.id); return (rb.matches*2+rb.heat/12)-(ra.matches*2+ra.heat/12); });
   house.slice(0,4).forEach(c=>{ const R=rel(c.id);
     out.push({c,why:R.matches?`${R.wins}-${R.losses} against them · bad blood ${Math.round(R.heat)} · respect ${Math.round(R.respect)}`:'You have never crossed paths'}); });
@@ -9282,7 +9373,7 @@ function renderCrew(){
   }).join('')+`</div>`;
 
   // ---- who wants you ----
-  const roster=CHARS.filter(x=>x.promo===myPromo().id&&!isAlly(x.id));
+  const roster=houseRoster(myPromo().id).filter(x=>!isAlly(x.id));
   h+=`<div class="flab">The rest of the locker room</div>
     <div class="grid g2" style="gap:10px;">`+roster.map(ch=>{
     const R=rel(ch.id), lb=relLabel(R);
@@ -9514,6 +9605,11 @@ function doTurn(){
        w.align=to; c.turns=(c.turns||0)+1;
        const fits=GIMMICKS.filter(g=>g.align===to);
        const g=fits[Math.floor(rnd()*fits.length)];
+       // Archive the outgoing gimmick before we overwrite it, so the HOF
+       // Character grade and the Story So Far can show a real evolution.
+       if(w.gimmick){ c.gimmickPast=c.gimmickPast||[];
+         c.gimmickPast.unshift({id:w.gimmick.id,name:w.gimmick.name,align:w.align==='face'?'heel':'face',
+           since:w.gimmick.since, until:c.year, endedBy:'turn'}); }
        w.gimmick={id:g.id,name:g.n,heat:88,since:c.year}; c.voice=[];
        const drop=clamp(6+c.pop*0.14,4,18);
        c.pop=clamp(c.pop-drop,1,100); c.standing=clamp(c.standing+4); c.mom=clamp(c.mom+10);
@@ -9536,6 +9632,10 @@ function doRepackage(id){
   closeModal();
   const c=G.car, w=G.w, g=gimById(id);
   Object.entries(g.b).forEach(([k,v])=>{ w.attrs[k]=clamp(w.attrs[k]+v); });
+  // Same archival as a turn, so the HOF Character grade grows with real changes.
+  if(w.gimmick){ c.gimmickPast=c.gimmickPast||[];
+    c.gimmickPast.unshift({id:w.gimmick.id,name:w.gimmick.name,align:w.align,
+      since:w.gimmick.since, until:c.year, endedBy:'repackage'}); }
   w.gimmick={id:g.id,name:g.n,heat:86,since:c.year};
   const drop=clamp(4+c.pop*0.10,3,14);
   c.pop=clamp(c.pop-drop,1,100);
