@@ -4102,7 +4102,7 @@ function renderCareer(){
     ['Titles', (heldBelts().length||'-'), (()=>{ const held=heldBelts();
       const mb = c.mitb ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} Money in the Bank: ${c.mitb.belt}</div>` : '';
       const ts = c.titleShot ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} Title shot in hand: from ${c.titleShot.from}</div>` : '';
-      const tn = c.tourn ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} In ${c.tourn.name}: round ${c.tourn.round} of ${c.tourn.rounds}</div>` : '';
+      const tn = c.tourn ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} In ${c.tourn.name}: round ${c.tourn.round} of ${c.tourn.rounds} <a href="#" onclick="showBracket();return false;">bracket</a></div>` : '';
       if(!held.length) return `<div class="hint">${beltName(t,'secondary')} and ${beltName(t)} in this house</div>${mb}${ts}${tn}`;
       return `<div class="hint">${held.map(b=>`${pico('crown',12)} ${b.name}${b.defenses?` <span style="opacity:.7">(${b.defenses} def)</span>`:''}`).join('<br>')}</div>${mb}${ts}${tn}`;
     })()],
@@ -4172,7 +4172,7 @@ function renderStoryPanel(){
   // The Ropes Report: what happened elsewhere in the wrestling world this week.
   const worldNews = (G.world&&G.world.news)||[];
   if(worldNews.length) h+=`<div class="card" style="margin-top:10px;"><div class="flab">The Ropes Report <span class="hint" style="text-transform:none;letter-spacing:0;">news from around the wrestling world</span></div>`+
-    worldNews.slice(0,5).map(n=>`<div class="inbox-item sev-info"><span class="ico">${n.ico||'•'}</span><span class="txt">${n.text} <span class="hint" style="margin-left:6px;">Y${n.y}W${n.w}</span></span></div>`).join('')+`</div>`;
+    worldNews.slice(0,5).map(n=>`<div class="inbox-item sev-info"><span class="ico">${n.ico||'•'}</span><span class="txt">${(n.text||n.t||'')} <span class="hint" style="margin-left:6px;">Y${n.y}W${n.w}</span></span></div>`).join('')+`</div>`;
   el.innerHTML=h;
   if(st&&feudAdv){
     const card=$('feudCard'), bar=$('feudBar');
@@ -4504,11 +4504,15 @@ function makeOffers(){
   // moves things up. Every offer is Main Event tier, purses double,
   // and if you have a live feud its blow-off happens tonight.
   const ppv = isPpvWeek();
+  // If last week's Main Event finished with a called-out opponent, the office
+  // gives you that match. It slots on the top spot of the card.
+  const callout = G.car._pendingNext && G.car._pendingNext.kind==='callout' ? charById(G.car._pendingNext.charId) : null;
   for(let i=0;i<3;i++){
     const taken=offs.map(x=>x.oppId);
     let cand=pool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
     let opp=cand.length?cand[Math.floor(rnd()*cand.length)]:CHARS[0];
     if(_story && i===0){ const rc=charById(_story.charId); if(rc) opp=rc; }   // the feud headlines
+    else if(callout && i===2){ opp=callout; }   // your called-out opponent tops the card
     const stips=[['Singles Match','singles',1],['Tag Team Match','tag',0.9],['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1]];
     let st=stips[Math.floor(rnd()*stips.length)];
     // PPV nights get the marquee stipulations. The office only puts you in one
@@ -6840,13 +6844,14 @@ function renderMatch(o,res){
   // Post-match hot mic: a big win + a live opponent = a chance to grab the mic
   const pmSlot=$('postMicSlot');
   if(pmSlot){
-    const canMic = res.win && res.quality>=70 && (o.stakes==='title'||o.stakes==='defense'||o.stakes==='rivalry'||classic);
-    // Who's-next: after any Main Event win, offer a call-out that seeds the
-    // next week's story. Free, no penalty; changes what next week feels like.
+    // In a tag match a face-to-face mic on the OPPONENT reads weird because
+    // there were two of them. Keep Grab the Mic off tag matches; the Who's
+    // Next card still works because it addresses the room.
+    const canMic = !o.tag && res.win && res.quality>=70 && (o.stakes==='title'||o.stakes==='defense'||o.stakes==='rivalry'||classic);
     const canNext = res.win && o.card==='Main Event' && !G.car._pendingNext;
     let html='';
     if(canMic) html += `<button class="ghost" style="margin-left:8px;" onclick="postMatchMic('${o.oppId}')">${pico('microphone',14)} Grab the mic</button>`;
-    if(canNext) html += `<button class="ghost" style="margin-left:8px;" onclick="askWhosNext()">${pico('star',14)} Who's next?</button>`;
+    if(canNext) html += `<button class="ghost" style="margin-left:8px;" onclick="askWhosNext(${o.tag?'true':'false'})">${pico('star',14)} Who's next?</button>`;
     pmSlot.innerHTML = html;
   }
   // the room celebrates with you
@@ -6859,7 +6864,7 @@ function postMatchMic(oppId){
 }
 // After a Main Event win, pick who the segment sends you at next. Each choice
 // leaves a mark on next week: a story seed, a title-shot lean, a fresh callout.
-function askWhosNext(){
+function askWhosNext(isTag){
   const c=G.car, me=myPromo();
   const champId = (G.world && G.world.champions && G.world.champions[me.id]
                    && G.world.champions[me.id].world && G.world.champions[me.id].world.holder);
@@ -6880,10 +6885,20 @@ function askWhosNext(){
       c._pendingNext={kind:'callout', charId:contender.id};
     }});
   }
-  opts.push({l:`Just soak it in`, d:`Let the crowd have this one.`, fn:()=>{
-    c.pop=clamp(c.pop+2,1,100); c.mom=clamp(c.mom+6);
-    c._pendingNext={kind:'soak'};
-  }});
+  // In a tag match, thank your partner instead of "just soak it in"
+  const tm = isTag && myTeam();
+  if(tm){
+    opts.push({l:`Turn to ${tm.mate.name}`, d:`Raise your partner's hand.`, fn:()=>{
+      c._pendingNext={kind:'partner'};
+      nudgeLoyalty(tm.ally.id, 8);
+      c.pop=clamp(c.pop+3,1,100);
+    }});
+  } else {
+    opts.push({l:`Just soak it in`, d:`Let the crowd have this one.`, fn:()=>{
+      c.pop=clamp(c.pop+2,1,100); c.mom=clamp(c.mom+6);
+      c._pendingNext={kind:'soak', reactionBoost:true};
+    }});
+  }
   const h = `<p class="log">The crowd is still on their feet. Say something that lands, or let the moment breathe.</p>
     <div class="decgrid">${opts.map((o,i)=>`<div class="decopt" data-i="${i}"><div class="dn">${o.l}</div><div class="dd">${o.d}</div></div>`).join('')}</div>`;
   modal('Who is next?', h, []);
@@ -6931,6 +6946,12 @@ function advanceWeek(){
     const r=c.retireOnWeek;
     if(c.year>r.y || (c.year===r.y && c.week>r.w)){
       c.retireOnWeek=null;
+      // Goodbye moment before the HOF opens: one card, at the front of the queue.
+      try{
+        queueMoment(pico('crown',36),'One last walk down the aisle.',
+          {kick:'FAREWELL', sub:`After ${c.year} year${c.year===1?'':'s'} and ${c.rec.w} wins, you hang up the boots.`});
+      }catch(_e){}
+      newsPush({ico:pico('crown',14),cat:'retire',t:`<b>${G.w.name} has wrestled the last match.</b> A farewell tour in front of the world.`});
       retire('The farewell tour ended on your own terms.');
       return;
     }
@@ -6970,6 +6991,18 @@ function advanceWeek(){
   }
   weeklyLoyalty();
   const turned=checkBetrayal();
+  // "One more with you": a defined rival re-emerges long after the last war,
+  // as long as there is no active story and you have not just squashed it.
+  if(!story() && c.definingRivalId && rnd()<0.015){
+    const rv=charById(c.definingRivalId);
+    if(rv){
+      const R=rel(rv.id);
+      const now=c.year*1000+c.week;
+      if((!R.cooldown || now>R.cooldown+30) && R.heat<25){
+        startStory(rv.id, 'is not done with you. You are not done with them either.');
+      }
+    }
+  }
   if(c.deal && c.deal.weeksLeft<=0){ c.freeAgent=true; c.faOffers=freeAgentOffers(); }
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   worldTick();       // rest of the wrestling world keeps happening
@@ -7070,6 +7103,26 @@ function fireTournMatch(){
            blurb:tn.round===tn.rounds?`${tn.name} FINAL: ${opp.name}. Win it and it is yours.`:`${tn.name} round ${tn.round} of ${tn.rounds} vs ${opp.name}.`};
   tn.currentOpp=opp.id;
   return o;
+}
+function showBracket(){
+  const c=G.car, tn=c.tourn; if(!tn){ toast('No tournament in progress'); return; }
+  const beaten=tn.beaten||[];
+  const nextId = tn.next, curOppId = tn.currentOpp;
+  const nameOf = id => (charById(id)||{}).name || 'a first-round opponent';
+  const rows = tn.bracket.map(id=>{
+    const isBeaten = beaten.includes(id);
+    const isNext   = id===nextId;
+    const isCur    = id===curOppId && !isBeaten;
+    const badge    = isBeaten ? `<span class="badge b-com" style="background:#1e2a1e;color:#7dc4a4">Beaten</span>`
+                   : isCur    ? `<span class="badge b-leg">This round</span>`
+                   : isNext   ? `<span class="badge b-red">Next round</span>`
+                   : `<span class="hint">In the bracket</span>`;
+    return `<div style="padding:7px 0;border-top:1px dashed rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <span><b style="color:${isBeaten?'#7dc4a4':isCur?'var(--gold)':'var(--cream)'}">${nameOf(id)}</b></span>${badge}</div>`;
+  }).join('');
+  modal(`${tn.name} · Round ${tn.round} of ${tn.rounds}`,
+    `<p class="hint">Prize: ${tn.prize}.</p>${rows}`,
+    [{label:'Close',fn:closeModal}]);
 }
 function advanceTourn(res){
   const c=G.car, tn=c.tourn; if(!tn) return;
@@ -7256,6 +7309,12 @@ function takeInjury(cats,stipMult,severityBoost){
   c.injuries=c.injuries||[]; c.injuries.unshift(Object.assign({},c.hurt));
   if(c.injuries.length>30) c.injuries.pop();
   c.morale=clamp(c.morale-8);
+  // A real injury reaches the wrestling world. The Ropes Report picks it up
+  // when the layoff is at least a month.
+  if(wk >= 4){
+    newsPush({ico:pico('cross',14), cat:'injury',
+      text:`<b>${G.w.name}</b> is out roughly ${wk} weeks with ${def.nm.toLowerCase()}. ${myPromo().short} has already started rewriting the card.`});
+  }
   return c.hurt;
 }
 // a live feud produces a backstage moment every few weeks
