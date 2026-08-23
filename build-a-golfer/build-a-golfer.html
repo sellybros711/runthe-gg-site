@@ -480,6 +480,24 @@ window.GA_ID='G-L29P5MRWKE';
     .mpcard,.mprow,.mpres,.mpseed{transition:none !important}
     .mplive::after{animation:none; display:none}
   }
+  /* On a wide screen the fixed 132px columns leave the tree floating in ~700px of a much larger
+     viewport, so the whole bracket reads as a small box. Scale it up on desktop instead of leaving
+     column widths phone-sized. */
+  @media(min-width:900px){
+    .mptin{gap:12px}
+    .mptcol{flex:0 0 190px; gap:7px}
+    .mptr{font-size:11.5px; padding:5px 8px; gap:7px}
+    .mptr .n{min-height:15px}
+    .mptr .s{min-width:19px; font:800 9px/16px var(--body)}
+    .mptr .r{font:800 10px/1 var(--body)}
+    .mpth{font-size:10px; padding-bottom:5px}
+    .mptree{max-height:min(72vh,660px)}
+  }
+  @media(min-width:1200px){
+    .mptcol{flex:0 0 220px}
+    .mptr{font-size:12.5px; padding:6px 9px}
+    .mptree{max-height:min(76vh,720px)}
+  }
   /* Ryder/Nations Cup running scoreboard, pinned to the top of the viewport while the
      match-by-match session cards below it scroll, so the score never leaves view. */
   .cupsticky{position:sticky; top:0; z-index:6; margin:0 -16px 4px; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 6px;
@@ -21500,6 +21518,42 @@ function mpTreeSlot(B, st, ri, si, s){
   }).join('');
   return `<div class="mptm live${mine?' mine':''}${settled?' done':''}${mine&&!s.res?' await':''}" id="mpl-${si}" data-si="${si}">${rows}</div>`;
 }
+/* The tree is a scroll container and every render mounts a fresh one at scrollLeft 0 - i.e. R32 - so
+   after each match the player was staring at the start of the bracket instead of the round they are in.
+   This picks the column they are actually PLAYING right now: the live day if there is one, else the next
+   round they are alive for, else their last played round. Ran on rAF after mount so the container has a
+   size to measure against, and stamps the host's _mpCol so the reveal's own scroll-on-settle does not
+   fight it on the very first match of the next round. */
+function bracketFocusRi(B, st){
+  if(st) return st.ri;
+  const played = B.rounds.length;
+  const alive = B.you && B.you.alive;
+  if(alive) return Math.min(played, B.RDS.length-1);
+  return Math.max(0, played-1);
+}
+function bracketFocusScroll(tree, B, st){
+  if(!tree) return;
+  const ri = bracketFocusRi(B, st);
+  requestAnimationFrame(()=>{
+    try{
+      if(!tree.isConnected) return;
+      const cols = tree.querySelectorAll('.mptcol');
+      const col = cols[ri]; if(!col) return;
+      const hb = tree.getBoundingClientRect(), cb = col.getBoundingClientRect();
+      // horizontal: centre the target column in the tree window
+      const dx = (cb.left + cb.width/2) - (hb.left + hb.width/2);
+      tree.scrollLeft = Math.max(0, tree.scrollLeft + dx);
+      tree._mpCol = ri;   // keep the reveal from re-centring on its first settle
+      // vertical: bring the mine tile of that column into view if it lives here
+      const mine = col.querySelector('.mptm.mine');
+      if(mine){
+        const mb = mine.getBoundingClientRect(), pad = 24;
+        if(mb.top < hb.top+pad) tree.scrollTop = Math.max(0, tree.scrollTop - (hb.top+pad - mb.top));
+        else if(mb.bottom > hb.bottom-pad) tree.scrollTop = tree.scrollTop + (mb.bottom - (hb.bottom-pad));
+      }
+    }catch(e){}
+  });
+}
 function mpTreeBuild(B, st){
   const box=$(`<div class="mptree"><div class="mptin"></div></div>`), inner=box.querySelector('.mptin');
   const liveRi=st?st.ri:-1;
@@ -21603,7 +21657,7 @@ function scrBracket(){
       ${mp?`<div class="bd-opp"><span class="bd-vs">${esc(B.RDS[0].day)} · ${esc(B.RDS[0].name)}</span><div class="bd-oppn"><span class="bm-s">${mp.opp.seed}</span> ${esc(mp.opp.p.name)}</div></div>`:''}
       <p class="bd-p">The season-long points race seeds it, and now it is knockout golf. <b>${B.RDS.length} days, one round a day, 18 holes a match.</b> Win and you are through to tomorrow. Lose once and your season is over. The last one standing lifts the Cup.</p>
     </div>`));
-    W(mpTreeBuild(B, null));
+    const drawTree=mpTreeBuild(B, null); W(drawTree); bracketFocusScroll(drawTree, B, null);
     const b=$(`<button class="btn goldfill" style="max-width:440px;margin:14px auto 0">Head to the first tee ▸<span class="sub">${esc(B.RDS[0].day)} · ${B.players.length/2} matches</span></button>`);
     b.onclick=()=>{ mpStartDay(B); track('bracket_start',{seed:you?you.seed:null, year:S.year||1}); };
     W(b);
@@ -21662,7 +21716,7 @@ function scrBracket(){
     </div>`));
 
   // ---- THE BRACKET ITSELF: the show ----
-  const tree=mpTreeBuild(B, st); W(tree);
+  const tree=mpTreeBuild(B, st); W(tree); bracketFocusScroll(tree, B, st);
 
   const path=bracketPathStrip(B); if(path) W(path);
 
