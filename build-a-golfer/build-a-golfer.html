@@ -10228,20 +10228,41 @@ function openingRivalCardHTML(){
   const h = (S.career.h2h && S.career.h2h[r.name]) || null;
   let myOvrNow = r.startMyOvr;
   try { myOvrNow = Math.round(buildPlayer().skill); } catch(e){}
+  // Live lookup: prefer the current world roster so age + OVR + retirement stay accurate as the
+  // career ages the world. Falls back to the frozen turn-pro snapshot for legacy saves before the
+  // world is seeded (a rare edge, but crash-free).
+  let liveOvr = r.ovr, liveAge = r.age, retired = false, retiredYear = null;
+  try {
+    const w = S.world;
+    if(w){
+      const active = (w.active||[]).find(g=>g.name===r.name);
+      const alum   = active ? null : (w.alumni||[]).find(g=>g.name===r.name);
+      const found  = active || alum;
+      if(found){
+        if(typeof livingOf==='function'){
+          const l = livingOf(found, w.simYear); if(l){ liveOvr = l.ov; liveAge = l.age; }
+        } else { liveOvr = found.lov||liveOvr; liveAge = found.lage||liveAge; }
+        if(alum){ retired = true; retiredYear = found.retiredYear||null; }
+      }
+    }
+  } catch(e) {}
   const yrs = Math.max(1, (S.year||1) - (r.sinceYear||1) + 1);
-  const gap = (r.ovr||0) - myOvrNow;
+  const gap = (liveOvr||0) - myOvrNow;
   // The gap is OVR-vs-OVR; label it explicitly so it doesn't read as "N events behind" or "N majors behind"
   const gapTxt = gap>0 ? `${gap} OVR back` : (gap<0 ? `${Math.abs(gap)} OVR ahead` : `dead level`);
+  const ageStr = liveAge ? ` · age ${liveAge}` : '';
+  const natStr = r.nation ? ` · ${esc(r.nation)}` : '';
+  const retTag = retired ? ` · <span style="color:var(--muted,#88a397)">retired${retiredYear?` (yr ${retiredYear})`:''}</span>` : '';
   const h2hLine = h && (h.meAhead||h.themAhead)
     ? `Career H2H · <b>${h.meAhead||0}–${h.themAhead||0}</b> across ${h.ev||0} shared events`
-    : (h && h.ev ? `${h.ev} shared events, still tied 0–0` : `No shared events yet — the tour is on the stage`);
+    : (h && h.ev ? `${h.ev} shared events, still tied 0–0` : `No shared events yet, the tour is on the stage`);
   const yrLine = yrs>1 ? ` · year ${yrs} of the chase` : ` · rookie year`;
   return `<div class="orival">
     <div class="orival-hd">Career Nemesis · named at turn-pro</div>
     <div class="orival-body">
       <div class="orival-them">
         <div class="orival-nm">${esc(r.name)}</div>
-        <div class="orival-meta">OVR ${r.ovr}${r.age?` · age ${r.age}`:''}${r.nation?` · ${esc(r.nation)}`:''}</div>
+        <div class="orival-meta">OVR ${liveOvr}${ageStr}${natStr}${retTag}</div>
       </div>
       <div class="orival-vs">VS</div>
       <div class="orival-you">
@@ -15949,8 +15970,8 @@ const GOAL_DEFS = {
   moneyTop100: {label:'Finish top 100 on the money list',short:'Top 100 money',     get:m=>m.moneyRank, target:100, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
   firstTop10:  {label:'Post your first top-10',          short:'A top 10',          get:m=>m.top10,     target:1},
   majorTop25:  {label:'Best finish top-25 at a major',   short:'Major top-25',      get:m=>m.majorTop25,target:1},
-  keepCard:    {label:'Keep your card (top 125 money)',  short:'Keep card',         get:m=>m.moneyRank, target:125, hitLow:true, fmt:v=>v==null?'—':('#'+v)},
-  playFull:    {label:'Play a full slate (18+ starts)',  short:'18 starts',         get:m=>m.played,    target:18},
+  keepCard:    {label:'Keep your card (top 90 money)',   short:'Keep card',         get:m=>m.moneyRank, target:90,  hitLow:true, fmt:v=>v==null?'—':('#'+v)},
+  playFull:    {label:'Play a full slate (15+ starts)',  short:'15 starts',         get:m=>m.played,    target:15},
 
   // established
   moneyTop60:  {label:'Finish top 60 on the money list', short:'Top 60 money',      get:m=>m.moneyRank, target:60,  hitLow:true, fmt:v=>v==null?'—':('#'+v)},
@@ -15988,6 +16009,7 @@ const GOAL_TIERS = {
 // on resume and different combinations across seasons (5 of 6 → 6 distinct rotations per tier).
 function generateSeasonGoals(){
   if(S.daily || S.circuitMode || !S.career) return null;
+  try{ if(typeof onProvingTour==='function' && onProvingTour()) return null; }catch(e){}
   const tier = seasonGoalTier();
   const pool = (GOAL_TIERS[tier]||GOAL_TIERS.rookie).pool.slice();
   const seed = (((S.careerSeed||1)>>>0) ^ (((S.year||1) * 0x9e3779b1)>>>0)) >>> 0;
@@ -16111,7 +16133,7 @@ function startSeason(majorsOnly){
   const me=buildPlayer();
   // Name your Career Nemesis at turn-pro (fresh year-1 career only; silent no-op otherwise, so
   // this is safe to call every startSeason and never re-fires or retroactively assigns).
-  try{ if(!S.daily && !S.circuitMode && !majorsOnly) ensureOpeningRival(); }catch(e){}
+  try{ if(!S.daily && !S.circuitMode && !majorsOnly){ if(!S.career) S.career={}; ensureOpeningRival(); } }catch(e){}
   // Field: daily uses the static seeded SG field; career/free-play uses the LIVING WORLD
   // (aging, retiring, rookie-refilled per year, career spec §4/§7); the Legend Circuit draws instead
   // from golfers who've themselves retired from that world. Each carries all 8 living skills so
