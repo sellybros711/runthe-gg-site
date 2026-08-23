@@ -290,6 +290,65 @@
   .fuse .bar em{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);
     transition:width .5s var(--ez)}
 
+  /* ---- the map ----
+     No state outlines. Eighty-three dots at real coordinates already draw the country, and
+     an outline traced by hand would be the one part of this picture with no source behind
+     it. The dots ARE the map. */
+  .map{margin-top:2px}
+  .mapsvg{display:block;width:100%;height:auto;overflow:visible}
+  .mapbg{fill:rgba(255,255,255,.035);stroke:var(--line);stroke-width:1}
+  .dot{stroke:rgba(8,11,20,.65);stroke-width:.8;
+    animation:dotin .5s var(--ez) backwards;animation-delay:calc(var(--i) * 12ms)}
+  @keyframes dotin{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
+  /* A SCHOOL THAT MOVED SINCE THIS WAS LAST DRAWN says so, because the whole reason the map
+     is here is that a dot changing colour is realignment and a line of text is not. */
+  .dot.moved{stroke:#fff;stroke-width:1.6;animation:dotmove 1.5s var(--ez) 3}
+  @keyframes dotmove{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){ .dot,.dot.moved{animation:none} }
+  .maplegend{display:flex;flex-wrap:wrap;gap:4px 11px;margin-top:10px}
+  .maplegend span{display:flex;align-items:center;gap:5px;font-family:var(--fn);
+    font-size:10px;font-weight:700;color:var(--dim)}
+  .maplegend i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+  .mapmove{margin-top:8px;font-size:12px;color:var(--gold)}
+
+  /* ---- the season ---- */
+  .champ{border:1px solid var(--tc,var(--line));border-radius:13px;padding:14px;
+    background:linear-gradient(160deg,color-mix(in srgb,var(--tc,#334155) 22%,transparent),transparent)}
+  @supports not (background:color-mix(in srgb,red 10%,transparent)){
+    .champ{background:var(--panel-2)}
+  }
+  .champ b{display:block;font-family:var(--fd);font-size:29px;line-height:1.02;margin-top:4px}
+  .champ span{display:block;font-family:var(--fn);font-size:11px;font-weight:700;
+    color:var(--dim);margin-top:5px}
+  .champ em{display:block;font-style:normal;font-size:12.5px;color:var(--ink);margin-top:7px}
+
+  .rounds{display:grid;gap:9px}
+  .rd b{display:block;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--dim-2);margin-bottom:5px}
+  .gm{display:grid;gap:2px;padding:6px 8px;border-radius:8px;background:var(--panel);
+    margin-bottom:4px}
+  .sd{display:grid;grid-template-columns:18px 1fr auto auto;align-items:center;gap:7px;
+    font-size:12.5px;color:var(--dim)}
+  .sd.win{color:var(--ink)}
+  .sd i{font-style:normal;font-family:var(--fn);font-size:9px;font-weight:700;
+    color:var(--dim-2);text-align:right}
+  .sd b{font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sd.win b{font-weight:800}
+  /* An automatic qualifier is marked, because "the seats you promised got blown out" is an
+     argument the player is going to have next winter and this is the evidence for it. */
+  .sd s{text-decoration:none;font-family:var(--fn);font-size:8px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--gold);
+    border:1px solid rgba(245,158,11,.4);border-radius:4px;padding:0 4px}
+  .sd u{text-decoration:none;font-family:var(--fn);font-size:13px;font-weight:800;
+    min-width:22px;text-align:right}
+  /* A GAME NOBODY WATCHED PAST HALF TIME. Three scores is the number the argument about
+     field size is always conducted in, so the bracket marks them. */
+  .gm.rout{border-left:2px solid rgba(239,68,68,.55)}
+  .snotes{margin-top:12px;display:grid;gap:7px}
+  .snotes p{font-size:13px;color:var(--dim);line-height:1.4;padding-left:10px;
+    border-left:2px solid var(--line-2)}
+  .realnote{margin-top:11px;font-size:11.5px;color:var(--dim-2);line-height:1.4}
+
   .verdict{border-radius:16px;padding:20px 18px;text-align:center;border:1px solid var(--line);
     background:var(--grad-panel);margin-bottom:12px}
   .verdict.bad{border-color:rgba(239,68,68,.45)}
@@ -337,6 +396,11 @@
       <div class="sport" id="off-sport"></div>
       <div class="fuses" id="off-fuses"></div>
     </div>
+    <!-- The map. Realignment is the one thing a list cannot show. -->
+    <div class="card flat">
+      <div class="eyebrow" style="margin-bottom:9px">The sport, by where it is played</div>
+      <div class="map" id="off-map"></div>
+    </div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
       <div class="room" id="off-room"></div>
@@ -383,6 +447,8 @@
       <div class="big" id="y-big">2025</div>
       <p id="y-say" style="color:var(--dim);font-size:14px;margin-top:6px"></p>
     </div>
+    <!-- The football that was actually played this year. -->
+    <div class="card flat" id="y-season" hidden></div>
     <!-- The same vote that ends a term, on the screen where a term can end. -->
     <div class="coal" id="y-coal"></div>
     <div class="card flat">
@@ -403,6 +469,7 @@
 <script src="ledger.js?v=1"></script>
 <script src="blocs.js?v=1"></script>
 <script src="docket.js?v=2"></script>
+<script src="season.js?v=2"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -427,6 +494,8 @@ const L=window.PS_CFB_LEDGER, B=window.PS_CFB_BLOCS, D=window.PS_CFB_DOCKET, E=w
    both degrade instead of throwing. Reading .allowed off undefined would take the whole
    mode down with a blank screen; falling back to a closed door is wrong in the harmless
    direction, and the door already says what to do about it. */
+const S=window.PS_CFB_SEASON;
+let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
 /* TESTERS ARE TREATED AS PAYING, on purpose and only while this is closed. The paid tier
@@ -504,9 +573,19 @@ let MEMBERSHIP={};
 async function loadTeams(){
   const r=await fetch('/cfb/data/cfb_team_seasons.json?v=9');
   const teams=await r.json();
+  TEAMS=teams;
   for(const t of teams){
     (MEMBERSHIP[t.season]=MEMBERSHIP[t.season]||{})[t.school]=t.conference;
   }
+}
+/* WHERE THE SCHOOLS ARE. Its own file because it is its own kind of fact, fetched by
+   cfb/build/fetch-places.mjs from Wikipedia rather than remembered. The map is the only
+   thing that needs it, so a failure here costs the map and nothing else. */
+async function loadPlaces(){
+  try{
+    const r=await fetch('/cfb/data/cfb_places.json?v=1');
+    PLACES=await r.json();
+  }catch(e){ PLACES={}; }
 }
 
 /* ── painting ─────────────────────────────────────────────────────────────────── */
@@ -697,6 +776,7 @@ function office(){
   paintCoalition($('off-coal'),world);
   paintSport($('off-sport'),world,null);
   paintFuses($('off-fuses'),world);
+  paintMap($('off-map'),world,{showMoves:true});
   paintRoom($('off-room'),world,null);
   const pool=D.eligible(world,L);
   $('b-desk').textContent=pool.length?'See what is on the desk':'Nothing on the desk. Move on.';
@@ -895,9 +975,144 @@ function advance(){
   office();
 }
 
+/* ── the map ──────────────────────────────────────────────────────────────────────
+   THE SPORT HAS A SHAPE AND IT IS A COUNTRY. Realignment is the one thing this mode does
+   that a list cannot show: "Oregon to the Big Ten" is four words, and a dot crossing two
+   thousand miles to change colour is the whole argument. Every point is a real campus,
+   fetched by cfb/build/fetch-places.mjs rather than typed from memory, which is why there
+   is a build script for eighty-three numbers.
+
+   Plain SVG on an equirectangular projection, which is wrong for a globe and right for a
+   country this shape at this size: the continental United States is wider than it is tall
+   and the eye is not being asked to measure anything. */
+let PLACES={};
+const MAP={ lat0:24.4, lat1:49.4, lon0:-125.0, lon1:-66.9, w:340, h:190 };
+const mapX=(lon)=>((lon-MAP.lon0)/(MAP.lon1-MAP.lon0))*MAP.w;
+/* Latitude runs the other way from a screen's y, and cos() of the middle latitude keeps the
+   country from looking stretched. */
+const mapY=(lat)=>MAP.h-((lat-MAP.lat0)/(MAP.lat1-MAP.lat0))*MAP.h;
+
+/* WHO HELD THE MAP LAST TIME IT WAS DRAWN, so a school that moved can be shown moving
+   rather than simply being somewhere else. */
+let mapWas=null;
+function paintMap(el,w,opts){
+  if(!el) return;
+  const o=opts||{};
+  const mem=w.membership||{};
+  const dots=[];
+  for(const school in mem){
+    const p=PLACES[school];
+    if(!p) continue;
+    const conf=mem[school];
+    const moved=mapWas&&mapWas[school]&&mapWas[school]!==conf;
+    dots.push({school,conf,x:mapX(p.lon),y:mapY(p.lat),moved});
+  }
+  /* Conferences get the room's own hues where they are one of the nine, so a dot on the map
+     and a chip in the room are the same colour for the same reason. */
+  const col=(c)=>bcOf(c)||'#64748b';
+  dots.sort((a,b)=>a.y-b.y);
+  const moved=dots.filter((d)=>d.moved);
+  el.innerHTML='<svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" class="mapsvg" aria-label="The sport, by where it is played">'
+    +'<rect x="0" y="0" width="'+MAP.w+'" height="'+MAP.h+'" rx="10" class="mapbg"/>'
+    +dots.map((d,i)=>
+      '<circle class="dot'+(d.moved?' moved':'')+'" cx="'+d.x.toFixed(1)+'" cy="'+d.y.toFixed(1)+'" r="'
+      +(d.moved?4.4:3.1)+'" fill="'+col(d.conf)+'" style="--i:'+(i%40)+'">'
+      +'<title>'+esc(d.school)+', '+esc(d.conf)+'</title></circle>').join('')
+    +'</svg>'
+    +'<div class="maplegend">'+conferencesOnMap(mem).map((c)=>
+      '<span><i style="background:'+col(c.name)+'"></i>'+esc(c.name)+' '+c.n+'</span>').join('')
+    +'</div>'
+    +(moved.length&&o.showMoves
+      ? '<div class="mapmove">'+esc(moved.map((m)=>m.school).join(', '))
+        +(moved.length===1?' is':' are')+' somewhere new.</div>'
+      : '');
+  mapWas=Object.assign({},mem);
+}
+function conferencesOnMap(mem){
+  const n={};
+  for(const s in mem){ if(PLACES[s]) n[mem[s]]=(n[mem[s]]||0)+1; }
+  return Object.keys(n).map((name)=>({name,n:n[name]})).sort((a,b)=>b.n-a.n);
+}
+
+/* ── the season ───────────────────────────────────────────────────────────────────
+   The football, played under the rules on the ledger. See cfb/commish/season.js. */
+let lastSeason=null;
+function playSeason(year){
+  lastSeason=null;
+  if(!S||!TEAMS.length) return;
+  try{
+    const sim=S.play(Object.assign({},world,{year}),TEAMS,rng);
+    if(!sim) return;
+    world.rngCalls=(world.rngCalls||0)+1;
+    lastSeason=sim;
+    /* THE SEASON IS A RULING NOBODY MADE and the room is entitled to answer it, so it goes
+       through applyEdit and applyOutcome exactly like a ruling does. */
+    const deltas=B.deltas(world,sim.edit);
+    world=L.applyOutcome(L.applyEdit(world,sim.edit),sim.edit,deltas);
+    save();
+  }catch(e){ lastSeason=null; }
+}
+
+function paintSeason(el,sim){
+  if(!el) return;
+  if(!sim){ el.innerHTML=''; el.hidden=true; return; }
+  el.hidden=false;
+  const ch=sim.bracket.champion;
+  const fin=(sim.bracket.rounds[sim.bracket.rounds.length-1]||[])[0];
+  const t=ch?ch.team:null;
+  const beaten=fin?(fin.winner===ch?fin.loser:fin.winner):null;
+  const score=fin?fin.score.slice().sort((a,b)=>b-a):null;
+  el.innerHTML=(t
+      ? '<div class="champ" style="--tc:'+esc(t.color)+'">'
+        +'<div class="eyebrow">National champion</div>'
+        +'<b>'+esc(t.school)+'</b>'
+        +'<span>'+t.wins+'-'+t.losses+' &middot; '+esc(ch.how==='auto'?'automatic bid':'at large')
+        +' &middot; '+ordinal(ch.seed)+' seed</span>'
+        +(beaten&&score?'<em>beat '+esc(beaten.team.school)+' '+score[0]+'-'+score[1]+'</em>':'')
+        +'</div>'
+      : '')
+    +'<div class="eyebrow" style="margin:12px 0 7px">The bracket you built</div>'
+    +'<div class="rounds">'+sim.bracket.rounds.map((r,i)=>
+      '<div class="rd"><b>'+esc(roundName(i,sim.bracket.rounds.length))+'</b>'
+      /* TWO LINES, THE WAY A SCOREBOARD IS READ. One line held a seed, a name, a score,
+         another name, another seed and another score, in that order, and the second seed
+         landed between the second team and its points. It was parseable and nobody should
+         have to parse it. */
+      +r.map((g)=>'<span class="gm'+(g.margin>=21?' rout':'')+'">'
+        +side(g.top,g.score[0],g.winner===g.top)
+        +side(g.bottom,g.score[1],g.winner===g.bottom)
+        +'</span>').join('')
+      +'</div>').join('')
+    +'</div>'
+    +(sim.notes&&sim.notes.length
+      ? '<div class="snotes">'+sim.notes.map((n)=>'<p>'+esc(n)+'</p>').join('')+'</div>' : '')
+    +(sim.fromRealData
+      ? ''
+      : '<p class="realnote">These teams are real. This season is not: the data stops at '
+        +world.startYear+', so every year after your first is played by the sport you have '
+        +'been changing rather than one that happened.</p>');
+}
+const short=(s)=>s.length>15?s.slice(0,14)+'.':s;
+/* One team's line in a bracket game: seed, who, what they scored. The winner is marked
+   rather than merely having the bigger number, because a bracket is scanned, not read. */
+const side=(seat,pts,won)=>'<span class="sd'+(won?' win':'')+'">'
+  +'<i>'+seat.seed+'</i><b>'+esc(short(seat.team.school))+'</b>'
+  +(seat.how==='auto'?'<s>auto</s>':'')
+  +'<u>'+pts+'</u></span>';
+const ordinal=(n)=>n+(n%10===1&&n%100!==11?'st':n%10===2&&n%100!==12?'nd':n%10===3&&n%100!==13?'rd':'th');
+function roundName(i,total){
+  const left=total-i;
+  return left===1?'Final':left===2?'Semi-finals':left===3?'Quarter-finals':'Round '+(i+1);
+}
+
 /* ── the year, and the end ────────────────────────────────────────────────────── */
 function yearEnd(year){
   const done=world.year-world.startYear;
+  /* THE FOOTBALL GETS PLAYED BEFORE THE YEAR IS SUMMED UP, because it is most of what
+     happened. A season is played under the rules as they stand at the end of the year, and
+     what it does back to the sport is a ledger edit like any other, so the room answers the
+     season on the same screen it answers everything else. */
+  playSeason(year);
   $('y-eyebrow').textContent='The year in review';
   $('y-big').textContent=year;
   $('y-card').className='verdict'+(world.meters.standing>=55?' good':world.meters.standing<30?' bad':'');
@@ -905,6 +1120,7 @@ function yearEnd(year){
   $('y-say').textContent=angry.length
     ? 'You finish the year with '+angry.join(' and ')+' against you.'
     : 'You finish the year with the room behind you.';
+  paintSeason($('y-season'),lastSeason);
   paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);
@@ -999,6 +1215,7 @@ function gate(){
 /* ── boot ─────────────────────────────────────────────────────────────────────── */
 (async function boot(){
   try{ await loadTeams(); }catch(e){}
+  await loadPlaces();
   load();
   const A=window.PS_CFB_AUTH;
   if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }

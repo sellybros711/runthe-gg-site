@@ -63,6 +63,10 @@
     "docket.js": {
       "v": "2",
       "sha": "41bcff039188efb5"
+    },
+    "season.js": {
+      "v": "2",
+      "sha": "a8b706d161aa550f"
     }
   },
   "cfb/index.html": {

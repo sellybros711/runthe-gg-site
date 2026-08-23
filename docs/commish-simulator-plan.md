@@ -14,9 +14,19 @@ season: you are the **commissioner of college football**, and the sport is yours
 > treated as paying, so **`?tier=free` on the same URL shows the free experience** rather
 > than nobody on the list ever seeing the half most likely to be got wrong.
 >
-> What is not built: the term is saved to `localStorage` and not to the database, the
-> playoff format on the ledger does not yet feed the engine, and a term does not end. Those
-> are stages 2, 3 and 4.
+> **Stage 3 is built too: every year is played out.** `cfb/commish/season.js` reads the
+> ledger and plays a real season with it. The playoff is the size you wrote, the automatic
+> bids go to conference champions, a school you moved plays its conference games somewhere
+> else, and a conference you starved gets measurably worse over the years of a term. The
+> season comes back as a ledger edit, so the room answers the football on the same screen it
+> answers a ruling.
+>
+> **The map is built.** Every school is a dot at its real campus, coloured by conference,
+> and a school that moved since the map was last drawn says so. The coordinates come from
+> `cfb/build/fetch-places.mjs`, which asks Wikipedia, rather than from anybody's memory.
+>
+> What is not built: the term is saved to `localStorage` and not to the database, and a term
+> does not end with a legacy card. Those are stages 2 and 4.
 
 ---
 
@@ -401,7 +411,7 @@ Each stage ships something you can look at. No stage depends on a later one.
 | **0** | The ledger and the bloc model, headless, in Node | **Done.** A term simulates in a test with no UI and a seed replays identically |
 | **1** | One beat, end to end: docket, ruling, reactions, ledger edit | **Done.** A decision plays on a phone, the room answers, and the term survives a reload |
 | **2** | The full nine-beat season and the year in review | A season plays start to finish, tester-gated, saving to the database |
-| **3** | Playing the sport you built: format and membership feed the engine | A sixteen-team playoff you designed runs in the bracket UI, on its own board |
+| **3** | Playing the sport you built: format and membership feed the season | **Done.** Every year is played out: `cfb/commish/season.js` reads the ledger, plays a 70-team season and a bracket the size you wrote, and the year in review is a recap rather than a page turn |
 | **4** | The five-season term, consequences with long fuses, the legacy card | A term ends, well or badly, and says what you did to the sport |
 | **5** | Paid rollout | Stripe price, entitlement check, comp passes, free first season |
 
