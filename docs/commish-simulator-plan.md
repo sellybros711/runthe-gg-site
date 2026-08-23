@@ -216,9 +216,13 @@ term, which at one big decision each is a real career and not an evening.
 
 ---
 
-## The decision system: **DECIDE**
+## The decision system: **DECIDED**
 
-The fork that everything else waits on.
+> **Decided: both, split by tier.** Everybody picks from written options. Paying players can
+> write their own ruling instead. See **The two tiers** below, which is the bigger half of
+> the same decision.
+
+The fork that everything else waited on.
 
 ### Option A: authored decisions, deep state *(recommended for v1)*
 
@@ -246,16 +250,51 @@ edit and writes the fallout.
 - Non-deterministic, so the repo's replay-a-seed discipline does not apply to it.
 - Needs moderation, and needs an answer for what happens when the model is down mid-term.
 
-### The recommendation
+### What was decided
 
-**Build A. Design for B.** Keep the ledger edit as the interface between a ruling and the
-world, so a ruling's *source* can change later without the world model moving. Then the
-first LLM layer is the cheapest and safest one: **authored choice, generated prose.** The
-player still picks, the ledger edit is still deterministic, and the model only writes the
-press column and the blocs' lines in their own voices. If the model is down, the authored
-fallback line shows and nothing breaks.
+**Both, and the split is the tier.** A is what everybody gets and B is what paying gets, so
+the model cost only ever lands on somebody who is already paying and free play stays free
+forever rather than free for a while.
 
-Full free text becomes a later upgrade, priced knowingly, once the loop is proven.
+Which makes the ledger edit the load-bearing interface, exactly as it already is: A produces
+one by lookup and B produces one by asking a model, and everything downstream cannot tell
+which. Nothing in `ledger.js` or `blocs.js` needs to know either, and neither does the
+season simulation. That is why stage 0 could be built before this was answered.
+
+**When the model is not there, the buttons are.** A paying player whose request times out
+gets the authored options and a note, never a dead screen. The same rule the rest of this
+repo lives by: the network is optional.
+
+---
+
+## The two tiers
+
+**The free version is a game, not a trial.** It is not the first year of a term with a wall
+after it. You take the job, you run the sport, you get judged, you get a legacy. Somebody
+who never pays a penny has played a whole career and can say what they did to college
+football.
+
+**What paying buys is control**, not progress. Nothing is ever gated in the middle of a
+sentence, and no term stops halfway with a price on the next beat.
+
+| | Free | Paid |
+|---|---|---|
+| The job | The whole term, all five seasons, the legacy card | Same |
+| Deciding | Pick from written options, with the main dials | **Write your own ruling in your own words** |
+| The room | Nine blocs, their reactions, the three meters | Same, plus every weight, projection and pressure gauge |
+| Testing a policy | After you rule | **Before you rule.** Football President's best idea, and it is a power rather than a screen |
+| When you take office | The present day | **Any year from 2005.** Take the job in 2011 and stop realignment before it happens |
+| The dials | Presets: 12, 14 or 16 | **Every number.** Exact autobids, the share per conference, your own selection rule |
+| The sport itself | The real one | **Draw your own.** Your conferences, your format, then govern what you built |
+| Career length | One term | Terms until they stop asking you back |
+| Playing the seasons | The result of your format, simulated | **Play them**, in your world, with the draft game |
+
+The through line is that the free tier is the sport as it is and the paid tier is the sport
+as you want it. That is a much easier thing to sell than a countdown, and a much easier
+thing to live with than a paywall in the middle of a career.
+
+**It needs a name that is not "the paid one".** Open question 5 below is whether this is its
+own subscription or what the Arcade Card grows into, and the name follows that answer.
 
 ---
 
@@ -331,9 +370,11 @@ So the paid rollout is: a new price in the same Stripe product, an entitlement c
 alongside `arcade_card_active`, and comp passes for testers. The runbook at
 `functions/api/stripe/README.md` already describes every step.
 
-**The free slice.** Fantasy President gives away the first year. The equivalent here is
-**the first season, all nine beats, ending at the year-in-review**, which is exactly where
-the ripple starts to pay off and therefore exactly where somebody wants the second season.
+**The free slice is not a slice.** Fantasy President gives away the first year and charges
+for the rest, and that was the plan here too until the tiers were decided. It is not any
+more: see **The two tiers** above. Free play is a whole term, and what is sold is control
+over the sport rather than permission to keep playing. A career that stops nine beats in
+with a price on the tenth is the version of this that people resent.
 
 ---
 
@@ -377,12 +418,12 @@ applies with no exceptions: the edit, the bump and the record in one commit.
 
 ## Open questions
 
-1. **Free text or authored?** Recommendation above is authored first, generated prose next,
-   free text as a priced upgrade. This decides the architecture and the running cost.
-2. **Real named people, or institutions only?** Recommendation is institutions.
-3. **Era.** Does a term start in the present and run forward into a sport you invent, or can
-   you take office in 2011 and stop realignment before it happens? The second is a better
-   hook and needs the 2005-2025 membership history the data already carries.
+1. ~~Free text or authored?~~ **Decided:** both, split by tier. See above.
+2. **Real named people, or institutions only?** Recommendation is institutions. Not
+   blocking: stage 1 is built with institutions and going the other way later is a copy
+   change, not a rebuild.
+3. ~~Era.~~ **Decided by the tiers:** the present day for free, any year from 2005 for
+   paying. Stage 0 already proves both open on the real sport of their year.
 4. **Where does it live?** A mode card inside `/cfb/`, or its own entry on the site's front
    page? It is a different game to the draft, and the front page is how anybody finds it.
 5. **Price.** Its own subscription, or is it what the existing Arcade Card grows into?
