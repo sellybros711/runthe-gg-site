@@ -16443,3 +16443,59 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   9) set the pace; the +1/+2/+3 curve is one ternary in `clubLevelBonus`. The card copy + row
   layout live in `clubProgressCardHTML`. Add a wins-based bonus, a "your career's most-played
   set" trophy, or a per-club achievement — the reps table is right there.
+
+### THE CUP FINALE SCREEN: show the knockout instead of describing it (the five approved mockups,
+### implemented — NOT yet deployed)
+- **The gap:** the finale is a 32-seed, five-day, lose-once-and-you're-done survival test, but
+  `scrBracket` read like a results list — a prose card explaining the format, a match card, and the
+  round labels only as a small footnote strip. The format itself was never the interface. The owner
+  asked for visual mockups first (delivered as a design canvas, all five approved), then "let's
+  improve the bracket in the game like you suggested."
+- **The five pieces, all additive presentation on top of the existing engine:**
+  - **`bracketRail`** — five dots for the five days: gold for the live one, green for a day you
+    survived, red for the one that ended you. The week's shape at a glance, on every state.
+  - **The draw** leads with `bracketFaceoff` (you vs your first opponent, seed badges) over
+    `bracketStakes` — **WIN → Round of 16** in green against **LOSE → season over** in red, the two
+    colours those things already mean everywhere else in the game.
+  - **`bracketDayHdrHTML`** pins the round name, the `n / N played` count and a progress bar in one
+    place. The reveal drives it through a single **`mpSetProgress(n,total)`** helper instead of
+    writing the counter inline, so the count and the bar can never disagree.
+  - **Your match** pauses on a hero card carrying **both OVRs** (`bracketOvr` → `ovrFromSkills`) and
+    the **head-to-head record** (`bracketH2H`, off `S.career.h2h`), with the same stakes chips under
+    it and Play it / Sim it.
+  - **The result**: a win puts the MARGIN up big and a `.bnext` card names tomorrow's opponent; a
+    loss shows where the week ended plus what it paid.
+  - **The champion screen is the ROUTE** (`bracketRouteHTML`) — five rows of who you beat and by how
+    much, the final row gold, over Prize money / Career cups tiles. Surviving five days IS the trophy.
+- **`bracketExitFinish(B,out)` is the one piece of real math.** A mid-week loss needs a finishing
+  position and money, but `bracketOrder` only reads correctly once the WEEK is complete. So it
+  computes the exit group straight off the elimination round (`surv = n / 2^(out+1)`, `pos = surv+1`,
+  `pct` = mean of `payoutAt(surv..surv+surv-1)`), which is exact for a power-of-2 single-elimination
+  bracket. **Verified equal to `bracketOrder` for every exit round** — same position, same money to
+  1e-6 — which is what makes the loss card's "Finished T9 · $670,885" and the champion screen's
+  "Finished T9 · $671k" agree.
+- **`payoutAt` is 0-INDEXED** — the champion is `payoutAt(0)` (18%), not `payoutAt(1)`. Learned the
+  hard way while writing the regression (a 1-indexed assumption reads the runner-up's share as the
+  winner's). `bracketOrder` starts its slot counter at 0 for the same reason, and `bracketExitFinish`
+  matches it. Worth knowing before touching either. Related, pre-existing and deliberately NOT
+  changed in a presentation pass: the top-32 slots of the payout curve sum to **91.4%** of the purse,
+  so a 32-man knockout leaves ~8.6% undistributed (the curve is shaped for a full stroke-play field).
+  Invisible to the player; flagged rather than silently retuned.
+- **DELIBERATE DEVIATION from the mockups, and the owner should know:** the DayReveal mockup proposed
+  replacing "elsewhere on the day" with compact match ROWS. The mockups were drawn against a
+  pre-"bracket in motion" version of this screen; since then the animated **bracket TREE** shipped and
+  the owner explicitly praised it. So the mockup's pinned day header was adopted and the **tree was
+  kept** — the reveal still settles each match in place and flies the winner into the next column.
+  Nothing about the reveal/commit engine changed.
+- **Verified: eight bracket states screenshotted** (draw, day revealing, your match paused, a win, a
+  loss, champion-is-you, champion-is-someone-else) and a **13-check regression** over the engine paths
+  this sits against: a full week resolving to one champion with the 1/1/2/4/8/16 exit groups, the
+  reveal counter + bar, the played-match path (`bracketStartMatch` → `dailyround` with `S.matchPlay`
+  set and `bag_daily` byte-identical), `skipToEnd`, `finishSeasonHeadless`, a weak build that misses
+  the 32, and every stage rendering with no error card — **0 page errors** throughout. Broader suites
+  green (daily_glitch, rest, records, morris, circuit, clubs, rival). `goals_test` fails 3 checks
+  **identically on the deployed baseline** — pre-existing stale fixture, not this change.
+- **NOT deployed to /golf** — committed + pushed to the feature branch, awaiting the owner's look at
+  the screenshots (per the deploy guardrail, and matching how the other visual redesigns were handled).
+- Tunable: the `.brail`/`.bstake`/`.bhero`/`.bres`/`.broute` CSS block, the copy in `bracketStakes`,
+  and `bracketExitFinish` if the payout curve ever changes shape.
