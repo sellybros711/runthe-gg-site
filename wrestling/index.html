@@ -3439,6 +3439,16 @@ function worldTick(){
     }
     w.champions[promo.id][kind] = { holder:chal.id, since:{y:c.year,w:c.week}, defenses:0, kind };
     const oldName = (charById(prevHolder)||{}).name || 'the champion';
+    // A protégé you took under your wing wins their first world title
+    const R2=rel(chal.id);
+    if(kind==='world' && R2 && R2.mentee && !R2.menteeFirstBelt){
+      R2.menteeFirstBelt = true;
+      pushInboxItem({ico:pico('starBig',18),sev:'good',
+        txt:`<b>Your prospect made it.</b> ${chal.name} won the ${beltName} at ${promo.short}.`});
+      try{ queueMoment(pico('crown',36), `${chal.name} calls you first from the winner's press conference.`, {kick:'The Prospect'}); }catch(_e){}
+      newsPush({ico:pico('starBig',14), kind:'mentee',
+        text:`<b>${chal.name}</b> credits ${G.w.name} in the ring after winning the <b>${beltName}</b>.`});
+    }
     // Cross-brand title change: if the winner and the previous holder were on
     // different brands, migrate the belt to the winner's brand, and the news
     // reads as a brand-supershow moment.
@@ -4848,7 +4858,21 @@ function advanceStory(){
   st.lastAdv=wk;
   st.stage=Math.min(4,st.stage+1);
   const c=charById(st.charId);
-  if(st.stage===3) pushInboxItem({ico:pico('impact',18),sev:'story',txt:`It is time to settle it with <b>${c.name}</b>. Take the blow-off match.`});
+  if(st.stage===3){
+    pushInboxItem({ico:pico('impact',18),sev:'story',txt:`It is time to settle it with <b>${c.name}</b>. Take the blow-off match.`});
+    // Rival gimmick evolves at the blow-off stage, once. The character shows
+    // up different for the settle.
+    if(c && !st.rivalEvolved){
+      st.rivalEvolved = true;
+      const twists = ['showed up to the tapings in a new mask.', 'walked out with a new coat of face paint.',
+                      'was seen cutting a new theme with the band down the road.', 'shaved the beard and looks like a different wrestler.',
+                      'stopped answering to the old nickname. They are going by something else now.'];
+      const twist = twists[Math.floor(rnd()*twists.length)];
+      c.gimmick = (c.gimmick||'A wrestler.') + ' Recently: ' + twist.replace(/\.$/,'') + '.';
+      newsPush({ico:pico('swap',14), kind:'gimmick',
+        text:`<b>${c.name}</b> ${twist} The feud with ${G.w.name} has changed them.`});
+    }
+  }
 }
 function endStory(resolution){
   const st=story(); if(!st) return;
@@ -6991,18 +7015,54 @@ function applyMatch(o,res){
 /* Weekly night card: lighter than the PPV card but shows the whole show so
    the roster feels like a company running a night. Non-PPV weeks get up to
    two other match results from your promotion's undercard. */
+// Pick pairs for undercard results, preferring pairs that mean something:
+// a tag team together, a recent debut against a mid-carder, opponents with
+// existing heat between them. Falls back to a random shuffle if nothing bites.
+function pickUndercardPairs(o, roster, count){
+  const pairs=[]; const used=new Set([o.oppId]);
+  // 1) A recent debut goes on the card
+  const debut = roster.find(x=>x.debut && !used.has(x.id));
+  if(debut){
+    const foe = roster.find(x=>!used.has(x.id) && x.id!==debut.id && (x.over||55)>=50);
+    if(foe){ pairs.push([debut, foe]); used.add(debut.id); used.add(foe.id); }
+  }
+  // 2) A world team pair from G.world.teams
+  const teams = (G.world&&G.world.teams)||[];
+  if(pairs.length<count){
+    for(const t of teams){
+      if(used.has(t.a) || used.has(t.b)) continue;
+      const a=charById(t.a), b=charById(t.b);
+      if(a && b && !used.has(a.id) && !used.has(b.id) && roster.some(r=>r.id===a.id) && roster.some(r=>r.id===b.id)){
+        pairs.push([a,b]); used.add(a.id); used.add(b.id); break;
+      }
+    }
+  }
+  // 3) A pair with heat between them, if the roster has enough relationship data
+  if(pairs.length<count){
+    const heated = roster.filter(x=>!used.has(x.id));
+    for(const a of heated){
+      const foe = heated.find(x=>x.id!==a.id && !used.has(x.id) && (rel(a.id)&&rel(a.id).heat>=25));
+      if(foe){ pairs.push([a,foe]); used.add(a.id); used.add(foe.id); break; }
+    }
+  }
+  // Fill rest with a random shuffle
+  const rest = roster.filter(x=>!used.has(x.id));
+  const shuffled=rest.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+  for(let i=0;i+1<shuffled.length && pairs.length<count;i+=2) pairs.push([shuffled[i],shuffled[i+1]]);
+  return pairs;
+}
 function nightCardHTML(o,res){
   if(o.ppv) return '';   // PPVs get their own bigger card
   const me = myPromo();
   const roster = houseRoster(me.id).filter(x=>x.id!==o.oppId);
   if(roster.length<4) return '';
-  const shuffled = roster.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
-  const pairs=[]; for(let i=0;i+1<shuffled.length && pairs.length<2;i+=2) pairs.push([shuffled[i],shuffled[i+1]]);
+  const pairs = pickUndercardPairs(o, roster, 2);
   const under = pairs.map(([a,b])=>{
     const q = 42 + Math.floor(rnd()*30);
     const winner = rnd()<0.5 ? a : b;
     const loser  = winner===a ? b : a;
-    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> beat <span class="ppv-l">${loser.name}</span> <span class="ppv-s">${starStr(q)}★</span></div>`;
+    const flavor = a.debut||b.debut ? ' <span class="hint">(debut)</span>' : '';
+    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> beat <span class="ppv-l">${loser.name}</span>${flavor} <span class="ppv-s">${starStr(q)}★</span></div>`;
   }).join('');
   return `<div class="ppvcard nightcard">
     <div class="ppv-k">Also on tonight's show</div>
@@ -7013,10 +7073,8 @@ function ppvCardHTML(o,res){
   if(!o.ppv) return '';
   const me = myPromo();
   const roster = houseRoster(me.id).filter(x=>x.id!==o.oppId);
-  // pick a handful of pairs (up to 3)
-  const shuffled = roster.slice(); for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
-  const pairs = [];
-  for(let i=0;i+1<shuffled.length && pairs.length<3;i+=2) pairs.push([shuffled[i],shuffled[i+1]]);
+  // Smart undercards: debut, tag team, heat pair, then random fill.
+  const pairs = pickUndercardPairs(o, roster, 3);
   // each undercard match gets a stipulation-flavoured outcome and a star rating
   const undercards = pairs.map(([a,b])=>{
     const q = 45 + Math.floor(rnd()*40);
@@ -7624,7 +7682,7 @@ function rookieMeetEvent(ch){
   const opts=[
     {n:'Shake their hand',d:'Welcome them to the room.',fx:{respect:14,pop:1},say:'You shake their hand and say the name back to them. They will remember that.'},
     {n:'Size them up',d:'Give them the veteran look.',fx:{respect:6,heat:2},say:'You look them up and down and say nothing. It works both ways.'},
-    {n:'Test them right there',d:'Run a spot in the empty ring.',fx:{respect:10,cond:-3,ps:1},say:'You take them to the ring for ten minutes. They watch every step you make.'},
+    {n:'Test them right there',d:'Run a spot in the empty ring.',fx:{respect:10,cond:-3,ps:1,mentee:true},say:'You take them to the ring for ten minutes. They watch every step you make.'},
     {n:'Ignore them',d:'Not your problem.',fx:{respect:-8},say:'You walk past. They notice. The room notices.'},
   ];
   const R=rel(ch.id);
@@ -7641,6 +7699,7 @@ function rookieMeetEvent(ch){
       if(f.pop) c.pop=clamp(c.pop+f.pop,1,100);
       if(f.cond) c.cond=clamp(c.cond+f.cond);
       if(f.ps) G.w.attrs.ps=clamp((G.w.attrs.ps||30)+f.ps);
+      if(f.mentee){ R.mentee=true; c.mentees=(c.mentees||[]); if(!c.mentees.includes(ch.id)) c.mentees.push(ch.id); }
       closeModal();
       pushInboxItem({ico:pico('handshake',18),sev:'story',txt:`<b>Met ${ch.name}.</b> ${o.say}`});
       save(); renderCareer();
