@@ -2051,6 +2051,31 @@ function pressQuote(o,res,s){
     return `We sat through all ${res.time} of ${me} and ${opp} so you do not have to. You are welcome.`;
   return null;
 }
+// One-shot thresholds: OVR crossings fire a mentor voicemail if there is one,
+// and each attribute crossing 90 leaves a "the tape does not lie" line in the
+// inbox. Everything gates on c._crossed so nothing re-fires.
+function checkThresholds(c, w){
+  c._crossed = c._crossed || {};
+  const cur = ovr(w);
+  [60,70,80,90].forEach(t=>{
+    if(cur>=t && !c._crossed['ovr'+t]){
+      c._crossed['ovr'+t]=true;
+      const mentorName = (c.mentor && (MENTORS.find(m=>m.id===c.mentor)||{}).name) || null;
+      const from = mentorName ? mentorName : 'The office';
+      pushInboxItem({ico:pico('starBig',18),sev:'good',
+        txt:`<b>You crossed OVR ${t}.</b> ${from} left you a note. Three words. You know which three.`});
+    }
+  });
+  // Attribute crossings at 90
+  ATTRS.forEach(([k,label])=>{
+    const v = w.attrs[k]|0;
+    if(v>=90 && !c._crossed['attr90_'+k]){
+      c._crossed['attr90_'+k]=true;
+      pushInboxItem({ico:pico('graphUp',18),sev:'good',
+        txt:`<b>They say your ${label} has crossed 90.</b> The tape does not lie.`});
+    }
+  });
+}
 function checkMilestones(res, o){
   const c=G.car, w=G.w, n=c.rec.w+c.rec.l+c.rec.d;
   if(c.rec.w===1) award('First professional victory.',pico('star',36));
@@ -4583,6 +4608,18 @@ function renderBizPanel(){
   </div>
   ${((c.milestones||[]).length>=3 && !c.styleRefitDone)?`<div class="advice act" style="margin-top:12px;"><span class="ad-i">${pico('swap',22)}</span><span class="ad-t">Three camps deep. You could refit your working style now if you wanted a different lane.</span><button class="ad-b" onclick="openStyleRefit()">Refit style →</button></div>`:''}`;
 }
+function promptCatchphrase(){
+  const w=G.w;
+  const cur=w.catch||'';
+  modal('The bit hit.',
+    `<p class="log">${w.gimmick&&w.gimmick.name?w.gimmick.name:'Your character'} is over. What are you saying every time now?</p>
+     <input type="text" id="_catchIn" maxlength="60" style="width:100%;padding:8px 10px;font-size:14px;" value="${cur}" placeholder="Believe that.">
+     <p class="hint" style="margin-top:6px;">The line opens every promo you cut from now on.</p>`,
+    [{label:'Skip',cls:'ghost',fn:closeModal},
+     {label:'Say it',fn:()=>{ const v=(document.getElementById('_catchIn')&&document.getElementById('_catchIn').value||'').trim();
+       if(v){ w.catch=v; pushInboxItem({ico:pico('microphone',18),sev:'good',txt:`<b>Catchphrase:</b> "${v}"`}); }
+       closeModal(); save(); renderCareer(); }}]);
+}
 function openInbox(){
   const c=G.car;
   const inbox=(c.inbox||[]).slice(0,40);
@@ -6014,6 +6051,20 @@ async function runFight(){
 
     // ---- advance the story ----
     if(!MS.ended && MS.phaseBeat>=ph.beats && MS.phase<PHASES.length-1){ MS.phase++; MS.phaseBeat=0; }
+    // ---- time-limit draw on top-of-the-card singles/tag stips ----
+    // Only real time-limit stips announce them; a plain singles Main Event or
+    // title match that runs way long ends as a time-limit draw the way real
+    // wrestling handles it. Marquee/climb/rumble stips do their own thing.
+    if(!MS.ended && MS.clock>=15*60 && (o.stakes==='title'||o.stakes==='defense'||o.stakes==='tag_defense')){
+      const rl=stipRules(o);
+      if(rl && !rl.marquee && !rl.ends.includes('climb') && rl.ends.includes('pin')){
+        await callout('TIME LIMIT');
+        fLog(`<span class="say">The bell. The referee waves it off. Fifteen minutes and both wrestlers stood.</span>`);
+        commitFinish({type:'nc',by:null,reason:'time-limit draw'});
+        MS.ended=true;
+        return endFight(null);
+      }
+    }
     // ---- the bell can beat you ----
     // Matches never end in a draw. If the finish stretch has run wildly long,
     // force somebody to lose: whoever is behind on momentum eats a pin.
@@ -6794,6 +6845,12 @@ function applyMatch(o,res){
   c.standing=clamp((c.standing||50)+standDelta);
   // ---- the character: a strong night refreshes the act, a flat one drains it ----
   if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat + (res.quality-56)*0.13 + (draw?0.2:res.win?0.8:-0.4), 0, 100);
+  // Gimmick freshness peak: once per career act, prompt for a catchphrase.
+  // The bit hit. What are you saying every time now?
+  if(w.gimmick && w.gimmick.heat>=80 && !c._catchPeak){
+    c._catchPeak = true;
+    setTimeout(()=>promptCatchphrase(), 600);
+  }
   const repGain=Math.round((res.quality*0.30+(draw?5:res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
@@ -6977,6 +7034,9 @@ function applyMatch(o,res){
     if(_tm2){ _tm2.ally.chem = clamp((_tm2.ally.chem||0) + 1 + (res.quality>=75?1:0), 0, 100); }
   }
   res.oppName=o.oppName; checkMilestones(res, o);
+  // You are ready: a mentor voicemail on the first time OVR crosses a big
+  // threshold; a color line when an individual attribute crosses 90.
+  checkThresholds(c,w);
   // Defied the odds: if Vegas had you a real underdog and you still won,
   // enshrine the scalp on the accolades wall.
   if(res.win && !res.draw){
