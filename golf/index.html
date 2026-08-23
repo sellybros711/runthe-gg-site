@@ -25607,7 +25607,12 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const holed=(showN>=total);
     if(live && curP) inner+=hvLiveShot(g,curP,small,multi.cols[cur.u]);
     else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
-    const cam=live?hvCamFor2(g,prevP):HV_CAM;
+    // H2H PLAYOFF FIX: seed the initial viewBox on the CURRENT shot's camera, not the previous
+    // one - otherwise a tight green-close-up left by the opponent's putt persists into your next
+    // shot, clipping your ball/tracer outside the frame while hvKick tweens out. Owner report:
+    // "I only see the lines of the other golfer" in the sudden-death playoff. hvKick still tweens
+    // in from the previous camera when it can, so the transition is preserved.
+    const cam=live?hvCamFor2(g,curP||prevP):HV_CAM;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
     const detailCam=hvDetailCam(camTarget, live&&!!curP);
     const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
