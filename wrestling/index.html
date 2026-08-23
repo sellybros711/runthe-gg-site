@@ -5587,10 +5587,76 @@ async function runFight(){
       const _st=myStable();
       const f=_st? {name:_st.name} : myFaction();
       const mate=(_st? stableMembers() : facMembers(myFaction())).filter(m=>m.id!==MS.o.oppId)[0];
-      if(mate){ shake(); sfx('impact'); burst(0,'INTERFERENCE!'); impact(atX('opp'),36,2); await callout(f.name.toUpperCase()+'!');
+      if(mate){ shake(); sfx('impact'); sfx('pop'); burst(0,'INTERFERENCE!'); impact(atX('opp'),36,2); await callout(f.name.toUpperCase()+'!');
         fLog(`<span class="hi">${mate.name} hits the ring. ${f.name} has your back!</span>`);
         MS.mom=clamp(MS.mom+52,-100,100); MS.opp.hp=clamp(MS.opp.hp-12); setBar('hpOpp',MS.opp.hp); setMom();
         MS.quality+=8; await sleep(420); }
+    }
+    // ---- a lone loyal ally can also save you, without a stable ----
+    // No faction or stable? A single ally with high loyalty still runs down.
+    else if(!MS.ended && !MS.ally && MS.mom<-30 && !myFaction() && !myStable() && MS.phase>=3){
+      const loyal = allies().filter(a=>a.loyalty>=70 && a.id!==MS.o.oppId);
+      if(loyal.length && rnd()<0.24){
+        MS.ally=true;
+        const a = loyal[0], ch = charById(a.id);
+        if(ch){
+          shake(); sfx('pop'); sfx('impact'); burst(0,'RINGSIDE!'); impact(atX('opp'),34,2);
+          await callout(ch.name.toUpperCase()+' AT RINGSIDE');
+          fLog(`<span class="hi">${ch.name} sprints down and pulls the referee's eye. Your window opens.</span>`);
+          MS.mom=clamp(MS.mom+40,-100,100); MS.opp.hp=clamp(MS.opp.hp-8); setBar('hpOpp',MS.opp.hp); setMom();
+          MS.quality+=5;
+          nudgeLoyalty(a.id, 4);
+          await sleep(420);
+        }
+      }
+    }
+    // ---- dirty finish: a heel down late can reach for the belt ----
+    // Only in a match with a referee (no hardcore/lms), only when you are
+    // losing late, and only if you work heel. Wins ugly, real character cost.
+    if(!MS.ended && !MS.dirty && G.w.align==='heel' && ph.id==='stretch'
+       && MS.mom<-40 && MS.opp.hp>40 && !stipRules(o).noDQ && rnd()<0.30){
+      MS.dirty=true;
+      const pick = await decide('REFEREE IS TURNED.','A dirty window is open. What do you call?',[
+        {name:'Swing the title belt', desc:'Win it right now. It costs your popularity.', p:0.85, kind:'belt'},
+        {name:'Thumb to the eye',     desc:'Small edge, no big consequence.',              p:0.68, kind:'thumb'},
+        {name:'Stay clean',           desc:'Roll with it. No shortcut.',                   p:1.00, kind:'clean'},
+      ]);
+      const ok = rnd() < pick.p;
+      if(pick.kind==='belt'){
+        if(ok){
+          sfx('impact'); shake();
+          fLog(`<span class="hi">The belt lands flush. ${MS.opp.name} is out. You slide the cover in.</span>`);
+          MS.opp.hp=0; setBar('hpOpp',0); MS.mom=100; setMom();
+          MS.quality-=4;
+          G.car.pop=clamp(G.car.pop-3,1,100);
+          G.car.reaction=clamp((G.car.reaction||G.car.pop)+8,0,100);
+          commitFinish({type:'pin',by:true,move:'a belt shot behind the ref',fin:false});
+          MS.ended=true;
+          await sleep(360);
+          return endFight(true);
+        } else {
+          fLog(`<span class="bad">The referee turned back too fast. The bell rings and it is over.</span>`);
+          commitFinish({type:'dq',by:false,reason:'caught with the belt'});
+          MS.ended=true;
+          await sleep(360);
+          return endFight(false);
+        }
+      } else if(pick.kind==='thumb'){
+        sfx('impact');
+        if(ok){
+          fLog(`<span class="say">Thumb to the eye. ${MS.opp.name} staggers.</span>`);
+          MS.mom=clamp(MS.mom+22,-100,100); setMom();
+          MS.opp.hp=clamp(MS.opp.hp-6); setBar('hpOpp',MS.opp.hp);
+          MS.quality+=1;
+        } else {
+          fLog(`<span class="bad">The referee caught it. Warning issued, momentum lost.</span>`);
+          MS.mom=clamp(MS.mom-6,-100,100); setMom();
+        }
+      } else {
+        fLog(`<span class="say">You stay on it clean. The referee turns back.</span>`);
+        MS.quality+=2;
+        const R=rel(o.oppId); R.respect=clamp(R.respect+4,0,100);
+      }
     }
 
     // ---- the finish is attempted, not accumulated ----
@@ -6925,7 +6991,20 @@ async function runRumble(o){
     fLog(`<span class="hi">${by&&by.name||'Someone'}</span> dumps <b>${victim.name}</b> over the top. (${survivors.length} left)`);
     if(iElim){ MS.quality+=3; MS.decWon++; MS.decisions++; sfx('pop'); }
     else { MS.decisions++; sfx('impact'); }
-    await sleep(360);
+    // Once per Battle Royal, your manager at ringside helps eliminate someone
+    // else for you. Small assist, big roar. Only if you have not been dumped.
+    if(!MS.mgrElim && myManager() && survivors.some(x=>x.you) && survivors.length>3 && rnd()<0.35){
+      MS.mgrElim = true;
+      const nonMe2 = survivors.filter(x=>!x.you);
+      if(nonMe2.length){
+        const dumped = nonMe2[Math.floor(rnd()*nonMe2.length)];
+        survivors = survivors.filter(x=>x.id!==dumped.id);
+        sfx('pop');
+        fLog(`<span class="hi">${myManager().name} yanks <b>${dumped.name}</b>'s foot off the apron. Over the top. Gone. (${survivors.length} left)</span>`);
+        MS.quality+=2; MS.decWon++; MS.decisions++;
+        await sleep(320);
+      }
+    }
   }
   // final two
   const other = survivors.find(x=>!x.you);
@@ -9321,9 +9400,20 @@ async function pmFinish(suppressPop){
       pmLog(`<span class="bad">The music cuts. <b>${rc.name}</b>'s music hits. They are marching down the aisle.</span>`);
       await sleep(600);
       pmLog(`<span class="say">"${(rc.lines.taunt[0]||'This is not about you tonight.')}"</span>`);
-      R.heat=clamp(R.heat+10,0,100); advanceStory();
-      c.mom=clamp(c.mom-8);
-      pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>${rc.name} interrupted your promo.</b> Bad blood spikes.`});
+      // If you have a manager, they can get in front of the rival and eat the
+      // hit for you: you keep the segment, they take the loyalty ding.
+      const mgr = myManager();
+      if(mgr && rnd()<0.55){
+        sfx('impact');
+        pmLog(`<span class="hi">${mgr.name} gets in front of you and takes ${rc.name}'s first shot. You get out of there clean.</span>`);
+        nudgeLoyalty(mgr.id, -6);
+        R.heat=clamp(R.heat+8,0,100);
+        pushInboxItem({ico:pico('handshake',18),sev:'info',txt:`<b>${mgr.name} ate a shot for you.</b> Loyalty took a hit; the segment stayed yours.`});
+      } else {
+        R.heat=clamp(R.heat+10,0,100); advanceStory();
+        c.mom=clamp(c.mom-8);
+        pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>${rc.name} interrupted your promo.</b> Bad blood spikes.`});
+      }
     }
   }
   await sleep(700);
