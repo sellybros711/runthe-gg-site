@@ -16385,3 +16385,61 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - **Tunable in one place:** `RESTS_PER_SEASON` (currently 4). The anchor list lives in
   `eventSkippable`; add a new event category by adding one line. Card copy in the confirm overlay
   and summary card can be reworded without touching the mechanic.
+
+### CLUB PROGRESSION: your clubs get sharper with reps (owner: green-lit as the audit's #4 pick —
+### the last outstanding item, completing all five top gaps from the Career Mode Canon study)
+- **The gap this closes:** the canon career modes all give equipment a story — the driver you've
+  hit a thousand times is different from the one out of the box. Our clubs were static: whatever
+  boost the catalog set is what you always got, forever. Now the SET you play WITH earns reps
+  every event you tee it up, and levels up over a career into a genuinely sharper club.
+- **The mechanic in one paragraph.** `S.career.clubReps` is a `{clubId: reps}` map on the career
+  object. `accrueClubRep()` bumps the equipped `S.look.club` by one, fired from `finalizeEvent`
+  at the top — gated on `ce.players.some(o=>o.p && o.p.you)`, so a rest week (which strips YOU
+  from the field before finalizeEvent per the CS-era rest-week hook) correctly grants no reps.
+  `clubLevel(id) = min(9, floor(reps/5))`. `clubLevelBonus(id)` returns `{stat, amount, level}`
+  at levels 3/6/9 with amounts 1/2/3, targeting the club's PRIMARY boost stat (the biggest
+  absolute value in its `b` object — driver → dist, wand → put, sandwedge → bnk, etc). The bonus
+  is added into `bagBoostRows()`'s returned boost object, so it flows through the SAME path the
+  base boost already takes: `accBoost() → buildPlayer() → OVR + sim`. Real effect, not decorative.
+- **Numbers were chosen for a REACHABLE-but-earned feel.** 5 reps per level × 9 levels = 45 reps
+  to max, which is ~4 seasons at the typical 12-17 events/year the player actually tees up
+  (rest weeks + team cups + missed cuts on the Frontier path don't count). Level 3 unlocks the
+  first bonus (~15 events); a maxed set is a full career's play with one favourite bag. The +1/
+  +2/+3 curve is small on purpose — it's a compounding reward for loyalty, not a shortcut past
+  the shop's flagship boost clubs (which start at +3/+4/+5 on their primary stat).
+- **One entry point** (`finalizeEvent`) and **one display point** (a "Your Clubs" card at the
+  bottom of the Records tab). The card renders one row per club with reps, sorted desc; the
+  currently-equipped club is highlighted with a gold ring + teal tint; each row shows level (L0-
+  L9), a progress bar to the next level, and the active bonus (or the next milestone if none
+  fires yet). No card at all on a fresh account with no reps — the whole thing appears the
+  moment you finish your first event, so it introduces itself organically rather than sitting
+  empty asking to be earned.
+- **Composes with everything already built.** The CS-era gear cap (`ACC_TOTAL_CAP=28`,
+  `ACC_SKILL_CAP=6`) still clamps the total boost, so a maxed set can't stack past the cap when
+  combined with cosmetics — verified with a live test that pushed both bags together and hit
+  the ceiling exactly. `bagBoostRows` already gates on `SHOP_ENABLED`, so the whole system
+  correctly stays inert if that ever flips. Daily/circuit both skip in `accrueClubRep()`.
+- **The one detail worth knowing.** `S.career.clubReps` is a new field, so a legacy save that
+  predates this pass has no reps — first event on load initialises it via `= S.career.clubReps
+  || {}`. Nobody loses anything, and nobody retroactively GAINS anything either (an in-progress
+  career at year 20 starts collecting reps from where it is, not from where it's been). Feels
+  right — the mechanic exists going forward, so the reward should too.
+- **Verified: 23 checks pass, 0 page errors.** Module + constants right; level math correct
+  across the range (0/2/5/14/25/44/45 → 0/0/1/2/5/8/9); bonus emerges at 3, escalates at 6/9,
+  primary stat = biggest boost (driver → dist verified); accrue bumps the equipped club and no
+  others; daily + no-career + null-look all no-op without crashing; bagBoostRows returns the
+  boosted club with the level bonus stacked on top of the base; a full simulated season through
+  finishSeasonHeadless accrued 17 reps on the driver over 21 scheduled events (rest weeks +
+  team cups correctly not counting); the Your Clubs card renders on the Records tab with
+  section header, correct row count per club with reps, equipped-row highlighted, level chip
+  reading L4 on a 22-rep driver, +1 DRV bonus chip visible; fresh account (0 reps) → no card.
+- **Regressions all green:** clubs 23, rest 37, rival 17, records 24, goals 25, daily_glitch 5,
+  circuit 14, morris 16 — **161 total, 0 page errors.** Baseline crashes on `clubLevel is not
+  defined` — real discrimination.
+- **All five top gaps from the Career Mode Canon study are now shipped:** Season Goals (#1),
+  Records Book (#2), Schedule Agency/rest weeks (#3), **Club Progression (#4)**, Named Opening
+  Rival (#5). The audit's top-5 recommendations, done in a single session.
+- **Tunable in one place.** `CLUB_REPS_PER_LEVEL` (currently 5) and `CLUB_LEVEL_CAP` (currently
+  9) set the pace; the +1/+2/+3 curve is one ternary in `clubLevelBonus`. The card copy + row
+  layout live in `clubProgressCardHTML`. Add a wins-based bonus, a "your career's most-played
+  set" trophy, or a per-club achievement — the reps table is right there.

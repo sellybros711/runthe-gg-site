@@ -2192,6 +2192,23 @@ window.GA_ID='G-L29P5MRWKE';
   .restcard-count{font-family:var(--mono); font-weight:800; font-size:11.5px; color:var(--oncard); font-variant-numeric:tabular-nums}
   .restcard-list{font-size:13px; color:var(--muted); line-height:1.45}
   .restcard-list b{color:var(--oncard); font-weight:600}
+  /* CLUB PROGRESSION — each set of clubs you've equipped accumulates reps as you play. Level up
+     grants a small bonus to that set's primary boost stat. Lives in the Records tab under a
+     "Your Clubs" heading, one row per set. Highlighted row = currently equipped. */
+  .clubprog{display:flex; flex-direction:column; gap:5px; margin:6px 0 4px}
+  .clubprog-row{display:grid; grid-template-columns:1fr 90px 60px; gap:9px; align-items:center;
+    padding:8px 11px; background:var(--panel); border:1px solid var(--line); border-radius:9px; font-family:var(--body)}
+  .clubprog-row.equipped{background:linear-gradient(180deg,rgba(22,181,166,.16),rgba(22,181,166,.04)); border-color:#16b5a6}
+  .clubprog-nm{font:700 13.5px/1.15 var(--body); color:var(--oncard); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .clubprog-row.equipped .clubprog-nm{color:#4fe0d0}
+  .clubprog-sub{font-size:10.5px; color:var(--muted); margin-top:2px; letter-spacing:.03em}
+  .clubprog-row.equipped .clubprog-sub{color:#8fe0c4}
+  .clubprog-bar{height:6px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; margin-top:5px}
+  .clubprog-bar>span{display:block; height:100%; background:linear-gradient(90deg,#16b5a6,#4fe0d0); border-radius:3px}
+  .clubprog-lvl{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--oncard); font-variant-numeric:tabular-nums; text-align:right}
+  .clubprog-row.equipped .clubprog-lvl{color:var(--gold)}
+  .clubprog-bonus{font-family:var(--mono); font-weight:800; font-size:12px; color:#35d6a0; text-align:right; font-variant-numeric:tabular-nums}
+  .clubprog-bonus.pending{color:var(--muted)}
   .sstat .v.gold{color:var(--gold); font-size:22px}
   /* CS264: Career Hub dashboard - franchise-mode banner (avatar · name · year/age + stats) + season event rail */
   .careerbanner{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px; padding:12px 15px;
@@ -9154,7 +9171,12 @@ function bagSetActiveTier(club,tier){ if(!S.look) return; const m=S.look.bagTier
 // accBoost()'s cosmetic+club sum and the "CLUBS" breakdown group both keep working unchanged.
 function bagBoostRows(){ const rows=[]; if(!SHOP_ENABLED) return rows;
   const id=normClub((S.look&&S.look.club)||'driver'); const b=cosBoost('club',id);
-  if(b){ const c=CLUBS_BY[id]; rows.push({club:id,name:(c&&c.name)||id,b}); } return rows; }
+  if(b){
+    // Club Progression: reps make your equipped club sharper over time. +1 at Lv 3, +2 at Lv 6, +3 at Lv 9 on the club's primary stat.
+    const bonus=clubLevelBonus(id); const bb=Object.assign({},b);
+    if(bonus){ bb[bonus.stat]=(bb[bonus.stat]||0)+bonus.amount; }
+    const c=CLUBS_BY[id]; rows.push({club:id,name:(c&&c.name)||id,b:bb});
+  } return rows; }
 function bagBoost(){ const o={}; bagBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
 function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
@@ -10135,6 +10157,7 @@ function recordsTabHTML(){
     <h2 style="margin:6px 0 8px">The Majors Leaderboard</h2>
     ${recordsMajorsHTML()}
     ${recordsMilestonesHTML()}
+    ${clubProgressCardHTML()}
     <div class="small muted" style="margin-top:12px;line-height:1.55;text-align:center">More categories to come — wins by tour and career longevity. For now the record that decides golf history is majors, so majors leads.</div>`;
 }
 
@@ -10326,6 +10349,82 @@ function overlayConfirmRest(screen){
   ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.goldfill').onclick=()=>{ S.overlay=null; restThisWeek(); };
   screen.appendChild(ov);
+}
+
+/* ══════ CLUB PROGRESSION — clubs get sharper with reps ══════════════════════════════════════════
+   The audit's #4 gap and last of the top-5. Every canon career mode since PGA 2K25 has "gear that
+   levels up with use" — a second progression axis so the shop isn't the only way to get better.
+   Ours: your equipped CLUB SET accumulates reps as you play events, level-ups grant a small +N to
+   the set's primary boost stat, capped so it stays a chase and not an infinite-power ramp.
+
+   One entry point: reps accrue at finalizeEvent (only if you were actually in the field — rest
+   weeks strip you first, so those correctly grant no reps). One display point: a "Your Clubs" card
+   at the bottom of the Records tab. One bonus point: bagBoostRows applies the level bonus, which
+   flows through accBoost → buildPlayer → OVR + sim, so the bonus is real, not decorative.
+
+   Numbers were chosen for a REACHABLE-but-earned feel:
+   - 5 reps per level (about 4 seasons to max at 45 reps)
+   - Cap at level 9
+   - Level 3 → +1, level 6 → +2, level 9 → +3 to the club's PRIMARY boost stat
+   The bonus is small on purpose — it's a compounding reward, not a shortcut past the shop.
+*/
+const CLUB_REPS_PER_LEVEL = 5;
+const CLUB_LEVEL_CAP = 9;
+
+function clubRepsFor(id){ if(!S.career || !id) return 0; const m = S.career.clubReps; return (m && m[id]) || 0; }
+function clubLevel(id){ return Math.min(CLUB_LEVEL_CAP, Math.floor(clubRepsFor(id) / CLUB_REPS_PER_LEVEL)); }
+// {stat, amount} — null until level 3, +1/+2/+3 at 3/6/9. Primary stat = largest absolute boost value.
+function clubLevelBonus(id){
+  const lvl = clubLevel(id); if(lvl < 3) return null;
+  const club = (typeof CLUBS_BY === 'object' && CLUBS_BY) ? CLUBS_BY[id] : null;
+  if(!club || !club.b) return null;
+  let primary = null, best = 0;
+  for(const k in club.b){ const v = Math.abs(club.b[k]); if(v > best){ best = v; primary = k; } }
+  if(!primary) return null;
+  const amount = lvl >= 9 ? 3 : lvl >= 6 ? 2 : 1;
+  return { stat: primary, amount: amount, level: lvl };
+}
+// Called once per PLAYED event (from finalizeEvent, gated on "you were in the field"). Regular
+// career only; daily and circuit skipped upstream.
+function accrueClubRep(){
+  if(S.daily || !S.career) return;
+  const id = S.look && S.look.club; if(!id) return;
+  S.career.clubReps = S.career.clubReps || {};
+  S.career.clubReps[id] = (S.career.clubReps[id] || 0) + 1;
+}
+
+// Records tab card — one row per club set you've played with, sorted by reps desc. Currently
+// equipped row is highlighted. Shows level, rep progress within the current level, and the
+// active bonus (or the next milestone if none is active yet).
+function clubProgressCardHTML(){
+  if(!S.career || !S.career.clubReps || !Object.keys(S.career.clubReps).length) return '';
+  const equipped = S.look && S.look.club;
+  const entries = Object.entries(S.career.clubReps).map(([id, reps]) => ({id, reps})).sort((a,b) => b.reps - a.reps);
+  const rows = entries.map(({id, reps}) => {
+    const club = (typeof CLUBS_BY === 'object' && CLUBS_BY) ? CLUBS_BY[id] : null;
+    if(!club) return '';
+    const lvl = clubLevel(id);
+    const inLevel = reps % CLUB_REPS_PER_LEVEL;
+    const pct = lvl >= CLUB_LEVEL_CAP ? 100 : Math.round((inLevel / CLUB_REPS_PER_LEVEL) * 100);
+    const bonus = clubLevelBonus(id);
+    const bonusTxt = bonus ? `+${bonus.amount} ${(typeof RSHORT === 'object' && RSHORT[bonus.stat]) || bonus.stat}` :
+                     lvl === 0 ? `Level 3 · +1` : `Level ${lvl < 3 ? 3 : lvl < 6 ? 6 : 9} · +${lvl < 3 ? 1 : lvl < 6 ? 2 : 3}`;
+    const subLine = lvl >= CLUB_LEVEL_CAP ? 'Maxed · ' + reps + ' reps' :
+                    `${reps} reps · ${CLUB_REPS_PER_LEVEL - inLevel} to Level ${lvl + 1}`;
+    const isEq = (id === equipped);
+    return `<div class="clubprog-row${isEq?' equipped':''}">
+      <div>
+        <div class="clubprog-nm">${esc(club.name)}${isEq?' · equipped':''}</div>
+        <div class="clubprog-sub">${subLine}</div>
+        <div class="clubprog-bar"><span style="width:${pct}%"></span></div>
+      </div>
+      <div class="clubprog-lvl">L${lvl}</div>
+      <div class="clubprog-bonus${bonus?'':' pending'}">${bonusTxt}</div>
+    </div>`;
+  }).join('');
+  return `<h2 style="margin:18px 0 8px">Your Clubs</h2>
+    <p class="small muted" style="margin:0 0 10px;line-height:1.55">Every event you tee it up with a set of clubs, it earns a rep. Level 3 unlocks a +1 to that set's primary stat; level 6, +2; level 9, +3. The bonus stacks on top of the club's normal boost, so a maxed set is genuinely sharper than a new one.</p>
+    <div class="clubprog">${rows}</div>`;
 }
 
 function overlayRecord(screen){
@@ -20171,6 +20270,10 @@ function assignTies(list,soloFirst){
 }
 function finalizeEvent(){
   const ce=S.curEvt, evt=ce.evt;
+  // Club Progression: bump reps for the equipped club iff YOU actually teed it up this event.
+  // Rest weeks strip you out of ce.players before we reach finalizeEvent, so this correctly
+  // only fires for events you played (never on a rested week).
+  try{ if(ce.players && ce.players.some(o=>o.p && o.p.you)) accrueClubRep(); }catch(e){}
   const made=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
   const missed=ce.players.filter(o=>!o.made).sort((a,b)=>a.total-b.total);
   // a tie for the LEAD (same final score) goes to a sudden-death playoff, golf never co-crowns
