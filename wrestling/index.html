@@ -4990,6 +4990,21 @@ const ST={W:760,home:130,close:80};
 const REF_LOOK={ skin:'#d29b6e', hair:'#241a12', gear:'#F4E8DB', trim:'#1e1e24',
   hairStyle:'buzz', face:'none', mask:'none', attire:'ref', boots:'sneak', acc:'none',
   pattern:'solid', tattoo:'none', aura:'none', build:'lean' };
+// Referees have personalities. `kick` bumps the near-fall kickout window,
+// `tolerate` widens what the ref will let go before a DQ, `count` speeds or
+// slows the ten-count for a count-out. Deterministic per week so the ref stays
+// consistent across a single show but rotates over a season.
+const REFS = [
+  {id:'monk',  name:'Ref: Milt Monk',    trait:'tight',    desc:'Calls it right down the middle. A shove is a shove.', kick:0,      tolerate:-0.20, count:0    },
+  {id:'brix',  name:'Ref: J.T. Brix',    trait:'lenient',  desc:'Lets a lot go before he calls for the bell.',         kick:0,      tolerate:+0.30, count:0    },
+  {id:'gale',  name:'Ref: Ann Gale',     trait:'fast',     desc:'Counts fast. A pin from her ends things quick.',      kick:-0.10,  tolerate:0,     count:-0.2 },
+  {id:'stone', name:'Ref: Cully Stone',  trait:'slow',     desc:'Counts slow. Two and a nine on almost every fall.',   kick:+0.10,  tolerate:0,     count:+0.2 },
+  {id:'novak', name:'Ref: Vera Novak',   trait:'sharp',    desc:'Sees everything. Do not try anything cute.',          kick:0,      tolerate:-0.30, count:0    },
+];
+function refFor(week){
+  const idx = (week + G.car.year*3) % REFS.length;
+  return REFS[idx];
+}
 function stageInit(arenaId){
   const A=$(arenaId||'arena'); ST.W=A.clientWidth||760;
   ST.home=Math.round(ST.W*0.16);
@@ -5445,6 +5460,9 @@ async function startFight(o){
        usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null,
        phase:0, phaseBeat:0, stretch:0, covers:0, nearFalls:0, finisherHit:0,
        clock:0, ally:false, mgrHit:false, hotTag:false, runIn:false,
+       // Referee for the night. Deterministic by week so the crowd sees the
+       // same official for the whole show; rotates over the season.
+       ref: refFor(G.car.week),
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   chooseTarget(MS.me); chooseTarget(MS.opp);
@@ -5464,7 +5482,7 @@ async function startFight(o){
   const _tm = (o.tag && myTeam()) ? myTeam() : null;
   const _tmTag = _tm ? ` · ${_tm.name.toUpperCase()}` : '';
   $('fStip').innerHTML=(o.stakes==='title'?beltIco+' TITLE MATCH · ':o.stakes==='defense'?beltIco+' TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase()+_tmTag;
-  $('fRules').textContent=stipRules(o).desc;
+  $('fRules').textContent=stipRules(o).desc + (MS.ref?` · ${MS.ref.name} (${MS.ref.trait})`:'');
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
   const startGen=MS.gen;
@@ -5580,6 +5598,34 @@ async function runFight(){
     renderLimbs();
     if(MS.beat%3===0) refDrift();
 
+    // ---- heels get a cheap-heat spot; faces get a crowd-rally spot ----
+    // Alignment-specific mid-match beat, once per match. The heel spot
+    // (rake the eyes / mouth off the ref) trades quality for reaction; the
+    // face spot (point at the crowd / clap along) trades a beat for momentum.
+    if(!MS.ended && !MS.alignSpot && ph.id==='heat' && MS.phaseBeat===2 && G.w.gimmick){
+      if(G.w.align==='heel' && rnd()<0.30){
+        MS.alignSpot=true;
+        sfx('boo');
+        fLog(`<span class="say">You mouth off to the referee behind their back. The crowd hates it.</span>`);
+        G.car.reaction = clamp((G.car.reaction||G.car.pop)+4, 0, 100);
+        MS.quality-=1;
+      } else if(G.w.align==='face' && rnd()<0.30){
+        MS.alignSpot=true;
+        sfx('pop');
+        fLog(`<span class="hi">You point at the crowd and clap along. The building answers.</span>`);
+        MS.mom=clamp(MS.mom+10,-100,100); setMom();
+        G.car.reaction = clamp((G.car.reaction||G.car.pop)+3, 0, 100);
+        MS.quality+=1;
+      }
+    }
+    // ---- commercial break beat between phases in mid-card+ matches ----
+    // A short "off camera" narration on the transition from heat to stretch,
+    // once per match, only when the office is on TV worth cutting to.
+    if(!MS.ended && !MS.commBreak && MS.phaseBeat===0 && ph.id==='stretch' && tierIdx()>=2 && rnd()<0.50){
+      MS.commBreak = true;
+      fLog(`<span class="hint">We are back from commercial. Both wrestlers are back on their feet.</span>`);
+      MS.me.hp=clamp(MS.me.hp+4); MS.opp.hp=clamp(MS.opp.hp+4); setBar('hpMe',MS.me.hp); setBar('hpOpp',MS.opp.hp);
+    }
     // ---- hot tag: in a tag match, your partner tags in and cleans house ----
     // Chemistry between you two tightens the timing; the more matches you've
     // worked together, the more reliable the hot tag lands and the bigger the pop.
@@ -5643,9 +5689,10 @@ async function runFight(){
     }
     // ---- self-inflicted DQ: taking it too far in a match with a ref ----
     // Only fires when you swung wildly outside your alignment and the rules
-    // do not permit weapons. Adds an escape hatch for badly losing matches at
-    // a real cost.
-    if(!MS.ended && !stipRules(o).noDQ && !stipRules(o).lenient && MS.mom<-40 && MS.opp.hp>50 && rnd()<0.02){
+    // do not permit weapons. Tolerance from the referee's personality
+    // decides how far you can push before the bell.
+    const _tol = (MS.ref && MS.ref.tolerate) || 0;
+    if(!MS.ended && !stipRules(o).noDQ && !stipRules(o).lenient && MS.mom<-40 && MS.opp.hp>50 && rnd()<Math.max(0, 0.02 - _tol*0.03)){
       await callout('DISQUALIFIED');
       fLog(`<span class="bad">You crossed the line. The referee had no choice.</span>`);
       commitFinish({type:'dq',by:false,reason:'a low blow behind the ref'});
