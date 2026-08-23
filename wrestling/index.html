@@ -5376,6 +5376,11 @@ async function startFight(o){
   if(G.car.booking&&G.car.booking.o===o&&G.car.booking.studied){ MS.mom=8; MS.quality+=4; MS.studied=true; }
   // sparring earlier in the week: a small edge that the announcers won't mention
   if(G.car.booking&&G.car.booking.sparred){ MS.quality+=3; MS.sparred=true; }
+  // A guaranteed cash-in (Battle Royal, MITB) walks out with the crowd already
+  // on the challenger. Real momentum bump, and the video package leans into it.
+  const shot = G.car.titleShot;
+  const guaranteed = (o.stakes==='title' && ((shot && shot.guaranteed) || o.guaranteed));
+  if(guaranteed){ MS.mom = Math.max(MS.mom||0, 18); MS.quality += 4; MS.guaranteed = true; }
   const oc=charById(o.oppId);
   $('fMeName').textContent=G.w.name; $('fOppName').textContent=o.oppName;
   $('fMeSub').textContent='OVR '+meOvr; $('fOppSub').textContent='OVR '+o.oppOvr;
@@ -6513,7 +6518,9 @@ function applyMatch(o,res){
     // weekly card slot.
     c.rumbleCooldown = c.year*100 + c.week + 42;
     if(res.win){
-      c.titleShot={promoId:myPromo().id, from:'the Battle Royal', y:c.year, w:c.week};
+      // "Guaranteed" is not a promise the office breaks. When this shot fires,
+      // the match starts with the crowd on your side and a real momentum bump.
+      c.titleShot={promoId:myPromo().id, from:'the Battle Royal', y:c.year, w:c.week, guaranteed:true};
       pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>You won the Battle Royal.</b> Guaranteed title shot on the books.`});
       G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won the Battle Royal'});
     }
@@ -6580,6 +6587,24 @@ function applyMatch(o,res){
   c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
   G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title'});
   if(G.hist.length>120) G.hist.pop();
+  // Career-defining rival: track the opponent who has produced the most matches
+  // with you at 4-star and up. Read by the HOF induction and the awards ribbon.
+  if(res.quality>=80 && o.oppId){
+    c.rivalScore = c.rivalScore || {};
+    c.rivalScore[o.oppId] = (c.rivalScore[o.oppId]||0) + 1;
+    const best = Object.keys(c.rivalScore).sort((a,b)=>c.rivalScore[b]-c.rivalScore[a])[0];
+    if(c.rivalScore[best] >= 3) c.definingRivalId = best;
+  }
+  // Career-best match: a 5.00 star (quality 95+) match is a genuine milestone.
+  // Enshrine it in the moments queue and mark it on the record so the HOF
+  // highlight reel knows to put it first.
+  if(res.quality>=95 && !c.careerBest){
+    c.careerBest = {y:c.year,w:c.week,opp:o.oppName,q:res.quality,stip:o.stipLabel};
+    queueMoment(pico('starBig',36), `A career-best match against ${o.oppName}.`, {kick:'Five-Star Classic'});
+  } else if(c.careerBest && res.quality > c.careerBest.q){
+    c.careerBest = {y:c.year,w:c.week,opp:o.oppName,q:res.quality,stip:o.stipLabel};
+    queueMoment(pico('starBig',36), `A new career-best against ${o.oppName}.`, {kick:'Better Than The Last One'});
+  }
   res.coins=coins; res.repGain=repGain; res.popGain=popGain; res.xp=xp; res.unlocked=unlocked; res.titleMsg=titleMsg; res.injMsg=injMsg;
   advanceWeek();
 }
@@ -6724,7 +6749,13 @@ function renderMatch(o,res){
   const pmSlot=$('postMicSlot');
   if(pmSlot){
     const canMic = res.win && res.quality>=70 && (o.stakes==='title'||o.stakes==='defense'||o.stakes==='rivalry'||classic);
-    pmSlot.innerHTML = canMic ? `<button class="ghost" style="margin-left:8px;" onclick="postMatchMic('${o.oppId}')">${pico('microphone',14)} Grab the mic</button>` : '';
+    // Who's-next: after any Main Event win, offer a call-out that seeds the
+    // next week's story. Free, no penalty; changes what next week feels like.
+    const canNext = res.win && o.card==='Main Event' && !G.car._pendingNext;
+    let html='';
+    if(canMic) html += `<button class="ghost" style="margin-left:8px;" onclick="postMatchMic('${o.oppId}')">${pico('microphone',14)} Grab the mic</button>`;
+    if(canNext) html += `<button class="ghost" style="margin-left:8px;" onclick="askWhosNext()">${pico('star',14)} Who's next?</button>`;
+    pmSlot.innerHTML = html;
   }
   // the room celebrates with you
   if(o.stakes==='title'&&res.win) confetti(150);
@@ -6733,6 +6764,42 @@ function renderMatch(o,res){
 }
 function postMatchMic(oppId){
   beginPromo('face', oppId);
+}
+// After a Main Event win, pick who the segment sends you at next. Each choice
+// leaves a mark on next week: a story seed, a title-shot lean, a fresh callout.
+function askWhosNext(){
+  const c=G.car, me=myPromo();
+  const champId = (G.world && G.world.champions && G.world.champions[me.id]
+                   && G.world.champions[me.id].world && G.world.champions[me.id].world.holder);
+  const champ = champId ? charById(champId) : null;
+  const roster = houseRoster(me.id).filter(x=>!story()||story().charId!==x.id).sort((a,b)=>(b.over||0)-(a.over||0));
+  const contender = roster[0];
+  const opts=[];
+  if(champ && champId!==c.rivalId){
+    opts.push({l:`Point at ${champ.name}`, d:`Aim at the champion.`, fn:()=>{
+      c._pendingNext={kind:'champ', charId:champId};
+      c.titleShot = c.titleShot || {promoId:me.id, from:'called out the champion', y:c.year, w:c.week};
+      pushInboxItem({ico:pico('crown',18),sev:'good',txt:`<b>You called ${champ.name} out.</b> The office is listening; a title shot is on the books.`});
+    }});
+  }
+  if(contender){
+    opts.push({l:`Call out ${contender.name}`, d:`Start something with the next name up.`, fn:()=>{
+      if(!story() && !c.rivalId){ startStory(contender.id, 'answered your call from ringside.'); }
+      c._pendingNext={kind:'callout', charId:contender.id};
+    }});
+  }
+  opts.push({l:`Just soak it in`, d:`Let the crowd have this one.`, fn:()=>{
+    c.pop=clamp(c.pop+2,1,100); c.mom=clamp(c.mom+6);
+    c._pendingNext={kind:'soak'};
+  }});
+  const h = `<p class="log">The crowd is still on their feet. Say something that lands, or let the moment breathe.</p>
+    <div class="decgrid">${opts.map((o,i)=>`<div class="decopt" data-i="${i}"><div class="dn">${o.l}</div><div class="dd">${o.d}</div></div>`).join('')}</div>`;
+  modal('Who is next?', h, []);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const o=opts[+d.dataset.i]; closeModal(); o.fn(); save();
+    });
+  },0);
 }
 function matchStory(o,res){
   const q=res.quality, n=o.oppName, f=res.finish||{};
@@ -6757,6 +6824,7 @@ function matchStory(o,res){
 function advanceWeek(){
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
   c.week++; c.offers=null; c.booking=null; c.prep=null;   // the office starts the week fresh
+  c._pendingNext=null;                                      // "who's next" only counts for the week you called it
   // ---- the road: recovery is slower the harder you work ----
   c.cond=clamp(c.cond + (11 - sc.wear*4) - (c.hurt?3:0));
   c.mom=c.mom+(50-c.mom)*0.10;
@@ -9585,6 +9653,7 @@ function askCashIn(){
        closeModal();
        o.stakes='title'; o.card='Main Event'; o.belt=mb.belt;
        o.blurb=`Cashing in Money in the Bank: beat ${o.oppName} and the ${mb.belt} is yours.`;
+       o.guaranteed=true;   // read by startFight to boost momentum
        G.car.mitb=null;
        pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Cashing in tonight.</b> The ${mb.belt} is on the line.`});
        save(); renderCareer();
@@ -10018,12 +10087,32 @@ function renderHof(){
   const busn = Math.min(100, Math.round((c.rep||0)/40 + (c.year||1)*3));
   const chara= Math.min(100, Math.round(50 + ((c.storiesResolved||[]).length*6) + Math.min(30,(c.gimmickPast||[]).length*8)));
   const grBar=(l,v)=>`<div style="margin:8px 0;"><div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-dim);font-weight:700;">${l}</span><span class="mono" style="color:var(--cream);font-weight:800;">${v}</span></div><div class="bar gd"><i style="width:${v}%"></i></div></div>`;
-  // Career highlight reel: your five best-rated matches, in order
-  const top5 = (G.hist||[]).slice().sort((a,b)=>b.q-a.q).slice(0,5);
+  // Career highlight reel: your five best-rated matches, in order. If a
+  // career-best match is on record, pin it to the top even if the sort would
+  // put a differently-rated one first.
+  let top5 = (G.hist||[]).slice().sort((a,b)=>b.q-a.q).slice(0,5);
+  if(c.careerBest){
+    top5 = top5.filter(m=>!(m.opp===c.careerBest.opp && m.q===c.careerBest.q && m.y===c.careerBest.y));
+    top5.unshift({y:c.careerBest.y,w:c.careerBest.w,opp:c.careerBest.opp,q:c.careerBest.q,stip:c.careerBest.stip,best:true});
+    top5 = top5.slice(0,5);
+  }
+  // Career-defining rival: a name that ran through the whole story
+  const drId = c.definingRivalId;
+  const drRow = drId ? (()=>{
+    const rv = charById(drId); if(!rv) return '';
+    const meets = (G.hist||[]).filter(m=>m.opp===rv.name);
+    const wins  = meets.filter(m=>m.win).length;
+    const loss  = meets.filter(m=>m.win===false).length;
+    return `<div class="card" style="margin-top:12px;border-left:3px solid var(--gold)">
+      <div class="flab" style="margin-top:0;color:var(--gold);">Career-defining rival</div>
+      <div style="font-family:var(--display);font-size:20px;color:var(--cream);text-transform:uppercase;">${rv.name}</div>
+      <div class="hint">${meets.length} meeting${meets.length===1?'':'s'} · you lead ${wins}-${loss}</div>
+    </div>`;
+  })() : '';
   const reel = top5.length ? `<div class="card" style="margin-top:12px;">
       <div class="flab" style="margin-top:0;">Highlight reel</div>
-      ${top5.map((m,i)=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:${i?'1px dashed rgba(255,255,255,.08)':'none'};">
-        <span><b>${starsOf(m.q).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</b> vs ${m.opp}${m.stip?` <span class="hint">${m.stip}</span>`:''}</span>
+      ${top5.map((m,i)=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:${i?'1px dashed rgba(255,255,255,.08)':'none'};${m.best?'background:linear-gradient(90deg,rgba(224,179,65,.10),transparent);':''}">
+        <span><b>${starsOf(m.q).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</b>${m.best?' <span style="color:var(--gold);font-size:10px;letter-spacing:.15em;">CAREER-BEST</span>':''} vs ${m.opp}${m.stip?` <span class="hint">${m.stip}</span>`:''}</span>
         <span class="hint mono">Y${m.y}W${m.w}</span></div>`).join('')}
     </div>` : '';
   // A ribbon of year awards, newest first
@@ -10066,7 +10155,7 @@ function renderHof(){
         ['Record',`${c.rec.w}-${c.rec.l}`],['Titles',c.reigns.length],['Earnings',money(c.earnings)],
         ['Years',c.year],['Final OVR',ovr(w)],['Moves',w.moves.length]
       ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}</div>
-      ${ribbon}${belts}
+      ${drRow}${ribbon}${belts}
       <div class="row" style="margin-top:12px;">
         <button class="ghost" onclick="showLegends()">Hall of Legends (past careers)</button>
       </div>
