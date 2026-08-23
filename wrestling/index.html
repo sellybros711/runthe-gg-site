@@ -3094,6 +3094,8 @@ function offerKeepsake(hall){
     if(l.entrance)      rows.push({from:l.name, k:'entrance',       l:`${l.name} · Entrance theme`,   v:l.entrance});
     // Retired-self as manager: their name shows up at ringside in the new run.
     rows.push({from:l.name, k:'manager', l:`${l.name} · Walk with you at ringside`, v:`Manager: ${l.name}`});
+    // Family lineage: carry the name. Sets G.car.familyOf so the world knows.
+    rows.push({from:l.name, k:'family', l:`${l.name} · Carry the name`, v:`You are widely believed to be their family.`});
   });
   if(!rows.length) return;
   const cap = rows.slice(0, 10);
@@ -3111,6 +3113,11 @@ function offerKeepsake(hall){
         // Store a pending manager assignment; applied on finishCreate.
         G && G.car ? (G.car.pendingManagerName=r.from) : (window._pendingManagerName=r.from);
         toast(`${r.from} will walk with you at ringside.`);
+        return;
+      }
+      if(r.k==='family'){
+        window._pendingFamilyOf = r.from;
+        toast(`You are carrying ${r.from}'s name.`);
         return;
       }
       const inp = {finisherName:'cFinName', finisherNameB:'cFinNameB', catch:'cCatch', entrance:'cEntrance'}[r.k];
@@ -3300,6 +3307,18 @@ function finishCreate(){
   G.car.deal.weekly=dealValue(myPromo(),5,0,50);
   pushLog(`You sign a one-year developmental deal with <b>${myPromo().name}</b> at ${money(G.car.deal.weekly)}/week.`);
   initWorld();
+  // Family-lineage keepsake: the world reads you as the previous Hall
+  // wrestler's family. Purely flavor, but the news feed will name it later.
+  if(window._pendingFamilyOf){
+    G.car.familyOf = window._pendingFamilyOf;
+    pushInboxItem({ico:pico('starBig',18),sev:'good',
+      txt:`<b>They are calling you ${G.w.name}, family of ${window._pendingFamilyOf}.</b> The tape will decide the rest.`});
+    try{
+      newsPush({ico:pico('starBig',14),cat:'debut',
+        text:`<b>${G.w.name}</b>, said to be family of the Hall's <b>${window._pendingFamilyOf}</b>, debuts at ${myPromo().short}.`});
+    }catch(_e){}
+    window._pendingFamilyOf=null;
+  }
   // Retired-self keepsake: seed a phantom CHARS entry and mount them as your
   // manager for the new career. The name walks with you at ringside.
   const pendMgr = (window._pendingManagerName || (G.car && G.car.pendingManagerName));
@@ -6051,6 +6070,48 @@ async function runFight(){
 
     // ---- advance the story ----
     if(!MS.ended && MS.phaseBeat>=ph.beats && MS.phase<PHASES.length-1){ MS.phase++; MS.phaseBeat=0; }
+    // ---- the screwjob: once per career, a title defense with low standing ----
+    // can end early on a fake submission the office called. The player picks
+    // how they react in the ring afterwards, and the fallout is on the news.
+    if(!MS.ended && !MS._screwjob && !G.car._screwjobDone && o.stakes==='defense'
+       && (G.car.standing||50)<38 && ph.id==='stretch' && MS.phaseBeat>=2 && rnd()<0.06){
+      MS._screwjob = true; G.car._screwjobDone = true;
+      shake(); sfx('bell'); sfx('boo');
+      await callout('THE BELL?');
+      fLog(`<span class="bad">The referee is calling for the bell. He is saying you tapped. You did not tap.</span>`);
+      const pick = await decide('THAT WAS NOT A TAP.','What do you do next?',[
+        {name:'Sit in the ring',    desc:'Refuse to leave. Take the moment.',      p:1.0, kind:'sit'},
+        {name:'Grab a mic',         desc:'Say something the office cannot cut.',    p:0.9, kind:'mic'},
+        {name:'Hand the belt over', desc:'Take the loss on the chin, walk out.',    p:1.0, kind:'hand'},
+      ]);
+      const R=rel(o.oppId);
+      G.hi=G.hi||[]; G.hi.unshift({y:G.car.year,w:G.car.week,t:`Screwjob at ${o.ppv||myPromo().short}: you ${pick.name.toLowerCase()}`});
+      if(pick.kind==='sit'){
+        G.car.reaction = clamp((G.car.reaction||G.car.pop)+18,0,100);
+        G.car.standing = clamp((G.car.standing||50)-8);
+        R.heat = clamp(R.heat+30,0,100);
+        newsPush({ico:pico('impact',14),cat:'screwjob',text:`<b>Screwjob at ${o.ppv||myPromo().short}.</b> ${G.w.name} sat in the ring for twenty minutes.`});
+      } else if(pick.kind==='mic'){
+        G.car.reaction = clamp((G.car.reaction||G.car.pop)+22,0,100);
+        G.car.standing = clamp((G.car.standing||50)-12);
+        R.heat = clamp(R.heat+22,0,100);
+        newsPush({ico:pico('microphone',14),cat:'screwjob',text:`<b>Screwjob.</b> ${G.w.name} grabbed the mic and said things they cannot put back in the tape.`});
+      } else {
+        G.car.standing = clamp((G.car.standing||50)+4);
+        newsPush({ico:pico('handshake',14),cat:'screwjob',text:`<b>Screwjob.</b> ${G.w.name} handed the belt over and walked out.`});
+      }
+      // The belt itself: the office is calling the finish, so the reign ends.
+      const lostBelt = G.car.title;
+      if(lostBelt){
+        const r=G.car.reigns.slice().reverse().find(r=>r.title===lostBelt&&!r.lostYear);
+        if(r){ r.lostYear=G.car.year; r.lostWeek=G.car.week; r.screwjob=true; }
+        G.car.title=null; G.car.defenses=0;
+        pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>Screwjob.</b> ${lostBelt} taken from you on a fast count.`});
+      }
+      commitFinish({type:'sub',by:false,move:'a fake submission the office called'});
+      MS.ended=true;
+      return endFight(false);
+    }
     // ---- time-limit draw on top-of-the-card singles/tag stips ----
     // Only real time-limit stips announce them; a plain singles Main Event or
     // title match that runs way long ends as a time-limit draw the way real
@@ -7713,6 +7774,15 @@ function takeInjury(cats,stipMult,severityBoost){
   if(wk >= 4){
     newsPush({ico:pico('cross',14), cat:'injury',
       text:`<b>${G.w.name}</b> is out roughly ${wk} weeks with ${def.nm.toLowerCase()}. ${myPromo().short} has already started rewriting the card.`});
+  }
+  // Career-ending catastrophe: four or more chronic injuries on file and a big
+  // one just landed. The doctor said it, and you knew before he did.
+  if((c.chronic||[]).length>=4 && wk>=12 && (def.part==='Neck'||def.part==='Back')){
+    try{ queueMoment(pico('cross',36), 'The doctor said it. You knew before he did.',
+      {kick:'CAREER OVER', sub:`After a ${def.nm.toLowerCase()}, this one does not heal.`}); }catch(_e){}
+    newsPush({ico:pico('cross',14),cat:'retire',
+      text:`<b>${G.w.name} has retired.</b> One landing too many. The ${def.part.toLowerCase()} would not heal.`});
+    setTimeout(()=>retire('One landing too many. The doctor said it.'), 200);
   }
   return c.hurt;
 }
@@ -10855,8 +10925,9 @@ function renderHof(){
         ['Years',c.year],['Final OVR',ovr(w)],['Moves',w.moves.length]
       ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}</div>
       ${drRow}${ribbon}${belts}
-      <div class="row" style="margin-top:12px;">
+      <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:6px;">
         <button class="ghost" onclick="showLegends()">Hall of Legends (past careers)</button>
+        ${loadLegends().length>=2 && !c._hofClass ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="pickHofClass()">Induct another (this year's class)</button>` : ''}
       </div>
     </div>
   </div>`;
@@ -10864,6 +10935,32 @@ function renderHof(){
   // land before the Hall reads. renderCareer drains the queue elsewhere; on the
   // retirement screen there is no other draw point.
   setTimeout(()=>{ if(typeof showMoments==='function') showMoments(); }, 380);
+}
+// Pick a second inductee for this year's HOF class. Choices are the top NPCs
+// on the roster; the picked name gets a "hof:{y}" tag on their legends entry
+// (or a lightweight synthetic entry if they were never on the legends list).
+function pickHofClass(){
+  const c=G.car;
+  if(c._hofClass) return;
+  const roster = CHARS.filter(x=>x.promo===myPromoId());
+  const options = roster.slice().sort((a,b)=>(b.over||0)-(a.over||0)).slice(0,6);
+  const rows = options.map((ch,i)=>`<div class="decopt" data-i="${i}"><div class="dn">${ch.name}</div><div class="dd">${ch.nick||''} · OVR ${ch.over||55}</div></div>`).join('');
+  modal(`This year's Hall class`, `<p class="log">Every Hall class has room for one more. Pick a second inductee.</p><div class="decgrid">${rows}</div>`, [{label:'Skip',cls:'ghost',fn:closeModal}]);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const idx=+d.dataset.i, ch=options[idx]; closeModal();
+      if(!ch) return;
+      c._hofClass = {y:c.year, charId:ch.id, name:ch.name};
+      const list=loadLegends();
+      list.unshift({name:ch.name, nick:ch.nick||'', years:0, wl:'', titles:0, earnings:0, pop:ch.over||60,
+        ovr:ch.over||60, style:ch.style||'', promo:myPromo().short, retired:'Inducted by '+G.w.name,
+        yearAwards:[], trophies:[], inducted:true, grade:'B+', legacy:120,
+        at:{y:c.year,w:c.week}, inductedBy:G.w.name});
+      saveLegends(list);
+      toast(`${ch.name} inducted alongside ${G.w.name}`);
+      renderHof();
+    });
+  },0);
 }
 function showLegends(){
   const list=loadLegends();
