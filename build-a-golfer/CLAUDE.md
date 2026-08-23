@@ -16495,7 +16495,10 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   the 32, and every stage rendering with no error card — **0 page errors** throughout. Broader suites
   green (daily_glitch, rest, records, morris, circuit, clubs, rival). `goals_test` fails 3 checks
   **identically on the deployed baseline** — pre-existing stale fixture, not this change.
-- **NOT deployed to /golf** — committed + pushed to the feature branch, awaiting the owner's look at
-  the screenshots (per the deploy guardrail, and matching how the other visual redesigns were handled).
+- **DEPLOYED to /golf** (owner: "Ship it") — `main` commit `8d00479`, regenerated from
+  `build-a-golfer.html` and verified byte-identical afterward, **only `golf/index.html` touched**.
+  `main` had moved (Commish Simulator work) but left the golf file alone, so there was nothing to
+  adopt this time. No cachebust or SW bump needed: golf is one self-contained HTML and its service
+  worker is network-first for navigations, so the new build reaches players on next load.
 - Tunable: the `.brail`/`.bstake`/`.bhero`/`.bres`/`.broute` CSS block, the copy in `bracketStakes`,
   and `bracketExitFinish` if the payout curve ever changes shape.
