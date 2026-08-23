@@ -261,6 +261,13 @@
   .ringback svg,.ringfront svg{width:100%;height:100%;display:block;}
   .arena .ringback,.arena .ringfront{height:78%;}
   .arena .ringback{z-index:1;} .arena .ringfront{z-index:4;}
+  /* The steel cage: four bar columns on the back apron, a chain-link mesh
+     overlay across the front, and a bar frame around the ring. Only visible
+     when the arena carries .cage; every other stipulation ignores it. */
+  .arena .cagelayer{position:absolute;inset:0;pointer-events:none;z-index:5;display:none;}
+  .arena.cage .cagelayer{display:block;}
+  .arena.cage{box-shadow:inset 0 0 90px 30px rgba(0,0,0,.55);}
+  .arena .cagelayer svg{width:100%;height:100%;display:block;}
 
   /* Fighters are positioned from the arena centre and driven entirely from JS,
      so a move can place one wrestler exactly on top of the other. */
@@ -1249,6 +1256,7 @@
     <div class="fighter opp" id="fOpp"></div>
     <div class="fighter ref" id="fRef"></div>
     <div class="ringfront"></div>
+    <div class="cagelayer" id="fCage"></div>
     <div class="fxlayer" id="fFx"></div>
     <div class="callout" id="fCall"></div>
     <div class="pincount" id="fPin"></div>
@@ -4034,6 +4042,8 @@ function dressArena(root,pid){
   const back=root.querySelector('.ringback'), front=root.querySelector('.ringfront');
   if(back) back.innerHTML=ringSVG(false,T);
   if(front) front.innerHTML=ringSVG(true,T);
+  const cage=root.querySelector('.cagelayer');
+  if(cage) cage.innerHTML=cageSVG();
   const cr=root.querySelector('.crowd,.hr-crowd');
   if(cr){
     cr.style.background=venueCSS(T);
@@ -4041,6 +4051,59 @@ function dressArena(root,pid){
     cr.style.height=(26+T.seats*5)+'%';   // a basement is not a stadium bowl
   }
   root.style.setProperty('--arGlow',T.glow);
+}
+// The steel cage: four bar posts, a chain-link mesh across the back and front,
+// and a bar frame around the top. Painted once on every arena; the .cage class
+// on the arena decides whether it is visible.
+function cageSVG(){
+  const R=RING;
+  const u='cg'+(++RINGN);
+  const bar='#8a8a90', barD='#3a3a40', mesh='#5a5a62';
+  // Chain-link pattern: two diagonal lines per tile
+  const pat = `<defs>
+    <pattern id="${u}m" width="4" height="4" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="4" y2="4" stroke="${mesh}" stroke-width="0.6" opacity=".7"/>
+      <line x1="4" y1="0" x2="0" y2="4" stroke="${mesh}" stroke-width="0.6" opacity=".7"/>
+    </pattern>
+  </defs>`;
+  // Top rail runs from post to post; then vertical bars every ~6 units
+  const topY = Math.max(0, R.yTopB - 8);
+  const bars = [];
+  const barCount = 18;
+  for(let i=0;i<=barCount;i++){
+    const x = R.bx1 - 4 + (i/barCount)*(R.bx2 - R.bx1 + 8);
+    bars.push(`<line x1="${x}" y1="${topY}" x2="${x}" y2="${R.yBack}" stroke="${bar}" stroke-width="0.7" opacity=".85" vector-effect="non-scaling-stroke"/>`);
+  }
+  // Front cage bars angle out with the ring perspective
+  const fbars = [];
+  const frontBarCount = 22;
+  for(let i=0;i<=frontBarCount;i++){
+    const t = i/frontBarCount;
+    const xB = R.bx1 - 4 + t*(R.bx2 - R.bx1 + 8);
+    const xF = R.fx1 - 6 + t*(R.fx2 - R.fx1 + 12);
+    fbars.push(`<line x1="${xB}" y1="${topY}" x2="${xF}" y2="${R.yFront}" stroke="${bar}" stroke-width="0.55" opacity=".55" vector-effect="non-scaling-stroke"/>`);
+  }
+  // Four corner posts, taller and darker so the cage reads as a frame
+  const cornerH = topY - 6;
+  const corners = [R.bx1, R.bx2, R.fx1, R.fx2].map((x,i)=>{
+    const yTop = i<2 ? topY : R.yTopF - 6;
+    const yBot = i<2 ? R.yBack : R.yFront;
+    return `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="${barD}" stroke-width="3" vector-effect="non-scaling-stroke"/>
+            <line x1="${x}" y1="${yTop}" x2="${x}" y2="${yBot}" stroke="${bar}" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`;
+  }).join('');
+  // Top horizontal rail
+  const topRail = `<line x1="${R.bx1-4}" y1="${topY}" x2="${R.bx2+4}" y2="${topY}" stroke="${barD}" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
+                   <line x1="${R.bx1-4}" y1="${topY}" x2="${R.bx2+4}" y2="${topY}" stroke="${bar}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
+  // A translucent mesh polygon behind the bars to sell the chain-link
+  const meshBack = `<polygon points="${R.bx1-4},${topY} ${R.bx2+4},${topY} ${R.bx2+4},${R.yBack} ${R.bx1-4},${R.yBack}" fill="url(#${u}m)"/>`;
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    ${pat}
+    ${meshBack}
+    ${bars.join('')}
+    ${topRail}
+    ${corners}
+    ${fbars.join('')}
+  </svg>`;
 }
 
 function ringSVG(front,T){
@@ -5732,6 +5795,11 @@ async function startFight(o){
   const stale=()=>!MS||MS.gen!==startGen;
   go('fight');
   stageInit(); dressArena($('arena'),myPromoId());
+  // Some stipulations need visible ring hardware. Steel cage is the first one.
+  const _arena=$('arena');
+  if(_arena){
+    _arena.classList.toggle('cage', o.stip==='cage');
+  }
   figLook('me',G.w.look);
   figLook('opp',oc?oc.look:oppLook(o.oppId,o.oppName));
   $('fClock').textContent='BELL';
@@ -6428,7 +6496,10 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   const nearMid  = 26 + refKick*15;
   const upAt = three?3 : power>nearHigh?3 : power>nearMid?2 : 1;
   const nearFall = !three && upAt===3;
-  const counts = nearFall?2:upAt;
+  // The 1-2 counts live in this loop. If the finish is a real three, the
+  // finish block below adds the 3. If it is a near fall, the block adds the
+  // 2.9 burst. If it is a kickout at 1 or 2, the counts loop covers everything.
+  const counts = (three || nearFall) ? 2 : upAt;
   const countGap = 1 + refCount;   // slow ref lengthens the gap, fast ref shortens
 
   for(let n=1;n<=counts;n++){
