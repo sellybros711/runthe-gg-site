@@ -3053,6 +3053,34 @@ function doStartCreate(){
   renderStyles();
   go('create'); gotoStep(1);
   if(!$('cName').value) rollName();
+  // NG+: if a previous career made the Hall, offer a keepsake picker
+  const legends = loadLegends();
+  const hall = legends.filter(l=>l.inducted);
+  if(hall.length) setTimeout(()=>offerKeepsake(hall[0]), 260);
+}
+function offerKeepsake(l){
+  const rows=[];
+  if(l.finisherName) rows.push({k:'finisherName', l:'Their finisher name', v:l.finisherName});
+  if(l.finisherNameB) rows.push({k:'finisherNameB', l:'Their second finisher', v:l.finisherNameB});
+  if(l.catch) rows.push({k:'catch', l:'Their catchphrase', v:l.catch});
+  if(l.entrance) rows.push({k:'entrance', l:'Their entrance theme', v:l.entrance});
+  if(!rows.length) return;
+  const h = `<p class="log"><b>${l.name}</b> is in the Hall. New Game Plus: pick one thing they hand down to the new wrestler.</p>
+    <div class="decgrid">${rows.map((r,i)=>`<div class="decopt" data-i="${i}"><div class="dn">${r.l}</div><div class="dd">${r.v}</div></div>`).join('')}
+       <div class="decopt" data-i="-1"><div class="dn">Nothing</div><div class="dd">Start clean, no keepsake.</div></div></div>`;
+  modal(`Legacy of ${l.name}`, h, [{label:'Skip',cls:'ghost',fn:closeModal}]);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
+      const idx=+d.dataset.i;
+      closeModal();
+      if(idx<0){ return; }
+      const r=rows[idx]; if(!r) return;
+      // Pre-fill the create form input the picker maps to
+      const inp = {finisherName:'cFinName', finisherNameB:'cFinNameB', catch:'cCatch', entrance:'cEntrance'}[r.k];
+      if(inp && $(inp)){ $(inp).value = r.v; }
+      toast(`Keepsake from ${l.name}: ${r.v}`);
+    });
+  },0);
 }
 /* Quick Setup: the whole character is rolled and the contract is signed in one
    press. No steps, no menus. You land on the career hub in week 1. */
@@ -3371,8 +3399,27 @@ function worldTick(){
     }
     w.champions[promo.id][kind] = { holder:chal.id, since:{y:c.year,w:c.week}, defenses:0, kind };
     const oldName = (charById(prevHolder)||{}).name || 'the champion';
-    newsPush({ico:pico('crown',14), kind:'title',
-      text:`<b>${chal.name}</b> beat ${oldName} for the <b>${beltName}</b> at ${promo.short}.`});
+    // Cross-brand title change: if the winner and the previous holder were on
+    // different brands, migrate the belt to the winner's brand, and the news
+    // reads as a brand-supershow moment.
+    const brandsFor = (w.brands||{})[promo.id];
+    if(brandsFor && prevHolder){
+      const wasRed = brandsFor.red.includes(prevHolder);
+      const isRedNow = brandsFor.red.includes(chal.id);
+      if(wasRed !== isRedNow){
+        // move the belt: track which brand carries this title via w.beltBrand
+        w.beltBrand = w.beltBrand || {};
+        w.beltBrand[promo.id+':'+kind] = isRedNow ? 'red' : 'blue';
+        newsPush({ico:pico('star',14), kind:'brand',
+          text:`<b>Brand supershow.</b> ${chal.name} took the <b>${beltName}</b> off ${oldName} across the aisle. The belt moves to the ${isRedNow?'Red':'Blue'} Brand.`});
+      } else {
+        newsPush({ico:pico('crown',14), kind:'title',
+          text:`<b>${chal.name}</b> beat ${oldName} for the <b>${beltName}</b> at ${promo.short}.`});
+      }
+    } else {
+      newsPush({ico:pico('crown',14), kind:'title',
+        text:`<b>${chal.name}</b> beat ${oldName} for the <b>${beltName}</b> at ${promo.short}.`});
+    }
     return;
   }
   // Roster churn: a rookie debuts, a signing, a release. Rookies can debut
@@ -7800,6 +7847,10 @@ function archiveToLegends(){
     titles:c.reigns.length, earnings:c.earnings, pop:Math.round(c.pop||0), ovr:ovr(w),
     style:(styleOf()||{}).id||'', promo:myPromo().short, retired:c.retireReason,
     yearAwards:(c.yearAwards||[]).slice(0,12), trophies:(c.trophies||[]).slice(0,10),
+    // NG+ keepsakes: the identity a previous career can pass into the next one
+    finisherName:w.finisherName||null, finisherNameB:w.finisherNameB||null,
+    catch:w.catch||null, entrance:w.entrance||null,
+    inducted: legacy>=120,   // read by the NG+ picker so only Hall wrestlers show
     grade, legacy, at:{y:c.year,w:c.week} };
   const list=loadLegends();
   list.unshift(entry);
