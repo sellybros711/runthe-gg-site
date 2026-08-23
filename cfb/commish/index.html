@@ -83,38 +83,106 @@
   .btn.sm{padding:10px 12px;font-size:13px}
   .btn+.btn{margin-top:9px}
 
-  /* ---- the office: three meters and the room ---- */
+  /* ---- the office: three meters and the room ----
+     TWO CHANNELS, KEPT APART. Everything on these screens is either an IDENTITY (which of
+     the nine is this) or a JUDGEMENT (are they happy, did that help). Identity gets a fixed
+     mark and hue on a small chip. Judgement gets the green-amber-red ramp, on bars and
+     numbers only. The first version had neither: nine identical rows with nine identical
+     orange bars, so the room read as a list rather than as a room. */
   .meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-  .meter{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 11px}
+  .meter{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:10px 11px;border-top:2px solid var(--line)}
+  .meter.good{border-top-color:var(--green)} .meter.mid{border-top-color:var(--gold)}
+  .meter.bad{border-top-color:var(--red)}
   .meter b{display:block;font-family:var(--fd);font-size:26px;line-height:1}
   .meter span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
     letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:4px}
-  .meter i{display:block;height:3px;border-radius:2px;background:rgba(255,255,255,.09);
-    margin-top:7px;overflow:hidden}
-  .meter i em{display:block;height:100%;background:var(--grad-green);
-    transition:width .5s var(--ez)}
+  .meter i{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.09);
+    margin-top:7px;overflow:hidden;position:relative}
+  .meter i em{display:block;height:100%;transition:width .5s var(--ez)}
+  /* WHERE IT WAS WHEN YOU TOOK THE JOB, as a notch on the track. A number alone cannot say
+     whether 55 is where you started or where you have crawled back to. */
+  .meter i u{position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.5);
+    border-radius:1px}
   .meter .d{font-family:var(--fn);font-size:11px;font-weight:700;margin-left:5px}
   .up{color:var(--green)} .dn{color:var(--red)}
 
+  /* THE VOTE, COUNTED ON SCREEN. Losing the job is a coalition of voting weight, which the
+     player used to have to work out by reading nine numbers and remembering which of them
+     hold votes. It is one bar: how much of the room has turned, against the half that ends
+     the term. */
+  .coal{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:10px 12px;margin-bottom:12px}
+  .coal .ch{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+  .coal .ch b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .coal .ch span{margin-left:auto;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--dim)}
+  .coal .track{position:relative;height:10px;border-radius:5px;background:rgba(255,255,255,.07);
+    overflow:hidden}
+  .coal .track em{display:block;height:100%;background:linear-gradient(90deg,#f87171,#ef4444);
+    transition:width .55s var(--ez)}
+  .coal .track u{position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;
+    background:rgba(255,255,255,.55)}
+  .coal.danger .track em{background:linear-gradient(90deg,#ef4444,#b91c1c)}
+  .coal .note{margin-top:7px;font-size:11.5px;color:var(--dim-2);line-height:1.35}
+  .coal.danger .note{color:#fca5a5}
+
   .room{display:grid;gap:5px}
-  .bl{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:9px;
-    padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+  /* FIVE COLUMNS: mark, name, vote, standing, number. Every row emits exactly five cells,
+     including an empty one where a bloc holds no vote, because a row that emits four in one
+     state and five in another wraps the last cell onto its own line and the room turns into
+     a ragged stack. That is what it did. */
+  .bl{display:grid;grid-template-columns:auto 1fr auto auto auto;align-items:center;gap:9px;
+    padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--bc,var(--line))}
+  /* THE MARK. Five conferences carry their own letters and the four actors who are not
+     conferences carry a glyph, which is also the fastest way to see the real structure of
+     the room: who is a league and who is not. */
+  .chip{width:30px;height:22px;flex:0 0 auto;display:flex;align-items:center;
+    justify-content:center;border-radius:6px;background:var(--bc,#334155);
+    color:#06121f;font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.02em}
+  .chip svg{width:13px;height:13px;fill:none;stroke:#06121f;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
   .bl .nm{font-family:var(--fn);font-size:12.5px;font-weight:700;min-width:0;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .bl .vt{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--dim-2);border:1px solid var(--line);
-    border-radius:5px;padding:1px 5px}
-  .bl .bar{width:70px;height:6px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
+  /* A VOTE IS THE ONLY THING THAT CAN END THE TERM, so a bloc that holds one says so in
+     ink and a bloc that holds none is quiet about it rather than carrying an empty box. */
+  .bl .vt{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.06em;
+    color:var(--ink);background:rgba(255,255,255,.10);border-radius:5px;padding:1px 5px}
+  .bl .bar{width:54px;height:7px;border-radius:4px;background:rgba(255,255,255,.09);
+    overflow:hidden;position:relative}
   .bl .bar em{display:block;height:100%;transition:width .55s var(--ez)}
-  .bl.hostile{border-color:rgba(239,68,68,.45)}
-  .bl .say{grid-column:1/-1;font-size:12px;color:var(--dim);margin-top:2px;line-height:1.35}
+  /* THE LINE AT WHICH SOMEBODY STOPS LISTENING. It is a real threshold in the rules, so it
+     belongs on the bar rather than in a paragraph nobody reads twice. */
+  .bl .bar u{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.35)}
+  .bl.hostile{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06)}
+  .bl .say{grid-column:2/-1;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35;
+    font-style:italic;opacity:.9}
   .bl .dl{font-family:var(--fn);font-size:12px;font-weight:800;min-width:34px;text-align:right}
+  .bl .lv{font-family:var(--fn);font-size:12px;font-weight:800;min-width:26px;text-align:right;
+    color:var(--dim-2)}
+  /* ON THE REACTION SCREEN THE MOVE IS THE STORY, so it is the big number and the standing
+     behind it goes quiet. A diverging bar under it says which way and how far without
+     asking anybody to compare two decimals. */
+  /* FULL WIDTH UNDER THE ROW, so nine of them stack into a shape the eye can read down in
+     one pass. In the row itself it was 76px wide and every reaction rendered as a speck. */
+  .bl .mv{grid-column:2/-1;display:block;height:6px;margin-top:5px;position:relative;
+    background:rgba(255,255,255,.05);border-radius:3px}
+  .bl .mv i{position:absolute;top:-2px;bottom:-2px;left:50%;width:2px;margin-left:-1px;
+    background:rgba(255,255,255,.45);border-radius:1px}
+  .bl .mv em{position:absolute;top:0;bottom:0;border-radius:3px;transition:width .5s var(--ez)}
+  .bl.react .dl{font-size:15px}
 
   /* ---- the desk ---- */
-  .voices{display:grid;gap:7px;margin:11px 0 14px}
-  .voice{border-left:2px solid var(--line-2);padding:2px 0 2px 11px}
-  .voice b{display:block;font-family:var(--fn);font-size:10px;font-weight:700;
-    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2)}
+  .voices{display:grid;gap:8px;margin:11px 0 14px}
+  /* THE QUOTE IS TIED TO THE ROOM BY COLOUR, so an argument on the desk and the number it
+     moves on the next screen are visibly the same actor. */
+  .voice{border-left:3px solid var(--bc,var(--line-2));padding:1px 0 1px 10px}
+  /* Same trap as the chip row: `.voice span` would make this header italic body text. */
+  .voice .vh{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-style:normal}
+  .voice b{font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--bc,var(--dim-2))}
   .voice span{font-size:13.5px;color:var(--ink);font-style:italic}
 
   .opt{display:block;width:100%;text-align:left;background:var(--panel);cursor:pointer;
@@ -124,6 +192,36 @@
   .opt.on{border-color:var(--green);background:rgba(16,185,129,.09)}
   .opt b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:700}
   .opt span{display:block;font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.4}
+  /* WHAT THE RULING DOES, IN SYMBOLS. Three options used to be three paragraphs that had to
+     be read in full and held in the head at once. These say the shape of each one at a
+     glance: which forces it pushes and which way.
+
+     IT DESCRIBES THE RULING, NOT THE ROOM. Naming who would be pleased is the paid tier's
+     power (test it before you rule) and the whole payoff of the next screen, so it stays
+     there. This restates what the option itself does, in marks instead of prose. */
+  /* .opt .sig, NOT .sig. The chip row is a <span> inside the option button, and `.opt span`
+     is a more specific selector than a bare class, so a plain `.sig{display:flex}` lost to
+     it and the row stayed display:block. The chips are joined with no whitespace between
+     them, so an inline row had no break opportunity at all: three chips ran off the side of
+     the card in one unbreakable line. */
+  .opt .sig{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  /* A CHIP NEVER BREAKS MID-PHRASE. "More money" split over two lines reads as two chips
+     and the row stops being scannable, which is the only thing these are for. */
+  .sig i{font-style:normal;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:6px;
+    white-space:nowrap;
+    color:var(--ax,var(--dim));border:1px solid var(--ax,var(--line));
+    background:color-mix(in srgb,var(--ax,transparent) 14%,transparent)}
+  /* DIRECTION IN THE WEIGHT AS WELL AS THE ARROW. Hue is which force, so it cannot also be
+     which way, and an arrow alone is a lot to ask of nine pixels. Filled means more of it,
+     hollow means less. It matters most where the hue is alarming and the direction is good
+     news: "less legal risk" is a red chip, and hollow is what stops it reading as a warning. */
+  .opt .sig i.less{background:transparent;opacity:.85}
+  /* color-mix is recent. Where it is not understood the chip keeps its hue on the text and
+     the border and simply has no wash behind it, which is the same information. */
+  @supports not (background:color-mix(in srgb,red 10%,transparent)){
+    .sig i{background:rgba(255,255,255,.04)}
+  }
 
   .dial{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
   .dial .dh{display:flex;align-items:center;gap:8px;margin-bottom:7px}
@@ -131,8 +229,12 @@
     text-transform:uppercase;color:var(--dim)}
   .dial .dh .v{margin-left:auto;font-family:var(--fd);font-size:18px;color:var(--ink)}
   .steps{display:flex;flex-wrap:wrap;gap:5px}
-  .steps button{flex:1 1 auto;min-width:38px;padding:8px 4px;border-radius:8px;cursor:pointer;
-    background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  /* SIZED BY THEIR OWN LABEL. A 38px floor put the ninth setting of a nine-setting dial on
+     a line of its own, stretched to the full width, reading as a different kind of control
+     from the eight above it. Nine single digits fit one row; five currency labels size
+     themselves wider and also fit. */
+  .steps button{flex:1 1 auto;min-width:0;white-space:nowrap;padding:8px 6px;border-radius:8px;
+    cursor:pointer;background:var(--panel);border:1px solid var(--line);color:var(--dim);
     font-family:var(--fn);font-size:12.5px;font-weight:700}
   .steps button.on{border-color:var(--green);color:var(--ink);background:rgba(16,185,129,.12)}
   .steps button.pro{border-style:dashed;border-color:rgba(168,85,247,.5);color:#c084fc}
@@ -150,20 +252,43 @@
   .write:focus{outline:none;border-color:var(--purple)}
 
   .sport{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
-  .fact{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
-  .fact b{display:block;font-family:var(--fd);font-size:19px;line-height:1.05}
-  .fact span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
-    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:3px}
-  .fact.changed{border-color:rgba(16,185,129,.5)}
-  .fact.changed b{color:var(--green)}
+  .fact{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:9px 11px;display:grid;grid-template-columns:auto 1fr;gap:2px 9px;align-items:center}
+  /* AN ICON PER FACT, so four numbers in four identical boxes stop being four numbers in
+     four identical boxes. The glyph says which lever this is before the label is read. */
+  .fact .fi{grid-row:1/3;width:26px;height:26px;border-radius:7px;display:flex;
+    align-items:center;justify-content:center;background:rgba(255,255,255,.06)}
+  .fact .fi svg{width:15px;height:15px;fill:none;stroke:var(--dim);stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .fact b{font-family:var(--fd);font-size:19px;line-height:1.05}
+  .fact span{font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2)}
+  /* WHAT IT WAS WHEN YOU TOOK THE JOB. The whole mode is about what you changed, and a
+     screen of current values cannot show that on its own. */
+  .fact em{grid-column:2;font-style:normal;font-family:var(--fn);font-size:9.5px;
+    font-weight:700;color:var(--gold)}
+  .fact.changed{border-color:rgba(245,158,11,.45)}
+  .fact.changed .fi{background:rgba(245,158,11,.14)}
+  .fact.changed .fi svg{stroke:var(--gold)}
 
-  .beatbar{display:flex;gap:3px;margin-bottom:12px}
-  .beatbar i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.09)}
-  .beatbar i.done{background:var(--green)} .beatbar i.now{background:var(--gold)}
+  /* NINE BEATS IN A SEASON, and the one you are on should be findable without counting.
+     It was nine identical dashes with two shades between them. */
+  .beatbar{display:flex;gap:3px;margin-bottom:12px;align-items:center}
+  .beatbar i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.09)}
+  .beatbar i.done{background:var(--green);opacity:.55}
+  .beatbar i.now{background:var(--gold);height:8px;box-shadow:0 0 0 3px rgba(245,158,11,.16)}
 
-  .fuse{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--dim)}
-  .fuse .bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden}
-  .fuse .bar em{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444)}
+  /* A FUSE IS NOT A METER AND MUST NOT LOOK LIKE ONE. It does not tick down, it fires, so
+     it is drawn hot and it names itself only once it is actually lit. */
+  .fuses{display:grid;gap:6px;margin-top:11px}
+  .fuse{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim);
+    background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.28);
+    border-radius:9px;padding:7px 10px}
+  .fuse .fx{width:13px;height:13px;flex:0 0 auto;fill:none;stroke:#fca5a5;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .fuse .bar{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
+  .fuse .bar em{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);
+    transition:width .5s var(--ez)}
 
   .verdict{border-radius:16px;padding:20px 18px;text-align:center;border:1px solid var(--line);
     background:var(--grad-panel);margin-bottom:12px}
@@ -204,10 +329,13 @@
     <div class="eyebrow" id="off-when">Winter meetings</div>
     <h2 id="off-title">Your office</h2>
     <div class="meters" id="off-meters"></div>
+    <!-- The coalition, which is how the term actually ends, drawn rather than left to be
+         worked out from nine numbers four of which do not count. -->
+    <div class="coal" id="off-coal"></div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px">The sport, as it stands</div>
       <div class="sport" id="off-sport"></div>
-      <div id="off-fuses"></div>
+      <div class="fuses" id="off-fuses"></div>
     </div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
@@ -255,6 +383,8 @@
       <div class="big" id="y-big">2025</div>
       <p id="y-say" style="color:var(--dim);font-size:14px;margin-top:6px"></p>
     </div>
+    <!-- The same vote that ends a term, on the screen where a term can end. -->
+    <div class="coal" id="y-coal"></div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px">The sport you are running</div>
       <div class="sport" id="y-sport"></div>
@@ -324,7 +454,26 @@ function newTerm(year){
   world=L.createWorld({year:year||2025,membership:MEMBERSHIP[year||2025]||{},seed});
   rng=E.createSeededRNG(seed);
   world.rngCalls=0;
+  /* THE SPORT AS YOU FOUND IT, kept so every screen can show what you changed rather than
+     only what is true now. A commissioner is judged on the difference and the screens could
+     not draw it: a term that moved the playoff from twelve to sixteen and one that was
+     handed sixteen looked identical. Small and flat, so it serialises with the rest.
+
+     It lives here rather than in ledger.js because it is a thing the SCREENS need. The
+     ledger's job is the sport as it is now, and nothing in the model reads this. */
+  world.start=openingSnapshot(world);
   save();
+}
+/* Only what the screens compare against, not a second copy of the world. */
+function openingSnapshot(w){
+  return {
+    meters:Object.assign({},w.meters),
+    /* STRINGS, because that is what they are compared against when drawn. One of these four
+       is a bare number and the other three are formatted, so storing them raw meant 9 was
+       compared with "9", every fact read as changed, and an untouched sport claimed a term
+       had already altered it. */
+    facts:sportFacts(w).map((f)=>String(f[1])),
+  };
 }
 /* The world IS the save file, which is what ledger.js is built for. The rng is rebuilt
    from the seed and a call count, the same trick every other mode here uses to make a run
@@ -339,6 +488,11 @@ function load(){
     world=o.world;
     rng=E.createSeededRNG(world.seed);
     for(let i=0;i<(world.rngCalls||0);i++) rng();
+    /* A TERM SAVED BEFORE THE SNAPSHOT EXISTED still has to open. Backfilling from the
+       world as it stands now is a lie about where it started, so it is better to say
+       nothing: every screen treats a missing snapshot as "no comparison to draw" and
+       simply leaves the notch and the "was" line off. */
+    if(world.start&&!world.start.meters) world.start=null;
     return true;
   }catch(e){ return false; }
 }
@@ -361,30 +515,113 @@ const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,(c)=>
 const show=(id)=>{document.querySelectorAll('.screen').forEach((s)=>s.classList.remove('on'));
   $(id).classList.add('on');window.scrollTo({top:0});};
 
+/* IDENTITY, AS A MARK AND A HUE, and it is deliberately NOT the green-amber-red ramp that
+   every judgement on these screens uses. The nine actors turn up on four different screens
+   and the only way to read the mode quickly is to know them on sight, which nine identical
+   rows of text could never teach. Conferences carry their own letters; the four who are not
+   conferences carry a glyph, which also draws the real division in the room. */
+const G=(d)=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>';
+const BLOC_UI={
+  'SEC':          {tag:'SEC',c:'#ef4444'},
+  'Big Ten':      {tag:'B1G',c:'#3b82f6'},
+  'ACC':          {tag:'ACC',c:'#f97316'},
+  'Big 12':       {tag:'B12',c:'#a855f7'},
+  /* The one conference name long enough to need the same treatment, and it shares its row
+     with the widest vote label in the room, "0.5 votes". */
+  'Group of Five':{tag:'G5', short:'Group of 5',c:'#14b8a6'},
+  /* A screen, a person, a colonnade, a megaphone. */
+  /* SHORT LABELS FOR THE ROOM ROWS, where the name shares 320px with a vote weight, a bar
+     and a number, and "The presidents" was being cut to "The presi...". The article carries
+     nothing the chip beside it does not already say. The full name is still what the voices,
+     the coalition line and every sentence use. */
+  'Networks':  {short:'Networks',c:'#ec4899',ic:G('<rect x="2.5" y="5" width="19" height="12" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>')},
+  'Players':   {short:'Players',c:'#eab308',ic:G('<circle cx="12" cy="7" r="3.2"/><path d="M5 21v-1.5A5.5 5.5 0 0 1 10.5 14h3A5.5 5.5 0 0 1 19 19.5V21"/>')},
+  'Presidents':{short:'Presidents',c:'#818cf8',ic:G('<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M10 10v8M14 10v8M19 10v8"/><path d="M3 21h18"/>')},
+  'Fans':      {short:'Fans',c:'#38bdf8',ic:G('<path d="M3 10.5 14 5v14L3 13.5z"/><path d="M17 9.5a4 4 0 0 1 0 5"/><path d="M6 13.5V19"/>')},
+};
+const bcOf=(id)=>(BLOC_UI[id]||{}).c||'#64748b';
+const blocChip=(id)=>{
+  const u=BLOC_UI[id]||{};
+  return '<span class="chip">'+(u.ic||esc(u.tag||id))+'</span>';
+};
+/* MOOD, WHICH IS THE OTHER CHANNEL. One function so a bloc at 40 is the same colour on the
+   office, the desk preview, the reaction and the year in review. */
+const moodCol=(v)=>v>=60?'var(--green)':v>=35?'var(--gold)':'var(--red)';
+const band=(v)=>v>=60?'good':v>=35?'mid':'bad';
+
 const METERS=[['revenue','Revenue'],['health','The sport'],['standing','Your standing']];
 function paintMeters(el,w,before){
   el.innerHTML=METERS.map(([k,label])=>{
     const v=w.meters[k], d=before?v-before.meters[k]:0;
+    /* WHERE IT STARTED, so the number has something to be measured against. */
+    const start=(w.start&&w.start.meters&&w.start.meters[k]);
     const arrow=Math.abs(d)<0.05?'':'<span class="d '+(d>0?'up':'dn')+'">'
-      +(d>0?'+':'')+d.toFixed(1)+'</span>';
-    return '<div class="meter"><b>'+Math.round(v)+arrow+'</b><span>'+label+'</span>'
-      +'<i><em style="width:'+Math.round(v)+'%"></em></i></div>';
+      +(d>0?'▲':'▼')+Math.abs(d).toFixed(1)+'</span>';
+    return '<div class="meter '+band(v)+'"><b>'+Math.round(v)+arrow+'</b><span>'+label+'</span>'
+      +'<i><em style="width:'+Math.round(v)+'%;background:'+moodCol(v)+'"></em>'
+      +(start!=null?'<u style="left:'+Math.round(start)+'%"></u>':'')+'</i></div>';
   }).join('');
 }
 
+/* THE THING THAT ENDS THE TERM, DRAWN. Losing the job is a coalition of voting weight, and
+   until now the player had to read nine numbers, remember which four of them hold no vote
+   at all, and add up the rest. It is one bar with the halfway line on it. */
+function paintCoalition(el,w){
+  const hostile=L.hostileWeight(w), total=L.totalWeight();
+  const pct=Math.max(0,Math.min(100,(hostile/total)*100));
+  const angry=L.coalition(w);
+  const danger=hostile>total/2||(angry.indexOf('SEC')>=0&&angry.indexOf('Big Ten')>=0);
+  const note=!angry.length
+    ? 'Nobody with a vote has stopped listening.'
+    : angry.map((a)=>(B.BY_ID[a]||{}).name||a).join(', ')+(angry.length===1?' has':' have')+' stopped listening.';
+  el.className='coal'+(danger?' danger':'');
+  el.innerHTML='<div class="ch"><b>The vote against you</b>'
+    +'<span>'+(Math.round(hostile*10)/10)+' of '+total+'</span></div>'
+    +'<div class="track"><em style="width:'+pct.toFixed(1)+'%"></em><u></u></div>'
+    +'<div class="note">'+esc(note)+'</div>';
+}
+
+/* ONE ROW PER BLOC, AND IT ANSWERS FOUR QUESTIONS AT A GLANCE: who, do they hold a vote,
+   how do they feel, and which way did they just move. `rows` is the reaction to a ruling
+   when there is one, and when there is one the MOVE becomes the loud number, because that
+   is the screen where what just happened is the story. */
 function paintRoom(el,w,rows){
   const byId={}; (rows||[]).forEach((r)=>{byId[r.id]=r;});
+  const react=!!(rows&&rows.length);
+  /* SCALED TO THE BIGGEST MOVER IN THIS RULING, not to a fixed ceiling. A fixed one was
+     tried and every bar came out a stub: real moves are one to four points against a scale
+     built for ten, so the room's whole answer rendered as nine dots. Relative means the
+     loudest reaction fills its half and the rest are honestly proportional to it, which is
+     the comparison a player actually wants: who cared most about THIS. */
+  let top=0; (rows||[]).forEach((r)=>{ top=Math.max(top,Math.abs(r.delta||0)); });
   el.innerHTML=B.BLOCS.map((b)=>{
     const v=w.blocs[b.id], r=byId[b.id];
     const hostile=v<L.HOSTILE;
-    const col=v>=60?'var(--green)':v>=35?'var(--gold)':'var(--red)';
-    const d=r&&Math.abs(r.delta)>=0.05
-      ?'<span class="dl '+(r.delta>0?'up':'dn')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span>'
-      :'<span class="dl" style="color:var(--dim-2)">'+Math.round(v)+'</span>';
-    return '<div class="bl'+(hostile?' hostile':'')+'">'
-      +'<span class="nm">'+esc(b.name)+(b.vote?' <span class="vt">'+b.vote+' vote'+(b.vote===1?'':'s')+'</span>':'')+'</span>'
-      +'<span class="bar"><em style="width:'+Math.round(v)+'%;background:'+col+'"></em></span>'
-      +d
+    const moved=r&&Math.abs(r.delta)>=0.05;
+    const mag=moved&&top?Math.max(3,(Math.abs(r.delta)/top)*50):0;
+    const mv=moved
+      ? '<span class="mv"><i></i><em style="'+(r.delta>0?'left:50%':'right:50%')+';width:'+mag+'%;'
+        +'background:'+(r.delta>0?'var(--green)':'var(--red)')+'"></em></span>'
+      : '';
+    return '<div class="bl'+(hostile?' hostile':'')+(react?' react':'')
+      +'" style="--bc:'+bcOf(b.id)+'">'
+      +blocChip(b.id)
+      +'<span class="nm">'+esc((BLOC_UI[b.id]||{}).short||b.name)+'</span>'
+      +(b.vote?'<span class="vt">'+b.vote+(b.vote===1?' vote':' votes')+'</span>':'<span></span>')
+      /* THE WHOLE SCREEN PICKS ONE FORM, not each row for itself. Keying this off whether
+         THIS bloc moved meant a room where eight reacted and one shrugged drew eight
+         reactions and one standings bar, which reads as a rendering fault rather than as
+         somebody having no opinion. On a reaction screen a bloc that did not move says so,
+         in the same column as everybody else. */
+      +(react
+        ? '<span class="lv">'+Math.round(v)+'</span>'
+          +(moved
+            ? '<span class="dl '+(r.delta>0?'up':'dn')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span>'
+            : '<span class="dl" style="color:var(--dim-2)">0.0</span>')
+        : '<span class="bar"><em style="width:'+Math.round(v)+'%;background:'+moodCol(v)+'"></em>'
+          +'<u style="left:'+L.HOSTILE+'%"></u></span>'
+          +'<span class="dl" style="color:'+moodCol(v)+'">'+Math.round(v)+'</span>')
+      +mv
       +(r?'<span class="say">'+esc(r.say)+'</span>':'')
       +'</div>';
   }).join('');
@@ -401,11 +638,29 @@ function sportFacts(w){
     ['rules.confGames',w.rules.confGames,'conference games'],
   ];
 }
+/* A GLYPH PER LEVER: a bracket, a pie slice, a banknote, a calendar grid. Four numbers in
+   four identical boxes is a table; four numbers each with its own mark is four things. */
+const FACT_ICON=[
+  G('<path d="M3 5h6v14H3z"/><path d="M15 5h6v14h-6z"/><path d="M9 12h6"/>'),
+  G('<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12l6 6"/>'),
+  G('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/>'),
+  G('<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18"/><path d="M8 3v3M16 3v3"/>'),
+];
 function paintSport(el,w,before){
+  /* WHAT IT WAS WHEN YOU TOOK THE JOB is the comparison worth drawing, not what it was one
+     beat ago: this screen is a term's record, and a single ruling's move is already the
+     whole of the reaction screen. `before` still marks the beat's own change when a caller
+     passes one. */
+  const start=w.start&&w.start.facts;
   el.innerHTML=sportFacts(w).map(([key,big,label],i)=>{
-    const changed=before&&sportFacts(before)[i][1]!==big;
-    return '<div class="fact'+(changed?' changed':'')+'"><b>'+esc(big)+'</b>'
-      +'<span>'+esc(label)+'</span></div>';
+    const was=start&&start[i];
+    const changed=(before&&sportFacts(before)[i][1]!==big)||(was!=null&&was!==String(big));
+    return '<div class="fact'+(changed?' changed':'')+'">'
+      +'<span class="fi">'+FACT_ICON[i]+'</span>'
+      +'<b>'+esc(big)+'</b>'
+      +'<span>'+esc(label)+'</span>'
+      +(was!=null&&was!==String(big)?'<em>was '+esc(was)+'</em>':'')
+      +'</div>';
   }).join('');
 }
 
@@ -415,11 +670,18 @@ function paintBeatbar(el,w){
 }
 
 const FUSES=[['legal','Legal exposure'],['congress','Washington'],['union','The players organising']];
+/* A LIT FUSE, drawn hot and boxed, because it is not a meter. It does not tick down and
+   there is no good number to reach: it sits there until it fires. Reading like the three
+   meters above it was the mistake, and it was reading like them in grey. */
+const FUSE_ICON=G('<path d="M14 4c0 2.5-2 3.5-2 6a3 3 0 0 0 5 2"/>'
+  +'<path d="M12 21a6 6 0 0 0 6-6c0-2.5-1.5-4-2.5-5.5"/>'
+  +'<path d="M12 21a6 6 0 0 1-6-6c0-3 3-4 4-7"/>');
 function paintFuses(el,w){
   const live=FUSES.filter(([k])=>w.pressure[k]>4);
   el.innerHTML=live.length?live.map(([k,label])=>
-    '<div class="fuse"><span>'+esc(label)+'</span><span class="bar"><em style="width:'
-    +Math.round(w.pressure[k])+'%"></em></span></div>').join(''):'';
+    '<div class="fuse">'+FUSE_ICON.replace('<svg ','<svg class="fx" ')
+    +'<span>'+esc(label)+'</span><span class="bar"><em style="width:'
+    +Math.round(Math.min(100,w.pressure[k]))+'%"></em></span></div>').join(''):'';
 }
 
 /* ── the office ───────────────────────────────────────────────────────────────── */
@@ -432,6 +694,7 @@ function office(){
     ? (angry.length===1?angry[0]+' has stopped listening':angry.length+' of the room have stopped listening')
     : 'Your office';
   paintMeters($('off-meters'),world,null);
+  paintCoalition($('off-coal'),world);
   paintSport($('off-sport'),world,null);
   paintFuses($('off-fuses'),world);
   paintRoom($('off-room'),world,null);
@@ -455,9 +718,14 @@ function desk(){
   $('d-eyebrow').textContent=(item.eyebrow||'')+' · '+L.BEATS[world.beat]+' · '+world.year;
   $('d-title').textContent=D.text(item.title,cast,item);
   $('d-brief').textContent=D.text(item.brief,cast,item);
+  /* THE ARGUMENT, TIED TO THE ROOM BY COLOUR AND MARK. These were three grey paragraphs
+     behind three grey labels, so the quote and the number it moves two screens later were
+     visibly unrelated. Same chip, same hue, same actor. */
   $('d-voices').innerHTML=(item.voices||[]).map((v)=>{
     const b=B.BY_ID[v.id];
-    return '<div class="voice"><b>'+esc(b?b.name:v.id)+'</b><span>'+esc(v.say)+'</span></div>';
+    return '<div class="voice" style="--bc:'+bcOf(v.id)+'">'
+      +'<span class="vh">'+blocChip(v.id)+'<b>'+esc(b?b.name:v.id)+'</b></span>'
+      +'<span>'+esc(v.say)+'</span></div>';
   }).join('');
   paintOptions();
   paintDials();
@@ -465,10 +733,61 @@ function desk(){
   $('b-test').hidden=!isPro();
   show('s-desk');
 }
+/* THE EIGHT FORCES, IN WORDS A PLAYER ALREADY HAS. The axis names are the model's, and two
+   of them mean the opposite of what they sound like on a card: `cost` going up is a bill,
+   and `exposure` going up is a lawsuit closer. So each axis carries the phrasing for both
+   directions rather than a name and a sign, which is the mistake that named an axis `risk`
+   and then read a reckless ruling as a careful one. */
+const AXIS_WORDS={
+  money:     ['More money','Less money'],
+  access:    ['Wider access','Narrower access'],
+  autonomy:  ['More autonomy','Less autonomy'],
+  cost:      ['Costs more','Costs less'],
+  tradition: ['Keeps tradition','Breaks tradition'],
+  inventory: ['More inventory','Less inventory'],
+  labour:    ['Better for players','Worse for players'],
+  exposure:  ['More legal risk','Less legal risk'],
+};
+/* A HUE PER FORCE, and NOT a green-for-good, red-for-bad ramp. Colouring these by whether
+   they are good news would be the one lie this mode must not tell: there is no ruling that
+   is simply good, which is the entire premise. Wider access is a gift to the Group of Five
+   and a theft from the SEC, and the screen has no business deciding which. So the colour
+   says WHICH FORCE, the way a bloc chip says which actor, and the arrow says which way.
+   Green and red stay reserved for the two places they are literally true: a bloc got
+   happier or angrier, and the vote against you. */
+const AXIS_HUE={
+  money:'#f59e0b', access:'#14b8a6', autonomy:'#a855f7', cost:'#fb7185',
+  tradition:'#94a3b8', inventory:'#ec4899', labour:'#38bdf8', exposure:'#ef4444',
+};
+/* THE SHAPE OF A RULING, AS MARKS. Three options were three paragraphs that had to be read
+   in full and held in the head together to be compared. The two or three forces each one
+   pushes hardest say most of that at a glance, and the prose is then a detail rather than
+   the only way in.
+
+   IT DESCRIBES THE RULING AND NOT THE ROOM, deliberately. Naming who would be pleased is
+   the paid tier's power (test it on the room before you rule) and the payoff of the
+   reaction screen. This is a restatement of what the option itself does. */
+function optionSignature(o){
+  const edit=(typeof o.edit==='function'?o.edit(cast,item):o.edit)||{};
+  const eff=edit.effects||{};
+  const named=Object.keys(eff)
+    .filter((a)=>AXIS_WORDS[a]&&Math.abs(eff[a])>=0.5)
+    .sort((a,b)=>Math.abs(eff[b])-Math.abs(eff[a]))
+    .slice(0,3);
+  if(!named.length) return '';
+  return '<span class="sig">'+named.map((a)=>{
+    const up=eff[a]>0;
+    /* `less`, not `dn`: .dn is the page's own class for "this number went down, paint
+       it red", and reusing it here would fight the axis hue on every falling chip. */
+    return '<i class="'+(up?'more':'less')+'" style="--ax:'+AXIS_HUE[a]+'">'
+      +(up?'▲':'▼')+' '+esc(AXIS_WORDS[a][up?0:1])+'</i>';
+  }).join('')+'</span>';
+}
 function paintOptions(){
   $('d-options').innerHTML=item.options.map((o)=>
     '<button class="opt'+(choice===o.id?' on':'')+'" data-o="'+esc(o.id)+'">'
-    +'<b>'+esc(o.label)+'</b><span>'+esc(o.body)+'</span></button>').join('');
+    +'<b>'+esc(o.label)+'</b><span>'+esc(o.body)+'</span>'
+    +optionSignature(o)+'</button>').join('');
   $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
     b.onclick=()=>{ choice=b.dataset.o; written=''; paintOptions(); paintDials(); paintWrite(); };
   });
@@ -586,6 +905,7 @@ function yearEnd(year){
   $('y-say').textContent=angry.length
     ? 'You finish the year with '+angry.join(' and ')+' against you.'
     : 'You finish the year with the room behind you.';
+  paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);
   if(done>=TERM_SEASONS){ ending(); return; }
@@ -604,6 +924,7 @@ function ending(){
   const moved=facts.filter((f,i)=>f[1]!==start[i][1]).length;
   $('y-say').textContent=(o.say||'')+' You changed '+moved+' of the four things a '
     +'commissioner is judged on, over '+world.history.length+' rulings.';
+  paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);
   $('b-year-next').textContent='Take the job again';
