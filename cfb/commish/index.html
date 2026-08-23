@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- IN TESTING, AND THEREFORE NOINDEXED. Same posture the wrestling game and hoops are
+     held to, and for the same reason: an unfinished mode found by search is a first
+     impression nobody chose to make. It comes off when the mode goes live, deliberately,
+     the way the note in CLAUDE.md describes for the others. -->
+<meta name="robots" content="noindex,nofollow">
+<title>Commish Simulator | College Football: Perfect Season</title>
+<link rel="icon" href="/cfb/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  /* The draft game's own palette, character for character, because this is a mode of that
+     game and not a different product. */
+  :root{
+    --bg:#080b14;--panel:#131a2b;--panel-2:#1a2337;
+    --line:rgba(255,255,255,.10);--line-2:rgba(255,255,255,.18);
+    --ink:#eef2f9;--dim:#94a3b8;--dim-2:#7d8fa8;
+    --green:#10b981;--green-2:#059669;--gold:#f59e0b;
+    --red:#ef4444;--purple:#a855f7;
+    --grad-green:linear-gradient(135deg,#10b981 0%,#059669 100%);
+    --grad-panel:linear-gradient(180deg,#182134 0%,#111827 100%);
+    --shadow:0 18px 40px -14px rgba(0,0,0,.85),0 3px 10px -4px rgba(0,0,0,.6);
+    --ez:cubic-bezier(.22,.9,.26,1);
+    --fd:'Anton',Impact,sans-serif;
+    --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:15px;
+    line-height:1.5;min-height:100vh;padding-bottom:40px;
+    background-image:radial-gradient(900px 520px at 50% -10%,rgba(16,185,129,.07),transparent 70%)}
+  .wrap{max-width:600px;margin:0 auto;padding:10px 14px 46px}
+  a{color:var(--green)}
+
+  header{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:9px;
+    padding:8px 0;margin-bottom:10px}
+  header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-index:-1}
+  .home{flex:0 0 auto;display:flex;align-items:center;gap:7px;text-decoration:none;color:inherit}
+  .home img{width:26px;height:23px}
+  .brand{font-family:var(--fd);font-size:13px;letter-spacing:.03em;text-transform:uppercase;
+    line-height:1.05}
+  .brand em{font-style:normal;color:var(--green)}
+  .tag{margin-left:auto;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--gold);
+    border:1px solid rgba(245,158,11,.4);border-radius:99px;padding:4px 9px;white-space:nowrap}
+
+  .eyebrow{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .eyebrow.green{color:var(--green)} .eyebrow.gold{color:var(--gold)}
+  h1{font-family:var(--fd);font-size:clamp(30px,8vw,46px);line-height:.98;
+    text-transform:uppercase;letter-spacing:.01em;margin:6px 0 10px}
+  h2{font-family:var(--fd);font-size:23px;line-height:1.08;text-transform:uppercase;
+    letter-spacing:.01em;margin:4px 0 8px}
+  p.lede{color:var(--dim);font-size:15px;margin-bottom:14px}
+
+  .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:15px;
+    padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .card.flat{background:var(--panel);box-shadow:none}
+
+  .btn{width:100%;display:block;padding:15px 16px;border-radius:12px;border:0;cursor:pointer;
+    font-family:var(--fd);font-size:17px;letter-spacing:.04em;text-transform:uppercase;
+    background:var(--grad-green);color:#03140d;box-shadow:var(--shadow);
+    transition:transform .08s var(--ez)}
+  .btn:active{transform:scale(.985)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.ghost{background:transparent;border:1.5px solid var(--line-2);color:var(--ink);
+    box-shadow:none;font-size:15px}
+  .btn.sm{padding:10px 12px;font-size:13px}
+  .btn+.btn{margin-top:9px}
+
+  /* ---- the office: three meters and the room ---- */
+  .meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .meter{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 11px}
+  .meter b{display:block;font-family:var(--fd);font-size:26px;line-height:1}
+  .meter span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+  .meter i{display:block;height:3px;border-radius:2px;background:rgba(255,255,255,.09);
+    margin-top:7px;overflow:hidden}
+  .meter i em{display:block;height:100%;background:var(--grad-green);
+    transition:width .5s var(--ez)}
+  .meter .d{font-family:var(--fn);font-size:11px;font-weight:700;margin-left:5px}
+  .up{color:var(--green)} .dn{color:var(--red)}
+
+  .room{display:grid;gap:5px}
+  .bl{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:9px;
+    padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+  .bl .nm{font-family:var(--fn);font-size:12.5px;font-weight:700;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bl .vt{font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2);border:1px solid var(--line);
+    border-radius:5px;padding:1px 5px}
+  .bl .bar{width:70px;height:6px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
+  .bl .bar em{display:block;height:100%;transition:width .55s var(--ez)}
+  .bl.hostile{border-color:rgba(239,68,68,.45)}
+  .bl .say{grid-column:1/-1;font-size:12px;color:var(--dim);margin-top:2px;line-height:1.35}
+  .bl .dl{font-family:var(--fn);font-size:12px;font-weight:800;min-width:34px;text-align:right}
+
+  /* ---- the desk ---- */
+  .voices{display:grid;gap:7px;margin:11px 0 14px}
+  .voice{border-left:2px solid var(--line-2);padding:2px 0 2px 11px}
+  .voice b{display:block;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2)}
+  .voice span{font-size:13.5px;color:var(--ink);font-style:italic}
+
+  .opt{display:block;width:100%;text-align:left;background:var(--panel);cursor:pointer;
+    border:1.5px solid var(--line);border-radius:12px;padding:12px 13px;margin-bottom:8px;
+    color:inherit;font:inherit;transition:border-color .12s var(--ez),background .12s var(--ez)}
+  .opt:hover{border-color:var(--line-2)}
+  .opt.on{border-color:var(--green);background:rgba(16,185,129,.09)}
+  .opt b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:700}
+  .opt span{display:block;font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.4}
+
+  .dial{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .dial .dh{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .dial .dh b{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim)}
+  .dial .dh .v{margin-left:auto;font-family:var(--fd);font-size:18px;color:var(--ink)}
+  .steps{display:flex;flex-wrap:wrap;gap:5px}
+  .steps button{flex:1 1 auto;min-width:38px;padding:8px 4px;border-radius:8px;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    font-family:var(--fn);font-size:12.5px;font-weight:700}
+  .steps button.on{border-color:var(--green);color:var(--ink);background:rgba(16,185,129,.12)}
+  .steps button.pro{border-style:dashed;border-color:rgba(168,85,247,.5);color:#c084fc}
+  .steps button.pro.on{background:rgba(168,85,247,.14);border-style:solid}
+
+  .prolock{margin-top:11px;border:1px dashed rgba(168,85,247,.45);border-radius:11px;
+    padding:11px 12px;background:rgba(168,85,247,.06)}
+  .prolock b{display:block;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:#c084fc}
+  .prolock span{display:block;font-size:12.5px;color:var(--dim);margin-top:3px}
+
+  .write{width:100%;min-height:92px;resize:vertical;padding:11px 12px;border-radius:11px;
+    background:var(--panel);border:1.5px solid rgba(168,85,247,.4);color:var(--ink);
+    font:inherit;font-size:14px;line-height:1.45}
+  .write:focus{outline:none;border-color:var(--purple)}
+
+  .sport{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+  .fact{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .fact b{display:block;font-family:var(--fd);font-size:19px;line-height:1.05}
+  .fact span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:3px}
+  .fact.changed{border-color:rgba(16,185,129,.5)}
+  .fact.changed b{color:var(--green)}
+
+  .beatbar{display:flex;gap:3px;margin-bottom:12px}
+  .beatbar i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.09)}
+  .beatbar i.done{background:var(--green)} .beatbar i.now{background:var(--gold)}
+
+  .fuse{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--dim)}
+  .fuse .bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden}
+  .fuse .bar em{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444)}
+
+  .verdict{border-radius:16px;padding:20px 18px;text-align:center;border:1px solid var(--line);
+    background:var(--grad-panel);margin-bottom:12px}
+  .verdict.bad{border-color:rgba(239,68,68,.45)}
+  .verdict.good{border-color:rgba(16,185,129,.45)}
+  .verdict .big{font-family:var(--fd);font-size:40px;line-height:1}
+
+  .screen{display:none} .screen.on{display:block}
+  @media(prefers-reduced-motion:no-preference){
+    .screen.on{animation:fade .28s var(--ez) both}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  }
+  .foot{margin-top:22px;text-align:center;font-size:11.5px;color:var(--dim-2);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="home" href="/cfb/">
+      <img src="/cfb/mark.png?v=2" alt="" width="26" height="23">
+      <span class="brand">Commish<br><em>Simulator</em></span>
+    </a>
+    <span class="tag" id="tag">In testing</span>
+  </header>
+
+  <!-- The door. Nobody who is not on the list gets past this. -->
+  <div class="screen on" id="s-gate">
+    <div class="eyebrow gold">College Football: Perfect Season</div>
+    <h1>Commish<br>Simulator</h1>
+    <p class="lede" id="gate-say">Checking your account.</p>
+    <div id="gate-act"></div>
+    <div class="foot">A mode of <a href="/cfb/">College Football: Perfect Season</a>.</div>
+  </div>
+
+  <!-- The office: where you stand before you rule. -->
+  <div class="screen" id="s-office">
+    <div class="beatbar" id="beatbar"></div>
+    <div class="eyebrow" id="off-when">Winter meetings</div>
+    <h2 id="off-title">Your office</h2>
+    <div class="meters" id="off-meters"></div>
+    <div class="card flat">
+      <div class="eyebrow" style="margin-bottom:9px">The sport, as it stands</div>
+      <div class="sport" id="off-sport"></div>
+      <div id="off-fuses"></div>
+    </div>
+    <div class="card flat">
+      <div class="eyebrow" style="margin-bottom:9px">The room</div>
+      <div class="room" id="off-room"></div>
+    </div>
+    <button class="btn" id="b-desk">See what is on the desk</button>
+  </div>
+
+  <!-- The desk: one item, one ruling. -->
+  <div class="screen" id="s-desk">
+    <div class="beatbar" id="desk-beatbar"></div>
+    <div class="eyebrow gold" id="d-eyebrow"></div>
+    <h2 id="d-title"></h2>
+    <p class="lede" id="d-brief"></p>
+    <div class="voices" id="d-voices"></div>
+    <div id="d-options"></div>
+    <div id="d-dials"></div>
+    <div id="d-write"></div>
+    <div style="margin-top:14px">
+      <button class="btn ghost" id="b-test">Test it on the room</button>
+      <button class="btn" id="b-rule">Rule</button>
+    </div>
+  </div>
+
+  <!-- The room answers. The screen the mode is remembered for. -->
+  <div class="screen" id="s-room">
+    <div class="eyebrow green" id="r-eyebrow">You ruled</div>
+    <h2 id="r-title"></h2>
+    <div class="meters" id="r-meters"></div>
+    <div class="card flat">
+      <div class="eyebrow" style="margin-bottom:9px" id="r-head">The room</div>
+      <div class="room" id="r-room"></div>
+    </div>
+    <div class="card flat" id="r-changed" hidden>
+      <div class="eyebrow" style="margin-bottom:9px">What changed in the sport</div>
+      <div class="sport" id="r-sport"></div>
+    </div>
+    <button class="btn" id="b-next">Carry on</button>
+  </div>
+
+  <!-- The year in review, and the end of a term. -->
+  <div class="screen" id="s-year">
+    <div class="verdict" id="y-card">
+      <div class="eyebrow" id="y-eyebrow">The year in review</div>
+      <div class="big" id="y-big">2025</div>
+      <p id="y-say" style="color:var(--dim);font-size:14px;margin-top:6px"></p>
+    </div>
+    <div class="card flat">
+      <div class="eyebrow" style="margin-bottom:9px">The sport you are running</div>
+      <div class="sport" id="y-sport"></div>
+    </div>
+    <div class="card flat">
+      <div class="eyebrow" style="margin-bottom:9px">The room</div>
+      <div class="room" id="y-room"></div>
+    </div>
+    <button class="btn" id="b-year-next">Next season</button>
+    <button class="btn ghost" id="b-quit">Leave the office</button>
+  </div>
+</div>
+
+<script src="/cfb/engine.js?v=34"></script>
+<script src="ledger.js?v=1"></script>
+<script src="blocs.js?v=1"></script>
+<script src="docket.js?v=2"></script>
+<script src="/cfb/auth.js?v=3"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script>
+(function(){
+'use strict';
+const $=(id)=>document.getElementById(id);
+const L=window.PS_CFB_LEDGER, B=window.PS_CFB_BLOCS, D=window.PS_CFB_DOCKET, E=window.PS_CFB_ENGINE;
+
+/* ── WHO IS ALLOWED IN, AND IT IS THE PATTERN THE REPO ALREADY USES ──────────────
+   supabase/80_football_defense_mode.sql writes this down: a name list in the page and a
+   LIVE flag, with the database side applied first so a tester's work is never rejected by
+   a constraint they cannot see. There is no database side yet, which is why a term is kept
+   in this browser for now and says so on the screen: nothing can be rejected because
+   nothing is being sent.
+
+   LOWERCASED, because set_username stores the casing somebody typed and an exact-case
+   match silently misses them. 72_comp_passes.sql hit this and wrote it down. */
+const COMMISH_TESTERS=['sellybros711'];
+const COMMISH_LIVE=false;
+
+/* TESTERS ARE TREATED AS PAYING, on purpose and only while this is closed. The paid tier
+   is most of what there is to test: the dials, writing your own ruling, taking office in
+   an older sport. A tester locked out of it would be testing the half that is easy. */
+const isTester=(name)=>COMMISH_TESTERS.indexOf(String(name||'').toLowerCase())>=0;
+let authState={ready:false,waiting:true,signedIn:false};
+const allowed=()=>COMMISH_LIVE||isTester(authState.name);
+/* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
+   means the half of the design most likely to be got wrong is the half nobody on the list
+   can look at: what a free player is shown, what is drawn and dead, and whether the offer
+   reads as an offer or as a scolding. `?tier=free` is that, and it is a tester-only switch
+   because nobody else can reach this page at all. */
+let forceFree=false;
+try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
+const isPro=()=>allowed()&&!forceFree;
+
+/* ── the term ─────────────────────────────────────────────────────────────────── */
+const SAVE_KEY='cfb_commish_term';
+const TERM_SEASONS=5;
+let world=null, rng=null, item=null, cast=null, choice=null, dials={}, written='';
+let lastRoom=null, lastBefore=null;
+
+function newTerm(year){
+  const seed=E.hashSeed(String(Date.now())+Math.random());
+  world=L.createWorld({year:year||2025,membership:MEMBERSHIP[year||2025]||{},seed});
+  rng=E.createSeededRNG(seed);
+  world.rngCalls=0;
+  save();
+}
+/* The world IS the save file, which is what ledger.js is built for. The rng is rebuilt
+   from the seed and a call count, the same trick every other mode here uses to make a run
+   replayable, so nothing but plain data is ever stored. */
+function save(){
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,world})); }catch(e){}
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
+    const o=JSON.parse(raw); if(!o||o.v!==1||!o.world||o.world.version!==1) return false;
+    world=o.world;
+    rng=E.createSeededRNG(world.seed);
+    for(let i=0;i<(world.rngCalls||0);i++) rng();
+    return true;
+  }catch(e){ return false; }
+}
+const draw=()=>{ world.rngCalls=(world.rngCalls||0)+1; return rng(); };
+
+/* Membership per year, off the draft game's own team data. Fetched rather than duplicated,
+   so there is one answer in this repo to what conference a school was in. */
+let MEMBERSHIP={};
+async function loadTeams(){
+  const r=await fetch('/cfb/data/cfb_team_seasons.json?v=9');
+  const teams=await r.json();
+  for(const t of teams){
+    (MEMBERSHIP[t.season]=MEMBERSHIP[t.season]||{})[t.school]=t.conference;
+  }
+}
+
+/* ── painting ─────────────────────────────────────────────────────────────────── */
+const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,(c)=>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const show=(id)=>{document.querySelectorAll('.screen').forEach((s)=>s.classList.remove('on'));
+  $(id).classList.add('on');window.scrollTo({top:0});};
+
+const METERS=[['revenue','Revenue'],['health','The sport'],['standing','Your standing']];
+function paintMeters(el,w,before){
+  el.innerHTML=METERS.map(([k,label])=>{
+    const v=w.meters[k], d=before?v-before.meters[k]:0;
+    const arrow=Math.abs(d)<0.05?'':'<span class="d '+(d>0?'up':'dn')+'">'
+      +(d>0?'+':'')+d.toFixed(1)+'</span>';
+    return '<div class="meter"><b>'+Math.round(v)+arrow+'</b><span>'+label+'</span>'
+      +'<i><em style="width:'+Math.round(v)+'%"></em></i></div>';
+  }).join('');
+}
+
+function paintRoom(el,w,rows){
+  const byId={}; (rows||[]).forEach((r)=>{byId[r.id]=r;});
+  el.innerHTML=B.BLOCS.map((b)=>{
+    const v=w.blocs[b.id], r=byId[b.id];
+    const hostile=v<L.HOSTILE;
+    const col=v>=60?'var(--green)':v>=35?'var(--gold)':'var(--red)';
+    const d=r&&Math.abs(r.delta)>=0.05
+      ?'<span class="dl '+(r.delta>0?'up':'dn')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span>'
+      :'<span class="dl" style="color:var(--dim-2)">'+Math.round(v)+'</span>';
+    return '<div class="bl'+(hostile?' hostile':'')+'">'
+      +'<span class="nm">'+esc(b.name)+(b.vote?' <span class="vt">'+b.vote+' vote'+(b.vote===1?'':'s')+'</span>':'')+'</span>'
+      +'<span class="bar"><em style="width:'+Math.round(v)+'%;background:'+col+'"></em></span>'
+      +d
+      +(r?'<span class="say">'+esc(r.say)+'</span>':'')
+      +'</div>';
+  }).join('');
+}
+
+/* The four facts a commissioner is judged on, and they are read straight off the ledger so
+   the screen cannot say something the world does not. */
+function sportFacts(w){
+  const share=Math.round((w.money.share['Group of Five']||0)*100);
+  return [
+    ['playoff.teams',w.playoff.teams+'-team',(w.playoff.autobids||0)+' automatic bids'],
+    ['money.share',share+'%',"the Group of Five's share"],
+    ['labour.revShare',Math.round(w.labour.revShare*100)+'%','to the players'],
+    ['rules.confGames',w.rules.confGames,'conference games'],
+  ];
+}
+function paintSport(el,w,before){
+  el.innerHTML=sportFacts(w).map(([key,big,label],i)=>{
+    const changed=before&&sportFacts(before)[i][1]!==big;
+    return '<div class="fact'+(changed?' changed':'')+'"><b>'+esc(big)+'</b>'
+      +'<span>'+esc(label)+'</span></div>';
+  }).join('');
+}
+
+function paintBeatbar(el,w){
+  el.innerHTML=L.BEATS.map((_,i)=>
+    '<i class="'+(i<w.beat?'done':i===w.beat?'now':'')+'"></i>').join('');
+}
+
+const FUSES=[['legal','Legal exposure'],['congress','Washington'],['union','The players organising']];
+function paintFuses(el,w){
+  const live=FUSES.filter(([k])=>w.pressure[k]>4);
+  el.innerHTML=live.length?live.map(([k,label])=>
+    '<div class="fuse"><span>'+esc(label)+'</span><span class="bar"><em style="width:'
+    +Math.round(w.pressure[k])+'%"></em></span></div>').join(''):'';
+}
+
+/* ── the office ───────────────────────────────────────────────────────────────── */
+function office(){
+  paintBeatbar($('beatbar'),world);
+  $('off-when').textContent=L.BEATS[world.beat]+' · '+world.year
+    +' · year '+(world.year-world.startYear+1)+' of '+TERM_SEASONS;
+  const angry=L.removal(world).angry||[];
+  $('off-title').textContent=angry.length
+    ? (angry.length===1?angry[0]+' has stopped listening':angry.length+' of the room have stopped listening')
+    : 'Your office';
+  paintMeters($('off-meters'),world,null);
+  paintSport($('off-sport'),world,null);
+  paintFuses($('off-fuses'),world);
+  paintRoom($('off-room'),world,null);
+  const pool=D.eligible(world,L);
+  $('b-desk').textContent=pool.length?'See what is on the desk':'Nothing on the desk. Move on.';
+  show('s-office');
+}
+$('b-desk').onclick=()=>{
+  const pool=D.eligible(world,L);
+  if(!pool.length){ advance(); return; }
+  item=D.pick(world,L,draw);
+  cast=D.castOf(item,world,L,draw);
+  choice=null; dials={}; written='';
+  (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
+  save(); desk();
+};
+
+/* ── the desk ─────────────────────────────────────────────────────────────────── */
+function desk(){
+  paintBeatbar($('desk-beatbar'),world);
+  $('d-eyebrow').textContent=(item.eyebrow||'')+' · '+L.BEATS[world.beat]+' · '+world.year;
+  $('d-title').textContent=D.text(item.title,cast,item);
+  $('d-brief').textContent=D.text(item.brief,cast,item);
+  $('d-voices').innerHTML=(item.voices||[]).map((v)=>{
+    const b=B.BY_ID[v.id];
+    return '<div class="voice"><b>'+esc(b?b.name:v.id)+'</b><span>'+esc(v.say)+'</span></div>';
+  }).join('');
+  paintOptions();
+  paintDials();
+  paintWrite();
+  $('b-test').hidden=!isPro();
+  show('s-desk');
+}
+function paintOptions(){
+  $('d-options').innerHTML=item.options.map((o)=>
+    '<button class="opt'+(choice===o.id?' on':'')+'" data-o="'+esc(o.id)+'">'
+    +'<b>'+esc(o.label)+'</b><span>'+esc(o.body)+'</span></button>').join('');
+  $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
+    b.onclick=()=>{ choice=b.dataset.o; written=''; paintOptions(); paintDials(); paintWrite(); };
+  });
+  $('b-rule').disabled=!choice&&!written.trim();
+}
+/* THE DIALS, AND THE TIER IS IN THE DATA RATHER THAN IN THIS FUNCTION. docket.settings
+   hands back what this player is allowed to turn; the settings a free player does not get
+   are still DRAWN, marked, and dead. Hiding them would hide the offer, and a control you
+   can see but not turn is the clearest a paywall ever gets. */
+function paintDials(){
+  const list=item.dials||[];
+  if(!list.length||!choice){ $('d-dials').innerHTML=''; return; }
+  $('d-dials').innerHTML=list.map((d)=>{
+    const mine=D.settings(d,isPro()), all=D.settings(d,true);
+    const cur=dials[d.id];
+    const fmt=(v)=>D.format(d,v);
+    return '<div class="dial"><div class="dh"><b>'+esc(d.label)+'</b>'
+      +'<span class="v">'+esc(fmt(cur))+'</span></div><div class="steps">'
+      +all.map((v)=>{
+        const can=mine.indexOf(v)>=0;
+        return '<button data-d="'+esc(d.id)+'" data-v="'+v+'"'+(can?'':' disabled')
+          +' class="'+(cur===v?'on ':'')+(can?'':'pro')+'">'+esc(fmt(v))+'</button>';
+      }).join('')+'</div></div>';
+  }).join('');
+  $('d-dials').querySelectorAll('[data-d]').forEach((b)=>{
+    b.onclick=()=>{ dials[b.dataset.d]=Number(b.dataset.v); paintDials(); };
+  });
+  if(!isPro()&&list.some((d)=>D.settings(d,true).length>D.settings(d,false).length)){
+    $('d-dials').insertAdjacentHTML('beforeend',
+      '<div class="prolock"><b>The rest of the range</b><span>The settings in purple are '
+      +'part of the full office. Everything you can reach here is yours for good.</span></div>');
+  }
+}
+/* WRITING YOUR OWN RULING, which is the paid tier's headline and is deliberately NOT wired
+   to a model yet. What is here is the input and the shape of the request; the endpoint is
+   its own piece of work and it is honest to say so on the screen rather than ship a box
+   that quietly does nothing. */
+function paintWrite(){
+  if(!isPro()){ $('d-write').innerHTML=''; return; }
+  $('d-write').innerHTML='<div class="dial"><div class="dh"><b>Or rule in your own words</b>'
+    +'</div><textarea class="write" id="d-text" placeholder="Expand to sixteen, but guarantee '
+    +'the Group of Five two seats for six years, paid for out of the top two shares."></textarea>'
+    +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:7px">Not connected yet. '
+    +'What you write is kept with the ruling so the wording can be tested against what the '
+    +'options produce.</p></div>';
+  const t=$('d-text');
+  if(t){ t.value=written; t.oninput=()=>{ written=t.value; $('b-rule').disabled=!choice&&!written.trim(); }; }
+}
+
+/* TEST IT ON THE ROOM, which is Football President's best idea and is a POWER rather than a
+   screen: it is the same call the ruling makes, on a world that is thrown away. applyEdit
+   being pure is what makes the preview incapable of lying. */
+$('b-test').onclick=()=>{
+  if(!choice) return;
+  const edit=D.resolve(item,choice,dials,cast);
+  lastRoom=B.react(world,edit);
+  lastBefore=world;
+  const after=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
+  $('r-eyebrow').textContent='If you ruled that way';
+  $('r-title').textContent='Nothing is decided yet';
+  $('r-head').textContent='How the room would take it';
+  paintMeters($('r-meters'),after,world);
+  paintRoom($('r-room'),after,lastRoom);
+  $('r-changed').hidden=false;
+  paintSport($('r-sport'),after,world);
+  $('b-next').textContent='Back to the desk';
+  $('b-next').dataset.go='desk';
+  show('s-room');
+};
+
+$('b-rule').onclick=()=>{
+  if(!choice) return;
+  const edit=D.resolve(item,choice,dials,cast);
+  if(written.trim()) edit.written=written.trim();
+  const before=world;
+  lastRoom=B.react(world,edit);
+  world=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
+  save();
+  $('r-eyebrow').textContent='You ruled';
+  $('r-title').textContent=D.text(item.title,cast,item)+': '
+    +item.options.find((o)=>o.id===choice).label.toLowerCase();
+  $('r-head').textContent='The room';
+  paintMeters($('r-meters'),world,before);
+  paintRoom($('r-room'),world,lastRoom);
+  const changed=JSON.stringify(sportFacts(world))!==JSON.stringify(sportFacts(before));
+  $('r-changed').hidden=!changed;
+  if(changed) paintSport($('r-sport'),world,before);
+  $('b-next').textContent='Carry on';
+  $('b-next').dataset.go='on';
+  show('s-room');
+};
+
+$('b-next').onclick=()=>{
+  if($('b-next').dataset.go==='desk'){ desk(); return; }
+  const out=L.removal(world);
+  if(out.removed){ world.outcome=out; save(); ending(); return; }
+  advance();
+};
+
+function advance(){
+  const wasYear=world.year;
+  world=L.advance(world);
+  save();
+  if(world.year!==wasYear){ yearEnd(wasYear); return; }
+  office();
+}
+
+/* ── the year, and the end ────────────────────────────────────────────────────── */
+function yearEnd(year){
+  const done=world.year-world.startYear;
+  $('y-eyebrow').textContent='The year in review';
+  $('y-big').textContent=year;
+  $('y-card').className='verdict'+(world.meters.standing>=55?' good':world.meters.standing<30?' bad':'');
+  const angry=L.removal(world).angry||[];
+  $('y-say').textContent=angry.length
+    ? 'You finish the year with '+angry.join(' and ')+' against you.'
+    : 'You finish the year with the room behind you.';
+  paintSport($('y-sport'),world,null);
+  paintRoom($('y-room'),world,null);
+  if(done>=TERM_SEASONS){ ending(); return; }
+  $('b-year-next').textContent='Season '+(done+1)+' of '+TERM_SEASONS;
+  show('s-year');
+}
+$('b-year-next').onclick=()=>office();
+$('b-quit').onclick=()=>{ if(confirm('Leave the office? The term ends here.')){ world.outcome={removed:false,reason:'quit',say:'You walked away.'}; save(); ending(); } };
+
+function ending(){
+  const o=world.outcome||{removed:false,reason:'served',say:'You served the term.'};
+  $('y-eyebrow').textContent=o.removed?'Removed':'The end of the term';
+  $('y-big').textContent=o.removed?world.year:(world.startYear+' to '+(world.year-1));
+  $('y-card').className='verdict '+(o.removed?'bad':'good');
+  const facts=sportFacts(world), start=sportFacts(L.createWorld({year:world.startYear}));
+  const moved=facts.filter((f,i)=>f[1]!==start[i][1]).length;
+  $('y-say').textContent=(o.say||'')+' You changed '+moved+' of the four things a '
+    +'commissioner is judged on, over '+world.history.length+' rulings.';
+  paintSport($('y-sport'),world,null);
+  paintRoom($('y-room'),world,null);
+  $('b-year-next').textContent='Take the job again';
+  $('b-year-next').onclick=()=>{ newTerm(2025); office(); };
+  $('b-quit').textContent='Back to the game';
+  $('b-quit').onclick=()=>{ location.href='/cfb/'; };
+  show('s-year');
+}
+
+/* ── the door ─────────────────────────────────────────────────────────────────── */
+function gate(){
+  const say=$('gate-say'), act=$('gate-act');
+  if(authState.waiting&&!authState.ready){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
+  if(!authState.ready){
+    say.textContent='Accounts are offline right now, usually a blocked script. This mode '
+      +'needs one to know whether you are on the tester list.';
+    act.innerHTML='<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center">Back to the game</a>';
+    return;
+  }
+  if(!authState.signedIn){
+    say.textContent='Commish Simulator is in testing. Sign in on the game and come back, '
+      +'and if you are on the list this opens.';
+    act.innerHTML='<a class="btn" href="/cfb/" style="text-decoration:none;text-align:center">Sign in on the game</a>';
+    return;
+  }
+  if(!allowed()){
+    say.textContent='Commish Simulator is in testing and this account is not on the list yet. '
+      +'Nothing is missing from the game you were playing.';
+    act.innerHTML='<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center">Back to the game</a>';
+    return;
+  }
+  say.textContent='You run college football. Who is in which conference, how many teams '
+    +'play for the title, what a player is owed, who gets the money. Five seasons, and the '
+    +'sport you change is the one you have to run next year.';
+  const resumable=world&&!world.outcome;
+  act.innerHTML=(resumable
+      ?'<button class="btn" id="g-resume">Back to '+L.BEATS[world.beat]+', '+world.year+'</button>'
+      :'')
+    +'<button class="btn'+(resumable?' ghost':'')+'" id="g-start">'
+      +(resumable?'Start a new term':'Take the job')+'</button>'
+    +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:11px;text-align:center">'
+      +'Your term is kept in this browser while the mode is in testing.<br>'
+      +(forceFree
+        ?'You are looking at the free version. <a href="?">Switch back</a>.'
+        :'<a href="?tier=free">See what a free player sees</a>.')+'</p>';
+  const r=$('g-resume'); if(r) r.onclick=()=>office();
+  $('g-start').onclick=()=>{ newTerm(2025); office(); };
+}
+
+/* ── boot ─────────────────────────────────────────────────────────────────────── */
+(async function boot(){
+  try{ await loadTeams(); }catch(e){}
+  load();
+  const A=window.PS_CFB_AUTH;
+  if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
+  A.onChange((st)=>{ authState=st;
+    $('tag').textContent=!allowed()?'In testing':forceFree?'Tester, free view':'Tester';
+    gate(); });
+  A.boot();
+  gate();
+})();
+})();
+</script>
+</body>
+</html>

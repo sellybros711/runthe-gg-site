@@ -184,6 +184,34 @@ console.log('\n=== the dials are the tier, and they are not decoration ===');
     D.settings(dial, true).indexOf(8) >= 0 && D.settings(dial, false).indexOf(8) < 0,
     'free ' + D.settings(dial, false).join(',') + '   paid ' + D.settings(dial, true).join(','));
 
+  /* HOW EVERY SETTING READS, checked here rather than on the page, because a page test can
+     only check the item it happened to draw and the one it drew was a pair of counts. The
+     bug this exists for is a media rights pool that printed as "130%": the formatter used
+     to infer a percentage from a step size below one, and the pool steps by 0.3 billion.
+     Every dial, every setting, against the unit the data declares. */
+  const wrong = [];
+  for (const it of D.ITEMS) {
+    for (const d of it.dials || []) {
+      const shape = d.unit === 'pct' ? /^-?\d+%$/ : d.unit === 'bn' ? /^\$\d+\.\d+B$/ : /^-?\d+(\.\d+)?$/;
+      for (const v of D.settings(d, true)) {
+        const s = D.format(d, v);
+        if (!shape.test(s)) wrong.push(it.id + '.' + d.id + ' ' + v + ' reads "' + s + '"');
+      }
+    }
+  }
+  ok('  and every setting reads as the kind of number it is', !wrong.length,
+    wrong.join(' | ') || D.ITEMS.flatMap((i) => (i.dials || []).map((d) =>
+      d.id + ' ' + D.format(d, D.settings(d, true)[0]) + ' to ' + D.format(d, D.settings(d, true).slice(-1)[0]))).join(', '));
+  /* A DIAL THAT DECLARES NO UNIT PRINTS A BARE NUMBER, which is right for a count of games
+     and wrong for money. Money is the one that has been got wrong, so name the paths. */
+  const moneyish = [];
+  for (const it of D.ITEMS) {
+    for (const d of it.dials || []) {
+      if (!d.unit && /share|pool|pay|money|cut|rev/i.test(d.path + ' ' + d.id)) moneyish.push(it.id + '.' + d.id);
+    }
+  }
+  ok('  and no money dial is left to print as a bare number', !moneyish.length, moneyish.join(', ') || 'none');
+
   /* A DIAL THAT MOVES THE WORLD BUT NOT THE ROOM IS DECORATION, and decoration in a
      decision screen is worse than nothing: it teaches a player their choices are cosmetic. */
   const low = D.resolve(item, 'to16', { autobids: 3 });
@@ -261,12 +289,23 @@ console.log('\n=== a term off the real docket ===');
   const b = term(11, false);
   ok('  the same seed replays it exactly', JSON.stringify(a.w) === JSON.stringify(b.w));
   const c = term(11, true);
+  /* NAME THE FIELDS THAT MOVED rather than printing three chosen in advance. The first
+     version of this line printed the playoff size, the autobids and the players' share
+     for both terms, and on this seed all three matched: a passing assertion under a
+     detail line that read as a failure. What differs is whatever differs. */
+  function diffs(x, y, path) {
+    if (x === y) return [];
+    if (x && y && typeof x === 'object' && typeof y === 'object' && !Array.isArray(x)) {
+      const keys = Object.keys(Object.assign({}, x, y));
+      return keys.flatMap((k) => diffs(x[k], y[k], path ? path + '.' + k : k));
+    }
+    if (JSON.stringify(x) === JSON.stringify(y)) return [];
+    const short = (v) => (Array.isArray(v) ? v.length + ' entries' : JSON.stringify(v));
+    return [path + ' ' + short(x) + ' to ' + short(y)];
+  }
+  const moved = diffs(a.w, c.w, '');
   ok('  and a paying player, on the same seed, gets a different sport',
-    JSON.stringify(a.w) !== JSON.stringify(c.w),
-    'free: ' + a.w.playoff.teams + '-team playoff, ' + a.w.playoff.autobids + ' autobids, '
-    + Math.round(a.w.labour.revShare * 100) + '% to the players   |   '
-    + 'paid: ' + c.w.playoff.teams + '-team, ' + c.w.playoff.autobids + ' autobids, '
-    + Math.round(c.w.labour.revShare * 100) + '%');
+    moved.length > 0, moved.slice(0, 3).join('   |   ') + (moved.length > 3 ? '   (+' + (moved.length - 3) + ' more)' : ''));
 }
 
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');

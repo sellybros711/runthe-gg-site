@@ -3,12 +3,20 @@
 A new mode inside **College Football: Perfect Season** (`/cfb/`). Not a draft and not a
 season: you are the **commissioner of college football**, and the sport is yours to run.
 
-> **Status:** Stage 0 is built. `cfb/commish/ledger.js` and `cfb/commish/blocs.js` are
-> headless and dependency-free, and `cfb/build/test/commish/test_ledger.mjs` plays a whole
-> five-season term with no UI and replays it from a seed. Nothing is on screen yet.
+> **Status: stages 0 and 1 are built, and the mode is playable at `/cfb/commish/` for
+> anybody on the tester list.** `ledger.js`, `blocs.js` and `docket.js` are headless and
+> dependency-free; the page is the only thing that touches a screen. A term plays on a
+> phone: the desk hands you an item, the room argues before you rule, you rule, nine blocs
+> answer with a number and a line each, and the sport in the save is the sport you changed.
+> It survives the browser closing.
 >
-> Stage 0 deliberately does not depend on either fork below, which is why it could start
-> before they are answered. **Stage 1 does.** Both are marked **DECIDE**.
+> Both forks below are answered. The tiers are the load-bearing one, and testers are
+> treated as paying, so **`?tier=free` on the same URL shows the free experience** rather
+> than nobody on the list ever seeing the half most likely to be got wrong.
+>
+> What is not built: the term is saved to `localStorage` and not to the database, the
+> playoff format on the ledger does not yet feed the engine, and a term does not end. Those
+> are stages 2, 3 and 4.
 
 ---
 
@@ -385,7 +393,7 @@ Each stage ships something you can look at. No stage depends on a later one.
 | Stage | What | Done when |
 |---|---|---|
 | **0** | The ledger and the bloc model, headless, in Node | **Done.** A term simulates in a test with no UI and a seed replays identically |
-| **1** | One beat, end to end: docket, ruling, reactions, ledger edit | One decision plays on a phone and the room answers |
+| **1** | One beat, end to end: docket, ruling, reactions, ledger edit | **Done.** A decision plays on a phone, the room answers, and the term survives a reload |
 | **2** | The full nine-beat season and the year in review | A season plays start to finish, tester-gated, saving to the database |
 | **3** | Playing the sport you built: format and membership feed the engine | A sixteen-team playoff you designed runs in the bracket UI, on its own board |
 | **4** | The five-season term, consequences with long fuses, the legacy card | A term ends, well or badly, and says what you did to the sport |

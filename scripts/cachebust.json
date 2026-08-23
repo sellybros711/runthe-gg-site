@@ -47,6 +47,20 @@
       "sha": "085c658695b471ad"
     }
   },
+  "cfb/commish/index.html": {
+    "ledger.js": {
+      "v": "1",
+      "sha": "3c20364441cf0ce6"
+    },
+    "blocs.js": {
+      "v": "1",
+      "sha": "39fa2cd261ea9a7e"
+    },
+    "docket.js": {
+      "v": "2",
+      "sha": "41bcff039188efb5"
+    }
+  },
   "cfb/index.html": {
     "engine.js": {
       "v": "34",

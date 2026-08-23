@@ -117,7 +117,11 @@
               'Group of Five': { money: -3, access: -2 }, ACC: { money: -2 } } } },
       ],
       dials: [
-        { id: 'pool', label: 'The pool, in billions', path: 'money.pool',
+        /* `unit` because a dial cannot be read off its step. This one steps by 0.3 and is
+           billions of dollars; the players' share steps by 0.05 and is a percentage. The
+           page inferred percent from any step under one and printed the media pool as
+           "130%", which is a number about the right sport and the wrong thing entirely. */
+        { id: 'pool', label: 'The pool', path: 'money.pool', unit: 'bn',
           base: 1.3, free: [1.3], pro: [1.0, 1.3, 1.6, 1.9, 2.2], step: 0.3,
           per: { money: 1.2, exposure: 0.3 } },
       ],
@@ -158,7 +162,7 @@
             aimed: { Presidents: { cost: -3, exposure: 1 }, Players: { labour: 3 } } } },
       ],
       dials: [
-        { id: 'revShare', label: 'The players\' share', path: 'labour.revShare',
+        { id: 'revShare', label: 'The players\' share', path: 'labour.revShare', unit: 'pct',
           base: 0.2, free: [0.15, 0.2], pro: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35],
           step: 0.05, per: { labour: 1.4, cost: 1.2, money: -0.6 } },
       ],
@@ -409,6 +413,15 @@
     return (pro ? dial.pro : dial.free) || dial.free || [];
   }
 
+  /* HOW A SETTING READS, beside the data that decides it rather than guessed at from the
+     step size. See the note on the pool dial: guessing printed a media rights deal as a
+     percentage. */
+  function format(dial, v) {
+    if (dial.unit === 'pct') return Math.round(v * 100) + '%';
+    if (dial.unit === 'bn') return '$' + (Math.round(v * 10) / 10).toFixed(1) + 'B';
+    return String(v);
+  }
+
   /* ONE RULING, AS ONE LEDGER EDIT. The option supplies the shape and the dials move it,
      which is why a dial is not decoration: turning the autobids from five to seven really
      is a different ruling with a different push, and the room feels the difference.
@@ -425,7 +438,11 @@
     const base = (typeof option.edit === 'function' ? option.edit(cast, item) : option.edit) || {};
     const edit = {
       id: item.id + ':' + option.id,
-      label: item.title + ', ' + option.label.toLowerCase(),
+      /* THE TITLE MAY BE A FUNCTION OF THE CAST, and this is the one place that was still
+         concatenating it raw. The record of a ruling is shown to the player, so a title
+         left unresolved put the source of an arrow function on the ledger and nothing
+         failed: it is a string either way. Resolve it here, where the cast is in hand. */
+      label: text(item.title, cast, item) + ', ' + option.label.toLowerCase(),
       set: Object.assign({}, base.set || {}),
       move: Object.assign({}, base.move || {}),
       effects: Object.assign({}, base.effects || {}),
@@ -465,7 +482,7 @@
   const text = (v, cast, item) => (typeof v === 'function' ? v(cast, item) : v);
 
   const publicAPI = { ITEMS, BY_ID, BEATS: { WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF },
-    eligible, pick, resolve, settings, castOf, text };
+    eligible, pick, resolve, settings, format, castOf, text };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_DOCKET = publicAPI;
 })();
