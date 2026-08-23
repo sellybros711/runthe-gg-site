@@ -5504,12 +5504,24 @@ async function runFight(){
       MS.hotTag=true;
       const mate=myTeam().mate;
       const boost = 20 + Math.round(((mate&&mate.over)||55)*0.12);
-      shake(); burst(0,'HOT TAG!'); await callout(mate?(mate.name.toUpperCase()+' IN!'):'HOT TAG!');
+      shake(); burst(0,'HOT TAG!'); sfx('pop'); await callout(mate?(mate.name.toUpperCase()+' IN!'):'HOT TAG!');
       fLog(`<span class="hi">${mate?mate.name:'Your partner'} gets the tag and clears house. The building comes to life.</span>`);
       MS.mom=clamp(MS.mom+boost,-100,100); setMom();
       MS.opp.hp=clamp(MS.opp.hp-9); setBar('hpOpp',MS.opp.hp);
       MS.quality+=6;
       await sleep(420);
+    }
+    // ---- tag out: mid-fight, the player can tag out for a rest ----
+    // Not a full legal-man switch, just a real rest that recovers HP and swings
+    // the crowd back. Once per match, only in a tag stipulation.
+    if(!MS.ended && !MS.tagOut && o.tag && myTeam() && ph.id==='shine' && MS.phaseBeat===1 && MS.me.hp<70){
+      MS.tagOut=true;
+      const mate=myTeam().mate;
+      fLog(`<span class="say">You reach the corner and slap the tag. ${mate?mate.name:'Your partner'} takes over.</span>`);
+      MS.me.hp = clamp(MS.me.hp + 18); setBar('hpMe', MS.me.hp);
+      MS.mom = clamp(MS.mom + 8, -100, 100); setMom();
+      MS.quality += 2;
+      await sleep(320);
     }
     // ---- a live rival can run in and ruin somebody's night ----
     // If you have a story with a wrestler who is NOT tonight's opponent, they
@@ -6379,7 +6391,12 @@ function applyMatch(o,res){
     else if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r) r.defenses=c.defenses;
       titleMsg=`Successful defence #${c.defenses}.`; }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
-      if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100); }
+      if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
+      // Rematch clause: a title loss is not the end of the story. The office
+      // owes you one shot before this rival can defend against anyone else.
+      c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'world'};
+      pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause is in.</b> You have a shot at the ${belt} back at the next PPV, or it burns.`});
+    }
   }
   else if(o.stakes==='secondary'&&res.win){ c.secondary=secBelt; c.secDefenses=0;
     c.reigns.push({title:secBelt,year:c.year,week:c.week,defenses:0,kind:'secondary'});
@@ -6393,7 +6410,11 @@ function applyMatch(o,res){
     else { titleMsg=`You <b>lost</b> the ${c.secondary} to ${o.oppName}.`;
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
-      c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100); }
+      const lostBelt = c.secondary;
+      c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100);
+      c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'secondary', belt:lostBelt};
+      pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause.</b> One shot at the ${lostBelt} back before it burns.`});
+    }
   }
   else if(o.stakes==='tag_title' && res.win){
     const tb = o.belt || beltName(tt,'tag');
@@ -6775,7 +6796,16 @@ function maybeStartTourn(){
   if((c.rep||0)<1200 || (c.standing||50)<52 || rnd()>0.05) return;
   const t=TOURN_NAMES[Math.floor(rnd()*TOURN_NAMES.length)];
   const me=myPromo();
-  const pool=houseRoster(me.id).sort(()=>rnd()-0.5).slice(0,7);
+  let pool=houseRoster(me.id).sort(()=>rnd()-0.5).slice(0,7);
+  // If there is an active feud, make sure the rival is IN the bracket. Seed
+  // them into round 2 or later so the drama lands mid-bracket, not opening night.
+  const st=story();
+  if(st){
+    const rc=charById(st.charId);
+    if(rc && rc.promo===me.id && !pool.some(p=>p.id===rc.id)){
+      pool.splice(1, 1, rc);   // slot 1 = round 2 first opponent
+    }
+  }
   c.tourn={id:t.id,name:t.name,rounds:t.rounds,prize:t.prize,round:1,
     bracket:pool.map(x=>x.id), next:pool[0]?pool[0].id:CHARS[0].id, wins:0, promoId:me.id};
   pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>${t.name}.</b> The office has entered you. Round 1 next week vs <b>${(charById(c.tourn.next)||{}).name||'a first-round opponent'}</b>.`});
@@ -6798,6 +6828,7 @@ function advanceTourn(res){
   const c=G.car, tn=c.tourn; if(!tn) return;
   if(res.win){
     tn.wins++;
+    sfx('pop');
     if(tn.round>=tn.rounds){
       // won it all
       c.rep+=Math.round(500+res.quality*3);
@@ -6823,7 +6854,20 @@ function advanceTourn(res){
       pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Round ${tn.round}.</b> You advance. Next up: <b>${nxt?nxt.name:'the next round'}</b>.`});
     }
   } else {
-    pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>Out of ${tn.name}.</b> ${res.oppName||'They'} advance.`});
+    sfx('boo');
+    // Ran-in during a tournament round? The story now WROTE this ending. Push
+    // the feud straight to blow-off and put it on the inbox so the fiction lines up.
+    const st=story();
+    if(st && res.finish && (res.finish.type==='dq' || res.finish.type==='nc') && st.charId){
+      const rc=charById(st.charId);
+      if(rc){
+        pushInboxItem({ico:pico('impact',18),sev:'bad',
+          txt:`<b>${rc.name} cost you ${tn.name}.</b> This ends at the next PPV, no matter what.`});
+        if(st.stage<3) st.stage=3;
+      }
+    } else {
+      pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>Out of ${tn.name}.</b> ${res.oppName||'They'} advance.`});
+    }
     newsPush({ico:pico('impact',14),cat:'tourn',t:`<b>${res.oppName||'A rival'} eliminates ${G.w.name} from ${tn.name}.</b>`});
     c.tourn=null; c.tournCooldown=(c.year*1000+c.week)+16;
   }
@@ -6958,8 +7002,11 @@ function maybeBackstage(){
   if(st && st.stage<4 && G.car.week % 3 === 0) return backstageEvent();
   // no active feud: allies and mid-carders can still stop you in the hall
   if(!st && G.car.week % 5 === 0 && rnd()<0.55) return nonRivalBackstage();
-  // life outside the ring: interviews, endorsements, small drama, hometown
-  if(!st && G.car.week % 7 === 0 && rnd()<0.45) return lifeEvent();
+  // life outside the ring: interviews, endorsements, small drama, hometown.
+  // Skip on weeks that already carry a story-loaded booking; a podcast should
+  // not crash into a KOTR final or a Japan tour.
+  const busy = G.car.tourPending || G.car.tourn;
+  if(!st && !busy && G.car.week % 7 === 0 && rnd()<0.45) return lifeEvent();
   return false;
 }
 /* Off-screen life. Fires between shows on quiet weeks. Nothing about the ring,
@@ -9270,6 +9317,7 @@ async function pmFinish(suppressPop){
     const rc=charById(st.charId);
     if(rc){
       const R=rel(rc.id);
+      sfx('boo'); sfx('impact');
       pmLog(`<span class="bad">The music cuts. <b>${rc.name}</b>'s music hits. They are marching down the aisle.</span>`);
       await sleep(600);
       pmLog(`<span class="say">"${(rc.lines.taunt[0]||'This is not about you tonight.')}"</span>`);
