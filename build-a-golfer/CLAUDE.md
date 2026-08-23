@@ -16502,3 +16502,56 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   worker is network-first for navigations, so the new build reaches players on next load.
 - Tunable: the `.brail`/`.bstake`/`.bhero`/`.bres`/`.broute` CSS block, the copy in `bracketStakes`,
   and `bracketExitFinish` if the payout curve ever changes shape.
+
+### PLAYER BUG REPORT: "the game thinks I've picked another option other than the one I chose"
+- **The report** (forwarded from a player, `dailyround` / career / iPhone / Chrome iOS 151): *"When menus
+  pop up about half the time the game thinks I've picked another option other than the one I chose."*
+- **The obvious suspect was wrong, and ruling it out mattered.** The leading theory was that the two
+  decision buttons were bound by INDEX (`sc.opts[0]` as aggressive, `sc.opts[1]` as safe) while the
+  scenario's `opts` order could vary, so the label and the action would disagree ~half the time. It cannot:
+  every one of the ~20 scenario templates is built by the same `S2` helper, which hardcodes
+  `opts:[{agg:true},{agg:false}]`, and the other two decision UIs (`dPlaceTargets`, `dDecisionModal`) read
+  the `agg` FLAG rather than the index. Confirmed empirically too - real taps in a live round recorded the
+  right `attack` value every time, and a 480-case sweep found no case where a target's label center
+  hit-tested to the other option. **It is not a swapped-buttons bug.**
+- **Three real defects were found by measuring, and all three are fixed:**
+  1. **A genuine 50/50, and it is the one that fits the report.** The prompt names a pin side ("pin cut
+     left", "Fire at the left pin") from `rng()<0.5`, a coin flip completely independent of the hole
+     geometry - while the on-course ⚡ target is drawn at the pin `hvGeom` actually picked (and that pin
+     ROTATES per play). Measured across every course's decision holes: **15 of 30 pin-side claims
+     disagreed with where the ⚡ chip actually sat - exactly 50%.** A player reads "fire at the left pin",
+     sees the aggressive target on the right, taps the left-hand chip and gets the safe play. New
+     `dPinSpot()` reads the real pin off the same geometry the tracer draws, so the copy always matches
+     the flag on screen; a centre pin now reads "at the front"/"at the back" instead of being called
+     left or right at all. Re-measured: **50% → 0% (23 claims, 0 wrong).**
+  2. **The chips' transparent gaps were stealing taps from each other.** A `.dctarget` is a flex column
+     (label / pointer / ring) whose BOX is far bigger than anything visible, and the two chips sit close
+     together near the green (the collision nudge only pushes 11%), so one chip's empty box overlapped
+     the other's visible aiming ring - and the safe chip, appended last, won the hit test. `.dctarget` is
+     now `pointer-events:none` with the label and ring `pointer-events:auto`, so **only what you can see
+     takes a tap.** Verified: 36 probes across the full visible area of every chip, nothing resolves to
+     the other option (the 3 remaining misses are the ring's bounding-box CORNERS, outside the circle).
+  3. **Nothing on the round screen set `touch-action:manipulation` - 28 of 28 interactive elements were
+     `auto`.** On iOS that means a ~300ms double-tap-zoom delay and taps that drift slightly get
+     swallowed or mis-targeted, which is very likely why this reproduces on iOS Chrome and not in the
+     owner's Safari/PWA. Added to the decision chips, the decision cards, the modal options and the
+     scorecard cells.
+- **Determinism was protected, and the first cut broke it.** `dScenario` picks its template from a seeded
+  stream, so an extra `rng()` call changes which decision a given day/hole asks. My first version called
+  the coin flip unconditionally where the original short-circuited on `water-l`/`water-r` holes - caught
+  by diffing scenario selection against the deployed build (4 of 36 shifted). Now the call is made in
+  exactly the original cases. Verified against `origin/main:golf/index.html`: **504 simulated holes
+  byte-identical, 168 decisions with identical template choice and identical phase routing** - the only
+  difference in the whole build is the pin wording.
+- **Flagged, NOT changed** (a layout decision, not a defect to fix mid-investigation): on a phone the
+  decision CARDS - the ones showing the odds and the risk - render at y≈750-960 in an 844px viewport, and
+  iOS Chrome's usable viewport is ~660px, so **the player never sees them without scrolling.** They only
+  ever see the two on-course chips. Worth deciding whether the cards should move above the window or the
+  window should shrink while a decision is up. Related: the scorecard's tap-to-rewatch cells are 34x25,
+  under the 44px guideline.
+- Verified: a full 18-hole practice round tapping the on-course chips (every tap recorded the option
+  chosen), a render sweep of title/shop/leaderboard/course-records/rules, and the determinism comparison
+  above - **7 pass, 0 fail, 0 page errors**; inline scripts parse (block 0 is the JSON-LD tag, fails
+  identically on baseline).
+- Tunable: `dPinSpot` (how a pin's position is described), the `.dctarget` pointer-events split, the
+  collision nudge in `dPlaceTargets`.
