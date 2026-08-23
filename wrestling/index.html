@@ -1135,6 +1135,8 @@
           </div></label>
         <label class="fld"><div class="flab">Nickname <span class="hint">(optional)</span></div><input type="text" id="cNick" placeholder="The Alley Cat" maxlength="26"></label>
         <label class="fld"><div class="flab">Finisher Name <span class="hint">(what the announcer calls your finish, optional)</span></div><input type="text" id="cFinName" placeholder="The Spiral Driver" maxlength="30"></label>
+        <label class="fld"><div class="flab">Second Finisher Name <span class="hint">(the one you reach for when the first is scouted)</span></div><input type="text" id="cFinNameB" placeholder="The Reject" maxlength="30"></label>
+        <label class="fld"><div class="flab">Catchphrase <span class="hint">(what you say to the crowd, optional)</span></div><input type="text" id="cCatch" placeholder="Believe that." maxlength="60"></label>
         <label class="fld"><div class="flab">Entrance Theme <span class="hint">(what the music sounds like)</span></div>
           <select id="cEntrance">
             <option value="metal">Metal · guitars, war chant</option>
@@ -3204,6 +3206,8 @@ function finishCreate(){
     w:{ name, nick:($('cNick').value||'').trim(), align:$('cAlign').value, era:$('cEra').value, style:CREATE.style,
         look:Object.assign({},CREATE.look), attrs, mastery, moves:(window.RTR_STARTER_MOVES||[]).slice(), custom:[], finisher:null, tp:0, xp:0,
         finisherName:($('cFinName').value||'').trim()||null,
+        finisherNameB:(($('cFinNameB')&&$('cFinNameB').value)||'').trim()||null,
+        catch:(($('cCatch')&&$('cCatch').value)||'').trim()||null,
         entrance:($('cEntrance').value||'metal') },
     car:{ age:21, year:1, week:1, rep:0, pop:5, cond:100, morale:70, mom:50,
           rec:{w:0,l:0,d:0}, title:null, reigns:[], earnings:0, streak:0, rivalId:null,
@@ -5577,10 +5581,13 @@ async function runFight(){
     if(MS.beat%3===0) refDrift();
 
     // ---- hot tag: in a tag match, your partner tags in and cleans house ----
+    // Chemistry between you two tightens the timing; the more matches you've
+    // worked together, the more reliable the hot tag lands and the bigger the pop.
     if(!MS.ended && !MS.hotTag && o.tag && myTeam() && ph.id==='heat' && MS.mom<-15 && MS.phaseBeat>=1){
       MS.hotTag=true;
       const mate=myTeam().mate;
-      const boost = 20 + Math.round(((mate&&mate.over)||55)*0.12);
+      const chem = (myTeam().ally && myTeam().ally.chem) || 0;
+      const boost = 20 + Math.round(((mate&&mate.over)||55)*0.12) + Math.round(chem*0.20);
       shake(); burst(0,'HOT TAG!'); sfx('pop'); await callout(mate?(mate.name.toUpperCase()+' IN!'):'HOT TAG!');
       fLog(`<span class="hi">${mate?mate.name:'Your partner'} gets the tag and clears house. The building comes to life.</span>`);
       MS.mom=clamp(MS.mom+boost,-100,100); setMom();
@@ -5739,7 +5746,14 @@ async function runFight(){
     // ---- the finish is attempted, not accumulated ----
     // When the wrestler's own finisher landed, log the custom finisher name
     // (if they gave it one at creation) instead of the raw move name.
-    const finishName = (byMe && isFin && G.w.finisherName) ? G.w.finisherName : lastMove;
+    // If this opponent has scouted your first finisher across enough meetings,
+    // reach for the second one instead (if named). The primary keeps landing,
+    // but the announcer calls the alternate move.
+    const _oppScouted = (rel(o.oppId).finisherScouted||0);
+    const _useB = isFin && byMe && G.w.finisherNameB && _oppScouted>=3;
+    const finishName = (byMe && isFin)
+      ? ( _useB ? G.w.finisherNameB : (G.w.finisherName || lastMove) )
+      : lastMove;
     if(!MS.ended && lastCat==='submission' && rnd()<(MS.phase>=3?0.85:0.5)){
       await submissionAttempt(byMe, finishName);
     } else if(!MS.ended && rnd()<coverChance(byMe,isFin)){
@@ -6659,6 +6673,11 @@ function applyMatch(o,res){
   }
   // ---- relationship with this character ----
   const R=rel(o.oppId); R.met=true; R.matches++;
+  // Every meeting scouts your finisher a little more, so a long feud has a
+  // real reason to reach for the second one.
+  if(res.finish && res.finish.by && (res.finish.type==='pin'||res.finish.type==='sub')){
+    R.finisherScouted = (R.finisherScouted||0) + 1;
+  }
   if(draw){ R.respect+=6; R.heat+=3; } else if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=2; R.heat+=2; }
   if(res.quality>=70) R.respect+=8;
   if(res.quality>=82) R.respect+=7;
@@ -6678,6 +6697,9 @@ function applyMatch(o,res){
     const _tm2 = myTeam();
     if(draw){} else if(res.win){ c.teamRec.w++; if(_tm2) nudgeLoyalty(_tm2.ally.id,4); }
     else { c.teamRec.l++; if(_tm2) nudgeLoyalty(_tm2.ally.id,-3); }
+    // Tag chemistry: every match together tightens what the partnership can
+    // do. A great match tightens it more. Read later by the hot-tag chance.
+    if(_tm2){ _tm2.ally.chem = clamp((_tm2.ally.chem||0) + 1 + (res.quality>=75?1:0), 0, 100); }
   }
   res.oppName=o.oppName; checkMilestones(res, o);
   c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
@@ -9132,6 +9154,11 @@ function beginPromo(mode,targetId){
     : target? `Face to face with ${target.name}` : '';
   $('pmLog').innerHTML=''; pmClearBubbles(); pmMeter();
   pmLog(`The music cuts. You have the microphone${target?`, and ${target.name} is already out here.`:'.'}`,'open');
+  // Catchphrase opens the segment if the wrestler has one, and it lands with
+  // the crowd once per segment on any promo mode.
+  if(G.w.catch){
+    pmLog(`<span class="say" style="color:var(--gold)">"${G.w.catch}"</span>`,'open');
+  }
   pmModePicker();    // player picks how deep to go before the office speaks
 }
 
@@ -10257,7 +10284,8 @@ function renderRecord(){
                {t:`Matches <span class="pgr-x">${G.hist.length}</span>`},
                {t:`Titles <span class="pgr-x">${c.reigns.length}</span>`},
                {t:`Accolades <span class="pgr-x">${acc.length}</span>`},
-               {t:`Splits`}];
+               {t:`Splits`},
+               {t:`Faced`}];
   h+=`<div style="margin-top:14px;">`+pagerBar('rec',chips,renderRecord)+`</div>`;
   const pg=pagerIdx('rec',chips.length);
   if(pg===0){
@@ -10288,7 +10316,7 @@ function renderRecord(){
   } else if(pg===3) {
     h+= acc.length? acc.map(a=>`<div class="movecard have"><span class="nm">${a.ico} ${a.txt}</span> <span class="rq">Year ${a.y}</span></div>`).join('')
       : `<p class="hint">No milestones yet.</p>`;
-  } else {
+  } else if(pg===4) {
     // Splits: win % and average rating by stipulation and by opponent tier
     const bucket = {};
     (G.hist||[]).forEach(m=>{
@@ -10327,6 +10355,27 @@ function renderRecord(){
     else h+=(rows?`<div class="flab" style="margin-top:6px;">By stipulation</div>`+rows:'')
           +(tierRows?`<div class="flab" style="margin-top:14px;">By night</div>`+tierRows:'')
           +yaHtml;
+  } else if(pg===5){
+    // Codex of every opponent you have faced. Aggregate from G.hist, join with
+    // rel() for respect/heat, tap through to charProfile.
+    const byOpp = {};
+    (G.hist||[]).forEach(m=>{
+      const key=m.opp; const b=byOpp[key]||(byOpp[key]={name:m.opp,n:0,w:0,l:0,d:0,best:0,last:null});
+      b.n++; if(m.win) b.w++; else if(m.win===false) b.l++; else b.d++;
+      if((m.q||0)>b.best) b.best=m.q;
+      if(!b.last || m.y*1000+m.w > b.last.y*1000+b.last.w) b.last={y:m.y,w:m.w,q:m.q};
+    });
+    const rows2 = Object.values(byOpp).sort((a,b)=>b.n-a.n).map(b=>{
+      const ch = CHARS.find(x=>x.name===b.name);
+      const R = ch ? rel(ch.id) : null;
+      const respect = R ? Math.round(R.respect) : null;
+      const clickAttr = ch ? `onclick="charProfile('${ch.id}')" style="cursor:pointer"` : '';
+      return `<div class="movecard have" ${clickAttr}>
+        <span class="nm">${b.name}${b===Object.values(byOpp).sort((x,y)=>y.n-x.n)[0]?' <span style="color:var(--gold);font-size:9px;letter-spacing:.15em;">MOST-FACED</span>':''}</span>
+        <span class="rq">${b.n} match${b.n===1?'':'es'} · <b>${b.w}-${b.l}${b.d?'-'+b.d:''}</b> · best ${starStr(b.best)}★${respect!==null?` · respect ${respect}`:''} · last Y${b.last.y}W${b.last.w}</span>
+      </div>`;
+    }).join('');
+    h += rows2 || `<p class="hint">No opponents on record yet. Every wrestler you face is filed here.</p>`;
   }
   h+=`<div class="row" style="margin-top:18px;"><button onclick="openCard()">View Player Card</button><button class="ghost" onclick="showLegends()">Hall of Legends</button>${c.retireOnWeek?`<button class="ghost" style="border-color:var(--gold);color:var(--gold);" disabled>Farewell tour · last week Y${c.retireOnWeek.y}W${c.retireOnWeek.w}</button>`:`<button class="ghost" onclick="confirmFarewell()">Announce farewell tour</button>`}<button class="ghost" onclick="confirmRetire()">Retire now</button></div>`;
   $('recBody').innerHTML=h;
