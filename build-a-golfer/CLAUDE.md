@@ -16336,3 +16336,52 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   Nothing else in the game references `openingRival`, so adding features that consume it
   (a "Beat the Nemesis" season goal, a farewell moment on their retirement, a Records-Book
   "won the head-to-head this year" toast) is additive from here.
+
+### SCHEDULE AGENCY: rest weeks (owner: green-lit as the audit's #3 pick, closing four of the top
+### five gaps from the Career Mode Canon study in a single session)
+- **The gap this closes:** real pros play 18-25 of the tour's ~45 events, and every canon career
+  mode gives you that choice. Ours didn't — you played all 20 events every year. This adds a REST
+  WEEK: skip a regular-tour stop, world plays without you, money list moves, you earn nothing.
+  Budget of **4 per season** so choosing which weeks to sit means something.
+- **Anchors stay mandatory.** The picker is `eventSkippable(evt)` — false for majors, signatures,
+  playoffs, team-cup weeks, the Olympics, the Match Play bracket, Frontier League stops, and the
+  finale. Rest is only for regular-tour weeks and their opposite-field events, which is where real
+  pros actually skip in real life.
+- **Naming trap: `S.season.skipped` was already taken** by "Skip to End" (a PRE-EXISTING boolean
+  that forfeits coins for the rest of the season). Rest weeks live on `S.season.restWeeks` — no
+  key collision, and rest weeks do NOT trip the skipped-to-end penalty. Verified by test.
+- **The mechanic (`restThisWeek()`) is honest about what a rest is.** Run `beginEvent()` (world
+  field assembled), strip YOU from `ce.players` before subsequent rounds fire, walk the sim to
+  done. Because you're gone before the event finalizes, `finalizeEvent()`'s totals-update loop
+  never touches your row — no phantom `played++`, no money, no points. The one detail worth knowing:
+  `beginEvent`'s inline Thursday sim already computed you a round-1 score before the strip; it
+  never reaches `S.season.totals` because your row is gone by the time the event ends. Harmless.
+- **The Rest button is on the season screen's control bar**, appearing only when `canRestNow()`
+  clears three checks: (a) event is skippable, (b) you have budget left, and (c) `ce.roundsDone <= 1`
+  (rest is a "before the field commits" call, not a mid-round withdrawal). The bar grows from 4 to
+  5 columns exactly when this hits, so anchor weeks show the tighter untouched layout.
+- **Confirm overlay** mirrors `overlayConfirmSkip`'s shape so it feels native: names the event by
+  name, says the money list moves without you and Season Goals gain no progress, and shows the
+  budget you'll have left after. `Take the week off ▸` in gold, `Tee it up instead` in ghost.
+- **Season summary card** on the Overview tab — teal-accent, only present if any rest was taken:
+  `"Rest weeks · 2/4 taken · Sat out: Phoenix Open · Canyon Crest Invitational"`. Slots between
+  Season Goals and the stat masthead in the compose order.
+- **Save/resume.** `S.season.restWeeks` is added to both `autoSaveSeason` and `saveMidSeasonAndExit`
+  field-filtered snapshots. The full-`S.season` summary-resume path picks it up automatically.
+- **Composes cleanly with the rest of the session's work.** Season Goals grade against your final
+  stats regardless of how many weeks you played — resting doesn't punish goals directly (you just
+  make less progress); it costs opportunity, not baseline. Career Nemesis H2H doesn't accrue on
+  weeks you rest (correct — you weren't in the field). Records Book milestones don't move.
+- **Verified: 37 checks pass, 0 page errors.** Every anchor type rejected (majors, signatures,
+  playoffs, team cups, Olympics, bracket, Frontier, finale, null); regulars + opposite-field
+  events pass. `restsLeft()` decrements and floors at 0. End-to-end: found "Island Open" week,
+  rested it, `S.season.restWeeks` grew by 1, `S.evtIndex` advanced by 1, YOUR played/money/points
+  all deltas 0, other players played (world advanced). Budget exhausts exactly at 4/4. Daily,
+  circuit, no-season all refuse. Button appears with the count `"Rest (4)"`. Summary card lists
+  the actual event names. Skipped-to-end penalty flag stays falsy. All three UI surfaces
+  screenshotted (control bar, confirm overlay, summary card).
+- **Regressions all green:** rest 37, rival 17, records 24, goals 25, daily_glitch 5, circuit 14,
+  morris 16 — **138 total, 0 page errors.**
+- **Tunable in one place:** `RESTS_PER_SEASON` (currently 4). The anchor list lives in
+  `eventSkippable`; add a new event category by adding one line. Card copy in the confirm overlay
+  and summary card can be reworded without touching the mechanic.

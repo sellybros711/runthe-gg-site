@@ -2183,6 +2183,15 @@ window.GA_ID='G-L29P5MRWKE';
   .orival-vs{font-family:var(--display); font-weight:400; font-size:14px; color:rgba(224,122,95,.7); letter-spacing:.08em}
   .orival-foot{margin-top:10px; padding-top:8px; border-top:1px dashed rgba(224,122,95,.16); font-size:12px; color:var(--muted); text-align:center; font-variant-numeric:tabular-nums}
   .orival-foot b{color:var(--oncard); font-weight:700}
+  /* SCHEDULE AGENCY — the Rest Week card in the summary + the pill on the control bar. Real pros
+     don't tee it up 40 weeks a year; you shouldn't either if you don't want to. */
+  .restcard{background:var(--panel); border:1px solid var(--line); border-left:3px solid #6bb59a;
+    border-radius:10px; padding:12px 14px 10px; margin:6px auto 12px; max-width:520px; font-family:var(--body)}
+  .restcard-hd{display:flex; align-items:baseline; gap:9px; margin-bottom:6px}
+  .restcard-tag{font:800 10px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:#6bb59a}
+  .restcard-count{font-family:var(--mono); font-weight:800; font-size:11.5px; color:var(--oncard); font-variant-numeric:tabular-nums}
+  .restcard-list{font-size:13px; color:var(--muted); line-height:1.45}
+  .restcard-list b{color:var(--oncard); font-weight:600}
   .sstat .v.gold{color:var(--gold); font-size:22px}
   /* CS264: Career Hub dashboard - franchise-mode banner (avatar · name · year/age + stats) + season event rail */
   .careerbanner{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px; padding:12px 15px;
@@ -5082,7 +5091,8 @@ function autoSaveSeason(){
       skipped:S.season.skipped, coinRaw0:S.season.coinRaw0, proving:S.season.proving,
       stops:S.season.stops, momentsShown:S.season.momentsShown, grudgeShown:S.season.grudgeShown, sideMoney:S.season.sideMoney, _lastStopEvt:S.season._lastStopEvt,
       confidence:S.season.confidence, followers0:S.season.followers0,
-      goals:S.season.goals } } });   // Season Sheet is deterministic-per-year but stashed so a mid-season resume shows the exact same sheet
+      goals:S.season.goals,   // Season Sheet is deterministic-per-year but stashed so a mid-season resume shows the exact same sheet
+      restWeeks:S.season.restWeeks } } });   // rest weeks are event-log data, must persist across mid-season save
 }
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
 // one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
@@ -5116,7 +5126,7 @@ function saveMidSeasonAndExit(){
   // ensure S.career reflects this year before snapshotting (career object is created at the first summary)
   const saved=saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
-      goals:S.season.goals } } });
+      goals:S.season.goals, restWeeks:S.season.restWeeks } } });
   track('career_mid_save',{year:S.year,evt:S.evtIndex,saved});
   clearTimeout(seasonTimer); reset(); render();
   toast(saved?'Career saved. Resume from the home screen':'Sign in to save & resume your career');
@@ -9588,6 +9598,7 @@ function render(){
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
     if(S.overlay==='confirmSkip') overlayConfirmSkip(app);
+    if(S.overlay==='confirmRest') overlayConfirmRest(app);
     if(S.overlay==='challenges') overlayChallenges(app);
     if(S.overlay==='wheel') overlayWheel(app);
     if(S.overlay==='login') overlayLogin(app);
@@ -10217,6 +10228,104 @@ function openingRivalCardHTML(){
     </div>
     <div class="orival-foot">${h2hLine}${yrLine}</div>
   </div>`;
+}
+
+/* ══════ SCHEDULE AGENCY — you don't have to tee it up every week ══════════════════════════════
+   The audit's #3 gap. Real pros play 18-25 events of the ~45 on tour; every canon career mode
+   gives you that choice; ours didn't. This adds a REST WEEK: skip a regular-tour week, world plays
+   without you, standings advance, budget of 4 rests per season.
+
+   Anchors stay mandatory — you can't rest a major, a signature event, a Cup playoff, the Olympics,
+   a team-cup week, the Match Play bracket, or a Frontier League stop. Those are what the season
+   is FOR. Rest weeks are for the mid-season regular events, and the budget is small on purpose
+   (4 of ~15 eligible weeks) so choosing which weeks to sit means something.
+
+   Naming note: S.season.skipped is a PRE-EXISTING boolean used by "Skip to End" (which forfeits
+   coins for the rest of the season). Rest weeks live on S.season.restWeeks — different key, no
+   collision, and rest weeks do NOT trip the skipped-to-end penalty. Regular career only; the
+   Legend Circuit (a 12-year set piece) doesn't get rest weeks.
+*/
+const RESTS_PER_SEASON = 4;
+
+// What events are mandatory. Everything the tour year is BUILT around; the ones you circle on
+// the calendar. Skippable = regular-tour weeks (evt.type absent/reg + no big/major/team/olympics).
+function eventSkippable(evt){
+  if(!evt) return false;
+  if(evt.big) return false;               // covers majors + signature + playoffs + finale
+  if(evt.major) return false;             // (redundant with big but explicit)
+  if(evt.teamcup) return false;           // Ryder / Nations cup week
+  if(evt.olympics) return false;          // set-piece
+  if(evt.bracket) return false;           // Match Play Championship
+  if(evt.type === 'league') return false; // Frontier League stops (contractually in)
+  if(evt.type === 'finale') return false; // Tour Championship
+  if(evt.playoff) return false;           // any playoff-tagged event
+  return true;
+}
+function restsUsed(){ return ((S.season && S.season.restWeeks) || []).length; }
+function restsLeft(){ return Math.max(0, RESTS_PER_SEASON - restsUsed()); }
+function canRestNow(){
+  if(S.daily || S.circuitMode || !S.season) return false;
+  const evt = S.schedule && S.schedule[S.evtIndex]; if(!eventSkippable(evt)) return false;
+  const ce = S.curEvt;
+  // Only offer BEFORE the field-cut moves — i.e. Thursday's still fresh. After the cut the field
+  // has committed and "withdrawing" is weird UX; the choice is really "next Monday, tee it or not."
+  if(ce && ce.roundsDone > 1) return false;
+  return restsLeft() > 0;
+}
+
+// The mechanic. Runs a full sim WITHOUT you: beginEvent sets up the field, we strip your row from
+// ce.players before subsequent rounds fire, the sim + finalizeEvent walk the world normally, and
+// your season totals are never touched. Result: money list moves, world rank drifts, you sat out.
+function restThisWeek(){
+  if(!canRestNow()) return;
+  const evt = S.schedule[S.evtIndex];
+  // If beginEvent hasn't run yet for this event, run it (so the field exists to be sim'd)
+  if(!S.curEvt || S.curEvt.idx !== S.evtIndex){ try{ beginEvent(); }catch(e){} }
+  // Strip you out so the remaining rounds + finalizeEvent don't touch your totals. beginEvent's
+  // inline round-1 sim already gave you a Thursday number, but since your row is gone before the
+  // event finalizes, that number never reaches S.season.totals.
+  if(S.curEvt && S.curEvt.players){
+    S.curEvt.players = S.curEvt.players.filter(o => !(o.p && o.p.you));
+  }
+  // Walk to done (world plays out; finalizeEvent updates every other player's totals)
+  try{ while(S.curEvt && !S.curEvt.done) simNextRound(); }catch(e){}
+  // Record the rest AFTER the sim (so the summary knows how many events had a rest row)
+  S.season.restWeeks = S.season.restWeeks || [];
+  S.season.restWeeks.push({ wk: evt.wk, name: evt.name, evtIndex: S.evtIndex });
+  try{ track('rest_week', { name: evt.name, wk: evt.wk, used: restsUsed(), left: restsLeft() }); }catch(e){}
+  // Advance to the next event, same path a played event uses
+  try{ advanceEvent(); }catch(e){}
+  render();
+}
+
+// Summary card. Sits on the season summary Overview tab whenever any rest weeks were taken.
+function restWeeksCardHTML(){
+  const rw = (S.season && S.season.restWeeks) || []; if(!rw.length) return '';
+  const names = rw.map(r => esc(r.name)).join(' · ');
+  return `<div class="restcard">
+    <div class="restcard-hd">
+      <span class="restcard-tag">Rest weeks</span>
+      <span class="restcard-count">${rw.length}/${RESTS_PER_SEASON} taken</span>
+    </div>
+    <div class="restcard-list">${names ? `Sat out: <b>${names}</b>` : ''}</div>
+  </div>`;
+}
+
+// Confirm overlay — mirrors overlayConfirmSkip's shape so the interaction feels native.
+function overlayConfirmRest(screen){
+  const evt = S.schedule && S.schedule[S.evtIndex];
+  const evtName = esc((evt && evt.name) || 'this event');
+  const left = restsLeft() - 1;   // after this rest is taken
+  const ov = $(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Rest this week?</h3>
+    <p class="lede">You'll sit out the <b>${evtName}</b>. The world plays on and the money list moves without you, but you earn nothing this week (and no Season Goals progress either). ${left>=0?`You'll have <b>${left}</b> rest week${left===1?'':'s'} left this season.`:''}</p>
+    <button class="btn goldfill">Take the week off ▸</button>
+    <button class="btn ghost cancel" style="margin-top:10px">Tee it up instead</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.goldfill').onclick=()=>{ S.overlay=null; restThisWeek(); };
+  screen.appendChild(ov);
 }
 
 function overlayRecord(screen){
@@ -22258,10 +22367,16 @@ function scrSeason(){
   const cbBase='display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.055);color:var(--oncard);cursor:pointer;font:800 11px/1 var(--body);letter-spacing:.02em';
   const cbOn=';border-color:rgba(22,181,166,.6);background:rgba(22,181,166,.17);color:#7fe9db';
   const mkc=(icon,label,fn,active,title)=>{ const b=$(`<button type="button" aria-label="${title||label}" title="${title||''}" style="${cbBase}${active?cbOn:''}"><span style="font-size:18px;line-height:1;display:flex" aria-hidden="true">${ic(icon)}</span><span style="white-space:nowrap">${label}</span></button>`); b.onclick=fn; return b; };
-  const bar=$(`<div style="display:grid;grid-template-columns:repeat(${S.daily?3:4},1fr);gap:8px;margin-top:10px"></div>`);
+  // Rest Week: only shown when this event is a regular tour stop (not an anchor) AND you still have
+  // budget. Widens the control bar to 5 columns only when the option is live, so anchor weeks show
+  // the tighter 4-column layout untouched.
+  const showRest = (typeof canRestNow==='function') && canRestNow();
+  const barCols = S.daily ? 3 : (showRest ? 5 : 4);
+  const bar=$(`<div style="display:grid;grid-template-columns:repeat(${barCols},1fr);gap:8px;margin-top:10px"></div>`);
   bar.appendChild(mkc('repeat', S.autoSim?'Auto On':'Auto Off', ()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();}, S.autoSim, 'Auto-advance events'));
   bar.appendChild(mkc('skip','Skip', ()=>{ S.overlay='confirmSkip'; render(); }, false, 'Skip to the end of the season'));
   bar.appendChild(mkc('clock', paceMs().lbl, ()=>{ const pro=passProActive(); const ord=pro?['normal','fast','chill']:['normal','chill']; let cur=S.simPace; if(cur==='fast'&&!pro) cur='normal'; S.simPace=ord[(ord.indexOf(cur)+1)%ord.length]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); }, false, passProActive()?'How fast rounds play':'How fast rounds play · Fast is a Tour Pass perk'));
+  if(showRest) bar.appendChild(mkc('clock', 'Rest ('+restsLeft()+')', ()=>{ clearTimeout(seasonTimer); S.overlay='confirmRest'; render(); }, false, 'Sit out this week · rest weeks left: '+restsLeft()));
   if(!S.daily) bar.appendChild(mkc('home','Exit', saveMidSeasonAndExit, false, 'Save & exit to home'));
   ctrl.appendChild(bar);
   // keep the coin-forfeit note (compact one-liner) so skipping still warns
@@ -23296,7 +23411,9 @@ function scrSummary(){
     // right under a legacy unlock (rarer, gets top billing) and above the stat masthead.
     const finalRow=(S.career&&S.career.seasons&&S.career.seasons.length)?S.career.seasons[S.career.seasons.length-1]:null;
     const goalsCard=(!S.daily && !S.circuitMode && typeof seasonGoalsCard==='function')?seasonGoalsCard({finalSeason:finalRow}):null;
-    [statusCard, legacyCard, goalsCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
+    // Rest weeks card — only present if any were taken; small acknowledgement that the season had shape
+    const restCard=(!S.daily && !S.circuitMode && typeof restWeeksCardHTML==='function')?(function(){ const h=restWeeksCardHTML(); return h?$(h):null; })():null;
+    [statusCard, legacyCard, goalsCard, restCard, statHero, tourWon, highlights, raceCupRow].filter(Boolean).forEach(n=>{ if(anchor) ovC.insertBefore(n, anchor); else ovC.appendChild(n); });
   }
   // CS481 (owner): rivalry belongs on the REPUTATION tab.
   __cur=reC;
