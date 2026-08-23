@@ -33,7 +33,11 @@
   /* Usernames, as typed on the leaderboard. Lowercased when matched, because set_username
      stores the casing somebody typed and an exact-case match silently misses them.
      72_comp_passes.sql hit this and wrote it down. */
-  var COMMISH_TESTERS = [];
+  var COMMISH_TESTERS = [
+    'malikwillislover',
+    'runnyj',
+    'slimeyb3',
+  ];
 
   /* Supabase account ids. For an account with no username chosen, this is the only way on
      the list. The gate screen at /cfb/commish/ prints the signed-in account's id. */

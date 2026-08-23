@@ -91,6 +91,32 @@ async function doorOpens(signedIn,username){
   return {open,errs};
 }
 
+/* THE SAME TWO QUESTIONS, WITHOUT THE TEST'S THUMB ON THE SCALE. `arm` is what makes the
+   blocks above independent of who is really on the list; these are what make the block at
+   the bottom able to check exactly that. */
+async function doorOpensBare(username){
+  const p=await b.newPage({viewport:{width:390,height:900}});
+  const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
+  await p.addInitScript(stub(true,username));
+  await p.goto(MODE,{waitUntil:'domcontentloaded',timeout:40000});
+  await p.waitForTimeout(2600);
+  const open=!!(await p.$('#g-start'));
+  await p.close();
+  return {open,errs};
+}
+async function cardShownBare(username){
+  const p=await b.newPage({viewport:{width:390,height:900}});
+  const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
+  await p.addInitScript(stub(true,username));
+  await p.goto(GAME,{waitUntil:'domcontentloaded',timeout:40000});
+  await p.waitForTimeout(3000);
+  let card=false;
+  try{ await p.click('#b-modes',{timeout:3000}); await p.waitForTimeout(600);
+       card=!!(await p.$('#b-mc-commish')); }catch(e){}
+  await p.close();
+  return {card,errs};
+}
+
 console.log('\n=== the list is one list ===');
 {
   ok('the shared file is what both pages would load', typeof ACCESS.allowed==='function',
@@ -165,6 +191,31 @@ console.log('\n=== the card goes where it says ===');
   const sticker=await p.$eval('#b-mc-commish .mc-sticker',(e)=>e.textContent.trim()).catch(()=>'');
   ok('  and that it is not finished', /testing/i.test(sticker), sticker||'no sticker');
   await p.close();
+}
+
+/* EVERY NAME THAT IS ACTUALLY SHIPPED, through the real door and the real sheet, with no
+   arming at all. The blocks above prove the MECHANISM with a name of their own, which is
+   the right way to test a gate but cannot catch the thing that went wrong here: a list
+   whose entries were correct in form and matched no living account. This is the check that
+   the people meant to be let in are let in. It runs once per name, so it stays honest as
+   the list grows and it says which name failed rather than that something did. */
+console.log('\n=== the accounts on the shipped list ===');
+if(!ACCESS.TESTERS.length){
+  ok('the list has somebody on it', false, 'empty, so nobody can open the mode');
+} else {
+  for(const name of ACCESS.TESTERS){
+    /* No arm(): this is the shipped list doing the work. Signed in under the name as it is
+       written, and again in a different casing, because set_username keeps what somebody
+       typed and that is the mistake this file exists to have already made once. */
+    const d=await doorOpensBare(name);
+    const dUp=await doorOpensBare(name.toUpperCase());
+    const c=await cardShownBare(name);
+    ok(name+': the mode opens', d.open);
+    ok('  and the card is on the sheet', c.card);
+    ok('  whatever case they signed up in', dUp.open, name.toUpperCase());
+    const errs=d.errs.concat(c.errs,dUp.errs);
+    if(errs.length){ console.log('  errors:', errs); bad++; }
+  }
 }
 
 await b.close();
