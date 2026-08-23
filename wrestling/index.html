@@ -2059,7 +2059,7 @@ function checkMilestones(res, o){
     c.bestMatch=res.quality;
     award(`A ${res.quality}-rated classic against ${res.oppName||'a worthy opponent'}.`,pico('starBig',36)); }
   if(c.reigns.length===1&&c.title) award(`First championship: ${c.title}.`,pico('trophy',36));
-  if((c.defenses||0)>=5) award(`Five straight defences of the ${c.title}.`,pico('shield',36));
+  if((c.defenses||0)===5) award(`Five straight defences of the ${c.title}.`,pico('shield',36));
   if(c.streak>=10) award('A ten-match winning streak.',pico('fire',36));
   if(c.earnings>=250000) award('A quarter of a million earned in the business.',pico('money',36));
   if(c.pop>=90) award('A genuine household name.',pico('starBig',36));
@@ -3447,6 +3447,9 @@ function worldTick(){
       const R=rel(rookie.id); R.met=true; R.respect=Math.max(R.respect,18);
       G.car.pendingRookies = G.car.pendingRookies || [];
       G.car.pendingRookies.push(rookie.id);
+      // Cap the queue so a long feud never leaves a dozen "meet the rookie"
+      // events piled up. Oldest drops first.
+      if(G.car.pendingRookies.length>3) G.car.pendingRookies.shift();
     }
     return;
   }
@@ -4263,13 +4266,17 @@ function injuryRisk(o){
   const wearPart  = Math.max(0, (c.wear||0)-40)/120 * 0.14;  // multiplies other risks
   const workedHurt= c.workedHurt ? 0.55 : 0;
   const chronic   = ((c.chronic||[]).length) * 0.02;
-  return clamp((stipPart + condPart + wearPart + workedHurt + chronic) * sc.inj, 0, 0.85);
+  const diff = (G.prefs&&G.prefs.difficulty)||'pro';
+  const diffInj = diff==='rookie'?0.85 : diff==='legend'?1.20 : 1;
+  return clamp((stipPart + condPart + wearPart + workedHurt + chronic) * sc.inj * diffInj, 0, 0.85);
 }
 function offerRisk(o){ return injuryRisk(o); }
 function offerRep(o){
   // a night's work is worth more against a better opponent and under a stipulation
   const q=44 + o.oppOvr*0.20 + (o.mult-1)*14;
-  return Math.round((q*0.30+6+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
+  const diff = (G.prefs&&G.prefs.difficulty)||'pro';
+  const diffRep = diff==='rookie'?0.90 : diff==='legend'?1.20 : 1;
+  return Math.round((q*0.30+6+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep')*diffRep);
 }
 // the one-line reason to pick each card
 function tagOffers(offs){
@@ -5840,13 +5847,18 @@ async function runFight(){
     // ---- dirty finish: a heel down late can reach for the belt ----
     // Only in a match with a referee (no hardcore/lms), only when you are
     // losing late, and only if you work heel. Wins ugly, real character cost.
+    const refTolDirty = (MS.ref && MS.ref.tolerate) || 0;
     if(!MS.ended && !MS.dirty && G.w.align==='heel' && ph.id==='stretch'
-       && MS.mom<-40 && MS.opp.hp>40 && !stipRules(o).noDQ && rnd()<0.30){
+       && MS.mom<-40 && MS.opp.hp>40 && !stipRules(o).noDQ && rnd()<Math.max(0.10, 0.20 + refTolDirty*0.6)){
       MS.dirty=true;
+      // The catch probability of the belt shot bends with the referee: sharp
+      // refs (tolerate < 0) catch it more often; lenient refs miss more.
+      const beltP = clamp(0.85 - refTolDirty*0.5, 0.55, 0.98);
+      const thumbP = clamp(0.68 - refTolDirty*0.3, 0.45, 0.90);
       const pick = await decide('REFEREE IS TURNED.','A dirty window is open. What do you call?',[
-        {name:'Swing the title belt', desc:'Win it right now. It costs your popularity.', p:0.85, kind:'belt'},
-        {name:'Thumb to the eye',     desc:'Small edge, no big consequence.',              p:0.68, kind:'thumb'},
-        {name:'Stay clean',           desc:'Roll with it. No shortcut.',                   p:1.00, kind:'clean'},
+        {name:'Swing the title belt', desc:'Win it right now. It costs your popularity.', p:beltP,  kind:'belt'},
+        {name:'Thumb to the eye',     desc:'Small edge, no big consequence.',              p:thumbP, kind:'thumb'},
+        {name:'Stay clean',           desc:'Roll with it. No shortcut.',                   p:1.00,   kind:'clean'},
       ]);
       const ok = rnd() < pick.p;
       if(pick.kind==='belt'){
@@ -5894,6 +5906,10 @@ async function runFight(){
     // but the announcer calls the alternate move.
     const _oppScouted = (rel(o.oppId).finisherScouted||0);
     const _useB = isFin && byMe && G.w.finisherNameB && _oppScouted>=3;
+    if(_useB && !MS._swapNoted){
+      MS._swapNoted = true;
+      fLog(`<span class="hint">They scouted the ${G.w.finisherName}. This time you reach for the ${G.w.finisherNameB}.</span>`);
+    }
     const finishName = (byMe && isFin)
       ? ( _useB ? G.w.finisherNameB : (G.w.finisherName || lastMove) )
       : lastMove;
@@ -6184,9 +6200,16 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   if(stale()) return false;
   arena.classList.add('tense');
 
-  const upAt = three?3 : power>50?3 : power>26?2 : 1;
+  // Referee's kickout window: a lenient/slow ref lets the fall live longer, a
+  // sharp ref calls it faster. Bumps the near-fall band up or down.
+  const refKick = (MS.ref && MS.ref.kick) || 0;
+  const refCount = (MS.ref && MS.ref.count) || 0;
+  const nearHigh = 50 + refKick*30;
+  const nearMid  = 26 + refKick*15;
+  const upAt = three?3 : power>nearHigh?3 : power>nearMid?2 : 1;
   const nearFall = !three && upAt===3;
   const counts = nearFall?2:upAt;
+  const countGap = 1 + refCount;   // slow ref lengthens the gap, fast ref shortens
 
   for(let n=1;n<=counts;n++){
     await refSlap();
@@ -6195,7 +6218,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     fmv(A,{sc:1.03},90); await sleep(120); fmv(A,{sc:1},90);
     // the gap before two is longer than the gap before one, and the gap
     // after two is the longest of all. That is the suspense
-    await sleep(n===1?520:700);
+    await sleep(Math.round((n===1?520:700) * countGap));
     if(stale()) return false;
   }
 
@@ -7086,6 +7109,8 @@ function matchStory(o,res){
   if(f.type==='sub') mid=res.win?` You worked the ${LIMB_NAME[f.part]||'limb'} all night and made them tap.`:` ${n} found the hold and you had nothing left to give.`;
   else if(f.type==='ko') mid=res.win?` You beat them down and they could not answer the ten count.`:` You could not beat the count. It was over on the floor.`;
   else if(f.type==='climb') mid=res.win?` You got over the top first, feet on the floor before them.`:` ${n} beat you to the top and dropped clear.`;
+  else if(f.type==='rumble') mid=res.win?` Last one over the top rope. The field was empty behind you.`:` They dumped you and the crowd howled. You never got close to the end.`;
+  else if(f.type==='tour') mid=res.win?` A one-night booking, and the tape travelled home with your name on it.`:` A rough night in a strange building. The tape is what everyone will see.`;
   else if(f.type==='count') mid=res.win?` ${n} took a walk you did not follow. Ten count on the floor.`:` You could not make it back. The count reached ten while you were still climbing to your feet.`;
   else if(f.type==='dq') mid=res.win?` ${n} lost the plot and got themselves disqualified. Points on the board, hollow ones.`:` You crossed the line and the referee had no choice.${f.reason?' '+cap(f.reason)+'.':''}`;
   else if(f.type==='nc') mid=` The referee waved it off before anybody could win.${f.reason?' '+cap(f.reason)+'.':''}`;
@@ -7685,9 +7710,10 @@ function nonRivalBackstage(){
   let key;
   if(pick.type==='ally') key = rnd()<0.5?'ally_help':'ally_favor';
   else {
-    // Recent match was a shortcut win? A vet meets you about it, else regular pool.
+    // Recent match was ugly (short or low quality)? A vet meets you about it,
+    // win or loss, else regular pool. Losses get a slightly kinder read.
     const lastMatch = (G.hist||[])[0];
-    const shortcut = lastMatch && lastMatch.win && lastMatch.q<50;
+    const shortcut = lastMatch && lastMatch.q<50;
     key = shortcut ? 'vet_meeting' : ['mid_respect','mid_workout','mid_gossip'][Math.floor(rnd()*3)];
   }
   const ev=EVENTS[key];
@@ -10299,11 +10325,14 @@ function renderWorld(){
     // Champions + belt lineage buttons for this promotion
     const ch = (G.world&&G.world.champions&&G.world.champions[p.id])||{};
     const beltsMap = beltsForPromo(p.id);
+    const beltBrandMap = (G.world&&G.world.beltBrand)||{};
     const champLine = ['world','secondary'].filter(k=>ch[k]&&ch[k].holder).map(k=>{
       const holder = (charById(ch[k].holder)||{}).name || 'vacant';
       const bn = beltsMap[k]||k;
       const def = ch[k].defenses?` · ${ch[k].defenses} def`:'';
-      return `<span class="badge b-leg">${pico('crown',12)} ${bn}: <b>${holder}</b>${def}</span> <a href="#" style="font-size:10.5px;" onclick="showLineage('${p.id}','${k}');return false;">history</a>`;
+      const bb = beltBrandMap[p.id+':'+k];
+      const bbTag = bb ? ` <span class="badge" style="background:${bb==='red'?'#3a1010':'#101a3a'};color:${bb==='red'?'#f0907f':'#8ab5f0'};padding:1px 5px;font-size:9px;">${bb.toUpperCase()}</span>` : '';
+      return `<span class="badge b-leg">${pico('crown',12)} ${bn}: <b>${holder}</b>${def}${bbTag}</span> <a href="#" style="font-size:10.5px;" onclick="showLineage('${p.id}','${k}');return false;">history</a>`;
     }).join(' · ') || `<span class="hint">All titles vacant.</span>`;
     // Brand split view
     const bs = G.world&&G.world.brands&&G.world.brands[p.id];
@@ -10621,6 +10650,10 @@ function renderHof(){
       </div>
     </div>
   </div>`;
+  // Any queued Moments (the farewell tour goodbye card is one) need to actually
+  // land before the Hall reads. renderCareer drains the queue elsewhere; on the
+  // retirement screen there is no other draw point.
+  setTimeout(()=>{ if(typeof showMoments==='function') showMoments(); }, 380);
 }
 function showLegends(){
   const list=loadLegends();
