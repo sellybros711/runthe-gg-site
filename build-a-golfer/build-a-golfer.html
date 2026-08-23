@@ -385,6 +385,107 @@ window.GA_ID='G-L29P5MRWKE';
     color:var(--muted); padding:9px 11px}
   .bctrl{max-width:440px; margin:12px auto 6px; display:grid; gap:8px}
 
+  /* ===== THE KNOCKOUT'S SHARED VOCABULARY =====
+     Five days, one round a day, lose once and the season is over. That format used to be explained in a
+     46-word paragraph on the draw screen and then never mentioned again. These pieces SHOW it instead, on
+     every screen of the week: a five-day rail (where you are, what you have banked), two stake chips (what
+     this match is worth either way), and one face-off block. Two new components, everything else reuses
+     tokens the game already has. */
+  .brail{display:flex; align-items:center; max-width:460px; margin:10px auto 12px}
+  .brl{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px}
+  .brd{width:9px; height:9px; border-radius:50%; background:rgba(244,227,201,.18)}
+  .brd.on{background:var(--gold); box-shadow:0 0 0 4px rgba(241,208,74,.16)}
+  .brd.dn{background:#35d6a0}
+  .brd.out{background:#E14A33}
+  .brn{font:800 8.5px/1 var(--body); letter-spacing:.12em; color:#6f8f80}
+  .brn.on{color:var(--gold)}
+  .brn.dn{color:#35d6a0}
+  .brn.out{color:#ff7a63}
+  .bstake{display:flex; gap:7px; margin-top:12px}
+  .mpwrap>.bstake{max-width:460px; margin:11px auto 0}
+  .bst{flex:1; border-radius:9px; padding:7px 6px; text-align:center;
+    font:800 8.5px/1.35 var(--body); letter-spacing:.06em; text-transform:uppercase}
+  .bst.w{background:rgba(53,214,160,.12); border:1px solid rgba(53,214,160,.35); color:#35d6a0}
+  .bst.l{background:rgba(225,74,51,.10); border:1px solid rgba(225,74,51,.35); color:#ff7a63}
+  .bm-s.you{background:var(--gold)}
+  .bvs{display:flex; align-items:center; gap:10px; margin-top:13px}
+  .bvp{flex:1; min-width:0; text-align:center}
+  .bvn{font:400 clamp(15px,4.4vw,18px)/1.05 var(--display); color:var(--oncard); text-transform:uppercase;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bvn.you{color:var(--gold)}
+  .bvsub{font:800 9px/1 var(--body); letter-spacing:.14em; color:var(--muted); margin-top:6px}
+  .bvx{flex:0 0 auto; font:400 14px/1 var(--display); color:#6f8f80}
+  .bchip{display:inline-flex; align-items:center; gap:5px; font:800 9.5px/1 var(--body); letter-spacing:.13em;
+    text-transform:uppercase; padding:6px 10px; border-radius:999px; border:1px solid rgba(244,227,201,.16);
+    background:rgba(0,0,0,.26); color:var(--muted)}
+  .bfoil{font:400 clamp(26px,8vw,34px)/1 var(--display); text-transform:uppercase; margin:7px 0 3px;
+    background:var(--gold-grad); -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent}
+  .bhero{max-width:460px; margin:0 auto; border-radius:15px; padding:15px 13px 13px; text-align:center;
+    background:linear-gradient(180deg,rgba(241,208,74,.15),rgba(8,32,15,.96)); border:1px solid rgba(241,208,74,.55)}
+  .bhero.pause{box-shadow:0 0 0 4px rgba(241,208,74,.07)}
+  .bhero-k{font:800 9.5px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--gold)}
+  .bhero-row{margin-top:11px; padding-top:10px; border-top:1px solid rgba(244,227,201,.12);
+    display:flex; justify-content:center; gap:8px; flex-wrap:wrap}
+  .bwait{text-align:center; margin-top:11px; font-size:11px; color:#6f8f80}
+  /* the day header: where am I in the week, and how much of today is left */
+  .bday{max-width:580px; margin:4px auto 12px; padding:11px 13px 10px; border-radius:13px;
+    background:linear-gradient(180deg,rgba(6,32,15,.98),rgba(6,32,15,.86)); border:1px solid rgba(241,208,74,.22)}
+  .bday .brail{margin:0 0 9px; max-width:none}
+  .bday-t{display:flex; align-items:baseline; gap:9px}
+  .bday-n{font:400 clamp(15px,4.6vw,18px)/1 var(--display); color:var(--oncard); text-transform:uppercase}
+  .bday-x{margin-left:auto; font:800 10px/1 var(--body); letter-spacing:.14em; color:var(--muted);
+    font-variant-numeric:tabular-nums; white-space:nowrap}
+  .bday-bar{margin-top:8px; height:3px; border-radius:2px; background:rgba(244,227,201,.12); overflow:hidden}
+  .bday-bar>i{display:block; height:100%; background:var(--gold); transition:width .35s ease}
+  .bday-f{margin-top:8px; font:800 9.5px/1.3 var(--body); letter-spacing:.14em; text-transform:uppercase; color:#6f8f80}
+  .bday-f b{color:#35d6a0}
+  /* the result: a knockout result is binary, so it reads that way from across the room */
+  .bres{max-width:460px; margin:0 auto 11px; border-radius:16px; padding:17px 14px 15px; text-align:center;
+    background:linear-gradient(180deg,rgba(53,214,160,.17),rgba(8,32,15,.96)); border:1px solid rgba(53,214,160,.55)}
+  .bres.l{background:linear-gradient(180deg,rgba(225,74,51,.15),rgba(8,32,15,.96)); border-color:rgba(225,74,51,.5)}
+  .bres-k{font:800 10px/1 var(--body); letter-spacing:.22em; text-transform:uppercase; color:#35d6a0}
+  .bres.l .bres-k{color:#ff7a63}
+  .bres-m{font:400 clamp(34px,12vw,52px)/.95 var(--display); color:var(--oncard); margin:9px 0 4px}
+  .bres.l .bres-m{font-size:clamp(24px,8vw,34px); line-height:1}
+  .bres-o{font-size:12.5px; color:#bcd0c4}
+  .bres-chips{display:flex; justify-content:center; gap:7px; flex-wrap:wrap; margin-top:10px}
+  .bnext{max-width:460px; margin:0 auto 11px; border-radius:13px; padding:12px 13px;
+    background:linear-gradient(180deg,rgba(241,208,74,.12),rgba(0,0,0,.24)); border:1px solid rgba(241,208,74,.4)}
+  .bnext-k{font:800 9.5px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--gold)}
+  .bnext-r{display:flex; align-items:center; gap:9px; margin-top:9px}
+  .bnext-n{font:400 clamp(15px,4.6vw,18px)/1 var(--display); color:var(--oncard); text-transform:uppercase;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bnext-s{font-size:10.5px; color:var(--muted); margin-top:2px}
+  /* the champion: five days, five wins - the ROUTE is the trophy */
+  .bcup{text-align:center; margin:6px 0 2px}
+  .bcup-t{font-size:44px; line-height:1}
+  .bcup-k{font:800 10px/1 var(--body); letter-spacing:.24em; text-transform:uppercase; color:var(--muted); margin-top:8px}
+  .broute{max-width:460px; margin:10px auto 0; border-radius:13px; overflow:hidden;
+    border:1px solid rgba(241,208,74,.28); background:rgba(0,0,0,.24)}
+  .brt{display:flex; align-items:center; gap:9px; padding:9px 11px; border-bottom:1px solid rgba(255,255,255,.05)}
+  .brt:last-child{border-bottom:0}
+  .brt.fin{background:linear-gradient(90deg,rgba(241,208,74,.16),transparent 80%)}
+  .brt.lost{background:rgba(225,74,51,.09)}
+  .brt-r{flex:0 0 34px; font:800 9px/1 var(--body); letter-spacing:.1em; color:#6f8f80}
+  .brt-n{flex:1; min-width:0; font-size:12.5px; color:#cfe0d4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .brt-v{flex:0 0 auto; font:800 12px/1 var(--body); color:#35d6a0}
+  .brt.lost .brt-v{color:#ff7a63}
+  .brt.fin .brt-v{font:400 16px/1 var(--display); color:var(--gold)}
+  .btiles{display:flex; gap:7px; max-width:460px; margin:12px auto 0}
+  .btile{flex:1; min-width:0; text-align:center; border-radius:10px; padding:9px 6px;
+    background:rgba(0,0,0,.26); border:1px solid rgba(244,227,201,.1)}
+  .btile-l{font:800 8.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:#6f8f80}
+  .btile-v{font:400 17px/1 var(--display); color:var(--oncard); margin-top:5px}
+  .btile-v.gold{color:var(--gold)}
+  .bfulldraw{max-width:580px; margin:12px auto 0}
+  .bfulldraw>summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    padding:10px 11px; border:1px solid var(--line); border-radius:11px; background:rgba(0,0,0,.2);
+    font:800 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+  .bfulldraw>summary::-webkit-details-marker{display:none}
+  .bfulldraw>summary::after{content:'▸'; margin-left:auto; color:#6f8f80; font-size:12px}
+  .bfulldraw[open]>summary::after{content:'▾'}
+
   /* ===== THE TOUR CHAMPIONSHIP KNOCKOUT: the match-by-match reveal =====
      Every animation here is transform/opacity only (and contained), so a whole day of 16 matches can
      play out at 60fps on a phone while the page below it stays still. */
@@ -21465,8 +21566,7 @@ function mpRunReveal(host, B){
     if(s.mine && !s.res){ S.brPause=true; render(); return; }   // STOP: your match is yours to call
     mpSettleLive(host, inner, st, si, !reduce);
     S.brShown=si+1;
-    const cnt=document.getElementById('mpcount');   // the header counts along with the reveal
-    if(cnt) cnt.textContent=(si+1)+' of '+st.slots.length;
+    mpSetProgress(si+1, st.slots.length);   // the pinned header counts along with the reveal
     if(s.mine){ const won=!!s.res.win.p.you; try{ sfx(won?'win':'hole'); buzz(won?[14,50,14]:12); }catch(e){} }
     mpTimer=setTimeout(step, reduce?15:(s.mine?MP_AFTER_MINE:MP_IN));
   };
@@ -21622,6 +21722,89 @@ function bracketPathStrip(B){
   }).join('');
   return $(`<div class="bpath" aria-label="Your run">${cells}</div>`);
 }
+/* ---- THE WEEK, SHOWN. One vocabulary across all five screens of the knockout: a five-day rail, two
+   stake chips, one face-off. The format used to live in a 46-word paragraph on the draw screen and was
+   never mentioned again; these pieces carry it on every screen instead. ---- */
+// where you are in the week: a banked day is green, the day you went out is red, today is gold.
+function bracketRail(B, st){
+  const you=B.you, done=bracketDone(B);
+  const liveRi = st ? st.ri : Math.min(B.rounds.length, B.RDS.length-1);
+  const alive = !you || you.alive;
+  return `<div class="brail" aria-label="The five days">`+B.RDS.map((R,ri)=>{
+    const step=you?you.path.find(p=>p.ri===ri):null;
+    const c = step ? (step.won?'dn':'out') : ((!done && alive && ri===liveRi) ? 'on' : '');
+    return `<div class="brl"><span class="brd ${c}"></span><span class="brn ${c}">${esc(R.short)}</span></div>`;
+  }).join('')+`</div>`;
+}
+// what this match is worth, both ways. The whole point of a knockout, in two chips.
+function bracketStakes(B, ri){
+  const nxt=B.RDS[ri+1];
+  return `<div class="bstake"><div class="bst w">Win → ${nxt?esc(nxt.name):'the Tour Cup'}</div>`+
+    `<div class="bst l">Lose → season over</div></div>`;
+}
+function bracketOvr(o){
+  try{ const v=Math.round(ovrFromSkills(o.p)); if(isFinite(v)&&v>0) return v; }catch(e){}
+  return (o.p&&isFinite(o.p.skill))?Math.round(o.p.skill):null;
+}
+function bracketFaceoff(me, opp, showOvr){
+  const side=(o,you)=>{
+    const ov=showOvr?bracketOvr(o):null;
+    return `<div class="bvp"><div class="bvn${you?' you':''}">${esc(you?(S.name||'You'):o.p.name)}</div>`+
+      `<div class="bvsub"><span class="bm-s${you?' you':''}">${o.seed}</span> `+
+      `${ov!=null?('OVR '+ov):(ord(o.seed)+' seed')}</div></div>`;
+  };
+  return `<div class="bvs">${side(me,true)}<div class="bvx">vs</div>${side(opp,false)}</div>`;
+}
+// the years you have already spent against this man, if the career has any
+function bracketH2H(opp){
+  try{
+    const h=S.career&&S.career.h2h&&S.career.h2h[opp.p.name];
+    if(h&&h.ev) return `<span class="bchip" style="border-color:rgba(53,214,160,.3);color:#8fe6cd">Head to head ${h.meAhead}–${h.themAhead}</span>`;
+  }catch(e){}
+  return '';
+}
+// the reveal counts along with the day: both the "n / N played" line and the bar read from here
+function mpSetProgress(n, total){
+  const cnt=document.getElementById('mpcount');
+  if(cnt) cnt.textContent=n+' / '+total+' played';
+  const bar=document.getElementById('mpbar');
+  if(bar) bar.style.width=(total?Math.round((n/total)*100):0)+'%';
+}
+function bracketDayHdrHTML(B, st, R, shown){
+  const total = st ? st.slots.length : ((R.matches&&R.matches.length)||0);
+  const n = st ? Math.min(shown, total) : total;
+  const foot = st
+    ? `${st.slots.length*2} in → <b>${st.slots.length} through</b>`
+    : (bracketDone(B) ? 'One left standing'
+      : `<b>${B.alive.length} through</b> to the ${esc((B.RDS[B.rounds.length]||{}).name||'next round')}`);
+  return `<div class="bday">${bracketRail(B, st)}
+    <div class="bday-t"><span class="bday-n">${esc(R.name||'')}</span>`+
+    `<span class="bday-x" id="mpcount">${n} / ${total} played</span></div>
+    <div class="bday-bar"><i id="mpbar" style="width:${total?Math.round((n/total)*100):0}%"></i></div>
+    <div class="bday-f">${foot}</div></div>`;
+}
+/* Where a loss leaves you, the moment it happens. bracketOrder is the banked truth but it only reads
+   correctly once the week is COMPLETE, and the loss card shows days earlier - so the finishing group is
+   computed straight off the round you went out in, which a single-elimination bracket makes exact. */
+function bracketExitFinish(B, out){
+  try{
+    const n=B.players.length, surv=n/Math.pow(2,out+1);
+    if(!isFinite(surv) || surv<1 || surv!==Math.round(surv)) return null;
+    let sum=0; for(let k=0;k<surv;k++) sum+=payoutAt(surv+k);
+    return {pos:surv+1, tied:surv>1, pct:sum/surv};
+  }catch(e){ return null; }
+}
+// every match, every margin, every name: the route through the week
+function bracketRouteHTML(B){
+  const you=B.you; if(!you || !you.path || !you.path.length) return '';
+  const lastRi=B.RDS.length-1;
+  return `<div class="broute">`+you.path.map(p=>{
+    const cls=p.won?((p.ri===lastRi)?' fin':''):' lost';
+    return `<div class="brt${cls}"><span class="brt-r">${esc(p.short)}</span>`+
+      `<span class="bm-s">${p.oppSeed}</span><span class="brt-n">${esc(p.opp)}</span>`+
+      `<span class="brt-v">${p.won?'':'lost '}${esc(p.label)}</span></div>`;
+  }).join('')+`</div>`;
+}
 function scrBracket(){
   clearTimeout(seasonTimer); mpClearTimer();
   if(S._brIdx!==S.evtIndex){ S._brIdx=S.evtIndex; S.curBracket=null; S.brStage='draw'; S.brShown=0; S.brPause=false; S.brMode={}; }
@@ -21638,27 +21821,35 @@ function scrBracket(){
     else { B.stage=bracketStage(B); S.brShown=Math.min(S.brShown||0, B.stage?B.stage.slots.length:0); if(!B.stage) S.brStage='roundEnd'; }
   }
 
-  // ---- header ----
-  add($(`<div class="bhead">
-    <div class="bh-kick">The Cup Finale · Knockout · Top ${B.players.length} by points</div>
-    <div class="bh-name">${esc(evt.name)}</div>
-    <div class="bh-meta">${venue?`📍 ${esc(venue.v)} · ${esc(venue.loc)} · `:''}${fmt(evt.purse)} purse</div>
-  </div>`));
+  // ---- header. The draw gets its own hero (the draw IS the news that day); every other screen of the
+  // week gets one quiet line, because the day header below already says where you are. ----
+  const isDraw=(S.brStage==='draw');
+  if(!isDraw) add($(`<div class="bhead"><div class="bh-kick">The Cup Finale · ${esc(evt.name)}</div></div>`));
 
   const wrap=$(`<div class="mpwrap"></div>`); add(wrap);
   const W=n=>wrap.appendChild(n);
 
-  // ---- THE DRAW ----
-  if(S.brStage==='draw'){
-    const mp=bracketMyPair(B);
-    W($(`<div class="bdrawcard">
-      <div class="bd-kick">The draw is out</div>
-      <div class="bd-seed">You are the <b>${ord(you?you.seed:B.players.length)} seed</b></div>
-      ${mp?`<div class="bd-opp"><span class="bd-vs">${esc(B.RDS[0].day)} · ${esc(B.RDS[0].name)}</span><div class="bd-oppn"><span class="bm-s">${mp.opp.seed}</span> ${esc(mp.opp.p.name)}</div></div>`:''}
-      <p class="bd-p">The season-long points race seeds it, and now it is knockout golf. <b>${B.RDS.length} days, one round a day, 18 holes a match.</b> Win and you are through to tomorrow. Lose once and your season is over. The last one standing lifts the Cup.</p>
+  // ---- THE DRAW: the format shown, not explained ----
+  if(isDraw){
+    const mp=bracketMyPair(B), R0=B.RDS[0];
+    W($(`<div class="bhead">
+      <div class="bh-kick">The Cup Finale · Top ${B.players.length} by points</div>
+      <div class="bfoil">The draw is out</div>
+      <div class="bh-meta">${esc(evt.name)}${venue?` · 📍 ${esc(venue.v)}`:''}</div>
     </div>`));
-    const drawTree=mpTreeBuild(B, null); W(drawTree); bracketFocusScroll(drawTree, B, null);
-    const b=$(`<button class="btn goldfill" style="max-width:440px;margin:14px auto 0">Head to the first tee ▸<span class="sub">${esc(B.RDS[0].day)} · ${B.players.length/2} matches</span></button>`);
+    W($(bracketRail(B, null)));
+    W($(`<div class="bhero">
+      <div class="bhero-k">${esc(R0.day)} · ${esc(R0.name)}</div>
+      ${mp?bracketFaceoff(mp.me, mp.opp, false):`<div class="bvs"><div class="bvp"><div class="bvn you">${esc(S.name||'You')}</div><div class="bvsub"><span class="bm-s you">${you?you.seed:'-'}</span> ${ord(you?you.seed:B.players.length)} seed</div></div></div>`}
+      ${bracketStakes(B, 0)}
+    </div>`));
+    W($(`<div style="text-align:center;margin-top:12px"><span class="bchip">${R0.holes} holes · match play</span></div>`));
+    // the whole draw is one tap away, not in the way
+    const det=$(`<details class="bfulldraw"><summary>See the full draw</summary></details>`);
+    const drawTree=mpTreeBuild(B, null); det.appendChild(drawTree);
+    det.addEventListener('toggle', ()=>{ if(det.open) bracketFocusScroll(drawTree, B, null); });
+    W(det);
+    const b=$(`<button class="btn goldfill" style="max-width:440px;margin:14px auto 0">Tee off ▸<span class="sub">${B.players.length/2} matches today</span></button>`);
     b.onclick=()=>{ mpStartDay(B); track('bracket_start',{seed:you?you.seed:null, year:S.year||1}); };
     W(b);
     { const rail=seasonRailNode(); if(rail) add(rail); }
@@ -21671,69 +21862,117 @@ function scrBracket(){
              : (B.rounds[B.rounds.length-1]||{day:'',name:'',n:0});
   const shown=st?Math.min(S.brShown||0, st.slots.length):(R.matches?R.matches.length:0);
 
-  W($(`<div class="mpday"><div class="mpday-l"><span class="mpday-d">${esc(R.day||'')}</span><span class="mpday-n">${esc(R.name||'')}</span></div><span class="mpday-x" id="mpcount">${st?shown+' of '+st.slots.length:B.alive.length+' left'}</span></div>`));
+  // the week is over: the trophy screen carries its own frame, so the day header and the result card
+  // (both of which the route table below says better) step out of its way
+  const champScreen = done && S.brStage==='roundEnd' && !!(B.champion && B.champion.p);
+  if(!champScreen) W($(bracketDayHdrHTML(B, st, R, shown)));
 
-  // ---- YOUR MATCH: the reveal has reached it and is waiting on you ----
+  // ---- YOUR MATCH: the reveal has reached it and is waiting on you. The most consequential tap in the
+  // mode, so it gets the scoreboard, the stake and two buttons that each say what they cost. ----
   if(st && S.brPause){
     const mi=bracketStageMine(st), s=mi>=0?st.slots[mi]:null;
     if(s){
       const me=s.A.p.you?s.A:s.C, opp=s.A.p.you?s.C:s.A;
-      W($(`<div class="mpdec await">
-        <div class="mpdec-k">Your match · ${esc(R.name||'')}</div>
-        <div class="mpdec-vs">
-          <div class="mpdec-p you"><div class="mpdec-nm">${esc(S.name||'You')}</div><div class="mpdec-sd">${ord(me.seed)} seed</div></div>
-          <div class="mpdec-x">vs</div>
-          <div class="mpdec-p"><div class="mpdec-nm">${esc(opp.p.name)}</div><div class="mpdec-sd">${ord(opp.seed)} seed</div></div>
-        </div>
-        <p class="mpdec-p2">The draw is waiting on you. <b>${esc(R.holes)} holes, head to head</b>, or until it is over.</p>
+      W($(`<div class="bhero pause">
+        <div class="bhero-k">Your match</div>
+        ${bracketFaceoff(me, opp, true)}
+        <div class="bhero-row">${bracketH2H(opp)}<span class="bchip">${R.holes} holes</span></div>
       </div>`));
-      const bp=$(`<button class="btn goldfill" style="max-width:440px;margin:10px auto 0">⛳ Play the match<span class="sub">Hole by hole, every call is yours</span></button>`);
+      W($(bracketStakes(B, st.ri)));
+      const bp=$(`<button class="btn goldfill" style="max-width:440px;margin:13px auto 0">⛳ Play it<span class="sub">${R.holes} holes · every call is yours</span></button>`);
       bp.onclick=()=>{ mpClearTimer(); track('bracket_play',{round:st.ri}); bracketStartMatch(B, {me, opp}); };
       W(bp);
-      const bs=$(`<button class="btn ghost" style="max-width:440px;margin:8px auto 0">Sim the match ▸<span class="sub">Watch the bracket play it out</span></button>`);
+      const bs=$(`<button class="btn ghost" style="max-width:440px;margin:8px auto 0">Sim it ▸<span class="sub">Watch the bracket decide</span></button>`);
       bs.onclick=()=>{ mpClearTimer(); if(!S.brMode) S.brMode={}; S.brMode[st.ri]='sim';
         bracketResolveMine(B, st); S.brPause=false; track('bracket_sim',{round:st.ri}); render(); };
       W(bs);
+      W($(`<div class="bwait">The bracket is waiting on you</div>`));
       // Auto Sim deliberately does NOT answer this one. It auto-advances the tour so you are not clicking
       // through weeks you do not care about; your own match in a knockout is the opposite of that, and a
       // 1.6s timer that picked Sim for you meant you never got the chance to play it.
     }
   }
 
-  // ---- your result, called out the moment it lands ----
+  // ---- your result, called out the moment it lands. A knockout result is binary: a win turns straight
+  // into anticipation (who is next, when), a loss gets closure (where you finished, what it paid). ----
   const mine=st ? (()=>{ const i=bracketStageMine(st); const s=i>=0?st.slots[i]:null;
       if(!s||!s.res||i>=(S.brShown||0)) return null;
       const won=!!s.res.win.p.you, o=won?s.res.lose:s.res.win;
-      return {won, label:s.res.label, s:o.seed, n:o.p.name}; })()
+      return {won, label:s.res.label, s:o.seed, n:o.p.name, out:st.ri}; })()
     : (()=>{ const R2=B.rounds[B.rounds.length-1]; if(!R2) return null;
       const m=R2.matches.find(x=>x.you); if(!m) return null;
       const o=m.aYou?{s:m.bSeed,n:m.bName}:{s:m.aSeed,n:m.aName};
-      return {won:!!m.youWon, label:m.label, s:o.s, n:o.n}; })();
-  if(mine) W($(`<div class="bmine ${mine.won?'w':'l'}">
-      <div class="bmi-k">${mine.won?'You are through':'Your week ends here'}</div>
-      <div class="bmi-r">${mine.won?'WON':'LOST'} <span class="bmi-lab">${esc(mine.label)}</span></div>
-      <div class="bmi-o">${mine.won?'beat':'beaten by'} <span class="bm-s">${mine.s}</span> <b>${esc(mine.n)}</b></div>
+      return {won:!!m.youWon, label:m.label, s:o.s, n:o.n, out:B.rounds.length-1}; })();
+  if(mine && !champScreen){
+    let chips='';
+    if(!mine.won){
+      const f=bracketExitFinish(B, mine.out);
+      if(f) chips=`<div class="bres-chips"><span class="bchip">Finished ${f.tied?'T':''}${f.pos}</span>`+
+        `<span class="bchip" style="color:var(--gold);border-color:rgba(241,208,74,.35)">${fmt(evt.purse*f.pct)}</span></div>`;
+    }
+    W($(`<div class="bres ${mine.won?'':'l'}">
+      <div class="bres-k">${mine.won?'You are through':'Your week ends here'}</div>
+      <div class="bres-m">${mine.won?esc(mine.label):('Lost '+esc(mine.label))}</div>
+      <div class="bres-o">${mine.won?'beat':'to'} <span class="bm-s">${mine.s}</span> <b>${esc(mine.n)}</b></div>
+      ${chips}
     </div>`));
+    // a win points forward: the day is committed, so tomorrow's opponent is already known
+    if(mine.won && !done && S.brStage==='roundEnd'){
+      const np=bracketMyPair(B), nr=B.RDS[B.rounds.length];
+      if(np && nr) W($(`<div class="bnext">
+        <div class="bnext-k">Next · ${esc(nr.name)}</div>
+        <div class="bnext-r"><span class="bm-s">${np.opp.seed}</span>
+          <div style="flex:1;min-width:0"><div class="bnext-n">${esc(np.opp.p.name)}</div>
+            <div class="bnext-s">${ord(np.opp.seed)} seed · ${esc(nr.day)}</div></div>
+          <span class="bchip" style="border-color:rgba(225,74,51,.35);color:#ff9d3a">${B.alive.length} left</span>
+        </div></div>`));
+    }
+  }
 
-  // ---- THE BRACKET ITSELF: the show ----
-  const tree=mpTreeBuild(B, st); W(tree); bracketFocusScroll(tree, B, st);
-
-  const path=bracketPathStrip(B); if(path) W(path);
-
-  // ---- the champion ----
-  if(done && S.brStage==='roundEnd' && B.champion && B.champion.p){
+  // ---- THE CHAMPION: five days of survival, so the ROUTE is the trophy ----
+  if(champScreen){
     const ch=B.champion, isYou=!!ch.p.you;
-    W($(`<div class="bchamp ${isYou?'mine':''}">
-      <div class="bc-k">${isYou?'You are the champion' : 'Champion'}</div>
-      <div class="bc-n"><span class="bm-s">${ch.seed}</span> ${esc(ch.p.name)}</div>
-      <div class="bc-s">${esc(evt.name)} · ${S.year||1} · lifts the Tour Cup</div>
-    </div>`));
+    const o=you?bracketOrder(B).find(x=>x.p.you):null;
+    if(isYou){
+      W($(`<div class="bcup">
+        <div class="bcup-t">🏆</div>
+        <div class="bcup-k">Tour Cup Champion</div>
+        <div class="bfoil">${esc(S.name||ch.p.name)}</div>
+        <div class="bh-meta">${ord(ch.seed)} seed · ${esc(evt.name)} · Year ${S.year||1}</div>
+      </div>`));
+      W($(`<div class="bday-f" style="text-align:center;margin-top:16px">${B.RDS.length} days, ${B.RDS.length} wins</div>`));
+    } else {
+      W($(`<div class="bchamp">
+        <div class="bc-k">Champion</div>
+        <div class="bc-n"><span class="bm-s">${ch.seed}</span> ${esc(ch.p.name)}</div>
+        <div class="bc-s">${esc(evt.name)} · Year ${S.year||1} · lifts the Tour Cup</div>
+      </div>`));
+      if(you) W($(`<div class="bday-f" style="text-align:center;margin-top:14px">Your week</div>`));
+    }
+    const route=bracketRouteHTML(B); if(route) W($(route));
+    if(o){
+      const cups=(()=>{ try{ const lt=(career().lt)||{}; return (lt.fedexCups||0)+(isYou?1:0); }catch(e){ return null; } })();
+      W($(`<div class="btiles">
+        <div class="btile"><div class="btile-l">Prize money</div><div class="btile-v gold">${fmtShort(evt.purse*o.pct)}</div></div>
+        ${isYou
+          ? `<div class="btile"><div class="btile-l">Career cups</div><div class="btile-v">${cups!=null?cups:1}</div></div>`
+          : `<div class="btile"><div class="btile-l">Finished</div><div class="btile-v">${o.tied?'T':''}${o.pos}</div></div>`}
+      </div>`));
+    }
     if(isYou && !reduce && !B._confetti){ B._confetti=true; try{ setTimeout(()=>{ const cv=document.querySelector('#brconf'); if(cv) confettiRun(cv,{colors:['#F1D04A','#fff8e2','#2fd0a8']}); },60); }catch(e){} }
     if(isYou) add($(`<canvas id="brconf" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"></canvas>`));
-    if(you){
-      const o=bracketOrder(B).find(x=>x.p.you);
-      if(o) W($(`<div class="bfin"><span>Your week</span><b>${esc(o.bfull)}</b><span class="bfin-m">${fmt(evt.purse*o.pct)}</span></div>`));
-    }
+  }
+
+  // ---- THE BRACKET ITSELF: the show while the week is live, one tap away once it is over ----
+  const tree=mpTreeBuild(B, st);
+  if(champScreen){
+    const det=$(`<details class="bfulldraw"><summary>See the full bracket</summary></details>`);
+    det.appendChild(tree);
+    det.addEventListener('toggle', ()=>{ if(det.open) bracketFocusScroll(tree, B, st); });
+    W(det);
+  } else {
+    W(tree); bracketFocusScroll(tree, B, st);
+    const path=bracketPathStrip(B); if(path) W(path);
   }
 
   // ---- controls ----
@@ -21754,6 +21993,13 @@ function scrBracket(){
     const b=$(`<button class="btn goldfill">Continue ▸<span class="sub">Back to the tour</span></button>`);
     b.onclick=()=>{ finalizeBracket(B); S.curBracket=null; S._brIdx=null; mpClearTimer(); advanceEvent(); render(); };
     ctrl.appendChild(b);
+    // the route is the thing worth showing off, so it is one tap from the trophy
+    if(B.champion && B.champion.p && B.champion.p.you && you){
+      const sh=$(`<button class="btn ghost">Share the week</button>`);
+      sh.onclick=()=>{ const run=you.path.map(p=>p.short+' '+p.label).join(' · ');
+        shareText(`RunTheTour: I won the ${evt.name} as the ${ord(you.seed)} seed. Five days, five matches: ${run}. Think you can build better? https://runthe.gg/golf`); };
+      ctrl.appendChild(sh);
+    }
   }
   W(ctrl);
   { const rail=seasonRailNode(); if(rail) add(rail); }
