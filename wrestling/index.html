@@ -4968,6 +4968,26 @@ function oppLook(id,name){
 }
 
 function fLog(html,cls){ const el=$('fLog'); const d=document.createElement('div'); if(cls)d.className=cls; d.innerHTML=html; el.appendChild(d); el.scrollTop=el.scrollHeight; }
+// A shared tap window. Shows a big prompt with a Tap button for `ms` and
+// resolves true if the player taps in time. Used by the kickout beat, the
+// submission escape and the ladder climb. One primitive, three uses.
+function tapWindow(ms, prompt){
+  return new Promise(res=>{
+    const arena=$('arena'); if(!arena){ res(false); return; }
+    const wrap=document.createElement('div');
+    wrap.className='tapwin';
+    wrap.style.cssText='position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:9;text-align:center;background:rgba(0,0,0,.72);padding:14px 22px;border:2px solid var(--gold);border-radius:12px;pointer-events:auto;';
+    wrap.innerHTML=`<div style="font-family:var(--display);font-size:18px;color:var(--cream);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">${prompt||'TAP NOW'}</div>
+      <button class="big" style="min-width:120px;padding:10px 26px;" id="_tapBtn">TAP</button>
+      <div class="_tapBar" style="margin-top:8px;height:6px;background:#3a2a10;border-radius:3px;overflow:hidden;"><i id="_tapFill" style="display:block;height:100%;width:100%;background:var(--gold);transition:width ${ms}ms linear;"></i></div>`;
+    arena.appendChild(wrap);
+    let done=false;
+    const finish=(ok)=>{ if(done) return; done=true; try{ arena.removeChild(wrap); }catch(_e){} res(!!ok); };
+    document.getElementById('_tapBtn').onclick=()=>finish(true);
+    requestAnimationFrame(()=>{ const f=document.getElementById('_tapFill'); if(f) f.style.width='0%'; });
+    setTimeout(()=>finish(false), ms);
+  });
+}
 /* Commentator colour: one voice for each move category, one for phase turns.
    Fired sparingly so the log stays readable, keyed to the moment. */
 const COLOR_LINES={
@@ -6036,7 +6056,22 @@ async function submissionAttempt(byMe, mvName){
   fLog(byMe?`<b>${MS.me.name}</b> wrenches back on the <span class="hi">${bare(mvName)}</span>, right on the ${LIMB_NAME[part]}.`
            :`<b>${MS.opp.name}</b> has the ${bare(mvName)} cinched in on your ${LIMB_NAME[part]}.`,byMe?'':'bad');
   for(let i=0;i<3;i++){ fmv(A,{sc:1.05},95); fmv(D,{rot:i%2?6:-6},95); await sleep(110); fmv(A,{sc:1},95); fmv(D,{rot:0},95); await sleep(95); }
-  const pTap=clamp((power-58)/56,0,0.88);
+  let pTap=clamp((power-58)/56,0,0.88);
+  // When the hold is on YOU and the finish is looming, a tap window opens: a
+  // real button, a real deadline. Beat it and the escape rate spikes.
+  if(!byMe && MS.phase>=3 && pTap>0.15){
+    const escaped = await tapWindow(950, 'TAP TO ESCAPE');
+    if(escaped){
+      pTap = pTap*0.25;                    // dramatically fewer taps
+      MS.mom=clamp(MS.mom+18,-100,100); setMom();
+      fLog(`<span class="hi">You reach for the ropes. The hold breaks.</span>`);
+      sfx('pop');
+    } else {
+      pTap = clamp(pTap*1.3,0,0.98);       // missed the window, worse
+      fLog(`<span class="bad">You could not reach the ropes.</span>`);
+      sfx('boo');
+    }
+  }
   const rulesAllowSub = stipRules(MS.o).ends.includes('sub');
   if(rulesAllowSub && MS.phase>=3 && rnd()<pTap){
     await callout('TAP! TAP! TAP!');
@@ -6090,10 +6125,19 @@ async function climbAttempt(){
   fLog(iAmClimbing?`<span class="hi">You are climbing. Nobody there to stop you.</span>`
                   :`<span class="bad">${MS.opp.name} is on the way up. Get up. Get up.</span>`);
   await sleep(720);
+  // A tap window opens on the climb. If YOU are the one climbing, tapping
+  // through the ladder rungs in time gets you over the top with a bonus.
+  // If YOU are on the mat, tapping brings you back to your feet to intercept.
+  let climbBoost=0;
+  if(iAmClimbing){
+    climbBoost = (await tapWindow(650, 'CLIMB!')) ? 0.20 : 0;
+  } else {
+    climbBoost = (await tapWindow(650, 'STOP THEM!')) ? -0.30 : 0;
+  }
   // The one on the mat has a puncher's chance to reach up and drag them back.
   const dragPow = (100 - (iAmClimbing?MS.opp.hp:MS.me.hp))*0.4;
   const escape = only ? 0.60 : 0.45;
-  if(rnd() < escape - dragPow/240){
+  if(rnd() < escape - dragPow/240 + climbBoost){
     // they get over
     commitFinish({type:'climb', by:iAmClimbing, move:'the climb', fin:false});
     MS.ended=true;
@@ -6263,22 +6307,23 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   }
 
   if(nearFall){
-    /* The hand goes up for three and never comes down.
-       It must NOT show the numeral. A three count that appears on screen and
-       is then taken away says the referee counted three and the match carried
-       on, which is not a near fall, it is a blown finish. The suspense is the
-       raised hand and the length of the pause, and the 2.9 burst below is what
-       names it afterwards. */
+    // The kickout window: when the pin is on YOU, a tap prompt appears at
+    // the two-count. Beat the timer and the crowd erupts, momentum spikes.
+    let hardKickout=false;
+    if(!iAmPinning){
+      hardKickout = await tapWindow(560, 'KICK OUT!');
+    }
     poseSet('ref','refUp'); await sleep(430);
     if(stale()) return false;
     fmv(D,{pose:'proneUp',rot:-10},110);
     fmv(A,{pose:'stagger',fwd:ST.close*0.5,rot:0},240);
     poseSet('ref','refNo');
     await flashScreen(); shake();
-    burst(px,'2.9!!');
-    await callout('KICKOUT!');
-    fLog(`<span class="hi">Shoulder up at two and a half! How did he survive the ${bare(mvName)}?!</span>`);
-    MS.nearFalls++; MS.quality+=isFin?15:10; MS.big++;
+    burst(px, hardKickout?'2.9!!!':'2.9!!');
+    await callout(hardKickout?'KICKED OUT WITH AUTHORITY!':'KICKOUT!');
+    fLog(`<span class="hi">${hardKickout?'Shoulder up with force! The place is unglued!':'Shoulder up at two and a half!'} How did he survive the ${bare(mvName)}?!</span>`);
+    MS.nearFalls++; MS.quality+=isFin?15:10 + (hardKickout?3:0); MS.big++;
+    if(hardKickout){ sfx('pop'); MS.mom = clamp(MS.mom + (iAmPinning?-24:24), -100, 100); }
     arena.classList.remove('tense');
     await sleep(420);
     FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
