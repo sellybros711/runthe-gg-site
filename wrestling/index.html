@@ -3053,32 +3053,44 @@ function doStartCreate(){
   renderStyles();
   go('create'); gotoStep(1);
   if(!$('cName').value) rollName();
-  // NG+: if a previous career made the Hall, offer a keepsake picker
+  // NG+: if any previous career made the Hall, offer a keepsake picker.
+  // Every inductee contributes rows to the picker, up to a sensible cap.
   const legends = loadLegends();
   const hall = legends.filter(l=>l.inducted);
-  if(hall.length) setTimeout(()=>offerKeepsake(hall[0]), 260);
+  if(hall.length) setTimeout(()=>offerKeepsake(hall), 260);
 }
-function offerKeepsake(l){
+function offerKeepsake(hall){
+  const list = Array.isArray(hall) ? hall : [hall];
   const rows=[];
-  if(l.finisherName) rows.push({k:'finisherName', l:'Their finisher name', v:l.finisherName});
-  if(l.finisherNameB) rows.push({k:'finisherNameB', l:'Their second finisher', v:l.finisherNameB});
-  if(l.catch) rows.push({k:'catch', l:'Their catchphrase', v:l.catch});
-  if(l.entrance) rows.push({k:'entrance', l:'Their entrance theme', v:l.entrance});
+  list.forEach(l=>{
+    if(l.finisherName)  rows.push({from:l.name, k:'finisherName',  l:`${l.name} · Finisher name`,   v:l.finisherName});
+    if(l.finisherNameB) rows.push({from:l.name, k:'finisherNameB', l:`${l.name} · Second finisher`, v:l.finisherNameB});
+    if(l.catch)         rows.push({from:l.name, k:'catch',          l:`${l.name} · Catchphrase`,      v:l.catch});
+    if(l.entrance)      rows.push({from:l.name, k:'entrance',       l:`${l.name} · Entrance theme`,   v:l.entrance});
+    // Retired-self as manager: their name shows up at ringside in the new run.
+    rows.push({from:l.name, k:'manager', l:`${l.name} · Walk with you at ringside`, v:`Manager: ${l.name}`});
+  });
   if(!rows.length) return;
-  const h = `<p class="log"><b>${l.name}</b> is in the Hall. New Game Plus: pick one thing they hand down to the new wrestler.</p>
-    <div class="decgrid">${rows.map((r,i)=>`<div class="decopt" data-i="${i}"><div class="dn">${r.l}</div><div class="dd">${r.v}</div></div>`).join('')}
+  const cap = rows.slice(0, 10);
+  const h = `<p class="log">${list.length===1?`<b>${list[0].name}</b> is in the Hall.`:`${list.length} Hall wrestlers on file.`} New Game Plus: pick one thing they hand down.</p>
+    <div class="decgrid">${cap.map((r,i)=>`<div class="decopt" data-i="${i}"><div class="dn">${r.l}</div><div class="dd">${r.v}</div></div>`).join('')}
        <div class="decopt" data-i="-1"><div class="dn">Nothing</div><div class="dd">Start clean, no keepsake.</div></div></div>`;
-  modal(`Legacy of ${l.name}`, h, [{label:'Skip',cls:'ghost',fn:closeModal}]);
+  modal('Legacy pick', h, [{label:'Skip',cls:'ghost',fn:closeModal}]);
   setTimeout(()=>{
     document.querySelectorAll('#modalBody .decopt').forEach(d=>d.onclick=()=>{
       const idx=+d.dataset.i;
       closeModal();
       if(idx<0){ return; }
-      const r=rows[idx]; if(!r) return;
-      // Pre-fill the create form input the picker maps to
+      const r=cap[idx]; if(!r) return;
+      if(r.k==='manager'){
+        // Store a pending manager assignment; applied on finishCreate.
+        G && G.car ? (G.car.pendingManagerName=r.from) : (window._pendingManagerName=r.from);
+        toast(`${r.from} will walk with you at ringside.`);
+        return;
+      }
       const inp = {finisherName:'cFinName', finisherNameB:'cFinNameB', catch:'cCatch', entrance:'cEntrance'}[r.k];
       if(inp && $(inp)){ $(inp).value = r.v; }
-      toast(`Keepsake from ${l.name}: ${r.v}`);
+      toast(`Keepsake from ${r.from}: ${r.v}`);
     });
   },0);
 }
@@ -3263,6 +3275,28 @@ function finishCreate(){
   G.car.deal.weekly=dealValue(myPromo(),5,0,50);
   pushLog(`You sign a one-year developmental deal with <b>${myPromo().name}</b> at ${money(G.car.deal.weekly)}/week.`);
   initWorld();
+  // Retired-self keepsake: seed a phantom CHARS entry and mount them as your
+  // manager for the new career. The name walks with you at ringside.
+  const pendMgr = (window._pendingManagerName || (G.car && G.car.pendingManagerName));
+  if(pendMgr){
+    const id = 'legend_'+pendMgr.toLowerCase().replace(/\s+/g,'_');
+    if(!CHARS.find(x=>x.id===id)){
+      CHARS.push({id, name:pendMgr, nick:'Hall Legend', promo:myPromo().id, style:'allrounder',
+        align:'face', over:70, look:oppLook(id,pendMgr), gimmick:'A wrestler out of the Hall, walking with you now.',
+        finisher:'',
+        lines:{ taunt:['You walk in, they stand up.'], win:['That is how it is done.'], lose:['Learn from that one.'], respect:['You have got it.'] } });
+    }
+    const R=rel(id); R.met=true; R.respect=90; R.heat=0;
+    // formAlliance-lite so myManager() finds a real ally record.
+    G.car.allies=G.car.allies||[];
+    if(!G.car.allies.find(a=>a.id===id)){
+      G.car.allies.push({id, since:(G.car.year*100+G.car.week), loyalty:95, tag:false, teamName:null, chem:0});
+    }
+    G.car.managerId=id;
+    pushInboxItem({ico:pico('handshake',18),sev:'good',
+      txt:`<b>${pendMgr}</b> walks with you to the ring from tonight.`});
+    window._pendingManagerName=null;
+  }
   save(); go('career'); toast('Welcome to the business, '+name);
 }
 // the indie that takes a chance on a rookie of your type
@@ -3355,10 +3389,16 @@ function spawnRookie(promoId){
   const style=styles[Math.floor(rnd()*styles.length)];
   const align=rnd()<0.5?'face':'heel';
   const over=35+Math.floor(rnd()*20);
+  // Some rookies arrive with a catchphrase or a second-finisher name on the
+  // scouting sheet, which the codex and any face-to-face segment can quote.
+  const CATCHES=['New blood.','Watch this.','Your turn is over.','On my watch.','Get comfortable.','Two years, tops.'];
+  const FINB=['The Shutdown','The Aftershock','The Long Night','The Debt','The Whistle','The Sunday Best'];
   const rookie={id, name:nm, nick:'The Newcomer', promo:promoId, style, align, over,
     look:oppLook(id,nm),
     gimmick:'A rookie still working out who they are in the ring.',
     finisher:'No signature finish on tape yet.',
+    finisherNameB: rnd()<0.20 ? FINB[Math.floor(rnd()*FINB.length)] : null,
+    catch: rnd()<0.25 ? CATCHES[Math.floor(rnd()*CATCHES.length)] : null,
     traits:['Newcomer'],
     lines:{ taunt:['I am here now.'], win:['Told you.'], lose:['Not tonight.'], respect:['You are the real thing.'] },
     debut:{y:G.car.year,w:G.car.week}};
@@ -7568,15 +7608,20 @@ function rookieMeetEvent(ch){
 function lifeEvent(){
   const c=G.car, w=G.w;
   const P=(c.pop||30), S=(c.standing||50);
+  // Small flavor helpers so the events can quote your actual identity when
+  // it exists, and fall back to something neutral when it does not.
+  const catchQuote = w.catch ? ` <span class="say" style="color:var(--gold)">"${w.catch}"</span>` : '';
+  const nickName   = w.nick ? `${w.name}, "${w.nick}",` : w.name;
+  const gimName    = (w.gimmick && w.gimmick.name) || 'your character';
   const EVENTS=[
-    { key:'podcast', head:`A wrestling podcast wants you on for an hour`,
-      body:`Bring some old stories and be prepared to answer for a few things. <span class="say">"Nothing off limits. Just talk."</span>`,
+    { key:'podcast', head:`A wrestling podcast wants ${nickName} on for an hour`,
+      body:`Bring some old stories and be prepared to answer for a few things.${catchQuote?' They quote your line back at you:'+catchQuote+'.':''}`,
       opts:[
         {n:'Go on and be candid',d:'Fans love the truth, the boys will read it.',fx:{pop:5,respect:-2}},
         {n:'Go on and stay in kayfabe',d:'Give them the character.',fx:{pop:3,mom:2}},
         {n:'Turn it down',d:'Not the right week.',fx:{pop:-1,standing:1}}]},
-    { key:'sponsor', head:`An energy drink wants your face on a can`,
-      body:`Six-figure deal, one photo shoot, three social posts. <span class="hint">Merch, not gear.</span>`,
+    { key:'sponsor', head:`An energy drink wants ${gimName} on a can`,
+      body:`Six-figure deal, one photo shoot, three social posts. <span class="hint">The pitch is your character, not you.</span>`,
       opts:[
         {n:'Sign it',d:'A paycheck a title reign cannot beat.',fx:{coins:8000,pop:2}},
         {n:'Ask for more',d:'Move the number.',fx:{coins:14000,standing:-2}},
@@ -7599,8 +7644,8 @@ function lifeEvent(){
         {n:'Address it head-on',d:'A statement, and move on.',fx:{pop:-2,standing:3}},
         {n:'Ignore it',d:'Nobody remembers next week.',fx:{pop:-4}},
         {n:'Lean into it',d:'The character absorbs it.',fx:{pop:4,mom:6,standing:-4}}]},
-    { key:'talkshow', head:`A morning talk show wants a five-minute segment`,
-      body:`Bright lights, a two-question host, a sitcom couch. It is what it is.`,
+    { key:'talkshow', head:`A morning talk show wants ${nickName} for a five-minute segment`,
+      body:`Bright lights, a two-question host, a sitcom couch. It is what it is.${catchQuote?' They ask if you will say the line on air:'+catchQuote+'.':''}`,
       opts:[
         {n:'Go on and put over the sport',d:'Straight ambassador stuff.',fx:{pop:3,standing:2}},
         {n:'Go on and cut a promo',d:'You are always working.',fx:{pop:5,respect:-1}},
@@ -10414,7 +10459,8 @@ function charProfile(id){
       ${bar('Respect',Math.round(r.respect))}${bar('Bad blood',Math.round(r.heat))}
       <div class="hint" style="margin-top:6px;">${r.matches?`${r.matches} meeting${r.matches!==1?'s':''} · you lead ${r.wins}-${r.losses}`:'You have never faced them.'}</div>
     </div>
-    <div style="margin-top:12px;"><div class="flab">Finisher</div><div style="color:var(--cream);font-weight:800;">${fin}</div></div>
+    <div style="margin-top:12px;"><div class="flab">Finisher</div><div style="color:var(--cream);font-weight:800;">${fin}${c.finisherNameB?` <span class="hint">(alt: ${c.finisherNameB})</span>`:''}</div></div>
+    ${c.catch?`<div style="margin-top:10px;"><div class="flab">Catchphrase</div><div class="say" style="color:var(--gold);font-style:italic;">"${c.catch}"</div></div>`:''}
     ${taunt?`<div style="margin-top:10px;"><div class="flab">They say</div><div class="say" style="font-style:italic;">"${taunt}"</div></div>`:''}`,
     [{label:'Close',fn:closeModal}]);
 }
