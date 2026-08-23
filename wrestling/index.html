@@ -1989,6 +1989,20 @@ function countUp(el,to,opt){
 /* ---------- STAR RATINGS: how wrestling actually keeps score ---------- */
 const STARP='M17 1.8 L21.8 11.6 L32.5 13.1 L24.7 20.7 L26.6 31.4 L17 26.3 L7.4 31.4 L9.3 20.7 L1.5 13.1 L12.2 11.6 Z';
 function starsOf(q){ return Math.round(clamp((q-30)/14,0,5)*4)/4; }
+// Short display string for a star rating: "4", "4.5", "4.75", never "4.00".
+function starStr(q){ return starsOf(q).toFixed(2).replace(/0+$/,'').replace(/\.$/,''); }
+// Coach marks: fire the first time a viewer sees a new system. The seen set is
+// on the save so returning to a career does not re-teach anything.
+function showCoach(id, title, body){
+  if(!G||!G.car) return;
+  G.car.coachSeen = G.car.coachSeen || {};
+  if(G.car.coachSeen[id]) return;
+  G.car.coachSeen[id] = true;
+  save();
+  setTimeout(()=>{
+    modal(title, `<p class="log">${body}</p>`, [{label:'Got it',fn:closeModal}]);
+  }, 240);
+}
 function starBand(s){
   return s>=5   ? 'A perfect match. They will talk about this forever.'
        : s>=4.75? 'An instant classic.'
@@ -2029,7 +2043,7 @@ function pressQuote(o,res,s){
     return `We sat through all ${res.time} of ${me} and ${opp} so you do not have to. You are welcome.`;
   return null;
 }
-function checkMilestones(res){
+function checkMilestones(res, o){
   const c=G.car, w=G.w, n=c.rec.w+c.rec.l+c.rec.d;
   if(c.rec.w===1) award('First professional victory.',pico('star',36));
   [10,50,100,250,500].forEach(m=>{ if(n===m) award(`${m} professional matches.`,pico('clipboard',36)); });
@@ -2043,6 +2057,13 @@ function checkMilestones(res){
   if(c.pop>=90) award('A genuine household name.',pico('starBig',36));
   if(promoTierIdx()>=3) award('Signed to the biggest company on earth.',pico('trophy',36));
   if(c.year>=10) award('Ten years in the business.',pico('clipboard',36));
+  // Opponent-specific signposts, now that `o` is threaded through
+  if(o && res && res.win){
+    const opp = charById(o.oppId);
+    if(opp && (opp.over||0)>=88) award(`First win over a global main-eventer (${opp.name}).`,pico('starBig',36));
+    if(o.stakes==='tourn_final') award('First tournament final win.',pico('trophy',36));
+    if(o.stakes==='rumble') award('First Battle Royal win.',pico('trophy',36));
+  }
 }
 
 let G=null, RNG=1;
@@ -6558,6 +6579,13 @@ function applyMatch(o,res){
     titleMsg=(titleMsg?titleMsg+' ':'')+`You have the <b>Money in the Bank</b> briefcase. Cash it in on any champion, any time.`;
     pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Briefcase in hand.</b> You can cash in the ${c.mitb.belt} whenever you want.`});
     G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won Money in the Bank'});
+    showCoach('mitb','You are carrying Money in the Bank',
+      'On any match, before you head to the ring, a Cash In button appears. Win that night and the title is yours, no matter the stipulation. You only get one shot.');
+  }
+  // First tag title reign earns a coach mark on how to defend it
+  if(o.stakes==='tag_title' && res.win){
+    showCoach('tag_title','You and your partner are the tag champions',
+      'From now on, tag matches on your card may put the belts on the line. Defend them together; if the team splits, the reign ends.');
   }
   // ---- injury: only when you actually pushed it (see injuryRisk) ----
   let injMsg=null;
@@ -6602,7 +6630,7 @@ function applyMatch(o,res){
     if(draw){} else if(res.win){ c.teamRec.w++; nudgeLoyalty(myTeam().ally.id,4); }
     else { c.teamRec.l++; nudgeLoyalty(myTeam().ally.id,-3); }
   }
-  res.oppName=o.oppName; checkMilestones(res);
+  res.oppName=o.oppName; checkMilestones(res, o);
   c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
   G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title'});
   if(G.hist.length>120) G.hist.pop();
@@ -6646,7 +6674,7 @@ function nightCardHTML(o,res){
     const q = 42 + Math.floor(rnd()*30);
     const winner = rnd()<0.5 ? a : b;
     const loser  = winner===a ? b : a;
-    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> beat <span class="ppv-l">${loser.name}</span> <span class="ppv-s">${starsOf(q).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</span></div>`;
+    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> beat <span class="ppv-l">${loser.name}</span> <span class="ppv-s">${starStr(q)}★</span></div>`;
   }).join('');
   return `<div class="ppvcard nightcard">
     <div class="ppv-k">Also on tonight's show</div>
@@ -6673,7 +6701,7 @@ function ppvCardHTML(o,res){
   }).join('');
   const meLine = `<div class="ppv-row ppv-me">
       <span class="ppv-w">${res.win?G.w.name:o.oppName}</span> ${res.win?'beat':'defeated'} <span class="ppv-l">${res.win?o.oppName:G.w.name}</span>
-      <span class="ppv-s">${starsOf(res.quality).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</span>
+      <span class="ppv-s">${starStr(res.quality)}★</span>
     </div>`;
   return `<div class="ppvcard">
     <div class="ppv-k">${pico('starBig',14)} ${o.ppv} · Year ${G.car.year} · Full Card</div>
@@ -6971,6 +6999,8 @@ function maybeStartTourn(){
   }
   c.tourn={id:t.id,name:t.name,rounds:t.rounds,prize:t.prize,round:1,
     bracket:pool.map(x=>x.id), next:pool[0]?pool[0].id:CHARS[0].id, wins:0, promoId:me.id};
+  showCoach('tourn','You are in a tournament',
+    `A single-elimination bracket over three weeks. Win three in a row and the prize is real: ${t.prize}. Lose one and it is over.`);
   pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>${t.name}.</b> The office has entered you. Round 1 next week vs <b>${(charById(c.tourn.next)||{}).name||'a first-round opponent'}</b>.`});
   newsPush({ico:pico('trophy',14),cat:'tourn',t:`<b>${me.short} announces ${t.name}.</b> ${G.w.name} is in the bracket.`});
 }
@@ -7049,6 +7079,8 @@ function maybeRumbleOffer(offs, oppPool){
 }
 /* Run the Rumble simulation in a compact eliminations sequence. */
 async function runRumble(o){
+  showCoach('rumble','This is a Battle Royal',
+    'Eight in the ring, one left. Try to survive the middle third; the winner gets a guaranteed title shot they can cash in later.');
   const ent=o.rumble.entrants.slice();
   MS={o, gen:(FIGHT_GEN=(FIGHT_GEN||0)+1), mom:0, beat:0, decisions:0, decWon:0, big:0, ended:false,
       me:{hp:100,name:G.w.name,ovr:ovr(G.w),limb:newLimbs(),target:null},
@@ -10184,7 +10216,7 @@ function renderHof(){
   const reel = top5.length ? `<div class="card" style="margin-top:12px;">
       <div class="flab" style="margin-top:0;">Highlight reel</div>
       ${top5.map((m,i)=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-top:${i?'1px dashed rgba(255,255,255,.08)':'none'};${m.best?'background:linear-gradient(90deg,rgba(224,179,65,.10),transparent);':''}">
-        <span><b>${starsOf(m.q).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}★</b>${m.best?' <span style="color:var(--gold);font-size:10px;letter-spacing:.15em;">CAREER-BEST</span>':''} vs ${m.opp}${m.stip?` <span class="hint">${m.stip}</span>`:''}</span>
+        <span><b>${starStr(m.q)}★</b>${m.best?' <span style="color:var(--gold);font-size:10px;letter-spacing:.15em;">CAREER-BEST</span>':''} vs ${m.opp}${m.stip?` <span class="hint">${m.stip}</span>`:''}</span>
         <span class="hint mono">Y${m.y}W${m.w}</span></div>`).join('')}
     </div>` : '';
   // A ribbon of year awards, newest first
