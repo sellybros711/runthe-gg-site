@@ -3,8 +3,12 @@
 A new mode inside **College Football: Perfect Season** (`/cfb/`). Not a draft and not a
 season: you are the **commissioner of college football**, and the sport is yours to run.
 
-> **Status:** planning. Nothing built. Two forks below need answering before Stage 1
-> starts, and they are marked **DECIDE**.
+> **Status:** Stage 0 is built. `cfb/commish/ledger.js` and `cfb/commish/blocs.js` are
+> headless and dependency-free, and `cfb/build/test/commish/test_ledger.mjs` plays a whole
+> five-season term with no UI and replays it from a seed. Nothing is on screen yet.
+>
+> Stage 0 deliberately does not depend on either fork below, which is why it could start
+> before they are answered. **Stage 1 does.** Both are marked **DECIDE**.
 
 ---
 
@@ -61,17 +65,36 @@ Free text as the primary input. Reasons under **The decision system** below.
 
 ### What only this game can do
 
-Neither reference game can simulate the thing you are governing. This repo already
-simulates a college football season from real 2005-2025 data: 1,380 team seasons, 83
-schools, real conference membership per year, real polls. So a commissioner mode here can
-close a loop nobody else has:
+**In both reference games, a decision only ever comes back as opinions.** People react,
+meters move, a headline runs. There is no America underneath the president game and no
+football underneath the football president game. They are very good conversation
+simulators, and that is the whole ceiling of the genre.
 
-**Set the rules, then play the sport you built.** Expand the playoff to sixteen and the
-draft game's bracket is sixteen. Blow up the Pac-12 and Conference Draft loses a
-conference. Cut the revenue share and the gap between the haves and the rest widens in the
-seasons you then play.
+We already own a working college football simulator. It plays games, produces scores, ranks
+the country and crowns a champion off real 2005-2025 data: 1,380 team seasons, 83 schools,
+real conference membership per year, real polls.
 
-That is the feature. Everything else is table stakes.
+**So a ruling here does not have to come back as opinions. It can come back as football.**
+
+Expand the playoff from twelve to sixteen. The reference games tell you the SEC is annoyed
+and revenue is up six percent, and move to the next item. This one tells you that, and then
+plays the season out and shows you the sixteen-team bracket: real teams, your seeding rule,
+actual games. And when the four teams your expansion let in go 0-4 and lose by four
+touchdowns, that is not a scripted consequence somebody wrote for you. It is what your rule
+did, and it is on the docket next winter as somebody else's motion to undo it.
+
+The player does not get told what the room thinks of their rule. They watch their rule
+happen.
+
+The same applies to everything else on the ledger. Kill the Pac-12 and next season's games
+genuinely have no Pac-12 in them. Widen the revenue gap and the schools you starved get
+measurably worse on the field over a few years. Rewrite the selection rule and watch a team
+you would have picked get left out by your own words.
+
+**A second and smaller payoff, kept separate because it is not the point.** The draft mode
+already in this game could be playable inside the world you built: move Oregon to the Big
+Ten as commissioner and Conference Draft offers Oregon under the Big Ten. That is a nice
+thing to have. The feature is the paragraph above it.
 
 ---
 
@@ -320,7 +343,7 @@ Each stage ships something you can look at. No stage depends on a later one.
 
 | Stage | What | Done when |
 |---|---|---|
-| **0** | The ledger and the bloc model, headless, in Node | A term can be simulated in a test with no UI, and a seed replays identically |
+| **0** | The ledger and the bloc model, headless, in Node | **Done.** A term simulates in a test with no UI and a seed replays identically |
 | **1** | One beat, end to end: docket, ruling, reactions, ledger edit | One decision plays on a phone and the room answers |
 | **2** | The full nine-beat season and the year in review | A season plays start to finish, tester-gated, saving to the database |
 | **3** | Playing the sport you built: format and membership feed the engine | A sixteen-team playoff you designed runs in the bracket UI, on its own board |
