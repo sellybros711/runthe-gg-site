@@ -681,11 +681,27 @@ function buildFullRandom(rng, budget) {
  * was the builder starving its late slots after an expensive early pick, and the band it
  * was being asked to resolve was narrower than its own noise.
  *
- * TWO POOLS, ONE BUDGET, and the DP does not care which side a slot is on: it maximises
- * summed expected output over all twelve subject to the shared cap. That is the right
- * target because summed output is what both halves of resolveGameFull consume, one through
- * rosterStructure and one through defenseSuppression.
+ * SUMMED OUTPUT IS THE WRONG TARGET HERE, which is the second thing this builder got
+ * wrong and a more interesting one than the first. A DP maximising the sum of all twelve
+ * came back WORSE than the greedy builder it replaced: 52.5% against 58.8% at $170M, with
+ * 107 points scored a game and 107 allowed.
+ *
+ * It was not solving badly. It was solving the wrong problem. An offensive point and a
+ * defensive point are not interchangeable currency: an offensive man's output goes into
+ * your score directly, and a defensive man's goes through defenseSuppression, which is
+ * steep. A defensive total of 40 lets 83% of the opponent's scoring through and 60 lets
+ * 40% through. So summed output prices a defender by his own number when what he is worth
+ * is the slope he sits on, the DP spent everything on the offensive slots because their
+ * points-per-dollar curve is the steeper of the two in raw units, and it bought an elite
+ * offense standing behind a floor-price secondary.
+ *
+ * THE TARGET IS EXPECTED MARGIN, and that makes optimal play a BUDGET SPLIT rather than a
+ * knapsack. For a fixed split the two sides are independent knapsacks, so this solves each
+ * side at every split and picks the split with the best margin against a league-average
+ * opponent. What comes back is not just a roster, it is the answer to the mode's own
+ * central question: how much of one cap goes to each side of the ball.
  */
+const OPP_PTS = 22.08;            // mean pts_scored_mean over every team season
 const FULL_BUCKET = 0.5;
 
 function fullCurve(allowedPositions, nb) {
@@ -706,39 +722,42 @@ function fullCurve(allowedPositions, nb) {
   return best;
 }
 
-const FULL_OPTIMAL_CACHE = new Map();
-function buildFullOptimal(budget) {
-  if (FULL_OPTIMAL_CACHE.has(budget)) return FULL_OPTIMAL_CACHE.get(budget).slice();
-  const slots = E.FULL_SLOTS;
-  const nb = Math.round(budget / FULL_BUCKET) + 1;
-  const curves = E.FULL_SLOT_POS.map((pos) => fullCurve(pos, nb));
+/* One side of the ball, cap-optimal for summed output at a given budget. Within ONE side
+   that objective is right: those six men all reach the score through the same term. */
+const SIDE_CACHE = new Map();
+function buildSide(indices, budget) {
+  const key = indices.join(',') + '|' + budget;
+  if (SIDE_CACHE.has(key)) return SIDE_CACHE.get(key).slice();
+  const nb = Math.max(1, Math.round(budget / FULL_BUCKET) + 1);
+  const curves = indices.map((i) => fullCurve(E.FULL_SLOT_POS[i], nb));
 
   let next = new Array(nb).fill(0);
   const choice = [];
-  for (let i = slots.length - 1; i >= 0; i--) {
+  for (let k = indices.length - 1; k >= 0; k--) {
     const cur = new Array(nb).fill(-Infinity);
     const pickAt = new Array(nb).fill(null);
     for (let b = 0; b < nb; b++) {
       for (let spend = 0; spend <= b; spend++) {
-        const cand = curves[i][spend];
+        const cand = curves[k][spend];
         if (!cand) continue;
         const val = cand.ppr_ppg_mean + next[b - spend];
         if (val > cur[b]) { cur[b] = val; pickAt[b] = { cand, spend }; }
       }
     }
-    choice[i] = pickAt;
+    choice[k] = pickAt;
     next = cur;
   }
 
   const roster = [];
   const used = new Set();
   let b = nb - 1;
-  for (let i = 0; i < slots.length; i++) {
-    let { cand, spend } = choice[i][b];
-    /* The DP ignores identity, and WR/WR or DL/DL or either FLEX can land on the same man
-       twice. Same guard buildOptimal uses, over this slot's own pool. */
+  for (let k = 0; k < indices.length; k++) {
+    if (!choice[k][b]) return null;
+    let { cand, spend } = choice[k][b];
+    /* The DP ignores identity, and WR/WR, DL/DL or a FLEX can land on the same man twice.
+       Same guard buildOptimal uses, over this slot's own pool. */
     if (used.has(`${cand.player_id}|${cand.season}`)) {
-      const pos = E.FULL_SLOT_POS[i];
+      const pos = E.FULL_SLOT_POS[indices[k]];
       const from = pos.some(p => E.DEFENSE_POSITIONS.indexOf(p) >= 0) ? defenders : players;
       const alt = from
         .filter((p) => pos.includes(p.position) && p.price_musd <= spend * FULL_BUCKET
@@ -750,8 +769,40 @@ function buildFullOptimal(budget) {
     roster.push(cand);
     b -= spend;
   }
-  FULL_OPTIMAL_CACHE.set(budget, roster);
+  SIDE_CACHE.set(key, roster);
   return roster.slice();
+}
+
+const OFF_IDX = [0, 1, 2, 3, 4, 5];
+const DEF_IDX = [6, 7, 8, 9, 10, 11];
+
+const FULL_OPTIMAL_CACHE = new Map();
+function buildFullOptimal(budget, wantSplit) {
+  if (FULL_OPTIMAL_CACHE.has(budget)) {
+    const hit = FULL_OPTIMAL_CACHE.get(budget);
+    return wantSplit ? hit : hit.roster.slice();
+  }
+  let best = null;
+  /* $2.5M steps across the split. Finer resolves nothing: the price ladder is coarser
+     than that, so neighbouring splits buy the same twelve men. */
+  for (let off = 12; off <= budget - 12; off += 2.5) {
+    const o = buildSide(OFF_IDX, off);
+    const d = buildSide(DEF_IDX, budget - off);
+    if (!o || !d) continue;
+    const rawOff = o.reduce((s, p) => s + p.ppr_ppg_mean, 0);
+    const rawDef = d.reduce((s, p) => s + p.ppr_ppg_mean, 0);
+    /* Chemistry is 1 here for the same reason buildOptimal ignores it: this row is the
+       points ceiling, and chemistry is a separate axis measured by its own archetype. */
+    const yourScore = rawOff * E.rosterStructure(o).multiplier;
+    const oppScore = OPP_PTS * constants.SCALE
+      * E.defenseSuppression(rawDef * E.defenseStructure(d).multiplier, constants);
+    const margin = yourScore - oppScore;
+    if (!best || margin > best.margin) {
+      best = { margin, off, def: budget - off, roster: o.concat(d), yourScore, oppScore };
+    }
+  }
+  FULL_OPTIMAL_CACHE.set(budget, best);
+  return wantSplit ? best : best.roster.slice();
 }
 
 function simulateFull(build, n, seed0) {
@@ -871,7 +922,10 @@ function fullTeamReport(n) {
         + r.meanFor.toFixed(1).padStart(7)
         + r.meanAgainst.toFixed(1).padStart(7)
         + r.meanRating.toFixed(1).padStart(9)
-        + ('$' + r.meanSpend.toFixed(0)).padStart(8));
+        + ('$' + r.meanSpend.toFixed(0)).padStart(8)
+        + (row.name === 'optimal'
+          ? `   split ${'$' + buildFullOptimal(cap, true).off} off / ${'$' + buildFullOptimal(cap, true).def} def`
+          : ''));
     }
     console.log('');
   }
