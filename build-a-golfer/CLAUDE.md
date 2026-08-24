@@ -16647,3 +16647,66 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   explicitly OFF for those two. How to Play is a reference manual people open deliberately (nine sections,
   CS431 + the guided-tour work), and the season summary is the payoff screen for a year of play - both are
   meant to be full. If a future session finds either one long, that is by design, not a defect.
+
+### THE CATCH: every entry path now costs something real, and the exemption is disliked (owner, on the
+### Turn Pro picker: "It feels like a no brainer to pick this one. I don't like how it's the youngest
+### option but also the best option. Respect should be low here. Also, there should be downsides for
+### picking different ones. like your composure can't be respun first 4 years or something like that. Do
+### not use that example but use it for inspiration")
+- **The diagnosis was structural, not a number.** Every path only GAVE things, so the five were RANKABLE
+  rather than a trade, and the Sponsor's Exemption topped the ranking on almost every axis (full card,
+  Premium sponsor, 140k fans, the youngest start there is). No amount of nudging respect fixes a screen
+  where one option dominates; the fix is that each path has to COST something.
+- **Respect first.** The exemption's `resp` went -22 → **-34**, so it starts at **16** — the lowest of the
+  five and inside the "Disliked" band. The locker room thinks you were handed it; that is now the reading
+  on the meter, not just the flavour text.
+- **Five constraints, one per path, each hooking a DIFFERENT system that the career already runs on**, so
+  they read as five different KINDS of cost rather than five sizes of the same one:
+  - **Amateur** — everybody expects it: a missed cut at a **major or a signature week** costs double
+    confidence, first 4 years (`resultMomentum`).
+  - **Q-School** — no conditional cushion: miss the card line and it is straight back to Q-School, first 4
+    years (`resolveCardStatus`).
+  - **Mini-tour** — four years of debts: travel costs **+80%**, first 4 seasons (`seasonNet`).
+  - **Exemption** — the brand owns the early years: **no rival brand can offer you a deal** for 5 years
+    (`computeSponsorOffers`), and the locker room withholds — **half respect gains until your first tour
+    win** (`adjRep`).
+  - **Late Convert** — came late, leaves early: you **fade 60% faster** once the decline starts, and unlike
+    the others it never expires, because it is the price of the years spent somewhere else
+    (`applyPlayerDecline`).
+- **Deliberately not the owner's own example.** "Composure can't be re-spun for 4 years" was the
+  inspiration, not the spec — a re-spin lock is invisible until the off-season and only bites players who
+  already know the off-season exists. These bite where you can see them.
+- **Stated up front, tagged in the compare table, and restated while in force.** A "The catch" block sits
+  under the tags on the detail panel; the compare table carries the headline cost per path (`+N` when a
+  path has two); and while a constraint is live the off-season and the season summary's "How you turned
+  pro" card both name it with the time left ("2 more seasons", "until your first win").
+- **Both punishing constraints were MEASURED and retuned, which is the part worth keeping.** The amateur's
+  first cut doubled confidence loss on EVERY missed cut, which took a 6-missed-cut rookie season from 60 to
+  0 — it would have made the Amateur the worst path by a distance. Scoped to major/signature weeks: 3 big
+  cuts now take confidence 60 → 24.3 in year 1 against 41.5 once it lifts, and ordinary cuts are untouched.
+  The Late Convert's first cut (`declineMult:1.3`) cost ~2 OVR across a whole career — less than his own
+  `+2 to every rating` perk, i.e. not a cost at all. Measured 1.0/1.3/1.6/2.0 at years 15/19/23 and chose
+  **1.6** (79.2 vs 82.2 at year 23), so the fade genuinely offsets the head start.
+- **What each catch is worth, so the trade is defensible:** mini-tour ≈ **$1.48M** of extra travel over four
+  seasons; amateur ≈ 3 big-week cuts costing ~17 confidence more than they otherwise would; late convert ≈
+  **3 OVR** lower by the end of his 23-year career; exemption ≈ respect **66 vs 100** after five steady
+  seasons, on top of starting at 16 and losing every sponsor upgrade and poach offer for five years.
+- **Career-only by construction.** `entryCatchVal` returns the default in `S.daily`/`S.circuitMode` or with
+  no path, so none of it can leak into the Daily or the Legend Circuit. `ENTRY_CATCH` is declared with
+  `var` and every read is wrapped, per the TDZ lesson that has bitten this file before.
+- **Three UI bugs were caught only by SCREENSHOTS, not by the assertions**, which is the reason to keep
+  taking them: the catch row's "when" chip was inline, so long text wrapped around it awkwardly (now a
+  stacked block with an uppercase amber line beneath); the two-catch exemption truncated to "Locked in · H…"
+  in the compare table (now the headline cost plus `+1`); and "2x big-week cut" still clipped (shortened to
+  **"2x major cut"**, then verified via `scrollWidth>clientWidth` that none of the five tags clip).
+- Verified: `entry_catch` **25/25** (catalog, accessor lifetimes + mode gating, all six hooks, the panel +
+  compare tags + repaint, the live restatement, the off-season, and turning pro unchanged), `entry_ux`
+  **23/23**, `catch_e2e` **4/4** (no horizontal overflow, a full simulated exemption season reaching the
+  summary with no error card, the summary restating the live catch, the off-season naming the cost and the
+  time left) — 0 page errors throughout, and `entry_catch` crashes on the deployed baseline with
+  `entryCatch is not defined`, so it genuinely discriminates. Regressions green: rest 37, records 24, rival
+  17, clubs 23, circuit 14, morris 16, daily_glitch 5, wr_goal 12. `goals_test` (3 `XX`) and `regress.mjs`
+  (1) fail **identically on the deployed baseline** — pre-existing stale fixtures. Inline scripts parse
+  (block 0 is the JSON-LD tag, fails identically on baseline).
+- Tunable: the whole `ENTRY_CATCH` table (each entry is `{k, v, yrs|untilWin, short, txt, when}`); adding a
+  constraint is one row plus a one-line `entryCatchVal` read at whichever system should feel it.
