@@ -474,6 +474,7 @@
   .calnow span{color:var(--dim-2);font-size:11.5px;min-width:0;overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap}
   .calnow span:before{content:'next: '}
+  .calnow span.done:before{content:''}
   .calnow em{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:700;
     color:var(--dim-2);white-space:nowrap}
   /* THE CHAMPION OF A SEASON THAT HAS BEEN PLAYED, on the row it was won in. A term's record
@@ -913,6 +914,8 @@
     </div>
     <!-- The football that was actually played this year. -->
     <div class="card flat" id="y-season" hidden></div>
+    <!-- The five seasons, on the screen that closes the term. -->
+    <div class="card flat" id="y-term" hidden></div>
     <!-- What the internet said about the football. -->
     <div class="card flat" id="y-feed" hidden></div>
     <!-- The term so far, on the screen where a year is being closed out. -->
@@ -1418,11 +1421,17 @@ function paintCalendar(el,w){
   });
   const champs=w.champions||{};
   const years=[]; for(let y=0;y<TERM_SEASONS;y++) years.push(w.startYear+y);
-  const spent=w.year-w.startYear;
+  /* CLAMPED, because a finished term reads year six of five. `spent` is the number of seasons
+     behind you, and on the ending screen that is five out of five: printing spent+1 was
+     correct on every screen except the one the player finishes on. `over` is also what stops
+     the footer offering a next beat on a term that has none. */
+  const spent=Math.min(w.year-w.startYear,TERM_SEASONS-1);
+  const over=(w.year-w.startYear)>=TERM_SEASONS||!!w.outcome;
   const nextBeat=w.beat+1<L.BEATS.length?L.BEATS[w.beat+1]
     :(w.year+1<=w.startYear+TERM_SEASONS-1?'The '+w.year+' season, then the winter':'The end of the term');
 
-  el.innerHTML='<div class="ch"><b>The calendar</b><span>Year '+(spent+1)+' of '+TERM_SEASONS+'</span></div>'
+  el.innerHTML='<div class="ch"><b>The calendar</b><span>'
+      +(over?'The term, in full':'Year '+(spent+1)+' of '+TERM_SEASONS)+'</span></div>'
     +'<div class="phases"><i></i>'
       +PHASES.map((p)=>'<i class="'+p[3]+'">'+esc(p[2])+'</i>').join('')+'</div>'
     +years.map((y)=>{
@@ -1444,7 +1453,11 @@ function paintCalendar(el,w){
         }).join('')
         +'</div>';
     }).join('')
-    +'<div class="calnow"><b>'+esc(L.BEATS[w.beat])+'</b><span>'+esc(nextBeat)+'</span>'
+    +'<div class="calnow">'
+      +(over
+        ? '<b>'+w.startYear+' to '+(w.startYear+TERM_SEASONS-1)+'</b><span class="done">'
+          +'five seasons, served</span>'
+        : '<b>'+esc(L.BEATS[w.beat])+'</b><span>'+esc(nextBeat)+'</span>')
       +'<em>'+(w.history||[]).filter((h)=>!(h.id&&String(h.id).indexOf('season:')===0)).length
       +' rulings</em></div>'
     /* THE TITLES YOU HAVE PRESIDED OVER. A term's record is partly who won it, and until
@@ -2004,13 +2017,17 @@ $('b-test').onclick=()=>{
      the vote-weighted average of those blocs and the number would give them straight back. */
   const voteDark=B.BLOCS.some((b)=>b.vote>0&&blind[b.id]);
   paintMeters($('r-meters'),after,world,voteDark?{standing:1}:null);
+  /* THE DESK ALREADY SAYS WHAT THIS RULING CHANGES, live, under the option. Repeating it here
+     unconditionally meant a forecast that moved none of the four numbers still drew a card
+     headed "what changed in the sport" over four numbers that had not. */
+  const willMove=JSON.stringify(sportFacts(after))!==JSON.stringify(sportFacts(world));
+  $('r-changed').hidden=!willMove;
+  if(willMove) paintSport($('r-sport'),after,world);
   paintRoom($('r-room'),after,lastRoom,blind);
   paintCouncilNote($('r-council'),seats);
   /* NO FEED ON A FORECAST. The internet cannot react to a ruling nobody has made, and it is
      the one thing on this screen that would not be true. */
   paintFeed($('r-feed'),null);
-  $('r-changed').hidden=false;
-  paintSport($('r-sport'),after,world);
   $('b-next').textContent='Back to the desk';
   $('b-next').dataset.go='desk';
   show('s-room');
@@ -2263,6 +2280,11 @@ function playSeason(year){
     const sim=seasonAt({through:S.WEEKS,titles:true,bracket:true});
     if(!sim) return;
     lastSeason=sim;
+    /* THE VIEWING FIGURES GO ON THE WORLD HERE, which is the only place a season is known to
+       be finished. The media rights item reads them back to price the next deal, so without
+       this call the negotiation is the same whether the player protected every rivalry or
+       moved all of them to a Friday night stream. */
+    recordRatings(year,sim);
     /* THE SEASON IS A RULING NOBODY MADE and the room is entitled to answer it, so it goes
        through applyEdit and applyOutcome exactly like a ruling does. */
     const deltas=B.deltas(world,sim.edit);
@@ -2387,6 +2409,31 @@ function yearVerdict(angry,w){
   ]);
 }
 
+/* THE FIVE SEASONS, ON THE SCREEN THAT CLOSES THE TERM. A commissioner is remembered for what
+   the sport looked like and who won it, and the ending screen was showing neither: it replayed
+   January's bracket, which the player had just scrolled through, and said nothing at all about
+   the other four years. */
+function paintTerm(el,w){
+  if(!el) return;
+  const champs=w.champions||{}, rat=w.ratings||{};
+  const years=[]; for(let y=0;y<TERM_SEASONS;y++) years.push(w.startYear+y);
+  const done=years.filter((y)=>champs[y]);
+  if(!done.length){ el.hidden=true; return; }
+  el.hidden=false;
+  const avg=ratingsAverage();
+  el.innerHTML='<div class="eyebrow gold" style="margin-bottom:9px">The five seasons</div>'
+    +'<div class="tbl">'+done.map((y)=>
+      '<div class="tr" style="--tc2:'+esc(champs[y].color||'#64748b')+'">'
+      +'<i>'+String(y).slice(2)+'</i><b>'+esc(champs[y].school)+'</b>'
+      +'<span>champion</span>'
+      +'<u>'+(rat[y]?rat[y].perGame.toFixed(2)+'M':'')+'</u></div>').join('')+'</div>'
+    +(avg?'<div class="tv" style="margin-top:11px;margin-bottom:0">'
+      +'<div><b>'+avg.perGame.toFixed(2)+'<i>M</i></b><span>An average game, over the term</span></div>'
+      +'<div><b>'+Math.round(avg.total/1000*10)/10+'<i>B</i></b><span>Watched a season</span></div>'
+      +'</div>':'');
+  reveal(el.querySelector('.tbl'));
+}
+
 /* ── the year, and the end ────────────────────────────────────────────────────── */
 function yearEnd(year){
   const done=world.year-world.startYear;
@@ -2401,6 +2448,7 @@ function yearEnd(year){
   const angry=L.removal(world).angry||[];
   $('y-say').textContent=yearVerdict(angry,world);
   paintSeason($('y-season'),lastSeason);
+  $('y-term').hidden=true;
   paintFeed($('y-feed'),lastSeason?FEED.onSeason({
     sim:lastSeason, year:year,
     snub:lastSeason.field&&lastSeason.field.snub,
@@ -2444,6 +2492,11 @@ function ending(){
     +(moved?moved+' of the four numbers moved.':'and not one of the four numbers moved.')
     +(moved>=3?' Nobody is going to say you left it alone.'
       :moved===0?' The sport you hand over is the sport you were given.':'');
+  /* THE BRACKET COMES DOWN. The player has just scrolled through it on the year in review
+     and the ending is about the term, not about January: leaving it up made the last screen
+     of the mode three and a half thousand pixels of a game already watched. */
+  paintSeason($('y-season'),null);
+  paintTerm($('y-term'),world);
   /* THE TERM AS A GRID IS THE RECORD, which is what an ending screen is for. Nothing is
      current on it any more: there is no beat you are standing on, and the rows simply say
      what you did with each of the five years and who won them. */

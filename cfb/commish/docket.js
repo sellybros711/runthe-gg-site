@@ -41,11 +41,502 @@
   };
 
   const ITEMS = [
+    /* THE THIN BEATS. Measured across two hundred terms with the in-season items in: the
+       portal item still came up 5.0 times in a five year term, every year without exception,
+       because it was the only thing eligible on its beat. A recency penalty cannot help when
+       there is nothing to lose to, so the fix is candidates rather than weights. */
+    {
+      id: 'collectives',
+      beats: [PORTAL, SPRING],
+      weight: 5,
+      when: (w) => w.labour.nil !== 'school-paid',
+      eyebrow: 'The money',
+      title: 'Nobody knows who is paying whom',
+      brief: 'Signing day came and went and the biggest numbers in it were paid by entities '
+        + 'that do not appear on any athletic department budget. Everybody in the sport knows '
+        + 'roughly what happened and nobody can produce a document.',
+      voices: [
+        { id: 'Presidents', say: 'We are certifying compliance with a system we cannot see.' },
+        { id: 'Players', say: 'It is the first honest market this sport has ever had.' },
+        { id: 'SEC', say: 'Every school does this. The ones complaining do it hardest.' },
+      ],
+      options: [
+        { id: 'onto-books', label: 'Put it on the athletic department books',
+          body: 'One employer, one number, one place to audit. It ends the pretence and it '
+            + 'starts an argument with every labour lawyer in the country.',
+          edit: { set: { 'labour.nil': 'school-paid' },
+            effects: { labour: 2, exposure: 1.8, cost: 2.2, autonomy: -1.4 },
+            aimed: { Players: { labour: 2.4 }, Presidents: { cost: -2, exposure: -2.4 } } } },
+        { id: 'register', label: 'Register the collectives and publish the totals',
+          body: 'They keep operating, they file, and the numbers are public. Sunlight, and '
+            + 'about forty new ways to be non-compliant.',
+          edit: { effects: { exposure: -1, cost: 0.8, labour: -0.4, tradition: 0.6 },
+            aimed: { Presidents: { exposure: -1.6 }, Players: { labour: -0.8 },
+              SEC: { autonomy: -1.2 } } } },
+        { id: 'hands-off', label: 'It is not this office\'s business',
+          body: 'Third parties paying third parties. Every time this office has touched it, '
+            + 'it has lost in court.',
+          edit: { effects: { exposure: 2.2, autonomy: 1.6, labour: 0.8 },
+            aimed: { Presidents: { exposure: 2.6 }, Players: { labour: 1 } } } },
+      ],
+    },
+    {
+      id: 'roster-limits',
+      beats: [PORTAL],
+      weight: 5,
+      when: () => true,
+      eyebrow: 'The roster',
+      title: 'How big a roster is',
+      brief: 'The number has never been written down properly. Some programmes carry a '
+        + 'hundred and twenty and some carry eighty five, the difference is mostly walk-ons, '
+        + 'and every version of a cap ends somebody\'s career on a Tuesday in February.',
+      voices: [
+        { id: 'Players', say: 'A cap is a cut list. Say that part out loud.' },
+        { id: 'Presidents', say: 'A hard number is the only way any of this gets budgeted.' },
+        { id: 'Fans', say: 'The walk-on who makes the team is the best story this sport has.' },
+      ],
+      options: [
+        { id: 'hard-cap', label: 'A hard cap, fully funded',
+          body: 'Everybody on the roster is on scholarship and the roster is smaller. Cleaner, '
+            + 'fairer to the ones who stay, and a lot of people do not stay.',
+          edit: { effects: { cost: 1.8, labour: 0.6, tradition: -2, exposure: 0.8 },
+            aimed: { Players: { labour: -0.8 }, Fans: { tradition: -2.2 },
+              Presidents: { cost: -1.4 } } } },
+        { id: 'soft', label: 'A cap on scholarships, not on bodies',
+          body: 'The walk-on survives. So does the hundred and thirty man roster and the '
+            + 'argument about what those players are owed.',
+          edit: { effects: { tradition: 1.6, cost: -0.6, exposure: 1 },
+            aimed: { Fans: { tradition: 2 }, Players: { labour: -0.6 } } } },
+        { id: 'conference', label: 'Let each conference set its own',
+          body: 'Four different numbers, four different recruiting pitches, and one very '
+            + 'predictable outcome.',
+          edit: { effects: { autonomy: 2.4, access: -1.4, exposure: 0.6 },
+            aimed: { SEC: { autonomy: 2 }, 'Group of Five': { access: -1.8 } } } },
+      ],
+    },
+    {
+      id: 'preseason-poll',
+      beats: [MEDIA],
+      weight: 5,
+      when: () => true,
+      eyebrow: 'Media days',
+      title: 'The preseason poll is doing damage',
+      brief: 'A list written in July by people who have watched nobody play decides who gets '
+        + 'the benefit of the doubt in November. Two athletic directors have asked this office '
+        + 'to make it go away and one of them is ranked fourth.',
+      voices: [
+        { id: 'Group of Five', say: 'We start outside it and there is no result that moves us in.' },
+        { id: 'Networks', say: 'The poll is how we sell September. Take it and we are selling nothing.' },
+        { id: 'Big Ten', say: 'It is a magazine cover that somehow became evidence.' },
+      ],
+      options: [
+        { id: 'ban-early', label: 'No rankings until October',
+          body: 'Six weeks of football decides who is good, instead of six weeks of football '
+            + 'being graded against a guess.',
+          edit: { effects: { access: 1.8, inventory: -1.2, tradition: -1 },
+            aimed: { 'Group of Five': { access: 2.4 }, Networks: { inventory: -1.8 },
+              SEC: { access: -1.2 } } } },
+        { id: 'keep', label: 'Leave it. It sells September',
+          body: 'It is unfair, it is fun, and it is the only reason anybody watches week two.',
+          edit: { effects: { inventory: 1.4, tradition: 1, access: -1.2 },
+            aimed: { Networks: { inventory: 1.6 }, 'Group of Five': { access: -1.6 } } } },
+        { id: 'publish', label: 'Make the voters show their work',
+          body: 'Every ballot public, every week, with a name on it. The poll survives and '
+            + 'the people writing it start behaving like it matters.',
+          edit: { effects: { exposure: -0.8, tradition: 0.6, access: 0.8, autonomy: -0.6 },
+            aimed: { 'Group of Five': { access: 1.2 }, Presidents: { exposure: 0.8 } } } },
+      ],
+    },
+    {
+      id: 'injury-report',
+      beats: [MEDIA, SEPT],
+      weight: 4,
+      when: (w) => w.posture.gambling !== 'banned',
+      eyebrow: 'The integrity',
+      title: 'Everybody wants the injury report',
+      brief: 'Legal books are taking money on these games and they are pricing them off '
+        + 'information that reaches the public through a message board on a Thursday. There '
+        + 'is a version of this that ends with a twenty year old being followed to class.',
+      voices: [
+        { id: 'Presidents', say: 'These are student medical records. Somebody needs to say that.' },
+        { id: 'Networks', say: 'The wagering audience is the reason weeknight ratings hold up.' },
+        { id: 'Players', say: 'People find our accounts now. It is not abstract.' },
+      ],
+      options: [
+        { id: 'mandate', label: 'Mandate a public availability report',
+          body: 'Same as every professional league. The information is public, the leaks stop, '
+            + 'and a medical privacy argument gets had in front of a judge sooner or later.',
+          edit: { effects: { exposure: 1.6, inventory: 1.4, labour: -1.2, money: 0.8 },
+            aimed: { Networks: { inventory: 1.8 }, Players: { labour: -1.8 },
+              Presidents: { exposure: 1.6 } } } },
+        { id: 'status-only', label: 'Availability only, no diagnosis',
+          body: 'In or out, nothing else. It closes most of the market for leaks without '
+            + 'publishing anybody\'s knee.',
+          edit: { effects: { inventory: 0.8, exposure: 0.4, labour: -0.4 },
+            aimed: { Networks: { inventory: 0.9 }, Players: { labour: -0.5 } } } },
+        { id: 'refuse', label: 'Refuse. These are students',
+          body: 'The sport does not publish medical information about people it insists are '
+            + 'not employees. The leaks continue and so does the pretence.',
+          edit: { effects: { labour: 1.4, exposure: 1.2, inventory: -1 },
+            aimed: { Players: { labour: 2 }, Networks: { inventory: -1.2 },
+              Presidents: { exposure: -0.8 } } } },
+      ],
+    },
+    {
+      id: 'bowl-season',
+      beats: [CHAMP, PLAYOFF],
+      weight: 5,
+      when: (w) => w.posture.bowlTieIns,
+      eyebrow: 'The postseason',
+      title: 'Nobody is playing in the bowls',
+      brief: 'Thirty-odd games between teams who finished 6-6, most of their best players '
+        + 'already gone, in stadiums a third full, against a bracket that is on at the same '
+        + 'time. The contracts run another four years.',
+      voices: [
+        { id: 'Fans', say: 'That trip used to be the reward for the season. Now it is a reason to opt out.' },
+        { id: 'Group of Five', say: 'Those payouts are real money to us. They are a rounding error to them.' },
+        { id: 'Networks', say: 'We bought a month of programming and half of it is unwatchable.' },
+      ],
+      options: [
+        { id: 'cut', label: 'Cut the field in half',
+          body: 'A bowl becomes something you earn again. Fifteen cities lose a game and '
+            + 'about forty schools lose a week of December practice.',
+          edit: { set: { 'posture.bowlTieIns': false },
+            effects: { tradition: 1.4, inventory: -1.4, money: -1.2, access: -1 },
+            aimed: { 'Group of Five': { money: -2.2 }, Fans: { tradition: 1.8 },
+              Networks: { inventory: -1.6 } } } },
+        { id: 'fold-in', label: 'Fold them into the bracket as early rounds',
+          body: 'Everything in December is one tournament. The bowls keep their names, their '
+            + 'cities and their sponsors, and stop being an exhibition.',
+          edit: { set: { 'playoff.teams': 16 },
+            effects: { access: 2.4, inventory: 2.2, tradition: -1.2, labour: -1.2 },
+            aimed: { 'Group of Five': { access: 2.6 }, Networks: { inventory: 2.4 },
+              Players: { labour: -1.6 } } } },
+        { id: 'keep-bowls', label: 'Leave them alone',
+          body: 'They are somebody\'s only postseason and the contracts are signed. It is a '
+            + 'bad month of television and a good week for sixty athletic departments.',
+          edit: { effects: { tradition: 0.8, money: 0.6, inventory: -0.9 },
+            aimed: { 'Group of Five': { money: 1.6 }, Networks: { inventory: -1 } } } },
+      ],
+    },
+    /* ================================================================
+       THE FOOTBALL SEASON, WHICH USED TO HAVE NOTHING IN IT.
+
+       Measured across two hundred terms, championship weekend and the playoff had something
+       on the desk exactly zero percent of the time, September thirty-two percent and October
+       twenty-two. The four offseason beats had something every single time. A commissioner
+       sim where the job stops the moment the sport starts is the wrong way round, and it made
+       a third of the calendar a button that said nothing was happening.
+
+       Every item below is a real argument that happens between September and January, and
+       each one is gated on the football that has actually been played where it can be.
+       ================================================================ */
+    {
+      id: 'guarantee-games',
+      beats: [SEPT],
+      weight: 5,
+      when: (w) => w.posture.nonRevGuarantee,
+      eyebrow: 'The schedule',
+      title: 'Nobody watched the first Saturday',
+      brief: 'Half the sport opened against an opponent it paid to be there. The scores were '
+        + 'what they always are, the stadiums emptied at half time, and everybody who sells '
+        + 'advertising has spent the week asking whose idea it was.',
+      voices: [
+        { id: 'Networks', say: 'We are paying premium money for a scrimmage in a warm stadium.' },
+        { id: 'Group of Five', say: 'That cheque is a third of our football budget. Ask before you take it.' },
+        { id: 'SEC', say: 'Twelve games, and some of them are supposed to be easy. That is the deal.' },
+      ],
+      options: [
+        { id: 'ban', label: 'Ban the guarantee game',
+          body: 'Everybody plays somebody real. The best Saturdays in years, and about sixty '
+            + 'athletic departments lose a line they were counting on.',
+          edit: { set: { 'posture.nonRevGuarantee': false },
+            effects: { inventory: 2.6, tradition: -1, cost: 1.8, money: 0.6 },
+            aimed: { 'Group of Five': { money: -3, cost: 2 }, Networks: { inventory: 2 },
+              SEC: { autonomy: -1.6 } } } },
+        { id: 'cap', label: 'Cap it at one a year',
+          body: 'One is a tune-up and three is a con. Nobody gets everything and nobody has '
+            + 'to close a programme over it.',
+          edit: { effects: { inventory: 1.4, cost: 0.5, autonomy: -1 },
+            aimed: { 'Group of Five': { money: -1 }, Networks: { inventory: 1.2 } } } },
+        { id: 'leave', label: 'Leave it alone',
+          body: 'It funds the schools that need it and it costs the sport four bad Saturdays. '
+            + 'That trade has been made every year for forty years.',
+          edit: { effects: { inventory: -1.2, autonomy: 1.2, tradition: 0.6 },
+            aimed: { 'Group of Five': { money: 1.5 }, Networks: { inventory: -1.4 } } } },
+      ],
+    },
+    {
+      id: 'officiating',
+      beats: [SEPT, OCT],
+      weight: 4,
+      when: () => true,
+      eyebrow: 'The officials',
+      title: 'The call everybody saw',
+      brief: 'A game between two teams who will both be in the argument in December turned on '
+        + 'a call the replay booth had ninety seconds to fix and did not. It has been watched '
+        + 'about forty million times since Saturday night.',
+      voices: [
+        { id: 'Fans', say: 'We all saw it. Just say it was wrong.' },
+        { id: 'Presidents', say: 'Whatever this office says on Monday gets read out in a lawsuit one day.' },
+        { id: 'Networks', say: 'We ran it fourteen times. We are not the problem here.' },
+      ],
+      options: [
+        { id: 'admit', label: 'Say it was wrong, publicly',
+          body: 'Name the error, name the crew, and take the week of coverage. Nobody has '
+            + 'ever regretted telling the truth about a call. Several people have regretted '
+            + 'the alternative.',
+          edit: { effects: { tradition: 1.4, exposure: 0.8, autonomy: -0.6 },
+            aimed: { Fans: { tradition: 2.4 }, Presidents: { exposure: 1.2 } } } },
+        { id: 'quiet', label: 'Handle it internally',
+          body: 'The crew is downgraded and nobody is told. It is what has always been done '
+            + 'and it is why nobody believes anything this office says about officiating.',
+          edit: { effects: { tradition: -1.6, autonomy: 1.2, exposure: -0.4 },
+            aimed: { Fans: { tradition: -2.6 }, Networks: { inventory: -0.5 } } } },
+        { id: 'centralise', label: 'Take replay off the conferences',
+          body: 'One command centre, one standard, one place to point when it goes wrong '
+            + 'again. Every conference loses something it has always controlled.',
+          edit: { set: { 'rules.replay': 'central' },
+            effects: { autonomy: -2.6, tradition: 0.8, exposure: -1.2, cost: 1.2 },
+            aimed: { SEC: { autonomy: -2 }, 'Big Ten': { autonomy: -2 },
+              Fans: { tradition: 1.4 } } } },
+      ],
+    },
+    {
+      id: 'flex-window',
+      beats: [OCT],
+      weight: 5,
+      when: () => true,
+      /* WHO IS ABOUT TO GET MOVED, off the real map rather than written down, so the item is
+         about a rivalry that exists in the sport as the player has left it. */
+      cast: (w, L, rng) => {
+        const live = L.POWERS.filter((c) => !L.isDefunct(w, c));
+        if (!live.length) return null;
+        const conf = live[Math.floor(rng() * live.length) % live.length];
+        const members = L.membersOf(w, conf);
+        if (members.length < 2) return null;
+        const i = Math.floor(rng() * members.length) % members.length;
+        let j = (i + 1 + Math.floor(rng() * (members.length - 1))) % members.length;
+        if (j === i) j = (i + 1) % members.length;
+        return { conf: conf, a: members[i], b: members[j] };
+      },
+      eyebrow: 'The windows',
+      title: (c) => (c ? c.a + ' and ' + c.b + ' want their kickoff back'
+        : 'A network wants to move a rivalry'),
+      brief: (c) => (c
+        ? 'A rights holder wants ' + c.a + ' and ' + c.b + ' at nine o clock eastern, in '
+          + 'November, because it is the only thing on. Both athletic directors have written '
+          + 'to this office. So have about eleven thousand season ticket holders.'
+        : 'A rights holder wants the biggest game left on the board moved into a late window '
+          + 'because it is the only thing on that night.'),
+      voices: [
+        { id: 'Networks', say: 'That window is worth more than the rest of the night put together.' },
+        { id: 'Fans', say: 'People drive four hours to that game. With children.' },
+        { id: 'Players', say: 'Kickoff at nine, off the bus at three, class on Monday.' },
+      ],
+      options: [
+        { id: 'flex', label: 'Give them the window',
+          body: 'The biggest audience the game has ever had, and the smallest crowd.',
+          edit: { effects: { money: 1.8, inventory: 2.2, tradition: -2.4, labour: -0.8 },
+            aimed: { Networks: { inventory: 2.4 }, Fans: { tradition: -2.6 } } } },
+        { id: 'protect', label: 'Protect the kickoff',
+          body: 'Some games are not inventory. Say so once, in writing, and be ready to say '
+            + 'it again at the next negotiation.',
+          edit: { effects: { tradition: 2.4, inventory: -1.4, money: -1.2 },
+            aimed: { Fans: { tradition: 3 }, Networks: { inventory: -2.2, money: -1 } } } },
+        { id: 'split', label: 'Sell the window, protect the date',
+          body: 'They get a late kickoff. They do not get to move it off the Saturday it has '
+            + 'been on since before anybody in the room was born.',
+          edit: { effects: { money: 0.9, inventory: 1, tradition: -0.8 },
+            aimed: { Networks: { inventory: 1 }, Fans: { tradition: -0.9 } } } },
+      ],
+    },
+    {
+      id: 'rankings-row',
+      beats: [OCT, NOV],
+      weight: 5,
+      when: (w) => w.playoff.selection === 'committee',
+      eyebrow: 'The rankings',
+      title: 'The first rankings landed badly',
+      brief: 'Twelve people in a hotel conference room published a list on Tuesday night and '
+        + 'by Wednesday morning three athletic directors, two governors and a congressman had '
+        + 'opinions about it.',
+      voices: [
+        { id: 'Group of Five', say: 'Undefeated, and behind two teams with a loss. Explain the method.' },
+        { id: 'Presidents', say: 'A committee with no published criteria is a defendant waiting to happen.' },
+        { id: 'SEC', say: 'The eye test exists for a reason. Some leagues are harder.' },
+      ],
+      options: [
+        { id: 'publish', label: 'Publish the ballots',
+          body: 'Every vote, every week, with a name on it. The arguments do not stop, they '
+            + 'just become arguments about people instead of about a black box.',
+          edit: { effects: { tradition: 1, exposure: -1.4, autonomy: -0.8 },
+            aimed: { Fans: { tradition: 1.6 }, Presidents: { exposure: 1.6 },
+              'Group of Five': { access: 1.2 } } } },
+        { id: 'formula', label: 'Replace the committee with a formula',
+          body: 'A number nobody can lobby. It will produce a result somebody hates in year '
+            + 'one and it will produce the same result for everybody who hates it.',
+          edit: { set: { 'playoff.selection': 'formula' },
+            effects: { access: 1.6, exposure: -2, tradition: -1.4, autonomy: -1 },
+            aimed: { 'Group of Five': { access: 2.4 }, SEC: { access: -1.8 },
+              Presidents: { exposure: 2 } } } },
+        { id: 'defend', label: 'Defend the committee',
+          body: 'They watched the games, they are in the room, and this office is not going '
+            + 'to referee the referees in public.',
+          edit: { effects: { autonomy: 1.4, exposure: 0.8, access: -0.8 },
+            aimed: { 'Group of Five': { access: -1.8 }, SEC: { autonomy: 1.2 } } } },
+      ],
+    },
+    {
+      id: 'dead-october',
+      beats: [NOV],
+      weight: 5,
+      when: (w) => w.playoff.teams <= 12,
+      eyebrow: 'The stakes',
+      title: 'Most of the country is already out',
+      brief: 'It is the second week of November and the number of teams with a live path to '
+        + 'the field is smaller than the number of conferences. The rest are playing for a '
+        + 'bowl in a city nobody wants to fly to.',
+      voices: [
+        { id: 'Networks', say: 'Six weeks of the season with nothing riding on it is six weeks we cannot sell.' },
+        { id: 'Big 12', say: 'Our best team is out and it is the ninth of November.' },
+        { id: 'SEC', say: 'A regular season that eliminates people is the entire product.' },
+      ],
+      options: [
+        { id: 'expand', label: 'Widen the field again',
+          body: 'More teams alive in November, and a first round that will be pointed at '
+            + 'every time it is not competitive.',
+          edit: { set: { 'playoff.teams': 16 },
+            effects: { access: 2.6, inventory: 2, tradition: -1.6, labour: -0.8 },
+            aimed: { 'Group of Five': { access: 2.4 }, SEC: { access: -2 },
+              Networks: { inventory: 2.2 } } } },
+        { id: 'playin', label: 'Add a play-in weekend',
+          body: 'The teams on the bubble settle it on the field in December instead of in a '
+            + 'hotel conference room. Two more games and one fewer argument.',
+          edit: { set: { 'playoff.byes': 0 },
+            effects: { access: 1.6, inventory: 1.8, labour: -1, tradition: -0.4 },
+            aimed: { Networks: { inventory: 2 }, Players: { labour: -1.4 },
+              'Big 12': { access: 1.6 } } } },
+        { id: 'accept', label: 'That is what a regular season is',
+          body: 'The games matter because losing them costs you. Making every November game '
+            + 'survivable is how you end up with a sport nobody watches in September.',
+          edit: { effects: { tradition: 1.8, access: -1.2, inventory: -0.8 },
+            aimed: { SEC: { tradition: 1.6 }, 'Group of Five': { access: -2 },
+              Networks: { inventory: -1.4 } } } },
+      ],
+    },
+    {
+      id: 'title-game-risk',
+      beats: [CHAMP],
+      weight: 5,
+      when: (w) => w.playoff.teams >= 12,
+      eyebrow: 'Championship weekend',
+      title: 'Two conferences want to skip their title game',
+      brief: 'Both their finalists are already in the field whatever happens on Saturday. '
+        + 'What is left to play for is an injury and a seed, and two commissioners have '
+        + 'written to ask whether the game is required.',
+      voices: [
+        { id: 'Big Ten', say: 'We are risking our best team in a game that decides nothing.' },
+        { id: 'Networks', say: 'That Saturday is six games and we have already sold every one.' },
+        { id: 'Fans', say: 'You cannot sell a championship and then tell us it does not count.' },
+      ],
+      options: [
+        { id: 'required', label: 'The game is required',
+          body: 'A conference championship is a championship. If it does not decide anything '
+            + 'that is a problem with the bracket, not with the Saturday.',
+          edit: { effects: { tradition: 2, inventory: 1.8, labour: -1, autonomy: -1.8 },
+            aimed: { Networks: { inventory: 2.2 }, 'Big Ten': { autonomy: -2 },
+              Fans: { tradition: 2 } } } },
+        { id: 'optional', label: 'Let them decide',
+          body: 'Their conference, their Saturday. Half of them will keep it and the two who '
+            + 'do not will be the two everybody wanted to watch.',
+          edit: { effects: { autonomy: 2.6, inventory: -2.2, tradition: -1.8, money: -1 },
+            aimed: { 'Big Ten': { autonomy: 2.4 }, SEC: { autonomy: 2.4 },
+              Networks: { inventory: -2.6 } } } },
+        { id: 'seed-it', label: 'Make it worth something',
+          body: 'Winning it is worth a bye and losing it is worth a seed. Nobody has to be '
+            + 'told to take it seriously if it decides where they play in January.',
+          edit: { set: { 'playoff.byes': 4 },
+            effects: { inventory: 1.4, access: 0.8, tradition: 1.2 },
+            aimed: { Networks: { inventory: 1.6 }, 'Group of Five': { access: -0.8 } } } },
+      ],
+    },
+    {
+      id: 'portal-timing',
+      beats: [CHAMP, PLAYOFF],
+      weight: 4,
+      when: (w) => w.labour.portalWindows >= 1,
+      eyebrow: 'The portal',
+      title: 'The window opens during the playoff',
+      brief: 'Four teams are still playing and their rosters are legally allowed to start '
+        + 'looking for a new one. Two starters have already entered and one of them is '
+        + 'expected to play on Saturday.',
+      voices: [
+        { id: 'Players', say: 'Every other worker in the country can look for a job in December.' },
+        { id: 'SEC', say: 'We are being asked to prepare for a semi-final with a roster that is legally leaving.' },
+        { id: 'Presidents', say: 'Whatever the rule is, it needs to survive somebody suing over it.' },
+      ],
+      options: [
+        { id: 'move', label: 'Move the window to January',
+          body: 'Nobody enters until the last game is played. Cleaner football, and a month '
+            + 'of a player being told to wait while everybody else recruits.',
+          edit: { effects: { labour: -1.8, tradition: 1.2, exposure: 1.4, inventory: 0.8 },
+            aimed: { Players: { labour: -2.6 }, SEC: { autonomy: 1 } } } },
+        { id: 'keep', label: 'Leave it where it is',
+          body: 'It is inconvenient for four teams and it is the only leverage the other '
+            + 'hundred and thirty rosters have.',
+          edit: { effects: { labour: 1.4, tradition: -0.8, exposure: -0.8 },
+            aimed: { Players: { labour: 2 }, SEC: { autonomy: -1 } } } },
+        { id: 'protect', label: 'Freeze it for teams still playing',
+          body: 'Your window opens when your season ends. Defensible, fiddly, and it will be '
+            + 'litigated by somebody within two years.',
+          edit: { effects: { labour: -0.6, tradition: 0.8, exposure: 0.9, cost: 0.4 },
+            aimed: { Players: { labour: -1 }, Presidents: { exposure: -1.2 } } } },
+      ],
+    },
+    {
+      id: 'playoff-sites',
+      beats: [PLAYOFF],
+      weight: 5,
+      when: (w) => w.playoff.sites !== 'campus' || w.playoff.teams > 4,
+      eyebrow: 'The venues',
+      title: 'Where the bracket is played',
+      brief: 'The first round on a campus in December is the best television this sport has '
+        + 'produced in twenty years. It is also the hardest ticket to sell in a neutral city '
+        + 'and there are four of those with contracts.',
+      voices: [
+        { id: 'Fans', say: 'Snow, a full student section, and nobody flew anywhere. Keep it.' },
+        { id: 'Networks', say: 'Campus games rate. We would like more of them and fewer half-empty domes.' },
+        { id: 'Presidents', say: 'Those neutral site contracts were signed by people who are still in post.' },
+      ],
+      options: [
+        { id: 'campus', label: 'Everything on campus until the final',
+          body: 'The atmosphere the sport is famous for, and four cities with a bowl game and '
+            + 'nothing to put in it.',
+          edit: { set: { 'playoff.sites': 'campus', 'posture.bowlTieIns': false },
+            effects: { tradition: 2.6, inventory: 1.8, money: -1, exposure: 0.8 },
+            aimed: { Fans: { tradition: 3 }, Networks: { inventory: 2 },
+              Presidents: { exposure: 1.2 } } } },
+        { id: 'mixed', label: 'Campus early, neutral late',
+          body: 'What is happening now, written down. Everybody gets something and the bowls '
+            + 'keep the games they can still fill.',
+          edit: { set: { 'playoff.sites': 'mixed' },
+            effects: { tradition: 0.8, inventory: 0.6, money: 0.4 },
+            aimed: { Fans: { tradition: 0.8 } } } },
+        { id: 'neutral', label: 'Sell the whole bracket to cities',
+          body: 'The most money, the least atmosphere, and a January the sport has been '
+            + 'trying to get away from since the committee was invented.',
+          edit: { set: { 'playoff.sites': 'neutral', 'posture.bowlTieIns': true },
+            effects: { money: 2.4, tradition: -2.8, inventory: -1.4 },
+            aimed: { Fans: { tradition: -3 }, Networks: { inventory: -1.6 },
+              Presidents: { cost: 1 } } } },
+      ],
+    },
     /* ---------------------------------------------------------------- */
     {
       id: 'playoff-format',
       beats: [WINTER],
-      weight: 5,
+      weight: 9,
       when: (w) => w.playoff.teams < 16,
       eyebrow: 'The format',
       title: 'The playoff is up for renewal',
@@ -172,7 +663,7 @@
     {
       id: 'raid',
       beats: [NOV, WINTER],
-      weight: 4,
+      weight: 2,
       /* THE GATE WAS WRONG AND THE TEST CAUGHT IT. It asked for a conference of fourteen or
          fewer to be the victim, which was true of the sport in 2014 and is true of nothing
          now: the smallest power conference in 2025 has sixteen. The item was unreachable in
@@ -232,34 +723,74 @@
     {
       id: 'media-deal',
       beats: [SPRING, MEDIA],
-      weight: 5,
+      weight: 6,
       when: (w) => w.money.dealYears <= 2,
+      /* WHAT THE SPORT ACTUALLY DREW, off the ratings the season screen has been recording
+         all term. Until there was a viewership number this item was a guess dressed as a
+         negotiation: the offer was the same whether the player had protected every rivalry
+         or moved all of them to a Friday night stream. Now the number in the brief is the
+         number the mode has been showing them since September. */
+      cast: (w) => {
+        const r = w.ratings || {};
+        const years = Object.keys(r);
+        if (!years.length) return { known: false };
+        const per = years.reduce((t, y) => t + r[y].perGame, 0) / years.length;
+        const title = years.reduce((t, y) => t + (r[y].title || 0), 0) / years.length;
+        /* Against the sport as it was handed over. A commissioner who grew the audience is
+           negotiating from somewhere different than one who did not, and the item should
+           say which one they are before they choose. */
+        const base = 1.7;
+        return {
+          known: true, years: years.length,
+          per: Math.round(per * 100) / 100,
+          title: Math.round(title * 10) / 10,
+          up: per >= base * 1.06, down: per <= base * 0.94,
+        };
+      },
       eyebrow: 'The deal',
       title: 'The media rights are up',
-      brief: 'Everything else you have done is about to be priced. The number that comes '
-        + 'back is the number the next four years of arguments are conducted in.',
+      brief: (c) => {
+        if (!c || !c.known) {
+          return 'Everything you have done is about to be priced. The number that comes back '
+            + 'is the number the next seven years of arguments are conducted in.';
+        }
+        const shape = c.up
+          ? 'You are walking in with an audience that has grown, which is the only argument '
+            + 'in this room that has ever worked.'
+          : c.down
+            ? 'You are walking in with an audience that has shrunk, and everybody on the '
+              + 'other side of the table has the same spreadsheet you do.'
+            : 'The audience is roughly where you found it, which buys you a fair hearing and '
+              + 'nothing more.';
+        return 'An average game drew ' + c.per.toFixed(2) + ' million across '
+          + (c.years === 1 ? 'your first season' : c.years + ' seasons')
+          + (c.title ? ', and the title game drew ' + c.title.toFixed(1) + ' million' : '')
+          + '. ' + shape;
+      },
       voices: [
         { id: 'Networks', say: 'One negotiation, clean windows, and we can be generous.' },
-        { id: 'Big Ten', say: 'We are entitled to negotiate our own inventory.' },
-        { id: 'Fans', say: 'Not every game at eleven in the morning.' },
+        { id: 'Big Ten', say: 'We are entitled to negotiate our own inventory and we both know what it is worth.' },
+        { id: 'Fans', say: 'Not every game at eleven in the morning on a channel we have to buy twice.' },
       ],
       options: [
         { id: 'one-deal', label: 'Sell it as one package',
-          body: 'The sport negotiates together. The most money, and the least autonomy.',
-          edit: { set: { 'money.dealYears': 7 },
-            effects: { money: 3, inventory: 2, autonomy: -3 },
-            aimed: { Networks: { inventory: 2 }, SEC: { autonomy: -2 }, 'Big Ten': { autonomy: -2 } } } },
+          body: 'The sport negotiates together. The most money, the least autonomy, and one '
+            + 'phone number for every argument about a kickoff time for seven years.',
+          edit: (c) => ({ set: { 'money.dealYears': 7 },
+            effects: { money: c && c.up ? 4 : c && c.down ? 1.8 : 3, inventory: 2, autonomy: -3 },
+            aimed: { Networks: { inventory: 2 }, SEC: { autonomy: -2 }, 'Big Ten': { autonomy: -2 } } }) },
         { id: 'per-conf', label: 'Let each conference sell its own',
-          body: 'What is already happening, made official. The top two do very well.',
-          edit: { set: { 'money.dealYears': 7 },
-            effects: { money: 1, autonomy: 3, access: -2, inventory: -1 },
-            aimed: { SEC: { money: 3 }, 'Big Ten': { money: 3 }, 'Group of Five': { money: -2 } } } },
+          body: 'What is already happening, made official. The two biggest do very well and '
+            + 'everybody else finds out what they are worth on their own.',
+          edit: (c) => ({ set: { 'money.dealYears': 7 },
+            effects: { money: c && c.up ? 1.8 : 1, autonomy: 3, access: -2, inventory: -1 },
+            aimed: { SEC: { money: 3 }, 'Big Ten': { money: 3 }, 'Group of Five': { money: -2 } } }) },
         { id: 'streaming', label: 'Take the streaming money',
           body: 'More money now, a smaller audience, and a generation that finds the sport '
-            + 'somewhere else or does not find it.',
-          edit: { set: { 'money.dealYears': 7, 'posture.tvWindows': 8 },
-            effects: { money: 3, inventory: 1, tradition: -3 },
-            aimed: { Fans: { tradition: -2 }, Networks: { inventory: -1 } } } },
+            + 'somewhere else or does not find it at all.',
+          edit: (c) => ({ set: { 'money.dealYears': 7, 'posture.tvWindows': 8 },
+            effects: { money: c && c.down ? 3.4 : 3, inventory: 1, tradition: -3 },
+            aimed: { Fans: { tradition: -2 }, Networks: { inventory: -1 } } }) },
       ],
       dials: [
         { id: 'windows', label: 'Broadcast windows', path: 'posture.tvWindows',
@@ -267,12 +798,10 @@
           per: { inventory: 0.8, money: 0.5, tradition: -0.7 } },
       ],
     },
-
-    /* ---------------------------------------------------------------- */
     {
       id: 'portal',
       beats: [PORTAL],
-      weight: 4,
+      weight: 3,
       when: () => true,
       eyebrow: 'The roster',
       title: 'The transfer window',
@@ -313,7 +842,7 @@
     {
       id: 'conf-games',
       beats: [WINTER, MEDIA],
-      weight: 3,
+      weight: 1,
       when: () => true,
       eyebrow: 'The schedule',
       title: 'How many conference games',
@@ -398,12 +927,43 @@
   /* The item for a beat, picked from what is eligible, weighted, and deterministic on the
      world's own seed and clock. Two players with the same seed get the same term, which is
      what makes a term replayable and therefore testable. */
+  /* HOW LONG AGO THIS ARGUMENT WAS LAST HAD, in beats, off the ledger's own record. Infinity
+     if it has never come up, which is what makes a fresh item the most likely one. */
+  function sinceRuled(world, id) {
+    const h = world.history || [];
+    for (let i = h.length - 1; i >= 0; i--) {
+      if (h[i].id && String(h[i].id).split(':')[0] === id) {
+        return (world.year - h[i].year) * 9 + (world.beat - h[i].beat);
+      }
+    }
+    return Infinity;
+  }
+
+  /* A RECENCY PENALTY, because weight alone cannot fix a thin beat. Measured across two
+     hundred terms: the portal item came up 5.0 times in a five year term, which is every
+     year without exception, for the simple reason that it was the only thing eligible on
+     its beat. Dropping its weight changes nothing when there is nothing to lose to.
+
+     So an argument the sport had recently is unlikely rather than impossible, and it is
+     scaled rather than banned: if everything eligible is stale the weights are all scaled
+     together and the pick still happens, which is the behaviour a hard block would break.
+
+     A season is nine beats. Inside one, an item is worth a fifth of itself; inside two, half.
+     After that the sport is entitled to have the argument again, because in life it does. */
+  function recency(world, it) {
+    const gap = sinceRuled(world, it.id);
+    if (gap >= 18) return 1;
+    if (gap >= 9) return 0.5;
+    return 0.2;
+  }
+
   function pick(world, L, rng) {
     const pool = eligible(world, L);
     if (!pool.length) return null;
-    const total = pool.reduce((t, it) => t + (it.weight || 1), 0);
+    const w = pool.map((it) => Math.max(0.01, (it.weight || 1) * recency(world, it)));
+    const total = w.reduce((t, x) => t + x, 0);
     let r = (rng ? rng() : 0.5) * total;
-    for (const it of pool) { r -= (it.weight || 1); if (r <= 0) return it; }
+    for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }
     return pool[pool.length - 1];
   }
 
@@ -482,7 +1042,7 @@
   const text = (v, cast, item) => (typeof v === 'function' ? v(cast, item) : v);
 
   const publicAPI = { ITEMS, BY_ID, BEATS: { WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF },
-    eligible, pick, resolve, settings, format, castOf, text };
+    eligible, pick, resolve, settings, format, castOf, text, recency, sinceRuled };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_DOCKET = publicAPI;
 })();
