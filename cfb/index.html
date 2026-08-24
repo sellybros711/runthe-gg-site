@@ -7798,8 +7798,17 @@ function optionGroups(draw){
      ALL grouped by position once, which read as four little lists stacked in a fixed order
      and buried a board's most expensive man wherever his position happened to fall. So it
      became price order, on the reasoning that price is the only cross-position ranking
-     there is: it is value over replacement AT the man's own position, so it already knows a
-     quarterback is measured against other quarterbacks.
+     there is.
+
+     THAT REASONING USED TO SAY PRICE ALREADY KNOWS A QUARTERBACK IS MEASURED AGAINST OTHER
+     QUARTERBACKS. It does not. 01-players.mjs sets one baseline per SEASON, pooled across
+     positions (the rank-120 skill player), so price is value over that pooled replacement
+     and not over a positional one. Quarterbacks score the most fantasy points, so they are
+     simply the dearest: mean $1.83M against $0.60M for a tight end, and a tight end returns
+     10.9 points per million where a quarterback returns 7.8. Price order is still the right
+     default for ALL, because it ranks by what a man costs you, which is the question that
+     tab is asking. It is just not position-adjusted, and writing that it was would send the
+     next person looking for a correction that is not in the code.
 
      Both readings are right and they answer different questions, which is exactly the case
      for a control instead of a verdict. A position tab used to sort by points and now sorts
