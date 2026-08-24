@@ -240,12 +240,12 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Full names, and spelling is forgiving: the typeahead will find him from a few letters.</li>
   <li>A right player in the wrong season is not a miss. The game says so and you keep going.</li>
   <li>There is no penalty for a wrong name, only the clock. Guess out loud, so to speak.</li>
-  <li>Name somebody who really was on that roster but is not one of the blanks and he still counts, as a deep cut. The board is what we hold; it is not the whole squad.</li>
+  <li>Name somebody who really was on that roster but is not one of the blanks and he still counts, as a deep cut. The blanks are the famous part of the squad, not all of it.</li>
 </ul>
 <h3>One roster a day</h3>
 <p>A new club and season arrive at midnight local time, the same one for everybody, and a finished day keeps your streak alive. Roll Call is an Arcade Card game. Members play all Arcade titles without limits and replay any past day from the <a href="/arcade/archive/">Archive</a>. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
 <h3>How the blanks are chosen</h3>
-<p>Rosters run deep and most of a squad is forgettable, so the blanks are only the players a sports fan would plausibly know, drawn from real jersey records. That is why a board is eight or ten names rather than fifty three, and why naming half of one is a good day.</p>
+<p>Rosters run deep and most of a squad is forgettable, so the blanks are only the players a sports fan would plausibly know, drawn from real jersey records. That is why a board is eight or ten names rather than fifty three, and why naming half of one is a good day. Behind them we hold the whole squad, so a twelfth man off the bench is checked against the real roster page and counts as a deep cut.</p>
 <h3>Getting more names</h3>
 <ul>
   <li>Start with the quarterback, the ace or the franchise guy, then work outward through the players who arrived with him.</li>
@@ -298,7 +298,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/teammates.js?v=2"></script>
 <script src="/arcade/livecheck.js?v=7"></script>
-<script src="/arcade/teamcheck.js?v=1"></script>
+<script src="/arcade/teamcheck.js?v=2"></script>
 <script src="/arcade/type.js?v=2"></script>
 <script>
 (function(){
@@ -353,6 +353,58 @@ window.GA_ID='G-L29P5MRWKE';
     return null;
   }
 
+  /* ---------- the full roster, which is the answer key ----------
+     The slots are the recognizable part of a squad. The ROSTER is all of it,
+     scraped gate-free (rosterseasons.js), and it is what a typed name is
+     judged against. Before this the file held six names off a fifteen-man
+     roster and anything else had to be put to Wikidata, which answered a
+     season question loosely: it accepted Boris Diaw for the 2009-10 Spurs,
+     who signed in 2012, and could not confirm Tiago Splitter, who was there.
+     Our own roster page settles both, and it settles them offline. */
+  /* ONE BOARD IS ONE LEAGUE, so only one shard is ever needed and the other
+     two are never downloaded. Injected rather than listed in the page head:
+     which league today's board is cannot be known until the board is picked.
+     Everything below tolerates the shard being absent or slow, in which case
+     the game falls back to exactly what it did before. */
+  var SHARD = {};
+  function loadShard(sp, cb){
+    if(!sp) return cb();
+    if(window['RTG_ROSTERS_'+sp]) return cb();
+    if(SHARD[sp]==='fail') return cb();
+    if(SHARD[sp]==='loading'){ setTimeout(function(){ loadShard(sp, cb); }, 120); return; }
+    SHARD[sp]='loading';
+    var s=document.createElement('script');
+    s.src='/arcade/rosters/'+sp.toLowerCase()+'.js?v=1';
+    s.async=true;
+    s.onload=function(){ SHARD[sp]='ok'; cb(); };
+    s.onerror=function(){ SHARD[sp]='fail'; cb(); };
+    document.head.appendChild(s);
+  }
+  function rosterFor(b){
+    if(!b) return null;
+    var pack = window['RTG_ROSTERS_'+sportOf(b)];
+    if(!pack || !pack.r) return null;
+    var ti = pack.teams.indexOf(D.teams[b.team]);
+    if(ti<0) return null;
+    var byYear = pack.r[ti];
+    var list = byYear && byYear[b.year];
+    if(!list) return null;
+    return list.map(function(row){ return [pack.names[row[0]], row[1]]; });
+  }
+  var ROSTER = null, ROSTER_BY = null;
+  function buildRoster(){
+    ROSTER = rosterFor(board);
+    ROSTER_BY = null;
+    if(!ROSTER) return;
+    ROSTER_BY = {};
+    for(var i=0;i<ROSTER.length;i++){
+      var k = norm(ROSTER[i][0]);
+      if(k && !ROSTER_BY[k]) ROSTER_BY[k] = ROSTER[i];
+    }
+  }
+  // Was this man on that roster, per our own file? Returns [name, number].
+  function onRoster(k){ return (ROSTER_BY && ROSTER_BY[k]) || null; }
+
   /* ---------- the daily board ----------
      A deck walk, not a random draw: the deck is already dealt so consecutive
      days move between sports and no club comes round twice in a fortnight.
@@ -386,19 +438,35 @@ window.GA_ID='G-L29P5MRWKE';
     var b = pickBoard(true, pdate());
     if(!b){ $('setupClub').textContent='Data failed to load'; $('startBtn').disabled=true; return; }
     $('setupClub').textContent = clubOf(b);
-    $('setupSeason').textContent = b.year + ' SEASON';
+    $('setupSeason').textContent = seasonLabel(b) + ' SEASON';
     $('setupKick').textContent = ARCHIVE ? 'That day’s roster' : 'Today’s roster';
     $('setupBlurb').textContent = 'Ninety seconds. ' + b.ids.length + ' names on the board.';
     var st=load(), bits=[];
     if(st.best) bits.push('Best ever: '+st.best+' named');
     if(st.last && st.last.d===today()) bits.push('Played today: '+st.last.score+'/'+st.last.total);
     $('bestLine').textContent = bits.join(' · ');
+    // Pull today's league shard now, while they are reading the setup screen,
+    // so the answer key is in hand before the ninety seconds start.
+    loadShard(sportOf(b), function(){});
   }
   function clubOf(b){ return D.teams[b.team]; }
+  /* AN NBA SEASON HAS TWO YEARS IN ITS NAME AND WE WERE ONLY PRINTING ONE.
+     Our year is Basketball-Reference's, which labels a season by the year it
+     ENDS: 2010 is the 2009-10 season. A player reads "2010 SEASON" as 2010-11,
+     so a board of Duncan, Ginobili, Finley and Ratliff (2009-10) was refusing
+     Tiago Splitter, whose first Spurs season was 2010-11, and the game looked
+     wrong when the roster was right. Say both years and the question is
+     answerable. Baseball and football seasons sit inside one calendar year, so
+     they keep the single number they always had. */
+  function seasonLabel(b){
+    var sp = sportOf(b), y = b.year;
+    if(sp !== 'NBA') return String(y);
+    return String(y - 1) + '-' + String(y).slice(2);
+  }
 
   function renderBoard(){
     $('playClub').textContent = clubName();
-    $('playYear').textContent = board.year + ' season · ' + board.ids.length + ' names';
+    $('playYear').textContent = seasonLabel(board) + ' season · ' + board.ids.length + ' names';
     var host=$('slots'); host.innerHTML='';
     board.ids.forEach(function(id, i){
       var el=document.createElement('div'); el.className='slot'; el.id='slot'+i;
@@ -441,14 +509,17 @@ window.GA_ID='G-L29P5MRWKE';
      somebody the game did not think to ask for should be worth more than
      nothing rather than less. */
   var extra = [], checking = false;
-  function addExtra(name, note){
+  // `num` is only there for a deep cut off our own roster page: we know the
+  // shirt he wore, so the row shows it exactly like a printed slot does.
+  function addExtra(name, note, num){
     extra.push({ name:name, note:note||'' });
     foundN++;
     $('tallyN').textContent=foundN;
     var host=$('slots');
     var el=document.createElement('div'); el.className='slot got deep pop';
-    el.innerHTML='<span class="i">+</span><span class="nm"></span><span class="no">deep cut</span>';
+    el.innerHTML='<span class="i">+</span><span class="nm"></span><span class="no"></span>';
     el.querySelector('.nm').textContent = name;
+    el.querySelector('.no').textContent = (num==null||num<0) ? 'deep cut' : ('#'+num+' · deep cut');
     host.appendChild(el);
   }
   function shakeField(){
@@ -480,12 +551,31 @@ window.GA_ID='G-L29P5MRWKE';
     for(var e2=0;e2<extra.length;e2++){
       if(norm(extra[e2].name)===k){ message('Already named ' + extra[e2].name + '.', 'warn'); return; }
     }
+    /* OUR OWN ROSTER, BEFORE ANYBODY ELSE'S. The squad page is the answer key
+       and it is exact about the season, so a deep cut is settled here, offline,
+       instead of being put to a source that only knows a man was at the club
+       at some point. This is the branch that now takes Tiago Splitter and
+       refuses Boris Diaw. */
+    var row = onRoster(k);
+    if(row){
+      addExtra(row[0], 'roster', row[1]);
+      message(row[0] + '. Deep cut, and he counts.', 'good');
+      sfx('good');
+      return;
+    }
     for(var b=0;b<ids.length;b++){
       var st = playedFor(ids[b], board.team);
       if(st){
         message(nameOf(ids[b]) + ' was there, but ' + (st[2]>st[1] ? 'from ' + st[1] + ' to ' + st[2] : 'in ' + st[1]) + '.', 'warn');
         return;
       }
+    }
+    /* Our roster HAS this season and did not list him, so it is a real no and
+       there is nothing to ask anybody. Only a season we hold no page for falls
+       through to the live check below. */
+    if(ROSTER){
+      message(ids.length ? 'Not on this roster.' : 'No player by that name.', 'bad');
+      sfx('bad'); shakeField(); return;
     }
     var TC = window.RTGTeamCheck;
     if(!TC || !TC.onClubIn){
@@ -542,6 +632,10 @@ window.GA_ID='G-L29P5MRWKE';
     if(!b){ toast('Could not build a board'); return; }
     board=b; isDaily=daily; found={}; foundN=0; done=false; left=SECONDS; startedAt=Date.now();
     extra=[]; checking=false;
+    // Normally already in hand from the setup screen; this covers a replay or
+    // a slow network, and buildRoster is safe to run twice.
+    buildRoster();
+    loadShard(sportOf(b), function(){ if(board===b) buildRoster(); });
     if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
       var att = RTGTokens.startAttempt(GAME);
       attemptFirst = !!(att && att.first);
@@ -611,7 +705,7 @@ window.GA_ID='G-L29P5MRWKE';
     for(var x=0;x<extra.length;x++) cells.push('🟨');        // deep cuts, off the board
     var rows=[]; for(var i=0;i<cells.length;i+=5) rows.push(cells.slice(i,i+5).join(''));
     return { key:'rollcall', date:today(), grid:rows.join('\n'),
-             stat:foundN+'/'+total+' named'+(extra.length?(' +'+extra.length+' deep'):'')+' · '+(board?clubName()+' '+board.year:''),
+             stat:foundN+'/'+total+' named'+(extra.length?(' +'+extra.length+' deep'):'')+' · '+(board?clubName()+' '+seasonLabel(board):''),
              statInt:foundN, total:total };
   }
   window.RTG_CARD_SPEC = cardSpec;

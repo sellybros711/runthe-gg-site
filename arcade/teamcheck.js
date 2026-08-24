@@ -65,7 +65,20 @@
     return !!ka && ka === kb;
   }
 
+  /* A YEAR THAT IS NOT A NUMBER IS NOT A WILDCARD.
+     This took a raw qualifier straight from the source and compared it, and
+     every comparison against a NaN is false, so `!(a0 > be || b0 > ae)` came
+     back TRUE for a row it could not read at all. One unparseable date meant a
+     player who was at the club in some other decade was accepted for the
+     season being asked about. Anything that is not a plain four-digit year is
+     now the same as no date: unknown, which the callers already handle. */
+  function yr(v) {
+    if (v == null || v === '') return null;
+    var n = typeof v === 'number' ? v : parseInt(String(v).replace(/^[+-]/, ''), 10);
+    return (isFinite(n) && n > 1800 && n < 2200) ? n : null;
+  }
   function overlaps(a0, a1, b0, b1) {
+    a0 = yr(a0); a1 = yr(a1); b0 = yr(b0); b1 = yr(b1);
     if (a0 == null || b0 == null) return null;        // undated: cannot say
     var ae = a1 == null ? 9999 : a1, be = b1 == null ? 9999 : b1;
     return !(a0 > be || b0 > ae);
@@ -167,7 +180,9 @@
           return { ok: true, why: 'confirmed', name: p.name, span: rows[i] };
         }
       }
-      var undated = rows.some(function (r) { return r.start == null; });
+      // "undated" has to mean "no year we can READ", not "no year field", or a
+      // date we failed to parse gets reported as a confident no.
+      var undated = rows.some(function (r) { return yr(r.start) == null; });
       return { ok: undated ? null : false, why: undated ? 'no years on file' : 'different years',
                name: p.name, span: rows[0] };
     });

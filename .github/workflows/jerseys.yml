@@ -39,7 +39,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jerseys
-          path: arcade/jerseys*.js
+          path: |
+            arcade/jerseys*.js
+            arcade/rosters/*.js
           if-no-files-found: warn
       - name: Guard against a throttled / truncated scrape
         if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
@@ -50,9 +52,12 @@ jobs:
         run: |
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"
-          git add arcade/jerseys.js
+          # arcade/rosters/*.js rides along: the same scrape produces both, and a
+          # jerseys.js that moved without its roster shards would leave Roll
+          # Call judging one day's squad against another day's answer key.
+          git add arcade/jerseys.js arcade/rosters
           git diff --cached --quiet && echo "no changes" || {
-            git commit -m "Refresh jersey-stint dataset (arcade/jerseys.js)"
+            git commit -m "Refresh jersey stints and Roll Call rosters"
             for i in 1 2 3 4 5; do
               git push && break
               echo "push rejected, rebasing (attempt $i)"

@@ -31,7 +31,7 @@
  * HOW TO RUN:  node scripts/fetch-jerseys.mjs   (writes arcade/jerseys.js)
  * Run by .github/workflows/jerseys.yml (needs open network for BBRef+statsapi).
  */
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 
 // Include the current season so the Number Game reflects live rosters (offseason
 // moves and mid-season trades). This job is re-run on a schedule (see
@@ -294,6 +294,25 @@ function emit(out, obs, sport) {
     for (const sp of spansFor(arr)) out.push({ name: meta.name, sport, team: sp.team, y0: sp.y0, y1: sp.y1, num: sp.num });
   }
 }
+/* THE WHOLE ROSTER, NOT JUST THE FAMOUS PART.
+ * Every fetch below already parses each team-season page in full and then
+ * throws away any name that is not in the recognizable pool. That is right for
+ * the Number Game, whose cards are one player each, and wrong for Roll Call,
+ * which asks "who else was on that squad" and then had to ask WIKIDATA,
+ * because its own file held six names off a fifteen-man roster. A third party
+ * answers that question loosely: it accepted Boris Diaw for the 2009-10 Spurs
+ * (he arrived in 2012) and could not confirm Tiago Splitter, who was there.
+ *
+ * So the raw rows are kept too, keyed by sport|team|year. No fame gate at all:
+ * a deep cut is the entire point of the mode. Pruned at write time to the
+ * team-seasons that can actually become boards, or this would be six figures
+ * of rows nobody asks about. */
+const rosters = new Map();
+function roster(sport, y, team, num, name) {
+  const k = sport + '|' + team + '|' + y;
+  let a = rosters.get(k); if (!a) { a = []; rosters.set(k, a); }
+  a.push({ name, num });
+}
 function record(obs, hit, y, team, num) {
   const k = hit.sport + '|' + nkey(hit.name);
   let a = obs.get(k); if (!a) { a = []; a._meta = hit; obs.set(k, a); }
@@ -321,11 +340,12 @@ async function buildNFL(find) {
     const rows = await csv(`https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_${y}.csv`);
     if (!rows) { await sleep(120); continue; }
     for (const r of rows) {
-      const hit = find('NFL', r.full_name || ''); if (!hit) continue;
       const num = parseNum(r.jersey_number);
       const team = NFL_TEAMS[r.team] || null;
       if (num == null || !team) continue;
       if (num === 0 && y < 2023) continue;   // #0 was illegal in the NFL until 2023; a 0 here is a data artifact
+      roster('NFL', y, team, num, String(r.full_name || '').trim());   // everyone, gate-free
+      const hit = find('NFL', r.full_name || ''); if (!hit) continue;
       record(obs, hit, y, team, num);
     }
     await sleep(50);
@@ -375,6 +395,7 @@ async function buildNBA(find) {
       pages++; await sleep(3200);
       if (!html) continue;
       for (const { num, name } of parseBBRRoster(html)) {
+        roster('NBA', y, t.name, num, name);          // everyone, gate-free
         const hit = find('NBA', name); if (!hit) continue;
         record(obs, hit, y, t.name, num);
       }
@@ -398,8 +419,10 @@ async function buildMLB(find) {
       const d = await j(`https://statsapi.mlb.com/api/v1/teams/${t.id}/roster?rosterType=fullSeason&season=${y}`);
       for (const e of (d && d.roster ? d.roster : [])) {
         const nm = e && e.person && e.person.fullName;
+        const num = parseNum(e.jerseyNumber);
+        if (nm && num != null) roster('MLB', y, decode(t.name || ''), num, decode(nm));
         const hit = nm && find('MLB', nm); if (!hit) continue;
-        const num = parseNum(e.jerseyNumber); if (num == null) continue;
+        if (num == null) continue;
         record(obs, hit, y, decode(t.name || ''), num);
       }
       await sleep(20);
@@ -435,3 +458,75 @@ const file =
 const outFile = ONLY ? `arcade/jerseys.${ONLY.toLowerCase()}.test.js` : 'arcade/jerseys.js';
 writeFileSync(outFile, file);
 console.log('wrote', outFile);
+
+/* ---- full rosters, for the team-seasons that can become Roll Call boards ----
+ * PRUNED AND SHARDED, because the honest version of this file is 3 MB. Every
+ * team-season since 1990 is 120,000 roster rows and an NFL squad alone is
+ * seventy men; nobody is asked about most of them and no phone should download
+ * them. Two cuts bring it to a sane size without ever narrowing an ANSWER:
+ *
+ *   1. only the seasons that can become a board. A board needs enough pooled
+ *      players to print slots against, so the floor here mirrors the game's
+ *      MIN_ROSTER, one lower, because this file has to be a SUPERSET of what
+ *      build-teammates.mjs picks. Strict here would silently starve a real
+ *      board of its deep cuts, which is the bug this whole file exists to fix.
+ *   2. one file per sport. Roll Call plays one board at a time and a board is
+ *      one league, so the page pulls the shard it needs and never the other
+ *      two.
+ *
+ * Names are pooled and referenced by index: a man on eight rosters is one
+ * string, not eight.
+ *
+ * Deduped on (name, number) within a season: a mid-season signing appears on
+ * two rows of the same page and Roll Call would print him twice. */
+const ROSTER_FLOOR = 5;
+const pooledPer = new Map();
+for (const st of stints) {
+  for (let y = st.y0; y <= st.y1; y++) {
+    const k = st.sport + '|' + st.team + '|' + y;
+    pooledPer.set(k, (pooledPer.get(k) || 0) + 1);
+  }
+}
+for (const sp of ['NBA', 'NFL', 'MLB']) {
+  if (!run(sp)) continue;
+  const names = [], iN = new Map();
+  const nameIdx = (n) => { let i = iN.get(n); if (i == null) { i = names.length; names.push(n); iN.set(n, i); } return i; };
+  const teams = [], iT = new Map();
+  const teamIdx = (t) => { let i = iT.get(t); if (i == null) { i = teams.length; teams.push(t); iT.set(t, i); } return i; };
+  const out = {};
+  let rows = 0, seasons = 0;
+  for (const [k, arr] of rosters) {
+    if (!k.startsWith(sp + '|')) continue;
+    if ((pooledPer.get(k) || 0) < ROSTER_FLOOR) continue;
+    const bar = k.indexOf('|'), bar2 = k.lastIndexOf('|');
+    const team = k.slice(bar + 1, bar2), year = +k.slice(bar2 + 1);
+    const seen = new Set(), list = [];
+    for (const r of arr) {
+      const dk = nkey(r.name) + '|' + r.num;
+      if (!r.name || seen.has(dk)) continue;
+      seen.add(dk); list.push([nameIdx(r.name), r.num]);
+    }
+    if (!list.length) continue;
+    list.sort((a, b) => a[1] - b[1] || (names[a[0]] < names[b[0]] ? -1 : 1));
+    (out[teamIdx(team)] || (out[teamIdx(team)] = {}))[year] = list;
+    rows += list.length; seasons++;
+  }
+  const body = JSON.stringify({ updated: new Date().toISOString().slice(0, 10), sport: sp,
+                                seasons, rows, names, teams, r: out });
+  const f =
+    '/* GENERATED by scripts/fetch-jerseys.mjs. Do not edit.\n' +
+    ' * FULL ' + sp + ' rosters, no recognizability gate, for the team-seasons that\n' +
+    ' * can become Roll Call boards. This is the answer key that mode judges a\n' +
+    ' * typed name against. Without it a deep cut had to be put to Wikidata,\n' +
+    ' * which answers a SEASON question loosely: it accepted Boris Diaw for the\n' +
+    ' * 2009-10 Spurs, who signed in 2012, and could not confirm Tiago Splitter,\n' +
+    ' * who was there.\n' +
+    ' * Shape: { names:[...], teams:[...], r:{ teamIdx: { year: [[nameIdx, number], ...] } } }\n' +
+    ' * Loaded on demand by the game: one board is one league. */\n' +
+    'window.RTG_ROSTERS_' + sp + ' = ' + body + ';\n';
+  const rosterOut = 'arcade/rosters/' + sp.toLowerCase() + '.js';
+  try { mkdirSync('arcade/rosters', { recursive: true }); } catch (e) {}
+  writeFileSync(rosterOut, f);
+  console.log('wrote', rosterOut, '|', seasons, 'team-seasons,', rows, 'roster rows,',
+              Math.round(body.length / 1024) + ' KB');
+}
