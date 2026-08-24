@@ -167,7 +167,11 @@ for (const s of schools) {
   places[s] = {
     lat: Math.round(hit.lat * 10000) / 10000,
     lon: Math.round(hit.lon * 10000) / 10000,
-    source: hit.title,
+    /* THE ARTICLE TITLE, WITH ITS DASHES NORMALISED. Three of these really are spelled with
+       an en dash ("University of Nebraska-Lincoln"), and this repo's hard rule is that no
+       tracked file carries one. The field is provenance and is never shown to a player: it
+       exists so somebody can find the page a number came from, and a hyphen finds it. */
+    source: String(hit.title).replace(/[\u2012-\u2015\u2212]/g, '-'),
   };
 }
 saveCache();

@@ -291,20 +291,50 @@
     transition:width .5s var(--ez)}
 
   /* ---- the map ----
-     No state outlines. Eighty-three dots at real coordinates already draw the country, and
-     an outline traced by hand would be the one part of this picture with no source behind
-     it. The dots ARE the map. */
+     EVERY LINE ON IT HAS A SOURCE. Eighty-three campuses from Wikipedia's own coordinates
+     and forty-nine state outlines from Natural Earth, which is public domain. Nothing here
+     was traced or remembered, because a map is a claim about where real places are and a
+     school in the wrong state is a lie the player can see. */
   .map{margin-top:2px}
   .mapsvg{display:block;width:100%;height:auto;overflow:visible}
-  .mapbg{fill:rgba(255,255,255,.035);stroke:var(--line);stroke-width:1}
-  .dot{stroke:rgba(8,11,20,.65);stroke-width:.8;
-    animation:dotin .5s var(--ez) backwards;animation-delay:calc(var(--i) * 12ms)}
-  @keyframes dotin{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
-  /* A SCHOOL THAT MOVED SINCE THIS WAS LAST DRAWN says so, because the whole reason the map
-     is here is that a dot changing colour is realignment and a line of text is not. */
-  .dot.moved{stroke:#fff;stroke-width:1.6;animation:dotmove 1.5s var(--ez) 3}
-  @keyframes dotmove{0%,100%{opacity:1}50%{opacity:.35}}
-  @media (prefers-reduced-motion:reduce){ .dot,.dot.moved{animation:none} }
+
+  /* THE COUNTRY. Real state geometry from Natural Earth, projected at build time into this
+     exact viewBox by cfb/build/fetch-usmap.mjs, which is why a campus lands inside its own
+     state without the page doing any geography.
+
+     `pathLength="1"` is the trick that makes the draw-in possible: it renormalises every
+     path to a length of one whatever its real perimeter, so one dash rule animates
+     forty-nine shapes of wildly different sizes at the same rate. */
+  .st{fill:var(--tint,rgba(255,255,255,.028));stroke:rgba(255,255,255,.17);stroke-width:.5;
+    transition:fill .7s var(--ez);
+    stroke-dasharray:1;stroke-dashoffset:0}
+  .drawin .st{animation:draw 1.1s var(--ez) backwards;
+    animation-delay:calc(var(--i) * 9ms)}
+  @keyframes draw{from{stroke-dashoffset:1;fill-opacity:0}to{stroke-dashoffset:0;fill-opacity:1}}
+  /* THE ONE STATE THAT JUST CHANGED HANDS. Realignment on a list is a line of text; on a
+     map it is territory, and territory changing colour is the thing worth looking at. */
+  .st.flip{animation:flip 2.2s var(--ez) 2}
+  @keyframes flip{0%,100%{stroke:rgba(255,255,255,.17);stroke-width:.5}
+    50%{stroke:#fff;stroke-width:1.4}}
+
+  .dot{stroke:rgba(8,11,20,.7);stroke-width:.8;transform-box:fill-box;transform-origin:center;
+    transition:fill .7s var(--ez)}
+  .drawin .dot{animation:dotin .55s var(--ez) backwards;
+    animation-delay:calc(700ms + var(--i) * 11ms)}
+  @keyframes dotin{from{opacity:0;transform:scale(0) translateY(-6px)}
+    60%{opacity:1;transform:scale(1.35) translateY(0)}
+    to{opacity:1;transform:scale(1)}}
+  /* A SCHOOL THAT MOVED gets a ring that expands and fades, which is the one thing on this
+     page that is genuinely an animation rather than a transition: it marks an event. */
+  .dot.moved{stroke:#fff;stroke-width:1.5}
+  .ping{fill:none;stroke:#fff;stroke-width:1.2;transform-box:fill-box;transform-origin:center;
+    animation:ping 1.8s var(--ez) infinite}
+  @keyframes ping{0%{transform:scale(.6);opacity:.85}70%{transform:scale(3.2);opacity:0}
+    100%{transform:scale(3.2);opacity:0}}
+  @media (prefers-reduced-motion:reduce){
+    .drawin .st,.drawin .dot,.st.flip,.ping{animation:none}
+    .st,.dot{transition:none}
+  }
   .maplegend{display:flex;flex-wrap:wrap;gap:4px 11px;margin-top:10px}
   .maplegend span{display:flex;align-items:center;gap:5px;font-family:var(--fn);
     font-size:10px;font-weight:700;color:var(--dim)}
@@ -994,7 +1024,38 @@ const mapY=(lat)=>MAP.h-((lat-MAP.lat0)/(MAP.lat1-MAP.lat0))*MAP.h;
 
 /* WHO HELD THE MAP LAST TIME IT WAS DRAWN, so a school that moved can be shown moving
    rather than simply being somewhere else. */
-let mapWas=null;
+let mapWas=null, mapDrawn=false;
+let STATES=[];
+async function loadStates(){
+  try{
+    const r=await fetch('/cfb/data/us_states.json?v=1');
+    const d=await r.json();
+    STATES=d.states||[];
+  }catch(e){ STATES=[]; }
+}
+
+/* WHICH CONFERENCE HOLDS A STATE: the one with the most schools in it, ties going to the
+   bigger conference nationally so the map does not flicker between two equal claims when a
+   single school moves somewhere else entirely. */
+function stateHolders(mem){
+  const count={}, size={};
+  for(const school in mem){
+    const p=PLACES[school]; if(!p||!p.state) continue;
+    (count[p.state]=count[p.state]||{})[mem[school]]=((count[p.state]||{})[mem[school]]||0)+1;
+    size[mem[school]]=(size[mem[school]]||0)+1;
+  }
+  const out={};
+  for(const st in count){
+    let best=null,bn=-1;
+    for(const c in count[st]){
+      const n=count[st][c];
+      if(n>bn||(n===bn&&(size[c]||0)>(size[best]||0))){ best=c; bn=n; }
+    }
+    out[st]=best;
+  }
+  return out;
+}
+
 function paintMap(el,w,opts){
   if(!el) return;
   const o=opts||{};
@@ -1005,19 +1066,36 @@ function paintMap(el,w,opts){
     if(!p) continue;
     const conf=mem[school];
     const moved=mapWas&&mapWas[school]&&mapWas[school]!==conf;
-    dots.push({school,conf,x:mapX(p.lon),y:mapY(p.lat),moved});
+    dots.push({school,conf,state:p.state,x:mapX(p.lon),y:mapY(p.lat),moved});
   }
-  /* Conferences get the room's own hues where they are one of the nine, so a dot on the map
-     and a chip in the room are the same colour for the same reason. */
   const col=(c)=>bcOf(c)||'#64748b';
   dots.sort((a,b)=>a.y-b.y);
   const moved=dots.filter((d)=>d.moved);
-  el.innerHTML='<svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" class="mapsvg" aria-label="The sport, by where it is played">'
-    +'<rect x="0" y="0" width="'+MAP.w+'" height="'+MAP.h+'" rx="10" class="mapbg"/>'
-    +dots.map((d,i)=>
-      '<circle class="dot'+(d.moved?' moved':'')+'" cx="'+d.x.toFixed(1)+'" cy="'+d.y.toFixed(1)+'" r="'
-      +(d.moved?4.4:3.1)+'" fill="'+col(d.conf)+'" style="--i:'+(i%40)+'">'
-      +'<title>'+esc(d.school)+', '+esc(d.conf)+'</title></circle>').join('')
+  const flipped={}; moved.forEach((m)=>{ if(m.state) flipped[m.state]=1; });
+  const holds=stateHolders(mem);
+  /* THE DRAW-IN RUNS ONCE A TERM, not on every repaint. A country that redraws itself every
+     time you come back from the desk stops being an arrival and becomes a stutter. */
+  const first=!mapDrawn; mapDrawn=true;
+
+  el.className='map'+(first?' drawin':'');
+  el.innerHTML='<svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" class="mapsvg" '
+      +'aria-label="The sport, by where it is played">'
+    +'<g>'+STATES.map((st,i)=>{
+        const c=holds[st.code];
+        /* A tint rather than a fill: a state is not owned, it is where most of somebody is. */
+        const tint=c?'color-mix(in srgb,'+col(c)+' 26%,transparent)':'';
+        return '<path class="st'+(flipped[st.code]?' flip':'')+'" pathLength="1" d="'+st.d+'"'
+          +' style="--i:'+i+(tint?';--tint:'+tint:'')+'"><title>'+esc(st.name)
+          +(c?', mostly '+esc(c):'')+'</title></path>';
+      }).join('')+'</g>'
+    +'<g>'+dots.map((d,i)=>
+        (d.moved
+          ? '<circle class="ping" cx="'+d.x.toFixed(1)+'" cy="'+d.y.toFixed(1)+'" r="4" '
+            +'stroke="'+col(d.conf)+'"/>'
+          : '')
+        +'<circle class="dot'+(d.moved?' moved':'')+'" cx="'+d.x.toFixed(1)+'" cy="'
+        +d.y.toFixed(1)+'" r="'+(d.moved?3.6:2.7)+'" fill="'+col(d.conf)+'" style="--i:'+i+'">'
+        +'<title>'+esc(d.school)+', '+esc(d.conf)+'</title></circle>').join('')+'</g>'
     +'</svg>'
     +'<div class="maplegend">'+conferencesOnMap(mem).map((c)=>
       '<span><i style="background:'+col(c.name)+'"></i>'+esc(c.name)+' '+c.n+'</span>').join('')
@@ -1216,6 +1294,7 @@ function gate(){
 (async function boot(){
   try{ await loadTeams(); }catch(e){}
   await loadPlaces();
+  await loadStates();
   load();
   const A=window.PS_CFB_AUTH;
   if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
