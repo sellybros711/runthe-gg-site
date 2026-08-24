@@ -6,11 +6,11 @@ defense, **one shared cap**, and both sides of the ball resolved in the same gam
 > **Status: the engine half is built and unreachable from the live game.**
 > `resolveGameFull` and `overallOf(..., 'full')` are in `engine.js`, and `playRun` reaches
 > them only through `opts.full`, which nothing outside the harness passes. There is no
-> page, no draft screen, no run mode and no migration yet. The cap is being measured by
-> `node football/simulator.js --fullteam` before any of that is written.
+> page, no draft screen, no run mode and no migration yet.
 >
-> **The cap is measured: about $170M shared across all twelve.** See below for the table
-> it was read off.
+> **The cap is measured: $170M shared across all twelve**, by
+> `node football/simulator.js --fullteam`. See below for the table it was read off, and for
+> the open problem the same table exposed: the offense/defense SPLIT is currently solved.
 >
 > Gated to the tester list when it becomes reachable, on the same footing as Commish
 > Simulator in the CFB game.
@@ -64,38 +64,70 @@ Where the number lands is **measured, not guessed**:
 
 ```
 node football/simulator.js --fullteam
-PS_CAPS=155,165,175,185 PS_N=300 node football/simulator.js --fullteam
+PS_CAPS=150,160,170,180,200 PS_N=300 node football/simulator.js --fullteam
 ```
 
 It plays whole seasons at a range of caps against three levels of play, and prints the
 offense mode's own rows at the top so the Full Team rows have something to be read against.
 
-### The measured answer: about $170M
+### The measured answer: $170M
 
-| cap | careless win% | careful win% | careful playoff% | careful title% |
-|---|---|---|---|---|
-| offense mode, $140M for 6 | 24.7% | 60.9% | 38.3% | 0.0% |
-| $140M | 10.8% | 36.9% | 0.0% | 0.0% |
-| **$170M** | **16.7%** | **63.5%** | **37.5%** | **0.0%** |
-| $200M | 21.5% | 79.0% | 89.2% | 0.8% |
-| $240M | 23.1% | 96.9% | 100.0% | 26.7% |
-| $280M | 22.8% | 98.3% | 100.0% | 55.0% |
+Optimal play, solved on both sides, N=300 seasons a cell:
 
-$170M lands on the shipped mode almost exactly: 63.5% against 60.9%, a 37.5% playoff rate
-against 38.3%, and no titles at either. $200M is already a different game and $240M is a
-mode where careful play goes 17-0 a quarter of the time.
+| cap | win% | playoff% | points for | points against | optimal split |
+|---|---|---|---|---|---|
+| **offense mode, $140M for 6** | **80.7%** | **93.0%** | 93.7 | 61.3 | n/a |
+| $150M | 71.0% | 59.0% | 47.3 | 35.7 | $49.5 off / $100.5 def |
+| $160M | 78.5% | 87.0% | 54.9 | 35.7 | $59.5 off / $100.5 def |
+| **$170M** | **81.3%** | **90.7%** | 60.3 | 37.2 | $69.5 off / $100.5 def |
+| $180M | 89.1% | 99.3% | 70.4 | 35.2 | $79.5 off / $100.5 def |
+| $200M | 86.5% | 98.0% | 85.1 | 46.1 | $109.5 off / $90.5 def |
 
-**It is not double, and it is not the $220M the ideation guessed.** Twelve men at $170M is
-about $14M a man against offense mode's $23M, and the reason is the crutches: removing both
-at once is worth more than the roster is, so the men have to be cheaper to compensate.
+$170M lands on the shipped mode: 81.3% against 80.7%, a 90.7% playoff rate against 93.0%.
+$180M is already a mode where the ceiling reaches the playoffs 99% of the time.
 
-**One thing $170M does NOT reproduce, and it is a design decision rather than a miss.**
-Careless play wins 16.7% here against 24.7% in offense mode, because a randomly drafted
-defense gets torched: points allowed run 89 against the reference's 70. That is the mode's
-new failure state working as intended, a team that scores and cannot get a stop, and it also
-means Full Team punishes thoughtlessness harder than the free game does. Fine for a paid
-mode aimed at people who already know the game. Worth knowing before it is anybody's first
-experience of it.
+**It is not double the six-man cap.** Twelve men at $170M is about $14M a man against
+offense mode's $23M, and the crutches are why: removing both at once is worth more than the
+roster is, so the men have to be cheaper to pay for it.
+
+**Careless play is harsher here and that is deliberate.** It wins 18.2% against offense
+mode's 24.5%, because a randomly drafted defense gets torched: 91 points allowed against
+the reference's 71. That is the failure state this mode exists to create, a team that scores
+and cannot get a stop. It also means Full Team punishes thoughtlessness harder than the free
+game does, which is fine for a paid mode and worth knowing before it is somebody's first
+experience of the game.
+
+### The open problem: the split is solved
+
+Look down the last column. **The optimal defensive spend is pinned at $100.5M at every cap
+from $150M to $180M**, and every extra dollar goes to the offense. The split is not a
+judgement call, it is a constant plus a remainder: spend about $100M on defense, put the
+rest on offense.
+
+That matters because the split is what the mode was sold on. "Do I take the $48M edge rusher
+or the $48M quarterback" is meant to be the question, and right now it has a computable
+answer that a good player will find and post.
+
+It happens because `defenseSuppression` saturates. A defensive total near 100 already holds
+the opponent to 16% of their scoring, so beyond that point another defensive dollar buys
+almost nothing while an offensive dollar keeps paying linearly. The optimum sits exactly
+where those two marginal values cross, and that crossing does not move with the cap.
+
+**So the cap is not the knob for this.** If the split should be a live decision, the thing
+to change is the PRICE of defenders against their leverage, or `DEF_POWER` for this mode
+alone. Both are real balance work and neither should be done by feel. It does not block
+shipping: there are still genuine choices inside each side's budget, and the mode plays.
+It does mean the pitch should not lean on a question the solver has already answered.
+
+### A limitation of the harness, recorded so it is not rediscovered
+
+At $200M the optimal row wins 86.5%, which is LESS than $180M's 89.1%. More money cannot
+buy a worse roster, so that is the objective, not the game: the solver maximises expected
+MARGIN and the season is decided by how often your score beats theirs. A low points-against
+suppresses variance in a way raw margin does not price, so at $200M the solver takes a
+higher-margin roster that wins less often. It does not affect the reading above, because
+$200M is well outside the band, but a future refit that cares about the top of the range
+should maximise win probability rather than margin.
 
 **Refit, do not nudge.** If the player data is rebuilt, run the sweep again rather than
 moving the cap by hand.
@@ -121,8 +153,8 @@ Nothing above is reachable from the page. The live game is untouched.
 
 ## What is not built, in the order it should be
 
-**1. The cap.** Read it off the sweep. Everything downstream assumes a number, and picking
-it late means rebalancing twice.
+**1. The cap.** Done: $170M. Everything downstream assumes a number, and picking it late
+means rebalancing twice.
 
 **2. The database.** `ps_runs_run_mode_ck` lists the recordable modes by name, so until it
 is widened the database **rejects every full team run outright**. `80_football_defense_mode.sql`
