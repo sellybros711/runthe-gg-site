@@ -669,6 +669,91 @@ function buildFullRandom(rng, budget) {
   return roster;
 }
 
+/*
+ * CAP-OPTIMAL FOR TWELVE, solved rather than greedily approximated, and the reason is
+ * written at the top of buildOptimal: a greedy builder measured this game at 70.6% when
+ * 84.7% was reachable, "that gap was the builder being bad, not the game being hard, and
+ * it would have mis-tuned SCALE by ~0.4".
+ *
+ * It happened again here, in the shape that warning predicts. The greedy alternating
+ * builder came back NON-MONOTONE across the fine sweep: careful play won 63.7% at $165M
+ * and 60.1% at $175M. Ten million dollars cannot make a roster worse, so the second number
+ * was the builder starving its late slots after an expensive early pick, and the band it
+ * was being asked to resolve was narrower than its own noise.
+ *
+ * TWO POOLS, ONE BUDGET, and the DP does not care which side a slot is on: it maximises
+ * summed expected output over all twelve subject to the shared cap. That is the right
+ * target because summed output is what both halves of resolveGameFull consume, one through
+ * rosterStructure and one through defenseSuppression.
+ */
+const FULL_BUCKET = 0.5;
+
+function fullCurve(allowedPositions, nb) {
+  const pool = (allowedPositions.some(p => E.DEFENSE_POSITIONS.indexOf(p) >= 0)
+    ? defenders : players).filter((p) => allowedPositions.includes(p.position));
+  const best = new Array(nb).fill(null);
+  for (const p of pool) {
+    const b = Math.ceil(p.price_musd / FULL_BUCKET);
+    if (b >= nb) continue;
+    if (!best[b] || p.ppr_ppg_mean > best[b].ppr_ppg_mean) best[b] = p;
+  }
+  /* Monotone: spending more can never buy less. */
+  for (let b = 1; b < nb; b++) {
+    if (!best[b] || (best[b - 1] && best[b - 1].ppr_ppg_mean > best[b].ppr_ppg_mean)) {
+      best[b] = best[b - 1];
+    }
+  }
+  return best;
+}
+
+const FULL_OPTIMAL_CACHE = new Map();
+function buildFullOptimal(budget) {
+  if (FULL_OPTIMAL_CACHE.has(budget)) return FULL_OPTIMAL_CACHE.get(budget).slice();
+  const slots = E.FULL_SLOTS;
+  const nb = Math.round(budget / FULL_BUCKET) + 1;
+  const curves = E.FULL_SLOT_POS.map((pos) => fullCurve(pos, nb));
+
+  let next = new Array(nb).fill(0);
+  const choice = [];
+  for (let i = slots.length - 1; i >= 0; i--) {
+    const cur = new Array(nb).fill(-Infinity);
+    const pickAt = new Array(nb).fill(null);
+    for (let b = 0; b < nb; b++) {
+      for (let spend = 0; spend <= b; spend++) {
+        const cand = curves[i][spend];
+        if (!cand) continue;
+        const val = cand.ppr_ppg_mean + next[b - spend];
+        if (val > cur[b]) { cur[b] = val; pickAt[b] = { cand, spend }; }
+      }
+    }
+    choice[i] = pickAt;
+    next = cur;
+  }
+
+  const roster = [];
+  const used = new Set();
+  let b = nb - 1;
+  for (let i = 0; i < slots.length; i++) {
+    let { cand, spend } = choice[i][b];
+    /* The DP ignores identity, and WR/WR or DL/DL or either FLEX can land on the same man
+       twice. Same guard buildOptimal uses, over this slot's own pool. */
+    if (used.has(`${cand.player_id}|${cand.season}`)) {
+      const pos = E.FULL_SLOT_POS[i];
+      const from = pos.some(p => E.DEFENSE_POSITIONS.indexOf(p) >= 0) ? defenders : players;
+      const alt = from
+        .filter((p) => pos.includes(p.position) && p.price_musd <= spend * FULL_BUCKET
+          && !used.has(`${p.player_id}|${p.season}`))
+        .sort((x, y) => y.ppr_ppg_mean - x.ppr_ppg_mean)[0];
+      if (alt) cand = alt;
+    }
+    used.add(`${cand.player_id}|${cand.season}`);
+    roster.push(cand);
+    b -= spend;
+  }
+  FULL_OPTIMAL_CACHE.set(budget, roster);
+  return roster.slice();
+}
+
 function simulateFull(build, n, seed0) {
   let regGames = 0, regWon = 0, perfect = 0, title = 0, madePlayoffs = 0;
   const regWins = [], spends = [], ptsFor = [], ptsAgainst = [], ratings = [];
@@ -711,12 +796,17 @@ function simulateFull(build, n, seed0) {
    behaving exactly like the one already shipped. */
 function offenseReference(n) {
   const out = {};
-  for (const [name, frac] of [['careless', null], ['mid', 0.90], ['careful', 1.00]]) {
+  /* 'optimal' is the SOLVED roster on both sides of this comparison, because comparing a
+     solved twelve against a greedy six would flatter Full Team by exactly the amount the
+     greedy builder is bad, which is the mistake this whole detour exists to avoid. */
+  for (const [name, frac] of [['careless', null], ['mid', 0.90], ['optimal', 'dp']]) {
     let regGames = 0, regWon = 0, madePlayoffs = 0, title = 0;
     const wins = [], pf = [], pa = [];
     for (let i = 0; i < n; i++) {
       const rng = E.createSeededRNG(424242 + i * 7919);
-      const roster = frac === null ? buildRandom(rng) : buildToBudget(rng, frac);
+      const roster = frac === null ? buildRandom(rng)
+        : frac === 'dp' ? buildOptimal()
+          : buildToBudget(rng, frac);
       const chem = E.resolveChemistry(roster, ctx);
       const sched = E.generateSchedule(data, rng);
       const playoffs = E.generatePlayoffs(data, rng);
@@ -745,7 +835,7 @@ function fullTeamReport(n) {
   console.log(`OFFENSE MODE AT $${constants.CAP_MUSD}M, 6 slots, the shipped calibration:`);
   console.log('  play        win%   med rec    PO%   title%     PF     PA');
   const ref = offenseReference(n);
-  for (const name of ['careless', 'mid', 'careful']) {
+  for (const name of ['careless', 'mid', 'optimal']) {
     const r = ref[name];
     console.log(`  ${name.padEnd(9)}` + fmtPct(r.perGameWin).padStart(7)
       + `${r.medianRegWins}-${17 - r.medianRegWins}`.padStart(9)
@@ -761,7 +851,9 @@ function fullTeamReport(n) {
   const rows = [
     { name: 'careless', build: (b) => (rng) => buildFullRandom(rng, b) },
     { name: 'mid',      build: (b) => (rng) => buildFullToBudget(rng, b, 0.90) },
-    { name: 'careful',  build: (b) => (rng) => buildFullToBudget(rng, b, 1.00) },
+    /* SOLVED, not greedy. This row is the ceiling and it is the row the cap is read off,
+       so it is the one that must not wobble: see buildFullOptimal's comment. */
+    { name: 'optimal',  build: (b) => () => buildFullOptimal(b) },
   ];
 
   console.log('  cap    play        win%   med rec    PO%   title%   20-0     PF     PA   rating   spend');

@@ -4167,6 +4167,20 @@ const publicAPI = {
      opts.full and only the harness passes that. FULL_SLOTS is the two slot lists joined,
      offense first, so a draft screen reads twelve in the order a player thinks about them. */
   FULL_SLOTS: SLOTS.concat(DEFENSE_SLOTS), resolveGameFull, splitSides,
+  /* FLEX IS AMBIGUOUS IN THIS MODE AND IN NEITHER OF THE OTHER TWO, which is why this
+     exists as its own table rather than as SLOT_ELIGIBILITY reused. Offense mode draws
+     from the offensive pool and defense mode from the defensive one, so in both of them a
+     FLEX open to 'RB','WR','TE','DL','LB','DB' can only ever be filled from the side the
+     player is drafting. Full Team puts both pools on the board at once, and the same entry
+     would then let somebody field seven defenders and call it a full team.
+
+     Six a side is the mode. So the offensive FLEX takes a skill player and the defensive
+     FLEX takes a defender, decided here, once, by INDEX into FULL_SLOTS rather than by
+     slot name, because the two FLEX slots share a name and do not share an answer. */
+  FULL_SLOT_POS: SLOTS.concat(DEFENSE_SLOTS).map((s, i) => {
+    if (s !== 'FLEX') return SLOT_ELIGIBILITY[s].slice();
+    return i < SLOTS.length ? ['RB', 'WR', 'TE'] : DEFENSE_POSITIONS.slice();
+  }),
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,
