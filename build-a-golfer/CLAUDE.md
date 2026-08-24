@@ -16638,3 +16638,12 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: the `ENTRY_PATHS` table is unchanged mechanically (only `short` added and the prose bullets
   shortened); the layout is `entryStyleOnce()`'s `.ep-*` block; the meter scales are the five `meter()`
   calls in `paint()`.
+- **DEPLOYED to /golf** (`main` commit `aed3c20`, owner-approved). Pre-deploy parallel-edit check: the
+  deployed file was byte-identical to the previously-deployed source, so nothing to adopt; only
+  `golf/index.html` touched (2 lines); verified byte-identical afterward and `entry_ux.mjs` re-run against
+  the LIVE file: **23 pass, 0 fail, 0 page errors, 123 words**.
+- **STANDING CONSTRAINT from the owner, given with this deploy: do NOT reduce the word count on How to
+  Play or the season summary.** The offered "measure the other text-heavy screens the same way" pass is
+  explicitly OFF for those two. How to Play is a reference manual people open deliberately (nine sections,
+  CS431 + the guided-tour work), and the season summary is the payoff screen for a year of play - both are
+  meant to be full. If a future session finds either one long, that is by design, not a defect.
