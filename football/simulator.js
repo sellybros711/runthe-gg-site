@@ -575,6 +575,221 @@ function draftReport(n) {
 }
 
 /*
+ * ─── FULL TEAM: WHAT DOES TWELVE MEN AND ONE CAP ACTUALLY DO ──────────────────
+ *
+ * THE ONLY QUESTION WORTH ASKING BEFORE ANY UI EXISTS. Full Team removes the crutch
+ * each of the other two modes leans on (see resolveGameFull's own comment), so the
+ * default expectation is that a twelve-man roster at any sensible cap is far too
+ * strong. This measures how strong, across a range of shared caps, so the cap can be
+ * READ OFF rather than guessed.
+ *
+ *   node football/simulator.js --fullteam
+ *   PS_N=400 node football/simulator.js --fullteam      fewer seasons, faster
+ *
+ * The target is the one the other modes are held to: careless play misses the
+ * playoffs, careful play does not walk to a title. Offense at $140M sits near a 55%
+ * per-game win rate for a mid roster, which is the number to compare against.
+ */
+/* A DEFENDER'S RATING IS IDP POINTS AND THE ENGINE SAMPLES ppr_ppg_*. The live page
+   normalises these two names onto each other when it loads the pool, and that loop is the
+   only copy of it, so a second reader of this file gets rows the engine cannot sample.
+   That is exactly what happened here: the first --fullteam run sampled undefined for all
+   six defenders, every full team played with no defense at all, and the table it printed
+   looked plausible enough to reason about. Nothing threw.
+
+   So it is done here too, and then ASSERTED, because the failure is silent by nature: a
+   missing mean does not crash, it quietly removes half the roster from the game. */
+const defenders = load('defender_seasons.json');
+for (const p of defenders) { p.ppr_ppg_mean = p.idp_ppg_mean; p.ppr_ppg_sd = p.idp_ppg_sd; }
+/* ABSENT, NOT ZERO. The first version of this guard asserted a mean above zero and fired
+   on Allen Rossum's 2008, which is a real man who really scored nothing: three of the
+   16,973 rows are honest zeroes, they cost the floor price, and the engine samples them
+   fine. What must never happen is a mean that is not a number at all, which is what the
+   missing normalisation produced and what no arithmetic downstream complains about. */
+for (const p of defenders) {
+  if (!Number.isFinite(p.ppr_ppg_mean) || !Number.isFinite(p.ppr_ppg_sd)) {
+    throw new Error(`defender ${p.player_id}|${p.season} has no sampleable mean: `
+      + `ppr_ppg_mean=${p.ppr_ppg_mean} ppr_ppg_sd=${p.ppr_ppg_sd}`);
+  }
+}
+
+/* THE ORDER THE SLOTS ARE FILLED IN IS NOT THE ORDER THEY ARE HELD IN, and that is the
+   whole point. FULL_SLOTS is offense then defense because that is how a player thinks
+   about a roster, but filling it in that order spends the shared budget on the offense
+   first and hands the defense whatever is left: the second --fullteam run did exactly
+   that, and every defense came out at the bottom of its range no matter what the cap was.
+
+   So the builder ALTERNATES, which is also the drafting order the plan argues for on its
+   own merits: the cap tension is felt continuously instead of discovered at pick seven. */
+const FULL_FILL_ORDER = [0, 6, 1, 7, 2, 8, 3, 9, 4, 10, 5, 11];
+
+/* One shared budget across all twelve, which IS the mode: two budgets would delete the
+   only question it asks. */
+function buildFullToBudget(rng, budget, targetSpendFraction) {
+  const slots = E.FULL_SLOTS;
+  const roster = new Array(slots.length).fill(null);
+  const used = new Set();
+  let remaining = budget * targetSpendFraction;
+  for (let n = 0; n < FULL_FILL_ORDER.length; n++) {
+    const i = FULL_FILL_ORDER[n];
+    const left = slots.length - n;
+    const isDef = i >= E.SLOTS.length;
+    const pool = (isDef ? defenders : players);
+    const legal = pool.filter((p) => E.fillsSlot(slots[i], p)
+      && !used.has(`${p.player_id}|${p.season}`));
+    const share = Math.min(remaining / left * 1.5, remaining - (left - 1) * 1.0);
+    let cand = legal.filter((p) => p.price_musd <= share)
+      .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+    /* Nothing affordable is a real outcome at a tight cap, not a harness bug. Take the
+       cheapest legal man rather than abandoning the roster, so the sweep reports a weak
+       team at $120M instead of reporting nothing at all. */
+    if (!cand) cand = legal.sort((a, b) => a.price_musd - b.price_musd)[0];
+    roster[i] = cand; used.add(`${cand.player_id}|${cand.season}`);
+    remaining -= cand.price_musd;
+  }
+  return roster;
+}
+
+function buildFullRandom(rng, budget) {
+  const slots = E.FULL_SLOTS;
+  const roster = new Array(slots.length).fill(null);
+  const used = new Set();
+  let remaining = budget;
+  for (let n = 0; n < FULL_FILL_ORDER.length; n++) {
+    const i = FULL_FILL_ORDER[n];
+    const isDef = i >= E.SLOTS.length;
+    const reserve = (slots.length - n - 1) * 1.0;
+    const legal = (isDef ? defenders : players).filter((p) => E.fillsSlot(slots[i], p)
+      && !used.has(`${p.player_id}|${p.season}`));
+    const pool = legal.filter((p) => p.price_musd <= remaining - reserve);
+    const c = pool.length ? pool[Math.floor(rng() * pool.length)]
+      : legal.sort((a, b) => a.price_musd - b.price_musd)[0];
+    roster[i] = c; used.add(`${c.player_id}|${c.season}`); remaining -= c.price_musd;
+  }
+  return roster;
+}
+
+function simulateFull(build, n, seed0) {
+  let regGames = 0, regWon = 0, perfect = 0, title = 0, madePlayoffs = 0;
+  const regWins = [], spends = [], ptsFor = [], ptsAgainst = [], ratings = [];
+  for (let i = 0; i < n; i++) {
+    const rng = E.createSeededRNG(seed0 + i * 7919);
+    const roster = build(rng);
+    const chem = E.resolveChemistry(roster, ctx);
+    const sched = E.generateSchedule(data, rng);
+    const playoffs = E.generatePlayoffs(data, rng);
+    const run = E.playRun(roster, chem.multiplier, sched.games, playoffs, leagueContext,
+      rng, constants, { full: true });
+    for (const g of run.results) {
+      if (!g.playoff) {
+        regGames++; if (g.won) regWon++;
+        ptsFor.push(g.yourScore); ptsAgainst.push(g.oppScore);
+      }
+    }
+    regWins.push(run.regularWins);
+    spends.push(roster.reduce((s, p) => s + p.price_musd, 0));
+    ratings.push(E.overallOf(roster, chem.multiplier, 'full'));
+    if (run.perfect) perfect++;
+    if (run.titleWon) title++;
+    if (run.seed.made) madePlayoffs++;
+  }
+  return {
+    perGameWin: regWon / regGames,
+    meanRegWins: mean(regWins), medianRegWins: median(regWins),
+    perfectRate: perfect / n, titleRate: title / n, playoffRate: madePlayoffs / n,
+    meanSpend: mean(spends), meanFor: mean(ptsFor), meanAgainst: mean(ptsAgainst),
+    meanRating: mean(ratings),
+  };
+}
+
+/* THE SAME NUMBERS FROM THE MODE THIS ONE HAS TO SIT BESIDE. Printed rather than
+   remembered, because "is 71 points a game too many" has no answer until you know that
+   offense mode scores 68: the engine works in fantasy space, not in points, and a score
+   here is not a scoreline until display_calibration.json converts it. The first version of
+   this report carried a note reading "if PF is near 40 the mode is broken", which was my
+   own guess about a scale I had not measured, and it would have condemned a mode that was
+   behaving exactly like the one already shipped. */
+function offenseReference(n) {
+  const out = {};
+  for (const [name, frac] of [['careless', null], ['mid', 0.90], ['careful', 1.00]]) {
+    let regGames = 0, regWon = 0, madePlayoffs = 0, title = 0;
+    const wins = [], pf = [], pa = [];
+    for (let i = 0; i < n; i++) {
+      const rng = E.createSeededRNG(424242 + i * 7919);
+      const roster = frac === null ? buildRandom(rng) : buildToBudget(rng, frac);
+      const chem = E.resolveChemistry(roster, ctx);
+      const sched = E.generateSchedule(data, rng);
+      const playoffs = E.generatePlayoffs(data, rng);
+      const run = E.playRun(roster, chem.multiplier, sched.games, playoffs, leagueContext,
+        rng, constants);
+      for (const g of run.results) {
+        if (g.playoff) continue;
+        regGames++; if (g.won) regWon++;
+        pf.push(g.yourScore); pa.push(g.oppScore);
+      }
+      wins.push(run.regularWins);
+      if (run.seed.made) madePlayoffs++;
+      if (run.titleWon) title++;
+    }
+    out[name] = { perGameWin: regWon / regGames, medianRegWins: median(wins),
+      playoffRate: madePlayoffs / n, titleRate: title / n,
+      meanFor: mean(pf), meanAgainst: mean(pa) };
+  }
+  return out;
+}
+
+function fullTeamReport(n) {
+  console.log(`FULL TEAM  ${E.FULL_SLOTS.length} slots  ${E.FULL_SLOTS.join(' ')}`);
+  console.log(`N=${n} seasons per cell.\n`);
+
+  console.log(`OFFENSE MODE AT $${constants.CAP_MUSD}M, 6 slots, the shipped calibration:`);
+  console.log('  play        win%   med rec    PO%   title%     PF     PA');
+  const ref = offenseReference(n);
+  for (const name of ['careless', 'mid', 'careful']) {
+    const r = ref[name];
+    console.log(`  ${name.padEnd(9)}` + fmtPct(r.perGameWin).padStart(7)
+      + `${r.medianRegWins}-${17 - r.medianRegWins}`.padStart(9)
+      + fmtPct(r.playoffRate).padStart(8) + fmtPct(r.titleRate).padStart(8)
+      + r.meanFor.toFixed(1).padStart(7) + r.meanAgainst.toFixed(1).padStart(7));
+  }
+  console.log('');
+
+  /* Overridable so the band around the answer can be resolved finely without editing the
+     file: PS_CAPS=155,165,175,185 node football/simulator.js --fullteam */
+  const caps = (process.env.PS_CAPS || '140,170,200,220,240,280')
+    .split(',').map(Number).filter(v => v > 0);
+  const rows = [
+    { name: 'careless', build: (b) => (rng) => buildFullRandom(rng, b) },
+    { name: 'mid',      build: (b) => (rng) => buildFullToBudget(rng, b, 0.90) },
+    { name: 'careful',  build: (b) => (rng) => buildFullToBudget(rng, b, 1.00) },
+  ];
+
+  console.log('  cap    play        win%   med rec    PO%   title%   20-0     PF     PA   rating   spend');
+  for (const cap of caps) {
+    for (const row of rows) {
+      const r = simulateFull(row.build(cap), n, 424242);
+      const rec = `${r.medianRegWins}-${17 - r.medianRegWins}`;
+      console.log(
+        `  $${String(cap).padEnd(4)} ${row.name.padEnd(9)}`
+        + fmtPct(r.perGameWin).padStart(7)
+        + rec.padStart(9)
+        + fmtPct(r.playoffRate).padStart(8)
+        + fmtPct(r.titleRate).padStart(8)
+        + fmtPct(r.perfectRate).padStart(8)
+        + r.meanFor.toFixed(1).padStart(7)
+        + r.meanAgainst.toFixed(1).padStart(7)
+        + r.meanRating.toFixed(1).padStart(9)
+        + ('$' + r.meanSpend.toFixed(0)).padStart(8));
+    }
+    console.log('');
+  }
+  console.log('WHAT TO LOOK FOR. The cap to ship is the one whose three rows sit closest to the');
+  console.log('three reference rows above: careless play out of the playoffs, careful play winning');
+  console.log('but not walking to a title. PF and PA are in the engine\'s fantasy space and are');
+  console.log('not scorelines, so compare them to the reference rather than to a real NFL game.');
+}
+
+/*
  * Regular-season win distribution per archetype, and what each candidate
  * threshold pair would mean. Thresholds are a game-feel decision, so pick them
  * from the actual distribution rather than from NFL precedent alone: the draft
@@ -723,6 +938,7 @@ if (arg === '--sweep') sweep(Math.max(400, Math.floor(N / 2)));
 else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
 else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
+else if (arg === '--fullteam') fullTeamReport(Number(process.env.PS_N ?? 400));
 else if (arg === '--record') recordReport(Number(process.env.PS_N ?? 2000));
 else if (arg === '--policies') policyReport(Number(process.env.PS_N ?? 40));
 else reportMain(N);

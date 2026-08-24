@@ -3544,6 +3544,26 @@ function defenseOverall(defenseTotal) {
 function overallOf(roster, chemistryMultiplier, isDefense) {
   const pts = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
   const chem = chemistryMultiplier || 1;
+  /* 'full' rather than true or false, because a full team has two ratings and one number
+     has to stand for both. A bare boolean could not say so: passing false scores twelve men
+     through the offensive reading and hands a $110M defense to rosterStructure, which is
+     the 0.57-for-everybody failure resolveGameDefense documents, and passing true does the
+     mirror of it. Anything that is not the string is still read as the old boolean, so every
+     existing caller means what it always meant. */
+  if (isDefense === 'full') {
+    const { off, def } = splitSides(roster);
+    const offPts = off.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+    const defPts = def.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+    /* THE MEAN OF THE TWO SIDES, not the sum, and not the offense with a defensive bonus.
+       Both halves are already on the 0-to-100 scale the seeding and weekly-edge constants
+       expect, so averaging keeps a full team on that scale; adding would put every roster
+       off the top of it and seed a mediocre team first. It also says the right thing about
+       the mode: a 92 offense behind a 40 defense is a 66 team, which is the failure state
+       this mode exists to make possible. */
+    const offRating = offPts * chem * rosterStructure(off).multiplier;
+    const defRating = defenseOverall(defPts * chem * defenseStructure(def).multiplier);
+    return (offRating + defRating) / 2;
+  }
   return isDefense
     ? defenseOverall(pts * chem * defenseStructure(roster).multiplier)
     : pts * chem * rosterStructure(roster).multiplier;
@@ -3612,6 +3632,97 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
   const lines = samples.map((v, i) => (v * (1 - C) + roster[i].ppr_ppg_mean * C) * teamMul);
 
   return { won, yourScore, oppScore, defenseModifier: suppression, defenseTotal, lines };
+}
+
+/*
+ * ─── FULL TEAM: BOTH SIDES OF THE BALL, TWELVE MEN, ONE CAP ────────────────────────
+ *
+ * NOT A THIRD ENGINE. The two functions above are exact mirrors of each other and each
+ * one already computes half of this:
+ *
+ *   resolveGame          your drafted offense scores. Opponent scores what it really did.
+ *   resolveGameDefense   a free offense scores. Your drafted defense holds the opponent.
+ *
+ * Full Team is the diagonal: your drafted offense scores AND your drafted defense holds.
+ * So this takes the yourScore term from the first and the oppScore term from the second,
+ * unchanged, and neither half needed writing.
+ *
+ * WHICH IS ALSO EXACTLY WHY IT CANNOT SHIP AT THE SAME CAP. Both modes are calibrated
+ * around a crutch that this one removes. Offense mode hands you the opponent's real
+ * scoring, which is what stops a good offense going 21-0; defense mode hands you an
+ * offense held deliberately below average by DEF_OFFENSE_SCALE, which is what stops a
+ * good defense doing the same. Draft both and both crutches are gone at once, so twelve
+ * men bought at the six-man cap is not a slightly strong team, it is an unbeatable one.
+ *
+ * THE CAP IS THE BALANCE KNOB, and it is the only one that should move. Twelve men under
+ * one shared budget is the whole design: the mode's question is "the $48M edge rusher or
+ * the $48M quarterback", and two separate budgets deletes that question. Where the shared
+ * number lands is measured, not guessed, by football/simulator.js --fullteam, which plays
+ * whole seasons at a range of caps and reads off the one where a careful roster wins about
+ * as often as a careful roster does in the other two modes.
+ *
+ * NOTHING IN THE LIVE GAME CALLS THIS YET. playRun reaches it only through opts.full, and
+ * no caller passes opts.full outside the harness.
+ */
+function splitSides(roster) {
+  const off = [], def = [];
+  for (const p of roster) {
+    (DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? def : off).push(p);
+  }
+  return { off, def };
+}
+
+function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed,
+  rng, constants = CONSTANTS, advantage = 1) {
+  const { off, def } = splitSides(roster);
+  const C = constants.CONSISTENCY || 0;
+
+  /* THE SAMPLES ARE DRAWN OVER THE WHOLE ROSTER IN ROSTER ORDER, one per man, before
+     anything is split. Drawing offense first and defense second would work and would make
+     the seed mean something different from what the draft screen shows, which is the class
+     of bug that only surfaces when somebody replays a shared seed and gets another season.
+     Sampling in the order the men are held keeps a seed a seed. */
+  const samples = roster.map(p => sampleGamma(p.ppr_ppg_mean, p.ppr_ppg_sd, rng));
+  const blend = (i) => samples[i] * (1 - C) + roster[i].ppr_ppg_mean * C;
+
+  let rawOff = 0, rawDef = 0;
+  for (let i = 0; i < roster.length; i++) {
+    const isDef = DEFENSE_POSITIONS.indexOf(roster[i].position) >= 0;
+    if (isDef) rawDef += blend(i); else rawOff += blend(i);
+  }
+
+  /* Each side reads its own structure, because the two functions are not interchangeable:
+     rosterStructure looks for a quarterback and a pass/rush balance, defenseStructure looks
+     at rush, coverage and tackling. Handing either one the full twelve would score half the
+     roster against questions it cannot answer. */
+  const offStructure = rosterStructure(off).multiplier;
+  const defStructure = defenseStructure(def).multiplier;
+
+  const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
+  const offMul = chemistryMultiplier * offStructure * defenseModifier;
+  const yourScore = rawOff * offMul;
+
+  const defenseTotal = rawDef * chemistryMultiplier * defStructure;
+  const suppression = defenseSuppression(defenseTotal, constants);
+  const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng)
+    * constants.SCALE * suppression / advantage;
+
+  let won;
+  if (yourScore > oppScore) won = true;
+  else if (yourScore < oppScore) won = false;
+  else won = rng() < 0.5;
+
+  /* ONE COLUMN, TWO MEANINGS, and the box score has to say which. An offensive line is
+     points on the board and the offensive lines sum to yourScore. A defensive line is a
+     share of the suppression effort and sums to defenseTotal, which is not points and must
+     never be printed as if it were. Same split the defense mode's box score already makes,
+     carried here rather than re-derived by the screen. */
+  const defMul = chemistryMultiplier * defStructure;
+  const lines = roster.map((p, i) =>
+    blend(i) * (DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? defMul : offMul));
+
+  return { won, yourScore, oppScore, defenseModifier: suppression, offenseModifier: defenseModifier,
+    defenseTotal, lines };
 }
 
 /*
@@ -3848,17 +3959,18 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
      that returns about 0.57 for any six defenders, and the product it lands on is on a
      scale the seeding and edge constants below do not share, so a top defense projected as
      a bottom team. overallOf answers both. */
-  const teamRating = overallOf(roster, chemistryMultiplier, !!opts.defense);
+  const teamRating = overallOf(roster, chemistryMultiplier,
+    opts.full ? 'full' : !!opts.defense);
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 21.5;
     /* THE PROJECTION HAS TO PLAY THE GAME THE RUN PLAYED. A One Stop roster resolved
        through resolveGame is a 47-point offense: it loses almost every week, and the
        typical record it came back with was 2-15 for a season that finished 10-7. */
-    const r = opts.defense
-      ? resolveGameDefense(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-        weeklyEdgeVs(teamRating, opp, constants))
-      : resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-        weeklyEdgeVs(teamRating, opp, constants));
+    const resolver = opts.full ? resolveGameFull
+      : opts.defense ? resolveGameDefense
+        : resolveGame;
+    const r = resolver(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
+      weeklyEdgeVs(teamRating, opp, constants));
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -4051,6 +4163,10 @@ const publicAPI = {
     return [s.key, i < 0 ? s.strength : s.strength.slice(i + 2)];
   })),
   resolveGame, resolveGameDefense, defenseSuppression, defenseOverall, overallOf,
+  /* Full Team, which nothing in the live game reaches yet: playRun only calls it through
+     opts.full and only the harness passes that. FULL_SLOTS is the two slot lists joined,
+     offense first, so a draft screen reads twelve in the order a player thinks about them. */
+  FULL_SLOTS: SLOTS.concat(DEFENSE_SLOTS), resolveGameFull, splitSides,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,
