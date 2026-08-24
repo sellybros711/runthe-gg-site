@@ -16757,3 +16757,38 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   against a full card, 140k fans and a Premium deal. The catches were measured and the age is one variable,
   so it was moved on its own; if playtesting says it has overcorrected, the cheapest dial is the sponsor
   lock (5 years → 4) rather than touching the age again.
+
+### THE BOARD RACE: a score posts, and the board that was already in flight buries it
+- **The bug, and it is a real one players would report as "my score isn't on the leaderboard".** Every
+  board loader (`dbLoad`, `crLoad`, `lbDailyLoad`, and their legend/spotlight twins) commits its rows
+  AFTER an `await`. So nulling a cache is not enough on its own: a fetch that was ALREADY in flight when
+  the cache was cleared lands afterwards and writes a **pre-submit snapshot** on top of the clear. That
+  snapshot is fresh and `ok:true`, so `boardStale()` says nothing needs refetching — and the player does
+  not appear on the board **until a page reload**. The daily hits this exactly: the result screen fetches
+  the board for the percentile at the same moment `sbSubmitDaily` posts and clears the caches, and the
+  submit usually wins the footrace home.
+- **The guard is an EPOCH, not a per-loader flag.** Every clear goes through `bumpBoardEpoch()`; every
+  loader captures `boardEpoch` before its await and, if it has moved, discards its own result and calls
+  `render()` so the next pass refetches. One counter covers all eight loaders and every clear site
+  (submit, sign-in, sign-out, `cloudPull`, the look backfill, the Try-again button), so a loader added
+  later only has to capture the epoch — there is no per-cache bookkeeping to get wrong. `var boardEpoch`
+  (not `let`) per the TDZ lesson this file has learned the hard way.
+- **Verified with a test that FAILS on the deployed build**, which is the only kind worth writing for a
+  race. `scratchpad/board_race.mjs` stubs a backend whose board QUERY runs at call time and whose RESPONSE
+  arrives late — exactly how a read that beat the write to the server but lost the race home behaves —
+  then drives the REAL `sbSubmitDaily`. **11 pass / 0 fail on the fix; 5 pass / 6 fail on
+  `origin/main:golf/index.html`**, with the baseline failure payload reading
+  `{rows:["rival"], ok:true, willRefetch:false}` — the stale board looking perfectly healthy, which is
+  precisely why it never refetches. Covers: the daily board, the course records (a record just set was
+  being buried the same way), the end-to-end Course Records screen (the poster's name and score appear on
+  the fix, never on the baseline), a sign-out not letting a signed-in board land in a guest session, and —
+  the check that matters for confidence — **uncontested loads still committing**, so the guard discards
+  only what raced.
+- Note the test asserts on `innerHTML` containing `>me<`, not on the text: the row renders as `meOVR 88`,
+  so `\bme\b` never matches. A word-boundary assertion on rendered text is a trap on this screen.
+- Regressions green: daily_glitch 5, records 24, rest 37, rival 17, clubs 23, circuit 14, morris 16,
+  wr_goal 12, entry_ux 23, entry_catch 25, age_ladder 9, catch_e2e 4 — 0 page errors throughout.
+  `goals_test` fails 3 **identically on the deployed baseline** (the known stale rookie-tier fixture whose
+  synthetic metric omits `played`). Inline scripts parse; block 0 is the JSON-LD tag, fails identically on
+  baseline. The deployed file was byte-identical to committed source beforehand, so there were no parallel
+  edits to adopt.
