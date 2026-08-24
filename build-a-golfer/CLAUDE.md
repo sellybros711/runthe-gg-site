@@ -16555,3 +16555,41 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   identically on baseline).
 - Tunable: `dPinSpot` (how a pin's position is described), the `.dctarget` pointer-events split, the
   collision nudge in `dPlaceTargets`.
+
+### PLAYER BUG REPORT: "World rankings goal is broken. It says I'm #151 regardless of where I actually finish"
+- **The report** (forwarded from a player, `season` / career / year 9 / signed in, iPhone): the Season
+  Goals sheet's world-ranking goal shows the same number no matter how the season goes.
+- **Root cause, and it was exact.** `goalMetrics()` read the player's world rank with
+  `worldRankOfName(meName)` — but that helper deliberately EXCLUDES you (`x.name===name && !x.you`),
+  because its job is looking an OPPONENT up (its only other caller passes an NPC's name). So searching
+  your own name always fell through to not-found and returned the **list SIZE**. The player's world had
+  150 active players + them = **151, every time, forever**. Fixed to `myWorldRank()` (guarded), which is
+  the helper that finds you.
+- **Two goal templates were affected, and one of them is common.** `worldTop10` ("Break the world top
+  10", star tier) and `defendNo1` ("Defend World No. 1", goat tier) both read `m.worldRank`, so both were
+  **permanently unhittable**. Since `generateSeasonGoals` draws 5 of a 6-template pool, a star-tier player
+  saw `worldTop10` on the sheet in 5 rotations out of 6 — a guaranteed miss that also **capped the season
+  grade at B**, so a star player could never post an A season no matter what they did.
+- **A second, quieter bug in the same area, fixed with it.** Grading ran at the top of the summary's
+  record block, BEFORE `updateWorldRanking()` banked the season's points — while the goal CARD renders
+  after it. So even with the lookup fixed, the stored grade would have used the rank you came INTO the
+  year with while the card beside it showed where you finished, and the summary's own ranking banner
+  would contradict the goal card on the same screen. `applySeasonGoalConsequences()` now runs after the
+  OWGR block settles. Nothing reads `lastGoalGrade` yet (only sponsors will, next season), and the row it
+  writes to is pushed earlier, so the move is safe today — verified.
+- Verified: a 12-check suite driving real careers — the metric reads YOUR rank and not the list size, it
+  moves monotonically as ranking points rise and fall (#1 / #31 / #151 across values that genuinely
+  straddle the field's 4800–2040 point spread), both goals are hittable by the world No. 1, a genuinely
+  low-ranked player still MISSES honestly, a perfect star sheet reaches A, and end-to-end a played season
+  lands on the summary with the goal card and the ranking banner showing **the same number**. The same
+  suite on the deployed build is **2 pass / 10 fail** (`goalWorldRank:151` against `trueWorldRank:1`), so
+  it pins the report rather than something adjacent. Screenshot confirms `#1 / #10 ✓` and an A · 5/5 sheet.
+- Regressions green: records 24, rest 37, rival 17, clubs 23, circuit 14, morris 16, daily_glitch 5,
+  dec_verify (the pin-side fix holds: 23 claims, 0 wrong), regress 7/7, and daily determinism vs the
+  deployed build unchanged (504 holes byte-identical, 168 decisions, identical template + phase routing).
+  `goals_test` fails 3 **identically on the deployed baseline** — a stale fixture whose synthetic
+  rookie-tier metric omits `played`, so a drawn `playFull` goal can never hit; it never touches world rank.
+- **NOTE on the number itself:** 151 is a legitimate rank for a player genuinely below the whole field —
+  it was returning it *unconditionally* that was the bug. "Regardless of where I actually finish" was the
+  tell.
+- Tunable: `goalMetrics()`'s world-rank read; the `worldTop10` / `defendNo1` targets in `GOAL_DEFS`.

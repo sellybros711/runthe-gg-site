@@ -15536,7 +15536,11 @@ function goalMetrics(finalSeason){
     if(finalSeason.rank   != null) moneyRank = finalSeason.rank;
   }
   const money = (finalSeason && finalSeason.money!=null) ? finalSeason.money : (me.money||0);
-  const worldRank = (typeof worldRankOfName==='function') ? worldRankOfName(meName) : null;
+  // YOUR world rank, not an opponent's. worldRankOfName() deliberately EXCLUDES you (it matches on
+  // `!x.you`, because its job is looking an OPPONENT up), so passing your own name always fell through
+  // to not-found and returned the list SIZE - the reported "#151 regardless of where I actually
+  // finish". myWorldRank() is the one that finds you.
+  let worldRank = null; try{ worldRank = myWorldRank(); }catch(e){}
   return { wins, majors, sigWins, top10, top25, made, played, majorCut, majorTop10, majorTop25,
            sigTop10, moneyRank, money, worldRank };
 }
@@ -22937,9 +22941,6 @@ function scrSummary(){
       ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
       if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
     S.career.seasons.push({year:S.year||1,net:netTotal,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
-    // Season Sheet grading (regular career only). Runs AFTER the season row is pushed so the grader
-    // reads the authoritative final numbers; writes the graded sheet onto that same row + a story beat.
-    try{ if(!S.circuitMode) applySeasonGoalConsequences(); }catch(e){}
     // track this career's PEAK build (full 8-skill snapshot, not just the overall number), this is
     // the golfer a Legend Token freezes and hands back to you in the Daily Challenge if this career
     // goes on to qualify (see endCareer). Compared against ovr so a later decline year can't overwrite it.
@@ -22963,6 +22964,11 @@ function scrSummary(){
       // THE CARD ITSELF: promotion, conditional status, demotion to the Proving Tour, and whether the
       // year ends with a trip to Q-School. Runs after the ranking settles because it reads the final one.
       try{ S.statusChange=resolveCardStatus(newWR, moneyRank); }catch(e){ S.statusChange=null; } }
+    // Season Sheet grading (regular career only). Runs AFTER the season row is pushed (so the grader
+    // reads the authoritative final numbers) AND after the world ranking settles, so a world-rank goal
+    // grades on where you FINISHED the season - the same number the ranking banner and the goal card
+    // itself show on this very screen, rather than the rank you came into the year with.
+    try{ if(!S.circuitMode) applySeasonGoalConsequences(); }catch(e){}
     // ---- Season awards (after the OWGR update so year-end World No.1 is settled) ----
     if(!S.daily){ const aw=computeAwards(); S.seasonAwards=aw;
       if(aw){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));   // money title already tracked via moneyLeaderSeasons
