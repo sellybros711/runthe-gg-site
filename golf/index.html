@@ -17405,32 +17405,51 @@ function statusChangeNode(){
    and start on whatever you earn.                                                                    */
 const CAREER_END_AGE=52;             // everyone plays until about the same age, so the start age IS the length
 const ENTRY_PATHS=[
-  {id:'amateur', name:'The Amateur Champion', kick:'You won the biggest amateur title in the game', col:'#35d6a0',
+  {id:'amateur', name:'The Amateur Champion', short:'Amateur', kick:'You won the biggest amateur title in the game', col:'#35d6a0',
    age:22, status:'full',
    blurb:'The tour hands the winner a card. You arrive with a name, a gallery, and everybody waiting to see whether it travels.',
    fans:25000, pop:8, resp:12, conf:46, rank:1.35, offFloor:0, offSpins:0, skill:0, sponsorTier:null, sponsorTierAdj:1,
-   good:['Full tour card from week one','Brands rate you a tier above your record','Peers rate you'], bad:['Everybody expects it','Confidence starts low: you have it all to lose']},
-  {id:'qschool', name:'The Q-School Graduate', kick:'Six rounds, right now, for your card', col:'#F1D04A',
+   good:['A card from week one','Peers already rate you'], bad:['Everybody expects it','You have it all to lose']},
+  {id:'qschool', name:'The Q-School Graduate', short:'Q-School', kick:'Six rounds, right now, for your card', col:'#F1D04A',
    age:24, status:null,
    blurb:'Two years of trying and one week that settles it. You play Q-School before your first season and start on exactly what you earn: a card, conditional status, or the second tier.',
    fans:4000, pop:0, resp:8, conf:58, rank:1, offFloor:2, offSpins:0, skill:0, sponsorTier:null, sponsorTierAdj:0,
-   good:['You learned how to work: never fewer than 2 off-season changes','Nobody doubts you belong'], bad:['Your card is not guaranteed','Two years already gone']},
-  {id:'mini', name:'The Mini-Tour Veteran', kick:'Four years of paying your own entry fees', col:'#E14A33',
+   good:['Nobody doubts you belong'], bad:['Your card is not guaranteed','Two years already gone']},
+  {id:'mini', name:'The Mini-Tour Veteran', short:'Mini-Tour', kick:'Four years of paying your own entry fees', col:'#E14A33',
    age:26, status:'proving',
    blurb:'No card, no exemption, no shortcut. You start on '+PROVING_NAME+' and play your way up the way everybody down there does.',
    fans:3000, pop:-4, resp:16, conf:55, rank:0.7, offFloor:2, offSpins:1, skill:0, sponsorTier:null, sponsorTierAdj:-1,
-   good:['Never fewer than 2 off-season changes, and +1 re-spin: you are still learning','The locker room respects the graft'], bad:['You start off the tour entirely','Four years of your prime are gone','Brands rate you a tier below']},
-  {id:'exempt', name:"The Sponsor's Exemption", kick:'A brand put you on tour before you earned it', col:'#a24be0',
+   good:['The locker room respects the graft'], bad:['You start off the tour entirely','Four prime years gone']},
+  {id:'exempt', name:"The Sponsor's Exemption", short:'Exemption', kick:'A brand put you on tour before you earned it', col:'#a24be0',
    age:21, status:'full',
    blurb:'Signed young, marketed hard, handed a card. The money is real and so is the audience. So is what the rest of the field thinks about it.',
    fans:140000, pop:20, resp:-22, conf:42, rank:1.1, offFloor:0, offSpins:0, skill:0, sponsorTier:3, sponsorTierAdj:0,
-   good:['A Premium sponsor signed from day one','A huge audience before you hit a shot','The youngest start there is'], bad:['The locker room thinks you bought it','Respect starts on the floor']},
-  {id:'late', name:'The Late Convert', kick:'Another life first, and then this one', col:'#5bcfe8',
+   good:['A huge audience before you hit a shot','The youngest start there is'], bad:['The locker room thinks you bought it']},
+  {id:'late', name:'The Late Convert', short:'Late', kick:'Another life first, and then this one', col:'#5bcfe8',
    age:29, status:'cond',
    blurb:'You came to golf late and got here on invitations. The game arrived fully formed, which is the one advantage of starting at 29.',
    fans:18000, pop:10, resp:6, conf:52, rank:0.9, offFloor:0, offSpins:0, skill:2, sponsorTier:null, sponsorTierAdj:0,
-   good:['+2 to every rating: you arrived mature','A story people want to follow'], bad:['Conditional status, a partial schedule','A 23-year career instead of 30']},
+   good:['You arrived mature','A story people want to follow'], bad:['A partial schedule','The shortest career']},
 ];
+/* The numbers behind a path, derived from the SAME fields applyEntryPath() reads, so the comparison on
+   screen can never drift from what turning pro actually does. */
+function entryYears(p){ return clamp(CAREER_END_AGE-p.age, 18, CAREER_MAX_YEARS); }
+function entryStat(p){
+  return { yrs:entryYears(p), card:p.status||'qs',
+    resp:clamp(REP_START.respect+(p.resp||0),0,100), conf:clamp(p.conf!=null?p.conf:CONF_START,0,100),
+    fans:Math.max(0,p.fans||FOLLOWERS_START) };
+}
+// The mechanical extras, derived rather than written out twice: these are the levers, not the flavour.
+function entryPerks(p){
+  const out=[];
+  if(p.skill) out.push({t:`+${p.skill} to every rating`, good:true});
+  if(p.sponsorTier) out.push({t:'Premium sponsor signed', good:true});
+  if(p.offFloor) out.push({t:`${p.offFloor}+ off-season changes`, good:true});
+  if(p.offSpins) out.push({t:`+${p.offSpins} off-season re-spin`, good:true});
+  if(p.sponsorTierAdj>0) out.push({t:'Brands rate you a tier up', good:true});
+  if(p.sponsorTierAdj<0) out.push({t:'Brands rate you a tier down', good:false});
+  return out;
+}
 function entryPathById(id){ return ENTRY_PATHS.find(p=>p.id===id)||null; }
 function entryPath(){ return (S.career&&S.career.entry)?entryPathById(S.career.entry):null; }
 function careerStartAge(){ const a=S.career&&S.career.startAge; return (a>0)?a:START_AGE; }
@@ -17468,26 +17487,144 @@ function applyEntryPath(id){
   startSeason(false); return true;
 }
 
-/* The screen. Shown once, before your first season, and only in career mode. */
+/* The screen. Shown once, before your first season, and only in career mode.
+
+   This used to be five long cards stacked down the page: to make ONE choice you read five kickers,
+   five blurbs and twenty-odd bullet points, and you still could not compare them because they were
+   never on screen together. Now it is a picker: five tiles you flick between, ONE detail panel that
+   re-animates its meters as you switch (so the differences move in front of you rather than having to
+   be held in your head), and a compact table underneath that puts all five side by side. Same five
+   paths, same numbers, a fraction of the reading. */
+function entryStyleOnce(){
+  if(document.getElementById('epcss')) return;
+  const s=document.createElement('style'); s.id='epcss'; s.textContent=`
+  .ep-wrap{max-width:560px;margin:0 auto}
+  .ep-pick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0 0 13px}
+  .ep-tile{background:rgba(255,255,255,.045);border:1.5px solid rgba(244,227,201,.14);border-radius:12px;
+    padding:9px 4px 8px;cursor:pointer;text-align:center;transition:transform .12s ease,border-color .18s ease,background .18s ease;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:60px}
+  .ep-tile:hover{transform:translateY(-2px)}
+  .ep-tile.on{background:rgba(255,255,255,.09);transform:translateY(-2px)}
+  .ep-tdot{width:22px;height:3px;border-radius:2px;margin:0 auto 6px;opacity:.55;transition:opacity .18s ease}
+  .ep-tile.on .ep-tdot{opacity:1;height:4px}
+  .ep-tnm{font:800 10.5px/1.15 var(--body);color:var(--oncard);letter-spacing:.01em}
+  .ep-tage{font:700 9.5px/1 var(--body);color:var(--muted);margin-top:4px}
+  .ep-panel{border:1.5px solid;border-radius:16px;padding:15px 16px 14px;background:rgba(0,0,0,.16);margin-bottom:12px}
+  .ep-kick{font:800 10px/1.25 var(--body);letter-spacing:.16em;text-transform:uppercase}
+  .ep-nm{font:900 22px/1.15 var(--body);color:var(--oncard);margin:5px 0 9px}
+  .ep-blurb{margin:0 0 12px}
+  .ep-mrow{display:grid;grid-template-columns:74px 1fr auto;gap:9px;align-items:center;padding:5px 0;
+    border-top:1px solid rgba(244,227,201,.07)}
+  .ep-mrow:first-of-type{border-top:0}
+  .ep-mlab{font:800 9.5px/1.1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .ep-mbar{height:6px;border-radius:4px;background:rgba(244,227,201,.1);overflow:hidden}
+  .ep-mfill{height:100%;border-radius:4px;width:0;transition:width .55s cubic-bezier(.2,.85,.25,1)}
+  .ep-mval{font-family:var(--mono);font-size:12px;color:var(--oncard);font-variant-numeric:tabular-nums;
+    white-space:nowrap;min-width:60px;text-align:right}
+  .ep-pips{display:flex;gap:3px;align-items:center}
+  .ep-pip{width:15px;height:6px;border-radius:3px;background:rgba(244,227,201,.13)}
+  .ep-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px}
+  .ep-tg{font:800 10px/1 var(--body);padding:5px 8px;border-radius:8px;border:1px solid;white-space:nowrap}
+  .ep-cmp{border:1px solid rgba(244,227,201,.12);border-radius:14px;overflow:hidden;margin-top:12px}
+  .ep-cmp>summary{cursor:pointer;list-style:none;padding:11px 14px;font:800 11px/1 var(--body);
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.03)}
+  .ep-cmp>summary::-webkit-details-marker{display:none}
+  .ep-crow{display:grid;grid-template-columns:1.35fr .5fr .55fr .8fr .5fr .5fr .7fr;gap:4px;align-items:center;
+    padding:8px 10px;border-top:1px solid rgba(244,227,201,.07);font-family:var(--mono);font-size:11px;
+    color:var(--oncard);font-variant-numeric:tabular-nums;text-align:right;cursor:pointer;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .ep-crow.hd{font:800 9px/1.1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+    cursor:default;background:rgba(0,0,0,.12)}
+  .ep-crow.on{background:rgba(255,255,255,.06)}
+  .ep-cnm{display:flex;align-items:center;gap:6px;text-align:left;font:800 11px/1.1 var(--body);min-width:0}
+  .ep-cnm i{width:3px;height:14px;border-radius:2px;flex:0 0 auto}
+  .ep-cnm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ep-best{color:var(--gold);font-weight:800}
+  @media(prefers-reduced-motion:reduce){ .ep-mfill{transition:none} .ep-tile{transition:none} }`;
+  document.head.appendChild(s);
+}
+const ENTRY_FANS_MAX=Math.max.apply(null, ENTRY_PATHS.map(p=>p.fans||0));
+function entryFansTxt(n){ return n>=1000 ? Math.round(n/1000)+'k' : String(n); }
+function entryCardMeta(p){ return p.status?statusMeta(p.status):{label:'Decided at Q-School', col:'#F1D04A'}; }
+// the card as a three-step ladder, so "off the tour < conditional < a full card" reads without a sentence
+function entryCardRank(p){ return p.status==='full'?3 : p.status==='cond'?2 : p.status==='proving'?1 : 0; }
 function scrEntry(){
+  entryStyleOnce();
+  if(!entryPathById(S.entryPick)) S.entryPick=ENTRY_PATHS[0].id;
   add(scrHero('Turn Pro','Five ways in. This one is for the whole career.'));
-  add($(`<div class="lede center" style="max-width:560px;margin:0 auto 14px">How you got here decides your age, your card, your standing and how long you have. Pick the road you actually want to walk.</div>`));
-  ENTRY_PATHS.forEach(p=>{
-    const yrs=clamp(CAREER_END_AGE-p.age,18,CAREER_MAX_YEARS);
-    const stat=p.status?statusMeta(p.status):{label:'Decided at Q-School', col:'#F1D04A'};
-    const chips=[`Age ${p.age}`, `${yrs} seasons`, stat.label].map(t=>`<span class="tag" style="margin:0;font-size:9.5px;padding:3px 7px">${esc(t)}</span>`).join(' ');
-    const b=$(`<button class="scout" style="width:100%;max-width:560px;margin:0 auto 12px;display:block;text-align:left;border-color:${p.col};padding:13px 15px;cursor:pointer">
-      <div style="font:800 10.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${p.col}">${esc(p.kick)}</div>
-      <div style="font:900 19px/1.2 var(--body);color:var(--oncard);margin:5px 0 6px">${esc(p.name)}</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">${chips}</div>
-      <div class="small muted" style="margin-bottom:8px">${esc(p.blurb)}</div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap">
-        <div style="flex:1 1 200px"><div class="small" style="color:#35d6a0;font-weight:800">${p.good.map(g=>'+ '+esc(g)).join('<br>')}</div></div>
-        <div style="flex:1 1 200px"><div class="small" style="color:#E14A33;font-weight:800">${p.bad.map(g=>'- '+esc(g)).join('<br>')}</div></div>
-      </div></button>`);
-    b.onclick=()=>applyEntryPath(p.id); add(b);
-  });
-  const back=$(`<button class="btn ghost" style="max-width:560px;margin:6px auto 0">‹ Back to your golfer</button>`);
+  add($(`<div class="lede center" style="max-width:560px;margin:0 auto 13px">How you got here sets your age, your card, your standing and how long you have.</div>`));
+  const wrap=$(`<div class="ep-wrap"></div>`);
+
+  // ---- the picker: all five always on screen, so the choice space is visible at a glance
+  const pick=$(`<div class="ep-pick">${ENTRY_PATHS.map(p=>
+    `<button class="ep-tile" data-ep="${p.id}">
+       <div class="ep-tdot" style="background:${p.col}"></div>
+       <div class="ep-tnm">${esc(p.short)}</div>
+       <div class="ep-tage">Age ${p.age}</div>
+     </button>`).join('')}</div>`);
+  wrap.appendChild(pick);
+
+  const panel=$(`<div class="ep-panel"></div>`); wrap.appendChild(panel);
+  const go=$(`<button class="btn goldfill" style="width:100%">Turn pro ▸</button>`); wrap.appendChild(go);
+
+  // ---- all five side by side, for the scan rather than the read
+  const best={yrs:Math.max.apply(null,ENTRY_PATHS.map(entryYears)),
+              card:Math.max.apply(null,ENTRY_PATHS.map(entryCardRank)),
+              resp:Math.max.apply(null,ENTRY_PATHS.map(p=>entryStat(p).resp)),
+              conf:Math.max.apply(null,ENTRY_PATHS.map(p=>entryStat(p).conf)),
+              fans:ENTRY_FANS_MAX};
+  const cmp=$(`<details class="ep-cmp"><summary>Compare all five ▾</summary>
+    <div class="ep-crow hd"><div class="ep-cnm"><span>Path</span></div><div>Age</div><div>Yrs</div>
+      <div style="text-align:right">Card</div><div>Resp</div><div>Conf</div><div>Fans</div></div>
+    ${ENTRY_PATHS.map(p=>{ const st=entryStat(p);
+      const cardTxt=p.status==='full'?'Full':p.status==='cond'?'Cond':p.status==='proving'?'Prov':'Q-Sch';
+      const hi=(v,b)=>v===b?' class="ep-best"':'';
+      return `<div class="ep-crow" data-ep="${p.id}">
+        <div class="ep-cnm"><i style="background:${p.col}"></i><span>${esc(p.short)}</span></div>
+        <div>${p.age}</div><div${hi(st.yrs,best.yrs)}>${st.yrs}</div>
+        <div${hi(entryCardRank(p),best.card)}>${cardTxt}</div>
+        <div${hi(st.resp,best.resp)}>${st.resp}</div><div${hi(st.conf,best.conf)}>${st.conf}</div>
+        <div${hi(st.fans,best.fans)}>${entryFansTxt(st.fans)}</div></div>`; }).join('')}</details>`);
+  wrap.appendChild(cmp);
+  add(wrap);
+
+  // ---- fill the panel for a path. Bars start at 0 and are set on the next frame, so every switch
+  // re-runs the sweep and you SEE which way each number moved.
+  function paint(id){
+    const p=entryPathById(id); if(!p) return;
+    const st=entryStat(p), cm=entryCardMeta(p), rank=entryCardRank(p);
+    const meter=(lab,pct,val,col)=>`<div class="ep-mrow"><div class="ep-mlab">${lab}</div>
+      <div class="ep-mbar"><div class="ep-mfill" data-w="${Math.round(clamp(pct,0,100))}" style="background:${col}"></div></div>
+      <div class="ep-mval">${val}</div></div>`;
+    const pips=`<div class="ep-mrow"><div class="ep-mlab">Card</div>
+      <div class="ep-pips">${[1,2,3].map(i=>`<span class="ep-pip"${rank>=i?` style="background:${cm.col}"`:''}></span>`).join('')}</div>
+      <div class="ep-mval" style="color:${cm.col}">${esc(rank?cm.label:'At Q-School')}</div></div>`;
+    const tags=[...p.good.map(t=>({t,good:true})), ...entryPerks(p), ...p.bad.map(t=>({t,good:false}))]
+      .map(o=>`<span class="ep-tg" style="color:${o.good?'#35d6a0':'#E14A33'};border-color:${o.good?'rgba(53,214,160,.32)':'rgba(225,74,51,.32)'}">${o.good?'✓':'✗'} ${esc(o.t)}</span>`).join('');
+    panel.style.borderColor=p.col;
+    panel.innerHTML=`<div class="ep-kick" style="color:${p.col}">${esc(p.kick)}</div>
+      <div class="ep-nm">${esc(p.name)}</div>
+      <div class="small muted ep-blurb">${esc(p.blurb)}</div>
+      ${meter('Career', (st.yrs-18)/(CAREER_MAX_YEARS-18)*100, st.yrs+' seasons', p.col)}
+      ${pips}
+      ${meter('Respect', st.resp, st.resp+' / 100', '#35d6a0')}
+      ${meter('Confidence', st.conf, st.conf+' / 100', '#F1D04A')}
+      ${meter('Fans', st.fans/ENTRY_FANS_MAX*100, entryFansTxt(st.fans), '#ff9d3a')}
+      <div class="ep-tags">${tags}</div>`;
+    requestAnimationFrame(()=>{ try{ panel.querySelectorAll('.ep-mfill').forEach(f=>{ f.style.width=f.getAttribute('data-w')+'%'; }); }catch(e){} });
+    // the name goes in the sub, not the label: "Turn pro as Late" / "as Exemption" reads badly
+    go.innerHTML=`Turn pro ▸<span class="sub">${esc(p.name)} · age ${p.age}</span>`;
+    wrap.querySelectorAll('[data-ep]').forEach(el=>el.classList.toggle('on', el.getAttribute('data-ep')===id));
+  }
+  wrap.querySelectorAll('[data-ep]').forEach(el=>{ el.onclick=()=>{
+    const id=el.getAttribute('data-ep'); if(id===S.entryPick) return;
+    S.entryPick=id; paint(id);
+    if(el.classList.contains('ep-crow')){ try{ panel.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){} }
+  }; });
+  go.onclick=()=>applyEntryPath(S.entryPick);
+  paint(S.entryPick);
+
+  const back=$(`<button class="btn ghost" style="max-width:560px;margin:10px auto 0">‹ Back to your golfer</button>`);
   back.onclick=()=>{ S.screen='build'; render(); }; add(back);
 }
 // a one-line reminder of the road you took, for the summary and the ceremony
