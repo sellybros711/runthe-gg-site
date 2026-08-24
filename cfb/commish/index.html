@@ -180,16 +180,55 @@
   .bl .mv em{position:absolute;top:0;bottom:0;border-radius:3px;transition:width .5s var(--ez)}
   .bl.react .dl{font-size:15px}
 
-  /* ---- the desk ---- */
-  .voices{display:grid;gap:8px;margin:11px 0 14px}
+  /* ---- the desk ----
+     THE SCREEN WHERE THE MODE IS ACTUALLY PLAYED, and it was a column of prose. A setup
+     paragraph, three quotes each with its own header line, and three options each with a
+     paragraph of its own: a hundred and ten words to read before the first decision, all
+     of it the same size, in the same colour, with nothing marking where one section ended
+     and the next began.
+
+     Three changes, and none of them deletes anything a player could want:
+
+       the setup is clamped to three lines and opens on a tap
+       a quote sits on ONE line beside its speaker's chip instead of under a name
+       an option's paragraph is one line until it is the option you are considering
+
+     Plus the thing that was missing entirely: the four numbers this ruling would leave
+     behind, live, under the choice. */
+  /* `display:flex` beats the browser's own `[hidden]{display:none}`, so the attribute has to
+     be honoured here or hiding a heading does nothing at all. */
+  .dsec{display:flex;align-items:baseline;gap:8px;margin:16px 0 8px}
+  .dsec[hidden]{display:none}
+  .dsec b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .dsec span{margin-left:auto;font-size:11px;color:var(--dim-2)}
+
+  /* THE SETUP, WHICH IS BACKGROUND AND SHOULD LOOK LIKE IT. Three lines is enough to know
+     what the item is about; the rest is there for whoever wants it. */
+  .brief{position:relative}
+  .brief p{color:var(--dim);font-size:14px;line-height:1.5;margin:0}
+  .brief.clamp p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
+    overflow:hidden}
+  .brief button{margin-top:5px;background:none;border:0;padding:0;cursor:pointer;
+    font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--green)}
+
+  .voices{display:grid;gap:7px;margin:0 0 4px}
   /* THE QUOTE IS TIED TO THE ROOM BY COLOUR, so an argument on the desk and the number it
-     moves on the next screen are visibly the same actor. */
-  .voice{border-left:3px solid var(--bc,var(--line-2));padding:1px 0 1px 10px}
-  /* Same trap as the chip row: `.voice span` would make this header italic body text. */
-  .voice .vh{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-style:normal}
-  .voice b{font-family:var(--fn);font-size:10px;font-weight:700;
-    letter-spacing:.1em;text-transform:uppercase;color:var(--bc,var(--dim-2))}
-  .voice span{font-size:13.5px;color:var(--ink);font-style:italic}
+     moves on the next screen are visibly the same actor.
+
+     ONE LINE PER SPEAKER. The name used to sit on a header row of its own above the quote,
+     which cost three lines a voice and nine for the room, to say something the chip beside
+     it already says in a colour and a mark. The name is still there, inline, leading the
+     sentence the way an attribution does. */
+  .voice{display:flex;align-items:flex-start;gap:8px;
+    border-left:3px solid var(--bc,var(--line-2));padding:1px 0 1px 9px}
+  .voice .chip{flex:0 0 auto;margin-top:1px}
+  /* Same trap as the chip row: `.voice span` would make this italic body text. */
+  .voice .vs{font-size:13.5px;color:var(--ink);font-style:italic;min-width:0}
+  .voice b{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--bc,var(--dim-2));
+    margin-right:6px;white-space:nowrap}
 
   .opt{display:block;width:100%;text-align:left;background:var(--panel);cursor:pointer;
     border:1.5px solid var(--line);border-radius:12px;padding:12px 13px;margin-bottom:8px;
@@ -198,6 +237,17 @@
   .opt.on{border-color:var(--green);background:rgba(16,185,129,.09)}
   .opt b{display:block;font-family:var(--fn);font-size:14.5px;font-weight:700}
   .opt span{display:block;font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.4}
+  /* ONE LINE UNTIL IT IS THE ONE YOU ARE CONSIDERING. Three options meant three paragraphs
+     to be read in full and held in the head together, which is precisely what the chip row
+     below was built to replace. The prose is the detail behind the chips, so it opens for
+     the option you have picked and stays a line for the two you have not.
+
+     CLAMPED, NOT HIDDEN. The first line is always there, and every word of it is one tap
+     away, because an option whose reasoning is behind a control nobody notices is an option
+     nobody reads. */
+  .opt .why{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;
+    overflow:hidden;transition:color .2s var(--ez)}
+  .opt.on .why{-webkit-line-clamp:6;color:var(--ink)}
   /* WHAT THE RULING DOES, IN SYMBOLS. Three options used to be three paragraphs that had to
      be read in full and held in the head at once. These say the shape of each one at a
      glance: which forces it pushes and which way.
@@ -228,6 +278,34 @@
   @supports not (background:color-mix(in srgb,red 10%,transparent)){
     .sig i{background:rgba(255,255,255,.04)}
   }
+
+  /* ---- what this ruling would leave behind ----
+     THE ONE THING THE DESK NEVER SHOWED. The player was asked to choose between three
+     paragraphs and then found out what they had done two screens later, which is why the
+     screen read as an essay question. These are the same four numbers the office leads with,
+     recomputed for the ruling in front of you, live, as you move the dial.
+
+     IT IS NOT THE PAID PREVIEW AND MUST NOT BECOME IT. What the room THINKS is Test It On
+     The Room, and it stays there. This is arithmetic on your own ruling: the chips above
+     already say which way each force moves, and this says what the board reads afterwards.
+     applyEdit is pure and the world it runs on is thrown away, so it cannot lie. */
+  .effect{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+  .effect .eh{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+  .effect .eh b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--green)}
+  .effect .eh span{margin-left:auto;font-size:11px;color:var(--dim-2)}
+  .effect .none{font-size:12.5px;color:var(--dim-2)}
+  /* THE REST OF THE LEDGER, one line each. Not tiles: these are the second rank, and giving
+     them the same box as the four headline numbers would say they are the same size of
+     thing. Name on the left, what it becomes on the right, what it was under that. */
+  .also{display:grid;gap:6px;margin-top:9px}
+  .also span{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:4px 10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+  .also b{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim);min-width:0}
+  .also u{text-decoration:none;font-family:var(--fd);font-size:16px;color:var(--ink);
+    white-space:nowrap}
+  .also em{grid-column:2;justify-self:end;font-style:normal;font-family:var(--fn);
+    font-size:9.5px;font-weight:700;color:var(--gold);white-space:nowrap}
 
   .dial{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
   .dial .dh{display:flex;align-items:center;gap:8px;margin-bottom:7px}
@@ -608,10 +686,15 @@
     <div class="beatbar" id="desk-beatbar"></div>
     <div class="eyebrow gold" id="d-eyebrow"></div>
     <h2 id="d-title"></h2>
-    <p class="lede" id="d-brief"></p>
+    <div class="brief" id="d-brief"></div>
+    <!-- Both hidden together when an item arrives with nobody arguing about it: a section
+         heading over an empty box reads as something that failed to load. -->
+    <div class="dsec" id="d-voices-head"><b>The room is arguing</b></div>
     <div class="voices" id="d-voices"></div>
+    <div class="dsec"><b>Your ruling</b><span id="d-hint"></span></div>
     <div id="d-options"></div>
     <div id="d-dials"></div>
+    <div id="d-effect"></div>
     <div id="d-write"></div>
     <div style="margin-top:14px">
       <button class="btn ghost" id="b-test">Test it on the room</button>
@@ -1152,21 +1235,26 @@ function desk(){
   paintBeatbar($('desk-beatbar'),world);
   $('d-eyebrow').textContent=(item.eyebrow||'')+' · '+L.BEATS[world.beat]+' · '+world.year;
   $('d-title').textContent=D.text(item.title,cast,item);
-  $('d-brief').textContent=D.text(item.brief,cast,item);
+  paintBrief(D.text(item.brief,cast,item));
   /* THE ARGUMENT, TIED TO THE ROOM BY COLOUR AND MARK. These were three grey paragraphs
      behind three grey labels, so the quote and the number it moves two screens later were
      visibly unrelated. Same chip, same hue, same actor. */
   $('d-voices').innerHTML=(item.voices||[]).map((v)=>{
     const b=B.BY_ID[v.id];
+    /* NAME AND QUOTE IN ONE FLOW. The name leads the sentence the way an attribution does,
+       rather than sitting on a header row of its own, which is a whole line per speaker to
+       repeat what the chip beside it already says in a colour and a mark. */
     return '<div class="voice" style="--bc:'+bcOf(v.id)+'">'
-      +'<span class="vh">'+blocChip(v.id)+'<b>'+esc(b?b.name:v.id)+'</b></span>'
-      +'<span>'+esc(v.say)+'</span></div>';
+      +blocChip(v.id)
+      +'<span class="vs"><b>'+esc(b?b.name:v.id)+'</b>'+esc(v.say)+'</span></div>';
   }).join('');
   /* THE ROOM SPEAKS IN TURN. Three voices arriving together are a wall of text; dealt out
      they are three people, which is what they are. */
+  $('d-voices-head').hidden=!(item.voices||[]).length;
   reveal($('d-voices'));
   paintOptions(true);
   paintDials();
+  paintEffect();
   paintWrite();
   $('b-test').hidden=!isPro();
   show('s-desk');
@@ -1197,6 +1285,16 @@ const AXIS_HUE={
   money:'#f59e0b', access:'#14b8a6', autonomy:'#a855f7', cost:'#fb7185',
   tradition:'#94a3b8', inventory:'#ec4899', labour:'#38bdf8', exposure:'#ef4444',
 };
+/* THE FORCE, NAMED IN ONE WORD, WITH THE ARROW DOING THE REST. The chips used to carry the
+   whole phrase ("WORSE FOR PLAYERS", "MORE LEGAL RISK"), which is unambiguous and too long:
+   three of them wrapped to two rows on a phone, and a row that wraps stops being scannable,
+   which is the only thing these are for. The arrow already says the direction and the hue
+   already says which force, so the label only has to name it. The full phrase is still on
+   the chip as its title, for anybody who wants to be sure. */
+const AXIS_SHORT={
+  money:'Money', access:'Access', autonomy:'Autonomy', cost:'Cost',
+  tradition:'Tradition', inventory:'Inventory', labour:'For players', exposure:'Legal risk',
+};
 /* THE SHAPE OF A RULING, AS MARKS. Three options were three paragraphs that had to be read
    in full and held in the head together to be compared. The two or three forces each one
    pushes hardest say most of that at a glance, and the prose is then a detail rather than
@@ -1217,23 +1315,140 @@ function optionSignature(o){
     const up=eff[a]>0;
     /* `less`, not `dn`: .dn is the page's own class for "this number went down, paint
        it red", and reusing it here would fight the axis hue on every falling chip. */
-    return '<i class="'+(up?'more':'less')+'" style="--ax:'+AXIS_HUE[a]+'">'
-      +(up?'▲':'▼')+' '+esc(AXIS_WORDS[a][up?0:1])+'</i>';
+    return '<i class="'+(up?'more':'less')+'" style="--ax:'+AXIS_HUE[a]+'"'
+      +' title="'+esc(AXIS_WORDS[a][up?0:1])+'">'
+      +(up?'▲':'▼')+' '+esc(AXIS_SHORT[a]||AXIS_WORDS[a][up?0:1])+'</i>';
   }).join('')+'</span>';
 }
+/* THE SETUP, CLAMPED. Some briefs are two lines and some are six, and a control that says
+   "more" under a paragraph that is already whole is worse than no control: it promises
+   something that is not there. So the clamp goes on, the page is measured, and the button
+   appears only where there is genuinely something folded away. */
+function paintBrief(text){
+  const el=$('d-brief');
+  el.className='brief clamp';
+  el.innerHTML='<p>'+esc(text)+'</p>';
+  /* MEASURED ON THE NEXT FRAME, because at this point the desk is still display:none. Every
+     box inside a hidden subtree reports a height of zero, so a paragraph of any length reads
+     as fitting in three lines and the clamp took itself straight back off. One frame later
+     the screen has been shown and the numbers are real. */
+  requestAnimationFrame(()=>{
+    const p=el.firstChild;
+    if(!p||p.scrollHeight-p.clientHeight<4){ el.className='brief'; return; }
+    el.insertAdjacentHTML('beforeend','<button type="button">Read the rest</button>');
+    el.querySelector('button').onclick=(e)=>{ el.className='brief'; e.target.remove(); };
+  });
+}
+
 /* `first` IS THE ARRIVAL AND NOTHING ELSE. This repaints on every tap, because choosing an
    option restyles the other two, and re-dealing three cards each time somebody changes their
    mind is a fidget rather than an animation. The stagger belongs to the item turning up. */
 function paintOptions(first){
   $('d-options').innerHTML=item.options.map((o)=>
     '<button class="opt'+(choice===o.id?' on':'')+'" data-o="'+esc(o.id)+'">'
-    +'<b>'+esc(o.label)+'</b><span>'+esc(o.body)+'</span>'
+    +'<b>'+esc(o.label)+'</b><span class="why">'+esc(o.body)+'</span>'
     +optionSignature(o)+'</button>').join('');
   if(first) reveal($('d-options'));
   $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
-    b.onclick=()=>{ choice=b.dataset.o; written=''; paintOptions(); paintDials(); paintWrite(); };
+    b.onclick=()=>{ choice=b.dataset.o; written=''; paintOptions(); paintDials(); paintEffect(); paintWrite(); };
   });
+  $('d-hint').textContent=choice?'':'Pick one to see what it does';
   $('b-rule').disabled=!choice&&!written.trim();
+}
+
+/* WHAT THE BOARD READS AFTERWARDS, live. The same four numbers the office leads with, run
+   through the ruling in front of you, so choosing is a thing you can see rather than a
+   paragraph you have to model in your head. Moving a dial moves them.
+
+   THE ROOM'S OPINION IS NOT IN HERE. That is Test It On The Room and it belongs to the paid
+   tier. This is arithmetic on your own ruling, and applyEdit is pure, so the world it runs
+   on is thrown away and nothing here can drift from what ruling actually does. */
+/* EVERY LEDGER FIELD THE DOCKET CAN WRITE, IN WORDS AND IN ITS OWN UNITS. The four tiles are
+   the headline board and they are not the whole ledger: a ruling can double the pool, add a
+   portal window or move a school across the country without touching any of them, and the
+   panel said "nothing on the board" while doing it. That is worse than saying nothing at
+   all, because it is a claim.
+
+   The four that ARE tiles are named here as skipped rather than left out, so a fact that
+   moves between the two lists is one edit rather than a silent gap. */
+const PATH_SKIP={'playoff.teams':1,'playoff.autobids':1,'labour.revShare':1,'rules.confGames':1,
+  'money.share.Group of Five':1};
+const PATH_NAME={
+  'playoff.byes':'First-round byes',
+  'playoff.selection':'How the field is picked',
+  'playoff.sites':'Where it is played',
+  'money.pool':'The pool',
+  'money.dealYears':'Years left on the deal',
+  'labour.portalWindows':'Portal windows',
+  'labour.eligibility':'Years of eligibility',
+  'labour.employment':'What a player is',
+  'labour.nil':'How players are paid',
+  'rules.clock':'The clock',
+  'rules.replay':'Replay',
+};
+function pathName(p){
+  if(PATH_NAME[p]) return PATH_NAME[p];
+  if(p.indexOf('money.share.')===0) return p.slice(12)+"'s share";
+  return p;
+}
+function pathValue(p,v){
+  if(v==null) return '';
+  if(p.indexOf('money.share.')===0) return Math.round(v*100)+'%';
+  if(p==='money.pool') return '$'+Number(v).toFixed(1)+'B';
+  if(p==='money.dealYears') return v+(v===1?' year':' years');
+  if(p==='labour.portalWindows') return v+(v===1?' window':' windows');
+  if(p==='labour.eligibility') return v+(v===1?' year':' years');
+  return String(v);
+}
+
+function paintEffect(){
+  const el=$('d-effect');
+  if(!choice){ el.innerHTML=''; return; }
+  let edit=null,after=null;
+  try{ edit=D.resolve(item,choice,dials,cast); after=L.applyEdit(world,edit); }
+  catch(e){ edit=null; after=null; }
+  if(!after){ el.innerHTML=''; return; }
+  /* "WAS" MEANS RIGHT NOW ON THIS SCREEN, not the day you took the job. paintSport reads a
+     world's own opening snapshot for that line, which is the right comparison everywhere
+     else and the wrong one here: the question on the desk is what this ruling changes, not
+     what four years of them have. applyEdit already handed back a throwaway copy, so the
+     snapshot can simply be replaced on it. */
+  after.start={facts:sportFacts(world).map((f)=>String(f[1]))};
+  const now=sportFacts(world), then=sportFacts(after);
+  const moved=then.filter((f,i)=>f[1]!==now[i][1]).length;
+
+  /* EVERYTHING ELSE THE RULING WRITES, off the edit's own `set` rather than off a diff of
+     the whole world. Shares are renormalised whenever one of them moves, so a diff would
+     list all six conferences every time anybody's cut changed, which is six rows to say one
+     thing. What the ruling asked for is the shorter and truer answer. */
+  const also=[];
+  for(const p in (edit&&edit.set)||{}){
+    if(PATH_SKIP[p]) continue;
+    const was=L.getPath(world,p), is=L.getPath(after,p);
+    if(String(was)===String(is)) continue;
+    also.push([pathName(p),pathValue(p,is),pathValue(p,was)]);
+  }
+  /* A SCHOOL CHANGING CONFERENCE IS THE LOUDEST THING THIS MODE DOES and it is not a number
+     at all, so it would have fallen through every check above. */
+  for(const s in (edit&&edit.move)||{}){
+    if(world.membership[s]===edit.move[s]) continue;
+    also.push([s,edit.move[s],world.membership[s]]);
+  }
+
+  const total=moved+also.length;
+  el.innerHTML='<div class="effect"><div class="eh"><b>What this changes</b>'
+    +'<span>'+(total?(total===1?'one thing moves':total+' things move')
+      :'nothing on the board')+'</span></div>'
+    +(moved?'<div class="sport" id="d-facts"></div>':'')
+    +(also.length?'<div class="also">'+also.map(([n,is,was])=>
+      '<span><b>'+esc(n)+'</b><u>'+esc(is)+'</u><em>was '+esc(was)+'</em></span>').join('')
+      +'</div>':'')
+    /* A RULING THAT MOVES NO NUMBER IS NOT A WASTED ONE, and saying so plainly is better
+       than an empty box that reads as something failing to load. */
+    +(total?'':'<p class="none">Nothing on the ledger moves. What moves is the room.</p>')
+    +'</div>';
+  if(moved) paintSport($('d-facts'),after,world);
+  if(also.length) reveal(el.querySelector('.also'));
 }
 /* THE DIALS, AND THE TIER IS IN THE DATA RATHER THAN IN THIS FUNCTION. docket.settings
    hands back what this player is allowed to turn; the settings a free player does not get
@@ -1255,7 +1470,10 @@ function paintDials(){
       }).join('')+'</div></div>';
   }).join('');
   $('d-dials').querySelectorAll('[data-d]').forEach((b)=>{
-    b.onclick=()=>{ dials[b.dataset.d]=Number(b.dataset.v); paintDials(); };
+    /* THE DIAL IS THE INTERACTIVE PART OF THE RULING, so the four numbers under it have to
+       move with it. Setting a share to 30% and watching the board read 30% is the whole
+       reason the control is a row of settings rather than a sentence. */
+    b.onclick=()=>{ dials[b.dataset.d]=Number(b.dataset.v); paintDials(); paintEffect(); };
   });
   if(!isPro()&&list.some((d)=>D.settings(d,true).length>D.settings(d,false).length)){
     $('d-dials').insertAdjacentHTML('beforeend',
