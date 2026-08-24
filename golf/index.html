@@ -3255,7 +3255,8 @@ const CIRCUIT_COSTS={travelPerEvent:8000, seasonFixed:0.5e6};
 const PROVING_COSTS={travelPerEvent:6000, seasonFixed:0.3e6};
 function seasonNet(t){const gross=t.money, caddie=gross*caddieFeePct(), agent=gross*COSTS.agentPct,
   cc=S.circuitMode?CIRCUIT_COSTS:((S.season&&S.season.proving)?PROVING_COSTS:COSTS),
-  travel=t.played*cc.travelPerEvent, fixed=cc.seasonFixed*(t.played/SEASON_EVENTS),
+  travel=t.played*cc.travelPerEvent*(typeof entryCatchVal==='function'?entryCatchVal('costMult',1):1),   // a mini-tour graduate is still paying off four years of his own entry fees
+  fixed=cc.seasonFixed*(t.played/SEASON_EVENTS),
   costs=caddie+agent+travel+fixed; return {gross,caddie,agent,travel,fixed,costs,net:gross-costs};}
 /* ---- Tee-tier badge system (lifetime, builds up across every season & career) ----
    Five tiers, named for the tees on a real scorecard, forward → tips:
@@ -7434,7 +7435,9 @@ function applyPlayerDecline(){   // once per off-season; severity ramps with the
   // even a decorated one still fades.
   const ramp=(DECLINE_RAMP_MIN + t*(DECLINE_RAMP_MAX-DECLINE_RAMP_MIN)) * (typeof legacyDecline==='function'?legacyDecline():1);
   const circuitMult = S.circuitMode ? CIRCUIT_DECLINE_MULT : 1;   // the Legend Circuit erodes faster
-  CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod*circuitMult)); });
+  // an entry path can cost you here too: the Late Convert came to golf at 29 and leaves early for it
+  const entryMult = (typeof entryCatchVal==='function') ? entryCatchVal('declineMult',1) : 1;
+  CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod*circuitMult*entryMult)); });
 }
 function playerRetires(){ return (S.year||1) >= (typeof careerYears==='function'?careerYears():CAREER_MAX_YEARS); }   // forced at the end of the shelf life your entry path bought you
 // CS384 (owner revision): the off-season always grants 3 RE-SPINS, no matter what. The number of CHANGES
@@ -16043,7 +16046,11 @@ function resultMomentum(pos, evt){
     else if(pos<=10){ dc=3; row=FAN_LADDER.top10[tier]; }
     else if(pos<=25){ dc=0; row=FAN_LADDER.top25[tier]; }
     else { dc=-2; fpct=0.001; fflat=25; }    // made the cut, back of the pack: a trickle
-  } else { dc=-6; fpct=-0.005; fflat=0; }     // CS401: missed the cut trims ~0.5% of the fan base
+  } else {
+    // CS401: missed the cut trims ~0.5% of the fan base. An amateur champion arrives expected to deliver, so
+    // missing one of the weeks everybody is WATCHING costs him double. Scoped to the big weeks on purpose: a
+    // rookie misses plenty of ordinary cuts, and doubling every one of those would just crater a first season.
+    dc=-6*((major||big)?entryCatchVal('confMiss',1):1); fpct=-0.005; fflat=0; }
   if(row){ fpct=row[0]; fflat=row[1]; }
   // CS280: RESPECT gives a composure floor - respected, well-liked pros settle at a higher confidence
   // baseline (the mean-reversion target rises with respect, ~36 disliked .. ~64 revered).
@@ -16140,7 +16147,11 @@ function careerRep(){ const s=careerStory(); if(!s.rep) s.rep={fans:REP_START.fa
   if(s.rep.fans==null) s.rep.fans=REP_START.fans; if(s.rep.respect==null) s.rep.respect=REP_START.respect; return s.rep; }
 function repFans(){ return careerRep().fans; }
 function repRespect(){ return careerRep().respect; }
-function adjRep(dFans, dResp){ const r=careerRep(); r.fans=repClampV(r.fans+(dFans||0)); r.respect=repClampV(r.respect+(dResp||0)); }
+function adjRep(dFans, dResp){ const r=careerRep(); let dr=dResp||0;
+  // a golfer the field thinks was handed his card earns respect at half rate until he wins one himself.
+  // Losses are never softened - the doubt is cheap to confirm and expensive to shift.
+  if(dr>0) dr*=entryCatchVal('respHalf',1);
+  r.fans=repClampV(r.fans+(dFans||0)); r.respect=repClampV(r.respect+dr); }
 // derive a choice's fans/respect move from its personality trait (so we don't retag every choice); an
 // explicit ch.fansΔ / ch.respΔ overrides. On a backfire the move flips sour (loses fans AND respect).
 const TRAIT_AXIS={
@@ -17238,7 +17249,10 @@ function resolveCardStatus(rank, moneyRank){
     else { to='proving'; reason=`${moneyRank>0?ord(moneyRank):'Outside'} on the order of merit, short of the top ${PROVING_PROMOTE}. Q-School is the other way back.`; q=true; }
   } else {
     if(rank<=CL){ to='full'; reason=from==='cond'?`World #${rank}, back inside the top ${CL}. Your full card is restored.`:''; }
-    else if(rank<=DL){ to='cond'; reason=`World #${rank}, outside the top ${CL}. Conditional status: a partial schedule next season, and Q-School if you want the card back sooner.`; q=true; }
+    // a Q-School graduate has no conditional cushion in his first years: he came through the six rounds and
+    // he goes back through them, straight off the tour, with none of the partial-schedule middle ground.
+    else if(rank<=DL && !entryCatchVal('noCond',false)){ to='cond'; reason=`World #${rank}, outside the top ${CL}. Conditional status: a partial schedule next season, and Q-School if you want the card back sooner.`; q=true; }
+    else if(rank<=DL){ to='proving'; reason=`World #${rank}, outside the top ${CL}. You came through Q-School and there is no conditional cushion to catch you: it is ${PROVING_NAME}, or six rounds to win the card back.`; q=true; }
     else { to='proving'; reason=`World #${rank}, outside the top ${DL}. You have lost your tour card. Q-School, or ${PROVING_NAME}.`; q=true; }
   }
   const changed=(to!==from);
@@ -17409,7 +17423,7 @@ const ENTRY_PATHS=[
    age:22, status:'full',
    blurb:'The tour hands the winner a card. You arrive with a name, a gallery, and everybody waiting to see whether it travels.',
    fans:25000, pop:8, resp:12, conf:46, rank:1.35, offFloor:0, offSpins:0, skill:0, sponsorTier:null, sponsorTierAdj:1,
-   good:['A card from week one','Peers already rate you'], bad:['Everybody expects it','You have it all to lose']},
+   good:['A card from week one','Peers already rate you'], bad:['You have it all to lose']},
   {id:'qschool', name:'The Q-School Graduate', short:'Q-School', kick:'Six rounds, right now, for your card', col:'#F1D04A',
    age:24, status:null,
    blurb:'Two years of trying and one week that settles it. You play Q-School before your first season and start on exactly what you earn: a card, conditional status, or the second tier.',
@@ -17421,16 +17435,64 @@ const ENTRY_PATHS=[
    fans:3000, pop:-4, resp:16, conf:55, rank:0.7, offFloor:2, offSpins:1, skill:0, sponsorTier:null, sponsorTierAdj:-1,
    good:['The locker room respects the graft'], bad:['You start off the tour entirely','Four prime years gone']},
   {id:'exempt', name:"The Sponsor's Exemption", short:'Exemption', kick:'A brand put you on tour before you earned it', col:'#a24be0',
-   age:21, status:'full',
-   blurb:'Signed young, marketed hard, handed a card. The money is real and so is the audience. So is what the rest of the field thinks about it.',
-   fans:140000, pop:20, resp:-22, conf:42, rank:1.1, offFloor:0, offSpins:0, skill:0, sponsorTier:3, sponsorTierAdj:0,
-   good:['A huge audience before you hit a shot','The youngest start there is'], bad:['The locker room thinks you bought it']},
+   age:27, status:'full',
+   blurb:'An audience first, a record never. A brand liked the numbers and bought you a card. The money is real and so is what the rest of the field thinks about it.',
+   fans:140000, pop:20, resp:-34, conf:42, rank:1.1, offFloor:0, offSpins:0, skill:0, sponsorTier:3, sponsorTierAdj:0,
+   good:['A huge audience before you hit a shot'], bad:['Nobody inside the ropes rates you','Five years behind the amateurs']},
   {id:'late', name:'The Late Convert', short:'Late', kick:'Another life first, and then this one', col:'#5bcfe8',
    age:29, status:'cond',
    blurb:'You came to golf late and got here on invitations. The game arrived fully formed, which is the one advantage of starting at 29.',
    fans:18000, pop:10, resp:6, conf:52, rank:0.9, offFloor:0, offSpins:0, skill:2, sponsorTier:null, sponsorTierAdj:0,
    good:['You arrived mature','A story people want to follow'], bad:['A partial schedule','The shortest career']},
 ];
+/* ---- THE CATCH ----
+   A path that only gives is not a decision. Every one of the five costs something REAL, in a system the
+   career already runs on, the cost is stated before you pick, and it expires - bar the Late Convert's,
+   which is the price of the years he spent somewhere else, so it lasts as long as he does.
+
+   Each entry is {k: the lever, v: its value, txt/short: what it says, when: how long, yrs|untilWin: when
+   it lifts}. Six one-line hooks read it: seasonNet (travel), applyPlayerDecline (the fade),
+   resultMomentum (a missed cut), resolveCardStatus (the conditional cushion), computeSponsorOffers (who
+   is allowed to call) and adjRep (respect gains). Career only - never the Daily, never the Circuit.   */
+var ENTRY_CATCH={
+  amateur:[{k:'confMiss', v:2, yrs:4, short:'2x major cut', txt:'Everybody expects it: missing a cut at a major or a signature event costs double confidence', when:'first 4 years'}],
+  qschool:[{k:'noCond',   v:true, yrs:4, short:'No cushion', txt:'No conditional cushion: miss the card line and it is straight back to Q-School', when:'first 4 years'}],
+  mini:[{k:'costMult',    v:1.8, yrs:4, short:'+80% costs',  txt:'Four years of debts: your travel costs 80% more', when:'first 4 seasons'}],
+  exempt:[{k:'sponsorLock', v:true, yrs:5, short:'Locked in', txt:'The brand owns the early years: no rival can offer you a deal', when:'first 5 years'},
+          {k:'respHalf',  v:0.5, untilWin:true, short:'Half respect', txt:'The locker room withholds: you earn half respect', when:'until your first tour win'}],
+  late:[{k:'declineMult', v:1.6, yrs:0, short:'Fades fast',  txt:'You came late and you leave early: you fade 60% faster once the decline starts', when:'the whole career'}],
+};
+function entryCatch(id){ try{ return (ENTRY_CATCH&&ENTRY_CATCH[id])||[]; }catch(e){ return []; } }
+function entryCatchOf(){ const p=(typeof entryPath==='function')?entryPath():null; return p?entryCatch(p.id):[]; }
+// wins so far THIS career, including the season in progress (the exemption's respect lock lifts the
+// moment you actually win one, not at the season boundary)
+function careerWinsNow(){ let w=(S.career&&S.career.wins)||0;
+  try{ if(S.season&&S.season.totals&&S.season.me){ const t=S.season.totals[S.season.me.name]; if(t) w+=(t.wins||0); } }catch(e){}
+  return w; }
+function entryCatchLive(c){
+  if(!c) return false;
+  if(c.untilWin) return careerWinsNow()===0;
+  if(!c.yrs) return true;                       // 0 years = for as long as the career lasts
+  return (S.year||1)<=c.yrs;
+}
+function entryCatchYearsLeft(c){ return (c&&!c.untilWin&&c.yrs) ? Math.max(0, c.yrs-(S.year||1)+1) : 0; }
+// the one accessor every hook uses: the constraint's value while it is in force, else the default
+function entryCatchVal(k, dflt){
+  try{
+    if(S.daily||S.circuitMode) return dflt;
+    const c=entryCatchOf().find(x=>x.k===k);
+    return (c && entryCatchLive(c)) ? c.v : dflt;
+  }catch(e){ return dflt; }
+}
+function entryCatchActive(){ return entryCatchOf().filter(entryCatchLive); }
+// a live reminder of what is still holding you back, for the off-season and the season summary
+function entryCatchLiveHTML(){
+  const act=entryCatchActive(); if(!act.length) return '';
+  return act.map(c=>{ const yl=entryCatchYearsLeft(c);
+    const left=c.untilWin?'until your first win':(yl?(yl===1?'this season':yl+' more seasons'):c.when);
+    return `<div class="small" style="color:#e0a45f;margin-top:4px">✗ ${esc(c.txt)} <span class="muted">· ${esc(left)}</span></div>`;
+  }).join('');
+}
 /* The numbers behind a path, derived from the SAME fields applyEntryPath() reads, so the comparison on
    screen can never drift from what turning pro actually does. */
 function entryYears(p){ return clamp(CAREER_END_AGE-p.age, 18, CAREER_MAX_YEARS); }
@@ -17523,6 +17585,14 @@ function entryStyleOnce(){
     white-space:nowrap;min-width:60px;text-align:right}
   .ep-pips{display:flex;gap:3px;align-items:center}
   .ep-pip{width:15px;height:6px;border-radius:3px;background:rgba(244,227,201,.13)}
+  .ep-catch{margin-top:11px;border:1.5px solid rgba(224,164,95,.4);border-radius:12px;
+    background:rgba(224,164,95,.07);padding:9px 11px}
+  .ep-clab{font:800 9.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#e0a45f;margin-bottom:6px}
+  .ep-crow2{margin-top:8px}
+  .ep-crow2:first-of-type{margin-top:0}
+  .ep-crow2 b{display:block;font:800 11.5px/1.35 var(--body);color:var(--oncard)}
+  .ep-cwhen{display:block;font:800 9.5px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;
+    color:#e0a45f;margin-top:2px}
   .ep-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px}
   .ep-tg{font:800 10px/1 var(--body);padding:5px 8px;border-radius:8px;border:1px solid;white-space:nowrap}
   .ep-cmp{border:1px solid rgba(244,227,201,.12);border-radius:14px;overflow:hidden;margin-top:12px}
@@ -17537,8 +17607,11 @@ function entryStyleOnce(){
     cursor:default;background:rgba(0,0,0,.12)}
   .ep-crow.on{background:rgba(255,255,255,.06)}
   .ep-cnm{display:flex;align-items:center;gap:6px;text-align:left;font:800 11px/1.1 var(--body);min-width:0}
-  .ep-cnm i{width:3px;height:14px;border-radius:2px;flex:0 0 auto}
-  .ep-cnm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ep-cnm i{width:3px;height:22px;border-radius:2px;flex:0 0 auto}
+  .ep-cnm span{min-width:0;overflow:hidden}
+  .ep-cnm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ep-cnm em{display:block;font:700 9px/1.25 var(--body);font-style:normal;color:#e0a45f;
+    margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ep-best{color:var(--gold);font-weight:800}
   @media(prefers-reduced-motion:reduce){ .ep-mfill{transition:none} .ep-tile{transition:none} }`;
   document.head.appendChild(s);
@@ -17580,7 +17653,10 @@ function scrEntry(){
       const cardTxt=p.status==='full'?'Full':p.status==='cond'?'Cond':p.status==='proving'?'Prov':'Q-Sch';
       const hi=(v,b)=>v===b?' class="ep-best"':'';
       return `<div class="ep-crow" data-ep="${p.id}">
-        <div class="ep-cnm"><i style="background:${p.col}"></i><span>${esc(p.short)}</span></div>
+        <div class="ep-cnm"><i style="background:${p.col}"></i><span><b>${esc(p.short)}</b>${(()=>{
+          const cs=entryCatch(p.id); if(!cs.length) return '';
+          // the headline cost only: two of them truncate to nothing useful at this width, and the panel above lists both
+          return `<em>${esc(cs[0].short)}${cs.length>1?' +'+(cs.length-1):''}</em>`; })()}</span></div>
         <div>${p.age}</div><div${hi(st.yrs,best.yrs)}>${st.yrs}</div>
         <div${hi(entryCardRank(p),best.card)}>${cardTxt}</div>
         <div${hi(st.resp,best.resp)}>${st.resp}</div><div${hi(st.conf,best.conf)}>${st.conf}</div>
@@ -17588,6 +17664,13 @@ function scrEntry(){
   wrap.appendChild(cmp);
   add(wrap);
 
+  // ---- what the path COSTS you, in its own block: these are not flavour bullets, they are levers the
+  // sim reads, and they are the reason the choice is a choice.
+  function catchHTML(p){
+    const cs=entryCatch(p.id); if(!cs.length) return '';
+    return `<div class="ep-catch"><div class="ep-clab">The catch</div>${cs.map(c=>
+      `<div class="ep-crow2"><b>${esc(c.txt)}</b><span class="ep-cwhen">${esc(c.when)}</span></div>`).join('')}</div>`;
+  }
   // ---- fill the panel for a path. Bars start at 0 and are set on the next frame, so every switch
   // re-runs the sweep and you SEE which way each number moved.
   function paint(id){
@@ -17610,7 +17693,8 @@ function scrEntry(){
       ${meter('Respect', st.resp, st.resp+' / 100', '#35d6a0')}
       ${meter('Confidence', st.conf, st.conf+' / 100', '#F1D04A')}
       ${meter('Fans', st.fans/ENTRY_FANS_MAX*100, entryFansTxt(st.fans), '#ff9d3a')}
-      <div class="ep-tags">${tags}</div>`;
+      <div class="ep-tags">${tags}</div>
+      ${catchHTML(p)}`;
     requestAnimationFrame(()=>{ try{ panel.querySelectorAll('.ep-mfill').forEach(f=>{ f.style.width=f.getAttribute('data-w')+'%'; }); }catch(e){} });
     // the name goes in the sub, not the label: "Turn pro as Late" / "as Exemption" reads badly
     go.innerHTML=`Turn pro ▸<span class="sub">${esc(p.name)} · age ${p.age}</span>`;
@@ -18985,6 +19069,7 @@ function ensureSponsor(){ const s=ensureSponsors(); return s.shirt||s.hat||null;
 // tier-up brand for your lowest filled slot once you've outgrown it. Deterministic per (careerSeed, year).
 const SPONSOR_POACH_CHANCE=0.5;   // CS330: ~half of "at your ceiling" years, a RIVAL brand comes calling → the journey keeps going all career
 function computeSponsorOffers(){ if(S.daily||S.circuitMode||!S.career) return [];
+  if(entryCatchVal('sponsorLock',false)) return [];   // the exemption's brand owns the early years: nobody else gets to call
   const s=ensureSponsors(), elig=eligibleSponsorTier(), maxT=SPONSOR_TIERS.length-1;
   const have=new Set(SPONSOR_SLOTS.map(k=>s[k]&&s[k].brand).filter(Boolean));
   const seed=(((S.careerSeed||1)>>>0)^(((S.year||1)*0x9E3779B1)>>>0))>>>0, rng=mulberry32((seed^0x0FFE5)>>>0);
@@ -23610,7 +23695,7 @@ function scrSummary(){
   // so the Continue button is visible without the scroll-down cue. Full list is in Full Season Recap.
   { const ep=entryPath(); if(ep) caC.appendChild($(`<div class="scout" style="border-color:${ep.col};padding:11px 13px;margin:0 0 10px">
     <div style="font:800 10.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${ep.col}">How you turned pro</div>
-    <div class="small" style="margin-top:5px;color:var(--oncard)">${entryLineHTML()} · a ${careerYears()}-year career</div></div>`)); }
+    <div class="small" style="margin-top:5px;color:var(--oncard)">${entryLineHTML()} · a ${careerYears()}-year career</div>${entryCatchLiveHTML()}</div>`)); }
   if(tab==='career'){
     careerList.slice(0,4).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
     if(cRank>4){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
@@ -24105,6 +24190,9 @@ function scrOffseason(){
     const note = nDec ? `<div class="oscard-lock" style="color:#e07a5f">Age is trimming your skills. Spin to repair one.</div>`
       : (lockedNow.length?`<div class="oscard-lock">🔒 ${lockedNow.length} stat${lockedNow.length>1?'s':''} already changed this off-season</div>`:'');
     add($(`<div class="oscard ${nDec?'warn':''}"><div class="oscard-hd">${hd}</div><div class="oscard-sub">${sub}</div>${note}</div>`));
+    // what the road you took is still costing you, and how much longer it costs it
+    if(!S.circuitMode){ const cl=entryCatchLiveHTML(); if(cl) add($(`<div class="scout" style="max-width:520px;margin:0 auto 10px;border-color:rgba(224,164,95,.45);padding:9px 12px">
+      <div style="font:800 9.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#e0a45f">Still paying for the road in</div>${cl}</div>`)); }
   }
 
   // CS483b (owner): the sponsor strip is removed from the off-season - sponsors live on the season-summary
