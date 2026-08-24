@@ -419,14 +419,19 @@ function achTotal(){
    a length of career rather than a fraction of a number:
 
      Bronze 1   0    your first draft
-     Bronze 2   45   about 5 drafts
-     Bronze 3   80   about 9
-     Silver 1   110  about 20
-     Silver 2   138  about 35
-     Silver 3   165  about 75
-     Gold 1     195  about 150
-     Gold 2     225  about 300
-     Gold 3     250  about 500
+     Bronze 2   45   about 2 drafts
+     Bronze 3   80   about 5
+     Silver 1   110  about 13
+     Silver 2   138  about 26
+     Silver 3   165  about 55
+     Gold 1     195  about 130
+     Gold 2     225  about 280
+     Gold 3     250  about 440
+
+   The draft counts are the MEDIAN player at that badge count and nothing stronger. The
+   spread around them is enormous: the query found somebody at 3071 drafts still sitting in
+   the same band as somebody at 77, because past roughly 200 badges what is left is specific
+   rosters rather than volume, and grinding does not get you there.
 
    ABSOLUTE NUMBERS, NOT FRACTIONS, and the comment above about the growing cabinet is the
    reason rather than an argument against. Ninths meant every badge added to achievements.js
