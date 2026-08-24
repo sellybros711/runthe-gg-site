@@ -464,6 +464,7 @@
      each is measured off the bracket that was just played rather than asserted. */
   function verdict(sim, world) {
     var notes = [];
+    var tags = [];
     var effects = {};
     var first = sim.bracket.rounds[0] || [];
     var blowouts = first.filter(function (g) { return g.margin >= 21; }).length;
@@ -473,6 +474,7 @@
     });
 
     if (first.length && blowouts / first.length >= 0.5) {
+      tags.push('blowouts');
       notes.push('The first round was a chore. ' + blowouts + ' of ' + first.length
         + ' games were over by the third quarter and the studio spent the night cutting away '
         + 'to a game that was not on your bracket.');
@@ -480,11 +482,13 @@
       effects.tradition = -0.8;
     }
     if (autoOut.length >= 2) {
+      tags.push('blowouts');
       notes.push(autoOut.length + ' conference champions got three scored in their opener. '
         + 'Everybody who has ever argued the field is too wide spent the week holding that up.');
       effects.access = -1.4;
     }
     if (sim.field.autobidsUnmet > 0) {
+      tags.push('autobids');
       notes.push('You promised ' + (world.playoff.autobids) + ' automatic bids and there are '
         + sim.field.champions.length + ' conferences left to win one. '
         + sim.field.autobidsUnmet + ' of those guaranteed seats went to a team that finished '
@@ -493,11 +497,13 @@
     }
     if (sim.field.snub) {
       var s = sim.field.snub;
+      tags.push('snub');
       notes.push(s.school + ' finished ' + s.wins + '-' + s.losses + ' and stayed home. '
         + 'That is the angriest fanbase in the country and they have your name.');
     }
     var champ = sim.bracket.champion;
     if (champ && champ.how === 'auto' && champ.seed > Math.ceil(sim.field.seats.length / 2)) {
+      tags.push('cinderella');
       notes.push(champ.team.school + ' won the whole thing from the ' + champ.seed
         + ' seed. Every argument that the regular season stopped mattering just lost its '
         + 'best line.');
@@ -508,6 +514,7 @@
        the format's best defence and the reason nobody buys a ticket for the first round,
        and a recap that only ever remarks on upsets is a recap that has an opinion. */
     if (champ && champ.seed === 1) {
+      tags.push('chalk');
       notes.push('The top seed was the best team in August and the best team in January. '
         + 'The bracket agreed with the preseason and half the sport feels slightly cheated '
         + 'by that.');
@@ -515,6 +522,7 @@
     }
     /* AN UNBEATEN CHAMPION is the rarest thing this sport produces and it deserves a line. */
     if (champ && champ.team && champ.team.losses === 0) {
+      tags.push('unbeaten');
       notes.push(champ.team.school + ' finished it unbeaten. Nobody is going to have to '
         + 'explain that one at a banquet.');
       effects.tradition = (effects.tradition || 0) + 0.5;
@@ -523,10 +531,12 @@
        game that decides it is the one people remember the format by. */
     var last = sim.bracket.rounds[sim.bracket.rounds.length - 1] || [];
     if (last[0] && last[0].margin >= 21) {
+      tags.push('blowout-final');
       notes.push('The final was over at half time. That is the game the sport shows its '
         + 'children and this year it showed them a scrimmage.');
       effects.inventory = (effects.inventory || 0) - 0.7;
     } else if (last[0] && last[0].margin <= 3) {
+      tags.push('close-final');
       notes.push('The final came down to one score. Whatever else this format is, it '
         + 'produced a night people are going to talk about for twenty years.');
       effects.inventory = (effects.inventory || 0) + 0.9;
@@ -535,6 +545,7 @@
     /* A LONG SEASON IS A TIRED ONE, and the players notice before anybody else does. */
     var rounds = sim.bracket.rounds.length;
     if (rounds >= 4) {
+      tags.push('grind');
       notes.push('The champion played ' + rounds + ' extra games on top of a full season. '
         + 'The people who played them have started saying so out loud.');
       effects.labour = -1.1;
@@ -548,6 +559,8 @@
     for (var k in effects) effects[k] = Math.round(effects[k] * 100) / 100;
     return {
       notes: notes,
+      /* WHICH VERDICTS FIRED, so the feed can talk about something else. */
+      tags: tags,
       edit: {
         id: 'season:' + world.year,
         label: 'The ' + world.year + ' season'
@@ -676,6 +689,7 @@
     }, 0)) * 10) / 10;
     var v = verdict(sim, o.fieldWorld || world);
     sim.notes = v.notes;
+    sim.tags = v.tags || [];
     sim.edit = v.edit;
     return sim;
   }

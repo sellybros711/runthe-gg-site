@@ -53,6 +53,7 @@
   .eyebrow{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.16em;
     text-transform:uppercase;color:var(--dim-2)}
   .eyebrow.green{color:var(--green)} .eyebrow.gold{color:var(--gold)}
+  .eyebrow.red{color:#fca5a5}
   h1{font-family:var(--fd);font-size:clamp(30px,8vw,46px);line-height:.98;
     text-transform:uppercase;letter-spacing:.01em;margin:6px 0 10px}
   h2{font-family:var(--fd);font-size:23px;line-height:1.08;text-transform:uppercase;
@@ -80,6 +81,7 @@
   .btn:disabled{opacity:.45;cursor:default}
   .btn.ghost{background:transparent;border:1.5px solid var(--line-2);color:var(--ink);
     box-shadow:none;font-size:15px}
+  .btn.danger{background:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%);color:#fff}
   .btn.sm{padding:10px 12px;font-size:13px}
   .btn+.btn{margin-top:9px}
 
@@ -308,6 +310,26 @@
   .council.full .ch b{color:var(--green)}
   .council.full .ci{stroke:var(--green)}
 
+  /* ---- precedent ----
+     THE MODE HAD NO MEMORY IN ITS OWN FICTION. Every ruling is on the ledger with the year
+     and the beat it was made in, and the calendar draws all of it, but nothing in the mode
+     ever SAID any of it back: an item could come round for the third time and the desk
+     would present it as though the sport had never had the argument before. A commissioner
+     who reversed themselves twice was never once told so.
+
+     Small and grey on purpose. It is the record, not the argument, and it sits under the
+     setup where a note from your own office would. */
+  .prec{display:grid;gap:5px;margin-top:10px;padding:9px 11px;border-radius:10px;
+    background:rgba(255,255,255,.035);border-left:2px solid var(--line-2)}
+  .prec b{font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .prec span{font-size:12px;color:var(--dim);line-height:1.4}
+  .prec span i{font-style:normal;font-family:var(--fn);font-weight:700;color:var(--ink)}
+  /* A REVERSAL IS THE ONE THAT MATTERS. Doing a thing twice is consistency; undoing your own
+     ruling is the thing the room will bring up, so it is the line that gets a colour. */
+  .prec.flip{background:rgba(245,158,11,.08);border-left-color:var(--gold)}
+  .prec.flip b{color:var(--gold)}
+
   /* ---- what this ruling would leave behind ----
      THE ONE THING THE DESK NEVER SHOWED. The player was asked to choose between three
      paragraphs and then found out what they had done two screens later, which is why the
@@ -488,15 +510,40 @@
 
   /* A FUSE IS NOT A METER AND MUST NOT LOOK LIKE ONE. It does not tick down, it fires, so
      it is drawn hot and it names itself only once it is actually lit. */
+  /* AND UNTIL NOW IT COULD NEVER FIRE. Measured across a hundred and twenty terms the highest
+     any pressure ever reached was 44 out of 100, so no threshold existed that would have gone
+     off: three little red bars sat on the office screen for five years being decorative. The
+     gains in ledger.js are set now so a commissioner who keeps taking the risky option lights
+     one inside a term and a careful one never does, and the mark on the track is where that
+     happens. A fuse you cannot see the end of is not a fuse, it is a mood. */
   .fuses{display:grid;gap:6px;margin-top:11px}
-  .fuse{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim);
+  .fuse{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:5px 9px;
+    font-size:11.5px;color:var(--dim);
     background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.28);
-    border-radius:9px;padding:7px 10px}
+    border-radius:9px;padding:8px 10px}
   .fuse .fx{width:13px;height:13px;flex:0 0 auto;fill:none;stroke:#fca5a5;stroke-width:2;
     stroke-linecap:round;stroke-linejoin:round}
-  .fuse .bar{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden}
-  .fuse .bar em{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);
-    transition:width .5s var(--ez)}
+  .fuse .nm2{font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--ink)}
+  /* THE STATE, IN A WORD. A number between 0 and 100 with no scale on it tells nobody
+     anything: 38 is either fine or nearly over depending on where the line is. */
+  .fuse .st2{font-family:var(--fn);font-size:9px;font-weight:700;letter-spacing:.11em;
+    text-transform:uppercase;color:#fca5a5;white-space:nowrap}
+  .fuse .bar{grid-column:1/4;position:relative;height:6px;border-radius:3px;
+    background:rgba(255,255,255,.09)}
+  .fuse .bar em{display:block;height:100%;border-radius:3px;
+    background:linear-gradient(90deg,#f59e0b,#ef4444);transition:width .5s var(--ez)}
+  /* WHERE IT GOES OFF, drawn on the track, because that is the whole information. */
+  .fuse .bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:rgba(255,255,255,.6);
+    border-radius:1px}
+  .fuse.near{background:rgba(239,68,68,.13);border-color:rgba(239,68,68,.5)}
+  .fuse.lit{background:rgba(239,68,68,.2);border-color:var(--red)}
+  .fuse.lit .nm2,.fuse.lit .st2{color:#fecaca}
+  .fuse.lit .fx{stroke:#fecaca}
+  @media(prefers-reduced-motion:no-preference){
+    .fuse.lit{animation:litpulse 1.6s var(--ez) infinite}
+    @keyframes litpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.35)}
+      60%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+  }
 
   /* ---- the map ----
      EVERY LINE ON IT HAS A SOURCE. Eighty-three campuses from Wikipedia's own coordinates
@@ -867,6 +914,8 @@
     <div class="eyebrow gold" id="d-eyebrow"></div>
     <h2 id="d-title"></h2>
     <div class="brief" id="d-brief"></div>
+    <!-- What this office has already done about this exact argument. -->
+    <div id="d-prec"></div>
     <!-- Both hidden together when an item arrives with nobody arguing about it: a section
          heading over an empty box reads as something that failed to load. -->
     <div class="dsec" id="d-voices-head"><b>The room is arguing</b></div>
@@ -939,12 +988,12 @@
 
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
-<script src="ledger.js?v=2"></script>
-<script src="blocs.js?v=2"></script>
-<script src="docket.js?v=2"></script>
-<script src="season.js?v=5"></script>
+<script src="ledger.js?v=3"></script>
+<script src="blocs.js?v=3"></script>
+<script src="docket.js?v=3"></script>
+<script src="season.js?v=6"></script>
 <script src="council.js?v=1"></script>
-<script src="feed.js?v=1"></script>
+<script src="feed.js?v=2"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -1472,7 +1521,20 @@ function paintCalendar(el,w){
   reveal(el);
 }
 
-const FUSES=[['legal','Legal exposure'],['congress','Washington'],['union','The players organising']];
+const FUSES=[['legal','Legal exposure','A filing'],
+  ['congress','Washington','A hearing'],
+  ['union','The players organising','A vote']];
+/* SHOWN ONCE IT IS A REAL RISK, not from zero, because three empty tracks are noise. */
+const FUSE_FLOOR=14;
+const FUSE_TITLE={legal:'A lawsuit has been filed',
+  congress:'Washington wants you to testify',
+  union:'The players have voted to organise'};
+function fuseState(v){
+  const lim=L.FUSE_LIMIT||46;
+  if(v>=lim) return {cls:'lit',word:'gone off'};
+  if(v>=lim*0.72) return {cls:'near',word:'close'};
+  return {cls:'',word:'smouldering'};
+}
 /* A LIT FUSE, drawn hot and boxed, because it is not a meter. It does not tick down and
    there is no good number to reach: it sits there until it fires. Reading like the three
    meters above it was the mistake, and it was reading like them in grey. */
@@ -1480,11 +1542,20 @@ const FUSE_ICON=G('<path d="M14 4c0 2.5-2 3.5-2 6a3 3 0 0 0 5 2"/>'
   +'<path d="M12 21a6 6 0 0 0 6-6c0-2.5-1.5-4-2.5-5.5"/>'
   +'<path d="M12 21a6 6 0 0 1-6-6c0-3 3-4 4-7"/>');
 function paintFuses(el,w){
-  const live=FUSES.filter(([k])=>w.pressure[k]>4);
-  el.innerHTML=live.length?live.map(([k,label])=>
-    '<div class="fuse">'+FUSE_ICON.replace('<svg ','<svg class="fx" ')
-    +'<span>'+esc(label)+'</span><span class="bar"><em data-w="'
-    +Math.round(Math.min(100,w.pressure[k]))+'%" style="width:0"></em></span></div>').join(''):'';
+  if(!el) return;
+  const lim=L.FUSE_LIMIT||46;
+  const live=FUSES.filter(([k])=>(w.pressure[k]||0)>FUSE_FLOOR);
+  el.innerHTML=live.length?live.map(([k,label,fires])=>{
+    const v=Math.min(100,w.pressure[k]||0);
+    const st=fuseState(v);
+    return '<div class="fuse '+st.cls+'">'
+      +FUSE_ICON.replace('<svg ','<svg class="fx" ')
+      +'<span class="nm2">'+esc(label)+'</span>'
+      +'<span class="st2">'+esc(st.cls==='lit'?fires+' has landed':st.word)+'</span>'
+      +'<span class="bar"><em data-w="'+Math.round(v)+'%" style="width:0"></em>'
+      +'<u style="left:'+lim+'%"></u></span>'
+      +'</div>';
+  }).join(''):'';
   grow(el); reveal(el);
 }
 
@@ -1497,9 +1568,14 @@ function office(){
   $('off-when').textContent=L.BEATS[world.beat]+' · '+world.year
     +' · year '+(world.year-world.startYear+1)+' of '+TERM_SEASONS;
   const angry=L.removal(world).angry||[];
-  $('off-title').textContent=angry.length
-    ? (angry.length===1?angry[0]+' has stopped listening':angry.length+' of the room have stopped listening')
-    : 'Your office';
+  /* A LIT FUSE OUTRANKS AN UNHAPPY ROOM AT THE TOP OF THIS SCREEN, because one of them has
+     happened and the other might. It was buried at the bottom of a card three panels down. */
+  const burning=L.lit?L.lit(world):[];
+  $('off-title').textContent=burning.length
+    ? (FUSE_TITLE[burning[0]]||'Your office')
+    : angry.length
+      ? (angry.length===1?angry[0]+' has stopped listening':angry.length+' of the room have stopped listening')
+      : 'Your office';
   paintMeters($('off-meters'),world,null);
   paintCoalition($('off-coal'),world);
   paintSport($('off-sport'),world,null);
@@ -1528,9 +1604,15 @@ function office(){
   }
   paintRoom($('off-room'),world,null);
   const pool=D.eligible(world,L);
-  $('b-desk').textContent=pool.length
-    ? 'See what is on the desk'
-    : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
+  /* THE BUTTON GOES RED WHEN THE THING BEHIND IT IS A CRISIS. Every other beat it is the same
+     green invitation, so the one week it is not should not need reading. */
+  const crisis=pool.some((it)=>it.crisis);
+  $('b-desk').className='btn'+(crisis?' danger':'');
+  $('b-desk').textContent=crisis
+    ? 'Deal with it'
+    : pool.length
+      ? 'See what is on the desk'
+      : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
   show('s-office');
 }
 $('b-desk').onclick=()=>{
@@ -1547,8 +1629,10 @@ $('b-desk').onclick=()=>{
 function desk(){
   paintBeatbar($('desk-beatbar'),world);
   $('d-eyebrow').textContent=(item.eyebrow||'')+' · '+L.BEATS[world.beat]+' · '+world.year;
+  $('d-eyebrow').className='eyebrow '+(item.crisis?'red':'gold');
   $('d-title').textContent=D.text(item.title,cast,item);
   paintBrief(D.text(item.brief,cast,item));
+  paintPrecedent($('d-prec'),world,item);
   /* THE ARGUMENT, TIED TO THE ROOM BY COLOUR AND MARK. These were three grey paragraphs
      behind three grey labels, so the quote and the number it moves two screens later were
      visibly unrelated. Same chip, same hue, same actor. */
@@ -1783,6 +1867,46 @@ function paintFeed(el,posts,head){
   reveal(el.querySelector('.feed'));
 }
 
+/* ── precedent ─────────────────────────────────────────────────────────────────────
+   WHAT YOU HAVE ALREADY DONE ABOUT THIS. Read straight off the ledger's own history, which
+   has carried the year, the beat and the label of every ruling since the mode was built and
+   was being drawn as coloured squares on a calendar and nowhere else.
+
+   The desk is where it belongs: at the moment you are about to decide the same thing again
+   is the moment being told you have decided it before is worth anything. */
+function precedent(w,itemId){
+  const out=[];
+  (w.history||[]).forEach((h)=>{
+    if(!h.id||String(h.id).split(':')[0]!==itemId) return;
+    out.push({year:h.year,beat:h.beat,option:String(h.id).split(':')[1]||'',label:h.label||''});
+  });
+  return out;
+}
+/* The half of a label after the comma is the option, which is how resolve() writes it:
+   "The playoff is up for renewal, expand to sixteen". */
+const ruledWhat=(p)=>{
+  const i=String(p.label).indexOf(', ');
+  return i>0?String(p.label).slice(i+2):p.option.replace(/-/g,' ');
+};
+
+function paintPrecedent(el,w,item){
+  if(!el) return;
+  const past=precedent(w,item.id);
+  if(!past.length){ el.innerHTML=''; return; }
+  const last=past[past.length-1];
+  /* A REVERSAL IS WHEN THE SAME ARGUMENT CAME BACK AND YOU ARE ABOUT TO BE ABLE TO PICK
+     SOMETHING ELSE. Whether they actually do is the next screen's business; this only says
+     what is on the record. */
+  const opts=(item.options||[]).map((o)=>o.id);
+  const canFlip=opts.length>1&&opts.indexOf(last.option)>=0;
+  el.innerHTML='<div class="prec'+(past.length>1&&canFlip?' flip':'')+'">'
+    +'<b>'+(past.length===1?'You have ruled on this before'
+      :'You have ruled on this '+(past.length===2?'twice':past.length+' times'))+'</b>'
+    +past.slice(-2).map((p)=>'<span><i>'+p.year+'</i> &middot; '+esc(ruledWhat(p))+'</span>').join('')
+    +'</div>';
+  reveal(el.querySelector('.prec'));
+}
+
 /* ── the council ──────────────────────────────────────────────────────────────────
    Three small readers over cfb/commish/council.js, which holds the ladder itself. */
 const blindSet=()=>{
@@ -1882,7 +2006,19 @@ const PATH_NAME={
   'labour.nil':'How players are paid',
   'rules.clock':'The clock',
   'rules.replay':'Replay',
+  /* THE FUSES, which a crisis ruling writes back down. Without these three the desk showed
+     the player the raw ledger path and an unrounded float: "pressure.congress 15, was 47.52".
+     A number nobody was ever meant to see, under a heading promising plain English. */
+  'pressure.legal':'Legal exposure',
+  'pressure.congress':'Washington',
+  'pressure.union':'The players organising',
 };
+/* Where a fuse stands, in the words the office uses, rather than as a number out of a
+   hundred that has no scale printed anywhere near it. */
+function fuseWord(v){
+  const lim=L.FUSE_LIMIT||46;
+  return v>=lim?'gone off':v>=lim*0.72?'close':v>=FUSE_FLOOR?'smouldering':'quiet';
+}
 function pathName(p){
   if(PATH_NAME[p]) return PATH_NAME[p];
   if(p.indexOf('money.share.')===0) return p.slice(12)+"'s share";
@@ -1890,6 +2026,7 @@ function pathName(p){
 }
 function pathValue(p,v){
   if(v==null) return '';
+  if(p.indexOf('pressure.')===0) return fuseWord(Number(v)||0);
   if(p.indexOf('money.share.')===0) return Math.round(v*100)+'%';
   if(p==='money.pool') return '$'+Number(v).toFixed(1)+'B';
   if(p==='money.dealYears') return v+(v===1?' year':' years');
@@ -2453,6 +2590,10 @@ function yearEnd(year){
     sim:lastSeason, year:year,
     snub:lastSeason.field&&lastSeason.field.snub,
     autobidsUnmet:lastSeason.field&&lastSeason.field.autobidsUnmet,
+    /* WHAT THE RECAP ABOVE ALREADY SAID, so the feed talks about something else. */
+    said:lastSeason.tags||[],
+    /* THIS SEASON'S AUDIENCE AGAINST THE TERM'S. Only the page has the ratings history. */
+    trend:(function(){ const a=ratingsAverage(); return a&&a.perGame?lastSeason.perGame-a.perGame:0; })(),
   }):null,'What the internet said about the '+year+' season');
   paintCalendar($('y-cal'),world);
   paintCoalition($('y-coal'),world);

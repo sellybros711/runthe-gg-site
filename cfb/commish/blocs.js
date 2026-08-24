@@ -148,7 +148,7 @@
            world's clock plus the bloc, so a beat replays word for word and two blocs never
            pick the same index out of two different pools. */
         say: line(b, delta, now, own, hash(b.id + '|' + world.year + '|' + world.beat
-          + '|' + ((world.history || []).length))),
+          + '|' + ((world.history || []).length)), g),
       };
     });
   }
@@ -234,6 +234,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'That is three in a row and we have counted every one of them.',
+        'This office has a pattern and it points away from the people paying for the sport.',
+        'We have stopped treating these as individual decisions.',
+      ],
       relief: [
         'Noted. It does not undo the last three meetings.',
         'A win for us, which after this year we are counting individually.',
@@ -298,6 +308,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Three of these now. Our presidents have started keeping a list, and so have we.',
+        'Every meeting this year has gone the same way and it is not the way we came in asking for.',
+        'There is a version of this where we stop attending.',
+      ],
       relief: [
         'Better. Our presidents will want to see two more like it.',
         'That helps. It does not settle anything.',
@@ -359,6 +379,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Every one of these lands on us and there are not many of us left.',
+        'Three in a row. Two of our schools have stopped pretending they are staying.',
+        'We came into this term hanging on. You have not helped once.',
+      ],
       relief: [
         'We will take it. We are not in a position to be proud about it.',
         'That is a lifeline, and we are aware of what a lifeline is.',
@@ -420,6 +450,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Third time. We are starting to think it is deliberate.',
+        'Nobody in this league expects anything from that office any more.',
+        'We have been on the wrong end of every ruling this year. Every single one.',
+      ],
       relief: [
         'Better than the usual. We are not sending a thank you card.',
         'Progress, from a very low base, and we know exactly how low.',
@@ -481,6 +521,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Three in a row, and the last one was the one you promised would be different.',
+        'There is a filing cabinet in this conference with your name on the folder.',
+        'We stopped hoping about two meetings ago.',
+      ],
       relief: [
         'We will take it and we will still be in front of a judge about the rest.',
         'A crumb, gratefully received, and please note the word crumb.',
@@ -542,6 +592,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Three decisions in a row that made the product worse. We are keeping a note.',
+        'Every one of these costs a window. They add up before the renewal does.',
+        'We are going to have a very short conversation about the next deal.',
+      ],
       relief: [
         'That helps the number. It does not fix the number.',
         'Sellable. We will still be having a difficult conversation at renewal.',
@@ -603,6 +663,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Third one. We are not asking any more, we are organising.',
+        'Every ruling this year has been about us and none of them has been with us.',
+        'There is a lawyer on this call now. There did not use to be.',
+      ],
       relief: [
         'That is one thing. There is a list.',
         'We noticed. It does not change that we are not in the room.',
@@ -669,6 +739,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Three of these in a row and every one has our institutions on the hook.',
+        'This is now a pattern and a pattern is what a plaintiff calls a policy.',
+        'The board has asked how many more of these there are going to be.',
+      ],
       relief: [
         'That reduces the exposure. It does not remove it.',
         'Our counsel is marginally happier. That is the highest praise available here.',
@@ -731,6 +811,16 @@
          let down. Without them a bloc sitting at forty printed an angry sentence beside a
          green plus one, which is the same contradiction the themed lines were guarded
          against and the more common one, because standing moves slowly and deltas do not. */
+      /* THE THIRD LOSS RUNNING. `grudge` in this file has always counted a streak and
+         nothing in the mode has ever SAID it: a bloc on the wrong end of four rulings in
+         a row reacted harder, which the player felt as a bigger number and never once
+         heard about. A room that remembers out loud is the difference between a model
+         and an argument. */
+      streak: [
+        'Three in a row. At what point is somebody going to ask us anything?',
+        'Every single one of these has made going to a game worse.',
+        'We have been saying the same thing all year and it is going very well.',
+      ],
       relief: [
         'Credit where it is due. We are still angry about the kickoff times.',
         'Fine, that one was good. Do not let it go to your head.',
@@ -808,7 +898,7 @@
      is a nudge and the mood pool says it better than a sentence about money would. */
   const DRIVEN = 1.2;
 
-  function line(bloc, delta, now, own, seed) {
+  function line(bloc, delta, now, own, seed, streak) {
     const voice = VOICE[bloc.id] || VOICE.Fans;
     /* Which pool is mostly where they have ENDED UP, nudged by which way they just moved,
        because a bloc at 70 that has just been hurt should not sound delighted. */
@@ -825,6 +915,14 @@
     else if (delta > 2.5) band = Math.max(0, band - 1);
 
     let pool = voice.bands[band];
+
+    /* A STREAK OUTRANKS A MOOD. Three losses running is the single most human thing this room
+       can notice and it was the one thing it could not say: `grudge` has counted the streak
+       since the file was written, and all it ever did was make the number bigger. */
+    if (streak != null && streak >= 3 && delta < -0.6 && voice.streak && voice.streak.length) {
+      const n = (typeof seed === 'number' ? seed : hash(bloc.id)) >>> 0;
+      return voice.streak[n % voice.streak.length];
+    }
 
     /* WHERE THEY STAND AND WHAT JUST HAPPENED CAN DISAGREE, and the bands only know the
        first. A bloc sitting at forty is displeased, and if this ruling helped them the screen

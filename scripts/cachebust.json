@@ -53,28 +53,28 @@
       "sha": "66210cbb22945863"
     },
     "ledger.js": {
-      "v": "2",
-      "sha": "d1239d64cad29fe4"
+      "v": "3",
+      "sha": "014127b746293dcd"
     },
     "blocs.js": {
-      "v": "2",
-      "sha": "3d115319742e50de"
+      "v": "3",
+      "sha": "5237c1dfac573a9b"
     },
     "docket.js": {
-      "v": "2",
-      "sha": "eb703e6738662b6a"
+      "v": "3",
+      "sha": "9b5cd2f2d806093c"
     },
     "season.js": {
-      "v": "5",
-      "sha": "a222a8ba7ab3d482"
+      "v": "6",
+      "sha": "7f2c8dc7066c957f"
     },
     "council.js": {
       "v": "1",
       "sha": "ee1026b7e8ae60ba"
     },
     "feed.js": {
-      "v": "1",
-      "sha": "494abe1f2adb3f18"
+      "v": "2",
+      "sha": "1618c4cdb9817be5"
     }
   },
   "cfb/index.html": {

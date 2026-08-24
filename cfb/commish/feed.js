@@ -326,6 +326,27 @@
       { who: 'locker', say: 'that is four extra games for the guys who went the distance. somebody should count the bodies as well as the windows' },
       { who: 'column', say: 'The champion played a professional postseason on an amateur contract. That gap is the whole story of this decade.' },
     ],
+    /* TWO ANGLES THE RECAP CANNOT TAKE, because season.js writes its notes off the bracket and
+       these are about the audience. Without them a typical season had three triggers, all
+       three were in the notes, and the feed spent its whole card repeating the card above it. */
+    ratingsUp: [
+      { who: 'tv', say: 'Best numbers this sport has done in years. Whatever else is going on, people are watching.' },
+      { who: 'wire', say: 'An average game drew {per} million. The rights holders noticed before anybody in that office did.' },
+      { who: 'column', say: 'The audience went up, which is the only argument that has ever worked in a negotiation with a network.' },
+      { who: 'numbers', say: '{per}M an average game, up on the year. That is the number the next deal gets written against.' },
+    ],
+    ratingsDown: [
+      { who: 'tv', say: 'The numbers are down and the schedule is the reason. We could name the week it started.' },
+      { who: 'wire', say: 'An average game drew {per} million, down on the year. Somebody is going to have to explain that at renewal.' },
+      { who: 'numbers', say: '{per}M an average game. Down. There is a version of this sport that used to draw more with worse teams.' },
+      { who: 'porch', say: 'turns out when you move everything to a stream nobody has, fewer people watch it. wild' },
+    ],
+    bigGame: [
+      { who: 'tv', say: '{bigGame} drew {bigViewers} million on its own. That is the game the whole year gets remembered for.' },
+      { who: 'wire', say: 'The biggest audience of the season was {bigGame}. Worth remembering the next time somebody proposes moving it.' },
+      { who: 'numbers', say: 'Most watched game of the year: {bigGame}, {bigViewers}M. Nothing else was close.' },
+      { who: 'porch', say: '{bigGame}. that is why we do this. that is the whole reason.' },
+    ],
     autobids: [
       { who: 'wire', say: 'The automatic bids you promised outnumber the conferences left to win them. Those seats went to at large teams instead.' },
       { who: 'midmajor', say: 'the guaranteed spots got guaranteed to somebody else. incredible work everybody' },
@@ -494,18 +515,63 @@
         : 'The bracket held.',
       snub: o.snub ? o.snub.school : '',
       snubrecord: o.snub ? o.snub.wins + '-' + o.snub.losses : '',
+      per: sim.perGame ? sim.perGame.toFixed(2) : '',
+      bigGame: '', bigViewers: '',
     };
+    /* THE BIGGEST AUDIENCE OF THE YEAR, which is a fact about the season nothing else on the
+       screen reports and which is downstream of every scheduling ruling the player made. */
+    const all = (sim.games || []).concat(
+      (sim.titles || []).map((t) => t.game).filter(Boolean),
+      (sim.bracket && sim.bracket.rounds ? sim.bracket.rounds : []).reduce((t, r) => t.concat(r), []));
+    const big = all.slice().sort((x, y) => (y.viewers || 0) - (x.viewers || 0))[0];
+    if (big) {
+      const a = big.a || (big.top && big.top.team), b2 = big.b || (big.bottom && big.bottom.team);
+      if (a && b2) {
+        vars.bigGame = a.school + ' and ' + b2.school;
+        vars.bigViewers = (big.viewers || 0).toFixed(1);
+      }
+    }
 
     const blowouts = first.filter((g) => (g.margin || 0) >= 21).length;
+
+    /* THE RECAP AND THE FEED WERE SAYING THE SAME THREE THINGS. The season notes above this
+       card are written by season.js off the same events the feed picks from, so the year in
+       review reported the automatic bids, the snub and the extra games in prose and then
+       immediately reported all three again as posts. Two voices on one story is a feed; two
+       voices on the SAME story, in order, is the game repeating itself.
+
+       `said` is the list of verdicts the notes already covered. A trigger in it goes to the
+       back of the queue rather than being banned, because a fan account shouting about the
+       snub adds something a report cannot, and because on a quiet season everything is in
+       `said` and the feed still has to fill three slots. */
+    const said = {};
+    (o.said || []).forEach((t) => { said[t] = 1; });
+    const queue = [];
+    const want = (tag, pool, salt) => queue.push({ tag: tag, pool: pool, salt: salt });
+
     /* Order of interest: the thing people will actually be arguing about on Monday. */
-    if (o.autobidsUnmet > 0) { const p = draw(ON_SEASON.autobids, seed, used, vars); if (p) out.push(p); }
-    if (champ && champ.seed >= 8) { const p = draw(ON_SEASON.cinderella, seed >>> 2, used, vars); if (p) out.push(p); }
-    else if (champ && champ.seed === 1 && out.length < 2) { const p = draw(ON_SEASON.chalk, seed >>> 2, used, vars); if (p) out.push(p); }
-    if (out.length < 3 && first.length && blowouts >= Math.ceil(first.length / 2)) {
-      const p = draw(ON_SEASON.blowouts, seed >>> 4, used, vars); if (p) out.push(p);
-    }
-    if (out.length < 3 && o.snub) { const p = draw(ON_SEASON.snub, seed >>> 6, used, vars); if (p) out.push(p); }
-    if (out.length < 3 && rounds.length >= 4) { const p = draw(ON_SEASON.grind, seed >>> 8, used, vars); if (p) out.push(p); }
+    if (o.autobidsUnmet > 0) want('autobids', ON_SEASON.autobids, 0);
+    if (champ && champ.seed >= 8) want('cinderella', ON_SEASON.cinderella, 2);
+    else if (champ && champ.seed === 1) want('chalk', ON_SEASON.chalk, 2);
+    if (first.length && blowouts >= Math.ceil(first.length / 2)) want('blowouts', ON_SEASON.blowouts, 4);
+    if (o.snub) want('snub', ON_SEASON.snub, 6);
+    if (rounds.length >= 4) want('grind', ON_SEASON.grind, 8);
+    /* The champion is always worth a post and is never in `said`, because the recap reports
+       the bracket rather than remarking on it. */
+    want('champion', ON_SEASON.champion, 10);
+    if (vars.bigGame) want('bigGame', ON_SEASON.bigGame, 12);
+    /* `o.trend` is this season's average against the term's, computed by the page because
+       only it has the ratings history. */
+    if (o.trend > 0.04) want('ratings', ON_SEASON.ratingsUp, 14);
+    else if (o.trend < -0.04) want('ratings', ON_SEASON.ratingsDown, 14);
+
+    /* Fresh first, then whatever the notes already covered. */
+    queue.sort((a, b) => (said[a.tag] ? 1 : 0) - (said[b.tag] ? 1 : 0));
+    queue.forEach((q) => {
+      if (out.length >= 3) return;
+      const p = draw(q.pool, seed >>> q.salt, used, vars);
+      if (p) out.push(p);
+    });
     while (out.length < 3) {
       const p = draw(ON_SEASON.champion, seed >>> (10 + out.length), used, vars);
       if (!p) break;

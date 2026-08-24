@@ -93,8 +93,33 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
   const late = world0();
   late.money.dealYears = 1;
   D.eligible(Object.assign({}, late, { beat: D.BEATS.SPRING }), L).forEach((i) => seen.add(i.id));
+  /* A CRISIS NEEDS A LIT FUSE, which is the whole point of one: it cannot be reached from an
+     opening world and it is not unreachable, it is waiting. Checked on the world it needs. */
+  const burning = world0();
+  burning.pressure = { legal: 90, congress: 90, union: 90 };
+  D.eligible(Object.assign({}, burning, { beat: D.BEATS.WINTER }), L).forEach((i) => seen.add(i.id));
   const unreachable = D.ITEMS.filter((i) => !seen.has(i.id)).map((i) => i.id);
   ok('every item can actually be dealt', !unreachable.length, unreachable.join(', ') || seen.size + ' reachable');
+
+  /* AND A CRISIS IS UNREACHABLE UNTIL IT SHOULD BE. The opposite failure: a lawsuit turning up
+     on a sport nobody has done anything to. */
+  const calm = world0();
+  const early = [];
+  for (let beat = 0; beat < L.BEATS.length; beat++) {
+    D.eligible(Object.assign({}, calm, { beat }), L).forEach((i) => { if (i.crisis) early.push(i.id); });
+  }
+  ok('  and no crisis is on the desk before a fuse is lit', !early.length,
+    early.join(', ') || 'nothing fires on an opening world');
+  /* FORCED, NOT WEIGHTED. A hundred against a five still leaves a one in twenty chance of the
+     sport ignoring a lawsuit for a beat, which is not what a crisis means. */
+  const rng = E.createSeededRNG(4);
+  const picks = new Set();
+  for (let i = 0; i < 40; i++) {
+    picks.add(D.pick(Object.assign({}, burning, { beat: D.BEATS.WINTER }), L, rng).id);
+  }
+  ok('  and once one is lit it outranks the whole docket',
+    [...picks].every((id) => id.indexOf('crisis-') === 0),
+    [...picks].join(', '));
 }
 
 console.log('\n=== a raid is about somebody, and it moves them ===');

@@ -41,6 +41,154 @@
   };
 
   const ITEMS = [
+    /* ================================================================
+       WHEN A FUSE GOES OFF.
+
+       The three pressures sat on the office screen for a whole term being decorative: the
+       highest any of them ever reached across a hundred and twenty terms was 44 out of 100,
+       so no threshold existed that would ever have fired. They are reachable now, and these
+       are what they reach.
+
+       A crisis is not weighted, it is FORCED: pick() returns one ahead of everything else,
+       because a lawsuit does not wait for a quiet week. Every option is bad, which is the
+       point of a fuse, and each one writes the pressure back down because a thing that has
+       happened stops being a thing that might.
+       ================================================================ */
+    {
+      id: 'crisis-legal',
+      beats: [WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF],
+      weight: 100,
+      crisis: true,
+      /* A COOLDOWN, BECAUSE A LAWSUIT TAKES YEARS. Without one, reckless play fired
+         eleven crises in a five year term: the pressure is written back down, the same
+         behaviour pushes it straight back over the line, and a thing that happens every
+         fourth beat is not a crisis, it is weather. Eighteen beats is two seasons,
+         so the sport gets one of these at a time and remembers it. */
+      when: (w) => (w.pressure.legal || 0) >= 46 && sinceRuled(w, 'crisis-legal') >= 18,
+      eyebrow: 'Filed',
+      title: 'The complaint has been filed',
+      brief: 'Forty-one pages, a class of every athlete affected, and treble damages. Counsel '
+        + 'for three conferences read it before this office did and two of them have already '
+        + 'said in writing that the rule was not their idea.',
+      voices: [
+        { id: 'Presidents', say: 'We told you this exact paragraph would end up in a filing.' },
+        { id: 'Players', say: 'It took four years and somebody finally wrote it down properly.' },
+        { id: 'SEC', say: 'Whatever this costs, it is not coming out of our distribution.' },
+      ],
+      options: [
+        { id: 'settle', label: 'Settle it',
+          body: 'Write the cheque, take the finding, and move on. It is the most expensive '
+            + 'afternoon in the history of this office and it ends on a date you choose.',
+          edit: { set: { 'pressure.legal': 14 },
+            effects: { cost: 3.4, money: -2.4, labour: 2, exposure: -2.6, autonomy: -1.2 },
+            aimed: { Presidents: { cost: -3 }, Players: { labour: 2.6 },
+              SEC: { money: -2 } } } },
+        { id: 'fight', label: 'Fight it all the way',
+          body: 'Four years, appellate courts, and a result that binds the whole sport either '
+            + 'way. Nobody who has done this has enjoyed the discovery phase.',
+          edit: { set: { 'pressure.legal': 24 },
+            effects: { cost: 1.6, exposure: 1.4, autonomy: 1.8, labour: -1.6 },
+            aimed: { Presidents: { exposure: -2.4 }, Players: { labour: -2.2 },
+              SEC: { autonomy: 1.6 } } } },
+        { id: 'repeal', label: 'Repeal the rule they are suing over',
+          body: 'Concede the point before a judge makes it for you. Cheap, humiliating, and '
+            + 'it works.',
+          edit: { set: { 'pressure.legal': 8, 'labour.eligibility': 5 },
+            effects: { exposure: -3.2, labour: 1.6, autonomy: -2.4, tradition: -1 },
+            aimed: { Presidents: { exposure: -2.8 }, Players: { labour: 1.8 },
+              SEC: { autonomy: -2.2 }, 'Big Ten': { autonomy: -2 } } } },
+      ],
+    },
+    {
+      id: 'crisis-congress',
+      beats: [WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF],
+      weight: 100,
+      crisis: true,
+      /* A COOLDOWN, BECAUSE A LAWSUIT TAKES YEARS. Without one, reckless play fired
+         eleven crises in a five year term: the pressure is written back down, the same
+         behaviour pushes it straight back over the line, and a thing that happens every
+         fourth beat is not a crisis, it is weather. Eighteen beats is two seasons,
+         so the sport gets one of these at a time and remembers it. */
+      when: (w) => (w.pressure.congress || 0) >= 46 && sinceRuled(w, 'crisis-congress') >= 18,
+      eyebrow: 'Washington',
+      title: 'You have been asked to testify',
+      brief: 'A subcommittee wants to know why a hundred and thirty schools playing the same '
+        + 'sport under one set of rules is not the thing it obviously looks like. The letter '
+        + 'was polite. The second letter had a date on it.',
+      voices: [
+        { id: 'Presidents', say: 'Whatever is said under oath is said on behalf of every institution here.' },
+        { id: 'Group of Five', say: 'We have been asked to come too, and we are going to be honest.' },
+        { id: 'Networks', say: 'A hearing is four hours of the sport being described by its enemies.' },
+      ],
+      options: [
+        { id: 'antitrust', label: 'Ask for an antitrust exemption',
+          body: 'Everything this office wants, granted by statute, in exchange for whatever '
+            + 'Congress decides it wants in return. Nobody has ever known that number in '
+            + 'advance.',
+          edit: { set: { 'pressure.congress': 15 },
+            effects: { exposure: -2.4, autonomy: -2.8, labour: -1.4, cost: 0.8 },
+            aimed: { Presidents: { exposure: -2.6 }, Players: { labour: -2.4 },
+              SEC: { autonomy: -2 } } } },
+        { id: 'concede', label: 'Go and commit to something',
+          body: 'Offer the thing they are going to legislate anyway and get credit for '
+            + 'offering it. It costs money and it buys two years of quiet.',
+          edit: { set: { 'pressure.congress': 12 },
+            effects: { labour: 2.2, cost: 2, exposure: -1.6, money: -1.2 },
+            aimed: { Players: { labour: 2.6 }, Presidents: { cost: -1.8 },
+              SEC: { cost: -1.6 } } } },
+        { id: 'stonewall', label: 'Go and say nothing',
+          body: 'Answer every question with the phrase student athlete. It will be clipped, '
+            + 'it will be played on television for a week, and nothing will be conceded.',
+          edit: { set: { 'pressure.congress': 28 },
+            effects: { exposure: 2, autonomy: 2.2, labour: -1.2, tradition: -1.4 },
+            aimed: { SEC: { autonomy: 2 }, Players: { labour: -2 },
+              Presidents: { exposure: 2.4 } } } },
+      ],
+    },
+    {
+      id: 'crisis-union',
+      beats: [WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF],
+      weight: 100,
+      crisis: true,
+      /* A COOLDOWN, BECAUSE A LAWSUIT TAKES YEARS. Without one, reckless play fired
+         eleven crises in a five year term: the pressure is written back down, the same
+         behaviour pushes it straight back over the line, and a thing that happens every
+         fourth beat is not a crisis, it is weather. Eighteen beats is two seasons,
+         so the sport gets one of these at a time and remembers it. */
+      when: (w) => (w.pressure.union || 0) >= 46 && sinceRuled(w, 'crisis-union') >= 18,
+      eyebrow: 'The players',
+      title: 'They have voted to organise',
+      brief: 'Two rosters filed, then eleven, then a number nobody in this office wants to '
+        + 'read out. The vote was not close and the week it was announced was the week before '
+        + 'championship weekend, which was not an accident.',
+      voices: [
+        { id: 'Players', say: 'We asked for four years. This is what asking became.' },
+        { id: 'Presidents', say: 'Recognition makes them employees. Everything follows from that word.' },
+        { id: 'Networks', say: 'If there is no championship weekend there is no contract to talk about.' },
+      ],
+      options: [
+        { id: 'recognise', label: 'Recognise them and bargain',
+          body: 'The end of a hundred years of pretending. Every cost in this sport becomes '
+            + 'negotiable and every rule becomes a term of employment.',
+          edit: { set: { 'pressure.union': 10, 'labour.employment': 'employee' },
+            effects: { labour: 3.4, cost: 3, exposure: -2, autonomy: -2, money: -1 },
+            aimed: { Players: { labour: 3.6 }, Presidents: { cost: -3.2 },
+              SEC: { cost: -2.4 }, 'Group of Five': { cost: -2.6 } } } },
+        { id: 'bargain-lite', label: 'Bargain without recognising anybody',
+          body: 'A council, a seat at a table, and a set of commitments that are not a '
+            + 'contract. It holds for as long as everybody wants it to.',
+          edit: { set: { 'pressure.union': 30 },
+            effects: { labour: 1.6, cost: 1.2, exposure: 0.8 },
+            aimed: { Players: { labour: 1.4 }, Presidents: { exposure: -0.8 } } } },
+        { id: 'resist', label: 'Contest every filing',
+          body: 'Board hearings, appeals, and a public argument about whether the people '
+            + 'playing the games work here. Somewhere in it, a Saturday does not happen.',
+          edit: { set: { 'pressure.union': 30 },
+            effects: { labour: -2.8, exposure: 2.6, cost: 1, inventory: -1.6 },
+            aimed: { Players: { labour: -3.4 }, Networks: { inventory: -2 },
+              Presidents: { exposure: 2.2 } } } },
+      ],
+    },
     /* THE THIN BEATS. Measured across two hundred terms with the in-season items in: the
        portal item still came up 5.0 times in a five year term, every year without exception,
        because it was the only thing eligible on its beat. A recency penalty cannot help when
@@ -960,6 +1108,18 @@
   function pick(world, L, rng) {
     const pool = eligible(world, L);
     if (!pool.length) return null;
+    /* A CRISIS DOES NOT WAIT FOR A QUIET WEEK. A lit fuse outranks the whole docket, and if
+       two are lit the older one goes first, because that is the order the letters arrived
+       in. Weights are not consulted at all: a hundred against a five would still leave a one
+       in twenty chance of the sport ignoring a lawsuit for a beat. */
+    const urgent = pool.filter((it) => it.crisis);
+    if (urgent.length) {
+      if (urgent.length === 1) return urgent[0];
+      const worst = urgent.slice().sort((a, b) =>
+        (world.pressure[b.id.replace('crisis-', '')] || 0)
+        - (world.pressure[a.id.replace('crisis-', '')] || 0));
+      return worst[0];
+    }
     const w = pool.map((it) => Math.max(0.01, (it.weight || 1) * recency(world, it)));
     const total = w.reduce((t, x) => t + x, 0);
     let r = (rng ? rng() : 0.5) * total;

@@ -57,7 +57,7 @@ console.log('\n=== every pool is a pool ===');
       if (!pool || !pool.length) empty.push(id + ' band ' + i);
       else if (pool.length < 2) thin.push(id + ' band ' + i);
     });
-    ['relief', 'grudge'].forEach((k) => {
+    ['relief', 'grudge', 'streak'].forEach((k) => {
       if (!v[k] || !v[k].length) empty.push(id + ' ' + k);
       else if (v[k].length < 2) thin.push(id + ' ' + k);
     });
@@ -194,6 +194,42 @@ console.log('\n=== a mood never fights its own number ===');
     reliefSeen.size === B.BLOCS.length, reliefSeen.size + ' of ' + B.BLOCS.length + ' reached relief');
   ok('  and a way to say "I was with you until that"',
     grudgeSeen.size === B.BLOCS.length, grudgeSeen.size + ' of ' + B.BLOCS.length + ' reached grudge');
+
+  /* THE THIRD LOSS RUNNING. grudge() has counted a streak since the file was written and all
+     it ever did was make the number bigger: a bloc on the wrong end of four rulings in a row
+     reacted harder and never once said so. Reached by actually losing three in a row rather
+     than by calling line() with a number, so the path from the ledger to the sentence is
+     what is being checked. */
+  const streakSeen = new Set();
+  const hurt = { effects: { money: -2.4, cost: 1.6, labour: -2, access: -2, tradition: -2 } };
+  let w2 = L.createWorld({ year: 2026, membership: {} });
+  for (let i = 0; i < 3; i++) {
+    w2 = L.applyOutcome(L.applyEdit(w2, Object.assign({ id: 'x:' + i }, hurt)), hurt, B.deltas(w2, hurt));
+  }
+  B.react(w2, hurt).forEach((r) => {
+    if ((B.VOICE[r.id].streak || []).indexOf(r.say) >= 0) streakSeen.add(r.id);
+  });
+  ok('  and a way to say "that is three in a row"',
+    streakSeen.size === B.BLOCS.length,
+    streakSeen.size + ' of ' + B.BLOCS.length + ' reached streak after three straight losses');
+
+  /* AND ONLY WHEN IT IS TRUE. A streak line beside a win is the loudest possible version of
+     the contradiction this file exists to prevent. */
+  const wrongStreak = [];
+  [0, 1, 2].forEach((n) => {
+    let w3 = L.createWorld({ year: 2026, membership: {} });
+    for (let i = 0; i < n; i++) {
+      w3 = L.applyOutcome(L.applyEdit(w3, Object.assign({ id: 'y:' + i }, hurt)), hurt, B.deltas(w3, hurt));
+    }
+    const good = { effects: { money: 2.4, access: 2, labour: 2, tradition: 2, inventory: 2 } };
+    B.react(w3, good).forEach((r) => {
+      if ((B.VOICE[r.id].streak || []).indexOf(r.say) >= 0) {
+        wrongStreak.push(r.id + ' claimed a streak at ' + r.delta + ' after ' + n + ' losses');
+      }
+    });
+  });
+  ok('  and never says it about something that helped them', !wrongStreak.length,
+    wrongStreak.slice(0, 3).join('; ') || 'no false streaks');
 }
 
 console.log('\n=== the room does not repeat itself ===');
@@ -241,7 +277,7 @@ console.log('\n=== it sounds like college football ===');
   const flat = [];
   for (const id in B.VOICE) {
     const v = B.VOICE[id];
-    let all = v.bands.reduce((t, p) => t.concat(p), []).concat(v.relief || [], v.grudge || []);
+    let all = v.bands.reduce((t, p) => t.concat(p), []).concat(v.relief || [], v.grudge || [], v.streak || []);
     for (const axis in v.on || {}) {
       all = all.concat(v.on[axis].good || [], v.on[axis].bad || []);
     }
@@ -256,7 +292,7 @@ console.log('\n=== it sounds like college football ===');
   const longest = [];
   for (const id in B.VOICE) {
     const v = B.VOICE[id];
-    let all = v.bands.reduce((t, p) => t.concat(p), []).concat(v.relief || [], v.grudge || []);
+    let all = v.bands.reduce((t, p) => t.concat(p), []).concat(v.relief || [], v.grudge || [], v.streak || []);
     for (const axis in v.on || {}) all = all.concat(v.on[axis].good || [], v.on[axis].bad || []);
     all.forEach((l) => { if (l.length > 105) longest.push(id + ': ' + l.slice(0, 40) + '...'); });
   }

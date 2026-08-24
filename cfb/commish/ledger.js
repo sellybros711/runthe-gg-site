@@ -124,6 +124,11 @@
       /* NOT METERS. These do not tick down, they go off. Washington and the courts are the
          actor with no satisfaction number: you cannot please them, only avoid them. */
       pressure: { legal: 0, congress: 0, union: 0 },
+      /* HOW MANY TIMES EACH HAS ALREADY GONE OFF. A fuse that fires once is an event; one
+         that fires every beat once it is lit is a broken screen, so firing resets the
+         pressure and this counts the scars. It is also what a second lawsuit is worse than
+         a first one because of. */
+      fired: { legal: 0, congress: 0, union: 0 },
 
       /* 0..100, all three. Revenue is what the sport makes, health is whether it is still
          worth watching, standing is whether the room still wants you. */
@@ -277,10 +282,17 @@
 
     /* The fuses. Risk is the axis nobody in the room is paid to care about, so it is the
        one a commissioner walks into. */
-    next.pressure.legal = clamp(next.pressure.legal + (fx.exposure || 0) * 1.5, 0, 100);
+    /* THE GAINS WERE TOO SMALL TO REACH ANYTHING. Measured across a hundred and twenty terms
+       of random rulings, the highest any pressure ever got was 44 out of 100 and the average
+       at the end of a term was thirteen. There was no threshold a fuse could have had that
+       would ever have fired, so the three of them sat on the office screen for a whole term
+       being decorative. Set so that a commissioner who keeps taking the risky option lights
+       one inside a term and a careful one does not. */
+    next.pressure.legal = clamp(next.pressure.legal + (fx.exposure || 0) * 3.4, 0, 100);
     next.pressure.congress = clamp(next.pressure.congress
-      + (fx.exposure || 0) * 0.8 + Math.max(0, -(fx.access || 0)) * 0.6, 0, 100);
-    next.pressure.union = clamp(next.pressure.union + Math.max(0, -(fx.labour || 0)) * 1.6, 0, 100);
+      + (fx.exposure || 0) * 1.8 + Math.max(0, -(fx.access || 0)) * 1.5, 0, 100);
+    next.pressure.union = clamp(next.pressure.union
+      + Math.max(0, -(fx.labour || 0)) * 3.2, 0, 100);
     return next;
   }
 
@@ -337,6 +349,25 @@
     return { removed: false, angry };
   }
 
+  /* WHERE A FUSE GOES OFF. Not a hundred, because a fuse is not a meter being filled: the
+     point at which a lawsuit is filed or a hearing is scheduled is a point somebody else
+     chooses, and it is well short of the sport being completely on fire. */
+  const FUSE_LIMIT = 46;
+  const FUSES = ['legal', 'congress', 'union'];
+  /* Which ones have gone off and are waiting to be dealt with. */
+  function lit(world) {
+    return FUSES.filter((k) => (world.pressure[k] || 0) >= FUSE_LIMIT);
+  }
+  /* FIRING RESETS IT, AND NOT TO ZERO. A lawsuit that has been filed stops being a threat
+     and starts being a fact, but the conditions that produced it are still there. */
+  function defuse(world, key) {
+    const next = JSON.parse(JSON.stringify(world));
+    next.pressure[key] = Math.min(next.pressure[key], 26);
+    next.fired = next.fired || { legal: 0, congress: 0, union: 0 };
+    next.fired[key] = (next.fired[key] || 0) + 1;
+    return next;
+  }
+
   const BEATS = ['Winter meetings', 'Portal and signing day', 'Spring', 'Media days',
     'September', 'October', 'November', 'Championship weekend', 'The playoff'];
 
@@ -351,6 +382,7 @@
 
   const publicAPI = {
     AXES, POWERS, BEATS, HOSTILE, OPENING_SHARE, VOTE_WEIGHT,
+    FUSE_LIMIT, FUSES, lit, defuse,
     createWorld, membershipFrom,
     getPath, membersOf, conferencesIn, isDefunct,
     applyEdit, applyOutcome, normaliseShare, standingFrom,

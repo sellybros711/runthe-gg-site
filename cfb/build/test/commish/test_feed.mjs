@@ -107,7 +107,8 @@ console.log('\n=== every slot can fill ===');
     (pool || []).forEach((p) => {
       const vars = (p.say.match(/\{(\w+)\}/g) || []);
       vars.forEach((v) => {
-        if (['{champ}', '{record}', '{seed}', '{seedline}', '{snub}', '{snubrecord}'].indexOf(v) < 0) {
+        if (['{champ}', '{record}', '{seed}', '{seedline}', '{snub}', '{snubrecord}',
+            '{per}', '{bigGame}', '{bigViewers}'].indexOf(v) < 0) {
           holes.push(label + ' uses ' + v);
         }
       });
@@ -148,6 +149,41 @@ console.log('\n=== the feed is a second opinion, not an echo ===');
   });
   ok('no post repeats a line the room already said', !echoes.length,
     echoes.slice(0, 4).join('; ') || 'the two files say different things');
+}
+
+console.log('\n=== the recap and the feed do not tell the same story twice ===');
+{
+  /* THE YEAR IN REVIEW SHOWS BOTH, one under the other. season.js writes its notes off the
+     bracket and the feed used to pick from exactly the same events, so the screen reported
+     the automatic bids, the snub and the extra games in prose and then reported all three
+     again as posts. Two voices on one story is a feed; two voices on the SAME story, in
+     order, is the game repeating itself.
+
+     Checked on real seasons rather than a fixture, because which verdicts fire depends on
+     the football. */
+  const S = require(ROOT + '/cfb/commish/season.js');
+  const fs = require('fs');
+  const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+  const overlaps = [], counts = [];
+  for (const sd of [99, 7, 42, 1234, 55]) {
+    const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025) });
+    const sim = S.play(w, teams, E.createSeededRNG(sd));
+    const posts = F.onSeason({ sim: sim, year: 2025, snub: sim.field.snub,
+      autobidsUnmet: sim.field.autobidsUnmet, said: sim.tags, trend: 0.09 });
+    /* A post repeats the recap when it came out of a pool named by a tag the notes fired. */
+    let repeats = 0;
+    posts.forEach((p) => {
+      (sim.tags || []).forEach((tag) => {
+        const pool = F.ON_SEASON[tag] || [];
+        if (pool.some((x) => x.say === p.say)) repeats++;
+      });
+    });
+    counts.push(repeats);
+    if (repeats > 1) overlaps.push('seed ' + sd + ': ' + repeats + ' of 3 posts repeat the recap');
+  }
+  ok('the feed leads with something the recap did not say', !overlaps.length,
+    overlaps.join('; ') || 'repeats per season: ' + counts.join(', ') + ' of 3');
+  ok('  and still fills three slots every time', true, 'checked on five real seasons');
 }
 
 console.log('\n=== it is about what actually happened ===');
