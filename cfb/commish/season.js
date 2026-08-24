@@ -207,6 +207,139 @@
     return games;
   }
 
+  /* ---------------- the weeks ----------------
+     A SEASON YOU CANNOT WATCH IS A NUMBER THAT ARRIVES IN DECEMBER. The whole regular season
+     used to be played in one loop the instant the ninth beat rolled over, which meant the
+     five beats between Media days and the year in review had nothing in them: September,
+     October and November existed on the calendar and nowhere else, and Championship weekend
+     and the playoff were guaranteed empty desks. A third of the mode was pressing a button
+     that said nothing was happening.
+
+     So the schedule gets weeks and the season is played in segments. September is weeks one
+     to four, October five to eight, November nine to twelve, and the last two beats are the
+     conference title games and the bracket. The office shows the standings while it happens.
+
+     Greedy colouring, lowest free week first, which is enough: a team plays twelve games in
+     twelve weeks and every game only needs a week where neither side is already busy. */
+  /* FOURTEEN WEEKS FOR TWELVE GAMES, which is what a real season is: everybody gets a bye or
+     two. It is also what makes the colouring possible. A team plays twelve games, so twelve
+     weeks is the theoretical floor and no greedy assignment reaches it; the first version
+     used twelve, quietly pushed the overflow into weeks thirteen and fourteen, and then
+     dropped those games on the floor because the season only played through week twelve.
+     Teams finished 8-0 and 13-0 in the same league and nothing failed. */
+  var WEEKS = 14;
+
+  function weekify(games, rng) {
+    /* Restarts, because greedy edge colouring is order dependent: one shuffle overflows and
+       the next one does not. Cheap enough to simply try again. */
+    var best = null;
+    for (var attempt = 0; attempt < 40; attempt++) {
+      var busy = {}, max = 0;
+      var order = shuffled(games, rng);
+      order.forEach(function (g) {
+        var w = 1;
+        while (busy[w + '|' + g.a.school] || busy[w + '|' + g.b.school]) w++;
+        busy[w + '|' + g.a.school] = 1;
+        busy[w + '|' + g.b.school] = 1;
+        g.week = w;
+        if (w > max) max = w;
+      });
+      var snap = games.map(function (g) { return g.week; });
+      if (!best || max < best.max) best = { max: max, weeks: snap };
+      if (max <= WEEKS) break;
+    }
+    /* WHATEVER IT TOOK, NOTHING IS THROWN AWAY. If forty tries could not fit the schedule
+       into fourteen weeks the season simply runs longer, because a game that exists and is
+       never played is the failure this whole block is here to prevent. */
+    games.forEach(function (g, i) { g.week = best.weeks[i]; });
+    return { games: games, weeks: Math.max(WEEKS, best.max) };
+  }
+
+  /* ---------------- who watched ----------------
+     THE NUMBER THE WHOLE ECONOMY HANGS OFF, and until now the mode had no idea whether
+     anybody was watching. Money came out of a formula and inventory was a count of games,
+     which meant a commissioner could hollow out every Saturday in the sport and the ledger
+     would report the same revenue.
+
+     Viewership is what a television deal is actually bought on, so it is built the way one
+     is valued: two good teams beat one, a conference game beats a body-bag game, November
+     beats September, and a game between two teams who are still alive is worth more than the
+     same two teams in week two. All of that is downstream of rulings the player makes.
+
+     Millions of viewers, on a scale set against the real thing: a nothing game is well under
+     a million, a good conference game is three or four, and the two or three biggest games
+     of a season clear ten. */
+  var VIEW_BASE = 0.55;
+  var VIEW_QUALITY = 1.75;
+  var VIEW_CONF = 1.28;
+  var VIEW_LATE = 0.055;
+  /* ONE STAGE MULTIPLIER, NEVER TWO. The first version applied a round multiplier ON TOP of
+     the week scaling, and the two compounded: a national championship game came out at 78
+     million against a real one that draws about 22, and a conference title game at 27 against
+     a real 16. A postseason game is not a regular season game in a later week, it is its own
+     thing, so it takes its own number and skips the week curve entirely.
+
+     Set against what these actually draw: a title game around 20 to 25 million, semi-finals
+     mid teens, quarters around ten, a first round game closer to a good Saturday than to a
+     final, and the two biggest conference championships in the same range as the quarters. */
+  var VIEW_TITLE = 2.15;
+  var VIEW_ROUND = [1.6, 2.5, 3.1, 3.5, 3.6];
+
+  function viewers(g, world) {
+    var a = g.a, b = g.b;
+    /* Both sides matter and the WORSE one matters more, because a mismatch is not a game.
+       The geometric mean does that on its own: a 2.0 against a 0.0 is worth less than two
+       1.0s, which is exactly the argument against a nine win team playing a cupcake. */
+    var qa = Math.max(0.15, a.z + 1.4), qb = Math.max(0.15, b.z + 1.4);
+    var quality = Math.sqrt(qa * qb);
+    var v = VIEW_BASE * Math.pow(quality, VIEW_QUALITY);
+    if (g.conf) v *= VIEW_CONF;
+    /* A LOSS COLUMN KILLS A TELEVISION WINDOW. Two unbeaten teams in November is the game of
+       the year; the same two at four and four is a Saturday nobody sets an alarm for. */
+    var alive = (a.losses <= 1 ? 1 : a.losses <= 2 ? 0.72 : 0.5)
+      * (b.losses <= 1 ? 1 : b.losses <= 2 ? 0.72 : 0.5);
+    v *= 0.55 + 0.45 * alive * 2;
+
+    if (g.round != null) {
+      v *= VIEW_ROUND[Math.min(g.round, VIEW_ROUND.length - 1)];
+    } else if (g.title) {
+      v *= VIEW_TITLE;
+    } else {
+      /* November is worth more than September and the reason is stakes, so it scales with how
+         many teams are still alive, which is a thing the playoff format decides. */
+      v *= 1 + VIEW_LATE * (g.week || 1) * (1 + ((world.playoff.teams || 12) - 12) * 0.02);
+    }
+    return Math.round(v * 100) / 100;
+  }
+
+  /* ---------------- conference championship weekend ----------------
+     THE BEAT THAT WAS ALWAYS EMPTY. A champion used to be whoever finished top of the table,
+     which is tidy and is not what happens: the top two play, and the one that wins goes to
+     the playoff whatever the table said in the morning. That is a Saturday with six games on
+     it and it was being skipped. */
+  function titleGames(teams, world, rng) {
+    var byConf = {};
+    teams.forEach(function (t) { (byConf[t.conference] = byConf[t.conference] || []).push(t); });
+    var out = [];
+    for (var c in byConf) {
+      if (byConf[c].length < (L.MIN_CONFERENCE || 4)) continue;
+      var sorted = byConf[c].slice().sort(function (x, y) {
+        return (y.confWins - y.confLosses) - (x.confWins - x.confLosses) || resume(y) - resume(x);
+      });
+      var a = sorted[0], b = sorted[1];
+      if (!b) { out.push({ conference: c, team: a, standings: sorted, walkover: true }); continue; }
+      var r = playGame(a, b, true, rng);
+      record(a, b, r.a, r.b, true);
+      record(b, a, r.b, r.a, true);
+      var g = { a: a, b: b, conf: true, neutral: true, title: true, week: WEEKS + 1,
+        score: [r.a, r.b], conference: c };
+      g.viewers = viewers(g, world);
+      out.push({ conference: c, team: r.aWon ? a : b, runnerUp: r.aWon ? b : a,
+        standings: sorted, game: g });
+    }
+    return out.sort(function (x, y) { return resume(y.team) - resume(x.team); });
+  }
+
   /* ---------------- selection ---------------- */
 
   /* A RESUME, not a power rating. Wins matter most, who you played matters, and being good
@@ -216,7 +349,11 @@
     return t.wins * 3.2 - t.losses * 3.0 + t.z * 3.4 + sos * 1.6;
   }
 
-  function champions(teams) {
+  /* WHO WON EACH CONFERENCE. `titles` is the result of championship weekend when it has been
+     played, and this falls back to the table when it has not, because the standings screen
+     asks the same question in October and there is no title game to read yet. */
+  function champions(teams, titles) {
+    if (titles && titles.length) return titles;
     var byConf = {};
     teams.forEach(function (t) { (byConf[t.conference] = byConf[t.conference] || []).push(t); });
     var out = [];
@@ -232,10 +369,14 @@
 
   /* THE FIELD IS THE RULING, MADE OF TEAMS. Every number here is read off the ledger: how
      many seats, how many of them are promised to champions, how many byes. */
-  function field(teams, world) {
+  function field(teams, world, titles) {
     var size = Math.max(2, world.playoff.teams || 12);
     var autos = Math.max(0, Math.min(size, world.playoff.autobids || 0));
-    var chs = champions(teams);
+    /* THE CHAMPION IS WHO WON THE TITLE GAME, not who topped the table. Championship weekend
+       is played before the field is picked, so an automatic bid can and does go to a team
+       that lost the regular season standings and won the Saturday, which is the whole reason
+       that Saturday exists. */
+    var chs = champions(teams, titles);
     var picked = [], seen = {};
     for (var i = 0; i < chs.length && picked.length < autos; i++) {
       picked.push({ team: chs[i].team, how: 'auto', conference: chs[i].conference });
@@ -418,30 +559,111 @@
 
   /* ---------------- the season ---------------- */
 
-  function play(world, teamSeasons, rng) {
+  /* WHICH WEEKS EACH BEAT OWNS. The four offseason beats play no football; September,
+     October and November take four weeks each; then the title games and the bracket. Read by
+     the page so the calendar and the football cannot drift apart. */
+  var SEGMENTS = [
+    { beat: 4, name: 'September', through: 5 },
+    { beat: 5, name: 'October', through: 9 },
+    { beat: 6, name: 'November', through: WEEKS },
+    { beat: 7, name: 'Championship weekend', through: WEEKS, titles: true },
+    { beat: 8, name: 'The playoff', through: WEEKS, titles: true, bracket: true },
+  ];
+  function segmentFor(beat) {
+    for (var i = 0; i < SEGMENTS.length; i++) if (SEGMENTS[i].beat === beat) return SEGMENTS[i];
+    return null;
+  }
+  /* How much football has been played by the time a beat OPENS, which is what the office
+     needs: standing on October, September is done and October is not. */
+  function throughAtBeat(beat) {
+    var last = 0;
+    for (var i = 0; i < SEGMENTS.length; i++) if (SEGMENTS[i].beat < beat) last = SEGMENTS[i].through;
+    return last;
+  }
+
+  /* PLAY THE SEASON UP TO A POINT, and it is the same call whether that point is week four
+     or the whole thing. Deterministic from the seed, so the page can throw the result away
+     and replay it after a reload rather than serialising a hundred and thirty teams and eight
+     hundred games into local storage. That is why nothing here reads the clock or the world
+     beyond the ledger it was handed. */
+  function play(world, teamSeasons, rng, opts) {
+    var o = opts || {};
+    var through = o.through == null ? GAMES : o.through;
+    var wantTitles = o.titles !== false;
+    var wantBracket = o.bracket !== false && wantTitles;
+
     var teams = league(world, teamSeasons);
     if (teams.length < 8) return null;
-    var games = schedule(teams, world, rng);
-    games = shuffled(games, rng);
+    var wk = weekify(schedule(teams, world, rng), rng);
+    var games = wk.games;
+    games.sort(function (x, y) { return x.week - y.week; });
+    /* The regular season is however many weeks the schedule actually needed. `through` is
+       given in weeks, and a full season means all of them. */
+    var lastWeek = wk.weeks;
+    if (o.through == null) through = lastWeek;
+
+    var played = [];
     for (var i = 0; i < games.length; i++) {
       var g = games[i];
+      if (g.week > through) continue;
       var r = playGame(g.a, g.b, g.neutral, rng);
       record(g.a, g.b, r.a, r.b, g.conf);
       record(g.b, g.a, r.b, r.a, g.conf);
       g.score = [r.a, r.b];
+      g.margin = Math.abs(r.a - r.b);
+      g.winner = r.aWon ? g.a : g.b;
+      g.loser = r.aWon ? g.b : g.a;
+      g.viewers = viewers(g, world);
+      played.push(g);
     }
-    var f = field(teams, world);
-    var br = bracket(f.seats, world, rng);
+
+    /* The week by week view the office draws while the season is going on. */
+    var weeks = [];
+    for (var n = 1; n <= through; n++) {
+      var inWeek = played.filter(function (x) { return x.week === n; });
+      weeks.push({
+        week: n,
+        games: inWeek.slice().sort(function (x, y) { return y.viewers - x.viewers; }),
+        viewers: Math.round(inWeek.reduce(function (t, x) { return t + x.viewers; }, 0) * 10) / 10,
+      });
+    }
+
     var sim = {
       year: world.year,
+      through: through,
+      lastWeek: lastWeek,
+      complete: !!wantBracket,
       teams: teams.slice().sort(function (a, b) { return resume(b) - resume(a); }),
-      field: f,
-      bracket: br,
-      games: games,
+      games: played,
+      weeks: weeks,
       /* True only for the first season of a term: after that the schools are real and the
          seasons are not, and the screen has to be able to say so. */
       fromRealData: world.year === world.startYear,
     };
+    sim.viewers = Math.round(played.reduce(function (t, x) { return t + x.viewers; }, 0) * 10) / 10;
+    sim.perGame = played.length ? Math.round((sim.viewers / played.length) * 100) / 100 : 0;
+
+    if (!wantTitles) return sim;
+
+    sim.titles = titleGames(teams, world, rng);
+    sim.viewers = Math.round((sim.viewers
+      + sim.titles.reduce(function (t, x) { return t + (x.game ? x.game.viewers : 0); }, 0)) * 10) / 10;
+    if (!wantBracket) return sim;
+
+    var f = field(teams, world, sim.titles);
+    var br = bracket(f.seats, world, rng);
+    br.rounds.forEach(function (round, ri) {
+      round.forEach(function (g) {
+        g.round = ri;
+        g.viewers = viewers({ a: g.top.team, b: g.bottom.team, conf: false, week: WEEKS + 2 + ri,
+          round: ri }, world);
+      });
+    });
+    sim.field = f;
+    sim.bracket = br;
+    sim.viewers = Math.round((sim.viewers + br.rounds.reduce(function (t, r) {
+      return t + r.reduce(function (u, g) { return u + (g.viewers || 0); }, 0);
+    }, 0)) * 10) / 10;
     var v = verdict(sim, world);
     sim.notes = v.notes;
     sim.edit = v.edit;
@@ -450,9 +672,11 @@
 
   var api = {
     play: play, league: league, schedule: schedule, field: field,
-    bracket: bracket, champions: champions, resume: resume,
+    bracket: bracket, champions: champions, resume: resume, titleGames: titleGames,
     playGame: playGame, plausible: plausible, moneyDrift: moneyDrift,
-    GAMES: GAMES, Z_TO_POINTS: Z_TO_POINTS, HOME: HOME, NOISE: NOISE,
+    weekify: weekify, viewers: viewers,
+    SEGMENTS: SEGMENTS, segmentFor: segmentFor, throughAtBeat: throughAtBeat,
+    GAMES: GAMES, WEEKS: WEEKS, Z_TO_POINTS: Z_TO_POINTS, HOME: HOME, NOISE: NOISE,
   };
   root.PS_CFB_SEASON = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

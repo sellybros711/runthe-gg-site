@@ -37,9 +37,24 @@ console.log('\n=== a season happens at all ===');
   const w = world();
   const sim = run(w);
   ok('a season plays', !!sim, sim ? sim.teams.length + ' teams' : 'nothing came back');
-  ok('  everybody plays a full schedule',
-    sim.teams.every((t) => t.wins + t.losses === S.GAMES),
-    'games per team: ' + Array.from(new Set(sim.teams.map((t) => t.wins + t.losses))).join(', '));
+  /* TWELVE FOR EVERYBODY, AND THIRTEEN FOR WHOEVER PLAYED ON CHAMPIONSHIP WEEKEND, which is
+     what a real season looks like. It used to be twelve flat, and the reason it is worth
+     asserting at all is the version in between: the schedule was coloured into weeks, the
+     colouring overflowed past the last week, and the overflow was quietly dropped. Teams
+     finished 8-0 and 13-0 in the same league and nothing failed. */
+  const inTitle = {};
+  (sim.titles || []).forEach((t) => {
+    if (t.game) { inTitle[t.game.a.school] = 1; inTitle[t.game.b.school] = 1; }
+  });
+  const odd = sim.teams.filter((t) => (t.wins + t.losses) !== (inTitle[t.school] ? S.GAMES + 1 : S.GAMES));
+  ok('  everybody plays a full schedule', !odd.length,
+    odd.length ? odd.slice(0, 4).map((t) => t.school + ' ' + (t.wins + t.losses)).join(', ')
+      : S.GAMES + ' each, ' + Object.keys(inTitle).length + ' of them ' + (S.GAMES + 1)
+        + ' after championship weekend');
+  /* AND NOTHING FELL OFF THE END OF THE CALENDAR. */
+  ok('  played in ' + sim.lastWeek + ' weeks, with nothing left unplayed',
+    sim.games.every((g) => g.week <= sim.through) && sim.lastWeek >= S.GAMES,
+    sim.games.length + ' games, last week ' + Math.max(...sim.games.map((g) => g.week)));
   /* THE SCORELINE BUG THE MAIN GAME SHIPPED FOR ITS WHOLE LIFE. One and four are not
      football scores and an arithmetic generator emits both. */
   const scores = sim.games.flatMap((g) => g.score);
