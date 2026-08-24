@@ -522,6 +522,9 @@ window.GA_ID='G-L29P5MRWKE';
     el.querySelector('.no').textContent = (num==null||num<0) ? 'deep cut' : ('#'+num+' · deep cut');
     host.appendChild(el);
   }
+  /* "Roger Mason Jr.." is what naive concatenation gives you. A name that
+     already ends in a full stop has one. */
+  function sentence(n){ return /\.$/.test(n) ? n : n + '.'; }
   function shakeField(){
     var wrap=$('ask').parentNode; wrap.classList.remove('shake'); void wrap.offsetWidth; wrap.classList.add('shake');
   }
@@ -539,17 +542,17 @@ window.GA_ID='G-L29P5MRWKE';
     for(var a=0;a<ids.length;a++){
       var pos = board.ids.indexOf(ids[a]);
       if(pos<0) continue;
-      if(found[ids[a]]){ message('Already named ' + nameOf(ids[a]) + '.', 'warn'); return; }
+      if(found[ids[a]]){ message('Already named ' + sentence(nameOf(ids[a])), 'warn'); return; }
       found[ids[a]]=1; foundN++;
       fillSlot(pos, ids[a]);
       $('tallyN').textContent=foundN;
-      message(nameOf(ids[a]) + '. Yes.', 'good');
+      message(sentence(nameOf(ids[a])) + ' Yes.', 'good');
       sfx('good');
       if(foundN>=board.ids.length){ finish(true); }
       return;
     }
     for(var e2=0;e2<extra.length;e2++){
-      if(norm(extra[e2].name)===k){ message('Already named ' + extra[e2].name + '.', 'warn'); return; }
+      if(norm(extra[e2].name)===k){ message('Already named ' + sentence(extra[e2].name), 'warn'); return; }
     }
     /* OUR OWN ROSTER, BEFORE ANYBODY ELSE'S. The squad page is the answer key
        and it is exact about the season, so a deep cut is settled here, offline,
@@ -559,7 +562,7 @@ window.GA_ID='G-L29P5MRWKE';
     var row = onRoster(k);
     if(row){
       addExtra(row[0], 'roster', row[1]);
-      message(row[0] + '. Deep cut, and he counts.', 'good');
+      message(sentence(row[0]) + ' Deep cut, and he counts.', 'good');
       sfx('good');
       return;
     }
@@ -573,8 +576,13 @@ window.GA_ID='G-L29P5MRWKE';
     /* Our roster HAS this season and did not list him, so it is a real no and
        there is nothing to ask anybody. Only a season we hold no page for falls
        through to the live check below. */
+    /* Always "not on this roster", never "no player by that name". We hold the
+       squad, not a census: a name missing from it means he was not there, and
+       we cannot tell a real player at another club from somebody invented.
+       Telling Boris Diaw's name it does not exist would be a second wrong
+       answer on top of the first. */
     if(ROSTER){
-      message(ids.length ? 'Not on this roster.' : 'No player by that name.', 'bad');
+      message('Not on this roster.', 'bad');
       sfx('bad'); shakeField(); return;
     }
     var TC = window.RTGTeamCheck;
@@ -589,7 +597,7 @@ window.GA_ID='G-L29P5MRWKE';
       if(done) return;
       if(r && r.ok === true){
         addExtra(r.name || raw, 'live');
-        message((r.name || raw) + '. Deep cut, and he counts.', 'good');
+        message(sentence(r.name || raw) + ' Deep cut, and he counts.', 'good');
         sfx('good');
         return;
       }
