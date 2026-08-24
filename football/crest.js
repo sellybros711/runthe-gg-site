@@ -392,9 +392,10 @@ const MARK_KEYS=['init','pad','posts','egg','signal','rafters','wall','headset',
 
    So it is an account tier instead, derived and never equipped,
    exactly the way RunThePitch does it: your tier climbs as your
-   badge count climbs and it colours your name. Same five steps,
-   same 0/25/50/75/100 thresholds, same idea of a floor before
-   you are ranked at all. One number, one seal, nothing to pick.
+   badge count climbs and it colours your name. Ten steps here
+   rather than that game's five, and cut where this game's own
+   players actually sit rather than at even fractions: see
+   TIER_AT below. One number, one seal, nothing to pick.
    ============================================================ */
 /* THE DENOMINATOR IS READ, NOT WRITTEN DOWN. The mock counted the cabinet once and put 387
    in a constant. The cabinet grows: every badge added to achievements.js would move every
@@ -405,7 +406,39 @@ function achTotal(){
   const A=window.PS_ACH;
   return (A&&A.CATALOG&&A.CATALOG.length)||387;
 }
-const BRONZE_MIN=5;       /* below this you are unranked, and the crest says nothing */
+/* WHERE THE NINE STEPS ARE CUT, in badges, measured rather than divided.
+
+   THEY USED TO BE NINTHS OF THE CATALOG: 43 apart, Silver 1 at 129, Gold 1 at 258, and the
+   ladder ran all the way to 387. Against 376 real players wearing a rank that came out as
+   two live rungs and seven decorative ones. Silver 1 and Silver 2 held 239 of them, 64% of
+   everybody, and Gold 1, Gold 2, Gold 3 held nobody at all. Not "few". Zero, with the rung
+   below holding 29, because a badge count near 258 is not a thing this cabinet produces:
+   the deepest player on the board, at 1011 drafts, was still Silver 3.
+
+   The thresholds below are cut from that distribution joined to drafts played, so a rank is
+   a length of career rather than a fraction of a number:
+
+     Bronze 1   0    your first draft
+     Bronze 2   45   about 5 drafts
+     Bronze 3   80   about 9
+     Silver 1   110  about 20
+     Silver 2   138  about 35
+     Silver 3   165  about 75
+     Gold 1     195  about 150
+     Gold 2     225  about 300
+     Gold 3     250  about 500
+
+   ABSOLUTE NUMBERS, NOT FRACTIONS, and the comment above about the growing cabinet is the
+   reason rather than an argument against. Ninths meant every badge added to achievements.js
+   moved the whole board DOWN a fraction of a step, and a rank that goes backwards is a rank
+   somebody earned and then lost to a release note. Absolute steps drift the other way: a
+   bigger cabinet makes the ladder slightly cheaper, which costs nothing anybody can feel.
+   Only GOAT stays proportional, because GOAT is not a threshold, it is every badge there is.
+
+   REFIT, DO NOT NUDGE. These came out of one query against the live board. If the cabinet
+   changes shape, run it again rather than moving one number:
+     select coalesce(crest_tier,'(none)'), count(*) from profiles group by 1; */
+const TIER_AT=[0,45,80,110,138,165,195,225,250];
 
 /* TEN RANKS, THREE METALS AND A STAR.
 
@@ -431,20 +464,25 @@ const TIERS=[];
 TIERS.push({ id:'goat', name:'GOAT', metal:'goat',
   a:'#FFD24A', b:'#FFC0E6', mid:'#FFF2A0', edge:'#6b4703', pips:0, star:true, holo:true });
 
-/* GOAT is every badge, the nine steps below it are ninths of the total, and under the floor
-   there is no rank at all. Same shape as the soccer game's, one more time round. */
+/* GOAT is every badge. Below it the nine steps are the table above.
+
+   THERE IS NO FLOOR ANY MORE. There was one, at five badges, and it never did the job it was
+   written for: a single finished draft is already sixteen badges, so the only accounts it
+   ever caught were ones with no runs at all, which have no row on any board to draw a seal
+   on. What it did instead was leave a signed-in player's own profile showing a rank strip
+   that said "not ranked yet" at a moment when nothing was wrong. Everybody who has an
+   account starts at Bronze 1 and climbs from there. */
 function tierFromBadges(b){
   b=+b||0;
-  const total=achTotal();
-  if(b>=total) return TIERS[9];
-  if(b<BRONZE_MIN) return null;
-  return TIERS[Math.min(8,Math.floor((b*9)/total))];
+  if(b>=achTotal()) return TIERS[9];
+  let i=0;
+  while(i+1<TIER_AT.length&&b>=TIER_AT[i+1]) i++;
+  return TIERS[i];
 }
 function tierAt(id){ return TIERS.filter(function(t){ return t.id===id; })[0]||null; }
 /* What the next step costs, for a "24 to Silver 1" line. */
 function nextTierAt(i){
-  const total=achTotal();
-  return i>=8?total:Math.ceil(((i+1)*total)/9);
+  return i>=TIER_AT.length-1?achTotal():TIER_AT[i+1];
 }
 
 /* The glyph inside the seal. Chevrons count the rank inside the metal, and the star belongs

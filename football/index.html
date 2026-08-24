@@ -5598,7 +5598,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
      disc it drew before any of this existed. -->
-<script src="crest.js?v=8"></script>
+<script src="crest.js?v=9"></script>
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=1"></script>
@@ -13692,11 +13692,12 @@ function paintRankRow(a){
   const i=t?C.TIERS.map(function(x){ return x.id; }).indexOf(t.id):-1;
   let line;
   if(!t){
-    /* Under the floor there is no rank at all, and saying so is kinder than showing an
-       empty disc: five badges is one or two sittings, not a wall. */
-    const need=5-myCrest.badges;
-    line='<b>Not ranked yet</b><span>'+need+' more badge'+(need===1?'':'s')+
-      ' and you start at Bronze 1.</span>';
+    /* THIS BRANCH IS THE DATABASE TALKING, NOT THE LADDER. There is no floor any more, so
+       tierFromBadges always answers with a rank and myCrest.tier is only null when this
+       browser could not work one out at all: no catalog, or a profile read that came back
+       without the column. Saying "not ranked yet" there would be a guess about somebody's
+       career, so it says nothing about badges and lets the seal be absent. */
+    line='<b>Rank unavailable</b><span>Your badges could not be read just now.</span>';
   }else if(i>=C.TIERS.length-1){
     line='<b>'+esc(t.name)+'</b><span>Every badge in the game. There is nothing above this.</span>';
   }else{
