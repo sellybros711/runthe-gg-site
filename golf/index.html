@@ -1695,7 +1695,7 @@ window.GA_ID='G-L29P5MRWKE';
   .rsc-c.winrow,.rsc-lab.winrow{background:linear-gradient(0deg,rgba(241,208,74,.09),rgba(241,208,74,.09)),rgba(0,0,0,.12)}
   .rsc-c.cur{background:rgba(241,208,74,.18); box-shadow:inset 0 0 0 1px var(--gold)}
   .rsc-c.sel{background:rgba(79,224,193,.18); box-shadow:inset 0 0 0 1px var(--teal)}
-  .rsc-c.tapc{cursor:pointer}
+  .rsc-c.tapc{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .rsc-c.tapc:hover{background:rgba(79,224,193,.13)}
   .rsc-dot0{color:var(--muted); opacity:.55}
   .dcell{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.24)); border:1px solid var(--panelb); border-radius:8px; padding:6px 0 5px; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
@@ -2098,7 +2098,7 @@ window.GA_ID='G-L29P5MRWKE';
   .dc-tag{font:800 10.5px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-top:12px}
   .dc-prompt{font:600 14px/1.5 var(--body);color:var(--oncard);margin-top:7px}
   .dc-opts{margin-top:16px}
-  .dc-opt{display:block;width:100%;border-radius:14px;padding:13px 14px;cursor:pointer;text-align:center;
+  .dc-opt{display:block;width:100%;border-radius:14px;padding:13px 14px;cursor:pointer;text-align:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
     border:2px solid;background:rgba(0,0,0,.22);transition:transform .1s ease}
   .dc-opt:active{transform:translateY(2px)}
   .dc-opt .dc-oi{font-size:16px;margin-right:6px}
@@ -2112,8 +2112,15 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .decisionov,.decisioncard{animation:none} }
   /* ON-COURSE decision (owner: make the player feel on the course, not watching): tappable targets ON the
      tracer window + stat/risk cards docked below. No dimming modal. */
+  /* The chip's BOX spans label + pointer + ring, so it is much wider/taller than anything you can see -
+     and the two chips are stacked close together near the green, so one chip's transparent gap sat over
+     the other chip's visible ring and stole the tap ("it picked the option I didn't choose"). Only the
+     parts you can actually SEE take taps. touch-action:manipulation kills the iOS double-tap-zoom delay,
+     which otherwise swallows or mis-targets a tap on iOS Chrome. */
   .dctarget{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;
-    background:none;border:none;padding:0;cursor:pointer;z-index:6;filter:drop-shadow(0 3px 8px rgba(0,0,0,.55))}
+    background:none;border:none;padding:0;cursor:pointer;z-index:6;pointer-events:none;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.55))}
+  .dctarget .dtl,.dctarget .dtr{pointer-events:auto}
   .dctarget .dtl{font:900 12px/1 var(--body);letter-spacing:.01em;color:#fff;white-space:nowrap;border:2px solid;border-radius:11px;padding:5px 10px}
   .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
   .dctarget .dtr{width:26px;height:14px;border:2.5px solid;border-radius:50%;margin-top:2px;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
@@ -2137,7 +2144,7 @@ window.GA_ID='G-L29P5MRWKE';
   .dcbar .dchs{font:700 12.5px/1.4 var(--body);color:#ffd27a}
   .dcbar .dchp{font:600 13px/1.45 var(--body);color:#eef4f0}
   .dcrow{display:flex;gap:10px}
-  .dccard{flex:1;text-align:left;border-radius:14px;padding:13px 13px 12px;cursor:pointer;border:1.5px solid;transition:transform .06s ease}
+  .dccard{flex:1;text-align:left;border-radius:14px;padding:13px 13px 12px;cursor:pointer;border:1.5px solid;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .dccard:active{transform:translateY(2px)}
   .dccard .dcl{font:900 15px/1.15 var(--body)}
   .dccard .dcs{font:600 12px/1.4 var(--body);color:#cfe0d8;margin-top:5px}
@@ -15529,7 +15536,11 @@ function goalMetrics(finalSeason){
     if(finalSeason.rank   != null) moneyRank = finalSeason.rank;
   }
   const money = (finalSeason && finalSeason.money!=null) ? finalSeason.money : (me.money||0);
-  const worldRank = (typeof worldRankOfName==='function') ? worldRankOfName(meName) : null;
+  // YOUR world rank, not an opponent's. worldRankOfName() deliberately EXCLUDES you (it matches on
+  // `!x.you`, because its job is looking an OPPONENT up), so passing your own name always fell through
+  // to not-found and returned the list SIZE - the reported "#151 regardless of where I actually
+  // finish". myWorldRank() is the one that finds you.
+  let worldRank = null; try{ worldRank = myWorldRank(); }catch(e){}
   return { wins, majors, sigWins, top10, top25, made, played, majorCut, majorTop10, majorTop25,
            sigTop10, moneyRank, money, worldRank };
 }
@@ -22930,9 +22941,6 @@ function scrSummary(){
       ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
       if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
     S.career.seasons.push({year:S.year||1,net:netTotal,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
-    // Season Sheet grading (regular career only). Runs AFTER the season row is pushed so the grader
-    // reads the authoritative final numbers; writes the graded sheet onto that same row + a story beat.
-    try{ if(!S.circuitMode) applySeasonGoalConsequences(); }catch(e){}
     // track this career's PEAK build (full 8-skill snapshot, not just the overall number), this is
     // the golfer a Legend Token freezes and hands back to you in the Daily Challenge if this career
     // goes on to qualify (see endCareer). Compared against ovr so a later decline year can't overwrite it.
@@ -22956,6 +22964,11 @@ function scrSummary(){
       // THE CARD ITSELF: promotion, conditional status, demotion to the Proving Tour, and whether the
       // year ends with a trip to Q-School. Runs after the ranking settles because it reads the final one.
       try{ S.statusChange=resolveCardStatus(newWR, moneyRank); }catch(e){ S.statusChange=null; } }
+    // Season Sheet grading (regular career only). Runs AFTER the season row is pushed (so the grader
+    // reads the authoritative final numbers) AND after the world ranking settles, so a world-rank goal
+    // grades on where you FINISHED the season - the same number the ranking banner and the goal card
+    // itself show on this very screen, rather than the rank you came into the year with.
+    try{ if(!S.circuitMode) applySeasonGoalConsequences(); }catch(e){}
     // ---- Season awards (after the OWGR update so year-end World No.1 is settled) ----
     if(!S.daily){ const aw=computeAwards(); S.seasonAwards=aw;
       if(aw){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));   // money title already tracked via moneyLeaderSeasons
@@ -27437,13 +27450,42 @@ function dDecHoleSet(courseKey){
   _decHoleCache[courseKey]=set; return set;
 }
 function dIsDecHole(i){ return dDecHoleSet(S.dailyCourse).has(i); }
+// Where the pin ACTUALLY is on this hole, read from the same geometry the tracer draws (hvGeom picks a
+// rotating pin per play). The prompt used to name a coin-flip side, so "pin cut left" disagreed with the
+// on-course ⚡ target half the time and the player's tap did the opposite of what they'd read.
+const _pinSpotCache={};
+function dPinSpot(courseKey,i,par,yards){
+  const key=courseKey+'|'+i+'|'+hvPinRot();
+  if(_pinSpotCache[key]) return _pinSpotCache[key];
+  let out={side:null, word:null};
+  try{
+    const seedN=(dHash(courseKey||'x')^Math.imul((i|0)+1,0x9e3779b1))>>>0;
+    const g=hvGeom(seedN,par,yards,courseKey,i);
+    const gcx=(g.gcx!=null)?g.gcx:0, px=(g.pin&&g.pin[0]!=null)?g.pin[0]:gcx, py=(g.pin&&g.pin[1]!=null)?g.pin[1]:g.L;
+    const rx=(g.greenR&&g.greenR[0])||12, ry=(g.greenR&&g.greenR[1])||10;
+    const dx=px-gcx, dy=py-g.L;
+    out.side = dx<0?'left':'right';
+    // a front/back pin sits near the centre line - naming it left/right reads as wrong on screen
+    out.word = (Math.abs(dx)/rx >= Math.abs(dy)/ry) ? out.side : (dy<0?'front':'back');
+  }catch(e){}
+  _pinSpotCache[key]=out; return out;
+}
 function dScenario(courseKey,i,total,av){
   const c=DAILY_COURSES[courseKey], h=c.holes[i], par=h[0], yards=h[1];
   const haz=(DSIG_HAZ[courseKey]||{})[i+1]||(par===3?'long':'bunker'), type=dShotType(par,yards);
   const rng=dHoleRng(S.dailySeed,courseKey,i,dAttSalt(0x5c1));
   const yd = type==='app4'?Math.max(120,Math.min(205,yards-285)) : type==='go5'?Math.max(195,Math.min(255,yards-300)) : type==='long5'?Math.round(95+rng()*22) : yards;
   const wet=/water|island|creek|cliff/.test(haz);
-  const side=haz==='water-l'?'left':haz==='water-r'?'right':(rng()<0.5?'left':'right'), other=side==='left'?'right':'left';
+  // NOTE: the rng() call is made in EXACTLY the cases the original made it (i.e. not on water-l/water-r,
+  // which short-circuit), so the seeded stream - and therefore which decision a given day/hole asks - is
+  // byte-identical. The real pin position just overrides the coin-flip value it produced.
+  const coin=(haz==='water-l'||haz==='water-r')?null:(rng()<0.5?'left':'right');
+  const spot=dPinSpot(courseKey,i,par,yards);
+  const side=haz==='water-l'?'left':haz==='water-r'?'right':(spot.side||coin), other=side==='left'?'right':'left';
+  // how the pin is described in copy: a genuinely side pin reads "left"/"right", a centre pin "at the
+  // front"/"at the back" - so the words always match the flag the player can see on the tracer.
+  const pinWord=spot.word||side;
+  const pinCut=(pinWord==='front'||pinWord==='back')?('at the '+pinWord):pinWord;
   const hazWord=haz==='creek'?'the creek':haz==='cliff'?'the cliff edge':haz==='bunker'?'the bunkers':wet?'the water':'the trouble';
   const windy=S.dailyCond!=='calm';
   // phase: 'tee' = a driving decision (shown before the drive, biases the drive); 'app' (default) = an
@@ -27453,9 +27495,9 @@ function dScenario(courseKey,i,total,av){
   const T=[];
   // ---------- decisions that fit this hole's shot type + hazard ----------
   if(type==='tee3'||type==='app4'){
-    T.push(S2(`${yd} yds · pin ${side}`,
-      `${yd} yards in, pin cut ${side}${wet?` behind ${hazWord}`:haz==='bunker'?' over a bunker':''}. Hunt the flag or play the percentages?`,
-      `Fire at the ${side} pin`, wet?'Birdie look, short-side it and you’re wet':'A close birdie look, but it’s short-sided',
+    T.push(S2(`${yd} yds · pin ${pinWord}`,
+      `${yd} yards in, pin cut ${pinCut}${wet?` behind ${hazWord}`:haz==='bunker'?' over a bunker':''}. Hunt the flag or play the percentages?`,
+      `Fire at the ${pinWord} pin`, wet?'Birdie look, short-side it and you’re wet':'A close birdie look, but it’s short-sided',
       'Aim for the fat of the green', 'Two-putt par, no chance of a big number'));
     T.push(S2(`${yd} yds · between clubs`,
       `${yd} yards and you’re right between clubs${windy?', the wind gusting':''}. Which one do you trust?`,
