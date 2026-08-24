@@ -279,6 +279,35 @@
     .sig i{background:rgba(255,255,255,.04)}
   }
 
+  /* ---- your council ----
+     A BLOC YOU CANNOT READ IS STILL IN THE ROOM. The row keeps its chip, its name, its votes
+     and where it stands, all of which are public and printed in the office anyway. Only the
+     forecast goes, and a padlock takes its place: a missing column reads as a rendering
+     fault, a padlock reads as a rule. */
+  .bl.blind{opacity:.62}
+  .meter.blind{opacity:.72}
+  .meter .d.lock svg{width:12px;height:12px;fill:none;stroke:var(--dim-2);stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round;vertical-align:-1px}
+  .bl .dl.lock{display:flex;align-items:center;justify-content:flex-end}
+  .bl .dl.lock svg{width:13px;height:13px;fill:none;stroke:var(--dim-2);stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .council{display:grid;gap:4px;margin-top:11px;padding:10px 11px;border-radius:10px;
+    background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.28)}
+  .council .ch{display:flex;align-items:center;gap:6px}
+  .council .ch b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.13em;
+    text-transform:uppercase;color:#c084fc}
+  .council .ci{width:12px;height:12px;flex:0 0 auto;fill:none;stroke:#c084fc;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .council .cn{font-size:12px;color:var(--dim);line-height:1.4}
+  /* THE NEXT SEAT, AND WHAT IT COSTS. A ladder nobody can see the next rung of is not a
+     ladder, it is a wall that occasionally moves. */
+  .council .cnx{font-size:11px;color:var(--dim-2);line-height:1.4}
+  /* Filled, and it is the one place in this mode that is allowed to look like an achievement
+     rather than an offer. */
+  .council.full{background:rgba(16,185,129,.07);border-color:rgba(16,185,129,.3)}
+  .council.full .ch b{color:var(--green)}
+  .council.full .ci{stroke:var(--green)}
+
   /* ---- what this ruling would leave behind ----
      THE ONE THING THE DESK NEVER SHOWED. The player was asked to choose between three
      paragraphs and then found out what they had done two screens later, which is why the
@@ -698,6 +727,9 @@
     <div id="d-write"></div>
     <div style="margin-top:14px">
       <button class="btn ghost" id="b-test">Test it on the room</button>
+      <!-- What that button will actually show you, said before you press it rather than
+           after, so a thin forecast is a known limit and not a disappointment. -->
+      <div id="d-council"></div>
       <button class="btn" id="b-rule">Rule</button>
     </div>
   </div>
@@ -710,6 +742,8 @@
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px" id="r-head">The room</div>
       <div class="room" id="r-room"></div>
+      <!-- How much of that was a read and how much was guesswork. -->
+      <div id="r-council"></div>
     </div>
     <div class="card flat" id="r-changed" hidden>
       <div class="eyebrow" style="margin-bottom:9px">What changed in the sport</div>
@@ -750,6 +784,7 @@
 <script src="blocs.js?v=1"></script>
 <script src="docket.js?v=2"></script>
 <script src="season.js?v=2"></script>
+<script src="council.js?v=1"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -775,6 +810,7 @@ const L=window.PS_CFB_LEDGER, B=window.PS_CFB_BLOCS, D=window.PS_CFB_DOCKET, E=w
    mode down with a blank screen; falling back to a closed door is wrong in the harmless
    direction, and the door already says what to do about it. */
 const S=window.PS_CFB_SEASON;
+const C=window.PS_CFB_COUNCIL;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
@@ -791,6 +827,49 @@ const allowed=()=>ACCESS.allowed(authState);
 let forceFree=false;
 try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
 const isPro=()=>allowed()&&!forceFree;
+
+/* ── the career ───────────────────────────────────────────────────────────────────
+   HOW LONG YOU HAVE BEEN DOING THIS JOB, counted in rulings and kept OUTSIDE the term.
+   Everything else in this mode is a five year contract that ends and starts again; the
+   council is the one thing that should not, because a commissioner who has served twelve
+   years knows people a first-year commissioner does not, and losing that on "take the job
+   again" would make the whole ladder pointless.
+
+   It is a count of rulings rather than of seasons or terms because that is what actually
+   accumulates the knowledge: a beat with nothing on the desk teaches you nothing, and there
+   is no way to farm it, since a year holds nine beats whatever you do with them.
+
+   `?rulings=N` is the tester switch, alongside `?tier=free`. Nobody else can reach this page
+   and there is no way to judge a ladder you would have to play four terms to see. */
+const CAREER_KEY='cfb_commish_career';
+let careerOverride=null;
+try{
+  const q=new URLSearchParams(location.search).get('rulings');
+  if(q!==null&&q!=='') careerOverride=Math.max(0,Math.floor(Number(q))||0);
+}catch(e){}
+function careerRulings(){
+  if(careerOverride!=null) return careerOverride;
+  try{
+    const raw=localStorage.getItem(CAREER_KEY);
+    if(raw) return Math.max(0,Math.floor(Number(JSON.parse(raw).rulings)||0));
+  }catch(e){}
+  return 0;
+}
+function bumpCareer(){
+  if(careerOverride!=null) return;
+  try{ localStorage.setItem(CAREER_KEY,JSON.stringify({v:1,rulings:careerRulings()+1})); }catch(e){}
+}
+/* A TERM ALREADY IN PROGRESS IS NOT WASTED. The career count is new, so somebody mid-term
+   would otherwise be at zero with a record of thirty rulings sitting in their own save.
+   Seeded once, from the ledger's own history, and never again: `>` rather than `=` so it can
+   only ever raise the number. */
+function seedCareer(w){
+  if(careerOverride!=null||!w||!w.history) return;
+  const ruled=w.history.filter((h)=>!(h.id&&String(h.id).indexOf('season:')===0)).length;
+  if(ruled>careerRulings()){
+    try{ localStorage.setItem(CAREER_KEY,JSON.stringify({v:1,rulings:ruled})); }catch(e){}
+  }
+}
 
 /* ── the term ─────────────────────────────────────────────────────────────────── */
 const SAVE_KEY='cfb_commish_term';
@@ -842,6 +921,7 @@ function load(){
        nothing: every screen treats a missing snapshot as "no comparison to draw" and
        simply leaves the notch and the "was" line off. */
     if(world.start&&!world.start.meters) world.start=null;
+    seedCareer(world);
     return true;
   }catch(e){ return false; }
 }
@@ -950,6 +1030,9 @@ const BLOC_UI={
   'Fans':      {short:'Fans',c:'#38bdf8',ic:G('<path d="M3 10.5 14 5v14L3 13.5z"/><path d="M17 9.5a4 4 0 0 1 0 5"/><path d="M6 13.5V19"/>')},
 };
 const bcOf=(id)=>(BLOC_UI[id]||{}).c||'#64748b';
+/* A CLOSED PADLOCK, for a bloc you have no read on. */
+const LOCK=G('<rect x="4.5" y="10.5" width="15" height="10" rx="2"/>'
+  +'<path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>');
 const blocChip=(id)=>{
   const u=BLOC_UI[id]||{};
   return '<span class="chip">'+(u.ic||esc(u.tag||id))+'</span>';
@@ -960,24 +1043,46 @@ const moodCol=(v)=>v>=60?'var(--green)':v>=35?'var(--gold)':'var(--red)';
 const band=(v)=>v>=60?'good':v>=35?'mid':'bad';
 
 const METERS=[['revenue','Revenue'],['health','The sport'],['standing','Your standing']];
-function paintMeters(el,w,before){
+/* `lock` NAMES METERS THE SCREEN MAY NOT FORECAST, and it exists because of one leak that
+   was invisible until the council was built.
+
+   Revenue and health read the ruling's own effect vector: they are what the sport makes and
+   how healthy it is, not anybody's opinion, so a forecast of them is arithmetic on your own
+   ruling in the same way the desk panel is.
+
+   STANDING IS NOT. It is the vote-weighted average of the room, and every bloc that holds a
+   vote is dark at a small council, so printing "your standing, minus 7.9" alongside six
+   padlocks hands back the exact aggregate of the six you were told you cannot read. One
+   number undoing the whole mechanic. It is locked instead, showing what the office already
+   shows and no more. */
+function paintMeters(el,w,before,lock){
+  const shut=lock||{};
   el.innerHTML=METERS.map(([k,label])=>{
-    const v=w.meters[k], d=before?v-before.meters[k]:0;
+    const off=!!shut[k]&&!!before;
+    /* A LOCKED METER IS THE ONE YOU ALREADY HAVE. Not a blank and not a guess: the value
+       before this ruling, which is public, with the forecast withheld. */
+    const v=off?before.meters[k]:w.meters[k], d=(before&&!off)?v-before.meters[k]:0;
     /* WHERE IT STARTED, so the number has something to be measured against. */
     const start=(w.start&&w.start.meters&&w.start.meters[k]);
-    const arrow=Math.abs(d)<0.05?'':'<span class="d '+(d>0?'up':'dn')+'">'
-      +(d>0?'▲':'▼')+Math.abs(d).toFixed(1)+'</span>';
+    const arrow=off
+      ? '<span class="d lock" title="Not on your council">'+LOCK+'</span>'
+      : Math.abs(d)<0.05?'':'<span class="d '+(d>0?'up':'dn')+'">'
+        +(d>0?'▲':'▼')+Math.abs(d).toFixed(1)+'</span>';
     /* THE NUMBER GETS ITS OWN NODE so it can be counted up to without the arrow beside it
        being rewritten forty times a second. */
-    return '<div class="meter '+band(v)+'"><b><i class="n">'+Math.round(before?before.meters[k]:v)
+    return '<div class="meter '+band(v)+(off?' blind':'')+'"><b><i class="n">'
+      +Math.round(before?before.meters[k]:v)
       +'</i>'+arrow+'</b><span>'+label+'</span>'
       +'<i><em data-w="'+Math.round(v)+'%" style="width:0;background:'+moodCol(v)+'"></em>'
       +(start!=null?'<u style="left:'+Math.round(start)+'%"></u>':'')+'</i></div>';
   }).join('');
   /* COUNTED, BUT ONLY WHERE SOMETHING HAPPENED. `before` is the world one ruling ago, and it
-     is only passed on the screen that is announcing that ruling. */
+     is only passed on the screen that is announcing that ruling. A locked meter has not
+     moved as far as this screen is concerned, so it has nothing to count. */
   const ns=el.querySelectorAll('.meter b .n');
-  METERS.forEach(([k],i)=>{ countTo(ns[i],w.meters[k],before?before.meters[k]:null); });
+  METERS.forEach(([k],i)=>{
+    countTo(ns[i],shut[k]&&before?before.meters[k]:w.meters[k],before?before.meters[k]:null);
+  });
   grow(el); reveal(el);
 }
 
@@ -1008,8 +1113,16 @@ function paintCoalition(el,w){
    how do they feel, and which way did they just move. `rows` is the reaction to a ruling
    when there is one, and when there is one the MOVE becomes the loud number, because that
    is the screen where what just happened is the story. */
-function paintRoom(el,w,rows){
+/* `blind` IS A SET OF BLOC IDS WHOSE REACTION MUST BE WITHHELD, and it is only ever passed
+   by the preview. What a bloc's standing IS stays visible for everybody: that is public and
+   the office prints it. What is withheld is which way THIS ruling would move them, which is
+   the thing a council is for.
+
+   Withheld includes the quote. The line a bloc says is generated from its own delta, so
+   printing it beside a hidden number would hand over the answer in words. */
+function paintRoom(el,w,rows,blind){
   const byId={}; (rows||[]).forEach((r)=>{byId[r.id]=r;});
+  const dark=blind||{};
   const react=!!(rows&&rows.length);
   /* SCALED TO THE BIGGEST MOVER IN THIS RULING, not to a fixed ceiling. A fixed one was
      tried and every bar came out a stub: real moves are one to four points against a scale
@@ -1031,7 +1144,11 @@ function paintRoom(el,w,rows){
       ? '<span class="mv"><i></i><em style="'+(r.delta>0?'left:50%':'right:50%')+';width:0;'
         +'background:'+(r.delta>0?'var(--green)':'var(--red)')+'" data-w="'+mag+'%"></em></span>'
       : '';
-    return '<div class="bl'+(hostile?' hostile':'')+(react?' react':'')
+    /* OFF YOUR COUNCIL: the row is still here, still names them, still shows where they
+       stand. What is gone is the read, and it is REPLACED rather than left blank, because a
+       missing column reads as a bug and a padlock reads as a rule. */
+    const off=react&&dark[b.id];
+    return '<div class="bl'+(hostile?' hostile':'')+(react?' react':'')+(off?' blind':'')
       +'" style="--bc:'+bcOf(b.id)+'">'
       +blocChip(b.id)
       +'<span class="nm">'+esc((BLOC_UI[b.id]||{}).short||b.name)+'</span>'
@@ -1043,15 +1160,17 @@ function paintRoom(el,w,rows){
          in the same column as everybody else. */
       +(react
         ? '<span class="lv">'+Math.round(v)+'</span>'
-          +(moved
-            ? '<span class="dl '+(r.delta>0?'up':'dn')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span>'
-            : '<span class="dl" style="color:var(--dim-2)">0.0</span>')
+          +(off
+            ? '<span class="dl lock" title="Not on your council">'+LOCK+'</span>'
+            : moved
+              ? '<span class="dl '+(r.delta>0?'up':'dn')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span>'
+              : '<span class="dl" style="color:var(--dim-2)">0.0</span>')
         : '<span class="bar"><em data-w="'+Math.round(v)+'%" style="width:0;background:'
           +moodCol(v)+'"></em>'
           +'<u style="left:'+L.HOSTILE+'%"></u></span>'
           +'<span class="dl" style="color:'+moodCol(v)+'">'+Math.round(v)+'</span>')
-      +mv
-      +(r?'<span class="say">'+esc(r.say)+'</span>':'')
+      +(off?'':mv)
+      +(r&&!off?'<span class="say">'+esc(r.say)+'</span>':'')
       +'</div>';
   }).join('');
   grow(el); reveal(el);
@@ -1257,6 +1376,8 @@ function desk(){
   paintEffect();
   paintWrite();
   $('b-test').hidden=!isPro();
+  if(isPro()) paintCouncilNote($('d-council'),C.seatsAt(careerRulings()));
+  else $('d-council').innerHTML='';
   show('s-desk');
 }
 /* THE EIGHT FORCES, IN WORDS A PLAYER ALREADY HAS. The axis names are the model's, and two
@@ -1320,6 +1441,40 @@ function optionSignature(o){
       +(up?'▲':'▼')+' '+esc(AXIS_SHORT[a]||AXIS_WORDS[a][up?0:1])+'</i>';
   }).join('')+'</span>';
 }
+/* ── the council ──────────────────────────────────────────────────────────────────
+   Three small readers over cfb/commish/council.js, which holds the ladder itself. */
+const blindSet=()=>{
+  const out={};
+  C.blindAt(careerRulings()).forEach((id)=>{ out[id]=1; });
+  return out;
+};
+const councilNames=()=>C.councilAt(careerRulings())
+  .map((id)=>(BLOC_UI[id]||{}).short||(B.BY_ID[id]||{}).name||id);
+
+/* WHAT YOU CAN READ AND WHAT IT WOULD TAKE TO READ MORE, in one line, in the two places it
+   matters: under the button that offers the forecast, and under the forecast itself. */
+function paintCouncilNote(el,seats){
+  if(!el) return;
+  const total=C.SEATS.length;
+  if(seats>=total){
+    el.className='council full';
+    el.innerHTML='<span class="ch">'+LOCK.replace('<svg ','<svg class="ci" ')
+      +'<b>The whole room</b></span>'
+      +'<span class="cn">Every seat on your council is filled. Nothing in this room is a '
+      +'surprise to you any more.</span>';
+    return;
+  }
+  const next=C.nextSeat(careerRulings());
+  el.className='council';
+  el.innerHTML='<span class="ch">'+LOCK.replace('<svg ','<svg class="ci" ')
+    +'<b>Your council: '+seats+' of '+total+'</b></span>'
+    +'<span class="cn">'+esc(councilNames().join(', '))+'. '
+    +'The rest of the room you cannot read yet.</span>'
+    +(next?'<span class="cnx">Your '+C.ORDINAL[next.seat]+' seat is '
+      +esc((BLOC_UI[next.id]||{}).short||next.id)+', at '+next.at+' rulings. You have '
+      +careerRulings()+'.</span>':'');
+}
+
 /* THE SETUP, CLAMPED. Some briefs are two lines and some are six, and a control that says
    "more" under a paragraph that is already whole is worse than no control: it promises
    something that is not there. So the clamp goes on, the page is measured, and the button
@@ -1506,11 +1661,22 @@ $('b-test').onclick=()=>{
   lastRoom=B.react(world,edit);
   lastBefore=world;
   const after=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
+  /* THE FORECAST IS AS GOOD AS YOUR COUNCIL AND NO BETTER. Nine of nine was the answer key:
+     press it, read the numbers, take the best ones, and there is no decision left in a mode
+     that is nothing but decisions. */
+  const blind=blindSet();
+  const seats=C.SEATS.length-Object.keys(blind).length;
   $('r-eyebrow').textContent='If you ruled that way';
   $('r-title').textContent='Nothing is decided yet';
-  $('r-head').textContent='How the room would take it';
-  paintMeters($('r-meters'),after,world);
-  paintRoom($('r-room'),after,lastRoom);
+  $('r-head').textContent=seats>=C.SEATS.length
+    ? 'How the room would take it'
+    : 'How your council says the room would take it';
+  /* THE STANDING METER IS LOCKED WHILE ANY VOTE HOLDER IS DARK, because standing is exactly
+     the vote-weighted average of those blocs and the number would give them straight back. */
+  const voteDark=B.BLOCS.some((b)=>b.vote>0&&blind[b.id]);
+  paintMeters($('r-meters'),after,world,voteDark?{standing:1}:null);
+  paintRoom($('r-room'),after,lastRoom,blind);
+  paintCouncilNote($('r-council'),seats);
   $('r-changed').hidden=false;
   paintSport($('r-sport'),after,world);
   $('b-next').textContent='Back to the desk';
@@ -1526,12 +1692,19 @@ $('b-rule').onclick=()=>{
   lastRoom=B.react(world,edit);
   world=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
   save();
+  /* A RULING IS THE UNIT THE CAREER IS COUNTED IN, so it is counted here and nowhere else:
+     one call at the one place a ruling actually becomes real. */
+  bumpCareer();
   $('r-eyebrow').textContent='You ruled';
   $('r-title').textContent=D.text(item.title,cast,item)+': '
     +item.options.find((o)=>o.id===choice).label.toLowerCase();
   $('r-head').textContent='The room';
   paintMeters($('r-meters'),world,before);
+  /* NO COUNCIL HERE, ON PURPOSE. This is what happened, and the whole room answers whether
+     you had people inside it or not. Gating a forecast is difficulty; gating a consequence
+     would just be hiding the game. */
   paintRoom($('r-room'),world,lastRoom);
+  paintCouncilNote($('r-council'),C.SEATS.length);
   const changed=JSON.stringify(sportFacts(world))!==JSON.stringify(sportFacts(before));
   $('r-changed').hidden=!changed;
   if(changed) paintSport($('r-sport'),world,before);

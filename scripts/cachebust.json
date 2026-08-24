@@ -67,6 +67,10 @@
     "season.js": {
       "v": "2",
       "sha": "a8b706d161aa550f"
+    },
+    "council.js": {
+      "v": "1",
+      "sha": "ee1026b7e8ae60ba"
     }
   },
   "cfb/index.html": {

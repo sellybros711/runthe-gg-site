@@ -227,6 +227,87 @@ console.log('\n=== what the desk promised is what the office got ===');
 }
 
 ok('no page errors', !errs.length, errs.join(' | ') || 'none');
+await p.close();
+
+console.log('\n=== the forecast is only as good as your council ===');
+{
+  /* THE PREVIEW WITHHOLDS, AND WITHHOLDING IS EASY TO DO BADLY. Three ways to leak the six
+     blocs a small council cannot read, none of which throws:
+
+       the quote          the line a bloc says is generated from its own delta
+       the move bar       its width IS the delta
+       the standing meter standing is the vote-weighted average of the room, and every bloc
+                          that holds a vote is dark at a small council, so one number hands
+                          back the exact aggregate of everything being hidden
+
+     The last one shipped for about an hour and was invisible: six padlocks and, above them,
+     "your standing, minus 7.9".
+
+     `?rulings=N` is the tester switch that makes this checkable without playing two terms. */
+  const look = async (rulings) => {
+    const q = await b.newPage({ viewport: { width: 390, height: 900 } });
+    const e2 = []; q.on('pageerror', (x) => e2.push(x.message));
+    await q.addInitScript(arm + stub);
+    await q.goto(URL + '?rulings=' + rulings, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await q.waitForTimeout(2400);
+    await q.click('#g-start').catch(() => {});
+    await q.waitForTimeout(900);
+    const at = (id) => q.$eval('#' + id, (x) => x.classList.contains('on')).catch(() => false);
+    for (let i = 0; i < 10 && !(await at('s-desk')); i++) {
+      if (await at('s-office')) { await q.click('#b-desk', { timeout: 2000 }).catch(() => {}); await q.waitForTimeout(450); continue; }
+      if (await at('s-room')) { await q.click('#b-next', { timeout: 2000 }).catch(() => {}); await q.waitForTimeout(450); continue; }
+      break;
+    }
+    const o = await q.$('#d-options .opt'); if (o) { await o.click(); await q.waitForTimeout(300); }
+    const note = await q.$eval('#d-council', (x) => x.textContent.trim()).catch(() => '');
+    await q.click('#b-test', { timeout: 2000 }).catch(() => {});
+    await q.waitForTimeout(900);
+    const rows = await q.$$eval('#r-room .bl', (els) => els.map((x) => ({
+      who: x.querySelector('.nm').textContent,
+      dark: x.classList.contains('blind'),
+      say: !!x.querySelector('.say'),
+      bar: !!x.querySelector('.mv'),
+      delta: (x.querySelector('.dl') || {}).textContent || '',
+      level: (x.querySelector('.lv') || {}).textContent || '',
+    })));
+    const standing = await q.$$eval('#r-meters .meter', (els) => {
+      const m = els[els.length - 1];
+      return { dark: m.classList.contains('blind'), d: (m.querySelector('.d') || {}).textContent || '' };
+    });
+    await q.close();
+    return { rows, standing, note, errs: e2 };
+  };
+
+  const nw = await look(0);
+  ok('a new commissioner reads three of the nine',
+    nw.rows.length === 9 && nw.rows.filter((r) => !r.dark).length === 3,
+    nw.rows.filter((r) => !r.dark).map((r) => r.who).join(', '));
+  /* THE ROW STAYS. Dropping it would show three rows and let the player think that is the
+     room; the padlock is what says there are six more and you are blind to them. */
+  ok('  the six they cannot read are still in the room', nw.rows.filter((r) => r.dark).length === 6);
+  ok('  and none of them leaks a quote or a move bar',
+    nw.rows.filter((r) => r.dark).every((r) => !r.say && !r.bar));
+  ok('  nor a number where the read would be',
+    nw.rows.filter((r) => r.dark).every((r) => !/[0-9]/.test(r.delta)),
+    'deltas: ' + JSON.stringify(nw.rows.filter((r) => r.dark).map((r) => r.delta)));
+  /* WHERE THEY STAND IS PUBLIC and the office prints it, so it stays. */
+  ok('  but where they stand is still shown, because that is public',
+    nw.rows.filter((r) => r.dark).every((r) => /^[0-9]+$/.test(r.level)));
+  ok('  and standing is locked, because it IS the room', nw.standing.dark === true
+    && !/[0-9]/.test(nw.standing.d), JSON.stringify(nw.standing));
+  ok('  with the desk having said so before they pressed it',
+    /council/i.test(nw.note) && /3 of 9/.test(nw.note), nw.note.slice(0, 60));
+
+  const old = await look(60);
+  ok('a commissioner of sixty rulings reads the whole room',
+    old.rows.length === 9 && old.rows.every((r) => !r.dark));
+  ok('  and gets their standing back', old.standing.dark === false
+    && /[0-9]/.test(old.standing.d), JSON.stringify(old.standing));
+
+  ok('no page errors in either', !nw.errs.length && !old.errs.length,
+    nw.errs.concat(old.errs).join(' | ') || 'none');
+}
+
 await b.close();
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);
