@@ -17551,8 +17551,8 @@ function entryCardRank(p){ return p.status==='full'?3 : p.status==='cond'?2 : p.
 function scrEntry(){
   entryStyleOnce();
   if(!entryPathById(S.entryPick)) S.entryPick=ENTRY_PATHS[0].id;
-  add(scrHero('Turn Pro','Five ways in. This one is for the whole career.'));
-  add($(`<div class="lede center" style="max-width:560px;margin:0 auto 13px">How you got here sets your age, your card, your standing and how long you have.</div>`));
+  // one instruction, not three: the tiles + panel below explain themselves
+  add(scrHero('Turn Pro','Choose how you want to begin your career'));
   const wrap=$(`<div class="ep-wrap"></div>`);
 
   // ---- the picker: all five always on screen, so the choice space is visible at a glance

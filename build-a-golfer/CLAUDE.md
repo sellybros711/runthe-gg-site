@@ -16620,6 +16620,10 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   biggest audience" is a glance rather than a read.
 - **The CTA says "Turn pro ▸" with the path name in the sub, not in the label.** The first cut read
   "Turn pro as Exemption" / "as Late", which is why the name moved to the sub line.
+- **The top is one instruction** (owner: "simplify the top text to be something very simple like CHOOSE
+  HOW YOU WANT TO BEGIN YOUR CAREER"). The hero sub is now exactly that and the explanatory paragraph
+  under it is gone, since the tiles and the panel explain themselves: **141 words → 123**, and it pulls
+  "Compare all five" up onto the first screen.
 - Verified: 23 checks, 0 fail, 0 page errors, driven through the real UI on a 393pt phone — five tiles
   and exactly one panel; only the SELECTED path spends a blurb on you; a tile tap switches the panel,
   highlights only that tile and re-sweeps the meters from 0; the meters tell the truth (23 seasons for
