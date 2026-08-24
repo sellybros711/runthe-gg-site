@@ -94,15 +94,21 @@
     padding:10px 11px;border-top:2px solid var(--line)}
   .meter.good{border-top-color:var(--green)} .meter.mid{border-top-color:var(--gold)}
   .meter.bad{border-top-color:var(--red)}
-  .meter b{display:block;font-family:var(--fd);font-size:26px;line-height:1}
-  .meter span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
+  /* DIRECT CHILDREN, NOT DESCENDANTS, and this is not tidying. A meter is three boxes and
+     the bare selectors claimed every span and every `i` anywhere inside one, so the moment
+     the number was given a node of its own to be counted up in it inherited the four-pixel
+     grey bar and the number vanished from the reaction screen entirely. The same rule was
+     already putting the change arrow on its own line, under the number it belongs beside. */
+  .meter>b{display:block;font-family:var(--fd);font-size:26px;line-height:1}
+  .meter>b .n{font-style:normal}
+  .meter>span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
     letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:4px}
-  .meter i{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.09);
+  .meter>i{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.09);
     margin-top:7px;overflow:hidden;position:relative}
-  .meter i em{display:block;height:100%;transition:width .5s var(--ez)}
+  .meter>i em{display:block;height:100%;transition:width .5s var(--ez)}
   /* WHERE IT WAS WHEN YOU TOOK THE JOB, as a notch on the track. A number alone cannot say
      whether 55 is where you started or where you have crawled back to. */
-  .meter i u{position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.5);
+  .meter>i u{position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.5);
     border-radius:1px}
   .meter .d{font-family:var(--fn);font-size:11px;font-weight:700;margin-left:5px}
   .up{color:var(--green)} .dn{color:var(--red)}
@@ -272,11 +278,105 @@
   .fact.changed .fi svg{stroke:var(--gold)}
 
   /* NINE BEATS IN A SEASON, and the one you are on should be findable without counting.
-     It was nine identical dashes with two shades between them. */
+     It was nine identical dashes with two shades between them. The strip stays on the desk,
+     where the whole term is more than the screen is asking about. The office and the year
+     in review get the calendar below instead. */
   .beatbar{display:flex;gap:3px;margin-bottom:12px;align-items:center}
-  .beatbar i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.09)}
+  .beatbar i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.09);
+    transition:background .45s var(--ez),height .35s var(--ez),box-shadow .35s var(--ez)}
   .beatbar i.done{background:var(--green);opacity:.55}
   .beatbar i.now{background:var(--gold);height:8px;box-shadow:0 0 0 3px rgba(245,158,11,.16)}
+
+  /* ---- the calendar ----
+     A TERM IS FORTY-FIVE BEATS AND THE PLAYER COULD ONLY EVER SEE NINE OF THEM. The strip
+     above says where you are inside one season and nothing at all about the job: five years,
+     how many are spent, what you did with them. That is the question the mode is actually
+     about, and it was being answered by one line of text ("year 1 of 5").
+
+     So the whole term is a grid. A row per season, a column per beat, and every cell says
+     what happened in it: a ruling you made, a season that was played, the beat you are
+     standing on, or nothing yet. It is a calendar in the sense that matters, which is that
+     you can see the shape of the year ahead and the record of the years behind at once.
+
+     THE THREE PHASES ARE THE COLUMNS' OWN COLOUR, because the football calendar really is
+     three different jobs. Four beats of winter, three of the season, two of the postseason. */
+  .cal{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:11px 12px 12px;margin-bottom:12px}
+  .cal .ch{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+  .cal .ch b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .cal .ch span{margin-left:auto;font-family:var(--fn);font-size:11px;font-weight:700;
+    color:var(--gold)}
+  /* The phase strip. Three labels over the columns they own, so a glance at the grid knows
+     which part of the year each column is without a legend to go and find. */
+  .phases{display:grid;grid-template-columns:26px 4fr 3fr 2fr;gap:0 4px;margin-bottom:5px}
+  .phases i{font-style:normal;font-family:var(--fn);font-size:8px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);text-align:center;
+    border-bottom:1px solid var(--line);padding-bottom:3px}
+  .phases i.p0{color:#93c5fd;border-bottom-color:rgba(147,197,253,.32)}
+  .phases i.p1{color:#86efac;border-bottom-color:rgba(134,239,172,.32)}
+  .phases i.p2{color:#fcd34d;border-bottom-color:rgba(252,211,77,.32)}
+  .calrow{display:grid;grid-template-columns:26px repeat(9,1fr);gap:4px;align-items:center;
+    margin-top:4px}
+  .calrow>b{font-family:var(--fn);font-size:9.5px;font-weight:700;color:var(--dim-2);
+    letter-spacing:.02em}
+  .calrow.now>b{color:var(--gold)}
+  /* A CELL IS A BEAT. Square, because forty-five of them in a row of nine has to stay a grid
+     and not become a bar chart. */
+  /* NOT SQUARE, ON PURPOSE. Square cells at nine to a row come out 31px tall, which is 190px
+     of calendar sitting above the headline on a phone and pushes the three meters off the
+     screen. Slightly wider than tall still reads as a grid and gives that back. */
+  .cel{position:relative;height:22px;border-radius:4px;background:rgba(255,255,255,.05);
+    border:1px solid transparent;
+    transition:background .5s var(--ez),border-color .5s var(--ez),transform .35s var(--ez)}
+  .cel.p0{background:rgba(147,197,253,.07)}
+  .cel.p1{background:rgba(134,239,172,.07)}
+  .cel.p2{background:rgba(252,211,77,.07)}
+  /* SPENT, RULED, PLAYED, NOW. Four states and each of them is a different mark rather than
+     a different shade of the same one, which is the mistake the strip above made. */
+  .cel.past{background:rgba(255,255,255,.10)}
+  .cel.ruled{background:var(--green);opacity:.72}
+  .cel.ruled:after{content:'';position:absolute;inset:0;margin:auto;width:3px;height:3px;
+    border-radius:50%;background:#03140d}
+  .cel.played{background:var(--gold);opacity:.85}
+  .cel.played:after{content:'';position:absolute;inset:0;margin:auto;width:4px;height:4px;
+    background:#2a1a00;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+  .cel.now{background:var(--gold);border-color:var(--gold);
+    box-shadow:0 0 0 2px rgba(245,158,11,.22)}
+  @media(prefers-reduced-motion:no-preference){
+    .cel.now{animation:calnow 2.4s var(--ez) infinite}
+    @keyframes calnow{0%,100%{box-shadow:0 0 0 2px rgba(245,158,11,.22)}
+      50%{box-shadow:0 0 0 5px rgba(245,158,11,.06)}}
+    /* THE BEAT YOU JUST SPENT. Time moving is the one thing this mode does that the player
+       does not do, and without a mark on it the calendar simply looks slightly different
+       than it did a second ago. The square you were standing on flashes as you leave it. */
+    .cel.just{animation:calspent .9s var(--ez) 1}
+    @keyframes calspent{0%{transform:scale(1.35);box-shadow:0 0 0 4px rgba(245,158,11,.35)}
+      100%{transform:scale(1);box-shadow:0 0 0 0 rgba(245,158,11,0)}}
+  }
+  /* THE YEAR AHEAD, NAMED. The grid says where you are, this says what it is called and
+     what is next, which is the other half of knowing where you are. */
+  /* THREE FIELDS ON ONE LINE AND NONE OF THEM MAY WRAP. As a flex row "Winter meetings"
+     broke over two lines and "0 rulings" broke between the number and the word, which reads
+     as a layout fault rather than as a line of information. A grid gives the middle field
+     the slack and lets it ellipsis instead. */
+  .calnow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;
+    gap:9px;margin-top:10px}
+  .calnow b{font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink);
+    white-space:nowrap}
+  .calnow span{color:var(--dim-2);font-size:11.5px;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .calnow span:before{content:'next: '}
+  .calnow em{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:700;
+    color:var(--dim-2);white-space:nowrap}
+  /* THE CHAMPION OF A SEASON THAT HAS BEEN PLAYED, on the row it was won in. A term's record
+     is who won it, and the year in review is the only place that ever said so. */
+  .calwin{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:9px;padding-top:9px;
+    border-top:1px solid var(--line)}
+  .calwin span{display:flex;align-items:center;gap:5px;font-family:var(--fn);font-size:10px;
+    font-weight:700;color:var(--dim)}
+  .calwin i{width:7px;height:7px;border-radius:2px;flex:0 0 auto}
+  .calwin u{text-decoration:none;color:var(--dim-2)}
 
   /* A FUSE IS NOT A METER AND MUST NOT LOOK LIKE ONE. It does not tick down, it fires, so
      it is drawn hot and it names itself only once it is actually lit. */
@@ -331,18 +431,35 @@
     animation:ping 1.8s var(--ez) infinite}
   @keyframes ping{0%{transform:scale(.6);opacity:.85}70%{transform:scale(3.2);opacity:0}
     100%{transform:scale(3.2);opacity:0}}
+  /* ONE CONFERENCE AT A TIME. The legend is not a key, it is a filter: tap a name and
+     everybody else steps back so the shape of that conference alone is visible. Realignment
+     arguments are always about one conference's footprint, and eighty-three dots in six
+     colours cannot answer "where is the Big Ten now" on their own. */
+  .map.focus .st{opacity:.28} .map.focus .st.fc{opacity:1}
+  .map.focus .dot{opacity:.13} .map.focus .dot.fc{opacity:1}
+  .st,.dot{transition:fill .7s var(--ez),opacity .35s var(--ez)}
+  @media (prefers-reduced-motion:no-preference){
+    .map.focus .dot.fc{animation:fpulse 1.9s var(--ez) infinite}
+    @keyframes fpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+  }
   @media (prefers-reduced-motion:reduce){
     .drawin .st,.drawin .dot,.st.flip,.ping{animation:none}
     .st,.dot{transition:none}
   }
   .maplegend{display:flex;flex-wrap:wrap;gap:4px 11px;margin-top:10px}
   .maplegend span{display:flex;align-items:center;gap:5px;font-family:var(--fn);
-    font-size:10px;font-weight:700;color:var(--dim)}
+    font-size:10px;font-weight:700;color:var(--dim);cursor:pointer;
+    border-radius:5px;padding:2px 4px;margin:-2px -4px;
+    transition:opacity .25s var(--ez),background .25s var(--ez)}
+  .maplegend span:hover{background:rgba(255,255,255,.05)}
+  .maplegend span.dim{opacity:.4}
+  .maplegend span.sel{background:rgba(255,255,255,.09);color:var(--ink)}
   .maplegend i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
   .mapmove{margin-top:8px;font-size:12px;color:var(--gold)}
 
   /* ---- the season ---- */
-  .champ{border:1px solid var(--tc,var(--line));border-radius:13px;padding:14px;
+  .champ{position:relative;overflow:hidden;
+    border:1px solid var(--tc,var(--line));border-radius:13px;padding:14px;
     background:linear-gradient(160deg,color-mix(in srgb,var(--tc,#334155) 22%,transparent),transparent)}
   @supports not (background:color-mix(in srgb,red 10%,transparent)){
     .champ{background:var(--panel-2)}
@@ -386,9 +503,57 @@
   .verdict .big{font-family:var(--fd);font-size:40px;line-height:1}
 
   .screen{display:none} .screen.on{display:block}
+
+  /* ---- motion ----
+     FOUR SCREENS THAT ARRIVED IDENTICALLY. Every screen faded up six pixels, which told the
+     player nothing about what had just happened: going forward to the desk, coming back from
+     a ruling and closing out a year all looked the same. They are three different moves and
+     the page should say which one it is.
+
+     Everything here is transform and opacity only, which is what the compositor can do
+     without touching layout. Nothing animates a width, a height, a top or a margin: those
+     are the properties that make a phone stutter, and a stutter is worse than no animation
+     at all. Bars still change width, but they change it once and let a transition carry it,
+     which is not the same thing as animating one.
+
+     ONE MEDIA QUERY HOLDS ALL OF IT. Somebody who has asked their phone to stop moving
+     things gets the whole mode with nothing moving and every screen still complete, because
+     none of this carries information that is not also in the markup. */
   @media(prefers-reduced-motion:no-preference){
     .screen.on{animation:fade .28s var(--ez) both}
     @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    /* THE MOVE MATCHES THE SENSE OF IT. You rise into the office, the desk slides in from
+       the side the way the next item does, the room lands on top of what you just did, and
+       a year opens up. */
+    .screen.on[data-in=rise]{animation:rise .36s var(--ez) both}
+    .screen.on[data-in=slide]{animation:slidein .32s var(--ez) both}
+    .screen.on[data-in=land]{animation:land .34s var(--ez) both}
+    .screen.on[data-in=zoom]{animation:zoom .42s var(--ez) both}
+    @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+    @keyframes slidein{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+    @keyframes land{from{opacity:0;transform:scale(1.035)}to{opacity:1;transform:none}}
+    @keyframes zoom{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:none}}
+
+    /* A LIST THAT ARRIVES ALL AT ONCE IS A BLOCK OF TEXT. Nine bloc rows, four facts, four
+       bracket rounds: dealt out in order they read as items, and the eye follows the deal
+       instead of having to pick a starting point. `--i` is set in JS after the markup lands,
+       because only the code that wrote the children knows how many there are. */
+    .pop>*{animation:pop .4s var(--ez) backwards;animation-delay:calc(var(--i,0) * 42ms)}
+    @keyframes pop{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+
+    /* THE ONE FLOURISH IN THE MODE, and it is spent on the one moment that deserves it:
+       somebody's name on a national title. Once, on arrival, never again. */
+    .champ:after{content:'';position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.15) 50%,transparent 62%);
+      transform:translateX(-130%);animation:sheen 1.4s var(--ez) .3s 1 both}
+    @keyframes sheen{to{transform:translateX(130%)}}
+
+    .opt{transition:border-color .16s var(--ez),background .16s var(--ez),
+      transform .12s var(--ez)}
+    .opt:active{transform:scale(.99)}
+    .steps button{transition:border-color .16s var(--ez),background .16s var(--ez),
+      color .16s var(--ez),transform .12s var(--ez)}
+    .steps button:active{transform:scale(.96)}
   }
   .foot{margin-top:22px;text-align:center;font-size:11.5px;color:var(--dim-2);line-height:1.6}
 </style>
@@ -413,8 +578,8 @@
   </div>
 
   <!-- The office: where you stand before you rule. -->
-  <div class="screen" id="s-office">
-    <div class="beatbar" id="beatbar"></div>
+  <div class="screen" id="s-office" data-in="rise">
+    <div class="cal" id="off-cal"></div>
     <div class="eyebrow" id="off-when">Winter meetings</div>
     <h2 id="off-title">Your office</h2>
     <div class="meters" id="off-meters"></div>
@@ -439,7 +604,7 @@
   </div>
 
   <!-- The desk: one item, one ruling. -->
-  <div class="screen" id="s-desk">
+  <div class="screen" id="s-desk" data-in="slide">
     <div class="beatbar" id="desk-beatbar"></div>
     <div class="eyebrow gold" id="d-eyebrow"></div>
     <h2 id="d-title"></h2>
@@ -455,7 +620,7 @@
   </div>
 
   <!-- The room answers. The screen the mode is remembered for. -->
-  <div class="screen" id="s-room">
+  <div class="screen" id="s-room" data-in="land">
     <div class="eyebrow green" id="r-eyebrow">You ruled</div>
     <h2 id="r-title"></h2>
     <div class="meters" id="r-meters"></div>
@@ -471,7 +636,7 @@
   </div>
 
   <!-- The year in review, and the end of a term. -->
-  <div class="screen" id="s-year">
+  <div class="screen" id="s-year" data-in="zoom">
     <div class="verdict" id="y-card">
       <div class="eyebrow" id="y-eyebrow">The year in review</div>
       <div class="big" id="y-big">2025</div>
@@ -479,6 +644,8 @@
     </div>
     <!-- The football that was actually played this year. -->
     <div class="card flat" id="y-season" hidden></div>
+    <!-- The term so far, on the screen where a year is being closed out. -->
+    <div class="cal" id="y-cal"></div>
     <!-- The same vote that ends a term, on the screen where a term can end. -->
     <div class="coal" id="y-coal"></div>
     <div class="card flat">
@@ -624,6 +791,57 @@ const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,(c)=>
 const show=(id)=>{document.querySelectorAll('.screen').forEach((s)=>s.classList.remove('on'));
   $(id).classList.add('on');window.scrollTo({top:0});};
 
+/* ── motion ───────────────────────────────────────────────────────────────────────
+   THE MOVEMENT IS IN THE STYLESHEET AND THE TRIGGERS ARE HERE. Three helpers, used by
+   every painter, so a new screen gets the same behaviour as the old ones by calling them
+   rather than by remembering to copy an animation.
+
+   ASKED ONCE AND OBEYED EVERYWHERE. If the reader has told their operating system to stop
+   moving things, `reveal` and `grow` put the final state on immediately and `countTo` writes
+   the number. Nothing on these screens is carried by motion alone, which is the test a
+   reduced-motion path has to pass. */
+const REDUCED=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* DEAL A LIST OUT IN ORDER. Called after innerHTML, because only the code that just wrote
+   the children knows how many there are, and the stagger has to restart every time: a class
+   that is already on the element animates nothing, so it comes off, the layout is read to
+   force the change through, and it goes back on. */
+function reveal(el){
+  if(!el||REDUCED) return;
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  for(let i=0;i<el.children.length;i++) el.children[i].style.setProperty('--i',i);
+  el.classList.add('pop');
+}
+
+/* GROW EVERY BAR IN A BLOCK FROM NOTHING. A bar written straight into innerHTML at its final
+   width has no transition to run, because the element did not exist a frame ago and CSS has
+   nothing to move from. So the markup ships `data-w` and zero width and this puts the real
+   width on one frame later, which is the point the transition has two values to work with. */
+function grow(el){
+  if(!el) return;
+  const bars=el.querySelectorAll('[data-w]');
+  if(REDUCED){ bars.forEach((b)=>{ b.style.width=b.getAttribute('data-w'); }); return; }
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+    bars.forEach((b)=>{ b.style.width=b.getAttribute('data-w'); });
+  }); });
+}
+
+/* RUN A NUMBER UP TO ITS NEW VALUE. Only where there is a previous value to run from: the
+   office is not announcing anything and a meter that counts itself up every time you walk
+   back into the room is a fidget. On the reaction screen the number moved because of what
+   you just did, and watching it move is the point. */
+function countTo(el,to,from,ms){
+  if(!el) return;
+  if(REDUCED||from==null||Math.round(from)===Math.round(to)){ el.textContent=Math.round(to); return; }
+  const t0=(window.performance&&performance.now)?performance.now():Date.now(), d=ms||640;
+  (function step(t){
+    const k=Math.min(1,(t-t0)/d), e=1-Math.pow(1-k,3);
+    el.textContent=Math.round(from+(to-from)*e);
+    if(k<1) requestAnimationFrame(step);
+  })(t0);
+}
+
 /* IDENTITY, AS A MARK AND A HUE, and it is deliberately NOT the green-amber-red ramp that
    every judgement on these screens uses. The nine actors turn up on four different screens
    and the only way to read the mode quickly is to know them on sight, which nine identical
@@ -666,10 +884,18 @@ function paintMeters(el,w,before){
     const start=(w.start&&w.start.meters&&w.start.meters[k]);
     const arrow=Math.abs(d)<0.05?'':'<span class="d '+(d>0?'up':'dn')+'">'
       +(d>0?'▲':'▼')+Math.abs(d).toFixed(1)+'</span>';
-    return '<div class="meter '+band(v)+'"><b>'+Math.round(v)+arrow+'</b><span>'+label+'</span>'
-      +'<i><em style="width:'+Math.round(v)+'%;background:'+moodCol(v)+'"></em>'
+    /* THE NUMBER GETS ITS OWN NODE so it can be counted up to without the arrow beside it
+       being rewritten forty times a second. */
+    return '<div class="meter '+band(v)+'"><b><i class="n">'+Math.round(before?before.meters[k]:v)
+      +'</i>'+arrow+'</b><span>'+label+'</span>'
+      +'<i><em data-w="'+Math.round(v)+'%" style="width:0;background:'+moodCol(v)+'"></em>'
       +(start!=null?'<u style="left:'+Math.round(start)+'%"></u>':'')+'</i></div>';
   }).join('');
+  /* COUNTED, BUT ONLY WHERE SOMETHING HAPPENED. `before` is the world one ruling ago, and it
+     is only passed on the screen that is announcing that ruling. */
+  const ns=el.querySelectorAll('.meter b .n');
+  METERS.forEach(([k],i)=>{ countTo(ns[i],w.meters[k],before?before.meters[k]:null); });
+  grow(el); reveal(el);
 }
 
 /* THE THING THAT ENDS THE TERM, DRAWN. Losing the job is a coalition of voting weight, and
@@ -686,8 +912,13 @@ function paintCoalition(el,w){
   el.className='coal'+(danger?' danger':'');
   el.innerHTML='<div class="ch"><b>The vote against you</b>'
     +'<span>'+(Math.round(hostile*10)/10)+' of '+total+'</span></div>'
-    +'<div class="track"><em style="width:'+pct.toFixed(1)+'%"></em><u></u></div>'
+    /* ROUNDED RATHER THAN FIXED TO ONE PLACE. toFixed writes "0.0%", the browser stores it
+       back as "0%", and the two no longer match, which is only a problem because the check
+       that every bar reached its width compares them literally. A tenth of this track is a
+       third of a pixel, so there is nothing to lose by writing the number plainly. */
+    +'<div class="track"><em data-w="'+(Math.round(pct*10)/10)+'%" style="width:0"></em><u></u></div>'
     +'<div class="note">'+esc(note)+'</div>';
+  grow(el);
 }
 
 /* ONE ROW PER BLOC, AND IT ANSWERS FOUR QUESTIONS AT A GLANCE: who, do they hold a vote,
@@ -707,10 +938,15 @@ function paintRoom(el,w,rows){
     const v=w.blocs[b.id], r=byId[b.id];
     const hostile=v<L.HOSTILE;
     const moved=r&&Math.abs(r.delta)>=0.05;
-    const mag=moved&&top?Math.max(3,(Math.abs(r.delta)/top)*50):0;
+    /* ROUNDED, because this goes into the markup as a percentage and a raw ratio writes
+       "21.874999999999996%" into the page. A tenth of a percent of a 54px track is nothing
+       anybody can see and seventeen digits of it is nothing anybody should read. */
+    const mag=moved&&top?Math.round(Math.max(3,(Math.abs(r.delta)/top)*50)*10)/10:0;
+    /* THE MOVE BAR GROWS OUT OF THE CENTRE LINE, which is the shape of what it means: the
+       room did not arrive at an opinion, it moved to one, away from where it was. */
     const mv=moved
-      ? '<span class="mv"><i></i><em style="'+(r.delta>0?'left:50%':'right:50%')+';width:'+mag+'%;'
-        +'background:'+(r.delta>0?'var(--green)':'var(--red)')+'"></em></span>'
+      ? '<span class="mv"><i></i><em style="'+(r.delta>0?'left:50%':'right:50%')+';width:0;'
+        +'background:'+(r.delta>0?'var(--green)':'var(--red)')+'" data-w="'+mag+'%"></em></span>'
       : '';
     return '<div class="bl'+(hostile?' hostile':'')+(react?' react':'')
       +'" style="--bc:'+bcOf(b.id)+'">'
@@ -727,13 +963,15 @@ function paintRoom(el,w,rows){
           +(moved
             ? '<span class="dl '+(r.delta>0?'up':'dn')+'">'+(r.delta>0?'+':'')+r.delta.toFixed(1)+'</span>'
             : '<span class="dl" style="color:var(--dim-2)">0.0</span>')
-        : '<span class="bar"><em style="width:'+Math.round(v)+'%;background:'+moodCol(v)+'"></em>'
+        : '<span class="bar"><em data-w="'+Math.round(v)+'%" style="width:0;background:'
+          +moodCol(v)+'"></em>'
           +'<u style="left:'+L.HOSTILE+'%"></u></span>'
           +'<span class="dl" style="color:'+moodCol(v)+'">'+Math.round(v)+'</span>')
       +mv
       +(r?'<span class="say">'+esc(r.say)+'</span>':'')
       +'</div>';
   }).join('');
+  grow(el); reveal(el);
 }
 
 /* The four facts a commissioner is judged on, and they are read straight off the ledger so
@@ -771,11 +1009,94 @@ function paintSport(el,w,before){
       +(was!=null&&was!==String(big)?'<em>was '+esc(was)+'</em>':'')
       +'</div>';
   }).join('');
+  reveal(el);
 }
 
 function paintBeatbar(el,w){
+  if(!el) return;
   el.innerHTML=L.BEATS.map((_,i)=>
     '<i class="'+(i<w.beat?'done':i===w.beat?'now':'')+'"></i>').join('');
+}
+
+/* ── the calendar ──────────────────────────────────────────────────────────────────
+   THE WHOLE TERM, AS A GRID. Five rows of nine, because a term is five seasons of nine
+   beats and the player could previously see one of those numbers at a time: the strip at
+   the top of the office said where you were inside the current season and the eyebrow said
+   "year 1 of 5" in words. Neither of them said what the mode is about, which is what you
+   did with the years you had.
+
+   Every cell answers for its own beat. A ruling you made, a season that was played, the
+   beat you are standing on, or a square still to come. That makes the grid a record going
+   backwards and a plan going forwards, from one glance, which is the whole reason to draw
+   a calendar rather than print a date.
+
+   THE PHASES ARE REAL AND THEY ARE THE COLUMNS. Four beats of winter, three of the season,
+   two of the postseason: the football year is three different jobs and the grid should not
+   pretend the portal window and the playoff are the same kind of week. */
+const PHASES=[[0,4,'Off-season','p0'],[4,7,'Season','p1'],[7,9,'Postseason','p2']];
+const phaseOf=(i)=>{ for(const p of PHASES) if(i>=p[0]&&i<p[1]) return p[3]; return 'p0'; };
+/* WHERE THE CLOCK WAS THE LAST TIME THIS WAS DRAWN, so the square you have just left can be
+   shown being left. Only for the one cell and only once: it is the difference between two
+   paints rather than anything the world knows about itself. */
+let calWas=null;
+
+function paintCalendar(el,w){
+  if(!el) return;
+  /* A DIFFERENT TERM IS A DIFFERENT CALENDAR. Taking the job again rebuilds the grid from
+     the new opening year, and a beat remembered from the term before it would flash a square
+     nobody has stood on. */
+  const leaving=calWas&&calWas.start===w.startYear
+    &&(calWas.year!==w.year||calWas.beat!==w.beat)?calWas:null;
+  calWas={year:w.year,beat:w.beat,start:w.startYear};
+  /* WHAT LANDED WHERE, off the ledger's own record rather than a second copy kept beside
+     it. A ruling carries the year and beat it was made in, which is the only reason this
+     screen can exist at all. */
+  const ruled={};
+  (w.history||[]).forEach((h)=>{
+    if(h.id&&String(h.id).indexOf('season:')===0) return;
+    ruled[h.year+':'+h.beat]=(ruled[h.year+':'+h.beat]||0)+1;
+  });
+  const champs=w.champions||{};
+  const years=[]; for(let y=0;y<TERM_SEASONS;y++) years.push(w.startYear+y);
+  const spent=w.year-w.startYear;
+  const nextBeat=w.beat+1<L.BEATS.length?L.BEATS[w.beat+1]
+    :(w.year+1<=w.startYear+TERM_SEASONS-1?'The '+w.year+' season, then the winter':'The end of the term');
+
+  el.innerHTML='<div class="ch"><b>The calendar</b><span>Year '+(spent+1)+' of '+TERM_SEASONS+'</span></div>'
+    +'<div class="phases"><i></i>'
+      +PHASES.map((p)=>'<i class="'+p[3]+'">'+esc(p[2])+'</i>').join('')+'</div>'
+    +years.map((y)=>{
+      const isNow=y===w.year;
+      return '<div class="calrow'+(isNow?' now':'')+'"><b>'+y+'</b>'
+        +L.BEATS.map((name,i)=>{
+          const now=isNow&&i===w.beat;
+          const past=y<w.year||(isNow&&i<w.beat);
+          const played=i===L.BEATS.length-1&&champs[y];
+          /* ORDER MATTERS AND IT IS THE ORDER OF INTEREST. Where you are beats what you
+             did there, and a season that was played beats a beat that merely went by. */
+          const state=now?'now':played?'played':ruled[y+':'+i]?'ruled':past?'past':'';
+          const just=leaving&&leaving.year===y&&leaving.beat===i?' just':'';
+          const said=played?'The '+y+' season: '+champs[y].school
+            :ruled[y+':'+i]?ruled[y+':'+i]+(ruled[y+':'+i]===1?' ruling':' rulings')
+            :now?'you are here':'';
+          return '<span class="cel '+phaseOf(i)+(state?' '+state:'')+just+'" style="--i:'+i+'"'
+            +' title="'+esc(y+', '+name+(said?': '+said:''))+'"></span>';
+        }).join('')
+        +'</div>';
+    }).join('')
+    +'<div class="calnow"><b>'+esc(L.BEATS[w.beat])+'</b><span>'+esc(nextBeat)+'</span>'
+      +'<em>'+(w.history||[]).filter((h)=>!(h.id&&String(h.id).indexOf('season:')===0)).length
+      +' rulings</em></div>'
+    /* THE TITLES YOU HAVE PRESIDED OVER. A term's record is partly who won it, and until
+       now the only screen that ever said so was the year in review, which is gone the
+       moment you press on. */
+    +(Object.keys(champs).length
+      ? '<div class="calwin">'+years.filter((y)=>champs[y]).map((y)=>
+          '<span><i style="background:'+esc(champs[y].color||'#64748b')+'"></i>'
+          +esc(champs[y].school)+' <u>'+y+'</u></span>').join('')+'</div>'
+      : '');
+  /* THE ROWS DEAL OUT YEAR BY YEAR, which is the order a term happened in. */
+  reveal(el);
 }
 
 const FUSES=[['legal','Legal exposure'],['congress','Washington'],['union','The players organising']];
@@ -789,13 +1110,17 @@ function paintFuses(el,w){
   const live=FUSES.filter(([k])=>w.pressure[k]>4);
   el.innerHTML=live.length?live.map(([k,label])=>
     '<div class="fuse">'+FUSE_ICON.replace('<svg ','<svg class="fx" ')
-    +'<span>'+esc(label)+'</span><span class="bar"><em style="width:'
-    +Math.round(Math.min(100,w.pressure[k]))+'%"></em></span></div>').join(''):'';
+    +'<span>'+esc(label)+'</span><span class="bar"><em data-w="'
+    +Math.round(Math.min(100,w.pressure[k]))+'%" style="width:0"></em></span></div>').join(''):'';
+  grow(el); reveal(el);
 }
 
 /* ── the office ───────────────────────────────────────────────────────────────── */
 function office(){
-  paintBeatbar($('beatbar'),world);
+  /* THE CALENDAR RATHER THAN THE STRIP. The office is where you decide what to spend a beat
+     on, and that decision wants the whole term in front of it. The strip stays on the desk,
+     which is a screen about one item and has no business showing five years. */
+  paintCalendar($('off-cal'),world);
   $('off-when').textContent=L.BEATS[world.beat]+' · '+world.year
     +' · year '+(world.year-world.startYear+1)+' of '+TERM_SEASONS;
   const angry=L.removal(world).angry||[];
@@ -837,7 +1162,10 @@ function desk(){
       +'<span class="vh">'+blocChip(v.id)+'<b>'+esc(b?b.name:v.id)+'</b></span>'
       +'<span>'+esc(v.say)+'</span></div>';
   }).join('');
-  paintOptions();
+  /* THE ROOM SPEAKS IN TURN. Three voices arriving together are a wall of text; dealt out
+     they are three people, which is what they are. */
+  reveal($('d-voices'));
+  paintOptions(true);
   paintDials();
   paintWrite();
   $('b-test').hidden=!isPro();
@@ -893,11 +1221,15 @@ function optionSignature(o){
       +(up?'▲':'▼')+' '+esc(AXIS_WORDS[a][up?0:1])+'</i>';
   }).join('')+'</span>';
 }
-function paintOptions(){
+/* `first` IS THE ARRIVAL AND NOTHING ELSE. This repaints on every tap, because choosing an
+   option restyles the other two, and re-dealing three cards each time somebody changes their
+   mind is a fidget rather than an animation. The stagger belongs to the item turning up. */
+function paintOptions(first){
   $('d-options').innerHTML=item.options.map((o)=>
     '<button class="opt'+(choice===o.id?' on':'')+'" data-o="'+esc(o.id)+'">'
     +'<b>'+esc(o.label)+'</b><span>'+esc(o.body)+'</span>'
     +optionSignature(o)+'</button>').join('');
+  if(first) reveal($('d-options'));
   $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
     b.onclick=()=>{ choice=b.dataset.o; written=''; paintOptions(); paintDials(); paintWrite(); };
   });
@@ -1024,7 +1356,7 @@ const mapY=(lat)=>MAP.h-((lat-MAP.lat0)/(MAP.lat1-MAP.lat0))*MAP.h;
 
 /* WHO HELD THE MAP LAST TIME IT WAS DRAWN, so a school that moved can be shown moving
    rather than simply being somewhere else. */
-let mapWas=null, mapDrawn=false;
+let mapWas=null, mapDrawnYear=null, mapFocus=null;
 let STATES=[];
 async function loadStates(){
   try{
@@ -1073,38 +1405,67 @@ function paintMap(el,w,opts){
   const moved=dots.filter((d)=>d.moved);
   const flipped={}; moved.forEach((m)=>{ if(m.state) flipped[m.state]=1; });
   const holds=stateHolders(mem);
-  /* THE DRAW-IN RUNS ONCE A TERM, not on every repaint. A country that redraws itself every
-     time you come back from the desk stops being an arrival and becomes a stutter. */
-  const first=!mapDrawn; mapDrawn=true;
+  /* THE DRAW-IN RUNS ONCE A SEASON, not on every repaint and not only at the start of a
+     term. A country that redraws itself every time you come back from the desk stops being
+     an arrival and becomes a stutter; a country that only ever does it once wastes the one
+     moment in the mode that is genuinely a new beginning. A new year is that moment, so the
+     map draws itself in five times over a term, on each of the five Januaries. */
+  /* `o.refilter` IS THE SAME MAP SEEN DIFFERENTLY, and it must not consume anything. Tapping
+     a name in the legend repaints, and a repaint that took the ordinary path would draw the
+     country in again as though a year had turned, replay the flash on every state that
+     changed hands, and then clear the record of what moved so the note underneath vanished.
+     One flag, checked in the four places that would otherwise spend a one-time event. */
+  const first=!o.refilter&&mapDrawnYear!==w.year;
+  if(!o.refilter) mapDrawnYear=w.year;
+  /* A REDRAW IS A CLEAN SLATE. Whatever was being singled out belongs to the map that just
+     went away, and leaving the class on would dim a country nobody asked to dim. */
+  if(first) mapFocus=null;
 
-  el.className='map'+(first?' drawin':'');
+  el.className='map'+(first?' drawin':'')+(mapFocus?' focus':'');
   el.innerHTML='<svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" class="mapsvg" '
       +'aria-label="The sport, by where it is played">'
     +'<g>'+STATES.map((st,i)=>{
         const c=holds[st.code];
         /* A tint rather than a fill: a state is not owned, it is where most of somebody is. */
         const tint=c?'color-mix(in srgb,'+col(c)+' 26%,transparent)':'';
-        return '<path class="st'+(flipped[st.code]?' flip':'')+'" pathLength="1" d="'+st.d+'"'
-          +' style="--i:'+i+(tint?';--tint:'+tint:'')+'"><title>'+esc(st.name)
-          +(c?', mostly '+esc(c):'')+'</title></path>';
+        return '<path class="st'+(flipped[st.code]&&!o.refilter?' flip':'')
+          +(mapFocus&&c===mapFocus?' fc':'')+'" pathLength="1" d="'+st.d+'"'
+          +' data-c="'+esc(c||'')+'" style="--i:'+i+(tint?';--tint:'+tint:'')+'">'
+          +'<title>'+esc(st.name)+(c?', mostly '+esc(c):'')+'</title></path>';
       }).join('')+'</g>'
     +'<g>'+dots.map((d,i)=>
         (d.moved
           ? '<circle class="ping" cx="'+d.x.toFixed(1)+'" cy="'+d.y.toFixed(1)+'" r="4" '
             +'stroke="'+col(d.conf)+'"/>'
           : '')
-        +'<circle class="dot'+(d.moved?' moved':'')+'" cx="'+d.x.toFixed(1)+'" cy="'
-        +d.y.toFixed(1)+'" r="'+(d.moved?3.6:2.7)+'" fill="'+col(d.conf)+'" style="--i:'+i+'">'
+        +'<circle class="dot'+(d.moved?' moved':'')+(mapFocus&&d.conf===mapFocus?' fc':'')
+        +'" cx="'+d.x.toFixed(1)+'" cy="'
+        +d.y.toFixed(1)+'" r="'+(d.moved?3.6:2.7)+'" fill="'+col(d.conf)+'" style="--i:'+i+'"'
+        +' data-c="'+esc(d.conf)+'">'
         +'<title>'+esc(d.school)+', '+esc(d.conf)+'</title></circle>').join('')+'</g>'
     +'</svg>'
     +'<div class="maplegend">'+conferencesOnMap(mem).map((c)=>
-      '<span><i style="background:'+col(c.name)+'"></i>'+esc(c.name)+' '+c.n+'</span>').join('')
+      '<span role="button" tabindex="0" data-c="'+esc(c.name)+'"'
+      +(mapFocus?(c.name===mapFocus?' class="sel"':' class="dim"'):'')
+      +'><i style="background:'+col(c.name)+'"></i>'+esc(c.name)+' '+c.n+'</span>').join('')
     +'</div>'
     +(moved.length&&o.showMoves
       ? '<div class="mapmove">'+esc(moved.map((m)=>m.school).join(', '))
         +(moved.length===1?' is':' are')+' somewhere new.</div>'
       : '');
-  mapWas=Object.assign({},mem);
+  reveal(el.querySelector('.maplegend'));
+  /* SINGLING ONE OUT IS A VIEW, NOT A CHANGE, so it never touches the world and it never
+     touches `save`. It repaints the same map with one conference held forward, and tapping
+     the same name again puts everybody back. */
+  el.querySelectorAll('.maplegend [data-c]').forEach((s)=>{
+    const pick=()=>{
+      mapFocus=mapFocus===s.getAttribute('data-c')?null:s.getAttribute('data-c');
+      paintMap(el,w,Object.assign({},o,{refilter:true}));
+    };
+    s.onclick=pick;
+    s.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); } };
+  });
+  if(!o.refilter) mapWas=Object.assign({},mem);
 }
 function conferencesOnMap(mem){
   const n={};
@@ -1127,6 +1488,15 @@ function playSeason(year){
        through applyEdit and applyOutcome exactly like a ruling does. */
     const deltas=B.deltas(world,sim.edit);
     world=L.applyOutcome(L.applyEdit(world,sim.edit),sim.edit,deltas);
+    /* THE CHAMPION GOES ON THE WORLD, not just on the screen that announces it. A term is
+       five seasons and the calendar wants all five of them, and `lastSeason` is one variable
+       that the next year overwrites and a reload loses entirely. Two fields, because the
+       calendar draws a name in a colour and nothing else needs keeping. */
+    const won=sim.bracket&&sim.bracket.champion&&sim.bracket.champion.team;
+    if(won){
+      world.champions=world.champions||{};
+      world.champions[year]={school:won.school,color:won.color||'#64748b'};
+    }
     save();
   }catch(e){ lastSeason=null; }
 }
@@ -1169,6 +1539,10 @@ function paintSeason(el,sim){
       : '<p class="realnote">These teams are real. This season is not: the data stops at '
         +world.startYear+', so every year after your first is played by the sport you have '
         +'been changing rather than one that happened.</p>');
+  /* THE BRACKET ARRIVES IN THE ORDER IT WAS PLAYED IN, round by round, which is the one
+     list on these screens where the sequence is the content. */
+  reveal(el.querySelector('.rounds'));
+  reveal(el.querySelector('.snotes'));
 }
 const short=(s)=>s.length>15?s.slice(0,14)+'.':s;
 /* One team's line in a bracket game: seed, who, what they scored. The winner is marked
@@ -1199,6 +1573,7 @@ function yearEnd(year){
     ? 'You finish the year with '+angry.join(' and ')+' against you.'
     : 'You finish the year with the room behind you.';
   paintSeason($('y-season'),lastSeason);
+  paintCalendar($('y-cal'),world);
   paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);
@@ -1207,7 +1582,13 @@ function yearEnd(year){
   show('s-year');
 }
 $('b-year-next').onclick=()=>office();
-$('b-quit').onclick=()=>{ if(confirm('Leave the office? The term ends here.')){ world.outcome={removed:false,reason:'quit',say:'You walked away.'}; save(); ending(); } };
+/* WALKING AWAY MID-YEAR LEAVES NO SEASON BEHIND IT, so the bracket card comes down. It is
+   the same screen as the year in review and it would otherwise still be showing last year's
+   playoff under a card that says the term is over. */
+$('b-quit').onclick=()=>{ if(confirm('Leave the office? The term ends here.')){
+  world.outcome={removed:false,reason:'quit',say:'You walked away.'}; save();
+  if(world.beat!==0||!lastSeason) paintSeason($('y-season'),null);
+  ending(); } };
 
 function ending(){
   const o=world.outcome||{removed:false,reason:'served',say:'You served the term.'};
@@ -1218,6 +1599,10 @@ function ending(){
   const moved=facts.filter((f,i)=>f[1]!==start[i][1]).length;
   $('y-say').textContent=(o.say||'')+' You changed '+moved+' of the four things a '
     +'commissioner is judged on, over '+world.history.length+' rulings.';
+  /* THE TERM AS A GRID IS THE RECORD, which is what an ending screen is for. Nothing is
+     current on it any more: there is no beat you are standing on, and the rows simply say
+     what you did with each of the five years and who won them. */
+  paintCalendar($('y-cal'),world);
   paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);
