@@ -16710,3 +16710,50 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   (block 0 is the JSON-LD tag, fails identically on baseline).
 - Tunable: the whole `ENTRY_CATCH` table (each entry is `{k, v, yrs|untilWin, short, txt, when}`); adding a
   constraint is one row plus a one-line `entryCatchVal` read at whichever system should feel it.
+
+### THE EXEMPTION IS 27, NOT 21 (owner: "I don't get why exemption would be younger than an amateur. I
+### feel like in today's game, the exemption golfers come from social media and they are usually mid to
+### late 20s. But correct me if I'm wrong")
+- **The owner is substantially right, and the honest answer has two halves.** The MODERN creator exemption
+  is exactly as described (Grant Horvat, Micah Morris, Luke Kwon: audience first, invited because they
+  bring eyeballs, all mid-to-late 20s). But the CLASSIC sponsor exemption is the opposite archetype, the
+  young phenom playing his way to a card on invitations (Tiger at 20, Spieth at 19, Bhatia at 17), so
+  historically it often DID mean the youngest man in the field. Both are real.
+- **What decided it was our own card, not the real-world argument.** Read how it is written: "A brand put
+  you on tour before you earned it", 140k fans, a Premium sponsor signed day one, respect 16, the locker
+  room thinks you bought it. That is the AUDIENCE archetype throughout, and then it was aged like the
+  phenom. The card described one thing and its age said another; moving the age is the consistent fix.
+- **`age:21` → `27`.** The ladder is now 22 / 24 / 26 / **27** / 29, and since the start age IS the career
+  length (`careerYears()` = `clamp(52-age,18,30)`), the lengths become **30 / 28 / 26 / 25 / 23** — five
+  distinct values, monotone with age.
+- **It also fixes the root of the original "no brainer" complaint rather than offsetting it.** The
+  exemption now TRADES five seasons for the instant platform, which is a legible cost sitting right on the
+  compare table, where the catch is a cost you have to read about. Age and catch now push the same way.
+- **A duplicate the test caught that nobody had noticed:** on the old build the exemption's 21 → 31 years
+  was CLAMPED to 30, the same as the amateur's, so two paths had identical career length and the compare
+  table's YRS column had a meaningless tie. Gone as a side effect.
+- Copy follows the age: blurb "Signed young, marketed hard, handed a card" → "An audience first, a record
+  never. A brand liked the numbers and bought you a card."; the ✓ "The youngest start there is" is dropped
+  (it was false); ✗ gains "Five years behind the amateurs", which is the same framing the mini-tour's
+  "Four prime years gone" already uses at 26.
+- **A screenshot caught the wording, as it keeps doing on this screen.** The first draft read "An audience
+  first, a **resume** never", which without the accents parses as the VERB *resume* — changed to "a record
+  never", which is a word golf uses anyway.
+- Verified: a new `age_ladder` suite, **9/9, 0 page errors** (every path has its own career length, the
+  exemption is no longer the youngest, it is a mid-to-late-20s start, it gives up more than three seasons
+  against the amateur, the tile shows 27, nothing in the rendered page still says "youngest", the catch
+  survives, and turning pro really starts at 27 on a 25-year career). **The same suite is 0 pass / 9 fail
+  on the deployed build**, so it discriminates. Regressions: `entry_ux` 23/23, `entry_catch` 25/25,
+  `catch_e2e` 4/4, plus rest / records / rival / clubs / circuit / morris / daily_glitch / wr_goal /
+  goals_test all 0 failures. `regress.mjs` fails 1 **on both builds** (its fixture stops waiting at 16-17
+  of 18 holes, a timing artifact). Inline scripts parse; block 0 is the JSON-LD tag, fails identically on
+  baseline.
+- **TWO STALE FIXTURES were updated, not worked around** — `entry_ux` asserted `age:21` and `entry_catch`
+  asserted "still turns pro at 21". Both were encoding the behaviour this change deliberately replaced,
+  and both failure payloads showed everything else already correct. Worth flagging because a green suite
+  asserting the old contract is exactly how a real regression hides.
+- **Flagged, NOT changed:** the exemption now carries the most downside of the five (second-shortest
+  career, lowest respect, half respect gains until a first win, no rival sponsor offers for five years)
+  against a full card, 140k fans and a Premium deal. The catches were measured and the age is one variable,
+  so it was moved on its own; if playtesting says it has overcorrected, the cheapest dial is the sponsor
+  lock (5 years → 4) rather than touching the age again.
