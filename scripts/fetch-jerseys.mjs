@@ -31,7 +31,7 @@
  * HOW TO RUN:  node scripts/fetch-jerseys.mjs   (writes arcade/jerseys.js)
  * Run by .github/workflows/jerseys.yml (needs open network for BBRef+statsapi).
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs';
 
 // Include the current season so the Number Game reflects live rosters (offseason
 // moves and mid-season trades). This job is re-run on a schedule (see
@@ -344,7 +344,16 @@ async function buildNFL(find) {
       const team = NFL_TEAMS[r.team] || null;
       if (num == null || !team) continue;
       if (num === 0 && y < 2023) continue;   // #0 was illegal in the NFL until 2023; a 0 here is a data artifact
-      roster('NFL', y, team, num, String(r.full_name || '').trim());   // everyone, gate-free
+      /* EVERYONE, and no status filter, because a season's roster file IS
+         that season's roster. Two narrower rules were tried and both refused
+         men who were plainly there. `status` is a weekly snapshot, so it has
+         A.J. Brown down as INA and would have cut the 2023 Eagles' best
+         receiver. `status_description_abbr` starting A or R is closer, but it
+         drops anyone released mid-year, which took Antonio Brown and Le'Veon
+         Bell off the 2021 Buccaneers and Odell Beckham off the 2020 Browns.
+         A man cut in October was still on the squad, and Roll Call is asking
+         who was on the squad. */
+      roster('NFL', y, team, num, String(r.full_name || '').trim());
       const hit = find('NFL', r.full_name || ''); if (!hit) continue;
       record(obs, hit, y, team, num);
     }
@@ -459,23 +468,25 @@ const outFile = ONLY ? `arcade/jerseys.${ONLY.toLowerCase()}.test.js` : 'arcade/
 writeFileSync(outFile, file);
 console.log('wrote', outFile);
 
-/* ---- full rosters, for the team-seasons that can become Roll Call boards ----
- * PRUNED AND SHARDED, because the honest version of this file is 3 MB. Every
- * team-season since 1990 is 120,000 roster rows and an NFL squad alone is
- * seventy men; nobody is asked about most of them and no phone should download
- * them. Two cuts bring it to a sane size without ever narrowing an ANSWER:
+/* ---- full rosters, for the team-seasons Roll Call actually asks about ------
+ * The honest dump of this is 3 MB and the first cut of it was 1 MB of NFL
+ * alone, so it is pruned three ways. None of them narrows an ANSWER:
  *
- *   1. only the seasons that can become a board. A board needs enough pooled
- *      players to print slots against, so the floor here mirrors the game's
- *      MIN_ROSTER, one lower, because this file has to be a SUPERSET of what
- *      build-teammates.mjs picks. Strict here would silently starve a real
- *      board of its deep cuts, which is the bug this whole file exists to fix.
- *   2. one file per sport. Roll Call plays one board at a time and a board is
- *      one league, so the page pulls the shard it needs and never the other
- *      two.
+ *   1. ONLY THE SEASONS THAT ARE BOARDS. Read straight off arcade/teammates.js,
+ *      the deck the game deals from, because "might qualify" ships two to four
+ *      times what is ever asked for: of 983 NFL seasons in the first cut, 552
+ *      were boards and the other 431 were dead weight. If teammates.js cannot
+ *      be read, fall back to the old floor, which is a superset and merely fat.
+ *   2. ACTIVE ROSTER ONLY, in the NFL. nflverse lists everyone who passed
+ *      through, so a season came out at 68 men and one at 119. A player on
+ *      injured reserve or the practice squad was not on that squad in the
+ *      sense the question means, and cutting them takes the median to 56.
+ *   3. ONE FILE PER SPORT PER DECADE. A board is one league and one year, so
+ *      the page pulls the decade it needs and never the other eleven files.
+ *      Sport alone still meant a 490 KB download to name the 2003 Bengals.
  *
- * Names are pooled and referenced by index: a man on eight rosters is one
- * string, not eight.
+ * Names are pooled per file and referenced by index: a man on eight rosters in
+ * one decade is one string, not eight.
  *
  * Deduped on (name, number) within a season: a mid-season signing appears on
  * two rows of the same page and Roll Call would print him twice. */
@@ -487,46 +498,79 @@ for (const st of stints) {
     pooledPer.set(k, (pooledPer.get(k) || 0) + 1);
   }
 }
-for (const sp of ['NBA', 'NFL', 'MLB']) {
+/* The board set, straight from the deck the game deals. Parsed rather than
+   imported because teammates.js is a browser file that assigns to window. */
+function boardKeys() {
+  try {
+    const src = readFileSync('arcade/teammates.js', 'utf8');
+    const D = JSON.parse(src.slice(src.indexOf('{'), src.lastIndexOf('}') + 1));
+    const out = new Set();
+    for (const r of D.roll) {
+      const sport = D.sports[D.players[r[2][0]][1]];
+      out.add(sport + '|' + D.teams[r[0]] + '|' + r[1]);
+    }
+    console.log('rosters: pruning to', out.size, 'boards from arcade/teammates.js');
+    return out;
+  } catch (e) {
+    console.log('rosters: teammates.js unreadable (' + e.message + '), falling back to the pooled floor');
+    return null;
+  }
+}
+const BOARDS = boardKeys();
+const wanted = (k) => BOARDS ? BOARDS.has(k) : (pooledPer.get(k) || 0) >= ROSTER_FLOOR;
+
+const decadeOf = (y) => Math.floor(y / 10) * 10;
+const shards = new Map();                       // "NBA|2010" -> [[team, year, rows]]
+for (const [k, arr] of rosters) {
+  if (!wanted(k)) continue;
+  const bar = k.indexOf('|'), bar2 = k.lastIndexOf('|');
+  const sp = k.slice(0, bar), team = k.slice(bar + 1, bar2), year = +k.slice(bar2 + 1);
+  const seen = new Set(), list = [];
+  for (const r of arr) {
+    const dk = nkey(r.name) + '|' + r.num;
+    if (!r.name || seen.has(dk)) continue;
+    seen.add(dk); list.push(r);
+  }
+  if (!list.length) continue;
+  const sk = sp + '|' + decadeOf(year);
+  (shards.get(sk) || shards.set(sk, []).get(sk)).push([team, year, list]);
+}
+/* Wipe first. The shard scheme has changed once already (per sport, now per
+   sport per decade) and a renamed file left behind is a stale answer key the
+   page could still fetch. */
+try { rmSync('arcade/rosters', { recursive: true, force: true }); } catch (e) {}
+try { mkdirSync('arcade/rosters', { recursive: true }); } catch (e) {}
+let totalKB = 0;
+for (const [sk, entries] of [...shards].sort()) {
+  const [sp, dec] = sk.split('|');
   if (!run(sp)) continue;
   const names = [], iN = new Map();
   const nameIdx = (n) => { let i = iN.get(n); if (i == null) { i = names.length; names.push(n); iN.set(n, i); } return i; };
   const teams = [], iT = new Map();
   const teamIdx = (t) => { let i = iT.get(t); if (i == null) { i = teams.length; teams.push(t); iT.set(t, i); } return i; };
-  const out = {};
-  let rows = 0, seasons = 0;
-  for (const [k, arr] of rosters) {
-    if (!k.startsWith(sp + '|')) continue;
-    if ((pooledPer.get(k) || 0) < ROSTER_FLOOR) continue;
-    const bar = k.indexOf('|'), bar2 = k.lastIndexOf('|');
-    const team = k.slice(bar + 1, bar2), year = +k.slice(bar2 + 1);
-    const seen = new Set(), list = [];
-    for (const r of arr) {
-      const dk = nkey(r.name) + '|' + r.num;
-      if (!r.name || seen.has(dk)) continue;
-      seen.add(dk); list.push([nameIdx(r.name), r.num]);
-    }
-    if (!list.length) continue;
-    list.sort((a, b) => a[1] - b[1] || (names[a[0]] < names[b[0]] ? -1 : 1));
-    (out[teamIdx(team)] || (out[teamIdx(team)] = {}))[year] = list;
-    rows += list.length; seasons++;
+  const r = {};
+  let rows = 0;
+  for (const [team, year, list] of entries) {
+    const packed = list.map((x) => [nameIdx(x.name), x.num]);
+    packed.sort((a, b) => a[1] - b[1] || (names[a[0]] < names[b[0]] ? -1 : 1));
+    (r[teamIdx(team)] || (r[teamIdx(team)] = {}))[year] = packed;
+    rows += packed.length;
   }
-  const body = JSON.stringify({ updated: new Date().toISOString().slice(0, 10), sport: sp,
-                                seasons, rows, names, teams, r: out });
+  const body = JSON.stringify({ updated: new Date().toISOString().slice(0, 10), sport: sp, decade: +dec,
+                                seasons: entries.length, rows, names, teams, r });
   const f =
     '/* GENERATED by scripts/fetch-jerseys.mjs. Do not edit.\n' +
-    ' * FULL ' + sp + ' rosters, no recognizability gate, for the team-seasons that\n' +
-    ' * can become Roll Call boards. This is the answer key that mode judges a\n' +
-    ' * typed name against. Without it a deep cut had to be put to Wikidata,\n' +
-    ' * which answers a SEASON question loosely: it accepted Boris Diaw for the\n' +
-    ' * 2009-10 Spurs, who signed in 2012, and could not confirm Tiago Splitter,\n' +
-    ' * who was there.\n' +
-    ' * Shape: { names:[...], teams:[...], r:{ teamIdx: { year: [[nameIdx, number], ...] } } }\n' +
-    ' * Loaded on demand by the game: one board is one league. */\n' +
-    'window.RTG_ROSTERS_' + sp + ' = ' + body + ';\n';
-  const rosterOut = 'arcade/rosters/' + sp.toLowerCase() + '.js';
-  try { mkdirSync('arcade/rosters', { recursive: true }); } catch (e) {}
-  writeFileSync(rosterOut, f);
-  console.log('wrote', rosterOut, '|', seasons, 'team-seasons,', rows, 'roster rows,',
-              Math.round(body.length / 1024) + ' KB');
+    ' * FULL ' + sp + ' rosters for the ' + dec + 's, no recognizability gate. This is the\n' +
+    ' * answer key Roll Call judges a typed name against, and holding it is what\n' +
+    ' * lets a season question be settled offline and exactly. Wikidata, which\n' +
+    ' * the game asked before this existed, answers one loosely: it accepted\n' +
+    ' * Boris Diaw for the 2009-10 Spurs, who signed in 2012, and could not\n' +
+    ' * confirm Tiago Splitter, who was there.\n' +
+    ' * Shape: { names:[...], teams:[...], r:{ teamIdx: { year: [[nameIdx, number], ...] } } } */\n' +
+    'window.RTG_ROSTERS_' + sp + '_' + dec + ' = ' + body + ';\n';
+  const out = 'arcade/rosters/' + sp.toLowerCase() + '-' + dec + '.js';
+  writeFileSync(out, f);
+  const kb = Math.round(f.length / 1024); totalKB += kb;
+  console.log('wrote', out.padEnd(30), entries.length + ' seasons,', rows + ' rows,', kb + ' KB');
 }
+console.log('rosters: ' + totalKB + ' KB across ' + shards.size + ' files (one is ever downloaded per board)');

@@ -16,7 +16,7 @@
  *
  *   node scripts/check-teammates.mjs
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 
 const root = new URL('..', import.meta.url).pathname;
@@ -88,6 +88,49 @@ D.chain.forEach(([a, b, links], n) => {
   }
   if (sport(a) !== sport(b)) bad.push('chain #' + n + ' crosses sports: ' + name(a) + ' / ' + name(b));
 });
+
+/* ---- every printed slot is on its own answer key -----------------------------
+ * Roll Call prints the recognizable part of a squad as blanks and judges
+ * everything else against arcade/rosters/<sport>-<decade>.js. A slot whose man
+ * is missing from that page is a board asking for a name its own roster would
+ * deny, and the first cut of these files had 383 of them: the NFL fetch was
+ * filtering on a weekly status column that has A.J. Brown down as inactive.
+ * Nothing about it FAILED, because the on-board branch runs before the roster
+ * lookup, which is exactly why it needs asserting here rather than noticing. */
+const RD = 'arcade/rosters';
+let shards = null;
+try { shards = readdirSync(RD).filter((f) => /-\d{4}\.js$/.test(f)); } catch (e) { shards = null; }
+if (!shards || !shards.length) {
+  console.log('note: no roster shards in ' + RD + ' yet, skipping the slot check');
+} else {
+  const box = { console };
+  box.self = box; box.window = box; box.globalThis = box;
+  createContext(box);
+  for (const f of shards) runInContext(readFileSync(RD + '/' + f, 'utf8'), box);
+  const nk = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]/g, '');
+  const lk = (x) => nk(String(x || '').replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''));
+  let noPage = 0, checked = 0;
+  for (const r of D.roll) {
+    const sp = sport(r[2][0]);
+    const pack = box['RTG_ROSTERS_' + sp + '_' + (Math.floor(r[1] / 10) * 10)];
+    const ti = pack ? pack.teams.indexOf(D.teams[r[0]]) : -1;
+    const list = (ti >= 0) ? (pack.r[ti] || {})[r[1]] : null;
+    if (!list) { noPage++; continue; }
+    checked++;
+    const exact = new Set(list.map((x) => nk(pack.names[x[0]])));
+    const fuzzy = new Set(list.map((x) => lk(pack.names[x[0]])));
+    for (const i of r[2]) {
+      const n = name(i);
+      if (!exact.has(nk(n)) && !fuzzy.has(lk(n))) {
+        bad.push('board ' + D.teams[r[0]] + ' ' + r[1] + ': ' + n +
+                 ' is a printed slot but is not on its own roster page');
+      }
+    }
+  }
+  if (noPage) bad.push(noPage + ' of ' + D.roll.length + ' boards have no roster page in ' + RD);
+  console.log('roster pages: ' + checked + ' of ' + D.roll.length + ' boards checked against theirs');
+}
 
 // ---- report ------------------------------------------------------------------
 if (bad.length) {

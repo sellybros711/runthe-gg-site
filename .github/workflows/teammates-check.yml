@@ -17,6 +17,7 @@ on:
   pull_request:
     paths:
       - 'arcade/teammates.js'
+      - 'arcade/rosters/**'
       - 'scripts/build-teammates.mjs'
       - 'scripts/check-teammates.mjs'
       - '.github/workflows/teammates-check.yml'
@@ -24,6 +25,7 @@ on:
     branches: [main]
     paths:
       - 'arcade/teammates.js'
+      - 'arcade/rosters/**'
       - 'scripts/build-teammates.mjs'
       - 'scripts/check-teammates.mjs'
       - '.github/workflows/teammates-check.yml'

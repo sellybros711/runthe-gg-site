@@ -55,7 +55,7 @@ jobs:
           # arcade/rosters/*.js rides along: the same scrape produces both, and a
           # jerseys.js that moved without its roster shards would leave Roll
           # Call judging one day's squad against another day's answer key.
-          git add arcade/jerseys.js arcade/rosters
+          git add -A arcade/jerseys.js arcade/rosters
           git diff --cached --quiet && echo "no changes" || {
             git commit -m "Refresh jersey stints and Roll Call rosters"
             for i in 1 2 3 4 5; do

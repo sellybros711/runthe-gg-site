@@ -367,22 +367,27 @@ window.GA_ID='G-L29P5MRWKE';
      Everything below tolerates the shard being absent or slow, in which case
      the game falls back to exactly what it did before. */
   var SHARD = {};
-  function loadShard(sp, cb){
-    if(!sp) return cb();
-    if(window['RTG_ROSTERS_'+sp]) return cb();
-    if(SHARD[sp]==='fail') return cb();
-    if(SHARD[sp]==='loading'){ setTimeout(function(){ loadShard(sp, cb); }, 120); return; }
-    SHARD[sp]='loading';
+  function shardKey(b){
+    var sp = sportOf(b);
+    return sp ? (sp + '_' + (Math.floor(b.year/10)*10)) : null;
+  }
+  function loadShard(b, cb){
+    var key = shardKey(b);
+    if(!key) return cb();
+    if(window['RTG_ROSTERS_'+key]) return cb();
+    if(SHARD[key]==='fail') return cb();
+    if(SHARD[key]==='loading'){ setTimeout(function(){ loadShard(b, cb); }, 120); return; }
+    SHARD[key]='loading';
     var s=document.createElement('script');
-    s.src='/arcade/rosters/'+sp.toLowerCase()+'.js?v=1';
+    s.src='/arcade/rosters/'+key.toLowerCase().replace('_','-')+'.js?v=1';
     s.async=true;
-    s.onload=function(){ SHARD[sp]='ok'; cb(); };
-    s.onerror=function(){ SHARD[sp]='fail'; cb(); };
+    s.onload=function(){ SHARD[key]='ok'; cb(); };
+    s.onerror=function(){ SHARD[key]='fail'; cb(); };
     document.head.appendChild(s);
   }
   function rosterFor(b){
     if(!b) return null;
-    var pack = window['RTG_ROSTERS_'+sportOf(b)];
+    var pack = window['RTG_ROSTERS_'+shardKey(b)];
     if(!pack || !pack.r) return null;
     var ti = pack.teams.indexOf(D.teams[b.team]);
     if(ti<0) return null;
@@ -391,19 +396,38 @@ window.GA_ID='G-L29P5MRWKE';
     if(!list) return null;
     return list.map(function(row){ return [pack.names[row[0]], row[1]]; });
   }
-  var ROSTER = null, ROSTER_BY = null;
+  /* Two keys per man, because two sources spell a suffix differently: the
+     roster page says "Odell Beckham" and our own pool says "Odell Beckham Jr.",
+     and 70 printed slots across the deck were on their own answer key under
+     only one of the two. Exact first, so a father and son are never confused,
+     then the stripped key, and only when it points at ONE man. */
+  /* Anchored to the END of the name and to a space in front of it. An
+     unanchored alternation eats those letters wherever they fall, which
+     turns David into Daid. */
+  function loose(s){ return norm(String(s||'').replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, '')); }
+  var ROSTER = null, ROSTER_BY = null, ROSTER_LOOSE = null;
   function buildRoster(){
     ROSTER = rosterFor(board);
-    ROSTER_BY = null;
+    ROSTER_BY = null; ROSTER_LOOSE = null;
     if(!ROSTER) return;
-    ROSTER_BY = {};
+    ROSTER_BY = {}; ROSTER_LOOSE = {};
+    var dup = {};
     for(var i=0;i<ROSTER.length;i++){
       var k = norm(ROSTER[i][0]);
       if(k && !ROSTER_BY[k]) ROSTER_BY[k] = ROSTER[i];
+      var lk = loose(ROSTER[i][0]);
+      if(!lk) continue;
+      if(ROSTER_LOOSE[lk] && ROSTER_LOOSE[lk][0] !== ROSTER[i][0]) dup[lk] = 1;
+      else if(!ROSTER_LOOSE[lk]) ROSTER_LOOSE[lk] = ROSTER[i];
     }
+    for(var d in dup) if(dup.hasOwnProperty(d)) delete ROSTER_LOOSE[d];
   }
   // Was this man on that roster, per our own file? Returns [name, number].
-  function onRoster(k){ return (ROSTER_BY && ROSTER_BY[k]) || null; }
+  function onRoster(k, raw){
+    if(ROSTER_BY && ROSTER_BY[k]) return ROSTER_BY[k];
+    var lk = loose(raw==null ? k : raw);
+    return (ROSTER_LOOSE && lk && ROSTER_LOOSE[lk]) || null;
+  }
 
   /* ---------- the daily board ----------
      A deck walk, not a random draw: the deck is already dealt so consecutive
@@ -447,7 +471,7 @@ window.GA_ID='G-L29P5MRWKE';
     $('bestLine').textContent = bits.join(' · ');
     // Pull today's league shard now, while they are reading the setup screen,
     // so the answer key is in hand before the ninety seconds start.
-    loadShard(sportOf(b), function(){});
+    loadShard(b, function(){});
   }
   function clubOf(b){ return D.teams[b.team]; }
   /* AN NBA SEASON HAS TWO YEARS IN ITS NAME AND WE WERE ONLY PRINTING ONE.
@@ -559,7 +583,7 @@ window.GA_ID='G-L29P5MRWKE';
        instead of being put to a source that only knows a man was at the club
        at some point. This is the branch that now takes Tiago Splitter and
        refuses Boris Diaw. */
-    var row = onRoster(k);
+    var row = onRoster(k, raw);
     if(row){
       addExtra(row[0], 'roster', row[1]);
       message(sentence(row[0]) + ' Deep cut, and he counts.', 'good');
@@ -643,7 +667,7 @@ window.GA_ID='G-L29P5MRWKE';
     // Normally already in hand from the setup screen; this covers a replay or
     // a slow network, and buildRoster is safe to run twice.
     buildRoster();
-    loadShard(sportOf(b), function(){ if(board===b) buildRoster(); });
+    loadShard(b, function(){ if(board===b) buildRoster(); });
     if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
       var att = RTGTokens.startAttempt(GAME);
       attemptFirst = !!(att && att.first);
