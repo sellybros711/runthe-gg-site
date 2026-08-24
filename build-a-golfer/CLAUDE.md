@@ -16593,3 +16593,44 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   it was returning it *unconditionally* that was the bug. "Regardless of where I actually finish" was the
   tell.
 - Tunable: `goalMetrics()`'s world-rank read; the `worldTop10` / `defendNo1` targets in `GOAL_DEFS`.
+
+### TURN PRO: five long cards became a picker you can actually compare (owner, with a screenshot of the
+### entry-path screen: "This page is a prime example where we are overloading the user with text (before
+### they even start their career!) ... we really need to make this selection screen an interactive screen
+### where the info is able to be read quickly and easily")
+- **The real fault was structural, not verbose writing.** To make ONE choice you read five kickers, five
+  blurbs and twenty-odd bullets stacked down 2.2 screens, and the five things you were choosing between
+  were never on screen together, so every comparison had to be held in your head. Measured on a 393pt
+  phone: **429 words, 2,226 characters**.
+- **Now a picker.** Five tiles (short name + start age) always visible, ONE detail panel below them, and
+  a compact table underneath that puts all five side by side. Same five paths, same numbers:
+  **429 words → 141, 2.21 screens → 1.36**, and the whole decision — picker, detail, meters, CTA — fits
+  a single viewport.
+- **The meters are the interactivity.** Career length / card / respect / confidence / fans render as bars
+  that start at zero and sweep on every switch, so flicking between paths *shows* you which way each
+  number moved instead of asking you to remember it. The card is a three-step ladder of pips (off the
+  tour < conditional < full) because it is categorical and a sentence was doing that work before.
+- **`entryStat`/`entryPerks` derive everything from the fields `applyEntryPath()` actually reads**, so the
+  comparison can never drift from what turning pro does. That let the mechanical facts (+2 to every
+  rating, Premium sponsor signed, 2+ off-season changes, brands rate you a tier up/down) come OUT of the
+  hand-written pros and cons — the bullets shrank to short ✓/✗ chips and the facts stopped being written
+  down twice.
+- **The compare table is a picker too**: tapping a row selects that path and scrolls the panel into view,
+  and the leader in each column is marked gold, so "who gets the longest career / the most respect / the
+  biggest audience" is a glance rather than a read.
+- **The CTA says "Turn pro ▸" with the path name in the sub, not in the label.** The first cut read
+  "Turn pro as Exemption" / "as Late", which is why the name moved to the sub line.
+- Verified: 23 checks, 0 fail, 0 page errors, driven through the real UI on a 393pt phone — five tiles
+  and exactly one panel; only the SELECTED path spends a blurb on you; a tile tap switches the panel,
+  highlights only that tile and re-sweeps the meters from 0; the meters tell the truth (23 seasons for
+  the shortest career, 140k fans for the exemption, 3/2/1 pips for full/conditional/second-tier); the
+  compare table lists all five, marks the per-column leader and drives the panel; **turning pro still
+  applies the path you picked** (mini → proving/age 26, exempt → full/age 21) and Q-School still routes
+  into Q-School; no horizontal overflow and the CTA is within one screen of the top.
+- Regressions green: records 24, rival 17, rest 37, clubs 23, circuit 14, morris 16, daily_glitch 5,
+  wr_goal 12, all with 0 page errors. `goals_test` fails 3 **identically on the live deployed build** (a
+  synthetic rookie metric missing `played`) — pre-existing stale fixture, not this change. Inline scripts
+  parse (block 0 is the JSON-LD tag, fails identically on baseline).
+- Tunable: the `ENTRY_PATHS` table is unchanged mechanically (only `short` added and the prose bullets
+  shortened); the layout is `entryStyleOnce()`'s `.ep-*` block; the meter scales are the five `meter()`
+  calls in `paint()`.
