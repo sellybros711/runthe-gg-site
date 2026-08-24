@@ -650,8 +650,18 @@
       + sim.titles.reduce(function (t, x) { return t + (x.game ? x.game.viewers : 0); }, 0)) * 10) / 10;
     if (!wantBracket) return sim;
 
-    var f = field(teams, world, sim.titles);
-    var br = bracket(f.seats, world, rng);
+    /* THE SCHEDULE WAS SET IN AUGUST AND THE FIELD IS PICKED IN DECEMBER, so they read two
+       different ledgers. `world` here is the sport as it stood when the season kicked off,
+       which is what decides who plays whom and how good they are; `o.fieldWorld` is the sport
+       as it stands now, which is what decides how many seats there are.
+
+       Without the split, expanding the playoff in October would replay September under the
+       new rules and teams would finish with different records than the ones the player
+       already watched. With it, a ruling in November changes the bracket and not the
+       football, which is what happens in life. */
+    var fw = o.fieldWorld || world;
+    var f = field(teams, fw, sim.titles);
+    var br = bracket(f.seats, fw, rng);
     br.rounds.forEach(function (round, ri) {
       round.forEach(function (g) {
         g.round = ri;
@@ -664,7 +674,7 @@
     sim.viewers = Math.round((sim.viewers + br.rounds.reduce(function (t, r) {
       return t + r.reduce(function (u, g) { return u + (g.viewers || 0); }, 0);
     }, 0)) * 10) / 10;
-    var v = verdict(sim, world);
+    var v = verdict(sim, o.fieldWorld || world);
     sim.notes = v.notes;
     sim.edit = v.edit;
     return sim;

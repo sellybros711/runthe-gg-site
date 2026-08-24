@@ -564,6 +564,84 @@
   .maplegend i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
   .mapmove{margin-top:8px;font-size:12px;color:var(--gold)}
 
+  /* A DOCKED PRIMARY ACTION. The office runs to two screens, the year in review to four, and
+     in both cases the only button was at the very bottom: a first time player landed on five
+     cards of numbers with nothing to press in sight. Sticky at the foot of the screen means
+     the detail can be as long as it needs to be and the way forward is always in reach.
+
+     It sits on a fade rather than a hard bar so the content underneath reads as continuing
+     rather than as being cut off. */
+  .dock{position:sticky;bottom:0;z-index:40;margin-top:14px;padding:14px 0 6px;
+    background:linear-gradient(180deg,transparent,var(--bg) 34%)}
+  .dock .btn+.btn{margin-top:8px}
+  @supports (backdrop-filter:blur(2px)){
+    .dock{backdrop-filter:blur(3px)}
+  }
+
+  /* ---- the season, while it is happening ----
+     THE ANSWER TO THE BIGGEST HOLE IN THE MODE. A third of the calendar was a button that
+     said nothing was on the desk, and the third in question was the football season. These
+     are the three things a commissioner would actually look at in October: who is winning,
+     what happened on Saturday, and how many people watched.
+
+     VIEWERSHIP IS THE HEADLINE, deliberately. It is the number a television deal is bought
+     on, it is downstream of every ruling the player has made, and it is the one figure that
+     turns "I moved a rivalry to a Friday" into a consequence you can see in November. */
+  .swk{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .swk b{font-family:var(--fd);font-size:19px;line-height:1}
+  .swk span{margin-left:auto;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2)}
+
+  .tv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .tv div{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:10px 11px;border-top:2px solid var(--line)}
+  .tv div.up{border-top-color:var(--green)} .tv div.dn{border-top-color:var(--red)}
+  .tv b{display:block;font-family:var(--fd);font-size:23px;line-height:1}
+  .tv b i{font-style:normal;font-size:13px;color:var(--dim-2);margin-left:2px}
+  .tv span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+  .tv em{display:block;font-style:normal;font-family:var(--fn);font-size:9.5px;
+    font-weight:700;margin-top:4px}
+
+  /* A GAME, AS A SCORE AND AN AUDIENCE. The viewers number is what makes this more than a
+     scoreboard: the biggest game of the week is the biggest game BECAUSE of who watched. */
+  .gms{display:grid;gap:5px}
+  .gm2{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:7px 9px;
+    border-radius:9px;background:var(--panel);border-left:2px solid var(--gc,var(--line))}
+  .gm2 .t{display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--dim);
+    min-width:0}
+  .gm2 .t.w{color:var(--ink);font-weight:700}
+  .gm2 .t u{text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  .gm2 .t s{text-decoration:none;font-family:var(--fn);font-size:12.5px;font-weight:800;
+    min-width:20px;text-align:right}
+  /* COLUMN TWO, EXPLICITLY. Without it auto-placement put the audience figure in column one
+     of row one and pushed both team lines to the right, so every score in the mode read
+     backwards: the number first and the team it belonged to after it. */
+  .gm2 .v{grid-column:2;grid-row:1/3;align-self:center;font-family:var(--fd);font-size:15px;
+    color:var(--ink);white-space:nowrap;text-align:right}
+  .gm2 .v i{font-style:normal;font-size:10px;color:var(--dim-2)}
+
+  /* THE TABLE. Ten rows, because a hundred and thirty is a database and the top of the sport
+     is what an argument about the playoff is actually about. */
+  .tbl{display:grid;gap:3px}
+  .tr{display:grid;grid-template-columns:20px 1fr auto auto;align-items:center;gap:8px;
+    padding:5px 8px;border-radius:7px;background:var(--panel);
+    border-left:2px solid var(--tc2,var(--line))}
+  .tr>i{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:700;
+    color:var(--dim-2);text-align:right}
+  .tr>b{font-family:var(--fn);font-size:12.5px;font-weight:700;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .tr>span{font-family:var(--fn);font-size:9.5px;font-weight:700;color:var(--dim-2)}
+  .tr>u{text-decoration:none;font-family:var(--fd);font-size:14px}
+  /* Inside the field as it stands, which is the only line on this table anybody cares about
+     in November: a team above it is in and a team below it is not. */
+  .tr.in{background:linear-gradient(90deg,rgba(16,185,129,.12),var(--panel))}
+  .tr.cut{margin-top:7px;position:relative}
+  .tr.cut:before{content:attr(data-cut);position:absolute;top:-12px;left:8px;
+    font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--gold)}
+
   /* ---- the feed ----
      WHAT THE INTERNET SAID, and the brief for it was "well designed and not a bunch of
      words", which rules out the obvious version: three grey paragraphs under a heading.
@@ -741,13 +819,34 @@
     <!-- The coalition, which is how the term actually ends, drawn rather than left to be
          worked out from nine numbers four of which do not count. -->
     <div class="coal" id="off-coal"></div>
+
+    <!-- ---- while the football is on ----
+         Hidden in the offseason and the only thing that matters from September to January.
+         The map and the sport panel move below these on purpose: in October nobody wants a
+         conference footprint, they want to know who is unbeaten. -->
+    <div class="card flat" id="off-tvcard" hidden>
+      <div class="eyebrow green" style="margin-bottom:9px">Who is watching</div>
+      <div id="off-tv"></div>
+    </div>
+    <div class="card flat" id="off-weekcard" hidden>
+      <div id="off-week"></div>
+    </div>
+    <div class="card flat" id="off-titlecard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:9px">Championship weekend</div>
+      <div id="off-titles"></div>
+    </div>
+    <div class="card flat" id="off-tablecard" hidden>
+      <div class="eyebrow" style="margin-bottom:9px" id="off-tablehead">The top of the sport</div>
+      <div id="off-table"></div>
+    </div>
+
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px">The sport, as it stands</div>
       <div class="sport" id="off-sport"></div>
       <div class="fuses" id="off-fuses"></div>
     </div>
     <!-- The map. Realignment is the one thing a list cannot show. -->
-    <div class="card flat">
+    <div class="card flat" id="off-mapcard">
       <div class="eyebrow" style="margin-bottom:9px">The sport, by where it is played</div>
       <div class="map" id="off-map"></div>
     </div>
@@ -755,7 +854,10 @@
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
       <div class="room" id="off-room"></div>
     </div>
-    <button class="btn" id="b-desk">See what is on the desk</button>
+    <!-- DOCKED, because the office runs to two screens and the only action on it was at the
+         bottom of the second one. A first time player landed on five cards of numbers with
+         nothing to press in sight. -->
+    <div class="dock"><button class="btn" id="b-desk">See what is on the desk</button></div>
   </div>
 
   <!-- The desk: one item, one ruling. -->
@@ -778,8 +880,8 @@
       <!-- What that button will actually show you, said before you press it rather than
            after, so a thin forecast is a known limit and not a disappointment. -->
       <div id="d-council"></div>
-      <button class="btn" id="b-rule">Rule</button>
     </div>
+    <div class="dock"><button class="btn" id="b-rule">Rule</button></div>
   </div>
 
   <!-- The room answers. The screen the mode is remembered for. -->
@@ -799,7 +901,7 @@
       <div class="eyebrow" style="margin-bottom:9px">What changed in the sport</div>
       <div class="sport" id="r-sport"></div>
     </div>
-    <button class="btn" id="b-next">Carry on</button>
+    <div class="dock"><button class="btn" id="b-next">Carry on</button></div>
   </div>
 
   <!-- The year in review, and the end of a term. -->
@@ -825,8 +927,10 @@
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
       <div class="room" id="y-room"></div>
     </div>
-    <button class="btn" id="b-year-next">Next season</button>
-    <button class="btn ghost" id="b-quit">Leave the office</button>
+    <div class="dock">
+      <button class="btn" id="b-year-next">Next season</button>
+      <button class="btn ghost" id="b-quit">Leave the office</button>
+    </div>
   </div>
 </div>
 
@@ -835,7 +939,7 @@
 <script src="ledger.js?v=2"></script>
 <script src="blocs.js?v=2"></script>
 <script src="docket.js?v=2"></script>
-<script src="season.js?v=4"></script>
+<script src="season.js?v=5"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=1"></script>
 <script src="/cfb/auth.js?v=3"></script>
@@ -1387,10 +1491,33 @@ function office(){
   paintCoalition($('off-coal'),world);
   paintSport($('off-sport'),world,null);
   paintFuses($('off-fuses'),world);
-  paintMap($('off-map'),world,{showMoves:true});
+
+  /* THE OFFICE IS TWO DIFFERENT SCREENS AND THE CALENDAR DECIDES WHICH. From September to
+     the playoff it is a season screen: who is watching, what happened on Saturday, who is
+     in the field. The rest of the year it is a governance screen and the map leads.
+     Drawing both at once was the alternative and it is four screens of scrolling. */
+  const seg=S?S.segmentFor(world.beat):null;
+  const sim=seasonNow();
+  const inSeason=!!(seg&&sim);
+  $('off-tvcard').hidden=!inSeason;
+  $('off-weekcard').hidden=!inSeason||!!seg.bracket;
+  $('off-titlecard').hidden=!inSeason||!seg.titles||!!seg.bracket;
+  $('off-tablecard').hidden=!inSeason;
+  $('off-mapcard').hidden=inSeason;
+  if(inSeason){
+    paintTv($('off-tv'),sim);
+    if(!seg.bracket) paintWeek($('off-week'),sim);
+    if(seg.titles&&!seg.bracket) paintTitles($('off-titles'),sim);
+    $('off-tablehead').textContent=seg.titles?'The field as it stands':'The top of the sport';
+    paintStandings($('off-table'),sim);
+  }else{
+    paintMap($('off-map'),world,{showMoves:true});
+  }
   paintRoom($('off-room'),world,null);
   const pool=D.eligible(world,L);
-  $('b-desk').textContent=pool.length?'See what is on the desk':'Nothing on the desk. Move on.';
+  $('b-desk').textContent=pool.length
+    ? 'See what is on the desk'
+    : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
   show('s-office');
 }
 $('b-desk').onclick=()=>{
@@ -1495,6 +1622,109 @@ function optionSignature(o){
       +(up?'▲':'▼')+' '+esc(AXIS_SHORT[a]||AXIS_WORDS[a][up?0:1])+'</i>';
   }).join('')+'</span>';
 }
+/* ── the season on the office screen ───────────────────────────────────────────────
+   Three cards while the football is on: what it drew, who is winning, and what happened on
+   Saturday. See the CSS block for why viewership leads. */
+const M1=(n)=>(Math.round(n*10)/10).toFixed(1);
+
+/* THE TERM'S VIEWING FIGURES, kept on the world so the next television negotiation has
+   something to be negotiated against. A deal is bought on what the sport drew, and until
+   there was a number for that the media rights item was guessing. */
+function recordRatings(year,sim){
+  if(!sim||!sim.complete) return;
+  world.ratings=world.ratings||{};
+  if(world.ratings[year]) return;
+  world.ratings[year]={
+    total:Math.round(sim.viewers),
+    perGame:Math.round(sim.perGame*100)/100,
+    title:sim.bracket&&sim.bracket.rounds.length
+      ? Math.round((sim.bracket.rounds[sim.bracket.rounds.length-1][0].viewers||0)*10)/10 : 0,
+  };
+  save();
+}
+/* What the sport has averaged across the term so far, which is the number a network would
+   actually put in front of you. Falls back to the opening year so year one has a baseline. */
+function ratingsAverage(){
+  const r=world.ratings||{}, ys=Object.keys(r);
+  if(!ys.length) return null;
+  const t=ys.reduce((a,y)=>a+r[y].total,0)/ys.length;
+  const g=ys.reduce((a,y)=>a+r[y].perGame,0)/ys.length;
+  return {years:ys.length,total:t,perGame:g};
+}
+
+function paintTv(el,sim){
+  if(!el) return;
+  const avg=ratingsAverage();
+  const prev=avg&&avg.perGame;
+  const d=prev?sim.perGame-prev:0;
+  const arrow=(v)=>Math.abs(v)<0.02?'':'<em class="'+(v>0?'up':'dn')+'">'
+    +(v>0?'▲':'▼')+Math.abs(v).toFixed(2)+'M a game</em>';
+  const biggest=sim.games.slice().sort((a,b)=>b.viewers-a.viewers)[0];
+  el.innerHTML='<div class="tv">'
+    +'<div class="'+(d>0.02?'up':d<-0.02?'dn':'')+'"><b>'+M1(sim.viewers)+'<i>M</i></b>'
+      +'<span>Watched so far</span>'+arrow(d)+'</div>'
+    +'<div><b>'+sim.perGame.toFixed(2)+'<i>M</i></b><span>An average game</span>'
+      +(avg?'<em style="color:var(--dim-2)">term average '+avg.perGame.toFixed(2)+'M</em>':'')+'</div>'
+    +'</div>'
+    +(biggest?'<div class="gms"><div class="gm2" style="--gc:'+esc(biggest.winner.color)+'">'
+      +side2(biggest,0)+side2(biggest,1)
+      +'<span class="v">'+M1(biggest.viewers)+'<i>M</i></span></div></div>':'');
+}
+
+const side2=(g,i)=>{
+  const t=i?g.b:g.a, sc=g.score[i], won=g.winner===t;
+  return '<span class="t'+(won?' w':'')+'"><u>'+esc(t.school)+'</u><s>'+sc+'</s></span>';
+};
+
+/* LAST SATURDAY, biggest game first, because "what happened" and "what mattered" are the
+   same question and the audience number answers both. */
+function paintWeek(el,sim){
+  if(!el) return;
+  const wk=sim.weeks[sim.weeks.length-1];
+  if(!wk||!wk.games.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="swk"><b>Week '+wk.week+'</b>'
+      +'<span>'+wk.games.length+' games &middot; '+M1(wk.viewers)+'M watched</span></div>'
+    +'<div class="gms">'+wk.games.slice(0,5).map((g)=>
+      '<div class="gm2" style="--gc:'+esc(g.winner.color)+'">'
+      +side2(g,0)+side2(g,1)
+      +'<span class="v">'+M1(g.viewers)+'<i>M</i></span></div>').join('')+'</div>';
+  reveal(el.querySelector('.gms'));
+}
+
+/* THE TABLE, AND THE LINE THROUGH IT. Who is in the field as it stands is the only thing
+   anybody wants from a standings screen in November, and it is a thing this mode's own
+   ledger decides, so the cut moves when the player moves it. */
+function paintStandings(el,sim){
+  if(!el) return;
+  const size=Math.max(2,world.playoff.teams||12);
+  /* TWO PAST THE CUT, so the line is visible. Slicing at exactly the field size meant the
+     row that draws it was always the first one off the end of the list, and the single most
+     useful thing on a standings screen in November never rendered at all. */
+  const top=sim.teams.slice(0,Math.min(size+2,16));
+  el.innerHTML='<div class="tbl">'+top.map((t,i)=>{
+    const cut=i===size;
+    return '<div class="tr'+(i<size?' in':'')+(cut?' cut':'')+'" style="--tc2:'+esc(t.color)+'"'
+      +(cut?' data-cut="the cut line, '+size+' seats"':'')+'>'
+      +'<i>'+(i+1)+'</i><b>'+esc(t.school)+'</b>'
+      +'<span>'+esc(t.conference)+'</span>'
+      +'<u>'+t.wins+'-'+t.losses+'</u></div>';
+  }).join('')+'</div>';
+  reveal(el.querySelector('.tbl'));
+}
+
+/* CHAMPIONSHIP WEEKEND, which is six games and used to be a beat with nothing in it. */
+function paintTitles(el,sim){
+  if(!el||!sim.titles){ if(el) el.innerHTML=''; return; }
+  el.innerHTML='<div class="gms">'+sim.titles.map((t)=>t.game
+    ? '<div class="gm2" style="--gc:'+esc(t.team.color)+'">'
+      +side2(t.game,0)+side2(t.game,1)
+      +'<span class="v">'+M1(t.game.viewers)+'<i>M</i></span></div>'
+    : '<div class="gm2" style="--gc:'+esc(t.team.color)+'">'
+      +'<span class="t w"><u>'+esc(t.team.school)+'</u><s>'+esc(t.conference)+'</s></span>'
+      +'<span class="t"><u>no title game played</u><s></s></span></div>').join('')+'</div>';
+  reveal(el.querySelector('.gms'));
+}
+
 /* ── the feed ──────────────────────────────────────────────────────────────────────
    The posts themselves live in cfb/commish/feed.js, including the rule about why every
    account in it is invented. This is only the drawing.
@@ -1973,13 +2203,65 @@ function conferencesOnMap(mem){
 /* ── the season ───────────────────────────────────────────────────────────────────
    The football, played under the rules on the ledger. See cfb/commish/season.js. */
 let lastSeason=null;
+
+/* ── the season, played in front of you ────────────────────────────────────────────
+   THE FOOTBALL USED TO HAPPEN IN ONE FRAME. September, October and November were names on
+   the calendar with nothing behind them, championship weekend and the playoff were empty a
+   measured hundred percent of the time, and the whole season arrived as a bracket in
+   December. A commissioner sim where you cannot watch the sport is a spreadsheet.
+
+   Now every in-season beat plays its own weeks and the office shows the standings while it
+   happens. Three things make that work.
+
+   A SEPARATE SEED. The season is derived from the world's seed and the year, never from the
+   docket's rng, because the season is now computed several times a year (once per beat, and
+   again on every repaint) and consuming the shared stream would put the docket somewhere
+   different depending on how often somebody looked at the standings.
+
+   A SNAPSHOT AT KICKOFF. The league, the schedule and the strengths come from the ledger as
+   it stood when the season started, so a ruling in October does not replay September under
+   new rules and hand back different records than the ones already watched. The FIELD is
+   picked from the ledger as it stands now, because that really is decided in December.
+
+   AND A CACHE, because eight hundred games is cheap once and not cheap on every repaint. */
+function seasonSeed(year){ return E.hashSeed('cfb-commish-season|'+world.seed+'|'+year); }
+
+function seasonBase(){
+  if(!world.seasonBase||world.seasonBase.year!==world.year){
+    world.seasonBase={year:world.year,snap:JSON.parse(JSON.stringify({
+      membership:world.membership, rules:world.rules, money:world.money,
+      playoff:world.playoff, labour:world.labour,
+    }))};
+    save();
+  }
+  return Object.assign({},world,world.seasonBase.snap);
+}
+
+let simCache={key:null,sim:null};
+function seasonAt(seg){
+  if(!S||!TEAMS.length||!seg) return null;
+  const key=world.year+'|'+seg.through+'|'+(seg.titles?1:0)+'|'+(seg.bracket?1:0)
+    +'|'+world.playoff.teams+'|'+world.playoff.autobids+'|'+world.playoff.byes;
+  if(simCache.key===key) return simCache.sim;
+  let sim=null;
+  try{
+    sim=S.play(seasonBase(),TEAMS,E.createSeededRNG(seasonSeed(world.year)),{
+      through:seg.through, titles:!!seg.titles, bracket:!!seg.bracket, fieldWorld:world,
+    });
+  }catch(e){ sim=null; }
+  simCache={key,sim};
+  return sim;
+}
+/* What has been played by the time you are standing on a given beat. Null in the offseason,
+   which is what tells the office to draw the map instead of the standings. */
+const seasonNow=()=>seasonAt(S?S.segmentFor(world.beat):null);
+
 function playSeason(year){
   lastSeason=null;
   if(!S||!TEAMS.length) return;
   try{
-    const sim=S.play(Object.assign({},world,{year}),TEAMS,rng);
+    const sim=seasonAt({through:S.WEEKS,titles:true,bracket:true});
     if(!sim) return;
-    world.rngCalls=(world.rngCalls||0)+1;
     lastSeason=sim;
     /* THE SEASON IS A RULING NOBODY MADE and the room is entitled to answer it, so it goes
        through applyEdit and applyOutcome exactly like a ruling does. */
