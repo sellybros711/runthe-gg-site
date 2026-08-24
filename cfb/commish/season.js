@@ -332,38 +332,70 @@
     });
 
     if (first.length && blowouts / first.length >= 0.5) {
-      notes.push('The first round was not competitive: ' + blowouts + ' of ' + first.length
-        + ' games were decided by three scores.');
+      notes.push('The first round was a chore. ' + blowouts + ' of ' + first.length
+        + ' games were over by the third quarter and the studio spent the night cutting away '
+        + 'to a game that was not on your bracket.');
       effects.inventory = -1.2;
       effects.tradition = -0.8;
     }
     if (autoOut.length >= 2) {
-      notes.push(autoOut.length + ' automatic qualifiers lost by three scores or more. '
-        + 'The argument that the field is too wide just got its evidence.');
+      notes.push(autoOut.length + ' conference champions got three scored in their opener. '
+        + 'Everybody who has ever argued the field is too wide spent the week holding that up.');
       effects.access = -1.4;
     }
     if (sim.field.autobidsUnmet > 0) {
-      notes.push('You have promised ' + (world.playoff.autobids) + ' automatic bids and there '
-        + 'are only ' + sim.field.champions.length + ' conferences left to win one. '
-        + sim.field.autobidsUnmet + ' of those seats went to at-large teams instead.');
+      notes.push('You promised ' + (world.playoff.autobids) + ' automatic bids and there are '
+        + sim.field.champions.length + ' conferences left to win one. '
+        + sim.field.autobidsUnmet + ' of those guaranteed seats went to a team that finished '
+        + 'second in its own league.');
       effects.access = (effects.access || 0) - 1.6;
     }
     if (sim.field.snub) {
       var s = sim.field.snub;
-      notes.push(s.school + ' finished ' + s.wins + '-' + s.losses
-        + ' and did not make the field, which is the loudest team in the country right now.');
+      notes.push(s.school + ' finished ' + s.wins + '-' + s.losses + ' and stayed home. '
+        + 'That is the angriest fanbase in the country and they have your name.');
     }
     var champ = sim.bracket.champion;
     if (champ && champ.how === 'auto' && champ.seed > Math.ceil(sim.field.seats.length / 2)) {
-      notes.push(champ.team.school + ' won it from the ' + champ.seed
-        + ' seed. Nobody is going to argue the field is too big this winter.');
+      notes.push(champ.team.school + ' won the whole thing from the ' + champ.seed
+        + ' seed. Every argument that the regular season stopped mattering just lost its '
+        + 'best line.');
       effects.access = (effects.access || 0) + 2.2;
       effects.tradition = (effects.tradition || 0) + 0.6;
+    }
+    /* CHALK IS ITS OWN VERDICT AND IT WAS NOT BEING SAID. A one seed running the table is
+       the format's best defence and the reason nobody buys a ticket for the first round,
+       and a recap that only ever remarks on upsets is a recap that has an opinion. */
+    if (champ && champ.seed === 1) {
+      notes.push('The top seed was the best team in August and the best team in January. '
+        + 'The bracket agreed with the preseason and half the sport feels slightly cheated '
+        + 'by that.');
+      effects.inventory = (effects.inventory || 0) - 0.4;
+    }
+    /* AN UNBEATEN CHAMPION is the rarest thing this sport produces and it deserves a line. */
+    if (champ && champ.team && champ.team.losses === 0) {
+      notes.push(champ.team.school + ' finished it unbeaten. Nobody is going to have to '
+        + 'explain that one at a banquet.');
+      effects.tradition = (effects.tradition || 0) + 0.5;
+    }
+    /* A FINAL NOBODY WATCHED PAST HALF TIME undoes a whole postseason of goodwill, and the
+       game that decides it is the one people remember the format by. */
+    var last = sim.bracket.rounds[sim.bracket.rounds.length - 1] || [];
+    if (last[0] && last[0].margin >= 21) {
+      notes.push('The final was over at half time. That is the game the sport shows its '
+        + 'children and this year it showed them a scrimmage.');
+      effects.inventory = (effects.inventory || 0) - 0.7;
+    } else if (last[0] && last[0].margin <= 3) {
+      notes.push('The final came down to one score. Whatever else this format is, it '
+        + 'produced a night people are going to talk about for twenty years.');
+      effects.inventory = (effects.inventory || 0) + 0.9;
+      effects.tradition = (effects.tradition || 0) + 0.5;
     }
     /* A LONG SEASON IS A TIRED ONE, and the players notice before anybody else does. */
     var rounds = sim.bracket.rounds.length;
     if (rounds >= 4) {
-      notes.push('The champion played ' + rounds + ' extra games. The players noticed.');
+      notes.push('The champion played ' + rounds + ' extra games on top of a full season. '
+        + 'The people who played them have started saying so out loud.');
       effects.labour = -1.1;
       effects.exposure = 0.8;
     }

@@ -564,6 +564,54 @@
   .maplegend i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
   .mapmove{margin-top:8px;font-size:12px;color:var(--gold)}
 
+  /* ---- the feed ----
+     WHAT THE INTERNET SAID, and the brief for it was "well designed and not a bunch of
+     words", which rules out the obvious version: three grey paragraphs under a heading.
+
+     A post is a CARD WITH A FACE ON IT. Monogram, hue, handle, timestamp, body, three
+     counts. That is the same identity channel the room rows use, pointed at a different set
+     of people, and it is what lets a column of three be scanned rather than read.
+
+     THE NUMBERS ARE INFORMATION, not decoration. Engagement is scaled by how far the room
+     actually moved, so the loudest ruling of a term genuinely carries the biggest number and
+     a player can see that without reading a word of it.
+
+     NOT DRESSED AS ANYBODY'S PRODUCT. No bird, no blue chrome, no counterfeit of a website
+     everybody has seen. It is a feed in this game's own clothes, which is both the safer
+     thing and the better looking one. See the header of cfb/commish/feed.js for the rest of
+     that rule, including why every account in it is invented. */
+  .feed{display:grid;gap:8px}
+  .post{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:11px 12px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    border-left:2px solid var(--ac,var(--line))}
+  .post .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-family:var(--fd);font-size:12.5px;letter-spacing:.02em;
+    color:#0a1020;background:var(--ac);flex:0 0 auto}
+  .post .hd{display:flex;align-items:center;gap:4px;flex-wrap:wrap;line-height:1.2}
+  .post .hd b{font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink)}
+  /* The tick is a shape rather than a character, because a check mark in the body font
+     lands differently on every platform and this one has to sit on a name. */
+  .post .hd .tick{width:12px;height:12px;flex:0 0 auto;fill:var(--ac)}
+  .post .hd i{font-style:normal;font-size:11.5px;color:var(--dim-2);min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .post p{font-size:13.5px;line-height:1.42;margin-top:4px;color:var(--ink)}
+  .post .eng{display:flex;gap:13px;margin-top:8px;font-family:var(--fn);font-size:10.5px;
+    font-weight:700;color:var(--dim-2)}
+  .post .eng span{display:flex;align-items:center;gap:4px}
+  .post .eng svg{width:11px;height:11px;fill:none;stroke:var(--dim-2);stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  /* THE ONE THAT WENT OFF. The biggest post in the feed is marked, because "this is the bit
+     people are actually arguing about" is the single most useful thing a feed can tell you
+     and it is otherwise buried in three similar numbers. */
+  .post.top{background:linear-gradient(180deg,rgba(255,255,255,.04),transparent),var(--panel)}
+  .post.top .eng span:first-child{color:var(--ink)}
+  .post.top .eng span:first-child svg{stroke:var(--red);fill:var(--red)}
+  .feedhead{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+  .feedhead b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .feedhead span{margin-left:auto;font-family:var(--fn);font-size:10px;font-weight:700;
+    color:var(--dim-2)}
+
   /* ---- the season ---- */
   .champ{position:relative;overflow:hidden;
     border:1px solid var(--tc,var(--line));border-radius:13px;padding:14px;
@@ -745,6 +793,8 @@
       <!-- How much of that was a read and how much was guesswork. -->
       <div id="r-council"></div>
     </div>
+    <!-- What the internet said. Only after a real ruling: see paintFeed. -->
+    <div class="card flat" id="r-feed" hidden></div>
     <div class="card flat" id="r-changed" hidden>
       <div class="eyebrow" style="margin-bottom:9px">What changed in the sport</div>
       <div class="sport" id="r-sport"></div>
@@ -761,6 +811,8 @@
     </div>
     <!-- The football that was actually played this year. -->
     <div class="card flat" id="y-season" hidden></div>
+    <!-- What the internet said about the football. -->
+    <div class="card flat" id="y-feed" hidden></div>
     <!-- The term so far, on the screen where a year is being closed out. -->
     <div class="cal" id="y-cal"></div>
     <!-- The same vote that ends a term, on the screen where a term can end. -->
@@ -780,11 +832,12 @@
 
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
-<script src="ledger.js?v=1"></script>
-<script src="blocs.js?v=1"></script>
+<script src="ledger.js?v=2"></script>
+<script src="blocs.js?v=2"></script>
 <script src="docket.js?v=2"></script>
-<script src="season.js?v=2"></script>
+<script src="season.js?v=3"></script>
 <script src="council.js?v=1"></script>
+<script src="feed.js?v=1"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -811,6 +864,7 @@ const L=window.PS_CFB_LEDGER, B=window.PS_CFB_BLOCS, D=window.PS_CFB_DOCKET, E=w
    direction, and the door already says what to do about it. */
 const S=window.PS_CFB_SEASON;
 const C=window.PS_CFB_COUNCIL;
+const FEED=window.PS_CFB_FEED;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
@@ -1441,6 +1495,51 @@ function optionSignature(o){
       +(up?'▲':'▼')+' '+esc(AXIS_SHORT[a]||AXIS_WORDS[a][up?0:1])+'</i>';
   }).join('')+'</span>';
 }
+/* ── the feed ──────────────────────────────────────────────────────────────────────
+   The posts themselves live in cfb/commish/feed.js, including the rule about why every
+   account in it is invented. This is only the drawing.
+
+   IT GOES AFTER A RULING, NEVER ON THE PREVIEW. Test It On The Room is a forecast, and the
+   internet reacting to something that has not happened yet would be the one thing on that
+   screen that was not true. */
+const ICON_LIKE=G('<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8C19 15.6 12 20 12 20z"/>');
+const ICON_REPOST=G('<path d="M4 8h11a3 3 0 0 1 3 3v2"/><path d="M7 5 4 8l3 3"/>'
+  +'<path d="M20 16H9a3 3 0 0 1-3-3v-2"/><path d="M17 19l3-3-3-3"/>');
+const ICON_REPLY=G('<path d="M20 12a7 7 0 0 1-7 7H8l-4 3 1-4.2A7 7 0 0 1 11 5h2a7 7 0 0 1 7 7z"/>');
+/* A NOTCHED DISC WITH A CHECK CUT OUT OF IT, in the account's own hue rather than in
+   anybody's brand blue. Drawn rather than typed because a check mark in the body font lands
+   at a different size and baseline on every platform and this one has to sit on a name. */
+const TICK='<svg class="tick" viewBox="0 0 24 24" aria-hidden="true">'
+  +'<path fill-rule="evenodd" d="M12 1.5l2.7 2.2 3.4-.4 1 3.3 3.1 1.5-1 3.3 2 2.6-2 2.6 1 3.3'
+  +'-3.1 1.5-1 3.3-3.4-.4L12 22.5 9.3 20.3l-3.4.4-1-3.3-3.1-1.5 1-3.3-2-2.6 2-2.6-1-3.3'
+  +'L5.9 3.3l1-3.3 3.4.4z'
+  +'M16.8 9.3a1 1 0 0 0-1.5-1.3l-4.2 4.7-2-1.8a1 1 0 0 0-1.4 1.5l2.8 2.5a1 1 0 0 0 1.4-.1z"/>'
+  +'</svg>';
+
+function paintFeed(el,posts,head){
+  if(!el) return;
+  if(!posts||!posts.length){ el.innerHTML=''; el.hidden=true; return; }
+  el.hidden=false;
+  /* WHICHEVER ONE WENT OFF gets marked, because that is the sentence people are actually
+     arguing about and it is otherwise buried in three similar numbers. */
+  let top=0; posts.forEach((p,i)=>{ if(p.likes>posts[top].likes) top=i; });
+  const n=(v)=>FEED.shortNum(v);
+  el.innerHTML='<div class="feedhead"><b>'+esc(head||'What the internet said')+'</b>'
+      +'<span>'+n(posts.reduce((t,p)=>t+p.likes+p.reposts+p.replies,0))+' engagements</span></div>'
+    +'<div class="feed">'+posts.map((p,i)=>
+      '<div class="post'+(i===top?' top':'')+'" style="--ac:'+esc(p.color)+'">'
+      +'<span class="av">'+esc(p.mark)+'</span>'
+      +'<div><span class="hd"><b>'+esc(p.name)+'</b>'+(p.tick?TICK:'')
+        +'<i>@'+esc(p.handle)+' &middot; '+esc(p.ago)+'</i></span>'
+      +'<p>'+esc(p.say)+'</p>'
+      +'<span class="eng">'
+        +'<span>'+ICON_LIKE+n(p.likes)+'</span>'
+        +'<span>'+ICON_REPOST+n(p.reposts)+'</span>'
+        +'<span>'+ICON_REPLY+n(p.replies)+'</span>'
+      +'</span></div></div>').join('')+'</div>';
+  reveal(el.querySelector('.feed'));
+}
+
 /* ── the council ──────────────────────────────────────────────────────────────────
    Three small readers over cfb/commish/council.js, which holds the ladder itself. */
 const blindSet=()=>{
@@ -1677,6 +1776,9 @@ $('b-test').onclick=()=>{
   paintMeters($('r-meters'),after,world,voteDark?{standing:1}:null);
   paintRoom($('r-room'),after,lastRoom,blind);
   paintCouncilNote($('r-council'),seats);
+  /* NO FEED ON A FORECAST. The internet cannot react to a ruling nobody has made, and it is
+     the one thing on this screen that would not be true. */
+  paintFeed($('r-feed'),null);
   $('r-changed').hidden=false;
   paintSport($('r-sport'),after,world);
   $('b-next').textContent='Back to the desk';
@@ -1705,6 +1807,10 @@ $('b-rule').onclick=()=>{
      would just be hiding the game. */
   paintRoom($('r-room'),world,lastRoom);
   paintCouncilNote($('r-council'),C.SEATS.length);
+  paintFeed($('r-feed'),FEED.onRuling({
+    rows:lastRoom, edit:edit, year:before.year, beat:before.beat,
+    itemId:item.id, optionId:choice,
+  }));
   const changed=JSON.stringify(sportFacts(world))!==JSON.stringify(sportFacts(before));
   $('r-changed').hidden=!changed;
   if(changed) paintSport($('r-sport'),world,before);
@@ -1948,6 +2054,57 @@ function roundName(i,total){
   return left===1?'Final':left===2?'Semi-finals':left===3?'Quarter-finals':'Round '+(i+1);
 }
 
+/* HOW THE YEAR IS SUMMED UP, and it was one sentence with a list stapled to it: "You finish
+   the year with the SEC and the Big Ten against you." True, and the same shape every
+   December for five straight years, which is how a five year term starts feeling like four
+   repeats of the same screen.
+
+   Written off the state of the room rather than picked at random, so it is still reporting
+   rather than flavour: who is against you, whether they can remove you, and how the meters
+   are doing are all in the ledger and all readable here. */
+function yearVerdict(angry,w){
+  const total=L.totalWeight(), hostile=L.hostileWeight(w);
+  const bigTwo=angry.indexOf('SEC')>=0&&angry.indexOf('Big Ten')>=0;
+  const names=angry.map((a)=>(B.BY_ID[a]||{}).name||a);
+  const seed=(w.year*31+(w.history||[]).length)>>>0;
+  const one=(list)=>list[seed%list.length];
+  if(bigTwo){
+    return one([
+      'The SEC and the Big Ten are against you at the same time, which is the one combination '
+        +'that has ever ended this job.',
+      'The two conferences that can remove you have started taking the same meetings. You '
+        +'have a winter to fix that.',
+    ]);
+  }
+  if(hostile>total*0.375){
+    return one([
+      'You go into the winter with '+names.join(' and ')+' against you, and enough of the '
+        +'room to make a vote worth counting.',
+      names.join(' and ')+' have stopped taking your calls. That is most of the way to a '
+        +'problem you cannot talk your way out of.',
+    ]);
+  }
+  if(names.length){
+    return one([
+      'You finish the year with '+names.join(' and ')+' against you. Survivable, and not free.',
+      names.join(' and ')+' will spend the offseason briefing against this office. Everybody '
+        +'else is fine.',
+      'One bad room, the rest of them behind you. That is an ordinary year in this job.',
+    ]);
+  }
+  if(w.meters.standing>=70){
+    return one([
+      'Nobody in the room is against you, which in this job usually means they are waiting.',
+      'A year with the whole room behind you. Enjoy it, because it does not happen twice.',
+    ]);
+  }
+  return one([
+    'You finish the year with the room behind you.',
+    'Nobody walked out. In this sport that counts as a mandate.',
+    'A quiet year. The people who wanted a fight are saving it for the spring.',
+  ]);
+}
+
 /* ── the year, and the end ────────────────────────────────────────────────────── */
 function yearEnd(year){
   const done=world.year-world.startYear;
@@ -1960,10 +2117,13 @@ function yearEnd(year){
   $('y-big').textContent=year;
   $('y-card').className='verdict'+(world.meters.standing>=55?' good':world.meters.standing<30?' bad':'');
   const angry=L.removal(world).angry||[];
-  $('y-say').textContent=angry.length
-    ? 'You finish the year with '+angry.join(' and ')+' against you.'
-    : 'You finish the year with the room behind you.';
+  $('y-say').textContent=yearVerdict(angry,world);
   paintSeason($('y-season'),lastSeason);
+  paintFeed($('y-feed'),lastSeason?FEED.onSeason({
+    sim:lastSeason, year:year,
+    snub:lastSeason.field&&lastSeason.field.snub,
+    autobidsUnmet:lastSeason.field&&lastSeason.field.autobidsUnmet,
+  }):null,'What the internet said about the '+year+' season');
   paintCalendar($('y-cal'),world);
   paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
@@ -1977,23 +2137,37 @@ $('b-year-next').onclick=()=>office();
    the same screen as the year in review and it would otherwise still be showing last year's
    playoff under a card that says the term is over. */
 $('b-quit').onclick=()=>{ if(confirm('Leave the office? The term ends here.')){
-  world.outcome={removed:false,reason:'quit',say:'You walked away.'}; save();
+  world.outcome={removed:false,reason:'quit',
+    say:'You walked away with time on the contract, which nobody in this job has ever been '
+      +'thanked for and several have been envied for.'}; save();
   if(world.beat!==0||!lastSeason) paintSeason($('y-season'),null);
   ending(); } };
 
 function ending(){
-  const o=world.outcome||{removed:false,reason:'served',say:'You served the term.'};
+  const o=world.outcome||{removed:false,reason:'served',
+    say:'You served the whole term, which in this job is a result on its own.'};
   $('y-eyebrow').textContent=o.removed?'Removed':'The end of the term';
   $('y-big').textContent=o.removed?world.year:(world.startYear+' to '+(world.year-1));
   $('y-card').className='verdict '+(o.removed?'bad':'good');
   const facts=sportFacts(world), start=sportFacts(L.createWorld({year:world.startYear}));
   const moved=facts.filter((f,i)=>f[1]!==start[i][1]).length;
-  $('y-say').textContent=(o.say||'')+' You changed '+moved+' of the four things a '
-    +'commissioner is judged on, over '+world.history.length+' rulings.';
+  /* THE SCORECARD, IN THE SPORT'S OWN TERMS. It was "you changed 2 of the four things a
+     commissioner is judged on, over 31 rulings", which is accurate and reads like a receipt.
+     What a term is actually judged on is what the sport looks like now and who is still
+     talking to you, so it says both. */
+  const ruled=world.history.filter((h)=>!(h.id&&String(h.id).indexOf('season:')===0)).length;
+  const titles=Object.keys(world.champions||{}).length;
+  $('y-say').textContent=(o.say||'')+' '+ruled+' rulings, '+titles
+    +(titles===1?' champion crowned, ':' champions crowned, ')
+    +(moved?moved+' of the four numbers moved.':'and not one of the four numbers moved.')
+    +(moved>=3?' Nobody is going to say you left it alone.'
+      :moved===0?' The sport you hand over is the sport you were given.':'');
   /* THE TERM AS A GRID IS THE RECORD, which is what an ending screen is for. Nothing is
      current on it any more: there is no beat you are standing on, and the rows simply say
      what you did with each of the five years and who won them. */
   paintCalendar($('y-cal'),world);
+  paintFeed($('y-feed'),FEED.onTerm({year:world.year,removed:!!o.removed}),
+    o.removed?'The morning after':'The verdict');
   paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);

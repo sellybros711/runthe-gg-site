@@ -326,11 +326,13 @@
     const bigTwo = angry.indexOf('SEC') >= 0 && angry.indexOf('Big Ten') >= 0;
     if (bigTwo) {
       return { removed: true, reason: 'coalition',
-        say: 'The SEC and the Big Ten moved together. Nothing else on the board mattered.' };
+        say: 'The SEC and the Big Ten moved together, and once those two are in a room without '
+          + 'you the rest of the board is decoration. It took one phone call and a Tuesday.' };
     }
     if (hostileWeight(world) > totalWeight() / 2) {
       return { removed: true, reason: 'vote',
-        say: 'The presidents called a vote and it was not close.' };
+        say: 'The presidents called a vote. It was not close, and two of them had the statement '
+          + 'written before the meeting started.' };
     }
     return { removed: false, angry };
   }
