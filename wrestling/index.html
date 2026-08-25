@@ -563,6 +563,33 @@
   .bs-nontitle{font-size:11px;color:var(--text-dim);margin-top:4px;padding:5px 8px;background:rgba(224,179,65,.07);border-left:2px solid rgba(224,179,65,.5);border-radius:3px;letter-spacing:.02em;}
   .bs-nontitle b{color:var(--gold);}
   .bs-scene-tease{margin-top:10px;padding:6px 10px;background:rgba(224,179,65,.08);border-left:2px solid rgba(224,179,65,.5);border-radius:3px;color:var(--gold);font-size:11px;letter-spacing:.02em;display:flex;align-items:center;gap:6px;}
+  /* Two-meter headline replaces the six-tile wall. One glance: where you
+     stand, how hot you are. */
+  .headline{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}
+  @media (max-width:520px){ .headline{grid-template-columns:1fr;} }
+  .hl-meter{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .hl-l{font-family:var(--display);font-size:10px;letter-spacing:.20em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
+  .hl-v{font-family:var(--mono);font-size:44px;font-weight:800;line-height:1;margin:6px 0 4px;}
+  .hl-o{font-size:16px;color:var(--text-faint);font-weight:600;margin-left:2px;}
+  .hl-b{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+  .hl-b i{display:block;height:100%;border-radius:3px;transition:width .5s;}
+  .hl-s{font-size:12px;margin-top:6px;letter-spacing:.03em;}
+  .headline-notes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+  .detailtoggle{width:100%;font-size:11px;letter-spacing:.06em;padding:8px 10px;margin-bottom:8px;}
+  .vitalsdetail{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:12px;}
+  /* Stripped booking sheet: opponent + one-line stakes + single CTA, details tucked */
+  .bs-headline{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+  .bs-stip{font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;letter-spacing:.03em;}
+  .bs-tag{font-family:var(--display);font-size:10.5px;letter-spacing:.15em;color:var(--text-faint);text-transform:uppercase;padding:3px 8px;border:1px solid var(--line);border-radius:4px;}
+  .bs-tag.me{color:var(--gold);border-color:rgba(224,179,65,.5);background:rgba(224,179,65,.05);}
+  .bs-tag.op{opacity:.7;}
+  .bs-oddline{font-size:12.5px;color:var(--text-dim);margin-top:4px;}
+  .bs-oddline b{color:var(--cream);font-family:var(--mono);}
+  .bk-quickrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .bk-quickrow button{flex:1 1 auto;font-size:11px;padding:6px 8px;}
+  .bk-details{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.09);}
+  .wk-extras-toggle{margin-top:12px;text-align:center;}
+  .wk-extras-toggle button{font-size:11px;letter-spacing:.06em;padding:6px 12px;color:var(--text-faint);}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -1743,6 +1770,36 @@ function merchWeekly(){
 }
 function gimHeat(){ return G&&G.w.gimmick? clamp(G.w.gimmick.heat,0,100):60; }
 function gimStale(){ return gimHeat()<32; }
+/* Two headline meters the career page leads with so a player has ONE glance
+   that tells them where they stand and how hot they are. Everything else
+   (reputation, popularity, momentum, gimmick heat, reaction, condition) still
+   exists and still updates; these just consolidate the many-into-two. */
+function trajectoryScore(){
+  const c=G.car;
+  const tierProgress = TIERS.length>1 ? tierIdx()/(TIERS.length-1) : 0;
+  const s = 0.50*(c.standing||50) + 0.30*(c.pop||50) + 0.20*(tierProgress*100);
+  return Math.round(clamp(s,0,100));
+}
+function heatScore(){
+  const g = gimHeat();
+  const r = reactionOf();
+  const m = (G.car.mom||50);
+  return Math.round(clamp(0.50*g + 0.35*r + 0.15*m, 0, 100));
+}
+function trajectoryBand(v){
+  if(v>=80) return {t:'Main event material',    c:'var(--gold)'};
+  if(v>=65) return {t:'On the rise',            c:'var(--green)'};
+  if(v>=50) return {t:'Holding your spot',      c:'var(--cream)'};
+  if(v>=35) return {t:'Below the office\'s eye',c:'var(--text-dim)'};
+  return       {t:'On the way out',           c:'#f0907f'};
+}
+function heatBand(v){
+  if(v>=80) return {t:'Red-hot right now',      c:'var(--gold)'};
+  if(v>=65) return {t:'Getting a reaction',     c:'var(--green)'};
+  if(v>=45) return {t:'Warm',                   c:'var(--cream)'};
+  if(v>=28) return {t:'Cooling off',            c:'var(--text-dim)'};
+  return       {t:'Ice cold',                 c:'#f0907f'};
+}
 
 /* ---- THE CROWD ----
    Popularity is not one number. A crowd that hates you loudly is worth more
@@ -3833,10 +3890,10 @@ const TOURS={
    body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing, and the sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
   {sel:'#weekBody .bksheet', title:'Winning is not the point',
    body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
-  {sel:'#weekBody select', title:'Your game plan',
-   body:'These two picks are what you <b>emphasise in every match</b>. They decide which move categories you build <b>mastery</b> in, and mastery is what unlocks your better moves. Change them whenever you want to grow in a new direction.'},
-  {sel:'#carTiles', title:'Your vitals',
-   body:'<b>Reputation</b> climbs the card. <b>Crowd</b> is how loudly they react, and being <i>hated</i> counts just as much as being loved (being <i>ignored</i> is the killer). <b>Condition</b> drops as you work, and working hurt is how careers end early.'},
+  {sel:'.wk-extras-toggle', title:'Game plan lives here',
+   body:'Under this toggle: the two <b>move categories you emphasise</b> in every match (they build mastery, which unlocks better moves) and the <b>goals</b> you are working toward. Open it when you want to steer your growth, close it when you just want to wrestle.'},
+  {sel:'#carTiles', title:'Where you stand, how hot you are',
+   body:'Two numbers, one glance. <b>Where you stand</b> blends office trust, popularity and tier progress. <b>How hot you are</b> blends gimmick heat, crowd reaction and momentum. Tap <i>Show the numbers behind these</i> if you want the six individual stats.'},
   {sel:'.hud', title:'The clock is running',
    body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30-32</b>, then decline, and mileage brings that forward. A careful main-eventer can work at world-class level well into their forties, and legends have gone longer. You can walk away any time from <b>34</b>; the ones who never quit end up in somebody else\'s corner years later, still on the road.'},
   {sel:'[data-nav="skills"]', title:'Skills: get better',
@@ -4448,26 +4505,49 @@ function renderCareer(){
     : ei>ti ? `<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;color:var(--gold)">You have outgrown ${myPromo().short}. A bigger company would put you on ${earned.name}.</div>`
     : c.rep<nextEarn.rep ? `<div class="bar gd"><i style="width:${repPct}%"></i></div><div class="hint" style="margin-top:3px;">${Math.max(0,Math.round(nextEarn.rep-c.rep))} rep to ${nextEarn.name}</div>`
     : `<div class="bar gd"><i style="width:100%"></i></div><div class="hint" style="margin-top:3px;">Rep is there. You need OVR ${nextEarn.minOvr} (you are ${ovr(G.w)}).</div>`;
-  $('carTiles').innerHTML=[
-    ['Reputation', Math.round(c.rep), repHint],
-    ['Crowd', Math.round(reactionOf()), (()=>{ const cl=crowdLabel(), l=leanOf();
-      const tp=turnProgress();
+  // Two headline meters replace the six-tile wall. The old details still exist
+  // and open behind a toggle for players who want them, but the default view
+  // is one glance: where you stand, how hot you are.
+  const traj = trajectoryScore(), heat = heatScore();
+  const tb = trajectoryBand(traj), hb = heatBand(heat);
+  const held = heldBelts();
+  const notesRow = [
+    (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('crown',12)} ${held.length===1?held[0].name:held.length+' belts'}</span>` : '',
+    c.titleShot ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Title shot in hand</span>` : '',
+    c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Money in the Bank</span>` : '',
+    c.tourn ? `<span class="pchip gold" style="animation:none;opacity:1;"><a href="#" onclick="showBracket();return false;">In ${c.tourn.name}, round ${c.tourn.round}/${c.tourn.rounds}</a></span>` : '',
+    c.streak>=3 ? `<span class="pchip" style="animation:none;opacity:1;color:#f0b060;">${pico('fire',12)} ${c.streak}-match streak</span>` : '',
+    c.rec.w||c.rec.l ? `<span class="pchip" style="animation:none;opacity:1;">Record ${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</span>` : '',
+  ].filter(Boolean).join('');
+  const detailsOpen = G.car._detailsOpen;
+  const detailPanel = detailsOpen ? `<div class="vitalsdetail">
+    <div class="tile"><div class="lab">Reputation</div><div class="val">${Math.round(c.rep)}</div>${repHint}</div>
+    <div class="tile"><div class="lab">Crowd</div><div class="val">${Math.round(reactionOf())}</div>${(()=>{ const cl=crowdLabel(), l=leanOf(); const tp=turnProgress();
       return `<div class="cm-bar" style="height:9px;margin-top:5px;"><i style="width:${100-reactionOf()}%"></i><span class="cm-tick"></span><b style="left:${(l+100)/2}%;top:-2px;height:13px;width:5px;"></b></div>
         <div class="hint" style="margin-top:4px;color:${cl.c}">${cl.t}</div>
-        ${tp.to&&tp.p>0.2?`<div class="hint" style="color:var(--gold)">${tp.to} turn ${Math.round(tp.p*100)}%</div>`:''}`; })()],
-    ['Condition', Math.round(c.cond), `<div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div>`],
-    ['Momentum', Math.round(c.mom), `<div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div>`],
-    ['Record', `${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}`,
-      c.streak>=3?`<div class="hint" style="color:#f0b060;font-weight:800;">${pico('fire',14)} ${c.streak}-match win streak</div>`
-      :c.streak?`<div class="hint">${c.streak>0?c.streak+' win streak':Math.abs(c.streak)+' loss skid'}</div>`:''],
-    ['Titles', (heldBelts().length||'-'), (()=>{ const held=heldBelts();
-      const mb = c.mitb ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} Money in the Bank: ${c.mitb.belt}</div>` : '';
-      const ts = c.titleShot ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} Title shot in hand: from ${c.titleShot.from}</div>` : '';
-      const tn = c.tourn ? `<div class="hint" style="color:var(--gold);margin-top:3px;">${pico('trophy',12)} In ${c.tourn.name}: round ${c.tourn.round} of ${c.tourn.rounds} <a href="#" onclick="showBracket();return false;">bracket</a></div>` : '';
-      if(!held.length) return `<div class="hint">${beltName(t,'secondary')} and ${beltName(t)} in this house</div>${mb}${ts}${tn}`;
-      return `<div class="hint">${held.map(b=>`${pico('crown',12)} ${b.name}${b.defenses?` <span style="opacity:.7">(${b.defenses} def)</span>`:''}`).join('<br>')}</div>${mb}${ts}${tn}`;
-    })()],
-  ].map(([l,v,x])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div>${x||''}</div>`).join('');
+        ${tp.to&&tp.p>0.2?`<div class="hint" style="color:var(--gold)">${tp.to} turn ${Math.round(tp.p*100)}%</div>`:''}`;})()}</div>
+    <div class="tile"><div class="lab">Condition</div><div class="val">${Math.round(c.cond)}</div><div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div></div>
+    <div class="tile"><div class="lab">Momentum</div><div class="val">${Math.round(c.mom)}</div><div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div></div>
+    <div class="tile"><div class="lab">Popularity</div><div class="val">${Math.round(c.pop||50)}</div><div class="bar g"><i style="width:${clamp(c.pop||50)}%"></i></div></div>
+    <div class="tile"><div class="lab">Office standing</div><div class="val">${Math.round(c.standing||50)}</div><div class="bar b"><i style="width:${clamp(c.standing||50)}%"></i></div></div>
+  </div>` : '';
+  $('carTiles').innerHTML = `<div class="headline">
+      <div class="hl-meter">
+        <div class="hl-l">Where you stand</div>
+        <div class="hl-v" style="color:${tb.c}">${traj}<span class="hl-o">/100</span></div>
+        <div class="hl-b"><i style="width:${traj}%;background:${tb.c}"></i></div>
+        <div class="hl-s" style="color:${tb.c}">${tb.t}</div>
+      </div>
+      <div class="hl-meter">
+        <div class="hl-l">How hot you are</div>
+        <div class="hl-v" style="color:${hb.c}">${heat}<span class="hl-o">/100</span></div>
+        <div class="hl-b"><i style="width:${heat}%;background:${hb.c}"></i></div>
+        <div class="hl-s" style="color:${hb.c}">${hb.t}</div>
+      </div>
+    </div>
+    ${notesRow?`<div class="headline-notes">${notesRow}</div>`:''}
+    <button class="ghost detailtoggle" onclick="toggleVitalsDetail()">${detailsOpen?'Hide':'Show'} the numbers behind these</button>
+    ${detailPanel}`;
   // secondary detail lives behind a pager so the week's decision stays on screen
   const HUB=['Business','Attributes'];
   $('hubPager').innerHTML=pagerBar('hub',HUB,renderCareer);
@@ -4688,48 +4768,56 @@ function renderWeek(){
     const o=b.o, w=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
     const dLab = w>=0.66?'Favoured':w>=0.54?'Slight edge':w>=0.46?'Even':w>=0.34?'Underdog':'Way above you';
     const dCol = w>=0.54?'var(--green)':w>=0.46?'var(--gold)':'#f0907f';
-    // Build cadence: the 3 weeks BEFORE a PPV are the go-home build. Every
-    // TV show inside that window points at the PPV, so the run to the pay-per-view
-    // feels intentional instead of episodic. SD SYM signposts it as "PPV in 2 weeks"
-    // above the card; we do the same.
     const _npv = (function(){ try{ return nextPpv(); }catch(_){ return null; } })();
     const buildIn = _npv && !o.ppv && _npv.weeksUntil>=1 && _npv.weeksUntil<=3 ? _npv : null;
+    // Card-position + stakes as ONE line, not four labels stacked.
+    const stakesTag = o.stakes==='title'?'FOR THE TITLE'
+                    : o.stakes==='defense'?'TITLE DEFENCE'
+                    : o.stakes==='rivalry'||o.stakes==='rival'?'THE FEUD'
+                    : o.nonTitleVsChamp?'NON-TITLE VS CHAMPION'
+                    : o.card.toUpperCase();
+    const bookDetailsOpen = G.car._bookOpen;
+    // Details panel: the odds bar, purse, risk, rules, office note, oppTitles.
+    // Nothing was DELETED, just tucked. Player can open it any time.
+    const details = bookDetailsOpen ? `<div class="bk-details">
+        ${(o.oppTitles&&o.oppTitles.length)?`<div class="bs-oppbelts">${pico('trophy',12)} They hold: ${o.oppTitles.map(t=>`<b>${t.name}</b>`).join(' · ')}</div>`:''}
+        <div class="bs-rules"><b>Rules.</b> ${stipRules(o).desc}</div>
+        ${b.line?`<div class="bs-office">"${b.line}"<div class="bs-office-src">from ${b.bookerName||'the office'}</div></div>`:''}
+        <div class="bk-odds" style="margin-top:10px;">
+          <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
+          <div class="bk-olab"><span>You <b>${Math.round(w*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(w*100)}%</b> them</span></div>
+        </div>
+        <div class="bk-rw" style="margin-top:8px;">
+          <span>${pico('money',14)} <b>${money(o.purse)}</b></span>
+          <span>${pico('graphUp',14)} <b>+${rep}</b> rep</span>
+          <span class="${risk>0.18?'hot':''}">${pico('bandage',14)} <b>${Math.round(risk*100)}%</b> risk</span>
+          ${myManager()?`<span style="color:var(--gold)">${pico('handshake',14)} ${myManager().name} in your corner</span>`:''}
+          ${b.moreTime?`<span style="color:var(--gold)">${pico('star',14)} extra time</span>`:''}
+          ${b.promised?`<span style="color:var(--gold)">${pico('handshake',14)} going over</span>`:''}
+          ${b.studied?`<span style="color:var(--gold)">${pico('tape',14)} did the homework</span>`:''}
+          ${b.sparred?`<span style="color:var(--gold)">${pico('fist',14)} sparred with an ally</span>`:''}
+        </div>
+      </div>` : '';
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
       ${o.ppv?`<div class="bs-ppv">${pico('starBig',14)} Tonight, at <b>${o.ppv}</b></div>`:''}
-      ${buildIn?`<div class="bs-build">${pico('starBig',12)} Road to <b>${buildIn.name}</b> · ${buildIn.weeksUntil} week${buildIn.weeksUntil===1?'':'s'} out · this is the build</div>`:''}
+      ${buildIn?`<div class="bs-build">${pico('starBig',12)} Road to <b>${buildIn.name}</b> · ${buildIn.weeksUntil} week${buildIn.weeksUntil===1?'':'s'} out</div>`:''}
       ${c.retireOnWeek?`<div class="bs-ppv" style="background:linear-gradient(90deg,#3a2a10,#221a10);color:var(--gold)">${pico('trophy',14)} FAREWELL TOUR · last week Y${c.retireOnWeek.y}W${c.retireOnWeek.w}</div>`:''}
-      <div class="bs-k">You are booked</div>
-      <div class="bs-t">${o.stipLabel}</div>
-      <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''} <span class="hint" style="font-size:10px;">(tap for dossier)</span></div>
-      ${(o.oppTitles&&o.oppTitles.length)?`<div class="bs-oppbelts">${pico('trophy',12)} They hold: ${o.oppTitles.map(t=>`<b>${t.name}</b>`).join(' · ')}</div>`:''}
-      <div class="bs-pos ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${o.card}${
-        o.stakes==='title'?' · for the title':o.stakes==='defense'?' · title defence':
-        o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':
-        o.nonTitleVsChamp?' · NON-TITLE':''}</div>
-      ${o.nonTitleVsChamp?`<div class="bs-nontitle">${pico('star',12)} Non-title tonight, but a clean pin over a champion earns the shot.</div>`:''}
-      <div class="bs-rules"><b>Rules.</b> ${stipRules(o).desc}</div>
-      ${b.line?`<div class="bs-office">"${b.line}"<div class="bs-office-src">from ${b.bookerName||'the office'}</div></div>`:''}
-      <div class="bk-odds" style="margin-top:10px;">
-        <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
-        <div class="bk-olab"><span>You <b>${Math.round(w*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(w*100)}%</b> them</span></div>
-        <div class="hint" style="margin-top:3px;text-align:center;">Vegas has you <b>${w>=0.5?('-'+Math.round(100*w/(1-w))):('+'+Math.round(100*(1-w)/w))}</b></div>
+      <div class="bs-headline">
+        <div class="bs-stip">${o.stipLabel}</div>
+        <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
       </div>
-      <div class="bk-rw" style="margin-top:8px;">
-        <span>${pico('money',14)} <b>${money(o.purse)}</b></span>
-        <span>${pico('graphUp',14)} <b>+${rep}</b> rep</span>
-        <span class="${risk>0.18?'hot':''}">${pico('bandage',14)} <b>${Math.round(risk*100)}%</b> risk</span>
-        ${myManager()?`<span style="color:var(--gold)">${pico('handshake',14)} ${myManager().name} in your corner</span>`:''}
-        ${b.moreTime?`<span style="color:var(--gold)">${pico('star',14)} extra time</span>`:''}
-        ${b.promised?`<span style="color:var(--gold)">${pico('handshake',14)} going over</span>`:''}
-        ${b.studied?`<span style="color:var(--gold)">${pico('tape',14)} did the homework</span>`:''}
-        ${b.sparred?`<span style="color:var(--gold)">${pico('fist',14)} sparred with an ally</span>`:''}
-      </div>
+      <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
+      <div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>
+      ${o.nonTitleVsChamp?`<div class="bs-nontitle">${pico('star',12)} A clean pin over the champion earns the shot.</div>`:''}
       ${(!segmentsPlayedThisWeek() && pickSegment())?`<div class="bs-scene-tease">${pico('microphone',12)} A backstage scene plays on the walk to gorilla.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
-      ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' ? `<button class="ghost" style="width:100%;margin-top:7px;border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in Money in the Bank →</button>`:''}
-      <button class="ghost" style="width:100%;margin-top:7px;" onclick="go('backstage')">Head Backstage →</button>
-      ${p>0?`<button class="ghost" style="width:100%;margin-top:7px;" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'You have had your say':'Have a word with the office'}</button>`:
-             `<div class="hint" style="text-align:center;margin-top:7px;">You have no say in the card yet. Earn it.</div>`}
+      <div class="bk-quickrow">
+        <button class="ghost" onclick="toggleBookingDetail()">${bookDetailsOpen?'Hide':'Show'} the details</button>
+        <button class="ghost" onclick="go('backstage')">Backstage</button>
+        ${p>0?`<button class="ghost" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'Had your say':'Talk to office'}</button>`:''}
+        ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in MITB</button>`:''}
+      </div>
+      ${details}
     </div>`;
   } else if(b.type==='promo'){
     const t=b.targetId?charById(b.targetId):null;
@@ -4761,45 +4849,46 @@ function renderWeek(){
 
   const catOpt=(sel,other)=>MCATS.map(x=>`<option value="${x.id}" ${sel===x.id?'selected':''}>${x.name}${x.id===other?' (already picked)':''}</option>`).join('');
   const catA=catById(c.plan.a)||MCATS[0], catB=catById(c.plan.b)||MCATS[1];
+  const wkOpen = G.car._wkExtras;
   el.innerHTML=`
     <div class="advice ${adv.sev}">
       <span class="ad-i">${adv.ico}</span>
       <span class="ad-t">${adv.t}</span>
       ${adv.cta?`<button class="ad-b" onclick="${adv.cta.f}">${adv.cta.l} →</button>`:''}
     </div>
-    ${prep}
-    <div class="flab">The booking <span class="hint" style="text-transform:none;letter-spacing:0;">(what the office has you doing)</span></div>
     ${sheet}
-
-  <div class="flab">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">(the two things you emphasise in every match)</span></div>
-    <div class="row" style="margin-bottom:6px;">
-      <select onchange="setPlan('a',this.value)">${catOpt(c.plan.a,c.plan.b)}</select>
-      <select onchange="setPlan('b',this.value)">${catOpt(c.plan.b,c.plan.a)}</select>
-    </div>
-    <div class="planwhy">
-      ${[catA,catB].map((x,i)=>{
-        const m=G.w.mastery[x.id]||0, t=masteryTier(x.id), nx=MTIERS.find(y=>y.t===t+1);
-        return `<div class="pw"><div class="pw-h">${catIcon(x.id,20)} ${x.name} <span class="hint">${i===0?'primary':'secondary'} · governed by ${ATTRS.find(a=>a[0]===x.attr)[1]}</span></div>
-          <div class="bar gd"><i style="width:${nx?clamp(m/nx.mastery*100):100}%"></i></div>
-          <div class="hint">Mastery ${m}${nx?` / ${nx.mastery} → Tier ${t+1} moves`:' · maxed'}</div></div>`;
-      }).join('')}
-    </div>
-
-    <div class="flab" style="margin-top:14px;">Working toward</div>
-    <div class="goals">${nextGoals().map(g=>`
-      <div class="goal"><div class="go-h"><span>${g.l}</span><b>${Math.round(g.p)}%</b></div>
-        <div class="bar g"><i style="width:${clamp(g.p)}%"></i></div>
-        <div class="hint">${g.sub}</div></div>`).join('')}</div>
-    <div class="row" style="margin-top:12px;">
-      <button class="ghost" onclick="go('deal')">Contract</button>
-    </div>`;
+    ${prep}
+    <div class="wk-extras-toggle"><button class="ghost" onclick="toggleWkExtras()">${wkOpen?'Hide':'Show'} game plan &amp; goals</button></div>
+    ${wkOpen ? `
+      <div class="flab" style="margin-top:12px;">Game plan <span class="hint" style="text-transform:none;letter-spacing:0;">(the two things you emphasise in every match)</span></div>
+      <div class="row" style="margin-bottom:6px;">
+        <select onchange="setPlan('a',this.value)">${catOpt(c.plan.a,c.plan.b)}</select>
+        <select onchange="setPlan('b',this.value)">${catOpt(c.plan.b,c.plan.a)}</select>
+      </div>
+      <div class="planwhy">
+        ${[catA,catB].map((x,i)=>{
+          const m=G.w.mastery[x.id]||0, t=masteryTier(x.id), nx=MTIERS.find(y=>y.t===t+1);
+          return `<div class="pw"><div class="pw-h">${catIcon(x.id,20)} ${x.name} <span class="hint">${i===0?'primary':'secondary'} · drives ${ATTRS.find(a=>a[0]===x.attr)[1]}</span></div>
+            <div class="bar gd"><i style="width:${nx?clamp(m/nx.mastery*100):100}%"></i></div>
+            <div class="hint">Mastery ${m}${nx?` / ${nx.mastery} → Tier ${t+1} moves`:' · maxed'}</div></div>`;
+        }).join('')}
+      </div>
+      <div class="flab" style="margin-top:14px;">Working toward</div>
+      <div class="goals">${nextGoals().map(g=>`
+        <div class="goal"><div class="go-h"><span>${g.l}</span><b>${Math.round(g.p)}%</b></div>
+          <div class="bar g"><i style="width:${clamp(g.p)}%"></i></div>
+          <div class="hint">${g.sub}</div></div>`).join('')}</div>
+    ` : ''}`;
 }
+function toggleWkExtras(){ G.car._wkExtras = !G.car._wkExtras; renderWeek(); }
 // picking the same category twice wastes half your week, so swap instead
 function setPlan(slot,v){
   const c=G.car, other=slot==='a'?'b':'a';
   if(c.plan[other]===v) c.plan[other]=c.plan[slot];
   c.plan[slot]=v; save(); renderWeek();
 }
+function toggleVitalsDetail(){ G.car._detailsOpen = !G.car._detailsOpen; renderCareer(); }
+function toggleBookingDetail(){ G.car._bookOpen = !G.car._bookOpen; renderCareer(); }
 function workHurt(){ G.car.workedHurt=true; G.car.injWeeks=0; G.car.standing=clamp(G.car.standing+3);
   pushLog('You told the doctor you were fine. You are not fine.'); save(); renderCareer();
   toast('Cleared yourself. Be careful.'); }
