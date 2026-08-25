@@ -3628,7 +3628,17 @@ function worldTick(){
 const PAGER={}, PAGERFN={}, PAGERN={};
 function pagerIdx(id,n){ return Math.max(0,Math.min((n||1)-1, PAGER[id]|0)); }
 function pagerSet(id,k){ PAGER[id]=k; const f=PAGERFN[id]; if(f) f();
-  const el=document.querySelector(`[data-pgr="${id}"] .pgr-c.on`); if(el&&el.scrollIntoView) el.scrollIntoView({block:'nearest',inline:'center'}); }
+  // Center the active chip inside its own scroll container ONLY. Using
+  // scrollIntoView here would walk the page and pan the whole body sideways
+  // when the surrounding grid is wider than the viewport, which is not what
+  // clicking a pager chip should ever do.
+  const chip=document.querySelector(`[data-pgr="${id}"] .pgr-c.on`);
+  const row=document.querySelector(`[data-pgr="${id}"] .pgr-chips`);
+  if(chip && row){
+    const target = chip.offsetLeft - (row.clientWidth/2) + (chip.offsetWidth/2);
+    row.scrollLeft = Math.max(0, target);
+  }
+}
 function pagerGo(id,d){ const n=PAGERN[id]||1; pagerSet(id, ((PAGER[id]|0)+d+n)%n); }
 // `labels` may be strings or {t:label, c:accent colour}
 function pagerBar(id,labels,fn){
