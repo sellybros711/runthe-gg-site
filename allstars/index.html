@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Run The All-Stars</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0b1015" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1015'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --ink:#0b1015;
+    --panel:#141c24;
+    --panel-2:#1c2732;
+    --line:rgba(255,255,255,.10);
+    --text:#f3ecdc;
+    --text-dim:#a89d86;
+    --gold:#f4c25a;
+    --red:#d24949;
+    --green:#5bb083;
+    --blue:#6aa7c4;
+    --purple:#b08ac6;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--text);
+    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    min-height:100vh;overscroll-behavior-y:none;}
+  body{
+    background:
+      radial-gradient(900px 500px at 50% 0%, rgba(91,176,131,.09), transparent 60%),
+      radial-gradient(700px 500px at 50% 110%, rgba(244,194,90,.05), transparent 66%),
+      var(--ink);
+  }
+  img.pico{image-rendering:pixelated;image-rendering:crisp-edges;}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
+
+  .wrap{max-width:920px;margin:0 auto;padding:14px 14px 60px;}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 0 14px;border-bottom:1px solid var(--line);}
+  .brand h1{margin:0;font-size:20px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+  .brand .tag{color:var(--text-dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
+  .brand .spacer{flex:1;}
+  .brand button{background:transparent;color:var(--text-dim);border:1px solid var(--line);
+    padding:6px 10px;font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    cursor:pointer;border-radius:4px;}
+  .brand button:hover{color:var(--text);border-color:var(--gold);}
+
+  .screen{padding:18px 0;}
+  h2{margin:0 0 12px;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+  h3{margin:14px 0 6px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);}
+  p{margin:0 0 10px;color:var(--text-dim);line-height:1.5;font-size:13px;}
+
+  .btn{display:inline-block;background:var(--gold);color:#1a1108;border:0;padding:10px 16px;
+    font-family:inherit;font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+    cursor:pointer;border-radius:4px;font-weight:700;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);}
+  .btn.ghost:hover{border-color:var(--gold);color:var(--gold);}
+  .btn.red{background:var(--red);color:#fff;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;filter:none;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;}
+  .card + .card{margin-top:12px;}
+
+  .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
+  .charcard{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;
+    cursor:pointer;transition:border-color .1s,transform .1s;text-align:center;position:relative;}
+  .charcard:hover{border-color:var(--gold);}
+  .charcard.picked{border-color:var(--gold);background:var(--panel-2);}
+  .charcard canvas{width:64px;height:64px;background:#0c1218;border-radius:4px;}
+  .charcard .name{margin-top:6px;font-size:12px;color:var(--text);letter-spacing:.06em;}
+  .charcard .role{font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
+  .charcard .pickno{position:absolute;top:6px;right:6px;background:var(--gold);color:#1a1108;
+    font-size:10px;padding:2px 5px;border-radius:3px;font-weight:700;}
+  .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:10px;color:var(--text-dim);}
+  .statgrid span b{color:var(--text);}
+
+  .toggle-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .toggle{padding:8px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;
+    cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
+  .toggle.on{border-color:var(--gold);color:var(--gold);}
+
+  /* Game */
+  .hud{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:10px;}
+  .hud .side{font-size:12px;letter-spacing:.08em;text-transform:uppercase;}
+  .hud .side .score{font-size:22px;color:var(--gold);font-weight:700;display:block;}
+  .hud .side .name{color:var(--text-dim);}
+  .hud .mid{text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase;}
+  .hud .mid .inning{display:block;font-size:14px;color:var(--text);margin-bottom:2px;}
+
+  .fielddiv{background:#0c1218;border:1px solid var(--line);border-radius:6px;padding:10px;
+    display:grid;grid-template-columns:1fr;gap:10px;}
+  #field{width:100%;max-width:640px;height:auto;aspect-ratio:16/10;display:block;margin:0 auto;
+    background:linear-gradient(180deg,#122018,#0c1615);border-radius:4px;}
+
+  .plate-row{display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:end;}
+  .meter-wrap{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;}
+  .meter-wrap .label{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+  #meter{width:100%;height:32px;display:block;background:#0c1218;border-radius:3px;}
+
+  .atbat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;}
+  .atbat .who{font-size:14px;letter-spacing:.06em;}
+  .atbat .who b{color:var(--gold);}
+  .atbat .vs{font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+  .atbat .count{margin-top:6px;font-size:12px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;}
+
+  .log{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;
+    max-height:140px;overflow-y:auto;font-size:12px;line-height:1.5;color:var(--text-dim);}
+  .log .line{padding:2px 0;}
+  .log .line.big{color:var(--gold);font-weight:700;letter-spacing:.05em;}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+
+  /* Result / hub */
+  .table{width:100%;border-collapse:collapse;font-size:13px;}
+  .table th,.table td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);}
+  .table th{color:var(--text-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;}
+  .table tr.you td{color:var(--gold);}
+  .table td.n{text-align:right;font-variant-numeric:tabular-nums;}
+
+  .bracket{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;}
+  .bracket .col{display:flex;flex-direction:column;gap:10px;}
+  .bracket .match{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;}
+  .bracket .match .row{display:flex;justify-content:space-between;padding:2px 0;}
+  .bracket .match .row.win{color:var(--gold);}
+  .bracket .match .row.you{font-weight:700;}
+  .bracket .arrow{color:var(--text-dim);font-size:18px;text-align:center;}
+
+  .banner{background:linear-gradient(90deg,rgba(244,194,90,.14),transparent);
+    border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;}
+  .banner b{color:var(--gold);}
+
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:640px){
+    .row-2{grid-template-columns:1fr;}
+    .plate-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <h1>Run The All-Stars</h1>
+    <span class="tag">Public domain baseball</span>
+    <span class="spacer"></span>
+    <button id="btn-home">Main Menu</button>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================================
+   ROSTER
+   Twelve public domain characters. Stat scale 1 to 100.
+   Each character carries a small pixel palette so the sprite reads
+   distinctively at 32 pixels tall without any external art assets.
+   ============================================================================ */
+const ROSTER = [
+  { k:'popeye',    n:'Popeye',        role:'Power',    pow:88, spd:55, con:60, def:65,
+    palette:{ skin:'#f5d2a3', hair:'#c25c1a', shirt:'#eaeaea', pants:'#0b3a6b', accent:'#c25c1a' },
+    hat:'sailor', mark:'pipe' },
+  { k:'jack',      n:'Jack',          role:'Speed',    pow:60, spd:82, con:50, def:60,
+    palette:{ skin:'#f0c99a', hair:'#c9a256', shirt:'#3a7f4a', pants:'#5c3a1c', accent:'#c9a256' },
+    hat:'cap',    mark:'bean' },
+  { k:'sherlock',  n:'Sherlock',      role:'Contact',  pow:45, spd:55, con:88, def:75,
+    palette:{ skin:'#efc9a0', hair:'#5a3618', shirt:'#8b6a3a', pants:'#2d1e14', accent:'#c69a5c' },
+    hat:'deerstalker', mark:'pipe' },
+  { k:'robin',     n:'Robin Hood',    role:'Balanced', pow:65, spd:80, con:68, def:78,
+    palette:{ skin:'#efc9a0', hair:'#a45b1a', shirt:'#3f7a3a', pants:'#4a2d18', accent:'#f4c25a' },
+    hat:'feather', mark:'bow' },
+  { k:'peter',     n:'Peter Pan',     role:'Speed',    pow:40, spd:96, con:62, def:72,
+    palette:{ skin:'#f2ceaa', hair:'#c07a2a', shirt:'#3a8a4a', pants:'#3a6a3a', accent:'#e3b04c' },
+    hat:'feather', mark:'dagger' },
+  { k:'dracula',   n:'Dracula',       role:'Power',    pow:84, spd:58, con:58, def:60,
+    palette:{ skin:'#dcd2d0', hair:'#141014', shirt:'#0f0f14', pants:'#0f0f14', accent:'#8a1a1a' },
+    hat:'slick', mark:'cape' },
+  { k:'pooh',      n:'Pooh',          role:'Contact',  pow:42, spd:30, con:65, def:50,
+    palette:{ skin:'#f0c187', hair:'#d18a3a', shirt:'#d24949', pants:'#d18a3a', accent:'#f4c25a' },
+    hat:'none', mark:'pot' },
+  { k:'tracy',     n:'Dick Tracy',    role:'Contact',  pow:60, spd:60, con:82, def:70,
+    palette:{ skin:'#efc9a0', hair:'#141014', shirt:'#f4c25a', pants:'#0e1a3a', accent:'#c94b1a' },
+    hat:'fedora', mark:'badge' },
+  { k:'tintin',    n:'Tintin',        role:'Balanced', pow:58, spd:75, con:65, def:72,
+    palette:{ skin:'#f5d5a8', hair:'#c9a256', shirt:'#5cb6e5', pants:'#6a4a2a', accent:'#c94b1a' },
+    hat:'none', mark:'quiff' },
+  { k:'franky',    n:'Frankenstein',  role:'Power',    pow:98, spd:22, con:40, def:55,
+    palette:{ skin:'#7ea86a', hair:'#141014', shirt:'#3a2a1a', pants:'#141014', accent:'#8a1a1a' },
+    hat:'flat', mark:'bolts' },
+  { k:'alice',     n:'Alice',         role:'Contact',  pow:40, spd:68, con:75, def:65,
+    palette:{ skin:'#f5d5a8', hair:'#e9c76a', shirt:'#5cb6e5', pants:'#eaeaea', accent:'#e9c76a' },
+    hat:'bow', mark:'apron' },
+  { k:'silver',    n:'Long John',     role:'Power',    pow:76, spd:40, con:62, def:55,
+    palette:{ skin:'#efc9a0', hair:'#141014', shirt:'#8a1a1a', pants:'#141014', accent:'#f4c25a' },
+    hat:'tricorn', mark:'peg' },
+];
+const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
+
+/* Opponent teams. Each is a name + primary color + a nine character lineup
+   drawn from the same twelve character pool. Users face a rotating cast of
+   these across a seven game season. */
+const OPPONENTS = [
+  { name:'The Whalers',    color:'#5cb6e5', roster:['dracula','franky','silver','pooh','sherlock','popeye','tracy','robin','alice'] },
+  { name:'Storybook Nine', color:'#c25c1a', roster:['jack','peter','robin','alice','pooh','tintin','sherlock','popeye','tracy'] },
+  { name:'The Timekeepers',color:'#b08ac6', roster:['tracy','sherlock','tintin','silver','robin','franky','peter','alice','popeye'] },
+  { name:'Ironsides',      color:'#8a1a1a', roster:['franky','popeye','dracula','silver','pooh','robin','sherlock','tintin','alice'] },
+  { name:'Marauders',      color:'#3a7f4a', roster:['silver','dracula','franky','robin','tintin','peter','tracy','popeye','sherlock'] },
+  { name:'The Fables',     color:'#f4c25a', roster:['peter','jack','alice','robin','pooh','tintin','sherlock','popeye','tracy'] },
+  { name:'Nightshift',     color:'#4a3a6a', roster:['dracula','franky','sherlock','tracy','silver','popeye','robin','tintin','pooh'] },
+  { name:'The Cartographers', color:'#c94b1a', roster:['tintin','sherlock','tracy','robin','alice','peter','popeye','jack','silver'] },
+];
+
+/* ============================================================================
+   PIXEL SPRITE
+   Each character is drawn procedurally onto a small canvas. The palette on the
+   ROSTER row does the identifying work: skin color, hair, uniform, and a hat
+   or mark distinguishes them at a glance.
+   ============================================================================ */
+function drawSprite(ctx, c, size) {
+  const s = size / 16;
+  const px = (x,y,w,h,color) => { ctx.fillStyle = color; ctx.fillRect(Math.floor(x*s), Math.floor(y*s), Math.ceil(w*s), Math.ceil(h*s)); };
+  const p = c.palette;
+  ctx.clearRect(0,0,size,size);
+  /* legs */
+  px(6,12,2,3, p.pants);
+  px(8,12,2,3, p.pants);
+  if (c.mark === 'peg') px(8,12,2,3,'#8b6a3a');
+  /* shoes */
+  px(6,14,2,1,'#141014');
+  px(8,14,2,1,'#141014');
+  /* body */
+  px(5,8,6,4, p.shirt);
+  /* belt */
+  px(5,11,6,1,'#141014');
+  /* accent stripe on chest */
+  px(5,9,6,1, p.accent);
+  /* arms */
+  px(4,8,1,3, p.shirt);
+  px(11,8,1,3, p.shirt);
+  /* hands */
+  px(4,10,1,1, p.skin);
+  px(11,10,1,1, p.skin);
+  /* neck */
+  px(7,7,2,1, p.skin);
+  /* head */
+  px(6,4,4,4, p.skin);
+  /* eyes */
+  px(7,6,1,1,'#141014');
+  px(9,6,1,1,'#141014');
+  /* hair base */
+  if (c.hat !== 'slick') px(6,3,4,1, p.hair);
+  /* hats and identifying marks */
+  switch (c.hat) {
+    case 'sailor':
+      px(5,3,6,1,'#eaeaea'); px(5,2,6,1,'#eaeaea'); px(7,1,2,1,'#eaeaea');
+      break;
+    case 'cap':
+      px(5,3,6,1, p.accent); px(6,2,4,1, p.accent);
+      break;
+    case 'deerstalker':
+      px(5,3,6,1,'#8b6a3a'); px(6,2,4,1,'#8b6a3a'); px(4,4,1,1,'#8b6a3a'); px(11,4,1,1,'#8b6a3a');
+      break;
+    case 'feather':
+      px(5,3,6,1, p.shirt); px(6,2,4,1, p.shirt); px(11,2,1,1, p.accent); px(11,1,1,1, p.accent);
+      break;
+    case 'fedora':
+      px(4,3,8,1,'#141014'); px(6,2,4,1,'#141014'); px(6,1,4,1,'#141014');
+      px(5,3,6,1, p.accent);
+      break;
+    case 'flat':
+      px(5,3,6,1,'#141014'); px(5,2,6,1,'#141014');
+      /* forehead scar */
+      px(7,4,2,1,'#3a2a1a');
+      break;
+    case 'bow':
+      px(5,3,6,1, p.hair); px(4,3,1,1, p.accent); px(11,3,1,1, p.accent);
+      break;
+    case 'tricorn':
+      px(4,3,8,1,'#141014'); px(3,3,1,1,'#141014'); px(12,3,1,1,'#141014');
+      px(6,2,4,1,'#141014'); px(6,1,4,1,'#141014');
+      break;
+    case 'slick':
+      px(6,3,4,1,'#141014'); px(6,2,4,1,'#141014');
+      break;
+  }
+  /* per character marks */
+  switch (c.mark) {
+    case 'pipe': px(10,6,2,1,'#3a2a1a'); px(12,6,1,1,'#7a5a2a'); break;
+    case 'bolts': px(5,7,1,1,'#c9a256'); px(10,7,1,1,'#c9a256'); break;
+    case 'cape': px(4,8,1,5,'#8a1a1a'); px(11,8,1,5,'#8a1a1a'); break;
+    case 'quiff': px(7,2,2,1, p.hair); px(8,1,1,2, p.hair); break;
+    case 'badge': px(9,9,1,1,'#f4c25a'); break;
+    case 'pot': px(11,10,1,2,'#f4c25a'); break;
+    case 'apron': px(5,9,6,3,'#eaeaea'); px(5,9,6,1, p.accent); break;
+    case 'bow': /* no visible bow at this scale */ break;
+    case 'bean': px(2,10,1,1,'#3a7f4a'); px(2,9,1,1,'#3a7f4a'); break;
+    case 'dagger': px(3,11,1,2,'#c0c0c0'); break;
+    case 'peg': /* handled above at legs */ break;
+  }
+}
+function spriteCanvas(c, size) {
+  const cv = document.createElement('canvas');
+  cv.width = size; cv.height = size;
+  drawSprite(cv.getContext('2d'), c, size);
+  return cv;
+}
+
+/* ============================================================================
+   PERSISTENT STATE
+   ============================================================================ */
+const SAVE_KEY = 'allstars.season.v1';
+const loadSeason = () => {
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); }
+  catch(e) { return null; }
+};
+const saveSeason = (s) => {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); }
+  catch(e) { /* private mode, ignore */ }
+};
+const clearSeason = () => {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+};
+
+/* ============================================================================
+   APP STATE and SCREEN ROUTER
+   ============================================================================ */
+const app = document.getElementById('app');
+const State = {
+  screen: 'menu',
+  mode: null,          /* 'exhibition' or 'season' */
+  team: null,          /* array of nine character keys */
+  teamName: 'Your Team',
+  opponent: null,      /* {name, color, roster} */
+  innings: 5,
+  difficulty: 'medium',
+  game: null,
+  season: loadSeason(),
+};
+
+const $ = (sel, root=document) => root.querySelector(sel);
+const el = (tag, cls, html) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html != null) n.innerHTML = html;
+  return n;
+};
+
+function render() {
+  app.innerHTML = '';
+  const s = State.screen;
+  if (s === 'menu') renderMenu();
+  else if (s === 'roster') renderRoster();
+  else if (s === 'settings') renderSettings();
+  else if (s === 'game') renderGame();
+  else if (s === 'result') renderResult();
+  else if (s === 'season-hub') renderSeasonHub();
+  else if (s === 'season-end') renderSeasonEnd();
+  else if (s === 'bracket') renderBracket();
+}
+$('#btn-home').addEventListener('click', () => {
+  if (State.game && State.game.live) {
+    if (!confirm('Abandon the current game and return to the menu?')) return;
+  }
+  State.game = null;
+  State.screen = 'menu';
+  render();
+});
+
+/* ============================================================================
+   MENU
+   ============================================================================ */
+function renderMenu() {
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, 'Choose a mode'));
+  s.appendChild(el('p', null,
+    'A pick-up-and-play arcade baseball game starring characters everyone knows. '
+    + 'Exhibition is a single game against a random opponent. Season is seven games '
+    + 'and a four-team playoff bracket, saved to this browser.'
+  ));
+
+  const card = el('div','card');
+  const exh = el('button','btn','Exhibition Game');
+  exh.onclick = () => { State.mode='exhibition'; State.screen='roster'; render(); };
+  const season = el('button','btn', State.season ? 'Resume Season' : 'Start Season');
+  season.onclick = () => {
+    if (State.season) { State.screen = 'season-hub'; render(); }
+    else { State.mode='season'; State.screen='roster'; render(); }
+  };
+  const row = el('div','btn-row');
+  row.append(exh, season);
+  card.appendChild(row);
+
+  if (State.season) {
+    const rec = seasonRecord(State.season);
+    const gp = State.season.results.length;
+    const info = el('p', null,
+      `Season in progress: ${rec.w}-${rec.l}, game ${gp+1} of 7.`
+      + (State.season.playoffs ? ' (Playoffs)' : '')
+    );
+    card.appendChild(info);
+    const wipe = el('button','btn ghost','Delete Save');
+    wipe.onclick = () => {
+      if (confirm('Delete the current season save? This cannot be undone.')) {
+        clearSeason(); State.season = null; render();
+      }
+    };
+    card.appendChild(wipe);
+  }
+
+  s.appendChild(card);
+
+  const roster = el('div','card');
+  roster.appendChild(el('h3', null, 'Roster'));
+  const grid = el('div','roster');
+  ROSTER.forEach(c => {
+    const cc = el('div','charcard');
+    const cv = spriteCanvas(c, 64);
+    cc.appendChild(cv);
+    cc.appendChild(el('div','name', c.n));
+    cc.appendChild(el('div','role', c.role));
+    const st = el('div','statgrid');
+    st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
+                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`;
+    cc.appendChild(st);
+    grid.appendChild(cc);
+  });
+  roster.appendChild(grid);
+  s.appendChild(roster);
+
+  app.appendChild(s);
+}
+
+/* ============================================================================
+   ROSTER PICK
+   User selects nine of twelve for their team.
+   ============================================================================ */
+function renderRoster() {
+  const picked = new Set();
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, State.mode === 'season' ? 'Build your season team' : 'Pick your lineup'));
+  s.appendChild(el('p', null, 'Choose nine characters. First pick bats first and pitches.'));
+
+  const card = el('div','card');
+  const grid = el('div','roster');
+  const cards = new Map();
+  ROSTER.forEach(c => {
+    const cc = el('div','charcard');
+    const cv = spriteCanvas(c, 56);
+    cc.appendChild(cv);
+    cc.appendChild(el('div','name', c.n));
+    cc.appendChild(el('div','role', `${c.role}`));
+    const st = el('div','statgrid');
+    st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
+                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`;
+    cc.appendChild(st);
+    cc.onclick = () => {
+      if (picked.has(c.k)) {
+        picked.delete(c.k);
+      } else if (picked.size < 9) {
+        picked.add(c.k);
+      }
+      redraw();
+    };
+    grid.appendChild(cc);
+    cards.set(c.k, cc);
+  });
+  card.appendChild(grid);
+  s.appendChild(card);
+
+  const foot = el('div','card');
+  const counter = el('div', null);
+  const nameLabel = el('label', null, 'Team name: ');
+  const nameInput = el('input', null);
+  nameInput.type='text'; nameInput.maxLength = 20;
+  nameInput.value = State.teamName || 'Your Team';
+  Object.assign(nameInput.style, {
+    background:'#0c1218', border:'1px solid var(--line)', color:'var(--text)',
+    padding:'6px 8px', borderRadius:'4px', fontFamily:'inherit', fontSize:'13px', marginLeft:'6px', width:'180px'
+  });
+  nameLabel.appendChild(nameInput);
+  foot.appendChild(nameLabel);
+  foot.appendChild(el('div', null, '<br>'));
+  foot.appendChild(counter);
+  const row = el('div','btn-row');
+  const rand = el('button','btn ghost','Randomize');
+  rand.onclick = () => {
+    picked.clear();
+    const bag = [...ROSTER].sort(() => Math.random() - 0.5);
+    bag.slice(0,9).forEach(c => picked.add(c.k));
+    redraw();
+  };
+  const go = el('button','btn','Continue');
+  go.onclick = () => {
+    if (picked.size !== 9) return;
+    State.team = [...picked];
+    State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+    State.screen = 'settings';
+    render();
+  };
+  const back = el('button','btn ghost','Back');
+  back.onclick = () => { State.screen = 'menu'; render(); };
+  row.append(back, rand, go);
+  foot.appendChild(row);
+  s.appendChild(foot);
+
+  app.appendChild(s);
+
+  function redraw() {
+    let n = 0;
+    for (const c of ROSTER) {
+      const cc = cards.get(c.k);
+      if (picked.has(c.k)) { n++; cc.classList.add('picked'); cc.querySelector('.pickno')?.remove(); const b = el('div','pickno', [...picked].indexOf(c.k)+1); cc.appendChild(b); }
+      else { cc.classList.remove('picked'); cc.querySelector('.pickno')?.remove(); }
+    }
+    counter.textContent = `${picked.size} of 9 selected`;
+    go.disabled = picked.size !== 9;
+  }
+  redraw();
+}
+
+/* ============================================================================
+   SETTINGS
+   ============================================================================ */
+function renderSettings() {
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, State.mode === 'season' ? 'Season settings' : 'Game settings'));
+
+  const card = el('div','card');
+
+  card.appendChild(el('h3', null, 'Innings'));
+  const innRow = el('div','toggle-row');
+  [5,9].forEach(n => {
+    const t = el('div','toggle', `${n} innings`);
+    if (State.innings === n) t.classList.add('on');
+    t.onclick = () => { State.innings = n; renderSettings(); };
+    innRow.appendChild(t);
+  });
+  card.appendChild(innRow);
+
+  card.appendChild(el('h3', null, 'Difficulty'));
+  const dRow = el('div','toggle-row');
+  ['easy','medium','hard'].forEach(d => {
+    const t = el('div','toggle', d);
+    if (State.difficulty === d) t.classList.add('on');
+    t.onclick = () => { State.difficulty = d; renderSettings(); };
+    dRow.appendChild(t);
+  });
+  card.appendChild(dRow);
+
+  if (State.mode === 'season') {
+    card.appendChild(el('h3', null, 'Season format'));
+    card.appendChild(el('p', null,
+      'Seven regular season games against random opponents from the league. '
+      + 'The top four records make a single elimination playoff bracket.'
+    ));
+  }
+
+  const row = el('div','btn-row');
+  const back = el('button','btn ghost','Back');
+  back.onclick = () => { State.screen = 'roster'; render(); };
+  const go = el('button','btn', State.mode === 'season' ? 'Start Season' : 'Play Ball');
+  go.onclick = () => {
+    if (State.mode === 'season') {
+      startSeason();
+    } else {
+      State.opponent = randomOpponent(null);
+      startGame({ mode:'exhibition' });
+    }
+  };
+  row.append(back, go);
+  card.appendChild(row);
+  s.appendChild(card);
+  app.appendChild(s);
+}
+
+/* ============================================================================
+   SEASON
+   ============================================================================ */
+function seasonRecord(season) {
+  const w = season.results.filter(r => r.win).length;
+  const l = season.results.filter(r => !r.win).length;
+  return { w, l };
+}
+function randomOpponent(exclude) {
+  const pool = OPPONENTS.filter(o => !exclude || o.name !== exclude);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function buildSchedule() {
+  const bag = [...OPPONENTS].sort(() => Math.random() - 0.5);
+  return bag.slice(0,7).map(o => o.name);
+}
+function opponentByName(name) {
+  return OPPONENTS.find(o => o.name === name);
+}
+function startSeason() {
+  State.season = {
+    team: State.team,
+    teamName: State.teamName,
+    innings: State.innings,
+    difficulty: State.difficulty,
+    schedule: buildSchedule(),
+    results: [],
+    playoffs: null,
+    playerStats: { hr:0, so:0, sb:0, hits:0, ab:0 },
+    league: simulateLeagueSeasons(),
+  };
+  saveSeason(State.season);
+  State.screen = 'season-hub';
+  render();
+}
+
+/* The other eight teams need records so a playoff picture exists. Rather than
+   simulate every game the league plays behind the scenes, generate a plausible
+   seven game record for each opponent up front. The user's own results get
+   subbed in as their games are played. */
+function simulateLeagueSeasons() {
+  const out = {};
+  for (const o of OPPONENTS) {
+    const rating = teamRating(o.roster);
+    const winRate = 0.35 + (rating - 60) * 0.008;   /* soft curve around .500 */
+    let w = 0;
+    for (let i=0;i<7;i++) if (Math.random() < winRate) w++;
+    out[o.name] = { w, l: 7 - w };
+  }
+  return out;
+}
+function teamRating(keys) {
+  const chars = keys.map(k => ROSTER_BY_KEY[k]);
+  const off = chars.reduce((a,c) => a + c.pow*0.4 + c.con*0.4 + c.spd*0.2, 0) / 9;
+  const def = chars.reduce((a,c) => a + c.def, 0) / 9;
+  return off * 0.65 + def * 0.35;
+}
+
+function renderSeasonHub() {
+  const S = State.season;
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, S.teamName + ' · Season'));
+
+  const rec = seasonRecord(S);
+  const games = S.results.length;
+  const banner = el('div','banner');
+  if (S.playoffs) {
+    banner.innerHTML = `<b>Playoffs.</b> Regular season done at ${rec.w}-${rec.l}.`;
+  } else {
+    banner.innerHTML = `<b>Regular season.</b> ${rec.w}-${rec.l} through ${games} game${games===1?'':'s'} of 7.`;
+  }
+  s.appendChild(banner);
+
+  if (!S.playoffs) {
+    const nextCard = el('div','card');
+    if (games < 7) {
+      const next = opponentByName(S.schedule[games]);
+      nextCard.appendChild(el('h3', null, 'Next game'));
+      nextCard.appendChild(el('p', null, `vs ${next.name}`));
+      const play = el('button','btn','Play Next Game');
+      play.onclick = () => {
+        State.team = S.team;
+        State.teamName = S.teamName;
+        State.innings = S.innings;
+        State.difficulty = S.difficulty;
+        State.opponent = next;
+        startGame({ mode:'season' });
+      };
+      nextCard.appendChild(play);
+    } else {
+      nextCard.appendChild(el('h3', null, 'Regular season complete'));
+      nextCard.appendChild(el('p', null, 'Ready to seed the playoff bracket.'));
+      const b = el('button','btn','Enter Playoffs');
+      b.onclick = () => {
+        S.playoffs = seedPlayoffs(S);
+        saveSeason(S);
+        State.screen = 'bracket';
+        render();
+      };
+      nextCard.appendChild(b);
+    }
+    s.appendChild(nextCard);
+  } else {
+    const bcard = el('div','card');
+    bcard.appendChild(el('h3', null, 'Playoff bracket'));
+    const b = el('button','btn','Open Bracket');
+    b.onclick = () => { State.screen='bracket'; render(); };
+    bcard.appendChild(b);
+    s.appendChild(bcard);
+  }
+
+  /* Standings */
+  const stCard = el('div','card');
+  stCard.appendChild(el('h3', null, 'League standings'));
+  const table = el('table','table');
+  table.innerHTML = '<thead><tr><th>Team</th><th class="n">W</th><th class="n">L</th></tr></thead>';
+  const tbody = el('tbody');
+  const rows = [];
+  rows.push({ name: S.teamName, w: rec.w, l: rec.l, you:true });
+  for (const o of OPPONENTS) {
+    rows.push({ name:o.name, w:S.league[o.name].w, l:S.league[o.name].l });
+  }
+  rows.sort((a,b) => b.w - a.w || a.l - b.l);
+  for (const r of rows) {
+    const tr = el('tr', r.you ? 'you' : '');
+    tr.innerHTML = `<td>${r.name}</td><td class="n">${r.w}</td><td class="n">${r.l}</td>`;
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  stCard.appendChild(table);
+  s.appendChild(stCard);
+
+  /* Past results */
+  const rCard = el('div','card');
+  rCard.appendChild(el('h3', null, 'Past results'));
+  if (!S.results.length) {
+    rCard.appendChild(el('p', null, 'No games played yet.'));
+  } else {
+    const t = el('table','table');
+    t.innerHTML = '<thead><tr><th>#</th><th>Opponent</th><th>Result</th><th class="n">Score</th></tr></thead>';
+    const tb = el('tbody');
+    S.results.forEach((r,i) => {
+      const tr = el('tr');
+      tr.innerHTML = `<td>${i+1}</td><td>${r.opponent}</td>`
+        + `<td>${r.win?'<span style="color:var(--gold)">W</span>':'<span style="color:var(--red)">L</span>'}</td>`
+        + `<td class="n">${r.you} to ${r.them}</td>`;
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    rCard.appendChild(t);
+  }
+  s.appendChild(rCard);
+
+  /* Season stats */
+  const stat = el('div','card');
+  stat.appendChild(el('h3', null, 'Your season stats'));
+  const ps = S.playerStats;
+  stat.innerHTML += `<p>Hits ${ps.hits} · HR ${ps.hr} · K ${ps.so} · SB ${ps.sb} · AB ${ps.ab}</p>`;
+  s.appendChild(stat);
+
+  const row = el('div','btn-row');
+  const q = el('button','btn ghost','Quit Season');
+  q.onclick = () => {
+    if (confirm('Quit and delete this season?')) {
+      clearSeason(); State.season = null; State.screen='menu'; render();
+    }
+  };
+  row.appendChild(q);
+  s.appendChild(row);
+
+  app.appendChild(s);
+}
+
+function seedPlayoffs(S) {
+  const rows = [];
+  rows.push({ name: S.teamName, roster: S.team, w: seasonRecord(S).w, you:true });
+  for (const o of OPPONENTS) rows.push({ name:o.name, roster:o.roster, w: S.league[o.name].w });
+  rows.sort((a,b) => b.w - a.w || Math.random() - 0.5);
+  const top4 = rows.slice(0,4);
+  return {
+    seeds: top4,
+    semis: [
+      { home:0, away:3, result:null },
+      { home:1, away:2, result:null },
+    ],
+    final: null,
+    stage: 'semi',
+  };
+}
+
+function renderBracket() {
+  const S = State.season;
+  const P = S.playoffs;
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, 'Playoff bracket'));
+
+  const seedsCard = el('div','card');
+  seedsCard.appendChild(el('h3', null, 'Seeds'));
+  const t = el('table','table');
+  t.innerHTML = '<thead><tr><th>Seed</th><th>Team</th><th class="n">W</th></tr></thead>';
+  const tb = el('tbody');
+  P.seeds.forEach((r,i) => {
+    const tr = el('tr', r.you ? 'you' : '');
+    tr.innerHTML = `<td>${i+1}</td><td>${r.name}</td><td class="n">${r.w}</td>`;
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  seedsCard.appendChild(t);
+  s.appendChild(seedsCard);
+
+  const brac = el('div','card');
+  const grid = el('div','bracket');
+  const semiCol = el('div','col');
+  P.semis.forEach((m,i) => {
+    const home = P.seeds[m.home];
+    const away = P.seeds[m.away];
+    const matchDiv = el('div','match');
+    const homeRow = el('div', 'row' + (home.you?' you':'') + (m.result && m.result.winner===m.home?' win':''),
+      `<span>${i+1}. ${home.name}</span><span>${m.result?m.result.homeScore:''}</span>`);
+    const awayRow = el('div', 'row' + (away.you?' you':'') + (m.result && m.result.winner===m.away?' win':''),
+      `<span>${4-i}. ${away.name}</span><span>${m.result?m.result.awayScore:''}</span>`);
+    matchDiv.append(homeRow, awayRow);
+    semiCol.appendChild(matchDiv);
+  });
+  const arrow = el('div','arrow', '&raquo;');
+  const finCol = el('div','col');
+  if (P.final) {
+    const home = P.seeds[P.final.home];
+    const away = P.seeds[P.final.away];
+    const m = P.final;
+    const matchDiv = el('div','match');
+    const homeRow = el('div','row' + (home.you?' you':'') + (m.result && m.result.winner===m.home?' win':''),
+      `<span>${home.name}</span><span>${m.result?m.result.homeScore:''}</span>`);
+    const awayRow = el('div','row' + (away.you?' you':'') + (m.result && m.result.winner===m.away?' win':''),
+      `<span>${away.name}</span><span>${m.result?m.result.awayScore:''}</span>`);
+    matchDiv.append(homeRow, awayRow);
+    finCol.appendChild(matchDiv);
+  } else {
+    finCol.appendChild(el('div','match', '<span>Final</span>'));
+  }
+  grid.append(semiCol, arrow, finCol);
+  brac.appendChild(grid);
+  s.appendChild(brac);
+
+  /* Next action button */
+  const row = el('div','btn-row');
+  const nextMatch = nextPlayoffMatch(P);
+  if (nextMatch) {
+    if (nextMatch.playerInvolved) {
+      const b = el('button','btn','Play Your Match');
+      b.onclick = () => startPlayoffMatch(nextMatch);
+      row.appendChild(b);
+    } else {
+      const b = el('button','btn','Simulate CPU Match');
+      b.onclick = () => { simulateCpuMatch(nextMatch); saveSeason(S); render(); };
+      row.appendChild(b);
+    }
+  } else {
+    /* All matches done */
+    const b = el('button','btn','View Season Summary');
+    b.onclick = () => { State.screen='season-end'; render(); };
+    row.appendChild(b);
+  }
+  const hub = el('button','btn ghost','Back to Hub');
+  hub.onclick = () => { State.screen='season-hub'; render(); };
+  row.appendChild(hub);
+  s.appendChild(row);
+
+  app.appendChild(s);
+}
+
+function nextPlayoffMatch(P) {
+  for (let i=0;i<P.semis.length;i++) {
+    const m = P.semis[i];
+    if (!m.result) {
+      const you = P.seeds[m.home].you || P.seeds[m.away].you;
+      return { round:'semi', idx:i, match:m, playerInvolved: you };
+    }
+  }
+  if (!P.final) {
+    const winners = P.semis.map(m => m.result.winner);
+    P.final = { home:winners[0], away:winners[1], result:null };
+  }
+  if (P.final && !P.final.result) {
+    const you = P.seeds[P.final.home].you || P.seeds[P.final.away].you;
+    return { round:'final', idx:0, match:P.final, playerInvolved: you };
+  }
+  return null;
+}
+
+function simulateCpuMatch(nm) {
+  const P = State.season.playoffs;
+  const m = nm.match;
+  const home = P.seeds[m.home];
+  const away = P.seeds[m.away];
+  const hr = teamRating(home.roster);
+  const ar = teamRating(away.roster);
+  const homeAdv = 3;
+  const hs = Math.max(0, Math.round(4 + (hr - ar)*0.06 + homeAdv*0.3 + (Math.random()-0.5)*3));
+  const as = Math.max(0, Math.round(4 + (ar - hr)*0.06 + (Math.random()-0.5)*3));
+  const finalHome = hs === as ? hs + 1 : hs;
+  m.result = { homeScore:finalHome, awayScore:as, winner: finalHome > as ? m.home : m.away };
+}
+
+function startPlayoffMatch(nm) {
+  const S = State.season;
+  const P = S.playoffs;
+  const m = nm.match;
+  const home = P.seeds[m.home];
+  const away = P.seeds[m.away];
+  const youHome = home.you;
+  const you = youHome ? home : away;
+  const foe = youHome ? away : home;
+  State.team = you.roster;
+  State.teamName = you.name;
+  State.opponent = { name: foe.name, color: (opponentByName(foe.name)?.color) || '#8a1a1a', roster: foe.roster };
+  State.innings = S.innings;
+  State.difficulty = S.difficulty;
+  startGame({ mode:'playoff', round: nm.round, matchIdx: nm.idx, youHome });
+}
+
+/* ============================================================================
+   GAME
+   ============================================================================ */
+function startGame(opts) {
+  const battersAway = State.team.map(k => ROSTER_BY_KEY[k]);
+  const battersHome = State.opponent.roster.map(k => ROSTER_BY_KEY[k]);
+  /* User bats AWAY (visitor), opponent home. In playoffs the flag flips. */
+  const youHome = !!opts.youHome;
+  State.game = {
+    live: true,
+    mode: opts.mode,
+    round: opts.round, matchIdx: opts.matchIdx,
+    innings: State.innings,
+    half: 'top',       /* 'top' means away batting */
+    inning: 1,
+    outs: 0,
+    balls: 0, strikes: 0,
+    bases: [null,null,null],
+    away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : '#f4c25a' },
+    home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? '#f4c25a' : State.opponent.color },
+    stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{} },
+    log: [],
+    pitch: null,      /* the current pitch animation */
+    over: false,
+    winner: null,
+  };
+  State.screen = 'game';
+  render();
+  setTimeout(startAtBat, 400);
+}
+
+function currentBattingTeam() {
+  const g = State.game;
+  return g.half === 'top' ? g.away : g.home;
+}
+function currentFieldingTeam() {
+  const g = State.game;
+  return g.half === 'top' ? g.home : g.away;
+}
+function currentBatter() {
+  const t = currentBattingTeam();
+  return t.batters[t.idx % 9];
+}
+function currentPitcher() {
+  return currentFieldingTeam().batters[0];  /* first pick pitches */
+}
+function statBump(k, key) {
+  const g = State.game;
+  g.stats[key][k] = (g.stats[key][k] || 0) + 1;
+}
+
+/* Difficulty tunings.
+   ideal[a,b] = the fraction-of-meter window that produces solid contact.
+   speed = seconds for the meter cursor to sweep across.
+   pitcherSkill = multiplier on pitcher CON that shifts the meter's ideal spot. */
+const DIFF = {
+  easy:   { speed: 1.5, sweetWidth: 0.24, pitcherSkill: 0.85 },
+  medium: { speed: 1.2, sweetWidth: 0.18, pitcherSkill: 1.00 },
+  hard:   { speed: 0.95, sweetWidth: 0.14, pitcherSkill: 1.12 },
+};
+
+let atBatCleanup = null;
+function endAtBatCleanup() {
+  if (atBatCleanup) { atBatCleanup(); atBatCleanup = null; }
+}
+
+function startAtBat() {
+  const g = State.game;
+  if (g.over) return;
+  g.balls = 0; g.strikes = 0;
+  refreshHud();
+  throwPitch();
+}
+
+function throwPitch() {
+  const g = State.game;
+  if (g.over) return;
+  const diff = DIFF[State.difficulty];
+  const batter = currentBatter();
+  const pitcher = currentPitcher();
+  /* pick a pitch type */
+  const pitchTypes = ['fastball','curveball','changeup'];
+  const pt = pitchTypes[Math.floor(Math.random()*3)];
+  /* speed multiplier: fastball fast, curve normal, change starts fast slows down */
+  const baseSpeed = diff.speed
+    * (pt === 'fastball' ? 0.85 : pt === 'curveball' ? 1.15 : 1.0)
+    / (0.85 + pitcher.pow / 400);
+  /* ideal timing sweet spot centered around 0.55, shifted by pitcher control */
+  const idealBase = pt === 'fastball' ? 0.5 : pt === 'curveball' ? 0.60 : 0.62;
+  const wobble = (Math.random() - 0.5) * 0.06 * diff.pitcherSkill;
+  const ideal = clamp(idealBase + wobble, 0.30, 0.75);
+  /* Ball is a strike or a ball. The pitcher's control determines it. */
+  const strikeProb = 0.55 + (pitcher.con || pitcher.def*0.4) / 300;
+  const isStrike = Math.random() < clamp(strikeProb, 0.45, 0.85);
+  g.pitch = {
+    pt, speed: baseSpeed, ideal, isStrike,
+    start: performance.now(),
+    swung: false,
+    hit: false,
+  };
+  refreshHud();
+  runPitchAnimation();
+}
+
+/* Meter and field animation. On each frame we draw the meter cursor and the
+   ball travelling from the mound to the plate. If the player clicks or presses
+   space during that window, resolveSwing() decides the outcome. If the pitch
+   finishes with no swing, it is a ball or a called strike. */
+function runPitchAnimation() {
+  const g = State.game;
+  const p = g.pitch;
+  const fieldCv = document.getElementById('field');
+  const meterCv = document.getElementById('meter');
+  if (!fieldCv || !meterCv) return;
+  const fctx = fieldCv.getContext('2d');
+  const mctx = meterCv.getContext('2d');
+  const durMs = p.speed * 1000;
+
+  let rafId = 0;
+  const onClick = (e) => {
+    if (p.swung) return;
+    const now = performance.now();
+    const t = clamp((now - p.start) / durMs, 0, 1);
+    p.swung = true;
+    resolveSwing(t);
+  };
+  const onKey = (e) => {
+    if (e.code === 'Space') { e.preventDefault(); onClick(e); }
+  };
+  const teardown = () => {
+    cancelAnimationFrame(rafId);
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('click', onClick, true);
+  };
+  atBatCleanup = teardown;
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('click', onClick, true);
+
+  const frame = (now) => {
+    const t = clamp((now - p.start) / durMs, 0, 1);
+    drawField(fctx, fieldCv.width, fieldCv.height, t, p);
+    drawMeter(mctx, meterCv.width, meterCv.height, t, p);
+    if (t >= 1 && !p.swung) {
+      teardown();
+      resolveCalledPitch();
+      return;
+    }
+    rafId = requestAnimationFrame(frame);
+  };
+  rafId = requestAnimationFrame(frame);
+}
+
+function resolveCalledPitch() {
+  const g = State.game;
+  const p = g.pitch;
+  if (p.isStrike) { g.strikes++; addLog('Called strike.'); }
+  else            { g.balls++;   addLog('Ball.'); }
+  refreshHud();
+  if (g.strikes >= 3) return recordOut('called strikeout', true);
+  if (g.balls >= 4) return recordWalk();
+  setTimeout(throwPitch, 500);
+}
+
+function resolveSwing(cursorT) {
+  endAtBatCleanup();
+  const g = State.game;
+  const p = g.pitch;
+  const batter = currentBatter();
+  const pitcher = currentPitcher();
+  const diff = DIFF[State.difficulty];
+  const half = diff.sweetWidth / 2;
+  const perfectDist = Math.abs(cursorT - p.ideal);
+  /* contact quality in [0,1]. 1 means dead-center of sweet zone. */
+  const contactRaw = 1 - perfectDist / 0.5;
+  const contactBoost = (batter.con - 50) / 200;   /* +/- 0.25 */
+  const contact = clamp(contactRaw + contactBoost, 0, 1);
+  const inZone = perfectDist <= half;
+
+  /* Whiff. The swing missed entirely. */
+  if (!inZone && contact < 0.4) {
+    g.strikes++;
+    addLog(`${batter.n} swings and misses.`);
+    refreshHud();
+    if (g.strikes >= 3) return recordOut('swinging strikeout', true);
+    return setTimeout(throwPitch, 500);
+  }
+
+  /* Foul: near-miss on strike, count strike (but never third strike) */
+  if (!inZone) {
+    if (g.strikes < 2) g.strikes++;
+    addLog(`${batter.n} fouls it off.`);
+    refreshHud();
+    return setTimeout(throwPitch, 500);
+  }
+
+  /* In zone: resolve to a batted ball outcome. */
+  const power = (batter.pow - 50) / 100;   /* +/- .5 */
+  /* Base HR chance rises with contact quality and batter power. */
+  const hrRoll = Math.random();
+  const hrChance = 0.02 + contact * 0.20 + Math.max(0, power) * 0.14;
+  if (hrRoll < hrChance) return recordHit('home run', batter);
+
+  /* Extra base */
+  if (Math.random() < 0.05 + contact * 0.08 + Math.max(0, power) * 0.06) {
+    return recordHit(Math.random() < 0.35 ? 'triple' : 'double', batter);
+  }
+  /* Single vs out */
+  const hitOdds = 0.28 + contact * 0.45 + (batter.spd - 50)/300;
+  if (Math.random() < hitOdds) return recordHit('single', batter);
+  /* Out on contact */
+  const out = Math.random() < 0.55 ? 'ground out' : 'fly out';
+  addLog(`${batter.n} ${out}s to the ${randPos(out)}.`);
+  refreshHud();
+  return recordOut(out, false);
+}
+
+function randPos(out) {
+  if (out === 'ground out') return ['pitcher','shortstop','second','third','first'][Math.floor(Math.random()*5)];
+  return ['left','center','right'][Math.floor(Math.random()*3)];
+}
+
+function recordHit(kind, batter) {
+  const g = State.game;
+  statBump(batter.k,'ab');
+  statBump(batter.k,'hits');
+  const bases = { 'single':1,'double':2,'triple':3,'home run':4 }[kind];
+  if (kind === 'home run') {
+    statBump(batter.k,'hr');
+    let scored = 1;   /* the batter */
+    for (let i=0;i<3;i++) if (g.bases[i]) scored++;
+    g.bases = [null,null,null];
+    scoreRuns(scored);
+    addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
+  } else {
+    /* Advance existing runners by `bases`, then place batter */
+    let scored = 0;
+    const newBases = [null,null,null];
+    for (let i=2;i>=0;i--) {
+      const runner = g.bases[i];
+      if (!runner) continue;
+      const dest = i + bases;   /* 0=first, 1=second, 2=third; dest>=3 scores */
+      if (dest >= 3) scored++;
+      else newBases[dest] = runner;
+    }
+    if (bases < 4) newBases[bases-1] = batter;
+    g.bases = newBases;
+    if (scored) scoreRuns(scored);
+    addLog(`${batter.n} lines a ${kind}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
+  }
+  nextBatter();
+  refreshHud();
+  setTimeout(startAtBat, 900);
+}
+
+function recordWalk() {
+  const g = State.game;
+  const batter = currentBatter();
+  addLog(`${batter.n} walks.`);
+  /* Force runners */
+  const bases = g.bases;
+  let scored = 0;
+  if (bases[0] && bases[1] && bases[2]) { scored = 1; g.bases = [batter, bases[0], bases[1]]; }
+  else if (bases[0] && bases[1]) { g.bases = [batter, bases[0], bases[1]]; }
+  else if (bases[0]) { g.bases = [batter, bases[0], bases[2]]; }
+  else { g.bases = [batter, bases[1], bases[2]]; }
+  if (scored) scoreRuns(scored);
+  nextBatter();
+  refreshHud();
+  setTimeout(startAtBat, 700);
+}
+
+function recordOut(reason, isStrikeout) {
+  const g = State.game;
+  const batter = currentBatter();
+  statBump(batter.k,'ab');
+  if (isStrikeout) statBump(batter.k,'so');
+  g.outs++;
+  addLog(`${batter.n} out (${reason}). ${g.outs} out.`);
+  if (g.outs >= 3) return endHalfInning();
+  nextBatter();
+  refreshHud();
+  setTimeout(startAtBat, 600);
+}
+
+function nextBatter() {
+  const t = currentBattingTeam();
+  t.idx = (t.idx + 1) % 9;
+  const g = State.game;
+  g.balls = 0; g.strikes = 0;
+}
+
+function scoreRuns(n) {
+  const t = currentBattingTeam();
+  t.score += n;
+}
+
+function endHalfInning() {
+  const g = State.game;
+  addLog(`Side retired. End of ${g.half === 'top' ? 'top' : 'bottom'} of ${g.inning}.`, true);
+  g.bases = [null,null,null];
+  g.outs = 0;
+  g.balls = 0; g.strikes = 0;
+  if (g.half === 'top') {
+    g.half = 'bottom';
+    /* Walk off possibility not needed for top-of-inning end */
+  } else {
+    g.half = 'top';
+    g.inning++;
+  }
+  /* Check for game end */
+  const done = checkGameOver();
+  refreshHud();
+  if (done) return finishGame();
+  setTimeout(startAtBat, 800);
+}
+
+function checkGameOver() {
+  const g = State.game;
+  /* After 9 (or configured) full innings, tied continues; unless capped for arcade. */
+  if (g.inning > g.innings) {
+    if (g.away.score !== g.home.score) {
+      g.over = true;
+      g.winner = g.home.score > g.away.score ? 'home' : 'away';
+      return true;
+    }
+  }
+  /* Walk off: home leads at end of top after regulation */
+  if (g.inning > g.innings && g.half === 'bottom' && g.home.score > g.away.score) {
+    g.over = true; g.winner = 'home'; return true;
+  }
+  /* If we're in bottom of last inning and home leads, skip */
+  if (g.inning === g.innings && g.half === 'top' && g.home.score > g.away.score && g.outs === 0 && g.away.idx === 0) {
+    /* We just wrapped, home already leads, no need to bat bottom */
+    /* Not triggered normally; the natural flow handles this */
+  }
+  /* End of top of final inning: if home is ahead, home does not bat */
+  if (g.inning > g.innings && g.half === 'bottom') {
+    /* We flipped past regulation with home leading or tied is handled above */
+  }
+  /* Skip bottom half if home leads after top of final inning */
+  if (g.half === 'bottom' && g.inning === g.innings && g.home.score > g.away.score) {
+    g.over = true; g.winner = 'home'; return true;
+  }
+  /* Cap arcade blowouts at 25 to prevent slog */
+  if (g.away.score - g.home.score >= 15 && g.inning >= Math.max(3, g.innings - 1)) {
+    g.over = true; g.winner = 'away'; return true;
+  }
+  if (g.home.score - g.away.score >= 15 && g.inning >= Math.max(3, g.innings - 1)) {
+    g.over = true; g.winner = 'home'; return true;
+  }
+  return false;
+}
+
+function finishGame() {
+  const g = State.game;
+  g.live = false;
+  const you = g.away.isYou ? g.away : g.home;
+  const foe = g.away.isYou ? g.home : g.away;
+  const win = you.score > foe.score;
+
+  if (State.mode === 'season' && State.season && !State.season.playoffs) {
+    State.season.results.push({
+      opponent: foe.name, win, you: you.score, them: foe.score,
+    });
+    /* Roll individual stats forward */
+    const ps = State.season.playerStats;
+    for (const k of Object.keys(g.stats.hr)) ps.hr += g.stats.hr[k];
+    for (const k of Object.keys(g.stats.so)) ps.so += g.stats.so[k];
+    for (const k of Object.keys(g.stats.sb || {})) ps.sb += g.stats.sb[k];
+    for (const k of Object.keys(g.stats.hits)) ps.hits += g.stats.hits[k];
+    for (const k of Object.keys(g.stats.ab)) ps.ab += g.stats.ab[k];
+    saveSeason(State.season);
+  } else if (State.mode === 'playoff' && State.season) {
+    /* Record playoff result */
+    const P = State.season.playoffs;
+    const match = g.mode === 'playoff' && g.round === 'semi' ? P.semis[g.matchIdx] : P.final;
+    const winner = win
+      ? (g.away.isYou ? match.away : match.home)
+      : (g.away.isYou ? match.home : match.away);
+    match.result = { homeScore: g.home.score, awayScore: g.away.score, winner };
+    /* If any CPU semis remain, they will sim next when the bracket page shows */
+    saveSeason(State.season);
+  }
+  State.screen = 'result';
+  render();
+}
+
+/* ============================================================================
+   FIELD AND METER RENDERING
+   ============================================================================ */
+function drawField(ctx, w, h, t, pitch) {
+  ctx.fillStyle = '#0c1615';
+  ctx.fillRect(0,0,w,h);
+  /* Outfield arc */
+  ctx.fillStyle = '#1a3a24';
+  ctx.beginPath();
+  ctx.arc(w/2, h*1.4, w*0.85, Math.PI, 0);
+  ctx.fill();
+  /* Infield diamond */
+  ctx.fillStyle = '#7a4a24';
+  const cx = w/2, cy = h*0.75, r = Math.min(w,h) * 0.28;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r);        /* second */
+  ctx.lineTo(cx + r, cy);        /* first */
+  ctx.lineTo(cx, cy + r);        /* home */
+  ctx.lineTo(cx - r, cy);        /* third */
+  ctx.closePath();
+  ctx.fill();
+  /* Grass inside */
+  ctx.fillStyle = '#1a4a24';
+  ctx.beginPath();
+  const rInner = r * 0.55;
+  ctx.moveTo(cx, cy - rInner);
+  ctx.lineTo(cx + rInner, cy);
+  ctx.lineTo(cx, cy + rInner);
+  ctx.lineTo(cx - rInner, cy);
+  ctx.closePath();
+  ctx.fill();
+  /* Bases */
+  const bases = [
+    [cx + r, cy],     /* first */
+    [cx, cy - r],     /* second */
+    [cx - r, cy],     /* third */
+  ];
+  ctx.fillStyle = '#eaeaea';
+  bases.forEach(([bx,by]) => { ctx.fillRect(bx-4, by-4, 8, 8); });
+  /* Home plate */
+  ctx.fillStyle = '#eaeaea';
+  ctx.fillRect(cx-6, cy+r-4, 12, 6);
+  /* Pitcher's mound */
+  ctx.fillStyle = '#6a3a1c';
+  ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill();
+
+  /* Runners */
+  const g = State.game;
+  if (g) {
+    const bs = g.bases;
+    if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 10, bs[0]);
+    if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 10, bs[1]);
+    if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 10, bs[2]);
+    /* Batter at plate */
+    const batter = currentBatter();
+    if (batter) drawRunner(ctx, cx - 12, cy + r - 2, batter);
+    /* Pitcher on mound */
+    const pit = currentPitcher();
+    if (pit) drawRunner(ctx, cx, cy - 4, pit);
+  }
+
+  /* Pitch ball moving from mound to plate */
+  if (pitch) {
+    const bx = cx;
+    const by = cy;
+    const px = cx;
+    const py = cy + r - 4;
+    /* On changeup, ease it. On curveball, arc it slightly. */
+    let e = t;
+    if (pitch.pt === 'changeup') e = t*t;
+    let ballX = bx + (px - bx) * e;
+    let ballY = by + (py - by) * e;
+    if (pitch.pt === 'curveball') {
+      ballX += Math.sin(e * Math.PI) * 8 * (pitch.ideal < 0.5 ? -1 : 1);
+    }
+    ctx.fillStyle = '#eaeaea';
+    ctx.beginPath(); ctx.arc(ballX, ballY, 3, 0, Math.PI*2); ctx.fill();
+  }
+
+  /* Score baked into the field top corners */
+  ctx.fillStyle = 'rgba(0,0,0,.35)';
+  ctx.fillRect(0,0,w,18);
+  ctx.fillStyle = '#f3ecdc';
+  ctx.font = 'bold 12px monospace';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  if (g) {
+    ctx.fillText(`${g.away.name}: ${g.away.score}`, 8, 9);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${g.home.name}: ${g.home.score}`, w-8, 9);
+    ctx.textAlign = 'center';
+    ctx.fillText(`${g.half === 'top' ? 'Top' : 'Bot'} ${g.inning} · ${g.outs} out`, w/2, 9);
+  }
+}
+
+const runnerCache = new Map();
+function drawRunner(ctx, x, y, character) {
+  let cv = runnerCache.get(character.k);
+  if (!cv) { cv = spriteCanvas(character, 32); runnerCache.set(character.k, cv); }
+  ctx.drawImage(cv, Math.round(x - 16), Math.round(y - 24));
+}
+
+function drawMeter(ctx, w, h, t, pitch) {
+  ctx.fillStyle = '#0c1218';
+  ctx.fillRect(0,0,w,h);
+  const diff = DIFF[State.difficulty];
+  const half = diff.sweetWidth / 2;
+  const ideal = pitch.ideal;
+  /* Perfect zone */
+  ctx.fillStyle = 'rgba(91,176,131,.5)';
+  ctx.fillRect((ideal - half) * w, 0, half*2 * w, h);
+  /* Ok zones */
+  ctx.fillStyle = 'rgba(244,194,90,.25)';
+  ctx.fillRect((ideal - half*1.8) * w, 0, half*3.6*w, h);
+  ctx.fillStyle = 'rgba(91,176,131,.6)';
+  ctx.fillRect((ideal - half) * w, 0, half*2 * w, h);
+  /* Cursor */
+  const x = t * w;
+  ctx.fillStyle = '#f3ecdc';
+  ctx.fillRect(x - 1, 0, 2, h);
+  /* Ticks */
+  ctx.fillStyle = 'rgba(255,255,255,.15)';
+  for (let i=1;i<10;i++) ctx.fillRect(i*w/10, h-4, 1, 4);
+  /* Label */
+  ctx.fillStyle = '#a89d86';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(pitch.pt.toUpperCase(), 4, 2);
+  ctx.textAlign = 'right';
+  ctx.fillText('SWING', w-4, 2);
+}
+
+/* ============================================================================
+   HUD
+   ============================================================================ */
+function renderGame() {
+  const g = State.game;
+  const s = el('div','screen');
+
+  const hud = el('div','hud');
+  const away = el('div','side',
+    `<span class="name">${g.away.name}${g.away.isYou?' (you)':''}</span>`
+    + `<span class="score">${g.away.score}</span>`
+  );
+  const mid = el('div','mid',
+    `<span class="inning">${g.half === 'top' ? 'Top' : 'Bot'} ${g.inning} of ${g.innings}</span>`
+    + `Outs ${g.outs} · ${g.balls}-${g.strikes}`
+  );
+  const home = el('div','side',
+    `<span class="name" style="text-align:right;display:block">${g.home.name}${g.home.isYou?' (you)':''}</span>`
+    + `<span class="score" style="text-align:right;display:block">${g.home.score}</span>`
+  );
+  hud.append(away, mid, home);
+  s.appendChild(hud);
+
+  const field = el('div','fielddiv');
+  const cv = document.createElement('canvas');
+  cv.id = 'field'; cv.width = 640; cv.height = 400;
+  field.appendChild(cv);
+  s.appendChild(field);
+
+  const plateRow = el('div','plate-row');
+  const meter = el('div','meter-wrap');
+  meter.appendChild(el('div','label', '<span>Swing timing</span><span>Click or press Space</span>'));
+  const m = document.createElement('canvas'); m.id='meter'; m.width=480; m.height=36;
+  meter.appendChild(m);
+  const atbat = el('div','atbat');
+  atbat.id = 'atbat';
+  refreshAtBatCard(atbat);
+  plateRow.append(meter, atbat);
+  s.appendChild(plateRow);
+
+  const log = el('div','log');
+  log.id = 'log';
+  for (const line of g.log.slice(-30)) {
+    const d = el('div', 'line' + (line.big?' big':''), line.text);
+    log.appendChild(d);
+  }
+  s.appendChild(log);
+
+  const ctrl = el('div','controls');
+  const abort = el('button','btn ghost','End Game');
+  abort.onclick = () => {
+    if (confirm('End this game and return to the menu?')) {
+      endAtBatCleanup();
+      State.game = null; State.screen = State.mode==='exhibition' ? 'menu' : 'season-hub';
+      render();
+    }
+  };
+  ctrl.appendChild(abort);
+  s.appendChild(ctrl);
+
+  app.appendChild(s);
+}
+
+function refreshAtBatCard(node) {
+  const g = State.game;
+  const b = currentBatter();
+  const p = currentPitcher();
+  const html =
+    `<div class="who"><b>${b.n}</b> at bat</div>`
+    + `<div class="vs">vs ${p.n} pitching</div>`
+    + `<div class="count">POW ${b.pow} · CON ${b.con} · SPD ${b.spd}</div>`
+    + `<div class="count">Count ${g.balls}-${g.strikes}</div>`;
+  node.innerHTML = html;
+}
+
+function refreshHud() {
+  if (State.screen !== 'game') return;
+  const g = State.game;
+  const scores = document.querySelectorAll('.hud .side .score');
+  if (scores.length === 2) {
+    scores[0].textContent = g.away.score;
+    scores[1].textContent = g.home.score;
+  }
+  const midDiv = document.querySelector('.hud .mid');
+  if (midDiv) {
+    midDiv.innerHTML =
+      `<span class="inning">${g.half === 'top' ? 'Top' : 'Bot'} ${g.inning} of ${g.innings}</span>`
+      + `Outs ${g.outs} · ${g.balls}-${g.strikes}`;
+  }
+  const ab = document.getElementById('atbat');
+  if (ab) refreshAtBatCard(ab);
+  const log = document.getElementById('log');
+  if (log) {
+    log.innerHTML = '';
+    for (const line of g.log.slice(-30)) {
+      const d = el('div','line' + (line.big?' big':''), line.text);
+      log.appendChild(d);
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+function addLog(text, big=false) {
+  const g = State.game;
+  g.log.push({ text, big });
+}
+
+/* ============================================================================
+   RESULT SCREEN
+   ============================================================================ */
+function renderResult() {
+  const g = State.game;
+  const you = g.away.isYou ? g.away : g.home;
+  const foe = g.away.isYou ? g.home : g.away;
+  const win = you.score > foe.score;
+
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, win ? 'You win.' : 'You lose.'));
+
+  const card = el('div','card');
+  card.innerHTML =
+    `<h3>Final</h3>`
+    + `<p style="font-size:16px;color:var(--text)">${you.name} <b>${you.score}</b> · ${foe.name} ${foe.score}</p>`;
+  const games = el('h3', null, 'Your batting');
+  card.appendChild(games);
+  const stats = el('table','table');
+  stats.innerHTML = '<thead><tr><th>Batter</th><th class="n">AB</th><th class="n">H</th><th class="n">HR</th><th class="n">K</th></tr></thead>';
+  const tb = el('tbody');
+  const yourTeam = State.team.map(k => ROSTER_BY_KEY[k]);
+  for (const b of yourTeam) {
+    const ab = g.stats.ab[b.k] || 0;
+    const h = g.stats.hits[b.k] || 0;
+    const hr = g.stats.hr[b.k] || 0;
+    const so = g.stats.so[b.k] || 0;
+    if (!ab && !h) continue;
+    const tr = el('tr');
+    tr.innerHTML = `<td>${b.n}</td><td class="n">${ab}</td><td class="n">${h}</td><td class="n">${hr}</td><td class="n">${so}</td>`;
+    tb.appendChild(tr);
+  }
+  stats.appendChild(tb);
+  card.appendChild(stats);
+  s.appendChild(card);
+
+  const row = el('div','btn-row');
+  if (State.mode === 'exhibition') {
+    const again = el('button','btn','Play Again');
+    again.onclick = () => { State.opponent = randomOpponent(null); startGame({ mode:'exhibition' }); };
+    const menu = el('button','btn ghost','Main Menu');
+    menu.onclick = () => { State.game = null; State.screen='menu'; render(); };
+    row.append(again, menu);
+  } else if (State.mode === 'season') {
+    const hub = el('button','btn','Continue');
+    hub.onclick = () => { State.game = null; State.screen='season-hub'; render(); };
+    row.append(hub);
+  } else if (State.mode === 'playoff') {
+    const b = el('button','btn','Back to Bracket');
+    b.onclick = () => { State.game = null; State.screen='bracket'; render(); };
+    row.append(b);
+  }
+  s.appendChild(row);
+
+  app.appendChild(s);
+}
+
+/* ============================================================================
+   SEASON END
+   ============================================================================ */
+function renderSeasonEnd() {
+  const S = State.season;
+  const P = S.playoffs;
+  const champ = (P && P.final && P.final.result)
+    ? P.seeds[P.final.result.winner]
+    : null;
+  const youWon = champ && champ.you;
+
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, youWon ? 'Champions.' : 'Season complete.'));
+  const card = el('div','card');
+  const rec = seasonRecord(S);
+  card.innerHTML = `<p>Regular season ${rec.w}-${rec.l}.</p>`;
+  if (champ) card.innerHTML += `<p>Champion: <b style="color:var(--gold)">${champ.name}</b></p>`;
+  const ps = S.playerStats;
+  card.innerHTML +=
+    `<h3>Season totals</h3>`
+    + `<p>Hits ${ps.hits} · HR ${ps.hr} · K ${ps.so} · AB ${ps.ab}</p>`;
+  s.appendChild(card);
+
+  const row = el('div','btn-row');
+  const restart = el('button','btn','Play Again');
+  restart.onclick = () => {
+    clearSeason(); State.season = null; State.screen='menu'; render();
+  };
+  const menu = el('button','btn ghost','Main Menu');
+  menu.onclick = () => {
+    clearSeason(); State.season = null; State.screen='menu'; render();
+  };
+  row.append(restart, menu);
+  s.appendChild(row);
+
+  app.appendChild(s);
+}
+
+/* ============================================================================
+   UTIL
+   ============================================================================ */
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+render();
+</script>
+</body>
+</html>

@@ -29,7 +29,7 @@ import { join, relative } from 'path';
 /* Widened only for directories that are already clean, per CLAUDE.md. hoops was
    written under the rule from its first commit, so it went on the list in the
    same commit rather than as a promise to clean it later. */
-const GUARDED = ['wrestling', 'hoops'];
+const GUARDED = ['wrestling', 'hoops', 'allstars'];
 const EXT = /\.(html|js|mjs|css|json|md|txt|svg)$/i;
 const SKIP = /(^|\/)(node_modules|\.git)(\/|$)/;
 
