@@ -4163,10 +4163,17 @@ const publicAPI = {
     return [s.key, i < 0 ? s.strength : s.strength.slice(i + 2)];
   })),
   resolveGame, resolveGameDefense, defenseSuppression, defenseOverall, overallOf,
-  /* Full Team, which nothing in the live game reaches yet: playRun only calls it through
-     opts.full and only the harness passes that. FULL_SLOTS is the two slot lists joined,
-     offense first, so a draft screen reads twelve in the order a player thinks about them. */
-  FULL_SLOTS: SLOTS.concat(DEFENSE_SLOTS), resolveGameFull, splitSides,
+  /* FULL TEAM'S TWELVE, INTERLEAVED, and the order is the design rather than a listing.
+     The draft fills slots in this order, so alternating them is what makes the shared cap
+     felt continuously instead of discovered at pick seven: every offensive signing is
+     immediately followed by a defensive one out of the same wallet. Six then six would let
+     somebody spend $140M on an offense before the game ever mentioned a defense.
+
+     It also makes the pool switch fall out for free. The draft screen asks which data set
+     to spin at each pick, and with the sides interleaved that question is answered by the
+     slot rather than by counting picks. */
+  FULL_SLOTS: ['QB', 'DL', 'RB', 'DL', 'WR', 'LB', 'WR', 'DB', 'TE', 'DB', 'FLEX', 'FLEX'],
+  resolveGameFull, splitSides,
   /* FLEX IS AMBIGUOUS IN THIS MODE AND IN NEITHER OF THE OTHER TWO, which is why this
      exists as its own table rather than as SLOT_ELIGIBILITY reused. Offense mode draws
      from the offensive pool and defense mode from the defensive one, so in both of them a
@@ -4177,10 +4184,18 @@ const publicAPI = {
      Six a side is the mode. So the offensive FLEX takes a skill player and the defensive
      FLEX takes a defender, decided here, once, by INDEX into FULL_SLOTS rather than by
      slot name, because the two FLEX slots share a name and do not share an answer. */
-  FULL_SLOT_POS: SLOTS.concat(DEFENSE_SLOTS).map((s, i) => {
-    if (s !== 'FLEX') return SLOT_ELIGIBILITY[s].slice();
-    return i < SLOTS.length ? ['RB', 'WR', 'TE'] : DEFENSE_POSITIONS.slice();
-  }),
+  FULL_SLOT_POS: [
+    ['QB'], ['DL'], ['RB'], ['DL'], ['WR'], ['LB'],
+    ['WR'], ['DB'], ['TE'], ['DB'],
+    /* THE LAST TWO ARE BOTH CALLED FLEX AND THEY ARE NOT THE SAME SLOT. Written out
+       rather than derived, because the derivation was three lines of counting that nobody
+       could check by eye, and this is a table with twelve rows. Slot 10 completes the
+       offense and slot 11 completes the defense. */
+    ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
+  ],
+  /* Measured, not chosen. simulator.js --fullteam puts optimal play at 81.3% against
+     offense mode's 80.7% here; $180M takes the ceiling to a 99% playoff rate. */
+  FULL_CAP_MUSD: 170,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,

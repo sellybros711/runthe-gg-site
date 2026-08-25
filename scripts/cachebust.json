@@ -102,11 +102,15 @@
   "football/index.html": {
     "engine.js": {
       "v": "61",
-      "sha": "ed3f672863b17b91"
+      "sha": "16bf782f066f4569"
     },
     "run.js": {
-      "v": "70",
-      "sha": "275b4b0e312a313a"
+      "v": "71",
+      "sha": "76c185078655c49c"
+    },
+    "fullteam-access.js": {
+      "v": "1",
+      "sha": "5622b02a66897441"
     },
     "board.js": {
       "v": "24",

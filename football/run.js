@@ -24,7 +24,10 @@ const E = (typeof require !== 'undefined')
    and falls back by mode so a run restored from storage without it still resolves. */
 const TRADE_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLEX'];
 const slotsOf = (run) => (run && run.slots)
-  || (run && run.tradeMachine ? TRADE_SLOTS : (run && run.defense ? E.DEFENSE_SLOTS : E.SLOTS));
+  || (run && run.full ? E.FULL_SLOTS
+    : run && run.tradeMachine ? TRADE_SLOTS
+      : run && run.defense ? E.DEFENSE_SLOTS
+        : E.SLOTS);
 
 /* PICK_FRANCHISE is gone. There is no favorite club to choose, so a run opens on the draft:
    the schedule is 17 random historic team-seasons and the playoffs are a fixed difficulty
@@ -93,7 +96,12 @@ function remaining(run) {
 }
 
 /** Slots still to fill, including the current one. */
-const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
+/* ASKS THE RUN, NOT THE MODULE. This read E.SLOTS.length, which is six, and every mode
+   that has ever existed also had six slots, so it was right by coincidence rather than by
+   construction: the defense draft has its own six and the Trade Machine swaps one slot for
+   another without changing the count. Full Team has twelve, and at twelve a hardcoded six
+   ends the draft halfway through with a legal-looking half a roster. */
+const slotsLeft = (run) => slotsOf(run).length - run.roster.length;
 
 /**
  * The floor the UI warns about: money you must keep back or you cannot legally
@@ -419,6 +427,10 @@ function createRun(opts) {
   /* THE DEFENSE DRAFT. Six spots like everything else, drawn from the defender pool, and
      the only run whose roster decides what the OTHER team scores. */
   const defense = !!opts.defense;
+  /* FULL TEAM. Twelve spots instead of six, alternating sides, drawn from BOTH pools out of
+     one shared cap. The only run whose roster decides what both teams score. */
+  const full = !!opts.full;
+  if (full && defense) throw new Error('a run is full team or defense, not both');
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
@@ -427,14 +439,24 @@ function createRun(opts) {
     capSurvivor,
     tradeMachine,
     defense,
+    full,
     // The Trade Machine runs a second flex in place of the second receiver; the defense
-    // draft runs its own six.
-    slots: (tradeMachine ? TRADE_SLOTS : (defense ? E.DEFENSE_SLOTS : E.SLOTS)).slice(),
+    // draft runs its own six; full team runs twelve with the sides interleaved.
+    slots: (full ? E.FULL_SLOTS
+      : tradeMachine ? TRADE_SLOTS
+        : defense ? E.DEFENSE_SLOTS
+          : E.SLOTS).slice(),
     seed,
     rngCalls: 0,
     /* The ceiling for THIS run. Only GM mode moves it, and only downward, as cash goes out
-       the door in trades -- see capOf() and CONSTANTS.TRADE_CASH_*. */
-    capMusd: E.CONSTANTS.CAP_MUSD,
+       the door in trades -- see capOf() and CONSTANTS.TRADE_CASH_*.
+
+       FULL TEAM CARRIES ITS OWN, and it is one shared budget for all twelve rather than two
+       of anything. $170M is measured: simulator.js --fullteam puts optimal play there at
+       81.2% against offense mode's 80.7%. It is NOT double the six-man cap, because Full
+       Team removes the crutch each of the other two modes leans on and the men have to be
+       cheaper to pay for that. */
+    capMusd: full ? E.FULL_CAP_MUSD : E.CONSTANTS.CAP_MUSD,
     cashPaid: 0,
     cashReceived: 0,
     /* EVERYONE WHO HAS LEFT THIS ROSTER, traded or released, and they do not come back.
@@ -763,7 +785,7 @@ function sign(run, player, want) {
   run.draws.push({ slot: slotsOf(run)[slot], team_season_id: run.currentDraw.team_season_id });
   run.currentDraw = null;
 
-  if (run.roster.length === E.SLOTS.length) run.phase = PHASES.SEASON;
+  if (run.roster.length === slotsOf(run).length) run.phase = PHASES.SEASON;
   return run;
 }
 
@@ -831,11 +853,13 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   const gameSlots = slotsOf(run);
   /* THE DEFENSE DRAFT PLAYS THE MIRROR GAME. Same opponent, same advantage, same league
      context: what changes is which side of the scoreboard the roster is attached to. */
-  const r = run.defense
-    ? E.resolveGameDefense(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5,
-      rng, E.CONSTANTS, advantage)
-    : E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5,
-      rng, E.CONSTANTS, advantage);
+  /* FULL TEAM PLAYS BOTH HALVES: its roster decides what you score AND what they score.
+     Picked by name rather than by nested ternary, because there are three of these now. */
+  const resolver = run.full ? E.resolveGameFull
+    : run.defense ? E.resolveGameDefense
+      : E.resolveGame;
+  const r = resolver(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5,
+    rng, E.CONSTANTS, advantage);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
 
   const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
@@ -868,9 +892,17 @@ function advanceWeek(run, data, leagueContext, displayCal) {
       franchise: p.franchise,
       pts: Math.round(r.lines[i] * 10) / 10,
       avg: Math.round(p.ppr_ppg_mean * 10) / 10,
-      ...(run.defense
+      /* WHICH THREE NUMBERS A MAN CARRIES IS A FACT ABOUT HIM, NOT ABOUT THE MODE, and in
+         Full Team the same box score holds both kinds. Read off his own position, which is
+         what run.defense was standing in for in a mode where every man was a defender. */
+      ...(E.DEFENSE_POSITIONS.indexOf(p.position) >= 0
         ? { rush: p.rush_ppg || 0, cover: p.cover_ppg || 0, tackle: p.tackle_ppg || 0 }
         : { pass: p.pass_ppg || 0, rush: p.rush_ppg || 0, rec: p.rec_ppg || 0 }),
+      /* Which half of the scoreboard this line belongs to. An offensive line is points and
+         the offensive lines sum to the score; a defensive line is a share of the
+         suppression effort and sums to the defensive total. Same column, two meanings, and
+         a results screen that prints them together has to be able to tell them apart. */
+      side: E.DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? 'def' : 'off',
     })) : null,
     defMod: Math.round((r.defenseModifier || 1) * 1000) / 1000,
   };
@@ -972,7 +1004,7 @@ function liveRating(run) {
      number, weeklyEdgeVs and seedFromRecord and playoffShare and homeField, is calibrated
      on a range a defensive product cannot reach. A top defense was seeded as a bottom
      team all the way through the back half of the season. */
-  return E.overallOf(run.roster, s.chemistry || 1, !!run.defense);
+  return E.overallOf(run.roster, s.chemistry || 1, run.full ? 'full' : !!run.defense);
 }
 
 /** Leave SEEDING and start the playoffs. */
@@ -1075,7 +1107,7 @@ function autoDraftTrade(run, data, ctx) {
     // The RNG is NOT rewound between attempts, so each retry draws a genuinely
     // different roster while the whole sequence stays a pure function of the seed.
     run.phase = PHASES.DRAFT;
-    for (let pick = 0; pick < E.SLOTS.length; pick++) {
+    for (let pick = 0; pick < slotsOf(run).length; pick++) {
       spin(run, data);
       const rng = rngFor(run);
       const opts = run.currentDraw.options;
@@ -2635,10 +2667,25 @@ function indexData(players, teamSeasons) {
  * you have already signed. The UI says so rather than implying otherwise.
  */
 function bestPossibleSquad(run, data, ctx) {
+  /* NOT ANSWERED FOR FULL TEAM, deliberately, and null is a shape every caller already
+     handles because the drawn pool can fail to fill a slot.
+     The objective below is a single scalar: points times chemistry times ONE reading of
+     roster shape. That works when every man reaches the scoreboard through the same term.
+     In Full Team six of them reach it through rosterStructure and six through
+     defenseSuppression, which is steep and saturating, so no weighted sum of the two is
+     the thing the season actually rewards. The harness had to solve this as a budget SPLIT
+     rather than a knapsack for exactly this reason (see simulator.js --fullteam), and that
+     does not fit in this DP.
+     Saying nothing is the honest answer. A "best possible" panel that ranked twelve men by
+     an offensive reading would tell somebody their defense was the problem when it was not. */
+  if (run.full) return null;
   const BUCKET = 0.5;
   const budget = capOf(run) - E.respinFees(run.respinsUsed);
   const NB = Math.round(budget / BUCKET) + 1;
-  const nSlots = E.SLOTS.length;
+  /* The bitmask below is one bit per slot, so this has to be the RUN's slot count and not
+     the module's. At twelve slots a hardcoded six would mask off half the roster and the
+     "best possible" panel would quietly rate a six-man subset of a twelve-man team. */
+  const nSlots = slotsOf(run).length;
   const FULL = (1 << nSlots) - 1;
 
   // Everyone available from each drawn team, at any position.
@@ -2880,7 +2927,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
   for (let i = 0; i < trials; i++) {
     const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
     const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng,
-      E.CONSTANTS, { gm: !!run.tradeMachine, defense: !!run.defense });
+      E.CONSTANTS, { gm: !!run.tradeMachine, defense: !!run.defense, full: !!run.full });
     wins.push(out.regularWins);
     if (out.seed.made) madePlayoffs++;
     if (out.seed.bye) bye++;

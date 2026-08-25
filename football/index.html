@@ -443,9 +443,47 @@ window.GA_ID='G-L29P5MRWKE';
     .hp-side-name{font-size:17px}
     .hp-side-sub{font-size:9px;letter-spacing:.04em}
   }
+  /* ---- FULL TEAM, the third door ----
+     A DIFFERENT SHAPE FROM THE PAIR ABOVE IT, on purpose. The split is two halves of one
+     control; this is one control the full width of both, so the eye reads it as another
+     question rather than as a third answer to the last one.
+     The warm edge is the only warm thing on the front page, which is what makes an
+     unannounced mode noticeable without a colour that shouts. */
+  .hp-full{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    margin-top:6px;padding:15px 12px 13px;border-radius:12px;
+    background:linear-gradient(180deg,rgba(38,30,16,.92),rgba(22,20,14,.92));
+    border:1.5px solid rgba(226,178,90,.42);
+    box-shadow:0 8px 22px -14px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  .hp-full[hidden]{display:none}
+  .hp-full:before{display:none}
+  .hp-full:active{transform:translateY(1px)}
+  .hp-full-name{font-family:var(--fd,var(--fn));font-size:19px;font-weight:800;
+    letter-spacing:.02em;color:#F3DDAE;line-height:1}
+  .hp-full-sub{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:rgba(243,221,174,.62);line-height:1.3;text-align:center}
+  /* Rides in the corner the way the New sticker on Defense does, and for the same reason:
+     anything in the flow would shift the label off centre. */
+  .hp-tag-pro{background:rgba(226,178,90,.16);border-color:rgba(226,178,90,.5);
+    color:#F3DDAE}
+  @media (max-width:340px){
+    .hp-full-name{font-size:17px}
+    .hp-full-sub{font-size:9px;letter-spacing:.03em}
+  }
   .hp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;
     margin-top:8px;padding:14px 18px;font-size:14.5px;background:rgba(19,26,43,.85);
     border:1.5px solid var(--line-2);box-shadow:none;border-radius:10px;white-space:nowrap}
+  /* THE COMPACT VARIANT. width:fit-content plus the auto margins are what actually shrink
+     it: .hp-secondary is inline-flex, but as a child of the intro column it is stretched to
+     full width by the parent's align-items, so font and padding alone left it exactly as
+     wide as before. */
+  /* display:flex AND NOT the inline-flex it inherits. .hp-secondary is inline-flex, which
+     makes this an INLINE-level box, and auto margins do not centre one: the pill came out
+     the right width and still sat hard against the left edge. Block-level flex is what lets
+     width:fit-content and the auto margins do the centring. */
+  .hp-more{display:flex;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;
+    margin-top:10px;padding:9px 16px;font-size:12.5px;letter-spacing:.03em;
+    border-radius:999px;border-color:var(--line);color:var(--dim2,var(--dim))}
+  .hp-more:active{background:rgba(255,255,255,.05)}
   .hp-secondary:before{display:none}
   .hp-secondary .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
     stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.65}
@@ -4726,7 +4764,25 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="hp-side-sub"><span>DL &middot; DL &middot; LB</span><span>DB &middot; DB &middot; FLEX</span></span>
       </button>
     </div>
-    <button class="btn hp-secondary locked" id="b-teams">More ways to play<svg class="lk"
+    <!-- THE THIRD DOOR, and it sits UNDER the pair rather than inside it. Offense and
+         Defense are one control asking one question, and the seam between them says "or".
+         A third column would turn that question into a menu and shrink both labels to fit.
+         Below it, full width, is a different shape on the page: not a third of the same
+         choice, a bigger version of the whole thing.
+         Hidden in the markup and revealed by paintHomeStart for anybody on the tester
+         list, the same way the split itself is. -->
+    <button class="btn hp-full" id="b-start-full" hidden>
+      <span class="hp-tag hp-tag-pro">Preview</span>
+      <span class="hp-full-name">Full Team</span>
+      <span class="hp-full-sub">Six on offense &middot; six on defense &middot; one cap</span>
+    </button>
+    <!-- SMALLER, AND STILL THE ONLY THING ON ITS OWN LINE. This was a full-width button
+         directly under the main call to action, which put a menu of side modes at the same
+         weight as the thing the page is for, and left nowhere for Full Team to go.
+         It is a compact centre pill now: narrower than everything above it, wider and
+         brighter than the three dim utility buttons below, and alone on its row so it still
+         reads as a door rather than as a footnote. -->
+    <button class="btn hp-secondary hp-more locked" id="b-teams">More ways to play<svg class="lk"
       viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>
       <path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
     <div class="hrow hp-util">
@@ -5589,7 +5645,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=61"></script>
-<script src="run.js?v=70"></script>
+<script src="run.js?v=71"></script>
+<!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
+     separate things ask and a list written three times drifts. Not optional in the way the
+     account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
+     blocked or stale copy hides an unannounced mode rather than opening it. -->
+<script src="fullteam-access.js?v=1"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5640,7 +5701,26 @@ const slotsNow=()=>(run&&run.slots)||(run&&run.tradeMachine
    which is more than the entire rest of the game; putting it in the boot bundle would make
    every visitor pay for a mode most of them will not open. */
 let DDATA=null, defLoading=null;
-const dataNow=()=>((run&&run.defense&&DDATA)?DDATA:DATA);
+/* WHICH POOL THE WHEEL IS SPINNING, and in Full Team the answer changes every pick.
+ *
+ * The two single-pool modes answer it once for the whole run. Full Team interleaves the
+ * sides, so pick 1 is a quarterback out of the offensive pool and pick 2 is a lineman out
+ * of the defensive one, and the question has to be asked per SLOT rather than per run.
+ * run.roster.length is the slot about to be filled, which is what spin(), canRespin() and
+ * respin() all need, and they are the only callers that run mid-draft.
+ *
+ * AFTER THE DRAFT IT FALLS BACK TO DATA, which is right rather than incidental: the only
+ * caller left is startSeason, and a schedule is seventeen real team-seasons whichever pool
+ * the roster came out of. */
+const fullSlotIsDefensive=(i)=>{
+  const pos=E.FULL_SLOT_POS&&E.FULL_SLOT_POS[i];
+  return !!pos&&pos.some(p=>E.DEFENSE_POSITIONS.indexOf(p)>=0);
+};
+const dataNow=()=>{
+  if(!run) return DATA;
+  if(run.full) return (DDATA&&fullSlotIsDefensive(run.roster.length))?DDATA:DATA;
+  return (run.defense&&DDATA)?DDATA:DATA;
+};
 function loadDefensePool(){
   if(DDATA) return Promise.resolve(DDATA);
   if(defLoading) return defLoading;
@@ -5724,6 +5804,21 @@ const isDefRun=()=>!!(run&&run.defense);
    this list. */
 const DEFENSE_LIVE=true;
 const DEFENSE_TESTERS=['malikwillislover','runnyj','slimeyb3'];
+/* FULL TEAM ASKS ITS OWN FILE. Same two gates as above and the same warning applies with
+   more force: fullteam-access.js is served to anybody who asks for it, so it hides an
+   unannounced mode and must never be what stands between a paying player and the thing
+   they bought. When this mode is sold, the authority moves to ps_submit_run.
+
+   Read defensively. A blocked, stale or failed fullteam-access.js leaves PS_FULLTEAM_ACCESS
+   undefined, and the honest answer to "can this person see an unannounced mode" when the
+   list cannot be read is no. */
+const canPlayFull=()=>{
+  const A=window.PS_FULLTEAM_ACCESS;
+  if(!A||typeof A.allowed!=='function') return false;
+  if(A.LIVE) return true;
+  if(!authState.signedIn) return false;
+  return A.allowed({name:authState.name,userId:authState.userId});
+};
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
   if(!authState.signedIn) return false;
@@ -5735,12 +5830,14 @@ const canPlayDefense=()=>{
 function runMode(){
   if(run&&run.capSurvivor) return 'capsurvivor';
   if(run&&run.tradeMachine) return 'trade';
+  if(run&&run.full) return 'fullteam';
   if(run&&run.defense) return 'defense';
   return (run&&run.era)?'era':(run&&run.franchise)?'club':'free';
 }
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
   if(run&&run.tradeMachine) return 'The Trade Machine';
+  if(run&&run.full) return 'Full Team';
   if(run&&run.defense) return 'Defense';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
   if(run&&run.era) return run.era+' era';
@@ -6730,10 +6827,13 @@ function newRun(opts){
    team-seasons and the playoffs are a fixed difficulty ladder either way: the club you draft
    from does not change who you play. */
 function beginDraft(opts){
-  if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine||opts.defense)
-    &&!oneTeamReady()){
+  /* Checked here as well as at the button, because the DOM is not the authority on what is
+     playable. Same belt and braces the Trade Machine and the defense draft use. */
+  if(opts&&opts.full&&!canPlayFull()) return;
+  if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine||opts.defense
+    ||opts.full)&&!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking',
-      opts.defense?'defense':'club');
+      opts.full?'full':opts.defense?'defense':'club');
   }
   replaceCtx=null;
   newRun(opts);
@@ -6753,6 +6853,7 @@ function beginDraft(opts){
 $('b-start').onclick=()=>{ beginDraft({}); };
 $('b-start-off').onclick=()=>{ beginDraft({}); };
 $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
+if($('b-start-full')) $('b-start-full').onclick=()=>{ beginFullDraft(); };
 
 /* WHICH START THE FRONT PAGE IS SHOWING.
  *
@@ -6790,6 +6891,16 @@ function paintHomeStart(){
      function is the one that governs: the sticker cannot be shown on a control that is not. */
   const tag=$('hp-def-new');
   if(tag) tag.hidden=!(on&&defenseNewLive());
+  /* FULL TEAM IS ITS OWN QUESTION AND ITS OWN GATE. Not tied to `on`: the defense split and
+     the full team preview are two different lists, and somebody could be on one and not the
+     other. Cleared of its loading state here for the same reason the Defense half is, since
+     it lives on the page permanently and fetches the same pool. */
+  const fullBtn=$('b-start-full');
+  if(fullBtn){
+    fullBtn.hidden=!canPlayFull();
+    fullBtn.disabled=false;
+    fullBtn.classList.remove('hp-loading');
+  }
 }
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
@@ -6797,6 +6908,30 @@ function paintHomeStart(){
    and nothing at all on a warm one, so it says what it is doing rather than opening an
    empty board, and a failure lands on the front page with a reason instead of a draft with
    nobody in it. */
+/* FULL TEAM NEEDS THE DEFENSIVE POOL TOO, and for a longer stretch: the defense draft
+   spins it six times and this one spins it six times interleaved with six offensive picks,
+   so a pool that arrives late would strand the SECOND pick rather than the first. Fetched
+   up front, exactly as beginDefenseDraft does, and for the same reason.
+
+   Same order of checks as the defense entry point, and that order is the lesson written up
+   there: the account wall comes BEFORE the download, or a walled visitor waits out six
+   megabytes to be told no and comes back to a button still spinning. */
+function beginFullDraft(){
+  if(!canPlayFull()) return;
+  if(!oneTeamReady()){
+    return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','full');
+  }
+  const b=$('b-start-full');
+  if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  loadDefensePool().then(()=>{
+    closeSheet();
+    beginDraft({full:true});
+  }).catch(()=>{
+    if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
+    toast('Could not load the defensive players. Check your connection and try again.');
+  });
+}
+
 function beginDefenseDraft(){
   /* Checked here as well as at the button, because the DOM is not the authority on what is
      playable. Same belt and braces the Trade Machine uses. */
@@ -6848,6 +6983,8 @@ let wantOneTeam=false;
 /* The same, for the defense draft, which is behind the same account requirement and is now on
    the front page where anybody can press it. */
 let wantDefense=false;
+/* And for Full Team, which is behind the same wall plus the tester list. */
+let wantFull=false;
 
 $('b-teams').onclick=()=>{ modeMenu(); };
 
@@ -6880,6 +7017,20 @@ const WALL={
       'board is listed under a name.',
     out:'Defense needs a free account. It has its own leaderboard, and a run has to have a '+
       'name on it to be listed.'},
+  /* WITHOUT THIS ENTRY THE WALL FALLS BACK TO WALL.club, so a tester pressing Full Team
+     without a username would get a sheet headed One Franchise telling them about
+     thirty-two club leaderboards. That exact failure is written up above this table: the
+     defense draft hit it first. */
+  full:{name:'Full Team',
+    what:'Draft six on offense and six on defense out of ONE cap, and play a season where '+
+      'your roster decides what both teams score. The first mode that can hand you an '+
+      'offense that scores at will and a defense that cannot get a stop.',
+    note:'<b>Full Team has its own leaderboard.</b> You are only up against people who '+
+      'drafted a whole team.',
+    noname:'You are signed in. Pick a username and Full Team opens, because every run on '+
+      'that board is listed under a name.',
+    out:'Full Team needs a free account. It has its own leaderboard, and a run has to have '+
+      'a name on it to be listed.'},
 };
 function oneTeamWall(why,mode){
   const w=WALL[mode]||WALL.club;
@@ -6903,7 +7054,12 @@ function oneTeamWall(why,mode){
   openSheet();
   const x=$('b-wall-x'); if(x) x.onclick=closeSheet;
   const go=$('b-wall-in');
-  if(go) go.onclick=()=>{ if(w===WALL.defense) wantDefense=true; else wantOneTeam=true;
+  if(go) go.onclick=()=>{
+    /* WHERE FINISHING THE SIGN-UP DROPS THEM, and it has to be the mode they asked for.
+       A chain of two was already one comparison per mode; a third makes it worth naming. */
+    wantDefense=(w===WALL.defense);
+    wantFull=(w===WALL.full);
+    wantOneTeam=!wantDefense&&!wantFull;
     profileSheet(); };
   const free=$('b-wall-free');
   if(free) free.onclick=()=>{ closeSheet(); beginDraft({}); };
@@ -7769,7 +7925,7 @@ function firstRunGuide(){
   if(frgSeen()) return false;
   if(!$('s-intro').classList.contains('on')) return false;
   if($('sheet').classList.contains('on')) return false;
-  if(wantModes||wantOneTeam||wantDefense) return false;
+  if(wantModes||wantOneTeam||wantDefense||wantFull) return false;
   const el=$('frg'); if(!el) return false;
   /* The button has to be on screen for an arrow to point at it. */
   const tgt=frgTarget();
@@ -7818,7 +7974,7 @@ function askArcadeAd(){
      they did not. */
   if(!$('s-intro').classList.contains('on')) return;
   if($('sheet').classList.contains('on')) return;
-  if(wantModes||wantOneTeam||wantDefense) return;
+  if(wantModes||wantOneTeam||wantDefense||wantFull) return;
   A.show({from:'football'});
 }
 
@@ -13015,6 +13171,15 @@ function authBoot(){
       wantDefense=false;
       closeSheet();
       beginDefenseDraft();
+    }
+    /* And Full Team, the third mode reachable from one press on the front page. Note the
+       eligibility is checked again by beginFullDraft: signing up does not put anybody on
+       the tester list, so somebody who reached the wall through a stale button lands back
+       on the front page rather than in a mode they cannot play. */
+    if(wantFull&&oneTeamReady()){
+      wantFull=false;
+      closeSheet();
+      beginFullDraft();
     }
     if(wantModes&&oneTeamReady()){
       wantModes=false;

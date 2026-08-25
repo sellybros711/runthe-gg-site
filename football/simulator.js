@@ -613,15 +613,17 @@ for (const p of defenders) {
   }
 }
 
-/* THE ORDER THE SLOTS ARE FILLED IN IS NOT THE ORDER THEY ARE HELD IN, and that is the
-   whole point. FULL_SLOTS is offense then defense because that is how a player thinks
-   about a roster, but filling it in that order spends the shared budget on the offense
-   first and hands the defense whatever is left: the second --fullteam run did exactly
-   that, and every defense came out at the bottom of its range no matter what the cap was.
+/* FILLING ORDER IS JUST SLOT ORDER NOW. It was an explicit interleave here, because
+   FULL_SLOTS used to be offense then defense and filling it in that order spent the shared
+   budget on the offense and handed the defense the change. The engine's slot list is
+   interleaved itself now, for the same reason and for the draft's, so this is 0..11.
 
-   So the builder ALTERNATES, which is also the drafting order the plan argues for on its
-   own merits: the cap tension is felt continuously instead of discovered at pick seven. */
-const FULL_FILL_ORDER = [0, 6, 1, 7, 2, 8, 3, 9, 4, 10, 5, 11];
+   posOk asks FULL_SLOT_POS rather than E.fillsSlot, because fillsSlot resolves FLEX from
+   the shared table where it means all six skill and defensive positions. That is right in
+   the two single-pool modes and wrong here: it would let the offensive FLEX be filled by a
+   linebacker. */
+const FULL_FILL_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const posOk = (i, p) => E.FULL_SLOT_POS[i].indexOf(p.position) >= 0;
 
 /* One shared budget across all twelve, which IS the mode: two budgets would delete the
    only question it asks. */
@@ -633,9 +635,9 @@ function buildFullToBudget(rng, budget, targetSpendFraction) {
   for (let n = 0; n < FULL_FILL_ORDER.length; n++) {
     const i = FULL_FILL_ORDER[n];
     const left = slots.length - n;
-    const isDef = i >= E.SLOTS.length;
+    const isDef = DEF_IDX.indexOf(i) >= 0;
     const pool = (isDef ? defenders : players);
-    const legal = pool.filter((p) => E.fillsSlot(slots[i], p)
+    const legal = pool.filter((p) => posOk(i, p)
       && !used.has(`${p.player_id}|${p.season}`));
     const share = Math.min(remaining / left * 1.5, remaining - (left - 1) * 1.0);
     let cand = legal.filter((p) => p.price_musd <= share)
@@ -657,9 +659,9 @@ function buildFullRandom(rng, budget) {
   let remaining = budget;
   for (let n = 0; n < FULL_FILL_ORDER.length; n++) {
     const i = FULL_FILL_ORDER[n];
-    const isDef = i >= E.SLOTS.length;
+    const isDef = DEF_IDX.indexOf(i) >= 0;
     const reserve = (slots.length - n - 1) * 1.0;
-    const legal = (isDef ? defenders : players).filter((p) => E.fillsSlot(slots[i], p)
+    const legal = (isDef ? defenders : players).filter((p) => posOk(i, p)
       && !used.has(`${p.player_id}|${p.season}`));
     const pool = legal.filter((p) => p.price_musd <= remaining - reserve);
     const c = pool.length ? pool[Math.floor(rng() * pool.length)]
@@ -773,8 +775,13 @@ function buildSide(indices, budget) {
   return roster.slice();
 }
 
-const OFF_IDX = [0, 1, 2, 3, 4, 5];
-const DEF_IDX = [6, 7, 8, 9, 10, 11];
+/* READ OFF FULL_SLOT_POS, not written down. The slot order is interleaved now, so the
+   offensive slots are no longer 0 to 5, and a hardcoded pair of ranges here would have
+   quietly solved a six-man offense out of four offensive slots and two defensive ones. */
+const OFF_IDX = [], DEF_IDX = [];
+E.FULL_SLOT_POS.forEach((pos, i) => {
+  (pos.some(p => E.DEFENSE_POSITIONS.indexOf(p) >= 0) ? DEF_IDX : OFF_IDX).push(i);
+});
 
 const FULL_OPTIMAL_CACHE = new Map();
 function buildFullOptimal(budget, wantSplit) {
