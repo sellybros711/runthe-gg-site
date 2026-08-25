@@ -469,6 +469,46 @@ window.GA_ID='G-L29P5MRWKE';
     .hp-full-name{font-size:17px}
     .hp-full-sub{font-size:9px;letter-spacing:.03em}
   }
+  /* THE UNIT HEADING on a Full Team roster list. Quiet: it is a divider that happens to
+     carry two numbers, not a title competing with the names under it. */
+  .rp-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    margin:10px 0 5px;padding-bottom:4px;border-bottom:1px solid var(--line);
+    font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim)}
+  .rp-head:first-child{margin-top:0}
+  .rp-head-n{font-weight:600;letter-spacing:.02em;color:var(--dim-2);text-transform:none}
+  /* ---- THE FULL TEAM FIELD ----
+     Twelve chips where six used to stand, so everything shrinks: a smaller disc, a smaller
+     name, and the team plate dropped entirely. The plate is the first thing to go because
+     it is the only part of a chip that repeats information the roster list underneath
+     already carries in full. */
+  .field.fullfield{aspect-ratio:.86}
+  .field.fullfield .chip .disc{width:30px;height:30px;font-size:10px}
+  .field.fullfield .chip .lab{margin-top:2px}
+  .field.fullfield .chip .who{font-size:9.5px;max-width:66px}
+  .field.fullfield .chip .yr{display:none}
+  .field.fullfield .chip .pip{width:13px;height:13px;font-size:8px}
+  /* THE LINE OF SCRIMMAGE, and it is the one marking on this field that means something
+     rather than measuring something. Brighter than a yard line and dashed, so it never
+     reads as another ten-yard stripe. */
+  .fulllos{position:absolute;left:0;right:0;height:0;
+    border-top:1.5px dashed rgba(255,255,255,.42);z-index:1}
+  /* WHICH HALF IS WHICH, said once per half in the margin rather than over the grass.
+     Vertical, hard against the left edge, at the weight of a yard number: a label competing
+     with the chips would be a third thing on a field that already has twelve. */
+  /* HARD AGAINST THE LINE OF SCRIMMAGE, one word each side of it, because that is the only
+     band of this field guaranteed to be empty: the gap above exists precisely so no chip
+     sits there. Set vertically down the left edge first, which put DEFENSE straight through
+     the cornerback who lines up at 12% wide. */
+  .unitlab{position:absolute;left:5px;z-index:1;font-family:var(--fn);font-size:8px;
+    font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    color:rgba(255,255,255,.34);line-height:1}
+  .unitlab.up{top:calc(50% - 13px)}
+  .unitlab.down{top:calc(50% + 6px)}
+  @media (max-width:360px){
+    .field.fullfield .chip .disc{width:26px;height:26px;font-size:9px}
+    .field.fullfield .chip .who{font-size:9px;max-width:56px}
+  }
   .hp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;
     margin-top:8px;padding:14px 18px;font-size:14.5px;background:rgba(19,26,43,.85);
     border:1.5px solid var(--line-2);box-shadow:none;border-radius:10px;white-space:nowrap}
@@ -5651,7 +5691,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=61"></script>
+<script src="engine.js?v=62"></script>
 <script src="run.js?v=72"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -6323,20 +6363,74 @@ function fullFieldDef(){
 }
 function visibleSlots(){
   const n=slotsNow().length;
-  if(!run||!run.full) return Array.from({length:n},(_,i)=>i);
-  const def=fullFieldDef();
-  const out=[];
-  for(let i=0;i<n;i++) if(fullSlotIsDefensive(i)===def) out.push(i);
+  return Array.from({length:n},(_,i)=>i);
+}
+
+/* ─── THE FULL TEAM FIELD: BOTH UNITS, ACROSS ONE LINE OF SCRIMMAGE ───────────────────
+ *
+ * The first version showed one side at a time and flipped every pick. It worked and it was
+ * wrong: the whole promise of this mode is that you own both halves of the scoreboard, and
+ * a picture that can only ever show you half of it hides the exact thing being decided.
+ * You also cannot see the shape of your defense while spending the money that would have
+ * bought it.
+ *
+ * BOTH FORMATIONS ALREADY AGREE ABOUT DEPTH, which is what makes this cheap. Each one puts
+ * the end zone it cares about at the top and counts its own depth downward: the offense
+ * runs receivers at 24 and the back at 64, the defense runs its line at 64 and the
+ * secondary at 24. So each unit's LINE OF SCRIMMAGE END is a known edge, and the combined
+ * picture is the two of them folded toward a shared line in the middle.
+ *
+ *   defence   line at the middle, backers behind it, secondary deepest at the top
+ *   ---- the line of scrimmage, at 50% ----
+ *   offence   receivers on the line, quarterback behind, back deepest at the bottom
+ *
+ * X IS UNTOUCHED for both, so every formation this game can produce keeps the spacing that
+ * was swept for collisions. Only the vertical is remapped, and it is remapped by the same
+ * scale on both sides so the two units stay in proportion to each other. */
+const FULL_LOS=50;            /* where the two units meet */
+/* THE GAP AT THE LINE IS MEASURED AGAINST THE DISC, not picked. At 2% either side the
+   defensive line sat 4% from the receivers and a 30px disc on a 470px field is 6.4%, so
+   every front-side chip overlapped the man across from it: a tight end wearing a defensive
+   lineman. 8% either side clears a disc and a bit, which is also about what the gap between
+   the two front sevens looks like on television. */
+const FULL_GAP=8;
+const FULL_SQUEEZE=0.80;      /* how much of each half a unit uses, once the gap is taken */
+const fullY=(y,def)=>def
+  ? FULL_LOS-FULL_GAP-(64-y)*FULL_SQUEEZE   /* defence: its line (64) just above the LOS */
+  : FULL_LOS+FULL_GAP+(y-24)*FULL_SQUEEZE;  /* offence: its receivers (24) just below it */
+
+function layoutFull(){
+  const slots=slotsNow();
+  const bySlot=new Array(slots.length).fill(null);
+  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  const out=new Array(slots.length).fill(null);
+
+  /* EACH SIDE IS LAID OUT BY ITS OWN EXISTING FUNCTION, over a roster that holds only that
+     side's men. Reusing them rather than reimplementing is what keeps a full team's offence
+     shaped like an offence draft's and its defence like a One Stop defence, including the
+     named front, instead of a third arrangement that drifts from both. */
+  const sideRun=(def)=>{
+    const idx=[]; for(let i=0;i<slots.length;i++) if(fullSlotIsDefensive(i)===def) idx.push(i);
+    const roster=[],slotIndex=[];
+    idx.forEach((slotIdx,k)=>{ const p=bySlot[slotIdx]; if(p){ roster.push(p); slotIndex.push(k); } });
+    return {idx,stub:{full:false,defense:def,slots:idx.map(i=>slots[i]),roster,slotIndex}};
+  };
+  [true,false].forEach((def)=>{
+    const {idx,stub}=sideRun(def);
+    const saved=run; run=stub;
+    let coords;
+    try{ coords=def?layoutDefense():layoutOffenseSide(); }
+    finally{ run=saved; }
+    idx.forEach((slotIdx,k)=>{ const c=coords[k]||{x:50,y:def?44:44};
+      out[slotIdx]={x:c.x,y:fullY(c.y,def)}; });
+  });
   return out;
 }
 
-/** Target coordinate for every VISIBLE slot, in visibleSlots() order. */
-function layoutFor(){
-  if(run&&run.tradeMachine) return SPOT_TRADE.map((c)=>({...c}));
-  if(isDefRun()) return layoutDefense();
-  /* A full run's defensive half is E.DEFENSE_SLOTS in order, so it is the defensive
-     formation, unchanged, over the six slots currently on screen. */
-  if(run&&run.full&&fullFieldDef()) return layoutDefense();
+/* The offensive formation, over whatever slots the run currently holds. Split out of
+   layoutFor so the Full Team layout can call it for its offensive half with a six man
+   stand-in run, rather than growing a second copy of the same placement rules. */
+function layoutOffenseSide(){
   const vis=visibleSlots();
   const n=vis.length;
   const bySlot=new Array(n).fill(null);
@@ -6363,8 +6457,16 @@ function layoutFor(){
   place('WR',SPOTS.WR);
   place('TE',SPOTS.TE);
   for(const i of slotsOf('FLEX')) out[i]=SPOTS.FLEX;
-  out.forEach((v,i)=>{ if(!v) out[i]=SPOT_FALLBACK[i]; });
+  out.forEach((v,i)=>{ if(!v) out[i]=SPOT_FALLBACK[i]||SPOT_FALLBACK[SPOT_FALLBACK.length-1]; });
   return out;
+}
+
+/** Target coordinate for every VISIBLE slot, in visibleSlots() order. */
+function layoutFor(){
+  if(run&&run.tradeMachine) return SPOT_TRADE.map((c)=>({...c}));
+  if(run&&run.full) return layoutFull();
+  if(isDefRun()) return layoutDefense();
+  return layoutOffenseSide();
 }
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,lastChem=1;
@@ -6532,6 +6634,26 @@ const FIELD_YARDS=23, FIELD_EZ_YARDS=4;
    direction of play, and the old field had them parallel to it, which is the pitch turned 90
    degrees from the formation standing on it. */
 function fieldMarkings(def){
+  /* ─── THE FULL TEAM FIELD ───────────────────────────────────────────────────────────
+     A stretch of open field with the ball in the middle of it, which is the only honest
+     framing for a picture holding both of your units: they meet at a line of scrimmage, and
+     neither end zone is close enough to be in shot.
+     No end zone, no goal line, no wordmark. Just yard lines, the LOS, and a label on each
+     half so there is never any doubt which men are yours to score with and which are yours
+     to stop with. */
+  if(def==='full'){
+    const o=['<div class="turf"></div><div class="lit"></div>'];
+    for(let i=1;i<10;i++){
+      const top=i*10;
+      if(Math.abs(top-FULL_LOS)<1) continue;      /* the LOS is drawn heavier below */
+      o.push('<div class="yd'+(i%2===0?' ten':'')+'" style="top:'+top+'%"></div>');
+    }
+    o.push('<div class="los fulllos" style="top:'+FULL_LOS+'%"></div>',
+      '<div class="unitlab up">Defense</div>',
+      '<div class="unitlab down">Offense</div>',
+      '<div class="vig"></div>');
+    return o.join('');
+  }
   const out=['<div class="turf"></div><div class="lit"></div>'];
   const pct=(yd)=>100*yd/FIELD_YARDS;
   const goal=pct(FIELD_EZ_YARDS);
@@ -6591,7 +6713,10 @@ function fieldMarkings(def){
 }
 
 function fieldState(el){
-  const def=isDefRun()||fullFieldDef();
+  /* 'full' is a third kind of field, not a variant of either: it carries both units and a
+     line of scrimmage between them, and no end zone, because with twelve men lined up over
+     one ball there is no end zone in the picture. */
+  const def=(run&&run.full)?'full':(isDefRun()||fullFieldDef());
   /* A FIELD IS REBUILT WHEN THE SIDE OF THE BALL CHANGES, not just when it is first seen.
      One page can play an offense draft and then a defense one without reloading, and the markings are
      baked into this markup: kept, the defensive field would come back with no line of
@@ -6601,6 +6726,7 @@ function fieldState(el){
      run is not the chip's position in this list: the offensive six are slots 0, 2, 4, 6, 8
      and 10. Everything downstream reads data-i rather than counting. */
   const vis=visibleSlots();
+  el.classList.toggle('fullfield',def==='full');
   el.innerHTML=fieldMarkings(def)+'<div class="front"></div>'+
     vis.map((slotIdx)=>'<div class="chip empty" data-i="'+slotIdx+'">'+
       '<div class="disc"><span class="dl">'+slotsNow()[slotIdx]+'</span><i class="pip"></i></div>'+
@@ -6668,7 +6794,11 @@ function drawField(el,live){
      and not before: the other three spots can only hold what they already hold, so until
      then the answer is "one of three" and printing one of them would be a guess. */
   const tag=el.querySelector('.front');
-  if(tag) tag.textContent=(isDefRun()||fullFieldDef())?(defShape().front.name||''):'';
+  /* The named front is a reading of a DEFENSE, and defShape() reads the whole roster. On a
+     full team that roster is half offensive, so it would count a quarterback toward a front.
+     Left blank here rather than half computed; the defensive shape has its own home on the
+     results screen. */
+  if(tag) tag.textContent=(run&&run.full)?'':(isDefRun()?(defShape().front.name||''):'');
 
   /* coords is parallel to st.chips, which is parallel to visibleSlots(). The guard is not
      defensive padding: it is what turns a formation table that has fallen out of step with
@@ -9912,14 +10042,31 @@ function paintRosterPanel(bodyId,capId){
       ? '<span class="rp-room over">$'+Math.abs(room).toFixed(1)+'M over cap</span>'
       : '<span class="rp-room">$'+room.toFixed(1)+'M free</span>');
   const order=run.roster.map((p,i)=>({p,i,slot:run.slotIndex[i]})).sort((a,b)=>a.slot-b.slot);
-  let h='';
-  order.forEach(({p,i,slot})=>{
-    h+='<div class="rp-row" data-i="'+i+'">'+
+  const row=({p,i,slot})=>'<div class="rp-row" data-i="'+i+'">'+
       '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
       '<div style="min-width:0"><div class="rp-name">'+esc(p.name)+'</div>'+
         '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
       '<span class="rp-fppg">'+p.ppr_ppg_mean.toFixed(1)+'<span>FPPG</span></span></div>';
-  });
+  let h='';
+  if(run&&run.full){
+    /* TWO UNITS, NOT TWELVE MEN IN A COLUMN. Sorting by slot is right in every other mode,
+       where the slot order IS the reading order. Full Team interleaves its slots so the cap
+       is felt at every pick, and reading that list top to bottom gave QB, lineman, back,
+       lineman: a roster nobody could see the shape of, and no way to answer the only
+       question the mode asks, which is what each half cost.
+       So each unit gets its own heading and its own spend. */
+    [['Offense',false],['Defense',true]].forEach(([label,def])=>{
+      const mine=order.filter(o=>(E.DEFENSE_POSITIONS.indexOf(o.p.position)>=0)===def);
+      if(!mine.length) return;
+      const spend=Math.round(mine.reduce((t,o)=>t+o.p.price_musd,0)*10)/10;
+      const pts=Math.round(mine.reduce((t,o)=>t+o.p.ppr_ppg_mean,0)*10)/10;
+      h+='<div class="rp-head"><span>'+label+'</span>'+
+        '<span class="rp-head-n">$'+spend.toFixed(1)+'M &middot; '+pts.toFixed(1)+' FPPG</span></div>';
+      mine.forEach(o=>{ h+=row(o); });
+    });
+  }else{
+    order.forEach(o=>{ h+=row(o); });
+  }
   const body=$(bodyId);
   if(!body) return;
   body.innerHTML=h;
@@ -9935,13 +10082,25 @@ function paintSquadSidebar(){
   let h='<div class="sr-cap"><span class="sr-cap-total">$'+total.toFixed(1)+'M</span>'+
     '<span class="sr-cap-limit" style="color:var(--dim-2)">/ $'+cap+'M</span>'+
     '<span class="sr-cap-room">$'+room.toFixed(1)+'M room</span></div>';
-  run.roster.forEach((p,i)=>{
-    h+='<div class="sr-row" data-i="'+i+'">'+
+  const srRow=(p,i)=>'<div class="sr-row" data-i="'+i+'">'+
       '<span class="sr-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[run.slotIndex[i]])+'</span>'+
       '<div><div class="sr-name">'+esc(p.name)+'</div>'+
       '<div class="sr-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+'</div></div>'+
       '<span class="sr-price">$'+p.price_musd.toFixed(1)+'M</span></div>';
-  });
+  const idx=run.roster.map((p,i)=>i).sort((a,b)=>run.slotIndex[a]-run.slotIndex[b]);
+  if(run&&run.full){
+    /* Split for the same reason paintRosterPanel is. */
+    [['Offense',false],['Defense',true]].forEach(([label,def])=>{
+      const mine=idx.filter(i=>(E.DEFENSE_POSITIONS.indexOf(run.roster[i].position)>=0)===def);
+      if(!mine.length) return;
+      const spend=Math.round(mine.reduce((t,i)=>t+run.roster[i].price_musd,0)*10)/10;
+      h+='<div class="rp-head"><span>'+label+'</span>'+
+        '<span class="rp-head-n">$'+spend.toFixed(1)+'M</span></div>';
+      mine.forEach(i=>{ h+=srRow(run.roster[i],i); });
+    });
+  }else{
+    idx.forEach(i=>{ h+=srRow(run.roster[i],i); });
+  }
   rl.innerHTML=h;
   rl.onclick=(e)=>{const r=e.target.closest('.sr-row');if(!r)return;
     const p=run.roster[+r.dataset.i];if(p)sheet(p);};

@@ -3560,8 +3560,16 @@ function overallOf(roster, chemistryMultiplier, isDefense) {
        off the top of it and seed a mediocre team first. It also says the right thing about
        the mode: a 92 offense behind a 40 defense is a 66 team, which is the failure state
        this mode exists to make possible. */
-    const offRating = offPts * chem * rosterStructure(off).multiplier;
-    const defRating = defenseOverall(defPts * chem * defenseStructure(def).multiplier);
+    /* TALENT APPLIES HERE TOO, and leaving it out was worth a 67% title rate.
+       A rating is what the seeding, the weekly edge and the playoff home field are all
+       read off, so it has to describe the team that actually takes the field. Rating the
+       roster at full strength while it plays at FULL_TALENT put a full team at 111 on a
+       scale those constants treat as topping out near 100, so every one of them was pinned:
+       the mode reached the playoffs 98% of the time and won the title two seasons in three
+       against a reference of 3%. */
+    const t = FULL_TALENT;
+    const offRating = offPts * t * chem * rosterStructure(off).multiplier;
+    const defRating = defenseOverall(defPts * t * chem * defenseStructure(def).multiplier);
     return (offRating + defRating) / 2;
   }
   return isDefense
@@ -3635,6 +3643,56 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
 }
 
 /*
+ * ─── FULL TEAM'S CAP, AND WHY IT IS NOT THE OTHER MODES' ───────────────────────────
+ *
+ * THE SHARED PRICE LIST DOES NOT SURVIVE BEING SPLIT TWELVE WAYS. Drafting the best
+ * affordable man every pick, at the $170M the balance sweep first landed on:
+ *
+ *                       offense, $140M over 6      full team, $170M over 12
+ *   mean percentile             71.5                        37.8
+ *   roster in bottom quartile    13%                         56%
+ *   men at the price floor      0.5 of 6                   6.2 of 12
+ *
+ * Only 2% of the pool is priced at the floor, so six floor men on a roster is not the pool
+ * being cheap, it is the budget forcing it. Every roster was one star and eleven bodies.
+ *
+ * A MODE-SPECIFIC PRICE CURVE WAS TRIED AND MEASURED AND IT FAILED. Compressing the range,
+ * lifting the floor from $3M to $6M and pulling the ceiling from $48M to $26M, was meant to
+ * make stars affordable without adding purchasing power. It made the mode worse: the middle
+ * of the field collapsed from a 58.8% win rate to 23.4%, because doubling the floor doubles
+ * what the eight ordinary men on a roster cost and only the very best play could absorb it.
+ * That is recorded here so it is not tried again.
+ *
+ * The reason no price curve can work is that affordability and strength are the same lever.
+ * A roster is only strong because of who is on it, so anything that lets you buy better men
+ * also makes the team better, and the cap sweep had already fitted the strength.
+ *
+ * SO THEY ARE SPLIT INTO TWO LEVERS. The cap is set where the ROSTER looks like a football
+ * team, and FULL_TALENT scales what that roster is worth on the field so the mode still sits
+ * beside the other two. At $280M a full team carries 2.3 floor men instead of 6.2 and its
+ * mean man is a 66th percentile player instead of a 38th.
+ *
+ * Both are measured. Re-run simulator.js --fullteam after touching either.
+ */
+const FULL_CAP_MUSD = 280;
+
+/* WHAT A FULL TEAM'S PRODUCTION IS WORTH, and the only reason it is not 1.
+ *
+ * The cap above is set by how a roster should LOOK. This is set by how it should PLAY, and
+ * the two had to be separated or one of them is always wrong: $280M of purchasing power
+ * buys a roster that wins over 90% of its games, and the cap that wins the right share buys
+ * a roster of floor men.
+ *
+ * It scales each side's raw production by the same factor before anything else touches it,
+ * so it changes what a full team is worth WITHOUT changing what any decision inside the mode
+ * is worth: a better quarterback is still better by the same proportion, the offence and the
+ * defence keep their relative weights, and every structure, scheme and chemistry multiplier
+ * still lands on top exactly as it did.
+ *
+ * Fitted, not chosen. See simulator.js --fullteam. */
+const FULL_TALENT = 0.76;
+
+/*
  * ─── FULL TEAM: BOTH SIDES OF THE BALL, TWELVE MEN, ONE CAP ────────────────────────
  *
  * NOT A THIRD ENGINE. The two functions above are exact mirrors of each other and each
@@ -3698,6 +3756,12 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
   const offStructure = rosterStructure(off).multiplier;
   const defStructure = defenseStructure(def).multiplier;
 
+  /* THE TALENT DIAL, applied once to each side's raw sum and to nothing else. Overridable
+     through constants so the harness can sweep it without editing this file. */
+  const talent = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  rawOff *= talent;
+  rawDef *= talent;
+
   const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
   const offMul = chemistryMultiplier * offStructure * defenseModifier;
   const yourScore = rawOff * offMul;
@@ -3717,9 +3781,14 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
      share of the suppression effort and sums to defenseTotal, which is not points and must
      never be printed as if it were. Same split the defense mode's box score already makes,
      carried here rather than re-derived by the screen. */
-  const defMul = chemistryMultiplier * defStructure;
+  /* TALENT RIDES ON THE LINES TOO, or the column stops adding up to the score it is under.
+     rawOff was scaled above; blend(i) was not, so each man's line has to take the same
+     factor for the offensive column to sum to yourScore and the defensive one to the
+     defensive total. */
+  const defMul = chemistryMultiplier * defStructure * talent;
+  const offLineMul = offMul * talent;
   const lines = roster.map((p, i) =>
-    blend(i) * (DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? defMul : offMul));
+    blend(i) * (DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? defMul : offLineMul));
 
   return { won, yourScore, oppScore, defenseModifier: suppression, offenseModifier: defenseModifier,
     defenseTotal, lines };
@@ -4193,9 +4262,8 @@ const publicAPI = {
        offense and slot 11 completes the defense. */
     ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
   ],
-  /* Measured, not chosen. simulator.js --fullteam puts optimal play at 81.3% against
-     offense mode's 80.7% here; $180M takes the ceiling to a 99% playoff rate. */
-  FULL_CAP_MUSD: 170,
+  /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
+  FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,

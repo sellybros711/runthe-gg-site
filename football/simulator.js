@@ -601,6 +601,12 @@ function draftReport(n) {
    missing mean does not crash, it quietly removes half the roster from the game. */
 const defenders = load('defender_seasons.json');
 for (const p of defenders) { p.ppr_ppg_mean = p.idp_ppg_mean; p.ppr_ppg_sd = p.idp_ppg_sd; }
+
+/* Full Team uses the same price list as every other mode. A mode-specific curve was tried
+   here and measured and it made the middle of the field worse, not better; the note over
+   FULL_CAP_MUSD in engine.js records what it did and why. */
+const fullPlayers = players;
+const fullDefenders = defenders;
 /* ABSENT, NOT ZERO. The first version of this guard asserted a mean above zero and fired
    on Allen Rossum's 2008, which is a real man who really scored nothing: three of the
    16,973 rows are honest zeroes, they cost the floor price, and the engine samples them
@@ -636,7 +642,7 @@ function buildFullToBudget(rng, budget, targetSpendFraction) {
     const i = FULL_FILL_ORDER[n];
     const left = slots.length - n;
     const isDef = DEF_IDX.indexOf(i) >= 0;
-    const pool = (isDef ? defenders : players);
+    const pool = (isDef ? fullDefenders : fullPlayers);
     const legal = pool.filter((p) => posOk(i, p)
       && !used.has(`${p.player_id}|${p.season}`));
     const share = Math.min(remaining / left * 1.5, remaining - (left - 1) * 1.0);
@@ -661,7 +667,7 @@ function buildFullRandom(rng, budget) {
     const i = FULL_FILL_ORDER[n];
     const isDef = DEF_IDX.indexOf(i) >= 0;
     const reserve = (slots.length - n - 1) * 1.0;
-    const legal = (isDef ? defenders : players).filter((p) => posOk(i, p)
+    const legal = (isDef ? fullDefenders : fullPlayers).filter((p) => posOk(i, p)
       && !used.has(`${p.player_id}|${p.season}`));
     const pool = legal.filter((p) => p.price_musd <= remaining - reserve);
     const c = pool.length ? pool[Math.floor(rng() * pool.length)]
@@ -708,7 +714,7 @@ const FULL_BUCKET = 0.5;
 
 function fullCurve(allowedPositions, nb) {
   const pool = (allowedPositions.some(p => E.DEFENSE_POSITIONS.indexOf(p) >= 0)
-    ? defenders : players).filter((p) => allowedPositions.includes(p.position));
+    ? fullDefenders : fullPlayers).filter((p) => allowedPositions.includes(p.position));
   const best = new Array(nb).fill(null);
   for (const p of pool) {
     const b = Math.ceil(p.price_musd / FULL_BUCKET);
@@ -760,7 +766,7 @@ function buildSide(indices, budget) {
        Same guard buildOptimal uses, over this slot's own pool. */
     if (used.has(`${cand.player_id}|${cand.season}`)) {
       const pos = E.FULL_SLOT_POS[indices[k]];
-      const from = pos.some(p => E.DEFENSE_POSITIONS.indexOf(p) >= 0) ? defenders : players;
+      const from = pos.some(p => E.DEFENSE_POSITIONS.indexOf(p) >= 0) ? fullDefenders : fullPlayers;
       const alt = from
         .filter((p) => pos.includes(p.position) && p.price_musd <= spend * FULL_BUCKET
           && !used.has(`${p.player_id}|${p.season}`))
@@ -904,7 +910,12 @@ function fullTeamReport(n) {
 
   /* Overridable so the band around the answer can be resolved finely without editing the
      file: PS_CAPS=155,165,175,185 node football/simulator.js --fullteam */
-  const caps = (process.env.PS_CAPS || '140,170,200,220,240,280')
+  const caps = (process.env.PS_CAPS || String(E.FULL_CAP_MUSD))
+    .split(',').map(Number).filter(v => v > 0);
+  /* THE SECOND DIAL. The cap decides what a roster LOOKS like and talent decides what it is
+     worth on the field, so they are fitted in that order: pick the cap for the roster, then
+     solve talent for the win rate. PS_TALENT=0.6,0.7,0.8 sweeps it. */
+  const talents = (process.env.PS_TALENT || String(E.FULL_TALENT))
     .split(',').map(Number).filter(v => v > 0);
   const rows = [
     { name: 'careless', build: (b) => (rng) => buildFullRandom(rng, b) },
@@ -914,13 +925,15 @@ function fullTeamReport(n) {
     { name: 'optimal',  build: (b) => () => buildFullOptimal(b) },
   ];
 
-  console.log('  cap    play        win%   med rec    PO%   title%   20-0     PF     PA   rating   spend');
+  console.log('  cap   tal    play        win%   med rec    PO%   title%   20-0     PF     PA   rating   spend');
   for (const cap of caps) {
+   for (const tal of talents) {
+    constants.FULL_TALENT = tal;
     for (const row of rows) {
       const r = simulateFull(row.build(cap), n, 424242);
       const rec = `${r.medianRegWins}-${17 - r.medianRegWins}`;
       console.log(
-        `  $${String(cap).padEnd(4)} ${row.name.padEnd(9)}`
+        `  $${String(cap).padEnd(4)} ${String(tal).padEnd(5)} ${row.name.padEnd(9)}`
         + fmtPct(r.perGameWin).padStart(7)
         + rec.padStart(9)
         + fmtPct(r.playoffRate).padStart(8)
@@ -935,6 +948,7 @@ function fullTeamReport(n) {
           : ''));
     }
     console.log('');
+   }
   }
   console.log('WHAT TO LOOK FOR. The cap to ship is the one whose three rows sit closest to the');
   console.log('three reference rows above: careless play out of the playoffs, careful play winning');
