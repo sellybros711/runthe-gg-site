@@ -215,6 +215,17 @@
   .promocard .pshort{font-family:var(--display);font-size:17px;letter-spacing:.04em;}
   .promocard .pblurb{font-size:12.5px;color:var(--text-dim);margin:6px 0 10px;line-height:1.5;}
   .charrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px;}
+  .titlebelt{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-top:8px;background:rgba(255,255,255,.02);}
+  .titlebelt.mine{border-color:rgba(224,179,65,.55);background:linear-gradient(180deg,rgba(224,179,65,.08),rgba(0,0,0,.15));}
+  .titlebelt .tb-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap;}
+  .titlebelt .tb-b{font-family:var(--display);font-size:13px;color:var(--cream);letter-spacing:.03em;}
+  .titlebelt .tb-r{font-size:11px;color:var(--text-dim);}
+  .titlebelt .tb-r b{color:var(--gold);font-family:var(--mono);}
+  .titlebelt .tb-c{margin-top:3px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .titlebelt .tb-c b{color:var(--cream);}
+  .titlebelt.mine .tb-c b{color:var(--gold);}
+  .titleq{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.08);display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+  .titleq .qman{font-size:11px;color:var(--text-dim);padding:2px 7px;background:rgba(255,255,255,.04);border-radius:9px;}
   .charcard{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:10px;padding:7px 5px;text-align:center;cursor:pointer;transition:.12s;}
   .charcard:hover{border-color:var(--brandred);transform:translateY(-2px);}
   .charcard .cav{height:56px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -402,6 +413,8 @@
   .bs-pos.me{color:var(--gold);font-weight:800;} .bs-pos.op{color:var(--text-faint);}
   .bksheet.ppv{border-color:var(--gold);background:linear-gradient(180deg,rgba(224,179,65,.16),rgba(0,0,0,.32));box-shadow:0 0 30px rgba(224,179,65,.15);}
   .bs-ppv{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .bs-build{font-family:var(--display);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;padding:5px 9px;background:rgba(224,179,65,.09);border-left:2px solid rgba(224,179,65,.6);border-radius:3px;display:flex;align-items:center;gap:6px;}
+  .bs-build b{color:var(--cream);font-weight:700;}
   .ppvcard{border:1.5px solid rgba(224,179,65,.55);border-radius:12px;padding:14px 16px;margin-bottom:14px;background:linear-gradient(180deg,rgba(224,179,65,.11),rgba(0,0,0,.30));}
   .ppvcard.nightcard{border:1px dashed var(--line);background:rgba(0,0,0,.22);}
   .ppvcard.nightcard .ppv-k{color:var(--text-faint);font-size:11px;}
@@ -472,6 +485,9 @@
   @keyframes ppvPulse{0%,100%{box-shadow:0 0 0 rgba(198,57,44,.6);} 50%{box-shadow:0 0 20px rgba(198,57,44,.7);}}
   .bs-rules{font-size:12px;color:var(--text);margin-top:8px;padding:8px 10px;background:rgba(255,255,255,.04);border-left:2px solid rgba(224,179,65,.55);border-radius:3px;}
   .bs-rules b{color:var(--cream);letter-spacing:.12em;font-size:10px;text-transform:uppercase;}
+  .bs-oppbelts{font-size:11.5px;color:var(--gold);margin-top:6px;letter-spacing:.02em;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .bs-nontitle{font-size:11px;color:var(--text-dim);margin-top:4px;padding:5px 8px;background:rgba(224,179,65,.07);border-left:2px solid rgba(224,179,65,.5);border-radius:3px;letter-spacing:.02em;}
+  .bs-nontitle b{color:var(--gold);}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -819,6 +835,11 @@
     background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:sheen 1.5s .35s ease-out 2;}
   @keyframes sheen{to{left:135%;}}
   @keyframes bannerIn{from{opacity:0;transform:translateY(-10px) scale(.96);}}
+  .pinchampbanner{margin-bottom:12px;padding:11px 13px;border-radius:10px;background:linear-gradient(180deg,rgba(224,179,65,.10),rgba(0,0,0,.28));border:1px solid rgba(224,179,65,.55);text-align:center;animation:bannerIn .5s ease-out;}
+  .pinchampbanner .pcb-k{font-size:10.5px;letter-spacing:.28em;color:var(--gold);font-weight:800;text-transform:uppercase;}
+  .pinchampbanner .pcb-t{font-family:var(--display);font-size:clamp(15px,3.6vw,20px);color:var(--cream);margin-top:2px;line-height:1.2;}
+  .pinchampbanner .pcb-s{font-size:11.5px;color:var(--text-dim);margin-top:4px;display:flex;align-items:center;justify-content:center;gap:5px;}
+  .pinchampbanner .pcb-s b{color:var(--gold);}
 
   .paychips{display:flex;flex-wrap:wrap;gap:8px;}
   .pchip{opacity:0;transform:translateY(8px) scale(.9);animation:chipIn .3s cubic-bezier(.2,1.5,.4,1) forwards;
@@ -1590,6 +1611,35 @@ function heldBelts(){
   if(c.tagTitle)    list.push({kind:'tag',      name:c.tagTitle,    defenses:c.tagDefenses||0});
   return list;
 }
+/* Belt name resolver keyed off any promo id, not just the player's own. Used
+   when the roster around you also carries titles: opponent dossiers, the world
+   title board, and any place we need to say what belt is on someone else. */
+function beltNameByPromo(pid, kind){
+  const p=promoById(pid); if(!p) return '';
+  const belts=beltsForPromo(pid);
+  if(kind==='secondary') return belts.secondary || `${p.short} Secondary Title`;
+  if(kind==='tag')       return belts.tag       || `${p.short} Tag Titles`;
+  return belts.world || `${p.short} World Championship`;
+}
+/* Titles held by a given wrestler across the world, right now.
+   Returns [{promoId, kind, name, since, defenses, ...}].
+   The world's champion tracking lives on G.world.champions[promoId][kind]. */
+function titlesHeldBy(charId){
+  const w=G.world; if(!w||!w.champions||!charId) return [];
+  const out=[];
+  Object.keys(w.champions).forEach(pid=>{
+    const ch=w.champions[pid]||{};
+    ['world','secondary'].forEach(kind=>{
+      const rec=ch[kind];
+      if(rec && rec.holder===charId){
+        out.push({promoId:pid, kind, name:beltNameByPromo(pid, kind),
+                  since:rec.since, defenses:rec.defenses||0});
+      }
+    });
+  });
+  return out;
+}
+function isChampion(charId){ return titlesHeldBy(charId).length>0; }
 // weekly downside a promotion will guarantee someone of your standing
 function dealValue(p,pop,rep,standing){
   const ti=promoTierIdx(p);
@@ -4550,15 +4600,25 @@ function renderWeek(){
     const o=b.o, w=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
     const dLab = w>=0.66?'Favoured':w>=0.54?'Slight edge':w>=0.46?'Even':w>=0.34?'Underdog':'Way above you';
     const dCol = w>=0.54?'var(--green)':w>=0.46?'var(--gold)':'#f0907f';
+    // Build cadence: the 3 weeks BEFORE a PPV are the go-home build. Every
+    // TV show inside that window points at the PPV, so the run to the pay-per-view
+    // feels intentional instead of episodic. SD SYM signposts it as "PPV in 2 weeks"
+    // above the card; we do the same.
+    const _npv = (function(){ try{ return nextPpv(); }catch(_){ return null; } })();
+    const buildIn = _npv && !o.ppv && _npv.weeksUntil>=1 && _npv.weeksUntil<=3 ? _npv : null;
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
       ${o.ppv?`<div class="bs-ppv">${pico('starBig',14)} Tonight, at <b>${o.ppv}</b></div>`:''}
+      ${buildIn?`<div class="bs-build">${pico('starBig',12)} Road to <b>${buildIn.name}</b> · ${buildIn.weeksUntil} week${buildIn.weeksUntil===1?'':'s'} out · this is the build</div>`:''}
       ${c.retireOnWeek?`<div class="bs-ppv" style="background:linear-gradient(90deg,#3a2a10,#221a10);color:var(--gold)">${pico('trophy',14)} FAREWELL TOUR · last week Y${c.retireOnWeek.y}W${c.retireOnWeek.w}</div>`:''}
       <div class="bs-k">You are booked</div>
       <div class="bs-t">${o.stipLabel}</div>
       <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''} <span class="hint" style="font-size:10px;">(tap for dossier)</span></div>
+      ${(o.oppTitles&&o.oppTitles.length)?`<div class="bs-oppbelts">${pico('trophy',12)} They hold: ${o.oppTitles.map(t=>`<b>${t.name}</b>`).join(' · ')}</div>`:''}
       <div class="bs-pos ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${o.card}${
         o.stakes==='title'?' · for the title':o.stakes==='defense'?' · title defence':
-        o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':''}</div>
+        o.stakes==='rivalry'||o.stakes==='rival'?' · the feud':
+        o.nonTitleVsChamp?' · NON-TITLE':''}</div>
+      ${o.nonTitleVsChamp?`<div class="bs-nontitle">${pico('star',12)} Non-title tonight, but a clean pin over a champion earns the shot.</div>`:''}
       <div class="bs-rules"><b>Rules.</b> ${stipRules(o).desc}</div>
       ${b.line?`<div class="bs-office">"${b.line}"<div class="bs-office-src">from ${b.bookerName||'the office'}</div></div>`:''}
       <div class="bk-odds" style="margin-top:10px;">
@@ -4788,11 +4848,17 @@ function makeOffers(){
   // If last week's Main Event finished with a called-out opponent, the office
   // gives you that match. It slots on the top spot of the card.
   const callout = G.car._pendingNext && G.car._pendingNext.kind==='callout' ? charById(G.car._pendingNext.charId) : null;
+  // If a title shot in hand names a specific champion, the PPV top spot goes
+  // to that match. This is what redeems "you pinned the champ": the next PPV
+  // books the payoff instead of a random main event.
+  const shotTarget = (ppv && G.car.titleShot && G.car.titleShot.targetId)
+    ? charById(G.car.titleShot.targetId) : null;
   for(let i=0;i<3;i++){
     const taken=offs.map(x=>x.oppId);
     let cand=pool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
     let opp=cand.length?cand[Math.floor(rnd()*cand.length)]:CHARS[0];
     if(_story && i===0){ const rc=charById(_story.charId); if(rc) opp=rc; }   // the feud headlines
+    else if(shotTarget && i===2){ opp=shotTarget; }   // your title shot lands on top
     else if(callout && i===2){ opp=callout; }   // your called-out opponent tops the card
     const stips=[['Singles Match','singles',1],['Tag Team Match','tag',0.9],['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1]];
     let st=stips[Math.floor(rnd()*stips.length)];
@@ -4854,10 +4920,18 @@ function makeOffers(){
     const beltForOffer = (stakes==='title'||stakes==='defense')?belt
                         :(stakes==='secondary'||stakes==='secondary_defense')?secBelt
                         :(stakes==='tag_title'||stakes==='tag_defense')?tagBelt:null;
+    // If the opponent carries a belt in the world but the office booked this
+    // match at non-title stakes, note it: the pre-match card calls it out as
+    // NON-TITLE (SD SYM style) and pinning them clean earns a title shot.
+    const oppTitles = titlesHeldBy(opp.id);
+    const isNonTitleVsChamp = oppTitles.length>0
+      && stakes!=='title' && stakes!=='defense'
+      && stakes!=='secondary' && stakes!=='secondary_defense';
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
       tag: st[1]==='tag' && !!myTeam(),
       ppv: ppvName,
       belt: beltForOffer,
+      oppTitles, nonTitleVsChamp:isNonTitleVsChamp,
       blurb: ppv ? (stakes==='title'?`At ${ppvName}: beat ${opp.name} and the ${belt} is yours.`
                  : stakes==='defense'?`At ${ppvName}: defend the ${belt} against ${opp.name}.`
                  : stakes==='secondary'?`At ${ppvName}: beat ${opp.name} for the ${secBelt}.`
@@ -5973,7 +6047,17 @@ async function runFight(){
     // If you have a story with a wrestler who is NOT tonight's opponent, they
     // may crash the match. In a hardcore/no-DQ world it becomes a no-contest;
     // otherwise the ref calls for the bell and someone eats a disqualification.
-    if(!MS.ended && !MS.runIn && MS.phase>=2 && story() && story().charId!==o.oppId && rnd()<0.08){
+    // Run-in odds bend toward the moments a booker would actually use them:
+    // during the build to a PPV the story wants a physical beat, and if the
+    // feud is heating (stage 2+) the rival wants to hunt. Baseline 8% jumps
+    // to about 18% in a build week with a hot story. Never crashes a PPV
+    // blow-off where the rival IS the opponent (that path is already skipped
+    // by the charId===o.oppId guard).
+    const _npvForRunin = (function(){ try{ return nextPpv(); }catch(_){ return null; } })();
+    const buildWeek = _npvForRunin && !o.ppv && _npvForRunin.weeksUntil>=1 && _npvForRunin.weeksUntil<=3;
+    const storyHot = story() && (story().stage||0) >= 2;
+    const runInP = 0.08 + (buildWeek?0.06:0) + (storyHot?0.04:0);
+    if(!MS.ended && !MS.runIn && MS.phase>=2 && story() && story().charId!==o.oppId && rnd()<runInP){
       const rid=story().charId, rc=charById(rid);
       if(rc){
         MS.runIn=true;
@@ -6146,8 +6230,14 @@ async function runFight(){
     // ---- the screwjob: once per career, a title defense with low standing ----
     // can end early on a fake submission the office called. The player picks
     // how they react in the ring afterwards, and the fallout is on the news.
+    // Screwjobs are a Montreal moment: an unhappy champion the office wants off
+    // the belt. It fires in the stretch of a title defence when standing is low,
+    // and PPV nights get a bigger swing because that is when a booker who wanted
+    // you off the title would actually pull the trigger. Once per career.
+    const _screwStanding = o.ppv ? 45 : 38;
+    const _screwRate     = o.ppv ? 0.13 : 0.06;
     if(!MS.ended && !MS._screwjob && !G.car._screwjobDone && o.stakes==='defense'
-       && (G.car.standing||50)<38 && ph.id==='stretch' && MS.phaseBeat>=2 && rnd()<0.06){
+       && (G.car.standing||50)<_screwStanding && ph.id==='stretch' && MS.phaseBeat>=2 && rnd()<_screwRate){
       MS._screwjob = true; G.car._screwjobDone = true;
       shake(); sfx('bell'); sfx('boo');
       await callout('THE BELL?');
@@ -6883,6 +6973,28 @@ function officeOptions(){
             p:clamp(base-0.02,0.05,0.92)});
   if(p>=3) out.push({id:'finish', l:'Ask to go over', d:'Ask them to put you over clean. They remember being asked.',
             p:clamp(base-0.22,0.03,0.80)});
+  // Demand a title shot. Only if you're a mid-carder or higher, the crowd is
+  // hot, and you don't already have one. The office remembers being pressed.
+  const me = myPromo();
+  const champId = me && G.world && G.world.champions && G.world.champions[me.id]
+                  && G.world.champions[me.id].world && G.world.champions[me.id].world.holder;
+  const champ = champId ? charById(champId) : null;
+  if(champ && !c.titleShot && c.standing>=55 && gimHeat()>=45 && champId!==c.rivalId){
+    out.push({id:'shot', l:`Demand a shot at ${champ.name}`,
+              d:'Say it in the room. Push for a title match at the next PPV.',
+              p:clamp(base-0.18,0.04,0.75), target:champId});
+  }
+  // Start something with somebody. Pick a rival off the roster. Below-average
+  // pull cannot; feuds die when the office does not have a story to hang them on.
+  if(p>=1 && !story() && !c.rivalId){
+    const roster = houseRoster(me.id).filter(x=>x.id!==b.o.oppId).sort((a,b)=>(b.over||0)-(a.over||0));
+    const target = roster[0];
+    if(target){
+      out.push({id:'callout', l:`Start something with ${target.name}`,
+                d:'Cut a backstage promo on them tonight. If it lands, you have a feud.',
+                p:clamp(base-0.04,0.05,0.85), target:target.id});
+    }
+  }
   return out;
 }
 function askOffice(){
@@ -6910,10 +7022,22 @@ function doAsk(id){
     if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1],['Last Man Standing','lms',1.35]][Math.floor(rnd()*5)];
       b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2]; }
     if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
-    pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got')}.`});
+    if(id==='shot'){
+      const me=myPromo();
+      const _npv=(function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const bn=beltNameByPromo(me.id,'world');
+      c.titleShot={promoId:me.id, from:'you demanded it', y:c.year, w:c.week, kind:'world',
+                   belt:bn, targetId:o.target, dueBy:{y:_npv.year, w:_npv.week}};
+      c.standing=clamp(c.standing-4);
+    }
+    if(id==='callout'){
+      startStory(o.target, 'you cut a backstage promo they will not forget.');
+      c.standing=clamp(c.standing-2);
+    }
+    pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got').replace('Demand','You got').replace('Start something with','A feud with')}.`});
     toast('They went for it');
   } else {
-    c.standing=clamp(c.standing-(id==='finish'?6:3));
+    c.standing=clamp(c.standing-(id==='finish'||id==='shot'?6:3));
     pushInboxItem({ico:pico('clipboard',18),sev:'bad',txt:`<b>Turned down.</b> You asked, they said no, and they remember being asked.`});
     toast('They said no');
   }
@@ -7005,6 +7129,38 @@ function applyMatch(o,res){
   w.xp+=Math.round(xp*(1+(styleOf().tpBonus||0)+facBonus('tp',0))); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
   const gain=9+res.quality*0.16;
   [c.plan.a,c.plan.b].forEach((cat,i)=>{ w.mastery[cat]=(w.mastery[cat]||0)+Math.round(gain*(i===0?1:0.6)*mastMult(cat)*facBonus('mastery')); });
+  // Pinning the champion clean in a non-title match is the biggest signal
+  // wrestling produces: it is how you earn a title shot. If they held a belt
+  // that we could plausibly chase (world or secondary in our own promo), we
+  // book that shot for the next PPV and light up the payoff. SD SYM's
+  // "you pinned the champ" beat, verbatim.
+  const cleanFinish = res.win && !res.dq && !res.countOut && !res.noContest
+    && (res.finish==='pin'||res.finish==='sub'||!res.finish);
+  if(cleanFinish && o.nonTitleVsChamp && (o.oppTitles||[]).length){
+    const mine = (o.oppTitles||[]).filter(t=>t.promoId===(myPromo()||{}).id);
+    const target = mine.find(t=>t.kind==='world') || mine[0] || o.oppTitles[0];
+    if(target){
+      res.pinnedChamp = {oppName:o.oppName, oppId:o.oppId, belt:target.name, kind:target.kind};
+      if(!c.titleShot){
+        const _npv = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+        c.titleShot = {promoId:target.promoId, from:`pinned ${o.oppName} clean`, y:c.year, w:c.week,
+                       kind:target.kind, belt:target.name, targetId:o.oppId,
+                       dueBy:{y:_npv.year, w:_npv.week}};
+        pushInboxItem({ico:pico('trophy',18),sev:'good',
+          txt:`<b>You are #1 contender.</b> Pinned ${o.oppName} clean. Your shot at the <b>${target.name}</b> is on the books by Y${_npv.year}W${_npv.week}.`});
+        if(typeof newsPush==='function') newsPush({ico:pico('trophy',14),cat:'title',
+          text:`<b>${G.w.name} pins the champion.</b> ${o.oppName} eats a clean loss non-title. The office moves ${G.w.name} to #1 contender for the ${target.name}.`});
+      } else {
+        pushInboxItem({ico:pico('trophy',18),sev:'good',
+          txt:`<b>You pinned ${o.oppName} clean</b> in a non-title. The title shot you already have just got that much heavier.`});
+      }
+      c.standing = clamp((c.standing||50)+3);
+      if(w.gimmick) w.gimmick.heat = clamp(w.gimmick.heat+5, 0, 100);
+      queueMoment(pico('trophy',36),
+        `You pinned the ${target.name.replace(/ Championship$/,'').replace(/ Title$/,'')} champion.`,
+        {kick:'#1 Contender', sub:`${o.oppName} took a clean loss, and the office noticed.`});
+    }
+  }
   // title
   let titleMsg=null;
   const tt=workTier(), belt=beltName(tt), secBelt=beltName(tt,'secondary');
@@ -7331,7 +7487,12 @@ function renderMatch(o,res){
   const starLine=(s.toFixed(2).replace(/0+$/,'').replace(/\.$/,''))+'★';
   const rowsOf=(items,cls,ico)=>items.length
     ? `<ul class="mlist ${cls}">${items.map(t=>`<li><span class="i">${ico}</span>${t}</li>`).join('')}</ul>` : '';
-  $('mBody').innerHTML=ppvCardHTML(o,res)+nightCardHTML(o,res)+banner+`
+  const pinChampBanner = (res.pinnedChamp
+    ? `<div class="pinchampbanner"><div class="pcb-k">You pinned the champion.</div>
+         <div class="pcb-t">${res.pinnedChamp.oppName} took a clean loss non-title.</div>
+         <div class="pcb-s">${pico('trophy',12)} #1 contender for the <b>${res.pinnedChamp.belt}</b>.</div></div>`
+    : '');
+  $('mBody').innerHTML=ppvCardHTML(o,res)+nightCardHTML(o,res)+banner+pinChampBanner+`
     <div class="starbox${classic?' classic':''}">
       <div class="sb-lab">Match Rating</div>
       <div class="starrow">${starRowHTML(s)}</div>
@@ -10671,9 +10832,54 @@ function renderWorld(){
   const order=['indie','regional','national','global'];
   const promos=order.flatMap(t=>PROMOS.filter(p=>p.tier===t));
   const here=myPromo().id;
-  const chips=promos.map(p=>({t:p.short+(p.id===here?' •':''), c:p.color})).concat([{t:'Factions'}]);
+  const chips=promos.map(p=>({t:p.short+(p.id===here?' •':''), c:p.color})).concat([{t:'Titles', c:'#e0b341'},{t:'Factions'}]);
   let h=pagerBar('world',chips,renderWorld);
   const i=pagerIdx('world',chips.length);
+  // "Titles" page: every belt in the world, current champion, reign length,
+  // and the contender queue. The single-glance board SD SYM has on its
+  // Championships menu, so a player can see what to chase.
+  if(i===promos.length){
+    const now = G.car.year*(WEEKS_PER_YEAR||44) + G.car.week;
+    const rows = promos.map(p=>{
+      const ch=(G.world&&G.world.champions&&G.world.champions[p.id])||{};
+      const roster = houseRoster(p.id);
+      const beltsMap = beltsForPromo(p.id);
+      const beltBrandMap = (G.world&&G.world.beltBrand)||{};
+      const beltRow = (kind)=>{
+        const rec = ch[kind];
+        const bn = kind==='world' ? (beltsMap.world||`${p.short} World Championship`)
+                 : kind==='secondary' ? (beltsMap.secondary||`${p.short} Contenders Title`)
+                 : (beltsMap.tag||null);
+        if(!bn) return '';
+        const holder = rec && rec.holder ? (charById(rec.holder)||{}) : null;
+        const holderName = holder ? holder.name : 'vacant';
+        const isYou = (kind==='world' && G.car.title===bn)
+                    || (kind==='secondary' && G.car.secondary===bn)
+                    || (kind==='tag' && G.car.tagTitle===bn);
+        const wks = rec && rec.since ? Math.max(0, now - (rec.since.y*(WEEKS_PER_YEAR||44)+rec.since.w)) : 0;
+        const reignStr = rec && rec.holder ? `<b>${wks}</b> week${wks===1?'':'s'}${rec.defenses?` · ${rec.defenses} def`:''}` : '';
+        const bb = beltBrandMap[p.id+':'+kind];
+        const bbTag = bb ? ` <span class="badge" style="background:${bb==='red'?'#3a1010':'#101a3a'};color:${bb==='red'?'#f0907f':'#8ab5f0'};padding:1px 5px;font-size:9px;">${bb.toUpperCase()}</span>` : '';
+        // Contender queue: top 3 non-champion workers in the promo by overness
+        const contenders = roster.filter(x=>!rec || x.id!==rec.holder)
+          .sort((a,b)=>(b.over||0)-(a.over||0)).slice(0,3);
+        const cQ = contenders.length ? `<div class="titleq"><span class="hint" style="letter-spacing:.14em;font-size:9px;">CONTENDERS</span> ${contenders.map(x=>`<span class="qman">${x.name}</span>`).join('')}</div>` : '';
+        return `<div class="titlebelt ${isYou?'mine':''}">
+          <div class="tb-h"><span class="tb-b">${bn}${bbTag}</span>${reignStr?`<span class="tb-r">${reignStr}</span>`:''}</div>
+          <div class="tb-c">${holder ? `${pico('crown',12)} <b>${isYou?'You':holderName}</b>` : `<span class="hint">vacant</span>`}${rec&&rec.holder?` <a href="#" style="font-size:10.5px;margin-left:6px;" onclick="showLineage('${p.id}','${kind}');return false;">history</a>`:''}</div>
+          ${cQ}
+        </div>`;
+      };
+      return `<div class="promocard" style="border-left:4px solid ${p.color}">
+        <div class="ph"><div><span class="pshort" style="color:${p.color}">${p.short}</span> <b>${p.name}</b></div></div>
+        ${beltRow('world')}
+        ${beltRow('secondary')}
+        ${beltsMap.tag?beltRow('tag'):''}
+      </div>`;
+    }).join('');
+    h+=`<p class="hint" style="margin:6px 4px 10px;">Every belt in the world. Reign length in weeks. The contender queue is the three names the office would book next if a champion fell tomorrow.</p>${rows}`;
+    $('worldBody').innerHTML=h; return;
+  }
   if(i<promos.length){
     const p=promos[i], roster=CHARS.filter(c=>c.promo===p.id && !(G.world&&G.world.retired&&G.world.retired[c.id]));
     const TN={indie:'Indie Circuit',regional:'Regional',national:'National TV',global:'Global'};
