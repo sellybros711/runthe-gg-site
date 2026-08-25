@@ -178,12 +178,23 @@ function assignedFloors(run) {
   for (const id of run.usedTeamSeasons) spent[id] = (spent[id] || 0) + 1;
   const reachable = (c) => (spent[c.ts] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON;
   const slots = slotsOf(run);
-  const open = openSlots(run).map((i) => slots[i])
-    .sort((a, b) => E.SLOT_ELIGIBILITY[a].length - E.SLOT_ELIGIBILITY[b].length);
+  /* ELIGIBILITY BY SLOT INDEX, NOT BY SLOT NAME, and only Full Team needs the difference.
+     E.SLOT_ELIGIBILITY.FLEX is the shared list of all six skill and defensive positions,
+     which is right in the two single-pool modes because the pool is what narrows it. Here
+     both pools are on the board, and reading it would let the OFFENSIVE flex be floored by
+     the cheapest linebacker in the game: a promise the wheel can never keep, which is the
+     opposite of what this function is for. FULL_SLOT_POS is the per-side answer.
+
+     It also means the sort has to carry the index through rather than mapping to names
+     first, because the two FLEX slots share a name and no longer share an answer. */
+  const eligAt = (i) => (run.full && E.FULL_SLOT_POS) ? E.FULL_SLOT_POS[i]
+    : E.SLOT_ELIGIBILITY[slots[i]];
+  const open = openSlots(run)
+    .sort((a, b) => eligAt(a).length - eligAt(b).length);
   const out = [];
-  for (const slot of open) {
+  for (const slotIdx of open) {
     let best = null;
-    for (const pos of E.SLOT_ELIGIBILITY[slot]) {
+    for (const pos of eligAt(slotIdx)) {
       for (const c of (lists[pos] || [])) {
         if (taken.has(c.id) || !reachable(c)) continue;
         if (best === null || c.price < best.price) best = c;
@@ -543,7 +554,19 @@ function slotForPlayer(run, player) {
   const positions = E.positionsOf(player);
   const dedicated = open.find((i) => positions.includes(slots[i]));
   if (dedicated !== undefined) return dedicated;
-  const flex = open.find((i) => E.fillsSlot(slots[i], player));
+  /* THE FLEX FALLBACK IS SIDE-AWARE, and only Full Team has a side for it to get wrong.
+     E.fillsSlot resolves FLEX from the shared table, where it means all six skill and
+     defensive positions. In the two single-pool modes that is safe, because the pool is
+     what narrows it. Here both pools are live, and it let a defensive lineman fall into the
+     OFFENSIVE flex: a twelve man roster with seven defenders on it, six a side broken, and
+     every fillability question downstream answered against a slot the wheel would never
+     have offered him for.
+     This is the one function sign(), canFinishAfter(), blockFor() and someAffordable() all
+     reach through, so fixing it here fixes the arithmetic in all four. */
+  const fitsFlex = (i) => (run.full && E.FULL_SLOT_POS && E.FULL_SLOT_POS[i])
+    ? E.FULL_SLOT_POS[i].some((pos) => positions.includes(pos))
+    : E.fillsSlot(slots[i], player);
+  const flex = open.find(fitsFlex);
   return flex === undefined ? null : flex;
 }
 
@@ -564,11 +587,31 @@ function slotForPlayer(run, player) {
  */
 function slotChoices(run, player) {
   const slots = slotsOf(run);
+  /* SIDE-AWARE, AND DEDUPED ON THE ELIGIBILITY RATHER THAN THE NAME. Both halves of that
+     matter and only in Full Team.
+
+     fillsSlot resolves FLEX from the shared table, so it would offer a defensive lineman the
+     offensive flex. The dedupe is the sharper one: FULL_SLOTS holds TWO slots called FLEX,
+     one per side, and collapsing by name meant only the first of them was ever offered. A
+     defender whose only remaining home was the defensive flex got handed the offensive one
+     instead, sign() rejected the mismatch, and the draft died with "no empty spot for a LB"
+     while a legal spot for him sat open.
+
+     Keying on the eligibility list keeps the two apart: 'RB,WR,TE' and 'DL,LB,DB' are
+     different keys, while the two DL slots and the two WR slots still collapse to one
+     choice each, which is the behaviour every other mode has. */
+  const full = run.full && E.FULL_SLOT_POS;
+  const positions = full ? E.positionsOf(player) : null;
   const seen = new Set();
   const out = [];
   for (const i of openSlots(run)) {
-    if (!E.fillsSlot(slots[i], player) || seen.has(slots[i])) continue;
-    seen.add(slots[i]);
+    const elig = full ? E.FULL_SLOT_POS[i] : null;
+    const fits = full ? elig.some((x) => positions.includes(x))
+      : E.fillsSlot(slots[i], player);
+    if (!fits) continue;
+    const key = full ? elig.join(',') : slots[i];
+    if (seen.has(key)) continue;
+    seen.add(key);
     out.push(i);
   }
   return out;

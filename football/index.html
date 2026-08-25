@@ -5652,7 +5652,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=61"></script>
-<script src="run.js?v=71"></script>
+<script src="run.js?v=72"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -6902,6 +6902,22 @@ function beginDraft(opts){
   }
   replaceCtx=null;
   newRun(opts);
+  /* BOTH POOLS' CHEAP LISTS, BEFORE THE FIRST SPIN CAN GUESS.
+     run.floorLists is what keeps a draft fillable: canFinishAfter simulates a signing and
+     refuses it if what is left cannot cover the open spots at the cheapest men who can take
+     them. spin() fills that field from the data set of the FIRST spin, and a full run's
+     first spin is offensive, so the lists held no DL, LB or DB at all. assignedFloors then
+     hit the first defensive slot, found no list, and returned null, and every caller fell
+     back to the flat $3M a slot. That is the real floor for an offensive spot and not for a
+     defensive one, so the game happily signed a roster down to a last pick it could not
+     fill, and spin() threw "nothing left you can afford" on the twelfth.
+     Set here rather than in run.js because this is the only place that holds both pools.
+     The position keys do not overlap, so a shallow merge is the whole join. */
+  if(run&&run.full&&DDATA){
+    const off=(DATA&&DATA.cheapBy&&DATA.cheapBy['*'])||{};
+    const def=(DDATA.cheapBy&&DDATA.cheapBy['*'])||{};
+    run.floorLists=Object.assign({},off,def);
+  }
   dressTeam();
   const m=runMode();
   ga('game_started',{mode:m,club:(opts&&opts.franchise)||null,era:(opts&&opts.era)||null});
