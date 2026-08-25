@@ -1414,8 +1414,6 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="roster.js"></script>
-<script src="corrections.js"></script>
 <script src="moves.js"></script>
 <script src="legends.js"></script>
 <script src="cosmetics.js"></script>
@@ -2127,9 +2125,6 @@ $('momentBack').addEventListener('click',e=>{ if(e.target===$('momentBack')) nex
 $('cardOv').addEventListener('click',e=>{ if(e.target===$('cardOv')) closeCard(); });
 
 /* ---------- data helpers ---------- */
-function corrected(w){ const c=(window.RTR_CORRECTIONS||{})[w.id]; return c?Object.assign({},w,c):w; }
-// (ROSTER used to be defined here from window.RTR_ROSTER; it had no callers,
-//  so it was removed. Every roster lookup goes through CHARS below.)
 // The active roster of a promotion, excluding anybody the world has retired.
 // Every booking site (offers, promo targets, PPV cards, crew page, backstage,
 // power rankings) should route through this helper. A retired legend must not
