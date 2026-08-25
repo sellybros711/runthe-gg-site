@@ -34,6 +34,9 @@ const slotsOf = (run) => (run && run.slots)
    ladder, neither of which depends on who you support. */
 const PHASES = {
   DRAFT: 'draft',
+  /* FULL TEAM ONLY: the hire and the game plan, between the last signing and the schedule.
+     A phase rather than a screen flag, so it survives a reload the way the draft does. */
+  COACH: 'coach',
   SEASON: 'season',      // the 17 regular-season games
   SEEDING: 'seeding',    // record is final, showing where it left you
   PLAYOFFS: 'playoffs',  // one loss ends it
@@ -95,7 +98,12 @@ function capOf(run) {
 function remaining(run) {
   const spent = run.roster.reduce((s, p) => s + p.price_musd, 0);
   const fees = E.respinFees(run.respinsUsed);
-  return money(capOf(run) - spent - fees);
+  /* THE COACH COMES OUT OF THE SAME CAP, which is the entire reason he is interesting. A
+     coach on a separate budget is a free bonus; a coach who costs a cornerback is a
+     decision. He is added here rather than at the callers so every screen, every floor
+     check and every affordability question sees the same number. */
+  const coach = (run.coach && run.coach.price_musd) || 0;
+  return money(capOf(run) - spent - fees - coach);
 }
 
 /** Slots still to fill, including the current one. */
@@ -135,12 +143,22 @@ const slotsLeft = (run) => slotsOf(run).length - run.roster.length;
  * the price floor is $3M and every position has somebody at it, so the pool
  * calculation lands on the same $3M a slot the constant always meant.
  */
+/* THE COACH IS AN OPEN SPOT TOO, and forgetting that made him unreachable. A player who
+   simply takes the best man he can afford twelve times finishes with $0.8M, which hires
+   nobody, so the thirteenth asset existed only for somebody who already knew to save for it.
+   Reserving the cheapest coach guarantees the hire can always happen.
+   The RESERVE IS ONLY THE FLOOR, deliberately. It buys the worst coach in the game. Getting
+   a good one still means finishing the draft under budget, which is the decision: Belichick
+   costs $27.3M, and that is a cornerback. */
+const coachFloor = (run) => (run && run.full && !run.coach) ? COACH_FLOOR_MUSD : 0;
+const COACH_FLOOR_MUSD = 3;
+
 function reserveFloor(run) {
   const flat = Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
   const per = assignedFloors(run);
-  if (!per || per.length !== slotsLeft(run)) return flat;
+  if (!per || per.length !== slotsLeft(run)) return money(flat + coachFloor(run));
   const sum = per.reduce((a, c) => a + c, 0);
-  return money(Math.max(flat, sum - Math.min(...per)));
+  return money(Math.max(flat, sum - Math.min(...per)) + coachFloor(run));
 }
 
 /**
@@ -152,8 +170,8 @@ function reserveFloor(run) {
 function fullFloor(run) {
   const per = assignedFloors(run);
   const flat = slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
-  if (!per || per.length !== slotsLeft(run)) return flat;
-  return money(Math.max(flat, per.reduce((a, c) => a + c, 0)));
+  if (!per || per.length !== slotsLeft(run)) return money(flat + coachFloor(run));
+  return money(Math.max(flat, per.reduce((a, c) => a + c, 0)) + coachFloor(run));
 }
 
 /**
@@ -454,6 +472,11 @@ function createRun(opts) {
     tradeMachine,
     defense,
     full,
+    /* THE THIRTEENTH ASSET AND THE PLAN HE BRINGS. Null until the coach step, which runs
+       after the twelfth signing: a plan chosen before there is a roster to point it at is a
+       guess, and a coach hired before the money is spent is a different game. */
+    coach: null,
+    plan: full ? E.normalizePlan(null) : null,
     // The Trade Machine runs a second flex in place of the second receiver; the defense
     // draft runs its own six; full team runs twelve with the sides interleaved.
     slots: (full ? E.FULL_SLOTS
@@ -831,12 +854,66 @@ function sign(run, player, want) {
   run.draws.push({ slot: slotsOf(run)[slot], team_season_id: run.currentDraw.team_season_id });
   run.currentDraw = null;
 
-  if (run.roster.length === slotsOf(run).length) run.phase = PHASES.SEASON;
+  /* A FULL RUN STOPS AT THE COACH, not at the season. Every other mode goes straight from
+     its last signing to the schedule; this one has a hire and a game plan in between, and
+     they are a phase rather than a screen so a reload mid-decision comes back to the same
+     place a reload mid-draft does. */
+  if (run.roster.length === slotsOf(run).length) {
+    run.phase = run.full ? PHASES.COACH : PHASES.SEASON;
+  }
+  return run;
+}
+
+/*
+ * WHO IS STILL AFFORDABLE, cheapest-worst to dearest-best. Called with the whole table so
+ * the caller decides how many to show; the money check is here because remaining() already
+ * knows about a coach and would otherwise be asked the question twice, differently.
+ */
+function coachMarket(run, table) {
+  if (!run || !run.full) return [];
+  const left = remaining(run);
+  return (table || []).filter((c) => c.price_musd <= left + 1e-9);
+}
+
+/** Hire, or hire nobody. Either is legal and going without is a real, cheap choice. */
+function hireCoach(run, coach) {
+  if (!run.full) throw new Error('not a full team run');
+  if (run.phase !== PHASES.COACH) throw new Error('not hiring');
+  if (coach) {
+    /* Checked against remaining() with any PREVIOUS hire already refunded, so changing your
+       mind between two coaches is not blocked by the one you have not confirmed. */
+    const had = (run.coach && run.coach.price_musd) || 0;
+    if (coach.price_musd > money(remaining(run) + had)) throw new Error('cannot afford him');
+  }
+  run.coach = coach || null;
+  /* HIS PLAN, UNLESS THE PLAYER HAS ALREADY TOUCHED ONE. A default that overwrites a
+     deliberate choice is worse than no default: it would silently undo the screen the
+     player just used. */
+  if (!run.planTouched) run.plan = E.planFromCoach(coach);
+  return run;
+}
+
+/** Set one axis of the game plan. Marks the plan as chosen, so a later hire respects it. */
+function setPlan(run, plan) {
+  if (!run.full) throw new Error('not a full team run');
+  run.plan = E.normalizePlan(plan);
+  run.planTouched = true;
+  return run;
+}
+
+/** Leave the coach step and play the season. */
+function finishHiring(run) {
+  if (run.phase !== PHASES.COACH) throw new Error('not hiring');
+  run.phase = PHASES.SEASON;
   return run;
 }
 
 /** Build the schedule. Deliberately after the draft, per §7. */
 function startSeason(run, data, ctx) {
+  /* COACH is a legal predecessor for a full run: the screen calls finishHiring first, but a
+     saved run reloaded on the season screen has to be able to start without going back
+     through a decision it already made. */
+  if (run.phase === PHASES.COACH && run.full) run.phase = PHASES.SEASON;
   if (run.phase !== PHASES.SEASON) throw new Error('draft not finished');
   const rng = rngFor(run);
   const chem = E.resolveChemistry(run.roster, ctx, chemOpts(run));
@@ -2973,7 +3050,8 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
   for (let i = 0; i < trials; i++) {
     const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
     const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng,
-      E.CONSTANTS, { gm: !!run.tradeMachine, defense: !!run.defense, full: !!run.full });
+      E.CONSTANTS, { gm: !!run.tradeMachine, defense: !!run.defense, full: !!run.full,
+        coach: run.coach, plan: run.plan });
     wins.push(out.regularWins);
     if (out.seed.made) madePlayoffs++;
     if (out.seed.bye) bye++;
@@ -3016,7 +3094,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 37;
+const RUN_API_VERSION = 38;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
@@ -3032,6 +3110,8 @@ const api = {
   TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD,
   cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
+  /* Full Team's coach step. */
+  coachMarket, hireCoach, setPlan, finishHiring,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

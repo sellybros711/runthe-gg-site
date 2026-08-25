@@ -3708,6 +3708,191 @@ const FULL_CAP_MUSD = 280;
 const FULL_TALENT = 0.78;
 
 /*
+ * ─── THE COACH ─────────────────────────────────────────────────────────────────────
+ *
+ * Full Team's thirteenth asset, and the one pick in this game that is not a wheel. Twelve
+ * spins hand you what they hand you; the coach is chosen from everybody you can still
+ * afford, which is what makes the last decision of a draft a decision rather than a draw.
+ *
+ * WHAT A COACH IS, IS DERIVED, NOT WRITTEN DOWN. There is no scheme column in the data and
+ * inventing one would be inventing facts about real people. What there is: coaches.json
+ * names the head coach of all 861 team-seasons, and team_seasons.json says what each of
+ * those teams scored and allowed. So a coach's tilt is simply what his teams actually did,
+ * measured against the league average OF HIS OWN SEASONS, which is what stops a 2000s
+ * defensive coach being flattered by a decade when nobody scored:
+ *
+ *   Mike Martz      +5.6 offense  -1.9 defense   the Greatest Show on Turf, priced as such
+ *   Jim Harbaugh    +0.3 offense  +4.9 defense   a defensive coach, and the data says so
+ *   Bill Belichick  +4.1 offense  +3.2 defense   good at both, over 24 seasons
+ *
+ * THREE SEASONS MINIMUM. One good year is a roster, not a coach, and a single-season man
+ * would be the cheapest way to buy a big tilt. 115 of the 162 names clear it.
+ *
+ * A COACH IS NOT A PLAYER AND MUST NOT BE PRICED LIKE ONE. His effect is a multiplier on a
+ * whole unit, which is worth far more than any single man, so the price ladder is its own:
+ * see coachPrice.
+ */
+const COACH_MIN_SEASONS = 3;
+/* Points per game above his era, converted to a multiplier on a unit. The best offensive
+   coach in the data is +5.6 and the worst is -8.2, so at this scale the coaching job is
+   worth about +7% to -10% of a unit: enough to be the reason a season turned, never enough
+   to be worth more than the six men it stands behind. */
+const COACH_K = 0.012;
+
+let COACH_TABLE = null;
+function coachTable(ctx) {
+  if (COACH_TABLE) return COACH_TABLE;
+  const coaches = (ctx && ctx.coaches) || {};
+  const seasons = (ctx && ctx.teamSeasons) || [];
+  if (!seasons.length) return (COACH_TABLE = []);
+
+  /* League average by season, so every coach is measured against the football that was
+     being played while he was doing it. */
+  const lg = {};
+  for (const t of seasons) {
+    const a = (lg[t.season] ??= { sc: 0, al: 0, n: 0 });
+    a.sc += t.pts_scored_mean; a.al += t.pts_allowed_mean; a.n++;
+  }
+  for (const k in lg) { lg[k].sc /= lg[k].n; lg[k].al /= lg[k].n; }
+
+  const byId = {};
+  for (const t of seasons) byId[t.team_season_id] = t;
+
+  const acc = {};
+  for (const id in coaches) {
+    const name = coaches[id] && coaches[id].hc;
+    const t = byId[id];
+    if (!name || !t || !lg[t.season]) continue;
+    const a = (acc[name] ??= { n: 0, off: 0, def: 0, w: 0, g: 0, first: 9e9, last: 0 });
+    a.n++;
+    a.off += t.pts_scored_mean - lg[t.season].sc;
+    a.def += lg[t.season].al - t.pts_allowed_mean;
+    const m = /^(\d+)-(\d+)/.exec(t.record || '');
+    if (m) { a.w += +m[1]; a.g += (+m[1]) + (+m[2]); }
+    a.first = Math.min(a.first, t.season);
+    a.last = Math.max(a.last, t.season);
+  }
+
+  COACH_TABLE = Object.keys(acc).map((name) => {
+    const a = acc[name];
+    const off = a.off / a.n, def = a.def / a.n;
+    return {
+      name,
+      seasons: a.n,
+      years: a.first === a.last ? String(a.first) : `${a.first}-${a.last}`,
+      off: Math.round(off * 10) / 10,
+      def: Math.round(def * 10) / 10,
+      winPct: a.g ? a.w / a.g : 0,
+      price_musd: coachPrice(off, def),
+    };
+  }).filter((c) => c.seasons >= COACH_MIN_SEASONS)
+    .sort((a, b) => b.price_musd - a.price_musd || a.name.localeCompare(b.name));
+  return COACH_TABLE;
+}
+
+/*
+ * WHAT A COACH COSTS. Priced off what he is worth rather than off what he did, which are
+ * different numbers: a coach who was +4 on offense and -4 on defense had a fine career and
+ * is worth nothing to a team that has to play both halves.
+ *
+ * So the price is driven by the SUM of the two tilts, floored so that a bad coach is cheap
+ * rather than free (somebody has to hold the clipboard) and capped so the best one in the
+ * game cannot eat a quarter of the roster.
+ */
+function coachPrice(off, def) {
+  const worth = off + def;                       // roughly -12 to +8 across the pool
+  const v = Math.max(0, Math.min(1, (worth + 6) / 14));
+  return Math.round((3 + 27 * v * v) * 10) / 10;  // $3M to $30M, steep at the top
+}
+
+/** The two multipliers a coach hands his team. */
+function coachEffect(coach) {
+  if (!coach) return { off: 1, def: 1 };
+  return { off: 1 + (coach.off || 0) * COACH_K, def: 1 + (coach.def || 0) * COACH_K };
+}
+
+/*
+ * ─── THE GAME PLAN ─────────────────────────────────────────────────────────────────
+ *
+ * Three choices made once, before the season, and they are the reason Full Team is not the
+ * draft with six more rounds.
+ *
+ * THEY ARE TRADES, NOT UPGRADES. Every one of them helps and hurts, and which way it lands
+ * depends on the roster you just built, so there is no correct answer to memorise:
+ *
+ *   TEMPO      fast raises BOTH scores, slow lowers both. Fast is right when your offence
+ *              is better than theirs and wrong when your defence is what you paid for.
+ *   FOURTH     aggressive scores a little more on average and swings a lot harder. A weak
+ *              team wants the swing, because it needs the tail. A strong team wants none of
+ *              it. Measured: +2.0 points of win rate to an underdog, -1.1 to a favourite.
+ *   PRESSURE   blitzing holds the opponent to less on average and gives up more when it
+ *              fails, so it is the mirror and the bigger lever: +8.3 to an underdog and
+ *              -5.2 to a favourite.
+ *
+ * EVERY ONE OF THOSE NUMBERS CHANGES SIGN, and that is the test each axis had to pass. The
+ * first set of constants made aggression worth +3.3 to an underdog and -0.3 to a favourite,
+ * which is not a trade, it is a free upgrade with a rounding error attached. They were swept
+ * until declining was genuinely right for somebody.
+ *
+ * WHY VARIANCE AND NOT JUST AVERAGES. A season is won game by game, so what decides it is
+ * how often your number beats theirs, not the gap over seventeen weeks. Two of these three
+ * move the spread rather than the middle, which is a real decision with no dominant answer
+ * and could not exist in a mode that only had one side of the ball to point them at.
+ *
+ * The coach picks the default, so a player who never opens this screen still fields a
+ * coherent team: see planFromCoach.
+ */
+const PLAN_AXES = ['tempo', 'fourth', 'pressure'];
+const PLAN = {
+  /* Both scores move together, so tempo is a bet on which offence is better. */
+  TEMPO: 0.085,
+  /* What aggression is worth on the scoreboard, and what it costs in consistency. The
+     second number is the one that matters: it is applied to the blend that damps a roster
+     toward its own expectation, so aggressive play lets a bad week be worse and a good one
+     better. */
+  /* SWEPT UNTIL THE SIGN FLIPS, which is the only test that matters for a choice. At the
+     first values (+3.5% mean, 0.55 swing) going for it was worth +3.3 points of win rate to
+     an underdog and cost a favourite 0.3: near enough to free that nobody would ever decline
+     it, which makes it an upgrade rather than a decision. At these it is +2.0 and -1.1. */
+  FOURTH_MEAN: 0.02,
+  FOURTH_SWING: 0.70,
+  /* Suppression bought with risk. A blitz that lands is a stop; one that does not is a
+     long touchdown, which is variance on THEIR score rather than on yours. */
+  /* Same sweep, same reason. At the first values a blitz was +8.0 for an underdog and -0.2
+     for a favourite, so everybody blitzes. At these it is +8.3 and -5.2: the biggest lever
+     on the screen and the one that most obviously belongs to a team that is behind. */
+  PRESSURE_MEAN: 0.015,
+  PRESSURE_SWING: 0.75,
+};
+
+/** A legal plan, from anything. Every axis is -1, 0 or +1 and nothing else. */
+function normalizePlan(plan) {
+  const out = {};
+  for (const k of PLAN_AXES) {
+    const v = plan && plan[k];
+    out[k] = v === 1 || v === -1 ? v : 0;
+  }
+  return out;
+}
+
+/*
+ * THE DEFAULT COMES OFF THE COACH, because a plan nobody chose still has to be a plan
+ * somebody would choose. An offensive coach pushes the tempo and goes for it; a defensive
+ * one shortens the game and sends pressure. A coach who is neither leaves all three level,
+ * which is the honest answer for a man whose teams were average at both.
+ */
+function planFromCoach(coach) {
+  if (!coach) return normalizePlan(null);
+  const off = coach.off || 0, def = coach.def || 0;
+  const tilt = off - def;
+  return normalizePlan({
+    tempo: tilt > 1.5 ? 1 : tilt < -1.5 ? -1 : 0,
+    fourth: off > 2 ? 1 : off < -2 ? -1 : 0,
+    pressure: def > 2 ? 1 : def < -2 ? -1 : 0,
+  });
+}
+
+/*
  * ─── FULL TEAM: BOTH SIDES OF THE BALL, TWELVE MEN, ONE CAP ────────────────────────
  *
  * NOT A THIRD ENGINE. The two functions above are exact mirrors of each other and each
@@ -3746,9 +3931,15 @@ function splitSides(roster) {
 }
 
 function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed,
-  rng, constants = CONSTANTS, advantage = 1) {
+  rng, constants = CONSTANTS, advantage = 1, extra = null) {
   const { off, def } = splitSides(roster);
-  const C = constants.CONSISTENCY || 0;
+  const coach = coachEffect(extra && extra.coach);
+  const plan = normalizePlan(extra && extra.plan);
+  /* CONSISTENCY IS THE FOURTH DOWN DIAL. It is the blend that pulls a week's sampling back
+     toward the roster's own expectation, so lowering it is exactly what "we went for it"
+     should feel like: the same team, swinging harder in both directions. */
+  const C = Math.max(0, Math.min(0.95,
+    (constants.CONSISTENCY || 0) * (1 - PLAN.FOURTH_SWING * plan.fourth)));
 
   /* THE SAMPLES ARE DRAWN OVER THE WHOLE ROSTER IN ROSTER ORDER, one per man, before
      anything is split. Drawing offense first and defense second would work and would make
@@ -3774,17 +3965,32 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
   /* THE TALENT DIAL, applied once to each side's raw sum and to nothing else. Overridable
      through constants so the harness can sweep it without editing this file. */
   const talent = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
-  rawOff *= talent;
-  rawDef *= talent;
+  /* The coach lands here, on the unit he coaches, before anything downstream reads it. So
+     his offensive tilt is worth the same proportion to a great offence as to a poor one,
+     which is what a multiplier should mean and what a flat points bonus would not. */
+  rawOff *= talent * coach.off;
+  rawDef *= talent * coach.def;
 
   const defenseModifier = opponent.pts_allowed_mean / leagueAvgAllowed;
+  /* TEMPO MOVES BOTH SCORES THE SAME WAY, which is the whole point of it: playing fast is
+     not "score more", it is "more football happens", and more football helps whichever
+     offence is better. It multiplies the finished scores rather than any one term so the
+     two sides cannot drift apart. */
+  const tempo = 1 + PLAN.TEMPO * plan.tempo;
   const offMul = chemistryMultiplier * offStructure * defenseModifier;
-  const yourScore = rawOff * offMul;
+  /* Aggression is worth a little on the average and a lot on the spread; the spread is in C
+     above. Both are wanted by a team that needs the tail and neither by one that does not. */
+  const yourScore = rawOff * offMul * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
 
   const defenseTotal = rawDef * chemistryMultiplier * defStructure;
   const suppression = defenseSuppression(defenseTotal, constants);
-  const oppScore = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng)
-    * constants.SCALE * suppression / advantage;
+  /* Pressure is the mirror of the fourth down call, pointed at their score instead of
+     yours: it holds them to less on average and gives up more when it misses. The swing is
+     applied to the opponent's own spread, because a blitz that fails is their big play. */
+  const oppScore = sampleGamma(opponent.pts_scored_mean,
+      opponent.pts_scored_sd * (1 + PLAN.PRESSURE_SWING * plan.pressure), rng)
+    * constants.SCALE * suppression * tempo
+    * (1 - PLAN.PRESSURE_MEAN * plan.pressure) / advantage;
 
   let won;
   if (yourScore > oppScore) won = true;
@@ -3800,8 +4006,8 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
      rawOff was scaled above; blend(i) was not, so each man's line has to take the same
      factor for the offensive column to sum to yourScore and the defensive one to the
      defensive total. */
-  const defMul = chemistryMultiplier * defStructure * talent;
-  const offLineMul = offMul * talent;
+  const defMul = chemistryMultiplier * defStructure * talent * coach.def;
+  const offLineMul = offMul * talent * coach.off * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
   const lines = roster.map((p, i) =>
     blend(i) * (DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? defMul : offLineMul));
 
@@ -4054,7 +4260,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
       : opts.defense ? resolveGameDefense
         : resolveGame;
     const r = resolver(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
-      weeklyEdgeVs(teamRating, opp, constants));
+      weeklyEdgeVs(teamRating, opp, constants), opts.full ? opts : null);
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -4204,7 +4410,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 37;
+const ENGINE_API_VERSION = 38;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -4279,6 +4485,8 @@ const publicAPI = {
   ],
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
+  coachTable, coachPrice, coachEffect, COACH_MIN_SEASONS,
+  PLAN, PLAN_AXES, normalizePlan, planFromCoach,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, playoffShare, finalEdge, finalRecordEase,
