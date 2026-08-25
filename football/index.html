@@ -500,11 +500,17 @@ window.GA_ID='G-L29P5MRWKE';
      band of this field guaranteed to be empty: the gap above exists precisely so no chip
      sits there. Set vertically down the left edge first, which put DEFENSE straight through
      the cornerback who lines up at 12% wide. */
-  .unitlab{position:absolute;left:5px;z-index:1;font-family:var(--fn);font-size:8px;
-    font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-    color:rgba(255,255,255,.34);line-height:1}
-  .unitlab.up{top:calc(50% - 13px)}
-  .unitlab.down{top:calc(50% + 6px)}
+  /* DEAD CENTRE OF THE LINE, which is the only place on this field nothing ever stands.
+     The left margin put the word through the name of the lineman who lines up at 30% wide,
+     and the right margin put it through the one at 70%: both edges of the line row are
+     somebody's label, because a name is centred on its disc and is wider than it. The
+     middle is not. The widest interior man in any front is at 32%, so the centre column is
+     clear by twenty points of width in every formation the game can produce. */
+  .unitlab{position:absolute;left:50%;transform:translateX(-50%);z-index:1;
+    font-family:var(--fn);font-size:8px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:rgba(255,255,255,.32);line-height:1;white-space:nowrap}
+  .unitlab.up{top:calc(50% - 14px)}
+  .unitlab.down{top:calc(50% + 7px)}
   @media (max-width:360px){
     .field.fullfield .chip .disc{width:26px;height:26px;font-size:9px}
     .field.fullfield .chip .who{font-size:9px;max-width:56px}
