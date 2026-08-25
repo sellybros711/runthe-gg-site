@@ -17043,3 +17043,40 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   is the JSON-LD tag, fails identically on baseline.
 - Tunable: `GEN_BAND` (how wide a cohort is), `START_MILESTONES` (which starts are marked), the anniversary
   year lists in `careerAnniversaries`, and the introduce-then-quiet gate in `buildTourDispatch`.
+
+### THE AGEING MOCKUP (not shipped), and the purple hair it uncovered
+- **The mockup** (task #6, scratchpad only, nothing wired in): `age_mock.mjs` overrides `avLook` IN THE PAGE
+  so the real `pxGolferURL` renderer draws arbitrary hair/skin hexes, then sheets one golfer across a 30-year
+  career at ages 22/30/38/45/52. Hair holds until the late 20s, greys through the 40s
+  (`min(0.88, ((age-28)/24)^1.45)`) and blends toward the game's own white late; the skin creeps up to 9
+  points down the existing `SKINS` ramp for thirty years of sun. The game file is not touched.
+- **What the render actually says, which is the useful part.** Bare-headed it reads clearly, and a zoomed
+  head strip makes it unmistakable. **Under a cap it is nearly invisible** - the crown is covered, so only the
+  sideburns carry it, and an 88%-grey 52-year-old is hard to tell from himself at 22. Most golfers wear a cap.
+  So if ageing ships it needs something a cap cannot hide (a weathered face, posture, the swing sprite), not
+  hair alone. The sheet is laid out to show exactly that: best case, zoomed, then the in-game reality.
+- **The mockup found a live bug, and it is on every golfer in the game.** `pxGolferCanvas` builds its palette
+  with `Y` as the hair crown HIGHLIGHT (`pxShade(hairHex,28)`), then does `Object.assign(P, PXG_NOV)` so
+  novelty hats can paint straight off the shared palette - and `PXG_NOV` defines `'Y':'#4a3568'`, witch-hat
+  purple. **All 11 hair styles use `Y`** (18-34 px each), so every bare-headed golfer wore a band of fixed
+  purple on the crown whatever colour they picked. Measured: 24-34 sprite pixels, **identical across black /
+  brown / blonde / white**, which is the proof it was a constant and not derived. It falls to 2 with a cap on,
+  which is why it survived this long - the default look wears one, and at 1x the rest is a thin line.
+- **Fixed surgically, because a reorder trades one bug for another.** Novelty hats are painted with NO palette
+  argument (`paintShaded(map)` -> `P[ch]`), so the witch hat genuinely depends on `P.Y` being purple; assigning
+  `PXG_NOV` first would have fixed the hair and broken the hat. Instead `paint()` gained an optional palette and
+  the hair paints with `HAIR_PAL={Y:pxShade(av.hairHex,28)}` - the hair keeps its own highlight, the witch hat
+  still reads `P.Y`. Both hair paths (bare and the under-hat variant) use it.
+- **FLAGGED, not changed: `S` collides the same way** - the palette sets `S:'#e8ebf0'` (bright chrome) and
+  `PXG_NOV` overwrites it with `'#b0b5bd'` (metal silver), so the putter/blade club heads (7 px each) render a
+  duller silver than intended. Far subtler than the hair and it changes shipped club art, so it is left for a
+  deliberate call rather than folded into a bug fix.
+- Verified: `hairY.mjs` **8 pass / 0 fail / 0 page errors** over all 11 styles x 10 hair colours - no golfer
+  wears the purple anywhere, the highlight now tracks the hair colour (blonde `#e9bf78`, black `#38312b`,
+  white `#fffff8`, three genuinely different values where it used to be one), the witch hat is still purple,
+  a plain cap still renders, and the body is untouched. **The same suite is 4 pass / 4 fail on the deployed
+  build** (`worst: 34 px at spiky/black`, and zero correctly-coloured highlights), so it discriminates rather
+  than asserting the setup.
+- Regressions green: gen 39, dispatch 27, farewell 25, drift 31, calendar 25, records 24, rival 17, rest 37,
+  clubs 23, circuit 14, morris 16, daily_glitch 5, board_race 11, entry_ux 23, entry_catch 25. `goals_test`
+  fails 3 and `parsecheck` block 0 fails **identically on the deployed build** - the known stale fixtures.

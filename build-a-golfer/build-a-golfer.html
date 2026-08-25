@@ -14638,9 +14638,14 @@ function pxGolferCanvas(look,opts){
   const px=7, cv=document.createElement('canvas'); cv.width=PXG_W*px; cv.height=PXG_H*px;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(22*px,54*px,12*px,2*px,0,0,7); ctx.fill();
-  const paint=(map,minY)=>{ for(let y=(minY||0);y<map.length;y++){ const row=map[y];
-    for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
+  const paint=(map,minY,pal)=>{ for(let y=(minY||0);y<map.length;y++){ const row=map[y];
+    for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=(pal&&pal[ch])||P[ch]; if(!col)continue;
       ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
+  // The hair maps use Y for the crown HIGHLIGHT, but PXG_NOV also defines Y (witch-hat purple) and is merged
+  // into P above so novelty hats can paint straight off it. That collision put 24-34px of fixed purple on the
+  // hair of EVERY bare-headed golfer, whatever colour they picked. The hair paints with its own palette so it
+  // keeps its own highlight; the witch hat still reads P.Y and stays purple.
+  const HAIR_PAL={ Y:pxShade(av.hairHex,28) };
   paint(BODY);
   // CS370: favorite club in the correct hand - authored on the golfer's LEFT hand (lefty); a right-handed
   // golfer mirrors it to the RIGHT hand (viewer's left). Drawn on the body layer so it sits with the hands.
@@ -14691,8 +14696,8 @@ function pxGolferCanvas(look,opts){
   const openTop=(hatStyle==='visor')||!!PXG_HAT_OPEN[hatStyle];
   // Hair overhaul: a closed-crown hat swaps in the style's authored UNDER-HAT hair (compressed - fringe/
   // sideburns/tail below the brim) instead of a flat row clip, so the hat reshapes the hair naturally.
-  if(capOn && !openTop) paint(PXG_HAIR_HAT[style]||PXG_HAIR_HAT.short||[]);
-  else paint(PXG_HAIR[style]);
+  if(capOn && !openTop) paint(PXG_HAIR_HAT[style]||PXG_HAIR_HAT.short||[], 0, HAIR_PAL);
+  else paint(PXG_HAIR[style], 0, HAIR_PAL);
   if(capOn){ if(PXG_HERITAGE_HAT_PAL[hatStyle]) paintShaded(PXG_HATS[hatStyle], PXG_HERITAGE_HAT_PAL[hatStyle]);   // CS411: tweed cap / straw boater (own palette)
     else paintShaded(hatStyle==='visor'?PXG_VISOR:(PXG_HATS[hatStyle]||PXG_CAP)); }
   // CS356g: EYEWEAR (sunglasses) over the eyes, on top of everything.
