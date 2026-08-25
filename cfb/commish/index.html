@@ -374,6 +374,34 @@
   .steps button.on{border-color:var(--green);color:var(--ink);background:rgba(16,185,129,.12)}
   .steps button.pro{border-style:dashed;border-color:rgba(168,85,247,.5);color:#c084fc}
   .steps button.pro.on{background:rgba(168,85,247,.14);border-style:solid}
+  /* WHAT THE SETTING MEANS, in the sport's own terms, above the row that sets it. */
+  .dread{margin:0 0 9px;font-size:12.5px;line-height:1.4;color:var(--dim);
+    border-left:2px solid var(--line-2);padding-left:9px}
+
+  /* THE BOOKS. Three figures, because the whole point is the subtraction between them, and
+     two of them side by side with the answer is how anybody would write it down. */
+  .books{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  .books>div{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:11px 9px;text-align:center}
+  .books b{display:block;font-family:var(--fd);font-size:19px;line-height:1;color:var(--ink)}
+  .books span{display:block;margin-top:5px;font-family:var(--fn);font-size:8.5px;
+    font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim-2);
+    line-height:1.25}
+  .books .good{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.10)}
+  .books .good b{color:var(--green)}
+  .books .warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.10)}
+  .books .warn b{color:var(--gold)}
+  .books .bad{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.10)}
+  .books .bad b{color:var(--red)}
+  .bnote{margin-top:10px;font-size:13px;line-height:1.4;color:var(--dim)}
+  /* The same fact in one line, for the office while the season is on. */
+  .bline{display:flex;align-items:baseline;gap:8px;margin-top:11px;padding:9px 11px;
+    border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+  .bline b{font-family:var(--fd);font-size:17px;line-height:1;flex:0 0 auto}
+  .bline span{font-size:12px;line-height:1.35;color:var(--dim)}
+  .bline.good{border-color:rgba(16,185,129,.4)} .bline.good b{color:var(--green)}
+  .bline.warn{border-color:rgba(245,158,11,.4)} .bline.warn b{color:var(--gold)}
+  .bline.bad{border-color:rgba(239,68,68,.4)} .bline.bad b{color:var(--red)}
 
   .prolock{margin-top:11px;border:1px dashed rgba(168,85,247,.45);border-radius:11px;
     padding:11px 12px;background:rgba(168,85,247,.06)}
@@ -405,6 +433,57 @@
   .fact.changed{border-color:rgba(245,158,11,.45)}
   .fact.changed .fi{background:rgba(245,158,11,.14)}
   .fact.changed .fi svg{stroke:var(--gold)}
+  /* THE TILES LOOK PRESSABLE AND WERE NOT, which a tester found by pressing them. They open
+     a sheet now. `text-align:left` and the reset below because these became buttons. */
+  button.fact{width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit;
+    transition:border-color .16s var(--ez),transform .12s var(--ez)}
+  button.fact:active{transform:scale(.985)}
+  button.fact:after{content:'';position:absolute;top:9px;right:10px;width:5px;height:5px;
+    border-right:1.5px solid var(--dim-2);border-bottom:1.5px solid var(--dim-2);
+    transform:rotate(-45deg);opacity:.7}
+  button.fact{position:relative}
+
+  /* ---- the sheet a fact opens ----
+     WHAT THE NUMBER IS, HOW IT GOT THERE, AND WHAT MOVES IT NEXT. The last of those is the
+     question somebody is really asking when they tap a number they cannot drag. */
+  .sheet{position:fixed;inset:0;z-index:60;display:none}
+  .sheet.on{display:block}
+  .sheet .scrim{position:absolute;inset:0;background:rgba(3,6,14,.72)}
+  .sheet .pane{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;
+    background:var(--bg);border-top:1px solid var(--line-2);
+    border-radius:18px 18px 0 0;padding:16px 14px calc(20px + env(safe-area-inset-bottom));
+    max-width:520px;margin:0 auto;box-shadow:var(--shadow)}
+  @media(prefers-reduced-motion:no-preference){
+    .sheet.on .pane{animation:sheetup .3s var(--ez) both}
+    .sheet.on .scrim{animation:fadein .3s var(--ez) both}
+    @keyframes sheetup{from{transform:translateY(22px);opacity:0}to{transform:none;opacity:1}}
+    @keyframes fadein{from{opacity:0}to{opacity:1}}
+  }
+  .sheet .grab{width:38px;height:4px;border-radius:3px;background:var(--line-2);
+    margin:0 auto 14px}
+  .sheet h3{font-family:var(--fd);font-size:25px;line-height:1;text-transform:uppercase;
+    margin-bottom:4px}
+  .sheet .now{display:flex;align-items:baseline;gap:9px;margin:12px 0 4px}
+  .sheet .now b{font-family:var(--fd);font-size:34px;line-height:1;color:var(--ink)}
+  .sheet .now u{text-decoration:none;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2)}
+  .sheet .now em{margin-left:auto;font-style:normal;font-family:var(--fn);font-size:10px;
+    font-weight:700;color:var(--gold);white-space:nowrap}
+  .sheet p{font-size:14px;line-height:1.45;color:var(--dim);margin-top:8px}
+  .sheet .sec{margin-top:17px;padding-top:14px;border-top:1px solid var(--line)}
+  .sheet .sec>.eyebrow{margin-bottom:8px}
+  .sheet .rul{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin-bottom:9px}
+  .sheet .rul i{font-style:normal;font-family:var(--fd);font-size:14px;color:var(--gold)}
+  .sheet .rul b{font-family:var(--fn);font-size:13px;font-weight:600;color:var(--ink)}
+  .sheet .rul span{grid-column:2;font-size:12px;color:var(--dim-2)}
+  .sheet .nxt{border:1px solid var(--line);border-radius:11px;padding:10px 11px;
+    background:var(--panel);margin-bottom:7px}
+  .sheet .nxt b{display:block;font-family:var(--fn);font-size:13px;font-weight:700;
+    color:var(--ink)}
+  .sheet .nxt span{display:block;margin-top:3px;font-family:var(--fn);font-size:9.5px;
+    font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--dim-2)}
+  .sheet .nxt.live{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.08)}
+  .sheet .nxt.live span{color:var(--green)}
 
   /* NINE BEATS IN A SEASON, and the one you are on should be findable without counting.
      It was nine identical dashes with two shades between them. The strip stays on the desk,
@@ -1072,6 +1151,8 @@
     </div>
     <!-- The football that was actually played this year. -->
     <div class="card flat" id="y-season" hidden></div>
+    <!-- What the sport promised the schools against what the football earned. -->
+    <div class="card flat" id="y-books" hidden></div>
     <!-- The five seasons, on the screen that closes the term. -->
     <div class="card flat" id="y-term" hidden></div>
     <!-- What the internet said about the football. -->
@@ -1095,12 +1176,25 @@
   </div>
 </div>
 
+<!-- What one of the four numbers is, how it got there, and what moves it next.
+     Outside .wrap because it covers whichever screen is up. See openFact(). -->
+<div class="sheet" id="s-fact" aria-hidden="true">
+  <div class="scrim" id="fact-scrim"></div>
+  <div class="pane" role="dialog" aria-modal="true" aria-labelledby="fact-title">
+    <div class="grab"></div>
+    <div class="eyebrow" id="fact-eyebrow"></div>
+    <h3 id="fact-title"></h3>
+    <div id="fact-body"></div>
+    <button class="btn ghost" id="fact-close" style="margin-top:16px">Close</button>
+  </div>
+</div>
+
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
 <script src="ledger.js?v=3"></script>
 <script src="blocs.js?v=3"></script>
-<script src="docket.js?v=3"></script>
-<script src="season.js?v=7"></script>
+<script src="docket.js?v=4"></script>
+<script src="season.js?v=8"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
 <script src="calendar.js?v=2"></script>
@@ -1528,18 +1622,157 @@ function paintSport(el,w,before){
      whole of the reaction screen. `before` still marks the beat's own change when a caller
      passes one. */
   const start=w.start&&w.start.facts;
+  /* PRESSABLE ONLY WHERE IT IS THE REAL SPORT. The desk draws these same four tiles from a
+     PREVIEW world, showing what the ruling in front of you would do. A sheet opened off one
+     of those would read the live ledger and answer a different question than the tile that
+     was tapped: "16-team" on the tile, "12-team today" in the sheet. */
+  const real=(w===world);
   el.innerHTML=sportFacts(w).map(([key,big,label],i)=>{
     const was=start&&start[i];
     const changed=(before&&sportFacts(before)[i][1]!==big)||(was!=null&&was!==String(big));
-    return '<div class="fact'+(changed?' changed':'')+'">'
+    /* A BUTTON, because a tester tried to press one. See openFact() for what it opens and
+       for why it is not a control that sets the number directly. */
+    const tag=real?'button':'div';
+    return '<'+tag+(real?' type="button" data-f="'+i+'"':'')+' class="fact'+(changed?' changed':'')+'">'
       +'<span class="fi">'+FACT_ICON[i]+'</span>'
       +'<b>'+esc(big)+'</b>'
       +'<span>'+esc(label)+'</span>'
       +(was!=null&&was!==String(big)?'<em>was '+esc(was)+'</em>':'')
-      +'</div>';
+      +'</'+tag+'>';
   }).join('');
+  el.querySelectorAll('[data-f]').forEach((b)=>{
+    b.onclick=()=>openFact(Number(b.dataset.f));
+  });
   reveal(el);
 }
+
+/* ── what a number is, and what moves it ───────────────────────────────────────────
+   THE FOUR TILES LOOKED PRESSABLE AND WERE NOT. A tester pressed them and asked for a
+   toggle on each one that made the number bigger or smaller.
+
+   A DIRECT TOGGLE IS THE ONE THING THIS MODE CANNOT HAVE. The whole game is that you do not
+   get to set the sport, you get to rule on it and live with what the room does about it:
+   nine blocs, a coalition that can remove you, and a docket that decides what is even on the
+   table this month. A slider that takes the playoff from twelve to sixteen with no item, no
+   vote and no reaction would make every one of those things ornamental, and it would make
+   the desk, which is the mode, optional.
+
+   But the impulse behind the ask is right and was going unanswered: the tiles are the only
+   place the sport is summarised, and they said a number and nothing else. Not what it means,
+   not what you did to it, and above all not HOW you would change it, which is what somebody
+   is actually reaching for when they tap a number they cannot drag.
+
+   So the sheet answers exactly that, and the last section is the payoff: the items that can
+   move this number, named, with the beats they turn up on and whether one is live now. */
+/* THE TILE'S SECOND LINE IS NOT A TITLE. sportFacts returns the number and a caption for it,
+   and the captions read as captions: "5 automatic bids", "to the players". Putting one at the
+   top of a sheet gave it the heading "5 AUTOMATIC BIDS" above the words "12-team". */
+const FACT_TITLE=['The playoff','The Group of Five','The players','The schedule'];
+const FACT_ABOUT=[
+  'How many teams play for the national title, and how many of those seats are guaranteed to '
+    + 'a conference champion rather than handed out by a committee. It is the argument the '
+    + 'sport is really having, and every other argument is downstream of it.',
+  'The share of the money that reaches the sixty-odd schools outside the biggest conferences. '
+    + 'Nobody in that group can remove you and all of them are in the room.',
+  'The fraction of the pool that reaches the players. It was zero for a hundred years and the '
+    + 'question is no longer whether, only how much and who chose it.',
+  'How many of a team\'s twelve games are inside its own conference. More of them is better '
+    + 'football and worse records, and every coach in the country has a view.',
+];
+/* WHICH LEDGER PATHS EACH TILE IS ABOUT, so the sheet can find the items that move it. */
+const FACT_PATHS=[
+  ['playoff.teams','playoff.autobids'],
+  ['money.share.'],
+  ['labour.revShare'],
+  ['rules.confGames'],
+];
+/* EVERY PATH ANY ITEM CAN WRITE, built once from the docket rather than listed by hand: a
+   list would be right today and quietly wrong the first time somebody adds an item. Option
+   edits may be functions of the cast, so they are called with an empty one and skipped if
+   they will not stand for it. */
+let PATH_ITEMS=null;
+function pathItems(){
+  if(PATH_ITEMS) return PATH_ITEMS;
+  PATH_ITEMS={};
+  const add=(p,id)=>{ (PATH_ITEMS[p]=PATH_ITEMS[p]||[]).push(id); };
+  (D.ITEMS||[]).forEach((it)=>{
+    (it.dials||[]).forEach((d)=>{ if(d.path) add(d.path,it.id); });
+    (it.options||[]).forEach((o)=>{
+      let e=o.edit;
+      if(typeof e==='function'){ try{ e=e(null,it); }catch(err){ e=null; } }
+      Object.keys((e&&e.set)||{}).forEach((p)=>add(p,it.id));
+    });
+  });
+  for(const p in PATH_ITEMS) PATH_ITEMS[p]=[...new Set(PATH_ITEMS[p])];
+  return PATH_ITEMS;
+}
+function itemsForFact(i){
+  const map=pathItems(), want=FACT_PATHS[i]||[], out=[];
+  Object.keys(map).forEach((p)=>{
+    if(!want.some((w)=>(w.slice(-1)==='.'?p.indexOf(w)===0:p===w))) return;
+    map[p].forEach((id)=>{ if(out.indexOf(id)<0) out.push(id); });
+  });
+  return out.map((id)=>D.BY_ID[id]).filter(Boolean);
+}
+
+function openFact(i){
+  const facts=sportFacts(world);
+  if(!facts[i]) return;
+  const [,big,label]=facts[i];
+  const was=world.start&&world.start.facts&&world.start.facts[i];
+  $('fact-eyebrow').textContent='The sport, as it stands';
+  $('fact-title').textContent=FACT_TITLE[i]||label;
+
+  const items=itemsForFact(i);
+  const ids=items.map((it)=>it.id);
+  /* WHAT YOU DID TO THIS NUMBER, off the ledger's own history: every ruling on an item that
+     can write one of this tile's paths, in the order they happened. */
+  const mine=(world.history||[]).filter((h)=>h.id&&ids.indexOf(String(h.id).split(':')[0])>=0);
+  const live=D.eligible(world,L).map((it)=>it.id);
+
+  let html='<div class="now"><b>'+esc(big)+'</b><u>'+esc(label)+'</u>'
+    +(was!=null&&was!==String(big)?'<em>was '+esc(was)+' when you took the job</em>':'')+'</div>'
+    +'<p>'+esc(FACT_ABOUT[i])+'</p>';
+
+  /* The two percentage tiles are a share of a number that is on another screen. */
+  if(i===1||i===2){
+    const pool=(world.money&&world.money.pool)||1.3;
+    const frac=i===1?(world.money.share['Group of Five']||0):world.labour.revShare;
+    html+='<p>At a '+esc(BN(pool))+' pool that is '+esc(BN(pool*frac))+' a year.</p>';
+  }
+
+  html+='<div class="sec"><div class="eyebrow">What you have ruled on it</div>';
+  html+=mine.length
+    ? mine.map((h)=>'<div class="rul"><i>'+esc(String(h.year).slice(2))+'</i>'
+      +'<b>'+esc(ruledWhat({label:h.label||'',option:String(h.id).split(':')[1]||''}))+'</b>'
+      +'<span>'+esc(L.BEATS[h.beat]||'')+' '+h.year+'</span></div>').join('')
+    : '<p style="margin-top:0">Nothing yet. This is where you found it.</p>';
+  html+='</div>';
+
+  html+='<div class="sec"><div class="eyebrow">What moves it</div>'
+    +'<p style="margin-top:0;margin-bottom:10px">You do not set this directly. It moves when '
+    +'one of these reaches your desk and you rule on it.</p>';
+  html+=items.length
+    ? items.map((it)=>{
+      const on=live.indexOf(it.id)>=0;
+      const when=(it.beats||[]).map((b)=>L.BEATS[b]).filter(Boolean);
+      return '<div class="nxt'+(on?' live':'')+'"><b>'+esc(D.text(it.title,null,it))+'</b>'
+        +'<span>'+esc(on?'On the desk this beat':when.slice(0,3).join(' · ')||'')+'</span></div>';
+    }).join('')
+    : '<p style="margin-top:0">Nothing on the docket writes this one.</p>';
+  html+='</div>';
+
+  $('fact-body').innerHTML=html;
+  const sh=$('s-fact');
+  sh.classList.add('on'); sh.setAttribute('aria-hidden','false');
+}
+function closeFact(){
+  const sh=$('s-fact');
+  sh.classList.remove('on'); sh.setAttribute('aria-hidden','true');
+}
+$('fact-close').onclick=closeFact;
+$('fact-scrim').onclick=closeFact;
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeFact(); });
 
 function paintBeatbar(el,w){
   if(!el) return;
@@ -2041,7 +2274,24 @@ function paintTv(el,sim){
     +'</div>'
     +(biggest?'<div class="gms"><div class="gm2" style="--gc:'+esc(biggest.winner.color)+'">'
       +side2(biggest,0)+side2(biggest,1)
-      +'<span class="v">'+M1(biggest.viewers)+'<i>M</i></span></div></div>':'');
+      +'<span class="v">'+M1(biggest.viewers)+'<i>M</i></span></div></div>':'')
+    /* WHAT THE AUDIENCE IS WORTH, BESIDE THE AUDIENCE. Viewership is already the headline
+       here, and it is the number that decides whether the pool is affordable, so the two
+       belong on one card rather than one in September and the other in January. */
+    +booksLine(sim.perGame);
+}
+
+/* One line of books, for a screen that is not the year in review. */
+function booksLine(perGame){
+  if(!S||!perGame) return '';
+  const b=S.settle((world.money&&world.money.pool)||1.3,perGame);
+  if(!b.known) return '';
+  const cls=b.gap>=0.12?'bad':b.gap<=-0.12?'warn':'good';
+  const say=b.gap>=0.12?'over the '+BN(b.worth)+' the football earns'
+    :b.gap<=-0.12?'under the '+BN(b.worth)+' the football earns'
+      :'against '+BN(b.worth)+' earned. Level.';
+  return '<div class="bline '+cls+'"><b>'+esc(BN(b.pool))+'</b>'
+    +'<span>promised to the schools, '+esc(say)+'</span></div>';
 }
 
 const side2=(g,i)=>{
@@ -2364,6 +2614,17 @@ function paintEffect(){
    hands back what this player is allowed to turn; the settings a free player does not get
    are still DRAWN, marked, and dead. Hiding them would hide the offer, and a control you
    can see but not turn is the clearest a paywall ever gets. */
+/* THE CONTEXT A DIAL NEEDS TO PRICE ITSELF, assembled here because this is the only place
+   the ledger, the season module and the term's viewing figures are all in hand. The docket
+   stays dependency-free: it is handed `settle` rather than requiring season.js. */
+function dialReads(d,v){
+  if(!d.reads) return '';
+  const avg=ratingsAverage();
+  try{
+    return d.reads(v,{ world:world, perGame:avg?avg.perGame:null,
+      settle:(p,pg)=>(S?S.settle(p,pg):{pool:p,worth:null,gap:null,known:false}) })||'';
+  }catch(e){ return ''; }
+}
 function paintDials(){
   const list=item.dials||[];
   if(!list.length||!choice){ $('d-dials').innerHTML=''; return; }
@@ -2372,12 +2633,25 @@ function paintDials(){
     const cur=dials[d.id];
     const fmt=(v)=>D.format(d,v);
     return '<div class="dial"><div class="dh"><b>'+esc(d.label)+'</b>'
-      +'<span class="v">'+esc(fmt(cur))+'</span></div><div class="steps">'
+      +'<span class="v">'+esc(fmt(cur))+'</span></div>'
+      /* WHAT THE SETTING MEANS. A money dial reads as decoration without it: the four numbers
+         on this screen do not include the pool, so a tester dragged the distribution dial from
+         $1.0B to $2.2B, saw the entire screen fail to react, and asked why they could change
+         it without it impacting anything.
+
+         ABOVE THE CHIPS, NOT BELOW THEM. Below, it was the last element on the longest screen
+         in the mode, measured at 852px down a 900px viewport with the sticky RULE dock over
+         it: reachable by scrolling to the very end, and behind the dock for the whole of the
+         way there. Above, it is on screen with the chips, and it rewrites itself in place as
+         they are pressed, which is the feedback the dial was missing. */
+      +(d.reads?'<div class="dread" data-r="'+esc(d.id)+'">'+esc(dialReads(d,cur))+'</div>':'')
+      +'<div class="steps">'
       +all.map((v)=>{
         const can=mine.indexOf(v)>=0;
         return '<button data-d="'+esc(d.id)+'" data-v="'+v+'"'+(can?'':' disabled')
           +' class="'+(cur===v?'on ':'')+(can?'':'pro')+'">'+esc(fmt(v))+'</button>';
-      }).join('')+'</div></div>';
+      }).join('')+'</div>'
+      +'</div>';
   }).join('');
   $('d-dials').querySelectorAll('[data-d]').forEach((b)=>{
     /* THE DIAL IS THE INTERACTIVE PART OF THE RULING, so the four numbers under it have to
@@ -2850,6 +3124,38 @@ function paintTerm(el,w){
   reveal(el.querySelector('.tbl'));
 }
 
+/* THE BOOKS: what you promised the schools against what the football earned.
+
+   THIS IS THE CARD THE POOL DIAL WAS MISSING. `money.pool` was written by that dial and read
+   by nothing at all, so a tester dragged it from $1.0B to $2.2B, watched the sport carry on
+   exactly as before, and asked why. The engine settles it now, and this is where the answer
+   is shown: three numbers, every year, including the years it balances, because a player who
+   only sees this card when they have gone wrong has no way to learn what right looks like. */
+const BN=(v)=>(Math.abs(v)>=1?'$'+v.toFixed(2)+'B':'$'+Math.round(v*1000)+'M');
+function paintBooks(el,sim){
+  if(!el) return;
+  const b=sim&&sim.books;
+  if(!b||!b.known){ el.hidden=true; return; }
+  el.hidden=false;
+  const over=b.gap>=0.12, under=b.gap<=-0.12;
+  const verdict=over
+    ? ['Short by '+BN(b.gap),'bad','The difference came out of the sport. It comes out again '
+      +'next year, and the year after, until the pool or the audience moves.']
+    : under
+      ? ['Held back '+BN(-b.gap),'warn','The books are immaculate and every conference in the '
+        +'room can do that subtraction.']
+      : ['Level','good','The sport paid out roughly what it earned, which is the only version '
+        +'of this nobody argues about.'];
+  el.innerHTML='<div class="eyebrow" style="margin-bottom:9px">The books</div>'
+    +'<div class="books">'
+      +'<div><b>'+esc(BN(b.pool))+'</b><span>Promised the schools</span></div>'
+      +'<div><b>'+esc(BN(b.worth))+'</b><span>The football earned</span></div>'
+      +'<div class="'+verdict[1]+'"><b>'+esc(verdict[0])+'</b><span>The difference</span></div>'
+    +'</div>'
+    +'<p class="bnote">'+esc(verdict[2])+'</p>';
+  reveal(el.querySelector('.books'));
+}
+
 /* ── the year, and the end ────────────────────────────────────────────────────── */
 function yearEnd(year){
   const done=world.year-world.startYear;
@@ -2864,6 +3170,7 @@ function yearEnd(year){
   const angry=L.removal(world).angry||[];
   $('y-say').textContent=yearVerdict(angry,world);
   paintSeason($('y-season'),lastSeason);
+  paintBooks($('y-books'),lastSeason);
   $('y-term').hidden=true;
   paintFeed($('y-feed'),lastSeason?FEED.onSeason({
     sim:lastSeason, year:year,
@@ -2977,9 +3284,13 @@ function gate(){
     };
     return;
   }
-  say.textContent='You run college football. Who is in which conference, how many teams '
-    +'play for the title, what a player is owed, who gets the money. Five seasons, and the '
-    +'sport you change is the one you have to run next year.';
+  /* THE FIRST LINE IS THE JOB OFFER, not a description of the mode. "You run college
+     football" states a premise; being NAMED to the post is a thing that just happened to
+     you, and the whole mode is written in that tense. It is also the sentence a player
+     would repeat to somebody else. */
+  say.textContent='You have just been named college football\'s commissioner. Who is in '
+    +'which conference, how many teams play for the title, what a player is owed, who gets '
+    +'the money. Five seasons, and the sport you change is the one you have to run next year.';
   const resumable=world&&!world.outcome;
   act.innerHTML=(resumable
       ?'<button class="btn" id="g-resume">Back to '+L.BEATS[world.beat]+', '+world.year+'</button>'

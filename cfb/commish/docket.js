@@ -32,6 +32,14 @@
   const WINTER = 0, PORTAL = 1, SPRING = 2, MEDIA = 3,
     SEPT = 4, OCT = 5, NOV = 6, CHAMP = 7, PLAYOFF = 8;
 
+  /* MONEY, IN THE UNIT SOMEBODY WOULD SAY IT IN. The ledger keeps the pool in billions
+     because that is how the pool is argued about, but a THREE HUNDRED MILLION shortfall
+     printed as "$0.30B" reads as a rounding error rather than as a third of a billion
+     dollars. Anything under a billion goes to millions. */
+  const money = (bnValue) => (Math.abs(bnValue) >= 1
+    ? '$' + bnValue.toFixed(2) + 'B'
+    : '$' + Math.round(bnValue * 1000) + 'M');
+
   /* Conferences with enough members left to behave like one. */
   const live = (w, L) => L.POWERS.filter((c) => !L.isDefunct(w, c));
   const moveAll = (c) => {
@@ -729,8 +737,14 @@
       when: () => true,
       eyebrow: 'The money',
       title: 'The distribution formula',
-      brief: 'The pool is set. How it splits is not, and it is the only number in the sport '
-        + 'that everybody can recite from memory.',
+      /* SAY THE NUMBER. This brief opened "The pool is set", and a tester asked, reasonably,
+         why it would not just print the figure: the pool is the largest number in the sport
+         and the item is about how it splits, so naming it is the whole premise rather than a
+         detail. It is a live figure now, so it also moves when the player moves it. */
+      cast: (w) => ({ pool: (w.money && w.money.pool) || 1.3 }),
+      brief: (c) => '$' + ((c && c.pool) || 1.3).toFixed(1) + 'B a year is on the table. How '
+        + 'it splits is not, and it is the only number in the sport that everybody can recite '
+        + 'from memory.',
       voices: [
         { id: 'SEC', say: 'We generate it. That should be the end of the conversation.' },
         { id: 'ACC', say: 'Our members are being told there is more elsewhere. There is.' },
@@ -762,7 +776,31 @@
            "130%", which is a number about the right sport and the wrong thing entirely. */
         { id: 'pool', label: 'The pool', path: 'money.pool', unit: 'bn',
           base: 1.3, free: [1.3], pro: [1.0, 1.3, 1.6, 1.9, 2.2], step: 0.3,
-          per: { money: 1.2, exposure: 0.3 } },
+          per: { money: 1.2, exposure: 0.3 },
+          /* WHAT THIS SETTING ACTUALLY MEANS, priced against what the football earns. A
+             tester dragged this dial across its whole range, watched nothing on the screen
+             react, and asked why they could change it without it impacting anything. Half of
+             that was a real hole in the engine, now settled every season. The other half was
+             this: even once it bites, a number with no consequence written beside it is a
+             number you cannot make a decision about. */
+          reads: (v, ctx) => {
+            const b = ctx.settle(v, ctx.perGame);
+            if (!b.known) {
+              return 'Nothing has been played yet. The first season is what prices this, and '
+                + 'the sport currently expects to earn about what it pays out.';
+            }
+            const w = money(b.worth);
+            if (b.gap >= 0.12) {
+              return 'The football earns ' + w + '. You would be promising ' + money(b.gap)
+                + ' a year the sport does not make, every year, until you stop.';
+            }
+            if (b.gap <= -0.12) {
+              return 'The football earns ' + w + '. You would be holding ' + money(-b.gap)
+                + ' of it back, and every athletic director in the country can do that '
+                + 'subtraction.';
+            }
+            return 'The football earns ' + w + '. This is about what the sport can actually pay.';
+          } },
       ],
     },
 
@@ -803,7 +841,15 @@
       dials: [
         { id: 'revShare', label: 'The players\' share', path: 'labour.revShare', unit: 'pct',
           base: 0.2, free: [0.15, 0.2], pro: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35],
-          step: 0.05, per: { labour: 1.4, cost: 1.2, money: -0.6 } },
+          step: 0.05, per: { labour: 1.4, cost: 1.2, money: -0.6 },
+          /* A PERCENTAGE OF A NUMBER NOBODY NAMED. "20%" is not a decision until it is
+             twenty per cent of something, and the something is on the same screen. */
+          reads: (v, ctx) => {
+            const pool = (ctx.world.money && ctx.world.money.pool) || 1.3;
+            return Math.round(v * 100) + '% of a ' + money(pool) + ' pool is ' + money(pool * v)
+              + ' a year to the players, and the same ' + money(pool * v)
+              + ' a year that stops reaching the schools.';
+          } },
       ],
     },
 

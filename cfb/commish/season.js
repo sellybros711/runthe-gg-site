@@ -285,6 +285,31 @@
   var VIEW_TITLE = 2.15;
   var VIEW_ROUND = [1.6, 2.5, 3.1, 3.5, 3.6];
 
+  /* WHAT AN AUDIENCE IS WORTH, in billions a year per million viewers a game. Not a guess:
+     the untouched sport draws 1.70 a game, measured across forty seeds, and the ledger opens
+     the pool at $1.3B, so this is 1.3 / 1.70 and the sport starts its term exactly breaking
+     even. Everything after that is the commissioner's doing. See the settlement in verdict()
+     for what the difference then costs. */
+  var WORTH_PER_M = 0.765;
+
+  /* THE BOOKS, FOR ANYBODY WHO NEEDS THEM BEFORE A SEASON HAS BEEN PLAYED. The verdict settles
+     the pool against the season that just happened; the desk has to price a pool the player is
+     STILL DRAGGING, against the audience the sport has been drawing so far. Same arithmetic
+     either way, so it lives in one function rather than in two that drift.
+
+     `perGame` is millions of viewers a game. Null when nothing has been played yet, which is a
+     real state in year one and has to come back as "not known" rather than as zero: a sport
+     that has drawn nothing is worth nothing, and saying so before a ball is kicked would tell
+     a first year commissioner they are $1.3B in the hole. */
+  function settle(pool, perGame) {
+    if (!perGame) return { pool: pool, worth: null, gap: null, known: false };
+    var worth = Math.round(perGame * WORTH_PER_M * 1000) / 1000;
+    /* `+ 0` because a pool that breaks even to the penny rounds to NEGATIVE ZERO, and the
+       screens print this. "-0" beside "the books are level" is the kind of thing a player
+       screenshots. */
+    return { pool: pool, worth: worth, gap: Math.round((pool - worth) * 100) / 100 + 0, known: true };
+  }
+
   function viewers(g, world) {
     var a = g.a, b = g.b;
     /* Both sides matter and the WORSE one matters more, because a mismatch is not a game.
@@ -466,6 +491,10 @@
     var notes = [];
     var tags = [];
     var effects = {};
+    /* AIMED AT A BLOC RATHER THAN AT THE SPORT. The season used to move everybody together,
+       which was right while its only verdicts were about the football. The books are not:
+       overspending is the presidents' problem and underpaying is the conferences'. */
+    var aimed = {};
     var first = sim.bracket.rounds[0] || [];
     var blowouts = first.filter(function (g) { return g.margin >= 21; }).length;
     var autos = sim.field.seats.filter(function (s) { return s.how === 'auto'; });
@@ -556,7 +585,71 @@
     effects.money = (effects.money || 0) + Math.min(2.4, played * 0.18);
     effects.inventory = (effects.inventory || 0) + Math.min(2.0, played * 0.15);
 
+    /* ---- THE BOOKS ----
+       THE POOL WAS A NUMBER THAT WENT NOWHERE. A tester moved the distribution dial from
+       $1.0B to $2.2B, watched the whole screen fail to react, and asked why they could change
+       it without it impacting anything. They were right: `money.pool` was written by that dial
+       and read by NOTHING. Not the season, not the meters, not the blocs, not the ending. The
+       dial's own push on money and exposure was real, so it was not literally inert, but the
+       figure itself was decoration, and the biggest number in the sport being decoration is
+       worse than not having it.
+
+       So the pool is settled every season against what the football actually earned. The pool
+       is what you PROMISED the schools; viewership is what the sport EARNED; the difference is
+       the sport's books, and it lands here because a season already goes through the ledger as
+       a ruling nobody made.
+
+       Both directions cost something, which is what makes the dial a decision:
+
+         PROMISE MORE THAN IT EARNS and every athletic director loves you this year. The
+         shortfall comes out of the sport, the revenue meter drains, and it drains again next
+         season, because you cannot un-promise it.
+
+         PROMISE LESS and the books are immaculate and every conference in the room can do the
+         subtraction. They wanted that money and they know it exists.
+
+       The untouched sport draws 1.70 a game, measured across forty seeds, and a commissioner
+       can push it between about 1.54 and 1.90 with the playoff field and the conference
+       schedule. So the rate below is set to make the opening pool of $1.3B exactly break even
+       at that opening audience: 1.3 / 1.70. That puts the whole dial range in reach of the
+       verdict rather than just the top of it, and it means the football decides how much room
+       you have while the dial decides how much of it you use. */
+    var books = settle((world.money && world.money.pool) || 1.3, sim.perGame);
+    var pool = books.pool, worth = books.worth, gap = books.gap;
+    /* In the unit somebody would say it in: a three hundred million shortfall printed as
+       "$0.30B" reads as a rounding error rather than as a third of a billion dollars. */
+    var bn = function (v) {
+      return Math.abs(v) >= 1 ? '$' + v.toFixed(2) + 'B' : '$' + Math.round(v * 1000) + 'M';
+    };
+    sim.books = books;
+    /* A tenth of a billion either way is noise, not a policy. */
+    if (gap >= 0.12) {
+      tags.push('overcommitted');
+      notes.push('You promised the schools ' + bn(pool) + ' a year. The football earned '
+        + bn(worth) + '. Somebody is going to ask where the other ' + bn(gap)
+        + ' comes from, and this year the answer was the reserve.');
+      effects.money = (effects.money || 0) - gap * 2.2;
+      effects.cost = (effects.cost || 0) + gap * 2.0;
+      aimed.Presidents = aimed.Presidents || {};
+      aimed.Presidents.cost = (aimed.Presidents.cost || 0) - Math.min(3, gap * 2.4);
+    } else if (gap <= -0.12) {
+      tags.push('underpaid');
+      notes.push('The sport drew ' + bn(worth) + ' and paid out ' + bn(pool)
+        + '. Every athletic director in the country can do that subtraction, and several of '
+        + 'them did it out loud.');
+      /* SCALED LIKE THE OTHER SIDE IS. A flat bonus here made shorting the schools by ten
+         million worth exactly as much as shorting them by three hundred. */
+      effects.money = (effects.money || 0) + Math.min(1.2, -gap * 1.3);
+      ['SEC', 'Big Ten', 'ACC', 'Big 12', 'Group of Five'].forEach(function (b) {
+        aimed[b] = aimed[b] || {};
+        aimed[b].money = (aimed[b].money || 0) - Math.min(3, -gap * 4.5);
+      });
+    }
+
     for (var k in effects) effects[k] = Math.round(effects[k] * 100) / 100;
+    for (var b2 in aimed) {
+      for (var a2 in aimed[b2]) aimed[b2][a2] = Math.round(aimed[b2][a2] * 100) / 100;
+    }
     return {
       notes: notes,
       /* WHICH VERDICTS FIRED, so the feed can talk about something else. */
@@ -565,8 +658,9 @@
         id: 'season:' + world.year,
         label: 'The ' + world.year + ' season'
           + (champ ? ', won by ' + champ.team.school : ''),
-        set: {}, move: {}, aimed: {}, effects: effects,
+        set: {}, move: {}, aimed: aimed, effects: effects,
       },
+      books: sim.books,
     };
   }
 
@@ -704,7 +798,7 @@
     play: play, league: league, schedule: schedule, field: field,
     bracket: bracket, champions: champions, resume: resume, titleGames: titleGames,
     playGame: playGame, plausible: plausible, moneyDrift: moneyDrift,
-    weekify: weekify, viewers: viewers,
+    weekify: weekify, viewers: viewers, settle: settle, WORTH_PER_M: WORTH_PER_M,
     SEGMENTS: SEGMENTS, segmentFor: segmentFor, throughAtBeat: throughAtBeat,
     GAMES: GAMES, WEEKS: WEEKS, Z_TO_POINTS: Z_TO_POINTS, HOME: HOME, NOISE: NOISE,
   };

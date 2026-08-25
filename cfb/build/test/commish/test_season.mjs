@@ -259,5 +259,69 @@ console.log('\n=== a five season term ===');
     run(world(), 1).fromRealData === true);
 }
 
+console.log('\n=== the pool is a promise the football has to pay for ===');
+{
+  /* THIS IS THE TEST FOR THE THING NOTHING WOULD HAVE CAUGHT. `money.pool` was written by the
+     distribution dial and read by NOTHING: not the season, not the meters, not the blocs, not
+     the ending. Every test passed, every screen rendered, and the biggest number in the sport
+     did nothing at all. A tester found it by dragging the dial and watching the page fail to
+     react, which is not a way to find bugs.
+
+     So the assertion is the causal claim itself, made against played seasons rather than
+     against the arithmetic: move the pool and the sport has to come out somewhere different. */
+  const play = (pool, seed) => {
+    const w = world();
+    w.money.pool = pool;
+    return S.play(w, teams, rngFor(seed), { through: S.WEEKS, titles: true, bracket: true });
+  };
+  const mid = play(1.3, 71);
+  ok('a season settles its books', !!(mid.books && mid.books.known),
+    mid.books ? '$' + mid.books.pool.toFixed(2) + 'B promised, $' + mid.books.worth.toFixed(2) + 'B earned' : 'no books');
+  /* THE OPENING SPORT BREAKS EVEN. The rate is fitted to make that true, so if the football
+     is ever retuned this is the check that says the money needs refitting with it. */
+  ok('  and the sport as handed over is roughly level', Math.abs(mid.books.gap) < 0.12,
+    'gap ' + mid.books.gap.toFixed(2) + 'B');
+
+  const low = play(1.0, 71), high = play(2.2, 71);
+  ok('promising more than the football earns is a shortfall',
+    high.books.gap > 0.5 && high.tags.indexOf('overcommitted') >= 0,
+    'gap ' + high.books.gap.toFixed(2) + 'B, tags ' + high.tags.join('/'));
+  ok('  and promising less is money held back',
+    low.books.gap < -0.2 && low.tags.indexOf('underpaid') >= 0,
+    'gap ' + low.books.gap.toFixed(2) + 'B, tags ' + low.tags.join('/'));
+  /* THE SAME FOOTBALL, so any difference below is the pool and only the pool. */
+  ok('  with the football itself untouched by any of it',
+    high.bracket.champion.team.school === low.bracket.champion.team.school
+    && high.perGame === low.perGame,
+    low.bracket.champion.team.school + ', ' + low.perGame.toFixed(2) + 'M a game either way');
+
+  /* AND IT REACHES THE LEDGER, which is the half that was missing. */
+  const after = (sim) => {
+    const w = L.applyOutcome(L.applyEdit(world(), sim.edit), sim.edit, {});
+    return w.meters.revenue;
+  };
+  ok('overspending costs the sport revenue against breaking even',
+    after(high) < after(mid) - 3,
+    'revenue ' + after(high).toFixed(1) + ' vs ' + after(mid).toFixed(1));
+  ok('  and it is worse the more you promise',
+    after(play(2.2, 71)) < after(play(1.6, 71)),
+    '$2.2B ' + after(play(2.2, 71)).toFixed(1) + ' vs $1.6B ' + after(play(1.6, 71)).toFixed(1));
+  /* THE ROOM ANSWERS THE UNDERPAY, which is the whole cost of that side: the books are fine
+     and the conferences are not. */
+  ok('  while underpaying is aimed at the conferences rather than at the sport',
+    Object.keys(low.edit.aimed).length >= 4 && !Object.keys(mid.edit.aimed).length,
+    'underpaid hits ' + Object.keys(low.edit.aimed).join(', ') + '; level hits nobody');
+
+  /* GROWING THE AUDIENCE IS THE OTHER LEVER, or the dial is the only thing that matters and
+     none of the football decisions feed back into the money. */
+  const wide = world();
+  wide.money.pool = 1.6; wide.playoff.teams = 24; wide.rules.confGames = 12;
+  const grown = S.play(wide, teams, rngFor(71), { through: S.WEEKS, titles: true, bracket: true });
+  const flat = play(1.6, 71);
+  ok('a bigger audience closes the gap at the same pool', grown.books.gap < flat.books.gap - 0.05,
+    'grown ' + grown.books.gap.toFixed(2) + 'B vs ' + flat.books.gap.toFixed(2) + 'B, at '
+    + grown.perGame.toFixed(2) + 'M a game vs ' + flat.perGame.toFixed(2) + 'M');
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

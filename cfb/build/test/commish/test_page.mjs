@@ -214,8 +214,12 @@ console.log('\n=== what a free player is shown ===');
      first run of this block drew an item with no settings, printed a skip, and asserted
      that an EMPTY list of numbers read correctly. That is a check that can never fail.
      Rule through beats until an item with settings comes up, and fail if none does. */
+  /* AND A BUDGET WIDE ENOUGH THAT LUCK CANNOT DECIDE IT. Roughly a quarter of the docket
+     carries settings and each item costs about three turns of this loop, so a budget of 24
+     was reaching only eight items and failing outright about one run in ten. A test that
+     fails one run in ten is a test people learn to re-run rather than read. */
   let steps=[], seen=0, beat=0, stuck='';
-  while(beat++<24){
+  while(beat++<75){
     if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
     if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }
