@@ -67,13 +67,14 @@
     cursor:pointer;transition:border-color .1s,transform .1s;text-align:center;position:relative;}
   .charcard:hover{border-color:var(--gold);}
   .charcard.picked{border-color:var(--gold);background:var(--panel-2);}
-  .charcard canvas{width:64px;height:64px;background:#0c1218;border-radius:4px;}
+  .charcard canvas{width:64px;height:auto;background:#0c1218;border-radius:4px;image-rendering:pixelated;}
   .charcard .name{margin-top:6px;font-size:12px;color:var(--text);letter-spacing:.06em;}
   .charcard .role{font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
   .charcard .pickno{position:absolute;top:6px;right:6px;background:var(--gold);color:#1a1108;
     font-size:10px;padding:2px 5px;border-radius:3px;font-weight:700;}
   .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:10px;color:var(--text-dim);}
   .statgrid span b{color:var(--text);}
+  .quirk{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:10px;color:var(--purple);line-height:1.4;}
 
   .toggle-row{display:flex;gap:6px;flex-wrap:wrap;}
   .toggle{padding:8px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;
@@ -155,155 +156,639 @@
 
 /* ============================================================================
    ROSTER
-   Twelve public domain characters. Stat scale 1 to 100.
-   Each character carries a small pixel palette so the sprite reads
-   distinctively at 32 pixels tall without any external art assets.
+   Twenty-three public domain characters. Stat scale 1 to 100.
+
+   Each character carries a hand painted 16 by 18 pixel sprite stored as an
+   `art` array of eighteen rows of sixteen characters. Each character in a row
+   is a key into that character's `pal` palette; `.` is transparent. The
+   drawSprite() renderer below reads those two fields together and paints
+   directly to canvas, so nothing loads from disk. The keys are per character
+   so each palette can carry exactly the colors that character needs (no
+   shared skin tone, no shared uniform).
+
+   A `quirk` field, when present, hooks a mechanic in the sim engine
+   (see startAtBat, throwPitch, and resolveSwing). Everyone else plays by
+   the same rules.
    ============================================================================ */
+
+const SPRITE_W = 16;
+const SPRITE_H = 18;
+
 const ROSTER = [
-  { k:'popeye',    n:'Popeye',        role:'Power',    pow:88, spd:55, con:60, def:65,
-    palette:{ skin:'#f5d2a3', hair:'#c25c1a', shirt:'#eaeaea', pants:'#0b3a6b', accent:'#c25c1a' },
-    hat:'sailor', mark:'pipe' },
-  { k:'jack',      n:'Jack',          role:'Speed',    pow:60, spd:82, con:50, def:60,
-    palette:{ skin:'#f0c99a', hair:'#c9a256', shirt:'#3a7f4a', pants:'#5c3a1c', accent:'#c9a256' },
-    hat:'cap',    mark:'bean' },
-  { k:'sherlock',  n:'Sherlock',      role:'Contact',  pow:45, spd:55, con:88, def:75,
-    palette:{ skin:'#efc9a0', hair:'#5a3618', shirt:'#8b6a3a', pants:'#2d1e14', accent:'#c69a5c' },
-    hat:'deerstalker', mark:'pipe' },
-  { k:'robin',     n:'Robin Hood',    role:'Balanced', pow:65, spd:80, con:68, def:78,
-    palette:{ skin:'#efc9a0', hair:'#a45b1a', shirt:'#3f7a3a', pants:'#4a2d18', accent:'#f4c25a' },
-    hat:'feather', mark:'bow' },
-  { k:'peter',     n:'Peter Pan',     role:'Speed',    pow:40, spd:96, con:62, def:72,
-    palette:{ skin:'#f2ceaa', hair:'#c07a2a', shirt:'#3a8a4a', pants:'#3a6a3a', accent:'#e3b04c' },
-    hat:'feather', mark:'dagger' },
-  { k:'dracula',   n:'Dracula',       role:'Power',    pow:84, spd:58, con:58, def:60,
-    palette:{ skin:'#dcd2d0', hair:'#141014', shirt:'#0f0f14', pants:'#0f0f14', accent:'#8a1a1a' },
-    hat:'slick', mark:'cape' },
-  { k:'pooh',      n:'Pooh',          role:'Contact',  pow:42, spd:30, con:65, def:50,
-    palette:{ skin:'#f0c187', hair:'#d18a3a', shirt:'#d24949', pants:'#d18a3a', accent:'#f4c25a' },
-    hat:'none', mark:'pot' },
-  { k:'tracy',     n:'Dick Tracy',    role:'Contact',  pow:60, spd:60, con:82, def:70,
-    palette:{ skin:'#efc9a0', hair:'#141014', shirt:'#f4c25a', pants:'#0e1a3a', accent:'#c94b1a' },
-    hat:'fedora', mark:'badge' },
-  { k:'tintin',    n:'Tintin',        role:'Balanced', pow:58, spd:75, con:65, def:72,
-    palette:{ skin:'#f5d5a8', hair:'#c9a256', shirt:'#5cb6e5', pants:'#6a4a2a', accent:'#c94b1a' },
-    hat:'none', mark:'quiff' },
-  { k:'franky',    n:'Frankenstein',  role:'Power',    pow:98, spd:22, con:40, def:55,
-    palette:{ skin:'#7ea86a', hair:'#141014', shirt:'#3a2a1a', pants:'#141014', accent:'#8a1a1a' },
-    hat:'flat', mark:'bolts' },
-  { k:'alice',     n:'Alice',         role:'Contact',  pow:40, spd:68, con:75, def:65,
-    palette:{ skin:'#f5d5a8', hair:'#e9c76a', shirt:'#5cb6e5', pants:'#eaeaea', accent:'#e9c76a' },
-    hat:'bow', mark:'apron' },
-  { k:'silver',    n:'Long John',     role:'Power',    pow:76, spd:40, con:62, def:55,
-    palette:{ skin:'#efc9a0', hair:'#141014', shirt:'#8a1a1a', pants:'#141014', accent:'#f4c25a' },
-    hat:'tricorn', mark:'peg' },
+  /* ------- POWER HITTERS ------- */
+  { k:'kong', n:'King Kong', role:'Power', pow:99, spd:8, con:45, def:40,
+    quirk:null,
+    note:'Legendary long ball, cannot run to save his life.',
+    pal:{ k:'#141014', f:'#3a2413', d:'#5a3a1c', l:'#8b6a3a', s:'#c9a067', e:'#eaeaea', p:'#241812' },
+    art:[
+      '................',
+      '.....kkkkk......',
+      '....kffffk......',
+      '....kffslsk.....',
+      '....kseeeek.....',
+      '....kfslsfk.....',
+      '...kfffffffk....',
+      '..kdddllldddk...',
+      '.kdlsssssslddk..',
+      '.kdslllllllsdk..',
+      '.kdslllllllsdk..',
+      '.kddlsssssllddk.',
+      '..kkkddddddkkk..',
+      '...dd......dd...',
+      '...dd......dd...',
+      '..fff......fff..',
+      '..pkp......pkp..',
+      '................',
+    ] },
+
+  { k:'franky', n:'Frankenstein', role:'Power', pow:97, spd:20, con:40, def:55,
+    quirk:null,
+    pal:{ k:'#141014', g:'#7ea86a', d:'#4d6a44', l:'#a0c286', b:'#c9a256', c:'#3a2818', s:'#8a1a1a', p:'#0f0f14' },
+    art:[
+      '....kkkkkkkk....',
+      '....kkkkkkkk....',
+      '...kggggggggk...',
+      '...gggkkkkggg...',
+      '...gkbggggbkg...',
+      '...gggkkggggg...',
+      '...ggggllgggg...',
+      '..kbgggggggbk...',
+      '..ccccssssccc...',
+      '..cccssssssccc..',
+      '.gcsssssssssscg.',
+      '.gcsssssssssscg.',
+      '..cccssssssccc..',
+      '...cc.pppp.cc...',
+      '...cc.pppp.cc...',
+      '...cc.pppp.cc...',
+      '..kkk.kkkk.kkk..',
+      '................',
+    ] },
+
+  { k:'popeye', n:'Popeye', role:'Power', pow:88, spd:55, con:60, def:65,
+    quirk:null,
+    pal:{ k:'#141014', w:'#eaeaea', h:'#c25c1a', s:'#f5d2a3', p:'#0b3a6b', b:'#3a2818', r:'#8a1a1a', y:'#f4c25a' },
+    art:[
+      '................',
+      '................',
+      '.....wwwwww.....',
+      '....wwwwwwww....',
+      '...whhhhhhhhw...',
+      '....sssssss.....',
+      '....skssskss....',
+      '....ssssssssrr..',
+      '....sssssssss...',
+      '.....wwwwww.....',
+      '....whhhhhhw....',
+      '..sshhhhhhhhss..',
+      '.sssshhhhhhssss.',
+      '.sssshhhhhhssss.',
+      '..ss.pppppp.ss..',
+      '.....pppppp.....',
+      '.....pppppp.....',
+      '....bb....bb....',
+    ] },
+
+  { k:'dracula', n:'Dracula', role:'Power', pow:86, spd:58, con:58, def:60,
+    quirk:null,
+    pal:{ k:'#0f0f14', s:'#dcd2d0', h:'#141014', r:'#8a1a1a', b:'#241820', w:'#eaeaea' },
+    art:[
+      '................',
+      '...hhhhhhhhhh...',
+      '..hhhhhhhhhhhh..',
+      '...ssssssssss...',
+      '...skssssskss...',
+      '...sssrrrsss....',
+      '...sssrrrsss....',
+      '..hhssssssssh...',
+      '..rwwkkkkkkwwr..',
+      '..rwbbbbbbbwr...',
+      '..rrbbwrwbbrr...',
+      '..rrbbbrbbbrr...',
+      '...rbbbbbbbbr...',
+      '...rrbbbbbbrr...',
+      '....rbbrrbbrr...',
+      '....rbb..bbr....',
+      '....bb....bb....',
+      '....kk....kk....',
+    ] },
+
+  { k:'liberty', n:'Lady Liberty', role:'Power', pow:100, spd:1, con:22, def:30,
+    quirk:'monument',
+    note:'Immobile. But every hit clears the wall.',
+    pal:{ k:'#243c34', g:'#6db8a2', l:'#8fd0b8', d:'#4a8a7a', y:'#f4c25a', o:'#c9a256', w:'#eaeaea' },
+    art:[
+      '......y.........',
+      '.....yyy........',
+      '....yyoyy.......',
+      '.g.gyyoyyg.g....',
+      '.gg.gggggg.gg...',
+      '.gggyyyyyyggg...',
+      '..ggglllllg.....',
+      '..gdggggggdg....',
+      '..gllllllllg....',
+      '..gllllllllg....',
+      '..gdlllllldg....',
+      '..gllwwwwllg....',
+      '..gllwwwwllg....',
+      '..gdlllllldg....',
+      '..gllllllllg....',
+      '..gllllllllg....',
+      '..gggggggggg....',
+      '..kkkkkkkkkk....',
+    ] },
+
+  /* ------- SPEED DEMONS ------- */
+  { k:'peter', n:'Peter Pan', role:'Speed', pow:40, spd:96, con:62, def:72,
+    quirk:null,
+    pal:{ k:'#141014', s:'#f2ceaa', g:'#3a8a4a', d:'#2a6a3a', l:'#5cb063', h:'#c07a2a', y:'#e3b04c', b:'#5c3a1c' },
+    art:[
+      '................',
+      '................',
+      '....y...........',
+      '...yggggggg.....',
+      '....gllggglg....',
+      '...ssssssssss...',
+      '...skssssskss...',
+      '...ssssmmssss...',
+      '....sssssssss...',
+      '..gglggggglgg...',
+      '.gggllgggllggg..',
+      '.gllgggggggllg..',
+      '.gllgggggggllg..',
+      '..gggggggggg....',
+      '..bbbggbbggb....',
+      '...bb.gg.bb.....',
+      '..ss....sss.....',
+      '..kk.....kk.....',
+    ] },
+
+  { k:'felix', n:'Felix', role:'Speed', pow:38, spd:92, con:68, def:70,
+    quirk:null,
+    pal:{ k:'#141014', w:'#eaeaea', p:'#e6b0b8', y:'#f4c25a' },
+    art:[
+      '...k........k...',
+      '...kk......kk...',
+      '...kwk....kwk...',
+      '..kkwwkkkkwwkk..',
+      '..kwwwwwwwwwwk..',
+      '..kwwwwwwwwwwk..',
+      '..kwykwwwwkywk..',
+      '..kwwkwwwwkwwk..',
+      '..kwwwwppwwwwk..',
+      '..kwwwppppwwwk..',
+      '..kkwwwwwwwwkk..',
+      '...kkwwwwwwkk...',
+      '....kwwwwww.....',
+      '....kw....w.....',
+      '...kkw....wkk...',
+      '...kwww..wwwk...',
+      '...kkk....kkk...',
+      '................',
+    ] },
+
+  { k:'jack', n:'Jack', role:'Speed', pow:52, spd:88, con:48, def:60,
+    quirk:null,
+    pal:{ k:'#141014', s:'#f0c99a', h:'#c9a256', g:'#3a7f4a', d:'#245524', t:'#f0e4d4', p:'#5c3a1c', b:'#3a2818', l:'#5cb063' },
+    art:[
+      'g...............',
+      'l...............',
+      'g...hhhhhhhh....',
+      'lg.hhssssssh....',
+      'gl.hsssssssh....',
+      'lg.skssssskh....',
+      'gg.ssssmmsss....',
+      '.ll.sssssss.....',
+      '.gl.tttttttt....',
+      '..lgtttttttt....',
+      '..lgtdddddddt...',
+      '...gttttttttg...',
+      '...gtppppppttg..',
+      '....gppppppg....',
+      '....gpppppp.....',
+      '....pppppppp....',
+      '...bbb....bbb...',
+      '................',
+    ] },
+
+  { k:'tom', n:'Tom Sawyer', role:'Speed', pow:50, spd:84, con:68, def:65,
+    quirk:null,
+    pal:{ k:'#141014', s:'#f0c99a', y:'#c9a256', o:'#8b6a3a', h:'#a45b1a', d:'#5a3a1c', t:'#dcbe86', g:'#3a5a3a', r:'#c94b1a' },
+    art:[
+      '................',
+      '....yyyyyyyy....',
+      '...yyyyyyyyyy...',
+      '...yoooooooooy..',
+      '....hhhhhhh.....',
+      '....ssssssss....',
+      '....skssssks....',
+      '....sssrsssss...',
+      '....sssssssss...',
+      '....tttttttt....',
+      '...tttttttttt...',
+      '...toooooooot...',
+      '...tttttttttt...',
+      '....tttttttt....',
+      '....gggggggg....',
+      '....gg....gg....',
+      '....gg....gg....',
+      '...bb......bb...',
+    ] },
+
+  { k:'huck', n:'Huck Finn', role:'Speed', pow:44, spd:86, con:58, def:62,
+    quirk:null,
+    pal:{ k:'#141014', s:'#efc9a0', y:'#c9a256', o:'#8b6a3a', h:'#5a3618', t:'#a45b1a', d:'#5c3a1c', l:'#8b6a3a', p:'#e0c88a' },
+    art:[
+      '............l...',
+      '....yyyyyyyy.l..',
+      '...yyyyyyyyyy.l.',
+      '...yoooooooooyl.',
+      '....hhhhhhh...l.',
+      '....ssssssss..l.',
+      '....skssssksll..',
+      '....sssssssll...',
+      '....sssssslll...',
+      '....ttttttt.....',
+      '...tttttttdt....',
+      '...tttddttttt...',
+      '...ttttttdtt....',
+      '....tttddttt....',
+      '....pppppppp....',
+      '....pp....pp....',
+      '....pp....pp....',
+      '....ss....ss....',
+    ] },
+
+  { k:'flash', n:'Flash Gordon', role:'Speed', pow:62, spd:80, con:64, def:68,
+    quirk:null,
+    pal:{ k:'#141014', s:'#f5d2a3', y:'#e9c76a', r:'#c94b1a', d:'#8a1a1a', o:'#3a2a1a', g:'#f4c25a', l:'#eaeaea' },
+    art:[
+      '................',
+      '................',
+      '....yyyyyyyy....',
+      '...yyyyyyyyy....',
+      '...yssssssyy....',
+      '...skssssksy....',
+      '....ssssssss....',
+      '....sssyssss....',
+      '....rrrrrrrr....',
+      '...rrrrgrrrrr...',
+      '..drrrgggrrrd...',
+      '..drrggygggrd...',
+      '..drrrgggrrrd...',
+      '..drrrrgrrrrd...',
+      '....oooooooo....',
+      '....oo....oo....',
+      '....oo....oo....',
+      '...kkk....kkk...',
+    ] },
+
+  { k:'invisible', n:'Invisible Man', role:'Defense', pow:38, spd:82, con:56, def:92,
+    quirk:null,
+    note:'Fielders lose him in the dust.',
+    pal:{ k:'#141014', g:'#4a4a4a', d:'#2a2a2a', l:'#7a7a7a', w:'#eaeaea', b:'#5cb6e5', p:'#141014' },
+    art:[
+      '................',
+      '....kkkkkkkk....',
+      '...kkkkkkkkkk...',
+      '...kllllllllk...',
+      '....wwwwwwww....',
+      '....wkkbbkkw....',
+      '....wwwwwwww....',
+      '....wwwwwwww....',
+      '....gggggggg....',
+      '...ggglllggg....',
+      '..gggglllgggg...',
+      '..gllllllllgg...',
+      '..gggglllgggg...',
+      '...ggglllggg....',
+      '....dddddddd....',
+      '....dd....dd....',
+      '....dd....dd....',
+      '...kkk....kkk...',
+    ] },
+
+  /* ------- CONTACT SPECIALISTS ------- */
+  { k:'sherlock', n:'Sherlock', role:'Contact', pow:45, spd:55, con:88, def:78,
+    quirk:null,
+    pal:{ k:'#141014', s:'#efc9a0', h:'#5a3618', c:'#8b6a3a', d:'#5a3a1c', l:'#c69a5c', p:'#2d1e14', r:'#8a1a1a', w:'#a0a0a0' },
+    art:[
+      '................',
+      '....cccccccc....',
+      '...c.cccccc.c...',
+      '...cccccccccc...',
+      '....ssssssss....',
+      '....skssssks....',
+      '....sssssssswww.',
+      '....ssssmssswwr.',
+      '....sssssssswww.',
+      '....cccccccc....',
+      '...cccccccccc...',
+      '..ccdddddddcc...',
+      '..cldddddddlc...',
+      '..cccdddddccc...',
+      '....pppppppp....',
+      '....pp....pp....',
+      '....pp....pp....',
+      '...kkk....kkk...',
+    ] },
+
+  { k:'tracy', n:'Dick Tracy', role:'Contact', pow:60, spd:60, con:85, def:72,
+    quirk:null,
+    pal:{ k:'#141014', s:'#efc9a0', y:'#f4c25a', o:'#c9a256', p:'#0e1a3a', r:'#c94b1a', w:'#eaeaea' },
+    art:[
+      '................',
+      '....yyyyyyyy....',
+      '...yyyyyyyyyy...',
+      '...yoooyyyoooy..',
+      '....kssssssk....',
+      '....skssssks....',
+      '....ssssrsss....',
+      '....sssssssss...',
+      '....yyyyyyyy....',
+      '...yywwwwwyy....',
+      '..yywywkkywyyy..',
+      '..yywywkkywyyy..',
+      '..yyywwwwwyyy...',
+      '..oyyyywyyyyoo..',
+      '....pppppppp....',
+      '....pp....pp....',
+      '....pp....pp....',
+      '...kkk....kkk...',
+    ] },
+
+  { k:'alice', n:'Alice', role:'Contact', pow:45, spd:68, con:82, def:65,
+    quirk:null,
+    pal:{ k:'#141014', s:'#f5d5a8', y:'#e9c76a', o:'#c9a256', b:'#5cb6e5', d:'#3a7fa8', w:'#eaeaea', r:'#c94b1a' },
+    art:[
+      '................',
+      '.....k....k.....',
+      '.....kbkkbk.....',
+      '....yyyyyyyy....',
+      '...yyssssssyy...',
+      '...oyksssskyo...',
+      '...yyssssssyo...',
+      '...yysssrssyy...',
+      '....ssssssss....',
+      '....bbbbbbbb....',
+      '...bwwwwwwwwb...',
+      '..bwwwwwwwwwwb..',
+      '..bwwwwwwwwwwb..',
+      '..bwwbbbbbbwwb..',
+      '..dwwbbwbwwwwb..',
+      '..dwwbbbbbwwbb..',
+      '..bbbbbbbbbbbb..',
+      '...ss......ss...',
+    ] },
+
+  { k:'dorothy', n:'Dorothy', role:'Contact', pow:52, spd:64, con:78, def:70,
+    quirk:null,
+    pal:{ k:'#141014', s:'#f5d5a8', h:'#5a3618', b:'#5cb6e5', w:'#eaeaea', r:'#c94b1a', d:'#8a1a1a' },
+    art:[
+      '................',
+      '....hhhhhhhh....',
+      '...hhhhhhhhhh...',
+      '..hh.ssssss.hh..',
+      '..hhssssssssh...',
+      '..hskssssskhh...',
+      '..hhssssssssh...',
+      '..hhsssmmssshh..',
+      '...hhssssssshh..',
+      '....bbwbbwbb....',
+      '...bwwbbwwbbw...',
+      '...wbbwwbbwwb...',
+      '...bwwbbwwbbw...',
+      '...wbbwwbbwwb...',
+      '....bwbbwbbw....',
+      '....bb....bb....',
+      '....bb....bb....',
+      '...dd......dd...',
+    ] },
+
+  { k:'lupin', n:'Arsène Lupin', role:'Contact', pow:55, spd:78, con:84, def:68,
+    quirk:null,
+    pal:{ k:'#0f0f14', s:'#efc9a0', h:'#141014', b:'#241820', w:'#eaeaea', y:'#c9a256', r:'#8a1a1a' },
+    art:[
+      '....hhhhhhhh....',
+      '....hhhhhhhh....',
+      '...hhhhhhhhhh...',
+      '..hhhhhhhhhhhh..',
+      '....ssssssss....',
+      '....skssssks....',
+      '....sssyysss....',
+      '....sssssssss...',
+      '....wwwwwwww....',
+      '..bhbbwbwbbhbb..',
+      '..bhbbwwwbbhbb..',
+      '..bhbbbwbbbhbb..',
+      '...hbbbbbbbbh...',
+      '...hbbbbbbbbh...',
+      '....hhbbbbhh....',
+      '....hh....hh....',
+      '....hh....hh....',
+      '...kkk....kkk...',
+    ] },
+
+  /* ------- WILD CARDS AND QUIRKY ------- */
+  { k:'hyde', n:'Mr. Hyde', role:'Wild', pow:55, spd:60, con:52, def:55,
+    quirk:'transform',
+    note:'One in six at bats he transforms. All power, no manners.',
+    pal:{ k:'#141014', s:'#e5c39a', h:'#141014', c:'#3a2a1a', d:'#241812', r:'#8a1a1a', b:'#141014', y:'#c9a256' },
+    art:[
+      '................',
+      '...hhh.hhhh.h...',
+      '..hhhhhhhhhhh...',
+      '..hhhhhhhhhhh...',
+      '..hhsssssssh....',
+      '..hskssssksh....',
+      '..hsssrrssss....',
+      '..hssrkkkrss....',
+      '..hssssssssh....',
+      '...cccccccc.....',
+      '..ccccccccccc...',
+      '..cdcccccccdc...',
+      '..cddccccddcc...',
+      '..cdddccddddc...',
+      '....dd..dd......',
+      '..ddddddddd.....',
+      '..dddd..dddd....',
+      '..kkk....kkk....',
+    ] },
+
+  { k:'scarecrow', n:'Scarecrow', role:'Wild', pow:38, spd:55, con:78, def:60,
+    quirk:'confuse',
+    note:'Pitchers lose the plate. Meter wobbles harder against him.',
+    pal:{ k:'#141014', y:'#c9a256', o:'#8b6a3a', s:'#eecc78', c:'#5a3a1a', g:'#3a5a3a', d:'#241812', p:'#a45b1a' },
+    art:[
+      '..y.......y.....',
+      '...yyyyyyyyy....',
+      '..yyyyyyyyyyy...',
+      '..yooooooooyy...',
+      '....sssssss.....',
+      '....skssssks....',
+      '....ssssrsss....',
+      '....ssskskss....',
+      '....cccccccc..y.',
+      '..ycccyyycccy.y.',
+      '.ycccccccccccy..',
+      '.yccyyccyyccyy..',
+      '..ccccddccccc...',
+      '..cccdccdcccc...',
+      '....pppppppp....',
+      '....pp....pp....',
+      '..yypp....ppyy..',
+      '..kkk......kkk..',
+    ] },
+
+  { k:'lion', n:'Cowardly Lion', role:'Wild', pow:82, spd:50, con:52, def:55,
+    quirk:'skittish',
+    note:'Enormous power. Bails on tough pitches.',
+    pal:{ k:'#141014', h:'#a45b1a', d:'#7a3a10', s:'#e3a05a', l:'#f5c47a', y:'#c9a256', b:'#3a2818' },
+    art:[
+      '..hhhhhhhhhhhh..',
+      '.hhhhhhhhhhhhhh.',
+      'hhhdddddddddddhh',
+      'hhdssssssssssdhh',
+      'hhdslsssssslsdhh',
+      'hhdskssssksssdhh',
+      'hhdssssyssssssdh',
+      '.hddssskkssssdh.',
+      '..hhdsssssssdh..',
+      '...hhhhhhhhhh...',
+      '..hlllllllllh...',
+      '..hllllllllllh..',
+      '..hlllllllllh...',
+      '..hddddddddddh..',
+      '....dd....dd....',
+      '....dd....dd....',
+      '....dd....dd....',
+      '...bbb....bbb...',
+    ] },
+
+  { k:'pooh', n:'Pooh', role:'Underdog', pow:42, spd:30, con:65, def:50,
+    quirk:null,
+    pal:{ k:'#141014', y:'#f4c25a', o:'#d18a3a', r:'#d24949', d:'#8a2b2b', s:'#f0c187', b:'#3a2818' },
+    art:[
+      '................',
+      '....yy....yy....',
+      '...yyyyyyyyyy...',
+      '..yyyyyyyyyyyy..',
+      '..yyssssssssyy..',
+      '..ysskssssksssy.',
+      '..ysssssossssy..',
+      '..ysssssmsssss..',
+      '..yyssssssssyy..',
+      '..rrrrrrrrrrrr..',
+      '..drrrrrrrrrrd..',
+      '..drrrrrrrrrrd..',
+      '..drrrrrrrrrrd..',
+      '..drrrrrrrrrrd..',
+      '..yyyy....yyyy..',
+      '..yyyy....yyyy..',
+      '..yyyy....yyyy..',
+      '..kkk......kkk..',
+    ] },
+
+  { k:'robin', n:'Robin Hood', role:'Balanced', pow:65, spd:78, con:70, def:78,
+    quirk:null,
+    pal:{ k:'#141014', s:'#efc9a0', g:'#3f7a3a', d:'#26521f', l:'#5aa055', h:'#a45b1a', b:'#4a2d18', y:'#f4c25a' },
+    art:[
+      '............y...',
+      '...gggggggggy...',
+      '..gllgggggggy...',
+      '..gllggggggg....',
+      '....hhhhhhh.....',
+      '....ssssssss....',
+      '....skssssks....',
+      '....sssssssss...',
+      '....gggggggg....',
+      '...gggllllggg...',
+      '..gglllgggllgg..',
+      '..gglllgggllgg..',
+      '..gggglllgggg...',
+      '...gggggggggg...',
+      '....bbbbbbbb....',
+      '....bb....bb....',
+      '....bb....bb....',
+      '...bbb....bbb...',
+    ] },
+
+  { k:'tintin', n:'Tintin', role:'Balanced', pow:58, spd:75, con:70, def:72,
+    quirk:null,
+    pal:{ k:'#141014', s:'#f5d5a8', h:'#c9a256', b:'#5cb6e5', d:'#3a7fa8', p:'#6a4a2a', o:'#8b6a3a', r:'#c94b1a' },
+    art:[
+      '................',
+      '.....hh.........',
+      '....hhhhh.......',
+      '....hssssss.....',
+      '...hhsssssss....',
+      '...hsksssskss...',
+      '....sssssssss...',
+      '....sssmssss....',
+      '....bbbbbbbb....',
+      '...bbwbbbbwbb...',
+      '..bbwwbbbbwwbb..',
+      '..bwwbbbbbbwwb..',
+      '..bwwbbbbbbwwb..',
+      '..bbbbbbbbbbbb..',
+      '....pppppppp....',
+      '....pp....pp....',
+      '....pp....pp....',
+      '...ooo....ooo...',
+    ] },
 ];
 const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
 
 /* Opponent teams. Each is a name + primary color + a nine character lineup
-   drawn from the same twelve character pool. Users face a rotating cast of
-   these across a seven game season. */
+   drawn from the same twenty-three character pool. Users face a rotating cast
+   of these across a seven game season. Every team has a distinct flavor: a
+   pack of pure sluggers hits differently from a small-ball speed team. */
 const OPPONENTS = [
-  { name:'The Whalers',    color:'#5cb6e5', roster:['dracula','franky','silver','pooh','sherlock','popeye','tracy','robin','alice'] },
-  { name:'Storybook Nine', color:'#c25c1a', roster:['jack','peter','robin','alice','pooh','tintin','sherlock','popeye','tracy'] },
-  { name:'The Timekeepers',color:'#b08ac6', roster:['tracy','sherlock','tintin','silver','robin','franky','peter','alice','popeye'] },
-  { name:'Ironsides',      color:'#8a1a1a', roster:['franky','popeye','dracula','silver','pooh','robin','sherlock','tintin','alice'] },
-  { name:'Marauders',      color:'#3a7f4a', roster:['silver','dracula','franky','robin','tintin','peter','tracy','popeye','sherlock'] },
-  { name:'The Fables',     color:'#f4c25a', roster:['peter','jack','alice','robin','pooh','tintin','sherlock','popeye','tracy'] },
-  { name:'Nightshift',     color:'#4a3a6a', roster:['dracula','franky','sherlock','tracy','silver','popeye','robin','tintin','pooh'] },
-  { name:'The Cartographers', color:'#c94b1a', roster:['tintin','sherlock','tracy','robin','alice','peter','popeye','jack','silver'] },
+  { name:'Ironsides',      color:'#8a1a1a', roster:['kong','franky','popeye','dracula','liberty','hyde','lion','robin','tracy'] },
+  { name:'Storybook Nine', color:'#c25c1a', roster:['peter','jack','alice','robin','pooh','tintin','sherlock','dorothy','felix'] },
+  { name:'The Timekeepers',color:'#b08ac6', roster:['tracy','sherlock','tintin','lupin','robin','flash','peter','alice','popeye'] },
+  { name:'Nightshift',     color:'#4a3a6a', roster:['dracula','franky','hyde','invisible','lupin','sherlock','tracy','popeye','robin'] },
+  { name:'The Cartographers', color:'#c94b1a', roster:['tintin','sherlock','flash','tracy','robin','alice','peter','tom','huck'] },
+  { name:'Fields and Fables', color:'#f4c25a', roster:['dorothy','scarecrow','lion','alice','pooh','tintin','robin','tom','sherlock'] },
+  { name:'The Marauders',  color:'#3a7f4a', roster:['lupin','dracula','franky','robin','tintin','peter','tracy','popeye','sherlock'] },
+  { name:'The Kids Table', color:'#5cb6e5', roster:['tom','huck','jack','peter','alice','dorothy','robin','tintin','pooh'] },
 ];
 
 /* ============================================================================
    PIXEL SPRITE
-   Each character is drawn procedurally onto a small canvas. The palette on the
-   ROSTER row does the identifying work: skin color, hair, uniform, and a hat
-   or mark distinguishes them at a glance.
+   Each character's art field is eighteen rows of sixteen characters, where
+   every character is either `.` for transparent or a key into that
+   character's `pal`. drawSprite reads that grid and paints one square per
+   cell into `size` wide. Total sprite height is size * SPRITE_H / SPRITE_W.
    ============================================================================ */
-function drawSprite(ctx, c, size) {
-  const s = size / 16;
-  const px = (x,y,w,h,color) => { ctx.fillStyle = color; ctx.fillRect(Math.floor(x*s), Math.floor(y*s), Math.ceil(w*s), Math.ceil(h*s)); };
-  const p = c.palette;
-  ctx.clearRect(0,0,size,size);
-  /* legs */
-  px(6,12,2,3, p.pants);
-  px(8,12,2,3, p.pants);
-  if (c.mark === 'peg') px(8,12,2,3,'#8b6a3a');
-  /* shoes */
-  px(6,14,2,1,'#141014');
-  px(8,14,2,1,'#141014');
-  /* body */
-  px(5,8,6,4, p.shirt);
-  /* belt */
-  px(5,11,6,1,'#141014');
-  /* accent stripe on chest */
-  px(5,9,6,1, p.accent);
-  /* arms */
-  px(4,8,1,3, p.shirt);
-  px(11,8,1,3, p.shirt);
-  /* hands */
-  px(4,10,1,1, p.skin);
-  px(11,10,1,1, p.skin);
-  /* neck */
-  px(7,7,2,1, p.skin);
-  /* head */
-  px(6,4,4,4, p.skin);
-  /* eyes */
-  px(7,6,1,1,'#141014');
-  px(9,6,1,1,'#141014');
-  /* hair base */
-  if (c.hat !== 'slick') px(6,3,4,1, p.hair);
-  /* hats and identifying marks */
-  switch (c.hat) {
-    case 'sailor':
-      px(5,3,6,1,'#eaeaea'); px(5,2,6,1,'#eaeaea'); px(7,1,2,1,'#eaeaea');
-      break;
-    case 'cap':
-      px(5,3,6,1, p.accent); px(6,2,4,1, p.accent);
-      break;
-    case 'deerstalker':
-      px(5,3,6,1,'#8b6a3a'); px(6,2,4,1,'#8b6a3a'); px(4,4,1,1,'#8b6a3a'); px(11,4,1,1,'#8b6a3a');
-      break;
-    case 'feather':
-      px(5,3,6,1, p.shirt); px(6,2,4,1, p.shirt); px(11,2,1,1, p.accent); px(11,1,1,1, p.accent);
-      break;
-    case 'fedora':
-      px(4,3,8,1,'#141014'); px(6,2,4,1,'#141014'); px(6,1,4,1,'#141014');
-      px(5,3,6,1, p.accent);
-      break;
-    case 'flat':
-      px(5,3,6,1,'#141014'); px(5,2,6,1,'#141014');
-      /* forehead scar */
-      px(7,4,2,1,'#3a2a1a');
-      break;
-    case 'bow':
-      px(5,3,6,1, p.hair); px(4,3,1,1, p.accent); px(11,3,1,1, p.accent);
-      break;
-    case 'tricorn':
-      px(4,3,8,1,'#141014'); px(3,3,1,1,'#141014'); px(12,3,1,1,'#141014');
-      px(6,2,4,1,'#141014'); px(6,1,4,1,'#141014');
-      break;
-    case 'slick':
-      px(6,3,4,1,'#141014'); px(6,2,4,1,'#141014');
-      break;
-  }
-  /* per character marks */
-  switch (c.mark) {
-    case 'pipe': px(10,6,2,1,'#3a2a1a'); px(12,6,1,1,'#7a5a2a'); break;
-    case 'bolts': px(5,7,1,1,'#c9a256'); px(10,7,1,1,'#c9a256'); break;
-    case 'cape': px(4,8,1,5,'#8a1a1a'); px(11,8,1,5,'#8a1a1a'); break;
-    case 'quiff': px(7,2,2,1, p.hair); px(8,1,1,2, p.hair); break;
-    case 'badge': px(9,9,1,1,'#f4c25a'); break;
-    case 'pot': px(11,10,1,2,'#f4c25a'); break;
-    case 'apron': px(5,9,6,3,'#eaeaea'); px(5,9,6,1, p.accent); break;
-    case 'bow': /* no visible bow at this scale */ break;
-    case 'bean': px(2,10,1,1,'#3a7f4a'); px(2,9,1,1,'#3a7f4a'); break;
-    case 'dagger': px(3,11,1,2,'#c0c0c0'); break;
-    case 'peg': /* handled above at legs */ break;
+function drawSpriteGrid(ctx, c, size) {
+  const px = size / SPRITE_W;
+  const totalH = size * SPRITE_H / SPRITE_W;
+  ctx.clearRect(0, 0, size, totalH);
+  const pal = c.pal || {};
+  const rows = c.art || [];
+  for (let y = 0; y < SPRITE_H; y++) {
+    const row = rows[y] || '';
+    for (let x = 0; x < SPRITE_W; x++) {
+      const ch = row[x];
+      if (!ch || ch === '.') continue;
+      const color = pal[ch];
+      if (!color) continue;
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.floor(x*px), Math.floor(y*px), Math.ceil(px), Math.ceil(px));
+    }
   }
 }
+/* The rest of the module still calls drawSprite; keep the name pointing at
+   the grid renderer. The old procedural fallback was removed with the
+   handpainted roster; every character now has a `pal` + `art` field. */
+function drawSprite(ctx, c, size) { drawSpriteGrid(ctx, c, size); }
+
+
 function spriteCanvas(c, size) {
   const cv = document.createElement('canvas');
-  cv.width = size; cv.height = size;
+  cv.width = size;
+  cv.height = Math.round(size * SPRITE_H / SPRITE_W);
   drawSprite(cv.getContext('2d'), c, size);
   return cv;
 }
@@ -425,6 +910,10 @@ function renderMenu() {
     st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
                  + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`;
     cc.appendChild(st);
+    if (c.note) {
+      const nt = el('div','quirk', c.note);
+      cc.appendChild(nt);
+    }
     grid.appendChild(cc);
   });
   roster.appendChild(grid);
@@ -456,6 +945,10 @@ function renderRoster() {
     st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
                  + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`;
     cc.appendChild(st);
+    if (c.note) {
+      const nt = el('div','quirk', c.note);
+      cc.appendChild(nt);
+    }
     cc.onclick = () => {
       if (picked.has(c.k)) {
         picked.delete(c.k);
@@ -967,8 +1460,25 @@ function startAtBat() {
   const g = State.game;
   if (g.over) return;
   g.balls = 0; g.strikes = 0;
+  const b = currentBatter();
+  g.batterCtx = batterContext(b);
+  for (const note of g.batterCtx.notes) addLog(note, true);
   refreshHud();
   throwPitch();
+}
+
+/* Quirk hook. Called once per at bat. Returns a stat snapshot the swing
+   resolver reads, so per at bat modifiers (Hyde's transformation, etc.)
+   never mutate the underlying ROSTER entry. */
+function batterContext(b) {
+  const ctx = { pow: b.pow, con: b.con, spd: b.spd, notes: [], flags: {} };
+  if (b.quirk === 'transform' && Math.random() < 0.16) {
+    ctx.pow = Math.max(ctx.pow, 96);
+    ctx.con = Math.max(ctx.con, 78);
+    ctx.notes.push(`${b.n} transforms. All power, no manners.`);
+    ctx.flags.transformed = true;
+  }
+  return ctx;
 }
 
 function throwPitch() {
@@ -986,8 +1496,14 @@ function throwPitch() {
     / (0.85 + pitcher.pow / 400);
   /* ideal timing sweet spot centered around 0.55, shifted by pitcher control */
   const idealBase = pt === 'fastball' ? 0.5 : pt === 'curveball' ? 0.60 : 0.62;
-  const wobble = (Math.random() - 0.5) * 0.06 * diff.pitcherSkill;
-  const ideal = clamp(idealBase + wobble, 0.30, 0.75);
+  let wobble = (Math.random() - 0.5) * 0.06 * diff.pitcherSkill;
+  /* Scarecrow rattles the pitcher. His ideal spot swings wider than anyone
+     else's on the roster, so timing him takes reading the meter, not muscle
+     memory. */
+  if (batter.quirk === 'confuse') {
+    wobble += (Math.random() - 0.5) * 0.14;
+  }
+  const ideal = clamp(idealBase + wobble, 0.28, 0.78);
   /* Ball is a strike or a ball. The pitcher's control determines it. */
   const strikeProb = 0.55 + (pitcher.con || pitcher.def*0.4) / 300;
   const isStrike = Math.random() < clamp(strikeProb, 0.45, 0.85);
@@ -1066,14 +1582,36 @@ function resolveSwing(cursorT) {
   const p = g.pitch;
   const batter = currentBatter();
   const pitcher = currentPitcher();
+  const ctx = g.batterCtx || { pow: batter.pow, con: batter.con, spd: batter.spd, flags:{} };
   const diff = DIFF[State.difficulty];
   const half = diff.sweetWidth / 2;
   const perfectDist = Math.abs(cursorT - p.ideal);
   /* contact quality in [0,1]. 1 means dead-center of sweet zone. */
   const contactRaw = 1 - perfectDist / 0.5;
-  const contactBoost = (batter.con - 50) / 200;   /* +/- 0.25 */
-  const contact = clamp(contactRaw + contactBoost, 0, 1);
-  const inZone = perfectDist <= half;
+  const contactBoost = (ctx.con - 50) / 200;   /* +/- 0.25 */
+  let contact = clamp(contactRaw + contactBoost, 0, 1);
+  let inZone = perfectDist <= half;
+
+  /* Lady Liberty is the joke and the mechanic. She is stone: on any real
+     contact the ball leaves the yard, on anything else she strikes out
+     looking like a statue would. Nothing in between. */
+  if (batter.quirk === 'monument') {
+    if (inZone && contact > 0.55) {
+      return recordHit('home run', batter);
+    }
+    g.strikes = 3;
+    addLog(`${batter.n} does not move. Strike three.`);
+    refreshHud();
+    return recordOut('called strikeout', true);
+  }
+
+  /* Cowardly Lion bails on borderline pitches. His whiff rate on close ones
+     is high, but when the pitch is right in the middle he uncorks. */
+  if (batter.quirk === 'skittish' && inZone && contact < 0.65 && Math.random() < 0.35) {
+    inZone = false;
+    contact *= 0.4;
+    addLog(`${batter.n} flinches away from the pitch.`);
+  }
 
   /* Whiff. The swing missed entirely. */
   if (!inZone && contact < 0.4) {
@@ -1084,7 +1622,7 @@ function resolveSwing(cursorT) {
     return setTimeout(throwPitch, 500);
   }
 
-  /* Foul: near-miss on strike, count strike (but never third strike) */
+  /* Foul: near miss on strike, count strike (but never third strike) */
   if (!inZone) {
     if (g.strikes < 2) g.strikes++;
     addLog(`${batter.n} fouls it off.`);
@@ -1092,19 +1630,23 @@ function resolveSwing(cursorT) {
     return setTimeout(throwPitch, 500);
   }
 
+  /* Cowardly Lion who did commit gets a burst of nerve on the swing. */
+  let powForRoll = ctx.pow;
+  if (batter.quirk === 'skittish' && contact > 0.7) powForRoll = Math.min(100, powForRoll + 15);
+
   /* In zone: resolve to a batted ball outcome. */
-  const power = (batter.pow - 50) / 100;   /* +/- .5 */
-  /* Base HR chance rises with contact quality and batter power. */
-  const hrRoll = Math.random();
+  const power = (powForRoll - 50) / 100;   /* +/- .5 */
   const hrChance = 0.02 + contact * 0.20 + Math.max(0, power) * 0.14;
-  if (hrRoll < hrChance) return recordHit('home run', batter);
+  if (Math.random() < hrChance) return recordHit('home run', batter);
 
   /* Extra base */
   if (Math.random() < 0.05 + contact * 0.08 + Math.max(0, power) * 0.06) {
     return recordHit(Math.random() < 0.35 ? 'triple' : 'double', batter);
   }
-  /* Single vs out */
-  const hitOdds = 0.28 + contact * 0.45 + (batter.spd - 50)/300;
+  /* Single vs out. The Invisible Man is genuinely hard to find in the field:
+     an extra chance to sneak a grounder through when he swings. */
+  let hitOdds = 0.28 + contact * 0.45 + (ctx.spd - 50)/300;
+  if (batter.k === 'invisible') hitOdds += 0.05;
   if (Math.random() < hitOdds) return recordHit('single', batter);
   /* Out on contact */
   const out = Math.random() < 0.55 ? 'ground out' : 'fly out';
@@ -1383,7 +1925,9 @@ const runnerCache = new Map();
 function drawRunner(ctx, x, y, character) {
   let cv = runnerCache.get(character.k);
   if (!cv) { cv = spriteCanvas(character, 32); runnerCache.set(character.k, cv); }
-  ctx.drawImage(cv, Math.round(x - 16), Math.round(y - 24));
+  /* Sprites are SPRITE_W wide by SPRITE_H tall (currently 16x18). Anchor at
+     the feet by shifting up by the sprite's full height. */
+  ctx.drawImage(cv, Math.round(x - cv.width/2), Math.round(y - cv.height));
 }
 
 function drawMeter(ctx, w, h, t, pitch) {

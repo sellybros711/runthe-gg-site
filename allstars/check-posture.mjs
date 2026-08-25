@@ -59,18 +59,31 @@ for (const nav of ['index.html', '404.html', 'about.html']) {
   }
 }
 
-/* 5. The roster the game loads is present and holds at least ten characters.
-      The team selection screen asks the player to pick nine of the roster, so
-      a shorter roster removes the choice and turns the screen into a formality. */
+/* 5. The roster the game loads is present and holds the twenty-three characters
+      the design finalized on. Under that count something has been dropped in a
+      rewrite: the team select screen asks the player to pick nine, and the
+      opponent teams below draw from this pool, so a silently shorter roster
+      thins both sides of every game. */
 const rosterMatch = page.match(/const ROSTER = \[([\s\S]*?)\n\];/);
 if (!rosterMatch) {
   problems.push('could not find the ROSTER array in allstars/index.html. Has the file been '
     + 'restructured? This check keeps the roster from silently shrinking.');
 } else {
   const count = (rosterMatch[1].match(/\{ k:/g) || []).length;
-  if (count < 10) {
-    problems.push(`ROSTER holds ${count} characters. The team select screen asks the player `
-      + 'to pick nine, so anything under ten removes the choice.');
+  if (count < 20) {
+    problems.push(`ROSTER holds ${count} characters. The finalized roster is twenty-three; `
+      + 'anything under twenty means somebody has been dropped in a rewrite.');
+  }
+  /* Every quirk key referenced on a roster row must be one the engine knows,
+     or the character silently plays like the base template and the quirk note
+     on the card lies about them. */
+  const allowedQuirks = new Set(['transform','confuse','skittish','monument']);
+  const quirks = [...rosterMatch[1].matchAll(/quirk:'([^']+)'/g)].map(m => m[1]);
+  const unknown = quirks.filter(q => !allowedQuirks.has(q));
+  if (unknown.length) {
+    problems.push(`ROSTER references unknown quirks: ${[...new Set(unknown)].join(', ')}. `
+      + 'Add the mechanic to resolveSwing (or startAtBat for at bat scoped mods) before '
+      + 'shipping the character with it on the card.');
   }
 }
 
