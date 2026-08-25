@@ -359,14 +359,25 @@ window.GA_ID='G-L29P5MRWKE';
   .bmine.l .bmi-r{color:#ff7a63}
   .bmi-lab{color:var(--oncard); font-size:17px}
   .bmi-o{font-size:13px; color:#bcd0c4}
-  .bpath{display:flex; gap:5px; max-width:560px; margin:0 auto 10px}
-  .bp-c{flex:1; min-width:0; text-align:center; padding:6px 3px; border-radius:8px;
+  /* one column per day of the fortnight (--bpn), so seven cells sit on one row at any width.
+     A wrapping flex row stretched the last cell to full width the moment it did not fit. */
+  .bpath{display:grid; grid-template-columns:repeat(var(--bpn,7),minmax(0,1fr));
+    gap:4px; max-width:560px; margin:0 auto 10px}
+  .bp-c{min-width:0; text-align:center; padding:6px 2px; border-radius:8px;
     background:rgba(0,0,0,.24); border:1px solid var(--line)}
   .bp-c.won{border-color:rgba(53,214,160,.45); background:rgba(53,214,160,.10)}
   .bp-c.lost{border-color:rgba(225,74,51,.45); background:rgba(225,74,51,.10)}
-  .bp-r{font:800 9px/1 var(--body); letter-spacing:.1em; color:var(--muted)}
+  .bp-c.half{border-color:rgba(244,227,201,.34); background:rgba(244,227,201,.08)}   /* a shared group match */
+  .bp-r{font:800 9px/1 var(--body); letter-spacing:.08em; color:var(--muted)}
   .bp-v{margin-top:3px; font-size:10.5px; font-weight:800; color:var(--oncard); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .bp-c.pend .bp-v{color:var(--muted)}
+  /* seven columns on a 320px phone leave ~38px a cell, which clips a margin like "1 up" */
+  @media(max-width:380px){
+    .bpath{gap:3px}
+    .bp-c{padding:6px 1px}
+    .bp-r{font-size:8.5px; letter-spacing:.02em}
+    .bp-v{font-size:9.5px; margin-top:2px}
+  }
   .bround-list,.bdr-round{max-width:560px; margin:0 auto 10px; border:1px solid var(--line); border-radius:11px;
     overflow:hidden; background:rgba(0,0,0,.2)}
   .bdr-h{font:800 10px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
@@ -398,11 +409,11 @@ window.GA_ID='G-L29P5MRWKE';
   .bctrl{max-width:440px; margin:12px auto 6px; display:grid; gap:8px}
 
   /* ===== THE KNOCKOUT'S SHARED VOCABULARY =====
-     Five days, one round a day, lose once and the season is over. That format used to be explained in a
-     46-word paragraph on the draw screen and then never mentioned again. These pieces SHOW it instead, on
-     every screen of the week: a five-day rail (where you are, what you have banked), two stake chips (what
-     this match is worth either way), and one face-off block. Two new components, everything else reuses
-     tokens the game already has. */
+     Two weeks: three group days (top two of every group go through), then four knockout days on a new
+     course, lose once and the season is over. That format used to be explained in a 46-word paragraph on
+     the draw screen and then never mentioned again. These pieces SHOW it instead, on every screen of the
+     fortnight: a day-by-day rail (where you are, what you have banked), two stake chips (what this match
+     is worth either way), and one face-off block. Everything else reuses tokens the game already has. */
   .brail{display:flex; align-items:center; max-width:460px; margin:10px auto 12px}
   .brl{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px}
   .brd{width:9px; height:9px; border-radius:50%; background:rgba(244,227,201,.18)}
@@ -462,6 +473,49 @@ window.GA_ID='G-L29P5MRWKE';
   .bres.l .bres-m{font-size:clamp(24px,8vw,34px); line-height:1}
   .bres-o{font-size:12.5px; color:#bcd0c4}
   .bres-chips{display:flex; justify-content:center; gap:7px; flex-wrap:wrap; margin-top:10px}
+  /* a group match can be SHARED, which is neither a win nor a loss - it gets its own neutral read */
+  .bres.h{background:linear-gradient(180deg,rgba(244,227,201,.13),rgba(8,32,15,.96)); border-color:rgba(244,227,201,.35)}
+  .bres.h .bres-k{color:var(--oncard)}
+  .bres.h .bres-m{font-size:clamp(24px,8vw,34px); line-height:1}
+  /* WEEK 1 vs WEEK 2, said once on the day header and once on the rail */
+  .bwk{flex:0 0 auto; font:800 8px/1 var(--body); letter-spacing:.16em; text-transform:uppercase;
+    padding:4px 7px; border-radius:5px; background:rgba(53,214,160,.14); color:#35d6a0;
+    border:1px solid rgba(53,214,160,.3)}
+  .bwk.two{background:rgba(241,208,74,.14); color:var(--gold); border-color:rgba(241,208,74,.34)}
+  .brl.wk2{border-left:1px solid rgba(244,227,201,.16); margin-left:5px; padding-left:5px}
+  /* ===== WEEK 1: EIGHT TABLES, MOVING =====
+     The group stage's show is a room full of standings re-sorting, so the card IS the table and the
+     day's two matches sit under it. */
+  .gwrap{max-width:760px; margin:0 auto; padding:2px 0 6px}
+  .gin{display:grid; grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:9px}
+  .gcard{border:1px solid var(--line); border-radius:11px; padding:9px 9px 8px; background:rgba(0,0,0,.24)}
+  .gcard.mine{border-color:rgba(241,208,74,.5); background:rgba(241,208,74,.06)}
+  .gcard.solo{max-width:460px; margin:11px auto 0}
+  .gc-h{display:flex; align-items:center; gap:7px; font:800 9px/1 var(--body); letter-spacing:.18em;
+    text-transform:uppercase; color:var(--muted); margin-bottom:7px}
+  .gcard.mine .gc-h{color:var(--gold)}
+  .gc-you{margin-left:auto; font-size:7.5px; letter-spacing:.14em; padding:3px 6px; border-radius:4px;
+    background:rgba(241,208,74,.16); color:var(--gold)}
+  .gc-tbl{border-radius:7px; overflow:hidden; background:rgba(0,0,0,.2)}
+  .gc-tbl.flash{animation:gcFlash .5s ease-out both}
+  @keyframes gcFlash{0%{box-shadow:inset 0 0 0 2px rgba(241,208,74,.4)}100%{box-shadow:inset 0 0 0 2px rgba(241,208,74,0)}}
+  .gc-r{display:flex; align-items:center; gap:6px; padding:4px 7px; font-size:10.5px; line-height:1.3}
+  .gc-r+.gc-r{border-top:1px solid rgba(255,255,255,.05)}
+  .gc-r.q{background:rgba(53,214,160,.08)}
+  .gc-r.you .gc-n{color:var(--gold); font-weight:800}
+  .gc-p{flex:0 0 11px; font:800 9px/1 var(--body); color:#6f8f80; text-align:center}
+  .gc-r.q .gc-p{color:#35d6a0}
+  .gc-n{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#c4d6cb}
+  .gc-w{flex:0 0 auto; font:800 8.5px/1 var(--body); color:#6f8f80; letter-spacing:.04em;
+    font-variant-numeric:tabular-nums}
+  .gc-pt{flex:0 0 auto; min-width:22px; text-align:right; font:800 11px/1 var(--body); color:var(--oncard);
+    font-variant-numeric:tabular-nums}
+  .gc-r.q .gc-pt{color:#35d6a0}
+  .gc-ms{display:flex; flex-direction:column; gap:5px; margin-top:8px}
+  /* a halved match: both names stand, both read AS */
+  .mptr.h .n{color:#e6ecdf}
+  .mptr.h .s{background:#9aa8a0}
+  .mptr.h .r{color:var(--oncard)}
   .bnext{max-width:460px; margin:0 auto 11px; border-radius:13px; padding:12px 13px;
     background:linear-gradient(180deg,rgba(241,208,74,.12),rgba(0,0,0,.24)); border:1px solid rgba(241,208,74,.4)}
   .bnext-k{font:800 9.5px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--gold)}
@@ -469,7 +523,7 @@ window.GA_ID='G-L29P5MRWKE';
   .bnext-n{font:400 clamp(15px,4.6vw,18px)/1 var(--display); color:var(--oncard); text-transform:uppercase;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .bnext-s{font-size:10.5px; color:var(--muted); margin-top:2px}
-  /* the champion: five days, five wins - the ROUTE is the trophy */
+  /* the champion: a group stage survived and four straight won - the ROUTE is the trophy */
   .bcup{text-align:center; margin:6px 0 2px}
   .bcup-t{font-size:44px; line-height:1}
   .bcup-k{font:800 10px/1 var(--body); letter-spacing:.24em; text-transform:uppercase; color:var(--muted); margin-top:8px}
@@ -479,6 +533,11 @@ window.GA_ID='G-L29P5MRWKE';
   .brt:last-child{border-bottom:0}
   .brt.fin{background:linear-gradient(90deg,rgba(241,208,74,.16),transparent 80%)}
   .brt.lost{background:rgba(225,74,51,.09)}
+  .brt.half{background:rgba(244,227,201,.06)}
+  .brt.half .brt-v{color:#e6d9bd}
+  /* the two weeks are one road, so the divider separates them rather than splitting the card */
+  .brt-wk{font:800 8.5px/1 var(--body); letter-spacing:.16em; color:#6f8f80; padding:7px 11px 5px;
+    background:rgba(0,0,0,.22); border-bottom:1px solid rgba(255,255,255,.05)}
   .brt-r{flex:0 0 34px; font:800 9px/1 var(--body); letter-spacing:.1em; color:#6f8f80}
   .brt-n{flex:1; min-width:0; font-size:12.5px; color:#cfe0d4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .brt-v{flex:0 0 auto; font:800 12px/1 var(--body); color:#35d6a0}
@@ -5677,9 +5736,9 @@ function drawGolfer(rng,pool,revealed){
 const PLAYOFF_EV={
   'The Memphis Championship':{cap:70,stage:1},
   'The Crossroads Championship':           {cap:50,stage:2},
-  // THE FINALE IS A KNOCKOUT (owner): the top 32 by season points, five days, one bracket round a day,
-  // last one standing lifts the Cup. `stagger` is kept as the FALLBACK format for the years a career's
-  // tour has voted the knockout out (Tour Eras), which reverts it to staggered stroke play.
+  // THE FINALE IS MATCH PLAY (owner): the top 32 by season points, a week of groups then a week of
+  // knockout on a new course, last one standing lifts the Cup. `stagger` is kept as the FALLBACK format
+  // for the years a career's tour has voted the knockout out (Tour Eras), reverting it to stroke play.
   'Tour Championship':          {cap:32,stage:3,bracket:true},
 };
 // East Lake starting strokes by points seed (1st=-10 … 30th=even)
@@ -7011,8 +7070,8 @@ function matchScoreFn(format, pair){
   if(format==='fourball') return ()=>Math.min(holeScore(matchEo(pair[0])), holeScore(matchEo(pair[1])));
   const eo=(matchEo(pair[0])+matchEo(pair[1]))/2; return ()=>holeScore(eo);
 }
-// `holes` defaults to 18 (every Cup session), so the team-cup call sites are unchanged. The Tour
-// Championship knockout plays 18 a day for five days, so it passes 18 too.
+// `holes` defaults to 18 (every Cup session), so the team-cup call sites are unchanged. Every day of the
+// Tour Championship fortnight - group stage and knockout alike - plays 18 too.
 function simMatch(format, pairA, pairB, holes){
   holes=holes||18;
   const fa=matchScoreFn(format,pairA), fb=matchScoreFn(format,pairB);
@@ -7023,27 +7082,45 @@ function simMatch(format, pairA, pairB, holes){
   return {res:up>0?'A':'B', label, a:pairA, b:pairB};
 }
 /* ================= THE MATCH PLAY CHAMPIONSHIP (owner) =================
-   A knockout championship the tour IMPLEMENTS partway through a career: the top 32 in the world,
-   seeded, five rounds of head-to-head elimination in a single week. Deliberately built on machinery
-   that already ships - simMatch() plays the holes (the same engine as the Atlantic/Nations Cups),
-   worldRanking() does the seeding, PAYOUT does the money - so this is a bracket driver + a screen,
-   not a new simulation. Career only (never the Daily, never the Legend Circuit).                  */
+   The Cup finale, in the tour's own two-week format (owner, matching the real 2028 announcement):
+
+     WEEK 1 - THE GROUP STAGE. The 32 who qualified are drawn into 8 groups of 4 and play a round
+     robin, one match a day for three days. The top two of every group go through. A group match CAN
+     be halved, so the table is points (win 1, half 0.5) exactly like a World Cup group.
+     WEEK 2 - THE BRACKET. Sixteen players, a NEW COURSE, straight single elimination. Win four in a
+     row and the Tour Cup is yours.
+
+   Deliberately built on machinery that already ships - simMatch() plays the holes (the same engine as
+   the Atlantic/Nations Cups), the season points race does the seeding, PAYOUT does the money - so this
+   is a driver + a screen, not a new simulation. Career only (never the Daily, never the Circuit).   */
 const BRACKET_NAME='The Match Play Championship';   // the FORMAT's name, used in copy about the finale
 const BRACKET_SIZE=32, BRACKET_PTS=600;            // finale-level points (big:true = 600, matching finalizeEvent)
-// FIVE DAYS, ONE ROUND A DAY (owner). No 36-hole final: a round is a day, and the final is the fifth day.
-const BRACKET_ROUNDS=[
-  {name:'Round of 32', short:'R32', holes:18, day:'DAY 1'},
-  {name:'Round of 16', short:'R16', holes:18, day:'DAY 2'},
-  {name:'Quarter-finals', short:'QF', holes:18, day:'DAY 3'},
-  {name:'Semi-finals', short:'SF', holes:18, day:'DAY 4'},
-  {name:'The Final', short:'F', holes:18, day:'DAY 5'},
+const BRACKET_GROUPS=8, BRACKET_GROUP_SIZE=4, BRACKET_ADV=2;   // 8 groups of 4, top 2 through = 16
+const BRACKET_GLETTERS='ABCDEFGH';
+// WEEK 1: three days, one match a day. Round robin by the circle method, so everyone plays everyone.
+const BRACKET_GDAYS=[
+  {name:'Group Stage · Day 1', short:'G1', holes:18, day:'DAY 1', wk:1},
+  {name:'Group Stage · Day 2', short:'G2', holes:18, day:'DAY 2', wk:1},
+  {name:'Group Stage · Day 3', short:'G3', holes:18, day:'DAY 3', wk:1},
 ];
-// how far you got, by the round you lost in (index = BRACKET_ROUNDS index; champion is separate)
-const BRACKET_EXIT=['R32','R16','QTRS','SEMIS','FINAL'];
-// The bracket a given season plays: 32 by default, or whatever the tour has voted it to (Tour Eras).
-// Rounds are sliced off the front so a 16-player bracket is R16 -> QF -> SF -> Final, four days.
+const GROUP_RR=[[[0,3],[1,2]],[[0,2],[3,1]],[[0,1],[2,3]]];   // day -> the two pairings, by group slot
+// WEEK 2: four days, one round a day. No 36-hole final: a round is a day.
+const BRACKET_ROUNDS=[
+  {name:'Round of 16', short:'R16', holes:18, day:'DAY 1', wk:2},
+  {name:'Quarter-finals', short:'QF', holes:18, day:'DAY 2', wk:2},
+  {name:'Semi-finals', short:'SF', holes:18, day:'DAY 3', wk:2},
+  {name:'The Final', short:'F', holes:18, day:'DAY 4', wk:2},
+];
+// how far you got, by the round you lost in (index = BRACKET_ROUNDS index; champion + groups are separate)
+const BRACKET_EXIT=['R16','QTRS','SEMIS','FINAL'];
+// The finale a given season plays: 32 (groups + bracket) by default, or whatever the tour has voted it
+// to (Tour Eras). At 16 there is no group stage - the sixteen go straight into the bracket.
 function bracketSize(){ const n=tourBracketSize(); return (n===16||n===32)?n:BRACKET_SIZE; }
-function bracketRounds(n){ n=n||bracketSize(); const skip=Math.round(Math.log2(BRACKET_SIZE/n)); return BRACKET_ROUNDS.slice(skip); }
+function bracketGroupsOn(n){ return (n||bracketSize())>=BRACKET_GROUPS*BRACKET_GROUP_SIZE; }
+// the knockout rounds a bracket of n players needs, sliced off the END (a 16 needs all four)
+function bracketRounds(n){ n=n||BRACKET_GROUPS*BRACKET_ADV;
+  const len=Math.max(1, Math.ceil(Math.log2(Math.max(2,n))));
+  return BRACKET_ROUNDS.slice(Math.max(0, BRACKET_ROUNDS.length-len)); }
 // standard single-elimination seed order (1 plays 32, and the 1 and 2 seeds can only meet in the final)
 function bracketSeedOrder(n){
   let a=[1];
@@ -7068,6 +7145,118 @@ function bracketExtra(A,B,base){
   }
   return A.eo>=B.eo ? {win:A,lose:B,label:'in extra holes'} : {win:B,lose:A,label:'in extra holes'};
 }
+/* ---- WEEK 1: THE GROUPS ----
+   The draw is a pot draw off the points race: group A gets the 1 seed, the 16, the 17 and the 32, group
+   B the 2, 15, 18 and 31, and so on - so a year spent chasing points buys you a group you can get out
+   of, and the top eight are kept apart. */
+function bracketGroupsFor(players){
+  const bySeed={}; players.forEach(o=>{ bySeed[o.seed]=o; });
+  const G=BRACKET_GROUPS, out=[];
+  for(let gi=0; gi<G; gi++){
+    const seeds=[gi+1, 2*G-gi, 2*G+1+gi, 4*G-gi];
+    out.push({gi, letter:BRACKET_GLETTERS[gi]||String(gi+1), members:seeds.map(s=>bySeed[s]).filter(Boolean)});
+  }
+  return out;
+}
+// a group match, unlike a knockout match, can be HALVED - which is what makes the table a table
+function groupDecide(A,C,holes){
+  const mt=simMatch('singles',[A],[C],holes);
+  if(mt.res==='half') return {half:true, label:'AS'};
+  return mt.res==='B' ? {win:C, lose:A, label:mt.label} : {win:A, lose:C, label:mt.label};
+}
+/* THE TABLE, computed rather than accumulated - one function is the only truth about a group, so the
+   standings you watch move during the reveal and the standings that decide who goes through can never
+   disagree. `shown` limits it to the part of today that has actually landed on screen (null = all of it).
+   Order: points, then matches won, then the head-to-head between the tied pair, then seed. */
+function groupStats(B, g, st, shown){
+  const m={}; g.members.forEach(o=>{ m[o.seed]={o, pts:0, w:0, l:0, h:0, vs:{}}; });
+  const apply=(aSeed,bSeed,half,winSeed)=>{
+    const A=m[aSeed], C=m[bSeed]; if(!A||!C) return;
+    if(half){ A.pts+=0.5; C.pts+=0.5; A.h++; C.h++; A.vs[bSeed]=0.5; C.vs[aSeed]=0.5; }
+    else { const W=(winSeed===aSeed)?A:C, L=(winSeed===aSeed)?C:A;
+      W.pts+=1; W.w++; L.l++; W.vs[L.o.seed]=1; L.vs[W.o.seed]=0; }
+  };
+  (B.gRounds||[]).forEach(R=>R.matches.forEach(x=>{ if(x.gi===g.gi) apply(x.aSeed,x.bSeed,x.half,x.winSeed); }));
+  if(st && st.group) st.slots.forEach((s,si)=>{
+    if(s.gi!==g.gi || !s.res || (shown!=null && si>=shown)) return;
+    apply(s.A.seed, s.C.seed, !!s.res.half, s.res.half?null:s.res.win.seed);
+  });
+  const rows=g.members.map(o=>m[o.seed]).filter(Boolean);
+  rows.sort((a,b)=> (b.pts-a.pts) || (b.w-a.w) || ((b.vs[a.o.seed]||0)-(a.vs[b.o.seed]||0)) || (a.o.seed-b.o.seed));
+  return rows;
+}
+// the day's 16 matches, group by group, so the reveal walks the groups in order
+function bracketGroupStage(B){
+  const gi=(B.gRounds||[]).length, D=B.GDS[gi]; if(!D) return null;
+  const slots=[];
+  B.groups.forEach(g=>{
+    (GROUP_RR[gi]||[]).forEach(pr=>{
+      const A=g.members[pr[0]], C=g.members[pr[1]]; if(!A||!C) return;
+      const mine=!!(A.p.you||C.p.you);
+      slots.push({A, C, mine, gi:g.gi, res: mine?null:groupDecide(A,C,D.holes)});
+    });
+  });
+  return {group:true, ri:gi, name:D.name, short:D.short, day:D.day, wk:1, holes:D.holes, slots};
+}
+function bracketCommitGroup(B, st){
+  st.slots.forEach(s=>{ if(!s.res) s.res=groupDecide(s.A, s.C, st.holes); });
+  const matches=[];
+  st.slots.forEach(s=>{
+    const A=s.A, C=s.C, r=s.res, half=!!r.half;
+    const step=(me,opp)=>({ri:st.ri, short:st.short, group:true, opp:opp.p.name, oppSeed:opp.seed,
+      label:r.label, half, won: !half && r.win===me});
+    A.gpath.push(step(A,C)); C.gpath.push(step(C,A));
+    matches.push({gi:s.gi, aSeed:A.seed, aName:A.p.name, aYou:!!A.p.you, bSeed:C.seed, bName:C.p.name,
+      bYou:!!C.p.you, half, winSeed:half?null:r.win.seed, label:r.label,
+      you:!!(A.p.you||C.p.you), youWon:!half && !!r.win.p.you});
+  });
+  B.gRounds.push({name:st.name, short:st.short, day:st.day, holes:st.holes, group:true, matches});
+  if(B.gRounds.length>=B.GDS.length) bracketSeedKnockout(B);
+  return B.gRounds[B.gRounds.length-1];
+}
+/* Week 1 is over: the top two of every group go through, and the sixteen are drawn World-Cup style -
+   the winner of A meets the runner-up of B, and a group's two qualifiers can only meet again in the
+   final. Everyone else is out, marked out:-1 (the group stage), which is its own finishing group. */
+function bracketSeedKnockout(B){
+  const win=[], run=[];
+  B.groups.forEach(g=>{
+    const t=groupStats(B, g, null, null);
+    t.forEach((r,i)=>{ r.o.gpts=r.pts; r.o.gw=r.w; r.o.gl=r.l; r.o.gh=r.h; r.o.gpos=i+1;
+      if(i>=BRACKET_ADV){ r.o.alive=false; r.o.out=-1; } });
+    win[g.gi]=t[0]&&t[0].o; run[g.gi]=t[1]&&t[1].o;
+  });
+  const order=[], push=(a,b)=>{ if(a) order.push(a); if(b) order.push(b); };
+  const G=B.groups.length;
+  for(let k=0;k<G;k+=2) push(win[k], run[k+1]);      // A1-B2, C1-D2, E1-F2, G1-H2  (top half)
+  for(let k=0;k<G;k+=2) push(win[k+1], run[k]);      // B1-A2, D1-C2, F1-E2, H1-G2  (bottom half)
+  B.alive=order.filter(Boolean);
+  B.koN=B.alive.length;
+  B.phase='ko';
+}
+// your match on a given group day (the draw screen needs it before any stage exists)
+function bracketMyGroupMatch(B, gi){
+  const you=B.you; if(!you || you.gi==null) return null;
+  const g=B.groups[you.gi]; if(!g) return null;
+  const pr=(GROUP_RR[gi]||[]).find(x=>g.members[x[0]]===you || g.members[x[1]]===you);
+  if(!pr) return null;
+  const A=g.members[pr[0]], C=g.members[pr[1]];
+  return A===you ? {me:A, opp:C} : {me:C, opp:A};
+}
+function bracketMyGroup(B){ const you=B.you; return (you && you.gi!=null) ? B.groups[you.gi] : null; }
+/* WEEK 2 IS A NEW COURSE (owner). Deterministic per event + year, and never the venue week 1 was
+   played on, so the bracket genuinely moves somewhere else. */
+function bracketKoCourseKey(B){
+  if(B._koKey) return B._koKey;
+  const wk1=momentCourseKey(B.evt);
+  const all=(typeof DAILY_KEYS!=='undefined' && DAILY_KEYS.length) ? DAILY_KEYS : Object.keys(DAILY_COURSES);
+  const keys=all.filter(k=>k!==wk1);
+  B._koKey = keys.length ? keys[(dHash(String(B.evt.name)+'|ko|'+(S.year||1))>>>0)%keys.length] : wk1;
+  return B._koKey;
+}
+function bracketCourseKey(B){ return (B.phase==='group') ? momentCourseKey(B.evt) : bracketKoCourseKey(B); }
+// every day of the championship, in order: the three group days then the four knockout rounds
+function bracketDays(B){ return (B.GDS||[]).concat(B.RDS||[]); }
+
 /* ---- INCREMENTAL DRIVER. The interactive screen plays ONE round at a time, because a match you play
    yourself decides who you meet next; the headless paths run the whole thing in one go. ---- */
 function bracketInit(){
@@ -7080,9 +7269,15 @@ function bracketInit(){
   // the player's standing edges apply here exactly as they do in a stroke-play week
   if(!S.daily && !S.circuitMode && S.career){ const me=players.find(o=>o.p.you); if(me){ me.eo+=confEo(); me.eo+=careerFxEo(ew); } }
   const bySeed={}; players.forEach(o=>{ bySeed[o.seed]=o; });
-  const alive=bracketSeedOrder(field.length).map(s=>bySeed[s]).filter(Boolean);
-  return {evt, ew, players, alive, rounds:[], champion:null, you:players.find(o=>o.p.you)||null,
-          RDS:bracketRounds(field.length), _final:false};
+  const groupsOn=bracketGroupsOn(field.length);
+  players.forEach(o=>{ o.gpts=0; o.gw=0; o.gl=0; o.gh=0; o.gpos=null; o.gi=null; o.gpath=[]; });
+  const groups=groupsOn?bracketGroupsFor(players):[];
+  groups.forEach(g=>g.members.forEach((o,i)=>{ o.gi=g.gi; o.gslot=i; }));
+  const koN=groupsOn ? groups.length*BRACKET_ADV : field.length;
+  const alive=groupsOn ? [] : bracketSeedOrder(field.length).map(s=>bySeed[s]).filter(Boolean);
+  return {evt, ew, players, groups, phase:groupsOn?'group':'ko', alive, koN,
+          gRounds:[], rounds:[], champion:null, you:players.find(o=>o.p.you)||null,
+          GDS:groupsOn?BRACKET_GDAYS:[], RDS:bracketRounds(koN), _final:false};
 }
 // the pairings for the round about to be played - known BEFORE any of it is simmed, which is what lets
 // the screen show you your next opponent and offer to play the match.
@@ -7105,6 +7300,7 @@ function bracketDecide(A,C,holes){
   return mt.res==='B' ? {win:C, lose:A, label:mt.label, extra:false} : {win:A, lose:C, label:mt.label, extra:false};
 }
 function bracketStage(B){
+  if(B.phase==='group') return bracketGroupStage(B);
   const ri=B.rounds.length, R=B.RDS[ri]; if(!R) return null;
   const slots=bracketPairs(B).map(pr=>{
     const mine=!!(pr[0].p.you||pr[1].p.you);
@@ -7117,13 +7313,17 @@ function bracketStageMine(st){ return st?st.slots.findIndex(s=>s.mine):-1; }
 function bracketResolveMine(B, st, override){
   const i=bracketStageMine(st); if(i<0) return;
   const s=st.slots[i]; if(s.res) return;
-  if(override){ const me=s.A.p.you?s.A:s.C, other=s.A.p.you?s.C:s.A;
-    s.res={win:override.won?me:other, lose:override.won?other:me, label:override.label, extra:!!override.extra}; }
-  else s.res=bracketDecide(s.A, s.C, st.holes);
+  if(override){
+    // a halved group match has no winner at all, so it carries groupDecide's own shape
+    if(override.half){ s.res={half:true, label:override.label||'AS'}; }
+    else { const me=s.A.p.you?s.A:s.C, other=s.A.p.you?s.C:s.A;
+      s.res={win:override.won?me:other, lose:override.won?other:me, label:override.label, extra:!!override.extra}; } }
+  else s.res = st.group ? groupDecide(s.A, s.C, st.holes) : bracketDecide(s.A, s.C, st.holes);
 }
 // commit a fully-decided stage: eliminate the losers, advance the winners, record the round
 function bracketCommit(B, st){
   if(!st) return null;
+  if(st.group) return bracketCommitGroup(B, st);
   // A slot that somehow reached the commit undecided must never stop the week: decide it here rather
   // than refuse to commit, because a round that can't be committed is a career stuck on the finale
   // (bracketFinishNow would spin forever). Belt and braces, same lesson as the short cup side.
@@ -7154,9 +7354,12 @@ function bracketPlayRound(B, myOverride){
   bracketResolveMine(B, st, myOverride);
   return bracketCommit(B, st);
 }
-function bracketDone(B){ return !!B && B.rounds.length>=B.RDS.length; }
+function bracketDone(B){ return !!B && B.phase==='ko' && B.rounds.length>=B.RDS.length; }
+// run whatever is left of the championship - group days included. Bounded, because a driver that can't
+// finish is a career stuck on the finale (the lesson the short cup side taught).
+function bracketRunOut(B){ for(let g=0; g<40 && !bracketDone(B); g++){ if(!bracketPlayRound(B)) break; } return B; }
 // bank a bracket that may be MID-WEEK (the screen plays it a round at a time): finish it, then finalize
-function bracketFinishNow(B){ B=(B&&!B._final)?B:bracketInit(); while(!bracketDone(B)) bracketPlayRound(B); finalizeBracket(B); return B; }
+function bracketFinishNow(B){ B=(B&&!B._final)?B:bracketInit(); bracketRunOut(B); finalizeBracket(B); return B; }
 
 /* ===== PLAYING A KNOCKOUT MATCH =====
    Your match, hole by hole on the TOURTRACE, against one opponent. Both balls run through the SAME
@@ -7181,8 +7384,12 @@ function matchOppHole(ci, salt){
   return dSimHole(h[0],h[1],S.dailyDiffs[ci],mp.oppSk,c.fit,DCFG.COND[S.dailyCond],'balanced',null,matchOppRng(ci,salt));
 }
 function bracketStartMatch(B, mp){
-  const evt=B.evt, ri=B.rounds.length, R=B.RDS[ri];
-  const key=momentCourseKey(evt), c=DAILY_COURSES[key];
+  const evt=B.evt, st=B.stage;
+  // the stage is the truth about which day this is - week 1 has its own round defs, and its own course
+  const R = st ? {name:st.name, short:st.short, day:st.day, holes:st.holes, group:!!st.group}
+               : (B.RDS[B.rounds.length]||B.RDS[B.RDS.length-1]);
+  const ri = st ? st.ri : B.rounds.length;
+  const key=bracketCourseKey(B), c=DAILY_COURSES[key];
   const p=buildPlayer(); const sk={}; CATS.forEach(cc=>sk[cc.k]=p[cc.k]);
   // Move the opponent by a UNIFORM shift (see MATCH_SKILL_K) so the daily engine sees the same edge the
   // sim would have given you. A uniform shift, not a per-skill stretch: the gap is what needs amplifying,
@@ -7198,7 +7405,7 @@ function bracketStartMatch(B, mp){
   S.dailySeed=(Math.random()*2147483647)>>>0; S.dailyAttempt=0;
   S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
   S.dailyDiffs=dBaseDiffs(c);   // the course plays as itself; the calibration lives in the opponent's ratings
-  S.matchPlay={ri, evtName:evt.name, roundName:R.name, day:R.day, holes:R.holes,
+  S.matchPlay={ri, evtName:evt.name, roundName:R.name, day:R.day, holes:R.holes, group:!!R.group,
     oppName:oppP.name, oppSeed:mp.opp.seed, mySeed:mp.me.seed, oppSk, oppHoles:[], oppExtra:[], extra:false};
   // the opponent's whole round is drawn NOW, before you hit a shot, so nothing you do can move it
   for(let i=0;i<18;i++) S.matchPlay.oppHoles.push(matchOppHole(i,0));
@@ -7237,7 +7444,12 @@ function matchState(){
       if(b!=null && a!==b){ decided=true; won=a<b; label='at the '+ord(19+k); break; }
     }
   }
-  return {up, reg, left, decided, won, label, extras, allSquare:reg>=18 && !decided};
+  // A GROUP match is not a knockout: all square through 18 is a HALF worth half a point to each of them,
+  // which is exactly what the day's own header promises. Only week 2 goes to sudden death.
+  const allSquare=reg>=18 && !decided;
+  if(mp.group && allSquare) return {up, reg, left, decided:true, won:false, half:true, label:'AS',
+    extras:0, allSquare:true};
+  return {up, reg, left, decided, won, label, extras, allSquare};
 }
 function matchStatusTxt(st){
   if(!st) return '';
@@ -7285,7 +7497,7 @@ function finishMatchRound(){
   if(!mp || !B || !st){ S.matchPlay=null; S.mpHoleIdx=null; S.screen='season'; render(); return; }
   const holes=S.dailyHoles.slice(), evt=B.evt;
   track('bracket_match_done',{round:mp.ri, won:st.won, label:st.label});
-  const ovr={won:st.won, label:st.label||'1 up', extra:st.extras>0};
+  const ovr={won:st.won, label:st.label||'1 up', extra:st.extras>0, half:!!st.half};
   // the day is staged and paused ON your match, so drop the result into the held slot and let the
   // bracket carry on advancing from exactly where it stopped (never restart the day from the top)
   if(B.stage && bracketStageMine(B.stage)>=0) bracketResolveMine(B, B.stage, ovr);
@@ -7329,24 +7541,32 @@ function matchSkipToEnd(){
   finishMatchRound();
 }
 
-function simBracket(){ const B=bracketInit(); while(!bracketDone(B)) bracketPlayRound(B); return B; }
+function simBracket(){ return bracketRunOut(bracketInit()); }
 // how a player's week ended, for the board's score column and the detail line
 function bracketResShort(o, B){ const R=(B&&B.rounds)||bracketRounds();
-  return o.out==null?'WON':(BRACKET_EXIT[BRACKET_ROUNDS.findIndex(x=>x.short===(R[o.out]||{}).short)]||(R[o.out]||{}).short||'OUT'); }
+  if(o.out==null) return 'WON';
+  if(o.out<0) return 'GROUPS';
+  return BRACKET_EXIT[BRACKET_ROUNDS.findIndex(x=>x.short===(R[o.out]||{}).short)]||(R[o.out]||{}).short||'OUT'; }
 function bracketResLong(o, B){
   if(o.out==null) return 'Champion';
+  if(o.out<0){ const g=(B&&B.groups&&B.groups[o.gi]), L=g?g.letter:'';
+    return `Out in the group stage${L?` (Group ${L}`:''}${L?`, ${o.gpos!=null?ord(o.gpos):''} on ${gpFmt(o.gpts)} pt${o.gpts===1?'':'s'})`:''}`; }
   const R=(B&&B.rounds)||bracketRounds(), last=o.path[o.path.length-1];
   const WH={'R32':'the first round','R16':'the last 16','QF':'the quarter-finals','SF':'the semi-finals','F':'the final'};
   const where=WH[(R[o.out]||{}).short]||'the '+((R[o.out]||{}).name||'').toLowerCase();
   return last ? `Lost in ${where}, ${last.label} to ${last.opp}` : `Lost in ${where}`;
 }
+// group points read as 2, 1.5, 0.5 - never 2.0 and never 1
+function gpFmt(v){ v=+v||0; return (Math.round(v*2)%2===0)?String(Math.round(v)):v.toFixed(1); }
 // finishing positions + money: 1 · 2 · T3 (2) · T5 (4) · T9 (8) · T17 (16), each group splitting the
 // prize slots it occupies, exactly like a stroke-play tie.
 function bracketOrder(B){
-  // 0 champion, 1 runner-up, then each earlier exit round. Sized off THIS bracket's round count so a
-  // 16-player finale (Tour Eras) orders correctly too.
-  const R=B.rounds.length, g=[]; for(let i=0;i<=R;i++) g.push([]);
-  B.players.forEach(o=>{ g[o.out==null?0:(R-o.out)].push(o); });
+  // 0 champion, 1 runner-up, then each earlier knockout exit, and LAST the group stage (out:-1), which
+  // is one tied group of sixteen. Sized off THIS bracket's round count so a 16-player finale (Tour Eras)
+  // orders correctly too.
+  const R=B.rounds.length, g=[]; for(let i=0;i<=R+1;i++) g.push([]);
+  const idx=o=> o.out==null?0 : (o.out<0 ? R+1 : R-o.out);
+  B.players.forEach(o=>{ g[idx(o)].push(o); });
   const order=[]; let slot=0;
   g.forEach(grp=>{
     if(!grp.length) return;
@@ -7354,7 +7574,7 @@ function bracketOrder(B){
     let sum=0; for(let k=0;k<grp.length;k++) sum+=payoutAt(slot+k);
     const each=sum/grp.length, pos=slot+1, tied=grp.length>1;
     grp.forEach(o=>order.push({p:o.p, seed:o.seed, pos, tied, pct:each,
-      bres:bracketResShort(o,B), bfull:bracketResLong(o,B), path:o.path,
+      bres:bracketResShort(o,B), bfull:bracketResLong(o,B), path:(o.gpath||[]).concat(o.path||[]),
       rounds:[null,null,null,null], score:null, total:null}));
     slot+=grp.length;
   });
@@ -7390,6 +7610,8 @@ function finalizeBracket(B){
   // position, and a week you missed the 32 is represented by the opposite-field event you did play.
   if(B.you) S.season.results.push({evt, order, playoff:null, bracket:{
     champion:B.champion.p.name, championSeed:B.champion.seed, youSeed:B.you.seed,
+    groups:B.GDS.length?{letter:(B.groups[B.you.gi]||{}).letter||'', pos:B.you.gpos, pts:B.you.gpts,
+                         through:B.you.out!==-1}:null,
     rounds:B.rounds.map(r=>({name:r.name, short:r.short, holes:r.holes, matches:r.matches}))}});
   S.season.bracketChampion={name:B.champion.p.name, seed:B.champion.seed, you:!!B.champion.p.you};
 }
@@ -11205,7 +11427,7 @@ function overlayTournament(screen){
     if(venue) ov.appendChild($(`<div class="center small muted" style="margin:0 0 12px;text-transform:none;letter-spacing:0">📍 ${esc(venue.v)} · ${esc(venue.loc)}</div>`));
     if(me){
       const result=(me.pos===1?'🏆 WON':(me.pos==='CUT'?'Missed cut':(me.tied?'T':'')+me.pos));
-      ov.appendChild($(`<div class="center" style="margin:0 0 8px"><span style="font:800 18px/1 var(--body);color:var(--gold)">${result}</span>${r.bracket?` <span class="small" style="color:var(--oncard)">${esc(me.bfull||'')}</span>`:(me.pos!=='CUT'?` <span class="mono" style="color:var(--oncard)">${par(me.score)}</span>`:'')}</div>`));
+      ov.appendChild($(`<div class="center" style="margin:0 0 8px"><span style="font:800 18px/1 var(--body);color:var(--gold)">${result}</span>${r.bracket?(me.pos===1?'':` <span class="small" style="color:var(--oncard)">${esc(me.bfull||'')}</span>`):(me.pos!=='CUT'?` <span class="mono" style="color:var(--oncard)">${par(me.score)}</span>`:'')}</div>`));
       if(!r.bracket) ov.appendChild(roundsRow(me));
     }
     const board=$(`<div class="board ${evt.major?'major':''}" style="margin-top:12px"></div>`);
@@ -21893,9 +22115,9 @@ const NEWS_ENTRIES=[
   {id:'qschool', date:NEWS_DATE, cat:'career', icon:'🎫', title:'The card can be lost, and won back',
    blurb:'Finish outside the line and you drop to conditional status with a thinner schedule. Fall further and you lose the card altogether and play The Proving Tour, sixteen weeks for a fraction of the money. Three roads back: the order of merit, three wins in a season, or six rounds of Q-School.',
    where:'It finds you at the end of a bad year.'},
-  {id:'mp-finale', date:NEWS_DATE, cat:'tour', icon:'🏆', title:'The finale is a five-day knockout',
-   blurb:'The Tour Championship is no longer seventy-two holes of stroke play. The top thirty-two of the points race are seeded and play one eighteen-hole match a day for five days: win and you are through to tomorrow, lose once and your season is over. Your own matches you can play out shot by shot, or sim.',
-   where:'The last week of the season.'},
+  {id:'mp-finale', date:NEWS_DATE, cat:'tour', icon:'🏆', title:'The finale is two weeks of match play',
+   blurb:'The Tour Championship is no longer seventy-two holes of stroke play. Week one, the top thirty-two of the points race are drawn into eight groups of four and play a round robin, one match a day for three days, and the top two of every group go through. Week two, sixteen players move to a new course for straight single elimination: win four in a row and the Cup is yours. Your own matches you can play out shot by shot, or sim.',
+   where:'The last two weeks of the season.'},
   {id:'traits', date:NEWS_DATE, cat:'career', icon:'🎖', title:'Career Traits',
    blurb:'Twelve landmark feats leave a permanent mark on the golfer who did them. Win all four majors in a season and you keep the composure, the extra off-season change and the sponsors who treat you two tiers higher for the rest of that career.',
    where:'Season summary, on the Career tab.'},
@@ -22055,9 +22277,11 @@ function overlayTourNews(app){
 }
 
 /* ================= THE TOUR CHAMPIONSHIP: the knockout screen =================
-   Five days, one bracket round a day. Each day the tour hands you your match and you decide whether to
-   PLAY it hole by hole or hand it to the sim; then the day's matches land ONE AT A TIME, yours last, so
-   the draw fills in in front of you and you find out who you have next by watching it happen.       */
+   Two weeks, one match a day. Week one is eight groups of four over three days (top two go through);
+   week two is a sixteen-man knockout on a new course over four. Each day the tour hands you your match
+   and you decide whether to PLAY it hole by hole or hand it to the sim; then the day's matches land ONE
+   AT A TIME, yours last, so the draw fills in in front of you and you find out who you have next by
+   watching it happen.                                                                               */
 // Reveal pacing. A match landing every 110ms read as a flicker, not a bracket filling in: a 16-match
 // round was over in under two seconds. These are the beats you actually watch, so they are slow enough
 // to follow a name across the draw, and Skip is always there for anyone who would rather not.
@@ -22125,17 +22349,31 @@ function mpTreeScrollTo(host, el, ri){
     else if(eb.bottom>hb.bottom-pad) host.scrollTop=host.scrollTop+(eb.bottom-(hb.bottom-pad));
   }catch(e){}
 }
-function mpSettleLive(host, inner, st, si, animate){
+function mpSettleLive(host, inner, st, si, animate, B){
   const s=st.slots[si]; if(!s || !s.res) return;
   const box=inner.querySelector('#mpl-'+si);
   if(box){
-    const rows=box.querySelectorAll('.mptr'), aWin=s.res.win===s.A;
-    const w=rows[aWin?0:1], l=rows[aWin?1:0];
-    if(w){ w.classList.add('w'); const r=w.querySelector('.r'); if(r) r.textContent=s.res.label; }
-    if(l) l.classList.add('l');
+    const rows=box.querySelectorAll('.mptr');
+    if(s.res.half){   // a group match can be shared: both names light, both read AS
+      rows.forEach(r=>{ r.classList.add('h'); const x=r.querySelector('.r'); if(x) x.textContent='AS'; });
+    } else {
+      const aWin=s.res.win===s.A;
+      const w=rows[aWin?0:1], l=rows[aWin?1:0];
+      if(w){ w.classList.add('w'); const r=w.querySelector('.r'); if(r) r.textContent=s.res.label; }
+      if(l) l.classList.add('l');
+    }
     box.classList.remove('await'); box.classList.add('done');
     if(animate){ box.classList.remove('settle'); void box.offsetWidth; box.classList.add('settle'); }
-    if(animate) mpTreeScrollTo(host, box, st.ri);
+    if(animate) mpTreeScrollTo(host, box, st.group?('g'+s.gi):st.ri);
+  }
+  if(st.group){
+    // the table under it re-sorts, which IS the group stage: what you just watched changed the order
+    const g=B && B.groups[s.gi], tbl=inner.querySelector('#gt-'+s.gi);
+    if(g && tbl){
+      tbl.innerHTML=groupTableHTML(B, g, st, si+1);
+      if(animate){ tbl.classList.remove('flash'); void tbl.offsetWidth; tbl.classList.add('flash'); }
+    }
+    return;   // nobody advances anywhere in week 1: the table is the result
   }
   const row=inner.querySelector('#'+mpAdvId(st.ri, si));
   if(row) mpFillRow(row, s.res.win.seed, s.res.win.p.name, !!s.res.win.p.you, animate);
@@ -22143,7 +22381,7 @@ function mpSettleLive(host, inner, st, si, animate){
 function mpRunReveal(host, B){
   mpClearTimer();
   const st=B.stage; if(!st) return;
-  const inner=host.querySelector('.mptin'); if(!inner) return;
+  const inner=host.querySelector('.mptin, .gin'); if(!inner) return;   // the tree in week 2, the groups in week 1
   const reduce=mpReduce();
   const step=()=>{
     mpTimer=null;
@@ -22152,10 +22390,10 @@ function mpRunReveal(host, B){
     if(si>=st.slots.length){ mpFinishRound(B); return; }
     const s=st.slots[si];
     if(s.mine && !s.res){ S.brPause=true; render(); return; }   // STOP: your match is yours to call
-    mpSettleLive(host, inner, st, si, !reduce);
+    mpSettleLive(host, inner, st, si, !reduce, B);
     S.brShown=si+1;
     mpSetProgress(si+1, st.slots.length);   // the pinned header counts along with the reveal
-    if(s.mine){ const won=!!s.res.win.p.you; try{ sfx(won?'win':'hole'); buzz(won?[14,50,14]:12); }catch(e){} }
+    if(s.mine){ const won=!s.res.half && !!s.res.win.p.you; try{ sfx(won?'win':'hole'); buzz(won?[14,50,14]:12); }catch(e){} }
     mpTimer=setTimeout(step, reduce?15:(s.mine?MP_AFTER_MINE:MP_IN));
   };
   mpTimer=setTimeout(step, reduce?15:MP_FIRST);
@@ -22180,7 +22418,7 @@ function mpSkipRound(B){
   const st=B.stage;
   if(st){
     bracketResolveMine(B, st);
-    st.slots.forEach(s=>{ if(!s.res) s.res=bracketDecide(s.A, s.C, st.holes); });
+    st.slots.forEach(s=>{ if(!s.res) s.res = st.group ? groupDecide(s.A, s.C, st.holes) : bracketDecide(s.A, s.C, st.holes); });
     S.brShown=st.slots.length;
   }
   mpFinishRound(B);
@@ -22300,28 +22538,82 @@ function mpFillRow(row, seed, name, you, animate){
   const box=row.closest('.mptm'); if(box) box.classList.remove('pend');
   if(animate){ row.classList.remove('adv'); void row.offsetWidth; row.classList.add('adv'); }
 }
+/* ---- WEEK 1: THE GROUPS, AS EIGHT TABLES ----
+   The group stage's show is not a tree, it is a room full of tables moving. Eight cards, each with a
+   live standings table and today's two matches; the reveal settles a match and the table under it
+   re-sorts, which is the whole point of a round robin. The match tiles are the SAME `.mptm` markup the
+   knockout uses and carry the same `mpl-<si>` ids, so one reveal driver runs both weeks.              */
+function groupTableHTML(B, g, st, shown){
+  return groupStats(B, g, st, shown).map((r,i)=>
+    `<div class="gc-r${i<BRACKET_ADV?' q':''}${r.o.p.you?' you':''}">`+
+    `<span class="gc-p">${i+1}</span><span class="bm-s${r.o.p.you?' you':''}">${r.o.seed}</span>`+
+    `<span class="gc-n">${esc(r.o.p.name)}</span>`+
+    `<span class="gc-w">${r.w}-${r.l}${r.h?'-'+r.h:''}</span>`+
+    `<span class="gc-pt">${gpFmt(r.pts)}</span></div>`).join('');
+}
+function groupMatchHTML(s, si, settled){
+  const half=settled && !!s.res.half;
+  const rows=[s.A, s.C].map(o=>{
+    const won=settled && !half && s.res.win===o;
+    const cls=(settled?(half?'h':(won?'w':'l')):'')+(o.p.you?' you':'');
+    return mpTreeRow(o.seed, o.p.name, cls, null, settled?(half?'AS':(won?esc(s.res.label):'')):'');
+  }).join('');
+  return `<div class="mptm live${s.mine?' mine':''}${settled?' done':''}${s.mine&&!s.res?' await':''}" id="mpl-${si}" data-si="${si}">${rows}</div>`;
+}
+function mpGroupsBuild(B, st){
+  const shown=st?(S.brShown||0):null;
+  const box=$(`<div class="gwrap"><div class="gin"></div></div>`), inner=box.querySelector('.gin');
+  B.groups.forEach(g=>{
+    const mine=!!(B.you && B.you.gi===g.gi);
+    const ms=[];
+    if(st) st.slots.forEach((s,si)=>{ if(s.gi===g.gi) ms.push(groupMatchHTML(s, si, !!(s.res && si<shown))); });
+    inner.insertAdjacentHTML('beforeend',
+      `<div class="gcard${mine?' mine':''}">`+
+      `<div class="gc-h">Group ${g.letter}${mine?'<span class="gc-you">Yours</span>':''}</div>`+
+      `<div class="gc-tbl" id="gt-${g.gi}">${groupTableHTML(B, g, st, shown)}</div>`+
+      (ms.length?`<div class="gc-ms">${ms.join('')}</div>`:'')+
+      `</div>`);
+  });
+  return box;
+}
 /* ---- your run through the week ---- */
 function bracketPathStrip(B){
   if(!B.you) return null;
-  const you=B.you, cells=B.RDS.map((R,ri)=>{
-    const step=you.path.find(p=>p.ri===ri);
+  const you=B.you, G=(B.GDS||[]).length, days=bracketDays(B);
+  const cells=days.map((R,i)=>{
+    const isG=i<G;
+    const step=isG ? (you.gpath||[]).find(p=>p.ri===i) : (you.path||[]).find(p=>p.ri===i-G);
     if(!step) return `<div class="bp-c pend"><div class="bp-r">${R.short}</div><div class="bp-v">·</div></div>`;
-    return `<div class="bp-c ${step.won?'won':'lost'}"><div class="bp-r">${R.short}</div><div class="bp-v">${step.won?'✓':'✕'} ${esc(step.label)}</div></div>`;
+    const cls=step.half?'half':(step.won?'won':'lost'), sym=step.half?'=':(step.won?'✓':'✕');
+    return `<div class="bp-c ${cls}"><div class="bp-r">${R.short}</div><div class="bp-v">${sym} ${esc(step.label)}</div></div>`;
   }).join('');
-  return $(`<div class="bpath" aria-label="Your run">${cells}</div>`);
+  // the grid gets one column per day, so a three-day group stage plus four knockout days fits one row
+  return $(`<div class="bpath" style="--bpn:${days.length}" aria-label="Your run">${cells}</div>`);
 }
-/* ---- THE WEEK, SHOWN. One vocabulary across all five screens of the knockout: a five-day rail, two
-   stake chips, one face-off. The format used to live in a 46-word paragraph on the draw screen and was
-   never mentioned again; these pieces carry it on every screen instead. ---- */
-// where you are in the week: a banked day is green, the day you went out is red, today is gold.
+/* ---- THE FORTNIGHT, SHOWN. One vocabulary across every screen of it: a day-by-day rail, two stake
+   chips, one face-off. The format used to live in a 46-word paragraph on the draw screen and was never
+   mentioned again; these pieces carry it on every screen instead. ---- */
+/* Where you are in the WEEK, and the week is now two of them: three group days then four knockout
+   rounds. A banked day is green, the day you went out is red, today is gold, and the two weeks are
+   separated so the shape of the format reads off the rail itself. */
 function bracketRail(B, st){
-  const you=B.you, done=bracketDone(B);
-  const liveRi = st ? st.ri : Math.min(B.rounds.length, B.RDS.length-1);
+  const you=B.you, done=bracketDone(B), G=(B.GDS||[]).length;
+  const gDone=(B.gRounds||[]).length, kDone=B.rounds.length;
+  const liveIdx = st ? (st.group ? st.ri : G+st.ri)
+    : (B.phase==='group' ? Math.min(gDone, Math.max(0,G-1)) : G+Math.min(kDone, B.RDS.length-1));
   const alive = !you || you.alive;
-  return `<div class="brail" aria-label="The five days">`+B.RDS.map((R,ri)=>{
-    const step=you?you.path.find(p=>p.ri===ri):null;
-    const c = step ? (step.won?'dn':'out') : ((!done && alive && ri===liveRi) ? 'on' : '');
-    return `<div class="brl"><span class="brd ${c}"></span><span class="brn ${c}">${esc(R.short)}</span></div>`;
+  return `<div class="brail" aria-label="The championship, day by day">`+bracketDays(B).map((R,i)=>{
+    const isG=i<G;
+    let c='';
+    if(isG){
+      if(gDone>i) c = (i===G-1 && you && you.out===-1) ? 'out' : 'dn';
+      else if(!done && alive && i===liveIdx) c='on';
+    } else {
+      const step=you?you.path.find(p=>p.ri===i-G):null;
+      c = step ? (step.won?'dn':'out') : ((!done && alive && i===liveIdx) ? 'on' : '');
+    }
+    const sep=(G && i===G) ? ' wk2' : '';
+    return `<div class="brl${sep}"><span class="brd ${c}"></span><span class="brn ${c}">${esc(R.short)}</span></div>`;
   }).join('')+`</div>`;
 }
 // what this match is worth, both ways. The whole point of a knockout, in two chips.
@@ -22329,6 +22621,11 @@ function bracketStakes(B, ri){
   const nxt=B.RDS[ri+1];
   return `<div class="bstake"><div class="bst w">Win → ${nxt?esc(nxt.name):'the Tour Cup'}</div>`+
     `<div class="bst l">Lose → season over</div></div>`;
+}
+// week 1's stake is a TABLE, not a match: a group day can be halved, and nobody goes home until day 3
+function bracketGroupStakes(){
+  return `<div class="bstake"><div class="bst w">Top ${BRACKET_ADV} → the bracket</div>`+
+    `<div class="bst l">Bottom ${BRACKET_GROUP_SIZE-BRACKET_ADV} → season over</div></div>`;
 }
 function bracketOvr(o){
   try{ const v=Math.round(ovrFromSkills(o.p)); if(isFinite(v)&&v>0) return v; }catch(e){}
@@ -22361,12 +22658,16 @@ function mpSetProgress(n, total){
 function bracketDayHdrHTML(B, st, R, shown){
   const total = st ? st.slots.length : ((R.matches&&R.matches.length)||0);
   const n = st ? Math.min(shown, total) : total;
-  const foot = st
-    ? `${st.slots.length*2} in → <b>${st.slots.length} through</b>`
-    : (bracketDone(B) ? 'One left standing'
-      : `<b>${B.alive.length} through</b> to the ${esc((B.RDS[B.rounds.length]||{}).name||'next round')}`);
+  const grp = st ? !!st.group : !!R.group;
+  const wk = (B.GDS&&B.GDS.length) ? (grp?1:2) : 0;
+  const foot = grp
+    ? `Win 1 · halve 0.5 · <b>top ${BRACKET_ADV} of every group</b> go through`
+    : (st ? `${st.slots.length*2} in → <b>${st.slots.length} through</b>`
+      : (bracketDone(B) ? 'One left standing'
+        : `<b>${B.alive.length} through</b> to the ${esc((B.RDS[B.rounds.length]||{}).name||'next round')}`));
   return `<div class="bday">${bracketRail(B, st)}
-    <div class="bday-t"><span class="bday-n">${esc(R.name||'')}</span>`+
+    <div class="bday-t">${wk?`<span class="bwk${wk===2?' two':''}">Week ${wk}</span>`:''}`+
+    `<span class="bday-n">${esc(R.name||'')}</span>`+
     `<span class="bday-x" id="mpcount">${n} / ${total} played</span></div>
     <div class="bday-bar"><i id="mpbar" style="width:${total?Math.round((n/total)*100):0}%"></i></div>
     <div class="bday-f">${foot}</div></div>`;
@@ -22376,22 +22677,40 @@ function bracketDayHdrHTML(B, st, R, shown){
    computed straight off the round you went out in, which a single-elimination bracket makes exact. */
 function bracketExitFinish(B, out){
   try{
-    const n=B.players.length, surv=n/Math.pow(2,out+1);
+    const n=B.players.length, koN=B.koN||n;
+    if(out<0){   // the group stage: everyone who did not make the bracket, one tied group
+      const cnt=n-koN; if(cnt<=0) return null;
+      let sum=0; for(let k=0;k<cnt;k++) sum+=payoutAt(koN+k);
+      return {pos:koN+1, tied:cnt>1, pct:sum/cnt};
+    }
+    const surv=koN/Math.pow(2,out+1);
     if(!isFinite(surv) || surv<1 || surv!==Math.round(surv)) return null;
     let sum=0; for(let k=0;k<surv;k++) sum+=payoutAt(surv+k);
     return {pos:surv+1, tied:surv>1, pct:sum/surv};
   }catch(e){ return null; }
 }
-// every match, every margin, every name: the route through the week
+// every match, every margin, every name: the route through the FORTNIGHT. The group days count too -
+// the strapline claims a group survived and four straight won, so the table has to evidence both weeks.
 function bracketRouteHTML(B){
-  const you=B.you; if(!you || !you.path || !you.path.length) return '';
+  const you=B.you; if(!you) return '';
+  const gp=you.gpath||[], kp=you.path||[];
+  if(!gp.length && !kp.length) return '';
   const lastRi=B.RDS.length-1;
-  return `<div class="broute">`+you.path.map(p=>{
-    const cls=p.won?((p.ri===lastRi)?' fin':''):' lost';
+  const row=(p,fin)=>{
+    const cls=p.half?' half':(p.won?(fin?' fin':''):' lost');
+    const val=p.half?'halved':((p.won?'':'lost ')+esc(p.label));
     return `<div class="brt${cls}"><span class="brt-r">${esc(p.short)}</span>`+
       `<span class="bm-s">${p.oppSeed}</span><span class="brt-n">${esc(p.opp)}</span>`+
-      `<span class="brt-v">${p.won?'':'lost '}${esc(p.label)}</span></div>`;
-  }).join('')+`</div>`;
+      `<span class="brt-v">${val}</span></div>`;
+  };
+  let out=`<div class="broute">`;
+  if(gp.length){
+    const g=(you.gi!=null) ? ' · GROUP '+String.fromCharCode(65+you.gi) : '';
+    out+=`<div class="brt-wk">WEEK 1${g}</div>`+gp.map(p=>row(p,false)).join('');
+    // a week that ended in the groups has no second half, so it never gets a heading for one
+    if(kp.length) out+=`<div class="brt-wk">WEEK 2 · KNOCKOUT</div>`;
+  }
+  return out+kp.map(p=>row(p, p.ri===lastRi)).join('')+`</div>`;
 }
 function scrBracket(){
   clearTimeout(seasonTimer); mpClearTimer();
@@ -22416,6 +22735,33 @@ function scrBracket(){
 
   const wrap=$(`<div class="mpwrap"></div>`); add(wrap);
   const W=n=>wrap.appendChild(n);
+
+  // ---- THE DRAW, WEEK 1: eight groups of four, and the one you are in ----
+  if(isDraw && B.phase==='group'){
+    const g=bracketMyGroup(B), mm=bracketMyGroupMatch(B, 0), D0=B.GDS[0];
+    W($(`<div class="bhead">
+      <div class="bh-kick">The Cup Finale · Top ${B.players.length} by points</div>
+      <div class="bfoil">The groups are drawn</div>
+      <div class="bh-meta">${esc(evt.name)}${venue?` · 📍 ${esc(venue.v)}`:''}</div>
+    </div>`));
+    W($(bracketRail(B, null)));
+    W($(`<div class="bhero">
+      <div class="bhero-k">${g?`Group ${g.letter}`:'Your group'} · ${esc(D0.day)}</div>
+      ${mm?bracketFaceoff(mm.me, mm.opp, false):''}
+      ${bracketGroupStakes()}
+    </div>`));
+    if(g) W($(`<div class="gcard mine solo"><div class="gc-h">Group ${g.letter}<span class="gc-you">Yours</span></div>`+
+      `<div class="gc-tbl">${groupTableHTML(B, g, null, null)}</div></div>`));
+    W($(`<div style="text-align:center;margin-top:12px"><span class="bchip">${B.GDS.length} days · one match a day · halves count</span></div>`));
+    const det=$(`<details class="bfulldraw"><summary>See all ${B.groups.length} groups</summary></details>`);
+    det.appendChild(mpGroupsBuild(B, null));
+    W(det);
+    const b=$(`<button class="btn goldfill" style="max-width:440px;margin:14px auto 0">Tee off ▸<span class="sub">${B.groups.length*2} matches today</span></button>`);
+    b.onclick=()=>{ mpStartDay(B); track('bracket_start',{seed:you?you.seed:null, year:S.year||1, groups:1}); };
+    W(b);
+    { const rail=seasonRailNode(); if(rail) add(rail); }
+    return;
+  }
 
   // ---- THE DRAW: the format shown, not explained ----
   if(isDraw){
@@ -22446,14 +22792,18 @@ function scrBracket(){
 
   // ---- THE DAY: the bracket fills in in front of you, and stops at your match ----
   const st=B.stage;
-  const R=st ? {day:st.day, name:st.name, holes:st.holes, n:st.slots.length}
-             : (B.rounds[B.rounds.length-1]||{day:'',name:'',n:0});
+  const lastRound = B.rounds.length ? B.rounds[B.rounds.length-1]
+    : ((B.gRounds&&B.gRounds.length) ? B.gRounds[B.gRounds.length-1] : null);
+  const R=st ? {day:st.day, name:st.name, holes:st.holes, n:st.slots.length, group:!!st.group}
+             : (lastRound||{day:'',name:'',n:0});
   const shown=st?Math.min(S.brShown||0, st.slots.length):(R.matches?R.matches.length:0);
+  // week 1 is over and the sixteen are drawn: the qualification screen is its own moment
+  const qualScreen = !st && B.phase==='ko' && !B.rounds.length && (B.GDS||[]).length && S.brStage==='roundEnd';
 
   // the week is over: the trophy screen carries its own frame, so the day header and the result card
   // (both of which the route table below says better) step out of its way
   const champScreen = done && S.brStage==='roundEnd' && !!(B.champion && B.champion.p);
-  if(!champScreen) W($(bracketDayHdrHTML(B, st, R, shown)));
+  if(!champScreen && !qualScreen) W($(bracketDayHdrHTML(B, st, R, shown)));
 
   // ---- YOUR MATCH: the reveal has reached it and is waiting on you. The most consequential tap in the
   // mode, so it gets the scoreboard, the stake and two buttons that each say what they cost. ----
@@ -22461,12 +22811,13 @@ function scrBracket(){
     const mi=bracketStageMine(st), s=mi>=0?st.slots[mi]:null;
     if(s){
       const me=s.A.p.you?s.A:s.C, opp=s.A.p.you?s.C:s.A;
+      const g=st.group?bracketMyGroup(B):null;
       W($(`<div class="bhero pause">
-        <div class="bhero-k">Your match</div>
+        <div class="bhero-k">Your match${g?` · Group ${g.letter}`:''}</div>
         ${bracketFaceoff(me, opp, true)}
-        <div class="bhero-row">${bracketH2H(opp)}<span class="bchip">${R.holes} holes</span></div>
+        <div class="bhero-row">${bracketH2H(opp)}<span class="bchip">${R.holes} holes</span>${st.group?'<span class="bchip">A half is worth half a point</span>':''}</div>
       </div>`));
-      W($(bracketStakes(B, st.ri)));
+      W($(st.group?bracketGroupStakes():bracketStakes(B, st.ri)));
       const bp=$(`<button class="btn goldfill" style="max-width:440px;margin:13px auto 0">⛳ Play it<span class="sub">${R.holes} holes · every call is yours</span></button>`);
       bp.onclick=()=>{ mpClearTimer(); track('bracket_play',{round:st.ri}); bracketStartMatch(B, {me, opp}); };
       W(bp);
@@ -22485,13 +22836,29 @@ function scrBracket(){
   // into anticipation (who is next, when), a loss gets closure (where you finished, what it paid). ----
   const mine=st ? (()=>{ const i=bracketStageMine(st); const s=i>=0?st.slots[i]:null;
       if(!s||!s.res||i>=(S.brShown||0)) return null;
+      if(s.res.half){ const o=s.A.p.you?s.C:s.A;
+        return {half:true, group:!!st.group, label:'AS', s:o.seed, n:o.p.name, out:st.ri}; }
       const won=!!s.res.win.p.you, o=won?s.res.lose:s.res.win;
-      return {won, label:s.res.label, s:o.seed, n:o.p.name, out:st.ri}; })()
-    : (()=>{ const R2=B.rounds[B.rounds.length-1]; if(!R2) return null;
-      const m=R2.matches.find(x=>x.you); if(!m) return null;
+      return {won, group:!!st.group, label:s.res.label, s:o.seed, n:o.p.name, out:st.ri}; })()
+    : (()=>{ if(!lastRound) return null;
+      const m=lastRound.matches.find(x=>x.you); if(!m) return null;
       const o=m.aYou?{s:m.bSeed,n:m.bName}:{s:m.aSeed,n:m.aName};
-      return {won:!!m.youWon, label:m.label, s:o.s, n:o.n, out:B.rounds.length-1}; })();
-  if(mine && !champScreen){
+      return {won:!!m.youWon, half:!!m.half, group:!!lastRound.group, label:m.label, s:o.s, n:o.n,
+        out:B.rounds.length?B.rounds.length-1:0}; })();
+  /* WEEK 1's result is a table position, not an exit. A halved match is a real outcome here, and
+     nobody goes home until day three, so the group card says where the day left you instead. */
+  if(mine && mine.group && !qualScreen){
+    const g=bracketMyGroup(B), rows=g?groupStats(B, g, st, st?shown:null):null;
+    const pos=rows?rows.findIndex(r=>r.o.p.you)+1:0, meRow=(rows&&pos)?rows[pos-1]:null;
+    W($(`<div class="bres ${mine.half?'h':(mine.won?'':'l')}">
+      <div class="bres-k">${mine.half?'Match halved':(mine.won?'Match won':'Match lost')}</div>
+      <div class="bres-m">${mine.half?'All square':esc(mine.label)}</div>
+      <div class="bres-o">${mine.half?'with':(mine.won?'beat':'to')} <span class="bm-s">${mine.s}</span> <b>${esc(mine.n)}</b></div>
+      ${meRow?`<div class="bres-chips"><span class="bchip">Group ${g.letter} · ${ord(pos)}</span>`+
+        `<span class="bchip"${pos<=BRACKET_ADV?' style="color:#35d6a0;border-color:rgba(53,214,160,.35)"':''}>${gpFmt(meRow.pts)} pt${meRow.pts===1?'':'s'}${pos<=BRACKET_ADV?' · in the top two':''}</span></div>`:''}
+    </div>`));
+  }
+  if(mine && !mine.group && !champScreen && !qualScreen){
     let chips='';
     if(!mine.won){
       const f=bracketExitFinish(B, mine.out);
@@ -22517,7 +22884,39 @@ function scrBracket(){
     }
   }
 
-  // ---- THE CHAMPION: five days of survival, so the ROUTE is the trophy ----
+  /* ---- QUALIFICATION: week one is over. This is the hinge of the whole championship, so it gets its
+     own screen - did you get out of your group, and if so, here is the new course and who you drew. ---- */
+  if(qualScreen){
+    const g=bracketMyGroup(B), through=!!(you && you.out!==-1);
+    const koKey=bracketKoCourseKey(B), kc=DAILY_COURSES[koKey];
+    if(you){
+      W($(`<div class="bres ${through?'':'l'}">
+        <div class="bres-k">${through?'Through to the bracket':'The groups end your week'}</div>
+        <div class="bres-m">${g?`Group ${g.letter}`:''} ${you.gpos?ord(you.gpos):''}</div>
+        <div class="bres-o">${you.gw}-${you.gl}${you.gh?'-'+you.gh:''} · <b>${gpFmt(you.gpts)} pt${you.gpts===1?'':'s'}</b></div>
+        ${!through?`<div class="bres-chips">${(()=>{ const f=bracketExitFinish(B,-1);
+          return f?`<span class="bchip">Finished ${f.tied?'T':''}${f.pos}</span><span class="bchip" style="color:var(--gold);border-color:rgba(241,208,74,.35)">${fmt(evt.purse*f.pct)}</span>`:''; })()}</div>`:''}
+      </div>`));
+    }
+    W($(bracketRail(B, null)));
+    W($(`<div class="bhero">
+      <div class="bhero-k">Week 2 · ${esc(B.RDS[0].name)}</div>
+      <div class="bfoil">A new course</div>
+      <div class="bh-meta">📍 ${esc(kc?kc.v:koKey)}${kc&&kc.loc?` · ${esc(kc.loc)}`:''}</div>
+      <div class="bday-f" style="text-align:center">${B.alive.length} left · single elimination · win ${B.RDS.length} straight</div>
+    </div>`));
+    if(through){
+      const np=bracketMyPair(B);
+      if(np){ W($(`<div class="bhero" style="margin-top:11px">
+        <div class="bhero-k">Your first match</div>
+        ${bracketFaceoff(np.me, np.opp, true)}
+        <div class="bhero-row">${bracketH2H(np.opp)}<span class="bchip">${B.RDS[0].holes} holes</span></div>
+      </div>`)); }
+      W($(bracketStakes(B, 0)));
+    }
+  }
+
+  // ---- THE CHAMPION: two weeks of survival, so the ROUTE is the trophy ----
   if(champScreen){
     const ch=B.champion, isYou=!!ch.p.you;
     const o=you?bracketOrder(B).find(x=>x.p.you):null;
@@ -22528,7 +22927,7 @@ function scrBracket(){
         <div class="bfoil">${esc(S.name||ch.p.name)}</div>
         <div class="bh-meta">${ord(ch.seed)} seed · ${esc(evt.name)} · ${calYear()}</div>
       </div>`));
-      W($(`<div class="bday-f" style="text-align:center;margin-top:16px">${B.RDS.length} days, ${B.RDS.length} wins</div>`));
+      W($(`<div class="bday-f" style="text-align:center;margin-top:16px">${B.GDS.length?`Out of the group, then ${B.RDS.length} straight`:`${B.RDS.length} days, ${B.RDS.length} wins`}</div>`));
     } else {
       W($(`<div class="bchamp">
         <div class="bc-k">Champion</div>
@@ -22551,9 +22950,13 @@ function scrBracket(){
     if(isYou) add($(`<canvas id="brconf" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5"></canvas>`));
   }
 
-  // ---- THE BRACKET ITSELF: the show while the week is live, one tap away once it is over ----
-  const tree=mpTreeBuild(B, st);
-  if(champScreen){
+  // ---- THE SHOW: eight tables re-sorting in week 1, the bracket filling in in week 2 ----
+  const inGroups=!!(st && st.group) || (B.phase==='group');
+  const tree=inGroups ? mpGroupsBuild(B, st) : mpTreeBuild(B, st);
+  if(inGroups){
+    W(tree);
+    const path=bracketPathStrip(B); if(path) W(path);
+  } else if(champScreen){
     const det=$(`<details class="bfulldraw"><summary>See the full bracket</summary></details>`);
     det.appendChild(tree);
     det.addEventListener('toggle', ()=>{ if(det.open) bracketFocusScroll(tree, B, st); });
@@ -22570,11 +22973,22 @@ function scrBracket(){
     sk.onclick=()=>mpSkipRound(B);
     ctrl.appendChild(sk);
   } else if(!done && S.brStage==='roundEnd'){
-    const nxt=B.RDS[B.rounds.length];
+    const grpNext=(B.phase==='group');
+    const nxt=grpNext ? B.GDS[B.gRounds.length] : B.RDS[B.rounds.length];
     const alive=B.you && B.you.alive;
-    const b=$(`<button class="btn goldfill">Play ${esc(nxt.day)} ▸<span class="sub">${esc(nxt.name)} · ${B.alive.length/2} match${B.alive.length/2>1?'es':''}${alive?' · you are in it':''}</span></button>`);
+    const nm=grpNext ? B.groups.length*2 : B.alive.length/2;
+    const lab=qualScreen ? (alive?'Into the bracket ▸':'Watch the bracket ▸')
+      : `Play ${esc(nxt.day)} ▸`;
+    const b=$(`<button class="btn goldfill">${lab}<span class="sub">${esc(nxt.name)} · ${nm} match${nm>1?'es':''}${alive?' · you are in it':''}</span></button>`);
     b.onclick=()=>mpStartDay(B);
     ctrl.appendChild(b);
+    // out of it but the week runs on: an eliminated player should never have to sit through four days
+    if(you && !alive){
+      const sk=$(`<button class="btn ghost">Skip to the champion</button>`);
+      sk.onclick=()=>{ mpClearTimer(); clearTimeout(seasonTimer); bracketRunOut(B);
+        B.stage=null; S.brShown=0; S.brPause=false; S.brStage='roundEnd'; render(); };
+      ctrl.appendChild(sk);
+    }
     // long enough to read the day's result and see who you drew next before the next day starts
     if(S.autoSim) seasonTimer=setTimeout(()=>{ if(S.screen==='season'&&S.curBracket===B&&S.brStage==='roundEnd') b.onclick(); }, reduce?60:2800);
   } else if(done){
@@ -22585,7 +22999,9 @@ function scrBracket(){
     if(B.champion && B.champion.p && B.champion.p.you && you){
       const sh=$(`<button class="btn ghost">Share the week</button>`);
       sh.onclick=()=>{ const run=you.path.map(p=>p.short+' '+p.label).join(' · ');
-        shareText(`RunTheTour: I won the ${evt.name} as the ${ord(you.seed)} seed. Five days, five matches: ${run}. Think you can build better? https://runthe.gg/golf`); };
+        const g=bracketMyGroup(B);
+        const grp=(B.GDS.length && g) ? ` Out of Group ${g.letter} on ${gpFmt(you.gpts)}, then ${B.RDS.length} straight:` : ` ${B.RDS.length} days, ${B.RDS.length} matches:`;
+        shareText(`RunTheTour: I won the ${evt.name} as the ${ord(you.seed)} seed.${grp} ${run}. Think you can build better? https://runthe.gg/golf`); };
       ctrl.appendChild(sh);
     }
   }
@@ -24762,9 +25178,21 @@ function scrRecap(){
     add(board);
     const bres=results[S.recapEvent].bracket;   // knockout week: no rounds, no to-par
     const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':(me.tied?'T':'')+me.pos);
-    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${bres?esc(me.bfull||''):(me.pos==='CUT'?'missed cut':par(me.score))}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'·'}</span></div>`));
+    // "WON" already says Champion, and a group exit is spelled out in the group line below, so neither
+    // is written twice; every other knockout week still says how far it went.
+    const detail = bres ? ((me.pos===1||me.bres==='GROUPS')?'':esc(me.bfull||''))
+                        : (me.pos==='CUT'?'missed cut':par(me.score));
+    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b>${detail?` · ${detail}`:''}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'·'}</span></div>`));
     if(!bres) add(roundsRow(me));
-    else add($(`<div class="bpath" style="margin-top:8px">${(me.path||[]).map((p,i)=>`<div class="bp-c ${p.won?'won':'lost'}"><div class="bp-r">${esc(p.short||(BRACKET_ROUNDS[p.ri]||{}).short||('R'+(p.ri+1)))}</div><div class="bp-v">${p.won?'✓':'✕'} ${esc(p.label)}</div></div>`).join('')}</div>`));
+    // one column per day the row actually holds: a group exit is three cells, not three of seven
+    else add($(`<div class="bpath" style="margin-top:8px;--bpn:${Math.max(1,(me.path||[]).length)}">${(me.path||[]).map(p=>{
+      // the path now opens with the three group days, and a group match can have been HALVED
+      const cls=p.half?'half':(p.won?'won':'lost'), sym=p.half?'=':(p.won?'✓':'✕');
+      const short=p.short||((p.group?BRACKET_GDAYS:BRACKET_ROUNDS)[p.ri]||{}).short||('R'+(p.ri+1));
+      return `<div class="bp-c ${cls}"><div class="bp-r">${esc(short)}</div><div class="bp-v">${sym} ${esc(p.label)}</div></div>`;
+    }).join('')}</div>`));
+    // week one, in a line: which group, where you finished it, and whether it took you to the bracket
+    if(bres && bres.groups) add($(`<div class="small muted" style="margin-top:7px;text-align:center">Group ${esc(bres.groups.letter)} · ${bres.groups.pos?ord(bres.groups.pos):''} on ${gpFmt(bres.groups.pts)} pt${bres.groups.pts===1?'':'s'} · <b style="color:${bres.groups.through?'#35d6a0':'#ff7a63'}">${bres.groups.through?'through to the bracket':'out in the groups'}</b></div>`));
     if(playoff){
       add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold)">⛳ ${playoff.holes}-hole playoff: ${esc(playoff.players.join(', '))}, won by <b>${esc(playoff.winner)}</b></div>`));
     }

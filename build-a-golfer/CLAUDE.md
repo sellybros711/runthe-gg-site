@@ -17080,3 +17080,66 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Regressions green: gen 39, dispatch 27, farewell 25, drift 31, calendar 25, records 24, rival 17, rest 37,
   clubs 23, circuit 14, morris 16, daily_glitch 5, board_race 11, entry_ux 23, entry_catch 25. `goals_test`
   fails 3 and `parsecheck` block 0 fails **identically on the deployed build** - the known stale fixtures.
+
+### THE TOUR CHAMPIONSHIP IS A FORTNIGHT: 8 groups of 4, then a 16-man knockout
+- **The owner sent GOLF.com's 2028 PGA Tour playoff format and asked for the game to match it**: WEEK 1 is
+  a group stage - the top 32 from the season drawn into 8 groups of 4, three days, one match a day, top 2
+  from each group advance, World Cup style - and WEEK 2 is a 16-man single-elimination bracket on a NEW
+  course, win four straight and you win the Tour Championship. The finale had been a five-day 32-man
+  knockout since the earlier bracket work; this is the second half of that build, and it changes the shape
+  of the week rather than adding one.
+- **`bracketDays(B) = GDS.concat(RDS)`** is the spine: three group days (`wk:1`) then four knockout days
+  (`wk:2`), so every screen that walks the fortnight - the day rail, the path strip, the route table -
+  reads one array and cannot disagree with itself about how long the week is.
+- **`groupStats(B, g, st, shown)` is the SINGLE truth about a group** (points -> wins -> head-to-head ->
+  seed), consumed by BOTH the live group table and `bracketSeedKnockout`. Two implementations of the same
+  tiebreak would have drifted the moment a rule changed.
+- **A group match can be HALVED and a knockout match cannot**, which is the one genuinely new rule.
+  `groupDecide` returns `{half:true,label:'AS'}` where `bracketDecide` goes to sudden death - and a match
+  YOU PLAY had to learn the same thing. `matchState()` only ever returned a winner, so an all-square
+  played group match was being sent to extra holes while the pause card beside it promised "A HALF IS
+  WORTH HALF A POINT". Fixed at four sites (`S.matchPlay.group`, `matchState`'s all-square branch,
+  `finishMatchRound`'s override, and `bracketResolveMine` learning `groupDecide`'s shape).
+- **A staged round mutates NOTHING until it is committed**, which is what lets the day fill in in front of
+  you and stop dead on your match without leaving the bracket half-played if you walk away:
+  `bracketStage` -> `bracketResolveMine` -> `bracketCommit`, with `bracketPlayRound` as all three in one
+  for every headless path.
+- **THE .bpath LAYOUT BUG, and why the screenshot pass found what the assertions did not.** The strip was
+  a wrapping flex row (`flex:1 1 60px`), so the moment seven cells did not fit, the overflow cell stretched
+  to FULL WIDTH on its own row. Measured before the fix: at 430px one 398px cell alone on a row, at 390px
+  two 177px cells, at 320px three 94px cells - only a desktop width was ever right, and every check that
+  merely asserted "seven cells exist" passed throughout. Now a grid of `--bpn` columns, one per day, so
+  seven cells sit on one row at any width; a `@media(max-width:380px)` block stops a margin like "1 up"
+  clipping in a ~38px cell. `bpath_check` (32 checks across 320/390/430/900 plus the Tour Eras 16 variant)
+  is **21 pass / 11 fail on a pre-fix copy**, so it discriminates.
+- **The same bug, one screen over, caught by reading the RECAP.** The recap detail rendered `.bpath` with
+  no `--bpn`, so it inherited the seven-column default: a three-day group exit drew three 53px cells in a
+  strip built for seven. It now sizes to the days the row actually holds.
+- **Two redundancies were also only visible by looking**: the recap line read `Me: WON · Champion`, and a
+  group exit read `Out in the group stage (Group A, 3rd on 1 pt)` immediately above a group line saying
+  exactly that again. "WON" already says Champion and the group line already tells the group story, so
+  neither is written twice; a knockout exit still says how far it went. Same fix in the tournament overlay.
+- **The champion screen is the ROUTE THROUGH THE FORTNIGHT, not the knockout.** `bracketRouteHTML` was
+  four rows under a strapline claiming a group had been survived and four straight won - the table
+  contradicted the sentence above it. It now runs `WEEK 1 · GROUP E` over the three group days and
+  `WEEK 2 · KNOCKOUT` over the four, with the week-2 heading suppressed for a week that ended in the
+  groups (a bug I introduced and the group-exit case caught).
+- **A test was asserting the WRONG CONTRACT, and it looked like six game bugs.** `mp_playgroup` checked
+  the group table immediately after `finishMatchRound()` and read zeros. `finishMatchRound` RESOLVES the
+  held slot; `bracketCommit` runs later, when the reveal reaches the end of the day. The game was right
+  in both cases; the fixture now asserts the two halves separately (the half lands in the slot, then the
+  day commits once the reveal finishes) and is **21/21**. Third stale fixture this session - the other two
+  were a Tour Eras rule keyed on `S.career.tour.ch` (not `.rules`) and an `mp_ui` route check still
+  encoding the knockout-only contract.
+- Verified: **173 checks, 0 fail, 0 page errors** across seven suites - `mp_eng` 37 (the fortnight's shape,
+  8 groups of 4, two from one group never meeting in the R16, the 1/1/2/4/8/16 finishing groups, week 2 on
+  a different course, a 16-player Tour Eras finale skipping the groups, and a staged day mutating nothing),
+  `mp_ui` 39, `mp_playgroup` 21, `mp_recap` 27 (new: the recap list, the recap detail's board + route strip
+  + group line, the tournament overlay, the summary callout, and a week you never qualified for),
+  `route_check` 6, `bpath_check` 32, `board_race` 11. All 7 real inline script blocks parse (block 0 is the
+  JSON-LD tag, which fails identically on `HEAD`).
+- **NOT deployed** - `golf/index.html` is regenerated from this file on deploy, so it needs the owner's go
+  and a check for parallel edits to the deployed file first.
+- Tunable: `BRACKET_GDAYS` / `BRACKET_GDS` (the group stage's shape), `bracketGroupsOn()` and the Tour Eras
+  `bracket_expand` / `bracket_axed` rules (whether the groups happen at all), `groupStats`'s tiebreak order,
+  and the `.bpath` grid + its narrow-phone block.
