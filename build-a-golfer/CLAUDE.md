@@ -16792,3 +16792,40 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   synthetic metric omits `played`). Inline scripts parse; block 0 is the JSON-LD tag, fails identically on
   baseline. The deployed file was byte-identical to committed source beforehand, so there were no parallel
   edits to adopt.
+
+### THE TOUR IS ON A CALENDAR: a career is a place in time, not a progress bar
+- **The gap.** The world has kept a real year internally since the living-world work (`w.simYear` runs
+  2026 through 2055 and on into the Legend Circuit) and the player was never shown it. Every surface read
+  "Year 8 of 30" - which is a progress bar. Nothing in a 30-year career said *when* it was happening, so a
+  career had no era, no "the 2033 season", no way to say a major was won in 2028.
+- **One helper, `calYear(y)`** = `CAREER_START_YEAR + y - 1`, the same arithmetic `w.simYear` does but
+  computed from `S.year` alone, so it works on a screen that has no world (a summary you are only reading
+  back, the profile History tab, a share card). Career years 31+ are the circuit and correctly keep
+  counting: 2056, 2057. Declared as a hoisted `function` and it reads `S` **inside a try** - `S` is
+  declared ~1,400 lines below it and `typeof` does not save you from a temporal dead zone, it throws, and
+  that would abort the whole inline script (the lesson `acctKey` learned the hard way).
+- **Where the season is now dated**: the live season banner ("2033 Season · Yr 9 of 30 · Age 30"), the
+  summary header, the highlights masthead ("2033 Season Highlights"), the advance button ("Continue to
+  2034"), the season share caption, the off-season hero + Start button ("Before the 2034 season" / "Start
+  the 2034 Season"), the recap title and its year picker (2026...2033 · NOW), the Resume Career card, the
+  career block ("through 2033") and its Season-high tile, the season-by-season accordion, the majors list
+  (a major won in career year 3 reads 2028), the career timeline, the profile History rows, the story
+  feed, past rivalries as a span, the tour-news / council / league / breakaway cards and the tour history
+  ("In force since 2031"), the bracket champion line, the player-card Year row, and the major-win share
+  card. The two ceremonies now LEAD with the span - "2026 to 2055 · 30 seasons on tour".
+- **What deliberately stays a count.** The career year is kept alongside the date wherever it is genuinely
+  a progress reading ("2033 · Yr 8 of 30", "8 years", "30 seasons on tour"), and left alone where the
+  number is a duration or a relationship counter rather than a date: the sponsor contract year ("Yr 3"
+  with this brand), the "Yr 1-42" stat-scope labels on the circuit ceremony, and every achievement.
+- **Every career starts in 2026**, so two saves share the same years - each career is its own universe,
+  which is the same thing the living world already assumed.
+- Verified: a new `calendar_test.mjs` - **25 pass, 0 fail, 0 page errors** - driving real played seasons
+  through the real screens (summary, career tab, live season, recap, off-season via `continueFranchise`,
+  resume card, History tab, tour history, career-end ceremony) plus the arithmetic and a sweep asserting no
+  career screen still reads "Year N of N". **The same suite is 0 pass / 25 fail on the deployed build**, so
+  it discriminates rather than asserting the setup. Screenshots of the summary, career tab, live season,
+  recap and off-season reviewed by eye - the recap's year picker wraps cleanly at 412px.
+- Regressions green: records 24, rest 37, rival 17, clubs 23, circuit 14, morris 16, daily_glitch 5,
+  board_race 11. `goals_test` (3) and `regress.mjs` (1) fail **identically on the deployed baseline** -
+  the known stale fixtures. Inline scripts parse; block 0 is the JSON-LD tag, fails identically on baseline.
+- Tunable: `CAREER_START_YEAR` (2026) moves every date at once; `calYear` is the single formatting point.
