@@ -626,6 +626,65 @@
     .dock{backdrop-filter:blur(3px)}
   }
 
+  /* ---- the simulation ----
+     TIME PASSING, RATHER THAN A BUTTON. Pressing on used to cut straight from the office to
+     the next decision, which made a five year term feel like a menu: nine beats a year, each
+     one a category rather than a date, and no sense at all that anything happened in between.
+
+     So the days go by. A real month grid, the real Saturdays of the real season, and the
+     ticker reads out the biggest game of each week as it lands. It stops on the day something
+     arrives on the desk, which is the moment the mode is actually about.
+
+     Skippable on a tap, because the second time somebody sees a September they will want it
+     over with, and skipped entirely under prefers-reduced-motion. */
+  .simwrap{min-height:70vh;display:flex;flex-direction:column;justify-content:center}
+  .simhead{text-align:center;margin-bottom:18px}
+  .simhead b{display:block;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--green)}
+  .simhead h3{font-family:var(--fd);font-size:30px;line-height:1;text-transform:uppercase;
+    letter-spacing:.01em;margin-top:7px}
+
+  .cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:0 auto;max-width:340px}
+  .cgrid i{font-style:normal;font-family:var(--fn);font-size:8.5px;font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--dim-2);text-align:center;
+    padding-bottom:3px}
+  .cd{position:relative;aspect-ratio:1;border-radius:7px;display:flex;align-items:center;
+    justify-content:center;font-family:var(--fn);font-size:11px;font-weight:700;
+    color:var(--dim-2);background:rgba(255,255,255,.03);
+    transition:background .25s var(--ez),color .25s var(--ez),transform .25s var(--ez)}
+  .cd.out{opacity:.18}
+  .cd.past{background:rgba(16,185,129,.18);color:var(--ink)}
+  /* A GAME DAY IS A SATURDAY WITH SOMETHING ON IT, marked before it arrives so the eye has
+     somewhere to go: the whole point of watching a month go by is seeing the next one coming. */
+  /* CENTRED BY TRANSFORM, not by auto margins. `left:0;right:0;margin:auto` is the usual
+     trick and it puts the dot against the right edge of the cell here, level with the
+     number, which reads as a rendering fault rather than as a marker. */
+  .cd.game:after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
+    width:4px;height:4px;border-radius:50%;background:var(--gold)}
+  .cd.past.game:after{background:#0b1a12}
+  .cd.now{background:var(--gold);color:#2a1a00;transform:scale(1.14);z-index:2}
+  .cd.stop{background:var(--red);color:#fff;transform:scale(1.18)}
+  @media(prefers-reduced-motion:no-preference){
+    .cd.now{animation:cdnow 1.1s var(--ez) infinite}
+    @keyframes cdnow{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.4)}
+      70%{box-shadow:0 0 0 7px rgba(245,158,11,0)}}
+  }
+
+  /* THE TICKER. One line, fixed height, so a month going by does not make the page jump
+     around every time a Saturday has a game on it and the day after does not. */
+  .tick{margin-top:20px;min-height:74px;text-align:center;display:flex;
+    flex-direction:column;justify-content:center;gap:5px}
+  .tick b{font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .tick p{font-size:14.5px;line-height:1.35;color:var(--ink);min-height:20px}
+  .tick span{font-family:var(--fn);font-size:10.5px;font-weight:700;color:var(--dim-2)}
+  @media(prefers-reduced-motion:no-preference){
+    .tick p.in{animation:tickin .34s var(--ez)}
+    @keyframes tickin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  }
+  .simskip{margin-top:22px;text-align:center;font-family:var(--fn);font-size:10px;
+    font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim-2)}
+
   /* ---- the season, while it is happening ----
      THE ANSWER TO THE BIGGEST HOLE IN THE MODE. A third of the calendar was a button that
      said nothing was on the desk, and the third in question was the football season. These
@@ -908,6 +967,20 @@
     <div class="dock"><button class="btn" id="b-desk">See what is on the desk</button></div>
   </div>
 
+  <!-- Time passing. See the CSS block above and runSim() below. -->
+  <div class="screen" id="s-sim" data-in="land">
+    <div class="simwrap">
+      <div class="simhead"><b id="sim-eyebrow">Simulating</b><h3 id="sim-month">September</h3></div>
+      <div class="cgrid" id="sim-grid"></div>
+      <div class="tick">
+        <b id="sim-day">Saturday 30 August</b>
+        <p id="sim-text"></p>
+        <span id="sim-sub"></span>
+      </div>
+      <div class="simskip" id="sim-skip">Tap to skip</div>
+    </div>
+  </div>
+
   <!-- The desk: one item, one ruling. -->
   <div class="screen" id="s-desk" data-in="slide">
     <div class="beatbar" id="desk-beatbar"></div>
@@ -991,9 +1064,10 @@
 <script src="ledger.js?v=3"></script>
 <script src="blocs.js?v=3"></script>
 <script src="docket.js?v=3"></script>
-<script src="season.js?v=6"></script>
+<script src="season.js?v=7"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
+<script src="calendar.js?v=1"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -1021,6 +1095,7 @@ const L=window.PS_CFB_LEDGER, B=window.PS_CFB_BLOCS, D=window.PS_CFB_DOCKET, E=w
 const S=window.PS_CFB_SEASON;
 const C=window.PS_CFB_COUNCIL;
 const FEED=window.PS_CFB_FEED;
+const CAL=window.PS_CFB_CALENDAR;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
@@ -1161,7 +1236,13 @@ async function loadPlaces(){
 /* ── painting ─────────────────────────────────────────────────────────────────── */
 const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,(c)=>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const show=(id)=>{document.querySelectorAll('.screen').forEach((s)=>s.classList.remove('on'));
+const show=(id)=>{
+  /* A RUN IN FLIGHT DIES HERE. The simulation is a chain of timeouts, and anything that
+     changes screen while one is alive would otherwise leave it ticking behind the new screen
+     and deal a second item when it reached the end. One place to cancel, and every screen
+     change goes through it. */
+  if(id!=='s-sim'&&typeof stopSim==='function') stopSim();
+  document.querySelectorAll('.screen').forEach((s)=>s.classList.remove('on'));
   $(id).classList.add('on');window.scrollTo({top:0});};
 
 /* ── motion ───────────────────────────────────────────────────────────────────────
@@ -1565,8 +1646,11 @@ function office(){
      on, and that decision wants the whole term in front of it. The strip stays on the desk,
      which is a screen about one item and has no business showing five years. */
   paintCalendar($('off-cal'),world);
-  $('off-when').textContent=L.BEATS[world.beat]+' · '+world.year
-    +' · year '+(world.year-world.startYear+1)+' of '+TERM_SEASONS;
+  /* WHERE YOU ARE, AS A DATE AND A NAME. The beat name alone is a category; a term made of
+     forty-five categories never feels like five years of anybody's life. */
+  const win=CAL.windowFor(world.year,world.beat);
+  $('off-when').textContent=L.BEATS[world.beat]+' · '+CAL.label(win.from)+' to '
+    +CAL.label(win.to)+' · year '+(world.year-world.startYear+1)+' of '+TERM_SEASONS;
   const angry=L.removal(world).angry||[];
   /* A LIT FUSE OUTRANKS AN UNHAPPY ROOM AT THE TOP OF THIS SCREEN, because one of them has
      happened and the other might. It was buried at the bottom of a card three panels down. */
@@ -1585,19 +1669,19 @@ function office(){
      the playoff it is a season screen: who is watching, what happened on Saturday, who is
      in the field. The rest of the year it is a governance screen and the map leads.
      Drawing both at once was the alternative and it is four screens of scrolling. */
-  const seg=S?S.segmentFor(world.beat):null;
+  const done=S?S.throughAtBeat(world.beat):null;
   const sim=seasonNow();
-  const inSeason=!!(seg&&sim);
+  const inSeason=!!(done&&sim);
   $('off-tvcard').hidden=!inSeason;
-  $('off-weekcard').hidden=!inSeason||!!seg.bracket;
-  $('off-titlecard').hidden=!inSeason||!seg.titles||!!seg.bracket;
+  $('off-weekcard').hidden=!inSeason;
+  $('off-titlecard').hidden=!inSeason||!done.titles;
   $('off-tablecard').hidden=!inSeason;
   $('off-mapcard').hidden=inSeason;
   if(inSeason){
     paintTv($('off-tv'),sim);
-    if(!seg.bracket) paintWeek($('off-week'),sim);
-    if(seg.titles&&!seg.bracket) paintTitles($('off-titles'),sim);
-    $('off-tablehead').textContent=seg.titles?'The field as it stands':'The top of the sport';
+    paintWeek($('off-week'),sim);
+    if(done.titles) paintTitles($('off-titles'),sim);
+    $('off-tablehead').textContent=done.titles?'The field as it stands':'The top of the sport';
     paintStandings($('off-table'),sim);
   }else{
     paintMap($('off-map'),world,{showMoves:true});
@@ -1615,20 +1699,34 @@ function office(){
       : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
   show('s-office');
 }
+/* THE ITEM IS DRAWN BEFORE THE DAYS ARE WALKED, not after, because the simulation has to
+   know which day to stop on and what to say when it gets there. Drawing it afterwards would
+   mean the calendar ran to an arbitrary date and the headline arrived from nowhere. */
 $('b-desk').onclick=()=>{
   const pool=D.eligible(world,L);
-  if(!pool.length){ advance(); return; }
+  if(!pool.length){
+    /* Nothing on the desk: the window runs out and the clock moves on. Rare now that every
+       beat has something, and it still has to look like time passing rather than a jump. */
+    runSim(null,null,()=>{ advance(); });
+    return;
+  }
   item=D.pick(world,L,draw);
   cast=D.castOf(item,world,L,draw);
   choice=null; dials={}; written='';
   (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
-  save(); desk();
+  save();
+  const day=CAL.decisionDay(world.year,world.beat,item.id);
+  deskDay=day;
+  runSim(day,D.text(item.title,cast,item),()=>{ desk(); });
 };
 
 /* ── the desk ─────────────────────────────────────────────────────────────────── */
 function desk(){
   paintBeatbar($('desk-beatbar'),world);
-  $('d-eyebrow').textContent=(item.eyebrow||'')+' · '+L.BEATS[world.beat]+' · '+world.year;
+  /* THE DATE, NOT THE BEAT NAME. The simulation has just walked to this day; the desk saying
+     "Portal and signing day" after that reads as though the calendar was decoration. */
+  $('d-eyebrow').textContent=(item.eyebrow||'')+' · '
+    +(deskDay?CAL.longLabel(deskDay)+' '+deskDay.getFullYear():L.BEATS[world.beat]+' · '+world.year);
   $('d-eyebrow').className='eyebrow '+(item.crisis?'red':'gold');
   $('d-title').textContent=D.text(item.title,cast,item);
   paintBrief(D.text(item.brief,cast,item));
@@ -1719,6 +1817,107 @@ function optionSignature(o){
       +(up?'▲':'▼')+' '+esc(AXIS_SHORT[a]||AXIS_WORDS[a][up?0:1])+'</i>';
   }).join('')+'</span>';
 }
+/* ── the simulation ────────────────────────────────────────────────────────────────
+   THE DAYS GO BY BEFORE ANYTHING LANDS ON THE DESK. Pressing on used to cut straight from
+   the office to the next decision, so a five year term was forty-five jumps between
+   categories and nothing in between: no sense that a September had happened, no sense that
+   the thing arriving had arrived while you were working.
+
+   The dates come from cfb/commish/calendar.js, which pins week one to the Saturday on or
+   after the twenty-eighth of August and everything else to that. The football comes from the
+   season the page has already simulated, so the game the ticker reads out on a Saturday is
+   the game that was played on that Saturday.
+
+   ONE TIMER, CANCELLED FROM ONE PLACE. A run that is skipped, or interrupted by somebody
+   pressing back, has to stop dead: two of these alive at once would deal two items. */
+let simTimer=null, simSkip=null, deskDay=null;
+function stopSim(){
+  if(simTimer){ clearTimeout(simTimer); simTimer=null; }
+  simSkip=null;
+}
+
+/* The month grid for whichever month the current day is in, with the window marked. */
+function paintMonth(el,cur,days,events,stopKey){
+  if(!el) return;
+  const y=cur.getFullYear(), m=cur.getMonth();
+  const first=new Date(y,m,1);
+  const lead=first.getDay();
+  const len=new Date(y,m+1,0).getDate();
+  const inWindow={}; days.forEach((d)=>{ inWindow[CAL.key(d)]=1; });
+  let html=CAL.DOW.map((d)=>'<i>'+d[0]+'</i>').join('');
+  for(let i=0;i<lead;i++) html+='<span class="cd out"></span>';
+  for(let day=1;day<=len;day++){
+    const date=new Date(y,m,day), k=CAL.key(date);
+    const ev=events[k];
+    const cls=['cd'];
+    if(!inWindow[k]) cls.push('out');
+    else if(CAL.between(date,cur)>0) cls.push('past');
+    if(ev&&ev.kind==='game') cls.push('game');
+    if(k===CAL.key(cur)) cls.push(k===stopKey?'stop':'now');
+    html+='<span class="'+cls.join(' ')+'">'+day+'</span>';
+  }
+  el.innerHTML=html;
+}
+
+/* HOW FAST. A month of nothing should go by quickly and a Saturday with a game on it should
+   hold long enough to read. Both are set against a whole window taking about three seconds,
+   which is long enough to feel like time and short enough that nobody resents it on the
+   fortieth beat of a term. */
+const SIM_DAY=30, SIM_EVENT=480, SIM_STOP=820;
+
+/* Run the days of the current beat and then do `done`. `stopOn` is the day the item lands,
+   or null to run the window out. */
+function runSim(stopOn,headline,done){
+  stopSim();
+  const year=world.year, beat=world.beat;
+  const days=CAL.daysOf(year,beat);
+  const win=CAL.windowFor(year,beat);
+  /* THE FOOTBALL THESE DAYS PRODUCE, which is this beat's own segment rather than what had
+     already happened when the office was drawn. */
+  const events=CAL.eventsFor(year,beat,S&&S.segmentFor(beat)?seasonThisBeat():null);
+  const stopKey=stopOn?CAL.key(stopOn):null;
+  const last=stopOn||days[days.length-1];
+  const upto=days.filter((d)=>CAL.between(d,last)>=0);
+
+  /* "SIMULATING", not the beat name: five of the nine beats are named after months and the
+     heading under this one is the month, so it read "OCTOBER 2025 / OCTOBER 2025". */
+  $('sim-eyebrow').textContent=stopOn?'Simulating':'Playing the window out';
+  $('sim-skip').textContent='Tap to skip';
+  show('s-sim');
+
+  let i=0;
+  const paintAt=(n)=>{
+    const cur=upto[n];
+    $('sim-month').textContent=CAL.MONTHS[cur.getMonth()]+' '+cur.getFullYear();
+    $('sim-day').textContent=CAL.longLabel(cur);
+    paintMonth($('sim-grid'),cur,days,events,stopKey);
+    const k=CAL.key(cur);
+    const ev=events[k];
+    const isStop=k===stopKey;
+    const t=$('sim-text'), sub=$('sim-sub');
+    if(isStop&&headline){ t.textContent=headline; sub.textContent='On your desk'; }
+    else if(ev){ t.textContent=ev.text; sub.textContent=ev.sub||''; }
+    else { t.textContent=''; sub.textContent=''; }
+    if(t.textContent&&!REDUCED){ t.classList.remove('in'); void t.offsetWidth; t.classList.add('in'); }
+    return isStop?SIM_STOP:ev?SIM_EVENT:SIM_DAY;
+  };
+
+  const finish=()=>{ stopSim(); done(); };
+  simSkip=finish;
+  /* SOMEBODY WHO HAS ASKED THEIR DEVICE TO STOP MOVING THINGS gets the last day and the
+     headline, with no month walked in front of them. */
+  if(REDUCED||!upto.length){ if(upto.length) paintAt(upto.length-1); setTimeout(finish,upto.length?600:0); return; }
+
+  const step=()=>{
+    if(i>=upto.length){ finish(); return; }
+    const wait=paintAt(i);
+    i++;
+    simTimer=setTimeout(step,wait);
+  };
+  step();
+}
+$('s-sim').onclick=()=>{ if(simSkip) simSkip(); };
+
 /* ── the season on the office screen ───────────────────────────────────────────────
    Three cards while the football is on: what it drew, who is winning, and what happened on
    Saturday. See the CSS block for why viewership leads. */
@@ -2406,9 +2605,12 @@ function seasonAt(seg){
   simCache={key,sim};
   return sim;
 }
-/* What has been played by the time you are standing on a given beat. Null in the offseason,
-   which is what tells the office to draw the map instead of the standings. */
-const seasonNow=()=>seasonAt(S?S.segmentFor(world.beat):null);
+/* WHAT HAS BEEN PLAYED BY THE TIME YOU ARE STANDING ON A BEAT, which is everything up to but
+   NOT INCLUDING this one: the simulation that runs when you press on is what plays this beat.
+   Null before a ball has been kicked, which is what tells the office to draw the map. */
+const seasonNow=()=>seasonAt(S?S.throughAtBeat(world.beat):null);
+/* And what the days being walked right now will produce, which is this beat's own segment. */
+const seasonThisBeat=()=>seasonAt(S?S.segmentFor(world.beat):null);
 
 function playSeason(year){
   lastSeason=null;

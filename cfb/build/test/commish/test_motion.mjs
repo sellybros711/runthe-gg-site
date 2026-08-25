@@ -40,6 +40,19 @@ const arm = `
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(TESTER)}); }catch(e){} }});
 })();`;
 
+
+/* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
+   beat before anything lands, which is the point of it and which every walker in these tests
+   would otherwise sit through or, worse, time out on. Tapping it skips to the end. */
+async function skipSim(pg) {
+  for (let i = 0; i < 60; i++) {
+    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#s-sim', { timeout: 1500 }).catch(() => {});
+    await pg.waitForTimeout(110);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -100,7 +113,7 @@ async function walk(reduced) {
   /* On to a ruling, which is the screen where the numbers count and the move bars grow. */
   let ruled = false;
   for (let i = 0; i < 24 && !ruled; i++) {
-    if (await on(p, 's-office')) { await tap(p, '#b-desk'); await p.waitForTimeout(400); continue; }
+    if (await on(p, 's-office')) { await tap(p, '#b-desk'); await skipSim(p); await p.waitForTimeout(350); continue; }
     if (await on(p, 's-desk')) {
       const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(200); }
       if (!(await tap(p, '#b-rule'))) break;

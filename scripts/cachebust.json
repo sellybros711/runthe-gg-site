@@ -65,8 +65,8 @@
       "sha": "9b5cd2f2d806093c"
     },
     "season.js": {
-      "v": "6",
-      "sha": "7f2c8dc7066c957f"
+      "v": "7",
+      "sha": "2ac0bdf74aedf748"
     },
     "council.js": {
       "v": "1",
@@ -75,6 +75,10 @@
     "feed.js": {
       "v": "2",
       "sha": "1618c4cdb9817be5"
+    },
+    "calendar.js": {
+      "v": "1",
+      "sha": "774302694f2e3cc8"
     }
   },
   "cfb/index.html": {

@@ -39,6 +39,19 @@ const arm = `
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(TESTER)}); }catch(e){} }});
 })();`;
 
+
+/* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
+   beat before anything lands, which is the point of it and which every walker in these tests
+   would otherwise sit through or, worse, time out on. Tapping it skips to the end. */
+async function skipSim(pg) {
+  for (let i = 0; i < 60; i++) {
+    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#s-sim', { timeout: 1500 }).catch(() => {});
+    await pg.waitForTimeout(110);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -59,7 +72,7 @@ const facts = (sel) => p.$$eval(sel + ' .fact b', (e) => e.map((x) => x.textCont
 /* Walk to a desk. */
 for (let i = 0; i < 12; i++) {
   if (await on('s-desk')) break;
-  if (await on('s-office')) { await tap('#b-desk'); await p.waitForTimeout(500); continue; }
+  if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
   if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(500); continue; }
   if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(500); continue; }
   break;
@@ -79,7 +92,7 @@ console.log('\n=== the desk is shorter than it was ===');
      promises something that is not behind it. */
   let opened = null, looked = 0;
   for (let i = 0; i < 14 && opened === null; i++) {
-    if (await on('s-office')) { await tap('#b-desk'); await p.waitForTimeout(450); continue; }
+    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
@@ -109,7 +122,7 @@ console.log('\n=== the desk is shorter than it was ===');
   }
   /* Back to a desk for the rest of this block, wherever ruling left us. */
   for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
-    if (await on('s-office')) { await tap('#b-desk'); await p.waitForTimeout(450); continue; }
+    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
@@ -172,7 +185,7 @@ console.log('\n=== what the desk promised is what the office got ===');
      a pass. */
   let promised = null, dialMoved = null, beats = 0;
   for (let i = 0; i < 30 && !promised; i++) {
-    if (await on('s-office')) { await tap('#b-desk'); await p.waitForTimeout(450); continue; }
+    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
@@ -254,7 +267,7 @@ console.log('\n=== the forecast is only as good as your council ===');
     await q.waitForTimeout(900);
     const at = (id) => q.$eval('#' + id, (x) => x.classList.contains('on')).catch(() => false);
     for (let i = 0; i < 10 && !(await at('s-desk')); i++) {
-      if (await at('s-office')) { await q.click('#b-desk', { timeout: 2000 }).catch(() => {}); await q.waitForTimeout(450); continue; }
+      if (await at('s-office')) { await q.click('#b-desk', { timeout: 2000 }).catch(() => {}); await skipSim(q); await q.waitForTimeout(380); continue; }
       if (await at('s-room')) { await q.click('#b-next', { timeout: 2000 }).catch(() => {}); await q.waitForTimeout(450); continue; }
       break;
     }

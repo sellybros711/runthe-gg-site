@@ -586,12 +586,18 @@
     for (var i = 0; i < SEGMENTS.length; i++) if (SEGMENTS[i].beat === beat) return SEGMENTS[i];
     return null;
   }
-  /* How much football has been played by the time a beat OPENS, which is what the office
-     needs: standing on October, September is done and October is not. */
+  /* HOW MUCH FOOTBALL HAS BEEN PLAYED BY THE TIME A BEAT OPENS, which is not the same as the
+     beat's own segment and the difference matters now that the days are walked on screen.
+
+     Standing in the office on October, September has happened and October has not: the
+     simulation that runs when you press on is what plays October. Using the beat's own
+     segment meant the office showed you week five's standings and then the calendar walked
+     September in front of you afterwards, which is the football happening twice, backwards. */
   function throughAtBeat(beat) {
-    var last = 0;
-    for (var i = 0; i < SEGMENTS.length; i++) if (SEGMENTS[i].beat < beat) last = SEGMENTS[i].through;
-    return last;
+    var seg = null;
+    for (var i = 0; i < SEGMENTS.length; i++) if (SEGMENTS[i].beat < beat) seg = SEGMENTS[i];
+    if (!seg) return null;
+    return { through: seg.through, titles: !!seg.titles, bracket: !!seg.bracket, name: seg.name };
   }
 
   /* PLAY THE SEASON UP TO A POINT, and it is the same call whether that point is week four

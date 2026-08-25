@@ -31,6 +31,19 @@ const arm = `
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(TESTER)}); }catch(e){} }});
 })();`;
 
+
+/* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
+   beat before anything lands, which is the point of it and which every walker in these tests
+   would otherwise sit through or, worse, time out on. Tapping it skips to the end. */
+async function skipSim(pg) {
+  for (let i = 0; i < 60; i++) {
+    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#s-sim', { timeout: 1500 }).catch(() => {});
+    await pg.waitForTimeout(110);
+  }
+}
+
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const on = (p, id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 const tap = async (p, s) => { try { await p.click(s, { timeout: 2000 }); return true; } catch (e) { return false; } };
@@ -47,7 +60,7 @@ async function run(width, suffix) {
   /* Walk to a desk that has dials on it, so the shot shows the settings too. */
   let shot = false;
   for (let i = 0; i < 16 && !shot; i++) {
-    if (await on(p, 's-office')) { await tap(p, '#b-desk'); await p.waitForTimeout(500); continue; }
+    if (await on(p, 's-office')) { await tap(p, '#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
     if (await on(p, 's-room')) { await tap(p, '#b-next'); await p.waitForTimeout(500); continue; }
     if (await on(p, 's-year')) { await tap(p, '#b-year-next'); await p.waitForTimeout(500); continue; }
     if (!(await on(p, 's-desk'))) break;
@@ -67,7 +80,7 @@ async function run(width, suffix) {
   /* On to the year in review. */
   for (let i = 0; i < 40; i++) {
     if (await on(p, 's-year')) break;
-    if (await on(p, 's-office')) { await tap(p, '#b-desk'); await p.waitForTimeout(400); continue; }
+    if (await on(p, 's-office')) { await tap(p, '#b-desk'); await skipSim(p); await p.waitForTimeout(350); continue; }
     if (await on(p, 's-desk')) {
       const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(200); }
       if (!(await tap(p, '#b-rule'))) break;

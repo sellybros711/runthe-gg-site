@@ -58,6 +58,18 @@ const arm=(name)=>`
 const tester=()=>arm(TESTER)+stub(true,TESTER);
 
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome',args:['--no-sandbox']});
+/* THE SIMULATION SITS BETWEEN THE OFFICE AND THE DESK NOW. Pressing on walks the days of the
+   beat before anything lands, which is the point of it and which every walker in these tests
+   would otherwise sit through or, worse, time out on. Tapping it skips to the end. */
+async function skipSim(pg) {
+  for (let i = 0; i < 60; i++) {
+    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#s-sim', { timeout: 1500 }).catch(() => {});
+    await pg.waitForTimeout(110);
+  }
+}
+
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefined?'   '+x:''));};
 const open=async(init,w)=>{
@@ -132,7 +144,7 @@ console.log('\n=== a tester takes the job ===');
   ok('  with the sport as it stands', sport.length===4, sport.join(' | '));
   await p.screenshot({path:SS+'commish_office.png'});
 
-  await p.click('#b-desk'); await p.waitForTimeout(700);
+  await p.click('#b-desk'); await skipSim(p); await p.waitForTimeout(600);
   ok('the desk has something on it', await on(p,'s-desk'));
   ok('  with a title', (await txt(p,'#d-title')).length>8, await txt(p,'#d-title'));
   const opts=await p.$$eval('#d-options .opt',(e)=>e.length);
@@ -195,7 +207,7 @@ console.log('\n=== what a free player is shown ===');
   ok('a tester can look at the free version', !!(await p.$('#g-start')));
   ok('  and the badge says which view this is', /free/i.test(await txt(p,'#tag')), await txt(p,'#tag'));
   await p.click('#g-start'); await p.waitForTimeout(600);
-  await p.click('#b-desk'); await p.waitForTimeout(600);
+  await p.click('#b-desk'); await skipSim(p); await p.waitForTimeout(500);
   ok('there is no box to write your own ruling', !(await p.$('#d-text')));
   ok('  and no testing a policy first', await p.$eval('#b-test',(e)=>e.hidden));
   /* NOT EVERY ITEM HAS DIALS, so landing on one and skipping is landing on nothing: the
@@ -204,7 +216,7 @@ console.log('\n=== what a free player is shown ===');
      Rule through beats until an item with settings comes up, and fail if none does. */
   let steps=[], seen=0, beat=0, stuck='';
   while(beat++<24){
-    if(await on(p,'s-office')){ await tap(p,'#b-desk'); await p.waitForTimeout(450); continue; }
+    if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
     if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }
     if(!(await on(p,'s-desk'))){ stuck='no screen the loop knows'; break; }
@@ -241,7 +253,7 @@ console.log('\n=== a season, and it survives the browser closing ===');
   let guard=0;
   while(guard++<40){
     if(await on(p,'s-year')) break;
-    if(await on(p,'s-office')){ await tap(p,'#b-desk'); await p.waitForTimeout(450); continue; }
+    if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if(await on(p,'s-desk')){
       const opt=await p.$('#d-options .opt');
       if(opt){ await opt.click(); await p.waitForTimeout(200); }
