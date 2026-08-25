@@ -1894,6 +1894,7 @@ window.GA_ID='G-L29P5MRWKE';
   .wkrow.wk-coins{border-left-color:var(--gold)} .wkrow.wk-brief{border-left-color:#35d6a0}
   .wkrow.wk-briefNew{border-left-color:#8fd3ff} .wkrow.wk-trait{border-left-color:#ffd45e; background:rgba(241,208,74,.09)}
   .wkrow.wk-farewell{border-left-color:#c9a0dc} .wkrow.wk-arrival{border-left-color:#7fd1a8}
+  .wkrow.wk-milestone{border-left-color:#F1D04A}
   .wkrows .wkrow:nth-child(2){animation-delay:.09s} .wkrows .wkrow:nth-child(3){animation-delay:.18s}
   .wkrows .wkrow:nth-child(n+4){animation-delay:.27s}
   @keyframes wkIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -6639,6 +6640,89 @@ function noteWinnerStory(o, evt){
   if(g && g.debutYear===w.simYear)
     wkNote('arrival', `<b>${esc(nm)}</b> wins ${esc(evtThe(evt.name))} as a rookie, a first title on tour.`, 3);
 }
+/* ================= YOUR GENERATION, AND THE ANNIVERSARIES =================
+   Two things a long career should know about itself and never did.
+
+   THE GENERATION. A literal "class of 2026" is not available and would be a lie if we faked one: only
+   GENERATED rookies carry a debutYear (genRookie stamps it), and the 2026 seed world needs just two of
+   them to reach WORLD_TARGET, so a class-of cohort is a party of three that never thins - measured.
+   Inventing a debut year for the real names would also be a factual claim about real people. So the
+   cohort is the one the data can support honestly: the players within GEN_BAND years of YOUR age when
+   you turned pro, read off `born`, which is real. It adapts to the entry path (a 29-year-old Late
+   Convert came up with a different set of men than a 21-year-old), and it is captured ONCE and frozen
+   by name, so nobody joins your generation later. Measured over 30 years: 19-41 players depending on
+   the path, intact through the prime, then thinning hard - which is exactly the shape of the story.
+
+   THE ANNIVERSARIES. Every number they need is already banked (season rows carry `played`, winsList
+   carries the year of every win), so this is a read, not new tracking. The Nth start lands on a
+   specific week and goes in the week ledger; the year-based ones look backwards and go on the winter
+   Dispatch. */
+var GEN_BAND=3;
+function genCapture(w){
+  if(!w||!w.active) return null;
+  const age=(typeof careerStartAge==='function'?careerStartAge():START_AGE), sy=w.simYear;
+  const names=w.active.filter(g=>g.born && Math.abs((sy-g.born)-age)<=GEN_BAND).map(g=>g.name);
+  return names.length?{year:sy, age, names}:null;
+}
+function ensureGeneration(){
+  if(S.daily||S.circuitMode||!S.career) return;
+  if(S.career.gen) return;                                       // captured once, never re-read
+  if((S.year||1)!==1) return;                                    // only at true turn-pro
+  if(S.career.seasons && S.career.seasons.length>0) return;      // never retroactive for a legacy save
+  let w=null; try{ w=ensureWorld(); }catch(e){}
+  const g=genCapture(w); if(!g) return;
+  S.career.gen=g;
+  try{ track('generation_named',{n:g.names.length, age:g.age}); }catch(e){}
+}
+// live read of the frozen cohort against the world as it stands now
+function generationReport(){
+  const G=S.career&&S.career.gen, w=S.world;
+  if(!G||!w||!G.names.length) return null;
+  const yr=w.simYear, set=new Set(G.names);
+  const alive=(w.active||[]).filter(g=>set.has(g.name));
+  const goneAll=(w.alumni||[]).filter(g=>set.has(g.name));
+  // a world that holds none of them cannot report on them (a synthetic or reset world)
+  if(!alive.length && !goneAll.length) return null;
+  const wins=w.wins||{}, majs=w.majors||{};
+  const goneNow=goneAll.filter(g=>g.retiredYear===yr).map(g=>g.name);
+  let best=null;
+  try{ const L=worldRanking();
+    for(let i=0;i<L.length;i++){ const x=L[i]; if(x.you||!set.has(x.name)) continue;
+      const g=alive.find(a=>a.name===x.name);
+      best={name:x.name, pos:i+1, ovr:g?Math.round(g.lov||0):null, wins:wins[x.name]||0, majors:majs[x.name]||0};
+      break; }
+  }catch(e){}
+  return {year:G.year, age:G.age, total:G.names.length, left:alive.length, gone:goneAll.length,
+          goneNow, best, majorWinners:G.names.filter(n=>(majs[n]||0)>0).length};
+}
+// career starts, banked season by season (t.played is written into every season row)
+function careerStarts(){ let n=0; ((S.career&&S.career.seasons)||[]).forEach(s=>{ n+=s.played||0; }); return n; }
+var START_MILESTONES=[100,200,300,400,500];
+// the week you make your Nth start is the week to say so
+function noteStartMilestone(order,evt){
+  if(!wkOn()||S.circuitMode||!S.career||!evt) return;
+  const you=order&&order.find(o=>o.p&&o.p.you); if(!you) return;   // a rest week is not a start
+  const t=S.season&&S.season.totals&&S.season.totals[you.p.name];
+  const n=careerStarts()+((t&&t.played)||0);                     // totals already count this event
+  if(START_MILESTONES.indexOf(n)<0) return;
+  wkNote('milestone', `Your <b>${ord(n)} start</b> on tour, at ${esc(evtThe(evt.name))}.`, 2);
+}
+// the winter's look back: seasons served, and the distance from the wins that started it all
+function careerAnniversaries(){
+  const c=S.career; if(!c||S.daily||S.circuitMode) return [];
+  const y=S.year||1, out=[];
+  if([10,20,25,30].indexOf(y)>=0) out.push(`You begin your <b>${ord(y)} season</b> on tour.`);
+  const wl=c.winsList||[];
+  if(wl.length){
+    const first=wl.reduce((a,b)=>((b.year||1)<(a.year||1)?b:a));
+    const d=y-(first.year||1);
+    if([10,20,25].indexOf(d)>=0) out.push(`<b>${d} years</b> since your first win, ${esc(evtThe(first.name))}.`);
+    const fm=wl.filter(x=>x.major).sort((a,b)=>(a.year||1)-(b.year||1))[0];
+    if(fm){ const dm=y-(fm.year||1);
+      if([10,20].indexOf(dm)>=0) out.push(`<b>${dm} years</b> since your first major, ${esc(evtThe(fm.name))}.`); }
+  }
+  return out;
+}
 /* ================= THE TOUR DISPATCH =================
    The living world has always aged in the background: players retire, rookies debut, the pecking order
    turns over. None of it was ever SHOWN, so a 30-year career passed with the field silently rearranging
@@ -6683,10 +6767,16 @@ function buildTourDispatch(w){
   let drift=null;
   try{ const dn=driftNews(S.year||yr, S.careerSeed);
        if(dn.renames.length||dn.folds.length||dn.founds.length) drift=dn; }catch(e){}
-  if(!retired.length && !debuts.length && !displaced && !mover && !drift) return null;   // a quiet winter is no page at all
+  // your own generation, and the anniversaries the season ahead carries. The cohort is introduced once
+  // (the first winter) and then stays quiet until it starts thinning, which is when it means something.
+  let gen=null;
+  try{ const g=generationReport();
+       if(g && ((S.year||1)===2 || g.gone>0)) gen=g; }catch(e){}
+  let anniv=[]; try{ anniv=careerAnniversaries(); }catch(e){}
+  if(!retired.length && !debuts.length && !displaced && !mover && !drift && !gen && !anniv.length) return null;   // a quiet winter is no page at all
   // careers that predate the win ledger have no record to read back, so the page keeps quiet about wins
   // rather than reporting a legend's career as "no wins on tour".
-  return {year:yr, retired, debuts, top, no1, displaced, mover, drift, ledger:Object.keys(wins).length>0};
+  return {year:yr, retired, debuts, top, no1, displaced, mover, drift, gen, anniv, ledger:Object.keys(wins).length>0};
 }
 // Tour Card line: finish inside the top CARD_LINE in the world to keep a full card for next season
 const CARD_LINE=100;
@@ -15983,7 +16073,7 @@ function startSeason(majorsOnly){
   const me=buildPlayer();
   // Name your Career Nemesis at turn-pro (fresh year-1 career only; silent no-op otherwise, so
   // this is safe to call every startSeason and never re-fires or retroactively assigns).
-  try{ if(!S.daily && !S.circuitMode && !majorsOnly){ if(!S.career) S.career={}; ensureOpeningRival(); } }catch(e){}
+  try{ if(!S.daily && !S.circuitMode && !majorsOnly){ if(!S.career) S.career={}; ensureOpeningRival(); ensureGeneration(); } }catch(e){}
   // Field: daily uses the static seeded SG field; career/free-play uses the LIVING WORLD
   // (aging, retiring, rookie-refilled per year, career spec §4/§7); the Legend Circuit draws instead
   // from golfers who've themselves retired from that world. Each carries all 8 living skills so
@@ -20331,6 +20421,8 @@ function finalizeEvent(){
     const rr=o.rounds.filter(r=>r!=null); t.toPar=(t.toPar||0)+rr.reduce((a,b)=>a+b,0); t.rounds=(t.rounds||0)+rr.length;
     if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
     if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;}});
+  // your own milestones, in the week they land (totals above already count this start)
+  try{ noteStartMilestone(order, evt); }catch(e){}
   // ---- Olympic medals: top 3 of the order take gold / silver / bronze (a tie for gold was already played off) ----
   if(evt.olympics){
     S.season.olympicMedals=order.slice(0,3).map(o=>({name:o.p.name, nat:o.p.nation||'INT', you:!!o.p.you}));
@@ -24442,7 +24534,7 @@ function scrDispatch(){
     D.slice(0,4).forEach(r=>sec.appendChild($(`<div class="dsp-row">
       <span class="dsp-nm">${esc(r.name)}<span style="color:var(--muted);font-weight:700;font-size:11.5px"> · ${r.age}</span></span>
       <span class="dsp-meta">${esc(r.nation||'')}${r.nation?' · ':''}rated ${r.ovr}</span></div>`)));
-    if(D.length>4) sec.appendChild($(`<div class="dsp-more">${D.length-4} more rookies earned cards</div>`));
+    if(D.length>4) sec.appendChild($(`<div class="dsp-more">${D.length-4} more ${D.length-4===1?'rookie earned a card':'rookies earned cards'}</div>`));
     box.appendChild(sec);
   }
   // the calendar drift: what next season is called, what has gone, what has joined
@@ -24457,6 +24549,26 @@ function scrDispatch(){
     dn.folds.forEach(f=>sec.appendChild($(`<div class="dsp-row stack">
       <span class="dsp-nm" style="color:var(--muted)">${esc(f.disp||f.name)}</span>
       <span class="dsp-meta">folds after ${esc(String(yr-1))}, off the calendar for good</span></div>`)));
+    box.appendChild(sec);
+  }
+  // the men you came up with, and how many of them are still out here
+  if(d.gen){
+    const g=d.gen, sec=$(`<div class="dsp-sec"><div class="dsp-lab">Your generation</div></div>`);
+    sec.appendChild($(`<div class="dsp-row stack">
+      <span class="dsp-nm">${g.left} of ${g.total} still on tour</span>
+      <span class="dsp-meta">${esc(`the group you turned pro with in ${g.year}`)}</span></div>`));
+    if(g.goneNow.length) sec.appendChild($(`<div class="dsp-row stack">
+      <span class="dsp-nm" style="color:var(--muted)">${esc(g.goneNow.slice(0,2).join(', '))}${g.goneNow.length>2?` and ${g.goneNow.length-2} more`:''}</span>
+      <span class="dsp-meta">${g.goneNow.length===1?'one of yours, gone this winter':esc(`${g.goneNow.length} of your generation walked away this winter`)}</span></div>`));
+    if(g.best) sec.appendChild($(`<div class="dsp-row stack">
+      <span class="dsp-nm">${esc(g.best.name)}</span>
+      <span class="dsp-meta">the best of them, world #${g.best.pos}${g.best.majors?` · ${g.best.majors} major${g.best.majors>1?'s':''}`:(g.best.wins?` · ${g.best.wins} tour win${g.best.wins>1?'s':''}`:'')}</span></div>`));
+    box.appendChild(sec);
+  }
+  // the season ahead as a number: seasons served, and the distance from the wins that started it
+  if(d.anniv && d.anniv.length){
+    const sec=$(`<div class="dsp-sec"><div class="dsp-lab">The years</div></div>`);
+    d.anniv.forEach(t=>sec.appendChild($(`<p class="tn-p" style="margin:0 0 5px">${t}</p>`)));
     box.appendChild(sec);
   }
   if(d.top && d.top.length){

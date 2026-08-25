@@ -16989,3 +16989,57 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   fixture. Inline scripts parse; block 0 is the JSON-LD tag, fails identically on baseline.
 - Tunable: `DRIFT_RENAME_P` / `DRIFT_FOLDS` / `DRIFT_FOUNDS` (how much moves), `DRIFT_FIRST_YEAR` (when it
   starts), and the `DRIFT_ALT` / `DRIFT_FOUND` tables (what the new names are).
+
+### YOUR GENERATION, AND THE YEARS: the cohort you turned pro with, and the milestones you pass
+- **The gap.** The Dispatch reports the world's turnover and the season announces its farewells, but both
+  are about OTHER people. Nothing tied the player to the players they came up with, and nothing marked the
+  distances a long career covers - a 25th season and the decade since a first win passed in silence.
+- **The literal task was refused, and that is the design decision worth keeping.** A "class of 2026" is not
+  honestly available: only `genRookie` stamps `debutYear`, and the seeded 2026 world needs just **2** of
+  them, so a literal class-of cohort is a party of three that never thins (measured). Inventing a debut year
+  for the real names would be a factual claim about real people the save has no basis for. So the cohort is
+  **everyone within `GEN_BAND=3` years of YOUR age at turn-pro, read off `born`** - real data, adapts to the
+  entry path (a 22-year-old amateur and a 29-year-old late convert come up with different rooms), and
+  measured at **19-41 players** depending on the path, intact through the prime and thinning hard after.
+- **Captured once and frozen by NAME** (`ensureGeneration`, from `startSeason`): only at true turn-pro
+  (`S.year===1` with no banked seasons, so it is never retroactive for a legacy save), never in the Daily or
+  the Circuit, never re-read. `generationReport()` then reads that frozen list against the world **as it
+  stands now** - how many are left, how many are gone, who walked away THIS winter, and the best of them by
+  live world rank - so the cohort ages with the tour rather than being a stored snapshot that drifts.
+  A world holding none of them (a synthetic or reset world) reports nothing rather than a wrong zero.
+- **The cadence is the feature.** Attrition does not begin until ~year 15-20, so a cohort that reads "22 of
+  22 still out here" for fifteen winters is dead weight. The generation is **introduced once** (the first
+  winter) and then **goes quiet until `gone > 0`**, which is exactly when it starts to mean something.
+- **The anniversaries needed NO new tracking** - every number was already banked. `careerStarts()` sums
+  `played` off the season rows, and `winsList` carries the year of every win. The Nth start (100/200/300/
+  400/500) lands on a specific week, so it goes in the **week ledger** (`noteStartMilestone`, hooked in
+  `finalizeEvent` AFTER the totals loop so `t.played` already counts this start, and keyed off the `order`
+  entry flagged `you` - which is what indexes `S.season.totals` - not `S.name`). The year-based ones look
+  backwards, so they go on the **winter Dispatch**: a 10th/20th/25th/30th season, and a decade or two since
+  the first win and the first major (`winsList` is scanned for the EARLIEST, not `[0]`, since array order is
+  finish order, not chronology).
+- **TWO COPY BUGS WERE CAUGHT BY READING THE RENDERED PAGE, NOT BY AN ASSERTION** - the suite was green both
+  times, which is now the third feature in a row where that has been true:
+  - "17 of 22 still on tour" over a meta reading "5 of the 22 who turned pro around you have gone" - the
+    same fact twice. The meta now says what the number IS ("the group you turned pro with in 2026").
+  - `"1 more rookies earned cards"` - a pre-existing pluralisation bug on the same Dispatch page, fixed
+    while in there.
+- Verified: `gen_test.mjs` **39 pass / 0 fail / 0 page errors**, and it crashes on the deployed build with
+  `genCapture is not defined`, so it discriminates. Covers cohort membership / band / year, entry-age
+  variation, capture-once + never-retroactive + daily-skip, attrition at y2/y10/y20/y31 with `left+gone ==
+  total`, an empty world reporting nothing, every anniversary case (including first-win-is-earliest
+  regardless of array order), `careerStarts` summation, the milestone hit / miss / rest-week / 200th, the
+  Dispatch integration, the introduce-then-quiet-then-return cadence, circuit exclusion, and a **live
+  `finalizeEvent`** check (99 banked, the 100th firing on event 0 of a real played season).
+- **`GEN_BAND` and `START_MILESTONES` are `var`, not `let`** - both are reachable before their line executes
+  and a TDZ binding throws rather than reading undefined, which would abort the whole inline script. The
+  same trap `acctKey`, `boardEpoch`, `_fwCache` and `_driftCache` each learned the hard way.
+- **`wk_test` reported "0 checks" in the sweep and it is NOT a silent failure** - the file does not exist in
+  this scratchpad (it belonged to an earlier, session-scoped one), so the sweep parsed a failed run. The week
+  ledger this writes to is covered by `gen_test`'s live `finalizeEvent` check instead.
+- Regressions green: dispatch 27, farewell 25, drift 31, calendar 25, records 24, rest 37, rival 17, clubs
+  23, circuit 14, morris 16, daily_glitch 5, board_race 11, entry_ux 23, entry_catch 25. `goals_test` fails 3
+  **identically on the deployed build** - the known stale rookie-tier fixture. Inline scripts parse; block 0
+  is the JSON-LD tag, fails identically on baseline.
+- Tunable: `GEN_BAND` (how wide a cohort is), `START_MILESTONES` (which starts are marked), the anniversary
+  year lists in `careerAnniversaries`, and the introduce-then-quiet gate in `buildTourDispatch`.
