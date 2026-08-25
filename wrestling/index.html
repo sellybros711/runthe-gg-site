@@ -8269,7 +8269,7 @@ function renderTrain(){
 function gateHint(k){
   const cats=MCATS.filter(c=>c.attr===k).map(c=>c.name);
   const next=MOVES.filter(m=>catById(m.cat).attr===k&&!moveUnlocked(m)&&m.val>G.w.attrs[k]).sort((a,b)=>a.val-b.val)[0];
-  return (cats.length?'Governs '+cats.join(' & ')+'. ':'')+(next?`Next gate: ${next.val} → ${next.name}`:'');
+  return (cats.length?'Drives '+cats.join(' & ')+'. ':'')+(next?`Next gate: ${next.val} → ${next.name}`:'');
 }
 function spendTP(k){ if(G.w.tp<1) return; G.w.tp--; G.w.attrs[k]=clamp(G.w.attrs[k]+growMult(k));
   const u=checkUnlocks(); save(); renderTrain(); refreshHud();
