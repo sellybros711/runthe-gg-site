@@ -6297,16 +6297,59 @@ function layoutDefense(){
   return out;
 }
 
-/** Target coordinate for every slot index, given who is currently signed. */
+/* WHICH SLOTS THE FIELD IS SHOWING, and for Full Team that is SIX OF TWELVE.
+ *
+ * Every formation table in this file holds six spots, and that was not an oversight to be
+ * widened: a field is a picture of eleven men on one side of the ball, and there is no
+ * arrangement of a drafted offense AND a drafted defense standing on one 200px phone field
+ * that means anything. They are never on the field together in the game either.
+ *
+ * So a full run's field shows the side of the ball the CURRENT pick is on, and flips when
+ * the pick does, which the interleaved slot order makes happen every signing. Both existing
+ * formations are reused exactly as they are, because the six offensive slots of FULL_SLOTS
+ * are E.SLOTS in order and the six defensive ones are E.DEFENSE_SLOTS in order.
+ *
+ * THIS IS WHAT THE FIELD WAS THROWING ON. fieldState built a chip per slot, twelve of them,
+ * while layoutFor returned six coordinates, so paint() read coords[6].x and threw. It threw
+ * inside beginDraft, under a .catch() meant for the pool fetch, which is why the symptom was
+ * a draft screen with empty wheels and a toast blaming the network.
+ */
+function fullFieldDef(){
+  if(!run||!run.full) return false;
+  /* After the last pick there is no "current" slot, so it holds on the side of the last one
+     rather than snapping back to the offense on the screen the player is still looking at. */
+  const i=Math.min(run.roster.length,run.slots.length-1);
+  return fullSlotIsDefensive(i);
+}
+function visibleSlots(){
+  const n=slotsNow().length;
+  if(!run||!run.full) return Array.from({length:n},(_,i)=>i);
+  const def=fullFieldDef();
+  const out=[];
+  for(let i=0;i<n;i++) if(fullSlotIsDefensive(i)===def) out.push(i);
+  return out;
+}
+
+/** Target coordinate for every VISIBLE slot, in visibleSlots() order. */
 function layoutFor(){
   if(run&&run.tradeMachine) return SPOT_TRADE.map((c)=>({...c}));
   if(isDefRun()) return layoutDefense();
-  const n=E.SLOTS.length;
+  /* A full run's defensive half is E.DEFENSE_SLOTS in order, so it is the defensive
+     formation, unchanged, over the six slots currently on screen. */
+  if(run&&run.full&&fullFieldDef()) return layoutDefense();
+  const vis=visibleSlots();
+  const n=vis.length;
   const bySlot=new Array(n).fill(null);
-  if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
+  /* Indexed by POSITION IN THE VISIBLE LIST rather than by slot index, because for a full
+     run those differ: the offensive six are slots 0, 2, 4, 6, 8 and 10. */
+  if(run) run.roster.forEach((p,i)=>{
+    const k=vis.indexOf(run.slotIndex[i]);
+    if(k>=0) bySlot[k]=p;
+  });
   // An empty spot still occupies the shape its own position implies, so the
   // formation never looks lopsided mid-draft.
-  const eff=E.SLOTS.map((slot,i)=>bySlot[i]?bySlot[i].position:(slot==='FLEX'?'FLEX':slot));
+  const slotNames=vis.map(i=>slotsNow()[i]);
+  const eff=slotNames.map((slot,i)=>bySlot[i]?bySlot[i].position:(slot==='FLEX'?'FLEX':slot));
   const slotsOf=(pos)=>eff.map((e,i)=>e===pos?i:-1).filter(i=>i>=0);
   const out=new Array(n).fill(null);
 
@@ -6548,15 +6591,19 @@ function fieldMarkings(def){
 }
 
 function fieldState(el){
-  const def=isDefRun();
+  const def=isDefRun()||fullFieldDef();
   /* A FIELD IS REBUILT WHEN THE SIDE OF THE BALL CHANGES, not just when it is first seen.
      One page can play an offense draft and then a defense one without reloading, and the markings are
      baked into this markup: kept, the defensive field would come back with no line of
      scrimmage and the offensive one would come back with somebody else's. */
   if(el._ps&&el._ps.def===def) return el._ps;
+  /* CHIPS FOR THE SLOTS ON SCREEN, and data-i carries the REAL slot index, which for a full
+     run is not the chip's position in this list: the offensive six are slots 0, 2, 4, 6, 8
+     and 10. Everything downstream reads data-i rather than counting. */
+  const vis=visibleSlots();
   el.innerHTML=fieldMarkings(def)+'<div class="front"></div>'+
-    slotsNow().map((slot,i)=>'<div class="chip empty" data-i="'+i+'">'+
-      '<div class="disc"><span class="dl">'+slot+'</span><i class="pip"></i></div>'+
+    vis.map((slotIdx)=>'<div class="chip empty" data-i="'+slotIdx+'">'+
+      '<div class="disc"><span class="dl">'+slotsNow()[slotIdx]+'</span><i class="pip"></i></div>'+
       '<div class="lab"><div class="who"></div><div class="yr"></div></div></div>').join('');
   el._ps={
     def:def,
@@ -6572,19 +6619,22 @@ function fieldState(el){
 
 function drawField(el,live){
   const st=fieldState(el);
-  const bySlot=new Array(E.SLOTS.length).fill(null);
+  /* THE RUN'S OWN SLOT COUNT, not the module's six. Full Team has twelve, and a six-long
+     array here silently dropped every man in a slot past the fifth. */
+  const bySlot=new Array(slotsNow().length).fill(null);
   if(run) run.roster.forEach((p,i)=>{ bySlot[run.slotIndex[i]]=p; });
   const links=(run&&run.roster.length>1)?E.resolveChemistry(run.roster,CTX,chemOpts()).links:[];
   const at=new Map();
   if(run) run.roster.forEach((p,i)=>at.set(p.name,run.slotIndex[i]));
-  const openCount=E.SLOTS.length-(run?run.roster.length:0);
+  const openCount=slotsNow().length-(run?run.roster.length:0);
 
   // The sticky bar's pips are the same six slots, so they are drawn from the same data.
   // The sticky bar's pips are the same six slots, so they come off the same data.
   if(el.id==='field'){ drawPips(bySlot); watchFold(); }
 
   // Contents update immediately; only the movement is animated.
-  st.chips.forEach((c,i)=>{
+  st.chips.forEach((c)=>{
+    const i=+c.dataset.i;
     const p=bySlot[i];
     // Only a chip that just went from empty to filled should pop. Reassigning the
     // class every redraw would otherwise restart the animation on all six.
@@ -6618,22 +6668,30 @@ function drawField(el,live){
      and not before: the other three spots can only hold what they already hold, so until
      then the answer is "one of three" and printing one of them would be a guess. */
   const tag=el.querySelector('.front');
-  if(tag) tag.textContent=isDefRun()?(defShape().front.name||''):'';
+  if(tag) tag.textContent=(isDefRun()||fullFieldDef())?(defShape().front.name||''):'';
 
+  /* coords is parallel to st.chips, which is parallel to visibleSlots(). The guard is not
+     defensive padding: it is what turns a formation table that has fallen out of step with
+     the slot list into a chip that does not move, instead of the exception that took the
+     whole draft screen down and reported itself as a failed download. */
   const paint=(coords)=>{
-    st.chips.forEach((c,i)=>{ c.style.left=coords[i].x+'%'; c.style.top=coords[i].y+'%'; });
+    st.chips.forEach((c,i)=>{ const t=coords[i]; if(!t) return;
+      c.style.left=t.x+'%'; c.style.top=t.y+'%'; });
   };
 
   const from=st.coords.map(c=>({...c}));
   const to=layoutFor();
-  const moved=to.some((c,i)=>Math.abs(c.x-from[i].x)>0.01||Math.abs(c.y-from[i].y)>0.01);
+  /* A missing FROM is the first paint after the side flipped, which is a rebuild rather than
+     a move: there is no previous position for a chip that was not on the field a moment ago. */
+  const moved=to.some((c,i)=>from[i]&&(Math.abs(c.x-from[i].x)>0.01||Math.abs(c.y-from[i].y)>0.01));
+  if(from.length!==to.length) st.fresh=true;
   cancelAnimationFrame(st.raf);
   if(st.fresh||!moved){ st.fresh=false; st.coords=to.map(c=>({...c})); paint(st.coords); }
   else{
     const t0=performance.now();
     const step=(now)=>{
       const k=Math.min(1,(now-t0)/MOVE_MS), e=easeOut(k);
-      paint(from.map((f,i)=>({x:f.x+(to[i].x-f.x)*e, y:f.y+(to[i].y-f.y)*e})));
+      paint(from.map((f,i)=>to[i]?{x:f.x+(to[i].x-f.x)*e, y:f.y+(to[i].y-f.y)*e}:f));
       if(k<1) st.raf=requestAnimationFrame(step);
       else st.coords=to.map(c=>({...c}));
     };
@@ -6965,10 +7023,17 @@ function beginFullDraft(){
   }
   const b=$('b-start-full');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  /* THE CATCH IS ON THE FETCH AND NOTHING ELSE.
+     Chained as .then(...).catch(...) it also caught anything beginDraft threw, and the
+     first thing beginDraft threw was the field renderer reading a coordinate for a chip
+     that had none. The player got a draft screen with dead wheels and a toast telling them
+     to check their connection, on a run whose download had already succeeded. Two arguments
+     to then() keeps the handler on the fetch, so a real bug in the draft reaches the console
+     as itself instead of being dressed up as a network failure. */
   loadDefensePool().then(()=>{
     closeSheet();
     beginDraft({full:true});
-  }).catch(()=>{
+  },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
     toast('Could not load the defensive players. Check your connection and try again.');
   });
@@ -6987,10 +7052,12 @@ function beginDefenseDraft(){
   }
   const b=$('b-start-def');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  /* Two arguments rather than a chained .catch, for the reason written out in
+     beginFullDraft: a chained catch reports a bug in the draft as a failed download. */
   loadDefensePool().then(()=>{
     closeSheet();
     beginDraft({defense:true});
-  }).catch(()=>{
+  },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
     toast('Could not load the defensive players. Check your connection and try again.');
   });
@@ -8134,7 +8201,10 @@ function paintTop(){
        is allowed to truncate there, so the order decides what survives a narrow screen.
        Club-first lost the count -- "LOS ANGELES CHARGERS..." -- which is the half that
        actually changes as you draft. */
-    $('d-count').textContent='Spin '+Math.min(6,run.roster.length+1)+' of 6'+
+    /* THE RUN'S OWN SLOT COUNT. This said "of 6" twice over, which on a twelve-pick Full
+       Team run read "Spin 1 of 6" all the way through and stopped counting at six. */
+    const n=slotsNow().length;
+    $('d-count').textContent='Spin '+Math.min(n,run.roster.length+1)+' of '+n+
       (run.franchise?' · '+E.nickname(run.franchise):'');
   }
 }
