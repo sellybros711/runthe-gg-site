@@ -289,9 +289,49 @@ console.log('\n=== both ends of the range reach the whole thing ===');
   const missItems = D.ITEMS.filter((i) => !i.crisis && !items.has(i.id)).map((i) => i.id);
   ok('every non crisis item turns up in sixteen played terms', !missItems.length,
     missItems.join(', ') || items.size + ' of ' + D.ITEMS.length + ' items');
-  const missTails = F.TAILS.filter((t) => !tails.has(t.id)).map((t) => t.id);
-  ok('  and every tail fires in one of them', !missTails.length,
-    missTails.join(', ') || tails.size + ' of ' + F.TAILS.length + ' tails');
+  /* THE TAILS NEED THE SAME TREATMENT THE CRISES GET. A tail gated on the leagues having
+     stopped agreeing about eligibility can only fire in a term where somebody devolved the
+     rule AND a conference wrote its own AND another ruling happened afterwards, which sixteen
+     played terms may simply not produce. That is not the same as unreachable, and asserting
+     it from play alone would make this test fail on a shuffle rather than on a fault.
+
+     So the ones the terms missed are checked against the world they are written for, built
+     out of states the game can actually reach: a sport that shut its door, one where the
+     leagues diverged, one where the room has turned, one where the fuses are burning. If a
+     tail cannot fire in any of those either, it is dead. */
+  const states = [];
+  {
+    const base = () => {
+      const x = L.createWorld({ year: 2027, membership: L.membershipFrom(teams, 2025), seed: 'st' });
+      x.startYear = 2025; x.tails = [];
+      return x;
+    };
+    const shut = base(); shut.labour.reentry = 'closed';
+    const split = base();
+    split.labour.rulesBy = 'conference';
+    split.labour.confReentry = { SEC: 'open', 'Big Ten': 'closed', ACC: '', 'Big 12': '' };
+    const burning = base(); burning.pressure = { legal: 40, congress: 40, union: 40 };
+    const loved = base(); loved.meters.standing = 80;
+    const hated = base(); hated.meters.standing = 25;
+    states.push(base(), shut, split, burning, loved, hated);
+  }
+  const sits = states.map((x) => SIT.build(x, L, { calendar: CAL }));
+  const edits = [
+    { effects: { money: 2, autonomy: -3, labour: 2, exposure: -2, inventory: 2, access: 2 } },
+    { effects: { money: -2, autonomy: 3, labour: -2, exposure: 2, inventory: -2, tradition: -2 } },
+  ];
+  const stillMissing = [];
+  F.TAILS.filter((t) => !tails.has(t.id)).forEach((t) => {
+    let fires = false;
+    states.forEach((x, i) => {
+      edits.forEach((e) => {
+        try { if (t.when(x, sits[i], { edit: e, sit: sits[i] })) fires = true; } catch (err) { /* no */ }
+      });
+    });
+    if (!fires) stillMissing.push(t.id);
+  });
+  ok('  and every tail fires in a term or in a world the game can reach', !stillMissing.length,
+    stillMissing.join(', ') || tails.size + ' in play, the rest gated on a state that exists');
 }
 
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');

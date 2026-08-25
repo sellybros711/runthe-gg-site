@@ -253,6 +253,28 @@
       });
       return hit;
     })();
+    /* ---- THE ONE WAY DOOR ----
+       Whether a man who has been a professional can come back, who wrote that rule, and
+       whether the leagues have stopped agreeing about it. The last of those is the state the
+       whole argument turns into the moment one conference goes first, so it is a field rather
+       than something nine items each work out again from a map. */
+    var lab = (world && world.labour) || {};
+    sit.reentry = lab.reentry || 'open';
+    sit.rulesBy = lab.rulesBy || 'national';
+    sit.proYears = lab.proYears == null ? 1 : lab.proYears;
+    sit.confReentry = Object.assign({}, lab.confReentry || {});
+    var rules = Object.keys(sit.confReentry)
+      .map(function (c) { return sit.confReentry[c] || sit.reentry; });
+    sit.splitRules = sit.rulesBy === 'conference'
+      && rules.some(function (r) { return r !== rules[0]; });
+    /* The two lists an item needs to name names: who shut their door and who did not. */
+    sit.doorShut = Object.keys(sit.confReentry).filter(function (c) {
+      return (sit.confReentry[c] || sit.reentry) === 'closed';
+    });
+    sit.doorOpen = Object.keys(sit.confReentry).filter(function (c) {
+      return (sit.confReentry[c] || sit.reentry) === 'open';
+    });
+
     sit.audienceUp = sit.trend != null && sit.trend >= 0.06;
     sit.audienceDown = sit.trend != null && sit.trend <= -0.06;
     sit.standing = world && world.meters ? world.meters.standing : null;

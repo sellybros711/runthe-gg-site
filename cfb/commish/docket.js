@@ -2392,6 +2392,581 @@
               SEC: { money: 2 }, Fans: { tradition: -2 } } } },
       ],
     },
+
+    /* ================================================================================
+       THE ONE WAY DOOR.
+       Declare for the draft, go undrafted or get cut in August, and come back to a college
+       roster in September. It is the live argument in the sport, it is the one a conference
+       went and legislated on its own rather than waiting for anybody, and until now this mode
+       had no field for it at all.
+
+       Everything below reads `labour.reentry`, `labour.rulesBy` and `labour.confReentry`, and
+       the football reads them back through reentryDrift(): an open door stretches the league
+       away from its middle, because the men coming back go to the twenty programmes that can
+       pay them and start them. Measured across seventy played seasons, that is the difference
+       between 21.8 per cent of games decided by four touchdowns and 26.6 per cent.
+
+       THE GOVERNANCE HALF IS THE INTERESTING HALF. Whether you decide this at all, or a
+       conference decides it for you, is a different question from what the answer is, and it
+       is the one the sport actually got wrong: by the time this office has an opinion there
+       is already a rule in one league and not in the others, and a player barred in one is a
+       transfer with a legal team attached.
+       ================================================================================ */
+
+    {
+      id: 'reentry-first',
+      beats: [WINTER, SPRING],
+      weight: 8,
+      /* THE ARGUMENT ONLY EXISTS WHILE THE DOOR IS OPEN AND NOBODY HAS WRITTEN A RULE. */
+      when: (w, L, sit) => sit.reentry === 'open' && sit.rulesBy === 'national',
+      cast: (w, L, rng, sit) => {
+        const live = L.POWERS.filter((c) => !L.isDefunct(w, c));
+        const conf = live[Math.floor(rng() * live.length) % live.length] || 'the Big Ten';
+        const m = L.membersOf(w, conf);
+        return { conf, school: m[Math.floor(rng() * m.length) % m.length] || null };
+      },
+      eyebrow: 'Eligibility',
+      title: (c) => (c ? c.conf + ' has written its own rule' : 'A conference has written its own rule'),
+      brief: (c) => 'They passed it this morning, in a room this office was not in, and told '
+        + 'a reporter before they told you. Declare for the draft and do not withdraw, appear '
+        + 'on a professional roster, sign anywhere: you cannot be on a '
+        + ((c && c.conf) || 'conference') + ' roster again. Everybody else\'s door is still '
+        + 'open, which means the rule they have written is really a rule about where a man '
+        + 'who gets cut in August goes in September.',
+      voices: [
+        { id: 'Big Ten', say: 'Somebody had to. We waited two years for this office to and you did not.' },
+        { id: 'Players', say: 'You are taking a year of a man\'s life away for finding out he was not ready.' },
+        { id: 'Presidents', say: 'We now have four different eligibility rules and one sport.' },
+      ],
+      options: [
+        { id: 'national-open', label: 'One rule, and the door stays open',
+          body: 'Overrule them. A man who tries and fails comes back, everywhere, and this '
+            + 'office decides eligibility because that is what this office is for.',
+          edit: { set: { 'labour.reentry': 'open', 'labour.rulesBy': 'national' },
+            effects: { labour: 3, autonomy: -3, access: -1.4, tradition: -1.6 },
+            aimed: { Players: { labour: 3.4 }, 'Big Ten': { autonomy: -3 }, SEC: { autonomy: -2.4 },
+              Presidents: { autonomy: 1.4 } } } },
+        { id: 'national-closed', label: 'One rule, and it is theirs',
+          body: 'Adopt what they wrote, nationally, today. It ends the divergence in an '
+            + 'afternoon and it ends it by letting the conference that went first write the '
+            + 'sport\'s law.',
+          edit: { set: { 'labour.reentry': 'closed', 'labour.rulesBy': 'national' },
+            effects: { labour: -3.4, tradition: 2.4, exposure: -2, access: 1.2 },
+            aimed: { Players: { labour: -3.8 }, 'Big Ten': { autonomy: 2.4 },
+              Fans: { tradition: 1.6 }, Presidents: { exposure: -1.6 } } } },
+        { id: 'devolve', label: 'Let every conference write its own',
+          body: 'If they are going to do it anyway, stop pretending. Each league sets its own '
+            + 'eligibility and this office keeps the calendar. Nobody has thought through what '
+            + 'that does to a transfer.',
+          /* AND THE ONE THAT WENT FIRST KEEPS ITS RULE, the same afternoon, which is the whole
+             point of devolving to them. Setting `rulesBy` alone left every conference falling
+             back to the national rule, so the leagues could never actually diverge, and the
+             three items and the tail about what happens when they do were unreachable from
+             any playthrough. Devolution that changes nothing is not devolution. */
+          edit: (c) => {
+            const set = { 'labour.rulesBy': 'conference' };
+            set['labour.confReentry.' + ((c && c.conf) || 'Big Ten')] = 'closed';
+            return { set,
+              effects: { autonomy: 3.4, access: -2.6, exposure: -2.4, labour: -1.4 },
+              aimed: { SEC: { autonomy: 3 }, 'Big Ten': { autonomy: 3 },
+                'Group of Five': { access: -2.6 }, Presidents: { exposure: -2.4 },
+                Players: { labour: -2 } } };
+          } },
+      ],
+      dials: [
+        { id: 'proYears', label: 'Years away you may have', path: 'labour.proYears',
+          base: 1, free: [0, 1], pro: [0, 1, 2, 3],
+          per: { labour: 0.9, tradition: -0.5, access: -0.3 },
+          aim: { Players: { labour: 1 }, Fans: { tradition: -0.6 } },
+          reads: (v, ctx) => (v === 0
+            ? 'Nobody comes back. The dial is set where the rule is a ban whatever the '
+              + 'sentence above it says.'
+            : 'A man who has been a professional for ' + v + ' year' + (v === 1 ? '' : 's')
+              + ' can come back and play. At ' + v + ' that is somebody who would be '
+              + (21 + v + 3) + ' in his last college season.') },
+      ],
+    },
+    {
+      id: 'undrafted',
+      beats: [PORTAL, SPRING],
+      weight: 7,
+      when: (w, L, sit) => sit.reentry !== 'closed',
+      cast: (w, L, rng, sit) => {
+        const t = (sit.unbeaten && sit.unbeaten[0]) || sit.leader
+          || { school: null, conference: null };
+        const live = L.POWERS.filter((c) => !L.isDefunct(w, c));
+        const conf = t.conference || live[0] || 'the SEC';
+        const m = L.membersOf(w, conf);
+        return { school: t.school || m[0] || null, conf };
+      },
+      eyebrow: 'The draft',
+      title: 'He went undrafted and wants to come back',
+      brief: (c) => 'Two hundred and fifty-seven names went off the board over three days and '
+        + 'his was not one of them. He is twenty-two, he was a second round grade in November, '
+        + 'and he did not withdraw by the deadline because four people told him not to. '
+        + ((c && c.school) ? c.school : 'His school')
+        + ' would take him back this afternoon. The rule as written says he stopped being a '
+        + 'college player the moment he did not withdraw, and the rule as written was not '
+        + 'written with this in it.',
+      voices: [
+        { id: 'Players', say: 'He got bad advice from adults and you want him to pay for it with a year.' },
+        { id: 'Fans', say: 'He said goodbye. There was a graphic. There was a video.' },
+        { id: 'Networks', say: 'He is the best player who will be on a field this autumn if you let him be.' },
+      ],
+      options: [
+        { id: 'let-back', label: 'Let him back',
+          body: 'And everybody in his position, this year and every year. It is the humane '
+            + 'answer and it makes the draft declaration meaningless, which is the point '
+            + 'everybody who objects will make.',
+          edit: { set: { 'labour.reentry': 'open' },
+            effects: { labour: 3, tradition: -2, exposure: -1, access: -1.2 },
+            aimed: { Players: { labour: 3.4 }, Fans: { tradition: -1.6 } } } },
+        { id: 'window', label: 'One return, inside a window',
+          body: 'A stated date, a single use, and it shuts behind him. Everybody knows the '
+            + 'rule in September and nobody finds out what it is in May.',
+          edit: { set: { 'labour.reentry': 'window', 'labour.proYears': 1 },
+            effects: { labour: 1.4, tradition: 0.6, cost: 0.4, access: -0.4 },
+            aimed: { Players: { labour: 1.6 }, Presidents: { exposure: 0.8 } } } },
+        { id: 'no', label: 'The deadline was the deadline',
+          body: 'It was published, it was explained, and a rule that bends for the best player '
+            + 'available is not a rule. Say it once and do not say it again.',
+          edit: { set: { 'labour.reentry': 'closed' },
+            effects: { labour: -3, tradition: 2.6, exposure: 1.2, access: 1 },
+            aimed: { Players: { labour: -3.4 }, Fans: { tradition: 2 },
+              Presidents: { exposure: 1.4 } } } },
+      ],
+    },
+    {
+      id: 'reentry-transfer',
+      beats: [PORTAL, SPRING, MEDIA],
+      weight: 8,
+      /* THE MESS THE DIVERGENCE MAKES, and it only exists once the leagues disagree. */
+      when: (w, L, sit) => sit.splitRules && sit.doorShut.length > 0 && sit.doorOpen.length > 0,
+      cast: (w, L, rng, sit) => ({
+        shut: sit.doorShut[0] || 'one conference',
+        open: sit.doorOpen[0] || 'another',
+      }),
+      eyebrow: 'Eligibility',
+      title: (c) => (c ? 'Barred in ' + c.shut + ', eligible in ' + c.open
+        : 'Barred in one league and eligible in the next'),
+      brief: (c) => 'He was a professional for eleven weeks. '
+        + ((c && c.shut) || 'One conference') + ' says that ends him. '
+        + ((c && c.open) || 'The one next door') + ' says it does not. So he has entered the '
+        + 'portal, and the only schools that can take him are the ones in the leagues that '
+        + 'kept their door open, which means the rule one conference wrote to protect itself '
+        + 'is now a recruiting service for its rivals. There are nine of him this month.',
+      voices: [
+        { id: 'ACC', say: 'We did not ask for this and we are not going to unilaterally disarm.' },
+        { id: 'Big Ten', say: 'We wrote a rule for our institutions. We are not obliged to write one for yours.' },
+        { id: 'Players', say: 'Which league you are in decides whether your career is over. Read that back.' },
+      ],
+      options: [
+        { id: 'unify-open', label: 'Take it back nationally, door open',
+          body: 'One rule, everybody, and the leagues that shut their doors reopen them '
+            + 'whether they like it or not. It ends the arbitrage and it ends the pretence '
+            + 'that they were ever allowed to do this.',
+          edit: { set: { 'labour.rulesBy': 'national', 'labour.reentry': 'open' },
+            effects: { labour: 3, autonomy: -3.4, access: 1.6, exposure: 1 },
+            aimed: { Players: { labour: 3.2 }, 'Big Ten': { autonomy: -3 },
+              SEC: { autonomy: -2.6 }, Presidents: { autonomy: 1.2 } } } },
+        { id: 'unify-closed', label: 'Take it back nationally, door shut',
+          body: 'One rule, everybody, and it is the strict one. The arbitrage ends because '
+            + 'there is nowhere left to arbitrage to.',
+          edit: { set: { 'labour.rulesBy': 'national', 'labour.reentry': 'closed' },
+            effects: { labour: -3.4, autonomy: -2.4, tradition: 2.2, exposure: -1.6 },
+            aimed: { Players: { labour: -3.6 }, Fans: { tradition: 1.8 },
+              SEC: { autonomy: -2 }, Presidents: { exposure: -1.4 } } } },
+        { id: 'leave', label: 'Leave them to it',
+          body: 'They wanted the authority. They have it. Every consequence of it is now '
+            + 'theirs, including the ones arriving in a filing on Thursday.',
+          edit: { effects: { autonomy: 2.6, access: -3, exposure: -3, labour: -2.4 },
+            aimed: { 'Big Ten': { autonomy: 2 }, SEC: { autonomy: 2 },
+              Players: { labour: -3 }, Presidents: { exposure: -3 },
+              'Group of Five': { access: -2.4 } } } },
+      ],
+    },
+    {
+      id: 'roster-spot',
+      beats: [SPRING, MEDIA],
+      weight: 6,
+      when: (w, L, sit) => sit.reentry !== 'closed',
+      cast: (w, L, rng) => {
+        const live = L.POWERS.filter((c) => !L.isDefunct(w, c));
+        const conf = live[Math.floor(rng() * live.length) % live.length];
+        const m = L.membersOf(w, conf);
+        return { school: m[Math.floor(rng() * m.length) % m.length] || null };
+      },
+      eyebrow: 'The roster',
+      title: 'Somebody has to lose the spot',
+      brief: (c) => 'When he left for the draft they gave his scholarship to a nineteen year '
+        + 'old who has been in the building for eight months, learned the offence, and told '
+        + 'his family. Now he is coming back and the roster is capped. '
+        + ((c && c.school) || 'The school') + ' has asked this office, in writing and slightly '
+        + 'desperately, which of the two of them they are supposed to tell.',
+      voices: [
+        { id: 'Players', say: 'Whichever one you pick, you are ending it for the other one by memo.' },
+        { id: 'Presidents', say: 'The cap is the cap. We asked for the cap.' },
+        { id: 'Big 12', say: 'Give us one exemption per roster and this stops being a crisis.' },
+      ],
+      options: [
+        { id: 'exempt', label: 'A returner does not count against the cap',
+          body: 'One exemption per roster per year. It solves it today and every roster in the '
+            + 'country is two men bigger by 2029.',
+          edit: { set: { 'labour.reentry': 'open' },
+            effects: { labour: 2.4, cost: 2, access: -1.4, tradition: -0.8 },
+            aimed: { Players: { labour: 2.6 }, Presidents: { cost: -2 },
+              'Big 12': { cost: 1.4 } } } },
+        { id: 'protect', label: 'The scholarship belongs to whoever has it',
+          body: 'He can come back, and he comes back to a roster with no room on it unless '
+            + 'somebody leaves. The kid who was already there is not the one who moves.',
+          edit: { effects: { labour: 0.8, tradition: 1.6, access: 1.2, cost: -0.6 },
+            aimed: { Players: { labour: 1.2 }, Fans: { tradition: 1.4 } } } },
+        { id: 'shut', label: 'This is why the door has to shut',
+          body: 'Every returner is a nineteen year old being told to find another school in '
+            + 'August. Close it, and the roster a school builds in February is the roster it '
+            + 'has in September.',
+          edit: { set: { 'labour.reentry': 'closed' },
+            effects: { labour: -2.6, tradition: 2, cost: -1.4, access: 1.4 },
+            aimed: { Players: { labour: -3 }, Presidents: { cost: 1.6 },
+              Fans: { tradition: 1.4 } } } },
+      ],
+    },
+    {
+      id: 'the-agent',
+      beats: [PORTAL, SPRING],
+      weight: 6,
+      when: (w, L, sit) => sit.reentry !== 'closed' && w.labour.employment !== 'employee',
+      eyebrow: 'The players',
+      title: 'He has an agent and a locker',
+      brief: 'He signed with an agency in December, went through the process, did not get '
+        + 'drafted, and is back in a college weight room in February with the same agent, who '
+        + 'is now negotiating his collective money. Under the old rules signing with an agent '
+        + 'ended you. Under the current rules nothing ends you. Under both of them somebody '
+        + 'in this office is supposed to have an opinion and nobody does.',
+      voices: [
+        { id: 'Players', say: 'Every one of us should have had one from the day we were sixteen.' },
+        { id: 'Presidents', say: 'If they have agents and salaries, tell me what word is left that is not employee.' },
+        { id: 'Networks', say: 'Nobody watching has ever cared about this and nobody watching ever will.' },
+      ],
+      options: [
+        { id: 'certify', label: 'Certify agents and register every deal',
+          body: 'A licence, a register, a standard contract and a complaints process. It is '
+            + 'dull, it is expensive, and it is the only version of this that protects anybody.',
+          edit: { set: { 'labour.nil': 'school-paid' },
+            effects: { labour: 2.6, cost: 2.4, exposure: 2, autonomy: -1.4 },
+            aimed: { Players: { labour: 3 }, Presidents: { cost: -2, exposure: 2.2 } } } },
+        { id: 'ignore', label: 'It is not this office\'s business',
+          body: 'A man\'s representation is a matter between him and the person he pays. Say '
+            + 'that, and hear it read back to you in a deposition in about two years.',
+          edit: { effects: { autonomy: 1.8, exposure: -2.4, labour: 1 },
+            aimed: { Players: { labour: 1.2 }, Presidents: { exposure: -2.6 } } } },
+        { id: 'employee', label: 'Say the word',
+          body: 'Agents, salaries, contracts, a return from a professional league. Stop '
+            + 'looking for a word that is not employee and write the one that is.',
+          edit: { set: { 'labour.employment': 'employee', 'labour.revShare': 0.25 },
+            effects: { labour: 4, cost: 4, tradition: -3.4, exposure: 2.4 },
+            aimed: { Players: { labour: 4 }, Presidents: { cost: -3.4, exposure: 2 },
+              Fans: { tradition: -3 } } } },
+      ],
+    },
+    {
+      id: 'age',
+      beats: [MEDIA, SEPT],
+      weight: 5,
+      when: (w, L, sit) => sit.reentry === 'open' && sit.proYears >= 1,
+      cast: (w, L, rng, sit) => {
+        const t = (sit.unbeaten && sit.unbeaten[0]) || sit.leader || null;
+        return { school: t ? t.school : null, age: 22 + 2 + (sit.proYears || 1) };
+      },
+      eyebrow: 'The rules',
+      title: (c) => (c ? 'There is a ' + c.age + ' year old at media days'
+        : 'There is a twenty-five year old at media days'),
+      brief: (c) => 'He is ' + ((c && c.age) || 25) + '. He has a professional season, a wife, '
+        + 'a mortgage and a very good year of college football ahead of him, and he was asked '
+        + 'about all four of those things in the same eleven minutes. He answered them well. '
+        + 'The photograph of him beside a genuine eighteen year old freshman has been on every '
+        + 'screen in the country since Tuesday and nobody can decide whether it is heartwarming '
+        + 'or an indictment.',
+      voices: [
+        { id: 'Fans', say: 'A grown man is playing against children and we are pretending that is college.' },
+        { id: 'Players', say: 'He is enrolled, he goes to class, he is eligible. What exactly is the objection?' },
+        { id: 'Networks', say: 'He is the single most interesting person in this sport right now.' },
+      ],
+      options: [
+        { id: 'cap', label: 'Put an age on it',
+          body: 'A ceiling, published, no exceptions. It is arbitrary, it will be litigated, '
+            + 'and it is the only line anybody can actually see.',
+          edit: { set: { 'labour.proYears': 0 },
+            effects: { labour: -2.6, tradition: 2.4, exposure: -2, access: 0.8 },
+            aimed: { Players: { labour: -3 }, Fans: { tradition: 2.4 },
+              Presidents: { exposure: -1.8 } } } },
+        { id: 'clock', label: 'A five year clock from enrolment',
+          body: 'Not an age, a clock. It starts when you first enrol and it does not stop for '
+            + 'anything, including a year in a professional camp. Same effect, defensible '
+            + 'shape.',
+          edit: { set: { 'labour.eligibility': 5, 'labour.reentry': 'window' },
+            effects: { labour: 0.8, tradition: 1.2, cost: 0.4, exposure: 1 },
+            aimed: { Players: { labour: 1 }, Presidents: { exposure: 1.2 },
+              Fans: { tradition: 1 } } } },
+        { id: 'nothing', label: 'Let him play',
+          body: 'He is a student at that university and he is eligible under the rules this '
+            + 'sport wrote down. Everything else is a feeling about a photograph.',
+          edit: { effects: { labour: 2, tradition: -2.2, inventory: 1.4, autonomy: 1 },
+            aimed: { Players: { labour: 2.4 }, Fans: { tradition: -2.4 },
+              Networks: { inventory: 1.6 } } } },
+      ],
+    },
+    {
+      id: 'withdrawal-deadline',
+      beats: [WINTER, PORTAL],
+      weight: 6,
+      when: (w, L, sit) => sit.reentry !== 'open' || sit.proYears < 2,
+      eyebrow: 'The calendar',
+      title: 'The deadline is in the wrong place',
+      brief: 'A player has to decide whether to withdraw from the draft eleven weeks before '
+        + 'the draft tells him anything, and four weeks before the portal window he would need '
+        + 'if he withdrew. So the decision every one of them makes is a guess made in the wrong '
+        + 'order, and the professional league that sets the first of those dates has never once '
+        + 'been in a room with this office about it.',
+      voices: [
+        { id: 'Players', say: 'Move it two months and half of this argument stops existing.' },
+        { id: 'Presidents', say: 'We do not control that calendar. We have asked. They were polite.' },
+        { id: 'Networks', say: 'The professional draft is a bigger broadcast than anything we own. They will not move.' },
+      ],
+      options: [
+        { id: 'align', label: 'Move our calendar to fit theirs',
+          body: 'Portal after the draft, signing after that, everything four weeks later. It '
+            + 'fixes the order and it puts every roster in the country together in July.',
+          edit: { set: { 'labour.portalWindows': 1, 'labour.reentry': 'window' },
+            effects: { labour: 2.6, cost: 1, tradition: -1.4, inventory: -0.6 },
+            aimed: { Players: { labour: 2.8 }, Presidents: { cost: -1 } } } },
+        { id: 'negotiate', label: 'Go and negotiate with them',
+          body: 'Formally, publicly, with a position paper. They may say no. They have never '
+            + 'been asked in a way that made saying no cost anything.',
+          edit: { effects: { autonomy: 2, exposure: -1.2, labour: 1.4, cost: 0.6 },
+            aimed: { Players: { labour: 1.6 }, Presidents: { autonomy: 1.6 } } } },
+        { id: 'hold', label: 'Leave the dates alone',
+          body: 'Every school in the country has built a February around these dates. Move '
+            + 'them and the next two recruiting cycles are chaos for a problem that affects '
+            + 'about ninety men a year.',
+          edit: { effects: { tradition: 1.6, labour: -2, cost: -0.8 },
+            aimed: { Players: { labour: -2.4 }, Presidents: { cost: 1 } } } },
+      ],
+    },
+    {
+      id: 'practice-squad',
+      beats: [SEPT, OCT],
+      weight: 6,
+      when: (w, L, sit) => sit.reentry === 'open',
+      cast: (w, L, rng, sit) => {
+        const t = (sit.unbeaten && sit.unbeaten[0]) || sit.leader || null;
+        return t ? { school: t.school, wins: t.wins } : null;
+      },
+      eyebrow: 'Eligibility',
+      title: 'He was on a practice squad in September',
+      brief: (c) => 'Three weeks, one paycheque, one release, and now it is October and '
+        + ((c && c.school) || 'a member school') + ' would like to add him for the second half '
+        + 'of the season. He has not played a college snap this year. There is nothing in the '
+        + 'rules that says he cannot and nothing in the rules that contemplated him, and if '
+        + 'this office says yes on a Tuesday there will be four more of him by the following '
+        + 'Monday.',
+      voices: [
+        { id: 'Networks', say: 'A ready made storyline arriving in week seven. We would build a week around it.' },
+        { id: 'Fans', say: 'You cannot sign a professional in October. That is not a season, that is a transfer market.' },
+        { id: 'Players', say: 'He was cut. He is allowed to work.' },
+      ],
+      options: [
+        { id: 'allow', label: 'Let him sign',
+          body: 'And write it down properly so the next four know the rule before they need '
+            + 'it. College football now has a mid-season signing window, which is a sentence '
+            + 'nobody in this building expected to write.',
+          edit: { set: { 'labour.reentry': 'open', 'labour.portalWindows': 3 },
+            effects: { labour: 2.6, inventory: 2, tradition: -3, access: -1.6 },
+            aimed: { Players: { labour: 2.8 }, Networks: { inventory: 2.4 },
+              Fans: { tradition: -3 } } } },
+        { id: 'next-year', label: 'Not in season',
+          body: 'He can come back in January like everybody else. A roster is a roster from '
+            + 'the first Saturday, and that is worth more than one very good half of football.',
+          edit: { set: { 'labour.reentry': 'window' },
+            effects: { tradition: 2.4, labour: -1.4, inventory: -1, access: 1 },
+            aimed: { Fans: { tradition: 2.6 }, Players: { labour: -1.6 } } } },
+        { id: 'shut', label: 'He took the cheque',
+          body: 'A man who has been paid to play football professionally is a professional '
+            + 'football player. The distinction is the last one this sport has and it is worth '
+            + 'more than he is.',
+          edit: { set: { 'labour.reentry': 'closed' },
+            effects: { labour: -3.2, tradition: 3, access: 1.2, exposure: -1 },
+            aimed: { Players: { labour: -3.6 }, Fans: { tradition: 2.6 } } } },
+      ],
+    },
+    {
+      id: 'reentry-heisman',
+      beats: [CHAMP, PLAYOFF],
+      weight: 6,
+      when: (w, L, sit) => sit.reentry === 'open' && !sit.firstYear,
+      cast: (w, L, rng, sit) => {
+        const t = (sit.unbeaten && sit.unbeaten[0]) || sit.leader || null;
+        return t ? { school: t.school, conference: t.conference } : null;
+      },
+      eyebrow: 'The season',
+      title: (c) => (c ? 'The best player in the sport was cut in August'
+        : 'The best player in the sport is a returner'),
+      brief: (c) => 'He was released by a professional team on the twenty-eighth of August, '
+        + 'was on a college campus by the second of September, and has been the best player in '
+        + 'this sport since the fourth. '
+        + ((c && c.school) || 'His team') + ' are playing for a national title because of it. '
+        + 'Every argument for the open door is standing on a field in December wearing his '
+        + 'number, and so is every argument against it.',
+      voices: [
+        { id: 'Networks', say: 'He is the story of the year and the year is not close.' },
+        { id: 'Group of Five', say: 'Nobody cut in August has ever turned up at one of our schools. Not one.' },
+        { id: 'Fans', say: 'He is twenty-four and he is throwing at teenagers. Yes it is great. That is the problem.' },
+      ],
+      options: [
+        { id: 'celebrate', label: 'Put him on the trophy stage',
+          body: 'This is the sport working: a man got told no, came back, and was magnificent. '
+            + 'Stand behind it out loud and take what comes in the spring.',
+          edit: { effects: { labour: 2.4, inventory: 2.6, tradition: -2, access: -1.8 },
+            aimed: { Players: { labour: 2.6 }, Networks: { inventory: 2.8 },
+              'Group of Five': { access: -2.2 }, Fans: { tradition: -1.6 } } } },
+        { id: 'floor', label: 'Let him play and fund the other end',
+          body: 'The door stays open and a fund goes to the schools he was never going to '
+            + 'return to. It does not solve the concentration and it admits it exists.',
+          edit: { effects: { access: 2.4, cost: 2.2, labour: 1.6, money: -1 },
+            aimed: { 'Group of Five': { access: 3, money: 2 }, Players: { labour: 1.6 },
+              Presidents: { cost: -2 } } } },
+        { id: 'window', label: 'This is the last year of it',
+          body: 'He finishes the season. Then the door becomes a window, because a rule that '
+            + 'produces this every year produces the other thing every year too.',
+          edit: { set: { 'labour.reentry': 'window' },
+            effects: { access: 2, tradition: 1.6, labour: -2, inventory: -1.4 },
+            aimed: { Players: { labour: -2.4 }, 'Group of Five': { access: 2.2 },
+              Networks: { inventory: -1.6 } } } },
+      ],
+    },
+    {
+      id: 'reentry-suit',
+      beats: [WINTER, SPRING, MEDIA],
+      weight: 7,
+      when: (w, L, sit) => sit.reentry === 'closed' || sit.splitRules,
+      eyebrow: 'The courts',
+      title: 'Three of them have sued',
+      brief: (c, it, sit) => 'A class action, filed in a district that has not been kind to '
+        + 'this sport, on behalf of every player barred from returning after a professional '
+        + 'stint. The claim is restraint of trade and the exhibits are the minutes of the '
+        + 'meeting where '
+        + ((sit.doorShut && sit.doorShut[0]) ? sit.doorShut[0] + ' passed its own rule'
+          : 'this rule was passed')
+        + '. Counsel has told this office privately that they do not expect to win. They have '
+        + 'also told this office that they do not need to.',
+      voices: [
+        { id: 'Presidents', say: 'Settle it. Whatever it costs, settle it before discovery.' },
+        { id: 'Players', say: 'Nobody would be in a courtroom if there had been anybody to talk to.' },
+        { id: 'SEC', say: 'If we settle every one of these, the rule book is written by plaintiffs.' },
+      ],
+      options: [
+        { id: 'fight', label: 'Fight it',
+          body: 'All the way, on the principle that a sport that folds once folds forever. '
+            + 'Discovery will produce four emails this office would rather nobody read.',
+          edit: { effects: { exposure: -3.4, cost: 2, autonomy: 2, tradition: 1.2 },
+            aimed: { Presidents: { exposure: -3, cost: -1.6 }, SEC: { autonomy: 1.8 },
+              Players: { labour: -1.6 } } } },
+        { id: 'settle', label: 'Settle and reopen the door',
+          body: 'Pay it, change the rule, and be the office that did the sensible thing four '
+            + 'months and one filing later than it could have.',
+          edit: { set: { 'labour.reentry': 'open', 'labour.rulesBy': 'national' },
+            effects: { labour: 2.6, cost: 2.6, exposure: 2.4, autonomy: -2 },
+            aimed: { Players: { labour: 3 }, Presidents: { cost: -2.2, exposure: 2.4 },
+              'Big Ten': { autonomy: -2 } } } },
+        { id: 'congress', label: 'Go to Washington for an exemption',
+          body: 'Ask for the thing this sport has been asking for since 2021: a statutory '
+            + 'shield that makes the rule stick. It has never worked and the asking is now the '
+            + 'strategy.',
+          edit: { effects: { exposure: -2.4, autonomy: 1.6, cost: 1.4, labour: -2 },
+            aimed: { Presidents: { exposure: -2 }, Players: { labour: -2.4 },
+              SEC: { autonomy: 1.4 } } } },
+      ],
+    },
+    {
+      id: 'pro-league-response',
+      beats: [SPRING, MEDIA],
+      weight: 5,
+      when: (w, L, sit) => sit.reentry !== 'closed',
+      eyebrow: 'The professionals',
+      title: 'The other league has noticed',
+      brief: 'A professional league has quietly changed its own rules in response to yours. '
+        + 'Camp invitations are down, one club has stopped signing undrafted college players '
+        + 'entirely on the grounds that they will simply go back, and a general manager said '
+        + 'on a podcast that college football is now "a very well funded developmental league '
+        + 'that we do not pay for". He meant it as a compliment to somebody.',
+      voices: [
+        { id: 'Networks', say: 'A developmental league that outdraws them on eleven Saturdays a year.' },
+        { id: 'Players', say: 'Fewer camp invitations is fewer men who ever get a look. That is the actual cost.' },
+        { id: 'Presidents', say: 'We are subsidising the talent identification of a trillion dollar industry.' },
+      ],
+      options: [
+        { id: 'bill', label: 'Send them a bill',
+          body: 'A development fee, per player drafted, paid to the sport that made him. It '
+            + 'has never been done, they will refuse, and the refusal is a useful thing to '
+            + 'have in public.',
+          edit: { effects: { money: 1.6, exposure: -1.6, autonomy: 2.2, cost: 0.6 },
+            aimed: { Presidents: { money: 1.4, autonomy: 1.6 }, Networks: { inventory: 0.8 } } } },
+        { id: 'partner', label: 'Sit down with them',
+          body: 'A shared calendar, a shared medical file, a joint statement about the '
+            + 'withdrawal deadline. Quiet, useful, and everybody in this room will call it '
+            + 'capitulation.',
+          edit: { effects: { labour: 2.4, cost: 0.8, autonomy: -1.6, exposure: 1.6 },
+            aimed: { Players: { labour: 2.6 }, Presidents: { exposure: 1.4 },
+              SEC: { autonomy: -1.4 } } } },
+        { id: 'nothing', label: 'Their rules are their business',
+          body: 'This office governs one sport. What another league does about its own camp '
+            + 'invitations is a matter for the people who run it.',
+          edit: { effects: { autonomy: 1, labour: -1.6, exposure: 0.6 },
+            aimed: { Players: { labour: -2 }, Presidents: { autonomy: 0.8 } } } },
+      ],
+    },
+    {
+      id: 'reentry-review',
+      beats: [WINTER],
+      weight: 5,
+      /* THE LOOK BACK, once there has been a year of whatever was decided to look back at. */
+      when: (w, L, sit) => !sit.firstYear && sit.reentry !== 'open',
+      cast: (w, L, rng, sit) => ({ rule: sit.reentry, years: sit.seasonOfTerm - 1 }),
+      eyebrow: 'The room',
+      title: (c) => (c && c.rule === 'closed' ? 'A year of the closed door'
+        : 'A year of the window'),
+      brief: (c) => 'The review is on the agenda and everybody has brought their own numbers. '
+        + 'Ninety-one men declared and did not withdraw. Eleven were drafted. The other eighty '
+        + 'are not in this sport any more and four of them are in this building today, in '
+        + 'suits, waiting to be heard by the committee that wrote the rule. Two of the '
+        + 'conferences that voted for it have submitted a paper asking for it to be relaxed.',
+      voices: [
+        { id: 'Players', say: 'Eighty. Say the number out loud in front of them and then vote again.' },
+        { id: 'Presidents', say: 'Rosters have been stable for the first time in six years and everybody in this room knows why.' },
+        { id: 'Fans', say: 'The football has been better. That is not nothing and it is not everything.' },
+      ],
+      options: [
+        { id: 'keep', label: 'Keep it',
+          body: 'It is doing what it was written to do. The eighty are the cost and the room '
+            + 'voted for the cost with its eyes open.',
+          edit: { effects: { tradition: 2, labour: -2.4, access: 1, exposure: -1.4 },
+            aimed: { Players: { labour: -2.8 }, Presidents: { cost: 1.4 },
+              Fans: { tradition: 1.6 } } } },
+        { id: 'relax', label: 'Relax it to a single window',
+          body: 'One return, one time, published dates. It is the compromise everybody could '
+            + 'have had two years ago before any of this.',
+          edit: { set: { 'labour.reentry': 'window', 'labour.proYears': 1 },
+            effects: { labour: 2.2, tradition: -0.8, cost: 0.6, access: -0.6 },
+            aimed: { Players: { labour: 2.4 }, Presidents: { exposure: 1 } } } },
+        { id: 'reopen', label: 'Open it and say you were wrong',
+          body: 'Out loud, on the record, with the four of them in the room. It costs this '
+            + 'office something that does not come back and it is the right answer.',
+          edit: { set: { 'labour.reentry': 'open' },
+            effects: { labour: 3.2, exposure: 2.6, autonomy: -1.6, tradition: -1.6 },
+            aimed: { Players: { labour: 3.6 }, Presidents: { exposure: 2.2 },
+              Fans: { tradition: -1.4 } } } },
+      ],
+    },
   ];
 
   const BY_ID = {};
@@ -2415,6 +2990,8 @@
     sameConfUnbeaten: null, leader: null, upset: null, blowout: null, biggest: null,
     viewers: null, perGame: null, trend: null, audienceUp: false, audienceDown: false,
     confs: {}, endangered: [], gone: [], previous: null,
+    reentry: 'open', rulesBy: 'national', proYears: 1, confReentry: {},
+    splitRules: false, doorShut: [], doorOpen: [],
     meters: null, pressure: null, standing: null, shaky: false, secure: false,
     ruled: 0, lit: [],
   };

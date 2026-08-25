@@ -96,6 +96,30 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
   const late = world0();
   late.money.dealYears = 1;
   D.eligible(Object.assign({}, late, { beat: D.BEATS.SPRING }), L).forEach((i) => seen.add(i.id));
+  /* AND THE ONE WAY DOOR NEEDS A SPORT THAT HAS ALREADY DECIDED SOMETHING ABOUT IT. Four of
+     these items are about living with the rule rather than writing it: the transfer arbitrage
+     needs the leagues to have diverged, the review needs a year of the rule to review, the
+     lawsuit needs a rule to sue over. None of that exists on an opening world, and all of it
+     is one ruling away from existing. Checked on the worlds they need, the same way a crisis
+     is checked on a world where the fuse is lit. */
+  const doors = [];
+  {
+    const shut = world0(); shut.labour.reentry = 'closed'; shut.year = shut.startYear + 2;
+    const win = world0(); win.labour.reentry = 'window'; win.year = win.startYear + 2;
+    const split = world0();
+    split.year = split.startYear + 1;
+    split.labour.rulesBy = 'conference';
+    split.labour.confReentry = { SEC: 'open', 'Big Ten': 'closed', ACC: '', 'Big 12': '' };
+    const openLater = world0(); openLater.year = openLater.startYear + 2;
+    doors.push(shut, win, split, openLater);
+  }
+  doors.forEach((d) => {
+    for (let beat = 0; beat < L.BEATS.length; beat++) {
+      const wb = Object.assign({}, d, { beat });
+      D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).forEach((i) => seen.add(i.id));
+    }
+  });
+
   /* A CRISIS NEEDS A LIT FUSE, which is the whole point of one: it cannot be reached from an
      opening world and it is not unreachable, it is waiting. Checked on the world it needs. */
   const burning = world0();

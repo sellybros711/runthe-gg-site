@@ -72,6 +72,84 @@
     return Math.max(-MONEY_CAP, Math.min(MONEY_CAP, d));
   }
 
+  /* WHAT THE ONE WAY DOOR DID TO THE FOOTBALL, and the reason it is a decision rather than a
+     posture. A player who declared for the draft, went undrafted and came back is a
+     twenty-four year old who has been coached by professionals for a year, and he does not
+     come back to the school that recruited him out of a small town. He comes back to a
+     programme that can pay him and start him, and those are the same twenty schools every
+     time. So an open door concentrates, cumulatively, in the shape moneyDrift already has:
+     small per year, and by year four it is the difference between a league and a procession.
+
+     IT HAS TO BE A REDISTRIBUTION, because playGame reads `a.z - b.z` and adding the same
+     number to all seventy teams cancels out perfectly. That much was obvious. What was not is
+     that a level shift does NOT cancel in viewers(), which reads how good the two teams ARE
+     rather than how far apart.
+
+     AND THE FIRST VERSION GOT THE AXIS WRONG, which is what made that bite. It moved the four
+     power conferences up and everybody else down, which is the sentence everybody says about
+     this and is not what this data can express: the season is played by seventy schools of
+     which sixty-seven ARE the four powers. The Group of Five is a bloc here and a line in the
+     money table, not teams. Lifting sixty-seven of seventy is a level shift by another name,
+     and it showed: an open door drew 2.50 a game at year five against 1.29 for a shut one, a
+     ninety per cent swing off one setting, which would have swamped the pool settlement the
+     audience is priced through, while the number it was supposed to move, who reached the
+     bracket, did not move at all.
+
+     SO IT STRETCHES RATHER THAN LIFTS. Each team is scaled by its own strength, which pulls
+     the league away from its middle: the top gets further from the pack, the bottom falls off
+     it, the mean barely moves so the audience barely moves, and the number that changes is
+     how many schools can still win. Which is the argument.
+
+     A CONFERENCE MAY HAVE ITS OWN RULE, and then the split is between the leagues that allow
+     it rather than between power and everybody else, which is precisely the mess the Big Ten
+     made by going first.
+
+     THE CAP IS A RAIL, NOT THE MECHANIC. Set at 0.16 against a gain of 0.34 it bound for
+     every team above z 0.47, which is most of the top of the league, so the proportional
+     stretch flattened into a step: everybody good got the same +0.16 and the difference
+     between a league that shut its door alone and one that shut it with everybody was clipped
+     to nothing. The gain is now small enough to be the whole effect and the cap only catches
+     a z the data does not contain. */
+  var REENTRY_GAIN = 0.14;
+  var REENTRY_CAP = 0.3;
+  /* Which rule a given conference is living under, which is the national one unless it has
+     written its own and this office let it. */
+  function reentryRule(world, conference) {
+    var lab = world.labour || {};
+    if (lab.rulesBy === 'conference') {
+      var own = (lab.confReentry || {})[conference];
+      if (own) return own;
+    }
+    return lab.reentry;
+  }
+  function reentryDrift(world, conference, z) {
+    var lab = world.labour || {};
+    var years = Math.max(0, world.year - world.startYear);
+    if (!years || z == null) return 0;
+    var ramp = REENTRY_GAIN * Math.min(years, 5) / 5;
+    var rule = reentryRule(world, conference);
+    var k = 0;
+    if (rule === 'open') k = ramp;
+    else if (rule === 'window') k = ramp * 0.35;
+    else if (rule === 'closed') k = -ramp * 0.5;
+    /* AND A LEAGUE THAT SHUT ITS OWN DOOR WHILE THE ONES NEXT TO IT DID NOT pays for it
+       twice: it loses the men who left and it loses the ones who would have come back to a
+       rival instead. This is the whole cost of going first, and it lands on the whole league
+       rather than on its best teams, because everybody in it is recruiting against the same
+       open door next door. */
+    var flat = 0;
+    if (lab.rulesBy === 'conference') {
+      var mine = rule;
+      var openElsewhere = Object.keys(lab.confReentry || {})
+        .filter(function (c) { return c !== conference; })
+        .map(function (c) { return (lab.confReentry || {})[c] || lab.reentry; })
+        .filter(function (r) { return r === 'open'; }).length;
+      if (mine !== 'open' && openElsewhere) flat = -ramp * 0.5 * Math.min(3, openElsewhere) / 3;
+    }
+    var d = k * z + flat;
+    return Math.max(-REENTRY_CAP, Math.min(REENTRY_CAP, d));
+  }
+
   function league(world, teamSeasons) {
     var base = baselines(teamSeasons, world.startYear);
     var out = [];
@@ -84,7 +162,8 @@
         conference: conf,
         abbr: b.abbreviation || school,
         color: b.color || '#64748b',
-        z: (b.strength_z || 0) + moneyDrift(world, conf),
+        z: (b.strength_z || 0) + moneyDrift(world, conf)
+          + reentryDrift(world, conf, b.strength_z || 0),
         off: b.pts_scored_mean || 24,
         offSd: b.pts_scored_sd || 10,
         def: b.pts_allowed_mean || 24,
@@ -808,6 +887,7 @@
     play: play, league: league, schedule: schedule, field: field,
     bracket: bracket, champions: champions, resume: resume, titleGames: titleGames,
     playGame: playGame, plausible: plausible, moneyDrift: moneyDrift,
+    reentryDrift: reentryDrift, reentryRule: reentryRule,
     weekify: weekify, viewers: viewers, settle: settle, WORTH_PER_M: WORTH_PER_M,
     SEGMENTS: SEGMENTS, segmentFor: segmentFor, throughAtBeat: throughAtBeat,
     GAMES: GAMES, WEEKS: WEEKS, Z_TO_POINTS: Z_TO_POINTS, HOME: HOME, NOISE: NOISE,

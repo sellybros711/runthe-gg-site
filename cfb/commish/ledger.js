@@ -103,6 +103,37 @@
         employment: 'amateur',
         portalWindows: 2,
         eligibility: 4,
+
+        /* ---- THE ONE WAY DOOR ----
+           WHETHER A PLAYER WHO HAS BEEN A PROFESSIONAL CAN COME BACK. Declare for the draft,
+           go undrafted or get cut in August, and return to a college roster in September.
+           This is the live argument in the sport and the mode had no field for it at all.
+
+           'open'       the door swings both ways. Nobody loses a year for trying.
+           'window'     one return, inside a stated window, and then it shuts behind you.
+           'closed'     declare and you are gone. Which is the rule the Big Ten wrote first.
+
+           IT IS NOT A COSMETIC SETTING. See reentryDrift() in season.js: an open door sends
+           men who have been in professional camps back to the programmes that can pay them,
+           which makes the top of the sport better and the middle worse, cumulatively, the
+           same way the distribution formula does. */
+        reentry: 'open',
+        /* How many years of professional football you may have played and still come back.
+           Only read when `reentry` is not 'closed'. */
+        proYears: 1,
+
+        /* ---- AND WHO GETS TO DECIDE ----
+           'national'   this office writes eligibility and everybody lives under it.
+           'conference' a conference may write its own, which is what happens in life the
+                        moment one of them stops waiting for you.
+
+           THE SECOND ONE IS NOT A TIDY DEVOLUTION. A player barred in one league and
+           eligible in the next is a transfer with a legal team attached, and `confReentry`
+           below is where the map of who allows what actually lives. */
+        rulesBy: 'national',
+        /* Per conference, only consulted while rulesBy is 'conference'. Empty means that
+           conference has not written one and falls back to the national rule. */
+        confReentry: { SEC: '', 'Big Ten': '', ACC: '', 'Big 12': '' },
       },
 
       rules: {

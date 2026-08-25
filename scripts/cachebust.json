@@ -53,20 +53,20 @@
       "sha": "66210cbb22945863"
     },
     "ledger.js": {
-      "v": "3",
-      "sha": "014127b746293dcd"
+      "v": "4",
+      "sha": "e240fb0038f61048"
     },
     "blocs.js": {
       "v": "3",
       "sha": "5237c1dfac573a9b"
     },
     "docket.js": {
-      "v": "5",
-      "sha": "939b721bbedc03bd"
+      "v": "6",
+      "sha": "be0658afea022577"
     },
     "season.js": {
-      "v": "9",
-      "sha": "f38841cffdb43c0a"
+      "v": "10",
+      "sha": "de33e0ae41fc63e9"
     },
     "council.js": {
       "v": "1",
@@ -81,12 +81,12 @@
       "sha": "36366f55e531fced"
     },
     "situation.js": {
-      "v": "1",
-      "sha": "98712cf59a02ddcd"
+      "v": "2",
+      "sha": "e2ffae1fa7e7f1e3"
     },
     "fallout.js": {
-      "v": "1",
-      "sha": "38d0cd225abd4f6d"
+      "v": "2",
+      "sha": "f44cb456fa06a602"
     }
   },
   "cfb/index.html": {

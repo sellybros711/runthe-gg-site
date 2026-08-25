@@ -488,6 +488,65 @@
       aimed: { SEC: { autonomy: -1.4 }, 'Big Ten': { autonomy: -1.4 },
         Presidents: { exposure: -1.2 } },
     },
+    /* ---------------- the one way door ---------------- */
+    {
+      id: 'came-back-elsewhere',
+      weight: 3,
+      when: function (w, sit) { return sit.splitRules && sit.doorShut.length > 0; },
+      head: 'He came back, to the school you least wanted',
+      body: function (ctx) {
+        return 'Barred from returning in his own conference, eligible in the one next door, '
+          + 'and he has signed with the team his old school plays in November. The graphic '
+          + 'announcing it used his old jersey number. Both athletic directors have issued '
+          + 'statements and one of them mentions this office by name.';
+      },
+      effects: { autonomy: -1.2, exposure: -1, access: -0.8 },
+      aimed: { Players: { labour: 0.8 }, Presidents: { exposure: -1.2 } },
+    },
+    {
+      id: 'eighty-men',
+      weight: 3,
+      when: function (w, sit) { return sit.reentry === 'closed'; },
+      head: 'A newspaper found all eighty of them',
+      body: function (ctx) {
+        return 'Every player who declared, went undrafted and had nowhere to go back to. '
+          + 'Eighty short interviews, one photograph each, published across four days as a '
+          + 'series. Six of them are working night shifts. Two are back at the same high '
+          + 'school they were recruited out of, coaching. It is very good journalism and it '
+          + 'is about a rule with this office\'s name on it.';
+      },
+      effects: { exposure: -2, labour: -0.8, tradition: -0.6 },
+      aimed: { Players: { labour: -1.4 }, Presidents: { exposure: -1.8 } },
+    },
+    {
+      id: 'camp-cut',
+      weight: 3,
+      when: function (w, sit) { return sit.reentry === 'open'; },
+      head: 'Nine of them were cut on the same afternoon',
+      body: function (ctx) {
+        return 'Professional camps broke on a Tuesday and by Thursday nine men who had said '
+          + 'goodbye in April were back on college rosters, four of them at ' + school(ctx)
+          + '\'s conference rivals. One walked into a team meeting he had a locker in fourteen '
+          + 'weeks ago. Somebody filmed the room reacting and it is the best thing anybody has '
+          + 'seen this year.';
+      },
+      effects: { inventory: 1.2, labour: 0.8, tradition: -1 },
+      aimed: { Players: { labour: 1.2 }, Networks: { inventory: 1.4 }, Fans: { tradition: -1 } },
+    },
+    {
+      id: 'the-locker',
+      weight: 2,
+      when: function (w, sit) { return sit.reentry !== 'closed'; },
+      head: 'They never cleared out his locker',
+      body: function (ctx) {
+        return 'An equipment manager at ' + school(ctx) + ' left it exactly as it was in '
+          + 'January, on the grounds that he had a feeling. He was right, and the photograph '
+          + 'of that locker with the nameplate still on it has done more for the argument in '
+          + 'favour of the open door than anything this office has ever published.';
+      },
+      effects: { tradition: 1.2, labour: 0.8 },
+      aimed: { Fans: { tradition: 1.4 }, Players: { labour: 1 } },
+    },
     {
       id: 'quiet',
       weight: 5,

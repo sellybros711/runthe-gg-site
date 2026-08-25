@@ -323,5 +323,71 @@ console.log('\n=== the pool is a promise the football has to pay for ===');
     + grown.perGame.toFixed(2) + 'M a game vs ' + flat.perGame.toFixed(2) + 'M');
 }
 
+console.log('\n=== the one way door bends the football ===');
+{
+  /* THE CLAIM: whether a man who has been a professional can come back is not a posture, it
+     is a rule about who is good. An open door sends him to a programme that can pay him and
+     start him, so the league stretches away from its middle.
+
+     ASSERTED ON THE SPREAD, NOT ON THE LEVEL. The first version of this drift moved the four
+     power conferences up and everybody else down, which in a seventy team league where
+     sixty-seven ARE the powers is a level shift wearing a costume: it moved the audience ten
+     per cent, which would have swamped the pool settlement, and moved who reached the bracket
+     by nothing. So what is checked here is the shape it is supposed to have. */
+  const at = (rule, year) => {
+    const w = world();
+    w.labour.reentry = rule;
+    w.year = year;
+    return w;
+  };
+  const spreadOf = (w, seed) => {
+    const sim = S.play(w, teams, rngFor(seed), { through: S.WEEKS, titles: true, bracket: true });
+    const zs = sim.teams.map((t) => t.z);
+    const m = zs.reduce((a, b) => a + b, 0) / zs.length;
+    return {
+      spread: Math.sqrt(zs.reduce((a, b) => a + (b - m) ** 2, 0) / zs.length),
+      perGame: sim.perGame,
+      blowouts: sim.games.filter((g) => g.margin >= 28).length / sim.games.length,
+    };
+  };
+  ok('nothing has happened in year one, whatever the rule is',
+    S.reentryDrift(at('open', 2025), 'SEC', 1.5) === 0
+    && S.reentryDrift(at('closed', 2025), 'SEC', 1.5) === 0);
+
+  const open = spreadOf(at('open', 2029), 31);
+  const shut = spreadOf(at('closed', 2029), 31);
+  ok('an open door stretches the league by year five', open.spread > shut.spread * 1.15,
+    'spread ' + open.spread.toFixed(3) + ' open vs ' + shut.spread.toFixed(3) + ' shut');
+  ok('  and the sport is visibly more lopsided for it',
+    open.blowouts > shut.blowouts,
+    (open.blowouts * 100).toFixed(1) + '% of games won by four scores vs '
+    + (shut.blowouts * 100).toFixed(1) + '%');
+  /* AND THE AUDIENCE BARELY MOVES, which is the half that has to stay small: viewership is
+     what the pool is settled against, so a labour posture that swung it would quietly rewrite
+     the money. */
+  ok('  while the audience barely notices', Math.abs(open.perGame - shut.perGame) < 0.16,
+    open.perGame.toFixed(2) + 'M vs ' + shut.perGame.toFixed(2) + 'M a game');
+
+  /* A CONFERENCE THAT SHUT ITS DOOR ALONE pays for it twice, which is the cost of going
+     first and the reason the divergence is a decision rather than a detail. */
+  const split = world();
+  split.year = 2029;
+  split.labour.rulesBy = 'conference';
+  split.labour.confReentry = { SEC: 'open', 'Big Ten': 'closed', ACC: 'open', 'Big 12': 'open' };
+  ok('a league that shuts its door alone is worse off than one that shuts it with everybody',
+    S.reentryDrift(split, 'Big Ten', 1.2) < S.reentryDrift(at('closed', 2029), 'Big Ten', 1.2),
+    'alone ' + S.reentryDrift(split, 'Big Ten', 1.2).toFixed(3)
+    + ' vs together ' + S.reentryDrift(at('closed', 2029), 'Big Ten', 1.2).toFixed(3));
+  ok('  and a league that kept its open while a rival shut is better off',
+    S.reentryDrift(split, 'SEC', 1.2) > 0, S.reentryDrift(split, 'SEC', 1.2).toFixed(3));
+  /* THE RULE A CONFERENCE IS LIVING UNDER is the national one until it writes its own AND
+     this office has let it, which is two conditions and the sort of thing that silently
+     becomes one. */
+  const notDevolved = world();
+  notDevolved.labour.confReentry = { SEC: 'closed', 'Big Ten': '', ACC: '', 'Big 12': '' };
+  ok('  a conference rule counts for nothing until the rules are devolved',
+    S.reentryRule(notDevolved, 'SEC') === 'open', S.reentryRule(notDevolved, 'SEC'));
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);
