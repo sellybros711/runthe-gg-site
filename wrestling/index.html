@@ -590,6 +590,30 @@
   .bk-details{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.09);}
   .wk-extras-toggle{margin-top:12px;text-align:center;}
   .wk-extras-toggle button{font-size:11px;letter-spacing:.06em;padding:6px 12px;color:var(--text-faint);}
+  /* Persistent WEEK ARC header. One anchor above every week so the cycle
+     reads as a shape at a glance. Colour + label per beat. */
+  .arc{padding:11px 14px;margin-bottom:10px;border-radius:10px;border-left:3px solid var(--line);background:var(--panel);}
+  .arc-k{font-family:var(--display);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);font-weight:800;}
+  .arc-t{font-size:13px;color:var(--text);margin-top:3px;line-height:1.4;}
+  .arc-t b{color:var(--cream);font-family:var(--mono);}
+  /* Week-type variants */
+  .arc-tv{border-left-color:rgba(255,255,255,.15);}
+  .arc-off{border-left-color:rgba(255,255,255,.10);background:rgba(255,255,255,.015);}
+  .arc-off .arc-k{color:var(--text-faint);}
+  .arc-build{border-left-color:rgba(224,179,65,.65);background:linear-gradient(90deg,rgba(224,179,65,.10),transparent 65%);}
+  .arc-build .arc-k{color:var(--gold);}
+  .arc-ppv{border-left-color:var(--brandred);background:linear-gradient(90deg,rgba(198,57,44,.14),transparent 65%);}
+  .arc-ppv .arc-k{color:#f0907f;text-shadow:0 0 12px rgba(240,144,127,.4);}
+  .arc-ppv .arc-t{color:var(--cream);font-weight:700;}
+  .arc-inj{border-left-color:#c6392c;background:linear-gradient(90deg,rgba(198,57,44,.10),transparent 65%);}
+  .arc-inj .arc-k{color:#f0907f;}
+  .arc-camp{border-left-color:rgba(224,179,65,.55);background:linear-gradient(90deg,rgba(224,179,65,.07),transparent 65%);}
+  .arc-camp .arc-k{color:var(--gold);}
+  .arc-farewell{border-left-color:rgba(224,179,65,.75);background:linear-gradient(90deg,#3a2a10,#221a10 80%);}
+  .arc-farewell .arc-k{color:var(--gold);letter-spacing:.28em;}
+  .arc-farewell .arc-t{color:var(--cream);}
+  .arc-fa{border-left-color:rgba(224,179,65,.55);}
+  .arc-fa .arc-k{color:var(--gold);}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -4734,16 +4758,61 @@ function nextGoals(){
   return out.slice(0,3);
 }
 
+/* The persistent WEEK ARC header. Every week type shows one here so the
+   cycle reads as a shape: rehab → camp → build → PPV → off week → build.
+   A single glance tells a player where in the year they are, without
+   reading a paragraph. Colored + labeled per beat: red for injury, gold
+   for mentor camp and PPV build, cream for off weeks, brand red for a
+   PPV night, gold for a farewell tour. */
+function weekArcHeader(){
+  const c=G.car;
+  if(c.freeAgent) return `<div class="arc arc-fa"><div class="arc-k">Free Agent</div><div class="arc-t">Your deal is up. No one is booking you until you sign.</div></div>`;
+  if(c.injWeeks>0){
+    const h=c.hurt;
+    return `<div class="arc arc-inj"><div class="arc-k">Rehab</div>
+      <div class="arc-t">Week ${c.injWeeks} of ${h?h.wk:'?'} out with ${h?h.part.toLowerCase():'the injury'}.</div></div>`;
+  }
+  if(c.mentorWeeks>0){
+    const m=MENTORS.find(x=>x.id===c.mentor);
+    return `<div class="arc arc-camp"><div class="arc-k">Training Camp</div>
+      <div class="arc-t">${c.mentorWeeks} week${c.mentorWeeks===1?'':'s'} left with ${m?m.name:'your mentor'}.</div></div>`;
+  }
+  const _npv = (function(){ try{ return nextPpv(); }catch(_){ return null; } })();
+  const isPpv = _npv && _npv.weeksUntil===0;
+  const inBuild = _npv && _npv.weeksUntil>=1 && _npv.weeksUntil<=3;
+  const b = c.booking || {type:'dark'};
+  if(c.retireOnWeek){
+    return `<div class="arc arc-farewell"><div class="arc-k">Farewell Tour</div>
+      <div class="arc-t">Last week: Year ${c.retireOnWeek.y}, Week ${c.retireOnWeek.w}. Every night counts.</div></div>`;
+  }
+  if(isPpv){
+    return `<div class="arc arc-ppv"><div class="arc-k">Pay Per View · Tonight</div>
+      <div class="arc-t">${_npv.name}. The month has been building to this.</div></div>`;
+  }
+  if(inBuild){
+    const wk = 4 - _npv.weeksUntil;   // 1..3 = build week 1..3 of 3
+    return `<div class="arc arc-build"><div class="arc-k">Road to ${_npv.name}</div>
+      <div class="arc-t">Build week <b>${wk}</b> of 3 · ${_npv.weeksUntil} week${_npv.weeksUntil===1?'':'s'} out.</div></div>`;
+  }
+  if(b.type==='dark'){
+    return `<div class="arc arc-off"><div class="arc-k">Off Week</div>
+      <div class="arc-t">Nothing on the card. Next PPV, ${_npv?_npv.name:'a big one'}, in ${_npv?_npv.weeksUntil:'a few'} weeks.</div></div>`;
+  }
+  // Regular TV week, well before the next PPV
+  return `<div class="arc arc-tv"><div class="arc-k">Weekly Show</div>
+    <div class="arc-t">Year ${c.year}, Week ${c.week} · ${_npv?`Next PPV in ${_npv.weeksUntil} weeks (${_npv.name}).`:''}</div></div>`;
+}
 function renderWeek(){
   const c=G.car, el=$('weekBody');
+  const arc = weekArcHeader();
   if(c.freeAgent){
-    el.innerHTML=`<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You are a <b style="color:var(--gold)">free agent</b>.</p>
+    el.innerHTML=`${arc}<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You are a <b style="color:var(--gold)">free agent</b>.</p>
       <button class="big" onclick="go('deal')">See Who Wants You →</button>`; return;
   }
   if(c.injWeeks>0){
     const h=c.hurt;
     const canWork=h && c.injWeeks<=Math.ceil(h.wk*0.55) && (c.cond>=42);
-    el.innerHTML=`<div class="injcard">
+    el.innerHTML=`${arc}<div class="injcard">
         <div class="ih">${pico('cross',16)} ${h?h.part:'Injured'}</div>
         <div class="id">${h?cap(h.nm):'You are hurt'} · <b>${c.injWeeks}</b> week${c.injWeeks>1?'s':''} of rehab left</div>
         ${h?`<div class="hint" style="margin-top:5px;">Carrying −${h.pen} ${(ATTRS.find(a=>a[0]===h.attr)||['','?'])[1]} until you are cleared.</div>`:''}
@@ -4755,7 +4824,7 @@ function renderWeek(){
   }
   if(c.mentorWeeks>0){
     const m=MENTORS.find(x=>x.id===c.mentor);
-    el.innerHTML=`<p class="log">You're in camp with <b>${m?m.name:'a mentor'}</b>, ${c.mentorWeeks} week${c.mentorWeeks>1?'s':''} to go.</p>
+    el.innerHTML=`${arc}<p class="log">You're in camp with <b>${m?m.name:'a mentor'}</b>, ${c.mentorWeeks} week${c.mentorWeeks>1?'s':''} to go.</p>
       <button class="big" onclick="doMentorWeek()">Train This Week →</button>`; return;
   }
   bookWeek();
@@ -4798,10 +4867,10 @@ function renderWeek(){
           ${b.sparred?`<span style="color:var(--gold)">${pico('fist',14)} sparred with an ally</span>`:''}
         </div>
       </div>` : '';
+    // PPV, build, and farewell banners moved to the persistent arc header at
+    // the top of the week body. Booking sheet is match-specific data only.
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
-      ${o.ppv?`<div class="bs-ppv">${pico('starBig',14)} Tonight, at <b>${o.ppv}</b></div>`:''}
-      ${buildIn?`<div class="bs-build">${pico('starBig',12)} Road to <b>${buildIn.name}</b> · ${buildIn.weeksUntil} week${buildIn.weeksUntil===1?'':'s'} out</div>`:''}
-      ${c.retireOnWeek?`<div class="bs-ppv" style="background:linear-gradient(90deg,#3a2a10,#221a10);color:var(--gold)">${pico('trophy',14)} FAREWELL TOUR · last week Y${c.retireOnWeek.y}W${c.retireOnWeek.w}</div>`:''}
+
       <div class="bs-headline">
         <div class="bs-stip">${o.stipLabel}</div>
         <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
@@ -4829,10 +4898,10 @@ function renderWeek(){
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Take The Microphone →</button>
     </div>`;
   } else {
+    // Arc header already frames the off-week. Sheet keeps just the "what
+    // happens now" line and the CTA.
     sheet=`<div class="bksheet dark">
-      <div class="bs-k">Not on the card</div>
-      <div class="bs-t">Nothing this week</div>
-      <div class="bs-vs">The office has no plans for you${(c.standing||50)<45?', and that is a message in itself':''}. Weeks like this are where careers get built.</div>
+      <div class="bs-vs">${(c.standing||50)<45?'No card, no interest, no plan. Weeks like this are where careers get built.':'No card this week. Prep the ones that are coming.'}</div>
       <button class="big" style="width:100%;margin-top:13px;" onclick="endDarkWeek()">Call It A Week →</button>
     </div>`;
   }
@@ -4851,6 +4920,7 @@ function renderWeek(){
   const catA=catById(c.plan.a)||MCATS[0], catB=catById(c.plan.b)||MCATS[1];
   const wkOpen = G.car._wkExtras;
   el.innerHTML=`
+    ${arc}
     <div class="advice ${adv.sev}">
       <span class="ad-i">${adv.ico}</span>
       <span class="ad-t">${adv.t}</span>
