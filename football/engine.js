@@ -3737,7 +3737,13 @@ const COACH_MIN_SEASONS = 3;
    coach in the data is +5.6 and the worst is -8.2, so at this scale the coaching job is
    worth about +7% to -10% of a unit: enough to be the reason a season turned, never enough
    to be worth more than the six men it stands behind. */
-const COACH_K = 0.012;
+/* MEASURED AGAINST WHAT HE COSTS, and the first value failed that test. At 0.012 the best
+   coach in the game returned about 4.4% of a unit for 9.8% of the cap, so the solver
+   declined to hire anybody at any budget: a feature whose optimal play is "never use it".
+   At 0.020 he is worth about 7.3%, which against a price ceiling pulled down to $22M is a
+   trade somebody would actually take. The two moved together because moving either one
+   alone would have had to move twice as far. */
+const COACH_K = 0.020;
 
 let COACH_TABLE = null;
 function coachTable(ctx) {
@@ -3802,7 +3808,7 @@ function coachTable(ctx) {
 function coachPrice(off, def) {
   const worth = off + def;                       // roughly -12 to +8 across the pool
   const v = Math.max(0, Math.min(1, (worth + 6) / 14));
-  return Math.round((3 + 27 * v * v) * 10) / 10;  // $3M to $30M, steep at the top
+  return Math.round((3 + 19 * v * v) * 10) / 10;  // $3M to $22M, steep at the top
 }
 
 /** The two multipliers a coach hands his team. */

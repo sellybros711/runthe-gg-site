@@ -29,6 +29,8 @@ const ctx = {
   battery: load('battery.json'),
   coaches: load('coaches.json'),
   curated: load('curated.json'),
+  /* coachTable derives every coach's tilt from what his own teams scored and allowed. */
+  teamSeasons: load('team_seasons.json'),
 };
 
 const data = E.prepareData(teamSeasons);
@@ -793,29 +795,47 @@ const FULL_OPTIMAL_CACHE = new Map();
 function buildFullOptimal(budget, wantSplit) {
   if (FULL_OPTIMAL_CACHE.has(budget)) {
     const hit = FULL_OPTIMAL_CACHE.get(budget);
-    return wantSplit ? hit : hit.roster.slice();
+    return wantSplit ? hit : { roster: hit.roster.slice(), coach: hit.coach };
   }
   let best = null;
-  /* $2.5M steps across the split. Finer resolves nothing: the price ladder is coarser
-     than that, so neighbouring splits buy the same twelve men. */
-  for (let off = 12; off <= budget - 12; off += 2.5) {
+  /* THE COACH IS BOUGHT BEFORE THE ROSTER, not out of what the roster happened to leave.
+     Solving the twelve first always spends the whole cap, so there was never a dollar left
+     and the ceiling always came back with no coach: a team no player can field, because the
+     game reserves for the hire. The outer loop is therefore over what to SPEND on a coach,
+     and the roster is solved with what remains, which is the trade the mode is built on.
+
+     A handful of spend levels rather than all 115 names: the price ladder is steep and
+     lumpy, so the best coach at or under $20M is the same man for most of the range, and
+     each extra level costs a full pair of knapsacks. */
+  const coaches = E.coachTable(ctx) || [];
+  const coachBudgets = [0, 3, 8, 14, 21, 28];
+  for (const cb of coachBudgets) {
+   const coach = cb === 0 ? null
+     : coaches.filter((c) => c.price_musd <= cb)
+       .sort((a, b) => (b.off + b.def) - (a.off + a.def))[0] || null;
+   const spendOnCoach = coach ? coach.price_musd : 0;
+   const budgetLeft = budget - spendOnCoach;
+   for (let off = 12; off <= budgetLeft - 12; off += 2.5) {
     const o = buildSide(OFF_IDX, off);
-    const d = buildSide(DEF_IDX, budget - off);
+    const d = buildSide(DEF_IDX, budgetLeft - off);
     if (!o || !d) continue;
     const rawOff = o.reduce((s, p) => s + p.ppr_ppg_mean, 0);
     const rawDef = d.reduce((s, p) => s + p.ppr_ppg_mean, 0);
     /* Chemistry is 1 here for the same reason buildOptimal ignores it: this row is the
        points ceiling, and chemistry is a separate axis measured by its own archetype. */
-    const yourScore = rawOff * E.rosterStructure(o).multiplier;
+    const eff = E.coachEffect(coach);
+    const yourScore = rawOff * eff.off * E.rosterStructure(o).multiplier;
     const oppScore = OPP_PTS * constants.SCALE
-      * E.defenseSuppression(rawDef * E.defenseStructure(d).multiplier, constants);
+      * E.defenseSuppression(rawDef * eff.def * E.defenseStructure(d).multiplier, constants);
     const margin = yourScore - oppScore;
     if (!best || margin > best.margin) {
-      best = { margin, off, def: budget - off, roster: o.concat(d), yourScore, oppScore };
+      best = { margin, off, def: budgetLeft - off, roster: o.concat(d), coach,
+        yourScore, oppScore };
     }
+   }
   }
   FULL_OPTIMAL_CACHE.set(budget, best);
-  return wantSplit ? best : best.roster.slice();
+  return wantSplit ? best : { roster: best.roster.slice(), coach: best.coach };
 }
 
 function simulateFull(build, n, seed0) {
@@ -823,7 +843,12 @@ function simulateFull(build, n, seed0) {
   const regWins = [], spends = [], ptsFor = [], ptsAgainst = [], ratings = [];
   for (let i = 0; i < n; i++) {
     const rng = E.createSeededRNG(seed0 + i * 7919);
-    const roster = build(rng);
+    const built = build(rng);
+    /* The greedy builders hand back a bare array; the solver hands back a roster AND the
+       coach it hired out of the same budget. */
+    const roster = Array.isArray(built) ? built : built.roster;
+    const coach = Array.isArray(built) ? null : built.coach;
+    const plan = E.planFromCoach(coach);
     /* twoSided, because the page passes it for every full run and a harness measuring a
        different chemistry rule is measuring a different game. Over half the links on a
        twelve man roster used to span the two units. */
@@ -831,7 +856,7 @@ function simulateFull(build, n, seed0) {
     const sched = E.generateSchedule(data, rng);
     const playoffs = E.generatePlayoffs(data, rng);
     const run = E.playRun(roster, chem.multiplier, sched.games, playoffs, leagueContext,
-      rng, constants, { full: true });
+      rng, constants, { full: true, coach, plan });
     for (const g of run.results) {
       if (!g.playoff) {
         regGames++; if (g.won) regWon++;
@@ -925,7 +950,7 @@ function fullTeamReport(n) {
     { name: 'mid',      build: (b) => (rng) => buildFullToBudget(rng, b, 0.90) },
     /* SOLVED, not greedy. This row is the ceiling and it is the row the cap is read off,
        so it is the one that must not wobble: see buildFullOptimal's comment. */
-    { name: 'optimal',  build: (b) => () => buildFullOptimal(b) },
+    { name: 'optimal',  build: (b) => () => buildFullOptimal(b) },   // roster AND coach
   ];
 
   console.log('  cap   tal    play        win%   med rec    PO%   title%   20-0     PF     PA   rating   spend');
@@ -948,6 +973,7 @@ function fullTeamReport(n) {
         + ('$' + r.meanSpend.toFixed(0)).padStart(8)
         + (row.name === 'optimal'
           ? `   split ${'$' + buildFullOptimal(cap, true).off} off / ${'$' + buildFullOptimal(cap, true).def} def`
+            + `   coach ${(buildFullOptimal(cap, true).coach || {}).name || 'none'}`
           : ''));
     }
     console.log('');

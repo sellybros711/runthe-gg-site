@@ -471,6 +471,19 @@
     if (payload.defTakeaways != null) args.p_def_takeaways = payload.defTakeaways;
     if (payload.defTds != null) args.p_def_tds = payload.defTds;
     if (payload.pointsAllowed != null) args.p_points_allowed = round1(payload.pointsAllowed);
+    /* FULL TEAM'S COACH AND PLAN, on exactly the same terms as the two sets above, and the
+       terms are the point: PostgREST resolves an RPC by the set of keys in the body, so a
+       key the installed function has never heard of is a 404 rather than an ignored field.
+       Sent only by a full team run, so a database that has not run
+       94_football_fullteam_coach.sql fails those and nothing else, which is the bargain 61
+       struck for the Trade Machine and 86 struck for the defense columns.
+       BOTH OR NEITHER. They are two halves of one description of how a season was played,
+       and a row with a coach and no plan reads as a plan nobody chose rather than one that
+       was not recorded. */
+    if (payload.coach != null && payload.plan != null) {
+      args.p_coach = payload.coach;
+      args.p_plan = payload.plan;
+    }
     const body = JSON.stringify(args);
     const ATTEMPTS = 3;
     for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
@@ -980,7 +993,7 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 10,
+    API_VERSION: 11,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     get offline() { return offline; },

@@ -118,7 +118,7 @@
   "football/index.html": {
     "engine.js": {
       "v": "64",
-      "sha": "adb57f13d7642cf5"
+      "sha": "cd89aee1dd648bf1"
     },
     "run.js": {
       "v": "74",
@@ -129,8 +129,8 @@
       "sha": "5622b02a66897441"
     },
     "board.js": {
-      "v": "25",
-      "sha": "d287251d0600cdb9"
+      "v": "26",
+      "sha": "6d26f45896a17865"
     },
     "achievements.js": {
       "v": "10",
