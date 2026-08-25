@@ -156,5 +156,40 @@ console.log('\n=== the football is on the Saturday it was played ===');
     Object.keys(winter).length + ' notes');
 }
 
+console.log('\n=== every event has an icon the page can actually draw ===');
+{
+  const fs = require('fs');
+  /* THE ICON SET LIVES IN THE PAGE and the names live here, which is exactly the join that
+     fails without a word: an event asking for an icon nobody drew renders an empty square,
+     and an empty square is what an ordinary day looks like. */
+  const page = fs.readFileSync(ROOT + '/cfb/commish/index.html', 'utf8');
+  const block = page.slice(page.indexOf('const CDI={'), page.indexOf('const cdIcon='));
+  const drawn = new Set([...block.matchAll(/^\s{2}([a-z]+):/gm)].map((m) => m[1]));
+  ok('the page draws a set of icons', drawn.size >= 8, [...drawn].join(', '));
+
+  const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+  const E = require(ROOT + '/cfb/engine.js');
+  const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025) });
+  const sim = S.play(w, teams, E.createSeededRNG(4), null);
+  const missing = [], unknown = [];
+  const used = new Set();
+  for (let beat = 0; beat < 9; beat++) {
+    const ev = C.eventsFor(2025, beat, sim);
+    Object.keys(ev).forEach((k) => {
+      if (!ev[k].icon) { missing.push('beat ' + beat + ' ' + k); return; }
+      used.add(ev[k].icon);
+      if (!drawn.has(ev[k].icon)) unknown.push(ev[k].icon + ' on beat ' + beat);
+    });
+  }
+  ok('  no event goes out without one', !missing.length, missing.slice(0, 3).join('; ') || 'every day the ticker reads out is marked');
+  ok('  and none of them names an icon nobody drew', !unknown.length,
+    unknown.slice(0, 3).join('; ') || [...used].sort().join(', '));
+  /* THE OTHER DIRECTION IS DEAD WEIGHT rather than a bug, but a set that has drifted out of
+     use is how the first one stops being trustworthy. `desk` is the decision day, which is
+     not an event and so never appears above. */
+  const idle = [...drawn].filter((n) => n !== 'desk' && !used.has(n));
+  ok('  and nothing in the set is unused', !idle.length, idle.join(', ') || drawn.size + ' drawn, all reachable');
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

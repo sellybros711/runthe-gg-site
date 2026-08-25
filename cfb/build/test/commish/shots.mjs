@@ -44,6 +44,25 @@ async function skipSim(pg) {
   }
 }
 
+/* THE ONE SCREEN THAT ONLY EXISTS WHILE IT IS MOVING, so it needs catching rather than
+   walking to. Ride the window until the square it is going to stop on lights up, then wait
+   out the ticker's own fade before shooting: caught inside those few hundred milliseconds
+   the headline photographs as an empty line, which is a fright and not a fault. */
+async function shotSim(pg, file) {
+  for (let i = 0; i < 90; i++) {
+    const lit = await pg.$eval('#sim-grid', (e) => !!e.querySelector('.cd.stop')).catch(() => false);
+    if (lit) {
+      await pg.waitForTimeout(500);
+      await pg.screenshot({ path: file });
+      return true;
+    }
+    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return false;
+    await pg.waitForTimeout(150);
+  }
+  return false;
+}
+
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
 const on = (p, id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 const tap = async (p, s) => { try { await p.click(s, { timeout: 2000 }); return true; } catch (e) { return false; } };
@@ -56,6 +75,11 @@ async function run(width, suffix) {
   await p.waitForTimeout(2600);
   await tap(p, '#g-start'); await p.waitForTimeout(700);
   await p.screenshot({ path: OUT + 'ui_office' + suffix + '.png', fullPage: true });
+
+  /* The first window of the term, caught on the day it stops. */
+  await tap(p, '#b-desk');
+  await shotSim(p, OUT + 'ui_sim' + suffix + '.png');
+  await skipSim(p); await p.waitForTimeout(400);
 
   /* Walk to a desk that has dials on it, so the shot shows the settings too. */
   let shot = false;

@@ -97,26 +97,39 @@
      the season the page has already simulated, so the day a game is shown on is the day its
      week actually falls on, and the offseason days are the ones anybody would name.
 
-     Returns a map of date key to { text, kind }. */
+     Returns a map of date key to { text, kind, icon }.
+
+     THE ICON IS THE POINT OF THE GRID. A square with a number in it says a day went past; a
+     square with a football in it says what the day was. The player is watching a month go by
+     at a glance, so the shape has to carry the meaning before the ticker line is read, and
+     the icons have to be things anybody would name: a ball, a trophy, a microphone, a pen.
+     Every entry below carries one, and `eventsFor` never returns an event without one. */
   var OFFSEASON = {
-    0: [[0, 8, 'The room gathers. Nobody has said anything on the record yet.'],
-      [0, 13, 'Two conferences hold their own meetings first, which is the whole problem.'],
-      [0, 16, 'The last of the committee reports land.']],
-    1: [[0, 18, 'The portal window opens.'],
-      [0, 24, 'Three hundred names in a week. Two of them matter.'],
-      [1, 4, 'Signing day. Fax machines, hats on tables, and a lot of very tired assistants.']],
-    2: [[2, 14, 'Spring practice opens across the country.'],
-      [3, 3, 'Spring games. Eighty thousand people watch a scrimmage in Tuscaloosa.'],
-      [3, 18, 'The last spring meetings before the summer.']],
-    3: [[6, 14, 'Media days begin. Everybody is undefeated and everybody is uncomfortable.'],
-      [6, 19, 'The preseason poll lands and three athletic directors ring this office.'],
-      [6, 24, 'Camps open next week. The talking is nearly over.']],
+    0: [[0, 8, 'The room gathers. Nobody has said anything on the record yet.', 'gavel'],
+      [0, 11, 'Budget subcommittee. Four hours, one decision, and it was the wrong one.', 'gavel'],
+      [0, 13, 'Two conferences hold their own meetings first, which is the whole problem.', 'gavel'],
+      [0, 16, 'The last of the committee reports land.', 'note']],
+    1: [[0, 18, 'The portal window opens.', 'portal'],
+      [0, 22, 'A starting quarterback enters at eleven at night. Two fanbases do not sleep.', 'portal'],
+      [0, 24, 'Three hundred names in a week. Two of them matter.', 'portal'],
+      [0, 30, 'The portal window shuts. Everybody counts what is left.', 'portal'],
+      [1, 4, 'Signing day. Hats on tables, and a lot of very tired assistants.', 'pen']],
+    2: [[2, 14, 'Spring practice opens across the country.', 'whistle'],
+      [2, 28, 'Two coaches are already describing this as the best camp they have had.', 'whistle'],
+      [3, 3, 'Spring games. Eighty thousand people watch a scrimmage in Tuscaloosa.', 'whistle'],
+      [3, 18, 'The last spring meetings before the summer.', 'gavel']],
+    3: [[6, 14, 'Media days begin. Everybody is undefeated and everybody is uncomfortable.', 'mic'],
+      [6, 17, 'A coach is asked about the playoff eleven times and answers a twelfth.', 'mic'],
+      [6, 19, 'The preseason poll lands and three athletic directors ring this office.', 'note'],
+      [6, 24, 'Camps open next week. The talking is nearly over.', 'whistle']],
   };
 
   function eventsFor(year, beat, sim) {
     var out = {};
     var fixed = OFFSEASON[beat] || [];
-    fixed.forEach(function (f) { out[key(d(year, f[0], f[1]))] = { text: f[2], kind: 'note' }; });
+    fixed.forEach(function (f) {
+      out[key(d(year, f[0], f[1]))] = { text: f[2], kind: 'note', icon: f[3] || 'note' };
+    });
 
     if (!sim) return out;
     /* THE FOOTBALL, ON THE SATURDAY IT WAS PLAYED. The biggest game of each week by audience,
@@ -129,7 +142,7 @@
         text: 'Week ' + wk.week + ': ' + g.winner.school + ' ' + Math.max(g.score[0], g.score[1])
           + ', ' + g.loser.school + ' ' + Math.min(g.score[0], g.score[1]),
         sub: wk.viewers.toFixed(1) + 'M watched the slate',
-        kind: 'game',
+        kind: 'game', icon: 'ball',
       };
     });
     (sim.titles || []).forEach(function (t, i) {
@@ -141,7 +154,7 @@
         out[key(date)] = {
           text: t.conference + ' title: ' + t.team.school + ' win it',
           sub: t.game.viewers.toFixed(1) + 'M watched',
-          kind: 'game', viewers: t.game.viewers,
+          kind: 'game', icon: 'trophy', viewers: t.game.viewers,
         };
       }
     });
@@ -151,12 +164,13 @@
         var date = plus(champ, 13 + ri * 10);
         var g = round.slice().sort(function (a, b) { return (b.viewers || 0) - (a.viewers || 0); })[0];
         if (!g) return;
+        var last = ri === sim.bracket.rounds.length - 1;
         out[key(date)] = {
-          text: (ri === sim.bracket.rounds.length - 1 ? 'The final: ' : 'Round ' + (ri + 1) + ': ')
+          text: (last ? 'The final: ' : 'Round ' + (ri + 1) + ': ')
             + g.winner.team.school + ' ' + Math.max(g.score[0], g.score[1]) + ', '
             + g.loser.team.school + ' ' + Math.min(g.score[0], g.score[1]),
           sub: (g.viewers || 0).toFixed(1) + 'M watched',
-          kind: 'game',
+          kind: 'game', icon: last ? 'trophy' : 'bracket',
         };
       });
     }
