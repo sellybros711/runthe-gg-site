@@ -226,6 +226,49 @@
   .titlebelt.mine .tb-c b{color:var(--gold);}
   .titleq{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.08);display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
   .titleq .qman{font-size:11px;color:var(--text-dim);padding:2px 7px;background:rgba(255,255,255,.04);border-radius:9px;}
+  /* Backstage floor plan */
+  .bs-budget{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;}
+  .bs-budget-k{font-family:var(--display);letter-spacing:.14em;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;}
+  .bs-budget-v{font-family:var(--mono);font-size:20px;color:var(--gold);font-weight:800;}
+  .bs-floor{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
+  .bs-room{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:6px;}
+  .bs-room-h{font-family:var(--display);font-size:13px;letter-spacing:.06em;color:var(--cream);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .bs-room-ico{font-size:15px;color:var(--gold);}
+  .bs-room-b{font-size:11.5px;color:var(--text-dim);line-height:1.45;}
+  .bs-occ{margin-top:6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;}
+  .bs-body{cursor:pointer;border-radius:9px;padding:6px 4px;background:rgba(255,255,255,.02);border:1px solid transparent;transition:transform .1s,border-color .1s,background .1s;text-align:center;}
+  .bs-body:hover{transform:translateY(-1px);border-color:rgba(224,179,65,.5);background:rgba(224,179,65,.06);}
+  .bs-body.done{opacity:.5;filter:grayscale(1);}
+  .bs-av{display:flex;align-items:center;justify-content:center;height:54px;}
+  .bs-av svg{width:54px;height:54px;}
+  .bs-gm-av{color:var(--gold);}
+  .bs-nm{font-size:11px;color:var(--cream);line-height:1.15;margin-top:2px;}
+  .bs-rel{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;margin-top:1px;}
+  /* Backstage interaction modal */
+  .bs-menu-h{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .bs-menu-av{width:56px;height:56px;display:flex;align-items:center;justify-content:center;}
+  .bs-menu-av svg{width:56px;height:56px;}
+  .bs-menu-nm{font-family:var(--display);font-size:15px;color:var(--cream);}
+  .bs-optlist{display:flex;flex-direction:column;gap:7px;}
+  .bs-opt{padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.02);cursor:pointer;transition:border-color .1s,background .1s;}
+  .bs-opt:hover{border-color:rgba(224,179,65,.6);background:rgba(224,179,65,.05);}
+  .bs-opt.off{opacity:.4;cursor:not-allowed;}
+  .bs-opt-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .bs-opt-h b{color:var(--cream);font-size:13px;}
+  .bs-opt-d{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.45;}
+  /* Segment scenes */
+  .segblock{padding:2px 0;}
+  .seg-tag{font-family:var(--display);font-size:10.5px;letter-spacing:.24em;color:var(--gold);text-transform:uppercase;margin-bottom:7px;}
+  .seg-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--line);}
+  .seg-av{flex:none;width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03);border-radius:9px;}
+  .seg-av svg{width:64px;height:64px;}
+  .seg-av-narr{color:var(--gold);}
+  .seg-line{font-size:14px;line-height:1.5;color:var(--cream);}
+  .seg-optlist{display:flex;flex-direction:column;gap:7px;}
+  .seg-opt{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);cursor:pointer;transition:border-color .1s,background .1s;}
+  .seg-opt:hover{border-color:rgba(224,179,65,.6);background:rgba(224,179,65,.06);}
+  .seg-opt-t{font-size:13.5px;color:var(--cream);line-height:1.4;}
+  .seg-opt-n{font-size:11px;color:var(--text-faint);margin-top:4px;font-style:italic;}
   .charcard{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:10px;padding:7px 5px;text-align:center;cursor:pointer;transition:.12s;}
   .charcard:hover{border-color:var(--brandred);transform:translateY(-2px);}
   .charcard .cav{height:56px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -1398,6 +1441,13 @@
   <div class="gnav" data-scr="world"></div>
   <h2>The World <span class="sub2">nine promotions · everyone you'll meet on the way up</span></h2>
   <div id="worldBody"></div>
+</div>
+
+<!-- ============ BACKSTAGE ============ -->
+<div class="screen" id="s-backstage">
+  <div class="gnav" data-scr="backstage"></div>
+  <h2>Backstage <span class="sub2">the halls before the bell · who's around, who wants a word</span></h2>
+  <div id="backstageBody"></div>
 </div>
 
 <!-- ============ RECORD ============ -->
@@ -3711,7 +3761,7 @@ const NAVG=[
   {id:'hub',    label:'Hub',    subs:[['career','Hub']]},
   {id:'skills', label:'Skills', subs:[['moves','Arsenal'],['train','Training'],['mentors','Mentors']]},
   {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Merch Stand'],['card','My Card']]},
-  {id:'roster', label:'Roster', subs:[['crew','Locker Room'],['world','The World']]},
+  {id:'roster', label:'Roster', subs:[['crew','Locker Room'],['backstage','Backstage'],['world','The World']]},
   {id:'legacy', label:'Career', subs:[['deal','Business'],['record','Record']]},
 ];
 function groupOf(scr){ return NAVG.find(g=>g.subs.some(s=>s[0]===scr)); }
@@ -3965,6 +4015,7 @@ function go(s){
     if(s==='locker'){ if(LOOKTAB==='colour') LOOKTAB='hairStyle'; renderLookEditor('lockBody','lockAv',G.w.look,false); }
     if(s==='shop') renderShop();
     if(s==='world') renderWorld();
+    if(s==='backstage') renderBackstage();
     if(s==='deal') renderDeal();
     if(s==='crew') renderCrew();
     if(s==='record') renderRecord();
@@ -4638,6 +4689,7 @@ function renderWeek(){
       </div>
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
       ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' ? `<button class="ghost" style="width:100%;margin-top:7px;border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in Money in the Bank →</button>`:''}
+      <button class="ghost" style="width:100%;margin-top:7px;" onclick="go('backstage')">Head Backstage →</button>
       ${p>0?`<button class="ghost" style="width:100%;margin-top:7px;" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'You have had your say':'Have a word with the office'}</button>`:
              `<div class="hint" style="text-align:center;margin-top:7px;">You have no say in the card yet. Earn it.</div>`}
     </div>`;
@@ -7045,8 +7097,15 @@ function doAsk(id){
 }
 function goBooking(){
   const b=G.car.booking; if(!b) return;
-  if(b.type==='match') startFight(b.o);
-  else if(b.type==='promo') beginPromo(b.targetId?'callout':'crowd', b.targetId);
+  const proceed = () => {
+    if(b.type==='match') startFight(b.o);
+    else if(b.type==='promo') beginPromo(b.targetId?'callout':'crowd', b.targetId);
+  };
+  // For matches, a segment plays on the walk to gorilla when one is available
+  // and one has not already run this week. Non-match bookings skip it because
+  // the promo view is already a segment of its own.
+  if(b.type==='match'){ maybeShowPreMatchSegment(proceed); }
+  else { proceed(); }
 }
 function simMatch(o){
   const w=G.w, c=G.car, a=w.attrs;
@@ -10937,6 +10996,507 @@ function renderWorld(){
   });
   $('worldBody').innerHTML=h;
 }
+/* ============================================================
+   BACKSTAGE: an open floor plan where the roster exists
+   ------------------------------------------------------------
+   SD SYM's Season Mode taught us that the ONE thing every
+   career mode needs is the roster as PEOPLE you can walk up to.
+   The engine renders a floor plan of rooms; each room is
+   populated with real wrestlers from your promotion (plus the
+   world champion in the champ's room, the GM in the office, and
+   your rival in the parking lot if he's hunting). Tap a
+   wrestler to open a menu: cut a promo on them, challenge them
+   to a match, insult them, compliment them, offer a tag team,
+   spar a spot, brawl. Everything applies real effects: heat,
+   relationships, stories, standing, gimmick heat.
+
+   The backstage rerolls every show week and gives you a
+   limited budget of visits (2 per week by default, more if you
+   are hot with the office), so it is a real choice each time,
+   not a spam button.
+   ============================================================ */
+function backstageBudget(){
+  const c=G.car;
+  const base=2;
+  const bonus = c.standing>=70 ? 1 : 0;
+  return base+bonus;
+}
+function backstageState(){
+  const c=G.car;
+  c.backstage = c.backstage || {y:c.year,w:c.week, used:0, layout:null, done:{}};
+  // fresh layout every week
+  const k = `${c.year}-${c.week}`;
+  if(c.backstage.k !== k){
+    c.backstage = {y:c.year, w:c.week, k, used:0, layout:null, done:{}};
+  }
+  if(!c.backstage.layout) c.backstage.layout = buildBackstageLayout();
+  return c.backstage;
+}
+function backstageDeterministicPick(seedStr, pool, n){
+  // A tiny deterministic shuffle keyed on (year, week, roomId, salt) so the
+  // layout is stable within a week but reshuffles when the week rolls over.
+  let h=2166136261>>>0;
+  for(let i=0;i<seedStr.length;i++){ h^=seedStr.charCodeAt(i); h=Math.imul(h,16777619); }
+  const rnd = () => { h = Math.imul(h^(h>>>15), 2246822507)>>>0; return (h & 0xffff)/0x10000; };
+  const arr=pool.slice();
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  return arr.slice(0, n);
+}
+function buildBackstageLayout(){
+  const c=G.car, me=myPromo();
+  const roster = houseRoster(me.id);
+  const worldCh = G.world && G.world.champions && G.world.champions[me.id]
+                  && G.world.champions[me.id].world && G.world.champions[me.id].world.holder;
+  const secCh   = G.world && G.world.champions && G.world.champions[me.id]
+                  && G.world.champions[me.id].secondary && G.world.champions[me.id].secondary.holder;
+  const rival   = c.rivalId;
+  const storyId = story() && story().charId;
+  const excludeIds = new Set([worldCh, secCh, rival, storyId].filter(Boolean));
+  const seed = `${c.year}-${c.week}-${me.id}`;
+  const otherPool = roster.filter(x=>!excludeIds.has(x.id)).map(x=>x.id);
+  // Locker room takes priority so the main dressing room is never dead even on
+  // tiny indie rosters. Catering and gorilla take what's left over.
+  const locker   = backstageDeterministicPick(seed+':locker',  otherPool, Math.min(4, otherPool.length));
+  const cateringPool = otherPool.filter(x=>!locker.includes(x));
+  const catering = backstageDeterministicPick(seed+':cater',   cateringPool, Math.min(3, cateringPool.length));
+  const gorillaPool = cateringPool.filter(x=>!catering.includes(x));
+  const gorilla  = backstageDeterministicPick(seed+':gor',     gorillaPool, Math.min(1, gorillaPool.length));
+  const rooms = [
+    { id:'locker',  name:'Locker Room', icon:'★', blurb:'The main dressing room. A few tables, tape, and everyone half-listening.', occ:locker },
+    { id:'catering',name:'Catering',    icon:'🍽', blurb:'Cheap coffee, a warm sandwich, and the people who linger.', occ:catering },
+    { id:'gm',      name:"GM's Office", icon:'✎', blurb:`${bookerFor(me.id).name}'s door is open. Take the meeting.`, occ:[], gm:true },
+    { id:'champ',   name:"Champ's Room",icon:'♛', blurb:'A closed door with a name on it, and a belt on the other side.', occ:worldCh?[worldCh]:[] },
+    { id:'sec',     name:'Mid-Card Room',icon:'♜', blurb:'Not the main event, not opening. Everyone in there wants the next step.', occ:secCh?[secCh]:[] },
+    { id:'story',   name:storyId?'Their Camp':'Empty Room', icon:'✱', blurb:storyId?'Your story is in there.':'Nobody, at least right now.', occ:storyId?[storyId]:[] },
+    { id:'parking', name:'Parking Lot', icon:'▤', blurb:'Where things happen when they are not supposed to happen inside.', occ:rival?[rival]:[] },
+    { id:'gorilla', name:'Gorilla Position', icon:'▶', blurb:'One curtain away from the ring. Somebody is about to walk through it.', occ:gorilla },
+  ];
+  return rooms;
+}
+function renderBackstage(){
+  const el=$('backstageBody'); if(!el) return;
+  const c=G.car;
+  const st = backstageState();
+  const budget = backstageBudget();
+  const left = Math.max(0, budget - st.used);
+  const cause = (!c.booking || c.booking.type==='dark')
+    ? '<p class="hint">No show tonight, but the halls are still open. What you do here echoes into next week\'s booking.</p>'
+    : '<p class="hint">You are booked tonight. Whatever you do back here goes with you through the curtain.</p>';
+  const budgetChip = `<div class="bs-budget">
+    <span class="bs-budget-k">Visits left</span>
+    <span class="bs-budget-v">${left}<span class="hint" style="font-size:11px;"> / ${budget}</span></span>
+    <span class="hint" style="margin-left:auto;">Weekly. Standing 70+ earns a third.</span>
+  </div>`;
+  const rooms = st.layout;
+  const roomHTML = rooms.map(r=>{
+    const bodies = r.occ.map(id=>{
+      const ch = charById(id); if(!ch) return '';
+      const isDone = st.done[id];
+      const rl = rel(id);
+      const rlLab = relLabel(rl);
+      return `<div class="bs-body ${isDone?'done':''}" onclick="backstageOpen('${id}')" title="Talk to ${ch.name}">
+        <div class="bs-av">${wrestlerSVG(ch.look,{frame:'head'})}</div>
+        <div class="bs-nm">${ch.name}</div>
+        <div class="bs-rel" style="color:${rlLab.c}">${rlLab.t}</div>
+      </div>`;
+    }).join('');
+    const gmBtn = r.gm ? `<div class="bs-body" onclick="backstageOpenGM()">
+        <div class="bs-av bs-gm-av">${pico('microphone',24)}</div>
+        <div class="bs-nm">${bookerFor(myPromo().id).name}</div>
+        <div class="bs-rel" style="color:var(--gold)">Booker</div>
+      </div>` : '';
+    const empty = (!bodies && !gmBtn) ? `<div class="hint" style="padding:14px 8px;text-align:center;">Quiet in here.</div>` : '';
+    return `<div class="bs-room" data-room="${r.id}">
+      <div class="bs-room-h"><span class="bs-room-ico">${r.icon}</span> <b>${r.name}</b></div>
+      <div class="bs-room-b">${r.blurb}</div>
+      <div class="bs-occ">${gmBtn}${bodies}${empty}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `${cause}${budgetChip}<div class="bs-floor">${roomHTML}</div>`;
+}
+/* Open the interaction menu for a wrestler in the backstage. */
+function backstageOpen(charId){
+  const ch = charById(charId); if(!ch) return;
+  const c=G.car, st=backstageState();
+  const left = Math.max(0, backstageBudget()-st.used);
+  const R = rel(charId);
+  const storyLive = story() && story().charId===charId;
+  const allyLive  = allyOf(charId);
+  const teamMate  = myTeam() && myTeam().mate && myTeam().mate.id===charId;
+  const canMore   = left>0 && !st.done[charId];
+  const opts = [];
+  opts.push({id:'promo',    l:'Cut a promo on them',
+             d: storyLive ? 'Escalate the feud one notch tonight.' : 'Say something that starts a story.',
+             p: 0.72 + (c.standing-50)*0.004});
+  opts.push({id:'challenge',l:'Challenge them for next week',
+             d:'Ask the office to put you in the ring with them.',
+             p: 0.55 + (c.standing-50)*0.006});
+  opts.push({id:'insult',   l:'Insult them',
+             d:'Turn the heat up. They will not forget it.',
+             p: 0.85});
+  opts.push({id:'compliment', l:'Bury the hatchet',
+             d: R.heat>30 ? 'Try to cool the heat between you.' : 'Nod, shake hands, mean it.',
+             p: 0.70});
+  if(!teamMate && !myTeam()){
+    opts.push({id:'tag', l:'Ask to form a team',
+             d: R.respect>=45 ? 'They know your work. Pitch it.' : 'A long shot at your level, but you have to ask.',
+             p: 0.28 + Math.max(0,R.respect-35)*0.010});
+  }
+  opts.push({id:'spar', l:'Run through a spot',
+             d:'Ten minutes in the ring after the show. It sharpens both of you.',
+             p: 0.80});
+  opts.push({id:'brawl',l:'Start a brawl',
+             d:'A camera happens by. This gets on the news either way.',
+             p: 0.95});
+  const disabled = !canMore;
+  const body = `<div class="bs-menu">
+    <div class="bs-menu-h">
+      <div class="bs-menu-av">${wrestlerSVG(ch.look,{frame:'head'})}</div>
+      <div>
+        <div class="bs-menu-nm">${ch.name}${ch.nick?` <span class="hint">"${ch.nick}"</span>`:''}</div>
+        <div class="hint" style="font-size:11px;">${relLabel(R).t}${R.matches?` · ${R.wins}-${R.losses} against you`:''}${storyLive?' · <b style="color:var(--gold)">your feud</b>':''}${teamMate?' · <b style="color:var(--gold)">your partner</b>':''}${allyLive?' · <b style="color:var(--gold)">your ally</b>':''}</div>
+      </div>
+    </div>
+    ${disabled?`<p class="hint" style="color:#f0907f;">You have no visits left this week, or you already talked to them.</p>`:''}
+    <div class="bs-optlist">${opts.map(o=>`
+      <div class="bs-opt ${disabled?'off':''}" onclick="${disabled?'':`backstageInteract('${charId}','${o.id}')`}">
+        <div class="bs-opt-h"><b>${o.l}</b><span class="hint">${Math.round(o.p*100)}% land</span></div>
+        <div class="bs-opt-d">${o.d}</div>
+      </div>`).join('')}</div>
+  </div>`;
+  modal(`Backstage`, body, [{label:'Walk on',cls:'ghost',fn:closeModal}]);
+}
+/* The GM's office: a distinct menu built around bookings, not brawls. */
+function backstageOpenGM(){
+  const me=myPromo(), bk=bookerFor(me.id);
+  const c=G.car;
+  const st=backstageState();
+  const left = Math.max(0, backstageBudget()-st.used);
+  const disabled = left<=0 || st.done['__gm__'];
+  const worldChId = G.world.champions[me.id]&&G.world.champions[me.id].world&&G.world.champions[me.id].world.holder;
+  const worldCh = worldChId ? charById(worldChId) : null;
+  const opts = [];
+  if(worldCh && !c.titleShot && c.standing>=55 && gimHeat()>=45){
+    opts.push({id:'gm_shot', l:`Demand a shot at ${worldCh.name}`, d:'Take the ask in the room. They respect a wrestler who does.', p:0.35 + (c.standing-55)*0.008});
+  }
+  opts.push({id:'gm_time',  l:'Ask for more room in your matches', d:'A longer runway makes for a better story.', p:0.55});
+  opts.push({id:'gm_push',  l:'Pitch yourself as the next act',    d:'Say the words. They know what you are asking.', p:0.32});
+  opts.push({id:'gm_gimmick',l:'Pitch a wrinkle for your character', d:'A small shift the crowd can see. They are watching too.', p:0.45});
+  const body = `<div class="bs-menu">
+    <div class="bs-menu-h">
+      <div class="bs-menu-av bs-gm-av">${pico('microphone',30)}</div>
+      <div>
+        <div class="bs-menu-nm">${bk.name}</div>
+        <div class="hint" style="font-size:11px;">${bk.voice}</div>
+      </div>
+    </div>
+    ${disabled?`<p class="hint" style="color:#f0907f;">Not now. You are out of visits this week.</p>`:''}
+    <div class="bs-optlist">${opts.map(o=>`
+      <div class="bs-opt ${disabled?'off':''}" onclick="${disabled?'':`backstageAskGM('${o.id}')`}">
+        <div class="bs-opt-h"><b>${o.l}</b><span class="hint">${Math.round(o.p*100)}% they go for it</span></div>
+        <div class="bs-opt-d">${o.d}</div>
+      </div>`).join('')}</div>
+  </div>`;
+  modal(`In the office`, body, [{label:'Walk on',cls:'ghost',fn:closeModal}]);
+}
+function backstageAskGM(id){
+  closeModal();
+  const c=G.car, me=myPromo();
+  const st=backstageState();
+  const map = {
+    gm_shot:0.35 + (c.standing-55)*0.008, gm_time:0.55, gm_push:0.32, gm_gimmick:0.45
+  };
+  const p = clamp(map[id]||0.4, 0.05, 0.95);
+  st.used += 1; st.done['__gm__'] = true;
+  const won = rnd()<p;
+  if(won){
+    if(id==='gm_shot'){
+      const chId = G.world.champions[me.id].world.holder;
+      const bn = beltNameByPromo(me.id,'world');
+      const _npv=(function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      c.titleShot={promoId:me.id, from:'went into the office and asked', y:c.year, w:c.week, kind:'world',
+                   belt:bn, targetId:chId, dueBy:{y:_npv.year, w:_npv.week}};
+      pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>The office booked it.</b> A shot at the ${bn} at the next PPV.`});
+    }
+    if(id==='gm_time'){ c._nextBookBonus = (c._nextBookBonus||0)+0.20; pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>More runway.</b> Your next match gets extra time.`}); }
+    if(id==='gm_push'){ c.standing=clamp(c.standing+5); pushInboxItem({ico:pico('graphUp',18),sev:'good',txt:`<b>They heard you.</b> Standing up.`}); }
+    if(id==='gm_gimmick' && G.w.gimmick){ G.w.gimmick.heat=clamp(G.w.gimmick.heat+8,0,100); pushInboxItem({ico:pico('star',18),sev:'good',txt:`<b>A wrinkle to try.</b> Gimmick heat up.`}); }
+    toast('They went for it');
+  } else {
+    c.standing=clamp(c.standing-(id==='gm_shot'?4:2));
+    pushInboxItem({ico:pico('clipboard',18),sev:'bad',txt:`<b>Not tonight.</b> ${bookerFor(me.id).name} passed.`});
+    toast('They passed');
+  }
+  save(); renderBackstage();
+}
+function backstageInteract(charId, verb){
+  closeModal();
+  const ch=charById(charId); if(!ch) return;
+  const c=G.car, w=G.w, st=backstageState();
+  st.used += 1; st.done[charId] = true;
+  const R = rel(charId);
+  const rollP = (base) => clamp(base + (c.standing-50)*0.004, 0.05, 0.98);
+  let msg='';
+  let sev='good';
+  if(verb==='promo'){
+    const p = rollP(0.72);
+    if(rnd()<p){
+      R.heat=clamp(R.heat+14,0,100);
+      if(!story() && !c.rivalId){ startStory(charId, `you cut a backstage promo they cannot let slide.`); msg=`Story started with ${ch.name}. This one is live.`; }
+      else if(story() && story().charId===charId){ advanceStory(); msg=`Feud with ${ch.name} escalates.`; }
+      else { msg=`Words landed. ${ch.name} is warmer on you and hotter about it.`; }
+      if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+3,0,100);
+    } else { msg=`It fell flat. ${ch.name} laughs it off.`; sev='bad'; c.standing=clamp(c.standing-1); }
+  } else if(verb==='challenge'){
+    const p = rollP(0.55);
+    if(rnd()<p){
+      c._pendingNext = {kind:'callout', charId};
+      msg=`${ch.name} is on next week's card. The office likes you asking.`;
+      c.standing=clamp(c.standing+1);
+    } else { msg=`${ch.name} shrugs you off. "Book yourself, kid."`; sev='bad'; c.standing=clamp(c.standing-1); }
+  } else if(verb==='insult'){
+    R.heat=clamp(R.heat+20,0,100);
+    if(!story() && !c.rivalId){ startStory(charId, `you got personal in the hallway.`); msg=`Story started. ${ch.name} is not going to let this go.`; }
+    else { msg=`${ch.name} is going to remember that.`; }
+    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+2,0,100);
+  } else if(verb==='compliment'){
+    const p = rollP(0.70);
+    if(rnd()<p){
+      R.respect=clamp(R.respect+10,0,100);
+      R.heat=clamp(R.heat-8,0,100);
+      msg=`${ch.name} appreciates it. Respect up.`;
+    } else { msg=`${ch.name} nods, walks past. No dice.`; sev='bad'; }
+  } else if(verb==='tag'){
+    const p = rollP(0.28 + Math.max(0,R.respect-35)*0.010);
+    if(rnd()<p){
+      const teamName = `${w.name.split(' ')[0]} & ${ch.name.split(' ')[0]}`;
+      formTeam(charId, teamName);
+      msg=`You have a team. <b>${teamName}</b>, effective tonight.`;
+    } else { msg=`${ch.name} is not looking for a partner right now.`; sev='bad'; }
+  } else if(verb==='spar'){
+    const p = rollP(0.80);
+    if(rnd()<p){
+      G.w.xp = (G.w.xp||0) + 12;
+      R.respect=clamp(R.respect+6,0,100);
+      c._sparredWith = charId;
+      msg=`Sharp session. XP earned. ${ch.name} respects you a little more.`;
+    } else { msg=`Awkward reps. Nothing sticks.`; sev='bad'; }
+  } else if(verb==='brawl'){
+    const brawlWin = rnd()<0.55;
+    R.heat=clamp(R.heat+34,0,100);
+    if(!story() && !c.rivalId){ startStory(charId, `you swung on them in the parking lot. Someone had a camera.`); }
+    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+6,0,100);
+    if(brawlWin){
+      c.standing=clamp(c.standing-4);   // brawls always cost the office
+      msg=`You had the better of it before security pulled you off. Feud is live, gimmick is hot, and the office is angry.`;
+    } else {
+      c.standing=clamp(c.standing-6);
+      c.cond=clamp(c.cond-8);
+      msg=`They got the better of you. Bruised, filmed, and the office wants to see you.`;
+      sev='bad';
+    }
+    if(typeof newsPush==='function') newsPush({ico:pico('impact',14),cat:'backstage',
+      text:`<b>Backstage brawl.</b> ${G.w.name} and ${ch.name} had to be pulled apart in the parking lot.`});
+    // Small chance of injury
+    if(rnd()<0.10 && typeof takeInjury==='function'){ takeInjury({part:brawlWin?'Ribs':'Head', reason:'the brawl'}); }
+  }
+  pushInboxItem({ico:pico('microphone',18),sev,txt:`<b>Backstage.</b> ${msg}`});
+  save();
+  renderBackstage();
+}
+
+/* ============================================================
+   SEGMENTS: dialogue scenes before the match
+   ------------------------------------------------------------
+   SD SYM's Season Mode is built on cutscene segments: someone
+   walks into your dressing room, someone catches you in the
+   hall, someone challenges you at gorilla. Each is a 2-4
+   choice branch, and your choices route standing, heat and
+   story. We stage one before every match unless you already
+   played one this week. Segments are keyed to state so what
+   fires makes sense: a champion visits you if you have a shot
+   in hand, your rival ambushes you if a story is live, an
+   interviewer talks to you on a slow week.
+   ============================================================ */
+const SEGMENT_LIB = [
+  // Champion pops in when you have a shot in hand at them
+  { id:'champVisit', tag:'CHAMPION VISIT',
+    when: (c) => c.titleShot && c.titleShot.targetId && charById(c.titleShot.targetId),
+    stage: (c) => { const ch=charById(c.titleShot.targetId); return {who:ch,
+      line:`${ch.name} pushes the curtain open. The belt is on their shoulder. "Hope you're ready to give it back to me on Sunday."`}; },
+    opts: (c,who) => [
+      { t:'"You brought it here so I would not have to walk far."',
+        eff:{ heat:+18, standing:+2, reactionBoost:true }, note:'Cool as ice. The room hears it.' },
+      { t:`"I don't want it back. I want to take it."`,
+        eff:{ heat:+22, standing:+1, gimHeat:+4 }, note:'The right words in the right room.' },
+      { t:'Do not look up from taping your wrists.',
+        eff:{ heat:+10, standing:+3 }, note:'They walked out first.' },
+      { t:'Stand up and step to them.',
+        eff:{ heat:+28, standing:-2, cond:-3 }, note:'Almost came to blows. Almost.' },
+    ] },
+  // Rival ambushes you when the story is live
+  { id:'rivalAmbush', tag:'AMBUSH',
+    when: (c) => { const s=story(); return s && s.charId && charById(s.charId); },
+    stage: (c) => { const ch=charById(story().charId); return {who:ch,
+      line:`${ch.name} shoves you into the wall as you round the corner. Cameras appear from nowhere.`}; },
+    opts: (c,who) => [
+      { t:'Shove them right back.',
+        eff:{ heat:+22, cond:-4, gimHeat:+4, adv:1 }, note:'Now it is a fight.' },
+      { t:'Do not react. Smile.',
+        eff:{ heat:+14, standing:+3, reactionBoost:true }, note:'The best kind of heel move.' },
+      { t:'Cut a promo on the spot.',
+        eff:{ heat:+18, gimHeat:+6, adv:1 }, note:'They handed you the mic and you took it.' },
+      { t:'Get security.',
+        eff:{ heat:+6, standing:-3 }, note:'The room quietened. The story cooled a little.' },
+    ] },
+  // The interviewer catches you in the hall
+  { id:'interviewer', tag:'INTERVIEW',
+    when: (c) => true,
+    stage: (c) => ({who:null,
+      line:`A backstage interviewer steps into your path with a microphone. "A quick word before your match?"`}),
+    opts: (c,who) => [
+      { t:'Talk about the match ahead.',
+        eff:{ standing:+2, gimHeat:+3 }, note:'Clean, professional, on point.' },
+      { t:'Cut a promo on the whole locker room.',
+        eff:{ heatAll:+4, gimHeat:+8, standing:-1 }, note:'Every person in that room heard it.' },
+      { t:'Refuse to answer. Walk past.',
+        eff:{ standing:-2, gimHeat:+2, reactionBoost:true }, note:'The room noticed the walk.' },
+      { t:'Talk about yourself, at length.',
+        eff:{ gimHeat:+5, standing:-1 }, note:'A lot of your face on camera.' },
+    ] },
+  // GM warns you (low standing)
+  { id:'gmWarning', tag:'A WORD FROM THE OFFICE',
+    when: (c) => (c.standing||50) < 45,
+    stage: (c) => ({who:null,
+      line:`${bookerFor(myPromo().id).name} stops you at gorilla. "We need to talk about the direction. Give me a great match tonight or we have a problem."`}),
+    opts: (c,who) => [
+      { t:'"I hear you. It will be there."',
+        eff:{ standing:+3 }, note:'They liked the answer.' },
+      { t:'"I have been carrying this show for weeks."',
+        eff:{ standing:-4, gimHeat:+4 }, note:'That played worse than you thought.' },
+      { t:'Say nothing. Nod.',
+        eff:{ standing:+1 }, note:'They accepted it.' },
+    ] },
+  // Ally pulls you aside
+  { id:'allyPep', tag:'A FRIEND',
+    when: (c) => (G.car.allies||[]).length>0,
+    stage: (c) => { const a=(G.car.allies||[])[0]; const ch=a?charById(a.id):null; return {who:ch,
+      line:ch?`${ch.name} catches you at your locker. "Whatever tonight is, you have got it. I mean it."`:''}; },
+    opts: (c,who) => [
+      { t:'"Thanks. Watch my back out there."',
+        eff:{ standing:+1, cond:+4, allyLoyalty:{id:who?who.id:null, d:+6} }, note:'They will be watching.' },
+      { t:'"I know."',
+        eff:{ gimHeat:+3 }, note:'They laughed.' },
+      { t:'Grip their shoulder, no words.',
+        eff:{ cond:+3, allyLoyalty:{id:who?who.id:null, d:+8} }, note:'A moment. Then business.' },
+    ] },
+  // Champion sends a warning through a lackey (mid-standing, no shot in hand)
+  { id:'lackeyMessage', tag:'A MESSAGE',
+    when: (c) => !c.titleShot && (c.standing||50) >= 50,
+    stage: (c) => { const roster=houseRoster(myPromo().id); const pick=roster[Math.floor(rnd()*roster.length)]; return {who:pick,
+      line:pick?`${pick.name} taps your shoulder. "Word from the champ: stay in your lane."`:''}; },
+    opts: (c,who) => [
+      { t:'"Tell them I am changing lanes."',
+        eff:{ heat:+16, gimHeat:+5 }, note:'The message will get back.' },
+      { t:'Say nothing. Just smile.',
+        eff:{ heat:+10, standing:+2 }, note:'Cool.' },
+      { t:'"Which champ?"',
+        eff:{ heat:+12, gimHeat:+7 }, note:'Room-clearer.' },
+    ] },
+  // Young wrestler asks for a spot (high standing)
+  { id:'youngAsk', tag:'A ROOKIE',
+    when: (c) => (c.standing||50) >= 55,
+    stage: (c) => { const roster=houseRoster(myPromo().id).filter(x=>(x.over||55)<50); const pick=roster[Math.floor(rnd()*Math.max(1,roster.length))]; return {who:pick,
+      line:pick?`A young ${pick.name} catches you. "If you ever need someone to work with, I'm in."`:''}; },
+    opts: (c,who) => [
+      { t:'"Meet me at 11. We\'ll run a spot."',
+        eff:{ standing:+2, respect:{id:who?who.id:null,d:+15} }, note:'You made a friend for life.' },
+      { t:'"I\'ll think about it."',
+        eff:{}, note:'You did not.' },
+      { t:'"Not now, kid."',
+        eff:{ standing:-1, respect:{id:who?who.id:null,d:-6} }, note:'They heard it.' },
+    ] },
+];
+function segmentsPlayedThisWeek(){
+  const c=G.car;
+  return c._segWeekKey === `${c.year}-${c.week}` && c._segPlayed;
+}
+function markSegmentPlayed(){
+  const c=G.car; c._segWeekKey = `${c.year}-${c.week}`; c._segPlayed = true;
+}
+function pickSegment(){
+  const c=G.car;
+  const pool = SEGMENT_LIB.filter(s=>{ try{ return s.when(c); }catch(_){ return false; } });
+  if(!pool.length) return null;
+  // Deterministic pick per week so the same load shows the same segment
+  const seed = `${c.year}-${c.week}-seg`;
+  let h=2166136261>>>0;
+  for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); }
+  const idx = (h>>>0) % pool.length;
+  return pool[idx];
+}
+function playSegment(seg, onDone){
+  const c=G.car;
+  let stage; try{ stage = seg.stage(c); }catch(_){ stage = {who:null,line:''}; }
+  const who = stage.who;
+  const opts = seg.opts(c, who) || [];
+  const avatar = who ? `<div class="seg-av">${wrestlerSVG(who.look,{frame:'head'})}</div>` : `<div class="seg-av seg-av-narr">${pico('microphone',30)}</div>`;
+  const body = `<div class="segblock">
+    <div class="seg-tag">${seg.tag}</div>
+    <div class="seg-head">${avatar}<div class="seg-line">${stage.line||''}</div></div>
+    <div class="seg-optlist">${opts.map((o,i)=>`
+      <div class="seg-opt" data-i="${i}">
+        <div class="seg-opt-t">${o.t}</div>
+        <div class="seg-opt-n hint">${o.note||''}</div>
+      </div>`).join('')}</div>
+  </div>`;
+  // Fallback "Walk past" always available so a stranded flow can always reach
+  // the ring. Segment is not marked played until we resolve one way or another.
+  const walkPast = () => { markSegmentPlayed(); closeModal(); if(onDone) onDone(); };
+  modal(`Backstage`, body, [{label:'Walk past',cls:'ghost',fn:walkPast}]);
+  setTimeout(()=>{
+    document.querySelectorAll('#modalBody .seg-opt').forEach(el=>{
+      el.onclick = ()=>{
+        const i = +el.dataset.i;
+        const o = opts[i];
+        applySegmentEffect(o.eff||{}, who);
+        markSegmentPlayed();
+        const note = o.note ? `<p class="hint" style="margin-top:8px;">${o.note}</p>` : '';
+        modal(`Backstage`, `<div class="segblock">
+          <div class="seg-tag">${seg.tag}</div>
+          <div class="seg-head">${avatar}<div class="seg-line">${o.t}</div></div>
+          ${note}
+        </div>`, [{label:'On to the match',cls:'primary',fn:()=>{ closeModal(); if(onDone) onDone(); }}]);
+      };
+    });
+  }, 30);
+}
+function applySegmentEffect(eff, who){
+  const c=G.car, w=G.w;
+  if(eff.standing) c.standing=clamp((c.standing||50)+eff.standing);
+  if(eff.cond)     c.cond=clamp((c.cond||100)+eff.cond, 0, 100);
+  if(eff.gimHeat && w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+eff.gimHeat,0,100);
+  if(eff.reactionBoost) c.reaction=clamp((c.reaction||c.pop)+3, 0, 100);
+  if(eff.heat && who){ const R=rel(who.id); R.heat=clamp(R.heat+eff.heat,0,100); }
+  if(eff.heatAll){
+    // Small heat bump against a random handful of the locker room
+    const roster = houseRoster(myPromo().id).slice(0, 6);
+    roster.forEach(x=>{ const R=rel(x.id); R.heat=clamp(R.heat+eff.heatAll,0,100); });
+  }
+  if(eff.adv){ if(story()) advanceStory(); }
+  if(eff.allyLoyalty && eff.allyLoyalty.id) nudgeLoyalty(eff.allyLoyalty.id, eff.allyLoyalty.d||0);
+  if(eff.respect && eff.respect.id){ const R=rel(eff.respect.id); R.respect=clamp(R.respect+(eff.respect.d||0),0,100); }
+}
+/* Show a segment before the match if one is available and one hasn't already
+   played this week. Bound to the "Head To The Ring" button flow so it feels
+   like part of walking out to gorilla. */
+function maybeShowPreMatchSegment(onDone){
+  if(segmentsPlayedThisWeek()){ onDone(); return; }
+  const seg = pickSegment();
+  if(!seg){ onDone(); return; }
+  playSegment(seg, onDone);
+}
+
 function showLineage(promoId, kind){
   const p=promoById(promoId); if(!p) return;
   const bn=(beltsForPromo(promoId)||{})[kind]||kind;
