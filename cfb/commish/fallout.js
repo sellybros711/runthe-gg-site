@@ -547,6 +547,67 @@
       effects: { tradition: 1.2, labour: 0.8 },
       aimed: { Fans: { tradition: 1.4 }, Players: { labour: 1 } },
     },
+    /* ---------------- the venues and the names on them ---------------- */
+    {
+      id: 'sponsor-collapse',
+      weight: 3,
+      when: function (w, sit) { return sit.soldCount > 0; },
+      head: 'The sponsor has stopped existing',
+      body: function (ctx) {
+        return 'Not gone quiet. Stopped existing. The chief executive is unreachable, the '
+          + 'accounts are frozen, and the name is on eleven thousand square feet of signage '
+          + 'this sport has already installed. Nobody in this office can work out whether the '
+          + 'money that arrived in March is money this sport still has.';
+      },
+      effects: { money: -2, exposure: -1.8, cost: 1.2 },
+      aimed: { Presidents: { money: -1.8, exposure: -1.6 }, Fans: { tradition: 1 } },
+    },
+    {
+      id: 'the-roof',
+      weight: 2,
+      when: function (w, sit) { return !!sit.titleVenue; },
+      head: 'The roof did not close',
+      body: function (ctx) {
+        var v = ctx.sit && ctx.sit.titleVenue;
+        return 'A test run at ' + ((v && v.name) || 'the host stadium') + ' stopped the roof '
+          + 'two thirds of the way across and left it there for nine hours. The building says '
+          + 'it is a sensor. The building has said it is a sensor twice before. There is a '
+          + 'forecast for the week of the game and everybody in this office has now looked at '
+          + 'it more than once.';
+      },
+      effects: { exposure: -1.4, cost: 0.8 },
+      aimed: { Presidents: { exposure: -1.4 }, Networks: { inventory: -0.8 } },
+    },
+    {
+      id: 'city-parade',
+      weight: 2,
+      when: function (w, sit) { return !!sit.titleVenue; },
+      head: 'The host city has planned a parade',
+      body: function (ctx) {
+        var v = ctx.sit && ctx.sit.titleVenue;
+        return ((v && v.city) || 'The host city') + ' has committed to a parade, a fan '
+          + 'festival, a week of free concerts and a light display on four bridges, none of '
+          + 'which was in the bid and all of which they are paying for. Their tourism board '
+          + 'has decided this is the week they become the city that does this. It is going to '
+          + 'be enormous.';
+      },
+      effects: { inventory: 1.4, tradition: 1, money: 0.6 },
+      aimed: { Fans: { tradition: 1.6 }, Networks: { inventory: 1.4 } },
+    },
+    {
+      id: 'signage',
+      weight: 2,
+      when: function (w, sit) { return sit.soldCount > 0; },
+      head: 'The signage went up with the wrong name on it',
+      body: function (ctx) {
+        return 'Every banner in the building, printed six weeks ago against a version of the '
+          + 'deal that changed in the second week of negotiation. The sponsor is furious, the '
+          + 'printer is insolvent, and a photograph of a man on a cherry picker taking down a '
+          + 'forty foot letter has been the most shared image in this sport for two days.';
+      },
+      effects: { exposure: -1, money: -0.6, tradition: 0.8 },
+      aimed: { Presidents: { exposure: -1.2 }, Fans: { tradition: 1.2 } },
+    },
     {
       id: 'quiet',
       weight: 5,

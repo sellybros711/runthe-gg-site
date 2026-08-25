@@ -275,6 +275,27 @@
       return (sit.confReentry[c] || sit.reentry) === 'open';
     });
 
+    /* ---- WHERE THE BIG GAMES ARE AND WHOSE NAME IS ON THEM ----
+       Ids, plus the resolved records when venues.js is loaded, so an item can say "Pasadena"
+       rather than "pas" without every one of them looking it up again. */
+    var ven = (world && world.venues) || {};
+    var brand = (world && world.brand) || {};
+    var V = root.PS_CFB_VENUES
+      || (typeof require === 'function' ? require('./venues.js') : null);
+    sit.titleSite = ven.title || null;
+    sit.titleVenue = V && ven.title ? V.venue(ven.title) : null;
+    sit.lastTitleSite = ven.lastTitle || null;
+    sit.openers = (ven.openers || []).slice();
+    sit.playoffSponsor = brand.playoff || null;
+    sit.patchSponsor = brand.patch || null;
+    sit.bowlSponsors = Object.assign({}, brand.bowls || {});
+    sit.sold = [brand.playoff, brand.patch, brand.trophy]
+      .concat(Object.keys(brand.bowls || {}).map(function (k) { return brand.bowls[k]; }))
+      .filter(Boolean);
+    /* HOW MUCH OF THE SPORT HAS SOMEBODY'S NAME ON IT, which is the number the argument is
+       really about and which no single field could carry. */
+    sit.soldCount = sit.sold.length;
+
     sit.audienceUp = sit.trend != null && sit.trend >= 0.06;
     sit.audienceDown = sit.trend != null && sit.trend <= -0.06;
     sit.standing = world && world.meters ? world.meters.standing : null;

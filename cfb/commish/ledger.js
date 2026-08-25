@@ -144,6 +144,38 @@
         targeting: 'strict',
       },
 
+      /* ---- WHERE THE BIG GAMES ARE PLAYED, AND WHOSE NAME IS ON THEM ----
+         Ids into venues.js. Null means nobody has decided yet, which is a real state in year
+         one and reads as "wherever it was going anyway" rather than as a missing value.
+
+         The mode could move a kickoff and not a game: it had a setting for campus against
+         neutral sites and no idea what a neutral site IS. See venues.js. */
+      venues: {
+        /* The national title game. The single biggest thing this office places in a year. */
+        title: null,
+        /* Week one neutral site kickoffs, as a list of venue ids. */
+        openers: [],
+        /* What the last one was, so a bid cycle does not offer the incumbent by default. */
+        lastTitle: null,
+      },
+      brand: {
+        /* Sponsor ids from venues.js. The playoff's title sponsor, the trophy, and a jersey
+           patch, which are three separate arguments and three separate cheques. */
+        playoff: null,
+        trophy: null,
+        patch: null,
+        /* Per bowl, bowl id to sponsor id, empty meaning unsold.
+
+           THE KEYS ARE LISTED RATHER THAN GROWN, because applyEdit throws on a path the world
+           does not have and that guard is the only thing standing between a ruling and doing
+           nothing at all. An empty map would make every `brand.bowls.rose` a thrown error and
+           every bowl sponsorship a ruling that could not be made.
+
+           These are the six that host a quarterfinal, from venues.js. The two lists have to
+           agree and nothing here can check that, so test_venues does. */
+        bowls: { rose: '', sugar: '', orange: '', fiesta: '', cotton: '', peach: '' },
+      },
+
       posture: {
         /* 'banned' | 'permitted' | 'partnered' */
         gambling: 'permitted',

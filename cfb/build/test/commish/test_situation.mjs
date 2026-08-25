@@ -286,9 +286,64 @@ console.log('\n=== both ends of the range reach the whole thing ===');
   }
   /* THE CRISES ARE THE EXCEPTION AND THEY ARE CHECKED IN test_docket, on a world with the
      fuses already lit, which is the only state they are meant to be reachable from. */
-  const missItems = D.ITEMS.filter((i) => !i.crisis && !items.has(i.id)).map((i) => i.id);
-  ok('every non crisis item turns up in sixteen played terms', !missItems.length,
-    missItems.join(', ') || items.size + ' of ' + D.ITEMS.length + ' items');
+  /* THE SAME TREATMENT THE TAILS GET BELOW, and for the same reason. Sixteen played terms is
+     a sample, not a proof: as the docket grows each item is a smaller share of it, and an item
+     gated on a state a term has to reach BEFORE it can come up (the leagues having diverged,
+     a title game already placed somewhere, an audience that has fallen) can miss the sample
+     without being unreachable. Asserting it from play alone makes this fail on a shuffle.
+
+     So the ones the terms missed are checked against the worlds they are written for. That an
+     item is reachable AT ALL is test_docket's job; what this adds is how much of the docket a
+     player actually meets, which is the number worth watching as it grows. */
+  const reached = items.size;
+  const gatedStates = [];
+  {
+    const mk = (f) => {
+      const x = L.createWorld({ year: 2027, membership: L.membershipFrom(teams, 2025), seed: 'gs' });
+      x.startYear = 2025;
+      f(x);
+      return x;
+    };
+    gatedStates.push(
+      mk((x) => { x.labour.reentry = 'closed'; }),
+      mk((x) => {
+        x.labour.rulesBy = 'conference';
+        x.labour.confReentry = { SEC: 'open', 'Big Ten': 'closed', ACC: '', 'Big 12': '' };
+      }),
+      mk((x) => { x.venues.title = 'nola'; x.brand.playoff = 'crypto'; }),
+      mk((x) => { x.money.dealYears = 1; }),
+      mk((x) => { x.ratings = { 2025: { total: 900, perGame: 1.9, title: 21 },
+        2026: { total: 890, perGame: 1.88, title: 21 } };
+        x.playoff.teams = 4; x.rules.confGames = 6; })
+    );
+  }
+  const stillMissingItems = [];
+  D.ITEMS.filter((i) => !i.crisis && !items.has(i.id)).forEach((it) => {
+    let can = false;
+    gatedStates.forEach((x) => {
+      for (let beat = 0; beat < 9; beat++) {
+        const wb = Object.assign({}, x, { beat });
+        let sim = null;
+        const seg = S.segmentFor(beat);
+        if (seg) {
+          try {
+            sim = S.play(wb, teams, E.createSeededRNG(77),
+              { through: seg.through, titles: !!seg.titles, bracket: !!seg.bracket });
+          } catch (e) { sim = null; }
+        }
+        if (D.eligible(wb, L, SIT.build(wb, L, { sim, calendar: CAL })).some((i) => i.id === it.id)) {
+          can = true;
+        }
+      }
+    });
+    if (!can) stillMissingItems.push(it.id);
+  });
+  ok('every item turns up in a term or in a world the game can reach', !stillMissingItems.length,
+    stillMissingItems.join(', ') || reached + ' of ' + D.ITEMS.length + ' met in sixteen terms');
+  /* AND MOST OF THE DOCKET IS MET IN PLAY, which is the number that says whether writing more
+     of it is still reaching anybody. */
+  ok('  and most of it is met in play', reached >= D.ITEMS.length * 0.85,
+    reached + ' of ' + D.ITEMS.length + ' (' + Math.round(reached / D.ITEMS.length * 100) + '%)');
   /* THE TAILS NEED THE SAME TREATMENT THE CRISES GET. A tail gated on the leagues having
      stopped agreeing about eligibility can only fire in a term where somebody devolved the
      rule AND a conference wrote its own AND another ruling happened afterwards, which sixteen

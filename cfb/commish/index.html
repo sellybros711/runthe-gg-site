@@ -1211,15 +1211,20 @@
 
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
-<script src="ledger.js?v=4"></script>
+<script src="ledger.js?v=5"></script>
 <script src="blocs.js?v=3"></script>
-<script src="docket.js?v=6"></script>
-<script src="season.js?v=10"></script>
+<!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
+     Loaded after them it is undefined at the moment they capture it, every venue item is
+     silently ineligible forever, and the title game is worth the same wherever it is played.
+     Nothing throws. test_page asserts the modules are actually live in the browser. -->
+<script src="venues.js?v=1"></script>
+<script src="docket.js?v=7"></script>
+<script src="season.js?v=11"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
 <script src="calendar.js?v=2"></script>
-<script src="situation.js?v=2"></script>
-<script src="fallout.js?v=2"></script>
+<script src="situation.js?v=3"></script>
+<script src="fallout.js?v=3"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -2620,9 +2625,13 @@ function paintBrief(text){
    option restyles the other two, and re-dealing three cards each time somebody changes their
    mind is a fidget rather than an animation. The stagger belongs to the item turning up. */
 function paintOptions(first){
+  /* THE LABEL AND THE BODY MAY BOTH BE FUNCTIONS OF THE CAST, because an item that offers
+     four real host cities cannot have them written into the docket: which four is a question
+     about the world. See the note in docket.resolve(). */
   $('d-options').innerHTML=item.options.map((o)=>
     '<button class="opt'+(choice===o.id?' on':'')+'" data-o="'+esc(o.id)+'">'
-    +'<b>'+esc(o.label)+'</b><span class="why">'+esc(o.body)+'</span>'
+    +'<b>'+esc(D.text(o.label,cast,item,sit))+'</b>'
+    +'<span class="why">'+esc(D.text(o.body,cast,item,sit))+'</span>'
     +optionSignature(o)+'</button>').join('');
   if(first) reveal($('d-options'));
   $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
@@ -2874,7 +2883,13 @@ $('b-rule').onclick=()=>{
   bumpCareer();
   $('r-eyebrow').textContent='You ruled';
   $('r-title').textContent=D.text(item.title,cast,item,sit)+': '
-    +item.options.find((o)=>o.id===choice).label.toLowerCase();
+    +(function(){
+      /* Same rule as docket.resolve(): a written label is a sentence fragment and folds in
+         lowercase, a computed one is a proper noun and keeps its case. */
+      const o=item.options.find((x)=>x.id===choice);
+      const t=String(D.text(o.label,cast,item,sit));
+      return typeof o.label==='function'?t:t.toLowerCase();
+    })();
   $('r-head').textContent='The room';
   paintMeters($('r-meters'),world,before);
   /* NO COUNCIL HERE, ON PURPOSE. This is what happened, and the whole room answers whether

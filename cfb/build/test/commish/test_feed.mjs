@@ -280,6 +280,13 @@ console.log('\n=== a whole term, and nothing comes out empty ===');
         edit = D.resolve(item, o.id, dials, cast);
       } catch (x) { return; }
       if (!edit || !edit.effects) return;
+      /* AN ITEM THAT COULD NOT BE DEALT HERE IS NOT A CONTENT GAP. Some items build their
+         options out of a cast: which three cities are bidding, which two sponsors called.
+         Resolved on a world where the item is not eligible the cast comes back null, the
+         edit comes back empty, and the feed correctly has nothing to say about a ruling that
+         could not have been made. Skip those rather than counting them as filler. */
+      if (!Object.keys(edit.effects).length && !Object.keys(edit.set || {}).length
+        && !cast && (item.cast || typeof o.edit === 'function')) return;
       const rows = B.react(world, edit);
       const posts = F.onRuling({ rows: rows, edit: edit, year: 2025, beat: n % 9, itemId: item.id, optionId: o.id });
       count++;

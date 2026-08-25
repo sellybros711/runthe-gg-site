@@ -75,6 +75,20 @@ console.log('\n=== every item is well formed ===');
      time unless something checks. An institution speaks; a person does not. */
   const prose = JSON.stringify(D.ITEMS);
   ok('nobody is quoted by name', !/\b(commissioner|president) [A-Z][a-z]+/.test(prose));
+
+  /* AND A VOICE FITS THE BOX IT IS DRAWN IN. The desk gives a speaker two lines on a phone
+     and test_desk asserts that, but it asserts it about whichever item its walk happens to
+     land on, so a long line can sit in the docket for weeks and only fail once the shuffle
+     reaches it. Eighty-five characters is the longest line that has ever rendered in two, and
+     writing a new one at ninety-seven is not a thing to find out from a browser. */
+  const long = [];
+  D.ITEMS.forEach((it) => {
+    (it.voices || []).forEach((v) => {
+      if (String(v.say).length > 85) long.push(it.id + '/' + v.id + ' ' + v.say.length);
+    });
+  });
+  ok('  and says it in two lines', !long.length, long.slice(0, 4).join(', ')
+    || 'longest is ' + Math.max(...D.ITEMS.flatMap((it) => (it.voices || []).map((v) => v.say.length))));
 }
 
 console.log('\n=== the desk is not empty, and it is not the same every year ===');
@@ -112,6 +126,21 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
     split.labour.confReentry = { SEC: 'open', 'Big Ten': 'closed', ACC: '', 'Big 12': '' };
     const openLater = world0(); openLater.year = openLater.startYear + 2;
     doors.push(shut, win, split, openLater);
+    /* AND A SPORT THAT HAS ALREADY PLACED ITS BIG GAMES. Three of the venue items are about
+       living with a choice rather than making one: a rota to replace the auction, a host city
+       that cannot deliver what it bid. None of that exists until a title game has been placed
+       somewhere, which is one ruling away and is not the opening world. */
+    const placed = world0();
+    placed.year = placed.startYear + 1;
+    placed.venues.title = 'nola';
+    placed.venues.lastTitle = 'atl';
+    const sold = world0();
+    sold.year = sold.startYear + 1;
+    sold.venues.title = 'lv';
+    sold.brand.playoff = 'crypto';
+    sold.brand.patch = 'pickup';
+    sold.brand.bowls.rose = 'bank';
+    doors.push(placed, sold);
   }
   doors.forEach((d) => {
     for (let beat = 0; beat < L.BEATS.length; beat++) {

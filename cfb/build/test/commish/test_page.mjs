@@ -87,6 +87,44 @@ const on=(p,id)=>p.$eval('#'+id,(e)=>e.classList.contains('on')).catch(()=>false
 const tap=async(p,sel)=>{ try{ await p.click(sel,{timeout:2000}); return true; }catch(e){ return false; } };
 const txt=(p,sel)=>p.$eval(sel,(e)=>(e.textContent||'').replace(/\s+/g,' ').trim()).catch(()=>'');
 
+console.log('\n=== every module the page needs is actually loaded ===');
+{
+  /* THE FAILURE THIS EXISTS FOR IS INVISIBLE EVERYWHERE ELSE. The modules capture each other
+     off `window` at load time, so a script tag in the wrong order leaves a consumer holding
+     undefined forever: docket.js loaded before venues.js has no host sites, every venue item
+     is quietly ineligible, the title game is worth the same wherever it is played, and
+     nothing throws. Node cannot catch it either, because require() does not care about the
+     order of tags in an HTML file. Only a browser can, and only if it looks. */
+  const {p,errs}=await open(tester());
+  const mods=await p.evaluate(()=>({
+    engine:!!window.PS_CFB_ENGINE||typeof window.createSeededRNG==='function',
+    ledger:!!window.PS_CFB_LEDGER, blocs:!!window.PS_CFB_BLOCS, venues:!!window.PS_CFB_VENUES,
+    docket:!!window.PS_CFB_DOCKET, season:!!window.PS_CFB_SEASON, council:!!window.PS_CFB_COUNCIL,
+    feed:!!window.PS_CFB_FEED, calendar:!!window.PS_CFB_CALENDAR,
+    situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
+  }));
+  const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
+  ok('every module is on the page',!dead.length,dead.join(', ')||Object.keys(mods).length+' modules');
+  /* AND THE ONES THAT READ EACH OTHER GOT A REAL OBJECT rather than undefined, which is the
+     part the presence check above cannot see. */
+  const wired=await p.evaluate(()=>{
+    const D=window.PS_CFB_DOCKET, V=window.PS_CFB_VENUES;
+    if(!D||!V) return {ok:false,why:'a module is missing'};
+    /* An item whose options are real cities can only build a cast if it found the catalogue. */
+    const it=D.BY_ID['title-site'];
+    if(!it) return {ok:false,why:'no title-site item'};
+    const L=window.PS_CFB_LEDGER;
+    const w=L.createWorld({year:2025,membership:{}});
+    let c=null;
+    try{ c=D.castOf(it,w,L,()=>0.5,D.NOSIT); }catch(e){ return {ok:false,why:String(e)}; }
+    return {ok:!!(c&&c.bids&&c.bids.length===3),
+      why:c&&c.bids?c.bids.map((v)=>v.city).join(', '):'no bids'};
+  });
+  ok('  and the docket can see the host sites through the page',wired.ok,wired.why);
+  ok('  no page errors',!errs.length,errs.join(' | ')||'none');
+  await p.close();
+}
+
 console.log('\n=== the door ===');
 {
   const {p,errs}=await open(stub(false,null));

@@ -23,6 +23,9 @@
   'use strict';
 
   var L = root.PS_CFB_LEDGER || (typeof require === 'function' ? require('./ledger.js') : null);
+  /* The host sites, for pricing the one game this office actually places. Optional: a caller
+     without it gets a final worth exactly what it was worth before. */
+  var V = root.PS_CFB_VENUES || (typeof require === 'function' ? require('./venues.js') : null);
 
   /* Twelve games, which is what a regular season is. The ledger decides how many of them
      are inside the conference; the rest are bought. */
@@ -406,6 +409,15 @@
 
     if (g.round != null) {
       v *= VIEW_ROUND[Math.min(g.round, VIEW_ROUND.length - 1)];
+      /* WHERE THE FINAL IS PLAYED IS WORTH SOMETHING, and it is the only game in the year
+         this office actually places. A dome in a city people want a week in outdraws a
+         January night outdoors in a market that has never asked for one. Applied to the last
+         round only: the earlier ones are on campus or wherever the bracket put them, which is
+         `playoff.sites` and a different argument. */
+      if (g.finalRound && world.venues && world.venues.title && V) {
+        var host = V.venue(world.venues.title);
+        if (host) v *= host.draw;
+      }
     } else if (g.title) {
       v *= VIEW_TITLE;
     } else {
@@ -868,7 +880,7 @@
       round.forEach(function (g) {
         g.round = ri;
         g.viewers = viewers({ a: g.top.team, b: g.bottom.team, conf: false, week: WEEKS + 2 + ri,
-          round: ri }, world);
+          round: ri, finalRound: ri === br.rounds.length - 1 }, world);
       });
     });
     sim.field = f;

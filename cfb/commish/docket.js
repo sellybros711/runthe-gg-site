@@ -27,6 +27,12 @@
 (function () {
   'use strict';
 
+  /* THE HOST SITES AND THE SPONSORS, for the items whose options are real cities. Optional
+     and guarded at every use: a caller without venues.js loaded gets a docket with the venue
+     items quietly ineligible rather than a file that will not load. */
+  var VEN = (typeof window !== 'undefined' && window.PS_CFB_VENUES)
+    || (typeof require === 'function' ? require('./venues.js') : null);
+
   /* Beat indices, matching ledger.BEATS. Named here so an item reads as a date rather than
      as a number, and so a renumbered calendar breaks loudly in one place. */
   const WINTER = 0, PORTAL = 1, SPRING = 2, MEDIA = 3,
@@ -1497,7 +1503,7 @@
         + 'eleven minutes over and the room applauded.',
       voices: [
         { id: 'Networks', say: 'It is the highest rated thing we have ever aired in July.' },
-        { id: 'Presidents', say: 'One of our employees just accused a volunteer committee of corruption with a laser pointer.' },
+        { id: 'Presidents', say: 'An employee accused a volunteer committee of corruption with a clicker.' },
         { id: 'Fans', say: 'Slide nineteen was right and everybody knows slide nineteen was right.' },
       ],
       options: [
@@ -1907,7 +1913,7 @@
           + 'them is about to lose a championship game and go home at 12-1.'),
       voices: [
         { id: 'Networks', say: 'That title game is the most valuable single broadcast of the year. Do not touch it.' },
-        { id: 'Big Ten', say: 'Punishing our best team for playing our second best team is the format\'s problem, not ours.' },
+        { id: 'Big Ten', say: 'Punishing our best team for playing our second is a format problem.' },
         { id: 'Fans', say: 'Just let them both in. It is not complicated.' },
       ],
       options: [
@@ -2212,7 +2218,7 @@
         + 'nothing publicly and quite a lot privately. He is nineteen, he is right, and every '
         + 'commentator in the country has spent the day explaining what he owes people.',
       voices: [
-        { id: 'Players', say: 'He is protecting the only asset he has and you built the system that made it the only one.' },
+        { id: 'Players', say: 'He is protecting his only asset. You built the system that made it the only one.' },
         { id: 'Fans', say: 'A hundred thousand people bought tickets to watch him play.' },
         { id: 'Networks', say: 'The number on that broadcast just moved and it did not move up.' },
       ],
@@ -2731,7 +2737,7 @@
       voices: [
         { id: 'Players', say: 'Move it two months and half of this argument stops existing.' },
         { id: 'Presidents', say: 'We do not control that calendar. We have asked. They were polite.' },
-        { id: 'Networks', say: 'The professional draft is a bigger broadcast than anything we own. They will not move.' },
+        { id: 'Networks', say: 'Their draft is a bigger broadcast than anything we own. They will not move.' },
       ],
       options: [
         { id: 'align', label: 'Move our calendar to fit theirs',
@@ -2772,7 +2778,7 @@
         + 'Monday.',
       voices: [
         { id: 'Networks', say: 'A ready made storyline arriving in week seven. We would build a week around it.' },
-        { id: 'Fans', say: 'You cannot sign a professional in October. That is not a season, that is a transfer market.' },
+        { id: 'Fans', say: 'You cannot sign a professional in October. That is not a season.' },
         { id: 'Players', say: 'He was cut. He is allowed to work.' },
       ],
       options: [
@@ -2820,7 +2826,7 @@
       voices: [
         { id: 'Networks', say: 'He is the story of the year and the year is not close.' },
         { id: 'Group of Five', say: 'Nobody cut in August has ever turned up at one of our schools. Not one.' },
-        { id: 'Fans', say: 'He is twenty-four and he is throwing at teenagers. Yes it is great. That is the problem.' },
+        { id: 'Fans', say: 'He is twenty-four, throwing at teenagers. Yes it is great. That is the problem.' },
       ],
       options: [
         { id: 'celebrate', label: 'Put him on the trophy stage',
@@ -2942,7 +2948,7 @@
         + 'conferences that voted for it have submitted a paper asking for it to be relaxed.',
       voices: [
         { id: 'Players', say: 'Eighty. Say the number out loud in front of them and then vote again.' },
-        { id: 'Presidents', say: 'Rosters have been stable for the first time in six years and everybody in this room knows why.' },
+        { id: 'Presidents', say: 'Rosters are stable for the first time in six years and we all know why.' },
         { id: 'Fans', say: 'The football has been better. That is not nothing and it is not everything.' },
       ],
       options: [
@@ -2965,6 +2971,399 @@
             effects: { labour: 3.2, exposure: 2.6, autonomy: -1.6, tradition: -1.6 },
             aimed: { Players: { labour: 3.6 }, Presidents: { exposure: 2.2 },
               Fans: { tradition: -1.4 } } } },
+      ],
+    },
+
+    /* ================================================================================
+       WHERE THE GAMES ARE PLAYED, AND WHOSE NAME IS ON THEM.
+       The mode could move a kickoff and not a game. It had a setting for whether the playoff
+       was on campus or at neutral sites and no idea what a neutral site IS: no cities, no
+       stadiums, no roof, no January in Detroit, no bid from a tourism board with a number on
+       it. The biggest single thing a commissioner places in an ordinary year is the title
+       game and this office had no way to place it.
+
+       THE OPTIONS ON THESE ITEMS ARE REAL PLACES, drawn from venues.js by the cast, which is
+       why an option's label and body are resolved through text() the same way a title is.
+       Which four cities are bidding is a question about the world, not a thing that can be
+       written down in this file.
+
+       AND THE SPONSORS HAVE NO NAMES, on purpose. A stadium is a fact; a sponsor in this
+       game goes wrong, and writing that about a real company would be writing something
+       false about somebody who could sue. See the note at the top of venues.js.
+       ================================================================================ */
+
+    {
+      id: 'title-site',
+      beats: [WINTER, SPRING],
+      weight: 8,
+      when: () => true,
+      /* THE BIDS ON THE TABLE. Never the site that had it last, because the one thing every
+         bid cycle has in common is that the incumbent is not automatically back. */
+      cast: (w, L, rng) => {
+        if (!VEN) return null;
+        const held = [w.venues && w.venues.lastTitle, w.venues && w.venues.title]
+          .filter(Boolean);
+        const bids = VEN.shortlist(rng, 3, { avoid: held, usOnly: true, minCap: 60000 });
+        return bids.length === 3 ? { bids } : null;
+      },
+      eyebrow: 'The venues',
+      title: 'Three cities want the title game',
+      brief: (c) => (c
+        ? 'The bids are in, they are sealed, and all three of them have flown somebody here '
+          + 'to sit outside this office all week. ' + VEN.label(c.bids[0]) + ', '
+          + VEN.label(c.bids[1]) + ' and ' + VEN.label(c.bids[2]) + '. Each one is a different '
+          + 'answer to what this game is supposed to be, and every athletic director in the '
+          + 'sport has a hotel preference they have told you about unprompted.'
+        : 'Three cities have bid for the title game and all three of them are waiting outside.'),
+      voices: [
+        { id: 'Networks', say: 'A dome and a good market. Everything else on this list is a risk we are carrying.' },
+        { id: 'Fans', say: 'Somewhere we can afford to get to and sleep in. It is a week off work for us.' },
+        { id: 'Presidents', say: 'Whoever pays the most. That money is the postseason distribution.' },
+      ],
+      options: [
+        { id: 'bid-a',
+          label: (c) => (c ? VEN.label(c.bids[0]) : 'The first bid'),
+          body: (c) => (c ? c.bids[0].name + '. ' + c.bids[0].note : ''),
+          edit: (c) => (c ? {
+            set: { 'venues.title': c.bids[0].id, 'venues.lastTitle': c.bids[0].id },
+            effects: VEN.effectsOf(c.bids[0], 1),
+          } : {}) },
+        { id: 'bid-b',
+          label: (c) => (c ? VEN.label(c.bids[1]) : 'The second bid'),
+          body: (c) => (c ? c.bids[1].name + '. ' + c.bids[1].note : ''),
+          edit: (c) => (c ? {
+            set: { 'venues.title': c.bids[1].id, 'venues.lastTitle': c.bids[1].id },
+            effects: VEN.effectsOf(c.bids[1], 1),
+          } : {}) },
+        { id: 'bid-c',
+          label: (c) => (c ? VEN.label(c.bids[2]) : 'The third bid'),
+          body: (c) => (c ? c.bids[2].name + '. ' + c.bids[2].note : ''),
+          edit: (c) => (c ? {
+            set: { 'venues.title': c.bids[2].id, 'venues.lastTitle': c.bids[2].id },
+            effects: VEN.effectsOf(c.bids[2], 1),
+          } : {}) },
+      ],
+    },
+    {
+      id: 'title-rota',
+      beats: [WINTER],
+      weight: 5,
+      when: (w) => !!(w.venues && w.venues.title),
+      cast: (w, L, rng) => {
+        const cur = VEN ? VEN.venue(w.venues.title) : null;
+        return cur ? { cur } : null;
+      },
+      eyebrow: 'The venues',
+      title: (c) => (c ? 'A standing rota, or a bid every year'
+        : 'How the title game gets placed'),
+      brief: (c) => 'Four cities have written jointly proposing a fixed rotation: same four '
+        + 'sites, in order, for a decade, no bidding. It is less money than an auction and it '
+        + 'is a decade of nobody in this office being lobbied at a funeral. '
+        + ((c && c.cur) ? 'It would start the year after ' + VEN.label(c.cur) + '.' : ''),
+      voices: [
+        { id: 'Presidents', say: 'An auction is more money and four cities a year wasting eleven of them.' },
+        { id: 'Fans', say: 'A rotation means you can plan. Some of us save for two years to go.' },
+        { id: 'Networks', say: 'We would rather know where it is in 2032 than find out what it fetches.' },
+      ],
+      options: [
+        { id: 'rota', label: 'Take the rotation',
+          body: 'Four sites, ten years, published tomorrow. Less money, no lobbying, and one '
+            + 'less thing on this desk every January.',
+          edit: { effects: { money: -1.8, tradition: 2.4, exposure: 1.6, inventory: -0.6 },
+            aimed: { Fans: { tradition: 2.4 }, Presidents: { money: -1.6, exposure: 1.4 } } } },
+        { id: 'auction', label: 'Keep the auction',
+          body: 'Every year, sealed bids, highest number wins. It is the most money this '
+            + 'sport can extract and everybody in the room has to pretend they do not know '
+            + 'that is what it is.',
+          edit: { effects: { money: 2.6, tradition: -1.6, exposure: -1.2, access: -0.6 },
+            aimed: { Presidents: { money: 2.2 }, Fans: { tradition: -1.8 } } } },
+        { id: 'spread', label: 'A rota, but write in a cold weather slot',
+          body: 'Three warm sites and one that has never had it. It costs money and it puts '
+            + 'the biggest night of the year somewhere that has waited eighty years for it.',
+          edit: { effects: { access: 2.6, tradition: 1, money: -2.2, exposure: -1.4 },
+            aimed: { Fans: { access: 2, tradition: 1.4 }, 'Big Ten': { access: 2 },
+              Networks: { inventory: -1.4 } } } },
+      ],
+    },
+    {
+      id: 'kickoff-game',
+      beats: [SPRING, MEDIA],
+      weight: 7,
+      when: () => true,
+      cast: (w, L, rng) => {
+        if (!VEN) return null;
+        const bids = VEN.shortlist(rng, 3, { avoid: (w.venues && w.venues.openers) || [] });
+        const live = L.POWERS.filter((c) => !L.isDefunct(w, c));
+        const ca = live[Math.floor(rng() * live.length) % live.length];
+        const cb = live[(live.indexOf(ca) + 1) % live.length];
+        const ma = L.membersOf(w, ca), mb = L.membersOf(w, cb);
+        return bids.length === 3 ? {
+          bids,
+          a: ma[Math.floor(rng() * ma.length) % ma.length] || 'one of them',
+          b: mb[Math.floor(rng() * mb.length) % mb.length] || 'the other',
+        } : null;
+      },
+      eyebrow: 'Week one',
+      title: (c) => (c ? c.a + ' and ' + c.b + ', somewhere neutral'
+        : 'The opening weekend needs a venue'),
+      brief: (c) => (c
+        ? 'Two programmes who would never schedule each other have agreed to, on the first '
+          + 'Saturday, at a neutral site, for a cheque. Three cities want it. It is the only '
+          + 'game on that night and it will set the tone of the entire season, which is a lot '
+          + 'to hang on a decision about a car park.'
+        : 'Two programmes have agreed to open the season at a neutral site and three cities '
+          + 'want it.'),
+      voices: [
+        { id: 'Networks', say: 'The first Saturday with one game on it is the best inventory of the year.' },
+        { id: 'Fans', say: 'Week one used to be at somebody\'s stadium with their students in it.' },
+        { id: 'Players', say: 'It is a road game for both of us in the last week of August.' },
+      ],
+      options: [
+        { id: 'k-a',
+          label: (c) => (c ? VEN.label(c.bids[0]) : 'The first bid'),
+          body: (c) => (c ? c.bids[0].name + '. ' + c.bids[0].note : ''),
+          edit: (c) => (c ? { effects: VEN.effectsOf(c.bids[0], 0.55) } : {}) },
+        { id: 'k-b',
+          label: (c) => (c ? VEN.label(c.bids[1]) : 'The second bid'),
+          body: (c) => (c ? c.bids[1].name + '. ' + c.bids[1].note : ''),
+          edit: (c) => (c ? { effects: VEN.effectsOf(c.bids[1], 0.55) } : {}) },
+        { id: 'campus',
+          label: 'Neither. Play it on a campus',
+          body: 'Home and home, students in the building, and a fraction of the money. The '
+            + 'sport did it this way for a century and stopped for a reason nobody can defend '
+            + 'out loud.',
+          edit: { effects: { tradition: 2.8, money: -2.2, inventory: -1, access: 0.6 },
+            aimed: { Fans: { tradition: 3 }, Networks: { inventory: -1.6 },
+              Presidents: { money: -1.8 } } } },
+      ],
+    },
+    {
+      id: 'playoff-naming',
+      beats: [WINTER, SPRING],
+      weight: 7,
+      when: (w) => !(w.brand && w.brand.playoff),
+      cast: (w, L, rng) => {
+        if (!VEN) return null;
+        const offers = VEN.sponsorList(rng, 3);
+        return offers.length === 3 ? { offers } : null;
+      },
+      eyebrow: 'The money',
+      title: 'Somebody wants their name on the playoff',
+      brief: (c) => (c
+        ? 'Three offers, all of them for the same thing: the words in front of the words '
+          + '"College Football Playoff", on every broadcast, every ticket and every piece of '
+          + 'confetti, for a decade. ' + c.offers[0].name + '. ' + c.offers[1].name + '. '
+          + c.offers[2].name + '. The lowest of the three is more money than this sport made '
+          + 'in total in 1998.'
+        : 'Three companies want their name in front of the words College Football Playoff.'),
+      voices: [
+        { id: 'Presidents', say: 'The largest cheque available to us, and not from television.' },
+        { id: 'Fans', say: 'It has a name. It is called the playoff.' },
+        { id: 'Networks', say: 'We say their name eleven times a broadcast. Choose somebody sayable.' },
+      ],
+      options: [
+        { id: 's-a',
+          label: (c) => (c ? c.offers[0].name : 'The first offer'),
+          body: (c) => (c ? c.offers[0].pitch : ''),
+          edit: (c) => (c ? { set: { 'brand.playoff': c.offers[0].id },
+            effects: VEN.sponsorEffects(c.offers[0], 1) } : {}) },
+        { id: 's-b',
+          label: (c) => (c ? c.offers[1].name : 'The second offer'),
+          body: (c) => (c ? c.offers[1].pitch : ''),
+          edit: (c) => (c ? { set: { 'brand.playoff': c.offers[1].id },
+            effects: VEN.sponsorEffects(c.offers[1], 1) } : {}) },
+        { id: 'none', label: 'It is called the playoff',
+          body: 'Turn all three down, in writing, and be the office that left three hundred '
+            + 'million dollars on a table because of a name.',
+          edit: { effects: { tradition: 3.2, money: -3, exposure: 1.6 },
+            aimed: { Fans: { tradition: 3.4 }, Presidents: { money: -2.6 } } } },
+      ],
+    },
+    {
+      id: 'bowl-sponsor-gone',
+      beats: [MEDIA, SEPT],
+      weight: 6,
+      when: () => true,
+      cast: (w, L, rng) => {
+        if (!VEN) return null;
+        const majors = VEN.BOWLS.filter((b) => b.tier === 3);
+        const bowl = majors[Math.floor(rng() * majors.length) % majors.length];
+        const offers = VEN.sponsorList(rng, 2);
+        return bowl && offers.length === 2 ? { bowl, offers, venue: VEN.venue(bowl.venue) } : null;
+      },
+      eyebrow: 'The postseason',
+      title: (c) => (c ? 'The ' + c.bowl.name + ' has lost its sponsor'
+        : 'A bowl has lost its sponsor'),
+      brief: (c) => (c
+        ? 'Twelve weeks before kickoff, by email, citing a restructuring. The '
+          + c.bowl.name + ' has a stadium in ' + (c.venue ? c.venue.city : 'its city')
+          + ', a television window, a parade committee and no title sponsor, and every piece '
+          + 'of signage in the building has last year\'s name on it. Two replacements have '
+          + 'already called, which tells you what the first one was paying.'
+        : 'A major bowl has lost its title sponsor twelve weeks before kickoff.'),
+      voices: [
+        { id: 'Presidents', say: 'That bowl funds four athletic departments. It plays with a name on it.' },
+        { id: 'Fans', say: 'It had a name for ninety years before anybody bought one.' },
+        { id: 'Networks', say: 'We sold the window with a sponsor in the title. That is a contract.' },
+      ],
+      options: [
+        { id: 'b-a',
+          label: (c) => (c ? c.offers[0].name : 'The first replacement'),
+          body: (c) => (c ? c.offers[0].pitch : ''),
+          edit: (c) => (c ? { set: { ['brand.bowls.' + c.bowl.id]: c.offers[0].id },
+            effects: VEN.sponsorEffects(c.offers[0], 0.6) } : {}) },
+        { id: 'b-b',
+          label: (c) => (c ? c.offers[1].name : 'The second replacement'),
+          body: (c) => (c ? c.offers[1].pitch : ''),
+          edit: (c) => (c ? { set: { ['brand.bowls.' + c.bowl.id]: c.offers[1].id },
+            effects: VEN.sponsorEffects(c.offers[1], 0.6) } : {}) },
+        { id: 'bare', label: (c) => (c ? 'Play it as the ' + c.bowl.name : 'Play it under its own name'),
+          body: 'No sponsor, no signage, one year, and see whether anybody misses it. They '
+            + 'will not, which is either reassuring or the most expensive thing you learn '
+            + 'this year.',
+          edit: { effects: { tradition: 2.6, money: -2, exposure: 0.8 },
+            aimed: { Fans: { tradition: 3 }, Presidents: { money: -2 } } } },
+      ],
+    },
+    {
+      id: 'bowl-moves',
+      beats: [WINTER, SPRING],
+      weight: 5,
+      when: () => true,
+      cast: (w, L, rng) => {
+        if (!VEN) return null;
+        const mid = VEN.BOWLS.filter((b) => b.tier <= 2);
+        const bowl = mid[Math.floor(rng() * mid.length) % mid.length];
+        const to = VEN.shortlist(rng, 1, { avoid: [bowl.venue], usOnly: true })[0];
+        return bowl && to ? { bowl, from: VEN.venue(bowl.venue), to } : null;
+      },
+      eyebrow: 'The postseason',
+      title: (c) => (c ? 'The ' + c.bowl.name + ' wants to move'
+        : 'A bowl wants to move cities'),
+      brief: (c) => (c
+        ? 'The ' + c.bowl.name + ' has played in '
+          + (c.from ? c.from.city : 'the same city') + ' since it was invented and it would '
+          + 'now like to play in ' + c.to.city + ', which has offered it a great deal of money '
+          + 'and a stadium that is not falling down. The bowl keeps the name. The city keeps '
+          + 'the name too, apparently, which is a sentence four lawyers are currently arguing '
+          + 'about.'
+        : 'A bowl would like to move to a city that has offered it money and a better '
+          + 'stadium, and keep its name.'),
+      voices: [
+        { id: 'Fans', say: 'It is named after the place. That is what the name is.' },
+        { id: 'Presidents', say: 'The payout doubles. The payout is the entire reason the bowl exists.' },
+        { id: 'Group of Five', say: 'Half the teams in that game every year are ours and none of us were asked.' },
+      ],
+      options: [
+        { id: 'move', label: (c) => (c ? 'Let it go to ' + c.to.city : 'Let it move'),
+          body: (c) => (c ? c.to.name + '. ' + c.to.note : 'A better stadium and more money.'),
+          edit: (c) => (c ? {
+            effects: Object.assign(VEN.effectsOf(c.to, 0.4), { tradition: -2.4 }),
+            aimed: { Fans: { tradition: -2.6 }, Presidents: { money: 1.6 } },
+          } : {}) },
+        { id: 'rename', label: 'It can move. It cannot keep the name',
+          body: 'A bowl named after a place is named after the place. Move and you are a new '
+            + 'bowl with a new name and none of the history, which is most of what the city '
+            + 'was buying.',
+          edit: { effects: { tradition: 2, money: -0.8, exposure: 0.6, inventory: -0.4 },
+            aimed: { Fans: { tradition: 2.4 }, Presidents: { money: -0.8 } } } },
+        { id: 'stay', label: 'It stays',
+          body: 'Block it, fund the stadium repairs out of the postseason pool, and take the '
+            + 'phone call from a mayor who was promised something.',
+          edit: { effects: { tradition: 2.6, cost: 1.8, autonomy: -1.6, money: -1 },
+            aimed: { Fans: { tradition: 2.6 }, Presidents: { cost: -1.6 } } } },
+      ],
+    },
+    {
+      id: 'jersey-patch',
+      beats: [SPRING, MEDIA],
+      weight: 6,
+      when: (w) => !(w.brand && w.brand.patch),
+      cast: (w, L, rng) => {
+        if (!VEN) return null;
+        const offers = VEN.sponsorList(rng, 2);
+        return offers.length === 2 ? { offers } : null;
+      },
+      eyebrow: 'The money',
+      title: 'A patch on the jersey',
+      brief: 'Four inches square, left shoulder, every team in the sport, and the number '
+        + 'attached to it is larger than the entire postseason distribution. The professional '
+        + 'leagues did this five years ago and nobody remembers the week they announced it. '
+        + 'The mock-ups are on the table and everybody in the room has looked at them and '
+        + 'then looked away.',
+      voices: [
+        { id: 'Presidents', say: 'It pays for every non revenue sport in this sport. Every single one.' },
+        { id: 'Fans', say: 'That is the jersey. That is the actual jersey.' },
+        { id: 'Players', say: 'We are wearing an advertisement. We would like to know what our share of it is.' },
+      ],
+      options: [
+        { id: 'p-a',
+          label: (c) => (c ? c.offers[0].name : 'The first offer'),
+          body: (c) => (c ? c.offers[0].pitch : ''),
+          edit: (c) => (c ? { set: { 'brand.patch': c.offers[0].id },
+            effects: Object.assign(VEN.sponsorEffects(c.offers[0], 0.8), { labour: -0.8 }),
+            aimed: { Players: { labour: -1.2 } } } : {}) },
+        { id: 'p-share',
+          label: (c) => (c ? c.offers[1].name + ', with a cut to the players'
+            : 'Take an offer, and share it'),
+          body: (c) => (c ? c.offers[1].pitch + ' A fixed share of it goes into the revenue '
+            + 'pool, written into the contract.' : ''),
+          edit: (c) => (c ? { set: { 'brand.patch': c.offers[1].id },
+            effects: Object.assign(VEN.sponsorEffects(c.offers[1], 0.6), { labour: 2.4, cost: 1.2 }),
+            aimed: { Players: { labour: 2.8 }, Presidents: { cost: -1.4 } } } : {}) },
+        { id: 'no', label: 'Not on the jersey',
+          body: 'There is a line and this office has decided it is on the shoulder of an '
+            + 'unpaid nineteen year old. Say so, and know it moves the year after you leave.',
+          edit: { effects: { tradition: 3, money: -3.2, labour: 0.8 },
+            aimed: { Fans: { tradition: 3.4 }, Presidents: { money: -2.8 } } } },
+      ],
+    },
+    {
+      id: 'bid-collapse',
+      beats: [MEDIA, SEPT, OCT],
+      weight: 5,
+      when: (w) => !!(w.venues && w.venues.title),
+      cast: (w, L, rng) => {
+        const cur = VEN ? VEN.venue(w.venues.title) : null;
+        if (!cur) return null;
+        const alt = VEN.shortlist(rng, 2, { avoid: [cur.id], domeOnly: true, usOnly: true });
+        return alt.length === 2 ? { cur, alt } : null;
+      },
+      eyebrow: 'The venues',
+      title: (c) => (c ? VEN.label(c.cur) + ' cannot deliver' : 'The host city cannot deliver'),
+      brief: (c) => (c
+        ? 'The hotel block is forty per cent of what was in the bid, the transit project that '
+          + 'was going to be finished is not going to be finished, and the local organising '
+          + 'committee has lost its executive director and its chief financial officer in the '
+          + 'same fortnight. ' + (c.cur ? c.cur.name : 'The stadium') + ' is fine. Everything '
+          + 'around it is not, and the game is in four months.'
+        : 'The host city cannot deliver what was in its bid and the game is in four months.'),
+      voices: [
+        { id: 'Networks', say: 'We can broadcast from anywhere. Forty thousand people cannot sleep anywhere.' },
+        { id: 'Fans', say: 'Some of us booked flights in February. Non refundable ones.' },
+        { id: 'Presidents', say: 'Moving it means giving back the fee and eating the difference.' },
+      ],
+      options: [
+        { id: 'move-a',
+          label: (c) => (c ? 'Move it to ' + VEN.label(c.alt[0]) : 'Move it'),
+          body: (c) => (c ? c.alt[0].name + ' can take it at four months notice. '
+            + c.alt[0].note : ''),
+          edit: (c) => (c ? {
+            set: { 'venues.title': c.alt[0].id },
+            effects: Object.assign(VEN.effectsOf(c.alt[0], 0.7),
+              { cost: 2.2, exposure: -1.4, money: -1.6 }),
+            aimed: { Presidents: { cost: -2 }, Fans: { tradition: -1.2 } },
+          } : {}) },
+        { id: 'prop', label: 'Prop the city up',
+          body: 'The sport funds the shortfall: hotels, buses, a temporary staff. It is '
+            + 'expensive and it is the only version where nobody\'s flight is wasted.',
+          edit: { effects: { cost: 3, exposure: 1.4, tradition: 1.2, money: -1.4 },
+            aimed: { Fans: { tradition: 1.8 }, Presidents: { cost: -2.6 } } } },
+        { id: 'hold', label: 'They signed a contract',
+          body: 'It is their problem, it is in the agreement, and the sport will find out in '
+            + 'January whether a contract can produce a hotel room.',
+          edit: { effects: { money: 1, exposure: -3, autonomy: 1.4, tradition: -1.6 },
+            aimed: { Presidents: { exposure: -2.6 }, Fans: { tradition: -2.2 } } } },
       ],
     },
   ];
@@ -2990,6 +3389,8 @@
     sameConfUnbeaten: null, leader: null, upset: null, blowout: null, biggest: null,
     viewers: null, perGame: null, trend: null, audienceUp: false, audienceDown: false,
     confs: {}, endangered: [], gone: [], previous: null,
+    titleSite: null, titleVenue: null, lastTitleSite: null, openers: [],
+    playoffSponsor: null, patchSponsor: null, bowlSponsors: {}, sold: [], soldCount: 0,
     reentry: 'open', rulesBy: 'national', proYears: 1, confReentry: {},
     splitRules: false, doorShut: [], doorOpen: [],
     meters: null, pressure: null, standing: null, shaky: false, secure: false,
@@ -3101,7 +3502,19 @@
          concatenating it raw. The record of a ruling is shown to the player, so a title
          left unresolved put the source of an arrow function on the ledger and nothing
          failed: it is a string either way. Resolve it here, where the cast is in hand. */
-      label: text(item.title, cast, item) + ', ' + option.label.toLowerCase(),
+      /* AND SO MAY THE OPTION'S OWN LABEL. An item that offers four real cities cannot have
+         them written down here: which four is a question about the world. Same treatment the
+         title has had, for the same reason, and the ruling on the record reads "Where the
+         title game goes, New Orleans" rather than the source of a function. */
+      /* A WRITTEN LABEL LOWERCASES AND A COMPUTED ONE DOES NOT. The static ones are sentence
+         fragments ("Leave the formula alone") and read correctly folded into the title. The
+         dynamic ones are proper nouns: a city, a stadium, a company. The record of a ruling
+         said "Three cities want the title game, pasadena, ca", which is the sort of thing a
+         player screenshots. */
+      label: text(item.title, cast, item) + ', '
+        + (typeof option.label === 'function'
+          ? String(text(option.label, cast, item))
+          : String(option.label).toLowerCase()),
       set: Object.assign({}, base.set || {}),
       move: Object.assign({}, base.move || {}),
       effects: Object.assign({}, base.effects || {}),
