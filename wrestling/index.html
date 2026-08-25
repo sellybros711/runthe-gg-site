@@ -614,6 +614,28 @@
   .arc-farewell .arc-t{color:var(--cream);}
   .arc-fa{border-left-color:rgba(224,179,65,.55);}
   .arc-fa .arc-k{color:var(--gold);}
+  /* Season goal chip + report + briefing */
+  .arc-goal{padding:9px 12px;margin-bottom:10px;border-radius:9px;background:linear-gradient(90deg,rgba(224,179,65,.10),transparent 70%);border:1px solid rgba(224,179,65,.35);cursor:pointer;transition:border-color .15s;}
+  .arc-goal:hover{border-color:rgba(224,179,65,.7);}
+  .arc-goal.done{background:linear-gradient(90deg,rgba(58,166,110,.14),transparent 70%);border-color:rgba(58,166,110,.55);}
+  .arc-goal-h{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-size:10px;letter-spacing:.18em;text-transform:uppercase;}
+  .arc-goal-k{color:var(--gold);font-weight:800;}
+  .arc-goal-w{color:var(--text-faint);}
+  .arc-goal-t{font-size:13px;color:var(--cream);margin-top:3px;line-height:1.35;}
+  .arc-goal-b{margin-top:6px;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+  .arc-goal-b i{display:block;height:100%;background:var(--gold);border-radius:3px;transition:width .5s;}
+  .arc-goal.done .arc-goal-b i{background:var(--green);}
+  .seasonreport,.seasonbrief{padding:8px 0;text-align:center;}
+  .sr-y,.sb-y{font-family:var(--display);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--text-faint);}
+  .sr-grade{font-family:var(--display);font-size:82px;font-weight:800;line-height:1;margin:8px 0;text-shadow:0 0 30px currentColor;}
+  .sr-goal,.sb-goal{font-family:var(--display);font-size:17px;color:var(--cream);text-transform:uppercase;letter-spacing:.03em;margin-top:6px;}
+  .sr-bar{height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin:14px auto;max-width:280px;}
+  .sr-bar i{display:block;height:100%;border-radius:4px;transition:width .8s;}
+  .sr-progress{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+  .sr-line,.sb-line{font-size:13.5px;color:var(--text);margin-top:14px;line-height:1.55;font-style:italic;}
+  .sb-desc{font-size:14px;color:var(--text);margin-top:10px;line-height:1.55;}
+  .sb-pay{font-size:12px;color:var(--gold);margin-top:12px;}
+  .feudshape{display:inline-block;margin-left:8px;padding:1px 6px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;border:1px solid;border-radius:4px;font-family:var(--display);}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -1823,6 +1845,144 @@ function heatBand(v){
   if(v>=45) return {t:'Warm',                   c:'var(--cream)'};
   if(v>=28) return {t:'Cooling off',            c:'var(--text-dim)'};
   return       {t:'Ice cold',                 c:'#f0907f'};
+}
+/* ============================================================
+   SEASON GOALS
+   ------------------------------------------------------------
+   SD SYM's two-year Season Mode had a defined endpoint: the
+   career was pointed at the world title with a due date. We
+   give every year of the career one office-set goal, a live
+   progress meter, and a year-end grade (S..D) with a payout.
+   Goals scale by tier so an indie rookie isn't asked to win
+   the CWF world title in year one.
+   ============================================================ */
+const SEASON_GOALS = [
+  { id:'reach_tier', label:c=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?`Reach ${nx.name}`:'Reach the top of the business'; },
+    desc:c=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?`Get to ${nx.name} tier: ${nx.rep} rep AND OVR ${nx.minOvr}.`:'You are already there. Keep it.'; },
+    check:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; if(!nx) return true; return c.rep>=nx.rep && ovr(w)>=nx.minOvr; },
+    progress:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; if(!nx) return 100; const rp=clamp((c.rep-TIERS.find(t=>t.id===tierOf(c.rep).id).rep)/(nx.rep-TIERS.find(t=>t.id===tierOf(c.rep).id).rep)*100); const op=clamp(ovr(w)/nx.minOvr*100); return Math.min(rp,op); },
+    fit:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?1:0; },
+    payout:{coins:1500,standing:6} },
+  { id:'world_title', label:c=>`Win the ${beltName()}`,
+    desc:c=>`Take the world title from ${(charById((G.world.champions[myPromo().id]||{}).world&&G.world.champions[myPromo().id].world.holder)||{}).name||'whoever holds it'} before year end.`,
+    check:(c,w)=>c.title===beltName() || (c.reigns||[]).some(r=>r.title===beltName() && r.year===c.year),
+    progress:(c,w)=>{ if(c.title===beltName()) return 100; const need=Math.min(70,18+tierIdx()*16); return clamp(reactionOf()/need*100*0.6 + (c.titleShot?30:0), 0, 99); },
+    fit:(c,w)=>{ const ti=tierIdx(); return ti>=1 && !c.title ? 1 : 0.4; },
+    payout:{coins:5000,standing:12} },
+  { id:'defend_title', label:c=>`Defend the ${c.title||beltName()} three times`,
+    desc:c=>`Three successful championship defences before year end. Long reigns build legacies.`,
+    check:(c,w)=>c.title && (c.defenses||0)>=3,
+    progress:(c,w)=>c.title ? clamp((c.defenses||0)/3*100) : 0,
+    fit:(c,w)=>c.title ? 1.2 : 0,
+    payout:{coins:3500,standing:10} },
+  { id:'mid_title', label:c=>`Win the ${beltName(workTier(),'secondary')}`,
+    desc:c=>`Take the mid-card belt. Prove you can carry a division.`,
+    check:(c,w)=>c.secondary===beltName(workTier(),'secondary') || (c.reigns||[]).some(r=>r.title===beltName(workTier(),'secondary')&&r.year===c.year),
+    progress:(c,w)=>c.secondary?100:clamp(c.standing/62*100),
+    fit:(c,w)=>{ const ti=tierIdx(); return ti>=0 && !c.title && !c.secondary ? 1 : 0.3; },
+    payout:{coins:1800,standing:6} },
+  { id:'classic', label:c=>`Have a 5-star match`,
+    desc:c=>`One night, one match, rated 90 or better. Chase quality, not quantity.`,
+    check:(c,w)=>(c.yearLog||[]).some(m=>m.q>=90),
+    progress:(c,w)=>{ const best=(c.yearLog||[]).reduce((a,m)=>Math.max(a,m.q||0),0); return Math.min(100, Math.round(best/90*100)); },
+    fit:(c,w)=>0.7,
+    payout:{coins:2500,standing:8} },
+  { id:'over', label:c=>`Reach OVR ${Math.min(90, ovr(G.w)+7)}`,
+    desc:c=>`Push your overall rating up ${Math.min(7, 90-ovr(G.w))} points. Train, work, grow.`,
+    check:(c,w)=>ovr(w)>=Math.min(90, (c._season&&c._season.startOvr?c._season.startOvr:ovr(w))+7),
+    progress:(c,w)=>{ const s=(c._season&&c._season.startOvr)||ovr(w); const t=Math.min(90,s+7); return clamp((ovr(w)-s)/(t-s)*100); },
+    fit:(c,w)=>ovr(w)<80?0.8:0.3,
+    payout:{coins:2000,standing:8} },
+  { id:'end_feud', label:c=>`Settle your defining rivalry`,
+    desc:c=>`Take your rival to the blow-off and win it clean.`,
+    check:(c,w)=>{ const r=c._season&&c._season.rivalStart; return r && (c.rivalId!==r || (rel(r).wins > (c._season.rivalWinsAt||0)+1)); },
+    progress:(c,w)=>{ const r=c._season&&c._season.rivalStart; if(!r) return 0; const now=rel(r).wins; const before=(c._season.rivalWinsAt||0); return clamp((now-before)/2*100); },
+    fit:(c,w)=>c.rivalId?1:0,
+    payout:{coins:2000,standing:8} },
+];
+function pickSeasonGoal(){
+  const c=G.car, w=G.w;
+  const scored = SEASON_GOALS.map(g=>({g, s: g.fit(c,w)+rnd()*0.15}))
+    .filter(x=>x.s>0)
+    .sort((a,b)=>b.s-a.s);
+  return scored.length ? scored[0].g : SEASON_GOALS[0];
+}
+function assignSeason(){
+  const c=G.car, w=G.w;
+  const g = pickSeasonGoal();
+  c._season = {
+    y: c.year,
+    goalId: g.id,
+    startOvr: ovr(w),
+    startRep: c.rep,
+    rivalStart: c.rivalId || null,
+    rivalWinsAt: c.rivalId ? rel(c.rivalId).wins : 0,
+    assignedAt: {y:c.year, w:c.week},
+  };
+}
+function currentSeasonGoal(){
+  const c=G.car;
+  if(!c._season || c._season.y !== c.year) return null;
+  return SEASON_GOALS.find(x=>x.id===c._season.goalId) || null;
+}
+function seasonProgress(){
+  const g = currentSeasonGoal(); if(!g) return {p:0, done:false};
+  const c=G.car, w=G.w;
+  const done = g.check(c,w);
+  const p = done ? 100 : Math.round(g.progress(c,w));
+  return {p, done};
+}
+function seasonGrade(p){
+  if(p>=100) return 'S';
+  if(p>=80)  return 'A';
+  if(p>=60)  return 'B';
+  if(p>=40)  return 'C';
+  return 'D';
+}
+function seasonReport(){
+  const g = currentSeasonGoal(); if(!g) return null;
+  const {p,done} = seasonProgress();
+  const grade = seasonGrade(p);
+  const payout = grade==='S'||done ? g.payout : grade==='A' ? {coins:Math.round(g.payout.coins*0.6), standing:Math.round(g.payout.standing*0.6)} : grade==='B' ? {coins:Math.round(g.payout.coins*0.3), standing:2} : {coins:0, standing:-2};
+  return {goal:g, p, done, grade, payout};
+}
+function showSeasonReport(){
+  const rep = seasonReport(); if(!rep) return false;
+  const c=G.car;
+  G.bag.coins += (rep.payout.coins||0);
+  c.earnings += (rep.payout.coins||0);
+  c.standing = clamp((c.standing||50) + (rep.payout.standing||0));
+  const gradeColor = rep.grade==='S'?'var(--gold)':rep.grade==='A'?'var(--green)':rep.grade==='B'?'var(--cream)':rep.grade==='C'?'var(--text-dim)':'#f0907f';
+  const line = rep.grade==='S' ? 'You did it clean, ahead of schedule. The office is going to hand you the world.'
+             : rep.grade==='A' ? 'Very close. The office is pleased. Next year they will ask for more.'
+             : rep.grade==='B' ? 'Fine year. Nothing broken, nothing legendary.'
+             : rep.grade==='C' ? 'Below what they wanted. They will notice.'
+             :                   'The office is not happy. Prove yourself or the door is on the left.';
+  const body = `<div class="seasonreport">
+    <div class="sr-y">Year ${c.year-1} · Season Report</div>
+    <div class="sr-grade" style="color:${gradeColor}">${rep.grade}</div>
+    <div class="sr-goal">${rep.goal.label(c)}</div>
+    <div class="sr-bar"><i style="width:${rep.p}%;background:${gradeColor}"></i></div>
+    <div class="sr-progress">${rep.p}% · ${rep.done?'done':'incomplete'}</div>
+    <div class="sr-line">${line}</div>
+    ${(rep.payout.coins||rep.payout.standing) ? `<div class="paychips" style="justify-content:center;margin-top:14px;">
+      ${rep.payout.coins ? `<span class="pchip gold" style="animation:none;opacity:1;">+${money(rep.payout.coins)} bonus</span>`:''}
+      ${rep.payout.standing ? `<span class="pchip ${rep.payout.standing>0?'gold':'red'}" style="animation:none;opacity:1;">Standing ${rep.payout.standing>0?'+':''}${rep.payout.standing}</span>`:''}
+    </div>`:''}
+  </div>`;
+  modal(`Year ${c.year-1} in the books`, body, [{label:'Onward',cls:'primary',fn:()=>{ closeModal(); assignSeason(); showSeasonBriefing(); }}]);
+  return true;
+}
+function showSeasonBriefing(){
+  const c=G.car; const g=currentSeasonGoal(); if(!g) return;
+  const body = `<div class="seasonbrief">
+    <div class="sb-y">Year ${c.year} · The office wants</div>
+    <div class="sb-goal">${g.label(c)}</div>
+    <div class="sb-desc">${g.desc(c)}</div>
+    <div class="sb-pay">Bonus on completion: <b>${money(g.payout.coins)}</b> and <b>+${g.payout.standing}</b> standing.</div>
+    <div class="sb-line">Ends Week ${WEEKS_PER_YEAR} of Year ${c.year}. Grade the year, get paid, or don't.</div>
+  </div>`;
+  modal(`The year ahead`, body, [{label:'Understood',cls:'primary',fn:closeModal}]);
 }
 
 /* ---- THE CROWD ----
@@ -3562,7 +3722,10 @@ function finishCreate(){
       txt:`<b>${pendMgr}</b> walks with you to the ring from tonight.`});
     window._pendingManagerName=null;
   }
+  // Assign the first season goal and fire the briefing modal after arrival.
+  try { assignSeason(); } catch(_){}
   save(); go('career'); toast('Welcome to the business, '+name);
+  setTimeout(()=>{ try{ showSeasonBriefing(); }catch(_){} }, 900);
 }
 // the indie that takes a chance on a rookie of your type
 function startingPromotion(style){
@@ -3827,6 +3990,167 @@ function worldTick(){
     w.retired[target.id] = {y:c.year,w:c.week};
     newsPush({ico:pico('medal',14), kind:'retire',
       text:`<b>${target.name}</b> announced their retirement. A memorable career at ${(promoById(target.promo)||{}).short||'the promotion'}.`});
+  }
+  // Sports-news style events. Fires ~one meaningful thing per week on average
+  // so the world reads as alive instead of a static roster.
+  try { generateWorldEvent(); } catch(_){}
+}
+/* ============================================================
+   WORLD EVENTS
+   ------------------------------------------------------------
+   A generator that keeps the wrestling world moving with beats
+   that feel like actual sports news: a champion holds too long
+   and the crowd turns, a returning star pushes the roster, a
+   defection between promos, an upset in the main event, a
+   contract dispute. Some events touch the player directly (a
+   rival defects to another promo, a champion vacates the belt).
+   Fires from worldTick once per week.
+   ============================================================ */
+/* When the player has outgrown their current promotion (reputation for a
+   higher tier than they work at), a bigger house reaches out. Fires at most
+   once every 12 weeks so it does not spam. */
+function maybeScoutingOffer(){
+  const c=G.car; if(!c || c.freeAgent) return;
+  if(c._lastScout && (c.year*WEEKS_PER_YEAR+c.week) - c._lastScout < 12) return;
+  const earned = tierOf(c.rep);
+  const worked = workTier();
+  const ei = TIERS.findIndex(t=>t.id===earned.id);
+  const wi = TIERS.findIndex(t=>t.id===worked.id);
+  if(ei <= wi) return;                     // not overperforming yet
+  if(rnd()>0.18) return;                   // roughly monthly at most
+  // Find a promo one tier up
+  const targetTier = TIERS[wi+1];
+  if(!targetTier) return;
+  const bigger = PROMOS.filter(p=>p.tier===targetTier.id && p.id!==myPromoId());
+  if(!bigger.length) return;
+  const suitor = bigger[Math.floor(rnd()*bigger.length)];
+  c._lastScout = c.year*WEEKS_PER_YEAR+c.week;
+  c._scoutOffer = { promoId:suitor.id, y:c.year, w:c.week, expires:c.year*WEEKS_PER_YEAR+c.week+8 };
+  pushInboxItem({ico:pico('handshake',18),sev:'act',
+    txt:`<b>${suitor.name} is asking about you.</b> They want to meet before your current deal is up. <a href="#" onclick="openScoutOffer();return false;">Take the meeting</a>`});
+  if(typeof newsPush==='function') newsPush({ico:pico('handshake',14),cat:'scouting',
+    text:`Rumours: <b>${suitor.short}</b> has reached out to <b>${G.w.name}</b>. A jump is on the table.`});
+}
+function openScoutOffer(){
+  const c=G.car, s=c._scoutOffer; if(!s) return;
+  const suitor = promoById(s.promoId); if(!suitor) return;
+  const weekly = dealValue(suitor, c.pop||60, c.rep, c.standing||60);
+  const body = `<div class="log"><b>${suitor.name}</b> wants you on a fresh deal at <b>${money(weekly)}/week</b> for a year.<br><br>
+    Taking the meeting means breaking your current contract with <b>${myPromo().name}</b>. Your standing there takes a hit. A jump to a bigger house also resets your rivalries: they belong to a different room now.</div>`;
+  modal(`The ${suitor.short} offer`, body, [
+    {label:'Decline',cls:'ghost',fn:()=>{ closeModal(); pushInboxItem({ico:pico('handshake',18),sev:'info',txt:`You passed on ${suitor.short}. They will remember.`}); c._scoutOffer=null; save(); }},
+    {label:'Sign with '+suitor.short, cls:'primary', fn:()=>{
+      closeModal();
+      c.deal = { promo:suitor.id, weekly, weeksLeft:WEEKS_PER_YEAR, years:1, sched:c.deal?c.deal.sched:'medium', creative:c.deal?c.deal.creative:false };
+      c.standing = clamp((c.standing||50) - 8);
+      c.rivalId = null;                    // rivalries are room-specific
+      G.story = null;
+      c._scoutOffer = null;
+      pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>You signed with ${suitor.short}.</b> New room, new roster, new stakes.`});
+      if(typeof newsPush==='function') newsPush({ico:pico('handshake',14),cat:'defection',
+        text:`<b>${G.w.name}</b> signs with <b>${suitor.short}</b>. Big move.`});
+      save(); go('career');
+    }}
+  ]);
+}
+function generateWorldEvent(){
+  const c=G.car, W=G.world;
+  if(!W || !W.champions) return;
+  if(rnd()>=0.35) return;   // ~1 in 3 weeks
+  const evs = ['staleChamp','defection','injury','turn','upset','feudBrew','signing'];
+  const type = evs[Math.floor(rnd()*evs.length)];
+  const now = {y:c.year, w:c.week};
+  // Helpers
+  const anyRoster = (excl)=>{ const excludeSet = new Set(excl||[]);
+    return CHARS.filter(x=>!W.retired[x.id] && !excludeSet.has(x.id)); };
+  const otherPromo = ()=>{ const others=PROMOS.filter(p=>p.id!==myPromoId()); return others[Math.floor(rnd()*others.length)]; };
+  if(type==='staleChamp'){
+    // Any champion held for 20+ weeks gets crowd fatigue: news beat, and if it
+    // affects a promo you have a title shot at, they open the door for a switch.
+    const found=[];
+    Object.keys(W.champions).forEach(pid=>{
+      ['world','secondary'].forEach(kind=>{
+        const rec=W.champions[pid][kind]; if(!rec||!rec.holder||!rec.since) return;
+        const wk = (c.year*WEEKS_PER_YEAR+c.week) - (rec.since.y*WEEKS_PER_YEAR+rec.since.w);
+        if(wk>=20) found.push({pid, kind, rec, wk});
+      });
+    });
+    if(!found.length) return;
+    const pick = found[Math.floor(rnd()*found.length)];
+    const holder = charById(pick.rec.holder);
+    if(!holder) return;
+    newsPush({ico:pico('microphone',14), cat:'stale',
+      text:`<b>${holder.name}</b> has held the ${beltNameByPromo(pick.pid,pick.kind)} for <b>${pick.wk}</b> weeks. The crowd is starting to turn.`});
+    return;
+  }
+  if(type==='defection'){
+    // A wrestler from promo A jumps to promo B. Trades rare enough to feel
+    // rare (~1 in 20 world-event rolls).
+    if(rnd()>0.30) return;
+    const from = PROMOS[Math.floor(rnd()*PROMOS.length)];
+    const to   = PROMOS.filter(p=>p.id!==from.id)[Math.floor(rnd()*(PROMOS.length-1))];
+    if(!from||!to) return;
+    const pool = CHARS.filter(x=>x.promo===from.id && !W.retired[x.id] && (x.over||55)>=48);
+    if(!pool.length) return;
+    const mover = pool[Math.floor(rnd()*pool.length)];
+    mover.promo = to.id;
+    newsPush({ico:pico('handshake',14), cat:'defection',
+      text:`<b>${mover.name}</b> signs with <b>${to.short}</b>, leaving <b>${from.short}</b> after a long run.`});
+    if(mover.id===c.rivalId){
+      pushInboxItem({ico:pico('handshake',18),sev:'warn',
+        txt:`<b>${mover.name} jumped ship.</b> They just signed with ${to.short}. The feud is on hold unless you follow them.`});
+    }
+    return;
+  }
+  if(type==='injury'){
+    if(rnd()>0.5) return;
+    const pool = anyRoster([c.rivalId]).filter(x=>x.promo!==myPromoId());
+    if(!pool.length) return;
+    const victim = pool[Math.floor(rnd()*pool.length)];
+    const parts=['knee','shoulder','back','neck','arm']; const wk=4+Math.floor(rnd()*10);
+    newsPush({ico:pico('cross',14), cat:'injury',
+      text:`<b>${victim.name}</b> out ${wk} weeks with a ${parts[Math.floor(rnd()*parts.length)]} injury. Bookings shuffled.`});
+    return;
+  }
+  if(type==='turn'){
+    if(rnd()>0.35) return;
+    const pool = anyRoster().filter(x=>x.promo!==myPromoId() && (x.over||55)>=50);
+    if(!pool.length) return;
+    const flipper = pool[Math.floor(rnd()*pool.length)];
+    const from = flipper.align||'tweener'; const to = from==='face'?'heel':from==='heel'?'face':(rnd()<0.5?'face':'heel');
+    flipper.align = to;
+    newsPush({ico:pico('mask',14), cat:'turn',
+      text:`<b>${flipper.name}</b> turned <b>${to}</b> at ${(promoById(flipper.promo)||{}).short}. The character is unrecognisable from six months ago.`});
+    return;
+  }
+  if(type==='upset'){
+    const pool = anyRoster().filter(x=>x.promo!==myPromoId() && (x.over||55)<=55);
+    const bigger = anyRoster().filter(x=>x.promo!==myPromoId() && (x.over||55)>=70);
+    if(!pool.length||!bigger.length) return;
+    const under=pool[Math.floor(rnd()*pool.length)], over=bigger[Math.floor(rnd()*bigger.length)];
+    if(under.promo!==over.promo) return;
+    newsPush({ico:pico('starBig',14), cat:'upset',
+      text:`<b>Upset at ${(promoById(under.promo)||{}).short}.</b> ${under.name} pinned ${over.name} clean. The room is talking.`});
+    return;
+  }
+  if(type==='feudBrew'){
+    const pool = anyRoster().filter(x=>x.promo!==myPromoId() && (x.over||55)>=55);
+    if(pool.length<2) return;
+    const a=pool[Math.floor(rnd()*pool.length)], b=pool.filter(x=>x.id!==a.id&&x.promo===a.promo)[0];
+    if(!b) return;
+    newsPush({ico:pico('fire',14), cat:'feud',
+      text:`<b>${a.name} vs ${b.name}</b> is building at ${(promoById(a.promo)||{}).short}. Backstage confrontation went too far.`});
+    return;
+  }
+  if(type==='signing'){
+    if(rnd()>0.5) return;
+    const to = PROMOS[Math.floor(rnd()*PROMOS.length)];
+    const names=['Rico Diamante','Konrad Weiss','Sunny Blake','Isla Ferran','Marc "Devil" Halo','Rina Volkov','Bo Curran','Tuli Havili'];
+    const styles=['powerhouse main-eventer','high-flyer','technical wrestler','character worker','submission specialist'];
+    const n=names[Math.floor(rnd()*names.length)], s=styles[Math.floor(rnd()*styles.length)];
+    newsPush({ico:pico('handshake',14), cat:'signing',
+      text:`<b>${to.short} signs ${n}</b>, a ${s} from the indie scene. Debut is being lined up.`});
+    return;
   }
 }
 
@@ -4623,9 +4947,11 @@ function renderStoryPanel(){
     feudAdv = seen!==key;
     feudFrom = (seen&&String(seen).split(':')[0]===st.charId && st.stage>0) ? ((st.stage-1)/3)*100 : 0;
     G.car._feudSeen=key;
+    const shapeMap = {aggressive:{t:'Bloodbath',c:'#f0907f'}, cool:{t:'Cold war',c:'var(--cream)'}, cerebral:{t:'Chess match',c:'var(--gold)'}, underdog:{t:'David vs Goliath',c:'var(--green)'}};
+    const shapeChip = st.shape && shapeMap[st.shape] ? `<span class="feudshape" style="color:${shapeMap[st.shape].c};border-color:${shapeMap[st.shape].c};">${shapeMap[st.shape].t}</span>` : '';
     h+=`<div class="storycard" id="feudCard">
       <div class="sh"><div style="width:52px;flex:none;">${wrestlerSVG(c.look,{frame:'head'})}</div>
-        <div><div class="st">Feud · ${stg.name}</div>
+        <div><div class="st">Feud · ${stg.name}${shapeChip}</div>
         <div class="sn">${G.w.name} vs ${c.name}</div>
         <div class="hint">${stg.label}</div></div></div>
       <div class="bar" style="margin-top:8px;"><i id="feudBar" style="width:${(feudAdv?feudFrom:(st.stage/3)*100)}%;background:var(--brandred)"></i></div>
@@ -4764,6 +5090,18 @@ function nextGoals(){
    reading a paragraph. Colored + labeled per beat: red for injury, gold
    for mentor camp and PPV build, cream for off weeks, brand red for a
    PPV night, gold for a farewell tour. */
+function seasonChip(){
+  const g = currentSeasonGoal(); if(!g) return '';
+  const {p,done} = seasonProgress();
+  const c=G.car;
+  const weeksLeft = Math.max(0, WEEKS_PER_YEAR - c.week + 1);
+  const label = g.label(c);
+  return `<div class="arc-goal ${done?'done':''}" onclick="showSeasonBriefing()">
+    <div class="arc-goal-h"><span class="arc-goal-k">Season goal</span><span class="arc-goal-w">${weeksLeft} wk${weeksLeft===1?'':'s'} left</span></div>
+    <div class="arc-goal-t">${label}${done?' ✓':''}</div>
+    <div class="arc-goal-b"><i style="width:${p}%"></i></div>
+  </div>`;
+}
 function weekArcHeader(){
   const c=G.car;
   if(c.freeAgent) return `<div class="arc arc-fa"><div class="arc-k">Free Agent</div><div class="arc-t">Your deal is up. No one is booking you until you sign.</div></div>`;
@@ -4804,7 +5142,7 @@ function weekArcHeader(){
 }
 function renderWeek(){
   const c=G.car, el=$('weekBody');
-  const arc = weekArcHeader();
+  const arc = weekArcHeader() + seasonChip();
   if(c.freeAgent){
     el.innerHTML=`${arc}<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You are a <b style="color:var(--gold)">free agent</b>.</p>
       <button class="big" onclick="go('deal')">See Who Wants You →</button>`; return;
@@ -5293,10 +5631,24 @@ const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','grudge',1.25],['
 function story(){ return G.story||null; }
 function startStory(charId,reason){
   const c=charById(charId); if(!c) return;
-  G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year };
-  G.car.rivalId=charId; G.car.offers=null;   // rebook the week around the feud
+  // shape defaults to unset; set on first backstage action or promo choice.
+  // Once set, the feud takes a distinct SHAPE (aggressive, cool, cerebral,
+  // or underdog) that colours later beats, segment picks and match story.
+  G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year, shape:null };
+  G.car.rivalId=charId; G.car.offers=null;
   pushLog(`<b>${c.name}</b>: ${reason}`);
   pushInboxItem({ico:pico('fire',18),sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
+}
+/* Set the feud shape once, based on the first meaningful action the player
+   takes against the rival. Downstream code reads story().shape to colour
+   segments and match beats. */
+function setStoryShape(shape){
+  const st=story(); if(!st || st.shape) return;
+  st.shape = shape;
+  const labels = {aggressive:'a bloodbath', cool:'a cold war', cerebral:'a chess match', underdog:'David and Goliath'};
+  const c = charById(st.charId);
+  if(c) pushInboxItem({ico:pico('fire',18),sev:'story',
+    txt:`<b>Feud shape: ${labels[shape]||shape}.</b> The way you handled ${c.name} tonight set the tone.`});
 }
 function advanceStory(){
   const st=story(); if(!st) return;
@@ -7244,6 +7596,15 @@ function officeOptions(){
                 p:clamp(base-0.04,0.05,0.85), target:target.id});
     }
   }
+  // Ask for a release. Available if you have contract time left and are
+  // considered a bigger name than the office is booking you as. Grants
+  // free-agent status immediately, with a standing hit; opens the door to
+  // sign somewhere better.
+  if(c.deal && c.deal.weeksLeft>4 && c.rep >= (tierOf(c.rep).rep + 400)){
+    out.push({id:'release', l:'Ask for your release',
+              d:'You have outgrown this deal. Take a hit on standing to walk out early.',
+              p:clamp(base-0.10 + (c.standing-55)*0.006, 0.05, 0.80)});
+  }
   return out;
 }
 function askOffice(){
@@ -7282,6 +7643,13 @@ function doAsk(id){
     if(id==='callout'){
       startStory(o.target, 'you cut a backstage promo they will not forget.');
       c.standing=clamp(c.standing-2);
+    }
+    if(id==='release'){
+      // Break the contract, become a free agent, standing hit, but doors open.
+      c.freeAgent = true;
+      c.faOffers = freeAgentOffers();
+      c.standing = clamp((c.standing||50) - 10);
+      c.deal.weeksLeft = 0;
     }
     pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>The office agreed.</b> ${o.l.replace('Ask for','You got').replace('Demand','You got').replace('Start something with','A feud with')}.`});
     toast('They went for it');
@@ -7560,6 +7928,11 @@ function applyMatch(o,res){
     R.finisherScouted = (R.finisherScouted||0) + 1;
   }
   if(draw){ R.respect+=6; R.heat+=3; } else if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=2; R.heat+=2; }
+  // Underdog shape: if your first match against a story rival is a loss and
+  // the shape is still unset, the arc becomes David-and-Goliath.
+  if(story() && story().charId===o.oppId && !story().shape){
+    if(!res.win && !draw && R.matches===1) setStoryShape('underdog');
+  }
   if(res.quality>=70) R.respect+=8;
   if(res.quality>=82) R.respect+=7;
   if(o.stakes==='title'||o.stakes==='defense') R.heat+=6;
@@ -7875,7 +8248,20 @@ function matchStory(o,res){
   else mid=f.fin?` They hit the ${bare(f.move)} and that was that.`:` ${n} had an answer when it mattered.`;
   const nf=(res.nearFalls||0)>=3?' The near-falls down the stretch had them out of their seats.':'';
   const end=q>=75?' The crowd was still buzzing on the way out.':q<45?' The room was quiet by the finish.':'';
-  return open+mid+nf+end;
+  // Feud-shape flavour: the sentence a paper would write about the story
+  // playing out between them. Only fires when this match IS the story rival.
+  const st=story();
+  let shape='';
+  if(st && st.charId===o.oppId && st.shape){
+    const bag = {
+      aggressive: res.win?' The blood between you spilled onto the mat and you left with it on your hands.':' You paid tonight for the blood you drew last month.',
+      cool:       res.win?' The whole thing was ice cold, and the crowd loved you for it.':' You barely broke stride. It was your rival who was rattled.',
+      cerebral:   res.win?' You out-thought them tonight, ten moves ahead, one step at a time.':' They read every counter you had. You need a new page in the book.',
+      underdog:   res.win?' Nobody in the room saw it coming, and that is why the pop was the loudest of the night.':' The gap is still there, but it is smaller than it was.',
+    };
+    shape = bag[st.shape] || '';
+  }
+  return open+mid+nf+end+shape;
 }
 
 /* ============================================================
@@ -7957,6 +8343,10 @@ function advanceWeek(){
     }
   }
   if(c.deal && c.deal.weeksLeft<=0){ c.freeAgent=true; c.faOffers=freeAgentOffers(); }
+  // Scouting: when you have clearly outgrown your promo's tier, a bigger
+  // house reaches out with a signing overture. Not automatic; you can decline
+  // and hold out for a better offer or accept and break your current deal.
+  try { maybeScoutingOffer(); } catch(_){}
   if(c.week>WEEKS_PER_YEAR){ c.week=1; c.year++; yearEnd(); }
   worldTick();       // rest of the wrestling world keeps happening
   maybeTourOffer();  // a promoter overseas rings up now and then
@@ -8525,6 +8915,9 @@ function doMentorWeek(){ const c=G.car;
 }
 function yearEnd(){
   const c=G.car, w=G.w;
+  // Season report + fresh season assignment for the year we're rolling into.
+  // Deferred to the UI thread so the modal opens after week is committed.
+  setTimeout(()=>{ try{ showSeasonReport(); }catch(_){} }, 800);
   c.age++;
   // Aging is not just the calendar. It is mileage. Two wrestlers the same age
   // decline at different rates depending on how hard they worked the road and
@@ -11442,6 +11835,7 @@ function backstageInteract(charId, verb){
       if(!story() && !c.rivalId){ startStory(charId, `you cut a backstage promo they cannot let slide.`); msg=`Story started with ${ch.name}. This one is live.`; }
       else if(story() && story().charId===charId){ advanceStory(); msg=`Feud with ${ch.name} escalates.`; }
       else { msg=`Words landed. ${ch.name} is warmer on you and hotter about it.`; }
+      if(story() && story().charId===charId) setStoryShape('cool');
       if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+3,0,100);
     } else { msg=`It fell flat. ${ch.name} laughs it off.`; sev='bad'; c.standing=clamp(c.standing-1); }
   } else if(verb==='challenge'){
@@ -11455,6 +11849,7 @@ function backstageInteract(charId, verb){
     R.heat=clamp(R.heat+20,0,100);
     if(!story() && !c.rivalId){ startStory(charId, `you got personal in the hallway.`); msg=`Story started. ${ch.name} is not going to let this go.`; }
     else { msg=`${ch.name} is going to remember that.`; }
+    if(story() && story().charId===charId) setStoryShape('cerebral');
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+2,0,100);
   } else if(verb==='compliment'){
     const p = rollP(0.70);
@@ -11482,6 +11877,7 @@ function backstageInteract(charId, verb){
     const brawlWin = rnd()<0.55;
     R.heat=clamp(R.heat+34,0,100);
     if(!story() && !c.rivalId){ startStory(charId, `you swung on them in the parking lot. Someone had a camera.`); }
+    if(story() && story().charId===charId) setStoryShape('aggressive');
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+6,0,100);
     if(brawlWin){
       c.standing=clamp(c.standing-4);   // brawls always cost the office
