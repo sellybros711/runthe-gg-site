@@ -824,7 +824,10 @@ function simulateFull(build, n, seed0) {
   for (let i = 0; i < n; i++) {
     const rng = E.createSeededRNG(seed0 + i * 7919);
     const roster = build(rng);
-    const chem = E.resolveChemistry(roster, ctx);
+    /* twoSided, because the page passes it for every full run and a harness measuring a
+       different chemistry rule is measuring a different game. Over half the links on a
+       twelve man roster used to span the two units. */
+    const chem = E.resolveChemistry(roster, ctx, { twoSided: true });
     const sched = E.generateSchedule(data, rng);
     const playoffs = E.generatePlayoffs(data, rng);
     const run = E.playRun(roster, chem.multiplier, sched.games, playoffs, leagueContext,

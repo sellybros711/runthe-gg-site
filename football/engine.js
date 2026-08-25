@@ -3023,15 +3023,30 @@ function qbHubBonus(roster, links) {
 const lastWord = (name) => String(name || '').trim().split(/\s+/).pop();
 
 function resolveChemistry(roster, ctx, opts) {
+  /* CHEMISTRY DOES NOT CROSS THE LINE OF SCRIMMAGE, and only Full Team has a line for it to
+     cross. Every other mode drafts one side of the ball, so every pair in the roster is on
+     the same unit and this rule costs nothing to apply.
+     Here it is the difference between a link that means something and one that does not.
+     Chemistry in this game is "these two have played together and it shows": a battery is a
+     quarterback and the receiver he threw to, the hub bonus is a quarterback with men he
+     knows. A cornerback and a left tackle who happened to share a locker room never took a
+     snap together, and pricing that as though they combine is the same category error as
+     rating a defense with rosterStructure. */
+  const split = !!(opts && opts.twoSided);
+  const sideOf = (p) => DEFENSE_POSITIONS.indexOf(p.position) >= 0;
   const links = [];
   for (let i = 0; i < roster.length; i++) {
     for (let j = i + 1; j < roster.length; j++) {
+      if (split && sideOf(roster[i]) !== sideOf(roster[j])) continue;
       const best = pairLinks(roster[i], roster[j], ctx, opts)[0];
       if (best) links.push({ ...best, a: roster[i].name, b: roster[j].name });
     }
   }
   /* THE QUARTERBACK AS A HUB, on top of the pairs. See CHEMISTRY.QB_HUB. */
-  const hub = qbHubBonus(roster, links);
+  /* The hub counts a quarterback's connections, and it is built from `links`, which is
+     already free of cross-side pairs. Passing only his own unit as well, so the count of
+     "men he knows" cannot be inflated by a roster that merely has twelve men in it. */
+  const hub = qbHubBonus(split ? roster.filter((p) => !sideOf(p)) : roster, links);
   if (hub) links.push(hub);
 
   const positives = links.filter((l) => l.value > 0).sort((a, b) => b.value - a.value);
@@ -3690,7 +3705,7 @@ const FULL_CAP_MUSD = 280;
  * still lands on top exactly as it did.
  *
  * Fitted, not chosen. See simulator.js --fullteam. */
-const FULL_TALENT = 0.76;
+const FULL_TALENT = 0.78;
 
 /*
  * ─── FULL TEAM: BOTH SIDES OF THE BALL, TWELVE MEN, ONE CAP ────────────────────────

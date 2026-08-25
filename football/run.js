@@ -52,7 +52,10 @@ const runKey = (p) => `${p.player_id}:${p.season}`;
  * chemistry it reports. Get one wrong and the tile promises a bonus the season
  * does not pay.
  */
-const chemOpts = (run) => ({ sameClub: !!(run && run.franchise) });
+/* twoSided is on for Full Team and only Full Team: it is the one mode holding both units,
+   so it is the one mode where a chemistry pair can span two men who never played a down
+   together. See resolveChemistry. */
+const chemOpts = (run) => ({ sameClub: !!(run && run.franchise), twoSided: !!(run && run.full) });
 
 /**
  * Money still available. The re-spin fee comes out of the cap, so the budget

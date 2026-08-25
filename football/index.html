@@ -5697,8 +5697,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=62"></script>
-<script src="run.js?v=72"></script>
+<script src="engine.js?v=63"></script>
+<script src="run.js?v=73"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -5899,7 +5899,12 @@ function runModeLabel(){
 /* What chemistry needs to know about the mode. Same object run.js builds, and it has to
    be passed at every call site or the rail on the draft screen draws links the season
    does not pay for. */
-function chemOpts(){ return {sameClub:!!(run&&run.franchise)}; }
+/* MUST MATCH run.js's chemOpts EXACTLY. The two exist because the page and the module each
+   need the answer and neither imports the other; they have always had to agree, and now
+   they have a second field to agree about. A page that forgot twoSided would draw chemistry
+   arcs between a quarterback and a safety and then a season would score as though they were
+   not there. */
+function chemOpts(){ return {sameClub:!!(run&&run.franchise),twoSided:!!(run&&run.full)}; }
 
 /* ---------- THE TEAM SKIN ----------
    One Franchise mode should not look like free play with a different wheel, so the moment a team
