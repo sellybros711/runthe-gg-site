@@ -31060,7 +31060,7 @@ function overlayCourseRecords(screen){
   const boardWrap=$(`<div></div>`); boardWrap.innerHTML=emojifyIcons(boardHTML); ov.appendChild(boardWrap);
   // owner ("leaderboard won't load"): a failed board now says why and offers a retry instead of a dead end
   if(boardFail) ov.appendChild(boardFailNode('Couldn’t load today’s board. '+(boardErrTxt(boardCache)||'Check your connection and try again.'),
-    ()=>{ if(tab==='legend'){ dbCacheLegend=null; dbLoadLegend(todaySeed); } else { dbCache=null; dbLoad(todaySeed); } }));
+    ()=>{ bumpBoardEpoch(); if(tab==='legend'){ dbCacheLegend=null; dbLoadLegend(todaySeed); } else { dbCache=null; dbLoad(todaySeed); } }));
   if(tab==='legend'){
     // the legend tier keeps its own all-time records here (the ALL COURSES tab holds the human records)
     const online=!!(crCacheLegend&&crCacheLegend.ok);
@@ -31411,6 +31411,15 @@ let lbDailyCache={}, lbWeekCache={};   // CS393: Daily / Weekly leaderboard tabs
 let _pendingDaily=null, crCache=null, dbCache=null;   // daily-challenge backend (Phase 3)
 let crCacheLegend=null, dbCacheLegend=null;   // Legend-tier course records / board (separate from the human ones above)
 let crCacheSpot=null, dbCacheSpot=null, _pendingSpot=null;   // Monthly Spotlight course records / board (own bucket)
+/* A board loader commits its rows AFTER an await, so nulling a cache is not enough on its own: a fetch
+   that was already in flight when the cache was cleared would land afterwards and overwrite the cleared
+   value with a PRE-submit snapshot. That snapshot is fresh and ok:true, so boardStale() says nothing needs
+   refetching and the player does not appear on the board until a page reload. This bit the daily exactly
+   that way (submit and the result screen's board fetch race, and the submit usually wins). So every clear
+   bumps an epoch, every loader captures it, and a loader whose epoch has moved discards its result and
+   lets the next render refetch. Bump via bumpBoardEpoch(), not by hand. */
+var boardEpoch=0;
+function bumpBoardEpoch(){ boardEpoch++; }
 let dailyAttemptsCheckedDay=null;   // guards reconcileDailyAttempts() to once per day per session
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
 /* THE KEY EVERY OTHER GAME ON THE SITE SHARES. supabase-js stores a session at
@@ -31489,7 +31498,7 @@ async function sbApply(session){
     // refresh course records + today's attempt count from the server RIGHT on sign-in, not just whenever
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
-    crCache=null; crLoad(); reconcileDailyAttempts();
+    bumpBoardEpoch(); crCache=null; crLoad(); reconcileDailyAttempts();
     cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
@@ -31554,6 +31563,7 @@ async function sbSignOut(){
   try{ localStorage.removeItem(HOME_AUTH_KEY); }catch(e){}
   setRemember(false);
   sbUser=null; sbUsername=null; sbProfile=null; sbNameFlag=null; lbCache={}; lbDailyCache={}; lbWeekCache={}; _pendingSeason=null;
+  bumpBoardEpoch();
   _pendingDaily=null; _pendingSpot=null; crCache=null; dbCache=null; crCacheSpot=null; dbCacheSpot=null;
   crCacheLegend=null; dbCacheLegend=null; lifeCache={}; _walletCache=null;
   // NOTHING from the signed-in profile may bleed into the guest session. Every per-player store is
@@ -31931,7 +31941,7 @@ async function cloudPull(){
     LS.set('bag_courserecords', mergeCourseRecords(courseRecords(), server.courseRecords));           // restore course records cross-device
     LS.set('bag_courserecords_legend', mergeCourseRecords(courseRecordsLegend(), server.courseRecordsLegend));
     LS.set('bag_courserecords_spotlight', mergeCourseRecords(courseRecordsSpot(), server.courseRecordsSpot));
-    crCache=null; crCacheLegend=null; crCacheSpot=null;   // force the records overlay to re-read the freshly-merged local store
+    bumpBoardEpoch(); crCache=null; crCacheLegend=null; crCacheSpot=null;   // force the records overlay to re-read the freshly-merged local store
     // identity (look + name): last-write-wins by the look's _ts, so the most-recently-customized device wins
     { const sv=server.look, lv=LS.get(lookKey(),null);
       if(sv && typeof sv==='object' && (sv._ts||0) > ((lv&&lv._ts)||0)){
@@ -31997,7 +32007,7 @@ async function maybeBackfillLook(){
     const {data,error}=await sb.rpc('runtour_backfill_look',{p_look:lookForBoard()});
     if(error) return;   // migration 54 not applied yet → try again on the next sign-in
     try{ LS.set(flagK,1); }catch(e){}
-    if((data|0)>0){ lbCache={}; lbDailyCache={}; lbWeekCache={}; if(S.overlay==='leaderboard') render(); }
+    if((data|0)>0){ bumpBoardEpoch(); lbCache={}; lbDailyCache={}; lbWeekCache={}; if(S.overlay==='leaderboard') render(); }
   }catch(e){}
 }
 function loadPendingSeasons(){ const a=LS.get(PENDING_SEASONS_KEY,[]); return Array.isArray(a)?a:[]; }
@@ -32043,10 +32053,12 @@ async function flushPendingSeasons(){
 async function lbDailyLoad(day){
   if(lbDailyCache[day] && lbDailyCache[day].loading) return;
   if(!sb){ lbDailyCache[day]={rows:[],ok:false}; render(); return; }
+  const _ep=boardEpoch;
   lbDailyCache[day]={loading:true};
   try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200});
+    if(_ep!==boardEpoch){ render(); return; }
     lbDailyCache[day]={rows:(data||[]),ok:!error};
-  }catch(e){ lbDailyCache[day]={rows:[],ok:false}; }
+  }catch(e){ if(_ep!==boardEpoch){ render(); return; } lbDailyCache[day]={rows:[],ok:false}; }
   render();
 }
 // Weekly leaderboard tab — cumulative daily performance across the current weekKey() 7-day block.
@@ -32054,10 +32066,12 @@ async function lbWeekLoad(from,to){
   const k=from+'-'+to;
   if(lbWeekCache[k] && lbWeekCache[k].loading) return;
   if(!sb){ lbWeekCache[k]={rows:[],ok:false}; render(); return; }
+  const _ep=boardEpoch;
   lbWeekCache[k]={loading:true};
   try{ const {data,error}=await sb.rpc('runtour_daily_week_board',{p_from:from,p_to:to,p_limit:200});
+    if(_ep!==boardEpoch){ render(); return; }
     lbWeekCache[k]={rows:(data||[]),ok:!error};
-  }catch(e){ lbWeekCache[k]={rows:[],ok:false}; }
+  }catch(e){ if(_ep!==boardEpoch){ render(); return; } lbWeekCache[k]={rows:[],ok:false}; }
   render();
 }
 async function sbSubmitSeason(s){
@@ -32195,7 +32209,7 @@ async function sbSubmitDaily(b){
   // owner: store the hole-by-hole so other players' cards show a scorecard. Its own graceful layer (tried
   // first, above p_look) so a pre-migration-69 DB simply falls back to p_look without losing the look.
   const withHoles=Object.assign({p_holes:(Array.isArray(b.holes)&&b.holes.length)?b.holes:null}, withLook);
-  const clearCaches=()=>{ crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null; crCacheSpot=null; dbCacheSpot=null; lbDailyCache={}; lbWeekCache={}; };
+  const clearCaches=()=>{ bumpBoardEpoch(); crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null; crCacheSpot=null; dbCacheSpot=null; lbDailyCache={}; lbWeekCache={}; };
   try{
     // supabase-js resolves (doesn't throw) on a Postgres error, so the {error} MUST be checked explicitly,
     // otherwise a rejected submission looks identical to a success and the round is silently never posted.
@@ -32222,7 +32236,7 @@ async function sbSubmitDaily(b){
       try{
         const {error:e3}=await sb.rpc('runtour_submit_daily', base);
         if(e3) throw e3;
-        crCache=null; dbCache=null; lbDailyCache={}; lbWeekCache={};
+        bumpBoardEpoch(); crCache=null; dbCache=null; lbDailyCache={}; lbWeekCache={};
       }catch(e3){ console.error('[RunTheTour] daily submit retry failed:', (e3&&e3.message)||e3, b); }
     }
   }
@@ -32263,8 +32277,10 @@ async function reconcileDailyAttempts(){
 async function crLoad(){
   if(!sb){ crCache={recs:{},ok:false,err:'offline',t:Date.now()}; render(); return; }
   if(crCache&&crCache.loading) return;
+  const _ep=boardEpoch;
   crCache={recs:(crCache&&crCache.recs)||{},ok:false,loading:true,t:Date.now()};
   const {data,error}=await rpcTry('runtour_course_records');
+  if(_ep!==boardEpoch){ render(); return; }
   const recs=buildCourseRecs(data); crCache={recs,ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   if(!error) adoptCourseRecs(recs, courseRecords(), 'bag_courserecords');   // adopt/merge the global record (incl. tied co-holders) locally
   render();
@@ -32275,8 +32291,10 @@ async function crLoad(){
 async function crLoadLegend(){
   if(!sb){ crCacheLegend={recs:{},ok:false,err:'offline',t:Date.now()}; render(); return; }
   if(crCacheLegend&&crCacheLegend.loading) return;
+  const _ep=boardEpoch;
   crCacheLegend={recs:(crCacheLegend&&crCacheLegend.recs)||{},ok:false,loading:true,t:Date.now()};
   const {data,error}=await rpcTry('runtour_course_records',{p_legend:true});
+  if(_ep!==boardEpoch){ render(); return; }
   const recs=buildCourseRecs(data); crCacheLegend={recs,ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   if(!error) adoptCourseRecs(recs, courseRecordsLegend(), 'bag_courserecords_legend');
   render();
@@ -32284,16 +32302,20 @@ async function crLoadLegend(){
 async function dbLoad(day){
   if(!sb){ dbCache={day,rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
   if(dbCache&&dbCache.loading&&dbCache.day===day) return;
+  const _ep=boardEpoch;
   dbCache={day,rows:[],ok:false,loading:true,t:Date.now()};
   const {data,error}=await rpcTry('runtour_daily_board',{p_day:day,p_limit:200});
+  if(_ep!==boardEpoch){ render(); return; }   // cleared mid-flight (a score posted): discard, let render refetch
   dbCache={day,rows:(data||[]),ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   render();
 }
 async function dbLoadLegend(day){
   if(!sb){ dbCacheLegend={day,rows:[],ok:false,err:'offline',t:Date.now()}; render(); return; }
   if(dbCacheLegend&&dbCacheLegend.loading&&dbCacheLegend.day===day) return;
+  const _ep=boardEpoch;
   dbCacheLegend={day,rows:[],ok:false,loading:true,t:Date.now()};
   const {data,error}=await rpcTry('runtour_daily_board',{p_day:day,p_limit:200,p_legend:true});
+  if(_ep!==boardEpoch){ render(); return; }
   dbCacheLegend={day,rows:(data||[]),ok:!error,err:error?(error.message||'error'):'',t:Date.now()};
   render();
 }
@@ -32301,17 +32323,21 @@ async function dbLoadLegend(day){
 // runs supabase/45_runtour_spotlight.sql - the p_spotlight RPC arg simply errors until then, caught below.
 async function crLoadSpot(){
   if(!sb){ crCacheSpot={recs:{},ok:false}; render(); return; }
+  const _ep=boardEpoch;
   try{ const {data,error}=await sb.rpc('runtour_course_records',{p_spotlight:true});
+    if(_ep!==boardEpoch){ render(); return; }
     const recs=buildCourseRecs(data); crCacheSpot={recs,ok:!error};
     if(!error) adoptCourseRecs(recs, courseRecordsSpot(), 'bag_courserecords_spotlight');
-  }catch(e){ crCacheSpot={recs:{},ok:false}; }
+  }catch(e){ if(_ep!==boardEpoch){ render(); return; } crCacheSpot={recs:{},ok:false}; }
   render();
 }
 async function dbLoadSpot(day){
   if(!sb){ dbCacheSpot={day,rows:[],ok:false}; render(); return; }
+  const _ep=boardEpoch;
   try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:200,p_spotlight:true});
+    if(_ep!==boardEpoch){ render(); return; }
     dbCacheSpot={day,rows:(data||[]),ok:!error};
-  }catch(e){ dbCacheSpot={day,rows:[],ok:false}; }
+  }catch(e){ if(_ep!==boardEpoch){ render(); return; } dbCacheSpot={day,rows:[],ok:false}; }
   render();
 }
 /* ============================================================================
