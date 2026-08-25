@@ -16933,3 +16933,59 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: the notability filter in `seasonFarewells` (the ov >= 82 floor and whether a win ledger entry
   counts), which weeks carry the note in `noteWorldTurnover`, and the `.wk-farewell` / `.wk-arrival` row
   colours.
+
+### THE CALENDAR DRIFTS: sponsors change, stops die, new ones are founded
+- **The gap.** The schedule was fixed for all time: 13 anchors plus a rotating window walked through one
+  per-career shuffle of the same 20 regular stops. So a 30-year career played the same 33 tournaments in
+  year 1 and year 30, under the same names. A real tour renames stops as sponsors come and go, loses
+  events, and adds new ones - none of which happened here, so the calendar had no era.
+- **Three kinds of drift, all decided ONCE per career** by `driftPlan(seed)` (a `mulberry32` off
+  `careerSeed ^ 0x0d21f7a3`, cached in a `var _driftCache`): a stop takes a **new sponsor's name** (55%
+  of the 20 rotating stops, each with 2 hand-written alternates in `DRIFT_ALT`), **3 stops fold** for
+  good, and **3 new stops are founded** from an 8-event `DRIFT_FOUND` pool. Nothing moves before
+  `DRIFT_FIRST_YEAR=4` - the tour holds still while a rookie learns it.
+- **Scoped to the ROTATING pool only, never the anchors, and that is load-bearing.** The 4 majors, The
+  Players, the signature weeks and the playoffs are keyed BY NAME all over the game - `majorStats`, the
+  Grand Slam check, `PLAYOFF_EV`, `ENTRY_CAP`, the `/Stadium Classic/i` achievement, the Legend Circuit's
+  past-champion exemptions. Renaming one would quietly break every one of them, so drift only ever
+  touches the 20 stops nothing else depends on.
+- **A renamed stop is the SAME tournament**, which is the whole reason it reads as a sponsor change
+  rather than a new event: the clone carries `evt.base` (the founding name), and the four name-keyed
+  lookups fall back through it - `eventWeights` (course fit), `eventCourse` (venue subtitle), the council
+  impact read, and `momentCourseKey`, whose signature changed from a NAME to the EVENT so it can reach
+  `base` (all 4 call sites updated). Venue, course fit, hazards and the playable course follow the
+  tournament, not the sponsor.
+- **Renames are applied to the inflated CLONES, after `inflatePurses`** - never to the shared `ANCHORS` /
+  `REG_POOL` templates, which every season builds from. Asserted, because mutating a template would
+  rename the stop in every career at once.
+- **`driftNews(year, seed)`** is the same shape filtered to the year it happens, and `buildTourDispatch`
+  now treats a calendar change as news in its own right: an "Around the tour" section on the winter
+  Dispatch, and a page that builds even in a winter where nobody retired or debuted.
+- **Measured drift**: a year-15 slate differs from year 1 by an average of 5.3 events, year 28 by 8.1, and
+  **0 of 24 seeds produce an identical calendar**.
+- **THREE COPY BUGS WERE CAUGHT BY READING THE RENDERED PAGE, NOT BY AN ASSERTION** - all three passed a
+  green suite, which is the lesson worth keeping:
+  - `folds after 10` - the fold line was dated with `S.year`, the CAREER year, on a page dated in
+    CALENDAR years. `calYear` vs `S.year` is an easy thing to reach for wrongly on career surfaces.
+  - `a new sponsor, the San Diego Open as was` - archaic, and it hardcoded "the", which is the same
+    double-article trap the farewell copy hit. Now `formerly ${evtThe(base)}`, reusing the helper.
+  - **`Houston Open folds after 2035` for a stop the player had known as the Bayou City Open since year
+    6.** Renames and folds are drawn independently, so **311 of 900 folds (35%) are of a tournament
+    renamed years earlier** - a third of fold notices named a tournament the tour had retired. `driftNews`
+    now attaches the name in force in its final season (`disp`) and the page uses it.
+- Verified: `drift_test.mjs` **31 pass / 0 fail / 0 page errors** - the plan (coverage, no alternate
+  colliding with a real event, determinism per save, variety across saves), the guarantees (anchors never
+  touched, templates never mutated, a folded stop never returning, the schedule never starving, the Daily
+  and the Legend Circuit never drifting), a renamed stop keeping its venue / fit / playable course, and
+  the Dispatch copy. The two fold-name assertions were **run against a temp copy with the fix reverted and
+  seen to FAIL** (`showsOld: true` - announcing "San Diego Open" seven years after it stopped existing),
+  so they discriminate rather than asserting the setup.
+- **A stale fixture was fixed, not worked around**: `dispatch_test`'s "a quiet winter builds no page"
+  broke because a calendar change is now news and its fixture inherited a drifting year from the previous
+  test. It now picks a `(seed, year)` whose calendar genuinely holds still, preserving its real intent -
+  back to 27/27. Regressions green: farewell 25, calendar 25, records 24, rest 37, rival 17, clubs 23,
+  circuit 14, morris 16, daily_glitch 5, board_race 11. `goals_test` fails 3 **identically on the deployed
+  build** (verified by running it against `origin/main:golf/index.html`) - the known stale rookie-tier
+  fixture. Inline scripts parse; block 0 is the JSON-LD tag, fails identically on baseline.
+- Tunable: `DRIFT_RENAME_P` / `DRIFT_FOLDS` / `DRIFT_FOUNDS` (how much moves), `DRIFT_FIRST_YEAR` (when it
+  starts), and the `DRIFT_ALT` / `DRIFT_FOUND` tables (what the new names are).

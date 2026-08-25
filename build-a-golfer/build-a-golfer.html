@@ -5749,9 +5749,101 @@ function majorsSchedule(){ return inflatePurses(ANCHORS.filter(e=>e.major),S.yea
 // with a max of 4 per country, and gold/silver/bronze medals instead of prize money.
 function isOlympicYear(year){ return (year||1)%4===0; }   // every 4 years, first in year 4 (then 8, 12, ...)
 const OLYMPICS_EVT={name:'Summer Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
+/* ---- SCHEDULE DRIFT: the calendar a rookie learns is not the one a veteran plays ----
+   A rotating stop is a sponsor's name on a golf tournament, and sponsors change. Over thirty years
+   events get renamed, folded and founded, so a year-15 slate should not read like year 1. Deterministic
+   off careerSeed (same save, same drift, resume-safe) and scoped to the ROTATING pool only: the majors,
+   the signature weeks, the playoffs and the finale are the tour's constants and never drift, which is
+   also what keeps majorStats, the Grand Slam, the playoff flags and the entry caps untouched.
+   A renamed stop keeps its identity in `base`, so the venue, the course fit and the hazards follow the
+   TOURNAMENT rather than the sponsor - only what it is called changes. */
+const DRIFT_ALT={
+  'Island Open':['Pacific Isles Open','Makani Open'],
+  'Desert Classic':['Sunridge Desert Classic','Mirage Classic'],
+  'San Diego Open':['Seacliff Open','Harbor City Open'],
+  'Phoenix Open':['Cactus Ridge Open','Valley Open'],
+  'Canyon Crest Invitational':['Silver Screen Invitational','Westgate Invitational'],
+  'Mexico Open':['Baja Open','Costa Verde Open'],
+  'Palm Coast Classic':['Atlantic Coast Classic','Sunbelt Classic'],
+  'Gulf Coast Classic':['Cypress Bay Classic','Tidewater Classic'],
+  'Houston Open':['Bayou City Open','Lone Star Open'],
+  'Texas Open':['Alamo Open','Hill Country Open'],
+  'Lighthouse Classic':['Harbourfront Classic','Beacon Classic'],
+  'Bayou Team Classic':['Delta Team Classic','Crescent City Team Classic'],
+  'Charlotte Open':['Queen City Open','Carolina Open'],
+  'Fort Worth Invitational':['Old Republic Invitational','Trinity River Invitational'],
+  'Canadian Open':['Maple Leaf Open','Dominion Open'],
+  'Motor City Classic':['Great Lakes Classic','Rivertown Classic'],
+  'Quad Cities Classic':['Heartland Classic','River Valley Classic'],
+  'Scottish Open':['Caledonian Open','Highland Open'],
+  'Twin Cities Open':['North Star Open','Lakeside Open'],
+  'Piedmont Classic':['Foothills Classic','Cardinal Classic']
+};
+// new tournaments the tour can found mid-career, taking a week on the rotating calendar
+const DRIFT_FOUND=[
+  ['Pacific Rim Championship',9.6,'reg',2],['Gulf Desert Championship',10.5,'reg',5],
+  ['Southern Cross Classic',8.8,'reg',9],['Cascade Championship',8.9,'reg',13],
+  ['Bayfront Championship',9.2,'reg',18],['Summit Championship',9.4,'reg',22],
+  ['Highlands Championship',9,'reg',26],['Meridian Open',9.1,'reg',29]
+].map(mkEvt);
+const DRIFT_FIRST_YEAR=4;    // the tour holds still while a rookie learns it
+const DRIFT_RENAME_P=0.55, DRIFT_FOLDS=3, DRIFT_FOUNDS=3;
+var _driftCache=null;        // var, not let: driftPlan can be reached before this line executes
+// the whole career's drift, rolled once off the seed. Sorted by year so the Dispatch can report it.
+function driftPlan(seed){
+  const key=(((seed==null?0:seed)^0x0d21f7a3)>>>0);
+  if(_driftCache && _driftCache.key===key) return _driftCache.p;
+  const rng=mulberry32(key), p={renames:[],folds:[],founds:[]};
+  REG_POOL.forEach(e=>{
+    const alts=DRIFT_ALT[e.name]; if(!alts||!alts.length) return;
+    const roll=rng(), yr=DRIFT_FIRST_YEAR+Math.floor(rng()*20), pick=Math.floor(rng()*alts.length);
+    if(roll<DRIFT_RENAME_P) p.renames.push({base:e.name, name:alts[pick], year:yr});
+  });
+  const foldable=seededShuffle(REG_POOL.map(e=>e.name),(key^0x51f0)>>>0);
+  for(let i=0;i<DRIFT_FOLDS&&i<foldable.length;i++) p.folds.push({name:foldable[i], year:8+Math.floor(rng()*16)});
+  const newbies=seededShuffle(DRIFT_FOUND,(key^0xf00d)>>>0);
+  for(let i=0;i<DRIFT_FOUNDS&&i<newbies.length;i++) p.founds.push({evt:newbies[i], year:6+Math.floor(rng()*16)});
+  p.renames.sort((a,b)=>a.year-b.year); p.folds.sort((a,b)=>a.year-b.year); p.founds.sort((a,b)=>a.year-b.year);
+  _driftCache={key,p};
+  return p;
+}
+// what the calendar looks like in a given year: what has folded, what has joined, what things are called
+function driftFor(year,seed){
+  const y=year||1, out={ren:{},gone:[],add:[]};
+  try{
+    if(S.daily||S.circuitMode) return out;
+    const p=driftPlan(seed);
+    p.folds.forEach(f=>{ if(y>=f.year) out.gone.push(f.name); });
+    p.renames.forEach(r=>{ if(y>=r.year && out.gone.indexOf(r.base)<0) out.ren[r.base]=r.name; });
+    p.founds.forEach(f=>{ if(y>=f.year) out.add.push(f.evt); });
+  }catch(e){}
+  return out;
+}
+// the drift that lands FOR a given season, i.e. what is new about this year's calendar
+function driftNews(year,seed){
+  const y=year||1, out={renames:[],folds:[],founds:[]};
+  try{
+    if(S.daily||S.circuitMode) return out;
+    const p=driftPlan(seed), gone=[];
+    p.folds.forEach(f=>{ if(y>=f.year) gone.push(f.name); });
+    p.renames.forEach(r=>{ if(r.year===y && gone.indexOf(r.base)<0) out.renames.push(r); });
+    // a stop that folds is announced under the name it carried in its LAST season, not the name
+    // it was founded with: a third of folds are of a tournament renamed years earlier.
+    p.folds.forEach(f=>{
+      if(f.year!==y) return;
+      const ren=p.renames.find(r=>r.base===f.name && r.year<f.year);
+      out.folds.push({name:f.name, year:f.year, disp:ren?ren.name:f.name});
+    });
+    p.founds.forEach(f=>{ if(f.year===y) out.founds.push(f); });
+  }catch(e){}
+  return out;
+}
 function seasonSchedule(year,seed){
   let pool=REG_POOL;
-  try{ const gone=tourDropped(); if(gone.length) pool=REG_POOL.filter(e=>gone.indexOf(e.name)<0); }catch(e){}
+  const dr=driftFor(year,seed);
+  try{ const gone=tourDropped(); if(gone.length) pool=pool.filter(e=>gone.indexOf(e.name)<0); }catch(e){}
+  if(dr.gone.length) pool=pool.filter(e=>dr.gone.indexOf(e.name)<0);
+  if(dr.add.length) pool=pool.concat(dr.add);
   const shuffled=seededShuffle(pool,((seed!=null?seed:0)^0x5eed1e)>>>0);
   const N=shuffled.length, M=Math.min(REG_PER_SEASON,N);
   const off=((((year||1)-1)*REG_STRIDE)%N+N)%N;
@@ -5765,6 +5857,9 @@ function seasonSchedule(year,seed){
   else if(!S.daily && playerInTeamEvent(year)){ const te=teamEventForYear(year);
     list=list.concat([{name:te.short, type:'teamcup', wk:38, teamcup:true, teamType:te.type, major:false, big:false, purse:0, noCut:true}]); }
   const out=inflatePurses(list,year).sort((a,b)=>a.wk-b.wk);
+  // sponsors change, the tournament does not. Applied to the inflated CLONES, never to the shared
+  // ANCHORS/REG_POOL templates, and `base` keeps the venue, the fit and the hazards with the event.
+  out.forEach(e=>{ const nn=dr.ren[e.name]; if(nn){ e.base=e.name; e.name=nn; } });
   // The Tour Championship's FORMAT, decided per season: normally the five-day knockout, but a tour that
   // has voted the bracket out plays the old staggered stroke-play finale instead. Set on the inflated
   // CLONE, never on the shared ANCHORS template.
@@ -5996,8 +6091,8 @@ function eventWeights(evt){
   // Field-wide by construction, so it reshapes who wins rather than handing the player an edge.
   let tw=null, m=null;
   try{ const te=tourEff(); if(te.any){ tw=te.w; m=tourFit(evt.name); } }catch(e){}
-  m=m||COURSEFIT[evt.name];
-  if(!m && !tw) return CATS;                                       // default = neutral base weights
+  m=m||COURSEFIT[evt.name]||(evt.base?COURSEFIT[evt.base]:null);   // a renamed stop keeps its course fit
+  if(!m && !tw) return CATS;                                     // default = neutral base weights
   const raw=CATS.map(c=>({k:c.k,short:c.short,w:c.w*(m?m[c.k]:1)*((tw&&tw[c.k])||1)}));
   const sum=raw.reduce((s,x)=>s+x.w,0);
   return raw.map(x=>({k:x.k,short:x.short,w:x.w/sum}));            // renormalize to 1.0
@@ -6124,7 +6219,7 @@ const EVENT_COURSE={
 function eventCourse(evt){
   if(!evt) return null;
   try{ const fn=tourEff().fitName; if(fn && fn[evt.name]) return {v:'A new rota', loc:fn[evt.name]}; }catch(e){}
-  const c=EVENT_COURSE[evt.name]; if(!c) return null;
+  const c=EVENT_COURSE[evt.name]||(evt.base?EVENT_COURSE[evt.base]:null); if(!c) return null;
   return {v:c.v, loc:c.loc};
 }
 // #8 (owner: less RNG so the build + your decisions beat luck): LATENT_S 0.92→0.80 tightens per-hole
@@ -6583,10 +6678,15 @@ function buildTourDispatch(w){
   if(prev) L.slice(0,50).forEach((x,i)=>{ const was=prev[key(x)]; if(was==null) return;
     const gain=was-(i+1); if(gain<5) return;
     if(!mover || gain>mover.gain) mover={name:x.you?meName():x.name, you:!!x.you, from:was, to:i+1, gain}; });
-  if(!retired.length && !debuts.length && !displaced && !mover) return null;   // a quiet winter is no page at all
+  // the calendar itself changing is news: a stop renamed by a new sponsor, one folded, one founded.
+  // Read for the season ABOUT to be played (continueFranchise advances S.year before building this).
+  let drift=null;
+  try{ const dn=driftNews(S.year||yr, S.careerSeed);
+       if(dn.renames.length||dn.folds.length||dn.founds.length) drift=dn; }catch(e){}
+  if(!retired.length && !debuts.length && !displaced && !mover && !drift) return null;   // a quiet winter is no page at all
   // careers that predate the win ledger have no record to read back, so the page keeps quiet about wins
   // rather than reporting a legend's career as "no wins on tour".
-  return {year:yr, retired, debuts, top, no1, displaced, mover, ledger:Object.keys(wins).length>0};
+  return {year:yr, retired, debuts, top, no1, displaced, mover, drift, ledger:Object.keys(wins).length>0};
 }
 // Tour Card line: finish inside the top CARD_LINE in the world to keep a full card for next season
 const CARD_LINE=100;
@@ -6992,7 +7092,7 @@ function matchOppHole(ci, salt){
 }
 function bracketStartMatch(B, mp){
   const evt=B.evt, ri=B.rounds.length, R=B.RDS[ri];
-  const key=momentCourseKey(evt.name), c=DAILY_COURSES[key];
+  const key=momentCourseKey(evt), c=DAILY_COURSES[key];
   const p=buildPlayer(); const sk={}; CATS.forEach(cc=>sk[cc.k]=p[cc.k]);
   // Move the opponent by a UNIFORM shift (see MATCH_SKILL_K) so the daily engine sees the same edge the
   // sim would have given you. A uniform shift, not a per-skill stretch: the gap is what needs amplifying,
@@ -16923,7 +17023,7 @@ function tourImpact(entry){
         let base=0,now=0,n=0;
         sched.forEach(evt=>{
           if(evt.teamcup) return;
-          const m=COURSEFIT[evt.name]; const raw=CATS.map(c=>({k:c.k,w:c.w*(m?m[c.k]:1)}));
+          const m=COURSEFIT[evt.name]||(evt.base?COURSEFIT[evt.base]:null); const raw=CATS.map(c=>({k:c.k,w:c.w*(m?m[c.k]:1)}));
           const s1=raw.reduce((a,x)=>a+x.w,0);
           base+=raw.reduce((a,x)=>a+me[x.k]*(x.w/s1),0);
           const raw2=CATS.map(c=>({k:c.k,w:c.w*(m?m[c.k]:1)*(f.w[c.k]||1)}));
@@ -19864,15 +19964,18 @@ function contractsReportHTML(list, signing){
 }
 // map a scheduled event to a playable DAILY_COURSES venue (EVENT_COURSE references those objects
 // directly, so identity recovers the internal key); unmapped events get a deterministic stand-in.
-function momentCourseKey(evtName){
-  const ec=EVENT_COURSE[evtName];
+// Takes the EVENT (a bare name still works). A drifted stop resolves through `base`, so a sponsor
+// change never moves the tournament to a different golf course.
+function momentCourseKey(evt){
+  const nm=(evt&&evt.name!=null)?evt.name:evt, id=(evt&&evt.base)||nm;
+  const ec=EVENT_COURSE[nm]||EVENT_COURSE[id];
   if(ec){ for(const k of Object.keys(DAILY_COURSES)) if(DAILY_COURSES[k]===ec) return k; }
   const keys=Object.keys(DAILY_COURSES);
-  return keys[(dHash(evtName||'x')>>>0)%keys.length];
+  return keys[(dHash(String(id||'x'))>>>0)%keys.length];
 }
 function startMomentRound(ce, info){
   S.lastMomentReel=null;   // fresh Moment → drop any prior played-final reel
-  const key=momentCourseKey(ce.evt.name), c=DAILY_COURSES[key];
+  const key=momentCourseKey(ce.evt), c=DAILY_COURSES[key];
   const p=buildPlayer(); const sk={}; CATS.forEach(cc=>sk[cc.k]=p[cc.k]);
   // FAIRNESS calibration: playing the Moment must carry the same EXPECTED score as simming it -
   // your edge comes from the decisions, not from switching engines. Estimate both engines' means
@@ -19919,7 +20022,7 @@ function finishMomentRound(){
   ce.roundsDone=4; ce._momentHoles=holes; ce._momentTotal=total;
   // stash this played final's holes (with shot data) for a "Share Highlights" reel on the win celebration.
   // Stamped with event+year so a recurring major next year can't reuse stale holes; cleared on a new Moment.
-  try{ S.lastMomentReel={key:momentCourseKey(ce.evt.name), evt:ce.evt.name, year:S.year||1, holes:holes.slice()}; }catch(e){ S.lastMomentReel=null; }
+  try{ S.lastMomentReel={key:momentCourseKey(ce.evt), evt:ce.evt.name, year:S.year||1, holes:holes.slice()}; }catch(e){ S.lastMomentReel=null; }
   // CS276: the Sunday decisions you made carry career stakes (confidence + followers + persona), applied
   // once here regardless of whether a playoff follows. resultMomentum (from the final position) applies
   // separately in finalizeEvent, so the two don't double-count.
@@ -20008,7 +20111,7 @@ function buildPoOrder(shotsArr){   // tee in listed order, then farthest-from-ho
   return order;
 }
 function poBuildPlan(ce, contenders){
-  const key=(S.dailyCourse && DAILY_COURSES[S.dailyCourse])?S.dailyCourse:momentCourseKey(ce.evt.name);
+  const key=(S.dailyCourse && DAILY_COURSES[S.dailyCourse])?S.dailyCourse:momentCourseKey(ce.evt);
   const c=DAILY_COURSES[key];
   const cond=(S.dailyCond&&DCFG.COND[S.dailyCond])?S.dailyCond:['calm','breezy','windy'][(dHash(ce.evt.name||'x')>>>2)%3];
   const diffs=(S.dailyDiffs&&S.dailyDiffs.length===18)?S.dailyDiffs:dBaseDiffs(c);
@@ -24304,6 +24407,7 @@ function scrDispatch(){
   else if(R.length===1) head = `${R[0].name} walks away`;
   else if(R.length) head = `${R.length} careers end`;
   else if(D.length) head = `The class of ${yr} arrives`;
+  else if(d.drift) head = 'The calendar changes';
   else head = 'The state of the tour';
 
   add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--gold);border-color:rgba(241,208,74,.5);background:rgba(241,208,74,.10)">📰 Tour Dispatch · ${yr}</span></div>`));
@@ -24339,6 +24443,20 @@ function scrDispatch(){
       <span class="dsp-nm">${esc(r.name)}<span style="color:var(--muted);font-weight:700;font-size:11.5px"> · ${r.age}</span></span>
       <span class="dsp-meta">${esc(r.nation||'')}${r.nation?' · ':''}rated ${r.ovr}</span></div>`)));
     if(D.length>4) sec.appendChild($(`<div class="dsp-more">${D.length-4} more rookies earned cards</div>`));
+    box.appendChild(sec);
+  }
+  // the calendar drift: what next season is called, what has gone, what has joined
+  if(d.drift){
+    const dn=d.drift, sec=$(`<div class="dsp-sec"><div class="dsp-lab">Around the tour</div></div>`);
+    dn.renames.forEach(r=>sec.appendChild($(`<div class="dsp-row stack">
+      <span class="dsp-nm">${esc(r.name)}</span>
+      <span class="dsp-meta">a new sponsor, formerly ${esc(evtThe(r.base))}</span></div>`)));
+    dn.founds.forEach(f=>sec.appendChild($(`<div class="dsp-row stack">
+      <span class="dsp-nm">${esc(f.evt.name)}</span>
+      <span class="dsp-meta">a new stop joins the rotation</span></div>`)));
+    dn.folds.forEach(f=>sec.appendChild($(`<div class="dsp-row stack">
+      <span class="dsp-nm" style="color:var(--muted)">${esc(f.disp||f.name)}</span>
+      <span class="dsp-meta">folds after ${esc(String(yr-1))}, off the calendar for good</span></div>`)));
     box.appendChild(sec);
   }
   if(d.top && d.top.length){
