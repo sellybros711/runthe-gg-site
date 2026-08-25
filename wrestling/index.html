@@ -256,7 +256,38 @@
   .bs-opt-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
   .bs-opt-h b{color:var(--cream);font-size:13px;}
   .bs-opt-d{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.45;}
-  /* Segment scenes */
+  /* Backstage scene overlay: a full-screen cinematic takeover so the segment
+     reads as A THING happening, not a system dialog. */
+  .sceneback{position:fixed;inset:0;z-index:60;background:radial-gradient(ellipse at center,rgba(20,15,10,.92) 0%,rgba(6,4,3,.97) 70%);
+    display:none;align-items:center;justify-content:center;padding:20px 16px;opacity:0;transition:opacity .35s ease;}
+  .sceneback.open{display:flex;opacity:1;}
+  .scenecard{width:100%;max-width:520px;background:linear-gradient(180deg,#1a140b 0%,#0d0906 100%);border:1px solid rgba(224,179,65,.35);border-radius:14px;padding:20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(224,179,65,.1);position:relative;overflow:hidden;transform:translateY(14px) scale(.98);opacity:0;transition:transform .4s cubic-bezier(.2,1,.3,1),opacity .3s;}
+  .sceneback.open .scenecard{transform:none;opacity:1;}
+  .scene-ident{font-family:var(--display);font-size:11px;letter-spacing:.45em;color:var(--gold);text-transform:uppercase;text-align:center;padding-bottom:12px;border-bottom:1px solid rgba(224,179,65,.25);margin-bottom:14px;font-weight:800;text-shadow:0 0 20px rgba(224,179,65,.5);}
+  .scene-tag{font-family:var(--display);font-size:9px;letter-spacing:.32em;color:var(--gold);text-transform:uppercase;margin-bottom:9px;opacity:.75;}
+  .scene-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed rgba(255,255,255,.09);}
+  .scene-av{flex:none;width:78px;height:78px;display:flex;align-items:center;justify-content:center;background:rgba(224,179,65,.06);border:1px solid rgba(224,179,65,.2);border-radius:10px;}
+  .scene-av svg{width:78px;height:78px;}
+  .scene-av-narr{color:var(--gold);}
+  .scene-who{font-family:var(--display);font-size:12px;color:var(--cream);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+  .scene-line{font-size:15px;line-height:1.55;color:var(--cream);font-family:Georgia,serif;font-style:italic;}
+  .scene-optlist{display:flex;flex-direction:column;gap:8px;}
+  .scene-opt{padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);cursor:pointer;transition:transform .1s,border-color .15s,background .15s;}
+  .scene-opt:hover{transform:translateX(3px);border-color:rgba(224,179,65,.6);background:rgba(224,179,65,.08);}
+  .scene-opt-t{font-size:14px;color:var(--cream);line-height:1.4;}
+  .scene-opt-n{font-size:11px;color:var(--text-faint);margin-top:5px;font-style:italic;}
+  .scene-walk{margin-top:14px;text-align:center;}
+  .scene-walk button{background:none;border:0;color:var(--text-faint);font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;padding:8px 12px;font-family:var(--display);}
+  .scene-walk button:hover{color:var(--gold);}
+  .scene-outcome{padding:16px 14px;background:rgba(224,179,65,.06);border-left:2px solid rgba(224,179,65,.6);border-radius:0 6px 6px 0;margin-top:6px;}
+  .scene-outcome-line{font-family:Georgia,serif;font-style:italic;font-size:15px;color:var(--cream);line-height:1.5;}
+  .scene-outcome-note{font-size:12px;color:var(--text-dim);margin-top:8px;}
+  .scene-continue{margin-top:18px;text-align:center;}
+  .scene-continue button{background:linear-gradient(180deg,#c9a24d,#a6842f);border:0;color:#1a140b;font-family:var(--display);font-size:12px;letter-spacing:.24em;text-transform:uppercase;padding:11px 22px;border-radius:8px;cursor:pointer;font-weight:800;}
+  .scene-continue button:hover{filter:brightness(1.1);}
+  @keyframes sceneIdentFlash{0%{opacity:0;transform:scale(1.4);}30%{opacity:1;transform:scale(1);}}
+  .sceneback.open .scene-ident{animation:sceneIdentFlash .8s ease-out;}
+  /* Segment scenes (legacy modal styles, still used elsewhere) */
   .segblock{padding:2px 0;}
   .seg-tag{font-family:var(--display);font-size:10.5px;letter-spacing:.24em;color:var(--gold);text-transform:uppercase;margin-bottom:7px;}
   .seg-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--line);}
@@ -1469,6 +1500,11 @@
   <div class="pcwrap"><div id="cardHost"></div><div class="pchint">TAP TO FLIP</div></div></div>
 
 <div class="modalback" id="modalBack"><div class="modal"><h3 id="modalTitle"></h3><div id="modalBody"></div><div class="row" style="justify-content:flex-end;margin-top:16px;" id="modalBtns"></div></div></div>
+<!-- Backstage scene overlay: full-screen cinematic takeover for pre-match segments. -->
+<div class="sceneback" id="sceneBack"><div class="scenecard">
+  <div class="scene-ident" id="sceneIdent">BACKSTAGE</div>
+  <div class="scene-body" id="sceneBody"></div>
+</div></div>
 <div class="momentback" id="momentBack"><div class="momentcard">
   <div class="mo-i" id="moIco"></div>
   <div class="mo-k" id="moKick">Career Milestone</div>
@@ -11435,41 +11471,63 @@ function pickSegment(){
   const idx = (h>>>0) % pool.length;
   return pool[idx];
 }
+function closeScene(){ const b=$('sceneBack'); if(b) b.classList.remove('open'); }
 function playSegment(seg, onDone){
   const c=G.car;
   let stage; try{ stage = seg.stage(c); }catch(_){ stage = {who:null,line:''}; }
   const who = stage.who;
   const opts = seg.opts(c, who) || [];
-  const avatar = who ? `<div class="seg-av">${wrestlerSVG(who.look,{frame:'head'})}</div>` : `<div class="seg-av seg-av-narr">${pico('microphone',30)}</div>`;
-  const body = `<div class="segblock">
-    <div class="seg-tag">${seg.tag}</div>
-    <div class="seg-head">${avatar}<div class="seg-line">${stage.line||''}</div></div>
-    <div class="seg-optlist">${opts.map((o,i)=>`
-      <div class="seg-opt" data-i="${i}">
-        <div class="seg-opt-t">${o.t}</div>
-        <div class="seg-opt-n hint">${o.note||''}</div>
+  const avatar = who
+    ? `<div class="scene-av">${wrestlerSVG(who.look,{frame:'head'})}</div>`
+    : `<div class="scene-av scene-av-narr">${pico('microphone',36)}</div>`;
+  const whoName = who ? `<div class="scene-who">${who.name}${who.nick?` "${who.nick}"`:''}</div>` : `<div class="scene-who">Backstage</div>`;
+  const back = $('sceneBack'), body = $('sceneBody');
+  const walkPast = () => { markSegmentPlayed(); closeScene(); if(onDone) onDone(); };
+  body.innerHTML = `<div class="scene-tag">${seg.tag}</div>
+    <div class="scene-head">${avatar}<div>${whoName}<div class="scene-line">"${stage.line||''}"</div></div></div>
+    <div class="scene-optlist">${opts.map((o,i)=>`
+      <div class="scene-opt" data-i="${i}">
+        <div class="scene-opt-t">${o.t}</div>
+        <div class="scene-opt-n">${o.note||''}</div>
       </div>`).join('')}</div>
-  </div>`;
-  // Fallback "Walk past" always available so a stranded flow can always reach
-  // the ring. Segment is not marked played until we resolve one way or another.
-  const walkPast = () => { markSegmentPlayed(); closeModal(); if(onDone) onDone(); };
-  modal(`Backstage`, body, [{label:'Walk past',cls:'ghost',fn:walkPast}]);
+    <div class="scene-walk"><button id="sceneWalkPast">Walk past →</button></div>`;
+  back.classList.add('open');
   setTimeout(()=>{
-    document.querySelectorAll('#modalBody .seg-opt').forEach(el=>{
+    const walkBtn = document.getElementById('sceneWalkPast'); if(walkBtn) walkBtn.onclick = walkPast;
+    document.querySelectorAll('#sceneBody .scene-opt').forEach(el=>{
       el.onclick = ()=>{
         const i = +el.dataset.i;
         const o = opts[i];
         applySegmentEffect(o.eff||{}, who);
         markSegmentPlayed();
-        const note = o.note ? `<p class="hint" style="margin-top:8px;">${o.note}</p>` : '';
-        modal(`Backstage`, `<div class="segblock">
-          <div class="seg-tag">${seg.tag}</div>
-          <div class="seg-head">${avatar}<div class="seg-line">${o.t}</div></div>
-          ${note}
-        </div>`, [{label:'On to the match',cls:'primary',fn:()=>{ closeModal(); if(onDone) onDone(); }}]);
+        // Second view: the pick + outcome. Big "On to the match" CTA.
+        body.innerHTML = `<div class="scene-tag">${seg.tag} · you chose</div>
+          <div class="scene-head">${avatar}<div>${whoName}<div class="scene-line">"${o.t}"</div></div></div>
+          <div class="scene-outcome">
+            <div class="scene-outcome-line">${o.note||'The moment passes.'}</div>
+            ${summarizeEffect(o.eff||{})}
+          </div>
+          <div class="scene-continue"><button id="sceneCont">On to the match →</button></div>`;
+        setTimeout(()=>{ const c2=document.getElementById('sceneCont'); if(c2) c2.onclick=()=>{ closeScene(); if(onDone) onDone(); }; }, 20);
       };
     });
   }, 30);
+}
+/* Show the segment's actual mechanical effect so the player sees the trade
+   they made, not just narration. Reads directly off the eff dictionary. */
+function summarizeEffect(eff){
+  const chips=[];
+  const fmt = (n)=> (n>0?'+':'')+n;
+  if(eff.standing) chips.push(`<span class="pchip ${eff.standing>0?'':'red'}" style="animation:none;opacity:1;">Standing ${fmt(eff.standing)}</span>`);
+  if(eff.heat)     chips.push(`<span class="pchip gold" style="animation:none;opacity:1;">Heat ${fmt(eff.heat)}</span>`);
+  if(eff.gimHeat)  chips.push(`<span class="pchip gold" style="animation:none;opacity:1;">Gimmick ${fmt(eff.gimHeat)}</span>`);
+  if(eff.cond)     chips.push(`<span class="pchip ${eff.cond>0?'':'red'}" style="animation:none;opacity:1;">Condition ${fmt(eff.cond)}</span>`);
+  if(eff.reactionBoost) chips.push(`<span class="pchip gold" style="animation:none;opacity:1;">Crowd +</span>`);
+  if(eff.adv)      chips.push(`<span class="pchip gold" style="animation:none;opacity:1;">Feud advances</span>`);
+  if(eff.allyLoyalty && eff.allyLoyalty.d) chips.push(`<span class="pchip" style="animation:none;opacity:1;">Loyalty ${fmt(eff.allyLoyalty.d)}</span>`);
+  if(eff.respect && eff.respect.d) chips.push(`<span class="pchip" style="animation:none;opacity:1;">Respect ${fmt(eff.respect.d)}</span>`);
+  if(!chips.length) return '';
+  return `<div class="scene-outcome-note"><div class="paychips" style="margin-top:4px;">${chips.join('')}</div></div>`;
 }
 function applySegmentEffect(eff, who){
   const c=G.car, w=G.w;
