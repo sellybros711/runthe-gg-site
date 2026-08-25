@@ -1,0 +1,42 @@
+name: College answer check
+
+# Alma Mater asks you to TYPE the school, so the matcher is the game. It has to
+# accept the short name a fan reaches for ("NC State", "BC", "Texas AM") and it
+# has to refuse a different school with a similar name ("Texas" for Texas A&M,
+# "Boston University" for a Boston College man). Both directions are asserted,
+# because fixing one by loosening the rule breaks the other.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-colleges.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/type.js'
+      - 'arcade/match/entities.js'
+      - 'scripts/check-colleges.mjs'
+      - '.github/workflows/colleges-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/type.js'
+      - 'arcade/match/entities.js'
+      - 'scripts/check-colleges.mjs'
+      - '.github/workflows/colleges-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: colleges-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-colleges.mjs
