@@ -4310,7 +4310,7 @@ function profileHistoryHTML(){
     const line1=`${(s.wins||0)>0?'🏆 ':''}${s.wins||0}W · ${s.maj||0} maj · ${s.top10||0} top-10${(s.made!=null&&s.played)?` · ${s.made}/${s.played} cuts`:''}`;
     const line2=`${s.mrank?ord(s.mrank)+' on the money list · ':''}OVR ${s.ovr||'-'}${s.circuit?' · Legend Circuit':''}${s.league?' · Breakaway League':''}`;
     return `<div class="lb" style="grid-template-columns:40px 1fr 92px;align-items:start">
-      <span class="pos" style="font-size:11px;color:var(--muted);padding-top:1px">Yr ${s.yr}</span>
+      <span class="pos" style="font-size:11px;color:var(--muted);padding-top:1px">${calYear(s.yr)}</span>
       <span class="pl" style="min-width:0;white-space:normal;overflow:visible;line-height:1.3"><span style="color:var(--oncard)">${esc(line1)}</span><span class="small muted" style="display:block">${esc(line2)}</span></span>
       <span style="text-align:right"><b style="color:${netCol(s.net)}">${fmtShort(s.net||0)}</b><span class="small muted" style="display:block">${fmtShort(s.money||0)} won</span></span>
     </div>`;
@@ -6264,6 +6264,20 @@ const ARCS={dist:[.95,23,34,.006,42,.013],acc:[.89,29,35,.0025,46,.007],app:[.86
   sht:[.88,29,38,.0025,47,.007],scr:[.88,29,38,.0025,47,.007],bnk:[.88,29,38,.0025,47,.007],
   put:[.89,27,35,.003,45,.008],clu:[.80,34,44,.0015,50,.004]};
 const CAREER_START_YEAR=2026, WORLD_TARGET=150;
+/* PUT THE TOUR ON A CALENDAR. The world already keeps a real year internally (w.simYear runs 2026 to
+   2055 and beyond into the Legend Circuit) and the player was never shown it: every screen read
+   "Year 7 of 30", which is a progress bar, not a place in time. calYear() is the same arithmetic
+   w.simYear does (start year + seasons elapsed), computed from S.year alone so it works on a screen
+   that has no world (the summary of a career you are only reading back, the profile history, a share
+   card). Career years 31+ are the circuit, which correctly keeps counting: 2056, 2057...
+   S is declared far BELOW this line, so the no-argument form reads it inside a try - `typeof` does not
+   save you from a temporal dead zone, it throws, and that would abort the whole inline script. */
+function calYear(y){
+  let n=y;
+  if(n==null){ try{ n=(S&&S.year)||1; }catch(e){ n=1; } }
+  n=(n|0)||1;
+  return CAREER_START_YEAR + n - 1;
+}
 function ageArc(s,age){const[fl,ps,pe,d1,d2a,d2]=ARCS[s];
   if(age<=ps) return clamp(fl+(1-fl)*(age-16)/(ps-16),fl,1);
   if(age<=pe) return 1;
@@ -7355,7 +7369,7 @@ function rivalStatusNode(){
   // past rivalries, the nemeses you've outgrown or outlasted, kept for the record
   const past=(S.career&&S.career.pastRivals)||[];
   if(past.length){
-    const rows=past.slice().reverse().map(p=>`<div class="small" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)"><span>${p.reason==='outgrew'?'✓':'·'} <b style="color:var(--oncard);font-weight:700">${esc(p.name)}</b> <span style="font-size:11px">Yr ${p.fromYear}–${p.toYear}</span></span><span style="white-space:nowrap">${p.meAhead}–${p.themAhead} H2H</span></div>`).join('');
+    const rows=past.slice().reverse().map(p=>`<div class="small" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)"><span>${p.reason==='outgrew'?'✓':'·'} <b style="color:var(--oncard);font-weight:700">${esc(p.name)}</b> <span style="font-size:11px">${calYear(p.fromYear)}–${calYear(p.toYear)}</span></span><span style="white-space:nowrap">${p.meAhead}–${p.themAhead} H2H</span></div>`).join('');
     box.appendChild($(`<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:8px"><div class="small" style="color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:3px">Past rivalries</div>${rows}</div>`));
   }
   // CS474 declutter: with no active rival, no just-retired-rival note, and no past rivals, this was an empty
@@ -10917,7 +10931,7 @@ function openPlayerCardRow(reg){ if(!reg) return; const r=reg.r||{};
       ['Earnings',fmtShort(r.career_earnings||0)],['Net',neg(r.career_net)]);
     if((r.followers||0)>0) rows.push(['Fans',fmtFollowers(r.followers)]);
   } else if(reg.kind==='season'){
-    rows.push(['Year','Yr '+(r.year||1)],['Wins',r.wins!=null?r.wins:'-'],['Majors',r.majors!=null?r.majors:'-'],
+    rows.push(['Year',String(calYear(r.year||1))],['Wins',r.wins!=null?r.wins:'-'],['Majors',r.majors!=null?r.majors:'-'],
       ['Earnings',fmtShort(r.season_earnings||0)],['Net',neg(r.season_net)]);
   } else if(reg.kind==='lifetime'){
     // A lifetime row IS the aggregate the card's own Lifetime panel shows, so don't repeat it in a second
@@ -10961,7 +10975,7 @@ function openPlayerCardSelf(){
   if(ovr==null) ovr=c.bestOvr||null;
   const rows=[];
   if(S.career){ const net=S.career.net||0;
-    rows.push(['Year','Yr '+(S.year||1)],['Wins',S.career.wins||0],['Majors',S.career.majors||0],['Net',{v:fmtSigned(net),c:net>=0?'#35d6a0':'#E14A33'}]); }
+    rows.push(['Year',String(calYear(S.year||1))],['Wins',S.career.wins||0],['Majors',S.career.majors||0],['Net',{v:fmtSigned(net),c:net>=0?'#35d6a0':'#E14A33'}]); }
   let rp=null; try{ rp=repTier().tier.name; }catch(e){}
   S.cardFlipped=false;
   S.cardView={ name:sbUsername||S.name||'Your Golfer', look:S.look||DEFLOOK, rep:rp,
@@ -12020,8 +12034,8 @@ function resumeCareerCard(cs){
     :mid?`Mid-season · event ${(cs.mid.evtIndex||0)+1}`
     :'Ready to play';
   let yrLabel,pct;
-  if(circuit){ const cy=Math.max(1,(cs.year||31)-30); yrLabel=`Legend Circuit · Year ${cy}`; pct=Math.min(100,Math.max(7,cy/12*100)); }
-  else { yrLabel=`Year ${cs.year} of 30`; pct=Math.min(100,Math.max(7,(cs.year||1)/30*100)); }
+  if(circuit){ const cy=Math.max(1,(cs.year||31)-30); yrLabel=`${calYear(cs.year)} · Legend Circuit Yr ${cy}`; pct=Math.min(100,Math.max(7,cy/12*100)); }
+  else { yrLabel=`${calYear(cs.year)} · Yr ${cs.year} of 30`; pct=Math.min(100,Math.max(7,(cs.year||1)/30*100)); }
   const card=$(`<button class="resumecard" aria-label="Resume ${circuit?'Legend Circuit':'Career Mode'}, ${who}, ${yrLabel}">
     <div class="rc-top">
       <div style="min-width:0"><div class="rc-kick">Resume ${circuit?'Legend Circuit':'Career'}</div><div class="rc-name">${who}</div></div>
@@ -18787,7 +18801,7 @@ function storyFeedHTML(){
   const s=c.story, feed=(s.feed||[]).slice(0,6), p=repPersona();
   const conf=(S.season && S.season.confidence!=null)?S.season.confidence:(s.confidence!=null?s.confidence:CONF_START);
   const rows=feed.map(f=>`<div style="display:flex;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)">
-    <span class="small" style="color:#5fd0e0;min-width:42px;font-weight:800">Yr ${f.year}</span>
+    <span class="small" style="color:#5fd0e0;min-width:42px;font-weight:800">${calYear(f.year)}</span>
     <span class="small" style="color:#dbe7ee">${esc(f.text)}</span></div>`).join('');
   return `<div class="scout" style="border-color:#2f6f86;text-align:left;margin:8px auto;max-width:520px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -20370,13 +20384,13 @@ function drawMajorWinCard(cv, info){
   x.fillStyle='#f7e48a'; x.font='800 40px Arial, sans-serif'; x.fillText('MAJOR CHAMPION', W/2, 358);
   x.fillStyle='#dfeae2'; x.font='600 26px Georgia, serif'; x.fillText(info.evt, W/2, 398);
   x.fillStyle='#F4E3C9'; x.font='700 44px Georgia, serif'; x.fillText(info.name, W/2, 474);
-  x.fillStyle='#9cbfa8'; x.font='700 20px Arial, sans-serif'; x.fillText('OVR '+info.ovr+'   ·   Year '+info.year, W/2, 508);
+  x.fillStyle='#9cbfa8'; x.font='700 20px Arial, sans-serif'; x.fillText('OVR '+info.ovr+'   ·   '+info.year, W/2, 508);
   x.fillStyle='#35d6a0'; x.font='800 30px Arial, sans-serif'; x.fillText('Winning score '+info.score, W/2, 566);
   x.fillStyle='#9cbfa8'; x.font='700 22px Arial, sans-serif'; x.fillText('build your golfer → runthe.gg/golf', W/2, H-48);
 }
 function shareMajorWin(evt,o){
   const me=S.season.me; const cv=document.createElement('canvas');
-  drawMajorWinCard(cv,{name:me.name, ovr:Math.round(me.skill), evt:evt.name, score:par(o&&o.score!=null?o.score:0), year:S.year||1, accent:majorTheme(evt.name).accent});
+  drawMajorWinCard(cv,{name:me.name, ovr:Math.round(me.skill), evt:evt.name, score:par(o&&o.score!=null?o.score:0), year:calYear(), accent:majorTheme(evt.name).accent});
   const cap=`${me.name} just won ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''} 🏆\nRunTheTour: Daily Golf Game, build a golfer, chase majors.\nThink you can do better? https://runthe.gg/golf`;
   track('major_win_shared',{event:evt.name}); shareCard(cv,cap,me.name,'major-win');
 }
@@ -21186,7 +21200,7 @@ function scrCouncilVote(){
   if(!d){ S.pendingTourVote=null; return scrSeason(); }
   RT.classList.add('major-screen');
   const res=S.tourVoteResult;
-  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--teal);border-color:rgba(47,208,168,.5);background:rgba(47,208,168,.10)">⚖ Player Advisory Council · Year ${S.year||1}</span></div>`));
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--teal);border-color:rgba(47,208,168,.5);background:rgba(47,208,168,.10)">⚖ Player Advisory Council · ${calYear()}</span></div>`));
   if(!res){
     const im=tourImpact(p);
     const col=im.dir>0?'#35d6a0':im.dir<0?'#E14A33':'var(--muted)';
@@ -21232,7 +21246,7 @@ function scrCouncilVote(){
 function scrTourNews(){
   const kind=S.pendingTourNews;
   RT.classList.add('major-screen');
-  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--gold);border-color:rgba(241,208,74,.5);background:rgba(241,208,74,.10)">📰 Tour News · Year ${S.year||1}</span></div>`));
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--gold);border-color:rgba(241,208,74,.5);background:rgba(241,208,74,.10)">📰 Tour News · ${calYear()}</span></div>`));
   {
     // TOUR ERAS: the tour changed something. Announced once, then simply true for the rest of the career.
     const d=TOUR_BY_ID[kind], arg=S.pendingTourArg;
@@ -21265,7 +21279,7 @@ function scrLeagueNews(){
   const n=S.pendingLeagueNews||{}, L=leagueState();
   RT.classList.add('major-screen');
   const red='#ff6b5e';
-  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${red};border-color:rgba(224,86,74,.5);background:rgba(224,86,74,.12)">⚔ Breaking · Year ${S.year||1}</span></div>`));
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${red};border-color:rgba(224,86,74,.5);background:rgba(224,86,74,.12)">⚔ Breaking · ${calYear()}</span></div>`));
   const names=(n.signed||[]).slice(0,5);
   if(n.kind==='formed'){
     add($(`<div class="tnews" style="border-color:rgba(224,86,74,.45)">
@@ -21330,11 +21344,11 @@ function leagueRetroNode(){
   const money=L.signed?fmtShort(L.signed):'';
   const w=$(`<div class="scout" style="margin-top:14px;text-align:left">
     <div class="tn-kick" style="text-align:center">The split</div>
-    <p class="small" style="text-align:center;color:var(--muted);margin:2px 0 10px">${esc(LEAGUE_NAME)} launched in Year ${L.born} and took ${leagueCount()} players with it.</p>
-    <div class="tnitem"><div class="tn-yr">Year ${L.born}</div><div><div class="tn-t">⚔ ${esc(LEAGUE_NAME)} launches</div><div class="tn-s">Golf splits in two.</div></div></div>
-    ${ever?`<div class="tnitem"><div class="tn-yr">Year ${L.joined||L.offers.filter(o=>o.accepted).map(o=>o.year)[0]||L.born}</div><div><div class="tn-t">You signed</div><div class="tn-s">${money?money+' guaranteed.':'You took the money.'}</div></div></div>`
-        :`<div class="tnitem"><div class="tn-yr">Year ${L.born}</div><div><div class="tn-t">You stayed</div><div class="tn-s">${L.offers.length?`Turned down ${L.offers.length} offer${L.offers.length>1?'s':''}, the biggest ${fmtShort(Math.max.apply(null,L.offers.map(o=>o.money)))}.`:'They never made you an offer you had to think about.'}</div></div></div>`}
-    ${L.left?`<div class="tnitem"><div class="tn-yr">Year ${L.left}</div><div><div class="tn-t">You came home</div><div class="tn-s">Served the suspension and played on.</div></div></div>`:''}
+    <p class="small" style="text-align:center;color:var(--muted);margin:2px 0 10px">${esc(LEAGUE_NAME)} launched in ${calYear(L.born)} and took ${leagueCount()} players with it.</p>
+    <div class="tnitem"><div class="tn-yr">${calYear(L.born)}</div><div><div class="tn-t">⚔ ${esc(LEAGUE_NAME)} launches</div><div class="tn-s">Golf splits in two.</div></div></div>
+    ${ever?`<div class="tnitem"><div class="tn-yr">${calYear(L.joined||L.offers.filter(o=>o.accepted).map(o=>o.year)[0]||L.born)}</div><div><div class="tn-t">You signed</div><div class="tn-s">${money?money+' guaranteed.':'You took the money.'}</div></div></div>`
+        :`<div class="tnitem"><div class="tn-yr">${calYear(L.born)}</div><div><div class="tn-t">You stayed</div><div class="tn-s">${L.offers.length?`Turned down ${L.offers.length} offer${L.offers.length>1?'s':''}, the biggest ${fmtShort(Math.max.apply(null,L.offers.map(o=>o.money)))}.`:'They never made you an offer you had to think about.'}</div></div></div>`}
+    ${L.left?`<div class="tnitem"><div class="tn-yr">${calYear(L.left)}</div><div><div class="tn-t">You came home</div><div class="tn-s">Served the suspension and played on.</div></div></div>`:''}
     ${L.cups.length?`<div class="tnitem"><div class="tn-yr">${esc(LEAGUE_CUP_NAME)}</div><div><div class="tn-t">${L.cups.filter(c=>c.mine).length}-${L.cups.filter(c=>!c.mine).length}</div><div class="tn-s">The cup the argument built.</div></div></div>`:''}
     ${((L.h2hW||0)+(L.h2hL||0))?`<div class="tnitem"><div class="tn-yr">Majors</div><div><div class="tn-t">${L.h2hW||0}-${L.h2hL||0} across the divide</div><div class="tn-s">The only weeks both sides showed up.</div></div></div>`:''}
   </div>`);
@@ -21352,7 +21366,7 @@ function scrLeagueOffer(){
   const o=S.pendingLeagueOffer||{}, res=S.leagueOfferResult;
   const red='#ff6b5e', L=leagueState();
   RT.classList.add('major-screen');
-  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${red};border-color:rgba(224,86,74,.5);background:rgba(224,86,74,.12)">⚔ ${esc(LEAGUE_SHORT)} · Year ${S.year||1}</span></div>`));
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${red};border-color:rgba(224,86,74,.5);background:rgba(224,86,74,.12)">⚔ ${esc(LEAGUE_SHORT)} · ${calYear()}</span></div>`));
   if(!res){
     const nth=L.offers.length;
     add($(`<div class="tnews" style="border-color:rgba(224,86,74,.45)">
@@ -21405,7 +21419,7 @@ function tourRuleRows(){
   return act.map(e=>{ const d=TOUR_BY_ID[e.id];
     return `<div class="trule"><div class="tr-i">${esc(d.icon||'')}</div><div><div class="tr-n">${esc(tourTxt(d.name,e.arg))}</div>
       <div class="tr-l">${esc(tourTxt(d.line,e.arg))}</div>
-      <div class="tr-y">In force since Year ${e.year}</div></div></div>`;
+      <div class="tr-y">In force since ${calYear(e.year)}</div></div></div>`;
   }).join('');
 }
 // The career-end retrospective. "The tour I played in was not the tour you played in" is a thing you say
@@ -21417,9 +21431,9 @@ function tourRetroNode(){
     <div class="tn-kick" style="text-align:center">The tour you played in</div>
     <p class="small" style="text-align:center;color:var(--muted);margin:2px 0 10px">The organization changed ${n} time${n>1?'s':''} while you were on it. No other career saw quite this tour.</p>
     <div>${h.slice().reverse().map(e=>{
-      if(e.id==='bracket') return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">🏆 ${esc(BRACKET_NAME)}</div><div class="tn-s">A knockout championship joins the schedule.</div></div></div>`;
+      if(e.id==='bracket') return `<div class="tnitem"><div class="tn-yr">${calYear(e.year)}</div><div><div class="tn-t">🏆 ${esc(BRACKET_NAME)}</div><div class="tn-s">A knockout championship joins the schedule.</div></div></div>`;
       const d=TOUR_BY_ID[e.id]; if(!d) return '';
-      return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">${esc(tourTxt(d.line,e.arg))}</div></div></div>`;
+      return `<div class="tnitem"><div class="tn-yr">${calYear(e.year)}</div><div><div class="tn-t">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">${esc(tourTxt(d.line,e.arg))}</div></div></div>`;
     }).join('')}</div></div>`);
   return w;
 }
@@ -21681,16 +21695,16 @@ function overlayTourNews(app){
         <div class="tr-i">⚔</div><div>
           <div class="tr-n" style="color:#ff8f7f">${esc(LEAGUE_NAME)}</div>
           <div class="tr-l">${leagueCount()} players gone · the feud is ${esc(leagueHeatLabel().toLowerCase())}${lg.cups.length?` · ${esc(LEAGUE_CUP_NAME)} ${lg.cups.filter(c=>c.mine).length}-${lg.cups.filter(c=>!c.mine).length}`:''}</div>
-          <div class="tr-y">${joined?`You signed in Year ${lg.joined}`:(lg.left?`You came back in Year ${lg.left}`:`You stayed · launched Year ${lg.born}`)}</div>
+          <div class="tr-y">${joined?`You signed in ${calYear(lg.joined)}`:(lg.left?`You came back in ${calYear(lg.left)}`:`You stayed · launched ${calYear(lg.born)}`)}</div>
         </div></div>`));
     } }
   ov.appendChild($(`<h2 style="margin:22px 0 8px">Tour news</h2>`));
   if(!h.length){ ov.appendChild($(`<p class="small" style="text-align:center;color:var(--muted)">Nothing has happened yet. Keep playing.</p>`)); }
   else ov.appendChild($(`<div>${h.map(e=>{
-    if(e.id==='bracket') return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">🏆 ${esc(BRACKET_NAME)}</div><div class="tn-s">The tour adds a knockout championship.</div></div></div>`;
+    if(e.id==='bracket') return `<div class="tnitem"><div class="tn-yr">${calYear(e.year)}</div><div><div class="tn-t">🏆 ${esc(BRACKET_NAME)}</div><div class="tn-s">The tour adds a knockout championship.</div></div></div>`;
     const d=TOUR_BY_ID[e.id]; if(!d) return '';
-    if(e.rej) return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t" style="color:var(--muted)">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">Proposed, and voted down by the council.</div></div></div>`;
-    return `<div class="tnitem"><div class="tn-yr">Year ${e.year}</div><div><div class="tn-t">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">${esc(tourTxt(d.head,e.arg))}.</div></div></div>`;
+    if(e.rej) return `<div class="tnitem"><div class="tn-yr">${calYear(e.year)}</div><div><div class="tn-t" style="color:var(--muted)">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">Proposed, and voted down by the council.</div></div></div>`;
+    return `<div class="tnitem"><div class="tn-yr">${calYear(e.year)}</div><div><div class="tn-t">${esc(d.icon||'')} ${esc(tourTxt(d.name,e.arg))}</div><div class="tn-s">${esc(tourTxt(d.head,e.arg))}.</div></div></div>`;
   }).join('')}</div>`));
   const x=$(`<button class="x" aria-label="Close">✕</button>`); x.onclick=()=>{ S.overlay=null; render(); };
   ov.appendChild(x);
@@ -22171,14 +22185,14 @@ function scrBracket(){
         <div class="bcup-t">🏆</div>
         <div class="bcup-k">Tour Cup Champion</div>
         <div class="bfoil">${esc(S.name||ch.p.name)}</div>
-        <div class="bh-meta">${ord(ch.seed)} seed · ${esc(evt.name)} · Year ${S.year||1}</div>
+        <div class="bh-meta">${ord(ch.seed)} seed · ${esc(evt.name)} · ${calYear()}</div>
       </div>`));
       W($(`<div class="bday-f" style="text-align:center;margin-top:16px">${B.RDS.length} days, ${B.RDS.length} wins</div>`));
     } else {
       W($(`<div class="bchamp">
         <div class="bc-k">Champion</div>
         <div class="bc-n"><span class="bm-s">${ch.seed}</span> ${esc(ch.p.name)}</div>
-        <div class="bc-s">${esc(evt.name)} · Year ${S.year||1} · lifts the Tour Cup</div>
+        <div class="bc-s">${esc(evt.name)} · ${calYear()} · lifts the Tour Cup</div>
       </div>`));
       if(you) W($(`<div class="bday-f" style="text-align:center;margin-top:14px">Your week</div>`));
     }
@@ -22327,7 +22341,7 @@ function scrSeason(){
   const wr=!S.daily?myWorldRank():0, wrN=!S.daily?worldRankSize():0;
   // CS264: franchise-mode career banner (avatar · name · year/age) + the season stat bar as a dashboard header
   const cbName=esc(S.season.me.name||S.name||'Your Golfer');
-  const cbYr=S.circuitMode?('Legend Circuit · Yr '+Math.max(1,(S.year||1)-30)):('Year '+(S.year||1)+' of '+careerYears());
+  const cbYr=S.circuitMode?(calYear()+' · Legend Circuit Yr '+Math.max(1,(S.year||1)-30)):(calYear()+' Season · Yr '+(S.year||1)+' of '+careerYears());
   const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
   const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
   // CS285: Confidence is now a HORIZONTAL meter (fits the wrapped second-row space better than a number),
@@ -22697,7 +22711,7 @@ function drawShareCard(cv,info,vals){
   const W=560,H=720,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
   let yearLine='';
-  if(info.year && !S.daily) yearLine = S.circuitMode ? ('LEGEND CIRCUIT · YEAR '+info.year) : ('YEAR '+info.year+' OF '+careerYears());
+  if(info.year && !S.daily) yearLine = S.circuitMode ? (calYear(info.year)+' · LEGEND CIRCUIT') : (calYear(info.year)+' SEASON · YR '+info.year+' OF '+careerYears());
   drawPlayerCard(ctx,W,H,{
     look:S.look||DEFLOOK, name:info.name, ovr:info.ovr, net:info.net,
     headline:playerCardHeadline(info), yearLine,
@@ -22944,7 +22958,7 @@ function seasonHeadlines(x){
 function headlinesHTML(h){
   const notes=h.notes.map(n=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-top:5px"><span style="font-size:13px;line-height:1.2;flex:0 0 auto">${n.icon}</span><span class="small" style="color:var(--oncard);line-height:1.3;text-align:left">${n.text}</span></div>`).join('');
   return `<div class="scout" style="max-width:520px;margin:6px auto 10px;text-align:left;border-color:rgba(241,208,74,.4);padding:10px 13px">
-    <div style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;border-bottom:1px solid rgba(241,208,74,.25);padding-bottom:5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>Season ${h.year} Highlights</span></div>
+    <div style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;border-bottom:1px solid rgba(241,208,74,.25);padding-bottom:5px;margin-bottom:8px;display:flex;justify-content:space-between"><span>${calYear(h.year)} Season Highlights</span></div>
     <div style="display:flex;gap:10px;align-items:center">
       <div style="font-size:26px;flex:0 0 auto">${h.lead.icon}</div>
       <div style="min-width:0;font-family:var(--serif);font-weight:800;font-size:19px;line-height:1.05;color:var(--oncard)">${h.lead.head}</div></div>
@@ -23341,7 +23355,7 @@ function scrSummary(){
   // the lede and ate vertical space; the results screen already implies the season is complete. Daily/circuit
   // keep a slim tag since their mode/context isn't otherwise stated.
   if(S.daily) add($(`<div class="center"><span class="tag">★ Daily Challenge complete</span></div>`));
-  else if(S.circuitMode) add($(`<div class="center"><span class="tag">Legend Circuit · Year ${circuitYear} complete</span></div>`));
+  else if(S.circuitMode) add($(`<div class="center"><span class="tag">${calYear()} · Legend Circuit Yr ${circuitYear} complete</span></div>`));
   __cur=hiCol;
   // season highlights masthead (#6) leads the summary now - the year's story up top.
   // (The global leaderboard rank moved down into the left column, below the Full Season Recap button.)
@@ -23379,7 +23393,7 @@ function scrSummary(){
   __cur=hdr;
   // CS483 (owner mobile pass): tighter header (name + year/overall on one compact line) reclaims vertical room on every tab.
   add($(`<h1 class="center" style="font-size:25px;margin:2px 0 1px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin:0 0 6px;font-size:13px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+careerYears()+' · '))}Overall ${ovr}</p>`));
+  add($(`<p class="lede center" style="margin:0 0 6px;font-size:13px">${S.daily?'':(S.circuitMode?(calYear()+' · Circuit Yr '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):(calYear()+' · Yr '+(S.year||1)+' of '+careerYears()+' · '))}Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   // CS477 (owner): the Earnings / Net-profit money card now lives on the EARNINGS tab (moC), not Overview.
   __cur=moC;
@@ -23642,7 +23656,7 @@ function scrSummary(){
   const ss=(!S.daily && (S.circuitMode ? (S.circuitCareer&&S.circuitCareer.skillSeasons) : (S.career&&S.career.skillSeasons)))||[];
   if(ss.length>=2 && pastPeak()){
     const cur=ss[ss.length-1].skills, prev=ss[ss.length-2].skills, py=ss[ss.length-2].year;
-    add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Skill changes vs Year ${py}</h2>`));
+    add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Skill changes vs ${calYear(py)}</h2>`));
     const dt=$(`<div class="tiles four"></div>`);
     CATS.forEach(c=>{
       const nv=cur[c.k]||0, d=nv-(prev[c.k]||0);
@@ -23713,7 +23727,7 @@ function scrSummary(){
     // Legend Circuit block below (owner: "you should see your regular career earnings, but your legend
     // career stats should also be separated to see those").
     const inCircuit=!!S.circuitMode;
-    caC.appendChild($(`<h2 style="margin:16px 0 8px">${inCircuit?'Tour Career':'Career'} · ${c.seasons.length} years${inCircuit?'':` (through Year ${S.year})`}</h2>`));
+    caC.appendChild($(`<h2 style="margin:16px 0 8px">${inCircuit?'Tour Career':'Career'} · ${c.seasons.length} years${inCircuit?'':` (through ${calYear()})`}</h2>`));
     const ct=$(`<div class="tiles"></div>`);
     ct.appendChild($(`<div class="tile"><div class="k">Net worth</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
     ct.appendChild(tile('Career earnings',fmt(c.money),true));
@@ -23723,7 +23737,7 @@ function scrSummary(){
     ct.appendChild(tile('Top 10s',c.top10+''));
     // guard a season row with no money on it (legacy/partial saves) so the tile can never read $NaN
     const bestS=(c.seasons||[]).filter(s=>s&&isFinite(s.money)).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
-    if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
+    if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">${calYear(bestS.year)}</div></div>`));
     caC.appendChild(ct);
     // ---- Legend Circuit: its own separated block, only once you've played a circuit season ----
     if(inCircuit && S.circuitCareer && (S.circuitCareer.seasons||[]).length){
@@ -23762,7 +23776,7 @@ function scrSummary(){
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const finTxt=(t.wins>0?`${t.wins} win${t.wins>1?'s':''}`:`best ${bestTxt(t.best)}`);
   const headLine=HL?`${HL.lead.icon} ${HL.lead.head}, `:'';
-  const share=`RunTheTour: Daily Golf Game, ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? https://runthe.gg/golf`;
+  const share=`RunTheTour: Daily Golf Game, ${me.name} (OVR ${ovr})\n${headLine}${calYear()}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? https://runthe.gg/golf`;
   right.appendChild($(`<h2 style="margin:2px 0 2px">Share your season</h2>`));
   right.appendChild($(`<p class="small muted" style="margin:0 0 8px">Post your card and dare a friend to beat your number.</p>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
@@ -23806,8 +23820,8 @@ function scrSummary(){
     //   [ Continue to Year X ]  [ View Leaderboard ]
     //   [ Exit to Home       ]  [ Retire           ]
     // "View Leaderboard" REPLACES the old Season-Leaderboard-Rank card (removed), opening the full board.
-    advanceLabel=lastYear?(S.circuitMode?'Finish Legend Circuit':'Finish Career'):'Continue to Year '+((S.year||1)+1);
-    const cont=$(`<button class="btn goldfill sumsq" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}</button>`);
+    advanceLabel=lastYear?(S.circuitMode?'Finish Legend Circuit':'Finish Career'):'Continue to '+calYear((S.year||1)+1);
+    const cont=$(`<button class="btn goldfill sumsq" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to '+calYear((S.year||1)+1)+' ▸'}</button>`);
     cont.onclick=continueFranchise;
     const lb=$(`<button class="btn gold sumsq">${ic('trophy')} View Leaderboard</button>`);
     lb.onclick=()=>{S.overlay='leaderboard';render();};
@@ -24128,7 +24142,7 @@ function scrOffseason(){
   const spun=!!(S.current && !S.spinning), g=S.current;
   let ovr=82; try{ ovr=Math.round(buildPlayer().skill); }catch(e){}
 
-  add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Year '+S.year+' · train your golfer')));
+  add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Before the '+calYear()+' season · train your golfer')));
 
   // Q-SCHOOL still owed (you refreshed out of it, or resumed the save here). It decides what next season
   // is, so it stays on offer until it is played, and is cleared for good when the season starts.
@@ -24261,7 +24275,7 @@ function scrOffseason(){
   // Once you've spun, you MUST take a skill from the golfer you land on (re-spin to get a different one) -
   // you can't spin, dislike it, and start the season without swapping (owner). So Start is LOCKED while a
   // spin is pending; tapping it just nudges you to pick a skill first.
-  const cont=$(`<button class="btn goldfill${spun?' locked':''}">Start Year ${yr} ▸<span class="sub">${spun?'🔒 Lock in one of the skills first':(os.changes>0?'Run the new season':'Keep your bag, run it as-is')}</span></button>`);
+  const cont=$(`<button class="btn goldfill${spun?' locked':''}">Start the ${S.circuitMode?('Yr '+yr):calYear()} Season ▸<span class="sub">${spun?'🔒 Lock in one of the skills first':(os.changes>0?'Run the new season':'Keep your bag, run it as-is')}</span></button>`);
   cont.onclick=spun ? (()=>toast('You must select one of the skills to lock in your spin before starting the season.'))
                     : finishOffseason;
   actions.appendChild(cont);
@@ -24317,18 +24331,18 @@ function scrRecap(){
   const isCareer=!S.daily && S.career && S.career.seasons && S.career.seasons.length>1;
   let viewYear=(S.recapYear!=null)?S.recapYear:curYear;
   if(viewYear>curYear||viewYear<1) viewYear=curYear;
-  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">${S.daily?'Daily':'Year '+viewYear} season recap</h1>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">${S.daily?'Daily':calYear(viewYear)} season recap</h1>`));
   // career mode: best single season + a selector to look back at past seasons
   if(isCareer){
     const bestS=S.career.seasons.reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
     if(bestS) add($(`<div class="scout" style="max-width:460px;margin:0 auto 12px;text-align:center">
       <div style="font:800 10.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Season high · best single season</div>
       <div class="mono cream" style="font-weight:800;font-size:24px;margin-top:4px">${fmt(bestS.money)}</div>
-      <div class="small muted" style="margin-top:2px">Year ${bestS.year} · ${bestS.wins}W · ${bestS.majors} major${bestS.majors===1?'':'s'} · best ${bestTxt(bestS.best)}</div></div>`));
+      <div class="small muted" style="margin-top:2px">${calYear(bestS.year)} · ${bestS.wins}W · ${bestS.majors} major${bestS.majors===1?'':'s'} · best ${bestTxt(bestS.best)}</div></div>`));
     const sel=$(`<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px"></div>`);
     for(let y=1;y<=curYear;y++){
       const on=(y===viewYear);
-      const chip=$(`<button class="btn ${on?'gold':'ghost'}" style="width:auto;font-size:11px;padding:6px 11px">Yr ${y}${y===curYear?' · now':''}</button>`);
+      const chip=$(`<button class="btn ${on?'gold':'ghost'}" style="width:auto;font-size:11px;padding:6px 11px">${calYear(y)}${y===curYear?' · now':''}</button>`);
       chip.onclick=()=>{S.recapYear=y;S.recapEvent=null;render();};
       sel.appendChild(chip);
     }
@@ -31109,7 +31123,7 @@ function careerTimelineNode(c){
   const wrap=$(`<div class="ctimeline"></div>`);
   wrap.appendChild($(`<div class="ct-hd">Career Timeline</div>`));
   M.forEach(m=>{ wrap.appendChild($(`<div class="ct-row">
-    <div class="ct-yr">Yr ${m.year}</div>
+    <div class="ct-yr">${calYear(m.year)}</div>
     <div class="ct-dot">${m.icon}</div>
     <div class="ct-body"><div class="ct-title">${esc(m.title)}</div><div class="ct-sub">${esc(m.sub)}</div></div>
   </div>`)); });
@@ -31123,7 +31137,7 @@ function careerMajorsHTML(c){
   const rows=order.map(nm=>{ const yrs=byName[nm].slice().sort((a,b)=>a-b);
     return `<div class="lb" style="grid-template-columns:1fr auto;padding:9px 14px">
       <span class="pl"><span style="color:var(--gold)">★</span> ${esc(nm)}${byName[nm].length>1?` <span class="small muted">×${byName[nm].length}</span>`:''}</span>
-      <span class="mny small muted">Yr ${yrs.join(', ')}</span></div>`; }).join('');
+      <span class="mny small muted">${yrs.map(y=>calYear(y)).join(', ')}</span></div>`; }).join('');
   return `<details class="acc" open><summary class="accsum"><span class="chev">▸</span><span class="acctitle">🏆 Majors</span><span class="accmeta">${majors.length} won</span></summary><div class="accbody">${rows}</div></details>`;
 }
 // season-by-season accordion: each year is a row (record + net); years with wins expand to the trophies
@@ -31141,9 +31155,9 @@ function careerSeasonsHTML(c, limit){
     const meta=`<span style="color:${netCol}">${fmtSigned(s.net)}</span>`;
     if(wins.length){
       const body=wins.map(w=>`<div class="lb" style="grid-template-columns:30px 1fr;padding:8px 14px"><span class="pos" style="color:var(--gold)">${w.major?'★':'🏆'}</span><span class="pl">${esc(w.name)}${w.major?' <span class="small muted">major</span>':''}</span></div>`).join('');
-      return `<details class="acc"><summary class="accsum"><span class="chev">▸</span><span class="yrtag">Yr ${s.year}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></summary><div class="accbody">${body}</div></details>`;
+      return `<details class="acc"><summary class="accsum"><span class="chev">▸</span><span class="yrtag">${calYear(s.year)}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></summary><div class="accbody">${body}</div></details>`;
     }
-    return `<div class="acc flat"><div class="accsum nochev"><span class="chev dim">·</span><span class="yrtag">Yr ${s.year}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></div></div>`;
+    return `<div class="acc flat"><div class="accsum nochev"><span class="chev dim">·</span><span class="yrtag">${calYear(s.year)}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></div></div>`;
   }).join('')+capNote;
 }
 // From the career-end pop-up "Play now": set up today's Daily and drop straight into it as this Legend.
@@ -31192,7 +31206,9 @@ function scrCareerEnd(){
   const full=(e.years>=(e.maxYears||CAREER_MAX_YEARS));
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${full?'🏁 A full career, hung up the clubs':'🏁 Career complete'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on tour · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
+  // CALENDAR: a finished career is a PERIOD, not a count - lead the ceremony with the years it spanned.
+  const span=e.years>1?(calYear(1)+' to '+calYear(e.years)+' · '):'';
+  add($(`<p class="lede center" style="margin-bottom:10px">${span}${e.years} season${e.years===1?'':'s'} on tour · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
   if(S.freshLegendToken){ const lt=S.freshLegendToken;
     add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(241,208,74,.25)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
@@ -31362,7 +31378,9 @@ function scrCircuitEnd(){
   const full=mergeCircuitCareer(career, c);
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">🏁 Legend Circuit complete</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${full.seasons.length}-year career · ${full.wins} win${full.wins===1?'':'s'} · ${full.majors} major${full.majors===1?'':'s'} · ${e.years} on the Legend Circuit</p>`));
+  // CALENDAR: the whole arc, tour years plus circuit years, as the span of years it actually covered.
+  const cspan=full.seasons.length>1?(calYear(1)+' to '+calYear(full.seasons.length)+' · '):'';
+  add($(`<p class="lede center" style="margin-bottom:10px">${cspan}${full.seasons.length}-year career · ${full.wins} win${full.wins===1?'':'s'} · ${full.majors} major${full.majors===1?'':'s'} · ${e.years} on the Legend Circuit</p>`));
   // tabs: default to the just-finished Legend Circuit
   if(!['circuit','career','full'].includes(S.ceTab)) S.ceTab='circuit';
   const TABS=[['circuit','Legend Circuit'],['career','Tour Career'],['full','Full Career']];
