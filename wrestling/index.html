@@ -258,7 +258,7 @@
   .bs-opt-d{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.45;}
   /* Backstage scene overlay: a full-screen cinematic takeover so the segment
      reads as A THING happening, not a system dialog. */
-  .sceneback{position:fixed;inset:0;z-index:60;background:radial-gradient(ellipse at center,rgba(20,15,10,.92) 0%,rgba(6,4,3,.97) 70%);
+  .sceneback{position:fixed;inset:0;z-index:200;background:radial-gradient(ellipse at center,rgba(20,15,10,.92) 0%,rgba(6,4,3,.97) 70%);
     display:none;align-items:center;justify-content:center;padding:20px 16px;opacity:0;transition:opacity .35s ease;}
   .sceneback.open{display:flex;opacity:1;}
   .scenecard{width:100%;max-width:520px;background:linear-gradient(180deg,#1a140b 0%,#0d0906 100%);border:1px solid rgba(224,179,65,.35);border-radius:14px;padding:20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(224,179,65,.1);position:relative;overflow:hidden;transform:translateY(14px) scale(.98);opacity:0;transition:transform .4s cubic-bezier(.2,1,.3,1),opacity .3s;}
@@ -562,6 +562,7 @@
   .bs-oppbelts{font-size:11.5px;color:var(--gold);margin-top:6px;letter-spacing:.02em;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .bs-nontitle{font-size:11px;color:var(--text-dim);margin-top:4px;padding:5px 8px;background:rgba(224,179,65,.07);border-left:2px solid rgba(224,179,65,.5);border-radius:3px;letter-spacing:.02em;}
   .bs-nontitle b{color:var(--gold);}
+  .bs-scene-tease{margin-top:10px;padding:6px 10px;background:rgba(224,179,65,.08);border-left:2px solid rgba(224,179,65,.5);border-radius:3px;color:var(--gold);font-size:11px;letter-spacing:.02em;display:flex;align-items:center;gap:6px;}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -4723,6 +4724,7 @@ function renderWeek(){
         ${b.studied?`<span style="color:var(--gold)">${pico('tape',14)} did the homework</span>`:''}
         ${b.sparred?`<span style="color:var(--gold)">${pico('fist',14)} sparred with an ally</span>`:''}
       </div>
+      ${(!segmentsPlayedThisWeek() && pickSegment())?`<div class="bs-scene-tease">${pico('microphone',12)} A backstage scene plays on the walk to gorilla.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
       ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' ? `<button class="ghost" style="width:100%;margin-top:7px;border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in Money in the Bank →</button>`:''}
       <button class="ghost" style="width:100%;margin-top:7px;" onclick="go('backstage')">Head Backstage →</button>
@@ -11474,6 +11476,10 @@ function pickSegment(){
 function closeScene(){ const b=$('sceneBack'); if(b) b.classList.remove('open'); }
 function playSegment(seg, onDone){
   const c=G.car;
+  // If the guided tour is still on screen, close it: it sits at z-index 150,
+  // above the scene, and would swallow clicks. A scene reads as the show
+  // starting, so tour ends here.
+  if(typeof endTour==='function' && TOUR_I>=0) endTour();
   let stage; try{ stage = seg.stage(c); }catch(_){ stage = {who:null,line:''}; }
   const who = stage.who;
   const opts = seg.opts(c, who) || [];
