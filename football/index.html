@@ -4764,18 +4764,25 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="hp-side-sub"><span>DL &middot; DL &middot; LB</span><span>DB &middot; DB &middot; FLEX</span></span>
       </button>
     </div>
-    <!-- THE THIRD DOOR, and it sits UNDER the pair rather than inside it. Offense and
-         Defense are one control asking one question, and the seam between them says "or".
-         A third column would turn that question into a menu and shrink both labels to fit.
-         Below it, full width, is a different shape on the page: not a third of the same
-         choice, a bigger version of the whole thing.
-         Hidden in the markup and revealed by paintHomeStart for anybody on the tester
-         list, the same way the split itself is. -->
-    <button class="btn hp-full" id="b-start-full" hidden>
-      <span class="hp-tag hp-tag-pro">Preview</span>
-      <span class="hp-full-name">Full Team</span>
-      <span class="hp-full-sub">Six on offense &middot; six on defense &middot; one cap</span>
-    </button>
+    <!-- THE THIRD DOOR IS NOT IN THIS MARKUP, and that is the difference between it and
+         the pair above.
+
+         Start a run and the Offense/Defense split are both here because both are things
+         SOME visitor is going to see, so the first-run guide, the landscape ordering and
+         the focus ring all need something real to attach to before any script runs, and
+         `hidden` decides which of the two shows.
+
+         Full Team is not that. It is an unannounced mode, and hidden markup is still
+         markup: it ships to everybody, it is one line of devtools away from being on
+         screen, and "view source" is not a lock. So it is BUILT, by ensureFullButton(),
+         only for an account that passes canPlayFull(), and a visitor who is not on the
+         list has no such node in their document at all.
+
+         What that does NOT do is hide the mode from somebody reading the JavaScript. This
+         is a static site: the label, the CSS and fullteam-access.js are all served to
+         anybody who asks. The guarantee is that nobody outside the list SEES a button, not
+         that the feature is a secret. The thing that stops a forged list from mattering is
+         the database, not this. -->
     <!-- SMALLER, AND STILL THE ONLY THING ON ITS OWN LINE. This was a full-width button
          directly under the main call to action, which put a menu of side modes at the same
          weight as the thing the page is for, and left nowhere for Full Team to go.
@@ -6853,7 +6860,9 @@ function beginDraft(opts){
 $('b-start').onclick=()=>{ beginDraft({}); };
 $('b-start-off').onclick=()=>{ beginDraft({}); };
 $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
-if($('b-start-full')) $('b-start-full').onclick=()=>{ beginFullDraft(); };
+/* NO BINDING HERE FOR FULL TEAM. The node does not exist at load: ensureFullButton() makes
+   it, for testers only, and wires its own click at the moment it does. A line here would
+   bind nothing and look like it had. */
 
 /* WHICH START THE FRONT PAGE IS SHOWING.
  *
@@ -6891,16 +6900,49 @@ function paintHomeStart(){
      function is the one that governs: the sticker cannot be shown on a control that is not. */
   const tag=$('hp-def-new');
   if(tag) tag.hidden=!(on&&defenseNewLive());
-  /* FULL TEAM IS ITS OWN QUESTION AND ITS OWN GATE. Not tied to `on`: the defense split and
-     the full team preview are two different lists, and somebody could be on one and not the
-     other. Cleared of its loading state here for the same reason the Defense half is, since
-     it lives on the page permanently and fetches the same pool. */
-  const fullBtn=$('b-start-full');
-  if(fullBtn){
-    fullBtn.hidden=!canPlayFull();
-    fullBtn.disabled=false;
-    fullBtn.classList.remove('hp-loading');
+  /* FULL TEAM IS ITS OWN QUESTION AND ITS OWN GATE. Not tied to `on`: the defense split
+     and the full team preview are two different lists, and somebody could be on one and
+     not the other. */
+  ensureFullButton();
+}
+
+/* THE FULL TEAM BUTTON, MADE RATHER THAN REVEALED.
+ *
+ * Called from paintHomeStart, so it runs at boot and again on every auth change, which is
+ * what it needs: the username the list is keyed on usually arrives one change after the
+ * sign-in does.
+ *
+ * BOTH DIRECTIONS. It builds the node for an account that passes and REMOVES it for one
+ * that does not, because signing out of a tester account on the same tab has to take the
+ * button with it. Leaving a hidden node behind would put us back where we started.
+ *
+ * Also the place the loading state gets cleared, for the reason written up over the Defense
+ * half: a control that lives on the page across a whole run has to be put back by hand, and
+ * the honest place is the function that runs on every return to the front page rather than
+ * the success path of the thing that set it. */
+function ensureFullButton(){
+  const host=$('hp-split');
+  let el=$('b-start-full');
+  if(!canPlayFull()){
+    if(el&&el.parentNode) el.parentNode.removeChild(el);
+    return;
   }
+  if(!host||!host.parentNode) return;
+  if(!el){
+    el=document.createElement('button');
+    el.className='btn hp-full';
+    el.id='b-start-full';
+    el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
+      '<span class="hp-full-name">Full Team</span>'+
+      '<span class="hp-full-sub">Six on offense &middot; six on defense &middot; one cap</span>';
+    el.onclick=()=>{ beginFullDraft(); };
+    /* Directly after the pair, which is where the layout expects it: the pill below reads
+       as smaller than this, and this reads as a separate question from the split. */
+    host.parentNode.insertBefore(el, host.nextSibling);
+  }
+  el.hidden=false;
+  el.disabled=false;
+  el.classList.remove('hp-loading');
 }
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
