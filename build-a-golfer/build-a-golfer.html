@@ -322,6 +322,18 @@ window.GA_ID='G-L29P5MRWKE';
   .tn-facts>div{background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:9px; padding:7px 10px}
   .tn-l{display:block; font:800 9.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted)}
   .tn-v{display:block; margin-top:3px; font-weight:800; font-size:13.5px; color:var(--oncard)}
+  /* ---- Tour Dispatch (the winter's state-of-the-tour page) ---- */
+  .dsp-sec{margin:0 0 13px}
+  .dsp-lab{font:800 9.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 5px}
+  .dsp-row{display:flex; flex-wrap:wrap; align-items:baseline; gap:1px 10px; padding:6px 0; border-top:1px solid var(--line)}
+  .dsp-row:first-of-type{border-top:0}
+  .dsp-nm{font-weight:800; font-size:13.5px; color:var(--oncard)}
+  .dsp-nm.you{color:var(--gold)}
+  .dsp-meta{font-size:11.5px; color:var(--muted); margin-left:auto}
+  /* a career line is long and varies with the name, so it always takes its own line rather than
+     wrapping for some players and not others */
+  .dsp-row.stack .dsp-meta{flex:0 0 100%; margin:1px 0 0}
+  .dsp-more{font-size:11.5px; color:var(--muted); padding-top:6px; border-top:1px solid var(--line)}
   .bhead{text-align:center; margin:6px 0 10px}
   .bh-kick{font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase; color:var(--muted)}
   .bh-name{font:800 clamp(20px,5.4vw,27px)/1.08 var(--display); color:var(--gold); margin:5px 0 3px}
@@ -6473,6 +6485,50 @@ function worldRanking(){
 function myWorldRank(){ const L=worldRanking(); const i=L.findIndex(x=>x.you); return i<0?L.length:i+1; }
 function worldRankSize(){ return worldRanking().length; }
 function worldRankOfName(name){ const L=worldRanking(); const i=L.findIndex(x=>x.name===name && !x.you); return i<0?L.length:i+1; }
+/* ================= THE TOUR DISPATCH =================
+   The living world has always aged in the background: players retire, rookies debut, the pecking order
+   turns over. None of it was ever SHOWN, so a 30-year career passed with the field silently rearranging
+   itself. buildTourDispatch reads the winter off the world the moment it ages (in continueFranchise,
+   right after advanceWorld) and hands the off-season a state-of-the-tour page: who walked away and what
+   they left behind, who arrived, who sits at No. 1 and who they took it from, and the year's biggest
+   climber. Stored on the world object, so it survives a refresh with the save and is built once.
+   Returns null on a winter where genuinely nothing happened, rather than an empty page. */
+function tourPeakOf(g){ return Math.round(g.career_potential||g.potential||g.overall||g.lov||0); }
+function buildTourDispatch(w){
+  if(!w || !w.active) return null;
+  const yr=w.simYear, prev=w.prevRank||null, wins=w.wins||{}, majs=w.majors||{};
+  const meName=()=>S.name||'Your Golfer';
+  const retired=(w.alumni||[]).filter(g=>g.retiredYear===yr).map(g=>({
+      name:g.name, age:yr-(g.born||(yr-45)), peak:tourPeakOf(g),
+      wins:wins[g.name]||0, majors:majs[g.name]||0,
+      rank:(prev&&prev[g.name])||null,
+      // only players who DEBUTED in this world have a length of service we actually know: a real golfer
+      // was mid-career when the save began, so "1 season on tour" would be a lie about a 54-year-old.
+      debut:g.debutYear||null, seasons:g.debutYear?Math.max(1,yr-g.debutYear):null
+    })).sort((a,b)=>(b.majors-a.majors)||(b.wins-a.wins)||(b.peak-a.peak));
+  const debuts=w.active.filter(g=>g.debutYear===yr).map(g=>({
+      name:g.name, age:yr-(g.born||(yr-21)), ovr:Math.round(g.lov||g.overall||0), peak:tourPeakOf(g), nation:g.nation||''
+    })).sort((a,b)=>(b.peak-a.peak)||(b.ovr-a.ovr));
+  const L=worldRanking(), key=x=>x.you?'__you__':x.name;
+  const top=L.slice(0,3).map((x,i)=>({name:x.you?meName():x.name, you:!!x.you, pos:i+1}));
+  const no1=top[0]||null;
+  // who held it a year ago, and where they are now (or whether they walked away holding it)
+  let displaced=null;
+  if(no1 && w.prevNo1 && w.prevNo1!==(L[0]?key(L[0]):null)){
+    const pn=w.prevNo1, i=L.findIndex(x=>key(x)===pn);
+    displaced={ name:pn==='__you__'?meName():pn, you:pn==='__you__', pos:i>=0?i+1:null,
+                retired:i<0 && (w.alumni||[]).some(g=>g.name===pn) };
+  }
+  // the year's biggest climber: most positions gained by anyone who is now genuinely near the top
+  let mover=null;
+  if(prev) L.slice(0,50).forEach((x,i)=>{ const was=prev[key(x)]; if(was==null) return;
+    const gain=was-(i+1); if(gain<5) return;
+    if(!mover || gain>mover.gain) mover={name:x.you?meName():x.name, you:!!x.you, from:was, to:i+1, gain}; });
+  if(!retired.length && !debuts.length && !displaced && !mover) return null;   // a quiet winter is no page at all
+  // careers that predate the win ledger have no record to read back, so the page keeps quiet about wins
+  // rather than reporting a legend's career as "no wins on tour".
+  return {year:yr, retired, debuts, top, no1, displaced, mover, ledger:Object.keys(wins).length>0};
+}
 // Tour Card line: finish inside the top CARD_LINE in the world to keep a full card for next season
 const CARD_LINE=100;
 function cardStatus(rank){ rank=rank||myWorldRank();
@@ -6484,6 +6540,12 @@ function cardStatus(rank){ rank=rank||myWorldRank();
 // end-of-season ranking update: decay everyone, add the year's Tour points (run BEFORE advanceWorld ages the world)
 function updateWorldRanking(){
   if(S.daily||!S.season) return; const w=ensureWorld(); if(!w) return;
+  /* THE DISPATCH needs "where everyone stood a year ago", and rankPts only move HERE, once a season.
+     So the order right BEFORE this update is the start-of-season ranking: snapshot it now and the
+     off-season report can name who climbed, who fell, and who lost the No. 1 spot. */
+  try{ const pre=worldRanking(); const pr={};
+       pre.forEach((x,i)=>{ pr[x.you?'__you__':x.name]=i+1; });
+       w.prevRank=pr; w.prevNo1=pre[0]?(pre[0].you?'__you__':pre[0].name):null; }catch(e){}
   const rp=(w.rankPts=w.rankPts||{}), tot=S.season.totals, meName=S.season.me.name;
   const activeNames=new Set(w.active.map(g=>g.name)), lovOf={};
   Object.keys(rp).forEach(n=>{ if(!activeNames.has(n)) delete rp[n]; });   // drop players who've left the tour
@@ -6494,6 +6556,22 @@ function updateWorldRanking(){
   Object.keys(rp).forEach(n=>{ const fl=owgrSeed(lovOf[n]!=null?lovOf[n]:60)*OWGR_FLOOR; if(rp[n]<fl) rp[n]=fl; });
   if(S.career){ const earned=((tot[meName]&&tot[meName].points)||0);
     S.career.rankPts=Math.max(myRankPts()*OWGR_DECAY+earned, owgrSeed(myOvrNow())*OWGR_FLOOR); }
+}
+/* ---- The world's own record book ----
+   Season totals are wiped every year, so the living world had no MEMORY: a golfer could win twenty
+   tournaments across fifteen seasons and still retire as nothing but a rating. w.wins / w.majors is a
+   running per-name ledger of every tour event the world's players win, kept on the world object (so it
+   persists with the save for free) and read back when they retire. Your own wins are NOT in here, they
+   live on S.career. A career that predates this ledger simply starts counting from the day it lands. */
+function recordWorldWin(o, evt){
+  try{
+    if(S.daily || !o || !o.p || o.p.you) return;      // your wins are S.career's business
+    if(o.pos!==1) return;                             // only an outright winner (a cut field can head the order)
+    if(evt && evt.olympics) return;                   // a medal, not a tour win
+    const w=S.world, n=o.p.name; if(!w||!n) return;
+    (w.wins=w.wins||{})[n]=(w.wins[n]||0)+1;
+    if(evt && evt.major) (w.majors=w.majors||{})[n]=(w.majors[n]||0)+1;
+  }catch(e){}
 }
 /* ---- Ranking-gated entry ----
    Signature events invite the top ENTRY_CAP.sig by OWGR, majors the top ENTRY_CAP.major (+ a personal
@@ -6534,6 +6612,7 @@ function simHeadlessEvent(evt, players){
   const made=ps.filter(o=>o.made).sort((a,b)=>a.total-b.total), missed=ps.filter(o=>!o.made);
   assignTies(made,false); missed.forEach(o=>{o.pos='CUT';o.pct=0;});
   const order=made.concat(missed), basePts=evt.league?LEAGUE_PTS:(evt.proving?PROVING_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500)));
+  recordWorldWin(order[0], evt);
   order.forEach(o=>{ o.money=evt.purse*(o.pct||0); o.points=typeof o.pos==='number'?Math.round(basePts*((o.pct||0)/0.18)):0;
     const t=S.season.totals[o.p.name]; if(!t) return;
     t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(typeof o.pos==='number'?o.pos:order.length);
@@ -20079,6 +20158,7 @@ function finalizeEvent(){
   assignTies(made,solo);
   missed.forEach(o=>{o.pos='CUT';o.tied=false;o.pct=0;});
   const order=made.concat(missed);
+  recordWorldWin(order[0], evt);   // the world remembers who won, so a retirement can carry a career line
   const basePts=evt.league?LEAGUE_PTS:(evt.proving?PROVING_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500)));
   order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
     o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
@@ -23927,6 +24007,9 @@ function continueFranchise(){
   else if(playerRetires()){ endCareer('age'); return; }   // your golfer's career is over → ceremony
   S.year=(S.year||1)+1;
   ensureWorld(); advanceWorld(S.world);   // age the living world one year (retire/rookies); spec §2-5
+  // THE TOUR DISPATCH: read the winter the moment the world ages, before anything else touches it.
+  // Stored on the world (persisted with the save), shown once at the top of the off-season.
+  if(!S.circuitMode){ try{ S.world.dispatch=buildTourDispatch(S.world); }catch(e){ S.world.dispatch=null; } }
   S.freshRivalRetired=null; reconcileRival();   // farewell a rival who's aged off the tour; refresh OVR
   const _pre=Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:null]));
   applyPlayerDecline();                    // your bag erodes from year 15 (re-spins fight it)
@@ -24135,7 +24218,87 @@ function offTake(k){
 // compare your current stats, and sponsors collapse to a tight strip (full decision only when there's an offer).
 // CS356d: big hero-style screen title (replaces the small pill headers). title in gold-gradient pixel, small teal sub.
 function scrHero(title, sub){ return $(`<div class="scrhero"><div class="sh-t">${esc(title)}</div>${sub?`<div class="sh-s">${esc(sub)}</div>`:''}</div>`); }
+/* THE TOUR DISPATCH page. Built once when the world ages (continueFranchise), read once here, then
+   marked acknowledged on the world so a refresh does not replay it. Everything on it is derived from
+   state the world was already keeping, so it can never disagree with the tour you are about to play. */
+/* What a career was worth, from what the world actually kept: wins if the ledger has them, the peak the
+   universe rolled for them, where they stood in their final season, and length of service only for the
+   players this world watched arrive. A winless career simply says nothing about wins rather than
+   printing an epitaph the save may not have the history to justify. */
+function dispatchRetireLine(r, ledger){
+  const bits=[];
+  if(ledger && r.wins) bits.push(`${r.wins} tour win${r.wins===1?'':'s'}${r.majors?', '+r.majors+' major'+(r.majors===1?'':'s'):''}`);
+  bits.push(`peak ${r.peak}`);
+  if(r.seasons) bits.push(`${r.seasons} season${r.seasons===1?'':'s'}`);
+  if(r.rank) bits.push(`last ranked #${r.rank}`);
+  return bits.join(' · ');
+}
+function scrDispatch(){
+  const w=S.world, d=w&&w.dispatch;
+  if(!d){ return scrOffseason(); }
+  const yr=d.year, R=d.retired||[], D=d.debuts||[], SHOW=6;
+  // lead with whatever actually happened, biggest first
+  let head;
+  if(d.displaced && d.no1) head = d.no1.you ? 'You are the new world No. 1' : `${d.no1.name} takes the No. 1 spot`;
+  else if(R.length===1) head = `${R[0].name} walks away`;
+  else if(R.length) head = `${R.length} careers end`;
+  else if(D.length) head = `The class of ${yr} arrives`;
+  else head = 'The state of the tour';
+
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--gold);border-color:rgba(241,208,74,.5);background:rgba(241,208,74,.10)">📰 Tour Dispatch · ${yr}</span></div>`));
+
+  const box=$(`<div class="tnews"></div>`);
+  box.appendChild($(`<div class="tn-kick">The winter report · ${esc(String(yr-1))} into ${esc(String(yr))}</div>`));
+  box.appendChild($(`<h2 class="tn-h">${esc(head)}</h2>`));
+
+  // the four facts, in the same grid the tour-news card uses
+  const no1txt=d.no1?(d.no1.you?'You':d.no1.name):'-';
+  const disTxt=d.displaced ? (d.displaced.retired ? `${d.displaced.name} retired holding it`
+                : (d.displaced.pos ? `${d.displaced.name} slips to #${d.displaced.pos}` : `${d.displaced.name} drops out`))
+                : 'Held for another year';
+  box.appendChild($(`<div class="tn-facts">
+      <div><span class="tn-l">World No. 1</span><span class="tn-v">${esc(no1txt)}</span></div>
+      <div><span class="tn-l">${d.displaced?'Previous No. 1':'The top spot'}</span><span class="tn-v" style="font-size:12px">${esc(disTxt)}</span></div>
+      <div><span class="tn-l">Retired</span><span class="tn-v">${R.length||'None'}</span></div>
+      <div><span class="tn-l">Debuts</span><span class="tn-v">${D.length||'None'}</span></div>
+    </div>`));
+
+  if(R.length){
+    const sec=$(`<div class="dsp-sec"><div class="dsp-lab">Careers that ended</div></div>`);
+    R.slice(0,SHOW).forEach(r=>sec.appendChild($(`<div class="dsp-row stack">
+      <span class="dsp-nm">${esc(r.name)}<span style="color:var(--muted);font-weight:700;font-size:11.5px"> · ${r.age}</span></span>
+      <span class="dsp-meta">${esc(dispatchRetireLine(r,d.ledger))}</span></div>`)));
+    if(R.length>SHOW) sec.appendChild($(`<div class="dsp-more">and ${R.length-SHOW} more off the tour this winter</div>`));
+    box.appendChild(sec);
+  }
+  if(D.length){
+    const sec=$(`<div class="dsp-sec"><div class="dsp-lab">The class of ${yr}</div></div>`);
+    // deliberately no ceiling shown: a rookie's peak is the world's secret to keep, not the page's to spoil
+    D.slice(0,4).forEach(r=>sec.appendChild($(`<div class="dsp-row">
+      <span class="dsp-nm">${esc(r.name)}<span style="color:var(--muted);font-weight:700;font-size:11.5px"> · ${r.age}</span></span>
+      <span class="dsp-meta">${esc(r.nation||'')}${r.nation?' · ':''}rated ${r.ovr}</span></div>`)));
+    if(D.length>4) sec.appendChild($(`<div class="dsp-more">${D.length-4} more rookies earned cards</div>`));
+    box.appendChild(sec);
+  }
+  if(d.top && d.top.length){
+    const sec=$(`<div class="dsp-sec"><div class="dsp-lab">At the top</div></div>`);
+    d.top.forEach(t=>sec.appendChild($(`<div class="dsp-row">
+      <span class="dsp-nm${t.you?' you':''}">#${t.pos} ${esc(t.you?'You':t.name)}</span></div>`)));
+    box.appendChild(sec);
+  }
+  if(d.mover){
+    box.appendChild($(`<p class="tn-p" style="margin:0"><b>Biggest climber:</b> ${esc(d.mover.you?'you':d.mover.name)}, up ${d.mover.gain} places from #${d.mover.from} to #${d.mover.to}.</p>`));
+  }
+  add(box);
+
+  const b=$(`<button class="btn goldfill" style="max-width:420px;margin:16px auto 0">To the off-season ▸</button>`);
+  b.onclick=()=>{ try{ w.dispatch.ack=true; saveCareer(offseasonResumeExtra()); }catch(e){}
+                  track('dispatch_ack',{year:yr, retired:R.length, debuts:D.length}); render(); };
+  add(b);
+}
 function scrOffseason(){
+  // the winter's state-of-the-tour page comes first: who left, who arrived, who is No. 1 now
+  { const d=S.world&&S.world.dispatch; if(!S.circuitMode && d && !d.ack && d.year===(S.world.simYear)) return scrDispatch(); }
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   const yr=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):(S.year||1);
   const decl=os.decline||{}, nDec=Object.keys(decl).length, lockedNow=os.locked||[];

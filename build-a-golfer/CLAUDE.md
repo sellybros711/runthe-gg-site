@@ -16829,3 +16829,62 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   board_race 11. `goals_test` (3) and `regress.mjs` (1) fail **identically on the deployed baseline** -
   the known stale fixtures. Inline scripts parse; block 0 is the JSON-LD tag, fails identically on baseline.
 - Tunable: `CAREER_START_YEAR` (2026) moves every date at once; `calYear` is the single formatting point.
+
+### THE TOUR DISPATCH: the winter's state-of-the-tour page, and a world that remembers
+- **The gap.** The living world has aged in the background since the career-spec work - `advanceWorld`
+  retires players into `w.alumni`, `genRookie` fills the gaps, `updateWorldRanking` turns the order over
+  at the top - and NONE of it was ever shown. Names quietly vanished from the field and new ones appeared
+  in it, so the tour changed around the player invisibly. The off-season opened straight on the tune-up.
+- **The world had no memory, and that was the real blocker.** Season totals are wiped every year, so a
+  golfer could win twenty tournaments across fifteen seasons and still retire as nothing but a rating -
+  there was no way to write a career line for anyone. Two small additions fixed it, both one-line hooks in
+  existing paths rather than new systems:
+  - **`recordWorldWin(o, evt)`** - a running per-name `w.wins` / `w.majors` ledger of every tour event the
+    world's players win, called from BOTH finalize paths (`finalizeEvent` and `simHeadlessEvent`, so an
+    event you never watched still counts). Your own wins stay `S.career`'s business; an Olympic medal is
+    not a tour win. It lives on the world object, so it persists with the save for free (`S.world` is
+    saved wholesale).
+  - **A start-of-season ranking snapshot** taken inside `updateWorldRanking`, right before the one place
+    rankPts move - so `w.prevRank` / `w.prevNo1` are exactly "where everyone stood a year ago", which is
+    what lets the page name who climbed, who fell and who lost the No. 1 spot.
+- **`buildTourDispatch(w)`** runs at the boundary in `continueFranchise`, the moment `advanceWorld` ages
+  the world and before anything else touches it, and stores the result on `S.world.dispatch` (persisted,
+  shown once). `scrOffseason` routes to `scrDispatch()` first when there is an unacknowledged dispatch for
+  the current `simYear` - the same interception pattern the existing `pendingTourNews` card uses.
+- **What the page says**: an adaptive headline (a new World No. 1 / who walked away / how many careers
+  ended / the class arriving), a facts grid, the winter's retirements with a real career line, the
+  incoming class, the top three, and the biggest climber inside the top 50.
+- **Three deliberate honesty rules, and they are the reason it reads as true:**
+  - A career that PREDATES the ledger is never reported as "no wins on tour" - the page keeps quiet about
+    wins entirely (`ledger` flag) rather than printing an unfair epitaph for a legend the save has no
+    history of.
+  - A retiree only gets a length of service if the world actually WATCHED them arrive (`debutYear`). A real
+    player was mid-career when the save began, so "1 season on tour" would be a lie about a 54-year-old.
+  - A rookie's rolled `career_potential` is never shown. That is the world's secret to keep.
+- **A quiet winter is no page at all** (no retirements, no debuts, no change at the top, no big mover ->
+  `null`), and the Legend Circuit is left alone entirely.
+- Verified: `dispatch_test.mjs` **27 pass / 0 fail / 0 page errors**, driving real seasons through the real
+  boundary (summary record block -> `continueFranchise` -> off-season). **It genuinely fails on the deployed
+  build** (`Cannot read properties of undefined (reading 'retired')`), so it discriminates. Covers the
+  ledger, the snapshot (151 entries), the world ageing exactly one year, the dispatch being built and dated
+  to the season about to be played, retirements/debuts filtered to THIS winter, the career line having
+  substance, the no-fake-service rule, acknowledging not replaying, the displaced-No.1 path, the quiet
+  winter, a pre-ledger career, and the circuit exclusion. Screenshots reviewed twice.
+- **Two bugs were caught by READING the rendered page and one by the screenshot, not by an assertion** -
+  worth recording, because all three passed their tests:
+  - "Stewart Cink · 54 / **1 season on tour** / no wins on tour" - `seasons` was computed as
+    years-since-the-save-began for every real player, and the epitaph was unfair. Both fixed above; the
+    line now reads "Ryan Fox · 49 · 2 tour wins · peak 86 · last ranked #88".
+  - A tile labelled "PREVIOUS NO. 1" whose value read "Unchanged at the top" - the label promises a name
+    and the value does not give one. The label is now dynamic ("The top spot" / "Held for another year").
+  - Retiree rows were ragged (some metas fitted inline, some wrapped right-aligned), fixed with a stacked
+    `.dsp-row.stack` meta so a career line always takes its own line.
+- **One test was asserting the OLD contract** (`seasons > 0`) and failed after the career-line rewrite -
+  updated to `peak > 40 && (seasons || rank || wins)`, and a permanent check ADDED that a golfer who
+  predates the save is never given a fake length of service.
+- **`calendar_test` regressed 25 -> 23 and that was CORRECT** - the off-season now opens on the Dispatch,
+  which is the intended new contract (the task said "routed like the existing pendingTourNews card", and
+  that card intercepts). Its fixture was amended to acknowledge the page the way a player does, preserving
+  its real intent -> 25/25.
+- Tunable: the retiree/debut show counts (`SHOW`, 6 and 4), the biggest-mover threshold (5 places inside
+  the top 50), and `dispatchRetireLine` (what a career line says and in what order).
