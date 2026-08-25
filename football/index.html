@@ -5661,7 +5661,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=24"></script>
+<script src="board.js?v=25"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -5758,7 +5758,7 @@ function loadDefensePool(){
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=9;
+const BOARD_VERSION=10;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -15897,6 +15897,10 @@ let lbTrade=false;
 /* The defense board. Gated the same way the Trade Machine's is: an option
    nobody can play is an option that leads to an empty table. */
 let lbDefense=false;
+/* The Full Team board. Gated on canPlayFull() for the same reason the two above are gated,
+   and harder: this one is a preview, so an option in the picker would advertise an
+   unannounced mode to everybody who opened the leaderboard. */
+let lbFull=false;
 function tradeBoardOff(){
   if(lbTrade&&!canPlayTrade()){ lbTrade=false; fixSort(); return true; }
   return false;
@@ -15907,6 +15911,13 @@ function tradeBoardOff(){
    which reads as a broken leaderboard rather than as a mode that has not opened yet. */
 function defenseBoardOff(){
   if(lbDefense&&!canPlayDefense()){ lbDefense=false; return true; }
+  return false;
+}
+/* And for Full Team, which needs it most: eligibility here can be lost by signing out of a
+   tester account without reloading, and a board left pointed at run_mode='fullteam' would
+   then be querying a mode the viewer cannot see the existence of. */
+function fullBoardOff(){
+  if(lbFull&&!canPlayFull()){ lbFull=false; fixSort(); return true; }
   return false;
 }
 /* Where this run sits on the board currently showing, on ITS axis and in ITS direction,
@@ -15939,7 +15950,10 @@ function lbScope(){
      database and it must never read a board the viewer is not entitled to. */
   tradeBoardOff();
   defenseBoardOff();
+  fullBoardOff();
   if(lbTrade) return {mode:'trade',win:lbWin};
+  /* One board for the whole mode again: twelve men out of one cap IS the competition. */
+  if(lbFull) return {mode:'fullteam',win:lbWin};
   /* One board for the whole mode, like the Trade Machine: the mode IS the competition,
      so there is no second field the way club has a franchise and era has a decade. */
   if(lbDefense) return {mode:'defense',win:lbWin};
@@ -15974,6 +15988,10 @@ function paintComp(){
     sel.innerHTML='<optgroup label="Perfect Season">'+
         '<option value="">Offense</option>'+
         (canPlayDefense()?'<option value="defense">Defense</option>':'')+
+        /* ONLY FOR SOMEBODY WHO CAN PLAY IT. An option here is the same leak the button
+           was: it would name an unannounced mode to every visitor who opened the board,
+           and lead them to a table they cannot add a row to. */
+        (canPlayFull()?'<option value="fullteam">Full Team</option>':'')+
       '</optgroup>'+
       (canPlayTrade()?'<option value="trade">The Trade Machine</option>':'')+
       '<optgroup label="Eras Draft">'+
@@ -15984,13 +16002,13 @@ function paintComp(){
         .map(c=>'<option value="'+c+'">'+esc(E.nickname(c))+'</option>').join('')+
       '</optgroup>';
   }
-  sel.value=lbTrade?'trade':lbDefense?'defense':lbEra?'era:'+lbEra:(lbClub||'');
+  sel.value=lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam':lbEra?'era:'+lbEra:(lbClub||'');
   const wrap=sel.parentElement;
-  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade&&!lbDefense);
-  wrap.classList.toggle('isera',!!lbEra&&!lbTrade&&!lbDefense);
+  wrap.classList.toggle('isclub',!!lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull);
+  wrap.classList.toggle('isera',!!lbEra&&!lbTrade&&!lbDefense&&!lbFull);
   wrap.classList.toggle('istrade',!!lbTrade);
   wrap.classList.toggle('isdef',!!lbDefense);
-  if(lbClub&&!lbEra&&!lbTrade&&!lbDefense){
+  if(lbClub&&!lbEra&&!lbTrade&&!lbDefense&&!lbFull){
     const tc=E.teamColors(lbClub);
     wrap.style.setProperty('--c1',tc.primary);
     wrap.style.setProperty('--c2',tc.secondary);
@@ -16004,23 +16022,29 @@ $('lb-comp').addEventListener('change',()=>{
   /* Checked again rather than trusted: the option is only rendered for an eligible viewer,
      but the value arrives from the DOM and the DOM is not the authority on that. */
   if(v==='trade'&&canPlayTrade()){
-    lbTrade=true; lbDefense=false; lbEra=null; lbClub=null;
+    lbTrade=true; lbDefense=false; lbFull=false; lbEra=null; lbClub=null;
     /* Land on the axis the mode is about. Record and team rating both mostly describe the
        roster you were handed; the GM rating is the season's work. */
     lbSort='gm';
   }else if(v==='defense'&&canPlayDefense()){
-    lbDefense=true; lbTrade=false; lbEra=null; lbClub=null;
+    lbDefense=true; lbTrade=false; lbFull=false; lbEra=null; lbClub=null;
     /* Same argument, the other mode: this is the board where what you allowed is the point. */
     lbSort='pa';
+  }else if(v==='fullteam'&&canPlayFull()){
+    lbFull=true; lbTrade=false; lbDefense=false; lbEra=null; lbClub=null;
+    /* RECORD, not points allowed and not team rating. Full Team is the one mode where both
+       halves of the scoreboard are yours, so the record is the only number that is about
+       the whole team rather than about one side of it. */
+    lbSort='record';
   }else if(v.startsWith('era:')){
-    lbTrade=false; lbDefense=false; lbEra=v.slice(4); lbClub=null;
+    lbTrade=false; lbDefense=false; lbFull=false; lbEra=v.slice(4); lbClub=null;
   }else{
-    lbTrade=false; lbDefense=false; lbEra=null; lbClub=v||null;
+    lbTrade=false; lbDefense=false; lbFull=false; lbEra=null; lbClub=v||null;
   }
   /* One call instead of a copy of the rule in each branch above. */
   fixSort();
   lbDir=sortBestDir(lbSort);
-  ga('board_competition',{mode:lbTrade?'trade':lbDefense?'defense':lbEra?'era':lbClub?'club':'free',
+  ga('board_competition',{mode:lbTrade?'trade':lbDefense?'defense':lbFull?'fullteam':lbEra?'era':lbClub?'club':'free',
     club:lbClub,era:lbEra});
   loadBoard();
 });
@@ -16050,15 +16074,17 @@ function boardFromRun(){
   if(!run||!run.outcome) return;
   lbTrade=!!(run.tradeMachine&&canPlayTrade());
   lbDefense=!lbTrade&&!!(run.defense&&canPlayDefense());
-  lbEra=(lbTrade||lbDefense)?null:(run.era||null);
-  lbClub=(lbTrade||lbDefense||lbEra)?null:(run.franchise||null);
+  /* A full run opens the board on its own competition, the way every other mode does. */
+  lbFull=!lbTrade&&!lbDefense&&!!(run.full&&canPlayFull());
+  lbEra=(lbTrade||lbDefense||lbFull)?null:(run.era||null);
+  lbClub=(lbTrade||lbDefense||lbFull||lbEra)?null:(run.franchise||null);
 }
 
 /* THE AXIS A BOARD LEADS WITH. The Trade Machine is scored on the GM rating, so that is the
    tab its board opens on; record and team rating both mostly describe the roster you were
    handed, while the GM rating is the season's work. Every other competition leads with the
    record. */
-function defaultSort(){ return lbTrade?'gm':lbDefense?'pa':'record'; }
+function defaultSort(){ return lbTrade?'gm':lbDefense?'pa':'record'; }  // full team uses record, which is already the fallback
 
 /* WHICH AXES THIS BOARD HAS, in one place. Four callers used to each carry their own copy of
    `if(lbSort==='gm') lbSort='rating'`, which was already one copy too many at one mode-only
@@ -16066,7 +16092,12 @@ function defaultSort(){ return lbTrade?'gm':lbDefense?'pa':'record'; }
    which every board has. */
 function sortAllowed(k){
   if(k==='gm') return lbTrade;
-  if(k==='pa') return lbDefense;
+  /* POINTS ALLOWED IS A REAL AXIS ON THE FULL TEAM BOARD, and it is not on the offense
+     board, which is the whole distinction. In offense mode what the other team scores is
+     what that team really scored: it is a property of the schedule, not of the player, so
+     ranking on it would rank the luck of the draw. In Full Team and in the defense draft
+     the number is the drafted defense's own work. */
+  if(k==='pa') return lbDefense||lbFull;
   if(k==='diff') return !lbTrade&&!lbDefense;
   return true;
 }
@@ -16669,6 +16700,7 @@ function runKindOf(row){
   if(m==='club'&&row.franchise) return 'One Franchise, '+E.nickname(row.franchise);
   if(m==='trade') return 'Trade Machine';
   if(m==='defense') return 'Defense';
+  if(m==='fullteam') return 'Full Team';
   if(m==='era'&&row.era) return 'Eras Draft, '+row.era;
   if(m==='daily') return 'daily puzzle';
   /* OFFENSE, NOT "FREE RUN". The words were fine while this was the only way to play and

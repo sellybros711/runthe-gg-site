@@ -386,7 +386,11 @@
      Club and era need a second field to name the competition, so a run claiming one of
      those without it is not that competition and falls back to free play. The Trade
      Machine and One Stop need nothing: the mode IS the competition. */
-  const SOLO_MODES = ['trade', 'defense'];
+  /* THIS LIST HAS NOW BEEN THE BUG THREE TIMES. 'trade' was missing from the submit,
+     'defense' from all four call sites, and 'fullteam' from here, added in the same commit
+     that shipped the mode's button to testers. The consolidation above is what turned the
+     third one into a single missing word instead of four. */
+  const SOLO_MODES = ['trade', 'defense', 'fullteam'];
   function modeOf(mode, franchise, era) {
     if (SOLO_MODES.indexOf(mode) >= 0) return mode;
     if (mode === 'era' && era) return 'era';
@@ -976,7 +980,7 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 9,
+    API_VERSION: 10,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     get offline() { return offline; },
