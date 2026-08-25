@@ -23,6 +23,9 @@ const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
 const L = require(ROOT + '/cfb/commish/ledger.js');
 const B = require(ROOT + '/cfb/commish/blocs.js');
 const D = require(ROOT + '/cfb/commish/docket.js');
+const S = require(ROOT + '/cfb/commish/season.js');
+const SIT = require(ROOT + '/cfb/commish/situation.js');
+const CAL = require(ROOT + '/cfb/commish/calendar.js');
 const E = require(ROOT + '/cfb/engine.js');
 const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
 
@@ -98,8 +101,63 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
   const burning = world0();
   burning.pressure = { legal: 90, congress: 90, union: 90 };
   D.eligible(Object.assign({}, burning, { beat: D.BEATS.WINTER }), L).forEach((i) => seen.add(i.id));
+  /* AND THE ONES THAT GATE ON WHAT IS HAPPENING NEED FOOTBALL TO HAVE HAPPENED. Half the
+     docket now asks the situation rather than the ledger: is anybody unbeaten, did somebody
+     lose a game they were paid to win, is the audience falling. None of that can be reached
+     from a hand-built world, and gating on it is exactly how an item becomes writing that
+     looks like content.
+
+     So this plays real seasons and asks the real question. If no season across all these
+     seeds ever produces a 45 point blowout, the item about the 45 point blowout is dead, and
+     that is a thing to find out here rather than from a player who never sees it. */
+  const seedsPlayed = 14;
+  for (let s = 0; s < seedsPlayed; s++) {
+    const base = world0();
+    base.seed = 'reach' + s;
+    for (const beat of [D.BEATS.SEPT, D.BEATS.OCT, D.BEATS.NOV, D.BEATS.CHAMP, D.BEATS.PLAYOFF]) {
+      const seg = S.throughAtBeat(beat) || { through: S.WEEKS, titles: true, bracket: true };
+      const wb = Object.assign({}, base, { beat });
+      let sim = null;
+      try {
+        sim = S.play(wb, teams, E.createSeededRNG(900 + s),
+          { through: seg.through, titles: !!seg.titles, bracket: !!seg.bracket });
+      } catch (e) { sim = null; }
+      const sit = SIT.build(wb, L, { sim, calendar: CAL });
+      D.eligible(wb, L, sit).forEach((i) => seen.add(i.id));
+    }
+    /* AND A SPORT SOMEBODY HAS DAMAGED, because two of these items are about a falling
+       audience and an audience cannot fall in year one. This is not a contrived world: it is
+       a four team playoff and a six game conference schedule against a term average from
+       before that, which is precisely the trajectory the item exists to comment on. */
+    const shrunk = world0();
+    shrunk.seed = 'shrink' + s;
+    shrunk.year = shrunk.startYear + 2;
+    shrunk.playoff.teams = 4; shrunk.rules.confGames = 6;
+    shrunk.ratings = { [shrunk.startYear]: { total: 880, perGame: 1.7, title: 21 },
+      [shrunk.startYear + 1]: { total: 875, perGame: 1.72, title: 21 } };
+    for (const beat of [D.BEATS.SEPT, D.BEATS.OCT, D.BEATS.NOV]) {
+      const seg = S.throughAtBeat(beat) || { through: S.WEEKS };
+      const wb = Object.assign({}, shrunk, { beat });
+      let sim = null;
+      try {
+        sim = S.play(wb, teams, E.createSeededRNG(1900 + s),
+          { through: seg.through, titles: !!seg.titles, bracket: !!seg.bracket });
+      } catch (e) { sim = null; }
+      D.eligible(wb, L, SIT.build(wb, L, { sim, calendar: CAL })).forEach((i) => seen.add(i.id));
+    }
+    /* The offseason beats read LAST season, so they need a term that has one behind it. */
+    const later = world0();
+    later.year = base.startYear + 2;
+    later.champs = { [base.startYear + 1]: { school: 'Ohio State', color: '#bb0000' } };
+    later.ratings = { [base.startYear + 1]: { total: 800, perGame: 1.5, title: 20 } };
+    for (const beat of [D.BEATS.WINTER, D.BEATS.PORTAL, D.BEATS.SPRING, D.BEATS.MEDIA]) {
+      const wb = Object.assign({}, later, { beat });
+      D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).forEach((i) => seen.add(i.id));
+    }
+  }
   const unreachable = D.ITEMS.filter((i) => !seen.has(i.id)).map((i) => i.id);
-  ok('every item can actually be dealt', !unreachable.length, unreachable.join(', ') || seen.size + ' reachable');
+  ok('every item can actually be dealt', !unreachable.length,
+    unreachable.join(', ') || seen.size + ' reachable, ' + seedsPlayed + ' seasons played');
 
   /* AND A CRISIS IS UNREACHABLE UNTIL IT SHOULD BE. The opposite failure: a lawsuit turning up
      on a sport nobody has done anything to. */

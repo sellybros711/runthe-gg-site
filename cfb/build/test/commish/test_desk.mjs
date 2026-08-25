@@ -19,6 +19,16 @@
  * considered. Neither can be a trapdoor.
  */
 import { chromium } from 'playwright';
+import { createRequire } from 'module';
+import path from 'path';
+const require = createRequire(import.meta.url);
+/* `import.meta.dirname` rather than `new URL(...)`: this file declares its own `const URL`
+   for the page under test, which shadows the global constructor and puts it in the temporal
+   dead zone above that line. */
+const ROOT = path.resolve(import.meta.dirname, '../../../..');
+/* HOW BIG THE DOCKET IS, read rather than assumed, so a walk budget cannot silently become
+   too small the next time somebody adds thirty items. */
+const DOCKET_ITEMS = require(ROOT + '/cfb/commish/docket.js').ITEMS.length;
 const URL = 'http://localhost:8080/cfb/commish/index.html';
 const UID = '11111111-1111-1111-1111-111111111111';
 const TESTER = 'commish-test-account';
@@ -183,8 +193,13 @@ console.log('\n=== what the desk promised is what the office got ===');
      through beats until it finds an option that genuinely moves a tile, and says at the end
      how long that took, so a run where it never found one reads as a failure rather than as
      a pass. */
+  /* AND THE BUDGET IS SIZED AGAINST THE DOCKET, not against the docket as it was. Thirty
+     turns reached about ten items, which was most of a twenty-four item docket and is a fifth
+     of a fifty-five item one, so this started failing outright on a sport that had simply got
+     bigger. Scaled off ITEMS so it cannot rot the same way twice. */
   let promised = null, dialMoved = null, beats = 0;
-  for (let i = 0; i < 30 && !promised; i++) {
+  const budget = Math.max(30, DOCKET_ITEMS * 2);
+  for (let i = 0; i < budget && !promised; i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
@@ -217,7 +232,7 @@ console.log('\n=== what the desk promised is what the office got ===');
   }
 
   ok('a ruling that moves the headline numbers turns up', !!promised,
-    promised ? 'after ' + beats + ' beats: ' + promised.join(' / ') : 'none in 30 beats');
+    promised ? 'after ' + beats + ' beats: ' + promised.join(' / ') : 'none in ' + beats + ' beats');
   ok('  and the dial moved the preview when there was one to move',
     dialMoved !== false, dialMoved === null ? 'no dial appeared on this walk' : 'yes');
 

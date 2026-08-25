@@ -702,8 +702,6 @@
   function play(world, teamSeasons, rng, opts) {
     var o = opts || {};
     var through = o.through == null ? GAMES : o.through;
-    var wantTitles = o.titles !== false;
-    var wantBracket = o.bracket !== false && wantTitles;
 
     var teams = league(world, teamSeasons);
     if (teams.length < 8) return null;
@@ -714,6 +712,18 @@
        given in weeks, and a full season means all of them. */
     var lastWeek = wk.weeks;
     if (o.through == null) through = lastWeek;
+
+    /* A PARTIAL SEASON DOES NOT GET TO PLAY ITS CHAMPIONSHIP GAMES. `titles` defaulted to
+       true whatever `through` was, so asking for nine weeks played nine weeks of football
+       AND every conference final, and the title results were recorded onto the same team
+       objects the standings are read off. Eight of seventy teams came back a game ahead of
+       the games actually in `sim.games`: Texas Tech 10-0 with nine on the board.
+
+       Nothing on screen was wrong, because the page has always passed `titles` explicitly
+       for each segment. It was a trap set for the next caller, which turned out to be the
+       situation module reading records to decide who is unbeaten in October. */
+    var wantTitles = o.titles != null ? o.titles !== false : through >= lastWeek;
+    var wantBracket = o.bracket !== false && wantTitles;
 
     var played = [];
     for (var i = 0; i < games.length; i++) {

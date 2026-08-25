@@ -378,6 +378,22 @@
   .dread{margin:0 0 9px;font-size:12.5px;line-height:1.4;color:var(--dim);
     border-left:2px solid var(--line-2);padding-left:9px}
 
+  /* THE TAIL A RULING GREW. Gold rule down the side so it reads as a dispatch rather than as
+     another card of numbers, which is what everything else on that screen is. */
+  .tail{border-left:3px solid var(--gold)}
+  .tail b{display:block;font-family:var(--fd);font-size:19px;line-height:1.1;
+    text-transform:uppercase;letter-spacing:.01em}
+  .tail p{margin-top:7px;font-size:14px;line-height:1.45;color:var(--dim)}
+
+  /* WHERE THE SPORT IS STANDING WHILE THIS LANDS. Same shape every time, so the eye learns
+     it once and reads the week off the desk without looking for it. */
+  .sitbar{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 2px}
+  .sitbar span{display:flex;align-items:baseline;gap:5px;padding:5px 9px;border-radius:999px;
+    background:var(--panel);border:1px solid var(--line)}
+  .sitbar i{font-style:normal;font-family:var(--fn);font-size:8.5px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2)}
+  .sitbar b{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--ink)}
+
   /* THE BOOKS. Three figures, because the whole point is the subtraction between them, and
      two of them side by side with the answer is how anybody would write it down. */
   .books{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
@@ -1101,6 +1117,8 @@
     <div class="beatbar" id="desk-beatbar"></div>
     <div class="eyebrow gold" id="d-eyebrow"></div>
     <h2 id="d-title"></h2>
+    <!-- Where the sport is standing while this lands. See paintSituation(). -->
+    <div class="sitbar" id="d-sit" hidden></div>
     <div class="brief" id="d-brief"></div>
     <!-- What this office has already done about this exact argument. -->
     <div id="d-prec"></div>
@@ -1126,6 +1144,8 @@
   <div class="screen" id="s-room" data-in="land">
     <div class="eyebrow green" id="r-eyebrow">You ruled</div>
     <h2 id="r-title"></h2>
+    <!-- The tail a ruling grew. See fallout.js and the wiring in b-rule. -->
+    <div class="card flat tail" id="r-tail" hidden></div>
     <div class="meters" id="r-meters"></div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px" id="r-head">The room</div>
@@ -1193,11 +1213,13 @@
 <script src="access.js?v=3"></script>
 <script src="ledger.js?v=3"></script>
 <script src="blocs.js?v=3"></script>
-<script src="docket.js?v=4"></script>
-<script src="season.js?v=8"></script>
+<script src="docket.js?v=5"></script>
+<script src="season.js?v=9"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
 <script src="calendar.js?v=2"></script>
+<script src="situation.js?v=1"></script>
+<script src="fallout.js?v=1"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -1226,6 +1248,8 @@ const S=window.PS_CFB_SEASON;
 const C=window.PS_CFB_COUNCIL;
 const FEED=window.PS_CFB_FEED;
 const CAL=window.PS_CFB_CALENDAR;
+const SIT=window.PS_CFB_SITUATION;
+const FALL=window.PS_CFB_FALLOUT;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
@@ -1728,7 +1752,7 @@ function openFact(i){
   /* WHAT YOU DID TO THIS NUMBER, off the ledger's own history: every ruling on an item that
      can write one of this tile's paths, in the order they happened. */
   const mine=(world.history||[]).filter((h)=>h.id&&ids.indexOf(String(h.id).split(':')[0])>=0);
-  const live=D.eligible(world,L).map((it)=>it.id);
+  const live=D.eligible(world,L,situationNow()).map((it)=>it.id);
 
   let html='<div class="now"><b>'+esc(big)+'</b><u>'+esc(label)+'</u>'
     +(was!=null&&was!==String(big)?'<em>was '+esc(was)+' when you took the job</em>':'')+'</div>'
@@ -1756,7 +1780,7 @@ function openFact(i){
     ? items.map((it)=>{
       const on=live.indexOf(it.id)>=0;
       const when=(it.beats||[]).map((b)=>L.BEATS[b]).filter(Boolean);
-      return '<div class="nxt'+(on?' live':'')+'"><b>'+esc(D.text(it.title,null,it))+'</b>'
+      return '<div class="nxt'+(on?' live':'')+'"><b>'+esc(D.text(it.title,null,it,sit))+'</b>'
         +'<span>'+esc(on?'On the desk this beat':when.slice(0,3).join(' · ')||'')+'</span></div>';
     }).join('')
     : '<p style="margin-top:0">Nothing on the docket writes this one.</p>';
@@ -1956,7 +1980,7 @@ function office(){
     paintMap($('off-map'),world,{showMoves:true});
   }
   paintRoom($('off-room'),world,null);
-  const pool=D.eligible(world,L);
+  const pool=D.eligible(world,L,situationNow());
   /* THE BUTTON GOES RED WHEN THE THING BEHIND IT IS A CRISIS. Every other beat it is the same
      green invitation, so the one week it is not should not need reading. */
   const crisis=pool.some((it)=>it.crisis);
@@ -1968,26 +1992,117 @@ function office(){
       : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
   show('s-office');
 }
+/* ── what is going on right now ────────────────────────────────────────────────────
+   ONE SITUATION PER BEAT, and every gate, cast and brief reads the same one. The docket used
+   to be addressed to nobody in particular: an October item about a rivalry read identically
+   in a year with three unbeaten teams and in a year when the whole country had two losses by
+   the first of the month. The beat said which CATEGORY of argument it was and nothing about
+   the argument.
+
+   Built off the football that has actually been played by the time you are standing on this
+   beat, which is `seasonNow()` and not this beat's own segment: standing in the office on
+   October, September has happened and October has not. */
+let sit=null;
+function situationNow(){
+  if(!SIT) return null;
+  try{
+    return SIT.build(world,L,{ sim:seasonNow(), calendar:CAL });
+  }catch(e){ return null; }
+}
+/* AND THE ONE THE DESK READS, which is a different question. Standing in the office on
+   September, no football has been played: the simulation is about to play it. But the item
+   lands on a DAY INSIDE September, and by that day some of September has happened.
+
+   Gating on what had happened before the beat opened made two items unreachable by
+   construction: an item about a September upset can never be dealt in September, because
+   September is the first football beat and nothing precedes it. Measured across forty terms,
+   `lightning` and `fcs-upset` came up zero times, which is the exact failure the reachability
+   test exists to catch and could not, because the test was not walking days.
+
+   So eligibility uses the window (the item has to be chosen before its day is known, which is
+   what decides the day) and the desk rebuilds against the day itself, so the week and the
+   records the player READS are the ones that were true on the date at the top of the screen. */
+function weeksBy(date){
+  if(!S||!date) return 0;
+  let n=0;
+  for(let wk=1;wk<=S.WEEKS;wk++){ if(CAL.between(CAL.saturday(world.year,wk),date)>=0) n++; }
+  return n;
+}
+function situationOn(day){
+  if(!SIT) return null;
+  try{
+    const seg=S&&S.segmentFor(world.beat);
+    let sim=null;
+    if(seg){
+      const through=Math.min(seg.through,weeksBy(day));
+      /* ZERO IS A REAL ANSWER. The September window opens four days before week one, so an
+         item landing on the twenty-seventh of August lands before a ball has been kicked.
+         Clamping up to one put "Week 1" on a desk three days early and reported thirty-four
+         unbeaten teams in a season that had not started. */
+      if(through>=1){
+        sim=seasonAt({through:through,titles:seg.titles&&through>=S.WEEKS,
+          bracket:seg.bracket&&through>=S.WEEKS});
+      }
+    }
+    return SIT.build(world,L,{ sim:sim, calendar:CAL, date:day });
+  }catch(e){ return situationNow(); }
+}
 /* THE ITEM IS DRAWN BEFORE THE DAYS ARE WALKED, not after, because the simulation has to
    know which day to stop on and what to say when it gets there. Drawing it afterwards would
    mean the calendar ran to an arbitrary date and the headline arrived from nowhere. */
 $('b-desk').onclick=()=>{
-  const pool=D.eligible(world,L);
+  /* THE WINDOW DECIDES WHICH ITEM, because the item decides the day. See situationOn(). */
+  sit=SIT?(function(){
+    try{
+      const seg=S&&S.segmentFor(world.beat);
+      return SIT.build(world,L,{ sim:seg?seasonThisBeat():null, calendar:CAL });
+    }catch(e){ return situationNow(); }
+  })():null;
+  const pool=D.eligible(world,L,sit);
   if(!pool.length){
     /* Nothing on the desk: the window runs out and the clock moves on. Rare now that every
        beat has something, and it still has to look like time passing rather than a jump. */
     runSim(null,null,()=>{ advance(); });
     return;
   }
-  item=D.pick(world,L,draw);
-  cast=D.castOf(item,world,L,draw);
+  item=D.pick(world,L,draw,sit);
+  cast=D.castOf(item,world,L,draw,sit);
   choice=null; dials={}; written='';
   (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
   save();
   const day=CAL.decisionDay(world.year,world.beat,item.id);
   deskDay=day;
-  runSim(day,D.text(item.title,cast,item),()=>{ desk(); });
+  /* AND ONCE THE DAY IS KNOWN, THE SITUATION IS REBUILT AGAINST IT, so the week on the desk
+     and the records in the prose are the ones that were true on the date at the top of the
+     screen rather than the ones the whole window will eventually produce. */
+  sit=situationOn(day)||sit;
+  runSim(day,D.text(item.title,cast,item,sit),()=>{ desk(); });
 };
+
+/* WHERE THE SPORT IS STANDING WHILE THIS LANDS. Three or four facts, the same shape every
+   time, so the argument on the desk has a week and a scoreboard behind it rather than
+   arriving out of a category. In the offseason it says what the offseason is: which year of
+   the term, what happened last season, and who is still short of a conference. */
+function paintSituation(el,s){
+  if(!el) return;
+  if(!s){ el.hidden=true; return; }
+  const bits=[];
+  if(s.played&&s.week){
+    bits.push(['Week',String(s.week)]);
+    if(s.unbeatenCount) bits.push([s.unbeatenCount===1?'Unbeaten':'Unbeaten',
+      s.unbeatenCount===1?s.unbeaten[0].school:String(s.unbeatenCount)]);
+    else if(s.leader) bits.push(['Leading',s.leader.school]);
+    if(s.perGame) bits.push(['A game',s.perGame.toFixed(2)+'M']);
+  }else{
+    bits.push(['Season',s.seasonOfTerm+' of 5']);
+    if(s.previous&&s.previous.champion) bits.push([s.previous.year+' champion',s.previous.champion]);
+    if(s.endangered.length) bits.push(['Short handed',s.endangered[0]]);
+    else if(s.previous&&s.previous.perGame) bits.push(['A game',s.previous.perGame.toFixed(2)+'M']);
+  }
+  if(!bits.length){ el.hidden=true; return; }
+  el.hidden=false;
+  el.innerHTML=bits.map(([k,v])=>'<span><i>'+esc(k)+'</i><b>'+esc(v)+'</b></span>').join('');
+}
 
 /* ── the desk ─────────────────────────────────────────────────────────────────── */
 function desk(){
@@ -1997,8 +2112,9 @@ function desk(){
   $('d-eyebrow').textContent=(item.eyebrow||'')+' · '
     +(deskDay?CAL.longLabel(deskDay)+' '+deskDay.getFullYear():L.BEATS[world.beat]+' · '+world.year);
   $('d-eyebrow').className='eyebrow '+(item.crisis?'red':'gold');
-  $('d-title').textContent=D.text(item.title,cast,item);
-  paintBrief(D.text(item.brief,cast,item));
+  $('d-title').textContent=D.text(item.title,cast,item,sit);
+  paintSituation($('d-sit'),sit);
+  paintBrief(D.text(item.brief,cast,item,sit));
   paintPrecedent($('d-prec'),world,item);
   /* THE ARGUMENT, TIED TO THE ROOM BY COLOUR AND MARK. These were three grey paragraphs
      behind three grey labels, so the quote and the number it moves two screens later were
@@ -2393,6 +2509,19 @@ function paintFeed(el,posts,head){
   reveal(el.querySelector('.feed'));
 }
 
+/* WHAT HAPPENED NEXT. A ruling used to end with nine numbers moving, which is a strange way
+   to run a game about the most publicly ridiculous institution in American life. About one
+   ruling in three now grows a tail, and its effects are already in the meters above it: see
+   fallout.js for why they are merged rather than applied separately. */
+function paintTail(el,tail){
+  if(!el) return;
+  if(!tail){ el.hidden=true; el.innerHTML=''; return; }
+  el.hidden=false;
+  el.innerHTML='<div class="eyebrow gold" style="margin-bottom:7px">What happened next</div>'
+    +'<b>'+esc(tail.head)+'</b><p>'+esc(tail.body)+'</p>';
+  reveal(el);
+}
+
 /* ── precedent ─────────────────────────────────────────────────────────────────────
    WHAT YOU HAVE ALREADY DONE ABOUT THIS. Read straight off the ledger's own history, which
    has carried the year, the beat and the label of every ruling since the mode was built and
@@ -2715,6 +2844,9 @@ $('b-test').onclick=()=>{
   /* NO FEED ON A FORECAST. The internet cannot react to a ruling nobody has made, and it is
      the one thing on this screen that would not be true. */
   paintFeed($('r-feed'),null);
+  /* NO TAIL ON A FORECAST either, and for the same reason: nothing has happened yet, so
+     nothing can have happened next. */
+  paintTail($('r-tail'),null);
   $('b-next').textContent='Back to the desk';
   $('b-next').dataset.go='desk';
   show('s-room');
@@ -2722,9 +2854,18 @@ $('b-test').onclick=()=>{
 
 $('b-rule').onclick=()=>{
   if(!choice) return;
-  const edit=D.resolve(item,choice,dials,cast);
+  let edit=D.resolve(item,choice,dials,cast);
   if(written.trim()) edit.written=written.trim();
   const before=world;
+  /* WHAT HAPPENED NEXT, folded in BEFORE the room answers. A tail applied afterwards would be
+     a second edit, which deals the room two answers to one decision and prints two sets of
+     numbers for one press of a button. See the note at the top of fallout.js. */
+  const tail=FALL?FALL.roll(world,{itemId:item.id,optionId:choice,cast:cast,sit:sit,edit:edit},draw):null;
+  if(tail){
+    edit=FALL.merge(edit,tail);
+    world.tails=(world.tails||[]).concat([tail.id]).slice(-24);
+  }
+  paintTail($('r-tail'),tail);
   lastRoom=B.react(world,edit);
   world=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
   save();
@@ -2732,7 +2873,7 @@ $('b-rule').onclick=()=>{
      one call at the one place a ruling actually becomes real. */
   bumpCareer();
   $('r-eyebrow').textContent='You ruled';
-  $('r-title').textContent=D.text(item.title,cast,item)+': '
+  $('r-title').textContent=D.text(item.title,cast,item,sit)+': '
     +item.options.find((o)=>o.id===choice).label.toLowerCase();
   $('r-head').textContent='The room';
   paintMeters($('r-meters'),world,before);

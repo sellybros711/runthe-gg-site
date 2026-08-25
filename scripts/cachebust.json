@@ -61,12 +61,12 @@
       "sha": "5237c1dfac573a9b"
     },
     "docket.js": {
-      "v": "4",
-      "sha": "efed5ad09996b505"
+      "v": "5",
+      "sha": "939b721bbedc03bd"
     },
     "season.js": {
-      "v": "8",
-      "sha": "dee4ca030e5c8cbf"
+      "v": "9",
+      "sha": "f38841cffdb43c0a"
     },
     "council.js": {
       "v": "1",
@@ -79,6 +79,14 @@
     "calendar.js": {
       "v": "2",
       "sha": "36366f55e531fced"
+    },
+    "situation.js": {
+      "v": "1",
+      "sha": "98712cf59a02ddcd"
+    },
+    "fallout.js": {
+      "v": "1",
+      "sha": "38d0cd225abd4f6d"
     }
   },
   "cfb/index.html": {
