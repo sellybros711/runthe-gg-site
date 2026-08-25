@@ -1670,6 +1670,21 @@ const CHEMISTRY = {
    * One bonus per roster however many of the shapes hold.
    */
   QB_HUB: { VALUE: 0.08 },
+  /*
+   * THE COACH IS THE THIRTEENTH MAN ON THE CHEMISTRY BOARD. See coachLinks. Two links, both
+   * provable from data already in the repo, and both worth more than the player-to-player
+   * link they resemble, because a head coach is not a locker-room acquaintance:
+   *
+   *   coached   he was this man's head coach, that very season. Sits between teammates
+   *             (0.05) and battery (0.10): stronger than having shared a room, weaker than
+   *             having thrown a thousand passes to each other.
+   *   college   he was the head coach at this man's school. Above the player-to-player
+   *             college link (0.02) for the same reason: one of them recruited the other.
+   *
+   * They enter the same saturation curve as everything else, so a coach who knows four of
+   * your men is worth more than one who knows two and less than twice as much.
+   */
+  COACH: { coached: 0.06, college: 0.03 },
   /* "Same era" was undefined in the GDD; fixed as within this many seasons. */
   TARGET_CONFLICT_ERA_YEARS: 3,
   TARGET_CONFLICT_PERCENTILE: 0.95,
@@ -3039,7 +3054,8 @@ function resolveChemistry(roster, ctx, opts) {
     for (let j = i + 1; j < roster.length; j++) {
       if (split && sideOf(roster[i]) !== sideOf(roster[j])) continue;
       const best = pairLinks(roster[i], roster[j], ctx, opts)[0];
-      if (best) links.push({ ...best, a: roster[i].name, b: roster[j].name });
+      if (best) links.push({ ...best, a: roster[i].name, b: roster[j].name,
+        side: sideOf(roster[i]) ? 'def' : 'off' });
     }
   }
   /* THE QUARTERBACK AS A HUB, on top of the pairs. See CHEMISTRY.QB_HUB. */
@@ -3047,24 +3063,56 @@ function resolveChemistry(roster, ctx, opts) {
      already free of cross-side pairs. Passing only his own unit as well, so the count of
      "men he knows" cannot be inflated by a roster that merely has twelve men in it. */
   const hub = qbHubBonus(split ? roster.filter((p) => !sideOf(p)) : roster, links);
-  if (hub) links.push(hub);
+  if (hub) links.push({ ...hub, side: 'off' });
+  /* THE COACH, on top of both. See coachLinks. Only Full Team hires one, and only Full Team
+     splits, so this rides on the same flag rather than inventing a second one. */
+  if (split && opts.coach) {
+    const byName = {};
+    for (const p of roster) byName[p.name] = p;
+    for (const l of coachLinks(roster, ctx, opts.coach)) {
+      const man = byName[l.b];
+      links.push({ ...l, side: man && sideOf(man) ? 'def' : 'off' });
+    }
+  }
 
-  const positives = links.filter((l) => l.value > 0).sort((a, b) => b.value - a.value);
-  const negatives = links.filter((l) => l.value < 0);
+  /* ONE UNIT'S CHEMISTRY IS ITS OWN. Skipping the cross-side PAIRS was only half the rule:
+     a single roster-wide multiplier still handed the defence whatever the offence earned,
+     so a quarterback and his receiver were quietly making the cornerbacks better. Each side
+     now saturates its own links and multiplies its own points, which is what resolveGameFull
+     applies and what fullStrength rates. The one-sided modes take the old path untouched. */
+  const fold = (ls) => {
+    const positives = ls.filter((l) => l.value > 0).sort((a, b) => b.value - a.value);
+    const negatives = ls.filter((l) => l.value < 0);
+    const raw = positives.reduce((s, l) => s + l.value, 0);
+    const saturated = CHEMISTRY.MAX * (1 - Math.exp(-raw / CHEMISTRY.MAX));
+    // Penalties never diminish and are applied after saturation, so a negative
+    // always costs its full face value.
+    const penalties = negatives.reduce((s, l) => s + l.value, 0);
+    const net = Math.max(CHEMISTRY.MIN, Math.min(CHEMISTRY.MAX, saturated + penalties));
+    return { raw, saturated, net, links: positives.concat(negatives) };
+  };
 
-  const raw = positives.reduce((s, l) => s + l.value, 0);
-  const saturated = CHEMISTRY.MAX * (1 - Math.exp(-raw / CHEMISTRY.MAX));
-  // Penalties never diminish and are applied after saturation, so a negative
-  // always costs its full face value.
-  const penalties = negatives.reduce((s, l) => s + l.value, 0);
-  const net = Math.max(CHEMISTRY.MIN, Math.min(CHEMISTRY.MAX, saturated + penalties));
+  if (!split) {
+    const all = fold(links);
+    return { multiplier: 1 + all.net, raw: all.raw, saturated: all.saturated, net: all.net,
+      links: all.links };
+  }
 
+  const o = fold(links.filter((l) => l.side !== 'def'));
+  const d = fold(links.filter((l) => l.side === 'def'));
   return {
-    multiplier: 1 + net,
-    raw,
-    saturated,
-    net,
-    links: positives.concat(negatives),
+    /* The headline number is the average of the two, because that is what the team is
+       carrying: quoting the folded whole-roster figure would print a multiplier no side of
+       the ball actually plays with. */
+    multiplier: 1 + (o.net + d.net) / 2,
+    offMultiplier: 1 + o.net,
+    defMultiplier: 1 + d.net,
+    raw: o.raw + d.raw,
+    saturated: (o.saturated + d.saturated) / 2,
+    net: (o.net + d.net) / 2,
+    offNet: o.net,
+    defNet: d.net,
+    links: o.links.concat(d.links).sort((a, b) => b.value - a.value),
   };
 }
 
@@ -3556,9 +3604,64 @@ function defenseOverall(defenseTotal) {
 }
 
 /** The overall of a roster as drafted, either side of the ball, in one place. */
+/*
+ * ─── WHAT A FULL TEAM IS WORTH, ON A SCALE THAT MEANS SOMETHING ────────────────────
+ *
+ * THE OLD NUMBER WAS TWO DIFFERENT QUANTITIES AVERAGED TOGETHER. The offensive half was
+ * points times three multipliers, which is unbounded and ran past 120 on a good roster; the
+ * defensive half was defenseOverall, which is mapped into 0 to 100. Averaging them is adding
+ * a distance to a percentage: the result had no ceiling, no floor, and no meaning, and a
+ * team rated 120 could lose because the rating was mostly saying "your offence is large".
+ *
+ * A RATING SHOULD ANSWER ONE QUESTION: how close is this to the best team I could have
+ * drafted. So it is measured as expected point margin against a league-average opponent,
+ * which is the thing that decides seasons, and then placed on the line between the worst
+ * legal roster and the best one:
+ *
+ *   0    the cheapest twelve men in the game, and the coach who makes them worse
+ *   100  the best roster the cap can buy, the best coach, and the chemistry to go with it
+ *
+ * Both ends are MEASURED, by solving for them, and both are stated below so they can be
+ * checked. Nothing here is a guess and nothing is a constant somebody liked the look of.
+ */
+const OPP_PTS_NEUTRAL = 22.08;   // mean pts_scored_mean over every team season
+
+/** Expected margin per game against a league-average opponent. The raw scale. */
+function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
+  const { off, def } = splitSides(roster);
+  if (!off.length || !def.length) return 0;
+  const eff = coachEffect(coach);
+  const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  const offPts = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t * eff.off;
+  const defPts = def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t * eff.def;
+  const yourPts = offPts * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
+  const theirPts = OPP_PTS_NEUTRAL * constants.SCALE
+    * defenseSuppression(defPts * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier,
+      constants);
+  return yourPts - theirPts;
+}
+
+/* THE TWO ENDS OF THE LINE, solved rather than chosen. Re-derive with
+ *   node football/simulator.js --fullscale
+ * after any change to the cap, the talent dial, the coach table or the player data. */
+const FULL_STRENGTH_MIN = -107.8;  // twelve cheapest legal men, Steve Spagnuolo coaching
+const FULL_STRENGTH_MAX = 67.6;    // $159.5M off / $100.4M def, Bill Belichick, chemistry and all
+
+function fullOverall(roster, chemistryMultiplier, coach, constants) {
+  const v = fullStrength(roster, chemistryMultiplier, coach, constants);
+  const span = FULL_STRENGTH_MAX - FULL_STRENGTH_MIN;
+  if (!(span > 0)) return 0;
+  /* CLAMPED, because the ends are the worst and best a DRAFT can reach and nothing stops a
+     caller handing this a roster assembled some other way. A rating of 104 would be the old
+     bug wearing a new scale. */
+  return Math.max(0, Math.min(100, 100 * (v - FULL_STRENGTH_MIN) / span));
+}
+
 function overallOf(roster, chemistryMultiplier, isDefense, coach) {
   const pts = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-  const chem = chemistryMultiplier || 1;
+  /* Full Team may hand this the two-sided chemistry object; every other mode hands it a
+     number. chemSide reads both, so the one-sided branches below stay arithmetic. */
+  const chem = chemSide(chemistryMultiplier, 'multiplier');
   /* 'full' rather than true or false, because a full team has two ratings and one number
      has to stand for both. A bare boolean could not say so: passing false scores twelve men
      through the offensive reading and hands a $110M defense to rosterStructure, which is
@@ -3566,33 +3669,15 @@ function overallOf(roster, chemistryMultiplier, isDefense, coach) {
      mirror of it. Anything that is not the string is still read as the old boolean, so every
      existing caller means what it always meant. */
   if (isDefense === 'full') {
-    const { off, def } = splitSides(roster);
-    const offPts = off.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-    const defPts = def.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-    /* THE MEAN OF THE TWO SIDES, not the sum, and not the offense with a defensive bonus.
-       Both halves are already on the 0-to-100 scale the seeding and weekly-edge constants
-       expect, so averaging keeps a full team on that scale; adding would put every roster
-       off the top of it and seed a mediocre team first. It also says the right thing about
-       the mode: a 92 offense behind a 40 defense is a 66 team, which is the failure state
-       this mode exists to make possible. */
-    /* TALENT APPLIES HERE TOO, and leaving it out was worth a 67% title rate.
-       A rating is what the seeding, the weekly edge and the playoff home field are all
-       read off, so it has to describe the team that actually takes the field. Rating the
-       roster at full strength while it plays at FULL_TALENT put a full team at 111 on a
-       scale those constants treat as topping out near 100, so every one of them was pinned:
-       the mode reached the playoffs 98% of the time and won the title two seasons in three
-       against a reference of 3%. */
-    /* THE COACH IS IN THE RATING, and leaving him out was an inconsistency rather than a
-       simplification: he changes what the team scores and allows, so a rating that ignores
-       him describes a team that never takes the field, and the seeding, the weekly edge and
-       the playoff home field are all read off it. It is also what makes the hire something a
-       player can SEE: the coach screen previews this number.
-       Defaulted to no coach, so every caller that does not have one means what it meant. */
-    const t = FULL_TALENT;
-    const eff = coachEffect(coach);
-    const offRating = offPts * t * eff.off * chem * rosterStructure(off).multiplier;
-    const defRating = defenseOverall(defPts * t * eff.def * chem * defenseStructure(def).multiplier);
-    return (offRating + defRating) / 2;
+
+    /* ONE NUMBER, ON THE LINE BETWEEN THE WORST AND BEST DRAFTABLE TEAM. See fullOverall
+       above for why the old mean of two incompatible halves had to go.
+       The coach is in it, which is both correct and what lets the coach screen preview the
+       hire: he changes what the team scores and allows, so a rating without him describes a
+       team that never takes the field. */
+    /* The WHOLE chemistry value, not the flattened one above: the two units are rated with
+       their own multipliers, so handing this the average would rate a team nobody built. */
+    return fullOverall(roster, chemistryMultiplier, coach);
   }
   return isDefense
     ? defenseOverall(pts * chem * defenseStructure(roster).multiplier)
@@ -3694,7 +3779,20 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
  * beside the other two. At $280M a full team carries 2.3 floor men instead of 6.2 and its
  * mean man is a 66th percentile player instead of a 38th.
  *
- * Both are measured. Re-run simulator.js --fullteam after touching either.
+ * Both are measured. Re-run simulator.js --fullteam after touching either. Where they stand
+ * today, 400 seasons a row, against the offense mode printed beside them:
+ *
+ *                    win%    med rec   playoffs   title   rating
+ *   careless         8.8%      1-16       0.0%    0.0%      23.4
+ *   mid             55.8%       9-8      15.0%    1.0%      66.4
+ *   optimal         82.6%      14-3      94.3%    7.5%      88.2
+ *   (offense mode: careless 25.0%, mid 60.8%, optimal 80.8%)
+ *
+ * CARELESS PLAY IS PUNISHED HARDER HERE THAN IN THE OTHER TWO MODES, and that is the mode
+ * rather than a mis-fit. Offense mode hands you a league-average defense and defense mode
+ * hands you an offense; draft both badly and there is nothing left to carry you, so a bad
+ * full team allows 1.5x what an average one does AND scores half. The rating says so before
+ * the season starts, which is the point of putting it on a scale that means something.
  */
 const FULL_CAP_MUSD = 280;
 
@@ -3816,6 +3914,58 @@ function coachPrice(off, def) {
   const worth = off + def;                       // roughly -12 to +8 across the pool
   const v = Math.max(0, Math.min(1, (worth + 6) / 14));
   return Math.round((3 + 19 * v * v) * 10) / 10;  // $3M to $22M, steep at the top
+}
+
+/*
+ * ─── WHO THE COACH ALREADY KNOWS ───────────────────────────────────────────────────
+ *
+ * A coach's tilt above is the same wherever he goes, which makes hiring a lookup: read the
+ * two numbers, take the biggest you can afford. That is not a decision, and Full Team is
+ * supposed to be a mode of decisions.
+ *
+ * So a coach also has CHEMISTRY, with the men you actually drafted, and it is different for
+ * every roster in the game. Two links, both facts rather than flavour:
+ *
+ *   coached   he was the head coach of that man's team-season. coaches.json names the head
+ *             coach of all 861 seasons and every player row carries its team_season_id, so
+ *             this is a join. Marvin Harrison's 2002 was coached by Tony Dungy, and hiring
+ *             Dungy to coach him again is a thing that happened.
+ *   college   he was a head coach at the school the player attended. That half is not in the
+ *             football data at all; it comes out of the COLLEGE game's, through
+ *             football/build/coach-links.mjs, and 25 of the hireable names have one.
+ *
+ * BOTH SIDES OF THE BALL. The links run to whoever is on the roster, so a defensive coach
+ * with three of his old defenders is a different hire from the same man on a roster full of
+ * strangers, and the offence and the defence each keep what their own men earned.
+ *
+ * A LINK THIS CANNOT PROVE IS A LINK IT DOES NOT CLAIM. No coordinator jobs, no college post
+ * that predates the college data. The failure mode here is telling a player a false thing
+ * about a real person, which is worse than a thin feature.
+ */
+function coachLinks(roster, ctx, coach) {
+  const V = CHEMISTRY.COACH;
+  if (!coach || !coach.name || !V) return [];
+  const seasonCoaches = (ctx && ctx.coaches) || {};
+  const schools = ((ctx && ctx.coachColleges) || {})[coach.name] || [];
+  const out = [];
+  for (const p of roster) {
+    const hc = seasonCoaches[p.team_season_id] && seasonCoaches[p.team_season_id].hc;
+    if (hc === coach.name) {
+      out.push({ type: 'coach_coached', value: V.coached, a: coach.name, b: p.name,
+        label: `${lastWord(coach.name)} coached ${p.name} in ${p.season}`,
+        short: 'Coached him already' });
+      continue;   // one link per man, and the stronger one wins
+    }
+    if (p.college && schools.indexOf(p.college) >= 0) {
+      /* NAMES THE MAN, not just the school. "Belichick was the head coach at North Carolina"
+         is true and says nothing about your roster, which is the only reason the line is
+         there. */
+      out.push({ type: 'coach_college', value: V.college, a: coach.name, b: p.name,
+        label: `${lastWord(coach.name)} was a head coach at ${p.college}, where ${p.name} played`,
+        short: `Both at ${p.college}` });
+    }
+  }
+  return out;
 }
 
 /** The two multipliers a coach hands his team. */
@@ -3941,6 +4091,24 @@ function planFromCoach(coach) {
  * NOTHING IN THE LIVE GAME CALLS THIS YET. playRun reaches it only through opts.full, and
  * no caller passes opts.full outside the harness.
  */
+/*
+ * FULL TEAM HANDS THE TWO UNITS TWO DIFFERENT MULTIPLIERS and every other mode one, so the
+ * full path takes either: a bare number, meaning both sides carry the same figure, or the
+ * object resolveChemistry returns when it split them. Written as a reader rather than a
+ * second parameter because `chemistryMultiplier` reaches these functions through playRun,
+ * advanceWeek and the harness, and threading one more argument through all three is how a
+ * side ends up silently playing at 1.0.
+ */
+function chemSide(chem, key) {
+  if (chem && typeof chem === 'object') {
+    if (typeof chem[key] === 'number') return chem[key];
+    return typeof chem.multiplier === 'number' ? chem.multiplier : 1;
+  }
+  return typeof chem === 'number' && chem > 0 ? chem : 1;
+}
+const chemOff = (c) => chemSide(c, 'offMultiplier');
+const chemDef = (c) => chemSide(c, 'defMultiplier');
+
 function splitSides(roster) {
   const off = [], def = [];
   for (const p of roster) {
@@ -3996,12 +4164,12 @@ function resolveGameFull(roster, chemistryMultiplier, opponent, leagueAvgAllowed
      offence is better. It multiplies the finished scores rather than any one term so the
      two sides cannot drift apart. */
   const tempo = 1 + PLAN.TEMPO * plan.tempo;
-  const offMul = chemistryMultiplier * offStructure * defenseModifier;
+  const offMul = chemOff(chemistryMultiplier) * offStructure * defenseModifier;
   /* Aggression is worth a little on the average and a lot on the spread; the spread is in C
      above. Both are wanted by a team that needs the tail and neither by one that does not. */
   const yourScore = rawOff * offMul * tempo * (1 + PLAN.FOURTH_MEAN * plan.fourth);
 
-  const defenseTotal = rawDef * chemistryMultiplier * defStructure;
+  const defenseTotal = rawDef * chemDef(chemistryMultiplier) * defStructure;
   const suppression = defenseSuppression(defenseTotal, constants);
   /* Pressure is the mirror of the fourth down call, pointed at their score instead of
      yours: it holds them to less on average and gives up more when it misses. The swing is
@@ -4429,7 +4597,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 39;
+const ENGINE_API_VERSION = 40;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -4504,7 +4672,8 @@ const publicAPI = {
   ],
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
-  coachTable, coachPrice, coachEffect, COACH_MIN_SEASONS,
+  fullStrength, fullOverall, FULL_STRENGTH_MIN, FULL_STRENGTH_MAX,
+  coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
   PLAN, PLAN_AXES, normalizePlan, planFromCoach,
   resolveHeadToHead, playRun, prepareData, toFootballScore,
   playoffOpponent, LEGEND_IDS, LEGEND_TEAM_SEASONS,

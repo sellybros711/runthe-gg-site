@@ -6,6 +6,7 @@
  *   node football/simulator.js --schedule   schedule normalization check
  *   node football/simulator.js --draft      draft-loop invariants (cap, dead ends)
  *   node football/simulator.js --policies   REAL play policies through the wheel
+ *   node football/simulator.js --fullscale  solve the ends of the Full Team rating scale
  *
  *   PS_SCALE=2.1 PS_N=4000 node football/simulator.js     override the dial
  *
@@ -31,6 +32,13 @@ const ctx = {
   curated: load('curated.json'),
   /* coachTable derives every coach's tilt from what his own teams scored and allowed. */
   teamSeasons: load('team_seasons.json'),
+  /* Full Team's coach chemistry reads this. Built by football/build/coach-links.mjs and
+     tiny, but loaded defensively: the harness has to keep running on a checkout where the
+     file has not been generated yet, and an absent college link is a link the game does not
+     claim rather than one it gets wrong. */
+  coachColleges: (() => {
+    try { return load('coach_colleges.json'); } catch (_) { return {}; }
+  })(),
 };
 
 const data = E.prepareData(teamSeasons);
@@ -711,7 +719,6 @@ function buildFullRandom(rng, budget) {
  * opponent. What comes back is not just a roster, it is the answer to the mode's own
  * central question: how much of one cap goes to each side of the ball.
  */
-const OPP_PTS = 22.08;            // mean pts_scored_mean over every team season
 const FULL_BUCKET = 0.5;
 
 function fullCurve(allowedPositions, nb) {
@@ -819,18 +826,18 @@ function buildFullOptimal(budget, wantSplit) {
     const o = buildSide(OFF_IDX, off);
     const d = buildSide(DEF_IDX, budgetLeft - off);
     if (!o || !d) continue;
-    const rawOff = o.reduce((s, p) => s + p.ppr_ppg_mean, 0);
-    const rawDef = d.reduce((s, p) => s + p.ppr_ppg_mean, 0);
-    /* Chemistry is 1 here for the same reason buildOptimal ignores it: this row is the
+    /* SCORED WITH THE ENGINE'S OWN fullStrength, not with a copy of it written out here.
+       The copy left the talent dial off, and a defensive total scaled by 0.78 sits at a
+       very different place on defenseSuppression's curve than the same total unscaled, so
+       the split this loop called optimal was optimal for a game nobody plays. Calling the
+       real function also means the solver and the rating can never drift apart, because
+       there is only one of them.
+       Chemistry is 1 here for the same reason buildOptimal ignores it: this row is the
        points ceiling, and chemistry is a separate axis measured by its own archetype. */
-    const eff = E.coachEffect(coach);
-    const yourScore = rawOff * eff.off * E.rosterStructure(o).multiplier;
-    const oppScore = OPP_PTS * constants.SCALE
-      * E.defenseSuppression(rawDef * eff.def * E.defenseStructure(d).multiplier, constants);
-    const margin = yourScore - oppScore;
+    const roster = o.concat(d);
+    const margin = E.fullStrength(roster, 1, coach, constants);
     if (!best || margin > best.margin) {
-      best = { margin, off, def: budgetLeft - off, roster: o.concat(d), coach,
-        yourScore, oppScore };
+      best = { margin, off, def: budgetLeft - off, roster, coach };
     }
    }
   }
@@ -851,11 +858,15 @@ function simulateFull(build, n, seed0) {
     const plan = E.planFromCoach(coach);
     /* twoSided, because the page passes it for every full run and a harness measuring a
        different chemistry rule is measuring a different game. Over half the links on a
-       twelve man roster used to span the two units. */
-    const chem = E.resolveChemistry(roster, ctx, { twoSided: true });
+       twelve man roster used to span the two units.
+       THE COACH GOES IN TOO, and he is the reason the whole object is handed on rather than
+       chem.multiplier: he brings links of his own to whichever unit his old players are on,
+       so the two sides come back with two different figures and flattening them here would
+       measure a balance the live game never plays at. */
+    const chem = E.resolveChemistry(roster, ctx, { twoSided: true, coach });
     const sched = E.generateSchedule(data, rng);
     const playoffs = E.generatePlayoffs(data, rng);
-    const run = E.playRun(roster, chem.multiplier, sched.games, playoffs, leagueContext,
+    const run = E.playRun(roster, chem, sched.games, playoffs, leagueContext,
       rng, constants, { full: true, coach, plan });
     for (const g of run.results) {
       if (!g.playoff) {
@@ -865,7 +876,7 @@ function simulateFull(build, n, seed0) {
     }
     regWins.push(run.regularWins);
     spends.push(roster.reduce((s, p) => s + p.price_musd, 0));
-    ratings.push(E.overallOf(roster, chem.multiplier, 'full'));
+    ratings.push(E.overallOf(roster, chem, 'full', coach));
     if (run.perfect) perfect++;
     if (run.titleWon) title++;
     if (run.seed.made) madePlayoffs++;
@@ -920,6 +931,60 @@ function offenseReference(n) {
   return out;
 }
 
+/*
+ * ─── THE TWO ENDS OF THE FULL TEAM RATING SCALE ─────────────────────────────────────
+ *
+ *   node football/simulator.js --fullscale
+ *
+ * Prints FULL_STRENGTH_MIN and FULL_STRENGTH_MAX for engine.js. Re-run after any change to
+ * the cap, the talent dial, the coach table or the player data, and paste the two numbers
+ * back: a rating scale anchored to endpoints that no longer exist is worse than none,
+ * because it still looks like it means something.
+ */
+function fullScaleReport() {
+  const cap = E.FULL_CAP_MUSD;
+  const coaches = E.coachTable(ctx) || [];
+  const POS = E.FULL_SLOT_POS;
+  const poolFor = (i) => POS[i].some((x) => E.DEFENSE_POSITIONS.indexOf(x) >= 0)
+    ? fullDefenders : fullPlayers;
+
+  /* THE FLOOR: the twelve worst legal men and the coach who does the most damage inside the
+     reserve. Not a team anybody would draft on purpose, which is the point of a floor. */
+  const used = new Set();
+  const worst = POS.map((pos, i) => {
+    const c = poolFor(i).filter((x) => pos.indexOf(x.position) >= 0
+        && !used.has(`${x.player_id}|${x.season}`))
+      .sort((a, b) => a.ppr_ppg_mean - b.ppr_ppg_mean)[0];
+    used.add(`${c.player_id}|${c.season}`);
+    return c;
+  });
+  const worstCoach = coaches.filter((c) => c.price_musd <= 3.5)
+    .sort((a, b) => (a.off + a.def) - (b.off + b.def))[0] || null;
+  const lo = E.fullStrength(worst, 1, worstCoach, constants);
+
+  /* THE CEILING: the solved roster and the coach it hires, at the best chemistry the game
+     can produce. Chemistry is taken as its own maximum rather than solved WITH the roster,
+     because a joint solve over both is a different and much larger problem, and an anchor
+     that is a touch out of reach is the right kind of wrong: it means the best team anybody
+     actually drafts scores in the high nineties instead of exactly 100. */
+  const best = buildFullOptimal(cap, true);
+  const hi = E.fullStrength(best.roster, 1 + E.CHEMISTRY.MAX, best.coach, constants);
+
+  console.log('FULL TEAM RATING SCALE');
+  console.log('');
+  console.log('  floor  twelve cheapest legal men, worst coach in the reserve');
+  console.log('         coach ' + (worstCoach ? worstCoach.name : 'none')
+    + '   strength ' + lo.toFixed(1));
+  console.log('  ceiling solved roster, its coach, and maximum chemistry');
+  console.log('         split $' + best.off.toFixed(1) + ' off / $' + best.def.toFixed(1)
+    + ' def   coach '
+    + ((best.coach || {}).name || 'none') + '   strength ' + hi.toFixed(1));
+  console.log('');
+  console.log('  paste into engine.js:');
+  console.log('    const FULL_STRENGTH_MIN = ' + lo.toFixed(1) + ';');
+  console.log('    const FULL_STRENGTH_MAX = ' + hi.toFixed(1) + ';');
+}
+
 function fullTeamReport(n) {
   console.log(`FULL TEAM  ${E.FULL_SLOTS.length} slots  ${E.FULL_SLOTS.join(' ')}`);
   console.log(`N=${n} seasons per cell.\n`);
@@ -972,7 +1037,7 @@ function fullTeamReport(n) {
         + r.meanRating.toFixed(1).padStart(9)
         + ('$' + r.meanSpend.toFixed(0)).padStart(8)
         + (row.name === 'optimal'
-          ? `   split ${'$' + buildFullOptimal(cap, true).off} off / ${'$' + buildFullOptimal(cap, true).def} def`
+          ? `   split ${'$' + buildFullOptimal(cap, true).off.toFixed(1)} off / ${'$' + buildFullOptimal(cap, true).def.toFixed(1)} def`
             + `   coach ${(buildFullOptimal(cap, true).coach || {}).name || 'none'}`
           : ''));
     }
@@ -1135,6 +1200,7 @@ else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
 else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
 else if (arg === '--fullteam') fullTeamReport(Number(process.env.PS_N ?? 400));
+else if (arg === '--fullscale') fullScaleReport();
 else if (arg === '--record') recordReport(Number(process.env.PS_N ?? 2000));
 else if (arg === '--policies') policyReport(Number(process.env.PS_N ?? 40));
 else reportMain(N);

@@ -58,7 +58,15 @@ const runKey = (p) => `${p.player_id}:${p.season}`;
 /* twoSided is on for Full Team and only Full Team: it is the one mode holding both units,
    so it is the one mode where a chemistry pair can span two men who never played a down
    together. See resolveChemistry. */
-const chemOpts = (run) => ({ sameClub: !!(run && run.franchise), twoSided: !!(run && run.full) });
+/* THE COACH RIDES ALONG, because in Full Team he is a source of chemistry like any player:
+   see E.coachLinks. He is null during the draft (he is hired after it) and null in every
+   other mode, and resolveChemistry only looks at him when twoSided is on, so the same object
+   serves the draft preview and the season. */
+const chemOpts = (run) => ({
+  sameClub: !!(run && run.franchise),
+  twoSided: !!(run && run.full),
+  coach: (run && run.coach) || null,
+});
 
 /**
  * Money still available. The re-spin fee comes out of the cap, so the budget
@@ -940,6 +948,11 @@ function startSeason(run, data, ctx) {
   run.playoffs = E.generatePlayoffs(data.prepared, rng, poOpts).map((g) => g.team_season_id);
   run.season = {
     chemistry: chem.multiplier,
+    /* FULL TEAM CARRIES BOTH SIDES, because it plays with both and one figure cannot stand
+       in for two. Absent in every other mode, and seasonChem falls back to the single
+       number, so a run saved before this existed still resolves. */
+    chemistryOff: typeof chem.offMultiplier === 'number' ? chem.offMultiplier : null,
+    chemistryDef: typeof chem.defMultiplier === 'number' ? chem.defMultiplier : null,
     chemistryLinks: chem.links,
     week: 0,
     playoffRound: 0,
@@ -993,8 +1006,15 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   const resolver = run.full ? E.resolveGameFull
     : run.defense ? E.resolveGameDefense
       : E.resolveGame;
-  const r = resolver(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5,
-    rng, E.CONSTANTS, advantage);
+  /* THE COACH AND THE GAME PLAN HAVE TO REACH THE GAME. They were being left off this call,
+     so a mode built around hiring a coach and setting a scheme played every one of its
+     seventeen weeks with neither: the screens worked, the rating moved, and the season was
+     decided by a neutral plan and no coach at all. Nothing failed, which is why it survived.
+     Passed only for full runs, because resolveGame and resolveGameDefense have no eighth
+     argument and handing them one would be the next version of this bug. */
+  const r = resolver(run.roster, seasonChem(run), opp, leagueContext[opp.season] ?? 21.5,
+    rng, E.CONSTANTS, advantage,
+    run.full ? { coach: run.coach || null, plan: run.plan || null } : null);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
 
   const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
@@ -1139,7 +1159,25 @@ function liveRating(run) {
      number, weeklyEdgeVs and seedFromRecord and playoffShare and homeField, is calibrated
      on a range a defensive product cannot reach. A top defense was seeded as a bottom
      team all the way through the back half of the season. */
-  return E.overallOf(run.roster, s.chemistry || 1, run.full ? 'full' : !!run.defense, run.coach);
+  return E.overallOf(run.roster, seasonChem(run), run.full ? 'full' : !!run.defense, run.coach);
+}
+
+/*
+ * The season's chemistry, in the shape the mode needs it.
+ *
+ * Full Team resolves two multipliers, one per unit, and everything else resolves one. This
+ * hands the engine whichever the run actually has: the object for a full run that stored
+ * both, the plain number otherwise. A full run saved before the split existed has only the
+ * one number, and returning it is exactly right for that run, since it was played that way.
+ */
+function seasonChem(run) {
+  const s = run && run.season;
+  if (!s) return 1;
+  if (run.full && typeof s.chemistryOff === 'number' && typeof s.chemistryDef === 'number') {
+    return { multiplier: s.chemistry || 1,
+      offMultiplier: s.chemistryOff, defMultiplier: s.chemistryDef };
+  }
+  return s.chemistry || 1;
 }
 
 /** Leave SEEDING and start the playoffs. */
@@ -3106,7 +3144,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 39;
+const RUN_API_VERSION = 40;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
@@ -3124,6 +3162,9 @@ const api = {
   cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
   /* Full Team's coach step. */
   coachMarket, hireCoach, setPlan, finishHiring,
+  /* Exported because the PAGE has to rate the live team with the same chemistry the season
+     is playing with, and in Full Team that is two figures rather than one. */
+  seasonChem,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

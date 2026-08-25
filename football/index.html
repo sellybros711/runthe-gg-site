@@ -558,7 +558,23 @@ window.GA_ID='G-L29P5MRWKE';
      display:none at the same specificity as a class, so the later class wins and the
      button stayed on screen with hidden=true set on it: exactly the trap .hp-full[hidden]
      was written for on the home screen. */
-  #b-coach-go[hidden],#co-planwrap[hidden],.cocard[hidden]{display:none}
+  /* #co-knows is in this list for the same reason: .coknows sets display:flex, so without
+     it the box stays on screen holding the LAST coach's links. Third time. */
+  #b-coach-go[hidden],#co-planwrap[hidden],.cocard[hidden],#co-knows[hidden]{display:none}
+  .coknows{margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
+  /* The two units' own chemistry, under the average of them. Same [hidden] trap. */
+  #q-chemsplit[hidden]{display:none}
+  .chemsplit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+  .chs{text-align:center;padding:7px 4px;border-radius:9px;background:rgba(0,0,0,.24)}
+  .chs b{display:block;font-family:var(--fn);font-size:15px;font-weight:800;line-height:1;color:var(--dim)}
+  .chs b.pos{color:var(--good,#4ade80)} .chs b.neg{color:var(--bad,#f87171)}
+  .chs span{display:block;font-family:var(--fn);font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2);margin-top:3px}
+  .cok{display:flex;align-items:center;gap:6px;font-family:var(--fn);font-size:11px;
+    padding:5px 8px;border-radius:8px;background:rgba(74,222,128,.10);
+    border:1px solid rgba(74,222,128,.28);color:rgba(214,245,222,.92)}
+  .cok b{font-weight:800;color:#4ade80;letter-spacing:.03em}
+  .cok span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* ---- the old list styles, still used by the coach line on the squad and results ---- */
   .co-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
     padding:10px 12px;margin-bottom:6px;border:1.5px solid var(--line);border-radius:11px;
@@ -2712,6 +2728,11 @@ window.GA_ID='G-L29P5MRWKE';
      field that broke: 47px of label under a back at 64% does not fit in 0.46 of 330px.
      Same aspect as the draft field now, which is the one the formation was solved for. */
   .field.short{aspect-ratio:1/0.54}
+  /* A FULL FIELD IS TWELVE MEN AND NEEDS ITS HEIGHT WHEREVER IT IS DRAWN. .field.fullfield
+     is declared far above at the same specificity as .field.short, so on the results screen
+     the later rule won and both units were squeezed into half the room: the defensive line's
+     names landed on top of the receivers a row below. */
+  .field.fullfield,.field.fullfield.short{aspect-ratio:.86}
   /* The reveal's own aspect. It was an inline attribute, which no selector can beat, and a
      field that cannot be restyled by a class is a field the next mode cannot reach. */
   #field-rv{aspect-ratio:1/0.62}
@@ -2908,7 +2929,16 @@ window.GA_ID='G-L29P5MRWKE';
   .rail{position:relative;margin-top:11px;height:38px;transition:height .28s ease}
   .rail.off{height:0;margin-top:0;overflow:hidden;opacity:0}
   .rail.empty .rarcs{opacity:0}
+  /* Column count is set from script, because Full Team's rail is twelve spots and this
+     stylesheet cannot know how many the mode has. Six is the fallback for anything that
+     renders before the script gets to it. */
   .rnodes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:relative;z-index:2}
+  /* TWELVE ACROSS A PHONE IS 35px A SPOT, so the surname goes and the dot shrinks. It has
+     to stay ONE row: the whole idea of an arc diagram is that every node is on one line and
+     every arc hangs below it, and wrapping to a second row put six of the twelve on top of
+     the arcs and the caption underneath. */
+  .rail.wide .rnode .rnm{display:none}
+  .rail.wide .rnode .rdot{width:20px;height:20px;font-size:8px}
   /* The hit area grows, the BOX does not. RAIL.NODE_BLOCK is 38 in the script and
      .rarcs is positioned against the same 38 here, so padding the button would have
      pushed the arcs over the surnames and left the rail short of its own contents.
@@ -5293,6 +5323,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="cr-delta" id="co-rdelta"></span>
       </div>
       <div class="coscheme" id="co-scheme"></div>
+      <!-- WHY THIS MAN AND NOT THE ONE WITH THE BIGGER TILT. His tilt is the same wherever
+           he goes; this line is the half that belongs to YOUR roster, so it is the reason
+           two GMs with the same money hire different coaches. Empty for most of the market,
+           which is what makes it worth reading when it is not. -->
+      <div class="coknows" id="co-knows" hidden></div>
       <div class="coprice"><span id="co-price">$0.0M</span><span class="dim" id="co-left"></span></div>
       <button class="btn" id="b-coach-hire">Hire him</button>
       <div class="codots" id="co-dots"></div>
@@ -5324,6 +5359,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="eyebrow">Chemistry</div>
       <div class="chemrow"><div class="chemval num" id="q-chem" style="font-size:27px">0.0%</div>
         <div class="chembar"><i id="q-chembar" style="width:0%"></i></div></div>
+      <!-- FULL TEAM ONLY, because it is the only mode holding two units. The headline above
+           is their average, and an average with nothing under it is the kind of number the
+           mode was getting complained about for. -->
+      <div class="chemsplit" id="q-chemsplit" hidden></div>
       <div id="q-links" style="margin-top:8px"></div>
     </div>
     <div class="panel schemepanel scheme-none" id="q-panel" style="margin-top:11px">
@@ -5819,8 +5858,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=65"></script>
-<script src="run.js?v=75"></script>
+<script src="engine.js?v=66"></script>
+<script src="run.js?v=76"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -5899,8 +5938,23 @@ const dataNow=()=>{
 function loadDefensePool(){
   if(DDATA) return Promise.resolve(DDATA);
   if(defLoading) return defLoading;
-  defLoading=fetch('data/defender_seasons.json?v=1')
-    .then(r=>{ if(!r.ok) throw new Error('defender_seasons'); return r.json(); })
+  /* THE COACHES' COLLEGE POSTINGS RIDE ALONG, at 0.8KB against 900KB. They are wanted only
+     by Full Team, but every path that reaches Full Team reaches this function first, and a
+     second lazy loader on its own trigger is how a resumed run ends up computing chemistry
+     without them. Defense mode pays a rounding error for the simplicity.
+     A FAILURE HERE IS SILENT ON PURPOSE. Without the file the college link never fires,
+     which is a link the game does not claim rather than a link it gets wrong, and the mode
+     is still entirely playable. Losing the whole defensive pool over it would not be. */
+  defLoading=Promise.all([
+    fetch('data/defender_seasons.json?v=1')
+      .then(r=>{ if(!r.ok) throw new Error('defender_seasons'); return r.json(); }),
+    fetch('data/coach_colleges.json?v=1')
+      .then(r=>r.ok?r.json():{}).catch(()=>({})),
+  ])
+    .then(([rows,colleges])=>{
+      CTX.coachColleges=colleges||{};
+      return rows;
+    })
     .then(rows=>{
       /* THE ENGINE SAMPLES ppr_ppg_*, and a defender's rating is IDP points rather than
          PPR points. The arithmetic is identical, only the meaning of the number differs,
@@ -6026,7 +6080,10 @@ function runModeLabel(){
    they have a second field to agree about. A page that forgot twoSided would draw chemistry
    arcs between a quarterback and a safety and then a season would score as though they were
    not there. */
-function chemOpts(){ return {sameClub:!!(run&&run.franchise),twoSided:!!(run&&run.full)}; }
+/* Kept in step with run.js's own chemOpts, field for field: the coach is a chemistry source
+   in Full Team, so leaving him off here would give the page a different multiplier from the
+   one the season plays with. */
+function chemOpts(){ return {sameClub:!!(run&&run.franchise),twoSided:!!(run&&run.full),coach:(run&&run.coach)||null}; }
 
 /* ---------- THE TEAM SKIN ----------
    One Franchise mode should not look like free play with a different wheel, so the moment a team
@@ -6102,7 +6159,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=39;
+const NEED_VERSION=40;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -6915,7 +6972,12 @@ function drawField(el,live){
     /* How many players he connects to, in his strongest link's color. The web
        itself lives on the rail; this is the count, so a glance at the formation
        still says who is tied in and who is on his own. */
-    const mine=p?links.filter(l=>l.a===p.name||l.b===p.name):[];
+    /* PLAYER TO PLAYER ONLY. The coach is a chemistry link like any other but he is not on
+       the field, so his arc is dropped by the rail (it filters on both ends being a chip)
+       and counting him here left a man wearing a "1" with no arc under him to explain it.
+       His own links are named on the coach block instead. */
+    const mine=p?links.filter(l=>(l.a===p.name||l.b===p.name)
+      &&String(l.type||'').slice(0,6)!=='coach_'):[];
     const pip=c.querySelector('.pip');
     if(mine.length){
       const best=mine.reduce((x,y)=>(Math.abs(y.value)>Math.abs(x.value)?y:x));
@@ -6986,9 +7048,16 @@ const RAIL={
 };
 
 function railState(el){
-  if(el._rs) return el._rs;
+  const want=slotsNow().length;
+  /* REBUILT WHEN THE MODE CHANGES ITS SHAPE, not only when the element is new. The cache
+     was keyed on the element alone, so a rail built for a six-man draft was reused for a
+     twelve-man one and half the roster had no node at all. */
+  if(el._rs&&el._rs.nodes.length===want) return el._rs;
+  const wide=want>6;
+  el.classList.toggle('wide',wide);
   el.innerHTML='<svg class="rarcs" preserveAspectRatio="none"></svg>'+
-    '<div class="rnodes">'+slotsNow().map((slot,i)=>
+    '<div class="rnodes" style="grid-template-columns:repeat('+want+',minmax(0,1fr))">'+
+    slotsNow().map((slot,i)=>
       '<button class="rnode" data-i="'+i+'"><span class="rdot">'+slot+'</span>'+
       '<span class="rnm"></span></button>').join('')+'</div>';
   el._rs={ svg:el.querySelector('.rarcs'), nodes:[...el.querySelectorAll('.rnode')],
@@ -7006,7 +7075,11 @@ function railState(el){
 function drawRail(el,bySlot,links,at){
   const st=railState(el);
   st.redraw=()=>drawRail(el,bySlot,links,at);
-  const n=E.SLOTS.length;
+  /* OFF THE NODES THAT EXIST, not off E.SLOTS. Hardcoding six put Full Team's last six arcs
+     at 108% to 192% of the rail's width, which is to say off the end of it. */
+  const n=st.nodes.length;
+  /* The node block is shorter without a surname under the dot. See .rail.wide. */
+  const nodeBlock=n>6?23:RAIL.NODE_BLOCK;
 
   st.nodes.forEach((node,i)=>{
     const p=bySlot[i];
@@ -7035,7 +7108,8 @@ function drawRail(el,bySlot,links,at){
      too or the rail keeps its 38px of node row while invisible. */
   const off=signedNow<2;
   el.classList.toggle('off',off);
-  el.style.height=off?'0px':(RAIL.NODE_BLOCK+(arcs.length?deepest+RAIL.PAD:0))+'px';
+  el.style.height=off?'0px':(nodeBlock+(arcs.length?deepest+RAIL.PAD:0))+'px';
+  st.svg.style.top=nodeBlock+'px';
   st.svg.style.height=(deepest+RAIL.PAD)+'px';
   st.svg.setAttribute('viewBox','0 0 100 '+(deepest+RAIL.PAD));
   st.svg.innerHTML=arcs.map((c,k)=>{
@@ -9094,11 +9168,23 @@ let coMarket=[];
 
 /* WHAT THE TEAM IS WORTH WITH A GIVEN MAN IN CHARGE. The same function the season uses, so
    the number previewed here is the number the run is actually seeded on. */
+/* THE CANDIDATE, NOT THE HIRE. chemOpts() reads run.coach, which is still null while you are
+   stepping through the market, so a preview built on it would price every man's chemistry at
+   nothing and the rating would move only by his tilt. Overriding the field is the whole point
+   of the screen: a coach who knows four of your men should visibly be worth more to THIS
+   roster than a better coach who knows none. */
+const coChemOf=(coach)=>E.resolveChemistry(run.roster,CTX,
+  Object.assign(chemOpts(),{coach:coach||null}));
 function coRating(coach){
   try{
-    const chem=E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
-    return E.overallOf(run.roster,chem,'full',coach||null);
+    /* The whole chemistry value, not .multiplier: Full Team resolves one figure per unit and
+       flattening them here would rate a team neither side is playing as. */
+    return E.overallOf(run.roster,coChemOf(coach),'full',coach||null);
   }catch(_){ return 0; }
+}
+/* Who on your roster he already knows, for the line on his card. */
+function coKnows(coach){
+  try{ return E.coachLinks(run.roster,CTX,coach||null)||[]; }catch(_){ return []; }
 }
 
 function paintCoach(){
@@ -9136,6 +9222,15 @@ function paintCoach(){
     /* innerHTML, because planWords separates with a middot entity and textContent would
        print the six characters of it. */
     $('co-scheme').innerHTML='His scheme: '+planWords(E.planFromCoach(c));
+    /* HIS HISTORY WITH THE MEN YOU DRAFTED. Capped at three lines: past that the card is a
+       list again, and the rating line above has already counted every one of them. */
+    const knows=coKnows(c), kw=$('co-knows');
+    if(kw){
+      kw.hidden=!knows.length;
+      kw.innerHTML=knows.slice(0,3).map(l=>'<div class="cok"><b>'+
+        (l.type==='coach_college'?'SCHOOL':'COACHED')+'</b><span>'+esc(l.label)+'</span></div>').join('')
+        +(knows.length>3?'<div class="cok"><b>+'+(knows.length-3)+'</b><span>more on this roster</span></div>':'');
+    }
     $('co-price').textContent='$'+c.price_musd.toFixed(1)+'M';
     $('co-left').textContent='$'+Math.max(0,left-c.price_musd).toFixed(1)+'M would be left';
     $('b-coach-hire').textContent='Hire '+c.name.split(' ').slice(-1)[0];
@@ -9207,6 +9302,10 @@ if($('b-coach-hire')) $('b-coach-hire').onclick=()=>{
         Math.max(0,R.remaining(run)-c.price_musd).toFixed(1)+'M.</li>'+
       '<li>Team rating <b>'+base.toFixed(1)+' &rarr; '+withHim.toFixed(1)+'</b> ('+sign+d.toFixed(1)+').</li>'+
       '<li><b>He calls the game plan.</b> '+planWords(E.planFromCoach(c))+'.</li>'+
+      (function(){const k=coKnows(c);return k.length
+        ? '<li><b>He already knows '+(k.length===1?'one of your men':k.length+' of your men')+'.</b> '
+          +esc(k.slice(0,2).map(l=>l.label).join('. '))+'.</li>'
+        : '';})()+
     '</ul>'+
     '<div style="margin-top:14px"><button class="btn" id="b-hire-yes">Hire him</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-hire-no">Keep looking</button></div>';
@@ -9250,17 +9349,32 @@ function paintCoachLine(id){
   if(!run||!run.full){ el.innerHTML=''; el.hidden=true; return; }
   el.hidden=false;
   const c=run.coach;
-  const tilt=(v)=>{const pct=Math.round(v*1.2*10)/10;
+  /* OFF E.coachEffect, NOT OFF A COPY OF ITS ARITHMETIC. This line multiplied the tilt by
+     1.2 to make a percentage, which was right when COACH_K was 0.012 and silently wrong the
+     day it moved to 0.020: the squad and results screens have been under-reporting every
+     coach by 40% while the coach card, which asks the engine, reported him correctly. */
+  const eff=c?E.coachEffect(c):null;
+  const tilt=(m)=>{const pct=Math.round((m-1)*1000)/10;
     return '<span class="co-t '+(pct>0.05?'pos':(pct<-0.05?'neg':''))+'">'+
       (pct>0?'+':'')+pct.toFixed(1)+'%</span>';};
+  /* Who he already knew, which is the other half of what he is worth and the half that
+     belongs to this roster rather than to him. */
+  const knows=c?coKnows(c):[];
   el.innerHTML='<div class="rp-head"><span>Coach</span><span class="rp-head-n">'+
       (c?'$'+c.price_musd.toFixed(1)+'M':'none')+'</span></div>'+
     '<div class="co-row" style="cursor:default;margin-bottom:10px">'+
       '<span><span class="co-nm">'+(c?esc(c.name):'No coach')+'</span>'+
       '<span class="co-sub2">'+(c
-        ? '<span>'+esc(c.years)+'</span><span>'+tilt(c.off)+' offense</span><span>'+tilt(c.def)+' defense</span>'
+        ? '<span>'+esc(c.years)+'</span><span>'+tilt(eff.off)+' offense</span><span>'+tilt(eff.def)+' defense</span>'
         : '<span>The money stayed on the field</span>')+
       '</span></span></div>'+
+    (knows.length
+      ? '<div class="coknows" style="margin:-4px 0 10px">'+knows.slice(0,3).map(l=>
+          '<div class="cok"><b>'+(l.type==='coach_college'?'SCHOOL':'COACHED')+'</b><span>'+
+          esc(l.label)+'</span></div>').join('')+
+        (knows.length>3?'<div class="cok"><b>+'+(knows.length-3)+'</b><span>more on this roster</span></div>':'')+
+        '</div>'
+      : '')+
     '<div class="rp-head"><span>Game plan</span></div>'+
     '<p class="dim" style="font-size:12.5px;margin:0 0 10px">'+planWords(run.plan)+'</p>';
 }
@@ -9301,6 +9415,22 @@ const schemeIconSvg=(key)=>{
      'stroke-linecap="round" stroke-linejoin="round">'+marks[key]+'</svg>'
     :'';
 };
+/* THE TWO HALVES OF A FULL TEAM'S CHEMISTRY, which is a number the other modes do not have.
+   Each unit now saturates and multiplies its own links, so the headline percentage above is
+   an average of two real figures rather than a figure of its own, and hiding the two is how
+   somebody ends up asking what the number means. */
+function paintChemSplit(){
+  const el=$('q-chemsplit'); if(!el) return;
+  const s=run&&run.season;
+  const has=!!(run&&run.full&&s&&typeof s.chemistryOff==='number'&&typeof s.chemistryDef==='number');
+  el.hidden=!has;
+  if(!has) return;
+  const cell=(v,lbl)=>{const d=v-1;
+    return '<div class="chs"><b class="'+(d>0.0005?'pos':(d<-0.0005?'neg':''))+'">'+pc(d)+
+      '</b><span>'+lbl+'</span></div>';};
+  el.innerHTML=cell(s.chemistryOff,'Offense')+cell(s.chemistryDef,'Defense');
+}
+
 function paintSquad(){
   R.startSeason(run,dataNow(),CTX);
   if(tutorialOn) tutFinish();
@@ -9328,6 +9458,7 @@ function paintSquad(){
   el.textContent=pc(p);
   el.className='chemval num '+(p>0.0005?'pos':(p<-0.0005?'neg':'zero'));
   $('q-chembar').style.width=Math.max(0,Math.min(100,p/E.CHEMISTRY.MAX*100))+'%';
+  paintChemSplit();
   const links=run.season.chemistryLinks;
   /* IN ONE FRANCHISE MODE THE EMPTY LINE HAS TO SAY MORE.
      "Nobody here ever played together" under a roster of six Dolphins reads as a bug: they
@@ -11290,7 +11421,7 @@ function paintSeed(){
     ? 'Hottest team in the league: '+sd.lateWins+' wins in your last '+sd.lateGames
       +'. That earns the bye. Three wins from a championship.'
     : sd.byeRoute==='strength'
-    ? 'Nobody wants to play you: at '+teamRating(run.roster,run.season.chemistry).toFixed(1)+
+    ? 'Nobody wants to play you: at '+teamRating(run.roster,liveChem()).toFixed(1)+
       ' overall you are seeded on top whatever the record says. Three wins from a championship.'
     : sd.bye
       ? 'You earned a first-round bye. Three wins from a championship.'
@@ -12301,7 +12432,7 @@ function paintOver(){
      this panel touches it (multiplier, scheme, schemeBonus, floorShare) and differ where
      the sports differ, which is what the meters below branch on. */
   const st=isDefRun()?E.defenseStructure(run.roster):E.rosterStructure(run.roster);
-  const rating=teamRating(run.roster,run.season.chemistry);
+  const rating=teamRating(run.roster,liveChem());
 
   /* Measured over 1,600 drafts across four play styles, team rating runs from about 1
      to about 100, so the number doubles as its own percentage and the bar needs no
@@ -12324,9 +12455,23 @@ function paintOver(){
     return bigcell('Improvement',(g>=0?'+':'')+g.toFixed(1),
       Math.max(2,Math.min(100,g/25*100)),gc);
   };
+  /* AND FULL TEAM'S SECOND NUMBER IS THE SPLIT. bestPossibleSquad returns null for a full
+     run (solving twelve slots across two pools is a different and much larger problem than
+     the six it was written for), so this tile was printing a grey "--" on the mode that is
+     supposed to be the premium one. What it prints instead is the answer to the question
+     the whole mode is built around: of one shared cap, how much went to the offence. There
+     is no right number, so there is no band on it either. */
+  const splitCell=()=>{
+    const o=run.roster.filter((p)=>E.DEFENSE_POSITIONS.indexOf(p.position)<0)
+      .reduce((t,p)=>t+p.price_musd,0);
+    const all=run.roster.reduce((t,p)=>t+p.price_musd,0);
+    const share=all>0?Math.round(100*o/all):0;
+    return bigcell('Offense share',share+'%',Math.max(2,Math.min(100,share)),'#60a5fa');
+  };
+  const secondCell=(fallback)=>run.tradeMachine?impCell():(run.full?splitCell():fallback());
   $('o-ovr').innerHTML=
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-    (run.tradeMachine?impCell():bigcell('Best possible','…',0,'#94a3b8'));
+    secondCell(()=>bigcell('Best possible','…',0,'#94a3b8'));
 
   /* THE STRIP. Top row is what the roster cost you and where it finished; bottom row
      is where the run placed, and each of those three opens the board on that window
@@ -12472,9 +12617,24 @@ function paintOver(){
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
     $('o-ovr').innerHTML=
       bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-      (run.tradeMachine?impCell():bigcell('Best possible',share===null?'--':share+'%',
+      secondCell(()=>bigcell('Best possible',share===null?'--':share+'%',
         share===null?0:Math.max(2,share),share===null?'#94a3b8':sband));
-    if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
+    /* FULL TEAM HAS NO PERFECT TO BE CLOSE TO, and "could not work this one out" reads as a
+       failure rather than as the truth. Solving twelve slots across two pools under one cap
+       is a budget split as well as a knapsack (see buildFullOptimal in the simulator), and
+       that is a solve this page is not going to do while somebody waits. So it says what
+       the number it DOES have means instead of apologising for one it does not. */
+    if(run.full){
+      $('o-miss').innerHTML=
+        '<p class="dim" style="font-size:13px;margin:0 0 8px">There is no best-possible score in '+
+        'Full Team yet. Twelve spots across two pools under one cap is a different problem '+
+        'from six, and a wrong answer here would be worse than none.</p>'+
+        '<p class="caveat" style="margin:0">Team overall is where this side of the ball and '+
+        'the other one land between the worst legal roster in the game and the best one the '+
+        'cap can buy, coach and chemistry included. 100 is that best team. '+
+        rating.toFixed(1)+' is yours.</p>';
+    }
+    else if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
     else{
       const band=share>=90?'pgood':(share>=70?'pmid':'pbad');
       const fill=sband;
@@ -12549,11 +12709,27 @@ function swapRows(best){
    scoreboard is still the raw total, which is what the points a game row prints and what
    suppression is computed from.
 
+   ON A FULL TEAM IT IS NEITHER, and leaving it out of this function is where the ratings in
+   the hundred and twenties came from. isDefRun() is false for a full run, so twelve men were
+   being scored through the OFFENSIVE reading: raw points on both sides of the ball, times
+   chemistry, times rosterStructure. That product has no ceiling, it counted a cornerback's
+   tackles as though they were touchdowns, and it disagreed with the coach screen, which had
+   been asking overallOf for the real thing all along. A team could read 122 and go 6-11 and
+   both numbers were correct about different questions. See fullOverall in the engine.
+
    The side of the ball is a parameter with a default rather than a read of the live run,
    because two callers describe a roster that is not the one being played. */
 function teamRating(roster,chemistry,isDefense){
-  return E.overallOf(roster,chemistry,isDefense===undefined?isDefRun():!!isDefense);
+  const side=isDefense===undefined
+    ? ((run&&run.full)?'full':isDefRun())
+    : (isDefense==='full'?'full':!!isDefense);
+  return E.overallOf(roster,chemistry,side,(run&&run.coach)||null);
 }
+
+/* THE CHEMISTRY THE SEASON IS ACTUALLY PLAYING WITH. One number in every mode but Full
+   Team, where it is one per unit, and handing a rating the average of two would rate a team
+   neither side of the ball is fielding. */
+const liveChem=()=>{ try{ return R.seasonChem(run); }catch(_){ return (run&&run.season&&run.season.chemistry)||1; } };
 
 /* THE STRUCTURE MULTIPLIER, IN A FORM A PLAYER CAN READ.
    Every line that used to print "a x1.06 team shape" prints "+6% for how the six fit
@@ -15869,7 +16045,7 @@ function runPayload(){
     structureMult:mult,
     /* Same function the comparison table uses, so the rating on the leaderboard and
        the rating in the YOURS column can never be two different quantities. */
-    teamRating:teamRating(run.roster,run.season.chemistry),
+    teamRating:teamRating(run.roster,liveChem()),
     /* Set by paintOver when it works the best possible squad out, because that is
        an expensive search and there is no reason to run it twice. Null until then,
        and null forever if it could not be solved. */
