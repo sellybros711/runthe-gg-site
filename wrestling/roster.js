@@ -1,7 +1,7 @@
 window.RTR_ROSTER = [
  {
   "id": "w0001",
-  "name": "Cody Rhodes",
+  "name": "Cody Runnels",
   "promotion": "WWE",
   "tier": "elite",
   "align": "heel",
@@ -18,7 +18,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0002",
-  "name": "Roman Reigns",
+  "name": "Joe Anoa'i",
   "promotion": "WWE",
   "tier": "elite",
   "align": "heel",
@@ -35,7 +35,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0003",
-  "name": "Seth Rollins",
+  "name": "Colby Lopez",
   "promotion": "WWE",
   "tier": "elite",
   "align": "heel",
@@ -52,7 +52,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0004",
-  "name": "CM Punk",
+  "name": "Phil Brooks",
   "promotion": "WWE",
   "tier": "elite",
   "align": "heel",
@@ -69,7 +69,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0005",
-  "name": "Gunther",
+  "name": "Walter Hahn",
   "promotion": "WWE",
   "tier": "elite",
   "align": "face",
@@ -86,7 +86,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0006",
-  "name": "Rhea Ripley",
+  "name": "Demi Bennett",
   "promotion": "WWE",
   "tier": "elite",
   "align": "face",
@@ -103,7 +103,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0007",
-  "name": "Bianca Belair",
+  "name": "Bianca Crawford",
   "promotion": "WWE",
   "tier": "elite",
   "align": "face",
@@ -137,7 +137,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0009",
-  "name": "Jey Uso",
+  "name": "Joshua Fatu",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -154,7 +154,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0010",
-  "name": "Jimmy Uso",
+  "name": "Jonathan Fatu",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -171,7 +171,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0011",
-  "name": "Damian Priest",
+  "name": "Luis Martinez",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -188,7 +188,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0012",
-  "name": "Drew McIntyre",
+  "name": "Drew Galloway",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -205,7 +205,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0013",
-  "name": "LA Knight",
+  "name": "Shaun Ricker",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -239,7 +239,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0015",
-  "name": "Liv Morgan",
+  "name": "Gionna Daddio",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -256,7 +256,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0016",
-  "name": "IYO SKY",
+  "name": "Masami Odate",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -273,7 +273,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0017",
-  "name": "Bron Breakker",
+  "name": "Bronson Rechsteiner",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -290,7 +290,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0018",
-  "name": "Sami Zayn",
+  "name": "Rami Sebei",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -307,7 +307,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0019",
-  "name": "Finn Balor",
+  "name": "Fergal Devitt",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -324,7 +324,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0020",
-  "name": "Kevin Owens",
+  "name": "Kevin Steen",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -341,7 +341,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0021",
-  "name": "Solo Sikoa",
+  "name": "Joseph Fatu",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -358,7 +358,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0022",
-  "name": "Dominik Mysterio",
+  "name": "Dominik Gutierrez",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -375,7 +375,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0023",
-  "name": "Rey Mysterio",
+  "name": "Oscar Gutierrez",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -392,7 +392,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0024",
-  "name": "Bayley",
+  "name": "Pamela Martinez",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -409,7 +409,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0025",
-  "name": "Becky Lynch",
+  "name": "Rebecca Quin",
   "promotion": "WWE",
   "tier": "upper",
   "align": "heel",
@@ -443,7 +443,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0027",
-  "name": "Tiffany Stratton",
+  "name": "Jessica Woynilko",
   "promotion": "WWE",
   "tier": "upper",
   "align": "face",
@@ -477,7 +477,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0029",
-  "name": "Austin Theory",
+  "name": "Austin White",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -494,7 +494,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0030",
-  "name": "Bronson Reed",
+  "name": "Jermaine Haley",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -511,7 +511,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0031",
-  "name": "Chad Gable",
+  "name": "Charles Betts",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -545,7 +545,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0033",
-  "name": "Ethan Page",
+  "name": "Julian Micevski",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -562,7 +562,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0034",
-  "name": "Grayson Waller",
+  "name": "Matthew Farrelly",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -613,7 +613,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0037",
-  "name": "JD McDonagh",
+  "name": "Jordan Devlin",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -630,7 +630,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0038",
-  "name": "Ludwig Kaiser",
+  "name": "Marcel Barthel",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -647,7 +647,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0039",
-  "name": "Montez Ford",
+  "name": "Kenneth Crawford",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -664,7 +664,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0040",
-  "name": "Angelo Dawkins",
+  "name": "Gary Green",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -698,7 +698,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0042",
-  "name": "Otis",
+  "name": "Nikola Bogojevic",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -749,7 +749,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0045",
-  "name": "Rusev",
+  "name": "Miroslav Barnyashev",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -766,7 +766,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0046",
-  "name": "Sheamus",
+  "name": "Stephen Farrelly",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -800,7 +800,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0048",
-  "name": "Pete Dunne",
+  "name": "Peter England",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -817,7 +817,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0049",
-  "name": "Carmelo Hayes",
+  "name": "Christian Casanova",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -834,7 +834,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0050",
-  "name": "Ilja Dragunov",
+  "name": "Ilja Rukober",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -868,7 +868,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0052",
-  "name": "The Miz",
+  "name": "Michael Mizanin",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -885,7 +885,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0053",
-  "name": "R-Truth",
+  "name": "Ronnie Killings",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -919,7 +919,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0055",
-  "name": "Trick Williams",
+  "name": "Matrix Brown",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -987,7 +987,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0059",
-  "name": "Alexa Bliss",
+  "name": "Alexis Kaufman",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1021,7 +1021,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0061",
-  "name": "Nia Jax",
+  "name": "Savelina Fanene",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1038,7 +1038,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0062",
-  "name": "Piper Niven",
+  "name": "Kimberly Benson",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1055,7 +1055,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0063",
-  "name": "Chelsea Green",
+  "name": "Chelsea Anderson",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1174,7 +1174,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0070",
-  "name": "Natalya",
+  "name": "Natalie Neidhart",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -1191,7 +1191,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0071",
-  "name": "Lyra Valkyria",
+  "name": "Aoife Cusack",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1208,7 +1208,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0072",
-  "name": "Maxxine Dupri",
+  "name": "Sydney Zmrzel",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1225,7 +1225,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0073",
-  "name": "Roxanne Perez",
+  "name": "Carla Gonzalez",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -1242,7 +1242,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0074",
-  "name": "Raquel Rodriguez",
+  "name": "Victoria Gonzalez",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1276,7 +1276,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0076",
-  "name": "Ivy Nile",
+  "name": "Rachel Gulotta",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -1293,7 +1293,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0077",
-  "name": "Brie Bella",
+  "name": "Brianna Danielson",
   "promotion": "WWE",
   "tier": "mid",
   "align": "heel",
@@ -1310,7 +1310,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0078",
-  "name": "Paige",
+  "name": "Saraya Bevis",
   "promotion": "WWE",
   "tier": "mid",
   "align": "face",
@@ -1446,7 +1446,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0086",
-  "name": "Julius Creed",
+  "name": "Julius Rechsteiner",
   "promotion": "WWE",
   "tier": "lower",
   "align": "face",
@@ -1463,7 +1463,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0087",
-  "name": "Brutus Creed",
+  "name": "Brutus Rechsteiner",
   "promotion": "WWE",
   "tier": "lower",
   "align": "face",
@@ -1667,7 +1667,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0099",
-  "name": "Candice LeRae",
+  "name": "Candice Dawson",
   "promotion": "WWE",
   "tier": "lower",
   "align": "heel",
@@ -1735,7 +1735,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0103",
-  "name": "Jon Moxley",
+  "name": "Jonathan Good",
   "promotion": "AEW",
   "tier": "elite",
   "align": "heel",
@@ -1752,7 +1752,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0104",
-  "name": "Will Ospreay",
+  "name": "William Ospreay",
   "promotion": "AEW",
   "tier": "elite",
   "align": "face",
@@ -1769,7 +1769,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0105",
-  "name": "MJF",
+  "name": "Maxwell Friedman",
   "promotion": "AEW",
   "tier": "elite",
   "align": "face",
@@ -1803,7 +1803,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0107",
-  "name": "Kenny Omega",
+  "name": "Tyson Smith",
   "promotion": "AEW",
   "tier": "elite",
   "align": "face",
@@ -1820,7 +1820,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0108",
-  "name": "Swerve Strickland",
+  "name": "Shane Strickland",
   "promotion": "AEW",
   "tier": "elite",
   "align": "face",
@@ -1837,7 +1837,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0109",
-  "name": "Toni Storm",
+  "name": "Toni Rossall",
   "promotion": "AEW",
   "tier": "elite",
   "align": "heel",
@@ -1854,7 +1854,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0110",
-  "name": "Mercedes Mone",
+  "name": "Mercedes Varnado",
   "promotion": "AEW",
   "tier": "elite",
   "align": "heel",
@@ -1888,7 +1888,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0112",
-  "name": "Hangman Page",
+  "name": "Stephen Woltz",
   "promotion": "AEW",
   "tier": "upper",
   "align": "heel",
@@ -1905,7 +1905,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0113",
-  "name": "Chris Jericho",
+  "name": "Chris Irvine",
   "promotion": "AEW",
   "tier": "upper",
   "align": "face",
@@ -1922,7 +1922,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0114",
-  "name": "Christian Cage",
+  "name": "William Reso",
   "promotion": "AEW",
   "tier": "upper",
   "align": "face",
@@ -1956,7 +1956,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0116",
-  "name": "Darby Allin",
+  "name": "Samuel Ratsch",
   "promotion": "AEW",
   "tier": "upper",
   "align": "face",
@@ -1973,7 +1973,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0117",
-  "name": "Samoa Joe",
+  "name": "Nuufolau Seanoa",
   "promotion": "AEW",
   "tier": "upper",
   "align": "heel",
@@ -2041,7 +2041,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0121",
-  "name": "Ricochet",
+  "name": "Trevor Mann",
   "promotion": "AEW",
   "tier": "upper",
   "align": "face",
@@ -2058,7 +2058,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0122",
-  "name": "Athena",
+  "name": "Adrienne Reese",
   "promotion": "AEW",
   "tier": "upper",
   "align": "face",
@@ -2160,7 +2160,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0128",
-  "name": "Britt Baker",
+  "name": "Brittany Baker",
   "promotion": "AEW",
   "tier": "upper",
   "align": "heel",
@@ -2177,7 +2177,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0129",
-  "name": "Adam Cole",
+  "name": "Austin Jenkins",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2211,7 +2211,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0131",
-  "name": "Bandido",
+  "name": "Luis Perales",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2228,7 +2228,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0132",
-  "name": "Brody King",
+  "name": "Andrew Gordy",
   "promotion": "AEW",
   "tier": "mid",
   "align": "heel",
@@ -2245,7 +2245,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0133",
-  "name": "Buddy Matthews",
+  "name": "Matthew Adams",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2262,7 +2262,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0134",
-  "name": "Cash Wheeler",
+  "name": "Daniel Wheeler",
   "promotion": "AEW",
   "tier": "mid",
   "align": "heel",
@@ -2279,7 +2279,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0135",
-  "name": "Dax Harwood",
+  "name": "David Harwood",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2313,7 +2313,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0137",
-  "name": "Eddie Kingston",
+  "name": "Edward Moore",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2364,7 +2364,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0140",
-  "name": "Lance Archer",
+  "name": "Lance Hoyt",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2381,7 +2381,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0141",
-  "name": "Josh Alexander",
+  "name": "Josh Lemay",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2449,7 +2449,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0145",
-  "name": "Wardlow",
+  "name": "Michael Wardlow",
   "promotion": "AEW",
   "tier": "mid",
   "align": "heel",
@@ -2466,7 +2466,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0146",
-  "name": "Roderick Strong",
+  "name": "Christopher Lindsey",
   "promotion": "AEW",
   "tier": "mid",
   "align": "heel",
@@ -2534,7 +2534,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0150",
-  "name": "Orange Cassidy",
+  "name": "James Cipperly",
   "promotion": "AEW",
   "tier": "mid",
   "align": "heel",
@@ -2551,7 +2551,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0151",
-  "name": "Matthew Jackson",
+  "name": "Matthew Massie",
   "promotion": "AEW",
   "tier": "mid",
   "align": "heel",
@@ -2568,7 +2568,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0152",
-  "name": "Nicholas Jackson",
+  "name": "Nicholas Massie",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2653,7 +2653,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0157",
-  "name": "Ruby Soho",
+  "name": "Dori Elizabeth Prange",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2704,7 +2704,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0160",
-  "name": "Thunder Rosa",
+  "name": "Melissa Cervantes",
   "promotion": "AEW",
   "tier": "mid",
   "align": "face",
@@ -2755,7 +2755,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0163",
-  "name": "Big Bill",
+  "name": "Bill Morrissey",
   "promotion": "AEW",
   "tier": "lower",
   "align": "face",
@@ -2772,7 +2772,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0164",
-  "name": "Billy Gunn",
+  "name": "Monty Sopp",
   "promotion": "AEW",
   "tier": "lower",
   "align": "heel",
@@ -2789,7 +2789,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0165",
-  "name": "Bobby Lashley",
+  "name": "Franklin Lashley",
   "promotion": "AEW",
   "tier": "lower",
   "align": "heel",
@@ -2823,7 +2823,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0167",
-  "name": "MVP",
+  "name": "Hassan Assad",
   "promotion": "AEW",
   "tier": "lower",
   "align": "heel",
@@ -2857,7 +2857,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0169",
-  "name": "Hook",
+  "name": "Tyler Senerchia",
   "promotion": "AEW",
   "tier": "lower",
   "align": "heel",
@@ -2891,7 +2891,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0171",
-  "name": "Moose",
+  "name": "Quinn Ojinnaka",
   "promotion": "TNA",
   "tier": "upper",
   "align": "heel",
@@ -2908,7 +2908,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0172",
-  "name": "Nic Nemeth",
+  "name": "Nicholas Nemeth",
   "promotion": "TNA",
   "tier": "upper",
   "align": "heel",
@@ -2993,7 +2993,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0177",
-  "name": "Frankie Kazarian",
+  "name": "Frank Gerdelman",
   "promotion": "TNA",
   "tier": "mid",
   "align": "heel",
@@ -3044,7 +3044,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0180",
-  "name": "Mustafa Ali",
+  "name": "Adeel Alam",
   "promotion": "TNA",
   "tier": "mid",
   "align": "heel",
@@ -3384,7 +3384,7 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0200",
-  "name": "Dominik Mysterio",
+  "name": "Dominik Gutierrez",
   "promotion": "AAA",
   "tier": "upper",
   "align": "face",
