@@ -239,570 +239,690 @@
    the same rules.
    ============================================================================ */
 
-const SPRITE_W = 16;
-const SPRITE_H = 18;
+const SPRITE_W = 20;
+const SPRITE_H = 24;
 
 const ROSTER = [
-  /* ------- POWER HITTERS ------- */
-  { k:'kong', n:'King Kong', role:'Power', pow:99, spd:8, con:45, def:40,
-    quirk:null,
+  /* ---------------- POWER HITTERS ---------------- */
+
+  { k:'kong', n:'King Kong', role:'Power', pow:99, spd:8, con:45, def:40, quirk:null,
     note:'Legendary long ball, cannot run to save his life.',
-    pal:{ k:'#141014', f:'#3a2413', d:'#5a3a1c', l:'#8b6a3a', s:'#c9a067', e:'#eaeaea', p:'#241812' },
+    pal:{ k:'#0a0806', d:'#1e120a', l:'#3a2413', f:'#5a3818', s:'#8b6a3a', e:'#eaeaea', q:'#0a0806', m:'#c94b1a' },
     art:[
-      '................',
-      '.....kkkkk......',
-      '....kffffk......',
-      '....kffslsk.....',
-      '....kseeeek.....',
-      '....kfslsfk.....',
-      '...kfffffffk....',
-      '..kdddllldddk...',
-      '.kdlsssssslddk..',
-      '.kdslllllllsdk..',
-      '.kdslllllllsdk..',
-      '.kddlsssssllddk.',
-      '..kkkddddddkkk..',
-      '...dd......dd...',
-      '...dd......dd...',
-      '..fff......fff..',
-      '..pkp......pkp..',
-      '................',
+      '....................',
+      '....................',
+      '.......kkkkkk.......',
+      '......kdddddddk.....',
+      '......kdlllllldk....',
+      '.....kdlfffffldk....',
+      '.....kdlfKfKfldk....',
+      '.....kdlfeqeqfldk...',
+      '.....kdlffffffldk...',
+      '.....kdlffMmMfldk...',
+      '.....kkdllfflldk....',
+      '......kkddddddk.....',
+      '....kdddddddddddk...',
+      '...kdllllllllllldk..',
+      '...kdllssssssslldk..',
+      '..kdllssssssssslldk.',
+      '..kdllsssssssssdldk.',
+      '..kdlllsssssslllldk.',
+      '..kkdlllllllllllldk.',
+      '..kfk.kdddddddk.kfk.',
+      '..kfk..kddddddk.kfk.',
+      '..kkk...kdddddk.kkk.',
+      '.......kfffk.kfffk..',
+      '.......kkkk..kkkk...',
     ] },
 
-  { k:'franky', n:'Frankenstein', role:'Power', pow:97, spd:20, con:40, def:55,
-    quirk:null,
-    pal:{ k:'#141014', g:'#7ea86a', d:'#4d6a44', l:'#a0c286', b:'#c9a256', c:'#3a2818', s:'#8a1a1a', p:'#0f0f14' },
+  { k:'franky', n:'Frankenstein', role:'Power', pow:97, spd:20, con:40, def:55, quirk:null,
+    pal:{ k:'#080c08', g:'#7ea86a', G:'#4d6a44', l:'#a0c286', b:'#c9a256', c:'#3a2818', C:'#2a1c10', s:'#8a1a1a', e:'#eaeaea', q:'#080c08', m:'#3a1010' },
     art:[
-      '....kkkkkkkk....',
-      '....kkkkkkkk....',
-      '...kggggggggk...',
-      '...gggkkkkggg...',
-      '...gkbggggbkg...',
-      '...gggkkggggg...',
-      '...ggggllgggg...',
-      '..kbgggggggbk...',
-      '..ccccssssccc...',
-      '..cccssssssccc..',
-      '.gcsssssssssscg.',
-      '.gcsssssssssscg.',
-      '..cccssssssccc..',
-      '...cc.pppp.cc...',
-      '...cc.pppp.cc...',
-      '...cc.pppp.cc...',
-      '..kkk.kkkk.kkk..',
-      '................',
+      '....................',
+      '....kkkkkkkkkkkk....',
+      '....kCCCCCCCCCCCk...',
+      '....kCCCCCCCCCCCk...',
+      '...kggggggggggggk...',
+      '...kglGGGGGGGGGlk...',
+      '...kgleebkbkbeegk...',
+      '...kgleqbkbkbqegk...',
+      '...kglGGGGGGGGGlk...',
+      '...kglGGGGGGGGGlk...',
+      '...kglGGmmmmmGGgk...',
+      '..kGGGGGGGGGGGGGGk..',
+      '..kbGGGGGGGGGGGbbk..',  /* neck bolts */
+      '..kkCCCCCCCCCCCCkk..',  /* coat top */
+      '.kCCCCCCCCCCCCCCCk..',
+      '.kCcccccccccccccck..',
+      '.kCccccssccccccck...',  /* small red patch */
+      '.kCcccccccccccccck..',
+      '.kkCcccccccccccckk..',
+      '..kCCCCCCCCCCCCCk...',
+      '..kkCCCCCCCCCCkk....',  /* pants top */
+      '....kCCCkkCCCk......',
+      '....kCCk..kCCk......',
+      '....kkkk..kkkk......',
     ] },
 
-  { k:'popeye', n:'Popeye', role:'Power', pow:88, spd:55, con:60, def:65,
-    quirk:null,
-    pal:{ k:'#141014', w:'#eaeaea', h:'#c25c1a', s:'#f5d2a3', p:'#0b3a6b', b:'#3a2818', r:'#8a1a1a', y:'#f4c25a' },
+  { k:'popeye', n:'Popeye', role:'Power', pow:88, spd:55, con:60, def:65, quirk:null,
+    pal:{ k:'#0a0a10', w:'#eaeaea', W:'#b8b8bd', h:'#c25c1a', H:'#8a3812', s:'#f5d2a3', S:'#c9a274', p:'#0b3a6b', P:'#052048', b:'#3a2818', e:'#eaeaea', q:'#0a0a10', m:'#8a2828', r:'#c94b1a' },
     art:[
-      '................',
-      '................',
-      '.....wwwwww.....',
-      '....wwwwwwww....',
-      '...whhhhhhhhw...',
-      '....sssssss.....',
-      '....skssskss....',
-      '....ssssssssrr..',
-      '....sssssssss...',
-      '.....wwwwww.....',
-      '....whhhhhhw....',
-      '..sshhhhhhhhss..',
-      '.sssshhhhhhssss.',
-      '.sssshhhhhhssss.',
-      '..ss.pppppp.ss..',
-      '.....pppppp.....',
-      '.....pppppp.....',
-      '....bb....bb....',
+      '....................',
+      '.......kwwwwwk......',  /* sailor cap top */
+      '......kwwwwwwwk.....',
+      '.....kwwwwwwwwwk....',
+      '....kkkkkkkkkkkkk...',  /* cap brim */
+      '....khhhhhhhhhhhk...',  /* hair band */
+      '....khsssssssshHk...',
+      '...kssseqssseqsSSk..',  /* eyes */
+      '...ksssssssssssSSk..',
+      '...ksssssMMmmssSSk..',  /* mouth */
+      '...kkSsssssssssSk.pp',  /* pipe on the right cheek */
+      '.....kwwwwwwwwSk.pp.',  /* sailor collar */
+      '....kwwwwwwwwwwwk...',
+      '...krrrrrrrrrrrrrk..',  /* red shirt */
+      '..kFFrrrrrrrrrrrFFk.',
+      '.kFFFFrrrrrrrrrFFFFk',  /* huge forearms */
+      '.kFFFFrrraaarrrFFFFk',  /* belt line */
+      '.kkkkFrrppppprrFkkkk',
+      '.....krppppppprk....',
+      '.....kppppppppk.....',
+      '.....kppp..pppk.....',
+      '.....kpp....ppk.....',
+      '....kbbb....bbbk....',
+      '....kkk......kkk....',
     ] },
 
-  { k:'dracula', n:'Dracula', role:'Power', pow:86, spd:58, con:58, def:60,
-    quirk:null,
-    pal:{ k:'#0f0f14', s:'#dcd2d0', h:'#141014', r:'#8a1a1a', b:'#241820', w:'#eaeaea' },
+  { k:'dracula', n:'Dracula', role:'Power', pow:86, spd:58, con:58, def:60, quirk:null,
+    pal:{ k:'#050508', h:'#12121a', H:'#050508', s:'#dcd2d0', S:'#a8a0a0', w:'#eaeaea', b:'#080a10', B:'#020204', r:'#8a1a1a', R:'#5a1010', e:'#eaeaea', q:'#050508', m:'#5a1010' },
     art:[
-      '................',
-      '...hhhhhhhhhh...',
-      '..hhhhhhhhhhhh..',
-      '...ssssssssss...',
-      '...skssssskss...',
-      '...sssrrrsss....',
-      '...sssrrrsss....',
-      '..hhssssssssh...',
-      '..rwwkkkkkkwwr..',
-      '..rwbbbbbbbwr...',
-      '..rrbbwrwbbrr...',
-      '..rrbbbrbbbrr...',
-      '...rbbbbbbbbr...',
-      '...rrbbbbbbrr...',
-      '....rbbrrbbrr...',
-      '....rbb..bbr....',
-      '....bb....bb....',
-      '....kk....kk....',
+      '....................',
+      '....khhhhhhhhhhhk...',  /* slicked hair peaks */
+      '...khhhhhhhhhhhhhk..',
+      '...khHHHHHHHHHHHhk..',
+      '...khssssssssssshk..',
+      '...kssseqsssseqssk..',  /* pale eyes */
+      '...kssssssssssssSk..',
+      '...ksssrmMmrssssSk..',  /* fanged mouth */
+      '...kSssssssssssSSk..',
+      '...kkSSSSSSSSSSSkk..',
+      '.rrrrwbbbbbbbbwrrrr.',  /* red cape wings + white collar */
+      '.rRRRRwwwwwwwRRRRRr.',
+      '.rRRRRbbbrbbbRRRRRr.',  /* black tux with red bow */
+      '.rRRRRbbbBbbbRRRRRr.',
+      '..rRRbbbbBbbbbRRRr..',
+      '..rRRbbbbbbbbbRRRr..',
+      '..rrRbbbbbbbbbRrrr..',
+      '..rrrbbbbbbbbbrrrr..',
+      '....kbbbbbbbbbk.....',
+      '....kbbbkkbbbbk.....',
+      '....kbbk..kbbbk.....',
+      '....kbbk..kbbbk.....',
+      '....kkk....kkkk.....',
+      '....................',
     ] },
 
   { k:'liberty', n:'Lady Liberty', role:'Power', pow:100, spd:1, con:22, def:30,
     quirk:'monument',
     note:'Immobile. But every hit clears the wall.',
-    pal:{ k:'#243c34', g:'#6db8a2', l:'#8fd0b8', d:'#4a8a7a', y:'#f4c25a', o:'#c9a256', w:'#eaeaea' },
+    pal:{ k:'#0d1e1a', g:'#6db8a2', G:'#3d7a68', l:'#8fd0b8', y:'#f4c25a', Y:'#a87020', o:'#c9a256', w:'#eaeaea', e:'#eaeaea', q:'#0d1e1a', m:'#3a5044' },
     art:[
-      '......y.........',
-      '.....yyy........',
-      '....yyoyy.......',
-      '.g.gyyoyyg.g....',
-      '.gg.gggggg.gg...',
-      '.gggyyyyyyggg...',
-      '..ggglllllg.....',
-      '..gdggggggdg....',
-      '..gllllllllg....',
-      '..gllllllllg....',
-      '..gdlllllldg....',
-      '..gllwwwwllg....',
-      '..gllwwwwllg....',
-      '..gdlllllldg....',
-      '..gllllllllg....',
-      '..gllllllllg....',
-      '..gggggggggg....',
-      '..kkkkkkkkkk....',
+      '.........yYy........',  /* torch flame */
+      '........yyYYy.......',
+      '.........YoY........',  /* torch handle */
+      '..y..y..yoYoy..y....',
+      '..yy.yyoyoYoyoyy.yy.',  /* crown spikes */
+      '..yYyoyoyoyoyoyoyYy.',
+      '...koooooooooooook..',  /* crown band */
+      '....kgggggggggggk...',
+      '....kglGGGGGGGlgk...',  /* face green */
+      '....kglseqsseqlgk...',  /* eyes */
+      '....kglGGGGGGGlgk...',
+      '....kglGGmmmGGlgk...',
+      '....kkGGGGGGGGGk....',
+      '..kglllllllllllglk..',  /* robe shoulders */
+      '..kglGllllllllGlgk..',
+      '..kglGlGGGGGGGlGlk..',  /* robe folds */
+      '..kglGlGGGGGGGlGlk..',
+      '..kglGlGGGGGGGlGlk..',
+      '..kglGlGGGGGGGlGlk..',
+      '..kglGlGGGGGGGlGlk..',
+      '..kglGlGGGGGGGlGlk..',
+      '..kglGlGGGGGGGlGlk..',
+      '..kkGGGGGGGGGGGGkk..',
+      '..kkkkkkkkkkkkkkkk..',  /* pedestal base */
     ] },
 
-  /* ------- SPEED DEMONS ------- */
-  { k:'peter', n:'Peter Pan', role:'Speed', pow:40, spd:96, con:62, def:72,
-    quirk:null,
-    pal:{ k:'#141014', s:'#f2ceaa', g:'#3a8a4a', d:'#2a6a3a', l:'#5cb063', h:'#c07a2a', y:'#e3b04c', b:'#5c3a1c' },
+  /* ---------------- SPEED DEMONS ---------------- */
+
+  { k:'peter', n:'Peter Pan', role:'Speed', pow:40, spd:96, con:62, def:72, quirk:null,
+    pal:{ k:'#0c1408', g:'#3a8a4a', G:'#245524', l:'#5cb063', h:'#c07a2a', H:'#7a4a12', s:'#f2ceaa', S:'#c9a274', y:'#e3b04c', r:'#c94b1a', b:'#3a2818', e:'#eaeaea', q:'#0c1408', m:'#8a3020' },
     art:[
-      '................',
-      '................',
-      '....y...........',
-      '...yggggggg.....',
-      '....gllggglg....',
-      '...ssssssssss...',
-      '...skssssskss...',
-      '...ssssmmssss...',
-      '....sssssssss...',
-      '..gglggggglgg...',
-      '.gggllgggllggg..',
-      '.gllgggggggllg..',
-      '.gllgggggggllg..',
-      '..gggggggggg....',
-      '..bbbggbbggb....',
-      '...bb.gg.bb.....',
-      '..ss....sss.....',
-      '..kk.....kk.....',
+      '.......y............',  /* feather tip */
+      '......yy............',
+      '.....yyy............',
+      '....kkgggggggggkr...',  /* peaked cap */
+      '....kglGGGGGGGgk....',
+      '....kgllGGGGGllk....',
+      '....kkhhhhhhhhkk....',  /* hair line under cap */
+      '....khsssssssshk....',
+      '...kssseqsseqssk....',
+      '...kssssssssssSk....',
+      '...ksssssMMsssSk....',
+      '...kkSSSssssSSkk....',
+      '.....kgggggggk......',  /* jagged tunic collar */
+      '....kgglgglggggk....',
+      '...kgggggggggggk....',
+      '...kgglgglgglggk....',
+      '...kgggGGGGGgggk....',
+      '..kgg.kgggggk.ggk...',  /* tunic hem jagged, belt buckle */
+      '..kgg..kgggk...ggk..',
+      '.....kgggggk........',  /* green tights */
+      '.....kgggggk........',
+      '.....kgg.ggk........',
+      '.....kgg.ggk........',
+      '....kbbb.bbbk.......',
     ] },
 
-  { k:'felix', n:'Felix', role:'Speed', pow:38, spd:92, con:68, def:70,
-    quirk:null,
-    pal:{ k:'#141014', w:'#eaeaea', p:'#e6b0b8', y:'#f4c25a' },
+  { k:'felix', n:'Felix', role:'Speed', pow:38, spd:92, con:68, def:70, quirk:null,
+    pal:{ k:'#000000', w:'#eaeaea', p:'#e6b0b8', y:'#f4c25a', b:'#141014' },
     art:[
-      '...k........k...',
-      '...kk......kk...',
-      '...kwk....kwk...',
-      '..kkwwkkkkwwkk..',
-      '..kwwwwwwwwwwk..',
-      '..kwwwwwwwwwwk..',
-      '..kwykwwwwkywk..',
-      '..kwwkwwwwkwwk..',
-      '..kwwwwppwwwwk..',
-      '..kwwwppppwwwk..',
-      '..kkwwwwwwwwkk..',
-      '...kkwwwwwwkk...',
-      '....kwwwwww.....',
-      '....kw....w.....',
-      '...kkw....wkk...',
-      '...kwww..wwwk...',
-      '...kkk....kkk...',
-      '................',
+      '....................',
+      '...kkk........kkk...',  /* ears */
+      '..kbwbk......kbwbk..',
+      '..kbwwkkkkkkkkwwbk..',  /* head top */
+      '.kbwwwwwwwwwwwwwwbk.',
+      '.kbwwwwwwwwwwwwwwbk.',
+      '.kbwyybwwwwwwbyywbk.',  /* eyes with yellow */
+      '.kbwybbwwwwwwbbyywk.',
+      '.kbwwwwwbbbwwwwwwbk.',  /* nose */
+      '.kbwwwwppppwwwwwwbk.',  /* smile */
+      '.kbwwwppppppwwwwwbk.',
+      '.kkbwwwwwwwwwwwwbkk.',
+      '..kkbbbwwwwwwwbbkk..',  /* neck bottom */
+      '...kbbbbbbbbbbbbk...',  /* body top */
+      '..kbbbbbbbbbbbbbbk..',
+      '..kbbbbbbbbbbbbbbk..',  /* body */
+      '..kbbbbbbbbbbbbbbk..',
+      '...kbbbbbbbbbbbbk...',
+      '....kbbbbbbbbbbk....',
+      '....kbbk....kbbk....',  /* legs */
+      '....kbbk....kbbk....',
+      '....kbbk....kbbk....',
+      '....kbbk....kbbk....',  /* feet */
+      '....kwwk....kwwk....',
     ] },
 
-  { k:'jack', n:'Jack', role:'Speed', pow:52, spd:88, con:48, def:60,
-    quirk:null,
-    pal:{ k:'#141014', s:'#f0c99a', h:'#c9a256', g:'#3a7f4a', d:'#245524', t:'#f0e4d4', p:'#5c3a1c', b:'#3a2818', l:'#5cb063' },
+  { k:'jack', n:'Jack', role:'Speed', pow:52, spd:88, con:48, def:60, quirk:null,
+    pal:{ k:'#0a0c10', s:'#f0c99a', S:'#c9a274', h:'#c9a256', H:'#8a6a30', g:'#3a7f4a', G:'#1e5028', l:'#5cb063', p:'#5c3a1c', P:'#3a2412', b:'#241812', d:'#3a5a3a', e:'#eaeaea', q:'#0a0c10', m:'#8a3020' },
     art:[
-      'g...............',
-      'l...............',
-      'g...hhhhhhhh....',
-      'lg.hhssssssh....',
-      'gl.hsssssssh....',
-      'lg.skssssskh....',
-      'gg.ssssmmsss....',
-      '.ll.sssssss.....',
-      '.gl.tttttttt....',
-      '..lgtttttttt....',
-      '..lgtdddddddt...',
-      '...gttttttttg...',
-      '...gtppppppttg..',
-      '....gppppppg....',
-      '....gpppppp.....',
-      '....pppppppp....',
-      '...bbb....bbb...',
-      '................',
+      'g...................',  /* beanstalk vine */
+      'l...................',
+      'gl..khhhhhhhhhhhk...',  /* messy hair */
+      'lgl.khhhHHHhhhHhhk..',
+      'gll.khsssssssssshk..',
+      'lg..kssseqsseqsssk..',  /* eyes */
+      'gl..kssssssssssssk..',
+      'll..kssssMMmmssssk..',  /* mouth */
+      'g...kkSSSSSSSSSSkk..',
+      'l....kwwtttttttwwk..',  /* white collar over green vest */
+      'l...kggttttttttggk..',  /* green vest */
+      'g..kggGtttttttGggk..',
+      'l..kggttttttttGggk..',
+      'g..kggGGGGGGGGGggk..',
+      'l..kgGGGpppppGGGgk..',  /* belt */
+      'l..kkGGpppppppGGkk..',
+      '....kppppppppppk....',  /* brown pants */
+      '....kPpppppppppk....',
+      '....kppppppppppk....',
+      '....kpp....pppk.....',  /* leg gap */
+      '....kpp....pppk.....',
+      '....kpp....pppk.....',
+      '....kbb....bbbk.....',  /* boots */
+      '....kkk.....kkk.....',
     ] },
 
-  { k:'tom', n:'Tom Sawyer', role:'Speed', pow:50, spd:84, con:68, def:65,
-    quirk:null,
-    pal:{ k:'#141014', s:'#f0c99a', y:'#c9a256', o:'#8b6a3a', h:'#a45b1a', d:'#5a3a1c', t:'#dcbe86', g:'#3a5a3a', r:'#c94b1a' },
+  { k:'tom', n:'Tom Sawyer', role:'Speed', pow:50, spd:84, con:68, def:65, quirk:null,
+    pal:{ k:'#0a0c10', s:'#f0c99a', S:'#c9a274', y:'#c9a256', Y:'#8b6a3a', h:'#a45b1a', o:'#c9a256', r:'#c94b1a', R:'#8a2812', b:'#241812', p:'#5a4a2a', P:'#3a2c18', e:'#eaeaea', q:'#0a0c10', m:'#8a3020' },
     art:[
-      '................',
-      '....yyyyyyyy....',
-      '...yyyyyyyyyy...',
-      '...yoooooooooy..',
-      '....hhhhhhh.....',
-      '....ssssssss....',
-      '....skssssks....',
-      '....sssrsssss...',
-      '....sssssssss...',
-      '....tttttttt....',
-      '...tttttttttt...',
-      '...toooooooot...',
-      '...tttttttttt...',
-      '....tttttttt....',
-      '....gggggggg....',
-      '....gg....gg....',
-      '....gg....gg....',
-      '...bb......bb...',
+      '....................',
+      '.....kyyyyyyyyk.....',  /* straw hat crown */
+      '....kyoooooooooyk...',
+      '...kyoooooooooooyk..',
+      '..kyyyyyyyyyyyyyyyk.',  /* wide brim */
+      '..kkkkkkkkkkkkkkkk..',
+      '....khhhhhhhhhhk....',  /* hair under hat */
+      '....ksssssssssssk...',
+      '...kssseqsseqssssk..',  /* freckled face */
+      '...ksssyssssyssssk..',  /* freckles */
+      '...kssssssssssssSk..',
+      '...kssssMMMMsssSSk..',
+      '...kkSssssssssSSkk..',
+      '.....krrrrrrrrrrk...',  /* red shirt */
+      '....krrRRRRRRRRrrk..',
+      '....krrrrrrrrrrRrk..',
+      '....kpppppppppppPk..',  /* overalls straps become pants */
+      '....kppyppppyppppk..',  /* overall buttons */
+      '....kppppppppppppk..',
+      '....kpppp..ppppppk..',
+      '....kppp....ppppk...',  /* legs, no shoes */
+      '....kppp....ppppk...',
+      '.....kss....sssk....',  /* barefoot */
+      '.....kkk....kkk.....',
     ] },
 
-  { k:'huck', n:'Huck Finn', role:'Speed', pow:44, spd:86, con:58, def:62,
-    quirk:null,
-    pal:{ k:'#141014', s:'#efc9a0', y:'#c9a256', o:'#8b6a3a', h:'#5a3618', t:'#a45b1a', d:'#5c3a1c', l:'#8b6a3a', p:'#e0c88a' },
+  { k:'huck', n:'Huck Finn', role:'Speed', pow:44, spd:86, con:58, def:62, quirk:null,
+    pal:{ k:'#0a0c10', s:'#efc9a0', S:'#c9a274', y:'#c9a256', Y:'#8b6a3a', h:'#5a3618', t:'#a45b1a', T:'#6a2810', d:'#5a4a2a', l:'#8b6a3a', p:'#e0c88a', e:'#eaeaea', q:'#0a0c10', m:'#8a3020' },
     art:[
-      '............l...',
-      '....yyyyyyyy.l..',
-      '...yyyyyyyyyy.l.',
-      '...yoooooooooyl.',
-      '....hhhhhhh...l.',
-      '....ssssssss..l.',
-      '....skssssksll..',
-      '....sssssssll...',
-      '....sssssslll...',
-      '....ttttttt.....',
-      '...tttttttdt....',
-      '...tttddttttt...',
-      '...ttttttdtt....',
-      '....tttddttt....',
-      '....pppppppp....',
-      '....pp....pp....',
-      '....pp....pp....',
-      '....ss....ss....',
+      '................l...',  /* fishing pole */
+      '.....kyyyyyyyyk.l...',
+      '....kyoooooooooyl...',
+      '...kyoooooooooyol...',
+      '..kyyyyyyyyyyyyyyl..',
+      '..kkkkkkkkkkkkkkkl..',
+      '....khhhhhhhhhhkl...',
+      '....kssssssssssklp..',  /* line dangling */
+      '...ksseqsssseqsklp..',
+      '...ksssssssssssklp..',
+      '...ksssssMMsssssk...',
+      '...kkSSSSSSSSSSSk...',
+      '....kttttttttttk....',  /* rust shirt */
+      '...kttTtTttttTTtk...',
+      '...ktttTtTtttttTk...',
+      '...kkTtTtTtTtTtTk...',  /* ragged shirt hem */
+      '....kdddddddddddk...',  /* pants */
+      '....kdddddddddddk...',
+      '....kddddddddddk....',
+      '....kdd....dddk.....',
+      '....kdd....dddk.....',
+      '....kdd....dddk.....',
+      '.....kss....ssk.....',  /* barefoot */
+      '.....kkk....kkk.....',
     ] },
 
-  { k:'flash', n:'Flash Gordon', role:'Speed', pow:62, spd:80, con:64, def:68,
-    quirk:null,
-    pal:{ k:'#141014', s:'#f5d2a3', y:'#e9c76a', r:'#c94b1a', d:'#8a1a1a', o:'#3a2a1a', g:'#f4c25a', l:'#eaeaea' },
+  { k:'flash', n:'Flash Gordon', role:'Speed', pow:62, spd:80, con:64, def:68, quirk:null,
+    pal:{ k:'#0a0c10', s:'#f5d2a3', S:'#c9a274', y:'#e9c76a', Y:'#a88a30', r:'#c94b1a', R:'#7a1c08', d:'#3a2a1a', g:'#f4c25a', G:'#a88a30', b:'#141014', e:'#eaeaea', q:'#0a0c10', m:'#8a3020' },
     art:[
-      '................',
-      '................',
-      '....yyyyyyyy....',
-      '...yyyyyyyyy....',
-      '...yssssssyy....',
-      '...skssssksy....',
-      '....ssssssss....',
-      '....sssyssss....',
-      '....rrrrrrrr....',
-      '...rrrrgrrrrr...',
-      '..drrrgggrrrd...',
-      '..drrggygggrd...',
-      '..drrrgggrrrd...',
-      '..drrrrgrrrrd...',
-      '....oooooooo....',
-      '....oo....oo....',
-      '....oo....oo....',
-      '...kkk....kkk...',
+      '....................',
+      '....kyyyyyyyyyyk....',  /* blond hair top */
+      '...kyyyYYyyYYyyyk...',
+      '...kysssssssssyYk...',
+      '...ksssssssssssSk...',
+      '...kseqsssssseqsk...',
+      '...ksssssssssssSk...',
+      '...ksssssMMMsssSk...',
+      '...kkSSSSSSSSSSkk...',
+      '....krrrrrrrrrrk....',  /* red suit collar */
+      '...krrrRRrrrRRrrrk..',
+      '...krrRgggggggRrrk..',  /* gold chest panel */
+      '...krrRgykkyygRrrk..',  /* F insignia */
+      '...krrRgkyykygRrrk..',
+      '...krrRgkyyykygRrk..',
+      '...krrRgggggggRrrk..',
+      '...krrRRRRRRRRRRrk..',
+      '...kkbbbbbbbbbbkk...',  /* black belt */
+      '....kddddddddddk....',  /* dark pants */
+      '....kddd..ddddk.....',
+      '....kdd....dddk.....',
+      '....kdd....dddk.....',
+      '....kbb....bbbk.....',  /* boots */
+      '....kkk....kkkk.....',
     ] },
 
-  { k:'invisible', n:'Invisible Man', role:'Defense', pow:38, spd:82, con:56, def:92,
-    quirk:null,
+  { k:'invisible', n:'Invisible Man', role:'Defense', pow:38, spd:82, con:56, def:92, quirk:null,
     note:'Fielders lose him in the dust.',
-    pal:{ k:'#141014', g:'#4a4a4a', d:'#2a2a2a', l:'#7a7a7a', w:'#eaeaea', b:'#5cb6e5', p:'#141014' },
+    pal:{ k:'#050508', h:'#12121a', H:'#050508', w:'#eaeaea', W:'#b8b8b8', b:'#4a4a5a', d:'#242430', g:'#12121a', G:'#080810', s:'#5cb6e5' },
     art:[
-      '................',
-      '....kkkkkkkk....',
-      '...kkkkkkkkkk...',
-      '...kllllllllk...',
-      '....wwwwwwww....',
-      '....wkkbbkkw....',
-      '....wwwwwwww....',
-      '....wwwwwwww....',
-      '....gggggggg....',
-      '...ggglllggg....',
-      '..gggglllgggg...',
-      '..gllllllllgg...',
-      '..gggglllgggg...',
-      '...ggglllggg....',
-      '....dddddddd....',
-      '....dd....dd....',
-      '....dd....dd....',
-      '...kkk....kkk...',
+      '....................',
+      '....khhhhhhhhhhhk...',  /* fedora crown */
+      '....khHHHHHHHHHhk...',
+      '....khhhhhhhhhhhk...',
+      '...kkhhhhhhhhhhhkk..',
+      '.khhhhhhhhhhhhhhhhk.',  /* fedora brim wide */
+      '.kkhhhhhhhhhhhhhhhk.',
+      '....kwwwwwwwwwwk....',  /* bandaged head */
+      '...kwWwwwwwwwwWwk...',
+      '...kwsssbbbbbbsswk..',  /* sunglasses */
+      '...kwwwwwwwwwwwwk...',
+      '...kwWwwwWwwwwWwwk..',
+      '...kkwwwwwwwwwwwk...',
+      '....kgggggggggggk...',  /* trenchcoat collar */
+      '....kdgggggggggdk...',
+      '...kdddgggggggddk...',  /* trenchcoat body */
+      '...kdggdggggggddk...',
+      '...kdggddddddgddk...',
+      '...kdggggggggggdk...',
+      '...kdgggGGGGGgggk...',
+      '...kddgdddddddgdk...',  /* coat hem */
+      '...kkdd.....ddddk...',
+      '....kdd.....dddk....',  /* legs */
+      '....kbb.....bbbk....',
     ] },
 
-  /* ------- CONTACT SPECIALISTS ------- */
-  { k:'sherlock', n:'Sherlock', role:'Contact', pow:45, spd:55, con:88, def:78,
-    quirk:null,
-    pal:{ k:'#141014', s:'#efc9a0', h:'#5a3618', c:'#8b6a3a', d:'#5a3a1c', l:'#c69a5c', p:'#2d1e14', r:'#8a1a1a', w:'#a0a0a0' },
+  /* ---------------- CONTACT SPECIALISTS ---------------- */
+
+  { k:'sherlock', n:'Sherlock', role:'Contact', pow:45, spd:55, con:88, def:78, quirk:null,
+    pal:{ k:'#0a0806', c:'#8b6a3a', C:'#5a4020', d:'#5a4020', s:'#efc9a0', S:'#c9a274', h:'#3a1e08', H:'#1e0e04', p:'#2d1e14', P:'#160c08', r:'#8a1a1a', w:'#a08060', e:'#eaeaea', q:'#0a0806', m:'#8a3020' },
     art:[
-      '................',
-      '....cccccccc....',
-      '...c.cccccc.c...',
-      '...cccccccccc...',
-      '....ssssssss....',
-      '....skssssks....',
-      '....sssssssswww.',
-      '....ssssmssswwr.',
-      '....sssssssswww.',
-      '....cccccccc....',
-      '...cccccccccc...',
-      '..ccdddddddcc...',
-      '..cldddddddlc...',
-      '..cccdddddccc...',
-      '....pppppppp....',
-      '....pp....pp....',
-      '....pp....pp....',
-      '...kkk....kkk...',
+      '.....kkkkkkkkkk.....',  /* deerstalker crown */
+      '....kcCCCCCCCCCck...',
+      '....kcCCCCCCCCCCk...',
+      '..kkccCCCCCCCCCcckk.',  /* side flaps */
+      '.kccccccccccccccccck',
+      '.kkkcccccccccccckkkk',
+      '....khhhhhhhhhhhk...',
+      '....kssssssssssssk..',
+      '...ksseqsssseqsssk..',
+      '...ksssssssssssspp..',  /* pipe start */
+      '...ksssssmmmssSPPPP.',
+      '...kkSSSSSSSSSSSkPP.',
+      '....kcccccccccck....',  /* tweed jacket */
+      '....kcCCcccCcCcck...',
+      '...kcccccccccCcck...',
+      '...kcCccrcCcccCcck..',  /* magnifying glass on lapel: red dot */
+      '...kccCCCCCCCCcCck..',
+      '...kkcccccccccccck..',
+      '....kppppppppppk....',  /* dark trousers */
+      '....kpPppppppppk....',
+      '....kpp....pppk.....',
+      '....kpp....pppk.....',
+      '....kbb....bbbk.....',
+      '....kkk....kkkk.....',
     ] },
 
-  { k:'tracy', n:'Dick Tracy', role:'Contact', pow:60, spd:60, con:85, def:72,
-    quirk:null,
-    pal:{ k:'#141014', s:'#efc9a0', y:'#f4c25a', o:'#c9a256', p:'#0e1a3a', r:'#c94b1a', w:'#eaeaea' },
+  { k:'tracy', n:'Dick Tracy', role:'Contact', pow:60, spd:60, con:85, def:72, quirk:null,
+    pal:{ k:'#0a0c14', y:'#f4c25a', Y:'#a88a30', s:'#efc9a0', S:'#c9a274', p:'#0e1a3a', P:'#080e20', r:'#c94b1a', w:'#eaeaea', b:'#12121a', e:'#eaeaea', q:'#0a0c14', m:'#8a3020' },
     art:[
-      '................',
-      '....yyyyyyyy....',
-      '...yyyyyyyyyy...',
-      '...yoooyyyoooy..',
-      '....kssssssk....',
-      '....skssssks....',
-      '....ssssrsss....',
-      '....sssssssss...',
-      '....yyyyyyyy....',
-      '...yywwwwwyy....',
-      '..yywywkkywyyy..',
-      '..yywywkkywyyy..',
-      '..yyywwwwwyyy...',
-      '..oyyyywyyyyoo..',
-      '....pppppppp....',
-      '....pp....pp....',
-      '....pp....pp....',
-      '...kkk....kkk...',
+      '....................',
+      '....kyyyyyyyyyyyk...',  /* yellow fedora crown */
+      '....kyYYYYYYYYYyk...',
+      '..kkyyyyyyyyyyyyykk.',
+      '.kyyyyyyyyyyyyyyyyyk',  /* wide brim */
+      '.kkkyyyyyyyyyyyykkkk',
+      '....kssssssssssssk..',
+      '...kssseqsssseqssk..',  /* sharp features */
+      '...ksssssssssssSSk..',
+      '...ksssssmMMMsSSSk..',
+      '...kkSSSSSSSSSSSSk..',
+      '.....kbbbbbbbbbk....',  /* black tie top */
+      '....kyyybbbbbyyyk...',  /* yellow trench with tie */
+      '...kyYyybbbbbyyYyk..',
+      '...kyyyybbbbbyyyyk..',
+      '...kyyyyybbbyyyyyk..',
+      '...kyyyyyyyyyyyyyk..',
+      '...kyYyyyyyyyyyYyk..',
+      '...kkyyyyyyyyyyyyk..',
+      '....kpppppppppppk...',  /* dark pants */
+      '....kppp..ppppppk...',
+      '....kpp....pppppk...',
+      '....kbb....bbbbbk...',
+      '....kkk.....kkkkk...',
     ] },
 
-  { k:'alice', n:'Alice', role:'Contact', pow:45, spd:68, con:82, def:65,
-    quirk:null,
-    pal:{ k:'#141014', s:'#f5d5a8', y:'#e9c76a', o:'#c9a256', b:'#5cb6e5', d:'#3a7fa8', w:'#eaeaea', r:'#c94b1a' },
+  { k:'alice', n:'Alice', role:'Contact', pow:45, spd:68, con:82, def:65, quirk:null,
+    pal:{ k:'#0a0c14', y:'#e9c76a', Y:'#a88a30', s:'#f5d5a8', S:'#c9a878', b:'#5cb6e5', B:'#3a7fa8', w:'#eaeaea', W:'#b8b8b8', d:'#080810', r:'#c94b1a', e:'#eaeaea', q:'#0a0c14', m:'#8a3020' },
     art:[
-      '................',
-      '.....k....k.....',
-      '.....kbkkbk.....',
-      '....yyyyyyyy....',
-      '...yyssssssyy...',
-      '...oyksssskyo...',
-      '...yyssssssyo...',
-      '...yysssrssyy...',
-      '....ssssssss....',
-      '....bbbbbbbb....',
-      '...bwwwwwwwwb...',
-      '..bwwwwwwwwwwb..',
-      '..bwwwwwwwwwwb..',
-      '..bwwbbbbbbwwb..',
-      '..dwwbbwbwwwwb..',
-      '..dwwbbbbbwwbb..',
-      '..bbbbbbbbbbbb..',
-      '...ss......ss...',
+      '....................',
+      '......d....d........',  /* bow tails */
+      '.....dbdbbdbd.......',  /* black bow */
+      '....kyyyyyyyyyyk....',  /* blonde hair top */
+      '...kyyyyyyyyyyyyk...',
+      '...kysssssssssyyk...',  /* hair frames face */
+      '...ksseqsssseqssk...',
+      '...ksssssssssssSk...',
+      '...ksssssMmMsssSk...',
+      '...kkSSSSSSSSSSkk...',
+      '...kyyyyyyyyyyyyk...',  /* long hair sides */
+      '.....kwwwwwwwwk.....',  /* white collar */
+      '....kbbbbbbbbbbk....',  /* blue dress top */
+      '...kbBBbbbbbbBBbk...',
+      '...kbwwwwwwwwwwbk...',  /* white apron */
+      '...kbwwwwrrwwwwbk...',  /* apron detail */
+      '...kbwwwwwwwwwwbk...',
+      '...kbBBBBBBBBBBbk...',
+      '...kkbbbbbbbbbbkk...',
+      '....kbbbbbbbbbk.....',
+      '....kbbb..bbbk......',
+      '.....kss..ssk.......',
+      '.....kbb..bbk.......',  /* black shoes */
+      '.....kkk..kkk.......',
     ] },
 
-  { k:'dorothy', n:'Dorothy', role:'Contact', pow:52, spd:64, con:78, def:70,
-    quirk:null,
-    pal:{ k:'#141014', s:'#f5d5a8', h:'#5a3618', b:'#5cb6e5', w:'#eaeaea', r:'#c94b1a', d:'#8a1a1a' },
+  { k:'dorothy', n:'Dorothy', role:'Contact', pow:52, spd:64, con:78, def:70, quirk:null,
+    pal:{ k:'#0a0c14', h:'#5a3618', H:'#2a1808', s:'#f5d5a8', S:'#c9a878', b:'#5cb6e5', B:'#3a7fa8', w:'#eaeaea', r:'#c94b1a', R:'#7a1c08', y:'#e9c76a', e:'#eaeaea', q:'#0a0c14', m:'#8a3020' },
     art:[
-      '................',
-      '....hhhhhhhh....',
-      '...hhhhhhhhhh...',
-      '..hh.ssssss.hh..',
-      '..hhssssssssh...',
-      '..hskssssskhh...',
-      '..hhssssssssh...',
-      '..hhsssmmssshh..',
-      '...hhssssssshh..',
-      '....bbwbbwbb....',
-      '...bwwbbwwbbw...',
-      '...wbbwwbbwwb...',
-      '...bwwbbwwbbw...',
-      '...wbbwwbbwwb...',
-      '....bwbbwbbw....',
-      '....bb....bb....',
-      '....bb....bb....',
-      '...dd......dd...',
+      '....................',
+      '....khhhhhhhhhhhk...',
+      '...khhhhhhhhhhhhhk..',  /* brown hair */
+      '..kkhssssssssssshkk.',
+      '.kh.kssseqsseqssk.hk',
+      '.kh.kssssssssssSk.hk',  /* pigtails at sides */
+      '.khkkkkSssmMmSSkkkhk',
+      '.khyybbbbbbbbbbyyhhk',  /* pigtail ties + collar */
+      '.kkhkbbbwwwwbbbkkhkk',  /* gingham dress top */
+      '..khkbwbwbwbwbwkhk..',  /* gingham pattern */
+      '..khkbbwbwbwbwbkhk..',
+      '...kbwbwbwbwbwbwk...',
+      '...kbbwbwbwbwbwbk...',
+      '...kwbwbwbwbwbwbk...',
+      '...kbwbwbwbwbwbwk...',
+      '...kbBwBwBwBwBwbk...',  /* dress darker at bottom */
+      '...kkBBBBBBBBBBkk...',
+      '....kbbbbbbbbbk.....',
+      '.....kss..ssk.......',
+      '.....kss..ssk.......',
+      '.....kss..ssk.......',  /* legs */
+      '.....krr..rrk.......',  /* ruby slippers */
+      '.....kRR..RRk.......',
+      '.....kkk..kkk.......',
     ] },
 
-  { k:'lupin', n:'Arsène Lupin', role:'Contact', pow:55, spd:78, con:84, def:68,
-    quirk:null,
-    pal:{ k:'#0f0f14', s:'#efc9a0', h:'#141014', b:'#241820', w:'#eaeaea', y:'#c9a256', r:'#8a1a1a' },
+  { k:'lupin', n:'Arsène Lupin', role:'Contact', pow:55, spd:78, con:84, def:68, quirk:null,
+    pal:{ k:'#04040a', h:'#12121a', H:'#04040a', s:'#efc9a0', S:'#c9a274', b:'#080a12', B:'#020204', w:'#eaeaea', y:'#c9a256', r:'#8a1a1a', e:'#eaeaea', q:'#04040a', m:'#8a3020' },
     art:[
-      '....hhhhhhhh....',
-      '....hhhhhhhh....',
-      '...hhhhhhhhhh...',
-      '..hhhhhhhhhhhh..',
-      '....ssssssss....',
-      '....skssssks....',
-      '....sssyysss....',
-      '....sssssssss...',
-      '....wwwwwwww....',
-      '..bhbbwbwbbhbb..',
-      '..bhbbwwwbbhbb..',
-      '..bhbbbwbbbhbb..',
-      '...hbbbbbbbbh...',
-      '...hbbbbbbbbh...',
-      '....hhbbbbhh....',
-      '....hh....hh....',
-      '....hh....hh....',
-      '...kkk....kkk...',
+      '....khhhhhhhhhhhk...',  /* top hat crown */
+      '....kbbbbbbbbbbbk...',
+      '....kbBBBBBBBBBbk...',
+      '....khhhhhhhhhhhk...',
+      '..kkhhhhhhhhhhhhkk..',  /* brim */
+      '.khhhhhhhhhhhhhhhhk.',
+      '.kkkhhhhhhhhhhhkkkk.',
+      '....kssssssssssssk..',
+      '...ksseqssyssseqsk..',  /* monocle: yellow ring on right eye */
+      '...ksssssssssssSSk..',
+      '...ksssssmmmsssSSk..',
+      '...kkSSSSSSSSSSSSk..',
+      '.....kwwwwwwwwwk....',  /* white shirt collar */
+      '....kbbwrbbbrwbbk...',  /* black tux with red bowtie */
+      '...kbbbbwwwwbbbbbk..',
+      '...kbBBBBBBBBBBBbk..',
+      '...kbBbBBBBBBBBbBk..',
+      '...kbBBBBBBBBBBBbk..',
+      '...kkBBBBBBBBBBBkk..',
+      '....kbbbbbbbbbbk....',
+      '....kbbb..bbbbk.....',
+      '....kbb....bbbk.....',
+      '....kbb....bbbk.....',
+      '....kkk....kkkk.....',
     ] },
 
-  /* ------- WILD CARDS AND QUIRKY ------- */
-  { k:'hyde', n:'Mr. Hyde', role:'Wild', pow:55, spd:60, con:52, def:55,
-    quirk:'transform',
+  /* ---------------- WILD CARDS ---------------- */
+
+  { k:'hyde', n:'Mr. Hyde', role:'Wild', pow:55, spd:60, con:52, def:55, quirk:'transform',
     note:'One in six at bats he transforms. All power, no manners.',
-    pal:{ k:'#141014', s:'#e5c39a', h:'#141014', c:'#3a2a1a', d:'#241812', r:'#8a1a1a', b:'#141014', y:'#c9a256' },
+    pal:{ k:'#08080c', h:'#0a0a12', H:'#050508', s:'#c9a878', S:'#8a6a4a', c:'#3a2a1a', C:'#1e1408', d:'#241812', r:'#8a1a1a', e:'#c94b1a', q:'#08080c', m:'#4a1010' },
     art:[
-      '................',
-      '...hhh.hhhh.h...',
-      '..hhhhhhhhhhh...',
-      '..hhhhhhhhhhh...',
-      '..hhsssssssh....',
-      '..hskssssksh....',
-      '..hsssrrssss....',
-      '..hssrkkkrss....',
-      '..hssssssssh....',
-      '...cccccccc.....',
-      '..ccccccccccc...',
-      '..cdcccccccdc...',
-      '..cddccccddcc...',
-      '..cdddccddddc...',
-      '....dd..dd......',
-      '..ddddddddd.....',
-      '..dddd..dddd....',
-      '..kkk....kkk....',
+      '..h.h..h..h..h...h..',  /* wild hair sticking up */
+      '.hhhhhhhhhhhhhhhh...',
+      '.khhhhhhhhhhhhhhhk..',
+      '.khhssssssssssssshk.',  /* hair around face */
+      '.khsssssssssssssShk.',
+      '.khsseqssssssseqshk.',  /* red-tinted eyes */
+      '.khssssssssssssssShk',
+      '.khssssMMmMmMsssShhk',  /* nasty grin */
+      '.khkSSSSSSSSSSSSSkhk',
+      '..kkccccccccccckk...',  /* torn coat collar */
+      '..kccccccccccccck...',
+      '.kcCccccdcdcccccck..',  /* torn coat */
+      '.kccCccccccccCcck...',
+      '.kcccccddddccccck...',
+      '.kcccccdrdccccck....',  /* torn stain */
+      '.kkccccddccccckk....',
+      '..kkccccccccckk.....',  /* hem torn */
+      '..kk..kkkkk..kk.....',  /* jagged bottom */
+      '....kdddddddk.......',
+      '....kdd...ddk.......',
+      '....kdd...ddk.......',
+      '....kdd...ddk.......',
+      '....kbb...bbk.......',
+      '....kkk...kkk.......',
     ] },
 
-  { k:'scarecrow', n:'Scarecrow', role:'Wild', pow:38, spd:55, con:78, def:60,
-    quirk:'confuse',
+  { k:'scarecrow', n:'Scarecrow', role:'Wild', pow:38, spd:55, con:78, def:60, quirk:'confuse',
     note:'Pitchers lose the plate. Meter wobbles harder against him.',
-    pal:{ k:'#141014', y:'#c9a256', o:'#8b6a3a', s:'#eecc78', c:'#5a3a1a', g:'#3a5a3a', d:'#241812', p:'#a45b1a' },
+    pal:{ k:'#0c0c10', y:'#c9a256', Y:'#8b6a3a', s:'#eecc78', S:'#a88a48', c:'#5a3a1a', C:'#2e1c08', g:'#3a5a3a', d:'#241812', p:'#a45b1a', P:'#5a2a08', h:'#c9a256', e:'#eaeaea', q:'#0c0c10' },
     art:[
-      '..y.......y.....',
-      '...yyyyyyyyy....',
-      '..yyyyyyyyyyy...',
-      '..yooooooooyy...',
-      '....sssssss.....',
-      '....skssssks....',
-      '....ssssrsss....',
-      '....ssskskss....',
-      '....cccccccc..y.',
-      '..ycccyyycccy.y.',
-      '.ycccccccccccy..',
-      '.yccyyccyyccyy..',
-      '..ccccddccccc...',
-      '..cccdccdcccc...',
-      '....pppppppp....',
-      '....pp....pp....',
-      '..yypp....ppyy..',
-      '..kkk......kkk..',
+      '..y......y......y...',  /* straw poking out top */
+      '.yyy....yyy....yyy..',
+      '..khhhhhhhhhhhkkkk..',  /* wide floppy straw hat */
+      '.khyyyyyyyyyyyyyk...',
+      '.kkyyyyyyyyyyyyykk..',
+      '..kkkkkkkkkkkkkkkk..',  /* brim */
+      '....kssssssssssk....',
+      '...ksseqsssseqsk....',  /* stitched eyes */
+      '...kssssxssssssk....',  /* stitch marks */
+      '...ksssxxxxssssk....',
+      '...kssxxsssxsssk....',
+      '...kkSSSSSSSSSSk....',
+      '....kcccccccccck....',  /* patchwork shirt */
+      '...kcCcYycccYycck...',
+      '...kccccccccccck....',
+      '...kcYyccCcCcYyck...',
+      '...kcccYyccccyyck...',
+      '...kcCccccyyccCck...',
+      '...kkccccccccckk...y',  /* straw at sleeves */
+      '....kppppppppk....yy',  /* pants */
+      '....kpPppppppk...y..',
+      '....kpp...pppk......',
+      '....kpp...pppk......',
+      '.yy.kdd...dddk.yy...',  /* straw feet */
     ] },
 
-  { k:'lion', n:'Cowardly Lion', role:'Wild', pow:82, spd:50, con:52, def:55,
-    quirk:'skittish',
+  { k:'lion', n:'Cowardly Lion', role:'Wild', pow:82, spd:50, con:52, def:55, quirk:'skittish',
     note:'Enormous power. Bails on tough pitches.',
-    pal:{ k:'#141014', h:'#a45b1a', d:'#7a3a10', s:'#e3a05a', l:'#f5c47a', y:'#c9a256', b:'#3a2818' },
+    pal:{ k:'#0a0806', h:'#a45b1a', H:'#7a3a10', d:'#5a2810', s:'#e3a05a', S:'#a86a30', l:'#f5c47a', y:'#c9a256', b:'#3a2818', e:'#eaeaea', q:'#0a0806', m:'#8a3020' },
     art:[
-      '..hhhhhhhhhhhh..',
-      '.hhhhhhhhhhhhhh.',
-      'hhhdddddddddddhh',
-      'hhdssssssssssdhh',
-      'hhdslsssssslsdhh',
-      'hhdskssssksssdhh',
-      'hhdssssyssssssdh',
-      '.hddssskkssssdh.',
-      '..hhdsssssssdh..',
-      '...hhhhhhhhhh...',
-      '..hlllllllllh...',
-      '..hllllllllllh..',
-      '..hlllllllllh...',
-      '..hddddddddddh..',
-      '....dd....dd....',
-      '....dd....dd....',
-      '....dd....dd....',
-      '...bbb....bbb...',
+      '..hhhhhhhhhhhhhh....',  /* mane top */
+      '.hhhhhhhhhhhhhhhhh..',
+      'hhhhhhhhhhhhhhhhhhh.',
+      'khhhhhhhhhhhhhhhhhk.',
+      'khhdddddddddddddhhhk',
+      'khhdssssssssssssdhhk',  /* face */
+      'khhdslsssssssslsdhhk',
+      'khhdseqsssssseqsdhhk',
+      'khhdsssssssssssssdhk',
+      'khhdssssyssssssssdhk',  /* nose */
+      'khhdsssMMkkMMssssdhk',  /* worried mouth */
+      'khhdSSSSSSSSSSSSSdhk',
+      '.khhhhhhhhhhhhhhhhk.',
+      '.kkhhhhhhhhhhhhhhkk.',  /* mane bottom */
+      '..kdlllllllllllldk..',
+      '..kdlllssssssslldk..',  /* body */
+      '..kdlllsssssssldk...',
+      '..kdlssssssssdldk...',
+      '..kdddlllllldddk....',
+      '...kdd.....dddk.....',
+      '...kdd.....dddk.....',
+      '...kdd.....dddk.....',
+      '...kbb.....bbbk.....',  /* paws */
+      '...kkk.....kkk......',
     ] },
 
-  { k:'pooh', n:'Pooh', role:'Underdog', pow:42, spd:30, con:65, def:50,
-    quirk:null,
-    pal:{ k:'#141014', y:'#f4c25a', o:'#d18a3a', r:'#d24949', d:'#8a2b2b', s:'#f0c187', b:'#3a2818' },
+  { k:'pooh', n:'Pooh', role:'Underdog', pow:42, spd:30, con:65, def:50, quirk:null,
+    pal:{ k:'#0a0806', y:'#f4c25a', Y:'#c99030', o:'#d18a3a', r:'#d24949', R:'#8a2b2b', s:'#f0c187', b:'#3a2818', e:'#0a0806', q:'#0a0806', m:'#5a3020' },
     art:[
-      '................',
-      '....yy....yy....',
-      '...yyyyyyyyyy...',
-      '..yyyyyyyyyyyy..',
-      '..yyssssssssyy..',
-      '..ysskssssksssy.',
-      '..ysssssossssy..',
-      '..ysssssmsssss..',
-      '..yyssssssssyy..',
-      '..rrrrrrrrrrrr..',
-      '..drrrrrrrrrrd..',
-      '..drrrrrrrrrrd..',
-      '..drrrrrrrrrrd..',
-      '..drrrrrrrrrrd..',
-      '..yyyy....yyyy..',
-      '..yyyy....yyyy..',
-      '..yyyy....yyyy..',
-      '..kkk......kkk..',
+      '.....y........y.....',  /* small ears */
+      '....kyk......kyk....',
+      '....kyyk....kyyk....',
+      '....kyyyk..kyyyk....',
+      '...kyyyyyyyyyyyyyk..',  /* head very round */
+      '..kyyyyyyyyyyyyyyk..',
+      '..kyyyYYYYYYyyyyyk..',
+      '..kyyeqyyyyyyeqyyk..',  /* eyes */
+      '..kyyyybyyyybyyyyk..',  /* nose */
+      '..kyyyyyybyyyyyyyk..',
+      '..kyyyyymmmmyyyyyk..',  /* smile */
+      '..kkyyYYYYYYYYYyk...',
+      '...krrrrrrrrrrrrk...',  /* red shirt */
+      '..krrRRrrrrrrrrRRk..',
+      '..krrrrrrrrrrrrrrk..',
+      '..krrrrrrrrrrrrrrk..',
+      '..krrrrrrrrrrrrrrk..',
+      '..krrRRRRRRRRRRRrk..',
+      '..kkrrrrrrrrrrrrkk..',
+      '...kyy........yyk...',  /* legs (paws) */
+      '..kyyy........yyyk..',
+      '..kyy..........yyk..',
+      '..kbb..........bbk..',
+      '..kkk..........kkk..',
     ] },
 
-  { k:'robin', n:'Robin Hood', role:'Balanced', pow:65, spd:78, con:70, def:78,
-    quirk:null,
-    pal:{ k:'#141014', s:'#efc9a0', g:'#3f7a3a', d:'#26521f', l:'#5aa055', h:'#a45b1a', b:'#4a2d18', y:'#f4c25a' },
+  { k:'robin', n:'Robin Hood', role:'Balanced', pow:65, spd:78, con:70, def:78, quirk:null,
+    pal:{ k:'#080a08', g:'#3f7a3a', G:'#1e4020', l:'#5aa055', s:'#efc9a0', S:'#c9a274', h:'#a45b1a', H:'#5a2810', b:'#4a2d18', B:'#241408', y:'#f4c25a', e:'#eaeaea', q:'#080a08', m:'#8a3020' },
     art:[
-      '............y...',
-      '...gggggggggy...',
-      '..gllgggggggy...',
-      '..gllggggggg....',
-      '....hhhhhhh.....',
-      '....ssssssss....',
-      '....skssssks....',
-      '....sssssssss...',
-      '....gggggggg....',
-      '...gggllllggg...',
-      '..gglllgggllgg..',
-      '..gglllgggllgg..',
-      '..gggglllgggg...',
-      '...gggggggggg...',
-      '....bbbbbbbb....',
-      '....bb....bb....',
-      '....bb....bb....',
-      '...bbb....bbb...',
+      '..............y.....',  /* feather */
+      '.............yy.....',
+      '............yyy.....',
+      '...kgggggggggggk....',  /* peaked green cap */
+      '..kglGGGGGGGGGgk....',
+      '..kkgggggggggggk....',
+      '...khhhhhhhhhhk.....',  /* hair band */
+      '...ksssssssssssk....',
+      '...ksseqssseqssk....',
+      '...ksssssssssssk....',
+      '...kssssmMMmsssk....',
+      '...kkSSSSSSSSSSk....',
+      '...kgggggggggggk....',  /* tunic */
+      '..kglGGGGGGGGGgk....',
+      '..kgllsssssssllk....',  /* belt */
+      '..kglGGGbbbGGGgk....',  /* belt buckle */
+      '..kglGGGGGGGGGgk....',
+      '..kkglGgggggglkk....',
+      '....kggggggggk......',  /* hem */
+      '....kgg....gggk.....',
+      '....kgg....gggk.....',  /* legs */
+      '....kgg....gggk.....',
+      '....kbb....bbbk.....',  /* boots */
+      '....kkk....kkkk.....',
     ] },
 
-  { k:'tintin', n:'Tintin', role:'Balanced', pow:58, spd:75, con:70, def:72,
-    quirk:null,
-    pal:{ k:'#141014', s:'#f5d5a8', h:'#c9a256', b:'#5cb6e5', d:'#3a7fa8', p:'#6a4a2a', o:'#8b6a3a', r:'#c94b1a' },
+  { k:'tintin', n:'Tintin', role:'Balanced', pow:58, spd:75, con:70, def:72, quirk:null,
+    pal:{ k:'#0a0c14', s:'#f5d5a8', S:'#c9a878', h:'#c9a256', H:'#8b6a3a', b:'#5cb6e5', B:'#3a7fa8', w:'#eaeaea', p:'#6a4a2a', P:'#3a2c18', o:'#8b6a3a', r:'#c94b1a', e:'#eaeaea', q:'#0a0c14', m:'#8a3020' },
     art:[
-      '................',
-      '.....hh.........',
-      '....hhhhh.......',
-      '....hssssss.....',
-      '...hhsssssss....',
-      '...hsksssskss...',
-      '....sssssssss...',
-      '....sssmssss....',
-      '....bbbbbbbb....',
-      '...bbwbbbbwbb...',
-      '..bbwwbbbbwwbb..',
-      '..bwwbbbbbbwwb..',
-      '..bwwbbbbbbwwb..',
-      '..bbbbbbbbbbbb..',
-      '....pppppppp....',
-      '....pp....pp....',
-      '....pp....pp....',
-      '...ooo....ooo...',
+      '.......hhh..........',  /* ginger quiff */
+      '......hhhhh.........',
+      '.....hhhhhhh........',
+      '....khhhhhhhh.......',
+      '....khhhhhhhhk......',  /* forehead hair */
+      '....kssssssssk......',
+      '...kssseqsseqsk.....',
+      '...kssssssssssk.....',
+      '...kssssMMMsssk.....',
+      '...kkSSSSSSSSSSk....',
+      '....kwwwwwwwww......',  /* white shirt collar */
+      '...kbbbbbbbbbbbk....',  /* blue sweater */
+      '..kbBBbbbbbbbBBbk...',
+      '..kbbbbbbbbbbbbbk...',
+      '..kbBbbbbbbbbbbBk...',
+      '..kbbbbbbbbbbbbbk...',
+      '..kbBbbbbbbbbbbBk...',
+      '..kkbbbbbbbbbbbbk...',
+      '....kpppppppppk.....',  /* plus-fours (brown pants) */
+      '....kpppppppppk.....',
+      '....kppp..ppppk.....',
+      '....kpp....pppk.....',
+      '....kbb....bbbk.....',  /* boots */
+      '....kkk....kkkk.....',
     ] },
 ];
 const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
