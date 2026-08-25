@@ -1893,6 +1893,7 @@ window.GA_ID='G-L29P5MRWKE';
     border-left:3px solid rgba(255,255,255,.18); border-radius:7px; padding:7px 10px; animation:wkIn .32s ease both}
   .wkrow.wk-coins{border-left-color:var(--gold)} .wkrow.wk-brief{border-left-color:#35d6a0}
   .wkrow.wk-briefNew{border-left-color:#8fd3ff} .wkrow.wk-trait{border-left-color:#ffd45e; background:rgba(241,208,74,.09)}
+  .wkrow.wk-farewell{border-left-color:#c9a0dc} .wkrow.wk-arrival{border-left-color:#7fd1a8}
   .wkrows .wkrow:nth-child(2){animation-delay:.09s} .wkrows .wkrow:nth-child(3){animation-delay:.18s}
   .wkrows .wkrow:nth-child(n+4){animation-delay:.27s}
   @keyframes wkIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -6485,6 +6486,64 @@ function worldRanking(){
 function myWorldRank(){ const L=worldRanking(); const i=L.findIndex(x=>x.you); return i<0?L.length:i+1; }
 function worldRankSize(){ return worldRanking().length; }
 function worldRankOfName(name){ const L=worldRanking(); const i=L.findIndex(x=>x.name===name && !x.you); return i<0?L.length:i+1; }
+/* ---- FAREWELLS AND ARRIVALS: the turnover, felt during the season it happens ----
+   advanceWorld decides retirements at the BOUNDARY, so a career used to end in silence and only
+   surface in the winter Dispatch: a name you played against for fifteen years was simply not in next
+   week's field. The roll is deterministic (mulberry32 off the world seed and simYear, one draw per
+   active player in order) and w.active is only ever mutated inside advanceWorld, so the season can
+   REPLAY that roll and know honestly who is playing their final year. Nothing about WHO retires
+   changes - it is revealed earlier, and the Dispatch then reports the farewell tour it announced. */
+function farewellsThisSeason(w){
+  if(!w || !w.active) return [];
+  // the exact draw advanceWorld will make at this boundary: same seed, same order, same ageing
+  const rng=mulberry32(((w.seed^0x9e3779b9)+w.simYear*0x9e3779b1)>>>0), next=w.simYear+1, out=[];
+  w.active.forEach(g=>{ const l=livingOf(g,next);
+    if(rng()<pRetire(l.age,l.ov)) out.push({name:g.name, age:l.age, ov:l.ov, real:!g.fictional}); });
+  return out;
+}
+var _fwCache=null;   // var, not let: seasonFarewells can be reached before this line executes
+// Only players the tour would actually notice. A generated journeyman ageing out is not news; a real
+// name, a past champion in the world's win ledger, or a genuine top-of-the-field player is.
+function seasonFarewells(){
+  const w=S&&S.world;
+  if(!w || !S.season || S.daily || S.circuitMode) return [];
+  const key=w.seed+':'+w.simYear;
+  if(_fwCache && _fwCache.key===key) return _fwCache.list;
+  const wins=w.wins||{};
+  const list=farewellsThisSeason(w)
+    .filter(f=>f.real || (wins[f.name]||0)>0 || f.ov>=82)
+    .sort((a,b)=>b.ov-a.ov);
+  _fwCache={key, list};
+  return list;
+}
+// "Eric Cole and Abraham Ancer" / "Eric Cole, Abraham Ancer and 3 more" - never "A and B and 3 more"
+function fwNames(F){ const n=F.map(f=>esc(f.name));
+  return n.length<=2 ? n.join(' and ') : n.slice(0,2).join(', ')+` and ${n.length-2} more`; }
+// most events are already called "The ...", so don't hand them a second one
+function evtThe(n){ n=n||'the event'; return /^the\s/i.test(n)?n:'the '+n; }
+// the season's opening and closing weeks carry the farewell tour; every week in between stays quiet
+function noteWorldTurnover(evt){
+  if(!wkOn()) return;
+  const F=seasonFarewells(); if(!F.length) return;
+  const i=S.evtIndex||0, last=(S.schedule||[]).length-1;
+  if(i===0){
+    wkNote('farewell', `<b>Farewell season</b> · ${fwNames(F)} ${F.length===1?'is':'are'} playing a final year on tour.`, 2);
+  } else if(i>=last && last>0){
+    wkNote('farewell', `<b>Last week on tour</b> · ${fwNames(F)} ${F.length===1?'plays':'play'} a final round this week.`, 2);
+  }
+}
+// a win by someone on their way out, or by someone who only just arrived, is the story of that week
+function noteWinnerStory(o, evt){
+  if(!wkOn() || !o || !o.p || o.p.you || o.pos!==1 || !evt) return;
+  const w=S.world; if(!w) return;
+  const nm=o.p.name;
+  if(seasonFarewells().some(f=>f.name===nm)){
+    wkNote('farewell', `<b>${esc(nm)}</b> wins ${esc(evtThe(evt.name))} in a farewell season.`, 3); return;
+  }
+  const g=(w.active||[]).find(x=>x.name===nm);
+  if(g && g.debutYear===w.simYear)
+    wkNote('arrival', `<b>${esc(nm)}</b> wins ${esc(evtThe(evt.name))} as a rookie, a first title on tour.`, 3);
+}
 /* ================= THE TOUR DISPATCH =================
    The living world has always aged in the background: players retire, rookies debut, the pecking order
    turns over. None of it was ever SHOWN, so a 30-year career passed with the field silently rearranging
@@ -20159,6 +20218,8 @@ function finalizeEvent(){
   missed.forEach(o=>{o.pos='CUT';o.tied=false;o.pct=0;});
   const order=made.concat(missed);
   recordWorldWin(order[0], evt);   // the world remembers who won, so a retirement can carry a career line
+  // the world's turnover, in the week it happens: a farewell tour, a last round, a rookie's first title
+  try{ noteWorldTurnover(evt); noteWinnerStory(order[0], evt); }catch(e){}
   const basePts=evt.league?LEAGUE_PTS:(evt.proving?PROVING_PTS:(evt.major?750:evt.big?600:(evt.oppo?360:500)));
   order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
     o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});

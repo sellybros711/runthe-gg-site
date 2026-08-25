@@ -16888,3 +16888,48 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   its real intent -> 25/25.
 - Tunable: the retiree/debut show counts (`SHOW`, 6 and 4), the biggest-mover threshold (5 places inside
   the top 50), and `dispatchRetireLine` (what a career line says and in what order).
+
+### FAREWELLS AND ARRIVALS: the turnover is felt during the season, not discovered in the winter
+- **The gap the Dispatch left.** `advanceWorld` decides retirements at the BOUNDARY, so a career ended in
+  silence: a name you had played against for fifteen years was simply not in next week's field, and the
+  first you heard of it was the winter Dispatch. The player never got the season-long goodbye that is half
+  of what makes a tour feel alive - the farewell tour, the last round, the emotional weight of watching
+  someone play out their final year.
+- **The structural insight, and it is the whole feature.** The boundary roll is DETERMINISTIC: mulberry32
+  seeded off `(w.seed ^ 0x9e3779b9) + w.simYear * 0x9e3779b1`, one draw per active player in order,
+  compared against `pRetire(age, ov)` on the NEW year's `livingOf`. And `w.active` is mutated in exactly
+  **two places, both inside `advanceWorld`/`refillWorld`** (grep-verified before building anything). So the
+  season can REPLAY that roll mid-year and know honestly who is playing their final season, with no second
+  retirement mechanic and no state to keep in sync. **Nothing about WHO retires changes** - it is revealed
+  earlier, and the winter Dispatch then reports the farewell tour the season announced.
+- **`farewellsThisSeason(w)`** is the replay (pure, no mutation). **`seasonFarewells()`** wraps it with the
+  notability filter and a per-`(seed:simYear)` cache: a generated journeyman ageing out is not news, so a
+  farewell only surfaces for a **real name**, a **past champion in the world's win ledger** (`w.wins`, the
+  memory added with the Dispatch), or a genuine **top-of-the-field player** (ov >= 82). Career-only:
+  returns `[]` in the Daily and the Legend Circuit.
+- **Three moments, all through the existing week ledger** (`wkNote`, so they render as week rows inside the
+  result card and archive into the season feed - no new surface, no pop-up, no interruption budget spent):
+  the season's **opening week** names the farewell tour, the **closing week** says they play a final round,
+  and any **win by a player on the way out** or a **rookie's first title** becomes that week's story. Every
+  week in between stays quiet. Hooked in `finalizeEvent` right after `recordWorldWin`, in a `try/catch` so
+  a turnover note can never take an event finalize down.
+- **Verified over 144 boundary rolls covering 459 real retirements: the season's prediction matched
+  `advanceWorld` exactly, zero mismatches** (24 seeds x 6 years, replaying then advancing and diffing the
+  active roster). That is the load-bearing check - if it ever fails, the feature is lying to the player.
+  Suite is **25 pass / 0 fail / 0 page errors** and covers purity, the notability filter, quiet mid-season
+  weeks, the closing week, farewell + rookie + ordinary + own-win + runner-up cases, rendering as a week
+  row, archiving to the feed, daily/circuit inertness, and "everyone the season said was leaving does
+  leave and the Dispatch reports them".
+- **TWO COPY BUGS WERE CAUGHT BY READING THE RENDERED OUTPUT, NOT BY AN ASSERTION** - both suites passed
+  green while the strings were wrong, which is the lesson worth keeping:
+  - `"wins the The Magnolia Invitational"` - most events are already called "The ...", so prefixing "the"
+    doubled it. New `evtThe(n)` prefixes only when the name does not already start with "The ".
+  - `"Eric Cole and Abraham Ancer and 3 more"` - a list built by joining with "and" twice. `fwNames(F)`
+    now reads "Eric Cole, Abraham Ancer and 3 more" (and plain "A and B" at two).
+  Three assertions were then ADDED so neither can come back.
+- **`_fwCache` is `var`, not `let`** - `seasonFarewells` is reachable before that line executes, and a TDZ
+  binding throws rather than reading undefined, which would abort the whole inline script. The same trap
+  `acctKey` and `boardEpoch` learned the hard way.
+- Tunable: the notability filter in `seasonFarewells` (the ov >= 82 floor and whether a win ledger entry
+  counts), which weeks carry the note in `noteWorldTurnover`, and the `.wk-farewell` / `.wk-arrival` row
+  colours.
