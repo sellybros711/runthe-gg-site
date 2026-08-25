@@ -16198,8 +16198,27 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   plays 20 events to a Cup champion with no bracket row and a clean summary. Regressions green: mp_eng 37,
   mp_ui 39, mp_playgroup 21, mp_recap 27, route_check 6, bpath_check 32, board_race 11. All 7 real inline
   script blocks parse (block 0 is the JSON-LD tag, fails identically on `HEAD`).
-- **NOT deployed** - `golf/index.html` is regenerated from this file on deploy, so it needs the owner's go
-  and a parallel-edit check on the deployed file first.
+- **DEPLOYED to /golf** (owner: "Push to main and make sure there are no bugs") - `main` commit `0526947`,
+  regenerated from this file, **only `golf/index.html` touched**, verified byte-identical afterward. The
+  parallel-edit check was clean: `origin/main:golf/index.html` was byte-identical to `06ba55d`'s source, so
+  there was nothing to adopt (main had moved for football work, which left the golf file alone). The delta
+  going live is exactly the fortnight plus the 2028 arrival.
+- **A stochastic fixture was found and fixed during the bug sweep, and it is the lesson worth keeping.**
+  `route_check` played an UNRIGGED bracket and then asserted on a CHAMPION's route (both week dividers,
+  exactly one gold final row), so it was green **by luck** - repeat runs dropped 6/6 -> 5/6, and every
+  failure had `champ:false` (a group exit correctly showed only WEEK 1; a semi-final loss correctly showed
+  both weeks and no gold row - the rendering was right in every failing case). It now forces the champion
+  with `bracketResolveMine(B, st, {won:true, label:'3&2'})`; 8/8 consecutive deterministic runs. **A suite
+  that sims and hopes is not a regression test** - if it asserts on one outcome, it has to produce that
+  outcome. Every suite was then re-run 2-3x to rule out the same weakness elsewhere: all green and
+  deterministic, 0 page errors.
+- Also verified for the deploy: a purpose-built `deploy_sweep` (16 checks) over what the fortnight touched
+  OUTSIDE the bracket screen - the shared match engine still serving the team cups (28 points / 5 sessions /
+  28 matches / 18 holes), a level knockout still going to sudden death, the four Tour Eras finale-reshaping
+  cases, both season-ending paths, a weak build that misses the 32, the season carrying into the next year,
+  a broad screen/overlay sweep, and the Daily on its own flow - plus a 2026->2033 career soak (2026/2027
+  stroke play with no card, 2028 announcing + playing the fortnight, later seasons silent, `bracket@3` in
+  the history, no error cards).
 - Tunable: `BRACKET_FIRST_CAL` (2028) moves the arrival, `CAREER_START_YEAR` moves every date at once, and
   the copy lives entirely in `scrFormatNews`.
 
