@@ -5920,13 +5920,15 @@ function seasonSchedule(year,seed){
   // sponsors change, the tournament does not. Applied to the inflated CLONES, never to the shared
   // ANCHORS/REG_POOL templates, and `base` keeps the venue, the fit and the hazards with the event.
   out.forEach(e=>{ const nn=dr.ren[e.name]; if(nn){ e.base=e.name; e.name=nn; } });
-  // The Tour Championship's FORMAT, decided per season: normally the five-day knockout, but a tour that
-  // has voted the bracket out plays the old staggered stroke-play finale instead. Set on the inflated
-  // CLONE, never on the shared ANCHORS template.
+  // The Tour Championship's FORMAT, decided per season, at the ONE site that decides it. The fortnight
+  // only exists from BRACKET_FIRST_CAL (2028) onward, and a tour that has since voted the bracket out
+  // reverts to it too - so the seasons before the format arrives play exactly the well-trodden
+  // staggered stroke-play finale, no special case. Set on the inflated CLONE, never on the shared
+  // ANCHORS template.
   if(!S.daily && !S.circuitMode){
     const fin=out.find(e=>e.finaleBracket);
     if(fin){
-      if(tourBracketOn()){ fin.bracket=true; fin.cap=bracketSize(); }
+      if(tourBracketOn() && bracketFormatLive(year)){ fin.bracket=true; fin.cap=bracketSize(); }
       else fin.stagger=true;
     }
   }
@@ -7094,6 +7096,15 @@ function simMatch(format, pairA, pairB, holes){
    the Atlantic/Nations Cups), the season points race does the seeding, PAYOUT does the money - so this
    is a driver + a screen, not a new simulation. Career only (never the Daily, never the Circuit).   */
 const BRACKET_NAME='The Match Play Championship';   // the FORMAT's name, used in copy about the finale
+/* THE FORMAT ARRIVES IN 2028, IN EVERY CAREER. The fortnight is not how the tour has always finished
+   its season: it is INTRODUCED, and the player is told what it is before they ever play it. 2026 and
+   2027 play the old staggered stroke-play finale (the same fallback a tour that later votes the
+   knockout out reverts to), then the tour announces the change ahead of the 2028 season.
+   Deliberately FIXED, not rolled per save: every career's tour changes in the same year, so the
+   arrival is a shared piece of the game's history rather than one more thing a seed decides. */
+const BRACKET_FIRST_CAL=2028;
+function bracketFormatCareerYear(){ return BRACKET_FIRST_CAL - CAREER_START_YEAR + 1; }   // career year 3
+function bracketFormatLive(year){ return calYear(year) >= BRACKET_FIRST_CAL; }
 const BRACKET_SIZE=32, BRACKET_PTS=600;            // finale-level points (big:true = 600, matching finalizeEvent)
 const BRACKET_GROUPS=8, BRACKET_GROUP_SIZE=4, BRACKET_ADV=2;   // 8 groups of 4, top 2 through = 16
 const BRACKET_GLETTERS='ABCDEFGH';
@@ -10420,7 +10431,7 @@ function render(){
           // drop whatever this screen was half-way through, then take the step past it
           S.curEvt=null; S.curBracket=null; S._brIdx=null; S.brStage='draw'; S.brShown=0; S.brPause=false;
           S.matchPlay=null; S.mpHoleIdx=null; S.moment=null; S.momentPO=null; S.poW=null;
-          S.pendingLeagueNews=null; S.pendingLeagueOffer=null; S.pendingTourNews=null; S.pendingTourVote=null;
+          S.pendingLeagueNews=null; S.pendingLeagueOffer=null; S.pendingTourNews=null; S.pendingTourVote=null; S.pendingBracketNews=false;
           S._cupIdx=null; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; S.teamMatchN=0;
           try{ track('career_escape_after_error',{screen:S.screen, evt:S.evtIndex}); }catch(e){}
           esc_.go();
@@ -16279,6 +16290,21 @@ function startSeason(majorsOnly){
   // take an event off the calendar or scrap the Match Play Championship outright.
   // A player with a council seat VOTES on it instead (see councilVote), so it is only applied here for
   // everybody else. A proposal voted through mid-screen resyncs the schedule via tourResync().
+  // THE FINALE'S FORMAT: the tour introduces the fortnight before the 2028 season, in every career.
+  // Recorded in the tour's own history (an inert entry - tourActive/tourGrpMap/tourEff all skip an id
+  // they don't know - which the news feed already knows how to list) and announced ONCE, in the season
+  // it actually lands. An in-progress career already past 2028 gets the history entry back-filled at
+  // the year it arrived, and no card: it has been playing the format for years.
+  let _fmtNew=false;
+  try{
+    if(!S.daily && !S.circuitMode && !majorsOnly){
+      const fy=bracketFormatCareerYear(), yr=S.year||1;
+      if(yr>=fy){
+        const st=tourState();
+        if(!st.ch.some(e=>e&&e.id==='bracket')){ st.ch.push({id:'bracket', year:fy}); _fmtNew=(yr===fy); }
+      }
+    }
+  }catch(e){}
   let _tourNew=null, _tourVote=null;
   try{
     _tourNew=maybeTourChange(S.year||1);
@@ -16327,10 +16353,10 @@ function startSeason(majorsOnly){
   if(!S.daily && !S.circuitMode && !majorsOnly){ try{ S.season.goals = generateSeasonGoals(); }catch(e){} }
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.curBracket=null; S._brIdx=null; S.brRound=0; S.season.bracketChampion=null;   // Match Play Championship state
-  // TOUR NEWS: the season the tour actually introduces the Match Play Championship gets an announcement
-  // card before the first event (once per career, since the start year is fixed per save).
-  // TOUR NEWS: the bracket's own arrival, or whatever the tour changed this off-season. The bracket
-  // wins the week if both land, and its year is recorded in the history so the feed lists it too.
+  // TOUR NEWS: the season the tour introduces the fortnight gets its own announcement card before the
+  // first event, explaining the format the player is about to meet. maybeTourChange stands aside that
+  // winter, so it is the only structural card of the season.
+  S.pendingBracketNews=_fmtNew;
   S.pendingTourNews=null;
   if(!S.daily && !S.circuitMode){
     S.pendingTourNews = _tourNew ? _tourNew.id : null;
@@ -17271,14 +17297,22 @@ function tourCtx(year){
     year, grp:tourGrpMap(), ids:h.map(e=>e.id),
     dropped:h.filter(e=>e.id==='event_dies').map(e=>e.arg).filter(Boolean),
     moved:h.filter(e=>e.id==='major_venue').map(e=>e.arg).filter(Boolean),
-    bracket:tourBracketOn(),   // is the Tour Championship currently a knockout?
+    // is the Tour Championship a knockout in the season being decided? Before 2028 it is not yet a
+    // format at all, so a rule that reads this (the stroke-play shootout, expanding or scrapping the
+    // bracket) sees the finale the schedule will actually build.
+    bracket:tourBracketOn() && bracketFormatLive(year),
   };
 }
 function maybeTourChange(year){
   if(!tourOn()) return null;
   const st=tourState();
   if(year<TOUR_MIN_YEAR) return null;
-  const last=st.ch.length?st.ch[st.ch.length-1].year:-99;
+  // the winter the finale's format arrives is the tour's one structural announcement: it never does
+  // two things in the same off-season, so the two news cards can never collide.
+  if(calYear(year)===BRACKET_FIRST_CAL) return null;
+  // the most recent change by YEAR, not by push order - the format arrival can be back-filled into an
+  // in-progress career's history after later changes were recorded.
+  const last=st.ch.reduce((m,e)=>Math.max(m,(e&&e.year)||-99),-99);
   if(year-last<TOUR_GAP) return null;
   const rng=mulberry32((((S.careerSeed||0)^(year*0x9e3779b1)^0x70c4)>>>0));
   if(rng()>TOUR_CHANCE) return null;
@@ -21806,6 +21840,42 @@ function scrCouncilVote(){
     add(b);
   }
 }
+/* THE FORMAT'S OWN ARRIVAL. Not a Tour Eras rule (those are one line of consequence); this changes what
+   the last fortnight of every season IS, so it gets a page that explains the two weeks rather than a
+   sentence about what it means for you. Shown once, in the season it lands. */
+function scrFormatNews(){
+  RT.classList.add('major-screen');
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--gold);border-color:rgba(241,208,74,.5);background:rgba(241,208,74,.10)">📰 Tour News · ${BRACKET_FIRST_CAL}</span></div>`));
+  add($(`<div class="tnews">
+    <div class="tn-kick">🏆 Format · the tour announces</div>
+    <h2 class="tn-h">${esc(BRACKET_NAME)}</h2>
+    <p class="tn-p"><b>From this season the Tour Championship is match play.</b> The year no longer ends
+      with four rounds of stroke play. The top 32 on the season points list go to a fortnight: a week of
+      group matches, then a week of knockout, and the last one standing lifts the Tour Cup.</p>
+    <div class="tn-facts">
+      <div><span class="tn-l">Week 1</span><span class="tn-v">8 groups of 4</span></div>
+      <div><span class="tn-l">Week 2</span><span class="tn-v">16 left, new course</span></div>
+      <div><span class="tn-l">The field</span><span class="tn-v">Top 32 by points</span></div>
+      <div><span class="tn-l">The prize</span><span class="tn-v">The Tour Cup</span></div>
+    </div>
+    <p class="tn-p"><b>Week 1 · the group stage.</b> The 32 are drawn into eight groups of four. Three
+      days, one match a day, everyone plays everyone in their group. A win is a point and a halved match
+      is half a point each. The top two of every group go through.</p>
+    <p class="tn-p"><b>Week 2 · the bracket.</b> The sixteen survivors move to a new course for straight
+      single elimination: round of 16, quarter-finals, semi-finals, the final, one round a day. Nothing
+      is halved here, so all square through 18 goes to sudden death. Win four in a row and the season is
+      yours.</p>
+    <p class="tn-p" style="margin-bottom:0"><b>What it means for you:</b> the points race is now a race
+      to make the 32, and the Cup is won by beating people, not by a total. Finish inside the top 32 and
+      you are in the draw. Lose once in week 2 and your season is over.</p>
+  </div>`));
+  const b=$(`<button class="btn goldfill" style="max-width:420px;margin:16px auto 0">Start the season ▸</button>`);
+  b.onclick=()=>{ S.pendingBracketNews=false; track('bracket_format_ack',{year:S.year||1, cal:BRACKET_FIRST_CAL}); render(); };
+  add(b);
+  const f=$(`<button class="btn ghost" style="max-width:420px;margin:9px auto 0">📰 All tour news ▸<span class="sub">Every change the tour has made in your career</span></button>`);
+  f.onclick=()=>{ S.overlay='tournews'; render(); };
+  add(f);
+}
 function scrTourNews(){
   const kind=S.pendingTourNews;
   RT.classList.add('major-screen');
@@ -23053,6 +23123,7 @@ function scrSeason(){
   // it fires before the first event, not mid-schedule.
   if(!S.daily && S.pendingLeagueOffer){ scrLeagueOffer(); return; }
   if(!S.daily && S.pendingLeagueNews){ scrLeagueNews(); return; }
+  if(!S.daily && S.pendingBracketNews){ scrFormatNews(); return; }
   if(!S.daily && S.pendingTourVote){ scrCouncilVote(); return; }
   if(!S.daily && S.pendingTourNews){ scrTourNews(); return; }
   // The Match Play Championship: inside the top 32 -> the bracket screen. Miss it and beginEvent runs

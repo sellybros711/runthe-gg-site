@@ -16152,6 +16152,57 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   decline exactly 1.8×, a real circuit season renders both blocks). Fails 8 on the pre-change baseline.
 - Tunable: `CIRCUIT_DECLINE_MULT`, `CIRCUIT_SPIN_GAIN`; the Legend Circuit block in `scrSummary`.
 
+### THE FINALE'S FORMAT ARRIVES IN 2028, AND THE TOUR SAYS SO FIRST
+- **The owner's ask**: "Can we have this start in 2028 every career? It should be introduced before the
+  2028 season so the user is well aware of it and what it is." The fortnight had been how the tour
+  finished its season since the beginning of time, in every save, with no announcement - so a player met
+  it by walking into it.
+- **One gate, at the one site that decides the format.** `bracketFormatLive(year) = calYear(year) >=
+  BRACKET_FIRST_CAL (2028)`, read by `seasonSchedule`'s finale block. 2026 and 2027 set `fin.stagger`
+  instead - which is not a special case: it is the SAME fallback a tour that later votes the knockout out
+  reverts to (the `bracket_axed` Tour Eras rule), so the pre-2028 seasons run a path the game already
+  plays. **Fixed, not rolled**: `CAREER_START_YEAR=2026`, so it is career year 3 in every save, and the
+  arrival is a shared piece of the game's history rather than one more thing a seed decides.
+- **The arrival is recorded as `{id:'bracket', year:3}` in the tour's own history**, which works because
+  `tourActive`/`tourGrpMap`/`tourEff` all skip an id they do not know (`const d=TOUR_BY_ID[e.id]; if(!d)
+  return;`) - so the entry is inert to every effect while the news feed, which already had a rendering
+  branch for it at two sites, lists it. Two desirable side effects: `TOUR_GAP` then holds the next Tour
+  Eras change off until year 5, and "The Tour" menu row (gated on `tourHistory().length`) appears from
+  2028.
+- **The tour does ONE structural thing per winter.** `maybeTourChange` returns null in the arrival year,
+  so the format card can never collide with a Tour Eras card or a council vote. `TOUR_MIN_YEAR=3` means
+  that is also the FIRST year a change could have fired, so nothing is lost - it is deferred, not
+  cancelled. Verified across ten seeds.
+- **`maybeTourChange`'s "last change" is now a MAX over years, not the last push** - the arrival is
+  back-filled at year 3 into an in-progress career whose history already holds later changes, and reading
+  the last ELEMENT would then have reported year 3 and wrongly re-opened a window the real last change had
+  closed.
+- **A resumed career past 2028 gets the entry back-filled and NO card** (`_fmtNew` is only true when the
+  season being started IS the arrival season) - it has been playing the format for years, so announcing it
+  would be a lie about its own history. `tourCtx(year).bracket` folds in the calendar gate too, so a rule
+  that reads it sees the finale the schedule will actually build.
+- **`scrFormatNews()`** is its own page rather than a Tour Eras row: a Tour Eras change is one line of
+  consequence, this changes what the last fortnight of every season IS. Reuses the `.tnews` card and
+  explains the two weeks (8 groups of 4 over three days, top two through; then 16 on a new course, one
+  round a day, win four straight) plus the one rule that differs between them - a group match can be
+  halved for half a point each, a knockout match cannot and goes to sudden death. Routed in the season
+  screen ahead of the council vote and the tour news, and acked by "Start the season".
+- Verified: `scratchpad/fmt2028.mjs` **31 pass / 0 fail / 0 page errors** - the calendar, 2026 and 2027
+  handing out the staggered finale with no card and no history entry, 2028 handing out a 32-man fortnight
+  WITH the card, the card's copy naming both weeks and the halved-vs-sudden-death rule, acking it once and
+  never again, a later season playing it silently, a resumed career back-filling at 2028 without rewriting
+  when the tour last moved, no Tour Eras change landing that winter on any of ten seeds, the feed listing
+  the arrival, the 2028 finale really building 8 groups over 7 days, and a 2027 finale never opening the
+  bracket screen. **The baseline probe is the discrimination**: on `HEAD` the fortnight is on in 2026 with
+  no announcement; on the fix 2026/2027 are stroke play and 2028 announces. A full headless 2026 season
+  plays 20 events to a Cup champion with no bracket row and a clean summary. Regressions green: mp_eng 37,
+  mp_ui 39, mp_playgroup 21, mp_recap 27, route_check 6, bpath_check 32, board_race 11. All 7 real inline
+  script blocks parse (block 0 is the JSON-LD tag, fails identically on `HEAD`).
+- **NOT deployed** - `golf/index.html` is regenerated from this file on deploy, so it needs the owner's go
+  and a parallel-edit check on the deployed file first.
+- Tunable: `BRACKET_FIRST_CAL` (2028) moves the arrival, `CAREER_START_YEAR` moves every date at once, and
+  the copy lives entirely in `scrFormatNews`.
+
 ### NOTE: an environment reset ate two commits mid-session, and they were rebuilt
 - During a multi-hour GitHub write-path outage this container was reclaimed and re-provisioned. The Morris
   and Legend-Circuit commits had been made LOCALLY but never pushed, so they were lost (the local git object
