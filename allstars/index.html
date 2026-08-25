@@ -81,38 +81,106 @@
     cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
   .toggle.on{border-color:var(--gold);color:var(--gold);}
 
-  /* Game */
-  .hud{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;
-    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:10px;}
-  .hud .side{font-size:12px;letter-spacing:.08em;text-transform:uppercase;}
-  .hud .side .score{font-size:22px;color:var(--gold);font-weight:700;display:block;}
-  .hud .side .name{color:var(--text-dim);}
-  .hud .mid{text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase;}
-  .hud .mid .inning{display:block;font-size:14px;color:var(--text);margin-bottom:2px;}
+  /* Game.
+     The field takes as much room as possible and the meter, HUD, and stat
+     rail sit around it. On desktop the field is a wide inset panel that
+     centers the diamond; on mobile it stacks. A single callout overlay
+     hangs above the field for hit and inning events (READY, STRIKE, HOME
+     RUN, and so on). */
 
-  .fielddiv{background:#0c1218;border:1px solid var(--line);border-radius:6px;padding:10px;
-    display:grid;grid-template-columns:1fr;gap:10px;}
-  #field{width:100%;max-width:640px;height:auto;aspect-ratio:16/10;display:block;margin:0 auto;
-    background:linear-gradient(180deg,#122018,#0c1615);border-radius:4px;}
+  .arena{
+    position:relative;
+    background:radial-gradient(700px 400px at 50% 30%, #17301f, #08110a 68%);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:0;
+    overflow:hidden;
+    margin-bottom:12px;
+  }
+  #field{
+    display:block;
+    width:100%;
+    aspect-ratio:16/11;
+    max-height:min(72vh, 720px);
+    background:transparent;
+  }
+  .arena .corner{position:absolute;pointer-events:none;padding:10px 14px;
+    font-family:inherit;text-transform:uppercase;letter-spacing:.14em;font-size:12px;
+    color:var(--text-dim);text-shadow:0 1px 2px rgba(0,0,0,.7);}
+  .arena .corner.tl{top:0;left:0;text-align:left;}
+  .arena .corner.tr{top:0;right:0;text-align:right;}
+  .arena .corner.bl{bottom:0;left:0;text-align:left;}
+  .arena .corner.br{bottom:0;right:0;text-align:right;}
+  .arena .corner .lbl{display:block;color:var(--text-dim);font-size:10px;letter-spacing:.16em;}
+  .arena .corner .val{color:var(--text);font-size:20px;font-weight:700;line-height:1;}
+  .arena .corner .val.gold{color:var(--gold);}
+  .arena .corner.br .val{color:var(--text);font-size:14px;}
 
-  .plate-row{display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:end;}
-  .meter-wrap{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;}
+  .callout{
+    position:absolute;
+    top:38%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(.9);
+    padding:14px 30px;
+    background:rgba(11,16,21,.86);
+    border:2px solid var(--gold);
+    border-radius:6px;
+    color:var(--gold);
+    font-family:inherit;
+    font-size:26px;
+    font-weight:900;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    text-shadow:0 2px 0 rgba(0,0,0,.5);
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .18s ease-out, transform .28s cubic-bezier(.2,.9,.2,1.2);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);
+    white-space:nowrap;
+    z-index:6;
+  }
+  .callout.on{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  .callout.homer{border-color:var(--gold);color:var(--gold);font-size:32px;
+    background:linear-gradient(180deg,rgba(60,30,10,.9),rgba(11,16,21,.9));}
+  .callout.hit{border-color:var(--green);color:var(--green);}
+  .callout.strike{border-color:var(--red);color:#f4a4a4;}
+  .callout.ball{border-color:var(--blue);color:var(--blue);}
+  .callout.sub{border-color:var(--text-dim);color:var(--text);font-size:18px;background:rgba(11,16,21,.7);}
+
+  @media (max-width:600px){
+    .callout{font-size:18px;padding:10px 18px;}
+    .callout.homer{font-size:22px;}
+    .arena .corner{padding:6px 8px;font-size:10px;}
+    .arena .corner .val{font-size:16px;}
+    .arena .corner.br .val{font-size:11px;}
+  }
+
+  .plate-row{
+    display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch;
+  }
+  .meter-wrap{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;}
   .meter-wrap .label{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);
     letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
-  #meter{width:100%;height:32px;display:block;background:#0c1218;border-radius:3px;}
+  .meter-wrap .label b.pt{color:var(--gold);letter-spacing:.14em;}
+  #meter{width:100%;height:44px;display:block;background:#0c1218;border-radius:3px;}
+  .meter-wrap .hint{margin-top:6px;font-size:11px;color:var(--text-dim);
+    letter-spacing:.08em;text-align:center;text-transform:uppercase;}
+  .meter-wrap .hint b{color:var(--gold);}
 
-  .atbat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;}
+  .atbat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;
+    display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .atbat .avatar{width:36px;height:auto;image-rendering:pixelated;}
   .atbat .who{font-size:14px;letter-spacing:.06em;}
   .atbat .who b{color:var(--gold);}
   .atbat .vs{font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
-  .atbat .count{margin-top:6px;font-size:12px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;}
+  .atbat .count{margin-left:auto;font-size:16px;color:var(--text);letter-spacing:.14em;font-weight:700;}
 
-  .log{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;
-    max-height:140px;overflow-y:auto;font-size:12px;line-height:1.5;color:var(--text-dim);}
-  .log .line{padding:2px 0;}
+  .log{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;
+    max-height:110px;overflow-y:auto;font-size:12px;line-height:1.6;color:var(--text-dim);}
+  .log .line{padding:1px 0;}
   .log .line.big{color:var(--gold);font-weight:700;letter-spacing:.05em;}
 
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 
   /* Result / hub */
   .table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -956,6 +1024,17 @@ function renderRoster() {
         picked.add(c.k);
       }
       redraw();
+      /* Ninth pick rolls straight into settings, per the design ask. The
+         Continue button stays for the case where a player rearranges picks
+         and it never fires. */
+      if (picked.size === 9) {
+        setTimeout(() => {
+          State.team = [...picked];
+          State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+          State.screen = 'settings';
+          render();
+        }, 220);
+      }
     };
     grid.appendChild(cc);
     cards.set(c.k, cc);
@@ -984,6 +1063,13 @@ function renderRoster() {
     const bag = [...ROSTER].sort(() => Math.random() - 0.5);
     bag.slice(0,9).forEach(c => picked.add(c.k));
     redraw();
+    /* Same auto advance as the ninth click: nine is nine. */
+    setTimeout(() => {
+      State.team = [...picked];
+      State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+      State.screen = 'settings';
+      render();
+    }, 300);
   };
   const go = el('button','btn','Continue');
   go.onclick = () => {
@@ -1028,7 +1114,7 @@ function renderSettings() {
   [5,9].forEach(n => {
     const t = el('div','toggle', `${n} innings`);
     if (State.innings === n) t.classList.add('on');
-    t.onclick = () => { State.innings = n; renderSettings(); };
+    t.onclick = () => { State.innings = n; render(); };
     innRow.appendChild(t);
   });
   card.appendChild(innRow);
@@ -1038,7 +1124,7 @@ function renderSettings() {
   ['easy','medium','hard'].forEach(d => {
     const t = el('div','toggle', d);
     if (State.difficulty === d) t.classList.add('on');
-    t.onclick = () => { State.difficulty = d; renderSettings(); };
+    t.onclick = () => { State.difficulty = d; render(); };
     dRow.appendChild(t);
   });
   card.appendChild(dRow);
@@ -1446,14 +1532,74 @@ function statBump(k, key) {
    speed = seconds for the meter cursor to sweep across.
    pitcherSkill = multiplier on pitcher CON that shifts the meter's ideal spot. */
 const DIFF = {
-  easy:   { speed: 1.5, sweetWidth: 0.24, pitcherSkill: 0.85 },
-  medium: { speed: 1.2, sweetWidth: 0.18, pitcherSkill: 1.00 },
-  hard:   { speed: 0.95, sweetWidth: 0.14, pitcherSkill: 1.12 },
+  easy:   { speed: 2.1, sweetWidth: 0.26, pitcherSkill: 0.85 },
+  medium: { speed: 1.7, sweetWidth: 0.20, pitcherSkill: 1.00 },
+  hard:   { speed: 1.35, sweetWidth: 0.16, pitcherSkill: 1.12 },
+};
+
+/* Pause lengths in ms. Named so nothing tunes one number without seeing what
+   the others are set to; the game's pacing lives here more than anywhere
+   else. */
+const BEAT = {
+  windup:    700,   /* pitcher into set, meter shows but does not sweep yet */
+  betweenPitches: 900,   /* after ball/called strike/foul */
+  afterWhiff: 950,
+  afterOut:   1500,
+  afterWalk:  1600,
+  afterHit:   2000,
+  afterHomer: 2600,
+  betweenHalfInnings: 2600,
+  intoAtBat: 700,   /* new batter walks up */
 };
 
 let atBatCleanup = null;
 function endAtBatCleanup() {
   if (atBatCleanup) { atBatCleanup(); atBatCleanup = null; }
+}
+
+/* A single, always-on animation loop paints the field and the meter every
+   frame while the game screen is up. Individual pitches only own the click
+   listener and the "no swing = called pitch" trigger; the drawing lives
+   here so the diamond stays visible between pitches, half innings, and
+   result callouts. */
+let fieldRafId = 0;
+function startFieldLoop() {
+  cancelAnimationFrame(fieldRafId);
+  const paint = () => {
+    if (State.screen !== 'game' || !State.game) {
+      fieldRafId = 0;
+      return;
+    }
+    const fCv = document.getElementById('field');
+    const mCv = document.getElementById('meter');
+    if (fCv && mCv) {
+      const g = State.game;
+      const p = g.pitch;
+      let t = 0, inWindup = true;
+      if (p) {
+        const now = performance.now();
+        if (now < p.windupUntil) { t = 0; inWindup = true; }
+        else {
+          const durMs = p.speed * 1000;
+          t = clamp((now - p.start) / durMs, 0, 1);
+          inWindup = false;
+          /* No swing by pitch end. Trigger the called pitch once. */
+          if (t >= 1 && !p.swung && !p.resolved) {
+            p.resolved = true;
+            resolveCalledPitch();
+          }
+        }
+      }
+      drawField(fCv.getContext('2d'), fCv.width, fCv.height, t, p || null, inWindup);
+      drawMeter(mCv.getContext('2d'), mCv.width, mCv.height, t, p || { ideal: 0.5, pt: 'fastball' }, inWindup);
+    }
+    fieldRafId = requestAnimationFrame(paint);
+  };
+  fieldRafId = requestAnimationFrame(paint);
+}
+function stopFieldLoop() {
+  cancelAnimationFrame(fieldRafId);
+  fieldRafId = 0;
 }
 
 function startAtBat() {
@@ -1463,8 +1609,9 @@ function startAtBat() {
   const b = currentBatter();
   g.batterCtx = batterContext(b);
   for (const note of g.batterCtx.notes) addLog(note, true);
+  showCallout(`${b.n} steps in`, 'sub');
   refreshHud();
-  throwPitch();
+  setTimeout(throwPitch, BEAT.intoAtBat);
 }
 
 /* Quirk hook. Called once per at bat. Returns a stat snapshot the swing
@@ -1507,9 +1654,13 @@ function throwPitch() {
   /* Ball is a strike or a ball. The pitcher's control determines it. */
   const strikeProb = 0.55 + (pitcher.con || pitcher.def*0.4) / 300;
   const isStrike = Math.random() < clamp(strikeProb, 0.45, 0.85);
+  /* Windup: the meter is on screen but does not sweep for a beat. This is
+     the player's chance to see the pitcher, the pitch type, the ideal spot,
+     and settle. `start` gets set when the sweep actually begins. */
   g.pitch = {
     pt, speed: baseSpeed, ideal, isStrike,
-    start: performance.now(),
+    start: performance.now() + BEAT.windup,
+    windupUntil: performance.now() + BEAT.windup,
     swung: false,
     hit: false,
   };
@@ -1517,24 +1668,17 @@ function throwPitch() {
   runPitchAnimation();
 }
 
-/* Meter and field animation. On each frame we draw the meter cursor and the
-   ball travelling from the mound to the plate. If the player clicks or presses
-   space during that window, resolveSwing() decides the outcome. If the pitch
-   finishes with no swing, it is a ball or a called strike. */
+/* Install the swing click and space listeners for this pitch. The field
+   loop (startFieldLoop) handles all the painting and the "no swing = called
+   pitch" transition. */
 function runPitchAnimation() {
   const g = State.game;
   const p = g.pitch;
-  const fieldCv = document.getElementById('field');
-  const meterCv = document.getElementById('meter');
-  if (!fieldCv || !meterCv) return;
-  const fctx = fieldCv.getContext('2d');
-  const mctx = meterCv.getContext('2d');
   const durMs = p.speed * 1000;
-
-  let rafId = 0;
   const onClick = (e) => {
     if (p.swung) return;
     const now = performance.now();
+    if (now < p.windupUntil) return;
     const t = clamp((now - p.start) / durMs, 0, 1);
     p.swung = true;
     resolveSwing(t);
@@ -1543,37 +1687,23 @@ function runPitchAnimation() {
     if (e.code === 'Space') { e.preventDefault(); onClick(e); }
   };
   const teardown = () => {
-    cancelAnimationFrame(rafId);
     document.removeEventListener('keydown', onKey);
     document.removeEventListener('click', onClick, true);
   };
   atBatCleanup = teardown;
   document.addEventListener('keydown', onKey);
   document.addEventListener('click', onClick, true);
-
-  const frame = (now) => {
-    const t = clamp((now - p.start) / durMs, 0, 1);
-    drawField(fctx, fieldCv.width, fieldCv.height, t, p);
-    drawMeter(mctx, meterCv.width, meterCv.height, t, p);
-    if (t >= 1 && !p.swung) {
-      teardown();
-      resolveCalledPitch();
-      return;
-    }
-    rafId = requestAnimationFrame(frame);
-  };
-  rafId = requestAnimationFrame(frame);
 }
 
 function resolveCalledPitch() {
   const g = State.game;
   const p = g.pitch;
-  if (p.isStrike) { g.strikes++; addLog('Called strike.'); }
-  else            { g.balls++;   addLog('Ball.'); }
+  if (p.isStrike) { g.strikes++; addLog('Called strike.'); showCallout('STRIKE', 'strike'); }
+  else            { g.balls++;   addLog('Ball.'); showCallout('BALL', 'ball'); }
   refreshHud();
   if (g.strikes >= 3) return recordOut('called strikeout', true);
   if (g.balls >= 4) return recordWalk();
-  setTimeout(throwPitch, 500);
+  setTimeout(throwPitch, BEAT.betweenPitches);
 }
 
 function resolveSwing(cursorT) {
@@ -1617,17 +1747,19 @@ function resolveSwing(cursorT) {
   if (!inZone && contact < 0.4) {
     g.strikes++;
     addLog(`${batter.n} swings and misses.`);
+    showCallout('SWING AND MISS', 'strike');
     refreshHud();
     if (g.strikes >= 3) return recordOut('swinging strikeout', true);
-    return setTimeout(throwPitch, 500);
+    return setTimeout(throwPitch, BEAT.afterWhiff);
   }
 
   /* Foul: near miss on strike, count strike (but never third strike) */
   if (!inZone) {
     if (g.strikes < 2) g.strikes++;
     addLog(`${batter.n} fouls it off.`);
+    showCallout('FOUL BALL', 'sub');
     refreshHud();
-    return setTimeout(throwPitch, 500);
+    return setTimeout(throwPitch, BEAT.betweenPitches);
   }
 
   /* Cowardly Lion who did commit gets a burst of nerve on the swing. */
@@ -1651,6 +1783,7 @@ function resolveSwing(cursorT) {
   /* Out on contact */
   const out = Math.random() < 0.55 ? 'ground out' : 'fly out';
   addLog(`${batter.n} ${out}s to the ${randPos(out)}.`);
+  showCallout(out === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
   refreshHud();
   return recordOut(out, false);
 }
@@ -1672,6 +1805,7 @@ function recordHit(kind, batter) {
     g.bases = [null,null,null];
     scoreRuns(scored);
     addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
+    showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
   } else {
     /* Advance existing runners by `bases`, then place batter */
     let scored = 0;
@@ -1687,17 +1821,18 @@ function recordHit(kind, batter) {
     g.bases = newBases;
     if (scored) scoreRuns(scored);
     addLog(`${batter.n} lines a ${kind}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
+    showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
   }
   nextBatter();
   refreshHud();
-  setTimeout(startAtBat, 900);
+  setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
 }
 
 function recordWalk() {
   const g = State.game;
   const batter = currentBatter();
   addLog(`${batter.n} walks.`);
-  /* Force runners */
+  showCallout('WALK', 'sub');
   const bases = g.bases;
   let scored = 0;
   if (bases[0] && bases[1] && bases[2]) { scored = 1; g.bases = [batter, bases[0], bases[1]]; }
@@ -1707,7 +1842,7 @@ function recordWalk() {
   if (scored) scoreRuns(scored);
   nextBatter();
   refreshHud();
-  setTimeout(startAtBat, 700);
+  setTimeout(startAtBat, BEAT.afterWalk);
 }
 
 function recordOut(reason, isStrikeout) {
@@ -1717,10 +1852,11 @@ function recordOut(reason, isStrikeout) {
   if (isStrikeout) statBump(batter.k,'so');
   g.outs++;
   addLog(`${batter.n} out (${reason}). ${g.outs} out.`);
+  if (isStrikeout) showCallout('STRIKEOUT', 'strike');
   if (g.outs >= 3) return endHalfInning();
   nextBatter();
   refreshHud();
-  setTimeout(startAtBat, 600);
+  setTimeout(startAtBat, BEAT.afterOut);
 }
 
 function nextBatter() {
@@ -1738,21 +1874,20 @@ function scoreRuns(n) {
 function endHalfInning() {
   const g = State.game;
   addLog(`Side retired. End of ${g.half === 'top' ? 'top' : 'bottom'} of ${g.inning}.`, true);
+  showCallout('SIDE RETIRED', 'homer');
   g.bases = [null,null,null];
   g.outs = 0;
   g.balls = 0; g.strikes = 0;
   if (g.half === 'top') {
     g.half = 'bottom';
-    /* Walk off possibility not needed for top-of-inning end */
   } else {
     g.half = 'top';
     g.inning++;
   }
-  /* Check for game end */
   const done = checkGameOver();
   refreshHud();
   if (done) return finishGame();
-  setTimeout(startAtBat, 800);
+  setTimeout(startAtBat, BEAT.betweenHalfInnings);
 }
 
 function checkGameOver() {
@@ -1795,6 +1930,7 @@ function checkGameOver() {
 function finishGame() {
   const g = State.game;
   g.live = false;
+  stopFieldLoop();
   const you = g.away.isYou ? g.away : g.home;
   const foe = g.away.isYou ? g.home : g.away;
   const win = you.score > foe.score;
@@ -1829,136 +1965,199 @@ function finishGame() {
 /* ============================================================================
    FIELD AND METER RENDERING
    ============================================================================ */
-function drawField(ctx, w, h, t, pitch) {
-  ctx.fillStyle = '#0c1615';
+function drawField(ctx, w, h, t, pitch, inWindup) {
+  /* Sky above, then dirt warning track, then outfield grass, then the
+     infield dirt diamond. Everything sized to the field's own w and h so
+     the canvas can be resized. */
+  ctx.fillStyle = '#0b1015';
   ctx.fillRect(0,0,w,h);
-  /* Outfield arc */
-  ctx.fillStyle = '#1a3a24';
+
+  const skyH = h * 0.12;
+  ctx.fillStyle = '#132434';
+  ctx.fillRect(0,0,w,skyH);
+  /* stadium seats hatched */
+  ctx.fillStyle = '#0d1a25';
+  for (let x = 0; x < w; x += 6) ctx.fillRect(x, skyH - 14, 3, 14);
+  ctx.fillStyle = '#1a2a3a';
+  for (let x = 3; x < w; x += 6) ctx.fillRect(x, skyH - 8, 3, 8);
+
+  /* Outfield grass with mowed stripe pattern */
+  const grassY = skyH;
+  ctx.fillStyle = '#245a2c';
+  ctx.fillRect(0, grassY, w, h - grassY);
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.05)';
+    const stripeH = (h - grassY) / 8;
+    ctx.fillRect(0, grassY + i * stripeH, w, stripeH);
+  }
+  /* Warning track along the wall */
+  ctx.fillStyle = '#8a5a2c';
+  ctx.fillRect(0, grassY, w, 12);
+
+  /* Home-plate camera: put the plate in the lower portion, mound up. */
+  const cx = w/2;
+  const cy = h * 0.58;
+  const r = Math.min(w, h) * 0.30;
+
+  /* Infield dirt diamond */
+  ctx.fillStyle = '#8b5a24';
   ctx.beginPath();
-  ctx.arc(w/2, h*1.4, w*0.85, Math.PI, 0);
-  ctx.fill();
-  /* Infield diamond */
-  ctx.fillStyle = '#7a4a24';
-  const cx = w/2, cy = h*0.75, r = Math.min(w,h) * 0.28;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - r);        /* second */
-  ctx.lineTo(cx + r, cy);        /* first */
-  ctx.lineTo(cx, cy + r);        /* home */
-  ctx.lineTo(cx - r, cy);        /* third */
+  ctx.moveTo(cx, cy - r);
+  ctx.lineTo(cx + r, cy);
+  ctx.lineTo(cx, cy + r);
+  ctx.lineTo(cx - r, cy);
   ctx.closePath();
   ctx.fill();
-  /* Grass inside */
-  ctx.fillStyle = '#1a4a24';
+
+  /* Infield grass */
+  ctx.fillStyle = '#2b6a30';
+  const rInner = r * 0.62;
   ctx.beginPath();
-  const rInner = r * 0.55;
   ctx.moveTo(cx, cy - rInner);
   ctx.lineTo(cx + rInner, cy);
   ctx.lineTo(cx, cy + rInner);
   ctx.lineTo(cx - rInner, cy);
   ctx.closePath();
   ctx.fill();
+
+  /* Foul lines */
+  ctx.strokeStyle = '#eaeaea';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + r);
+  ctx.lineTo(cx - w, cy + r + w);   /* down-left */
+  ctx.moveTo(cx, cy + r);
+  ctx.lineTo(cx + w, cy + r + w);   /* down-right */
+  ctx.stroke();
+
+  /* Batter's box */
+  ctx.strokeStyle = 'rgba(255,255,255,.35)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(cx - 34, cy + r - 8, 26, 32);
+  ctx.strokeRect(cx + 8, cy + r - 8, 26, 32);
+
   /* Bases */
   const bases = [
-    [cx + r, cy],     /* first */
-    [cx, cy - r],     /* second */
-    [cx - r, cy],     /* third */
+    [cx + r, cy],
+    [cx, cy - r],
+    [cx - r, cy],
   ];
   ctx.fillStyle = '#eaeaea';
-  bases.forEach(([bx,by]) => { ctx.fillRect(bx-4, by-4, 8, 8); });
-  /* Home plate */
-  ctx.fillStyle = '#eaeaea';
-  ctx.fillRect(cx-6, cy+r-4, 12, 6);
-  /* Pitcher's mound */
-  ctx.fillStyle = '#6a3a1c';
-  ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill();
+  bases.forEach(([bx,by]) => { ctx.fillRect(bx-7, by-7, 14, 14); });
 
-  /* Runners */
+  /* Home plate: pentagon */
+  ctx.beginPath();
+  ctx.moveTo(cx - 10, cy + r);
+  ctx.lineTo(cx + 10, cy + r);
+  ctx.lineTo(cx + 10, cy + r + 6);
+  ctx.lineTo(cx, cy + r + 12);
+  ctx.lineTo(cx - 10, cy + r + 6);
+  ctx.closePath();
+  ctx.fill();
+
+  /* Pitcher's mound */
+  ctx.fillStyle = '#a66a2c';
+  ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#eaeaea';
+  ctx.fillRect(cx - 8, cy - 2, 16, 4);
+
+  /* Runners on base */
   const g = State.game;
   if (g) {
     const bs = g.bases;
-    if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 10, bs[0]);
-    if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 10, bs[1]);
-    if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 10, bs[2]);
-    /* Batter at plate */
+    if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 4, bs[0]);
+    if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 4, bs[1]);
+    if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 4, bs[2]);
+    /* Batter next to the plate, offset into the left batter's box */
     const batter = currentBatter();
-    if (batter) drawRunner(ctx, cx - 12, cy + r - 2, batter);
-    /* Pitcher on mound */
+    if (batter) drawRunner(ctx, cx - 22, cy + r + 6, batter, 3);
+    /* Catcher behind plate */
+    const catcher = { ...(currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1]) };
+    if (catcher && catcher.pal) drawRunner(ctx, cx, cy + r + 22, catcher, 2.4);
+    /* Pitcher on the mound */
     const pit = currentPitcher();
-    if (pit) drawRunner(ctx, cx, cy - 4, pit);
+    if (pit) drawRunner(ctx, cx, cy - 6, pit, 3);
+    /* A little fielder cluster behind the mound so the field isn't empty */
+    const fs = currentFieldingTeam().batters;
+    if (fs[2]) drawRunner(ctx, cx - r*0.55, cy - r*0.15, fs[2], 2.2);   /* shortstop */
+    if (fs[3]) drawRunner(ctx, cx + r*0.55, cy - r*0.15, fs[3], 2.2);   /* second */
+    if (fs[4]) drawRunner(ctx, cx + r*0.85, cy + r*0.10, fs[4], 2.2);   /* first */
+    if (fs[5]) drawRunner(ctx, cx - r*0.85, cy + r*0.10, fs[5], 2.2);   /* third */
+    if (fs[6]) drawRunner(ctx, cx - w*0.28, cy - h*0.14, fs[6], 2.4);   /* left field */
+    if (fs[7]) drawRunner(ctx, cx,           cy - h*0.20, fs[7], 2.4);  /* center */
+    if (fs[1]) drawRunner(ctx, cx + w*0.28, cy - h*0.14, fs[1], 2.4);   /* right */
   }
 
   /* Pitch ball moving from mound to plate */
-  if (pitch) {
+  if (pitch && !inWindup) {
     const bx = cx;
     const by = cy;
     const px = cx;
     const py = cy + r - 4;
-    /* On changeup, ease it. On curveball, arc it slightly. */
     let e = t;
     if (pitch.pt === 'changeup') e = t*t;
     let ballX = bx + (px - bx) * e;
     let ballY = by + (py - by) * e;
     if (pitch.pt === 'curveball') {
-      ballX += Math.sin(e * Math.PI) * 8 * (pitch.ideal < 0.5 ? -1 : 1);
+      ballX += Math.sin(e * Math.PI) * 12 * (pitch.ideal < 0.5 ? -1 : 1);
     }
+    /* trail */
+    ctx.fillStyle = 'rgba(255,255,255,.25)';
+    ctx.beginPath(); ctx.arc(ballX - (px-bx)*.06, ballY - (py-by)*.06, 3, 0, Math.PI*2); ctx.fill();
+    /* ball */
     ctx.fillStyle = '#eaeaea';
-    ctx.beginPath(); ctx.arc(ballX, ballY, 3, 0, Math.PI*2); ctx.fill();
-  }
-
-  /* Score baked into the field top corners */
-  ctx.fillStyle = 'rgba(0,0,0,.35)';
-  ctx.fillRect(0,0,w,18);
-  ctx.fillStyle = '#f3ecdc';
-  ctx.font = 'bold 12px monospace';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  if (g) {
-    ctx.fillText(`${g.away.name}: ${g.away.score}`, 8, 9);
-    ctx.textAlign = 'right';
-    ctx.fillText(`${g.home.name}: ${g.home.score}`, w-8, 9);
-    ctx.textAlign = 'center';
-    ctx.fillText(`${g.half === 'top' ? 'Top' : 'Bot'} ${g.inning} · ${g.outs} out`, w/2, 9);
+    ctx.beginPath(); ctx.arc(ballX, ballY, 5, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#c94b1a';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(ballX, ballY, 4, -Math.PI*0.2, Math.PI*0.3); ctx.stroke();
   }
 }
 
 const runnerCache = new Map();
-function drawRunner(ctx, x, y, character) {
-  let cv = runnerCache.get(character.k);
-  if (!cv) { cv = spriteCanvas(character, 32); runnerCache.set(character.k, cv); }
-  /* Sprites are SPRITE_W wide by SPRITE_H tall (currently 16x18). Anchor at
-     the feet by shifting up by the sprite's full height. */
+function drawRunner(ctx, x, y, character, scale) {
+  scale = scale || 3;
+  const key = character.k + '@' + scale;
+  let cv = runnerCache.get(key);
+  if (!cv) { cv = spriteCanvas(character, Math.round(SPRITE_W * scale)); runnerCache.set(key, cv); }
+  /* Anchor at the feet: shift up by the sprite's full height. */
   ctx.drawImage(cv, Math.round(x - cv.width/2), Math.round(y - cv.height));
 }
 
-function drawMeter(ctx, w, h, t, pitch) {
+function drawMeter(ctx, w, h, t, pitch, inWindup) {
   ctx.fillStyle = '#0c1218';
   ctx.fillRect(0,0,w,h);
   const diff = DIFF[State.difficulty];
   const half = diff.sweetWidth / 2;
   const ideal = pitch.ideal;
-  /* Perfect zone */
-  ctx.fillStyle = 'rgba(91,176,131,.5)';
-  ctx.fillRect((ideal - half) * w, 0, half*2 * w, h);
-  /* Ok zones */
-  ctx.fillStyle = 'rgba(244,194,90,.25)';
+  /* Ok zones (wider yellow band around the green) */
+  ctx.fillStyle = 'rgba(244,194,90,.28)';
   ctx.fillRect((ideal - half*1.8) * w, 0, half*3.6*w, h);
-  ctx.fillStyle = 'rgba(91,176,131,.6)';
+  /* Perfect zone */
+  ctx.fillStyle = 'rgba(91,176,131,.65)';
   ctx.fillRect((ideal - half) * w, 0, half*2 * w, h);
-  /* Cursor */
-  const x = t * w;
-  ctx.fillStyle = '#f3ecdc';
-  ctx.fillRect(x - 1, 0, 2, h);
-  /* Ticks */
-  ctx.fillStyle = 'rgba(255,255,255,.15)';
-  for (let i=1;i<10;i++) ctx.fillRect(i*w/10, h-4, 1, 4);
-  /* Label */
-  ctx.fillStyle = '#a89d86';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillText(pitch.pt.toUpperCase(), 4, 2);
-  ctx.textAlign = 'right';
-  ctx.fillText('SWING', w-4, 2);
+  /* Cursor: brighter and thicker so it reads through the gradient */
+  if (!inWindup) {
+    const x = t * w;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x - 2, 0, 4, h);
+    ctx.fillStyle = '#f4c25a';
+    ctx.fillRect(x - 1, 0, 2, h);
+  } else {
+    /* windup: dim the whole meter and pulse a hint at the ideal spot */
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.fillRect(0, 0, w, h);
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now()/140);
+    ctx.fillStyle = `rgba(244,194,90,${0.35 + pulse*0.4})`;
+    ctx.fillRect(ideal*w - 2, 0, 4, h);
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('GET READY', w/2, h/2);
+  }
+  /* Ticks along the bottom */
+  ctx.fillStyle = 'rgba(255,255,255,.20)';
+  for (let i=1;i<10;i++) ctx.fillRect(i*w/10, h-5, 1, 5);
 }
 
 /* ============================================================================
@@ -1968,42 +2167,53 @@ function renderGame() {
   const g = State.game;
   const s = el('div','screen');
 
-  const hud = el('div','hud');
-  const away = el('div','side',
-    `<span class="name">${g.away.name}${g.away.isYou?' (you)':''}</span>`
-    + `<span class="score">${g.away.score}</span>`
-  );
-  const mid = el('div','mid',
-    `<span class="inning">${g.half === 'top' ? 'Top' : 'Bot'} ${g.inning} of ${g.innings}</span>`
-    + `Outs ${g.outs} · ${g.balls}-${g.strikes}`
-  );
-  const home = el('div','side',
-    `<span class="name" style="text-align:right;display:block">${g.home.name}${g.home.isYou?' (you)':''}</span>`
-    + `<span class="score" style="text-align:right;display:block">${g.home.score}</span>`
-  );
-  hud.append(away, mid, home);
-  s.appendChild(hud);
-
-  const field = el('div','fielddiv');
+  const arena = el('div','arena');
   const cv = document.createElement('canvas');
-  cv.id = 'field'; cv.width = 640; cv.height = 400;
-  field.appendChild(cv);
-  s.appendChild(field);
+  cv.id = 'field'; cv.width = 960; cv.height = 660;
+  arena.appendChild(cv);
 
-  const plateRow = el('div','plate-row');
+  /* Score and inning overlaid on the field's corners so nothing steals room
+     from the diamond. Names inside color chips read at a glance without
+     needing a label. */
+  const tl = el('div','corner tl',
+    `<span class="lbl">${g.away.name}${g.away.isYou?' (you)':''}</span>`
+    + `<span class="val ${g.away.isYou?'gold':''}" id="hud-away">${g.away.score}</span>`
+  );
+  const tr = el('div','corner tr',
+    `<span class="lbl">${g.home.name}${g.home.isYou?' (you)':''}</span>`
+    + `<span class="val ${g.home.isYou?'gold':''}" id="hud-home">${g.home.score}</span>`
+  );
+  const bl = el('div','corner bl',
+    `<span class="lbl">Inning</span>`
+    + `<span class="val" id="hud-inning">${g.half==='top'?'Top':'Bot'} ${g.inning}/${g.innings}</span>`
+  );
+  const br = el('div','corner br',
+    `<span class="val" id="hud-count">Outs ${g.outs} · ${g.balls}-${g.strikes}</span>`
+  );
+  arena.append(tl, tr, bl, br);
+
+  const callout = el('div','callout'); callout.id = 'callout';
+  arena.appendChild(callout);
+  s.appendChild(arena);
+
   const meter = el('div','meter-wrap');
-  meter.appendChild(el('div','label', '<span>Swing timing</span><span>Click or press Space</span>'));
-  const m = document.createElement('canvas'); m.id='meter'; m.width=480; m.height=36;
+  const b = currentBatter(), p = currentPitcher();
+  meter.innerHTML = `<div class="label">`
+    + `<span><b class="pt" id="pt-name">Get ready</b></span>`
+    + `<span>Click anywhere or press Space</span></div>`;
+  const m = document.createElement('canvas'); m.id='meter'; m.width=720; m.height=52;
   meter.appendChild(m);
+  meter.appendChild(el('div','hint', 'Land the marker on the <b>green zone</b> to make solid contact.'));
+  s.appendChild(meter);
+
   const atbat = el('div','atbat');
   atbat.id = 'atbat';
   refreshAtBatCard(atbat);
-  plateRow.append(meter, atbat);
-  s.appendChild(plateRow);
+  s.appendChild(atbat);
 
   const log = el('div','log');
   log.id = 'log';
-  for (const line of g.log.slice(-30)) {
+  for (const line of g.log.slice(-14)) {
     const d = el('div', 'line' + (line.big?' big':''), line.text);
     log.appendChild(d);
   }
@@ -2022,45 +2232,63 @@ function renderGame() {
   s.appendChild(ctrl);
 
   app.appendChild(s);
+  /* Start the always-on field paint loop as soon as the canvas is in the DOM. */
+  startFieldLoop();
+}
+
+/* One flavor callout at a time. Overlays the field for 1.4s, fades out.
+   `kind` picks a color: default gold, plus homer, hit, strike, ball, sub. */
+let calloutTimer = 0;
+function showCallout(text, kind) {
+  const node = document.getElementById('callout');
+  if (!node) return;
+  node.textContent = text;
+  node.className = 'callout on ' + (kind || '');
+  clearTimeout(calloutTimer);
+  calloutTimer = setTimeout(() => { node.classList.remove('on'); }, 1400);
 }
 
 function refreshAtBatCard(node) {
   const g = State.game;
   const b = currentBatter();
   const p = currentPitcher();
-  const html =
+  node.innerHTML = '';
+  const avatar = spriteCanvas(b, 48);
+  avatar.className = 'avatar';
+  node.appendChild(avatar);
+  const info = el('div', null,
     `<div class="who"><b>${b.n}</b> at bat</div>`
-    + `<div class="vs">vs ${p.n} pitching</div>`
-    + `<div class="count">POW ${b.pow} · CON ${b.con} · SPD ${b.spd}</div>`
-    + `<div class="count">Count ${g.balls}-${g.strikes}</div>`;
-  node.innerHTML = html;
+    + `<div class="vs">vs ${p.n} pitching · POW ${b.pow} · CON ${b.con} · SPD ${b.spd}</div>`
+  );
+  node.appendChild(info);
+  const count = el('div','count', `${g.balls}-${g.strikes}`);
+  node.appendChild(count);
 }
 
 function refreshHud() {
   if (State.screen !== 'game') return;
   const g = State.game;
-  const scores = document.querySelectorAll('.hud .side .score');
-  if (scores.length === 2) {
-    scores[0].textContent = g.away.score;
-    scores[1].textContent = g.home.score;
-  }
-  const midDiv = document.querySelector('.hud .mid');
-  if (midDiv) {
-    midDiv.innerHTML =
-      `<span class="inning">${g.half === 'top' ? 'Top' : 'Bot'} ${g.inning} of ${g.innings}</span>`
-      + `Outs ${g.outs} · ${g.balls}-${g.strikes}`;
-  }
+  const hudAway = document.getElementById('hud-away');
+  const hudHome = document.getElementById('hud-home');
+  const hudInn = document.getElementById('hud-inning');
+  const hudCount = document.getElementById('hud-count');
+  if (hudAway) hudAway.textContent = g.away.score;
+  if (hudHome) hudHome.textContent = g.home.score;
+  if (hudInn) hudInn.textContent = `${g.half==='top'?'Top':'Bot'} ${g.inning}/${g.innings}`;
+  if (hudCount) hudCount.textContent = `Outs ${g.outs} · ${g.balls}-${g.strikes}`;
   const ab = document.getElementById('atbat');
   if (ab) refreshAtBatCard(ab);
   const log = document.getElementById('log');
   if (log) {
     log.innerHTML = '';
-    for (const line of g.log.slice(-30)) {
+    for (const line of g.log.slice(-14)) {
       const d = el('div','line' + (line.big?' big':''), line.text);
       log.appendChild(d);
     }
     log.scrollTop = log.scrollHeight;
   }
+  const ptName = document.getElementById('pt-name');
+  if (ptName && g.pitch) ptName.textContent = g.pitch.pt.toUpperCase();
 }
 
 function addLog(text, big=false) {
