@@ -886,16 +886,28 @@ function hireCoach(run, coach) {
     if (coach.price_musd > money(remaining(run) + had)) throw new Error('cannot afford him');
   }
   run.coach = coach || null;
-  /* HIS PLAN, UNLESS THE PLAYER HAS ALREADY TOUCHED ONE. A default that overwrites a
-     deliberate choice is worse than no default: it would silently undo the screen the
-     player just used. */
-  if (!run.planTouched) run.plan = E.planFromCoach(coach);
+  /* HIS SCHEME COMES WITH HIM, always. It used to respect a plan the player had already
+     set, which sounds respectful and was the wrong model: it meant hiring the best coach in
+     the game and then overruling him, so his expertise was free and his scheme was
+     decoration. Hire a man and you play his way. Hire nobody and it is yours.
+     planTouched is cleared too, so hiring, changing your mind, and going without leaves the
+     plan editable again rather than stuck on the last coach's philosophy. */
+  run.plan = E.planFromCoach(coach);
+  run.planTouched = false;
+  /* A DECISION WAS MADE, and declining is one. Without this the screen could not tell
+     "has not chosen yet" from "chose nobody", so pressing No coach left the play button
+     hidden and the step with no way out of it. */
+  run.coachDecided = true;
   return run;
 }
 
 /** Set one axis of the game plan. Marks the plan as chosen, so a later hire respects it. */
 function setPlan(run, plan) {
   if (!run.full) throw new Error('not a full team run');
+  /* ONLY WHEN NOBODY IS COACHING. Checked here rather than only in the screen, because the
+     screen is not the authority on the rules: hideing the editor is presentation, and this
+     is what makes the scheme actually belong to the coach. */
+  if (run.coach) throw new Error(run.coach.name + ' calls the game plan');
   run.plan = E.normalizePlan(plan);
   run.planTouched = true;
   return run;
@@ -1127,7 +1139,7 @@ function liveRating(run) {
      number, weeklyEdgeVs and seedFromRecord and playoffShare and homeField, is calibrated
      on a range a defensive product cannot reach. A top defense was seeded as a bottom
      team all the way through the back half of the season. */
-  return E.overallOf(run.roster, s.chemistry || 1, run.full ? 'full' : !!run.defense);
+  return E.overallOf(run.roster, s.chemistry || 1, run.full ? 'full' : !!run.defense, run.coach);
 }
 
 /** Leave SEEDING and start the playoffs. */
@@ -3094,7 +3106,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 38;
+const RUN_API_VERSION = 39;
 
 const api = {
   API_VERSION: RUN_API_VERSION,

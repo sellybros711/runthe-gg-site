@@ -515,7 +515,51 @@ window.GA_ID='G-L29P5MRWKE';
     .field.fullfield .chip .disc{width:26px;height:26px;font-size:9px}
     .field.fullfield .chip .who{font-size:9px;max-width:56px}
   }
-  /* ---- THE COACH SCREEN ---- */
+  /* ---- THE COACH SCREEN ----
+     A card, not a list. See the markup for why. */
+  .cocard{border:1.5px solid rgba(226,178,90,.35);border-radius:14px;padding:14px 12px 12px;
+    background:linear-gradient(180deg,rgba(38,30,16,.85),rgba(19,20,26,.85))}
+  .cohead{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;align-items:center;gap:6px}
+  .conav{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line-2);
+    background:transparent;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;
+    display:grid;place-items:center;font-family:inherit}
+  .conav:active{background:rgba(255,255,255,.06)}
+  .conav[disabled]{opacity:.28;cursor:default}
+  .cowho{text-align:center;min-width:0}
+  .cowho .co-nm{font-size:19px;font-weight:800;letter-spacing:.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .co-yrs{font-family:var(--fn);font-size:11px;color:var(--dim-2);letter-spacing:.05em;margin-top:1px}
+  .cotilts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 10px}
+  .cotilt{text-align:center;padding:8px 4px;border-radius:10px;background:rgba(0,0,0,.28)}
+  .cotilt b{display:block;font-family:var(--fn);font-size:17px;font-weight:800;line-height:1}
+  .cotilt span{display:block;font-family:var(--fn);font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2);margin-top:3px}
+  /* THE RATING LINE. Bigger than anything else on the card, because it is the answer. */
+  .corate{display:flex;align-items:baseline;justify-content:center;gap:7px;flex-wrap:wrap;
+    padding:10px 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .cr-lab{font-family:var(--fn);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim-2);width:100%;text-align:center;margin-bottom:2px}
+  .cr-now{font-family:var(--fn);font-size:19px;font-weight:700;color:var(--dim)}
+  .cr-arrow{color:var(--dim-2);font-size:15px}
+  .cr-new{font-family:var(--fn);font-size:27px;font-weight:800;line-height:1}
+  .cr-delta{font-family:var(--fn);font-size:13px;font-weight:800}
+  .cr-new.pos,.cr-delta.pos{color:var(--good,#4ade80)}
+  .cr-new.neg,.cr-delta.neg{color:var(--bad,#f87171)}
+  .coscheme{font-family:var(--fn);font-size:11px;letter-spacing:.04em;color:rgba(243,221,174,.72);
+    text-align:center;margin:10px 0 2px}
+  .coprice{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    font-family:var(--fn);font-size:13px;font-weight:800;margin:10px 0 8px}
+  .coprice .dim{font-weight:600;font-size:11.5px}
+  /* Where you are in the market, without a number to read. */
+  .codots{display:flex;gap:4px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .codot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.18)}
+  .codot.on{background:rgba(226,178,90,.9);transform:scale(1.35)}
+  /* HIDDEN HAS TO BEAT .btn, which sets its own display. The UA rule for [hidden] is
+     display:none at the same specificity as a class, so the later class wins and the
+     button stayed on screen with hidden=true set on it: exactly the trap .hp-full[hidden]
+     was written for on the home screen. */
+  #b-coach-go[hidden],#co-planwrap[hidden],.cocard[hidden]{display:none}
+  /* ---- the old list styles, still used by the coach line on the squad and results ---- */
   .co-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
     padding:10px 12px;margin-bottom:6px;border:1.5px solid var(--line);border-radius:11px;
     background:rgba(19,26,43,.55);cursor:pointer;text-align:left;width:100%;
@@ -5226,12 +5270,41 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow">Step 3 of 4</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Hire a coach</h2>
     <p class="dim" id="co-sub" style="font-size:13px;margin:0 0 12px"></p>
-    <div id="co-list"></div>
-    <button class="btn ghost sm" id="co-more" hidden>Show everyone I can afford</button>
-    <h3 class="display" style="font-size:20px;margin:20px 0 4px">Game plan</h3>
-    <p class="dim" id="co-planwho" style="font-size:12.5px;margin:0 0 10px"></p>
-    <div id="co-plan"></div>
-    <div style="margin-top:18px"><button class="btn" id="b-coach-go">Play the season</button></div>
+    <!-- ONE COACH AT A TIME. The first version was eleven rows of name, years, two
+         percentages and a price: forty numbers to read before a decision, on a phone. This
+         is a card you step through, and the only number that matters is the one at the
+         bottom, which is what hiring him would do to your team. -->
+    <div class="cocard">
+      <div class="cohead">
+        <button class="conav" id="co-prev" aria-label="Previous coach">&#8249;</button>
+        <div class="cowho">
+          <div class="co-nm" id="co-name">&nbsp;</div>
+          <div class="co-yrs" id="co-years">&nbsp;</div>
+        </div>
+        <button class="conav" id="co-next" aria-label="Next coach">&#8250;</button>
+      </div>
+      <div class="cotilts" id="co-tilts"></div>
+      <!-- THE POINT OF THE WHOLE SCREEN. Your rating now, his arrow, and what it becomes. -->
+      <div class="corate">
+        <span class="cr-lab">Team rating</span>
+        <span class="cr-now" id="co-rnow">0</span>
+        <span class="cr-arrow">&#8594;</span>
+        <span class="cr-new" id="co-rnew">0</span>
+        <span class="cr-delta" id="co-rdelta"></span>
+      </div>
+      <div class="coscheme" id="co-scheme"></div>
+      <div class="coprice"><span id="co-price">$0.0M</span><span class="dim" id="co-left"></span></div>
+      <button class="btn" id="b-coach-hire">Hire him</button>
+      <div class="codots" id="co-dots"></div>
+    </div>
+    <!-- THE OTHER DOOR, and it is the one that hands the scheme back to you. -->
+    <button class="btn ghost sm" id="b-coach-none" style="width:100%;margin-top:10px">No coach, I will call it myself</button>
+    <div id="co-planwrap" hidden>
+      <h3 class="display" style="font-size:20px;margin:20px 0 4px">Your game plan</h3>
+      <p class="dim" id="co-planwho" style="font-size:12.5px;margin:0 0 10px"></p>
+      <div id="co-plan"></div>
+    </div>
+    <div style="margin-top:18px"><button class="btn" id="b-coach-go" hidden>Play the season</button></div>
   </div>
 
   <div class="screen" id="s-squad">
@@ -5746,8 +5819,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=64"></script>
-<script src="run.js?v=74"></script>
+<script src="engine.js?v=65"></script>
+<script src="run.js?v=75"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -6029,7 +6102,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=38;
+const NEED_VERSION=39;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -9004,7 +9077,9 @@ function signInto(p,slot){
    affordable rather than a shortlist somebody curated, and going without a coach is on the
    list too, because at $3M the worst man in the game is a real alternative to a better
    cornerback. */
-let coShowAll=false;
+/* WHERE THE STEPPER IS. -1 is the "no coach" position, which is a real place in the market
+   rather than an absence: it is what you land on if you decline everybody. */
+let coIdx=0;
 
 /* The three axes, in the words a player would use. Order matters: the left option is always
    the conservative one, so the row reads the same way every time. */
@@ -9014,70 +9089,88 @@ const PLAN_UI=[
   {k:'pressure',nm:'Pressure',opts:[[-1,'Contain'],[0,'Base'],[1,'Blitz']]},
 ];
 
-const coachList=()=>{
-  try{ return E.coachTable(CTX)||[]; }catch(_){ return []; }
-};
+const coachList=()=>{ try{ return E.coachTable(CTX)||[]; }catch(_){ return []; } };
+let coMarket=[];
+
+/* WHAT THE TEAM IS WORTH WITH A GIVEN MAN IN CHARGE. The same function the season uses, so
+   the number previewed here is the number the run is actually seeded on. */
+function coRating(coach){
+  try{
+    const chem=E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
+    return E.overallOf(run.roster,chem,'full',coach||null);
+  }catch(_){ return 0; }
+}
 
 function paintCoach(){
   if(!run||!run.full) return;
+  coMarket=R.coachMarket(run,coachList());
+  if(coIdx>=coMarket.length) coIdx=Math.max(0,coMarket.length-1);
   const left=R.remaining(run);
-  const market=R.coachMarket(run,coachList());
-  $('co-sub').innerHTML='<b>$'+left.toFixed(1)+'M left</b>, and he comes out of it. '+
-    (market.length
-      ? 'Every coach here is one you can still afford.'
-      : 'Nothing is affordable, which is a decision you already made in the draft.');
+  const base=coRating(null);
 
-  /* TEN, THEN THE REST ON ASKING. The market is 115 names and most of them are somebody
-     nobody has heard of who was 4-12 three times: a list that long is not a choice, it is a
-     scroll. Sorted dearest first, because price here tracks how good he was. */
-  const shown=coShowAll?market:market.slice(0,10);
-  const tilt=(v)=>{
-    const pct=Math.round((v*1.2)*10)/10;   // COACH_K as a percentage, one decimal
-    const cls=pct>0.05?'pos':(pct<-0.05?'neg':'');
-    return '<span class="co-t '+cls+'">'+(pct>0?'+':'')+pct.toFixed(1)+'%</span>';
-  };
-  let h='';
-  shown.forEach((c,i)=>{
-    const on=run.coach&&run.coach.name===c.name;
-    h+='<button class="co-row'+(on?' on':'')+'" data-c="'+i+'">'+
-      '<span><span class="co-nm">'+esc(c.name)+'</span>'+
-      '<span class="co-sub2"><span>'+esc(c.years)+'</span>'+
-      '<span>'+tilt(c.off)+' offense</span><span>'+tilt(c.def)+' defense</span></span></span>'+
-      '<span class="co-pr">$'+c.price_musd.toFixed(1)+'M</span></button>';
-  });
-  /* GOING WITHOUT IS A ROW, not an absence. It has to be as easy to pick as any coach or it
-     is not an option, it is a thing you do by failing to act. */
-  h+='<button class="co-row'+(run.coach?'':' on')+'" data-c="none">'+
-    '<span><span class="co-nm">No coach</span>'+
-    '<span class="co-sub2"><span>Keep the money on the field</span></span></span>'+
-    '<span class="co-pr">$0.0M</span></button>';
-  $('co-list').innerHTML=h;
-  const more=$('co-more');
-  if(more){ more.hidden=coShowAll||market.length<=10;
-    more.textContent='Show all '+market.length+' I can afford'; }
+  $('co-sub').innerHTML=coMarket.length
+    ? '<b>$'+left.toFixed(1)+'M left.</b> A coach comes out of it, and his scheme comes with him.'
+    : '<b>$'+left.toFixed(1)+'M left</b>, which hires nobody. You call the game plan.';
 
-  $('co-list').onclick=(e)=>{
-    const b=e.target.closest('.co-row'); if(!b) return;
-    const k=b.dataset.c;
-    try{ R.hireCoach(run,k==='none'?null:market[+k]); }
-    catch(err){ toast(err.message); return; }
-    ga('coach_hired',{name:run.coach?run.coach.name:'none',price:run.coach?run.coach.price_musd:0});
-    paintCoach();
-  };
+  const card=document.querySelector('.cocard');
+  if(card) card.hidden=!coMarket.length;
+
+  if(coMarket.length){
+    const c=coMarket[coIdx];
+    const withHim=coRating(c);
+    const d=withHim-base;
+    $('co-name').textContent=c.name;
+    $('co-years').textContent=c.years+'  \u00b7  '+c.seasons+' seasons';
+    const eff=E.coachEffect(c);
+    const tilt=(v,lbl)=>{const pct=(v-1)*100;
+      return '<div class="cotilt"><b class="'+(pct>0.05?'co-t pos':(pct<-0.05?'co-t neg':''))+'">'+
+        (pct>0?'+':'')+pct.toFixed(1)+'%</b><span>'+lbl+'</span></div>';};
+    $('co-tilts').innerHTML=tilt(eff.off,'Offense')+tilt(eff.def,'Defense');
+    $('co-rnow').textContent=base.toFixed(1);
+    const rn=$('co-rnew');
+    rn.textContent=withHim.toFixed(1);
+    rn.className='cr-new '+(d>0.05?'pos':(d<-0.05?'neg':''));
+    const dl=$('co-rdelta');
+    dl.textContent=(d>0?'+':'')+d.toFixed(1);
+    dl.className='cr-delta '+(d>0.05?'pos':(d<-0.05?'neg':''));
+    /* innerHTML, because planWords separates with a middot entity and textContent would
+       print the six characters of it. */
+    $('co-scheme').innerHTML='His scheme: '+planWords(E.planFromCoach(c));
+    $('co-price').textContent='$'+c.price_musd.toFixed(1)+'M';
+    $('co-left').textContent='$'+Math.max(0,left-c.price_musd).toFixed(1)+'M would be left';
+    $('b-coach-hire').textContent='Hire '+c.name.split(' ').slice(-1)[0];
+    $('co-prev').disabled=coIdx<=0;
+    $('co-next').disabled=coIdx>=coMarket.length-1;
+    /* A dot per coach, up to a point. Past about twenty the dots stop meaning anything and
+       start being a second thing to look at. */
+    $('co-dots').innerHTML=coMarket.length<=20
+      ? coMarket.map((_,i)=>'<span class="codot'+(i===coIdx?' on':'')+'"></span>').join('')
+      : '<span class="cr-lab" style="margin:0">'+(coIdx+1)+' of '+coMarket.length+'</span>';
+  }
   paintPlan();
-  /* AND ACTUALLY SHOW IT. Every other paint function on this page is called by something
-     that has already switched screens; this one is the switch, because the twelfth signing
-     has nowhere else to go. Without it the draft screen sat there with a finished roster on
-     it and no error anywhere. */
   show('s-coach');
 }
-if($('co-more')) $('co-more').onclick=()=>{ coShowAll=true; paintCoach(); };
 
+/* THE PLAN EDITOR IS ONLY YOURS WHEN NOBODY IS COACHING, which is the whole trade on this
+   screen: pay for a man who knows what he is doing and play his way, or keep the money and
+   call it yourself. */
 function paintPlan(){
+  const wrap=$('co-planwrap');
+  const hired=!!(run&&run.coach);
+  /* SHOWN ONLY AFTER DECLINING. Editable before a decision it would invite somebody to set
+     a plan and then hire a coach who overwrites it, which is the same "hire him and overrule
+     him" muddle from the other direction. Browse, decide, and then the plan is either his or
+     yours. */
+  if(wrap) wrap.hidden=hired||!run.coachDecided;
+  /* THE WAY OUT OPENS ONCE A DECISION HAS BEEN MADE, and declining is a decision. It also
+     opens when nobody is affordable, because then there was nothing to decide. */
+  const go=$('b-coach-go');
+  if(go) go.hidden=!(run.coachDecided||!coMarket.length);
   const who=$('co-planwho');
-  if(who) who.textContent=run.coach
-    ? (run.planTouched?'Yours, not his.':run.coach.name+' would play it this way. Change anything you disagree with.')
-    : 'Nobody set this for you. Three choices, and each one costs what it gives.';
+  if(who) who.textContent=run.coachDecided
+    ? 'Nobody is calling this but you. Each choice costs what it gives.'
+    : 'Three choices, and each one costs what it gives.';
+  if(hired) return;
   let h='';
   PLAN_UI.forEach((ax)=>{
     h+='<div class="pl-ax"><span class="pl-nm">'+ax.nm+'</span><span class="pl-opts">'+
@@ -9089,11 +9182,49 @@ function paintPlan(){
   $('co-plan').onclick=(e)=>{
     const b=e.target.closest('.pl-b'); if(!b) return;
     const next={...(run.plan||{})}; next[b.dataset.k]=+b.dataset.v;
-    R.setPlan(run,next);
+    try{ R.setPlan(run,next); }catch(err){ toast(err.message); return; }
     ga('plan_set',{axis:b.dataset.k,value:+b.dataset.v});
     paintPlan();
   };
 }
+
+const coStep=(d)=>{ coIdx=Math.max(0,Math.min(coMarket.length-1,coIdx+d)); paintCoach(); };
+if($('co-prev')) $('co-prev').onclick=()=>coStep(-1);
+if($('co-next')) $('co-next').onclick=()=>coStep(1);
+
+/* CONFIRMED, NOT CLICKED. Hiring is the last irreversible thing in a draft and it costs
+   real money, so it asks. The sheet names him, the price and what it does to the rating,
+   which is the same three facts the card was showing: a confirmation that made you go and
+   look something up again would be worse than none. */
+if($('b-coach-hire')) $('b-coach-hire').onclick=()=>{
+  const c=coMarket[coIdx]; if(!c) return;
+  const base=coRating(null), withHim=coRating(c), d=withHim-base;
+  const sign=d>0?'+':'';
+  $('sheet-in').innerHTML='<div class="eyebrow red">Hire a coach</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">'+esc(c.name)+'</h2>'+
+    '<ul class="modenotes">'+
+      '<li><b>$'+c.price_musd.toFixed(1)+'M</b> out of your cap, leaving $'+
+        Math.max(0,R.remaining(run)-c.price_musd).toFixed(1)+'M.</li>'+
+      '<li>Team rating <b>'+base.toFixed(1)+' &rarr; '+withHim.toFixed(1)+'</b> ('+sign+d.toFixed(1)+').</li>'+
+      '<li><b>He calls the game plan.</b> '+planWords(E.planFromCoach(c))+'.</li>'+
+    '</ul>'+
+    '<div style="margin-top:14px"><button class="btn" id="b-hire-yes">Hire him</button></div>'+
+    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-hire-no">Keep looking</button></div>';
+  $('sheet-in').dataset.kind='hire';
+  openSheet();
+  $('b-hire-no').onclick=closeSheet;
+  $('b-hire-yes').onclick=()=>{
+    try{ R.hireCoach(run,c); }catch(err){ toast(err.message); return; }
+    ga('coach_hired',{name:c.name,price:c.price_musd});
+    closeSheet(); paintCoach();
+  };
+};
+
+if($('b-coach-none')) $('b-coach-none').onclick=()=>{
+  try{ R.hireCoach(run,null); }catch(err){ toast(err.message); return; }
+  ga('coach_hired',{name:'none',price:0});
+  paintCoach();
+};
 
 if($('b-coach-go')) $('b-coach-go').onclick=()=>{
   try{ R.finishHiring(run); }catch(err){ toast(err.message); return; }

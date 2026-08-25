@@ -3556,7 +3556,7 @@ function defenseOverall(defenseTotal) {
 }
 
 /** The overall of a roster as drafted, either side of the ball, in one place. */
-function overallOf(roster, chemistryMultiplier, isDefense) {
+function overallOf(roster, chemistryMultiplier, isDefense, coach) {
   const pts = roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
   const chem = chemistryMultiplier || 1;
   /* 'full' rather than true or false, because a full team has two ratings and one number
@@ -3582,9 +3582,16 @@ function overallOf(roster, chemistryMultiplier, isDefense) {
        scale those constants treat as topping out near 100, so every one of them was pinned:
        the mode reached the playoffs 98% of the time and won the title two seasons in three
        against a reference of 3%. */
+    /* THE COACH IS IN THE RATING, and leaving him out was an inconsistency rather than a
+       simplification: he changes what the team scores and allows, so a rating that ignores
+       him describes a team that never takes the field, and the seeding, the weekly edge and
+       the playoff home field are all read off it. It is also what makes the hire something a
+       player can SEE: the coach screen previews this number.
+       Defaulted to no coach, so every caller that does not have one means what it meant. */
     const t = FULL_TALENT;
-    const offRating = offPts * t * chem * rosterStructure(off).multiplier;
-    const defRating = defenseOverall(defPts * t * chem * defenseStructure(def).multiplier);
+    const eff = coachEffect(coach);
+    const offRating = offPts * t * eff.off * chem * rosterStructure(off).multiplier;
+    const defRating = defenseOverall(defPts * t * eff.def * chem * defenseStructure(def).multiplier);
     return (offRating + defRating) / 2;
   }
   return isDefense
@@ -3886,6 +3893,12 @@ function normalizePlan(plan) {
  * somebody would choose. An offensive coach pushes the tempo and goes for it; a defensive
  * one shortens the game and sends pressure. A coach who is neither leaves all three level,
  * which is the honest answer for a man whose teams were average at both.
+ */
+/*
+ * A COACH'S SCHEME IS HIS, NOT A SUGGESTION. Hiring one takes his philosophy with him,
+ * which is the whole shape of the decision: pay for a man who knows what he is doing and
+ * play his way, or keep the money and call it yourself. A screen that let you hire
+ * Belichick and then overrule him was offering the expertise for free.
  */
 function planFromCoach(coach) {
   if (!coach) return normalizePlan(null);
@@ -4256,7 +4269,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
      scale the seeding and edge constants below do not share, so a top defense projected as
      a bottom team. overallOf answers both. */
   const teamRating = overallOf(roster, chemistryMultiplier,
-    opts.full ? 'full' : !!opts.defense);
+    opts.full ? 'full' : !!opts.defense, opts.coach);
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 21.5;
     /* THE PROJECTION HAS TO PLAY THE GAME THE RUN PLAYED. A One Stop roster resolved
@@ -4416,7 +4429,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 38;
+const ENGINE_API_VERSION = 39;
 
 /*
  * The three-letter code a team actually wore in a given season.
