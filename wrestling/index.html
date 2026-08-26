@@ -4297,8 +4297,9 @@ const TOURS={
    body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing, and the sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
   {sel:'#weekBody .bksheet', title:'Winning is not the point',
    body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
-  {sel:'.wk-extras-toggle', title:'Game plan lives here',
-   body:'Under this toggle: the two <b>move categories you emphasise</b> in every match (they build mastery, which unlocks better moves) and the <b>goals</b> you are working toward. Open it when you want to steer your growth, close it when you just want to wrestle.'},
+  {sel:'.planwhy', title:'Game plan',
+   body:'The two <b>move categories you emphasise</b> in every match. They build mastery, and mastery unlocks better moves. Change them any time you want to grow differently.',
+   before:()=>{ if(G && G.car && !G.car._wkExtras){ G.car._wkExtras=true; try{ renderWeek(); }catch(_){} } }},
   {sel:'#carTiles', title:'Where you stand, how hot you are',
    body:'Two numbers, one glance. <b>Where you stand</b> blends office trust, popularity and tier progress. <b>How hot you are</b> blends gimmick heat, crowd reaction and momentum. Tap <i>Show the numbers behind these</i> if you want the six individual stats.'},
   {sel:'.hud', title:'The clock is running',
@@ -4335,6 +4336,9 @@ function tourStep(i){
   if(i>=T.length){ endTour(); return; }
   TOUR_I=i;
   const st=T[i], back=$('tourBack'), hole=$('tourHole'), arrow=$('tourArrow'), card=$('tourCard');
+  // Optional per-step preparation, e.g. reveal a collapsed panel so the
+  // spotlight actually lands on visible content.
+  if(typeof st.before==='function'){ try{ st.before(); }catch(_){} }
   back.classList.add('open');
   const last=i===T.length-1;
   card.innerHTML=`
@@ -5088,32 +5092,35 @@ function tagOffers(offs){
    The hub should never leave you wondering. This picks the single most
    useful thing available and says it in a sentence. */
 function weekAdvice(){
+  // Each advice line is one short sentence (~12 words max). The old copy
+  // ran 40 words a line, so the "one thing to do this week" got drowned in
+  // its own reasoning.
   const c=G.car, w=G.w;
   const P=s=>pico(s,22);
-  if(c.freeAgent) return {ico:P('pen'),t:'Your contract is up. Sign somewhere before you can be booked.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
-  if(c.injWeeks>0) return {ico:P('cross'),t:`You are hurt. Rest until the ${(c.hurt&&c.hurt.part||'injury').toLowerCase()} is cleared. Working through it makes it worse.`,sev:'bad'};
-  if(w.tp>0) return {ico:P('star'),t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
-  if(c.cond<45) return {ico:P('bandage'),t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury. Take the week off.`,sev:'bad'};
-  if(gimStale()) return {ico:P('mask'),t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
-  if(reactionOf()<22 && c.year+c.week>2) return {ico:P('microphone'),t:'Nobody is reacting to you either way, and indifference is worse than being hated. Next time they put a microphone in your hand, give them something.',sev:'bad'};
-  if(voiceFlip()>=0.5) return {ico:P('mask'),t:'You have said three different things in three weeks. Pick a character and stay with it. The crowd cannot get behind somebody who changes every time they hold a microphone.',sev:'bad'};
+  if(c.freeAgent) return {ico:P('pen'),t:'Contract is up. Sign somewhere.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
+  if(c.injWeeks>0) return {ico:P('cross'),t:`Rest that ${(c.hurt&&c.hurt.part||'injury').toLowerCase()}. Working through it makes it worse.`,sev:'bad'};
+  if(w.tp>0) return {ico:P('star'),t:`${w.tp} training point${w.tp>1?'s':''} banked. Spend them.`,cta:{l:'Train',f:"go('train')"},sev:'act'};
+  if(c.cond<45) return {ico:P('bandage'),t:`Condition ${Math.round(c.cond)}. Take the week off.`,sev:'bad'};
+  if(gimStale()) return {ico:P('mask'),t:'The character is stale. Repackage or turn.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
+  if(reactionOf()<22 && c.year+c.week>2) return {ico:P('microphone'),t:'The crowd is indifferent. Give them a reason next time you mic up.',sev:'bad'};
+  if(voiceFlip()>=0.5) return {ico:P('mask'),t:'Three voices in three weeks. Pick a character and stay.',sev:'bad'};
   const tp=turnProgress();
-  if(tp.to&&tp.p>0.25) return {ico:P('swap'),t:`You have been talking like a ${tp.to}. One more promo in that voice completes the turn. You are ${Math.round(tp.p*100)}% of the way there.`,sev:'act'};
-  if(alignMismatch()) return {ico:P('mask'),t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back the next time you are on the mic.`,sev:'warn'};
+  if(tp.to&&tp.p>0.25) return {ico:P('swap'),t:`Talking like a ${tp.to}. One more promo finishes the turn.`,sev:'act'};
+  if(alignMismatch()) return {ico:P('mask'),t:`Billed ${G.w.align}, crowd reads ${crowdAlign()}. Lean in or win them back.`,sev:'warn'};
   const st=story();
-  if(st&&st.stage>=3) return {ico:P('fire'),t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
+  if(st&&st.stage>=3) return {ico:P('fire'),t:'Your feud is ready for its blow-off.',sev:'act'};
   const _weak=allies().find(a=>a.loyalty<25);
   if(_weak){ const wc=charById(_weak.id);
-    return {ico:P('knife'),t:`${wc?wc.name:'One of your allies'} is barely with you any more. Win something together or they will turn, and you will not get a warning.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
-  if(canStable()) return {ico:P('shield'),t:`You have ${allies().length} people in your corner. Put a name on it and you have a stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
+    return {ico:P('knife'),t:`${wc?wc.name:'An ally'} is close to turning on you.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
+  if(canStable()) return {ico:P('shield'),t:`${allies().length} allies. Name your stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
   const _cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id))[0];
-  if(_cand) return {ico:P('handshake'),t:`${_cand.name} rates you enough to work together. That is how tag teams and stables start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
-  if(c.deal&&c.deal.weeksLeft<=6) return {ico:P('clipboard'),t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
+  if(_cand) return {ico:P('handshake'),t:`${_cand.name} respects you. That's how tag teams start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
+  if(c.deal&&c.deal.weeksLeft<=6) return {ico:P('clipboard'),t:`Deal expires in ${c.deal.weeksLeft} weeks.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
   if(c.booking&&c.booking.type==='match'&&!c.prep&&!c.booking.studied)
-    return {ico:P('tape'),t:`You have not prepared this week. Studying ${c.booking.o.oppName}'s tape raises your odds tonight.`,sev:'act'};
+    return {ico:P('tape'),t:`Study ${c.booking.o.oppName}'s tape. Raises your odds.`,sev:'act'};
   const t=workTier(), belt=beltName(t);
-  if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:P('trophy'),t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
-  return {ico:P('fist'),t:'Check what the office has you doing, then make the most of it. Your game plan is what you get better at.',sev:'ok'};
+  if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:P('trophy'),t:`Over enough for a ${belt} run. Keep winning.`,sev:'good'};
+  return {ico:P('fist'),t:'Make the most of the card you were given.',sev:'ok'};
 }
 /* what you are working toward, so progress is visible week to week */
 function nextGoals(){
@@ -5285,7 +5292,7 @@ function renderWeek(){
         <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
       </div>
       <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
-      <div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>
+      ${bookDetailsOpen?'':`<div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>`}
       ${o.nonTitleVsChamp?`<div class="bs-nontitle">${pico('star',12)} A clean pin over the champion earns the shot.</div>`:''}
       ${(!segmentsPlayedThisWeek() && pickSegment())?`<div class="bs-scene-tease">${pico('microphone',12)} A backstage scene plays on the walk to gorilla.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
@@ -11308,8 +11315,13 @@ function renderCrew(){
   }).join('')+`</div>`;
 
   // ---- who wants you ----
+  // Previously every non-ally card repeated its own "Needs 55 respect.
+  // Wrestle them or talk to them" hint. On a roster of 8 wrestlers this
+  // is the same sentence eight times. Rule is one line, at the top.
   const roster=houseRoster(myPromo().id).filter(x=>!isAlly(x.id));
+  const anyLocked = roster.some(ch=>!canAlly(ch.id));
   h+=`<div class="flab">The rest of the locker room</div>
+    ${anyLocked?`<div class="hint" style="margin-bottom:8px;">Alliances open at <b>55 respect</b> with <b>under 40 heat</b>. Wrestle them or work them at the mic to build both.</div>`:''}
     <div class="grid g2" style="gap:10px;">`+roster.map(ch=>{
     const R=rel(ch.id), lb=relLabel(R);
     const ok=canAlly(ch.id);
@@ -11325,10 +11337,9 @@ function renderCrew(){
         <div><div class="hint">Respect ${Math.round(R.respect)}</div><div class="bar g"><i style="width:${R.respect}%"></i></div></div>
         <div><div class="hint">Bad blood ${Math.round(R.heat)}</div><div class="bar"><i style="width:${R.heat}%;background:#c0392b"></i></div></div>
       </div>
-      <div class="row" style="margin-top:9px;gap:6px;">
-        ${ok?`<button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>`
-            :`<span class="hint">${R.heat>=40?'Too much bad blood':'Needs 55 respect'}. Wrestle them or talk to them</span>`}
-      </div>
+      ${ok?`<div class="row" style="margin-top:9px;gap:6px;">
+        <button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>
+      </div>`:''}
     </div>`;
   }).join('')+`</div>`;
   $('crewBody').innerHTML=h;
@@ -11802,9 +11813,8 @@ function renderBackstage(){
     // Empty rooms are omitted entirely instead of showing "Quiet in here."
     // Fewer tiles, less noise, and the ones that ARE present feel populated.
     if(!bodies && !gmBtn) return '';
-    return `<div class="bs-room" data-room="${r.id}">
+    return `<div class="bs-room" data-room="${r.id}" title="${(r.blurb||'').replace(/"/g,'&quot;')}">
       <div class="bs-room-h"><span class="bs-room-ico">${r.icon}</span> <b>${r.name}</b></div>
-      <div class="bs-room-b">${r.blurb}</div>
       <div class="bs-occ">${gmBtn}${bodies}</div>
     </div>`;
   }).filter(Boolean).join('');
