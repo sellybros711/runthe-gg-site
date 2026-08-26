@@ -3626,19 +3626,31 @@ function defenseOverall(defenseTotal) {
  */
 const OPP_PTS_NEUTRAL = 22.08;   // mean pts_scored_mean over every team season
 
-/** Expected margin per game against a league-average opponent. The raw scale. */
-function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
+/**
+ * The two halves of a full team's week, against a league-average opponent: what it would
+ * score and what it would allow. Everything below is built out of these two numbers, so
+ * there is one place that knows how a full team is valued rather than three that agree
+ * until somebody edits one of them.
+ */
+function fullParts(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
   const { off, def } = splitSides(roster);
-  if (!off.length || !def.length) return 0;
+  if (!off.length || !def.length) return { scored: 0, allowed: 0 };
   const eff = coachEffect(coach);
   const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
   const offPts = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t * eff.off;
   const defPts = def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t * eff.def;
-  const yourPts = offPts * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
-  const theirPts = OPP_PTS_NEUTRAL * constants.SCALE
-    * defenseSuppression(defPts * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier,
-      constants);
-  return yourPts - theirPts;
+  return {
+    scored: offPts * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier,
+    allowed: OPP_PTS_NEUTRAL * constants.SCALE
+      * defenseSuppression(defPts * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier,
+        constants),
+  };
+}
+
+/** Expected margin per game against a league-average opponent. The raw scale. */
+function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
+  const p = fullParts(roster, chemistryMultiplier, coach, constants);
+  return p.scored - p.allowed;
 }
 
 /* THE TWO ENDS OF THE LINE, solved rather than chosen. Re-derive with
@@ -3646,6 +3658,14 @@ function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS)
  * after any change to the cap, the talent dial, the coach table or the player data. */
 const FULL_STRENGTH_MIN = -107.8;  // twelve cheapest legal men, Steve Spagnuolo coaching
 const FULL_STRENGTH_MAX = 67.6;    // $159.5M off / $100.4M def, Bill Belichick, chemistry and all
+/* The floor roster's OFFENSIVE half, which is what anchors the two per-unit ratings below.
+   Comes out of the same solve as the pair above and must be re-pasted with them. */
+const FULL_FLOOR_SCORED = -0.07;
+/* DERIVED, NEVER PASTED. The identity the per-unit ratings rest on is
+   FULL_STRENGTH_MIN = FLOOR_SCORED - FLOOR_ALLOWED, so storing the third number separately
+   would be storing a fact already implied by two others and inviting them to disagree by a
+   tenth after somebody re-runs the solve and pastes two lines out of three. */
+const FULL_FLOOR_ALLOWED = FULL_FLOOR_SCORED - FULL_STRENGTH_MIN;
 
 function fullOverall(roster, chemistryMultiplier, coach, constants) {
   const v = fullStrength(roster, chemistryMultiplier, coach, constants);
@@ -3655,6 +3675,43 @@ function fullOverall(roster, chemistryMultiplier, coach, constants) {
      caller handing this a roster assembled some other way. A rating of 104 would be the old
      bug wearing a new scale. */
   return Math.max(0, Math.min(100, 100 * (v - FULL_STRENGTH_MIN) / span));
+}
+
+/*
+ * ─── THE SAME RATING, SPLIT BACK INTO THE TWO UNITS IT CAME FROM ────────────────────
+ *
+ * "Team overall is the offence and the defence averaged" is how anybody would describe a
+ * number like this, and it is worth making that literally true rather than nearly true.
+ *
+ * IT IS AN IDENTITY, NOT AN APPROXIMATION. Give each side HALF the span of the whole scale
+ * and anchor each at the floor roster's own half, and the algebra closes:
+ *
+ *   off = 200 * (scored  - FLOOR_SCORED)  / span
+ *   def = 200 * (FLOOR_ALLOWED - allowed) / span
+ *   (off + def) / 2 = 100 * ((scored - allowed) - (FLOOR_SCORED - FLOOR_ALLOWED)) / span
+ *                   = 100 * (strength - FULL_STRENGTH_MIN) / span
+ *                   = the team overall, exactly
+ *
+ * because FULL_STRENGTH_MIN is by definition FLOOR_SCORED - FLOOR_ALLOWED. So the two halves
+ * are a genuine decomposition of the headline number and not a second opinion about it.
+ *
+ * THE COACH IS INSIDE EACH HALF, not a bonus on top, and that is deliberate. Almost every
+ * coach in the game tilts the two ways at once: Mike Martz is +5.6 offense and -1.9 defense,
+ * Jim Harbaugh is +0.3 and +4.9. One blended "coach boost" would report Martz as a small
+ * positive and hide the whole of what hiring him does. Inside the halves, his two numbers
+ * move in opposite directions on screen, which is the truth about him.
+ *
+ * NEITHER HALF IS CLAMPED. Spend the whole cap on one side and that side can pass 100 while
+ * the other goes below 0, and both facts are worth seeing. The headline stays clamped
+ * because it is the number people compare runs by.
+ */
+function fullSideRatings(roster, chemistryMultiplier, coach, constants) {
+  const span = FULL_STRENGTH_MAX - FULL_STRENGTH_MIN;
+  if (!(span > 0)) return { off: 0, def: 0, overall: 0 };
+  const p = fullParts(roster, chemistryMultiplier, coach, constants);
+  const off = 200 * (p.scored - FULL_FLOOR_SCORED) / span;
+  const def = 200 * (FULL_FLOOR_ALLOWED - p.allowed) / span;
+  return { off, def, overall: Math.max(0, Math.min(100, (off + def) / 2)) };
 }
 
 function overallOf(roster, chemistryMultiplier, isDefense, coach) {
@@ -4597,7 +4654,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 40;
+const ENGINE_API_VERSION = 41;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -4672,7 +4729,8 @@ const publicAPI = {
   ],
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
-  fullStrength, fullOverall, FULL_STRENGTH_MIN, FULL_STRENGTH_MAX,
+  fullStrength, fullOverall, fullParts, fullSideRatings,
+  FULL_STRENGTH_MIN, FULL_STRENGTH_MAX, FULL_FLOOR_SCORED, FULL_FLOOR_ALLOWED,
   coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
   PLAN, PLAN_AXES, normalizePlan, planFromCoach,
   resolveHeadToHead, playRun, prepareData, toFootballScore,

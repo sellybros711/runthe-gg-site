@@ -961,6 +961,11 @@ function fullScaleReport() {
   const worstCoach = coaches.filter((c) => c.price_musd <= 3.5)
     .sort((a, b) => (a.off + a.def) - (b.off + b.def))[0] || null;
   const lo = E.fullStrength(worst, 1, worstCoach, constants);
+  /* The floor's two halves, kept apart, because they are what anchor the per-unit ratings.
+     fullSideRatings gives each side half the whole scale's span and starts it at the floor's
+     own half, which is what makes "offence and defence averaged" the team overall exactly
+     rather than approximately. See its comment. */
+  const loParts = E.fullParts(worst, 1, worstCoach, constants);
 
   /* THE CEILING: the solved roster and the coach it hires, at the best chemistry the game
      can produce. Chemistry is taken as its own maximum rather than solved WITH the roster,
@@ -980,9 +985,14 @@ function fullScaleReport() {
     + ' def   coach '
     + ((best.coach || {}).name || 'none') + '   strength ' + hi.toFixed(1));
   console.log('');
-  console.log('  paste into engine.js:');
+  console.log('  paste into engine.js, all three, together:');
   console.log('    const FULL_STRENGTH_MIN = ' + lo.toFixed(1) + ';');
   console.log('    const FULL_STRENGTH_MAX = ' + hi.toFixed(1) + ';');
+  console.log('    const FULL_FLOOR_SCORED = ' + loParts.scored.toFixed(2) + ';');
+  console.log('');
+  console.log('  (FULL_FLOOR_ALLOWED is derived from those two in the engine, by the identity');
+  console.log('   MIN = scored - allowed. Here the floor allows '
+    + loParts.allowed.toFixed(2) + ' a game.)');
 }
 
 function fullTeamReport(n) {

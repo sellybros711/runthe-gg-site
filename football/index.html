@@ -548,51 +548,53 @@ window.GA_ID='G-L29P5MRWKE';
     .field.fullfield .chip .who{font-size:9px;max-width:56px}
   }
   /* ---- THE COACH SCREEN ----
-     A card, not a list. See the markup for why. */
-  .cocard{border:1.5px solid rgba(226,178,90,.35);border-radius:14px;padding:14px 12px 12px;
-    background:linear-gradient(180deg,rgba(38,30,16,.85),rgba(19,20,26,.85))}
-  .cohead{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;align-items:center;gap:6px}
-  .conav{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line-2);
-    background:transparent;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;
-    display:grid;place-items:center;font-family:inherit}
-  .conav:active{background:rgba(255,255,255,.06)}
-  .conav[disabled]{opacity:.28;cursor:default}
-  .cowho{text-align:center;min-width:0}
-  .cowho .co-nm{font-size:19px;font-weight:800;letter-spacing:.01em;
+     A grid, not a card you step through. See the markup for why. */
+  /* YOUR TEAM AS IT STANDS, above the market, because every number in the grid is a change
+     to this one and a delta with nothing to be a delta FROM is just a number. */
+  .cobase{border:1.5px solid var(--line-2);border-radius:12px;padding:10px 12px;
+    background:rgba(19,26,43,.5);display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .cobase .cb-lab{font-family:var(--fn);font-size:9.5px;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--dim-2);width:100%}
+  .cobase .cb-v{font-family:var(--fn);font-size:26px;font-weight:800;line-height:1}
+  .cobase .cb-half{font-family:var(--fn);font-size:11.5px;color:var(--dim)}
+  .cobase .cb-half b{font-weight:800;color:var(--ink)}
+  /* THE MARKET. Two columns on a phone, capped in height so the way out of this screen is
+     never fifty rows below the fold: the grid scrolls inside itself and the buttons under
+     it stay put. */
+  .cogrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px;
+    max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:2px;scrollbar-width:thin}
+  .cocell{border:1.5px solid var(--line-2);border-radius:11px;padding:8px 9px;
+    background:rgba(19,26,43,.55);text-align:left;cursor:pointer;font-family:inherit;
+    display:flex;flex-direction:column;gap:3px;min-width:0;color:var(--ink)}
+  .cocell:active{transform:translateY(1px)}
+  .cocell.best{border-color:rgba(226,178,90,.55);background:rgba(38,30,16,.6)}
+  .cocell .cnm{font-size:12.5px;font-weight:800;letter-spacing:.01em;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .co-yrs{font-family:var(--fn);font-size:11px;color:var(--dim-2);letter-spacing:.05em;margin-top:1px}
-  .cotilts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 10px}
-  .cotilt{text-align:center;padding:8px 4px;border-radius:10px;background:rgba(0,0,0,.28)}
-  .cotilt b{display:block;font-family:var(--fn);font-size:17px;font-weight:800;line-height:1}
-  .cotilt span{display:block;font-family:var(--fn);font-size:9.5px;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--dim-2);margin-top:3px}
-  /* THE RATING LINE. Bigger than anything else on the card, because it is the answer. */
-  .corate{display:flex;align-items:baseline;justify-content:center;gap:7px;flex-wrap:wrap;
-    padding:10px 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .cr-lab{font-family:var(--fn);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
-    color:var(--dim-2);width:100%;text-align:center;margin-bottom:2px}
-  .cr-now{font-family:var(--fn);font-size:19px;font-weight:700;color:var(--dim)}
-  .cr-arrow{color:var(--dim-2);font-size:15px}
-  .cr-new{font-family:var(--fn);font-size:27px;font-weight:800;line-height:1}
-  .cr-delta{font-family:var(--fn);font-size:13px;font-weight:800}
-  .cr-new.pos,.cr-delta.pos{color:var(--good,#4ade80)}
-  .cr-new.neg,.cr-delta.neg{color:var(--bad,#f87171)}
-  .coscheme{font-family:var(--fn);font-size:11px;letter-spacing:.04em;color:rgba(243,221,174,.72);
-    text-align:center;margin:10px 0 2px}
-  .coprice{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
-    font-family:var(--fn);font-size:13px;font-weight:800;margin:10px 0 8px}
-  .coprice .dim{font-weight:600;font-size:11.5px}
-  /* Where you are in the market, without a number to read. */
-  .codots{display:flex;gap:4px;justify-content:center;margin-top:10px;flex-wrap:wrap}
-  .codot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.18)}
-  .codot.on{background:rgba(226,178,90,.9);transform:scale(1.35)}
+  .cocell .cdl{font-family:var(--fn);font-size:19px;font-weight:800;line-height:1;color:var(--dim)}
+  .cocell .cdl.pos{color:var(--good,#4ade80)} .cocell .cdl.neg{color:var(--bad,#f87171)}
+  .cocell .cdl i{font-style:normal;font-size:9.5px;font-weight:600;color:var(--dim-2);
+    letter-spacing:.06em;margin-left:3px}
+  .cocell .cft{display:flex;align-items:center;gap:6px;font-family:var(--fn);font-size:10px;
+    color:var(--dim-2);min-width:0}
+  .cocell .cft .cpr{font-weight:800;color:var(--dim)}
+  /* He already knows somebody on this roster. Rare enough to be worth a mark of its own. */
+  .cocell .cknow{color:var(--good,#4ade80);font-weight:800;white-space:nowrap}
+  .comkt{font-family:var(--fn);font-size:10px;letter-spacing:.06em;color:var(--dim-2);
+    text-transform:uppercase;margin:12px 0 0;text-align:center}
+  /* The two unit ratings, wherever the team overall is printed. Deliberately reads as
+     arithmetic rather than as two more statistics: the mean of them IS the number above. */
+  .sidesplit{display:flex;align-items:baseline;justify-content:center;gap:8px;flex-wrap:wrap;
+    font-family:var(--fn);font-size:11.5px;color:var(--dim-2);margin:9px 0 2px}
+  .sidesplit b{font-weight:800;font-size:14px;color:var(--dim)}
+  .sidesplit .sep{color:var(--line-2);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   /* HIDDEN HAS TO BEAT .btn, which sets its own display. The UA rule for [hidden] is
      display:none at the same specificity as a class, so the later class wins and the
      button stayed on screen with hidden=true set on it: exactly the trap .hp-full[hidden]
      was written for on the home screen. */
   /* #co-knows is in this list for the same reason: .coknows sets display:flex, so without
      it the box stays on screen holding the LAST coach's links. Third time. */
-  #b-coach-go[hidden],#co-planwrap[hidden],.cocard[hidden],#co-knows[hidden]{display:none}
+  #b-coach-go[hidden],#co-planwrap[hidden],#co-knows[hidden]{display:none}
   .coknows{margin:8px 0 0;display:flex;flex-direction:column;gap:4px}
   /* The two units' own chemistry, under the average of them. Same [hidden] trap. */
   #q-chemsplit[hidden]{display:none}
@@ -5332,38 +5334,17 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow">Step 3 of 4</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Hire a coach</h2>
     <p class="dim" id="co-sub" style="font-size:13px;margin:0 0 12px"></p>
-    <!-- ONE COACH AT A TIME. The first version was eleven rows of name, years, two
-         percentages and a price: forty numbers to read before a decision, on a phone. This
-         is a card you step through, and the only number that matters is the one at the
-         bottom, which is what hiring him would do to your team. -->
-    <div class="cocard">
-      <div class="cohead">
-        <button class="conav" id="co-prev" aria-label="Previous coach">&#8249;</button>
-        <div class="cowho">
-          <div class="co-nm" id="co-name">&nbsp;</div>
-          <div class="co-yrs" id="co-years">&nbsp;</div>
-        </div>
-        <button class="conav" id="co-next" aria-label="Next coach">&#8250;</button>
-      </div>
-      <div class="cotilts" id="co-tilts"></div>
-      <!-- THE POINT OF THE WHOLE SCREEN. Your rating now, his arrow, and what it becomes. -->
-      <div class="corate">
-        <span class="cr-lab">Team rating</span>
-        <span class="cr-now" id="co-rnow">0</span>
-        <span class="cr-arrow">&#8594;</span>
-        <span class="cr-new" id="co-rnew">0</span>
-        <span class="cr-delta" id="co-rdelta"></span>
-      </div>
-      <div class="coscheme" id="co-scheme"></div>
-      <!-- WHY THIS MAN AND NOT THE ONE WITH THE BIGGER TILT. His tilt is the same wherever
-           he goes; this line is the half that belongs to YOUR roster, so it is the reason
-           two GMs with the same money hire different coaches. Empty for most of the market,
-           which is what makes it worth reading when it is not. -->
-      <div class="coknows" id="co-knows" hidden></div>
-      <div class="coprice"><span id="co-price">$0.0M</span><span class="dim" id="co-left"></span></div>
-      <button class="btn" id="b-coach-hire">Hire him</button>
-      <div class="codots" id="co-dots"></div>
-    </div>
+    <!-- EVERYBODY AT ONCE. This was a card you stepped through one man at a time, and with
+         fifty-odd names in the market that is fifty-odd taps to find out who is worth
+         hiring. A grid shows fourteen at a glance and every cell carries the only number
+         that decides anything: what hiring him would do to YOUR team.
+
+         SORTED BY THAT NUMBER, best first, rather than by price. Price is on the cell, so
+         the cheap ones are still findable, but "who helps this roster most" is the question
+         somebody opens this screen with and it should not need a search. -->
+    <div class="cobase" id="co-base"></div>
+    <div class="cogrid" id="co-grid"></div>
+    <p class="comkt" id="co-market"></p>
     <!-- THE OTHER DOOR, and it is the one that hands the scheme back to you. -->
     <button class="btn ghost sm" id="b-coach-none" style="width:100%;margin-top:10px">No coach, I will call it myself</button>
     <div id="co-planwrap" hidden>
@@ -5384,6 +5365,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <div class="rail" id="rail2"></div>
         <p class="railnote"></p>
       </div>
+      <div id="q-sides"></div>
       <div id="q-coach"></div>
       <div class="squad-right" id="q-roster-list"></div>
     </div>
@@ -5631,6 +5613,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            live only in the leaderboard's detail sheet, which meant the number the board
            ranks you on was invisible on the page that ends your run. -->
       <div class="ovr" id="o-ovr"></div>
+      <!-- Full Team only: the two unit ratings the headline above is the mean of. -->
+      <div id="o-sides"></div>
       <div class="splits" id="o-splits"></div>
       <!-- One line, guests only. The full sign-in gate lives in the Where it ranks tab,
            which stopped being the tab this page opens on, and a prompt nobody sees is
@@ -5890,7 +5874,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=66"></script>
+<script src="engine.js?v=67"></script>
 <script src="run.js?v=76"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
@@ -6191,7 +6175,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=40;
+const NEED_VERSION=41;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -9217,9 +9201,6 @@ function signInto(p,slot){
    affordable rather than a shortlist somebody curated, and going without a coach is on the
    list too, because at $3M the worst man in the game is a real alternative to a better
    cornerback. */
-/* WHERE THE STEPPER IS. -1 is the "no coach" position, which is a real place in the market
-   rather than an absence: it is what you land on if you decline everybody. */
-let coIdx=0;
 
 /* The three axes, in the words a player would use. Order matters: the left option is always
    the conservative one, so the row reads the same way every time. */
@@ -9248,6 +9229,17 @@ function coRating(coach){
     return E.overallOf(run.roster,coChemOf(coach),'full',coach||null);
   }catch(_){ return 0; }
 }
+/* THE SAME RATING SPLIT INTO ITS TWO HALVES, whose mean IS the rating: see fullSideRatings
+   in the engine, where that is an identity rather than an approximation. Worth showing on
+   this screen above any other, because most coaches tilt the two ways at once and "he takes
+   you from 43 to 46" hides that he took four off your defence to do it. */
+function coSides(coach){
+  try{ return E.fullSideRatings(run.roster,coChemOf(coach),coach||null); }
+  catch(_){ return {off:0,def:0,overall:0}; }
+}
+/* -0.0 is a real output here (a defence pinned at the worst the game allows) and it prints
+   as "-0.0", which reads as a bug rather than as a floor. */
+const rate1=(v)=>(Math.abs(v)<0.05?0:v).toFixed(1);
 /* Who on your roster he already knows, for the line on his card. */
 function coKnows(coach){
   try{ return E.coachLinks(run.roster,CTX,coach||null)||[]; }catch(_){ return []; }
@@ -9256,7 +9248,6 @@ function coKnows(coach){
 function paintCoach(){
   if(!run||!run.full) return;
   coMarket=R.coachMarket(run,coachList());
-  if(coIdx>=coMarket.length) coIdx=Math.max(0,coMarket.length-1);
   const left=R.remaining(run);
   const base=coRating(null);
 
@@ -9264,50 +9255,36 @@ function paintCoach(){
     ? '<b>$'+left.toFixed(1)+'M left.</b> A coach comes out of it, and his scheme comes with him.'
     : '<b>$'+left.toFixed(1)+'M left</b>, which hires nobody. You call the game plan.';
 
-  const card=document.querySelector('.cocard');
-  if(card) card.hidden=!coMarket.length;
+  /* WHAT THE TEAM IS WORTH RIGHT NOW, and its two halves, because every number in the grid
+     below is a change to this one. The halves are the whole point of showing them here: a
+     coach who is +8% offence and -7% defence moves them in opposite directions, and one
+     blended figure would report him as a small nothing. */
+  const b0=coSides(null);
+  $('co-base').innerHTML='<span class="cb-lab">Your team as it stands</span>'+
+    '<span class="cb-v">'+base.toFixed(1)+'</span>'+
+    '<span class="cb-half">offense <b>'+rate1(b0.off)+'</b> &middot; defense <b>'+
+      rate1(b0.def)+'</b>, averaged</span>';
 
-  if(coMarket.length){
-    const c=coMarket[coIdx];
-    const withHim=coRating(c);
-    const d=withHim-base;
-    $('co-name').textContent=c.name;
-    $('co-years').textContent=c.years+'  \u00b7  '+c.seasons+' seasons';
-    const eff=E.coachEffect(c);
-    const tilt=(v,lbl)=>{const pct=(v-1)*100;
-      return '<div class="cotilt"><b class="'+(pct>0.05?'co-t pos':(pct<-0.05?'co-t neg':''))+'">'+
-        (pct>0?'+':'')+pct.toFixed(1)+'%</b><span>'+lbl+'</span></div>';};
-    $('co-tilts').innerHTML=tilt(eff.off,'Offense')+tilt(eff.def,'Defense');
-    $('co-rnow').textContent=base.toFixed(1);
-    const rn=$('co-rnew');
-    rn.textContent=withHim.toFixed(1);
-    rn.className='cr-new '+(d>0.05?'pos':(d<-0.05?'neg':''));
-    const dl=$('co-rdelta');
-    dl.textContent=(d>0?'+':'')+d.toFixed(1);
-    dl.className='cr-delta '+(d>0.05?'pos':(d<-0.05?'neg':''));
-    /* innerHTML, because planWords separates with a middot entity and textContent would
-       print the six characters of it. */
-    $('co-scheme').innerHTML='His scheme: '+planWords(E.planFromCoach(c));
-    /* HIS HISTORY WITH THE MEN YOU DRAFTED. Capped at three lines: past that the card is a
-       list again, and the rating line above has already counted every one of them. */
-    const knows=coKnows(c), kw=$('co-knows');
-    if(kw){
-      kw.hidden=!knows.length;
-      kw.innerHTML=knows.slice(0,3).map(l=>'<div class="cok"><b>'+
-        (l.type==='coach_college'?'SCHOOL':'COACHED')+'</b><span>'+esc(l.label)+'</span></div>').join('')
-        +(knows.length>3?'<div class="cok"><b>+'+(knows.length-3)+'</b><span>more on this roster</span></div>':'');
-    }
-    $('co-price').textContent='$'+c.price_musd.toFixed(1)+'M';
-    $('co-left').textContent='$'+Math.max(0,left-c.price_musd).toFixed(1)+'M would be left';
-    $('b-coach-hire').textContent='Hire '+c.name.split(' ').slice(-1)[0];
-    $('co-prev').disabled=coIdx<=0;
-    $('co-next').disabled=coIdx>=coMarket.length-1;
-    /* A dot per coach, up to a point. Past about twenty the dots stop meaning anything and
-       start being a second thing to look at. */
-    $('co-dots').innerHTML=coMarket.length<=20
-      ? coMarket.map((_,i)=>'<span class="codot'+(i===coIdx?' on':'')+'"></span>').join('')
-      : '<span class="cr-lab" style="margin:0">'+(coIdx+1)+' of '+coMarket.length+'</span>';
-  }
+  /* EVERY MAN IN THE MARKET, PRICED IN RATING POINTS. Fifty-odd cells, each of which costs
+     one chemistry resolve and one strength evaluation, which is about a millisecond of work
+     in total and buys the whole screen. */
+  const cells=coMarket.map((c)=>({ c, d:coRating(c)-base, knows:coKnows(c).length }))
+    .sort((x,y)=>y.d-x.d||x.c.price_musd-y.c.price_musd);
+  $('co-grid').innerHTML=cells.map((r,i)=>{
+    const d=r.d, cls=d>0.05?'pos':(d<-0.05?'neg':'');
+    return '<button class="cocell'+(i===0&&d>0.05?' best':'')+'" data-n="'+esc(r.c.name)+'">'+
+      '<span class="cnm">'+esc(r.c.name)+'</span>'+
+      '<span class="cdl '+cls+'">'+(d>0?'+':'')+d.toFixed(1)+'<i>RATING</i></span>'+
+      '<span class="cft"><span class="cpr">$'+r.c.price_musd.toFixed(1)+'M</span>'+
+        '<span>'+esc(r.c.years)+'</span>'+
+        (r.knows?'<span class="cknow">knows '+r.knows+'</span>':'')+'</span>'+
+      '</button>';
+  }).join('');
+  $('co-grid').hidden=!coMarket.length;
+  const mk=$('co-market');
+  if(mk) mk.textContent=coMarket.length
+    ? coMarket.length+' coaches you can afford, best for this roster first'
+    : '';
   paintPlan();
   show('s-coach');
 }
@@ -9349,24 +9326,38 @@ function paintPlan(){
   };
 }
 
-const coStep=(d)=>{ coIdx=Math.max(0,Math.min(coMarket.length-1,coIdx+d)); paintCoach(); };
-if($('co-prev')) $('co-prev').onclick=()=>coStep(-1);
-if($('co-next')) $('co-next').onclick=()=>coStep(1);
+/* ONE TAP OPENS THE MAN, and the confirmation sheet IS his detail view: it already carries
+   the price, what he does to the rating, his scheme and who he knows, which is everything
+   the stepped card used to hold. So browsing is the grid and reading is the sheet, and
+   nothing needs a third screen in between. */
+if($('co-grid')) $('co-grid').onclick=(e)=>{
+  const cell=e.target.closest('.cocell'); if(!cell) return;
+  const c=coMarket.find((x)=>x.name===cell.dataset.n);
+  if(c) openHireSheet(c);
+};
 
 /* CONFIRMED, NOT CLICKED. Hiring is the last irreversible thing in a draft and it costs
    real money, so it asks. The sheet names him, the price and what it does to the rating,
    which is the same three facts the card was showing: a confirmation that made you go and
    look something up again would be worse than none. */
-if($('b-coach-hire')) $('b-coach-hire').onclick=()=>{
-  const c=coMarket[coIdx]; if(!c) return;
+function openHireSheet(c){
+  if(!c) return;
   const base=coRating(null), withHim=coRating(c), d=withHim-base;
   const sign=d>0?'+':'';
+  const b0=coSides(null), b1=coSides(c);
+  /* THE TWO HALVES, BEFORE AND AFTER, because this is the screen where they earn their keep.
+     Almost every coach in the game tilts both ways at once, and the one blended number above
+     cannot say which half he is taking from. */
+  const half=(lbl,was,now)=>{const dd=now-was;
+    return '<li>'+lbl+' <b>'+rate1(was)+' &rarr; '+rate1(now)+'</b> <span class="'+
+      (dd>0.05?'co-t pos':(dd<-0.05?'co-t neg':''))+'">'+(dd>0?'+':'')+dd.toFixed(1)+'</span></li>';};
   $('sheet-in').innerHTML='<div class="eyebrow red">Hire a coach</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">'+esc(c.name)+'</h2>'+
     '<ul class="modenotes">'+
       '<li><b>$'+c.price_musd.toFixed(1)+'M</b> out of your cap, leaving $'+
         Math.max(0,R.remaining(run)-c.price_musd).toFixed(1)+'M.</li>'+
       '<li>Team rating <b>'+base.toFixed(1)+' &rarr; '+withHim.toFixed(1)+'</b> ('+sign+d.toFixed(1)+').</li>'+
+      half('Offense',b0.off,b1.off)+half('Defense',b0.def,b1.def)+
       '<li><b>He calls the game plan.</b> '+planWords(E.planFromCoach(c))+'.</li>'+
       (function(){const k=coKnows(c);return k.length
         ? '<li><b>He already knows '+(k.length===1?'one of your men':k.length+' of your men')+'.</b> '
@@ -9383,7 +9374,7 @@ if($('b-coach-hire')) $('b-coach-hire').onclick=()=>{
     ga('coach_hired',{name:c.name,price:c.price_musd});
     closeSheet(); paintCoach();
   };
-};
+}
 
 if($('b-coach-none')) $('b-coach-none').onclick=()=>{
   try{ R.hireCoach(run,null); }catch(err){ toast(err.message); return; }
@@ -9485,6 +9476,17 @@ const schemeIconSvg=(key)=>{
    Each unit now saturates and multiplies its own links, so the headline percentage above is
    an average of two real figures rather than a figure of its own, and hiding the two is how
    somebody ends up asking what the number means. */
+/* THE TEAM OVERALL, SAID AS THE TWO NUMBERS IT IS THE MEAN OF. See fullSideRatings: the
+   mean of these two IS the headline, exactly, so this is a decomposition of it and not a
+   second opinion about it. Full Team only, because it is the only mode with two units. */
+function sideLine(){
+  if(!(run&&run.full&&run.roster&&run.roster.length)) return '';
+  let s; try{ s=E.fullSideRatings(run.roster,liveChem(),run.coach||null); }catch(_){ return ''; }
+  return '<div class="sidesplit"><span>Offense <b>'+rate1(s.off)+'</b></span>'+
+    '<span class="sep">+</span><span>Defense <b>'+rate1(s.def)+'</b></span>'+
+    '<span class="sep">averaged</span></div>';
+}
+
 function paintChemSplit(){
   const el=$('q-chemsplit'); if(!el) return;
   const s=run&&run.season;
@@ -9525,6 +9527,7 @@ function paintSquad(){
   el.className='chemval num '+(p>0.0005?'pos':(p<-0.0005?'neg':'zero'));
   $('q-chembar').style.width=Math.max(0,Math.min(100,p/E.CHEMISTRY.MAX*100))+'%';
   paintChemSplit();
+  const qs=$('q-sides'); if(qs) qs.innerHTML=sideLine();
   const links=run.season.chemistryLinks;
   /* IN ONE FRANCHISE MODE THE EMPTY LINE HAS TO SAY MORE.
      "Nobody here ever played together" under a roster of six Dolphins reads as a bug: they
@@ -12538,6 +12541,7 @@ function paintOver(){
   $('o-ovr').innerHTML=
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
     secondCell(()=>bigcell('Best possible','…',0,'#94a3b8'));
+  $('o-sides').innerHTML=sideLine();
 
   /* THE STRIP. Top row is what the roster cost you and where it finished; bottom row
      is where the run placed, and each of those three opens the board on that window
