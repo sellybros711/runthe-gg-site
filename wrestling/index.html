@@ -239,6 +239,22 @@
   .bs-ppvcard-r{font-size:12.5px;color:var(--text);padding:4px 0;border-top:1px dashed rgba(255,255,255,.06);}
   .bs-ppvcard-r:first-of-type{border-top:0;padding-top:0;}
   .bs-ppvcard-r.bs-ppvcard-me{color:var(--cream);font-weight:600;padding-top:8px;margin-top:6px;border-top:1px solid rgba(224,179,65,.35);display:flex;align-items:center;gap:6px;}
+  .arcbadge{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;font-family:var(--display);}
+  .brewlist{display:flex;flex-direction:column;gap:6px;}
+  .brewrow{background:var(--panel);border:1px solid var(--line);border-left:2px solid rgba(198,57,44,.55);border-radius:6px;padding:8px 11px;cursor:pointer;transition:border-color .15s;}
+  .brewrow:hover{border-color:rgba(198,57,44,.9);}
+  .brewv{font-size:12.5px;color:var(--cream);}
+  .brewv b{color:var(--cream);}
+  .slotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+  .slot{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;cursor:pointer;transition:border-color .15s;}
+  .slot:hover{border-color:rgba(224,179,65,.7);}
+  .slot.active{border-color:rgba(224,179,65,.8);background:rgba(224,179,65,.08);}
+  .slot-empty{opacity:.7;font-style:italic;}
+  .slot-empty:hover{opacity:1;font-style:normal;}
+  .slot-i{font-family:var(--display);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);}
+  .slot.active .slot-i{color:var(--gold);}
+  .slot-t{font-size:13.5px;color:var(--cream);margin-top:2px;font-weight:600;}
+  .slot-s{font-size:11px;color:var(--text-dim);margin-top:3px;}
   /* Backstage floor plan */
   .bs-budget{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;}
   .bs-budget-k{font-family:var(--display);letter-spacing:.14em;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;}
@@ -1583,7 +1599,10 @@
 <div class="screen" id="s-hof">
   <h2>Career Complete</h2>
   <div id="hofBody"></div>
-  <div class="row" style="margin-top:18px;"><button class="big" onclick="newCareerConfirm()">Start A New Career</button></div>
+  <div class="row" style="margin-top:18px;gap:10px;flex-wrap:wrap;">
+    <button class="big" onclick="startNextChapter()">Begin The Next Chapter →</button>
+    <button class="ghost" onclick="newCareerConfirm()">Start A New Career</button>
+  </div>
 </div>
 </main>
 
@@ -1623,6 +1642,25 @@
    Single save, localStorage. Attributes + moves are EARNED.
    ============================================================ */
 const SAVE='rtr_baw_v1', SCHEMA=1;
+// Multi-slot save layer. The original SAVE key is treated as slot 0 for
+// back-compat; slots 1..3 add rtr_baw_v1_s1 / s2 / s3. The active slot is
+// remembered under rtr_baw_slot. All existing save()/load() paths route
+// through activeSaveKey() so no caller needs to know slots exist.
+const SLOT_KEYS = ['rtr_baw_v1','rtr_baw_v1_s1','rtr_baw_v1_s2','rtr_baw_v1_s3'];
+const SLOT_META = 'rtr_baw_slot';
+function activeSlot(){ try{ const s = +(localStorage.getItem(SLOT_META)||0); return (s>=0 && s<SLOT_KEYS.length)? s : 0; }catch(_){ return 0; } }
+function setActiveSlot(i){ try{ localStorage.setItem(SLOT_META, String(i|0)); }catch(_){} }
+function activeSaveKey(){ return SLOT_KEYS[activeSlot()] || SAVE; }
+function slotSummary(i){
+  try{
+    const raw = localStorage.getItem(SLOT_KEYS[i]); if(!raw) return null;
+    const o = JSON.parse(raw); const c=o&&o.car, w=o&&o.w;
+    if(!c||!w) return null;
+    return { slot:i, name:w.name, promo:(o.car.deal&&o.car.deal.promo)||'', year:c.year, week:c.week,
+             age:c.age, rec:c.rec||{w:0,l:0,d:0}, retired:!!c.retired, savedAt:o.savedAt||0 };
+  }catch(_){ return null; }
+}
+function listSlots(){ return SLOT_KEYS.map((_,i)=>slotSummary(i)); }
 const WEEKS_PER_YEAR=40;
 const ATTRS=[['po','Power'],['te','Technique'],['ae','Aerial'],['ch','Charisma'],['ps','Psychology'],['to','Toughness'],['st','Stamina']];
 // `base` = the effective level of opposition at that tier. `minOvr` means you are
@@ -2849,12 +2887,12 @@ function save(){
   if(!G) return;
   try{
     G.savedAt = Date.now();
-    localStorage.setItem(SAVE,JSON.stringify(G));
+    localStorage.setItem(activeSaveKey(),JSON.stringify(G));
   }catch(e){ console.warn('RTR: save failed',e); }
 }
 function load(){
   try{
-    const r=localStorage.getItem(SAVE); if(!r) return null;
+    const r=localStorage.getItem(activeSaveKey()); if(!r) return null;
     const o=JSON.parse(r);
     return (o&&o.schema===SCHEMA)? migrate(o) : null;
   }catch(e){ console.warn('RTR: load failed',e); return null; }
@@ -3519,7 +3557,7 @@ let CREATE={style:'allrounder', look:Object.assign({},DEFLOOK)};
 
 function startCreate(){
   if(load()){ modal('Start a new career?','This erases your current wrestler and their whole career. This cannot be undone.',
-    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doStartCreate();}}]); return; }
+    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(activeSaveKey()); doStartCreate();}}]); return; }
   doStartCreate();
 }
 function doStartCreate(){
@@ -3597,7 +3635,7 @@ function doQuickStart(){
 }
 function quickStart(){
   if(load()){ modal('Start a new career?','This erases your current wrestler and their whole career. This cannot be undone.',
-    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doQuickStart();}}]); return; }
+    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(activeSaveKey()); doQuickStart();}}]); return; }
   doQuickStart();
 }
 /* The archetype cards used to read "+11 PO · +6 TO", which tells you nothing
@@ -4063,6 +4101,7 @@ function worldTick(){
   // Sports-news style events. Fires ~one meaningful thing per week on average
   // so the world reads as alive instead of a static roster.
   try { generateWorldEvent(); } catch(_){}
+  try { tickRosterArcs(); } catch(_){}
 }
 /* ============================================================
    WORLD EVENTS
@@ -4121,6 +4160,70 @@ function openScoutOffer(){
       save(); go('career');
     }}
   ]);
+}
+/* ============================================================
+   ROSTER ARCS
+   ------------------------------------------------------------
+   Every CPU wrestler carries a hidden arc state that shifts on a
+   weekly roll: rising, hot, cold, stagnant, injured, career-year.
+   The arc drives an overness nudge and is surfaced as flavor on
+   the World tab and in the odd news beat. Persists to save via
+   G.world.arcs (keyed by id).
+   ============================================================ */
+const ARCS = {
+  rising:      {label:'On the rise',        c:'var(--green)',  overDelta:+0.6},
+  hot:         {label:'Red-hot streak',     c:'var(--gold)',   overDelta:+1.1},
+  cold:        {label:'Cold streak',        c:'#f0907f',       overDelta:-0.7},
+  stagnant:    {label:'Stagnant',           c:'var(--text-dim)', overDelta:-0.1},
+  career:      {label:'Career year',        c:'var(--gold)',   overDelta:+1.4},
+  hurt:        {label:'Nursing an injury', c:'#f0907f',       overDelta:-0.4},
+};
+function rosterArcState(id){
+  G.world = G.world || {}; G.world.arcs = G.world.arcs || {};
+  return G.world.arcs[id] || null;
+}
+function setRosterArc(id, key, weeks){
+  G.world = G.world || {}; G.world.arcs = G.world.arcs || {};
+  const c = G.car;
+  G.world.arcs[id] = {key, until:{y:c.year, w:c.week + (weeks||8)}, since:{y:c.year, w:c.week}};
+}
+function tickRosterArcs(){
+  const c=G.car, W=G.world;
+  if(!W) return;
+  W.arcs = W.arcs || {};
+  const now = c.year*WEEKS_PER_YEAR + c.week;
+  // Expire finished arcs, then roll a small number of new ones per week.
+  Object.keys(W.arcs).forEach(id=>{
+    const a=W.arcs[id];
+    if(a && a.until && (a.until.y*WEEKS_PER_YEAR + a.until.w) < now){ delete W.arcs[id]; }
+  });
+  // Cap: at most 6 active arcs across the whole world at any time.
+  const active = Object.keys(W.arcs).length;
+  if(active >= 6) return;
+  const pool = CHARS.filter(x=>!W.retired[x.id] && !W.arcs[x.id] && x.promo!==myPromoId());
+  if(!pool.length) return;
+  if(rnd()>0.20) return;
+  const target = pool[Math.floor(rnd()*pool.length)];
+  const roll = rnd();
+  const key = roll<0.28?'rising' : roll<0.44?'hot' : roll<0.60?'cold' : roll<0.76?'stagnant' : roll<0.90?'career' : 'hurt';
+  const weeks = key==='hot'?4 : key==='career'?14 : key==='hurt'?6 : 8;
+  setRosterArc(target.id, key, weeks);
+  const msgs = {
+    rising:  `<b>${target.name}</b> is stringing wins together at ${(promoById(target.promo)||{}).short}. The push is on.`,
+    hot:     `<b>${target.name}</b> is red-hot right now. Every promo is a highlight.`,
+    cold:    `<b>${target.name}</b> is in a cold streak. Fans are cooling on the act.`,
+    stagnant:`<b>${target.name}</b> has plateaued. Same match, same reaction, week after week.`,
+    career:  `<b>${target.name}</b> is having a career year. This will be the tape they show.`,
+    hurt:    `<b>${target.name}</b> is nursing something. Working through it but not at 100%.`,
+  };
+  try { newsPush({ico:pico('graphUp',14), cat:'arc', text: msgs[key] || `<b>${target.name}</b> · new arc.`}); }catch(_){}
+}
+// Apply the small overness nudge from a wrestler's active arc when the
+// engine reads over. Kept as a helper so callers can opt in without
+// changing base numbers permanently.
+function arcOverAdjust(charId){
+  const a = rosterArcState(charId); if(!a) return 0;
+  const spec = ARCS[a.key]; return spec ? spec.overDelta : 0;
 }
 function generateWorldEvent(){
   const c=G.car, W=G.world;
@@ -4208,8 +4311,17 @@ function generateWorldEvent(){
   if(type==='feudBrew'){
     const pool = anyRoster().filter(x=>x.promo!==myPromoId() && (x.over||55)>=55);
     if(pool.length<2) return;
-    const a=pool[Math.floor(rnd()*pool.length)], b=pool.filter(x=>x.id!==a.id&&x.promo===a.promo)[0];
+    const a=pool[Math.floor(rnd()*pool.length)];
+    const rest = pool.filter(x=>x.id!==a.id && x.promo===a.promo);
+    const b = rest.length ? rest[Math.floor(rnd()*rest.length)] : null;
     if(!b) return;
+    W.brewingFeuds = W.brewingFeuds || [];
+    // Do not duplicate an already-brewing pair (either direction).
+    const key = [a.id,b.id].sort().join('|');
+    if(!W.brewingFeuds.find(f=>f.key===key)){
+      W.brewingFeuds.unshift({key, promoId:a.promo, a:{id:a.id,name:a.name}, b:{id:b.id,name:b.name}, since:{y:c.year,w:c.week}});
+      if(W.brewingFeuds.length>12) W.brewingFeuds.length = 12;
+    }
     newsPush({ico:pico('fire',14), cat:'feud',
       text:`<b>${a.name} vs ${b.name}</b> is building at ${(promoById(a.promo)||{}).short}. Backstage confrontation went too far.`});
     return;
@@ -4855,6 +4967,9 @@ function renderHome(){
   const s=load(); const el=$('homeCont');
   if(!s){
     const hasBackup = (()=>{ try{ return !!localStorage.getItem(SAVE+'_prev'); }catch(_e){ return false; } })();
+    // If ANY slot has a save, show the picker even without an active one.
+    // (Happens when the active slot is empty but another slot has a career.)
+    const anySave = SLOT_KEYS.some(k=>{ try{ return !!localStorage.getItem(k); }catch(_){ return false; } });
     el.innerHTML=`<div class="startcard">
       <div class="sc-kick">Start your journey<br>to greatness</div>
       <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring, never bought.</div>
@@ -4866,7 +4981,8 @@ function renderHome(){
         <div class="feat"><b>${PROMOS.length}</b><span>promotions</span></div>
         <div class="feat"><b>${COSM.length}</b><span>gear items</span></div>
       </div>
-    </div>`;
+    </div>
+    ${anySave ? slotPickerHTML() : ''}`;
     return;
   }
   const c=s.car, w=s.w;
@@ -4893,9 +5009,45 @@ function renderHome(){
       </div>
       ${s.savedAt?`<div class="rc-saved">Last saved ${savedAgo(s.savedAt)}</div>`:''}
     </button>
+    ${slotPickerHTML()}
     <div class="row" style="margin-top:12px;justify-content:center;">
       <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('start')">Start a new career</button>
     </div>`;
+}
+/* Save-slot picker on the home screen. Four slots. Empty slots read
+   "New career here"; occupied slots read a short summary and are
+   tap-to-switch. The current slot is highlighted. */
+function slotPickerHTML(){
+  const cur = activeSlot();
+  const rows = SLOT_KEYS.map((_,i)=>{
+    const s = slotSummary(i);
+    const active = i===cur;
+    if(!s){
+      return `<div class="slot ${active?'active':''} slot-empty" onclick="pickSlot(${i}, true)">
+        <div class="slot-i">SLOT ${i+1}</div>
+        <div class="slot-t">New career</div>
+      </div>`;
+    }
+    const p = promoById(s.promo) || {short:'IND'};
+    return `<div class="slot ${active?'active':''}" onclick="pickSlot(${i}, false)">
+      <div class="slot-i">SLOT ${i+1}${s.retired?' · RETIRED':''}${active?' · active':''}</div>
+      <div class="slot-t">${s.name}</div>
+      <div class="slot-s">${p.short} · Year ${s.year}W${s.week} · ${s.rec.w}-${s.rec.l}${s.rec.d?'-'+s.rec.d:''}${s.age?` · age ${s.age}`:''}</div>
+    </div>`;
+  }).join('');
+  return `<div class="flab" style="margin:14px 0 6px;">Save slots</div><div class="slotgrid">${rows}</div>`;
+}
+function pickSlot(i, isEmpty){
+  const wasActive = activeSlot();
+  if(i===wasActive && !isEmpty) return;
+  if(isEmpty){
+    setActiveSlot(i); G = null; go('start');
+    return;
+  }
+  setActiveSlot(i);
+  const s = load();
+  if(s){ G = s; continueCareer(); }
+  else  { G = null; renderHome(); }
 }
 // mentor-taught moves live on the save; fold them back into the catalogue on load
 function mergeCustomMoves(){ (G.w.custom||[]).forEach(mv=>{ if(!MOVES.find(x=>x.id===mv.id)) MOVES.push(mv); }); }
@@ -5605,7 +5757,7 @@ function makeOffers(){
     else if(i===1 && !holdsSec && !holds && midCarder && rnd()<0.28) stakes='secondary';
     else if(rivalId===opp.id) stakes='rival';
     const _s=story();
-    if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
+    if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=ripStipFor(_s.stage, _s.shape);
       st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
     // PPV night: a live feud is booked to blow off, and every offer moves up to Main Event.
     if(ppv){
@@ -5751,6 +5903,19 @@ const STORY_STAGES=[
 // gets a distinct blow-off stipulation instead of collapsing back onto the
 // Last Man Standing already used at stage 3. Marquee for the blow-off.
 const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Steel Cage','cage',1.2],['Last Man Standing','lms',1.35],['I Quit Match','iquit',1.45]];
+// Feud SHAPE routing: the stipulation ladder for each shape is different so
+// stories with different shapes feel like different stories. Fallback to
+// RIV_STIPS when the shape is not set (early beats).
+const RIV_STIP_BY_SHAPE = {
+  aggressive: [['Singles Match','singles',1],['Street Fight','grudge',1.30],['Steel Cage','cage',1.30],['Last Man Standing','lms',1.40],['I Quit Match','iquit',1.50]],
+  cool:       [['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Submission Match','sub',1.20],['I Quit Match','iquit',1.45],['I Quit Match','iquit',1.45]],
+  cerebral:   [['Singles Match','singles',1],['Submission Match','sub',1.15],['Grudge Match','grudge',1.25],['Iron Man Match','iron',1.55],['I Quit Match','iquit',1.45]],
+  underdog:   [['Singles Match','singles',1],['Grudge Match','grudge',1.20],['Ladder Match','ladder',1.30],['Steel Cage','cage',1.30],['Last Man Standing','lms',1.40]],
+};
+function ripStipFor(stage, shape){
+  const track = (shape && RIV_STIP_BY_SHAPE[shape]) || RIV_STIPS;
+  return track[Math.min(track.length-1, stage||0)];
+}
 
 function story(){ return G.story||null; }
 function startStory(charId,reason){
@@ -9369,13 +9534,59 @@ function archiveToLegends(){
   list.unshift(entry);
   saveLegends(list);
 }
+/* Post-retirement chapter. The wrestler retires, but their legend
+   persists. This screen lets the player pick a next role: mentor the
+   next generation from the office side (adds a bonus keepsake to the
+   NEXT career), or walk away and start fresh. A quiet handoff, not a
+   whole second game. */
+function startNextChapter(){
+  const c=G.car, w=G.w;
+  const legendName = w.name;
+  modal(`${legendName} · the next chapter`,
+    `<p class="log">The road is over. What you do now is who they will remember you as.</p>
+     <div class="scene-optlist" style="margin-top:12px;">
+       <div class="scene-opt" id="ncManager">
+         <div class="scene-opt-t"><b>Walk with the next wrestler.</b></div>
+         <div class="scene-opt-n">Your next career opens with <b>${legendName}</b> in the corner as your manager, and a keepsake move from your finisher tree.</div>
+       </div>
+       <div class="scene-opt" id="ncBook">
+         <div class="scene-opt-t"><b>Take a booker's chair.</b></div>
+         <div class="scene-opt-n">Retire fully and let the record speak. Your Hall entry gets a "went into the office" badge.</div>
+       </div>
+       <div class="scene-opt" id="ncNew">
+         <div class="scene-opt-t"><b>Just start something new.</b></div>
+         <div class="scene-opt-n">Blank slate. The Hall keeps you either way.</div>
+       </div>
+     </div>`,
+    [{label:'Not yet',cls:'ghost',fn:closeModal}]);
+  setTimeout(()=>{
+    const nm=document.getElementById('ncManager'), nb=document.getElementById('ncBook'), nn=document.getElementById('ncNew');
+    if(nm) nm.onclick=()=>{
+      window._pendingManagerName = legendName;
+      window._pendingFamilyOf = legendName;    // subtle: also seed lineage
+      closeModal();
+      // Route into a fresh slot so the legend and the successor coexist.
+      const empty = SLOT_KEYS.findIndex((_,i)=> !slotSummary(i));
+      if(empty>=0) setActiveSlot(empty);
+      G = null; go('start');
+    };
+    if(nb) nb.onclick=()=>{
+      c.wentIntoOffice = true;
+      pushInboxItem({ico:pico('microphone',18),sev:'good',
+        txt:`<b>${legendName} took a booker's chair.</b> The office is different for it.`});
+      save();
+      closeModal(); toast(`${legendName} steps into the office.`);
+    };
+    if(nn) nn.onclick=()=>{ closeModal(); newCareerConfirm(); };
+  }, 30);
+}
 function newCareerConfirm(){ modal('Start a new career?','Your current wrestler will be retired permanently and a new career begins. The previous save is kept in a backup slot in case you misclicked.',
   [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'New Career',fn:()=>{
     // If they haven't already been archived, keep them anyway as an unfinished run
     try{ archiveToLegends(); }catch(_e){}
     // And keep the raw save one step back so a misclick is recoverable
     try{ const cur=localStorage.getItem(SAVE); if(cur) localStorage.setItem(SAVE+'_prev', cur); }catch(_e){}
-    closeModal(); localStorage.removeItem(SAVE); G=null; go('home');}}]); }
+    closeModal(); localStorage.removeItem(activeSaveKey()); G=null; go('home');}}]); }
 // Recover the last career from the auto-backup slot (available on the home screen).
 function restoreBackup(){
   try{
@@ -11879,6 +12090,16 @@ function renderWorld(){
         <div class="rank-name">${x.name}${x.you?' <span class="hint" style="color:var(--gold);">you</span>':''}</div>
         <div class="rank-o">${x.over}</div>
       </div>`).join('')}</div>`;
+    // Feuds elsewhere in the world: CPU wrestlers who have stories brewing.
+    const brew = (G.world && G.world.brewingFeuds) || [];
+    if(brew.length){
+      h+=`<div class="flab" style="margin-top:16px;">Feuds Around The World</div>
+      <div class="brewlist">${brew.slice(0,6).map(f=>`
+        <div class="brewrow" onclick="charProfile('${f.a.id}')">
+          <div class="brewv"><b>${f.a.name}</b> vs <b>${f.b.name}</b></div>
+          <div class="hint">${(promoById(f.promoId)||{}).short||''} · since Y${f.since.y}W${f.since.w}</div>
+        </div>`).join('')}</div>`;
+    }
     $('worldBody').innerHTML=h; return;
   }
   if(i<promos.length){
@@ -11912,10 +12133,13 @@ function renderWorld(){
         const r=rel(c.id), lb=relLabel(r);
         const b=bs ? (bs.red.includes(c.id)?'red':bs.blue.includes(c.id)?'blue':null) : null;
         const bBadge = b ? ` <span class="badge" style="background:${b==='red'?'#3a1010':'#101a3a'};color:${b==='red'?'#f0907f':'#8ab5f0'};padding:1px 5px;font-size:9px;">${b.toUpperCase()}</span>` : '';
+        const arc = rosterArcState(c.id);
+        const arcBadge = arc && ARCS[arc.key] ? `<div class="arcbadge" style="color:${ARCS[arc.key].c}">${ARCS[arc.key].label}</div>` : '';
         return `<div class="charcard" onclick="charProfile('${c.id}')">
           <div class="cav">${wrestlerSVG(c.look,{frame:'head'})}</div>
           <div class="cnm">${c.name}${bBadge}</div>
           <div class="cnk">${c.nick||''}</div>
+          ${arcBadge}
           <div class="crel" style="color:${lb.c}">${lb.t}${r.matches?` · ${r.wins}-${r.losses}`:''}</div>
         </div>`;
       }).join('')+`</div></div>`;
