@@ -17213,3 +17213,62 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: `BRACKET_GDAYS` / `BRACKET_GDS` (the group stage's shape), `bracketGroupsOn()` and the Tour Eras
   `bracket_expand` / `bracket_axed` rules (whether the groups happen at all), `groupStats`'s tiebreak order,
   and the `.bpath` grid + its narrow-phone block.
+
+### THE CADDIE REPORT, GROUP 1 (items 01-04): signature holes, a readable leaderboard, measured
+### strokes gained, and wind with a direction
+- The owner read the 20-item audit ("The Caddie Report") and asked for it in **groups of five**, with each
+  item **explained before it is pushed**. Item **01** was scoped by them: *"I don't want to ever reveal the
+  real Course names but I'd love to highlight the signature holes"* - so the venues stay fictional and only
+  the holes get named.
+- **01 - the signature holes are named while you play them.** The in-round hole chip becomes a gold-edged
+  card carrying the hole's fictional name and what makes it famous, and the preview surfaces the three
+  signature holes up front. Never a real venue name anywhere. The chip shrinks to a star + the hole facts
+  (`sigmini`) while a decision is up, so it can never crowd the tap-targets.
+- **02 - the leaderboard reads like a leaderboard**: THRU, TODAY split from TOTAL, the round-by-round card,
+  country flags, the cut line drawn as a row, and the full field behind its own scroll.
+- **03 - strokes gained, MEASURED off the round you just watched.** The season sheet models SG from the 8
+  ratings because a season is simmed at score level; a daily round carries a full structured shot list, so
+  it is measured the way the tour measures one - each shot's drop in expected-strokes-to-hole-out against
+  the published PGA baselines. The splits SUM to the round's total, and the total is the field baseline for
+  those 18 holes minus your actual score.
+- **04 - wind with a direction** (the report: *"wind is one word for the whole round. Give the round a
+  direction, draw it as an arrow on the hole map, let it turn a driver hole into a 3-wood hole"*). The round
+  now carries a compass bearing and a speed as well as a strength; every hole has its own bearing, so the
+  same wind is in your face on one and behind you on the next, and it changes the SHOT - the club is named
+  by the yardage the shot PLAYS, into it a drive comes up short, and downwind a shortish par-4 becomes a
+  3-wood off the tee.
+  - **The load-bearing rule: the DIRECTIONAL effect is EXACTLY zero-sum across the 18 holes.** Every course's
+    `cdiff` was Monte-Carlo fitted so an OVR-80 build averages that venue's real tour scoring average, so the
+    direction may only decide WHICH holes bite - the strength (calm..gusting) stays the only thing that moves
+    the round's difficulty. Implemented by subtracting the round's mean head component, verified analytically
+    (worst deviation 2.66e-15 over 1,280 course x direction x strength) AND empirically (a 6,000-round Monte
+    Carlo on 5 venues: **max drift 0.039 strokes/round**).
+  - **No new rng calls.** Every wind effect is a deterministic multiplier or a threshold shift on values the
+    rng had ALREADY drawn, so a windless round narrates byte-for-byte as before and the hard
+    shot-count === stroke-count invariant holds (1,512+ combos, 0 bad).
+  - **Scoped to the DAILY family** (daily, Monthly Spotlight, a Legend token round). A career Moment and an
+    online match keep a neutral wind: both have their own calibration machinery, and `curWind()` gates on
+    `S.daily`, so those paths get `dBaseDiffs(c)` exactly as before - zero regression by construction.
+  - **THE CHIP'S CORNER WAS WRONG, AND ONLY A SCREENSHOT CAUGHT IT.** It was placed top-right ("the free
+    corner") and the suite asserted exactly that, green. But `.hvresult` - the holed-result pill - is ALSO
+    `top:8px;right:8px`, so the wind chip would have been buried under BIRDIE/PAR on every hole. Moved to
+    **bottom-left, mirroring the scoreboard at bottom-right**, with a `.nodesc` variant that drops to the
+    very bottom when there is no shot-description bar, exactly as the board does. A test now appends a real
+    result pill to the live shell and asserts they cannot overlap.
+- Verified: `wind04` **23/23**, `windcal` (the Monte Carlo above), `wind_e2e` **5/5** (a full 18-hole windy
+  round and a calm one both play out to the result with no error card), `sig01` **18/18**, `lb02` **15/15**,
+  `sg03` **29/29** - 0 page errors throughout; inline scripts parse (block 0 is the JSON-LD tag, fails
+  identically on baseline).
+- **A FLAKY FIXTURE was hardened, not worked around**: `sig01`'s "the chip names the hole" check asserted on
+  whichever state the round happened to be in when it rendered, so it failed on the ~half of runs where a
+  decision was pending and the chip was correctly compact. It now asserts the full card AND the compact
+  variant off the builder - stable 3/3 runs, 18/18.
+- **NOT deployed.** The owner's standing instruction is that each item is explained before it is pushed.
+- **Item 05 (*"tell me what week it is in real golf"*) is NOT built** - it collides with the owner's own
+  never-name-a-real-venue rule and needs a live tour calendar. Put to them as one decision with a
+  recommendation (a hardcoded week -> course calendar so the daily FOLLOWS the real tour's rotation, described
+  only with fictional names) rather than guessed at, because it also changes which course the daily plays,
+  which drives course records, the passport and the global boards.
+- Tunable: `WIND_AMP` (how much the direction bites, per strength), `WIND_MPH` (the speed bands), the drive /
+  play-yardage / cross-wind coefficients in `wDriveMult` / `wPlayYds` / `wCrossPen`, and `wTeeClub`'s
+  downwind driver-to-3-wood threshold.

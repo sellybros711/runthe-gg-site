@@ -1860,6 +1860,30 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .lb.winner{animation:none} }
   .lb.you .pl{color:var(--gold); font-weight:800}
   .lb.cut .sc{color:#e07a5f}
+  /* THE LIVE LEADERBOARD. Phone: pos · flag+name · TODAY · THRU · TOTAL. The round-by-round card is real
+     estate a phone does not have, so it appears from 560px up (and inside the full-field view on desktop). */
+  .lb.lbx{grid-template-columns:30px 1fr 44px 40px 50px; gap:7px; padding:8px 11px}
+  .lb.lbx .rnds{display:none}
+  .lb.lbx .tdy,.lb.lbx .thru{font-family:var(--mono); font-size:12px; text-align:right; color:var(--oncard)}
+  .lb.lbx .thru{color:var(--muted)}
+  .lb.lbx .pl{display:flex; align-items:center; gap:6px; min-width:0}
+  .lb.lbx .lbfl{flex:0 0 auto; display:inline-flex}
+  .lb.lbx .lbfl .flag-ico{width:17px; height:11px; border-radius:2px}
+  .lbhead{font:800 10px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+    padding-top:7px; padding-bottom:7px; background:rgba(0,0,0,.16)}
+  .lbhead .pl,.lbhead .tdy,.lbhead .thru,.lbhead .sc,.lbhead .rcell{color:var(--muted); font-family:var(--body);
+    font-weight:800; font-size:10px; letter-spacing:.1em}
+  @media (min-width:560px){
+    .lb.lbx{grid-template-columns:32px 1fr 132px 46px 42px 54px}
+    .lb.lbx .rnds{display:grid; grid-template-columns:repeat(4,1fr); gap:2px}
+    .lb.lbx .rcell{font-family:var(--mono); font-size:11.5px; text-align:right; color:var(--muted)}
+  }
+  /* the full field: every player, in its own scroll, so the board stops being a top-5 results list */
+  .lbfield{max-height:340px; overflow-y:auto; overscroll-behavior:contain; border-radius:0 0 14px 14px}
+  .lbmore{display:block; width:100%; margin-top:0; background:rgba(0,0,0,.2); border:0; border-top:1px solid rgba(244,227,201,.08);
+    color:var(--muted); font:800 10.5px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; padding:10px;
+    cursor:pointer; touch-action:manipulation}
+  .lbmore:hover{color:var(--gold)}
   /* Tour Rep tier name - a distinct text effect per rank (higher = flashier) */
   .rept{font-weight:800; font-size:10px; letter-spacing:.02em; white-space:nowrap}
   /* CS394: H2H preview tier chip - a small bordered pill carrying the rank's own text effect (repClass) */
@@ -2058,6 +2082,28 @@ window.GA_ID='G-L29P5MRWKE';
   .hvhole{top:8px;left:8px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);border-radius:8px;
     padding:5px 9px;font:800 11.5px/1 var(--body);letter-spacing:.1em;color:#eef4ee}
   .hvhole.right{left:auto;right:8px}
+  /* the wind chip (item 04): bottom-LEFT, mirroring the scoreboard at bottom-right, so all four corners
+     stay fixed all round. It cannot live top-right: the holed-result pill (.hvresult) owns that corner. */
+  .hvwind{bottom:48px;left:8px;display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;
+    background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);
+    font:800 10px/1 var(--body);letter-spacing:.1em;color:#e8efe9}
+  .hvwind.nodesc{bottom:10px}
+  .hvwind svg{display:block;width:15px;height:15px;transform-origin:50% 50%}
+  .hvwind .wkind{opacity:.92}
+  /* SIGNATURE hole: the chip grows into a gold-edged card carrying the hole's fictional name + what
+     makes it famous. Deliberately capped in width so it can never crowd the green or the scoreboard. */
+  .hvhole.sig{max-width:min(62%,240px);border-color:rgba(241,208,74,.62);
+    background:linear-gradient(180deg,rgba(30,23,6,.9),rgba(8,17,26,.88));
+    box-shadow:0 6px 18px -8px rgba(0,0,0,.7), inset 0 1px 0 rgba(241,208,74,.18);padding:6px 10px 7px}
+  .hvhole.sig .hvsigtop{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+  .hvhole.sig .hvsigstar{color:var(--gold);font:900 10.5px/1 var(--body);letter-spacing:.14em}
+  .hvhole.sig .hvsigname{color:#f4e9c8;font:italic 700 13px/1.05 var(--display);letter-spacing:.02em}
+  .hvhole.sig .hvsigmeta{margin-top:4px;font:800 10.5px/1 var(--body);letter-spacing:.09em;color:#cfe0d4;opacity:.9}
+  .hvhole.sig .hvsigblurb{margin-top:5px;font:600 10.5px/1.32 var(--body);letter-spacing:0;color:#dfeade;opacity:.92;
+    text-transform:none}
+  @media (max-width:430px){ .hvhole.sig{max-width:66%} .hvhole.sig .hvsigblurb{font-size:10px} }
+  .hvhole.sigmini{border-color:rgba(241,208,74,.55);color:#f4e9c8}
+  .hvhole.sigmini .hvsigstar{color:var(--gold)}
   /* board sits BOTTOM-right, above the shot-description bar - the green is always near the TOP of the
      hole, so a top-right board covered it (owner). Anchored to the bottom, it grows upward into the
      lower fairway/rough, never the green. CS251: restyled as ONE cohesive dark gold-bordered panel
@@ -6323,8 +6369,19 @@ function dCourseDiff(c){ if(typeof c.cdiff==='number') return c.cdiff;
 // the venue's real PGA scoring average vs par (the benchmark to beat); 0 if unknown
 function dTourAvg(c){ return (c&&typeof c.avg==='number')?c.avg:0; }
 function dAvgTxt(t){ return t>0?('+'+t.toFixed(1)):(t<0?t.toFixed(1):'E'); }
-function dBaseDiffs(c){ const raw=c.holes.map(h=>DDRAW[dArch(h[0],h[1])]); const mean=raw.reduce((s,x)=>s+x,0)/18; const cd=dCourseDiff(c);
-  return raw.map(x=>DCFG.SHAPE_SCALE*(x-mean)+cd); }
+function dBaseDiffs(c, wind){ const raw=c.holes.map(h=>DDRAW[dArch(h[0],h[1])]); const mean=raw.reduce((s,x)=>s+x,0)/18; const cd=dCourseDiff(c);
+  const base=raw.map(x=>DCFG.SHAPE_SCALE*(x-mean)+cd);
+  // WIND DIRECTION (item 04): into the wind a hole plays harder, downwind easier - but we subtract the
+  // round's MEAN head component first, so the 18 offsets sum to exactly what they summed to before. The
+  // direction decides WHICH holes bite; it can never make the course as a whole harder or easier, which
+  // is what keeps every venue's Monte-Carlo-fitted cdiff honest.
+  if(wind && wind.dir && WIND_AMP[wind.cond]){
+    const amp=WIND_AMP[wind.cond];
+    const heads=base.map((_,i)=>dHoleWind(wind.ck, i, wind.dir).head);
+    const hm=heads.reduce((a,b)=>a+b,0)/heads.length;
+    return base.map((d,i)=>d+amp*(heads[i]-hm));
+  }
+  return base; }
 // simulate one hole → strokes-to-par. attack: true=Attack, false=Play Safe, null=use global plan.
 function dSimHole(par,yards,baseDiff,skills,fit,cond,plan,attack,rng){
   const w=dWeights(par,yards,fit,cond); const eff=dEffHole(skills,w);
@@ -6351,6 +6408,59 @@ function dailyCourseKey(dayKey){ const dn=dDayNumber(dayKey); const cycle=Math.f
 const DCOND_NAMES=['calm','breezy','windy','gusting'];
 function dailyConditions(dayKey,courseKey){ const r=mulberry32((dDayNumber(dayKey)^dHash(courseKey)^0x5bd1e995)>>>0)();
   return r<0.27?'calm':r<0.72?'breezy':r<0.92?'windy':'gusting'; }
+/* ===================== WIND WITH A DIRECTION (item 04) =====================
+   Conditions used to be ONE WORD for the whole round (Calm / Breezy / Windy / Gusting): it told you how
+   hard the day was, but never which way it blew, so the wind was a difficulty number rather than
+   something you played into. Now the round also carries a DIRECTION and a speed:
+   - every hole has its own compass bearing, so the same wind is in your face on one hole and behind you
+     on the next; the hole map draws it as an arrow that turns with the hole.
+   - it changes the SHOT, not just the score: into it a drive comes up short and the approach is a longer
+     club; downwind the hole plays short enough that a driver hole becomes a 3-wood hole.
+   The one hard rule: the DIRECTIONAL effect is EXACTLY ZERO-SUM across the 18 holes. Every course's cdiff
+   was Monte-Carlo fitted so an OVR-80 build averages that venue's real tour scoring average, so the
+   direction may only decide WHICH holes are hard - the strength (calm..gusting) stays the only thing that
+   moves the round's overall difficulty. */
+var WIND_PTS=['N','NE','E','SE','S','SW','W','NW'];
+var WIND_MPH={calm:[4,8], breezy:[9,15], windy:[16,23], gusting:[24,33]};   // the speed the chip shows
+var WIND_AMP={calm:0.02, breezy:0.07, windy:0.14, gusting:0.21};            // strokes of hole-mean at a DEAD headwind
+// the compass point the wind blows FROM, and its speed - both a pure function of (day, course), so a
+// round is reproducible and server-verifiable exactly like the course and the conditions already are.
+function dailyWindDir(dayKey,courseKey){ const r=mulberry32((dDayNumber(dayKey)^dHash(courseKey||'x')^0x77696e64)>>>0)();
+  return WIND_PTS[Math.min(7,Math.floor(r*8))]; }
+function dailyWindMph(dayKey,courseKey,cond){ const b=WIND_MPH[cond]||WIND_MPH.breezy;
+  const r=mulberry32((dDayNumber(dayKey)^dHash(courseKey||'x')^0x6d70680a)>>>0)();
+  return Math.round(b[0]+r*(b[1]-b[0])); }
+function dailyWind(dayKey,courseKey,cond){ cond=cond||dailyConditions(dayKey,courseKey);
+  return {ck:courseKey, cond, dir:dailyWindDir(dayKey,courseKey), mph:dailyWindMph(dayKey,courseKey,cond)}; }
+function windDeg(pt){ const i=WIND_PTS.indexOf(pt); return (i<0?0:i)*45; }
+// the way a hole PLAYS, as a compass bearing - fixed per course+hole, so a venue's wind story is its own
+function dHoleBearing(courseKey,i){ return (dHash((courseKey||'x')+'|bear'+i)>>>0)%360; }
+/* the wind ON one hole. rel = where the wind is TRAVELLING, relative to the way the hole plays, so
+   rel 0 = straight downwind and rel 180 = dead into it (and rel is exactly the angle to rotate an
+   up-pointing arrow by on a map drawn with the hole playing up the screen).
+     head  +1 = dead into it, -1 = straight downwind
+     cross +1 = left to right across the hole                                                        */
+function dHoleWind(courseKey,i,dir){
+  const travel=(windDeg(dir)+180)%360;
+  const rel=(((travel-dHoleBearing(courseKey,i))%360)+360)%360;
+  const rad=rel*Math.PI/180, head=-Math.cos(rad), cross=Math.sin(rad);
+  return {rel, head, cross, kind: head>0.45?'into':head<-0.45?'down':'cross'};
+}
+var WIND_KIND={into:'Into the wind', down:'Downwind', cross:'Crosswind'};
+var WIND_KIND_SHORT={into:'Into', down:'Downwind', cross:'Cross'};
+// how much a hole's PLAYING yardage moves: into the wind it plays longer, downwind shorter. Purely
+// narrative (which club is named, how far the drive goes) - the score is the engine's, not this.
+function windYdsMult(w,i){ if(!w||!w.dir) return 1;
+  const hw=dHoleWind(w.ck,i,w.dir); return 1 + hw.head*(w.mph||10)*0.0042; }
+// the wind for the round currently being played. Scoped to the DAILY family (daily challenge, Monthly
+// Spotlight, a Legend token round) - a career Moment and an online match keep a neutral wind, so nothing
+// about their calibration moves. Derived, never stored, so a resumed round always recomputes the same one.
+function curWind(){ if(!S.daily || !S.dailyCourse || !S.dailyCond) return null;
+  return dailyWind(S.dailySeed||todayKey(), S.dailyCourse, S.dailyCond); }
+// the wind ON the hole you're about to play, ready to hand to the shot narrator. Null when the round
+// has no wind of its own, in which case every shot narrates exactly as it always did.
+function holeWind(i){ const w=curWind(); if(!w) return null;
+  const hw=dHoleWind(w.ck,i,w.dir); hw.mph=w.mph; hw.dir=w.dir; hw.cond=w.cond; return hw; }
 /* ---------- Monthly Spotlight (#11): a special 1-day event, once a month ----------
    Deterministic per calendar month (marquee course + tough conditions + the one UTC date it's live),
    surfaced on the title screen. Self-contained: its own storage (bag_special), its own attempts, and it
@@ -6617,7 +6727,22 @@ function worldField(n){ const w=ensureWorld(); if(!w) return null;
   const gone=(typeof leagueDefectorSet==='function')?leagueDefectorSet():null;
   const src=gone ? w.active.filter(g=>!gone.has(g.name)) : w.active;
   return src.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
-    .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
+    // nation rides along so the leaderboard can fly a flag for every player, not just at the Games
+    .map(g=>{const o={name:g.name,skill:g.lov,nation:g.nation||'INT'}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
+/* the flag lookup. Most field builders now carry `nation`, but a few older ones (and any player rebuilt
+   from a save that predates it) do not, so fall back to the roster by name. Cached, and re-checked
+   against the living world when a name misses, since generated rookies are not in the roster. */
+var _natByName=null;
+function natOfPlayer(p){
+  if(!p) return null;
+  if(p.nation) return p.nation;
+  if(p.nat) return p.nat;
+  if(p.you){ try{ return playerNation(); }catch(e){ return null; } }
+  if(!_natByName){ _natByName={}; try{ GOLFERS.forEach(g=>{ if(g.nation) _natByName[g.name]=g.nation; }); }catch(e){} }
+  if(_natByName[p.name]) return _natByName[p.name];
+  try{ const w=S.world; if(w&&w.active){ const g=w.active.find(x=>x.name===p.name); if(g&&g.nation){ _natByName[p.name]=g.nation; return g.nation; } } }catch(e){}
+  return null;
+}
 /* ---- Official World Golf Ranking (OWGR) ----
    A rolling, decaying, results-based world ranking. Every player carries `rankPts`: world players
    in S.world.rankPts (persisted with the world), YOU in S.career.rankPts. Seeded from skill so the
@@ -8327,6 +8452,126 @@ function statSheetHTML(sk, real, opts){
       <div>${left}</div><div>${right}</div>
     </div>
     <div class="small muted" style="margin-top:7px;font-size:9.5px;line-height:1.35">Scoring average is measured from rounds played; the SG splits &amp; traditional stats are modeled from your golfer's ratings.</div>
+  </div>`;
+}
+/* ===================== MEASURED STROKES GAINED (item 03) =====================
+   The season stat sheet above MODELS its SG splits from the 8 ratings, because a season is simmed at
+   score level and there are no shots to measure. A DAILY round is different: every hole carries a full
+   structured shot list (k / lie / fromY / toY / ft), so the round you just watched can be measured the
+   way the tour measures one - each shot's strokes gained is the drop in expected-strokes-to-hole-out
+   minus the stroke it cost, and the categories are just those shots grouped by where they were played
+   from.
+   Two properties worth knowing:
+   - The splits SUM to the round's total, and the total is exactly (field baseline for these 18 holes)
+     minus (your actual strokes). So SG:Total is measured off your real score, not off your ratings.
+   - The baselines are the published PGA Tour expected-strokes tables, so a positive number means you
+     gained on a TOUR-AVERAGE field from that spot, independent of how hard the course is. */
+// expected strokes to hole out. Sparse tables, linearly interpolated, clamped at both ends.
+var SG_PUTT=[[1,1.001],[2,1.009],[3,1.053],[4,1.147],[5,1.23],[6,1.34],[7,1.42],[8,1.50],[9,1.56],[10,1.61],[12,1.70],[15,1.78],[20,1.87],[25,1.93],[30,1.98],[40,2.06],[50,2.14],[60,2.21],[80,2.34],[100,2.44]];
+var SG_TEE =[[80,2.87],[100,2.92],[150,2.99],[200,3.12],[250,3.29],[300,3.71],[350,3.94],[400,4.11],[450,4.28],[500,4.44],[550,4.60],[600,4.76],[650,4.92]];
+var SG_FW  =[[5,2.10],[10,2.18],[20,2.40],[30,2.52],[40,2.60],[60,2.70],[80,2.75],[100,2.80],[120,2.85],[140,2.91],[160,2.98],[180,3.08],[200,3.19],[220,3.32],[240,3.45],[260,3.58],[280,3.70],[300,3.82]];
+var SG_RU  =[[5,2.28],[10,2.34],[20,2.59],[30,2.70],[40,2.78],[60,2.91],[80,3.02],[100,3.10],[120,3.17],[140,3.25],[160,3.35],[180,3.45],[200,3.55],[220,3.66],[240,3.78],[260,3.90]];
+var SG_SAND=[[5,2.38],[10,2.43],[20,2.53],[30,2.66],[40,2.82],[60,3.15],[80,3.24],[100,3.23],[120,3.21],[140,3.22],[160,3.28],[180,3.40],[200,3.55]];
+var SG_REC =[[20,3.10],[40,3.35],[60,3.55],[80,3.70],[100,3.80],[140,3.83],[180,3.87],[220,3.92],[260,4.00],[300,4.10]];
+function sgLerp(tbl,x){
+  if(!(x>0)) return tbl[0][1];
+  if(x<=tbl[0][0]) return tbl[0][1];
+  for(let i=1;i<tbl.length;i++){ if(x<=tbl[i][0]){ const a=tbl[i-1],b=tbl[i];
+    return a[1]+(b[1]-a[1])*((x-a[0])/(b[0]-a[0])); } }
+  return tbl[tbl.length-1][1];
+}
+// the lie codes dShotSeq emits, grouped into the four surfaces the baselines cover
+var SG_LIE_GROUP={fw:'fw', fc:'fw', fr:'fw', drop:'fw',
+  ru:'ru', rl:'ru', rr:'ru', sr:'ru', lo:'ru',
+  gb:'sand', fb:'sand', tr:'rec'};
+// expected strokes from a state {lie, y (yards to hole), ft (feet, on the green)}
+function sgExpected(st){
+  if(!st || st.lie==='hole') return 0;
+  if(st.lie==='green') return sgLerp(SG_PUTT, st.ft!=null?st.ft:1);
+  if(st.lie==='tee')   return sgLerp(SG_TEE, st.y);
+  const grp=SG_LIE_GROUP[st.lie]||'fw';
+  const y=st.y!=null?st.y:0;
+  return sgLerp(grp==='ru'?SG_RU:grp==='sand'?SG_SAND:grp==='rec'?SG_REC:SG_FW, y);
+}
+/* measure one hole. Walks the shot chain: shot i is played FROM wherever shot i-1 left the ball, so the
+   category is decided by the START state (that's how the tour books it) and the gain is
+   before - after - strokes. A ball in the water is booked WITH its penalty drop as one 2-stroke episode,
+   charged to the shot that found the water. */
+function sgHole(hole){
+  const shots=hole&&hole.shots; if(!shots||!shots.length) return null;
+  const out={ott:0,app:0,arg:0,put:0,tot:0,base:sgLerp(SG_TEE,hole.yards),strokes:0};
+  let cur={lie:'tee', y:hole.yards, ft:null}, n=0;
+  for(let i=0;i<shots.length;i++){
+    const s=shots[i];
+    // the category is where the shot was played FROM
+    const cat = cur.lie==='green' ? 'put'
+              : (n===0 && hole.par>3) ? 'ott'
+              : (cur.lie!=='tee' && cur.y!=null && cur.y<=30) ? 'arg'
+              : 'app';
+    const before=sgExpected(cur);
+    let strokes=1, next;
+    if(s.lie==='water'){
+      const d=shots[i+1];
+      strokes=2;
+      if(d && d.k==='pen'){ next={lie:'fw', y:d.toY, ft:null}; i++; }
+      else next={lie:'fw', y:Math.max(20,Math.round((s.fromY!=null?s.fromY:cur.y||100)*0.5)), ft:null};
+    }
+    else if(s.lie==='hole') next={lie:'hole'};
+    else if(s.lie==='green') next={lie:'green', ft:(s.toFt!=null?s.toFt:s.ft)};
+    else next={lie:s.lie, y:(s.toY!=null?s.toY:cur.y), ft:null};
+    const g=before - sgExpected(next) - strokes;
+    out[cat]+=g; out.tot+=g; out.strokes+=strokes; n+=strokes;
+    cur=next;
+    if(cur.lie==='hole') break;
+  }
+  return out;
+}
+// measure a whole round. Returns null when no hole carries shot data (an old stored result).
+function sgRound(holes){
+  if(!holes||!holes.length) return null;
+  const out={ott:0,app:0,arg:0,put:0,tot:0,base:0,strokes:0,holes:0};
+  holes.forEach(h=>{ const r=sgHole(h); if(!r) return;
+    out.ott+=r.ott; out.app+=r.app; out.arg+=r.arg; out.put+=r.put;
+    out.tot+=r.tot; out.base+=r.base; out.strokes+=r.strokes; out.holes++; });
+  return out.holes?out:null;
+}
+// [key, the row label on the card, the noun the headline sentence uses]
+var SG_CATS=[['ott','Off the tee','Your driving'],['app','Approach','Your iron play'],['arg','Around the green','Your short game'],['put','Putting','Your putting']];
+// what carried (or cost) the round: the biggest gain, and the biggest loss if there was one
+function sgHeadline(sg){
+  const rows=SG_CATS.map(c=>({k:c[0],lab:c[2],v:sg[c[0]]}));
+  const best=rows.reduce((a,b)=>b.v>a.v?b:a), worst=rows.reduce((a,b)=>b.v<a.v?b:a);
+  if(best.v<=0.15 && worst.v>=-0.15) return 'An even round, nothing gained or given back in any one area.';
+  const n=v=>Math.abs(v).toFixed(1);
+  if(best.v>0.15 && worst.v<-0.15) return `${best.lab} won you ${n(best.v)} shots. ${worst.lab} gave back ${n(worst.v)}.`;
+  if(best.v>0.15) return `${best.lab} won you ${n(best.v)} shots on the field.`;
+  return `${worst.lab} cost you ${n(worst.v)} shots against the field.`;
+}
+/* the measured card, for the round-result screen. Deliberately a different shape from statSheetHTML:
+   this one leads with the four splits as bars, because the point is which part of the game did the work. */
+function sgCardHTML(sg, opts){
+  opts=opts||{};
+  const mx=Math.max(1.2, ...SG_CATS.map(c=>Math.abs(sg[c[0]])));
+  const bar=(v)=>{ const w=Math.min(50, Math.abs(v)/mx*50), pos=v>=0;
+    return `<div style="position:relative;height:7px;border-radius:4px;background:rgba(255,255,255,.07)">
+      <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.22)"></div>
+      <div style="position:absolute;top:0;bottom:0;${pos?'left:50%':'right:50%'};width:${w}%;border-radius:4px;background:${pos?'#35d6a0':'#E14A33'}"></div>
+    </div>`; };
+  const rows=SG_CATS.map(c=>{ const v=sg[c[0]];
+    return `<div style="display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;margin:7px 0 0">
+      <span class="small" style="text-align:left;font-size:11.5px;font-weight:700;color:var(--oncard)">${c[1]}</span>
+      <span class="mono" style="font-size:12.5px;font-weight:800;white-space:nowrap">${fmtSG(v)}</span>
+      <div style="grid-column:1/-1">${bar(v)}</div>
+    </div>`; }).join('');
+  return `<div class="scout" style="padding:11px 13px;margin:8px auto;max-width:520px;text-align:left">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:2px">${opts.title||'Strokes gained · this round'}</div>
+    <div class="small muted" style="font-size:10px;margin-bottom:8px">Measured from every shot you played, against a tour-average field</div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.09)">
+      <span class="small" style="font-size:11.5px;font-weight:800;color:var(--oncard)">SG: Total</span>
+      <span class="mono" style="font-size:19px;font-weight:800">${fmtSG(sg.tot)}</span>
+    </div>
+    ${rows}
+    <div class="small" style="margin-top:9px;font-size:10.5px;line-height:1.4;color:var(--oncard);opacity:.9">${sgHeadline(sg)}</div>
   </div>`;
 }
 /* ===================== COINS + SHOP + ACCESSORIES (CS183) =====================
@@ -15803,7 +16048,7 @@ function scrDraft(){
   if(S.daily && DAILY_COURSES[S.dailyCourse]){
     const c=DAILY_COURSES[S.dailyCourse];
     const topTags=dCourseSkillTop(c,3).map(x=>`★${x.short}`).join(' · ');
-    add($(`<div class="osstat" style="color:#cfe0d8"><b style="color:var(--gold)">⛳ ${esc(dShort(c.v))}</b> · Par ${c.par} · ${dCondLabel(S.dailyCond)}, favor <b style="color:var(--gold)">${topTags}</b></div>`));
+    add($(`<div class="osstat" style="color:#cfe0d8"><b style="color:var(--gold)">⛳ ${esc(dShort(c.v))}</b> · Par ${c.par} · ${dWindCondLabel()}, favor <b style="color:var(--gold)">${topTags}</b></div>`));
   }
 
   // reserved reel slot - same height idle / spinning / landed, so tapping Spin (or an auto-spin after a take) never jumps
@@ -20876,15 +21121,47 @@ function skipToEnd(){
     S.screen='summary'; render();
   } finally { _coinsSuppressToast=false; _wkQuiet=false; }
 }
-function liveRow(o,pos,you,done,flag){
-  const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
+/* THE LEADERBOARD. A real one carries more than a finishing order: how far through the player is, what
+   they have shot TODAY as distinct from their TOTAL, the round-by-round card, the flag, and a field you
+   can scroll. Rounds are simmed whole here (there is no hole-by-hole state for the field), so THRU is
+   reported in HOLES COMPLETED - 18/36/54, F once the event is final - which is the honest reading of the
+   same column rather than inventing per-player hole progress. */
+function lbThru(o, rd, done, cut){
+  if(cut) return '36';
+  if(done) return 'F';
+  return String(Math.max(0,Math.min(4,rd))*18);
+}
+function liveRow(o,pos,you,done,flag,opt){
+  opt=opt||{};
+  const rd=opt.rd!=null?opt.rd:(o.rounds?o.rounds.filter(x=>x!=null).length:0);
+  const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total));
   // the trophy is only for the WINNER once the tournament is final, mid-round the leader is just 1 / T1
   const isWin=(pos===1&&done&&!o._tied);
   const lab=cut?'–':(isWin?'🏆':(o._tied?'T'+pos:pos));
-  const fl=(flag&&o.p.nation)?natFlag(o.p.nation)+' ':'';
-  return $(`<div class="lb ${you?'you':''} ${cut?'cut':''} ${isWin?'winner':''}" data-nm="${esc(o.p.name)}">
+  const nat=(flag!==false)?natOfPlayer(o.p):null;
+  const fl=nat?`<span class="lbfl">${natFlag(nat)}</span>`:'';
+  // TODAY = the round just completed (a cut player has nothing going today)
+  const tRaw=(!cut && rd>0)?o.rounds[rd-1]:null;
+  const today=(tRaw==null)?'–':par(Math.round(tRaw));
+  const tCol=(tRaw==null)?'var(--muted)':(tRaw<0?'#35d6a0':tRaw>0?'#e8b04b':'var(--oncard)');
+  // round columns read TO PAR, like every other score in the game (the sim never carries a stroke total)
+  const rcells=[0,1,2,3].map(i=>{ const v=(o.rounds&&i<rd)?o.rounds[i]:null;
+    const c=(v==null)?'var(--muted)':(v<0?'#35d6a0':v>0?'#e8b04b':'var(--oncard)');
+    return `<span class="rcell" style="color:${c}">${v==null?'–':par(Math.round(v))}</span>`; }).join('');
+  return $(`<div class="lb lbx ${you?'you':''} ${cut?'cut':''} ${isWin?'winner':''}" data-nm="${esc(o.p.name)}">
     <span class="pos">${lab}</span>
-    <span class="pl">${fl}${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
+    <span class="pl">${fl}${o.p.name}</span>
+    <span class="rnds">${rcells}</span>
+    <span class="tdy" style="color:${tCol}">${today}</span>
+    <span class="thru">${lbThru(o,rd,done,cut)}</span>
+    <span class="sc">${sc}</span></div>`);
+}
+// the column header that makes the numbers under it legible
+function lbHeadRow(){
+  return $(`<div class="lb lbx lbhead">
+    <span class="pos"></span><span class="pl">Player</span>
+    <span class="rnds"><span class="rcell">R1</span><span class="rcell">R2</span><span class="rcell">R3</span><span class="rcell">R4</span></span>
+    <span class="tdy">Today</span><span class="thru">Thru</span><span class="sc">Total</span></div>`);
 }
 // the per-round "moment" callout for YOU: day · round score · places gained/lost - highlighted so it
 // can't be missed as the standings shuffle. m is built in scrSeason once per completed round.
@@ -23270,18 +23547,28 @@ function scrSeason(){
   let cutLine=null;
   if(ce.roundsDone>=2 && !ce.evt.noCut){ const madeSet=ce.players.filter(o=>o.made); if(madeSet.length) cutLine=Math.max(...madeSet.map(o=>o.total)); }
   const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
-  const flag=!!evt.olympics;   // show country flags on the Olympic leaderboard
+  // flags are on for EVERY event now, not just the Games - the field is international and the flag is
+  // half of how a leaderboard reads at a glance.
   // CS498 (owner): shorter leaderboard on mobile (5) than desktop (10) so it fits without a long scroll.
+  // "Full field" opens the whole thing in its own scroll rather than lengthening the page.
   const topN=matchMedia('(max-width:700px)').matches?5:10;
-  const top=ordered.slice(0,topN); const youOut=!top.includes(meLive);
-  top.forEach((o,i)=>{
+  const full=!!S.lbFull;
+  const shown=full?ordered:ordered.slice(0,topN);
+  const youOut=!shown.includes(meLive);
+  board.appendChild(lbHeadRow());
+  const rowsWrap=full?$(`<div class="lbfield"></div>`):board;
+  shown.forEach((o,i)=>{
     // drop a dashed "CUT +N" line between the last player inside the cut and the first outside it
-    if(cutLine!=null && !ce.done && i>0 && top[i-1].total<=cutLine+1e-9 && o.total>cutLine+1e-9){
-      board.appendChild($(`<div class="cutrow"><span class="cutmark">Cut ${par(Math.round(cutLine))}</span><span class="ln"></span></div>`));
+    if(cutLine!=null && !ce.done && i>0 && shown[i-1].total<=cutLine+1e-9 && o.total>cutLine+1e-9){
+      rowsWrap.appendChild($(`<div class="cutrow"><span class="cutmark">Cut ${par(Math.round(cutLine))}</span><span class="ln"></span></div>`));
     }
-    board.appendChild(liveRow(o,o._pos,o.p.you,ce.done,flag));
+    rowsWrap.appendChild(liveRow(o,o._pos,o.p.you,ce.done,true,{rd:ce.roundsDone}));
   });
-  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true,ce.done,flag));}
+  if(full) board.appendChild(rowsWrap);
+  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true,ce.done,true,{rd:ce.roundsDone}));}
+  const moreBtn=$(`<button class="lbmore">${full?'▴ Show the top '+topN:'▾ Full field · '+ordered.length+' players'}</button>`);
+  moreBtn.onclick=()=>{ S.lbFull=!S.lbFull; render(); };
+  board.appendChild(moreBtn);
   left.appendChild(board);
 
   // RIGHT, prominent live scorecard + controls
@@ -25429,20 +25716,37 @@ function dSk(sk,k){ return (sk&&sk[k]!=null)?sk[k]:80; }                    // s
 function dSkQ(v){ return Math.max(0.03,Math.min(0.97,(v-58)/40)); }          // competence 0..1
 function dBallQ(sk){ const a=dSk(sk,'app'),c=dSk(sk,'acc'); return dSkQ(0.55*Math.min(a,c)+0.25*((a+c)/2)+0.20*dSk(sk,'scr')); }
 function dClub(y){ if(y>=278)return'driver'; if(y>=248)return'3-wood'; if(y>=226)return'hybrid'; if(y>=208)return'4-iron'; if(y>=194)return'5-iron'; if(y>=179)return'6-iron'; if(y>=164)return'7-iron'; if(y>=149)return'8-iron'; if(y>=134)return'9-iron'; if(y>=119)return'pitching wedge'; if(y>=95)return'gap wedge'; if(y>=70)return'sand wedge'; return'lob wedge'; }
+// ---- what the wind does to a SHOT (narration only; the score is the engine's) ----
+// into it the ball comes up short, downwind it runs on: ~6% of carry at 20mph dead into/behind.
+function wDriveMult(hw){ return hw ? (1 - hw.head*(hw.mph||10)*0.0032) : 1; }
+// a crosswind costs a little accuracy off the tee (a full 20mph cross is worth ~7 fairways in 100)
+function wCrossPen(hw){ return hw ? Math.abs(hw.cross)*(hw.mph||10)*0.0035 : 0; }
+// the yardage a shot PLAYS, which is what decides the club you'd pull. Into a 20mph wind 168 yds plays
+// like 182 (a club more); downwind it plays like 154 (a club less). The number shown stays the real one.
+function wPlayYds(hw,y){ return hw ? Math.max(30, Math.round(y*(1 + hw.head*(hw.mph||10)*0.0042))) : y; }
+// downwind on a shortish par-4, the hole plays short enough to take less club off the tee - the owner's
+// "a driver hole becomes a 3-wood hole". Playing safe already means 3-wood, so this only ever ADDS one.
+function wTeeClub(hw,par,yards,safe){ if(safe) return '3-wood';
+  if(hw && hw.head<-0.5 && (hw.mph||0)>=12 && par===4 && yards<=430) return '3-wood';
+  return 'driver'; }
 // A decision-INDEPENDENT tee shot for a par-4/5 (driver, in play, never reaching the green). Used by
 // the signature-hole APPROACH decisions: we reveal this drive, THEN ask the approach decision, so the
 // prompt lands before the shot it's about and matches what's on screen. Seeded separately from the
 // score (a fixed salt) so it's identical whichever choice the player then makes, and it feeds dShotSeq
 // as opts.teePreset so shot 0 of the final hole is exactly this drive.
-function dNeutralDrive(yards, sk, par, rng, clubTag){
+function dNeutralDrive(yards, sk, par, rng, clubTag, hw){
   const accQ=dSkQ(dSk(sk,'acc')), distQ=dSkQ(dSk(sk,'dist'));
   let drive=Math.round((par===5?266:258)+distQ*68+rng()*13);
   if(distQ>0.8 && rng()<0.25) drive+=Math.round(8+rng()*10);
+  // WIND (item 04): into it the ball comes up short, downwind it runs on. Applied to the yardage already
+  // drawn - no extra rng call, so the shot sequence stays byte-identical for a windless round.
+  if(hw) drive=Math.round(drive*wDriveMult(hw));
   drive=Math.max(180, Math.min(drive, yards-60));   // always leaves an approach (never reaches the green)
   const dist=Math.max(45, yards-drive);
-  const fairway=rng()<(0.26+0.64*accQ);
+  const fairway=rng()<(0.26+0.64*accQ-wCrossPen(hw));
   const lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
-  const shot={n:1, d:`${clubTag?clubTag+' driver':'Driver'} ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`, k:'tee', lie:HV_LIE[lie]||'ru', fromY:yards, toY:Math.round(dist), dr:drive};
+  const tc=wTeeClub(hw,par,yards,false);
+  const shot={n:1, d:`${clubTag?clubTag+' '+tc:tc.charAt(0).toUpperCase()+tc.slice(1)} ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`, k:'tee', lie:HV_LIE[lie]||'ru', fromY:yards, toY:Math.round(dist), dr:drive};
   return {shot, dist:Math.round(dist)};
 }
 // readable name for a lie code (used in the approach-decision context line)
@@ -25450,7 +25754,11 @@ function dLieName(lie){ return {fw:'the fairway',rr:'the right rough',rl:'the le
 function dShotSeq(par,yards,strokes,rng,sk,opts){
   opts=opts||{}; sk=sk||{};
   // club sets: prefix club names with the equipped set's tag ('Wizard 7-iron...') - text only, rng untouched
-  const _ct=opts.clubTag?opts.clubTag+' ':''; const dc=y=>_ct+dClub(y); const toPar=strokes-par; const sh=[]; const sides=['left','right','center'];
+  // WIND (item 04): the club you pull is decided by the yardage the shot PLAYS, not the number on the
+  // card - so into the wind the same 168 yards is a 7-iron and downwind it's a 9. The distance shown is
+  // always the real one. hw is null on a windless round, and then every line is exactly as it was.
+  const hw=opts.hw||null;
+  const _ct=opts.clubTag?opts.clubTag+' ':''; const dc=y=>_ct+dClub(wPlayYds(hw,y)); const toPar=strokes-par; const sh=[]; const sides=['left','right','center'];
   // Signature-hole decision, SCOPED to the shot it's actually about (owner: the prompt should come
   // before the specific shot and match what's shown):
   //   par 3          → the tee shot IS the approach, so the choice biases the green-arrival (atk)
@@ -25544,10 +25852,13 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
     let drive=Math.round((par===5?266:258)+distQ*68+rng()*13);
     if(distQ>0.8 && rng()<0.25) drive+=Math.round(8+rng()*10);
     if(teeSafe)drive-=Math.round(10+rng()*14);
-    drive=Math.min(drive,yards-20); const teeClub=_ct+(teeSafe?'3-wood':'driver');
+    const _tc=wTeeClub(hw,par,yards,teeSafe);
+    if(_tc==='3-wood' && !teeSafe) drive-=14;      // took less club because the wind is behind you
+    if(hw) drive=Math.round(drive*wDriveMult(hw));
+    drive=Math.max(150,Math.min(drive,yards-20)); const teeClub=_ct+_tc;
     if(water && rem()>=3 && rng()<0.6){ sh.push({d:`${teeClub}, pushed into the water hazard`, k:'tee', lie:'water', fromY:yards}); played++; dist=Math.max(20,yards-Math.round(drive*0.55)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`, k:'pen', lie:'drop', fromY:yards, toY:Math.round(dist)}); played++; water=false; }
     else if(trees && rem()>=3){ const td=Math.round(drive*(0.6+rng()*0.22)); dist=Math.max(40,yards-td); sh.push({d:`${teeClub} ${td} yds into the trees, ${Math.round(dist)} yds to hole`, k:'tee', lie:'tr', fromY:yards, toY:Math.round(dist), dr:td}); played++; const punch=Math.round(35+rng()*55); dist=Math.max(20,dist-punch); sh.push({d:`punch-out to the fairway, ${Math.round(dist)} yds to hole`, k:'adv', lie:'fw', fromY:Math.round(dist+punch), toY:Math.round(dist)}); played++; trees=false; }   // stuck behind the trees → chip back to the fairway (the extra stroke), then play on
-    else { dist=Math.max(10,yards-drive); const fairway=rng()<(0.26+0.64*accQ);
+    else { dist=Math.max(10,yards-drive); const fairway=rng()<(0.26+0.64*accQ-wCrossPen(hw));
       const lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
       if(rem()===1){ ftToHole=14+rng()*28; sh.push({d:`${teeClub} ${drive} yds to the green, ${dFeet(ftToHole)} to hole`, k:'tee', lie:'green', fromY:yards, toY:0, ft:ftToHole, dr:drive, spin:0.3}); }   // a long tee shot into the green releases (low spin)
       else sh.push({d:`${teeClub} ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`, k:'tee', lie:HV_LIE[lie]||'ru', fromY:yards, toY:Math.round(dist), dr:drive}); played++; }
@@ -25688,6 +25999,10 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   return sh;
 }
 function dCondLabel(c){ if(!c) return ''; return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||''; }
+// the conditions line WITH the round's direction: '≋ Windy · 18 mph NW'. Falls back to the plain strength
+// label when the round has no wind of its own (a career Moment, an online match).
+function dWindCondLabel(){ const w=curWind(); const base=dCondLabel(S.dailyCond);
+  return w ? `${base} · ${w.mph} mph ${w.dir}` : base; }
 function dShort(name){ return String(name).split('(')[0].trim(); }
 /* ==================== HOLE VIEW - broadcast-style animated tracer ====================
    A stylized top-down hole graphic (fairway, bunkers, water, green) with the ball flying
@@ -25857,6 +26172,60 @@ function hvFeat(courseKey, holeN){
   const a=(typeof DSIG_HAZ!=='undefined'&&DSIG_HAZ[courseKey])||{};
   const b=HV_SIG_EXTRA[courseKey]||{};
   return b[holeN]||a[holeN]||null;
+}
+// SIGNATURE HOLES. Every one of the courses carries exactly three `sig` entries ([holeNumber, blurb]);
+// only some carry per-hole NAMES (c.holes[i][2]), so the marker is driven by the signature list and the
+// name is an optional extra. Course keys are internal (they are the real venues) and are NEVER shown -
+// hvSig only ever returns the FICTIONAL display text (the blurb + the fictionalised hole name).
+// Cached per course, since the in-round banner asks on every render.
+var _hvSigCache={};
+function hvSigMap(courseKey){
+  if(!courseKey) return null;
+  if(_hvSigCache[courseKey]!==undefined) return _hvSigCache[courseKey];
+  let m=null;
+  try{
+    const c=(typeof DAILY_COURSES!=='undefined')&&DAILY_COURSES[courseKey];
+    if(c && c.sig && c.sig.length){
+      m={};
+      c.sig.forEach(s=>{
+        const n=s[0], h=(c.holes&&c.holes[n-1])||null;
+        m[n]={n, blurb:s[1]||'', name:(h&&h[2])||''};
+      });
+    }
+  }catch(e){}
+  _hvSigCache[courseKey]=m;
+  return m;
+}
+function hvSig(courseKey, holeN){
+  const m=hvSigMap(courseKey);
+  return (m && m[holeN]) || null;
+}
+// the ordered list of a course's signature hole numbers (for the compact preview marker)
+function hvSigHoles(courseKey){
+  const m=hvSigMap(courseKey);
+  return m ? Object.keys(m).map(Number).sort((a,b)=>a-b) : [];
+}
+// the in-round floating hole chip, with the SIGNATURE treatment when the hole is one of the three.
+// `compact` collapses it to a single gold line - used while the on-course decision targets are up, since
+// on a short hole the green (and so both targets) sits high enough to run into the full card.
+function hvHoleChipHTML(courseKey, hole, compact){
+  const base=`HOLE ${hole.n} · PAR ${hole.par} · ${hole.yards}Y`;
+  const s=hvSig(courseKey, hole.n);
+  if(!s) return `<div class="hvob hvhole">${base}</div>`;
+  if(compact) return `<div class="hvob hvhole sigmini"><span class="hvsigstar">★</span> ${base}</div>`;
+  const nm=s.name?`<span class="hvsigname">${esc(s.name)}</span>`:'';
+  const bl=s.blurb?`<div class="hvsigblurb">${esc(s.blurb)}</div>`:'';
+  return `<div class="hvob hvhole sig"><div class="hvsigtop"><span class="hvsigstar">★ SIGNATURE</span>${nm}</div><div class="hvsigmeta">${base}</div>${bl}</div>`;
+}
+// the wind chip (item 04). The map is always drawn with the hole playing UP the screen, so the arrow is
+// simply the wind's travel direction rotated by its angle to the hole: straight up = behind you, straight
+// down = in your face, sideways = across. Empty string on a round with no wind of its own.
+function hvWindChipHTML(holeIdx, noDesc){
+  const w=curWind(); if(!w || holeIdx==null) return '';
+  const hw=dHoleWind(w.ck, holeIdx, w.dir);
+  const col=hw.kind==='into'?'#ff9d8f':hw.kind==='down'?'#4be3a8':'#8fd0ff';
+  const lab=`${WIND_KIND[hw.kind]}, ${w.mph} miles an hour from the ${w.dir}`;
+  return `<div class="hvob hvwind${noDesc?' nodesc':''}" role="img" aria-label="${esc(lab)}"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${Math.round(hw.rel)}deg);color:${col}"><path d="M12 2.5 L18.5 12 L13.5 12 L13.5 21.5 L10.5 21.5 L10.5 12 L5.5 12 Z" fill="currentColor"/></svg><span>${w.mph} MPH</span><span class="wkind" style="color:${col}">${WIND_KIND_SHORT[hw.kind].toUpperCase()}</span></div>`;
 }
 // deterministic hole geometry, shaped by the course's style + its signature-hole features:
 // dogleg (single or S), fairway width profile with landing-zone pinches, sized/tucked greens,
@@ -26548,7 +26917,7 @@ function dailyFeatureCard(key, extra){
     border:1px solid ${A}55;box-shadow:0 14px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06)"></div>`);
   card.appendChild($(`<div style="font:800 10.5px system-ui;letter-spacing:2.4px;color:${A}">${S.special?'⭐ ':''}${kicker}</div>`));
   card.appendChild($(`<div style="font:800 27px/1.05 var(--display,system-ui);color:#fff;margin-top:7px">${esc(c.v)}</div>`));
-  card.appendChild($(`<div class="small" style="color:#e9e0cfcc;margin-top:5px;font-weight:600">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dCondLabel(S.dailyCond)}</div>`));
+  card.appendChild($(`<div class="small" style="color:#e9e0cfcc;margin-top:5px;font-weight:600">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dWindCondLabel()}</div>`));
   // CS356p: keep only the essentials visible; the tagline/blurb/palette/motifs collapse behind a dropdown.
   const toggle=$(`<button class="dfeat-more" style="margin-top:13px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:${A}14;border:1px solid ${A}44;color:${A};font:800 11px system-ui;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px;border-radius:10px;cursor:pointer">${open?'Hide course details':'More about this course'} <span style="font-size:13px">${open?'▴':'▾'}</span></button>`);
   toggle.onclick=()=>{ S.dailyBlurbOpen=!open; render(); };
@@ -27321,6 +27690,17 @@ function scrDailyPreview(){
     <div style="margin-top:16px"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800">Your game plan</div><div class="small muted" style="margin-top:6px;line-height:1.4">Pick how boldly to play below. You'll still make the big calls on the signature holes.</div></div>
   </div>`);
   add(dailyFeatureCard(key, details));
+  // SIGNATURE HOLES, compact and OUTSIDE the fold. CS483f deliberately folded the full signature list into
+  // "More about this course" to keep this screen on one phone (owner: "way too much scrolling"), so this is
+  // a one-line marker - the three holes to watch for - not a second copy of that list.
+  {
+    const sh=hvSigHoles(key);
+    if(sh.length){
+      const chips=sh.map(n=>{ const s=hvSig(key,n); const nm=s&&s.name?` <span style="font-style:italic;opacity:.85">${esc(s.name)}</span>`:''; return `<span class="tag" style="color:var(--gold);border-color:rgba(241,208,74,.45);font-size:11px">${n}${nm}</span>`; }).join(' ');
+      add($(`<div class="center" style="margin:10px auto 0;max-width:600px;display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap">
+        <span class="small" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--gold)">★ Signature holes</span>${chips}</div>`));
+    }
+  }
   if(!S.special) add($(`<div class="small center" style="margin:9px 0 0;color:var(--muted)">Playable for <span style="color:var(--gold);font-weight:800">${dCd('clock')}</span>, then a new course rotates in</div>`));
   // the main objective: beat the real tour scoring average for this venue. CS483h (owner): the course record
   // now sits on the SAME line as the target (split card), removing the standalone Course Record card.
@@ -27710,7 +28090,7 @@ function dRoundControls(){
 function beginDailyRound(){
   restoreProfileIdentity();   // a prior Legend round may have left the legend's identity on S.look/S.name - a NORMAL round is always your own golfer (buildPlayer below reads S.look for gear/caddie)
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
-  S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
+  S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse], curWind());
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false; clearDailyLive();
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
@@ -27734,7 +28114,7 @@ function beginDailyRoundWithLegend(token){
   S.daily=true; S.dailySeed=_seed; S.mode='daily'; S.dailyMode='round'; S.special=false;
   S.dailyCourse=dailyCourseKey(_seed); S.dailyCond=dailyConditions(_seed,S.dailyCourse); if(!S.dailyPlan) S.dailyPlan='balanced';
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr; S.dailyAttempt=0;
-  S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
+  S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse], curWind());
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false; clearDailyLive();
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
   S.dailyLegend={id:token.id, name:token.name, look:token.look}; S.momentPO=null; S.momentPOHoleIdx=null;
@@ -27766,7 +28146,7 @@ function playDailyHole(attack, phase){
   const h=c.holes[ci], a=(attack===true||attack===false)?attack:null;
   const ph=(a===null)?null:(phase||'app');
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[ci],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(sSalt)));
-  S.dailyHoles.push({i,n:ci+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,decPhase:ph,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(xSalt)),S.dailySkills,ph?{decPhase:ph,decAgg:a,clubTag:clubSetTag(S.look)}:{clubTag:clubSetTag(S.look)})});
+  S.dailyHoles.push({i,n:ci+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,decPhase:ph,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(xSalt)),S.dailySkills,ph?{decPhase:ph,decAgg:a,clubTag:clubSetTag(S.look),hw:holeWind(ci)}:{clubTag:clubSetTag(S.look),hw:holeWind(ci)})});
   S.dailyViewHole=null; S.dailyQuickStatic=false;
   const hole=S.dailyHoles[S.dailyHoles.length-1];
   if(!dailyHoleFull(hole)){
@@ -27787,7 +28167,7 @@ function playDailyHole(attack, phase){
 // Par-4/5 APPROACH decision: reveal a decision-independent drive FIRST, then ask the approach prompt.
 function dailyStartApproachHole(i, sc){
   const c=DAILY_COURSES[S.dailyCourse], h=c.holes[i];
-  const d0=dNeutralDrive(h[1], S.dailySkills, h[0], dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x0d1)), clubSetTag(S.look));
+  const d0=dNeutralDrive(h[1], S.dailySkills, h[0], dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x0d1)), clubSetTag(S.look), holeWind(i));
   const hole={i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar:null,attack:null,shots:[d0.shot],_prov:true};
   S.dailyProv={i, hole, d0, scenario:sc, revealN:1, await:false};
   S.dailyHolePause=false; S.dailySinking=false; S.dailyViewHole=null; S.dailyQuickStatic=false;
@@ -27801,7 +28181,7 @@ function dailyResolveApproach(agg){
   const prov=S.dailyProv; if(!prov)return; if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;}
   const c=DAILY_COURSES[S.dailyCourse], i=prov.i, h=c.holes[i], a=(agg===true||agg===false)?agg:null;
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
-  const shots=dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{decPhase:'app',decAgg:a,teePreset:prov.d0,clubTag:clubSetTag(S.look)});
+  const shots=dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{decPhase:'app',decAgg:a,teePreset:prov.d0,clubTag:clubSetTag(S.look),hw:holeWind(i)});
   S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,decPhase:'app',_d0:prov.d0,shots});
   S.dailyProv=null; S.dailyViewHole=null; S.dailyHolePause=false; S.dailyQuickStatic=false;
   // the drive is already on screen (shot 1) - continue revealing from shot 2
@@ -27813,7 +28193,7 @@ function autoFinishDaily(){ if(S.matchPlay) return matchSkipToEnd();
   clearDailyTimer(); S.dailyAuto=false; S.dailyHolePause=false; S.dailyProv=null; const c=DAILY_COURSES[S.dailyCourse];
   while(S.dailyHoles.length<18){ const i=S.dailyHoles.length,h=c.holes[i];
     const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
-    S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{clubTag:clubSetTag(S.look)})}); }
+    S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{clubTag:clubSetTag(S.look),hw:holeWind(i)})}); }
   finishDailyRound();   // straight to the result, fastest path
 }
 function dailyMulligan(){
@@ -27822,7 +28202,7 @@ function dailyMulligan(){
   const alt=dSimHole(last.par,last.yards,S.dailyDiffs[last.i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,last.attack,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x4d2)));
   if(alt<last.toPar) last.toPar=alt;
   const mopts=last.decPhase?{decPhase:last.decPhase,decAgg:last.attack, ...(last._d0?{teePreset:last._d0}:{})}:{};
-  last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x5408)),S.dailySkills,Object.assign({clubTag:clubSetTag(S.look)},mopts));
+  last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x5408)),S.dailySkills,Object.assign({clubTag:clubSetTag(S.look),hw:holeWind(last.i)},mopts));
   last.mull=true; S.dailyMullUsed=true; S.dailyQuickStatic=false; track('daily_mulligan');
   if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;}
   S.dailyHolePause=false; S.dailySinking=false; S.dailyProv=null; S.dailyViewHole=null;
@@ -27873,7 +28253,7 @@ function resumeDailyLive(){
     if(!c || !Array.isArray(d.holes) || d.holes.length>=18){ clearDailyLive(); return false; }
     S.daily=true; S.mode='daily'; S.dailyMode='round'; S.special=!!d.special; S.dailyLegend=d.legend||null;
     S.dailySeed=d.seed; S.dailyCourse=d.course; S.dailyCond=d.cond; S.dailyPlan=d.plan||'balanced';
-    S.dailyAttempt=d.attempt||0; S.dailySkills=d.skills; S.dailyOvr=d.ovr; S.dailyDiffs=dBaseDiffs(c);   // diffs are deterministic → recompute
+    S.dailyAttempt=d.attempt||0; S.dailySkills=d.skills; S.dailyOvr=d.ovr; S.dailyDiffs=dBaseDiffs(c, curWind());   // diffs are deterministic → recompute
     S.dailyHoles=d.holes.map(h=>({i:h.i,n:h.n,par:h.par,yards:h.yards,name:h.name,toPar:h.toPar,
       attack:h.attack,decPhase:h.decPhase||undefined,_d0:h._d0||undefined,mull:!!h.mull,shots:h.shots||[]}));
     S.dailyMullAvail=!!d.mullAvail; S.dailyMullUsed=!!d.mullUsed; S.dailyMullSeen=d.mullSeen||[]; S.dailyMullOffer=null;
@@ -28393,6 +28773,7 @@ function scrSpotlightResult(){
     const grid=scoreCardEl({holes:18, pars:holes.map(h=>h.par),   // CS502: realistic Hole/Par/OUT-IN-TOT card
       rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:holes.map(h=>h.par+h.toPar), tp:holes.map(h=>h.toPar)}]});
     grid.style.margin='14px auto 0'; add(grid);
+    { const sg=sgRound(holes); if(sg){ const w=$(`<div></div>`); w.innerHTML=sgCardHTML(sg); add(w); } }   // item 03
   }
   const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Brag about the special event</span></button>`);
   shr.onclick=()=>{ track('spotlight_shared'); shareText(spotlightShareText(rec&&rec.best!=null?{course:r.course,total:rec.best,won:wonEvent}:r,sp)); }; add(shr);
@@ -28860,6 +29241,9 @@ function dPlaceTargets(shell, g, sc, pick){
     let lf=Math.max(11,Math.min(89,(p[0]+HV_EX)/(HV_W+2*HV_EX)*100)), tp=Math.max(9,Math.min(72,p[1]/HV_H*100));
     // nudge apart if the two chips would collide (close in screen space)
     for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(72, q.tp+11); } }
+    // and out from under the fixed top-left hole chip - on a short hole the green (and so a target)
+    // sits high enough to land on it, which reads as the two overlapping.
+    if(lf<52 && tp<15) tp=15;
     pos.push({lf,tp});
     const rh=Math.round(rw*0.53);
     const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${icon} ${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
@@ -29013,7 +29397,7 @@ function scrDailyRound(){
     }
   } else {
   { const _ta=hvThemeAccent(S.dailyCourse);
-    add($(`<div class="bcasthd" style="--bacc:${_ta}"><span class="bc-name">${esc(dShort(c.v))}</span><span class="bc-meta">${dCondLabel(S.dailyCond)} · ${esc(S.dailyPlan)}</span></div>`)); }
+    add($(`<div class="bcasthd" style="--bacc:${_ta}"><span class="bc-name">${esc(dShort(c.v))}</span><span class="bc-meta">${dWindCondLabel()} · ${esc(S.dailyPlan)}</span></div>`)); }
   if(!boardPresent && !reviewing){
     add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
     const beating=(through>0)&&(total < av*(through/18));
@@ -29071,7 +29455,9 @@ function scrDailyRound(){
     const shell=hvn.querySelector('.hvshell'), h=hole;
     // (CS246: the themed accent frame now lives on the svg itself via hvFrameStyle, so the whole window is framed)
     // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
-    shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
+    shell.appendChild($(hvHoleChipHTML(S.dailyCourse, h, !!dec)));
+    { const wc=hvWindChipHTML(h.i!=null?h.i:(h.n-1), !(descShot && descShot.d && !holePauseFlag));
+      if(wc) shell.appendChild($(wc)); }
     if(holePauseFlag && lastIdx>=0){
       const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
       const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
@@ -29452,6 +29838,9 @@ function scrDailyResult(){
       rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:holes.map(h=>h.par+h.toPar), tp:holes.map(h=>h.toPar)}],
       tap:canReview?((k)=>{ if(holes[k]&&holes[k].shots&&holes[k].shots.length){ S.dailyHoleView=k; S.dailyHoleShot=null; S.overlay='holeshots'; render(); } }):null}));
     add(wrapg);
+    // item 03: strokes gained MEASURED from the shots you just played (needs the live shot data, so a
+    // result reloaded from storage - which only stores par/toPar per hole - simply doesn't show it).
+    { const sg=sgRound(holes); if(sg){ const w=$(`<div></div>`); w.innerHTML=sgCardHTML(sg); add(w); } }
   }
   renderMeta();   // owner (IMG_8714): streak / 7-day rewards / daily-record now render BELOW the scorecard
   // CS483n: Share (blue) + the primary action (red) sit SIDE BY SIDE in one row (owner)
@@ -34376,7 +34765,7 @@ function scrH2HWatch(){
     const hvn=h2hCourseKey?hvNode(h, R.step, R.hole, h2hCourseKey(S.h2h.seed), multi):null;
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
-      shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
+      shell.appendChild($(hvHoleChipHTML(h2hCourseKey?h2hCourseKey(S.h2h.seed):null, h)));
       const holed=h2hHoledUnits(h, R.step);
       const curW=h.order[Math.max(0,Math.min(R.step||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
       const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n}</div></div>`);
@@ -34409,7 +34798,7 @@ function scrH2HWatch(){
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
       // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
-      shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
+      shell.appendChild($(hvHoleChipHTML(h2hCourseKey?h2hCourseKey(S.h2h.seed):null, h)));
       const curW=h.order[Math.max(0,Math.min(S.h2h.wStep||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
       const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">HOLE ${h.n} · PAR ${h.par} · THRU ${played}/${holes}</div></div>`);
       // the scoreboard updates the MOMENT a ball drops, not when the hole advances (owner) - add the
