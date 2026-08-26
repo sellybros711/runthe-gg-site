@@ -664,6 +664,29 @@
   .sr-line,.sb-line{font-size:13.5px;color:var(--text);margin-top:14px;line-height:1.55;font-style:italic;}
   .sb-desc{font-size:14px;color:var(--text);margin-top:10px;line-height:1.55;}
   .sb-pay{font-size:12px;color:var(--gold);margin-top:12px;}
+  /* Season briefing rebuilt: booker speaks, gaps are visible, terms are plain */
+  .seasonbrief{text-align:left;}
+  .sb-from{display:flex;align-items:center;gap:11px;padding-bottom:11px;border-bottom:1px solid var(--line);margin-bottom:12px;}
+  .sb-fromav{width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(224,179,65,.08);border:1px solid rgba(224,179,65,.3);border-radius:8px;color:var(--gold);}
+  .sb-fromname{font-family:var(--display);font-size:15px;color:var(--cream);letter-spacing:.02em;}
+  .sb-fromrole{font-size:11.5px;color:var(--text-faint);margin-top:1px;}
+  .sb-quote{font-family:Georgia,serif;font-style:italic;font-size:15.5px;line-height:1.6;color:var(--cream);padding:0 0 4px;}
+  .sb-rows{margin-top:16px;display:flex;flex-direction:column;gap:12px;}
+  .sbrow{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:8px;padding:10px 12px;}
+  .sbrow-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .sbrow-l{font-size:13px;color:var(--cream);font-weight:600;}
+  .sbrow-v{font-family:var(--mono);font-size:13px;color:var(--text-dim);}
+  .sbrow-v b{color:var(--gold);font-size:15px;}
+  .sbrow-v.ok b,.sbrow-v.ok{color:var(--green);}
+  .sbrow-arrow{color:var(--text-faint);font-family:var(--sans);font-size:11px;}
+  .sbrow-bar{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:7px;}
+  .sbrow-bar i{display:block;height:100%;background:var(--gold);border-radius:3px;transition:width .6s;}
+  .sbrow-why{font-size:11.5px;color:var(--text-faint);margin-top:6px;line-height:1.45;}
+  .sb-terms{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:7px;}
+  .sb-term{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;}
+  .sb-term-l{font-family:var(--display);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);flex:none;}
+  .sb-term-v{font-size:12.5px;color:var(--text);text-align:right;flex:1;}
+  .sb-term-v.gold{color:var(--gold);}
   .feudshape{display:inline-block;margin-left:8px;padding:1px 6px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;border:1px solid;border-radius:4px;font-family:var(--display);}
   .bs-debut{margin-bottom:12px;padding:10px 12px;border-radius:8px;background:linear-gradient(90deg,rgba(224,179,65,.10),transparent 70%);border-left:3px solid rgba(224,179,65,.65);}
   .bs-debut-k{font-family:var(--display);font-size:13px;letter-spacing:.06em;color:var(--gold);text-transform:uppercase;}
@@ -1919,42 +1942,70 @@ const SEASON_GOALS = [
     desc:c=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id))+1; const nx=TIERS[idx]; return nx?`Get to ${nx.name} tier: ${nx.rep} rep AND OVR ${nx.minOvr}.`:'You are already there. Keep it.'; },
     check:(c,w)=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id))+1; const nx=TIERS[idx]; if(!nx) return true; return c.rep>=nx.rep && ovr(w)>=nx.minOvr; },
     progress:(c,w)=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id)); const cur=TIERS[idx], nx=TIERS[idx+1]; if(!nx) return 100; const rp=clamp((c.rep-cur.rep)/(nx.rep-cur.rep)*100); const op=clamp(ovr(w)/nx.minOvr*100); return Math.min(rp,op); },
+    // rows: what the player has to move, where they are NOW, and where it
+    // has to get to. Rendered as labelled bars on the briefing screen so
+    // the ask is never an abstract number with no anchor.
+    rows:(c,w)=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id))+1; const nx=TIERS[idx]; if(!nx) return [];
+      return [ {l:'Reputation', now:Math.round(c.rep), goal:nx.rep, why:'Earned every match. Better matches pay more.'},
+               {l:'Overall rating', now:ovr(w), goal:nx.minOvr, why:'Train between shows to raise it.'} ]; },
+    plain:c=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id))+1; const nx=TIERS[idx];
+      return nx?`Get yourself out of ${(TIERS[idx-1]||{}).name||'here'} and onto the ${nx.name}. Bigger buildings, better money, tougher opponents.`:'Stay on top.'; },
     fit:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?1:0; },
     payout:{coins:1500,standing:6} },
   { id:'world_title', label:c=>`Win the ${beltName()}`,
     desc:c=>`Take the world title from ${(charById((G.world.champions[myPromo().id]||{}).world&&G.world.champions[myPromo().id].world.holder)||{}).name||'whoever holds it'} before year end.`,
     check:(c,w)=>c.title===beltName() || (c.reigns||[]).some(r=>r.title===beltName() && r.year===c.year),
     progress:(c,w)=>{ if(c.title===beltName()) return 100; const need=Math.min(70,18+tierIdx()*16); return clamp(reactionOf()/need*100*0.6 + (c.titleShot?30:0), 0, 99); },
+    rows:(c,w)=>{ const need=Math.min(70,18+tierIdx()*16);
+      return [ {l:'Crowd reaction', now:Math.round(reactionOf()), goal:need, why:'The office only books a title match for someone the crowd wants.'},
+               {l:'Title shot in hand', now:c.titleShot?1:0, goal:1, bool:true, why:'Pin the champion clean, or ask for it in the office.'} ]; },
+    plain:c=>{ const ch=(charById((G.world.champions[myPromo().id]||{}).world&&G.world.champions[myPromo().id].world.holder)||{}).name;
+      return `Take the belt off ${ch||'the champion'}. Get over enough that the office has to book the match, then win it.`; },
     fit:(c,w)=>{ const ti=tierIdx(); return ti>=1 && !c.title ? 1 : 0.4; },
     payout:{coins:5000,standing:12} },
   { id:'defend_title', label:c=>`Defend the ${c.title||beltName()} three times`,
     desc:c=>`Three successful championship defences before year end. Long reigns build legacies.`,
     check:(c,w)=>c.title && (c.defenses||0)>=3,
     progress:(c,w)=>c.title ? clamp((c.defenses||0)/3*100) : 0,
+    rows:(c,w)=>[ {l:'Title defences', now:(c.defenses||0), goal:3, why:'The office books them. Win them and the reign means something.'} ],
+    plain:c=>`You have the belt. Now prove it was not a fluke: three clean defences before the year is out.`,
     fit:(c,w)=>c.title ? 1.2 : 0,
     payout:{coins:3500,standing:10} },
   { id:'mid_title', label:c=>`Win the ${beltName(workTier(),'secondary')}`,
     desc:c=>`Take the mid-card belt. Prove you can carry a division.`,
     check:(c,w)=>c.secondary===beltName(workTier(),'secondary') || (c.reigns||[]).some(r=>r.title===beltName(workTier(),'secondary')&&r.year===c.year),
     progress:(c,w)=>c.secondary?100:clamp(c.standing/62*100),
+    rows:(c,w)=>[ {l:'Standing with the office', now:Math.round(c.standing||50), goal:62, why:'Good matches raise it. Missed cues and bad nights lower it.'},
+                  {l:'Hold the belt', now:c.secondary?1:0, goal:1, bool:true, why:'The office books the shot once they trust you.'} ],
+    plain:c=>`Win the mid-card belt. It is the step every main eventer takes first.`,
     fit:(c,w)=>{ const ti=tierIdx(); return ti>=0 && !c.title && !c.secondary ? 1 : 0.3; },
     payout:{coins:1800,standing:6} },
   { id:'classic', label:c=>`Have a 5-star match`,
     desc:c=>`One night, one match, rated 90 or better. Chase quality, not quantity.`,
     check:(c,w)=>(c.yearLog||[]).some(m=>m.q>=90),
     progress:(c,w)=>{ const best=(c.yearLog||[]).reduce((a,m)=>Math.max(a,m.q||0),0); return Math.min(100, Math.round(best/90*100)); },
+    rows:(c,w)=>[ {l:'Best match this year', now:(c.yearLog||[]).reduce((a,m)=>Math.max(a,m.q||0),0), goal:90, why:'Near-falls, a worked body part, and hitting your called spots all raise it.'} ],
+    plain:c=>`One match, one night, that people still talk about next year. Rated 90 or better.`,
     fit:(c,w)=>0.7,
     payout:{coins:2500,standing:8} },
-  { id:'over', label:c=>`Reach OVR ${Math.min(90, ovr(G.w)+7)}`,
-    desc:c=>`Push your overall rating up ${Math.min(7, 90-ovr(G.w))} points. Train, work, grow.`,
-    check:(c,w)=>ovr(w)>=Math.min(90, (c._season&&c._season.startOvr?c._season.startOvr:ovr(w))+7),
-    progress:(c,w)=>{ const s=(c._season&&c._season.startOvr)||ovr(w); const t=Math.min(90,s+7); return clamp((ovr(w)-s)/(t-s)*100); },
+  { id:'over', label:c=>`Reach OVR ${Math.min(90, (G.car._season&&G.car._season.startOvr!=null?G.car._season.startOvr:ovr(G.w))+7)}`,
+    desc:c=>`Push your overall rating up seven points. Train, work, grow.`,
+    check:(c,w)=>ovr(w)>=Math.min(90, (c._season&&c._season.startOvr!=null?c._season.startOvr:ovr(w))+7),
+    progress:(c,w)=>{ const s=(c._season&&c._season.startOvr!=null)?c._season.startOvr:ovr(w); const t=Math.min(90,s+7); if(t<=s) return 100; return clamp((ovr(w)-s)/(t-s)*100); },
+    rows:(c,w)=>{ const s=(c._season&&c._season.startOvr!=null)?c._season.startOvr:ovr(w);
+      return [ {l:'Overall rating', now:ovr(w), goal:Math.min(90,s+7), why:'Matches earn XP. Every 100 XP is a training point you spend on attributes.'} ]; },
+    plain:c=>`Get better. Seven points of overall rating between now and the end of the year.`,
     fit:(c,w)=>ovr(w)<80?0.8:0.3,
     payout:{coins:2000,standing:8} },
   { id:'end_feud', label:c=>`Settle your defining rivalry`,
     desc:c=>`Take your rival to the blow-off and win it clean.`,
-    check:(c,w)=>{ const r=c._season&&c._season.rivalStart; return r && (c.rivalId!==r || (rel(r).wins > (c._season.rivalWinsAt||0)+1)); },
-    progress:(c,w)=>{ const r=c._season&&c._season.rivalStart; if(!r) return 0; const now=rel(r).wins; const before=(c._season.rivalWinsAt||0); return clamp((now-before)/2*100); },
+    check:(c,w)=>{ const r=c._season&&c._season.rivalStart; return r && (c.rivalId!==r || (rel(r).wins > (c._season.rivalWinsAt||0))); },
+    progress:(c,w)=>{ const r=c._season&&c._season.rivalStart; if(!r) return 0; const now=rel(r).wins; const before=(c._season.rivalWinsAt||0); return clamp((now-before)*100); },
+    rows:(c,w)=>{ const r=c._season&&c._season.rivalStart; if(!r) return [];
+      const rv=charById(r); const before=(c._season.rivalWinsAt||0);
+      return [ {l:`Wins over ${rv?rv.name:'your rival'}`, now:Math.max(0, rel(r).wins-before), goal:1, why:'Beat them when the feud reaches its blow-off.'} ]; },
+    plain:c=>{ const r=c._season&&c._season.rivalStart; const rv=r?charById(r):null;
+      return `Finish it with ${rv?rv.name:'your rival'}. Let the feud build, then beat them at the blow-off.`; },
     fit:(c,w)=>c.rivalId?1:0,
     payout:{coins:2000,standing:8} },
 ];
@@ -2059,15 +2110,47 @@ function showSeasonReportModal(rep){
 /* Back-compat: some old paths may call showSeasonReport() directly. */
 function showSeasonReport(){ const rep = seasonReport(); return showSeasonReportModal(rep); }
 function showSeasonBriefing(){
-  const c=G.car; const g=currentSeasonGoal(); if(!g) return;
+  const c=G.car, w=G.w; const g=currentSeasonGoal(); if(!g) return;
+  const bk = bookerFor(myPromo().id);
+  const weeksLeft = Math.max(0, WEEKS_PER_YEAR - c.week + 1);
+  // Plain-language ask in the booker's mouth, then the actual numbers with
+  // WHERE YOU ARE NOW next to where they need to be. A goal with no current
+  // reading is just trivia.
+  const plain = (typeof g.plain==='function') ? g.plain(c) : g.desc(c);
+  const rows  = (typeof g.rows==='function')  ? (g.rows(c,w)||[]) : [];
+  const rowHTML = rows.map(r=>{
+    if(r.bool){
+      const has = r.now>=r.goal;
+      return `<div class="sbrow">
+        <div class="sbrow-h"><span class="sbrow-l">${r.l}</span>
+          <span class="sbrow-v ${has?'ok':''}">${has?'Yes':'Not yet'}</span></div>
+        <div class="sbrow-why">${r.why||''}</div>
+      </div>`;
+    }
+    const pct = r.goal>0 ? Math.max(0, Math.min(100, Math.round((r.now/r.goal)*100))) : 100;
+    const done = r.now>=r.goal;
+    return `<div class="sbrow">
+      <div class="sbrow-h"><span class="sbrow-l">${r.l}</span>
+        <span class="sbrow-v ${done?'ok':''}"><b>${r.now.toLocaleString()}</b> <span class="sbrow-arrow">of</span> ${r.goal.toLocaleString()}</span></div>
+      <div class="sbrow-bar"><i style="width:${pct}%"></i></div>
+      <div class="sbrow-why">${r.why||''}</div>
+    </div>`;
+  }).join('');
   const body = `<div class="seasonbrief">
-    <div class="sb-y">Year ${c.year} · The office wants</div>
-    <div class="sb-goal">${g.label(c)}</div>
-    <div class="sb-desc">${g.desc(c)}</div>
-    <div class="sb-pay">Bonus on completion: <b>${money(g.payout.coins)}</b> and <b>+${g.payout.standing}</b> standing.</div>
-    <div class="sb-line">Ends Week ${WEEKS_PER_YEAR} of Year ${c.year}. Grade the year, get paid, or don't.</div>
+    <div class="sb-from">
+      <div class="sb-fromav">${pico('clipboard',24)}</div>
+      <div><div class="sb-fromname">${bk.name}</div>
+      <div class="sb-fromrole">runs the book at ${myPromo().name}</div></div>
+    </div>
+    <div class="sb-quote">"${plain}"</div>
+    ${rowHTML?`<div class="sb-rows">${rowHTML}</div>`:`<div class="sb-desc">${g.desc(c)}</div>`}
+    <div class="sb-terms">
+      <div class="sb-term"><span class="sb-term-l">Deadline</span><span class="sb-term-v">Week ${WEEKS_PER_YEAR} · ${weeksLeft} weeks from now</span></div>
+      <div class="sb-term"><span class="sb-term-l">If you get there</span><span class="sb-term-v gold">${money(g.payout.coins)} bonus, and the office starts listening to you</span></div>
+      <div class="sb-term"><span class="sb-term-l">If you miss it</span><span class="sb-term-v">No bonus. The year still ends, and they remember.</span></div>
+    </div>
   </div>`;
-  modal(`The year ahead`, body, [{label:'Understood',cls:'primary',fn:closeModal}]);
+  modal(`Year ${c.year}: what they want from you`, body, [{label:'Got it',cls:'primary',fn:closeModal}]);
 }
 
 /* ---- THE CROWD ----
