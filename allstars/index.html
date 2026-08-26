@@ -1368,6 +1368,522 @@ const ROSTER = [
       '..kdk..........kdk..',   /* clawed feet */
       '..kkk..........kkk..',
     ] },
+
+  /* ---------------- MYTH, MONSTER, AND CIRCUS PACK ----------------
+     These sprites use a light-to-shadow ramp per material (capital letter
+     = highlight, lowercase = base, a third key = shadow) with the light
+     coming from the upper left, so forms read with more depth than the
+     flat fills of the older roster. */
+
+  { k:'cupid', n:'Cupid', role:'Contact', pow:48, spd:88, con:82, def:65, quirk:null,
+    note:'Aims for the heart of the strike zone. Rarely misses.',
+    pal:{ k:'#0a0806', s:'#f7dcb4', S:'#d8b184', L:'#fff0d8', h:'#d8a24a', H:'#a87828', w:'#fdfbf5', W:'#c8c4bc', r:'#d24960', R:'#8a2b3a', y:'#f4c25a', g:'#c9a256', e:'#0a0806', q:'#0a0806', m:'#8a3a4a' },
+    art:[
+      '.....kHHHHHHk.......',
+      '....kHhhhhhhHk......',
+      '....khLsssshHk......',
+      '....kLssssssShk.....',
+      '....ksLeqsseqSk.....',   /* eyes */
+      '....kssssssssSk.....',
+      '....kssssmmssSk.....',
+      '....kkSSSSSSSkk.....',
+      'wWk...kwwwwww...kWw.',   /* wings out both sides */
+      'wWWkkwWwwwwwWwkkWWw.',
+      '.wWwkWwwwwwwwWkwWw..',
+      '..wkrrrrrrrrrrkw...y',   /* pink toga + bow to the side */
+      '...krRrrrrrrRrk...yy',
+      '...krrrLLLLrrrk..yg.',   /* highlight band */
+      '...krRrrrrrrRrk...y.',
+      '...kkrrrrrrrrkk.....',
+      '....krrrrrrrrk......',
+      '....krRrrrrRrk......',
+      '....kss....ssk......',
+      '....kSs....sSk......',   /* chubby legs */
+      '....kss....ssk......',
+      '....kSs....sSk......',
+      '....kkk....kkk......',
+      '....................',
+    ] },
+
+  { k:'medusa', n:'Medusa', role:'Wild', pow:66, spd:70, con:72, def:64, quirk:'petrify',
+    note:'One look and the pitcher forgets where the plate is.',
+    pal:{ k:'#0a0c08', g:'#3a8a4a', G:'#7ec06a', d:'#245524', s:'#9ec87a', S:'#6a9850', L:'#c8e8a0', y:'#f4c25a', r:'#c94b1a', w:'#eaeaea', e:'#f4c25a', q:'#0a0c08', m:'#3a5a20', p:'#8a1a1a' },
+    art:[
+      'g.G.g..G.g..G.g..G.g',   /* snake hair strands */
+      'Gd.Gd.gd.Gd.gd.Gd.gd',
+      '.kGgGgGgGgGgGgGgGk..',
+      '..kGdGdGdGdGdGdGk...',
+      '...kLsssssssssLk....',   /* face highlight */
+      '...ksLseqsseqLsk....',   /* glowing eyes */
+      '...ksssssssssSk.....',
+      '...ksssssmmsssSk....',
+      '...kkSSSSSSSSSkk....',
+      '....kGGGGGGGGGk.....',   /* green scaled dress */
+      '...kGLGGGGGGGGk.....',
+      '..kGGGGdddGGGGGk....',
+      '..kGLGdGGGdGGGGk....',   /* scale pattern */
+      '..kGGGdGGGdGGGGk....',
+      '..kGGGGdddGGGGGk....',
+      '..kkGLGGGGGGGGkk....',
+      '...kGGGGGGGGGGk.....',
+      '...kGGdGGGGdGGk.....',
+      '...kGGtailGGGk......',   /* serpent tail base */
+      '...kGGGGdddGGk......',
+      '....kGGGGGGGk.......',
+      '.....kGGdGGk.......',
+      '......kGGGk........',
+      '.......kkk.........',
+    ] },
+
+  { k:'cyclops', n:'Cyclops', role:'Power', pow:90, spd:38, con:46, def:58, quirk:null,
+    note:'One eye, zero doubt. Sees only the fence.',
+    pal:{ k:'#0a0806', s:'#c8956a', S:'#9a6a44', L:'#e8b888', b:'#5a3a2a', B:'#3a2418', w:'#eaeaea', W:'#b8b8b0', r:'#8a2b1a', d:'#3a2818', e:'#0a0806', q:'#0a0806', m:'#5a2010' },
+    art:[
+      '.....kbbbbbbbk......',   /* dark hair */
+      '....kbBbbbbbbBk.....',
+      '...kLsssssssssLk....',
+      '...kLsssssssssLk....',
+      '...ksswwwwwwsssk....',   /* single big eye */
+      '...ksswWeWwwsssk....',
+      '...ksswwwwwwsssk....',
+      '...ksssssssssSk.....',
+      '...ksssmMMMmssSk....',   /* wide mouth */
+      '..kkSSSSSSSSSSSkk...',
+      '.kLssssssssssssSk...',   /* bare muscled torso */
+      'kLsssssssssssssSSk..',
+      'kLssssrrrrsssssSSk..',   /* loincloth strap */
+      'kLssssssssssssssSk..',
+      'kLsssssSSssssssSSk..',   /* pec/ab shading */
+      '.kkSsssSSsssssSkk...',
+      '...krrrrrrrrrrk.....',   /* loincloth */
+      '...krRrrrrrrRrk.....',
+      '...kkrrrrrrrrkk.....',
+      '....kss....ssk......',
+      '....kLs....sSk......',
+      '....kss....ssk......',
+      '....kbb....bbk......',
+      '....kkk....kkk......',
+    ] },
+
+  { k:'phoenix', n:'Phoenix', role:'Wild', pow:80, spd:82, con:60, def:60, quirk:'rebirth',
+    note:'Struck out once a game, and rises from the ashes to first.',
+    pal:{ k:'#1a0a04', r:'#e04520', R:'#8a1c08', o:'#f4922a', O:'#c96010', y:'#f8d84a', Y:'#e0a820', L:'#fff0a0', w:'#fff0d0', e:'#1a0a04', q:'#1a0a04', m:'#8a1c08' },
+    art:[
+      '.......yYy..........',   /* head crest */
+      '......yLyYy.........',
+      '......oyYyo........',
+      '.....koyYyok.......',
+      '....koyeyeyok......',   /* eyes on fiery head */
+      '....koyyyyyok......',
+      '....koooOooook.....',   /* beak */
+      '...kOooooooooOk....',
+      'yo.kooryyyyrook.oy.',   /* wings spread */
+      'yOokorLyyyyLrokoOy.',
+      'yYokoryyyyyyrokoYy.',
+      '.YkoOryyOOyyrOokY..',   /* body flame */
+      '..koorRyyyyRrook...',
+      '..kooryyyyyyrook...',
+      '..kOooryYYyroook...',
+      '...kooorOOroook....',
+      '...kkooooooookk....',
+      '....koooOooook.....',   /* tail flames */
+      '....koYyroYyok.....',
+      '.....kororook......',
+      '.....kOooOok.......',   /* talons */
+      '.....kok.kok.......',
+      '.....kk...kk.......',
+      '....................',
+    ] },
+
+  { k:'dragon', n:'Dragon', role:'Power', pow:94, spd:56, con:50, def:66, quirk:null,
+    note:'Torches the ball. It lands three towns over.',
+    pal:{ k:'#08120a', g:'#2e8a3a', G:'#5cc060', d:'#1c5424', L:'#8ce88a', y:'#f4c25a', r:'#c94b1a', o:'#f4922a', w:'#eaeaea', s:'#c8b060', e:'#f4c25a', q:'#08120a', m:'#8a1a1a' },
+    art:[
+      '..y........y.......',   /* horns */
+      '..Gy......yG.......',
+      '..kGkkkkkkkGk......',
+      '.kGLGGGGGGGGGk.....',
+      '.kGGGdGGGdGGGGk....',   /* scaled head */
+      '.kGGeyGGGyeGGGk...o',   /* eyes + snout smoke */
+      '.kGGGGrrrGGGGGkoOo.',   /* nostrils */
+      '.kGGGdddddGGGGk.o..',
+      '.kkGLGGGGGGGGkk....',
+      '..wkGGGGGGGGkw.....',   /* wing membranes */
+      '.wwkGdGGGGdGGkww...',
+      'wwLkGGGGGGGGGGkLww.',
+      'wwkGLGdGGGdGLGGkww.',   /* scaled body */
+      '.wkGGGGdddGGGGGkw..',
+      '..kGGdGGGGGdGGGk...',
+      '..kkGLGGGGGGGGkk...',
+      '...kGGGdddGGGGk....',
+      '...kGGGGGGGGGGk....',
+      '...kGdGGGGGGdGk....',   /* tail base */
+      '...kkGGGGGGGGkk....',
+      '....kGG....GGk.....',
+      '....kGd....dGk.....',   /* clawed legs */
+      '....kyy....yyk.....',
+      '....kkk....kkk.....',
+    ] },
+
+  { k:'sasquatch', n:'Sasquatch', role:'Power', pow:92, spd:52, con:44, def:56, quirk:null,
+    note:'Blurry in every photo, crystal clear on the base paths.',
+    pal:{ k:'#0a0604', d:'#4a3020', D:'#2a1a10', b:'#6a4a30', L:'#8a6a44', s:'#c8a074', S:'#9a7050', e:'#0a0604', q:'#0a0604', m:'#3a1a10', w:'#c0b0a0' },
+    art:[
+      '....kdddddddddk.....',
+      '...kdLdddddddLdk....',   /* shaggy fur */
+      '..kdbdddddddddbdk...',
+      '..kdbLsssssssLbdk...',   /* face patch */
+      '..kdbseqsseqssbdk...',
+      '..kdbsssssssssbdk...',
+      '..kdbsssmMMsssbdk...',
+      '..kkdbSSSSSSSbdkk...',
+      '.kdLdddddddddddLdk..',   /* broad furry shoulders */
+      'kdbdddddddddddddbdk.',
+      'kdLddddddddddddddLk.',
+      'kdbddLsssssLddddbdk.',   /* chest bare patch */
+      'kdbdddssssssdddddbk.',   /* wait fix width */
+      'kdbddddssssddddddbk.',
+      '.kdLdddddddddddLdk..',
+      '..kkdbddddddddbdkk..',
+      '...kddd....dddk.....',
+      '..kdbdd....ddbdk....',
+      '..kdLdd....ddLdk....',   /* thick legs */
+      '..kdbdd....ddbdk....',
+      '..kdddd....ddddk....',
+      '..kddd......dddk....',
+      '..kkbk......kbkk....',   /* big feet */
+      '...kkk......kkk.....',
+    ] },
+
+  { k:'yeti', n:'Yeti', role:'Power', pow:88, spd:48, con:50, def:62, quirk:null,
+    note:'Ice in his veins. Also everywhere else.',
+    pal:{ k:'#0a1420', w:'#f0f6fb', W:'#c8d8e8', d:'#8aa8c0', D:'#5a7890', b:'#9ac0e0', s:'#d8e8f4', y:'#5cb6e5', e:'#0a1420', q:'#0a1420', m:'#3a6a8a' },
+    art:[
+      '....kwwwwwwwwwk.....',
+      '...kwWwwwwwwwWwk....',   /* white fur */
+      '..kwdwwwwwwwwwdwk...',
+      '..kwdWsssssssWdwk...',   /* blue-tinted face */
+      '..kwdseyseyssdwk...',   /* icy eyes */
+      '..kwdssssssssdwk...',
+      '..kwdsssMMMssdwk...',   /* mouth */
+      '..kkwdWSSSSWdwkk...',
+      '.kwWwwwwwwwwwwWwk...',
+      'kwdwwwwwwwwwwwwdwk..',   /* broad body */
+      'kwWwwwwwwwwwwwwWwk..',
+      'kwdwwbbbwwbbbwwdwk..',   /* fur chest tufts */
+      'kwWwwwwwwwwwwwwWwk..',
+      'kwdwwwwwwwwwwwwdwk..',
+      '.kwWwwwwwwwwwWwk....',
+      '..kkwWwwwwwwWwkk....',
+      '...kwww....wwwk.....',
+      '..kwWww....wwWwk....',
+      '..kwdww....wwdwk....',
+      '..kwWww....wwWwk....',
+      '..kwwww....wwwwk....',
+      '..kwww......wwwk....',
+      '..kkWk......kWkk....',
+      '...kkk......kkk.....',
+    ] },
+
+  { k:'nessie', n:'Nessie', role:'Speed', pow:64, spd:90, con:58, def:64, quirk:null,
+    note:'Surfaces once a century, legs it out for a triple.',
+    pal:{ k:'#04120c', g:'#2a7a5a', G:'#4aa878', d:'#184a34', L:'#7ad8a8', b:'#1a3a4a', B:'#0e2430', y:'#f4c25a', s:'#c8b060', e:'#f4c25a', q:'#04120c', m:'#0e2430' },
+    art:[
+      '.........kGGGk.....',   /* small head up high */
+      '........kGLGGGk....',
+      '........kGeyGGk....',   /* eye */
+      '........kGGGGGk....',
+      '........kkGGGkk....',
+      '.........kGGGk.....',   /* long neck */
+      '.........kGdGk.....',
+      '.........kGGGk.....',
+      '.........kGdGk.....',
+      '.........kGGGk.....',
+      '........kGLGGk.....',
+      '.......kGGGGGGk....',   /* body meets water */
+      'bbbbbkGGdGGGGGGkbbb',   /* water line + humps */
+      'BBBkGGGGGGGdGGGGkBB',
+      'kGGGGdGGGGGGGGGGGGk',   /* long serpent body */
+      'kGLGGGGGdGGGGGdGGLk',
+      'kGGGdGGGGGGdGGGGGGk',
+      'kkGGGGGGGGGGGGGGGkk',
+      'bbkkGGdGGGGdGGGkkbb',   /* tail dips into water */
+      'BBBBkkGGGGGGkkBBBBB',
+      'bbbbbbkkGGkkbbbbbbb',
+      'BBBBBBBBkkBBBBBBBBB',
+      '...................',
+      '...................',
+    ] },
+
+  { k:'horseman', n:'Headless Horseman', role:'Power', pow:84, spd:64, con:52, def:58, quirk:null,
+    note:'No head, no strike zone fear. Carries his own lantern.',
+    pal:{ k:'#050604', c:'#2a1e2a', C:'#4a3a4a', d:'#3a2818', b:'#141014', o:'#e0821a', O:'#f4b040', y:'#f4c25a', g:'#3a5a3a', r:'#8a1a1a', e:'#0a0604', q:'#050604', m:'#3a1010' },
+    art:[
+      '..............oOo..',   /* jack-o-lantern held aloft */
+      '.............oOyOo.',
+      '.............oyyyo.',
+      '.............okykok.',   /* carved face */
+      '..............ooo..',
+      '...kcccccccck.......',   /* collar where head would be */
+      '..kcCccccccCck.....',
+      '..kccccccccccck....',   /* empty shoulders */
+      '.kcCcccccccccCck...',
+      'kcccccccccccccck...',   /* long black cloak */
+      'kcCccccbbbccccCck..',
+      'kcccccbbbbbccccck..',   /* cloak clasp */
+      'kcCcccccbccccccCk..',
+      'kcccccccccccccck...',
+      '.kcCccccccccccCk...',
+      '..kkcccccccccckk...',
+      '...kcccccccccck....',
+      '...kcCcccccccCk....',
+      '...kkccccccccck....',
+      '....kcc....cck.....',
+      '....kdd....ddk.....',   /* riding boots */
+      '....kbb....bbk.....',
+      '....kbb....bbk.....',
+      '....kkk....kkk.....',
+    ] },
+
+  { k:'zombie', n:'Zombie', role:'Wild', pow:70, spd:34, con:44, def:48, quirk:null,
+    note:'Shambles to first no matter what. Braaains, then bases.',
+    pal:{ k:'#0a0e06', g:'#6a8a4a', G:'#8aae64', d:'#3a5424', L:'#a8c880', s:'#7a9a54', b:'#2a1a10', r:'#8a2b2a', w:'#c8c0b0', y:'#c9a256', e:'#0a0e06', q:'#0a0e06', m:'#4a1a1a' },
+    art:[
+      '....kgggggggggk.....',
+      '...kgLgggddgggk.....',   /* patchy scalp */
+      '..kgGgggggggggk.....',
+      '..kgGLsssssdggk.....',   /* rotting face */
+      '..kgsewsserggk.....',   /* mismatched eyes */
+      '..kgggsssssgggk....',
+      '..kggrrmmmmrggk....',   /* torn mouth */
+      '..kkgGSSSSSgkk.....',
+      '.kbbbbrrrrbbbbk....',   /* tattered shirt */
+      'kbLbbbbbbbbbbbk....',
+      'kbbbrrbbbbrrbbbk...',   /* bloodstains */
+      'kbbbbbbggbbbbbbk...',   /* exposed skin */
+      'kbLbbbbggbbbbbbk...',
+      '.kbbbbbbbbbbbbk....',
+      '..kkbbbbbbbbkk.....',
+      'sk.kbbbbbbbbk......',   /* one arm outstretched */
+      'Ss.kbbb..bbbk......',
+      's..kbbb..bbbk......',
+      '...kddd..dddk......',   /* dragging legs */
+      '...kdLd..dLdk......',
+      '...kddd..dddk......',
+      '...kbbb..bbbk......',
+      '...kkk....kkk......',
+      '...................',
+    ] },
+
+  { k:'werewolf', n:'Werewolf', role:'Wild', pow:86, spd:80, con:50, def:54, quirk:'moonrise',
+    note:'Harmless early. Under the late-inning moon, a monster.',
+    pal:{ k:'#0a0806', d:'#4a3524', D:'#2a1c10', b:'#6a4e34', L:'#8a6a44', s:'#a88458', y:'#f4c25a', r:'#8a1a1a', w:'#eaeaea', e:'#f4c25a', q:'#0a0806', m:'#5a1010' },
+    art:[
+      '..kdk........kdk....',   /* pointed ears */
+      '.kdLdk......kdLdk...',
+      '.kdbdkkkkkkkkdbdk...',
+      '.kdbddddddddddbdk...',   /* furry head */
+      '.kdbLseysseyLsbdk...',   /* yellow eyes */
+      '.kdbsssssssssbdk...',
+      '.kdbsswwwwwssbdk...',   /* snout */
+      '.kdbswrmMMmrwsbdk..',   /* fanged muzzle */
+      '.kkdbSSSSSSSbdkk...',
+      '..kdLddddddddLdk...',   /* shaggy shoulders */
+      '.kdbddddddddddbdk..',
+      '.kdbddLsssLddddbk..',   /* torn shirt over fur */
+      '.kdbdddssssdddbdk..',
+      '.kdLddddddddddLdk..',
+      '..kkdbddddddbdkk...',
+      '...kddd...dddk.....',
+      '..kdbdd...ddbdk....',   /* legs */
+      '..kdLdd...ddLdk....',
+      '..kdbdd...ddbdk....',
+      '..kdddd...ddddk....',
+      '..kddw.....wddk....',   /* claws */
+      '..kkbk.....kbkk....',
+      '...kk.......kk.....',
+      '...................',
+    ] },
+
+  { k:'strongman', n:'Strongman', role:'Power', pow:89, spd:44, con:56, def:58, quirk:null,
+    note:'Bends the bat around the ball. Handlebar never moves.',
+    pal:{ k:'#0a0806', s:'#e8b888', S:'#b8895a', L:'#ffd8a8', h:'#5a3a1c', H:'#3a2410', r:'#c94b1a', R:'#8a2b10', y:'#f4c25a', b:'#141014', w:'#eaeaea', e:'#0a0806', q:'#0a0806', m:'#3a1810' },
+    art:[
+      '.....khhhhhhk......',   /* slicked hair, center part */
+      '....khHhhhhHhk.....',
+      '....kLssssssLk.....',
+      '....ksLeqseqSk.....',
+      '....ksssssssSk.....',
+      '....kshhhhhhSk.....',   /* handlebar moustache */
+      '...khhksssskhhk....',
+      '....kkSSSSSkk......',
+      '.kLsssssssssssSk...',   /* huge bare torso */
+      'kLssssssssssssSSk..',
+      'kLsssrrrrrrsssSSk..',   /* strongman singlet strap */
+      'kLssrRrrrrRrssSSk..',
+      'kLsssSSssSSsssSSk..',   /* pec shading */
+      'kLssssSSssSSssSSk..',   /* abs */
+      '.kkSssssssssSSkk...',
+      '...krrrrrrrrrk.....',   /* singlet trunks */
+      '...krRrrrrrrRk.....',
+      '...kkrrrrrrrrk.....',
+      '...kLss....ssLk....',   /* thick legs */
+      '...ksSs....sSsk....',
+      '...ksss....sssk....',
+      '...kbbb....bbbk....',
+      '...kkk......kkk....',
+      '...................',
+    ] },
+
+  { k:'beardedlady', n:'Bearded Lady', role:'Contact', pow:56, spd:56, con:84, def:68, quirk:null,
+    note:'Reads the pitch through the whiskers. Never fooled.',
+    pal:{ k:'#0a0806', s:'#f2ceaa', S:'#c8a077', L:'#fce4c0', h:'#3a2414', H:'#1e1206', p:'#b0447a', P:'#7a2a54', w:'#eaeaea', y:'#f4c25a', g:'#c9a256', e:'#0a0806', q:'#0a0806', m:'#8a3a5a' },
+    art:[
+      '....khhhhhhhhk......',   /* styled updo */
+      '...khHhhhhhhHhk.....',
+      '...khLsssssssLk.....',
+      '...kshseqseqshk.....',
+      '...ksssssssssSk.....',
+      '...ksssssmmsssk....',
+      '...kshhhhhhhhSk....',   /* beard begins */
+      '..khHhhhhhhhhHhk...',
+      '..khhhhhhhhhhhhk...',   /* full beard */
+      '..khHhhhhhhhhHhk...',
+      '...khhhhhhhhhhk....',
+      '...kpppppppppk.....',   /* purple gown */
+      '..kpPppppppppPk....',
+      '..kppwwwwwwwwppk...',   /* lace collar */
+      '..kppppppppppppk...',
+      '..kpPpppgggpppPk...',   /* gold sash */
+      '..kppppppppppppk...',
+      '..kkpPppppppPpkk...',
+      '...kppppppppppk....',
+      '...kppp....pppk....',
+      '...kpPp....pPpk....',
+      '...kss.....ssk.....',
+      '...kpp.....ppk.....',   /* shoes */
+      '...kkk.....kkk.....',
+    ] },
+
+  { k:'ringmaster', n:'Ringmaster', role:'Balanced', pow:68, spd:68, con:70, def:70, quirk:null,
+    note:'Announces his own home runs. Loudly.',
+    pal:{ k:'#0a0806', h:'#141010', H:'#050302', s:'#e8b888', S:'#b8895a', r:'#c93030', R:'#7a1414', y:'#f4c25a', Y:'#c9a030', w:'#eaeaea', b:'#141014', e:'#0a0806', q:'#0a0806', m:'#5a2010' },
+    art:[
+      '....khhhhhhhhk......',   /* black top hat */
+      '....khHHHHHHhk.....',
+      '....khyyyyyyhk.....',   /* gold band */
+      '....khhhhhhhhk.....',
+      '..kkhhhhhhhhhhkk...',   /* brim */
+      '.khhhhhhhhhhhhhhk..',
+      '....ksssssssssk....',
+      '...ksSseqseqsSk....',
+      '...ksssssssssSk....',
+      '...kshhmmmmhhSk....',   /* curled moustache */
+      '...kkSSSSSSSSkk....',
+      '....kwwwwwwwk......',   /* white collar */
+      '...krrryyyrrrk.....',   /* red tailcoat, gold trim */
+      '..krRrryyyrrRrk....',
+      '..krryyyyyyyrrk....',   /* gold buttons/frogging */
+      '..krRryyyyyrRrk....',
+      '..krrrryyyrrrrk....',
+      '..kkrRrrrrrrRkk....',
+      '...krrr...rrrk.....',   /* coat tails */
+      '...krRr...rRrk.....',
+      '...kbb.....bbk.....',   /* black trousers */
+      '...kbb.....bbk.....',
+      '...kHH.....HHk.....',   /* boots */
+      '...kkk.....kkk.....',
+    ] },
+
+  { k:'acrobat', n:'Acrobat', role:'Speed', pow:46, spd:94, con:74, def:72, quirk:null,
+    note:'Cartwheels into second. Sticks the landing every time.',
+    pal:{ k:'#0a0c14', s:'#e8b888', S:'#b8895a', L:'#ffd8a8', h:'#5a3a1c', p:'#c93a6a', P:'#7a1c40', y:'#f4c25a', Y:'#c9a030', w:'#eaeaea', b:'#141014', e:'#0a0c14', q:'#0a0c14', m:'#8a2a4a' },
+    art:[
+      '.....khhhhhhk......',   /* hair in a tight bun */
+      '....khhhkkhhhk.....',
+      '....kLsssssLk......',
+      '....ksLeqeqSk......',
+      '....ksssssssk......',
+      '....kssmmmsSk......',
+      '....kkSSSSSkk......',
+      '....kppyyyppk......',   /* sequined leotard, star */
+      '...kpPpyYypPpk.....',
+      '..kppppyyppppk.....',
+      '.Lk.kppyYypp.kL....',   /* arms out for balance */
+      'Sk..kpPyyyPpk..kS..',
+      '....kppppppppk.....',
+      '....kpPpppppPk.....',
+      '....kkppppppkk.....',
+      '.....kppppppk......',
+      '.....kppppppk......',
+      '.....kpp..ppk......',   /* legs */
+      '.....kLs..sLk......',
+      '.....kSs..sSk......',
+      '.....kss..ssk......',
+      '.....kyy..yyk......',   /* slippers */
+      '.....kkk..kkk......',
+      '...................',
+    ] },
+
+  { k:'firebreather', n:'Fire Breather', role:'Power', pow:83, spd:60, con:54, def:56, quirk:null,
+    note:'Exhales, and the ball is already gone.',
+    pal:{ k:'#0a0604', s:'#c8956a', S:'#9a6a44', L:'#e8b888', h:'#141010', b:'#3a2418', r:'#c93020', o:'#f4922a', O:'#f8d84a', y:'#f4c25a', w:'#eaeaea', e:'#0a0604', q:'#0a0604', m:'#5a1810' },
+    art:[
+      '....khhhhhhhk......',   /* dark topknot */
+      '...khHhhhhhHhk.....',
+      '...kLssssssLk......',
+      '...ksLeqseqSk......',
+      '...kssssssssk.....o',   /* flame from mouth to right */
+      '...ksssssssOooOo..',
+      '...kssmMMOoryrooO.',   /* breathing fire */
+      '...kkSSOoryyyrooo.',
+      '....kbbbbOoryroO..',   /* bare chest with vest */
+      '...kbLbbbbOooOo...',
+      '..kbbbrrrbbbbk....',   /* red sash */
+      '..kbLbbbbbbbLbk...',
+      '..kbbbSSbbSSbbbk..',   /* chest shading */
+      '..kbbbbbbbbbbbbk..',
+      '..kkbLbbbbbbLbkk..',
+      '...kbbb...bbbk....',
+      '..kbLbb...bbLbk...',   /* legs */
+      '..kbbbb...bbbbk...',
+      '..kbLbb...bbLbk...',
+      '..kbbbb...bbbbk...',
+      '..kbbb.....bbbk...',
+      '..kkbk.....kbkk...',
+      '...kk.......kk....',
+      '.................. ',
+    ] },
+
+  { k:'blackcat', n:'Black Cat', role:'Wild', pow:44, spd:90, con:70, def:66, quirk:'unlucky',
+    note:'Crosses the pitcher. Errors follow her around the bases.',
+    pal:{ k:'#000000', b:'#141018', B:'#0a0810', d:'#2a2430', y:'#f4c25a', Y:'#c9a030', g:'#3a8a4a', p:'#c85a7a', w:'#eaeaea', e:'#f4c25a', q:'#000000', m:'#5a1a2a' },
+    art:[
+      '..bbk........kbb...',   /* pointed ears */
+      '..bYbk......kbYb...',
+      '..bbbkkkkkkkkbbb...',
+      '..kbdbbbbbbbbdbk...',   /* head */
+      '..kbBbbbbbbbbBbk...',
+      '..kbyeybbbbyeybk...',   /* glowing eyes */
+      '..kbbbbppbbbbbk...',   /* pink nose */
+      '..kbbwbbbbwbbbk...',   /* whiskers */
+      '..kkbBbbbbbBbkk...',
+      '...kbbbbbbbbbk.....',   /* sleek body */
+      '..kbBbbbbbbbBbk....',
+      '..kbbbbwwbbbbbk....',   /* white chest tuft */
+      '..kbBbbbbbbbBbk....',
+      '..kbbbbbbbbbbbk....',
+      '..kkbBbbbbbBbkk...b',   /* tail curling up right */
+      '...kbbbbbbbbk...bBb',
+      '...kbBbbbbBbk..bbb.',
+      '...kbbbbbbbbk.bBb..',
+      '...kbb....bbk.bbb..',   /* legs */
+      '...kBb....bBk......',
+      '...kbb....bbk......',
+      '...kdb....bdk......',   /* paws */
+      '...kkk....kkk......',
+      '...................',
+    ] },
 ];
 const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
 
@@ -1654,6 +2170,10 @@ const OPPONENTS = [
   { name:'Cryptids', color:'#3a1e4a', roster:['chupacabra','raboddog','witch','vampire','hyde','franky','krampus','dracula','pirate'] },
   { name:'The Ancients', color:'#5a4020', roster:['fathertime','mothernature','centaur','liberty','robin','sherlock','tintin','tracy','franky'] },
   { name:'Folklore', color:'#8b6a3a', roster:['bunny','witch','pirate','centaur','fathertime','mothernature','krampus','vampire','fairy'] },
+  { name:'The Beasts', color:'#4a3020', roster:['sasquatch','yeti','werewolf','dragon','cyclops','nessie','centaur','krampus','franky'] },
+  { name:'Nightmares', color:'#1a0a1a', roster:['zombie','horseman','medusa','werewolf','blackcat','vampire','dracula','hyde','chupacabra'] },
+  { name:'The Big Top', color:'#c93030', roster:['ringmaster','strongman','beardedlady','acrobat','firebreather','blackcat','cupid','bunny','tintin'] },
+  { name:'Mythos', color:'#c9a030', roster:['phoenix','medusa','cyclops','cupid','dragon','centaur','liberty','robin','sherlock'] },
 ];
 
 /* ============================================================================
@@ -2903,6 +3423,18 @@ function batterContext(b) {
   if (b.quirk === 'frenzy') {
     ctx.flags.frenzy = true;
   }
+  /* Werewolf rises with the moon: like Dracula, powers up in late innings. */
+  if (b.quirk === 'moonrise' && g.inning >= 4) {
+    ctx.pow = Math.min(100, ctx.pow + (g.inning - 3) * 3);
+    ctx.con = Math.min(100, ctx.con + (g.inning - 3) * 1);
+    if (g.inning >= 5) ctx.notes.push(`${b.n} howls at the rising moon.`);
+  }
+  /* Phoenix rebirth: the first time she would strike out in a game, she
+     rises from the ashes and reaches first instead. Flag armed here,
+     spent in recordOut. */
+  if (b.quirk === 'rebirth' && !g.phoenixUsed) {
+    ctx.flags.rebirth = true;
+  }
   return ctx;
 }
 
@@ -2937,6 +3469,11 @@ function throwPitch(chosenPt, chosenZone) {
      memory. */
   if (batter.quirk === 'confuse') {
     wobble += (Math.random() - 0.5) * 0.14;
+  }
+  /* Medusa petrifies the pitcher: one look and he loses the plate even
+     harder than the Scarecrow rattles him. */
+  if (batter.quirk === 'petrify') {
+    wobble += (Math.random() - 0.5) * 0.20;
   }
   let ideal = clamp(idealBase + wobble, 0.28, 0.78);
   /* Ball is a strike or a ball. The pitcher's control determines it, minus
@@ -3273,7 +3810,10 @@ function scheduleContactPlay(kind, batter) {
   if (kind === 'ground out' || kind === 'fly out') {
     const fielding = currentFieldingTeam().batters;
     const avgDef = fielding.reduce((a,c) => a + (c.def || 60), 0) / fielding.length;
-    const errChance = clamp(0.08 - (avgDef - 60) / 400, 0.02, 0.14);
+    let errChance = clamp(0.08 - (avgDef - 60) / 400, 0.02, 0.14);
+    /* Black Cat's bad luck: fielders bobble the ball far more often when
+       she's the batter. Superstition, weaponized. */
+    if (batter.quirk === 'unlucky') errChance = clamp(errChance + 0.22, 0, 0.4);
     if (Math.random() < errChance) {
       effective = 'single';       /* reached on error, treated as a single */
       onError = true;
@@ -3808,6 +4348,16 @@ function recordWalk() {
 function recordOut(reason, isStrikeout) {
   const g = State.game;
   const batter = currentBatter();
+  /* Phoenix rebirth: the first strikeout she'd take in a game becomes a
+     walk to first instead. She rises from the ashes. */
+  if (isStrikeout && g.batterCtx && g.batterCtx.flags && g.batterCtx.flags.rebirth && !g.phoenixUsed) {
+    g.phoenixUsed = true;
+    addLog(`${batter.n} rises from the ashes. Reaches first.`, true);
+    showCallout('REBIRTH', 'homer');
+    g.signature = { kind: 'torch', until: performance.now() + 1200 };
+    Sound.play('cheer');
+    return recordWalk();
+  }
   statBump(batter.k,'ab');
   if (isStrikeout) statBump(batter.k,'so');
   g.outs++;
