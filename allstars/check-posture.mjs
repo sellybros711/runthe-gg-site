@@ -79,13 +79,57 @@ if (!rosterMatch) {
      on the card lies about them. */
   const allowedQuirks = new Set(['transform','confuse','skittish','monument',
                                   'hex','naughty','stall','frenzy','drain',
-                                  'petrify','rebirth','moonrise','unlucky']);
+                                  'petrify','rebirth','moonrise','unlucky','fragile']);
   const quirks = [...rosterMatch[1].matchAll(/quirk:'([^']+)'/g)].map(m => m[1]);
   const unknown = quirks.filter(q => !allowedQuirks.has(q));
   if (unknown.length) {
     problems.push(`ROSTER references unknown quirks: ${[...new Set(unknown)].join(', ')}. `
       + 'Add the mechanic to resolveSwing (or startAtBat for at bat scoped mods) before '
       + 'shipping the character with it on the card.');
+  }
+}
+
+/* 5b. EVERY SPRITE IS EXACTLY THE DECLARED GRID.
+      The renderer walks a fixed SPRITE_W by SPRITE_H box and reads row[x]
+      for each cell, so a row one character short just renders transparent
+      at the end and a row one character long silently loses its tail. Both
+      look like a slightly wrong drawing rather than a bug, which is exactly
+      the sort of thing that survives review. With fifty-plus hand written
+      sprites this is the guard that keeps them honest. */
+{
+  const wM = page.match(/const SPRITE_W = (\d+)/);
+  const hM = page.match(/const SPRITE_H = (\d+)/);
+  if (!wM || !hM) {
+    problems.push('could not read SPRITE_W / SPRITE_H from allstars/index.html.');
+  } else if (rosterMatch) {
+    const W = +wM[1], H = +hM[1];
+    /* Split the roster body on each entry so a bad row can be named. */
+    const entries = rosterMatch[1].split(/\n  \{ k:'/).slice(1);
+    for (const entry of entries) {
+      const key = (entry.match(/^([a-z]+)'/) || [])[1] || '?';
+      const artM = entry.match(/art:\s*\[([\s\S]*?)\]/);
+      if (!artM) { problems.push(`character "${key}" has no art array.`); continue; }
+      const rows = [...artM[1].matchAll(/'([^']*)'/g)].map(m => m[1]);
+      if (rows.length !== H) {
+        problems.push(`character "${key}" has ${rows.length} sprite rows, expected ${H}.`);
+      }
+      const bad = rows.map((r, i) => [i, r.length]).filter(([, len]) => len !== W);
+      if (bad.length) {
+        const detail = bad.slice(0, 4).map(([i, len]) => `row ${i} is ${len}`).join(', ');
+        problems.push(`character "${key}" has ${bad.length} sprite row(s) that are not ${W} wide: ${detail}.`);
+      }
+      /* Every palette key a row uses must exist, or that cell draws nothing. */
+      const palM = entry.match(/pal:\{([^}]*)\}/);
+      if (palM) {
+        const palKeys = new Set([...palM[1].matchAll(/([A-Za-z])\s*:/g)].map(m => m[1]));
+        const used = new Set();
+        for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
+        const missing = [...used].filter(c => !palKeys.has(c));
+        if (missing.length) {
+          problems.push(`character "${key}" uses palette keys with no color: ${missing.join(', ')}.`);
+        }
+      }
+    }
   }
 }
 
