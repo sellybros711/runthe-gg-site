@@ -636,6 +636,10 @@
   .sb-desc{font-size:14px;color:var(--text);margin-top:10px;line-height:1.55;}
   .sb-pay{font-size:12px;color:var(--gold);margin-top:12px;}
   .feudshape{display:inline-block;margin-left:8px;padding:1px 6px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;border:1px solid;border-radius:4px;font-family:var(--display);}
+  .bs-debut{margin-bottom:12px;padding:10px 12px;border-radius:8px;background:linear-gradient(90deg,rgba(224,179,65,.10),transparent 70%);border-left:3px solid rgba(224,179,65,.65);}
+  .bs-debut-k{font-family:var(--display);font-size:13px;letter-spacing:.06em;color:var(--gold);text-transform:uppercase;}
+  .bs-debut-t{font-size:12px;color:var(--text);margin-top:4px;line-height:1.5;}
+  .bs-debut-b{font-size:11.5px;color:var(--text-dim);margin-top:6px;font-style:italic;}
   .bksheet .pchip{cursor:pointer;}
 
   /* ---- home: a live ring with a different card every visit ---- */
@@ -5178,11 +5182,22 @@ function renderWeek(){
     const _npv = (function(){ try{ return nextPpv(); }catch(_){ return null; } })();
     const buildIn = _npv && !o.ppv && _npv.weeksUntil>=1 && _npv.weeksUntil<=3 ? _npv : null;
     // Card-position + stakes as ONE line, not four labels stacked.
-    const stakesTag = o.stakes==='title'?'FOR THE TITLE'
+    const _worked=(c.rec.w||0)+(c.rec.l||0)+(c.rec.d||0);
+    const isDebut=_worked===0;
+    const stakesTag = isDebut?'YOUR DEBUT'
+                    : o.stakes==='title'?'FOR THE TITLE'
                     : o.stakes==='defense'?'TITLE DEFENCE'
                     : o.stakes==='rivalry'||o.stakes==='rival'?'THE FEUD'
                     : o.nonTitleVsChamp?'NON-TITLE VS CHAMPION'
                     : o.card.toUpperCase();
+    // Debut week: one card that says where you are and who is watching,
+    // so the first booking is a scene with context instead of a cold sheet.
+    const me_=myPromo(), bk_=bookerFor(me_.id);
+    const debutIntro = isDebut ? `<div class="bs-debut">
+        <div class="bs-debut-k">Welcome to ${me_.name}</div>
+        <div class="bs-debut-t">${me_.blurb||me_.product||'A wrestling company.'}</div>
+        <div class="bs-debut-b">${bk_.name} runs the book here. "${bk_.voice}"</div>
+      </div>` : '';
     const bookDetailsOpen = G.car._bookOpen;
     // Details panel: the odds bar, purse, risk, rules, office note, oppTitles.
     // Nothing was DELETED, just tucked. Player can open it any time.
@@ -5208,7 +5223,7 @@ function renderWeek(){
     // PPV, build, and farewell banners moved to the persistent arc header at
     // the top of the week body. Booking sheet is match-specific data only.
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
-
+      ${debutIntro}
       <div class="bs-headline">
         <div class="bs-stip">${o.stipLabel}</div>
         <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
@@ -5449,9 +5464,18 @@ function makeOffers(){
     else if(callout && i===2){ opp=callout; }   // your called-out opponent tops the card
     const stips=[['Singles Match','singles',1],['Tag Team Match','tag',0.9],['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1]];
     let st=stips[Math.floor(rnd()*stips.length)];
+    // Gimmick stipulations are EARNED. No office on earth debuts an unknown
+    // in a ladder match: a rookie works plain singles (or tag) until they have
+    // a handful of matches and some trust in the room. This is also just
+    // better onboarding: a new player's first nights are the simplest rules
+    // in the game, and the first Hardcore or Ladder night arrives as a step
+    // up they can feel.
+    const matchesWorked=(G.car.rec.w||0)+(G.car.rec.l||0)+(G.car.rec.d||0);
+    const earnedGimmicks = matchesWorked>=6 && (G.car.standing||50)>=45;
+    if(!earnedGimmicks && st[1]!=='singles' && st[1]!=='tag') st=stips[0];
     // PPV nights get the marquee stipulations. The office only puts you in one
     // if you have earned the spot, and only on the biggest match of the card.
-    if(ppv && i===2 && G.car.standing>=48 && rnd()<0.55){
+    if(ppv && i===2 && G.car.standing>=48 && matchesWorked>=6 && rnd()<0.55){
       const mm=[['Iron Man Match','iron',1.5],['Elimination Chamber','chamber',1.55],['Money in the Bank','mitb',1.5],['Tables, Ladders, Chairs','tlc',1.45]];
       st = mm[Math.floor(rnd()*mm.length)];
     }
