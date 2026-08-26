@@ -5,3 +5,6 @@ scratchpad/
 # Python bytecode cache (created when the roster tools are imported)
 __pycache__/
 *.pyc
+
+# throwaway Playwright screenshots (test scripts write here from the repo root)
+shots/
