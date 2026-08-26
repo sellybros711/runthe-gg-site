@@ -1787,8 +1787,11 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(4,16,10,.34)); border:1px solid var(--panelb);
     border-radius:13px; padding:9px 15px 9px 16px; box-shadow:0 6px 18px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)}
   .bcasthd::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--bacc,#e0a83b)}
+  /* ITEM 11: the venue name is never clipped. It wraps to a second line rather than ellipsising, at any width
+     (a 470px desktop header truncated "The Auld Links at Carrickmoor" too, not just a phone). */
   .bcasthd .bc-name{flex:1; min-width:0; font-family:var(--display); font-style:italic; font-size:18px; line-height:1.05;
-    color:var(--cream,#F4E3C9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.01em}
+    color:var(--cream,#F4E3C9); letter-spacing:.01em; overflow:hidden; overflow-wrap:anywhere;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
   .bcasthd .bc-meta{flex:0 0 auto; font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--bacc,#e0a83b); text-align:right}
   .bcasthd .bc-ph{font-family:var(--body); font-style:normal; font-weight:700; font-size:.6em; letter-spacing:.05em; text-transform:uppercase; opacity:.82; white-space:nowrap}
   .dcardwrap{max-width:600px; margin:9px auto 0; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(4,16,10,.3));
@@ -1799,6 +1802,14 @@ window.GA_ID='G-L29P5MRWKE';
   @media(max-width:700px){
     .bcasthd,.dcardwrap{max-width:none; width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
       border-radius:0; border-left:none; border-right:none}
+    /* ITEM 11: the round header truncated at phone width ("The Auld Links at Carrickm..."). The name and the
+       conditions were sharing one row, so the longest venue names got ~150px of a 390px screen. On a phone the
+       name now takes the full row (it fits on one line there) and the conditions drop underneath it as an
+       eyebrow, with the padding tightened so the header is barely taller than it was. */
+    .bcasthd{flex-wrap:wrap; row-gap:3px; align-items:flex-start; padding:7px 14px 7px 15px}
+    .bcasthd .bc-name{flex:1 1 100%; white-space:normal; overflow:hidden; text-overflow:clip;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow-wrap:anywhere}
+    .bcasthd .bc-meta{flex:1 1 100%; text-align:left; line-height:1.15}
   }
   .shotpanel{max-width:560px; margin:8px auto 0; background:var(--panel); border:1px solid var(--panelb); border-radius:13px; padding:10px 14px}
   .shothd{display:flex; align-items:baseline; gap:11px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:2px}
@@ -2205,37 +2216,44 @@ window.GA_ID='G-L29P5MRWKE';
      arrived as two words with no numbers attached, and I tapped one at random". Compact by design:
      the tap-targets on the course own the upper two thirds. */
   .hvdec{left:6px;right:6px;bottom:6px;pointer-events:auto;
-    background:linear-gradient(180deg,rgba(10,23,15,.95),rgba(5,12,9,.97));
-    border:1.5px solid rgba(235,208,74,.5);border-radius:12px;padding:6px 7px 7px;
-    box-shadow:0 14px 34px -12px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
+    background:linear-gradient(180deg,rgba(9,24,17,.96),rgba(4,11,8,.985));
+    border:1px solid rgba(241,208,74,.34);border-radius:14px;padding:7px 9px 9px;
+    box-shadow:0 18px 42px -14px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
     animation:hvdin .28s ease}
   @media (prefers-reduced-motion:reduce){ .hvdec{animation:none} }
-  .hvdec .dkh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-  .hvdec .dkl{font:900 9.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
-  .hvdec .dkw{display:inline-flex;align-items:center;gap:4px;font:800 9.5px/1 var(--body);letter-spacing:.07em}
+  .hvdec .dkh{display:flex;align-items:center;gap:7px;margin-bottom:5px;min-height:15px}
+  .hvdec .dkl{font:900 9px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);flex:0 0 auto}
+  /* the relevant rating, shown ONCE in the header instead of repeated on both cards */
+  .hvdec .dkst{font:900 9px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:#dbe7e0;flex:0 0 auto;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px 8px}
+  .hvdec .dkw{display:inline-flex;align-items:center;gap:4px;font:800 9.5px/1 var(--body);letter-spacing:.07em;margin-left:auto}
   .hvdec .dkw svg{display:block;width:12px;height:12px;transform-origin:50% 50%}
-  /* every line is CLAMPED, so the panel's height is fixed whatever the scenario says - that is what
-     lets the tap-targets be clamped to the strip above it without measuring at render time. */
-  .hvdec .dks{flex:1 1 100%;font:700 10px/1.3 var(--body);color:#ffd27a;
-    display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-  .hvdec .dkp{font:600 11px/1.32 var(--body);color:#eef4f0;margin-bottom:5px;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .hvdec .dkrow{display:flex;gap:7px}
-  .hvdec .dkc{flex:1;min-width:0;text-align:left;border-radius:10px;padding:6px 7px 7px;cursor:pointer;
-    border:1.5px solid;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* Fixed-height lines keep the panel's height constant whatever the scenario says - that is what lets
+     the tap-targets be clamped to the strip above it without measuring at render time. Deliberately NO
+     -webkit-box/-webkit-line-clamp anywhere in this panel: an inline icon inside a -webkit-box is what
+     drew the full-width green bars on iOS, so the revamp removes the cause by construction. */
+  .hvdec .dks{font:800 9.5px/1 var(--body);color:#ffcf6a;letter-spacing:.02em;flex:1 1 auto;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hvdec .dkp{font:600 11px/1.3 var(--body);color:#dfe9e3;margin-bottom:7px;height:2.6em;overflow:hidden}
+  .hvdec .dkrow{display:flex;gap:8px}
+  .hvdec .dkc{flex:1 1 0;min-width:0;text-align:left;border-radius:11px;padding:7px 8px 8px 11px;cursor:pointer;
+    border:1px solid;position:relative;overflow:hidden;transition:transform .06s ease;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* the colour-coded ACCENT EDGE replaces the old inline icon - no glyph, nothing to mis-render */
+  .hvdec .dkc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
   .hvdec .dkc:active{transform:translateY(2px)}
-  .hvdec .dkc .l{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    font:900 12.5px/1.12 var(--body)}
-  .hvdec .dkc .s{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
-    font:600 9.5px/1.3 var(--body);color:#cfe0d8;margin-top:3px}
-  /* each number on its OWN line (owner, CS379): stat, then the reward, then the risk */
-  .hvdec .dkc .o{display:flex;flex-direction:column;gap:1px;margin-top:5px;padding-top:4px;
-    border-top:1px solid rgba(255,255,255,.15);font:800 9.5px/1.32 var(--body);color:#eef4f0}
-  .hvdec .dkc .o .gd{color:#4fe0a6} .hvdec .dkc .o .rk{color:#ff9576} .hvdec .dkc .o .neu{color:#cfe0d8}
-  .hvdec .dkc.agg{border-color:#ff6b4a;background:linear-gradient(180deg,rgba(255,90,60,.17),rgba(255,90,60,.05))}
-  .hvdec .dkc.agg .l{color:#ff9576}
-  .hvdec .dkc.safe{border-color:#3fcaa8;background:linear-gradient(180deg,rgba(63,202,168,.17),rgba(63,202,168,.05))}
-  .hvdec .dkc.safe .l{color:#5fe0c0}
+  .hvdec .dkc .l{font:900 12.5px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* the odds read as a PAIR of big numbers with a tiny caption, not three sentences */
+  .hvdec .dkc .o{display:flex;gap:10px;margin-top:6px;padding-top:5px;border-top:1px solid rgba(255,255,255,.13)}
+  .hvdec .dkc .o span{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .hvdec .dkc .o b{font:900 13px/1 var(--body);letter-spacing:-.01em}
+  .hvdec .dkc .o i{font:800 8.5px/1 var(--body);font-style:normal;letter-spacing:.09em;text-transform:uppercase;
+    color:#9fb3a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hvdec .dkc .o .gd b{color:#4fe0a6} .hvdec .dkc .o .rk b{color:#ff8f76} .hvdec .dkc .o .neu b{color:#cfe0d8}
+  .hvdec .dkc.agg{border-color:rgba(255,107,74,.55);background:linear-gradient(180deg,rgba(255,90,60,.16),rgba(255,90,60,.04))}
+  .hvdec .dkc.agg::before{background:#ff6b4a} .hvdec .dkc.agg .l{color:#ff9576}
+  .hvdec .dkc.safe{border-color:rgba(63,202,168,.55);background:linear-gradient(180deg,rgba(63,202,168,.16),rgba(63,202,168,.04))}
+  .hvdec .dkc.safe::before{background:#3fcaa8} .hvdec .dkc.safe .l{color:#5fe0c0}
   /* decision MODAL: a real pop-up presenting the situation + 2 options over a dimmed course - never
      shifts the page underneath (owner: a real, exciting pop-up that draws attention) */
   .decisionov{position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;
@@ -2277,7 +2295,13 @@ window.GA_ID='G-L29P5MRWKE';
     background:none;border:none;padding:0;cursor:pointer;z-index:6;pointer-events:none;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.55))}
   .dctarget .dtl,.dctarget .dtr{pointer-events:auto}
-  .dctarget .dtl{font:900 12px/1 var(--body);letter-spacing:.01em;color:#fff;white-space:nowrap;border:2px solid;border-radius:11px;padding:5px 10px}
+  /* the chip carries a colour-coded DOT, not an inline icon: an emoji-derived <svg class="ic"> inside a
+     chip is what iOS was drawing as a full-width bar with the text pushed under it. */
+  .dctarget .dtl{font:900 12px/1 var(--body);letter-spacing:.01em;color:#fff;white-space:nowrap;border:2px solid;border-radius:11px;padding:5px 10px 5px 9px;display:inline-flex;align-items:center;gap:6px}
+  /* solid dot = the risky line, hollow ring = the safe one: a SHAPE cue, so the two still read apart
+     for a colourblind player and without leaning on a glyph. */
+  .dctarget .dtl::before{content:'';width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:currentColor}
+  .dctarget.safe .dtl::before{background:transparent;box-shadow:inset 0 0 0 2px currentColor}
   .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
   .dctarget .dtr{width:26px;height:14px;border:2.5px solid;border-radius:50%;margin-top:2px;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
   .dctarget.agg .dtl{background:rgba(180,26,26,.94);border-color:#ff5a4d}
@@ -2295,21 +2319,28 @@ window.GA_ID='G-L29P5MRWKE';
      bright colour-coded odds so the stat + percentages read at a glance */
   .dcbar{max-width:600px;margin:10px auto 0;border:1px solid rgba(235,208,74,.42);border-radius:16px;
     background:linear-gradient(180deg,rgba(14,33,20,.97),rgba(7,17,11,.98));padding:13px 13px 14px;box-shadow:0 14px 34px -14px rgba(0,0,0,.75)}
-  .dcbar .dch{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
-  .dcbar .dchl{font:900 12.5px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
-  .dcbar .dchs{font:700 12.5px/1.4 var(--body);color:#ffd27a}
-  .dcbar .dchp{font:600 13px/1.45 var(--body);color:#eef4f0}
+  .dcbar .dch{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .dcbar .dchl{font:900 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .dcbar .dchst{font:900 10px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:#dbe7e0;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px}
+  .dcbar .dchs{font:800 11px/1.3 var(--body);color:#ffcf6a;flex:1 1 100%}
+  .dcbar .dchp{font:600 13px/1.4 var(--body);color:#dfe9e3;flex:1 1 100%}
   .dcrow{display:flex;gap:10px}
-  .dccard{flex:1;text-align:left;border-radius:14px;padding:13px 13px 12px;cursor:pointer;border:1.5px solid;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .dccard{flex:1 1 0;min-width:0;text-align:left;border-radius:14px;padding:12px 12px 12px 15px;cursor:pointer;border:1px solid;
+    position:relative;overflow:hidden;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .dccard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
   .dccard:active{transform:translateY(2px)}
-  .dccard .dcl{font:900 15px/1.15 var(--body)}
-  .dccard .dcs{font:600 12px/1.4 var(--body);color:#cfe0d8;margin-top:5px}
-  .dccard .dco{font:800 13px/1.3 var(--body);margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);color:#eef4f0;display:flex;flex-direction:column;gap:3px}
-  .dccard .dco .dcstat{color:#fff} .dccard .dco .gd{color:#4fe0a6} .dccard .dco .rk{color:#ff9576} .dccard .dco .neu{color:#cfe0d8}
-  .dccard.agg{border-color:#ff6b4a;background:linear-gradient(180deg,rgba(255,90,60,.17),rgba(255,90,60,.05));box-shadow:0 8px 22px -12px rgba(255,90,60,.6)}
-  .dccard.agg .dcl{color:#ff9576}
-  .dccard.safe{border-color:#3fcaa8;background:linear-gradient(180deg,rgba(63,202,168,.17),rgba(63,202,168,.05));box-shadow:0 8px 22px -12px rgba(63,202,168,.5)}
-  .dccard.safe .dcl{color:#5fe0c0}
+  .dccard .dcl{font:900 15px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dccard .dco{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.14);display:flex;gap:12px}
+  .dccard .dco span{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .dccard .dco b{font:900 16px/1 var(--body);letter-spacing:-.01em}
+  .dccard .dco i{font:800 9px/1 var(--body);font-style:normal;letter-spacing:.09em;text-transform:uppercase;color:#9fb3a8;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dccard .dco .gd b{color:#4fe0a6} .dccard .dco .rk b{color:#ff8f76} .dccard .dco .neu b{color:#cfe0d8}
+  .dccard.agg{border-color:rgba(255,107,74,.55);background:linear-gradient(180deg,rgba(255,90,60,.16),rgba(255,90,60,.04));box-shadow:0 8px 22px -12px rgba(255,90,60,.6)}
+  .dccard.agg::before{background:#ff6b4a} .dccard.agg .dcl{color:#ff9576}
+  .dccard.safe{border-color:rgba(63,202,168,.55);background:linear-gradient(180deg,rgba(63,202,168,.16),rgba(63,202,168,.04));box-shadow:0 8px 22px -12px rgba(63,202,168,.5)}
+  .dccard.safe::before{background:#3fcaa8} .dccard.safe .dcl{color:#5fe0c0}
   /* crisp FLIP glide when scoreboard rows swap order (positions animate, not teleport) */
   .hvbrow{transition:none}
   @media (prefers-reduced-motion:reduce){ .hvbrow{transition:none!important} }
@@ -15712,13 +15743,22 @@ function hvSwingMarkup(g,p,look){
     : frames.map((u,i)=>img(u,clsBase[i])).join('');
   // Shot-number pin: upright, above the ball (no rotated group now, so it never rotates/flips).
   let badge='';
-  if(p.i!=null && !holdStatic){ const num=p.i+1, putt=(kind==='putt');
-    const br=putt?GH*0.30:GH*0.26, fs=putt?GH*0.36:GH*0.32;
-    const bx2=A[0], by2=Math.max(cam[1]+br+0.8, A[1]-GH*1.05);
-    badge=`<g class="hvswnum">`
+  if(p.i!=null && !holdStatic){ const num=p.i+1;
+    // ITEM 11: on the green close-up this badge was the biggest thing on the screen and it sat exactly where
+    // the flag is - the pin is UP the hole from the ball, and the badge was pinned above the ball and clamped
+    // to the top of the frame, so it landed on the flagstick. Standing over a putt, the most prominent object
+    // was a numeral. On a zoomed frame it is now small and sits BELOW the ball (open green, clear of the pin)
+    // with its pointer flipped up at the ball. The full-hole view, where it reads well, is untouched.
+    const zoom = cam[3] < HV_H*0.62;
+    const br=zoom?GH*0.19:GH*0.26, fs=zoom?GH*0.25:GH*0.32;
+    const bx2=A[0];
+    const by2=zoom ? Math.min(cam[1]+cam[3]-br-1.2, A[1]+GH*0.34+br)
+                   : Math.max(cam[1]+br+0.8, A[1]-GH*1.05);
+    const tipY = zoom ? by2-br*1.45 : by2+br*1.45, baseY = zoom ? by2-br*0.54 : by2+br*0.54;
+    badge=`<g class="hvswnum"${zoom?' opacity=".9"':''}>`
       +`<circle cx="${(bx2+0.6).toFixed(1)}" cy="${(by2+1).toFixed(1)}" r="${br.toFixed(1)}" fill="#04150a" opacity=".45"/>`
-      +`<path d="M ${bx2.toFixed(1)} ${(by2+br*1.45).toFixed(1)} L ${(bx2-br*0.54).toFixed(1)} ${(by2+br*0.54).toFixed(1)} L ${(bx2+br*0.54).toFixed(1)} ${(by2+br*0.54).toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
-      +`<circle cx="${bx2.toFixed(1)}" cy="${by2.toFixed(1)}" r="${br.toFixed(1)}" fill="#0a1626" stroke="#F1D04A" stroke-width="1.2"/>`
+      +`<path d="M ${bx2.toFixed(1)} ${tipY.toFixed(1)} L ${(bx2-br*0.54).toFixed(1)} ${baseY.toFixed(1)} L ${(bx2+br*0.54).toFixed(1)} ${baseY.toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
+      +`<circle cx="${bx2.toFixed(1)}" cy="${by2.toFixed(1)}" r="${br.toFixed(1)}" fill="#0a1626" stroke="#F1D04A" stroke-width="${zoom?'0.9':'1.2'}"/>`
       +`<text x="${bx2.toFixed(1)}" y="${(by2+fs*0.34).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}" font-weight="800" fill="#F6E88F" font-family="inherit">${num}</text>`
       +`</g>`; }
   // CS483u: an equipped effect (aura) glows on the golfer - a pulse in the effect's colour on the group.
@@ -26311,28 +26351,52 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
   g.sx=Math.max(1.8, Math.min(3.2, g.vy*2.6));
   g.t=(y)=>1-HV_TAPER*Math.max(0,Math.min(1,y/g.span));      // far-end perspective taper
   g.ry=(r)=>r*Math.max(g.vy, g.sx*0.42);                     // hazard vertical radius (never pancakes on long holes)
-  // dogleg: severity scales with the course's tendency; direction leans its famous way. A real dogleg
-  // TURNS at a corner - a straight leg off the tee, then a straight diagonal leg to the green - rather
-  // than bowing the whole way (the old smoothstep read as a gentle S-curve). Some holes play dead straight.
-  const dir=(hh(1)+st.bias*0.28)<0.5?-1:1;
-  const straight=(par!==3 && hh(50)<0.22);                            // ~1 in 5 non-par-3s is dead straight
-  const mag=(par===3||straight)?0:Math.round((10+hh(21)*(par===5?42:30))*st.dog)*dir;
-  g.bend=mag;
-  const cf=0.36+hh(51)*0.22;                                          // the corner sits 36-58% down the hole
-  const sShape=(par===5 && hh(22)<st.sshape);
-  g.cx=(y)=>{ if(par===3||!mag) return 0;
-    if(!sShape){ const cY=L*cf; if(y<=cY) return 0;                   // straight leg off the tee...
-      const t=Math.min(1,(y-cY)/(L-cY));
-      return mag*(t*0.7 + (t*t*(3-2*t))*0.3); }                       // ...then a mostly-straight diagonal leg to the green (elbow softly rounded)
-    // double dogleg (some par-5s): out one way past the first corner, back the other into the green
-    const f1=Math.max(0,Math.min(1,(y-L*0.24)/(L*0.24))), e1=f1*f1*(3-2*f1);
-    const f2=Math.max(0,Math.min(1,(y-L*0.60)/(L*0.24))), e2=f2*f2*(3-2*f2);
-    return mag*e1 - mag*1.7*e2; };
   // fairway width PROFILE: base width by course (now a much wider hole-to-hole spread) shaped along the
   // hole by a broad driving-zone flare, a distinct neck pinch, and a rippled (non-parallel) edge - so
   // fairways vary in thickness both course-to-course AND within a hole, and read organic, not squared-off.
   const baseW=(24+hh(2)*20)*st.fw;
   g.fwW=baseW;
+  // green: size AND shape vary per hole - an overall size roll × the course's green-size character, and an
+  // aspect ratio ranging from wide-and-shallow to deep-and-narrow (area kept roughly constant), plus a
+  // per-hole irregularity so outlines aren't near-circular (Redan-ish, kidney, long tongue, etc.).
+  // Sized BEFORE the dogleg on purpose: the bend's in-frame clamp needs the fairway width and the green.
+  const gArea=(12.5+hh(5)*2.5)*st.gsz*(0.84+hh(55)*0.46), gAsp=0.66+hh(6)*0.9;
+  g.greenR=[gArea*Math.sqrt(gAsp), gArea/Math.sqrt(gAsp)];
+  g.greenIrr=0.13+hh(56)*0.15;
+  // dogleg: severity scales with the course's tendency; direction leans its famous way. A real dogleg
+  // TURNS at a corner - a straight leg off the tee, then a straight diagonal leg to the green - rather
+  // than bowing the whole way (the old smoothstep read as a gentle S-curve). Some holes play dead straight.
+  // The mechanism was right but the AMPLITUDE read as a lean, so it is raised and given a tail of holes
+  // that bend genuinely hard, and the elbow is tightened - then clamped per hole (below) so the fairway
+  // and the green can never leave the camera however far the hole turns.
+  const dir=(hh(1)+st.bias*0.28)<0.5?-1:1;
+  const straight=(par!==3 && hh(50)<0.22);                            // ~1 in 5 non-par-3s is dead straight
+  const sev=(hh(57)<0.26)?(1.45+hh(58)*0.4):1;                        // ~1 in 4 bends hard: the holes that deserve it
+  let mag=(par===3||straight)?0:Math.round((15+hh(21)*(par===5?62:46))*st.dog*sev)*dir;
+  const cf=0.36+hh(51)*0.22;                                          // the corner sits 36-58% down the hole
+  const sShape=(par===5 && hh(22)<st.sshape);
+  g.cx=(y)=>{ if(par===3||!mag) return 0;
+    if(!sShape){ const cY=L*cf; if(y<=cY) return 0;                   // straight leg off the tee...
+      const t=Math.min(1,(y-cY)/(L-cY));
+      return mag*(t*0.82 + (t*t*(3-2*t))*0.18); }                     // ...then a straight diagonal leg to the green (the elbow only softly rounded)
+    // double dogleg (some par-5s): out one way past the first corner, back the other into the green
+    const f1=Math.max(0,Math.min(1,(y-L*0.24)/(L*0.24))), e1=f1*f1*(3-2*f1);
+    const f2=Math.max(0,Math.min(1,(y-L*0.60)/(L*0.24))), e2=f2*f2*(3-2*f2);
+    return mag*e1 - mag*1.7*e2; };
+  // IN-FRAME GUARANTEE: walk the centreline and shrink the bend until the fairway edge - and, at the
+  // green, the green's own half-width - still sits inside HV_CAM. g.cx reads `mag`, so scaling it
+  // re-shapes the hole in place: a hard turn is drawn as hard as the frame allows and never further.
+  if(mag){
+    const lim=(HV_CAM[2]/2)-14;
+    let s=1;
+    for(let i=0;i<=24;i++){ const y=L*i/24, c=Math.abs(g.cx(y));
+      if(c<0.5) continue;
+      const half=(y>L-10)?Math.max(baseW*0.62, g.greenR[0]+6):baseW*0.62;
+      const allow=lim/(g.sx*g.t(y)) - half;
+      if(allow<c) s=Math.min(s, Math.max(0,allow)/c); }
+    if(s<1) mag=Math.round(mag*s);
+  }
+  g.bend=mag;
   const lzY=L*(0.32+hh(52)*0.14);                                     // driving landing zone (widest point)
   const lzAmt=0.16+hh(53)*0.24;
   const neckY=L*(0.58+hh(23)*0.22);                                   // a neck somewhere past the flare
@@ -26342,13 +26406,7 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
     w*=1-neckAmt*Math.exp(-Math.pow((y-neckY)/(L*0.09),2));           // pinch at the neck
     w*=1+0.11*Math.sin(y*0.052+hh(26)*6)+0.055*Math.sin(y*0.14+hh(54)*6);   // organic wavy edge (not parallel)
     return Math.max(baseW*0.17, w); };
-  // green: sized by course, sometimes tucked left/right of the fairway line (clamped in frame)
-  // green: size AND shape vary per hole - an overall size roll × the course's green-size character, and an
-  // aspect ratio ranging from wide-and-shallow to deep-and-narrow (area kept roughly constant), plus a
-  // per-hole irregularity so outlines aren't near-circular (Redan-ish, kidney, long tongue, etc.).
-  const gArea=(12.5+hh(5)*2.5)*st.gsz*(0.84+hh(55)*0.46), gAsp=0.66+hh(6)*0.9;
-  g.greenR=[gArea*Math.sqrt(gAsp), gArea/Math.sqrt(gAsp)];
-  g.greenIrr=0.13+hh(56)*0.15;
+  // the green is sometimes tucked left/right of the fairway line (clamped in frame)
   const maxOff=Math.max(0,(HV_W/2-26)/(g.sx*g.t(L)) - g.greenR[0] - Math.abs(g.cx(L)));
   const goff=(hh(27)<0.5?-1:1)*Math.min(maxOff,(hh(28)<0.35?(6+hh(29)*8):0));
   g.gcx=g.cx(L)+goff;
@@ -26490,6 +26548,12 @@ function hvPlots(g, shots, seedN){
   shots.forEach((s,i)=>{
     const p={i, k:s.k||'app', lie:s.lie||'fw'};
     p.from=cur.slice();
+    // ITEM 13: carry the shot's OWN distance-to-hole onto the plot, so the map can show the number the
+    // narration is already telling you. Feet first: a shot only ever carries `ft` when it finishes near
+    // the green (a par-3 miss stores both a rough toY and the true ft), and the finer unit is the truth.
+    { const fv=(s.k==='putt')?s.toFt:s.ft;
+      p.toFt=(fv!=null&&fv>0)?fv:null;
+      p.toYd=(s.toY!=null&&s.toY>0)?s.toY:null; }
     const toY=(s.toY!=null)?s.toY:null; let y, rest=null;
     const sgn=(s.side==='left')?-1:(s.side==='right')?1:(hh(i,3)<0.5?-1:1);
     switch(s.lie){
@@ -27195,7 +27259,21 @@ function pxTerrainURL(g, seedN, B, opts){
     sand:hex(B.sand),sandLine:hex(B.sandLine||B.sand),sandSpeck:hex(B.sandSpeck||B.sand),
     water:hex(B.water),ripple:hex(B.ripple||B.water)};
   C.path=hex(desert?'#caa26a':'#c8b59a');
-  const RO=0,DE=1,FW=2,GR=3,FR=4,SA=5,WA=6,TE=7,OC=8;
+  // ITEM 12: THE FIRST CUT. The fairway edge was a hard line straight into rough, but a golfer's eye reads a
+  // hole in bands - fairway, first cut, rough, then trouble. One intermediate mown band, in a tone between the
+  // fairway and that biome's own rough, so it works on grass, links fescue and desert alike.
+  const mix=(a,b,t)=>[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t)];
+  const lum=c=>0.299*c[0]+0.587*c[1]+0.114*c[2];
+  C.first=mix(C.fw,C.rough,0.44);
+  // On links (and desert) the biome's rough is nearly the same tone as its fairway by design - fescue on
+  // fescue - so a straight mix is invisible. Force a real step down from the darker fairway stripe, then
+  // clamp it so a first cut can never read DARKER than the rough it borders (it is short grass, not trouble).
+  { const fwRef=lum(C.cut)<lum(C.fw)?C.cut:C.fw, d=lum(fwRef)-lum(C.first);
+    if(d<10) C.first=shade(C.first,-(10-d));
+    const dr=lum(C.rough)-lum(C.first); if(dr>10) C.first=shade(C.first,dr-10); }
+  C.firstLine=shade(C.first,-11);
+  const CUTW=3.2;           // course units of first cut outside the fairway edge (a real first cut is a few yards)
+  const RO=0,DE=1,FW=2,GR=3,FR=4,SA=5,WA=6,TE=7,OC=8,FC=9;
   let oceanSide=0, oceanW=0, oedge=null, oDeep=null, oShallow=null, oCliff=null, oBeach=null;
   if(B.ocean){
     const ow=B.oceanW||[52,76];
@@ -27241,15 +27319,18 @@ function pxTerrainURL(g, seedN, B, opts){
         if(rr<bk.r*m){inSand=true;break;}                                                      // kidney/scalloped bunker
       }
       const inFw=(g.par!==3&&!beyond&&y>5&&y<g.L+3&&Math.abs(x-g.cx(y))<g.fww(y)),inTee=(y>=0&&y<7&&Math.abs(x)<8.5);
+      // ITEM 12: the first cut - a band outside the fairway, and a surround outside the green's collar, so
+      // even a par 3 (which has no fairway) still reads green, collar, first cut, rough.
+      const inFc=(g.par!==3&&!beyond&&y>4.4&&y<g.L+3.6&&Math.abs(x-g.cx(y))<g.fww(y)+CUTW)||(gd<=gm2*1.62);
       let id=beyond?DE:RO;
-      if(gd<=gm2)id=GR;else if(gd<=gm2*1.32)id=FR;else if(inWater)id=WA;else if(inSand)id=SA;else if(inFw)id=FW;else if(inTee)id=TE;
+      if(gd<=gm2)id=GR;else if(gd<=gm2*1.32)id=FR;else if(inWater)id=WA;else if(inSand)id=SA;else if(inFw)id=FW;else if(inTee)id=TE;else if(inFc)id=FC;
       if(oceanSide&&(id===RO||id===DE)){const exx=oedge(vy);if((oceanSide>0&&vx>exx)||(oceanSide<0&&vx<exx))id=OC;}
       T[cy*GW+cx]=id;}}
   const at=(x,y)=>(x<0||y<0||x>=GW||y>=GH)?-1:T[y*GW+x];
   const edge=(x,y,id)=>at(x-1,y)!==id||at(x+1,y)!==id||at(x,y-1)!==id||at(x,y+1)!==id;
   const DIST=new Int16Array(GW*GH).fill(999); let q=[];
   const p3corr=(g.par===3);   // par-3: no fairway, but keep a NATIVE (rough) corridor clear of trees so there's a line to the green
-  for(let i=0;i<GW*GH;i++){const t=T[i]; let s0=(t===FW||t===GR||t===FR||t===SA||t===WA||t===TE);
+  for(let i=0;i<GW*GH;i++){const t=T[i]; let s0=(t===FW||t===GR||t===FR||t===SA||t===WA||t===TE||t===FC);
     if(!s0&&p3corr&&t===RO){const x=XY[i*2],y=XY[i*2+1]; if(y>4&&y<g.L&&Math.abs(x-g.cx(y))<g.fww(y)*0.82) s0=true;}
     if(s0){DIST[i]=0;q.push(i);}}
   for(let qi=0;qi<q.length;qi++){const i=q[qi],x=i%GW,y=(i/GW)|0,d=DIST[i]+1;
@@ -27268,7 +27349,15 @@ function pxTerrainURL(g, seedN, B, opts){
     else if(id===FR){col=dith(cx,cy,lv)?C.fringe:shade(C.fringe,-6);if(edge(cx,cy,FR)&&at(cx,cy-1)!==GR)col=shade(C.fringe,-14);}
     else if(id===WA){const x=XY[(cy*GW+cx)*2],y=XY[(cy*GW+cx)*2+1];let deep=0;if(g.water)deep=1-Math.min(1,Math.hypot((x-g.water.x)/(g.water.rx),(y-g.water.y)/(g.water.ry)));col=deep>0.4?shade(C.water,-16):C.water;const wave=Math.round(1.6+Math.sin(cx*0.28+cy*0.05)*1.3);if((cy&3)===(wave&3))col=shade(C.ripple,deep>0.4?-10:0);if(edge(cx,cy,WA))col=shade(C.ripple,22);}
     else if(id===SA){col=dith(cx,cy,lv)?shade(C.sand,7):C.sand;if(((cx+(cy&1?2:0))%6)===0&&cy%3===0)col=C.sandSpeck;if(edge(cx,cy,SA))col=C.sandLine;}
-    else if(id===FW){const stripe=(Math.floor(cy/(6*os))%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);if(edge(cx,cy,FW)){const nb=at(cx,cy-1);col=(nb===GR||nb===FR)?C.cut:C.fwEdge;}}
+    else if(id===FW){const stripe=(Math.floor(cy/(6*os))%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);
+      if(edge(cx,cy,FW)){const nb=at(cx,cy-1);
+        // ITEM 12: against the first cut the fairway edge is a soft mow line, not the hard dark rough edge.
+        const fcAdj=(at(cx-1,cy)===FC||at(cx+1,cy)===FC||at(cx,cy-1)===FC||at(cx,cy+1)===FC);
+        col=(nb===GR||nb===FR)?C.cut:(fcAdj?shade(C.fw,-10):C.fwEdge);}}
+    else if(id===FC){col=dith(cx,cy,lv*0.86)?C.first:shade(C.first,-6);
+      // one mow line, and only where the first cut meets the true rough - inside, it blends into the fairway
+      const n1=at(cx-1,cy),n2=at(cx+1,cy),n3=at(cx,cy-1),n4=at(cx,cy+1);
+      if(n1===RO||n2===RO||n3===RO||n4===RO||n1===DE||n2===DE||n3===DE||n4===DE)col=C.firstLine;}
     else if(id===TE){col=C.cut;if(edge(cx,cy,TE))col=C.fwEdge;}
     else if(id===OC){const vy2=(cy+0.5)/GH*cam[3]+cam[1],vx2=(cx+0.5)/GW*cam[2]+cam[0];
       const dS=oceanSide>0?vx2-oedge(vy2):oedge(vy2)-vx2;
@@ -27288,7 +27377,8 @@ function pxTerrainURL(g, seedN, B, opts){
   const proj=(x,y)=>{const f=Math.max(0,Math.min(1,y/g.span));const sy=HV_H-34-f*(HV_H-78);const sx=HV_W/2+x*g.sx*g.t(y);
     return [Math.round((sx-cam[0])/cam[2]*GW),Math.round((sy-cam[1])/cam[3]*GH)];};
   const pathSide=(hvHash(seed,1,9)<0.5?-1:1), pw=Math.max(2,Math.round(2*os));
-  for(let yy=6; yy<g.L-2; yy+=0.6/os){ const off=g.fww(yy)+2.4+Math.sin(yy*0.08)*1.2, xx=g.cx(yy)+pathSide*off;
+  // ITEM 12: the path runs OUTSIDE the first cut (it used to sit at fairway+2.4, which the new band now covers)
+  for(let yy=6; yy<g.L-2; yy+=0.6/os){ const off=g.fww(yy)+CUTW+2.4+Math.sin(yy*0.08)*1.2, xx=g.cx(yy)+pathSide*off;
     const [px,py]=proj(xx,yy); if(at(px,py)===RO||at(px,py)===DE){ for(let w=0;w<pw;w++) put(px+pathSide*w,py,w<pw*0.5?C.path:shade(C.path,-14)); } }
   const tg=(B.treeG||['#2e5c1e','#3f7a28','#5d9c34']).map(hex),pine=(B.pine||['#1b4416','#265a1f','#37732a']).map(hex),
     autumn=(B.treeA||['#a06a1c','#c08a2a']).map(hex),cact=(B.cactus||['#4f8f3f','#6aa74f']).map(hex),trunk=hex(B.trunk||'#7a5a2e'),
@@ -27395,6 +27485,128 @@ function pxTerrainURL(g, seedN, B, opts){
   const o=out.getContext('2d');o.imageSmoothingEnabled=false;o.drawImage(cv,0,0,out.width,out.height);
   const url=out.toDataURL('image/png'); _pxCache.set(key,url); return url;
 }
+/* ITEM 13: YARDAGE ON THE MAP. The narration carries every number and the map carried none - no 150
+   marker, no "290 to carry" on the bunker you're being asked to challenge. Two references, both drawn
+   as constant-distance arcs the way a broadcast does it, on the full-hole camera only (the green
+   close-up has its own scale and no room for them).
+   The carry arc is drawn ONLY when the driving zone genuinely holds trouble, so the number is never
+   decoration - if there is nothing to carry, there is no arc. Course-y is yards (g.L = the hole's
+   yardage) and the green sits at y=L, so both arcs are real distances, not drawn-on approximations. */
+function hvArcD(g, ox, oy, R, cx, halfW, sign){
+  const N=14; let d='';
+  for(let i=0;i<=N;i++){
+    const x=cx-halfW+(2*halfW)*i/N, dx=x-ox, k=R*R-dx*dx;
+    if(k<0) return '';
+    const y=oy+sign*Math.sqrt(k);
+    if(y<4||y>g.span-6) return '';
+    const P=hvProj(g,x,y);
+    d+=(i?' L ':'M ')+P[0].toFixed(1)+' '+P[1].toFixed(1);
+  }
+  return d;
+}
+// A yardage label, placed in SCREEN space and clamped into the frame. Returns its own box as well as
+// its markup, so the caller can see whether two labels would land on top of each other and move one.
+function hvLabelAt(px, py, txt, col){
+  const fs=7, w=String(txt).length*fs*0.6+9;
+  const x=Math.max(HV_CAM[0]+w/2+2, Math.min(HV_CAM[0]+HV_CAM[2]-w/2-2, px));
+  const y=Math.max(12, Math.min(HV_H-8, py));
+  return {x, y, w,
+    svg:`<g opacity=".92"><rect x="${(x-w/2).toFixed(1)}" y="${(y-6).toFixed(1)}" width="${w.toFixed(1)}" height="12" rx="6" fill="rgba(6,18,12,.78)" stroke="${col}" stroke-width=".7"/>`
+      +`<text x="${x.toFixed(1)}" y="${(y+2.6).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="${col}" font-family="inherit">${txt}</text></g>`};
+}
+// Anything already on the map that a yardage chip must not land on: a chip is a box, sand is a disc.
+function hvObsHit(b,o,pad){ return Math.abs(b.x-o.x) < b.rx+o.rx+pad && Math.abs(b.y-o.y) < b.ry+o.ry+pad; }
+// Try each spot in order and take the cleanest. Covering something HARD (the ball's own distance readout,
+// or the other yardage chip) stacks two unreadable numbers; covering sand hides the thing the number names;
+// an earlier candidate wins a tie, so a chip stays as near its intended spot as it can.
+function hvPlaceLabel(cands, txt, col, obs){
+  let best=null, bestSc=1e9;
+  for(let i=0;i<cands.length;i++){
+    const t=hvLabelAt(cands[i][0], cands[i][1], txt, col);
+    const box={x:t.x, y:t.y, rx:t.w/2, ry:6};
+    let sc=i;
+    for(const o of obs) if(hvObsHit(box,o,3)) sc += (o.hard?1000:40);
+    if(sc<bestSc){ bestSc=sc; best=t; }
+    if(sc===i) break;
+  }
+  return best;
+}
+// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it
+function hvYardageSVG(g, avoid){
+  if(!g || g.par===3) return '';
+  let s='', L150=null;
+  // sand, in screen space, so a chip never lands on the trouble it is drawn to explain
+  const obs=(g.bunkers||[]).map(bk=>{ const B=hvProj(g,bk.x,bk.y), r=Math.abs(bk.r*g.sx*g.t(bk.y));
+    return {x:B[0], y:B[1], rx:r, ry:r}; });
+  if(avoid) obs.push({x:avoid.x, y:avoid.y, rx:avoid.rx, ry:avoid.ry, hard:true});
+  // the 150 marker: a constant-distance arc from the middle of the green, the reference every golfer uses
+  const y150=g.L-150;
+  if(y150>30){
+    const cx=g.cx(y150), hw=Math.min(g.fww(y150)*1.5+12, 120);
+    const d=hvArcD(g, g.gcx, g.L, 150, cx, hw, -1);
+    if(d){ s+=`<path d="${d}" fill="none" stroke="rgba(244,227,201,.5)" stroke-width="1.3" stroke-dasharray="6 6"/>`;
+      // either end of the arc, then a rank off it
+      const arcY=(x)=>g.L-Math.sqrt(Math.max(0,150*150-Math.pow(x-g.gcx,2)));
+      const R=hvProj(g, cx+hw, arcY(cx+hw)), Lf=hvProj(g, cx-hw, arcY(cx-hw));
+      L150=hvPlaceLabel([[R[0],R[1]],[Lf[0],Lf[1]],[R[0],R[1]+16],[Lf[0],Lf[1]+16],[R[0],R[1]-16],[Lf[0],Lf[1]-16]],
+        '150', 'rgba(244,227,201,.9)', obs);
+      s+=L150.svg;
+      obs.push({x:L150.x, y:L150.y, rx:L150.w/2, ry:6, hard:true}); }
+  }
+  // the carry: the far edge of whatever the tee shot is being asked to fly, if anything is out there.
+  // Only trouble in the DRIVING ZONE counts (170-330 yds and inside the front two thirds of the hole) -
+  // a greenside bunker isn't a carry, it's an approach.
+  let carry=0, hz=null, hzR=6;
+  const consider=(c,x,y,r)=>{ if(c>=170 && c<=330 && y<g.L*0.72 && c>carry){ carry=c; hz=[x,y]; hzR=r; } };
+  for(const bk of (g.bunkers||[])) if(bk.y<g.L-40) consider(Math.hypot(bk.x,bk.y)+bk.r, bk.x, bk.y, bk.r);
+  if(g.creek && g.creek.y<g.L*0.55) consider(g.creek.y+5, g.cx(g.creek.y), g.creek.y, 5);
+  if(g.water && g.water.y<g.L-40) consider(g.water.y+g.water.ry, g.water.x, g.water.y, g.water.rx||8);
+  if(carry>0){
+    const yc=Math.min(g.L-14, carry), cx=g.cx(yc);
+    const hw=Math.min(Math.max(g.fww(yc)*1.5+12, Math.abs(hz[0]-cx)+16), 140);
+    const d=hvArcD(g, 0, 0, carry, cx, hw, 1);
+    if(d){ const n=Math.ceil(carry/5)*5;   // round UP - a carry number must never promise less than the shot needs
+      const gold='rgba(241,208,74,.95)', txt=n+' CARRY';
+      // the label rides the arc at the hazard's own bearing, so the number belongs to the trouble it names,
+      // but it is pushed clear of the hazard itself - a chip sitting ON the sand hides the thing it is about
+      const hd=Math.hypot(hz[0],hz[1])||1, lx=hz[0]*carry/hd, ly=hz[1]*carry/hd;
+      const P=hvProj(g,lx,ly), cxs=hvProj(g,g.cx(ly),ly)[0];
+      const rad=Math.abs(hzR*g.sx*g.t(ly)), side=(P[0]>=cxs)?1:-1;
+      const wLab=txt.length*7*0.6+9, off=rad+wLab/2+5;
+      // either side of the hazard first, then ranks off the arc
+      const cb=hvPlaceLabel([[side*off,0],[-side*off,0],[side*off,17],[-side*off,17],[side*off,-17],
+        [-side*off,-17],[side*(off+34),0],[-side*(off+34),0],[side*off,34],[-side*off,34]]
+        .map(o=>[P[0]+o[0], P[1]+o[1]]), txt, gold, obs);
+      s+=`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`;
+      s+=cb.svg; }
+  }
+  return s;
+}
+// ITEM 13: the distance-to-pin readout that sits ON the ball once it comes to rest. Held hidden while
+// the shot is in the air (revealing where the ball ends up before it lands would spoil the shot) and
+// shown by the animator the moment it settles.
+function hvDistTxt(p){
+  if(!p||p.hole) return '';
+  if(p.toFt!=null) return Math.round(p.toFt)+' FT';
+  if(p.toYd!=null) return p.toYd+' YDS';
+  return '';
+}
+// where the ball's readout sits, so the yardage chips can give way to it
+function hvDistBox(g,p,small){
+  const txt=p?hvDistTxt(p):''; if(!txt) return null;
+  const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
+  const fs=small?3.8:7, h=small?7:12, w=txt.length*fs*0.6+(small?5:9);
+  return {x, y:Math.max(h/2+2, y-(small?8:16)), rx:w/2, ry:h/2};
+}
+function hvDistChip(g,p,live,small){
+  const txt=hvDistTxt(p); if(!txt) return '';
+  const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
+  const fs=small?3.8:7, h=small?7:12, w=txt.length*fs*0.6+(small?5:9);
+  const cy=Math.max(h/2+2, y-(small?8:16));
+  return `<g id="hv-dist" opacity="${live?'0':'1'}"><rect x="${(x-w/2).toFixed(1)}" y="${(cy-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="${(h/2).toFixed(1)}" fill="rgba(6,18,12,.86)" stroke="rgba(241,208,74,.6)" stroke-width="${small?0.4:0.8}"/>`
+    +`<text x="${x.toFixed(1)}" y="${(cy+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#F1D04A" font-family="inherit">${txt}</text></g>`;
+}
+function hvRevealDist(){ const d=document.getElementById('hv-dist'); if(d) d.setAttribute('opacity','1'); }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
 function hvDoneShot(g,p,dim,small,pcol){
@@ -27480,7 +27692,7 @@ function hvRevealPaths(p){
 // re-created the ball at the putt/chip origin and hvKick's done-branch only revealed the tracer). A holed
 // shot's rest is the pin → radius 0 = in the cup; any other completed shot sits at its true rest.
 function hvSettle(g,p){
-  hvRevealPaths(p);
+  hvRevealPaths(p); hvRevealDist();
   if(!p) return;
   const b=document.getElementById('hv-ball'); if(!b) return;
   const sv=document.getElementById('hv-svg');
@@ -27504,7 +27716,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
     if(sv) sv.setAttribute('viewBox', hvCamFor2(g,p).join(' '));   // reduced-motion users still get the right camera
     if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);
       const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }   // a ball resting ON the green (any shot) is the small green size, not the big ground ball
-    if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); _hvA.done=true; };
+    if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); hvRevealDist(); _hvA.done=true; };
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
   // CS355: hold the ball at address while the golfer swings; it leaves at impact (chip is a quicker stroke)
@@ -27560,7 +27772,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
           dr.setAttribute('cx',(B[0]+Math.cos(ang)*dist*st).toFixed(1));
           dr.setAttribute('cy',(B[1]+Math.sin(ang)*dist*st-arc).toFixed(1));
           dr.setAttribute('r',(1.7*(1-st*0.55)).toFixed(2)); dr.setAttribute('opacity',(0.9*(1-st)).toFixed(2)); }
-        if(elF>flyMs+600){ _hvA.raf=0; _hvA.done=true; return; }
+        if(elF>flyMs+600){ hvRevealDist(); _hvA.raf=0; _hvA.done=true; return; }
       } else if(elF<=flyMs+groundMs){
         const t=(elF-flyMs)/groundMs, te=1-Math.pow(1-t,2.2);       // decelerating bounce + roll-out
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
@@ -27603,8 +27815,8 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       if(p.hole && t>=1){
         const st=Math.min(1,(ep-rollMs)/560); ball.setAttribute('r',(HV_GBALL*(1-st)).toFixed(2));   // the small green ball drops into the cup
         const sk2=q('hv-sink'); if(sk2){ sk2.setAttribute('cx',R[0]);sk2.setAttribute('cy',R[1]);sk2.setAttribute('r',(HV_CUP_RX*0.7+st*3).toFixed(1));sk2.setAttribute('stroke-width','1');sk2.setAttribute('opacity',(0.9*(1-st)).toFixed(2)); }
-        if(st>=1){ _hvA.raf=0; _hvA.done=true; return; }
-      } else if(t>=1){ _hvA.raf=0; _hvA.done=true; return; }
+        if(st>=1){ hvRevealDist(); _hvA.raf=0; _hvA.done=true; return; }
+      } else if(t>=1){ hvRevealDist(); _hvA.raf=0; _hvA.done=true; return; }
     }
     _hvA.raf=requestAnimationFrame(frame);
   }
@@ -27667,7 +27879,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
     return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
-      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}</svg></div></div>`);
+      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
@@ -27689,8 +27901,14 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
   const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
+  // ITEM 13: the map's yardage references (full-hole camera only) sit under the tracers; the
+  // distance-to-pin chip rides the current shot's resting ball, hidden until the ball settles.
+  const curP=(idx>=0&&plots[idx])?plots[idx]:null;
+  const dsmall=curP?small&&inCam(curP):false;
+  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall));
+  const dchip=curP?hvDistChip(g,curP,live,dsmall):'';
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${inner}${overlay||''}</svg></div></div>`);
+    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${yard}${inner}${dchip}${overlay||''}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN+(animNonce!=null?':r'+animNonce:'');
     requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
@@ -29399,7 +29617,9 @@ function dDecOdds(sc, sk){
   const safeGood=Math.round(20+q*22);
   const goodWord=/go for|home in two|reach|drivable|rip driver/.test(txt)?'reach':/carry/.test(txt)?'carry':'birdie look';
   const riskWord=wet?'water':bunker?'bunker':'trouble';
-  return {stat:st, val, aggGood, aggRisk, safeGood, goodWord, riskWord};
+  // one-word captions for the compact odds pair on the cards (the revamped panel labels a number, not a sentence)
+  const goodShort=goodWord==='birdie look'?'birdie':goodWord;
+  return {stat:st, val, aggGood, aggRisk, safeGood, goodWord, goodShort, riskWord};
 }
 // the two course points a decision aims at (aggressive vs safe), in course coords → projected onto the window
 function dDecTargets(g, sc){
@@ -29439,7 +29659,7 @@ function dPlaceTargets(shell, g, sc, pick){
   const od=dDecOdds(sc, S.dailySkills||{}), sq=dSkQ(od.val);
   const aggW=Math.round(30+od.aggRisk*1.15), safeW=Math.round(14+(1-sq)*9);   // agg ~35..71px · safe ~14..23px
   const pos=[];
-  const place=(pt,cls,icon,lab,agg,rw)=>{
+  const place=(pt,cls,lab,agg,rw)=>{
     const p=hvProj(g,pt[0],pt[1]);
     // ITEM 07: the decision panel now docks along the BOTTOM of the window, so a target can no longer
     // sit in the lower third - it would land under the panel. The green (and so the aggressive target)
@@ -29452,37 +29672,59 @@ function dPlaceTargets(shell, g, sc, pick){
     if(lf<52 && tp<15) tp=15;
     pos.push({lf,tp});
     const rh=Math.round(rw*0.53);
-    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${icon} ${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
+    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
     chip.onclick=(e)=>{ e.stopPropagation(); pick(agg); };
     shell.appendChild(chip);
   };
-  place(tg.agg,'agg','⚡',tg.al||'Attack',true,aggW);
-  place(tg.safe,'safe','🛡',tg.sl||'Safe',false,safeW);
+  place(tg.agg,'agg',tg.al||'Attack',true,aggW);
+  place(tg.safe,'safe',tg.sl||'Safe',false,safeW);
+  // A chip is anchored by its BOTTOM (translate -100%), so a percentage clamp cannot know how tall it
+  // is - and on a short hole a target was landing ON the fixed hole-info chip. Measure once the browser
+  // has laid them out and push any chip that genuinely overlaps it clear.
+  requestAnimationFrame(()=>{
+    if(!shell.isConnected) return;
+    const hole=shell.querySelector('.hvhole'); if(!hole) return;
+    const hr=hole.getBoundingClientRect(), sr=shell.getBoundingClientRect();
+    if(!sr.height) return;
+    shell.querySelectorAll('.dctarget').forEach(c=>{
+      const r=c.getBoundingClientRect();
+      if(r.right<hr.left-4||r.left>hr.right+4||r.bottom<hr.top-4||r.top>hr.bottom+4) return;
+      const push=(hr.bottom+6-r.top)/sr.height*100;
+      if(push>0) c.style.top=Math.min(HV_DEC_TOP, (parseFloat(c.style.top)||0)+push)+'%';
+    });
+  });
 }
 // ITEM 07: the decision, DOCKED INSIDE the tracer window along its bottom edge, so the hole, the
 // on-course tap-targets and the numbers are all in one frame above the fold. Same content as
 // dDecisionBar (which is kept as the below-window fallback), compacted to leave the upper two thirds
 // of the window to the course and the targets.
+// The revamp (owner: "I don't like the green boxes on the decision buttons. I'd like to revamp the
+// decision ui and upgrade the visual design and reduce the amount of reading"):
+//   * NO inline icons and NO -webkit-line-clamp anywhere in this panel. An emoji-derived <svg class="ic">
+//     inside a -webkit-box is what iOS was stretching into a full-width bar with the text shoved beneath
+//     it (the "green boxes"). Colour is carried by an accent EDGE on each card and a dot on each chip.
+//   * Far less to read: the header instruction, the two per-option notes and the per-card stat line are
+//     gone (the rating is shown ONCE as a header pill), and the odds are a pair of big numbers with a
+//     one-word caption instead of three sentences a side.
 function dDecisionPanel(sc, pick, sub, holeIdx){
   const od=dDecOdds(sc, S.dailySkills);
   const p=$(`<div class="hvob hvdec"></div>`);
-  const head=$(`<div class="dkh"><span class="dkl">⛳ Your call · tap the course or a card</span></div>`);
+  const head=$(`<div class="dkh"><span class="dkl">Your call</span><span class="dkst">${esc(od.stat.name)} ${od.val}</span></div>`);
   { const wi=hvWindInlineHTML(holeIdx); if(wi) head.appendChild($(wi)); }
-  // ONE situation line: the approach sub (where your drive finished) if there is one, else the
-  // pressure line - two stacked lines would push the panel up into the tap-targets.
-  const situ = sub || sc.sit || (S.moment?momentStakesLine(S.dailyHoles.length):'');
-  if(situ) head.appendChild($(`<span class="dks">${esc(situ)}</span>`));
+  // The pressure line is kept only where it is the point of the shot (a career Moment); a Daily round
+  // gets the shot context alone, which is what "less reading" means on the screen the owner sent.
+  const stakes = S.moment ? (sc.sit || momentStakesLine(S.dailyHoles.length)) : '';
+  if(stakes) head.appendChild($(`<span class="dks">${esc(stakes)}</span>`));
   p.appendChild(head);
-  p.appendChild($(`<div class="dkp">${esc(sc.prompt)}</div>`));
+  // ONE context line: where the drive finished, if this decision has one, else the shot itself.
+  p.appendChild($(`<div class="dkp">${esc(sub || sc.prompt)}</div>`));
   const row=$(`<div class="dkrow"></div>`);
-  const card=(cls,icon,label,note,l1,l2,l3,agg)=>{
-    const b=$(`<button class="dkc ${cls}"><span class="l">${icon} ${esc(label)}</span><span class="s">${esc(note)}</span><span class="o"><span>${l1}</span><span class="${cls==='agg'?'gd':'gd'}">${l2}</span><span class="${cls==='agg'?'rk':'neu'}">${l3}</span></span></button>`);
+  const card=(cls,label,vA,kA,clsA,vB,kB,clsB,agg)=>{
+    const b=$(`<button class="dkc ${cls}"><span class="l">${esc(label)}</span><span class="o"><span class="${clsA}"><b>${esc(vA)}</b><i>${esc(kA)}</i></span><span class="${clsB}"><b>${esc(vB)}</b><i>${esc(kB)}</i></span></span></button>`);
     b.onclick=()=>pick(agg); return b;
   };
-  row.appendChild(card('agg','⚡',sc.opts[0].l,sc.opts[0].s,
-    `${esc(od.stat.name)} ${od.val}`, `${od.aggGood}% ${esc(od.goodWord)}`, `${od.aggRisk}% ${esc(od.riskWord)}`, true));
-  row.appendChild(card('safe','🛡',sc.opts[1].l,sc.opts[1].s,
-    'Low risk', `${od.safeGood}% birdie look`, 'par safe', false));
+  row.appendChild(card('agg', sc.opts[0].l, od.aggGood+'%', od.goodShort, 'gd', od.aggRisk+'%', od.riskWord, 'rk', true));
+  row.appendChild(card('safe', sc.opts[1].l, od.safeGood+'%', 'birdie', 'gd', 'LOW', 'risk', 'neu', false));
   p.appendChild(row);
   return p;
 }
@@ -29491,16 +29733,14 @@ function dDecisionBar(sc, pick, sub){
   const od=dDecOdds(sc, S.dailySkills);
   const stakes=S.moment?momentStakesLine(S.dailyHoles.length):'';
   const bar=$(`<div class="dcbar"></div>`);
-  const head=$(`<div class="dch"><span class="dchl">⛳ Your call · tap the course or a card</span></div>`);
-  if(sub) head.appendChild($(`<span class="dchs" style="color:#9fe0cf">${esc(sub)}</span>`));
-  if(sc.sit) head.appendChild($(`<span class="dchs">${esc(sc.sit)}</span>`));
-  else if(stakes) head.appendChild($(`<span class="dchs">${esc(stakes)}</span>`));
-  head.appendChild($(`<span class="dchp">${esc(sc.prompt)}</span>`));
+  const head=$(`<div class="dch"><span class="dchl">Your call</span><span class="dchst">${esc(od.stat.name)} ${od.val}</span></div>`);
+  if(S.moment && (sc.sit||stakes)) head.appendChild($(`<span class="dchs">${esc(sc.sit||stakes)}</span>`));
+  head.appendChild($(`<span class="dchp">${esc(sub || sc.prompt)}</span>`));
   bar.appendChild(head);
   const row=$(`<div class="dcrow"></div>`);
-  const ag=$(`<button class="dccard agg"><div class="dcl">⚡ ${esc(sc.opts[0].l)}</div><div class="dcs">${esc(sc.opts[0].s)}</div><div class="dco"><div class="dcstat">${esc(od.stat.name)} ${od.val}</div><div class="gd">${od.aggGood}% ${esc(od.goodWord)}</div><div class="rk">${od.aggRisk}% ${esc(od.riskWord)}</div></div></button>`);
+  const ag=$(`<button class="dccard agg"><div class="dcl">${esc(sc.opts[0].l)}</div><div class="dco"><span class="gd"><b>${od.aggGood}%</b><i>${esc(od.goodShort)}</i></span><span class="rk"><b>${od.aggRisk}%</b><i>${esc(od.riskWord)}</i></span></div></button>`);
   ag.onclick=()=>pick(true);
-  const sf=$(`<button class="dccard safe"><div class="dcl">🛡 ${esc(sc.opts[1].l)}</div><div class="dcs">${esc(sc.opts[1].s)}</div><div class="dco"><div class="dcstat">Low risk</div><div class="gd">${od.safeGood}% birdie look</div><div class="neu">par safe</div></div></button>`);
+  const sf=$(`<button class="dccard safe"><div class="dcl">${esc(sc.opts[1].l)}</div><div class="dco"><span class="gd"><b>${od.safeGood}%</b><i>birdie</i></span><span class="neu"><b>LOW</b><i>risk</i></span></div></button>`);
   sf.onclick=()=>pick(false);
   row.appendChild(ag); row.appendChild(sf); bar.appendChild(row);
   return bar;
