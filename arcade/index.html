@@ -971,7 +971,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/mycard.js?v=9"></script>
 <script src="/arcade/topbanner.js?v=7"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=16"></script>
+<script src="/arcade/card.js?v=17"></script>
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/nav.js?v=1"></script>
 <script src="/arcade/calendar.js?v=15"></script>
@@ -1103,10 +1103,6 @@ window.GA_ID='G-L29P5MRWKE';
           el.classList.toggle('locked', lock);
           var play = el.querySelector('.play');
           if(lock && play) play.innerHTML = LOCK+'ARCADE CARD';
-          // The arrow is spelled out rather than reusing ARW: this block is its
-          // own IIFE and runs before ARW is assigned, so the shared constant is
-          // still undefined here.
-          else if(play && !member && (TOK.trialOffer && TOK.trialOffer(k))) play.innerHTML = 'PLAY IT FREE <span class="arw">→</span>';
           var st = el.querySelector('.status');
           if(!st) return;
           // Solved today outranks the price chip. mark() sets .solved, and it
@@ -1118,11 +1114,28 @@ window.GA_ID='G-L29P5MRWKE';
             st.className='status members';
             st.innerHTML=LOCK+'<span class="bfull">Members only</span><span class="bshort">Members</span>';
           } else if(tryFree){
-            // a card game whose one free play is still there for the taking
+            /* A card game whose one free play is still there for the taking.
+               The badge says the whole entitlement, once: it is free, there is
+               one of it, and it is a try rather than a tier. The pill below
+               stays plain PLAY like every other tile, because a badge reading
+               TRY FREE over a button reading PLAY IT FREE said free twice and
+               the number nowhere. */
             st.className='status tryfree';
-            st.innerHTML='<span class="bfull">1 free play</span><span class="bshort">Try free</span>';
+            st.textContent='1 free try';
           } else if(!member){
             st.className='status free'; st.textContent='Free';
+          } else {
+            /* A MEMBER, and paint() has to be able to UNDO. Every branch above
+               adds a badge; none of them took one away, so the function was
+               only correct if the tier never changed after load. It changes on
+               every member's page load: the card flag arrives from the server
+               after first paint, and until then the hub is drawing the
+               free-account view. That left a cardholder looking at price
+               badges on games they own, and once the free look existed, at a
+               row of tiles offering them a free try of it. "Ready" is the
+               resting label in the markup, which is what these tiles say when
+               nothing has been bought and nothing has been played. */
+            st.className='status ready'; st.textContent='Ready';
           }
         });
       });
@@ -1289,12 +1302,10 @@ window.GA_ID='G-L29P5MRWKE';
       play.innerHTML = CHART_SVG + 'VIEW RESULT';
       card.classList.add('recap'); card.setAttribute('data-recap', key);
     } else if (!done) {
-      // Not played yet (free or cardholder): PLAY. A card game the player still
-      // has their one free look at says so on the button, because that is the
-      // whole invitation and a tile that just says PLAY hides it.
-      var tryFree = false;
-      try { tryFree = !hasCard() && !!(TOK && TOK.trialOffer && TOK.trialOffer(key)); } catch (e) {}
-      play.innerHTML = (tryFree ? 'PLAY IT FREE' : 'PLAY') + ARW;
+      // Not played yet, whoever you are: PLAY. What the play COSTS is the
+      // badge's job in the corner, which is where free, members only and the
+      // one free try all live.
+      play.innerHTML = 'PLAY' + ARW;
     }
   }
   // Career Path, Odd One Out and Alma Mater post POINTS now, not a count of

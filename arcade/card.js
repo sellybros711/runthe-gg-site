@@ -488,6 +488,13 @@
     if(!(window.RTG_BOARD && RTG_BOARD.tokenStatus)) return;
     RTG_BOARD.tokenStatus().then(function(s){
       if(!s || !s.signed_in) return;
+      /* THE CARDHOLDER BRANCH HAS TO ANNOUNCE ITSELF TOO. It used to write the
+         entitlement flag and say nothing, so every surface that had already
+         painted kept the view it drew before the flag arrived. The hub paints
+         at parse time and repaints on rtg:tokens, so a member landed on tiles
+         built for a free account: card games wearing a price badge, and after
+         the free-look work, a row of TRY FREE buttons offering a member
+         something they already have. */
       if(s.unlimited){ try{ localStorage.setItem('runthegrid_pro','1'); }catch(e){} }
       else if(window.RTGTokens){
         if(s.plays && RTGTokens.setServerPlays) RTGTokens.setServerPlays(s.plays);
@@ -496,8 +503,8 @@
         // today's referral bonus travels on the same status read, so the wallet
         // learns about a reward the moment any page reconciles.
         if(RTGTokens.setServerBonus) RTGTokens.setServerBonus(s.bonus||0);
-        try{ document.dispatchEvent(new Event('rtg:tokens')); }catch(e){}
       }
+      try{ document.dispatchEvent(new Event('rtg:tokens')); }catch(e){}
     }).catch(function(){});
   }
   function watchTokens(){
