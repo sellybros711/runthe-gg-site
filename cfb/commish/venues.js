@@ -103,35 +103,49 @@
   /* ---- the bowls ----
      `tier` is roughly what it is worth: 3 is a game that decides something, 1 is a game in
      December with eleven thousand people in it. `slot` is when it is played. */
+  /* `pick` IS HOW DEEP INTO THE ELIGIBLE POOL THIS BOWL CHOOSES FROM, as a fraction: 0 takes
+     the best team with nowhere better to be, 0.72 takes whoever is about seventy per cent of
+     the way down the list of teams that won six.
+
+     IT IS NOT THE VENUES' `reach` ABOVE, which is a different number about a different thing
+     (how far a host site pulls an audience). Two fields called the same word in one file is a
+     trap, so this one is called `pick`.
+
+     WITHOUT IT EVERY BOWL SKIMS THE TOP. Fourteen bowls take twenty-eight teams out of a pool
+     of about sixty, so filling them in order of prestige handed the Bahamas Bowl the fifteenth
+     best team in the country: the first slate this produced had Washington playing Tennessee
+     in Nassau. These are a curated fourteen standing in for a real forty-one, so each one has
+     to sit where its real counterpart sits on the ladder rather than where it happens to fall
+     in a list of fourteen. */
   var BOWLS = [
     { id: 'rose', name: 'Rose Bowl', venue: 'pas', tier: 3, slot: 'jan1', heritage: 1,
-      tie: 'Big Ten' },
+      tie: 'Big Ten', pick: 0 },
     { id: 'sugar', name: 'Sugar Bowl', venue: 'nola', tier: 3, slot: 'jan1', heritage: 0.9,
-      tie: 'SEC' },
+      tie: 'SEC', pick: 0 },
     { id: 'orange', name: 'Orange Bowl', venue: 'mia', tier: 3, slot: 'jan1', heritage: 0.8,
-      tie: 'ACC' },
+      tie: 'ACC', pick: 0 },
     { id: 'fiesta', name: 'Fiesta Bowl', venue: 'phx', tier: 3, slot: 'jan1', heritage: 0.6,
-      tie: 'Big 12' },
+      tie: 'Big 12', pick: 0 },
     { id: 'cotton', name: 'Cotton Bowl', venue: 'dfw', tier: 3, slot: 'jan1', heritage: 0.7,
-      tie: '' },
+      tie: '', pick: 0 },
     { id: 'peach', name: 'Peach Bowl', venue: 'atl', tier: 3, slot: 'jan1', heritage: 0.5,
-      tie: '' },
+      tie: '', pick: 0 },
     { id: 'citrus', name: 'Citrus Bowl', venue: 'orl', tier: 2, slot: 'jan1', heritage: 0.4,
-      tie: '' },
+      tie: '', pick: 0.02 },
     { id: 'alamo', name: 'Alamo Bowl', venue: 'sa', tier: 2, slot: 'late', heritage: 0.3,
-      tie: '' },
+      tie: '', pick: 0.06 },
     { id: 'gator', name: 'Gator Bowl', venue: 'orl', tier: 2, slot: 'late', heritage: 0.35,
-      tie: '' },
+      tie: '', pick: 0.1 },
     { id: 'holiday', name: 'Holiday Bowl', venue: 'sea', tier: 2, slot: 'late', heritage: 0.3,
-      tie: '' },
+      tie: '', pick: 0.14 },
     { id: 'music', name: 'Music City Bowl', venue: 'nsh', tier: 2, slot: 'late', heritage: 0.2,
-      tie: '' },
+      tie: '', pick: 0.22 },
     { id: 'pinstripe', name: 'Pinstripe Bowl', venue: 'nyc', tier: 1, slot: 'late', heritage: 0.15,
-      tie: '' },
+      tie: '', pick: 0.42 },
     { id: 'quickstop', name: 'Motor City Bowl', venue: 'det', tier: 1, slot: 'early', heritage: 0.1,
-      tie: '' },
+      tie: '', pick: 0.55 },
     { id: 'bahamas', name: 'Bahamas Bowl', venue: 'orl', tier: 1, slot: 'early', heritage: 0.05,
-      tie: '' },
+      tie: '', pick: 0.72 },
   ];
 
   /* ---- the sponsors ----

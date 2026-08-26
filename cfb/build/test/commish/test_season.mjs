@@ -390,5 +390,127 @@ console.log('\n=== the one way door bends the football ===');
     S.reentryRule(notDevolved, 'SEC') === 'open', S.reentryRule(notDevolved, 'SEC'));
 }
 
+console.log('\n=== the sport has a poll to argue about ===');
+{
+  const w = world();
+  const sim = run(w, 41);
+  ok('there is a poll for every week and one before them',
+    sim.polls.length === sim.through + 1, sim.polls.length + ' polls, ' + sim.through + ' weeks');
+  ok('  and it is twenty-five long', sim.poll.length === S.POLL_SIZE, sim.poll.length + ' teams');
+  ok('  ranked one to twenty-five with nothing missing',
+    sim.poll.every((r, i) => r.rank === i + 1));
+  ok('  and nobody is in it twice',
+    new Set(sim.poll.map((r) => r.school)).size === sim.poll.length);
+  /* THE PRESEASON HAS NO MOVEMENT BECAUSE THERE IS NOTHING TO HAVE MOVED FROM, which is the
+     kind of thing that renders as a green arrow saying "up 0" if nobody checks. */
+  ok('  August has no arrows on it', sim.polls[0].top.every((r) => r.move === null && !r.fresh));
+  ok('  and every team in August has played nothing',
+    sim.polls[0].top.every((r) => r.wins === 0 && r.losses === 0));
+
+  /* A POLL IS LAST WEEK WITH THIS WEEK DONE TO IT. If it moved like a sorted list it would
+     not be a poll, and if it never moved it would not be one either. */
+  const moves = sim.polls.slice(1).flatMap((p) => p.top.filter((r) => !r.fresh && r.move != null)
+    .map((r) => Math.abs(r.move)));
+  const mean = moves.reduce((s, x) => s + x, 0) / moves.length;
+  ok('  it moves week to week', mean > 0.5 && mean < 6, 'mean move ' + mean.toFixed(2) + ' places');
+  ok('  and not by everything at once', moves.filter((m) => m > 15).length < moves.length * 0.02,
+    moves.filter((m) => m > 15).length + ' of ' + moves.length + ' moves over fifteen places');
+
+  /* AUGUST IS A GUESS AND HAS TO BE WRONG SOMETIMES. Ranking by strength alone made the
+     preseason poll an oracle: it was sorted by the very number that decides the games. */
+  const pre = new Set(sim.polls[0].top.slice(0, 10).map((r) => r.school));
+  const kept = sim.poll.slice(0, 10).filter((r) => pre.has(r.school)).length;
+  ok('  and August was wrong about somebody', kept < 10, kept + ' of the August top ten survived');
+
+  /* AND LOSING DOES NOT MOVE A TEAM UP, which is the one rule of a poll every voter gets
+     shouted at for breaking.
+
+     STATED CAREFULLY, BECAUSE THE OBVIOUS VERSION IS FALSE. A team that loses CAN finish the
+     week higher, when the teams in front of it lost too: that is not a reward, it is everyone
+     ahead falling past it, and it happens in real polls every November. What must not happen
+     is climbing while nobody above lost. Smoothing alone allowed about four of those a season
+     and pollSeason now clamps them, which leaves roughly one per thirty seasons where a team
+     above slid on an unimpressive win rather than a defeat. That one is real poll behaviour,
+     so this allows it rather than chasing it to zero and making the poll rigid. */
+  let climbed = 0, unexplained = 0;
+  for (let n = 1; n < sim.polls.length; n++) {
+    const before = {}; sim.polls[n - 1].top.forEach((r) => { before[r.school] = r; });
+    const now = {}; sim.polls[n].top.forEach((r) => { now[r.school] = r; });
+    sim.polls[n].top.forEach((r) => {
+      const was = before[r.school];
+      if (!(was && r.losses > was.losses && r.rank < was.rank)) return;
+      climbed++;
+      const aboveLost = sim.polls[n - 1].top.filter((x) => x.rank < was.rank)
+        .some((x) => now[x.school] && now[x.school].losses > x.losses);
+      if (!aboveLost) unexplained++;
+    });
+  }
+  ok('  and losing only moves a team up when everyone ahead lost too', unexplained <= 1,
+    climbed + ' climbed in a week they lost, ' + unexplained + ' with nobody above them losing');
+}
+
+console.log('\n=== December is not just the bracket ===');
+{
+  /* FOURTEEN BOWLS SAT IN venues.js AND NEVER KICKED OFF, so a hundred and twenty-four teams
+     finished the year with nothing. Everything here is a rule a fan would state out loud. */
+  const w = world();
+  const sim = run(w, 31);
+  const seats = {};
+  sim.field.seats.forEach((s) => { seats[s.team.school] = true; });
+
+  ok('the bowls are played', sim.bowls.length > 0, sim.bowls.length + ' bowls');
+  ok('  and six wins is what gets you one',
+    sim.bowls.every((b) => b.a.wins >= S.BOWL_MIN_WINS && b.b.wins >= S.BOWL_MIN_WINS),
+    'lowest ' + Math.min(...sim.bowls.flatMap((b) => [b.a.wins, b.b.wins])) + ' wins');
+  ok('  and nobody in the playoff is also in one',
+    !sim.bowls.some((b) => seats[b.a.school] || seats[b.b.school]));
+  const seen = {}; let twice = null;
+  sim.bowls.forEach((b) => {
+    [b.a, b.b].forEach((t) => { if (seen[t.school]) twice = t.school; seen[t.school] = 1; });
+  });
+  ok('  and nobody plays two of them', !twice, twice || 'each team once');
+  ok('  and every scoreline is one football can produce',
+    sim.bowls.every((b) => S.plausible(b.score[0], b.score[1])),
+    sim.bowls.map((b) => b.score.join('-')).join(' '));
+
+  /* THE LADDER, which is the difference between a bowl slate and a list. The best bowl left
+     takes a better team than the worst one does, and the first version of this got it wrong
+     in the most visible way: Washington against Tennessee in the Bahamas Bowl. */
+  const first = sim.bowls[0], last = sim.bowls[sim.bowls.length - 1];
+  ok('  and the better bowl gets the better team',
+    first && last && S.resume(first.a) > S.resume(last.a),
+    first && last ? first.name + ' took ' + first.a.school + ', ' + last.name + ' took ' + last.a.school : 'not enough bowls');
+
+  /* THE BRACKET IS PLAYED IN THE BOWLS, late rounds only: the first round is on campus, which
+     is the part of the twelve team format people actually like. */
+  const rounds = sim.bracket.rounds;
+  const named = rounds.flatMap((r, i) => r.filter((g) => g.bowlName).map(() => i));
+  ok('the bracket is played in the bowls', named.length > 0, named.length + ' games in a bowl');
+  ok('  but never the first round, which is on campus', !named.includes(0),
+    'rounds with a bowl: ' + Array.from(new Set(named)).join(', '));
+  ok('  nor the final, which is its own game',
+    !(rounds[rounds.length - 1] || []).some((g) => g.bowlName));
+  /* ONE BOWL CANNOT HOST TWO GAMES, which is the way this would break silently: the slate is
+     filled from the same catalogue the bracket just took six out of. */
+  const usedNames = rounds.flatMap((r) => r.filter((g) => g.bowl).map((g) => g.bowl))
+    .concat(sim.bowls.map((b) => b.bowl));
+  ok('  and no bowl hosts two games', new Set(usedNames).size === usedNames.length,
+    usedNames.length + ' games, ' + new Set(usedNames).size + ' distinct bowls');
+
+  /* A BIGGER PLAYOFF EATS THE BOWL POOL, which is a real argument about expansion and is the
+     thing this system lets the mode make. Asserted on the POOL rather than on the number of
+     bowls, because at these sizes there are still enough teams to fill all eight either way
+     and a count would pass without measuring anything. */
+  const eligible = (s) => {
+    const inField = {};
+    s.field.seats.forEach((x) => { inField[x.team.school] = true; });
+    return s.teams.filter((t) => t.wins >= S.BOWL_MIN_WINS && !inField[t.school]).length;
+  };
+  const big = world({ playoff: { teams: 24, byes: 8, autobids: 5 } });
+  const bigSim = run(big, 31);
+  ok('a bigger playoff eats into the bowl pool', eligible(bigSim) < eligible(sim),
+    eligible(sim) + ' teams free for a bowl at 12, ' + eligible(bigSim) + ' at 24');
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

@@ -455,6 +455,12 @@
      final, and the two biggest conference championships in the same range as the quarters. */
   var VIEW_TITLE = 2.15;
   var VIEW_ROUND = [1.6, 2.5, 3.1, 3.5, 3.6];
+  /* AND A BOWL TAKES ITS OWN NUMBER FOR THE SAME REASON, indexed by the bowl's tier. Set
+     against what these really draw: a New Year's Day bowl outside the bracket in the mid
+     single millions, a Citrus or an Alamo three or four, and a Pinstripe or a Bahamas Bowl
+     around one, which is a weekday afternoon game with nothing on it and is exactly why
+     people love them. */
+  var VIEW_BOWL = [0.8, 0.9, 1.7, 2.4];
 
   /* WHAT AN AUDIENCE IS WORTH, in billions a year per million viewers a game. Not a guess:
      the untouched sport draws 1.87 a game, measured across forty seeds, and the ledger opens
@@ -519,6 +525,19 @@
       if (g.finalRound && world.venues && world.venues.title && V) {
         var host = V.venue(world.venues.title);
         if (host) v *= host.draw;
+      }
+    } else if (g.bowl && V) {
+      /* A BOWL IS ITS OWN THING TOO, and skipping the week curve here matters more than it
+         looks: a bowl is played in week sixteen, so left in the regular season branch below
+         a Bahamas Bowl between two seven win teams would have outdrawn a top ten game in
+         November purely for being late. */
+      var bw = V.bowl(g.bowl);
+      if (bw) {
+        v *= VIEW_BOWL[Math.max(0, Math.min(bw.tier, VIEW_BOWL.length - 1))];
+        /* WHERE IT IS PLAYED IS PART OF WHY PEOPLE WATCH, but far less than for the final:
+           nobody tunes in to a bowl for the city, and a few do turn it off for one. */
+        var bv = V.venue(bw.venue);
+        if (bv) v *= 0.85 + 0.15 * bv.draw;
       }
     } else if (g.title) {
       v *= VIEW_TITLE;
@@ -704,6 +723,245 @@
       waiting = [];
     }
     return { rounds: rounds, champion: playing[0] || alive[0] || null };
+  }
+
+  /* ---------------- the poll ----------------
+     COLLEGE FOOTBALL ARGUES ABOUT A LIST OF TWENTY-FIVE NAMES FOR FOUR MONTHS and the mode
+     did not have one. Every other sport's regular season is a table; this one's is a weekly
+     opinion poll that decides who is talked about, who is on television, and half of what a
+     commissioner gets shouted at about. Playing a season without it is playing a different
+     sport.
+
+     A POLL IS NOT A RANKING, IT IS LAST WEEK'S RANKING WITH THIS WEEK DONE TO IT. That is the
+     whole behaviour and it is why fans complain about it: a preseason number follows a team
+     into October, a good side climbs three spots a week no matter how well it plays, and a
+     loss drops you further than a win lifts you. Sorting by resume every week would produce a
+     correct list that nobody would recognise.
+
+     SO IT IS BLENDED IN RANK SPACE, not in score space. A resume is worth about three points
+     in week one and forty by December, so blending the numbers themselves would let one
+     November Saturday outweigh the entire preseason. A RANK is on the same scale in week one
+     as in week fourteen, which is what makes inertia mean the same thing all year. */
+  var POLL_INERTIA = 0.45;
+  var POLL_SIZE = 25;
+
+  /* AND A PRESEASON POLL IS A GUESS, WHICH IS THE POINT OF IT. Ranking August by each team's
+     strength makes the poll an oracle: it is sorted by the exact number that then decides
+     every game, so seventy-two per cent of the preseason top ten was still in the top ten in
+     December against a real rate near a half. Nobody would ever be wrong about August, and
+     being wrong about August is most of why anybody argues about this list at all.
+
+     So August gets an error the size of a real one. Deterministic per school per year, so a
+     term replays identically and the team that was overrated in 2027 is overrated in 2027
+     every time that save is loaded. Off its own hash rather than off the season's rng, because
+     the poll is built after the football is played and pulling draws here would quietly
+     reshuffle the bracket.
+
+     FITTED AGAINST HOW WRONG AUGUST REALLY IS: about half a real preseason top ten is still in
+     the top ten in December. At 0.6 this gives fifty per cent. At 0.85 it gives forty, which
+     is a sport where the preseason poll tells you nothing, and at zero it gives seventy-two,
+     which is a sport where it tells you everything. */
+  var PRESEASON_ERROR = 0.6;
+  function pollHash(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  function pollGauss(seed, school) {
+    var a = (pollHash(seed + '|' + school + '|pa') % 100000) / 100000;
+    var b = (pollHash(seed + '|' + school + '|pb') % 100000) / 100000;
+    return Math.sqrt(-2 * Math.log(Math.max(1e-6, a))) * Math.cos(2 * Math.PI * b);
+  }
+
+  /* WHAT VOTERS SEE, WHICH IS NOT WHAT A COMMITTEE SEES. Same shape as resume() above, and
+     deliberately so, with one number changed: the eye test counts for far less.
+
+     A SELECTION COMMITTEE SAYS OUT LOUD THAT IT RATES TEAMS; A POLL RANKS RECORDS. Running the
+     poll on the committee's own resume put an 11-1 Texas Tech first ahead of four undefeated
+     teams, because its rating was the highest in the sport and the rating term is worth three
+     and a half places on its own. That is a defensible bracket seed and it is not a poll
+     anybody has ever seen: nothing gets a voter shouted at faster than putting a one loss team
+     above an unbeaten one. At 0.9 the record decides it and the eye test breaks ties, which is
+     the right way round for this list. */
+  var POLL_RATING = 0.9;
+  function resumeOf(a) {
+    var s = a.z * POLL_RATING;
+    for (var i = 0; i < a.beat.length; i++) s += WIN_BASE + a.beat[i] * WIN_SLOPE;
+    for (var j = 0; j < a.lostTo.length; j++) {
+      s -= Math.max(LOSS_FLOOR, LOSS_BASE - a.lostTo[j] * LOSS_SLOPE);
+    }
+    return s;
+  }
+
+  function pollSeason(teams, played, through, seed) {
+    if (!teams.length) return [];
+    var acc = {}, order = [], hunch = {};
+    teams.forEach(function (t) {
+      acc[t.school] = { z: t.z, beat: [], lostTo: [], wins: 0, losses: 0, t: t };
+      order.push(t.school);
+      /* WHAT AUGUST THINKS THEY ARE, which is what they are plus how wrong everybody is. */
+      hunch[t.school] = t.z + pollGauss(String(seed), t.school) * PRESEASON_ERROR;
+    });
+    /* RANKED BY WHAT THEY ARE EXPECTED TO BE, which is what a preseason poll is: nobody has
+       played anybody, so it is last year plus whoever is back plus a hunch. */
+    var rank = {};
+    order.slice().sort(function (x, y) { return hunch[y] - hunch[x]; })
+      .forEach(function (s, i) { rank[s] = i + 1; });
+
+    var out = [];
+    var snapshot = function (week, prev) {
+      var top = order.slice().sort(function (x, y) { return rank[x] - rank[y]; })
+        .slice(0, POLL_SIZE)
+        .map(function (s, i) {
+          var t = acc[s].t;
+          return {
+            school: s, conference: t.conference, color: t.color,
+            rank: i + 1,
+            wins: acc[s].wins, losses: acc[s].losses,
+            /* HOW FAR THEY MOVED, which is the only part of a poll anybody reads first.
+               Null in the preseason, because there is nothing to have moved from. */
+            move: prev && prev[s] != null ? prev[s] - (i + 1) : null,
+            /* AND WHETHER THEY WERE IN IT AT ALL LAST WEEK. "New" is a different story from
+               "up nine" and the screens need to be able to tell them apart. */
+            fresh: !!(prev && prev[s] == null),
+          };
+        });
+      out.push({ week: week, top: top });
+      var placed = {};
+      top.forEach(function (r) { placed[r.school] = r.rank; });
+      return placed;
+    };
+    var prev = snapshot(0, null);
+
+    for (var n = 1; n <= through; n++) {
+      var beaten = {};
+      for (var i = 0; i < played.length; i++) {
+        var g = played[i];
+        if (g.week !== n) continue;
+        var w = acc[g.winner.school], l = acc[g.loser.school];
+        if (!w || !l) continue;
+        w.wins++; w.beat.push(g.loser.z);
+        l.losses++; l.lostTo.push(g.winner.z);
+        beaten[g.loser.school] = true;
+      }
+      /* THIS WEEK'S OPINION, then dragged most of the way back toward last week's. */
+      var merit = {};
+      order.slice().sort(function (x, y) { return resumeOf(acc[y]) - resumeOf(acc[x]); })
+        .forEach(function (s, i2) { merit[s] = i2 + 1; });
+      var wasRank = {};
+      order.forEach(function (s) { wasRank[s] = rank[s]; });
+      order.forEach(function (s) {
+        rank[s] = POLL_INERTIA * rank[s] + (1 - POLL_INERTIA) * merit[s];
+        /* A TEAM THAT LOST ON SATURDAY IS NOT REWARDED FOR IT. Smoothing alone does not
+           guarantee this: a side can drift past another that is still falling from a bad
+           result two weeks ago, and it produced about four of these a season, always by a
+           single place and always looking like a mistake. Texas A&M going from fourth to
+           third in a week it lost is the kind of thing that gets a voter's ballot printed in
+           a newspaper.
+
+           It can still climb because somebody ABOVE it lost, which is the legitimate way this
+           happens and is left alone: it is not being rewarded, everyone in front fell. */
+        if (beaten[s] && rank[s] < wasRank[s]) rank[s] = wasRank[s];
+      });
+      prev = snapshot(n, prev);
+    }
+    return out;
+  }
+
+  /* ---------------- the bowl season ----------------
+     FOURTEEN BOWLS SAT IN venues.js AND NONE OF THEM WERE EVER PLAYED. December ran the
+     conference title games and the bracket and stopped, so a sport of a hundred and thirty-six
+     schools ended its year with fifteen postseason games and nothing at all for the hundred and
+     twenty-four teams that were not in the playoff. A nine win season that ends with a shrug is
+     not what December is.
+
+     SIX WINS IS THE RULE and it is the real one. It is also why the number matters to a fan in
+     week twelve: a five win team playing a sixth is playing for a trip somewhere warm, and the
+     mode had no way to say so. */
+  var BOWL_MIN_WINS = 6;
+
+  function majorBowls() {
+    if (!V || !V.BOWLS) return [];
+    return V.BOWLS.filter(function (b) { return b.tier >= 3; })
+      .slice().sort(function (a, b) { return b.heritage - a.heritage; });
+  }
+
+  /* THE BRACKET IS PLAYED IN THE BOWLS, which is the thing the twelve team format actually
+     did to the sport and which the mode was silent about. Named from the latest round
+     backwards, so the semi-finals get the Rose and the Sugar and the first round does not get
+     one at all, because first round games are played on campus and that is the best part of
+     the format. The final is never a bowl: it is its own game.
+
+     Returns the ids it used, so the same bowl cannot also host a game between two eight win
+     teams on the same afternoon. */
+  function nameBracketBowls(br) {
+    var majors = majorBowls();
+    var used = [];
+    if (!majors.length || !br || !br.rounds.length) return used;
+    var slots = [];
+    for (var ri = br.rounds.length - 2; ri >= 0; ri--) {
+      for (var gi = 0; gi < br.rounds[ri].length; gi++) slots.push(br.rounds[ri][gi]);
+    }
+    for (var i = 0; i < slots.length && i < majors.length; i++) {
+      slots[i].bowl = majors[i].id;
+      slots[i].bowlName = majors[i].name;
+      used.push(majors[i].id);
+    }
+    return used;
+  }
+
+  /* AND EVERYBODY ELSE WHO EARNED A DECEMBER. Bowls are filled in order of prestige, each
+     taking the best team left, because that is what a bowl committee does with the pick it
+     paid for. */
+  function bowlSeason(teams, world, f, usedIds, rng) {
+    if (!V || !V.BOWLS) return [];
+    var inField = {};
+    ((f && f.seats) || []).forEach(function (s) { inField[s.team.school] = true; });
+    var used = {};
+    (usedIds || []).forEach(function (id) { used[id] = true; });
+    var slate = V.BOWLS.filter(function (b) { return !used[b.id]; })
+      .slice().sort(function (a, b) { return (b.tier - a.tier) || (b.heritage - a.heritage); });
+    var pool = teams.filter(function (t) {
+      return !inField[t.school] && t.wins >= BOWL_MIN_WINS;
+    }).sort(function (a, b) { return resume(b) - resume(a); });
+
+    var out = [];
+    for (var i = 0; i < slate.length; i++) {
+      /* NOT ENOUGH ELIGIBLE TEAMS IS A REAL DECEMBER, not an error. Shorten the season or
+         expand the playoff far enough and the bottom bowls simply do not get played, which is
+         a consequence worth seeing rather than one to pad around with five win teams. */
+      if (pool.length < 2) break;
+      var b = slate[i];
+      /* WHERE ON THE LADDER THIS BOWL PICKS. See the note on `pick` in venues.js: without it
+         the fourteen bowls skim the top of a sixty team pool and the Bahamas Bowl gets a top
+         fifteen team. Clamped so the last bowls still have two teams to choose between. */
+      var from = Math.max(0, Math.min(pool.length - 2,
+        Math.floor((b.pick || 0) * pool.length)));
+      /* THE TIE-IN GETS FIRST REFUSAL and falls through when that conference has nobody left,
+         which is what happens in life every time the league it is tied to puts three teams in
+         the playoff. */
+      var ai = from;
+      if (b.tie) {
+        for (var k = from; k < pool.length; k++) {
+          if (pool[k].conference === b.tie) { ai = k; break; }
+        }
+      }
+      var A = pool.splice(ai, 1)[0];
+      /* A BOWL IS A MATCH-UP BETWEEN LEAGUES wherever it can be. Two teams from the same
+         conference meeting in a bowl is a thing that happens and is nobody's favourite. */
+      var bi = Math.min(from, pool.length - 1);
+      for (var m = bi; m < pool.length; m++) {
+        if (pool[m].conference !== A.conference) { bi = m; break; }
+      }
+      var B = pool.splice(bi, 1)[0];
+      var r = playGame(A, B, true, rng);
+      var g = { a: A, b: B, neutral: true, bowl: b.id, week: WEEKS + 2 };
+      var vw = viewers(g, world);
+      out.push({ bowl: b.id, name: b.name, venue: b.venue, tier: b.tier,
+        a: A, b: B, score: [r.a, r.b], winner: r.aWon ? A : B, loser: r.aWon ? B : A,
+        margin: Math.abs(r.a - r.b), viewers: vw });
+    }
+    return out;
   }
 
   /* ---------------- what the football does back ---------------- */
@@ -993,6 +1251,12 @@
     };
     sim.viewers = Math.round(played.reduce(function (t, x) { return t + x.viewers; }, 0) * 10) / 10;
     sim.perGame = played.length ? Math.round((sim.viewers / played.length) * 100) / 100 : 0;
+    /* THE POLL, WEEK BY WEEK, which is what the sport actually argues about. `polls[0]` is the
+       preseason list and the last entry is wherever the season has got to, so a screen drawn
+       in October gets October's poll rather than a final one that has not happened. */
+    sim.polls = pollSeason(teams, played, through, world.seed);
+    sim.poll = sim.polls.length ? sim.polls[sim.polls.length - 1].top : [];
+    sim.preseason = sim.polls.length ? sim.polls[0].top : [];
     /* WHO CHANGED COACH GOING INTO THIS SEASON. December's carousel is a holiday for the
        people this game is for and the mode had no way of telling them it happened. */
     sim.carousel = CH
@@ -1035,9 +1299,13 @@
     });
     sim.field = f;
     sim.bracket = br;
+    /* THE REST OF DECEMBER. Named first so the bracket's own games claim the bowls that host
+       them, then everybody else who won six. */
+    var claimed = nameBracketBowls(br);
+    sim.bowls = bowlSeason(teams, fw, f, claimed, rng);
     sim.viewers = Math.round((sim.viewers + br.rounds.reduce(function (t, r) {
       return t + r.reduce(function (u, g) { return u + (g.viewers || 0); }, 0);
-    }, 0)) * 10) / 10;
+    }, 0) + sim.bowls.reduce(function (t, x) { return t + (x.viewers || 0); }, 0)) * 10) / 10;
     var v = verdict(sim, o.fieldWorld || world);
     sim.notes = v.notes;
     sim.tags = v.tags || [];
@@ -1048,6 +1316,8 @@
   var api = {
     play: play, league: league, schedule: schedule, field: field,
     bracket: bracket, champions: champions, resume: resume, titleGames: titleGames,
+    bowlSeason: bowlSeason, nameBracketBowls: nameBracketBowls, BOWL_MIN_WINS: BOWL_MIN_WINS,
+    pollSeason: pollSeason, POLL_INERTIA: POLL_INERTIA, POLL_SIZE: POLL_SIZE,
     playGame: playGame, plausible: plausible, moneyDrift: moneyDrift,
     reentryDrift: reentryDrift, reentryRule: reentryRule,
     weekify: weekify, viewers: viewers, settle: settle, WORTH_PER_M: WORTH_PER_M,

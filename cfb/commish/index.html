@@ -966,6 +966,55 @@
     border-left:2px solid var(--line-2)}
   .realnote{margin-top:11px;font-size:11.5px;color:var(--dim-2);line-height:1.4}
 
+  /* THE POLL. Rank, name, record, arrow, on one line each, with the club's colour holding the
+     left edge so a long list is scannable by team rather than only by number. */
+  .poll{display:grid;gap:3px}
+  .pr{display:grid;grid-template-columns:22px 1fr auto 34px;gap:8px;align-items:baseline;
+    padding:5px 8px 5px 6px;border-radius:7px;background:var(--panel);
+    border-left:3px solid var(--tc,var(--line))}
+  .pr i{font-style:normal;font-family:var(--fd);font-size:13px;color:var(--dim-2);
+    text-align:right}
+  .pr b{font-family:var(--fd);font-size:14.5px;font-weight:400;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pr u{text-decoration:none;font-family:var(--fn);font-size:10px;color:var(--dim-2)}
+  /* THE ARROW IS THE POINT OF A POLL, so it is never carried by colour alone: the glyph says
+     up or down on its own and the colour only agrees with it. */
+  .pr em{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:700;
+    text-align:right;letter-spacing:.02em}
+  .pr em.up{color:var(--good,#4ade80)}
+  .pr em.up::before{content:'\2191 '}
+  .pr em.dn{color:var(--bad,#f87171)}
+  .pr em.dn::before{content:'\2193 '}
+  .pr em.new{color:var(--acc,#a78bfa);text-transform:uppercase;font-size:8.5px;
+    letter-spacing:.1em}
+  .pr em.hold{color:var(--dim-2)}
+  /* The year in review shows where August had them instead of a week's movement, which is a
+     phrase rather than a number and needs the room for one. */
+  .poll.wide .pr{grid-template-columns:22px 1fr auto 62px}
+  .poll.wide .pr em::before{content:''}
+
+  /* The host bowl above a bracket game, sized like the round label it sits under so it reads
+     as a caption rather than as a third team. */
+  .gmb{display:block;font-style:normal;font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);margin-bottom:3px}
+
+  /* THE BOWLS. One row a game: the bowl's name, then both teams with their record and their
+     points, the winner marked. Deliberately denser than the bracket above it, because there
+     are eight of these and none of them is the story of the year. */
+  .bowls{display:grid;gap:5px}
+  .bowl{display:grid;grid-template-columns:1fr;gap:2px;padding:7px 9px;border-radius:9px;
+    background:var(--panel)}
+  .bowl>b{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim-2);margin-bottom:2px}
+  .bt{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:baseline;
+    border-left:3px solid var(--tc,var(--line));padding-left:7px}
+  .bt b{font-family:var(--fd);font-size:14px;font-weight:400;color:var(--dim)}
+  .bt i{font-style:normal;font-family:var(--fn);font-size:9.5px;color:var(--dim-2)}
+  .bt em{font-style:normal;font-family:var(--fd);font-size:15px;color:var(--dim);
+    min-width:26px;text-align:right}
+  /* The winner, and it has to be readable without the colour: heavier, brighter, both sides. */
+  .bt.w b,.bt.w em{color:var(--ink);font-weight:700}
+
   /* WHO MOVED AND WHO GOT FIRED. A wrapping row of club-coloured chips rather than a table,
      because none of it is a ranking: it is a handful of names a fan scans and reacts to, and
      six of them beside each other read faster than six rows do. The colour is the club's own
@@ -1093,6 +1142,14 @@
     <div class="card flat" id="off-tablecard" hidden>
       <div class="eyebrow" style="margin-bottom:9px" id="off-tablehead">The top of the sport</div>
       <div id="off-table"></div>
+    </div>
+    <!-- THE POLL, WHICH IS NOT THE TABLE ABOVE IT AND THAT IS THE POINT. The table is the
+         field as this office's own rules would seed it; this is what the voters think, which
+         is slower, stickier and frequently wrong, and the gap between the two is the argument
+         this sport has every single week. -->
+    <div class="card flat" id="off-pollcard" hidden>
+      <div class="eyebrow" style="margin-bottom:9px" id="off-pollhead">The poll</div>
+      <div id="off-poll"></div>
     </div>
 
     <div class="card flat">
@@ -1235,7 +1292,7 @@
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
-<script src="venues.js?v=1"></script>
+<script src="venues.js?v=2"></script>
 <script src="docket.js?v=7"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
@@ -1243,7 +1300,7 @@
      in the same order, one school wins four of the five titles, and nobody ever changes coach.
      Nothing throws and every screen renders. test_page asserts the modules are actually live. -->
 <script src="churn.js?v=1"></script>
-<script src="season.js?v=12"></script>
+<script src="season.js?v=13"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
 <script src="calendar.js?v=2"></script>
@@ -2030,6 +2087,7 @@ function office(){
   $('off-weekcard').hidden=!inSeason;
   $('off-titlecard').hidden=!inSeason||!done.titles;
   $('off-tablecard').hidden=!inSeason;
+  $('off-pollcard').hidden=!inSeason;
   $('off-mapcard').hidden=inSeason;
   if(inSeason){
     paintTv($('off-tv'),sim);
@@ -2037,6 +2095,11 @@ function office(){
     if(done.titles) paintTitles($('off-titles'),sim);
     $('off-tablehead').textContent=done.titles?'The field as it stands':'The top of the sport';
     paintStandings($('off-table'),sim);
+    /* THE WEEK IT IS, NOT THE YEAR IT WILL BE. `sim.polls` is one entry a week, so an office
+       opened in October draws October's poll: a final top twenty-five in week six would be
+       telling the player about games that have not been played. */
+    $('off-pollhead').textContent='The poll, week '+(sim.polls.length-1);
+    paintPoll($('off-poll'),sim.poll,10);
   }else{
     paintMap($('off-map'),world,{showMoves:true});
   }
@@ -2510,6 +2573,32 @@ function paintStandings(el,sim){
       +'<u>'+t.wins+'-'+t.losses+'</u></div>';
   }).join('')+'</div>';
   reveal(el.querySelector('.tbl'));
+}
+
+/* THE POLL. Twenty-five names the sport argues about for four months, and the mode had none.
+   Drawn as a list rather than as a table because the only two things anybody reads are the
+   order and the arrows, and a record is a footnote to both.
+
+   THE MOVEMENT IS THE CONTENT. A poll with no arrows on it is a ranking, and a ranking is a
+   different and much less interesting object: nobody has ever argued about a sorted list.
+   "New" is called out separately from "up nine", because arriving is a different story from
+   climbing and one number cannot say both. */
+function paintPoll(el,rows,n){
+  if(!el) return;
+  const list=(rows||[]).slice(0,n||25);
+  if(!list.length){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="poll">'+list.map((r)=>{
+    const m=r.fresh?'<em class="new">new</em>'
+      :r.move>0?'<em class="up">'+r.move+'</em>'
+      :r.move<0?'<em class="dn">'+(-r.move)+'</em>'
+      :'<em class="hold">&middot;</em>';
+    return '<div class="pr" style="--tc:'+esc(r.color)+'">'
+      +'<i>'+r.rank+'</i>'
+      +'<b>'+esc(r.school)+'</b>'
+      +'<u>'+r.wins+'-'+r.losses+'</u>'
+      +m+'</div>';
+  }).join('')+'</div>';
+  reveal(el.querySelector('.poll'));
 }
 
 /* CHAMPIONSHIP WEEKEND, which is six games and used to be a beat with nothing in it. */
@@ -3242,7 +3331,11 @@ function paintSeason(el,sim){
          another name, another seed and another score, in that order, and the second seed
          landed between the second team and its points. It was parseable and nobody should
          have to parse it. */
+      /* THE BOWL THAT HOSTED IT, when one did. The twelve team format put the quarter-finals
+         and semi-finals inside the New Year's bowls and left the first round on campus, which
+         is the best thing about it and which this screen used to say nothing about. */
       +r.map((g)=>'<span class="gm'+(g.margin>=21?' rout':'')+'">'
+        +(g.bowlName?'<em class="gmb">'+esc(g.bowlName)+'</em>':'')
         +side(g.top,g.score[0],g.winner===g.top)
         +side(g.bottom,g.score[1],g.winner===g.bottom)
         +'</span>').join('')
@@ -3250,6 +3343,8 @@ function paintSeason(el,sim){
     +'</div>'
     +(sim.notes&&sim.notes.length
       ? '<div class="snotes">'+sim.notes.map((n)=>'<p>'+esc(n)+'</p>').join('')+'</div>' : '')
+    +pollBlock(sim)
+    +bowlBlock(sim)
     +movedBlock(sim)
     +(sim.fromRealData
       ? ''
@@ -3260,7 +3355,55 @@ function paintSeason(el,sim){
      list on these screens where the sequence is the content. */
   reveal(el.querySelector('.rounds'));
   reveal(el.querySelector('.snotes'));
+  reveal(el.querySelector('.poll'));
+  reveal(el.querySelector('.bowls'));
   reveal(el.querySelector('.moved'));
+}
+
+/* THE FINAL POLL, WITH AUGUST BESIDE IT. The whole reason to keep a preseason list is to be
+   able to put it next to the real one in December, which is the sport's oldest running joke:
+   somebody was ranked third in August and did not win eight games.
+
+   Ten rather than twenty-five, because this screen already carries a bracket, a bowl slate,
+   the carousel and the books, and the tail of a top twenty-five is where a reader stops. */
+function pollBlock(sim){
+  const fin=(sim.poll||[]).slice(0,10);
+  if(!fin.length) return '';
+  const pre=sim.preseason||[];
+  const preRank={}; pre.forEach((r)=>{ preRank[r.school]=r.rank; });
+  const row=(r)=>{
+    const was=preRank[r.school];
+    /* WHERE AUGUST HAD THEM, which is the comparison worth drawing here. Unranked in August
+       and top ten in December is the best story this list can tell. */
+    const from=was?'was '+was:'unranked';
+    return '<div class="pr" style="--tc:'+esc(r.color)+'">'
+      +'<i>'+r.rank+'</i><b>'+esc(r.school)+'</b>'
+      +'<u>'+r.wins+'-'+r.losses+'</u>'
+      +'<em class="'+(was?(was>r.rank?'up':was<r.rank?'dn':'hold'):'new')+'">'
+      +esc(from)+'</em></div>';
+  };
+  return '<div class="eyebrow" style="margin:14px 0 7px">The final poll, against August</div>'
+    +'<div class="poll wide">'+fin.map(row).join('')+'</div>';
+}
+
+/* THE REST OF DECEMBER, which the mode used to skip entirely.
+   Fourteen bowls sat in the data and none of them were ever played, so a season ended with
+   the bracket and nothing at all for the hundred and twenty-four teams outside it. A nine win
+   year that ends with a shrug is not what December is for.
+
+   THE WINNER IS MARKED RATHER THAN MERELY HAVING THE BIGGER NUMBER, the same way the bracket
+   does it, because this is a list to be scanned and not read. */
+function bowlBlock(sim){
+  const bs=sim.bowls||[];
+  if(!bs.length) return '';
+  const side=(t,pts,won)=>'<span class="bt'+(won?' w':'')+'" style="--tc:'+esc(t.color)+'">'
+    +'<b>'+esc(short(t.school))+'</b><i>'+t.wins+'-'+t.losses+'</i><em>'+pts+'</em></span>';
+  return '<div class="eyebrow" style="margin:14px 0 7px">The bowls</div>'
+    +'<div class="bowls">'+bs.map((b)=>{
+      const aWon=b.winner===b.a;
+      return '<div class="bowl"><b>'+esc(b.name)+'</b>'
+        +side(b.a,b.score[0],aWon)+side(b.b,b.score[1],!aWon)+'</div>';
+    }).join('')+'</div>';
 }
 
 /* WHO MOVED, AND WHO IS OUT OF A JOB.
