@@ -2962,6 +2962,7 @@ function render() {
   else if (s === 'season-hub') renderSeasonHub();
   else if (s === 'season-end') renderSeasonEnd();
   else if (s === 'bracket') renderBracket();
+  else if (s === 'howto') renderHowTo();
 }
 $('#btn-home').addEventListener('click', () => {
   if (State.game && State.game.live) {
@@ -2992,8 +2993,10 @@ function renderMenu() {
     if (State.season) { State.screen = 'season-hub'; render(); }
     else { State.mode='season'; State.screen='roster'; render(); }
   };
+  const howto = el('button','btn ghost','How To Play');
+  howto.onclick = () => { State.screen='howto'; render(); };
   const row = el('div','btn-row');
-  row.append(exh, season);
+  row.append(exh, season, howto);
   card.appendChild(row);
 
   if (State.season) {
@@ -6140,6 +6143,107 @@ function renderResult() {
 /* ============================================================================
    SEASON END
    ============================================================================ */
+/* ============================================================================
+   HOW TO PLAY
+   Everything a first-time player needs: what the meter does, what the two
+   picks mean when they are pitching, the two fielding minigames, base
+   running, and how a season is shaped.
+   ============================================================================ */
+function renderHowTo() {
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, 'How to play'));
+
+  const bat = el('div','card');
+  bat.innerHTML =
+      '<h3>Batting</h3>'
+    + '<p>A marker sweeps left to right across the meter under the field. '
+    + 'Click anywhere, press <b>Space</b>, or tap the big SWING button to swing.</p>'
+    + '<p><b>Green zone:</b> solid contact. The closer to the middle, the better '
+    + 'the ball is struck. <b>Yellow band:</b> a piece of it, usually a foul or '
+    + 'weak contact. <b>Outside both:</b> a swing and a miss.</p>'
+    + '<p>The pitch reaches the plate exactly when the marker crosses the green, '
+    + 'so you can watch the ball or watch the meter. During GET READY the pitcher '
+    + 'is still winding up and swings are ignored.</p>'
+    + '<p>Pitches behave differently: a <b>fastball</b> comes in hard and straight, '
+    + 'a <b>curveball</b> breaks late and sharply, and a <b>changeup</b> floats, '
+    + 'fades, and dies at the end.</p>';
+  s.appendChild(bat);
+
+  const pitch = el('div','card');
+  pitch.innerHTML =
+      '<h3>Pitching</h3>'
+    + '<p>When the other team bats, you are on the mound. Each windup you make '
+    + 'two picks: the <b>pitch type</b> and the <b>location</b> on a three by three '
+    + 'strike zone grid.</p>'
+    + '<p><b>Middle:</b> always a strike, but easy for the hitter to square up. '
+    + '<b>Edges and corners:</b> much harder to hit, but your pitcher can miss the '
+    + 'spot and the umpire calls a ball. Better control means you hit your spot '
+    + 'more often.</p>'
+    + '<p>Every batter has a hidden weak pitch. Find it and their timing falls apart. '
+    + 'No pick within five seconds and the pitcher shakes off the sign and throws '
+    + 'his own choice.</p>'
+    + '<p>Pitchers tire. Past the third inning the chip above the mound reads WARM, '
+    + 'then TIRING, then GASSED, and a tired arm loses the plate.</p>';
+  s.appendChild(pitch);
+
+  const field = el('div','card');
+  field.innerHTML =
+      '<h3>Fielding</h3>'
+    + '<p><b>Ground balls:</b> a timing bar appears at the bottom of the field. '
+    + 'Hit the green for the out, the yellow lets the batter beat the throw for an '
+    + 'infield single, and a miss is a throwing error that lets every runner take '
+    + 'an extra base.</p>'
+    + '<p><b>Fly balls:</b> a ring shrinks over the landing spot. Click or press '
+    + 'Space when it is tightest to make the catch. Slightly off and the ball drops '
+    + 'in for a single; badly off and it sails over the fielder for a triple.</p>'
+    + '<p>Your fielders\' defense ratings widen both safe windows, so a strong '
+    + 'defensive lineup is easier to play.</p>';
+  s.appendChild(field);
+
+  const run = el('div','card');
+  run.innerHTML =
+      '<h3>Base running</h3>'
+    + '<p>With a runner on first and second base empty, a <b>Steal 2nd</b> button '
+    + 'appears during the windup. Success depends on the runner\'s speed against the '
+    + 'pitcher\'s control.</p>'
+    + '<p>Fast runners are aggressive on hits: a quick runner on second will try to '
+    + 'score on a single rather than stop at third. Sometimes they get thrown out '
+    + 'at the plate. Speed lineups score more and risk more.</p>';
+  s.appendChild(run);
+
+  const chars = el('div','card');
+  chars.innerHTML =
+      '<h3>Characters</h3>'
+    + '<p>Every character has Power, Speed, Contact, and Defense, and many carry a '
+    + 'quirk that genuinely changes how they play. A few examples:</p>'
+    + '<p><b>Lady Liberty</b> never runs: every real swing is a home run or a '
+    + 'strikeout. <b>Mr. Hyde</b> transforms in about one at bat in six. '
+    + '<b>Popeye</b> eats his spinach on his third trip to the plate. '
+    + '<b>Father Time</b> slows the meter down. <b>The Phoenix</b> turns her first '
+    + 'strikeout of the game into a walk. <b>Black Cat</b> makes fielders bobble. '
+    + '<b>Dracula</b> and the <b>Werewolf</b> get stronger in late innings.</p>';
+  s.appendChild(chars);
+
+  const season = el('div','card');
+  season.innerHTML =
+      '<h3>Season</h3>'
+    + '<p>Pick nine characters and play seven games against a rotating cast of '
+    + 'opponent teams, each with its own park and its own batting personality: some '
+    + 'hack at everything, some are patient.</p>'
+    + '<p>The top four records make a single elimination playoff bracket. The higher '
+    + 'seed hosts, and home teams get a small crowd boost. Your season saves to this '
+    + 'browser automatically, so you can close the tab and come back.</p>';
+  s.appendChild(season);
+
+  const row = el('div','btn-row');
+  const back = el('button','btn','Back to Menu');
+  back.onclick = () => { State.screen='menu'; render(); };
+  row.appendChild(back);
+  s.appendChild(row);
+
+  app.appendChild(s);
+}
+
 function renderSeasonEnd() {
   const S = State.season;
   const P = S.playoffs;
