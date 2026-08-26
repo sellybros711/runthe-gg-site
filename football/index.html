@@ -8822,14 +8822,29 @@ const positionsNow=()=>(run&&run.defense?E.DEFENSE_POSITIONS:OFFENSE_POSITIONS);
 const ALL='ALL';
 
 /** Can a player of this position go anywhere on the roster right now? */
+/* WHAT AN OPEN SLOT CAN TAKE, by INDEX and not by name.
+   Full Team carries two spots called FLEX and they do not have the same answer: slot 10
+   completes the offence and slot 11 completes the defence. E.SLOT_ELIGIBILITY is keyed by
+   name and lists all six skill and defensive positions under one FLEX entry, which is safe
+   in the two single-pool modes and wrong here, because both pools are on the board. Same
+   rule slotForPlayer and slotChoices apply in run.js. */
+function slotTakes(i){
+  if(run&&run.full&&E.FULL_SLOT_POS&&E.FULL_SLOT_POS[i]) return E.FULL_SLOT_POS[i];
+  return E.SLOT_ELIGIBILITY[slotsNow()[i]]||[];
+}
 function positionOpen(pos){
-  return R.openSlotNames(run).some(s=>E.SLOT_ELIGIBILITY[s].includes(pos));
+  return R.openSlots(run).some(i=>slotTakes(i).includes(pos));
 }
 
 /** Which spot a signing would fill, named, so a tile can say "goes to FLEX". */
 function destination(p){
   const slot=R.slotForPlayer(run,p);
-  return slot===null?null:E.SLOTS[slot];
+  /* THE RUN'S OWN SLOT LIST, not the module's six. E.SLOTS is the offence draft's array, so
+     every Full Team slot past the fifth indexed off the end of it and came back undefined:
+     a tight end taken at the first pick lands in slot 8, read as undefined, and the tile
+     announced "Goes to flex" on a roster where the tight end spot was open and nothing at
+     all had been signed. */
+  return slot===null?null:(slotsNow()[slot]||null);
 }
 
 /* ---- HOW THE BOARD IS ORDERED ----
@@ -8999,8 +9014,11 @@ function optTile(row){
     : '';
   // Where this signing actually lands. Worth saying when it is not his own spot,
   // since that is the information the FLEX tab used to carry.
+  /* Said only when it is TRUE, which means the null case has to be its own answer rather
+     than falling through with it: a man nobody can take has no destination, and "goes to
+     flex" is the one thing that is certainly not where he goes. */
   const dest=destination(p);
-  const flex=dest&&dest!=='FLEX'?'':'<span class="dest">Goes to flex</span>';
+  const flex=dest==='FLEX'?'<span class="dest">Goes to flex</span>':'';
   return '<button class="tile'+(g>0.0005?' hot':'')+'" style="animation-delay:'+stagger(i)+'ms" '+
     'data-k="'+p.player_id+'|'+p.season+'">'+
     '<span class="th">'+head+'</span>'+who+
