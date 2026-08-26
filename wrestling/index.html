@@ -2320,6 +2320,10 @@ function showMoments(){
   if(!MOMENT_Q.length) return;
   const back=$('momentBack'); if(back.classList.contains('open')) return;
   if($('ceremonyBack').classList.contains('open')) return;
+  // Never stack a Moment on top of the guided tour or a live scene. The
+  // queue holds; whatever closes last will drain it.
+  if(TOUR_I>=0) return;
+  const _sb=$('sceneBack'); if(_sb && _sb.classList.contains('open')) return;
   const m=MOMENT_Q[0];
   // pixel icons come through as raw SVG; stock emojis stay as text
   if(/^</.test(m.ico)) $('moIco').innerHTML=m.ico; else $('moIco').textContent=m.ico;
@@ -3829,10 +3833,15 @@ function finishCreate(){
       txt:`<b>${pendMgr}</b> walks with you to the ring from tonight.`});
     window._pendingManagerName=null;
   }
-  // Assign the first season goal and fire the briefing modal after arrival.
+  // Assign the first season goal. The briefing modal waits until the guided
+  // tour has finished (endTour fires it) so a brand-new player is not reading
+  // two overlays at once. Players who skip the tutorial get it immediately.
   try { assignSeason(); } catch(_){}
+  G.car._briefingDeferred = !G.car.tourDone;
   save(); go('career'); toast('Welcome to the business, '+name);
-  setTimeout(()=>{ try{ showSeasonBriefing(); }catch(_){} }, 900);
+  if(!G.car._briefingDeferred){
+    setTimeout(()=>{ try{ showSeasonBriefing(); }catch(_){} }, 900);
+  }
 }
 // the indie that takes a chance on a rookie of your type
 function startingPromotion(style){
@@ -4454,6 +4463,15 @@ function startTour(name){
 function endTour(){
   const n=TOURN; TOUR_I=-1; $('tourBack').classList.remove('open');
   if(G){ if(n==='hub') G.car.tourDone=true; if(n==='dec') G.car.decSeen=true; save(); }
+  // A season briefing deferred by the tutorial plays now that the tour is
+  // done, so the two never stack on a first career. Moments queued during
+  // the tour drain after it, in the same order.
+  if(n==='hub' && G && G.car && G.car._briefingDeferred){
+    G.car._briefingDeferred = false;
+    setTimeout(()=>{ try{ showSeasonBriefing(); }catch(_){} }, 420);
+  } else {
+    setTimeout(()=>{ try{ showMoments(); }catch(_){} }, 340);
+  }
 }
 function tourNext(){ tourStep(TOUR_I+1); }
 function tourStep(i){
