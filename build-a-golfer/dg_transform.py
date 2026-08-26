@@ -85,6 +85,16 @@ def norm_name(n: str) -> str:
     n = re.sub(r"\s+", " ", n).strip()
     return n
 
+# LEGEND CARDS ARE HAND-OWNED AND THIS SCRIPT NEVER TOUCHES THEM.
+# A legend is a peak-era card (Nicklaus at his best, Prime Phil), not a rating of how the man plays
+# today, so a live feed has nothing to say about it. The trap is that ~16 of them are modern-era names
+# the feed still carries (Kaymer, McDowell, Webb Simpson, Bubba...), so a name match happily re-rated
+# a 95-rated peak card down to its holder's present form, and the values had to be restored by hand
+# after every run. era and tier agree on all 113 legend cards; both are checked so a card missing one
+# field still can't slip through.
+def is_legend(p):
+    return p.get("era") == "leg" or p.get("tier") == "legend"
+
 def clampi(x, lo=CLAMP_LO, hi=CLAMP_HI):
     return int(round(max(lo, min(hi, x))))
 
@@ -163,6 +173,8 @@ def main():
     ap.add_argument("--input", help="read the DataGolf feed from a local JSON file instead of the API")
     ap.add_argument("--report", help="also write the full report to this file")
     ap.add_argument("--html", help="ALSO patch the embedded ROSTER in this HTML (e.g. build-a-golfer.html)")
+    ap.add_argument("--rerate-legends", action="store_true",
+                    help="also re-rate legend cards (OFF by default: peak-era cards are hand-owned)")
     args = ap.parse_args()
 
     if args.input and args.input.lower().endswith(".csv"):
@@ -228,7 +240,7 @@ def main():
             shift += (target - cur) * denom / w_avail
         return {k: clampi(raw[k] + shift) for k in cats}, target
 
-    matched, unmatched_roster, changes = [], [], []
+    matched, unmatched_roster, changes, held = [], [], [], []
     # date the ratings to the FEED, not the run day (the data is as-of last_updated)
     today = (last_updated or "").split(" ")[0]
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", today):
@@ -239,6 +251,9 @@ def main():
         if not row:
             if p.get("tier") in ("star", "rising"):
                 unmatched_roster.append(p["name"])
+            continue
+        if is_legend(p) and not args.rerate_legends:
+            held.append(p["name"])          # in the feed, deliberately not re-rated
             continue
         clu = p.get("clu", p.get("overall", TOUR_AVG))
         final, _target = rate_player(row, clu)
@@ -267,6 +282,12 @@ def main():
                f"app/put/arg = {SHAPE['app']}/{SHAPE['put']}/{SHAPE['arg']} rating/SG; "
                f"calibration matches={len(cal_rows)}")
     out.append(f"matched & re-rated: {len(matched)} roster players")
+    if args.rerate_legends:
+        out.append("legend cards: RE-RATED (--rerate-legends) — peak-era cards were overwritten from the feed")
+    else:
+        out.append(f"legend cards held (in the feed, never re-rated): {len(held)}")
+        if held:
+            out.append("   " + ", ".join(sorted(held)))
     out.append(f"roster star/rising NOT in feed: {len(unmatched_roster)}")
     if unmatched_roster:
         out.append("   " + ", ".join(sorted(unmatched_roster)[:40]) + (" …" if len(unmatched_roster) > 40 else ""))
