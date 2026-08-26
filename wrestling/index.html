@@ -1964,22 +1964,28 @@ function seasonReport(){
   const payout = grade==='S'||done ? g.payout : grade==='A' ? {coins:Math.round(g.payout.coins*0.6), standing:Math.round(g.payout.standing*0.6)} : grade==='B' ? {coins:Math.round(g.payout.coins*0.3), standing:2} : {coins:0, standing:-2};
   return {goal:g, p, done, grade, payout};
 }
-function showSeasonReport(){
-  const rep = seasonReport(); if(!rep) return false;
+/* Split so state updates happen at yearEnd time (immediate, correct
+   whether or not the modal ever opens) and the modal is pure presentation
+   over precomputed data. */
+function applySeasonPayout(rep){
+  if(!rep) return;
   const c=G.car;
+  if(rep._applied) return;
+  rep._applied = true;
   G.bag.coins += (rep.payout.coins||0);
   c.earnings += (rep.payout.coins||0);
   c.standing = clamp((c.standing||50) + (rep.payout.standing||0));
+}
+function showSeasonReportModal(rep){
+  if(!rep) return false;
+  applySeasonPayout(rep);
+  const c=G.car;
   const gradeColor = rep.grade==='S'?'var(--gold)':rep.grade==='A'?'var(--green)':rep.grade==='B'?'var(--cream)':rep.grade==='C'?'var(--text-dim)':'#f0907f';
   const line = rep.grade==='S' ? 'You did it clean, ahead of schedule. The office is going to hand you the world.'
              : rep.grade==='A' ? 'Very close. The office is pleased. Next year they will ask for more.'
              : rep.grade==='B' ? 'Fine year. Nothing broken, nothing legendary.'
              : rep.grade==='C' ? 'Below what they wanted. They will notice.'
              :                   'The office is not happy. Prove yourself or the door is on the left.';
-  // Assign the new season BEFORE rendering so we can show the year-just-
-  // finished report AND the year-ahead goal on the same screen. One modal
-  // instead of two back-to-back.
-  assignSeason();
   const g2 = currentSeasonGoal();
   const body = `<div class="seasonreport">
     <div class="sr-y">Year ${c.year-1} · Season Report</div>
@@ -1999,6 +2005,8 @@ function showSeasonReport(){
   modal(`Year ${c.year-1} in the books`, body, [{label:'Onward',cls:'primary',fn:closeModal}]);
   return true;
 }
+/* Back-compat: some old paths may call showSeasonReport() directly. */
+function showSeasonReport(){ const rep = seasonReport(); return showSeasonReportModal(rep); }
 function showSeasonBriefing(){
   const c=G.car; const g=currentSeasonGoal(); if(!g) return;
   const body = `<div class="seasonbrief">
@@ -9008,9 +9016,12 @@ function doMentorWeek(){ const c=G.car;
 }
 function yearEnd(){
   const c=G.car, w=G.w;
-  // Season report + fresh season assignment for the year we're rolling into.
-  // Deferred to the UI thread so the modal opens after week is committed.
-  setTimeout(()=>{ try{ showSeasonReport(); }catch(_){} }, 800);
+  // Season: bake the report data now, roll the new season now (state is
+  // immediately correct at year+1 week 1 even if the player never opens the
+  // report modal). Defer only the MODAL reveal to the UI thread.
+  const _pendingReport = (function(){ try{ return seasonReport(); }catch(_){ return null; } })();
+  try{ assignSeason(); }catch(_){}
+  setTimeout(()=>{ try{ if(_pendingReport) showSeasonReportModal(_pendingReport); }catch(_){} }, 800);
   c.age++;
   // Aging is not just the calendar. It is mileage. Two wrestlers the same age
   // decline at different rates depending on how hard they worked the road and
