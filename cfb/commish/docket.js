@@ -362,7 +362,7 @@
         + 'already gone, in stadiums a third full, against a bracket that is on at the same '
         + 'time. The contracts run another four years.',
       voices: [
-        { id: 'Fans', say: 'That trip used to be the reward for the season. Now it is a reason to opt out.' },
+        { id: 'Fans', say: 'That trip was the reward for the season. Now it is a reason to opt out.' },
         { id: 'Group of Five', say: 'Those payouts are real money to us. They are a rounding error to them.' },
         { id: 'Networks', say: 'We bought a month of programming and half of it is unwatchable.' },
       ],
@@ -1289,7 +1289,7 @@
           + 'volleyball team would fly eleven thousand miles in October.'),
       voices: [
         { id: 'Group of Five', say: 'Every school in that plan is one of ours. Ask us how we feel about it.' },
-        { id: 'Players', say: 'A Tuesday night game two thousand miles away is a Wednesday nobody goes to class.' },
+        { id: 'Players', say: 'A Tuesday two thousand miles away is a Wednesday nobody goes to class.' },
         { id: 'Presidents', say: 'It is that or the conference stops existing, and then what happens to them?' },
       ],
       options: [
@@ -1864,7 +1864,7 @@
       voices: [
         { id: 'Networks', say: 'We have a seven second delay for audio. Signs are not audio.' },
         { id: 'Fans', say: 'It has been the same joke behind that set for forty years and it is the best part.' },
-        { id: 'Presidents', say: 'The student is enrolled at one of our institutions and is now nationally famous.' },
+        { id: 'Presidents', say: 'He is enrolled at one of our institutions and is now nationally famous.' },
       ],
       options: [
         { id: 'ignore', label: 'Say nothing',
@@ -1986,7 +1986,7 @@
           + ' on the term. Somebody in a meeting used the phrase "compelling matchups" nine times.'
         : 'The best team in the sport is unbeaten and the audience is falling anyway.'),
       voices: [
-        { id: 'Networks', say: 'An unbeaten team nobody watches is worth less than a good rivalry with two losses.' },
+        { id: 'Networks', say: 'An unbeaten nobody watches is worth less than a rivalry with two losses.' },
         { id: 'Fans', say: 'We know how it ends in September. That is the whole problem.' },
         { id: 'Presidents', say: 'Our distribution is calculated off these numbers.' },
       ],
@@ -2593,7 +2593,7 @@
         + 'is now a recruiting service for its rivals. There are nine of him this month.',
       voices: [
         { id: 'ACC', say: 'We did not ask for this and we are not going to unilaterally disarm.' },
-        { id: 'Big Ten', say: 'We wrote a rule for our institutions. We are not obliged to write one for yours.' },
+        { id: 'Big Ten', say: 'We wrote a rule for our schools. We are not obliged to write one for yours.' },
         { id: 'Players', say: 'Which league you are in decides whether your career is over. Read that back.' },
       ],
       options: [
@@ -2681,7 +2681,7 @@
         + 'in this office is supposed to have an opinion and nobody does.',
       voices: [
         { id: 'Players', say: 'Every one of us should have had one from the day we were sixteen.' },
-        { id: 'Presidents', say: 'If they have agents and salaries, tell me what word is left that is not employee.' },
+        { id: 'Presidents', say: 'Agents and salaries. Tell me what word is left that is not employee.' },
         { id: 'Networks', say: 'Nobody watching has ever cared about this and nobody watching ever will.' },
       ],
       options: [
@@ -2724,7 +2724,7 @@
         + 'screen in the country since Tuesday and nobody can decide whether it is heartwarming '
         + 'or an indictment.',
       voices: [
-        { id: 'Fans', say: 'A grown man is playing against children and we are pretending that is college.' },
+        { id: 'Fans', say: 'A grown man against children, and we are pretending that is college.' },
         { id: 'Players', say: 'He is enrolled, he goes to class, he is eligible. What exactly is the objection?' },
         { id: 'Networks', say: 'He is the single most interesting person in this sport right now.' },
       ],
@@ -3282,7 +3282,7 @@
       voices: [
         { id: 'Fans', say: 'It is named after the place. That is what the name is.' },
         { id: 'Presidents', say: 'The payout doubles. The payout is the entire reason the bowl exists.' },
-        { id: 'Group of Five', say: 'Half the teams in that game every year are ours and none of us were asked.' },
+        { id: 'Group of Five', say: 'Half that game is ours every year and none of us were asked.' },
       ],
       options: [
         { id: 'move', label: (c) => (c ? 'Let it go to ' + c.to.city : 'Let it move'),
@@ -3369,7 +3369,7 @@
           + 'around it is not, and the game is in four months.'
         : 'The host city cannot deliver what was in its bid and the game is in four months.'),
       voices: [
-        { id: 'Networks', say: 'We can broadcast from anywhere. Forty thousand people cannot sleep anywhere.' },
+        { id: 'Networks', say: 'We broadcast from anywhere. Forty thousand people cannot sleep there.' },
         { id: 'Fans', say: 'Some of us booked flights in February. Non refundable ones.' },
         { id: 'Presidents', say: 'Moving it means giving back the fee and eating the difference.' },
       ],

@@ -1349,13 +1349,13 @@
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
 <script src="ledger.js?v=7"></script>
-<script src="blocs.js?v=3"></script>
+<script src="blocs.js?v=4"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=2"></script>
-<script src="docket.js?v=10"></script>
+<script src="docket.js?v=11"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2325,14 +2325,26 @@ function desk(){
   /* THE ARGUMENT, TIED TO THE ROOM BY COLOUR AND MARK. These were three grey paragraphs
      behind three grey labels, so the quote and the number it moves two screens later were
      visibly unrelated. Same chip, same hue, same actor. */
-  $('d-voices').innerHTML=(item.voices||[]).map((v)=>{
+  $('d-voices').innerHTML=(item.voices||[]).map((v,i)=>{
     const b=B.BY_ID[v.id];
+    /* SOMEBODY IS IN THE CHAIR. The attribution used to be the institution, so a room of nine
+       said "we" nine times and read like minutes. It is a role now: an athletic director in
+       the SEC, a fourth year safety, somebody in row eleven. Same bloc underneath, same chip
+       beside it, same weights: the only thing that changed is that a person is speaking.
+
+       Salted with the item and the position, so two blocs in one room get different people
+       and the same desk replays with the same people in it. See speaker() in blocs.js for
+       why none of them can be identified.
+
+       `v.who` overrides where the item knows better than the generator does. */
+    const who=v.who?D.text(v.who,cast,item,sit)
+      :(B.speaker?B.speaker(v.id,cast,item.id+'|'+i):null);
     /* NAME AND QUOTE IN ONE FLOW. The name leads the sentence the way an attribution does,
        rather than sitting on a header row of its own, which is a whole line per speaker to
        repeat what the chip beside it already says in a colour and a mark. */
     return '<div class="voice" style="--bc:'+bcOf(v.id)+'">'
       +blocChip(v.id)
-      +'<span class="vs"><b>'+esc(b?b.name:v.id)+'</b>'+esc(v.say)+'</span></div>';
+      +'<span class="vs"><b>'+esc(who||(b?b.name:v.id))+'</b>'+esc(v.say)+'</span></div>';
   }).join('');
   /* THE ROOM SPEAKS IN TURN. Three voices arriving together are a wall of text; dealt out
      they are three people, which is what they are. */

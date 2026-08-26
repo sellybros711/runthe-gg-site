@@ -964,7 +964,80 @@
     return pool[n % pool.length];
   }
 
-  const publicAPI = { BLOCS, BY_ID, GAIN, MEMORY, VOICE, react, deltas, grudge, dot, moodOf, line, driver, hash };
+  /* ---------------- who is actually talking ----------------
+     A BLOC IS NOT A PERSON AND THE ROOM READ LIKE MINUTES. Every quote on the desk was
+     attributed to an institution: "The SEC: whatever this costs, it is not coming out of our
+     distribution." That is accurate and it is nobody speaking. A room of nine institutions
+     saying "we" is a press release with nine paragraphs.
+
+     So a voice gets a SPEAKER: a role, not a name. An athletic director in the SEC, a fourth
+     year safety, somebody in the student section. It is the same bloc underneath, with the
+     same weights and the same chip beside it, and the only thing that changes is that
+     somebody is in the chair.
+
+     NOBODY IDENTIFIABLE, WHICH IS A NARROWER RULE THAN IT SOUNDS. "A coach in the SEC" is a
+     role held by sixteen people and names none of them. "Alabama's head coach" is a role held
+     by exactly one living man, so putting an invented sentence in it is using his name with
+     extra steps, and it is the thing this file's rule has always been about. Where a school
+     is named the role has to stay plural or anonymous: an assistant, the compliance office,
+     somebody in the athletic department.
+
+     DETERMINISTIC PER BEAT, off the same hash everything else here uses, so a term replays
+     with the same people in it and a screenshot is reproducible.
+
+     SHORT, BECAUSE THE DESK GIVES A SPEAKER TWO LINES. The attribution and the quote share
+     one flow, so every character spent here is a character taken off the sentence. The first
+     set of these ran to twenty-seven characters ("a Big Ten athletic director") and pushed
+     twenty-eight of the two hundred and seventy-three lines onto a third row. "AD" is not a
+     compression, it is what everybody in this sport actually says. test_desk measures every
+     line in the docket, so this stays honest. */
+  const SPEAKERS = {
+    SEC: ['an SEC AD', 'a coach in the SEC', 'an SEC assistant'],
+    'Big Ten': ['a Big Ten AD', 'a Big Ten coach', 'a Big Ten deputy'],
+    ACC: ['an ACC AD', 'an ACC coach', 'an ACC deputy'],
+    'Big 12': ['a Big 12 AD', 'a Big 12 coach', 'a Big 12 deputy'],
+    'Group of Five': ['a Sun Belt AD', 'a Mountain West coach', 'a MAC AD'],
+    Networks: ['a network exec', 'a rights holder', 'a Saturday producer'],
+    Players: ['a starting safety', 'a starting QB', 'a player rep'],
+    Presidents: ['a school president', 'a chancellor', 'a faculty rep'],
+    Fans: ['a ticket holder', 'a radio caller', 'somebody in row 11'],
+  };
+  /* AND THE SAME ROLES WITH A SCHOOL ON THEM, for items that carry one. All of these are
+     plural or anonymous on purpose: an assistant, a trustee, a supporter. */
+  const AT_SCHOOL = {
+    SEC: ['an assistant at ', 'a deputy AD at '],
+    'Big Ten': ['an assistant at ', 'a deputy AD at '],
+    ACC: ['an assistant at ', 'a deputy AD at '],
+    'Big 12': ['an assistant at ', 'a deputy AD at '],
+    'Group of Five': ['an assistant at ', 'a deputy AD at '],
+    Presidents: ['a trustee at ', 'the provost at '],
+    Fans: ['a supporter of ', 'a fan of '],
+  };
+
+  /* `cast` is whatever the item is about, so a school on it is the school being argued over.
+     `salt` separates two speakers from the same bloc in one room and keeps a beat stable. */
+  function speaker(blocId, cast, salt) {
+    const pool = SPEAKERS[blocId];
+    if (!pool) return null;
+    const n = hash(String(blocId) + '|' + String(salt || ''));
+    const school = cast && (cast.school || cast.a
+      || (cast.team && cast.team.school) || null);
+    const atPool = AT_SCHOOL[blocId];
+    /* A NAMED SCHOOL IS WORTH SPENDING THE CHARACTERS ON, sometimes. Roughly a third of the
+       time, so the room does not turn into the same construction nine times over, and never
+       when the name would push the line past what the box holds. */
+    if (school && atPool && (n % 3) === 0) {
+      /* UNSIGNED, because `hash` returns values above 2^31 and a signed shift on one of
+         those is negative, which indexes the pool at minus one and prints "undefinedAlabama"
+         at a reader. */
+      const built = atPool[(n >>> 3) % atPool.length] + school;
+      if (built.length <= 26) return built;
+    }
+    return pool[n % pool.length];
+  }
+
+  const publicAPI = { BLOCS, BY_ID, GAIN, MEMORY, VOICE, react, deltas, grudge, dot, moodOf, line, driver, hash,
+    SPEAKERS, speaker };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_BLOCS = publicAPI;
 })();
