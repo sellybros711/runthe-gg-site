@@ -1504,6 +1504,101 @@ const STADIUM_THEMES = {
       ctx.fillRect(w*0.55, h*0.08, 30, 4); ctx.fillRect(w*0.58, h*0.06, 24, 4);
     },
   },
+  'The Holiday Nine': {
+    park:'North Pole Yard', sky:'#0e1e3a', wall:'#c93030', wallLine:'#f5efe8',
+    marker:'#f5efe8', track:'#f5efe8', grass:'#3aaa5a',
+    crowd:['#c93030','#3a7f4a','#f5efe8','#f4c25a','#5cb6e5'],
+    landmark(ctx, w, h) {
+      /* Big evergreen tree on the horizon, garland lights, snow atop the
+         wall track. */
+      ctx.fillStyle = '#08120a';
+      const tx = w * 0.50;
+      ctx.beginPath();
+      ctx.moveTo(tx, h * 0.005); ctx.lineTo(tx - 20, h * 0.09); ctx.lineTo(tx + 20, h * 0.09); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(tx, h * 0.03); ctx.lineTo(tx - 28, h * 0.13); ctx.lineTo(tx + 28, h * 0.13); ctx.closePath(); ctx.fill();
+      /* Tree lights */
+      const lightCols = ['#c93030','#f4c25a','#3aaa5a','#5cb6e5'];
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = lightCols[i % 4];
+        ctx.fillRect(tx - 22 + i * 8, h * 0.10, 2, 2);
+      }
+      /* Falling snow across the sky (procedural static) */
+      ctx.fillStyle = '#f5efe8';
+      for (let i = 0; i < 22; i++) {
+        const sx = (i * 137) % w;
+        const sy = ((i * 41 + Math.floor(performance.now() / 80)) % (h * 0.12));
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+    },
+  },
+  'Cryptids': {
+    park:'Crater Field', sky:'#0a0a14', wall:'#1a0e1a', wallLine:'#5bb083',
+    marker:'#c94b1a', track:'#1a1010', grass:'#1a2a10',
+    crowd:['#050508','#080810','#12081a','#0a0a12','#1a0a12'],
+    landmark(ctx, w, h) {
+      /* Bone-white full moon behind ragged crater rim silhouette. */
+      ctx.fillStyle = '#f5efe8';
+      ctx.beginPath(); ctx.arc(w * 0.72, h * 0.055, 14, 0, Math.PI*2); ctx.fill();
+      /* Crater rim: jagged black shapes rising along the horizon */
+      ctx.fillStyle = '#050508';
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.115);
+      const points = [ [0.06, 0.09], [0.14, 0.11], [0.22, 0.075], [0.30, 0.10], [0.38, 0.06],
+                       [0.46, 0.09], [0.55, 0.08], [0.64, 0.10], [0.75, 0.07],
+                       [0.85, 0.10], [0.94, 0.08], [1.0, 0.10] ];
+      for (const [px, py] of points) ctx.lineTo(w * px, h * py);
+      ctx.lineTo(w, h * 0.13); ctx.lineTo(0, h * 0.13);
+      ctx.closePath(); ctx.fill();
+      /* Glowing eyes scattered in the shadows */
+      ctx.fillStyle = '#c94b1a';
+      const eyes = [ [0.10, 0.098], [0.28, 0.108], [0.42, 0.10], [0.58, 0.105], [0.90, 0.105] ];
+      for (const [ex, ey] of eyes) {
+        ctx.fillRect(w * ex, h * ey, 1, 1);
+        ctx.fillRect(w * ex + 3, h * ey, 1, 1);
+      }
+    },
+  },
+  'The Ancients': {
+    park:'Colossus Coliseum', sky:'#3a2828', wall:'#a89058', wallLine:'#eaeaea',
+    marker:'#eaeaea', track:'#c9a256', grass:'#2a5a2c',
+    crowd:['#c9a256','#8b6a3a','#5a4a2a','#a89058','#3a2818'],
+    landmark(ctx, w, h) {
+      /* Marble columns behind the wall */
+      ctx.fillStyle = '#eaeaea';
+      for (let i = 0; i < 8; i++) {
+        const x = w * (0.10 + i * 0.10);
+        ctx.fillRect(x, h * 0.02, 6, h * 0.11);
+        ctx.fillRect(x - 2, h * 0.02, 10, 3);
+        ctx.fillRect(x - 2, h * 0.115, 10, 3);
+      }
+      /* Setting sun between columns */
+      ctx.fillStyle = '#e88a3a';
+      ctx.beginPath(); ctx.arc(w * 0.5, h * 0.07, 8, 0, Math.PI * 2); ctx.fill();
+    },
+  },
+  'Folklore': {
+    park:'Whispering Grove', sky:'#3a1a10', wall:'#5a2a10', wallLine:'#f4c25a',
+    marker:'#f4c25a', track:'#8a5a2c', grass:'#3a5a2a',
+    crowd:['#c94b1a','#e88a3a','#8a5a2c','#c9a256','#5a2a10'],
+    landmark(ctx, w, h) {
+      /* Autumn-forest silhouette: sparse tree crowns */
+      ctx.fillStyle = '#0a0806';
+      const trees = [0.10, 0.22, 0.34, 0.44, 0.56, 0.68, 0.80, 0.92];
+      for (const tf of trees) {
+        const x = w * tf;
+        ctx.fillRect(x, h * 0.04, 3, h * 0.10);
+        ctx.beginPath(); ctx.arc(x + 1.5, h * 0.04, 9, 0, Math.PI * 2); ctx.fill();
+      }
+      /* Fireflies dotting the woods */
+      ctx.fillStyle = '#f4c25a';
+      for (let i = 0; i < 12; i++) {
+        const fx = ((i * 173) + Math.floor(performance.now() / 200)) % w;
+        const fy = h * (0.06 + ((i * 31) % 60) / 1000);
+        ctx.fillRect(fx, fy, 1, 1);
+      }
+    },
+  },
 };
 const DEFAULT_THEME = {
   park:'The Sandlot', sky:'#0e1c2c', wall:'#173a20', wallLine:'#f4c25a',
@@ -1520,6 +1615,32 @@ function currentTheme() {
    drawn from the same twenty-three character pool. Users face a rotating cast
    of these across a seven game season. Every team has a distinct flavor: a
    pack of pure sluggers hits differently from a small-ball speed team. */
+/* Per-team style tuning applied to the CPU batting AI. `swing` shifts the
+   base probability of taking a hack (positive = free swingers), `patience`
+   trims swings on balls (positive = disciplined), `jitter` scales the
+   contact spread (positive = wilder swings, more whiffs). */
+const TEAM_STYLE = {
+  'Ironsides':          { swing:+0.10, patience:-0.05, jitter:+0.04, label:'Free-swingers' },
+  'Storybook Nine':     { swing: 0.00, patience:+0.02, jitter:+0.00, label:'Balanced' },
+  'The Timekeepers':    { swing:-0.02, patience:+0.10, jitter:-0.03, label:'Patient hitters' },
+  'Nightshift':         { swing:+0.08, patience:-0.05, jitter:+0.05, label:'Hackers' },
+  'The Cartographers':  { swing: 0.00, patience:+0.04, jitter:-0.02, label:'Contact hitters' },
+  'Fields and Fables':  { swing:-0.03, patience:+0.06, jitter:-0.03, label:'Patient' },
+  'The Marauders':      { swing:+0.06, patience: 0.00, jitter:+0.02, label:'Aggressive' },
+  'The Kids Table':     { swing:-0.10, patience:+0.14, jitter:+0.02, label:'Small ball' },
+  'The Holiday Nine':   { swing:+0.02, patience:+0.02, jitter:-0.01, label:'Balanced' },
+  'Cryptids':           { swing:+0.12, patience:-0.08, jitter:+0.07, label:'Wild swingers' },
+  'The Ancients':       { swing:-0.05, patience:+0.10, jitter:-0.05, label:'Ancient patience' },
+  'Folklore':           { swing:+0.03, patience: 0.00, jitter:+0.03, label:'Odd bunch' },
+};
+const DEFAULT_STYLE = { swing:0, patience:0, jitter:0, label:'Balanced' };
+function currentBattingTeamStyle() {
+  const t = currentBattingTeam();
+  if (t.isYou) return DEFAULT_STYLE;
+  const oppName = State.opponent && State.opponent.name;
+  return TEAM_STYLE[oppName] || DEFAULT_STYLE;
+}
+
 const OPPONENTS = [
   { name:'Ironsides',      color:'#8a1a1a', roster:['kong','franky','popeye','dracula','liberty','hyde','lion','robin','tracy'] },
   { name:'Storybook Nine', color:'#c25c1a', roster:['peter','jack','alice','robin','pooh','tintin','sherlock','dorothy','felix'] },
@@ -1690,6 +1811,68 @@ const Sound = {
       }
     } catch (e) { /* audio unavailable: stay silent */ }
   },
+  /* -------- 8-bit ambient background loop --------
+     A pentatonic sequence in the key of D that loops indefinitely
+     while the game screen is up. Uses a low square-wave bass and a
+     tinkling triangle melody. Volume ducks against action sounds by
+     living on its own gain. Mute stops it; toggling on restarts it. */
+  music: {
+    ctx: null,
+    bus: null,
+    playing: false,
+    stopper: null,
+    start(sound) {
+      if (this.playing) return;
+      const ctx = sound.ensure();
+      if (!ctx || sound.muted) return;
+      this.ctx = ctx;
+      this.bus = ctx.createGain();
+      this.bus.gain.value = 0.06;   /* quieter than SFX */
+      this.bus.connect(sound.bus());
+      /* Notes in the D pentatonic (D E F# A B) */
+      const melody = [ 587, 660, 740, 880, 660, 587, 740, 880,   /* eight beats */
+                       988, 880, 740, 660, 587, 740, 880, 988 ];
+      const bass = [ 147, 147, 220, 220, 165, 165, 147, 147 ];
+      let step = 0;
+      const beatSec = 0.35;
+      const schedule = () => {
+        if (!sound.muted && this.playing) {
+          const t = ctx.currentTime;
+          /* melody: eight beats per bar */
+          for (let i = 0; i < 8; i++) {
+            const note = melody[(step + i) % melody.length];
+            this.playNote(note, t + i * beatSec, beatSec * 0.75, 'triangle', 0.5);
+          }
+          for (let i = 0; i < 8; i++) {
+            const note = bass[(Math.floor(step / 2) + i) % bass.length];
+            this.playNote(note, t + i * beatSec, beatSec * 0.9, 'square', 0.35);
+          }
+          step += 8;
+        }
+      };
+      schedule();
+      this.stopper = setInterval(schedule, beatSec * 8 * 1000);
+      this.playing = true;
+    },
+    stop() {
+      if (this.stopper) { clearInterval(this.stopper); this.stopper = null; }
+      if (this.bus) { try { this.bus.disconnect(); } catch(e){} this.bus = null; }
+      this.playing = false;
+    },
+    playNote(freq, when, dur, type, vol) {
+      const ctx = this.ctx;
+      if (!ctx || !this.bus) return;
+      const osc = ctx.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, when);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, when);
+      g.gain.linearRampToValueAtTime(vol, when + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, when + dur);
+      osc.connect(g); g.connect(this.bus);
+      osc.start(when); osc.stop(when + dur + 0.02);
+    },
+  },
 };
 
 /* ============================================================================
@@ -1752,7 +1935,12 @@ const muteBtn = document.getElementById('btn-mute');
 function refreshMuteBtn() { muteBtn.textContent = Sound.muted ? 'Sound: off' : 'Sound: on'; }
 muteBtn.addEventListener('click', () => {
   Sound.muted = !Sound.muted;
-  if (!Sound.muted) { Sound.ensure(); Sound.play('ball'); }
+  if (!Sound.muted) {
+    Sound.ensure(); Sound.play('ball');
+    if (State.screen === 'game') Sound.music.start(Sound);
+  } else {
+    Sound.music.stop();
+  }
   refreshMuteBtn();
   savePrefs();
 });
@@ -2055,6 +2243,7 @@ function startSeason() {
     results: [],
     playoffs: null,
     playerStats: { hr:0, so:0, sb:0, hits:0, ab:0 },
+    perPlayer: {},   /* per character running totals across the season */
     league: simulateLeagueSeasons(),
   };
   saveSeason(State.season);
@@ -2104,7 +2293,8 @@ function renderSeasonHub() {
     if (games < 7) {
       const next = opponentByName(S.schedule[games]);
       nextCard.appendChild(el('h3', null, 'Next game'));
-      nextCard.appendChild(el('p', null, `vs ${next.name}`));
+      const style = TEAM_STYLE[next.name] || DEFAULT_STYLE;
+      nextCard.appendChild(el('p', null, `vs ${next.name} · ${style.label}`));
       const play = el('button','btn','Play Next Game');
       play.onclick = () => {
         State.team = S.team;
@@ -2185,6 +2375,40 @@ function renderSeasonHub() {
   const ps = S.playerStats;
   stat.innerHTML += `<p>Hits ${ps.hits} · HR ${ps.hr} · K ${ps.so} · SB ${ps.sb} · AB ${ps.ab}</p>`;
   s.appendChild(stat);
+
+  /* Leaderboards */
+  const per = S.perPlayer || {};
+  const leaderRows = Object.entries(per)
+    .map(([k, v]) => ({ k, n: (ROSTER_BY_KEY[k] || {}).n || k,
+                        hr: v.hr, hits: v.hits, ab: v.ab, so: v.so, sb: v.sb,
+                        avg: v.ab ? v.hits / v.ab : 0 }));
+  if (leaderRows.length) {
+    const lead = el('div','card');
+    lead.appendChild(el('h3', null, 'League leaders (your bats)'));
+    const leaderTable = (title, sortKey, format) => {
+      const t = el('table', 'table');
+      t.innerHTML = `<thead><tr><th>${title}</th><th class="n">${sortKey.toUpperCase()}</th></tr></thead>`;
+      const tb = el('tbody');
+      const top = [...leaderRows].sort((a,b) => (b[sortKey] || 0) - (a[sortKey] || 0)).slice(0, 5);
+      for (const r of top) {
+        if ((r[sortKey] || 0) === 0 && sortKey !== 'avg') continue;
+        if (sortKey === 'avg' && !r.ab) continue;
+        const tr = el('tr');
+        tr.innerHTML = `<td>${r.n}</td><td class="n">${format ? format(r[sortKey]) : r[sortKey]}</td>`;
+        tb.appendChild(tr);
+      }
+      t.appendChild(tb);
+      return t;
+    };
+    const grid = el('div', 'row-2');
+    const g1 = el('div', null); g1.appendChild(leaderTable('Home runs', 'hr'));
+    const g2 = el('div', null); g2.appendChild(leaderTable('Batting average', 'avg', v => v.toFixed(3).replace(/^0/, '')));
+    const g3 = el('div', null); g3.appendChild(leaderTable('Hits', 'hits'));
+    const g4 = el('div', null); g4.appendChild(leaderTable('Stolen bases', 'sb'));
+    grid.append(g1, g2, g3, g4);
+    lead.appendChild(grid);
+    s.appendChild(lead);
+  }
 
   const row = el('div','btn-row');
   const q = el('button','btn ghost','Quit Season');
@@ -2378,6 +2602,7 @@ function startGame(opts) {
   };
   State.screen = 'game';
   render();
+  Sound.music.start(Sound);
   setTimeout(startAtBat, 400);
 }
 
@@ -2748,9 +2973,13 @@ function scheduleCpuSwing() {
   if (g.balls >= 3 && !isStrike) swingProb = 0.10;
   /* Contact hitters swing selectively; hackers hack. */
   swingProb += (batter.con - 60) * 0.001;
+  /* Team style: some teams are patient, some hack away. */
+  const style = currentBattingTeamStyle();
+  if (isStrike) swingProb += style.swing;
+  else          swingProb -= style.patience;
   /* Rabid Dog is frenzied: he swings at nearly everything. */
   if (g.batterCtx && g.batterCtx.flags && g.batterCtx.flags.frenzy) swingProb = 0.95;
-  const willSwing = Math.random() < swingProb;
+  const willSwing = Math.random() < clamp(swingProb, 0.05, 0.98);
 
   if (!willSwing) {
     /* Let the pitch pass; the field loop's called-pitch trigger fires. */
@@ -2769,10 +2998,12 @@ function scheduleCpuSwing() {
     if (p.zoneAim.isCorner) jitter += 0.12;
     else if (p.zoneAim.isEdge) jitter += 0.06;
   }
+  /* Team style: wild swingers spread more, disciplined bats less. */
+  jitter += style.jitter;
   /* Fresh pitcher vs gassed pitcher moves the needle the other way. */
   const fat = pitcherFatigue();
   jitter -= fat.level * 0.02;
-  jitter = clamp(jitter, 0.03, 0.35);
+  jitter = clamp(jitter, 0.03, 0.40);
 
   const dir = Math.random() < 0.5 ? -1 : 1;
   const t = clamp(p.ideal + dir * jitter * Math.random(), 0.02, 0.98);
@@ -2953,6 +3184,8 @@ function scheduleContactPlay(kind, batter) {
   Sound.play('crack');
   const throwable = kind === 'ground out' && !playerIsBatting();
   if (throwable) return scheduleThrowMinigame(kind, batter);
+  const catchable = kind === 'fly out' && !playerIsBatting();
+  if (catchable) return scheduleFlyCatchMinigame(kind, batter);
   /* Errors: on a ground or fly out, roll against the fielding team's DEF.
      A low-defense team lets the batter reach on a mishandled ball. */
   let effective = kind;
@@ -3240,6 +3473,113 @@ function resolveThrow(outcome, kind, batter) {
   refreshHud();
 }
 
+/* -------- Fly-ball catch minigame --------
+   When the player is fielding and the batter puts one up, the outfielder
+   camps under it. A different meter appears: the ball drops into a
+   catch window that shrinks toward the middle (mimics glove tracking).
+   Nail the green center to catch; ok yellow band is a single that
+   drops in; a miss is a triple over the fielder's head. */
+
+function scheduleFlyCatchMinigame(kind, batter) {
+  const g = State.game;
+  const traj = ballTrajectory(kind);
+  const preBases = [...g.bases];
+  g.play = {
+    kind, batter, isOut: true,
+    ball: traj,
+    startedAt: performance.now(),
+    swingUntil: performance.now() + 240,
+    ballUntil: performance.now() + traj.duration,
+    runnerStart: performance.now() + Math.max(180, traj.duration - 400),
+    runnerUntil: performance.now() + traj.duration + 600,
+    preBases,
+    batterPath: batterPathIndices(kind),
+    runnerPaths: preBases.map((r, i) => r ? existingRunnerPathIndices(i, kind) : null),
+    applied: false,
+    catchActive: false,
+  };
+  const geo = fieldGeom();
+  const angle = Math.atan2(traj.dy * geo.r, traj.dx * geo.r);
+  const landingX = geo.cx + Math.cos(angle) * geo.r * 0.9;
+  const landingY = geo.cy + Math.sin(angle) * geo.r * 0.9;
+  /* When the ball starts descending, the catch window opens. */
+  const openAt = traj.duration * 0.6;
+  setTimeout(() => {
+    if (!g.play || g.play.applied) return;
+    startCatchWindow(kind, batter, landingX, landingY);
+  }, openAt);
+}
+
+function startCatchWindow(kind, batter, landingX, landingY) {
+  const g = State.game;
+  if (!g.play) return;
+  const fs = currentFieldingTeam().batters;
+  const of = [fs[6], fs[7], fs[1]].filter(Boolean);
+  const avgDef = of.reduce((a, c) => a + c.def, 0) / (of.length || 1);
+  /* A catch bar with a shrinking green center. Not held-still-hard: the
+     time window is short (900 ms) and the fielder DEF widens the safe
+     zone. */
+  const window = {
+    duration: 900,
+    startedAt: performance.now(),
+    greenHalf: 0.10 + (avgDef - 50) / 900,
+    yellowHalf: 0.24,
+    landingX, landingY,
+    resolved: false,
+  };
+  g.play.catchActive = true;
+  g.play.catchWindow = window;
+
+  const finish = (t) => {
+    if (window.resolved) return;
+    window.resolved = true;
+    g.play.catchActive = false;
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('click', onClick, true);
+    /* t < 0 means the window expired. */
+    let outcome;
+    if (t < 0) outcome = 'miss';
+    else {
+      const d = Math.abs(t - 0.5);
+      if (d <= window.greenHalf) outcome = 'catch';
+      else if (d <= window.yellowHalf) outcome = 'single';
+      else outcome = 'miss';
+    }
+    resolveCatch(outcome, kind, batter, landingX, landingY);
+  };
+  const onClick = (e) => {
+    if (window.resolved) return;
+    const t = clamp((performance.now() - window.startedAt) / window.duration, 0, 1);
+    finish(t);
+  };
+  const onKey = (e) => { if (e.code === 'Space') { e.preventDefault(); onClick(e); } };
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('click', onClick, true);
+  setTimeout(() => finish(-1), window.duration + 20);
+}
+
+function resolveCatch(outcome, kind, batter, landingX, landingY) {
+  const g = State.game;
+  if (!g.play || g.play.applied) return;
+  g.play.applied = true;
+  if (outcome === 'catch') {
+    gloveFlash(g, landingX, landingY);
+    Sound.play('catch');
+    applyOutMutation('fly out', batter);
+  } else if (outcome === 'single') {
+    addLog(`${batter.n} bloops it in front of the fielder. Single.`);
+    showCallout('DROPS IN', 'hit');
+    Sound.play('cheer');
+    applyHitMutation('single', batter);
+  } else {
+    addLog(`Ball drops over the fielder's head. Triple.`);
+    showCallout('OVER HIS HEAD', 'strike');
+    Sound.play('aww');
+    applyHitMutation('triple', batter);
+  }
+  refreshHud();
+}
+
 function applyErrorMutation(batter) {
   const g = State.game;
   statBump(batter.k, 'ab');
@@ -3260,6 +3600,10 @@ function applyErrorMutation(batter) {
 
 function afterHitTransition(kind) {
   const g = State.game;
+  if (g.walkoff) {
+    g.over = true; g.winner = 'home';
+    return setTimeout(finishGame, BEAT.afterHomer);
+  }
   nextBatter();
   refreshHud();
   setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
@@ -3359,6 +3703,14 @@ function scoreRuns(n) {
   const key = g.half === 'top' ? 'away' : 'home';
   while (g.lineScore[key].length < g.inning) g.lineScore[key].push(0);
   g.lineScore[key][g.inning - 1] += n;
+  /* Walk-off: if the HOME team is batting in the bottom of the final
+     inning (or extra) and their score exceeds the away score, the game
+     ends right here, mid-inning. Trigger a special callout and let the
+     transition timers wind down before firing the result screen. */
+  if (g.half === 'bottom' && g.inning >= g.innings && g.home.score > g.away.score) {
+    g.walkoff = true;
+    showCallout('WALK-OFF!', 'homer');
+  }
 }
 
 function endHalfInning() {
@@ -3386,6 +3738,10 @@ function endHalfInning() {
 
 function checkGameOver() {
   const g = State.game;
+  /* Walk-off in real time: home team is batting in the bottom of the
+     final (or later) inning and takes the lead, the game ends on the
+     spot. checkForWalkoff runs after every scoring play so the game can
+     end mid-inning. */
   /* After 9 (or configured) full innings, tied continues; unless capped for arcade. */
   if (g.inning > g.innings) {
     if (g.away.score !== g.home.score) {
@@ -3425,6 +3781,7 @@ function finishGame() {
   const g = State.game;
   g.live = false;
   stopFieldLoop();
+  Sound.music.stop();
   const you = g.away.isYou ? g.away : g.home;
   const foe = g.away.isYou ? g.home : g.away;
   const win = you.score > foe.score;
@@ -3440,6 +3797,17 @@ function finishGame() {
     for (const k of Object.keys(g.stats.sb || {})) ps.sb += g.stats.sb[k];
     for (const k of Object.keys(g.stats.hits)) ps.hits += g.stats.hits[k];
     for (const k of Object.keys(g.stats.ab)) ps.ab += g.stats.ab[k];
+    /* Per-character season stats for the leaderboard. */
+    const per = State.season.perPlayer || (State.season.perPlayer = {});
+    const bumpPer = (k, key, n) => {
+      if (!per[k]) per[k] = { hr:0, hits:0, ab:0, so:0, sb:0 };
+      per[k][key] += n;
+    };
+    for (const [k, v] of Object.entries(g.stats.hr || {})) bumpPer(k, 'hr', v);
+    for (const [k, v] of Object.entries(g.stats.so || {})) bumpPer(k, 'so', v);
+    for (const [k, v] of Object.entries(g.stats.sb || {})) bumpPer(k, 'sb', v);
+    for (const [k, v] of Object.entries(g.stats.hits || {})) bumpPer(k, 'hits', v);
+    for (const [k, v] of Object.entries(g.stats.ab || {})) bumpPer(k, 'ab', v);
     saveSeason(State.season);
   } else if (State.mode === 'playoff' && State.season) {
     /* Record playoff result */
@@ -3842,6 +4210,36 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     }
   }
 
+  /* Catch minigame overlay: appears when a fly ball is coming down toward
+     an outfielder. A small ring shrinks around the landing spot; nail
+     the tightest ring for a catch. */
+  if (g && g.play && g.play.catchActive && g.play.catchWindow) {
+    const cw = g.play.catchWindow;
+    const now = performance.now();
+    const t = clamp((now - cw.startedAt) / cw.duration, 0, 1);
+    const [lx, ly] = [cw.landingX, cw.landingY];
+    /* Green target ring: shrinks as t moves through the middle, widens
+       past the sweet spot. Radius drives visual read of when to click. */
+    const shrink = 1 - 4 * Math.abs(t - 0.5) * (1 - Math.abs(t - 0.5));
+    const rBig = 46;
+    const rSmall = 12;
+    const rNow = rSmall + (rBig - rSmall) * shrink;
+    ctx.strokeStyle = '#5bb083';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(lx, ly, rNow, 0, Math.PI * 2); ctx.stroke();
+    /* Inner sweet ring */
+    ctx.strokeStyle = 'rgba(244,194,90,.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
+    /* Label */
+    ctx.fillStyle = '#f4c25a';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('CATCH IT!', lx, ly - rBig - 12);
+    ctx.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+  }
+
   /* Throw minigame overlay: appears when a grounder is in the field and
      the player has a window to complete the throw. */
   if (g && g.play && g.play.throwActive && g.play.throwWindow) {
@@ -4135,6 +4533,7 @@ function renderGame() {
   abort.onclick = () => {
     if (confirm('End this game and return to the menu?')) {
       endAtBatCleanup();
+      Sound.music.stop();
       State.game = null; State.screen = State.mode==='exhibition' ? 'menu' : 'season-hub';
       render();
     }
