@@ -1861,10 +1861,13 @@ function heatBand(v){
    the CWF world title in year one.
    ============================================================ */
 const SEASON_GOALS = [
-  { id:'reach_tier', label:c=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?`Reach ${nx.name}`:'Reach the top of the business'; },
-    desc:c=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?`Get to ${nx.name} tier: ${nx.rep} rep AND OVR ${nx.minOvr}.`:'You are already there. Keep it.'; },
-    check:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; if(!nx) return true; return c.rep>=nx.rep && ovr(w)>=nx.minOvr; },
-    progress:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; if(!nx) return 100; const rp=clamp((c.rep-TIERS.find(t=>t.id===tierOf(c.rep).id).rep)/(nx.rep-TIERS.find(t=>t.id===tierOf(c.rep).id).rep)*100); const op=clamp(ovr(w)/nx.minOvr*100); return Math.min(rp,op); },
+  { id:'reach_tier',
+    // Target tier is FROZEN at the season start via _season.startTierIdx.
+    // Falls back to the live tier if a save predates that field.
+    label:c=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id))+1; const nx=TIERS[idx]; return nx?`Reach ${nx.name}`:'Reach the top of the business'; },
+    desc:c=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id))+1; const nx=TIERS[idx]; return nx?`Get to ${nx.name} tier: ${nx.rep} rep AND OVR ${nx.minOvr}.`:'You are already there. Keep it.'; },
+    check:(c,w)=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id))+1; const nx=TIERS[idx]; if(!nx) return true; return c.rep>=nx.rep && ovr(w)>=nx.minOvr; },
+    progress:(c,w)=>{ const idx=(c._season&&c._season.startTierIdx!=null?c._season.startTierIdx:TIERS.findIndex(t=>t.id===tierOf(c.rep).id)); const cur=TIERS[idx], nx=TIERS[idx+1]; if(!nx) return 100; const rp=clamp((c.rep-cur.rep)/(nx.rep-cur.rep)*100); const op=clamp(ovr(w)/nx.minOvr*100); return Math.min(rp,op); },
     fit:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?1:0; },
     payout:{coins:1500,standing:6} },
   { id:'world_title', label:c=>`Win the ${beltName()}`,
@@ -1919,6 +1922,8 @@ function assignSeason(){
     goalId: g.id,
     startOvr: ovr(w),
     startRep: c.rep,
+    startTitle: c.title || null,          // for world_title: were you already champ?
+    startTierIdx: TIERS.findIndex(t=>t.id===tierOf(c.rep).id),
     rivalStart: c.rivalId || null,
     rivalWinsAt: c.rivalId ? rel(c.rivalId).wins : 0,
     assignedAt: {y:c.year, w:c.week},
@@ -1944,8 +1949,17 @@ function seasonGrade(p){
   return 'D';
 }
 function seasonReport(){
-  const g = currentSeasonGoal(); if(!g) return null;
-  const {p,done} = seasonProgress();
+  // yearEnd runs AFTER c.year has been incremented, so currentSeasonGoal()
+  // (which requires _season.y === c.year) would return null and the whole
+  // report silently bails. Read _season directly here instead: it still
+  // holds the JUST-completed season until assignSeason overwrites it.
+  const c=G.car, w=G.w;
+  if(!c._season || !c._season.goalId) return null;
+  const g = SEASON_GOALS.find(x=>x.id===c._season.goalId); if(!g) return null;
+  // Progress against the completed season. Recompute using the same check/
+  // progress functions but tolerant of the year having already ticked.
+  const done = g.check(c,w);
+  const p = done ? 100 : Math.round(g.progress(c,w));
   const grade = seasonGrade(p);
   const payout = grade==='S'||done ? g.payout : grade==='A' ? {coins:Math.round(g.payout.coins*0.6), standing:Math.round(g.payout.standing*0.6)} : grade==='B' ? {coins:Math.round(g.payout.coins*0.3), standing:2} : {coins:0, standing:-2};
   return {goal:g, p, done, grade, payout};
@@ -1962,6 +1976,11 @@ function showSeasonReport(){
              : rep.grade==='B' ? 'Fine year. Nothing broken, nothing legendary.'
              : rep.grade==='C' ? 'Below what they wanted. They will notice.'
              :                   'The office is not happy. Prove yourself or the door is on the left.';
+  // Assign the new season BEFORE rendering so we can show the year-just-
+  // finished report AND the year-ahead goal on the same screen. One modal
+  // instead of two back-to-back.
+  assignSeason();
+  const g2 = currentSeasonGoal();
   const body = `<div class="seasonreport">
     <div class="sr-y">Year ${c.year-1} · Season Report</div>
     <div class="sr-grade" style="color:${gradeColor}">${rep.grade}</div>
@@ -1973,8 +1992,11 @@ function showSeasonReport(){
       ${rep.payout.coins ? `<span class="pchip gold" style="animation:none;opacity:1;">+${money(rep.payout.coins)} bonus</span>`:''}
       ${rep.payout.standing ? `<span class="pchip ${rep.payout.standing>0?'gold':'red'}" style="animation:none;opacity:1;">Standing ${rep.payout.standing>0?'+':''}${rep.payout.standing}</span>`:''}
     </div>`:''}
+    ${g2 ? `<div class="sr-next"><div class="sr-y" style="margin-top:6px;">Year ${c.year} · Next</div>
+      <div class="sr-goal" style="font-size:15px;">${g2.label(c)}</div>
+      <div class="hint" style="margin-top:6px;">${g2.desc(c)}</div></div>`:''}
   </div>`;
-  modal(`Year ${c.year-1} in the books`, body, [{label:'Onward',cls:'primary',fn:()=>{ closeModal(); assignSeason(); showSeasonBriefing(); }}]);
+  modal(`Year ${c.year-1} in the books`, body, [{label:'Onward',cls:'primary',fn:closeModal}]);
   return true;
 }
 function showSeasonBriefing(){
@@ -2521,6 +2543,22 @@ const MOVES=window.RTR_MOVES||[], MCATS=window.RTR_MOVE_CATS||[], MTIERS=window.
 const COSM=window.RTR_COSMETICS||[], RAR=window.RTR_RARITY||{}, PACKS=window.RTR_PACKS||[], PAL=window.RTR_PALETTE||{};
 const ERAS=window.RTR_ERAS||[], MENTORS=window.RTR_LEGENDS||[];
 const PROMOS=window.RTR_PROMOS||[], CHARS=window.RTR_CHARS||[], FACTIONS=window.RTR_FACTIONS||[];
+/* World event mutations on CHARS (defections, alignment turns, gimmick
+   rewrites from rival evolution) are LOST on save/load because CHARS is
+   re-seeded from window.RTR_CHARS every time. Persistent overrides live
+   on G.world.charOverrides keyed by char id, applied by rehydrateCharOverrides
+   after load so a defected wrestler stays in their new promo.
+   Use setCharOverride whenever mutating a CHARS entry. */
+function setCharOverride(id, patch){
+  G.world = G.world || {}; G.world.charOverrides = G.world.charOverrides || {};
+  const cur = G.world.charOverrides[id] || {};
+  G.world.charOverrides[id] = Object.assign(cur, patch);
+  const ch = charById(id); if(ch) Object.assign(ch, patch);
+}
+function rehydrateCharOverrides(){
+  const o=(G.world&&G.world.charOverrides)||{};
+  Object.keys(o).forEach(id=>{ const ch=CHARS.find(x=>x.id===id); if(ch) Object.assign(ch, o[id]); });
+}
 function facById(id){ return FACTIONS.find(f=>f.id===id); }
 function myFaction(){ return G&&G.car.faction? facById(G.car.faction):null; }
 function facOf(charId){ return FACTIONS.find(f=>f.leader===charId||f.members.includes(charId)); }
@@ -2714,7 +2752,13 @@ function betray(id){
   G.car.voice=[]; pushVoice(-1); pushVoice(-1);      // you have declared what you are
   G.car.mom=clamp(G.car.mom+16);
   if(G.w.align==='face') completeTurn('heel',`You turned on ${c.name} in front of everybody.`);
-  startStory(id,'will not forget what you did.');
+  // The betrayal overwrites the current story with the ally you just turned
+  // on. Only overwrite if that story is against SOMEONE ELSE; if a story
+  // with this same character is already live (turning on your rival in the
+  // middle of the feud), just escalate it instead of resetting the stage.
+  const st=story();
+  if(st && st.charId===id){ advanceStory(); }
+  else { startStory(id,'will not forget what you did.'); }
   pushLog(`<b>You turned on ${c.name}.</b> ${was} is finished, and the building will be talking about it for a year.`);
   pushInboxItem({ico:pico('knife',18),sev:'story',txt:`<b>The betrayal.</b> You turned on ${c.name}. Nobody saw it coming.`});
   award(`Betrayed ${c.name}.`,pico('knife',36));
@@ -4097,12 +4141,15 @@ function generateWorldEvent(){
     const pool = CHARS.filter(x=>x.promo===from.id && !W.retired[x.id] && (x.over||55)>=48);
     if(!pool.length) return;
     const mover = pool[Math.floor(rnd()*pool.length)];
-    mover.promo = to.id;
+    setCharOverride(mover.id, {promo: to.id});
     newsPush({ico:pico('handshake',14), cat:'defection',
       text:`<b>${mover.name}</b> signs with <b>${to.short}</b>, leaving <b>${from.short}</b> after a long run.`});
     if(mover.id===c.rivalId){
       pushInboxItem({ico:pico('handshake',18),sev:'warn',
         txt:`<b>${mover.name} jumped ship.</b> They just signed with ${to.short}. The feud is on hold unless you follow them.`});
+      // Clear rival + story so the feud actually pauses instead of leaving
+      // a rivalId that houseRoster no longer recognises.
+      c.rivalId = null; G.story = null;
     }
     return;
   }
@@ -4122,7 +4169,7 @@ function generateWorldEvent(){
     if(!pool.length) return;
     const flipper = pool[Math.floor(rnd()*pool.length)];
     const from = flipper.align||'tweener'; const to = from==='face'?'heel':from==='heel'?'face':(rnd()<0.5?'face':'heel');
-    flipper.align = to;
+    setCharOverride(flipper.id, {align: to});
     newsPush({ico:pico('mask',14), cat:'turn',
       text:`<b>${flipper.name}</b> turned <b>${to}</b> at ${(promoById(flipper.promo)||{}).short}. The character is unrecognisable from six months ago.`});
     return;
@@ -4832,6 +4879,7 @@ function continueCareer(){ G=load(); if(!G){ renderHome(); return; }
   G.w.custom=G.w.custom||[]; mergeCustomMoves();
   if(!G.world) initWorld();               // living world state for older saves
   migrateChampions();                     // upgrade champion shape for older saves
+  rehydrateCharOverrides();               // re-apply world event mutations after load
   RNG=(G.car.year*104729+G.car.week*7919+1)>>>0;
   go(G.car.retired?'hof':'career'); }
 
@@ -4869,7 +4917,7 @@ function renderCareer(){
     c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Money in the Bank</span>` : '',
     c.tourn ? `<span class="pchip gold" style="animation:none;opacity:1;"><a href="#" onclick="showBracket();return false;">In ${c.tourn.name}, round ${c.tourn.round}/${c.tourn.rounds}</a></span>` : '',
     c.streak>=3 ? `<span class="pchip" style="animation:none;opacity:1;color:#f0b060;">${pico('fire',12)} ${c.streak}-match streak</span>` : '',
-    c.rec.w||c.rec.l ? `<span class="pchip" style="animation:none;opacity:1;">Record ${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</span>` : '',
+    (c.rec.w+c.rec.l+c.rec.d)>=3 ? `<span class="pchip" style="animation:none;opacity:1;">Record ${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</span>` : '',
   ].filter(Boolean).join('');
   const detailsOpen = G.car._detailsOpen;
   const detailPanel = detailsOpen ? `<div class="vitalsdetail">
@@ -5237,7 +5285,7 @@ function renderWeek(){
         <button class="ghost" onclick="toggleBookingDetail()">${bookDetailsOpen?'Hide':'Show'} the details</button>
         <button class="ghost" onclick="go('backstage')">Backstage</button>
         ${p>0?`<button class="ghost" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'Had your say':'Talk to office'}</button>`:''}
-        ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in MITB</button>`:''}
+        ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' && o.stakes!=='tag_defense' && o.stakes!=='tag_title' && o.stip!=='rumble' && o.stip!=='chamber' && o.stip!=='mitb' ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in MITB</button>`:''}
       </div>
       ${details}
     </div>`;
@@ -5597,7 +5645,9 @@ const STIP_RULES = {
              ends:['ko'],                  danger:1, mod:3, noDQ:true, noCount:true },
   grudge:  { label:'Grudge Match',       desc:'Personal issue. The referee will let a lot go before calling for the bell.',
              ends:['pin','sub'],           danger:.6, mod:2, lenient:true },
-  iron:    { label:'Iron Man Match',      desc:'Most decisions inside the time limit wins. Every fall is by pin or submission.',
+  iquit:   { label:'I Quit Match',       desc:'No pinfalls, no submissions. The only way to win is to make them say the words into the microphone.',
+             ends:['sub'],                 danger:.8, mod:4, noDQ:true, noCount:true, lenient:true },
+  iron:    { label:'Iron Man Match',      desc:'Long-form showcase. Whoever puts them away first walks out with the win, but the crowd is scoring it every minute.',
              ends:['pin','sub'],           danger:.4, mod:5, marquee:true },
   chamber: { label:'Elimination Chamber', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
              ends:['pin','sub'],           danger:1,   mod:6, marquee:true, noDQ:true, noCount:true },
@@ -5650,7 +5700,10 @@ const STORY_STAGES=[
   {n:3,name:'Blow-Off',    label:'It ends. One way or another.'},
   {n:4,name:'Settled',     label:'Whatever it was, it is finished.'},
 ];
-const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Steel Cage','cage',1.2],['Last Man Standing','lms',1.35]];
+// Five entries so a story that reaches stage 4 (advanceStory Math.min(4,…))
+// gets a distinct blow-off stipulation instead of collapsing back onto the
+// Last Man Standing already used at stage 3. Marquee for the blow-off.
+const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Steel Cage','cage',1.2],['Last Man Standing','lms',1.35],['I Quit Match','iquit',1.45]];
 
 function story(){ return G.story||null; }
 function startStory(charId,reason){
@@ -7287,9 +7340,20 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
 }
 
 async function endFight(iWon){
-  if(MS.ended && !MS.finish) return; MS.ended=true;
-  const gen=MS.gen;
-  const stale=()=>!MS||MS.gen!==gen;
+  // Two guards, both matter:
+  //  1. _endCalled catches a re-entry within the SAME match. The old check
+  //     (`MS.ended && !MS.finish`) let a live re-entry through because every
+  //     finish path had already set MS.finish before awaiting endFight,
+  //     causing rec/coins/title logic to fire twice on Skip-during-pin.
+  //  2. gen snapshot at entry catches startFight replacing MS while a
+  //     previous endFight was still pending; otherwise the new match's MS
+  //     would be marked ended before the first move.
+  const startGen = MS && MS.gen;
+  if(!MS || MS._endCalled) return;
+  MS._endCalled = true;
+  MS.ended = true;
+  const gen = startGen;
+  const stale = () => !MS || MS.gen!==gen;
   const noWinner=(iWon==null);
   const W=iWon?'me':'opp', Lz=iWon?'opp':'me';
   busy(true);
@@ -7782,8 +7846,13 @@ function applyMatch(o,res){
   // that we could plausibly chase (world or secondary in our own promo), we
   // book that shot for the next PPV and light up the payoff. SD SYM's
   // "you pinned the champ" beat, verbatim.
+  // res.finish is always the {type, by, move, fin?} object set by
+  // finalizeFight / simMatch, never a bare string. An earlier version of
+  // this check compared res.finish to the string 'pin' and quietly never
+  // fired the whole pin-the-champ chain. The fix reads .type.
+  const finT = (res.finish && res.finish.type) || null;
   const cleanFinish = res.win && !res.dq && !res.countOut && !res.noContest
-    && (res.finish==='pin'||res.finish==='sub'||!res.finish);
+    && (finT==='pin' || finT==='sub' || finT==null);
   if(cleanFinish && o.nonTitleVsChamp && (o.oppTitles||[]).length){
     const mine = (o.oppTitles||[]).filter(t=>t.promoId===(myPromo()||{}).id);
     const target = mine.find(t=>t.kind==='world') || mine[0] || o.oppTitles[0];
@@ -11719,13 +11788,15 @@ function renderBackstage(){
         <div class="bs-nm">${bookerFor(myPromo().id).name}</div>
         <div class="bs-rel" style="color:var(--gold)">Booker</div>
       </div>` : '';
-    const empty = (!bodies && !gmBtn) ? `<div class="hint" style="padding:14px 8px;text-align:center;">Quiet in here.</div>` : '';
+    // Empty rooms are omitted entirely instead of showing "Quiet in here."
+    // Fewer tiles, less noise, and the ones that ARE present feel populated.
+    if(!bodies && !gmBtn) return '';
     return `<div class="bs-room" data-room="${r.id}">
       <div class="bs-room-h"><span class="bs-room-ico">${r.icon}</span> <b>${r.name}</b></div>
       <div class="bs-room-b">${r.blurb}</div>
-      <div class="bs-occ">${gmBtn}${bodies}${empty}</div>
+      <div class="bs-occ">${gmBtn}${bodies}</div>
     </div>`;
-  }).join('');
+  }).filter(Boolean).join('');
   el.innerHTML = `${cause}${budgetChip}<div class="bs-floor">${roomHTML}</div>`;
 }
 /* Open the interaction menu for a wrestler in the backstage. */
@@ -12073,7 +12144,6 @@ function playSegment(seg, onDone){
     <div class="scene-optlist">${opts.map((o,i)=>`
       <div class="scene-opt" data-i="${i}">
         <div class="scene-opt-t">${o.t}</div>
-        <div class="scene-opt-n">${o.note||''}</div>
       </div>`).join('')}</div>
     <div class="scene-walk"><button id="sceneWalkPast">Walk past →</button></div>`;
   back.classList.add('open');
