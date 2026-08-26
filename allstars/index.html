@@ -166,10 +166,23 @@
   .meter-wrap .hint{margin-top:6px;font-size:11px;color:var(--text-dim);
     letter-spacing:.08em;text-align:center;text-transform:uppercase;}
   .meter-wrap .hint b{color:var(--gold);}
-  .pitch-select{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;
+  .pitch-select{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap;
     justify-content:center;}
-  .pitch-select .lbl{color:var(--gold);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
+  .pitch-select .lbl{color:var(--gold);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    display:block;margin-bottom:4px;text-align:center;}
   .pitch-select .btn{padding:8px 12px;font-size:11px;letter-spacing:.14em;}
+  .pitch-select .col{display:flex;flex-direction:column;gap:4px;align-items:center;}
+  .pitch-select .type-row{display:flex;gap:6px;}
+  .zone-grid{display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);
+    gap:2px;background:rgba(255,255,255,.06);padding:3px;border:1px solid var(--line);
+    border-radius:4px;}
+  .zone-grid button{background:rgba(11,16,21,.6);border:1px solid rgba(255,255,255,.10);
+    cursor:pointer;padding:0;transition:background .1s;}
+  .zone-grid button:hover{background:rgba(244,194,90,.35);border-color:var(--gold);}
+  .zone-grid button.corner{background:rgba(11,16,21,.85);}
+  .zone-grid button.mid{background:rgba(91,176,131,.15);}
+  .zone-grid button.center{background:rgba(91,176,131,.30);}
+  .zone-grid button.selected{background:var(--gold);border-color:var(--gold);}
   .swing-btn{display:none;width:100%;margin-top:10px;padding:16px;font-size:16px;
     background:var(--gold);color:#1a1108;border:0;border-radius:6px;font-weight:900;
     letter-spacing:.28em;cursor:pointer;font-family:inherit;text-transform:uppercase;}
@@ -2095,7 +2108,15 @@ function startAtBat() {
   const b = currentBatter();
   g.batterCtx = batterContext(b);
   for (const note of g.batterCtx.notes) addLog(note, true);
-  showCallout(`${b.n} steps in`, 'sub');
+  if (g.batterCtx.flags.spinach) {
+    showCallout('SPINACH TIME', 'homer');
+    g.signature = { kind: 'anchor', until: performance.now() + 1400 };
+    Sound.play('homer');
+  } else if (g.batterCtx.flags.transformed) {
+    showCallout('HYDE TRANSFORMS', 'strike');
+  } else {
+    showCallout(`${b.n} steps in`, 'sub');
+  }
   refreshHud();
   if (playerIsBatting()) {
     setTimeout(throwPitch, BEAT.intoAtBat);
@@ -2105,26 +2126,48 @@ function startAtBat() {
   }
 }
 
-/* When the CPU bats, the player picks what the pitcher throws. Buttons
-   appear under the meter; no pick within four seconds and the pitcher
-   shakes off the sign and throws his own choice, so the game never
-   stalls. The chosen pitch matters: each CPU batter has a hidden weak
-   pitch for the at bat, and hitting it wrecks their timing. */
+/* When the CPU bats, the player picks the pitch and the target zone. Two
+   picks needed; the pitch fires as soon as both are chosen, or after
+   five seconds with default values so the game never stalls. The
+   selected pitch type matters (each CPU batter has a hidden weak
+   pitch), and the target zone shifts both the ideal meter spot and
+   the CPU batter's read: corners are hard to square up but risk a
+   ball. */
 function offerPitchSelection() {
   const g = State.game;
   if (!g || g.over) return;
   const row = document.getElementById('pitch-select');
   if (!row) return throwPitch();
   row.style.display = '';
-  const done = (pt) => {
+  let chosenPt = null, chosenZone = null;
+  let done = false;
+  const fire = () => {
+    if (done) return;
+    done = true;
     row.style.display = 'none';
     clearTimeout(timer);
     for (const btn of row.querySelectorAll('button')) btn.onclick = null;
-    throwPitch(pt);
+    /* Sensible defaults so the game never stalls: fastball down the middle. */
+    throwPitch(chosenPt || 'fastball', chosenZone == null ? 4 : chosenZone);
   };
-  const timer = setTimeout(() => done(undefined), 4000);
-  for (const btn of row.querySelectorAll('button')) {
-    btn.onclick = (e) => { e.stopPropagation(); done(btn.dataset.pt); };
+  const timer = setTimeout(fire, 5000);
+  for (const btn of row.querySelectorAll('button[data-pt]')) {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      chosenPt = btn.dataset.pt;
+      for (const b of row.querySelectorAll('button[data-pt]')) b.classList.remove('selected');
+      btn.classList.add('selected');
+      if (chosenZone != null) fire();
+    };
+  }
+  for (const btn of row.querySelectorAll('button[data-zone]')) {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      chosenZone = parseInt(btn.dataset.zone, 10);
+      for (const b of row.querySelectorAll('button[data-zone]')) b.classList.remove('selected');
+      btn.classList.add('selected');
+      if (chosenPt) fire();
+    };
   }
 }
 
@@ -2132,6 +2175,7 @@ function offerPitchSelection() {
    resolver reads, so per at bat modifiers (Hyde's transformation, etc.)
    never mutate the underlying ROSTER entry. */
 function batterContext(b) {
+  const g = State.game;
   const ctx = { pow: b.pow, con: b.con, spd: b.spd, notes: [], flags: {} };
   if (b.quirk === 'transform' && Math.random() < 0.16) {
     ctx.pow = Math.max(ctx.pow, 96);
@@ -2139,10 +2183,28 @@ function batterContext(b) {
     ctx.notes.push(`${b.n} transforms. All power, no manners.`);
     ctx.flags.transformed = true;
   }
+  /* Popeye eats his spinach once per game, on his third plate appearance.
+     Roman announces it with a callout, and his POW/CON spike for that
+     at bat only. Big signature moment. */
+  if (b.k === 'popeye') {
+    g.popeyeApps = (g.popeyeApps || 0) + 1;
+    if (g.popeyeApps === 3 && !g.popeyeSpinach) {
+      g.popeyeSpinach = true;
+      ctx.pow = 100;
+      ctx.con = Math.max(ctx.con, 88);
+      ctx.notes.push('Popeye eats his spinach!');
+      ctx.flags.spinach = true;
+    }
+  }
+  /* Dracula bats at night: he tunes up as innings pile on (his stats
+     rise a hair per inning past the third, mirroring pitcher fatigue). */
+  if (b.k === 'dracula' && g.inning >= 4) {
+    ctx.pow = Math.min(100, ctx.pow + (g.inning - 3) * 2);
+  }
   return ctx;
 }
 
-function throwPitch(chosenPt) {
+function throwPitch(chosenPt, chosenZone) {
   const g = State.game;
   if (g.over) return;
   const diff = DIFF[State.difficulty];
@@ -2170,16 +2232,46 @@ function throwPitch(chosenPt) {
   if (batter.quirk === 'confuse') {
     wobble += (Math.random() - 0.5) * 0.14;
   }
-  const ideal = clamp(idealBase + wobble, 0.28, 0.78);
+  let ideal = clamp(idealBase + wobble, 0.28, 0.78);
   /* Ball is a strike or a ball. The pitcher's control determines it, minus
      any accumulated fatigue for this pitcher over the game. */
   const strikeProb = 0.55 + (pitcher.con || pitcher.def*0.4) / 300 - fatigue.strikeDrop;
-  const isStrike = Math.random() < clamp(strikeProb, 0.4, 0.85);
+  let isStrike = Math.random() < clamp(strikeProb, 0.4, 0.85);
+
+  /* Aim: player-chosen 3x3 zone (0..8; 4 = center) shifts the ideal meter
+     spot horizontally and lowers the CPU batter's contact against corners.
+     A pitcher's CON stat determines whether they land the pitch in the
+     called zone or miss (which flips it to a ball on corner calls). */
+  let zoneAim = null;
+  if (chosenZone != null && chosenZone >= 0 && chosenZone < 9) {
+    const col = chosenZone % 3;         /* 0 in, 1 mid, 2 out */
+    const row = Math.floor(chosenZone / 3);  /* 0 high, 1 mid, 2 low */
+    const isCorner = col !== 1 && row !== 1;
+    const isEdge = !isCorner && chosenZone !== 4;
+    zoneAim = { col, row, isCorner, isEdge };
+    /* Push the ideal spot toward the corner: inside high shifts one way,
+       outside low the other, so the meter target isn't always centered. */
+    ideal += (col - 1) * 0.06 + (row - 1) * 0.02;
+    ideal = clamp(ideal, 0.18, 0.86);
+    /* The pitcher's control decides if the pitch lands in the called
+       zone. Miss the corner and it's a ball. */
+    const landRoll = Math.random();
+    const controlChance = 0.55 + (pitcher.con || 50) / 250 - fatigue.strikeDrop
+                       - (isCorner ? 0.20 : isEdge ? 0.08 : 0);
+    if (landRoll > clamp(controlChance, 0.30, 0.95)) {
+      /* Missed the spot: center pitches still land for strikes, corner
+         and edge misses become balls. */
+      if (isCorner || isEdge) isStrike = false;
+    } else {
+      isStrike = true;
+    }
+  }
   /* Windup: the meter is on screen but does not sweep for a beat. This is
      the player's chance to see the pitcher, the pitch type, the ideal spot,
      and settle. `start` gets set when the sweep actually begins. */
   g.pitch = {
     pt, speed: baseSpeed, ideal, isStrike,
+    zoneAim,
     start: performance.now() + BEAT.windup,
     windupUntil: performance.now() + BEAT.windup,
     swung: false,
@@ -2255,6 +2347,11 @@ function scheduleCpuSwing() {
   let jitter = conJitter + diffJitter;
   /* Weak pitch: CPU whiffs badly on their weak pitch. */
   if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;
+  /* Corner / edge pitches are harder to square up. */
+  if (p.zoneAim) {
+    if (p.zoneAim.isCorner) jitter += 0.12;
+    else if (p.zoneAim.isEdge) jitter += 0.06;
+  }
   /* Fresh pitcher vs gassed pitcher moves the needle the other way. */
   const fat = pitcherFatigue();
   jitter -= fat.level * 0.02;
@@ -2437,6 +2534,8 @@ function scheduleContactPlay(kind, batter) {
   const g = State.game;
   /* Bat meets ball. The crack fires immediately, before the ball travels. */
   Sound.play('crack');
+  const throwable = kind === 'ground out' && !playerIsBatting();
+  if (throwable) return scheduleThrowMinigame(kind, batter);
   /* Errors: on a ground or fly out, roll against the fielding team's DEF.
      A low-defense team lets the batter reach on a mishandled ball. */
   let effective = kind;
@@ -2491,6 +2590,22 @@ function scheduleContactPlay(kind, batter) {
       confettiBurst(g, geo.cx, geo.cy);
       g.shakeUntil = performance.now() + 500;
       Sound.play('homer');
+      /* Signature moments per character. Trigger a stronger celebration
+         for the marquees: Kong shakes the yard longer, Dracula's swarm
+         darkens the crowd, Franky flexes hard on the way to home. */
+      const who = g.play.batter && g.play.batter.k;
+      if (who === 'kong') {
+        g.shakeUntil = performance.now() + 900;
+        g.signature = { kind: 'chest', until: performance.now() + 1600 };
+        Sound.play('crack');   /* double-thump */
+        setTimeout(() => Sound.play('crack'), 180);
+      } else if (who === 'dracula') {
+        g.signature = { kind: 'bats', until: performance.now() + 1400 };
+      } else if (who === 'franky') {
+        g.signature = { kind: 'flex', until: performance.now() + 1200 };
+      } else if (who === 'popeye') {
+        g.signature = { kind: 'anchor', until: performance.now() + 1200 };
+      }
     } else if (g.play.kind === 'fly out') {
       gloveFlash(g, landingX, landingY);
       dustPuff(g, landingX, landingY);
@@ -2596,6 +2711,134 @@ function applyOutMutation(kind, batter) {
   g.outs++;
   addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
   showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
+}
+
+/* -------- Throw minigame --------
+   Grounders when the player is fielding play out in two stages: the ball
+   goes to a fielder, then the player has a small window to time a throw
+   to first. The meter is a moving cursor against a green zone (safe out),
+   a wider yellow zone (infield single, batter reaches on a slow play),
+   and everything outside (error, batter safe and any runners take an
+   extra base). Fielder DEF widens the green zone. */
+
+function scheduleThrowMinigame(kind, batter) {
+  const g = State.game;
+  const traj = ballTrajectory(kind);
+  const isOut = true;
+  const preBases = [...g.bases];
+  g.play = {
+    kind, batter, isOut,
+    ball: traj,
+    startedAt: performance.now(),
+    swingUntil: performance.now() + 240,
+    ballUntil: performance.now() + traj.duration,
+    runnerStart: performance.now() + Math.max(180, traj.duration - 400),
+    runnerUntil: performance.now() + traj.duration + 600,
+    preBases,
+    batterPath: batterPathIndices(kind),
+    runnerPaths: preBases.map((r, i) => r ? existingRunnerPathIndices(i, kind) : null),
+    applied: false,
+    throwActive: false,
+  };
+
+  const geo = fieldGeom();
+  const angle = Math.atan2(traj.dy * geo.r, traj.dx * geo.r);
+  const landingX = geo.cx + Math.cos(angle) * geo.r * 0.9;
+  const landingY = geo.cy + Math.sin(angle) * geo.r * 0.9;
+
+  /* At ball-arrival time, spawn dust and open the throw window. */
+  setTimeout(() => {
+    if (!g.play || g.play.applied) return;
+    dustPuff(g, landingX, landingY, 'rgba(205,170,120,.9)');
+    Sound.play('catch');
+    startThrowWindow(kind, batter);
+  }, traj.duration);
+}
+
+function startThrowWindow(kind, batter) {
+  const g = State.game;
+  if (!g.play) return;
+  /* Overall fielding rating for the team's infield (average of DEF for
+     four infielders): better fielders = wider safe zone. */
+  const fs = currentFieldingTeam().batters;
+  const infield = [fs[2], fs[3], fs[4], fs[5]].filter(Boolean);
+  const avgDef = infield.reduce((a, c) => a + c.def, 0) / (infield.length || 1);
+  const window = {
+    ideal: 0.55 + (Math.random() - 0.5) * 0.2,   /* wobbly target each throw */
+    greenHalf: 0.06 + (avgDef - 50) / 800,
+    yellowHalf: 0.14,
+    duration: 1600,
+    startedAt: performance.now(),
+    resolved: false,
+  };
+  g.play.throwActive = true;
+  g.play.throwWindow = window;
+
+  const finish = (t) => {
+    if (window.resolved) return;
+    window.resolved = true;
+    g.play.throwActive = false;
+    document.removeEventListener('keydown', onKey);
+    document.removeEventListener('click', onClick, true);
+    const d = Math.abs(t - window.ideal);
+    let outcome;
+    if (d <= window.greenHalf) outcome = 'out';
+    else if (d <= window.yellowHalf) outcome = 'single';
+    else outcome = 'error';
+    resolveThrow(outcome, kind, batter);
+  };
+  const onClick = (e) => {
+    if (window.resolved) return;
+    const t = clamp((performance.now() - window.startedAt) / window.duration, 0, 1);
+    finish(t);
+  };
+  const onKey = (e) => {
+    if (e.code === 'Space') { e.preventDefault(); onClick(e); }
+  };
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('click', onClick, true);
+  /* If the player doesn't throw in time, fielder holds it: batter safe. */
+  setTimeout(() => finish(-1), window.duration + 20);
+}
+
+function resolveThrow(outcome, kind, batter) {
+  const g = State.game;
+  if (!g.play || g.play.applied) return;
+  g.play.applied = true;
+  if (outcome === 'out') {
+    applyOutMutation('ground out', batter);
+  } else if (outcome === 'single') {
+    /* Batter reaches on a slow play; runners advance one. */
+    addLog(`${batter.n} beats the throw. Infield single.`);
+    showCallout('INFIELD SINGLE', 'hit');
+    Sound.play('cheer');
+    applyHitMutation('single', batter);
+  } else {
+    /* Error: batter to first, everyone else advances an extra base. */
+    addLog(`Throwing error. ${batter.n} safe, runners advance.`);
+    showCallout('ERROR', 'strike');
+    Sound.play('aww');
+    applyErrorMutation(batter);
+  }
+  refreshHud();
+}
+
+function applyErrorMutation(batter) {
+  const g = State.game;
+  statBump(batter.k, 'ab');
+  /* All runners advance two, batter to first. */
+  let scored = 0;
+  const newBases = [null, null, null];
+  for (let i = 2; i >= 0; i--) {
+    const runner = g.bases[i];
+    if (!runner) continue;
+    const dest = i + 2;
+    if (dest >= 3) scored++;
+    else newBases[dest] = runner;
+  }
+  newBases[0] = batter;
+  g.bases = newBases;
+  if (scored) scoreRuns(scored);
 }
 
 function afterHitTransition(kind) {
@@ -3126,6 +3369,94 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     drawBaseball(ctx, ballX, ballY);
   }
 
+  /* Signature moment overlays: character-specific spectacle that lands
+     on top of the field during a big at bat. Each one runs for its
+     own window and clears itself. */
+  if (g && g.signature) {
+    const sig = g.signature;
+    const now = performance.now();
+    if (now < sig.until) {
+      const rem = (sig.until - now) / 1600;
+      const alpha = clamp(rem * 1.4, 0, 1);
+      if (sig.kind === 'chest') {
+        /* KONG chest beat: darken the field, thump text scales in. */
+        ctx.fillStyle = `rgba(0,0,0,${0.35 * alpha})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.font = `bold ${Math.floor(84 - rem * 30)}px monospace`;
+        ctx.fillStyle = `rgba(255,220,140,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('THUMP!', cx, cy - 40);
+        ctx.font = 'bold 36px monospace';
+        ctx.fillText('THUMP!', cx + 90, cy + 40);
+      } else if (sig.kind === 'bats') {
+        /* DRACULA bat swarm: scattered black bats fluttering across. */
+        for (let i = 0; i < 22; i++) {
+          const off = (i * 137 + Math.floor(now / 30)) % 360;
+          const bx = ((off * 3) % w);
+          const by = ((off * 5) % h);
+          ctx.fillStyle = `rgba(20,10,20,${alpha})`;
+          ctx.fillRect(bx, by, 6, 2);
+          ctx.fillRect(bx - 3, by + 2, 12, 2);
+        }
+        ctx.font = 'bold 40px serif';
+        ctx.fillStyle = `rgba(196,50,50,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('~ NIGHT FALLS ~', cx, cy - 60);
+      } else if (sig.kind === 'flex') {
+        /* FRANKY flex: green flash + bolts */
+        ctx.fillStyle = `rgba(126,168,106,${0.28 * alpha})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.font = 'bold 48px monospace';
+        ctx.fillStyle = `rgba(201,162,86,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('IT LIVES', cx, cy - 20);
+      } else if (sig.kind === 'anchor') {
+        /* POPEYE anchor: forearm silhouette + horn */
+        ctx.fillStyle = `rgba(198,57,44,${0.22 * alpha})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.font = 'bold 44px monospace';
+        ctx.fillStyle = `rgba(255,235,180,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('AH-GA-GA-GA-GA!', cx, cy - 20);
+      }
+    } else {
+      g.signature = null;
+    }
+  }
+
+  /* Throw minigame overlay: appears when a grounder is in the field and
+     the player has a window to complete the throw. */
+  if (g && g.play && g.play.throwActive && g.play.throwWindow) {
+    const win = g.play.throwWindow;
+    const now = performance.now();
+    const t = clamp((now - win.startedAt) / win.duration, 0, 1);
+    const barW = w * 0.5;
+    const barX = cx - barW/2;
+    const barY = h * 0.90;
+    const barH = 22;
+    /* Background */
+    ctx.fillStyle = 'rgba(11,16,21,.92)';
+    ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + 34);
+    /* Yellow zone */
+    ctx.fillStyle = 'rgba(244,194,90,.36)';
+    ctx.fillRect(barX + (win.ideal - win.yellowHalf) * barW, barY,
+                 win.yellowHalf * 2 * barW, barH);
+    /* Green zone */
+    ctx.fillStyle = 'rgba(91,176,131,.72)';
+    ctx.fillRect(barX + (win.ideal - win.greenHalf) * barW, barY,
+                 win.greenHalf * 2 * barW, barH);
+    /* Cursor */
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(barX + t * barW - 2, barY - 3, 4, barH + 6);
+    /* Label */
+    ctx.fillStyle = '#f4c25a';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+  }
+
   /* Pitcher fatigue chip in the top strip so a player can see it. */
   if (g && !g.play) {
     const fat = pitcherFatigue();
@@ -3319,15 +3650,27 @@ function renderGame() {
   meter.appendChild(hint);
 
   /* Pitch-selection strip: hidden by default, shown only during the CPU's
-     at bat windup by offerPitchSelection(). */
+     at bat windup by offerPitchSelection(). Two picks: pitch type and
+     target location on a 3 by 3 strike zone grid. Center pitches are
+     easier for the CPU to square up but always strikes; corner and edge
+     pitches are harder to hit but can turn into balls if you miss. */
   const psel = el('div','pitch-select');
   psel.id = 'pitch-select';
   psel.style.display = 'none';
+  const zoneGridCells = [
+    'corner','mid','corner',
+    'mid','center','mid',
+    'corner','mid','corner',
+  ];
+  const zoneHtml = zoneGridCells.map((cls,i) => `<button class="${cls}" data-zone="${i}" title="Aim here"></button>`).join('');
   psel.innerHTML =
-      `<span class="lbl">Call your pitch</span>`
+      `<div class="col"><span class="lbl">Pitch</span><div class="type-row">`
     + `<button class="btn ghost" data-pt="fastball">Fastball</button>`
     + `<button class="btn ghost" data-pt="curveball">Curveball</button>`
-    + `<button class="btn ghost" data-pt="changeup">Changeup</button>`;
+    + `<button class="btn ghost" data-pt="changeup">Changeup</button>`
+    + `</div></div>`
+    + `<div class="col"><span class="lbl">Location</span>`
+    + `<div class="zone-grid" id="zone-grid">${zoneHtml}</div></div>`;
   meter.appendChild(psel);
 
   /* Big touch-friendly SWING button under the meter, for phones and
