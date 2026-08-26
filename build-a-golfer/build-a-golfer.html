@@ -26331,28 +26331,52 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
   g.sx=Math.max(1.8, Math.min(3.2, g.vy*2.6));
   g.t=(y)=>1-HV_TAPER*Math.max(0,Math.min(1,y/g.span));      // far-end perspective taper
   g.ry=(r)=>r*Math.max(g.vy, g.sx*0.42);                     // hazard vertical radius (never pancakes on long holes)
-  // dogleg: severity scales with the course's tendency; direction leans its famous way. A real dogleg
-  // TURNS at a corner - a straight leg off the tee, then a straight diagonal leg to the green - rather
-  // than bowing the whole way (the old smoothstep read as a gentle S-curve). Some holes play dead straight.
-  const dir=(hh(1)+st.bias*0.28)<0.5?-1:1;
-  const straight=(par!==3 && hh(50)<0.22);                            // ~1 in 5 non-par-3s is dead straight
-  const mag=(par===3||straight)?0:Math.round((10+hh(21)*(par===5?42:30))*st.dog)*dir;
-  g.bend=mag;
-  const cf=0.36+hh(51)*0.22;                                          // the corner sits 36-58% down the hole
-  const sShape=(par===5 && hh(22)<st.sshape);
-  g.cx=(y)=>{ if(par===3||!mag) return 0;
-    if(!sShape){ const cY=L*cf; if(y<=cY) return 0;                   // straight leg off the tee...
-      const t=Math.min(1,(y-cY)/(L-cY));
-      return mag*(t*0.7 + (t*t*(3-2*t))*0.3); }                       // ...then a mostly-straight diagonal leg to the green (elbow softly rounded)
-    // double dogleg (some par-5s): out one way past the first corner, back the other into the green
-    const f1=Math.max(0,Math.min(1,(y-L*0.24)/(L*0.24))), e1=f1*f1*(3-2*f1);
-    const f2=Math.max(0,Math.min(1,(y-L*0.60)/(L*0.24))), e2=f2*f2*(3-2*f2);
-    return mag*e1 - mag*1.7*e2; };
   // fairway width PROFILE: base width by course (now a much wider hole-to-hole spread) shaped along the
   // hole by a broad driving-zone flare, a distinct neck pinch, and a rippled (non-parallel) edge - so
   // fairways vary in thickness both course-to-course AND within a hole, and read organic, not squared-off.
   const baseW=(24+hh(2)*20)*st.fw;
   g.fwW=baseW;
+  // green: size AND shape vary per hole - an overall size roll × the course's green-size character, and an
+  // aspect ratio ranging from wide-and-shallow to deep-and-narrow (area kept roughly constant), plus a
+  // per-hole irregularity so outlines aren't near-circular (Redan-ish, kidney, long tongue, etc.).
+  // Sized BEFORE the dogleg on purpose: the bend's in-frame clamp needs the fairway width and the green.
+  const gArea=(12.5+hh(5)*2.5)*st.gsz*(0.84+hh(55)*0.46), gAsp=0.66+hh(6)*0.9;
+  g.greenR=[gArea*Math.sqrt(gAsp), gArea/Math.sqrt(gAsp)];
+  g.greenIrr=0.13+hh(56)*0.15;
+  // dogleg: severity scales with the course's tendency; direction leans its famous way. A real dogleg
+  // TURNS at a corner - a straight leg off the tee, then a straight diagonal leg to the green - rather
+  // than bowing the whole way (the old smoothstep read as a gentle S-curve). Some holes play dead straight.
+  // The mechanism was right but the AMPLITUDE read as a lean, so it is raised and given a tail of holes
+  // that bend genuinely hard, and the elbow is tightened - then clamped per hole (below) so the fairway
+  // and the green can never leave the camera however far the hole turns.
+  const dir=(hh(1)+st.bias*0.28)<0.5?-1:1;
+  const straight=(par!==3 && hh(50)<0.22);                            // ~1 in 5 non-par-3s is dead straight
+  const sev=(hh(57)<0.26)?(1.45+hh(58)*0.4):1;                        // ~1 in 4 bends hard: the holes that deserve it
+  let mag=(par===3||straight)?0:Math.round((15+hh(21)*(par===5?62:46))*st.dog*sev)*dir;
+  const cf=0.36+hh(51)*0.22;                                          // the corner sits 36-58% down the hole
+  const sShape=(par===5 && hh(22)<st.sshape);
+  g.cx=(y)=>{ if(par===3||!mag) return 0;
+    if(!sShape){ const cY=L*cf; if(y<=cY) return 0;                   // straight leg off the tee...
+      const t=Math.min(1,(y-cY)/(L-cY));
+      return mag*(t*0.82 + (t*t*(3-2*t))*0.18); }                     // ...then a straight diagonal leg to the green (the elbow only softly rounded)
+    // double dogleg (some par-5s): out one way past the first corner, back the other into the green
+    const f1=Math.max(0,Math.min(1,(y-L*0.24)/(L*0.24))), e1=f1*f1*(3-2*f1);
+    const f2=Math.max(0,Math.min(1,(y-L*0.60)/(L*0.24))), e2=f2*f2*(3-2*f2);
+    return mag*e1 - mag*1.7*e2; };
+  // IN-FRAME GUARANTEE: walk the centreline and shrink the bend until the fairway edge - and, at the
+  // green, the green's own half-width - still sits inside HV_CAM. g.cx reads `mag`, so scaling it
+  // re-shapes the hole in place: a hard turn is drawn as hard as the frame allows and never further.
+  if(mag){
+    const lim=(HV_CAM[2]/2)-14;
+    let s=1;
+    for(let i=0;i<=24;i++){ const y=L*i/24, c=Math.abs(g.cx(y));
+      if(c<0.5) continue;
+      const half=(y>L-10)?Math.max(baseW*0.62, g.greenR[0]+6):baseW*0.62;
+      const allow=lim/(g.sx*g.t(y)) - half;
+      if(allow<c) s=Math.min(s, Math.max(0,allow)/c); }
+    if(s<1) mag=Math.round(mag*s);
+  }
+  g.bend=mag;
   const lzY=L*(0.32+hh(52)*0.14);                                     // driving landing zone (widest point)
   const lzAmt=0.16+hh(53)*0.24;
   const neckY=L*(0.58+hh(23)*0.22);                                   // a neck somewhere past the flare
@@ -26362,13 +26386,7 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
     w*=1-neckAmt*Math.exp(-Math.pow((y-neckY)/(L*0.09),2));           // pinch at the neck
     w*=1+0.11*Math.sin(y*0.052+hh(26)*6)+0.055*Math.sin(y*0.14+hh(54)*6);   // organic wavy edge (not parallel)
     return Math.max(baseW*0.17, w); };
-  // green: sized by course, sometimes tucked left/right of the fairway line (clamped in frame)
-  // green: size AND shape vary per hole - an overall size roll × the course's green-size character, and an
-  // aspect ratio ranging from wide-and-shallow to deep-and-narrow (area kept roughly constant), plus a
-  // per-hole irregularity so outlines aren't near-circular (Redan-ish, kidney, long tongue, etc.).
-  const gArea=(12.5+hh(5)*2.5)*st.gsz*(0.84+hh(55)*0.46), gAsp=0.66+hh(6)*0.9;
-  g.greenR=[gArea*Math.sqrt(gAsp), gArea/Math.sqrt(gAsp)];
-  g.greenIrr=0.13+hh(56)*0.15;
+  // the green is sometimes tucked left/right of the fairway line (clamped in frame)
   const maxOff=Math.max(0,(HV_W/2-26)/(g.sx*g.t(L)) - g.greenR[0] - Math.abs(g.cx(L)));
   const goff=(hh(27)<0.5?-1:1)*Math.min(maxOff,(hh(28)<0.35?(6+hh(29)*8):0));
   g.gcx=g.cx(L)+goff;
