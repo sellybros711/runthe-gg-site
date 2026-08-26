@@ -226,6 +226,35 @@
   .titlebelt.mine .tb-c b{color:var(--gold);}
   .titleq{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.08);display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
   .titleq .qman{font-size:11px;color:var(--text-dim);padding:2px 7px;background:rgba(255,255,255,.04);border-radius:9px;}
+  .rankcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .rankrow{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line);}
+  .rankrow:last-child{border-bottom:0;}
+  .rankrow.me{background:rgba(224,179,65,.10);}
+  .rank-n{font-family:var(--mono);font-size:15px;font-weight:800;color:var(--text-dim);width:26px;text-align:right;}
+  .rankrow.me .rank-n{color:var(--gold);}
+  .rank-name{flex:1;font-size:13.5px;color:var(--cream);}
+  .rank-o{font-family:var(--mono);font-size:13.5px;color:var(--gold);}
+  .bs-ppvcard{margin-bottom:12px;padding:10px 12px;border:1px solid rgba(224,179,65,.4);border-radius:9px;background:linear-gradient(180deg,rgba(224,179,65,.08),transparent 65%);}
+  .bs-ppvcard-h{font-family:var(--display);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .bs-ppvcard-r{font-size:12.5px;color:var(--text);padding:4px 0;border-top:1px dashed rgba(255,255,255,.06);}
+  .bs-ppvcard-r:first-of-type{border-top:0;padding-top:0;}
+  .bs-ppvcard-r.bs-ppvcard-me{color:var(--cream);font-weight:600;padding-top:8px;margin-top:6px;border-top:1px solid rgba(224,179,65,.35);display:flex;align-items:center;gap:6px;}
+  .arcbadge{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;font-family:var(--display);}
+  .brewlist{display:flex;flex-direction:column;gap:6px;}
+  .brewrow{background:var(--panel);border:1px solid var(--line);border-left:2px solid rgba(198,57,44,.55);border-radius:6px;padding:8px 11px;cursor:pointer;transition:border-color .15s;}
+  .brewrow:hover{border-color:rgba(198,57,44,.9);}
+  .brewv{font-size:12.5px;color:var(--cream);}
+  .brewv b{color:var(--cream);}
+  .slotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+  .slot{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;cursor:pointer;transition:border-color .15s;}
+  .slot:hover{border-color:rgba(224,179,65,.7);}
+  .slot.active{border-color:rgba(224,179,65,.8);background:rgba(224,179,65,.08);}
+  .slot-empty{opacity:.7;font-style:italic;}
+  .slot-empty:hover{opacity:1;font-style:normal;}
+  .slot-i{font-family:var(--display);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);}
+  .slot.active .slot-i{color:var(--gold);}
+  .slot-t{font-size:13.5px;color:var(--cream);margin-top:2px;font-weight:600;}
+  .slot-s{font-size:11px;color:var(--text-dim);margin-top:3px;}
   /* Backstage floor plan */
   .bs-budget{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;}
   .bs-budget-k{font-family:var(--display);letter-spacing:.14em;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;}
@@ -1570,7 +1599,10 @@
 <div class="screen" id="s-hof">
   <h2>Career Complete</h2>
   <div id="hofBody"></div>
-  <div class="row" style="margin-top:18px;"><button class="big" onclick="newCareerConfirm()">Start A New Career</button></div>
+  <div class="row" style="margin-top:18px;gap:10px;flex-wrap:wrap;">
+    <button class="big" onclick="startNextChapter()">Begin The Next Chapter →</button>
+    <button class="ghost" onclick="newCareerConfirm()">Start A New Career</button>
+  </div>
 </div>
 </main>
 
@@ -1610,6 +1642,25 @@
    Single save, localStorage. Attributes + moves are EARNED.
    ============================================================ */
 const SAVE='rtr_baw_v1', SCHEMA=1;
+// Multi-slot save layer. The original SAVE key is treated as slot 0 for
+// back-compat; slots 1..3 add rtr_baw_v1_s1 / s2 / s3. The active slot is
+// remembered under rtr_baw_slot. All existing save()/load() paths route
+// through activeSaveKey() so no caller needs to know slots exist.
+const SLOT_KEYS = ['rtr_baw_v1','rtr_baw_v1_s1','rtr_baw_v1_s2','rtr_baw_v1_s3'];
+const SLOT_META = 'rtr_baw_slot';
+function activeSlot(){ try{ const s = +(localStorage.getItem(SLOT_META)||0); return (s>=0 && s<SLOT_KEYS.length)? s : 0; }catch(_){ return 0; } }
+function setActiveSlot(i){ try{ localStorage.setItem(SLOT_META, String(i|0)); }catch(_){} }
+function activeSaveKey(){ return SLOT_KEYS[activeSlot()] || SAVE; }
+function slotSummary(i){
+  try{
+    const raw = localStorage.getItem(SLOT_KEYS[i]); if(!raw) return null;
+    const o = JSON.parse(raw); const c=o&&o.car, w=o&&o.w;
+    if(!c||!w) return null;
+    return { slot:i, name:w.name, promo:(o.car.deal&&o.car.deal.promo)||'', year:c.year, week:c.week,
+             age:c.age, rec:c.rec||{w:0,l:0,d:0}, retired:!!c.retired, savedAt:o.savedAt||0 };
+  }catch(_){ return null; }
+}
+function listSlots(){ return SLOT_KEYS.map((_,i)=>slotSummary(i)); }
 const WEEKS_PER_YEAR=40;
 const ATTRS=[['po','Power'],['te','Technique'],['ae','Aerial'],['ch','Charisma'],['ps','Psychology'],['to','Toughness'],['st','Stamina']];
 // `base` = the effective level of opposition at that tier. `minOvr` means you are
@@ -2836,12 +2887,12 @@ function save(){
   if(!G) return;
   try{
     G.savedAt = Date.now();
-    localStorage.setItem(SAVE,JSON.stringify(G));
+    localStorage.setItem(activeSaveKey(),JSON.stringify(G));
   }catch(e){ console.warn('RTR: save failed',e); }
 }
 function load(){
   try{
-    const r=localStorage.getItem(SAVE); if(!r) return null;
+    const r=localStorage.getItem(activeSaveKey()); if(!r) return null;
     const o=JSON.parse(r);
     return (o&&o.schema===SCHEMA)? migrate(o) : null;
   }catch(e){ console.warn('RTR: load failed',e); return null; }
@@ -3506,7 +3557,7 @@ let CREATE={style:'allrounder', look:Object.assign({},DEFLOOK)};
 
 function startCreate(){
   if(load()){ modal('Start a new career?','This erases your current wrestler and their whole career. This cannot be undone.',
-    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doStartCreate();}}]); return; }
+    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(activeSaveKey()); doStartCreate();}}]); return; }
   doStartCreate();
 }
 function doStartCreate(){
@@ -3584,7 +3635,7 @@ function doQuickStart(){
 }
 function quickStart(){
   if(load()){ modal('Start a new career?','This erases your current wrestler and their whole career. This cannot be undone.',
-    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(SAVE); doQuickStart();}}]); return; }
+    [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'Erase & Start',fn:()=>{closeModal(); localStorage.removeItem(activeSaveKey()); doQuickStart();}}]); return; }
   doQuickStart();
 }
 /* The archetype cards used to read "+11 PO · +6 TO", which tells you nothing
@@ -4050,6 +4101,7 @@ function worldTick(){
   // Sports-news style events. Fires ~one meaningful thing per week on average
   // so the world reads as alive instead of a static roster.
   try { generateWorldEvent(); } catch(_){}
+  try { tickRosterArcs(); } catch(_){}
 }
 /* ============================================================
    WORLD EVENTS
@@ -4108,6 +4160,70 @@ function openScoutOffer(){
       save(); go('career');
     }}
   ]);
+}
+/* ============================================================
+   ROSTER ARCS
+   ------------------------------------------------------------
+   Every CPU wrestler carries a hidden arc state that shifts on a
+   weekly roll: rising, hot, cold, stagnant, injured, career-year.
+   The arc drives an overness nudge and is surfaced as flavor on
+   the World tab and in the odd news beat. Persists to save via
+   G.world.arcs (keyed by id).
+   ============================================================ */
+const ARCS = {
+  rising:      {label:'On the rise',        c:'var(--green)',  overDelta:+0.6},
+  hot:         {label:'Red-hot streak',     c:'var(--gold)',   overDelta:+1.1},
+  cold:        {label:'Cold streak',        c:'#f0907f',       overDelta:-0.7},
+  stagnant:    {label:'Stagnant',           c:'var(--text-dim)', overDelta:-0.1},
+  career:      {label:'Career year',        c:'var(--gold)',   overDelta:+1.4},
+  hurt:        {label:'Nursing an injury', c:'#f0907f',       overDelta:-0.4},
+};
+function rosterArcState(id){
+  G.world = G.world || {}; G.world.arcs = G.world.arcs || {};
+  return G.world.arcs[id] || null;
+}
+function setRosterArc(id, key, weeks){
+  G.world = G.world || {}; G.world.arcs = G.world.arcs || {};
+  const c = G.car;
+  G.world.arcs[id] = {key, until:{y:c.year, w:c.week + (weeks||8)}, since:{y:c.year, w:c.week}};
+}
+function tickRosterArcs(){
+  const c=G.car, W=G.world;
+  if(!W) return;
+  W.arcs = W.arcs || {};
+  const now = c.year*WEEKS_PER_YEAR + c.week;
+  // Expire finished arcs, then roll a small number of new ones per week.
+  Object.keys(W.arcs).forEach(id=>{
+    const a=W.arcs[id];
+    if(a && a.until && (a.until.y*WEEKS_PER_YEAR + a.until.w) < now){ delete W.arcs[id]; }
+  });
+  // Cap: at most 6 active arcs across the whole world at any time.
+  const active = Object.keys(W.arcs).length;
+  if(active >= 6) return;
+  const pool = CHARS.filter(x=>!W.retired[x.id] && !W.arcs[x.id] && x.promo!==myPromoId());
+  if(!pool.length) return;
+  if(rnd()>0.20) return;
+  const target = pool[Math.floor(rnd()*pool.length)];
+  const roll = rnd();
+  const key = roll<0.28?'rising' : roll<0.44?'hot' : roll<0.60?'cold' : roll<0.76?'stagnant' : roll<0.90?'career' : 'hurt';
+  const weeks = key==='hot'?4 : key==='career'?14 : key==='hurt'?6 : 8;
+  setRosterArc(target.id, key, weeks);
+  const msgs = {
+    rising:  `<b>${target.name}</b> is stringing wins together at ${(promoById(target.promo)||{}).short}. The push is on.`,
+    hot:     `<b>${target.name}</b> is red-hot right now. Every promo is a highlight.`,
+    cold:    `<b>${target.name}</b> is in a cold streak. Fans are cooling on the act.`,
+    stagnant:`<b>${target.name}</b> has plateaued. Same match, same reaction, week after week.`,
+    career:  `<b>${target.name}</b> is having a career year. This will be the tape they show.`,
+    hurt:    `<b>${target.name}</b> is nursing something. Working through it but not at 100%.`,
+  };
+  try { newsPush({ico:pico('graphUp',14), cat:'arc', text: msgs[key] || `<b>${target.name}</b> · new arc.`}); }catch(_){}
+}
+// Apply the small overness nudge from a wrestler's active arc when the
+// engine reads over. Kept as a helper so callers can opt in without
+// changing base numbers permanently.
+function arcOverAdjust(charId){
+  const a = rosterArcState(charId); if(!a) return 0;
+  const spec = ARCS[a.key]; return spec ? spec.overDelta : 0;
 }
 function generateWorldEvent(){
   const c=G.car, W=G.world;
@@ -4195,8 +4311,17 @@ function generateWorldEvent(){
   if(type==='feudBrew'){
     const pool = anyRoster().filter(x=>x.promo!==myPromoId() && (x.over||55)>=55);
     if(pool.length<2) return;
-    const a=pool[Math.floor(rnd()*pool.length)], b=pool.filter(x=>x.id!==a.id&&x.promo===a.promo)[0];
+    const a=pool[Math.floor(rnd()*pool.length)];
+    const rest = pool.filter(x=>x.id!==a.id && x.promo===a.promo);
+    const b = rest.length ? rest[Math.floor(rnd()*rest.length)] : null;
     if(!b) return;
+    W.brewingFeuds = W.brewingFeuds || [];
+    // Do not duplicate an already-brewing pair (either direction).
+    const key = [a.id,b.id].sort().join('|');
+    if(!W.brewingFeuds.find(f=>f.key===key)){
+      W.brewingFeuds.unshift({key, promoId:a.promo, a:{id:a.id,name:a.name}, b:{id:b.id,name:b.name}, since:{y:c.year,w:c.week}});
+      if(W.brewingFeuds.length>12) W.brewingFeuds.length = 12;
+    }
     newsPush({ico:pico('fire',14), cat:'feud',
       text:`<b>${a.name} vs ${b.name}</b> is building at ${(promoById(a.promo)||{}).short}. Backstage confrontation went too far.`});
     return;
@@ -4297,8 +4422,9 @@ const TOURS={
    body:'A wrestler does not pick their own matches. Each week the company tells you what you are doing, and the sheet shows your <b>odds</b>, the <b>purse</b>, the <b>reputation</b> and the <b>injury risk</b>. Get your standing up and they start listening to you.'},
   {sel:'#weekBody .bksheet', title:'Winning is not the point',
    body:'You are judged on <b>how good the match was</b>, not who went over. A <b>90-rated loss</b> pays more reputation, standing and popularity than a <b>50-rated win</b>. So a night where they feed you to somebody better is an opportunity, not a punishment.'},
-  {sel:'.wk-extras-toggle', title:'Game plan lives here',
-   body:'Under this toggle: the two <b>move categories you emphasise</b> in every match (they build mastery, which unlocks better moves) and the <b>goals</b> you are working toward. Open it when you want to steer your growth, close it when you just want to wrestle.'},
+  {sel:'.planwhy', title:'Game plan',
+   body:'The two <b>move categories you emphasise</b> in every match. They build mastery, and mastery unlocks better moves. Change them any time you want to grow differently.',
+   before:()=>{ if(G && G.car && !G.car._wkExtras){ G.car._wkExtras=true; try{ renderWeek(); }catch(_){} } }},
   {sel:'#carTiles', title:'Where you stand, how hot you are',
    body:'Two numbers, one glance. <b>Where you stand</b> blends office trust, popularity and tier progress. <b>How hot you are</b> blends gimmick heat, crowd reaction and momentum. Tap <i>Show the numbers behind these</i> if you want the six individual stats.'},
   {sel:'.hud', title:'The clock is running',
@@ -4335,6 +4461,9 @@ function tourStep(i){
   if(i>=T.length){ endTour(); return; }
   TOUR_I=i;
   const st=T[i], back=$('tourBack'), hole=$('tourHole'), arrow=$('tourArrow'), card=$('tourCard');
+  // Optional per-step preparation, e.g. reveal a collapsed panel so the
+  // spotlight actually lands on visible content.
+  if(typeof st.before==='function'){ try{ st.before(); }catch(_){} }
   back.classList.add('open');
   const last=i===T.length-1;
   card.innerHTML=`
@@ -4838,6 +4967,9 @@ function renderHome(){
   const s=load(); const el=$('homeCont');
   if(!s){
     const hasBackup = (()=>{ try{ return !!localStorage.getItem(SAVE+'_prev'); }catch(_e){ return false; } })();
+    // If ANY slot has a save, show the picker even without an active one.
+    // (Happens when the active slot is empty but another slot has a career.)
+    const anySave = SLOT_KEYS.some(k=>{ try{ return !!localStorage.getItem(k); }catch(_){ return false; } });
     el.innerHTML=`<div class="startcard">
       <div class="sc-kick">Start your journey<br>to greatness</div>
       <div class="sc-sub">Create a rookie, break into the business, and live a full career. Every attribute point and every move is earned in the ring, never bought.</div>
@@ -4849,7 +4981,8 @@ function renderHome(){
         <div class="feat"><b>${PROMOS.length}</b><span>promotions</span></div>
         <div class="feat"><b>${COSM.length}</b><span>gear items</span></div>
       </div>
-    </div>`;
+    </div>
+    ${anySave ? slotPickerHTML() : ''}`;
     return;
   }
   const c=s.car, w=s.w;
@@ -4876,9 +5009,45 @@ function renderHome(){
       </div>
       ${s.savedAt?`<div class="rc-saved">Last saved ${savedAgo(s.savedAt)}</div>`:''}
     </button>
+    ${slotPickerHTML()}
     <div class="row" style="margin-top:12px;justify-content:center;">
       <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('start')">Start a new career</button>
     </div>`;
+}
+/* Save-slot picker on the home screen. Four slots. Empty slots read
+   "New career here"; occupied slots read a short summary and are
+   tap-to-switch. The current slot is highlighted. */
+function slotPickerHTML(){
+  const cur = activeSlot();
+  const rows = SLOT_KEYS.map((_,i)=>{
+    const s = slotSummary(i);
+    const active = i===cur;
+    if(!s){
+      return `<div class="slot ${active?'active':''} slot-empty" onclick="pickSlot(${i}, true)">
+        <div class="slot-i">SLOT ${i+1}</div>
+        <div class="slot-t">New career</div>
+      </div>`;
+    }
+    const p = promoById(s.promo) || {short:'IND'};
+    return `<div class="slot ${active?'active':''}" onclick="pickSlot(${i}, false)">
+      <div class="slot-i">SLOT ${i+1}${s.retired?' · RETIRED':''}${active?' · active':''}</div>
+      <div class="slot-t">${s.name}</div>
+      <div class="slot-s">${p.short} · Year ${s.year}W${s.week} · ${s.rec.w}-${s.rec.l}${s.rec.d?'-'+s.rec.d:''}${s.age?` · age ${s.age}`:''}</div>
+    </div>`;
+  }).join('');
+  return `<div class="flab" style="margin:14px 0 6px;">Save slots</div><div class="slotgrid">${rows}</div>`;
+}
+function pickSlot(i, isEmpty){
+  const wasActive = activeSlot();
+  if(i===wasActive && !isEmpty) return;
+  if(isEmpty){
+    setActiveSlot(i); G = null; go('start');
+    return;
+  }
+  setActiveSlot(i);
+  const s = load();
+  if(s){ G = s; continueCareer(); }
+  else  { G = null; renderHome(); }
 }
 // mentor-taught moves live on the save; fold them back into the catalogue on load
 function mergeCustomMoves(){ (G.w.custom||[]).forEach(mv=>{ if(!MOVES.find(x=>x.id===mv.id)) MOVES.push(mv); }); }
@@ -5088,32 +5257,35 @@ function tagOffers(offs){
    The hub should never leave you wondering. This picks the single most
    useful thing available and says it in a sentence. */
 function weekAdvice(){
+  // Each advice line is one short sentence (~12 words max). The old copy
+  // ran 40 words a line, so the "one thing to do this week" got drowned in
+  // its own reasoning.
   const c=G.car, w=G.w;
   const P=s=>pico(s,22);
-  if(c.freeAgent) return {ico:P('pen'),t:'Your contract is up. Sign somewhere before you can be booked.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
-  if(c.injWeeks>0) return {ico:P('cross'),t:`You are hurt. Rest until the ${(c.hurt&&c.hurt.part||'injury').toLowerCase()} is cleared. Working through it makes it worse.`,sev:'bad'};
-  if(w.tp>0) return {ico:P('star'),t:`You have ${w.tp} training point${w.tp>1?'s':''} banked. Spending them raises your ratings and unlocks moves.`,cta:{l:'Spend them',f:"go('train')"},sev:'act'};
-  if(c.cond<45) return {ico:P('bandage'),t:`Condition is ${Math.round(c.cond)}. Wrestling this beaten up hurts your match quality and invites injury. Take the week off.`,sev:'bad'};
-  if(gimStale()) return {ico:P('mask'),t:'Your character has gone cold. Repackage or turn to get a fresh reaction.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
-  if(reactionOf()<22 && c.year+c.week>2) return {ico:P('microphone'),t:'Nobody is reacting to you either way, and indifference is worse than being hated. Next time they put a microphone in your hand, give them something.',sev:'bad'};
-  if(voiceFlip()>=0.5) return {ico:P('mask'),t:'You have said three different things in three weeks. Pick a character and stay with it. The crowd cannot get behind somebody who changes every time they hold a microphone.',sev:'bad'};
+  if(c.freeAgent) return {ico:P('pen'),t:'Contract is up. Sign somewhere.',cta:{l:'See offers',f:"go('deal')"},sev:'act'};
+  if(c.injWeeks>0) return {ico:P('cross'),t:`Rest that ${(c.hurt&&c.hurt.part||'injury').toLowerCase()}. Working through it makes it worse.`,sev:'bad'};
+  if(w.tp>0) return {ico:P('star'),t:`${w.tp} training point${w.tp>1?'s':''} banked. Spend them.`,cta:{l:'Train',f:"go('train')"},sev:'act'};
+  if(c.cond<45) return {ico:P('bandage'),t:`Condition ${Math.round(c.cond)}. Take the week off.`,sev:'bad'};
+  if(gimStale()) return {ico:P('mask'),t:'The character is stale. Repackage or turn.',cta:{l:'The Business',f:"go('deal')"},sev:'bad'};
+  if(reactionOf()<22 && c.year+c.week>2) return {ico:P('microphone'),t:'The crowd is indifferent. Give them a reason next time you mic up.',sev:'bad'};
+  if(voiceFlip()>=0.5) return {ico:P('mask'),t:'Three voices in three weeks. Pick a character and stay.',sev:'bad'};
   const tp=turnProgress();
-  if(tp.to&&tp.p>0.25) return {ico:P('swap'),t:`You have been talking like a ${tp.to}. One more promo in that voice completes the turn. You are ${Math.round(tp.p*100)}% of the way there.`,sev:'act'};
-  if(alignMismatch()) return {ico:P('mask'),t:`You are billed as a ${G.w.align} but the crowd is treating you like a ${crowdAlign()}. Lean into it with a turn, or win them back the next time you are on the mic.`,sev:'warn'};
+  if(tp.to&&tp.p>0.25) return {ico:P('swap'),t:`Talking like a ${tp.to}. One more promo finishes the turn.`,sev:'act'};
+  if(alignMismatch()) return {ico:P('mask'),t:`Billed ${G.w.align}, crowd reads ${crowdAlign()}. Lean in or win them back.`,sev:'warn'};
   const st=story();
-  if(st&&st.stage>=3) return {ico:P('fire'),t:'Your feud is ready for its blow-off. Take that match and settle it.',sev:'act'};
+  if(st&&st.stage>=3) return {ico:P('fire'),t:'Your feud is ready for its blow-off.',sev:'act'};
   const _weak=allies().find(a=>a.loyalty<25);
   if(_weak){ const wc=charById(_weak.id);
-    return {ico:P('knife'),t:`${wc?wc.name:'One of your allies'} is barely with you any more. Win something together or they will turn, and you will not get a warning.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
-  if(canStable()) return {ico:P('shield'),t:`You have ${allies().length} people in your corner. Put a name on it and you have a stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
+    return {ico:P('knife'),t:`${wc?wc.name:'An ally'} is close to turning on you.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'bad'}; }
+  if(canStable()) return {ico:P('shield'),t:`${allies().length} allies. Name your stable.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
   const _cand=CHARS.filter(x=>x.promo===myPromo().id&&canAlly(x.id))[0];
-  if(_cand) return {ico:P('handshake'),t:`${_cand.name} rates you enough to work together. That is how tag teams and stables start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
-  if(c.deal&&c.deal.weeksLeft<=6) return {ico:P('clipboard'),t:`Your deal expires in ${c.deal.weeksLeft} weeks. Keep your standing up and the offers will be better.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
+  if(_cand) return {ico:P('handshake'),t:`${_cand.name} respects you. That's how tag teams start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
+  if(c.deal&&c.deal.weeksLeft<=6) return {ico:P('clipboard'),t:`Deal expires in ${c.deal.weeksLeft} weeks.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
   if(c.booking&&c.booking.type==='match'&&!c.prep&&!c.booking.studied)
-    return {ico:P('tape'),t:`You have not prepared this week. Studying ${c.booking.o.oppName}'s tape raises your odds tonight.`,sev:'act'};
+    return {ico:P('tape'),t:`Study ${c.booking.o.oppName}'s tape. Raises your odds.`,sev:'act'};
   const t=workTier(), belt=beltName(t);
-  if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:P('trophy'),t:`You are over enough for a run at the ${belt}. Keep winning and the office will book it.`,sev:'good'};
-  return {ico:P('fist'),t:'Check what the office has you doing, then make the most of it. Your game plan is what you get better at.',sev:'ok'};
+  if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:P('trophy'),t:`Over enough for a ${belt} run. Keep winning.`,sev:'good'};
+  return {ico:P('fist'),t:'Make the most of the card you were given.',sev:'ok'};
 }
 /* what you are working toward, so progress is visible week to week */
 function nextGoals(){
@@ -5278,14 +5450,33 @@ function renderWeek(){
       </div>` : '';
     // PPV, build, and farewell banners moved to the persistent arc header at
     // the top of the week body. Booking sheet is match-specific data only.
+    // PPV night: show the whole card on the booking sheet so it reads like a
+    // pay-per-view, not a single match. Predicted undercards drawn from the
+    // house roster; not simulated until later.
+    let ppvCard = '';
+    if(o.ppv){
+      try {
+        const me_p = myPromo();
+        const pool = houseRoster(me_p.id).filter(x=>x.id!==o.oppId);
+        const pairs = (typeof pickUndercardPairs==='function') ? pickUndercardPairs(o, pool, 3) : [];
+        if(pairs.length){
+          ppvCard = `<div class="bs-ppvcard">
+            <div class="bs-ppvcard-h">${pico('starBig',12)} Tonight's Card · ${o.ppv}</div>
+            ${pairs.map(([a,b])=>`<div class="bs-ppvcard-r">${a.name} <span class="hint">vs</span> ${b.name}</div>`).join('')}
+            <div class="bs-ppvcard-r bs-ppvcard-me">${pico('star',11)} <b>MAIN EVENT</b> · ${G.w.name} vs ${o.oppName}</div>
+          </div>`;
+        }
+      } catch(_){}
+    }
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
       ${debutIntro}
+      ${ppvCard}
       <div class="bs-headline">
         <div class="bs-stip">${o.stipLabel}</div>
         <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
       </div>
       <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
-      <div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>
+      ${bookDetailsOpen?'':`<div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>`}
       ${o.nonTitleVsChamp?`<div class="bs-nontitle">${pico('star',12)} A clean pin over the champion earns the shot.</div>`:''}
       ${(!segmentsPlayedThisWeek() && pickSegment())?`<div class="bs-scene-tease">${pico('microphone',12)} A backstage scene plays on the walk to gorilla.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
@@ -5566,7 +5757,7 @@ function makeOffers(){
     else if(i===1 && !holdsSec && !holds && midCarder && rnd()<0.28) stakes='secondary';
     else if(rivalId===opp.id) stakes='rival';
     const _s=story();
-    if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=RIV_STIPS[Math.min(RIV_STIPS.length-1,_s.stage)];
+    if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=ripStipFor(_s.stage, _s.shape);
       st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
     // PPV night: a live feud is booked to blow off, and every offer moves up to Main Event.
     if(ppv){
@@ -5655,7 +5846,7 @@ const STIP_RULES = {
              ends:['pin','sub'],           danger:.6, mod:2, lenient:true },
   iquit:   { label:'I Quit Match',       desc:'No pinfalls, no submissions. The only way to win is to make them say the words into the microphone.',
              ends:['sub'],                 danger:.8, mod:4, noDQ:true, noCount:true, lenient:true },
-  iron:    { label:'Iron Man Match',      desc:'Long-form showcase. Whoever puts them away first walks out with the win, but the crowd is scoring it every minute.',
+  iron:    { label:'Iron Man Match',      desc:'Twenty-minute time limit. Every pin or submission is a fall on the scoreboard. Most falls at the bell wins; a tie goes to sudden death.',
              ends:['pin','sub'],           danger:.4, mod:5, marquee:true },
   chamber: { label:'Elimination Chamber', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
              ends:['pin','sub'],           danger:1,   mod:6, marquee:true, noDQ:true, noCount:true },
@@ -5712,6 +5903,19 @@ const STORY_STAGES=[
 // gets a distinct blow-off stipulation instead of collapsing back onto the
 // Last Man Standing already used at stage 3. Marquee for the blow-off.
 const RIV_STIPS=[['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Steel Cage','cage',1.2],['Last Man Standing','lms',1.35],['I Quit Match','iquit',1.45]];
+// Feud SHAPE routing: the stipulation ladder for each shape is different so
+// stories with different shapes feel like different stories. Fallback to
+// RIV_STIPS when the shape is not set (early beats).
+const RIV_STIP_BY_SHAPE = {
+  aggressive: [['Singles Match','singles',1],['Street Fight','grudge',1.30],['Steel Cage','cage',1.30],['Last Man Standing','lms',1.40],['I Quit Match','iquit',1.50]],
+  cool:       [['Singles Match','singles',1],['Grudge Match','grudge',1.25],['Submission Match','sub',1.20],['I Quit Match','iquit',1.45],['I Quit Match','iquit',1.45]],
+  cerebral:   [['Singles Match','singles',1],['Submission Match','sub',1.15],['Grudge Match','grudge',1.25],['Iron Man Match','iron',1.55],['I Quit Match','iquit',1.45]],
+  underdog:   [['Singles Match','singles',1],['Grudge Match','grudge',1.20],['Ladder Match','ladder',1.30],['Steel Cage','cage',1.30],['Last Man Standing','lms',1.40]],
+};
+function ripStipFor(stage, shape){
+  const track = (shape && RIV_STIP_BY_SHAPE[shape]) || RIV_STIPS;
+  return track[Math.min(track.length-1, stage||0)];
+}
 
 function story(){ return G.story||null; }
 function startStory(charId,reason){
@@ -5992,8 +6196,76 @@ function sfx(kind){
       g.gain.exponentialRampToValueAtTime(0.001, now+0.18);
       o.connect(g).connect(c.destination);
       o.start(now); o.stop(now+0.2);
+    } else if(kind==='crowdRise' || kind==='crowdBig'){
+      // Layered filtered noise "wave" that swells like a crowd reaction.
+      // crowdRise: near-fall, hot spot. crowdBig: finisher, three-count.
+      const big = kind==='crowdBig';
+      const dur = big ? 1.6 : 0.9;
+      const peak = big ? 0.35 : 0.22;
+      const buf = c.createBuffer(1, Math.max(1,Math.floor(c.sampleRate*dur)), c.sampleRate);
+      const d = buf.getChannelData(0);
+      for(let i=0;i<d.length;i++){
+        // Pink-ish noise: white noise + slow LPF-like smoothing
+        const w = (Math.random()*2-1);
+        d[i] = i>0 ? (d[i-1]*0.6 + w*0.4) : w*0.4;
+      }
+      const s=c.createBufferSource(); s.buffer=buf;
+      const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=big?520:640; bp.Q.value=0.8;
+      const g=c.createGain(); g.gain.value=0;
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.exponentialRampToValueAtTime(peak, now+(big?0.25:0.14));
+      g.gain.exponentialRampToValueAtTime(0.001, now+dur);
+      s.connect(bp).connect(g).connect(c.destination);
+      s.start(now); s.stop(now+dur+0.05);
     }
   }catch(_e){}
+}
+/* Ambient crowd murmur that plays quietly under the whole match. Wired up
+   in startFight and stopped in endFight. Filtered noise, low volume, with
+   a slow LFO so it breathes. */
+let CROWD_AMB = null;
+function startCrowdAmbient(intensity){
+  if(G && G.prefs && G.prefs.sound===false) return;
+  const c = sfxCtx(); if(!c) return;
+  stopCrowdAmbient();
+  try{
+    const buf = c.createBuffer(1, c.sampleRate*4, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++){
+      const w = Math.random()*2-1;
+      d[i] = i>0 ? (d[i-1]*0.75 + w*0.25) : w*0.25;
+    }
+    const s = c.createBufferSource(); s.buffer=buf; s.loop=true;
+    const bp = c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=380; bp.Q.value=0.6;
+    const g = c.createGain(); g.gain.value = 0.001;
+    const lvl = 0.035 + (Math.max(0,Math.min(1,intensity||0))*0.030);
+    g.gain.linearRampToValueAtTime(lvl, c.currentTime+0.6);
+    // Slow "breathing" LFO on gain so it does not feel like static
+    const lfo = c.createOscillator(); lfo.type='sine'; lfo.frequency.value = 0.13;
+    const lfoGain = c.createGain(); lfoGain.gain.value = lvl*0.35;
+    lfo.connect(lfoGain).connect(g.gain);
+    s.connect(bp).connect(g).connect(c.destination);
+    s.start(); lfo.start();
+    CROWD_AMB = {s, g, lfo, lvl};
+  }catch(_e){}
+}
+function crowdIntensify(delta){
+  if(!CROWD_AMB) return;
+  try{
+    const c = sfxCtx(); if(!c) return;
+    const cur = CROWD_AMB.g.gain.value;
+    const to = Math.min(0.10, cur + (delta||0.01));
+    CROWD_AMB.g.gain.linearRampToValueAtTime(to, c.currentTime+0.4);
+    CROWD_AMB.lvl = to;
+  }catch(_e){}
+}
+function stopCrowdAmbient(){
+  if(!CROWD_AMB) return;
+  try{
+    const c = sfxCtx();
+    CROWD_AMB.g.gain.linearRampToValueAtTime(0.001, c.currentTime+0.35);
+    setTimeout(()=>{ try{ CROWD_AMB.s.stop(); CROWD_AMB.lfo.stop(); }catch(_){} CROWD_AMB=null; }, 500);
+  }catch(_e){ CROWD_AMB=null; }
 }
 // The theme cue for a wrestler. You picked yours from the create screen;
 // everybody else gets one deterministically from their id, so it stays consistent.
@@ -6603,6 +6875,12 @@ async function startFight(o){
   busy(true);
   fmv('me',{pose:'lockup',fwd:ST.close*0.9},320); fmv('opp',{pose:'lockup',fwd:ST.close*0.9},320);
   sfx('bell');
+  // Start the ambient crowd murmur. Bigger crowd = louder base level: main
+  // event / PPV / stakes crank the loop up. The wave sounds on near-falls
+  // and finishers layer on top.
+  const crowdBase = (o.ppv?0.7:0) + (o.card==='Main Event'?0.35:o.card==='Mid-Card'?0.15:0)
+                  + (o.stakes==='title'||o.stakes==='defense'?0.25:0);
+  startCrowdAmbient(clamp(crowdBase, 0, 1));
   await callout('FIGHT!');
   if(stale()) return;
   await settle(260);
@@ -6961,6 +7239,26 @@ async function runFight(){
       MS.ended=true;
       return endFight(false);
     }
+    // ---- IRON MAN bell (20 minutes, most falls wins) ----
+    // Iron Man plays for the FULL time limit and awards the win on falls.
+    // A tie at the bell goes to sudden death: match continues, next fall wins.
+    if(!MS.ended && o.stip==='iron' && MS.clock>=20*60){
+      const f = MS.falls || {me:0,opp:0};
+      if(f.me!==f.opp){
+        const iWon = f.me>f.opp;
+        await callout('TIME LIMIT');
+        fLog(`<span class="good"><b>THE BELL.</b> Final score ${f.me}-${f.opp}. ${iWon?'You won it.':'They took it.'}</span>`);
+        commitFinish({type:iWon?'pin':'pin', by:iWon, move:`${Math.max(f.me,f.opp)}-${Math.min(f.me,f.opp)} on falls`, fin:false});
+        MS.ended=true;
+        MS.quality = clamp(MS.quality + 8, 0, 100);
+        return endFight(iWon);
+      } else if(!MS._ironOT){
+        MS._ironOT = true;
+        await callout('SUDDEN DEATH');
+        fLog(`<span class="say"><b>TIED AT ${f.me}.</b> The bell went and they are still going. Next fall wins.</span>`);
+        MS.quality = clamp(MS.quality + 6, 0, 100);
+      }
+    }
     // ---- time-limit draw on top-of-the-card singles/tag stips ----
     // Only real time-limit stips announce them; a plain singles Main Event or
     // title match that runs way long ends as a time-limit draw the way real
@@ -7311,6 +7609,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     await callout(hardKickout?'KICKED OUT WITH AUTHORITY!':'KICKOUT!');
     fLog(`<span class="hi">${hardKickout?'Shoulder up with force! The place is unglued!':'Shoulder up at two and a half!'} How did he survive the ${bare(mvName)}?!</span>`);
     MS.nearFalls++; MS.quality+=isFin?15:10 + (hardKickout?3:0); MS.big++;
+    sfx('crowdRise'); crowdIntensify(0.008);
     if(hardKickout){ sfx('pop'); MS.mom = clamp(MS.mom + (iAmPinning?-24:24), -100, 100); }
     arena.classList.remove('tense');
     await sleep(420);
@@ -7323,7 +7622,27 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     await refSlap();
     if(stale()) return false;
     showCount(3, true);
+    sfx('crowdBig');
     await flashScreen();
+    // Iron Man: a three-count is a FALL, not the finish. Track it, celebrate
+    // the momentary win, then reset positions and keep wrestling until the
+    // time limit fires. Whoever has more falls at the bell wins the match.
+    // The time-limit block in runFight reads MS.falls to decide the winner.
+    const isIron = MS.o && MS.o.stip==='iron';
+    if(isIron){
+      MS.falls = MS.falls || {me:0, opp:0};
+      const side = iAmPinning ? 'me' : 'opp';
+      MS.falls[side]++;
+      fLog(`<span class="good"><b>FALL FOR ${side==='me'?'YOU':'THEM'}</b> · ${MS.falls.me}-${MS.falls.opp} on the scoreboard.</span>`);
+      arena.classList.remove('tense');
+      await sleep(650);
+      FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
+      // Reset both wrestlers to neutral for the next fall.
+      MS.mom = clamp(MS.mom + (iAmPinning?-14:14), -100, 100); setMom();
+      MS.quality += 4;
+      await settle(260);
+      return false;   // NOT a finish; runFight continues
+    }
     commitFinish({type:'pin',by:iAmPinning,move:mvName,fin:isFin});
     arena.classList.remove('tense');
     await sleep(520);
@@ -7435,6 +7754,7 @@ async function endFight(iWon){
     fLog(`<b>${pc.name}</b>: <span class="say">"${say}"</span>`);
   }
   await sleep(900);
+  stopCrowdAmbient();
   finalizeFight(iWon);
 }
 
@@ -7895,12 +8215,25 @@ function applyMatch(o,res){
     if(c.titleShotPending){ c.titleShot=c.titleShotPending; c.titleShotPending=null;
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`Your rematch clause is back on the books.`}); }
   }
-  if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0; c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0});
+  if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0;
+    // Prestige tracks how much a specific reign means: earned by the OVR
+    // gap between you and who you beat, the match rating, and (later) the
+    // defenses stacked onto it. Read by Hall of Fame and end-of-year awards.
+    const reignPrestige = Math.round(30 + (o.oppOvr - ovr(w))*0.8 + Math.max(0,res.quality-60)*0.7 + (o.ppv?12:0));
+    c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0,
+                   wonFrom:o.oppName,wonAt:o.ppv||null,prestige:Math.max(20,reignPrestige)});
     titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
-    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
+    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100);
+    // Champion press conference: fires after the results ceremony settles.
+    // Interviewer scene with dialogue choices that shape post-reign momentum.
+    c._pendingPresser = {belt, from:o.oppName, at:o.ppv||myPromo().short};
+  }
   else if(o.stakes==='defense'){
     if(draw){ titleMsg=`Time-limit draw. You retain the ${c.title}.`; }
-    else if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r) r.defenses=c.defenses;
+    else if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r){ r.defenses=c.defenses;
+      // Every clean defence stacks prestige on this specific reign. Beating
+      // higher-rated challengers, breaking star-rating ceiling, PPV nights.
+      r.prestige = (r.prestige||30) + Math.round(8 + Math.max(0,o.oppOvr-ovr(w))*0.5 + Math.max(0,res.quality-70)*0.3 + (o.ppv?4:0)); }
       titleMsg=`Successful defence #${c.defenses}.`; }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
@@ -8283,6 +8616,56 @@ function renderMatch(o,res){
   if(o.stakes==='title'&&res.win) confetti(150);
   else if(classic) confetti(100);
   setTimeout(showMoments,750);
+  // Champion press conference fires AFTER the moments queue, so it lands
+  // as the last beat of the night rather than fighting the celebration.
+  if(G.car._pendingPresser){
+    const presser = G.car._pendingPresser;
+    G.car._pendingPresser = null;
+    setTimeout(()=>{ try{ playPressConference(presser); }catch(_){} }, 2200);
+  }
+}
+/* Post-title-win interviewer scene: three choices each with a distinct
+   fallout (humility → office love, callout → heat + story seed, shoot →
+   gimmick heat + standing hit). Uses the same scene overlay segments do. */
+function playPressConference(p){
+  const back = $('sceneBack'), body = $('sceneBody'); if(!back||!body) return;
+  const me = G.w;
+  const line = `The lights come up on the press table. A microphone slides across. "New champion, ${me.name}. First question: what do you want to say?"`;
+  const opts = [
+    { t:'"I thank the wrestlers who came before me. I know what this belt means."',
+      eff:{standing:+5, reactionBoost:true}, note:'The room warms to you. The office is watching.'},
+    { t:'"There is not a wrestler in the back who can take this off me. Come and try."',
+      eff:{gimHeat:+7, heatAll:+3, standing:+1}, note:'Every locker room dry-swallowed at once.'},
+    { t:'"The office held me back for months. That ends tonight."',
+      eff:{gimHeat:+9, standing:-6, reactionBoost:true}, note:'A shoot. The office is furious. The crowd is not.'},
+    { t:'Say nothing. Raise the belt and walk.',
+      eff:{gimHeat:+4, reactionBoost:true}, note:'They will replay that photo for a year.'},
+  ];
+  body.innerHTML = `<div class="scene-tag">CHAMPION PRESS CONFERENCE · ${p.belt}</div>
+    <div class="scene-head"><div class="scene-av scene-av-narr">${pico('microphone',36)}</div>
+      <div><div class="scene-who">${p.at}</div>
+      <div class="scene-line">"${line}"</div></div></div>
+    <div class="scene-optlist">${opts.map((o,i)=>`
+      <div class="scene-opt" data-i="${i}"><div class="scene-opt-t">${o.t}</div></div>`).join('')}</div>
+    <div class="scene-walk"><button id="sceneWalkPast">Refuse the interview →</button></div>`;
+  back.classList.add('open');
+  const dismiss = () => { closeScene(); };
+  setTimeout(()=>{
+    const wp = document.getElementById('sceneWalkPast'); if(wp) wp.onclick = dismiss;
+    document.querySelectorAll('#sceneBody .scene-opt').forEach(el=>{
+      el.onclick = ()=>{
+        const o = opts[+el.dataset.i];
+        applySegmentEffect(o.eff||{}, null);
+        body.innerHTML = `<div class="scene-tag">CHAMPION PRESS CONFERENCE · you said</div>
+          <div class="scene-head"><div class="scene-av scene-av-narr">${pico('microphone',36)}</div>
+            <div><div class="scene-who">${p.at}</div>
+            <div class="scene-line">"${o.t}"</div></div></div>
+          <div class="scene-outcome"><div class="scene-outcome-line">${o.note||'The room takes it in.'}</div>${summarizeEffect(o.eff||{})}</div>
+          <div class="scene-continue"><button id="sceneCont">On to next week →</button></div>`;
+        setTimeout(()=>{ const c2=document.getElementById('sceneCont'); if(c2) c2.onclick=dismiss; }, 20);
+      };
+    });
+  }, 30);
 }
 function postMatchMic(oppId){
   beginPromo('face', oppId);
@@ -9151,13 +9534,59 @@ function archiveToLegends(){
   list.unshift(entry);
   saveLegends(list);
 }
+/* Post-retirement chapter. The wrestler retires, but their legend
+   persists. This screen lets the player pick a next role: mentor the
+   next generation from the office side (adds a bonus keepsake to the
+   NEXT career), or walk away and start fresh. A quiet handoff, not a
+   whole second game. */
+function startNextChapter(){
+  const c=G.car, w=G.w;
+  const legendName = w.name;
+  modal(`${legendName} · the next chapter`,
+    `<p class="log">The road is over. What you do now is who they will remember you as.</p>
+     <div class="scene-optlist" style="margin-top:12px;">
+       <div class="scene-opt" id="ncManager">
+         <div class="scene-opt-t"><b>Walk with the next wrestler.</b></div>
+         <div class="scene-opt-n">Your next career opens with <b>${legendName}</b> in the corner as your manager, and a keepsake move from your finisher tree.</div>
+       </div>
+       <div class="scene-opt" id="ncBook">
+         <div class="scene-opt-t"><b>Take a booker's chair.</b></div>
+         <div class="scene-opt-n">Retire fully and let the record speak. Your Hall entry gets a "went into the office" badge.</div>
+       </div>
+       <div class="scene-opt" id="ncNew">
+         <div class="scene-opt-t"><b>Just start something new.</b></div>
+         <div class="scene-opt-n">Blank slate. The Hall keeps you either way.</div>
+       </div>
+     </div>`,
+    [{label:'Not yet',cls:'ghost',fn:closeModal}]);
+  setTimeout(()=>{
+    const nm=document.getElementById('ncManager'), nb=document.getElementById('ncBook'), nn=document.getElementById('ncNew');
+    if(nm) nm.onclick=()=>{
+      window._pendingManagerName = legendName;
+      window._pendingFamilyOf = legendName;    // subtle: also seed lineage
+      closeModal();
+      // Route into a fresh slot so the legend and the successor coexist.
+      const empty = SLOT_KEYS.findIndex((_,i)=> !slotSummary(i));
+      if(empty>=0) setActiveSlot(empty);
+      G = null; go('start');
+    };
+    if(nb) nb.onclick=()=>{
+      c.wentIntoOffice = true;
+      pushInboxItem({ico:pico('microphone',18),sev:'good',
+        txt:`<b>${legendName} took a booker's chair.</b> The office is different for it.`});
+      save();
+      closeModal(); toast(`${legendName} steps into the office.`);
+    };
+    if(nn) nn.onclick=()=>{ closeModal(); newCareerConfirm(); };
+  }, 30);
+}
 function newCareerConfirm(){ modal('Start a new career?','Your current wrestler will be retired permanently and a new career begins. The previous save is kept in a backup slot in case you misclicked.',
   [{label:'Cancel',cls:'ghost',fn:closeModal},{label:'New Career',fn:()=>{
     // If they haven't already been archived, keep them anyway as an unfinished run
     try{ archiveToLegends(); }catch(_e){}
     // And keep the raw save one step back so a misclick is recoverable
     try{ const cur=localStorage.getItem(SAVE); if(cur) localStorage.setItem(SAVE+'_prev', cur); }catch(_e){}
-    closeModal(); localStorage.removeItem(SAVE); G=null; go('home');}}]); }
+    closeModal(); localStorage.removeItem(activeSaveKey()); G=null; go('home');}}]); }
 // Recover the last career from the auto-backup slot (available on the home screen).
 function restoreBackup(){
   try{
@@ -11308,8 +11737,13 @@ function renderCrew(){
   }).join('')+`</div>`;
 
   // ---- who wants you ----
+  // Previously every non-ally card repeated its own "Needs 55 respect.
+  // Wrestle them or talk to them" hint. On a roster of 8 wrestlers this
+  // is the same sentence eight times. Rule is one line, at the top.
   const roster=houseRoster(myPromo().id).filter(x=>!isAlly(x.id));
+  const anyLocked = roster.some(ch=>!canAlly(ch.id));
   h+=`<div class="flab">The rest of the locker room</div>
+    ${anyLocked?`<div class="hint" style="margin-bottom:8px;">Alliances open at <b>55 respect</b> with <b>under 40 heat</b>. Wrestle them or work them at the mic to build both.</div>`:''}
     <div class="grid g2" style="gap:10px;">`+roster.map(ch=>{
     const R=rel(ch.id), lb=relLabel(R);
     const ok=canAlly(ch.id);
@@ -11325,10 +11759,9 @@ function renderCrew(){
         <div><div class="hint">Respect ${Math.round(R.respect)}</div><div class="bar g"><i style="width:${R.respect}%"></i></div></div>
         <div><div class="hint">Bad blood ${Math.round(R.heat)}</div><div class="bar"><i style="width:${R.heat}%;background:#c0392b"></i></div></div>
       </div>
-      <div class="row" style="margin-top:9px;gap:6px;">
-        ${ok?`<button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>`
-            :`<span class="hint">${R.heat>=40?'Too much bad blood':'Needs 55 respect'}. Wrestle them or talk to them</span>`}
-      </div>
+      ${ok?`<div class="row" style="margin-top:9px;gap:6px;">
+        <button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>
+      </div>`:''}
     </div>`;
   }).join('')+`</div>`;
   $('crewBody').innerHTML=h;
@@ -11585,7 +12018,7 @@ function renderWorld(){
   const order=['indie','regional','national','global'];
   const promos=order.flatMap(t=>PROMOS.filter(p=>p.tier===t));
   const here=myPromo().id;
-  const chips=promos.map(p=>({t:p.short+(p.id===here?' •':''), c:p.color})).concat([{t:'Titles', c:'#e0b341'},{t:'Factions'}]);
+  const chips=promos.map(p=>({t:p.short+(p.id===here?' •':''), c:p.color})).concat([{t:'Titles', c:'#e0b341'},{t:'Rankings', c:'#e0b341'},{t:'Factions'}]);
   let h=pagerBar('world',chips,renderWorld);
   const i=pagerIdx('world',chips.length);
   // "Titles" page: every belt in the world, current champion, reign length,
@@ -11633,6 +12066,42 @@ function renderWorld(){
     h+=`<p class="hint" style="margin:6px 4px 10px;">Every belt in the world. Reign length in weeks. The contender queue is the three names the office would book next if a champion fell tomorrow.</p>${rows}`;
     $('worldBody').innerHTML=h; return;
   }
+  // "Rankings" page: your promotion's top 10 by a live blend of overness,
+  // titles held, and a random trend factor. Player's ranking highlighted.
+  if(i===promos.length+1){
+    const p=myPromo();
+    const roster = houseRoster(p.id);
+    const scoreFor = (x)=>{
+      const t = titlesHeldBy(x.id);
+      const titlesBonus = t.reduce((s,tt)=>s + (tt.kind==='world'?18:tt.kind==='secondary'?8:5), 0);
+      const rel = (G.rel||{})[x.id] || {};
+      return (x.over||55) + titlesBonus + ((rel.wins||0)*0.5) - ((rel.losses||0)*0.3);
+    };
+    const meScore = 45 + (G.car.pop||50)*0.15 + (G.car.standing||50)*0.2 + (G.car.title?18:0) + (G.car.secondary?8:0);
+    const you = { id:'__me__', name:G.w.name, over:Math.round(meScore), you:true };
+    const list = roster.map(x=>({id:x.id, name:x.name, over:Math.round(scoreFor(x))}))
+      .concat([you])
+      .sort((a,b)=>b.over-a.over)
+      .slice(0,10);
+    h+=`<p class="hint" style="margin:6px 4px 10px;">Where you sit in the ${p.short} pecking order right now. Blends overness, held belts and recent record. Your rank moves every week you wrestle.</p>
+    <div class="rankcard">${list.map((x,idx)=>`
+      <div class="rankrow ${x.you?'me':''}">
+        <div class="rank-n">${idx+1}</div>
+        <div class="rank-name">${x.name}${x.you?' <span class="hint" style="color:var(--gold);">you</span>':''}</div>
+        <div class="rank-o">${x.over}</div>
+      </div>`).join('')}</div>`;
+    // Feuds elsewhere in the world: CPU wrestlers who have stories brewing.
+    const brew = (G.world && G.world.brewingFeuds) || [];
+    if(brew.length){
+      h+=`<div class="flab" style="margin-top:16px;">Feuds Around The World</div>
+      <div class="brewlist">${brew.slice(0,6).map(f=>`
+        <div class="brewrow" onclick="charProfile('${f.a.id}')">
+          <div class="brewv"><b>${f.a.name}</b> vs <b>${f.b.name}</b></div>
+          <div class="hint">${(promoById(f.promoId)||{}).short||''} · since Y${f.since.y}W${f.since.w}</div>
+        </div>`).join('')}</div>`;
+    }
+    $('worldBody').innerHTML=h; return;
+  }
   if(i<promos.length){
     const p=promos[i], roster=CHARS.filter(c=>c.promo===p.id && !(G.world&&G.world.retired&&G.world.retired[c.id]));
     const TN={indie:'Indie Circuit',regional:'Regional',national:'National TV',global:'Global'};
@@ -11664,10 +12133,13 @@ function renderWorld(){
         const r=rel(c.id), lb=relLabel(r);
         const b=bs ? (bs.red.includes(c.id)?'red':bs.blue.includes(c.id)?'blue':null) : null;
         const bBadge = b ? ` <span class="badge" style="background:${b==='red'?'#3a1010':'#101a3a'};color:${b==='red'?'#f0907f':'#8ab5f0'};padding:1px 5px;font-size:9px;">${b.toUpperCase()}</span>` : '';
+        const arc = rosterArcState(c.id);
+        const arcBadge = arc && ARCS[arc.key] ? `<div class="arcbadge" style="color:${ARCS[arc.key].c}">${ARCS[arc.key].label}</div>` : '';
         return `<div class="charcard" onclick="charProfile('${c.id}')">
           <div class="cav">${wrestlerSVG(c.look,{frame:'head'})}</div>
           <div class="cnm">${c.name}${bBadge}</div>
           <div class="cnk">${c.nick||''}</div>
+          ${arcBadge}
           <div class="crel" style="color:${lb.c}">${lb.t}${r.matches?` · ${r.wins}-${r.losses}`:''}</div>
         </div>`;
       }).join('')+`</div></div>`;
@@ -11802,9 +12274,8 @@ function renderBackstage(){
     // Empty rooms are omitted entirely instead of showing "Quiet in here."
     // Fewer tiles, less noise, and the ones that ARE present feel populated.
     if(!bodies && !gmBtn) return '';
-    return `<div class="bs-room" data-room="${r.id}">
+    return `<div class="bs-room" data-room="${r.id}" title="${(r.blurb||'').replace(/"/g,'&quot;')}">
       <div class="bs-room-h"><span class="bs-room-ico">${r.icon}</span> <b>${r.name}</b></div>
-      <div class="bs-room-b">${r.blurb}</div>
       <div class="bs-occ">${gmBtn}${bodies}</div>
     </div>`;
   }).filter(Boolean).join('');
