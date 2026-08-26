@@ -27215,7 +27215,21 @@ function pxTerrainURL(g, seedN, B, opts){
     sand:hex(B.sand),sandLine:hex(B.sandLine||B.sand),sandSpeck:hex(B.sandSpeck||B.sand),
     water:hex(B.water),ripple:hex(B.ripple||B.water)};
   C.path=hex(desert?'#caa26a':'#c8b59a');
-  const RO=0,DE=1,FW=2,GR=3,FR=4,SA=5,WA=6,TE=7,OC=8;
+  // ITEM 12: THE FIRST CUT. The fairway edge was a hard line straight into rough, but a golfer's eye reads a
+  // hole in bands - fairway, first cut, rough, then trouble. One intermediate mown band, in a tone between the
+  // fairway and that biome's own rough, so it works on grass, links fescue and desert alike.
+  const mix=(a,b,t)=>[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t)];
+  const lum=c=>0.299*c[0]+0.587*c[1]+0.114*c[2];
+  C.first=mix(C.fw,C.rough,0.44);
+  // On links (and desert) the biome's rough is nearly the same tone as its fairway by design - fescue on
+  // fescue - so a straight mix is invisible. Force a real step down from the darker fairway stripe, then
+  // clamp it so a first cut can never read DARKER than the rough it borders (it is short grass, not trouble).
+  { const fwRef=lum(C.cut)<lum(C.fw)?C.cut:C.fw, d=lum(fwRef)-lum(C.first);
+    if(d<10) C.first=shade(C.first,-(10-d));
+    const dr=lum(C.rough)-lum(C.first); if(dr>10) C.first=shade(C.first,dr-10); }
+  C.firstLine=shade(C.first,-11);
+  const CUTW=3.2;           // course units of first cut outside the fairway edge (a real first cut is a few yards)
+  const RO=0,DE=1,FW=2,GR=3,FR=4,SA=5,WA=6,TE=7,OC=8,FC=9;
   let oceanSide=0, oceanW=0, oedge=null, oDeep=null, oShallow=null, oCliff=null, oBeach=null;
   if(B.ocean){
     const ow=B.oceanW||[52,76];
@@ -27261,15 +27275,18 @@ function pxTerrainURL(g, seedN, B, opts){
         if(rr<bk.r*m){inSand=true;break;}                                                      // kidney/scalloped bunker
       }
       const inFw=(g.par!==3&&!beyond&&y>5&&y<g.L+3&&Math.abs(x-g.cx(y))<g.fww(y)),inTee=(y>=0&&y<7&&Math.abs(x)<8.5);
+      // ITEM 12: the first cut - a band outside the fairway, and a surround outside the green's collar, so
+      // even a par 3 (which has no fairway) still reads green, collar, first cut, rough.
+      const inFc=(g.par!==3&&!beyond&&y>4.4&&y<g.L+3.6&&Math.abs(x-g.cx(y))<g.fww(y)+CUTW)||(gd<=gm2*1.62);
       let id=beyond?DE:RO;
-      if(gd<=gm2)id=GR;else if(gd<=gm2*1.32)id=FR;else if(inWater)id=WA;else if(inSand)id=SA;else if(inFw)id=FW;else if(inTee)id=TE;
+      if(gd<=gm2)id=GR;else if(gd<=gm2*1.32)id=FR;else if(inWater)id=WA;else if(inSand)id=SA;else if(inFw)id=FW;else if(inTee)id=TE;else if(inFc)id=FC;
       if(oceanSide&&(id===RO||id===DE)){const exx=oedge(vy);if((oceanSide>0&&vx>exx)||(oceanSide<0&&vx<exx))id=OC;}
       T[cy*GW+cx]=id;}}
   const at=(x,y)=>(x<0||y<0||x>=GW||y>=GH)?-1:T[y*GW+x];
   const edge=(x,y,id)=>at(x-1,y)!==id||at(x+1,y)!==id||at(x,y-1)!==id||at(x,y+1)!==id;
   const DIST=new Int16Array(GW*GH).fill(999); let q=[];
   const p3corr=(g.par===3);   // par-3: no fairway, but keep a NATIVE (rough) corridor clear of trees so there's a line to the green
-  for(let i=0;i<GW*GH;i++){const t=T[i]; let s0=(t===FW||t===GR||t===FR||t===SA||t===WA||t===TE);
+  for(let i=0;i<GW*GH;i++){const t=T[i]; let s0=(t===FW||t===GR||t===FR||t===SA||t===WA||t===TE||t===FC);
     if(!s0&&p3corr&&t===RO){const x=XY[i*2],y=XY[i*2+1]; if(y>4&&y<g.L&&Math.abs(x-g.cx(y))<g.fww(y)*0.82) s0=true;}
     if(s0){DIST[i]=0;q.push(i);}}
   for(let qi=0;qi<q.length;qi++){const i=q[qi],x=i%GW,y=(i/GW)|0,d=DIST[i]+1;
@@ -27288,7 +27305,15 @@ function pxTerrainURL(g, seedN, B, opts){
     else if(id===FR){col=dith(cx,cy,lv)?C.fringe:shade(C.fringe,-6);if(edge(cx,cy,FR)&&at(cx,cy-1)!==GR)col=shade(C.fringe,-14);}
     else if(id===WA){const x=XY[(cy*GW+cx)*2],y=XY[(cy*GW+cx)*2+1];let deep=0;if(g.water)deep=1-Math.min(1,Math.hypot((x-g.water.x)/(g.water.rx),(y-g.water.y)/(g.water.ry)));col=deep>0.4?shade(C.water,-16):C.water;const wave=Math.round(1.6+Math.sin(cx*0.28+cy*0.05)*1.3);if((cy&3)===(wave&3))col=shade(C.ripple,deep>0.4?-10:0);if(edge(cx,cy,WA))col=shade(C.ripple,22);}
     else if(id===SA){col=dith(cx,cy,lv)?shade(C.sand,7):C.sand;if(((cx+(cy&1?2:0))%6)===0&&cy%3===0)col=C.sandSpeck;if(edge(cx,cy,SA))col=C.sandLine;}
-    else if(id===FW){const stripe=(Math.floor(cy/(6*os))%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);if(edge(cx,cy,FW)){const nb=at(cx,cy-1);col=(nb===GR||nb===FR)?C.cut:C.fwEdge;}}
+    else if(id===FW){const stripe=(Math.floor(cy/(6*os))%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);
+      if(edge(cx,cy,FW)){const nb=at(cx,cy-1);
+        // ITEM 12: against the first cut the fairway edge is a soft mow line, not the hard dark rough edge.
+        const fcAdj=(at(cx-1,cy)===FC||at(cx+1,cy)===FC||at(cx,cy-1)===FC||at(cx,cy+1)===FC);
+        col=(nb===GR||nb===FR)?C.cut:(fcAdj?shade(C.fw,-10):C.fwEdge);}}
+    else if(id===FC){col=dith(cx,cy,lv*0.86)?C.first:shade(C.first,-6);
+      // one mow line, and only where the first cut meets the true rough - inside, it blends into the fairway
+      const n1=at(cx-1,cy),n2=at(cx+1,cy),n3=at(cx,cy-1),n4=at(cx,cy+1);
+      if(n1===RO||n2===RO||n3===RO||n4===RO||n1===DE||n2===DE||n3===DE||n4===DE)col=C.firstLine;}
     else if(id===TE){col=C.cut;if(edge(cx,cy,TE))col=C.fwEdge;}
     else if(id===OC){const vy2=(cy+0.5)/GH*cam[3]+cam[1],vx2=(cx+0.5)/GW*cam[2]+cam[0];
       const dS=oceanSide>0?vx2-oedge(vy2):oedge(vy2)-vx2;
@@ -27308,7 +27333,8 @@ function pxTerrainURL(g, seedN, B, opts){
   const proj=(x,y)=>{const f=Math.max(0,Math.min(1,y/g.span));const sy=HV_H-34-f*(HV_H-78);const sx=HV_W/2+x*g.sx*g.t(y);
     return [Math.round((sx-cam[0])/cam[2]*GW),Math.round((sy-cam[1])/cam[3]*GH)];};
   const pathSide=(hvHash(seed,1,9)<0.5?-1:1), pw=Math.max(2,Math.round(2*os));
-  for(let yy=6; yy<g.L-2; yy+=0.6/os){ const off=g.fww(yy)+2.4+Math.sin(yy*0.08)*1.2, xx=g.cx(yy)+pathSide*off;
+  // ITEM 12: the path runs OUTSIDE the first cut (it used to sit at fairway+2.4, which the new band now covers)
+  for(let yy=6; yy<g.L-2; yy+=0.6/os){ const off=g.fww(yy)+CUTW+2.4+Math.sin(yy*0.08)*1.2, xx=g.cx(yy)+pathSide*off;
     const [px,py]=proj(xx,yy); if(at(px,py)===RO||at(px,py)===DE){ for(let w=0;w<pw;w++) put(px+pathSide*w,py,w<pw*0.5?C.path:shade(C.path,-14)); } }
   const tg=(B.treeG||['#2e5c1e','#3f7a28','#5d9c34']).map(hex),pine=(B.pine||['#1b4416','#265a1f','#37732a']).map(hex),
     autumn=(B.treeA||['#a06a1c','#c08a2a']).map(hex),cact=(B.cactus||['#4f8f3f','#6aa74f']).map(hex),trunk=hex(B.trunk||'#7a5a2e'),
