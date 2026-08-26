@@ -89,45 +89,58 @@ if (!rosterMatch) {
   }
 }
 
-/* 5b. EVERY SPRITE IS EXACTLY THE DECLARED GRID.
-      The renderer walks a fixed SPRITE_W by SPRITE_H box and reads row[x]
-      for each cell, so a row one character short just renders transparent
-      at the end and a row one character long silently loses its tail. Both
-      look like a slightly wrong drawing rather than a bug, which is exactly
-      the sort of thing that survives review. With fifty-plus hand written
-      sprites this is the guard that keeps them honest. */
+/* 5b. EVERY CHARACTER HAS A GENERATED SPRITE, AND IT IS THE DECLARED SIZE.
+      Sprites come from allstars/gen_sprites_v2.py as a V2_SPRITES table.
+      The renderer walks a fixed V2_W by V2_H box and reads row[x] per cell,
+      so a short row renders transparent at the end and a long one silently
+      loses its tail: both look like a slightly wrong drawing rather than a
+      bug. An earlier hand written sprite set shipped with twenty of those
+      and nothing failed, which is why this check exists. It also catches a
+      roster entry with no sprite at all, which would throw on first draw. */
 {
-  const wM = page.match(/const SPRITE_W = (\d+)/);
-  const hM = page.match(/const SPRITE_H = (\d+)/);
-  if (!wM || !hM) {
-    problems.push('could not read SPRITE_W / SPRITE_H from allstars/index.html.');
-  } else if (rosterMatch) {
+  const wM = page.match(/V2_W = (\d+)/);
+  const hM = page.match(/V2_H = (\d+)/);
+  const tableM = page.match(/const V2_SPRITES = \{([\s\S]*?)\n\};/);
+  if (!wM || !hM || !tableM) {
+    problems.push('could not read V2_W / V2_H / V2_SPRITES from allstars/index.html. '
+      + 'Has the generated sprite block been replaced by hand?');
+  } else {
     const W = +wM[1], H = +hM[1];
-    /* Split the roster body on each entry so a bad row can be named. */
-    const entries = rosterMatch[1].split(/\n  \{ k:'/).slice(1);
-    for (const entry of entries) {
-      const key = (entry.match(/^([a-z]+)'/) || [])[1] || '?';
-      const artM = entry.match(/art:\s*\[([\s\S]*?)\]/);
-      if (!artM) { problems.push(`character "${key}" has no art array.`); continue; }
-      const rows = [...artM[1].matchAll(/'([^']*)'/g)].map(m => m[1]);
-      if (rows.length !== H) {
-        problems.push(`character "${key}" has ${rows.length} sprite rows, expected ${H}.`);
-      }
-      const bad = rows.map((r, i) => [i, r.length]).filter(([, len]) => len !== W);
-      if (bad.length) {
-        const detail = bad.slice(0, 4).map(([i, len]) => `row ${i} is ${len}`).join(', ');
-        problems.push(`character "${key}" has ${bad.length} sprite row(s) that are not ${W} wide: ${detail}.`);
-      }
-      /* Every palette key a row uses must exist, or that cell draws nothing. */
-      const palM = entry.match(/pal:\{([^}]*)\}/);
-      if (palM) {
-        const palKeys = new Set([...palM[1].matchAll(/([A-Za-z])\s*:/g)].map(m => m[1]));
+    const spriteKeys = new Set();
+    const entries = [...tableM[1].matchAll(/(\w+):\{p:\{([^}]*)\},f:\{([\s\S]*?)\}\},/g)];
+    for (const [, key, palSrc, framesSrc] of entries) {
+      spriteKeys.add(key);
+      const palKeys = new Set([...palSrc.matchAll(/(\w):'/g)].map(m => m[1]));
+      const frames = [...framesSrc.matchAll(/(\w+):\[([^\]]*)\]/g)];
+      const seen = new Set();
+      for (const [, pose, rowsSrc] of frames) {
+        seen.add(pose);
+        const rows = [...rowsSrc.matchAll(/'([^']*)'/g)].map(m => m[1]);
+        if (rows.length !== H) {
+          problems.push(`sprite "${key}" pose "${pose}" has ${rows.length} rows, expected ${H}.`);
+        }
+        const bad = rows.map((r, i) => [i, r.length]).filter(([, l]) => l !== W);
+        if (bad.length) {
+          problems.push(`sprite "${key}" pose "${pose}" has ${bad.length} row(s) not ${W} wide `
+            + `(first: row ${bad[0][0]} is ${bad[0][1]}).`);
+        }
         const used = new Set();
         for (const r of rows) for (const ch of r) if (ch !== '.') used.add(ch);
         const missing = [...used].filter(c => !palKeys.has(c));
         if (missing.length) {
-          problems.push(`character "${key}" uses palette keys with no color: ${missing.join(', ')}.`);
+          problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
         }
+      }
+      for (const need of ['idle', 'run1', 'run2']) {
+        if (!seen.has(need)) problems.push(`sprite "${key}" is missing the "${need}" frame.`);
+      }
+    }
+    if (rosterMatch) {
+      const rosterCharKeys = [...rosterMatch[1].matchAll(/\{ k:'([^']+)'/g)].map(m => m[1]);
+      const noSprite = rosterCharKeys.filter(k => !spriteKeys.has(k));
+      if (noSprite.length) {
+        problems.push(`roster characters with no generated sprite: ${noSprite.join(', ')}. `
+          + 'Add a SPEC in allstars/gen_sprites_v2.py and regenerate.');
       }
     }
   }
