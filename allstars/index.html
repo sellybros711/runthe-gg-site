@@ -1674,6 +1674,19 @@ const DIFF = {
   hard:   { speed: 1.35, sweetWidth: 0.16, pitcherSkill: 1.12 },
 };
 
+/* Pitcher fatigue: each inning past the third, the pitcher tires. The
+   effect grows the wobble on the ideal spot and drops the strike rate.
+   Returns a scaling context resolveSwing and throwPitch consult per pitch. */
+function pitcherFatigue() {
+  const g = State.game;
+  const past = Math.max(0, g.inning - 3);
+  return {
+    wobbleMult: 1 + past * 0.25,
+    strikeDrop: past * 0.03,
+    level: past,   /* 0 fresh, 1 tiring, 2 gassed, 3+ cooked */
+  };
+}
+
 /* Pause lengths in ms. Named so nothing tunes one number without seeing what
    the others are set to; the game's pacing lives here more than anywhere
    else. */
@@ -1729,6 +1742,7 @@ function startFieldLoop() {
       }
       drawField(fCv.getContext('2d'), fCv.width, fCv.height, t, p || null, inWindup);
       drawMeter(mCv.getContext('2d'), mCv.width, mCv.height, t, p || { ideal: 0.5, pt: 'fastball' }, inWindup);
+      refreshStealButton();
     }
     fieldRafId = requestAnimationFrame(paint);
   };
@@ -1780,7 +1794,8 @@ function throwPitch() {
     / (0.85 + pitcher.pow / 400);
   /* ideal timing sweet spot centered around 0.55, shifted by pitcher control */
   const idealBase = pt === 'fastball' ? 0.5 : pt === 'curveball' ? 0.60 : 0.62;
-  let wobble = (Math.random() - 0.5) * 0.06 * diff.pitcherSkill;
+  const fatigue = pitcherFatigue();
+  let wobble = (Math.random() - 0.5) * 0.06 * diff.pitcherSkill * fatigue.wobbleMult;
   /* Scarecrow rattles the pitcher. His ideal spot swings wider than anyone
      else's on the roster, so timing him takes reading the meter, not muscle
      memory. */
@@ -1788,9 +1803,10 @@ function throwPitch() {
     wobble += (Math.random() - 0.5) * 0.14;
   }
   const ideal = clamp(idealBase + wobble, 0.28, 0.78);
-  /* Ball is a strike or a ball. The pitcher's control determines it. */
-  const strikeProb = 0.55 + (pitcher.con || pitcher.def*0.4) / 300;
-  const isStrike = Math.random() < clamp(strikeProb, 0.45, 0.85);
+  /* Ball is a strike or a ball. The pitcher's control determines it, minus
+     any accumulated fatigue for this pitcher over the game. */
+  const strikeProb = 0.55 + (pitcher.con || pitcher.def*0.4) / 300 - fatigue.strikeDrop;
+  const isStrike = Math.random() < clamp(strikeProb, 0.4, 0.85);
   /* Windup: the meter is on screen but does not sweep for a beat. This is
      the player's chance to see the pitcher, the pitch type, the ideal spot,
      and settle. `start` gets set when the sweep actually begins. */
@@ -1864,7 +1880,7 @@ function resolveSwing(cursorT) {
      looking like a statue would. Nothing in between. */
   if (batter.quirk === 'monument') {
     if (inZone && contact > 0.55) {
-      return recordHit('home run', batter);
+      return scheduleContactPlay('home run', batter);
     }
     g.strikes = 3;
     addLog(`${batter.n} does not move. Strike three.`);
@@ -1903,26 +1919,184 @@ function resolveSwing(cursorT) {
   let powForRoll = ctx.pow;
   if (batter.quirk === 'skittish' && contact > 0.7) powForRoll = Math.min(100, powForRoll + 15);
 
-  /* In zone: resolve to a batted ball outcome. */
-  const power = (powForRoll - 50) / 100;   /* +/- .5 */
+  /* In zone: resolve to a batted ball outcome. Rather than mutating the
+     bases and firing the callout instantly, we stage the play: bat swing
+     then ball trajectory then runners then callout. All of that happens
+     in scheduleContactPlay below. */
+  const power = (powForRoll - 50) / 100;
   const hrChance = 0.02 + contact * 0.20 + Math.max(0, power) * 0.14;
-  if (Math.random() < hrChance) return recordHit('home run', batter);
+  if (Math.random() < hrChance) return scheduleContactPlay('home run', batter);
 
-  /* Extra base */
   if (Math.random() < 0.05 + contact * 0.08 + Math.max(0, power) * 0.06) {
-    return recordHit(Math.random() < 0.35 ? 'triple' : 'double', batter);
+    return scheduleContactPlay(Math.random() < 0.35 ? 'triple' : 'double', batter);
   }
-  /* Single vs out. The Invisible Man is genuinely hard to find in the field:
-     an extra chance to sneak a grounder through when he swings. */
   let hitOdds = 0.28 + contact * 0.45 + (ctx.spd - 50)/300;
   if (batter.k === 'invisible') hitOdds += 0.05;
-  if (Math.random() < hitOdds) return recordHit('single', batter);
-  /* Out on contact */
+  if (Math.random() < hitOdds) return scheduleContactPlay('single', batter);
+  /* Out on contact: same staging, the callout fires when the fielder gets
+     the ball. */
   const out = Math.random() < 0.55 ? 'ground out' : 'fly out';
-  addLog(`${batter.n} ${out}s to the ${randPos(out)}.`);
-  showCallout(out === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
+  return scheduleContactPlay(out, batter);
+}
+
+/* -------- Play staging: bat, ball, runners, callout --------
+   scheduleContactPlay is what resolveSwing calls after it decides what a
+   contacted pitch turns into. It records the outcome onto g.play, kicks
+   off a bat swing, then a ball trajectory animation, then applies the
+   mutation to the bases with an animated runner tween, then fires the
+   callout and moves on. All the timing lives in BEAT. */
+
+function ballTrajectory(kind) {
+  const rand = (a,b) => a + Math.random() * (b - a);
+  const sign = () => Math.random() < 0.5 ? -1 : 1;
+  switch (kind) {
+    case 'home run':   return { dx: rand(0.55, 1.05)*sign(), dy: -2.4, arcH: 260, duration: 1500 };
+    case 'triple':     return { dx: rand(0.75, 1.2)*sign(),  dy: -1.4, arcH: 150, duration: 1250 };
+    case 'double':     return { dx: rand(0.5, 1.0)*sign(),   dy: -1.1, arcH: 110, duration: 1050 };
+    case 'single':     return { dx: rand(0.3, 0.7)*sign(),   dy: -0.7, arcH: 60,  duration: 850 };
+    case 'fly out':    return { dx: rand(0.15,0.5)*sign(),   dy: -1.3, arcH: 170, duration: 1200, caught: true };
+    case 'ground out': return { dx: rand(0.35,0.8)*sign(),   dy: -0.15,arcH: 18,  duration: 700,  caught: true };
+  }
+  return { dx: 0, dy: 0, arcH: 0, duration: 700 };
+}
+
+/* How many bases the batter travels for this outcome. -1 means back to
+   home (a HR); -2 means the batter is out (ground/fly out). */
+function batterEndBase(kind) {
+  return { 'single':0, 'double':1, 'triple':2, 'home run':-1,
+           'ground out':-2, 'fly out':-2 }[kind];
+}
+
+/* Named waypoints on the diamond, keyed by an integer index. drawField
+   converts each index to a pixel position from the current cx/cy/r.
+   -1 = home (batter box); 0/1/2 = 1st/2nd/3rd; 3 = home again (a run
+   scored, runner is done). */
+function waypointForBase(field, idx) {
+  const { cx, cy, r } = field;
+  if (idx === -1) return [cx - 22, cy + r + 8];
+  if (idx === 0)  return [cx + r, cy];
+  if (idx === 1)  return [cx, cy - r];
+  if (idx === 2)  return [cx - r, cy];
+  if (idx === 3)  return [cx + 2, cy + r + 8];
+  return [cx, cy];
+}
+
+function batterPathIndices(kind) {
+  const end = batterEndBase(kind);
+  if (end === -2) return [-1, 0];   /* out, runs to first anyway */
+  const arr = [-1];
+  const target = end === -1 ? 3 : end;
+  for (let i = 0; i <= target; i++) arr.push(i);
+  return arr;
+}
+function existingRunnerPathIndices(startBase, kind) {
+  const advance = { 'single':1, 'double':2, 'triple':3, 'home run':4 }[kind] || 0;
+  const arr = [];
+  const end = startBase + advance;
+  for (let b = startBase; b <= Math.min(end, 3); b++) arr.push(b);
+  return arr;
+}
+function pathPointAt(field, path, t) {
+  if (path.length === 1) return waypointForBase(field, path[0]);
+  const scaled = t * (path.length - 1);
+  const seg = Math.min(Math.floor(scaled), path.length - 2);
+  const frac = scaled - seg;
+  const a = waypointForBase(field, path[seg]);
+  const b = waypointForBase(field, path[seg + 1]);
+  return [a[0] + (b[0] - a[0]) * frac, a[1] + (b[1] - a[1]) * frac];
+}
+
+function scheduleContactPlay(kind, batter) {
+  const g = State.game;
+  const traj = ballTrajectory(kind);
+  const isOut = kind === 'ground out' || kind === 'fly out';
+  const preBases = [...g.bases];
+
+  g.play = {
+    kind, batter, isOut,
+    ball: traj,
+    startedAt: performance.now(),
+    swingUntil: performance.now() + 240,
+    ballUntil: performance.now() + traj.duration,
+    runnerStart: performance.now() + Math.max(180, traj.duration - 400),
+    runnerUntil: performance.now() + traj.duration + 600,
+    preBases,
+    batterPath: batterPathIndices(kind),
+    runnerPaths: preBases.map((r, i) => r ? existingRunnerPathIndices(i, kind) : null),
+    applied: false,
+  };
+
+  const applyMs = traj.duration;   /* apply mutation when ball arrives */
+  setTimeout(() => {
+    if (!g.play || g.play.applied) return;
+    g.play.applied = true;
+    if (isOut) applyOutMutation(kind, batter);
+    else       applyHitMutation(kind, batter);
+    refreshHud();
+  }, applyMs);
+
+  const finishMs = traj.duration + 700;
+  setTimeout(() => {
+    if (!g.play) return;
+    const wasOut = g.play.isOut;
+    g.play = null;
+    if (wasOut) afterOutTransition();
+    else        afterHitTransition(kind);
+  }, finishMs);
+}
+
+function applyHitMutation(kind, batter) {
+  const g = State.game;
+  statBump(batter.k,'ab');
+  statBump(batter.k,'hits');
+  if (kind === 'home run') {
+    statBump(batter.k,'hr');
+    let scored = 1;
+    for (let i=0;i<3;i++) if (g.bases[i]) scored++;
+    g.bases = [null,null,null];
+    scoreRuns(scored);
+    addLog(`${batter.n} crushes it. HOME RUN. ${scored} run${scored>1?'s':''} score.`, true);
+    showCallout(`HOME RUN · ${scored} RUN${scored>1?'S':''}`, 'homer');
+    return;
+  }
+  const bases = { 'single':1,'double':2,'triple':3 }[kind];
+  let scored = 0;
+  const newBases = [null,null,null];
+  for (let i=2;i>=0;i--) {
+    const runner = g.bases[i];
+    if (!runner) continue;
+    const dest = i + bases;
+    if (dest >= 3) scored++;
+    else newBases[dest] = runner;
+  }
+  newBases[bases-1] = batter;
+  g.bases = newBases;
+  if (scored) scoreRuns(scored);
+  addLog(`${batter.n} lines a ${kind}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
+  showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
+}
+
+function applyOutMutation(kind, batter) {
+  const g = State.game;
+  statBump(batter.k,'ab');
+  g.outs++;
+  addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
+  showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
+}
+
+function afterHitTransition(kind) {
+  const g = State.game;
+  nextBatter();
   refreshHud();
-  return recordOut(out, false);
+  setTimeout(startAtBat, kind === 'home run' ? BEAT.afterHomer : BEAT.afterHit);
+}
+
+function afterOutTransition() {
+  const g = State.game;
+  if (g.outs >= 3) return endHalfInning();
+  nextBatter();
+  refreshHud();
+  setTimeout(startAtBat, BEAT.afterOut);
 }
 
 function randPos(out) {
@@ -2198,35 +2372,77 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillStyle = '#eaeaea';
   ctx.fillRect(cx - 8, cy - 2, 16, 4);
 
-  /* Runners on base */
+  /* Fielders and defense are always drawn. The batter and base runners
+     get drawn either statically at their bases (no active play) or as
+     animated waypoints along their paths (a play is in flight). */
   const g = State.game;
+  const field = { cx, cy, r };
+
   if (g) {
-    const bs = g.bases;
-    if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 4, bs[0]);
-    if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 4, bs[1]);
-    if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 4, bs[2]);
-    /* Batter next to the plate, offset into the left batter's box */
-    const batter = currentBatter();
-    if (batter) drawRunner(ctx, cx - 22, cy + r + 6, batter, 3);
     /* Catcher behind plate */
-    const catcher = { ...(currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1]) };
+    const catcher = currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1];
     if (catcher && catcher.pal) drawRunner(ctx, cx, cy + r + 22, catcher, 2.4);
     /* Pitcher on the mound */
     const pit = currentPitcher();
     if (pit) drawRunner(ctx, cx, cy - 6, pit, 3);
-    /* A little fielder cluster behind the mound so the field isn't empty */
+    /* Fielder cluster */
     const fs = currentFieldingTeam().batters;
-    if (fs[2]) drawRunner(ctx, cx - r*0.55, cy - r*0.15, fs[2], 2.2);   /* shortstop */
-    if (fs[3]) drawRunner(ctx, cx + r*0.55, cy - r*0.15, fs[3], 2.2);   /* second */
-    if (fs[4]) drawRunner(ctx, cx + r*0.85, cy + r*0.10, fs[4], 2.2);   /* first */
-    if (fs[5]) drawRunner(ctx, cx - r*0.85, cy + r*0.10, fs[5], 2.2);   /* third */
-    if (fs[6]) drawRunner(ctx, cx - w*0.28, cy - h*0.14, fs[6], 2.4);   /* left field */
-    if (fs[7]) drawRunner(ctx, cx,           cy - h*0.20, fs[7], 2.4);  /* center */
-    if (fs[1]) drawRunner(ctx, cx + w*0.28, cy - h*0.14, fs[1], 2.4);   /* right */
+    if (fs[2]) drawRunner(ctx, cx - r*0.55, cy - r*0.15, fs[2], 2.2);
+    if (fs[3]) drawRunner(ctx, cx + r*0.55, cy - r*0.15, fs[3], 2.2);
+    if (fs[4]) drawRunner(ctx, cx + r*0.85, cy + r*0.10, fs[4], 2.2);
+    if (fs[5]) drawRunner(ctx, cx - r*0.85, cy + r*0.10, fs[5], 2.2);
+    if (fs[6]) drawRunner(ctx, cx - w*0.28, cy - h*0.14, fs[6], 2.4);
+    if (fs[7]) drawRunner(ctx, cx,           cy - h*0.20, fs[7], 2.4);
+    if (fs[1]) drawRunner(ctx, cx + w*0.28, cy - h*0.14, fs[1], 2.4);
+
+    if (g.play) {
+      /* A contact play is animating. Draw the pre-play runners along
+         their paths, and the batter as another runner along their own
+         path. The bases themselves are only rewritten when the play's
+         apply timer fires. */
+      const p = g.play;
+      const now = performance.now();
+      const rt = clamp((now - p.runnerStart) / (p.runnerUntil - p.runnerStart), 0, 1);
+      p.preBases.forEach((runner, i) => {
+        if (!runner || !p.runnerPaths[i]) return;
+        const [rx, ry] = pathPointAt(field, p.runnerPaths[i], rt);
+        drawRunner(ctx, rx, ry - 4, runner, 2.6);
+      });
+      /* Batter as runner: starts moving at the same time as the ball is */
+      const bt = clamp((now - p.startedAt) / Math.max(300, p.ball.duration - 100), 0, 1);
+      const [bx, by] = pathPointAt(field, p.batterPath, bt);
+      drawRunner(ctx, bx, by - 4, p.batter, 3);
+      /* Bat swing arc, first 240ms of the play */
+      if (now < p.swingUntil) {
+        const st = clamp((now - p.startedAt) / (p.swingUntil - p.startedAt), 0, 1);
+        drawBatSwing(ctx, cx - 22, cy + r + 8, st);
+      }
+      /* Ball trajectory: plate to landing spot */
+      if (now < p.ballUntil) {
+        const bt2 = clamp((now - p.startedAt) / p.ball.duration, 0, 1);
+        const startX = cx, startY = cy + r + 6;
+        const endX = startX + p.ball.dx * r;
+        const endY = cy + p.ball.dy * r;
+        const arc = 4 * p.ball.arcH * bt2 * (1 - bt2);
+        const bxx = startX + (endX - startX) * bt2;
+        const byy = startY + (endY - startY) * bt2 - arc;
+        drawBaseball(ctx, bxx, byy);
+      }
+    } else {
+      /* No play in flight: runners are static on their bases, batter
+         stands in the batter's box. */
+      const bs = g.bases;
+      if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 4, bs[0], 2.6);
+      if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 4, bs[1], 2.6);
+      if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 4, bs[2], 2.6);
+      const batter = currentBatter();
+      if (batter) drawRunner(ctx, cx - 22, cy + r + 6, batter, 3);
+    }
   }
 
-  /* Pitch ball moving from mound to plate */
-  if (pitch && !inWindup) {
+  /* Pitch ball moving from mound to plate. Only when no contact-play is
+     in flight (so the ball isn't drawn twice). */
+  if (pitch && !inWindup && !(g && g.play)) {
     const bx = cx;
     const by = cy;
     const px = cx;
@@ -2238,16 +2454,49 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     if (pitch.pt === 'curveball') {
       ballX += Math.sin(e * Math.PI) * 12 * (pitch.ideal < 0.5 ? -1 : 1);
     }
-    /* trail */
     ctx.fillStyle = 'rgba(255,255,255,.25)';
     ctx.beginPath(); ctx.arc(ballX - (px-bx)*.06, ballY - (py-by)*.06, 3, 0, Math.PI*2); ctx.fill();
-    /* ball */
-    ctx.fillStyle = '#eaeaea';
-    ctx.beginPath(); ctx.arc(ballX, ballY, 5, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#c94b1a';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(ballX, ballY, 4, -Math.PI*0.2, Math.PI*0.3); ctx.stroke();
+    drawBaseball(ctx, ballX, ballY);
   }
+
+  /* Pitcher fatigue chip in the top strip so a player can see it. */
+  if (g && !g.play) {
+    const fat = pitcherFatigue();
+    if (fat.level > 0) {
+      const label = fat.level >= 3 ? 'GASSED' : fat.level === 2 ? 'TIRING' : 'WARM';
+      const color = fat.level >= 3 ? '#c94b1a' : fat.level === 2 ? '#e3b04c' : '#5bb083';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = color;
+      ctx.fillText(label, cx, cy - 26);
+    }
+  }
+}
+
+function drawBaseball(ctx, x, y) {
+  ctx.fillStyle = '#eaeaea';
+  ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#c94b1a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x, y, 4, -Math.PI*0.2, Math.PI*0.3); ctx.stroke();
+}
+
+function drawBatSwing(ctx, x, y, t) {
+  /* A wooden bat sweeping horizontally at the plate. t goes 0 to 1 over
+     the swing window, so the bat rotates from behind the batter to in
+     front. */
+  const cx = x + 6, cy = y - 12;
+  const angle = -Math.PI * 0.6 + Math.PI * 1.2 * t;
+  const len = 22;
+  const bx = cx + Math.cos(angle) * len;
+  const by = cy + Math.sin(angle) * len;
+  ctx.strokeStyle = '#8b6a3a';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
+  ctx.strokeStyle = '#5a3a1c';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(angle) * 6, cy + Math.sin(angle) * 6); ctx.stroke();
 }
 
 const runnerCache = new Map();
@@ -2343,6 +2592,15 @@ function renderGame() {
   meter.appendChild(el('div','hint', 'Land the marker on the <b>green zone</b> to make solid contact.'));
   s.appendChild(meter);
 
+  /* Steal button, only visible when there is a runner who can advance. */
+  const stealRow = el('div', 'controls');
+  const stealBtn = el('button','btn ghost','Steal 2nd');
+  stealBtn.id = 'steal-btn';
+  stealBtn.style.display = 'none';
+  stealBtn.onclick = attemptSteal;
+  stealRow.appendChild(stealBtn);
+  s.appendChild(stealRow);
+
   const atbat = el('div','atbat');
   atbat.id = 'atbat';
   refreshAtBatCard(atbat);
@@ -2426,6 +2684,51 @@ function refreshHud() {
   }
   const ptName = document.getElementById('pt-name');
   if (ptName && g.pitch) ptName.textContent = g.pitch.pt.toUpperCase();
+  refreshStealButton();
+}
+
+function refreshStealButton() {
+  const btn = document.getElementById('steal-btn');
+  if (!btn) return;
+  const g = State.game;
+  if (!g || g.over || g.play) { btn.style.display = 'none'; return; }
+  /* Only offer a straight steal: runner on 1st going to 2nd, when 2nd is
+     empty. Available only during the windup, before the meter starts. */
+  const canSteal = g.bases[0] && !g.bases[1] && g.pitch && !g.pitch.swung
+                 && performance.now() < g.pitch.windupUntil;
+  btn.style.display = canSteal ? '' : 'none';
+  if (canSteal) btn.textContent = `Steal 2nd · ${g.bases[0].n}`;
+}
+
+function attemptSteal() {
+  const g = State.game;
+  if (!g || !g.bases[0] || g.bases[1]) return;
+  if (!g.pitch || g.pitch.swung || g.play) return;
+  const runner = g.bases[0];
+  const pitcher = currentPitcher();
+  g.pitch.swung = true;
+  endAtBatCleanup();
+  addLog(`${runner.n} breaks for 2nd.`);
+  showCallout('STEAL ATTEMPT', 'sub');
+  const odds = clamp(0.35 + (runner.spd - 60)/200 - (pitcher.con - 55)/300, 0.15, 0.9);
+  const success = Math.random() < odds;
+  setTimeout(() => {
+    if (success) {
+      g.bases[0] = null;
+      g.bases[1] = runner;
+      g.stats.sb[runner.k] = (g.stats.sb[runner.k] || 0) + 1;
+      addLog(`SAFE. ${runner.n} takes 2nd.`);
+      showCallout('STOLEN BASE', 'hit');
+    } else {
+      g.bases[0] = null;
+      g.outs++;
+      addLog(`CAUGHT STEALING. ${runner.n} tagged out. ${g.outs} out.`);
+      showCallout('CAUGHT STEALING', 'strike');
+    }
+    refreshHud();
+    if (g.outs >= 3) return setTimeout(endHalfInning, 1200);
+    setTimeout(throwPitch, 1400);
+  }, 900);
 }
 
 function addLog(text, big=false) {
