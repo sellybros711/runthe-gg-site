@@ -70,14 +70,15 @@ if (!rosterMatch) {
     + 'restructured? This check keeps the roster from silently shrinking.');
 } else {
   const count = (rosterMatch[1].match(/\{ k:/g) || []).length;
-  if (count < 20) {
-    problems.push(`ROSTER holds ${count} characters. The finalized roster is twenty-three; `
-      + 'anything under twenty means somebody has been dropped in a rewrite.');
+  if (count < 30) {
+    problems.push(`ROSTER holds ${count} characters. The current roster runs into the mid thirties; `
+      + 'a drop below thirty means somebody has been cut in a rewrite.');
   }
   /* Every quirk key referenced on a roster row must be one the engine knows,
      or the character silently plays like the base template and the quirk note
      on the card lies about them. */
-  const allowedQuirks = new Set(['transform','confuse','skittish','monument']);
+  const allowedQuirks = new Set(['transform','confuse','skittish','monument',
+                                  'hex','naughty','stall','frenzy','drain']);
   const quirks = [...rosterMatch[1].matchAll(/quirk:'([^']+)'/g)].map(m => m[1]);
   const unknown = quirks.filter(q => !allowedQuirks.has(q));
   if (unknown.length) {
