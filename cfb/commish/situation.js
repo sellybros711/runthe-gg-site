@@ -232,11 +232,14 @@
        generator this sport has, and it needs to be one field rather than the same filter
        written slightly differently in nine items.
 
-       NOT "the Group of Five", deliberately. That is a BLOC in this mode and a line in the
-       money table, but it is not in the membership: the seventy schools the season is played
-       with are the four powers plus what is left of the Pac-12 plus the independents. So an
-       outsider here is a team with no power conference behind it, which is what the argument
-       is actually about, rather than a category the season cannot produce. */
+       NOT "the Group of Five", deliberately, and the reason has changed without the code
+       needing to. That phrase names a BLOC in this mode and a line in the money table, and it
+       used to name nothing on the field at all: the season was played with seventy schools,
+       sixty-seven of them power, so an item written about a Group of Five team could not fire.
+       The whole division is on the field now and it could. It is still the wrong test. An
+       outsider is a team with no power conference behind it, which is what the argument is
+       actually about and which correctly catches an independent and whatever the Pac-12 is
+       this year, neither of which is in the Group of Five. */
     sit.outsider = unbeaten.filter(function (t) {
       return !(confs[t.conference] && confs[t.conference].power);
     })[0] || null;

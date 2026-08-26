@@ -20,6 +20,7 @@ const require = createRequire(import.meta.url);
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
+import { leagueTeams } from './league.mjs';
 const L = require(ROOT + '/cfb/commish/ledger.js');
 const B = require(ROOT + '/cfb/commish/blocs.js');
 const D = require(ROOT + '/cfb/commish/docket.js');
@@ -27,7 +28,7 @@ const S = require(ROOT + '/cfb/commish/season.js');
 const SIT = require(ROOT + '/cfb/commish/situation.js');
 const CAL = require(ROOT + '/cfb/commish/calendar.js');
 const E = require(ROOT + '/cfb/engine.js');
-const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+const teams = leagueTeams(ROOT);
 
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
@@ -76,11 +77,17 @@ console.log('\n=== every item is well formed ===');
   const prose = JSON.stringify(D.ITEMS);
   ok('nobody is quoted by name', !/\b(commissioner|president) [A-Z][a-z]+/.test(prose));
 
-  /* AND A VOICE FITS THE BOX IT IS DRAWN IN. The desk gives a speaker two lines on a phone
-     and test_desk asserts that, but it asserts it about whichever item its walk happens to
-     land on, so a long line can sit in the docket for weeks and only fail once the shuffle
-     reaches it. Eighty-five characters is the longest line that has ever rendered in two, and
-     writing a new one at ninety-seven is not a thing to find out from a browser. */
+  /* AND A VOICE FITS THE BOX IT IS DRAWN IN, roughly. The desk gives a speaker two lines on a
+     phone and eighty-five characters is about the longest quote that has ever rendered in two.
+
+     THIS IS A CANARY AND NOT THE GUARD, which is worth knowing before trusting it. It cannot
+     be the guard for two reasons: the desk renders the SPEAKER'S NAME in the same flow, so
+     the real budget is the name plus the quote, and the font is proportional and the name is
+     bold, so twelve characters of one name are wider than fourteen of another. A line that
+     overflowed at eighty-three characters passed this check while sitting at ninety-five
+     rendered, next to another line at exactly ninety-five that fits. test_desk draws all two
+     hundred and twenty-five into the real container and measures them, which is the guard.
+     This one is here because it is free and it catches the egregious case without a browser. */
   const long = [];
   D.ITEMS.forEach((it) => {
     (it.voices || []).forEach((v) => {

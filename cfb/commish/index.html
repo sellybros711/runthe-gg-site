@@ -966,6 +966,24 @@
     border-left:2px solid var(--line-2)}
   .realnote{margin-top:11px;font-size:11.5px;color:var(--dim-2);line-height:1.4}
 
+  /* WHO MOVED AND WHO GOT FIRED. A wrapping row of club-coloured chips rather than a table,
+     because none of it is a ranking: it is a handful of names a fan scans and reacts to, and
+     six of them beside each other read faster than six rows do. The colour is the club's own
+     and carries the whole identity, so the chip itself stays plain. */
+  .moved{margin-top:4px}
+  .mvrow{display:flex;flex-wrap:wrap;gap:6px}
+  .mv{display:grid;gap:1px;padding:6px 9px;border-radius:9px;background:var(--panel);
+    border-left:3px solid var(--tc,var(--line))}
+  .mv b{font-family:var(--fd);font-size:14px;line-height:1.05}
+  .mv em{font-style:normal;font-family:var(--fn);font-size:9.5px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2)}
+  /* An arrow rather than a colour alone, because up and down is the whole content of these
+     two rows and a red or green border is not readable to everybody. */
+  .mv.up b::after{content:' \2191';color:var(--good,#4ade80);font-size:12px}
+  .mv.down b::after{content:' \2193';color:var(--bad,#f87171);font-size:12px}
+  .mv.more{border-left-color:var(--line)}
+  .mv.more b{color:var(--dim)}
+
   .verdict{border-radius:16px;padding:20px 18px;text-align:center;border:1px solid var(--line);
     background:var(--grad-panel);margin-bottom:12px}
   .verdict.bad{border-color:rgba(239,68,68,.45)}
@@ -1211,7 +1229,7 @@
 
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
-<script src="ledger.js?v=5"></script>
+<script src="ledger.js?v=6"></script>
 <script src="blocs.js?v=3"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
@@ -1219,11 +1237,17 @@
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=1"></script>
 <script src="docket.js?v=7"></script>
-<script src="season.js?v=11"></script>
+<!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
+     null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
+     team is frozen at the season the term began: the top five in 2025 are the top five in 2029
+     in the same order, one school wins four of the five titles, and nobody ever changes coach.
+     Nothing throws and every screen renders. test_page asserts the modules are actually live. -->
+<script src="churn.js?v=1"></script>
+<script src="season.js?v=12"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
 <script src="calendar.js?v=2"></script>
-<script src="situation.js?v=3"></script>
+<script src="situation.js?v=4"></script>
 <script src="fallout.js?v=3"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
@@ -1371,12 +1395,44 @@ function load(){
 }
 const draw=()=>{ world.rngCalls=(world.rngCalls||0)+1; return rng(); };
 
-/* Membership per year, off the draft game's own team data. Fetched rather than duplicated,
-   so there is one answer in this repo to what conference a school was in. */
+/* Membership per year, fetched rather than duplicated, so there is one answer in this repo
+   to what conference a school was in.
+
+   TWO FILES, AND THE RIGHT ONE MATTERS MORE THAN IT LOOKS. cfb_team_seasons.json is built
+   for the draft game, which picks a roster out of great historical seasons, so it is filtered
+   to the power conferences plus a hand-picked list of famous Group of Five years: SEVENTY
+   schools, sixty-seven of them power. Commish plays a LEAGUE with that file, which meant the
+   Group of Five sat at the table with a vote, a share of the money and a voice at every
+   meeting, arguing about access to a playoff none of its schools could physically enter.
+   cfb_fbs.json is the whole division, built by cfb/build/08-fbs.mjs.
+
+   THE FALLBACK IS NOT DECORATION. If the full file is missing or arrives looking wrong, the
+   mode opens on the old seventy rather than on nothing, and says so once in the console. A
+   term is still playable; it is just the smaller sport. */
 let MEMBERSHIP={};
+let TEAMS_FULL=false;
 async function loadTeams(){
-  const r=await fetch('/cfb/data/cfb_team_seasons.json?v=9');
-  const teams=await r.json();
+  let teams=null;
+  try{
+    const r=await fetch('/cfb/data/cfb_fbs.json?v=1');
+    if(r.ok){
+      const rows=await r.json();
+      /* WHAT A GOOD FILE LOOKS LIKE, checked here rather than trusted, because the failure
+         is silent: a truncated or half-written file would load, the league would quietly be
+         forty schools, and every screen would render. FBS is about 134 clubs and roughly
+         half of them are outside the power four. */
+      const cur=rows.filter?rows.filter((t)=>t.season===2025):[];
+      const g5=cur.filter((t)=>!['SEC','Big Ten','ACC','Big 12'].includes(t.conference)).length;
+      if(cur.length>=110&&g5>=50) teams=rows;
+      else console.warn('cfb_fbs.json looks wrong ('+cur.length+' teams, '+g5+' outside the power four), using the draft game data');
+    }
+  }catch(e){ /* falls through to the smaller file below */ }
+  if(teams){ TEAMS_FULL=true; }
+  else{
+    const r=await fetch('/cfb/data/cfb_team_seasons.json?v=9');
+    teams=await r.json();
+    console.warn('Commish is running on the draft game team file: the Group of Five is not on the field.');
+  }
   TEAMS=teams;
   for(const t of teams){
     (MEMBERSHIP[t.season]=MEMBERSHIP[t.season]||{})[t.school]=t.conference;
@@ -2955,13 +3011,26 @@ async function loadStates(){
 
 /* WHICH CONFERENCE HOLDS A STATE: the one with the most schools in it, ties going to the
    bigger conference nationally so the map does not flicker between two equal claims when a
-   single school moves somewhere else entirely. */
+   single school moves somewhere else entirely.
+
+   COUNTED OVER THE POWER CONFERENCES ONLY, which is the difference between a map and a
+   census. Ohio has one Big Ten school and six in the Mid-American; Texas has more schools
+   outside the power four than in it. Counting every school in the division, which is what
+   this did the moment the whole division arrived, colours Ohio as a Mid-American state and
+   tells a fan something they know to be false. Holding a state is a claim about the sport's
+   money and its recruiting, and only the four conferences with a vote are making it.
+
+   THE DOTS ARE UNAFFECTED. Every school on the field is still drawn where it is: this
+   decides the FILL behind them, and a state with nobody in the power four simply has no
+   holder and stays neutral, which is also true. */
 function stateHolders(mem){
   const count={}, size={};
   for(const school in mem){
     const p=PLACES[school]; if(!p||!p.state) continue;
-    (count[p.state]=count[p.state]||{})[mem[school]]=((count[p.state]||{})[mem[school]]||0)+1;
-    size[mem[school]]=(size[mem[school]]||0)+1;
+    const conf=mem[school];
+    if(L.POWERS.indexOf(conf)<0) continue;
+    (count[p.state]=count[p.state]||{})[conf]=((count[p.state]||{})[conf]||0)+1;
+    size[conf]=(size[conf]||0)+1;
   }
   const out={};
   for(const st in count){
@@ -3181,6 +3250,7 @@ function paintSeason(el,sim){
     +'</div>'
     +(sim.notes&&sim.notes.length
       ? '<div class="snotes">'+sim.notes.map((n)=>'<p>'+esc(n)+'</p>').join('')+'</div>' : '')
+    +movedBlock(sim)
     +(sim.fromRealData
       ? ''
       : '<p class="realnote">These teams are real. This season is not: the data stops at '
@@ -3190,6 +3260,48 @@ function paintSeason(el,sim){
      list on these screens where the sequence is the content. */
   reveal(el.querySelector('.rounds'));
   reveal(el.querySelector('.snotes'));
+  reveal(el.querySelector('.moved'));
+}
+
+/* WHO MOVED, AND WHO IS OUT OF A JOB.
+   The engine has worked both of these out since the league started churning and the page
+   showed neither, which meant the sport turned over behind the player's back: coaches were
+   fired, programmes climbed out of nowhere, and the only visible trace was that the bracket
+   had different names in it than last year. A carousel nobody is told about is the same as
+   no carousel.
+
+   NOT IN YEAR ONE, because there is nothing to compare against. The first season is the real
+   one and nobody has moved off it yet, so both lists are empty and the block does not draw. */
+function movedBlock(sim){
+  const risers=(sim.risers||[]).slice(0,4);
+  const fallers=(sim.risers||[]).slice(-4).reverse().filter((t)=>t.move<0);
+  const wheel=(sim.carousel||[]);
+  if(!risers.length&&!fallers.length&&!wheel.length) return '';
+  const chip=(t)=>'<span class="mv'+(t.move>0?' up':' down')+'" style="--tc:'+esc(t.color)+'">'
+    +'<b>'+esc(short(t.school))+'</b>'
+    +'<em>'+t.wins+'-'+t.losses+'</em></span>';
+  let h='<div class="moved">';
+  if(risers.length){
+    h+='<div class="eyebrow" style="margin:14px 0 7px">Nobody had these people anywhere</div>'
+      +'<div class="mvrow">'+risers.map(chip).join('')+'</div>';
+  }
+  if(fallers.length){
+    h+='<div class="eyebrow" style="margin:12px 0 7px">And these ones went the other way</div>'
+      +'<div class="mvrow">'+fallers.map(chip).join('')+'</div>';
+  }
+  if(wheel.length){
+    /* THE NUMBER FIRST, because a carousel is a scale before it is a list: fourteen jobs is a
+       bloodbath and three is a quiet winter, and that is the thing a fan reacts to. */
+    h+='<div class="eyebrow" style="margin:12px 0 7px">'+wheel.length
+      +(wheel.length===1?' job changed hands in December':' jobs changed hands in December')
+      +'</div>'
+      +'<div class="mvrow">'+wheel.slice(0,6).map((c)=>
+        '<span class="mv" style="--tc:'+esc(c.color)+'"><b>'+esc(short(c.school))+'</b>'
+        +'<em>'+esc(c.conference)+'</em></span>').join('')
+      +(wheel.length>6?'<span class="mv more"><b>+'+(wheel.length-6)+'</b><em>more</em></span>':'')
+      +'</div>';
+  }
+  return h+'</div>';
 }
 const short=(s)=>s.length>15?s.slice(0,14)+'.':s;
 /* One team's line in a bracket game: seed, who, what they scored. The winner is marked

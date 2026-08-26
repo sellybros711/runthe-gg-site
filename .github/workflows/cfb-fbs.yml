@@ -1,0 +1,116 @@
+# Build the whole FBS team file that Commish Simulator plays its league with.
+#
+# WHY A WORKFLOW AND NOT A COMMAND. cfb/data/cfb_fbs.json is built from the CFBD
+# API, which needs a key, and the key must never be committed to this repo or
+# pasted anywhere it would be stored. A repository secret is the one place it can
+# live: GitHub holds it encrypted, the job reads it into an env var for the length
+# of one step, and it never appears in the checkout, the log or the commit.
+#
+# ONE-TIME SETUP. Add the key at
+#   Settings > Secrets and variables > Actions > New repository secret
+#   Name: CFBD_KEY
+#   Value: the key from collegefootballdata.com/key
+# That page works on a phone. If you have already added CFBD_KEY for the rankings
+# workflow, this one uses the same secret and there is nothing to do.
+#
+# THEN, TO RUN IT. Actions tab > "Build the FBS league file" > Run workflow, with
+# commit set to true. Leave commit false for a dry run: the file is still built and
+# attached to the run as an artifact, and nothing is written to the repo.
+#
+# WHEN TO RUN IT. After a season finishes, to add that year. The file that ships
+# today covers 2005 to 2025 and was built without this workflow, from responses an
+# earlier build had already cached, so the first run of this is a refresh rather
+# than a rescue.
+#
+# WHAT IT PRODUCES. Every FBS team-season from 2005 on, about 2600 rows: a hundred
+# and thirty-six schools rather than the seventy in the draft game's file, which is
+# what puts the Group of Five on the field instead of only in the room. Strength is
+# a schedule-adjusted solve rather than raw point differential, because a league
+# containing both the SEC and the Mid-American cannot be rated on margin alone.
+#
+# IT CANNOT PUBLISH A BROKEN LEAGUE. 08-fbs.mjs refuses to write fewer than 110
+# current teams, fewer than 50 outside the power four, or fewer than 900 rows, and
+# exits non-zero instead. A bad key or a CFBD outage fails the run rather than
+# committing a file that would silently shrink the sport back to the powers.
+#
+# NO CACHE BUMP NEEDED. The page fetches this as cfb_fbs.json?v=1 and treats a
+# missing or wrong-looking file as "fall back to the draft game data", so a refresh
+# that arrives late costs nothing. If you change the SHAPE of a row rather than
+# adding a season, bump that ?v= in cfb/commish/index.html in the same commit.
+name: Build the FBS league file
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit cfb/data/cfb_fbs.json back to this branch (true/false)'
+        required: false
+        default: 'true'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Fails the run with a readable message rather than twenty-one seasons of
+      # "CFBD_KEY environment variable is required" followed by a refusal.
+      - name: Check the key is set
+        env:
+          CFBD_KEY: ${{ secrets.CFBD_KEY }}
+        run: |
+          if [ -z "$CFBD_KEY" ]; then
+            echo "::error::No CFBD_KEY secret. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "CFBD_KEY is set (${#CFBD_KEY} characters)."
+
+      - name: Build the league
+        env:
+          CFBD_KEY: ${{ secrets.CFBD_KEY }}
+        run: node cfb/build/08-fbs.mjs
+
+      # Read this in the log before trusting the file. The build prints the
+      # conference counts and the best teams of the current year; this is the shape
+      # of what it wrote, and the two ways it goes wrong are both visible here: a
+      # league that lost the Group of Five, and a rating that likes the wrong teams.
+      - name: Show what was built
+        run: |
+          node -e '
+            const r = require("./cfb/data/cfb_fbs.json");
+            const P = ["SEC", "Big Ten", "ACC", "Big 12"];
+            const cur = r.filter((t) => t.season === 2025);
+            console.log(r.length + " team-seasons, " + cur.length + " teams in 2025");
+            console.log(cur.filter((t) => !P.includes(t.conference)).length + " outside the power four");
+            const top = cur.slice().sort((a, b) => b.strength_z - a.strength_z).slice(0, 8);
+            console.log("best of 2025: " + top.map((t) => t.school + " " + t.record).join(", "));
+            const g5 = cur.filter((t) => !P.includes(t.conference) && t.conference !== "FBS Independents")
+              .sort((a, b) => b.strength_z - a.strength_z)[0];
+            console.log("best outside the power four: " + (g5 ? g5.school + " " + g5.record + " (" + g5.conference + ")" : "NONE, which is the bug"));
+          '
+
+      - name: Upload the league as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfb-fbs
+          path: cfb/data/cfb_fbs.json
+          if-no-files-found: error
+
+      - name: Commit if requested
+        if: ${{ github.event.inputs.commit == 'true' }}
+        run: |
+          git config user.name "fbs-bot"
+          git config user.email "noreply@anthropic.com"
+          git add cfb/data/cfb_fbs.json
+          git diff --cached --quiet && echo "no change, the league is already current" || {
+            git commit -m "Commish plays the whole division"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing (attempt $i)"
+              git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+            done
+          }

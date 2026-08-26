@@ -102,6 +102,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
     docket:!!window.PS_CFB_DOCKET, season:!!window.PS_CFB_SEASON, council:!!window.PS_CFB_COUNCIL,
     feed:!!window.PS_CFB_FEED, calendar:!!window.PS_CFB_CALENDAR,
     situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
+    churn:!!window.PS_CFB_CHURN,
   }));
   const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
   ok('every module is on the page',!dead.length,dead.join(', ')||Object.keys(mods).length+' modules');
@@ -121,6 +122,29 @@ console.log('\n=== every module the page needs is actually loaded ===');
       why:c&&c.bids?c.bids.map((v)=>v.city).join(', '):'no bids'};
   });
   ok('  and the docket can see the host sites through the page',wired.ok,wired.why);
+  /* AND SEASON.JS CAPTURED CHURN, which the presence check above genuinely cannot see: put
+     the tag after season.js instead of before it and window.PS_CFB_CHURN is still perfectly
+     alive by the time anybody looks, while the reference season.js took at load time is null
+     forever. The symptom is not an error, it is that the sport stops moving. So this asks the
+     engine for a season five years into a term and checks that somebody has moved off the
+     number they started on and that a December has a carousel in it. */
+  const churned=await p.evaluate(async()=>{
+    const L=window.PS_CFB_LEDGER, S=window.PS_CFB_SEASON, E=window.PS_CFB_ENGINE;
+    if(!L||!S||!E) return {ok:false,why:'a module is missing'};
+    let teams;
+    try{
+      const r=await fetch('/cfb/data/cfb_fbs.json?v=1');
+      teams=await r.json();
+    }catch(e){ return {ok:false,why:'no team data: '+e}; }
+    const w=L.createWorld({year:2025,membership:L.membershipFrom(teams,2025),seed:11});
+    w.year=2030;
+    let sim;
+    try{ sim=S.play(w,teams,E.createSeededRNG(3)); }catch(e){ return {ok:false,why:String(e)}; }
+    const moved=sim.teams.filter((t)=>Math.abs(t.z-t.baseZ)>0.2).length;
+    return {ok:moved>10&&sim.carousel.length>0,
+      why:moved+' of '+sim.teams.length+' teams moved, '+sim.carousel.length+' coaching changes'};
+  });
+  ok('  and the season engine got churn through the page',churned.ok,churned.why);
   ok('  no page errors',!errs.length,errs.join(' | ')||'none');
   await p.close();
 }
@@ -311,19 +335,41 @@ console.log('\n=== a season, and it survives the browser closing ===');
   await p.screenshot({path:SS+'commish_year.png'});
 
   const mid=await p.evaluate(()=>JSON.parse(localStorage.getItem('cfb_commish_term')).world);
-  ok('  the sport has moved by the end of it',
-    mid.playoff.teams!==12||mid.labour.revShare>0||mid.rules.confGames!==9||mid.history.length>3,
-    mid.playoff.teams+'-team playoff, '+mid.history.length+' rulings, year '+mid.year);
 
-  /* THE TERM IS THE SAVE FILE, which is what the ledger was built for. */
-  await p.reload({waitUntil:'domcontentloaded'});
-  await p.waitForTimeout(2600);
-  ok('closing the browser does not end the term', !!(await p.$('#g-resume')),
-    await txt(p,'#g-resume'));
-  await p.click('#g-resume'); await p.waitForTimeout(600);
-  const back=await p.evaluate(()=>JSON.parse(localStorage.getItem('cfb_commish_term')).world);
-  ok('  and it comes back where it was', back.year===mid.year&&back.history.length===mid.history.length,
-    back.year+', '+back.history.length+' rulings');
+  /* BEING VOTED OUT IS A WIN CONDITION FOR THIS WALK, NOT A TEST FAILURE, and the walk cannot
+     avoid it. It takes the first option of every item it is shown, which is the most
+     aggressive commissioner the game can be handed, and a term is seeded from Date.now() and
+     Math.random(), so which items come up differs on every run. Draw two that anger the SEC
+     and the Big Ten in the same year and the coalition removes you, correctly, in February.
+
+     The two assertions below are about a term that CONTINUES: that the sport moved and that
+     the save survives a reload. Neither is a meaningful question about a term that has ended,
+     and asserting them anyway made this file fail at random on a legitimate outcome. So a
+     removal is reported and skipped rather than counted, and the run still says which happened
+     so that a suite that NEVER reaches the second half is visible rather than quietly green. */
+  const gone=!!(mid.outcome&&mid.outcome.removed);
+  if(gone){
+    console.log('  note: this walk was voted out in '+mid.year+' after '+mid.history.length
+      +' rulings, which is a real outcome and not a failure. Skipping the two assertions '
+      +'about a term that continues.');
+  }else{
+    ok('  the sport has moved by the end of it',
+      mid.playoff.teams!==12||mid.labour.revShare>0||mid.rules.confGames!==9||mid.history.length>3,
+      mid.playoff.teams+'-team playoff, '+mid.history.length+' rulings, year '+mid.year);
+
+    /* THE TERM IS THE SAVE FILE, which is what the ledger was built for. */
+    await p.reload({waitUntil:'domcontentloaded'});
+    await p.waitForTimeout(2600);
+    ok('closing the browser does not end the term', !!(await p.$('#g-resume')),
+      await txt(p,'#g-resume'));
+    if(await p.$('#g-resume')){
+      await p.click('#g-resume'); await p.waitForTimeout(600);
+      const back=await p.evaluate(()=>JSON.parse(localStorage.getItem('cfb_commish_term')).world);
+      ok('  and it comes back where it was',
+        back.year===mid.year&&back.history.length===mid.history.length,
+        back.year+', '+back.history.length+' rulings');
+    }
+  }
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();

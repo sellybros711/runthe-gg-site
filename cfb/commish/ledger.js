@@ -59,6 +59,28 @@
      shares as a fraction of the pool, and they add to 1 with the Group of Five last. */
   const OPENING_SHARE = { SEC: 0.27, 'Big Ten': 0.27, ACC: 0.16, 'Big 12': 0.16, 'Group of Five': 0.14 };
 
+  /* WHICH POT A CONFERENCE DRINKS FROM, which is not the same question as which conference a
+     school is in and used to have no answer at all.
+
+     The money is split five ways and the sport has eleven leagues in it. Before the whole
+     division was on the field that mismatch was invisible, because the team file held only
+     power schools and the handful of others drifted by zero without anybody noticing. Put a
+     hundred and thirty-six clubs on the field and it becomes the bug: starve the Group of Five
+     to nothing and every Mountain West, MAC, Sun Belt, Conference USA and American team plays
+     exactly as well as before, because `moneyDrift` looked up 'Mountain West' in a table whose
+     keys are 'Group of Five'. The bloc would argue at the meeting and nothing would reach the
+     field, which is the thing this mode is supposed to be about.
+
+     THE INDEPENDENTS ARE NOT IN THE POOL AND THAT IS THE POINT OF BEING ONE. Notre Dame has
+     its own contract, so no distribution this office writes moves it. `null` rather than a
+     bloc, and `moneyDrift` reads that as no drift. */
+  function blocOf(conference) {
+    if (!conference) return null;
+    if (OPENING_SHARE[conference] != null) return conference;
+    if (conference === 'FBS Independents') return null;
+    return 'Group of Five';
+  }
+
   function createWorld(opts) {
     const o = opts || {};
     const year = o.year || 2025;
@@ -444,7 +466,7 @@
   }
 
   const publicAPI = {
-    AXES, POWERS, BEATS, HOSTILE, OPENING_SHARE, VOTE_WEIGHT,
+    AXES, POWERS, BEATS, HOSTILE, OPENING_SHARE, VOTE_WEIGHT, blocOf,
     FUSE_LIMIT, FUSES, lit, defuse,
     createWorld, membershipFrom,
     getPath, membersOf, conferencesIn, isDefunct,

@@ -26,6 +26,9 @@
   /* The host sites, for pricing the one game this office actually places. Optional: a caller
      without it gets a final worth exactly what it was worth before. */
   var V = root.PS_CFB_VENUES || (typeof require === 'function' ? require('./venues.js') : null);
+  /* THE SPORT DOES NOT STAND STILL, and it used to: team strength was taken from the season
+     the term began and frozen, so the same team won four titles in five. See churn.js. */
+  var CH = root.PS_CFB_CHURN || (typeof require === 'function' ? require('./churn.js') : null);
 
   /* Twelve games, which is what a regular season is. The ledger decides how many of them
      are inside the conference; the rest are bought. */
@@ -67,8 +70,15 @@
   var MONEY_GAIN = 1.6;
   var MONEY_CAP = 0.55;
   function moneyDrift(world, conference) {
-    var now = (world.money.share || {})[conference];
-    var was = (L.OPENING_SHARE || {})[conference];
+    /* THE POT, NOT THE LEAGUE. The money is split five ways and the sport has eleven leagues
+       in it, so a Sun Belt school is paid out of the Group of Five share and has to be looked
+       up under that name. Reading `share['Sun Belt']` finds nothing and drifts by zero, which
+       is how starving a bloc to nothing could leave sixty-seven teams playing exactly as well
+       as before. */
+    var pot = L.blocOf ? L.blocOf(conference) : conference;
+    if (!pot) return 0;
+    var now = (world.money.share || {})[pot];
+    var was = (L.OPENING_SHARE || {})[pot];
     if (now == null || was == null || !was) return 0;
     var years = Math.max(0, world.year - world.startYear);
     var d = ((now - was) / was) * MONEY_GAIN * Math.min(years, 6) / 6;
@@ -84,19 +94,23 @@
      small per year, and by year four it is the difference between a league and a procession.
 
      IT HAS TO BE A REDISTRIBUTION, because playGame reads `a.z - b.z` and adding the same
-     number to all seventy teams cancels out perfectly. That much was obvious. What was not is
-     that a level shift does NOT cancel in viewers(), which reads how good the two teams ARE
-     rather than how far apart.
+     number to every team cancels out perfectly. That much was obvious. What was not is that a
+     level shift does NOT cancel in viewers(), which reads how good the two teams ARE rather
+     than how far apart.
 
      AND THE FIRST VERSION GOT THE AXIS WRONG, which is what made that bite. It moved the four
      power conferences up and everybody else down, which is the sentence everybody says about
-     this and is not what this data can express: the season is played by seventy schools of
-     which sixty-seven ARE the four powers. The Group of Five is a bloc here and a line in the
-     money table, not teams. Lifting sixty-seven of seventy is a level shift by another name,
-     and it showed: an open door drew 2.50 a game at year five against 1.29 for a shut one, a
-     ninety per cent swing off one setting, which would have swamped the pool settlement the
-     audience is priced through, while the number it was supposed to move, who reached the
-     bracket, did not move at all.
+     this and was not what the data could express at the time: the season was then played by
+     seventy schools of which sixty-seven WERE the four powers, so the Group of Five was a bloc
+     and a line in the money table rather than teams. Lifting sixty-seven of seventy is a level
+     shift by another name, and it showed: an open door drew 2.50 a game at year five against
+     1.29 for a shut one, a ninety per cent swing off one setting, which would have swamped the
+     pool settlement the audience is priced through, while the number it was supposed to move,
+     who reached the bracket, did not move at all.
+
+     The whole division is on the field now, so the axis the first version reached for finally
+     exists. It stays wrong anyway, for the reason below: what an open door does is concentrate
+     talent at the top of the sport, and the top of the sport is not a conference.
 
      SO IT STRETCHES RATHER THAN LIFTS. Each team is scaled by its own strength, which pulls
      the league away from its middle: the top gets further from the pack, the bottom falls off
@@ -155,26 +169,66 @@
 
   function league(world, teamSeasons) {
     var base = baselines(teamSeasons, world.startYear);
-    var out = [];
+    var years = Math.max(0, world.year - world.startYear);
+
+    /* WHERE EVERY PROGRAMME IS THIS YEAR, before anything this office did to it. Year one is
+       the real season and returns the baseline untouched; every year after regresses toward
+       that school's own level, takes a shock the size of its own volatility, and lives with
+       whatever the carousel did. */
+    var roster = [];
     for (var school in world.membership) {
       var b = base[school];
       if (!b) continue;
-      var conf = world.membership[school];
-      out.push({
-        school: school,
-        conference: conf,
-        abbr: b.abbreviation || school,
-        color: b.color || '#64748b',
-        z: (b.strength_z || 0) + moneyDrift(world, conf)
-          + reentryDrift(world, conf, b.strength_z || 0),
-        off: b.pts_scored_mean || 24,
-        offSd: b.pts_scored_sd || 10,
-        def: b.pts_allowed_mean || 24,
-        from: b.season,
-        wins: 0, losses: 0, confWins: 0, confLosses: 0,
-        pf: 0, pa: 0, opp: [],
-      });
+      var baseZ = b.strength_z || 0;
+      roster.push({ school: school, b: b, baseZ: baseZ,
+        nowZ: CH ? CH.strengthOf(school, baseZ, teamSeasons, world.seed, years) : baseZ });
     }
+
+    /* AND THEN RECENTRED, BECAUSE A Z IS A Z. This is not a tidying step, it is the
+       definition of the quantity: strength_z is standardised within its season, so the mean
+       of a real season is zero by construction and an invented one has to be as well.
+
+       Without it the whole sport quietly got better every year. The carousel only fires on
+       programmes that are UNDER their own level, and a hire is worth a little more than
+       nothing on average, so every December injected a small positive number into the league
+       and never a negative one. Regression then fed each year's inflated figure into the
+       next. Measured, the league mean ran 0.00, 0.24, 0.49, 0.61, 0.71 across a five year
+       term: by year five the average team in the sport rated three quarters of a standard
+       deviation above the average team in the sport.
+
+       NOTHING FAILED AND NOTHING LOOKED WRONG, which is the whole problem with it. Every
+       scoreline was plausible, every record was plausible, and the only visible symptom was
+       that viewership rose every single year no matter what the office did, so the item about
+       an unbeaten team nobody is watching became unreachable and the audience meter stopped
+       being something a player could damage. */
+    if (years && roster.length) {
+      var mu = 0;
+      for (var i = 0; i < roster.length; i++) mu += roster[i].nowZ;
+      mu /= roster.length;
+      for (var j = 0; j < roster.length; j++) roster[j].nowZ -= mu;
+    }
+
+    var out = [];
+    roster.forEach(function (r) {
+      var conf = world.membership[r.school];
+      out.push({
+        school: r.school,
+        conference: conf,
+        abbr: r.b.abbreviation || r.school,
+        color: r.b.color || '#64748b',
+        /* What the season the term opened on had them at, kept so the carousel and the year
+           in review can talk about how far a programme has moved. */
+        baseZ: r.baseZ,
+        z: r.nowZ + moneyDrift(world, conf)
+          + reentryDrift(world, conf, r.nowZ),
+        off: r.b.pts_scored_mean || 24,
+        offSd: r.b.pts_scored_sd || 10,
+        def: r.b.pts_allowed_mean || 24,
+        from: r.b.season,
+        wins: 0, losses: 0, confWins: 0, confLosses: 0,
+        pf: 0, pa: 0, opp: [], beat: [], lostTo: [],
+      });
+    });
     return out;
   }
 
@@ -215,8 +269,12 @@
 
   function record(t, o, mine, theirs, conf) {
     t.pf += mine; t.pa += theirs;
-    if (mine > theirs) { t.wins++; if (conf) t.confWins++; }
-    else { t.losses++; if (conf) t.confLosses++; }
+    /* WHO YOU BEAT AND WHO BEAT YOU, kept apart rather than averaged together. A mean
+       opponent strength cannot tell a 12-1 team that beat the best team it played from a
+       12-1 team that lost to the only good one on its schedule, and those are not the same
+       season. `resume` reads these two lists. */
+    if (mine > theirs) { t.wins++; if (conf) t.confWins++; t.beat.push(o.z); }
+    else { t.losses++; if (conf) t.confLosses++; t.lostTo.push(o.z); }
     t.opp.push(o.z);
   }
 
@@ -281,11 +339,42 @@
       var per = Math.min(want, pool.length - 1);
       pairUp(pool, function () { return per; }, rng).forEach(function (g) { bump(g, true); });
     }
+    /* ---- the guarantee game ----
+       A POWER SCHOOL BUYS A HOME GAME AND THE VISITOR CASHES THE CHEQUE. This is how
+       non-conference scheduling actually works and leaving it out was the single biggest
+       thing wrong with the league once the whole division was on the field.
+
+       Drawing every non-conference game at random from a hundred and thirty-six teams meant
+       a Mountain West team could play its entire schedule without meeting anybody good: San
+       Diego State went 13-0 having beaten nobody above z 0.5 and took the seventh seed in the
+       playoff. Undefeated outsiders arrived at 1.73 a season, which is two or three times what
+       the sport produces, and they arrived because nobody had made them go to Columbus in
+       September.
+
+       So each team outside the power four is sent to one power school, on the road, before
+       anything else is drawn. That is the trip that puts a loss on the record, and the cheque
+       for it is a third of their football budget, which is a line the Group of Five already
+       says on the docket and now has a game behind it. */
+    var owes = function (t) { return Math.max(0, GAMES - (count[t.school] || 0)); };
+    var pot = function (t) { return L.blocOf ? L.blocOf(t.conference) : t.conference; };
+    var hosts = shuffled(teams.filter(function (t) {
+      var p = pot(t); return p && p !== 'Group of Five' && owes(t) > 0;
+    }), rng);
+    var visitors = shuffled(teams.filter(function (t) {
+      return pot(t) === 'Group of Five' && owes(t) > 0;
+    }), rng);
+    /* WHOEVER IS SHORT DECIDES HOW MANY GET PLAYED, and the mode has to survive both
+       directions: consolidate the sport down to two conferences and there are barely any
+       hosts, break it up and there are barely any visitors. Neither should throw. */
+    var trips = Math.min(hosts.length, visitors.length);
+    for (var n = 0; n < trips; n++) {
+      /* The power school is `a`, which is the side playGame gives the home points to. */
+      bump({ a: hosts[n], b: visitors[n] }, false);
+    }
+
     /* Everything still owing is non-conference, and it crosses conference lines because the
        pool is the whole league. */
-    pairUp(teams, function (t) {
-      return Math.max(0, GAMES - (count[t.school] || 0));
-    }, rng).forEach(function (g) { bump(g, false); });
+    pairUp(teams, owes, rng).forEach(function (g) { bump(g, false); });
     return games;
   }
 
@@ -368,11 +457,24 @@
   var VIEW_ROUND = [1.6, 2.5, 3.1, 3.5, 3.6];
 
   /* WHAT AN AUDIENCE IS WORTH, in billions a year per million viewers a game. Not a guess:
-     the untouched sport draws 1.70 a game, measured across forty seeds, and the ledger opens
-     the pool at $1.3B, so this is 1.3 / 1.70 and the sport starts its term exactly breaking
+     the untouched sport draws 1.87 a game, measured across forty seeds, and the ledger opens
+     the pool at $1.3B, so this is 1.3 / 1.87 and the sport starts its term exactly breaking
      even. Everything after that is the commissioner's doing. See the settlement in verdict()
-     for what the difference then costs. */
-  var WORTH_PER_M = 0.765;
+     for what the difference then costs.
+
+     REFIT WHEN THE LEAGUE GREW, and it had to be. At seventy schools the untouched sport drew
+     1.698 and this was 0.765, which broke even to within a thousandth. The whole division
+     draws 1.869, because a hundred and thirty-six teams beating each other up leaves more
+     clubs with a loss column worth watching deeper into the year, so the same 0.765 handed
+     every commissioner a $130M surplus in year one for doing nothing at all, and the sentence
+     above stopped being true.
+
+     ONE CONSTANT CANNOT SERVE BOTH LEAGUES and this one is fitted to the league that ships. A
+     term played on the fallback file, which happens only when cfb_fbs.json is missing or
+     malformed, opens about $120M in deficit instead of level. That is a broken deploy rather
+     than a game state, the console says so when it happens, and pricing for it would mean
+     mispricing every real term to be right about a failure. */
+  var WORTH_PER_M = 0.696;
 
   /* THE BOOKS, FOR ANYBODY WHO NEEDS THEM BEFORE A SEASON HAS BEEN PLAYED. The verdict settles
      the pool against the season that just happened; the desk has to price a pool the player is
@@ -458,11 +560,46 @@
 
   /* ---------------- selection ---------------- */
 
-  /* A RESUME, not a power rating. Wins matter most, who you played matters, and being good
-     matters, which is roughly the order a selection committee says it uses. */
+  /* A RESUME, not a power rating: who you beat, who beat you, and how good you look.
+     Everything that reaches the bracket is ordered by this, so it is the single number that
+     decides who plays for the title.
+
+     IT USED TO COUNT WINS AND THEN ADD THE AVERAGE OPPONENT ON TOP, and that was fine for as
+     long as the league was sixty-seven power schools playing each other, because every team
+     in it had roughly the same schedule. Put the whole division on the field and it breaks in
+     the most visible way there is: a 12-1 Mountain West champion scored 36.8 against a 10-3
+     SEC champion's 28.1, so the five automatic bids went to Texas Tech, Indiana, James
+     Madison, Florida State and UNLV, and THE SEC WAS NOT IN THE PLAYOFF. Nothing failed and
+     nothing looked odd in the code. It is the first thing a college football fan would see.
+
+     The problem is that a flat wins term pays the same for beating Alabama and beating an
+     0-12 team, and a mean opponent cannot tell a 12-1 team that beat the best side it played
+     from a 12-1 team that lost to the only good one on its schedule.
+
+     SO EVERY GAME IS PRICED BY WHO IT WAS AGAINST. A win is worth more the better they were.
+     A loss costs less the better they were, and floors out rather than going free, because a
+     loss is a loss. Then the team's own rating goes on top, which is the eye test.
+
+     FITTED, NOT CHOSEN. Against how the real twelve-team format actually fills: five
+     conference champions, of whom about one is from outside the power four (2024 gave
+     Oregon, Georgia, Boise State, Arizona State, Clemson), and no power conference shut out
+     of the field altogether. An undefeated outsider still gets left out sometimes, which is
+     a real story in this sport and has a docket item about it. */
+  var WIN_BASE = 2.2;    /* what beating anybody is worth */
+  var WIN_SLOPE = 1.5;   /* and how much more it is worth per point of them */
+  var LOSS_BASE = 3.4;   /* what any loss costs */
+  var LOSS_SLOPE = 1.1;  /* and how much of that is forgiven for who beat you */
+  var LOSS_FLOOR = 0.9;  /* but never all of it */
+  var RATING = 3.4;      /* the eye test */
   function resume(t) {
-    var sos = t.opp.length ? t.opp.reduce(function (s, z) { return s + z; }, 0) / t.opp.length : 0;
-    return t.wins * 3.2 - t.losses * 3.0 + t.z * 3.4 + sos * 1.6;
+    var s = t.z * RATING;
+    var beat = t.beat || [];
+    for (var i = 0; i < beat.length; i++) s += WIN_BASE + beat[i] * WIN_SLOPE;
+    var lost = t.lostTo || [];
+    for (var j = 0; j < lost.length; j++) {
+      s -= Math.max(LOSS_FLOOR, LOSS_BASE - lost[j] * LOSS_SLOPE);
+    }
+    return s;
   }
 
   /* WHO WON EACH CONFERENCE. `titles` is the result of championship weekend when it has been
@@ -856,6 +993,19 @@
     };
     sim.viewers = Math.round(played.reduce(function (t, x) { return t + x.viewers; }, 0) * 10) / 10;
     sim.perGame = played.length ? Math.round((sim.viewers / played.length) * 100) / 100 : 0;
+    /* WHO CHANGED COACH GOING INTO THIS SEASON. December's carousel is a holiday for the
+       people this game is for and the mode had no way of telling them it happened. */
+    sim.carousel = CH
+      ? CH.carouselFor(teams, teamSeasons, world.seed, Math.max(0, world.year - world.startYear))
+      : [];
+    /* AND WHO HAS MOVED FURTHEST from the season the term opened on, which is the sentence a
+       fan says out loud in October: nobody had these people anywhere in August. */
+    sim.risers = teams.slice()
+      .map(function (t) { return { school: t.school, conference: t.conference, color: t.color,
+        move: Math.round(((t.z - (t.baseZ == null ? t.z : t.baseZ)) * 100)) / 100,
+        wins: t.wins, losses: t.losses }; })
+      .filter(function (t) { return Math.abs(t.move) >= 0.5; })
+      .sort(function (a, b) { return b.move - a.move; });
 
     if (!wantTitles) return sim;
 

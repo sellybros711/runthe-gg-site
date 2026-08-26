@@ -53,8 +53,8 @@
       "sha": "66210cbb22945863"
     },
     "ledger.js": {
-      "v": "5",
-      "sha": "7db6b2d9a7def518"
+      "v": "6",
+      "sha": "315609df1cd37d9a"
     },
     "blocs.js": {
       "v": "3",
@@ -66,11 +66,15 @@
     },
     "docket.js": {
       "v": "7",
-      "sha": "e3b3de3eaa20c7c6"
+      "sha": "b16458d73c77dce9"
+    },
+    "churn.js": {
+      "v": "1",
+      "sha": "a11270978be0d15f"
     },
     "season.js": {
-      "v": "11",
-      "sha": "4c01b3062f4ec11e"
+      "v": "12",
+      "sha": "fd2144fb31431eb8"
     },
     "council.js": {
       "v": "1",
@@ -85,8 +89,8 @@
       "sha": "36366f55e531fced"
     },
     "situation.js": {
-      "v": "3",
-      "sha": "fbdcdd77f054052e"
+      "v": "4",
+      "sha": "81f98511be6c71cc"
     },
     "fallout.js": {
       "v": "3",

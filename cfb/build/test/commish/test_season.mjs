@@ -17,10 +17,11 @@ const require = createRequire(import.meta.url);
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
+import { leagueTeams } from './league.mjs';
 const L = require(ROOT + '/cfb/commish/ledger.js');
 const S = require(ROOT + '/cfb/commish/season.js');
 const E = require(ROOT + '/cfb/engine.js');
-const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+const teams = leagueTeams(ROOT);
 
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };

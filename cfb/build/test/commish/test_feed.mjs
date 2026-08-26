@@ -23,6 +23,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const path = require('path');
 const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
+import { leagueTeams } from './league.mjs';
 const F = require(ROOT + '/cfb/commish/feed.js');
 const B = require(ROOT + '/cfb/commish/blocs.js');
 const L = require(ROOT + '/cfb/commish/ledger.js');
@@ -163,7 +164,7 @@ console.log('\n=== the recap and the feed do not tell the same story twice ===')
      the football. */
   const S = require(ROOT + '/cfb/commish/season.js');
   const fs = require('fs');
-  const teams = JSON.parse(fs.readFileSync(ROOT + '/cfb/data/cfb_team_seasons.json', 'utf8'));
+  const teams = leagueTeams(ROOT);
   const overlaps = [], counts = [];
   for (const sd of [99, 7, 42, 1234, 55]) {
     const w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025) });

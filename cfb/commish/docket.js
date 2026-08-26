@@ -1912,7 +1912,7 @@
         : 'Two unbeaten teams are in the same conference, do not play each other, and one of '
           + 'them is about to lose a championship game and go home at 12-1.'),
       voices: [
-        { id: 'Networks', say: 'That title game is the most valuable single broadcast of the year. Do not touch it.' },
+        { id: 'Networks', say: 'That title game is the most valuable broadcast of the year. Do not touch it.' },
         { id: 'Big Ten', say: 'Punishing our best team for playing our second is a format problem.' },
         { id: 'Fans', say: 'Just let them both in. It is not complicated.' },
       ],

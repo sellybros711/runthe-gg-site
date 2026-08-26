@@ -147,6 +147,40 @@ console.log('\n=== the desk is shorter than it was ===');
   ok('the room argues in two lines a speaker, not three',
     voices.length > 0 && voices.every((v) => v.lines <= 2),
     voices.map((v) => v.lines).join(', ') + ' lines');
+
+  /* AND SO DOES EVERY OTHER VOICE IN THE DOCKET, not merely the three this walk happened to
+     land on. Two hundred and twenty-five lines are written and a walk sees three of them, so
+     a line that wraps can sit there for weeks and then fail somebody else's afternoon at
+     random. Every one of them is drawn into the real container at phone width and measured.
+
+     THIS REPLACES A CHARACTER COUNT THAT COULD NOT HAVE CAUGHT IT. test_docket used to assert
+     the quote was under eighty-five characters, which missed two things. The desk renders the
+     SPEAKER'S NAME in the same flow, so the line that overflowed was eighty-three characters
+     of quote behind a twelve character name. And length is the wrong unit anyway: the name is
+     bold and the font is proportional, so "The presidents" plus eighty-one characters fits in
+     two lines while "The networks" plus eighty-three does not, at the same ninety-five. Only
+     the browser knows, so ask the browser. */
+  const wide = await p.evaluate(() => {
+    const D = window.PS_CFB_DOCKET, B = window.PS_CFB_BLOCS;
+    const box = document.getElementById('d-voices');
+    if (!D || !B || !box) return { err: 'a module or the container is missing' };
+    const held = box.innerHTML;
+    const out = [];
+    D.ITEMS.forEach((it) => {
+      (it.voices || []).forEach((v) => {
+        const bl = B.BY_ID[v.id];
+        const name = bl ? bl.name : v.id;
+        box.innerHTML = '<div class="voice"><span class="vs"><b>' + name + '</b>'
+          + String(v.say).replace(/[&<>]/g, '') + '</span></div>';
+        const el = box.querySelector('.voice');
+        if (el.clientHeight > 46) out.push(it.id + '/' + v.id + ' ' + el.clientHeight + 'px');
+      });
+    });
+    box.innerHTML = held;
+    return { out };
+  });
+  ok('  and so does every other line in the docket', !wide.err && !wide.out.length,
+    wide.err || wide.out.slice(0, 4).join(', ') || 'all 225 fit');
   ok('  and every quote still names who said it',
     voices.every((v) => v.chip)
     && (await p.$$eval('#d-voices .voice b', (e) => e.length)) === voices.length);
