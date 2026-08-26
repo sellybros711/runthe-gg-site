@@ -29173,6 +29173,30 @@ function dPinSpot(courseKey,i,par,yards){
   }catch(e){}
   _pinSpotCache[key]=out; return out;
 }
+// ---- ITEM 06 ("let me pick a club"): the decision cards NAME the club you're pulling and the yardage
+// it leaves, so a driver-or-3-wood off a tight tee, and a full wedge instead of a half, read as the club
+// decision a golfer actually makes rather than two adjectives. Everything here is DETERMINISTIC - it
+// reads the same drive model dShotSeq narrates, at its centre - so NO rng() call is added and the
+// seeded stream (and therefore which shots a hole produces) is untouched.
+function dDriveEst(sk, par, yards, hw, safe){
+  const distQ=dSkQ(dSk(sk,'dist'));
+  let d=(par===5?266:258)+distQ*68+6;                        // the mean of dShotSeq's drive draw
+  if(safe) d-=17;                                            // 3-wood off the tee gives up 10-24 yds
+  else if(wTeeClub(hw,par,yards,false)==='3-wood') d-=14;    // downwind you'd take less club anyway
+  if(hw) d*=wDriveMult(hw);
+  return Math.max(150, Math.min(Math.round(d), yards-20));
+}
+// what a tee club leaves in, and the iron it leaves you (by the yardage that shot PLAYS in this wind)
+function dLeaveIn(sk, par, yards, hw, safe){
+  const y=Math.max(30, yards-dDriveEst(sk,par,yards,hw,safe));
+  return {yds:y, club:dClub(wPlayYds(hw,y))};
+}
+// the club a given wedge number plays as in this wind (a stock full wedge ~100, a half ~58)
+function dWedgeAt(hw, y){ return dClub(wPlayYds(hw,y)); }
+var DEC_FULLW=100, DEC_HALFW=58;
+// the short club word an on-course tap-target shows, taken from the card's own label ("Driver · 8-iron in")
+function dClubWord(label){ const s=String(label||''); if(s.indexOf(' · ')<0) return null;
+  const w=s.split(' · ')[0]; return (w && w.length<=14)?w:null; }
 function dScenario(courseKey,i,total,av){
   const c=DAILY_COURSES[courseKey], h=c.holes[i], par=h[0], yards=h[1];
   const haz=(DSIG_HAZ[courseKey]||{})[i+1]||(par===3?'long':'bunker'), type=dShotType(par,yards);
@@ -29191,6 +29215,11 @@ function dScenario(courseKey,i,total,av){
   const pinCut=(pinWord==='front'||pinWord==='back')?('at the '+pinWord):pinWord;
   const hazWord=haz==='creek'?'the creek':haz==='cliff'?'the cliff edge':haz==='bunker'?'the bunkers':wet?'the water':'the trouble';
   const windy=S.dailyCond!=='calm';
+  // ITEM 06: the clubs this hole's tee and layup options actually put in your hands, and what each
+  // one leaves in. Deterministic (no rng), so the decision the day asks is unchanged.
+  const sk=S.dailySkills||{}, hw=holeWind(i);
+  const aL=dLeaveIn(sk,par,yards,hw,false), sL=dLeaveIn(sk,par,yards,hw,true);
+  const fullClub=dWedgeAt(hw,DEC_FULLW), halfClub=dWedgeAt(hw,DEC_HALFW);
   // phase: 'tee' = a driving decision (shown before the drive, biases the drive); 'app' (default) = an
   // approach/second-shot decision (par 4/5: the drive is revealed FIRST, then this prompt; biases the
   // approach). par-3 decisions are 'app' and shown up-front (the tee shot IS the approach).
@@ -29223,35 +29252,47 @@ function dScenario(courseKey,i,total,av){
       'Take it on at the flag', 'A great look if it holds, gone if it leaks',
       'Bail to the safe side', 'Keep it on dry land, settle for par'));
   if(type==='app4'||type==='short4')
-    T.push(S2(`tee shot · ${yards} yds`,
-      `Off the tee: the aggressive line flirts with ${hazWord} but opens up the green; the safe side leaves a longer, awkward approach. How do you play it?`,
-      `Driver down the ${side} edge`, `Best angle in, but ${hazWord} is right there`,
-      '3-wood to the fat of the fairway', 'Longer in, but safely in play', false, 'tee'));
+    T.push(S2(`tee shot · driver or 3-wood`,
+      `Off the tee: driver down the ${side} edge leaves about ${aL.yds} yards, a ${aL.club} in, but flirts with ${hazWord}. A 3-wood to the fat of the fairway leaves ${sL.yds}, a ${sL.club}. Which club?`,
+      `Driver · ${aL.club} in`, `~${aL.yds} yds left, ${hazWord} in play`,
+      `3-wood · ${sL.club} in`, `~${sL.yds} yds left, safely in play`, false, 'tee'));
   if(type==='drive4')
     T.push(S2(`${yards} yds · drivable`,
       `${yards}-yard drivable par-4. Have a go at the green off the tee, or lay back to a full wedge?`,
-      'Driver at the green', 'Eagle/birdie if it finds the surface, trouble if it misses',
-      'Lay back to a wedge', 'A simple pitch in, birdie still on', false, 'tee'));
+      'Driver at the green', `All ${yards}: eagle look if it finds the surface, trouble if it misses`,
+      `Lay back to a full ${fullClub}`, `~${DEC_FULLW} yds in, birdie still on`, false, 'tee'));
   if(type==='short4')
     T.push(S2(`short par-4 · ${yards} yds`,
-      `Short, strategic par-4. Take on the green-side trouble off the tee, or lay back to your favorite wedge number?`,
+      `Short, strategic par-4. Take on the green-side trouble off the tee, or lay back to a full ${fullClub} from your favorite number?`,
       'Take it on off the tee', 'A close pitch if it works, short-side trouble if not',
-      'Lay back for a full wedge', 'Control your number from the fairway', false, 'tee'));
+      `Lay back to a full ${fullClub}`, `~${DEC_FULLW} yds, control your number`, false, 'tee'));
   if(type==='go5'){
+    const goClub=dClub(wPlayYds(hw,yd));
     T.push(S2(`${yd} out · go for it in two?`,
-      `${yd} yards to get home in two${wet?`, ${hazWord} guarding the green`:''}. Send it, or lay up to a comfortable wedge?`,
-      'Go for the green', wet?'Eagle look, a blow-up if you find the water':'Eagle look, bogey in play on a miss',
-      'Lay up to your number', 'Wedge in, a stress-free birdie still on'));
+      `${yd} yards to get home in two, a ${goClub}${wet?`, ${hazWord} guarding the green`:''}. Send it, or lay up to a full ${fullClub}?`,
+      `Go for it · ${goClub}`, wet?`${yd} over ${hazWord}, or a blow-up`:`${yd} yds, eagle look, bogey in play`,
+      `Lay up · full ${fullClub}`, `~${DEC_FULLW} yds, a stress-free birdie still on`));
     T.push(S2(`tee shot · reaching in two`,
-      `To get home in two you’ve got to rip driver and bring ${hazWord} into play off the tee, or position it and lay up. How aggressive off the tee?`,
-      'Rip driver to get home', 'Sets up the eagle, but the drive has to be perfect',
-      'Position it, then lay up', 'Takes the big number out of play', false, 'tee'));
+      `To get home in two you’ve got to rip driver, leaving about ${aL.yds} yards in, and bring ${hazWord} into play off the tee. Or take 3-wood, position it and lay up. How aggressive off the tee?`,
+      `Rip driver · ${aL.club} in`, `~${aL.yds} yds left, the drive has to be perfect`,
+      '3-wood · then lay up', 'Takes the big number out of play', false, 'tee'));
   }
-  if(type==='long5')
+  if(type==='long5'){
     T.push(S2(`layup · ${yards} yds`,
-      `Too long to reach, it’s a layup. Chase it down near ${hazWord} for a short pitch, or lay back to a stock 100-yard wedge?`,
-      `Push the layup near ${hazWord}`, 'Shortest pitch in, but it flirts with the hazard',
-      'Lay back to a full wedge', 'Stock number, trouble out of play'));
+      `Too long to reach, it’s a layup. Chase it down near ${hazWord} for a ${halfClub}, or lay back to a stock ${DEC_FULLW}-yard ${fullClub}?`,
+      `Chase it · ${halfClub}`, `~${DEC_HALFW} yds, but it flirts with ${hazWord}`,
+      `Lay back · full ${fullClub}`, `~${DEC_FULLW} yds, trouble out of play`));
+    T.push(S2(`tee shot · driver or 3-wood`,
+      `Even on a layup hole the tee shot decides the number: driver leaves about ${aL.yds} to the flag, a 3-wood ${sL.yds} from safer ground. Which club?`,
+      `Driver · ${aL.yds} left`, `Shortest layup, but the tighter line`,
+      `3-wood · ${sL.yds} left`, `Longer, but dead safe off the tee`, false, 'tee'));
+  }
+  // the layup that IS the club choice: a delicate half wedge close in, or your stock full number
+  if(type==='go5'||type==='long5')
+    T.push(S2(`layup · full wedge or half`,
+      `You’re laying up. Chase it down to a ${halfClub} of about ${DEC_HALFW} yards, or hold back to your stock ${fullClub} from ${DEC_FULLW}? The shorter shot sits closer to the flag and is far harder to control.`,
+      `Chase it · ${DEC_HALFW}-yd ${halfClub}`, 'Closest in, but a delicate half shot',
+      `Hold back · ${DEC_FULLW}-yd ${fullClub}`, 'A full swing at your favorite number'));
   if(haz==='elevated')
     T.push(S2(`${yd} yds · downhill`,
       `A downhill shot of ${yd} yards, the slope releases anything near the flag. Chase one in, or land it below the hole?`,
@@ -29280,9 +29321,9 @@ function dScenario(courseKey,i,total,av){
   }
   if(type==='app4'||type==='drive4'||type==='short4')
     T.push(S2(`${yards} yds · position or power`,
-      `Off the tee: rip driver and leave a wedge but bring ${hazWord} into play, or hit a controlled 3-wood to take the trouble out and accept a longer iron in?`,
-      'Rip driver, wedge in', `Short iron if it finds the short grass, but ${hazWord} lurks`,
-      'Stinger 3-wood for position', 'Longer approach, but dead safe off the tee', false, 'tee'));
+      `Off the tee: rip driver and leave a ${aL.club} from ${aL.yds} but bring ${hazWord} into play, or hit a controlled stinger 3-wood, take the trouble out and accept a ${sL.club} from ${sL.yds}?`,
+      `Rip driver · ${aL.club} in`, `~${aL.yds} yds left, but ${hazWord} lurks`,
+      `Stinger 3-wood · ${sL.club}`, `~${sL.yds} yds left, dead safe off the tee`, false, 'tee'));
   // ---------- situational decisions (late, behind/ahead of the tour average) ----------
   const holesLeft=18-i, pace=av*(i/18), diff=Math.round(total-pace);
   if(holesLeft<=5 && diff>=2)
@@ -29304,7 +29345,9 @@ function dScenario(courseKey,i,total,av){
   // par-3 decisions are always shown up-front (the tee shot IS the approach); only par-4/5 'app'
   // decisions get the reveal-the-drive-first treatment.
   const phase=(par===3)?'app':chosen.phase;
-  return {tag:chosen.tag, prompt:chosen.prompt, opts:chosen.opts, sit:chosen.sit?'':dSitLine(total,av,i), phase};
+  // ITEM 06: the on-course tap-targets name the club too when the card's label is a club
+  return {tag:chosen.tag, prompt:chosen.prompt, opts:chosen.opts, sit:chosen.sit?'':dSitLine(total,av,i), phase,
+    clubs:{agg:dClubWord(chosen.opts[0].l), safe:dClubWord(chosen.opts[1].l)}};
 }
 // ---- ON-COURSE decision (#6/#7): the shot decision is made ON the tracer window (tap a target), the
 // relevant stat + risk/reward shown, instead of a dimming pop-up. ----
@@ -29333,21 +29376,24 @@ function dDecOdds(sc, sk){
 function dDecTargets(g, sc){
   const L=g.L, gcx=g.gcx, par=g.par, pin=g.pin||[gcx,L];
   const txt=(sc.tag+' '+sc.prompt).toLowerCase();
+  // ITEM 06: when the decision IS a club choice, the chip on the course names the club ("Driver",
+  // "3-wood", "58-yd sand wedge") instead of a generic line - taken from the card's own label.
+  const cl=sc.clubs||{}, CA=lab=>cl.agg||lab, CS=lab=>cl.safe||lab;
   if(sc.phase==='tee'){
     if(/drivable|driver at the green|at the green off the tee/.test(txt)){
-      const y=Math.max(8,L*0.6); return {agg:[gcx,L], safe:[g.cx(y),y], al:'Green', sl:'Lay back'};
+      const y=Math.max(8,L*0.6); return {agg:[gcx,L], safe:[g.cx(y),y], al:CA('Green'), sl:CS('Lay back')};
     }
     const y=par===5?g.span*0.44:g.span*0.6, cx=g.cx(y), w=Math.max(6,g.fww(y));
     const hz=g.water?(g.water.x>cx?1:-1):1;
-    return {agg:[cx+hz*w*0.72,y], safe:[cx-hz*w*0.32,y], al:'Attack line', sl:'Safe line'};
+    return {agg:[cx+hz*w*0.72,y], safe:[cx-hz*w*0.32,y], al:CA('Attack line'), sl:CS('Safe line')};
   }
   if(par!==3){
     if(/go for|home in two|reach|rip driver to get home/.test(txt)){        // reach the green vs lay up short
-      const y=Math.max(8,L-24); return {agg:[gcx,L], safe:[g.cx(y),y], al:'Go for it', sl:'Lay up'};
+      const y=Math.max(8,L-24); return {agg:[gcx,L], safe:[g.cx(y),y], al:CA('Go for it'), sl:CS('Lay up')};
     }
-    if(/lay ?up|lay back|push the layup|chase/.test(txt)){                   // both layups: chase near green vs lay back
+    if(/lay ?up|lay back|push the layup|chase|hold back/.test(txt)){         // both layups: chase near green vs lay back
       const y1=Math.max(10,L-14), y2=Math.max(6,L-34);
-      return {agg:[g.cx(y1),y1], safe:[g.cx(y2),y2], al:'Chase it', sl:'Lay back'};
+      return {agg:[g.cx(y1),y1], safe:[g.cx(y2),y2], al:CA('Chase it'), sl:CS('Lay back')};
     }
   }
   const off=Math.max(3,(g.greenR?g.greenR[0]:12)*0.6)*(pin[0]>gcx?-1:1);     // pin-hunt vs middle of the green
