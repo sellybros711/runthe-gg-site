@@ -521,17 +521,20 @@ window.GA_ID='G-L29P5MRWKE';
      an arbitrary one: the offensive board, the offensive scheme panel and the brand itself
      are red, and body.def-mode has painted the defence blue since that mode shipped.
 
-     It is a ring INSIDE the half, not a shadow around it, because .field clips its overflow:
-     anything cast outward is drawn and then thrown away. The ring closes along the line of
-     scrimmage too, so the lit half reads as a box rather than as a bleed. */
+     LIGHT, NOT A LINE. The first version drew a hard 2px ring around the half and it read as
+     a selection box on a form: a border is a boundary, and this is not saying "the half ends
+     here", it is saying "this half is where the next man comes from". So it is only the
+     bloom, cast inward from the edges and fading out well before the middle. All of it is
+     INSIDE the half, because .field clips its overflow and anything cast outward is drawn
+     and then thrown away. */
   .halfglow{position:absolute;left:0;right:0;height:50%;pointer-events:none;z-index:1;
     opacity:0;transition:opacity .3s ease}
   .halfglow.up{top:0;border-radius:13px 13px 0 0;
-    box-shadow:inset 0 0 0 2px rgba(59,130,246,.85),inset 0 0 26px 5px rgba(59,130,246,.28);
-    background:linear-gradient(180deg,rgba(59,130,246,.15),rgba(59,130,246,0) 64%)}
+    box-shadow:inset 0 0 40px 10px rgba(59,130,246,.34);
+    background:linear-gradient(180deg,rgba(59,130,246,.16),rgba(59,130,246,0) 72%)}
   .halfglow.down{top:50%;border-radius:0 0 13px 13px;
-    box-shadow:inset 0 0 0 2px rgba(239,68,68,.85),inset 0 0 26px 5px rgba(239,68,68,.28);
-    background:linear-gradient(0deg,rgba(239,68,68,.15),rgba(239,68,68,0) 64%)}
+    box-shadow:inset 0 0 40px 10px rgba(239,68,68,.34);
+    background:linear-gradient(0deg,rgba(239,68,68,.16),rgba(239,68,68,0) 72%)}
   .field.pick-def .halfglow.up,.field.pick-off .halfglow.down{
     opacity:1;animation:halfpulse 2.4s ease-in-out infinite}
   @keyframes halfpulse{0%,100%{opacity:.7}50%{opacity:1}}
