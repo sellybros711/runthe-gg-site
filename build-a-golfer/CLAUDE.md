@@ -17272,3 +17272,41 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: `WIND_AMP` (how much the direction bites, per strength), `WIND_MPH` (the speed bands), the drive /
   play-yardage / cross-wind coefficients in `wDriveMult` / `wPlayYds` / `wCrossPen`, and `wTeeClub`'s
   downwind driver-to-3-wood threshold.
+
+### THE CADDIE REPORT, GROUP 1 (item 05): what week it is in real golf
+- **The report's ask** (*"tell me what week it is in real golf: This week on tour: the Tour Championship.
+  Today: Old Grove"*) collided head-on with the owner's own never-name-a-real-venue rule, so it was put to
+  them rather than guessed at. They unblocked it: *"Item 05 can reference real courses because it's just
+  information about what's going on in real life"* - i.e. the rule protects the GAME's fictional venues,
+  not factual real-world information.
+- **A slim line above the course card on the Play 18 preview**: `This week on tour · ★ The Masters ·
+  Augusta National · Augusta, Georgia` sitting directly over `TODAY'S PLAY 18 · Palm Grove`, which is
+  exactly the pairing the report asked for. Majors are gold and starred, the playoffs blue, a team week
+  purple, an ordinary week neutral.
+- **INFORMATION ONLY, and that is a deliberate design decision the owner should know about.** The obvious
+  next step - making the daily course FOLLOW the real tour's venue rotation - would effectively PUBLISH the
+  fictional-to-real venue mapping the whole rest of the game protects (play Augusta's week, get the
+  Augusta-analog, and the mapping is solved). So it is not built, and a test asserts the daily course keeps
+  rotating independently across a fortnight that spans two real events.
+- **`REAL_TOUR`** is a table of Monday-start week keys (YYYYMMDD) for the 2026 season; `realTourWeek(dayKey)`
+  returns the entry whose seven-day window contains today. **The four majors, the three playoff weeks and
+  the Presidents Cup are confident anchors; the ordinary weeks are best-effort and want a check at the start
+  of each season** (there is a comment saying so at the table). Two hosts that genuinely rotate (the Truist
+  and the Canadian Open) carry a **blank venue** rather than an invented one.
+- **It degrades honestly.** A gap week, a week the table does not cover, or any season the table has not
+  been checked for renders **nothing at all** rather than the last event it knew about - verified on all
+  three, and screenshotted (the preview simply opens on the course card).
+- Verified: `real05.mjs` **24 pass / 0 fail / 0 page errors** - the table (chronological, every key really
+  is a Monday, all four majors present), the lookup (Monday / midweek / Sunday all find the same week, the
+  next Monday rolls over, before / gap / after all return null), the strip's copy per tier with no em dash,
+  it rendering ABOVE the course card in document order on the real preview, the no-leak check above, and a
+  full 18-hole round still playing to the result. Screenshots of a major / playoff / team / ordinary / gap
+  week reviewed by eye.
+- Regressions green: sig01 18, lb02 15, sg03 29, wind04 23, wind_e2e 5, mp_eng 37, route_check 6.
+  `board_race` fails 1 **identically on the deployed build** (`showsMyScore` false while the name shows) -
+  a pre-existing stale fixture, verified by running it against `origin/main:golf/index.html`. Inline
+  scripts parse; block 0 is the JSON-LD tag, fails identically on baseline.
+- **NOT deployed** - the owner's standing rule is that each item is explained before it is pushed to the
+  site. Group 1 (items 01-05) is now complete and awaiting that go-ahead.
+- Tunable: the `REAL_TOUR` table (one row per week), `RT_TIER` (the per-tier accent and label), and
+  `realWeekStripHTML` (what the line says).

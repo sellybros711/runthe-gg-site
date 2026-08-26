@@ -26904,6 +26904,82 @@ function dailyTheme(key){
   const palette=[B.base, B.fw, B.green, B.sand||B.fringe, B.water||B.accent||B.outline].filter(Boolean);
   return {tag:t.tag, motifs:t.motifs||[], accent, accent2, palette};
 }
+// ITEM 05 of the Caddie Report: "tell me what week it is in real golf". A slim informational line on the
+// Play 18 preview naming the real tournament being played this week, so the Daily sits inside the real
+// season the player is already following.
+// The owner's never-name-a-real-venue rule is about the GAME's own fictional venues; they explicitly
+// unblocked real-world naming here ("it's just information about what's going on in real life").
+// Deliberately INFORMATION ONLY: the daily course rotation is NOT tied to the real tour's venues, because
+// that would effectively publish the fictional-to-real venue mapping the rest of the game protects.
+// The four majors, the playoffs and the Presidents Cup are confident anchors; the ordinary weeks are
+// best-effort and want a check at the start of each season. A blank venue is deliberate where the host
+// rotates and it could not be confirmed. Outside this table the strip simply renders nothing.
+const REAL_TOUR_SEASON=2026;
+// w = the Monday that starts the tournament week (YYYYMMDD), t = major | playoff | team | ''
+const REAL_TOUR=[
+ {w:20260105,n:'The Sentry',v:'Kapalua, Plantation Course',l:'Kapalua, Hawaii'},
+ {w:20260112,n:'Sony Open in Hawaii',v:'Waialae Country Club',l:'Honolulu, Hawaii'},
+ {w:20260119,n:'The American Express',v:'PGA West',l:'La Quinta, California'},
+ {w:20260126,n:'Farmers Insurance Open',v:'Torrey Pines',l:'San Diego, California'},
+ {w:20260202,n:'AT&T Pebble Beach Pro-Am',v:'Pebble Beach Golf Links',l:'Pebble Beach, California'},
+ {w:20260209,n:'WM Phoenix Open',v:'TPC Scottsdale',l:'Scottsdale, Arizona'},
+ {w:20260216,n:'The Genesis Invitational',v:'Riviera Country Club',l:'Pacific Palisades, California'},
+ {w:20260223,n:'Cognizant Classic',v:'PGA National',l:'Palm Beach Gardens, Florida'},
+ {w:20260302,n:'Arnold Palmer Invitational',v:'Bay Hill Club',l:'Orlando, Florida'},
+ {w:20260309,n:'The Players Championship',v:'TPC Sawgrass',l:'Ponte Vedra Beach, Florida'},
+ {w:20260316,n:'Valspar Championship',v:'Innisbrook, Copperhead Course',l:'Palm Harbor, Florida'},
+ {w:20260323,n:'Texas Children\'s Houston Open',v:'Memorial Park',l:'Houston, Texas'},
+ {w:20260330,n:'Valero Texas Open',v:'TPC San Antonio',l:'San Antonio, Texas'},
+ {w:20260406,n:'The Masters',v:'Augusta National',l:'Augusta, Georgia',t:'major'},
+ {w:20260413,n:'RBC Heritage',v:'Harbour Town Golf Links',l:'Hilton Head, South Carolina'},
+ {w:20260420,n:'Zurich Classic of New Orleans',v:'TPC Louisiana',l:'Avondale, Louisiana'},
+ {w:20260427,n:'CJ Cup Byron Nelson',v:'TPC Craig Ranch',l:'McKinney, Texas'},
+ {w:20260504,n:'Truist Championship',v:'',l:''},
+ {w:20260511,n:'PGA Championship',v:'Aronimink Golf Club',l:'Newtown Square, Pennsylvania',t:'major'},
+ {w:20260518,n:'Charles Schwab Challenge',v:'Colonial Country Club',l:'Fort Worth, Texas'},
+ {w:20260525,n:'Memorial Tournament',v:'Muirfield Village',l:'Dublin, Ohio'},
+ {w:20260601,n:'RBC Canadian Open',v:'',l:'Canada'},
+ {w:20260608,n:'Rocket Classic',v:'Detroit Golf Club',l:'Detroit, Michigan'},
+ {w:20260615,n:'U.S. Open',v:'Shinnecock Hills',l:'Southampton, New York',t:'major'},
+ {w:20260622,n:'Travelers Championship',v:'TPC River Highlands',l:'Cromwell, Connecticut'},
+ {w:20260629,n:'John Deere Classic',v:'TPC Deere Run',l:'Silvis, Illinois'},
+ {w:20260706,n:'Genesis Scottish Open',v:'The Renaissance Club',l:'North Berwick, Scotland'},
+ {w:20260713,n:'The Open Championship',v:'Royal Birkdale',l:'Southport, England',t:'major'},
+ {w:20260720,n:'3M Open',v:'TPC Twin Cities',l:'Blaine, Minnesota'},
+ {w:20260727,n:'Wyndham Championship',v:'Sedgefield Country Club',l:'Greensboro, North Carolina'},
+ {w:20260803,n:'FedEx St. Jude Championship',v:'TPC Southwind',l:'Memphis, Tennessee',t:'playoff'},
+ {w:20260810,n:'BMW Championship',v:'',l:'',t:'playoff'},
+ {w:20260817,n:'TOUR Championship',v:'East Lake Golf Club',l:'Atlanta, Georgia',t:'playoff'},
+ {w:20260831,n:'Procore Championship',v:'Silverado Resort',l:'Napa, California'},
+ {w:20260921,n:'Presidents Cup',v:'Medinah Country Club',l:'Medinah, Illinois',t:'team'},
+ {w:20260928,n:'Sanderson Farms Championship',v:'Country Club of Jackson',l:'Jackson, Mississippi'},
+ {w:20261005,n:'Baycurrent Classic',v:'Yokohama Country Club',l:'Japan'},
+ {w:20261019,n:'Black Desert Championship',v:'Black Desert Resort',l:'Ivins, Utah'},
+ {w:20261102,n:'World Wide Technology Championship',v:'El Cardonal at Diamante',l:'Los Cabos, Mexico'},
+ {w:20261109,n:'Butterfield Bermuda Championship',v:'Port Royal Golf Course',l:'Southampton, Bermuda'},
+ {w:20261116,n:'The RSM Classic',v:'Sea Island Golf Club',l:'St. Simons Island, Georgia'}
+];
+function rtDate(k){ return new Date(Date.UTC(Math.floor(k/10000), (Math.floor(k/100)%100)-1, k%100)); }
+// the entry whose seven day week contains this day key, or null outside the table (honest degradation:
+// a gap week, or any season the table has not been checked for, simply shows nothing)
+function realTourWeek(dayKey){
+  let last=null;
+  for(let i=0;i<REAL_TOUR.length;i++){ if(REAL_TOUR[i].w<=dayKey) last=REAL_TOUR[i]; else break; }
+  if(!last) return null;
+  const d=(rtDate(dayKey)-rtDate(last.w))/86400000;
+  return (d>=0 && d<7)?last:null;
+}
+const RT_TIER={major:{c:'var(--gold)',tag:'Major championship'},playoff:{c:'#7ec8ff',tag:'FedExCup Playoffs'},team:{c:'#c48bff',tag:'Team event'}};
+function realWeekStripHTML(){
+  const e=realTourWeek(todayKey()); if(!e) return '';
+  const th=RT_TIER[e.t||'']||{c:'#accabb',tag:''};
+  const where=[e.v,e.l].filter(Boolean).join(' · ');
+  return `<div class="center" style="margin:2px auto 0;max-width:600px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap">
+    <span class="tag" style="font-size:10px;color:#accabb;border-color:rgba(255,255,255,.16)">This week on tour</span>
+    <span style="font-weight:800;font-size:14px;color:${th.c}">${e.t==='major'?'★ ':''}${esc(e.n)}</span>
+    ${where?`<span class="small muted" style="font-size:11.5px">${esc(where)}</span>`:''}
+  </div>`;
+}
 // the themed "today's daily challenge" feature card (owner Option 3). Folds the course name, meta, tagline,
 // vibe blurb, palette and motif chips into one branded hero so every day's Daily feels special.
 function dailyFeatureCard(key, extra){
@@ -27677,6 +27753,8 @@ function scrDailyPreview(){
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
   add(scrHero(S.special?'Monthly Spotlight':'Play 18', S.special?'Special event · today only':"Today's course"));
   if(PRACTICE && !S.special) add($(`<div class="center" style="margin-top:5px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice mode · unlimited rounds, nothing is recorded</span></div>`));
+  // ITEM 05: what week it is in real golf, above today's fictional course, so the two read as a pair.
+  { const rw=realWeekStripHTML(); if(rw) add($(rw)); }
   // CS240: themed "today's course" feature card - name, tagline, vibe, palette + motif chips, accent from
   // the course's own biome so every day's Daily feels special (owner-picked Option 3).
   add($(`<div style="height:6px"></div>`));
