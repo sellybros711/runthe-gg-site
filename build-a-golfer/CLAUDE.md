@@ -17310,3 +17310,28 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   site. Group 1 (items 01-05) is now complete and awaiting that go-ahead.
 - Tunable: the `REAL_TOUR` table (one row per week), `RT_TIER` (the per-tier accent and label), and
   `realWeekStripHTML` (what the line says).
+
+### STANDING CONSTRAINT: no physical golf bag, in any form (owner)
+- The owner's rule, given while reviewing the group-2 proposal: **"I don't want to include a physical golf
+  bag in any way."** This is the THIRD time a bag has been rejected (CS421 removed the worn bag sprite;
+  the one-club-one-list pass retired the bag tier system and refunded it), so treat it as permanent:
+  no worn bag on the golfer, no bag as a cosmetic slot, no "Your Golf Bag" menu, and no bag wording on any
+  screen a player reads. A club SET is a set of clubs, not an object to carry.
+- **Two stale lines were still telling players otherwise and are now fixed.** How to Play listed "and a
+  golf bag" among the things you can dress your golfer in (the sprite removed in CS421), and pointed at a
+  "Your Golf Bag" menu that has not existed since the closet was folded into the Pro Shop. It now reads
+  "Your club set: pick your club SET and your ball in the Closet, under Gear", which is where they actually
+  live. The What's New Pro Shop entry said "Golf Bag upgrades"; now "club upgrades". Copy only, and the
+  How to Play rows were rewritten at the same length or longer, per the standing do-not-shorten rule.
+- **What was ALREADY clean and needs no change**: there is no bag sprite (`PXG_BAG` gone), no bag cosmetic
+  category, no bag menu, and the Pro Shop's club tab is labelled **"Clubs"**. The only remaining "bag" is
+  the INTERNAL section key `S.shopSec==='bag'` and helpers like `bagBoostRows` - identifiers a player never
+  sees, left alone rather than churned.
+- Verified: `nobag.mjs` **10 pass / 0 fail / 0 page errors** - no sprite, no cosmetic slot, no menu, the
+  club tab reads "Clubs", and a regex sweep for bag wording across the title, rules, Pro Shop (clubs and
+  apparel, signed in so the tabs actually render), closet and What's New screens. **The same suite fails on
+  the deployed build** with `hits:["golf bag","golf bag","Golf Bag","bag"]` on the rules screen, so it pins
+  the thing the owner objected to. Keep it in the regression set: it is the cheapest way to stop a bag
+  creeping back in.
+- **NOTE for whoever writes the group 2-4 proposals**: if a Caddie Report item reads as "what's in the bag",
+  build it as the club SET and the ball, shown as a list, and never as a carried object.
