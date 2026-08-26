@@ -3088,7 +3088,7 @@ h2{font-size:11px;letter-spacing:.04em}
 <p>Play the daily challenge, run a full career mode across dozens of iconic courses, climb the global leaderboard, and go head-to-head online. No download required — play free in your browser.</p>
 <h2>How the game works</h2>
 <p>Every spin reveals a real golfer, and you take one of their eight attributes (distance, accuracy, approach, short game, scrambling, bunker, putting or composure) to fill a slot on your build. You get two re-spins for the whole draft. Once all eight slots are filled you have a golfer, and you take them out on tour.</p>
-<p>Career mode runs up to 30 seasons on tour, then up to 12 more on the Legend Circuit once you turn 50. Your golfer ages, peaks and declines, chasing majors, the Atlantic Cup, the Nations Cup and international medals while you manage injuries, sponsors, rivalries and roughly $2.8M a year of tour costs. The daily challenge is a single 18-hole round at a rotating real course, the same for everyone, resetting at midnight ET. Online head-to-head offers 1v1, Best Ball, Scramble and Free-for-All against real players.</p>
+<p>Career mode runs up to 30 seasons on tour, then up to 12 more on the Legend Circuit once you turn 50. Your golfer ages, peaks and declines, chasing majors, the Atlantic Cup, the Nations Cup and international medals while you manage injuries, sponsors, rivalries and roughly $2.8M a year of tour costs. The daily challenge is a single 18-hole round on a rotating championship layout, real par and yardages under a course name of our own, the same for everyone, resetting at midnight ET. Online head-to-head offers 1v1, Best Ball, Scramble and Free-for-All against real players.</p>
 <p>Run The Tour is free to play, with optional in-game upgrades. Read the full <a href="/golf/how-to-play.html" style="color:#EBA61F">How to Play guide</a> for the complete rules, pull odds and strategy.</p>
 <p><strong>This game needs JavaScript enabled to play.</strong> Please turn on JavaScript and reload.</p>
 <p><a href="/golf/how-to-play.html" style="color:#EBA61F">How to play</a> &middot;
@@ -10938,10 +10938,12 @@ function scrRules(){
   add($(`<p class="small muted center" style="max-width:560px;margin:0 auto 22px;line-height:1.45">A card's tier is earned by its overall rating - the gold ★ Legendary tier is reserved for the game's highest-rated cards, and aging stars have a separate PRIME VERSION card rated at their peak. Take the best rating for an open slot, whoever lands.</p>`));
 
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge</span></div>`));
-  add($(`<h2 class="center" style="margin:10px 0 4px">One round. One famous course.</h2>`));
-  add($(`<p class="lede center" style="margin:2px 0 14px">A single 18-hole round at a rotating real course, same for everyone, new course at midnight ET. Human-only: chase the course record.</p>`));
+  add($(`<h2 class="center" style="margin:10px 0 4px">One round. One championship course.</h2>`));
+  add($(`<p class="lede center" style="margin:2px 0 14px">A single 18-hole round on a rotating championship layout, same for everyone, new course at midnight ET. Human-only: chase the course record.</p>`));
   const dSteps=[
-    ['⛳','A real course, every day','18 holes at an iconic tour venue, real pars and yardages. The course rotates daily and is the same for every player.'],
+    // ITEM 10: say what the course actually IS. The layout is a real championship test (par, hole-by-hole
+    // yardages, the score tour pros average there); the name and setting are ours, and always will be.
+    ['⛳','A championship layout, every day','Every course is a real championship test: its par, its hole-by-hole yardages, and the score tour pros actually average there. The names and settings are ours, so what you recognize is the golf, not the branding. A new course rotates in at midnight ET and is the same for every player.'],
     ['🎯','Build for the course','The preview shows what skills win there and the day\'s conditions. Spin a golfer built to attack today\'s course.'],
     ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number, but it can blow up.'],
     ['🏆','Claim the course record','Post the lowest round and the course record is yours. Beat the standing record and your name sits on it until someone takes it.'],
@@ -27061,6 +27063,12 @@ function dailyFeatureCard(key, extra){
   card.appendChild($(`<div style="font:800 10.5px system-ui;letter-spacing:2.4px;color:${A}">${S.special?'⭐ ':''}${kicker}</div>`));
   card.appendChild($(`<div style="font:800 27px/1.05 var(--display,system-ui);color:#fff;margin-top:7px">${esc(c.v)}</div>`));
   card.appendChild($(`<div class="small" style="color:#e9e0cfcc;margin-top:5px;font-weight:600">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dWindCondLabel()}</div>`));
+  // ITEM 10: the report was that the daily promises "a real course" and then shows a name nobody has heard
+  // of. Say it here, where the mismatch is actually felt: the LAYOUT is a real championship test, the name
+  // and setting are ours. A fantasy course (invented outright) says so instead of claiming otherwise.
+  card.appendChild($(`<div class="small muted" style="margin-top:7px;line-height:1.45;font-size:11.5px">${c.fantasy
+    ? 'An original course, invented for Run The Tour.'
+    : 'Our name and setting, a real championship layout: its par, its hole-by-hole yardages and the score tour pros average there.'}</div>`));
   // CS356p: keep only the essentials visible; the tagline/blurb/palette/motifs collapse behind a dropdown.
   const toggle=$(`<button class="dfeat-more" style="margin-top:13px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:${A}14;border:1px solid ${A}44;color:${A};font:800 11px system-ui;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px;border-radius:10px;cursor:pointer">${open?'Hide course details':'More about this course'} <span style="font-size:13px">${open?'▴':'▾'}</span></button>`);
   toggle.onclick=()=>{ S.dailyBlurbOpen=!open; render(); };
@@ -27794,10 +27802,11 @@ async function enforceDailyAttempt(seed){
 function scrDailyIntro(){
   const c=DAILY_COURSES[S.dailyCourse];
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge · how to play</span></div>`));
-  add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">One round.<br>One famous course.</h1>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">One round.<br>One championship course.</h1>`));
   add($(`<p class="lede center" style="margin:2px 0 14px">Today you're playing <b style="color:var(--gold)">${esc(dShort(c.v))}</b>. Post the lowest round and the course record is yours.</p>`));
   const steps=[
-    ['⛳','A real course, every day','18 holes at an iconic tour venue, real pars and yardages. A new course rotates in at midnight ET.'],
+    // ITEM 10: the layout is a real championship test; the name is ours (see the how-to-play note).
+    ['⛳','A championship layout, every day','A real championship test: its par, its hole-by-hole yardages, and the score tour pros average there. The name and setting are ours. A new course rotates in at midnight ET.'],
     ['🎯','Build for the course','The preview shows what skills win here and today\'s conditions. Spin a golfer built to attack this course.'],
     ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number, but it can blow up.'],
     ['🏆','Claim the course record','Your score is posted to the course. Beat the standing record and your name sits on it until someone takes it.'],
@@ -35308,7 +35317,8 @@ try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course
     through professional seasons where prize money has to outrun roughly $2.8M a year of tour
     costs. Career mode runs up to 30 seasons of ageing, peaking and declining while you chase
     majors, cups and the world number one.</p>
-  <p style="font-size:14.5px;line-height:1.6;margin:0 0 10px;">Beyond the career there is a Daily Challenge at a rotating real course, the same for
+  <p style="font-size:14.5px;line-height:1.6;margin:0 0 10px;">Beyond the career there is a Daily Challenge on a rotating championship layout, real par
+    and yardages under a course name of our own, the same for
     everyone with a fresh course at midnight ET, plus online Head-to-Head, Best Ball, Scramble
     and Free-for-All against real players. Your golfer is fully yours to design: outfits, hats,
     hairstyles, eyewear and clubs, earned through play.</p>
