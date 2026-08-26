@@ -41,7 +41,7 @@
   .brand .spacer{flex:1;}
   .brand button{background:transparent;color:var(--text-dim);border:1px solid var(--line);
     padding:6px 10px;font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    cursor:pointer;border-radius:4px;}
+    cursor:pointer;border-radius:4px;margin-left:6px;}
   .brand button:hover{color:var(--text);border-color:var(--gold);}
 
   .screen{padding:18px 0;}
@@ -166,6 +166,15 @@
   .meter-wrap .hint{margin-top:6px;font-size:11px;color:var(--text-dim);
     letter-spacing:.08em;text-align:center;text-transform:uppercase;}
   .meter-wrap .hint b{color:var(--gold);}
+  .pitch-select{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;
+    justify-content:center;}
+  .pitch-select .lbl{color:var(--gold);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
+  .pitch-select .btn{padding:8px 12px;font-size:11px;letter-spacing:.14em;}
+  .swing-btn{display:none;width:100%;margin-top:10px;padding:16px;font-size:16px;
+    background:var(--gold);color:#1a1108;border:0;border-radius:6px;font-weight:900;
+    letter-spacing:.28em;cursor:pointer;font-family:inherit;text-transform:uppercase;}
+  .swing-btn:active{transform:translateY(1px);filter:brightness(1.06);}
+  @media (max-width:900px){.swing-btn{display:block;}}
 
   .atbat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;
     display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
@@ -226,6 +235,7 @@
     <h1>Run The All-Stars</h1>
     <span class="tag">Public domain baseball</span>
     <span class="spacer"></span>
+    <button id="btn-mute" title="Toggle sound"></button>
     <button id="btn-home">Main Menu</button>
   </div>
   <div id="app"></div>
@@ -1156,6 +1166,124 @@ function spriteCanvas(c, size) {
 }
 
 /* ============================================================================
+   SOUND
+   All synthesized with WebAudio at call time: oscillators and filtered
+   noise, no audio files. The context is created lazily on the first user
+   gesture (autoplay policy), and the mute choice persists in prefs.
+   ============================================================================ */
+const Sound = {
+  ctx: null,
+  muted: false,
+  ensure() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      this.ctx = new AC();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  /* one master gain so everything mixes politely */
+  bus() {
+    const ctx = this.ensure();
+    if (!ctx) return null;
+    if (!this._bus) {
+      this._bus = ctx.createGain();
+      this._bus.gain.value = 0.5;
+      this._bus.connect(ctx.destination);
+    }
+    return this._bus;
+  },
+  tone(freq, dur, opts = {}) {
+    const ctx = this.ensure(); const bus = this.bus();
+    if (!ctx || !bus) return;
+    const t0 = ctx.currentTime + (opts.delay || 0);
+    const osc = ctx.createOscillator();
+    osc.type = opts.type || 'square';
+    osc.frequency.setValueAtTime(freq, t0);
+    if (opts.slideTo) osc.frequency.exponentialRampToValueAtTime(opts.slideTo, t0 + dur);
+    const g = ctx.createGain();
+    const vol = opts.vol || 0.18;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    osc.connect(g); g.connect(bus);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  },
+  noise(dur, opts = {}) {
+    const ctx = this.ensure(); const bus = this.bus();
+    if (!ctx || !bus) return;
+    const t0 = ctx.currentTime + (opts.delay || 0);
+    const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = opts.filter || 'highpass';
+    filt.frequency.value = opts.freq || 2000;
+    const g = ctx.createGain();
+    const vol = opts.vol || 0.3;
+    g.gain.setValueAtTime(vol, t0);
+    if (opts.swell) {
+      g.gain.setValueAtTime(0.001, t0);
+      g.gain.linearRampToValueAtTime(vol, t0 + dur * 0.3);
+    }
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    src.connect(filt); filt.connect(g); g.connect(bus);
+    src.start(t0); src.stop(t0 + dur + 0.05);
+  },
+  play(name) {
+    if (this.muted) return;
+    try {
+      switch (name) {
+        case 'crack':
+          this.noise(0.08, { filter:'highpass', freq: 1800, vol: 0.5 });
+          this.tone(180, 0.06, { type:'triangle', vol: 0.25 });
+          break;
+        case 'foul':
+          this.noise(0.05, { filter:'highpass', freq: 2400, vol: 0.3 });
+          break;
+        case 'whiff':
+          this.tone(320, 0.16, { type:'sawtooth', slideTo: 90, vol: 0.10 });
+          break;
+        case 'strike':
+          this.tone(220, 0.10, { vol: 0.14 });
+          this.tone(175, 0.16, { vol: 0.14, delay: 0.10 });
+          break;
+        case 'ball':
+          this.tone(440, 0.07, { type:'sine', vol: 0.12 });
+          break;
+        case 'catch':
+          this.tone(880, 0.05, { type:'sine', vol: 0.16 });
+          this.noise(0.04, { filter:'lowpass', freq: 900, vol: 0.25 });
+          break;
+        case 'cheer':
+          this.noise(0.7, { filter:'bandpass', freq: 1000, vol: 0.22, swell: true });
+          break;
+        case 'aww':
+          this.tone(300, 0.28, { type:'sine', slideTo: 200, vol: 0.10 });
+          break;
+        case 'homer': {
+          /* an original little triad fanfare, composed here */
+          const seq = [ [523, 0.00], [659, 0.11], [784, 0.22], [1047, 0.35] ];
+          for (const [f, d] of seq) this.tone(f, 0.16, { vol: 0.16, delay: d });
+          this.tone(1047, 0.5, { vol: 0.12, delay: 0.52 });
+          this.noise(1.4, { filter:'bandpass', freq: 1000, vol: 0.26, swell: true, delay: 0.1 });
+          break;
+        }
+        case 'inning':
+          this.tone(392, 0.10, { vol: 0.10 });
+          this.tone(494, 0.10, { vol: 0.10, delay: 0.11 });
+          this.tone(587, 0.16, { vol: 0.10, delay: 0.22 });
+          break;
+      }
+    } catch (e) { /* audio unavailable: stay silent */ }
+  },
+};
+
+/* ============================================================================
    PERSISTENT STATE
    ============================================================================ */
 const SAVE_KEY = 'allstars.season.v1';
@@ -1175,17 +1303,55 @@ const clearSeason = () => {
    APP STATE and SCREEN ROUTER
    ============================================================================ */
 const app = document.getElementById('app');
+
+/* Lightweight prefs: innings, difficulty, team name, and the mute choice
+   survive across visits. Separate from the season save on purpose, so
+   deleting a season never wipes how someone likes to play. */
+const PREFS_KEY = 'allstars.prefs.v1';
+const loadPrefs = () => {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}; }
+  catch (e) { return {}; }
+};
+const PREFS = loadPrefs();
+Sound.muted = !!PREFS.muted;
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      innings: State.innings,
+      difficulty: State.difficulty,
+      teamName: State.teamName,
+      muted: Sound.muted,
+    }));
+  } catch (e) {}
+}
+
 const State = {
   screen: 'menu',
   mode: null,          /* 'exhibition' or 'season' */
   team: null,          /* array of nine character keys */
-  teamName: 'Your Team',
+  teamName: PREFS.teamName || 'Your Team',
   opponent: null,      /* {name, color, roster} */
-  innings: 5,
-  difficulty: 'medium',
+  innings: PREFS.innings === 9 ? 9 : 5,
+  difficulty: ['easy','medium','hard'].includes(PREFS.difficulty) ? PREFS.difficulty : 'medium',
   game: null,
   season: loadSeason(),
 };
+
+/* Mute toggle in the header. Also warms the audio context up on the
+   first user gesture anywhere, which is what autoplay policy wants. */
+const muteBtn = document.getElementById('btn-mute');
+function refreshMuteBtn() { muteBtn.textContent = Sound.muted ? 'Sound: off' : 'Sound: on'; }
+muteBtn.addEventListener('click', () => {
+  Sound.muted = !Sound.muted;
+  if (!Sound.muted) { Sound.ensure(); Sound.play('ball'); }
+  refreshMuteBtn();
+  savePrefs();
+});
+refreshMuteBtn();
+document.addEventListener('click', function warmAudio() {
+  if (!Sound.muted) Sound.ensure();
+  document.removeEventListener('click', warmAudio);
+}, { once: true });
 
 const $ = (sel, root=document) => root.querySelector(sel);
 const el = (tag, cls, html) => {
@@ -1325,6 +1491,7 @@ function renderRoster() {
         setTimeout(() => {
           State.team = [...picked];
           State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+          savePrefs();
           State.screen = 'settings';
           render();
         }, 220);
@@ -1361,6 +1528,7 @@ function renderRoster() {
     setTimeout(() => {
       State.team = [...picked];
       State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+      savePrefs();
       State.screen = 'settings';
       render();
     }, 300);
@@ -1408,7 +1576,7 @@ function renderSettings() {
   [5,9].forEach(n => {
     const t = el('div','toggle', `${n} innings`);
     if (State.innings === n) t.classList.add('on');
-    t.onclick = () => { State.innings = n; render(); };
+    t.onclick = () => { State.innings = n; savePrefs(); render(); };
     innRow.appendChild(t);
   });
   card.appendChild(innRow);
@@ -1418,7 +1586,7 @@ function renderSettings() {
   ['easy','medium','hard'].forEach(d => {
     const t = el('div','toggle', d);
     if (State.difficulty === d) t.classList.add('on');
-    t.onclick = () => { State.difficulty = d; render(); };
+    t.onclick = () => { State.difficulty = d; savePrefs(); render(); };
     dRow.appendChild(t);
   });
   card.appendChild(dRow);
@@ -1819,6 +1987,9 @@ function currentBatter() {
 function currentPitcher() {
   return currentFieldingTeam().batters[0];  /* first pick pitches */
 }
+function playerIsBatting() {
+  return currentBattingTeam().isYou;
+}
 function statBump(k, key) {
   const g = State.game;
   g.stats[key][k] = (g.stats[key][k] || 0) + 1;
@@ -1926,7 +2097,35 @@ function startAtBat() {
   for (const note of g.batterCtx.notes) addLog(note, true);
   showCallout(`${b.n} steps in`, 'sub');
   refreshHud();
-  setTimeout(throwPitch, BEAT.intoAtBat);
+  if (playerIsBatting()) {
+    setTimeout(throwPitch, BEAT.intoAtBat);
+  } else {
+    /* Your defense is on the field: you call the pitch. */
+    setTimeout(offerPitchSelection, BEAT.intoAtBat);
+  }
+}
+
+/* When the CPU bats, the player picks what the pitcher throws. Buttons
+   appear under the meter; no pick within four seconds and the pitcher
+   shakes off the sign and throws his own choice, so the game never
+   stalls. The chosen pitch matters: each CPU batter has a hidden weak
+   pitch for the at bat, and hitting it wrecks their timing. */
+function offerPitchSelection() {
+  const g = State.game;
+  if (!g || g.over) return;
+  const row = document.getElementById('pitch-select');
+  if (!row) return throwPitch();
+  row.style.display = '';
+  const done = (pt) => {
+    row.style.display = 'none';
+    clearTimeout(timer);
+    for (const btn of row.querySelectorAll('button')) btn.onclick = null;
+    throwPitch(pt);
+  };
+  const timer = setTimeout(() => done(undefined), 4000);
+  for (const btn of row.querySelectorAll('button')) {
+    btn.onclick = (e) => { e.stopPropagation(); done(btn.dataset.pt); };
+  }
 }
 
 /* Quirk hook. Called once per at bat. Returns a stat snapshot the swing
@@ -1943,15 +2142,20 @@ function batterContext(b) {
   return ctx;
 }
 
-function throwPitch() {
+function throwPitch(chosenPt) {
   const g = State.game;
   if (g.over) return;
   const diff = DIFF[State.difficulty];
   const batter = currentBatter();
   const pitcher = currentPitcher();
-  /* pick a pitch type */
+  /* Pick a pitch type: player choice when they're calling, else random. */
   const pitchTypes = ['fastball','curveball','changeup'];
-  const pt = pitchTypes[Math.floor(Math.random()*3)];
+  const pt = chosenPt && pitchTypes.includes(chosenPt) ? chosenPt : pitchTypes[Math.floor(Math.random()*3)];
+  /* Each CPU at bat has a hidden weak pitch. Hitting it costs the batter
+     a chunk of contact quality, which the swing AI reads. */
+  if (!g.batterCtx.weakPitch) {
+    g.batterCtx.weakPitch = pitchTypes[Math.floor(Math.random()*3)];
+  }
   /* speed multiplier: fastball fast, curve normal, change starts fast slows down */
   const baseSpeed = diff.speed
     * (pt === 'fastball' ? 0.85 : pt === 'curveball' ? 1.15 : 1.0)
@@ -1987,36 +2191,93 @@ function throwPitch() {
 
 /* Install the swing click and space listeners for this pitch. The field
    loop (startFieldLoop) handles all the painting and the "no swing = called
-   pitch" transition. */
+   pitch" transition. When the CPU is batting instead of the player,
+   nothing listens for a click; a scheduled CPU swing takes its shot. */
 function runPitchAnimation() {
   const g = State.game;
   const p = g.pitch;
   const durMs = p.speed * 1000;
-  const onClick = (e) => {
-    if (p.swung) return;
-    const now = performance.now();
-    if (now < p.windupUntil) return;
-    const t = clamp((now - p.start) / durMs, 0, 1);
+  if (playerIsBatting()) {
+    const onClick = (e) => {
+      if (p.swung) return;
+      const now = performance.now();
+      if (now < p.windupUntil) return;
+      const t = clamp((now - p.start) / durMs, 0, 1);
+      p.swung = true;
+      resolveSwing(t);
+    };
+    const onKey = (e) => {
+      if (e.code === 'Space') { e.preventDefault(); onClick(e); }
+    };
+    const teardown = () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('click', onClick, true);
+    };
+    atBatCleanup = teardown;
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('click', onClick, true);
+    return;
+  }
+  scheduleCpuSwing();
+}
+
+/* CPU batting AI. Reads the pitch's ideal spot, the batter's contact
+   stat, and the current count to decide (a) whether to swing at all,
+   and (b) how close to the ideal spot to land. Better contact hitters
+   land closer; a batter down 0-2 protects the plate. */
+function scheduleCpuSwing() {
+  const g = State.game;
+  const p = g.pitch;
+  const batter = currentBatter();
+  const diff = DIFF[State.difficulty];
+  const durMs = p.speed * 1000;
+
+  /* Swing decision: strikes get swung at more often, balls left alone,
+     0-2 counts see the batter foul most anything close. */
+  const twoStrikes = g.strikes >= 2;
+  const isStrike = p.isStrike;
+  let swingProb = isStrike ? 0.68 : 0.20;
+  if (twoStrikes) swingProb = isStrike ? 0.92 : 0.55;
+  if (g.balls >= 3 && !isStrike) swingProb = 0.10;
+  /* Contact hitters swing selectively; hackers hack. */
+  swingProb += (batter.con - 60) * 0.001;
+  const willSwing = Math.random() < swingProb;
+
+  if (!willSwing) {
+    /* Let the pitch pass; the field loop's called-pitch trigger fires. */
+    return;
+  }
+
+  /* Where the CPU lands the cursor: closer to ideal with better CON, wider
+     spread on hard difficulty (harder to hit their sweet timing). */
+  const conJitter = (110 - batter.con) / 900;   /* .01 to .12 range */
+  const diffJitter = { easy: 0.20, medium: 0.13, hard: 0.09 }[State.difficulty];
+  let jitter = conJitter + diffJitter;
+  /* Weak pitch: CPU whiffs badly on their weak pitch. */
+  if (p.pt === g.batterCtx.weakPitch) jitter += 0.14;
+  /* Fresh pitcher vs gassed pitcher moves the needle the other way. */
+  const fat = pitcherFatigue();
+  jitter -= fat.level * 0.02;
+  jitter = clamp(jitter, 0.03, 0.35);
+
+  const dir = Math.random() < 0.5 ? -1 : 1;
+  const t = clamp(p.ideal + dir * jitter * Math.random(), 0.02, 0.98);
+  /* Time the swing to match that cursor position (fires after the meter
+     reaches it). Add the windup so it happens in real time. */
+  const fireAt = p.windupUntil + t * durMs;
+  const wait = Math.max(0, fireAt - performance.now());
+  setTimeout(() => {
+    if (!g.pitch || g.pitch !== p || p.swung) return;
     p.swung = true;
     resolveSwing(t);
-  };
-  const onKey = (e) => {
-    if (e.code === 'Space') { e.preventDefault(); onClick(e); }
-  };
-  const teardown = () => {
-    document.removeEventListener('keydown', onKey);
-    document.removeEventListener('click', onClick, true);
-  };
-  atBatCleanup = teardown;
-  document.addEventListener('keydown', onKey);
-  document.addEventListener('click', onClick, true);
+  }, wait);
 }
 
 function resolveCalledPitch() {
   const g = State.game;
   const p = g.pitch;
-  if (p.isStrike) { g.strikes++; addLog('Called strike.'); showCallout('STRIKE', 'strike'); }
-  else            { g.balls++;   addLog('Ball.'); showCallout('BALL', 'ball'); }
+  if (p.isStrike) { g.strikes++; addLog('Called strike.'); showCallout('STRIKE', 'strike'); Sound.play('strike'); }
+  else            { g.balls++;   addLog('Ball.'); showCallout('BALL', 'ball'); Sound.play('ball'); }
   refreshHud();
   if (g.strikes >= 3) return recordOut('called strikeout', true);
   if (g.balls >= 4) return recordWalk();
@@ -2065,6 +2326,7 @@ function resolveSwing(cursorT) {
     g.strikes++;
     addLog(`${batter.n} swings and misses.`);
     showCallout('SWING AND MISS', 'strike');
+    Sound.play('whiff');
     refreshHud();
     if (g.strikes >= 3) return recordOut('swinging strikeout', true);
     return setTimeout(throwPitch, BEAT.afterWhiff);
@@ -2075,6 +2337,7 @@ function resolveSwing(cursorT) {
     if (g.strikes < 2) g.strikes++;
     addLog(`${batter.n} fouls it off.`);
     showCallout('FOUL BALL', 'sub');
+    Sound.play('foul');
     refreshHud();
     return setTimeout(throwPitch, BEAT.betweenPitches);
   }
@@ -2172,6 +2435,8 @@ function pathPointAt(field, path, t) {
 
 function scheduleContactPlay(kind, batter) {
   const g = State.game;
+  /* Bat meets ball. The crack fires immediately, before the ball travels. */
+  Sound.play('crack');
   /* Errors: on a ground or fly out, roll against the fielding team's DEF.
      A low-defense team lets the batter reach on a mishandled ball. */
   let effective = kind;
@@ -2225,11 +2490,15 @@ function scheduleContactPlay(kind, batter) {
     if (g.play.kind === 'home run') {
       confettiBurst(g, geo.cx, geo.cy);
       g.shakeUntil = performance.now() + 500;
+      Sound.play('homer');
     } else if (g.play.kind === 'fly out') {
       gloveFlash(g, landingX, landingY);
       dustPuff(g, landingX, landingY);
+      Sound.play('catch');
     } else {
       dustPuff(g, landingX, landingY);
+      if (g.play.kind === 'single' || g.play.kind === 'double' || g.play.kind === 'triple') Sound.play('cheer');
+      else Sound.play('aww');
     }
     if (onError) {
       applyHitMutation('single', batter, { onError: true });
@@ -2436,6 +2705,7 @@ function endHalfInning() {
   const g = State.game;
   addLog(`Side retired. End of ${g.half === 'top' ? 'top' : 'bottom'} of ${g.inning}.`, true);
   showCallout('SIDE RETIRED', 'homer');
+  Sound.play('inning');
   g.bases = [null,null,null];
   g.outs = 0;
   g.balls = 0; g.strikes = 0;
@@ -2768,9 +3038,16 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     /* Catcher behind plate */
     const catcher = currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1];
     if (catcher && catcher.pal) drawRunner(ctx, cx, cy + r + 22, catcher, 2.4);
-    /* Pitcher on the mound */
+    /* Pitcher on the mound: windup for the first 65% of the pitch's
+       travel, release for the last 35%, then idle. */
     const pit = currentPitcher();
-    if (pit) drawRunner(ctx, cx, cy - 6, pit, 3);
+    let pitcherPose = null;
+    if (pitch && !inWindup) {
+      pitcherPose = t < 0.35 ? 'release' : null;
+    } else if (pitch && inWindup) {
+      pitcherPose = 'windup';
+    }
+    if (pit) drawRunner(ctx, cx, cy - 6, pit, 3, pitcherPose);
     /* Fielder cluster */
     const fs = currentFieldingTeam().batters;
     if (fs[2]) drawRunner(ctx, cx - r*0.55, cy - r*0.15, fs[2], 2.2);
@@ -2789,15 +3066,16 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       const p = g.play;
       const now = performance.now();
       const rt = clamp((now - p.runnerStart) / (p.runnerUntil - p.runnerStart), 0, 1);
+      const runFrame = Math.floor(now / 130) % 2 === 0 ? 'run-a' : 'run-b';
       p.preBases.forEach((runner, i) => {
         if (!runner || !p.runnerPaths[i]) return;
         const [rx, ry] = pathPointAt(field, p.runnerPaths[i], rt);
-        drawRunner(ctx, rx, ry - 4, runner, 2.6);
+        drawRunner(ctx, rx, ry - 4, runner, 2.6, rt > 0 && rt < 1 ? runFrame : null);
       });
       /* Batter as runner: starts moving at the same time as the ball is */
       const bt = clamp((now - p.startedAt) / Math.max(300, p.ball.duration - 100), 0, 1);
       const [bx, by] = pathPointAt(field, p.batterPath, bt);
-      drawRunner(ctx, bx, by - 4, p.batter, 3);
+      drawRunner(ctx, bx, by - 4, p.batter, 3, bt > 0.05 && bt < 0.98 ? runFrame : null);
       /* Bat swing arc, first 240ms of the play */
       if (now < p.swingUntil) {
         const st = clamp((now - p.startedAt) / (p.swingUntil - p.startedAt), 0, 1);
@@ -2825,7 +3103,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 4, bs[1], 2.6);
       if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 4, bs[2], 2.6);
       const batter = currentBatter();
-      if (batter) drawRunner(ctx, cx - 22, cy + r + 6, batter, 3);
+      if (batter) drawRunner(ctx, cx - 22, cy + r + 6, batter, 3, 'batting');
     }
   }
 
@@ -2904,7 +3182,7 @@ function drawBatSwing(ctx, x, y, t) {
 }
 
 const runnerCache = new Map();
-function drawRunner(ctx, x, y, character, scale) {
+function drawRunner(ctx, x, y, character, scale, pose) {
   scale = scale || 3;
   const key = character.k + '@' + scale;
   let cv = runnerCache.get(key);
@@ -2914,8 +3192,33 @@ function drawRunner(ctx, x, y, character, scale) {
   ctx.beginPath();
   ctx.ellipse(x, y + 1, cv.width * 0.35, cv.width * 0.10, 0, 0, Math.PI * 2);
   ctx.fill();
-  /* Anchor at the feet: shift up by the sprite's full height. */
-  ctx.drawImage(cv, Math.round(x - cv.width/2), Math.round(y - cv.height));
+
+  const drawX = Math.round(x - cv.width/2);
+  const drawY = Math.round(y - cv.height);
+  /* Pose-driven micro-animation: idle-bob shifts a pixel every 400ms,
+     run alternates a small skew, windup crouches, and release throws
+     the whole sprite forward for a beat. Every character on the field
+     picks up an idle bob so nothing looks frozen. */
+  const t = performance.now();
+  let dy = 0, sx = 1, rot = 0;
+  if (pose === 'run-a') { dy = -1; }
+  else if (pose === 'run-b') { dy = 0; sx = -1; }
+  else if (pose === 'windup') { dy = -2; rot = -0.10; }
+  else if (pose === 'release') { dy = 1; rot = 0.14; }
+  else if (pose === 'batting') { dy = 0; rot = -0.06; }
+  else {
+    dy = Math.floor(((t / 420) + (character.k.charCodeAt(0) % 5) * 0.2) % 2) === 0 ? 0 : -1;
+  }
+  if (rot || sx !== 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (rot) ctx.rotate(rot);
+    if (sx !== 1) ctx.scale(sx, 1);
+    ctx.drawImage(cv, -cv.width/2, -cv.height + dy);
+    ctx.restore();
+  } else {
+    ctx.drawImage(cv, drawX, drawY + dy);
+  }
 }
 
 function drawMeter(ctx, w, h, t, pitch, inWindup) {
@@ -3006,13 +3309,43 @@ function renderGame() {
   s.appendChild(arena);
 
   const meter = el('div','meter-wrap');
-  const b = currentBatter(), p = currentPitcher();
   meter.innerHTML = `<div class="label">`
     + `<span><b class="pt" id="pt-name">Get ready</b></span>`
-    + `<span>Click anywhere or press Space</span></div>`;
+    + `<span id="meter-side">Click anywhere or press Space</span></div>`;
   const m = document.createElement('canvas'); m.id='meter'; m.width=720; m.height=52;
   meter.appendChild(m);
-  meter.appendChild(el('div','hint', 'Land the marker on the <b>green zone</b> to make solid contact.'));
+  const hint = el('div','hint', 'Land the marker on the <b>green zone</b> to make solid contact.');
+  hint.id = 'meter-hint';
+  meter.appendChild(hint);
+
+  /* Pitch-selection strip: hidden by default, shown only during the CPU's
+     at bat windup by offerPitchSelection(). */
+  const psel = el('div','pitch-select');
+  psel.id = 'pitch-select';
+  psel.style.display = 'none';
+  psel.innerHTML =
+      `<span class="lbl">Call your pitch</span>`
+    + `<button class="btn ghost" data-pt="fastball">Fastball</button>`
+    + `<button class="btn ghost" data-pt="curveball">Curveball</button>`
+    + `<button class="btn ghost" data-pt="changeup">Changeup</button>`;
+  meter.appendChild(psel);
+
+  /* Big touch-friendly SWING button under the meter, for phones and
+     anyone who prefers a target to a click-anywhere. */
+  const swingBtn = el('button','btn swing-btn','SWING');
+  swingBtn.id = 'swing-btn';
+  swingBtn.onmousedown = swingBtn.ontouchstart = (e) => {
+    e.preventDefault();
+    /* Route through the same swing path a click would use. */
+    const g2 = State.game;
+    if (!g2 || !g2.pitch || g2.pitch.swung || !playerIsBatting()) return;
+    const now = performance.now();
+    if (now < g2.pitch.windupUntil) return;
+    const t = clamp((now - g2.pitch.start) / (g2.pitch.speed * 1000), 0, 1);
+    g2.pitch.swung = true;
+    resolveSwing(t);
+  };
+  meter.appendChild(swingBtn);
   s.appendChild(meter);
 
   /* Steal button, only visible when there is a runner who can advance. */
@@ -3134,6 +3467,15 @@ function refreshHud() {
   const ptName = document.getElementById('pt-name');
   if (ptName && g.pitch) ptName.textContent = g.pitch.pt.toUpperCase();
   refreshStealButton();
+  /* Show swing controls only when the player is batting; show the
+     "you're pitching" hint when the CPU is at the plate. */
+  const side = document.getElementById('meter-side');
+  const hint = document.getElementById('meter-hint');
+  const swingBtn = document.getElementById('swing-btn');
+  const youBat = playerIsBatting();
+  if (side) side.textContent = youBat ? 'Click anywhere or press Space' : 'You are pitching · call a pitch each windup';
+  if (hint) hint.style.display = youBat ? '' : 'none';
+  if (swingBtn) swingBtn.style.display = youBat ? '' : 'none';
 }
 
 function refreshStealButton() {
@@ -3143,7 +3485,7 @@ function refreshStealButton() {
   if (!g || g.over || g.play) { btn.style.display = 'none'; return; }
   /* Only offer a straight steal: runner on 1st going to 2nd, when 2nd is
      empty. Available only during the windup, before the meter starts. */
-  const canSteal = g.bases[0] && !g.bases[1] && g.pitch && !g.pitch.swung
+  const canSteal = playerIsBatting() && g.bases[0] && !g.bases[1] && g.pitch && !g.pitch.swung
                  && performance.now() < g.pitch.windupUntil;
   btn.style.display = canSteal ? '' : 'none';
   if (canSteal) btn.textContent = `Steal 2nd · ${g.bases[0].n}`;
