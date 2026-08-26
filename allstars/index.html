@@ -2166,6 +2166,35 @@ const TEAM_STYLE = {
   'Folklore':           { swing:+0.03, patience: 0.00, jitter:+0.03, label:'Odd bunch' },
 };
 const DEFAULT_STYLE = { swing:0, patience:0, jitter:0, label:'Balanced' };
+
+/* -------- Season difficulty ramp --------
+   A seven game season that plays identically from game one to game seven
+   has no arc. Opponents sharpen as the season goes on: early games are a
+   warm up, the last games bite, and the playoffs and the final bite
+   hardest. Returns 0 (opening day) to 1 (championship game). Exhibition
+   games sit in the middle so a one off is neither trivial nor brutal. */
+function opponentSharpness() {
+  if (State.mode === 'season' && State.season) {
+    const played = State.season.results.length;   /* 0..6 going in */
+    return clamp(played / 8, 0, 1);
+  }
+  if (State.mode === 'playoff') {
+    return State.game && State.game.round === 'final' ? 1.0 : 0.85;
+  }
+  if (State.mode === 'cup' && State.game) {
+    /* Round 0 quarters, 1 semis, 2 final. */
+    return clamp(0.55 + (State.game.cupR || 0) * 0.225, 0, 1);
+  }
+  return 0.45;
+}
+/* A short label so the player can see what they are walking into. */
+function sharpnessLabel(v) {
+  if (v >= 0.95) return 'Championship form';
+  if (v >= 0.8) return 'Playoff sharp';
+  if (v >= 0.6) return 'Locked in';
+  if (v >= 0.35) return 'Warming up';
+  return 'Early season rust';
+}
 function currentBattingTeamStyle() {
   const t = currentBattingTeam();
   if (t.isYou) return DEFAULT_STYLE;
@@ -3559,7 +3588,9 @@ function renderSeasonHub() {
       const next = opponentByName(S.schedule[games]);
       nextCard.appendChild(el('h3', null, 'Next game'));
       const style = TEAM_STYLE[next.name] || DEFAULT_STYLE;
-      nextCard.appendChild(el('p', null, `vs ${next.name} · ${style.label}`));
+      const sharp = clamp(games / 8, 0, 1);
+      nextCard.appendChild(el('p', null,
+        `vs ${next.name} · ${style.label} · ${sharpnessLabel(sharp)}`));
       const play = el('button','btn','Play Next Game');
       play.onclick = () => {
         State.team = S.team;
@@ -4232,6 +4263,14 @@ function throwPitch(chosenPt, chosenZone) {
   const idealBase = pt === 'fastball' ? 0.5 : pt === 'curveball' ? 0.60 : 0.62;
   const fatigue = pitcherFatigue();
   let wobble = (Math.random() - 0.5) * 0.06 * diff.pitcherSkill * fatigue.wobbleMult;
+  /* Season ramp, felt from the batter's box: a sharper opponent's pitcher
+     works the edges of the meter, so the sweet spot sits further from the
+     middle and the timing is less forgiving. Only when the player bats;
+     the CPU already reads the ramp through its own jitter. */
+  if (playerIsBatting()) {
+    const sharp = opponentSharpness();
+    wobble *= 1 + sharp * 0.9;
+  }
   /* Scarecrow rattles the pitcher. His ideal spot swings wider than anyone
      else's on the roster, so timing him takes reading the meter, not muscle
      memory. */
@@ -4303,6 +4342,10 @@ function runPitchAnimation() {
   if (playerIsBatting()) {
     const onClick = (e) => {
       if (p.swung) return;
+      /* Clicks on the game's own buttons (Replay, Steal, End Game, the
+         pitch picker) are commands, not swings. This handler runs in the
+         capture phase, so it has to check the target itself. */
+      if (e.target && e.target.closest && e.target.closest('button')) return;
       const now = performance.now();
       if (now < p.windupUntil) return;
       const t = clamp((now - p.start) / durMs, 0, 1);
@@ -4371,6 +4414,8 @@ function scheduleCpuSwing() {
   }
   /* Team style: wild swingers spread more, disciplined bats less. */
   jitter += style.jitter;
+  /* Season ramp: a sharper opponent squares the ball up more often. */
+  jitter -= opponentSharpness() * 0.055;
   /* Fresh pitcher vs gassed pitcher moves the needle the other way. */
   const fat = pitcherFatigue();
   jitter -= fat.level * 0.02;
@@ -4549,6 +4594,34 @@ function pathPointAt(field, path, t) {
   return [a[0] + (b[0] - a[0]) * frac, a[1] + (b[1] - a[1]) * frac];
 }
 
+/* Remember the last notable batted ball so it can be replayed. Only real
+   highlights are worth keeping: extra base hits and home runs. */
+function rememberHighlight(kind, batter, traj) {
+  if (kind !== 'home run' && kind !== 'triple' && kind !== 'double') return;
+  const g = State.game;
+  g.highlight = {
+    kind, batterName: batter.n, batterKey: batter.k,
+    ball: Object.assign({}, traj),
+    inning: g.inning, half: g.half,
+  };
+}
+
+/* Replay the stored highlight: re-run its ball trajectory over the live
+   field with a REPLAY badge, without touching any game state. */
+function playHighlight() {
+  const g = State.game;
+  if (!g || !g.highlight || g.replay) return;
+  g.replay = {
+    startedAt: performance.now(),
+    duration: g.highlight.ball.duration + 500,
+    h: g.highlight,
+  };
+  Sound.play('crack');
+  setTimeout(() => { if (State.game) State.game.replay = null; refreshHud(); },
+             g.highlight.ball.duration + 600);
+  refreshHud();
+}
+
 function scheduleContactPlay(kind, batter) {
   const g = State.game;
   /* Bat meets ball. The crack fires immediately, before the ball travels,
@@ -4588,6 +4661,7 @@ function scheduleContactPlay(kind, batter) {
     }
   }
   const traj = ballTrajectory(effective);
+  rememberHighlight(effective, batter, traj);
   const isOut = effective === 'ground out' || effective === 'fly out';
   const preBases = [...g.bases];
 
@@ -5745,6 +5819,48 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     drawBaseball(ctx, ballX, ballY);
   }
 
+  /* Instant replay: re-runs the stored highlight's flight over the live
+     field, with a broadcast style badge. Purely cosmetic; it reads no
+     game state and changes none. */
+  if (g && g.replay) {
+    const R = g.replay;
+    const now = performance.now();
+    const rt = clamp((now - R.startedAt) / R.h.ball.duration, 0, 1);
+    /* Dim the field slightly so the replay reads as a cutaway. */
+    ctx.fillStyle = 'rgba(0,0,0,.28)';
+    ctx.fillRect(0, 0, w, h);
+    if (rt < 1) {
+      const startX = cx - 12, startY = cy + r - 2;
+      const endX = startX + R.h.ball.dx * r;
+      const endY = cy + R.h.ball.dy * r;
+      const arc = 4 * R.h.ball.arcH * rt * (1 - rt);
+      /* Trailing arc so the whole flight path is visible at once. */
+      ctx.strokeStyle = 'rgba(244,194,90,.55)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 40; i++) {
+        const e = (i / 40) * rt;
+        const px2 = startX + (endX - startX) * e;
+        const py2 = startY + (endY - startY) * e - 4 * R.h.ball.arcH * e * (1 - e);
+        if (i === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+      }
+      ctx.stroke();
+      drawBaseball(ctx, startX + (endX - startX) * rt, startY + (endY - startY) * rt - arc);
+    }
+    /* Badge */
+    const blink = Math.floor(now / 400) % 2 === 0;
+    ctx.fillStyle = blink ? '#c94b1a' : '#8a2b10';
+    ctx.fillRect(cx - 92, 30, 184, 30);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('REPLAY', cx, 45);
+    ctx.fillStyle = '#f4c25a';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText(`${R.h.batterName} · ${R.h.kind.toUpperCase()}`, cx, 74);
+  }
+
   /* Signature moment overlays: character-specific spectacle that lands
      on top of the field during a big at bat. Each one runs for its
      own window and clears itself. */
@@ -6248,6 +6364,12 @@ function renderGame() {
   stealBtn.style.display = 'none';
   stealBtn.onclick = attemptSteal;
   stealRow.appendChild(stealBtn);
+
+  const replayBtn = el('button','btn ghost','Replay');
+  replayBtn.id = 'replay-btn';
+  replayBtn.style.display = 'none';
+  replayBtn.onclick = (e) => { e.stopPropagation(); playHighlight(); };
+  stealRow.appendChild(replayBtn);
   s.appendChild(stealRow);
 
   const atbat = el('div','atbat');
@@ -6370,6 +6492,14 @@ function refreshHud() {
   if (side) side.textContent = youBat ? 'Click anywhere or press Space' : 'You are pitching · call a pitch each windup';
   if (hint) hint.style.display = youBat ? '' : 'none';
   if (swingBtn) swingBtn.style.display = youBat ? '' : 'none';
+  /* Replay is offered whenever a highlight is stored and nothing is
+     already animating. */
+  const rb = document.getElementById('replay-btn');
+  if (rb) {
+    const can = !!(g.highlight && !g.play && !g.replay && !g.over);
+    rb.style.display = can ? '' : 'none';
+    if (can) rb.textContent = `Replay ${g.highlight.kind}`;
+  }
 }
 
 function refreshStealButton() {
