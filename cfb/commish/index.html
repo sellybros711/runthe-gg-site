@@ -59,6 +59,14 @@
   h2{font-family:var(--fd);font-size:23px;line-height:1.08;text-transform:uppercase;
     letter-spacing:.01em;margin:4px 0 8px}
   p.lede{color:var(--dim);font-size:15px;margin-bottom:14px}
+  /* THE GOAL AND THE DARE, under the premise and set apart from it. Two blocks rather than
+     one paragraph because they are doing opposite jobs: the first tells a player what they
+     are judged on, the second tells them that is not the same as what they should do. Run
+     together they read as one hedge. */
+  .lede .goal,.lede .dare{display:block;margin-top:12px;font-size:13.5px;line-height:1.5}
+  .lede .goal{color:var(--ink);padding-left:11px;border-left:2px solid var(--gold,#d9a441)}
+  .lede .goal b{font-weight:700}
+  .lede .dare{color:var(--dim-2);font-size:12.5px}
   /* THE ACCOUNT AS THE GATE SEES IT, for somebody who has been told they are not on the
      list and needs to say which account that is. A uuid is 36 characters and must not
      reflow into something that gets half-copied, so it breaks anywhere and wraps. */
@@ -973,6 +981,16 @@
     border-left:2px solid var(--line-2)}
   .realnote{margin-top:11px;font-size:11.5px;color:var(--dim-2);line-height:1.4}
 
+  /* STILL WORKING ITS WAY THROUGH. A quiet list, deliberately: these are not decisions and
+     nothing on it can be pressed. It is a sport carrying things. */
+  .motion{display:grid;gap:5px}
+  .mo{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:baseline;
+    padding:7px 10px;border-radius:9px;background:var(--panel);
+    border-left:2px dashed var(--line)}
+  .mo b{font-family:var(--fd);font-size:13.5px;font-weight:400;color:var(--dim)}
+  .mo span{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--dim-2)}
+
   /* THE REPORT CARD. The verdict is set like the headline it is; the six grades below it are
      a letter, a label, the number behind it and a sentence. */
   .rvd{padding:12px 13px;border-radius:12px;background:var(--panel-2);
@@ -1179,6 +1197,15 @@
          field as this office's own rules would seed it; this is what the voters think, which
          is slower, stickier and frequently wrong, and the gap between the two is the argument
          this sport has every single week. -->
+    <!-- WHAT YOU HAVE SET IN MOTION. Threads planted by earlier rulings that have not come
+         back yet. It is the only screen that says out loud that this mode has a memory, and
+         it exists as much to advertise the mechanic as to inform: a player who can see three
+         things pending is a player who understands that the next reckless ruling will also
+         still be there in two years. -->
+    <div class="card flat" id="off-motioncard" hidden>
+      <div class="eyebrow" style="margin-bottom:9px">Still working its way through</div>
+      <div id="off-motion"></div>
+    </div>
     <div class="card flat" id="off-pollcard" hidden>
       <div class="eyebrow" style="margin-bottom:9px" id="off-pollhead">The poll</div>
       <div id="off-poll"></div>
@@ -1321,14 +1348,14 @@
 
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
-<script src="ledger.js?v=6"></script>
+<script src="ledger.js?v=7"></script>
 <script src="blocs.js?v=3"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=2"></script>
-<script src="docket.js?v=8"></script>
+<script src="docket.js?v=10"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -1343,7 +1370,7 @@
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
 <script src="calendar.js?v=2"></script>
-<script src="situation.js?v=4"></script>
+<script src="situation.js?v=5"></script>
 <script src="fallout.js?v=3"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
@@ -2142,6 +2169,7 @@ function office(){
   $('off-titlecard').hidden=!inSeason||!done.titles;
   $('off-tablecard').hidden=!inSeason;
   $('off-pollcard').hidden=!inSeason;
+  paintMotion($('off-motion'),$('off-motioncard'),world);
   $('off-mapcard').hidden=inSeason;
   if(inSeason){
     paintTv($('off-tv'),sim);
@@ -3087,6 +3115,18 @@ $('b-rule').onclick=()=>{
   paintTail($('r-tail'),tail);
   lastRoom=B.react(world,edit);
   world=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
+  /* ---- what this ruling set in motion ----
+     AFTER THE EDIT, BEFORE THE SAVE, and in that order for a reason: a thread is a fact about
+     the world the ruling just made, so planting it against the world the ruling was made FROM
+     would date it to the wrong beat and let a payoff arrive before its cause.
+
+     A payoff cuts its own thread first, so an arc that plants its own successor does not trip
+     over the one it is finishing. See the threads block in ledger.js. */
+  if(item.pays){
+    [].concat(item.pays).forEach((id)=>{ world=L.cut(world,id); });
+  }
+  const seeds=D.plantsOf?D.plantsOf(item,choice,world,L,cast,sit):[];
+  seeds.forEach((s)=>{ if(s&&s.id) world=L.plant(world,s.id,s); });
   save();
   /* A RULING IS THE UNIT THE CAREER IS COUNTED IN, so it is counted here and nowhere else:
      one call at the one place a ruling actually becomes real. */
@@ -3440,6 +3480,28 @@ function paintSeason(el,sim){
   reveal(el.querySelector('.poll'));
   reveal(el.querySelector('.bowls'));
   reveal(el.querySelector('.moved'));
+}
+
+/* WHAT IS STILL COMING. A ruling can plant a thread that ripens a year or two later (see the
+   threads block in ledger.js), and without this the player has no way to know one exists
+   until it arrives, which makes the arrival read as the mode inventing something.
+
+   IT SAYS WHAT YOU DID, NOT WHAT HAPPENS. "A lawsuit this office chose to fight" is a fact
+   the player already owns; the verdict is the thing worth waiting for. Naming the outcome
+   here would spend the payoff to decorate a sidebar.
+
+   NO DATE ON IT EITHER. The ripening window is deliberately a range, and printing "arrives
+   in year four" would turn a consequence into an appointment. */
+function paintMotion(el,card,w){
+  if(!el||!card) return;
+  const live=(w&&w.threads)||[];
+  const shown=live.filter((t)=>t.note);
+  if(!shown.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  el.innerHTML='<div class="motion">'+shown.map((t)=>
+    '<div class="mo"><b>'+esc(t.note)+'</b><span>since '+t.plantedYear+'</span></div>').join('')
+    +'</div>';
+  reveal(el.querySelector('.motion'));
 }
 
 /* THE REPORT CARD. Six grades and a verdict, drawn only on the screen that ends a term.
@@ -3818,9 +3880,28 @@ function gate(){
      football" states a premise; being NAMED to the post is a thing that just happened to
      you, and the whole mode is written in that tense. It is also the sentence a player
      would repeat to somebody else. */
-  say.textContent='You have just been named college football\'s commissioner. Who is in '
-    +'which conference, how many teams play for the title, what a player is owed, who gets '
-    +'the money. Five seasons, and the sport you change is the one you have to run next year.';
+  /* THE SECOND LINE IS THE GOAL, and until now there was not one. A player was named to the
+     job, shown four meters and a docket, and left to infer what winning looked like from the
+     fact that the meters could go up. That is a sandbox with a scoreboard in it.
+
+     SAID IN THE SAME SIX TERMS THE ENDING GRADES, so the rubric is known going in and the
+     report card at the end is a verdict rather than a surprise. See report.js.
+
+     AND THEN THE THIRD LINE UNDERMINES IT ON PURPOSE. A stated goal makes people optimise,
+     and a mode whose whole pleasure is finding out what happens if you do something insane
+     is ruined by players trying to score well. So the goal is stated and the invitation is
+     stated next to it, and both are true: you are graded on six things, and the interesting
+     runs are the ones that fail some of them spectacularly. */
+  say.innerHTML=esc('You have just been named college football\'s commissioner. Who is in '
+      +'which conference, how many teams play for the title, what a player is owed, who gets '
+      +'the money. Five seasons, and the sport you change is the one you have to run next year.')
+    +'<span class="goal"><b>Survive the five years and hand over a better sport than you '
+      +'were given.</b> You are judged on six things: the books, the audience, the room, who '
+      +'wins, who gets in, and whether the map is still standing.</span>'
+    +'<span class="dare">There is no correct set of answers, and nothing here is a bluff. '
+      +'Blow up the bowls, pay the players, let a conference die, take the gambling money. '
+      +'The sport will do what a sport actually does with that, and some of it will not '
+      +'arrive until the year after next.</span>';
   const resumable=world&&!world.outcome;
   act.innerHTML=(resumable
       ?'<button class="btn" id="g-resume">Back to '+L.BEATS[world.beat]+', '+world.year+'</button>'

@@ -215,6 +215,117 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
       D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).forEach((i) => seen.add(i.id));
     }
   }
+  /* AND THE ONES THAT ONLY EXIST BECAUSE OF SOMETHING THIS OFFICE DID EARLIER. A payoff item
+     is gated on a thread having ripened, so no amount of walking beats will produce one: the
+     world has to have been changed by a ruling first. Planting every thread at once is not a
+     world a player reaches, and it does not need to be, because what this asserts is that the
+     item is WRITABLE against a ripe thread. Whether the thread can be planted at all is the
+     separate and more interesting question, asserted on its own below. */
+  {
+    const withThreads = world0();
+    withThreads.year = withThreads.startYear + 2;
+    D.ITEMS.forEach((it) => {
+      [].concat(it.pays || []).forEach((id) => { withThreads.threads.push({ id, ripe: 0 }); });
+    });
+    for (let beat = 0; beat < 9; beat++) {
+      const wb = Object.assign({}, withThreads, { beat });
+      D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).forEach((i) => seen.add(i.id));
+    }
+  }
+  /* ---- the arcs ----
+     A THREAD WITH NO PAYOFF IS A PROMISE THE MODE DOES NOT KEEP, and a payoff with no plant
+     is writing nobody can ever reach. Both fail silently: the first looks like a ruling with
+     no consequence, which is what this whole mechanic exists to stop, and the second looks
+     like content. Neither throws and neither shows up in a playthrough, because the way you
+     find out is by not seeing something. */
+  {
+    const planted = new Set();
+    const plantedBy = {};
+    D.ITEMS.forEach((it) => (it.options || []).forEach((o) => {
+      if (!o.plant) return;
+      /* A computed plant is called on a real world so a function that names a school still
+         reports which thread it is planting. */
+      const made = typeof o.plant === 'function'
+        ? o.plant(world0(), L, {}, SIT.build(world0(), L, {})) : o.plant;
+      [].concat(made || []).filter(Boolean).forEach((pl) => {
+        planted.add(pl.id);
+        plantedBy[pl.id] = (plantedBy[pl.id] || []).concat([it.id + '/' + o.id]);
+      });
+    }));
+    const paid = new Set();
+    D.ITEMS.forEach((it) => [].concat(it.pays || []).forEach((id) => paid.add(id)));
+
+    const dangling = [...planted].filter((id) => !paid.has(id));
+    ok('every thread a ruling plants has something that pays it off', !dangling.length,
+      dangling.join(', ') || planted.size + ' threads, all answered');
+    const orphan = [...paid].filter((id) => !planted.has(id));
+    ok('  and every payoff has a ruling that could plant it', !orphan.length,
+      orphan.join(', ') || paid.size + ' payoffs, all reachable');
+
+    /* AND THE ARCS GO DEEPER THAN ONE STEP, which is the whole reason this is not just a
+       delayed fallout tail. A payoff that plants another payoff is a term with a middle. */
+    const chained = D.ITEMS.filter((it) => it.pays)
+      .filter((it) => (it.options || []).some((o) => o.plant));
+    ok('  and some payoffs plant the next thing', chained.length >= 3,
+      chained.map((i) => i.id).join(', '));
+
+    /* NOTHING PLANTS ITSELF, which would be a decision that reschedules itself forever. */
+    const selfish = D.ITEMS.filter((it) => (it.options || []).some((o) => {
+      const made = typeof o.plant === 'function' ? null : o.plant;
+      return [].concat(made || []).filter(Boolean).some((pl) => [].concat(it.pays || []).includes(pl.id));
+    }));
+    ok('  and nothing replants the thread it just cut', !selfish.length,
+      selfish.map((i) => i.id).join(', ') || 'no loops');
+  }
+
+  /* ---- an arc, walked ----
+     THE ONLY TEST THAT PROVES THE MECHANIC. Everything above checks the wiring in the
+     abstract: this takes an option, plants what it plants, advances the clock the way the
+     mode advances it, and asserts that the thing comes back on its own. If a thread never
+     ripens into anything the whole feature is a field on a save file. */
+  {
+    const arc = (itemId, optionId, payoffId) => {
+      let w = world0();
+      const it = D.BY_ID[itemId];
+      const seeds = D.plantsOf(it, optionId, w, L, {}, SIT.build(w, L, {}));
+      seeds.forEach((sd) => { w = L.plant(w, sd.id, sd); });
+      const planted = w.threads.length;
+      /* Nothing should have come back yet: a consequence that arrives in the same beat as
+         its cause is a fallout tail, which the mode already has. */
+      const early = D.eligible(w, L, SIT.build(w, L, {})).some((x) => x.id === payoffId);
+      let arrived = 0;
+      for (let n = 1; n <= 30 && !arrived; n++) {
+        w = L.advance(w);
+        for (let beat = 0; beat < 9 && !arrived; beat++) {
+          const wb = Object.assign({}, w, { beat });
+          if (D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).some((x) => x.id === payoffId)) {
+            arrived = n;
+          }
+        }
+      }
+      return { planted, early, arrived };
+    };
+    const a1 = arc('crisis-legal', 'fight', 'pay-verdict');
+    ok('fighting a lawsuit plants a verdict', a1.planted === 1);
+    ok('  which does not arrive the same day', !a1.early);
+    ok('  and comes back on its own', a1.arrived > 0,
+      a1.arrived ? 'after ' + a1.arrived + ' beats' : 'never came back');
+    const a2 = arc('gambling', 'partner', 'pay-flagged');
+    ok('taking the book\'s money comes back too', a2.arrived > 0 && !a2.early,
+      a2.arrived ? 'after ' + a2.arrived + ' beats' : 'never came back');
+
+    /* AND THE SECOND STEP OF AN ARC, which is the part that makes it a story rather than a
+       delay. The verdict is paid, and paying it plants the argument about who was short. */
+    let w2 = world0();
+    w2 = L.plant(w2, 'fought-it', { wait: 1 });
+    w2 = L.advance(w2);
+    w2 = L.cut(w2, 'fought-it');
+    D.plantsOf(D.BY_ID['pay-verdict'], 'pay', w2, L, {}, SIT.build(w2, L, {}))
+      .forEach((sd) => { w2 = L.plant(w2, sd.id, sd); });
+    ok('  and a payoff plants the next one', w2.threads.some((t) => t.id === 'the-bill'),
+      w2.threads.map((t) => t.id).join(', ') + '; resolved ' + w2.resolved.join(', '));
+  }
+
   const unreachable = D.ITEMS.filter((i) => !seen.has(i.id)).map((i) => i.id);
   ok('every item can actually be dealt', !unreachable.length,
     unreachable.join(', ') || seen.size + ' reachable, ' + seedsPlayed + ' seasons played');

@@ -299,6 +299,26 @@
        really about and which no single field could carry. */
     sit.soldCount = sit.sold.length;
 
+    /* ---- what this office already set in motion ----
+       THREADS ARE JUST ANOTHER THING THE SITUATION KNOWS, which is the whole reason the
+       mechanic needed no new plumbing on the desk. A payoff item gates on `sit.ripe['id']`
+       exactly the way an existing item gates on there being an unbeaten team, so seventy-five
+       items' worth of machinery works on it unchanged.
+
+       `ripe` is a map for the gates, `ripeList` is the order they came due in for anything
+       that wants to show them, and `resolved` is what has already paid off, because an arc
+       with a second act has to be able to ask whether the first one happened. */
+    sit.ripe = {};
+    sit.ripeList = (L && L.ripe) ? L.ripe(world) : [];
+    sit.ripeList.forEach(function (t) { sit.ripe[t.id] = t; });
+    sit.hasRipe = sit.ripeList.length > 0;
+    sit.resolved = {};
+    ((world && world.resolved) || []).forEach(function (id) { sit.resolved[id] = true; });
+    /* AND WHAT IS STILL COMING, which is not the same question: an item may want to know that
+       the door is open and nobody has come back through it YET. */
+    sit.pending = {};
+    ((world && world.threads) || []).forEach(function (t) { sit.pending[t.id] = t; });
+
     sit.audienceUp = sit.trend != null && sit.trend >= 0.06;
     sit.audienceDown = sit.trend != null && sit.trend <= -0.06;
     sit.standing = world && world.meters ? world.meters.standing : null;

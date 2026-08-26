@@ -166,6 +166,7 @@ console.log('\n=== the desk is shorter than it was ===');
     if (!D || !B || !box) return { err: 'a module or the container is missing' };
     const held = box.innerHTML;
     const out = [];
+    let seen = 0;
     D.ITEMS.forEach((it) => {
       (it.voices || []).forEach((v) => {
         const bl = B.BY_ID[v.id];
@@ -174,13 +175,14 @@ console.log('\n=== the desk is shorter than it was ===');
           + String(v.say).replace(/[&<>]/g, '') + '</span></div>';
         const el = box.querySelector('.voice');
         if (el.clientHeight > 46) out.push(it.id + '/' + v.id + ' ' + el.clientHeight + 'px');
+        seen++;
       });
     });
     box.innerHTML = held;
-    return { out };
+    return { out, seen };
   });
   ok('  and so does every other line in the docket', !wide.err && !wide.out.length,
-    wide.err || wide.out.slice(0, 4).join(', ') || 'all 225 fit');
+    wide.err || wide.out.slice(0, 4).join(', ') || 'all ' + wide.seen + ' fit');
   ok('  and every quote still names who said it',
     voices.every((v) => v.chip)
     && (await p.$$eval('#d-voices .voice b', (e) => e.length)) === voices.length);

@@ -215,6 +215,25 @@
          a first one because of. */
       fired: { legal: 0, congress: 0, union: 0 },
 
+      /* THINGS THIS OFFICE DID THAT HAVE NOT FINISHED HAPPENING YET.
+         The mode resolved a ruling inside one beat: the room answered, the meters moved, a
+         tail sometimes fired, and it was over. Everything a commissioner does in life takes
+         longer than that to come back. The pressures above are the closest thing there was,
+         and they are the wrong shape for it: three accumulating dials that say the sport is
+         generally in trouble, not "the door you opened in 2026 has a twenty-four year old
+         behind it in 2029".
+
+         A thread is planted by a ruling, sits dormant, and ripens on a beat some distance
+         away. What it ripens INTO is a docket item gated on it, so this needed no new
+         plumbing on the desk: a thread is just another thing the situation knows. And a
+         payoff can plant another thread, which is where a term stops being nine independent
+         decisions and starts being a story with a middle. See plant() and ripe(). */
+      threads: [],
+      /* AND THE ONES THAT HAVE ALREADY PAID OFF, so a payoff fires once and the arc can ask
+         what came before it. Kept as a list rather than deleted, because "you have already
+         been through this" is a thing several items want to know. */
+      resolved: [],
+
       /* 0..100, all three. Revenue is what the sport makes, health is whether it is still
          worth watching, standing is whether the room still wants you. */
       meters: { revenue: 55, health: 62, standing: 60 },
@@ -434,6 +453,73 @@
     return { removed: false, angry };
   }
 
+  /* ---------------- threads ----------------
+     WHEN A THING COMES BACK, counted in beats rather than years, because the docket runs on
+     beats and "two years" is a different length of time depending which month you are in.
+     Nine beats to a year, so six is most of a season and twenty is a bit over two.
+
+     THE RANGE IS THE POINT. A thread that always ripens in exactly six beats is a timer, and
+     a player learns the timer and stops being surprised. Every plant takes a window and lands
+     somewhere inside it. */
+  function beatOf(world) { return (world.year * BEATS.length) + (world.beat || 0); }
+
+  /* PLANT ONE. `wait` is beats from now, and may be a two element window.
+     Idempotent per id: a ruling made twice does not stack two copies of the same future,
+     because the second one arriving would make the payoff fire twice for no reason a player
+     could see. A live thread simply keeps its original date. */
+  function plant(world, id, opts) {
+    const o = opts || {};
+    const next = JSON.parse(JSON.stringify(world));
+    next.threads = next.threads || [];
+    if (next.threads.some((t) => t.id === id)) return next;
+    const w = o.wait == null ? [9, 18] : o.wait;
+    const lo = Array.isArray(w) ? w[0] : w;
+    const hi = Array.isArray(w) ? w[1] : w;
+    /* Deterministic inside the window off the world's own clock and seed, so a term replays
+       with the same things coming back on the same days. */
+    const spread = Math.max(0, hi - lo);
+    const jitter = spread
+      ? Math.abs(hashish(String(next.seed) + '|' + id + '|' + beatOf(next))) % (spread + 1) : 0;
+    next.threads.push({
+      id: id,
+      from: o.from || null,
+      /* WHAT THE OFFICE IS ALLOWED TO SAY ABOUT IT while it is still out there. The point is
+         that a player can see consequences accumulating without being told the ending: "a
+         lawsuit this office chose to fight" is a thing you know you did, and it is not the
+         verdict. */
+      note: o.note || null,
+      /* What it was about, so a payoff written a year later can still name the school. */
+      data: o.data || null,
+      plantedYear: next.year,
+      plantedBeat: next.beat || 0,
+      ripe: beatOf(next) + lo + jitter,
+    });
+    return next;
+  }
+
+  function hashish(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h >>> 0;
+  }
+
+  /* WHICH ONES HAVE COME DUE. Everything at or past its beat, oldest first, so a term that
+     planted three things in one year pays them off in the order it caused them. */
+  function ripe(world) {
+    const now = beatOf(world);
+    return (world.threads || []).filter((t) => t.ripe <= now)
+      .sort((a, b) => a.ripe - b.ripe);
+  }
+
+  /* AND CLEARING ONE, which is what a payoff item does when it is ruled on. The id goes on
+     `resolved` rather than vanishing: several arcs want to know what already happened. */
+  function cut(world, id) {
+    const next = JSON.parse(JSON.stringify(world));
+    next.threads = (next.threads || []).filter((t) => t.id !== id);
+    next.resolved = (next.resolved || []).concat([id]);
+    return next;
+  }
+
   /* WHERE A FUSE GOES OFF. Not a hundred, because a fuse is not a meter being filled: the
      point at which a lawsuit is filed or a hearing is scheduled is a point somebody else
      chooses, and it is well short of the sport being completely on fire. */
@@ -468,6 +554,7 @@
   const publicAPI = {
     AXES, POWERS, BEATS, HOSTILE, OPENING_SHARE, VOTE_WEIGHT, blocOf,
     FUSE_LIMIT, FUSES, lit, defuse,
+    plant, ripe, cut, beatOf,
     createWorld, membershipFrom,
     getPath, membersOf, conferencesIn, isDefunct,
     applyEdit, applyOutcome, normaliseShare, standingFrom,

@@ -53,8 +53,8 @@
       "sha": "66210cbb22945863"
     },
     "ledger.js": {
-      "v": "6",
-      "sha": "315609df1cd37d9a"
+      "v": "7",
+      "sha": "99fa2b871c188dfa"
     },
     "blocs.js": {
       "v": "3",
@@ -65,8 +65,8 @@
       "sha": "01f19def147ec7b1"
     },
     "docket.js": {
-      "v": "8",
-      "sha": "9485e87d796a389c"
+      "v": "10",
+      "sha": "be4d766b7672efe4"
     },
     "rivals.js": {
       "v": "1",
@@ -93,8 +93,8 @@
       "sha": "36366f55e531fced"
     },
     "situation.js": {
-      "v": "4",
-      "sha": "81f98511be6c71cc"
+      "v": "5",
+      "sha": "b69c679a19d519c8"
     },
     "fallout.js": {
       "v": "3",
