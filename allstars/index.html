@@ -3246,8 +3246,22 @@ function pathPointAt(field, path, t) {
 
 function scheduleContactPlay(kind, batter) {
   const g = State.game;
-  /* Bat meets ball. The crack fires immediately, before the ball travels. */
+  /* Bat meets ball. The crack fires immediately, before the ball travels,
+     and a gold impact burst pops at the contact point so the hit visibly
+     comes OFF THE BAT rather than materializing mid-field. */
   Sound.play('crack');
+  {
+    const geo = fieldGeom();
+    const hitX = geo.cx - 12, hitY = geo.cy + geo.r - 2;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      spawnFx(g, {
+        x: hitX, y: hitY, size: 3,
+        vx: Math.cos(a) * 140, vy: Math.sin(a) * 140 - 40,
+        grav: 200, color: i % 2 ? '#f4c25a' : '#ffffff', life: 340,
+      });
+    }
+  }
   const throwable = kind === 'ground out' && !playerIsBatting();
   if (throwable) return scheduleThrowMinigame(kind, batter);
   const catchable = kind === 'fly out' && !playerIsBatting();
@@ -3569,6 +3583,16 @@ function resolveThrow(outcome, kind, batter) {
     applyErrorMutation(batter);
   }
   refreshHud();
+  /* Complete the play: clear the animation state and advance to the next
+     batter (or end the half). Without this the game freezes right here,
+     which is exactly what shipped once. */
+  const wasOut = outcome === 'out';
+  setTimeout(() => {
+    if (!State.game) return;
+    State.game.play = null;
+    if (wasOut) afterOutTransition();
+    else afterHitTransition('single');
+  }, 900);
 }
 
 /* -------- Fly-ball catch minigame --------
@@ -3676,6 +3700,15 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
     applyHitMutation('triple', batter);
   }
   refreshHud();
+  /* Complete the play: same freeze guard as the throw minigame. */
+  const wasOut = outcome === 'catch';
+  const hitKind = outcome === 'single' ? 'single' : 'triple';
+  setTimeout(() => {
+    if (!State.game) return;
+    State.game.play = null;
+    if (wasOut) afterOutTransition();
+    else afterHitTransition(hitKind);
+  }, 900);
 }
 
 function applyErrorMutation(batter) {
@@ -4074,83 +4107,155 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillText('408', w * 0.50, wallY + wallH / 2 + 1);
   ctx.fillText('342', w * 0.88, wallY + wallH / 2 + 1);
 
-  /* Outfield grass, themed. */
+  /* Outfield grass, themed, with a vertical light-to-dark gradient so the
+     field recedes rather than sitting flat. */
   const grassY = wallY + wallH;
   ctx.fillStyle = theme.grass;
   ctx.fillRect(0, grassY, w, h - grassY);
-  for (let i = 0; i < 8; i++) {
-    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.05)';
-    const stripeH = (h - grassY) / 8;
-    ctx.fillRect(0, grassY + i * stripeH, w, stripeH);
-  }
-  /* Warning track along the wall, themed. */
-  ctx.fillStyle = theme.track;
-  ctx.fillRect(0, grassY, w, 10);
+  const gGrad = ctx.createLinearGradient(0, grassY, 0, h);
+  gGrad.addColorStop(0, 'rgba(255,255,255,.08)');
+  gGrad.addColorStop(0.5, 'rgba(0,0,0,0)');
+  gGrad.addColorStop(1, 'rgba(0,0,0,.22)');
+  ctx.fillStyle = gGrad;
+  ctx.fillRect(0, grassY, w, h - grassY);
 
   /* Home-plate camera: put the plate in the lower portion, mound up. */
   const cx = w/2;
   const cy = h * 0.58;
   const r = Math.min(w, h) * 0.30;
+  const plateY = cy + r;
 
-  /* Infield dirt diamond */
-  ctx.fillStyle = '#8b5a24';
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - r);
-  ctx.lineTo(cx + r, cy);
-  ctx.lineTo(cx, cy + r);
-  ctx.lineTo(cx - r, cy);
-  ctx.closePath();
-  ctx.fill();
+  /* Fan-mowed grass: alternating arc bands radiating from home plate,
+     the way a real crew mows an outfield. Far more organic than flat
+     horizontal stripes. */
+  for (let band = 0; band < 7; band++) {
+    const r0 = r * 0.8 + band * ((h - grassY) / 5.2);
+    ctx.strokeStyle = band % 2 === 0 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)';
+    ctx.lineWidth = (h - grassY) / 5.2;
+    ctx.beginPath();
+    ctx.arc(cx, plateY, r0, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+  }
+  /* Grass speckle: deterministic hash dots, two tones. */
+  for (let i = 0; i < 240; i++) {
+    const sx = (i * 227 + 53) % w;
+    const sy = grassY + ((i * 157 + 31) % (h - grassY));
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.045)' : 'rgba(0,0,0,.06)';
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+  /* Warning track along the wall, themed. */
+  ctx.fillStyle = theme.track;
+  ctx.fillRect(0, grassY, w, 10);
 
-  /* Infield grass */
-  ctx.fillStyle = '#2b6a30';
-  const rInner = r * 0.62;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - rInner);
-  ctx.lineTo(cx + rInner, cy);
-  ctx.lineTo(cx, cy + rInner);
-  ctx.lineTo(cx - rInner, cy);
-  ctx.closePath();
-  ctx.fill();
+  /* Rounded-organic path helper: quadratic-curve blob through points,
+     borrowed from the golf tracer's shape language. */
+  const blobPath = (pts) => {
+    const n = pts.length;
+    const mid = (a, b) => [(a[0]+b[0])/2, (a[1]+b[1])/2];
+    let m = mid(pts[n-1], pts[0]);
+    ctx.beginPath();
+    ctx.moveTo(m[0], m[1]);
+    for (let i = 0; i < n; i++) {
+      const p = pts[i], q = pts[(i+1)%n];
+      const mm = mid(p, q);
+      ctx.quadraticCurveTo(p[0], p[1], mm[0], mm[1]);
+    }
+    ctx.closePath();
+  };
 
-  /* Foul lines */
-  ctx.strokeStyle = '#eaeaea';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy + r);
-  ctx.lineTo(cx - w, cy + r + w);   /* down-left */
-  ctx.moveTo(cx, cy + r);
-  ctx.lineTo(cx + w, cy + r + w);   /* down-right */
+  const DIRT = '#8b5a24';
+  const DIRT_DARK = '#6e451c';
+  const basePts = [
+    [cx, cy - r],        /* second */
+    [cx + r, cy],        /* first */
+    [cx, plateY],        /* home */
+    [cx - r, cy],        /* third */
+  ];
+
+  /* Dirt basepaths: a wide stroked loop through the four bases, with
+     rounded corners. The infield interior stays grass, like a modern
+     park, which reads far less geometric than a filled diamond. */
+  blobPath([
+    [cx, cy - r], [cx + r*0.55, cy - r*0.55],
+    [cx + r, cy], [cx + r*0.55, cy + r*0.55],
+    [cx, plateY], [cx - r*0.55, cy + r*0.55],
+    [cx - r, cy], [cx - r*0.55, cy - r*0.55],
+  ]);
+  ctx.strokeStyle = DIRT;
+  ctx.lineWidth = 17;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,.12)';
+  ctx.lineWidth = 3;
   ctx.stroke();
 
-  /* Batter's box */
-  ctx.strokeStyle = 'rgba(255,255,255,.35)';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(cx - 34, cy + r - 8, 26, 32);
-  ctx.strokeRect(cx + 8, cy + r - 8, 26, 32);
+  /* Dirt cutout circles at each base, home plate area, and the mound. */
+  const dirtCircle = (x, y, rad) => {
+    const grd = ctx.createRadialGradient(x, y - rad*0.3, rad*0.2, x, y, rad);
+    grd.addColorStop(0, '#a06a30');
+    grd.addColorStop(1, DIRT_DARK);
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.fill();
+  };
+  dirtCircle(cx + r, cy, 17);       /* first */
+  dirtCircle(cx, cy - r, 17);       /* second */
+  dirtCircle(cx - r, cy, 17);       /* third */
+  dirtCircle(cx, plateY, 24);       /* home plate circle */
+  dirtCircle(cx, cy, 21);           /* mound */
+  /* Dirt speckle inside the circles and paths. */
+  for (let i = 0; i < 60; i++) {
+    const a = (i * 2.399963);   /* golden angle scatter */
+    const rad = 20 * Math.sqrt((i % 30) / 30);
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)';
+    ctx.fillRect(cx + Math.cos(a) * rad, plateY + Math.sin(a) * rad * 0.7, 2, 2);
+    ctx.fillRect(cx + Math.cos(a + 1) * rad, cy + Math.sin(a + 1) * rad * 0.7, 2, 2);
+  }
 
-  /* Bases */
+  /* Foul lines */
+  ctx.strokeStyle = 'rgba(234,234,234,.85)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, plateY);
+  ctx.lineTo(cx - w, plateY + w);   /* down-left */
+  ctx.moveTo(cx, plateY);
+  ctx.lineTo(cx + w, plateY + w);   /* down-right */
+  ctx.stroke();
+
+  /* Batter's boxes: soft chalk */
+  ctx.strokeStyle = 'rgba(255,255,255,.30)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(cx - 34, plateY - 8, 26, 32);
+  ctx.strokeRect(cx + 8, plateY - 8, 26, 32);
+
+  /* Bases: diamonds rather than squares, with a shadow edge. */
   const bases = [
     [cx + r, cy],
     [cx, cy - r],
     [cx - r, cy],
   ];
-  ctx.fillStyle = '#eaeaea';
-  bases.forEach(([bx,by]) => { ctx.fillRect(bx-7, by-7, 14, 14); });
+  for (const [bx, by] of bases) {
+    ctx.fillStyle = 'rgba(0,0,0,.25)';
+    ctx.beginPath();
+    ctx.moveTo(bx, by - 7); ctx.lineTo(bx + 8, by + 1); ctx.lineTo(bx, by + 9); ctx.lineTo(bx - 8, by + 1);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#eaeaea';
+    ctx.beginPath();
+    ctx.moveTo(bx, by - 8); ctx.lineTo(bx + 8, by); ctx.lineTo(bx, by + 8); ctx.lineTo(bx - 8, by);
+    ctx.closePath(); ctx.fill();
+  }
 
   /* Home plate: pentagon */
+  ctx.fillStyle = '#eaeaea';
   ctx.beginPath();
-  ctx.moveTo(cx - 10, cy + r);
-  ctx.lineTo(cx + 10, cy + r);
-  ctx.lineTo(cx + 10, cy + r + 6);
-  ctx.lineTo(cx, cy + r + 12);
-  ctx.lineTo(cx - 10, cy + r + 6);
+  ctx.moveTo(cx - 10, plateY);
+  ctx.lineTo(cx + 10, plateY);
+  ctx.lineTo(cx + 10, plateY + 6);
+  ctx.lineTo(cx, plateY + 12);
+  ctx.lineTo(cx - 10, plateY + 6);
   ctx.closePath();
   ctx.fill();
 
-  /* Pitcher's mound */
-  ctx.fillStyle = '#a66a2c';
-  ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI*2); ctx.fill();
+  /* Pitcher's rubber on the mound circle drawn above. */
   ctx.fillStyle = '#eaeaea';
   ctx.fillRect(cx - 8, cy - 2, 16, 4);
 
@@ -4211,7 +4316,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
          the arc height reads. */
       if (now < p.ballUntil) {
         const bt2 = clamp((now - p.startedAt) / p.ball.duration, 0, 1);
-        const startX = cx, startY = cy + r + 6;
+        /* Batted balls leave from the bat's contact point, just off the
+           batter's box, not from the middle of the plate. */
+        const startX = cx - 12, startY = cy + r - 2;
         const endX = startX + p.ball.dx * r;
         const endY = cy + p.ball.dy * r;
         const arc = 4 * p.ball.arcH * bt2 * (1 - bt2);
@@ -4234,21 +4341,43 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   }
 
   /* Pitch ball moving from mound to plate. Only when no contact-play is
-     in flight (so the ball isn't drawn twice). */
+     in flight (so the ball isn't drawn twice).
+
+     TIMING CONTRACT: the ball must ARRIVE AT THE PLATE exactly when the
+     meter cursor crosses the pitch's ideal spot, so swinging when the
+     ball reaches the hitter is the same thing as swinging in the green
+     zone. The meter runs 0..1 over the pitch duration; the ball's own
+     travel is therefore remapped to finish at t = ideal. Past that
+     point the ball sits in the catcher's mitt. */
   if (pitch && !inWindup && !(g && g.play)) {
     const bx = cx;
     const by = cy;
     const px = cx;
     const py = cy + r - 4;
-    let e = t;
-    if (pitch.pt === 'changeup') e = t*t;
+    const arrive = Math.max(0.22, pitch.ideal);
+    let e = clamp(t / arrive, 0, 1);
+    /* Per-pitch flight character: fastball rides straight and hard, the
+       curveball bends late and big, the changeup floats then dies. */
+    if (pitch.pt === 'changeup') e = Math.pow(e, 1.45);
     let ballX = bx + (px - bx) * e;
     let ballY = by + (py - by) * e;
     if (pitch.pt === 'curveball') {
-      ballX += Math.sin(e * Math.PI) * 12 * (pitch.ideal < 0.5 ? -1 : 1);
+      /* Late break: barely moves early, sweeps hard in the last third. */
+      const bend = Math.pow(e, 2.2) * Math.sin(e * Math.PI);
+      ballX += bend * 34 * (pitch.ideal < 0.5 ? -1 : 1);
+    } else if (pitch.pt === 'changeup') {
+      /* Small fade plus a visible dip at the end. */
+      ballX += Math.sin(e * Math.PI) * 8;
+      ballY += Math.pow(e, 3) * 10;
     }
-    ctx.fillStyle = 'rgba(255,255,255,.25)';
-    ctx.beginPath(); ctx.arc(ballX - (px-bx)*.06, ballY - (py-by)*.06, 3, 0, Math.PI*2); ctx.fill();
+    /* Trail: three ghosts behind the ball so speed reads. */
+    for (let gi = 1; gi <= 3; gi++) {
+      const ge = clamp(e - gi * 0.05, 0, 1);
+      const gx = bx + (px - bx) * ge;
+      let gyy = by + (py - by) * ge;
+      ctx.fillStyle = `rgba(255,255,255,${0.22 - gi * 0.06})`;
+      ctx.beginPath(); ctx.arc(gx, gyy, 4 - gi, 0, Math.PI*2); ctx.fill();
+    }
     drawBaseball(ctx, ballX, ballY);
   }
 
@@ -4464,6 +4593,15 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
 
   /* Particles fire on top of everything. */
   if (g) updateAndDrawFx(ctx, g);
+
+  /* Soft vignette: darkens the corners so the diamond glows in the
+     middle, same framing trick the golf tracer uses. */
+  const vg = ctx.createRadialGradient(cx, cy, r * 0.8, cx, cy, w * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,.30)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, w, h);
+
   ctx.restore();
 }
 
@@ -4504,12 +4642,42 @@ function drawBatSwing(ctx, x, y, t) {
   ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(angle) * 6, cy + Math.sin(angle) * 6); ctx.stroke();
 }
 
+/* -------- 3/4 field view --------
+   On the field the camera looks diagonally down at the players, so the
+   sprites are foreshortened: the head stays at full size and the body
+   and legs compress vertically. Each character's own art is used (so
+   Kong stays an ape and Felix stays a cat); only the proportions change.
+   The head boundary is found per character from the eye row in their
+   art, so tall hats and short bodies both foreshorten correctly. */
+const fieldSpriteCache = new Map();
+function fieldSpriteCanvas(c, size) {
+  const full = spriteCanvas(c, size);
+  /* Head ends a few rows below the eyes. */
+  let eyeRow = 7;
+  for (let y = 0; y < (c.art || []).length; y++) {
+    if ((c.art[y] || '').includes('e')) { eyeRow = y; break; }
+  }
+  const headFrac = clamp((eyeRow + 5) / SPRITE_H, 0.3, 0.62);
+  const headPx = Math.round(full.height * headFrac);
+  const bodyPx = full.height - headPx;
+  const squash = 0.55;
+  const cv = document.createElement('canvas');
+  cv.width = full.width;
+  cv.height = headPx + Math.round(bodyPx * squash);
+  const g2 = cv.getContext('2d');
+  g2.imageSmoothingEnabled = false;
+  g2.drawImage(full, 0, 0, full.width, headPx, 0, 0, full.width, headPx);
+  g2.drawImage(full, 0, headPx, full.width, bodyPx,
+               0, headPx, full.width, Math.round(bodyPx * squash));
+  return cv;
+}
+
 const runnerCache = new Map();
 function drawRunner(ctx, x, y, character, scale, pose) {
   scale = scale || 3;
   const key = character.k + '@' + scale;
   let cv = runnerCache.get(key);
-  if (!cv) { cv = spriteCanvas(character, Math.round(SPRITE_W * scale)); runnerCache.set(key, cv); }
+  if (!cv) { cv = fieldSpriteCanvas(character, Math.round(SPRITE_W * scale)); runnerCache.set(key, cv); }
   /* Ellipse shadow under the sprite so it feels planted on the field. */
   ctx.fillStyle = 'rgba(0,0,0,.35)';
   ctx.beginPath();
