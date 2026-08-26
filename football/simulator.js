@@ -936,7 +936,7 @@ function offenseReference(n) {
  *
  *   node football/simulator.js --fullscale
  *
- * Prints FULL_STRENGTH_MIN and FULL_STRENGTH_MAX for engine.js. Re-run after any change to
+ * Prints every solved constant the Full Team ratings rest on. Re-run after any change to
  * the cap, the talent dial, the coach table or the player data, and paste the two numbers
  * back: a rating scale anchored to endpoints that no longer exist is worse than none,
  * because it still looks like it means something.
@@ -948,8 +948,8 @@ function fullScaleReport() {
   const poolFor = (i) => POS[i].some((x) => E.DEFENSE_POSITIONS.indexOf(x) >= 0)
     ? fullDefenders : fullPlayers;
 
-  /* THE FLOOR: the twelve worst legal men and the coach who does the most damage inside the
-     reserve. Not a team anybody would draft on purpose, which is the point of a floor. */
+  /* THE FLOOR: the worst legal six on each side, and the coach who does the most damage
+     inside the reserve. Not a team anybody would draft on purpose, which is the point. */
   const used = new Set();
   const worst = POS.map((pos, i) => {
     const c = poolFor(i).filter((x) => pos.indexOf(x.position) >= 0
@@ -960,39 +960,56 @@ function fullScaleReport() {
   });
   const worstCoach = coaches.filter((c) => c.price_musd <= 3.5)
     .sort((a, b) => (a.off + a.def) - (b.off + b.def))[0] || null;
-  const lo = E.fullStrength(worst, 1, worstCoach, constants);
-  /* The floor's two halves, kept apart, because they are what anchor the per-unit ratings.
-     fullSideRatings gives each side half the whole scale's span and starts it at the floor's
-     own half, which is what makes "offence and defence averaged" the team overall exactly
-     rather than approximately. See its comment. */
   const loParts = E.fullParts(worst, 1, worstCoach, constants);
 
-  /* THE CEILING: the solved roster and the coach it hires, at the best chemistry the game
-     can produce. Chemistry is taken as its own maximum rather than solved WITH the roster,
-     because a joint solve over both is a different and much larger problem, and an anchor
-     that is a touch out of reach is the right kind of wrong: it means the best team anybody
-     actually drafts scores in the high nineties instead of exactly 100. */
+  /* THE CEILING, ONE SIDE AT A TIME, at HALF the cap. That is the rule the ratings state:
+     100 is the best that unit could be if you gave it an even share. Solving each side on
+     its own is also the only way the two anchors can be symmetric, and symmetry is the whole
+     fix here: anchoring on the two halves of the SOLVED team put the offence's 100 behind
+     $159.5M and the defence's behind $100.4M, which made every balanced roster look like it
+     had a good defence and a poor offence.
+
+     Each side is paired with the floor's OTHER side so fullParts sees a legal twelve, and it
+     reads only the half being measured, so what the other half holds cannot matter. */
+  const half = cap / 2;
+  const bestCoach = coaches.slice().sort((a, b) => (b.off + b.def) - (a.off + a.def))[0] || null;
+  const maxChem = 1 + E.CHEMISTRY.MAX;
+  const offSix = buildSide(OFF_IDX, half);
+  const defSix = buildSide(DEF_IDX, half);
+  const floorOff = OFF_IDX.map((i) => worst[i]);
+  const floorDef = DEF_IDX.map((i) => worst[i]);
+  const ceilOffParts = E.fullParts(offSix.concat(floorDef), maxChem, bestCoach, constants);
+  const ceilDefParts = E.fullParts(floorOff.concat(defSix), maxChem, bestCoach, constants);
+
+  /* The whole team's ends, printed for reference rather than pasted: nothing reads them any
+     more, but "what does the best draftable team actually out-score an average side by" is
+     the question the balance sweep is answered in. */
   const best = buildFullOptimal(cap, true);
-  const hi = E.fullStrength(best.roster, 1 + E.CHEMISTRY.MAX, best.coach, constants);
+  const hi = E.fullStrength(best.roster, maxChem, best.coach, constants);
+  const lo = E.fullStrength(worst, 1, worstCoach, constants);
 
   console.log('FULL TEAM RATING SCALE');
   console.log('');
-  console.log('  floor  twelve cheapest legal men, worst coach in the reserve');
-  console.log('         coach ' + (worstCoach ? worstCoach.name : 'none')
-    + '   strength ' + lo.toFixed(1));
-  console.log('  ceiling solved roster, its coach, and maximum chemistry');
-  console.log('         split $' + best.off.toFixed(1) + ' off / $' + best.def.toFixed(1)
-    + ' def   coach '
-    + ((best.coach || {}).name || 'none') + '   strength ' + hi.toFixed(1));
+  console.log('  floor    the worst legal six a side, coach ' + (worstCoach ? worstCoach.name : 'none'));
+  console.log('           scores ' + loParts.scored.toFixed(2) + ', allows '
+    + loParts.allowed.toFixed(2) + ' a game');
+  console.log('  ceiling  the best six HALF the cap buys on each side, coach '
+    + ((bestCoach || {}).name || 'none') + ', full chemistry');
+  console.log('           offence $' + offSix.reduce((s, p) => s + p.price_musd, 0).toFixed(0)
+    + 'M scores ' + ceilOffParts.scored.toFixed(2)
+    + '   defence $' + defSix.reduce((s, p) => s + p.price_musd, 0).toFixed(0)
+    + 'M allows ' + ceilDefParts.allowed.toFixed(2));
   console.log('');
-  console.log('  paste into engine.js, all three, together:');
-  console.log('    const FULL_STRENGTH_MIN = ' + lo.toFixed(1) + ';');
-  console.log('    const FULL_STRENGTH_MAX = ' + hi.toFixed(1) + ';');
-  console.log('    const FULL_FLOOR_SCORED = ' + loParts.scored.toFixed(2) + ';');
+  console.log('  paste into engine.js, all four, together:');
+  console.log('    const FULL_OFF_FLOOR = ' + loParts.scored.toFixed(2) + ';');
+  console.log('    const FULL_OFF_CEIL = ' + ceilOffParts.scored.toFixed(2) + ';');
+  console.log('    const FULL_DEF_FLOOR = ' + loParts.allowed.toFixed(2) + ';');
+  console.log('    const FULL_DEF_CEIL = ' + ceilDefParts.allowed.toFixed(2) + ';');
   console.log('');
-  console.log('  (FULL_FLOOR_ALLOWED is derived from those two in the engine, by the identity');
-  console.log('   MIN = scored - allowed. Here the floor allows '
-    + loParts.allowed.toFixed(2) + ' a game.)');
+  console.log('  for reference, the whole team: the floor is ' + lo.toFixed(1)
+    + ' points a game worse than an average side and the solved best is ' + hi.toFixed(1)
+    + ' better, at $' + best.off.toFixed(1) + ' off / $' + best.def.toFixed(1) + ' def under '
+    + ((best.coach || {}).name || 'nobody') + '.');
 }
 
 function fullTeamReport(n) {

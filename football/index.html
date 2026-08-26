@@ -5874,8 +5874,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=67"></script>
-<script src="run.js?v=76"></script>
+<script src="engine.js?v=68"></script>
+<script src="run.js?v=77"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -6175,7 +6175,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=41;
+const NEED_VERSION=42;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -9483,7 +9483,7 @@ function sideLine(){
   if(!(run&&run.full&&run.roster&&run.roster.length)) return '';
   let s; try{ s=E.fullSideRatings(run.roster,liveChem(),run.coach||null); }catch(_){ return ''; }
   return '<div class="sidesplit"><span>Offense <b>'+rate1(s.off)+'</b></span>'+
-    '<span class="sep">+</span><span>Defense <b>'+rate1(s.def)+'</b></span>'+
+    '<span class="sep">and</span><span>Defense <b>'+rate1(s.def)+'</b></span>'+
     '<span class="sep">averaged</span></div>';
 }
 
@@ -12699,10 +12699,11 @@ function paintOver(){
         '<p class="dim" style="font-size:13px;margin:0 0 8px">There is no best-possible score in '+
         'Full Team yet. Twelve spots across two pools under one cap is a different problem '+
         'from six, and a wrong answer here would be worse than none.</p>'+
-        '<p class="caveat" style="margin:0">Team overall is where this side of the ball and '+
-        'the other one land between the worst legal roster in the game and the best one the '+
-        'cap can buy, coach and chemistry included. 100 is that best team. '+
-        rating.toFixed(1)+' is yours.</p>';
+        '<p class="caveat" style="margin:0">Team overall is your offense and your defense '+
+        'averaged. Each unit is rated against what that unit could be: 0 is the worst legal '+
+        'six on that side of the ball, and 100 is the best six half the cap can buy there, '+
+        'with the coach and the chemistry that come with them. A unit you spent more than '+
+        'half your cap on can pass 100, which is what an unbalanced team looks like.</p>';
     }
     else if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
     else{
