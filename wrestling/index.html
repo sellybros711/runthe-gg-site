@@ -226,6 +226,19 @@
   .titlebelt.mine .tb-c b{color:var(--gold);}
   .titleq{margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.08);display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
   .titleq .qman{font-size:11px;color:var(--text-dim);padding:2px 7px;background:rgba(255,255,255,.04);border-radius:9px;}
+  .rankcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .rankrow{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line);}
+  .rankrow:last-child{border-bottom:0;}
+  .rankrow.me{background:rgba(224,179,65,.10);}
+  .rank-n{font-family:var(--mono);font-size:15px;font-weight:800;color:var(--text-dim);width:26px;text-align:right;}
+  .rankrow.me .rank-n{color:var(--gold);}
+  .rank-name{flex:1;font-size:13.5px;color:var(--cream);}
+  .rank-o{font-family:var(--mono);font-size:13.5px;color:var(--gold);}
+  .bs-ppvcard{margin-bottom:12px;padding:10px 12px;border:1px solid rgba(224,179,65,.4);border-radius:9px;background:linear-gradient(180deg,rgba(224,179,65,.08),transparent 65%);}
+  .bs-ppvcard-h{font-family:var(--display);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .bs-ppvcard-r{font-size:12.5px;color:var(--text);padding:4px 0;border-top:1px dashed rgba(255,255,255,.06);}
+  .bs-ppvcard-r:first-of-type{border-top:0;padding-top:0;}
+  .bs-ppvcard-r.bs-ppvcard-me{color:var(--cream);font-weight:600;padding-top:8px;margin-top:6px;border-top:1px solid rgba(224,179,65,.35);display:flex;align-items:center;gap:6px;}
   /* Backstage floor plan */
   .bs-budget{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;}
   .bs-budget-k{font-family:var(--display);letter-spacing:.14em;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;}
@@ -5285,8 +5298,27 @@ function renderWeek(){
       </div>` : '';
     // PPV, build, and farewell banners moved to the persistent arc header at
     // the top of the week body. Booking sheet is match-specific data only.
+    // PPV night: show the whole card on the booking sheet so it reads like a
+    // pay-per-view, not a single match. Predicted undercards drawn from the
+    // house roster; not simulated until later.
+    let ppvCard = '';
+    if(o.ppv){
+      try {
+        const me_p = myPromo();
+        const pool = houseRoster(me_p.id).filter(x=>x.id!==o.oppId);
+        const pairs = (typeof pickUndercardPairs==='function') ? pickUndercardPairs(o, pool, 3) : [];
+        if(pairs.length){
+          ppvCard = `<div class="bs-ppvcard">
+            <div class="bs-ppvcard-h">${pico('starBig',12)} Tonight's Card · ${o.ppv}</div>
+            ${pairs.map(([a,b])=>`<div class="bs-ppvcard-r">${a.name} <span class="hint">vs</span> ${b.name}</div>`).join('')}
+            <div class="bs-ppvcard-r bs-ppvcard-me">${pico('star',11)} <b>MAIN EVENT</b> · ${G.w.name} vs ${o.oppName}</div>
+          </div>`;
+        }
+      } catch(_){}
+    }
     sheet=`<div class="bksheet ${o.ppv?'ppv':''}">
       ${debutIntro}
+      ${ppvCard}
       <div class="bs-headline">
         <div class="bs-stip">${o.stipLabel}</div>
         <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
@@ -5662,7 +5694,7 @@ const STIP_RULES = {
              ends:['pin','sub'],           danger:.6, mod:2, lenient:true },
   iquit:   { label:'I Quit Match',       desc:'No pinfalls, no submissions. The only way to win is to make them say the words into the microphone.',
              ends:['sub'],                 danger:.8, mod:4, noDQ:true, noCount:true, lenient:true },
-  iron:    { label:'Iron Man Match',      desc:'Long-form showcase. Whoever puts them away first walks out with the win, but the crowd is scoring it every minute.',
+  iron:    { label:'Iron Man Match',      desc:'Twenty-minute time limit. Every pin or submission is a fall on the scoreboard. Most falls at the bell wins; a tie goes to sudden death.',
              ends:['pin','sub'],           danger:.4, mod:5, marquee:true },
   chamber: { label:'Elimination Chamber', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
              ends:['pin','sub'],           danger:1,   mod:6, marquee:true, noDQ:true, noCount:true },
@@ -5999,8 +6031,76 @@ function sfx(kind){
       g.gain.exponentialRampToValueAtTime(0.001, now+0.18);
       o.connect(g).connect(c.destination);
       o.start(now); o.stop(now+0.2);
+    } else if(kind==='crowdRise' || kind==='crowdBig'){
+      // Layered filtered noise "wave" that swells like a crowd reaction.
+      // crowdRise: near-fall, hot spot. crowdBig: finisher, three-count.
+      const big = kind==='crowdBig';
+      const dur = big ? 1.6 : 0.9;
+      const peak = big ? 0.35 : 0.22;
+      const buf = c.createBuffer(1, Math.max(1,Math.floor(c.sampleRate*dur)), c.sampleRate);
+      const d = buf.getChannelData(0);
+      for(let i=0;i<d.length;i++){
+        // Pink-ish noise: white noise + slow LPF-like smoothing
+        const w = (Math.random()*2-1);
+        d[i] = i>0 ? (d[i-1]*0.6 + w*0.4) : w*0.4;
+      }
+      const s=c.createBufferSource(); s.buffer=buf;
+      const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=big?520:640; bp.Q.value=0.8;
+      const g=c.createGain(); g.gain.value=0;
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.exponentialRampToValueAtTime(peak, now+(big?0.25:0.14));
+      g.gain.exponentialRampToValueAtTime(0.001, now+dur);
+      s.connect(bp).connect(g).connect(c.destination);
+      s.start(now); s.stop(now+dur+0.05);
     }
   }catch(_e){}
+}
+/* Ambient crowd murmur that plays quietly under the whole match. Wired up
+   in startFight and stopped in endFight. Filtered noise, low volume, with
+   a slow LFO so it breathes. */
+let CROWD_AMB = null;
+function startCrowdAmbient(intensity){
+  if(G && G.prefs && G.prefs.sound===false) return;
+  const c = sfxCtx(); if(!c) return;
+  stopCrowdAmbient();
+  try{
+    const buf = c.createBuffer(1, c.sampleRate*4, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++){
+      const w = Math.random()*2-1;
+      d[i] = i>0 ? (d[i-1]*0.75 + w*0.25) : w*0.25;
+    }
+    const s = c.createBufferSource(); s.buffer=buf; s.loop=true;
+    const bp = c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=380; bp.Q.value=0.6;
+    const g = c.createGain(); g.gain.value = 0.001;
+    const lvl = 0.035 + (Math.max(0,Math.min(1,intensity||0))*0.030);
+    g.gain.linearRampToValueAtTime(lvl, c.currentTime+0.6);
+    // Slow "breathing" LFO on gain so it does not feel like static
+    const lfo = c.createOscillator(); lfo.type='sine'; lfo.frequency.value = 0.13;
+    const lfoGain = c.createGain(); lfoGain.gain.value = lvl*0.35;
+    lfo.connect(lfoGain).connect(g.gain);
+    s.connect(bp).connect(g).connect(c.destination);
+    s.start(); lfo.start();
+    CROWD_AMB = {s, g, lfo, lvl};
+  }catch(_e){}
+}
+function crowdIntensify(delta){
+  if(!CROWD_AMB) return;
+  try{
+    const c = sfxCtx(); if(!c) return;
+    const cur = CROWD_AMB.g.gain.value;
+    const to = Math.min(0.10, cur + (delta||0.01));
+    CROWD_AMB.g.gain.linearRampToValueAtTime(to, c.currentTime+0.4);
+    CROWD_AMB.lvl = to;
+  }catch(_e){}
+}
+function stopCrowdAmbient(){
+  if(!CROWD_AMB) return;
+  try{
+    const c = sfxCtx();
+    CROWD_AMB.g.gain.linearRampToValueAtTime(0.001, c.currentTime+0.35);
+    setTimeout(()=>{ try{ CROWD_AMB.s.stop(); CROWD_AMB.lfo.stop(); }catch(_){} CROWD_AMB=null; }, 500);
+  }catch(_e){ CROWD_AMB=null; }
 }
 // The theme cue for a wrestler. You picked yours from the create screen;
 // everybody else gets one deterministically from their id, so it stays consistent.
@@ -6610,6 +6710,12 @@ async function startFight(o){
   busy(true);
   fmv('me',{pose:'lockup',fwd:ST.close*0.9},320); fmv('opp',{pose:'lockup',fwd:ST.close*0.9},320);
   sfx('bell');
+  // Start the ambient crowd murmur. Bigger crowd = louder base level: main
+  // event / PPV / stakes crank the loop up. The wave sounds on near-falls
+  // and finishers layer on top.
+  const crowdBase = (o.ppv?0.7:0) + (o.card==='Main Event'?0.35:o.card==='Mid-Card'?0.15:0)
+                  + (o.stakes==='title'||o.stakes==='defense'?0.25:0);
+  startCrowdAmbient(clamp(crowdBase, 0, 1));
   await callout('FIGHT!');
   if(stale()) return;
   await settle(260);
@@ -6968,6 +7074,26 @@ async function runFight(){
       MS.ended=true;
       return endFight(false);
     }
+    // ---- IRON MAN bell (20 minutes, most falls wins) ----
+    // Iron Man plays for the FULL time limit and awards the win on falls.
+    // A tie at the bell goes to sudden death: match continues, next fall wins.
+    if(!MS.ended && o.stip==='iron' && MS.clock>=20*60){
+      const f = MS.falls || {me:0,opp:0};
+      if(f.me!==f.opp){
+        const iWon = f.me>f.opp;
+        await callout('TIME LIMIT');
+        fLog(`<span class="good"><b>THE BELL.</b> Final score ${f.me}-${f.opp}. ${iWon?'You won it.':'They took it.'}</span>`);
+        commitFinish({type:iWon?'pin':'pin', by:iWon, move:`${Math.max(f.me,f.opp)}-${Math.min(f.me,f.opp)} on falls`, fin:false});
+        MS.ended=true;
+        MS.quality = clamp(MS.quality + 8, 0, 100);
+        return endFight(iWon);
+      } else if(!MS._ironOT){
+        MS._ironOT = true;
+        await callout('SUDDEN DEATH');
+        fLog(`<span class="say"><b>TIED AT ${f.me}.</b> The bell went and they are still going. Next fall wins.</span>`);
+        MS.quality = clamp(MS.quality + 6, 0, 100);
+      }
+    }
     // ---- time-limit draw on top-of-the-card singles/tag stips ----
     // Only real time-limit stips announce them; a plain singles Main Event or
     // title match that runs way long ends as a time-limit draw the way real
@@ -7318,6 +7444,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     await callout(hardKickout?'KICKED OUT WITH AUTHORITY!':'KICKOUT!');
     fLog(`<span class="hi">${hardKickout?'Shoulder up with force! The place is unglued!':'Shoulder up at two and a half!'} How did he survive the ${bare(mvName)}?!</span>`);
     MS.nearFalls++; MS.quality+=isFin?15:10 + (hardKickout?3:0); MS.big++;
+    sfx('crowdRise'); crowdIntensify(0.008);
     if(hardKickout){ sfx('pop'); MS.mom = clamp(MS.mom + (iAmPinning?-24:24), -100, 100); }
     arena.classList.remove('tense');
     await sleep(420);
@@ -7330,7 +7457,27 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     await refSlap();
     if(stale()) return false;
     showCount(3, true);
+    sfx('crowdBig');
     await flashScreen();
+    // Iron Man: a three-count is a FALL, not the finish. Track it, celebrate
+    // the momentary win, then reset positions and keep wrestling until the
+    // time limit fires. Whoever has more falls at the bell wins the match.
+    // The time-limit block in runFight reads MS.falls to decide the winner.
+    const isIron = MS.o && MS.o.stip==='iron';
+    if(isIron){
+      MS.falls = MS.falls || {me:0, opp:0};
+      const side = iAmPinning ? 'me' : 'opp';
+      MS.falls[side]++;
+      fLog(`<span class="good"><b>FALL FOR ${side==='me'?'YOU':'THEM'}</b> · ${MS.falls.me}-${MS.falls.opp} on the scoreboard.</span>`);
+      arena.classList.remove('tense');
+      await sleep(650);
+      FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
+      // Reset both wrestlers to neutral for the next fall.
+      MS.mom = clamp(MS.mom + (iAmPinning?-14:14), -100, 100); setMom();
+      MS.quality += 4;
+      await settle(260);
+      return false;   // NOT a finish; runFight continues
+    }
     commitFinish({type:'pin',by:iAmPinning,move:mvName,fin:isFin});
     arena.classList.remove('tense');
     await sleep(520);
@@ -7442,6 +7589,7 @@ async function endFight(iWon){
     fLog(`<b>${pc.name}</b>: <span class="say">"${say}"</span>`);
   }
   await sleep(900);
+  stopCrowdAmbient();
   finalizeFight(iWon);
 }
 
@@ -7902,12 +8050,25 @@ function applyMatch(o,res){
     if(c.titleShotPending){ c.titleShot=c.titleShotPending; c.titleShotPending=null;
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`Your rematch clause is back on the books.`}); }
   }
-  if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0; c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0});
+  if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0;
+    // Prestige tracks how much a specific reign means: earned by the OVR
+    // gap between you and who you beat, the match rating, and (later) the
+    // defenses stacked onto it. Read by Hall of Fame and end-of-year awards.
+    const reignPrestige = Math.round(30 + (o.oppOvr - ovr(w))*0.8 + Math.max(0,res.quality-60)*0.7 + (o.ppv?12:0));
+    c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0,
+                   wonFrom:o.oppName,wonAt:o.ppv||null,prestige:Math.max(20,reignPrestige)});
     titleMsg=`You are the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
-    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100); }
+    if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100);
+    // Champion press conference: fires after the results ceremony settles.
+    // Interviewer scene with dialogue choices that shape post-reign momentum.
+    c._pendingPresser = {belt, from:o.oppName, at:o.ppv||myPromo().short};
+  }
   else if(o.stakes==='defense'){
     if(draw){ titleMsg=`Time-limit draw. You retain the ${c.title}.`; }
-    else if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r) r.defenses=c.defenses;
+    else if(res.win){ c.defenses=(c.defenses||0)+1; const r=c.reigns[c.reigns.length-1]; if(r){ r.defenses=c.defenses;
+      // Every clean defence stacks prestige on this specific reign. Beating
+      // higher-rated challengers, breaking star-rating ceiling, PPV nights.
+      r.prestige = (r.prestige||30) + Math.round(8 + Math.max(0,o.oppOvr-ovr(w))*0.5 + Math.max(0,res.quality-70)*0.3 + (o.ppv?4:0)); }
       titleMsg=`Successful defence #${c.defenses}.`; }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
@@ -8290,6 +8451,56 @@ function renderMatch(o,res){
   if(o.stakes==='title'&&res.win) confetti(150);
   else if(classic) confetti(100);
   setTimeout(showMoments,750);
+  // Champion press conference fires AFTER the moments queue, so it lands
+  // as the last beat of the night rather than fighting the celebration.
+  if(G.car._pendingPresser){
+    const presser = G.car._pendingPresser;
+    G.car._pendingPresser = null;
+    setTimeout(()=>{ try{ playPressConference(presser); }catch(_){} }, 2200);
+  }
+}
+/* Post-title-win interviewer scene: three choices each with a distinct
+   fallout (humility → office love, callout → heat + story seed, shoot →
+   gimmick heat + standing hit). Uses the same scene overlay segments do. */
+function playPressConference(p){
+  const back = $('sceneBack'), body = $('sceneBody'); if(!back||!body) return;
+  const me = G.w;
+  const line = `The lights come up on the press table. A microphone slides across. "New champion, ${me.name}. First question: what do you want to say?"`;
+  const opts = [
+    { t:'"I thank the wrestlers who came before me. I know what this belt means."',
+      eff:{standing:+5, reactionBoost:true}, note:'The room warms to you. The office is watching.'},
+    { t:'"There is not a wrestler in the back who can take this off me. Come and try."',
+      eff:{gimHeat:+7, heatAll:+3, standing:+1}, note:'Every locker room dry-swallowed at once.'},
+    { t:'"The office held me back for months. That ends tonight."',
+      eff:{gimHeat:+9, standing:-6, reactionBoost:true}, note:'A shoot. The office is furious. The crowd is not.'},
+    { t:'Say nothing. Raise the belt and walk.',
+      eff:{gimHeat:+4, reactionBoost:true}, note:'They will replay that photo for a year.'},
+  ];
+  body.innerHTML = `<div class="scene-tag">CHAMPION PRESS CONFERENCE · ${p.belt}</div>
+    <div class="scene-head"><div class="scene-av scene-av-narr">${pico('microphone',36)}</div>
+      <div><div class="scene-who">${p.at}</div>
+      <div class="scene-line">"${line}"</div></div></div>
+    <div class="scene-optlist">${opts.map((o,i)=>`
+      <div class="scene-opt" data-i="${i}"><div class="scene-opt-t">${o.t}</div></div>`).join('')}</div>
+    <div class="scene-walk"><button id="sceneWalkPast">Refuse the interview →</button></div>`;
+  back.classList.add('open');
+  const dismiss = () => { closeScene(); };
+  setTimeout(()=>{
+    const wp = document.getElementById('sceneWalkPast'); if(wp) wp.onclick = dismiss;
+    document.querySelectorAll('#sceneBody .scene-opt').forEach(el=>{
+      el.onclick = ()=>{
+        const o = opts[+el.dataset.i];
+        applySegmentEffect(o.eff||{}, null);
+        body.innerHTML = `<div class="scene-tag">CHAMPION PRESS CONFERENCE · you said</div>
+          <div class="scene-head"><div class="scene-av scene-av-narr">${pico('microphone',36)}</div>
+            <div><div class="scene-who">${p.at}</div>
+            <div class="scene-line">"${o.t}"</div></div></div>
+          <div class="scene-outcome"><div class="scene-outcome-line">${o.note||'The room takes it in.'}</div>${summarizeEffect(o.eff||{})}</div>
+          <div class="scene-continue"><button id="sceneCont">On to next week →</button></div>`;
+        setTimeout(()=>{ const c2=document.getElementById('sceneCont'); if(c2) c2.onclick=dismiss; }, 20);
+      };
+    });
+  }, 30);
 }
 function postMatchMic(oppId){
   beginPromo('face', oppId);
@@ -11596,7 +11807,7 @@ function renderWorld(){
   const order=['indie','regional','national','global'];
   const promos=order.flatMap(t=>PROMOS.filter(p=>p.tier===t));
   const here=myPromo().id;
-  const chips=promos.map(p=>({t:p.short+(p.id===here?' •':''), c:p.color})).concat([{t:'Titles', c:'#e0b341'},{t:'Factions'}]);
+  const chips=promos.map(p=>({t:p.short+(p.id===here?' •':''), c:p.color})).concat([{t:'Titles', c:'#e0b341'},{t:'Rankings', c:'#e0b341'},{t:'Factions'}]);
   let h=pagerBar('world',chips,renderWorld);
   const i=pagerIdx('world',chips.length);
   // "Titles" page: every belt in the world, current champion, reign length,
@@ -11642,6 +11853,32 @@ function renderWorld(){
       </div>`;
     }).join('');
     h+=`<p class="hint" style="margin:6px 4px 10px;">Every belt in the world. Reign length in weeks. The contender queue is the three names the office would book next if a champion fell tomorrow.</p>${rows}`;
+    $('worldBody').innerHTML=h; return;
+  }
+  // "Rankings" page: your promotion's top 10 by a live blend of overness,
+  // titles held, and a random trend factor. Player's ranking highlighted.
+  if(i===promos.length+1){
+    const p=myPromo();
+    const roster = houseRoster(p.id);
+    const scoreFor = (x)=>{
+      const t = titlesHeldBy(x.id);
+      const titlesBonus = t.reduce((s,tt)=>s + (tt.kind==='world'?18:tt.kind==='secondary'?8:5), 0);
+      const rel = (G.rel||{})[x.id] || {};
+      return (x.over||55) + titlesBonus + ((rel.wins||0)*0.5) - ((rel.losses||0)*0.3);
+    };
+    const meScore = 45 + (G.car.pop||50)*0.15 + (G.car.standing||50)*0.2 + (G.car.title?18:0) + (G.car.secondary?8:0);
+    const you = { id:'__me__', name:G.w.name, over:Math.round(meScore), you:true };
+    const list = roster.map(x=>({id:x.id, name:x.name, over:Math.round(scoreFor(x))}))
+      .concat([you])
+      .sort((a,b)=>b.over-a.over)
+      .slice(0,10);
+    h+=`<p class="hint" style="margin:6px 4px 10px;">Where you sit in the ${p.short} pecking order right now. Blends overness, held belts and recent record. Your rank moves every week you wrestle.</p>
+    <div class="rankcard">${list.map((x,idx)=>`
+      <div class="rankrow ${x.you?'me':''}">
+        <div class="rank-n">${idx+1}</div>
+        <div class="rank-name">${x.name}${x.you?' <span class="hint" style="color:var(--gold);">you</span>':''}</div>
+        <div class="rank-o">${x.over}</div>
+      </div>`).join('')}</div>`;
     $('worldBody').innerHTML=h; return;
   }
   if(i<promos.length){
