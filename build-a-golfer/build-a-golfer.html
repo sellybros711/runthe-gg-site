@@ -10418,12 +10418,13 @@ function header(){
   menu.onclick=()=>{ S.overlay='menu'; render(); };
   left.appendChild(menu);
   const profNew=signedIn && (typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: unviewed new items → dot on the profile pill
-  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;left:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
+  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Your golfer'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;left:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
   // CS484 (owner): tapping the banner profile IMAGE opens your CLOSET (dress your golfer); the bottom-nav
   // Profile tab opens your overall Profile. Non-destructive: remembers the current screen/overlay to return to.
-  pl.onclick=()=>{ if(sbSignedIn()){ if(S.screen==='setup'){ render(); return; }   // already customizing
-      S.setupEdit=true; S.setupReturn={screen:S.screen, overlay:S.overlay}; S.overlay=null; S.screen='setup'; render(); }
-    else { S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); } };
+  // ITEM 09: guests get the Closet too - it is where a name is set, and a daily-only guest never passes
+  // through the career setup screen otherwise. The sign-in card still sits inside it.
+  pl.onclick=()=>{ if(S.screen==='setup'){ render(); return; }   // already customizing
+      S.setupEdit=true; S.setupReturn={screen:S.screen, overlay:S.overlay}; S.overlay=null; S.screen='setup'; render(); };
   // CS432/CS433: the profile pill always sits on the LEFT (next to the menu). The wordmark is absolutely
   // centered on the banner (see CSS), so it stays centered for guests and signed-in alike.
   left.appendChild(pl);
@@ -13846,8 +13847,12 @@ function scrSetup(){
   const APPAREL=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
   const GEAR=[['club','Clubs'],['ball','Balls'],['cleats','Cleats']];
   const EFFECTS=[['fx','Aura']];
+  // ITEM 09: a guest can NAME their golfer. The name is theirs alone - it is stored on the guest-scoped
+  // key and no guest submission path carries it (a guest season posts server-hardcoded as 'Guest Player',
+  // the daily boards + course records are sign-in gated, a guest streak posts as 'Guest'), so naming can
+  // never leak an unmoderated name onto a public surface. The country FLAG stays an account perk.
   const SECTIONS = guest
-    ? [['look','Appearance',LOOKCATS]]
+    ? [['look','Appearance',LOOKCATS],['profile','Name',[['details','Name']]]]
     : [['look','Look',LOOKCATS],['apparel','Apparel',APPAREL],['gear','Gear',GEAR],['fx','Effects',EFFECTS],['card','Card',[['plate','Nameplate'],['cardbg','Background']]],['profile','Profile',[['details','Name & Country'],['caddie','Caddie']]]];
   const cats = SECTIONS.reduce((a,s)=>a.concat(s[2]),[]);
   let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
@@ -13884,7 +13889,12 @@ function scrSetup(){
     const nrow=$(`<div class="setrow"><div class="setlab">Name</div></div>`);
     const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
     inp.oninput=e=>{S.name=e.target.value; saveGolferName(S.name); saveLook();}; nrow.appendChild(inp); form.appendChild(nrow);
-    const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); form.appendChild(crow);
+    if(guest){
+      // ITEM 09: name away. Said plainly so nobody expects a guest name to show up on a board.
+      form.appendChild($(`<div class="small muted" style="margin-top:7px;line-height:1.5">This name is yours on this device. Guest scores post to the global boards as <b style="color:var(--oncard)">Guest Player</b> - sign in free to put your own name on them, and to fly your country's flag.</div>`));
+    } else {
+      const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); form.appendChild(crow);
+    }
     wrap.appendChild(form);
   } else if(cat==='caddie' && !guest){
     // owner: pick your caddie right here on the profile/closet page. A caddie gives a small on-theme career edge.
@@ -13946,8 +13956,8 @@ function scrSetup(){
 
   if(guest){
     const lock=$(`<div style="margin-top:12px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Sign in to finish your golfer</b></div>
-      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, and unlock the <b style="color:var(--oncard)">Apparel &amp; Accessories</b> shop (shirt/hat colors, patterns, headwear &amp; eyewear) - plus it saves your career and posts you to the leaderboards.</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Sign in to unlock the rest</b></div>
+      <div class="small muted" style="margin-bottom:12px;line-height:1.5">Name and style your golfer as a guest. A free account puts <b style="color:var(--oncard)">your name on the leaderboards</b> (guest scores post as "Guest Player"), flies your <b style="color:var(--oncard)">country's flag</b>, and unlocks the <b style="color:var(--oncard)">Apparel &amp; Accessories</b> shop (shirt/hat colors, patterns, headwear &amp; eyewear) - plus it saves your career.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 160px;padding:11px">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:0 0 auto;padding:11px 18px">Sign in</button></div></div>`);
     lock.querySelector('#setup-signup').onclick=()=>{ track('setup_signup_click'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
     lock.querySelector('#setup-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
