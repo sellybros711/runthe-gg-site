@@ -2216,37 +2216,44 @@ window.GA_ID='G-L29P5MRWKE';
      arrived as two words with no numbers attached, and I tapped one at random". Compact by design:
      the tap-targets on the course own the upper two thirds. */
   .hvdec{left:6px;right:6px;bottom:6px;pointer-events:auto;
-    background:linear-gradient(180deg,rgba(10,23,15,.95),rgba(5,12,9,.97));
-    border:1.5px solid rgba(235,208,74,.5);border-radius:12px;padding:6px 7px 7px;
-    box-shadow:0 14px 34px -12px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
+    background:linear-gradient(180deg,rgba(9,24,17,.96),rgba(4,11,8,.985));
+    border:1px solid rgba(241,208,74,.34);border-radius:14px;padding:7px 9px 9px;
+    box-shadow:0 18px 42px -14px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
     animation:hvdin .28s ease}
   @media (prefers-reduced-motion:reduce){ .hvdec{animation:none} }
-  .hvdec .dkh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-  .hvdec .dkl{font:900 9.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
-  .hvdec .dkw{display:inline-flex;align-items:center;gap:4px;font:800 9.5px/1 var(--body);letter-spacing:.07em}
+  .hvdec .dkh{display:flex;align-items:center;gap:7px;margin-bottom:5px;min-height:15px}
+  .hvdec .dkl{font:900 9px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);flex:0 0 auto}
+  /* the relevant rating, shown ONCE in the header instead of repeated on both cards */
+  .hvdec .dkst{font:900 9px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:#dbe7e0;flex:0 0 auto;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px 8px}
+  .hvdec .dkw{display:inline-flex;align-items:center;gap:4px;font:800 9.5px/1 var(--body);letter-spacing:.07em;margin-left:auto}
   .hvdec .dkw svg{display:block;width:12px;height:12px;transform-origin:50% 50%}
-  /* every line is CLAMPED, so the panel's height is fixed whatever the scenario says - that is what
-     lets the tap-targets be clamped to the strip above it without measuring at render time. */
-  .hvdec .dks{flex:1 1 100%;font:700 10px/1.3 var(--body);color:#ffd27a;
-    display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-  .hvdec .dkp{font:600 11px/1.32 var(--body);color:#eef4f0;margin-bottom:5px;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .hvdec .dkrow{display:flex;gap:7px}
-  .hvdec .dkc{flex:1;min-width:0;text-align:left;border-radius:10px;padding:6px 7px 7px;cursor:pointer;
-    border:1.5px solid;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* Fixed-height lines keep the panel's height constant whatever the scenario says - that is what lets
+     the tap-targets be clamped to the strip above it without measuring at render time. Deliberately NO
+     -webkit-box/-webkit-line-clamp anywhere in this panel: an inline icon inside a -webkit-box is what
+     drew the full-width green bars on iOS, so the revamp removes the cause by construction. */
+  .hvdec .dks{font:800 9.5px/1 var(--body);color:#ffcf6a;letter-spacing:.02em;flex:1 1 auto;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hvdec .dkp{font:600 11px/1.3 var(--body);color:#dfe9e3;margin-bottom:7px;height:2.6em;overflow:hidden}
+  .hvdec .dkrow{display:flex;gap:8px}
+  .hvdec .dkc{flex:1 1 0;min-width:0;text-align:left;border-radius:11px;padding:7px 8px 8px 11px;cursor:pointer;
+    border:1px solid;position:relative;overflow:hidden;transition:transform .06s ease;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* the colour-coded ACCENT EDGE replaces the old inline icon - no glyph, nothing to mis-render */
+  .hvdec .dkc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
   .hvdec .dkc:active{transform:translateY(2px)}
-  .hvdec .dkc .l{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    font:900 12.5px/1.12 var(--body)}
-  .hvdec .dkc .s{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
-    font:600 9.5px/1.3 var(--body);color:#cfe0d8;margin-top:3px}
-  /* each number on its OWN line (owner, CS379): stat, then the reward, then the risk */
-  .hvdec .dkc .o{display:flex;flex-direction:column;gap:1px;margin-top:5px;padding-top:4px;
-    border-top:1px solid rgba(255,255,255,.15);font:800 9.5px/1.32 var(--body);color:#eef4f0}
-  .hvdec .dkc .o .gd{color:#4fe0a6} .hvdec .dkc .o .rk{color:#ff9576} .hvdec .dkc .o .neu{color:#cfe0d8}
-  .hvdec .dkc.agg{border-color:#ff6b4a;background:linear-gradient(180deg,rgba(255,90,60,.17),rgba(255,90,60,.05))}
-  .hvdec .dkc.agg .l{color:#ff9576}
-  .hvdec .dkc.safe{border-color:#3fcaa8;background:linear-gradient(180deg,rgba(63,202,168,.17),rgba(63,202,168,.05))}
-  .hvdec .dkc.safe .l{color:#5fe0c0}
+  .hvdec .dkc .l{font:900 12.5px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* the odds read as a PAIR of big numbers with a tiny caption, not three sentences */
+  .hvdec .dkc .o{display:flex;gap:10px;margin-top:6px;padding-top:5px;border-top:1px solid rgba(255,255,255,.13)}
+  .hvdec .dkc .o span{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .hvdec .dkc .o b{font:900 13px/1 var(--body);letter-spacing:-.01em}
+  .hvdec .dkc .o i{font:800 8.5px/1 var(--body);font-style:normal;letter-spacing:.09em;text-transform:uppercase;
+    color:#9fb3a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hvdec .dkc .o .gd b{color:#4fe0a6} .hvdec .dkc .o .rk b{color:#ff8f76} .hvdec .dkc .o .neu b{color:#cfe0d8}
+  .hvdec .dkc.agg{border-color:rgba(255,107,74,.55);background:linear-gradient(180deg,rgba(255,90,60,.16),rgba(255,90,60,.04))}
+  .hvdec .dkc.agg::before{background:#ff6b4a} .hvdec .dkc.agg .l{color:#ff9576}
+  .hvdec .dkc.safe{border-color:rgba(63,202,168,.55);background:linear-gradient(180deg,rgba(63,202,168,.16),rgba(63,202,168,.04))}
+  .hvdec .dkc.safe::before{background:#3fcaa8} .hvdec .dkc.safe .l{color:#5fe0c0}
   /* decision MODAL: a real pop-up presenting the situation + 2 options over a dimmed course - never
      shifts the page underneath (owner: a real, exciting pop-up that draws attention) */
   .decisionov{position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;
@@ -2288,7 +2295,13 @@ window.GA_ID='G-L29P5MRWKE';
     background:none;border:none;padding:0;cursor:pointer;z-index:6;pointer-events:none;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.55))}
   .dctarget .dtl,.dctarget .dtr{pointer-events:auto}
-  .dctarget .dtl{font:900 12px/1 var(--body);letter-spacing:.01em;color:#fff;white-space:nowrap;border:2px solid;border-radius:11px;padding:5px 10px}
+  /* the chip carries a colour-coded DOT, not an inline icon: an emoji-derived <svg class="ic"> inside a
+     chip is what iOS was drawing as a full-width bar with the text pushed under it. */
+  .dctarget .dtl{font:900 12px/1 var(--body);letter-spacing:.01em;color:#fff;white-space:nowrap;border:2px solid;border-radius:11px;padding:5px 10px 5px 9px;display:inline-flex;align-items:center;gap:6px}
+  /* solid dot = the risky line, hollow ring = the safe one: a SHAPE cue, so the two still read apart
+     for a colourblind player and without leaning on a glyph. */
+  .dctarget .dtl::before{content:'';width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:currentColor}
+  .dctarget.safe .dtl::before{background:transparent;box-shadow:inset 0 0 0 2px currentColor}
   .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
   .dctarget .dtr{width:26px;height:14px;border:2.5px solid;border-radius:50%;margin-top:2px;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
   .dctarget.agg .dtl{background:rgba(180,26,26,.94);border-color:#ff5a4d}
@@ -2306,21 +2319,28 @@ window.GA_ID='G-L29P5MRWKE';
      bright colour-coded odds so the stat + percentages read at a glance */
   .dcbar{max-width:600px;margin:10px auto 0;border:1px solid rgba(235,208,74,.42);border-radius:16px;
     background:linear-gradient(180deg,rgba(14,33,20,.97),rgba(7,17,11,.98));padding:13px 13px 14px;box-shadow:0 14px 34px -14px rgba(0,0,0,.75)}
-  .dcbar .dch{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
-  .dcbar .dchl{font:900 12.5px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
-  .dcbar .dchs{font:700 12.5px/1.4 var(--body);color:#ffd27a}
-  .dcbar .dchp{font:600 13px/1.45 var(--body);color:#eef4f0}
+  .dcbar .dch{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .dcbar .dchl{font:900 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .dcbar .dchst{font:900 10px/1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:#dbe7e0;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px}
+  .dcbar .dchs{font:800 11px/1.3 var(--body);color:#ffcf6a;flex:1 1 100%}
+  .dcbar .dchp{font:600 13px/1.4 var(--body);color:#dfe9e3;flex:1 1 100%}
   .dcrow{display:flex;gap:10px}
-  .dccard{flex:1;text-align:left;border-radius:14px;padding:13px 13px 12px;cursor:pointer;border:1.5px solid;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .dccard{flex:1 1 0;min-width:0;text-align:left;border-radius:14px;padding:12px 12px 12px 15px;cursor:pointer;border:1px solid;
+    position:relative;overflow:hidden;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .dccard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
   .dccard:active{transform:translateY(2px)}
-  .dccard .dcl{font:900 15px/1.15 var(--body)}
-  .dccard .dcs{font:600 12px/1.4 var(--body);color:#cfe0d8;margin-top:5px}
-  .dccard .dco{font:800 13px/1.3 var(--body);margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);color:#eef4f0;display:flex;flex-direction:column;gap:3px}
-  .dccard .dco .dcstat{color:#fff} .dccard .dco .gd{color:#4fe0a6} .dccard .dco .rk{color:#ff9576} .dccard .dco .neu{color:#cfe0d8}
-  .dccard.agg{border-color:#ff6b4a;background:linear-gradient(180deg,rgba(255,90,60,.17),rgba(255,90,60,.05));box-shadow:0 8px 22px -12px rgba(255,90,60,.6)}
-  .dccard.agg .dcl{color:#ff9576}
-  .dccard.safe{border-color:#3fcaa8;background:linear-gradient(180deg,rgba(63,202,168,.17),rgba(63,202,168,.05));box-shadow:0 8px 22px -12px rgba(63,202,168,.5)}
-  .dccard.safe .dcl{color:#5fe0c0}
+  .dccard .dcl{font:900 15px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dccard .dco{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.14);display:flex;gap:12px}
+  .dccard .dco span{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .dccard .dco b{font:900 16px/1 var(--body);letter-spacing:-.01em}
+  .dccard .dco i{font:800 9px/1 var(--body);font-style:normal;letter-spacing:.09em;text-transform:uppercase;color:#9fb3a8;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dccard .dco .gd b{color:#4fe0a6} .dccard .dco .rk b{color:#ff8f76} .dccard .dco .neu b{color:#cfe0d8}
+  .dccard.agg{border-color:rgba(255,107,74,.55);background:linear-gradient(180deg,rgba(255,90,60,.16),rgba(255,90,60,.04));box-shadow:0 8px 22px -12px rgba(255,90,60,.6)}
+  .dccard.agg::before{background:#ff6b4a} .dccard.agg .dcl{color:#ff9576}
+  .dccard.safe{border-color:rgba(63,202,168,.55);background:linear-gradient(180deg,rgba(63,202,168,.16),rgba(63,202,168,.04));box-shadow:0 8px 22px -12px rgba(63,202,168,.5)}
+  .dccard.safe::before{background:#3fcaa8} .dccard.safe .dcl{color:#5fe0c0}
   /* crisp FLIP glide when scoreboard rows swap order (positions animate, not teleport) */
   .hvbrow{transition:none}
   @media (prefers-reduced-motion:reduce){ .hvbrow{transition:none!important} }
@@ -29597,7 +29617,9 @@ function dDecOdds(sc, sk){
   const safeGood=Math.round(20+q*22);
   const goodWord=/go for|home in two|reach|drivable|rip driver/.test(txt)?'reach':/carry/.test(txt)?'carry':'birdie look';
   const riskWord=wet?'water':bunker?'bunker':'trouble';
-  return {stat:st, val, aggGood, aggRisk, safeGood, goodWord, riskWord};
+  // one-word captions for the compact odds pair on the cards (the revamped panel labels a number, not a sentence)
+  const goodShort=goodWord==='birdie look'?'birdie':goodWord;
+  return {stat:st, val, aggGood, aggRisk, safeGood, goodWord, goodShort, riskWord};
 }
 // the two course points a decision aims at (aggressive vs safe), in course coords → projected onto the window
 function dDecTargets(g, sc){
@@ -29637,7 +29659,7 @@ function dPlaceTargets(shell, g, sc, pick){
   const od=dDecOdds(sc, S.dailySkills||{}), sq=dSkQ(od.val);
   const aggW=Math.round(30+od.aggRisk*1.15), safeW=Math.round(14+(1-sq)*9);   // agg ~35..71px · safe ~14..23px
   const pos=[];
-  const place=(pt,cls,icon,lab,agg,rw)=>{
+  const place=(pt,cls,lab,agg,rw)=>{
     const p=hvProj(g,pt[0],pt[1]);
     // ITEM 07: the decision panel now docks along the BOTTOM of the window, so a target can no longer
     // sit in the lower third - it would land under the panel. The green (and so the aggressive target)
@@ -29650,37 +29672,59 @@ function dPlaceTargets(shell, g, sc, pick){
     if(lf<52 && tp<15) tp=15;
     pos.push({lf,tp});
     const rh=Math.round(rw*0.53);
-    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${icon} ${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
+    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
     chip.onclick=(e)=>{ e.stopPropagation(); pick(agg); };
     shell.appendChild(chip);
   };
-  place(tg.agg,'agg','⚡',tg.al||'Attack',true,aggW);
-  place(tg.safe,'safe','🛡',tg.sl||'Safe',false,safeW);
+  place(tg.agg,'agg',tg.al||'Attack',true,aggW);
+  place(tg.safe,'safe',tg.sl||'Safe',false,safeW);
+  // A chip is anchored by its BOTTOM (translate -100%), so a percentage clamp cannot know how tall it
+  // is - and on a short hole a target was landing ON the fixed hole-info chip. Measure once the browser
+  // has laid them out and push any chip that genuinely overlaps it clear.
+  requestAnimationFrame(()=>{
+    if(!shell.isConnected) return;
+    const hole=shell.querySelector('.hvhole'); if(!hole) return;
+    const hr=hole.getBoundingClientRect(), sr=shell.getBoundingClientRect();
+    if(!sr.height) return;
+    shell.querySelectorAll('.dctarget').forEach(c=>{
+      const r=c.getBoundingClientRect();
+      if(r.right<hr.left-4||r.left>hr.right+4||r.bottom<hr.top-4||r.top>hr.bottom+4) return;
+      const push=(hr.bottom+6-r.top)/sr.height*100;
+      if(push>0) c.style.top=Math.min(HV_DEC_TOP, (parseFloat(c.style.top)||0)+push)+'%';
+    });
+  });
 }
 // ITEM 07: the decision, DOCKED INSIDE the tracer window along its bottom edge, so the hole, the
 // on-course tap-targets and the numbers are all in one frame above the fold. Same content as
 // dDecisionBar (which is kept as the below-window fallback), compacted to leave the upper two thirds
 // of the window to the course and the targets.
+// The revamp (owner: "I don't like the green boxes on the decision buttons. I'd like to revamp the
+// decision ui and upgrade the visual design and reduce the amount of reading"):
+//   * NO inline icons and NO -webkit-line-clamp anywhere in this panel. An emoji-derived <svg class="ic">
+//     inside a -webkit-box is what iOS was stretching into a full-width bar with the text shoved beneath
+//     it (the "green boxes"). Colour is carried by an accent EDGE on each card and a dot on each chip.
+//   * Far less to read: the header instruction, the two per-option notes and the per-card stat line are
+//     gone (the rating is shown ONCE as a header pill), and the odds are a pair of big numbers with a
+//     one-word caption instead of three sentences a side.
 function dDecisionPanel(sc, pick, sub, holeIdx){
   const od=dDecOdds(sc, S.dailySkills);
   const p=$(`<div class="hvob hvdec"></div>`);
-  const head=$(`<div class="dkh"><span class="dkl">⛳ Your call · tap the course or a card</span></div>`);
+  const head=$(`<div class="dkh"><span class="dkl">Your call</span><span class="dkst">${esc(od.stat.name)} ${od.val}</span></div>`);
   { const wi=hvWindInlineHTML(holeIdx); if(wi) head.appendChild($(wi)); }
-  // ONE situation line: the approach sub (where your drive finished) if there is one, else the
-  // pressure line - two stacked lines would push the panel up into the tap-targets.
-  const situ = sub || sc.sit || (S.moment?momentStakesLine(S.dailyHoles.length):'');
-  if(situ) head.appendChild($(`<span class="dks">${esc(situ)}</span>`));
+  // The pressure line is kept only where it is the point of the shot (a career Moment); a Daily round
+  // gets the shot context alone, which is what "less reading" means on the screen the owner sent.
+  const stakes = S.moment ? (sc.sit || momentStakesLine(S.dailyHoles.length)) : '';
+  if(stakes) head.appendChild($(`<span class="dks">${esc(stakes)}</span>`));
   p.appendChild(head);
-  p.appendChild($(`<div class="dkp">${esc(sc.prompt)}</div>`));
+  // ONE context line: where the drive finished, if this decision has one, else the shot itself.
+  p.appendChild($(`<div class="dkp">${esc(sub || sc.prompt)}</div>`));
   const row=$(`<div class="dkrow"></div>`);
-  const card=(cls,icon,label,note,l1,l2,l3,agg)=>{
-    const b=$(`<button class="dkc ${cls}"><span class="l">${icon} ${esc(label)}</span><span class="s">${esc(note)}</span><span class="o"><span>${l1}</span><span class="${cls==='agg'?'gd':'gd'}">${l2}</span><span class="${cls==='agg'?'rk':'neu'}">${l3}</span></span></button>`);
+  const card=(cls,label,vA,kA,clsA,vB,kB,clsB,agg)=>{
+    const b=$(`<button class="dkc ${cls}"><span class="l">${esc(label)}</span><span class="o"><span class="${clsA}"><b>${esc(vA)}</b><i>${esc(kA)}</i></span><span class="${clsB}"><b>${esc(vB)}</b><i>${esc(kB)}</i></span></span></button>`);
     b.onclick=()=>pick(agg); return b;
   };
-  row.appendChild(card('agg','⚡',sc.opts[0].l,sc.opts[0].s,
-    `${esc(od.stat.name)} ${od.val}`, `${od.aggGood}% ${esc(od.goodWord)}`, `${od.aggRisk}% ${esc(od.riskWord)}`, true));
-  row.appendChild(card('safe','🛡',sc.opts[1].l,sc.opts[1].s,
-    'Low risk', `${od.safeGood}% birdie look`, 'par safe', false));
+  row.appendChild(card('agg', sc.opts[0].l, od.aggGood+'%', od.goodShort, 'gd', od.aggRisk+'%', od.riskWord, 'rk', true));
+  row.appendChild(card('safe', sc.opts[1].l, od.safeGood+'%', 'birdie', 'gd', 'LOW', 'risk', 'neu', false));
   p.appendChild(row);
   return p;
 }
@@ -29689,16 +29733,14 @@ function dDecisionBar(sc, pick, sub){
   const od=dDecOdds(sc, S.dailySkills);
   const stakes=S.moment?momentStakesLine(S.dailyHoles.length):'';
   const bar=$(`<div class="dcbar"></div>`);
-  const head=$(`<div class="dch"><span class="dchl">⛳ Your call · tap the course or a card</span></div>`);
-  if(sub) head.appendChild($(`<span class="dchs" style="color:#9fe0cf">${esc(sub)}</span>`));
-  if(sc.sit) head.appendChild($(`<span class="dchs">${esc(sc.sit)}</span>`));
-  else if(stakes) head.appendChild($(`<span class="dchs">${esc(stakes)}</span>`));
-  head.appendChild($(`<span class="dchp">${esc(sc.prompt)}</span>`));
+  const head=$(`<div class="dch"><span class="dchl">Your call</span><span class="dchst">${esc(od.stat.name)} ${od.val}</span></div>`);
+  if(S.moment && (sc.sit||stakes)) head.appendChild($(`<span class="dchs">${esc(sc.sit||stakes)}</span>`));
+  head.appendChild($(`<span class="dchp">${esc(sub || sc.prompt)}</span>`));
   bar.appendChild(head);
   const row=$(`<div class="dcrow"></div>`);
-  const ag=$(`<button class="dccard agg"><div class="dcl">⚡ ${esc(sc.opts[0].l)}</div><div class="dcs">${esc(sc.opts[0].s)}</div><div class="dco"><div class="dcstat">${esc(od.stat.name)} ${od.val}</div><div class="gd">${od.aggGood}% ${esc(od.goodWord)}</div><div class="rk">${od.aggRisk}% ${esc(od.riskWord)}</div></div></button>`);
+  const ag=$(`<button class="dccard agg"><div class="dcl">${esc(sc.opts[0].l)}</div><div class="dco"><span class="gd"><b>${od.aggGood}%</b><i>${esc(od.goodShort)}</i></span><span class="rk"><b>${od.aggRisk}%</b><i>${esc(od.riskWord)}</i></span></div></button>`);
   ag.onclick=()=>pick(true);
-  const sf=$(`<button class="dccard safe"><div class="dcl">🛡 ${esc(sc.opts[1].l)}</div><div class="dcs">${esc(sc.opts[1].s)}</div><div class="dco"><div class="dcstat">Low risk</div><div class="gd">${od.safeGood}% birdie look</div><div class="neu">par safe</div></div></button>`);
+  const sf=$(`<button class="dccard safe"><div class="dcl">${esc(sc.opts[1].l)}</div><div class="dco"><span class="gd"><b>${od.safeGood}%</b><i>birdie</i></span><span class="neu"><b>LOW</b><i>risk</i></span></div></button>`);
   sf.onclick=()=>pick(false);
   row.appendChild(ag); row.appendChild(sf); bar.appendChild(row);
   return bar;
