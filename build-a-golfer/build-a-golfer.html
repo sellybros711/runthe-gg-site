@@ -26510,6 +26510,12 @@ function hvPlots(g, shots, seedN){
   shots.forEach((s,i)=>{
     const p={i, k:s.k||'app', lie:s.lie||'fw'};
     p.from=cur.slice();
+    // ITEM 13: carry the shot's OWN distance-to-hole onto the plot, so the map can show the number the
+    // narration is already telling you. Feet first: a shot only ever carries `ft` when it finishes near
+    // the green (a par-3 miss stores both a rough toY and the true ft), and the finer unit is the truth.
+    { const fv=(s.k==='putt')?s.toFt:s.ft;
+      p.toFt=(fv!=null&&fv>0)?fv:null;
+      p.toYd=(s.toY!=null&&s.toY>0)?s.toY:null; }
     const toY=(s.toY!=null)?s.toY:null; let y, rest=null;
     const sgn=(s.side==='left')?-1:(s.side==='right')?1:(hh(i,3)<0.5?-1:1);
     switch(s.lie){
@@ -27441,6 +27447,108 @@ function pxTerrainURL(g, seedN, B, opts){
   const o=out.getContext('2d');o.imageSmoothingEnabled=false;o.drawImage(cv,0,0,out.width,out.height);
   const url=out.toDataURL('image/png'); _pxCache.set(key,url); return url;
 }
+/* ITEM 13: YARDAGE ON THE MAP. The narration carries every number and the map carried none - no 150
+   marker, no "290 to carry" on the bunker you're being asked to challenge. Two references, both drawn
+   as constant-distance arcs the way a broadcast does it, on the full-hole camera only (the green
+   close-up has its own scale and no room for them).
+   The carry arc is drawn ONLY when the driving zone genuinely holds trouble, so the number is never
+   decoration - if there is nothing to carry, there is no arc. Course-y is yards (g.L = the hole's
+   yardage) and the green sits at y=L, so both arcs are real distances, not drawn-on approximations. */
+function hvArcD(g, ox, oy, R, cx, halfW, sign){
+  const N=14; let d='';
+  for(let i=0;i<=N;i++){
+    const x=cx-halfW+(2*halfW)*i/N, dx=x-ox, k=R*R-dx*dx;
+    if(k<0) return '';
+    const y=oy+sign*Math.sqrt(k);
+    if(y<4||y>g.span-6) return '';
+    const P=hvProj(g,x,y);
+    d+=(i?' L ':'M ')+P[0].toFixed(1)+' '+P[1].toFixed(1);
+  }
+  return d;
+}
+// A yardage label, placed in SCREEN space and clamped into the frame. Returns its own box as well as
+// its markup, so the caller can see whether two labels would land on top of each other and move one.
+function hvLabelAt(px, py, txt, col){
+  const fs=7, w=String(txt).length*fs*0.6+9;
+  const x=Math.max(HV_CAM[0]+w/2+2, Math.min(HV_CAM[0]+HV_CAM[2]-w/2-2, px));
+  const y=Math.max(12, Math.min(HV_H-8, py));
+  return {x, y, w,
+    svg:`<g opacity=".92"><rect x="${(x-w/2).toFixed(1)}" y="${(y-6).toFixed(1)}" width="${w.toFixed(1)}" height="12" rx="6" fill="rgba(6,18,12,.78)" stroke="${col}" stroke-width=".7"/>`
+      +`<text x="${x.toFixed(1)}" y="${(y+2.6).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="${col}" font-family="inherit">${txt}</text></g>`};
+}
+function hvLabelHits(a,b){ return !!a && !!b && Math.abs(a.x-b.x) < (a.w+b.w)/2+4 && Math.abs(a.y-b.y) < 13; }
+function hvYardageSVG(g){
+  if(!g || g.par===3) return '';
+  let s='', L150=null;
+  // the 150 marker: a constant-distance arc from the middle of the green, the reference every golfer uses
+  const y150=g.L-150;
+  if(y150>30){
+    const cx=g.cx(y150), hw=Math.min(g.fww(y150)*1.5+12, 120);
+    const d=hvArcD(g, g.gcx, g.L, 150, cx, hw, -1);
+    if(d){ s+=`<path d="${d}" fill="none" stroke="rgba(244,227,201,.5)" stroke-width="1.3" stroke-dasharray="6 6"/>`;
+      const ly=g.L-Math.sqrt(Math.max(0,150*150-Math.pow(cx+hw-g.gcx,2)));
+      L150=hvLabelAt(hvProj(g,cx+hw,ly)[0], hvProj(g,cx+hw,ly)[1], '150', 'rgba(244,227,201,.9)');
+      s+=L150.svg; }
+  }
+  // the carry: the far edge of whatever the tee shot is being asked to fly, if anything is out there.
+  // Only trouble in the DRIVING ZONE counts (170-330 yds and inside the front two thirds of the hole) -
+  // a greenside bunker isn't a carry, it's an approach.
+  let carry=0, hz=null, hzR=6;
+  const consider=(c,x,y,r)=>{ if(c>=170 && c<=330 && y<g.L*0.72 && c>carry){ carry=c; hz=[x,y]; hzR=r; } };
+  for(const bk of (g.bunkers||[])) if(bk.y<g.L-40) consider(Math.hypot(bk.x,bk.y)+bk.r, bk.x, bk.y, bk.r);
+  if(g.creek && g.creek.y<g.L*0.55) consider(g.creek.y+5, g.cx(g.creek.y), g.creek.y, 5);
+  if(g.water && g.water.y<g.L-40) consider(g.water.y+g.water.ry, g.water.x, g.water.y, g.water.rx||8);
+  if(carry>0){
+    const yc=Math.min(g.L-14, carry), cx=g.cx(yc);
+    const hw=Math.min(Math.max(g.fww(yc)*1.5+12, Math.abs(hz[0]-cx)+16), 140);
+    const d=hvArcD(g, 0, 0, carry, cx, hw, 1);
+    if(d){ const n=Math.ceil(carry/5)*5;   // round UP - a carry number must never promise less than the shot needs
+      const gold='rgba(241,208,74,.95)', txt=n+' CARRY';
+      // the label rides the arc at the hazard's own bearing, so the number belongs to the trouble it names,
+      // but it is pushed clear of the hazard itself - a chip sitting ON the sand hides the thing it is about
+      const hd=Math.hypot(hz[0],hz[1])||1, lx=hz[0]*carry/hd, ly=hz[1]*carry/hd;
+      const P=hvProj(g,lx,ly), cxs=hvProj(g,g.cx(ly),ly)[0];
+      const rad=Math.abs(hzR*g.sx*g.t(ly)), side=(P[0]>=cxs)?1:-1;
+      const wLab=txt.length*7*0.6+9, off=rad+wLab/2+5;
+      // sand the chip would cover, in screen space - a chip sitting ON a bunker hides the thing it names
+      const sand=(g.bunkers||[]).map(bk=>{ const B=hvProj(g,bk.x,bk.y);
+        return {x:B[0], y:B[1], r:Math.abs(bk.r*g.sx*g.t(bk.y))}; });
+      const buried=(b)=>sand.filter(o=>Math.abs(o.x-b.x)<o.r+b.w/2 && Math.abs(o.y-b.y)<o.r+10).length;
+      // try either side of the hazard, then ranks off the arc, and take the cleanest spot. Colliding with
+      // the 150 chip is the worst outcome (two numbers stacked is unreadable); covering sand is next; a
+      // spot nearer the hazard's own bearing breaks the tie, so the number stays attached to its trouble.
+      let cb=null, best=1e9;
+      const cand=[[side*off,0],[-side*off,0],[side*off,17],[-side*off,17],[side*off,-17],[-side*off,-17],
+                  [side*(off+34),0],[-side*(off+34),0],[side*off,34],[-side*off,34]];
+      for(let i=0;i<cand.length;i++){
+        const t=hvLabelAt(P[0]+cand[i][0], P[1]+cand[i][1], txt, gold);
+        const sc=(hvLabelHits(t,L150)?1000:0)+buried(t)*40+i;
+        if(sc<best){ best=sc; cb=t; }
+        if(sc===i) break;   // clean, and no earlier candidate was
+      }
+      s+=`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`;
+      s+=cb.svg; }
+  }
+  return s;
+}
+// ITEM 13: the distance-to-pin readout that sits ON the ball once it comes to rest. Held hidden while
+// the shot is in the air (revealing where the ball ends up before it lands would spoil the shot) and
+// shown by the animator the moment it settles.
+function hvDistTxt(p){
+  if(!p||p.hole) return '';
+  if(p.toFt!=null) return Math.round(p.toFt)+' FT';
+  if(p.toYd!=null) return p.toYd+' YDS';
+  return '';
+}
+function hvDistChip(g,p,live,small){
+  const txt=hvDistTxt(p); if(!txt) return '';
+  const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
+  const fs=small?3.8:7, h=small?7:12, w=txt.length*fs*0.6+(small?5:9);
+  const cy=Math.max(h/2+2, y-(small?8:16));
+  return `<g id="hv-dist" opacity="${live?'0':'1'}"><rect x="${(x-w/2).toFixed(1)}" y="${(cy-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="${(h/2).toFixed(1)}" fill="rgba(6,18,12,.86)" stroke="rgba(241,208,74,.6)" stroke-width="${small?0.4:0.8}"/>`
+    +`<text x="${x.toFixed(1)}" y="${(cy+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#F1D04A" font-family="inherit">${txt}</text></g>`;
+}
+function hvRevealDist(){ const d=document.getElementById('hv-dist'); if(d) d.setAttribute('opacity','1'); }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
 function hvDoneShot(g,p,dim,small,pcol){
@@ -27526,7 +27634,7 @@ function hvRevealPaths(p){
 // re-created the ball at the putt/chip origin and hvKick's done-branch only revealed the tracer). A holed
 // shot's rest is the pin → radius 0 = in the cup; any other completed shot sits at its true rest.
 function hvSettle(g,p){
-  hvRevealPaths(p);
+  hvRevealPaths(p); hvRevealDist();
   if(!p) return;
   const b=document.getElementById('hv-ball'); if(!b) return;
   const sv=document.getElementById('hv-svg');
@@ -27550,7 +27658,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
     if(sv) sv.setAttribute('viewBox', hvCamFor2(g,p).join(' '));   // reduced-motion users still get the right camera
     if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);
       const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }   // a ball resting ON the green (any shot) is the small green size, not the big ground ball
-    if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); _hvA.done=true; };
+    if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); hvRevealDist(); _hvA.done=true; };
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
   // CS355: hold the ball at address while the golfer swings; it leaves at impact (chip is a quicker stroke)
@@ -27606,7 +27714,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
           dr.setAttribute('cx',(B[0]+Math.cos(ang)*dist*st).toFixed(1));
           dr.setAttribute('cy',(B[1]+Math.sin(ang)*dist*st-arc).toFixed(1));
           dr.setAttribute('r',(1.7*(1-st*0.55)).toFixed(2)); dr.setAttribute('opacity',(0.9*(1-st)).toFixed(2)); }
-        if(elF>flyMs+600){ _hvA.raf=0; _hvA.done=true; return; }
+        if(elF>flyMs+600){ hvRevealDist(); _hvA.raf=0; _hvA.done=true; return; }
       } else if(elF<=flyMs+groundMs){
         const t=(elF-flyMs)/groundMs, te=1-Math.pow(1-t,2.2);       // decelerating bounce + roll-out
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
@@ -27649,8 +27757,8 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       if(p.hole && t>=1){
         const st=Math.min(1,(ep-rollMs)/560); ball.setAttribute('r',(HV_GBALL*(1-st)).toFixed(2));   // the small green ball drops into the cup
         const sk2=q('hv-sink'); if(sk2){ sk2.setAttribute('cx',R[0]);sk2.setAttribute('cy',R[1]);sk2.setAttribute('r',(HV_CUP_RX*0.7+st*3).toFixed(1));sk2.setAttribute('stroke-width','1');sk2.setAttribute('opacity',(0.9*(1-st)).toFixed(2)); }
-        if(st>=1){ _hvA.raf=0; _hvA.done=true; return; }
-      } else if(t>=1){ _hvA.raf=0; _hvA.done=true; return; }
+        if(st>=1){ hvRevealDist(); _hvA.raf=0; _hvA.done=true; return; }
+      } else if(t>=1){ hvRevealDist(); _hvA.raf=0; _hvA.done=true; return; }
     }
     _hvA.raf=requestAnimationFrame(frame);
   }
@@ -27713,7 +27821,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
     return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
-      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}</svg></div></div>`);
+      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
@@ -27735,8 +27843,13 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
   const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
+  // ITEM 13: the map's yardage references (full-hole camera only) sit under the tracers; the
+  // distance-to-pin chip rides the current shot's resting ball, hidden until the ball settles.
+  const yard=small?'':hvYardageSVG(g);
+  const curP=(idx>=0&&plots[idx])?plots[idx]:null;
+  const dchip=curP?hvDistChip(g,curP,live,small&&inCam(curP)):'';
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${inner}${overlay||''}</svg></div></div>`);
+    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${yard}${inner}${dchip}${overlay||''}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN+(animNonce!=null?':r'+animNonce:'');
     requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
