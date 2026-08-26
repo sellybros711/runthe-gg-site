@@ -2468,7 +2468,7 @@ function renderBracket() {
     const away = P.seeds[m.away];
     const matchDiv = el('div','match');
     const homeRow = el('div', 'row' + (home.you?' you':'') + (m.result && m.result.winner===m.home?' win':''),
-      `<span>${i+1}. ${home.name}</span><span>${m.result?m.result.homeScore:''}</span>`);
+      `<span>${i+1}. ${home.name} · home</span><span>${m.result?m.result.homeScore:''}</span>`);
     const awayRow = el('div', 'row' + (away.you?' you':'') + (m.result && m.result.winner===m.away?' win':''),
       `<span>${4-i}. ${away.name}</span><span>${m.result?m.result.awayScore:''}</span>`);
     matchDiv.append(homeRow, awayRow);
@@ -2560,6 +2560,9 @@ function startPlayoffMatch(nm) {
   const m = nm.match;
   const home = P.seeds[m.home];
   const away = P.seeds[m.away];
+  /* Home field advantage: the higher seed always hosts (the bracket
+     puts home in the higher slot already). Player is home when their
+     seed made them home. */
   const youHome = home.you;
   const you = youHome ? home : away;
   const foe = youHome ? away : home;
@@ -2740,11 +2743,68 @@ function startAtBat() {
   }
   refreshHud();
   if (playerIsBatting()) {
-    setTimeout(throwPitch, BEAT.intoAtBat);
+    /* CPU calls its own pitch. */
+    setTimeout(() => {
+      const pick = cpuCallPitch();
+      throwPitch(pick.pt, pick.zone);
+    }, BEAT.intoAtBat);
   } else {
     /* Your defense is on the field: you call the pitch. */
     setTimeout(offerPitchSelection, BEAT.intoAtBat);
   }
+}
+
+/* CPU pitching AI. Decides pitch type and zone against the current
+   batter and count. Reads:
+     - batter's CON: attack corners on high-CON hitters (avoid squaring up)
+     - count: 0-2 wastes off the plate; 3-0 grooves down the middle
+     - pitcher fatigue: gassed pitchers throw more fastballs, aim center more
+     - last pitch: mix things up on repeat calls
+   Returns { pt, zone } consumed by throwPitch. */
+function cpuCallPitch() {
+  const g = State.game;
+  const batter = currentBatter();
+  const pitcher = currentPitcher();
+  const fat = pitcherFatigue();
+  const pitchTypes = ['fastball','curveball','changeup'];
+
+  /* Type choice: mix, but repeat rarely. */
+  let pt;
+  if (g.lastCpuPitchType && Math.random() < 0.65) {
+    pt = pitchTypes.filter(x => x !== g.lastCpuPitchType)[Math.floor(Math.random()*2)];
+  } else {
+    pt = pitchTypes[Math.floor(Math.random()*3)];
+  }
+  /* Gassed pitcher: fastballs only, he can't spin the ball. */
+  if (fat.level >= 2) pt = 'fastball';
+  g.lastCpuPitchType = pt;
+
+  /* Zone choice: 3x3 grid indices 0..8, 4 = center. */
+  let zone;
+  const wasteRoll = g.strikes >= 2 && Math.random() < 0.35;
+  const grooveRoll = g.balls >= 3 && Math.random() < 0.55;
+  if (grooveRoll) {
+    zone = 4;   /* dead center on 3-0 */
+  } else if (wasteRoll) {
+    /* Chase pitch: pick one of the four corners. */
+    const corners = [0, 2, 6, 8];
+    zone = corners[Math.floor(Math.random() * 4)];
+  } else {
+    /* Contact hitters get cornered; power hitters get sinkers low. */
+    const hitContact = batter.con >= 75;
+    const hitPower = batter.pow >= 80;
+    if (hitContact) {
+      const cornersOrEdges = [0, 2, 6, 8, 1, 3, 5, 7];
+      zone = cornersOrEdges[Math.floor(Math.random() * cornersOrEdges.length)];
+    } else if (hitPower) {
+      /* Low pitches to power hitters */
+      zone = [6, 7, 8][Math.floor(Math.random() * 3)];
+    } else {
+      /* Balanced: random */
+      zone = Math.floor(Math.random() * 9);
+    }
+  }
+  return { pt, zone };
 }
 
 /* When the CPU bats, the player picks the pitch and the target zone. Two
@@ -2798,6 +2858,12 @@ function offerPitchSelection() {
 function batterContext(b) {
   const g = State.game;
   const ctx = { pow: b.pow, con: b.con, spd: b.spd, notes: [], flags: {} };
+  /* Home field advantage: the home team's batters get a small crowd
+     bump. Only in playoff games, so the regular season stays flat. */
+  if (g.half === 'bottom' && State.mode === 'playoff') {
+    ctx.pow = Math.min(100, ctx.pow + 3);
+    ctx.con = Math.min(100, ctx.con + 2);
+  }
   if (b.quirk === 'transform' && Math.random() < 0.16) {
     ctx.pow = Math.max(ctx.pow, 96);
     ctx.con = Math.max(ctx.con, 78);
@@ -3255,7 +3321,21 @@ function scheduleContactPlay(kind, batter) {
         g.signature = { kind: 'flex', until: performance.now() + 1200 };
       } else if (who === 'popeye') {
         g.signature = { kind: 'anchor', until: performance.now() + 1200 };
+      } else if (who === 'chupacabra') {
+        g.signature = { kind: 'drain', until: performance.now() + 1400 };
+      } else if (who === 'raboddog') {
+        g.signature = { kind: 'snarl', until: performance.now() + 1200 };
+      } else if (who === 'santa') {
+        g.signature = { kind: 'sleigh', until: performance.now() + 1400 };
+      } else if (who === 'liberty') {
+        g.signature = { kind: 'torch', until: performance.now() + 1400 };
       }
+    } else if (g.play.kind === 'triple') {
+      /* Triples get their own smaller flourishes for chars whose vibe fits. */
+      const who = g.play.batter && g.play.batter.k;
+      if (who === 'robin') g.signature = { kind: 'arrow', until: performance.now() + 1100 };
+      else if (who === 'peter') g.signature = { kind: 'flies', until: performance.now() + 1200 };
+      else if (who === 'centaur') g.signature = { kind: 'gallop', until: performance.now() + 1100 };
     } else if (g.play.kind === 'fly out') {
       gloveFlash(g, landingX, landingY);
       dustPuff(g, landingX, landingY);
@@ -3335,11 +3415,25 @@ function applyHitMutation(kind, batter, opts) {
   }
   const bases = { 'single':1,'double':2,'triple':3 }[kind];
   let scored = 0;
+  let thrownOut = 0;
   const newBases = [null,null,null];
   for (let i=2;i>=0;i--) {
     const runner = g.bases[i];
     if (!runner) continue;
-    const dest = i + bases;
+    let dest = i + bases;
+    /* Aggressive send: on singles, a fast runner on 2nd rounds third
+       and heads for home. Speed-based chance to score; otherwise thrown
+       out at the plate. On doubles a very fast runner from 1st tries
+       the same. Only kicks in for real hits, not errors. */
+    if (!onError && kind === 'single' && i === 1 && runner.spd >= 75) {
+      const scoreChance = 0.35 + (runner.spd - 75) / 100;
+      if (Math.random() < scoreChance) dest = 3;
+      else { thrownOut++; g.outs++; addLog(`${runner.n} thrown out at the plate.`); continue; }
+    } else if (!onError && kind === 'double' && i === 0 && runner.spd >= 85) {
+      const scoreChance = 0.30 + (runner.spd - 85) / 120;
+      if (Math.random() < scoreChance) dest = 3;
+      else { thrownOut++; g.outs++; addLog(`${runner.n} thrown out at the plate.`); continue; }
+    }
     if (dest >= 3) scored++;
     else newBases[dest] = runner;
   }
@@ -3350,8 +3444,12 @@ function applyHitMutation(kind, batter, opts) {
     addLog(`${batter.n} reaches on an error${scored ? `, ${scored} score` : ''}.`);
     showCallout('REACHED ON ERROR', 'sub');
   } else {
-    addLog(`${batter.n} lines a ${kind}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
-    showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
+    const parts = [`${batter.n} lines a ${kind}`];
+    if (scored) parts.push(`, ${scored} run${scored>1?'s':''} score`);
+    if (thrownOut) parts.push(', runner thrown out at the plate');
+    addLog(parts.join('') + '.');
+    const outNote = thrownOut ? ' · OUT AT HOME' : (scored ? ` · ${scored} IN` : '');
+    showCallout(kind.toUpperCase() + outNote, scored ? 'homer' : (thrownOut ? 'strike' : 'hit'));
   }
 }
 
@@ -4204,6 +4302,85 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         ctx.fillStyle = `rgba(255,235,180,${alpha})`;
         ctx.textAlign = 'center';
         ctx.fillText('AH-GA-GA-GA-GA!', cx, cy - 20);
+      } else if (sig.kind === 'arrow') {
+        /* ROBIN HOOD arrow zips across the field. */
+        const p = 1 - rem;
+        const ax = w * p;
+        const ay = cy - 30 + Math.sin(p * Math.PI) * 40;
+        ctx.strokeStyle = `rgba(244,194,90,${alpha})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(ax - 40, ay); ctx.lineTo(ax, ay); ctx.stroke();
+        ctx.fillStyle = `rgba(90,50,20,${alpha})`;
+        ctx.fillRect(ax, ay - 3, 6, 6);
+        ctx.font = 'bold 32px serif';
+        ctx.fillStyle = `rgba(90,140,80,${alpha})`;
+        ctx.fillText('BULLSEYE', cx, cy - 60);
+      } else if (sig.kind === 'flies') {
+        /* PETER PAN takes off */
+        const p = 1 - rem;
+        ctx.font = 'bold 40px monospace';
+        ctx.fillStyle = `rgba(244,194,90,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('FLIES AWAY', cx, cy - 80 - p * 60);
+        /* Fairy dust trail */
+        for (let i = 0; i < 20; i++) {
+          const dx = cx + (Math.random() - 0.5) * 120;
+          const dy = cy - p * 100 + Math.random() * 60;
+          ctx.fillStyle = `rgba(244,194,90,${alpha * Math.random()})`;
+          ctx.fillRect(dx, dy, 2, 2);
+        }
+      } else if (sig.kind === 'gallop') {
+        /* CENTAUR gallops with motion lines */
+        ctx.strokeStyle = `rgba(240,220,180,${alpha * 0.7})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+          const y = cy + (i - 3) * 8;
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w * (1 - rem), y); ctx.stroke();
+        }
+        ctx.font = 'bold 36px monospace';
+        ctx.fillStyle = `rgba(240,220,180,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('THUNDERING HOOVES', cx, cy - 50);
+      } else if (sig.kind === 'drain') {
+        /* CHUPACABRA drains: violet-green haze */
+        ctx.fillStyle = `rgba(90,180,120,${0.28 * alpha})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.font = 'bold 40px monospace';
+        ctx.fillStyle = `rgba(244,220,90,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('DRAINED', cx, cy - 20);
+      } else if (sig.kind === 'snarl') {
+        /* RABID DOG snarl: quick red streaks */
+        for (let i = 0; i < 12; i++) {
+          const rx = Math.random() * w;
+          const ry = Math.random() * h;
+          ctx.fillStyle = `rgba(201,75,26,${alpha * 0.35})`;
+          ctx.fillRect(rx, ry, 40, 2);
+        }
+        ctx.font = 'bold 36px monospace';
+        ctx.fillStyle = `rgba(201,75,26,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('SNARL!', cx, cy - 20);
+      } else if (sig.kind === 'sleigh') {
+        /* SANTA sleigh across the sky */
+        const p = 1 - rem;
+        const sx = w * (1 - p);
+        ctx.fillStyle = `rgba(201,48,48,${alpha})`;
+        ctx.fillRect(sx, 40, 30, 8);
+        ctx.fillStyle = `rgba(240,220,180,${alpha})`;
+        ctx.fillRect(sx - 8, 44, 40, 2);
+        ctx.font = 'bold 32px serif';
+        ctx.fillStyle = `rgba(201,48,48,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('HO HO HO', cx, cy - 40);
+      } else if (sig.kind === 'torch') {
+        /* LADY LIBERTY torch flash */
+        ctx.fillStyle = `rgba(244,194,90,${0.25 * alpha})`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.font = 'bold 40px serif';
+        ctx.fillStyle = `rgba(109,184,162,${alpha})`;
+        ctx.textAlign = 'center';
+        ctx.fillText('LIBERTY LEVELED', cx, cy - 20);
       }
     } else {
       g.signature = null;
