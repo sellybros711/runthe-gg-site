@@ -3445,6 +3445,22 @@
     return 0.2;
   }
 
+  /* WHAT THE LAST RULING WAS HEADED, so the next one can avoid saying it again.
+     The eyebrow is the first thing read on the desk and there are seventy-five items sharing
+     forty-four headings, so two of the four "The rules" items landing back to back reads as
+     the mode repeating itself even when the two decisions have nothing to do with each other.
+     A player notices the word before they notice the item. */
+  function lastEyebrow(world) {
+    const h = (world && world.history) || [];
+    for (let i = h.length - 1; i >= 0; i--) {
+      const id = h[i] && h[i].id;
+      if (!id || String(id).indexOf('season:') === 0) continue;
+      const it = BY_ID[id];
+      return it ? it.eyebrow : null;
+    }
+    return null;
+  }
+
   function pick(world, L, rng, sit) {
     const pool = eligible(world, L, sit);
     if (!pool.length) return null;
@@ -3460,7 +3476,12 @@
         - (world.pressure[a.id.replace('crisis-', '')] || 0));
       return worst[0];
     }
-    const w = pool.map((it) => Math.max(0.01, (it.weight || 1) * recency(world, it)));
+    /* HEAVILY AGAINST, RATHER THAN FORBIDDEN. Sometimes the sport really is arguing about the
+       rules two weeks running, and a hard ban would become its own pattern: every heading
+       would be guaranteed to alternate, which is as visible as repeating. */
+    const last = lastEyebrow(world);
+    const w = pool.map((it) => Math.max(0.01, (it.weight || 1) * recency(world, it)
+      * (last && it.eyebrow === last ? 0.1 : 1)));
     const total = w.reduce((t, x) => t + x, 0);
     let r = (rng ? rng() : 0.5) * total;
     for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }

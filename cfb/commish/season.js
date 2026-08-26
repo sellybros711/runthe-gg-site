@@ -29,6 +29,10 @@
   /* THE SPORT DOES NOT STAND STILL, and it used to: team strength was taken from the season
      the term began and frozen, so the same team won four titles in five. See churn.js. */
   var CH = root.PS_CFB_CHURN || (typeof require === 'function' ? require('./churn.js') : null);
+  /* THE GAMES THAT WERE ON THE CALENDAR BEFORE ANYBODY DREW A CONFERENCE. Optional: without
+     it the schedule is filled by conference and then at random, which is what it did before
+     and which produced a sport where Ohio State played Michigan one year in five. */
+  var RV = root.PS_CFB_RIVALS || (typeof require === 'function' ? require('./rivals.js') : null);
 
   /* Twelve games, which is what a regular season is. The ledger decides how many of them
      are inside the conference; the rest are bought. */
@@ -298,7 +302,23 @@
      needs the most, give them opponents from the next-neediest, repeat. It cannot get stuck
      while no single team needs more games than everybody else has slots left, which is
      always true here because a conference game count is capped at the conference size. */
-  function pairUp(list, want, rng) {
+  /* NOBODY PLAYS ANYBODY TWICE, which this did not enforce and should have. The pairing walks
+     the neediest team and hands it opponents off the top of the list, and nothing stopped it
+     handing out the same opponent it had already been given in an earlier phase or an earlier
+     pass. About thirteen pairs a season met twice in one regular season, which is not a thing
+     that happens and reads as a rendering fault when it turns up in two different weeks.
+
+     It got worse rather than better once the rivalries went on first, because those are
+     thirty-six fixed pairings the later phases knew nothing about: The Game could be played
+     in September and again in November.
+
+     `seen` is shared across every phase of one schedule, so the rivalries, the conference
+     slates, the guarantee games and the leftovers all avoid each other. */
+  var pairKey = function (a, b) {
+    return a.school < b.school ? a.school + '|' + b.school : b.school + '|' + a.school;
+  };
+  function pairUp(list, want, rng, seen) {
+    var used = seen || {};
     var rem = [];
     for (var i = 0; i < list.length; i++) rem.push({ t: list[i], n: want(list[i]) });
     var games = [], guard = 0;
@@ -310,10 +330,19 @@
       alive = shuffled(alive, rng).sort(function (a, b) { return b.n - a.n; });
       var head = alive[0], made = 0;
       for (var k = 1; k < alive.length && head.n > 0; k++) {
+        var key = pairKey(head.t, alive[k].t);
+        if (used[key]) continue;
+        used[key] = 1;
         games.push({ a: head.t, b: alive[k].t });
         head.n--; alive[k].n--; made++;
       }
-      if (!made) break;
+      /* A TEAM WITH NOBODY NEW LEFT TO PLAY IS DONE, and forcing it a game would mean a
+         repeat. Dropping it from the pool rather than breaking the whole loop is what keeps
+         everybody ELSE on twelve. */
+      if (!made) {
+        head.n = 0;
+        continue;
+      }
     }
     return games;
   }
@@ -328,16 +357,53 @@
 
     var games = [], count = {};
     var bump = function (g, conf) {
-      g.conf = conf; g.neutral = false;
+      g.conf = conf; if (g.neutral == null) g.neutral = false;
       count[g.a.school] = (count[g.a.school] || 0) + 1;
       count[g.b.school] = (count[g.b.school] || 0) + 1;
       games.push(g);
     };
+
+    /* ---- the rivalries, first, before anything else is drawn ----
+       PROTECTED MEANS PLACED FIRST and that is the whole mechanism. Filling conferences and
+       then buying the rest at random gave a sport with no history in it: Ohio State played
+       Michigan in about one year of five, and when they did it was worth the same as any
+       other Saturday. See rivals.js.
+
+       A rivalry inside a conference is a conference game and comes out of that budget; one
+       across conferences is played anyway and comes out of both schools' non-conference
+       dates, which is exactly what it costs two real schools to keep one alive after a
+       realignment. */
+    var byName = {};
+    teams.forEach(function (t) { byName[t.school] = t; });
+    var confDone = {};
+    /* ONE SET OF PAIRINGS FOR THE WHOLE SCHEDULE, shared by every phase below. */
+    var seen = {};
+    if (RV) {
+      RV.playable(byName).forEach(function (r) {
+        var A = byName[r.a], B = byName[r.b];
+        var sameConf = A.conference === B.conference;
+        var g = { a: A, b: B, rivalry: r.id, rivalryName: r.name,
+          /* WHERE IT WANTS TO BE PLAYED. weekify honours it when both sides are free. */
+          want: r.week, neutral: !!r.neutral };
+        seen[pairKey(A, B)] = 1;
+        bump(g, sameConf);
+        if (sameConf) {
+          confDone[A.school] = (confDone[A.school] || 0) + 1;
+          confDone[B.school] = (confDone[B.school] || 0) + 1;
+        }
+      });
+    }
+
     for (var c in byConf) {
       var pool = byConf[c];
       if (pool.length < 2) continue;
       var per = Math.min(want, pool.length - 1);
-      pairUp(pool, function () { return per; }, rng).forEach(function (g) { bump(g, true); });
+      /* MINUS WHATEVER A RIVALRY ALREADY BOOKED. Without this a pair inside one conference
+         gets its rivalry AND a full conference slate, so two schools play thirteen games and
+         each other twice. */
+      pairUp(pool, function (t) {
+        return Math.max(0, per - (confDone[t.school] || 0));
+      }, rng, seen).forEach(function (g) { bump(g, true); });
     }
     /* ---- the guarantee game ----
        A POWER SCHOOL BUYS A HOME GAME AND THE VISITOR CASHES THE CHEQUE. This is how
@@ -369,12 +435,15 @@
     var trips = Math.min(hosts.length, visitors.length);
     for (var n = 0; n < trips; n++) {
       /* The power school is `a`, which is the side playGame gives the home points to. */
+      var key = pairKey(hosts[n], visitors[n]);
+      if (seen[key]) continue;
+      seen[key] = 1;
       bump({ a: hosts[n], b: visitors[n] }, false);
     }
 
     /* Everything still owing is non-conference, and it crosses conference lines because the
        pool is the whole league. */
-    pairUp(teams, owes, rng).forEach(function (g) { bump(g, false); });
+    pairUp(teams, owes, rng, seen).forEach(function (g) { bump(g, false); });
     return games;
   }
 
@@ -406,10 +475,26 @@
     var best = null;
     for (var attempt = 0; attempt < 40; attempt++) {
       var busy = {}, max = 0;
-      var order = shuffled(games, rng);
+      /* A GAME THAT WANTS A DATE GETS ASKED FIRST. The rivalries carry `want`, and the whole
+         shape of the sport's November is that those games are on the last Saturday: colour
+         them into the shuffle with everything else and The Game lands in week three.
+
+         `want` is a preference and never a requirement. If both sides are busy it takes the
+         next free week the ordinary way, which is what a conference office does with a date
+         two schools both want. */
+      var order = shuffled(games, rng).sort(function (x, y) {
+        return (y.want ? 1 : 0) - (x.want ? 1 : 0);
+      });
       order.forEach(function (g) {
-        var w = 1;
+        var w = g.want || 1;
         while (busy[w + '|' + g.a.school] || busy[w + '|' + g.b.school]) w++;
+        /* AND IT NEVER RUNS OFF THE END CHASING ONE. A wanted week late in the year with both
+           sides busy would otherwise walk past week fourteen and stretch the season for
+           everybody, so a game that cannot have its date falls back to the front. */
+        if (w > WEEKS) {
+          w = 1;
+          while (busy[w + '|' + g.a.school] || busy[w + '|' + g.b.school]) w++;
+        }
         busy[w + '|' + g.a.school] = 1;
         busy[w + '|' + g.b.school] = 1;
         g.week = w;
@@ -700,11 +785,6 @@
         var w = r.aWon ? A : B, l = r.aWon ? B : A;
         games.push({
           top: A, bottom: B, winner: w, loser: l,
-          /* `r.a` IS ALWAYS THE TOP SEED'S POINTS, whoever won. This used to swap the pair
-             when the lower seed won, which left the winner correct and the SCOREBOARD
-             wrong: the bracket showed the top seed with the upset winner's points, and then
-             showed the team it had just beaten playing the next round. Nothing failed,
-             because both numbers were real numbers from the same game. */
           /* `r.a` IS ALWAYS THE TOP SEED'S POINTS, whoever won. This used to swap the pair
              when the lower seed won, which left the winner correct and the SCOREBOARD
              wrong: the bracket showed the top seed with the upset winner's points, and then

@@ -848,6 +848,13 @@
   .gm2 .t{display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--dim);
     min-width:0}
   .gm2 .t.w{color:var(--ink);font-weight:700}
+  /* A RIVALRY SAYS WHICH ONE IT IS. The name spans both columns above the scoreline, in the
+     same small caps the round labels use, so it reads as what the game is called rather than
+     as a third team in it. */
+  .gm2 .rivn{grid-column:1 / -1;font-style:normal;font-family:var(--fn);font-size:9px;
+    font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);
+    margin-bottom:2px}
+  .gm2.riv{border-left-width:3px}
   .gm2 .t u{text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap}
   .gm2 .t s{text-decoration:none;font-family:var(--fn);font-size:12.5px;font-weight:800;
@@ -965,6 +972,31 @@
   .snotes p{font-size:13px;color:var(--dim);line-height:1.4;padding-left:10px;
     border-left:2px solid var(--line-2)}
   .realnote{margin-top:11px;font-size:11.5px;color:var(--dim-2);line-height:1.4}
+
+  /* THE REPORT CARD. The verdict is set like the headline it is; the six grades below it are
+     a letter, a label, the number behind it and a sentence. */
+  .rvd{padding:12px 13px;border-radius:12px;background:var(--panel-2);
+    border:1px solid var(--line)}
+  .rvd b{display:block;font-family:var(--fd);font-size:23px;line-height:1.08;margin-top:5px}
+  .rvd p{margin-top:6px;font-size:13px;line-height:1.45;color:var(--dim)}
+  .cards{display:grid;gap:6px}
+  .rc{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;
+    padding:9px 11px;border-radius:10px;background:var(--panel);
+    border-left:3px solid var(--gcol,var(--line))}
+  /* THE LETTER IS THE FIRST THING READ, so it is set large and the colour only agrees with it.
+     An A and an F are different glyphs before they are different colours, which is the whole
+     reason a report card uses letters. */
+  .rc .g{font-family:var(--fd);font-size:25px;line-height:1;min-width:24px;text-align:center;
+    color:var(--gcol,var(--dim))}
+  .rc b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .rc i{font-style:normal;display:block;font-family:var(--fd);font-size:16px;margin-top:1px}
+  .rc p{margin-top:5px;font-size:12.5px;line-height:1.42;color:var(--dim)}
+  .rc.gA{--gcol:var(--good,#4ade80)}
+  .rc.gB{--gcol:#7dd3a0}
+  .rc.gC{--gcol:var(--dim)}
+  .rc.gD{--gcol:#f0a868}
+  .rc.gF{--gcol:var(--bad,#f87171)}
 
   /* THE POLL. Rank, name, record, arrow, on one line each, with the club's colour holding the
      left edge so a long list is scannable by team rather than only by number. */
@@ -1244,6 +1276,9 @@
       <div class="big" id="y-big">2025</div>
       <p id="y-say" style="color:var(--dim);font-size:14px;margin-top:6px"></p>
     </div>
+    <!-- THE REPORT CARD, on the screen that ends a term and nowhere else. Empty and hidden
+         for a year in review, which is a progress report rather than a verdict. -->
+    <div class="card flat" id="y-report" hidden></div>
     <!-- The football that was actually played this year. -->
     <div class="card flat" id="y-season" hidden></div>
     <!-- What the sport promised the schools against what the football earned. -->
@@ -1293,19 +1328,26 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=2"></script>
-<script src="docket.js?v=7"></script>
+<script src="docket.js?v=8"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
      in the same order, one school wins four of the five titles, and nobody ever changes coach.
      Nothing throws and every screen renders. test_page asserts the modules are actually live. -->
+<!-- BEFORE season.js, which reads window.PS_CFB_RIVALS at load time and falls back to null.
+     Loaded after it, the schedule is filled by conference and then bought at random, Ohio
+     State plays Michigan about one year in five, and nothing throws. -->
+<script src="rivals.js?v=1"></script>
 <script src="churn.js?v=1"></script>
-<script src="season.js?v=13"></script>
+<script src="season.js?v=15"></script>
 <script src="council.js?v=1"></script>
 <script src="feed.js?v=2"></script>
 <script src="calendar.js?v=2"></script>
 <script src="situation.js?v=4"></script>
 <script src="fallout.js?v=3"></script>
+<!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
+     load time, so its own position past that point does not matter. -->
+<script src="report.js?v=1"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -1336,6 +1378,7 @@ const FEED=window.PS_CFB_FEED;
 const CAL=window.PS_CFB_CALENDAR;
 const SIT=window.PS_CFB_SITUATION;
 const FALL=window.PS_CFB_FALLOUT;
+const REPORT=window.PS_CFB_REPORT;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
@@ -1419,8 +1462,14 @@ function newTerm(year){
 }
 /* Only what the screens compare against, not a second copy of the world. */
 function openingSnapshot(w){
+  const confs=L.conferencesIn(w);
   return {
     meters:Object.assign({},w.meters),
+    /* HOW MANY LEAGUES WERE STANDING WHEN YOU TOOK THE JOB, which is the only way the ending
+       can grade what the map looks like when you leave. Counted here rather than derived
+       later because "what it was at the start" stops being recoverable the moment anything
+       moves. */
+    conferences:Object.keys(confs).filter((c)=>confs[c]>=(L.MIN_CONFERENCE||4)).length,
     /* STRINGS, because that is what they are compared against when drawn. One of these four
        is a bare number and the other three are formatted, so storing them raw meant 9 was
        compared with "9", every fact read as changed, and an untouched sport claimed a term
@@ -1605,7 +1654,12 @@ const blocChip=(id)=>{
 const moodCol=(v)=>v>=60?'var(--green)':v>=35?'var(--gold)':'var(--red)';
 const band=(v)=>v>=60?'good':v>=35?'mid':'bad';
 
-const METERS=[['revenue','Revenue'],['health','The sport'],['standing','Your standing']];
+/* "THE SPORT" NAMED NOTHING. Three meters sat side by side reading Revenue, The sport, Your
+   standing, and a player could tell you what two of them meant. The middle one is weighted on
+   tradition and access against money and exposure: it is whether the thing on the field is
+   still recognisably college football and still open to somebody new. "The sport" could have
+   been any of the three, including the one beside it. */
+const METERS=[['revenue','Revenue'],['health','The state of the game'],['standing','Your standing']];
 /* `lock` NAMES METERS THE SCREEN MAY NOT FORECAST, and it exists because of one leak that
    was invisible until the council was built.
 
@@ -2483,6 +2537,10 @@ function recordRatings(year,sim){
   world.ratings[year]={
     total:Math.round(sim.viewers),
     perGame:Math.round(sim.perGame*100)/100,
+    /* HOW MANY TEAMS FROM OUTSIDE THE POWER FOUR REACHED THE FIELD, recorded per year because
+       the ending grades access on what actually happened rather than on what the ledger says
+       is allowed. A guaranteed bid nobody can reach is the thing this catches. */
+    outsiders:sim.field?sim.field.seats.filter((s)=>L.POWERS.indexOf(s.team.conference)<0).length:0,
     title:sim.bracket&&sim.bracket.rounds.length
       ? Math.round((sim.bracket.rounds[sim.bracket.rounds.length-1][0].viewers||0)*10)/10 : 0,
   };
@@ -2545,10 +2603,17 @@ function paintWeek(el,sim){
   if(!el) return;
   const wk=sim.weeks[sim.weeks.length-1];
   if(!wk||!wk.games.length){ el.innerHTML=''; return; }
+  /* A RIVALRY GOES TO THE FRONT OF THE WEEK IT IS PLAYED IN, whatever it drew. Five games are
+     shown out of sixty, chosen by audience, and the whole point of The Game is that it is The
+     Game on a Saturday when Ohio State are 6-5. Sorting purely by viewers would hide it in
+     exactly the year a fan most wants to see it. */
+  const shown=wk.games.slice().sort((a,b)=>
+    (b.rivalry?1:0)-(a.rivalry?1:0)||b.viewers-a.viewers).slice(0,5);
   el.innerHTML='<div class="swk"><b>Week '+wk.week+'</b>'
       +'<span>'+wk.games.length+' games &middot; '+M1(wk.viewers)+'M watched</span></div>'
-    +'<div class="gms">'+wk.games.slice(0,5).map((g)=>
-      '<div class="gm2" style="--gc:'+esc(g.winner.color)+'">'
+    +'<div class="gms">'+shown.map((g)=>
+      '<div class="gm2'+(g.rivalry?' riv':'')+'" style="--gc:'+esc(g.winner.color)+'">'
+      +(g.rivalryName?'<em class="rivn">'+esc(g.rivalryName)+'</em>':'')
       +side2(g,0)+side2(g,1)
       +'<span class="v">'+M1(g.viewers)+'<i>M</i></span></div>').join('')+'</div>';
   reveal(el.querySelector('.gms'));
@@ -3167,9 +3232,23 @@ function paintMap(el,w,opts){
   if(first) mapFocus=null;
 
   el.className='map'+(first?' drawin':'')+(mapFocus?' focus':'');
-  el.innerHTML='<svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" class="mapsvg" '
-      +'aria-label="The sport, by where it is played">'
-    +'<g>'+STATES.map((st,i)=>{
+  /* ONE LABEL, NOT A HUNDRED AND EIGHTY-SIX. Every state carries a <title> and so does every
+     school, which is what draws the tooltip a mouse wants. They are also all in the
+     accessibility tree, so the card announced itself as "Alabama, mostly SEC. Alaska. Arizona,
+     mostly Big 12." and then a hundred and thirty-six schools, one at a time, and came out of
+     a select-and-copy the same way. That was tolerable at seventy schools and is not at a
+     hundred and thirty-six.
+
+     The groups are hidden from the tree and the svg carries a summary instead. The tooltips
+     are untouched: a <title> inside an aria-hidden element still draws on hover, because that
+     is a browser behaviour rather than an accessibility one. The legend below stays reachable,
+     which is where the map's actual interaction lives. */
+  const onMap=conferencesOnMap(mem);
+  const summary='The sport, by where it is played: '+dots.length+' schools in '
+    +onMap.length+' conferences, '+onMap.slice(0,3).map((c)=>c.name+' largest').join(', ');
+  el.innerHTML='<svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" class="mapsvg" role="img" '
+      +'aria-label="'+esc(summary)+'">'
+    +'<g aria-hidden="true">'+STATES.map((st,i)=>{
         const c=holds[st.code];
         /* A tint rather than a fill: a state is not owned, it is where most of somebody is. */
         const tint=c?'color-mix(in srgb,'+col(c)+' 26%,transparent)':'';
@@ -3178,7 +3257,7 @@ function paintMap(el,w,opts){
           +' data-c="'+esc(c||'')+'" style="--i:'+i+(tint?';--tint:'+tint:'')+'">'
           +'<title>'+esc(st.name)+(c?', mostly '+esc(c):'')+'</title></path>';
       }).join('')+'</g>'
-    +'<g>'+dots.map((d,i)=>
+    +'<g aria-hidden="true">'+dots.map((d,i)=>
         (d.moved
           ? '<circle class="ping" cx="'+d.x.toFixed(1)+'" cy="'+d.y.toFixed(1)+'" r="4" '
             +'stroke="'+col(d.conf)+'"/>'
@@ -3189,7 +3268,7 @@ function paintMap(el,w,opts){
         +' data-c="'+esc(d.conf)+'">'
         +'<title>'+esc(d.school)+', '+esc(d.conf)+'</title></circle>').join('')+'</g>'
     +'</svg>'
-    +'<div class="maplegend">'+conferencesOnMap(mem).map((c)=>
+    +'<div class="maplegend">'+onMap.map((c)=>
       '<span role="button" tabindex="0" data-c="'+esc(c.name)+'"'
       +(mapFocus?(c.name===mapFocus?' class="sel"':' class="dim"'):'')
       +'><i style="background:'+col(c.name)+'"></i>'+esc(c.name)+' '+c.n+'</span>').join('')
@@ -3300,7 +3379,10 @@ function playSeason(year){
     const won=sim.bracket&&sim.bracket.champion&&sim.bracket.champion.team;
     if(won){
       world.champions=world.champions||{};
-      world.champions[year]={school:won.school,color:won.color||'#64748b'};
+      /* THE CONFERENCE TOO, because the ending grades how open the sport stayed and five
+         different SEC champions is a less open sport than four out of four leagues. */
+      world.champions[year]={school:won.school,color:won.color||'#64748b',
+        conference:won.conference||''};
     }
     save();
   }catch(e){ lastSeason=null; }
@@ -3358,6 +3440,29 @@ function paintSeason(el,sim){
   reveal(el.querySelector('.poll'));
   reveal(el.querySelector('.bowls'));
   reveal(el.querySelector('.moved'));
+}
+
+/* THE REPORT CARD. Six grades and a verdict, drawn only on the screen that ends a term.
+   See report.js for what each one is read off.
+
+   THE VERDICT GOES FIRST AND THE GRADES ARE THE WORKING. A player who reads one line should
+   get the answer; a player who reads six should understand it. The other way round makes the
+   reader do the averaging, which is the one job this screen exists to do for them. */
+function paintReport(el,rep){
+  if(!el) return;
+  if(!rep||!rep.cards.length){ el.innerHTML=''; el.hidden=true; return; }
+  el.hidden=false;
+  const v=rep.verdict;
+  el.innerHTML=(v?'<div class="rvd"><div class="eyebrow">The verdict</div>'
+      +'<b>'+esc(v.title)+'</b><p>'+esc(v.line)+'</p></div>':'')
+    +'<div class="eyebrow" style="margin:14px 0 8px">Graded on the six things this office '
+    +'actually moves</div>'
+    +'<div class="cards">'+rep.cards.map((c)=>
+      '<div class="rc g'+esc(c.grade)+'">'
+      +'<span class="g">'+esc(c.grade)+'</span>'
+      +'<div><b>'+esc(c.label)+'</b><i>'+esc(c.mark)+'</i>'
+      +'<p>'+esc(c.line)+'</p></div></div>').join('')+'</div>';
+  reveal(el.querySelector('.cards'));
 }
 
 /* THE FINAL POLL, WITH AUGUST BESIDE IT. The whole reason to keep a preseason list is to be
@@ -3549,14 +3654,24 @@ function paintBooks(el,sim){
   if(!b||!b.known){ el.hidden=true; return; }
   el.hidden=false;
   const over=b.gap>=0.12, under=b.gap<=-0.12;
+  /* THE NUMBER IS ALWAYS SHOWN, and it used to say "Level" between $1.30B promised and $1.40B
+     earned. Those two figures are printed directly above it, so the third tile was telling a
+     player that a hundred million pounds of difference they could see with their own eyes was
+     no difference. The band is a tolerance for how much it MATTERS, not a claim that the
+     subtraction came out at zero, and the wording now says which of those it is.
+
+     Signed the way a reader would say it out loud: a plus means the football earned more than
+     the office had promised away. */
+  const signed=(v)=>(v>=0?'+':'-')+BN(Math.abs(v));
   const verdict=over
-    ? ['Short by '+BN(b.gap),'bad','The difference came out of the sport. It comes out again '
-      +'next year, and the year after, until the pool or the audience moves.']
+    ? [signed(-b.gap),'bad','Short of what the football earned. The difference came out of the '
+      +'sport, and it comes out again next year and the year after, until the pool or the '
+      +'audience moves.']
     : under
-      ? ['Held back '+BN(-b.gap),'warn','The books are immaculate and every conference in the '
-        +'room can do that subtraction.']
-      : ['Level','good','The sport paid out roughly what it earned, which is the only version '
-        +'of this nobody argues about.'];
+      ? [signed(-b.gap),'warn','Held back from the schools. The books are immaculate and every '
+        +'conference in the room can do that subtraction.']
+      : [signed(-b.gap),'good','Near enough level. The sport paid out roughly what it earned, '
+        +'which is the only version of this nobody argues about.'];
   el.innerHTML='<div class="eyebrow" style="margin-bottom:9px">The books</div>'
     +'<div class="books">'
       +'<div><b>'+esc(BN(b.pool))+'</b><span>Promised the schools</span></div>'
@@ -3580,6 +3695,7 @@ function yearEnd(year){
   $('y-card').className='verdict'+(world.meters.standing>=55?' good':world.meters.standing<30?' bad':'');
   const angry=L.removal(world).angry||[];
   $('y-say').textContent=yearVerdict(angry,world);
+  $('y-report').hidden=true;
   paintSeason($('y-season'),lastSeason);
   paintBooks($('y-books'),lastSeason);
   $('y-term').hidden=true;
@@ -3630,6 +3746,9 @@ function ending(){
     +(moved?moved+' of the four numbers moved.':'and not one of the four numbers moved.')
     +(moved>=3?' Nobody is going to say you left it alone.'
       :moved===0?' The sport you hand over is the sport you were given.':'');
+  /* AND THEN THE THING THE SENTENCE ABOVE CANNOT DO, which is say whether any of it worked.
+     See report.js: six grades, each read off something the player did. */
+  paintReport($('y-report'),REPORT?REPORT.report(world):null);
   /* THE BRACKET COMES DOWN. The player has just scrolled through it on the year in review
      and the ending is about the term, not about January: leaving it up made the last screen
      of the mode three and a half thousand pixels of a game already watched. */

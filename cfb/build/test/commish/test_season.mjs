@@ -20,6 +20,7 @@ const ROOT = path.resolve(new URL('../../../..', import.meta.url).pathname);
 import { leagueTeams } from './league.mjs';
 const L = require(ROOT + '/cfb/commish/ledger.js');
 const S = require(ROOT + '/cfb/commish/season.js');
+const RV = require(ROOT + '/cfb/commish/rivals.js');
 const E = require(ROOT + '/cfb/engine.js');
 const teams = leagueTeams(ROOT);
 
@@ -388,6 +389,55 @@ console.log('\n=== the one way door bends the football ===');
   notDevolved.labour.confReentry = { SEC: 'closed', 'Big Ten': '', ACC: '', 'Big 12': '' };
   ok('  a conference rule counts for nothing until the rules are devolved',
     S.reentryRule(notDevolved, 'SEC') === 'open', S.reentryRule(notDevolved, 'SEC'));
+}
+
+console.log('\n=== the rivalries are on the calendar ===');
+{
+  const w = world();
+  const sim = run(w, 51);
+  const inLeague = {};
+  sim.teams.forEach((t) => { inLeague[t.school] = t; });
+  const want = RV.playable(inLeague);
+  const played = sim.games.filter((g) => g.rivalry);
+  ok('every rivalry both schools are here for gets played',
+    played.length === want.length, played.length + ' of ' + want.length);
+  ok('  and each one only once',
+    new Set(played.map((g) => g.rivalry)).size === played.length);
+  ok('  between the two schools it is actually between',
+    played.every((g) => {
+      const r = RV.BY_ID[g.rivalry];
+      return (g.a.school === r.a && g.b.school === r.b) || (g.a.school === r.b && g.b.school === r.a);
+    }));
+  /* THE DATE IS THE POINT. November is shaped by these games being at the end of it, and a
+     Game colouring into week three would be the whole thing failing quietly. */
+  const onDate = played.filter((g) => g.week === g.want).length;
+  ok('  and almost all of them on the date they want',
+    onDate >= played.length - 2, onDate + ' of ' + played.length + ' on their own date');
+
+  /* PROTECTED MEANS PROTECTED. Move one of them into another conference and the game still
+     has to happen: that is the difference between a rivalry and a scheduling coincidence. */
+  const moved = L.applyEdit(world(), { move: { Michigan: 'SEC' } });
+  const movedSim = S.play(moved, teams, rngFor(51));
+  const theGame = movedSim.games.filter((g) => g.rivalry === 'the-game');
+  ok('a rivalry survives one of them changing conference', theGame.length === 1,
+    theGame.length ? 'played in week ' + theGame[0].week
+      + (theGame[0].conf ? ' as a conference game' : ' as a non-conference game') : 'not played');
+  ok('  and it comes out of their non-conference dates',
+    theGame.length === 1 && !theGame[0].conf);
+
+  /* NOBODY PLAYS ANYBODY TWICE, which was true of nothing before the rivalries went on first
+     and forced the question: about thirteen pairs a season met twice, and the fixed pairings
+     made it worse because the later phases knew nothing about them. */
+  const pairs = {}; let twice = 0;
+  sim.games.forEach((g) => {
+    const k = [g.a.school, g.b.school].sort().join('|');
+    if (pairs[k]) twice++;
+    pairs[k] = 1;
+  });
+  ok('  and no two teams meet twice in a regular season', twice === 0, twice + ' repeat meetings');
+  /* AND EVERYBODY STILL PLAYS TWELVE, which is the thing all of this could quietly break. */
+  const short = sim.teams.filter((t) => t.wins + t.losses < S.GAMES).length;
+  ok('  with everybody still playing a full season', short === 0, short + ' teams short of twelve');
 }
 
 console.log('\n=== the sport has a poll to argue about ===');

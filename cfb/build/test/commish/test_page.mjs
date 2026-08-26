@@ -102,7 +102,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
     docket:!!window.PS_CFB_DOCKET, season:!!window.PS_CFB_SEASON, council:!!window.PS_CFB_COUNCIL,
     feed:!!window.PS_CFB_FEED, calendar:!!window.PS_CFB_CALENDAR,
     situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
-    churn:!!window.PS_CFB_CHURN,
+    churn:!!window.PS_CFB_CHURN, rivals:!!window.PS_CFB_RIVALS, report:!!window.PS_CFB_REPORT,
   }));
   const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
   ok('every module is on the page',!dead.length,dead.join(', ')||Object.keys(mods).length+' modules');
@@ -145,6 +145,24 @@ console.log('\n=== every module the page needs is actually loaded ===');
       why:moved+' of '+sim.teams.length+' teams moved, '+sim.carousel.length+' coaching changes'};
   });
   ok('  and the season engine got churn through the page',churned.ok,churned.why);
+  /* AND IT GOT THE RIVALRIES, which is the same class of failure: rivals.js loaded after
+     season.js leaves the reference null forever, the schedule fills by conference and then at
+     random, and Ohio State plays Michigan about one year in five. Nothing throws. */
+  const rivals=await p.evaluate(async()=>{
+    const L=window.PS_CFB_LEDGER, S=window.PS_CFB_SEASON, E=window.PS_CFB_ENGINE;
+    if(!L||!S||!E) return {ok:false,why:'a module is missing'};
+    let teams;
+    try{ teams=await (await fetch('/cfb/data/cfb_fbs.json?v=1')).json(); }
+    catch(e){ return {ok:false,why:'no team data'}; }
+    const w=L.createWorld({year:2025,membership:L.membershipFrom(teams,2025),seed:13});
+    let sim;
+    try{ sim=S.play(w,teams,E.createSeededRNG(5)); }catch(e){ return {ok:false,why:String(e)}; }
+    const named=sim.games.filter((g)=>g.rivalry);
+    const game=named.find((g)=>g.rivalry==='the-game');
+    return {ok:named.length>20&&!!game,
+      why:named.length+' named games, The Game '+(game?'in week '+game.week:'NOT PLAYED')};
+  });
+  ok('  and the rivalries through it too',rivals.ok,rivals.why);
   ok('  no page errors',!errs.length,errs.join(' | ')||'none');
   await p.close();
 }

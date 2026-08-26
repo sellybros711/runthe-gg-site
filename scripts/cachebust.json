@@ -65,16 +65,20 @@
       "sha": "01f19def147ec7b1"
     },
     "docket.js": {
-      "v": "7",
-      "sha": "b16458d73c77dce9"
+      "v": "8",
+      "sha": "9485e87d796a389c"
+    },
+    "rivals.js": {
+      "v": "1",
+      "sha": "786d8fd6c8de497a"
     },
     "churn.js": {
       "v": "1",
       "sha": "a11270978be0d15f"
     },
     "season.js": {
-      "v": "13",
-      "sha": "cb7fceb322b73858"
+      "v": "15",
+      "sha": "b2a8ee6fa9d2c4f4"
     },
     "council.js": {
       "v": "1",
@@ -95,6 +99,10 @@
     "fallout.js": {
       "v": "3",
       "sha": "564f19bcb89ca95b"
+    },
+    "report.js": {
+      "v": "1",
+      "sha": "affdd4dd6e6efe23"
     }
   },
   "cfb/index.html": {
