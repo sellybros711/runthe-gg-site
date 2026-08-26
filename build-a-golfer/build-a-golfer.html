@@ -2199,6 +2199,43 @@ window.GA_ID='G-L29P5MRWKE';
   .hvresult .rsub{font:800 11px/1.2 var(--body);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
   @keyframes hvresPop{0%{opacity:0;transform:scale(.84)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
   @media (prefers-reduced-motion:reduce){ .hvresult{animation:none} }
+  /* ITEM 07: the signature-hole decision is DOCKED INSIDE the window, along its bottom edge, so the
+     hole, the tap-targets and the NUMBERS all sit in one frame. It used to render below the window,
+     which put it under the fold on a real phone - the report: "the signature interaction of the round
+     arrived as two words with no numbers attached, and I tapped one at random". Compact by design:
+     the tap-targets on the course own the upper two thirds. */
+  .hvdec{left:6px;right:6px;bottom:6px;pointer-events:auto;
+    background:linear-gradient(180deg,rgba(10,23,15,.95),rgba(5,12,9,.97));
+    border:1.5px solid rgba(235,208,74,.5);border-radius:12px;padding:6px 7px 7px;
+    box-shadow:0 14px 34px -12px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
+    animation:hvdin .28s ease}
+  @media (prefers-reduced-motion:reduce){ .hvdec{animation:none} }
+  .hvdec .dkh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .hvdec .dkl{font:900 9.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+  .hvdec .dkw{display:inline-flex;align-items:center;gap:4px;font:800 9.5px/1 var(--body);letter-spacing:.07em}
+  .hvdec .dkw svg{display:block;width:12px;height:12px;transform-origin:50% 50%}
+  /* every line is CLAMPED, so the panel's height is fixed whatever the scenario says - that is what
+     lets the tap-targets be clamped to the strip above it without measuring at render time. */
+  .hvdec .dks{flex:1 1 100%;font:700 10px/1.3 var(--body);color:#ffd27a;
+    display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .hvdec .dkp{font:600 11px/1.32 var(--body);color:#eef4f0;margin-bottom:5px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .hvdec .dkrow{display:flex;gap:7px}
+  .hvdec .dkc{flex:1;min-width:0;text-align:left;border-radius:10px;padding:6px 7px 7px;cursor:pointer;
+    border:1.5px solid;transition:transform .06s ease;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .hvdec .dkc:active{transform:translateY(2px)}
+  .hvdec .dkc .l{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    font:900 12.5px/1.12 var(--body)}
+  .hvdec .dkc .s{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
+    font:600 9.5px/1.3 var(--body);color:#cfe0d8;margin-top:3px}
+  /* each number on its OWN line (owner, CS379): stat, then the reward, then the risk */
+  .hvdec .dkc .o{display:flex;flex-direction:column;gap:1px;margin-top:5px;padding-top:4px;
+    border-top:1px solid rgba(255,255,255,.15);font:800 9.5px/1.32 var(--body);color:#eef4f0}
+  .hvdec .dkc .o .gd{color:#4fe0a6} .hvdec .dkc .o .rk{color:#ff9576} .hvdec .dkc .o .neu{color:#cfe0d8}
+  .hvdec .dkc.agg{border-color:#ff6b4a;background:linear-gradient(180deg,rgba(255,90,60,.17),rgba(255,90,60,.05))}
+  .hvdec .dkc.agg .l{color:#ff9576}
+  .hvdec .dkc.safe{border-color:#3fcaa8;background:linear-gradient(180deg,rgba(63,202,168,.17),rgba(63,202,168,.05))}
+  .hvdec .dkc.safe .l{color:#5fe0c0}
   /* decision MODAL: a real pop-up presenting the situation + 2 options over a dimmed course - never
      shifts the page underneath (owner: a real, exciting pop-up that draws attention) */
   .decisionov{position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;
@@ -26227,6 +26264,16 @@ function hvWindChipHTML(holeIdx, noDesc){
   const lab=`${WIND_KIND[hw.kind]}, ${w.mph} miles an hour from the ${w.dir}`;
   return `<div class="hvob hvwind${noDesc?' nodesc':''}" role="img" aria-label="${esc(lab)}"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${Math.round(hw.rel)}deg);color:${col}"><path d="M12 2.5 L18.5 12 L13.5 12 L13.5 21.5 L10.5 21.5 L10.5 12 L5.5 12 Z" fill="currentColor"/></svg><span>${w.mph} MPH</span><span class="wkind" style="color:${col}">${WIND_KIND_SHORT[hw.kind].toUpperCase()}</span></div>`;
 }
+// ITEM 07: the same wind, INLINE in the docked decision panel. The standalone chip lives bottom-left,
+// which is exactly where the panel docks - and the wind is the one thing you most want to read while
+// choosing a shot, so it moves into the panel's header rather than being hidden by it.
+function hvWindInlineHTML(holeIdx){
+  const w=curWind(); if(!w || holeIdx==null) return '';
+  const hw=dHoleWind(w.ck, holeIdx, w.dir);
+  const col=hw.kind==='into'?'#ff9d8f':hw.kind==='down'?'#4be3a8':'#8fd0ff';
+  const lab=`${WIND_KIND[hw.kind]}, ${w.mph} miles an hour from the ${w.dir}`;
+  return `<span class="dkw" role="img" aria-label="${esc(lab)}" style="color:${col}"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${Math.round(hw.rel)}deg)"><path d="M12 2.5 L18.5 12 L13.5 12 L13.5 21.5 L10.5 21.5 L10.5 12 L5.5 12 Z" fill="currentColor"/></svg>${w.mph} MPH ${WIND_KIND_SHORT[hw.kind].toUpperCase()}</span>`;
+}
 // deterministic hole geometry, shaped by the course's style + its signature-hole features:
 // dogleg (single or S), fairway width profile with landing-zone pinches, sized/tucked greens,
 // PERSISTENT water & creeks (drawn whether or not a ball finds them), style-scaled bunkering.
@@ -29306,6 +29353,9 @@ function dDecTargets(g, sc){
   const off=Math.max(3,(g.greenR?g.greenR[0]:12)*0.6)*(pin[0]>gcx?-1:1);     // pin-hunt vs middle of the green
   return {agg:[pin[0],pin[1]], safe:[gcx+off,L], al:'At the pin', sl:'Middle'};
 }
+// the lowest a tap-target may sit, as a % of the window height: the docked decision panel (item 07)
+// owns the bottom strip. `var` (not `let`) - dPlaceTargets is reachable before this line executes.
+var HV_DEC_TOP=44;
 // place the two tappable targets on the window shell (called from drawWindow when a decision is pending)
 function dPlaceTargets(shell, g, sc, pick){
   const tg=dDecTargets(g,sc);
@@ -29316,9 +29366,12 @@ function dPlaceTargets(shell, g, sc, pick){
   const pos=[];
   const place=(pt,cls,icon,lab,agg,rw)=>{
     const p=hvProj(g,pt[0],pt[1]);
-    let lf=Math.max(11,Math.min(89,(p[0]+HV_EX)/(HV_W+2*HV_EX)*100)), tp=Math.max(9,Math.min(72,p[1]/HV_H*100));
+    // ITEM 07: the decision panel now docks along the BOTTOM of the window, so a target can no longer
+    // sit in the lower third - it would land under the panel. The green (and so the aggressive target)
+    // is near the top of the frame anyway; only a deep layup target is pulled up by this.
+    let lf=Math.max(11,Math.min(89,(p[0]+HV_EX)/(HV_W+2*HV_EX)*100)), tp=Math.max(9,Math.min(HV_DEC_TOP,p[1]/HV_H*100));
     // nudge apart if the two chips would collide (close in screen space)
-    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(72, q.tp+11); } }
+    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(HV_DEC_TOP, q.tp+11); } }
     // and out from under the fixed top-left hole chip - on a short hole the green (and so a target)
     // sits high enough to land on it, which reads as the two overlapping.
     if(lf<52 && tp<15) tp=15;
@@ -29330,6 +29383,33 @@ function dPlaceTargets(shell, g, sc, pick){
   };
   place(tg.agg,'agg','⚡',tg.al||'Attack',true,aggW);
   place(tg.safe,'safe','🛡',tg.sl||'Safe',false,safeW);
+}
+// ITEM 07: the decision, DOCKED INSIDE the tracer window along its bottom edge, so the hole, the
+// on-course tap-targets and the numbers are all in one frame above the fold. Same content as
+// dDecisionBar (which is kept as the below-window fallback), compacted to leave the upper two thirds
+// of the window to the course and the targets.
+function dDecisionPanel(sc, pick, sub, holeIdx){
+  const od=dDecOdds(sc, S.dailySkills);
+  const p=$(`<div class="hvob hvdec"></div>`);
+  const head=$(`<div class="dkh"><span class="dkl">⛳ Your call · tap the course or a card</span></div>`);
+  { const wi=hvWindInlineHTML(holeIdx); if(wi) head.appendChild($(wi)); }
+  // ONE situation line: the approach sub (where your drive finished) if there is one, else the
+  // pressure line - two stacked lines would push the panel up into the tap-targets.
+  const situ = sub || sc.sit || (S.moment?momentStakesLine(S.dailyHoles.length):'');
+  if(situ) head.appendChild($(`<span class="dks">${esc(situ)}</span>`));
+  p.appendChild(head);
+  p.appendChild($(`<div class="dkp">${esc(sc.prompt)}</div>`));
+  const row=$(`<div class="dkrow"></div>`);
+  const card=(cls,icon,label,note,l1,l2,l3,agg)=>{
+    const b=$(`<button class="dkc ${cls}"><span class="l">${icon} ${esc(label)}</span><span class="s">${esc(note)}</span><span class="o"><span>${l1}</span><span class="${cls==='agg'?'gd':'gd'}">${l2}</span><span class="${cls==='agg'?'rk':'neu'}">${l3}</span></span></button>`);
+    b.onclick=()=>pick(agg); return b;
+  };
+  row.appendChild(card('agg','⚡',sc.opts[0].l,sc.opts[0].s,
+    `${esc(od.stat.name)} ${od.val}`, `${od.aggGood}% ${esc(od.goodWord)}`, `${od.aggRisk}% ${esc(od.riskWord)}`, true));
+  row.appendChild(card('safe','🛡',sc.opts[1].l,sc.opts[1].s,
+    'Low risk', `${od.safeGood}% birdie look`, 'par safe', false));
+  p.appendChild(row);
+  return p;
 }
 // the stat/risk cards docked directly under the course view
 function dDecisionBar(sc, pick, sub){
@@ -29534,7 +29614,9 @@ function scrDailyRound(){
     // (CS246: the themed accent frame now lives on the svg itself via hvFrameStyle, so the whole window is framed)
     // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
     shell.appendChild($(hvHoleChipHTML(S.dailyCourse, h, !!dec)));
-    { const wc=hvWindChipHTML(h.i!=null?h.i:(h.n-1), !(descShot && descShot.d && !holePauseFlag));
+    // (item 07: while a decision is docked at the bottom, the wind moves INTO the panel's header -
+    // the standalone chip lives bottom-left, which the panel now occupies)
+    if(!dec){ const wc=hvWindChipHTML(h.i!=null?h.i:(h.n-1), !(descShot && descShot.d && !holePauseFlag));
       if(wc) shell.appendChild($(wc)); }
     if(holePauseFlag && lastIdx>=0){
       const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
@@ -29654,6 +29736,8 @@ function scrDailyRound(){
       if(descShot && descShot.d && !holePauseFlag) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(descShot.d)}</div>`));
     }
     if(dec && hole._hv && hole._hv.g) dPlaceTargets(shell, hole._hv.g, dec.sc, dec.pick);   // on-course tap-targets
+    // ITEM 07: the cards dock INSIDE the window, under the targets, instead of below it (off the fold)
+    if(dec) shell.appendChild(dDecisionPanel(dec.sc, dec.pick, dec.sub, h.i!=null?h.i:(h.n-1)));
     add(hvn);
   }
   // ON-COURSE decision (#6/#7): a pending signature-hole call is now presented ON the tracer window
@@ -29713,8 +29797,9 @@ function scrDailyRound(){
     // one-line description on the tracer window narrates each shot, so no between-holes log flash.
   }
   }
-  // on-course decision cards, docked directly under the course view (the tap-targets are ON the window)
-  if(decPending) add(dDecisionBar(decPending.sc, decPending.pick, decPending.sub));
+  // ITEM 07: the decision now docks INSIDE the window (see drawWindow). The below-window bar is kept
+  // only as the fallback for the case where no window rendered, so a decision can never be unreachable.
+  if(decPending && !showTracer) add(dDecisionBar(decPending.sc, decPending.pick, decPending.sub));
   // CS513: the scorecard strip renders BELOW the window (built above; secondary reference).
   if(scoreCardNode) add(scoreCardNode);
   add($(`<div style="height:10px"></div>`));
