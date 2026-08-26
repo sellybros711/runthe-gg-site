@@ -511,6 +511,35 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase;color:rgba(255,255,255,.32);line-height:1;white-space:nowrap}
   .unitlab.up{top:calc(50% - 14px)}
   .unitlab.down{top:calc(50% + 7px)}
+  /* ---- WHICH HALF YOU ARE DRAFTING, IN COLOUR ----
+     The slots alternate, so every spin changes which pool the wheels are turning over, and
+     until now the only thing that said so was the three letters inside the empty disc. On a
+     phone, mid-spin, that is nothing. Lighting the half the pick belongs to says it before
+     the reels stop, at a glance, without a word of instruction.
+
+     RED IS THE OFFENCE AND BLUE IS THE DEFENCE, which is this game's own pairing rather than
+     an arbitrary one: the offensive board, the offensive scheme panel and the brand itself
+     are red, and body.def-mode has painted the defence blue since that mode shipped.
+
+     It is a ring INSIDE the half, not a shadow around it, because .field clips its overflow:
+     anything cast outward is drawn and then thrown away. The ring closes along the line of
+     scrimmage too, so the lit half reads as a box rather than as a bleed. */
+  .halfglow{position:absolute;left:0;right:0;height:50%;pointer-events:none;z-index:1;
+    opacity:0;transition:opacity .3s ease}
+  .halfglow.up{top:0;border-radius:13px 13px 0 0;
+    box-shadow:inset 0 0 0 2px rgba(59,130,246,.85),inset 0 0 26px 5px rgba(59,130,246,.28);
+    background:linear-gradient(180deg,rgba(59,130,246,.15),rgba(59,130,246,0) 64%)}
+  .halfglow.down{top:50%;border-radius:0 0 13px 13px;
+    box-shadow:inset 0 0 0 2px rgba(239,68,68,.85),inset 0 0 26px 5px rgba(239,68,68,.28);
+    background:linear-gradient(0deg,rgba(239,68,68,.15),rgba(239,68,68,0) 64%)}
+  .field.pick-def .halfglow.up,.field.pick-off .halfglow.down{
+    opacity:1;animation:halfpulse 2.4s ease-in-out infinite}
+  @keyframes halfpulse{0%,100%{opacity:.7}50%{opacity:1}}
+  /* A breathing border is decoration, and decoration is the first thing to go. The half
+     stays lit, it just stops moving. */
+  @media (prefers-reduced-motion:reduce){
+    .field.pick-def .halfglow.up,.field.pick-off .halfglow.down{animation:none;opacity:.92}
+  }
   @media (max-width:360px){
     .field.fullfield .chip .disc{width:26px;height:26px;font-size:9px}
     .field.fullfield .chip .who{font-size:9px;max-width:56px}
@@ -6844,6 +6873,11 @@ function fieldMarkings(def){
     o.push('<div class="los fulllos" style="top:'+FULL_LOS+'%"></div>',
       '<div class="unitlab up">Defense</div>',
       '<div class="unitlab down">Offense</div>',
+      /* WHICH HALF THIS PICK BELONGS TO. Both are built and neither is lit; drawField
+         turns one on. Built here rather than injected later so the field can be rebuilt
+         from its markings alone, which is the whole contract fieldState relies on. */
+      '<div class="halfglow up"></div>',
+      '<div class="halfglow down"></div>',
       '<div class="vig"></div>');
     return o.join('');
   }
@@ -6950,6 +6984,17 @@ function drawField(el,live){
   // The sticky bar's pips are the same six slots, so they are drawn from the same data.
   // The sticky bar's pips are the same six slots, so they come off the same data.
   if(el.id==='field'){ drawPips(bySlot); watchFold(); }
+
+  /* THE HALF THIS PICK COMES OUT OF, lit from the moment the wheels start turning. See
+     .halfglow. Only on the LIVE field: the squad and results copies are showing a finished
+     team and have no pick to be in the middle of, and lighting half of one would be saying
+     something about a draft that is over. */
+  if(live){
+    const picking=!!(run&&run.full&&run.roster.length<slotsNow().length);
+    const def=picking&&fullSlotIsDefensive(run.roster.length);
+    el.classList.toggle('pick-def',picking&&def);
+    el.classList.toggle('pick-off',picking&&!def);
+  }
 
   // Contents update immediately; only the movement is animated.
   st.chips.forEach((c)=>{
