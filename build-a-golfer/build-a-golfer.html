@@ -27476,19 +27476,44 @@ function hvLabelAt(px, py, txt, col){
     svg:`<g opacity=".92"><rect x="${(x-w/2).toFixed(1)}" y="${(y-6).toFixed(1)}" width="${w.toFixed(1)}" height="12" rx="6" fill="rgba(6,18,12,.78)" stroke="${col}" stroke-width=".7"/>`
       +`<text x="${x.toFixed(1)}" y="${(y+2.6).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="${col}" font-family="inherit">${txt}</text></g>`};
 }
-function hvLabelHits(a,b){ return !!a && !!b && Math.abs(a.x-b.x) < (a.w+b.w)/2+4 && Math.abs(a.y-b.y) < 13; }
-function hvYardageSVG(g){
+// Anything already on the map that a yardage chip must not land on: a chip is a box, sand is a disc.
+function hvObsHit(b,o,pad){ return Math.abs(b.x-o.x) < b.rx+o.rx+pad && Math.abs(b.y-o.y) < b.ry+o.ry+pad; }
+// Try each spot in order and take the cleanest. Covering something HARD (the ball's own distance readout,
+// or the other yardage chip) stacks two unreadable numbers; covering sand hides the thing the number names;
+// an earlier candidate wins a tie, so a chip stays as near its intended spot as it can.
+function hvPlaceLabel(cands, txt, col, obs){
+  let best=null, bestSc=1e9;
+  for(let i=0;i<cands.length;i++){
+    const t=hvLabelAt(cands[i][0], cands[i][1], txt, col);
+    const box={x:t.x, y:t.y, rx:t.w/2, ry:6};
+    let sc=i;
+    for(const o of obs) if(hvObsHit(box,o,3)) sc += (o.hard?1000:40);
+    if(sc<bestSc){ bestSc=sc; best=t; }
+    if(sc===i) break;
+  }
+  return best;
+}
+// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it
+function hvYardageSVG(g, avoid){
   if(!g || g.par===3) return '';
   let s='', L150=null;
+  // sand, in screen space, so a chip never lands on the trouble it is drawn to explain
+  const obs=(g.bunkers||[]).map(bk=>{ const B=hvProj(g,bk.x,bk.y), r=Math.abs(bk.r*g.sx*g.t(bk.y));
+    return {x:B[0], y:B[1], rx:r, ry:r}; });
+  if(avoid) obs.push({x:avoid.x, y:avoid.y, rx:avoid.rx, ry:avoid.ry, hard:true});
   // the 150 marker: a constant-distance arc from the middle of the green, the reference every golfer uses
   const y150=g.L-150;
   if(y150>30){
     const cx=g.cx(y150), hw=Math.min(g.fww(y150)*1.5+12, 120);
     const d=hvArcD(g, g.gcx, g.L, 150, cx, hw, -1);
     if(d){ s+=`<path d="${d}" fill="none" stroke="rgba(244,227,201,.5)" stroke-width="1.3" stroke-dasharray="6 6"/>`;
-      const ly=g.L-Math.sqrt(Math.max(0,150*150-Math.pow(cx+hw-g.gcx,2)));
-      L150=hvLabelAt(hvProj(g,cx+hw,ly)[0], hvProj(g,cx+hw,ly)[1], '150', 'rgba(244,227,201,.9)');
-      s+=L150.svg; }
+      // either end of the arc, then a rank off it
+      const arcY=(x)=>g.L-Math.sqrt(Math.max(0,150*150-Math.pow(x-g.gcx,2)));
+      const R=hvProj(g, cx+hw, arcY(cx+hw)), Lf=hvProj(g, cx-hw, arcY(cx-hw));
+      L150=hvPlaceLabel([[R[0],R[1]],[Lf[0],Lf[1]],[R[0],R[1]+16],[Lf[0],Lf[1]+16],[R[0],R[1]-16],[Lf[0],Lf[1]-16]],
+        '150', 'rgba(244,227,201,.9)', obs);
+      s+=L150.svg;
+      obs.push({x:L150.x, y:L150.y, rx:L150.w/2, ry:6, hard:true}); }
   }
   // the carry: the far edge of whatever the tee shot is being asked to fly, if anything is out there.
   // Only trouble in the DRIVING ZONE counts (170-330 yds and inside the front two thirds of the hole) -
@@ -27510,22 +27535,10 @@ function hvYardageSVG(g){
       const P=hvProj(g,lx,ly), cxs=hvProj(g,g.cx(ly),ly)[0];
       const rad=Math.abs(hzR*g.sx*g.t(ly)), side=(P[0]>=cxs)?1:-1;
       const wLab=txt.length*7*0.6+9, off=rad+wLab/2+5;
-      // sand the chip would cover, in screen space - a chip sitting ON a bunker hides the thing it names
-      const sand=(g.bunkers||[]).map(bk=>{ const B=hvProj(g,bk.x,bk.y);
-        return {x:B[0], y:B[1], r:Math.abs(bk.r*g.sx*g.t(bk.y))}; });
-      const buried=(b)=>sand.filter(o=>Math.abs(o.x-b.x)<o.r+b.w/2 && Math.abs(o.y-b.y)<o.r+10).length;
-      // try either side of the hazard, then ranks off the arc, and take the cleanest spot. Colliding with
-      // the 150 chip is the worst outcome (two numbers stacked is unreadable); covering sand is next; a
-      // spot nearer the hazard's own bearing breaks the tie, so the number stays attached to its trouble.
-      let cb=null, best=1e9;
-      const cand=[[side*off,0],[-side*off,0],[side*off,17],[-side*off,17],[side*off,-17],[-side*off,-17],
-                  [side*(off+34),0],[-side*(off+34),0],[side*off,34],[-side*off,34]];
-      for(let i=0;i<cand.length;i++){
-        const t=hvLabelAt(P[0]+cand[i][0], P[1]+cand[i][1], txt, gold);
-        const sc=(hvLabelHits(t,L150)?1000:0)+buried(t)*40+i;
-        if(sc<best){ best=sc; cb=t; }
-        if(sc===i) break;   // clean, and no earlier candidate was
-      }
+      // either side of the hazard first, then ranks off the arc
+      const cb=hvPlaceLabel([[side*off,0],[-side*off,0],[side*off,17],[-side*off,17],[side*off,-17],
+        [-side*off,-17],[side*(off+34),0],[-side*(off+34),0],[side*off,34],[-side*off,34]]
+        .map(o=>[P[0]+o[0], P[1]+o[1]]), txt, gold, obs);
       s+=`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`;
       s+=cb.svg; }
   }
@@ -27539,6 +27552,13 @@ function hvDistTxt(p){
   if(p.toFt!=null) return Math.round(p.toFt)+' FT';
   if(p.toYd!=null) return p.toYd+' YDS';
   return '';
+}
+// where the ball's readout sits, so the yardage chips can give way to it
+function hvDistBox(g,p,small){
+  const txt=p?hvDistTxt(p):''; if(!txt) return null;
+  const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
+  const fs=small?3.8:7, h=small?7:12, w=txt.length*fs*0.6+(small?5:9);
+  return {x, y:Math.max(h/2+2, y-(small?8:16)), rx:w/2, ry:h/2};
 }
 function hvDistChip(g,p,live,small){
   const txt=hvDistTxt(p); if(!txt) return '';
@@ -27845,9 +27865,10 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
   // ITEM 13: the map's yardage references (full-hole camera only) sit under the tracers; the
   // distance-to-pin chip rides the current shot's resting ball, hidden until the ball settles.
-  const yard=small?'':hvYardageSVG(g);
   const curP=(idx>=0&&plots[idx])?plots[idx]:null;
-  const dchip=curP?hvDistChip(g,curP,live,small&&inCam(curP)):'';
+  const dsmall=curP?small&&inCam(curP):false;
+  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall));
+  const dchip=curP?hvDistChip(g,curP,live,dsmall):'';
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
     <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${yard}${inner}${dchip}${overlay||''}</svg></div></div>`);
   if(live && plots[idx]){
