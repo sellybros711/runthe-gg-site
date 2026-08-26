@@ -75,6 +75,10 @@
   .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:10px;color:var(--text-dim);}
   .statgrid span b{color:var(--text);}
   .quirk{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:10px;color:var(--purple);line-height:1.4;}
+  .charcard.locked{opacity:.55;cursor:not-allowed;}
+  .charcard.locked canvas{filter:grayscale(1) brightness(.7);}
+  .charcard.locked:hover{border-color:var(--line);}
+  .quirk.lockhint{color:var(--gold);}
 
   .toggle-row{display:flex;gap:6px;flex-wrap:wrap;}
   .toggle{padding:8px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;
@@ -2910,6 +2914,51 @@ function savePrefs() {
   } catch (e) {}
 }
 
+/* ============================================================================
+   UNLOCKS
+   A handful of the most outlandish characters start locked. They are earned
+   by doing something in the game rather than bought, and the roster card
+   says exactly what to do, so a locked slot reads as a goal rather than a
+   missing feature. Progress lives in prefs beside the other settings.
+   ============================================================================ */
+const UNLOCKS = {
+  kong:      { how:'Hit 6 home runs in a season.',        check:(p)=> (p.seasonHR|0) >= 6 },
+  liberty:   { how:'Win a playoff game.',                  check:(p)=> (p.playoffWins|0) >= 1 },
+  dragon:    { how:'Win the championship.',                check:(p)=> (p.titles|0) >= 1 },
+  phoenix:   { how:'Come back and win after trailing.',    check:(p)=> (p.comebacks|0) >= 1 },
+  chupacabra:{ how:'Win a game by 10 or more runs.',       check:(p)=> (p.blowouts|0) >= 1 },
+  fathertime:{ how:'Play a full 9 inning game.',           check:(p)=> (p.nineInningGames|0) >= 1 },
+};
+const PROGRESS = Object.assign(
+  { seasonHR:0, playoffWins:0, titles:0, comebacks:0, blowouts:0, nineInningGames:0, unlocked:[] },
+  PREFS.progress || {}
+);
+function saveProgress() {
+  PREFS.progress = PROGRESS;
+  try {
+    const cur = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+    cur.progress = PROGRESS;
+    localStorage.setItem(PREFS_KEY, JSON.stringify(cur));
+  } catch (e) {}
+}
+function isUnlocked(k) {
+  if (!UNLOCKS[k]) return true;              /* not a locked character */
+  return PROGRESS.unlocked.indexOf(k) !== -1;
+}
+/* Re-evaluate every locked character against current progress. Returns the
+   list of keys newly unlocked by this call, so the caller can celebrate. */
+function refreshUnlocks() {
+  const fresh = [];
+  for (const k of Object.keys(UNLOCKS)) {
+    if (PROGRESS.unlocked.indexOf(k) === -1 && UNLOCKS[k].check(PROGRESS)) {
+      PROGRESS.unlocked.push(k);
+      fresh.push(k);
+    }
+  }
+  if (fresh.length) saveProgress();
+  return fresh;
+}
+
 const State = {
   screen: 'menu',
   mode: null,          /* 'exhibition' or 'season' */
@@ -3070,7 +3119,15 @@ function renderRoster() {
       const nt = el('div','quirk', c.note);
       cc.appendChild(nt);
     }
+    /* Locked characters can't be drafted; the card says how to earn them. */
+    const locked = !isUnlocked(c.k);
+    if (locked) {
+      cc.classList.add('locked');
+      const lk = el('div','quirk lockhint', 'LOCKED: ' + UNLOCKS[c.k].how);
+      cc.appendChild(lk);
+    }
     cc.onclick = () => {
+      if (locked) return;
       if (picked.has(c.k)) {
         picked.delete(c.k);
       } else if (picked.size < 9) {
@@ -3114,7 +3171,7 @@ function renderRoster() {
   const rand = el('button','btn ghost','Randomize');
   rand.onclick = () => {
     picked.clear();
-    const bag = [...ROSTER].sort(() => Math.random() - 0.5);
+    const bag = ROSTER.filter(c => isUnlocked(c.k)).sort(() => Math.random() - 0.5);
     bag.slice(0,9).forEach(c => picked.add(c.k));
     redraw();
     /* Same auto advance as the ninth click: nine is nine. */
@@ -4976,7 +5033,35 @@ function finishGame() {
     match.result = { homeScore: g.home.score, awayScore: g.away.score, winner };
     /* If any CPU semis remain, they will sim next when the bracket page shows */
     saveSeason(State.season);
+    if (win) PROGRESS.playoffWins = (PROGRESS.playoffWins|0) + 1;
+    if (win && g.round === 'final') PROGRESS.titles = (PROGRESS.titles|0) + 1;
   }
+
+  /* Achievement progress from any game, whatever the mode. */
+  const yourHR = you.batters.reduce((a,b) => a + (g.stats.hr[b.k] || 0), 0);
+  if (State.mode === 'season' && State.season) {
+    PROGRESS.seasonHR = Math.max(PROGRESS.seasonHR|0, State.season.playerStats.hr|0);
+  } else {
+    PROGRESS.seasonHR = Math.max(PROGRESS.seasonHR|0, yourHR);
+  }
+  if (win && (you.score - foe.score) >= 10) PROGRESS.blowouts = (PROGRESS.blowouts|0) + 1;
+  if (g.innings >= 9) PROGRESS.nineInningGames = (PROGRESS.nineInningGames|0) + 1;
+  /* Comeback: you trailed at some point on the line score and still won. */
+  if (win) {
+    let aw = 0, hm = 0, trailed = false;
+    const n = Math.max(g.lineScore.away.length, g.lineScore.home.length);
+    for (let i = 0; i < n; i++) {
+      aw += g.lineScore.away[i] || 0;
+      hm += g.lineScore.home[i] || 0;
+      const mine = you === g.away ? aw : hm;
+      const theirs = you === g.away ? hm : aw;
+      if (mine < theirs) trailed = true;
+    }
+    if (trailed) PROGRESS.comebacks = (PROGRESS.comebacks|0) + 1;
+  }
+  saveProgress();
+  g.freshUnlocks = refreshUnlocks();
+
   State.screen = 'result';
   render();
 }
@@ -6095,29 +6180,105 @@ function renderResult() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, win ? 'You win.' : 'You lose.'));
 
-  const card = el('div','card');
-  card.innerHTML =
+  /* Headline: final score, with a walk-off note when it earned one. */
+  const head = el('div','card');
+  head.innerHTML =
     `<h3>Final</h3>`
-    + `<p style="font-size:16px;color:var(--text)">${you.name} <b>${you.score}</b> · ${foe.name} ${foe.score}</p>`;
-  const games = el('h3', null, 'Your batting');
-  card.appendChild(games);
-  const stats = el('table','table');
-  stats.innerHTML = '<thead><tr><th>Batter</th><th class="n">AB</th><th class="n">H</th><th class="n">HR</th><th class="n">K</th></tr></thead>';
-  const tb = el('tbody');
-  const yourTeam = State.team.map(k => ROSTER_BY_KEY[k]);
-  for (const b of yourTeam) {
-    const ab = g.stats.ab[b.k] || 0;
-    const h = g.stats.hits[b.k] || 0;
-    const hr = g.stats.hr[b.k] || 0;
-    const so = g.stats.so[b.k] || 0;
-    if (!ab && !h) continue;
-    const tr = el('tr');
-    tr.innerHTML = `<td>${b.n}</td><td class="n">${ab}</td><td class="n">${h}</td><td class="n">${hr}</td><td class="n">${so}</td>`;
-    tb.appendChild(tr);
+    + `<p style="font-size:18px;color:var(--text)">${you.name} <b style="color:var(--gold)">${you.score}</b>`
+    + ` &nbsp;·&nbsp; ${foe.name} <b>${foe.score}</b></p>`
+    + (g.walkoff ? `<p style="color:var(--gold)">Walk-off win.</p>` : '');
+  s.appendChild(head);
+
+  /* Anything unlocked by this game gets its own celebration card. */
+  if (g.freshUnlocks && g.freshUnlocks.length) {
+    const uc = el('div','card');
+    uc.style.borderColor = 'var(--gold)';
+    uc.appendChild(el('h3', null, g.freshUnlocks.length > 1 ? 'New characters unlocked' : 'New character unlocked'));
+    const grid = el('div','roster');
+    for (const k of g.freshUnlocks) {
+      const c = ROSTER_BY_KEY[k];
+      if (!c) continue;
+      const cc = el('div','charcard');
+      cc.style.cursor = 'default';
+      cc.appendChild(spriteCanvas(c, 64));
+      cc.appendChild(el('div','name', c.n));
+      cc.appendChild(el('div','role', c.role));
+      if (c.note) cc.appendChild(el('div','quirk', c.note));
+      grid.appendChild(cc);
+    }
+    uc.appendChild(grid);
+    s.appendChild(uc);
   }
-  stats.appendChild(tb);
-  card.appendChild(stats);
-  s.appendChild(card);
+
+  /* Line score: runs per inning for both sides, the way a real board reads. */
+  const lsCard = el('div','card');
+  lsCard.appendChild(el('h3', null, 'Line score'));
+  const innCount = Math.max(g.innings, g.lineScore.away.length, g.lineScore.home.length);
+  const lsWrap = el('div','linescore');
+  const lsT = document.createElement('table');
+  let head1 = '<thead><tr><th></th>';
+  for (let i = 1; i <= innCount; i++) head1 += `<th>${i}</th>`;
+  head1 += '<th>R</th></tr></thead>';
+  let body = '<tbody>';
+  for (const side of ['away','home']) {
+    const team = g[side];
+    body += `<tr><td class="team">${team.name}${team.isYou ? ' *' : ''}</td>`;
+    for (let i = 0; i < innCount; i++) {
+      const v = g.lineScore[side][i];
+      body += `<td>${v == null ? '' : v}</td>`;
+    }
+    body += `<td class="r">${team.score}</td></tr>`;
+  }
+  body += '</tbody>';
+  lsT.innerHTML = head1 + body;
+  lsWrap.appendChild(lsT);
+  lsCard.appendChild(lsWrap);
+  s.appendChild(lsCard);
+
+  /* Batting lines for BOTH lineups, so the box score is a real box score. */
+  const batTable = (team) => {
+    const t = el('table','table');
+    t.innerHTML = '<thead><tr><th>Batter</th><th class="n">AB</th><th class="n">H</th>'
+                + '<th class="n">HR</th><th class="n">K</th><th class="n">SB</th><th class="n">AVG</th></tr></thead>';
+    const tb = el('tbody');
+    let any = false;
+    for (const b of team.batters) {
+      const ab = g.stats.ab[b.k] || 0;
+      const h  = g.stats.hits[b.k] || 0;
+      const hr = g.stats.hr[b.k] || 0;
+      const so = g.stats.so[b.k] || 0;
+      const sb = (g.stats.sb && g.stats.sb[b.k]) || 0;
+      if (!ab && !h && !sb) continue;
+      any = true;
+      const avg = ab ? (h/ab).toFixed(3).replace(/^0/,'') : '.000';
+      const tr = el('tr');
+      tr.innerHTML = `<td>${b.n}</td><td class="n">${ab}</td><td class="n">${h}</td>`
+                   + `<td class="n">${hr}</td><td class="n">${so}</td><td class="n">${sb}</td>`
+                   + `<td class="n">${avg}</td>`;
+      tb.appendChild(tr);
+    }
+    if (!any) {
+      const tr = el('tr');
+      tr.innerHTML = '<td colspan="7" style="color:var(--text-dim)">No plate appearances recorded.</td>';
+      tb.appendChild(tr);
+    }
+    t.appendChild(tb);
+    return t;
+  };
+
+  for (const team of [you, foe]) {
+    const c = el('div','card');
+    c.appendChild(el('h3', null, `${team.name} batting`));
+    c.appendChild(batTable(team));
+    /* Pitching line: the first pick on each roster takes the mound. */
+    const opp = team === you ? foe : you;
+    const p = team.batters[0];
+    const oppK = opp.batters.reduce((a,b) => a + (g.stats.so[b.k] || 0), 0);
+    const oppH = opp.batters.reduce((a,b) => a + (g.stats.hits[b.k] || 0), 0);
+    c.appendChild(el('p', null,
+      `<b style="color:var(--gold)">${p.n}</b> pitching: ${opp.score} runs, ${oppH} hits, ${oppK} strikeouts.`));
+    s.appendChild(c);
+  }
 
   const row = el('div','btn-row');
   if (State.mode === 'exhibition') {
