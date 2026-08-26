@@ -3088,7 +3088,7 @@ h2{font-size:11px;letter-spacing:.04em}
 <p>Play the daily challenge, run a full career mode across dozens of iconic courses, climb the global leaderboard, and go head-to-head online. No download required — play free in your browser.</p>
 <h2>How the game works</h2>
 <p>Every spin reveals a real golfer, and you take one of their eight attributes (distance, accuracy, approach, short game, scrambling, bunker, putting or composure) to fill a slot on your build. You get two re-spins for the whole draft. Once all eight slots are filled you have a golfer, and you take them out on tour.</p>
-<p>Career mode runs up to 30 seasons. Your golfer ages, peaks and declines, chasing majors, the Atlantic Cup, the Nations Cup and international medals while you manage injuries, sponsors, rivalries and roughly $2.8M a year of tour costs. The daily challenge is a single 18-hole round at a rotating real course, the same for everyone, resetting at midnight ET. Online head-to-head offers 1v1, Best Ball, Scramble and Free-for-All against real players.</p>
+<p>Career mode runs up to 30 seasons on tour, then up to 12 more on the Legend Circuit once you turn 50. Your golfer ages, peaks and declines, chasing majors, the Atlantic Cup, the Nations Cup and international medals while you manage injuries, sponsors, rivalries and roughly $2.8M a year of tour costs. The daily challenge is a single 18-hole round at a rotating real course, the same for everyone, resetting at midnight ET. Online head-to-head offers 1v1, Best Ball, Scramble and Free-for-All against real players.</p>
 <p>Run The Tour is free to play, with optional in-game upgrades. Read the full <a href="/golf/how-to-play.html" style="color:#EBA61F">How to Play guide</a> for the complete rules, pull odds and strategy.</p>
 <p><strong>This game needs JavaScript enabled to play.</strong> Please turn on JavaScript and reload.</p>
 <p><a href="/golf/how-to-play.html" style="color:#EBA61F">How to play</a> &middot;
@@ -10914,7 +10914,7 @@ function scrRules(){
     add(tb);
     add($(`<div class="small muted center" style="margin:0 0 8px">A 30 second walkthrough of the home screen and what each tab does.</div>`)); }
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">Build a golfer.<br>Run the tour.</h1>`));
-  add($(`<p class="lede center" style="margin:2px 0 16px">Build a golfer one skill at a time, then live out their career, up to 30 years on tour, or test your build on the daily challenge.</p>`));
+  add($(`<p class="lede center" style="margin:2px 0 16px">Build a golfer one skill at a time, then live out their career, up to 30 years on tour and up to 12 more on the Legend Circuit after 50, or test your build on the daily challenge.</p>`));
 
   add($(`<h2 class="center" style="margin:8px 0 10px">Career Mode · Up to 30 Years</h2>`));
   const cSteps=[
@@ -10922,7 +10922,7 @@ function scrRules(){
     ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else, you get 2 re-spins for the whole draft.'],
     ['🧱','Fill all 8 skills','Distance, accuracy, approach, short game, scrambling, bunker, putting, composure. Spikes win events; one weak slot loses weekends.'],
     ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big, but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
-    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 30 seasons. Chase majors, the Atlantic Cup, the Nations Cup and international medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it.'],
+    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 30 seasons on tour. Chase majors, the Atlantic Cup, the Nations Cup and international medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it. Then the Legend Circuit picks you up at 50 for up to 12 more seasons against the players who retired alongside you, which is where the 42 on the Career Mode card comes from: 30 on tour, 12 more after it.'],
   ];
   const cList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   cSteps.forEach(s=>cList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -12488,7 +12488,7 @@ function overlayConfirmRetire(screen){
     left=Math.max(0, careerYears()-(S.year||1));
     label='Retire your golfer?';
     body=left>0
-      ? `You still have <b>${left} year${left===1?'':'s'} left</b> in this 30-year career. Retiring now ends it for good, there's no coming back to this golfer. Your lifetime stats and achievements carry over untouched.`
+      ? `You still have <b>${left} year${left===1?'':'s'} left</b> in this ${careerYears()}-year tour career, and the Legend Circuit after it. Retiring now ends it for good, there's no coming back to this golfer. Your lifetime stats and achievements carry over untouched.`
       : `This ends your career. Your lifetime stats and achievements carry over untouched.`;
   }
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
@@ -12802,7 +12802,7 @@ function overlayAbout(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>About</h3>
-    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 30-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Atlantic Cup, the Nations Cup, international medals, and a World Ranking climb across up to 30 seasons.</p>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 30-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Atlantic Cup, the Nations Cup, international medals, and a World Ranking climb across up to 30 seasons on tour, then up to 12 more on the Legend Circuit once you turn 50.</p>
     <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
     <div class="scout">
       <b style="color:var(--teal)">More from RunThe.GG</b>
@@ -12877,8 +12877,11 @@ function resumeCareerCard(cs){
     :mid?`Mid-season · event ${(cs.mid.evtIndex||0)+1}`
     :'Ready to play';
   let yrLabel,pct;
-  if(circuit){ const cy=Math.max(1,(cs.year||31)-30); yrLabel=`${calYear(cs.year)} · Legend Circuit Yr ${cy}`; pct=Math.min(100,Math.max(7,cy/12*100)); }
-  else { yrLabel=`${calYear(cs.year)} · Yr ${cs.year} of 30`; pct=Math.min(100,Math.max(7,(cs.year||1)/30*100)); }
+  // ITEM 08: the length is the one the SAVE bought (an entry path can be shorter than 30), read off the
+  // saved start age rather than hardcoded, and the circuit says what its own 12 are out of.
+  const saveYrs=clamp(CAREER_END_AGE-(((cs.career&&cs.career.startAge)>0)?cs.career.startAge:START_AGE),18,CAREER_MAX_YEARS);
+  if(circuit){ const cy=Math.max(1,(cs.year||31)-30); yrLabel=`${calYear(cs.year)} · Legend Circuit Yr ${cy} of ${CIRCUIT_MAX_YEARS}`; pct=Math.min(100,Math.max(7,cy/CIRCUIT_MAX_YEARS*100)); }
+  else { yrLabel=`${calYear(cs.year)} · Yr ${cs.year} of ${saveYrs}`; pct=Math.min(100,Math.max(7,(cs.year||1)/saveYrs*100)); }
   const card=$(`<button class="resumecard" aria-label="Resume ${circuit?'Legend Circuit':'Career Mode'}, ${who}, ${yrLabel}">
     <div class="rc-top">
       <div style="min-width:0"><div class="rc-kick">Resume ${circuit?'Legend Circuit':'Career'}</div><div class="rc-name">${who}</div></div>
@@ -13043,7 +13046,10 @@ function careerHeroCard(fresh){
   const lt=(c&&c.lt)||{};
   const mid=(c&&c.builds>0)
     ? `${c.builds} golfer${c.builds>1?'s':''} built · ${lt.wins||0} career win${(lt.wins||0)===1?'':'s'} · ${lt.majors||0} major${(lt.majors||0)===1?'':'s'}`
-    : 'Draft 8 skills from real pros, then live a 42-year career.';
+    // ITEM 08: the badge promises 42 and every screen inside the career says 30, so the split is named
+    // HERE, at the point of the promise: 30 on tour, then the Legend Circuit picks it up at 50.
+    // it clamps to two lines in the home rail, so the split has to be the WHOLE sentence
+    : '30 seasons on tour, then up to 12 on the Legend Circuit.';
   const card=$(`<button class="gcard gc-blue" aria-label="Career Mode, build your golfer">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">${fresh?'Start Your Journey':'New Career'}</div><div class="gc-title">${fresh?'Career Mode':'New Golfer'}</div></div><span class="gc-badge">UP TO 42 YRS</span></div>
     <div class="gc-mid">${mid}</div>
@@ -18478,6 +18484,8 @@ function entryStyleOnce(){
   .ep-crow2 b{display:block;font:800 11.5px/1.35 var(--body);color:var(--oncard)}
   .ep-cwhen{display:block;font:800 9.5px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;
     color:#e0a45f;margin-top:2px}
+  .ep-note{margin-top:8px;font-size:11.5px;line-height:1.45}
+  .ep-note b{color:var(--oncard)}
   .ep-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px}
   .ep-tg{font:800 10px/1 var(--body);padding:5px 8px;border-radius:8px;border:1px solid;white-space:nowrap}
   .ep-cmp{border:1px solid rgba(244,227,201,.12);border-radius:14px;overflow:hidden;margin-top:12px}
@@ -18578,6 +18586,7 @@ function scrEntry(){
       ${meter('Respect', st.resp, st.resp+' / 100', '#35d6a0')}
       ${meter('Confidence', st.conf, st.conf+' / 100', '#F1D04A')}
       ${meter('Fans', st.fans/ENTRY_FANS_MAX*100, entryFansTxt(st.fans), '#ff9d3a')}
+      <div class="small muted ep-note">Career is your <b>tour</b> career. Play it out and the Legend Circuit picks you up at 50 for up to ${CIRCUIT_MAX_YEARS} more, <b>${st.yrs+CIRCUIT_MAX_YEARS} seasons in all</b>.</div>
       <div class="ep-tags">${tags}</div>
       ${catchHTML(p)}`;
     requestAnimationFrame(()=>{ try{ panel.querySelectorAll('.ep-mfill').forEach(f=>{ f.style.width=f.getAttribute('data-w')+'%'; }); }catch(e){} });
@@ -23483,7 +23492,8 @@ function scrSeason(){
   const wr=!S.daily?myWorldRank():0, wrN=!S.daily?worldRankSize():0;
   // CS264: franchise-mode career banner (avatar · name · year/age) + the season stat bar as a dashboard header
   const cbName=esc(S.season.me.name||S.name||'Your Golfer');
-  const cbYr=S.circuitMode?(calYear()+' · Legend Circuit Yr '+Math.max(1,(S.year||1)-30)):(calYear()+' Season · Yr '+(S.year||1)+' of '+careerYears());
+  // ITEM 08: the circuit says what its years are out of too, so neither half of the 42 is ever a bare count
+  const cbYr=S.circuitMode?(calYear()+' · Legend Circuit Yr '+Math.max(1,(S.year||1)-30)+' of '+CIRCUIT_MAX_YEARS):(calYear()+' Season · Yr '+(S.year||1)+' of '+careerYears());
   const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
   const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
   // CS285: Confidence is now a HORIZONTAL meter (fits the wrapped second-row space better than a number),
