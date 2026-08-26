@@ -182,6 +182,18 @@
 
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 
+  /* Line score: the classic ballpark board, one column per inning plus runs. */
+  .linescore{display:flex;justify-content:center;margin-bottom:10px;overflow-x:auto;}
+  .linescore table{border-collapse:collapse;background:var(--panel);border:1px solid var(--line);
+    border-radius:6px;overflow:hidden;font-size:13px;}
+  .linescore th,.linescore td{padding:4px 9px;text-align:center;
+    font-variant-numeric:tabular-nums;border-left:1px solid var(--line);}
+  .linescore th{color:var(--text-dim);font-weight:500;font-size:10px;letter-spacing:.1em;}
+  .linescore td.team{text-align:left;color:var(--text-dim);letter-spacing:.08em;
+    text-transform:uppercase;font-size:10px;border-left:0;white-space:nowrap;}
+  .linescore td.r{color:var(--gold);font-weight:700;}
+  .linescore td.cur{background:rgba(244,194,90,.14);}
+
   /* Result / hub */
   .table{width:100%;border-collapse:collapse;font-size:13px;}
   .table th,.table td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);}
@@ -944,6 +956,151 @@ const ROSTER = [
 ];
 const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
 
+/* -------- Stadium themes --------
+   Every opponent team plays in a stadium themed to who they are: a park
+   name, a sky mood, a wall color, a warning track tint, crowd colors, and
+   a landmark drawn behind the outfield wall. drawField reads this by the
+   current opponent's name. `landmark` is a function drawn onto the crowd
+   strip in the sky area, so it reads as a silhouette on the horizon. */
+const STADIUM_THEMES = {
+  'Ironsides': {
+    park:'The Iron Yard', sky:'#0a0d13', wall:'#2a2a2a', wallLine:'#c94b1a',
+    marker:'#f4c25a', track:'#5a4a3a', grass:'#1e4a24',
+    crowd:['#3a2820','#2a2028','#3a3038','#302020','#404040'],
+    landmark(ctx, w, h) {
+      /* Gothic iron gate silhouette behind the wall */
+      ctx.fillStyle = '#050508';
+      for (let i = 0; i < 5; i++) {
+        const x = w * (0.20 + i * 0.15);
+        ctx.fillRect(x, h * 0.05, 6, h * 0.11);
+        ctx.beginPath();
+        ctx.arc(x + 3, h * 0.05, 8, Math.PI, 0);
+        ctx.fill();
+      }
+      ctx.fillRect(w * 0.18, h * 0.11, w * 0.64, 3);
+    },
+  },
+  'Storybook Nine': {
+    park:'Fable Field', sky:'#2a1a3a', wall:'#7a4a8a', wallLine:'#f4c25a',
+    marker:'#f4c25a', track:'#c9a256', grass:'#3a7a3a',
+    crowd:['#f4c25a','#5cb6e5','#c94b1a','#b08ac6','#5bb083'],
+    landmark(ctx, w, h) {
+      /* Storybook castle spires */
+      ctx.fillStyle = '#08050f';
+      ctx.fillRect(w * 0.42, h * 0.03, 10, h * 0.13);
+      ctx.beginPath(); ctx.moveTo(w*0.42, h*0.03); ctx.lineTo(w*0.47, h*0.0); ctx.lineTo(w*0.52, h*0.03); ctx.fill();
+      ctx.fillRect(w * 0.36, h * 0.07, 6, h * 0.09);
+      ctx.fillRect(w * 0.56, h * 0.07, 6, h * 0.09);
+    },
+  },
+  'The Timekeepers': {
+    park:'Detective Downs', sky:'#221a10', wall:'#3a2818', wallLine:'#eaeaea',
+    marker:'#eaeaea', track:'#5a4a2a', grass:'#2a5a2c',
+    crowd:['#3a2818','#5a4a3a','#2a1a10','#4a3a2a','#3a3028'],
+    landmark(ctx, w, h) {
+      /* A giant clock face in the wall */
+      ctx.fillStyle = '#0a0806';
+      ctx.beginPath(); ctx.arc(w*0.5, h*0.09, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#c9a256';
+      ctx.beginPath(); ctx.arc(w*0.5, h*0.09, 12, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#0a0806'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(w*0.5, h*0.09); ctx.lineTo(w*0.5, h*0.09 - 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w*0.5, h*0.09); ctx.lineTo(w*0.5 + 6, h*0.09); ctx.stroke();
+    },
+  },
+  'Nightshift': {
+    park:'Midnight Park', sky:'#100820', wall:'#180a24', wallLine:'#8a1a1a',
+    marker:'#c94b1a', track:'#3a2a30', grass:'#183a24',
+    crowd:['#180a24','#2a1a3a','#3a1a20','#08040c','#0a0a12'],
+    landmark(ctx, w, h) {
+      /* Bat silhouettes flying across the sky */
+      ctx.fillStyle = '#050508';
+      const bat = (bx, by) => {
+        ctx.fillRect(bx, by, 4, 2);
+        ctx.fillRect(bx - 3, by + 1, 10, 1);
+        ctx.fillRect(bx - 5, by + 2, 14, 1);
+        ctx.fillRect(bx - 7, by + 3, 6, 1); ctx.fillRect(bx + 1, by + 3, 6, 1);
+      };
+      bat(w*0.15, h*0.05); bat(w*0.32, h*0.02); bat(w*0.62, h*0.03); bat(w*0.82, h*0.06);
+      /* Blood moon */
+      ctx.fillStyle = '#8a1a1a';
+      ctx.beginPath(); ctx.arc(w*0.5, h*0.055, 12, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#c94b1a';
+      ctx.beginPath(); ctx.arc(w*0.5, h*0.055, 10, 0, Math.PI*2); ctx.fill();
+    },
+  },
+  'The Cartographers': {
+    park:'Explorer Grounds', sky:'#2c2418', wall:'#8b6a3a', wallLine:'#eaeaea',
+    marker:'#141014', track:'#c9a256', grass:'#3a6a2a',
+    crowd:['#8b6a3a','#c9a256','#5a4a2a','#a48856','#2c2418'],
+    landmark(ctx, w, h) {
+      /* Parchment map billboard */
+      ctx.fillStyle = '#d4b878';
+      ctx.fillRect(w*0.40, h*0.02, 80, 14);
+      ctx.fillStyle = '#5a3a1c';
+      ctx.fillText('N', w*0.44, h*0.09);
+      /* Rocket ship in the sky */
+      ctx.fillStyle = '#eaeaea';
+      ctx.fillRect(w*0.72, h*0.04, 3, 8);
+      ctx.fillStyle = '#c94b1a';
+      ctx.fillRect(w*0.72, h*0.11, 3, 2);
+    },
+  },
+  'Fields and Fables': {
+    park:'Emerald Meadows', sky:'#3a6a5a', wall:'#3a7a4a', wallLine:'#e9c76a',
+    marker:'#e9c76a', track:'#c9a256', grass:'#3a8a3a',
+    crowd:['#3a7a4a','#e9c76a','#c94b1a','#5cb6e5','#f4c25a'],
+    landmark(ctx, w, h) {
+      /* Emerald City tower */
+      ctx.fillStyle = '#0a2a1a';
+      ctx.fillRect(w*0.44, h*0.02, 14, h*0.14);
+      ctx.fillStyle = '#3a8a4a';
+      ctx.fillRect(w*0.46, h*0.03, 10, h*0.13);
+      ctx.fillStyle = '#f4c25a';
+      ctx.beginPath(); ctx.arc(w*0.51, h*0.02, 4, 0, Math.PI*2); ctx.fill();
+    },
+  },
+  'The Marauders': {
+    park:'Pirate Bay', sky:'#1a2a3a', wall:'#3a2818', wallLine:'#f4c25a',
+    marker:'#f4c25a', track:'#8a6a3a', grass:'#2a5a3a',
+    crowd:['#3a2818','#5a4a2a','#8a1a1a','#3a3a4a','#2a2a3a'],
+    landmark(ctx, w, h) {
+      /* Ship silhouette with sail */
+      ctx.fillStyle = '#050508';
+      ctx.fillRect(w*0.40, h*0.10, 80, 6);
+      ctx.fillRect(w*0.48, h*0.02, 3, h*0.10);
+      ctx.fillStyle = '#eaeaea';
+      ctx.beginPath(); ctx.moveTo(w*0.48, h*0.03); ctx.lineTo(w*0.60, h*0.09); ctx.lineTo(w*0.48, h*0.09); ctx.fill();
+      /* Jolly Roger */
+      ctx.fillStyle = '#050508';
+      ctx.beginPath(); ctx.arc(w*0.54, h*0.06, 2, 0, Math.PI*2); ctx.fill();
+    },
+  },
+  'The Kids Table': {
+    park:'Little League Park', sky:'#5aa0d0', wall:'#c94b1a', wallLine:'#eaeaea',
+    marker:'#eaeaea', track:'#c9a256', grass:'#3a8a3a',
+    crowd:['#f4c25a','#5cb6e5','#c94b1a','#5bb083','#eaeaea'],
+    landmark(ctx, w, h) {
+      /* Day sky: a sun and a few clouds. */
+      ctx.fillStyle = '#f4c25a';
+      ctx.beginPath(); ctx.arc(w*0.85, h*0.05, 8, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(234,234,234,.8)';
+      ctx.fillRect(w*0.20, h*0.06, 26, 4); ctx.fillRect(w*0.22, h*0.04, 22, 4);
+      ctx.fillRect(w*0.55, h*0.08, 30, 4); ctx.fillRect(w*0.58, h*0.06, 24, 4);
+    },
+  },
+};
+const DEFAULT_THEME = {
+  park:'The Sandlot', sky:'#0e1c2c', wall:'#173a20', wallLine:'#f4c25a',
+  marker:'#eaeaea', track:'#8a5a2c', grass:'#245a2c',
+  crowd:['#3a4a5a','#5a4a3a','#4a3a4a','#3a5a4a','#5a5a6a'],
+  landmark(){},
+};
+function currentTheme() {
+  const oppName = State.opponent && State.opponent.name;
+  return STADIUM_THEMES[oppName] || DEFAULT_THEME;
+}
+
 /* Opponent teams. Each is a name + primary color + a nine character lineup
    drawn from the same twenty-three character pool. Users face a rotating cast
    of these across a seven game season. Every team has a distinct flavor: a
@@ -1634,6 +1791,9 @@ function startGame(opts) {
     away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : '#f4c25a' },
     home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? '#f4c25a' : State.opponent.color },
     stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{} },
+    lineScore: { away:[0], home:[] },   /* runs per inning, per side */
+    fx: [],           /* live particles: dust, confetti, glove flashes */
+    shakeUntil: 0,    /* camera shake deadline (home runs) */
     log: [],
     pitch: null,      /* the current pitch animation */
     over: false,
@@ -1757,6 +1917,10 @@ function startAtBat() {
   const g = State.game;
   if (g.over) return;
   g.balls = 0; g.strikes = 0;
+  /* Open this half inning's bucket on the line score so the board shows a
+     zero for an inning in progress and stays blank for ones not reached. */
+  const lsKey = g.half === 'top' ? 'away' : 'home';
+  while (g.lineScore[lsKey].length < g.inning) g.lineScore[lsKey].push(0);
   const b = currentBatter();
   g.batterCtx = batterContext(b);
   for (const note of g.batterCtx.notes) addLog(note, true);
@@ -2008,12 +2172,35 @@ function pathPointAt(field, path, t) {
 
 function scheduleContactPlay(kind, batter) {
   const g = State.game;
-  const traj = ballTrajectory(kind);
-  const isOut = kind === 'ground out' || kind === 'fly out';
+  /* Errors: on a ground or fly out, roll against the fielding team's DEF.
+     A low-defense team lets the batter reach on a mishandled ball. */
+  let effective = kind;
+  let onError = false;
+  if (kind === 'ground out' || kind === 'fly out') {
+    const fielding = currentFieldingTeam().batters;
+    const avgDef = fielding.reduce((a,c) => a + (c.def || 60), 0) / fielding.length;
+    const errChance = clamp(0.08 - (avgDef - 60) / 400, 0.02, 0.14);
+    if (Math.random() < errChance) {
+      effective = 'single';       /* reached on error, treated as a single */
+      onError = true;
+    }
+  }
+  const traj = ballTrajectory(effective);
+  const isOut = effective === 'ground out' || effective === 'fly out';
   const preBases = [...g.bases];
 
+  /* Double play: ground out with a runner on 1st and less than 2 outs. */
+  let doublePlay = false;
+  if (isOut && effective === 'ground out' && preBases[0] && g.outs < 2) {
+    const fielding = currentFieldingTeam().batters;
+    const avgDef = fielding.reduce((a,c) => a + (c.def || 60), 0) / fielding.length;
+    const runnerSpd = preBases[0].spd;
+    const dpChance = clamp(0.40 + (avgDef - 60) / 250 - (runnerSpd - 60) / 220, 0.10, 0.75);
+    if (Math.random() < dpChance) doublePlay = true;
+  }
+
   g.play = {
-    kind, batter, isOut,
+    kind: effective, batter, isOut, onError, doublePlay,
     ball: traj,
     startedAt: performance.now(),
     swingUntil: performance.now() + 240,
@@ -2021,8 +2208,8 @@ function scheduleContactPlay(kind, batter) {
     runnerStart: performance.now() + Math.max(180, traj.duration - 400),
     runnerUntil: performance.now() + traj.duration + 600,
     preBases,
-    batterPath: batterPathIndices(kind),
-    runnerPaths: preBases.map((r, i) => r ? existingRunnerPathIndices(i, kind) : null),
+    batterPath: batterPathIndices(effective),
+    runnerPaths: preBases.map((r, i) => r ? existingRunnerPathIndices(i, effective) : null),
     applied: false,
   };
 
@@ -2030,25 +2217,78 @@ function scheduleContactPlay(kind, batter) {
   setTimeout(() => {
     if (!g.play || g.play.applied) return;
     g.play.applied = true;
-    if (isOut) applyOutMutation(kind, batter);
-    else       applyHitMutation(kind, batter);
+    /* Landing FX: dust on the ground where the ball comes down, glove
+       flash on a caught fly ball, confetti + shake on a home run. */
+    const geo = fieldGeom();
+    const landingX = geo.cx + g.play.ball.dx * geo.r;
+    const landingY = geo.cy + g.play.ball.dy * geo.r;
+    if (g.play.kind === 'home run') {
+      confettiBurst(g, geo.cx, geo.cy);
+      g.shakeUntil = performance.now() + 500;
+    } else if (g.play.kind === 'fly out') {
+      gloveFlash(g, landingX, landingY);
+      dustPuff(g, landingX, landingY);
+    } else {
+      dustPuff(g, landingX, landingY);
+    }
+    if (onError) {
+      applyHitMutation('single', batter, { onError: true });
+    } else if (doublePlay) {
+      applyDoublePlayMutation(batter);
+    } else if (isOut) {
+      applyOutMutation(effective, batter);
+    } else {
+      applyHitMutation(effective, batter);
+    }
     refreshHud();
   }, applyMs);
 
   const finishMs = traj.duration + 700;
   setTimeout(() => {
     if (!g.play) return;
-    const wasOut = g.play.isOut;
+    const wasOut = g.play.isOut && !g.play.onError;
+    const wasDP = g.play.doublePlay;
     g.play = null;
+    /* Check for a walk-off: home team leads at the end of a play in the
+       bottom of the final inning or later. */
+    if (checkWalkOff()) return finishGame();
+    if (wasDP && g.outs >= 3) return endHalfInning();
     if (wasOut) afterOutTransition();
-    else        afterHitTransition(kind);
+    else        afterHitTransition(g && g.away && g.home ? kind : kind);
   }, finishMs);
 }
 
-function applyHitMutation(kind, batter) {
+function applyDoublePlayMutation(batter) {
   const g = State.game;
+  statBump(batter.k, 'ab');
+  const preRunner = g.bases[0];
+  g.bases[0] = null;
+  g.outs += 2;
+  addLog(`Double play. ${batter.n} and ${preRunner.n} both out. ${g.outs} out.`);
+  showCallout('DOUBLE PLAY', 'strike');
+  /* Kick up dust at both bases for the play. */
+  const geo = fieldGeom();
+  dustPuff(g, geo.cx + geo.r, geo.cy);
+  dustPuff(g, geo.cx + (batter.spd > 70 ? geo.r * 0.9 : geo.r), geo.cy + geo.r * 0.3);
+}
+
+function checkWalkOff() {
+  const g = State.game;
+  if (g.half !== 'bottom') return false;
+  if (g.inning < g.innings) return false;
+  if (g.home.score > g.away.score) {
+    g.over = true;
+    g.winner = 'home';
+    return true;
+  }
+  return false;
+}
+
+function applyHitMutation(kind, batter, opts) {
+  const g = State.game;
+  const onError = opts && opts.onError;
   statBump(batter.k,'ab');
-  statBump(batter.k,'hits');
+  if (!onError) statBump(batter.k,'hits');
   if (kind === 'home run') {
     statBump(batter.k,'hr');
     let scored = 1;
@@ -2072,8 +2312,13 @@ function applyHitMutation(kind, batter) {
   newBases[bases-1] = batter;
   g.bases = newBases;
   if (scored) scoreRuns(scored);
-  addLog(`${batter.n} lines a ${kind}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
-  showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
+  if (onError) {
+    addLog(`${batter.n} reaches on an error${scored ? `, ${scored} score` : ''}.`);
+    showCallout('REACHED ON ERROR', 'sub');
+  } else {
+    addLog(`${batter.n} lines a ${kind}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
+    showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
+  }
 }
 
 function applyOutMutation(kind, batter) {
@@ -2178,8 +2423,13 @@ function nextBatter() {
 }
 
 function scoreRuns(n) {
+  const g = State.game;
   const t = currentBattingTeam();
   t.score += n;
+  /* File the runs on the line score under the current inning. */
+  const key = g.half === 'top' ? 'away' : 'home';
+  while (g.lineScore[key].length < g.inning) g.lineScore[key].push(0);
+  g.lineScore[key][g.inning - 1] += n;
 }
 
 function endHalfInning() {
@@ -2198,6 +2448,9 @@ function endHalfInning() {
   const done = checkGameOver();
   refreshHud();
   if (done) return finishGame();
+  /* Also fire a walk-off check right after flipping to the bottom of the
+     final inning, in case the home team is already ahead. */
+  if (checkWalkOff()) return finishGame();
   setTimeout(startAtBat, BEAT.betweenHalfInnings);
 }
 
@@ -2276,34 +2529,167 @@ function finishGame() {
 /* ============================================================================
    FIELD AND METER RENDERING
    ============================================================================ */
+
+/* The field canvas has a fixed internal size, so play staging code can
+   compute the same geometry drawField uses without holding a context. */
+function fieldGeom() {
+  const w = 960, h = 660;
+  return { w, h, cx: w/2, cy: h*0.58, r: Math.min(w, h) * 0.30 };
+}
+
+/* -------- Particles --------
+   One flat array on the game. Everything is a square that moves, falls,
+   and fades. Dust for slides and landings, confetti for homers, a white
+   flash for catches. Updated and drawn once per frame inside drawField. */
+function spawnFx(g, p) {
+  if (!g.fx) g.fx = [];
+  if (g.fx.length > 400) return;   /* hard cap, keeps a confetti spam sane */
+  g.fx.push(p);
+}
+function dustPuff(g, x, y, color) {
+  for (let i = 0; i < 9; i++) {
+    spawnFx(g, {
+      x, y, size: 3,
+      vx: (Math.random() - 0.5) * 80,
+      vy: -20 - Math.random() * 50,
+      grav: 160,
+      color: color || 'rgba(205,170,120,.9)',
+      life: 450 + Math.random() * 300,
+    });
+  }
+}
+function gloveFlash(g, x, y) {
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2;
+    spawnFx(g, {
+      x, y, size: 2,
+      vx: Math.cos(a) * 90, vy: Math.sin(a) * 90,
+      grav: 0, color: '#eaeaea', life: 300,
+    });
+  }
+}
+function confettiBurst(g, x, y) {
+  const cols = ['#f4c25a','#d24949','#5bb083','#6aa7c4','#b08ac6','#eaeaea'];
+  for (let i = 0; i < 46; i++) {
+    spawnFx(g, {
+      x: x + (Math.random() - 0.5) * 120, y,
+      size: 4,
+      vx: (Math.random() - 0.5) * 220,
+      vy: -40 - Math.random() * 180,
+      grav: 210,
+      color: cols[i % cols.length],
+      life: 1100 + Math.random() * 700,
+    });
+  }
+}
+function updateAndDrawFx(ctx, g) {
+  if (!g.fx || !g.fx.length) { g.fxTime = performance.now(); return; }
+  const now = performance.now();
+  const dt = Math.min(50, now - (g.fxTime || now));
+  g.fxTime = now;
+  g.fx = g.fx.filter(p => (p.life -= dt) > 0);
+  for (const p of g.fx) {
+    p.x += p.vx * dt / 1000;
+    p.y += p.vy * dt / 1000;
+    p.vy += (p.grav || 0) * dt / 1000;
+    ctx.globalAlpha = clamp(p.life / 400, 0, 1);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+}
+
 function drawField(ctx, w, h, t, pitch, inWindup) {
-  /* Sky above, then dirt warning track, then outfield grass, then the
-     infield dirt diamond. Everything sized to the field's own w and h so
-     the canvas can be resized. */
+  /* Night sky, crowd, light towers, outfield wall, grass, diamond.
+     Everything sized to the field's own w and h so the canvas can be
+     resized. A home run shakes the whole camera for half a second. */
+  ctx.save();
+  const gShake = State.game;
+  if (gShake && gShake.shakeUntil && performance.now() < gShake.shakeUntil) {
+    const mag = 6 * (gShake.shakeUntil - performance.now()) / 500;
+    ctx.translate((Math.random() - 0.5) * mag * 2, (Math.random() - 0.5) * mag * 2);
+  }
+
+  const theme = currentTheme();
+
   ctx.fillStyle = '#0b1015';
-  ctx.fillRect(0,0,w,h);
+  ctx.fillRect(-8, -8, w + 16, h + 16);
 
-  const skyH = h * 0.12;
-  ctx.fillStyle = '#132434';
-  ctx.fillRect(0,0,w,skyH);
-  /* stadium seats hatched */
-  ctx.fillStyle = '#0d1a25';
-  for (let x = 0; x < w; x += 6) ctx.fillRect(x, skyH - 14, 3, 14);
-  ctx.fillStyle = '#1a2a3a';
-  for (let x = 3; x < w; x += 6) ctx.fillRect(x, skyH - 8, 3, 8);
+  const skyH = h * 0.13;
+  ctx.fillStyle = theme.sky;
+  ctx.fillRect(0, 0, w, skyH);
+  /* a few stars, dimmed on daytime themes */
+  if (theme.sky !== '#5aa0d0') {
+    ctx.fillStyle = 'rgba(234,234,234,.5)';
+    for (let x = 13; x < w; x += 61) ctx.fillRect(x, 6 + (x * 7) % 18, 2, 2);
+  }
 
-  /* Outfield grass with mowed stripe pattern */
-  const grassY = skyH;
-  ctx.fillStyle = '#245a2c';
+  /* Landmark: theme-specific silhouette in the sky area. */
+  if (theme.landmark) theme.landmark(ctx, w, h);
+
+  /* Light towers, glowing */
+  const tower = (tx) => {
+    ctx.fillStyle = '#2a3644';
+    ctx.fillRect(tx - 2, 14, 4, skyH - 14);
+    ctx.fillStyle = '#1a2430';
+    ctx.fillRect(tx - 16, 6, 32, 12);
+    for (let row = 0; row < 2; row++) {
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = '#f5ecc8';
+        ctx.fillRect(tx - 13 + i * 8, 8 + row * 5, 4, 3);
+      }
+    }
+    const glow = ctx.createRadialGradient(tx, 12, 2, tx, 12, 60);
+    glow.addColorStop(0, 'rgba(245,236,200,.20)');
+    glow.addColorStop(1, 'rgba(245,236,200,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(tx - 60, 0, 120, 80);
+  };
+  tower(w * 0.14);
+  tower(w * 0.86);
+
+  /* Crowd: three rows of colored dots in the stands, with a slow wave of
+     brighter fans rolling through so the place feels alive. */
+  const crowdCols = theme.crowd;
+  const tick = Math.floor(performance.now() / 350);
+  for (let row = 0; row < 3; row++) {
+    const y = skyH - 17 + row * 5;
+    for (let x = 4; x < w; x += 7) {
+      const v = (x * 7 + row * 13) % 10;
+      if (v >= 8) continue;
+      const lively = ((x * 31 + row * 17 + tick) % 47) === 0;
+      ctx.fillStyle = lively ? '#e8d8b0' : crowdCols[v % 5];
+      ctx.fillRect(x, lively ? y - 2 : y, 3, 3);
+    }
+  }
+
+  /* Outfield wall: themed color and yellow line at the top. */
+  const wallY = skyH;
+  const wallH = 20;
+  ctx.fillStyle = theme.wall;
+  ctx.fillRect(0, wallY, w, wallH);
+  ctx.fillStyle = theme.wallLine;
+  ctx.fillRect(0, wallY, w, 2);
+  ctx.fillStyle = theme.marker;
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('342', w * 0.12, wallY + wallH / 2 + 1);
+  ctx.fillText('408', w * 0.50, wallY + wallH / 2 + 1);
+  ctx.fillText('342', w * 0.88, wallY + wallH / 2 + 1);
+
+  /* Outfield grass, themed. */
+  const grassY = wallY + wallH;
+  ctx.fillStyle = theme.grass;
   ctx.fillRect(0, grassY, w, h - grassY);
   for (let i = 0; i < 8; i++) {
     ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.05)';
     const stripeH = (h - grassY) / 8;
     ctx.fillRect(0, grassY + i * stripeH, w, stripeH);
   }
-  /* Warning track along the wall */
-  ctx.fillStyle = '#8a5a2c';
-  ctx.fillRect(0, grassY, w, 12);
+  /* Warning track along the wall, themed. */
+  ctx.fillStyle = theme.track;
+  ctx.fillRect(0, grassY, w, 10);
 
   /* Home-plate camera: put the plate in the lower portion, mound up. */
   const cx = w/2;
@@ -2417,7 +2803,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         const st = clamp((now - p.startedAt) / (p.swingUntil - p.startedAt), 0, 1);
         drawBatSwing(ctx, cx - 22, cy + r + 8, st);
       }
-      /* Ball trajectory: plate to landing spot */
+      /* Ball trajectory: plate to landing spot, with a ground shadow so
+         the arc height reads. */
       if (now < p.ballUntil) {
         const bt2 = clamp((now - p.startedAt) / p.ball.duration, 0, 1);
         const startX = cx, startY = cy + r + 6;
@@ -2426,7 +2813,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         const arc = 4 * p.ball.arcH * bt2 * (1 - bt2);
         const bxx = startX + (endX - startX) * bt2;
         const byy = startY + (endY - startY) * bt2 - arc;
-        drawBaseball(ctx, bxx, byy);
+        /* Ground level for the shadow: the ball's own linear path (no arc). */
+        const gy = startY + (endY - startY) * bt2;
+        drawBaseball(ctx, bxx, byy, gy);
       }
     } else {
       /* No play in flight: runners are static on their bases, batter
@@ -2471,9 +2860,24 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       ctx.fillText(label, cx, cy - 26);
     }
   }
+
+  /* Particles fire on top of everything. */
+  if (g) updateAndDrawFx(ctx, g);
+  ctx.restore();
 }
 
-function drawBaseball(ctx, x, y) {
+function drawBaseball(ctx, x, y, groundY) {
+  /* Optional ground shadow: pass the y of the ground plane and we drop a
+     small shadow there, so a high arc reads as high. */
+  if (typeof groundY === 'number') {
+    const drop = Math.max(0, groundY - y);
+    const alpha = clamp(0.35 - drop * 0.0015, 0.05, 0.35);
+    const rx = 5 + drop * 0.02;
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(x, groundY, rx, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.fillStyle = '#eaeaea';
   ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
   ctx.strokeStyle = '#c94b1a';
@@ -2505,6 +2909,11 @@ function drawRunner(ctx, x, y, character, scale) {
   const key = character.k + '@' + scale;
   let cv = runnerCache.get(key);
   if (!cv) { cv = spriteCanvas(character, Math.round(SPRITE_W * scale)); runnerCache.set(key, cv); }
+  /* Ellipse shadow under the sprite so it feels planted on the field. */
+  ctx.fillStyle = 'rgba(0,0,0,.35)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 1, cv.width * 0.35, cv.width * 0.10, 0, 0, Math.PI * 2);
+  ctx.fill();
   /* Anchor at the feet: shift up by the sprite's full height. */
   ctx.drawImage(cv, Math.round(x - cv.width/2), Math.round(y - cv.height));
 }
@@ -2553,6 +2962,12 @@ function renderGame() {
   const g = State.game;
   const s = el('div','screen');
 
+  /* Line score above the field, real ballpark style. */
+  const ls = el('div','linescore');
+  ls.id = 'linescore';
+  renderLineScore(ls);
+  s.appendChild(ls);
+
   const arena = el('div','arena');
   const cv = document.createElement('canvas');
   cv.id = 'field'; cv.width = 960; cv.height = 660;
@@ -2561,6 +2976,14 @@ function renderGame() {
   /* Score and inning overlaid on the field's corners so nothing steals room
      from the diamond. Names inside color chips read at a glance without
      needing a label. */
+  const theme = currentTheme();
+  const parkLbl = el('div','corner',
+    `<span class="lbl" style="color:${theme.wallLine}">${theme.park}</span>`
+  );
+  parkLbl.style.top = '0'; parkLbl.style.left = '50%'; parkLbl.style.transform = 'translateX(-50%)';
+  parkLbl.style.textAlign = 'center';
+  arena.appendChild(parkLbl);
+
   const tl = el('div','corner tl',
     `<span class="lbl">${g.away.name}${g.away.isYou?' (you)':''}</span>`
     + `<span class="val ${g.away.isYou?'gold':''}" id="hud-away">${g.away.score}</span>`
@@ -2660,9 +3083,35 @@ function refreshAtBatCard(node) {
   node.appendChild(count);
 }
 
+function renderLineScore(node) {
+  const g = State.game;
+  if (!g) return;
+  const innings = g.innings;
+  const rowFor = (label, arr, score, isYou) => {
+    let html = `<td class="team">${label}${isYou?' *':''}</td>`;
+    for (let i = 0; i < innings; i++) {
+      const cell = arr[i];
+      const isCur = (i + 1) === g.inning;
+      const cls = isCur ? 'cur' : '';
+      html += `<td class="${cls}">${cell == null ? '' : cell}</td>`;
+    }
+    html += `<td class="r">${score}</td>`;
+    return html;
+  };
+  let header = '<th>&nbsp;</th>';
+  for (let i = 1; i <= innings; i++) header += `<th>${i}</th>`;
+  header += '<th>R</th>';
+  node.innerHTML = `<table><thead><tr>${header}</tr></thead><tbody>`
+    + `<tr>${rowFor(g.away.name.slice(0,10), g.lineScore.away, g.away.score, g.away.isYou)}</tr>`
+    + `<tr>${rowFor(g.home.name.slice(0,10), g.lineScore.home, g.home.score, g.home.isYou)}</tr>`
+    + `</tbody></table>`;
+}
+
 function refreshHud() {
   if (State.screen !== 'game') return;
   const g = State.game;
+  const ls = document.getElementById('linescore');
+  if (ls) renderLineScore(ls);
   const hudAway = document.getElementById('hud-away');
   const hudHome = document.getElementById('hud-home');
   const hudInn = document.getElementById('hud-inning');
