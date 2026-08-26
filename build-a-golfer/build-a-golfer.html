@@ -1787,8 +1787,11 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(4,16,10,.34)); border:1px solid var(--panelb);
     border-radius:13px; padding:9px 15px 9px 16px; box-shadow:0 6px 18px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)}
   .bcasthd::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--bacc,#e0a83b)}
+  /* ITEM 11: the venue name is never clipped. It wraps to a second line rather than ellipsising, at any width
+     (a 470px desktop header truncated "The Auld Links at Carrickmoor" too, not just a phone). */
   .bcasthd .bc-name{flex:1; min-width:0; font-family:var(--display); font-style:italic; font-size:18px; line-height:1.05;
-    color:var(--cream,#F4E3C9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.01em}
+    color:var(--cream,#F4E3C9); letter-spacing:.01em; overflow:hidden; overflow-wrap:anywhere;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
   .bcasthd .bc-meta{flex:0 0 auto; font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--bacc,#e0a83b); text-align:right}
   .bcasthd .bc-ph{font-family:var(--body); font-style:normal; font-weight:700; font-size:.6em; letter-spacing:.05em; text-transform:uppercase; opacity:.82; white-space:nowrap}
   .dcardwrap{max-width:600px; margin:9px auto 0; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(4,16,10,.3));
@@ -1799,6 +1802,14 @@ window.GA_ID='G-L29P5MRWKE';
   @media(max-width:700px){
     .bcasthd,.dcardwrap{max-width:none; width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
       border-radius:0; border-left:none; border-right:none}
+    /* ITEM 11: the round header truncated at phone width ("The Auld Links at Carrickm..."). The name and the
+       conditions were sharing one row, so the longest venue names got ~150px of a 390px screen. On a phone the
+       name now takes the full row (it fits on one line there) and the conditions drop underneath it as an
+       eyebrow, with the padding tightened so the header is barely taller than it was. */
+    .bcasthd{flex-wrap:wrap; row-gap:3px; align-items:flex-start; padding:7px 14px 7px 15px}
+    .bcasthd .bc-name{flex:1 1 100%; white-space:normal; overflow:hidden; text-overflow:clip;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow-wrap:anywhere}
+    .bcasthd .bc-meta{flex:1 1 100%; text-align:left; line-height:1.15}
   }
   .shotpanel{max-width:560px; margin:8px auto 0; background:var(--panel); border:1px solid var(--panelb); border-radius:13px; padding:10px 14px}
   .shothd{display:flex; align-items:baseline; gap:11px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:2px}
@@ -15712,13 +15723,22 @@ function hvSwingMarkup(g,p,look){
     : frames.map((u,i)=>img(u,clsBase[i])).join('');
   // Shot-number pin: upright, above the ball (no rotated group now, so it never rotates/flips).
   let badge='';
-  if(p.i!=null && !holdStatic){ const num=p.i+1, putt=(kind==='putt');
-    const br=putt?GH*0.30:GH*0.26, fs=putt?GH*0.36:GH*0.32;
-    const bx2=A[0], by2=Math.max(cam[1]+br+0.8, A[1]-GH*1.05);
-    badge=`<g class="hvswnum">`
+  if(p.i!=null && !holdStatic){ const num=p.i+1;
+    // ITEM 11: on the green close-up this badge was the biggest thing on the screen and it sat exactly where
+    // the flag is - the pin is UP the hole from the ball, and the badge was pinned above the ball and clamped
+    // to the top of the frame, so it landed on the flagstick. Standing over a putt, the most prominent object
+    // was a numeral. On a zoomed frame it is now small and sits BELOW the ball (open green, clear of the pin)
+    // with its pointer flipped up at the ball. The full-hole view, where it reads well, is untouched.
+    const zoom = cam[3] < HV_H*0.62;
+    const br=zoom?GH*0.19:GH*0.26, fs=zoom?GH*0.25:GH*0.32;
+    const bx2=A[0];
+    const by2=zoom ? Math.min(cam[1]+cam[3]-br-1.2, A[1]+GH*0.34+br)
+                   : Math.max(cam[1]+br+0.8, A[1]-GH*1.05);
+    const tipY = zoom ? by2-br*1.45 : by2+br*1.45, baseY = zoom ? by2-br*0.54 : by2+br*0.54;
+    badge=`<g class="hvswnum"${zoom?' opacity=".9"':''}>`
       +`<circle cx="${(bx2+0.6).toFixed(1)}" cy="${(by2+1).toFixed(1)}" r="${br.toFixed(1)}" fill="#04150a" opacity=".45"/>`
-      +`<path d="M ${bx2.toFixed(1)} ${(by2+br*1.45).toFixed(1)} L ${(bx2-br*0.54).toFixed(1)} ${(by2+br*0.54).toFixed(1)} L ${(bx2+br*0.54).toFixed(1)} ${(by2+br*0.54).toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
-      +`<circle cx="${bx2.toFixed(1)}" cy="${by2.toFixed(1)}" r="${br.toFixed(1)}" fill="#0a1626" stroke="#F1D04A" stroke-width="1.2"/>`
+      +`<path d="M ${bx2.toFixed(1)} ${tipY.toFixed(1)} L ${(bx2-br*0.54).toFixed(1)} ${baseY.toFixed(1)} L ${(bx2+br*0.54).toFixed(1)} ${baseY.toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
+      +`<circle cx="${bx2.toFixed(1)}" cy="${by2.toFixed(1)}" r="${br.toFixed(1)}" fill="#0a1626" stroke="#F1D04A" stroke-width="${zoom?'0.9':'1.2'}"/>`
       +`<text x="${bx2.toFixed(1)}" y="${(by2+fs*0.34).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}" font-weight="800" fill="#F6E88F" font-family="inherit">${num}</text>`
       +`</g>`; }
   // CS483u: an equipped effect (aura) glows on the golfer - a pulse in the effect's colour on the group.
