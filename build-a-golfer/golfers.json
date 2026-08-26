@@ -69,38 +69,6 @@
  },
  "golfers": [
   {
-   "name": "Tiger Woods",
-   "era": "leg",
-   "tier": "legend",
-   "nation": "USA",
-   "note": "GOAT, 15 majors",
-   "dist": 88,
-   "acc": 88,
-   "app": 99,
-   "sht": 96,
-   "scr": 96,
-   "bnk": 94,
-   "put": 95,
-   "clu": 98,
-   "overall": 95,
-   "majors": 15,
-   "born": 1975,
-   "rarity": "Legendary",
-   "archetype": "Ballstriker",
-   "signature": "Approach",
-   "country": "United States",
-   "data_source": "historical peak 2009 (DataGolf)",
-   "arc_age": 34,
-   "potential": 95,
-   "pot_band": {
-    "exp": 95,
-    "lo": 95,
-    "hi": 95,
-    "boom": 0.0,
-    "bust": 0.0
-   }
-  },
-  {
    "name": "Jack Nicklaus",
    "era": "leg",
    "tier": "legend",
@@ -601,7 +569,7 @@
    "archetype": "Closer",
    "signature": "Composure",
    "country": "United States",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 80,
    "pot_band": {
@@ -1337,7 +1305,7 @@
    "archetype": "Closer",
    "signature": "Composure",
    "country": "England",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 80,
    "pot_band": {
@@ -1369,7 +1337,7 @@
    "archetype": "Short-Game Artist",
    "signature": "Short Game",
    "country": "England",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 82,
    "pot_band": {
@@ -2073,7 +2041,7 @@
    "archetype": "Marksman",
    "signature": "Driving Accuracy",
    "country": "Sweden",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 80,
    "pot_band": {
@@ -2105,7 +2073,7 @@
    "archetype": "Closer",
    "signature": "Composure",
    "country": "England",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 85,
    "pot_band": {
@@ -2137,7 +2105,7 @@
    "archetype": "Ballstriker",
    "signature": "Approach",
    "country": "England",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 84,
    "pot_band": {
@@ -2169,7 +2137,7 @@
    "archetype": "Closer",
    "signature": "Composure",
    "country": "Germany",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 42,
    "potential": 82,
    "pot_band": {
@@ -2201,7 +2169,7 @@
    "archetype": "Closer",
    "signature": "Composure",
    "country": "Northern Ireland",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 81,
    "pot_band": {
@@ -2233,7 +2201,7 @@
    "archetype": "Marksman",
    "signature": "Driving Accuracy",
    "country": "South Africa",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 44,
    "potential": 83,
    "pot_band": {
@@ -2265,7 +2233,7 @@
    "archetype": "Short-Game Artist",
    "signature": "Short Game",
    "country": "South Africa",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 42,
    "potential": 83,
    "pot_band": {
@@ -2297,7 +2265,7 @@
    "archetype": "Bomber",
    "signature": "Driving Distance",
    "country": "United States",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 84,
    "pot_band": {
@@ -2329,7 +2297,7 @@
    "archetype": "Short-Game Artist",
    "signature": "Short Game",
    "country": "United States",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 41,
    "potential": 83,
    "pot_band": {
@@ -2361,7 +2329,7 @@
    "archetype": "Marksman",
    "signature": "Driving Accuracy",
    "country": "United States",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 86,
    "pot_band": {
@@ -7417,7 +7385,7 @@
    "archetype": "Marksman",
    "signature": "Driving Accuracy",
    "country": "Italy",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 44,
    "potential": 82,
    "pot_band": {
@@ -7449,7 +7417,7 @@
    "archetype": "Putter",
    "signature": "Putting",
    "country": "England",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 39,
    "potential": 81,
    "pot_band": {
@@ -7769,7 +7737,7 @@
    "archetype": "Closer",
    "signature": "Composure",
    "country": "Ireland",
-   "data_source": "current (DataGolf 2026-06-22)",
+   "data_source": "reputation",
    "arc_age": 45,
    "potential": 82,
    "pot_band": {
