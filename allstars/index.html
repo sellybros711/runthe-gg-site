@@ -2908,8 +2908,10 @@ function savePrefs() {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
       innings: State.innings,
       difficulty: State.difficulty,
+      gameSpeed: State.gameSpeed,
       teamName: State.teamName,
       muted: Sound.muted,
+      progress: PROGRESS,
     }));
   } catch (e) {}
 }
@@ -2967,6 +2969,7 @@ const State = {
   opponent: null,      /* {name, color, roster} */
   innings: PREFS.innings === 9 ? 9 : 5,
   difficulty: ['easy','medium','hard'].includes(PREFS.difficulty) ? PREFS.difficulty : 'medium',
+  gameSpeed: ['relaxed','normal','fast'].includes(PREFS.gameSpeed) ? PREFS.gameSpeed : 'normal',
   game: null,
   season: loadSeason(),
 };
@@ -3240,6 +3243,19 @@ function renderSettings() {
     dRow.appendChild(t);
   });
   card.appendChild(dRow);
+
+  card.appendChild(el('h3', null, 'Game speed'));
+  const spRow = el('div','toggle-row');
+  ['relaxed','normal','fast'].forEach(sp => {
+    const t = el('div','toggle', SPEEDS[sp].label);
+    if (State.gameSpeed === sp) t.classList.add('on');
+    t.onclick = () => { State.gameSpeed = sp; applyGameSpeed(); savePrefs(); render(); };
+    spRow.appendChild(t);
+  });
+  card.appendChild(spRow);
+  card.appendChild(el('p', null,
+    'How long the game pauses between pitches and plays. Fast also brings the '
+    + 'pitch in a little quicker, so the timing is slightly tighter.'));
 
   if (State.mode === 'season') {
     card.appendChild(el('h3', null, 'Season format'));
@@ -3710,8 +3726,9 @@ function pitcherFatigue() {
 
 /* Pause lengths in ms. Named so nothing tunes one number without seeing what
    the others are set to; the game's pacing lives here more than anywhere
-   else. */
-const BEAT = {
+   else. These are the authored NORMAL values; the live BEAT below is these
+   scaled by the player's game speed setting. */
+const BASE_BEAT = {
   windup:    700,   /* pitcher into set, meter shows but does not sweep yet */
   betweenPitches: 900,   /* after ball/called strike/foul */
   afterWhiff: 950,
@@ -3722,6 +3739,28 @@ const BEAT = {
   betweenHalfInnings: 2600,
   intoAtBat: 700,   /* new batter walks up */
 };
+
+/* Game speed. A full five inning game at NORMAL runs past ten minutes,
+   which overshoots the quick arcade loop this game is meant to have, so
+   the player can trade ceremony for pace. `beat` scales the dead time
+   between events; `meter` scales the pitch sweep, kept mild because it
+   also changes how hard the timing is. */
+const SPEEDS = {
+  relaxed: { beat: 1.25, meter: 1.15, label:'Relaxed' },
+  normal:  { beat: 1.00, meter: 1.00, label:'Normal' },
+  fast:    { beat: 0.55, meter: 0.85, label:'Fast' },
+};
+const BEAT = Object.assign({}, BASE_BEAT);
+function applyGameSpeed() {
+  const s = SPEEDS[State.gameSpeed] || SPEEDS.normal;
+  for (const k of Object.keys(BASE_BEAT)) BEAT[k] = Math.round(BASE_BEAT[k] * s.beat);
+}
+function meterScale() {
+  const s = SPEEDS[State.gameSpeed] || SPEEDS.normal;
+  return s.meter;
+}
+/* Seed BEAT from the saved preference now that SPEEDS exists. */
+applyGameSpeed();
 
 let atBatCleanup = null;
 function endAtBatCleanup() {
@@ -3986,7 +4025,7 @@ function throwPitch(chosenPt, chosenZone) {
     g.batterCtx.weakPitch = pitchTypes[Math.floor(Math.random()*3)];
   }
   /* speed multiplier: fastball fast, curve normal, change starts fast slows down */
-  let baseSpeed = diff.speed
+  let baseSpeed = diff.speed * meterScale()
     * (pt === 'fastball' ? 0.85 : pt === 'curveball' ? 1.15 : 1.0)
     / (0.85 + pitcher.pow / 400);
   /* Father Time drags out every at bat; his stall quirk multiplies the
