@@ -32,7 +32,16 @@ LIGHT = (-0.55, -0.62, 0.56)   # upper left, slightly toward the viewer
 SIL = (14, 11, 20)             # shared outer silhouette line
 
 CX = 16.0
-HEAD_CY, HEAD_RX, HEAD_RY = 13.0, 10.2, 9.6
+
+# The skull is very slightly TALLER than it is wide. It has to be: a chibi
+# head is most of the silhouette, so a head one pixel wider than it is tall
+# reads as squashed at every size, and no amount of shading fixes it. Hair
+# and hats are then built INSIDE this box (see hair(), headwear()) so that
+# what the eye follows is always the skull's curve, never a wider lid
+# sitting on top of it.
+HEAD_CY, HEAD_RX, HEAD_RY = 13.0, 9.4, 10.2
+HEAD_BROW = HEAD_CY - 1.5     # hair stops here; below it is face
+TORSO_HW = 6.5                # torso half width, vs a 9.4 head half width
 
 
 # ---------------------------------------------------------------- color
@@ -59,16 +68,47 @@ def shade(c, amt):
     return mix(c, (255, 248, 225), amt)
 
 
+def luma(c):
+    return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255.0
+
+
 class Ramp:
-    """One material: a base color, its tone ramp, and its own outline."""
+    """One material: a base color, its tone ramp, and its own outline.
+
+    THE SHADOW END IS NOT A FIXED OFFSET. A near black material darkened
+    by a fixed amount lands on the silhouette color, so the form loses its
+    own edge into its own interior and reads as a hole rather than a
+    shape: that is what Hyde's hair was. The shadow tones are therefore
+    floored away from SIL in proportion to how dark the base already is.
+    The highlight end is left alone (see _floor).
+    """
     def __init__(self, base):
         self.base = hex2rgb(base) if isinstance(base, str) else base
+        y = luma(self.base)
+        # Only genuinely near black materials need help, and they need it
+        # from BELOW: lengthening their highlight instead just puts a white
+        # blob on a black shape, which is not a form either.
+        t = max(0.0, min(1.0, (0.16 - y) / 0.16))
         self.spec = shade(self.base, 0.55)
         self.lit = shade(self.base, 0.26)
         self.mid = self.base
-        self.dark = shade(self.base, -0.26)
-        self.core = shade(self.base, -0.44)
-        self.line = shade(self.base, -0.58)
+        self.dark = self._floor(shade(self.base, -0.26), t)
+        self.core = self._floor(shade(self.base, -0.44), t)
+        self.line = self._floor(shade(self.base, -0.58), t, extra=0.6)
+
+    @staticmethod
+    def _floor(c, t, extra=1.0):
+        """Keep a shadow tone clear of the silhouette color. Without this a
+        near black material's shadow IS the outline, the shape loses its
+        edge into its own interior, and what is left reads as a hole.
+
+        Only the SHADOW end moves. Lengthening the highlight instead is
+        the obvious fix and the wrong one: it turns a black cat grey while
+        the shadows stay welded to the outline, which is both problems at
+        once."""
+        if t <= 0:
+            return c
+        return mix(c, shade(SIL, 0.30), 0.35 * t * extra)
 
     def at(self, l, spec=False):
         if spec and l > 0.93:
@@ -99,8 +139,13 @@ class Canvas:
             return self.px[y][x]
         return None
 
-    def sphere(self, cx, cy, rx, ry, ramp, spec=True):
+    def sphere(self, cx, cy, rx, ry, ramp, spec=True, ymax=None):
+        """ymax cuts the sphere off below that row, so a hair or hat shape
+        can be a CAP that follows the skull's own curve rather than a
+        separate wider ellipse pasted over it."""
         for y in range(H):
+            if ymax is not None and y > ymax:
+                break
             for x in range(W):
                 nx = (x + 0.5 - cx) / rx
                 ny = (y + 0.5 - cy) / ry
@@ -271,6 +316,40 @@ def face(cv, skin, spec, cy=HEAD_CY):
     sp = spec.get('eyespread', 4)
     if style == 'hidden':
         return
+    if style == 'carved':
+        # A pumpkin is a pumpkin because of what is cut OUT of it. Two dots
+        # and a line on an orange sphere is just an orange sphere.
+        glow = hex2rgb(ec or '#3a1a08')
+        deep = shade(glow, -0.45)
+        # Triangle eyes, point down, drawn row by row so both sides mirror.
+        for i, wid in enumerate((3, 2, 1)):
+            for side in (-1, 1):
+                base = CX + side * 5
+                for k in range(wid):
+                    cv.dot(base - side * k, y - 2 + i, glow if i else deep)
+        # A nose notch, then a grin with two teeth left standing in it.
+        cv.dot(CX, y + 2, glow)
+        cv.dot(CX - 1, y + 3, glow)
+        cv.dot(CX, y + 3, glow)
+        cv.dot(CX + 1, y + 3, glow)
+        for dx in range(-5, 6):
+            drop = 1 if abs(dx) >= 4 else 0
+            if dx in (-2, 2):               # teeth
+                continue
+            cv.dot(CX + dx, y + 6 - drop, glow)
+            cv.dot(CX + dx, y + 7 - drop, deep)
+        return
+    if style == 'goggles':
+        # Dark round lenses on a strap. A fully hidden face on a bandaged
+        # head leaves nothing for the eye to land on, and the head reads
+        # as a bucket rather than as a head.
+        lens = hex2rgb(ec or '#1a1a24')
+        for side in (-1, 1):
+            cv.sphere(CX + side * 4, y, 3.0, 2.6, Ramp(rgb2hex(lens)), spec=True)
+        cv.rect(CX - 8, y - 1, CX + 8, y, Ramp(rgb2hex(shade(lens, 0.12))), l=0.35)
+        for side in (-1, 1):
+            cv.sphere(CX + side * 4, y, 2.2, 1.9, Ramp(rgb2hex(lens)), spec=True)
+        return
     for sx in (-sp, sp):
         x = int(CX + sx)
         if style == 'glow':
@@ -320,29 +399,69 @@ def face(cv, skin, spec, cy=HEAD_CY):
             cv.dot(x, my, mc)
 
 
+def head_edge(y, floor=0.72):
+    """Half width of the skull at row y. Below the jaw it stops narrowing
+    and holds at `floor` of the full width, because a fall of hair (or a
+    bandage) that keeps following the ellipse curls back under the chin
+    and closes into a ring around the face."""
+    ny = (y + 0.5 - HEAD_CY) / HEAD_RY
+    t = math.sqrt(max(0.0, 1.0 - min(1.0, ny * ny)))
+    return HEAD_RX * max(floor, t)
+
+
+def sidelock(cv, r, side, y0, y1, w=2.0):
+    """A fall of hair down the side of the head, following the skull's own
+    curve rather than hanging beside it as a straight bar."""
+    for y in range(int(y0), int(y1) + 1):
+        outer = CX + side * head_edge(y)
+        inner = outer - side * w
+        lo, hi = sorted((inner, outer))
+        cv.cyl(lo, y, hi, y, r)
+
+
 def hair(cv, spec):
     h = spec.get('hair')
     if not h:
         return
     r = Ramp(h)
     kind = spec.get('hairstyle', 'short')
+    # Every cap is drawn INSIDE the skull box and cut off at the brow, so
+    # the outline the eye follows is the head's, not the hair's.
+    cap = lambda rx, ry, dy=0.0: cv.sphere(CX, HEAD_CY + dy, HEAD_RX * rx,
+                                           HEAD_RY * ry, r, ymax=HEAD_BROW)
     if kind == 'short':
-        cv.sphere(CX, HEAD_CY - 4.6, HEAD_RX * 0.98, HEAD_RY * 0.62, r)
+        cap(0.99, 0.99, -0.6)
     elif kind == 'long':
-        cv.sphere(CX, HEAD_CY - 4.0, HEAD_RX * 1.02, HEAD_RY * 0.74, r)
-        cv.cyl(CX - 11, HEAD_CY - 2, CX - 9, HEAD_CY + 9, r, round_bot=2)
-        cv.cyl(CX + 9, HEAD_CY - 2, CX + 11, HEAD_CY + 9, r, round_bot=2)
+        cap(1.0, 1.0, -0.3)
+        sidelock(cv, r, -1, HEAD_CY - 4, HEAD_CY + 9, 2.4)
+        sidelock(cv, r, 1, HEAD_CY - 4, HEAD_CY + 9, 2.4)
     elif kind == 'wild':
-        cv.sphere(CX, HEAD_CY - 4.2, HEAD_RX * 1.05, HEAD_RY * 0.7, r)
-        for dx in (-9, -5, 0, 5, 9):
-            cv.cyl(CX + dx - 1, 1, CX + dx + 1, 5, r, round_top=1)
+        cap(1.0, 1.0, -0.4)
+        # Pointed locks with real gaps between them. Evenly spaced bars of
+        # equal height read as the teeth of a comb; bars packed edge to
+        # edge read as one slab with notches cut in it. Neither reads as
+        # hair, so: four locks, uneven heights, daylight in between.
+        for dx, up, lean in ((-6.0, 4, -2), (-2.0, 7, -1), (2.5, 5, 1), (6.5, 6, 3)):
+            top = HEAD_CY - HEAD_RY * math.sqrt(max(0.0, 1 - (dx / HEAD_RX) ** 2))
+            cv.tri([(CX + dx + lean, top - up),
+                    (CX + dx - 2.0, top + 2),
+                    (CX + dx + 2.0, top + 2)], r, l=0.5)
+    elif kind == 'mop':
+        # A shaggy fringe: the cap comes down past the brow in uneven
+        # points. Spikes would read as a crown on a blond character, which
+        # is what Jack looked like when he shared Hyde's wild hair.
+        cap(1.0, 1.0, -0.2)
+        for dx, drop in ((-6, 1), (-4, 2), (-2, 1), (0, 2), (2, 1), (4, 2), (6, 1)):
+            for k in range(drop):
+                cv.dot(CX + dx, HEAD_BROW + 1 + k, r.dark if k else r.mid)
+                cv.dot(CX + dx + 1, HEAD_BROW + 1 + k, r.dark if k else r.mid)
     elif kind == 'quiff':
-        cv.sphere(CX, HEAD_CY - 4.6, HEAD_RX * 0.96, HEAD_RY * 0.6, r)
+        cap(0.99, 0.97, -0.8)
         cv.tri([(CX - 3, 4), (CX + 4, 0), (CX + 5, 5)], r, l=0.7)
     elif kind == 'braids':
-        cv.sphere(CX, HEAD_CY - 4.4, HEAD_RX * 1.0, HEAD_RY * 0.66, r)
-        cv.cyl(CX - 12, HEAD_CY, CX - 10, HEAD_CY + 8, r, round_bot=2)
-        cv.cyl(CX + 10, HEAD_CY, CX + 12, HEAD_CY + 8, r, round_bot=2)
+        cap(1.0, 0.99, -0.5)
+        sidelock(cv, r, -1, HEAD_CY - 2, HEAD_CY + 8, 2.0)
+        sidelock(cv, r, 1, HEAD_CY - 2, HEAD_CY + 8, 2.0)
     elif kind == 'bald':
         pass
 
@@ -353,11 +472,15 @@ def beard(cv, spec):
         return
     r = Ramp(b)
     size = spec.get('beardsize', 'full')
+    # A beard has to start BELOW the eyes. The old spheres were centered
+    # high enough that their top edge crossed row HEAD_CY, which is where
+    # face() puts the eyes: every bearded character came out as a blank
+    # oval with no face in it at all, and Father Time had no face to find.
     if size == 'full':
-        cv.sphere(CX, HEAD_CY + 6.4, HEAD_RX * 0.92, HEAD_RY * 0.72, r)
+        cv.sphere(CX, HEAD_CY + 8.6, HEAD_RX * 0.94, HEAD_RY * 0.62, r)
     elif size == 'long':
-        cv.sphere(CX, HEAD_CY + 6.0, HEAD_RX * 0.95, HEAD_RY * 0.66, r)
-        cv.taper(HEAD_CY + 8, HEAD_CY + 18, 14, 8, r)
+        cv.sphere(CX, HEAD_CY + 8.2, HEAD_RX * 0.96, HEAD_RY * 0.58, r)
+        cv.taper(HEAD_CY + 10, HEAD_CY + 19, 13, 7, r)
     elif size == 'moustache':
         cv.rect(CX - 5, HEAD_CY + 4, CX + 5, HEAD_CY + 5, r, l=0.6)
         cv.dot(CX - 6, HEAD_CY + 4, shade(r.base, -0.2))
@@ -370,39 +493,44 @@ def headwear(cv, spec):
         return
     c = Ramp(spec.get('hatcolor', '#c93030'))
     trim = Ramp(spec.get('hattrim', '#f5efe8'))
+    # A hat is a CROWN plus a BRIM, and the crown is cut to the skull the
+    # same way hair is. Brims stay inside +/-11 of a 32 wide sprite: past
+    # that the hat becomes the character and the head underneath is gone.
+    crown = lambda rx, ry, dy: cv.sphere(CX, HEAD_CY + dy, HEAD_RX * rx,
+                                         HEAD_RY * ry, c, ymax=HEAD_CY - 2)
     if hw == 'cap':
-        cv.sphere(CX, HEAD_CY - 6.6, HEAD_RX * 0.98, 5.4, c)
-        cv.rect(CX - 11, HEAD_CY - 3, CX + 4, HEAD_CY - 2, c, l=0.40)
+        crown(0.99, 0.99, -0.8)
+        cv.rect(CX - 10, HEAD_CY - 3, CX + 3, HEAD_CY - 2, c, l=0.40)
     elif hw == 'brim':                      # fedora / detective
-        cv.sphere(CX, HEAD_CY - 7.4, 7.6, 5.0, c)
-        cv.rect(CX - 12, HEAD_CY - 4, CX + 12, HEAD_CY - 3, c, l=0.42)
-        cv.rect(CX - 8, HEAD_CY - 5, CX + 8, HEAD_CY - 5, trim, l=0.55)
+        crown(0.92, 0.92, -1.6)
+        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.42)
+        cv.rect(CX - 7, HEAD_CY - 6, CX + 7, HEAD_CY - 6, trim, l=0.55)
     elif hw == 'top':
         cv.rect(CX - 6, 0, CX + 6, HEAD_CY - 6, c, l=0.5)
         cv.rect(CX - 6, HEAD_CY - 9, CX + 6, HEAD_CY - 8, trim, l=0.6)
-        cv.rect(CX - 11, HEAD_CY - 5, CX + 11, HEAD_CY - 4, c, l=0.42)
+        cv.rect(CX - 10, HEAD_CY - 5, CX + 10, HEAD_CY - 4, c, l=0.42)
     elif hw == 'point':                     # witch / wizard
-        cv.tri([(CX, 0), (CX - 8, HEAD_CY - 5), (CX + 8, HEAD_CY - 5)], c, l=0.52)
-        cv.rect(CX - 12, HEAD_CY - 5, CX + 12, HEAD_CY - 4, c, l=0.40)
+        cv.tri([(CX, 0), (CX - 7, HEAD_CY - 5), (CX + 7, HEAD_CY - 5)], c, l=0.52)
+        cv.rect(CX - 11, HEAD_CY - 5, CX + 11, HEAD_CY - 4, c, l=0.40)
         cv.rect(CX - 5, HEAD_CY - 7, CX + 5, HEAD_CY - 6, trim, l=0.62)
     elif hw == 'straw':
-        cv.sphere(CX, HEAD_CY - 6.6, 7.0, 4.6, c)
-        cv.rect(CX - 13, HEAD_CY - 4, CX + 13, HEAD_CY - 3, c, l=0.46)
+        crown(0.86, 0.80, -2.2)
+        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.46)
     elif hw == 'santa':
-        cv.tri([(CX + 7, 1), (CX - 9, HEAD_CY - 4), (CX + 9, HEAD_CY - 4)], c, l=0.55)
-        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 2, trim, l=0.66)
-        cv.sphere(CX + 8, 2.0, 3.0, 2.6, trim)
+        cv.tri([(CX + 6, 1), (CX - 8, HEAD_CY - 4), (CX + 8, HEAD_CY - 4)], c, l=0.55)
+        cv.rect(CX - 10, HEAD_CY - 4, CX + 10, HEAD_CY - 2, trim, l=0.66)
+        cv.sphere(CX + 7, 2.0, 2.8, 2.6, trim)
     elif hw == 'crown':
-        for dx in (-8, -4, 0, 4, 8):
+        for dx in (-7, -3.5, 0, 3.5, 7):
             cv.tri([(CX + dx, HEAD_CY - 12), (CX + dx - 2, HEAD_CY - 6),
                     (CX + dx + 2, HEAD_CY - 6)], c, l=0.62)
-        cv.rect(CX - 9, HEAD_CY - 7, CX + 9, HEAD_CY - 5, c, l=0.5)
+        cv.rect(CX - 8, HEAD_CY - 7, CX + 8, HEAD_CY - 5, c, l=0.5)
     elif hw == 'tricorn':
-        cv.sphere(CX, HEAD_CY - 6.6, 7.2, 4.6, c)
-        cv.tri([(CX - 13, HEAD_CY - 3), (CX, HEAD_CY - 8), (CX + 13, HEAD_CY - 3)], c, l=0.46)
-        cv.rect(CX - 12, HEAD_CY - 4, CX + 12, HEAD_CY - 3, c, l=0.4)
+        crown(0.88, 0.84, -2.0)
+        cv.tri([(CX - 11, HEAD_CY - 3), (CX, HEAD_CY - 8), (CX + 11, HEAD_CY - 3)], c, l=0.46)
+        cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.4)
     elif hw == 'helm':                      # flat top, Frankenstein
-        cv.rect(CX - 9, HEAD_CY - 10, CX + 9, HEAD_CY - 5, c, l=0.42)
+        cv.rect(CX - 8, HEAD_CY - 10, CX + 8, HEAD_CY - 5, c, l=0.42)
 
 
 def extras(cv, spec, pose):
@@ -444,14 +572,29 @@ def extras(cv, spec, pose):
                 cv.dot(CX + sx, HEAD_CY + 4, (150, 118, 56))
         elif kind == 'flame':
             r = Ramp(e[1])
-            for i, (dx, dy, rr) in enumerate([(0, -4, 4.0), (-3, -1, 3.0), (3, -1, 3.0)]):
-                cv.sphere(CX + dx, dy + 4, rr, rr * 1.2, r, spec=True)
+            # Rooted on the crown. Floating clear of the skull made it read
+            # as a separate object hovering over the character's head.
+            crown_y = HEAD_CY - HEAD_RY
+            for dx, dy, rr in ((0, -1.6, 3.6), (-3.4, 1.0, 2.6), (3.4, 0.6, 2.8)):
+                cv.sphere(CX + dx, crown_y + dy, rr, rr * 1.25, r, spec=True)
         elif kind == 'shell':               # egg body highlight
             pass
         elif kind == 'bandage':
             r = Ramp(e[1])
-            for yy in range(int(HEAD_CY) - 6, int(HEAD_CY) + 7, 2):
-                cv.rect(CX - 10, yy, CX + 10, yy, r, l=0.62)
+            # Wrapped ON the head, so each turn is clipped to the skull's
+            # width at that row. Flat full width bars turned the head into
+            # a rectangular bucket with no shape under the wrapping.
+            #
+            # And drawn with rect, not cyl: a cylinder one row tall gets
+            # its shading from a normal that points sideways everywhere, so
+            # every band came out dark at both ends and the head read as
+            # corrugated metal.
+            # Only from the brow down. Wrapping the whole skull painted
+            # over the character's own hat, which is drawn first, and the
+            # head came out as a banded bucket with no hat on it at all.
+            for i, yy in enumerate(range(int(HEAD_CY) - 2, int(HEAD_CY) + 9, 2)):
+                half = head_edge(yy, floor=0.34) - (0.8 if i % 2 else 0)
+                cv.rect(CX - half, yy, CX + half, yy, r, l=0.66 if i % 2 else 0.52)
 
 
 # ----------------------------------------------------------- archetypes
@@ -477,7 +620,7 @@ def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
     else:
         lo, ro = 0, 0
     for side, off in ((-1, lo), (1, ro)):
-        x0 = CX + side * (8 + out) - 1
+        x0 = CX + side * (9 + out) - 1
         cv.cyl(x0, top + off, x0 + 2, top + length + off, sleeve, round_bot=1)
         cv.cyl(x0, top + length + off, x0 + 2, top + length + 2 + off, skin, round_bot=1)
 
@@ -489,9 +632,9 @@ def arch_human(cv, spec, pose):
     boot = Ramp(spec.get('boot', '#2a2018'))
     legs(cv, pants, boot, pose)
     arms(cv, shirt, skin, pose)
-    cv.cyl(CX - 5, 23, CX + 5, 31, shirt, round_bot=1)
+    cv.cyl(CX - TORSO_HW, 23, CX + TORSO_HW, 31, shirt, round_bot=1)
     if spec.get('belt'):
-        cv.rect(CX - 5, 29, CX + 5, 30, Ramp(spec['belt']), l=0.45)
+        cv.rect(CX - TORSO_HW, 29, CX + TORSO_HW, 30, Ramp(spec['belt']), l=0.45)
     cv.sphere(CX, HEAD_CY, HEAD_RX, HEAD_RY, skin)
 
 
@@ -566,9 +709,15 @@ def arch_beast(cv, spec, pose):
         cv.cyl(CX + lx - 1, 36 + o, CX + lx + 1, 37 + o, boot)
     # neck, then a forward facing head centred over the body
     cv.cyl(CX - 2, 19, CX + 2, 26, body, round_top=1)
-    cv.sphere(CX, 14.0, 8.6, 7.6, body)
+    cv.sphere(CX, 14.0, 7.8, 8.4, body)
     if spec.get('muzzle'):
-        cv.sphere(CX, 17.6, 5.4, 3.6, Ramp(spec['muzzle']))
+        # The muzzle needs its own value, not just its own hue. Drawn in a
+        # near neighbour of the body color, the only thing that showed was
+        # the sphere's rim shading, which read as a dark V scored into the
+        # face rather than as a snout.
+        m = Ramp(shade(spec['muzzle'], 0.18))
+        cv.sphere(CX, 18.0, 5.2, 3.8, m)
+        cv.sphere(CX, 16.4, 1.8, 1.4, Ramp(shade(spec['muzzle'], -0.55)))
 
 
 def arch_cat(cv, spec, pose):
@@ -661,7 +810,7 @@ SPECS = {
                eyes='cartoon', eyecolor='#141018', mouth='none', eyespread=3,
                extra=[('ears', '#141018')]),
  'jack': dict(arch='human', skin='#f0c99a', shirt='#3a7f4a', pants='#5c3a1c',
-              hair='#c9a256', hairstyle='wild', eyes='normal', mouth='grin'),
+              hair='#c9a256', hairstyle='mop', eyes='normal', mouth='grin'),
  'tom': dict(arch='human', skin='#f0c99a', shirt='#c94b1a', pants='#5a4a2a',
              hat='straw', hatcolor='#c9a256', hair='#c9a256', hairstyle='bald',
              eyes='normal', mouth='grin'),
@@ -673,7 +822,8 @@ SPECS = {
                belt='#f4c25a'),
  'invisible': dict(arch='human', skin='#f0e4d4', shirt='#4a4a5a', pants='#242430',
                    hat='brim', hatcolor='#12121a', hattrim='#2a2a3a',
-                   eyes='hidden', mouth='none', extra=[('bandage', '#eaeaea')]),
+                   eyes='goggles', eyecolor='#15151f', mouth='none',
+                   extra=[('bandage', '#eaeaea')]),
  'sherlock': dict(arch='human', skin='#efc9a0', shirt='#8b6a3a', pants='#241812',
                   hat='brim', hatcolor='#8b6a3a', hattrim='#5a4020',
                   hair='#3a1e08', hairstyle='bald', eyes='normal', mouth='line',
@@ -765,7 +915,7 @@ SPECS = {
  'nessie': dict(arch='beast', skin='#2a7a5a', muzzle='#4aa878',
                 eyes='normal', mouth='line'),
  'horseman': dict(arch='human', skin='#f4922a', shirt='#2a1e2a', pants='#141014',
-                  eyes='glow', eyecolor='#3a1a08', mouth='grin', eyespread=3),
+                  eyes='carved', eyecolor='#5e2a06', mouth='none'),
  'zombie': dict(arch='human', skin='#8aae64', shirt='#3a2818', pants='#2a1a10',
                 hair='#3a5424', hairstyle='short', eyes='cartoon',
                 eyecolor='#8a2b2a', mouth='open'),
