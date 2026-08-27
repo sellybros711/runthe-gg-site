@@ -209,12 +209,49 @@
   /* What you ruled last time, across every item you have ever seen. */
   const mine = () => call('commish_my_rulings', {});
 
+  /* ── finished terms, and the doctrine each one had ───────────────────────────
+     supabase/96_commish_terms.sql, and it lives here rather than in a module of its own
+     because it is the same transport: the same anon key, the same bearer, the same
+     resolve-to-null-on-anything. A second file would be a second copy of all of that, and
+     the way two copies of a transport go wrong is that one of them keeps sending the anon
+     key after somebody signs in.
+
+     WHAT THIS IS FOR is the other half of the same idea. rule() asks what everybody did
+     with one item; finishTerm() asks what everybody's whole term added up to, and answers
+     with the two numbers worth reading at the end: how many commissioners came out the same
+     way as you, and where your term stands among them. */
+  const finishTerm = (t) => call('commish_finish_term', {
+    p_doctrine: String(t.doctrine),
+    p_axes: t.axes,
+    p_score: t.score == null ? null : Math.round(t.score),
+    p_grade: t.grade || null,
+    p_removed: !!t.removed,
+    p_years: Math.round(t.years || 0),
+    p_rulings: Math.round(t.rulings || 0),
+    p_champions: Math.round(t.champions || 0),
+  });
+  /* Read the split without recording a term, for a screen that wants to show the shape of
+     the room before you have finished one. */
+  const doctrineSplit = () => call('commish_doctrine_split', {});
+  /* THE BOARD IS PER DOCTRINE AND THAT IS THE POINT. One board by score rewards upsetting
+     nobody, because the way to do well on six report cards at once is to take no side. Nine
+     boards ask a better question: of the people who believe what you believe, who did it
+     best. */
+  const doctrineBoard = (id, limit) => call('commish_doctrine_board', {
+    p_doctrine: String(id), p_limit: Math.max(1, Math.min(50, limit || 20)),
+  });
+  const myTerms = (limit) => call('commish_my_terms', {
+    p_limit: Math.max(1, Math.min(50, limit || 20)),
+  });
+
   const api = {
     API_VERSION: 1,
     MIN_SHOW: MIN_SHOW, RARE_PCT: RARE_PCT, CONSENSUS_PCT: CONSENSUS_PCT,
     MAX_BATCH: MAX_BATCH,
     phrase: phrase, bars: bars,
     rule: rule, split: split, many: many, mine: mine,
+    finishTerm: finishTerm, doctrineSplit: doctrineSplit,
+    doctrineBoard: doctrineBoard, myTerms: myTerms,
     get offline() { return offline; },
   };
 

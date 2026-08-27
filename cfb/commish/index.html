@@ -394,6 +394,47 @@
   .tail p{margin-top:7px;font-size:14px;line-height:1.45;color:var(--dim)}
 
 
+/* ── WHAT YOU TURNED OUT TO BELIEVE ───────────────────────────────────────────────
+     A four axis card. Each row is a spectrum with its two ends named and a marker sitting
+     somewhere between them, which is the only honest way to draw a signed value: a bar
+     growing from the left would make -100 and 0 look like the same thing (nothing) when
+     they are opposite answers to the question.
+
+     The centre line is where the argument is even, and it is drawn once across all four so
+     the eye can read the column rather than four separate bars. */
+  .doc{border-left:3px solid var(--gold)}
+  .docname{font-family:var(--fd);font-size:30px;line-height:1;letter-spacing:.01em;
+    text-transform:uppercase;color:var(--ink);margin:2px 0 6px}
+  .docline{font-size:13.5px;line-height:1.5;color:var(--dim);margin-bottom:12px}
+  .docaxes{display:flex;flex-direction:column;gap:9px}
+  .docrow{display:grid;gap:3px}
+  .docq{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim-2)}
+  .docbar{position:relative;height:22px;border-radius:6px;background:var(--panel);
+    border:1px solid var(--line);overflow:hidden}
+  .docmid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line-2)}
+  /* The fill runs FROM the centre, so its length is how far from even and its side is which
+     way. Both halves of the answer, in one mark. */
+  .docfill{position:absolute;top:3px;bottom:3px;border-radius:4px;background:var(--gold);
+    opacity:.85}
+  /* The two ends of the spectrum, named. The one the term landed on the side of is set in
+     ink, so which way it went is legible without measuring the bar. */
+  .docends{display:flex;justify-content:space-between;gap:10px;font-size:11px;
+    color:var(--dim-2)}
+  .docends i{font-style:normal}
+  .docends b{color:var(--ink);font-weight:700}
+  /* The evidence: what the sport actually looks like now, which is the half a reader can
+     argue with. Small, under the bars, one line each. */
+  .docev{margin-top:12px;display:flex;flex-direction:column;gap:5px}
+  .docev span{font-size:12px;line-height:1.4;color:var(--dim);padding-left:11px;
+    border-left:2px solid var(--line-2)}
+  /* How many other commissioners came out the same way, and where this term stands among
+     them. Arrives over a network, so it starts hidden. */
+  .docsplit{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);
+    display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline}
+  .docsplit b{font-family:var(--fd);font-size:22px;line-height:1;color:var(--gold)}
+  .docsplit span{font-size:12.5px;color:var(--dim)}
+  .docsplit em{font-style:normal;color:var(--ink);font-weight:700}
+
   /* ── THE DATA CENTRE ──────────────────────────────────────────────────────────────
      Chart chrome recedes and the data does not. Every rule here has a reason written next
      to it in the painter; what is here is the paint. */
@@ -1512,6 +1553,10 @@
       <div class="big" id="y-big">2025</div>
       <p id="y-say" style="color:var(--dim);font-size:14px;margin-top:6px"></p>
     </div>
+    <!-- WHAT YOU TURNED OUT TO BELIEVE, above the grade, because it is the more interesting
+         of the two and because a grade at the top makes everything under it read as a
+         justification for the grade. See doctrine.js. -->
+    <div class="card flat doc" id="y-doctrine" hidden></div>
     <!-- THE REPORT CARD, on the screen that ends a term and nowhere else. Empty and hidden
          for a year in review, which is a progress report rather than a verdict. -->
     <div class="card flat" id="y-report" hidden></div>
@@ -1587,9 +1632,12 @@
 <!-- Captures nothing off window at load time: it is handed the world by the page and the
      beat names by the caller, so its position here is free. -->
 <script src="metrics.js?v=1"></script>
+<!-- Reads nothing off window at load time: it is handed a world and returns a profile, so
+     its position here is free. -->
+<script src="doctrine.js?v=1"></script>
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
-<script src="splits.js?v=1"></script>
+<script src="splits.js?v=2"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -2483,6 +2531,114 @@ function situationOn(day){
 /* THE ITEM IS DRAWN BEFORE THE DAYS ARE WALKED, not after, because the simulation has to
    know which day to stop on and what to say when it gets there. Drawing it afterwards would
    mean the calendar ran to an arbitrary date and the headline arrived from nowhere. */
+/* ── WHAT YOU TURNED OUT TO BELIEVE ─────────────────────────────────────────────────
+ The report card grades a term. This one classifies it, and the two answer different
+ questions: not how well you did the job but WHICH SIDE YOU TOOK, across forty-five
+ rulings made one at a time by somebody who probably never noticed a pattern.
+
+ IT GOES ABOVE THE GRADE on purpose. A score at the top of a screen makes everything under
+ it read as an explanation of the score, and the doctrine is the more interesting half.
+
+ EACH AXIS IS DRAWN FROM THE CENTRE OUT, never as a bar growing from the left, because a
+ left-growing bar makes -100 and 0 look like the same thing (an empty bar) when they are
+ opposite answers to the same question. Length is how far from even, side is which way.
+
+ AND THE SPLIT ARRIVES LATE OR NOT AT ALL. See splits.js: every call resolves to null on a
+ missing migration, a dead network or a blocked request, and the card is finished without
+ it. A commissioner with no connection gets a doctrine and no comparison, which is a
+ smaller card rather than a broken one. */
+let docSeq=0;
+function paintDoctrine(el,world){
+if(!el) return;
+const DOC=window.PS_CFB_DOCTRINE;
+const p=DOC?DOC.profile(world):null;
+if(!p){ el.hidden=true; el.innerHTML=''; return; }
+const ev=DOC.evidence(world);
+const evBy={};
+ev.forEach((e)=>{ evBy[e.id]=e.say; });
+let h='<div class="eyebrow gold">What you turned out to believe</div>'
+  +'<div class="docname">'+esc(p.name)+'</div>'
+  +'<div class="docline">'+esc(p.line)+'</div>'
+  +'<div class="docaxes">'+DOC.SPECTRA.map((s)=>{
+    const v=p.axes[s.id];
+    /* A FLOOR OF TWO PERCENT ON THE FILL, so an axis at zero still shows something at the
+       centre line. A bar of literally nothing reads as a rendering fault rather than as
+       "you were exactly even on this one". */
+    const w=Math.max(Math.abs(v)/2,2);
+    const side=v>=0?'left:50%':'right:50%';
+    return '<div class="docrow">'
+      +'<span class="docq">'+esc(s.axis)+'</span>'
+      +'<div class="docbar"><span class="docmid"></span>'
+        +'<span class="docfill" style="'+side+';width:'+w.toFixed(1)+'%"></span></div>'
+      +'<span class="docends"><i'+(v<0?' class="on"':'')+'>'
+        +(v<0?'<b>'+esc(s.lo)+'</b>':esc(s.lo))+'</i>'
+        +'<i>'+(v>0?'<b>'+esc(s.hi)+'</b>':esc(s.hi))+'</i></span>'
+      +'</div>';
+  }).join('')+'</div>';
+if(ev.length){
+  /* A HEADING, AND IT IS DOING REAL WORK. The bars are what you kept voting FOR; these are
+     where the sport actually ended up, and the two are allowed to disagree. A reformer who
+     leaves the players on nothing is a true and interesting result, but stacked straight
+     under the doctrine line with no label it reads as the card contradicting itself. Named,
+     the gap between what you pushed for and what you got becomes the point. */
+  h+='<div class="eyebrow" style="margin:14px 0 7px">What you actually leave behind</div>'
+    +'<div class="docev">'+ev.map((e)=>'<span>'+esc(e.say)+'</span>').join('')+'</div>';
+}
+h+='<div class="docsplit" id="y-docsplit" hidden></div>';
+el.innerHTML=h;
+el.hidden=false;
+reveal(el);
+return p;
+}
+
+/* SEND THE TERM AND DRAW WHAT COMES BACK. Same shape as recordRuling(): fired after the
+ screen has painted, guarded by a sequence so a slow answer for one term cannot land on
+ the next one's ending, and silent when the backend is not there. */
+function recordTerm(world,p){
+const box=$('y-docsplit');
+if(box){ box.hidden=true; box.innerHTML=''; }
+const P=window.PS_CFB_SPLITS, DOC=window.PS_CFB_DOCTRINE, R=window.PS_CFB_REPORT;
+if(!P||!P.finishTerm||!DOC||!p) return;
+const rep=R?R.report(world):null;
+const seq=++docSeq;
+P.finishTerm({
+  doctrine:p.id, axes:DOC.pack(p),
+  score:rep?rep.score:null, grade:rep?rep.grade:null,
+  removed:!!(world.outcome&&world.outcome.removed),
+  years:Math.max(0,world.year-world.startYear),
+  rulings:p.rulings,
+  champions:Object.keys(world.champions||{}).length,
+}).then((res)=>{
+  if(seq!==docSeq||!res||!box) return;
+  const counts=res.counts||{};
+  let total=0;
+  for(const k in counts){ if(Object.prototype.hasOwnProperty.call(counts,k)){
+    const v=Number(counts[k]); if(isFinite(v)&&v>0) total+=v; } }
+  const mine=Number(counts[p.id])||0;
+  const bits=[];
+  /* THE SAME FLOOR THE ITEM SPLITS USE, and for the same reason: a percentage off four
+     people is noise dressed as a fact. Under it the card says the other true thing. */
+  if(total>=(P.MIN_SHOW||8)){
+    bits.push('<b>'+Math.round(mine/total*100)+'%</b>'
+      +'<span>of commissioners came out the same way</span>');
+  }else if(total>0){
+    bits.push('<span>You are among the first to finish a term.</span>');
+  }
+  /* WHERE IT STANDS AMONG ITS OWN KIND, which is the whole reason the board is split nine
+     ways rather than being one list by score. */
+  if(res.place&&res.terms>1){
+    /* "among The Reformers" reads as a typo. Every archetype is named "The Something", so
+       the article comes off before it is pluralised. */
+    bits.push('<span><em>'+res.place+' of '+res.terms+'</em> among '
+      +esc(String(p.name).replace(/^The\s+/,'')+'s')+'</span>');
+  }
+  if(!bits.length) return;
+  box.innerHTML=bits.join('');
+  box.hidden=false;
+  reveal(box);
+}).catch(()=>{});
+}
+
 /* ── the data centre's controls ───────────────────────────────────────────────────
    ONE ROW OF FILTERS, and both of them re-render everything below them together, so the
    chart, the nine sparklines and the table can never be describing different slices. */
@@ -4637,6 +4793,10 @@ function ending(){
     +(moved?moved+' of the four numbers moved.':'and not one of the four numbers moved.')
     +(moved>=3?' Nobody is going to say you left it alone.'
       :moved===0?' The sport you hand over is the sport you were given.':'');
+  /* WHAT YOU TURNED OUT TO BELIEVE, before the grade rather than after it. See doctrine.js:
+     the four arguments this job is actually made of, read off the effect vectors of every
+     ruling rather than off where the sport ended up. */
+  const doc=paintDoctrine($('y-doctrine'),world);
   /* AND THEN THE THING THE SENTENCE ABOVE CANNOT DO, which is say whether any of it worked.
      See report.js: six grades, each read off something the player did. */
   paintReport($('y-report'),REPORT?REPORT.report(world):null);
@@ -4659,6 +4819,10 @@ function ending(){
   $('b-quit').textContent='Back to the game';
   $('b-quit').onclick=()=>{ location.href='/cfb/'; };
   show('s-year');
+  /* LAST, AND AFTER show(), like every other thing on this page that talks to a network.
+     The ending is finished before this is asked for, and if it never answers the card
+     simply has no comparison on it. */
+  recordTerm(world,doc);
 }
 
 /* ── the door ─────────────────────────────────────────────────────────────────── */
