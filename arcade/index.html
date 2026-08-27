@@ -671,8 +671,12 @@ window.GA_ID='G-L29P5MRWKE';
         </div>
 
         <div class="tiles">
-          <div class="tsec daily"><b>Daily puzzles</b><span>One solve each, then you're done until tomorrow.</span></div>
-          <div class="tsec run"><b>Streak games</b><span>Keep answering until you miss. How far can you get?</span></div>
+          <!-- The two headers are retitled and repositioned by paint(), because the
+               grouping that helps depends on who is looking: cost for a visitor,
+               completion for a member. The resting copy below is the non-member
+               view, so the page is right even before a line of JS runs. -->
+          <div class="tsec daily" id="tsecA"><b>Free every day</b><span>One play of each, every day. Yours to keep.</span></div>
+          <div class="tsec run" id="tsecB"><b>One free try each</b><span>Play any of them once, free. The Arcade Card opens all of them, unlimited.</span></div>
 
           <a class="tile match" id="cardMatch" href="/arcade/match/">
             <span class="cap" data-mark="match" aria-hidden="true">
@@ -1084,21 +1088,66 @@ window.GA_ID='G-L29P5MRWKE';
                  guess:'cardGuess', highlow:'cardHigh', oddone:'cardOdd', table:'cardTable',
                  career:'cardCareer', almamater:'cardAlma', rollcall:'cardRoll', chain:'cardChain' };
     // section base order, free games first (matches the resting CSS)
-    var SECTIONS = [ { base:1, keys:['sportegories','crossword','match','rollcall','chain','rankit','guess'] },
-                     { base:9, keys:['almamater','career','table','oddone','highlow'] } ];
+    /* WHO IS LOOKING DECIDES THE MAP. The old split was Daily puzzles /
+       Streak games, which is a MECHANICS taxonomy: true, and useful to nobody
+       deciding what to tap. It also buried two of the four free games in the
+       second section behind five locked ones, so a free player scrolled past
+       five doors they could not open to find half of what they could.
+
+       A visitor's question is what does it cost; a member's question is what
+       is left. So a non-member gets the entitlement ladder (free four, then
+       the eight with a free try, locked dead-ends sinking last) and a member
+       gets completion (still to play, then done), with their habitual games
+       leading via the same recency data the old sort used. The mechanics note
+       each game needs lives on its own tile copy. */
+    var ALL = ['sportegories','crossword','almamater','career',
+               'match','rollcall','chain','rankit','guess','table','oddone','highlow'];
+    var FREE4 = ['sportegories','crossword','almamater','career'];
+    function playedToday(k){
+      var el=document.getElementById(TILE[k]);
+      return !!(el && el.classList.contains('solved'));
+    }
+    function sections(member){
+      if(member){
+        var last=(TOK.lastPlayed?TOK.lastPlayed():{}), pos={};
+        ALL.forEach(function(k,i){ pos[k]=i; });
+        var byHabit=function(a,b){ var la=last[a]||0, lb=last[b]||0; return la!==lb ? lb-la : pos[a]-pos[b]; };
+        var todo=ALL.filter(function(k){ return !playedToday(k); }).sort(byHabit);
+        var done=ALL.filter(playedToday).sort(byHabit);
+        return [ { label:'Still to play today', sub:'The pips up top fill when you clear the board.', keys:todo },
+                 { label:'Done today', sub:'Back tomorrow, or replay for practice.', keys:done } ];
+      }
+      // Guest or free account: the ladder. Within each rung, played sinks and
+      // a locked (tried) card game sinks below one still holding its free try.
+      var free=FREE4.slice().sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
+      var cards=ALL.filter(function(k){ return FREE4.indexOf(k)<0; })
+        .sort(function(a,b){
+          var la=(TOK.cardOnly&&TOK.cardOnly(a))?1:0, lb=(TOK.cardOnly&&TOK.cardOnly(b))?1:0;
+          if(la!==lb) return la-lb;                       // free try first, locked last
+          return (playedToday(a)?1:0)-(playedToday(b)?1:0);
+        });
+      return [ { label:'Free every day', sub:'One play of each, every day. Yours to keep.', keys:free },
+               { label:'One free try each', sub:'Play any of them once, free. The Arcade Card opens all of them, unlimited.', keys:cards } ];
+    }
     var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
     function paint(){
       var member = !!(TOK.hasCard && TOK.hasCard());
-      var last = (TOK.lastPlayed && member) ? TOK.lastPlayed() : null;
-      SECTIONS.forEach(function(sec){
-        var keys = sec.keys.slice();
-        if(last){
-          var pos={}; keys.forEach(function(k,i){ pos[k]=i; });
-          keys.sort(function(a,b){ var la=last[a]||0, lb=last[b]||0; return la!==lb ? lb-la : pos[a]-pos[b]; });
+      var secs = sections(member);
+      var heads = [document.getElementById('tsecA'), document.getElementById('tsecB')];
+      var ord = 0;
+      secs.forEach(function(sec, si){
+        var h = heads[si];
+        if(h){
+          // an empty group hides its header: "Done today" over nothing is noise
+          h.style.display = sec.keys.length ? '' : 'none';
+          h.style.order = String(ord++);
+          h.querySelector('b').textContent = sec.label;
+          h.querySelector('span').textContent = sec.sub;
         }
+        var keys = sec.keys;
         keys.forEach(function(k,i){
           var el=document.getElementById(TILE[k]); if(!el) return;
-          el.style.order = String(sec.base + i);
+          el.style.order = String(ord++);
           var lock = !!(TOK.cardOnly && TOK.cardOnly(k));
           el.classList.toggle('locked', lock);
           var play = el.querySelector('.play');
