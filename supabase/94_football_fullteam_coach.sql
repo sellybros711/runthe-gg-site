@@ -408,7 +408,7 @@ begin
   return v_id;
 end $$;
 
--- THE OLD int,int,numeric,numeric,numeric,int,text,text,text[],text[],text,int,numeric,numeric,numeric,int,text,text,numeric,jsonb,int,int,numeric,text,jsonbNATURE IS DROPPED. Postgres would hold both as overloads and
+-- THE OLD SIGNATURE IS DROPPED. Postgres would hold both as overloads and
 -- PostgREST resolves an RPC by the argument names in the body, so a submit
 -- naming p_coach would match the new one and a submit without it would match
 -- BOTH and answer 300. Same trap 89_football_crest_tier.sql documents.
