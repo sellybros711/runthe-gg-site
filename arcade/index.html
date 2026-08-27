@@ -854,6 +854,23 @@ window.GA_ID='G-L29P5MRWKE';
           <span>Clean sweep!<span class="sub">You played every one of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
 
+        <!-- ORDER IS THE ARGUMENT. For a free player whose free tries are spent,
+             the grid above is just the four free games, so what sits directly under
+             them is the pitch: here is the other 23 a day. The editions strip follows
+             as the second exhibit. Both sections already hide for members. -->
+        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
+          <div class="cp-kicker">Arcade Card</div>
+          <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
+          <p class="cp-sub">A free account plays four games a day. The Card opens all twelve, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
+          <ul class="cp-perks">
+            <li><i>&#10003;</i> Unlimited plays, every day</li>
+            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
+            <li><i>&#10003;</i> Six members-only games</li>
+            <li><i>&#10003;</i> The full archive of past days</li>
+          </ul>
+          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
+          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
+        </section>
         <section class="editions" id="editions">
           <h2 class="ed-h">Five games, three more ways</h2>
           <p class="ed-s">Common Ground, Alma Mater, Career Path, Guess the Player and Rank It each also have an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
@@ -872,19 +889,6 @@ window.GA_ID='G-L29P5MRWKE';
           <div class="iv-tally" id="ivTally"></div>
         </section>
 
-        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
-          <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
-          <p class="cp-sub">A free account plays four games a day. The Card opens all twelve, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
-          <ul class="cp-perks">
-            <li><i>&#10003;</i> Unlimited plays, every day</li>
-            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
-            <li><i>&#10003;</i> Six members-only games</li>
-            <li><i>&#10003;</i> The full archive of past days</li>
-          </ul>
-          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
-          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
-        </section>
 
         <details class="gjx">
 <summary>About Run The Arcade<span class="gjx-chev" aria-hidden="true"></span></summary>
@@ -1117,15 +1121,20 @@ window.GA_ID='G-L29P5MRWKE';
         return [ { label:'Still to play today', sub:'The pips up top fill when you clear the board.', keys:todo },
                  { label:'Done today', sub:'Back tomorrow, or replay for practice.', keys:done } ];
       }
-      // Guest or free account: the ladder. Within each rung, played sinks and
-      // a locked (tried) card game sinks below one still holding its free try.
+      /* Guest or free account: the ladder, and a spent try LEAVES it. A card
+         game whose one free play is gone is a dead door, and a dead door was
+         an ad the first time and clutter every time after; the card's own
+         pitch section further down is where the upsell lives. The one
+         exception is a trial played TODAY, which stays until midnight so
+         "View result" still means something, then vanishes. Within each rung,
+         played sinks. */
       var free=FREE4.slice().sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
-      var cards=ALL.filter(function(k){ return FREE4.indexOf(k)<0; })
-        .sort(function(a,b){
-          var la=(TOK.cardOnly&&TOK.cardOnly(a))?1:0, lb=(TOK.cardOnly&&TOK.cardOnly(b))?1:0;
-          if(la!==lb) return la-lb;                       // free try first, locked last
-          return (playedToday(a)?1:0)-(playedToday(b)?1:0);
-        });
+      var cards=ALL.filter(function(k){
+          if(FREE4.indexOf(k)>=0) return false;
+          var locked=(TOK.cardOnly&&TOK.cardOnly(k));
+          return !locked || playedToday(k);
+        })
+        .sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
       return [ { label:'Free every day', sub:'One play of each, every day. Yours to keep.', keys:free },
                { label:'One free try each', sub:'Play any of them once, free. The Arcade Card opens all of them, unlimited.', keys:cards } ];
     }
@@ -1133,6 +1142,15 @@ window.GA_ID='G-L29P5MRWKE';
     function paint(){
       var member = !!(TOK.hasCard && TOK.hasCard());
       var secs = sections(member);
+      /* sections() can EXCLUDE a tile now, so paint owns visibility both ways:
+         hidden when outside every section, restored when the tier changes and
+         it is back in one (the member flag arrives after first paint). */
+      var shown = {};
+      secs.forEach(function(sec){ sec.keys.forEach(function(k){ shown[k]=1; }); });
+      ALL.forEach(function(k){
+        var el=document.getElementById(TILE[k]); if(!el) return;
+        el.style.display = shown[k] ? '' : 'none';
+      });
       var heads = [document.getElementById('tsecA'), document.getElementById('tsecB')];
       var ord = 0;
       secs.forEach(function(sec, si){
