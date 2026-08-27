@@ -353,6 +353,11 @@
     box-shadow:0 0 0 1px rgba(242,193,78,.25);}
   .bdg.on .bp i{background:var(--gold);}
 
+  /* Off screen but still in the accessibility tree. display:none and
+     visibility:hidden both remove it from that tree, which is the opposite of
+     what a live region is for. */
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap;border:0;}
   .toast{position:fixed;left:50%;bottom:calc(var(--dock) + 22px);transform:translateX(-50%);
     z-index:95;background:#1b2333;border:1px solid var(--cardb);color:var(--ink);
     padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
@@ -875,6 +880,14 @@
      bug it is reporting. -->
 <div class="crash" id="crash" role="alert" onclick="this.style.display='none'"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- WHAT JUST HAPPENED, FOR SOMEBODY WHO CANNOT SEE THE WHEEL. The reels are a
+     picture of a decision that has already been made, and to a screen reader
+     they are two boxes of decorative text that change silently. This says the
+     draw out loud once it lands, and says how the season finished. Visually
+     hidden rather than display:none, because a hidden element is not announced
+     at all. -->
+<div class="sr-only" id="say" role="status" aria-live="polite"></div>
 
 <!-- THE TOP BAR. Where you are, what the run is doing, and a way out. It is
      sticky, so the way out is never a scroll away, and it paints its own
@@ -1595,6 +1608,8 @@ function drawInto(fn){
       dressReel($('box-s'), draw.team);
       dressReel($('box-c'), draw.team);
       dressPage(draw.team);
+      say('You drew the ' + draw.season + ' ' + E.teamName(draw.team)
+        + '. Filling ' + draw.openSlots.join(', ') + '.');
       settled();
     });
   }, 130);
@@ -3128,6 +3143,7 @@ function renderOver(out){
   v.className = 'verdict ' + (out.titleWon ? 'good' : 'bad');
 
   $('o-record').textContent = out.wins + '-' + out.losses;
+  say(headline(out) + '. ' + out.wins + ' wins, ' + out.losses + ' losses.');
   var story = seasonStory(out);
   $('o-story').textContent = story;
   $('o-story').style.display = story ? '' : 'none';
@@ -3655,6 +3671,15 @@ function clip(x, text, max){
 }
 
 var toastTimer = null;
+/* One place that speaks. Cleared first, because a live region only announces a
+   CHANGE and setting it to the text it already holds says nothing. */
+function say(msg){
+  var el = $('say');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(function(){ el.textContent = msg; }, 60);
+}
+
 function toast(msg){
   var el = $('toast');
   if (!el) return;
@@ -3918,13 +3943,35 @@ function renderCareer(){
   if (club) row('Most drafted club', club.name + ' (' + club.n + ')');
 }
 
+/* FOCUS GOES INTO THE SHEET AND COMES BACK OUT AGAIN.
+ *
+ * It carries role="dialog" and aria-modal="true", which is a promise: a screen
+ * reader stops announcing the page behind it and a keyboard user expects to be
+ * inside it. Neither was true. Focus stayed on the Career button in the bar, so
+ * the first Tab went to whatever followed it on the page UNDER the sheet, and a
+ * keyboard user was reading a page they could not see.
+ *
+ * Where focus was before is remembered, so closing puts it back where the
+ * player left it rather than at the top of the document. */
+var sheetReturn = null;
+
 function openProfile(){
   renderCareer();
   renderBadges();
   showProfileTab(badgeTab);
+  sheetReturn = document.activeElement;
   $('sheet').classList.add('open');
+  var first = $('pt-record') || $('b-prof-x');
+  if (first) first.focus();
 }
-function closeProfile(){ $('sheet').classList.remove('open'); }
+
+function closeProfile(){
+  $('sheet').classList.remove('open');
+  if (sheetReturn && sheetReturn.focus) {
+    try { sheetReturn.focus(); } catch (e) { /* it may have been re-rendered away */ }
+  }
+  sheetReturn = null;
+}
 
 function clearCareer(){
   try { localStorage.removeItem(PKEY); } catch (e) {}
