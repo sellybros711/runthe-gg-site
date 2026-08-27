@@ -11192,7 +11192,17 @@ function champOf(pid){
   pid=pid||myPromoId();
   const c=G&&G.car;
   if(c&&c.title&&(c.deal&&c.deal.promo)===pid) return {you:true,name:G.w.name};
-  const house=CHARS.filter(x=>x.promo===pid);
+  // Read the actual champion registry first. This used to return whoever had
+  // the highest overness in the promotion, which is frequently NOT the person
+  // holding the belt, so a "demand a shot at the title" promo could send you
+  // after the wrong wrestler while the Titles screen named someone else.
+  const W=G&&G.world;
+  const holder = W && W.champions && W.champions[pid] && W.champions[pid].world && W.champions[pid].world.holder;
+  if(holder && !(W.retired && W.retired[holder])){
+    const ch = charById(holder);
+    if(ch && ch.promo===pid) return ch;
+  }
+  const house=CHARS.filter(x=>x.promo===pid && !(W && W.retired && W.retired[x.id]));
   if(!house.length) return null;
   return house.slice().sort((a,b)=>(b.over||0)-(a.over||0))[0];
 }
