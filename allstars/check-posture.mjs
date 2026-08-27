@@ -131,7 +131,7 @@ if (!rosterMatch) {
           problems.push(`sprite "${key}" pose "${pose}" uses palette keys with no color: ${missing.join(', ')}.`);
         }
       }
-      for (const need of ['idle', 'run1', 'run2']) {
+      for (const need of ['idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2']) {
         if (!seen.has(need)) problems.push(`sprite "${key}" is missing the "${need}" frame.`);
       }
     }

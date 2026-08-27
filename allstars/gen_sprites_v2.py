@@ -729,12 +729,14 @@ def arch_cat(cv, spec, pose):
     cv.sphere(CX, 13.0, 9.4, 8.2, body)
     # A cat drawn in near black loses its whole face. Give it a lighter
     # muzzle so the eyes, nose and whiskers have something to sit on.
-    muz = Ramp(spec.get('muzzle', belly.base))
-    cv.sphere(CX, 16.4, 5.6, 3.6, muz, spec=False)
-    cv.dot(CX, 15, shade(muz.base, -0.45))
-    cv.dot(CX - 1, 15, shade(muz.base, -0.30))
-    for wx in (-5, -4, 4, 5):
-        cv.dot(CX + wx, 17, shade(muz.base, -0.35))
+    # muzzle=None (the back view) suppresses the whole face group.
+    if spec.get('muzzle', belly.base) is not None:
+        muz = Ramp(spec.get('muzzle', belly.base))
+        cv.sphere(CX, 16.4, 5.6, 3.6, muz, spec=False)
+        cv.dot(CX, 15, shade(muz.base, -0.45))
+        cv.dot(CX - 1, 15, shade(muz.base, -0.30))
+        for wx in (-5, -4, 4, 5):
+            cv.dot(CX + wx, 17, shade(muz.base, -0.35))
 
 
 def arch_bird(cv, spec, pose):
@@ -756,9 +758,47 @@ ARCH = {
 }
 
 
+def back_head(cv, spec):
+    """The back of the head: hair covers the whole rear of the skull down
+    to the collar, and there is no face. Characters with no hair (bald,
+    or a nonhuman skull) just show the skull itself, which the archetype
+    already drew."""
+    h = spec.get('hair')
+    if not h or spec.get('hairstyle') == 'bald':
+        return
+    r = Ramp(h)
+    cv.sphere(CX, HEAD_CY - 0.4, HEAD_RX * 0.99, HEAD_RY * 0.96, r,
+              ymax=HEAD_CY + 6)
+    kind = spec.get('hairstyle', 'short')
+    if kind in ('long', 'braids'):
+        sidelock(cv, r, -1, HEAD_CY - 2, HEAD_CY + 9, 2.4)
+        sidelock(cv, r, 1, HEAD_CY - 2, HEAD_CY + 9, 2.4)
+
+
+# Extras that are anchored to the face and make no sense from behind.
+FRONT_ONLY_EXTRAS = {'pipe', 'monocle', 'patch'}
+
+
 def build(spec, pose='idle'):
     cv = Canvas()
-    ARCH[spec.get('arch', 'human')](cv, spec, pose)
+    back = pose.startswith('back')
+    body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2'}[pose] if back else pose
+    if back:
+        # The archetype is drawn with its FRONT features stripped: the
+        # muzzle and the chest patch belong to the side facing the
+        # camera, and Kong's back is not the side with his belly on it.
+        bspec = dict(spec)
+        bspec.pop('chest', None)
+        if spec.get('arch') in ('hulk', 'beast', 'cat'):
+            bspec['muzzle'] = None
+        ARCH[spec.get('arch', 'human')](cv, bspec, body_pose)
+        back_head(cv, spec)
+        headwear(cv, spec)
+        ex = [e for e in spec.get('extra', []) if e[0] not in FRONT_ONLY_EXTRAS]
+        extras(cv, dict(spec, extra=ex), body_pose)
+        cv.outline()
+        return cv
+    ARCH[spec.get('arch', 'human')](cv, spec, body_pose)
     hair(cv, spec)
     headwear(cv, spec)
     a = spec.get('arch', 'human')
@@ -945,7 +985,11 @@ SPECS = {
                 eyes='cartoon', eyecolor='#141018', mouth='grin'),
 }
 
-POSES = ('idle', 'run1', 'run2')
+# The back poses exist because of where the camera stands: the viewer is
+# behind home plate, so the batter and any runner heading up the screen
+# are seen from behind. A batter who faces the camera while "looking at"
+# the pitcher breaks the whole view.
+POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2')
 
 
 def js_block(key, frames):
