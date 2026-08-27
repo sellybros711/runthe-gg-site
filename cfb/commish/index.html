@@ -56,13 +56,61 @@
      below 860px, which is every phone and most tablets in portrait, so nothing about the
      design that was tuned by eye on a phone moves at all. */
   @media (min-width:860px){ :root{ --z:1.2 } }
-  @media (min-width:1280px){ :root{ --z:1.36 } }
+  /* Past the two-column breakpoint the column itself gets wider, so the zoom eases off:
+     both together would run the layout off the sides of a 1240px window. The rendered
+     width lands at about 1100px either way, which is a comfortable dashboard and a normal
+     maximum for reading. */
+  @media (min-width:1240px){ :root{ --z:1.28 } }
 
   body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:15px;
     line-height:1.5;min-height:calc(100vh / var(--z));padding-bottom:40px;
     zoom:var(--z);
     background-image:radial-gradient(900px 520px at 50% -10%,rgba(16,185,129,.07),transparent 70%)}
   .wrap{max-width:600px;margin:0 auto;padding:10px 14px 46px}
+  /* Only the office goes to two columns, so only the office needs the room to do it. Every
+     other screen is one thing being read or decided and stays at its phone width, where the
+     line length is right. */
+  /* FLUID RATHER THAN A FIXED GUESS, because the zoom and the width fight each other: a
+     column wide enough to hold two of these at 1700px runs off the sides at 1240px. The
+     min() takes whichever is smaller, the ideal width or what the window can actually
+     show, and the division by --z is there because everything inside a zoomed subtree is
+     multiplied by it, viewport units included. */
+  @media (min-width:1240px){
+    .wrap:has(#s-office.on){max-width:min(980px, calc((100vw / var(--z)) - 46px))}
+  }
+
+  /* ── THE OFFICE, IN TWO STACKS ────────────────────────────────────────────────────
+     See the comment on .ocol in the markup for why this is columns rather than tabs.
+
+     ON A PHONE THE WRAPPERS ARE NOT THERE. `display:contents` removes them from the box
+     tree, their children become flex items of the screen, and the `order` values below put
+     those children back in exactly the sequence they read in before this existed. The map
+     in particular has to stay below the meters: it is five hundred pixels of decoration and
+     the three numbers above it are the point of the screen. */
+  #s-office{display:flex;flex-direction:column}
+  .ocol{display:contents}
+  #off-cal{order:1}
+  .ob>*{order:2}
+  #off-mapcard{order:3}
+  #off-roomcard{order:4}
+  #b-data{order:5}
+  #s-office>.dock{order:6}
+
+  @media (min-width:1240px){
+    /* The wrappers become real boxes again and each one stacks on its own, which is the
+       whole reason they exist: a grid with one item per cell would tie the calendar's row
+       height to the headline beside it and open a two hundred pixel hole under it. Two
+       independent columns have no rows to share. */
+    #s-office{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);
+      gap:0 14px;align-items:start}
+    .ocol{display:flex;flex-direction:column}
+    /* The dock spans both, because it is the one control that moves the term on and it
+       should not be sitting at the foot of one column. */
+    #s-office>.dock{grid-column:1 / -1}
+    /* The map is the left column's reason to exist, so it gets the height it deserves
+       rather than the one a phone could spare. */
+    #off-mapcard .map{min-height:300px}
+  }
   a{color:var(--green)}
 
   header{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:9px;
@@ -127,8 +175,14 @@
      numbers only. The first version had neither: nine identical rows with nine identical
      orange bars, so the room read as a list rather than as a room. */
   .meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  /* A COLUMN SO THE THREE TRACKS LINE UP WHATEVER THE LABELS DO. "The state of the game"
+     is twice the length of "Revenue" and wraps to two lines at most widths, which pushed
+     the middle meter's bar seventeen pixels below its neighbours: three bars meant to be
+     read as one row, at three different heights. The bar is pushed to the bottom of the
+     card instead, so the labels can wrap or not and the row still reads straight. */
   .meter{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:10px 11px;border-top:2px solid var(--line)}
+    padding:10px 11px;border-top:2px solid var(--line);
+    display:flex;flex-direction:column}
   .meter.good{border-top-color:var(--green)} .meter.mid{border-top-color:var(--gold)}
   .meter.bad{border-top-color:var(--red)}
   /* DIRECT CHILDREN, NOT DESCENDANTS, and this is not tidying. A meter is three boxes and
@@ -139,9 +193,12 @@
   .meter>b{display:block;font-family:var(--fd);font-size:26px;line-height:1}
   .meter>b .n{font-style:normal}
   .meter>span{display:block;font-family:var(--fn);font-size:9px;font-weight:700;
-    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:4px}
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-top:4px;
+    /* The gap above the bar lives here rather than on the bar, because the bar's own
+       margin-top is what pushes it to the foot of the card. See .meter above. */
+    margin-bottom:7px}
   .meter>i{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.09);
-    margin-top:7px;overflow:hidden;position:relative}
+    margin-top:auto;overflow:hidden;position:relative}
   .meter>i em{display:block;height:100%;transition:width .5s var(--ez)}
   /* WHERE IT WAS WHEN YOU TOOK THE JOB, as a notch on the track. A number alone cannot say
      whether 55 is where you started or where you have crawled back to. */
@@ -1385,7 +1442,31 @@
 
   <!-- The office: where you stand before you rule. -->
   <div class="screen" id="s-office" data-in="rise">
+    <!-- ── TWO COLUMNS ON A BIG SCREEN, ONE ON A PHONE ────────────────────────────
+         The office is a briefing: everything on it is the state of the sport, read in one
+         pass before you press through to the desk. On a phone that is correctly one long
+         column. On a desktop it was a narrow strip of it with a great deal of nothing
+         either side.
+
+         So the cards are grouped into two stacks rather than hidden behind tabs. Tabs would
+         put three quarters of the briefing one click away at exactly the moment somebody is
+         about to make a decision with it, and would need a whole second navigation model
+         that only exists above 1240px.
+
+         THE WRAPPERS DISAPPEAR ON A PHONE. `display:contents` drops them out of the layout
+         entirely, so their children become items of the screen itself and read in the order
+         they always have, which the `order` values in the stylesheet pin down. Nothing about
+         the phone moves. -->
+    <div class="ocol oa">
     <div class="cal" id="off-cal"></div>
+    <!-- The map. Realignment is the one thing a list cannot show. -->
+    <div class="card flat" id="off-mapcard">
+      <div class="eyebrow" style="margin-bottom:9px">The sport, by where it is played</div>
+      <div class="map" id="off-map"></div>
+    </div>
+    </div>
+
+    <div class="ocol ob">
     <div class="eyebrow" id="off-when">Winter meetings</div>
     <h2 id="off-title">Your office</h2>
     <div class="meters" id="off-meters"></div>
@@ -1435,12 +1516,7 @@
       <div class="sport" id="off-sport"></div>
       <div class="fuses" id="off-fuses"></div>
     </div>
-    <!-- The map. Realignment is the one thing a list cannot show. -->
-    <div class="card flat" id="off-mapcard">
-      <div class="eyebrow" style="margin-bottom:9px">The sport, by where it is played</div>
-      <div class="map" id="off-map"></div>
-    </div>
-    <div class="card flat">
+    <div class="card flat" id="off-roomcard">
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
       <div class="room" id="off-room"></div>
     </div>
@@ -1452,6 +1528,7 @@
          the one thing that moves the term forward and a second button in it would compete
          with that. -->
     <button class="btn ghost" id="b-data">Open the data center</button>
+    </div>
     <div class="dock"><button class="btn" id="b-desk">See what is on the desk</button></div>
   </div>
 
