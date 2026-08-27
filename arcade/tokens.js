@@ -1,13 +1,22 @@
 /* Run The Arcade - play entitlement (per game, per day)
  *
  * THE MODEL
- *   SIGNED OUT           → nothing is playable, and the hub shows the four free
- *                          games only. Any PLAY asks for a free account first.
- *   FREE ACCOUNT         → the four free games, one play each per day:
- *                          Daily Crossword, Sportegories, Alma Mater, Career Path.
- *                          PLUS one free play of each of the other eight, once,
- *                          ever. Taken, it locks for good.
+ *   SIGNED OUT           → the four free games, one play each per day, with no
+ *                          account and no sign-up: Daily Crossword, Sportegories,
+ *                          Alma Mater, Career Path. The hub shows those four and
+ *                          nothing else. Kept on the device only: no leaderboard
+ *                          row, no streak that survives a new phone (board.js
+ *                          submits nothing without a session), and no free try of
+ *                          a card game, because that one is keyed to an account.
+ *   FREE ACCOUNT         → the same four, now saved: the board, the streak, the
+ *                          achievements. PLUS one free play of each of the other
+ *                          eight, once, ever. Taken, it locks for good.
  *   ARCADE CARD (paid)   → all twelve, unlimited, plus the Archive.
+ *
+ * A VISITOR PLAYS FIRST. Asking for an account before anyone has played a hand
+ * is asking a stranger to pay in effort for a thing they have not seen, and it
+ * is the wall the traffic was hitting: the game is the pitch, so the game goes
+ * first and the account is what makes today's result count for something.
  *
  * This replaces the old shared wallet (guest 1/day, account 3/day). The cap is
  * no longer a pool you spend anywhere: it is per game, so a free player always
@@ -161,8 +170,8 @@
   // wants "come back tomorrow". Two different screens, so two different checks.
   function unlocked(game){
     if(unlimited()) return true;
-    if(!signedIn()) return false;
-    return isFreeGame(game) || trialOpen(game);
+    if(isFreeGame(game)) return true;          // no account needed for these four
+    return signedIn() && trialOpen(game);      // the free try is keyed to an account
   }
   function locked(game){ return !unlocked(game); }
   // "Is this game behind the card for this player?" - unlike locked(), a signed
@@ -278,7 +287,7 @@
   }
   function remainingOf(game){ var c=capOf(game); return c===Infinity?Infinity:Math.max(0, c-playsOf(game)); }
   // Wallet-wide view, kept for the odd caller that wants "anything left at all".
-  function cap(){ if(unlimited()) return Infinity; return signedIn() ? FREE_LIST.length*(PER_GAME_DAILY+bonusToday()) : 0; }
+  function cap(){ if(unlimited()) return Infinity; return FREE_LIST.length*(PER_GAME_DAILY+bonusToday()); }
   /* "How many games can I go and play right now?" - the number the top bar
      counts. The free four with a go left, PLUS every card game still holding
      its one free look, because those are games this player can open today just
@@ -312,11 +321,11 @@
   function triesLeft(game){ return remainingOf(game); }
   function canPlay(game){
     if(unlimited()) return true;
-    if(!signedIn()) return false;
     if(!game) return remaining()>0;                // no game named: anything left?
     // A card game is playable exactly once: while the free look is open, and
     // not again after it has been taken (this run included, so the Play Again
-    // button turns into the offer the moment the trial play ends).
+    // button turns into the offer the moment the trial play ends). trialOpen
+    // is false without an account, which is what keeps the eight behind one.
     if(!isFreeGame(game)) return trialOpen(game) && playsOf(game) < 1;
     return playsOf(game) < capOf(game);            // capOf folds in today's bonus
   }
@@ -368,8 +377,12 @@
      look at this one" is a different sentence from "this is a card game" and
      lands on a very different player: one of them has played it. */
   function why(game){
-    if(!signedIn()) return 'signin';
-    if(!isFreeGame(game) && !unlimited() && trialUsed(game)) return 'tried';
+    // A free game has exactly one way to be blocked, at every tier: today's go
+    // is gone. Signing in does not hand back a play, so 'signin' would be the
+    // wrong ask, and it was the one a guest used to get.
+    if(unlimited() || isFreeGame(game)) return 'spent';
+    if(!signedIn()) return 'signin';               // the free try needs an account
+    if(trialUsed(game)) return 'tried';
     if(!unlocked(game)) return 'card';
     return 'spent';
   }
@@ -403,7 +416,7 @@
     var wasTrial = trialOpen(game);
     if(wasTrial) markTrialUsed(game);
     s.plays[game]=before+1; write(s); bumpLife(game); emit('rtg:tokens');
-    gaGame('arcade_game_started', game, { tier: wasTrial ? 'trial' : 'free', try_no:before+1 });
+    gaGame('arcade_game_started', game, { tier: wasTrial ? 'trial' : (signedIn() ? 'free' : 'guest'), try_no:before+1 });
     serverSpend(game);
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, trial:wasTrial, left:remainingOf(game) };
   }
@@ -420,8 +433,10 @@
   function label(game){
     if(hasCard()) return 'Arcade Card · unlimited';
     if(TESTING)   return 'Testing · unlimited';
-    if(!signedIn()) return 'Free account to play';
-    if(!isFreeGame(game)) return trialOpen(game) ? 'One free play' : 'Arcade Card game';
+    if(!isFreeGame(game)){
+      if(!signedIn()) return 'Free account to try it';
+      return trialOpen(game) ? 'One free play' : 'Arcade Card game';
+    }
     return remainingOf(game)>0 ? 'Your free play' : 'Free play used';
   }
   // Short "why you can't play" text for a toast or a disabled button. There are
@@ -430,7 +445,7 @@
   // is not something you ran out of.
   function blockMsg(game){
     var r=why(game);
-    if(r==='signin') return 'Free account to play';
+    if(r==='signin') return 'Free account to try it';
     if(r==='tried')  return 'That was your free play';
     if(r==='card')   return 'Arcade Card game';
     return 'That was today’s go';
@@ -439,7 +454,7 @@
   // The full sentence a locked board prints where the hint line usually goes.
   function lockLine(game){
     var r=why(game);
-    if(r==='signin') return 'Create a free account to play.';
+    if(r==='signin') return 'A free account gets you one play of this one.';
     if(r==='tried')  return 'That was your free play. The Arcade Card keeps it open.';
     if(r==='card')   return 'This one is on the Arcade Card.';
     return 'That was today’s go. Back tomorrow.';
@@ -450,7 +465,7 @@
   function hint(game){
     var l=label(game);
     if(hasCard() || TESTING) return l;
-    if(!signedIn() || !isFreeGame(game)) return l;
+    if(!isFreeGame(game)) return l;
     return l+' today';
   }
 

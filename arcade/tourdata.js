@@ -28,7 +28,7 @@
        rather than the old .daily / .run classes for the same reason. */
     { sel: '#tsecA',
       title: 'Free every day',
-      html: 'These four are free, one play of each, every day. New puzzles at midnight, ' +
+      html: 'These four are free, one play of each, every day, no account needed. New puzzles at midnight, ' +
             'and <b>each one keeps its own streak</b>.' },
     { sel: '#cardpitch',
       title: 'The other eight',

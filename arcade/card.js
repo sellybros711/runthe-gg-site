@@ -5,8 +5,10 @@
  * use for the consumer monetization UI:
  *   RTGCard.paywall(opts)   - "Out of plays" → Arcade Card upsell (monthly/annual,
  *                             + tax, and a friendly "Come back tomorrow")
- *   RTGCard.guestConvert()  - a signed-out visitor hit a game: "create a free
- *                             account for four games a day" conversion
+ *   RTGCard.guestConvert()  - a signed-out visitor hit a wall on a game. Two
+ *                             versions: on a card game the account is the way
+ *                             in, on a free game they have had today's go and
+ *                             the account is what saves the result
  *   RTGCard.checkout(plan)  - start Arcade Card checkout ($5.99/mo or $49.99/yr). If
  *                             the visitor isn't signed in, we open sign-in first and
  *                             resume checkout after, preserving the chosen plan.
@@ -219,7 +221,7 @@
     } else {
       kicker='Arcade Card'; head='Keep playing, unlimited';
       sub = signedIn()
-        ? 'A free account gets one go a day at four games. Members play all twelve as much as they like, every day, across 27 daily puzzles.'
+        ? 'Four games are free every day, one go each. Members play all twelve as much as they like, every day, across 27 daily puzzles.'
         : 'Members play all twelve games as much as they like, every day, across 27 daily puzzles.';
     }
     function render(){
@@ -319,14 +321,24 @@
   // Signed-out visitor hit a game → convert. A free account is now the thing
   // that actually unblocks them, so it leads; the Arcade Card is the upgrade
   // sitting above it for anyone who already knows they want everything.
-  function guestConvert(){
+  /* opts.spent: this visitor has just USED today's go at a free game, which is
+     a different person from one who has not played yet. Nothing here gets them
+     back on the board today, so the account is not the price of entry, it is
+     what makes the run they just finished count: guests post to no leaderboard
+     and their streak lives in one browser. The ask goes first for them, and the
+     card second. */
+  function guestConvert(opts){
+    opts = opts || {};
     ensureScrim();
     var b=$('rtgcardBody');
+    var acct = '<button class="rtgc-create" id="rtgcardCreate" type="button"><b>'+
+        (opts.spent ? 'Create a Free Account' : 'Or Create a Free Account')+'</b>'+
+        '<small>Your streak and your place on the leaderboard, saved. Plus one free play of every Arcade Card game. Stays with you on all RunThe.GG content.</small></button>';
+    var banner = arcadeBanner('rtgcardCard','All twelve games, unlimited. Every past day unlocked.');
     b.innerHTML =
-      '<h2 style="font-family:var(--f,inherit);font-weight:900;font-size:26px;line-height:1.1;color:var(--ink,#eaf0f7);margin:0 0 14px;">Ready to play?</h2>'+
-      arcadeBanner('rtgcardCard','All twelve games, unlimited. Every past day unlocked.')+
-      '<button class="rtgc-create" id="rtgcardCreate" type="button"><b>Or Create a Free Account</b>'+
-        '<small>One go a day at four games, and the leaderboard. Account stays with you on all RunThe.GG content.</small></button>'+
+      '<h2 style="font-family:var(--f,inherit);font-weight:900;font-size:26px;line-height:1.1;color:var(--ink,#eaf0f7);margin:0 0 14px;">'+
+        (opts.spent ? 'That’s today’s go' : 'Ready to play?')+'</h2>'+
+      (opts.spent ? (acct+banner) : (banner+acct))+
       '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+
       '<div class="rtgc-fine">No card required for account.</div>';
     $('rtgcardCreate').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signup'); };
@@ -439,10 +451,16 @@
   // "keep playing" one, and a signed-out visitor gets the account offer.
   function pageGame(){ var m=(location.pathname||'').match(/\/arcade\/([a-z]+)\//); return m?m[1]:null; }
   function wall(game){
-    if(!signedIn()) return guestConvert();
     var g = game || pageGame();
     var locked=false;
     try{ locked = !!(g && window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(g)); }catch(e){}
+    /* A signed-out visitor now reaches this wall two ways, and they want
+       opposite things. On a CARD game the account is the way in, because that
+       is where the one free try lives. On a FREE game they have just played
+       it, so there is no way in until midnight and the account is instead what
+       keeps the result. Sending both to the same screen told somebody who had
+       just finished a puzzle to create an account so they could play. */
+    if(!signedIn()) return guestConvert({ spent: !locked });
     paywall({ reason: locked ? 'locked' : 'out', game: g });
   }
 

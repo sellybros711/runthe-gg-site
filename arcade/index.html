@@ -861,7 +861,7 @@ window.GA_ID='G-L29P5MRWKE';
         <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
           <div class="cp-kicker">Arcade Card</div>
           <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
-          <p class="cp-sub">A free account plays four games a day. The Card opens all twelve, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
+          <p class="cp-sub">Four games are free every day. The Card opens all twelve, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
           <ul class="cp-perks">
             <li><i>&#10003;</i> Unlimited plays, every day</li>
             <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
@@ -971,20 +971,20 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=11"></script>
+<script src="/arcade/tokens.js?v=12"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=18"></script>
 <script src="/arcade/auth.js?v=3"></script>
-<script src="/arcade/mycard.js?v=9"></script>
-<script src="/arcade/topbanner.js?v=7"></script>
+<script src="/arcade/mycard.js?v=10"></script>
+<script src="/arcade/topbanner.js?v=8"></script>
 <script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=17"></script>
+<script src="/arcade/card.js?v=18"></script>
 <script src="/arcade/referral.js?v=9"></script>
-<script src="/arcade/nav.js?v=1"></script>
+<script src="/arcade/nav.js?v=2"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=5"></script>
+<script src="/arcade/tourdata.js?v=6"></script>
 <script>
 /* THE FIRST NINETY SECONDS.
    Ten tiles with no explanation is the single biggest thing standing between
@@ -1139,10 +1139,11 @@ window.GA_ID='G-L29P5MRWKE';
         })
         .sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
       return [ { label:'Free every day',
-                 /* The guest line carries the account offer that the eight
-                    tiles used to carry: it is one sentence in a header rather
-                    than eight doors that open a sign-up box. */
-                 sub: guest ? 'A free account plays one of each, every day, plus one free try of every Card game.'
+                 /* The guest line says the two things a visitor needs in the
+                    order they need them: you can play right now, and an
+                    account is what keeps the result. It is one sentence in a
+                    header rather than eight tiles that open a sign-up box. */
+                 sub: guest ? 'One play of each, every day, no account needed. An account saves your streak.'
                             : 'One play of each, every day. Yours to keep.', keys:free },
                { label:'One free try each', sub:'Play any of them once, free. The Arcade Card opens all of them, unlimited.', keys:cards } ];
     }

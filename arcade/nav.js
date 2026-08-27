@@ -52,8 +52,9 @@
      can actually open, so a free account sees "3 left" out of its four rather
      than a 10 it has no way to reach. */
   function leftToday() {
+    // No signed-out shortcut any more: a visitor can open the four free games,
+    // so unlocked() answers this for every tier on its own.
     var t = T(); if (!t || !t.GAMES) return null;
-    if (!(t.signedIn && t.signedIn())) return null;      // signed out: nothing to count
     var n = 0;
     for (var i = 0; i < t.GAMES.length; i++) {
       var k = t.GAMES[i];
