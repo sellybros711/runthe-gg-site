@@ -94,7 +94,13 @@
       '.rtgHowto-title{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:20px;margin:0 34px 12px 0;color:var(--ink);}' +
       '.rtgHowto-sub{margin:-6px 0 14px;color:var(--mut);font-size:13px;line-height:1.5;}' +
       '.rtgHowto-demo{margin:0 0 14px;}' +
-      '.rtgHowto-list{margin:0 0 18px;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
+      '.rtgHowto-rules{margin:0 0 16px;border-top:1px solid var(--line2);padding-top:12px;}' +
+      '.rtgHowto-rules summary{list-style:none;cursor:pointer;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:6px;}' +
+      '.rtgHowto-rules summary::-webkit-details-marker{display:none;}' +
+      '.rtgHowto-rules summary::after{content:"+";margin-left:auto;font-size:15px;line-height:1;}' +
+      '.rtgHowto-rules[open] summary::after{content:"\\2212";}' +
+      '.rtgHowto-rules[open] summary{margin-bottom:10px;}' +
+      '.rtgHowto-list{margin:0;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
       '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--brand,#FF8A3D);color:var(--onAccent,#160B02);font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
@@ -152,6 +158,13 @@
       sub.textContent = gdesc;
     }
 
+    /* THE DEMO IS THE TUTORIAL; the bullets are the reference. Shown together
+       they compete, and the wordier one wins by sheer area: four lines of grey
+       text under a four-second clip is the wordy tutorial with an animation on
+       top of it. So the list folds away.
+       It is not deleted, because it says the things a clip cannot: what a
+       wrong answer costs, what each answer is worth, when the run ends. Those
+       matter, just not before you have seen the game move. */
     var ul = document.createElement('ul');
     ul.className = 'rtgHowto-list';
     for(var i = 0; i < bullets.length; i++){
@@ -159,6 +172,12 @@
       li.textContent = bullets[i];
       ul.appendChild(li);
     }
+    var rules = document.createElement('details');
+    rules.className = 'rtgHowto-rules';
+    var sum = document.createElement('summary');
+    sum.textContent = 'Scoring and rules';
+    rules.appendChild(sum);
+    rules.appendChild(ul);
 
     var ok = document.createElement('button');
     ok.className = 'rtgHowto-ok';
@@ -181,7 +200,7 @@
       card.appendChild(stagewrap);
       demo = { host: stagewrap, handle: null };
     }
-    card.appendChild(ul);
+    card.appendChild(rules);
     card.appendChild(ok);
     scrim.appendChild(card);
     document.body.appendChild(scrim);
