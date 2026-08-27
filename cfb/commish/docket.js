@@ -3270,33 +3270,78 @@
       eyebrow: 'The postseason',
       title: (c) => (c ? 'The ' + c.bowl.name + ' wants to move'
         : 'A bowl wants to move cities'),
+      /* THE BRIEF SAYS WHAT THE NAME IS ATTACHED TO, because that is the entire decision and
+         the item used to guess. It offered "a bowl named after a place is named after the
+         place" about the Pinstripe Bowl, which is named after a baseball uniform, and a player
+         caught it on the first reading. See `named` in venues.js: every bowl now carries what
+         its name is actually for, and every line below is drawn from it rather than assumed. */
       brief: (c) => (c
         ? 'The ' + c.bowl.name + ' has played in '
-          + (c.from ? c.from.city : 'the same city') + ' since it was invented and it would '
-          + 'now like to play in ' + c.to.city + ', which has offered it a great deal of money '
-          + 'and a stadium that is not falling down. The bowl keeps the name. The city keeps '
-          + 'the name too, apparently, which is a sentence four lawyers are currently arguing '
-          + 'about.'
+          + (c.from ? c.from.city : 'the same city') + ' for as long as anybody in this room '
+          + 'has been doing this, and it would now like to play in ' + c.to.city + ', which has '
+          + 'offered it a great deal of money and a stadium that is not falling down. The name '
+          + 'is after ' + c.bowl.named.of + '. ' + c.bowl.named.gone
         : 'A bowl would like to move to a city that has offered it money and a better '
           + 'stadium, and keep its name.'),
+      /* THE ROOM ARGUES ABOUT THE BOWL IN FRONT OF IT. A fan saying "it is named after the
+         place" over a bowl named after a ballclub is the same failure as the brief, one line
+         further down the screen. */
       voices: [
-        { id: 'Fans', say: 'It is named after the place. That is what the name is.' },
+        /* `says` + `pick` RATHER THAN A FUNCTION, and the reason is a guard rather than taste.
+           Two tests walk every quote in this file and measure it: one counts characters, the
+           other renders all two hundred and twenty-five into the real row against every name a
+           bloc can draw. A function is not enumerable, so a quote hidden behind one is a quote
+           nothing measures, and the way that shows up is a wrapped line on somebody's phone.
+           A map of variants is cast-driven AND countable. */
+        { id: 'Fans', pick: (c) => (c ? c.bowl.named.kind : 'local'),
+          says: {
+            local: 'It is named after the place. That is what the name is.',
+            city: 'The name is the city. You cannot take the city with you.',
+            club: 'That name belongs to a baseball team. It always did.',
+            free: 'Nobody has ever once cared where that one is played.',
+          } },
         { id: 'Presidents', say: 'The payout doubles. The payout is the entire reason the bowl exists.' },
         { id: 'Group of Five', say: 'Half that game is ours every year and none of us were asked.' },
       ],
       options: [
         { id: 'move', label: (c) => (c ? 'Let it go to ' + c.to.city : 'Let it move'),
           body: (c) => (c ? c.to.name + '. ' + c.to.note : 'A better stadium and more money.'),
+          /* WHAT IT COSTS SCALES WITH HOW TIGHTLY THE NAME IS TIED DOWN. A Rose Bowl in Las
+             Vegas and a Holiday Bowl in Las Vegas are not the same crime, and pricing them the
+             same is how a player learns that tradition is a number rather than a thing. */
           edit: (c) => (c ? {
-            effects: Object.assign(VEN.effectsOf(c.to, 0.4), { tradition: -2.4 }),
-            aimed: { Fans: { tradition: -2.6 }, Presidents: { money: 1.6 } },
+            effects: Object.assign(VEN.effectsOf(c.to, 0.4),
+              { tradition: Math.round(-3.2 * c.bowl.named.bind * 10) / 10 }),
+            aimed: { Fans: { tradition: Math.round(-3.4 * c.bowl.named.bind * 10) / 10 },
+              Presidents: { money: 1.6 } },
           } : {}) },
-        { id: 'rename', label: 'It can move. It cannot keep the name',
-          body: 'A bowl named after a place is named after the place. Move and you are a new '
-            + 'bowl with a new name and none of the history, which is most of what the city '
-            + 'was buying.',
-          edit: { effects: { tradition: 2, money: -0.8, exposure: 0.6, inventory: -0.4 },
-            aimed: { Fans: { tradition: 2.4 }, Presidents: { money: -0.8 } } } },
+        { id: 'rename',
+          label: (c) => (c && c.bowl.named.kind === 'club'
+            ? 'It can move. The name stays with the club'
+            : 'It can move. It cannot keep the name'),
+          body: (c) => (!c
+            ? 'Move and you are a new bowl with a new name and none of the history.'
+            : c.bowl.named.kind === 'club'
+              ? 'The name was never the sport\'s to sell. Let the game go and it goes as a new '
+                + 'bowl with a new name, because the old one walks back across the road to the '
+                + 'people who own it.'
+              : c.bowl.named.kind === 'free'
+                ? 'You can insist on this. You will be insisting on it about the one name on '
+                  + 'the board that would have travelled perfectly well, and everybody in the '
+                  + 'room will notice.'
+                : 'The name is after ' + c.bowl.named.of + '. Move and you are a new bowl with '
+                  + 'a new name and none of the history, which is most of what the city was '
+                  + 'buying.'),
+          /* THE ONE OPTION WHOSE VALUE IS NOT MONOTONE IN `bind`. Refusing to let a tightly
+             bound name travel is the sport defending itself; refusing to let a free one travel
+             is pique, and the ledger says so. */
+          edit: (c) => {
+            const bind = c ? c.bowl.named.bind : 0.7;
+            return { effects: { tradition: Math.round((bind * 3 - 0.6) * 10) / 10,
+              money: -0.8, exposure: 0.6, inventory: -0.4 },
+            aimed: { Fans: { tradition: Math.round((bind * 3.4 - 0.6) * 10) / 10 },
+              Presidents: { money: -0.8 } } };
+          } },
         { id: 'stay', label: 'It stays',
           body: 'Block it, fund the stadium repairs out of the postseason pool, and take the '
             + 'phone call from a mayor who was promised something.',
@@ -4294,9 +4339,37 @@
   const text = (v, cast, item, sit) =>
     (typeof v === 'function' ? v(cast, item, sit || NOSIT) : v);
 
+  /* ---- what a voice says, and everything it could say ----
+     A QUOTE MAY DEPEND ON THE CAST. An item about a bowl moving cannot have a fan saying "it
+     is named after the place" when the bowl in front of them is named after a baseball
+     uniform, which is a thing that shipped and that a player caught on his first reading.
+
+     But the two width guards walk every quote in this file and measure it, and a quote that
+     only exists inside a function is a quote nothing measures. So a voice declares either a
+     plain `say` or a `says` MAP of variants plus a `pick` that chooses one, and both of these
+     live here rather than at the four call sites:
+
+       voiceSay()   what this voice says about this cast, for the page
+       voiceSays()  every string it could ever say, for the guards
+
+     Anything the first can return, the second lists. That is the invariant, and it is the
+     only reason the map is worth having over a function. */
+  function voiceSay(v, cast, item, sit) {
+    if (!v) return '';
+    if (!v.says) return text(v.say, cast, item, sit);
+    const k = text(v.pick, cast, item, sit);
+    const keys = Object.keys(v.says);
+    return v.says[k] != null ? v.says[k] : v.says[keys[0]];
+  }
+  function voiceSays(v) {
+    if (!v) return [];
+    if (!v.says) return [String(text(v.say, null, null, NOSIT))];
+    return Object.keys(v.says).map((k) => String(v.says[k]));
+  }
+
   const publicAPI = { ITEMS, BY_ID, BEATS: { WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF },
     eligible, pick, resolve, settings, format, castOf, text, recency, sinceRuled, NOSIT,
-    plantsOf };
+    plantsOf, voiceSay, voiceSays };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_DOCKET = publicAPI;
 })();

@@ -98,6 +98,30 @@
       dome: false, cap: 87000, draw: 0.9, fee: 0.7, heritage: 0.05, risk: 0.2, reach: 0.65,
       note: 'Seven thousand feet, ninety thousand people, and a market this sport has never '
         + 'seriously tried.' },
+
+    /* ---- homes, not hosts ----
+       `host:false` MEANS THIS SITE IS SOMEBODY'S HOME AND NOT A BID. Four bowls below play in
+       real buildings that are nobody's idea of a neutral site: a ballpark, two stadiums under
+       forty thousand seats, and a ground in another country with eighteen thousand. They are
+       in this list because a bowl has to play SOMEWHERE and the game was pointing four of them
+       at the wrong city, which is the kind of error that makes an item about tradition read as
+       nonsense to anybody who follows the sport. shortlist() leaves them out, so adding them
+       cannot put a playoff bid in Nassau. */
+    { id: 'bronx', name: 'Yankee Stadium', city: 'the Bronx', state: 'NY', host: false,
+      dome: false, cap: 47000, draw: 1.0, fee: 0.5, heritage: 0.4, risk: 0.26, reach: 0.3,
+      note: 'A baseball park in December, with the sport laid out corner to corner and a '
+        + 'quarter of the seats sold to people who walked over from the subway.' },
+    { id: 'jax', name: 'EverBank Stadium', city: 'Jacksonville', state: 'FL', host: false,
+      dome: false, cap: 67000, draw: 0.95, fee: 0.5, heritage: 0.45, risk: 0.1, reach: 0.05,
+      note: 'Warm, cheap, and the one week of the year the city is the center of anything.' },
+    { id: 'sd', name: 'Snapdragon Stadium', city: 'San Diego', state: 'CA', host: false,
+      dome: false, cap: 35000, draw: 0.93, fee: 0.45, heritage: 0.3, risk: 0.04, reach: 0.05,
+      note: 'Perfect weather, half the seats of anywhere else, and a city that has lost every '
+        + 'other football it ever had.' },
+    { id: 'nas', name: 'Thomas Robinson Stadium', city: 'Nassau', state: 'BS', host: false,
+      dome: false, cap: 15000, draw: 0.85, fee: 0.4, heritage: 0, risk: 0.15, reach: 0.4,
+      note: 'Fifteen thousand seats, an ocean behind one end zone, and two fanbases who have '
+        + 'made a holiday of it.' },
   ];
 
   /* ---- the bowls ----
@@ -117,35 +141,122 @@
      in Nassau. These are a curated fourteen standing in for a real forty-one, so each one has
      to sit where its real counterpart sits on the ladder rather than where it happens to fall
      in a list of fourteen. */
+  /* ---- WHAT THE NAME IS ATTACHED TO ----
+     A PLAYER KNEW THIS BEFORE THE GAME DID. The bowl-move item was written as though every
+     bowl is named after the city it plays in, so it offered "a bowl named after a place is
+     named after the place" about the PINSTRIPE Bowl, which is named after a baseball uniform
+     and plays in the ballpark that wears it. Reading that is the moment somebody stops
+     believing the rest of the office.
+
+     So each name says what it is actually attached to. Four kinds, and they are four
+     different decisions rather than four different sentences:
+
+       club   the name is somebody else's property. You cannot take it with you, and the
+              question is not whether it would be rude, it is whether they will licence it.
+       city   the name IS the place. Move and the name is a plain lie.
+       local  the name is the region's, not the city's: a crop, a parade, a trade. It stretches
+              a long way and it does snap.
+       free   the name is attached to nothing at all. Moving it costs the sport nothing, which
+              makes the ruling purely about money and is worth meeting once.
+
+     `bind` is how tightly, 0 to 1, and it is what the docket scales tradition by, so a Rose
+     Bowl in Las Vegas and a Holiday Bowl in Las Vegas are not the same crime. */
   var BOWLS = [
     { id: 'rose', name: 'Rose Bowl', venue: 'pas', tier: 3, slot: 'jan1', heritage: 1,
-      tie: 'Big Ten', pick: 0 },
+      tie: 'Big Ten', pick: 0,
+      named: { kind: 'local', bind: 1,
+        of: 'the Tournament of Roses, a parade that has come down Colorado Boulevard every '
+          + 'New Year since 1890 and that owns the game rather than the other way round',
+        gone: 'The parade does not move. Take the football somewhere else and the parade '
+          + 'keeps the name, because it was always theirs.' } },
     { id: 'sugar', name: 'Sugar Bowl', venue: 'nola', tier: 3, slot: 'jan1', heritage: 0.9,
-      tie: 'SEC', pick: 0 },
+      tie: 'SEC', pick: 0,
+      named: { kind: 'local', bind: 0.85,
+        of: 'the sugar trade that built the Louisiana delta, and a stretch of New Orleans '
+          + 'that was still called the Sugar Bowl district before there was a football game',
+        gone: 'The name is a piece of Louisiana. Somewhere else it is a word about a crop '
+          + 'that does not grow there.' } },
     { id: 'orange', name: 'Orange Bowl', venue: 'mia', tier: 3, slot: 'jan1', heritage: 0.8,
-      tie: 'ACC', pick: 0 },
+      tie: 'ACC', pick: 0,
+      named: { kind: 'local', bind: 0.8,
+        of: 'the fruit south Florida sold itself on, and a festival built to advertise it to '
+          + 'people in the cold',
+        gone: 'It was an advertisement for a place. Move it and it is advertising the wrong '
+          + 'one.' } },
     { id: 'fiesta', name: 'Fiesta Bowl', venue: 'phx', tier: 3, slot: 'jan1', heritage: 0.6,
-      tie: 'Big 12', pick: 0 },
+      tie: 'Big 12', pick: 0,
+      named: { kind: 'local', bind: 0.6,
+        of: 'a festival the valley invented in the seventies for the express purpose of '
+          + 'having a bowl game',
+        gone: 'The festival exists because the game does. Take the game and there is nothing '
+          + 'left for the name to sit on.' } },
     { id: 'cotton', name: 'Cotton Bowl', venue: 'dfw', tier: 3, slot: 'jan1', heritage: 0.7,
-      tie: '', pick: 0 },
+      tie: '', pick: 0,
+      named: { kind: 'local', bind: 0.75,
+        of: 'the Texas cotton exchange, the State Fair, and a stadium in Dallas that still '
+          + 'carries the name whether the game is in it or not',
+        gone: 'The building keeps the name. It already did once, and this is the second '
+          + 'time somebody has had this conversation.' } },
     { id: 'peach', name: 'Peach Bowl', venue: 'atl', tier: 3, slot: 'jan1', heritage: 0.5,
-      tie: '', pick: 0 },
+      tie: '', pick: 0,
+      named: { kind: 'local', bind: 0.7,
+        of: 'the state of Georgia, roughly the way everything in the state of Georgia is',
+        gone: 'You can play a Peach Bowl outside Georgia. You will be asked about it every '
+          + 'year, forever.' } },
     { id: 'citrus', name: 'Citrus Bowl', venue: 'orl', tier: 2, slot: 'jan1', heritage: 0.4,
-      tie: '', pick: 0.02 },
+      tie: '', pick: 0.02,
+      named: { kind: 'local', bind: 0.6,
+        of: 'central Florida groves, and a stadium that was called the Citrus Bowl for '
+          + 'forty years before a sponsor bought the sign',
+        gone: 'The groves are the name. Take it north and it is a word nobody local chose.' } },
     { id: 'alamo', name: 'Alamo Bowl', venue: 'sa', tier: 2, slot: 'late', heritage: 0.3,
-      tie: '', pick: 0.06 },
-    { id: 'gator', name: 'Gator Bowl', venue: 'orl', tier: 2, slot: 'late', heritage: 0.35,
-      tie: '', pick: 0.1 },
-    { id: 'holiday', name: 'Holiday Bowl', venue: 'sea', tier: 2, slot: 'late', heritage: 0.3,
-      tie: '', pick: 0.14 },
+      tie: '', pick: 0.06,
+      named: { kind: 'city', bind: 0.95,
+        of: 'a building four blocks from the stadium that is the single most visited thing '
+          + 'in Texas',
+        gone: 'The Alamo is at a fixed address. An Alamo Bowl anywhere else is a sentence '
+          + 'that does not survive being said out loud.' } },
+    { id: 'gator', name: 'Gator Bowl', venue: 'jax', tier: 2, slot: 'late', heritage: 0.35,
+      tie: '', pick: 0.1,
+      named: { kind: 'local', bind: 0.7,
+        of: 'north Florida, where they are in the retention ponds, and a game that has been '
+          + 'played in Jacksonville since 1946',
+        gone: 'Eighty years in one city is the name. The animal is just what they put on '
+          + 'the trophy.' } },
+    { id: 'holiday', name: 'Holiday Bowl', venue: 'sd', tier: 2, slot: 'late', heritage: 0.3,
+      tie: '', pick: 0.14,
+      named: { kind: 'free', bind: 0.15,
+        of: 'the last week of December, which happens everywhere at the same time',
+        gone: 'Nothing. It is the one name on the board that is true in any city, and '
+          + 'whoever chose it in 1978 has quietly won an argument nobody was having.' } },
     { id: 'music', name: 'Music City Bowl', venue: 'nsh', tier: 2, slot: 'late', heritage: 0.2,
-      tie: '', pick: 0.22 },
-    { id: 'pinstripe', name: 'Pinstripe Bowl', venue: 'nyc', tier: 1, slot: 'late', heritage: 0.15,
-      tie: '', pick: 0.42 },
+      tie: '', pick: 0.22,
+      named: { kind: 'city', bind: 0.9,
+        of: 'Nashville, because Music City is not a description of Nashville, it is what '
+          + 'Nashville is called',
+        gone: 'The name is the city with the city taken out. Move it and you are running '
+          + 'the Music City Bowl in a town with no music in it.' } },
+    { id: 'pinstripe', name: 'Pinstripe Bowl', venue: 'bronx', tier: 1, slot: 'late', heritage: 0.15,
+      tie: '', pick: 0.42,
+      named: { kind: 'club', bind: 0.9,
+        of: 'a baseball uniform. The game is played in that club\'s ballpark, the name is '
+          + 'their trademark, and they licence it one December at a time',
+        gone: 'The name is not the sport\'s to move. It goes back to the club the day the '
+          + 'game leaves their building, and no city can buy it from you because you have '
+          + 'never owned it.' } },
     { id: 'quickstop', name: 'Motor City Bowl', venue: 'det', tier: 1, slot: 'early', heritage: 0.1,
-      tie: '', pick: 0.55 },
-    { id: 'bahamas', name: 'Bahamas Bowl', venue: 'orl', tier: 1, slot: 'early', heritage: 0.05,
-      tie: '', pick: 0.72 },
+      tie: '', pick: 0.55,
+      named: { kind: 'city', bind: 0.9,
+        of: 'Detroit, and specifically the thing Detroit built, which is the whole joke and '
+          + 'the whole point',
+        gone: 'There is one Motor City. Everybody knows which one, including the city you '
+          + 'would be taking it to.' } },
+    { id: 'bahamas', name: 'Bahamas Bowl', venue: 'nas', tier: 1, slot: 'early', heritage: 0.05,
+      tie: '', pick: 0.72,
+      named: { kind: 'city', bind: 1,
+        of: 'a country',
+        gone: 'There is no version of this where the game moves and the name comes along. '
+          + 'It is not a nickname, it is a passport.' } },
   ];
 
   /* ---- the sponsors ----
@@ -208,8 +319,11 @@
     var avoid = o.avoid || [];
     var pool = VENUES.filter(function (v) {
       if (avoid.indexOf(v.id) >= 0) return false;
+      /* SOMEBODY'S HOME IS NOT A BID. See the note on `host` in the venue list: a shortlist is
+         a list of places that WANT the game, and a ballpark in the Bronx is not offering. */
+      if (v.host === false && !o.homes) return false;
       if (o.domeOnly && !v.dome) return false;
-      if (o.usOnly && (v.state === 'IE' || v.state === 'MX')) return false;
+      if (o.usOnly && (v.state === 'IE' || v.state === 'MX' || v.state === 'BS')) return false;
       if (o.minCap && v.cap < o.minCap) return false;
       return true;
     });

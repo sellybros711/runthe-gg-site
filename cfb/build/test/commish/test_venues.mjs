@@ -58,6 +58,46 @@ console.log('\n=== the catalog holds together ===');
   ok('  and every major bowl can be sold', !bad2.length, bad2.join(', ') || majors.length + ' majors');
 }
 
+console.log('\n=== every bowl knows what its own name is for ===');
+{
+  /* THE ITEM ABOUT A BOWL MOVING READS THIS AND NOTHING ELSE. It used to assume the name was
+     the city, so it argued "a bowl named after a place is named after the place" about the
+     PINSTRIPE Bowl, which is named after a baseball uniform and plays in that club's park. A
+     bowl with no `named` block would put that sentence straight back on the screen, so the
+     block is required rather than optional. */
+  const KINDS = ['club', 'city', 'local', 'free'];
+  const noName = V.BOWLS.filter((b) => !b.named || !b.named.of || !b.named.gone);
+  ok('every bowl says what it is named after and what moving costs the name', !noName.length,
+    noName.map((b) => b.id).join(', ') || V.BOWLS.length + ' bowls');
+  const badKind = V.BOWLS.filter((b) => b.named && KINDS.indexOf(b.named.kind) < 0);
+  ok('  under one of the four kinds', !badKind.length,
+    badKind.map((b) => b.id + ' -> ' + b.named.kind).join(', ') || KINDS.join(', '));
+  /* `bind` SCALES WHAT MOVING COSTS, so a value outside the range silently prices a ruling at
+     something the rest of the docket has no scale for. */
+  const badBind = V.BOWLS.filter((b) => b.named
+    && !(typeof b.named.bind === 'number' && b.named.bind >= 0 && b.named.bind <= 1));
+  ok('  with a bind between 0 and 1', !badBind.length,
+    badBind.map((b) => b.id).join(', ') || 'all of them');
+  /* ALL FOUR KINDS IN PLAY. Three of them collapsing to one wording is the same item four
+     times, which is the thing this whole block exists to stop. */
+  const seen = {};
+  V.BOWLS.forEach((b) => { if (b.named) seen[b.named.kind] = (seen[b.named.kind] || 0) + 1; });
+  ok('  and all four kinds turn up in the catalog', KINDS.every((k) => seen[k] > 0),
+    KINDS.map((k) => k + ' ' + (seen[k] || 0)).join(', '));
+
+  /* A HOME IS NOT A BID. Four of these buildings are somebody's home ground and belong to no
+     shortlist: a fifteen thousand seat ground in Nassau turning up as a playoff site is the
+     failure this flag exists to prevent. */
+  const homes = V.VENUES.filter((v) => v.host === false).map((v) => v.id);
+  ok('the homes are excluded from a shortlist', homes.length > 0
+    && [0.1, 0.3, 0.5, 0.7, 0.9].every((seed) => {
+      let i = 0;
+      const rng = () => [0.1, 0.44, 0.77, 0.2, 0.61, 0.05, 0.9, 0.35][(i++) % 8] * seed / 0.5 % 1;
+      return V.shortlist(rng, 6, {}).every((v) => homes.indexOf(v.id) < 0);
+    }), homes.join(', '));
+  ok('  but can still be asked for by name', homes.every((id) => !!V.venue(id)));
+}
+
 console.log('\n=== a bid is a decision rather than a formality ===');
 {
   /* IF ONE CITY WINS ON EVERY AXIS the item is a button that says "pick the good one". */

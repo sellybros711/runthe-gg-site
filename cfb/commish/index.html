@@ -367,9 +367,12 @@
      CLAMPED, NOT HIDDEN. The first line is always there, and every word of it is one tap
      away, because an option whose reasoning is behind a control nobody notices is an option
      nobody reads. */
+  /* `.open` IS READING AND `.on` IS CHOOSING, and they used to be the same class. Opening a
+     paragraph to read it cast the ruling, so the only way to find out what the second option
+     said was to pick it. See the two buttons below. */
   .opt .why{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;
     overflow:hidden;transition:color .2s var(--ez)}
-  .opt.on .why{-webkit-line-clamp:6;color:var(--ink)}
+  .opt.on .why,.opt.open .why{-webkit-line-clamp:6;color:var(--ink)}
   /* WHAT THE RULING DOES, IN SYMBOLS. Three options used to be three paragraphs that had to
      be read in full and held in the head at once. These say the shape of each one at a
      glance: which forces it pushes and which way.
@@ -400,6 +403,38 @@
   @supports not (background:color-mix(in srgb,red 10%,transparent)){
     .sig i{background:rgba(255,255,255,.04)}
   }
+  /* ---- what a tap on an option does, said in words ----
+     THE CARD DID TWO THINGS AND ANNOUNCED NEITHER. Tapping it opened the rest of the paragraph
+     and cast the ruling at the same time, so somebody who tapped the second option to read it
+     had chosen it, and somebody who wanted to choose could not tell whether they had. The card
+     still selects on tap, because that is what a card does and every existing tap should keep
+     working, but the two actions now have their own controls with their own names.
+
+     `.oact` overrides `.opt span`, which sets display:block and a gray 12.5px, and which beat
+     a bare class once already in this file. See the note on `.opt .sig`. */
+  .opt .oact{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;font-size:0}
+  .opt .oact button{font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.04em;
+    padding:6px 11px;border-radius:8px;cursor:pointer;border:1px solid var(--line-2);
+    background:transparent;color:var(--dim);
+    transition:border-color .12s var(--ez),color .12s var(--ez),background .12s var(--ez)}
+  .opt .oact button:hover{color:var(--ink);border-color:var(--dim-2)}
+  .opt .oact button[hidden]{display:none}
+  /* THE SELECT BUTTON IS THE PRIMARY ONE and reads as it, and once it is the ruling it stops
+     inviting a press: a green button that says "select this ruling" under a card that is
+     already selected is asking for a tap that would change nothing. */
+  .opt .oact .opick{color:var(--green);border-color:rgba(16,185,129,.45)}
+  .opt .oact .opick:hover{background:rgba(16,185,129,.12);color:var(--green)}
+  .opt.on .oact .opick{background:rgba(16,185,129,.18);color:var(--green);
+    border-color:var(--green);cursor:default}
+  .opt:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+  /* A CORRECTION TO THE HEADLINE ABOVE IT, so it is styled as a caution rather than as one
+     more card: at card weight it reads as another section and the whole point is that it is
+     about the section it interrupts. */
+  .rnote{border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.08);
+    border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12.5px;line-height:1.45;
+    color:var(--dim)}
+  .rnote[hidden]{display:none}
+  .rnote b{color:#fbbf24;font-weight:700}
 
   /* ---- your council ----
      A BLOC YOU CANNOT READ IS STILL IN THE ROOM. The row keeps its chip, its name, its votes
@@ -1760,6 +1795,9 @@
   <div class="screen" id="s-room" data-in="land">
     <div class="eyebrow green" id="r-eyebrow">You ruled</div>
     <h2 id="r-title"></h2>
+    <!-- WHAT THE ROOM WAS ACTUALLY ANSWERING, on a forecast where a note has been typed. It
+         is the first thing under the headline because it is a correction to the headline. -->
+    <div class="rnote" id="r-note" hidden></div>
     <!-- The tail a ruling grew. See fallout.js and the wiring in b-rule. -->
     <div class="card flat tail" id="r-tail" hidden></div>
     <div class="meters" id="r-meters"></div>
@@ -1851,8 +1889,8 @@
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
-<script src="venues.js?v=3"></script>
-<script src="docket.js?v=12"></script>
+<script src="venues.js?v=4"></script>
+<script src="docket.js?v=13"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -1976,6 +2014,11 @@ function seedCareer(w){
 const SAVE_KEY='cfb_commish_term';
 const TERM_SEASONS=5;
 let world=null, rng=null, item=null, cast=null, choice=null, dials={}, written='';
+/* PER ITEM, AND CLEARED WITH IT. `optOpen` is which paragraphs somebody has opened without
+   choosing; `optLong` is which ones have anything folded away to open, measured rather than
+   assumed. Both are keyed by option id, which is unique inside an item and nowhere else, so
+   carrying either across a beat would open the wrong card on the next desk. */
+let optOpen={}, optLong={};
 let lastRoom=null, lastBefore=null;
 
 function newTerm(year){
@@ -3078,7 +3121,7 @@ $('b-desk').onclick=()=>{
   }
   item=D.pick(world,L,draw,sit);
   cast=D.castOf(item,world,L,draw,sit);
-  choice=null; dials={}; written='';
+  choice=null; dials={}; written=''; optOpen={}; optLong={};
   (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
   save();
   const day=CAL.decisionDay(world.year,world.beat,item.id);
@@ -3149,7 +3192,11 @@ function desk(){
        repeat what the chip beside it already says in a color and a mark. */
     return '<div class="voice" style="--bc:'+bcOf(v.id)+'">'
       +blocChip(v.id)
-      +'<span class="vs"><b>'+esc(who||(b?b.name:v.id))+'</b>'+esc(v.say)+'</span></div>';
+      /* THE QUOTE READS THE CAST TOO, on the same terms `who` already did. A fan saying "it is
+         named after the place" over a bowl named after a baseball uniform is the same failure
+         as a brief that assumes it, one line further down the screen. See voiceSay(). */
+      +'<span class="vs"><b>'+esc(who||(b?b.name:v.id))+'</b>'
+      +esc(D.voiceSay(v,cast,item,sit))+'</span></div>';
   }).join('');
   /* THE ROOM SPEAKS IN TURN. Three voices arriving together are a wall of text; dealt out
      they are three people, which is what they are. */
@@ -3158,8 +3205,11 @@ function desk(){
   paintOptions(true);
   paintDials();
   paintEffect();
-  paintWrite();
+  /* BEFORE paintWrite(), because paintTestBtn() reads `hidden` to decide whether the button is
+     on this screen at all. Setting it after left the first item of a session relabelling a
+     button that was still hidden from the last one. */
   $('b-test').hidden=!isPro();
+  paintWrite();
   if(isPro()) paintCouncilNote($('d-council'),C.seatsAt(careerRulings()));
   else $('d-council').innerHTML='';
   show('s-desk');
@@ -4297,17 +4347,73 @@ function paintOptions(first){
   /* THE LABEL AND THE BODY MAY BOTH BE FUNCTIONS OF THE CAST, because an item that offers
      four real host cities cannot have them written into the docket: which four is a question
      about the world. See the note in docket.resolve(). */
-  $('d-options').innerHTML=item.options.map((o)=>
-    '<button class="opt'+(choice===o.id?' on':'')+'" data-o="'+esc(o.id)+'">'
-    +'<b>'+esc(D.text(o.label,cast,item,sit))+'</b>'
-    +'<span class="why">'+esc(D.text(o.body,cast,item,sit))+'</span>'
-    +optionSignature(o)+'</button>').join('');
+  /* TWO ACTIONS, TWO BUTTONS, because they were one. Tapping a card both revealed the rest of
+     its paragraph AND cast the ruling, so a player who wanted to read the second option had to
+     choose it to do so, and could not tell which of the two things the tap had just done. The
+     card still selects on tap, because that is the primary action and every phone user expects
+     it, but the two things it can do are now written on it in words.
+
+     `Read more` STOPS THE EVENT. Without that it would select the option it was trying to let
+     you read, which is the original fault with an extra step. */
+  $('d-options').innerHTML=item.options.map((o)=>{
+    const on=choice===o.id;
+    const open=on||optOpen[o.id];
+    return '<div class="opt'+(on?' on':'')+(open?' open':'')+'" data-o="'+esc(o.id)+'"'
+      +' role="button" tabindex="0"'+(on?' aria-pressed="true"':' aria-pressed="false"')+'>'
+      +'<b>'+esc(D.text(o.label,cast,item,sit))+'</b>'
+      +'<span class="why">'+esc(D.text(o.body,cast,item,sit))+'</span>'
+      +optionSignature(o)
+      +'<span class="oact">'
+      +'<button type="button" class="omore" data-more="'+esc(o.id)+'"'
+      +(optLong[o.id]?'':' hidden')+'>'+(open?'Show less':'Read more')+'</button>'
+      +'<button type="button" class="opick" data-pick="'+esc(o.id)+'">'
+      +(on?'Ruling selected':'Select this ruling')+'</button>'
+      +'</span></div>';
+  }).join('');
   if(first) reveal($('d-options'));
+  /* THE OPTION KEEPS WHAT YOU TYPED. It used to blank it, so two paragraphs of somebody's own
+     reasoning were destroyed by tapping a card to read it. The note and the ruling are not
+     alternatives: see paintWrite() for what the box actually is. */
+  const take=(id)=>{ choice=id; paintOptions(); paintDials(); paintEffect(); paintWrite(); };
   $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
-    b.onclick=()=>{ choice=b.dataset.o; written=''; paintOptions(); paintDials(); paintEffect(); paintWrite(); };
+    b.onclick=(e)=>{ if(e.target.closest('.oact')) return; take(b.dataset.o); };
+    b.onkeydown=(e)=>{
+      if(e.target!==b) return;
+      if(e.key===' '||e.key==='Enter'){ e.preventDefault(); take(b.dataset.o); }
+    };
   });
+  $('d-options').querySelectorAll('[data-pick]').forEach((b)=>{
+    b.onclick=(e)=>{ e.stopPropagation(); take(b.dataset.pick); };
+  });
+  $('d-options').querySelectorAll('[data-more]').forEach((b)=>{
+    b.onclick=(e)=>{
+      e.stopPropagation();
+      const id=b.dataset.more;
+      /* A SELECTED OPTION IS ALREADY OPEN and closing it would be closing the thing you just
+         chose, so the control folds the flag rather than the card. */
+      optOpen[id]=!(optOpen[id]||choice===id);
+      paintOptions();
+    };
+  });
+  /* MEASURED ONCE PER ITEM, on the same principle as the brief: a "read more" over a paragraph
+     that is already whole promises something that is not there. The bodies do not change when
+     the selection does, so this runs on arrival and the answer is reused. */
+  if(first){
+    requestAnimationFrame(()=>{
+      let any=false;
+      $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
+        const w=b.querySelector('.why');
+        const long=!!w&&w.scrollHeight-w.clientHeight>3;
+        if(optLong[b.dataset.o]!==long){ optLong[b.dataset.o]=long; any=true; }
+      });
+      if(any) paintOptions();
+    });
+  }
   $('d-hint').textContent=choice?'':'Pick one to see what it does';
-  $('b-rule').disabled=!choice&&!written.trim();
+  /* WORDS ALONE CANNOT RULE, and the button used to say they could. It enabled on typed text
+     with no option chosen, and b-rule's first line is `if(!choice) return`, so pressing it did
+     nothing at all and gave no reason. */
+  $('b-rule').disabled=!choice;
 }
 
 /* WHAT THE BOARD READS AFTERWARDS, live. The same four numbers the office leads with, run
@@ -4475,17 +4581,44 @@ function paintDials(){
 /* WRITING YOUR OWN RULING, which is the paid tier's headline and is deliberately NOT wired
    to a model yet. What is here is the input and the shape of the request; the endpoint is
    its own piece of work and it is honest to say so on the screen rather than ship a box
-   that quietly does nothing. */
+   that quietly does nothing.
+
+   IT WAS NOT HONEST ENOUGH AND A PLAYER PROVED IT. The heading said "or rule in your own
+   words", which promises an alternative to the three options. It is not one: b-rule's first
+   line is `if(!choice) return`, so words with no option chosen pressed a button that did
+   nothing, and Test It On The Room forecast the OPTION while two paragraphs of somebody's own
+   reasoning sat above it. They wrote a careful argument about a bowl's name, got back a room
+   talking about players' bodies and television windows, and said the responses made no sense.
+   They were right: nothing on that screen had read a word of it.
+
+   So the heading now says what the box is, the small print says what happens to it, and the
+   button below says which of the two things it is about to forecast. The feature that would
+   make the promise true is the endpoint, and until that exists the screen does not imply it. */
 function paintWrite(){
   if(!isPro()){ $('d-write').innerHTML=''; return; }
-  $('d-write').innerHTML='<div class="dial"><div class="dh"><b>Or rule in your own words</b>'
+  $('d-write').innerHTML='<div class="dial"><div class="dh"><b>Add a note to the ruling</b>'
     +'</div><textarea class="write" id="d-text" placeholder="Expand to sixteen, but guarantee '
     +'the Group of Five two seats for six years, paid for out of the top two shares."></textarea>'
-    +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:7px">Not connected yet. '
-    +'What you write is kept with the ruling so the wording can be tested against what the '
-    +'options produce.</p></div>';
+    +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:7px">This rides along with '
+    +'whichever of the three you pick, and it is kept on the record with your ruling. '
+    +'<b style="color:var(--dim)">The room cannot read it yet.</b> Reasoning in your own words '
+    +'and having the nine of them answer it is the next piece of work, and until it is built '
+    +'this screen will not pretend otherwise.</p></div>';
   const t=$('d-text');
-  if(t){ t.value=written; t.oninput=()=>{ written=t.value; $('b-rule').disabled=!choice&&!written.trim(); }; }
+  if(t){ t.value=written; t.oninput=()=>{ written=t.value; paintTestBtn(); }; }
+  paintTestBtn();
+}
+
+/* WHICH OF THE TWO THINGS THE BUTTON IS ABOUT TO DO. "Test it on the room" over a screen
+   holding both a selected option and a paragraph you wrote is a button with two possible
+   meanings, and it was doing the one nobody expected. */
+function paintTestBtn(){
+  const b=$('b-test');
+  if(!b||b.hidden) return;
+  b.disabled=!choice;
+  b.textContent=!choice ? 'Pick one of the three to test it'
+    : written.trim() ? 'Test the selected ruling on the room'
+      : 'Test it on the room';
 }
 
 /* TEST IT ON THE ROOM, which is Football President's best idea and is a POWER rather than a
@@ -4503,10 +4636,28 @@ $('b-test').onclick=()=>{
   const blind=blindSet();
   const seats=C.SEATS.length-Object.keys(blind).length;
   $('r-eyebrow').textContent='If you ruled that way';
-  $('r-title').textContent='Nothing is decided yet';
+  /* WHICH WAY, NAMED. "Nothing is decided yet" over a forecast of one of three options does
+     not say which of the three was forecast, and with a note typed above it the player's
+     reasonable reading was that the room had answered what they wrote. It had not. */
+  const picked=item.options.find((x)=>x.id===choice);
+  $('r-title').textContent=picked
+    ? 'If you ruled: '+String(D.text(picked.label,cast,item,sit))
+    : 'Nothing is decided yet';
   $('r-head').textContent=seats>=C.SEATS.length
     ? 'How the room would take it'
     : 'How your council says the room would take it';
+  /* AND THE NOTE IS NOT WHAT WAS TESTED. Somebody wrote two careful paragraphs about a bowl's
+     name, pressed this, and got nine reactions to the option they had highlighted. Nothing
+     lied to them in words, which is exactly the problem: the screen said nothing at all. */
+  const rnote=$('r-note');
+  if(rnote){
+    rnote.hidden=!written.trim();
+    if(written.trim()){
+      rnote.innerHTML='<b>Your note is not what was forecast.</b> The nine of them are '
+        +'answering the ruling you selected. Your own wording is kept on the record with it, '
+        +'and having the room read and answer it is the next piece of work.';
+    }
+  }
   /* THE STANDING METER IS LOCKED WHILE ANY VOTE HOLDER IS DARK, because standing is exactly
      the vote-weighted average of those blocs and the number would give them straight back. */
   const voteDark=B.BLOCS.some((b)=>b.vote>0&&blind[b.id]);
@@ -4581,6 +4732,9 @@ $('b-rule').onclick=()=>{
       return typeof o.label==='function'?t:t.toLowerCase();
     })();
   $('r-head').textContent='The room';
+  /* NO CORRECTION ON A REAL RULING. The note is on the record with it, which is exactly what
+     the desk said would happen, so there is nothing here to put right. */
+  if($('r-note')) $('r-note').hidden=true;
   paintMeters($('r-meters'),world,before);
   /* NO COUNCIL HERE, ON PURPOSE. This is what happened, and the whole room answers whether
      you had people inside it or not. Gating a forecast is difficulty; gating a consequence

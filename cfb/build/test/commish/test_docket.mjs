@@ -88,14 +88,17 @@ console.log('\n=== every item is well formed ===');
      rendered, next to another line at exactly ninety-five that fits. test_desk draws all two
      hundred and twenty-five into the real container and measures them, which is the guard.
      This one is here because it is free and it catches the egregious case without a browser. */
+  /* EVERY STRING THE VOICE CAN SAY, not just the one it happens to say with no cast. A quote
+     that varies with what is on the desk is declared as a map of variants exactly so this
+     stays countable: see voiceSays() in docket.js. */
   const long = [];
-  D.ITEMS.forEach((it) => {
-    (it.voices || []).forEach((v) => {
-      if (String(v.say).length > 85) long.push(it.id + '/' + v.id + ' ' + v.say.length);
-    });
+  const allSays = D.ITEMS.flatMap((it) => (it.voices || [])
+    .flatMap((v) => D.voiceSays(v).map((s) => ({ it, v, s }))));
+  allSays.forEach(({ it, v, s }) => {
+    if (s.length > 85) long.push(it.id + '/' + v.id + ' ' + s.length);
   });
   ok('  and says it in two lines', !long.length, long.slice(0, 4).join(', ')
-    || 'longest is ' + Math.max(...D.ITEMS.flatMap((it) => (it.voices || []).map((v) => v.say.length))));
+    || 'longest of ' + allSays.length + ' is ' + Math.max(...allSays.map((x) => x.s.length)));
 }
 
 console.log('\n=== the desk is not empty, and it is not the same every year ===');

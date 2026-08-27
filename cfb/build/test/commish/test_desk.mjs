@@ -224,17 +224,22 @@ console.log('\n=== the desk is shorter than it was ===');
     let seen = 0, names = 0;
     D.ITEMS.forEach((it) => {
       (it.voices || []).forEach((v) => {
-        const say = String(v.say).replace(/[&<>]/g, '');
-        let worst = 0, worstName = '';
-        namesFor(v.id).forEach((nm) => {
-          vs.innerHTML = '<b>' + nm.replace(/[&<>]/g, '') + '</b>' + say;
-          names++;
-          if (node.clientHeight > worst) { worst = node.clientHeight; worstName = nm; }
+        /* EVERY VARIANT, not just the default one. A quote that changes with what is on the
+           desk declares its alternatives as a map precisely so this loop can reach them: a
+           variant nothing measures is a wrapped line waiting to happen. */
+        D.voiceSays(v).forEach((raw) => {
+          const say = raw.replace(/[&<>]/g, '');
+          let worst = 0, worstName = '';
+          namesFor(v.id).forEach((nm) => {
+            vs.innerHTML = '<b>' + nm.replace(/[&<>]/g, '') + '</b>' + say;
+            names++;
+            if (node.clientHeight > worst) { worst = node.clientHeight; worstName = nm; }
+          });
+          /* Three rows is 63px at this line height, four is 83. The bar is between them. */
+          if (worst > 70) out.push(it.id + '/' + v.id + ' "' + worstName + '" ' + worst + 'px');
+          tall.push(worst);
+          seen++;
         });
-        /* Three rows is 63px at this line height, four is 83. The bar is between them. */
-        if (worst > 70) out.push(it.id + '/' + v.id + ' "' + worstName + '" ' + worst + 'px');
-        tall.push(worst);
-        seen++;
       });
     });
     box.innerHTML = held;
@@ -287,6 +292,104 @@ console.log('\n=== the preview is the ruling ===');
 
   const shown = await p.$eval('#d-effect', (e) => e.textContent.length > 0);
   ok('  and says what the ruling would do', shown);
+}
+
+console.log('\n=== reading an option is not choosing it, and the note survives either ===');
+{
+  /* THE CARD DID TWO THINGS AND SAID NEITHER, and a player found all of it in one sitting:
+     tapping a card to read the rest of its paragraph cast the ruling, choosing a card wiped
+     two paragraphs they had typed into the box below, and the box's own heading said "or rule
+     in your own words" while b-rule's first line is `if(!choice) return`. Four separate ways
+     for the screen to do something other than what it said. */
+  const state = () => p.evaluate(() => ({
+    opts: [...document.querySelectorAll('#d-options .opt')].map((o) => ({
+      on: o.classList.contains('on'),
+      open: getComputedStyle(o.querySelector('.why')).webkitLineClamp !== '1',
+      more: o.querySelector('.omore'),
+      pick: !!o.querySelector('.opick'),
+    })).map((x) => ({ on: x.on, open: x.open, more: !!x.more, pick: x.pick })),
+    rule: document.getElementById('b-rule').disabled,
+    test: { hidden: document.getElementById('b-test').hidden,
+      txt: document.getElementById('b-test').textContent.trim(),
+      dis: document.getElementById('b-test').disabled },
+  }));
+
+  /* A FRESH DESK. The block above left an option selected. */
+  for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
+    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
+    if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+    if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
+    break;
+  }
+  /* ANY option, not the first one: the block above selected the LAST, so checking only
+     `.opt:first-child` reported a clean desk and every assertion below ran against a desk
+     that already had a ruling on it. */
+  for (let i = 0; i < 6; i++) {
+    if (!(await on('s-desk'))) {
+      if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
+      if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+      if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
+      break;
+    }
+    const dirty = await p.$$eval('#d-options .opt', (e) => e.some((x) => x.classList.contains('on')));
+    if (!dirty) break;
+    await tap('#b-rule'); await p.waitForTimeout(750);
+  }
+
+  const a = await state();
+  ok('every option offers both actions by name',
+    a.opts.length >= 2 && a.opts.every((o) => o.pick), a.opts.length + ' options');
+  ok('  and none of them is chosen on arrival', a.opts.every((o) => !o.on));
+  ok('  so there is nothing to rule on yet', a.rule === true);
+  /* WORDS ALONE CANNOT RULE and the button used to say they could. */
+  ok('  and nothing to test either', a.test.hidden || a.test.dis === true,
+    a.test.hidden ? 'not a tester' : a.test.txt);
+
+  /* READ MORE OPENS AND DOES NOT CHOOSE. This is the whole complaint. */
+  const which = a.opts.findIndex((o) => o.more);
+  if (which >= 0) {
+    await p.click('#d-options .opt:nth-child(' + (which + 1) + ') .omore');
+    await p.waitForTimeout(300);
+    const b2 = await state();
+    ok('reading an option opens it', b2.opts[which].open);
+    ok('  without choosing it', b2.opts.every((o) => !o.on) && b2.rule === true);
+    await p.click('#d-options .opt:nth-child(' + (which + 1) + ') .omore');
+    await p.waitForTimeout(300);
+    ok('  and folds back up', !(await state()).opts[which].open);
+  } else {
+    ok('reading an option opens it', false, 'no option had anything folded away');
+  }
+
+  /* THE NOTE SURVIVES BEING GIVEN A RULING TO RIDE WITH. It used to be deleted. */
+  const NOTE = 'The bowl is named for a ballclub and has no tie to that city at all.';
+  const box = await p.$('#d-text');
+  if (box) {
+    await p.fill('#d-text', NOTE);
+    await p.waitForTimeout(200);
+    ok('typing a note does not rule by itself', (await state()).rule === true);
+    await p.click('#d-options .opt:last-child .opick');
+    await p.waitForTimeout(400);
+    const after = await state();
+    ok('choosing a ruling keeps what you wrote',
+      (await p.$eval('#d-text', (e) => e.value)) === NOTE);
+    ok('  and marks that option as the ruling', after.opts[after.opts.length - 1].on);
+    ok('  and lets you rule', after.rule === false);
+    /* THE BUTTON NAMES WHICH OF THE TWO THINGS IT IS ABOUT TO FORECAST. */
+    ok('  with the test button saying what it will test',
+      /selected ruling/i.test(after.test.txt), after.test.txt);
+    await tap('#b-test');
+    await p.waitForTimeout(900);
+    const fc = await p.evaluate(() => ({
+      title: document.getElementById('r-title').textContent,
+      hidden: document.getElementById('r-note').hidden,
+    }));
+    ok('  and the forecast names the ruling it forecast', /^If you ruled: /.test(fc.title), fc.title);
+    ok('  and says the note is not what the room answered', fc.hidden === false);
+    await tap('#b-next');
+    await p.waitForTimeout(500);
+  } else {
+    ok('typing a note does not rule by itself', false, 'no writing box on this desk');
+  }
 }
 
 console.log('\n=== what the desk promised is what the office got ===');
