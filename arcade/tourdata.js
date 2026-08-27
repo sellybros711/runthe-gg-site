@@ -21,13 +21,19 @@
       html: 'Twelve small sports puzzles, about a minute each. They are built from real NBA, NFL and MLB careers, ' +
             'and <b>every one of them resets at midnight</b>.',
       cta: 'Show me' },
-    { sel: '.tsec.daily',
-      title: 'Daily puzzles',
-      html: 'The games under this heading are <b>one solve a day</b>. You get the same puzzle everyone else gets, ' +
-            'you play it once, and that is your day.' },
-    { sel: '.tsec.run',
-      title: 'Streak games',
-      html: 'These ones keep going until you miss. <b>How far you get is the score</b>, and it starts over tomorrow.' },
+    /* These two used to narrate Daily puzzles / Streak games, which is how the
+       hub was grouped then. It is grouped by what a play COSTS now, and a tour
+       describing headings that no longer say that is worse than no tour: the
+       card floated over a section reading something else. Anchored on the ids
+       rather than the old .daily / .run classes for the same reason. */
+    { sel: '#tsecA',
+      title: 'Free every day',
+      html: 'These four are free, one play of each, every day. New puzzles at midnight, ' +
+            'and <b>each one keeps its own streak</b>.' },
+    { sel: '#cardpitch',
+      title: 'The other eight',
+      html: 'The rest are Arcade Card games. A free account gets <b>one try of each</b>, ' +
+            'so nobody is asked to buy a game they have never played.' },
     /* Start on a game they can actually open. Common Ground is behind the
        Arcade Card now, so pointing a brand new visitor at it walked them into
        a paywall on step four. Sportegories is free, and it is the game people

@@ -1,8 +1,8 @@
 /* Run The Arcade - play entitlement (per game, per day)
  *
  * THE MODEL
- *   SIGNED OUT           → nothing is playable. The hub browses fine; any PLAY
- *                          asks for a free account first.
+ *   SIGNED OUT           → nothing is playable, and the hub shows the four free
+ *                          games only. Any PLAY asks for a free account first.
  *   FREE ACCOUNT         → the four free games, one play each per day:
  *                          Daily Crossword, Sportegories, Alma Mater, Career Path.
  *                          PLUS one free play of each of the other eight, once,
@@ -102,18 +102,21 @@
     if(isFreeGame(game)) return false;
     return !trialUsed(game);
   }
-  /* Is a free look ON OFFER to whoever is looking at this tile? Not the same
-     question as trialOpen, and the difference is the signed-out visitor.
-     There is no account to ask about them, so trialOpen has to say no, and a
-     hub built on that answer padlocks all eight card games and sells the card
-     to somebody who has played none of them. What they will actually get is a
-     free look at every one, because that is what a new account comes with, so
-     that is what the tile says. Display and funnel use this; spending never
-     does. */
-  function trialOffer(game){
-    if(unlimited() || isFreeGame(game)) return false;
-    return signedIn() ? !trialUsed(game) : true;
-  }
+  /* Is a free look ON OFFER on this tile? A display question: the spend path
+     asks trialOpen and only ever asked trialOpen.
+
+     This used to answer YES for a signed-out visitor, on the argument that a
+     free look is what a new account comes with, so the tile may as well say so.
+     It reads well and it is the wrong offer. The free look belongs to an
+     ACCOUNT: the server keys arcade_game_trial on the user id, so there is no
+     guest's free try to take, and a hub showing eight of them handed a visitor
+     eight tiles that each turn into a sign-up wall. A visitor now sees the four
+     free games and the card's own pitch underneath them, which is the same
+     argument made once, honestly, in the place built for it.
+
+     So it is trialOpen exactly, and the name stays because the callers are
+     asking about a badge, not about the right to play. */
+  function trialOffer(game){ return trialOpen(game); }
 
   // Supabase session key (mirrors auth.js). Presence of a session blob = signed in.
   var SB_SESSION_KEY = 'sb-jcrrxqfpdelrmvjuihnm-auth-token';
