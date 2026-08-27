@@ -10,7 +10,8 @@
 --   * commish_doctrine_split() how many commissioners came out each way
 --   * commish_doctrine_board() the best terms inside one doctrine
 --   * commish_my_terms()       your own, newest first
---   * commish_recount_terms()  the owner's hand, for a doctrine that gets renamed
+--   * commish_term_standing()  where one term sits inside its own doctrine
+--   * commish_move_doctrine()  the owner's hand, for a doctrine that gets renamed
 --
 -- ---------------------------------------------------------------------------
 -- WHY RANK INSIDE A DOCTRINE RATHER THAN ACROSS ALL OF THEM
