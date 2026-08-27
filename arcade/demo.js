@@ -67,6 +67,10 @@
       '  background:var(--card,rgba(0,0,0,.25));border:1.5px solid var(--line2,rgba(255,255,255,.14));',
       '  font-weight:800;font-size:13.5px;color:var(--ink,#F4F7FB);white-space:nowrap;overflow:hidden;}',
       '.rtgd-field.go{border-color:var(--green,#48D17A);}',
+      /* A clue is read, not typed, so it takes the width it needs and a size
+         that fits it. The nowrap above exists so a name being typed does not
+         reflow mid-keystroke; a clue never changes once it is printed. */
+      '.rtgd-field.clue{font-size:11.5px;font-weight:700;min-width:0;width:100%;white-space:normal;height:auto;min-height:32px;padding:6px 10px;line-height:1.35;}',
       '.rtgd-caret{display:inline-block;width:1.5px;height:15px;margin-left:1px;background:var(--a,#F4F7FB);animation:rtgdBlink 1s steps(1) infinite;}',
       '@keyframes rtgdBlink{50%{opacity:0}}',
       '.rtgd-line{display:flex;align-items:center;gap:7px;width:100%;max-width:236px;padding:5px 9px;border-radius:8px;',
@@ -134,8 +138,8 @@
     };
   }
 
-  function field(placeholder) {
-    var f = el('rtgd-field');
+  function field(placeholder, cls) {
+    var f = el('rtgd-field' + (cls ? ' ' + cls : ''));
     var span = document.createElement('span');
     var caret = el('rtgd-caret');
     f.appendChild(span); f.appendChild(caret);
@@ -143,8 +147,8 @@
     return {
       node: f,
       text: function (s) { span.textContent = s; },
-      good: function (on) { f.className = 'rtgd-field' + (on ? ' go' : ''); },
-      reset: function () { span.textContent = placeholder || ''; f.className = 'rtgd-field'; }
+      good: function (on) { f.className = 'rtgd-field' + (cls ? ' ' + cls : '') + (on ? ' go' : ''); },
+      reset: function () { span.textContent = placeholder || ''; f.className = 'rtgd-field' + (cls ? ' ' + cls : ''); }
     };
   }
 
@@ -247,7 +251,7 @@
       };
     },
     crossword: function () {
-      var n = note('4 down'), t = tiles('    ', { blank: true }), f = field('Sports mini crossword');
+      var n = note('4 down'), t = tiles('    ', { blank: true }), f = field('Sports mini crossword', 'clue');
       var w = 'RUTH';
       return {
         cap: ['A clue about a career, not a category.', 'Fill the grid against the clock.'],

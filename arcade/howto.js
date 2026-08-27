@@ -92,6 +92,7 @@
       '.rtgHowto-card{width:100%;max-width:360px;background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:22px 20px 20px;position:relative;box-shadow:var(--shadow,0 30px 80px -20px rgba(0,0,0,.7));margin:auto 0;font-family:var(--f,inherit);}' +
       '.rtgHowto-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--ink);font-size:14px;line-height:1;cursor:pointer;padding:0;}' +
       '.rtgHowto-title{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:20px;margin:0 34px 12px 0;color:var(--ink);}' +
+      '.rtgHowto-sub{margin:-6px 0 14px;color:var(--mut);font-size:13px;line-height:1.5;}' +
       '.rtgHowto-demo{margin:0 0 14px;}' +
       '.rtgHowto-list{margin:0 0 18px;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
@@ -133,9 +134,23 @@
     x.setAttribute('aria-label', 'Close');
     x.textContent = '✕';
 
+    /* THE HEADER INTRODUCES THE GAME, it does not label the dialog. "How to
+       play" is true of every one of these modals and tells you nothing about
+       the one you opened; the game's own name and its one-line pitch are what
+       orient somebody who tapped in from a tile. Falls back to the old label
+       if gamemarks is absent. */
+    var marks = window.RTGGameMarks || null;
+    var gname = (marks && marks.name) ? marks.name(key) : '';
+    var gdesc = (marks && marks.desc) ? marks.desc(key) : '';
     var h = document.createElement('h2');
     h.className = 'rtgHowto-title';
-    h.textContent = 'How to play';
+    h.textContent = gname || 'How to play';
+    var sub = null;
+    if (gdesc) {
+      sub = document.createElement('p');
+      sub.className = 'rtgHowto-sub';
+      sub.textContent = gdesc;
+    }
 
     var ul = document.createElement('ul');
     ul.className = 'rtgHowto-list';
@@ -152,6 +167,7 @@
 
     card.appendChild(x);
     card.appendChild(h);
+    if (sub) card.appendChild(sub);
     /* THE DEMO GOES ABOVE THE RULES, because it answers the question the
        rules cannot: what does this look like when it is working. Four seconds
        of the game playing itself beats four bullets, and the bullets stay
@@ -166,19 +182,6 @@
       demo = { host: stagewrap, handle: null };
     }
     card.appendChild(ul);
-    /* Reading the rules and being shown the screen are different needs, and a
-       list of bullets only ever answers the first one. The walkthrough lives
-       one tap away rather than being a first-visit event you can miss. */
-    var tourBtn = null;
-    if (window.RTGTour && window.RTGTourData && RTGTourData.GAMES[key]) {
-      tourBtn = RTGTour.button('Show me around the screen');
-      tourBtn.style.cssText = 'display:flex;width:100%;justify-content:center;margin:0 0 10px;';
-      tourBtn.addEventListener('click', function(){
-        close();
-        setTimeout(function(){ RTGTour.replay('game:' + key, RTGTourData.GAMES[key]); }, 120);
-      });
-      card.appendChild(tourBtn);
-    }
     card.appendChild(ok);
     scrim.appendChild(card);
     document.body.appendChild(scrim);
@@ -234,14 +237,14 @@
     // for a locked/finished day, typically after a ~300ms timeout) has run.
     // If any game scrim is showing we skip the auto-open and leave the flag
     // unset, so the intro still shows on the next fresh visit.
-    /* On a first visit, walk them through the actual screen rather than
-       opening a list of rules. Pointing at the league switcher and saying what
-       it does lands; "one puzzle a day, five tries" does not, because at that
-       moment they do not yet know what they are looking at. The bullets stay
-       behind the "?" for anyone who wants the rules on their own.
-       Waits for the pregame overlay to be gone as well as any result modal:
-       walking someone through a screen they cannot see would be worse than
-       saying nothing. */
+    /* On a first visit, open THIS. It used to hand off to a tour that pointed
+       at the league switcher and the score box, which answers "what is this
+       control" for somebody who does not yet know what the game is. The demo
+       answers the earlier question by playing a round, and once you have seen
+       one the controls explain themselves.
+       Still waits for the pregame overlay and any result modal to be gone:
+       opening onto a screen they cannot see would be worse than saying
+       nothing. */
     if(!seen()){
       var tries = 0;
       var wait = setInterval(function(){
@@ -250,9 +253,7 @@
         if (document.querySelector('.rtgpg-scrim:not([hidden])')) return; // pregame is showing
         clearInterval(wait);
         markSeen();
-        var did = (window.RTGTour && window.RTGTourData && RTGTourData.GAMES[key])
-          ? RTGTour.once('game:' + key, RTGTourData.GAMES[key]) : false;
-        if (!did) open();
+        open();
       }, 300);
     }
   }
