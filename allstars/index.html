@@ -3196,13 +3196,13 @@ function batterEndBase(kind) {
    -1 = home (batter box); 0/1/2 = 1st/2nd/3rd; 3 = home again (a run
    scored, runner is done). */
 function waypointForBase(field, idx) {
-  const { cx, cy, r } = field;
-  if (idx === -1) return [cx - 22, cy + r + 8];
-  if (idx === 0)  return [cx + r, cy];
-  if (idx === 1)  return [cx, cy - r];
-  if (idx === 2)  return [cx - r, cy];
-  if (idx === 3)  return [cx + 2, cy + r + 8];
-  return [cx, cy];
+  const { cx, rx, midY, topY, plateY } = field;
+  if (idx === -1) return [cx - 30, plateY + 8];
+  if (idx === 0)  return [cx + rx, midY];
+  if (idx === 1)  return [cx, topY];
+  if (idx === 2)  return [cx - rx, midY];
+  if (idx === 3)  return [cx + 2, plateY + 8];
+  return [cx, midY];
 }
 
 function batterPathIndices(kind) {
@@ -3266,7 +3266,7 @@ function scheduleContactPlay(kind, batter) {
   Sound.play('crack');
   {
     const geo = fieldGeom();
-    const hitX = geo.cx - 12, hitY = geo.cy + geo.r - 2;
+    const hitX = geo.cx - 14, hitY = geo.plateY - 4;
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2;
       spawnFx(g, {
@@ -3414,8 +3414,8 @@ function applyDoublePlayMutation(batter) {
   showCallout('DOUBLE PLAY', 'strike');
   /* Kick up dust at both bases for the play. */
   const geo = fieldGeom();
-  dustPuff(g, geo.cx + geo.r, geo.cy);
-  dustPuff(g, geo.cx + (batter.spd > 70 ? geo.r * 0.9 : geo.r), geo.cy + geo.r * 0.3);
+  dustPuff(g, geo.cx + geo.rx, geo.midY);
+  dustPuff(g, geo.cx + geo.rx * 0.5, geo.midY - geo.ry * 0.5);
 }
 
 function checkWalkOff() {
@@ -4038,8 +4038,28 @@ function finishGame() {
 /* The field canvas has a fixed internal size, so play staging code can
    compute the same geometry drawField uses without holding a context. */
 function fieldGeom() {
+  /* The Backyard Baseball camera: home plate LARGE at the bottom of the
+     frame, first and third pushed way out to the sides, second base
+     compressed upward. The diamond is a square seen along the ground,
+     so it draws about twice as wide as it is tall; drawing it with one
+     radius made it read as a shape pinned to a wall, and rounding its
+     corners made that shape a circle.
+
+       rx      half width of the diamond (plate to first, horizontally)
+       ry      ONE hop of vertical depth (plate up to the corner bases)
+       plateY  home plate; midY first and third; topY second base
+
+     cy and r are the legacy aliases the ball flight, landing and FX
+     code aim with; they approximate the diamond's center and scale. */
   const w = 960, h = 660;
-  return { w, h, cx: w/2, cy: h*0.58, r: Math.min(w, h) * 0.30 };
+  const cx = w / 2;
+  const plateY = h * 0.86;
+  const rx = w * 0.315;
+  const ry = h * 0.255;
+  const midY = plateY - ry;
+  const topY = plateY - 2 * ry;
+  const moundY = plateY - ry * 0.92;
+  return { w, h, cx, rx, ry, plateY, midY, topY, moundY, cy: midY, r: 210 };
 }
 
 /* -------- Particles --------
@@ -4120,7 +4140,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillStyle = '#0b1015';
   ctx.fillRect(-8, -8, w + 16, h + 16);
 
-  const skyH = h * 0.13;
+  const skyH = h * 0.105;
   ctx.fillStyle = theme.sky;
   ctx.fillRect(0, 0, w, skyH);
   /* a few stars, dimmed on daytime themes */
@@ -4216,11 +4236,11 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillStyle = gGrad;
   ctx.fillRect(0, grassY, w, h - grassY);
 
-  /* Home-plate camera: put the plate in the lower portion, mound up. */
-  const cx = w/2;
-  const cy = h * 0.58;
-  const r = Math.min(w, h) * 0.30;
-  const plateY = cy + r;
+  /* Home-plate camera. All of the diamond's numbers come from
+     fieldGeom(), the single geometry the runner paths, ball flights and
+     FX aim with, so the picture and the play can never disagree. */
+  const G = fieldGeom();
+  const { cx, rx, ry, plateY, midY, topY, moundY, cy, r } = G;
 
   /* Checkerboard mowing: arc bands radiating from home plate crossed
      with pie wedges from the same origin, which is the classic mowed
@@ -4262,68 +4282,68 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillStyle = theme.track;
   ctx.fillRect(0, grassY, w, 10);
 
-  /* Rounded-organic path helper: quadratic-curve blob through points,
-     borrowed from the golf tracer's shape language. */
-  const blobPath = (pts) => {
-    const n = pts.length;
-    const mid = (a, b) => [(a[0]+b[0])/2, (a[1]+b[1])/2];
-    let m = mid(pts[n-1], pts[0]);
-    ctx.beginPath();
-    ctx.moveTo(m[0], m[1]);
-    for (let i = 0; i < n; i++) {
-      const p = pts[i], q = pts[(i+1)%n];
-      const mm = mid(p, q);
-      ctx.quadraticCurveTo(p[0], p[1], mm[0], mm[1]);
-    }
-    ctx.closePath();
-  };
-
   const DIRT = '#8b5a24';
   const DIRT_DARK = '#6e451c';
-  const basePts = [
-    [cx, cy - r],        /* second */
-    [cx + r, cy],        /* first */
-    [cx, plateY],        /* home */
-    [cx - r, cy],        /* third */
-  ];
 
-  /* Dirt basepaths: a wide stroked loop through the four bases, with
-     rounded corners. The infield interior stays grass, like a modern
-     park, which reads far less geometric than a filled diamond. */
-  blobPath([
-    [cx, cy - r], [cx + r*0.55, cy - r*0.55],
-    [cx + r, cy], [cx + r*0.55, cy + r*0.55],
-    [cx, plateY], [cx - r*0.55, cy + r*0.55],
-    [cx - r, cy], [cx - r*0.55, cy - r*0.55],
-  ]);
-  ctx.strokeStyle = DIRT;
-  ctx.lineWidth = 17;
-  ctx.lineJoin = 'round';
-  ctx.stroke();
-  ctx.strokeStyle = 'rgba(0,0,0,.12)';
-  ctx.lineWidth = 3;
+  /* THE INFIELD. This is the shape that makes a baseball field read as a
+     baseball field: straight dirt edges running along the foul lines
+     from home past first and third, closed by the arc that bulges out
+     behind second base. The previous version stroked a rounded loop
+     through the bases, which is why the diamond looked like a circle. */
+  const dirtOut = 26;                       /* dirt runs past the bases */
+  const p1x = cx + rx + dirtOut, p3x = cx - rx - dirtOut;
+  const pOutY = midY + dirtOut * 0.35;
+  ctx.beginPath();
+  ctx.moveTo(cx, plateY + 20);
+  ctx.lineTo(p1x, pOutY);
+  ctx.quadraticCurveTo(cx + rx * 0.72, topY - 40, cx, topY - 44);
+  ctx.quadraticCurveTo(cx - rx * 0.72, topY - 40, p3x, pOutY);
+  ctx.closePath();
+  const dGrad = ctx.createLinearGradient(0, topY - 44, 0, plateY + 20);
+  dGrad.addColorStop(0, DIRT_DARK);
+  dGrad.addColorStop(0.55, DIRT);
+  dGrad.addColorStop(1, '#9a6428');
+  ctx.fillStyle = dGrad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.20)';
+  ctx.lineWidth = 2;
   ctx.stroke();
 
-  /* Dirt cutout circles at each base, home plate area, and the mound. */
-  const dirtCircle = (x, y, rad) => {
-    const grd = ctx.createRadialGradient(x, y - rad*0.3, rad*0.2, x, y, rad);
+  /* Grass interior: a straight edged diamond inset from the bases, so
+     the dirt reads as basepaths with corners rather than a ring. */
+  const inset = 30;
+  ctx.beginPath();
+  ctx.moveTo(cx, plateY - inset * 1.4);
+  ctx.lineTo(cx + rx - inset * 1.7, midY);
+  ctx.lineTo(cx, topY + inset);
+  ctx.lineTo(cx - rx + inset * 1.7, midY);
+  ctx.closePath();
+  ctx.fillStyle = theme.grass;
+  ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.10)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.18)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  /* Mound and home plate circle, as ground ellipses (a circle on the
+     ground is an ellipse from this camera, another perspective tell). */
+  const dirtOval = (x, y, ox, oy) => {
+    const grd = ctx.createRadialGradient(x, y - oy * 0.4, 2, x, y, ox);
     grd.addColorStop(0, '#a06a30');
     grd.addColorStop(1, DIRT_DARK);
     ctx.fillStyle = grd;
-    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y, ox, oy, 0, 0, Math.PI * 2); ctx.fill();
   };
-  dirtCircle(cx + r, cy, 17);       /* first */
-  dirtCircle(cx, cy - r, 17);       /* second */
-  dirtCircle(cx - r, cy, 17);       /* third */
-  dirtCircle(cx, plateY, 24);       /* home plate circle */
-  dirtCircle(cx, cy, 21);           /* mound */
-  /* Dirt speckle inside the circles and paths. */
+  dirtOval(cx, moundY, 30, 15);
+  dirtOval(cx, plateY, 40, 19);
+  /* Dirt speckle on the mound and plate circles. */
   for (let i = 0; i < 60; i++) {
     const a = (i * 2.399963);   /* golden angle scatter */
-    const rad = 20 * Math.sqrt((i % 30) / 30);
+    const rad = 26 * Math.sqrt((i % 30) / 30);
     ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.08)';
-    ctx.fillRect(cx + Math.cos(a) * rad, plateY + Math.sin(a) * rad * 0.7, 2, 2);
-    ctx.fillRect(cx + Math.cos(a + 1) * rad, cy + Math.sin(a + 1) * rad * 0.7, 2, 2);
+    ctx.fillRect(cx + Math.cos(a) * rad, plateY + Math.sin(a) * rad * 0.45, 2, 2);
+    ctx.fillRect(cx + Math.cos(a + 1) * rad * 0.8, moundY + Math.sin(a + 1) * rad * 0.4, 2, 2);
   }
 
   /* Foul lines: from the plate THROUGH first and third out to the wall,
@@ -4335,8 +4355,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     const t = (grassTop - plateY) / (by - plateY);
     return [cx + (bx - cx) * t, grassTop];
   };
-  const [flx, fly] = foulTo(cx - r, cy);
-  const [frx, fry] = foulTo(cx + r, cy);
+  const [flx, fly] = foulTo(cx - rx, midY);
+  const [frx, fry] = foulTo(cx + rx, midY);
   ctx.strokeStyle = 'rgba(234,234,234,.55)';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -4358,28 +4378,30 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     ctx.fillRect(px - 1.5, wallY + wallH - 4, 3, 4);
   }
 
-  /* Batter's boxes: soft chalk */
+  /* Batter's boxes: soft chalk, sized for the bigger plate area. */
   ctx.strokeStyle = 'rgba(255,255,255,.30)';
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(cx - 34, plateY - 8, 26, 32);
-  ctx.strokeRect(cx + 8, plateY - 8, 26, 32);
+  ctx.strokeRect(cx - 44, plateY - 12, 30, 36);
+  ctx.strokeRect(cx + 14, plateY - 12, 30, 36);
 
-  /* Bases: diamonds rather than squares, with a shadow edge. */
+  /* Bases: flattened diamonds (perspective again), second drawn a touch
+     smaller because it is the farthest away. */
   const bases = [
-    [cx + r, cy],
-    [cx, cy - r],
-    [cx - r, cy],
+    [cx + rx, midY],
+    [cx, topY],
+    [cx - rx, midY],
   ];
-  for (const [bx, by] of bases) {
+  bases.forEach(([bx, by], i) => {
+    const s = i === 1 ? 8 : 10;
     ctx.fillStyle = 'rgba(0,0,0,.25)';
     ctx.beginPath();
-    ctx.moveTo(bx, by - 7); ctx.lineTo(bx + 8, by + 1); ctx.lineTo(bx, by + 9); ctx.lineTo(bx - 8, by + 1);
+    ctx.moveTo(bx, by - s * 0.6 + 1); ctx.lineTo(bx + s, by + 1); ctx.lineTo(bx, by + s * 0.6 + 1); ctx.lineTo(bx - s, by + 1);
     ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#eaeaea';
     ctx.beginPath();
-    ctx.moveTo(bx, by - 8); ctx.lineTo(bx + 8, by); ctx.lineTo(bx, by + 8); ctx.lineTo(bx - 8, by);
+    ctx.moveTo(bx, by - s * 0.6); ctx.lineTo(bx + s, by); ctx.lineTo(bx, by + s * 0.6); ctx.lineTo(bx - s, by);
     ctx.closePath(); ctx.fill();
-  }
+  });
 
   /* Home plate: pentagon */
   ctx.fillStyle = '#eaeaea';
@@ -4394,27 +4416,27 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
 
   /* Pitcher's rubber on the mound circle drawn above. */
   ctx.fillStyle = '#eaeaea';
-  ctx.fillRect(cx - 8, cy - 2, 16, 4);
+  ctx.fillRect(cx - 9, moundY - 2, 18, 4);
 
   /* Fielders and defense are always drawn. The batter and base runners
      get drawn either statically at their bases (no active play) or as
      animated waypoints along their paths (a play is in flight). */
   const g = State.game;
-  const field = { cx, cy, r };
+  const field = G;
 
   if (g) {
     /* Catcher behind plate */
     /* (This once gated on catcher.pal, a field the old sprite system
        carried and the rewrite removed, so no catcher drew at all.) */
     const catcher = currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1];
-    if (catcher) drawRunner(ctx, cx, cy + r + 22, catcher, 2.4, 'back');
+    if (catcher) drawRunner(ctx, cx + 18, plateY + 38, catcher, 2.3, 'back');
     /* On-deck circle: the next batter waits in it, bat on shoulder is
        implied by the back view. Gives the bottom corner life and tells
        the player who is up next without reading the log. */
     const bt2 = currentBattingTeam();
     const onDeck = bt2.batters[(bt2.idx + 1) % 9];
     if (onDeck) {
-      const ox = cx - r * 1.18, oy = cy + r + 26;
+      const ox = cx - rx * 0.62, oy = plateY + 30;
       ctx.fillStyle = 'rgba(0,0,0,.18)';
       ctx.beginPath(); ctx.ellipse(ox, oy, 20, 9, 0, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = 'rgba(234,234,234,.25)';
@@ -4431,18 +4453,18 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     } else if (pitch && inWindup) {
       pitcherPose = 'windup';
     }
-    if (pit) drawRunner(ctx, cx, cy - 6, pit, 2.7, pitcherPose);
-    /* Fielder cluster */
-    /* Depth scaling: outfielders are FARTHER away, so they draw a touch
-       smaller than the infield, which is what sells the camera angle. */
+    if (pit) drawRunner(ctx, cx, moundY - 6, pit, 2.6, pitcherPose);
+    /* Fielder cluster, on the foreshortened diamond. Depth scaling:
+       outfielders are FARTHER away, so they draw smaller than the
+       infield corners, which is what sells the camera angle. */
     const fs = currentFieldingTeam().batters;
-    if (fs[2]) drawRunner(ctx, cx - r*0.55, cy - r*0.15, fs[2], 2.4);
-    if (fs[3]) drawRunner(ctx, cx + r*0.55, cy - r*0.15, fs[3], 2.4);
-    if (fs[4]) drawRunner(ctx, cx + r*0.85, cy + r*0.10, fs[4], 2.5);
-    if (fs[5]) drawRunner(ctx, cx - r*0.85, cy + r*0.10, fs[5], 2.5);
-    if (fs[6]) drawRunner(ctx, cx - w*0.28, cy - h*0.14, fs[6], 2.2);
-    if (fs[7]) drawRunner(ctx, cx,           cy - h*0.20, fs[7], 2.1);
-    if (fs[1]) drawRunner(ctx, cx + w*0.28, cy - h*0.14, fs[1], 2.2);
+    if (fs[2]) drawRunner(ctx, cx - rx*0.42, midY - ry*0.52, fs[2], 2.45);
+    if (fs[3]) drawRunner(ctx, cx + rx*0.42, midY - ry*0.52, fs[3], 2.45);
+    if (fs[4]) drawRunner(ctx, cx + rx*0.90, midY + 24, fs[4], 2.6);
+    if (fs[5]) drawRunner(ctx, cx - rx*0.90, midY + 24, fs[5], 2.6);
+    if (fs[6]) drawRunner(ctx, cx - w*0.33, topY - 48, fs[6], 2.15);
+    if (fs[7]) drawRunner(ctx, cx,           topY - 74, fs[7], 2.05);
+    if (fs[1]) drawRunner(ctx, cx + w*0.33, topY - 48, fs[1], 2.15);
 
     if (g.play) {
       /* A contact play is animating. Draw the pre-play runners along
@@ -4464,8 +4486,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       };
       p.preBases.forEach((runner, i) => {
         if (!runner || !p.runnerPaths[i]) return;
-        const [rx, ry] = pathPointAt(field, p.runnerPaths[i], rt);
-        drawRunner(ctx, rx, ry - 4, runner, 2.6,
+        const [wx, wy] = pathPointAt(field, p.runnerPaths[i], rt);
+        drawRunner(ctx, wx, wy - 4, runner, 2.6,
                    rt > 0 && rt < 1 ? runFrameFor(p.runnerPaths[i], rt) : null);
       });
       /* Batter as runner: starts moving at the same time as the ball is */
@@ -4476,7 +4498,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       /* Bat swing arc, first 240ms of the play */
       if (now < p.swingUntil) {
         const st = clamp((now - p.startedAt) / (p.swingUntil - p.startedAt), 0, 1);
-        drawBatSwing(ctx, cx - 22, cy + r + 8, st);
+        drawBatSwing(ctx, cx - 28, plateY + 4, st);
       }
       /* Ball trajectory: plate to landing spot, with a ground shadow so
          the arc height reads. */
@@ -4484,7 +4506,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         const bt2 = clamp((now - p.startedAt) / p.ball.duration, 0, 1);
         /* Batted balls leave from the bat's contact point, just off the
            batter's box, not from the middle of the plate. */
-        const startX = cx - 12, startY = cy + r - 2;
+        const startX = cx - 14, startY = plateY - 4;
         const endX = startX + p.ball.dx * r;
         const endY = cy + p.ball.dy * r;
         const arc = 4 * p.ball.arcH * bt2 * (1 - bt2);
@@ -4498,11 +4520,11 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       /* No play in flight: runners are static on their bases, batter
          stands in the batter's box. */
       const bs = g.bases;
-      if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 4, bs[0], 2.6);
-      if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 4, bs[1], 2.6);
-      if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 4, bs[2], 2.6);
+      if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 6, bs[0], 2.6);
+      if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 6, bs[1], 2.45);
+      if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 6, bs[2], 2.6);
       const batter = currentBatter();
-      if (batter) drawRunner(ctx, cx - 22, cy + r + 6, batter, 3.2, 'batting');
+      if (batter) drawRunner(ctx, cx - 28, plateY + 6, batter, 3.2, 'batting');
     }
   }
 
@@ -4517,9 +4539,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      point the ball sits in the catcher's mitt. */
   if (pitch && !inWindup && !(g && g.play)) {
     const bx = cx;
-    const by = cy;
+    const by = moundY - 22;    /* release point, out of the pitcher's hand */
     const px = cx;
-    const py = cy + r - 4;
+    const py = plateY - 8;
     const arrive = Math.max(0.22, pitch.ideal);
     let e = clamp(t / arrive, 0, 1);
     /* Per-pitch flight character: fastball rides straight and hard, the
@@ -4558,7 +4580,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     ctx.fillStyle = 'rgba(0,0,0,.28)';
     ctx.fillRect(0, 0, w, h);
     if (rt < 1) {
-      const startX = cx - 12, startY = cy + r - 2;
+      const startX = cx - 14, startY = plateY - 4;
       const endX = startX + R.h.ball.dx * r;
       const endY = cy + R.h.ball.dy * r;
       const arc = 4 * R.h.ball.arcH * rt * (1 - rt);
