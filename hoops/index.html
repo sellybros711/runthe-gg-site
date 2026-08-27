@@ -1288,7 +1288,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=10"></script>
+<script src="engine.js?v=11"></script>
 <script src="run.js?v=2"></script>
 <script src="badges.js?v=1"></script>
 <script>
@@ -3453,11 +3453,36 @@ function seasonStory(out){
       + ' game' + (E.CONSTANTS.PLAY_IN_WINS - out.wins === 1 ? '' : 's') + '.');
   }
 
+  /* SOMETHING TRUE IS ALWAYS AVAILABLE. Two runs in twelve came back with an
+     empty line: a 36-46 season with no long streak, no marquee extreme and not
+     close enough to the play-in to mention it. Nothing was wrong, there was
+     just nothing on the list to say. A team's best run of form is a fact every
+     season has, so it is the floor rather than a blank. */
+  if (!bits.length) {
+    var run10 = bestStretch(games, 10);
+    if (run10) {
+      bits.push('Best stretch: ' + run10.w + '-' + run10.l + ' ' + when(run10.at) + '.');
+    }
+  }
+
   /* At most two, because three is a paragraph and this is a caption. The
      ending is kept when there is one, since it is the sentence somebody came
      to this screen for. */
   if (bits.length > 2) bits = [bits[0], bits[bits.length - 1]];
   return bits.join(' ');
+}
+
+/* The best window of N games in the season, as a record and where it started.
+   Every season has one, which is what makes it a safe last resort. */
+function bestStretch(games, n){
+  if (!games || games.length < n) return null;
+  var best = null, won = 0;
+  for (var i = 0; i < games.length; i++) {
+    if (games[i].won) won++;
+    if (i >= n && games[i - n].won) won--;
+    if (i >= n - 1 && (!best || won > best.w)) best = { w: won, l: n - won, at: i - n + 1 };
+  }
+  return best;
 }
 
 // ── sharing ────────────────────────────────────────────────────────────────

@@ -1463,7 +1463,30 @@ const TITLE = {
      missing. A seven game series turns on who is healthy in May and whether the
      matchup takes your centre off the floor, and neither is in a season rating.
 
-     Fitted at 9.0 over the whole 45-plus-win population. */
+     Fitted at 9.0 over the whole 45-plus-win population.
+
+     WHAT IT COSTS, MEASURED, so the next reader does not think this is an
+     oversight. Because the opponent is drawn independently of how good YOU are,
+     the median playoff series in this model has a 7.1 point net gap between the
+     two sides, and a third of them have a gap over 10. A ten point gap sweeps
+     57% of the time, which is correct physics on a matchup that should be rare
+     and is not. The result is that 4-0 is the MOST COMMON series result at 28%
+     of best-of-sevens, where a real bracket is clearly a minority of sweeps.
+     Game sevens, by contrast, land at 17.8%, which is about right.
+
+     LOWERING IT DOES NOT PAY. Swept on 400 real playoff rosters at 40 replays
+     each: SD 6 gives 23% sweeps, SD 4 gives 19%, SD 3 gives 18%. But the title
+     rate for a median 49-win playoff roster falls from 1.0% to 0.3% on the same
+     move, against a real-history anchor of 1.4% for a 45 to 50 win club. That
+     trades a curve fitted against every championship since 1974 for a
+     distribution nobody fitted, which is the wrong way round.
+
+     THE REAL FIX IS STRUCTURAL and is not a number in this object. A real
+     bracket is SEEDED: good teams meet good teams, so the field is compressed
+     and upsets come from series variance rather than from drawing a weak
+     opponent. Modelling that means correlating the opponent with your own
+     strength and refitting ROUND_NET against both targets at once. Worth doing;
+     too big to do as a nudge. */
   SERIES_SD: 9.0,
 };
 
