@@ -17380,3 +17380,41 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: `AGE_GREY_START` / `AGE_CROWN_FULL` / `AGE_TEMPLE_FULL` / `AGE_GREY_MAX` (the greying curve),
   `AGE_TAN_START` / `AGE_TAN_YEARS` / `AGE_TAN_MAX` (the weathering), `AGE_GREY_HEX` (what grey looks like),
   and `AGE_TEMPLE_Y0` / `AGE_TEMPLE_Y1` (where the crown ends and the temples begin).
+
+### WHAT'S NEW: an issue for the calendar layer and the Caddie Report (8/27/26)
+- **The owner's ask, right after the group-4 deploy**: *"And we can update the what's new page with all the
+  biggest new features we added."* Eighteen entries under a new `NEWS_DATE3='8/27/26'`, covering everything
+  shipped since the 8/22 issue and now live at /golf.
+- **The tour in time** (7): the calendar year on every season surface, the Tour Dispatch, farewell seasons
+  felt as they happen, a schedule that drifts under you, your generation and the milestones you pass, the
+  Tour Championship as a fortnight, and the golfer who ages. **Playing it** (11): signature holes named
+  while you play them, a leaderboard that reads like one, measured strokes gained, wind with a direction,
+  what week it is in real golf, decisions that name the club, a hole map with yardages and real doglegs,
+  the green read, a ball flight that belongs to the golfer, a guest who can dress and name their golfer,
+  and a golfer who stands at address wearing a glove and spikes.
+- **What was DELIBERATELY left off**, because the owner asked for the biggest FEATURES: the 30-vs-42 career
+  wording fix (item 08) and the honest daily-course copy (item 10). Both are real player-facing wins but
+  they are clarity and copy, and padding an issue with them dilutes it.
+- **The map from report item to entry is many-to-one where that reads better.** Items 11-14 are one card
+  ("A hole map that tells you where you are") because a player experiences them as one screen getting
+  better, not as four fixes; items 18/19 plus the arm rework are one card for the same reason.
+- **Mechanics to know if you add the next issue.** Entries are NEWEST FIRST and the grouping code only
+  starts a new dated header when the date CHANGES, so a new batch goes at the TOP of `NEWS_ENTRIES` in one
+  contiguous run - interleaving dates silently produces duplicate headers. `newsSeen()` seeds a brand-new
+  player as having read everything, so only existing players get the badge. Icons are rendered as text, so
+  a glyph without an emoji presentation (`❄`, `⚔`) comes out as a thin monochrome mark - `❄` was swapped
+  for `🗞` on the Dispatch card after the screenshot showed it reading as a sparkle.
+- Verified: `news21.mjs` **18 pass / 0 fail / 0 page errors** - the entries, the ids, the issue leading the
+  page newest-first with contiguous dates, every card carrying a category / icon / blurb / where, the unread
+  badge and its count, the dated header, and opening it clearing the dot. It also holds the two standing
+  rules on this page: **no bag wording** and **no real venue named**. Screenshotted on a phone at four scroll
+  positions and read by eye.
+- **A stale fixture in `sig01` was fixed at the same time, and it was NOT a product bug.** The hole chip
+  lives INSIDE the tracer window, and Quick Play sims the routine holes without one, so an ordinary hole
+  only has a chip to inspect when it is played shot-by-shot - and which holes those are changes with the
+  daily course of the day. The check bet on one hole and failed on any day whose first ordinary hole was
+  simmed (verified failing identically on HEAD before the change). It now walks a FRESH round and asserts
+  every chip that renders, in both directions: ordinary stays plain, signature goes gold. **19/19, stable
+  across three runs.**
+- **NOT deployed** - the What's New copy is release notes for work that IS live, but pushing it is still a
+  push to the live site, so it waits for the owner's word like everything else.
