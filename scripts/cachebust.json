@@ -35,12 +35,12 @@
   },
   "baseball/index.html": {
     "engine.js": {
-      "v": "6",
-      "sha": "fb44b80c127cd248"
+      "v": "8",
+      "sha": "f7b6bcd81a5dffec"
     },
     "run.js": {
-      "v": "5",
-      "sha": "98d11d2bf25a6341"
+      "v": "7",
+      "sha": "c6b6a039bb3e0c7b"
     },
     "achievements.js": {
       "v": "1",
@@ -171,8 +171,8 @@
   },
   "hoops/index.html": {
     "engine.js": {
-      "v": "9",
-      "sha": "bb0107f0f25cbf20"
+      "v": "10",
+      "sha": "f325fa050b43f3a9"
     },
     "run.js": {
       "v": "2",

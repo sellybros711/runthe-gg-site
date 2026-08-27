@@ -17,7 +17,7 @@
      ready to be reviewed. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Run The Floor: NBA Draft Game | RunThe.GG</title>
-<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $134M cap, then play all 82 games and chase a ring.">
+<meta name="description" content="Run The Floor: spin for a season and a club, draft a six man NBA rotation under a $126M cap, then play all 82 games and chase a ring.">
 <meta name="theme-color" content="#0d1117">
 <link rel="canonical" href="https://runthe.gg/hoops/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='24' font-size='20' text-anchor='middle'%3E%F0%9F%8F%80%3C/text%3E%3C/svg%3E">
@@ -358,6 +358,9 @@
      what a live region is for. */
   .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
     clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+  /* A short season is not a fault, but it IS the reason a card is cheap, so it
+     is marked rather than left to blend into the line. */
+  .st.warn b{color:var(--gold);}
   .toast{position:fixed;left:50%;bottom:calc(var(--dock) + 22px);transform:translateX(-50%);
     z-index:95;background:#1b2333;border:1px solid var(--cardb);color:var(--ink);
     padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;
@@ -1002,7 +1005,7 @@
       The wheel gives you a club and a season. You sign one player off that roster, and
       you do it six times to fill a point guard, a shooting guard, a small forward, a
       power forward, a centre and a sixth man. Every signing comes out of a
-      <b style="color:var(--ink)">$134M</b> cap, and the cap is the whole game: the best
+      <b style="color:var(--ink)">$126M</b> cap, and the cap is the whole game: the best
       man on every board runs to about $300M, so it cannot be done.
     </p>
     <p class="dim" style="font-size:14px;margin:0 0 4px">
@@ -1285,7 +1288,7 @@
      number in the same commit as the edit, then run:
        node scripts/check-cachebust.mjs --update
      CI checks it on any push touching an .html or .js file. See CLAUDE.md. -->
-<script src="engine.js?v=9"></script>
+<script src="engine.js?v=10"></script>
 <script src="run.js?v=2"></script>
 <script src="badges.js?v=1"></script>
 <script>
@@ -2684,9 +2687,9 @@ function awardRow(p, max){
   return row;
 }
 
-function statBit(value, label, key){
+function statBit(value, label, key, warn){
   var st = document.createElement('span');
-  st.className = 'st' + (key ? ' key' : '');
+  st.className = 'st' + (key ? ' key' : '') + (warn ? ' warn' : '');
   var b = document.createElement('b');
   b.textContent = value;
   var i = document.createElement('i');
@@ -2737,6 +2740,18 @@ function playerTile(p, block, tooDear, idx){
   stats.appendChild(statBit(String(p.pts), 'pts'));
   stats.appendChild(statBit(String(p.reb), 'reb'));
   stats.appendChild(statBit(String(p.ast), 'ast'));
+  /* GAMES, BECAUSE THE PRICE NOW DEPENDS ON IT. A season is priced by how much
+     of it the man actually played, so a 34 game year is cheap on purpose. Not
+     saying so would leave the board full of bargains whose only explanation was
+     invisible, which is the trap this whole change was meant to remove.
+     ONLY WHEN IT IS WORTH REMARKING ON. The first cut flagged anything under 68
+     games, which is 49% of the board: a mark on half the cards is not a remark,
+     it is a second colour. Measured, the league's median is 68 games and its
+     first quartile is 49, so under 45 is genuinely short rather than merely
+     modern, and it lands on 20% of cards. */
+  if (typeof p.g === 'number' && p.g > 0 && p.g < 45) {
+    stats.appendChild(statBit(String(p.g), 'games', false, true));
+  }
   b.appendChild(stats);
 
   var hardware = awardRow(p, 2);

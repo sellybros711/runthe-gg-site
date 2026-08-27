@@ -6,7 +6,7 @@
  * previous reskin of that skeleton. Adapted for basketball:
  *
  *   6 roster slots (PG, SG, SF, PF, C, 6TH)
- *   a $134M cap, in the range of a real NBA cap
+ *   a $126M cap, in the range of a real NBA cap
  *   an 82 game season against real all-time team-seasons
  *   offense and defense expressed as ratings per 100 possessions, not per game
  *   Pythagorean expectation at the basketball exponent
@@ -45,9 +45,9 @@ const ENGINE_API_VERSION = 2;
 
 const CONSTANTS = {
   /* THE CAP HAS TO SAY NO, or the draft is not a decision, it is a sequence of
-     clicks on whoever scored most. $134M is about $22M a slot across six
+     clicks on whoever scored most. $126M is about $21M a slot across six
      players, and the priciest player in the data costs $60M. So one superstar
-     eats nearly half the roster and the other five have to come in under $75M.
+     eats nearly half the roster and the other five have to come in under $66M.
      That is the shape of the squeeze: one great player is comfortable, two is
      tight, and three means filling the rest with minimum contracts.
      Best-available on every spin runs to about $300M and busts before the
@@ -57,13 +57,20 @@ const CONSTANTS = {
      changed, the cap was re-measured across its whole range rather than nudged:
      $145M when the ratings were guessed, $125M once they were fitted to real
      records, $138M once price stopped being a function of value and the playoff
-     bracket was fitted to history, and $134M once the schedule stopped being
-     harder than a real one. All four calibration targets land inside their
-     bands together at this setting. It is also roughly a real NBA cap.
+     bracket was fitted to history, $134M once the schedule stopped being harder
+     than a real one, and $126M once a season's price started depending on how
+     much of it the man actually played. That last one moved the median price
+     from $10.7M to $8.6M, which is a real economy change wearing the clothes of
+     a data refresh: at the old cap "beats 72 wins" went out of band at 7.4%
+     against a ceiling of 6, and the playoff rate for a thoughtless draft jumped
+     from 53% to 65%. Swept again at 122, 126 and 130: all four targets land
+     inside their bands at every one of those, and 126 puts each of them nearest
+     the middle while reproducing the balance that shipped before the change
+     (42 greedy wins and 50% playoffs against 43 and 53%).
 
      Priced against hoops/build/build-players.mjs, and the two numbers are one
      decision: moving either without the other breaks the draft. */
-  CAP_MUSD: 134,
+  CAP_MUSD: 126,
   REGULAR_SEASON_GAMES: 82,
 
   RESPIN_LADDER_MUSD: [5, 10, 15],
