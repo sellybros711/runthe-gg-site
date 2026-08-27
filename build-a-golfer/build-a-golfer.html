@@ -13886,8 +13886,16 @@ function scrSetup(){
   // key and no guest submission path carries it (a guest season posts server-hardcoded as 'Guest Player',
   // the daily boards + course records are sign-in gated, a guest streak posts as 'Guest'), so naming can
   // never leak an unmoderated name onto a public surface. The country FLAG stays an account perk.
+  // ITEM 17: A GUEST'S GOLFER LOOKED LIKE EVERY OTHER GUEST'S GOLFER. The report: "the four things
+  // changeable without an account (skin, hair, style, hand) are the four that read worst at on-course
+  // size; everything visible from the broadcast camera is locked." The kit basics were ALREADY free in
+  // FREE_COSMETICS - 6 shirt colors, 6 hat colors, cap/visor/bare - a guest simply had no screen that
+  // showed them. So a guest now gets a KIT section: 108 combinations of the things you can actually see
+  // at 24px, and not one item leaves the free set. Patterns, novelty hats, eyewear, auras, trousers,
+  // shoes and every piece of gear stay exactly as account-gated as they were.
+  const GUESTKIT=[['shirt','Shirt'],['hat','Hat'],['hw','Headwear']];
   const SECTIONS = guest
-    ? [['look','Appearance',LOOKCATS],['profile','Name',[['details','Name']]]]
+    ? [['look','Appearance',LOOKCATS],['kit','Kit',GUESTKIT],['profile','Name',[['details','Name']]]]
     : [['look','Look',LOOKCATS],['apparel','Apparel',APPAREL],['gear','Gear',GEAR],['fx','Effects',EFFECTS],['card','Card',[['plate','Nameplate'],['cardbg','Background']]],['profile','Profile',[['details','Name & Country'],['caddie','Caddie']]]];
   const cats = SECTIONS.reduce((a,s)=>a.concat(s[2]),[]);
   let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
@@ -13968,6 +13976,10 @@ function scrSetup(){
       const more=$(`<button class="setup-shopbtn" style="margin-top:11px">${ic('cart',{size:'16px'})}<span>Get more ${esc(catPlural(catLabel))} in the Pro Shop</span> <span class="ssb-go">▸</span></button>`);
       more.onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec=cosShopSec(cat); S.shopCat=cat; render(); };
       wrap.appendChild(more);
+    }
+    // ITEM 17: a guest sees the free kit and is told, once, where the rest of it lives.
+    if(!isLook && guest && SHOP_ENABLED){
+      wrap.appendChild($(`<div class="small muted" style="margin-top:11px;line-height:1.5">These ${esc(catPlural(catLabel))} are free for everyone. Shirt patterns, fancier headwear, shades, trousers, shoes and the rest of the locker come with a free account.</div>`));
     }
     if(!isLook && !guest) markCatSeen(cat);   // CS422: viewing a category's tiles clears its NEW badges (next render)
   }
