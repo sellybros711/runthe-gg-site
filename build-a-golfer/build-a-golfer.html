@@ -7688,7 +7688,9 @@ function matchOppOverlaySVG(hole, holeIdx, courseKey){
     hole._hv={g:gg, plots:[]}; }
   const g=hole._hv.g;
   const gc=Object.assign({}, g);   // hvPlots may mutate g.water; keep the player's terrain pristine
-  let plots; try{ plots=hvPlots(gc, shots, seedN); }catch(e){ return ''; }
+  // ITEM 16: the opponent hits their OWN ball flight, not a mirror of yours - two identical draws
+  // side by side would read as one drawing repeated.
+  let plots; try{ plots=hvPlots(gc, shots, seedN, {shape:hvShape(seedN)}); }catch(e){ return ''; }
   const OPP_COL='#ef4444';   // matches the red dot next to the opponent's name on the board
   let s='';
   for(let i=0;i<plots.length;i++) s+=hvDoneShot(g, plots[i], true, false, OPP_COL);
@@ -26534,9 +26536,29 @@ function hvOutOfWater(g, pt){
     if(side>0 ? P[0]>shore-m : P[0]<shore+m){ const tx=side>0?shore-m:shore+m, denom=g.sx*g.t(y)||1; x=(tx-HV_W/2)/denom; } }
   return [x,y];
 }
-function hvPlots(g, shots, seedN){
+// ITEM 16: EVERY GOLFER OWNS A SHAPE. The report: "a 321-yard drive drew a dead-straight white line...
+// bending it by shot type and accuracy, a working draw or a held-off fade, is what sells the shot to
+// somebody who watches ball flight for a living."  The shape is DERIVED, never stored, so a career in
+// progress inherits its golfer's ball flight with no migration:
+//   direction - a draw or a fade, hashed off the name you chose, and MIRRORED for a left-hander, so a
+//               lefty's draw moves the other way across the screen exactly as it does in life.
+//   amount    - set by ACCURACY. An elite ball-striker works a small, controlled shape; a wild one
+//               hits the big one. This is the rating finally showing up in something you can watch.
+// Returns { dir, amt } in screen units; +dir bends the flight RIGHT on screen.
+function hvShape(seedN){
+  let acc=0.5, lefty=false, key='';
+  try{ const v=S.slots&&S.slots.acc&&S.slots.acc.value; if(v!=null) acc=Math.max(0,Math.min(1,(+v)/99)); }catch(e){}
+  try{ lefty=!!(S.look&&S.look.lefty); key=(S.name||'')+'|'+((S.look&&S.look.hairStyle)||''); }catch(e){}
+  const h0=(typeof dHash==='function')?dHash('shape|'+(seedN!=null?seedN:key||'default')):0;
+  if(seedN!=null){ acc=0.30+((h0>>>7)&255)/255*0.55; lefty=((h0>>>4)&1)===1; }   // an opponent flies their own ball, not a copy of yours
+  const dir=((h0>>>2)&1)?1:-1;                      // the shape they keep for a career
+  const amt=(8+(1-acc)*20)*(lefty?-1:1);            // straight hitter ~8 units of shape, wild one ~28
+  return {dir, amt};
+}
+function hvPlots(g, shots, seedN, opts){
   const L=g.L, gx=(g.gcx!=null?g.gcx:g.cx(L)), pin=g.pin, out=[]; let cur=[0,0];
   const hh=(i,s)=>hvHash(seedN,i*13+s,2), jj=(i,a)=>hh(i,a)-0.5;
+  const shp=((opts&&opts.shape)||hvShape());   // ITEM 16: whose ball flight this is
   // pre-pass: if a ball drowned and the hole has NO spec'd water or creek, invent a pond where
   // it went in (spec'd hazards from hvGeom take priority - the ball snaps to them instead)
   shots.forEach((s,i)=>{ if(s.lie==='water' && !g.water && !g.creek){
@@ -26657,10 +26679,30 @@ function hvPlots(g, shots, seedN){
         if(!done) p.land=rest.slice();   // rest itself is at/over the water (island / front-edge) → land where it stops, no roll across water
       }
     }
-    // flight curve (draw/fade): signed bend magnitude, biased toward the miss side. The control
-    // point itself is computed in SCREEN space (hvCtrl) so the arc stays believable under the taper.
-    const bias=(s.lie==='rl'||s.lie==='tr'&&sgn<0)?-7:(s.lie==='rr'?7:0);
-    p.curve=(rest[0]-p.from[0])*0.30 + jj(i,4)*12 + bias;
+    // ITEM 16: flight curve (draw/fade), signed bend magnitude. Three terms, and the old version only
+    // had the weakest two - which is why a drive down the middle came out as a straight white line.
+    //   WORK  - the golfer's own shape (hvShape), scaled by what the shot can actually do: a driver
+    //           bends, a full iron bends less, a wedge is too short to move and a chip does not fly.
+    //   MISS  - a ball that finished right of where it started got there by moving right. The drive that
+    //           ended in the TREES took a long ride to get there, and the recovery bends back around the
+    //           trunk: the two shots that most want shaping and had none.
+    //   NOISE - a small per-shot wobble so two identical drives are not the same drawing.
+    // The control points themselves are computed in SCREEN space (hvCtrl) so the arc stays believable
+    // under the perspective taper.
+    const dK=Math.max(0, Math.min(1, (p.dist-55)/175));                                   // shape needs air time
+    const typeK=(p.k==='tee')?1:(p.k==='adv')?0.9:(p.k==='app')?0.78:(p.k==='chip')?0:0.5;
+    const work=shp.dir*shp.amt*typeK*dK;
+    // offline is measured against the FAIRWAY where the ball came down, not against the tee: on a dogleg
+    // the centerline moves, and a drive that follows the corner is dead straight, not a 40-yard slice.
+    const offline=(rest[1]!=null)?(rest[0]-g.cx(rest[1])):(rest[0]-p.from[0]);
+    const miss=offline*0.42;
+    const prevLie=(i>0&&shots[i-1])?shots[i-1].lie:null;
+    const bias=(s.lie==='tr')?sgn*17:(prevLie==='tr')?Math.sign(rest[0]-p.from[0])*13:0;
+    // the two must never CANCEL. A fade player who pulled one into the left rough averaged out to the
+    // dead-straight line this whole item exists to kill, so the further offline the ball finished, the
+    // more the miss owns the drawing and the less the golfer's habitual shape does.
+    const own=1-Math.min(1, Math.abs(miss)/12);
+    p.curve=miss + work*own + jj(i,4)*7 + bias;
     cur=rest.slice();
     out.push(p);
   });
@@ -26703,11 +26745,11 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
     let w;
     if(holeOut){
       // a hole-out arcs THROUGH the air, so pad for the flight curve's bulge (hvCtrl caps the control
-      // offset at 22% of the shot line) and for the golfer sprite standing at the origin. It only zooms
+      // offset at 26% of the shot line) and for the golfer sprite standing at the origin. It only zooms
       // as far as it can while still showing the whole shot; a long fairway hole-out or an ace can't fit
       // both in a tight frame, so it keeps the full hole rather than losing the ball off-screen.
       const len=Math.hypot(A[0]-P[0], A[1]-P[1]);
-      w=Math.max(90, Math.abs(A[0]-P[0])+62+len*0.3, (Math.abs(A[1]-P[1])+74+len*0.3)*AR);
+      w=Math.max(90, Math.abs(A[0]-P[0])+62+len*0.34, (Math.abs(A[1]-P[1])+74+len*0.34)*AR);
       // stay on the same close-up threshold the renderer uses (markers draw to scale + the high-density
       // detail tile kicks in below HV_W*0.6), so a hole-out either gets a true close-up or the full hole.
       if(w >= HV_W*0.6) return HV_CAM;
@@ -26722,15 +26764,27 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
   }
   return HV_CAM;
 }
-// flight-curve control point in SCREEN space, perpendicular to the shot line and capped relative
+// flight-curve control points in SCREEN space, perpendicular to the shot line and capped relative
 // to its length - a course-space control point warped under the perspective taper near the top of
 // the frame, which is what made some ball flights look skewed/kinked.
+// ITEM 16: TWO control points, not one. A ball leaves the club STRAIGHT and turns LATE - the sideways
+// movement accumulates through the flight, so the widest point of a worked shot sits around 60% of the
+// way down the hole and the ball then dives back onto its landing spot. A single quadratic control point
+// can only bow evenly about the middle, and an even bow is exactly what reads as a lean rather than a
+// shape. Weighting the two offsets 0.35 / 1.00 puts the apex where the eye expects to see it.
+// Returns [C1, C2] for a cubic; hvBez3 below evaluates the same curve for the animated ball.
 function hvCtrl(g,p){ const A=hvProj(g,p.from[0],p.from[1]), B=hvProj(g,p.land[0],p.land[1]);
   const dx=B[0]-A[0], dy=B[1]-A[1], len=Math.hypot(dx,dy)||1;
-  const amt=Math.max(-len*0.22, Math.min(len*0.22, (p.curve||0)*1.5));
-  return [(A[0]+B[0])/2 - dy/len*amt, (A[1]+B[1])/2 + dx/len*amt]; }
+  const amt=Math.max(-len*0.26, Math.min(len*0.26, (p.curve||0)*2.3));
+  const nx=-dy/len, ny=dx/len;   // screen-perpendicular; +amt bows the flight RIGHT (a fade, right-handed)
+  const at=(t,o)=>[A[0]+dx*t+nx*amt*o, A[1]+dy*t+ny*amt*o];
+  return [at(0.35,0.35), at(0.72,1)]; }
+// cubic bezier point, so the flying ball rides the same line the tracer draws
+function hvBez3(A,C1,C2,B,t){ const u=1-t, a=u*u*u, b=3*u*u*t, c=3*u*t*t, d=t*t*t;
+  return [a*A[0]+b*C1[0]+c*C2[0]+d*B[0], a*A[1]+b*C1[1]+c*C2[1]+d*B[1]]; }
 function hvPathD(g,p){ const A=hvProj(g,p.from[0],p.from[1]), C=hvCtrl(g,p), B=hvProj(g,p.land[0],p.land[1]);
-  return `M ${A[0].toFixed(1)} ${A[1].toFixed(1)} Q ${C[0].toFixed(1)} ${C[1].toFixed(1)} ${B[0].toFixed(1)} ${B[1].toFixed(1)}`; }
+  const f=v=>v.toFixed(1);
+  return `M ${f(A[0])} ${f(A[1])} C ${f(C[0][0])} ${f(C[0][1])} ${f(C[1][0])} ${f(C[1][1])} ${f(B[0])} ${f(B[1])}`; }
 function hvRollD(g,p){ const A=hvProj(g,p.land[0],p.land[1]), B=hvProj(g,p.rest[0],p.rest[1]);
   return `M ${A[0].toFixed(1)} ${A[1].toFixed(1)} L ${B[0].toFixed(1)} ${B[1].toFixed(1)}`; }
 // putt roll path: a BROKEN (curved) line, and - realistically - a made putt can horseshoe in around the
@@ -27825,8 +27879,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',(HV_GROUND*bScale()).toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
       if(elF<=flyMs){
         const t=elF/flyMs, te=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;   // fast off the club, hangs, dives
-        const x=(1-te)*(1-te)*A[0]+2*(1-te)*te*C[0]+te*te*B[0];
-        const y=(1-te)*(1-te)*A[1]+2*(1-te)*te*C[1]+te*te*B[1];
+        const bp=hvBez3(A,C[0],C[1],B,te), x=bp[0], y=bp[1];        // ITEM 16: ride the shaped tracer
         const h=4*te*(1-te)*(p.k==='tee'?1:(p.k==='chip'?0.45:0.75))*Math.min(1,p.dist/240+0.35);
         ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',((HV_GROUND+h*(HV_AIRPEAK-HV_GROUND))*bScale()).toFixed(2));
         if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.28*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); }
@@ -27912,7 +27965,9 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const order=multi.order||[];
     if(!order.length || !multi.shots.every(ss=>ss.length&&ss[0].k)) return null;
     if(!hole._hvm){ const g=hvGeom(seedN, hole.par, hole.yards||400, courseKey, holeIdx);
-      hole._hvm={g, plots:multi.shots.map(ss=>hvPlots(g,ss,seedN))}; }
+      // ITEM 16: in a multi-ball H2H every golfer in the group flies their own shape, so the balls are
+      // told apart by how they move as well as by colour. Ball 0 is you and keeps your own flight.
+      hole._hvm={g, plots:multi.shots.map((ss,mi)=>hvPlots(g,ss,seedN,mi?{shape:hvShape(seedN+mi*7919)}:null))}; }
     const {g, plots}=hole._hvm;
     const total=order.length;
     const live=(revealN!=null && revealN<=total);
@@ -28931,27 +28986,30 @@ function hvGifRender(hole, holeIdx, c){
 function hvTracerDraw(g, plots, D){
   const {W,scale,vx,vy}=D;
   const P=pt=>{ const s=hvProj(g,pt[0],pt[1]); return [(s[0]-vx)*scale,(s[1]-vy)*scale]; };
-  const cbez=(A,C,B,t)=>{ const u=1-t; return [u*u*A[0]+2*u*t*C[0]+t*t*B[0], u*u*A[1]+2*u*t*C[1]+t*t*B[1]]; };
+  // ITEM 16: the shared GIF/reel kit rides the same shaped cubic the live tracer does, so a worked
+  // draw looks the same in the highlight you post as it did on the screen you watched.
+  const cbez=(A,C1,C2,B,t)=>hvBez3(A,C1,C2,B,t);
   const lin=(A,B,t)=>[A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t];
   const shots=plots.map(p=>{ const A=P(p.from), rest=P(p.rest||p.from), putt=(p.k==='putt'||p.k==='hole');
     if(putt) return {putt:true,A,rest,hole:!!p.hole,onGreen:!!p.onGreen};
-    const B=P(p.land||p.rest||p.from); let C;
-    if(p.land){ const cc=hvCtrl(g,p); C=[(cc[0]-vx)*scale,(cc[1]-vy)*scale]; } else C=[(A[0]+B[0])/2,(A[1]+B[1])/2];
-    return {A,C,B,rest,hole:!!p.hole,onGreen:!!p.onGreen}; });
+    const B=P(p.land||p.rest||p.from); let C1,C2;
+    if(p.land){ const cc=hvCtrl(g,p), m=q=>[(q[0]-vx)*scale,(q[1]-vy)*scale]; C1=m(cc[0]); C2=m(cc[1]); }
+    else { C1=lin(A,B,0.35); C2=lin(A,B,0.72); }
+    return {A,C1,C2,B,rest,hole:!!p.hole,onGreen:!!p.onGreen}; });
   // a completed shot = just its tracer line (NO per-shot rest marker / numbered black dot - owner wants only
   // the ball + tracer). The resting ball is drawn once at the final position via drawBall.
   const drawDone=(ctx,sh)=>{ ctx.save(); ctx.lineCap='round';
     ctx.strokeStyle='rgba(120,220,190,.5)'; ctx.lineWidth=Math.max(1,W*0.006); ctx.beginPath();
     ctx.moveTo(sh.A[0],sh.A[1]);
     if(sh.putt) ctx.lineTo(sh.rest[0],sh.rest[1]);
-    else { ctx.quadraticCurveTo(sh.C[0],sh.C[1],sh.B[0],sh.B[1]); ctx.lineTo(sh.rest[0],sh.rest[1]); }
+    else { ctx.bezierCurveTo(sh.C1[0],sh.C1[1],sh.C2[0],sh.C2[1],sh.B[0],sh.B[1]); ctx.lineTo(sh.rest[0],sh.rest[1]); }
     ctx.stroke(); ctx.restore(); };
   const drawBall=(ctx,pt)=>{ ctx.save(); ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(1.3,W*0.010),0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
   const drawActive=(ctx,sh,t)=>{ ctx.save(); ctx.lineCap='round'; const lw=Math.max(1.4,W*0.008); let head;
     if(sh.putt){ head=lin(sh.A,sh.rest,t); ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineWidth=lw;
       ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]); ctx.lineTo(head[0],head[1]); ctx.stroke(); }
-    else { const fT=0.72, samp=tt=> tt<=fT?cbez(sh.A,sh.C,sh.B,tt/fT):lin(sh.B,sh.rest,(tt-fT)/(1-fT)), N=Math.max(2,Math.round(t*26));
+    else { const fT=0.72, samp=tt=> tt<=fT?cbez(sh.A,sh.C1,sh.C2,sh.B,tt/fT):lin(sh.B,sh.rest,(tt-fT)/(1-fT)), N=Math.max(2,Math.round(t*26));
       ctx.strokeStyle='rgba(255,215,106,.55)'; ctx.lineWidth=lw+2;
       ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]); for(let i=1;i<=N;i++){ const q=samp(t*i/N); ctx.lineTo(q[0],q[1]); } ctx.stroke();
       ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=lw;
