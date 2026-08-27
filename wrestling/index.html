@@ -1986,7 +1986,11 @@ const SEASON_GOALS = [
     progress:(c,w)=>{ const best=(c.yearLog||[]).reduce((a,m)=>Math.max(a,m.q||0),0); return Math.min(100, Math.round(best/90*100)); },
     rows:(c,w)=>[ {l:'Best match this year', now:(c.yearLog||[]).reduce((a,m)=>Math.max(a,m.q||0),0), goal:90, why:'Near-falls, a worked body part, and hitting your called spots all raise it.'} ],
     plain:c=>`One match, one night, that people still talk about next year. Rated 90 or better.`,
-    fit:(c,w)=>0.7,
+    // Match quality is driven mostly by craft (arsenal, governing attributes,
+    // psychology, opponent level). Below roughly OVR 60 a 90-rated match is
+    // arithmetically out of reach, so never hand a rookie a goal they cannot
+    // complete no matter how well they play.
+    fit:(c,w)=>ovr(w)>=60?0.9:0,
     payout:{coins:2500,standing:8} },
   { id:'over', label:c=>`Reach OVR ${Math.min(90, (G.car._season&&G.car._season.startOvr!=null?G.car._season.startOvr:ovr(G.w))+7)}`,
     desc:c=>`Push your overall rating up seven points. Train, work, grow.`,
@@ -4032,10 +4036,58 @@ function spawnRookie(promoId){
   CHARS.push(rookie);
   return rookie;
 }
+/* A belt cannot travel with its holder. When a champion retires, gets
+   released, or signs elsewhere, the title they were carrying has to be
+   settled: the lineage is closed and the belt passes to the best available
+   wrestler still in that promotion (or goes vacant if nobody is left).
+   Four-year playtests were ending with retired wrestlers listed as
+   reigning champions and belts held by people who had left the company. */
+function settleOrphanedBelts(){
+  const W=G.world, c=G.car; if(!W||!W.champions) return;
+  Object.keys(W.champions).forEach(pid=>{
+    const ch=W.champions[pid]; if(!ch) return;
+    ['world','secondary'].forEach(kind=>{
+      const rec=ch[kind]; if(!rec||!rec.holder) return;
+      const holder=charById(rec.holder);
+      const gone = !holder || (W.retired&&W.retired[rec.holder]) || holder.promo!==pid;
+      if(!gone) return;
+      const bn = beltNameByPromo(pid, kind);
+      // close the lineage on the way out
+      if(!W.lineage[pid]) W.lineage[pid]={world:[],secondary:[]};
+      W.lineage[pid][kind] = W.lineage[pid][kind] || [];
+      W.lineage[pid][kind].unshift({ holder:rec.holder, name:(holder&&holder.name)||'a champion',
+        from:rec.since||{y:c.year,w:c.week}, to:{y:c.year,w:c.week}, defenses:rec.defenses||0, vacated:true });
+      if(W.lineage[pid][kind].length>40) W.lineage[pid][kind].pop();
+      // hand it to the best wrestler still in that room
+      const house = CHARS.filter(x=>x.promo===pid && !(W.retired&&W.retired[x.id]) && x.id!==rec.holder)
+                         .sort((a,b)=>(b.over||0)-(a.over||0));
+      const why = (!holder) ? 'is gone'
+                : (W.retired&&W.retired[rec.holder]) ? 'has retired'
+                : `has signed with ${(promoById(holder.promo)||{}).short||'another company'}`;
+      if(house.length){
+        const heir=house[0];
+        W.champions[pid][kind] = {holder:heir.id, since:{y:c.year,w:c.week}, defenses:0, kind};
+        newsPush({ico:pico('crown',14), cat:'title',
+          text:`<b>${bn} vacated.</b> ${(holder&&holder.name)||'The champion'} ${why}. <b>${heir.name}</b> is recognised as the new champion.`});
+      } else {
+        W.champions[pid][kind] = {holder:null, since:{y:c.year,w:c.week}, defenses:0, kind};
+        newsPush({ico:pico('crown',14), cat:'title',
+          text:`<b>${bn} is vacant.</b> ${(holder&&holder.name)||'The champion'} ${why} and there is nobody left to hand it to.`});
+      }
+    });
+  });
+}
 function newsPush(entry){
   if(!G.world) initWorld();
   const c=G.car;
-  G.world.news.unshift(Object.assign({y:c.year, w:c.week}, entry));
+  // Callers historically used either `text:` or `t:` for the body and either
+  // `cat:` or `kind:` for the tag. Normalise on the way in so every renderer
+  // can read one shape and a typo cannot silently produce a blank news row.
+  const e = Object.assign({}, entry);
+  if(e.text==null && e.t!=null) e.text = e.t;
+  if(e.cat==null && e.kind!=null) e.cat = e.kind;
+  if(!e.text) return;                       // never store an empty news row
+  G.world.news.unshift(Object.assign({y:c.year, w:c.week}, e));
   if(G.world.news.length>120) G.world.news.pop();
 }
 function worldTick(){
@@ -4194,6 +4246,9 @@ function worldTick(){
   // so the world reads as alive instead of a static roster.
   try { generateWorldEvent(); } catch(_){}
   try { tickRosterArcs(); } catch(_){}
+  // Run last: any belt orphaned by this week's retirements, releases or
+  // defections gets settled before the player sees the world again.
+  try { settleOrphanedBelts(); } catch(_){}
 }
 /* ============================================================
    WORLD EVENTS
@@ -5845,9 +5900,19 @@ function makeOffers(){
     const trusted=G.car.standing>=52 && gimHeat()>=40;
     const midCarder=G.car.standing>=42 && reactionOf()>=Math.min(46,10+tierIdx()*10);
     const tagBelt=beltName(t,'tag'), holdsTag = G.car.tagTitle===tagBelt;
+    // How long a promised title shot has been sitting unused. The office is
+    // allowed to be slow, not amnesiac: after four weeks the shot gets booked
+    // whether or not it is a pay-per-view. Without this a shot earned by
+    // pinning the champion could only ever cash on one of four PPV weeks and
+    // routinely expired unpaid (four-year playtests were finishing with zero
+    // title matches contested).
+    const shotAge = G.car.titleShot
+      ? (G.car.year*WEEKS_PER_YEAR+G.car.week) - ((G.car.titleShot.y||G.car.year)*WEEKS_PER_YEAR+(G.car.titleShot.w||G.car.week))
+      : -1;
     if(i===2 && holds && rnd()<0.78) stakes='defense';
-    // a promised title shot always gets used on the top of the card
-    else if(i===2 && !holds && G.car.titleShot && ppv){ stakes='title'; }
+    // A promised title shot goes on top of the card: immediately at a PPV,
+    // and on regular TV once it has waited long enough.
+    else if(i===2 && !holds && G.car.titleShot && (ppv || shotAge>=4 || rnd()<0.35)){ stakes='title'; }
     else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
     // Tag titles: a team defence or a shot at them. Only on tag matches, and
     // only when your promotion actually has tag titles.
@@ -5865,8 +5930,16 @@ function makeOffers(){
       if(_s && _s.charId===opp.id && _s.stage<3) _s.stage=3;   // force to blow-off intensity
       if(!holds && trusted && reactionOf()>=Math.min(60,10+tierIdx()*14) && stakes==='standard' && rnd()<0.45) stakes='title';
     }
-    // your position on the card follows your standing and how hot the act is
-    const draw=(G.car.standing*0.34 + gimHeat()*0.22 + reactionOf()*0.44);
+    // Your position on the card follows standing, how hot the act is, and how
+    // loud the room is FOR THIS LEVEL. Crowd reaction is hard-capped by tier
+    // (38 on the indies, 100 at the top), so comparing a raw reaction number
+    // against a fixed threshold meant an indie wrestler could be the biggest
+    // draw in their company and still be booked to open the show forever:
+    // four-year playtests were finishing with 57 of 66 matches in the Opener.
+    // Reaction is now measured against what is achievable where you work.
+    const _popCeil = ([38,64,85,100][tierIdx()] || 38);
+    const reactionRel = clamp((reactionOf()/_popCeil)*100, 0, 100);
+    const draw=(G.car.standing*0.34 + gimHeat()*0.22 + reactionRel*0.44);
     let card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
                : (stakes==='secondary'||stakes==='secondary_defense') ? 'Mid-Card'
                : draw>=62 ? 'Main Event' : draw>=40 ? 'Mid-Card' : 'Opener';
@@ -8282,10 +8355,18 @@ function applyMatch(o,res){
   const finT = (res.finish && res.finish.type) || null;
   const cleanFinish = res.win && !res.dq && !res.countOut && !res.noContest
     && (finT==='pin' || finT==='sub' || finT==null);
-  if(cleanFinish && o.nonTitleVsChamp && (o.oppTitles||[]).length){
+  // On a small roster the champions ARE most of the locker room, so almost
+  // every match is technically "non-title versus a champion". Left ungated
+  // this fired 35 times in a four-year playtest and the #1-contender beat
+  // stopped meaning anything. It now only lands when it can actually DO
+  // something: no shot already in hand, and not again for six weeks.
+  const _pcNow = c.year*WEEKS_PER_YEAR + c.week;
+  const pinChampFresh = !c._lastPinChamp || (_pcNow - c._lastPinChamp) >= 6;
+  if(cleanFinish && o.nonTitleVsChamp && (o.oppTitles||[]).length && !c.titleShot && pinChampFresh){
     const mine = (o.oppTitles||[]).filter(t=>t.promoId===(myPromo()||{}).id);
     const target = mine.find(t=>t.kind==='world') || mine[0] || o.oppTitles[0];
     if(target){
+      c._lastPinChamp = _pcNow;
       res.pinnedChamp = {oppName:o.oppName, oppId:o.oppId, belt:target.name, kind:target.kind};
       if(!c.titleShot){
         const _npv = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
@@ -9225,9 +9306,22 @@ function takeInjury(cats,stipMult,severityBoost){
   if(c.hurt){ const od=injById(c.hurt.id); if(od) G.w.attrs[od.attr]=clamp(G.w.attrs[od.attr]+c.hurt.pen); }
   const pool=INJURIES.filter(i=>i.from.some(f=>cats.includes(f)));
   const set=pool.length?pool:INJURIES;
-  // heavier schedules, more mileage and a beaten-up body push you up the severity list
-  const sev=clamp((c.wear||0)/300 + (100-c.cond)/340 + (stipMult-1)*0.34 + (severityBoost||0) + rnd()*0.72, 0, 0.999);
-  const idx=Math.min(set.length-1, Math.floor(sev*set.length));
+  // Severity is meant to be a story about the BODY: mileage, condition and
+  // the knocks already on file decide how bad it is, and the stipulation
+  // adds on top. The random term used to be 0.72 of a 1.0 scale, which
+  // swamped every body term: a 21-year-old with zero mileage and full
+  // condition drew herniated discs at the same rate as a broken-down
+  // veteran. Body terms now carry the weight and the roll is the garnish.
+  const bodyRisk = (c.wear||0)/220                       // ~0.45 at heavy mileage
+                 + Math.max(0,100-c.cond)/240            // ~0.25 when run down
+                 + ((c.chronic||[]).length)*0.05;        // old damage compounds
+  const sev=clamp(bodyRisk + (stipMult-1)*0.40 + (severityBoost||0) + rnd()*0.42, 0, 0.999);
+  let idx=Math.min(set.length-1, Math.floor(sev*set.length));
+  // A fresh body has a ceiling. The worst injuries in the table (neck, back)
+  // are career-shapers and should be earned by mileage, not drawn blind in
+  // a rookie's first cage match.
+  const green = (c.wear||0) < 25 && (c.chronic||[]).length===0;
+  if(green) idx=Math.min(idx, Math.max(0, set.length-3));
   const def=set[idx];
   const wk=rint(def.wk[0],def.wk[1]) + Math.round((c.wear||0)/90);
   const pen=rint(def.pen[0],def.pen[1]);
@@ -11098,7 +11192,17 @@ function champOf(pid){
   pid=pid||myPromoId();
   const c=G&&G.car;
   if(c&&c.title&&(c.deal&&c.deal.promo)===pid) return {you:true,name:G.w.name};
-  const house=CHARS.filter(x=>x.promo===pid);
+  // Read the actual champion registry first. This used to return whoever had
+  // the highest overness in the promotion, which is frequently NOT the person
+  // holding the belt, so a "demand a shot at the title" promo could send you
+  // after the wrong wrestler while the Titles screen named someone else.
+  const W=G&&G.world;
+  const holder = W && W.champions && W.champions[pid] && W.champions[pid].world && W.champions[pid].world.holder;
+  if(holder && !(W.retired && W.retired[holder])){
+    const ch = charById(holder);
+    if(ch && ch.promo===pid) return ch;
+  }
+  const house=CHARS.filter(x=>x.promo===pid && !(W && W.retired && W.retired[x.id]));
   if(!house.length) return null;
   return house.slice().sort((a,b)=>(b.over||0)-(a.over||0))[0];
 }
