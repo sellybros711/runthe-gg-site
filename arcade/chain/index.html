@@ -36,7 +36,11 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --ch:#7FA22F; --chT:#4F6B0F; --onAccent:#FFFFFF;
+    /* onAccent stays DARK in light mode. Flipping it to white put white on
+       moss (2.9:1) and white on the how-to's orange (2.4:1), the two worst
+       contrast readings on the whole site. Every other game page keeps dark
+       ink on its accent in both themes, which is why only this page failed. */
+    --ch:#7FA22F; --chT:#4F6B0F;
     --brandT:#B4530A; --goldT:#A87508; --greenT:#17A34A; --red:#C4372C; --coralT:#D8452F;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
