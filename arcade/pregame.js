@@ -121,6 +121,7 @@
       '.rtgpg-body{padding:18px 18px 18px;}',
       '.rtgpg-nm{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:24px;line-height:1;margin:0 0 3px;color:var(--ink,#F4F7FB);}',
       '.rtgpg-tag{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--c,var(--blue,#2F6BFF));margin-bottom:14px;}',
+      '.rtgpg-demo{margin:0 0 14px;}',
       '.rtgpg-rules{list-style:none;margin:0 0 16px;padding:0;text-align:left;display:grid;gap:8px;}',
       '.rtgpg-rules li{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;font-weight:600;color:var(--ink,#F4F7FB);line-height:1.4;}',
       '.rtgpg-rules li b{color:var(--c,var(--blue,#2F6BFF));font-weight:900;flex:0 0 auto;}',
@@ -195,8 +196,24 @@
    * and the modal can never both onboard the same person.
    */
   var INTRO_NOTE='<div class="rtgpg-note2">Rules are under the ? button up top.</div>';
+  var demoHandle = null;
+  /* THIS IS THE FIRST SCREEN A NEW PLAYER SEES, and the one every free look at
+     a card game goes through, so it is where a demo is worth the most. The
+     stage is a placeholder in the markup and the animation is mounted into it
+     after render, because this file builds its body as an HTML string and
+     RTGDemo works on nodes. Absent demo.js, the placeholder stays empty and
+     the rules read exactly as before. */
+  function demoSlot(){
+    return (window.RTGDemo && RTGDemo.has(GAME)) ? '<div class="rtgpg-demo" id="rtgpgDemo"></div>' : '';
+  }
+  function mountDemo(){
+    var host = $('rtgpgDemo');
+    if(!host || host.firstChild || !(window.RTGDemo && RTGDemo.has(GAME))) return;
+    var m = meta();
+    demoHandle = RTGDemo.mount(host, GAME, m && m.accent, { caption: false });
+  }
   function rulesList(){
-    return '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){
+    return demoSlot()+'<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){
       return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>';
   }
   function markIntro(){
@@ -236,9 +253,24 @@
     try{ if(window.RTGGameMarks) RTGGameMarks.fill(scrim); }catch(e){}
     render();
   }
-  function done(){ dismissed=true; if(scrim){ scrim.remove(); scrim=null; } try{ document.body.style.overflow=''; }catch(e){} }
+  function done(){
+    dismissed=true;
+    // the demo runs on timers; a dismissed gate must not leave one looping
+    if(demoHandle){ try{ demoHandle.stop(); }catch(e){} demoHandle=null; }
+    if(scrim){ scrim.remove(); scrim=null; }
+    try{ document.body.style.overflow=''; }catch(e){}
+  }
 
+  /* One wrapper so every branch of the body gets its demo mounted without
+     each of them having to remember. Re-rendering tears the old one down
+     first: the entitlement can arrive late and re-render this card, and two
+     live timelines writing to the same stage is a flicker nobody can trace. */
   function render(){
+    if(demoHandle){ try{ demoHandle.stop(); }catch(e){} demoHandle=null; }
+    renderBody();
+    mountDemo();
+  }
+  function renderBody(){
     if(dismissed || !scrim) return;
     try{ document.body.style.overflow='hidden'; }catch(e){}
     var m=meta(), name=(m&&m.name)||'This game';

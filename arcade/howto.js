@@ -92,6 +92,7 @@
       '.rtgHowto-card{width:100%;max-width:360px;background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:22px 20px 20px;position:relative;box-shadow:var(--shadow,0 30px 80px -20px rgba(0,0,0,.7));margin:auto 0;font-family:var(--f,inherit);}' +
       '.rtgHowto-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--ink);font-size:14px;line-height:1;cursor:pointer;padding:0;}' +
       '.rtgHowto-title{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:20px;margin:0 34px 12px 0;color:var(--ink);}' +
+      '.rtgHowto-demo{margin:0 0 14px;}' +
       '.rtgHowto-list{margin:0 0 18px;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
@@ -151,6 +152,19 @@
 
     card.appendChild(x);
     card.appendChild(h);
+    /* THE DEMO GOES ABOVE THE RULES, because it answers the question the
+       rules cannot: what does this look like when it is working. Four seconds
+       of the game playing itself beats four bullets, and the bullets stay
+       underneath for the scoring detail an animation has no way to say.
+       Optional throughout: a page without demo.js still gets exactly what it
+       had before. */
+    var demo = null;
+    if (window.RTGDemo && RTGDemo.has(key)) {
+      var stagewrap = document.createElement('div');
+      stagewrap.className = 'rtgHowto-demo';
+      card.appendChild(stagewrap);
+      demo = { host: stagewrap, handle: null };
+    }
     card.appendChild(ul);
     /* Reading the rules and being shown the screen are different needs, and a
        list of bullets only ever answers the first one. The walkthrough lives
@@ -174,8 +188,23 @@
     function seen(){ try{ return !!localStorage.getItem(FLAG); }catch(e){ return true; } }
     function markSeen(){ try{ localStorage.setItem(FLAG, '1'); }catch(e){} }
     function isOpen(){ return scrim.classList.contains('on'); }
-    function open(){ scrim.classList.add('on'); }
-    function close(){ scrim.classList.remove('on'); markSeen(); }
+    /* The demo runs on timers, so it starts when the modal opens and is torn
+       down when it closes. A loop still ticking behind a dismissed modal costs
+       battery and shows up in no test. */
+    function accent(){
+      try {
+        var m = (window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(key) : null;
+        return m && m.accent;
+      } catch (e) { return null; }
+    }
+    function open(){
+      scrim.classList.add('on');
+      if (demo && !demo.handle) demo.handle = RTGDemo.mount(demo.host, key, accent());
+    }
+    function close(){
+      scrim.classList.remove('on'); markSeen();
+      if (demo && demo.handle) { try { demo.handle.stop(); } catch (e) {} demo.handle = null; demo.host.innerHTML = ''; }
+    }
 
     x.addEventListener('click', close);
     ok.addEventListener('click', close);
