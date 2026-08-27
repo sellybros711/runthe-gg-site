@@ -85,12 +85,18 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     filter:blur(8px);animation:heroGlow 7s ease-in-out infinite;}
   @keyframes heroGlow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1);}
     50%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}}
-  .wordmark{display:block;width:100%;max-width:600px;height:auto;margin:0 auto;
-    filter:drop-shadow(0 6px 30px rgba(0,0,0,.45));}
+  /* 600px of pixel wordmark pushed the games below the fold and read as the
+     whole page rather than its title. At 430 it is still the loudest thing up
+     there, just not the only thing. */
+  .wordmark{display:block;width:100%;max-width:430px;height:auto;margin:0 auto;
+    filter:drop-shadow(0 8px 34px rgba(0,0,0,.5));}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px auto 0;max-width:260px;color:var(--gold);}
   .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(110,232,78,.6));}
   .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(110,232,78,.6));}
-  .tag{text-align:center;color:var(--ink);font-weight:700;margin:16px auto 0;max-width:460px;line-height:1.45;font-size:16px;}
+  /* at 460 this wrapped to three lines with a two-word rag on the last. The
+     sentence is 17 words; give it room to sit on two. */
+  .tag{text-align:center;color:var(--ink);font-weight:600;margin:20px auto 0;max-width:600px;
+    line-height:1.55;font-size:16.5px;letter-spacing:.004em;}
   .tag b{color:var(--teal);}
   /* live status pill: tells a first-time visitor what the site is at a glance */
   .hero-status{display:inline-flex;align-items:center;gap:9px;margin:16px auto 2px;
@@ -218,8 +224,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .online-strip .ol-mode .m-sub{display:block;font-size:11px;color:#9fd9c9;margin-top:2px;font-weight:700;letter-spacing:.02em;}
 
   .g-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 17px 16px;margin-top:2px;}
-  .play{display:inline-flex;align-items:center;gap:8px;font-weight:900;font-size:14px;letter-spacing:.01em;
-    padding:11px 18px;border-radius:7px;color:#fff;line-height:1;transition:gap .18s ease, filter .12s ease;}
+  /* The button carried no depth at all, so on the darker cards it read as a
+     coloured rectangle sitting on top of another coloured rectangle. A top
+     highlight, a dark rim and a cast shadow give it an edge to catch light on. */
+  .play{display:inline-flex;align-items:center;gap:8px;font-weight:900;font-size:14.5px;letter-spacing:.01em;
+    padding:13px 22px;border-radius:9px;color:#fff;line-height:1;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.32), 0 0 0 1px rgba(0,0,0,.22), 0 10px 22px -14px rgba(0,0,0,.95);
+    transition:gap .18s ease, filter .12s ease, transform .12s ease;}
+  .play:hover{transform:translateY(-1px);}
   .game.golf .play{background:linear-gradient(180deg,#EEB23E,#D9931A);color:#1b1204;box-shadow:0 8px 20px -12px rgba(235,166,31,.9);}
   .game.soccer .play{background:linear-gradient(180deg,#33D3B8,#17A891);color:#04231d;box-shadow:0 8px 20px -12px rgba(53,196,205,.9);}
   .play .arw{transition:transform .18s ease;}
@@ -412,11 +424,13 @@ window.GA_ID='G-L29P5MRWKE';
   .nav-logo{height:26px;width:auto;display:block;}
   .nav-acct{display:flex;align-items:center;gap:8px;}
   .nav-btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:13.5px;line-height:1;
-    border-radius:6px;padding:9px 15px;text-decoration:none;display:inline-flex;align-items:center;gap:7px;
-    transition:filter .12s ease,border-color .12s ease;}
+    border-radius:8px;padding:10px 17px;text-decoration:none;display:inline-flex;align-items:center;gap:7px;
+    transition:filter .12s ease,border-color .12s ease,transform .12s ease;}
+  .nav-btn:hover{transform:translateY(-1px);}
   .nav-btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
   .nav-btn.ghost:hover{border-color:var(--teal);}
-  .nav-btn.solid{background:linear-gradient(180deg,#84F262,#4EC335);color:#06230c;box-shadow:0 6px 18px -10px rgba(110,232,78,.8);}
+  .nav-btn.solid{background:linear-gradient(180deg,#84F262,#4EC335);color:#06230c;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 0 0 1px rgba(0,0,0,.18), 0 10px 22px -12px rgba(110,232,78,.75);}
   .nav-btn.solid:hover{filter:brightness(1.06);}
   .nav-chip{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.05);border:1px solid var(--cardb);
     border-radius:6px;padding:4px 13px 4px 4px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13.5px;}
@@ -468,8 +482,23 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ---- featured game blocks: lead with real gameplay screenshots ---- */
   .games{display:block;}
-  .feat{position:relative;overflow:hidden;border-radius:10px;border:1px solid var(--cardb);
-    padding:20px 20px 22px;margin:0 0 16px;isolation:isolate;}
+  /* A lit panel, not a rectangle with a line round it. The inset hairline along
+     the top edge is the light catching it, the black ring keeps the colour from
+     bleeding into the page behind, and the long soft shadow gives it somewhere
+     to sit. Radius up to 14 because 10 on a card this wide reads as square. */
+  .feat{position:relative;overflow:hidden;border-radius:14px;border:1px solid var(--cardb);
+    padding:24px 24px 26px;margin:0 0 18px;isolation:isolate;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.07),
+      0 0 0 1px rgba(0,0,0,.3),
+      0 26px 50px -34px rgba(0,0,0,.95);
+    transition:transform .18s ease, box-shadow .18s ease;}
+  .feat:hover{transform:translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.09),
+      0 0 0 1px rgba(0,0,0,.3),
+      0 34px 60px -34px rgba(0,0,0,.95);}
+  @media (prefers-reduced-motion:reduce){.feat,.feat:hover{transform:none;transition:none;}}
   .feat .art{position:absolute;inset:0;z-index:-1;}
   .feat.golf{border-color:rgba(235,166,31,.34);}
   .feat.golf .art{background:radial-gradient(130% 120% at 92% -12%, rgba(235,166,31,.20), transparent 55%),
@@ -679,25 +708,40 @@ window.GA_ID='G-L29P5MRWKE';
        sheet was a second tap and a second read of copy the tile had already
        given you, in front of the thing you had just asked for. text-decoration
        and color are reset because these are links now. */
+    /* The outline was doing all the work and none of it well: a 2px bar of the
+       accent at full strength around every tile, a second 2px bar around the
+       crest inside it, and a hard 4px offset shadow with no blur. Three hard
+       edges stacked inside 174px, which is what read as cheap.
+       The colour stays, it just stops being a cartoon outline: a hairline at
+       low alpha, a wider ring of the accent for the glow the outline was
+       standing in for, and a real shadow underneath with depth to it. The tile
+       reads as a lit panel instead of a sticker. */
     .gtile{
       position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:11px;
-      padding:13px 12px 12px;margin:0;text-align:left;cursor:pointer;
-      border:2px solid var(--ac);border-radius:4px;background:var(--card);
-      box-shadow:4px 4px 0 var(--acd);text-decoration:none;
+      padding:15px 14px 14px;margin:0;text-align:left;cursor:pointer;
+      border:1px solid var(--acq);border-radius:10px;background:var(--card);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.07),
+        0 0 0 1px rgba(0,0,0,.35),
+        0 14px 28px -20px rgba(0,0,0,.95);
+      text-decoration:none;
       -webkit-appearance:none;appearance:none;font:inherit;color:var(--ink);
-      transition:transform .08s ease,box-shadow .08s ease;
+      transition:transform .12s ease, box-shadow .12s ease;
     }
-    /* pressed = the cabinet button actually going in */
-    .gtile:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--acd);}
+    /* pressed still moves, it just settles instead of clacking */
+    .gtile:active{transform:translateY(2px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,0,0,.4), 0 6px 14px -12px rgba(0,0,0,.9);}
 
     /* The crest sits the way it sits on the desktop card: the icon itself, a
        thin accent edge, and the card's own colour showing through behind it.
        No fill and no scanlines, because the colour is the tile now. */
     .gt-txt,.gt-scr{position:relative;z-index:1;}
     .gt-scr{display:grid;place-items:center;flex:0 0 auto;
-      width:54px;height:54px;border-radius:3px;overflow:hidden;
-      background:transparent;border:2px solid var(--acq);}
-    .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;}
+      width:54px;height:54px;border-radius:9px;overflow:hidden;
+      background:rgba(255,255,255,.045);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.09), 0 6px 14px -10px rgba(0,0,0,.9);}
+    .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));}
 
     .gt-txt{display:flex;flex-direction:column;gap:6px;min-width:0;}
     .gt-nm{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;
@@ -706,11 +750,12 @@ window.GA_ID='G-L29P5MRWKE';
     /* the college edition needs its qualifier, but not at the size of a name */
     .gt-nm i{display:block;font-style:normal;font-size:11px;letter-spacing:.06em;
       color:var(--mut);margin-top:3px;}
-    /* A tagline, not a spec sheet. No accent bar: the colour now lives in the
-       crest box, and a rule down the middle of a tile this small only chopped
-       it in two. */
-    .gt-tag{font-size:11px;font-weight:700;line-height:1.35;color:var(--mut);
-      margin-top:auto;}
+    /* A tagline, not a spec sheet. No accent bar: the colour lives in the tile
+       itself, and a rule down the middle of one this small only chopped it in
+       two. Set at 700 rather than 800 and given real leading, because bold
+       small text packed tight is the other half of what looked cheap. */
+    .gt-tag{font-size:11.5px;font-weight:600;line-height:1.5;color:var(--mut);
+      margin-top:auto;letter-spacing:.005em;}
     /* the badge belongs to the tile, so it sits inside it and not in the gutter */
     .gt-new{position:absolute;top:9px;right:9px;z-index:2;font-size:9px;letter-spacing:.08em;
       text-transform:uppercase;font-weight:900;}
@@ -776,8 +821,12 @@ window.GA_ID='G-L29P5MRWKE';
 
     /* "coming soon" is not a game, so it does not pretend to be one: no colour,
        no shadow to press, and a dashed edge like the card it replaces. */
-    .gtile.soonTile{grid-column:1 / -1;cursor:default;gap:5px;padding:12px 13px;
-      border:2px dashed rgba(255,255,255,.18);box-shadow:none;background:none;}
+    /* quiet, not broken: a dashed 2px rule looked like a validation error. A
+       hairline at low alpha over a barely-there fill reads as a placeholder
+       that belongs to the set. */
+    .gtile.soonTile{grid-column:1 / -1;cursor:default;gap:5px;padding:15px 14px;border-radius:10px;
+      border:1px dashed rgba(255,255,255,.14);box-shadow:none;
+      background:rgba(255,255,255,.018);}
     .gtile.soonTile .gt-nm{font-size:14px;color:var(--mut);}
     .gtile.soonTile .gt-tag{margin-top:0;border-left-color:rgba(255,255,255,.18);}
 
