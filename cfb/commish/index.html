@@ -242,6 +242,21 @@
   .coal.danger .note{color:#fca5a5}
 
   .room{display:grid;gap:5px}
+  /* WHAT THE NUMBER ON THE RIGHT IS.
+     It went the whole build unnamed: nine rows of chip, name, bar and a figure somewhere in
+     the forties, with nothing anywhere on the screen saying what was being measured. A
+     number with no unit is not information, it is a puzzle, and the player's own words for
+     it were "this is never explained".
+
+     TWO LINES RATHER THAN TWO COLUMNS. Side by side was tried: the caption is 120px of
+     nowrap text and it took that out of the sentence's width at every size, so a two line
+     gloss on a wide screen became a four line one with an empty gap beside it. The caption
+     gets its own line directly over the numbers instead, which is also where a column header
+     belongs, and the sentence gets the whole width at every size. */
+  .rkey{padding:0 10px 8px}
+  .rkey span{display:block;font-size:11.5px;line-height:1.35;color:var(--dim-2)}
+  .rkey b{display:block;margin-top:6px;text-align:right;font-family:var(--fn);font-size:9px;
+    font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2)}
   /* FIVE COLUMNS: mark, name, vote, standing, number. Every row emits exactly five cells,
      including an empty one where a bloc holds no vote, because a row that emits four in one
      state and five in another wraps the last cell onto its own line and the room turns into
@@ -2269,7 +2284,22 @@ function paintRoom(el,w,rows,blind){
      loudest reaction fills its half and the rest are honestly proportional to it, which is
      the comparison a player actually wants: who cared most about THIS. */
   let top=0; (rows||[]).forEach((r)=>{ top=Math.max(top,Math.abs(r.delta||0)); });
-  el.innerHTML=B.BLOCS.map((b)=>{
+  /* THE CAPTION IS BUILT HERE RATHER THAN WRITTEN INTO THREE PANELS OF MARKUP. The office,
+     the year in review and the reaction screen all call this function, and three hand-written
+     headers is three chances for one of them to end up calling the number something the other
+     two do not. The reaction screen gets its own wording because its right-hand column is not
+     the same column: there the standing goes quiet and the MOVE is the big figure. */
+  const key='<div class="rkey"><span>'
+    +(react
+      /* NEUTRAL ON TENSE, because this same branch draws the forecast ("if you ruled that
+         way") and the ruling itself, and a caption that says "moved" is a lie on one of
+         them. */
+      ? 'How far each bloc moves, and where that leaves them. '
+        +'Below 25 they are counted against you in a vote to remove you.'
+      : 'How each bloc feels about you: 0 is at war, 100 is an ally. Below 25, the mark on '
+        +'each bar, they are counted against you in a vote to remove you.')
+    +'</span><b>'+(react?'Standing, and the move':'Standing, 0 to 100')+'</b></div>';
+  el.innerHTML=key+B.BLOCS.map((b)=>{
     const v=w.blocs[b.id], r=byId[b.id];
     const hostile=v<L.HOSTILE;
     const moved=r&&Math.abs(r.delta)>=0.05;
