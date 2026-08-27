@@ -7,7 +7,7 @@
  * a number IS. Nothing has ever shown you where it has BEEN, which is the only way to see
  * that the thing you did in year two is still costing you in year four.
  *
- * So: a tape. One row per beat and per ruling, appended as the term runs, and a catalogue
+ * So: a tape. One row per beat and per ruling, appended as the term runs, and a catalog
  * of series read off it.
  *
  * TWO HALVES, KEPT APART.
@@ -49,7 +49,7 @@
   /* ── the tape ────────────────────────────────────────────────────────────────
      SHORT KEYS ON PURPOSE. A term is about ninety rows and every row is written to
      localStorage on every ruling; `revenue` against `rv` across ninety rows and nine blocs
-     is most of a kilobyte for nothing. The catalogue below is where the names live. */
+     is most of a kilobyte for nothing. The catalog below is where the names live. */
   function sample(world) {
     var m = world.meters || {};
     var p = world.pressure || {};
@@ -94,7 +94,7 @@
     return world;
   }
 
-  /* ── the catalogue ───────────────────────────────────────────────────────────
+  /* ── the catalog ───────────────────────────────────────────────────────────
      `from` says which store a series is read out of and therefore how dense it is:
 
        'tape'   every beat and every ruling. Ninety odd points across a term.
@@ -102,10 +102,10 @@
        'week'   one point a week inside the season being played, out of the live sim.
 
      `good` is which direction is the good one, and null where there is no such thing: a
-     bigger playoff is not better or worse, it is a choice, and colouring it green would be
+     bigger playoff is not better or worse, it is a choice, and coloring it green would be
      the mode taking a side in the argument it is about.
 
-     COLOURS ARE FIXED PER SERIES rather than assigned when a chart is drawn, so a reader who
+     COLORS ARE FIXED PER SERIES rather than assigned when a chart is drawn, so a reader who
      learns that viewership is the blue line does not have that repainted under them by
      changing what else is on screen. The three used together in compare mode were run
      through the palette validator against this page's card surface: lightness band, chroma
@@ -153,7 +153,7 @@
     { id: 'health', label: 'The state of the game', sub: 'out of 100', group: 'The office',
       from: 'tape', color: '#0b8fcc', good: 'up', dp: 0, suffix: '',
       pick: function (r) { return r.he; },
-      about: 'Whether the thing on the field is still recognisably college football and '
+      about: 'Whether the thing on the field is still recognizably college football and '
         + 'still open to somebody new.' },
     { id: 'standing', label: 'Your standing', sub: 'out of 100', group: 'The office',
       from: 'tape', color: '#9333ea', good: 'up', dp: 0, suffix: '',
@@ -182,12 +182,12 @@
       pick: function (r) { return r.cg; }, about: 'Washington, accumulating.' },
     { id: 'union', label: 'The union', sub: 'pressure', group: 'The pressure',
       from: 'tape', color: '#c27a06', good: 'down', dp: 0, suffix: '',
-      pick: function (r) { return r.un; }, about: 'Organising, accumulating.' },
+      pick: function (r) { return r.un; }, about: 'Organizing, accumulating.' },
   ];
 
-  /* The nine blocs are series too, generated rather than typed, and they carry the colour
+  /* The nine blocs are series too, generated rather than typed, and they carry the color
      the rest of the mode already draws them in: a reader who has learned that the Big Ten is
-     the blue chip should not meet a Big Ten line in some other colour. */
+     the blue chip should not meet a Big Ten line in some other color. */
   var BLOC_COLOR = {
     SEC: '#ef4444', 'Big Ten': '#3b82f6', ACC: '#f97316', 'Big 12': '#a855f7',
     'Group of Five': '#14b8a6', Networks: '#ec4899', Players: '#eab308',
@@ -431,11 +431,11 @@
   }
 
   /* PUSHING LABELS APART. Direct labels at the end of two lines that finished a point from
-     each other land on top of one another, and three numbers in three colours stacked into
+     each other land on top of one another, and three numbers in three colors stacked into
      one smudge sit at exactly the end of the line a reader looks at first.
 
      Takes the wanted positions, returns positions at least `gap` apart, inside [lo, hi], in
-     the SAME ORDER IT WAS GIVEN so a caller can zip them back against their colours. Returns
+     the SAME ORDER IT WAS GIVEN so a caller can zip them back against their colors. Returns
      null when they cannot all fit, which is a real answer: the legend already carries every
      name and its move, so no labels beats a smudge.
 

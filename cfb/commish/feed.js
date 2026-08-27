@@ -13,12 +13,12 @@
  * NOBODY REAL IS IN HERE, AND THAT IS A HARD LINE, not a preference.
  *
  *   No real reporter, coach, athletic director, player or broadcaster is named, quoted or
- *   alluded to closely enough to be recognisable. Every account below is invented.
+ *   alluded to closely enough to be recognizable. Every account below is invented.
  *
  *   No account posts AS a real school, conference or network. A fictional fan account may
  *   talk ABOUT Alabama, which is the same use of a real institution the rest of this game
  *   already makes; an account called "Alabama Football" posting a statement would be
- *   somebody's real organisation saying something it never said.
+ *   somebody's real organization saying something it never said.
  *
  *   Nothing here is dressed as a real platform. No bird, no blue app chrome, no screenshot
  *   of somebody else's product. It is a feed in this game's own clothes, which is both
@@ -81,7 +81,7 @@
   /* ---------------- what gets posted ----------------
      Keyed by what happened, so the feed is about the ruling rather than about the mood. The
      neutral accounts report and opine; the fan accounts are chosen by which bloc moved and
-     are written to be recognisably that fanbase rather than a generic angry person. */
+     are written to be recognizably that fanbase rather than a generic angry person. */
 
   const ON_AXIS = {
     money: {
@@ -126,7 +126,7 @@
       up: [
         { who: 'wire', say: 'The bill for this lands on the athletic departments, which is a sentence that has ended three olympic sports this year already.' },
         { who: 'numbers', say: 'Athletic departments running a deficit last year: 96 of 134. That number is about to get worse.' },
-        { who: 'tobacco', say: 'we are one bad TV cycle from losing our swim programme and they keep writing rules like this' },
+        { who: 'tobacco', say: 'we are one bad TV cycle from losing our swim program and they keep writing rules like this' },
       ],
       down: [
         { who: 'wire', say: 'Costs come down. The presidents will be relieved, quietly, in a statement nobody reads.' },

@@ -162,7 +162,7 @@
   }
 
   /* EVERY CALL RESOLVES. None of them reject and none of them throw, because every call
-     site is decorating a screen that has already painted and the correct behaviour when
+     site is decorating a screen that has already painted and the correct behavior when
      this is unreachable is silence. `offline` is how the page can say so if it wants to,
      and it is never reset by a later success on purpose: one failure means the split
      shown next to it may be stale, and the page should not flip between confident and

@@ -136,7 +136,7 @@
            'closed'     declare and you are gone. Which is the rule the Big Ten wrote first.
 
            IT IS NOT A COSMETIC SETTING. See reentryDrift() in season.js: an open door sends
-           men who have been in professional camps back to the programmes that can pay them,
+           men who have been in professional camps back to the programs that can pay them,
            which makes the top of the sport better and the middle worse, cumulatively, the
            same way the distribution formula does. */
         reentry: 'open',
@@ -182,7 +182,7 @@
       },
       brand: {
         /* Sponsor ids from venues.js. The playoff's title sponsor, the trophy, and a jersey
-           patch, which are three separate arguments and three separate cheques. */
+           patch, which are three separate arguments and three separate checks. */
         playoff: null,
         trophy: null,
         patch: null,
@@ -239,7 +239,7 @@
       meters: { revenue: 55, health: 62, standing: 60 },
 
       /* 0..100 satisfaction. Everybody starts wary rather than happy: a commissioner
-         arrives owing favours, not holding them. */
+         arrives owing favors, not holding them. */
       blocs: {
         SEC: 52, 'Big Ten': 52, ACC: 48, 'Big 12': 46, 'Group of Five': 40,
         Networks: 55, Players: 38, Presidents: 55, Fans: 50,
@@ -332,7 +332,7 @@
     /* The shares have to keep adding to one, whatever a ruling did to them, or the pool
        quietly grows or shrinks and nobody notices until the money stops meaning anything. */
     if (e.set && Object.keys(e.set).some((k) => k.indexOf('money.share.') === 0)) {
-      normaliseShare(next.money.share);
+      normalizeShare(next.money.share);
     }
 
     next.history.push({
@@ -343,7 +343,7 @@
     return next;
   }
 
-  function normaliseShare(share) {
+  function normalizeShare(share) {
     let total = 0;
     for (const k in share) { share[k] = Math.max(0, Number(share[k]) || 0); total += share[k]; }
     if (total <= 0) return;
@@ -557,7 +557,7 @@
     plant, ripe, cut, beatOf,
     createWorld, membershipFrom,
     getPath, membersOf, conferencesIn, isDefunct,
-    applyEdit, applyOutcome, normaliseShare, standingFrom,
+    applyEdit, applyOutcome, normalizeShare, standingFrom,
     coalition, removal, advance, hostileWeight, totalWeight, MIN_CONFERENCE,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;

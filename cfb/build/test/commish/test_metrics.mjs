@@ -1,5 +1,5 @@
 /*
- * test_metrics.mjs - the tape, and the arithmetic the data centre draws with.
+ * test_metrics.mjs - the tape, and the arithmetic the data center draws with.
  *
  * A chart is the one screen in this mode that can be confidently, silently wrong. Every
  * other screen prints a number next to a word, and a wrong number looks wrong. A chart
@@ -62,11 +62,11 @@ head('the tape records once per position');
   /* Nine blocs are stored as a bare array to keep the save file small, so the order IS the
      schema and a reorder would silently relabel somebody's whole term. */
   ok('every bloc is on the row', w.tape[0].bl.length === 9, w.tape[0].bl.length + ' of 9');
-  ok('  in the order the catalogue reads them back in',
+  ok('  in the order the catalog reads them back in',
     M.BLOC_ORDER[0] === 'SEC' && M.BLOC_ORDER[8] === 'Fans',
     M.BLOC_ORDER.join(', '));
   const secSeries = M.BY_ID['bloc:SEC'];
-  ok('  and reading one back gets that bloc and not its neighbour',
+  ok('  and reading one back gets that bloc and not its neighbor',
     secSeries.pick(w.tape[0]) === w.blocs.SEC, String(secSeries.pick(w.tape[0])));
 }
 
@@ -179,15 +179,15 @@ head('comparing without a second axis');
 head('labels that would land on top of each other');
 {
   /* THE SMUDGE THIS EXISTS TO PREVENT. Two of three indexed lines finishing a point apart
-     put their end labels at the same height, which is three numbers in three colours in one
+     put their end labels at the same height, which is three numbers in three colors in one
      illegible pile, at exactly the end of the line a reader looks at first. */
   const s = M.spread([40, 41, 42], 11, 0, 200);
   ok('three labels a pixel apart are pushed to the gap',
     s[1] - s[0] >= 11 && s[2] - s[1] >= 11, JSON.stringify(s));
-  ok('  and come back in the order they went in, so they keep their colours',
+  ok('  and come back in the order they went in, so they keep their colors',
     s[0] < s[1] && s[1] < s[2], JSON.stringify(s));
 
-  /* ORDER IN IS NOT ORDER UP. The caller zips these against a list of colours by index, so
+  /* ORDER IN IS NOT ORDER UP. The caller zips these against a list of colors by index, so
      a function that returned them sorted would hand every label the wrong hue. */
   const mixed = M.spread([90, 40, 65], 11, 0, 200);
   ok('an unsorted list keeps its own order',
@@ -255,7 +255,7 @@ head('reading a series off a real term');
 
   const yearly = M.points(w, 'perGame', 'term');
   ok('a yearly series reads off the ratings', yearly.length === 2, yearly.length + ' points');
-  ok('  labelled by year, not by beat', yearly[0].at.y === 2025 && yearly[0].at.b === null);
+  ok('  labeled by year, not by beat', yearly[0].at.y === 2025 && yearly[0].at.b === null);
 
   /* A SEASON THAT HAS NOT BEEN PLAYED HAS NO VIEWERSHIP, and plotting that as zero draws a
      collapse that did not happen. */
@@ -294,7 +294,7 @@ head('the rulings on the line');
     M.rulings(L.createWorld({ year: 2025, seed: 1 }), 'term').length === 0);
 }
 
-head('the catalogue holds together');
+head('the catalog holds together');
 {
   ok('every series has an id, a label and a group',
     M.SERIES.every((s) => s.id && s.label && s.group), M.SERIES.length + ' series');
@@ -308,10 +308,10 @@ head('the catalogue holds together');
   ok('the nine blocs are all in it',
     M.SERIES.filter((s) => s.bloc).length === 9,
     M.SERIES.filter((s) => s.bloc).length + ' bloc series');
-  /* A COLOUR PER SERIES, FIXED. A reader who learns viewership is the blue line must not
+  /* A COLOR PER SERIES, FIXED. A reader who learns viewership is the blue line must not
      have that repainted by changing what else is on screen. */
-  ok('  and every series carries its own colour', M.SERIES.every((s) => /^#[0-9a-f]{6}$/i.test(s.color)));
-  ok('  with the blocs keeping the colour the rest of the mode draws them in',
+  ok('  and every series carries its own color', M.SERIES.every((s) => /^#[0-9a-f]{6}$/i.test(s.color)));
+  ok('  with the blocs keeping the color the rest of the mode draws them in',
     M.BY_ID['bloc:SEC'].color === '#ef4444' && M.BY_ID['bloc:Fans'].color === '#38bdf8');
   ok('formatting a value uses the series own units',
     M.fmt(1.4, M.BY_ID.perGame) === '1.40M' && M.fmt(1.3, M.BY_ID.pool) === '$1.30B',

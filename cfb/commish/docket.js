@@ -75,7 +75,7 @@
       crisis: true,
       /* A COOLDOWN, BECAUSE A LAWSUIT TAKES YEARS. Without one, reckless play fired
          eleven crises in a five year term: the pressure is written back down, the same
-         behaviour pushes it straight back over the line, and a thing that happens every
+         behavior pushes it straight back over the line, and a thing that happens every
          fourth beat is not a crisis, it is weather. Eighteen beats is two seasons,
          so the sport gets one of these at a time and remembers it. */
       when: (w) => (w.pressure.legal || 0) >= 46 && sinceRuled(w, 'crisis-legal') >= 18,
@@ -91,7 +91,7 @@
       ],
       options: [
         { id: 'settle', label: 'Settle it',
-          body: 'Write the cheque, take the finding, and move on. It is the most expensive '
+          body: 'Write the check, take the finding, and move on. It is the most expensive '
             + 'afternoon in the history of this office and it ends on a date you choose.',
           edit: { set: { 'pressure.legal': 14 },
             effects: { cost: 3.4, money: -2.4, labour: 2, exposure: -2.6, autonomy: -1.2 },
@@ -123,7 +123,7 @@
       crisis: true,
       /* A COOLDOWN, BECAUSE A LAWSUIT TAKES YEARS. Without one, reckless play fired
          eleven crises in a five year term: the pressure is written back down, the same
-         behaviour pushes it straight back over the line, and a thing that happens every
+         behavior pushes it straight back over the line, and a thing that happens every
          fourth beat is not a crisis, it is weather. Eighteen beats is two seasons,
          so the sport gets one of these at a time and remembers it. */
       when: (w) => (w.pressure.congress || 0) >= 46 && sinceRuled(w, 'crisis-congress') >= 18,
@@ -169,12 +169,12 @@
       crisis: true,
       /* A COOLDOWN, BECAUSE A LAWSUIT TAKES YEARS. Without one, reckless play fired
          eleven crises in a five year term: the pressure is written back down, the same
-         behaviour pushes it straight back over the line, and a thing that happens every
+         behavior pushes it straight back over the line, and a thing that happens every
          fourth beat is not a crisis, it is weather. Eighteen beats is two seasons,
          so the sport gets one of these at a time and remembers it. */
       when: (w) => (w.pressure.union || 0) >= 46 && sinceRuled(w, 'crisis-union') >= 18,
       eyebrow: 'The players',
-      title: 'They have voted to organise',
+      title: 'They have voted to organize',
       brief: 'Two rosters filed, then eleven, then a number nobody in this office wants to '
         + 'read out. The vote was not close and the week it was announced was the week before '
         + 'championship weekend, which was not an accident.',
@@ -184,7 +184,7 @@
         { id: 'Networks', say: 'If there is no championship weekend there is no contract to talk about.' },
       ],
       options: [
-        { id: 'recognise', label: 'Recognise them and bargain',
+        { id: 'recognize', label: 'Recognize them and bargain',
           body: 'The end of a hundred years of pretending. Every cost in this sport becomes '
             + 'negotiable and every rule becomes a term of employment.',
           edit: { set: { 'pressure.union': 10, 'labour.employment': 'employee' },
@@ -193,7 +193,7 @@
               SEC: { cost: -2.4 }, 'Group of Five': { cost: -2.6 } } },
           /* RECOGNITION IS THE FIRST CONTRACT, and a contract has an end date. See pay-payroll. */
           plant: { id: 'players-employed', wait: [14, 24], note: 'Players on contracts, and a first expiry date' } },
-        { id: 'bargain-lite', label: 'Bargain without recognising anybody',
+        { id: 'bargain-lite', label: 'Bargain without recognizing anybody',
           body: 'A council, a seat at a table, and a set of commitments that are not a '
             + 'contract. It holds for as long as everybody wants it to.',
           edit: { set: { 'pressure.union': 30 },
@@ -206,7 +206,7 @@
             effects: { labour: -2.8, exposure: 2.6, cost: 1, inventory: -1.6 },
             aimed: { Players: { labour: -3.4 }, Networks: { inventory: -2 },
               Presidents: { exposure: 2.2 } } },
-          /* REFUSING TO RECOGNISE THEM IS A CASE. Same verdict, a different road into it. */
+          /* REFUSING TO RECOGNIZE THEM IS A CASE. Same verdict, a different road into it. */
           plant: { id: 'fought-it', wait: [16, 26], note: 'A lawsuit this office chose to fight' } },
       ],
     },
@@ -231,7 +231,7 @@
       ],
       options: [
         { id: 'onto-books', label: 'Put it on the athletic department books',
-          body: 'One employer, one number, one place to audit. It ends the pretence and it '
+          body: 'One employer, one number, one place to audit. It ends the pretense and it '
             + 'starts an argument with every labour lawyer in the country.',
           edit: { set: { 'labour.nil': 'school-paid' },
             effects: { labour: 2, exposure: 1.8, cost: 2.2, autonomy: -1.4 },
@@ -256,7 +256,7 @@
       when: () => true,
       eyebrow: 'The roster',
       title: 'How big a roster is',
-      brief: 'The number has never been written down properly. Some programmes carry a '
+      brief: 'The number has never been written down properly. Some programs carry a '
         + 'hundred and twenty and some carry eighty five, the difference is mostly walk-ons, '
         + 'and every version of a cap ends somebody\'s career on a Tuesday in February.',
       voices: [
@@ -345,7 +345,7 @@
             aimed: { Networks: { inventory: 0.9 }, Players: { labour: -0.5 } } } },
         { id: 'refuse', label: 'Refuse. These are students',
           body: 'The sport does not publish medical information about people it insists are '
-            + 'not employees. The leaks continue and so does the pretence.',
+            + 'not employees. The leaks continue and so does the pretense.',
           edit: { effects: { labour: 1.4, exposure: 1.2, inventory: -1 },
             aimed: { Players: { labour: 2 }, Networks: { inventory: -1.2 },
               Presidents: { exposure: -0.8 } } } },
@@ -414,7 +414,7 @@
         + 'advertising has spent the week asking whose idea it was.',
       voices: [
         { id: 'Networks', say: 'We are paying premium money for a scrimmage in a warm stadium.' },
-        { id: 'Group of Five', say: 'That cheque is a third of our football budget. Ask before you take it.' },
+        { id: 'Group of Five', say: 'That check is a third of our football budget. Ask before you take it.' },
         { id: 'SEC', say: 'Twelve games, and some of them are supposed to be easy. That is the deal.' },
       ],
       options: [
@@ -425,11 +425,11 @@
             effects: { inventory: 2.6, tradition: -1, cost: 1.8, money: 0.6 },
             aimed: { 'Group of Five': { money: -3, cost: 2 }, Networks: { inventory: 2 },
               SEC: { autonomy: -1.6 } } },
-          /* That cheque is a third of a Group of Five football budget. See pay-dropped. */
+          /* That check is a third of a Group of Five football budget. See pay-dropped. */
           plant: { id: 'a-school-left', wait: [12, 20], note: 'Money taken off the bottom of the sport' } },
         { id: 'cap', label: 'Cap it at one a year',
           body: 'One is a tune-up and three is a con. Nobody gets everything and nobody has '
-            + 'to close a programme over it.',
+            + 'to close a program over it.',
           edit: { effects: { inventory: 1.4, cost: 0.5, autonomy: -1 },
             aimed: { 'Group of Five': { money: -1 }, Networks: { inventory: 1.2 } } } },
         { id: 'leave', label: 'Leave it alone',
@@ -467,7 +467,7 @@
           edit: { effects: { tradition: -1.6, autonomy: 1.2, exposure: -0.4 },
             aimed: { Fans: { tradition: -2.6 }, Networks: { inventory: -0.5 } } } },
         { id: 'centralise', label: 'Take replay off the conferences',
-          body: 'One command centre, one standard, one place to point when it goes wrong '
+          body: 'One command center, one standard, one place to point when it goes wrong '
             + 'again. Every conference loses something it has always controlled.',
           edit: { set: { 'rules.replay': 'central' },
             effects: { autonomy: -2.6, tradition: 0.8, exposure: -1.2, cost: 1.2 },
@@ -1438,7 +1438,7 @@
       when: () => true,
       eyebrow: 'The spring',
       title: 'Four schools want to play flag football',
-      brief: 'Not as a joke. Four programmes have told this office that their spring game will '
+      brief: 'Not as a joke. Four programs have told this office that their spring game will '
         + 'be non-contact, in shorts, because they have twelve scholarship offensive linemen '
         + 'and a portal window in three weeks. One of them sold sixty thousand tickets to it '
         + 'before announcing that part.',
@@ -1573,7 +1573,7 @@
         { id: 'Fans', say: 'They are the best story in the sport and they have not played a down.' },
       ],
       options: [
-        { id: 'correct', label: 'Correct it and apologise',
+        { id: 'correct', label: 'Correct it and apologize',
           body: 'A quiet note, a fixed table, and a sport that behaves like a governing body '
             + 'for one afternoon.',
           edit: { effects: { tradition: 1, exposure: 0.8, inventory: -1.6 },
@@ -1645,15 +1645,15 @@
       brief: (c) => (c
         ? c.winner + ' beat ' + c.loser + ' ' + c.score[0] + '-' + c.score[1] + ' in week '
           + c.week + ', on the road, having been brought in to lose by four touchdowns for a '
-          + 'cheque. ' + c.loser + '\'s athletic director has spent two days explaining a '
+          + 'check. ' + c.loser + '\'s athletic director has spent two days explaining a '
           + 'scheduling decision he made in 2019. The game drew '
           + ((c.viewers || 0).toFixed(1)) + ' million people, most of whom tuned in at half time.'
-        : 'A team brought in to lose by four touchdowns for a cheque did not lose. The '
+        : 'A team brought in to lose by four touchdowns for a check did not lose. The '
           + 'scheduling decision was made in 2019 by somebody who now has to explain it.'),
       voices: [
         { id: 'Group of Five', say: 'We have been telling you the gap is not what the money says it is.' },
         { id: 'Networks', say: 'Nobody watches those games until one of them turns into that.' },
-        { id: 'Presidents', say: 'The guarantee game pays for our entire non revenue programme.' },
+        { id: 'Presidents', say: 'The guarantee game pays for our entire non revenue program.' },
       ],
       options: [
         { id: 'ban', label: 'Ban the guarantee game',
@@ -1664,7 +1664,7 @@
             effects: { inventory: 2.6, access: -2.6, money: -1.8, tradition: -1 },
             aimed: { 'Group of Five': { money: -3, access: -2 }, Networks: { inventory: 2.4 },
               Presidents: { cost: -1.6 } } },
-          /* That cheque is a third of a Group of Five football budget. See pay-dropped. */
+          /* That check is a third of a Group of Five football budget. See pay-dropped. */
           plant: { id: 'a-school-left', wait: [12, 20], note: 'Money taken off the bottom of the sport' } },
         { id: 'reward', label: 'Pay them properly instead',
           body: 'Raise the guarantee, put a floor under it, and write into the contract that a '
@@ -1793,7 +1793,7 @@
             aimed: { 'Group of Five': { access: 3.4 }, SEC: { access: -2 },
               'Big Ten': { access: -1.6 } } } },
         { id: 'mandate', label: 'Mandate the games instead',
-          body: 'Every power school plays one of them a year, home and home, no cheques. If '
+          body: 'Every power school plays one of them a year, home and home, no checks. If '
             + 'the schedule is the objection, remove the objection.',
           edit: { effects: { access: 2.4, inventory: 1.8, autonomy: -2.6, money: -0.8 },
             aimed: { 'Group of Five': { access: 3 }, SEC: { autonomy: -2.6 },
@@ -1859,7 +1859,7 @@
       brief: 'A student held up a sign behind the pregame set on Saturday morning that referred '
         + 'to this office by name, an amount of money, and a verb. It was on air for eleven '
         + 'seconds. It has since been printed on shirts, painted on a barn in Kentucky, and '
-        + 'read aloud in a state senate. Two athletic directors have apologised to you '
+        + 'read aloud in a state senate. Two athletic directors have apologized to you '
         + 'personally and both of them were laughing.',
       voices: [
         { id: 'Networks', say: 'We have a seven second delay for audio. Signs are not audio.' },
@@ -1893,7 +1893,7 @@
       when: () => true,
       eyebrow: 'The rules',
       title: 'Six players cramped on the same drive',
-      brief: 'All six on the same defence, all six against a tempo offence, all six back in on '
+      brief: 'All six on the same defense, all six against a tempo offense, all six back in on '
         + 'the next series. One of them looked at the sideline first. The broadcast noticed at '
         + 'the third one and spent the rest of the half on it. Nobody has been able to write a '
         + 'rule against this in thirty years because the rule would have to distinguish a lie '
@@ -2007,7 +2007,7 @@
               Fans: { tradition: -1.8 } } } },
         { id: 'hold', label: 'Hold the line and let it be a bad year',
           body: 'Audiences move. Formats are forever. A sport that redesigns itself every '
-            + 'November it has a quiet one ends up with nothing anybody recognises.',
+            + 'November it has a quiet one ends up with nothing anybody recognizes.',
           edit: { effects: { tradition: 2.8, money: -2, inventory: -1.6, autonomy: 1 },
             aimed: { Fans: { tradition: 2.6 }, Networks: { money: -2.4, inventory: -2 },
               Presidents: { money: -1.6 } } } },
@@ -2324,7 +2324,7 @@
       brief: 'Ninety-four yards, untouched, and he pointed at the bench from the eight yard '
         + 'line. Fifteen yards on the extra point, the kick was blocked, and the other team '
         + 'went eighty yards in forty seconds to win a playoff game. He is nineteen and he has '
-        + 'apologised four times, twice in tears, to a country that has watched it nine million '
+        + 'apologized four times, twice in tears, to a country that has watched it nine million '
         + 'times.',
       voices: [
         { id: 'Fans', say: 'He was happy. He ran ninety-four yards and he was happy.' },
@@ -2345,7 +2345,7 @@
             effects: { tradition: 1.4, autonomy: -0.8, labour: -2 },
             aimed: { Players: { labour: -2.4 }, Fans: { tradition: -2 } } } },
         { id: 'review', label: 'Review every one of them centrally',
-          body: 'Nothing on the field. A panel on Monday, a fine to the programme, and the '
+          body: 'Nothing on the field. A panel on Monday, a fine to the program, and the '
             + 'game decided by the football that was played.',
           edit: { effects: { access: 1.6, cost: 1.2, autonomy: -1.6, labour: 1.4 },
             aimed: { Players: { labour: 1.8 }, SEC: { autonomy: -1.4 } } } },
@@ -2399,7 +2399,7 @@
       brief: 'Live, on a Tuesday night selection show, asked why a team was left out, the '
         + 'committee chairman said "honestly, nobody wanted to watch them" and then heard '
         + 'himself say it. There is a four second pause on the tape. The head of the network '
-        + 'has apologised. The chairman has not, because the chairman has stopped answering '
+        + 'has apologized. The chairman has not, because the chairman has stopped answering '
         + 'his telephone.',
       voices: [
         { id: 'Group of Five', say: 'He said out loud what the ballots have said for ten years.' },
@@ -2438,7 +2438,7 @@
 
        Everything below reads `labour.reentry`, `labour.rulesBy` and `labour.confReentry`, and
        the football reads them back through reentryDrift(): an open door stretches the league
-       away from its middle, because the men coming back go to the twenty programmes that can
+       away from its middle, because the men coming back go to the twenty programs that can
        pay them and start them. Measured across seventy played seasons, that is the difference
        between 21.8 per cent of games decided by four touchdowns and 26.6 per cent.
 
@@ -2599,7 +2599,7 @@
       options: [
         { id: 'unify-open', label: 'Take it back nationally, door open',
           body: 'One rule, everybody, and the leagues that shut their doors reopen them '
-            + 'whether they like it or not. It ends the arbitrage and it ends the pretence '
+            + 'whether they like it or not. It ends the arbitrage and it ends the pretense '
             + 'that they were ever allowed to do this.',
           edit: { set: { 'labour.rulesBy': 'national', 'labour.reentry': 'open' },
             effects: { labour: 3, autonomy: -3.4, access: 1.6, exposure: 1 },
@@ -2635,7 +2635,7 @@
       eyebrow: 'The roster',
       title: 'Somebody has to lose the spot',
       brief: (c) => 'When he left for the draft they gave his scholarship to a nineteen year '
-        + 'old who has been in the building for eight months, learned the offence, and told '
+        + 'old who has been in the building for eight months, learned the offense, and told '
         + 'his family. Now he is coming back and the roster is capped. '
         + ((c && c.school) || 'The school') + ' has asked this office, in writing and slightly '
         + 'desperately, which of the two of them they are supposed to tell.',
@@ -2686,7 +2686,7 @@
       ],
       options: [
         { id: 'certify', label: 'Certify agents and register every deal',
-          body: 'A licence, a register, a standard contract and a complaints process. It is '
+          body: 'A license, a register, a standard contract and a complaints process. It is '
             + 'dull, it is expensive, and it is the only version of this that protects anybody.',
           edit: { set: { 'labour.nil': 'school-paid' },
             effects: { labour: 2.6, cost: 2.4, exposure: 2, autonomy: -1.4 },
@@ -2736,8 +2736,8 @@
             effects: { labour: -2.6, tradition: 2.4, exposure: -2, access: 0.8 },
             aimed: { Players: { labour: -3 }, Fans: { tradition: 2.4 },
               Presidents: { exposure: -1.8 } } } },
-        { id: 'clock', label: 'A five year clock from enrolment',
-          body: 'Not an age, a clock. It starts when you first enrol and it does not stop for '
+        { id: 'clock', label: 'A five year clock from enrollment',
+          body: 'Not an age, a clock. It starts when you first enroll and it does not stop for '
             + 'anything, including a year in a professional camp. Same effect, defensible '
             + 'shape.',
           edit: { set: { 'labour.eligibility': 5, 'labour.reentry': 'window' },
@@ -2800,7 +2800,7 @@
       },
       eyebrow: 'Eligibility',
       title: 'He was on a practice squad in September',
-      brief: (c) => 'Three weeks, one paycheque, one release, and now it is October and '
+      brief: (c) => 'Three weeks, one paycheck, one release, and now it is October and '
         + ((c && c.school) || 'a member school') + ' would like to add him for the second half '
         + 'of the season. He has not played a college snap this year. There is nothing in the '
         + 'rules that says he cannot and nothing in the rules that contemplated him, and if '
@@ -2826,7 +2826,7 @@
           edit: { set: { 'labour.reentry': 'window' },
             effects: { tradition: 2.4, labour: -1.4, inventory: -1, access: 1 },
             aimed: { Fans: { tradition: 2.6 }, Players: { labour: -1.6 } } } },
-        { id: 'shut', label: 'He took the cheque',
+        { id: 'shut', label: 'He took the check',
           body: 'A man who has been paid to play football professionally is a professional '
             + 'football player. The distinction is the last one this sport has and it is worth '
             + 'more than he is.',
@@ -3137,11 +3137,11 @@
       title: (c) => (c ? c.a + ' and ' + c.b + ', somewhere neutral'
         : 'The opening weekend needs a venue'),
       brief: (c) => (c
-        ? 'Two programmes who would never schedule each other have agreed to, on the first '
-          + 'Saturday, at a neutral site, for a cheque. Three cities want it. It is the only '
+        ? 'Two programs who would never schedule each other have agreed to, on the first '
+          + 'Saturday, at a neutral site, for a check. Three cities want it. It is the only '
           + 'game on that night and it will set the tone of the entire season, which is a lot '
           + 'to hang on a decision about a car park.'
-        : 'Two programmes have agreed to open the season at a neutral site and three cities '
+        : 'Two programs have agreed to open the season at a neutral site and three cities '
           + 'want it.'),
       voices: [
         { id: 'Networks', say: 'The first Saturday with one game on it is the best inventory of the year.' },
@@ -3187,7 +3187,7 @@
           + 'in total in 1998.'
         : 'Three companies want their name in front of the words College Football Playoff.'),
       voices: [
-        { id: 'Presidents', say: 'The largest cheque available to us, and not from television.' },
+        { id: 'Presidents', say: 'The largest check available to us, and not from television.' },
         { id: 'Fans', say: 'It has a name. It is called the playoff.' },
         { id: 'Networks', say: 'We say their name eleven times a broadcast. Choose somebody sayable.' },
       ],
@@ -3363,7 +3363,7 @@
       title: (c) => (c ? VEN.label(c.cur) + ' cannot deliver' : 'The host city cannot deliver'),
       brief: (c) => (c
         ? 'The hotel block is forty per cent of what was in the bid, the transit project that '
-          + 'was going to be finished is not going to be finished, and the local organising '
+          + 'was going to be finished is not going to be finished, and the local organizing '
           + 'committee has lost its executive director and its chief financial officer in the '
           + 'same fortnight. ' + (c.cur ? c.cur.name : 'The stadium') + ' is fine. Everything '
           + 'around it is not, and the game is in four months.'
@@ -3407,7 +3407,7 @@
        THEY ARE WRITTEN AS ARRIVALS, NOT AS REMINDERS. A payoff that opens by telling the
        player what they chose is a receipt with a decision stapled to it. These open with the
        thing that is happening now, and the cause is visible in it the way a cause is visible
-       in life: you recognise your own handwriting.
+       in life: you recognize your own handwriting.
 
        AND SEVERAL OF THEM PLANT THE NEXT ONE. That is the point of the mechanic rather than
        a flourish: a term with an arc in it is a term a player can tell somebody about, and
@@ -3441,7 +3441,7 @@
               'Big Ten': { autonomy: 1.4 } } },
           plant: { id: 'the-appeal', wait: [12, 20], note: 'An appeal nobody in the building wanted to file' } },
         { id: 'pay', label: 'Pay it and move on',
-          body: 'Write the cheque out of the pool, take the reasoning on the chin, and spend '
+          body: 'Write the check out of the pool, take the reasoning on the chin, and spend '
             + 'the next decade drafting around one paragraph.',
           edit: { set: { 'pressure.legal': 14 },
             effects: { cost: 3, money: -2.4, exposure: 1.8, labour: 1.2 },
@@ -3603,7 +3603,7 @@
             aimed: { Players: { labour: -1 }, Fans: { tradition: 1.6 },
               Presidents: { exposure: 1.4 } } } },
         { id: 'education', label: 'Treat it as what it is',
-          body: 'No ban. A programme, in every locker room, run by somebody who has done this '
+          body: 'No ban. A program, in every locker room, run by somebody who has done this '
             + 'before. It will be called weak by people who have never met a nineteen year '
             + 'old with a phone.',
           edit: { effects: { labour: 2.4, cost: 1.6, tradition: -1.6, exposure: 1.2 },
@@ -3660,7 +3660,7 @@
       eyebrow: 'The map',
       title: 'There is a league with six schools in it',
       brief: 'What is left of it cannot fill a schedule, cannot sell a television package and '
-        + 'cannot crown a champion the format will recognise. Its commissioner has asked for '
+        + 'cannot crown a champion the format will recognize. Its commissioner has asked for '
         + 'a meeting and has been honest about what the meeting is.',
       voices: [
         { id: 'Group of Five', say: 'Six schools who were a power conference two years ago.' },
@@ -3840,7 +3840,7 @@
               'Group of Five': { money: -1.6 } } } },
         { id: 'accept', label: 'The building is not the audience',
           body: 'Nine million people watched. Twelve thousand did not turn up. Say the first '
-            + 'number out loud and stop apologising for the second.',
+            + 'number out loud and stop apologizing for the second.',
           edit: { effects: { money: 1.6, tradition: -3, exposure: -1.4, inventory: 1.2 },
             aimed: { Fans: { tradition: -3.4 }, Networks: { inventory: 1 },
               Presidents: { exposure: -1.4 } } } },
@@ -4112,7 +4112,7 @@
 
      So an argument the sport had recently is unlikely rather than impossible, and it is
      scaled rather than banned: if everything eligible is stale the weights are all scaled
-     together and the pick still happens, which is the behaviour a hard block would break.
+     together and the pick still happens, which is the behavior a hard block would break.
 
      A season is nine beats. Inside one, an item is worth a fifth of itself; inside two, half.
      After that the sport is entitled to have the argument again, because in life it does. */
@@ -4129,7 +4129,7 @@
      different futures, and an item-level plant could not tell them apart.
 
      Declared as an object, a list of them, or a function of the world when a thread needs to
-     carry who it was about. Everything is normalised to a list here so the caller has one
+     carry who it was about. Everything is normalized to a list here so the caller has one
      shape to deal with and an item can grow from one future to three without the page
      changing.
 

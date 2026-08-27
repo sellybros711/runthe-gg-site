@@ -16,7 +16,7 @@
  * A WEIGHT IS A CHARACTER. The SEC's is not "likes money" in the abstract, it is: money
  * matters three times what tradition does, being told what to do costs more than either,
  * and paying players is a cost before it is anything else. Read down a column and it should
- * be recognisably that bloc arguing at a real meeting.
+ * be recognizably that bloc arguing at a real meeting.
  *
  * MEMORY, WHICH IS THE PART THAT MAKES IT A ROOM RATHER THAN A CALCULATOR. A bloc that has
  * been on the losing end of the last three rulings reacts harder to the fourth, in both
@@ -558,7 +558,7 @@
           good: ['Something we can actually pay for. Write more of those.',
             'A rule that does not price us out. That is new.'],
           bad: ['That rule ends non-revenue sports at schools you have never visited.',
-            'You have written a cheque with our athletic departments.'],
+            'You have written a check with our athletic departments.'],
         },
         tradition: {
           good: ['Somebody remembered that we have rivalries too.',
@@ -585,7 +585,7 @@
           'We are not paying premium money for a Saturday you have hollowed out.'],
         ['We are not bidding on that.',
           'Take it to somebody else and see what they say. We will wait.',
-          'You can have the sport you want or the cheque. Not both.'],
+          'You can have the sport you want or the check. Not both.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -617,7 +617,7 @@
           good: ['More games that matter in more windows. That is the entire business.',
             'That is three additional nights we can put a number on.'],
           bad: ['You just deleted inventory we had already sold to advertisers.',
-            'Fewer meaningful games is a smaller cheque. It is not complicated.'],
+            'Fewer meaningful games is a smaller check. It is not complicated.'],
         },
         autonomy: {
           good: ['One conversation instead of eleven. Thank you.',
@@ -651,7 +651,7 @@
         ['We are being talked about, not to.',
           'Nine groups in that room and none of them puts on a helmet.',
           'You just made a decision about our bodies and our calendar without us.'],
-        ['We are organising.',
+        ['We are organizing.',
           'There are guys on this call who have already spoken to a labour lawyer.',
           'Every one of these decisions makes the case for us better.'],
         ['We will bargain, or we will sit.',
@@ -669,7 +669,7 @@
          heard about. A room that remembers out loud is the difference between a model
          and an argument. */
       streak: [
-        'Third one. We are not asking any more, we are organising.',
+        'Third one. We are not asking any more, we are organizing.',
         'Every ruling this year has been about us and none of them has been with us.',
         'There is a lawyer on this call now. There did not use to be.',
       ],
@@ -772,7 +772,7 @@
             'We can fund that without touching the academic side. Barely.'],
           bad: ['That comes out of a university budget, and universities are not football teams.',
             'You have just made every athletic department a line item somebody will attack.',
-            'Somewhere that closes a swimming programme. It always closes a swimming programme.'],
+            'Somewhere that closes a swimming program. It always closes a swimming program.'],
         },
         money: {
           good: ['Revenue we can point at when the faculty asks what this is for.',
@@ -801,7 +801,7 @@
           'Somebody in a boardroom heard the word tradition and reached for a calculator.'],
         ['You are ruining it.',
           'They moved that game to eleven at night on a channel nobody has.',
-          'My grandfather sat in that stadium. He would not recognise the schedule.'],
+          'My grandfather sat in that stadium. He would not recognize the schedule.'],
         ['We will find something else on.',
           'Enjoy the sport. We will be at a high school game on Friday.',
           'You finally did it. The tickets are for sale and nobody is buying.'],

@@ -7,28 +7,28 @@
  * fifty simulated seasons only six schools ever won a national title and two of them took
  * seventy-six per cent of them.
  *
- * Worse, WHICH two. Texas Tech's programme level across twenty-one seasons of real data is
+ * Worse, WHICH two. Texas Tech's program level across twenty-one seasons of real data is
  * 0.57 and its 2025 was 2.32. Indiana's is MINUS 0.03 against a 2025 of 2.13. The two teams
  * winning three quarters of everything are two of the largest one-year outliers in the
  * dataset, held at their outlier forever. A college football fan knows in their bones that
  * Indiana does not win four national titles, and no amount of writing elsewhere survives that.
  *
  * SO A TEAM REGRESSES TOWARD ITS OWN HISTORY, not toward the league. The data carries
- * twenty-one seasons for most schools, which is a real programme level and a real volatility
+ * twenty-one seasons for most schools, which is a real program level and a real volatility
  * per school: Ohio State sits at 1.72 and moves half a point either way, Vanderbilt at -0.10
  * and moves rather more. Regressing everybody to zero would make the sport flat and wrong in
  * the other direction, with Vanderbilt and Alabama meeting in the middle.
  *
  * WHAT MOVES A TEAM, IN ORDER OF HOW MUCH:
  *
- *   Regression. Last year's number decays toward the programme's own level. A fluke season
+ *   Regression. Last year's number decays toward the program's own level. A fluke season
  *   is mostly gone in three years and a genuine rise takes years to be believed.
  *
  *   A shock. Deterministic per school per year off the world's seed, scaled by that
- *   programme's own volatility, because a quarterback tearing a knee in August is a thing
+ *   program's own volatility, because a quarterback tearing a knee in August is a thing
  *   that happens to somebody every year and cannot be predicted by anybody.
  *
- *   The carousel. A programme far enough below its own level for long enough changes its
+ *   The carousel. A program far enough below its own level for long enough changes its
  *   coach, and the change is a step rather than a drift. Mostly it helps, because the reason
  *   you fire somebody is that the floor is lower than it should be. Sometimes it does not.
  *
@@ -49,7 +49,7 @@
      and almost never as good as its best year.
 
      FITTED AGAINST FOUR THINGS, not chosen. The spread of an invented season has to look
-     like the spread of a real one (real z is normalised per season, so that is sd 1.00 by
+     like the spread of a real one (real z is normalized per season, so that is sd 1.00 by
      construction). The titles have to land the way they land in life: a real five year window
      produces about four different champions, and 2019 to 2023 gave LSU, Alabama, Georgia,
      Georgia, Michigan. The bottom of the league has to keep existing. And a December has to
@@ -59,7 +59,7 @@
      fifty seasons, and the six were the wrong six. These give 4.20 and thirty-one, at an
      invented season's sd of 1.02, with the worst team at -2.58 against a real -2.28. The
      schools holding the most titles over a hundred and fifty invented seasons are Ohio State,
-     Alabama, LSU and Oregon, which is a list a fan would recognise.
+     Alabama, LSU and Oregon, which is a list a fan would recognize.
 
      REFIT WHEN THE DATA CHANGED SHAPE, which is the rule rather than a courtesy. The first
      set of these was solved against the draft game's file: seventy power schools, strength
@@ -68,11 +68,11 @@
      re-solved against that. FIRE_GAP moved the furthest and the reason is worth knowing: see
      the carousel below. */
   var PERSIST = 0.6;
-  /* AND HOW MUCH IS NEW, as a fraction of that programme's own volatility. Somebody has to
+  /* AND HOW MUCH IS NEW, as a fraction of that program's own volatility. Somebody has to
      come out of nowhere every year or the sport has no stories in it. */
   var SHOCK = 0.68;
 
-  /* THE CAROUSEL. A programme this far under its own level, for this many years running, is
+  /* THE CAROUSEL. A program this far under its own level, for this many years running, is
      making a change in December.
 
      ONE BAD YEAR IS ENOUGH IN THIS SPORT and the numbers say so: at two years running and a
@@ -84,7 +84,7 @@
      seventy power schools this gave 7.8 changes a year with a floor of two, which was right.
      The same 0.75 against the whole division gives 4.8 of 136 with a floor of ZERO: a third
      of a real carousel, and Decembers with nothing in them again. The gap is measured in
-     units of a programme's own volatility, and a schedule-adjusted rating is a tighter, truer
+     units of a program's own volatility, and a schedule-adjusted rating is a tighter, truer
      number than raw differential, so a school sits closer to its own level and far fewer fall
      a long way under it. At 0.30 it is 23.5 of 136 with a floor of six, which is a sixth of
      the jobs and a December that always has one. */
@@ -92,7 +92,7 @@
   var FIRE_YEARS = 1;
   /* WHAT A NEW COACH IS WORTH, WHICH IS ALMOST NOTHING ON AVERAGE. The first version had this
      at 0.42 on the theory that you fire somebody because the floor is too low, and the effect
-     was that the bottom of the league quietly stopped existing: every bad programme got a
+     was that the bottom of the league quietly stopped existing: every bad program got a
      reliable lift and the worst team in an invented season was a full point better than the
      worst team in a real one. Most hires do not work. The spread is the story, not the mean.
 
@@ -124,7 +124,7 @@
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
 
-  /* ---- what a programme is ----
+  /* ---- what a program is ----
      Its own mean and its own spread across every season the data has for it. Cached on the
      array it was built from, because league() calls this once per season per beat and the
      answer never changes. */
@@ -145,7 +145,7 @@
         ? Math.sqrt(zs.reduce(function (t, x) { return t + (x - m) * (x - m); }, 0) / zs.length)
         : 0.7;
       out[school] = {
-        /* A SCHOOL WITH ONE SEASON IN THE DATA HAS NO PROGRAMME LEVEL, and pretending its one
+        /* A SCHOOL WITH ONE SEASON IN THE DATA HAS NO PROGRAM LEVEL, and pretending its one
            year is its identity is how a team that had a fluke gets frozen at the fluke, which
            is the bug this file exists to fix. Pull those most of the way to the middle. */
         level: zs.length >= 5 ? m : m * 0.45,
@@ -157,7 +157,7 @@
     return out;
   }
 
-  /* ---- a programme's five years ----
+  /* ---- a program's five years ----
      Walked year by year rather than solved, because the carousel depends on how the previous
      years actually went and a closed form cannot see that.
 
@@ -173,12 +173,12 @@
       var prev = z[n - 1];
       var was = coach;
       /* REGRESSION TOWARD ITS OWN LEVEL, plus whatever the coach on the sideline is worth,
-         plus a shock the size of what this programme normally does. */
+         plus a shock the size of what this program normally does. */
       var next = level + (prev - level) * PERSIST
         + was
         + gauss(seed, school, n, 'z') * vol * SHOCK;
 
-      /* THE CAROUSEL, decided on how the season that just finished went. A programme under
+      /* THE CAROUSEL, decided on how the season that just finished went. A program under
          its own level by this much for two years running makes a change, and the change lands
          on the season after it. */
       if (prev < level - FIRE_GAP) under++; else under = 0;
@@ -188,14 +188,14 @@
         /* THE NEW MAN REPLACES THE OLD ONE, he is not added to him. `next` already carries
            `was`, so a hire swaps one contribution for the other. Adding the new delta on top
            of a number that already contained a coach paid every hire twice in its first
-           season, which is how a programme reached a strength the real data has never
+           season, which is how a program reached a strength the real data has never
            produced in twenty-one years. */
         next = next - was + coach;
         events.push({ year: n, school: school, kind: 'coach', delta: Math.round(delta * 100) / 100 });
         under = 0;
       } else {
-        /* A COACH'S EFFECT IS NOT FOREVER. Two good years and it is the programme's level
-           rather than the hire, which is how programme levels move in life. */
+        /* A COACH'S EFFECT IS NOT FOREVER. Two good years and it is the program's level
+           rather than the hire, which is how program levels move in life. */
         coach = was * 0.55;
       }
       z.push(Math.round(next * 1000) / 1000);

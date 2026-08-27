@@ -46,7 +46,7 @@
  * `stage` reaches about 88 and one chasing `gate` reaches about 30, so a single shared
  * divisor would tell every open-the-doors commissioner they had barely bothered.
  *
- * The centre is left at zero rather than at the median of played terms, and that is the
+ * The center is left at zero rather than at the median of played terms, and that is the
  * decision worth defending. A bot playing to keep its job lands at purse -25 and throne -15
  * every time: pleasing the room means taking from the players and giving power to the
  * conferences. Recentring would define that away as "normal" and hand the player a doctrine
@@ -95,7 +95,7 @@
     'gate+': { name: 'The Populist',
       line: 'You kept opening doors that had been shut for a long time.' },
     'gate-': { name: 'The Gatekeeper',
-      line: 'You kept the sport small at the top and did not apologise for it.' },
+      line: 'You kept the sport small at the top and did not apologize for it.' },
     'stage+': { name: 'The Showman',
       line: 'You treated college football as inventory and sold it well.' },
     'stage-': { name: 'The Keeper',

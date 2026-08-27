@@ -49,72 +49,72 @@
   },
   "cfb/commish/index.html": {
     "access.js": {
-      "v": "3",
+      "v": "4",
       "sha": "66210cbb22945863"
     },
     "ledger.js": {
-      "v": "7",
-      "sha": "99fa2b871c188dfa"
+      "v": "8",
+      "sha": "4f539d3dc458d2ba"
     },
     "blocs.js": {
-      "v": "5",
-      "sha": "1414bfd5d4901eff"
+      "v": "6",
+      "sha": "b805d196bc47508e"
     },
     "venues.js": {
-      "v": "2",
-      "sha": "01f19def147ec7b1"
+      "v": "3",
+      "sha": "8696abb590dcd4cd"
     },
     "docket.js": {
-      "v": "11",
-      "sha": "daca11f3b7eb5685"
+      "v": "12",
+      "sha": "cdb00f3b9bec6d8b"
     },
     "rivals.js": {
-      "v": "1",
+      "v": "2",
       "sha": "786d8fd6c8de497a"
     },
     "churn.js": {
-      "v": "1",
-      "sha": "a11270978be0d15f"
+      "v": "2",
+      "sha": "ddec70726d2ba43d"
     },
     "season.js": {
-      "v": "15",
-      "sha": "b2a8ee6fa9d2c4f4"
+      "v": "16",
+      "sha": "61ec3239197b9636"
     },
     "council.js": {
-      "v": "1",
-      "sha": "ee1026b7e8ae60ba"
+      "v": "2",
+      "sha": "2ce5a3c156d926ca"
     },
     "feed.js": {
-      "v": "2",
-      "sha": "1618c4cdb9817be5"
+      "v": "3",
+      "sha": "80f79fe7cb6c8282"
     },
     "calendar.js": {
-      "v": "2",
+      "v": "3",
       "sha": "36366f55e531fced"
     },
     "situation.js": {
-      "v": "5",
+      "v": "6",
       "sha": "b69c679a19d519c8"
     },
     "fallout.js": {
-      "v": "3",
-      "sha": "564f19bcb89ca95b"
+      "v": "4",
+      "sha": "8c36f51171778bc9"
     },
     "report.js": {
-      "v": "1",
-      "sha": "affdd4dd6e6efe23"
+      "v": "2",
+      "sha": "91cc3d7cec1ece60"
     },
     "metrics.js": {
-      "v": "1",
-      "sha": "b307a2d82485837c"
+      "v": "2",
+      "sha": "aa65739bc39a6d29"
     },
     "doctrine.js": {
-      "v": "1",
-      "sha": "c5a6d696949cec85"
+      "v": "2",
+      "sha": "829a7215d80dd5ea"
     },
     "splits.js": {
-      "v": "2",
-      "sha": "baad7aed0c6f08bd"
+      "v": "3",
+      "sha": "f50d1ebbe3d57d3a"
     }
   },
   "cfb/index.html": {

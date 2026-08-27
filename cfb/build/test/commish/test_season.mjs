@@ -41,8 +41,8 @@ console.log('\n=== a season happens at all ===');
   ok('a season plays', !!sim, sim ? sim.teams.length + ' teams' : 'nothing came back');
   /* TWELVE FOR EVERYBODY, AND THIRTEEN FOR WHOEVER PLAYED ON CHAMPIONSHIP WEEKEND, which is
      what a real season looks like. It used to be twelve flat, and the reason it is worth
-     asserting at all is the version in between: the schedule was coloured into weeks, the
-     colouring overflowed past the last week, and the overflow was quietly dropped. Teams
+     asserting at all is the version in between: the schedule was colored into weeks, the
+     coloring overflowed past the last week, and the overflow was quietly dropped. Teams
      finished 8-0 and 13-0 in the same league and nothing failed. */
   const inTitle = {};
   (sim.titles || []).forEach((t) => {
@@ -328,7 +328,7 @@ console.log('\n=== the pool is a promise the football has to pay for ===');
 console.log('\n=== the one way door bends the football ===');
 {
   /* THE CLAIM: whether a man who has been a professional can come back is not a posture, it
-     is a rule about who is good. An open door sends him to a programme that can pay him and
+     is a rule about who is good. An open door sends him to a program that can pay him and
      start him, so the league stretches away from its middle.
 
      ASSERTED ON THE SPREAD, NOT ON THE LEVEL. The first version of this drift moved the four
@@ -409,7 +409,7 @@ console.log('\n=== the rivalries are on the calendar ===');
       return (g.a.school === r.a && g.b.school === r.b) || (g.a.school === r.b && g.b.school === r.a);
     }));
   /* THE DATE IS THE POINT. November is shaped by these games being at the end of it, and a
-     Game colouring into week three would be the whole thing failing quietly. */
+     Game coloring into week three would be the whole thing failing quietly. */
   const onDate = played.filter((g) => g.week === g.want).length;
   ok('  and almost all of them on the date they want',
     onDate >= played.length - 2, onDate + ' of ' + played.length + ' on their own date');
@@ -480,7 +480,7 @@ console.log('\n=== the sport has a poll to argue about ===');
      ahead falling past it, and it happens in real polls every November. What must not happen
      is climbing while nobody above lost. Smoothing alone allowed about four of those a season
      and pollSeason now clamps them, which leaves roughly one per thirty seasons where a team
-     above slid on an unimpressive win rather than a defeat. That one is real poll behaviour,
+     above slid on an unimpressive win rather than a defeat. That one is real poll behavior,
      so this allows it rather than chasing it to zero and making the poll rigid. */
   let climbed = 0, unexplained = 0;
   for (let n = 1; n < sim.polls.length; n++) {
@@ -541,7 +541,7 @@ console.log('\n=== December is not just the bracket ===');
   ok('  nor the final, which is its own game',
     !(rounds[rounds.length - 1] || []).some((g) => g.bowlName));
   /* ONE BOWL CANNOT HOST TWO GAMES, which is the way this would break silently: the slate is
-     filled from the same catalogue the bracket just took six out of. */
+     filled from the same catalog the bracket just took six out of. */
   const usedNames = rounds.flatMap((r) => r.filter((g) => g.bowl).map((g) => g.bowl))
     .concat(sim.bowls.map((b) => b.bowl));
   ok('  and no bowl hosts two games', new Set(usedNames).size === usedNames.length,

@@ -12,7 +12,7 @@
  *
  *   IT ARRIVES        a term played to its end draws a name, four axes and the evidence
  *   IT IS SIGNED      a bar drawn from the left would make "against" and "no opinion" the
- *                     same picture; each one runs from the centre and picks a side
+ *                     same picture; each one runs from the center and picks a side
  *   IT SURVIVES       the backend is not applied to the live project, so the comparison has
  *                     to be absent rather than broken
  *   IT SENDS ONCE     a term is recorded when it ends, with the numbers the card shows
@@ -124,9 +124,9 @@ const up = await runTerm('up');
   ok('  four axes, each a named question', card.rows.length === 4,
     card.rows.map((r) => r.q).join(' | '));
   /* A BAR GROWING FROM THE LEFT WOULD MAKE -100 AND 0 THE SAME PICTURE. Every fill has to be
-     anchored to the centre, on one side or the other, or the card cannot say which way a
+     anchored to the center, on one side or the other, or the card cannot say which way a
      term went. */
-  ok('  every axis drawn from the centre out',
+  ok('  every axis drawn from the center out',
     card.rows.every((r) => /(^|;)\s*(left|right):50%/.test(r.style)),
     JSON.stringify(card.rows.map((r) => r.style.split(';')[0])));
   ok('  and the end it landed on is the one set in ink',

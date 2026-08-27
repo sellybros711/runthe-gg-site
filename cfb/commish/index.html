@@ -31,9 +31,36 @@
     --fd:'Anton',Impact,sans-serif;
     --fn:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     --fb:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    /* ── HOW BIG THE WHOLE MODE IS ────────────────────────────────────────────────
+       This is a phone-shaped column and it was drawn at phone size: fifteen pixel body
+       text, a six hundred pixel column, and a map, a calendar, nine reaction bars and a
+       chart all sized in hard pixels to fit beside each other. On a desktop that is a
+       narrow strip of small type in the middle of a very large screen.
+
+       SO THE WHOLE THING SCALES, rather than a media query re-specifying forty type sizes
+       and still missing the SVG. Everything on the page is already proportioned correctly
+       against everything else; the only thing wrong on a big screen is that all of it is
+       too small at once, and that is exactly the problem `zoom` solves.
+
+       IT IS ONE NUMBER AND EVERY VIEWPORT UNIT ON THE PAGE HAS TO KNOW ABOUT IT. Zoom
+       multiplies lengths inside the scaled subtree, and vh is a length: 100vh under a 1.35
+       zoom is a third taller than the window, which would put a scrollbar on an empty page
+       and let a bottom sheet run off the top of the screen. There are four viewport units
+       in this file and all four divide by --z. A fifth added later has to as well.
+
+       Media queries are NOT affected by zoom, so the breakpoints below are real screen
+       widths rather than scaled ones. */
+    --z:1;
   }
+  /* Deliberately not a phone breakpoint with a desktop override: --z stays 1 everywhere
+     below 860px, which is every phone and most tablets in portrait, so nothing about the
+     design that was tuned by eye on a phone moves at all. */
+  @media (min-width:860px){ :root{ --z:1.2 } }
+  @media (min-width:1280px){ :root{ --z:1.36 } }
+
   body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:15px;
-    line-height:1.5;min-height:100vh;padding-bottom:40px;
+    line-height:1.5;min-height:calc(100vh / var(--z));padding-bottom:40px;
+    zoom:var(--z);
     background-image:radial-gradient(900px 520px at 50% -10%,rgba(16,185,129,.07),transparent 70%)}
   .wrap{max-width:600px;margin:0 auto;padding:10px 14px 46px}
   a{color:var(--green)}
@@ -95,8 +122,8 @@
 
   /* ---- the office: three meters and the room ----
      TWO CHANNELS, KEPT APART. Everything on these screens is either an IDENTITY (which of
-     the nine is this) or a JUDGEMENT (are they happy, did that help). Identity gets a fixed
-     mark and hue on a small chip. Judgement gets the green-amber-red ramp, on bars and
+     the nine is this) or a JUDGMENT (are they happy, did that help). Identity gets a fixed
+     mark and hue on a small chip. Judgment gets the green-amber-red ramp, on bars and
      numbers only. The first version had neither: nine identical rows with nine identical
      orange bars, so the room read as a list rather than as a room. */
   .meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -107,7 +134,7 @@
   /* DIRECT CHILDREN, NOT DESCENDANTS, and this is not tidying. A meter is three boxes and
      the bare selectors claimed every span and every `i` anywhere inside one, so the moment
      the number was given a node of its own to be counted up in it inherited the four-pixel
-     grey bar and the number vanished from the reaction screen entirely. The same rule was
+     gray bar and the number vanished from the reaction screen entirely. The same rule was
      already putting the change arrow on its own line, under the number it belongs beside. */
   .meter>b{display:block;font-family:var(--fd);font-size:26px;line-height:1}
   .meter>b .n{font-style:normal}
@@ -194,7 +221,7 @@
      THE SCREEN WHERE THE MODE IS ACTUALLY PLAYED, and it was a column of prose. A setup
      paragraph, three quotes each with its own header line, and three options each with a
      paragraph of its own: a hundred and ten words to read before the first decision, all
-     of it the same size, in the same colour, with nothing marking where one section ended
+     of it the same size, in the same color, with nothing marking where one section ended
      and the next began.
 
      Three changes, and none of them deletes anything a player could want:
@@ -206,7 +233,7 @@
      Plus the thing that was missing entirely: the four numbers this ruling would leave
      behind, live, under the choice. */
   /* `display:flex` beats the browser's own `[hidden]{display:none}`, so the attribute has to
-     be honoured here or hiding a heading does nothing at all. */
+     be honored here or hiding a heading does nothing at all. */
   .dsec{display:flex;align-items:baseline;gap:8px;margin:16px 0 8px}
   .dsec[hidden]{display:none}
   .dsec b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.16em;
@@ -224,12 +251,12 @@
     text-transform:uppercase;color:var(--green)}
 
   .voices{display:grid;gap:7px;margin:0 0 4px}
-  /* THE QUOTE IS TIED TO THE ROOM BY COLOUR, so an argument on the desk and the number it
+  /* THE QUOTE IS TIED TO THE ROOM BY COLOR, so an argument on the desk and the number it
      moves on the next screen are visibly the same actor.
 
      ONE LINE PER SPEAKER. The name used to sit on a header row of its own above the quote,
      which cost three lines a voice and nine for the room, to say something the chip beside
-     it already says in a colour and a mark. The name is still there, inline, leading the
+     it already says in a color and a mark. The name is still there, inline, leading the
      sentence the way an attribution does. */
   .voice{display:flex;align-items:flex-start;gap:8px;
     border-left:3px solid var(--bc,var(--line-2));padding:1px 0 1px 9px}
@@ -325,7 +352,7 @@
      would present it as though the sport had never had the argument before. A commissioner
      who reversed themselves twice was never once told so.
 
-     Small and grey on purpose. It is the record, not the argument, and it sits under the
+     Small and gray on purpose. It is the record, not the argument, and it sits under the
      setup where a note from your own office would. */
   .prec{display:grid;gap:5px;margin-top:10px;padding:9px 11px;border-radius:10px;
     background:rgba(255,255,255,.035);border-left:2px solid var(--line-2)}
@@ -334,7 +361,7 @@
   .prec span{font-size:12px;color:var(--dim);line-height:1.4}
   .prec span i{font-style:normal;font-family:var(--fn);font-weight:700;color:var(--ink)}
   /* A REVERSAL IS THE ONE THAT MATTERS. Doing a thing twice is consistency; undoing your own
-     ruling is the thing the room will bring up, so it is the line that gets a colour. */
+     ruling is the thing the room will bring up, so it is the line that gets a color. */
   .prec.flip{background:rgba(245,158,11,.08);border-left-color:var(--gold)}
   .prec.flip b{color:var(--gold)}
 
@@ -400,7 +427,7 @@
      growing from the left would make -100 and 0 look like the same thing (nothing) when
      they are opposite answers to the question.
 
-     The centre line is where the argument is even, and it is drawn once across all four so
+     The center line is where the argument is even, and it is drawn once across all four so
      the eye can read the column rather than four separate bars. */
   .doc{border-left:3px solid var(--gold)}
   .docname{font-family:var(--fd);font-size:30px;line-height:1;letter-spacing:.01em;
@@ -412,7 +439,7 @@
   .docbar{position:relative;height:22px;border-radius:6px;background:var(--panel);
     border:1px solid var(--line);overflow:hidden}
   .docmid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line-2)}
-  /* The fill runs FROM the centre, so its length is how far from even and its side is which
+  /* The fill runs FROM the center, so its length is how far from even and its side is which
      way. Both halves of the answer, in one mark. */
   .docfill{position:absolute;top:3px;bottom:3px;border-radius:4px;background:var(--gold);
     opacity:.85}
@@ -435,7 +462,7 @@
   .docsplit span{font-size:12.5px;color:var(--dim)}
   .docsplit em{font-style:normal;color:var(--ink);font-weight:700}
 
-  /* ── THE DATA CENTRE ──────────────────────────────────────────────────────────────
+  /* ── THE DATA CENTER ──────────────────────────────────────────────────────────────
      Chart chrome recedes and the data does not. Every rule here has a reason written next
      to it in the painter; what is here is the paint. */
   .dcbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -518,7 +545,7 @@
     background:var(--panel);border:1px solid var(--line);color:var(--dim);
     font-family:var(--fn);font-size:12px;font-weight:700}
   .dcchip.on{border-color:var(--sc,var(--line-2));color:var(--ink);background:var(--panel-2)}
-  /* The selected chip carries a dot in its own series colour, so the chip and the line it
+  /* The selected chip carries a dot in its own series color, so the chip and the line it
      draws are tied together by more than position. */
   .dcchip.on::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
     background:var(--sc,var(--dim));margin-right:6px;vertical-align:middle}
@@ -553,14 +580,14 @@
      small. A number this size next to three bars is a claim; the same number inside a
      paragraph is a footnote, and a footnote does not get screenshotted.
 
-     No coloured rule down the side, unlike .tail: this is not a dispatch, it is a fact
+     No colored rule down the side, unlike .tail: this is not a dispatch, it is a fact
      about the people who play the game, and it should not read as another thing that
      happened in the sport. */
   .split{border-left:3px solid var(--line-2)}
   .split .pc{display:flex;align-items:baseline;gap:9px;margin-bottom:2px}
   .split .pc b{font-family:var(--fd);font-size:34px;line-height:.95;letter-spacing:.01em;
     color:var(--ink)}
-  /* THE RARE CASE IS THE SHAREABLE ONE, so it is the one that gets a colour. Gold reads as
+  /* THE RARE CASE IS THE SHAREABLE ONE, so it is the one that gets a color. Gold reads as
      "you did something unusual" on every other screen in this mode. */
   .split.rare .pc b{color:var(--gold)}
   .split .pc span{font-size:13.5px;line-height:1.35;color:var(--dim)}
@@ -665,7 +692,7 @@
   .sheet{position:fixed;inset:0;z-index:60;display:none}
   .sheet.on{display:block}
   .sheet .scrim{position:absolute;inset:0;background:rgba(3,6,14,.72)}
-  .sheet .pane{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;
+  .sheet .pane{position:absolute;left:0;right:0;bottom:0;max-height:calc(88vh / var(--z));overflow:auto;
     background:var(--bg);border-top:1px solid var(--line-2);
     border-radius:18px 18px 0 0;padding:16px 14px calc(20px + env(safe-area-inset-bottom));
     max-width:520px;margin:0 auto;box-shadow:var(--shadow)}
@@ -722,7 +749,7 @@
      standing on, or nothing yet. It is a calendar in the sense that matters, which is that
      you can see the shape of the year ahead and the record of the years behind at once.
 
-     THE THREE PHASES ARE THE COLUMNS' OWN COLOUR, because the football calendar really is
+     THE THREE PHASES ARE THE COLUMNS' OWN COLOR, because the football calendar really is
      three different jobs. Four beats of winter, three of the season, two of the postseason. */
   .cal{background:var(--panel);border:1px solid var(--line);border-radius:12px;
     padding:11px 12px 12px;margin-bottom:12px}
@@ -852,7 +879,7 @@
      exact viewBox by cfb/build/fetch-usmap.mjs, which is why a campus lands inside its own
      state without the page doing any geography.
 
-     `pathLength="1"` is the trick that makes the draw-in possible: it renormalises every
+     `pathLength="1"` is the trick that makes the draw-in possible: it renormalizes every
      path to a length of one whatever its real perimeter, so one dash rule animates
      forty-nine shapes of wildly different sizes at the same rate. */
   .st{fill:var(--tint,rgba(255,255,255,.028));stroke:rgba(255,255,255,.17);stroke-width:.5;
@@ -862,7 +889,7 @@
     animation-delay:calc(var(--i) * 9ms)}
   @keyframes draw{from{stroke-dashoffset:1;fill-opacity:0}to{stroke-dashoffset:0;fill-opacity:1}}
   /* THE ONE STATE THAT JUST CHANGED HANDS. Realignment on a list is a line of text; on a
-     map it is territory, and territory changing colour is the thing worth looking at. */
+     map it is territory, and territory changing color is the thing worth looking at. */
   .st.flip{animation:flip 2.2s var(--ez) 2}
   @keyframes flip{0%,100%{stroke:rgba(255,255,255,.17);stroke-width:.5}
     50%{stroke:#fff;stroke-width:1.4}}
@@ -884,7 +911,7 @@
   /* ONE CONFERENCE AT A TIME. The legend is not a key, it is a filter: tap a name and
      everybody else steps back so the shape of that conference alone is visible. Realignment
      arguments are always about one conference's footprint, and eighty-three dots in six
-     colours cannot answer "where is the Big Ten now" on their own. */
+     colors cannot answer "where is the Big Ten now" on their own. */
   .map.focus .st{opacity:.28} .map.focus .st.fc{opacity:1}
   .map.focus .dot{opacity:.13} .map.focus .dot.fc{opacity:1}
   .st,.dot{transition:fill .7s var(--ez),opacity .35s var(--ez)}
@@ -932,7 +959,7 @@
 
      Skippable on a tap, because the second time somebody sees a September they will want it
      over with, and skipped entirely under prefers-reduced-motion. */
-  .simwrap{min-height:70vh;display:flex;flex-direction:column;justify-content:center}
+  .simwrap{min-height:calc(70vh / var(--z));display:flex;flex-direction:column;justify-content:center}
   .simhead{text-align:center;margin-bottom:18px}
   .simhead b{display:block;font-family:var(--fn);font-size:10px;font-weight:700;
     letter-spacing:.18em;text-transform:uppercase;color:var(--green)}
@@ -974,7 +1001,7 @@
   /* A GAME DAY IS MARKED BEFORE IT ARRIVES, so the eye has somewhere to go: the whole point
      of watching a month go by is seeing the next one coming. */
   .cd.game:not(.past):not(.now) svg{stroke:var(--gold);opacity:.5}
-  /* OUTSIDE THE WINDOW, GREY, whatever it was. A month carries the Saturdays either side of
+  /* OUTSIDE THE WINDOW, GRAY, whatever it was. A month carries the Saturdays either side of
      the beat it is showing, and in gold those read as games still to come when they were
      played a fortnight ago. */
   .cd.out svg{stroke:currentColor;opacity:.4}
@@ -1008,7 +1035,7 @@
     .tick p.in{animation:tickin .34s var(--ez)}
     @keyframes tickin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
   }
-  /* A REAL AFFORDANCE NOW THAT A WINDOW TAKES REAL TIME. A grey caption was fine when the
+  /* A REAL AFFORDANCE NOW THAT A WINDOW TAKES REAL TIME. A gray caption was fine when the
      whole thing was over in three seconds. */
   .simskip{margin:20px auto 0;display:block;width:max-content;padding:9px 18px;
     border:1px solid var(--line-2);border-radius:999px;background:transparent;
@@ -1088,7 +1115,7 @@
 
   /* ---- the feed ----
      WHAT THE INTERNET SAID, and the brief for it was "well designed and not a bunch of
-     words", which rules out the obvious version: three grey paragraphs under a heading.
+     words", which rules out the obvious version: three gray paragraphs under a heading.
 
      A post is a CARD WITH A FACE ON IT. Monogram, hue, handle, timestamp, body, three
      counts. That is the same identity channel the room rows use, pointed at a different set
@@ -1193,8 +1220,8 @@
   .rc{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;
     padding:9px 11px;border-radius:10px;background:var(--panel);
     border-left:3px solid var(--gcol,var(--line))}
-  /* THE LETTER IS THE FIRST THING READ, so it is set large and the colour only agrees with it.
-     An A and an F are different glyphs before they are different colours, which is the whole
+  /* THE LETTER IS THE FIRST THING READ, so it is set large and the color only agrees with it.
+     An A and an F are different glyphs before they are different colors, which is the whole
      reason a report card uses letters. */
   .rc .g{font-family:var(--fd);font-size:25px;line-height:1;min-width:24px;text-align:center;
     color:var(--gcol,var(--dim))}
@@ -1208,7 +1235,7 @@
   .rc.gD{--gcol:#f0a868}
   .rc.gF{--gcol:var(--bad,#f87171)}
 
-  /* THE POLL. Rank, name, record, arrow, on one line each, with the club's colour holding the
+  /* THE POLL. Rank, name, record, arrow, on one line each, with the club's color holding the
      left edge so a long list is scannable by team rather than only by number. */
   .poll{display:grid;gap:3px}
   .pr{display:grid;grid-template-columns:22px 1fr auto 34px;gap:8px;align-items:baseline;
@@ -1219,8 +1246,8 @@
   .pr b{font-family:var(--fd);font-size:14.5px;font-weight:400;color:var(--ink);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pr u{text-decoration:none;font-family:var(--fn);font-size:10px;color:var(--dim-2)}
-  /* THE ARROW IS THE POINT OF A POLL, so it is never carried by colour alone: the glyph says
-     up or down on its own and the colour only agrees with it. */
+  /* THE ARROW IS THE POINT OF A POLL, so it is never carried by color alone: the glyph says
+     up or down on its own and the color only agrees with it. */
   .pr em{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:700;
     text-align:right;letter-spacing:.02em}
   .pr em.up{color:var(--good,#4ade80)}
@@ -1254,12 +1281,12 @@
   .bt i{font-style:normal;font-family:var(--fn);font-size:9.5px;color:var(--dim-2)}
   .bt em{font-style:normal;font-family:var(--fd);font-size:15px;color:var(--dim);
     min-width:26px;text-align:right}
-  /* The winner, and it has to be readable without the colour: heavier, brighter, both sides. */
+  /* The winner, and it has to be readable without the color: heavier, brighter, both sides. */
   .bt.w b,.bt.w em{color:var(--ink);font-weight:700}
 
-  /* WHO MOVED AND WHO GOT FIRED. A wrapping row of club-coloured chips rather than a table,
+  /* WHO MOVED AND WHO GOT FIRED. A wrapping row of club-colored chips rather than a table,
      because none of it is a ranking: it is a handful of names a fan scans and reacts to, and
-     six of them beside each other read faster than six rows do. The colour is the club's own
+     six of them beside each other read faster than six rows do. The color is the club's own
      and carries the whole identity, so the chip itself stays plain. */
   .moved{margin-top:4px}
   .mvrow{display:flex;flex-wrap:wrap;gap:6px}
@@ -1268,7 +1295,7 @@
   .mv b{font-family:var(--fd);font-size:14px;line-height:1.05}
   .mv em{font-style:normal;font-family:var(--fn);font-size:9.5px;font-weight:700;
     letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2)}
-  /* An arrow rather than a colour alone, because up and down is the whole content of these
+  /* An arrow rather than a color alone, because up and down is the whole content of these
      two rows and a red or green border is not readable to everybody. */
   .mv.up b::after{content:' \2191';color:var(--good,#4ade80);font-size:12px}
   .mv.down b::after{content:' \2193';color:var(--bad,#f87171);font-size:12px}
@@ -1424,7 +1451,7 @@
          way into where it has BEEN. Above the dock rather than in it, because the dock is
          the one thing that moves the term forward and a second button in it would compete
          with that. -->
-    <button class="btn ghost" id="b-data">Open the data centre</button>
+    <button class="btn ghost" id="b-data">Open the data center</button>
     <div class="dock"><button class="btn" id="b-desk">See what is on the desk</button></div>
   </div>
 
@@ -1471,10 +1498,10 @@
     <div class="dock"><button class="btn" id="b-rule">Rule</button></div>
   </div>
 
-  <!-- THE DATA CENTRE. Where every number in the mode has been, rather than where it is. -->
+  <!-- THE DATA CENTER. Where every number in the mode has been, rather than where it is. -->
   <div class="screen" id="s-data" data-in="rise">
     <div class="eyebrow gold">The tape</div>
-    <h2 style="margin-bottom:12px">Data centre</h2>
+    <h2 style="margin-bottom:12px">Data center</h2>
     <!-- ONE FILTER ROW, ABOVE EVERYTHING IT SCOPES, and never inside a chart card. Both
          controls re-render the chart, the room and the table together, so the numbers on
          this screen always agree with each other. -->
@@ -1601,15 +1628,15 @@
 </div>
 
 <script src="/cfb/engine.js?v=34"></script>
-<script src="access.js?v=3"></script>
-<script src="ledger.js?v=7"></script>
-<script src="blocs.js?v=5"></script>
+<script src="access.js?v=4"></script>
+<script src="ledger.js?v=8"></script>
+<script src="blocs.js?v=6"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
-<script src="venues.js?v=2"></script>
-<script src="docket.js?v=11"></script>
+<script src="venues.js?v=3"></script>
+<script src="docket.js?v=12"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -1618,26 +1645,26 @@
 <!-- BEFORE season.js, which reads window.PS_CFB_RIVALS at load time and falls back to null.
      Loaded after it, the schedule is filled by conference and then bought at random, Ohio
      State plays Michigan about one year in five, and nothing throws. -->
-<script src="rivals.js?v=1"></script>
-<script src="churn.js?v=1"></script>
-<script src="season.js?v=15"></script>
-<script src="council.js?v=1"></script>
-<script src="feed.js?v=2"></script>
-<script src="calendar.js?v=2"></script>
-<script src="situation.js?v=5"></script>
-<script src="fallout.js?v=3"></script>
+<script src="rivals.js?v=2"></script>
+<script src="churn.js?v=2"></script>
+<script src="season.js?v=16"></script>
+<script src="council.js?v=2"></script>
+<script src="feed.js?v=3"></script>
+<script src="calendar.js?v=3"></script>
+<script src="situation.js?v=6"></script>
+<script src="fallout.js?v=4"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
-<script src="report.js?v=1"></script>
+<script src="report.js?v=2"></script>
 <!-- Captures nothing off window at load time: it is handed the world by the page and the
      beat names by the caller, so its position here is free. -->
-<script src="metrics.js?v=1"></script>
+<script src="metrics.js?v=2"></script>
 <!-- Reads nothing off window at load time: it is handed a world and returns a profile, so
      its position here is free. -->
-<script src="doctrine.js?v=1"></script>
+<script src="doctrine.js?v=2"></script>
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
-<script src="splits.js?v=2"></script>
+<script src="splits.js?v=3"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -1658,7 +1685,7 @@ const L=window.PS_CFB_LEDGER, B=window.PS_CFB_BLOCS, D=window.PS_CFB_DOCKET, E=w
    copies drift, and both ways it drifts are bad: a card nobody can act on, or a mode
    nobody can find. One file, both pages, one flag to flip when it goes live. */
 /* IF THAT FILE IS NOT THERE, THE DOOR STAYS SHUT rather than the page dying. An ad blocker
-   or a bad deploy can take any script on this site, which is why sign-in and school colours
+   or a bad deploy can take any script on this site, which is why sign-in and school colors
    both degrade instead of throwing. Reading .allowed off undefined would take the whole
    mode down with a blank screen; falling back to a closed door is wrong in the harmless
    direction, and the door already says what to do about it. */
@@ -1858,7 +1885,7 @@ const show=(id)=>{
 
 /* ── motion ───────────────────────────────────────────────────────────────────────
    THE MOVEMENT IS IN THE STYLESHEET AND THE TRIGGERS ARE HERE. Three helpers, used by
-   every painter, so a new screen gets the same behaviour as the old ones by calling them
+   every painter, so a new screen gets the same behavior as the old ones by calling them
    rather than by remembering to copy an animation.
 
    ASKED ONCE AND OBEYED EVERYWHERE. If the reader has told their operating system to stop
@@ -1908,7 +1935,7 @@ function countTo(el,to,from,ms){
 }
 
 /* IDENTITY, AS A MARK AND A HUE, and it is deliberately NOT the green-amber-red ramp that
-   every judgement on these screens uses. The nine actors turn up on four different screens
+   every judgment on these screens uses. The nine actors turn up on four different screens
    and the only way to read the mode quickly is to know them on sight, which nine identical
    rows of text could never teach. Conferences carry their own letters; the four who are not
    conferences carry a glyph, which also draws the real division in the room. */
@@ -1939,7 +1966,7 @@ const blocChip=(id)=>{
   const u=BLOC_UI[id]||{};
   return '<span class="chip">'+(u.ic||esc(u.tag||id))+'</span>';
 };
-/* MOOD, WHICH IS THE OTHER CHANNEL. One function so a bloc at 40 is the same colour on the
+/* MOOD, WHICH IS THE OTHER CHANNEL. One function so a bloc at 40 is the same color on the
    office, the desk preview, the reaction and the year in review. */
 const moodCol=(v)=>v>=60?'var(--green)':v>=35?'var(--gold)':'var(--red)';
 const band=(v)=>v>=60?'good':v>=35?'mid':'bad';
@@ -1947,7 +1974,7 @@ const band=(v)=>v>=60?'good':v>=35?'mid':'bad';
 /* "THE SPORT" NAMED NOTHING. Three meters sat side by side reading Revenue, The sport, Your
    standing, and a player could tell you what two of them meant. The middle one is weighted on
    tradition and access against money and exposure: it is whether the thing on the field is
-   still recognisably college football and still open to somebody new. "The sport" could have
+   still recognizably college football and still open to somebody new. "The sport" could have
    been any of the three, including the one beside it. */
 const METERS=[['revenue','Revenue'],['health','The state of the game'],['standing','Your standing']];
 /* `lock` NAMES METERS THE SCREEN MAY NOT FORECAST, and it exists because of one leak that
@@ -2045,7 +2072,7 @@ function paintRoom(el,w,rows,blind){
        "21.874999999999996%" into the page. A tenth of a percent of a 54px track is nothing
        anybody can see and seventeen digits of it is nothing anybody should read. */
     const mag=moved&&top?Math.round(Math.max(3,(Math.abs(r.delta)/top)*50)*10)/10:0;
-    /* THE MOVE BAR GROWS OUT OF THE CENTRE LINE, which is the shape of what it means: the
+    /* THE MOVE BAR GROWS OUT OF THE CENTER LINE, which is the shape of what it means: the
        room did not arrive at an opinion, it moved to one, away from where it was. */
     const mv=moved
       ? '<span class="mv"><i></i><em style="'+(r.delta>0?'left:50%':'right:50%')+';width:0;'
@@ -2144,7 +2171,7 @@ function paintSport(el,w,before){
    the desk, which is the mode, optional.
 
    But the impulse behind the ask is right and was going unanswered: the tiles are the only
-   place the sport is summarised, and they said a number and nothing else. Not what it means,
+   place the sport is summarized, and they said a number and nothing else. Not what it means,
    not what you did to it, and above all not HOW you would change it, which is what somebody
    is actually reaching for when they tap a number they cannot drag.
 
@@ -2359,12 +2386,12 @@ function paintCalendar(el,w){
 
 const FUSES=[['legal','Legal exposure','A filing'],
   ['congress','Washington','A hearing'],
-  ['union','The players organising','A vote']];
+  ['union','The players organizing','A vote']];
 /* SHOWN ONCE IT IS A REAL RISK, not from zero, because three empty tracks are noise. */
 const FUSE_FLOOR=14;
 const FUSE_TITLE={legal:'A lawsuit has been filed',
   congress:'Washington wants you to testify',
-  union:'The players have voted to organise'};
+  union:'The players have voted to organize'};
 function fuseState(v){
   const lim=L.FUSE_LIMIT||46;
   if(v>=lim) return {cls:'lit',word:'gone off'};
@@ -2373,7 +2400,7 @@ function fuseState(v){
 }
 /* A LIT FUSE, drawn hot and boxed, because it is not a meter. It does not tick down and
    there is no good number to reach: it sits there until it fires. Reading like the three
-   meters above it was the mistake, and it was reading like them in grey. */
+   meters above it was the mistake, and it was reading like them in gray. */
 const FUSE_ICON=G('<path d="M14 4c0 2.5-2 3.5-2 6a3 3 0 0 0 5 2"/>'
   +'<path d="M12 21a6 6 0 0 0 6-6c0-2.5-1.5-4-2.5-5.5"/>'
   +'<path d="M12 21a6 6 0 0 1-6-6c0-3 3-4 4-7"/>');
@@ -2400,7 +2427,7 @@ function office(){
   /* ── THE TAPE GETS A POINT ──────────────────────────────────────────────────────
      HERE AND AFTER A RULING, and those two are the whole recorder. The office is the top of
      every beat, so a point here is the state you were handed; a point after a ruling is the
-     state you left. Between them the data centre has the shape of a term.
+     state you left. Between them the data center has the shape of a term.
 
      record() is idempotent per (year, beat, rulings), so it does not matter that this runs on
      every repaint, on a reload landing back on the same beat, or twice because a player
@@ -2539,7 +2566,7 @@ function situationOn(day){
  IT GOES ABOVE THE GRADE on purpose. A score at the top of a screen makes everything under
  it read as an explanation of the score, and the doctrine is the more interesting half.
 
- EACH AXIS IS DRAWN FROM THE CENTRE OUT, never as a bar growing from the left, because a
+ EACH AXIS IS DRAWN FROM THE CENTER OUT, never as a bar growing from the left, because a
  left-growing bar makes -100 and 0 look like the same thing (an empty bar) when they are
  opposite answers to the same question. Length is how far from even, side is which way.
 
@@ -2562,7 +2589,7 @@ let h='<div class="eyebrow gold">What you turned out to believe</div>'
   +'<div class="docaxes">'+DOC.SPECTRA.map((s)=>{
     const v=p.axes[s.id];
     /* A FLOOR OF TWO PERCENT ON THE FILL, so an axis at zero still shows something at the
-       centre line. A bar of literally nothing reads as a rendering fault rather than as
+       center line. A bar of literally nothing reads as a rendering fault rather than as
        "you were exactly even on this one". */
     const w=Math.max(Math.abs(v)/2,2);
     const side=v>=0?'left:50%':'right:50%';
@@ -2639,7 +2666,7 @@ P.finishTerm({
 }).catch(()=>{});
 }
 
-/* ── the data centre's controls ───────────────────────────────────────────────────
+/* ── the data center's controls ───────────────────────────────────────────────────
    ONE ROW OF FILTERS, and both of them re-render everything below them together, so the
    chart, the nine sparklines and the table can never be describing different slices. */
 $('b-data').onclick=()=>{ paintData(); show('s-data'); };
@@ -2676,7 +2703,7 @@ $('dc-room').onclick=(e)=>{
 };
 $('b-dctable').onclick=()=>{ dcState.table=!dcState.table; dcTable(); };
 /* aria-pressed AND the class, together, because the segmented control says which of two
-   things is on by colour alone otherwise, and that is the one thing a screen reader cannot
+   things is on by color alone otherwise, and that is the one thing a screen reader cannot
    see. */
 function dcSeg(id,attr,val){
   const key=attr.replace('data-','');
@@ -2753,8 +2780,8 @@ function desk(){
   paintSituation($('d-sit'),sit);
   paintBrief(D.text(item.brief,cast,item,sit));
   paintPrecedent($('d-prec'),world,item);
-  /* THE ARGUMENT, TIED TO THE ROOM BY COLOUR AND MARK. These were three grey paragraphs
-     behind three grey labels, so the quote and the number it moves two screens later were
+  /* THE ARGUMENT, TIED TO THE ROOM BY COLOR AND MARK. These were three gray paragraphs
+     behind three gray labels, so the quote and the number it moves two screens later were
      visibly unrelated. Same chip, same hue, same actor. */
   $('d-voices').innerHTML=(item.voices||[]).map((v,i)=>{
     const b=B.BY_ID[v.id];
@@ -2772,7 +2799,7 @@ function desk(){
       :(B.speaker?B.speaker(v.id,cast,item.id+'|'+i):null);
     /* NAME AND QUOTE IN ONE FLOW. The name leads the sentence the way an attribution does,
        rather than sitting on a header row of its own, which is a whole line per speaker to
-       repeat what the chip beside it already says in a colour and a mark. */
+       repeat what the chip beside it already says in a color and a mark. */
     return '<div class="voice" style="--bc:'+bcOf(v.id)+'">'
       +blocChip(v.id)
       +'<span class="vs"><b>'+esc(who||(b?b.name:v.id))+'</b>'+esc(v.say)+'</span></div>';
@@ -2805,10 +2832,10 @@ const AXIS_WORDS={
   labour:    ['Better for players','Worse for players'],
   exposure:  ['More legal risk','Less legal risk'],
 };
-/* A HUE PER FORCE, and NOT a green-for-good, red-for-bad ramp. Colouring these by whether
+/* A HUE PER FORCE, and NOT a green-for-good, red-for-bad ramp. Coloring these by whether
    they are good news would be the one lie this mode must not tell: there is no ruling that
    is simply good, which is the entire premise. Wider access is a gift to the Group of Five
-   and a theft from the SEC, and the screen has no business deciding which. So the colour
+   and a theft from the SEC, and the screen has no business deciding which. So the color
    says WHICH FORCE, the way a bloc chip says which actor, and the arrow says which way.
    Green and red stay reserved for the two places they are literally true: a bloc got
    happier or angrier, and the vote against you. */
@@ -2873,7 +2900,7 @@ function stopSim(){
 /* WHAT A DAY WAS, AS A SHAPE. The grid is read at a glance and a number cannot say whether
    the fourth of October was a game, a signing day or a subcommittee. Everything here is
    stroked rather than filled, from one weight, so the set holds together and so a square
-   can recolour its icon by inheriting a colour rather than by swapping markup. */
+   can recolor its icon by inheriting a color rather than by swapping markup. */
 const CDI={
   ball:'<g transform="rotate(-40 12 12)"><ellipse cx="12" cy="12" rx="9" ry="5.4"/>'
     +'<path d="M8.6 12h6.8M11 10.3v3.4M13 10.3v3.4"/></g>',
@@ -3208,7 +3235,7 @@ function paintTail(el,tail){
   reveal(el);
 }
 
-/* ── THE DATA CENTRE ──────────────────────────────────────────────────────────────
+/* ── THE DATA CENTER ──────────────────────────────────────────────────────────────
    A chart is the one thing on this site that can be confidently, silently wrong, so the
    rules it is built to are written down rather than felt:
 
@@ -3224,18 +3251,18 @@ function paintTail(el,tail){
    neither. Two pixel line, eight pixel markers, and a wash under the line at low alpha so
    the shape carries without the fill competing with it.
 
-   NUMBERS WEAR TEXT COLOURS. The value in the readout is ink, the label beside it is dim,
-   and the only coloured thing is the two pixel key next to them. A number set in the
-   series colour is data-weight ink doing a label's job, and it goes grey on the third
+   NUMBERS WEAR TEXT COLORS. The value in the readout is ink, the label beside it is dim,
+   and the only colored thing is the two pixel key next to them. A number set in the
+   series color is data-weight ink doing a label's job, and it goes gray on the third
    series that needs it.
 
    AND NOT A NUMBER ON EVERY POINT. Ninety points with ninety labels is unreadable and
-   goes unread. The high and the low of the window are labelled, the crosshair carries the
+   goes unread. The high and the low of the window are labeled, the crosshair carries the
    rest, and the table under it carries all of them for anybody who cannot hover.
 
-   THE COLOURS WERE VALIDATED, NOT CHOSEN. See metrics.js: the three that appear together
-   in compare mode pass a lightness band, a chroma floor, colour-blind separation, a
-   normal-vision floor and contrast against this card. The nine bloc colours FAIL that test
+   THE COLORS WERE VALIDATED, NOT CHOSEN. See metrics.js: the three that appear together
+   in compare mode pass a lightness band, a chroma floor, color-blind separation, a
+   normal-vision floor and contrast against this card. The nine bloc colors FAIL that test
    as a set of nine, which is why the room is nine separate sparklines rather than nine
    lines on one plot. */
 const DCBOX = { x: 34, y: 12, w: 302, h: 132 };
@@ -3259,7 +3286,7 @@ function dcSeries() {
     if (!raw.length) return { s, raw, pts: raw, ext: null };
     /* COMPARE MODE REBASES. A series whose first value is zero cannot be rebased and is
        dropped rather than drawn wrong, and the footer says which, because a line quietly
-       missing is worse than a line labelled absent. */
+       missing is worse than a line labeled absent. */
     const pts = dcState.mode === 'cmp' ? MT.indexed(raw) : raw;
     return { s, raw, pts, ext: null };
   }).filter(Boolean);
@@ -3313,7 +3340,7 @@ function dcChart() {
   const rawCh = MT.change(one.raw);
 
   /* THE READOUT. Value big, in ink, and the movement beside it with an arrow AND a signed
-     number, so direction is never carried by colour alone. */
+     number, so direction is never carried by color alone. */
   if (single) {
     const t = MT.tone(rawCh.delta, one.s);
     head.innerHTML = '<div class="dctitle"><b>' + esc(one.s.label) + '</b>'
@@ -3363,7 +3390,7 @@ function dcChart() {
     }
     g.push('<path class="dcline" d="' + MT.path(r.pts, DCBOX, ext)
       + '" stroke="' + r.s.color + '"/>');
-    /* The last point, ringed in the card colour so it reads as a marker rather than as a
+    /* The last point, ringed in the card color so it reads as a marker rather than as a
        kink in the line. */
     const s2 = MT.scaler(r.pts, DCBOX, ext);
     const last = r.pts[r.pts.length - 1];
@@ -3372,11 +3399,11 @@ function dcChart() {
     if (!single) ends.push({ y: s2.Y(last.v), c: r.s.color, t: String(Math.round(last.v)) });
   });
 
-  /* FOUR OR FEWER SERIES ARE DIRECT LABELLED as well as legended, so identity is never
-     colour alone for a reader who cannot separate the hues.
+  /* FOUR OR FEWER SERIES ARE DIRECT LABELED as well as legended, so identity is never
+     color alone for a reader who cannot separate the hues.
 
      BUT THEY HAVE TO BE PUSHED APART FIRST. Two of these three lines finished a point
-     apart and their labels landed on top of each other: three numbers in three colours
+     apart and their labels landed on top of each other: three numbers in three colors
      stacked into an unreadable smudge at exactly the end of the line a reader looks at
      first. Sorted by height and separated by a line's worth, clamped to the plot, and if
      they still will not fit the labels come off entirely, because the legend above already
@@ -3389,7 +3416,7 @@ function dcChart() {
     });
   }
 
-  /* THE HIGH AND THE LOW, labelled, and nothing else. A value beside every point is chaos
+  /* THE HIGH AND THE LOW, labeled, and nothing else. A value beside every point is chaos
      and goes unread; these two are the ones a reader is looking for. */
   if (single) {
     const pk = MT.peaks(one.pts);
@@ -3436,8 +3463,14 @@ function dcXLabels(pts, sc) {
   const out = [];
   const say = (p) => (p.at && p.at.week) ? 'Wk ' + p.at.week : String(p.at ? p.at.y : '');
   out.push({ x: DCBOX.x, text: say(pts[0]), anchor: 'start' });
+  /* AND NOT THE SAME LABEL AT BOTH ENDS. A term still inside its first year starts and
+     finishes in 2025, so the axis read "2025 ... 2025", which looks like a bug and tells the
+     reader nothing. One label is the honest version: the whole window is that year. */
   if (pts.length > 1) {
-    out.push({ x: DCBOX.x + DCBOX.w, text: say(pts[pts.length - 1]), anchor: 'end' });
+    const last = say(pts[pts.length - 1]);
+    if (last !== out[0].text) {
+      out.push({ x: DCBOX.x + DCBOX.w, text: last, anchor: 'end' });
+    }
   }
   /* A year boundary is worth a tick; a beat boundary is not, or the axis is ninety
      labels deep. */
@@ -3555,7 +3588,7 @@ function dcHover(live, ext) {
     tip.innerHTML = h;
     tip.hidden = false;
     /* IT FLIPS TO THE OTHER SIDE OF THE CROSSHAIR rather than centring on it, so it never
-       covers the point it is describing. A centred tooltip on a plot this short sits on top
+       covers the point it is describing. A centered tooltip on a plot this short sits on top
        of exactly the part of the line somebody is reading, which is a readout that hides
        the thing it is a readout of. Also keeps it inside the card: a tooltip clipped at the
        edge cannot be read at the moment somebody reaches the end of the line. */
@@ -3612,10 +3645,10 @@ function dcPicker() {
 }
 
 /* ---- the room, nine at once ----
-   SMALL MULTIPLES, NOT NINE LINES ON ONE PLOT. The nine bloc colours are the ones the rest
-   of the mode already draws these blocs in, and as a set of nine they fail colour-blind
+   SMALL MULTIPLES, NOT NINE LINES ON ONE PLOT. The nine bloc colors are the ones the rest
+   of the mode already draws these blocs in, and as a set of nine they fail color-blind
    separation: pink against teal comes back at a delta of 3.7 for a deuteranope, which is
-   the same colour. Nine lines on one axis would be unreadable for one man in twelve and a
+   the same color. Nine lines on one axis would be unreadable for one man in twelve and a
    tangle for everybody else. Nine little charts, each alone in its own frame with its name
    written next to it, has no adjacency problem at all. */
 function dcRoom() {
@@ -3643,7 +3676,7 @@ function dcRoom() {
 }
 
 /* ---- the table ----
-   THE TWIN. Every value the chart draws, reachable with no pointer, no hover and no colour
+   THE TWIN. Every value the chart draws, reachable with no pointer, no hover and no color
    at all. A tooltip that is the only way to read a number is a number some readers simply
    do not get. */
 function dcTable() {
@@ -3740,7 +3773,7 @@ function recordRuling(item,optionId){
 /* ── precedent ─────────────────────────────────────────────────────────────────────
    WHAT YOU HAVE ALREADY DONE ABOUT THIS. Read straight off the ledger's own history, which
    has carried the year, the beat and the label of every ruling since the mode was built and
-   was being drawn as coloured squares on a calendar and nowhere else.
+   was being drawn as colored squares on a calendar and nowhere else.
 
    The desk is where it belongs: at the moment you are about to decide the same thing again
    is the moment being told you have decided it before is worth anything. */
@@ -3885,7 +3918,7 @@ const PATH_NAME={
      A number nobody was ever meant to see, under a heading promising plain English. */
   'pressure.legal':'Legal exposure',
   'pressure.congress':'Washington',
-  'pressure.union':'The players organising',
+  'pressure.union':'The players organizing',
 };
 /* Where a fuse stands, in the words the office uses, rather than as a number out of a
    hundred that has no scale printed anywhere near it. */
@@ -3926,7 +3959,7 @@ function paintEffect(){
   const moved=then.filter((f,i)=>f[1]!==now[i][1]).length;
 
   /* EVERYTHING ELSE THE RULING WRITES, off the edit's own `set` rather than off a diff of
-     the whole world. Shares are renormalised whenever one of them moves, so a diff would
+     the whole world. Shares are renormalized whenever one of them moves, so a diff would
      list all six conferences every time anybody's cut changed, which is six rows to say one
      thing. What the ruling asked for is the shorter and truer answer. */
   const also=[];
@@ -4105,7 +4138,7 @@ $('b-rule').onclick=()=>{
   const seeds=D.plantsOf?D.plantsOf(item,choice,world,L,cast,sit):[];
   seeds.forEach((s)=>{ if(s&&s.id) world=L.plant(world,s.id,s); });
   /* THE OTHER HALF OF THE RECORDER. After the edit, after the fallout, after the threads: the
-     point on the tape has to be the state the ruling LEFT, or the data centre draws the
+     point on the tape has to be the state the ruling LEFT, or the data center draws the
      effect of a decision one beat before the decision. */
   if(window.PS_CFB_METRICS) window.PS_CFB_METRICS.record(world);
   save();
@@ -4162,7 +4195,7 @@ function advance(){
 /* ── the map ──────────────────────────────────────────────────────────────────────
    THE SPORT HAS A SHAPE AND IT IS A COUNTRY. Realignment is the one thing this mode does
    that a list cannot show: "Oregon to the Big Ten" is four words, and a dot crossing two
-   thousand miles to change colour is the whole argument. Every point is a real campus,
+   thousand miles to change color is the whole argument. Every point is a real campus,
    fetched by cfb/build/fetch-places.mjs rather than typed from memory, which is why there
    is a build script for eighty-three numbers.
 
@@ -4195,7 +4228,7 @@ async function loadStates(){
    COUNTED OVER THE POWER CONFERENCES ONLY, which is the difference between a map and a
    census. Ohio has one Big Ten school and six in the Mid-American; Texas has more schools
    outside the power four than in it. Counting every school in the division, which is what
-   this did the moment the whole division arrived, colours Ohio as a Mid-American state and
+   this did the moment the whole division arrived, colors Ohio as a Mid-American state and
    tells a fan something they know to be false. Holding a state is a claim about the sport's
    money and its recruiting, and only the four conferences with a vote are making it.
 
@@ -4266,7 +4299,7 @@ function paintMap(el,w,opts){
 
      The groups are hidden from the tree and the svg carries a summary instead. The tooltips
      are untouched: a <title> inside an aria-hidden element still draws on hover, because that
-     is a browser behaviour rather than an accessibility one. The legend below stays reachable,
+     is a browser behavior rather than an accessibility one. The legend below stays reachable,
      which is where the map's actual interaction lives. */
   const onMap=conferencesOnMap(mem);
   const summary='The sport, by where it is played: '+dots.length+' schools in '
@@ -4400,7 +4433,7 @@ function playSeason(year){
     /* THE CHAMPION GOES ON THE WORLD, not just on the screen that announces it. A term is
        five seasons and the calendar wants all five of them, and `lastSeason` is one variable
        that the next year overwrites and a reload loses entirely. Two fields, because the
-       calendar draws a name in a colour and nothing else needs keeping. */
+       calendar draws a name in a color and nothing else needs keeping. */
     const won=sim.bracket&&sim.bracket.champion&&sim.bracket.champion.team;
     if(won){
       world.champions=world.champions||{};
@@ -4561,7 +4594,7 @@ function bowlBlock(sim){
 /* WHO MOVED, AND WHO IS OUT OF A JOB.
    The engine has worked both of these out since the league started churning and the page
    showed neither, which meant the sport turned over behind the player's back: coaches were
-   fired, programmes climbed out of nowhere, and the only visible trace was that the bracket
+   fired, programs climbed out of nowhere, and the only visible trace was that the bracket
    had different names in it than last year. A carousel nobody is told about is the same as
    no carousel.
 
@@ -4885,16 +4918,25 @@ function gate(){
      is ruined by players trying to score well. So the goal is stated and the invitation is
      stated next to it, and both are true: you are graded on six things, and the interesting
      runs are the ones that fail some of them spectacularly. */
-  say.innerHTML=esc('You have just been named college football\'s commissioner. Who is in '
-      +'which conference, how many teams play for the title, what a player is owed, who gets '
-      +'the money. Five seasons, and the sport you change is the one you have to run next year.')
-    +'<span class="goal"><b>Survive the five years and hand over a better sport than you '
-      +'were given.</b> You are judged on six things: the books, the audience, the room, who '
-      +'wins, who gets in, and whether the map is still standing.</span>'
-    +'<span class="dare">There is no correct set of answers, and nothing here is a bluff. '
-      +'Blow up the bowls, pay the players, let a conference die, take the gambling money. '
-      +'The sport will do what a sport actually does with that, and some of it will not '
-      +'arrive until the year after next.</span>';
+  /* THREE LINES, AND EACH ONE HAS A JOB. This was a hundred and thirty words and it was the
+     first thing anybody saw: on a phone the whole screen was prose and the button was below
+     the fold. Cut to about sixty, which is the same three jobs in half the words.
+
+       what the job is    conferences, the playoff, the money, five years
+       the rubric         what the ending will grade, said before you start rather than
+                          sprung on you at the end
+       the dare           because a stated goal makes people optimise, and the runs worth
+                          having are the ones that fail some of it spectacularly
+
+     What came out was the explaining. "The sport will do what a sport actually does with
+     that" is a promise the mode keeps on its own within about three rulings, and a promise
+     the thing itself keeps does not need making first. */
+  say.innerHTML=esc('You run college football for five years. Who is in which conference, '
+      + 'how many teams play for the title, what a player is owed, who gets the money.')
+    +'<span class="goal"><b>Hand over a better sport than you were given.</b> Graded on six '
+      +'things: the books, the audience, the room, who wins, who gets in, and the map.</span>'
+    +'<span class="dare">Nothing here is a bluff. Blow up the bowls, pay the players, let a '
+      +'conference die, take the gambling money.</span>';
   const resumable=world&&!world.outcome;
   act.innerHTML=(resumable
       ?'<button class="btn" id="g-resume">Back to '+L.BEATS[world.beat]+', '+world.year+'</button>'

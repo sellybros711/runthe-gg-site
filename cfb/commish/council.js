@@ -31,7 +31,7 @@
   var SEATS = [
     'Fans',           /* no vote, and they say it at a volume nobody can miss */
     'Networks',       /* no vote, and their position is in the rights negotiation */
-    'Players',        /* no vote, organising in public */
+    'Players',        /* no vote, organizing in public */
     'Group of Five',  /* half a vote, and their grievance is a press release */
     'Big 12',         /* one vote */
     'ACC',            /* one vote */

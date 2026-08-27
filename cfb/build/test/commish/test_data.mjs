@@ -1,4 +1,4 @@
-/* THE DATA CENTRE, IN A BROWSER.
+/* THE DATA CENTER, IN A BROWSER.
  *
  *   (nohup python3 -m http.server 8080 &)
  *   node cfb/build/test/commish/test_data.mjs
@@ -76,10 +76,34 @@ console.log('\n=== the tape gets written as a term is played ===');
   const start = await rows();
   ok('the tape exists from the first beat', start >= 1, start + ' rows');
 
-  let ruled = 0;
-  for (let i = 0; i < 46; i++) {
-    if (i > 22 && await on('s-office')) break;
-    if (await on('s-office')) { await tap('#b-desk'); await skipSim(); await p.waitForTimeout(300); continue; }
+  /* WALK UNTIL THERE IS A TAPE WORTH CHARTING AND WE ARE STANDING IN THE OFFICE, which is
+     the only screen the data centre opens from. Two things make that harder than a fixed
+     number of steps:
+
+       BEING VOTED OUT IS A LEGITIMATE OUTCOME of taking the first option forty times, and
+       it can happen after three rulings. Stopping there leaves the walk on an ending, and
+       every assertion below then fails against a screen with no chart on it because there
+       is no chart on an ending.
+
+       A YEAR IN REVIEW AND AN ENDING ARE THE SAME SCREEN, told apart only by the button's
+       own text. Pressing through an ending starts a FRESH term, which is correct behaviour
+       and resets the tape, so a run that did it reported "1 to 3 rows" and read as a
+       recorder that had stopped working.
+
+     So: an ending is not a stop, it is a new term, and the loop keeps going until the tape
+     in whatever term it is now in is long enough to draw. Measured against the tape itself
+     rather than against a step count, so it cannot silently come up short again. */
+  const WANT = 10;
+  const tapeNow = () => p.evaluate(() => {
+    try { return JSON.parse(localStorage.getItem('cfb_commish_term')).world.tape.length; }
+    catch (e) { return 0; }
+  });
+  let ruled = 0, terms = 1, ready = false;
+  for (let i = 0; i < 110 && !ready; i++) {
+    if (await on('s-office')) {
+      if (await tapeNow() >= WANT) { ready = true; break; }
+      await tap('#b-desk'); await skipSim(); await p.waitForTimeout(300); continue;
+    }
     if (await on('s-desk')) {
       const o = await p.$('#d-options .opt');
       if (o) { await o.click(); await p.waitForTimeout(160); }
@@ -87,12 +111,17 @@ console.log('\n=== the tape gets written as a term is played ===');
       await p.waitForTimeout(400); continue;
     }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(360); continue; }
-    if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(360); continue; }
+    if (await on('s-year')) {
+      const t = await p.$eval('#b-year-next', (e) => e.textContent).catch(() => '');
+      if (/take the job again/i.test(t)) { terms++; ruled = 0; }
+      await tap('#b-year-next'); await p.waitForTimeout(400); continue;
+    }
     break;
   }
   await p.evaluate(() => { try { window.__w = JSON.parse(localStorage.getItem('cfb_commish_term')).world; } catch (e) { window.__w = null; } });
   const after = await rows();
-  ok('  and grows as the term is played', after > start + 4, start + ' to ' + after + ' rows');
+  ok('  and grows as the term is played', ready && after >= WANT,
+    start + ' to ' + after + ' rows' + (terms > 1 ? ', over ' + terms + ' terms' : ''));
   /* ONE ROW PER POSITION. The recorder runs on every office paint and after every ruling,
      and both of those can fire twice; a tape with duplicates draws flat segments that were
      never flat and reports a term as calmer than it was. */
@@ -115,7 +144,7 @@ console.log('\n=== the chart draws ===');
 await tap('#b-data');
 await p.waitForTimeout(600);
 {
-  ok('the data centre opens', await on('s-data'));
+  ok('the data center opens', await on('s-data'));
   const svg = await p.$('#dc-plot svg');
   ok('  with a chart in it', !!svg);
   const pathLen = await p.$eval('#dc-plot .dcline', (e) => e.getAttribute('d').length).catch(() => 0);
@@ -243,9 +272,9 @@ console.log('\n=== comparing does not grow a second axis ===');
   }));
   ok('three lines are drawn', cmp.lines === 3, cmp.lines + ' lines');
   /* A LEGEND IS ALWAYS PRESENT FOR MORE THAN ONE SERIES, and four or fewer are also direct
-     labelled, so identity is never carried by colour alone. */
+     labeled, so identity is never carried by color alone. */
   ok('  with a legend naming all three', cmp.legend === 3, cmp.legend + ' entries');
-  ok('  and each line labelled at its own end', cmp.labels.length === 3,
+  ok('  and each line labeled at its own end', cmp.labels.length === 3,
     JSON.stringify(cmp.labels.map((l) => l.t)));
   /* THE SMUDGE. Two lines finishing a point apart put their labels at the same height. */
   const ys = cmp.labels.map((l) => l.y).sort((a, c) => a - c);
@@ -275,12 +304,12 @@ console.log('\n=== the room is nine charts, not nine lines on one ===');
       .every((n) => n.textContent.trim().length > 1),
   }));
   /* NINE LINES ON ONE PLOT IS THE ANTI-PATTERN AND THE VALIDATOR SAYS SO: the nine bloc
-     colours this mode already uses come back at a colour-blind separation of 3.7 for the
-     closest pair, which is the same colour. Nine little charts, each alone in its frame
+     colors this mode already uses come back at a color-blind separation of 3.7 for the
+     closest pair, which is the same color. Nine little charts, each alone in its frame
      with its name beside it, has no adjacency problem at all. */
   ok('nine cells', room.cells === 9, room.cells + ' cells');
   ok('  each with its own plot', room.sparks >= 8, room.sparks + ' sparklines');
-  ok('  and its own name, so the colour is never the only label', room.named);
+  ok('  and its own name, so the color is never the only label', room.named);
 
   await p.click('#dc-room .dccell:nth-child(3)').catch(() => {});
   await p.waitForTimeout(450);
@@ -290,7 +319,7 @@ console.log('\n=== the room is nine charts, not nine lines on one ===');
 
 console.log('\n=== the table says the same thing as the chart ===');
 {
-  /* THE TWIN. Every value the chart draws, with no pointer, no hover and no colour. A
+  /* THE TWIN. Every value the chart draws, with no pointer, no hover and no color. A
      tooltip that is the only route to a number is a number some readers simply do not get. */
   await p.click('#b-dctable');
   await p.waitForTimeout(400);
@@ -341,7 +370,7 @@ console.log('\n=== a series with nothing behind it says so ===');
 
 console.log('\n=== back out, and the term is untouched ===');
 {
-  /* THE DATA CENTRE IS A READING ROOM. It must not advance a beat, rule on anything, or
+  /* THE DATA CENTER IS A READING ROOM. It must not advance a beat, rule on anything, or
      write to the world beyond the tape it was already writing. */
   const before = await p.evaluate(() => {
     const w = JSON.parse(localStorage.getItem('cfb_commish_term')).world;

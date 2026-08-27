@@ -70,7 +70,7 @@
         : gap <= 0.05
           ? 'The books came out level. Nobody thanks a commissioner for that and it is harder '
             + 'than it sounds.'
-          : 'You wrote cheques the football did not cover. Somebody after you has to find '
+          : 'You wrote checks the football did not cover. Somebody after you has to find '
             + 'that money or take it off somebody.',
     };
   }

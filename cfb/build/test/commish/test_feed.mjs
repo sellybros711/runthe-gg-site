@@ -55,7 +55,7 @@ console.log('\n=== nobody in this feed is real ===');
 
   /* NO ACCOUNT IS A REAL INSTITUTION. A fictional fan account may talk ABOUT Alabama, which
      is the same use of a real name the rest of this game makes. An account CALLED Alabama
-     posting a statement is a real organisation saying something it never said. */
+     posting a statement is a real organization saying something it never said. */
   const REAL = /\b(SEC|Big Ten|ACC|Big 12|Pac-12|ESPN|Fox|CBS|NBC|NCAA|Alabama|Georgia|Ohio State|Michigan|Texas|Oregon|Clemson|Notre Dame|Nebraska|LSU)\b/i;
   const posing = accounts.filter((a) => REAL.test(F.WHO[a].name) || REAL.test(F.WHO[a].handle));
   ok('  no account is named after a real school, conference or network', !posing.length,

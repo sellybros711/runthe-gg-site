@@ -2,7 +2,7 @@
  *
  *   node cfb/build/test/commish/test_venues.mjs
  *
- * This module is a catalogue, which is the kind of file that goes wrong quietly. A bowl
+ * This module is a catalog, which is the kind of file that goes wrong quietly. A bowl
  * pointing at a stadium that is not in the list renders a brief about "its city". A venue
  * priced so that one city dominates every bid makes the item a formality. A sponsor with the
  * same name twice makes one of them unreachable. None of that throws.
@@ -29,7 +29,7 @@ let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 const world = () => L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025), seed: 3 });
 
-console.log('\n=== the catalogue holds together ===');
+console.log('\n=== the catalog holds together ===');
 {
   const ids = V.VENUES.map((v) => v.id);
   ok('every host site has a unique id', new Set(ids).size === ids.length, ids.length + ' sites');
@@ -73,7 +73,7 @@ console.log('\n=== a bid is a decision rather than a formality ===');
   /* AND THE MONEY AND THE HISTORY PULL AGAINST EACH OTHER, or there is no trade to make. */
   const rich = scored.slice().sort((a, b) => b.money - a.money)[0];
   const old = scored.slice().sort((a, b) => b.tradition - a.tradition)[0];
-  ok('  the biggest cheque is not the most history', rich.id !== old.id,
+  ok('  the biggest check is not the most history', rich.id !== old.id,
     rich.id + ' pays most, ' + old.id + ' has most history');
   /* A ROOF IS WORTH SOMETHING, or the weather is a detail rather than a decision. */
   const domes = V.VENUES.filter((v) => v.dome), open = V.VENUES.filter((v) => !v.dome);

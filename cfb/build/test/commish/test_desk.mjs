@@ -188,7 +188,7 @@ console.log('\n=== the desk is shorter than it was ===');
      only safe reading is the worst of everything speaker() can return for that bloc.
 
      IT ALSO CLONES A REAL VOICE ROW rather than building one out of a string. The row carries
-     a colour chip that takes width, and a hand-built copy leaves it out and under-measures
+     a color chip that takes width, and a hand-built copy leaves it out and under-measures
      every line in the docket by the width of the chip and its gap. */
   const wide = await p.evaluate(() => {
     const D = window.PS_CFB_DOCKET, B = window.PS_CFB_BLOCS;
@@ -538,7 +538,7 @@ console.log('\n=== what every other commissioner did ===');
   /* BIGGEST FIRST, so taking the call nobody took is visible rather than inferred. */
   ok('  biggest first', up.box.rows[0].pct === '63%' && up.box.rows[2].pct === '10%',
     up.box.rows.map((r) => r.pct).join(' > '));
-  /* THE ROW IS LABELLED WITH THE OPTION AS THE PLAYER READ IT, not with its id. The two
+  /* THE ROW IS LABELED WITH THE OPTION AS THE PLAYER READ IT, not with its id. The two
      differ on every item in the docket, and an id on a reaction screen is a leak. */
   ok('  and the row says what the option said, not its id',
     up.box.rows.some((r) => r.mine && r.label.length > 4 && !/^[a-z0-9-]+you$/.test(r.label)),

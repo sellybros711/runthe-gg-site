@@ -272,7 +272,7 @@ console.log('\n=== it sounds like college football ===');
      characterised by NOT talking about the game. The presidents' whole voice is that they
      sound like university administrators, and forcing the word "cupcake" into their mouths
      to satisfy a regex would break the one bloc it was meant to improve. Trustees, faculty
-     senates and a swimming programme being cut are exactly as specific to this sport. */
+     senates and a swimming program being cut are exactly as specific to this sport. */
   const SPORT = /portal|cupcake|rivalr|kickoff|noon|band|stadium|scholarship|recruit|helmet|locker|november|september|january|saturday|tailgat|boise|ames|tuscaloosa|walk-on|bowl|marching|season ticket|concourse|primetime|undefeated|coordinator|weight room|high school|jersey|athletic department|faculty|trustee|campus|deposition|swimming|conference title|non-revenue|championship weekend/i;
   const flat = [];
   for (const id in B.VOICE) {

@@ -50,7 +50,7 @@
   /* ---------------- the league ---------------- */
 
   /* A school's baseline, taken from the most recent real season it has at or before the
-     year the term began. A school that left the data (a defunct programme, or one this
+     year the term began. A school that left the data (a defunct program, or one this
      dataset never carried) is simply not in the league, which is honest: the alternative is
      inventing a team. */
   function baselines(teamSeasons, upToYear) {
@@ -93,7 +93,7 @@
      posture. A player who declared for the draft, went undrafted and came back is a
      twenty-four year old who has been coached by professionals for a year, and he does not
      come back to the school that recruited him out of a small town. He comes back to a
-     programme that can pay him and start him, and those are the same twenty schools every
+     program that can pay him and start him, and those are the same twenty schools every
      time. So an open door concentrates, cumulatively, in the shape moneyDrift already has:
      small per year, and by year four it is the difference between a league and a procession.
 
@@ -175,7 +175,7 @@
     var base = baselines(teamSeasons, world.startYear);
     var years = Math.max(0, world.year - world.startYear);
 
-    /* WHERE EVERY PROGRAMME IS THIS YEAR, before anything this office did to it. Year one is
+    /* WHERE EVERY PROGRAM IS THIS YEAR, before anything this office did to it. Year one is
        the real season and returns the baseline untouched; every year after regresses toward
        that school's own level, takes a shock the size of its own volatility, and lives with
        whatever the carousel did. */
@@ -188,12 +188,12 @@
         nowZ: CH ? CH.strengthOf(school, baseZ, teamSeasons, world.seed, years) : baseZ });
     }
 
-    /* AND THEN RECENTRED, BECAUSE A Z IS A Z. This is not a tidying step, it is the
+    /* AND THEN RECENTERED, BECAUSE A Z IS A Z. This is not a tidying step, it is the
        definition of the quantity: strength_z is standardised within its season, so the mean
        of a real season is zero by construction and an invented one has to be as well.
 
        Without it the whole sport quietly got better every year. The carousel only fires on
-       programmes that are UNDER their own level, and a hire is worth a little more than
+       programs that are UNDER their own level, and a hire is worth a little more than
        nothing on average, so every December injected a small positive number into the league
        and never a negative one. Regression then fed each year's inflated figure into the
        next. Measured, the league mean ran 0.00, 0.24, 0.49, 0.61, 0.71 across a five year
@@ -221,7 +221,7 @@
         abbr: r.b.abbreviation || r.school,
         color: r.b.color || '#64748b',
         /* What the season the term opened on had them at, kept so the carousel and the year
-           in review can talk about how far a programme has moved. */
+           in review can talk about how far a program has moved. */
         baseZ: r.baseZ,
         z: r.nowZ + moneyDrift(world, conf)
           + reentryDrift(world, conf, r.nowZ),
@@ -383,7 +383,7 @@
         var A = byName[r.a], B = byName[r.b];
         var sameConf = A.conference === B.conference;
         var g = { a: A, b: B, rivalry: r.id, rivalryName: r.name,
-          /* WHERE IT WANTS TO BE PLAYED. weekify honours it when both sides are free. */
+          /* WHERE IT WANTS TO BE PLAYED. weekify honors it when both sides are free. */
           want: r.week, neutral: !!r.neutral };
         seen[pairKey(A, B)] = 1;
         bump(g, sameConf);
@@ -406,7 +406,7 @@
       }, rng, seen).forEach(function (g) { bump(g, true); });
     }
     /* ---- the guarantee game ----
-       A POWER SCHOOL BUYS A HOME GAME AND THE VISITOR CASHES THE CHEQUE. This is how
+       A POWER SCHOOL BUYS A HOME GAME AND THE VISITOR CASHES THE CHECK. This is how
        non-conference scheduling actually works and leaving it out was the single biggest
        thing wrong with the league once the whole division was on the field.
 
@@ -418,7 +418,7 @@
        September.
 
        So each team outside the power four is sent to one power school, on the road, before
-       anything else is drawn. That is the trip that puts a loss on the record, and the cheque
+       anything else is drawn. That is the trip that puts a loss on the record, and the check
        for it is a third of their football budget, which is a line the Group of Five already
        says on the docket and now has a game behind it. */
     var owes = function (t) { return Math.max(0, GAMES - (count[t.school] || 0)); };
@@ -459,10 +459,10 @@
      to four, October five to eight, November nine to twelve, and the last two beats are the
      conference title games and the bracket. The office shows the standings while it happens.
 
-     Greedy colouring, lowest free week first, which is enough: a team plays twelve games in
+     Greedy coloring, lowest free week first, which is enough: a team plays twelve games in
      twelve weeks and every game only needs a week where neither side is already busy. */
   /* FOURTEEN WEEKS FOR TWELVE GAMES, which is what a real season is: everybody gets a bye or
-     two. It is also what makes the colouring possible. A team plays twelve games, so twelve
+     two. It is also what makes the coloring possible. A team plays twelve games, so twelve
      weeks is the theoretical floor and no greedy assignment reaches it; the first version
      used twelve, quietly pushed the overflow into weeks thirteen and fourteen, and then
      dropped those games on the floor because the season only played through week twelve.
@@ -470,13 +470,13 @@
   var WEEKS = 14;
 
   function weekify(games, rng) {
-    /* Restarts, because greedy edge colouring is order dependent: one shuffle overflows and
+    /* Restarts, because greedy edge coloring is order dependent: one shuffle overflows and
        the next one does not. Cheap enough to simply try again. */
     var best = null;
     for (var attempt = 0; attempt < 40; attempt++) {
       var busy = {}, max = 0;
       /* A GAME THAT WANTS A DATE GETS ASKED FIRST. The rivalries carry `want`, and the whole
-         shape of the sport's November is that those games are on the last Saturday: colour
+         shape of the sport's November is that those games are on the last Saturday: color
          them into the shuffle with everything else and The Game lands in week three.
 
          `want` is a preference and never a requirement. If both sides are busy it takes the
@@ -813,10 +813,10 @@
      sport.
 
      A POLL IS NOT A RANKING, IT IS LAST WEEK'S RANKING WITH THIS WEEK DONE TO IT. That is the
-     whole behaviour and it is why fans complain about it: a preseason number follows a team
+     whole behavior and it is why fans complain about it: a preseason number follows a team
      into October, a good side climbs three spots a week no matter how well it plays, and a
      loss drops you further than a win lifts you. Sorting by resume every week would produce a
-     correct list that nobody would recognise.
+     correct list that nobody would recognize.
 
      SO IT IS BLENDED IN RANK SPACE, not in score space. A resume is worth about three points
      in week one and forty by December, so blending the numbers themselves would let one
@@ -1028,7 +1028,7 @@
       }
       var A = pool.splice(ai, 1)[0];
       /* A BOWL IS A MATCH-UP BETWEEN LEAGUES wherever it can be. Two teams from the same
-         conference meeting in a bowl is a thing that happens and is nobody's favourite. */
+         conference meeting in a bowl is a thing that happens and is nobody's favorite. */
       var bi = Math.min(from, pool.length - 1);
       for (var m = bi; m < pool.length; m++) {
         if (pool[m].conference !== A.conference) { bi = m; break; }
@@ -1106,7 +1106,7 @@
       effects.tradition = (effects.tradition || 0) + 0.6;
     }
     /* CHALK IS ITS OWN VERDICT AND IT WAS NOT BEING SAID. A one seed running the table is
-       the format's best defence and the reason nobody buys a ticket for the first round,
+       the format's best defense and the reason nobody buys a ticket for the first round,
        and a recap that only ever remarks on upsets is a recap that has an opinion. */
     if (champ && champ.seed === 1) {
       tags.push('chalk');

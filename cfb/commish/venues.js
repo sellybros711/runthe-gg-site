@@ -31,7 +31,7 @@
   'use strict';
 
   /* ---- the host sites ----
-     Sorted by nothing. Read as a catalogue, offered as a shortlist. */
+     Sorted by nothing. Read as a catalog, offered as a shortlist. */
   var VENUES = [
     { id: 'atl', name: 'Mercedes-Benz Stadium', city: 'Atlanta', state: 'GA',
       dome: true, cap: 71000, draw: 1.07, fee: 0.95, heritage: 0.3, risk: 0.02, reach: 0.1,
@@ -39,7 +39,7 @@
         + 'dozen times.' },
     { id: 'dfw', name: 'AT&T Stadium', city: 'Arlington', state: 'TX',
       dome: true, cap: 80000, draw: 1.08, fee: 1.0, heritage: 0.2, risk: 0.02, reach: 0.1,
-      note: 'The biggest cheque, the biggest screen, and a car park the size of a town.' },
+      note: 'The biggest check, the biggest screen, and a car park the size of a town.' },
     { id: 'nola', name: 'Caesars Superdome', city: 'New Orleans', state: 'LA',
       dome: true, cap: 73000, draw: 1.09, fee: 0.8, heritage: 0.85, risk: 0.06, reach: 0.05,
       note: 'The best week anybody has ever had at a football game, and everybody in this '
@@ -60,7 +60,7 @@
       note: 'Enormous, indoors, and about four hours from a third of the sport by road.' },
     { id: 'ind', name: 'Lucas Oil Stadium', city: 'Indianapolis', state: 'IN',
       dome: true, cap: 67000, draw: 1, fee: 0.7, heritage: 0.3, risk: 0.02, reach: 0.1,
-      note: 'The one everybody who has actually organised an event votes for. Walkable, '
+      note: 'The one everybody who has actually organized an event votes for. Walkable, '
         + 'indoors, and nobody has to hire a car.' },
     { id: 'lv', name: 'Allegiant Stadium', city: 'Las Vegas', state: 'NV',
       dome: true, cap: 65000, draw: 1.1, fee: 1.05, heritage: 0, risk: 0.03, reach: 0.2,
@@ -171,7 +171,7 @@
       pitch: 'Dull, solvent, and they want a fifteen year deal because their board thinks in '
         + 'fifteen year deals.' },
     { id: 'phone', name: 'A mobile network', pay: 1.4, risk: 0.08, hate: 0.2,
-      pitch: 'The safest big cheque available and the least interesting sentence in this '
+      pitch: 'The safest big check available and the least interesting sentence in this '
         + 'file.' },
     { id: 'energy', name: 'An energy drink', pay: 1.1, risk: 0.2, hate: 0.3,
       pitch: 'They want the playoff and they want to put a man on a motorcycle through the '
@@ -197,7 +197,7 @@
   function sponsor(id) { return S_BY_ID[id] || null; }
   function label(v) { return v ? v.city + ', ' + v.state : ''; }
 
-  /* A SHORTLIST RATHER THAN A CATALOGUE. Eighteen options is a spreadsheet; three or four is
+  /* A SHORTLIST RATHER THAN A CATALOG. Eighteen options is a spreadsheet; three or four is
      a decision. Deterministic from the rng the beat already has, and it never offers the site
      that hosted it last year, because the one thing every bid cycle has in common is that
      the incumbent is not automatically back.

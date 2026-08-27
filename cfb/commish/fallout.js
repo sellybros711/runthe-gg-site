@@ -353,7 +353,7 @@
       body: function (ctx) {
         return 'Two, in fact, in the same week, in different states, both from families who '
           + 'wrote to say so. Neither of them is your first name. Both of them are your '
-          + 'surname, as a first name, which is either the highest honour this sport can give '
+          + 'surname, as a first name, which is either the highest honor this sport can give '
           + 'a person or two decisions those children will be asked about for sixty years.';
       },
       effects: { tradition: 1, exposure: 0.4 },
@@ -452,7 +452,7 @@
       head: 'Somebody found the hole in it before Friday',
       body: function (ctx) {
         return 'A compliance officer at ' + school(ctx) + ' read clause seven properly and '
-          + 'realised it permits the exact thing it was written to stop, provided you do it in '
+          + 'realized it permits the exact thing it was written to stop, provided you do it in '
           + 'a different order. She sent a polite email asking for confirmation. Four other '
           + 'schools have since asked the same question and none of them were polite.';
       },
@@ -467,7 +467,7 @@
       body: function (ctx) {
         return 'Within a month, nearly word for word, with an acknowledgement in a footnote '
           + 'nobody was supposed to read and a press release that does not mention this sport '
-          + 'at all. It is the first time in living memory that anything has travelled in that '
+          + 'at all. It is the first time in living memory that anything has traveled in that '
           + 'direction and every president in the room has now mentioned it to you.';
       },
       effects: { autonomy: 1.2, tradition: 0.6, exposure: 0.6 },
@@ -542,7 +542,7 @@
         return 'An equipment manager at ' + school(ctx) + ' left it exactly as it was in '
           + 'January, on the grounds that he had a feeling. He was right, and the photograph '
           + 'of that locker with the nameplate still on it has done more for the argument in '
-          + 'favour of the open door than anything this office has ever published.';
+          + 'favor of the open door than anything this office has ever published.';
       },
       effects: { tradition: 1.2, labour: 0.8 },
       aimed: { Fans: { tradition: 1.4 }, Players: { labour: 1 } },

@@ -111,7 +111,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
   const wired=await p.evaluate(()=>{
     const D=window.PS_CFB_DOCKET, V=window.PS_CFB_VENUES;
     if(!D||!V) return {ok:false,why:'a module is missing'};
-    /* An item whose options are real cities can only build a cast if it found the catalogue. */
+    /* An item whose options are real cities can only build a cast if it found the catalog. */
     const it=D.BY_ID['title-site'];
     if(!it) return {ok:false,why:'no title-site item'};
     const L=window.PS_CFB_LEDGER;
@@ -245,7 +245,7 @@ console.log('\n=== a tester takes the job ===');
   const before=await p.evaluate(()=>localStorage.getItem('cfb_commish_term'));
   await p.click('#b-test'); await p.waitForTimeout(700);
   ok('testing it shows the room', await on(p,'s-room'));
-  ok('  labelled as a what-if', /if you ruled/i.test(await txt(p,'#r-eyebrow')), await txt(p,'#r-eyebrow'));
+  ok('  labeled as a what-if', /if you ruled/i.test(await txt(p,'#r-eyebrow')), await txt(p,'#r-eyebrow'));
   const after=await p.evaluate(()=>localStorage.getItem('cfb_commish_term'));
   ok('  and it changed nothing at all', before===after);
   await p.screenshot({path:SS+'commish_test.png'});
