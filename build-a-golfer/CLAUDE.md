@@ -17335,3 +17335,48 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   creeping back in.
 - **NOTE for whoever writes the group 2-4 proposals**: if a Caddie Report item reads as "what's in the bag",
   build it as the club SET and the ball, shown as a list, and never as a carried object.
+
+### CADDIE REPORT ITEM 20: the golfer ages (and the temples do it first)
+- **The report**: *"Forty-two years, and the sprite at twenty-two is the sprite at sixty-four. The rest of the
+  career layer is unusually good at making time feel real: farewell seasons, class-of cohorts, anniversaries.
+  The golfer is the one thing standing still."* Ages now run 22 -> 63 across a 30-season career plus the
+  12-year Legend Circuit, and the sprite carries them.
+- **The mockup's finding drove the design.** Task #6 proved hair greying is nearly invisible under a cap, and
+  most golfers wear one. So the temples grey FIRST and FASTEST (`AGE_TEMPLE_FULL=46` vs `AGE_CROWN_FULL=56`) -
+  which is both true to life and exactly the band a closed-crown hat leaves visible. Two more cues are
+  colour-independent so a blond golfer still ages: the skin weathers up the game's own tone ramp
+  (`AGE_TAN_MAX=10` points over 30 years) and the jaw shade deepens with `greyT`. Nothing greys before 30,
+  and the blend caps at `AGE_GREY_MAX=0.88` - never a pure white head.
+- **One resolver, three renderers, no new stored state.** All the work is in `avLook()`, which the standing
+  `pxGolferCanvas`, the 3/4 swing `pxDir8Canvas`/`pxSw4Canvas` and the overhead golfer all already consume, so
+  the golfer ages everywhere for free. `avAgeOf(L)` reads an explicit `L.age`, else uses the live `playerAge()`
+  when the look IS the profile look (`L===S.look`) and it is not a Daily. `withAge(L,age)` stamps an age onto a
+  look that is not the profile one - the resume card (the save's own year) and `lookForBoard` (so a board shows
+  a rookie and a grey-templed veteran as what they are). **Nothing new is written to `bag_look`**, so no
+  cloud-sync churn and no stale age in storage.
+- **A per-row hair painter, because a crown-only grey is a hard line.** `paintHair(map)` walks the map rows and
+  interpolates crown-grey -> temple-grey between `AGE_TEMPLE_Y0=8` and `AGE_TEMPLE_Y1=16`, so the greying reads
+  as a gradient rather than a cap. Unaged golfers take the old single-`paint()` path untouched.
+- **Cache correctness**: `av.key` gains `_a<age>` ONLY when there is a visible effect, so an unaged sprite keeps
+  its exact old key. Proven: `age20_same.mjs` renders 90 unaged golfers (11 styles x 4 hair colours x cap
+  on/off, plus DEFLOOK and a lefty) on this build and on `git show HEAD:...` - **identical 90 / changed 0**.
+  Ageing only ever adds.
+- Verified: `age20.mjs` **32 pass / 0 fail / 0 page errors** - the curve (nothing at 22/30, temples lead the
+  crown by >1.5x at 40, both capped, monotone), `avLook` (an unaged look byte-identical with no `_a`, greyT >
+  greyC at 45, the skin weathering, the tan tapering to `add===0` on the darkest tone so the deepest-skinned
+  golfer is left alone), **the cap test** (a capped 50-year-old is a different sprite, >=6 hair pixels visible,
+  luminance up >0.10 and saturation down >0.10), a bare head showing temple-led greying with the crown also
+  started, a blond capped golfer ageing via the skin alone, all 11 hair styles, and the wiring (career age at
+  year 14, circuit year 34 -> 55, Daily -> 0, a rookie 22, board snapshots, a guest untouched).
+  `age20game.mjs` **5 pass** covers the closet at years 1 and 30, the season banner, the in-round swing and
+  overhead sprites, and a guest. **The suite crashes on the deployed build** (`avGreyAmt is not defined`), so it
+  discriminates. Screenshots reviewed: `shots/age20_sheet.png` (5 looks x 6 ages plus a zoomed head strip) and
+  the two closet shots.
+- Regressions green: nobag 10, sig01 18, lb02 15, sg03 29, wind04 23, real05 24, glove19 19, stance18 21,
+  guest17 19, dec16 23, read15 28, yard13 30, mp_eng 37, mp_ui 39, mp_playgroup 21, mp_recap 27, route_check 6,
+  bpath_check 32. `board_race` fails 1 and `parsecheck` block 0 fails **identically on HEAD** - the known
+  stale fixtures.
+- **NOT deployed** - the owner's standing rule is that each item is explained before it is pushed to the site.
+- Tunable: `AGE_GREY_START` / `AGE_CROWN_FULL` / `AGE_TEMPLE_FULL` / `AGE_GREY_MAX` (the greying curve),
+  `AGE_TAN_START` / `AGE_TAN_YEARS` / `AGE_TAN_MAX` (the weathering), `AGE_GREY_HEX` (what grey looks like),
+  and `AGE_TEMPLE_Y0` / `AGE_TEMPLE_Y1` (where the crown ends and the temples begin).
