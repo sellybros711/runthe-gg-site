@@ -59,9 +59,9 @@ const on = (id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(()
 const tap = async (s) => { try { await p.click(s, { timeout: 2000 }); return true; } catch (e) { return false; } };
 async function skipSim() {
   for (let i = 0; i < 60; i++) {
-    const up = await p.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    const up = await p.$eval('#off-monthcard', (e) => e.classList.contains('running')).catch(() => false);
     if (!up) return;
-    await p.click('#s-sim', { timeout: 1500 }).catch(() => {});
+    await p.click('#off-monthcard', { timeout: 1500 }).catch(() => {});
     await p.waitForTimeout(110);
   }
 }

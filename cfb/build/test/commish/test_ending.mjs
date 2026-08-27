@@ -69,9 +69,9 @@ async function runTerm(mode) {
   const on = (id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
   const skip = async () => {
     for (let j = 0; j < 80; j++) {
-      const up = await p.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+      const up = await p.$eval('#off-monthcard', (e) => e.classList.contains('running')).catch(() => false);
       if (!up) return;
-      await p.click('#s-sim', { timeout: 1500 }).catch(() => {});
+      await p.click('#off-monthcard', { timeout: 1500 }).catch(() => {});
       await p.waitForTimeout(90);
     }
   };

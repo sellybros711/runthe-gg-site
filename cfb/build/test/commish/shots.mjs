@@ -37,9 +37,9 @@ const arm = `
    would otherwise sit through or, worse, time out on. Tapping it skips to the end. */
 async function skipSim(pg) {
   for (let i = 0; i < 60; i++) {
-    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    const up = await pg.$eval('#off-monthcard', (e) => e.classList.contains('running')).catch(() => false);
     if (!up) return;
-    await pg.click('#s-sim', { timeout: 1500 }).catch(() => {});
+    await pg.click('#off-monthcard', { timeout: 1500 }).catch(() => {});
     await pg.waitForTimeout(110);
   }
 }
@@ -56,7 +56,7 @@ async function shotSim(pg, file) {
       await pg.screenshot({ path: file });
       return true;
     }
-    const up = await pg.$eval('#s-sim', (e) => e.classList.contains('on')).catch(() => false);
+    const up = await pg.$eval('#off-monthcard', (e) => e.classList.contains('running')).catch(() => false);
     if (!up) return false;
     await pg.waitForTimeout(150);
   }

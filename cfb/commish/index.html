@@ -844,6 +844,52 @@
   .phases i.p0{color:#93c5fd;border-bottom-color:rgba(147,197,253,.32)}
   .phases i.p1{color:#86efac;border-bottom-color:rgba(134,239,172,.32)}
   .phases i.p2{color:#fcd34d;border-bottom-color:rgba(252,211,77,.32)}
+
+  /* ── THE YEAR STRIP, WEIGHTED ────────────────────────────────────────────────────
+     Three groups sharing the width in proportion to --w, which is the number of beats a
+     phase owns plus a bonus for the one being played. Equal thirds would say a four beat
+     off-season and a two beat postseason are the same size, and they are not. */
+  /* The three fr values are written inline by the painter, because they change with the
+     beat and there is no sensible default to put here. */
+  .phrow{display:grid;gap:0 8px}
+  .phg{min-width:0;display:flex;flex-direction:column;gap:4px}
+  /* SMALL ENOUGH THAT THE NARROW ONES STILL FIT. "Postseason" is ten characters in a group
+     two beats wide, and at the old size it ellipsised to "POSTSEA...", which is a label that
+     has stopped being a label. The phase in play gets the size back below. */
+  .phn{font-family:var(--fn);font-size:7.5px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--dim-2);text-align:center;
+    border-bottom:1px solid var(--line);padding-bottom:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    transition:font-size .35s var(--ez),color .35s var(--ez)}
+  /* THE PHASE YOU ARE IN SAYS SO IN ITS OWN SIZE, which is the cheapest possible way to
+     answer "where am I" without a second label anywhere on the screen. */
+  .phg.now .phn{font-size:10.5px;letter-spacing:.12em}
+  .phg.p0 .phn{color:#93c5fd;border-bottom-color:rgba(147,197,253,.32)}
+  .phg.p1 .phn{color:#86efac;border-bottom-color:rgba(134,239,172,.32)}
+  .phg.p2 .phn{color:#fcd34d;border-bottom-color:rgba(252,211,77,.32)}
+  .phc{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:4px}
+  /* A BEAT IS A BUTTON NOW, because it carries a sentence and a keyboard has to reach it. */
+  .phc .cel{appearance:none;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;height:30px;padding:0;color:var(--dim-2)}
+  .phc .cel svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round;display:block}
+  .phc .cel.past{color:var(--dim-2)}
+  .phc .cel.ruled,.phc .cel.played{color:var(--ink)}
+  .phc .cel.now{color:#0b1220}
+  .phc .cel:hover,.phc .cel:focus-visible{border-color:var(--line-2);outline:none}
+  .phc .cel:focus-visible{box-shadow:0 0 0 2px var(--green)}
+  /* How many rulings landed on that beat, in the corner, so the strip still records the
+     term as well as describing the year. */
+  .phc .cel u{position:absolute;top:1px;right:3px;text-decoration:none;font-family:var(--fn);
+    font-size:8px;font-weight:700;color:var(--ink);opacity:.75}
+  .phc .cel.now u{color:#0b1220;opacity:.9}
+
+  /* The line under the strip: which beat you are on and what is next, replaced by the
+     description of whichever beat is being hovered or focused. */
+  .calsay{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-top:9px;
+    font-size:12px;line-height:1.4;color:var(--dim);min-height:34px}
+  .calsay b{font-size:13px;color:var(--ink);font-weight:700}
+  .calsay.lit{color:var(--ink)}
   .calrow{display:grid;grid-template-columns:26px repeat(9,1fr);gap:4px;align-items:center;
     margin-top:4px}
   .calrow>b{font-family:var(--fn);font-size:9.5px;font-weight:700;color:var(--dim-2);
@@ -1056,6 +1102,35 @@
   .cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin:0 auto;width:100%;
     max-width:460px;background:var(--line);border:1px solid var(--line);
     border-radius:14px;overflow:hidden}
+  /* ── THE MONTH, LIVING ON THE OFFICE ──────────────────────────────────────────────
+     Square days were right when this had a screen to itself. On the office it sits above
+     everything else the player came to read, and six rows of squares is three hundred and
+     ninety pixels before the meters. Wider than tall still reads as a calendar and gives
+     most of that back. */
+  .cgrid.compact{max-width:none;border-radius:10px}
+  .cgrid.compact .cd{aspect-ratio:1.42}
+  .cgrid.compact .cd u{font-size:11px;top:3px;left:5px}
+  .cgrid.compact .cd svg{width:46%;height:46%}
+  .cgrid.compact i{font-size:8px;padding:5px 0 4px}
+  .mcard{padding-bottom:9px}
+  .mcard .ch b{font-family:var(--fd);font-size:17px;line-height:1;letter-spacing:.01em;
+    text-transform:uppercase;color:var(--ink)}
+  .mcard .ch span{margin-left:auto;font-size:10.5px;color:var(--dim-2);font-weight:700}
+  /* WHILE IT IS WALKING, the card says so by lighting its own edge rather than by taking
+     over the screen, and the whole thing becomes the skip target. */
+  .mcard.running{border-color:rgba(16,185,129,.45);cursor:pointer}
+  .mcard .simbar{margin-top:8px}
+  /* The day's line. Reserved height so a month that walks from a quiet day to a loud one
+     does not shunt the whole office down and back up again. */
+  /* THE HEIGHT IS RESERVED ONLY WHILE IT IS WALKING. Reserved always, it is sixty pixels of
+     nothing under a calendar somebody is trying to read; reserved never, the office shunts
+     up and down every time a day carries a line and the next one does not. */
+  .mtick{min-height:0;margin-top:0}
+  .mcard.running .mtick{min-height:34px;margin-top:7px}
+  .mcard .simbar{opacity:0;transition:opacity .2s var(--ez)}
+  .mcard.running .simbar{opacity:1}
+  .mtick p{margin:0;font-size:13px;line-height:1.35;color:var(--ink)}
+  .mtick span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:2px}
   .cgrid i{font-style:normal;font-family:var(--fn);font-size:9px;font-weight:700;
     letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);text-align:center;
     padding:8px 0 7px;background:var(--panel)}
@@ -1478,6 +1553,22 @@
          they always have, which the `order` values in the stylesheet pin down. Nothing about
          the phone moves. -->
     <div class="ocol oa">
+    <!-- ── THE MONTH, ON THE MAIN SCREEN ──────────────────────────────────────────
+         This used to be a screen of its own: pressing on to the desk handed the whole
+         window over to a full page calendar, walked the days, and handed it back. It was
+         the best looking thing in the mode and it existed for four seconds at a time.
+
+         It lives here now. The office opens with the month already drawn and the beat's
+         window marked, and pressing on walks it IN PLACE rather than cutting to somewhere
+         else. Same animation, same days, but the calendar is a fixture the player can look
+         at whenever they want rather than something that flashes past on the way to a
+         decision. -->
+    <div class="cal mcard" id="off-monthcard">
+      <div class="ch"><b id="off-mtitle">January 2025</b><span id="off-mday"></span></div>
+      <div class="cgrid compact" id="off-month"></div>
+      <div class="simbar"><span id="off-mbar"></span></div>
+      <div class="mtick"><p id="off-mtext"></p><span id="off-msub"></span></div>
+    </div>
     <div class="cal" id="off-cal"></div>
     <!-- The map. Realignment is the one thing a list cannot show. -->
     <div class="card flat" id="off-mapcard">
@@ -1553,19 +1644,6 @@
   </div>
 
   <!-- Time passing. See the CSS block above and runSim() below. -->
-  <div class="screen" id="s-sim" data-in="land">
-    <div class="simwrap">
-      <div class="simhead"><b id="sim-eyebrow">Simulating</b><h3 id="sim-month">September</h3></div>
-      <div class="cgrid" id="sim-grid"></div>
-      <div class="simbar"><span id="sim-bar"></span></div>
-      <div class="tick">
-        <b id="sim-day">Saturday 30 August</b>
-        <p id="sim-text"></p>
-        <span id="sim-sub"></span>
-      </div>
-      <button class="simskip" id="sim-skip" type="button">Tap to skip</button>
-    </div>
-  </div>
 
   <!-- The desk: one item, one ruling. -->
   <div class="screen" id="s-desk" data-in="slide">
@@ -2002,7 +2080,11 @@ const show=(id)=>{
      changes screen while one is alive would otherwise leave it ticking behind the new screen
      and deal a second item when it reached the end. One place to cancel, and every screen
      change goes through it. */
-  if(id!=='s-sim'&&typeof stopSim==='function') stopSim();
+  /* A WALK IN FLIGHT DIES HERE, and it is no longer possible to be on the screen it runs
+     on and leave it at the same time, because it runs on the office. Any screen change
+     while a month is walking would otherwise leave the timer ticking behind the new screen
+     and deal a second item when it reached the end. */
+  if(typeof stopSim==='function') stopSim();
   document.querySelectorAll('.screen').forEach((s)=>s.classList.remove('on'));
   $(id).classList.add('on');window.scrollTo({top:0});};
 
@@ -2431,12 +2513,114 @@ function paintBeatbar(el,w){
    THE PHASES ARE REAL AND THEY ARE THE COLUMNS. Four beats of winter, three of the season,
    two of the postseason: the football year is three different jobs and the grid should not
    pretend the portal window and the playoff are the same kind of week. */
-const PHASES=[[0,4,'Off-season','p0'],[4,7,'Season','p1'],[7,9,'Postseason','p2']];
+/* Two names each. The phase being played is spelled out and set larger; the other two are
+   abbreviated, because "Postseason" in a group two beats wide ellipsises to "POSTSEAS..."
+   and a truncated label has stopped being a label. Shortening the ones that are not the
+   subject also sharpens the emphasis rather than fighting it. */
+const PHASES=[[0,4,'Off-season','p0','Off'],[4,7,'Season','p1','Season'],
+  [7,9,'Postseason','p2','Post']];
 const phaseOf=(i)=>{ for(const p of PHASES) if(i>=p[0]&&i<p[1]) return p[3]; return 'p0'; };
 /* WHERE THE CLOCK WAS THE LAST TIME THIS WAS DRAWN, so the square you have just left can be
    shown being left. Only for the one cell and only once: it is the difference between two
    paints rather than anything the world knows about itself. */
 let calWas=null;
+
+/* ── THE YEAR, AS NINE THINGS THAT HAPPEN ────────────────────────────────────────────
+   The office used to carry the whole term: five rows of nine empty squares, forty-five
+   cells of which one was lit. It answered "how far through am I", which the header already
+   answers in three words, and it answered nothing else. Four of those rows were years the
+   player has not reached, drawn in full, every single beat.
+
+   So the office shows ONE year and spends the space it gets back on saying what the nine
+   beats ARE. Each one carries the symbol of the thing that happens in it and a sentence you
+   can hover, focus or tap to read. The ending screen still draws the full five, because
+   there the whole term IS the subject.
+
+   AND THE PHASES ARE WEIGHTED RATHER THAN EQUAL. Off-season is four beats and postseason is
+   two, so equal thirds were already a lie about the shape of a year; on top of that the
+   phase you are standing in gets extra room and a bigger label, because the near future is
+   what a calendar is for. In January that means off-season is most of the strip. In October
+   the strip has rearranged itself around the season. */
+const BEAT_INFO=[
+  {icon:'gavel',   say:'The room meets before a game has been played, and most of the rules that matter get written here.'},
+  {icon:'portal',  say:'Rosters move. Everybody signs, and a fair number of them leave again inside the month.'},
+  {icon:'whistle', say:'Spring practice and spring games. The quiet part of the year, which is when the quiet decisions get made.'},
+  {icon:'mic',     say:'Media days. Nothing has happened yet and it is the only thing anybody is covering.'},
+  {icon:'ball',    say:'September. The first real evidence anybody has about anything.'},
+  {icon:'ball',    say:'October. The polls start to mean something, so the arguments start to have stakes.'},
+  {icon:'ball',    say:'November. Rivalry month, and the part of the year the sport is actually about.'},
+  {icon:'trophy',  say:'Championship weekend. Conference titles, and the last argument before the field is picked.'},
+  {icon:'bracket', say:'The playoff and the bowls. A champion, and then the whole thing starts again.'},
+];
+
+function paintYearStrip(el,w){
+  if(!el) return;
+  const ruled={};
+  (w.history||[]).forEach((h)=>{
+    if(h.id&&String(h.id).indexOf('season:')===0) return;
+    ruled[h.year+':'+h.beat]=(ruled[h.year+':'+h.beat]||0)+1;
+  });
+  const champs=w.champions||{};
+  const y=w.year;
+  const spent=Math.min(w.year-w.startYear,TERM_SEASONS-1);
+  const over=(w.year-w.startYear)>=TERM_SEASONS||!!w.outcome;
+  const here=phaseOf(w.beat);
+  /* Base weight is how many beats the phase owns, so a four beat phase is already wider
+     than a two beat one. The phase in play gets three more, which is roughly "half the
+     strip" without any of them ever collapsing to nothing. */
+  const groups=PHASES.map((p)=>({
+    from:p[0],to:p[1],cls:p[3],
+    name:p[3]===here?p[2]:(p[4]||p[2]),
+    now:p[3]===here, w:(p[1]-p[0])+(p[3]===here?3:0),
+  }));
+
+  const cell=(i)=>{
+    const now=i===w.beat, past=i<w.beat;
+    const played=i===L.BEATS.length-1&&champs[y];
+    const state=now?'now':played?'played':ruled[y+':'+i]?'ruled':past?'past':'';
+    const n=ruled[y+':'+i]||0;
+    /* A BUTTON because it is focusable and a keyboard has to be able to read these too.
+       The sentence goes to the footer rather than into a title attribute: a native tooltip
+       takes a second to appear, cannot be reached without a pointer, and on a phone never
+       appears at all. */
+    return '<button type="button" class="cel '+phaseOf(i)+(state?' '+state:'')+'"'
+      +' data-say="'+esc(L.BEATS[i]+'. '+BEAT_INFO[i].say)+'"'
+      +' aria-label="'+esc(L.BEATS[i])+'">'
+      +cdIcon(BEAT_INFO[i].icon)
+      +(n?'<u>'+n+'</u>':'')+'</button>';
+  };
+
+  const foot='<b>'+esc(L.BEATS[w.beat])+'</b><span>'
+    +(over?'the term is over'
+      :'next: '+esc(w.beat+1<L.BEATS.length?L.BEATS[w.beat+1]
+        :(w.year+1<=w.startYear+TERM_SEASONS-1?'the '+w.year+' season':'the end of the term')))
+    +'</span>';
+
+  el.innerHTML='<div class="ch"><b>'+y+'</b><span>'
+      +(over?'The term, in full':'Year '+(spent+1)+' of '+TERM_SEASONS)+'</span></div>'
+    +'<div class="phrow" style="grid-template-columns:'
+      +groups.map((g)=>g.w+'fr').join(' ')+'">'+groups.map((g)=>{
+      let cells='';
+      for(let i=g.from;i<g.to;i++) cells+=cell(i);
+      return '<div class="phg '+g.cls+(g.now?' now':'')+'" style="--w:'+g.w+'">'
+        +'<span class="phn">'+esc(g.name)+'</span>'
+        +'<div class="phc" style="--n:'+(g.to-g.from)+'">'+cells+'</div></div>';
+    }).join('')+'</div>'
+    +'<div class="calsay">'+foot+'</div>';
+
+  /* HOVER, FOCUS OR TAP, all three, all doing the same thing. */
+  const say=el.querySelector('.calsay');
+  const show=(e)=>{
+    const b=e.target.closest('.cel'); if(!b||!say) return;
+    say.classList.add('lit'); say.textContent=b.dataset.say;
+  };
+  const clear=()=>{ if(say){ say.classList.remove('lit'); say.innerHTML=foot; } };
+  el.addEventListener('pointerover',show);
+  el.addEventListener('focusin',show);
+  el.addEventListener('pointerleave',clear);
+  el.addEventListener('focusout',clear);
+  reveal(el.querySelector('.phrow'));
+}
 
 function paintCalendar(el,w){
   if(!el) return;
@@ -2562,7 +2746,12 @@ function office(){
   /* THE CALENDAR RATHER THAN THE STRIP. The office is where you decide what to spend a beat
      on, and that decision wants the whole term in front of it. The strip stays on the desk,
      which is a screen about one item and has no business showing five years. */
-  paintCalendar($('off-cal'),world);
+  /* ONE YEAR HERE, FIVE ON THE ENDING. The office is a screen about the beat you are
+     standing on; the ending is a screen about the term. See paintYearStrip. */
+  paintYearStrip($('off-cal'),world);
+  /* AND THE MONTH ITSELF, STATIC, showing the window this beat covers and whatever is
+     already marked in it. Pressing on walks these same squares in place: see runSim. */
+  paintMonthNow();
   /* WHERE YOU ARE, AS A DATE AND A NAME. The beat name alone is a category; a term made of
      forty-five categories never feels like five years of anybody's life. */
   const win=CAL.windowFor(world.year,world.beat);
@@ -3019,7 +3208,7 @@ function optionSignature(o){
 
    ONE TIMER, CANCELLED FROM ONE PLACE. A run that is skipped, or interrupted by somebody
    pressing back, has to stop dead: two of these alive at once would deal two items. */
-let simTimer=null, simSkip=null, deskDay=null;
+let simTimer=null, simSkip=null, deskDay=null, simRunning=false;
 function stopSim(){
   if(simTimer){ clearTimeout(simTimer); simTimer=null; }
   simSkip=null;
@@ -3048,6 +3237,32 @@ const CDI={
   desk:'<rect x="3" y="5" width="18" height="14" rx="2.2"/><path d="m3.6 6.6 8.4 6.4 8.4-6.4"/>',
 };
 const cdIcon=(n)=>CDI[n]?'<svg viewBox="0 0 24 24" aria-hidden="true">'+CDI[n]+'</svg>':'';
+
+/* THE MONTH AS IT STANDS, with nothing walking. The office draws this on arrival so the
+   calendar is a fixture rather than something that only exists while it is animating: you
+   can look at the window you are in, see which days carry something, and press on when you
+   are ready. runSim then walks these very squares. */
+function paintMonthNow(){
+  const grid=$('off-month');
+  if(!grid||!CAL||!world) return;
+  const days=CAL.daysOf(world.year,world.beat);
+  if(!days.length) return;
+  const cur=days[0];
+  let events={};
+  try{
+    events=CAL.eventsFor(world.year,world.beat,
+      S&&S.segmentFor(world.beat)?seasonThisBeat():null)||{};
+  }catch(e){ events={}; }
+  $('off-mtitle').textContent=CAL.MONTHS[cur.getMonth()]+' '+cur.getFullYear();
+  $('off-mday').textContent=CAL.label(days[0])+' to '+CAL.label(days[days.length-1]);
+  /* NO CURRENT DAY AND NO WALKED DAYS. Passing the first day as `cur` would paint it as
+     today and everything after it as still to come, which is true, and passing a stop day
+     would put an envelope on a square before an item has been drawn, which is not. */
+  paintMonth(grid,cur,days,events,null);
+  $('off-mbar').style.width='0%';
+  $('off-mtext').textContent='';
+  $('off-msub').textContent='';
+}
 
 /* The month grid for whichever month the current day is in, with the window marked. Drawn as
    a full rectangle: the leading blanks were already there, and the trailing ones are new,
@@ -3103,28 +3318,34 @@ function runSim(stopOn,headline,done){
   const last=stopOn||days[days.length-1];
   const upto=days.filter((d)=>CAL.between(d,last)>=0);
 
-  /* "SIMULATING", not the beat name: five of the nine beats are named after months and the
-     heading under this one is the month, so it read "OCTOBER 2025 / OCTOBER 2025". */
-  $('sim-eyebrow').textContent=stopOn?'Simulating':'Playing the window out';
-  $('sim-skip').textContent='Tap to skip';
+  /* NO SCREEN CHANGE. The month is already on the office and the walk happens in it, so
+     the only thing that moves is the calendar and the only thing that changes is the
+     button, which becomes the way to skip. */
+  simRunning=true;
+  const go=$('b-desk');
+  if(go){ go.dataset.was=go.textContent; go.textContent='Tap to skip'; }
   /* BACK TO EMPTY WITHOUT SLIDING THERE. The bar ends a run full, so a plain reset would
      animate the previous window draining away under the first day of the new one. */
-  const bar=$('sim-bar');
+  const bar=$('off-mbar');
   bar.style.transition='none'; bar.style.width='0%';
   void bar.offsetWidth; bar.style.transition='';
-  show('s-sim');
+  const card=$('off-monthcard');
+  if(card) card.classList.add('running');
+  /* THE CALENDAR IS THE THING BEING WATCHED, so bring it to the top of the window rather
+     than walking a month somebody has scrolled past. */
+  if(card&&card.scrollIntoView) card.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'start'});
 
   let i=0;
   const paintAt=(n)=>{
     const cur=upto[n];
-    $('sim-month').textContent=CAL.MONTHS[cur.getMonth()]+' '+cur.getFullYear();
-    $('sim-day').textContent=CAL.longLabel(cur);
-    paintMonth($('sim-grid'),cur,days,events,stopKey);
-    $('sim-bar').style.width=Math.round(((n+1)/upto.length)*100)+'%';
+    $('off-mtitle').textContent=CAL.MONTHS[cur.getMonth()]+' '+cur.getFullYear();
+    $('off-mday').textContent=CAL.longLabel(cur);
+    paintMonth($('off-month'),cur,days,events,stopKey);
+    $('off-mbar').style.width=Math.round(((n+1)/upto.length)*100)+'%';
     const k=CAL.key(cur);
     const ev=events[k];
     const isStop=k===stopKey;
-    const t=$('sim-text'), sub=$('sim-sub');
+    const t=$('off-mtext'), sub=$('off-msub');
     if(isStop&&headline){ t.textContent=headline; sub.textContent='On your desk'; }
     else if(ev){ t.textContent=ev.text; sub.textContent=ev.sub||''; }
     else { t.textContent=''; sub.textContent=''; }
@@ -3132,7 +3353,14 @@ function runSim(stopOn,headline,done){
     return isStop?SIM_STOP:ev?SIM_EVENT:SIM_DAY;
   };
 
-  const finish=()=>{ stopSim(); done(); };
+  const finish=()=>{
+    stopSim();
+    simRunning=false;
+    const g=$('b-desk');
+    if(g&&g.dataset.was){ g.textContent=g.dataset.was; delete g.dataset.was; }
+    const c=$('off-monthcard'); if(c) c.classList.remove('running');
+    done();
+  };
   simSkip=finish;
   /* SOMEBODY WHO HAS ASKED THEIR DEVICE TO STOP MOVING THINGS gets the last day and the
      headline, with no month walked in front of them. */
@@ -3146,7 +3374,8 @@ function runSim(stopOn,headline,done){
   };
   step();
 }
-$('s-sim').onclick=()=>{ if(simSkip) simSkip(); };
+/* Tapping the calendar itself skips, the same way tapping the old full screen one did. */
+$('off-monthcard').onclick=()=>{ if(simRunning&&simSkip) simSkip(); };
 
 /* ── the season on the office screen ───────────────────────────────────────────────
    Three cards while the football is on: what it drew, who is winning, and what happened on
