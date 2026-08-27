@@ -362,7 +362,7 @@
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Create a free account</button>'+
         '<div><button class="rtgpg-ghost" id="rtgpgSignin" type="button">Already have one? Sign in</button></div>'+
         '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
-      $('rtgpgGo').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup'); else openSignin(); };
+      $('rtgpgGo').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup', { src:'pregame_cardgame' }); else openSignin(); };
       $('rtgpgSignin').onclick=openSignin;
       $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
       return;
@@ -432,7 +432,7 @@
     $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
     if($('rtgpgLb')) $('rtgpgLb').onclick=function(){ try{ RTG_LB.open(); }catch(e){} };
     if($('rtgpgInvite')) $('rtgpgInvite').onclick=function(){ if(window.RTGReferral) RTGReferral.share(); };
-    if($('rtgpgAcct')) $('rtgpgAcct').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup'); else openSignin(); };
+    if($('rtgpgAcct')) $('rtgpgAcct').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup', { src:'pregame_spent' }); else openSignin(); };
   }
 
   // Games whose all-time record is a TIME (lower = better); everything else is a

@@ -194,10 +194,25 @@
   // The Arcade Card upsell.
   // reason: 'locked' (a members-only game) | 'out' (today's go used) |
   //         'archive' | 'upsell' | undefined. opts.game / opts.name name it.
+  /* GA4 helper. The card funnel had no events at all: a report could see a
+     play start and a play blocked, then nothing until a subscription appeared
+     in Stripe, so which screen sells the card was unanswerable. Inert without
+     gtag, like every other emit on the site. */
+  function ga(ev, p){
+    try{
+      if(typeof window.gtag !== 'function') return;
+      var o = { game_name:'Run The Arcade' };
+      try{ o.tier = (window.RTGTokens && RTGTokens.tier) ? RTGTokens.tier() : 'guest'; }catch(e){}
+      for(var k in p) if(p.hasOwnProperty(k)) o[k]=p[k];
+      window.gtag('event', ev, o);
+    }catch(e){}
+  }
+
   function paywall(opts){
     opts=opts||{}; var reason=opts.reason||'out';
     ensureScrim();
     if(hasCard()){ renderMember(); open(); return; }   // already a member: manage, never sell a second card
+    ga('arcade_paywall_shown', { paywall_reason: reason, arcade_game: opts.game || pageGame() || 'none' });
     var chosen = 'annual';   // steer to best value by default
     var kicker, head, sub;
     if(reason==='archive'){
@@ -330,6 +345,7 @@
   function guestConvert(opts){
     opts = opts || {};
     ensureScrim();
+    ga('arcade_paywall_shown', { paywall_reason: opts.spent ? 'guest_spent' : 'guest_cardgame', arcade_game: pageGame() || 'none' });
     var b=$('rtgcardBody');
     var acct = '<button class="rtgc-create" id="rtgcardCreate" type="button"><b>'+
         (opts.spent ? 'Create a Free Account' : 'Or Create a Free Account')+'</b>'+
@@ -341,7 +357,7 @@
       (opts.spent ? (acct+banner) : (banner+acct))+
       '<button class="rtgc-ghost" id="rtgcardSignin" type="button">I already have an account</button>'+
       '<div class="rtgc-fine">No card required for account.</div>';
-    $('rtgcardCreate').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signup'); };
+    $('rtgcardCreate').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signup', { src: opts.spent ? 'wall_spent' : 'wall_cardgame' }); };
     $('rtgcardCard').onclick=function(){ paywall({ reason:'upsell' }); };
     $('rtgcardSignin').onclick=function(){ close(); if(window.RTGAuthUI) RTGAuthUI.open('signin'); };
     open();
@@ -351,6 +367,7 @@
   function startCheckout(plan){
     plan = plan==='annual'?'annual':'monthly';
     if(hasCard()){ renderMember(); return; }   // already a member: never start a second checkout
+    ga('arcade_checkout_started', { plan: plan });
     if(!signedIn()){
       // preserve intent, ask them to sign in / create an account, then resume.
       // Persisted (not just in memory): Google sign-up leaves the page and
@@ -358,7 +375,7 @@
       pending = plan;
       try{ localStorage.setItem('rtg:pendingplan', JSON.stringify({ p: plan, t: Date.now() })); }catch(e){}
       close();
-      if(window.RTGAuthUI){ RTGAuthUI.open('signup'); }
+      if(window.RTGAuthUI){ RTGAuthUI.open('signup', { src:'checkout' }); }
       return;
     }
     var go=$('rtgcardGo'); if(go){ go.disabled=true; go.textContent='Starting…'; }

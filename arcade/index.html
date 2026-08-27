@@ -974,12 +974,12 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/tokens.js?v=12"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=18"></script>
-<script src="/arcade/auth.js?v=3"></script>
-<script src="/arcade/mycard.js?v=10"></script>
+<script src="/arcade/board.js?v=19"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/mycard.js?v=11"></script>
 <script src="/arcade/topbanner.js?v=8"></script>
-<script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=18"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/card.js?v=19"></script>
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/nav.js?v=2"></script>
 <script src="/arcade/calendar.js?v=15"></script>
@@ -1228,7 +1228,7 @@ window.GA_ID='G-L29P5MRWKE';
       var k = (a.getAttribute('href')||'').match(/\/arcade\/([a-z]+)\//);
       var nm = a.querySelector('.nm');
       if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason:'locked', game:(k&&k[1])||null, name:(nm&&nm.textContent)||null });
-      else if(window.RTGAuthUI) RTGAuthUI.open('signup');
+      else if(window.RTGAuthUI) RTGAuthUI.open('signup', { src:'hub_tile_locked' });
     }, true);
     paint();
     document.addEventListener('rtg:tokens', paint);

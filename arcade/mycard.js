@@ -273,7 +273,7 @@
     var mng = document.getElementById('rtgmcManage');
     if (mng) mng.onclick = function () { close(); if (window.RTGCard && RTGCard.paywall) RTGCard.paywall({}); };
     var su = document.getElementById('rtgmcSignup');
-    if (su) su.onclick = function () { close(); if (window.RTGAuthUI) RTGAuthUI.open('signup'); };
+    if (su) su.onclick = function () { close(); if (window.RTGAuthUI) RTGAuthUI.open('signup', { src:'mycard' }); };
     var si = document.getElementById('rtgmcSignin');
     if (si) si.onclick = function () { close(); if (window.RTGAuthUI) RTGAuthUI.open('signin'); };
 

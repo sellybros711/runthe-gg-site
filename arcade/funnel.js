@@ -224,7 +224,7 @@
     var btn = document.createElement('button');
     btn.type = 'button'; btn.textContent = 'Create a free account';
     btn.addEventListener('click', function () {
-      try { if (window.RTGAuthUI && RTGAuthUI.open) { RTGAuthUI.open('signup'); return; } } catch (e) {}
+      try { if (window.RTGAuthUI && RTGAuthUI.open) { RTGAuthUI.open('signup', { src:'result_guest' }); return; } } catch (e) {}
       location.href = '/arcade/';
     });
     box.appendChild(msg); box.appendChild(btn);
