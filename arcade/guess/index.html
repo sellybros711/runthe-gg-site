@@ -701,7 +701,9 @@ window.GA_ID='G-L29P5MRWKE';
   var colCollege = { label:'College', cell:function(g,t){
     if(!g.col) return { st:'miss', v:'-' };
     var same = window.RTGType ? RTGType.sameCollege(g.col, t.col) : (g.col===t.col);
-    return { st: same ? 'hit' : 'miss', v:g.col };
+    // display form: the feed's "Miami, O." is a school nobody writes that way.
+    var shown = g.col; try{ if(window.RTGType && RTGType.schoolLabel) shown = RTGType.schoolLabel(g.col); }catch(e){}
+    return { st: same ? 'hit' : 'miss', v:shown };
   } };
   /* Honours, as four rungs rather than a list. A raw award list cannot be
      compared tile-to-tile, but "how decorated" can, and it is the axis people

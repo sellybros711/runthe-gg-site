@@ -43,6 +43,22 @@ const SAME = [
   ['WVU', 'West Virginia'], ['FAU', 'Florida Atlantic'], ['FIU', 'Florida International'],
   ['ODU', 'Old Dominion'], ['SDSU', 'San Diego State'], ['App State', 'Appalachian State'],
   ['Southern Miss', 'Southern Mississippi'], ['Penn', 'Pennsylvania'],
+  /* THE STATE QUALIFIER, WHICH THE FEEDS SPELL FOUR WAYS. This is the bug a
+     player emailed in: Ben Roethlisberger's row says "Miami, O.", he typed
+     "Miami (OH)", and the comparison stopped at "o" against "oh". Every
+     spelling of a state now collapses to one token, so all of these are the
+     one answer they have always been. */
+  ['Miami (OH)', 'Miami, O.'], ['Miami OH', 'Miami, O.'], ['Miami Ohio', 'Miami, O.'],
+  ['Miami (FL)', 'Miami (Fla.)'], ['Miami Florida', 'Miami (Fla.)'],
+  ['California (PA)', 'California, Pa.'], ['Monmouth', 'Monmouth, N.J.'],
+  ['Augustana', 'Augustana, S.D.'], ['Albany State', 'Albany State, Ga.'],
+  ['Western State', 'Western State, Colo.'], ['Wayne State', 'Wayne State (NE)'],
+  ['Murray State', 'Murray State (KY)'], ['Regina', 'Regina, Can.'],
+  ['Regina (Canada)', 'Regina, Can.'],
+  /* "St." is Saint in front and State on the end, and the table could only say
+     one. It said State, so "St. Mary's (CA)" became "state marys ca". */
+  ["Saint Mary's (CA)", "St. Mary's (CA)"], ["St. John's", "Saint John's"],
+  ['Michigan St', 'Michigan State'], ['Ohio', 'Ohio U.'], ['Ohio University', 'Ohio U.'],
   ['Ohio St', 'Ohio State'], ['Michigan St', 'Michigan State'],
   ['St Johns', "St. John's"], ['Miami', 'Miami (FL)'], ['Miami Fla', 'Miami (Fla.)'],
   ['William and Mary', 'William & Mary'], ['Cal Poly', 'Cal Poly San Luis Obispo'],
@@ -78,6 +94,13 @@ const DIFFER = [
   ['Miami', 'Ohio'], ['Georgia', 'Georgia Tech'], ['Virginia', 'Virginia Tech'],
   ['Texas', 'Texas Tech'], ['Utah', 'Utah State'], ['Nevada', 'UNLV'],
   ['BC', 'Boston University'], ['BU', 'Boston College'],
+  /* The state token collapses spellings; it must never collapse SCHOOLS. Two
+     Miamis stay two Miamis, and a state word at the FRONT is a school name
+     (Ohio University, Indiana, Iowa) rather than a postcode. */
+  ['Miami (OH)', 'Miami (FL)'], ['Miami (OH)', 'Miami (Fla.)'], ['Miami, O.', 'Miami (FL)'],
+  ['Ohio', 'Ohio State'], ['Ohio U.', 'Ohio State'], ['Miami (OH)', 'Ohio State'],
+  ['Indiana', 'Indiana State'], ['Iowa', 'Iowa State'], ['Washington', 'Washington State'],
+  ["St. Mary's (CA)", "Saint Joseph's College (IN)"],
 ];
 console.log('\n2) two different schools stay two different schools');
 for (const [a, b] of DIFFER) {
@@ -111,5 +134,67 @@ if (!corpus) {
   if (orphan.length) fail('alias targets no player attended: ' + orphan.join(', '));
   else console.log('  ok, all ' + new Set(targets).size + ' alias targets exist in the corpus');
 }
+/* ---- 4. one school, one spelling, in the data we ship --------------------- */
+/* The recurrence guard. Section 1 proves the MATCHER handles a spelling; this
+   proves we are not carrying two spellings of one school in the first place,
+   which is what put "Miami, O." in front of a player as the right answer to a
+   question he had answered correctly. Two labels that normalise to one key are
+   one school written two ways: pick one and repair the other, in the build or
+   in supplement.js. */
+console.log('\n4) no school is spelled two ways in the corpus');
+if (!corpus) {
+  console.log('  skipped: the corpus did not load');
+} else {
+  const byKey = new Map();
+  for (const e of corpus) {
+    if (!e || !e.col) continue;
+    const k = T.schoolKey(e.col);
+    if (!k) continue;
+    if (!byKey.has(k)) byKey.set(k, new Set());
+    byKey.get(k).add(String(e.col));
+  }
+  /* A BASELINE, NOT A CLEAN SHEET. Nineteen schools already carry two labels
+     because the feeds disagree, and the matcher now unifies every one of them,
+     so they cost a player nothing: this is a display wart, not a wrong answer.
+     Failing on all nineteen tonight would make the check something people
+     learn to skip, which is exactly what the dash checker's own notes warn
+     against. So the known ones are listed and the check fails on a NEW one,
+     which is the thing worth catching. Repair one and delete its line. */
+  const KNOWN = new Set([
+    'louisianastate', 'connecticut', 'nevadalasvegas', 'southerncalifornia',
+    'texaselpaso', 'louisianamonroe', 'northcarolinastate', 'calpolysanluisobispo',
+    'texaschristian', 'brighamyoung', 'southernmethodist', 'bowlinggreenstate',
+    'californiapa', 'louisianalafayette', 'detroitmercy', 'saintmarysca',
+    'wisconsinoshkosh'
+  ]);
+  const dupes = [...byKey.entries()].filter(([, v]) => v.size > 1);
+  const fresh = dupes.filter(([k]) => !KNOWN.has(k));
+  for (const [k, v] of fresh) fail('one school, two spellings: ' + [...v].join('  vs  ') + '   [key ' + k + ']');
+  const old = dupes.length - fresh.length;
+  if (!fresh.length) {
+    console.log('  ok, no NEW double-spelling (' + old + ' known ones still to tidy, all matched correctly)');
+  }
+}
+
+/* ---- 5. every college we ship is accepted as itself, and as it is PRINTED - */
+/* The player types what the screen shows them. Alma Mater prints
+   RTGType.schoolLabel(col) now, so if the label were not itself an accepted
+   answer we would be showing somebody a word and then refusing it. This closes
+   that loop over the whole corpus rather than over a list of examples. */
+console.log('\n5) every college accepts itself and its printed label');
+if (!corpus) {
+  console.log('  skipped: the corpus did not load');
+} else {
+  const cols = [...new Set(corpus.filter((e) => e && e.col).map((e) => String(e.col)))];
+  let n = 0;
+  for (const c of cols) {
+    const label = T.schoolLabel(c);
+    if (!T.sameCollege(c, c)) fail('a college does not accept itself: ' + c);
+    else if (!T.sameCollege(label, c) || !T.sameCollege(c, label)) fail('printed "' + label + '" but would refuse it for ' + c);
+    else n++;
+  }
+  if (n === cols.length) console.log('  ok, all ' + n + ' colleges');
+}
+
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }
 console.log('\ncolleges ok');

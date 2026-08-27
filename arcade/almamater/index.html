@@ -420,7 +420,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/pregame.js?v=24"></script>
 <script src="/arcade/howto.js?v=21"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
-<script src="/arcade/type.js?v=3"></script>
+<script src="/arcade/type.js?v=4"></script>
 <script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
@@ -467,6 +467,12 @@ window.GA_ID='G-L29P5MRWKE';
      A player is included only if a college is on record; international players
      who never attended a US college simply aren't in the pool. College data is
      collected by the roster/former GitHub Actions, so the pool self-updates. ---- */
+  /* The feed writes some schools as abbreviations ("Miami, O.", "California,
+     Pa."). Those are answers a player reads, so they are printed the way a
+     person writes them. Display only: every comparison on this page still
+     runs on the raw value, and RTGType.sameCollege accepts both spellings. */
+  function label(c){ try{ return (window.RTGType && RTGType.schoolLabel) ? RTGType.schoolLabel(c) : c; }catch(e){ return c; } }
+
   function normCol(c){ return String(c||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
   function badCol(c){ return !c || /^(none|n\/?a|unknown|no college|--)$/i.test(String(c).trim()); }
   var corpF={}; ENT.forEach(function(e){ if(e&&TEAM_SPORTS[e.sport]){ var k=e.name+'|'+e.sport; corpF[k]=Math.max(corpF[k]||0, e.f||0); } });
@@ -638,7 +644,7 @@ window.GA_ID='G-L29P5MRWKE';
     startIfNeeded();
     bailed=true;
     choicesEl.hidden=false;
-    choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(c)+'</button>'; }).join('');
+    choicesEl.innerHTML = r.opts.map(function(c,i){ return '<button class="choice" type="button" data-i="'+i+'">'+esc(label(c))+'</button>'; }).join('');
     [].forEach.call(choicesEl.querySelectorAll('.choice'), function(bt){ bt.addEventListener('click', function(){ resolve(r.opts[+bt.dataset.i]===r.col, bt); }); });
     setAnswerEnabled(true);
     setSub('One of these four. Worth 1.');
@@ -705,13 +711,13 @@ window.GA_ID='G-L29P5MRWKE';
     if(right){
       ANSLOG.push(String(got));
       run+=got; document.getElementById('runN').textContent=run;
-      setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(r.col)+'</span>', 'score');
+      setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(label(r.col))+'</span>', 'score');
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
       setTimeout(function(){ busy=false; renderRound(); answerIn.focus(); }, 1400);
     } else {
       ANSLOG.push('x');
-      setSub('<span class="pts">Miss.</span> <span class="school">It was '+esc(r.col)+'.</span>', 'miss');
+      setSub('<span class="pts">Miss.</span> <span class="school">It was '+esc(label(r.col))+'.</span>', 'miss');
       if(window.RTGSound) RTGSound.wrong();
       setTimeout(function(){ finish(); }, 2000);
     }
