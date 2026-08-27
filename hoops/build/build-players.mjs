@@ -106,11 +106,47 @@ export function marketScore(row) {
     + at(row.blk) * W.blk + at(row.stl) * W.stl;
 }
 
-export function priceOf(row) {
+/* ── PRICE AND VALUE HAVE TO BE MEASURED THE SAME WAY ──────────────────────
+ *
+ * They were not, and it made a tenth of the board junk for a reason that has
+ * nothing to do with basketball.
+ *
+ * Win shares are a COUNT: play half a season and you produce half of them.
+ * The market score above is a RATE: it is built from per-game averages, which
+ * a short season does not touch. So a man who played 25 games was priced like
+ * a man who played 82 and valued like a man who played 25.
+ *
+ * Measured across the shipped data, holding scoring equal at 14 to 18 points a
+ * game, a player traded mid-season carried a median 2.1 win shares against 5.4
+ * for a player who stayed put, at 23.5 against 24.5 million dollars. Less than
+ * half the production for the same money, on 1,508 rows, and nothing on the
+ * board said why.
+ *
+ * AVAILABILITY IS THE MISSING TERM, and it belongs on the price. A front office
+ * pays for a season; twenty-five games is not one. Applied to the part of the
+ * price above the minimum, so the floor stays a floor, and applied AFTER the
+ * curve rather than to the score: scaling the score would run the exponent over
+ * it as well and turn every injured player into a bargain, which is the same
+ * mistake pointed the other way.
+ *
+ * This is not only about trades. A star who missed thirty games with an ankle
+ * now costs what thirty fewer games are worth, and the board says how many he
+ * played, so "is this injured season worth it" becomes a real question with a
+ * fair answer instead of a trap.
+ */
+export function availability(row, clubGames) {
+  const played = typeof row.g === 'number' ? row.g : null;
+  const full = clubGames || 82;
+  if (played === null || !(full > 0)) return 1;
+  return Math.max(0, Math.min(1, played / full));
+}
+
+export function priceOf(row, clubGames) {
   const P = PRICING;
   const span = P.TOP_SCORE - P.FLOOR_SCORE;
   const t = Math.max(0, Math.min(1, (marketScore(row) - P.FLOOR_SCORE) / span));
-  const price = P.BASE_MUSD + (P.MAX_MUSD - P.BASE_MUSD) * Math.pow(t, P.K);
+  const over = (P.MAX_MUSD - P.BASE_MUSD) * Math.pow(t, P.K);
+  const price = P.BASE_MUSD + over * availability(row, clubGames);
   return Math.round(price * 10) / 10;
 }
 
@@ -215,13 +251,20 @@ function main() {
    * man who played 40 of 82 is still worth half a season and a man who played
    * 40 of 50 is not.
    */
+  /* HOISTED OUT OF THE NORMALIZATION BLOCK, because the pricing pass below
+     needs the same answer. A club's schedule is the most games any of its
+     players managed, and that one number is now doing two jobs: it decides
+     whether a season was short enough to normalize, and it is the denominator
+     for how much of it each player was actually available for. */
+  const teamSchedule = new Map();
+  for (const r of rows) {
+    if (typeof r.g !== 'number') continue;
+    const k = `${r.s}|${r.t}`;
+    teamSchedule.set(k, Math.max(teamSchedule.get(k) || 0, r.g));
+  }
+
   {
-    const teamGames = new Map();
-    for (const r of rows) {
-      if (typeof r.g !== 'number') continue;
-      const k = `${r.s}|${r.t}`;
-      teamGames.set(k, Math.max(teamGames.get(k) || 0, r.g));
-    }
+    const teamGames = teamSchedule;
     const FULL = 82;
     /* THE SHORTEST REAL SCHEDULE IS 50 GAMES, the 1999 lockout, and that is the
        floor rather than a cap on the factor. Capping the factor was the first
@@ -314,7 +357,7 @@ function main() {
       ...row,
       dr: row.dr ?? (extra ? extra.dr : null),
       col: row.col ?? (extra ? extra.col : null),
-      p: priceOf(row),
+      p: priceOf(row, teamSchedule.get(`${row.s}|${row.t}`)),
     };
     /* SORTED BY PRESTIGE HERE, once, at build time. The page shows the best one
        on a tile and the whole list on a roster row, and doing the ordering in
@@ -324,13 +367,30 @@ function main() {
       won.sort((a, b) => (AWARD_RANK[a] ?? 99) - (AWARD_RANK[b] ?? 99));
       out.aw = won;
     }
-    /* Games played was an input to the playing-time floor above and is not read
-       by anything at runtime. Every field in this file is downloaded by every
-       visitor, so a field nobody uses is bytes on somebody's phone. Minutes
-       stays: a draft board saying 34 a night is telling the reader something. */
-    delete out.g;
+    /* GAMES NOW SHIPS. It used to be deleted here as an input the runtime did
+       not read, on the grounds that a field nobody uses is bytes on somebody's
+       phone. It is read now, twice: the price above is scaled by it, and the
+       board prints it, because "62 games" is the difference between a bargain
+       and an injury and the reader deserves to be told which. */
     return out;
   });
+
+  /* WHAT AVAILABILITY ACTUALLY LOOKS LIKE, printed, because the price now
+     depends on it and the shape of it was a guess until this line existed.
+     If most of the league sits well below a full schedule then scaling against
+     the full schedule deflates every price and the cap buys more than it was
+     fitted to buy, which is a balance change hiding inside a data change. */
+  {
+    const av = priced
+      .map((p) => availability(p, teamSchedule.get(`${p.s}|${p.t}`)))
+      .sort((a, b) => a - b);
+    const at = (q) => av[Math.floor(av.length * q)] ?? 1;
+    const under = (x) => av.filter((v) => v < x).length;
+    console.log(`  availability: median ${at(0.5).toFixed(2)} of the club's schedule`
+      + ` (p10 ${at(0.1).toFixed(2)}, p25 ${at(0.25).toFixed(2)}, p75 ${at(0.75).toFixed(2)})`);
+    console.log(`    ${under(0.99)} rows under a full schedule, ${under(0.7)} under 70%, `
+      + `${under(0.4)} under 40%`);
+  }
 
   if (draft) {
     const withDraft = priced.filter(p => p.dr).length;
