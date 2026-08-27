@@ -41,7 +41,7 @@
     almamater:  ['Name the college each player attended.', 'Type it for 2 points, take four choices for 1.'],
     guess:      ['Guess the mystery player, from any era.', 'Eight tries. Tiles compare careers, not this season.'],
     crossword:  ['Fill the sports mini crossword.', 'Beat the clock; no mistakes for a flawless.'],
-    sportegories: ['One letter, eight categories, two minutes.', 'Every answer has to start with that letter. Rarer names score more.'],
+    sportegories: ['One letter, eight categories, two minutes.', 'First or last name starts with the letter. Rarer names score more.'],
     rollcall:   ['One club, one season, ninety seconds.', 'Name as many of that roster as you can. Wrong names cost nothing but the clock.'],
     chain:      ['Two players, two teammates in between.', 'Each name has to have played alongside the one above it. Four wrong and the chain breaks.'],
     highlow:    ['One stat, two players. Higher or lower?', 'Call every athlete that follows. There is no finish line, only your best.'],

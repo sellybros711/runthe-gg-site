@@ -57,7 +57,7 @@
     ],
     sportegories: [
       'One letter, eight sports categories, two minutes.',
-      'Type a full name that fits each category and starts with the letter.',
+      'Type a full name. The FIRST or the LAST name can start with the letter: on B, Bosh works and so does Barry Bonds.',
       'Bank the easy ones fast; you can come back to anything that stalls.',
       'The clock ends the round. Fill all eight for a perfect day.'
     ],
@@ -206,7 +206,12 @@
     document.body.appendChild(scrim);
 
     // ---- open/close + first-visit flag ----------------------------------
-    var FLAG = 'rtg:howto:' + key;
+    /* howto2, not howto: the demos replaced a wordy modal that used the old
+       key, so every existing player's flag was already set and nobody who knew
+       the games ever saw a single animation. The owner wants the animated
+       intro to be the thing that comes up, once, for everyone; the wordy rules
+       are inside it behind "Scoring and rules". One key bump = one showing. */
+    var FLAG = 'rtg:howto2:' + key;
     function seen(){ try{ return !!localStorage.getItem(FLAG); }catch(e){ return true; } }
     function markSeen(){ try{ localStorage.setItem(FLAG, '1'); }catch(e){} }
     function isOpen(){ return scrim.classList.contains('on'); }

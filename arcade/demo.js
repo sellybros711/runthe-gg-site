@@ -237,7 +237,7 @@
       var n = note('Letter D'), t = tiles('DUNCAN', { small: true, blank: true }), f = field('Type a name');
       var word = 'DUNCAN';
       return {
-        cap: ['Every answer has to start with the letter.', 'Rarer names score more. Two minutes, eight categories.'],
+        cap: ['First OR last name starts with the letter.', 'Rarer names score more. Two minutes, eight categories.'],
         nodes: [n, t, f],
         acts: [{ at: 300, fn: function () { n.text('NBA · Power forwards'); } }]
           .concat(typeInto(f, 'Duncan', 700, 130))
