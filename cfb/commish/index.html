@@ -393,6 +393,120 @@
     text-transform:uppercase;letter-spacing:.01em}
   .tail p{margin-top:7px;font-size:14px;line-height:1.45;color:var(--dim)}
 
+
+  /* ── THE DATA CENTRE ──────────────────────────────────────────────────────────────
+     Chart chrome recedes and the data does not. Every rule here has a reason written next
+     to it in the painter; what is here is the paint. */
+  .dcbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:2px;gap:2px}
+  .seg button{appearance:none;border:0;background:transparent;cursor:pointer;padding:7px 11px;
+    border-radius:7px;font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--dim);
+    white-space:nowrap}
+  .seg button.on{background:var(--panel-2);color:var(--ink);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+
+  .dccard{padding-bottom:10px}
+  .dchead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 12px;margin-bottom:6px}
+  .dctitle{flex:1 1 auto;min-width:0}
+  .dctitle b{display:block;font-size:14px;font-weight:800;color:var(--ink);line-height:1.2}
+  .dctitle span{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--dim-2);margin-top:2px}
+  /* THE HERO FIGURE WEARS THE SAME SANS AS EVERYTHING ELSE, not the display face, and it
+     takes proportional figures: equal-width digits make a big number look loose. */
+  .dcnow{text-align:right;flex:0 0 auto}
+  .dcnow b{display:block;font-size:27px;font-weight:800;line-height:1;color:var(--ink);
+    font-variant-numeric:proportional-nums}
+  .dcnow em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--dim)}
+  .dcnow em.up{color:var(--green)} .dcnow em.dn{color:#f87171}
+  .dcnow i{display:block;font-style:normal;font-size:10.5px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--dim-2);margin-top:2px}
+
+  /* A LEGEND IS ALWAYS PRESENT FOR MORE THAN ONE SERIES, and its key is a short stroke
+     rather than a filled block, because the mark on the plot is a line. */
+  .dclegend{display:flex;flex-wrap:wrap;gap:4px 14px;width:100%}
+  .dclegend span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+  .dclegend i{width:14px;height:2px;border-radius:2px;flex:0 0 auto}
+  .dclegend b{color:var(--ink);font-weight:800}
+
+  .dcplot{position:relative}
+  .dcsvg{display:block;width:100%;height:auto;overflow:visible;outline:none}
+  .dcsvg:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:6px}
+  /* SOLID HAIRLINES, NEVER DASHED. A dashed grid reads as a projection or a threshold when
+     it is neither, and at this density it is just noise. */
+  .dcgrid{stroke:var(--line);stroke-width:1}
+  .dcbase{stroke:var(--dim-2);stroke-width:1;opacity:.55}
+  .dcline{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+  .dcend{stroke:var(--panel);stroke-width:2}
+  /* A RULING, AND IT IS AN ANNOTATION RATHER THAN A DATA POINT. First pass drew these
+     ringed in full ink and a term with fourteen rulings in it came back as fourteen bright
+     beads with a line threaded through them: the marks read as the data and the line read
+     as the decoration, which is backwards. They are not hover targets either, because the
+     crosshair already owns the whole height of the plot, so they do not need the eight
+     pixels a target needs. Small, dim, and only there when you look for them. */
+  .dcmark{fill:var(--panel);stroke:var(--dim-2);stroke-width:1;opacity:.85}
+  .dcyt,.dcxt{fill:var(--dim-2);font-size:9.5px;font-family:var(--fn);
+    font-variant-numeric:tabular-nums}
+  /* Direct labels, selectively: the high, the low, and each line's own end in compare. */
+  .dcdl{fill:var(--dim);font-size:10px;font-weight:700;font-family:var(--fn)}
+  .dccross line{stroke:var(--dim-2);stroke-width:1;opacity:.8}
+
+  .dctip{position:absolute;top:2px;pointer-events:none;background:var(--panel-2);
+    border:1px solid var(--line-2);border-radius:8px;padding:7px 9px;min-width:104px;
+    box-shadow:0 6px 18px rgba(0,0,0,.45);z-index:3}
+  .dctip b{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--dim-2);margin-bottom:4px}
+  /* VALUES LEAD, LABELS FOLLOW: the legend's hierarchy inverted, because here the reader
+     has the series and wants the number. */
+  .dctip span{display:flex;align-items:baseline;gap:6px;font-size:11.5px;color:var(--dim);
+    white-space:nowrap}
+  .dctip i{width:10px;height:2px;border-radius:2px;flex:0 0 auto;align-self:center}
+  .dctip em{font-style:normal;font-size:13px;font-weight:800;color:var(--ink)}
+  .dctip u{display:block;text-decoration:none;font-size:11px;color:var(--ink);
+    margin-top:5px;padding-top:5px;border-top:1px solid var(--line);max-width:150px;
+    white-space:normal;line-height:1.35}
+
+  .dcfoot{margin-top:8px;font-size:12px;line-height:1.45;color:var(--dim)}
+  .dcnone{padding:26px 4px;text-align:center;font-size:13px;line-height:1.5;color:var(--dim)}
+
+  .dcgroup{margin-bottom:10px}
+  .dcgroup:last-child{margin-bottom:0}
+  .dcgroup>span{display:block;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim-2);margin-bottom:6px}
+  .dcgroup>div{display:flex;flex-wrap:wrap;gap:6px}
+  .dcchip{appearance:none;cursor:pointer;padding:7px 10px;border-radius:999px;
+    background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    font-family:var(--fn);font-size:12px;font-weight:700}
+  .dcchip.on{border-color:var(--sc,var(--line-2));color:var(--ink);background:var(--panel-2)}
+  /* The selected chip carries a dot in its own series colour, so the chip and the line it
+     draws are tied together by more than position. */
+  .dcchip.on::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--sc,var(--dim));margin-right:6px;vertical-align:middle}
+
+  .dcroom{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .dccell{appearance:none;cursor:pointer;text-align:left;background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:8px 9px;display:grid;gap:2px}
+  .dcname{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    color:var(--dim);min-width:0}
+  .dcname i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+  .dcspark{display:block;width:100%;height:24px;overflow:visible}
+  .dcspark path{fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+  .dcflat{display:block;height:24px}
+  .dcval{display:flex;align-items:baseline;gap:5px}
+  .dcval b{font-size:17px;font-weight:800;color:var(--ink)}
+  .dcval em{font-style:normal;font-size:11px;font-weight:700;color:var(--dim-2)}
+  .dcval em.up{color:var(--green)} .dcval em.dn{color:#f87171}
+
+  .dctab{width:100%;border-collapse:collapse;margin-top:10px;font-size:11.5px;
+    font-variant-numeric:tabular-nums}
+  .dctab th,.dctab td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--line);
+    white-space:nowrap}
+  .dctab thead th{color:var(--dim-2);font-size:10px;letter-spacing:.06em;
+    text-transform:uppercase;font-weight:700}
+  .dctab th[scope=row]{text-align:left;color:var(--dim);font-weight:600}
+  .dctab td{color:var(--ink)}
+  .dctab td:last-child{text-align:left;color:var(--dim);white-space:normal;max-width:150px}
+  .dcnote{font-size:12px;color:var(--dim);margin-top:10px}
+
   /* ── WHAT EVERYBODY ELSE DID ──────────────────────────────────────────────────────
      The percentage is the point, so it is set at display size and everything around it is
      small. A number this size next to three bars is a claim; the same number inside a
@@ -1265,6 +1379,11 @@
     <!-- DOCKED, because the office runs to two screens and the only action on it was at the
          bottom of the second one. A first time player landed on five cards of numbers with
          nothing to press in sight. -->
+    <!-- THE TAPE. Every other card on this screen says where a number IS; this is the one
+         way into where it has BEEN. Above the dock rather than in it, because the dock is
+         the one thing that moves the term forward and a second button in it would compete
+         with that. -->
+    <button class="btn ghost" id="b-data">Open the data centre</button>
     <div class="dock"><button class="btn" id="b-desk">See what is on the desk</button></div>
   </div>
 
@@ -1309,6 +1428,48 @@
       <div id="d-council"></div>
     </div>
     <div class="dock"><button class="btn" id="b-rule">Rule</button></div>
+  </div>
+
+  <!-- THE DATA CENTRE. Where every number in the mode has been, rather than where it is. -->
+  <div class="screen" id="s-data" data-in="rise">
+    <div class="eyebrow gold">The tape</div>
+    <h2 style="margin-bottom:12px">Data centre</h2>
+    <!-- ONE FILTER ROW, ABOVE EVERYTHING IT SCOPES, and never inside a chart card. Both
+         controls re-render the chart, the room and the table together, so the numbers on
+         this screen always agree with each other. -->
+    <div class="dcbar">
+      <div class="seg" id="dc-range" role="group" aria-label="How far back to look">
+        <button type="button" data-r="season" aria-pressed="false">This season</button>
+        <button type="button" data-r="term" class="on" aria-pressed="true">Whole term</button>
+      </div>
+      <div class="seg" id="dc-mode" role="group" aria-label="What to draw">
+        <button type="button" data-m="one" class="on" aria-pressed="true">One line</button>
+        <button type="button" data-m="cmp" aria-pressed="false">Compare</button>
+      </div>
+    </div>
+
+    <div class="card flat dccard">
+      <div class="dchead" id="dc-head"></div>
+      <div class="dcplot" id="dc-plot"></div>
+      <div class="dcfoot" id="dc-foot"></div>
+    </div>
+
+    <div class="card flat" id="dc-pickcard">
+      <div class="eyebrow" style="margin-bottom:9px">What to look at</div>
+      <div id="dc-pick"></div>
+    </div>
+
+    <div class="card flat">
+      <div class="eyebrow" style="margin-bottom:9px">The room, nine at once</div>
+      <div class="dcroom" id="dc-room"></div>
+    </div>
+
+    <div class="card flat">
+      <button class="btn ghost sm" id="b-dctable">Read it as a table</button>
+      <div id="dc-table" hidden></div>
+    </div>
+
+    <div class="dock"><button class="btn" id="b-dcback">Back to the office</button></div>
   </div>
 
   <!-- The room answers. The screen the mode is remembered for. -->
@@ -1423,6 +1584,9 @@
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=1"></script>
+<!-- Captures nothing off window at load time: it is handed the world by the page and the
+     beat names by the caller, so its position here is free. -->
+<script src="metrics.js?v=1"></script>
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=1"></script>
@@ -1887,7 +2051,7 @@ function sportFacts(w){
 const FACT_ICON=[
   G('<path d="M3 5h6v14H3z"/><path d="M15 5h6v14h-6z"/><path d="M9 12h6"/>'),
   G('<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12l6 6"/>'),
-  G('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/>'),
+  G('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.2"/>'),
   G('<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18"/><path d="M8 3v3M16 3v3"/>'),
 ];
 function paintSport(el,w,before){
@@ -2185,6 +2349,18 @@ function paintFuses(el,w){
 
 /* ── the office ───────────────────────────────────────────────────────────────── */
 function office(){
+  /* ── THE TAPE GETS A POINT ──────────────────────────────────────────────────────
+     HERE AND AFTER A RULING, and those two are the whole recorder. The office is the top of
+     every beat, so a point here is the state you were handed; a point after a ruling is the
+     state you left. Between them the data centre has the shape of a term.
+
+     record() is idempotent per (year, beat, rulings), so it does not matter that this runs on
+     every repaint, on a reload landing back on the same beat, or twice because a player
+     pressed something twice. See metrics.js: same position overwrites, new position appends.
+     Recording here rather than inside advance() is deliberate, because advance() is not the
+     only way onto a beat: loading a saved term lands on one too, and a term reopened after a
+     week would otherwise have a hole in it exactly where the player stopped. */
+  if(window.PS_CFB_METRICS){ window.PS_CFB_METRICS.record(world); save(); }
   /* THE CALENDAR RATHER THAN THE STRIP. The office is where you decide what to spend a beat
      on, and that decision wants the whole term in front of it. The strip stays on the desk,
      which is a screen about one item and has no business showing five years. */
@@ -2307,6 +2483,54 @@ function situationOn(day){
 /* THE ITEM IS DRAWN BEFORE THE DAYS ARE WALKED, not after, because the simulation has to
    know which day to stop on and what to say when it gets there. Drawing it afterwards would
    mean the calendar ran to an arbitrary date and the headline arrived from nowhere. */
+/* ── the data centre's controls ───────────────────────────────────────────────────
+   ONE ROW OF FILTERS, and both of them re-render everything below them together, so the
+   chart, the nine sparklines and the table can never be describing different slices. */
+$('b-data').onclick=()=>{ paintData(); show('s-data'); };
+$('b-dcback').onclick=()=>{ office(); show('s-office'); };
+$('dc-range').onclick=(e)=>{
+  const b=e.target.closest('button[data-r]'); if(!b) return;
+  dcState.range=b.dataset.r; dcState.at=-1;
+  dcSeg('dc-range','data-r',dcState.range);
+  paintData();
+};
+$('dc-mode').onclick=(e)=>{
+  const b=e.target.closest('button[data-m]'); if(!b) return;
+  dcState.mode=b.dataset.m; dcState.at=-1;
+  dcSeg('dc-mode','data-m',dcState.mode);
+  paintData();
+};
+/* Picking a series from the chip list, or from one of the nine room cells, which is the
+   same action: the cell is a chip that happens to be drawn as a chart. */
+$('dc-pick').onclick=(e)=>{
+  const b=e.target.closest('button[data-s]'); if(!b) return;
+  dcState.id=b.dataset.s; dcState.at=-1; dcState.mode='one';
+  dcSeg('dc-mode','data-m','one');
+  paintData();
+};
+$('dc-room').onclick=(e)=>{
+  const b=e.target.closest('button[data-s]'); if(!b) return;
+  dcState.id=b.dataset.s; dcState.at=-1; dcState.mode='one';
+  dcSeg('dc-mode','data-m','one');
+  paintData();
+  /* The chart is above the room, so a tap down here moves the thing being looked at off
+     screen. Bring it back rather than leaving the player to scroll up and wonder. */
+  const c=document.querySelector('.dccard');
+  if(c&&c.scrollIntoView) c.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'start'});
+};
+$('b-dctable').onclick=()=>{ dcState.table=!dcState.table; dcTable(); };
+/* aria-pressed AND the class, together, because the segmented control says which of two
+   things is on by colour alone otherwise, and that is the one thing a screen reader cannot
+   see. */
+function dcSeg(id,attr,val){
+  const key=attr.replace('data-','');
+  document.querySelectorAll('#'+id+' button').forEach((b)=>{
+    const on=b.dataset[key]===val;
+    b.classList.toggle('on',on);
+    b.setAttribute('aria-pressed',on?'true':'false');
+  });
+}
+
 $('b-desk').onclick=()=>{
   /* THE WINDOW DECIDES WHICH ITEM, because the item decides the day. See situationOn(). */
   sit=SIT?(function(){
@@ -2828,6 +3052,468 @@ function paintTail(el,tail){
   reveal(el);
 }
 
+/* ── THE DATA CENTRE ──────────────────────────────────────────────────────────────
+   A chart is the one thing on this site that can be confidently, silently wrong, so the
+   rules it is built to are written down rather than felt:
+
+   ONE AXIS. Never two. Viewership is 1.4, the pool is 1.3 billion, the meters are out of a
+   hundred, and putting any two of them on one plot with a scale down each side invents a
+   correlation the numbers do not contain: slide one axis and the same data tells the
+   opposite story. So a chart draws ONE series at its own scale, the way a stock app draws
+   one ticker, and comparing is a separate mode that rebases everything to 100 at the left
+   edge. Percent moved is a real shared unit. Two y-axes is not.
+
+   THE GRID RECEDES AND THE LINE DOES NOT. Hairlines one shade off the card, solid rather
+   than dashed, because a dashed grid reads as a projection or a threshold when it is
+   neither. Two pixel line, eight pixel markers, and a wash under the line at low alpha so
+   the shape carries without the fill competing with it.
+
+   NUMBERS WEAR TEXT COLOURS. The value in the readout is ink, the label beside it is dim,
+   and the only coloured thing is the two pixel key next to them. A number set in the
+   series colour is data-weight ink doing a label's job, and it goes grey on the third
+   series that needs it.
+
+   AND NOT A NUMBER ON EVERY POINT. Ninety points with ninety labels is unreadable and
+   goes unread. The high and the low of the window are labelled, the crosshair carries the
+   rest, and the table under it carries all of them for anybody who cannot hover.
+
+   THE COLOURS WERE VALIDATED, NOT CHOSEN. See metrics.js: the three that appear together
+   in compare mode pass a lightness band, a chroma floor, colour-blind separation, a
+   normal-vision floor and contrast against this card. The nine bloc colours FAIL that test
+   as a set of nine, which is why the room is nine separate sparklines rather than nine
+   lines on one plot. */
+const DCBOX = { x: 34, y: 12, w: 302, h: 132 };
+const DCVIEW = { w: 348, h: 178 };
+/* Where the x-axis labels sit, inside the viewBox rather than clipped by it: a plot sized
+   without room for its own axis gets a tiny nested scrollbar in the card. */
+const DCAXIS = DCBOX.y + DCBOX.h + 16;
+
+let dcState = { range: 'term', mode: 'one', id: 'standing', table: false, at: -1 };
+
+/* THE SERIES ON SCREEN, resolved once so the chart, the readout, the crosshair and the
+   table all read the same list and cannot disagree about what is being drawn. */
+function dcSeries() {
+  const MT = window.PS_CFB_METRICS;
+  if (!MT) return [];
+  const ids = dcState.mode === 'cmp' ? MT.COMPARE : [dcState.id];
+  return ids.map((id) => {
+    const s = MT.BY_ID[id];
+    if (!s) return null;
+    const raw = MT.points(world, id, dcState.range, seasonNow());
+    if (!raw.length) return { s, raw, pts: raw, ext: null };
+    /* COMPARE MODE REBASES. A series whose first value is zero cannot be rebased and is
+       dropped rather than drawn wrong, and the footer says which, because a line quietly
+       missing is worse than a line labelled absent. */
+    const pts = dcState.mode === 'cmp' ? MT.indexed(raw) : raw;
+    return { s, raw, pts, ext: null };
+  }).filter(Boolean);
+}
+
+/* One extent across every visible series, which is what makes compare mode honest: three
+   indexed lines share one scale because they are all in the same unit. */
+function dcExtent(rows) {
+  const MT = window.PS_CFB_METRICS;
+  const live = rows.filter((r) => r.pts && r.pts.length);
+  if (!live.length) return null;
+  if (dcState.mode !== 'cmp') return MT.extent(live[0].pts, live[0].s);
+  const all = [];
+  live.forEach((r) => r.pts.forEach((p) => all.push(p)));
+  /* Indexed series are percentages of a hundred, so they get a percentage-shaped floor
+     rather than the source series' own. */
+  return MT.extent(all, { suffix: '%', dp: 0 });
+}
+
+function paintData() {
+  const MT = window.PS_CFB_METRICS;
+  if (!MT) { $('s-data').innerHTML = ''; return; }
+  dcPicker();
+  dcChart();
+  dcRoom();
+  dcTable();
+}
+
+/* ---- the chart ---- */
+function dcChart() {
+  const MT = window.PS_CFB_METRICS;
+  const rows = dcSeries();
+  const ext = dcExtent(rows);
+  const live = rows.filter((r) => r.pts && r.pts.length);
+  const head = $('dc-head'), plot = $('dc-plot'), foot = $('dc-foot');
+
+  /* NOTHING TO DRAW IS A SENTENCE, NOT AN EMPTY BOX. A season that has not been played has
+     no viewership, and the honest answer is to say so rather than to draw a flat line on
+     the floor of the chart, which is a collapse that did not happen. */
+  if (!live.length || !ext) {
+    head.innerHTML = '<div class="dctitle"><b>' + esc(rows.length ? rows[0].s.label : '')
+      + '</b><span>' + esc(rows.length ? rows[0].s.sub : '') + '</span></div>';
+    plot.innerHTML = '<div class="dcnone">' + esc(dcWhyEmpty(rows)) + '</div>';
+    foot.innerHTML = '';
+    return;
+  }
+
+  const single = dcState.mode !== 'cmp';
+  const one = live[0];
+  const ch = MT.change(one.pts);
+  const rawCh = MT.change(one.raw);
+
+  /* THE READOUT. Value big, in ink, and the movement beside it with an arrow AND a signed
+     number, so direction is never carried by colour alone. */
+  if (single) {
+    const t = MT.tone(rawCh.delta, one.s);
+    head.innerHTML = '<div class="dctitle"><b>' + esc(one.s.label) + '</b>'
+      + '<span>' + esc(one.s.sub) + '</span></div>'
+      + '<div class="dcnow"><b>' + esc(MT.fmt(rawCh.to, one.s)) + '</b>'
+      + (Math.abs(rawCh.delta) > 1e-9
+        ? '<em class="' + t + '">' + (rawCh.delta > 0 ? '▲' : '▼') + ' '
+          + esc(MT.fmtDelta(rawCh.delta, one.s)) + '</em>'
+        : '<em>no change</em>')
+      + '<i>' + esc(dcSince()) + '</i></div>';
+  } else {
+    head.innerHTML = '<div class="dctitle"><b>Indexed to 100</b>'
+      + '<span>percent moved since ' + esc(dcSince().replace(/^since /, '')) + '</span></div>'
+      + '<div class="dclegend">' + live.map((r) => {
+        const c = MT.change(r.raw);
+        return '<span><i style="background:' + r.s.color + '"></i>'
+          + esc(r.s.label) + ' <b>' + esc(MT.fmtDelta(c.delta, r.s)) + '</b></span>';
+      }).join('') + '</div>';
+  }
+
+  const g = [];
+  /* The grid, and its labels, one shade off the card. */
+  const tk = MT.ticks(ext.lo, ext.hi, 4);
+  const sc = MT.scaler(live[0].pts, DCBOX, ext);
+  tk.forEach((v) => {
+    const y = sc.Y(v);
+    if (y < DCBOX.y - 1 || y > DCBOX.y + DCBOX.h + 1) return;
+    g.push('<line class="dcgrid" x1="' + DCBOX.x + '" y1="' + y.toFixed(1)
+      + '" x2="' + (DCBOX.x + DCBOX.w) + '" y2="' + y.toFixed(1) + '"/>');
+    g.push('<text class="dcyt" x="' + (DCBOX.x - 6) + '" y="' + (y + 3.2).toFixed(1)
+      + '" text-anchor="end">' + esc(dcTickLabel(v, single ? one.s : null)) + '</text>');
+  });
+  /* Compare mode's baseline: 100 is where everybody started, so it is the line every
+     other line is read against and it gets its own weight. */
+  if (!single && ext.lo < 100 && ext.hi > 100) {
+    g.push('<line class="dcbase" x1="' + DCBOX.x + '" y1="' + sc.Y(100).toFixed(1)
+      + '" x2="' + (DCBOX.x + DCBOX.w) + '" y2="' + sc.Y(100).toFixed(1) + '"/>');
+  }
+
+  const ends = [];
+  live.forEach((r) => {
+    const a = MT.area(r.pts, DCBOX, ext);
+    /* ONE SERIES GETS THE WASH. Three overlapping washes are mud and hide each other's
+       lines, so compare mode is lines only. */
+    if (single && a) {
+      g.push('<path d="' + a + '" fill="' + r.s.color + '" opacity=".13"/>');
+    }
+    g.push('<path class="dcline" d="' + MT.path(r.pts, DCBOX, ext)
+      + '" stroke="' + r.s.color + '"/>');
+    /* The last point, ringed in the card colour so it reads as a marker rather than as a
+       kink in the line. */
+    const s2 = MT.scaler(r.pts, DCBOX, ext);
+    const last = r.pts[r.pts.length - 1];
+    g.push('<circle class="dcend" cx="' + s2.X(r.pts.length - 1).toFixed(1)
+      + '" cy="' + s2.Y(last.v).toFixed(1) + '" r="3.6" fill="' + r.s.color + '"/>');
+    if (!single) ends.push({ y: s2.Y(last.v), c: r.s.color, t: String(Math.round(last.v)) });
+  });
+
+  /* FOUR OR FEWER SERIES ARE DIRECT LABELLED as well as legended, so identity is never
+     colour alone for a reader who cannot separate the hues.
+
+     BUT THEY HAVE TO BE PUSHED APART FIRST. Two of these three lines finished a point
+     apart and their labels landed on top of each other: three numbers in three colours
+     stacked into an unreadable smudge at exactly the end of the line a reader looks at
+     first. Sorted by height and separated by a line's worth, clamped to the plot, and if
+     they still will not fit the labels come off entirely, because the legend above already
+     carries the name and the move and a smudge carries nothing. */
+  const spread = MT.spread(ends.map((e) => e.y), 11, DCBOX.y + 4, DCBOX.y + DCBOX.h - 2);
+  if (spread) {
+    ends.forEach((e, i) => {
+      g.push('<text class="dcdl" x="' + (DCVIEW.w - 2) + '" y="' + (spread[i] + 3).toFixed(1)
+        + '" text-anchor="end" fill="' + e.c + '">' + esc(e.t) + '</text>');
+    });
+  }
+
+  /* THE HIGH AND THE LOW, labelled, and nothing else. A value beside every point is chaos
+     and goes unread; these two are the ones a reader is looking for. */
+  if (single) {
+    const pk = MT.peaks(one.pts);
+    if (pk) {
+      [['hi', pk.hi, -8], ['lo', pk.lo, 12]].forEach(([, i, dy]) => {
+        const x = sc.X(i), y = sc.Y(one.pts[i].v) + dy;
+        if (y < DCBOX.y + 2 || y > DCBOX.y + DCBOX.h - 2) return;
+        g.push('<text class="dcdl" x="' + dcClampX(x) + '" y="' + y.toFixed(1)
+          + '" text-anchor="middle">' + esc(MT.fmt(one.raw[i].v, one.s)) + '</text>');
+      });
+    }
+    /* THE RULINGS, on the line that they moved. This is what makes it a chart of a term
+       rather than a chart of a number. */
+    if (one.s.from === 'tape') {
+      MT.rulings(world, dcState.range).forEach((m) => {
+        if (m.x >= one.pts.length) return;
+        g.push('<circle class="dcmark" cx="' + sc.X(m.x).toFixed(1)
+          + '" cy="' + sc.Y(one.pts[m.x].v).toFixed(1) + '" r="2.2"/>');
+      });
+    }
+  }
+
+  /* The x-axis: the ends, and the year boundaries in between. Never every point. */
+  dcXLabels(one.pts, sc).forEach((l) => {
+    g.push('<text class="dcxt" x="' + l.x + '" y="' + DCAXIS + '" text-anchor="' + l.anchor
+      + '">' + esc(l.text) + '</text>');
+  });
+
+  plot.innerHTML = '<svg viewBox="0 0 ' + DCVIEW.w + ' ' + DCVIEW.h + '" class="dcsvg" '
+    + 'role="img" aria-label="' + esc(dcAria(live, rawCh)) + '">'
+    + '<g class="dccross" hidden><line x1="0" y1="' + DCBOX.y + '" x2="0" y2="'
+      + (DCBOX.y + DCBOX.h) + '"/></g>'
+    + g.join('') + '</svg>'
+    + '<div class="dctip" hidden></div>';
+  dcHover(live, ext);
+
+  foot.innerHTML = dcFoot(live, rows);
+}
+
+/* X labels: the first, the last, and where the year turns over. Sparse on purpose. */
+function dcXLabels(pts, sc) {
+  if (!pts.length) return [];
+  const MT = window.PS_CFB_METRICS;
+  const out = [];
+  const say = (p) => (p.at && p.at.week) ? 'Wk ' + p.at.week : String(p.at ? p.at.y : '');
+  out.push({ x: DCBOX.x, text: say(pts[0]), anchor: 'start' });
+  if (pts.length > 1) {
+    out.push({ x: DCBOX.x + DCBOX.w, text: say(pts[pts.length - 1]), anchor: 'end' });
+  }
+  /* A year boundary is worth a tick; a beat boundary is not, or the axis is ninety
+     labels deep. */
+  if (dcState.range === 'term') {
+    let seen = pts[0].at ? pts[0].at.y : null;
+    pts.forEach((p, i) => {
+      if (!p.at || p.at.y === seen) return;
+      seen = p.at.y;
+      const x = sc.X(i);
+      if (x - DCBOX.x < 26 || DCBOX.x + DCBOX.w - x < 26) return;
+      /* AND NOT THE SAME YEAR TWICE. A term one season old ends inside the year it turned
+         over into, so the boundary tick and the right-hand tick both read 2026 and the axis
+         appears to run from 2025 to 2026 to 2026. */
+      if (out.some((o) => o.text === String(p.at.y))) return;
+      out.push({ x: x.toFixed(1), text: String(p.at.y), anchor: 'middle' });
+    });
+  }
+  return out;
+}
+const dcClampX = (x) => Math.max(DCBOX.x + 14, Math.min(DCBOX.x + DCBOX.w - 14, x)).toFixed(1);
+function dcTickLabel(v, s) {
+  if (!s) return Math.round(v) + '';
+  if (s.prefix === '$') return '$' + (Math.round(v * 100) / 100).toFixed(2);
+  if (Math.abs(v) >= 100 || s.dp === 0) return String(Math.round(v));
+  return (Math.round(v * 100) / 100).toFixed(s.dp > 1 ? 2 : 1);
+}
+const dcSince = () => dcState.range === 'season'
+  ? 'since the start of ' + world.year : 'since you took the job';
+
+/* WHY THERE IS NOTHING TO DRAW, said specifically. "No data" is the answer that makes a
+   player think the screen is broken. */
+function dcWhyEmpty(rows) {
+  if (!rows.length) return 'Nothing to draw.';
+  const s = rows[0].s;
+  if (s.from === 'year') {
+    return 'Nothing here until a season has been played all the way through. '
+      + 'The first one lands in December.';
+  }
+  if (dcState.range === 'season') return 'Nothing recorded yet this year.';
+  return 'Nothing recorded yet.';
+}
+
+function dcAria(live, ch) {
+  const MT = window.PS_CFB_METRICS;
+  if (dcState.mode === 'cmp') {
+    return 'Three series indexed to 100: ' + live.map((r) => r.s.label).join(', ')
+      + '. The table below the chart lists every value.';
+  }
+  const s = live[0].s;
+  return s.label + ', ' + live[0].pts.length + ' points, from '
+    + MT.fmt(ch.from, s) + ' to ' + MT.fmt(ch.to, s)
+    + '. The table below the chart lists every value.';
+}
+
+function dcFoot(live, rows) {
+  const MT = window.PS_CFB_METRICS;
+  const bits = [];
+  if (dcState.mode === 'cmp') {
+    /* A LINE THAT COULD NOT BE DRAWN IS NAMED. Rebasing divides by the first value, so a
+       series that started at zero has no honest index and is dropped. Saying nothing would
+       leave a legend with three entries and a plot with two lines. */
+    const gone = rows.filter((r) => !r.pts || !r.pts.length).map((r) => r.s.label);
+    if (gone.length) bits.push(gone.join(' and ') + ' started at zero, so there is nothing to index it against.');
+    else bits.push('Every line starts at 100. A line at 120 is up a fifth on where you found it.');
+  } else {
+    bits.push(esc(live[0].s.about));
+    if (live[0].s.from === 'tape') {
+      const n = MT.rulings(world, dcState.range).length;
+      if (n) bits.push('The ' + n + ' dot' + (n === 1 ? '' : 's') + ' on the line '
+        + (n === 1 ? 'is a ruling' : 'are rulings') + '. Touch one to read it.');
+    }
+  }
+  return bits.join(' ');
+}
+
+/* ---- the crosshair ----
+   THE READER AIMS AT A MOMENT IN THE TERM, NEVER AT A TWO PIXEL LINE. The whole height of
+   the plot is the hit target and the nearest column in x wins, so there is no way to miss
+   and no pinpoint to land on. Keyboard gets the same readout as the pointer, because a
+   tooltip that is the only route to a value is a value nobody using a keyboard can read;
+   the table under the chart is the third way in. */
+function dcHover(live, ext) {
+  const MT = window.PS_CFB_METRICS;
+  const plot = $('dc-plot');
+  const svg = plot.querySelector('svg');
+  const cross = plot.querySelector('.dccross');
+  const tip = plot.querySelector('.dctip');
+  if (!svg || !live.length) return;
+  const pts = live[0].pts;
+  const sc = MT.scaler(pts, DCBOX, ext);
+  const marks = live[0].s.from === 'tape' ? MT.rulings(world, dcState.range) : [];
+  const markAt = {};
+  marks.forEach((m) => { markAt[m.x] = m; });
+
+  const at = (i) => {
+    if (i < 0 || i >= pts.length) { hide(); return; }
+    dcState.at = i;
+    const x = sc.X(i);
+    cross.hidden = false;
+    cross.firstChild.setAttribute('x1', x.toFixed(1));
+    cross.firstChild.setAttribute('x2', x.toFixed(1));
+    /* VALUES LEAD, LABELS FOLLOW. The reader already knows which series they are looking
+       at and wants the number, which is the legend's hierarchy inverted. */
+    const when = MT.whenOf(pts[i].at, L.BEATS);
+    let h = '<b>' + esc(when) + '</b>';
+    live.forEach((r) => {
+      const p = r.pts[i];
+      if (!p) return;
+      const shown = dcState.mode === 'cmp' ? Math.round(p.v) + '' : MT.fmt(r.raw[i].v, r.s);
+      h += '<span><i style="background:' + r.s.color + '"></i>'
+        + '<em>' + esc(shown) + '</em>' + esc(r.s.label) + '</span>';
+    });
+    const m = markAt[i];
+    if (m && m.label) h += '<u>' + esc(m.label) + '</u>';
+    tip.innerHTML = h;
+    tip.hidden = false;
+    /* IT FLIPS TO THE OTHER SIDE OF THE CROSSHAIR rather than centring on it, so it never
+       covers the point it is describing. A centred tooltip on a plot this short sits on top
+       of exactly the part of the line somebody is reading, which is a readout that hides
+       the thing it is a readout of. Also keeps it inside the card: a tooltip clipped at the
+       edge cannot be read at the moment somebody reaches the end of the line. */
+    const frac = pts.length < 2 ? 0.5 : i / (pts.length - 1);
+    tip.style.left = (frac * 100).toFixed(1) + '%';
+    tip.style.transform = 'translateX(' + (frac > 0.5 ? 'calc(-100% - 8px)' : '8px') + ')';
+  };
+  const hide = () => { dcState.at = -1; cross.hidden = true; tip.hidden = true; };
+
+  const fromEvent = (e) => {
+    const r = svg.getBoundingClientRect();
+    if (!r.width) return -1;
+    const sx = ((e.clientX - r.left) / r.width) * DCVIEW.w;
+    return MT.nearest(pts, DCBOX, sx);
+  };
+  svg.addEventListener('pointermove', (e) => at(fromEvent(e)));
+  svg.addEventListener('pointerdown', (e) => at(fromEvent(e)));
+  svg.addEventListener('pointerleave', hide);
+  /* KEYBOARD READS THE SAME THING. Arrow keys walk the series, which is also the only way
+     to reach a ruling's name without a pointer. */
+  svg.setAttribute('tabindex', '0');
+  svg.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const i = dcState.at < 0 ? pts.length - 1 : dcState.at + (e.key === 'ArrowRight' ? 1 : -1);
+    at(Math.max(0, Math.min(pts.length - 1, i)));
+  });
+  svg.addEventListener('blur', hide);
+}
+
+/* ---- the picker ----
+   Grouped, because twenty-three series in one strip is a wall. The group headings are the
+   same four words the rest of the mode uses for the same things. */
+function dcPicker() {
+  const MT = window.PS_CFB_METRICS;
+  const card = $('dc-pickcard');
+  /* COMPARE MODE HAS NOTHING TO PICK. Its three series are fixed, because more than three
+     indexed lines on a phone is a plate of spaghetti and choosing them badly is the
+     fastest way back to a chart that lies. */
+  card.hidden = dcState.mode === 'cmp';
+  if (card.hidden) return;
+  let h = '';
+  MT.GROUPS.forEach((gname) => {
+    const inGroup = MT.SERIES.filter((s) => s.group === gname && !s.bloc);
+    if (!inGroup.length) return;
+    h += '<div class="dcgroup"><span>' + esc(gname) + '</span><div>'
+      + inGroup.map((s) => '<button class="dcchip' + (s.id === dcState.id ? ' on' : '')
+        + '" data-s="' + esc(s.id) + '" style="--sc:' + s.color + '"'
+        + (s.id === dcState.id ? ' aria-pressed="true"' : ' aria-pressed="false"')
+        + '>' + esc(s.label) + '</button>').join('')
+      + '</div></div>';
+  });
+  $('dc-pick').innerHTML = h;
+}
+
+/* ---- the room, nine at once ----
+   SMALL MULTIPLES, NOT NINE LINES ON ONE PLOT. The nine bloc colours are the ones the rest
+   of the mode already draws these blocs in, and as a set of nine they fail colour-blind
+   separation: pink against teal comes back at a delta of 3.7 for a deuteranope, which is
+   the same colour. Nine lines on one axis would be unreadable for one man in twelve and a
+   tangle for everybody else. Nine little charts, each alone in its own frame with its name
+   written next to it, has no adjacency problem at all. */
+function dcRoom() {
+  const MT = window.PS_CFB_METRICS;
+  const box = { x: 0, y: 2, w: 92, h: 26 };
+  $('dc-room').innerHTML = MT.BLOC_ORDER.map((name) => {
+    const s = MT.BY_ID['bloc:' + name];
+    const p = MT.points(world, s.id, dcState.range, seasonNow());
+    const ch = MT.change(p);
+    const ext = MT.extent(p, s);
+    const t = ch ? MT.tone(ch.delta, s) : '';
+    const now = ch ? Math.round(ch.to) : null;
+    return '<button class="dccell" data-s="' + esc(s.id) + '">'
+      + '<span class="dcname"><i style="background:' + s.color + '"></i>'
+        + esc(BLOC_UI[name] && BLOC_UI[name].short ? BLOC_UI[name].short : name) + '</span>'
+      + (p.length > 1
+        ? '<svg viewBox="0 0 92 30" class="dcspark" aria-hidden="true">'
+          + '<path d="' + MT.path(p, box, ext) + '" stroke="' + s.color + '"/></svg>'
+        : '<span class="dcflat"></span>')
+      + '<span class="dcval"><b>' + (now == null ? '--' : now) + '</b>'
+        + (ch && Math.abs(ch.delta) >= 0.5
+          ? '<em class="' + t + '">' + (ch.delta > 0 ? '▲' : '▼') + Math.abs(Math.round(ch.delta)) + '</em>'
+          : '') + '</span></button>';
+  }).join('');
+}
+
+/* ---- the table ----
+   THE TWIN. Every value the chart draws, reachable with no pointer, no hover and no colour
+   at all. A tooltip that is the only way to read a number is a number some readers simply
+   do not get. */
+function dcTable() {
+  const MT = window.PS_CFB_METRICS;
+  const el = $('dc-table');
+  el.hidden = !dcState.table;
+  $('b-dctable').textContent = dcState.table ? 'Hide the table' : 'Read it as a table';
+  if (!dcState.table) { el.innerHTML = ''; return; }
+  const rows = dcSeries().filter((r) => r.pts && r.pts.length);
+  if (!rows.length) { el.innerHTML = '<p class="dcnote">Nothing recorded yet.</p>'; return; }
+  const n = rows[0].pts.length;
+  const marks = rows[0].s.from === 'tape' ? MT.rulings(world, dcState.range) : [];
+  const markAt = {};
+  marks.forEach((m) => { markAt[m.x] = m; });
+  let h = '<table class="dctab"><thead><tr><th scope="col">When</th>'
+    + rows.map((r) => '<th scope="col">' + esc(r.s.label) + '</th>').join('')
+    + (marks.length ? '<th scope="col">Ruling</th>' : '') + '</tr></thead><tbody>';
+  for (let i = 0; i < n; i++) {
+    h += '<tr><th scope="row">' + esc(MT.whenOf(rows[0].pts[i].at, L.BEATS)) + '</th>'
+      + rows.map((r) => '<td>' + esc(r.raw[i] ? MT.fmt(r.raw[i].v, r.s) : '--') + '</td>').join('')
+      + (marks.length ? '<td>' + esc(markAt[i] ? markAt[i].label : '') + '</td>' : '')
+      + '</tr>';
+  }
+  el.innerHTML = h + '</tbody></table>';
+}
+
 /* ── WHAT EVERYBODY ELSE DID ────────────────────────────────────────────────────────
    The one number in this mode that is about the world outside it. Everything else on the
    reaction screen is the sport answering you; this is the other people who sat in the chair
@@ -3262,6 +3948,10 @@ $('b-rule').onclick=()=>{
   }
   const seeds=D.plantsOf?D.plantsOf(item,choice,world,L,cast,sit):[];
   seeds.forEach((s)=>{ if(s&&s.id) world=L.plant(world,s.id,s); });
+  /* THE OTHER HALF OF THE RECORDER. After the edit, after the fallout, after the threads: the
+     point on the tape has to be the state the ruling LEFT, or the data centre draws the
+     effect of a decision one beat before the decision. */
+  if(window.PS_CFB_METRICS) window.PS_CFB_METRICS.record(world);
   save();
   /* A RULING IS THE UNIT THE CAREER IS COUNTED IN, so it is counted here and nowhere else:
      one call at the one place a ruling actually becomes real. */
