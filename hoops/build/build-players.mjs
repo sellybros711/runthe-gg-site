@@ -431,7 +431,12 @@ function main() {
   console.log(`  ${priced.length} player-seasons across ${teamSeasons.size} team-seasons`);
   console.log(`  seasons ${Math.min(...priced.map(p => p.s))} to ${Math.max(...priced.map(p => p.s))}`);
   console.log(`  price: min $${at(0)}M · median $${at(0.5)}M · p90 $${at(0.9)}M · max $${at(1)}M`);
-  console.log(`  a six-man roster of median players costs $${(at(0.5) * 6).toFixed(1)}M against a $145M cap`);
+  /* THE CAP IS READ, NOT TYPED. This line said $145M for as long as it has
+     existed and the cap has been $134M throughout: a hardcoded number in a
+     report about whether the economy fits the cap is the one number in it that
+     cannot be trusted. */
+  console.log(`  a six-man roster of median players costs $${(at(0.5) * 6).toFixed(1)}M `
+    + `against a $${E.CONSTANTS.CAP_MUSD}M cap`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

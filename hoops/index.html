@@ -3390,9 +3390,20 @@ function seasonStory(out){
   var bits = [];
   if (bestW.n >= 8) bits.push('Won ' + bestW.n + ' straight ' + when(bestW.at) + '.');
   if (worstL.n >= 8) bits.push('Lost ' + worstL.n + ' in a row ' + when(worstL.at) + '.');
-  if (marqW + marqL >= 6) {
-    if (marqW >= marqL * 2) bits.push('Beat the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
-    else if (marqL >= marqW * 2) bits.push('Feasted on the weak and went ' + marqW + '-' + marqL + ' against the good ones.');
+  /* MARQUEE NIGHTS ARE HARD ON PURPOSE, so the comparison cannot be .500.
+     The marquee slate is drawn at net +5, and measured across 600 seasons the
+     whole league wins 37.8% of those games. Comparing against half meant
+     "Feasted on the weak" fired on seven runs out of twelve, including 5-13,
+     which is a perfectly ordinary marquee record. A line that fires on
+     everybody is not characterisation, it is the game calling most of its
+     players frauds for finishing where the schedule put them.
+     So both branches are measured against the norm, and the middle says
+     nothing at all. */
+  var marqN = marqW + marqL;
+  if (marqN >= 8) {
+    var rate = marqW / marqN;
+    if (rate >= 0.58) bits.push('Beat the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
+    else if (rate <= 0.20) bits.push('Never solved the good teams: ' + marqW + '-' + marqL + ' on marquee nights.');
   }
 
   /* How it ended, which is the part worth saying last. */
