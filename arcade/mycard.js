@@ -262,7 +262,7 @@
     } else if (ti.signed) {
       out += '<button class="rtgmc-btn go" type="button" id="rtgmcBuy">Get the Arcade Card<small>Unlimited plays · every past day</small></button>';
     } else {
-      out += '<button class="rtgmc-btn signin" type="button" id="rtgmcSignup">Create free account<small>Four free games a day · save your streak</small></button>' +
+      out += '<button class="rtgmc-btn signin" type="button" id="rtgmcSignup">Create free account<small>Save your streak · one play of every Card game</small></button>' +
         '<button class="rtgmc-sub" type="button" id="rtgmcSignin">Already have an account? Sign in</button>';
     }
 
@@ -273,7 +273,7 @@
     var mng = document.getElementById('rtgmcManage');
     if (mng) mng.onclick = function () { close(); if (window.RTGCard && RTGCard.paywall) RTGCard.paywall({}); };
     var su = document.getElementById('rtgmcSignup');
-    if (su) su.onclick = function () { close(); if (window.RTGAuthUI) RTGAuthUI.open('signup'); };
+    if (su) su.onclick = function () { close(); if (window.RTGAuthUI) RTGAuthUI.open('signup', { src:'mycard' }); };
     var si = document.getElementById('rtgmcSignin');
     if (si) si.onclick = function () { close(); if (window.RTGAuthUI) RTGAuthUI.open('signin'); };
 

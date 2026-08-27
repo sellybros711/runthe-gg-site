@@ -220,11 +220,11 @@
     var box = document.createElement('div');
     box.className = 'funguest'; box.id = 'funGuest';
     var msg = document.createElement('span');
-    msg.textContent = 'Playing as a guest — this score stays on this device and isn’t on the leaderboard.';
+    msg.textContent = 'Playing as a guest. This score stays on this device and is not on the leaderboard.';
     var btn = document.createElement('button');
-    btn.type = 'button'; btn.textContent = 'Sign in to post it';
+    btn.type = 'button'; btn.textContent = 'Create a free account';
     btn.addEventListener('click', function () {
-      try { if (window.RTGAuthUI && RTGAuthUI.open) { RTGAuthUI.open('signup'); return; } } catch (e) {}
+      try { if (window.RTGAuthUI && RTGAuthUI.open) { RTGAuthUI.open('signup', { src:'result_guest' }); return; } } catch (e) {}
       location.href = '/arcade/';
     });
     box.appendChild(msg); box.appendChild(btn);

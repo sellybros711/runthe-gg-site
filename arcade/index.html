@@ -19,20 +19,20 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Run The Arcade is a daily set of quick sports brain-games on RunThe.GG. Common Ground and a Daily Crossword every day. Beat the clock, keep your streak." />
+<meta name="description" content="Twelve quick daily sports puzzles on RunThe.GG. Four free every day, no account needed: Daily Crossword, Sportegories, Alma Mater and Career Path. Play today's board, keep your streak." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:title" content="Run The Arcade: Daily Sports Puzzles" />
-<meta property="og:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
+<meta property="og:description" content="Twelve quick sports puzzles, new every day. Four are free every day, no account needed." />
 <meta property="og:url" content="https://runthe.gg/arcade/" />
 <meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Run The Arcade: Daily Sports Puzzles" />
-<meta name="twitter:description" content="Nine quick sports brain-games, new every day. Build a streak, chase your best, beat the clock." />
+<meta name="twitter:description" content="Twelve quick sports puzzles, new every day. Four are free every day, no account needed." />
 <meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="canonical" href="https://runthe.gg/arcade/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -671,8 +671,12 @@ window.GA_ID='G-L29P5MRWKE';
         </div>
 
         <div class="tiles">
-          <div class="tsec daily"><b>Daily puzzles</b><span>One solve each, then you're done until tomorrow.</span></div>
-          <div class="tsec run"><b>Streak games</b><span>Keep answering until you miss. How far can you get?</span></div>
+          <!-- The two headers are retitled and repositioned by paint(), because the
+               grouping that helps depends on who is looking: cost for a visitor,
+               completion for a member. The resting copy below is the non-member
+               view, so the page is right even before a line of JS runs. -->
+          <div class="tsec daily" id="tsecA"><b>Free every day</b><span>One play of each, every day. Yours to keep.</span></div>
+          <div class="tsec run" id="tsecB"><b>One free try each</b><span>Play any of them once, free. The Arcade Card opens all of them, unlimited.</span></div>
 
           <a class="tile match" id="cardMatch" href="/arcade/match/">
             <span class="cap" data-mark="match" aria-hidden="true">
@@ -850,6 +854,23 @@ window.GA_ID='G-L29P5MRWKE';
           <span>Clean sweep!<span class="sub">You played every one of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
         </div>
 
+        <!-- ORDER IS THE ARGUMENT. For a free player whose free tries are spent,
+             the grid above is just the four free games, so what sits directly under
+             them is the pitch: here is the other 23 a day. The editions strip follows
+             as the second exhibit. Both sections already hide for members. -->
+        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
+          <div class="cp-kicker">Arcade Card</div>
+          <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
+          <p class="cp-sub">Four games are free every day. The Card opens all twelve, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
+          <ul class="cp-perks">
+            <li><i>&#10003;</i> Unlimited plays, every day</li>
+            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
+            <li><i>&#10003;</i> Six members-only games</li>
+            <li><i>&#10003;</i> The full archive of past days</li>
+          </ul>
+          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
+          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
+        </section>
         <section class="editions" id="editions">
           <h2 class="ed-h">Five games, three more ways</h2>
           <p class="ed-s">Common Ground, Alma Mater, Career Path, Guess the Player and Rank It each also have an NBA, NFL and MLB edition, with its own board and its own streak. Card members play all of them.</p>
@@ -868,19 +889,6 @@ window.GA_ID='G-L29P5MRWKE';
           <div class="iv-tally" id="ivTally"></div>
         </section>
 
-        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
-          <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
-          <p class="cp-sub">A free account plays four games a day. The Card opens all twelve, unlimited, plus an NBA, NFL and MLB edition of five of them.</p>
-          <ul class="cp-perks">
-            <li><i>&#10003;</i> Unlimited plays, every day</li>
-            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
-            <li><i>&#10003;</i> Six members-only games</li>
-            <li><i>&#10003;</i> The full archive of past days</li>
-          </ul>
-          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
-          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
-        </section>
 
         <details class="gjx">
 <summary>About Run The Arcade<span class="gjx-chev" aria-hidden="true"></span></summary>
@@ -963,20 +971,20 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=10"></script>
+<script src="/arcade/tokens.js?v=12"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=18"></script>
-<script src="/arcade/auth.js?v=3"></script>
-<script src="/arcade/mycard.js?v=9"></script>
-<script src="/arcade/topbanner.js?v=7"></script>
-<script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=17"></script>
+<script src="/arcade/board.js?v=19"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/mycard.js?v=11"></script>
+<script src="/arcade/topbanner.js?v=8"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/card.js?v=19"></script>
 <script src="/arcade/referral.js?v=9"></script>
-<script src="/arcade/nav.js?v=1"></script>
+<script src="/arcade/nav.js?v=2"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=3"></script>
+<script src="/arcade/tourdata.js?v=6"></script>
 <script>
 /* THE FIRST NINETY SECONDS.
    Ten tiles with no explanation is the single biggest thing standing between
@@ -1084,21 +1092,89 @@ window.GA_ID='G-L29P5MRWKE';
                  guess:'cardGuess', highlow:'cardHigh', oddone:'cardOdd', table:'cardTable',
                  career:'cardCareer', almamater:'cardAlma', rollcall:'cardRoll', chain:'cardChain' };
     // section base order, free games first (matches the resting CSS)
-    var SECTIONS = [ { base:1, keys:['sportegories','crossword','match','rollcall','chain','rankit','guess'] },
-                     { base:9, keys:['almamater','career','table','oddone','highlow'] } ];
+    /* WHO IS LOOKING DECIDES THE MAP. The old split was Daily puzzles /
+       Streak games, which is a MECHANICS taxonomy: true, and useful to nobody
+       deciding what to tap. It also buried two of the four free games in the
+       second section behind five locked ones, so a free player scrolled past
+       five doors they could not open to find half of what they could.
+
+       A visitor's question is what does it cost; a member's question is what
+       is left. So a non-member gets the entitlement ladder (free four, then
+       the eight with a free try, locked dead-ends sinking last) and a member
+       gets completion (still to play, then done), with their habitual games
+       leading via the same recency data the old sort used. The mechanics note
+       each game needs lives on its own tile copy. */
+    var ALL = ['sportegories','crossword','almamater','career',
+               'match','rollcall','chain','rankit','guess','table','oddone','highlow'];
+    var FREE4 = ['sportegories','crossword','almamater','career'];
+    function playedToday(k){
+      var el=document.getElementById(TILE[k]);
+      return !!(el && el.classList.contains('solved'));
+    }
+    function sections(member){
+      if(member){
+        var last=(TOK.lastPlayed?TOK.lastPlayed():{}), pos={};
+        ALL.forEach(function(k,i){ pos[k]=i; });
+        var byHabit=function(a,b){ var la=last[a]||0, lb=last[b]||0; return la!==lb ? lb-la : pos[a]-pos[b]; };
+        var todo=ALL.filter(function(k){ return !playedToday(k); }).sort(byHabit);
+        var done=ALL.filter(playedToday).sort(byHabit);
+        return [ { label:'Still to play today', sub:'The pips up top fill when you clear the board.', keys:todo },
+                 { label:'Done today', sub:'Back tomorrow, or replay for practice.', keys:done } ];
+      }
+      /* THREE TIERS, THREE PAGES, and the rung you cannot use is not on yours.
+         A SIGNED-OUT visitor sees the four free games and nothing else. The
+         free try belongs to an account (the server keys it on the user id), so
+         eight tiles offering one to a guest are eight tiles that turn into a
+         sign-up wall; the card's pitch directly underneath makes that argument
+         once, in the place built for it.
+         A FREE ACCOUNT sees the four plus whichever of the eight still has its
+         try. A try it has SPENT leaves the page for good, the same day it is
+         used: a dead door was an ad the first time and clutter every time
+         after. Within each rung, played today sinks to the back. */
+      var guest = !(TOK.signedIn && TOK.signedIn());
+      var free=FREE4.slice().sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
+      var cards = guest ? [] : ALL.filter(function(k){
+          if(FREE4.indexOf(k)>=0) return false;
+          return !(TOK.cardOnly && TOK.cardOnly(k));
+        })
+        .sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
+      return [ { label:'Free every day',
+                 /* The guest line says the two things a visitor needs in the
+                    order they need them: you can play right now, and an
+                    account is what keeps the result. It is one sentence in a
+                    header rather than eight tiles that open a sign-up box. */
+                 sub: guest ? 'One play of each, every day, no account needed. An account saves your streak.'
+                            : 'One play of each, every day. Yours to keep.', keys:free },
+               { label:'One free try each', sub:'Play any of them once, free. The Arcade Card opens all of them, unlimited.', keys:cards } ];
+    }
     var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
     function paint(){
       var member = !!(TOK.hasCard && TOK.hasCard());
-      var last = (TOK.lastPlayed && member) ? TOK.lastPlayed() : null;
-      SECTIONS.forEach(function(sec){
-        var keys = sec.keys.slice();
-        if(last){
-          var pos={}; keys.forEach(function(k,i){ pos[k]=i; });
-          keys.sort(function(a,b){ var la=last[a]||0, lb=last[b]||0; return la!==lb ? lb-la : pos[a]-pos[b]; });
+      var secs = sections(member);
+      /* sections() can EXCLUDE a tile now, so paint owns visibility both ways:
+         hidden when outside every section, restored when the tier changes and
+         it is back in one (the member flag arrives after first paint). */
+      var shown = {};
+      secs.forEach(function(sec){ sec.keys.forEach(function(k){ shown[k]=1; }); });
+      ALL.forEach(function(k){
+        var el=document.getElementById(TILE[k]); if(!el) return;
+        el.style.display = shown[k] ? '' : 'none';
+      });
+      var heads = [document.getElementById('tsecA'), document.getElementById('tsecB')];
+      var ord = 0;
+      secs.forEach(function(sec, si){
+        var h = heads[si];
+        if(h){
+          // an empty group hides its header: "Done today" over nothing is noise
+          h.style.display = sec.keys.length ? '' : 'none';
+          h.style.order = String(ord++);
+          h.querySelector('b').textContent = sec.label;
+          h.querySelector('span').textContent = sec.sub;
         }
+        var keys = sec.keys;
         keys.forEach(function(k,i){
           var el=document.getElementById(TILE[k]); if(!el) return;
-          el.style.order = String(sec.base + i);
+          el.style.order = String(ord++);
           var lock = !!(TOK.cardOnly && TOK.cardOnly(k));
           el.classList.toggle('locked', lock);
           var play = el.querySelector('.play');
@@ -1152,7 +1228,7 @@ window.GA_ID='G-L29P5MRWKE';
       var k = (a.getAttribute('href')||'').match(/\/arcade\/([a-z]+)\//);
       var nm = a.querySelector('.nm');
       if(window.RTGCard && RTGCard.paywall) RTGCard.paywall({ reason:'locked', game:(k&&k[1])||null, name:(nm&&nm.textContent)||null });
-      else if(window.RTGAuthUI) RTGAuthUI.open('signup');
+      else if(window.RTGAuthUI) RTGAuthUI.open('signup', { src:'hub_tile_locked' });
     }, true);
     paint();
     document.addEventListener('rtg:tokens', paint);

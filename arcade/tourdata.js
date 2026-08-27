@@ -21,13 +21,19 @@
       html: 'Twelve small sports puzzles, about a minute each. They are built from real NBA, NFL and MLB careers, ' +
             'and <b>every one of them resets at midnight</b>.',
       cta: 'Show me' },
-    { sel: '.tsec.daily',
-      title: 'Daily puzzles',
-      html: 'The games under this heading are <b>one solve a day</b>. You get the same puzzle everyone else gets, ' +
-            'you play it once, and that is your day.' },
-    { sel: '.tsec.run',
-      title: 'Streak games',
-      html: 'These ones keep going until you miss. <b>How far you get is the score</b>, and it starts over tomorrow.' },
+    /* These two used to narrate Daily puzzles / Streak games, which is how the
+       hub was grouped then. It is grouped by what a play COSTS now, and a tour
+       describing headings that no longer say that is worse than no tour: the
+       card floated over a section reading something else. Anchored on the ids
+       rather than the old .daily / .run classes for the same reason. */
+    { sel: '#tsecA',
+      title: 'Free every day',
+      html: 'These four are free, one play of each, every day, no account needed. New puzzles at midnight, ' +
+            'and <b>each one keeps its own streak</b>.' },
+    { sel: '#cardpitch',
+      title: 'The other eight',
+      html: 'The rest are Arcade Card games. A free account gets <b>one try of each</b>, ' +
+            'so nobody is asked to buy a game they have never played.' },
     /* Start on a game they can actually open. Common Ground is behind the
        Arcade Card now, so pointing a brand new visitor at it walked them into
        a paywall on step four. Sportegories is free, and it is the game people
@@ -66,129 +72,6 @@
     html: 'Today’s leaderboard. Everyone is playing the same puzzle, so it is a fair fight.'
   };
 
-  var GAMES = {
-    career: [
-      LEAGUES,
-      { sel: '.pathcard',
-        title: 'A career, one club at a time',
-        html: 'The scouting file at the top is free: position, college, era. Then you get the <b>first club only</b>, ' +
-              'and the rest of the career is hidden.' },
-      { sel: '#revealBtn',
-        title: 'The decision',
-        html: 'Ask for another club whenever you like. It always helps, and it always <b>costs you points</b>: ' +
-              'five off the first club, three off two or three, less after that.' },
-      { sel: '#answerbar',
-        title: 'Name them',
-        html: 'Type the player and hit Call it. Spelling we do not recognise costs nothing, so guess freely, ' +
-              'but <b>naming the wrong real player ends your run</b>.' },
-      { sel: '#bailBtn',
-        title: 'If you are stuck',
-        html: 'This swaps the typing for four names and drops the round to one point. It is there so a career ' +
-              'you cannot place is a bad round, not the end of your day.' },
-      BOARD
-    ],
-    almamater: [
-      LEAGUES,
-      { sel: '.pcard',
-        title: 'One player at a time',
-        html: 'Where did they go to college? That is the whole question.' },
-      { sel: '#answerbar',
-        title: 'Type the school',
-        html: '<b>Two points for typing it.</b> UNC, North Carolina and University of North Carolina all count, ' +
-              'so use whichever name you know it by.' },
-      { sel: '#bailBtn',
-        title: 'Or take the four',
-        html: 'Four schools instead, worth one point. One wrong school ends the run either way.' },
-      BOARD
-    ],
-    table: [
-      { sel: '.pcard',
-        title: 'One player, one club',
-        html: 'A single spell at a single team, with the years. <b>What number did they wear there?</b>' },
-      { sel: '#answerbar',
-        title: 'Type the number',
-        html: 'Exact is a bullseye. <b>Within two still counts</b>, because being a digit out is remembering, not guessing.' },
-      { sel: '#shieldPill',
-        title: 'One save',
-        html: 'Your first real miss is absorbed and puts you back to zero without ending the run. The second one ends it.' },
-      BOARD
-    ],
-    match: [
-      LEAGUES,
-      { sel: '#pool',
-        title: 'Sixteen names, four groups',
-        html: 'Every name belongs to exactly one group of four. The link might be a team, a jersey number, ' +
-              'a surname, anything.' },
-      { sel: '.submitbar',
-        title: 'Lock in four',
-        html: 'Tap four names, then Submit. <b>"One away" means three of your four belong together</b>, which is the ' +
-              'most useful thing the game will ever tell you.' },
-      { sel: '.mstatus .dots, .statusCard .dots',
-        title: 'Four mistakes',
-        html: 'These are your wrong guesses. Use all four and the day is over.' },
-      BOARD
-    ],
-    oddone: [
-      { sel: '#choices',
-        title: 'Four belong, one does not',
-        html: 'Four of these five share something: a team, a position, a decade, the Hall of Fame. Tap the one that does not.' },
-      { sel: '.prompt',
-        title: 'Then say why',
-        html: 'Spotting it is worth a point. <b>Naming the connection is worth another</b>, because pointing at the odd ' +
-              'one is one-in-five luck and saying why is knowing.' },
-      BOARD
-    ],
-    rankit: [
-      LEAGUES,
-      { sel: '.axis',
-        title: 'Most at the top',
-        html: 'Always most at the top. The stat changes daily; the direction never does.' },
-      { sel: '#rows',
-        title: 'Put them in order',
-        html: '<b>Tap two names to swap them</b>, or drag by the number. The arrows work too.' },
-      { sel: '#checkBtn',
-        title: 'Five tries',
-        html: 'Check tells you <b>how many are in the right spot, never which ones</b>. Working that out is the puzzle. ' +
-              'Fewest tries wins the day.' },
-      BOARD
-    ],
-    guess: [
-      LEAGUES,
-      { sel: '.board',
-        title: 'Five career columns',
-        html: 'Position, franchises, debut decade, college and honours. <b>Green is a match, yellow is close</b>, ' +
-              'and the arrows point higher or lower.' },
-      { sel: '#q',
-        title: 'Guess any player',
-        html: 'Type any player from that sport, from any era. A guess is never wasted: every row narrows it down.' },
-      { sel: '#guessesLeft',
-        title: 'Eight guesses',
-        html: 'That is the whole budget. Stuck? There is a clue button that spends one.' },
-      BOARD
-    ],
-    crossword: [
-      { sel: '.board-wrap, #board',
-        title: 'A sports mini',
-        html: 'Tap a square and type. Tapping the same square again switches between across and down.' },
-      { sel: '.cluebar',
-        title: 'Your clue',
-        html: 'The clue for wherever you are sits here and follows you around the grid.' },
-      BOARD
-    ],
-    sportegories: [
-      { sel: '#letterTile',
-        title: 'One letter',
-        html: 'Every answer today has to start with this letter, on <b>either the first name or the last</b>.' },
-      { sel: '#rows',
-        title: 'Eight categories, two minutes',
-        html: 'Type a full name into each. Start typing and the list underneath does most of the work.' },
-      { sel: '#doneBtn',
-        title: 'Rarer is worth more',
-        html: 'An obvious answer scores. <b>An answer nobody else thinks of scores more.</b> Names starting with the ' +
-              'letter twice score double.' },
-      BOARD
-    ]
-  };
 
-  window.RTGTourData = { HUB: HUB, GAMES: GAMES };
+  window.RTGTourData = { HUB: HUB };
 })();

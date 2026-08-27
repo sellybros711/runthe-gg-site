@@ -4,7 +4,8 @@
  * play this game right now it stays out of the way entirely: one click to play,
  * straight onto a ready board. It only appears when they cannot, and then it
  * says which of the three reasons it is:
- *   SIGNED OUT           → how to play + "Create a free account"
+ *   SIGNED OUT, CARD GAME → how to play + "Create a free account"
+ *   SIGNED OUT, FREE GAME → nothing: they play, same as an account holder
  *   FREE, card-only game → "This one is on the Arcade Card"
  *   FREE, play used      → "Back tomorrow", plus the four other free games
  *   CARDHOLDER           → never (they can always play)
@@ -121,6 +122,7 @@
       '.rtgpg-body{padding:18px 18px 18px;}',
       '.rtgpg-nm{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:24px;line-height:1;margin:0 0 3px;color:var(--ink,#F4F7FB);}',
       '.rtgpg-tag{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--c,var(--blue,#2F6BFF));margin-bottom:14px;}',
+      '.rtgpg-demo{margin:0 0 14px;}',
       '.rtgpg-rules{list-style:none;margin:0 0 16px;padding:0;text-align:left;display:grid;gap:8px;}',
       '.rtgpg-rules li{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;font-weight:600;color:var(--ink,#F4F7FB);line-height:1.4;}',
       '.rtgpg-rules li b{color:var(--c,var(--blue,#2F6BFF));font-weight:900;flex:0 0 auto;}',
@@ -195,8 +197,24 @@
    * and the modal can never both onboard the same person.
    */
   var INTRO_NOTE='<div class="rtgpg-note2">Rules are under the ? button up top.</div>';
+  var demoHandle = null;
+  /* THIS IS THE FIRST SCREEN A NEW PLAYER SEES, and the one every free look at
+     a card game goes through, so it is where a demo is worth the most. The
+     stage is a placeholder in the markup and the animation is mounted into it
+     after render, because this file builds its body as an HTML string and
+     RTGDemo works on nodes. Absent demo.js, the placeholder stays empty and
+     the rules read exactly as before. */
+  function demoSlot(){
+    return (window.RTGDemo && RTGDemo.has(GAME)) ? '<div class="rtgpg-demo" id="rtgpgDemo"></div>' : '';
+  }
+  function mountDemo(){
+    var host = $('rtgpgDemo');
+    if(!host || host.firstChild || !(window.RTGDemo && RTGDemo.has(GAME))) return;
+    var m = meta();
+    demoHandle = RTGDemo.mount(host, GAME, m && m.accent, { caption: false });
+  }
   function rulesList(){
-    return '<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){
+    return demoSlot()+'<ul class="rtgpg-rules">'+(RULES[GAME]||[]).map(function(r){
       return '<li><b>›</b><span>'+esc(r)+'</span></li>'; }).join('')+'</ul>';
   }
   function markIntro(){
@@ -236,9 +254,24 @@
     try{ if(window.RTGGameMarks) RTGGameMarks.fill(scrim); }catch(e){}
     render();
   }
-  function done(){ dismissed=true; if(scrim){ scrim.remove(); scrim=null; } try{ document.body.style.overflow=''; }catch(e){} }
+  function done(){
+    dismissed=true;
+    // the demo runs on timers; a dismissed gate must not leave one looping
+    if(demoHandle){ try{ demoHandle.stop(); }catch(e){} demoHandle=null; }
+    if(scrim){ scrim.remove(); scrim=null; }
+    try{ document.body.style.overflow=''; }catch(e){}
+  }
 
+  /* One wrapper so every branch of the body gets its demo mounted without
+     each of them having to remember. Re-rendering tears the old one down
+     first: the entitlement can arrive late and re-render this card, and two
+     live timelines writing to the same stage is a flicker nobody can trace. */
   function render(){
+    if(demoHandle){ try{ demoHandle.stop(); }catch(e){} demoHandle=null; }
+    renderBody();
+    mountDemo();
+  }
+  function renderBody(){
     if(dismissed || !scrim) return;
     try{ document.body.style.overflow='hidden'; }catch(e){}
     var m=meta(), name=(m&&m.name)||'This game';
@@ -313,25 +346,23 @@
 
     // ---- blocked. Three different reasons, three different asks. ----
 
-    if(!signedIn()){
-      // SIGNED OUT. Show what the game is before asking for anything: the rules
-      // are the pitch, and a free account is the only thing standing between
-      // them and playing it (if it is one of the free four).
-      var isFree = T && T.isFreeGame ? T.isFreeGame(GAME) : false;
+    /* SIGNED OUT ON A CARD GAME. Not on a free one: those need no account at
+       all now, so a signed-out visitor who reaches the blocked section on one
+       of the four has simply had today's go, and that is the last screen in
+       this function, not this one. Sending them to a sign-up box instead
+       answered a question they had not asked and charged them an account for a
+       play that does not exist yet. */
+    if(!signedIn() && !(T && T.isFreeGame && T.isFreeGame(GAME))){
+      // Show what the game is before asking for anything: the rules are the
+      // pitch, and the account is what hands them a play of it.
       b.innerHTML=
         '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
         intro()+
-        /* A card game is now the STRONGER sign-up pitch, not the weaker one:
-           the account is what hands them a play of the thing they came for.
-           Telling them instead to go and play four other games was answering a
-           question they had not asked. */
-        '<div class="rtgpg-note">'+(isFree
-          ? 'Free to play with a free account. One go a day, on this and three other games.'
-          : 'This one is on the Arcade Card, and a free account gets you one play of it, plus a play of every other card game and four games free every day.')+'</div>'+
+        '<div class="rtgpg-note">This one is on the Arcade Card, and a free account gets you one play of it, plus a play of every other card game. Four games are free every day with no account at all.</div>'+
         '<button class="rtgpg-go" id="rtgpgGo" type="button">Create a free account</button>'+
         '<div><button class="rtgpg-ghost" id="rtgpgSignin" type="button">Already have one? Sign in</button></div>'+
         '<div><button class="rtgpg-ghost" id="rtgpgBack" type="button">Back to the arcade</button></div>';
-      $('rtgpgGo').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup'); else openSignin(); };
+      $('rtgpgGo').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup', { src:'pregame_cardgame' }); else openSignin(); };
       $('rtgpgSignin').onclick=openSignin;
       $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
       return;
@@ -366,14 +397,25 @@
       return;
     }
 
-    // FREE ACCOUNT, PLAY USED. The cap is per game, so there is always somewhere
-    // else to send them: that is the whole reason the four exist.
+    // PLAY USED, account or not. The cap is per game, so there is always
+    // somewhere else to send them: that is the whole reason the four exist.
+    // A GUEST lands here too now, and they are the one person on this screen
+    // with something to gain by signing up, because the run they just finished
+    // is sitting in this browser and nowhere else: board.js posts nothing
+    // without a session. So the ask is the result they already have, not a
+    // play they have not had.
     b.innerHTML=
       '<h2 class="rtgpg-nm">'+esc(name)+'</h2>'+
       '<div class="rtgpg-tag">Back tomorrow</div>'+
       '<div class="rtgpg-note">That’s today’s go at '+esc(name)+'. A fresh one lands at midnight.</div>'+
       '<div class="rtgpg-note2">Still free today:</div>'+
       freeLinks()+
+      (!signedIn()
+        ? '<button class="rtgpg-invite" id="rtgpgAcct" type="button">'+
+            '<span class="ic" aria-hidden="true">🎟️</span>'+
+            '<span class="tx">Free account: <b>keep your streak, get on the leaderboard</b>, and play every Card game once</span>'+
+          '</button>'
+        : '')+
       (canInvite()
         ? '<button class="rtgpg-invite" id="rtgpgInvite" type="button">'+
             '<span class="ic" aria-hidden="true">🎟️</span>'+
@@ -390,6 +432,7 @@
     $('rtgpgBack').onclick=function(){ location.href='/arcade/'; };
     if($('rtgpgLb')) $('rtgpgLb').onclick=function(){ try{ RTG_LB.open(); }catch(e){} };
     if($('rtgpgInvite')) $('rtgpgInvite').onclick=function(){ if(window.RTGReferral) RTGReferral.share(); };
+    if($('rtgpgAcct')) $('rtgpgAcct').onclick=function(){ if(window.RTGAuthUI && RTGAuthUI.open) RTGAuthUI.open('signup', { src:'pregame_spent' }); else openSignin(); };
   }
 
   // Games whose all-time record is a TIME (lower = better); everything else is a

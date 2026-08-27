@@ -104,9 +104,17 @@
       "v": "1",
       "sha": "affdd4dd6e6efe23"
     },
-    "splits.js": {
+    "metrics.js": {
       "v": "1",
-      "sha": "31b1c726ed01bdc5"
+      "sha": "b307a2d82485837c"
+    },
+    "doctrine.js": {
+      "v": "1",
+      "sha": "c5a6d696949cec85"
+    },
+    "splits.js": {
+      "v": "2",
+      "sha": "baad7aed0c6f08bd"
     }
   },
   "cfb/index.html": {

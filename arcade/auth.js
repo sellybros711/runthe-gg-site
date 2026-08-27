@@ -43,6 +43,41 @@
   var resolved = false;
   function resolve() { resolved = true; }
   function fire() { for (var i = 0; i < listeners.length; i++) { try { listeners[i](state()); } catch (e) {} } }
+
+  /* DID AN ACCOUNT JUST GET CREATED, and off the back of which ask.
+     Supabase reports a sign-up and a sign-in as the same SIGNED_IN event, so
+     the only thing separating them is the user's own created_at: minutes old
+     means the account is new. The ask that produced it comes from the stash
+     auth-ui.js writes when it opens the sign-up modal, because a Google
+     sign-up leaves the page and returns, and by the time this runs the click
+     is two documents ago.
+     Fired once per account: the stash is cleared and the id is remembered, so
+     a reload or the second of the two boot paths cannot count it twice. */
+  var SRC_KEY = 'rtg:signupsrc', DONE_KEY = 'rtg:signupfired';
+  function noteAccount() {
+    try {
+      var u = session && session.user; if (!u || !u.created_at) return;
+      var age = Date.now() - Date.parse(u.created_at);
+      if (!(age >= 0 && age < 30 * 60 * 1000)) return;         // not a fresh sign-up
+      if (localStorage.getItem(DONE_KEY) === u.id) return;      // already counted
+      var src = 'unknown', pg = 'other';
+      try {
+        var m = (location.pathname || '').match(/\/arcade\/([a-z]+)\//);
+        pg = m ? m[1] : (/\/arcade\/?$/.test(location.pathname) ? 'hub' : 'other');
+      } catch (e) {}
+      try {
+        var st = JSON.parse(localStorage.getItem(SRC_KEY) || 'null');
+        if (st && Date.now() - (st.t || 0) < 2 * 60 * 60 * 1000) { src = st.s || src; pg = st.g || pg; }
+      } catch (e) {}
+      localStorage.setItem(DONE_KEY, u.id);
+      try { localStorage.removeItem(SRC_KEY); } catch (e) {}
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'arcade_signup_completed', {
+          game_name: 'Run The Arcade', signup_src: src, signup_page: pg
+        });
+      }
+    } catch (e) {}
+  }
   function state() {
     return {
       ready: !!sb,
@@ -191,13 +226,14 @@
       if (evt === 'SIGNED_OUT' && session) wipeLocal();
       session = s || null;
       resolve();
+      if (session) noteAccount();
       if (session) bridgeSession(); else bridgeClear();
       if (session) loadProfile().then(fire); else { profile = null; fire(); }
     });
     sb.auth.getSession().then(function (r) {
       session = (r && r.data && r.data.session) || null;
       resolve();
-      if (session) { bridgeSession(); return loadProfile().then(fire); }
+      if (session) { noteAccount(); bridgeSession(); return loadProfile().then(fire); }
       fire();
     }).catch(function () { resolve(); fire(); });
     return true;

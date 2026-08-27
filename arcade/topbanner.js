@@ -93,13 +93,11 @@
     var tk = document.getElementById('rtbTokens');
     if (tk) {
       var unlimited = !!(t && t.hasCard && t.hasCard());
-      var signed = !!(t && t.signedIn && t.signedIn());
-      // Signed out, this pill had nothing to report: it was a fixed "4 games
-      // free" advert sitting next to ten tiles that each say FREE or MEMBERS
-      // ONLY in their own corner. Hide it and let the tiles do the talking.
-      // Signed in it is live (games left today), and for a member it is their
-      // status plus the way into My Arcade Card, so it stays.
-      tk.hidden = !signed;
+      // This pill was hidden when signed out, because back then it had nothing
+      // to report: a fixed "4 games free" advert next to tiles that each said
+      // FREE in their own corner. A visitor has four real plays now, so the
+      // count is live for them too and it goes down as they use them.
+      tk.hidden = false;
       if (unlimited) { tk.className = 'rtb-tokens unlimited'; tk.innerHTML = TICKET + '<span>Unlimited</span>'; }
       else if (t) {
         // Per game now, not a pool: a free account has four games with one go

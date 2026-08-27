@@ -16,6 +16,18 @@
 <meta name="description" content="Sportegories: a daily sports Scattergories. One letter, eight categories, two minutes." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Sportegories" />
+<meta property="og:description" content="A daily sports Scattergories. One letter, eight categories, two minutes." />
+<meta property="og:url" content="https://runthe.gg/arcade/sportegories/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Sportegories" />
+<meta name="twitter:description" content="A daily sports Scattergories. One letter, eight categories, two minutes." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
@@ -357,32 +369,31 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="/arcade/tokens.js?v=10"></script>
+<script src="/arcade/tokens.js?v=12"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
 <script src="/arcade/archive.js?v=2"></script>
 <script src="/arcade/gamemarks.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=18"></script>
+<script src="/arcade/board.js?v=19"></script>
 <script src="/arcade/leaderboard.js?v=14"></script>
 <!-- Sportegories shipped without the shared account chrome, so it had no
      paywall, no sign-in modal and no end-of-game funnel: guests got unlimited
      free plays here while every other game gives one. -->
-<script src="/arcade/auth.js?v=3"></script>
-<script src="/arcade/auth-ui.js?v=4"></script>
-<script src="/arcade/card.js?v=17"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/card.js?v=19"></script>
 <script src="/arcade/referral.js?v=9"></script>
-<script src="/arcade/pregame.js?v=20"></script>
-<script src="/arcade/funnel.js?v=7"></script>
-<script src="/arcade/share.js?v=7"></script>
+<script src="/arcade/demo.js?v=2"></script>
+<script src="/arcade/pregame.js?v=23"></script>
+<script src="/arcade/funnel.js?v=9"></script>
+<script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/sportegories-data.js?v=9"></script>
 <script src="/arcade/type.js?v=3"></script>
-<script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=3"></script>
 <script src="/arcade/sportegories.js?v=10"></script>
 <script src="/arcade/livecheck.js?v=7"></script>
 <script>
@@ -410,14 +421,6 @@ window.GA_ID='G-L29P5MRWKE';
   function show(n){ Object.keys(P).forEach(function(k){ P[k].classList.toggle('on', k===n); }); }
 
   var puz=null, inputs=[], timer=null, left=SECONDS, graded=false, isDaily=true;
-  /* This page has no shared how-to helper, so it starts its own walkthrough.
-     It waits for the rows to exist, because half the steps point at them. */
-  function maybeTour(){
-    if(!window.RTGTour || !window.RTGTourData || !RTGTourData.GAMES.sportegories) return;
-    if(!document.getElementById('in0')) return;
-    RTGTour.once('game:sportegories', RTGTourData.GAMES.sportegories);
-  }
-
   var TIER_NAME = ['Anchor','Mid','Hard','Spice'];
 
   function render(){
@@ -449,7 +452,6 @@ window.GA_ID='G-L29P5MRWKE';
     $('letterTile').textContent = puz.letter;
     $('modeLab').textContent = ARCHIVE ? 'Archive letter' : (isDaily ? 'Today’s letter' : 'Practice letter');
     $('playFoot').textContent = 'Every answer must be a real player. Same player can’t be used twice. Deep cuts get looked up.';
-    setTimeout(maybeTour, 500);
   }
 
   /* The typeahead used to live here, ~90 lines of it, and three other games
@@ -858,7 +860,7 @@ window.GA_ID='G-L29P5MRWKE';
   })();
 })();
 </script>
-<script src="/arcade/howto.js?v=17"></script>
+<script src="/arcade/howto.js?v=20"></script>
 <script>if (window.RTGHowto) RTGHowto.init('sportegories');</script>
 </body>
 </html>

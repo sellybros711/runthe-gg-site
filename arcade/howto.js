@@ -92,7 +92,15 @@
       '.rtgHowto-card{width:100%;max-width:360px;background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:22px 20px 20px;position:relative;box-shadow:var(--shadow,0 30px 80px -20px rgba(0,0,0,.7));margin:auto 0;font-family:var(--f,inherit);}' +
       '.rtgHowto-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--ink);font-size:14px;line-height:1;cursor:pointer;padding:0;}' +
       '.rtgHowto-title{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:20px;margin:0 34px 12px 0;color:var(--ink);}' +
-      '.rtgHowto-list{margin:0 0 18px;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
+      '.rtgHowto-sub{margin:-6px 0 14px;color:var(--mut);font-size:13px;line-height:1.5;}' +
+      '.rtgHowto-demo{margin:0 0 14px;}' +
+      '.rtgHowto-rules{margin:0 0 16px;border-top:1px solid var(--line2);padding-top:12px;}' +
+      '.rtgHowto-rules summary{list-style:none;cursor:pointer;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:6px;}' +
+      '.rtgHowto-rules summary::-webkit-details-marker{display:none;}' +
+      '.rtgHowto-rules summary::after{content:"+";margin-left:auto;font-size:15px;line-height:1;}' +
+      '.rtgHowto-rules[open] summary::after{content:"\\2212";}' +
+      '.rtgHowto-rules[open] summary{margin-bottom:10px;}' +
+      '.rtgHowto-list{margin:0;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
       '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--brand,#FF8A3D);color:var(--onAccent,#160B02);font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
@@ -132,10 +140,31 @@
     x.setAttribute('aria-label', 'Close');
     x.textContent = '✕';
 
+    /* THE HEADER INTRODUCES THE GAME, it does not label the dialog. "How to
+       play" is true of every one of these modals and tells you nothing about
+       the one you opened; the game's own name and its one-line pitch are what
+       orient somebody who tapped in from a tile. Falls back to the old label
+       if gamemarks is absent. */
+    var marks = window.RTGGameMarks || null;
+    var gname = (marks && marks.name) ? marks.name(key) : '';
+    var gdesc = (marks && marks.desc) ? marks.desc(key) : '';
     var h = document.createElement('h2');
     h.className = 'rtgHowto-title';
-    h.textContent = 'How to play';
+    h.textContent = gname || 'How to play';
+    var sub = null;
+    if (gdesc) {
+      sub = document.createElement('p');
+      sub.className = 'rtgHowto-sub';
+      sub.textContent = gdesc;
+    }
 
+    /* THE DEMO IS THE TUTORIAL; the bullets are the reference. Shown together
+       they compete, and the wordier one wins by sheer area: four lines of grey
+       text under a four-second clip is the wordy tutorial with an animation on
+       top of it. So the list folds away.
+       It is not deleted, because it says the things a clip cannot: what a
+       wrong answer costs, what each answer is worth, when the run ends. Those
+       matter, just not before you have seen the game move. */
     var ul = document.createElement('ul');
     ul.className = 'rtgHowto-list';
     for(var i = 0; i < bullets.length; i++){
@@ -143,6 +172,12 @@
       li.textContent = bullets[i];
       ul.appendChild(li);
     }
+    var rules = document.createElement('details');
+    rules.className = 'rtgHowto-rules';
+    var sum = document.createElement('summary');
+    sum.textContent = 'Scoring and rules';
+    rules.appendChild(sum);
+    rules.appendChild(ul);
 
     var ok = document.createElement('button');
     ok.className = 'rtgHowto-ok';
@@ -151,20 +186,21 @@
 
     card.appendChild(x);
     card.appendChild(h);
-    card.appendChild(ul);
-    /* Reading the rules and being shown the screen are different needs, and a
-       list of bullets only ever answers the first one. The walkthrough lives
-       one tap away rather than being a first-visit event you can miss. */
-    var tourBtn = null;
-    if (window.RTGTour && window.RTGTourData && RTGTourData.GAMES[key]) {
-      tourBtn = RTGTour.button('Show me around the screen');
-      tourBtn.style.cssText = 'display:flex;width:100%;justify-content:center;margin:0 0 10px;';
-      tourBtn.addEventListener('click', function(){
-        close();
-        setTimeout(function(){ RTGTour.replay('game:' + key, RTGTourData.GAMES[key]); }, 120);
-      });
-      card.appendChild(tourBtn);
+    if (sub) card.appendChild(sub);
+    /* THE DEMO GOES ABOVE THE RULES, because it answers the question the
+       rules cannot: what does this look like when it is working. Four seconds
+       of the game playing itself beats four bullets, and the bullets stay
+       underneath for the scoring detail an animation has no way to say.
+       Optional throughout: a page without demo.js still gets exactly what it
+       had before. */
+    var demo = null;
+    if (window.RTGDemo && RTGDemo.has(key)) {
+      var stagewrap = document.createElement('div');
+      stagewrap.className = 'rtgHowto-demo';
+      card.appendChild(stagewrap);
+      demo = { host: stagewrap, handle: null };
     }
+    card.appendChild(rules);
     card.appendChild(ok);
     scrim.appendChild(card);
     document.body.appendChild(scrim);
@@ -174,8 +210,23 @@
     function seen(){ try{ return !!localStorage.getItem(FLAG); }catch(e){ return true; } }
     function markSeen(){ try{ localStorage.setItem(FLAG, '1'); }catch(e){} }
     function isOpen(){ return scrim.classList.contains('on'); }
-    function open(){ scrim.classList.add('on'); }
-    function close(){ scrim.classList.remove('on'); markSeen(); }
+    /* The demo runs on timers, so it starts when the modal opens and is torn
+       down when it closes. A loop still ticking behind a dismissed modal costs
+       battery and shows up in no test. */
+    function accent(){
+      try {
+        var m = (window.RTGCalendar && RTGCalendar.get) ? RTGCalendar.get(key) : null;
+        return m && m.accent;
+      } catch (e) { return null; }
+    }
+    function open(){
+      scrim.classList.add('on');
+      if (demo && !demo.handle) demo.handle = RTGDemo.mount(demo.host, key, accent());
+    }
+    function close(){
+      scrim.classList.remove('on'); markSeen();
+      if (demo && demo.handle) { try { demo.handle.stop(); } catch (e) {} demo.handle = null; demo.host.innerHTML = ''; }
+    }
 
     x.addEventListener('click', close);
     ok.addEventListener('click', close);
@@ -205,14 +256,14 @@
     // for a locked/finished day, typically after a ~300ms timeout) has run.
     // If any game scrim is showing we skip the auto-open and leave the flag
     // unset, so the intro still shows on the next fresh visit.
-    /* On a first visit, walk them through the actual screen rather than
-       opening a list of rules. Pointing at the league switcher and saying what
-       it does lands; "one puzzle a day, five tries" does not, because at that
-       moment they do not yet know what they are looking at. The bullets stay
-       behind the "?" for anyone who wants the rules on their own.
-       Waits for the pregame overlay to be gone as well as any result modal:
-       walking someone through a screen they cannot see would be worse than
-       saying nothing. */
+    /* On a first visit, open THIS. It used to hand off to a tour that pointed
+       at the league switcher and the score box, which answers "what is this
+       control" for somebody who does not yet know what the game is. The demo
+       answers the earlier question by playing a round, and once you have seen
+       one the controls explain themselves.
+       Still waits for the pregame overlay and any result modal to be gone:
+       opening onto a screen they cannot see would be worse than saying
+       nothing. */
     if(!seen()){
       var tries = 0;
       var wait = setInterval(function(){
@@ -221,9 +272,7 @@
         if (document.querySelector('.rtgpg-scrim:not([hidden])')) return; // pregame is showing
         clearInterval(wait);
         markSeen();
-        var did = (window.RTGTour && window.RTGTourData && RTGTourData.GAMES[key])
-          ? RTGTour.once('game:' + key, RTGTourData.GAMES[key]) : false;
-        if (!did) open();
+        open();
       }, 300);
     }
   }
