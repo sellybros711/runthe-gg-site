@@ -252,6 +252,52 @@ console.log('\n=== the room does not repeat itself ===');
   ok('one ruling across a term does not produce one sentence', !stuck.length,
     stuck.join(', ') || B.BLOCS.map((b) => b.id + ':' + said[b.id].size).join(' '));
 
+  /* CONSECUTIVE RULINGS, WHICH IS WHAT A PLAYER ACTUALLY SEES. The loop above jumps the clock
+     nine at a time and so tests a sample rather than a sequence, and a sample was exactly the
+     problem: the line was chosen by hashing the clock, a hash of three options repeats about a
+     third of the time, and somebody played a term and reported that the fans say "best thing
+     to come out of a conference room since the two point conversion" every time they are
+     pleased.
+
+     The index walks now, so six rulings in a row out of a six line pool are six different
+     sentences. That is the assertion, and it is stated as the pool size rather than as six so
+     that adding lines cannot quietly leave it testing a prefix. */
+  /* FOUR, which is blocs.VARIETY: every pool the room can land in is padded to at least that
+     many, so four rulings in a row can never be fewer than four sentences. Checked against
+     several different edits, because which pool is in play depends entirely on what the ruling
+     pushed and a single edit only exercises one of them. Seventy-four of the themed pools hold
+     two hand-written lines, and it was those, not the bands, that a player actually saw
+     repeating. */
+  const N = B.VARIETY;
+  const EDITS = [
+    { effects: { money: -2.2, cost: 1.4 } },
+    { effects: { money: 2.6, inventory: 1.8 } },
+    { effects: { access: 2.4, tradition: -1.2 } },
+    { effects: { labour: 2.8, cost: 1.6 } },
+    { effects: { autonomy: -2.2, exposure: 1.4 } },
+    { effects: { tradition: 2.6, inventory: -1.4 } },
+  ];
+  const thin = [], backToBack = [];
+  EDITS.forEach((e, ei) => {
+    const run = {};
+    B.BLOCS.forEach((b) => { run[b.id] = []; });
+    for (let i = 0; i < N; i++) {
+      const w = L.createWorld({ year: 2026, membership: {} });
+      w.beat = 3;
+      w.history = new Array(i).fill({ effects: {} });
+      B.react(w, e).forEach((r) => run[r.id].push(r.say));
+    }
+    B.BLOCS.forEach((b) => {
+      if (new Set(run[b.id]).size < N) thin.push('e' + ei + ' ' + b.id + ':' + new Set(run[b.id]).size);
+      if (run[b.id].some((s, i) => i > 0 && s === run[b.id][i - 1])) backToBack.push('e' + ei + ' ' + b.id);
+    });
+  });
+  ok('  and ' + N + ' rulings in a row are ' + N + ' different sentences', !thin.length,
+    thin.slice(0, 6).join(', ')
+      || (EDITS.length * B.BLOCS.length) + ' pools walked, none short');
+  ok('  and never the same one twice running', !backToBack.length,
+    backToBack.slice(0, 6).join(', ') || 'none repeated back to back');
+
   /* AND THE SAME BEAT SAYS THE SAME THING. The preview and the ruling that follows it run
      this twice on the same world, and a resampled line would make the forecast a liar about
      something that costs nothing to get right. */

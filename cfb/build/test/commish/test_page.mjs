@@ -25,6 +25,14 @@
  * gone on passing if the list were emptied by mistake.
  */
 import { chromium } from 'playwright';
+import { createRequire } from 'module';
+import path from 'path';
+const require=createRequire(import.meta.url);
+const ROOT=path.resolve(import.meta.dirname,'../../../..');
+/* HOW BIG THE DOCKET IS, READ RATHER THAN ASSUMED, so a walk budget sized against it cannot
+   silently become too small the next time somebody adds thirty items. Same reasoning, and the
+   same line, as test_desk. */
+const DOCKET_ITEMS=require(ROOT+'/cfb/commish/docket.js').ITEMS.length;
 const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
 const UID='11111111-1111-1111-1111-111111111111';
 const URL='http://localhost:8080/cfb/commish/index.html';
@@ -215,8 +223,15 @@ console.log('\n=== a tester takes the job ===');
 
   await p.click('#g-start'); await p.waitForTimeout(700);
   ok('the office is the first thing you see', await on(p,'s-office'));
-  const meters=await p.$$eval('#off-meters .meter span',(e)=>e.map((x)=>x.textContent));
+  /* THE LABEL SPAN, not every span. The office tiles carry a second one now saying where the
+     number started, so a bare `span` counts six and reports three meters as a failure. */
+  const meters=await p.$$eval('#off-meters .meter > span:not(.fr)',(e)=>e.map((x)=>x.textContent));
   ok('  three meters', meters.length===3, meters.join(', '));
+  /* AND EACH ONE SAYS WHAT IT USED TO BE. A number between 0 and 100 with nothing to measure
+     it against was the whole complaint: "how do i know if these are good or not". */
+  const froms=await p.$$eval('#off-meters .meter .fr',(e)=>e.map((x)=>x.textContent.trim()));
+  ok('  each measured against where the term began', froms.length===3
+    && froms.every((s)=>s.length>0), froms.join(' | '));
   const room=await p.$$eval('#off-room .bl',(e)=>e.length);
   ok('  and the whole room', room===9, room+' blocs');
   ok('  who hold votes', (await p.$$eval('#off-room .vt',(e)=>e.length))>0);
@@ -294,12 +309,19 @@ console.log('\n=== what a free player is shown ===');
      first run of this block drew an item with no settings, printed a skip, and asserted
      that an EMPTY list of numbers read correctly. That is a check that can never fail.
      Rule through beats until an item with settings comes up, and fail if none does. */
-  /* AND A BUDGET WIDE ENOUGH THAT LUCK CANNOT DECIDE IT. Roughly a quarter of the docket
-     carries settings and each item costs about three turns of this loop, so a budget of 24
-     was reaching only eight items and failing outright about one run in ten. A test that
-     fails one run in ten is a test people learn to re-run rather than read. */
+  /* AND A BUDGET WIDE ENOUGH THAT LUCK CANNOT DECIDE IT. A test that fails one run in ten is
+     a test people learn to re-run rather than read.
+
+     THE NUMBER IN THE OLD NOTE WAS STALE AND THAT IS WHY IT KEPT FLAKING. It said roughly a
+     quarter of the docket carries settings; six of ninety-one do, which is seven per cent, and
+     the docket has grown a lot since somebody counted. Drawing without replacement, twenty-five
+     items miss one about fourteen times in a hundred, which is exactly the rate this was
+     failing at. Fifty-five items misses three times in a thousand.
+
+     Each item costs about three turns of this loop, so the budget is sized off ITEMS rather
+     than turns, and off the docket rather than a number typed once. */
   let steps=[], seen=0, beat=0, stuck='';
-  while(beat++<75){
+  while(beat++<Math.max(75,DOCKET_ITEMS*2)){
     if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
     if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }

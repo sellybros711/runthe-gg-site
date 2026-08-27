@@ -147,8 +147,19 @@
            be about the thing that moved rather than only about how much. The seed is the
            world's clock plus the bloc, so a beat replays word for word and two blocs never
            pick the same index out of two different pools. */
-        say: line(b, delta, now, own, hash(b.id + '|' + world.year + '|' + world.beat
-          + '|' + ((world.history || []).length)), g),
+        /* WALKED, NOT SAMPLED, and that is the whole of the fix. The seed used to be a hash of
+           the clock, so the index into a three line pool was effectively random and a random
+           draw from three repeats about a third of the time: a player watched the fans say
+           "best thing to come out of a conference room since the two point conversion" over
+           and over and reported that the room says it every time it is pleased.
+
+           A ruling counter plus a per bloc offset makes consecutive picks from the same pool
+           consecutive INDEXES, so a pool of five is five different sentences before any of
+           them comes back, and two blocs still start in different places. It is just as
+           deterministic: the same beat replays word for word, because the counter is the
+           length of the history and the offset is a hash of the id. */
+        say: line(b, delta, now, own,
+          (hash(b.id) + ((world.history || []).length)) >>> 0, g),
       };
     });
   }
@@ -211,23 +222,33 @@
         ['This is what we pay for.',
           'You have finally read the room correctly. Do it again.',
           'We will be difficult about something else. Enjoy the afternoon.',
-          'Put it in writing before somebody in this room reconsiders.'],
+          'Put it in writing before somebody in this room reconsiders.',
+          'Correct. Now do not revisit it in March when somebody complains.',
+          'No notes. Write that down, it will not happen often.'],
         ['Fine. We will take it.',
           'We can live with this. Do not read that as enthusiasm.',
           'Nobody here is thrilled. Nobody is calling a lawyer either.',
-          'Acceptable. We have lost worse meetings than this one.'],
+          'Acceptable. We have lost worse meetings than this one.',
+          'We will not fight this one. We are saving it.',
+          'It is a decision, and this office has made worse ones this month.'],
         ['We were not consulted.',
           'We found out about this the way everybody else did, which is the part we mind.',
           'Interesting call, given whose television money keeps those lights on.',
-          'We will remember the process here longer than the decision.'],
+          'We will remember the process here longer than the decision.',
+          'Somebody should have called first. Somebody always should have called first.',
+          'Our presidents read about it in the paper. That is the part that stings.'],
         ['We have other options and everybody knows it.',
           'We have had very good years without this office. Several of them.',
           'Ask us again in the spring. The answer will cost more.',
-          'You are welcome to run the sport. You are running it without us.'],
+          'You are welcome to run the sport. You are running it without us.',
+          'We are polling our members, and you will not enjoy the results.',
+          'The next version of this conversation happens on our terms.'],
         ['We are done talking to this office.',
           'We will schedule our own January. Thank you for your time.',
           'There is a version of this sport that does not have you in it. It is drawn up.',
-          'Our lawyers, our networks and our presidents are already on the same call.'],
+          'Our lawyers, our networks and our presidents are already on the same call.',
+          'We have stopped returning the calls. Read that however you like.',
+          'There is a meeting this week that you are not in.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -248,11 +269,13 @@
         'Noted. It does not undo the last three meetings.',
         'A win for us, which after this year we are counting individually.',
         'Fine. Keep going and we will stop drafting the other plan.',
+        'We can put that in the win column. It is a short column this year.',
       ],
       grudge: [
         'We were with you until that.',
         'That is the first thing out of that office we have had to think about.',
         'Careful. We have been patient and it is not a renewable resource.',
+        'We had been prepared to call this a good term. Had been.',
       ],
       on: {
         money: {
@@ -289,19 +312,34 @@
       bands: [
         ['Our presidents will be pleased, which is the hardest audience there is.',
           'That is parity. We will say so publicly and mean it.',
-          'Sensible. We will not make you regret agreeing with us.'],
+          'Sensible. We will not make you regret agreeing with us.',
+          'Fair, funded and defensible. Three for three, which never happens.',
+          'We can take that to eighteen campuses and not lose a single one.',
+          'That is what a commissioner is for. We do not say it often.'],
         ['Workable.',
           'We will take it back to the campuses and it will survive the room.',
-          'Not what we asked for. Close enough to sign.'],
+          'Not what we asked for. Close enough to sign.',
+          'It holds. It does not inspire anybody, and it holds.',
+          'We have signed off on worse and called it a triumph.',
+          'Our directors will grumble and vote for it anyway.'],
         ['That is not parity and everybody in here can count.',
           'We are being asked to fund a system built for somebody else.',
-          'We came out of that meeting further behind than we went in.'],
+          'We came out of that meeting further behind than we went in.',
+          'The arithmetic in that room did not include us.',
+          'We are the largest footprint in the sport and we just got the smaller half.',
+          'Somebody will ask us in January why we agreed to this. We did not.'],
         ['We will be looking at our own arrangements.',
           'There is a network that would take our inventory tomorrow. They have said so.',
-          'Our schools did not join a conference to be the second call.'],
+          'Our schools did not join a conference to be the second call.',
+          'Our television partners have started asking what our options are.',
+          'We built the biggest thing in this sport. We can build another.',
+          'The Rose Bowl was ours before this office existed. Remember that.'],
         ['This office no longer speaks for us.',
           'We will announce our own postseason and you will read about it.',
-          'Eighteen presidents, one vote, and it is not going your way.'],
+          'Eighteen presidents, one vote, and it is not going your way.',
+          'We are not attending the next one. Send the minutes.',
+          'Our presidents have voted and the vote was not close.',
+          'You will find out what we are doing when everybody else does.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -322,11 +360,13 @@
         'Better. Our presidents will want to see two more like it.',
         'That helps. It does not settle anything.',
         'One meeting in the right direction. We have a long memory for the other kind.',
+        'That is closer to what we asked for than anything else this year.',
       ],
       grudge: [
         'We were prepared to support this office. That made it harder.',
         'One of those is a mistake. Two is a pattern and we count.',
         'That will be raised at our meetings and not by us.',
+        'We came in supportive. You are spending that down quickly.',
       ],
       on: {
         money: {
@@ -360,19 +400,34 @@
       bands: [
         ['That buys us time, and time is the only thing we were short of.',
           'We can recruit against that. Thank you.',
-          'Our members will read this as a reason to stay. Finally.'],
+          'Our members will read this as a reason to stay. Finally.',
+          'The first good news anybody has brought this conference in years.',
+          'Our members can look at that and see a reason to stay put.',
+          'We will take a year with no emergency calls. Thank you.'],
         ['We can live with it.',
           'It is not a fix. It is not a funeral either.',
-          'We will take a year where nothing gets worse.'],
+          'We will take a year where nothing gets worse.',
+          'Nothing broke today. In this conference that counts.',
+          'It buys a season. We will spend it well.',
+          'We would have asked for more. We did not expect to get this.'],
         ['Our members will read this as a reason to leave.',
           'Every school we are worried about just got a talking point.',
-          'You have handed the schools with exit lawyers a reason to call them.'],
+          'You have handed the schools with exit lawyers a reason to call them.',
+          'The schools with lawyers just added a slide to their deck.',
+          'That is one more reason to leave, and we are short of reasons to stay.',
+          'We will spend the spring explaining this to nine athletic directors.'],
         ['Our lawyers are already reading it. So are theirs.',
           'The grant of rights is the only thing holding this together and you just tested it.',
-          'Two of our schools took that meeting before the ink dried.'],
+          'Two of our schools took that meeting before the ink dried.',
+          'Two of our members have already asked what the exit costs.',
+          'The grant of rights was never as strong as everybody pretended.',
+          'We are one bad ruling from being a map with holes in it.'],
         ['There may not be an ACC to consult next year.',
           'You can address the remaining nine of us in writing.',
-          'When this conference comes apart, this is the meeting people will point at.'],
+          'When this conference comes apart, this is the meeting people will point at.',
+          'There is a version of next year with six of us in it.',
+          'Our members are talking to each other without us on the call.',
+          'You have run out of conference to negotiate with.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -393,11 +448,13 @@
         'We will take it. We are not in a position to be proud about it.',
         'That is a lifeline, and we are aware of what a lifeline is.',
         'Good. Now do six more before somebody\'s lawyer finishes reading the exit clause.',
+        'Every one of these buys us a month. We need about forty.',
       ],
       grudge: [
         'We had one good thing going and you touched it.',
         'That is a phone call two of our schools are going to make tonight.',
         'We were nearly comfortable. Nearly.',
+        'That is the one thing we could not afford this week.',
       ],
       on: {
         money: {
@@ -431,19 +488,34 @@
       bands: [
         ['A seat at last.',
           'That is the first time this conference has been treated as a peer. We noticed.',
-          'Good. Now say the same thing in public with a camera on.'],
+          'Good. Now say the same thing in public with a camera on.',
+          'For once we are in the sentence rather than the footnote.',
+          'That is the ruling we have been asking three commissioners for.',
+          'We will hold you to it, and we will thank you in public first.'],
         ['Acceptable.',
           'We will take it, and we will still be asking for more in the spring.',
-          'Not a win. Not the usual.'],
+          'Not a win. Not the usual.',
+          'More than the usual, which is not the same as enough.',
+          'We can sell that to our schools without a long meeting.',
+          'Nothing to celebrate. Nothing to appeal either.'],
         ['We are being lumped in again.',
           'We are not the Group of Five and we are tired of the sentence that says we are.',
-          'Somebody drew a line and put us on the wrong side of it. Again.'],
+          'Somebody drew a line and put us on the wrong side of it. Again.',
+          'We are a power conference on the letterhead and nowhere else today.',
+          'Every one of these costs us a recruit we will never hear about.',
+          'The fourth share of everything, forever, is not a business.'],
         ['We will look after ourselves.',
           'This conference has been written off twice and is still here. Try a third time.',
-          'We have expansion targets and a phone. Do not make us use both.'],
+          'We have expansion targets and a phone. Do not make us use both.',
+          'We have been left for dead before and we are still scheduling games.',
+          'There are four schools in other leagues who take our calls now.',
+          'You are pricing us out and calling it a formula.'],
         ['We are not participating in this.',
           'You can hold the meeting. We will read the minutes.',
-          'The last office that treated us like this does not exist any more.'],
+          'The last office that treated us like this does not exist any more.',
+          'We will make our own arrangements and announce them on our own day.',
+          'This conference has outlived two of these offices already.',
+          'Do not send us the agenda. We are not coming.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -464,11 +536,13 @@
         'Better than the usual. We are not sending a thank you card.',
         'Progress, from a very low base, and we know exactly how low.',
         'Something went our way for once. We will believe it in November.',
+        'That is the sort of thing we joined this league expecting.',
       ],
       grudge: [
         'We were on your side this morning.',
         'That is a step backwards and we did not have many to spare.',
         'Do not do that again. We have been very reasonable.',
+        'We had stopped bracing for these. That was a mistake.',
       ],
       on: {
         money: {
@@ -502,19 +576,34 @@
       bands: [
         ['A real path. Finally.',
           'Somewhere in Boise a whole athletic department is standing up right now.',
-          'Twenty years of being told to schedule better, and today it actually meant something.'],
+          'Twenty years of being told to schedule better, and today it actually meant something.',
+          'Somebody in this office finally looked at a map of the whole country.',
+          'We will tell sixty athletic directors tonight and none of them will sleep.',
+          'That is the difference between a sport and a closed shop. You chose right.'],
         ['Better than nothing.',
           'We will take the crumb. We would like it noted that it is a crumb.',
-          'It is progress. Slow, but the arrow is the right way.'],
+          'It is progress. Slow, but the arrow is the right way.',
+          'We will take it and keep asking. That has always been the job.',
+          'It is not the door. It is a window, and we have gone through smaller.',
+          'Our schools have survived on less than this for thirty years.'],
         ['The gap just got wider.',
           'We play the same sport under the same rules and get a different answer every time.',
-          'Our best season in a decade would still not clear that bar.'],
+          'Our best season in a decade would still not clear that bar.',
+          'Another rule written by people who have never played on a Tuesday.',
+          'We generate the upsets that sell your postseason and are paid for none.',
+          'The word access keeps appearing in rulings that reduce it.'],
         ['We are filing.',
           'There is an antitrust lawyer in this conference who has been waiting years for this.',
-          'You have made us a farm system with a marching band.'],
+          'You have made us a farm system with a marching band.',
+          'Our presidents have started using the word cartel in writing.',
+          'Sixty schools, one set of rules, and two of them get to write it.',
+          'We are documenting all of this. Somebody will want it eventually.'],
         ['We will see you in front of a judge.',
           'Congress has asked us to come and explain the sport. We are going to.',
-          'Sixty schools, one exhibit, and your name on the front of it.'],
+          'Sixty schools, one exhibit, and your name on the front of it.',
+          'We are not scheduling your buy games any more. Find somebody else.',
+          'There is a subcommittee that would love to hear about today.',
+          'We would rather play each other than be a rounding error.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -535,11 +624,13 @@
         'We will take it and we will still be in front of a judge about the rest.',
         'A crumb, gratefully received, and please note the word crumb.',
         'That helps about four of our schools. There are sixty of us.',
+        'Good. Now say it again when the power four are in the room.',
       ],
       grudge: [
         'We were starting to think this office was different.',
         'That is the part where it always goes wrong for us.',
         'We had hope for about a season. That is longer than usual.',
+        'For a moment there we were being treated as part of the sport.',
       ],
       on: {
         access: {
@@ -573,19 +664,34 @@
       bands: [
         ['That is a product we can sell.',
           'Give us that window and we will make it the biggest night of the fall.',
-          'Our sales team just stopped worrying about the fourth quarter of the year.'],
+          'Our sales team just stopped worrying about the fourth quarter of the year.',
+          'That is three hours we can charge premium for. Thank you.',
+          'Our affiliates will run that promo unpaid. That is how good it is.',
+          'You just created a night. Nobody in this sport creates nights.'],
         ['We can work with the windows.',
           'It is not what we would have drawn up. It is sellable.',
-          'We will make it work. We always do, and it always costs somebody something.'],
+          'We will make it work. We always do, and it always costs somebody something.',
+          'It is sellable. It is not the pitch we wanted to make.',
+          'We will move it to a window where nobody is watching closely.',
+          'Our sales team will find a way. They resent it, and they do it.'],
         ['This devalues the inventory.',
           'You have taken a game people would have watched and made it a formality.',
-          'Half of that slate is now a rating we cannot sell against.'],
+          'Half of that slate is now a rating we cannot sell against.',
+          'You have turned appointment television into background noise.',
+          'A game nobody has to watch is a game nobody watches.',
+          'We paid for drama. That ruling takes it off the schedule.'],
         ['The next deal will reflect this.',
           'Every one of these decisions shows up in the number at renewal.',
-          'We are not paying premium money for a Saturday you have hollowed out.'],
+          'We are not paying premium money for a Saturday you have hollowed out.',
+          'The renewal conversation will be shorter and colder than the last one.',
+          'There is a number in our model for this and it is going down.',
+          'We are already looking at what else is on in that window.'],
         ['We are not bidding on that.',
           'Take it to somebody else and see what they say. We will wait.',
-          'You can have the sport you want or the check. Not both.'],
+          'You can have the sport you want or the check. Not both.',
+          'We will let the rights lapse and see who else turns up.',
+          'You have made this a distribution problem rather than a sports one.',
+          'Our board has asked whether this sport is still a growth line.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -606,11 +712,13 @@
         'That helps the number. It does not fix the number.',
         'Sellable. We will still be having a difficult conversation at renewal.',
         'Good for one window. We buy the whole fall.',
+        'That is one Saturday improved. There are thirteen of them.',
       ],
       grudge: [
         'We were happy. Please understand how rare that is.',
         'That comes out of a window we had already sold. It shows up later.',
         'One of those is fine. We are going to count them.',
+        'We had that slate priced. It is worth less than it was this morning.',
       ],
       on: {
         inventory: {
@@ -644,19 +752,34 @@
       bands: [
         ['Somebody finally listened.',
           'That is the first rule in a while that was written with us in the room.',
-          'Guys are texting each other about this right now, and not to complain.'],
+          'Guys are texting each other about this right now, and not to complain.',
+          'Somebody in that room asked what it is like to be twenty and ranked.',
+          'First thing all year that makes the season easier rather than longer.',
+          'We have been asking for exactly that since before most of us got here.'],
         ['It is a start.',
           'We will take it. We are not going to pretend it is finished.',
-          'Better than last year, which is a low bar and still a bar.'],
+          'Better than last year, which is a low bar and still a bar.',
+          'We will take it. We are still counting the things it does not fix.',
+          'It helps the guys after us more than it helps us. That is fine.',
+          'Nobody is celebrating. Nobody is walking out either.'],
         ['We are being talked about, not to.',
           'Nine groups in that room and none of them puts on a helmet.',
-          'You just made a decision about our bodies and our calendar without us.'],
+          'You just made a decision about our bodies and our calendar without us.',
+          'You added games to a calendar nobody asked us about.',
+          'Everybody in that room gets paid to decide what happens to our knees.',
+          'They keep saying student athlete and never once ask a student athlete.'],
         ['We are organizing.',
           'There are guys on this call who have already spoken to a labour lawyer.',
-          'Every one of these decisions makes the case for us better.'],
+          'Every one of these decisions makes the case for us better.',
+          'There are guys on this team who have already signed something.',
+          'We are the only ones in this sport who cannot say no to anything.',
+          'The room decided. The room does not play on Saturday.'],
         ['We will bargain, or we will sit.',
           'Ask yourself what a championship weekend looks like with nobody on the field.',
-          'You do not have a sport without us. That has always been true.'],
+          'You do not have a sport without us. That has always been true.',
+          'There is a group chat with four thousand players in it and it is angry.',
+          'You will find out what a walkout looks like in November.',
+          'Every one of us can leave. Watch what happens if we all do it at once.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -677,11 +800,13 @@
         'That is one thing. There is a list.',
         'We noticed. It does not change that we are not in the room.',
         'Something, finally, and about a decade after it should have been obvious.',
+        'We will take the win. We would rather have had the meeting.',
       ],
       grudge: [
         'We were listening. That is the part that stings.',
         'Right up until that line, somebody was actually paying attention.',
         'Take a step forward and a step back and call it a process.',
+        'We were beginning to think somebody in there was on our side.',
       ],
       on: {
         labour: {
@@ -718,21 +843,33 @@
         ['Defensible. That matters more than anybody in this room admits.',
           'We can put that in front of a board and a faculty senate on the same day.',
           'Nothing there that ends up in a subpoena. Thank you.',
-          'Our athletic departments can run a season under that without a special meeting.'],
+          'Our athletic departments can run a season under that without a special meeting.',
+          'Our counsel read it twice and had nothing to add. That is a first.',
+          'We can defend that to a board without a rehearsal.'],
         ['We can explain this.',
           'It will survive a trustees meeting. Not comfortably, but it will survive.',
-          'We would have written it differently. We will not fight it.'],
+          'We would have written it differently. We will not fight it.',
+          'It will pass a committee. Slowly, and it will pass.',
+          'We can live inside that. Our budgets cannot live inside much.',
+          'No institution here is going to break over this one.'],
         ['This ends up in a courtroom.',
           'Somebody is going to be deposed about this and it will be one of us.',
           'You have created a fact pattern. That is what they call it afterwards.',
-          'The football team is eight percent of this campus and a hundred percent of the risk.'],
+          'The football team is eight percent of this campus and a hundred percent of the risk.',
+          'We will be answering questions about that ruling under oath eventually.',
+          'Every one of these ends up in a filing with our name on it.'],
         ['We have a fiduciary problem.',
           'Our institutions have obligations that have nothing to do with football.',
-          'General counsel has advised us not to be in the room the next time this is discussed.'],
+          'General counsel has advised us not to be in the room the next time this is discussed.',
+          'Our boards are asking why athletics keeps arriving as a liability.',
+          'The faculty senate has put this on an agenda. That never goes well.',
+          'We govern universities. This office keeps handing us football problems.'],
         ['A vote is being scheduled.',
           'This is now a governance matter and governance is what we do.',
           'Two of us have been asked to testify. We are going to be honest.',
-          'There are trustees asking whether this university needs a football team at all.'],
+          'There are trustees asking whether this university needs a football team at all.',
+          'The next conversation about this happens in front of a committee.',
+          'Some of our institutions are reconsidering the whole arrangement.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -753,11 +890,13 @@
         'That reduces the exposure. It does not remove it.',
         'Our counsel is marginally happier. That is the highest praise available here.',
         'Helpful. We remain the ones who get deposed.',
+        'That narrows the exposure. Our counsel will still not sign anything.',
       ],
       grudge: [
         'We were comfortable. We are now merely calm.',
         'That reopens something we thought had been closed.',
         'One paragraph in that has our counsel writing an email.',
+        'We had that risk closed out. It is open again and it is bigger.',
       ],
       on: {
         exposure: {
@@ -792,19 +931,34 @@
       bands: [
         ['This is the sport we grew up on.',
           'For once somebody in a suit remembered why any of us watch.',
-          'Best thing to come out of a conference room since the two point conversion.'],
+          'Best thing to come out of a conference room since the two point conversion.',
+          'They actually left something alone. Mark the calendar.',
+          'First ruling in years that sounds like it came from somebody who watches.',
+          'Somebody in there has been to a game. You can tell.'],
         ['We will get used to it.',
           'It is not the end of the world. It is not why we started watching either.',
-          'Fine. We complained about the last one too and here we still are.'],
+          'Fine. We complained about the last one too and here we still are.',
+          'It is fine. We say that every year and we are always still here.',
+          'Not what we wanted. Not worth the argument either.',
+          'We will grumble in September and forget about it by October.'],
         ['Nobody asked for this.',
           'Every year they take one more thing that was free and put a price on it.',
-          'Somebody in a boardroom heard the word tradition and reached for a calculator.'],
+          'Somebody in a boardroom heard the word tradition and reached for a calculator.',
+          'Another thing that used to be simple and now needs an explainer.',
+          'They keep asking us to love a sport they keep rearranging.',
+          'Nobody in that room has ever paid for a ticket to anything.'],
         ['You are ruining it.',
           'They moved that game to eleven at night on a channel nobody has.',
-          'My grandfather sat in that stadium. He would not recognize the schedule.'],
+          'My grandfather sat in that stadium. He would not recognize the schedule.',
+          'Half the reason we watched is gone and they are calling it growth.',
+          'The season we grew up with is a thing you have to explain to a child.',
+          'We are the only ones in this who never get a vote.'],
         ['We will find something else on.',
           'Enjoy the sport. We will be at a high school game on Friday.',
-          'You finally did it. The tickets are for sale and nobody is buying.'],
+          'You finally did it. The tickets are for sale and nobody is buying.',
+          'We are done. Not angry, just done.',
+          'There is a high school field three miles away with real people in it.',
+          'The sport we loved is a thing they sell now. We noticed when it stopped.'],
       ],
       /* THE TWO THINGS A ROOM SAYS THAT A MOOD BAND CANNOT. `relief` is an unhappy bloc
          acknowledging a win without forgiving anything; `grudge` is a content one being
@@ -825,11 +979,13 @@
         'Credit where it is due. We are still angry about the kickoff times.',
         'Fine, that one was good. Do not let it go to your head.',
         'One good decision. We have been counting the other kind since 2010.',
+        'That one was for us. We are not going to pretend it was not.',
       ],
       grudge: [
         'We were having such a nice year.',
         'You had us. You genuinely had us.',
         'One of these always shows up in February to remind us who runs it.',
+        'We were enjoying this. That is the last time we do that.',
       ],
       on: {
         tradition: {
@@ -898,6 +1054,11 @@
      is a nudge and the mood pool says it better than a sentence about money would. */
   const DRIVEN = 1.2;
 
+  /* HOW MANY DIFFERENT SENTENCES A POOL HAS TO BE ABLE TO PRODUCE. Four, because the index
+     walks rather than samples now: four consecutive rulings out of the same pool are four
+     different lines, and a themed pool fires perhaps five or six times across a whole term. */
+  const VARIETY = 4;
+
   function line(bloc, delta, now, own, seed, streak) {
     const voice = VOICE[bloc.id] || VOICE.Fans;
     /* Which pool is mostly where they have ENDED UP, nudged by which way they just moved,
@@ -938,6 +1099,10 @@
     } else if (band <= 1 && delta <= -1.0 && voice.grudge && voice.grudge.length) {
       pool = voice.grudge;
     }
+    /* WHAT THE MOOD ALONE WOULD HAVE SAID, kept because a themed pool below may need to borrow
+       from it. Captured here, after relief and grudge have had their say, so what it borrows
+       is never a sentence that fights the number. */
+    const base = pool;
 
     /* THE EXTREMES KEEP THEIR OWN WORDS. A bloc that is finished with you should sound
        finished with you, not deliver a considered note about television inventory, so the
@@ -957,7 +1122,24 @@
          line rather than a confident one about television. */
       if (themed && d.mag >= DRIVEN && Math.abs(delta) >= 0.6 && (d.term > 0) === (delta > 0)) {
         const side = d.term > 0 ? themed.good : themed.bad;
-        if (side && side.length) pool = side;
+        /* PADDED UP TO A FLOOR, FROM THE POOL THIS ONE JUST DISPLACED. Seventy-four of the
+           themed pools hold exactly two lines, and two lines walked is A, B, A, B, which reads
+           as repetition every bit as loudly as one line did. The bands were widened to six for
+           the same reason; doing that to seventy-four themed pools by hand is a hundred and
+           fifty sentences, and most of them would be a worse way of saying the two that are
+           already there.
+
+           So a short themed pool borrows from `base`, which is whatever the mood alone would
+           have said in this exact situation, and the specific line still comes up about half
+           the time. Borrowing from `base` rather than from the band matters: relief and grudge
+           exist precisely because the band CONTRADICTS the delta in those two cases, and
+           padding out of the band there would put an angry sentence beside a green number,
+           which is the fault they were written to fix. */
+        if (side && side.length) {
+          pool = side.length >= VARIETY
+            ? side
+            : side.concat(base.slice(0, VARIETY - side.length));
+        }
       }
     }
     const n = (typeof seed === 'number' ? seed : hash(bloc.id)) >>> 0;
@@ -1041,7 +1223,7 @@
      on whether the item carries a school. A guard that measures one of those and calls it
      safe is the guard that already failed once: it went on rendering bloc names ("The SEC",
      seven characters) for a room that had stopped drawing them. See test_desk.mjs. */
-  const publicAPI = { BLOCS, BY_ID, GAIN, MEMORY, VOICE, react, deltas, grudge, dot, moodOf, line, driver, hash,
+  const publicAPI = { BLOCS, BY_ID, GAIN, MEMORY, VARIETY, VOICE, react, deltas, grudge, dot, moodOf, line, driver, hash,
     SPEAKERS, AT_SCHOOL, speaker };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_BLOCS = publicAPI;

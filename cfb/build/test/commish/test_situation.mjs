@@ -189,6 +189,41 @@ console.log('\n=== what happened next ===');
   });
   ok('  and moves a real axis on a real bloc', !wrong.length, wrong.join(', ') || 'all of them');
 
+  /* ---- a punishment is earned, and is still reachable ----
+     THE HARSH TAILS ARE GATED ON HOW BIG THE RULING WAS. A player picked a host city, which is
+     about as mild as this office gets, and was handed a fabricated video of himself: "I did
+     nothing to cause this yet it had a negative impact on the game." A gate fixes that and
+     introduces the opposite failure, which is silent: raise the bar past the docket and the
+     best writing in fallout.js becomes unreachable and nothing anywhere says so.
+
+     So both directions are checked, in arithmetic rather than simulation, against the real
+     docket. */
+  const optWeights = [];
+  D.ITEMS.forEach((it) => (it.options || []).forEach((o) => {
+    let e = o.edit;
+    if (typeof e === 'function') { try { e = e(null, it); } catch (x) { return; } }
+    const fx = (e && e.effects) || {};
+    optWeights.push(Object.keys(fx).reduce((a, k) => a + Math.abs(Number(fx[k]) || 0), 0));
+  }));
+  const biggest = Math.max(...optWeights);
+  const netOf = (t) => Object.keys(t.effects || {})
+    .reduce((a, k) => a + (Number(t.effects[k]) || 0), 0);
+  const harsh = F.TAILS.filter((t) => netOf(t) < -0.6);
+  const unreachable = harsh.filter((t) => Math.abs(netOf(t)) * 2 > biggest);
+  ok('  every punishing tail is still reachable off a real ruling', !unreachable.length,
+    unreachable.map((t) => t.id).join(', ')
+      || harsh.length + ' gated, the biggest needs ' + (Math.max(...harsh.map((t) => Math.abs(netOf(t)))) * 2).toFixed(1)
+        + ' against a docket that reaches ' + biggest.toFixed(1));
+  /* AND THE RULING THAT MOVES NOTHING CANNOT BE PUNISHED FOR IT. */
+  let harshOnNothing = null;
+  const flat = { effects: {} };
+  for (let i = 1; i < 400 && !harshOnNothing; i++) {
+    const t = F.roll(w, { itemId: 'x', optionId: 'y', sit: s, edit: flat }, E.createSeededRNG(i));
+    if (t && netOf(t) < -0.6) harshOnNothing = t.id;
+  }
+  ok('  and a ruling that moves nothing cannot set off a scandal', !harshOnNothing,
+    harshOnNothing || 'none in 400 rolls');
+
   /* MERGED, NOT APPLIED SEPARATELY. Two edits for one press of a button would deal the room
      two answers and print two sets of numbers. */
   const tail = { id: 't', head: 'h', body: 'b', effects: { money: 1 }, aimed: { SEC: { money: 2 } } };

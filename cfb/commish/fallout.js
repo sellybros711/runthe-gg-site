@@ -40,6 +40,51 @@
      player stops expecting one and is pleased each time. */
   var RATE = 0.34;
 
+  /* ---- a punishment has to be earned by the ruling it follows ----
+     SIXTEEN OF THESE ARE UNGATED, and the harshest of them, a fabricated video of you saying
+     something you did not say, cost exposure and autonomy after ANY ruling at all. A player
+     picked a host city, which is about as inoffensive as this office gets, and was handed a
+     national scandal. Their words: "I did nothing to cause this yet it had a negative impact
+     on the game." Read as random punishment, because from where they sat it was.
+
+     The gate is not a new field on thirty-eight tails, it is arithmetic on two things the
+     roller already has. A tail's HARM is how far its own effects net negative. A ruling's
+     WEIGHT is how far it pushed the sport, summed across the axes it touched. A tail may only
+     fire if the ruling was at least twice its harm, so a scandal at minus two point four needs
+     a ruling worth four point eight, and the ruling that moves nothing gets none of them.
+
+     TWICE, measured rather than chosen. The docket's 273 options run from 0 to 13.8 with a
+     median of 6.6, so this stops the harshest tails after roughly the mildest quarter of
+     rulings and leaves every one of them reachable off an ordinary decision. A smaller
+     multiple gates nothing; a larger one puts the best writing in this file behind rulings
+     almost nobody makes.
+
+     THE POOL CANNOT EMPTY. `quiet` nets positive and is ungated, so a mild ruling still has
+     somewhere to land. */
+  var EARNS = 2;
+  /* Below this a tail is not a punishment, it is a texture, and gating it would be gating the
+     jokes. */
+  var HARM_FLOOR = -0.6;
+
+  function netOf(t) {
+    var e = (t && t.effects) || {}, n = 0;
+    for (var k in e) if (Object.prototype.hasOwnProperty.call(e, k)) n += Number(e[k]) || 0;
+    return n;
+  }
+  /* HOW BIG THE RULING WAS. Absolute, because a ruling that gives with one hand and takes with
+     the other is a big ruling: what earns a consequence is having done something, not having
+     done something unpopular. */
+  function weightOf(edit) {
+    var e = (edit && edit.effects) || {}, n = 0;
+    for (var k in e) if (Object.prototype.hasOwnProperty.call(e, k)) n += Math.abs(Number(e[k]) || 0);
+    return n;
+  }
+  function earned(t, edit) {
+    var harm = netOf(t);
+    if (harm >= HARM_FLOOR) return true;
+    return weightOf(edit) >= Math.abs(harm) * EARNS;
+  }
+
   /* A REAL NAME OR NOTHING. Most items carry a cast and the tail can use it; the ones that do
      not were printing "a compliance officer at a member school", which reads as a template
      that failed rather than as a sentence somebody wrote. `roll` puts a school from the actual
@@ -642,6 +687,9 @@
       if (names.length) ctx.anySchool = names[Math.floor((rng ? rng() : 0.5) * names.length) % names.length];
     }
     var pool = TAILS.filter(function (t) {
+      /* EARNED FIRST, because it is the cheaper test and because a tail that the ruling has
+         not earned is not eligible however well its own `when` fits. See the note on EARNS. */
+      if (!earned(t, ctx && ctx.edit)) return false;
       try { return t.when(world, sit, ctx || {}); } catch (e) { return false; }
     });
     if (!pool.length) return null;
