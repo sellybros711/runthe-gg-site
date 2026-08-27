@@ -6,7 +6,6 @@
  *   node football/simulator.js --schedule   schedule normalization check
  *   node football/simulator.js --draft      draft-loop invariants (cap, dead ends)
  *   node football/simulator.js --policies   REAL play policies through the wheel
- *   node football/simulator.js --fullscale  solve the ends of the Full Team rating scale
  *
  *   PS_SCALE=2.1 PS_N=4000 node football/simulator.js     override the dial
  *
@@ -932,85 +931,19 @@ function offenseReference(n) {
 }
 
 /*
- * ─── THE TWO ENDS OF THE FULL TEAM RATING SCALE ─────────────────────────────────────
+ * THERE IS NO --fullscale ANY MORE, and its absence is the point.
  *
- *   node football/simulator.js --fullscale
+ * It solved four constants that anchored the Full Team ratings, and those constants are
+ * gone: the two units are now scored by the two live modes' own functions, so their scales
+ * come from calibrations that already exist and are already checked. Nothing to solve means
+ * nothing to re-solve after a data refresh and nothing to paste wrongly. See
+ * fullSideRatings in the engine.
  *
- * Prints every solved constant the Full Team ratings rest on. Re-run after any change to
- * the cap, the talent dial, the coach table or the player data, and paste the two numbers
- * back: a rating scale anchored to endpoints that no longer exist is worse than none,
- * because it still looks like it means something.
+ * What replaced the check is the rating column in --fullteam below, which prints what each
+ * play style actually rates: careless around 23, careful around 65, solved around 90. If
+ * those move a long way after a data change, the scales moved with them.
  */
-function fullScaleReport() {
-  const cap = E.FULL_CAP_MUSD;
-  const coaches = E.coachTable(ctx) || [];
-  const POS = E.FULL_SLOT_POS;
-  const poolFor = (i) => POS[i].some((x) => E.DEFENSE_POSITIONS.indexOf(x) >= 0)
-    ? fullDefenders : fullPlayers;
 
-  /* THE FLOOR: the worst legal six on each side, and the coach who does the most damage
-     inside the reserve. Not a team anybody would draft on purpose, which is the point. */
-  const used = new Set();
-  const worst = POS.map((pos, i) => {
-    const c = poolFor(i).filter((x) => pos.indexOf(x.position) >= 0
-        && !used.has(`${x.player_id}|${x.season}`))
-      .sort((a, b) => a.ppr_ppg_mean - b.ppr_ppg_mean)[0];
-    used.add(`${c.player_id}|${c.season}`);
-    return c;
-  });
-  const worstCoach = coaches.filter((c) => c.price_musd <= 3.5)
-    .sort((a, b) => (a.off + a.def) - (b.off + b.def))[0] || null;
-  const loParts = E.fullParts(worst, 1, worstCoach, constants);
-
-  /* THE CEILING, ONE SIDE AT A TIME, at HALF the cap. That is the rule the ratings state:
-     100 is the best that unit could be if you gave it an even share. Solving each side on
-     its own is also the only way the two anchors can be symmetric, and symmetry is the whole
-     fix here: anchoring on the two halves of the SOLVED team put the offence's 100 behind
-     $159.5M and the defence's behind $100.4M, which made every balanced roster look like it
-     had a good defence and a poor offence.
-
-     Each side is paired with the floor's OTHER side so fullParts sees a legal twelve, and it
-     reads only the half being measured, so what the other half holds cannot matter. */
-  const half = cap / 2;
-  const bestCoach = coaches.slice().sort((a, b) => (b.off + b.def) - (a.off + a.def))[0] || null;
-  const maxChem = 1 + E.CHEMISTRY.MAX;
-  const offSix = buildSide(OFF_IDX, half);
-  const defSix = buildSide(DEF_IDX, half);
-  const floorOff = OFF_IDX.map((i) => worst[i]);
-  const floorDef = DEF_IDX.map((i) => worst[i]);
-  const ceilOffParts = E.fullParts(offSix.concat(floorDef), maxChem, bestCoach, constants);
-  const ceilDefParts = E.fullParts(floorOff.concat(defSix), maxChem, bestCoach, constants);
-
-  /* The whole team's ends, printed for reference rather than pasted: nothing reads them any
-     more, but "what does the best draftable team actually out-score an average side by" is
-     the question the balance sweep is answered in. */
-  const best = buildFullOptimal(cap, true);
-  const hi = E.fullStrength(best.roster, maxChem, best.coach, constants);
-  const lo = E.fullStrength(worst, 1, worstCoach, constants);
-
-  console.log('FULL TEAM RATING SCALE');
-  console.log('');
-  console.log('  floor    the worst legal six a side, coach ' + (worstCoach ? worstCoach.name : 'none'));
-  console.log('           scores ' + loParts.scored.toFixed(2) + ', allows '
-    + loParts.allowed.toFixed(2) + ' a game');
-  console.log('  ceiling  the best six HALF the cap buys on each side, coach '
-    + ((bestCoach || {}).name || 'none') + ', full chemistry');
-  console.log('           offence $' + offSix.reduce((s, p) => s + p.price_musd, 0).toFixed(0)
-    + 'M scores ' + ceilOffParts.scored.toFixed(2)
-    + '   defence $' + defSix.reduce((s, p) => s + p.price_musd, 0).toFixed(0)
-    + 'M allows ' + ceilDefParts.allowed.toFixed(2));
-  console.log('');
-  console.log('  paste into engine.js, all four, together:');
-  console.log('    const FULL_OFF_FLOOR = ' + loParts.scored.toFixed(2) + ';');
-  console.log('    const FULL_OFF_CEIL = ' + ceilOffParts.scored.toFixed(2) + ';');
-  console.log('    const FULL_DEF_FLOOR = ' + loParts.allowed.toFixed(2) + ';');
-  console.log('    const FULL_DEF_CEIL = ' + ceilDefParts.allowed.toFixed(2) + ';');
-  console.log('');
-  console.log('  for reference, the whole team: the floor is ' + lo.toFixed(1)
-    + ' points a game worse than an average side and the solved best is ' + hi.toFixed(1)
-    + ' better, at $' + best.off.toFixed(1) + ' off / $' + best.def.toFixed(1) + ' def under '
-    + ((best.coach || {}).name || 'nobody') + '.');
-}
 
 function fullTeamReport(n) {
   console.log(`FULL TEAM  ${E.FULL_SLOTS.length} slots  ${E.FULL_SLOTS.join(' ')}`);
@@ -1227,7 +1160,6 @@ else if (arg === '--chem') chemReport();
 else if (arg === '--schedule') scheduleReport(200);
 else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
 else if (arg === '--fullteam') fullTeamReport(Number(process.env.PS_N ?? 400));
-else if (arg === '--fullscale') fullScaleReport();
 else if (arg === '--record') recordReport(Number(process.env.PS_N ?? 2000));
 else if (arg === '--policies') policyReport(Number(process.env.PS_N ?? 40));
 else reportMain(N);

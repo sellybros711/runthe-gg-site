@@ -3659,71 +3659,65 @@ function fullStrength(roster, chemistryMultiplier, coach, constants = CONSTANTS)
 }
 
 /*
- * ─── EACH UNIT ON ITS OWN LADDER, AND THE TEAM IS THEIR AVERAGE ─────────────────────
+ * ─── EACH UNIT ON ITS OWN MODE'S SCALE, AVERAGED, AND THEN THE COACH ────────────────
  *
  * A rating has to answer the question printed above it. "Offense" has to mean how good the
- * offence is, "Defense" how good the defence is, and "Team overall" has to be what those two
- * come to together, because that is what anybody reading three numbers will assume.
+ * offence is, "Defense" how good the defence is, and "Team overall" what those two come to
+ * together, because that is what anybody reading three numbers will assume.
  *
- * TWO EARLIER VERSIONS FAILED THAT, in opposite directions, and both are worth writing down.
+ * THIS GAME ALREADY HAS BOTH OF THOSE SCALES and they are the ones players have been reading
+ * for two modes. An offence is worth what overallOf scores it in the offence draft: points a
+ * game, times chemistry, times how the six fit. A defence is worth what defenseOverall
+ * scores it in the defence draft, which puts a unit whose fantasy points sum to a fraction
+ * of an offence's onto the offence's own 0 to 100 line, off measured percentiles. That
+ * function exists precisely so the two sides of the ball can be compared, so Full Team
+ * should use it rather than invent a third scale.
  *
- *   Points times chemistry times shape, for all twelve. Unbounded, and it counted a
- *   cornerback's tackles as though they were touchdowns. Teams read 122 and went 6-11.
+ *   offense  = what these six would rate in the offence draft
+ *   defense  = what these six would rate in the defence draft
+ *   team     = the average of the two, then the coach's lift on top
  *
- *   The team's point margin, split in half so the two units averaged to it exactly. The
- *   identity was real but it forced both halves to share one span 50/50, and the two halves
- *   do not have equal reach: at the solved optimum the offence carries more of the margin,
- *   so it ate more of the scale. Measured over 400 realistic drafts the offence ran a median
- *   74 against the defence's 61, a systematic twelve-point gap, and the defence could not
- *   pass 85 while the offence reached 104. Every player would have concluded their defence
- *   was the weak half of every team they ever drafted, and been wrong every time.
+ * TWO EARLIER VERSIONS INVENTED THAT THIRD SCALE and both read wrong, in opposite
+ * directions, and both are worth writing down because the failure is not obvious either
+ * time. Splitting the team's point margin in half made "averaged" an exact identity but
+ * forced both units to share one span 50/50, and the two do not have equal reach: over 400
+ * realistic drafts the offence ran a median 74 against the defence's 61. Giving each unit
+ * its own solved floor and ceiling fixed that gap but left four constants nobody could
+ * check, all of which had to be re-solved after any change to the data.
  *
- * SO EACH UNIT IS MEASURED AGAINST WHAT THAT UNIT CAN REACH, by a rule that is the same
- * sentence on both sides of the ball:
+ * THE TALENT DIAL IS IN, and it has to be. Full Team scales both sides' output by
+ * FULL_TALENT, so six men here do not produce what the same six produce in their own mode.
+ * Rating them without it describes a unit that never takes the field: measured, it put a
+ * 9-8 team at 87 and left almost every roster in the game reading as elite, which also
+ * walks the seeding and the weekly edge into thresholds meant for a top team. Same formula,
+ * same scale, applied to what these men actually produce in this mode.
  *
- *   0    the worst legal six on that side, under the worst coach in the reserve
- *   100  the best six HALF THE CAP can buy on that side, its coach and its chemistry
+ * THE COACH IS A LIFT ON THE TEAM, not a term inside each unit. It is the average of his two
+ * tilts, so a coach who is +8.2% offense and +6.4% defense is worth +7.3% to the team. His
+ * two tilts are shown separately wherever he is, because most coaches pull the two ways at
+ * once and one number cannot say which half he is helping. What DOES move the unit ratings
+ * when you hire him is his chemistry with your players, which is a fact about the roster and
+ * belongs in the roster's numbers.
  *
- * Half the cap, because an even split is the one reference an even mode has. A team that
- * splits evenly and drafts perfectly reads 100 and 100; the solved optimum, which splits
- * $159.5M to $100.4M, reads about 117 and 82, and both of those are worth seeing. Neither
- * side is clamped for exactly that reason.
- *
- * THE DEFENCE IS RATED BY WHAT IT DOES TO THE SCOREBOARD, not by the fantasy points it
- * piles up. defenseSuppression is steep, so the last few points of defensive production are
- * worth far more than the first few, and a rating linear in production undervalues a great
- * defence. Measured: rating the defence linearly drops the correlation with wins from 0.655
- * to 0.586 among realistic drafts, which is the whole population that matters. Rating it by
- * points allowed keeps it, and among CAREFUL drafts it edges the point margin itself, 0.546
- * against 0.536, because a per-unit reading separates two good teams that the one blended
- * number cannot.
- *
- * WHAT THE AVERAGE COSTS is nothing measurable: 0.875 against the margin's 0.878 over the
- * full range. It is the same number, said in the two pieces it was always made of.
- *
- * THE COACH IS INSIDE EACH UNIT, not a bonus on top, and that is deliberate. Almost every
- * coach tilts the two ways at once: Mike Martz is +5.6 offense and -1.9 defense, Jim
- * Harbaugh is +0.3 and +4.9. One blended "coach boost" would report Martz as a small
- * positive and hide the whole of what hiring him does.
- *
- * All four are SOLVED. Re-derive with
- *   node football/simulator.js --fullscale
- * after any change to the cap, the talent dial, the coach table or the player data.
+ * Measured over 400 seasons: correlation with regular-season wins 0.890, against 0.878 for
+ * the point margin the engine plays out and 0.875 for the version this replaces. The median
+ * gap between the two units is 1.1 points on realistic drafts and 0.6 on careful ones. It is
+ * the most legible version and also the most predictive, which does not usually happen.
  */
-const FULL_OFF_FLOOR = -0.07;    // the worst legal offence scores about nothing, and does
-const FULL_OFF_CEIL = 91.27;     // the best $140M offence, best coach, full chemistry
-const FULL_DEF_FLOOR = 107.75;   // points allowed by the worst legal defence: the cap
-const FULL_DEF_CEIL = 29.10;     // points allowed by the best $140M defence
-
-function fullSideRatings(roster, chemistryMultiplier, coach, constants) {
-  const os = FULL_OFF_CEIL - FULL_OFF_FLOOR, ds = FULL_DEF_FLOOR - FULL_DEF_CEIL;
-  if (!(os > 0) || !(ds > 0)) return { off: 0, def: 0, overall: 0 };
-  const p = fullParts(roster, chemistryMultiplier, coach, constants);
-  const off = 100 * (p.scored - FULL_OFF_FLOOR) / os;
-  const def = 100 * (FULL_DEF_FLOOR - p.allowed) / ds;
-  /* The halves run past 100 and below 0 on a lopsided roster and are left alone; the
-     headline is clamped because it is the number runs are compared by. */
-  return { off, def, overall: Math.max(0, Math.min(100, (off + def) / 2)) };
+function fullSideRatings(roster, chemistryMultiplier, coach, constants = CONSTANTS) {
+  const { off, def } = splitSides(roster);
+  if (!off.length || !def.length) return { off: 0, def: 0, coachBoost: 1, overall: 0 };
+  const t = constants.FULL_TALENT === undefined ? FULL_TALENT : constants.FULL_TALENT;
+  const o = off.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
+    * chemOff(chemistryMultiplier) * rosterStructure(off).multiplier;
+  const d = defenseOverall(def.reduce((a, p) => a + p.ppr_ppg_mean, 0) * t
+    * chemDef(chemistryMultiplier) * defenseStructure(def).multiplier);
+  const eff = coachEffect(coach);
+  const coachBoost = (eff.off + eff.def) / 2;
+  /* The units are left alone: a great one passes 100 in its own mode too, and saying so is
+     the point. The headline is clamped because it is the number runs are compared by. */
+  return { off: o, def: d, coachBoost,
+    overall: Math.max(0, Math.min(100, (o + d) / 2 * coachBoost)) };
 }
 
 function fullOverall(roster, chemistryMultiplier, coach, constants) {
@@ -3856,9 +3850,9 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
  * today, 400 seasons a row, against the offense mode printed beside them:
  *
  *                    win%    med rec   playoffs   title   rating
- *   careless         8.8%      1-16       0.0%    0.0%      23.0
- *   mid             55.8%       9-8      15.0%    1.0%      67.7
- *   optimal         83.5%      14-3      96.3%    7.8%      90.0
+ *   careless         8.8%      1-16       0.0%    0.0%      37.0
+ *   mid             55.8%       9-8      15.0%    1.0%      63.8
+ *   optimal         81.3%      14-3      92.3%    6.8%      81.4
  *   (offense mode: careless 25.0%, mid 60.8%, optimal 80.8%)
  *
  * CARELESS PLAY IS PUNISHED HARDER HERE THAN IN THE OTHER TWO MODES, and that is the mode
@@ -4670,7 +4664,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 42;
+const ENGINE_API_VERSION = 43;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -4746,7 +4740,6 @@ const publicAPI = {
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
   fullStrength, fullOverall, fullParts, fullSideRatings,
-  FULL_OFF_FLOOR, FULL_OFF_CEIL, FULL_DEF_FLOOR, FULL_DEF_CEIL,
   coachTable, coachPrice, coachEffect, coachLinks, COACH_MIN_SEASONS,
   PLAN, PLAN_AXES, normalizePlan, planFromCoach,
   resolveHeadToHead, playRun, prepareData, toFootballScore,

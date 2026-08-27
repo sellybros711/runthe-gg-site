@@ -5874,8 +5874,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=68"></script>
-<script src="run.js?v=77"></script>
+<script src="engine.js?v=69"></script>
+<script src="run.js?v=78"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -6175,7 +6175,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=42;
+const NEED_VERSION=43;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -9255,10 +9255,8 @@ function paintCoach(){
     ? '<b>$'+left.toFixed(1)+'M left.</b> A coach comes out of it, and his scheme comes with him.'
     : '<b>$'+left.toFixed(1)+'M left</b>, which hires nobody. You call the game plan.';
 
-  /* WHAT THE TEAM IS WORTH RIGHT NOW, and its two halves, because every number in the grid
-     below is a change to this one. The halves are the whole point of showing them here: a
-     coach who is +8% offence and -7% defence moves them in opposite directions, and one
-     blended figure would report him as a small nothing. */
+  /* WHAT THE TEAM IS WORTH RIGHT NOW, and the two units it is the average of, because every
+     number in the grid below is a change to this one. */
   const b0=coSides(null);
   $('co-base').innerHTML='<span class="cb-lab">Your team as it stands</span>'+
     '<span class="cb-v">'+base.toFixed(1)+'</span>'+
@@ -9345,19 +9343,28 @@ function openHireSheet(c){
   const base=coRating(null), withHim=coRating(c), d=withHim-base;
   const sign=d>0?'+':'';
   const b0=coSides(null), b1=coSides(c);
-  /* THE TWO HALVES, BEFORE AND AFTER, because this is the screen where they earn their keep.
-     Almost every coach in the game tilts both ways at once, and the one blended number above
-     cannot say which half he is taking from. */
+  const eff=E.coachEffect(c);
+  const pct=(m)=>{const v=(m-1)*100; return '<span class="'+
+    (v>0.05?'co-t pos':(v<-0.05?'co-t neg':''))+'">'+(v>0?'+':'')+v.toFixed(1)+'%</span>';};
+  /* HIS LIFT, AND WHICH HALF IT COMES FROM. The team number above already has the average of
+     his two tilts in it; this says what the two are, because most coaches in this game pull
+     the two ways at once and one blended figure cannot tell you which half he is helping. */
+  const lift='<li><b>He lifts the team '+pct(b1.coachBoost)+'.</b> '+
+    pct(eff.off)+' offense, '+pct(eff.def)+' defense.</li>';
+  /* AND HIS CHEMISTRY MOVES THE UNITS THEMSELVES, which is a different thing from the lift:
+     a coach who knows four of your defenders makes those four better, and that shows up in
+     the defence's own rating rather than in his percentage. Printed only when it moves. */
   const half=(lbl,was,now)=>{const dd=now-was;
+    if(Math.abs(dd)<0.05) return '';
     return '<li>'+lbl+' <b>'+rate1(was)+' &rarr; '+rate1(now)+'</b> <span class="'+
-      (dd>0.05?'co-t pos':(dd<-0.05?'co-t neg':''))+'">'+(dd>0?'+':'')+dd.toFixed(1)+'</span></li>';};
+      (dd>0?'co-t pos':'co-t neg')+'">'+(dd>0?'+':'')+dd.toFixed(1)+'</span>, from knowing your men.</li>';};
   $('sheet-in').innerHTML='<div class="eyebrow red">Hire a coach</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">'+esc(c.name)+'</h2>'+
     '<ul class="modenotes">'+
       '<li><b>$'+c.price_musd.toFixed(1)+'M</b> out of your cap, leaving $'+
         Math.max(0,R.remaining(run)-c.price_musd).toFixed(1)+'M.</li>'+
       '<li>Team rating <b>'+base.toFixed(1)+' &rarr; '+withHim.toFixed(1)+'</b> ('+sign+d.toFixed(1)+').</li>'+
-      half('Offense',b0.off,b1.off)+half('Defense',b0.def,b1.def)+
+      lift+half('Offense',b0.off,b1.off)+half('Defense',b0.def,b1.def)+
       '<li><b>He calls the game plan.</b> '+planWords(E.planFromCoach(c))+'.</li>'+
       (function(){const k=coKnows(c);return k.length
         ? '<li><b>He already knows '+(k.length===1?'one of your men':k.length+' of your men')+'.</b> '
@@ -9484,7 +9491,9 @@ function sideLine(){
   let s; try{ s=E.fullSideRatings(run.roster,liveChem(),run.coach||null); }catch(_){ return ''; }
   return '<div class="sidesplit"><span>Offense <b>'+rate1(s.off)+'</b></span>'+
     '<span class="sep">and</span><span>Defense <b>'+rate1(s.def)+'</b></span>'+
-    '<span class="sep">averaged</span></div>';
+    '<span class="sep">averaged'+(s.coachBoost&&Math.abs(s.coachBoost-1)>0.0005
+      ? ', then '+((s.coachBoost-1)*100>0?'+':'')+((s.coachBoost-1)*100).toFixed(1)+'% coach'
+      : '')+'</span></div>';
 }
 
 function paintChemSplit(){
@@ -12700,10 +12709,11 @@ function paintOver(){
         'Full Team yet. Twelve spots across two pools under one cap is a different problem '+
         'from six, and a wrong answer here would be worse than none.</p>'+
         '<p class="caveat" style="margin:0">Team overall is your offense and your defense '+
-        'averaged. Each unit is rated against what that unit could be: 0 is the worst legal '+
-        'six on that side of the ball, and 100 is the best six half the cap can buy there, '+
-        'with the coach and the chemistry that come with them. A unit you spent more than '+
-        'half your cap on can pass 100, which is what an unbalanced team looks like.</p>';
+        'averaged, and then your coach on top. Each unit is scored on the same scale its own '+
+        'mode uses: your offense reads what these six would rate in the Offense draft, your '+
+        'defense what these six would rate in the Defense draft. Both are read at what they '+
+        'produce HERE, which is a shade under what the same men manage with only one side of '+
+        'the ball to carry.</p>';
     }
     else if(!best){ $('o-miss').innerHTML='<p class="dim" style="font-size:13px;margin:0">Could not work this one out.</p>'; }
     else{
