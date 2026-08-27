@@ -70,14 +70,23 @@
   /* Only the office goes to two columns, so only the office needs the room to do it. Every
      other screen is one thing being read or decided and stays at its phone width, where the
      line length is right. */
-  /* FLUID RATHER THAN A FIXED GUESS, because the zoom and the width fight each other: a
-     column wide enough to hold two of these at 1700px runs off the sides at 1240px. The
-     min() takes whichever is smaller, the ideal width or what the window can actually
-     show, and the division by --z is there because everything inside a zoomed subtree is
-     multiplied by it, viewport units included. */
-  @media (min-width:1240px){
-    .wrap:has(#s-office.on){max-width:min(980px, calc((100vw / var(--z)) - 46px))}
-  }
+  /* FIXED PER BREAKPOINT, AND NOT A vw CALCULATION, which is the second thing this got
+     wrong. The idea was a fluid width: min(ideal, what the window can show), dividing by
+     --z because a zoomed subtree multiplies its lengths. But a viewport unit inside a
+     zoomed subtree is not simply "viewport times zoom", and the arithmetic came out
+     differently at different widths: at 1500px the min() picked the cap and looked right,
+     at 1464px it picked the calc and returned about two thirds of it, which squeezed the
+     right hand column to three hundred pixels and wrapped "The state of the game" onto
+     four lines. It looked correct at exactly the width it was tested at.
+
+     Since --z is a known constant inside each of these blocks, the safe width is a number
+     that can be checked by hand: at 1240px and a zoom of 1.28 the window holds 969 units,
+     so 900 fits with room either side, and every wider window fits it by definition. */
+  /* THE DATA CENTER GETS THE SAME ROOM. It holds a chart and a nine cell grid, and a
+     wrap that widens for one screen and snaps back for the next is a jolt on every
+     press of the button between them. */
+  @media (min-width:1240px){ .wrap:has(#s-office.on),.wrap:has(#s-data.on){max-width:900px} }
+  @media (min-width:1560px){ .wrap:has(#s-office.on),.wrap:has(#s-data.on){max-width:1010px} }
 
   /* ── THE OFFICE, IN TWO STACKS ────────────────────────────────────────────────────
      See the comment on .ocol in the markup for why this is columns rather than tabs.
@@ -87,7 +96,11 @@
      those children back in exactly the sequence they read in before this existed. The map
      in particular has to stay below the meters: it is five hundred pixels of decoration and
      the three numbers above it are the point of the screen. */
-  #s-office{display:flex;flex-direction:column}
+  /* .on IS LOAD BEARING HERE. `.screen{display:none}` is one class, and `#s-office` is an
+     id, so a bare `#s-office{display:flex}` outranks it and the office renders on top of
+     every other screen in the mode. It did, until this was caught in a screenshot of the
+     data center with the whole office sitting above it. */
+  #s-office.on{display:flex;flex-direction:column}
   .ocol{display:contents}
   #off-cal{order:1}
   .ob>*{order:2}
@@ -101,12 +114,12 @@
        whole reason they exist: a grid with one item per cell would tie the calendar's row
        height to the headline beside it and open a two hundred pixel hole under it. Two
        independent columns have no rows to share. */
-    #s-office{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);
+    #s-office.on{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);
       gap:0 14px;align-items:start}
     .ocol{display:flex;flex-direction:column}
     /* The dock spans both, because it is the one control that moves the term on and it
        should not be sitting at the foot of one column. */
-    #s-office>.dock{grid-column:1 / -1}
+    #s-office.on>.dock{grid-column:1 / -1}
     /* The map is the left column's reason to exist, so it gets the height it deserves
        rather than the one a phone could spare. */
     #off-mapcard .map{min-height:300px}
@@ -522,7 +535,13 @@
   /* ── THE DATA CENTER ──────────────────────────────────────────────────────────────
      Chart chrome recedes and the data does not. Every rule here has a reason written next
      to it in the painter; what is here is the paint. */
-  .dcbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .dcbar{display:flex;gap:10px 14px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end}
+  .segbox{display:flex;flex-direction:column;gap:4px}
+  .seglab{font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);
+    padding-left:2px}
+  /* The one-line explanations under a card's heading. Dimmer and smaller than the content
+     they introduce, because they are read once and then never again. */
+  .dcsub{font-size:12px;line-height:1.45;color:var(--dim);margin:0 0 10px}
   .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;
     padding:2px;gap:2px}
   .seg button{appearance:none;border:0;background:transparent;cursor:pointer;padding:7px 11px;
@@ -615,7 +634,8 @@
   .dcname i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
   .dcspark{display:block;width:100%;height:24px;overflow:visible}
   .dcspark path{fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
-  .dcflat{display:block;height:24px}
+  .dcflat{display:flex;align-items:center;height:24px;font-size:10px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--dim-2)}
   .dcval{display:flex;align-items:baseline;gap:5px}
   .dcval b{font-size:17px;font-weight:800;color:var(--ink)}
   .dcval em{font-style:normal;font-size:11px;font-weight:700;color:var(--dim-2)}
@@ -1578,18 +1598,35 @@
   <!-- THE DATA CENTER. Where every number in the mode has been, rather than where it is. -->
   <div class="screen" id="s-data" data-in="rise">
     <div class="eyebrow gold">The tape</div>
-    <h2 style="margin-bottom:12px">Data center</h2>
+    <h2>Data center</h2>
+    <!-- SAY WHAT THE PAGE IS. It opened straight onto a chart, two unlabelled pairs of
+         buttons and thirteen chips, and assumed the reader already knew what a tape was,
+         what "compare" compared, or why nine numbers with no bars under them were a useful
+         thing to look at. Every one of those is obvious once and confusing the first time. -->
+    <p class="lede" style="margin-bottom:14px">The office tells you where every number in
+      the sport is standing right now. This is where each of them has BEEN: one reading
+      every beat, one more every time you rule on something, kept for the whole five years.</p>
     <!-- ONE FILTER ROW, ABOVE EVERYTHING IT SCOPES, and never inside a chart card. Both
          controls re-render the chart, the room and the table together, so the numbers on
-         this screen always agree with each other. -->
+         this screen always agree with each other.
+
+         AND BOTH ARE NAMED NOW. Four buttons in two boxes with nothing above them is a
+         reader guessing which pair does what, and "One line" against "Compare" gives no
+         clue at all until you press it. -->
     <div class="dcbar">
-      <div class="seg" id="dc-range" role="group" aria-label="How far back to look">
-        <button type="button" data-r="season" aria-pressed="false">This season</button>
-        <button type="button" data-r="term" class="on" aria-pressed="true">Whole term</button>
+      <div class="segbox">
+        <span class="seglab">How far back</span>
+        <div class="seg" id="dc-range" role="group" aria-label="How far back to look">
+          <button type="button" data-r="season" aria-pressed="false">This season</button>
+          <button type="button" data-r="term" class="on" aria-pressed="true">Whole term</button>
+        </div>
       </div>
-      <div class="seg" id="dc-mode" role="group" aria-label="What to draw">
-        <button type="button" data-m="one" class="on" aria-pressed="true">One line</button>
-        <button type="button" data-m="cmp" aria-pressed="false">Compare</button>
+      <div class="segbox">
+        <span class="seglab">What to draw</span>
+        <div class="seg" id="dc-mode" role="group" aria-label="What to draw">
+          <button type="button" data-m="one" class="on" aria-pressed="true">One number</button>
+          <button type="button" data-m="cmp" aria-pressed="false">Three at once</button>
+        </div>
       </div>
     </div>
 
@@ -1600,16 +1637,25 @@
     </div>
 
     <div class="card flat" id="dc-pickcard">
-      <div class="eyebrow" style="margin-bottom:9px">What to look at</div>
+      <div class="eyebrow" style="margin-bottom:4px">What to look at</div>
+      <p class="dcsub">Pick any one of these and the chart above redraws against it. There
+        are four groups because there are four kinds of number in this job: what the sport
+        drew, what it is worth, how the office is doing, and what is building up against
+        you.</p>
       <div id="dc-pick"></div>
     </div>
 
     <div class="card flat">
-      <div class="eyebrow" style="margin-bottom:9px">The room, nine at once</div>
+      <div class="eyebrow" style="margin-bottom:4px">The room, nine at once</div>
+      <p class="dcsub">How each bloc feels about you, out of a hundred. Fifty is
+        indifferent and under thirty they start counting votes. Tap one to open it in the
+        chart above.</p>
       <div class="dcroom" id="dc-room"></div>
     </div>
 
     <div class="card flat">
+      <p class="dcsub" style="margin-bottom:9px">Every point on the chart, written out, for
+        reading rather than hovering.</p>
       <button class="btn ghost sm" id="b-dctable">Read it as a table</button>
       <div id="dc-table" hidden></div>
     </div>
@@ -2746,7 +2792,12 @@ P.finishTerm({
 /* ── the data center's controls ───────────────────────────────────────────────────
    ONE ROW OF FILTERS, and both of them re-render everything below them together, so the
    chart, the nine sparklines and the table can never be describing different slices. */
-$('b-data').onclick=()=>{ paintData(); show('s-data'); };
+/* SHOWN BEFORE IT IS PAINTED, and that order matters now. dcSize() measures the plot to
+   decide how wide the viewBox should be, and an element on a hidden screen has no box at
+   all: painting first measured zero, fell back to the phone geometry, and drew a chart five
+   hundred pixels tall on a desktop. Every other caller of paintData runs while the screen is
+   already up, which is why this was the only one that got it wrong. */
+$('b-data').onclick=()=>{ show('s-data'); paintData(); };
 $('b-dcback').onclick=()=>{ office(); show('s-office'); };
 $('dc-range').onclick=(e)=>{
   const b=e.target.closest('button[data-r]'); if(!b) return;
@@ -3342,8 +3393,31 @@ function paintTail(el,tail){
    normal-vision floor and contrast against this card. The nine bloc colors FAIL that test
    as a set of nine, which is why the room is nine separate sparklines rather than nine
    lines on one plot. */
-const DCBOX = { x: 34, y: 12, w: 302, h: 132 };
-const DCVIEW = { w: 348, h: 178 };
+/* ── HOW BIG THE PLOT IS ──────────────────────────────────────────────────────────
+   The viewBox was a phone: 348 by 178, an aspect of about two to one, drawn at 100% of
+   whatever it was given. That is right at 360 pixels wide and wrong at 1100, where it
+   becomes a chart five hundred and sixty pixels tall. With one reading on it, that is an
+   enormous empty box with a dot in the middle, which is most of why this screen read as
+   broken rather than as new.
+
+   So the box widens with the space rather than the whole drawing scaling into it. The
+   HEIGHT is fixed and the WIDTH follows, which is what keeps a line chart looking like a
+   line chart: more room means more room along the axis that has the data on it.
+
+   Values rather than constants because they change per render, and dcSize() is called at
+   the top of dcChart so everything downstream reads the same geometry. */
+let DCBOX = { x: 34, y: 12, w: 302, h: 132 };
+let DCVIEW = { w: 348, h: 178 };
+function dcSize() {
+  const el = $('dc-plot');
+  const w = el ? el.clientWidth : 0;
+  /* Below this the phone geometry is used unchanged, so nothing about the small screen
+     moves. Above it the viewBox grows with the container, capped so a very wide window
+     does not stretch four points across a metre of axis. */
+  const view = w > 470 ? Math.max(348, Math.min(760, Math.round(w * 0.62))) : 348;
+  DCVIEW = { w: view, h: 178 };
+  DCBOX = { x: 34, y: 12, w: view - 46, h: 132 };
+}
 /* Where the x-axis labels sit, inside the viewBox rather than clipped by it: a plot sized
    without room for its own axis gets a tiny nested scrollbar in the card. */
 const DCAXIS = DCBOX.y + DCBOX.h + 16;
@@ -3395,6 +3469,8 @@ function paintData() {
 /* ---- the chart ---- */
 function dcChart() {
   const MT = window.PS_CFB_METRICS;
+  /* FIRST, because every path, tick, label and hit test below is in these coordinates. */
+  dcSize();
   const rows = dcSeries();
   const ext = dcExtent(rows);
   const live = rows.filter((r) => r.pts && r.pts.length);
@@ -3423,11 +3499,17 @@ function dcChart() {
     head.innerHTML = '<div class="dctitle"><b>' + esc(one.s.label) + '</b>'
       + '<span>' + esc(one.s.sub) + '</span></div>'
       + '<div class="dcnow"><b>' + esc(MT.fmt(rawCh.to, one.s)) + '</b>'
-      + (Math.abs(rawCh.delta) > 1e-9
-        ? '<em class="' + t + '">' + (rawCh.delta > 0 ? '▲' : '▼') + ' '
-          + esc(MT.fmtDelta(rawCh.delta, one.s)) + '</em>'
-        : '<em>no change</em>')
-      + '<i>' + esc(dcSince()) + '</i></div>';
+      /* ONE READING IS NOT "NO CHANGE". A term opened on its first beat has a single point
+         on the tape, and calling that no change states that a number held steady when
+         nothing has happened to it yet. It reads as a broken chart, which is exactly what
+         a first-time visitor to this screen sees. */
+      + (rawCh.points < 2
+        ? '<em>first reading</em>'
+        : Math.abs(rawCh.delta) > 1e-9
+          ? '<em class="' + t + '">' + (rawCh.delta > 0 ? '▲' : '▼') + ' '
+            + esc(MT.fmtDelta(rawCh.delta, one.s)) + '</em>'
+          : '<em>no change</em>')
+      + '<i>' + esc(rawCh.points < 2 ? 'nothing to compare yet' : dcSince()) + '</i></div>';
   } else {
     head.innerHTML = '<div class="dctitle"><b>Indexed to 100</b>'
       + '<span>percent moved since ' + esc(dcSince().replace(/^since /, '')) + '</span></div>'
@@ -3614,10 +3696,16 @@ function dcFoot(live, rows) {
     else bits.push('Every line starts at 100. A line at 120 is up a fifth on where you found it.');
   } else {
     bits.push(esc(live[0].s.about));
-    if (live[0].s.from === 'tape') {
+    /* A CHART OF ONE POINT LOOKS BROKEN AND IS NOT. Say so, and say when it stops being
+       one point, rather than leaving somebody to conclude the feature does not work. */
+    if (live[0].pts.length < 2) {
+      bits.push('One reading so far, which is why it is a dot rather than a line. '
+        + 'Another lands on every beat and on every ruling.');
+    } else if (live[0].s.from === 'tape') {
       const n = MT.rulings(world, dcState.range).length;
       if (n) bits.push('The ' + n + ' dot' + (n === 1 ? '' : 's') + ' on the line '
         + (n === 1 ? 'is a ruling' : 'are rulings') + '. Touch one to read it.');
+      else bits.push('Rule on something and it lands on this line as a dot you can read.');
     }
   }
   return bits.join(' ');
@@ -3744,7 +3832,9 @@ function dcRoom() {
       + (p.length > 1
         ? '<svg viewBox="0 0 92 30" class="dcspark" aria-hidden="true">'
           + '<path d="' + MT.path(p, box, ext) + '" stroke="' + s.color + '"/></svg>'
-        : '<span class="dcflat"></span>')
+        /* A BLANK 24px GAP WHERE A SPARKLINE GOES reads as a chart that failed to draw.
+           One reading cannot be a line, and saying that is better than an empty box. */
+        : '<span class="dcflat">one reading</span>')
       + '<span class="dcval"><b>' + (now == null ? '--' : now) + '</b>'
         + (ch && Math.abs(ch.delta) >= 0.5
           ? '<em class="' + t + '">' + (ch.delta > 0 ? '▲' : '▼') + Math.abs(Math.round(ch.delta)) + '</em>'
