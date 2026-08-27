@@ -1300,9 +1300,24 @@
     min-width:20px;text-align:right}
   /* COLUMN TWO, EXPLICITLY. Without it auto-placement put the audience figure in column one
      of row one and pushed both team lines to the right, so every score in the mode read
-     backwards: the number first and the team it belonged to after it. */
+     backwards: the number first and the team it belonged to after it.
+
+     AND THE ROWS DEPEND ON WHETHER THERE IS A NAME ABOVE THEM. `1/3` was counted by hand off
+     a card holding two team lines and nothing else, so the day a rivalry name was added the
+     count was silently wrong: the name took row one, the teams moved to two and three, and the
+     audience figure stayed pinned beside the name with the scoreline collapsing under it.
+
+     `1 / -1` LOOKS LIKE THE ANSWER AND IS NOT. A negative row line counts back from the last
+     line of the EXPLICIT grid, and this card declares columns only, so every row here is
+     implicit and -1 resolves to line 1: the span becomes `1 / 1` and the figure lands on the
+     name's row, which is the bug it was meant to fix. It was tried, measured, and reverted.
+
+     So the placement is keyed on the class the name itself puts there. `.named` is emitted
+     from the same expression that emits the name, rather than off `.riv`, which is a different
+     flag on a different field and can be set without one. */
   .gm2 .v{grid-column:2;grid-row:1/3;align-self:center;font-family:var(--fd);font-size:15px;
     color:var(--ink);white-space:nowrap;text-align:right}
+  .gm2.named .v{grid-row:2/4}
   .gm2 .v i{font-style:normal;font-size:10px;color:var(--dim-2)}
 
   /* THE TABLE. Ten rows, because a hundred and thirty is a database and the top of the sport
@@ -1352,7 +1367,16 @@
   .post .hd b{font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink)}
   /* The tick is a shape rather than a character, because a check mark in the body font
      lands differently on every platform and this one has to sit on a name. */
-  .post .hd .tick{width:12px;height:12px;flex:0 0 auto;fill:var(--ac)}
+  /* `.vtick`, NOT `.tick`, AND THAT COLLISION SHIPPED. The season ticker further up this
+     sheet is also called `.tick`, and it carries min-height:78px and margin-top:16px. The
+     badge's own rule sets width and height and overrides neither of those, so a verified
+     account's twelve pixel check mark rendered a hundred pixels tall and pushed a blank
+     eighty pixel band between the name and the tweet. It only showed on accounts WITH a
+     badge, which is why it read as "this weird space appears on some tweets".
+
+     A name collision in one file is exactly the failure this repo already documents for the
+     wrestling game. Renaming the smaller of the two is the whole fix. */
+  .post .hd .vtick{width:12px;height:12px;flex:0 0 auto;fill:var(--ac)}
   .post .hd i{font-style:normal;font-size:11.5px;color:var(--dim-2);min-width:0;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .post p{font-size:13.5px;line-height:1.42;margin-top:4px;color:var(--ink)}
@@ -1960,6 +1984,9 @@ const CAL=window.PS_CFB_CALENDAR;
 const SIT=window.PS_CFB_SITUATION;
 const FALL=window.PS_CFB_FALLOUT;
 const REPORT=window.PS_CFB_REPORT;
+/* The catalog, for turning a sponsor id and a bowl id back into the names the rest of the
+   mode uses. See pathName and pathValue. */
+const VEN=window.PS_CFB_VENUES;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
@@ -3594,11 +3621,18 @@ function paintWeek(el,sim){
     (b.rivalry?1:0)-(a.rivalry?1:0)||b.viewers-a.viewers).slice(0,5);
   el.innerHTML='<div class="swk"><b>Week '+wk.week+'</b>'
       +'<span>'+wk.games.length+' games &middot; '+MT(wk.viewers)+' watched</span></div>'
-    +'<div class="gms">'+shown.map((g)=>
-      '<div class="gm2'+(g.rivalry?' riv':'')+'" style="--gc:'+esc(g.winner.color)+'">'
-      +(g.rivalryName?'<em class="rivn">'+esc(g.rivalryName)+'</em>':'')
-      +side2(g,0)+side2(g,1)
-      +'<span class="v">'+MU(g.viewers)+'</span></div>').join('')+'</div>';
+    /* `named` COMES OFF THE NAME, not off `riv`. They are two different fields and a game can
+       carry one without the other, and the audience figure's row placement depends on whether
+       there is a line of text above the scoreline rather than on whether the game is a
+       rivalry. See the note on `.gm2 .v`. */
+    +'<div class="gms">'+shown.map((g)=>{
+      const nm=g.rivalryName?esc(g.rivalryName):'';
+      return '<div class="gm2'+(g.rivalry?' riv':'')+(nm?' named':'')
+        +'" style="--gc:'+esc(g.winner.color)+'">'
+        +(nm?'<em class="rivn">'+nm+'</em>':'')
+        +side2(g,0)+side2(g,1)
+        +'<span class="v">'+MU(g.viewers)+'</span></div>';
+    }).join('')+'</div>';
   reveal(el.querySelector('.gms'));
 }
 
@@ -3676,7 +3710,7 @@ const ICON_REPLY=G('<path d="M20 12a7 7 0 0 1-7 7H8l-4 3 1-4.2A7 7 0 0 1 11 5h2a
 /* A NOTCHED DISC WITH A CHECK CUT OUT OF IT, in the account's own hue rather than in
    anybody's brand blue. Drawn rather than typed because a check mark in the body font lands
    at a different size and baseline on every platform and this one has to sit on a name. */
-const TICK='<svg class="tick" viewBox="0 0 24 24" aria-hidden="true">'
+const TICK='<svg class="vtick" viewBox="0 0 24 24" aria-hidden="true">'
   +'<path fill-rule="evenodd" d="M12 1.5l2.7 2.2 3.4-.4 1 3.3 3.1 1.5-1 3.3 2 2.6-2 2.6 1 3.3'
   +'-3.1 1.5-1 3.3-3.4-.4L12 22.5 9.3 20.3l-3.4.4-1-3.3-3.1-1.5 1-3.3-2-2.6 2-2.6-1-3.3'
   +'L5.9 3.3l1-3.3 3.4.4z'
@@ -4510,6 +4544,47 @@ const PATH_NAME={
   'pressure.legal':'Legal exposure',
   'pressure.congress':'Washington',
   'pressure.union':'The players organizing',
+  /* THE ONES THAT WERE MISSING, and the way they were missing is the point: pathName falls
+     through to the raw path and pathValue to the raw value, so an item writing a field nobody
+     had added here printed "labour.reentry / window / was open" on a panel headed What This
+     Changes. A player read it as a coding glitch, which is exactly what it looks like.
+
+     See the guard in test_docket: every path the docket can write now has to appear here, so
+     the next item that invents one fails a test rather than shipping a database key to
+     somebody's screen. */
+  'labour.reentry':'Going pro and coming back',
+  'labour.rulesBy':'Who writes the player rules',
+  'labour.proYears':'How long you can be a pro',
+  'rules.overtime':'Overtime',
+  'rules.targeting':'Targeting',
+  'posture.gambling':'Sportsbooks',
+  'posture.bowlTieIns':'Bowl tie-ins',
+  'posture.nonRevGuarantee':'The other sports',
+  'posture.tvWindows':'Television windows',
+  'brand.playoff':'The playoff sponsor',
+  'brand.trophy':'The trophy sponsor',
+  'brand.patch':'The jersey patch',
+};
+/* WHAT A CODE WORD MEANS. Half of these fields hold a short string that is a key rather than
+   a sentence, and printing it raw put "window", "twopoint" and "phone" under a heading that
+   promises plain English. */
+const PATH_WORD={
+  'labour.reentry':{ open:'allowed', closed:'not allowed', window:'one window only' },
+  'labour.rulesBy':{ national:'this office', conference:'each conference' },
+  'labour.employment':{ employee:'an employee', contracted:'under contract',
+    amateur:'an amateur' },
+  'labour.nil':{ 'school-paid':'paid by the school', collective:'paid by a collective',
+    open:'paid by anybody' },
+  'rules.overtime':{ twopoint:'two point shootout', kick:'kick from the 25', none:'ties stand' },
+  /* SAID AS WHAT IT DOES, not as the value. "Targeting: strict" and "The clock: running" are
+     already English, which is the problem: they read as the setting's name repeated rather
+     than as an answer to what changed. */
+  'rules.targeting':{ strict:'ejection every time', lenient:'called on the field' },
+  'rules.clock':{ running:'keeps running', stopped:'stops on a first down' },
+  'rules.replay':{ central:'a central booth', full:'reviewed in full', none:'no replay' },
+  'playoff.selection':{ formula:'a formula', committee:'a committee', poll:'a poll' },
+  'playoff.sites':{ campus:'on campus', mixed:'campus, then neutral', neutral:'neutral sites' },
+  'posture.gambling':{ partnered:'partners of the sport', banned:'kept out' },
 };
 /* Where a fuse stands, in the words the office uses, rather than as a number out of a
    hundred that has no scale printed anywhere near it. */
@@ -4520,18 +4595,44 @@ function fuseWord(v){
 function pathName(p){
   if(PATH_NAME[p]) return PATH_NAME[p];
   if(p.indexOf('money.share.')===0) return p.slice(12)+"'s share";
+  /* PER CONFERENCE AND PER BOWL, so the key carries a name inside it that no fixed table can
+     hold: `labour.confReentry.Big Ten`, `brand.bowls.rose`. */
+  if(p.indexOf('labour.confReentry.')===0) return 'Coming back in the '+p.slice(19);
+  if(p.indexOf('brand.bowls.')===0){
+    const b=VEN&&VEN.bowl?VEN.bowl(p.slice(12)):null;
+    return (b?b.name:p.slice(12))+' sponsor';
+  }
   return p;
 }
 function pathValue(p,v){
-  if(v==null) return '';
+  if(v==null||v==='') return 'nobody';
+  if(v===true) return 'yes';
+  if(v===false) return 'no';
   if(p.indexOf('pressure.')===0) return fuseWord(Number(v)||0);
   if(p.indexOf('money.share.')===0) return Math.round(v*100)+'%';
   if(p==='money.pool') return '$'+Number(v).toFixed(1)+'B';
   if(p==='money.dealYears') return v+(v===1?' year':' years');
   if(p==='labour.portalWindows') return v+(v===1?' window':' windows');
   if(p==='labour.eligibility') return v+(v===1?' year':' years');
+  if(p==='labour.proYears') return v+(v===1?' year':' years');
+  if(p==='posture.tvWindows') return v+(v===1?' window':' windows');
+  if(p.indexOf('labour.confReentry.')===0) return PATH_WORD['labour.reentry'][v]||String(v);
+  /* A SPONSOR IS AN ARCHETYPE WITH A NAME. The ledger holds its id, so "brand.playoff" was
+     printing "phone" where the desk everywhere else says "a phone company". */
+  if(p==='brand.playoff'||p==='brand.trophy'||p==='brand.patch'||p.indexOf('brand.bowls.')===0){
+    const s=VEN&&VEN.sponsor?VEN.sponsor(String(v)):null;
+    return s?s.name:String(v);
+  }
+  if(PATH_WORD[p]&&PATH_WORD[p][v]) return PATH_WORD[p][v];
   return String(v);
 }
+/* A HANDLE FOR THE GUARD, and nothing in the page reads it. This whole script is one closure
+   by design, so the pair that turns a ledger path into English is unreachable from a test that
+   has to run EVERY path the docket can write through it. Two named functions on a window key
+   is cheaper than moving them into a module nothing else would import, and the check is the
+   only reason either of them can be trusted: the table they read is a list somebody has to
+   remember to update, and twice now somebody did not. See test_desk. */
+window.PS_CFB_COMMISH_WORDS={pathName:pathName,pathValue:pathValue,skip:PATH_SKIP};
 
 function paintEffect(){
   const el=$('d-effect');

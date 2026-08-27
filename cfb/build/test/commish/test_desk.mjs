@@ -302,12 +302,18 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
      in your own words" while b-rule's first line is `if(!choice) return`. Four separate ways
      for the screen to do something other than what it said. */
   const state = () => p.evaluate(() => ({
-    opts: [...document.querySelectorAll('#d-options .opt')].map((o) => ({
-      on: o.classList.contains('on'),
-      open: getComputedStyle(o.querySelector('.why')).webkitLineClamp !== '1',
-      more: o.querySelector('.omore'),
-      pick: !!o.querySelector('.opick'),
-    })).map((x) => ({ on: x.on, open: x.open, more: !!x.more, pick: x.pick })),
+    /* `more` MEANS THERE IS ONE TO PRESS, not that the node exists. The button is emitted for
+       every option and hidden on the ones whose paragraph is already whole, so `!!node` picked
+       a hidden control and the click sat there for thirty seconds. */
+    opts: [...document.querySelectorAll('#d-options .opt')].map((o) => {
+      const m = o.querySelector('.omore');
+      return {
+        on: o.classList.contains('on'),
+        open: getComputedStyle(o.querySelector('.why')).webkitLineClamp !== '1',
+        more: !!m && !m.hidden && m.offsetParent !== null,
+        pick: !!o.querySelector('.opick'),
+      };
+    }),
     rule: document.getElementById('b-rule').disabled,
     test: { hidden: document.getElementById('b-test').hidden,
       txt: document.getElementById('b-test').textContent.trim(),
@@ -655,6 +661,153 @@ console.log('\n=== what every other commissioner did ===');
   ok('  and does not break the reaction screen', !down.errs.length,
     down.errs.join(' | ') || 'none');
   ok('  no page errors with it working either', !up.errs.length, up.errs.join(' | ') || 'none');
+}
+
+console.log('\n=== nothing the desk writes reaches the screen as a database key ===');
+{
+  /* WHAT THIS PANEL DID TO A PLAYER. "What this changes" names every ledger field a ruling
+     writes, in words, off a hand-kept table. A field missing from that table falls through to
+     the raw path and the raw value, so an item that had never been added printed
+
+       labour.reentry      window      was open
+       brand.playoff       phone       was
+
+     under a heading promising plain English. Both were reported as coding glitches, which is
+     precisely what they look like, and there was nothing to catch them because the table is a
+     list somebody remembers to update.
+
+     So it is checked rather than remembered. Every path the docket can write, and every value
+     it can write there, is run through the page's own two functions. A name that still
+     contains a dot is a path that reached the screen; a string value that comes back exactly
+     as it went in is a code word that did. */
+  const pg = await b.newPage({ viewport: { width: 900, height: 900 } });
+  const errs = []; pg.on('pageerror', (e) => errs.push(e.message));
+  await pg.addInitScript(arm + stub);
+  await pg.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await pg.waitForTimeout(2000);
+
+  /* Every (path, value) the docket can write, gathered in node off the real items. Options
+     whose edit needs a cast are resolved with none, which is what the docket already tolerates
+     everywhere else; anything that throws is simply not collected. */
+  const D = require(ROOT + '/cfb/commish/docket.js');
+  const pairs = [];
+  D.ITEMS.forEach((it) => (it.options || []).forEach((o) => {
+    let e = o.edit;
+    if (typeof e === 'function') { try { e = e(null, it); } catch (x) { return; } }
+    const set = (e && e.set) || {};
+    Object.keys(set).forEach((k) => pairs.push([k, set[k]]));
+  }));
+  const seen = {};
+  const uniq = pairs.filter(([k, v]) => {
+    const key = k + '|' + JSON.stringify(v);
+    if (seen[key]) return false; seen[key] = 1; return true;
+  });
+  ok('the docket writes something to check', uniq.length > 20, uniq.length + ' path and value pairs');
+
+  const out = await pg.evaluate((rows) => {
+    const W = window.PS_CFB_COMMISH_WORDS;
+    if (!W || typeof W.pathName !== 'function' || typeof W.pathValue !== 'function') {
+      return { missing: true };
+    }
+    /* THE FOUR HEADLINE TILES ARE NAMED ELSEWHERE and never reach these two functions, so
+       checking them here would be checking a code path the panel does not use. The skip list
+       comes off the page rather than being copied, or the copy is one more thing to keep in
+       step with the original. */
+    const skip = W.skip || {};
+    return {
+      rows: rows.filter(([k]) => !skip[k]).map(([k, v]) => ({ k: k, v: v,
+        name: String(W.pathName(k)), word: String(W.pathValue(k, v)) })),
+    };
+  }, uniq);
+  ok('  and the page exposes the two that turn it into words', !out.missing);
+  if (!out.missing) {
+    /* A NAME WITH A DOT IN IT IS A PATH. No real column heading in this mode has one. */
+    const raw = out.rows.filter((r) => r.name.indexOf('.') >= 0 || r.name === r.k);
+    ok('  every field has a name a person would use', !raw.length,
+      raw.slice(0, 5).map((r) => r.k).join(', ') || out.rows.length + ' fields');
+    /* A STRING VALUE THAT SURVIVES UNCHANGED IS A KEY. Every string in the ledger is a code
+       word ("window", "twopoint", "school-paid", a sponsor id), so any of them coming back
+       verbatim means nothing translated it. Numbers and booleans are exempt: those ARE the
+       value, and pathValue's job there is only to put a unit on them. */
+    const keys = out.rows.filter((r) => typeof r.v === 'string' && r.word === r.v);
+    ok('  and every code word is said in English', !keys.length,
+      keys.slice(0, 5).map((r) => r.k + '=' + r.v).join(', ')
+        || out.rows.filter((r) => typeof r.v === 'string').length + ' code words translated');
+    /* AND NOTHING COMES BACK EMPTY, which is what "was" with nothing after it was. */
+    const blank = out.rows.filter((r) => !r.word.trim() || !r.name.trim());
+    ok('  and none of it renders as a blank', !blank.length,
+      blank.slice(0, 5).map((r) => r.k).join(', ') || 'all of them say something');
+  }
+  ok('  with no page errors', !errs.length, errs.join(' | ') || 'none');
+
+  /* ---- two layouts that a later element quietly invalidated ----
+     THE SAME FAULT TWICE, in two places, both found by a player rather than by anything here.
+
+     A game row is a two column grid and the audience figure was pinned to `grid-row:1/3`,
+     which is rows one and two counted by hand off a card that held two team lines. The day a
+     rivalry name was added above them the teams moved to rows two and three and the figure
+     stayed beside the name, so every named game rendered with its scoreline collapsed. "It is
+     messing up the box score when the game has a name."
+
+     And a verified badge was given the class `.tick`, which this sheet was already using for
+     the season ticker at min-height:78px. A twelve pixel check mark rendered a hundred pixels
+     tall and opened a blank band under the name of every account that had one. "This weird
+     space appears on some tweets."
+
+     Both are measured here, against the real stylesheet, in both states. */
+  const box = await pg.evaluate(() => {
+    const host = document.createElement('div');
+    host.style.cssText = 'position:absolute;left:0;top:0;width:420px';
+    document.body.appendChild(host);
+    const row = (name) => '<div class="gms"><div class="gm2' + (name ? ' riv named' : '') + '"'
+      + ' style="--gc:#e11d48">'
+      + (name ? '<em class="rivn">' + name + '</em>' : '')
+      + '<span class="t w"><u>Notre Dame</u><s>43</s></span>'
+      + '<span class="t"><u>USC</u><s>15</s></span>'
+      + '<span class="v">6.9<i>M</i></span></div></div>';
+    const read = (html) => {
+      host.innerHTML = html;
+      const g = host.querySelector('.gm2');
+      const v = g.querySelector('.v').getBoundingClientRect();
+      const ts = [...g.querySelectorAll('.t')].map((t) => t.getBoundingClientRect());
+      return {
+        /* The figure sits to the RIGHT of both team lines. */
+        right: ts.every((t) => v.left >= t.right - 1),
+        /* And beside them rather than above: its middle is inside their band. */
+        beside: (v.top + v.bottom) / 2 >= ts[0].top && (v.top + v.bottom) / 2 <= ts[1].bottom,
+        /* The two team lines are stacked, not side by side. */
+        stacked: ts[1].top >= ts[0].bottom - 1,
+      };
+    };
+    const plain = read(row(null));
+    const named = read(row('THE JEWELED SHILLELAGH'));
+
+    /* And the badge, at the size its own rule asks for rather than the ticker's. */
+    host.innerHTML = '<div class="feed"><div class="post" style="--ac:#38bdf8">'
+      + '<span class="av">WR</span><div><span class="hd"><b>The Wire Report</b>'
+      + '<svg class="vtick" viewBox="0 0 24 24"><path d="M12 2l10 20H2z"/></svg>'
+      + '<i>@thewirereport &middot; 41m</i></span>'
+      + '<p>The presidents can defend this one to a board of trustees.</p></div></div></div>';
+    const hd = host.querySelector('.hd').getBoundingClientRect();
+    const tk = host.querySelector('.vtick').getBoundingClientRect();
+    const tx = host.querySelector('.post p').getBoundingClientRect();
+    const badge = { w: Math.round(tk.width), h: Math.round(tk.height),
+      hd: Math.round(hd.height), gap: Math.round(tx.top - hd.bottom) };
+    host.remove();
+    return { plain, named, badge };
+  });
+  ok('a game row puts the audience beside the score, not above it',
+    box.plain.right && box.plain.beside && box.plain.stacked, JSON.stringify(box.plain));
+  ok('  and still does when the game has a name',
+    box.named.right && box.named.beside && box.named.stacked, JSON.stringify(box.named));
+  ok('a verified badge is the size of a badge',
+    box.badge.w <= 20 && box.badge.h <= 20,
+    box.badge.w + 'x' + box.badge.h);
+  ok('  and opens no gap under the name it sits on',
+    box.badge.hd <= 30 && box.badge.gap <= 14,
+    'header ' + box.badge.hd + 'px, gap ' + box.badge.gap + 'px');
+
+  await pg.close();
 }
 
 await b.close();
