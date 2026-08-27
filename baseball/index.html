@@ -278,7 +278,9 @@ h1,h2,h3{margin:0}
 .tile .th{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .tile .pos{flex:0 0 auto;min-width:31px;text-align:center;padding:3px 0;border-radius:7px;
   color:#fff;font-family:var(--fn);font-size:10.5px;font-weight:700;letter-spacing:.06em}
-.tile .pr{font-family:var(--fn);font-size:15px;font-weight:600;letter-spacing:.01em;white-space:nowrap}
+.tile .pr{font-family:var(--fn);font-size:15px;font-weight:600;letter-spacing:.01em;white-space:nowrap;margin-left:auto}
+.tile .scarce{font-family:var(--fn);font-size:8.5px;font-weight:800;letter-spacing:.04em;color:var(--gold);
+  background:rgba(184,134,11,.13);border:1px solid rgba(184,134,11,.3);border-radius:99px;padding:2px 6px;white-space:nowrap}
 .tile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   margin-top:7px;font-family:var(--fp);font-size:18px;font-weight:700;line-height:1.15;
   letter-spacing:.01em;padding-bottom:2px}
@@ -735,8 +737,8 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
-<script src="engine.js?v=6"></script>
-<script src="run.js?v=5"></script>
+<script src="engine.js?v=7"></script>
+<script src="run.js?v=6"></script>
 <script src="achievements.js?v=1"></script>
 <script>
 (function(){
@@ -1418,11 +1420,12 @@ function optTile(r,i){
   const p=r.p,block=r.block;
   const pos=p.pp||(p.ep?p.ep.split(';')[0]:'');
   // Distinct open positions this player could fill (SP1/SP2 collapsed).
-  let destSlot=null;
+  let destSlot=null,premium=false;
   if(!block){
     const bases=[];const seen=new Set();
     for(const idx of R.eligibleOpenSlots(RUN,p)){
       const bs=E.SLOTS[idx].replace(/[12]$/,'');
+      if(DATA.scarcity&&DATA.scarcity[E.SLOTS[idx]]&&DATA.scarcity[E.SLOTS[idx]].premium&&p.w>=3.5) premium=true;
       if(!seen.has(bs)){seen.add(bs);bases.push(bs);}
     }
     if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
@@ -1440,6 +1443,7 @@ function optTile(r,i){
   return '<button class="tile'+(block?' off':'')+(hot?' hot':'')+'" data-key="'+r.key+'"'+(block?' disabled':'')+
     ' style="animation-delay:'+(i*0.04)+'s">'+
     '<div class="th"><span class="pos" style="'+posPaint(pos)+'">'+esc(pos)+'</span>'+
+    (premium?'<span class="scarce">&#9733; Scarce spot</span>':'')+
     '<span class="pr">'+(block?esc(reason):M(p.p))+'</span></div>'+
     '<div class="nm">'+esc(p.n)+'</div>'+
     '<div class="sn">'+p.s+' '+esc(p.t)+(destSlot?' &rarr; '+destSlot:'')+'</div>'+

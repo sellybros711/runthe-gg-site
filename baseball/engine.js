@@ -266,6 +266,25 @@ function indexData(players) {
   ratingTable.sort((a, b) => a - b);
   const oppPool = buildOpponentPool(teamSeasons);
 
+  // Position scarcity: how many elite (6+ WAR) seasons can fill each slot.
+  // Catchers and closers are rare; outfielders and DH abundant. Drives the
+  // draft's "premium spot" nudge so you grab scarce positions when you can.
+  const eliteBySlot = {};
+  for (const slot of SLOTS) eliteBySlot[slot] = 0;
+  for (const p of players) {
+    if (p.t === 'TOT' || p.w < 6) continue;
+    for (const slot of SLOTS) {
+      if (slot === 'DH') continue; // everyone fills DH; not a scarcity signal
+      if (canFillSlot(p, slot)) eliteBySlot[slot]++;
+    }
+  }
+  // Scarcest slots (fewest elite options) get flagged premium.
+  const scarcity = {};
+  for (const slot of SLOTS) {
+    const n = eliteBySlot[slot];
+    scarcity[slot] = { elite: n, premium: slot !== 'DH' && n <= 60 };
+  }
+
   return {
     players,
     allPlayers,
@@ -275,6 +294,7 @@ function indexData(players) {
     teamStats,
     ratingTable,
     oppPool,
+    scarcity,
   };
 }
 
