@@ -49,6 +49,12 @@ const SAME = [
      spelling of a state now collapses to one token, so all of these are the
      one answer they have always been. */
   ['Miami (OH)', 'Miami, O.'], ['Miami OH', 'Miami, O.'], ['Miami Ohio', 'Miami, O.'],
+  /* An alias resolves to one token, so it survives only the joined comparison,
+     and the joined form has to tolerate a trailing "University" or the day a
+     feed adds one is the day the acronym stops working. */
+  ['TCU', 'Texas Christian University'], ['LSU', 'Louisiana State University'],
+  ['BYU', 'Brigham Young University'], ['SMU', 'Southern Methodist University'],
+  ['UCF', 'Central Florida University'],
   ['Miami (FL)', 'Miami (Fla.)'], ['Miami Florida', 'Miami (Fla.)'],
   ['California (PA)', 'California, Pa.'], ['Monmouth', 'Monmouth, N.J.'],
   ['Augustana', 'Augustana, S.D.'], ['Albany State', 'Albany State, Ga.'],
@@ -94,6 +100,13 @@ const DIFFER = [
   ['Miami', 'Ohio'], ['Georgia', 'Georgia Tech'], ['Virginia', 'Virginia Tech'],
   ['Texas', 'Texas Tech'], ['Utah', 'Utah State'], ['Nevada', 'UNLV'],
   ['BC', 'Boston University'], ['BU', 'Boston College'],
+  /* The extra word may be a state ONLY where the data sets it off with a
+     bracket or a comma. Without that rule "Southern" was accepted for four
+     different schools, because Utah, Illinois, Arkansas and Mississippi are
+     all state names and all sat in the extra-word slot. */
+  ['Southern', 'Southern Utah'], ['Southern', 'Southern Illinois'],
+  ['Southern', 'Southern Arkansas'], ['Western', 'Western Michigan'],
+  ['Northern', 'Northern Iowa'], ['Eastern', 'Eastern Washington'],
   /* The state token collapses spellings; it must never collapse SCHOOLS. Two
      Miamis stay two Miamis, and a state word at the FRONT is a school name
      (Ohio University, Indiana, Iowa) rather than a postcode. */
@@ -134,46 +147,48 @@ if (!corpus) {
   if (orphan.length) fail('alias targets no player attended: ' + orphan.join(', '));
   else console.log('  ok, all ' + new Set(targets).size + ' alias targets exist in the corpus');
 }
-/* ---- 4. one school, one spelling, in the data we ship --------------------- */
-/* The recurrence guard. Section 1 proves the MATCHER handles a spelling; this
-   proves we are not carrying two spellings of one school in the first place,
-   which is what put "Miami, O." in front of a player as the right answer to a
-   question he had answered correctly. Two labels that normalise to one key are
-   one school written two ways: pick one and repair the other, in the build or
-   in supplement.js. */
-console.log('\n4) no school is spelled two ways in the corpus');
+/* ---- 4. one school, one PRINTED NAME -------------------------------------- */
+/* The recurrence guard, and it is deliberately about what a player SEES rather
+   than about what the feed wrote. The feeds disagree with each other and with
+   themselves ("LSU" on 16 players, "Louisiana State" on 51), which no longer
+   costs a point, because the matcher unifies them; it cost the game its
+   composure, calling one place two names on two days.
+   So the rule is not "the data must be tidy", which would fail on seventeen
+   pre-existing warts and become a check people learn to skip. It is: every
+   spelling of one school must PRINT the same name. RTGType.CANON is keyed on
+   the school rather than the string, so a new spelling from a future refresh
+   lands on the same key and passes this on its own. */
+console.log('\n4) every spelling of one school prints one name');
 if (!corpus) {
   console.log('  skipped: the corpus did not load');
 } else {
-  const byKey = new Map();
+  /* Grouped on schoolIdent, which is the SCHOOL. Two other groupings were
+     tried and both were wrong in a way worth recording.
+     schoolKey missed the thing this check exists for: "Miami, Ohio" and
+     "Miami (OH)" key differently, because a state spelling is resolved in the
+     comparison rather than in the key, so the two were never compared.
+     sameCollege dragged in everything the matcher deliberately FORGIVES: it
+     accepts a bare "Miami" for "Miami (OH)", so a group appeared demanding
+     that two genuinely different schools print one name. */
+  const byIdent = new Map();
   for (const e of corpus) {
     if (!e || !e.col) continue;
-    const k = T.schoolKey(e.col);
-    if (!k) continue;
-    if (!byKey.has(k)) byKey.set(k, new Set());
-    byKey.get(k).add(String(e.col));
+    const id = T.schoolIdent(e.col);
+    if (!id) continue;
+    if (!byIdent.has(id)) byIdent.set(id, new Set());
+    byIdent.get(id).add(String(e.col));
   }
-  /* A BASELINE, NOT A CLEAN SHEET. Nineteen schools already carry two labels
-     because the feeds disagree, and the matcher now unifies every one of them,
-     so they cost a player nothing: this is a display wart, not a wrong answer.
-     Failing on all nineteen tonight would make the check something people
-     learn to skip, which is exactly what the dash checker's own notes warn
-     against. So the known ones are listed and the check fails on a NEW one,
-     which is the thing worth catching. Repair one and delete its line. */
-  const KNOWN = new Set([
-    'louisianastate', 'connecticut', 'nevadalasvegas', 'southerncalifornia',
-    'texaselpaso', 'louisianamonroe', 'northcarolinastate', 'calpolysanluisobispo',
-    'texaschristian', 'brighamyoung', 'southernmethodist', 'bowlinggreenstate',
-    'californiapa', 'louisianalafayette', 'detroitmercy', 'saintmarysca',
-    'wisconsinoshkosh'
-  ]);
-  const dupes = [...byKey.entries()].filter(([, v]) => v.size > 1);
-  const fresh = dupes.filter(([k]) => !KNOWN.has(k));
-  for (const [k, v] of fresh) fail('one school, two spellings: ' + [...v].join('  vs  ') + '   [key ' + k + ']');
-  const old = dupes.length - fresh.length;
-  if (!fresh.length) {
-    console.log('  ok, no NEW double-spelling (' + old + ' known ones still to tidy, all matched correctly)');
+  let split = 0;
+  for (const [id, spellings] of byIdent) {
+    if (spellings.size < 2) continue;
+    const labels = new Set([...spellings].map((c) => T.schoolLabel(c)));
+    if (labels.size > 1) {
+      split++;
+      fail('one school, ' + labels.size + ' printed names: ' + [...labels].join('  vs  ') +
+           '   (add "' + id + '" to CANON in type.js)');
+    }
   }
+  if (!split) console.log('  ok, ' + byIdent.size + ' schools, each printing one name');
 }
 
 /* ---- 5. every college we ship is accepted as itself, and as it is PRINTED - */

@@ -15,6 +15,12 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/fetch-former.mjs
+      # GATE THE REFRESH ON THE ANSWER CHECK. This job rewrites the college
+      # every Alma Mater round is scored against, so a feed that starts writing
+      # a school a new way ships straight to players. Checking after the commit
+      # is checking too late: fail here and the old, working data stays.
+      - name: The refreshed data must still answer correctly
+        run: node scripts/check-colleges.mjs
       - name: Commit if changed
         run: |
           git config user.name "roster-bot"

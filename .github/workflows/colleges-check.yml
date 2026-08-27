@@ -16,6 +16,17 @@ on:
     paths:
       - 'arcade/type.js'
       - 'arcade/match/entities.js'
+      # THE DATA, not just the matcher. "Miami, O." reached a player because
+      # the college a game shows lives in these files, they are rewritten by
+      # scheduled Actions (former.yml runs monthly and commits), and this check
+      # did not watch a single one of them. A refresh could introduce a
+      # spelling nobody had ever typed and nothing would fail until an email
+      # arrived.
+      - 'arcade/former.js'
+      - 'arcade/supplement.js'
+      - 'arcade/stars.js'
+      - 'arcade/awards.js'
+      - 'arcade/data.js'
       - 'scripts/check-colleges.mjs'
       - '.github/workflows/colleges-check.yml'
   push:
@@ -23,6 +34,17 @@ on:
     paths:
       - 'arcade/type.js'
       - 'arcade/match/entities.js'
+      # THE DATA, not just the matcher. "Miami, O." reached a player because
+      # the college a game shows lives in these files, they are rewritten by
+      # scheduled Actions (former.yml runs monthly and commits), and this check
+      # did not watch a single one of them. A refresh could introduce a
+      # spelling nobody had ever typed and nothing would fail until an email
+      # arrived.
+      - 'arcade/former.js'
+      - 'arcade/supplement.js'
+      - 'arcade/stars.js'
+      - 'arcade/awards.js'
+      - 'arcade/data.js'
       - 'scripts/check-colleges.mjs'
       - '.github/workflows/colleges-check.yml'
   workflow_dispatch: {}

@@ -209,9 +209,33 @@
     ok:'OK', or:'OR', pa:'PA', ri:'RI', sc:'SC', sd:'SD', tn:'TN', tx:'TX', ut:'UT',
     vt:'VT', va:'VA', wa:'WA', wv:'WV', wi:'WI', wy:'WY', canada:'Canada'
   };
+  /* ONE SCHOOL, ONE PRINTED NAME.
+     The feeds disagree with each other and with themselves: 51 players are
+     out of "Louisiana State" and 16 out of "LSU", which is one school shown
+     two ways depending on which row came up that morning. The matcher has
+     always accepted both, so this costs nobody a point, but a game that calls
+     a place two names on two days looks like it does not know.
+     Keyed on schoolKey, so it is the SCHOOL that is named rather than a
+     string: a third spelling arriving from a future refresh lands on the same
+     key and prints the same name without anybody editing this list. The value
+     is the name a fan would say out loud, which is why the acronyms win here
+     and the full name wins for Bowling Green.
+     Every value must itself be an accepted answer. check-colleges section 5
+     proves that over the whole corpus rather than trusting this comment. */
+  var CANON = {
+    louisianastate: 'LSU', connecticut: 'UConn', nevadalasvegas: 'UNLV',
+    southerncalifornia: 'USC', texaselpaso: 'UTEP', texaschristian: 'TCU',
+    brighamyoung: 'BYU', southernmethodist: 'SMU',
+    northcarolinastate: 'NC State', calpolysanluisobispo: 'Cal Poly',
+    bowlinggreenstate: 'Bowling Green', detroitmercy: 'Detroit Mercy',
+    louisianamonroe: 'Louisiana-Monroe', louisianalafayette: 'Louisiana-Lafayette',
+    wisconsinoshkosh: 'Wisconsin-Oshkosh', saintmarysca: "Saint Mary's (CA)"
+  };
   function schoolLabel(s) {
     var raw = String(s == null ? '' : s).trim();
     if (!raw) return raw;
+    var canon = CANON[schoolKey(raw)];
+    if (canon) return canon;
     // the tails the feeds use for the state: ", O." / ", Pa." / " (Fla.)" / " (OH)"
     var m = raw.match(/^(.*?)[\s,]*[(,]\s*([A-Za-z.]{1,12})\.?\)?$/);
     if (!m) return raw;
@@ -220,6 +244,23 @@
     return head + ' (' + STATE_PRINT[code] + ')';
   }
   function schoolKey(s) { return schoolWords(s).join(''); }
+  /* THE SCHOOL, not the string and not what the matcher will forgive.
+     schoolKey says "Miami (OH)" and "Miami, O." are different (the spelling
+     lives in the comparison), and sameCollege says "Miami" and "Miami (OH)"
+     are the same (it forgives a missing qualifier on purpose). Neither answers
+     "are these two rows the same school", which is what a data check needs.
+     This does: the set-off qualifier is canonicalised, and nothing else is
+     forgiven. */
+  function schoolIdent(s) {
+    var raw = String(s == null ? '' : s);
+    var w = schoolWords(raw);
+    if (!w.length) return '';
+    if (w.length > 1 && hasSetOffTail(raw)) {
+      var last = STATE_CANON[w[w.length - 1]];
+      if (last) { w = w.slice(0, -1).concat([last]); }
+    }
+    return w.join('');
+  }
   /* Word-wise, not prefix-wise. A plain prefix test cleared "Michigan" against
      "Michigan State", which are two different schools and a wrong answer.
      The only extra word allowed is a STATE, which is how the data separates
@@ -241,23 +282,50 @@
        the same LENGTH, so they are compared word by word and differ. */
     university:1, college:1
   };
+  /* Is the state SET OFF in the raw string, "Miami (OH)" or "Miami, O."?
+     That punctuation is the only thing separating a qualifier from a word
+     that is part of the school's own name, and without asking, allowing any
+     state as the extra word accepted "Southern" for Southern Utah, Southern
+     Illinois and Southern Arkansas: four different schools collapsed into one
+     answer, which is the wrong-answer-marked-right direction and the worse
+     bug of the two. */
+  function dropInstitution(w) {
+    return (w.length > 1 && INSTITUTION[w[w.length - 1]]) ? w.slice(0, -1).join('') : w.join('');
+  }
+  function hasSetOffTail(raw) {
+    return /[(,]\s*[A-Za-z][A-Za-z. ]{0,13}\)?\s*$/.test(String(raw == null ? '' : raw));
+  }
   function sameCollege(typed, target) {
     var a = schoolWords(typed), b = schoolWords(target);
     if (!a.length || !b.length) return false;
-    if (a.join('') === b.join('')) return true;
-    var shortW = a.length <= b.length ? a : b, longW = a.length <= b.length ? b : a;
+    var aj = a.join(''), bj = b.join('');
+    if (aj === bj) return true;
+    /* An alias resolves to ONE token ("TCU" becomes texaschristian), and a
+       one-token side can never survive the word-by-word loop against a
+       multi-word name: it only ever matches on this joined comparison. So the
+       joined form has to tolerate the trailing institutional word too, or the
+       day a feed starts writing "Texas Christian University" is the day TCU
+       stops being accepted. That is tonight's bug wearing a different hat. */
+    if (dropInstitution(a) === bj || aj === dropInstitution(b)) return true;
+    var aShort = a.length <= b.length;
+    var shortW = aShort ? a : b, longW = aShort ? b : a;
+    var longRaw = aShort ? target : typed;
     for (var i = 0; i < shortW.length; i++) {
       if (shortW[i] === longW[i]) continue;
       // past the head, "OH" and "O." and "Ohio" are one word
       if (i > 0 && sameState(shortW[i], longW[i])) continue;
       return false;
     }
-    // the allowed extra word: a state in ANY spelling STATE_CANON knows, or a
-    // trailing institutional word. Listing spellings in two places is how
-    // "Murray State" stopped reaching "Murray State (KY)": ky expands to
-    // kentucky, which the hand-written list did not have.
+    /* The allowed extra word. A trailing institutional word always ("Temple"
+       reaches "Temple University"); a state ONLY when the longer name sets it
+       off with a bracket or a comma, which is how the data writes a qualifier
+       and not how it writes Southern Utah. */
+    var setOff = hasSetOffTail(longRaw);
     for (var j = shortW.length; j < longW.length; j++) {
-      if (!QUALIFIER[longW[j]] && !STATE_CANON[longW[j]]) return false;
+      var w = longW[j];
+      if (INSTITUTION[w]) continue;
+      if (setOff && (QUALIFIER[w] || STATE_CANON[w])) continue;
+      return false;
     }
     return true;
   }
@@ -596,7 +664,7 @@
   return {
     mount: mount, close: close, harden: harden,
     norm: norm, tokens: tokens, nameKey: nameKey, hasFullName: hasFullName,
-    sameName: sameName, schoolKey: schoolKey, schoolLabel: schoolLabel, sameCollege: sameCollege,
+    sameName: sameName, schoolKey: schoolKey, schoolIdent: schoolIdent, schoolLabel: schoolLabel, sameCollege: sameCollege,
     playerSource: playerSource, collegeSource: collegeSource
   };
 });
