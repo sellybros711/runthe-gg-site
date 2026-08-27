@@ -1036,8 +1036,13 @@
     return pool[n % pool.length];
   }
 
+  /* AT_SCHOOL IS EXPORTED SO THE WIDTH GUARD CAN ENUMERATE THE WORST CASE. The desk gives a
+     speaker two lines, and which speaker a voice draws depends on a hash of the item id and
+     on whether the item carries a school. A guard that measures one of those and calls it
+     safe is the guard that already failed once: it went on rendering bloc names ("The SEC",
+     seven characters) for a room that had stopped drawing them. See test_desk.mjs. */
   const publicAPI = { BLOCS, BY_ID, GAIN, MEMORY, VOICE, react, deltas, grudge, dot, moodOf, line, driver, hash,
-    SPEAKERS, speaker };
+    SPEAKERS, AT_SCHOOL, speaker };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_BLOCS = publicAPI;
 })();

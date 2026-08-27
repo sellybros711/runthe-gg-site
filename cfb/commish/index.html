@@ -393,6 +393,43 @@
     text-transform:uppercase;letter-spacing:.01em}
   .tail p{margin-top:7px;font-size:14px;line-height:1.45;color:var(--dim)}
 
+  /* ── WHAT EVERYBODY ELSE DID ──────────────────────────────────────────────────────
+     The percentage is the point, so it is set at display size and everything around it is
+     small. A number this size next to three bars is a claim; the same number inside a
+     paragraph is a footnote, and a footnote does not get screenshotted.
+
+     No coloured rule down the side, unlike .tail: this is not a dispatch, it is a fact
+     about the people who play the game, and it should not read as another thing that
+     happened in the sport. */
+  .split{border-left:3px solid var(--line-2)}
+  .split .pc{display:flex;align-items:baseline;gap:9px;margin-bottom:2px}
+  .split .pc b{font-family:var(--fd);font-size:34px;line-height:.95;letter-spacing:.01em;
+    color:var(--ink)}
+  /* THE RARE CASE IS THE SHAREABLE ONE, so it is the one that gets a colour. Gold reads as
+     "you did something unusual" on every other screen in this mode. */
+  .split.rare .pc b{color:var(--gold)}
+  .split .pc span{font-size:13.5px;line-height:1.35;color:var(--dim)}
+  .split .n{margin-top:8px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim-2)}
+  /* All three shares, so "nobody took the one I took" is visible rather than inferred.
+     Yours is the one with a border on it, and it says YOU rather than relying on that. */
+  .split .rows{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+  .split .r{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+    position:relative;padding:6px 9px;border-radius:6px;background:var(--panel);
+    border:1px solid transparent;overflow:hidden}
+  .split .r.mine{border-color:var(--green)}
+  /* The bar is behind the text rather than beside it, because a label, a bar and a number
+     in three columns leaves the label about nine characters on a phone. */
+  .split .r i{position:absolute;inset:0 auto 0 0;background:rgba(148,163,184,.14);
+    border-radius:6px}
+  .split .r.mine i{background:rgba(16,185,129,.16)}
+  .split .r em,.split .r strong{position:relative;font-style:normal}
+  .split .r em{font-size:13px;color:var(--ink)}
+  .split .r .you{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--green);margin-left:6px}
+  .split .r strong{font-size:13px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums}
+  .split .r.mine strong{color:var(--ink)}
+
   /* WHERE THE SPORT IS STANDING WHILE THIS LANDS. Same shape every time, so the eye learns
      it once and reads the week off the desk without looking for it. */
   .sitbar{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 2px}
@@ -1281,6 +1318,17 @@
     <!-- The tail a ruling grew. See fallout.js and the wiring in b-rule. -->
     <div class="card flat tail" id="r-tail" hidden></div>
     <div class="meters" id="r-meters"></div>
+    <!-- What everybody else did with the same item.
+
+         BELOW THE METERS, NOT ABOVE THEM. This is the most screenshotted thing on the screen
+         and the pull is to lead with it, but the meters are what the RULING did and this is
+         what strangers did, and the game's own answer should not be shoved down the page by
+         a fact about other people. It is still above the fold on a phone.
+
+         And it starts hidden rather than empty, because it arrives over a network after the
+         screen has painted: an empty box that fills in half a second reads as a fault, a box
+         that appears reads as an answer. -->
+    <div class="card flat split" id="r-split" hidden></div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px" id="r-head">The room</div>
       <div class="room" id="r-room"></div>
@@ -1349,7 +1397,7 @@
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=3"></script>
 <script src="ledger.js?v=7"></script>
-<script src="blocs.js?v=4"></script>
+<script src="blocs.js?v=5"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
@@ -1375,6 +1423,9 @@
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=1"></script>
+<!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
+     auth.js. It is here rather than up with the rest because nothing else reads it. -->
+<script src="splits.js?v=1"></script>
 <script src="/cfb/auth.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
@@ -2777,6 +2828,73 @@ function paintTail(el,tail){
   reveal(el);
 }
 
+/* ── WHAT EVERYBODY ELSE DID ────────────────────────────────────────────────────────
+   The one number in this mode that is about the world outside it. Everything else on the
+   reaction screen is the sport answering you; this is the other people who sat in the chair
+   answering the same question, and it is the thing worth sending to somebody.
+
+   THREE RULES, AND ALL THREE ARE ABOUT NOT LYING:
+
+   1. IT ARRIVES LATE OR NOT AT ALL, and the screen is finished either way. splits.js
+      resolves null on every failure rather than throwing, this hides the box, and a
+      commissioner with an ad blocker plays a game with one fewer decoration on it rather
+      than a game that stops.
+
+   2. A RULING IS NOT HELD UP FOR IT. The request goes out after the screen paints, and
+      `splitSeq` throws away an answer that arrives for a ruling you have already moved past:
+      a slow response to beat four must never land on beat five's screen, which is exactly
+      what happens on a bad connection and is a lie with your own name on it.
+
+   3. UNDER EIGHT VOTES IT SAYS SOMETHING ELSE. See MIN_SHOW in splits.js. "100% of
+      commissioners agreed with you" off a sample of one is worse than silence, because
+      silence is not a claim. */
+let splitSeq=0;
+function paintSplit(el,split,optionId,labels){
+  if(!el) return;
+  const P=window.PS_CFB_SPLITS;
+  const ph=P&&P.phrase?P.phrase(split,optionId):null;
+  if(!ph){ el.hidden=true; el.innerHTML=''; return; }
+  el.classList.toggle('rare',!!ph.rare);
+  let h='<div class="eyebrow" style="margin-bottom:8px">Every other commissioner</div>';
+  if(ph.early){
+    /* NO PERCENTAGE AND NO BARS. Both would be drawing a distribution out of four votes,
+       and the honest fact here is the other one: this is new. */
+    h+='<div class="pc"><span style="font-size:15px;color:var(--ink)">'+esc(ph.line)+'</span></div>';
+  }else{
+    h+='<div class="pc"><b>'+ph.pct+'%</b><span>'+esc(ph.line.replace(/^\D*\d+% ?/,''))+'</span></div>';
+    const rows=P.bars(split,optionId,labels||{});
+    if(rows.length>1){
+      h+='<div class="rows">'+rows.map((r)=>'<div class="r'+(r.mine?' mine':'')+'">'
+        +'<i style="width:'+Math.max(r.pct,2)+'%"></i>'
+        +'<em>'+esc(r.label)+(r.mine?'<span class="you">you</span>':'')+'</em>'
+        +'<strong>'+r.pct+'%</strong></div>').join('')+'</div>';
+    }
+    h+='<div class="n">'+ph.total+' commissioner'+(ph.total===1?'':'s')+' have ruled on this</div>';
+  }
+  el.innerHTML=h;
+  el.hidden=false;
+  reveal(el);
+}
+
+/* SEND THE RULING AND DRAW WHAT COMES BACK, or draw nothing. Split out from the click
+   handler because the handler is already long and because the sequence guard is the whole
+   point: the number on the screen has to belong to the item on the screen. */
+function recordRuling(item,optionId){
+  const el=$('r-split');
+  if(el){ el.hidden=true; el.innerHTML=''; }
+  const P=window.PS_CFB_SPLITS;
+  if(!P||!P.rule) return;
+  const seq=++splitSeq;
+  /* The option labels as this commissioner saw them, resolved here rather than in
+     splits.js: a label can be a function of the world, and the world is here. */
+  const labels={};
+  (item.options||[]).forEach((o)=>{ labels[o.id]=String(D.text(o.label,cast,item,sit)); });
+  P.rule(item.id,optionId).then((res)=>{
+    if(seq!==splitSeq) return;
+    paintSplit(el,res,optionId,labels);
+  }).catch(()=>{});
+}
+
 /* ── precedent ─────────────────────────────────────────────────────────────────────
    WHAT YOU HAVE ALREADY DONE ABOUT THIS. Read straight off the ledger's own history, which
    has carried the year, the beat and the label of every ruling since the mode was built and
@@ -3106,6 +3224,11 @@ $('b-test').onclick=()=>{
   /* NO TAIL ON A FORECAST either, and for the same reason: nothing has happened yet, so
      nothing can have happened next. */
   paintTail($('r-tail'),null);
+  /* AND NO SPLIT, which is the same reason a third time and one more besides: asking the
+     server what everybody else did would be casting your vote for a ruling you have not
+     made. A forecast has to be free. */
+  paintSplit($('r-split'),null,null,null);
+  splitSeq++;
   $('b-next').textContent='Back to the desk';
   $('b-next').dataset.go='desk';
   show('s-room');
@@ -3169,6 +3292,10 @@ $('b-rule').onclick=()=>{
   $('b-next').textContent='Carry on';
   $('b-next').dataset.go='on';
   show('s-room');
+  /* LAST, AND AFTER show(). Everything above this is the screen; this is a request over a
+     network that may not answer, so it goes out once the screen the player is looking at is
+     already finished. See recordRuling for the sequence guard. */
+  recordRuling(item,choice);
 };
 
 $('b-next').onclick=()=>{

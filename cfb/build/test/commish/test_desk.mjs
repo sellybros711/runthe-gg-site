@@ -139,50 +139,118 @@ console.log('\n=== the desk is shorter than it was ===');
   }
   ok('  and there is still an item on the desk after all that', await on('s-desk'));
 
-  /* ONE LINE PER SPEAKER. The header row above each quote was a third of the room's height
-     and said what the chip beside it already says. */
+  /* THREE LINES A SPEAKER, NOT FOUR, and that budget was two until the room got people in
+     it. Worth writing down rather than quietly editing, because the number moved for a
+     reason and the reason is not "the check was annoying".
+
+     The original rule was one line per speaker of chrome and one of quote: the header row
+     above each quote was a third of the room's height and said what the chip beside it
+     already says. That held while the name was an institution. "The SEC" is seven
+     characters and disappears into the front of a sentence.
+
+     A PERSON'S ROLE IS NOT SEVEN CHARACTERS. "a school president" is eighteen, "an
+     assistant at Alabama" twenty-one, and the room went from nine institutions taking turns
+     at a microphone to people saying things, which is most of what makes the writing worth
+     reading. Measured properly, 127 of 273 lines needed a third row. The two ways to get
+     back under two lines were cutting every quote to sixty-nine characters, which is the
+     shape of a caption rather than of somebody talking, or giving the box the row. The row
+     costs about forty pixels on a desk with whitespace to spare.
+
+     FOUR IS STILL THE CLIFF and this still guards it, because four is where a quote stops
+     being a remark and the room stops being scannable. Nothing in the docket reaches it
+     today: every one of the 273 measures at either two rows or three. */
   const voices = await p.$$eval('#d-voices .voice', (e) => e.map((v) => ({
     lines: Math.round(v.clientHeight / 20), chip: !!v.querySelector('.chip'),
   })));
-  ok('the room argues in two lines a speaker, not three',
-    voices.length > 0 && voices.every((v) => v.lines <= 2),
+  ok('the room argues in three lines a speaker, not four',
+    voices.length > 0 && voices.every((v) => v.lines <= 3),
     voices.map((v) => v.lines).join(', ') + ' lines');
 
   /* AND SO DOES EVERY OTHER VOICE IN THE DOCKET, not merely the three this walk happened to
-     land on. Two hundred and twenty-five lines are written and a walk sees three of them, so
-     a line that wraps can sit there for weeks and then fail somebody else's afternoon at
+     land on. Two hundred and seventy-three lines are written and a walk sees three of them,
+     so a line that wraps can sit there for weeks and then fail somebody else's afternoon at
      random. Every one of them is drawn into the real container at phone width and measured.
 
      THIS REPLACES A CHARACTER COUNT THAT COULD NOT HAVE CAUGHT IT. test_docket used to assert
      the quote was under eighty-five characters, which missed two things. The desk renders the
      SPEAKER'S NAME in the same flow, so the line that overflowed was eighty-three characters
      of quote behind a twelve character name. And length is the wrong unit anyway: the name is
-     bold and the font is proportional, so "The presidents" plus eighty-one characters fits in
-     two lines while "The networks" plus eighty-three does not, at the same ninety-five. Only
-     the browser knows, so ask the browser. */
+     bold and the font is proportional, so one name plus eighty-one characters fits in two
+     lines while a shorter name plus eighty-three does not, at the same ninety-five. Only the
+     browser knows, so ask the browser.
+
+     AND IT MEASURES EVERY NAME THE VOICE COULD DRAW, not one of them, which is the part this
+     guard got wrong and went on passing about. When the room stopped saying "The SEC" and
+     started saying "an SEC AD", this block carried on rendering the bloc name: seven
+     characters where the page draws twenty-two, so it reported all 273 fitting while the
+     live desk in the assertion above it wrapped to three lines at random. The name a voice
+     gets depends on a hash of the item id AND on whether the item carries a school, so the
+     only safe reading is the worst of everything speaker() can return for that bloc.
+
+     IT ALSO CLONES A REAL VOICE ROW rather than building one out of a string. The row carries
+     a colour chip that takes width, and a hand-built copy leaves it out and under-measures
+     every line in the docket by the width of the chip and its gap. */
   const wide = await p.evaluate(() => {
     const D = window.PS_CFB_DOCKET, B = window.PS_CFB_BLOCS;
     const box = document.getElementById('d-voices');
     if (!D || !B || !box) return { err: 'a module or the container is missing' };
+    const proto = box.querySelector('.voice');
+    if (!proto) return { err: 'nothing is on the desk to copy' };
     const held = box.innerHTML;
-    const out = [];
-    let seen = 0;
+
+    /* EVERY NAME A BLOC CAN SPEAK UNDER. The plain roles, plus the with-a-school forms built
+       against real school names, since speaker() refuses a built name over its own cap and a
+       made-up long one would test a string the page can never draw. */
+    const SCHOOLS = ['Alabama', 'Northwestern', 'Washington State', 'Mississippi State',
+      'Southern California', 'UTEP'];
+    const namesFor = (id) => {
+      const out = [].concat((B.SPEAKERS && B.SPEAKERS[id]) || []);
+      const at = (B.AT_SCHOOL && B.AT_SCHOOL[id]) || [];
+      at.forEach((pre) => SCHOOLS.forEach((s) => {
+        /* The same cap speaker() applies, so this measures what could be drawn. */
+        if ((pre + s).length <= 26) out.push(pre + s);
+      }));
+      if (!out.length) out.push(B.BY_ID[id] ? B.BY_ID[id].name : id);
+      return out;
+    };
+
+    box.innerHTML = '';
+    const node = proto.cloneNode(true);
+    box.appendChild(node);
+    const vs = node.querySelector('.vs');
+    if (!vs) { box.innerHTML = held; return { err: 'the voice row has no text span' }; }
+
+    const out = [], tall = [];
+    let seen = 0, names = 0;
     D.ITEMS.forEach((it) => {
       (it.voices || []).forEach((v) => {
-        const bl = B.BY_ID[v.id];
-        const name = bl ? bl.name : v.id;
-        box.innerHTML = '<div class="voice"><span class="vs"><b>' + name + '</b>'
-          + String(v.say).replace(/[&<>]/g, '') + '</span></div>';
-        const el = box.querySelector('.voice');
-        if (el.clientHeight > 46) out.push(it.id + '/' + v.id + ' ' + el.clientHeight + 'px');
+        const say = String(v.say).replace(/[&<>]/g, '');
+        let worst = 0, worstName = '';
+        namesFor(v.id).forEach((nm) => {
+          vs.innerHTML = '<b>' + nm.replace(/[&<>]/g, '') + '</b>' + say;
+          names++;
+          if (node.clientHeight > worst) { worst = node.clientHeight; worstName = nm; }
+        });
+        /* Three rows is 63px at this line height, four is 83. The bar is between them. */
+        if (worst > 70) out.push(it.id + '/' + v.id + ' "' + worstName + '" ' + worst + 'px');
+        tall.push(worst);
         seen++;
       });
     });
     box.innerHTML = held;
-    return { out, seen };
+    return { out, seen, names, three: tall.filter((h) => h > 46).length };
   });
-  ok('  and so does every other line in the docket', !wide.err && !wide.out.length,
-    wide.err || wide.out.slice(0, 4).join(', ') || 'all ' + wide.seen + ' fit');
+  ok('  and so does every other line in the docket, under every name it could carry',
+    !wide.err && !wide.out.length,
+    wide.err || wide.out.slice(0, 4).join(' | ')
+      || 'all ' + wide.seen + ' fit, measured under ' + wide.names + ' names');
+  /* REPORTED, NOT ASSERTED. How many lines need the third row is a fact about the writing
+     rather than a fault in it, and it is the number that says whether the budget is still
+     the right budget: if it ever reads 273 of 273 the third row has stopped being headroom
+     and become the layout, and the room should be designed for three from the start. */
+  ok('  and the third row is headroom rather than the norm',
+    !wide.err && wide.three < wide.seen,
+    wide.err || wide.three + ' of ' + wide.seen + ' need a third row');
   ok('  and every quote still names who said it',
     voices.every((v) => v.chip)
     && (await p.$$eval('#d-voices .voice b', (e) => e.length)) === voices.length);
@@ -370,6 +438,120 @@ console.log('\n=== the forecast is only as good as your council ===');
 
   ok('no page errors in either', !nw.errs.length && !old.errs.length,
     nw.errs.concat(old.errs).join(' | ') || 'none');
+}
+
+console.log('\n=== what every other commissioner did ===');
+{
+  /* THE SPLIT IS THE ONE THING ON THE REACTION SCREEN THAT COMES FROM OUTSIDE THE GAME, so
+     it is the one thing that can be absent, late, or wrong about somebody real. Three
+     separate failures worth a check, and only the first is about a number:
+
+       it draws         a percentage, its bars, and the option the player took marked as
+                        theirs, off an answer the server gave
+       it survives      supabase/95_commish_choices.sql not being applied yet, which is the
+                        state the live project is in as this ships: no box, no error, and a
+                        reaction screen that is otherwise finished
+       it does not vote a forecast on the desk must not record a ruling nobody has made
+
+     PS_CFB_SPLITS.rule is stubbed rather than reaching the network, because a test that
+     depends on a live database tests the database. What is being checked here is the page.  */
+  const canned = {
+    item: 'x', recorded: true, total: 40,
+    counts: { A: 25, B: 11, C: 4 },
+  };
+  const look = async (mode) => {
+    const q = await b.newPage({ viewport: { width: 390, height: 900 } });
+    const qe = []; q.on('pageerror', (e) => qe.push(e.message));
+    await q.addInitScript(arm + stub);
+    /* Replace the transport and keep the wording, which is the half worth exercising here.
+       The option ids are not known until an item is drawn, so the stub answers with the
+       ids it was asked about rather than with fixed ones. */
+    await q.addInitScript(`window.__SPLIT_MODE=${JSON.stringify(mode)};
+      window.__SPLIT_CALLS=[];
+      document.addEventListener('DOMContentLoaded',function(){
+        var S=window.PS_CFB_SPLITS; if(!S) return;
+        S.rule=function(item,opt){
+          window.__SPLIT_CALLS.push(item+'/'+opt);
+          if(window.__SPLIT_MODE==='down') return Promise.resolve(null);
+          var c={}; c[opt]=11; c[opt+'-x']=25; c[opt+'-y']=4;
+          return Promise.resolve({item:item,recorded:true,total:40,counts:c});
+        };
+      });`);
+    await q.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await q.waitForTimeout(2400);
+    await q.click('#g-start').catch(() => {});
+    await q.waitForTimeout(900);
+    const qon = (id) => q.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
+    for (let i = 0; i < 14; i++) {
+      if (await qon('s-desk')) break;
+      if (await qon('s-office')) { await q.click('#b-desk').catch(() => {}); await skipSim(q); await q.waitForTimeout(400); continue; }
+      if (await qon('s-room')) { await q.click('#b-next').catch(() => {}); await q.waitForTimeout(500); continue; }
+      if (await qon('s-year')) { await q.click('#b-year-next').catch(() => {}); await q.waitForTimeout(500); continue; }
+      break;
+    }
+    const o = await q.$('#d-options .opt');
+    if (o) { await o.click(); await q.waitForTimeout(300); }
+    /* THE FORECAST FIRST, and it must not have voted. */
+    await q.click('#b-test').catch(() => {});
+    await q.waitForTimeout(600);
+    const afterTest = {
+      calls: await q.evaluate(() => window.__SPLIT_CALLS.length),
+      shown: await q.$eval('#r-split', (e) => !e.hidden).catch(() => null),
+    };
+    await q.click('#b-next').catch(() => {});
+    await q.waitForTimeout(500);
+    const o2 = await q.$('#d-options .opt');
+    if (o2) { await o2.click(); await q.waitForTimeout(300); }
+    await q.click('#b-rule').catch(() => {});
+    await q.waitForTimeout(1200);
+    const box = await q.evaluate(() => {
+      const e = document.getElementById('r-split');
+      if (!e) return { missing: true };
+      return {
+        hidden: e.hidden,
+        pct: (e.querySelector('.pc b') || {}).textContent || '',
+        rows: [].slice.call(e.querySelectorAll('.r')).map((r) => ({
+          mine: r.classList.contains('mine'),
+          pct: (r.querySelector('strong') || {}).textContent || '',
+          label: (r.querySelector('em') || {}).textContent || '',
+        })),
+        n: (e.querySelector('.n') || {}).textContent || '',
+      };
+    });
+    const calls = await q.evaluate(() => window.__SPLIT_CALLS.slice());
+    await q.close();
+    return { afterTest, box, calls, errs: qe };
+  };
+
+  const up = await look('up');
+  ok('a forecast does not cast a vote', up.afterTest.calls === 0,
+    up.afterTest.calls + ' calls after pressing test');
+  ok('  and shows no split, because nothing has been ruled', up.afterTest.shown === false);
+
+  ok('a ruling draws what everybody else did', up.box && !up.box.hidden && !up.box.missing);
+  ok('  with your own share in the big number', up.box.pct === '28%', up.box.pct);
+  ok('  all three shares below it', up.box.rows.length === 3,
+    up.box.rows.map((r) => r.pct).join(' '));
+  ok('  exactly one of them marked as yours',
+    up.box.rows.filter((r) => r.mine).length === 1,
+    JSON.stringify(up.box.rows.find((r) => r.mine) || null));
+  /* BIGGEST FIRST, so taking the call nobody took is visible rather than inferred. */
+  ok('  biggest first', up.box.rows[0].pct === '63%' && up.box.rows[2].pct === '10%',
+    up.box.rows.map((r) => r.pct).join(' > '));
+  /* THE ROW IS LABELLED WITH THE OPTION AS THE PLAYER READ IT, not with its id. The two
+     differ on every item in the docket, and an id on a reaction screen is a leak. */
+  ok('  and the row says what the option said, not its id',
+    up.box.rows.some((r) => r.mine && r.label.length > 4 && !/^[a-z0-9-]+you$/.test(r.label)),
+    JSON.stringify(up.box.rows.find((r) => r.mine).label));
+  ok('  with the sample size said out loud', /40 commissioners/.test(up.box.n), up.box.n);
+  ok('  and the ruling was recorded once', up.calls.length === 1, up.calls.join(', '));
+
+  /* THE STATE THE LIVE PROJECT IS ACTUALLY IN until somebody runs the migration. */
+  const down = await look('down');
+  ok('an unreachable backend draws no box at all', down.box.hidden === true);
+  ok('  and does not break the reaction screen', !down.errs.length,
+    down.errs.join(' | ') || 'none');
+  ok('  no page errors with it working either', !up.errs.length, up.errs.join(' | ') || 'none');
 }
 
 await b.close();

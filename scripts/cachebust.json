@@ -57,8 +57,8 @@
       "sha": "99fa2b871c188dfa"
     },
     "blocs.js": {
-      "v": "4",
-      "sha": "0d403e0c0d1d0099"
+      "v": "5",
+      "sha": "1414bfd5d4901eff"
     },
     "venues.js": {
       "v": "2",
@@ -103,6 +103,10 @@
     "report.js": {
       "v": "1",
       "sha": "affdd4dd6e6efe23"
+    },
+    "splits.js": {
+      "v": "1",
+      "sha": "31b1c726ed01bdc5"
     }
   },
   "cfb/index.html": {
