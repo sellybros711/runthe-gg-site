@@ -14111,9 +14111,9 @@ const PXG_BODY=[
 "...............mmpqqq...mmpqqq..............",
 "...............mmpqqq...mmpqqq..............",
 "...............mmpqqq...mmpqqq..............",
-".............uuuuooooo.uuuuooooo............",
-".............oooooozzz.oooooozzz...nnnnnnnnn",
-".............nnnnnnnnn.nnnnnnnnn............"];
+".............uuuuooooo.ooooouuuu............",
+".............oooooozzz.zzzoooooo...nnnnnnnnn",
+".............nznznznzn.nznznznzn............"];
 // CS370: favorite-club overlays (driver/wood/iron/wedge/putter). Drawn on the golfer's LEFT hand
 // as authored (lefty); mirrored to the RIGHT hand for a right-handed golfer.
 // ===== DROPS content: Legendary Drop 2 (Mythic) + seasonal themed-drop sprites =====
@@ -15321,6 +15321,24 @@ function pxGolferCanvas(look,opts){
   // so this is correct for the cardigan, the blazer, the floatie and anything added later.
   for(let y=38;y<=42;y++){ const row=BODY[y]||''; for(let x=0;x<row.length;x++){ const ch=row[x];
     if(ch!=='s'&&ch!=='j'&&ch!=='x')continue; ctx.fillStyle=P[ch]; ctx.fillRect(x*px,y*px,px,px); } }
+  // ITEM 19: a GLOVE on the LEAD hand. A golfer wears one, on the top hand of the grip - the left hand
+  // for a right-hander, which on a frontal sprite is at viewer-RIGHT. Painted as a post-pass RECOLOUR of
+  // the hand's own pixels rather than a new body char: a baked char could not mirror with look.lefty, and
+  // every spare letter is already claimed by PXG_NOV. Keeping the hand's own s/j/x shading means the glove
+  // holds the form of the fist instead of flattening it.
+  if(!(opts&&opts.body)){
+    const GLOVE={x:'#ffffff', s:'#f2f5f1', j:'#c9cec8'}, SEAM='#8e968f';
+    for(let y=41;y<=42;y++){ const row=PXG_BODY[y]||''; let lo=-1, hi=-1;
+      for(let x=0;x<row.length;x++){ const c=row[x]; if(c==='s'||c==='j'||c==='x'){ if(lo<0) lo=x; hi=x; } }
+      if(lo<0) continue; const mid=(lo+hi)/2;
+      // The seam is the pixel where the glove meets the bare hand. Without it a white glove is only a few
+      // shades off the palest skin tone and the hand reads as one undifferentiated block; a hard edge makes
+      // it read as two hands, one gloved, on EVERY skin tone.
+      const seamX = look.lefty ? Math.floor(mid) : Math.ceil(mid);
+      for(let x=lo;x<=hi;x++){ const c=row[x]; if(c!=='s'&&c!=='j'&&c!=='x') continue;
+        if(look.lefty ? (x>mid) : (x<mid)) continue;   // trail hand stays bare
+        ctx.fillStyle=(x===seamX)?SEAM:GLOVE[c]; ctx.fillRect(x*px,y*px,px,px); } }
+  }
   if(!(opts&&opts.noClub)) paintClub(pxClubAddress(PXG_CLUBS[club]), !look.lefty, PXG_CLUB_PAL[club]);
   // CS414: teed ball on the TRAIL side (flip=look.lefty → opposite the club, so they never collide)
   if(ball && !(opts&&opts.noBall)) paintClub(PXG_BALL[ball], !!look.lefty, PXG_BALL_PAL[ball]);
