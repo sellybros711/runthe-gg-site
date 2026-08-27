@@ -16,8 +16,12 @@
 import pkg from '/opt/node22/lib/node_modules/playwright/index.js';
 const { chromium } = pkg;
 
+// Every game page, including the newest three: this list once trailed the
+// site, and a page missing from it is a page the ink-on-ink class of bug can
+// ship on unwatched.
 const PAGES = ['', 'match/', 'crossword/', 'guess/', 'table/',
-               'oddone/', 'career/', 'rankit/', 'almamater/', 'highlow/', 'archive/'];
+               'oddone/', 'career/', 'rankit/', 'almamater/', 'highlow/',
+               'sportegories/', 'rollcall/', 'chain/', 'archive/'];
 
 const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell' });
 const mkctx = async (theme) => { const ctx = await browser.newContext({ viewport:{width:390,height:844} });

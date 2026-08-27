@@ -80,11 +80,15 @@
      product it is selling rather than like a wall of orange. Naming them is the
      point: "ten daily puzzles" is a quantity, "Alma Mater, Rank It, High Low" is a
      reason to tap, and one of the ten is always somebody's sort of thing. */
+  /* The REAL twelve, free four first. This list once advertised Word Search,
+     which had been retired, and did not know Sportegories, Roll Call or Chain
+     existed: an ad that names a game the door does not open is worse than no
+     ad. If the roster changes again, this is the second place to change it. */
   var GAMES = [
-    ['Common Ground', '#5C8CFF'], ['Crossword', '#9CADC0'], ['Word Search', '#37C5D5'],
-    ['Guess the Player', '#F06A5F'], ['Number Game', '#F2B632'], ['Odd One Out', '#B79BF6'],
-    ['Career Path', '#48D17A'], ['Rank It', '#F778AE'], ['Alma Mater', '#96B93C'],
-    ['High Low', '#FF8A3D']
+    ['Sportegories', '#B79BF6'], ['Daily Crossword', '#9CADC0'], ['Alma Mater', '#96B93C'],
+    ['Career Path', '#48D17A'], ['Common Ground', '#5C8CFF'], ['Guess the Player', '#F06A5F'],
+    ['Number Game', '#F2B632'], ['Odd One Out', '#B79BF6'], ['Rank It', '#F778AE'],
+    ['High Low', '#FF8A3D'], ['Roll Call', '#37C5D5'], ['Chain', '#96B93C']
   ];
 
   var CSS = [
@@ -229,14 +233,14 @@
       '<div class="rtgaa-wrap">' +
         '<div class="rtgaa-kick"><span class="rtgaa-dot"></span>Also from RunThe.GG</div>' +
         '<h2 class="rtgaa-head">Run The Arcade</h2>' +
-        '<p class="rtgaa-lede">Ten quick sports brain-games, <b>new every single day</b>. ' +
-          'Two minutes each, one streak to protect.</p>' +
+        '<p class="rtgaa-lede">Twelve quick sports brain-games, <b>new every single day</b>, ' +
+          'and four of them are free every day. Two minutes each, one streak to protect.</p>' +
         '<div class="rtgaa-panel">' +
           '<div class="rtgaa-grid">' + chips + '</div>' +
           '<div class="rtgaa-stats">' +
-            '<div class="rtgaa-stat"><b>10</b><span>Games</span></div>' +
+            '<div class="rtgaa-stat"><b>12</b><span>Games</span></div>' +
             '<div class="rtgaa-stat"><b>Daily</b><span>New set</span></div>' +
-            '<div class="rtgaa-stat"><b>Free</b><span>To play</span></div>' +
+            '<div class="rtgaa-stat"><b>4 free</b><span>Every day</span></div>' +
           '</div>' +
         '</div>' +
         '<p class="rtgaa-fine">Same free RunThe.GG account you use here. Your streak carries ' +
