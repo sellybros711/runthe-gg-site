@@ -1991,7 +1991,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=5"></script>
-<script src="docket.js?v=15"></script>
+<script src="docket.js?v=16"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -4658,19 +4658,28 @@ function paintCouncilNote(el,seats){
   if(!el) return;
   const total=C.SEATS.length;
   if(seats>=total){
+    /* SAY WHAT THE PANEL IS, NOT JUST THAT IT IS FINISHED. "The whole room" under a padlock,
+       on a screen where nothing is locked, told a player nothing: they did not know there had
+       ever been a council, so being told it was complete was an answer to a question they had
+       never been asked. It names the mechanic and says what it bought. */
     el.className='council full';
     el.innerHTML='<span class="ch">'+LOCK.replace('<svg ','<svg class="ci" ')
-      +'<b>The whole room</b></span>'
-      +'<span class="cn">Every seat on your council is filled. Nothing in this room is a '
-      +'surprise to you any more.</span>';
+      +'<b>Your council: all nine</b></span>'
+      +'<span class="cn">A forecast only reads the blocs who talk to you, and you have earned '
+      +'every seat. All nine numbers above are real ones. Nothing in this room is a surprise '
+      +'to you any more.</span>';
     return;
   }
   const next=C.nextSeat(careerRulings());
   el.className='council';
   el.innerHTML='<span class="ch">'+LOCK.replace('<svg ','<svg class="ci" ')
     +'<b>Your council: '+seats+' of '+total+'</b></span>'
-    +'<span class="cn">'+esc(councilNames().join(', '))+'. '
-    +'The rest of the room you cannot read yet.</span>'
+    /* AND WHAT THE OTHER SIX ARE, on the version that is not finished. "The rest of the room
+       you cannot read yet" is only meaningful if you know a forecast is a thing that reads
+       people. */
+    +'<span class="cn">A forecast only reads the blocs who talk to you. So far that is '
+    +esc(councilNames().join(', '))+'. The rest of the room shows where it stands and not what '
+    +'this ruling would do to it.</span>'
     +(next?'<span class="cnx">Your '+C.ORDINAL[next.seat]+' seat is '
       +esc((BLOC_UI[next.id]||{}).short||next.id)+', at '+next.at+' rulings. You have '
       +careerRulings()+'.</span>':'');
@@ -5046,8 +5055,7 @@ function paintDials(){
 function paintWrite(){
   if(!isPro()){ $('d-write').innerHTML=''; return; }
   $('d-write').innerHTML='<div class="dial"><div class="dh"><b>Add a note to the ruling</b>'
-    +'</div><textarea class="write" id="d-text" placeholder="Expand to sixteen, but guarantee '
-    +'the Group of Five two seats for six years, paid for out of the top two shares."></textarea>'
+    +'</div><textarea class="write" id="d-text" placeholder="'+esc(writeHint())+'"></textarea>'
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:7px">This rides along with '
     +'whichever of the three you pick, and it is kept on the record with your ruling. '
     +'<b style="color:var(--dim)">The room cannot read it yet.</b> Reasoning in your own words '
@@ -5056,6 +5064,34 @@ function paintWrite(){
   const t=$('d-text');
   if(t){ t.value=written; t.oninput=()=>{ written=t.value; paintTestBtn(); }; }
   paintTestBtn();
+}
+
+/* THE PROMPT IN THE BOX IS ABOUT THE THING ON THE DESK. It was one fixed sentence about
+   expanding the playoff and guaranteeing the Group of Five two seats, shown over a ruling
+   about a mascot, a drone, or a bowl moving city. An example that has nothing to do with the
+   decision in front of you is worse than an empty box: it reads as the box belonging to some
+   other screen.
+
+   BUILT FROM THE FORCES THE ITEM CAN ACTUALLY MOVE, so it is always about this ruling without
+   ninety-one hand-written prompts, and it is phrased as the shape of an answer rather than as
+   an answer, because the box is a note and suggesting a ruling in it would be putting words in
+   somebody's mouth. */
+const WRITE_HINT={
+  money:'Say who the money comes from and who it goes to.',
+  access:'Say who gets a path and what it takes to walk it.',
+  autonomy:'Say who decides this from now on, and in writing.',
+  cost:'Say who is paying for it and out of which pocket.',
+  tradition:'Say what is protected by name and what is not.',
+  inventory:'Say what gets played, and when, and who sells it.',
+  labour:'Say what a player is owed here and who owes it.',
+  exposure:'Say how this survives the first person who sues over it.',
+};
+function writeHint(){
+  const axes=axesInPlay();
+  const parts=axes.map((a)=>WRITE_HINT[a]).filter(Boolean).slice(0,2);
+  return parts.length
+    ? parts.join(' ')
+    : 'Say what you would do instead, and who has to live with it.';
 }
 
 /* WHICH OF THE TWO THINGS THE BUTTON IS ABOUT TO DO. "Test it on the room" over a screen

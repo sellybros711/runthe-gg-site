@@ -812,15 +812,17 @@
             }
             const w = money(b.worth);
             if (b.gap >= 0.12) {
-              return 'The football earns ' + w + '. You would be promising ' + money(b.gap)
-                + ' a year the sport does not make, every year, until you stop.';
+              return 'Television and tickets bring in ' + w + ' a year. You would be promising '
+                + money(b.gap) + ' a year on top of that, which the sport does not make, '
+                + 'every year, until you stop.';
             }
             if (b.gap <= -0.12) {
-              return 'The football earns ' + w + '. You would be holding ' + money(-b.gap)
-                + ' of it back, and every athletic director in the country can do that '
-                + 'subtraction.';
+              return 'Television and tickets bring in ' + w + ' a year. You would be holding '
+                + money(-b.gap) + ' of it back, and every athletic director in the country '
+                + 'can do that subtraction.';
             }
-            return 'The football earns ' + w + '. This is about what the sport can actually pay.';
+            return 'Television and tickets bring in ' + w + ' a year. This is a promise about '
+              + 'what the sport can actually pay out of that.';
           } },
       ],
     },
@@ -1492,9 +1494,13 @@
         { id: 'Presidents', say: 'Two of our institutions are about to sue each other over a toy helicopter.' },
       ],
       options: [
-        { id: 'punish', label: 'Vacate their opener and take a pick',
-          body: 'Make an example while the sport is still finding it funny, because in three '
-            + 'years everybody will have one of these.',
+        /* "TAKE A PICK" IS A PROFESSIONAL LEAGUE'S PUNISHMENT AND NOT THIS ONE'S. College
+           football has no draft to dock, so the phrase pointed at a lever that does not exist
+           and a player read it as a typo. The sanction here is scholarships. */
+        { id: 'punish', label: 'Vacate their opener and take scholarships',
+          body: 'Wipe the win, dock them three scholarships, and make an example while the '
+            + 'sport is still finding it funny, because in three years everybody will have '
+            + 'one of these.',
           edit: { effects: { tradition: 2, autonomy: -2.4, exposure: 1.2, access: -0.6 },
             aimed: { Presidents: { exposure: 1.4 }, SEC: { autonomy: -1.6 },
               'Big Ten': { autonomy: -1.6 } } } },
