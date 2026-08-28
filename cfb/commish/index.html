@@ -379,6 +379,11 @@
   .opt .why{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;
     overflow:hidden;transition:color .2s var(--ez)}
   .opt.on .why,.opt.open .why{-webkit-line-clamp:6;color:var(--ink)}
+  /* AND A BODY TOO SHORT TO BE WORTH FOLDING IS NOT FOLDED. A control that reveals four words
+     is worse than no control, so the button goes; the clamp has to go with it or that line is
+     hidden behind nothing. Dim rather than full ink, because it is shown without being the
+     option under consideration. */
+  .opt.whole .why{-webkit-line-clamp:6}
   /* WHAT THE RULING DOES, IN SYMBOLS. Three options used to be three paragraphs that had to
      be read in full and held in the head at once. These say the shape of each one at a
      glance: which forces it pushes and which way.
@@ -1191,6 +1196,19 @@
   .mcard.running .simbar{opacity:1}
   .mtick p{margin:0;font-size:13px;line-height:1.35;color:var(--ink)}
   .mtick span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:2px}
+  /* THE SATURDAY SLATE. Reserved to the tallest day THIS MONTH holds rather than to a fixed
+     five rows: a January with no football would otherwise carry eighty pixels of nothing under
+     the calendar, and a September that reflows on every Saturday shunts the office up and down
+     exactly as the note above warns. The painter counts the rows before the walk starts and
+     writes the number here. */
+  .mtick .mrows{margin-top:5px;display:grid;gap:2px}
+  .mtick .mrows[hidden]{display:none}
+  .mcard.running .mtick .mrows{min-height:calc(var(--mrows,0) * 17px)}
+  .mtick .mrow{display:block;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--ink);margin-top:0;line-height:1.45}
+  /* The name of the game, ahead of the score, in the same small caps the round labels use. */
+  .mtick .mrow em{font-style:normal;font-size:9px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--dim-2);margin-right:6px}
   .cgrid i{font-style:normal;font-family:var(--fn);font-size:9px;font-weight:700;
     letter-spacing:.1em;text-transform:uppercase;color:var(--dim-2);text-align:center;
     padding:8px 0 7px;background:var(--panel)}
@@ -1651,7 +1669,11 @@
       <div class="ch"><b id="off-mtitle">January 2025</b><span id="off-mday"></span></div>
       <div class="cgrid compact" id="off-month"></div>
       <div class="simbar"><span id="off-mbar"></span></div>
-      <div class="mtick"><p id="off-mtext"></p><span id="off-msub"></span></div>
+      <!-- `off-mrows` IS THE SATURDAY SLATE. A week of football used to arrive as one line,
+           which made the season read as a thing being skipped rather than played. See
+           eventsFor() in calendar.js for which games are chosen and why. -->
+      <div class="mtick"><p id="off-mtext"></p><div class="mrows" id="off-mrows"></div>
+        <span id="off-msub"></span></div>
     </div>
     <div class="cal" id="off-cal"></div>
     <!-- The map. Realignment is the one thing a list cannot show. -->
@@ -1685,7 +1707,14 @@
       <div id="off-titles"></div>
     </div>
     <div class="card flat" id="off-tablecard" hidden>
-      <div class="eyebrow" style="margin-bottom:9px" id="off-tablehead">The top of the sport</div>
+      <div class="eyebrow" style="margin-bottom:4px" id="off-tablehead">The top of the sport</div>
+      <!-- WHICH OF THE TWO LISTS THIS IS. The card below is a different ranking of the same
+           fourteen teams and the two disagree most weeks, which is correct and is the whole
+           argument the sport has, and NOTHING ON EITHER CARD SAID SO. A player looked at them
+           side by side and asked why they are different. -->
+      <p class="dcsub" style="margin-bottom:9px">Who would be seeded, under your own rules. This
+        is a committee: it rates how good teams are, so a one loss team it rates highly can sit
+        above an unbeaten one.</p>
       <div id="off-table"></div>
     </div>
     <!-- THE POLL, WHICH IS NOT THE TABLE ABOVE IT AND THAT IS THE POINT. The table is the
@@ -1702,7 +1731,10 @@
       <div id="off-motion"></div>
     </div>
     <div class="card flat" id="off-pollcard" hidden>
-      <div class="eyebrow" style="margin-bottom:9px" id="off-pollhead">The poll</div>
+      <div class="eyebrow" style="margin-bottom:4px" id="off-pollhead">The poll</div>
+      <p class="dcsub" style="margin-bottom:9px">What the voters think, which is a different
+        question. A poll ranks records rather than teams, and it moves slowly, so it disagrees
+        with the seeding above most weeks. That gap is what the sport argues about.</p>
       <div id="off-poll"></div>
     </div>
 
@@ -1938,7 +1970,7 @@
 <script src="season.js?v=16"></script>
 <script src="council.js?v=2"></script>
 <script src="feed.js?v=3"></script>
-<script src="calendar.js?v=3"></script>
+<script src="calendar.js?v=4"></script>
 <script src="situation.js?v=6"></script>
 <script src="fallout.js?v=5"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
@@ -3381,6 +3413,53 @@ const cdIcon=(n)=>CDI[n]?'<svg viewBox="0 0 24 24" aria-hidden="true">'+CDI[n]+'
    calendar is a fixture rather than something that only exists while it is animating: you
    can look at the window you are in, see which days carry something, and press on when you
    are ready. runSim then walks these very squares. */
+/* THE LEAGUE AS IT STANDS THIS YEAR, for the ticker's off-season lines. Split into the
+   schools with money and everybody else, because "a quarterback leaves X for Y" is only a
+   story when Y is somewhere better, and read off the world's OWN membership rather than off
+   the data file: a conference a ruling dissolved three years ago must not turn up in a line
+   about media days. See OFFSEASON in calendar.js. */
+function leagueNow(){
+  const m=(world&&world.membership)||{};
+  const big=[], small=[], confs=[], seen={}, schools=[];
+  for(const s in m){
+    const c=m[s];
+    if(!c||(L.isDefunct&&L.isDefunct(world,c))) continue;
+    schools.push(s);
+    (L.POWERS.indexOf(c)>=0?big:small).push(s);
+    /* INDEPENDENTS ARE NOT A CONFERENCE and they do not hold meetings. They are a bucket in
+       the data with a conference-shaped name, and a line about two leagues caucusing before
+       the room is nonsense with them in it. */
+    if(!seen[c]&&!/independ/i.test(c)){ seen[c]=1; confs.push(c); }
+  }
+  /* SORTED, so the draw is a function of the year and nothing else. Object key order is not
+     something to build a deterministic replay on. */
+  const by=(a,b)=>(a<b?-1:1);
+  /* ---- and a tier for the lines that need one ----
+     A DRAW OFF ALL SIXTY-SEVEN POWER SCHOOLS WRITES NONSENSE, and it did on the first run:
+     eighty thousand people at a Vanderbilt spring game, Rutgers first in the preseason poll,
+     the best recruiting class in the country at Oklahoma State. Those three lines are not
+     about a power school, they are about a school people show up for, and the difference is
+     the whole joke.
+
+     `strength_z` is already on every row of the team file, so the tier is the top of it among
+     schools STILL IN THE SPORT this year rather than a hand-written list of blue bloods that
+     a realignment ruling would immediately falsify. Falls back to `big` if the ratings are not
+     loaded, which is a worse line rather than a broken one. */
+  const rated={};
+  (TEAMS||[]).forEach((t)=>{
+    const z=Number(t.strength_z);
+    if(t&&t.school&&isFinite(z)&&(rated[t.school]==null||z>rated[t.school])) rated[t.school]=z;
+  });
+  const elite=schools.filter((x)=>rated[x]!=null)
+    .sort((x,y)=>rated[y]-rated[x]).slice(0,24).sort(by);
+  /* THE LEAGUES WITH VOTES, in the order the ledger lists them, filtered to the ones that
+     still have members. A ruling can dissolve one. */
+  const powers=L.POWERS.filter((c)=>confs.indexOf(c)>=0);
+  return { big:big.sort(by), small:small.sort(by), confs:confs.sort(by),
+    schools:schools.sort(by), elite:elite.length?elite:big.slice(),
+    powers:powers.length?powers:confs.slice() };
+}
+
 function paintMonthNow(){
   const grid=$('off-month');
   if(!grid||!CAL||!world) return;
@@ -3390,7 +3469,7 @@ function paintMonthNow(){
   let events={};
   try{
     events=CAL.eventsFor(world.year,world.beat,
-      S&&S.segmentFor(world.beat)?seasonThisBeat():null)||{};
+      S&&S.segmentFor(world.beat)?seasonThisBeat():null,leagueNow())||{};
   }catch(e){ events={}; }
   $('off-mtitle').textContent=CAL.MONTHS[cur.getMonth()]+' '+cur.getFullYear();
   $('off-mday').textContent=CAL.label(days[0])+' to '+CAL.label(days[days.length-1]);
@@ -3452,7 +3531,7 @@ function runSim(stopOn,headline,done){
   const win=CAL.windowFor(year,beat);
   /* THE FOOTBALL THESE DAYS PRODUCE, which is this beat's own segment rather than what had
      already happened when the office was drawn. */
-  const events=CAL.eventsFor(year,beat,S&&S.segmentFor(beat)?seasonThisBeat():null);
+  const events=CAL.eventsFor(year,beat,S&&S.segmentFor(beat)?seasonThisBeat():null,leagueNow());
   const stopKey=stopOn?CAL.key(stopOn):null;
   const last=stopOn||days[days.length-1];
   const upto=days.filter((d)=>CAL.between(d,last)>=0);
@@ -3470,6 +3549,14 @@ function runSim(stopOn,headline,done){
   void bar.offsetWidth; bar.style.transition='';
   const card=$('off-monthcard');
   if(card) card.classList.add('running');
+  /* HOW TALL THE SLATE GETS THIS MONTH, counted once before the walk. See `.mtick .mrows`:
+     reserving a fixed five rows would put eighty pixels of nothing under a January, and
+     reserving none would shunt the whole office on every Saturday. */
+  if(card){
+    let mx=0;
+    for(const k in events){ const n=(events[k].lines||[]).length; if(n>mx) mx=n; }
+    card.style.setProperty('--mrows',String(mx));
+  }
   /* THE CALENDAR IS THE THING BEING WATCHED, so bring it to the top of the window rather
      than walking a month somebody has scrolled past. */
   if(card&&card.scrollIntoView) card.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'start'});
@@ -3484,10 +3571,21 @@ function runSim(stopOn,headline,done){
     const k=CAL.key(cur);
     const ev=events[k];
     const isStop=k===stopKey;
-    const t=$('off-mtext'), sub=$('off-msub');
-    if(isStop&&headline){ t.textContent=headline; sub.textContent='On your desk'; }
-    else if(ev){ t.textContent=ev.text; sub.textContent=ev.sub||''; }
-    else { t.textContent=''; sub.textContent=''; }
+    const t=$('off-mtext'), sub=$('off-msub'), rows=$('off-mrows');
+    /* THE SLATE, WHEN THERE IS ONE. `ev.lines` is a Saturday's ranked games and it is the one
+       kind of event that is a list rather than a sentence, so it gets its own node instead of
+       being crushed into the headline. Cleared on every day, or a week's scores would sit
+       under the following Tuesday. */
+    const drawRows=(list)=>{
+      if(!rows) return;
+      if(!list||!list.length){ rows.innerHTML=''; rows.hidden=true; return; }
+      rows.hidden=false;
+      rows.innerHTML=list.map((r)=>'<span class="mrow">'
+        +(r.name?'<em>'+esc(r.name)+'</em>':'')+esc(r.say)+'</span>').join('');
+    };
+    if(isStop&&headline){ t.textContent=headline; drawRows(null); sub.textContent='On your desk'; }
+    else if(ev){ t.textContent=ev.text; drawRows(ev.lines); sub.textContent=ev.sub||''; }
+    else { t.textContent=''; drawRows(null); sub.textContent=''; }
     if(t.textContent&&!REDUCED){ t.classList.remove('in'); void t.offsetWidth; t.classList.add('in'); }
     return isStop?SIM_STOP:ev?SIM_EVENT:SIM_DAY;
   };
@@ -4413,6 +4511,25 @@ function paintCouncilNote(el,seats){
       +careerRulings()+'.</span>':'');
 }
 
+/* WHETHER FOLDING THIS IS WORTH DOING AT ALL.
+   Both places in this file that clamp text asked the same question the same wrong way: is
+   ANYTHING hidden, to within a few pixels. Four pixels is a fifth of a line, so a paragraph
+   running four words past its clamp got a control promising more, and pressing it produced
+   four words. "There are multiple times where something that said read more was only like 4
+   more words."
+
+   The question is not whether something is hidden, it is whether enough is hidden to be worth
+   a tap. Under two lines' worth, the clamp comes off and the whole thing is simply shown:
+   nothing to press, nothing folded, and nobody misled. Measured off the element's own line
+   height rather than a pixel guess, because the brief is 14px and an option's reasoning is
+   12.5px and one constant cannot be right for both. */
+function foldWorthIt(el){
+  if(!el) return false;
+  const hidden=el.scrollHeight-el.clientHeight;
+  const line=parseFloat(getComputedStyle(el).lineHeight)||18;
+  return hidden>=line*1.8;
+}
+
 /* THE SETUP, CLAMPED. Some briefs are two lines and some are six, and a control that says
    "more" under a paragraph that is already whole is worse than no control: it promises
    something that is not there. So the clamp goes on, the page is measured, and the button
@@ -4427,7 +4544,7 @@ function paintBrief(text){
      the screen has been shown and the numbers are real. */
   requestAnimationFrame(()=>{
     const p=el.firstChild;
-    if(!p||p.scrollHeight-p.clientHeight<4){ el.className='brief'; return; }
+    if(!foldWorthIt(p)){ el.className='brief'; return; }
     el.insertAdjacentHTML('beforeend','<button type="button">Read the rest</button>');
     el.querySelector('button').onclick=(e)=>{ el.className='brief'; e.target.remove(); };
   });
@@ -4450,8 +4567,15 @@ function paintOptions(first){
      you read, which is the original fault with an extra step. */
   $('d-options').innerHTML=item.options.map((o)=>{
     const on=choice===o.id;
+    /* `whole` IS NOT THE SAME AS `open`, AND MISSING THAT WOULD HIDE TEXT WITH NO WAY BACK.
+       An option whose reasoning runs a line past the clamp no longer gets a Read more button,
+       because pressing it would produce a few words. But the clamp is still on, so without
+       this the line it hides would be unreachable. A body not worth folding is not folded:
+       it opens on arrival and never offers a control. Measured, in `optLong` below. */
+    const whole=optLong[o.id]===false;
     const open=on||optOpen[o.id];
-    return '<div class="opt'+(on?' on':'')+(open?' open':'')+'" data-o="'+esc(o.id)+'"'
+    return '<div class="opt'+(on?' on':'')+(open?' open':'')+(whole?' whole':'')
+      +'" data-o="'+esc(o.id)+'"'
       +' role="button" tabindex="0"'+(on?' aria-pressed="true"':' aria-pressed="false"')+'>'
       +'<b>'+esc(D.text(o.label,cast,item,sit))+'</b>'
       +'<span class="why">'+esc(D.text(o.body,cast,item,sit))+'</span>'
@@ -4496,7 +4620,7 @@ function paintOptions(first){
       let any=false;
       $('d-options').querySelectorAll('[data-o]').forEach((b)=>{
         const w=b.querySelector('.why');
-        const long=!!w&&w.scrollHeight-w.clientHeight>3;
+        const long=foldWorthIt(w);
         if(optLong[b.dataset.o]!==long){ optLong[b.dataset.o]=long; any=true; }
       });
       if(any) paintOptions();
@@ -4915,7 +5039,17 @@ $('b-rule').onclick=()=>{
   const changed=JSON.stringify(sportFacts(world))!==JSON.stringify(sportFacts(before));
   $('r-changed').hidden=!changed;
   if(changed) paintSport($('r-sport'),world,before);
-  $('b-next').textContent='Carry on';
+  /* WHERE IT GOES, ON THE BUTTON. "Carry on" is an instruction with no destination in it, and
+     this button leads to three different screens depending on where the term is. Naming the
+     next one costs a word and removes the only question the dock was raising.
+
+     THE ENDING IS NOT NAMED, deliberately. Saying "continue to your removal" over a room that
+     has just turned on you announces the result of a vote the player has not seen, which is
+     the one screen in the mode that has to arrive. It reads as the year in review, because
+     that is what it is until the count says otherwise. */
+  $('b-next').textContent=(world.beat+1>=L.BEATS.length)
+    ? 'Continue to the year in review'
+    : 'Continue to '+String(L.BEATS[world.beat+1]).toLowerCase();
   $('b-next').dataset.go='on';
   show('s-room');
   /* LAST, AND AFTER show(). Everything above this is the screen; this is a request over a

@@ -104,44 +104,179 @@
      at a glance, so the shape has to carry the meaning before the ticker line is read, and
      the icons have to be things anybody would name: a ball, a trophy, a microphone, a pen.
      Every entry below carries one, and `eventsFor` never returns an event without one. */
+  /* ---- the eight months nobody plays a game in ----
+     THE OFFSEASON WAS FOUR FIXED SENTENCES A BEAT, the same four every year of every term,
+     with not one real school in any of them. A player watched a month walk past and said the
+     mode "just skips through the fun parts of a real season", and wanted what actually happens
+     between January and August: quarterbacks moving somewhere better, signing day, camp.
+
+     So a line may be a function of the league instead of a string. It is handed the schools
+     that exist THIS year, split into the ones with money and everybody else, plus a `pick`
+     that draws a school deterministically from the year and the slot. The same beat in the
+     same year reads the same way; the next year reads differently; and every name in it is a
+     school actually in the sport at that moment, so a line cannot name a conference that has
+     been dissolved by a ruling three years ago.
+
+     PLACES ARE REAL AND PEOPLE ARE NOT, which is the rule the whole mode already runs on. A
+     quarterback here is "the starting quarterback at Kansas", never a name: inventing a
+     transfer for somebody who exists and is twenty is the one thing this file must not do. */
+  function offHash(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  /* A DRAW THAT DOES NOT REPEAT ITSELF INSIDE ONE LINE. `pick(pool, n)` returns the nth
+     distinct school out of that pool for this slot, so "X to Y" is never "X to X". */
+  function drawer(seed) {
+    return function (pool, n) {
+      if (!pool || !pool.length) return '';
+      var k = offHash(seed + '|' + (n || 0)) % pool.length;
+      return pool[(k + (n || 0) * 7) % pool.length];
+    };
+  }
+
   var OFFSEASON = {
     0: [[0, 8, 'The room gathers. Nobody has said anything on the record yet.', 'gavel'],
       [0, 11, 'Budget subcommittee. Four hours, one decision, and it was the wrong one.', 'gavel'],
-      [0, 13, 'Two conferences hold their own meetings first, which is the whole problem.', 'gavel'],
+      /* THE TWO THAT CAN END YOU, so it draws from the leagues with votes rather than from
+         every conference in the sport. The first run of this offered "the Conference USA and
+         the Big 12 hold their own meetings first, which is the whole problem", which is not a
+         problem anybody has. */
+      [0, 13, function (c, p) {
+        return 'The ' + (p(c.powers, 0) || 'SEC') + ' and the ' + (p(c.powers, 1) || 'Big Ten')
+          + ' hold their own meetings first, which is the whole problem.';
+      }, 'gavel'],
       [0, 16, 'The last of the committee reports land.', 'note']],
     1: [[0, 18, 'The portal window opens.', 'portal'],
-      [0, 22, 'A starting quarterback enters at eleven at night. Two fanbases do not sleep.', 'portal'],
+      /* THE ONE EVERYBODY ACTUALLY WATCHES FOR. A starting quarterback leaving somewhere for
+         somewhere richer is the defining event of this month in the real sport, and the mode
+         described it without naming either end. */
+      [0, 20, function (c, p) {
+        return 'The starting quarterback at ' + (p(c.small, 0) || 'a Group of Five school')
+          + ' enters at eleven at night. He is at ' + (p(c.elite, 1) || 'a power school')
+          + ' by breakfast.';
+      }, 'portal'],
+      [0, 22, function (c, p) {
+        return (p(c.big, 2) || 'A power school') + ' loses three starters in a morning and '
+          + 'signs four by dinner.';
+      }, 'portal'],
       [0, 24, 'Three hundred names in a week. Two of them matter.', 'portal'],
+      [0, 26, function (c, p) {
+        return 'A receiver leaves ' + (p(c.big, 3) || 'one power school') + ' for '
+          + (p(c.big, 4) || 'another') + ' and both fanbases claim they won it.';
+      }, 'portal'],
       [0, 30, 'The portal window shuts. Everybody counts what is left.', 'portal'],
-      [1, 4, 'Signing day. Hats on tables, and a lot of very tired assistants.', 'pen']],
+      [1, 4, function (c, p) {
+        return 'Signing day. The best class in the country belongs to '
+          + (p(c.elite, 5) || 'the usual place') + ', and nobody is surprised.';
+      }, 'pen']],
     2: [[2, 14, 'Spring practice opens across the country.', 'whistle'],
-      [2, 28, 'Two coaches are already describing this as the best camp they have had.', 'whistle'],
-      [3, 3, 'Spring games. Eighty thousand people watch a scrimmage in Tuscaloosa.', 'whistle'],
+      [2, 20, function (c, p) {
+        return 'The coach at ' + (p(c.big, 0) || 'a power school')
+          + ' is already calling this the best camp he has had.';
+      }, 'whistle'],
+      [2, 28, function (c, p) {
+        return (p(c.small, 1) || 'A Group of Five school')
+          + ' hires away a coordinator and gets a raise out of it for everybody else.';
+      }, 'whistle'],
+      [3, 3, function (c, p) {
+        return 'Spring games. Eighty thousand people watch a scrimmage at '
+          + (p(c.elite, 2) || 'Alabama') + '.';
+      }, 'whistle'],
       [3, 18, 'The last spring meetings before the summer.', 'gavel']],
     3: [[6, 14, 'Media days begin. Everybody is undefeated and everybody is uncomfortable.', 'mic'],
-      [6, 17, 'A coach is asked about the playoff eleven times and answers a twelfth.', 'mic'],
-      [6, 19, 'The preseason poll lands and three athletic directors ring this office.', 'note'],
+      [6, 16, function (c, p) {
+        return 'The coach at ' + (p(c.big, 0) || 'a power school')
+          + ' is asked about the playoff eleven times and answers a twelfth.';
+      }, 'mic'],
+      [6, 19, function (c, p) {
+        return 'The preseason poll lands with ' + (p(c.elite, 1) || 'somebody') + ' first and '
+          + 'three athletic directors ring this office about it.';
+      }, 'note'],
+      [6, 21, function (c, p) {
+        /* NO INDEFINITE ARTICLE IN FRONT OF A CONFERENCE NAME. "A SEC coach" and "A ACC
+           coach" are both wrong and which one is wrong depends on the draw, so the sentence
+           is built to not need one. */
+        return 'A coach in the ' + (p(c.powers, 2) || 'Big 12') + ' says the quiet part into a '
+          + 'live microphone and spends the afternoon explaining it.';
+      }, 'mic'],
       [6, 24, 'Camps open next week. The talking is nearly over.', 'whistle']],
   };
 
-  function eventsFor(year, beat, sim) {
+  /* `league` IS OPTIONAL AND EVERY LINE HAS A FALLBACK. The page passes it; the guards call
+     eventsFor with two arguments in half a dozen places, and a calendar that throws because
+     nobody handed it a membership would take the whole office down over a ticker line. */
+  function eventsFor(year, beat, sim, league) {
     var out = {};
+    var lg = league || {};
+    var ctx = {
+      big: lg.big || [], small: lg.small || [],
+      confs: lg.confs || [], schools: lg.schools || [],
+      /* The schools people show up for, and the leagues that hold votes. See leagueNow(). */
+      elite: (lg.elite && lg.elite.length) ? lg.elite : (lg.big || []),
+      powers: (lg.powers && lg.powers.length) ? lg.powers : (lg.confs || []),
+    };
     var fixed = OFFSEASON[beat] || [];
-    fixed.forEach(function (f) {
-      out[key(d(year, f[0], f[1]))] = { text: f[2], kind: 'note', icon: f[3] || 'note' };
+    fixed.forEach(function (f, i) {
+      var pick = drawer(year + '|' + beat + '|' + i);
+      var text = typeof f[2] === 'function' ? f[2](ctx, pick) : f[2];
+      out[key(d(year, f[0], f[1]))] = { text: text, kind: 'note', icon: f[3] || 'note' };
     });
 
     if (!sim) return out;
-    /* THE FOOTBALL, ON THE SATURDAY IT WAS PLAYED. The biggest game of each week by audience,
-       because a ticker that lists sixty scores is not a ticker. */
+    /* THE FOOTBALL, ON THE SATURDAY IT WAS PLAYED.
+       ONE GAME A WEEK WAS TOO FEW. The Saturday tick showed the biggest game by audience and
+       nothing else, so a whole week of a sixty game slate arrived as a single line and the
+       season read as a thing being skipped past rather than played: "maybe instead of 1 game
+       it should give you the ranked games that were played in a list."
+
+       So it is the RANKED slate, up to five, which is exactly what a Saturday in this sport
+       is: the games between teams somebody had an opinion about on Friday. Ordered by whether
+       both sides were ranked and then by the better of the two rankings, because two ranked
+       teams playing each other is the game of the day whatever the audience says, and audience
+       is a consequence of that rather than a reason for it.
+
+       THE POLL USED IS THE ONE PEOPLE HAD GOING IN, `polls[week - 1]`, not the one written
+       afterwards. Ranking a game by where the loser ended up on Sunday is hindsight, and the
+       whole appeal of a ranked matchup is that it was ranked before anybody played. */
+    var RANKED_MAX = 5;
     (sim.weeks || []).forEach(function (wk) {
       if (!wk.games.length) return;
       var date = saturday(year, wk.week);
-      var g = wk.games[0];
+      var poll = (sim.polls || [])[wk.week - 1];
+      var rankOf = {};
+      if (poll && poll.top) {
+        poll.top.forEach(function (r) { rankOf[r.school] = r.rank; });
+      }
+      var scored = wk.games.map(function (g) {
+        var rw = rankOf[g.winner.school] || 0, rl = rankOf[g.loser.school] || 0;
+        return { g: g, rw: rw, rl: rl, both: !!(rw && rl), best: Math.min(rw || 99, rl || 99) };
+      }).filter(function (x) { return x.best < 99; });
+      scored.sort(function (x, y) {
+        return (y.both ? 1 : 0) - (x.both ? 1 : 0) || x.best - y.best || y.g.viewers - x.g.viewers;
+      });
+      var pick = scored.slice(0, RANKED_MAX);
+      /* NOTHING RANKED PLAYED, which happens in a week one built out of guarantee games. The
+         biggest audience is then the only honest headline, and saying so is better than an
+         empty list under a heading that promises one. */
+      var fallback = !pick.length;
+      if (fallback) pick = [{ g: wk.games[0], rw: 0, rl: 0 }];
+      var line = function (x) {
+        var g = x.g;
+        var hi = Math.max(g.score[0], g.score[1]), lo = Math.min(g.score[0], g.score[1]);
+        var tag = function (r, s) { return (r ? '#' + r + ' ' : '') + s; };
+        return {
+          name: g.rivalryName || '',
+          say: tag(x.rw, g.winner.school) + ' ' + hi + ', ' + tag(x.rl, g.loser.school) + ' ' + lo,
+        };
+      };
       out[key(date)] = {
-        text: 'Week ' + wk.week + ': ' + g.winner.school + ' ' + Math.max(g.score[0], g.score[1])
-          + ', ' + g.loser.school + ' ' + Math.min(g.score[0], g.score[1]),
-        sub: wk.viewers.toFixed(1) + 'M watched the slate',
+        text: 'Week ' + wk.week,
+        lines: pick.map(line),
+        sub: fallback
+          ? wk.viewers.toFixed(1) + 'M watched the slate, nobody ranked played'
+          : pick.length + (pick.length === 1 ? ' ranked game' : ' ranked games')
+            + ' · ' + wk.viewers.toFixed(1) + 'M watched the slate',
         kind: 'game', icon: 'ball',
       };
     });

@@ -286,8 +286,12 @@ console.log('\n=== the preview is the ruling ===');
   await p.waitForTimeout(400);
   ok('picking an option opens its reasoning',
     (await p.$eval('#d-options .opt.on .why', (e) => getComputedStyle(e).webkitLineClamp)) !== '1');
-  ok('  and the two you did not pick stay a line',
-    (await p.$$eval('#d-options .opt:not(.on) .why',
+  /* `.whole` IS EXEMPT, and it has to be. An option whose reasoning runs one line past the
+     clamp is now shown in full rather than folded behind a control that would reveal four
+     words, so "everything you did not pick is one line" stopped being true on purpose. What is
+     still true, and is the thing this guards, is that a long one stays folded. */
+  ok('  and the long ones you did not pick stay a line',
+    (await p.$$eval('#d-options .opt:not(.on):not(.whole):not(.open) .why',
       (e) => e.every((x) => getComputedStyle(x).webkitLineClamp === '1'))));
 
   const shown = await p.$eval('#d-effect', (e) => e.textContent.length > 0);
