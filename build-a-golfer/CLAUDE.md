@@ -17418,3 +17418,44 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   across three runs.**
 - **NOT deployed** - the What's New copy is release notes for work that IS live, but pushing it is still a
   push to the live site, so it waits for the owner's word like everything else.
+
+### THE HUB'S GOLF CARD RAN A DIFFERENT GOLFER: regenerating golf/pxgolfer.js, and a generator to do it with
+- **The drift.** `golf/pxgolfer.js` is a STANDALONE extract of the pixel-golfer engine used by the hub
+  homepage (`index.html`) and by nothing else - `RTGolfer.url(RTGolfer.randomLook())`, four golfers on the
+  Run The Tour card. It was hand-carved once and **never updated**, so the front page of the site was drawing
+  a pre-item-18 golfer: no address stance, no glove, no spiked shoes, no ageing. Measured: **0 of 128 test
+  looks matched the game.**
+- **`build-a-golfer/gen-pxgolfer.mjs` rebuilds it from the game file**, so the next refresh is one command
+  instead of an afternoon of copy-paste. Run it FROM A WORKTREE ON MAIN (`golf/` does not exist on the
+  prototype branch): `node build-a-golfer/gen-pxgolfer.mjs`. It is a **verbatim line-range extraction** - each
+  symbol comes out of the game's own source with its comments intact - driven by a MANIFEST that lists what
+  the card needs, in declaration order.
+- **Three things the generator does that a hand-carve kept getting wrong:**
+  - **It indexes co-declared names.** `const PXG_W=44, PXG_H=56;` and `var AGE_TAN_START=24, AGE_TAN_YEARS=30`
+    are one statement each; naming any of those in the manifest pulls the whole thing, once.
+  - **It PRUNES by reachability from `RTGolfer`.** The old file carried the 3/4 swing, overhead and
+    8-direction sprite sets, none of which the standing-golfer path can reach. **609KB -> 361KB** on a page
+    that has to load fast, and there is no exclusion list to keep in sync.
+  - **It fails the build on a free identifier.** This is the failure that matters: the extract PARSES and
+    then throws the moment it draws, because the game grew a helper the manifest does not know about. Three
+    were found this way (`pxClubAddress` from item 18, `_pxAddr`, `CLUB_HDX`), each after a browser
+    round-trip, which is why the check ended up checking EVERY free identifier rather than only called ones.
+- **A shim was quietly wrong and the parity run caught it.** The old file stubbed `findShirt` to the base
+  `POLOS` list, so every Pro Shop shirt colour drew as **teal** (POLOS[0]) - `polo:'red'` was the case that
+  exposed it. `COSMETIC_SHIRTS` and the game's real `allShirts`/`findShirt` are now extracted. The entries'
+  `req()` callbacks name game-only helpers (`repAtLeast`, `badgeMetrics`), but the renderer reads `.m`/`.s`
+  and never calls them, so those two are allowlisted in the scanner with that reasoning written down.
+- **Two shims REMAIN, both honest**: `var S={}` (there is no save out here; `avAgeOf` reads `S.look` inside a
+  try, so a golfer only ages when a look carries an explicit `age`), and `clubSetTag`/`h2hUnitClubTag`
+  returning null (club tags come off a career; the card draws a random club).
+- **`randomLook` now stamps an age** (`22 + rand(40)`). Without it every golfer on the front page would be
+  twenty-two, because the engine ages a look only when one is stamped on it.
+- Verified: `scratchpad/pxg_parity.mjs` **7 pass / 0 fail / 0 page errors** - 128 looks (11 hair styles x 5
+  colours x cap on/off, seven ages bare and capped, garments, novelty hats, eyewear, cleats, a lefty, the
+  default) rendered through the game's `pxGolferURL` AND the extract's `RTGolfer.url`, required to match
+  **byte for byte: 128/128**. Plus the exported surface, randomLook never throwing, ages actually spreading,
+  a sixty-year-old differing from a rookie, and an unaged look rendering as it always did. **The same suite
+  is 4 pass / 3 fail on the deployed file (0/128 matching)**, so it pins the drift rather than asserting the
+  setup. Hub card screenshotted at phone and desktop width, plus a 40-golfer strip straight off `randomLook`.
+- **If you change the golfer's art or palette, re-run the generator and the parity suite.** Nothing else
+  reminds you: the hub card fails silently, by looking slightly wrong on the front page.
