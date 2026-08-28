@@ -1956,7 +1956,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=4"></script>
-<script src="docket.js?v=13"></script>
+<script src="docket.js?v=14"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -3316,7 +3316,11 @@ const AXIS_WORDS={
   autonomy:  ['More autonomy','Less autonomy'],
   cost:      ['Costs more','Costs less'],
   tradition: ['Keeps tradition','Breaks tradition'],
-  inventory: ['More inventory','Less inventory'],
+  /* "INVENTORY" IS A WORD FROM THE ROOM AND NOT FROM THE STANDS. It is what a rights holder
+     calls a game worth putting on television, and it appeared on chips under every ruling with
+     nothing anywhere on the site defining it. The axis keeps its name in the model, where it is
+     the right name; the chip says what it means. */
+  inventory: ['More to televise','Less to televise'],
   labour:    ['Better for players','Worse for players'],
   exposure:  ['More legal risk','Less legal risk'],
 };
@@ -5448,7 +5452,15 @@ function pollBlock(sim){
       +'<em class="'+(was?(was>r.rank?'up':was<r.rank?'dn':'hold'):'new')+'">'
       +esc(from)+'</em></div>';
   };
-  return '<div class="eyebrow" style="margin:14px 0 7px">The final poll, against August</div>'
+  /* WHICH POLL THIS IS, AND IT IS NOT THE ONE AFTER THE PLAYOFF. `polls` runs to the end of the
+     REGULAR season, so this list is where the voters had everybody going into the bracket. Read
+     under a card announcing a national champion it looked like a contradiction: "how did Ohio
+     State win the natty but finish 2?" They finished second in a poll taken before they played
+     a single playoff game. The heading now says which Sunday it is. */
+  return '<div class="eyebrow" style="margin:14px 0 7px">'
+    +'The last poll before the playoff, against August</div>'
+    +'<p class="dcsub" style="margin:0 0 9px">Where the voters had everybody going in. Nobody '
+    +'votes again after the bracket: the champion is whoever wins it, not whoever tops this.</p>'
     +'<div class="poll wide">'+fin.map(row).join('')+'</div>';
 }
 

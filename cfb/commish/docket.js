@@ -1905,8 +1905,12 @@
       ],
       options: [
         { id: 'sit', label: 'Injured means a full series out',
-          body: 'Go down, sit down. Simple, enforceable, and it will keep a genuinely hurt kid '
-            + 'on the field one play too long.',
+          /* THE SENTENCE IS RIGHT AND READ AS A TYPO, which is the same as being wrong. The
+             rule makes going down cost a series, so the incentive it creates is to stay up.
+             "It will keep a hurt kid on the field" states the outcome and hides the mechanism;
+             saying the rule GIVES HIM A REASON puts the cause in the sentence. */
+          body: 'Go down, sit down. Simple, enforceable, and it gives a genuinely hurt kid a '
+            + 'reason to stay on his feet one play too long.',
           edit: { effects: { inventory: 2, labour: -2.4, tradition: -0.8, cost: -0.4 },
             aimed: { Networks: { inventory: 2.4 }, Players: { labour: -2.8 } } } },
         { id: 'review', label: 'Review them centrally and fine the staff',
@@ -2770,15 +2774,18 @@
         { id: 'Networks', say: 'Their draft is a bigger broadcast than anything we own. They will not move.' },
       ],
       options: [
-        { id: 'align', label: 'Move our calendar to fit theirs',
+        /* NAMED, BECAUSE "THEIRS" AND "THEM" ARE NOT A NOUN. Both labels pointed at the
+           professional league through a pronoun whose antecedent is four sentences up in the
+           brief, and a card has to read on its own: "go and negotiate with who?" */
+        { id: 'align', label: 'Move our calendar to fit the pro draft',
           body: 'Portal after the draft, signing after that, everything four weeks later. It '
             + 'fixes the order and it puts every roster in the country together in July.',
           edit: { set: { 'labour.portalWindows': 1, 'labour.reentry': 'window' },
             effects: { labour: 2.6, cost: 1, tradition: -1.4, inventory: -0.6 },
             aimed: { Players: { labour: 2.8 }, Presidents: { cost: -1 } } } },
-        { id: 'negotiate', label: 'Go and negotiate with them',
-          body: 'Formally, publicly, with a position paper. They may say no. They have never '
-            + 'been asked in a way that made saying no cost anything.',
+        { id: 'negotiate', label: 'Go and negotiate with the professional league',
+          body: 'Formally, publicly, with a position paper about their draft date. They may say '
+            + 'no. They have never been asked in a way that made saying no cost anything.',
           edit: { effects: { autonomy: 2, exposure: -1.2, labour: 1.4, cost: 0.6 },
             aimed: { Players: { labour: 1.6 }, Presidents: { autonomy: 1.6 } } } },
         { id: 'hold', label: 'Leave the dates alone',
