@@ -476,16 +476,32 @@
     box-shadow:0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); opacity:0; animation:playpulse 2.2s ease-in-out infinite;}
   @keyframes playpulse{0%,100%{opacity:0; transform:scale(1);}55%{opacity:.55; transform:scale(1.045);}}
   .tile.solved .play{background:var(--card2); color:var(--greenT); border:1.5px solid var(--green); animation:none; text-shadow:none;}
+  .tile.solved .play.hollow{background:transparent;}
   /* Played today: the PLAY pill hollows out. Same size, same place, same weight,
      so the row still reads at a glance, but an outline says "this one is done"
      without a second glance. Tapping it opens today's result. */
-  .tile .play.hollow{background:transparent; color:var(--c); border:1.5px solid var(--c); animation:none;
-    text-shadow:none; font-size:14px; letter-spacing:.02em;}
+  /* PLAYED, AND STAYING WHERE IT IS. Nothing moves to a "done" section any
+     more, so this pill is the whole signal and it has to work at a glance,
+     from across the row, on a grid where most of the other pills are solid
+     and shouting. So: emptied out (no fill, no pulse, hairline border), a
+     tick, PLAYED in the same weight the others use, and what tapping it does
+     underneath in small type. Green rather than the game's accent, because
+     done is done whatever colour the game is, and a dozen accent-coloured
+     ticks would read as a dozen different states. */
+  .tile .play.hollow{background:transparent; color:var(--greenT); border:1.5px solid color-mix(in srgb, var(--green) 55%, transparent);
+    animation:none; text-shadow:none; font-size:13px; letter-spacing:.02em;
+    display:flex; align-items:center; justify-content:center; gap:6px; line-height:1.05;}
   .tile .play.hollow svg{width:15px; height:15px; flex:0 0 auto;}
+  .tile .play.hollow .pd{font-weight:900; letter-spacing:.06em;}
+  .tile .play.hollow .vr{font-size:10.5px; font-weight:700; opacity:.72; letter-spacing:.02em;}
   .tile .play.hollow::after{display:none;}
-  .tile:hover .play.hollow{background:color-mix(in srgb, var(--c) 12%, transparent); filter:none;}
-  /* the crossword accent is near-white, so it borrows the readable variant */
-  .tile.cross .play.hollow{color:var(--coralT); border-color:var(--coral);}
+  .tile:hover .play.hollow{background:color-mix(in srgb, var(--green) 12%, transparent); filter:none;
+    border-color:var(--green);}
+  /* The rest of the row steps back with it: a played tile is still readable and
+     still tappable, it just stops competing with the ones you have not done. */
+  .tile.solved .cap{opacity:.62;}
+  .tile.solved .nm{opacity:.82;}
+  @media (max-width:400px){ .tile .play.hollow .vr{display:none;} }
 
   /* ---- today's result, read back on the hub ----
      Built from the same localStorage the tiles are already reading, so it opens
@@ -1107,19 +1123,22 @@ window.GA_ID='G-L29P5MRWKE';
     var ALL = ['sportegories','crossword','almamater','career',
                'match','rollcall','chain','rankit','guess','table','oddone','highlow'];
     var FREE4 = ['sportegories','crossword','almamater','career'];
-    function playedToday(k){
-      var el=document.getElementById(TILE[k]);
-      return !!(el && el.classList.contains('solved'));
-    }
+    /* THE ORDER DOES NOT MOVE WHEN YOU PLAY.
+       Three separate sorts used to rearrange this page underneath somebody who
+       had just finished a game: played sank to the back of its rung, and a
+       member's board split into "still to play" and "done today", so clearing
+       Sportegories fired it across two headings. Every one of them was
+       reasonable on its own and together they meant the page you came back to
+       was not the page you left, and the tile you were reaching for had moved.
+       A grid you have used for a week is navigated from memory, so the layout
+       is worth more than the sort.
+       Position is now fixed for every tier, and being done is said ON the tile
+       instead: the pill hollows out and takes a tick. Which is the same
+       information, in the place you were already looking. */
     function sections(member){
       if(member){
-        var last=(TOK.lastPlayed?TOK.lastPlayed():{}), pos={};
-        ALL.forEach(function(k,i){ pos[k]=i; });
-        var byHabit=function(a,b){ var la=last[a]||0, lb=last[b]||0; return la!==lb ? lb-la : pos[a]-pos[b]; };
-        var todo=ALL.filter(function(k){ return !playedToday(k); }).sort(byHabit);
-        var done=ALL.filter(playedToday).sort(byHabit);
-        return [ { label:'Still to play today', sub:'The pips up top fill when you clear the board.', keys:todo },
-                 { label:'Done today', sub:'Back tomorrow, or replay for practice.', keys:done } ];
+        return [ { label:'Today\u2019s games', sub:'All twelve, unlimited. The pips up top fill as you clear them.', keys:ALL.slice() },
+                 { label:'', sub:'', keys:[] } ];
       }
       /* THREE TIERS, THREE PAGES, and the rung you cannot use is not on yours.
          A SIGNED-OUT visitor sees the four free games and nothing else. The
@@ -1130,14 +1149,13 @@ window.GA_ID='G-L29P5MRWKE';
          A FREE ACCOUNT sees the four plus whichever of the eight still has its
          try. A try it has SPENT leaves the page for good, the same day it is
          used: a dead door was an ad the first time and clutter every time
-         after. Within each rung, played today sinks to the back. */
+         after. Both rungs keep their own order, always. */
       var guest = !(TOK.signedIn && TOK.signedIn());
-      var free=FREE4.slice().sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
+      var free = FREE4.slice();
       var cards = guest ? [] : ALL.filter(function(k){
           if(FREE4.indexOf(k)>=0) return false;
           return !(TOK.cardOnly && TOK.cardOnly(k));
-        })
-        .sort(function(a,b){ return (playedToday(a)?1:0)-(playedToday(b)?1:0); });
+        });
       return [ { label:'Free every day',
                  /* The guest line says the two things a visitor needs in the
                     order they need them: you can play right now, and an
@@ -1349,6 +1367,7 @@ window.GA_ID='G-L29P5MRWKE';
   var CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>';
   var TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg>';
   var CHART_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>';
+  var TICK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
   var LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
   function mark(cardId, pipId, stId, playId, done, statusText, key) {
     var card = document.getElementById(cardId);
@@ -1374,8 +1393,15 @@ window.GA_ID='G-L29P5MRWKE';
       // that used to live here as a split pill (Leaderboard, past days) are
       // inside that result, where they read as next steps rather than as a
       // choice you have to make before seeing your score.
+      /* THE TICK IS THE POINT. This pill used to be the only thing separating a
+         played row from an unplayed one, and it said VIEW RESULT next to a
+         little bar chart, which is where the row GOES rather than what has
+         happened to it. Now the row is not moved to a "done" heap either, so
+         the tile has to carry the whole answer on its own: a tick, and the word
+         PLAYED, and the emptied-out pill behind both. VIEW RESULT is still what
+         tapping it does, and it is still written on it, just second. */
       play.classList.add('hollow');
-      play.innerHTML = CHART_SVG + 'VIEW RESULT';
+      play.innerHTML = TICK_SVG + '<b class="pd">PLAYED</b><span class="vr">View result</span>';
       card.classList.add('recap'); card.setAttribute('data-recap', key);
     } else if (!done) {
       // Not played yet, whoever you are: PLAY. What the play COSTS is the
