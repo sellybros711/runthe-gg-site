@@ -58,6 +58,49 @@ console.log('\n=== the catalog holds together ===');
   ok('  and every major bowl can be sold', !bad2.length, bad2.join(', ') || majors.length + ' majors');
 }
 
+console.log('\n=== an offer the brief names is an offer you can take ===');
+{
+  /* THE BUG THIS CATCHES. `playoff-naming` draws three sponsors, lists all three by name in
+     the brief, and shipped with options for two of them and a refusal. A player read about an
+     airline that wanted its name on the playoff and was never given the airline.
+
+     The check is general rather than about that one item: for every item whose cast carries
+     `offers`, the number of offers drawn has to equal the number of options that take one. An
+     item that draws four and offers three fails here rather than on somebody's screen. */
+  const withOffers = D.ITEMS.filter((it) => {
+    if (!it.cast) return false;
+    let c; try { c = it.cast({ membership: {} }, L, () => 0.42); } catch (e) { return false; }
+    return !!(c && Array.isArray(c.offers));
+  });
+  ok('the docket has items that deal a list of offers', withOffers.length > 0,
+    withOffers.map((it) => it.id).join(', '));
+
+  const short = [];
+  withOffers.forEach((it) => {
+    const c = it.cast({ membership: {} }, L, () => 0.42);
+    /* An option TAKES an offer if resolving it writes a sponsor id the cast drew. */
+    const ids = c.offers.map((o) => o.id);
+    let takers = 0;
+    (it.options || []).forEach((o) => {
+      let e; try { e = D.resolve(it, o.id, {}, c); } catch (x) { return; }
+      const vals = Object.keys(e.set || {}).map((k) => String(e.set[k]));
+      if (vals.some((v) => ids.indexOf(v) >= 0)) takers++;
+    });
+    if (takers !== c.offers.length) {
+      short.push(it.id + ': ' + c.offers.length + ' offered, ' + takers + ' takeable');
+    }
+  });
+  ok('  and every offer it names can actually be taken', !short.length,
+    short.join(', ') || withOffers.length + ' items, every offer takeable');
+
+  /* AND EVERY OFFER IS A BRAND RATHER THAN A CATEGORY, which is the difference between
+     filling in a form and making a decision. The archetype survives as `kind` and still
+     carries every number. */
+  const noBrand = V.SPONSORS.filter((s) => !s.name || !s.kind || /^(a|an) /i.test(s.name));
+  ok('  and every sponsor has a name of its own', !noBrand.length,
+    noBrand.map((s) => s.id).join(', ') || V.SPONSORS.length + ' brands over ' + V.SPONSORS.length + ' archetypes');
+}
+
 console.log('\n=== every bowl knows what its own name is for ===');
 {
   /* THE ITEM ABOUT A BOWL MOVING READS THIS AND NOTHING ELSE. It used to assume the name was

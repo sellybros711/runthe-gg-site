@@ -3201,14 +3201,22 @@
       options: [
         { id: 's-a',
           label: (c) => (c ? c.offers[0].name : 'The first offer'),
-          body: (c) => (c ? c.offers[0].pitch : ''),
+          body: (c) => (c ? VEN.sponsorPitch(c.offers[0]) : ''),
           edit: (c) => (c ? { set: { 'brand.playoff': c.offers[0].id },
             effects: VEN.sponsorEffects(c.offers[0], 1) } : {}) },
         { id: 's-b',
           label: (c) => (c ? c.offers[1].name : 'The second offer'),
-          body: (c) => (c ? c.offers[1].pitch : ''),
+          body: (c) => (c ? VEN.sponsorPitch(c.offers[1]) : ''),
           edit: (c) => (c ? { set: { 'brand.playoff': c.offers[1].id },
             effects: VEN.sponsorEffects(c.offers[1], 1) } : {}) },
+        /* THE THIRD OFFER WAS NAMED AND NOT OFFERED. The cast draws three, the brief lists
+           all three by name, and the options gave you two of them and a refusal, so a player
+           read about an airline that wanted the playoff and was never allowed to pick it. */
+        { id: 's-c',
+          label: (c) => (c ? c.offers[2].name : 'The third offer'),
+          body: (c) => (c ? VEN.sponsorPitch(c.offers[2]) : ''),
+          edit: (c) => (c ? { set: { 'brand.playoff': c.offers[2].id },
+            effects: VEN.sponsorEffects(c.offers[2], 1) } : {}) },
         { id: 'none', label: 'It is called the playoff',
           body: 'Turn all three down, in writing, and be the office that left three hundred '
             + 'million dollars on a table because of a name.',
@@ -3246,12 +3254,12 @@
       options: [
         { id: 'b-a',
           label: (c) => (c ? c.offers[0].name : 'The first replacement'),
-          body: (c) => (c ? c.offers[0].pitch : ''),
+          body: (c) => (c ? VEN.sponsorPitch(c.offers[0]) : ''),
           edit: (c) => (c ? { set: { ['brand.bowls.' + c.bowl.id]: c.offers[0].id },
             effects: VEN.sponsorEffects(c.offers[0], 0.6) } : {}) },
         { id: 'b-b',
           label: (c) => (c ? c.offers[1].name : 'The second replacement'),
-          body: (c) => (c ? c.offers[1].pitch : ''),
+          body: (c) => (c ? VEN.sponsorPitch(c.offers[1]) : ''),
           edit: (c) => (c ? { set: { ['brand.bowls.' + c.bowl.id]: c.offers[1].id },
             effects: VEN.sponsorEffects(c.offers[1], 0.6) } : {}) },
         { id: 'bare', label: (c) => (c ? 'Play it as the ' + c.bowl.name : 'Play it under its own name'),
@@ -3381,14 +3389,14 @@
       options: [
         { id: 'p-a',
           label: (c) => (c ? c.offers[0].name : 'The first offer'),
-          body: (c) => (c ? c.offers[0].pitch : ''),
+          body: (c) => (c ? VEN.sponsorPitch(c.offers[0]) : ''),
           edit: (c) => (c ? { set: { 'brand.patch': c.offers[0].id },
             effects: Object.assign(VEN.sponsorEffects(c.offers[0], 0.8), { labour: -0.8 }),
             aimed: { Players: { labour: -1.2 } } } : {}) },
         { id: 'p-share',
           label: (c) => (c ? c.offers[1].name + ', with a cut to the players'
             : 'Take an offer, and share it'),
-          body: (c) => (c ? c.offers[1].pitch + ' A fixed share of it goes into the revenue '
+          body: (c) => (c ? VEN.sponsorPitch(c.offers[1]) + ' A fixed share of it goes into the revenue '
             + 'pool, written into the contract.' : ''),
           edit: (c) => (c ? { set: { 'brand.patch': c.offers[1].id },
             effects: Object.assign(VEN.sponsorEffects(c.offers[1], 0.6), { labour: 2.4, cost: 1.2 }),

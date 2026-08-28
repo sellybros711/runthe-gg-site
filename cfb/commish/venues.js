@@ -22,8 +22,8 @@
  * REAL PLACES, INVENTED SPONSORS, and the asymmetry is deliberate. A stadium is a stadium and
  * naming one is a fact. A sponsor in this file GOES WRONG: it collapses, it gets indicted, it
  * turns out to have been a fraud. Attaching that to a real company would be writing something
- * false about somebody who could sue, so the sponsors here are archetypes with no names, and
- * they are funnier for it because everybody supplies their own.
+ * false about somebody who could sue, so every sponsor here is made up: a brand nobody owns,
+ * over an archetype that carries all the numbers.
  *
  * Headless and dependency-free. Browser: window.PS_CFB_VENUES. Node: require('./venues.js').
  */
@@ -260,40 +260,58 @@
   ];
 
   /* ---- the sponsors ----
-     NO NAMES, ON PURPOSE. See the note at the top of this file: these go wrong, and writing
-     that about a real company is writing something false about somebody who can sue.
+     INVENTED NAMES, ON PURPOSE, AND THE PURPOSE IS THE SAME ONE. See the note at the top of
+     this file: these go wrong. They collapse, they get indicted, they turn out to have been a
+     fraud, and writing that about a real company is writing something false about somebody who
+     can sue. So every one of them is made up, and none of them is a company that exists.
+
+     THEY USED TO HAVE NO NAME AT ALL, and that was one step too careful. "Deciding between a
+     sportsbook and a mobile network" is filling in a form; deciding between Big Baller
+     Sportsbook and Nordis Mobile is a story, and a player said exactly that. `name` is the
+     brand and `kind` is the archetype, so a screen can use either: the archetype is still the
+     mechanic and every number below still belongs to it.
 
      `pay` is what they are worth, `risk` is the chance of what they do to you, and `hate` is
      what putting their category on the sport costs with the people who watch it. */
   var SPONSORS = [
-    { id: 'crypto', name: 'A cryptocurrency exchange', pay: 1.9, risk: 0.55, hate: 0.7,
+    { id: 'crypto', name: 'Vantabit', kind: 'a cryptocurrency exchange',
+      pay: 1.9, risk: 0.55, hate: 0.7,
       pitch: 'They have offered more than anybody has ever offered for anything in this '
         + 'sport, in cash, today, and their chief executive is twenty-nine.' },
-    { id: 'book', name: 'A sportsbook', pay: 1.6, risk: 0.35, hate: 0.55,
+    { id: 'book', name: 'Big Baller Sportsbook', kind: 'a sportsbook',
+      pay: 1.6, risk: 0.35, hate: 0.55,
       pitch: 'They are already the biggest advertiser in every broadcast this sport sells. '
         + 'This is only the part where their name is on the trophy.' },
-    { id: 'pickup', name: 'A pickup truck maker', pay: 1.2, risk: 0.05, hate: 0.05,
+    { id: 'pickup', name: 'Bruteline Trucks', kind: 'a pickup truck maker',
+      pay: 1.2, risk: 0.05, hate: 0.05,
       pitch: 'They have sponsored something in this sport every autumn since 1974 and nobody '
         + 'has ever once complained about it.' },
-    { id: 'wings', name: 'A fast food chain', pay: 1.0, risk: 0.12, hate: 0.15,
+    { id: 'wings', name: "Cluckton's", kind: 'a fast food chain',
+      pay: 1.0, risk: 0.12, hate: 0.15,
       pitch: 'Cheap, cheerful, and their last campaign was genuinely funny, which nobody '
         + 'expected.' },
-    { id: 'bank', name: 'A regional bank', pay: 0.9, risk: 0.1, hate: 0.1,
+    { id: 'bank', name: 'Merribank', kind: 'a regional bank',
+      pay: 0.9, risk: 0.1, hate: 0.1,
       pitch: 'Dull, solvent, and they want a fifteen year deal because their board thinks in '
         + 'fifteen year deals.' },
-    { id: 'phone', name: 'A mobile network', pay: 1.4, risk: 0.08, hate: 0.2,
+    { id: 'phone', name: 'Nordis Mobile', kind: 'a mobile network',
+      pay: 1.4, risk: 0.08, hate: 0.2,
       pitch: 'The safest big check available and the least interesting sentence in this '
         + 'file.' },
-    { id: 'energy', name: 'An energy drink', pay: 1.1, risk: 0.2, hate: 0.3,
+    { id: 'energy', name: 'Voltyx', kind: 'an energy drink',
+      pay: 1.1, risk: 0.2, hate: 0.3,
       pitch: 'They want the playoff and they want to put a man on a motorcycle through the '
         + 'trophy presentation.' },
-    { id: 'insurer', name: 'An insurance company', pay: 1.0, risk: 0.05, hate: 0.25,
+    { id: 'insurer', name: 'Hearthstead Mutual', kind: 'an insurance company',
+      pay: 1.0, risk: 0.05, hate: 0.25,
       pitch: 'Reliable, boring, and the mascot in their advertising is more famous than any '
         + 'coach in this sport.' },
-    { id: 'airline', name: 'An airline', pay: 0.95, risk: 0.15, hate: 0.15,
+    { id: 'airline', name: 'Saturn Airlines', kind: 'an airline',
+      pay: 0.95, risk: 0.15, hate: 0.15,
       pitch: 'A good name on a postseason and a category with a bad week roughly twice a '
         + 'year.' },
-    { id: 'ai', name: 'An artificial intelligence company', pay: 1.7, risk: 0.4, hate: 0.45,
+    { id: 'ai', name: 'Perrian Labs', kind: 'an artificial intelligence company',
+      pay: 1.7, risk: 0.4, hate: 0.45,
       pitch: 'Founded nineteen months ago, valued at more than every athletic department in '
         + 'this sport put together, and nobody in this office can explain what it sells.' },
   ];
@@ -376,6 +394,15 @@
     return e;
   }
 
+  /* THE CATEGORY IN FRONT OF THE PITCH. The option's label is the brand now, so the card
+     would otherwise never say what Nordis Mobile actually sells, and the category is what
+     every number attached to this offer is priced off. */
+  function sponsorPitch(s) {
+    if (!s) return '';
+    var k = s.kind || '';
+    return (k ? k.charAt(0).toUpperCase() + k.slice(1) + '. ' : '') + (s.pitch || '');
+  }
+
   /* And what a sponsor is worth, on the same principle. */
   function sponsorEffects(s, weight) {
     if (!s) return {};
@@ -391,7 +418,7 @@
     VENUES: VENUES, BOWLS: BOWLS, SPONSORS: SPONSORS,
     venue: venue, bowl: bowl, sponsor: sponsor, label: label,
     shortlist: shortlist, sponsorList: sponsorList,
-    effectsOf: effectsOf, sponsorEffects: sponsorEffects,
+    effectsOf: effectsOf, sponsorEffects: sponsorEffects, sponsorPitch: sponsorPitch,
   };
   root.PS_CFB_VENUES = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
