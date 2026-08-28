@@ -298,6 +298,73 @@ console.log('\n=== the preview is the ruling ===');
   ok('  and says what the ruling would do', shown);
 }
 
+console.log('\n=== you get to answer the room ===');
+{
+  /* "MAYBE YOU SHOULD HAVE A CHANCE TO REBUTTAL?" The room answers a ruling with nine numbers
+     and a sentence each, somebody is furious, and the only control on the screen moved you on.
+
+     THREE THINGS ARE ASSERTED HERE and each of them is a way this could go wrong quietly. It
+     must never appear on a forecast, because nothing has been said yet and there is nothing to
+     answer. It must move the room. And repainting after a reply must not turn the reaction
+     screen back into the standings screen, which is exactly what the first version did: it
+     dropped all nine quotes and the delta column off the one screen the mode is remembered
+     for, and nothing failed. */
+  let offered = 0, onForecast = 0, answered = null;
+  for (let i = 0; i < 26 && !answered; i++) {
+    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(340); continue; }
+    if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(400); continue; }
+    if (await on('s-room')) {
+      const st = await p.evaluate(() => {
+        const c = document.getElementById('r-rebutcard');
+        if (!c || c.hidden) return null;
+        return { forecast: /if you ruled/i.test(document.getElementById('r-eyebrow').textContent),
+          opts: c.querySelectorAll('.reb').length };
+      });
+      if (st && st.forecast) onForecast++;
+      if (st && !st.forecast) {
+        offered++;
+        const before = await p.$$eval('#r-room .bl .lv', (e) => e.map((x) => Number(x.textContent)));
+        const says = await p.$$eval('#r-room .bl .say', (e) => e.length);
+        await p.click('#r-rebutcard .reb:nth-child(1)');
+        await p.waitForTimeout(500);
+        answered = await p.evaluate(() => ({
+          said: !!document.querySelector('#r-rebut .rebd'),
+          chips: [...document.querySelectorAll('#r-rebut .rebm span')].map((x) => x.textContent),
+          gone: !document.querySelector('#r-rebut .reb'),
+          says: document.querySelectorAll('#r-room .bl .say').length,
+          deltas: document.querySelectorAll('#r-room .bl .dl').length,
+        }));
+        answered.opts = st.opts;
+        answered.before = before;
+        answered.after = await p.$$eval('#r-room .bl .lv', (e) => e.map((x) => Number(x.textContent)));
+        answered.saysBefore = says;
+      }
+      await tap('#b-next'); await p.waitForTimeout(400); continue;
+    }
+    if (await on('s-desk')) {
+      const o = await p.$('#d-options .opt'); if (o) await o.click();
+      await p.waitForTimeout(200);
+      if (!(await tap('#b-rule'))) break;
+      await p.waitForTimeout(650); continue;
+    }
+    break;
+  }
+  ok('somebody eventually wants a word', offered > 0, offered + ' times');
+  ok('  and never about a ruling you have not made', onForecast === 0, onForecast + ' on a forecast');
+  if (answered) {
+    ok('  with more than one way to answer', answered.opts >= 3, answered.opts + ' replies');
+    ok('  answering says what it did', answered.said && answered.chips.length > 0,
+      answered.chips.join(', '));
+    ok('  and can only be done once', answered.gone);
+    ok('  it moves the room', answered.after.some((v, i) => v !== answered.before[i]),
+      answered.before.join(' ') + '  ->  ' + answered.after.join(' '));
+    /* THE REGRESSION THIS EXISTS FOR. */
+    ok('  and the room is still the reaction screen afterwards',
+      answered.says === answered.saysBefore && answered.deltas === 9,
+      answered.says + ' quotes, ' + answered.deltas + ' deltas');
+  }
+}
+
 console.log('\n=== what every side wants, before you decide ===');
 {
   /* THE THING A PLAYER ASKED FOR THREE TIMES. The desk gives a brief, three quotes and three

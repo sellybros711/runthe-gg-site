@@ -455,6 +455,20 @@
   .yr.moved{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
   .yr.moved b{color:var(--ink)}
 
+  /* THE REBUTTAL. Three replies, sized as decisions rather than as buttons, because that is
+     what they are: every one of them costs something with somebody. */
+  .rebs{display:grid;gap:7px}
+  .reb{display:block;width:100%;text-align:left;background:var(--panel);cursor:pointer;
+    border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;color:inherit;font:inherit}
+  .reb:hover{border-color:var(--gold)}
+  .reb b{display:block;font-family:var(--fn);font-size:13px;font-weight:700;color:var(--ink)}
+  .reb span{display:block;font-size:12px;line-height:1.4;color:var(--dim);margin-top:3px}
+  .rebd{margin:0 0 8px;font-size:13px;line-height:1.45;color:var(--dim)}
+  .rebd b{color:var(--ink)}
+  .rebm{display:flex;flex-wrap:wrap;gap:6px}
+  .rebm span{font-family:var(--fn);font-size:10.5px;font-weight:700;padding:3px 8px;
+    border-radius:6px;background:rgba(255,255,255,.05)}
+
   .setl{border-left:2px solid var(--green);background:rgba(16,185,129,.06);
     border-radius:0 10px 10px 0;padding:9px 12px;margin-bottom:7px}
   .setl:last-child{margin-bottom:0}
@@ -1963,6 +1977,13 @@
     <div class="card flat" id="r-changed" hidden>
       <div class="eyebrow" style="margin-bottom:9px">What changed in the sport</div>
       <div class="sport" id="r-sport"></div>
+    </div>
+    <!-- YOUR TURN TO SPEAK. The room answers and the mode used to move straight on, so the
+         one screen where somebody is shouting at you was the one screen you could not reply
+         on. See paintRebuttal(). -->
+    <div class="card flat" id="r-rebutcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px" id="r-rebuthead">They want a word</div>
+      <div id="r-rebut"></div>
     </div>
     <div class="dock"><button class="btn" id="b-next">Carry on</button></div>
   </div>
@@ -4045,6 +4066,98 @@ function paintFeed(el,posts,head){
   reveal(el.querySelector('.feed'));
 }
 
+/* ── the rebuttal ─────────────────────────────────────────────────────────────────
+   "MAYBE YOU SHOULD HAVE A CHANCE TO REBUTTAL?" The room answers a ruling with nine numbers
+   and a sentence each, somebody is furious, and the only control on the screen moved you on.
+   A commissioner in that position says something. This office could not.
+
+   IT CANNOT UNDO THE RULING and it is not meant to. It moves nobody's number by more than a
+   point and a half, it touches the ledger not at all, and it records no history row, because
+   the ruling is the event and a second one would give the room's memory two things to
+   remember about one decision.
+
+   WHAT IT IS FOR is that all three replies cost something. Holding the line pleases everybody
+   who won and hardens the loser. Explaining it buys back a little from the people who respond
+   to reasons and irritates the people who do not want a lecture. Promising a review buys the
+   most and spends it with everybody who thought the argument was over. */
+const REBUT_ANGRY=-1.5;
+const REBUTTALS=[
+  { id:'hold', label:'The ruling stands',
+    say:'You say it once, in the room, and do not say it again.',
+    /* The loser hardens; everybody the ruling helped reads it as an office that cannot be
+       lobbied, which is worth something to all of them. */
+    to:(angry,gained)=>{
+      const d={}; d[angry]=-0.6;
+      gained.forEach((b)=>{ d[b]=(d[b]||0)+0.5; });
+      return d;
+    } },
+  { id:'explain', label:'Walk them through the arithmetic',
+    say:'Forty minutes, the actual numbers, and a room that mostly wanted to be angry.',
+    to:(angry,gained,rows)=>{
+      const d={}; d[angry]=0.9;
+      /* The people who answer to a board answer to a reason. The people who bought a ticket
+         did not come for a slide deck. */
+      d.Presidents=(d.Presidents||0)+0.6;
+      d.Networks=(d.Networks||0)+0.3;
+      d.Fans=(d.Fans||0)-0.4;
+      return d;
+    } },
+  { id:'review', label:'Promise to look at it again in the spring',
+    say:'It buys you the afternoon. Everybody in the room now knows what buys you an afternoon.',
+    to:(angry,gained)=>{
+      const d={}; d[angry]=1.6;
+      gained.forEach((b)=>{ d[b]=(d[b]||0)-0.5; });
+      return d;
+    } },
+];
+let rebutDone=false;
+function paintRebuttal(el,card,rows){
+  if(!el||!card) return;
+  if(!rows||!rows.length){ card.hidden=true; el.innerHTML=''; return; }
+  const worst=rows.slice().sort((a,b)=>a.delta-b.delta)[0];
+  if(!worst||worst.delta>REBUT_ANGRY){ card.hidden=true; el.innerHTML=''; return; }
+  rebutDone=false;
+  card.hidden=false;
+  const who=(BLOC_UI[worst.id]||{}).short||worst.name;
+  $('r-rebuthead').textContent=who+' wants a word';
+  const gained=rows.filter((r)=>r.delta>=0.4).map((r)=>r.id);
+  el.innerHTML='<p class="dcsub" style="margin:0 0 9px">You can answer this one, and the '
+    +'answer is on the record. It will not change the ruling.</p>'
+    +'<div class="rebs">'+REBUTTALS.map((r)=>
+      '<button class="reb" data-r="'+esc(r.id)+'"><b>'+esc(r.label)+'</b>'
+      +'<span>'+esc(r.say)+'</span></button>').join('')+'</div>';
+  el.querySelectorAll('[data-r]').forEach((btn)=>{
+    btn.onclick=()=>{
+      if(rebutDone) return;
+      rebutDone=true;
+      const r=REBUTTALS.find((x)=>x.id===btn.dataset.r);
+      const d=r?r.to(worst.id,gained,rows):{};
+      /* APPLIED TO THE BLOCS AND NOTHING ELSE. No ledger, no history: the ruling is the event
+         and standing is derived from the blocs, so it follows on its own. */
+      for(const b in d){
+        if(world.blocs[b]==null) continue;
+        world.blocs[b]=Math.max(0,Math.min(100,world.blocs[b]+d[b]));
+      }
+      world.meters.standing=L.standingFrom(world.blocs);
+      save();
+      const moved=Object.keys(d).filter((b)=>world.blocs[b]!=null&&Math.abs(d[b])>=0.2)
+        .sort((a,b)=>Math.abs(d[b])-Math.abs(d[a]));
+      el.innerHTML='<p class="rebd"><b>'+esc(r.label)+'.</b> '+esc(r.say)+'</p>'
+        +'<div class="rebm">'+moved.map((b)=>'<span class="'+(d[b]>0?'up':'dn')+'">'
+          +esc((BLOC_UI[b]||{}).short||b)+' '+(d[b]>0?'+':'')+d[b].toFixed(1)+'</span>').join('')
+        +'</div>';
+      /* REPAINTED AS THE REACTION SCREEN IT STILL IS. Passing null here drew the standings
+         variant instead, which silently dropped all nine quotes and the delta column off the
+         one screen the mode is remembered for. `lastRoom` keeps the ruling's own reaction; the
+         standings read from the world, which the reply has just moved. */
+      paintMeters($('r-meters'),world,lastBefore);
+      paintRoom($('r-room'),world,lastRoom);
+      reveal(el);
+    };
+  });
+  reveal(el.querySelector('.rebs'));
+}
+
 /* WHAT HAPPENED NEXT. A ruling used to end with nine numbers moving, which is a strange way
    to run a game about the most publicly ridiculous institution in American life. About one
    ruling in three now grows a tail, and its effects are already in the meters above it: see
@@ -5331,6 +5444,8 @@ $('b-test').onclick=()=>{
   /* NO FEED ON A FORECAST. The internet cannot react to a ruling nobody has made, and it is
      the one thing on this screen that would not be true. */
   paintFeed($('r-feed'),null);
+  /* AND NOBODY WANTS A WORD ABOUT A RULING YOU HAVE NOT MADE. */
+  paintRebuttal($('r-rebut'),$('r-rebutcard'),null);
   /* NO TAIL ON A FORECAST either, and for the same reason: nothing has happened yet, so
      nothing can have happened next. */
   paintTail($('r-tail'),null);
@@ -5410,6 +5525,10 @@ $('b-rule').onclick=()=>{
     rows:lastRoom, edit:edit, year:before.year, beat:before.beat,
     itemId:item.id, optionId:choice,
   }));
+  /* The meters on this screen are drawn against `before`, and a reply repaints them, so the
+     comparison has to survive past this function. */
+  lastBefore=before;
+  paintRebuttal($('r-rebut'),$('r-rebutcard'),lastRoom);
   const changed=JSON.stringify(sportFacts(world))!==JSON.stringify(sportFacts(before));
   $('r-changed').hidden=!changed;
   if(changed) paintSport($('r-sport'),world,before);
