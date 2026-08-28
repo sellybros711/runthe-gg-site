@@ -438,6 +438,34 @@
   .opt.on .oact .opick{background:rgba(16,185,129,.18);color:var(--green);
     border-color:var(--green);cursor:default}
   .opt:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+
+  /* ---- learn more: what every side wants ----
+     REFERENCE RATHER THAN NARRATIVE, so it is set quieter and denser than the quotes above it.
+     Folded by default because it is nine rows and the desk is already the longest screen in
+     the mode; open, it is the thing the player asked for three times. */
+  #b-learn{margin:2px 0 4px}
+  .learn{border:1px solid var(--line);border-radius:12px;background:var(--panel);
+    padding:12px 13px;margin:0 0 4px}
+  .learn[hidden]{display:none}
+  .lsec{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim-2);margin:0 0 7px}
+  .lrows+.lsec,.lax+.lsec{margin-top:14px}
+  .lax{display:grid;gap:6px}
+  /* The force's own hue on a rule down the left, the same one its chip carries on an option,
+     so the two readings of the same eight things are visibly the same eight things. */
+  .laxr{border-left:2px solid var(--ax,var(--line));padding-left:9px}
+  .laxr b{display:block;font-family:var(--fn);font-size:11px;font-weight:700;
+    color:var(--ax,var(--ink))}
+  .laxr span{display:block;font-size:11.5px;line-height:1.4;color:var(--dim)}
+  .lrows{display:grid;gap:7px}
+  .lrow{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;
+    border-left:2px solid var(--bc,var(--line));padding-left:9px}
+  .lrow b{display:block;font-family:var(--fn);font-size:12px;font-weight:700;color:var(--ink)}
+  .lrow .lw{display:block;font-size:11.5px;line-height:1.4;color:var(--dim);margin-top:1px}
+  .lrow .lf{display:block;font-size:11.5px;line-height:1.4;color:var(--dim-2);margin-top:2px}
+  .lrow .lf em{font-style:normal;color:var(--ink)}
+  .lnote{margin:12px 0 0;padding-top:9px;border-top:1px solid var(--line);
+    font-size:11px;line-height:1.45;color:var(--dim-2)}
   /* A CORRECTION TO THE HEADLINE ABOVE IT, so it is styled as a caution rather than as one
      more card: at card weight it reads as another section and the whole point is that it is
      about the section it interrupts. */
@@ -1775,6 +1803,13 @@
          heading over an empty box reads as something that failed to load. -->
     <div class="dsec" id="d-voices-head"><b>The room is arguing</b></div>
     <div class="voices" id="d-voices"></div>
+    <!-- WHAT EVERY SIDE WANTS, on every decision, before you make it. Three quotes is three of
+         nine, and which three depends on what the item happened to be written with, so a
+         player was choosing without ever being told what the other six are for. Folded rather
+         than a screen of its own: it is reference, and it belongs where the decision is. -->
+    <button class="btn ghost sm" id="b-learn" aria-expanded="false">
+      Learn more: what every side wants</button>
+    <div class="learn" id="d-learn" hidden></div>
     <div class="dsec"><b>Your ruling</b><span id="d-hint"></span></div>
     <div id="d-options"></div>
     <div id="d-dials"></div>
@@ -3183,6 +3218,18 @@ $('dc-room').onclick=(e)=>{
   if(c&&c.scrollIntoView) c.scrollIntoView({behavior:REDUCED?'auto':'smooth',block:'start'});
 };
 $('b-dctable').onclick=()=>{ dcState.table=!dcState.table; dcTable(); };
+/* PAINTED ON OPEN RATHER THAN ON ARRIVAL. Nine rows means nine calls to B.react across every
+   option, which is cheap but not free, and most players will not open it on most items. */
+$('b-learn').onclick=()=>{
+  const el=$('d-learn');
+  const open=el.hidden;
+  if(open) paintLearn();
+  el.hidden=!open;
+  $('b-learn').setAttribute('aria-expanded',String(open));
+  $('b-learn').textContent=open
+    ? 'Hide what every side wants'
+    : 'Learn more: what every side wants';
+};
 /* aria-pressed AND the class, together, because the segmented control says which of two
    things is on by color alone otherwise, and that is the one thing a screen reader cannot
    see. */
@@ -3300,6 +3347,11 @@ function desk(){
      on this screen at all. Setting it after left the first item of a session relabelling a
      button that was still hidden from the last one. */
   $('b-test').hidden=!isPro();
+  /* FOLDED AGAIN ON EVERY ITEM. Left open, it would carry the previous decision's nine rows
+     over the new one's brief until somebody scrolled past it. */
+  $('d-learn').hidden=true; $('d-learn').innerHTML='';
+  $('b-learn').setAttribute('aria-expanded','false');
+  $('b-learn').textContent='Learn more: what every side wants';
   paintWrite();
   if(isPro()) paintCouncilNote($('d-council'),C.seatsAt(careerRulings()));
   else $('d-council').innerHTML='';
@@ -3345,6 +3397,115 @@ const AXIS_SHORT={
   money:'Money', access:'Access', autonomy:'Autonomy', cost:'Cost',
   tradition:'Tradition', inventory:'Inventory', labour:'For players', exposure:'Legal risk',
 };
+/* ── WHAT EVERY SIDE WANTS ────────────────────────────────────────────────────────
+   THE ONE THING A PLAYER ASKED FOR THREE TIMES. The desk gives you a brief, three quotes and
+   three options, and nothing anywhere says what the other eight people in the room actually
+   want. The room's reaction arrives AFTER the ruling, and the forecast is a paid power that
+   only reads the blocs on your council, so an ordinary commissioner was choosing blind and
+   being told afterwards that he had made nine people unhappy.
+
+   WHAT A COMMISSIONER OBVIOUSLY KNOWS IS NOT A SPOILER. The SEC wants money and to be asked
+   first; that is true in August and it is true on every item, and hiding it was never
+   difficulty, it was just a missing page. So this is ungated and always available.
+
+   WHAT IS STILL EARNED is the arithmetic: the exact number each bloc moves, which is Test It
+   On The Room and is still council-gated. Knowing the SEC will hate option three is the game.
+   Knowing they will hate it by 4.2 is the answer key. */
+const AXIS_ABOUT={
+  money:'How much money moves, and toward the top of the sport unless it is aimed somewhere.',
+  access:'How easy the playoff is to reach for somebody who did not have a path.',
+  autonomy:'Whether a conference keeps a decision or this office takes it.',
+  cost:'What the member schools have to pay out.',
+  tradition:'Rivalries, sane kickoff times, the things people already love.',
+  inventory:'Games worth putting on television, which is what the networks are buying.',
+  labour:'Whether it is better or worse to be a player.',
+  exposure:'How much legal and political trouble it invites.',
+};
+/* WHAT WANTING AN AXIS SOUNDS LIKE, which is not what a chip says. The chip labels are
+   written to sit under an option ("Costs less", "Better for players") and read as nonsense as
+   the object of a sentence: "Wants more money, and costs less." A want is a noun phrase, so it
+   gets its own vocabulary rather than a reused one.
+
+   THE SIGN IS THE BLOC'S WEIGHT, NOT WHETHER THE THING IS GOOD. A positive weight on `cost`
+   belongs to the people who are not paying it and want the schools to, and a positive weight
+   on `exposure` belongs to the people who do the suing. Both read backwards from the chip. */
+const AXIS_WANT={
+  money:     ['more money moving','less money moving'],
+  access:    ['a wider path into the playoff','the path into the playoff kept narrow'],
+  autonomy:  ['conferences left to decide for themselves','this office to make the call'],
+  cost:      ['the schools to carry more of the bill','the bill kept down'],
+  tradition: ['the old things left alone','the old things out of the way'],
+  inventory: ['more games worth televising','fewer games on the schedule'],
+  labour:    ['a better deal for the players','the players kept where they are'],
+  exposure:  ['this argued in front of a judge','this kept out of a courtroom'],
+};
+/* Which forces this ruling can move at all, across every option on it. */
+function axesInPlay(){
+  const seen={};
+  (item.options||[]).forEach((o)=>{
+    let e; try{ e=D.resolve(item,o.id,dials,cast); }catch(x){ return; }
+    for(const a in e.effects||{}) if(Math.abs(e.effects[a])>=0.05) seen[a]=1;
+    for(const b in e.aimed||{}) for(const a in e.aimed[b]) if(Math.abs(e.aimed[b][a])>=0.05) seen[a]=1;
+  });
+  return L.AXES.filter((a)=>seen[a]);
+}
+/* WHAT ONE BLOC WANTS OUT OF THIS PARTICULAR RULING, in words, from its own weights crossed
+   with the forces actually in play. Generic enough to be honest (it is their standing
+   position, not a prediction) and specific enough to be worth reading (it only names the
+   forces this item can move). */
+function wantsOf(bloc,axes){
+  const w=bloc.w||{};
+  const ranked=axes.slice().sort((a,b)=>Math.abs(w[b]||0)-Math.abs(w[a]||0))
+    .filter((a)=>Math.abs(w[a]||0)>=0.5).slice(0,2);
+  if(!ranked.length) return 'Nothing in this one is theirs. They will follow the room.';
+  return ranked.map((a)=>AXIS_WANT[a][(w[a]||0)>0?0:1]).join(', and ')+'.';
+}
+/* AND WHICH OPTION THAT MAKES THEM WANT. Computed the same way the room computes its answer,
+   so it cannot disagree with what actually happens: it is B.react on a thrown away world. The
+   NUMBER is withheld, the direction is not. */
+function favourOf(bloc){
+  let best=null,bestV=-Infinity,worst=null,worstV=Infinity;
+  (item.options||[]).forEach((o)=>{
+    let e; try{ e=D.resolve(item,o.id,dials,cast); }catch(x){ return; }
+    const row=B.react(world,e).find((r)=>r.id===bloc.id);
+    if(!row) return;
+    if(row.delta>bestV){ bestV=row.delta; best=o; }
+    if(row.delta<worstV){ worstV=row.delta; worst=o; }
+  });
+  /* A ROOM THAT IS INDIFFERENT SAYS SO. Naming a favourite when every option moves them by a
+     tenth of a point is inventing a preference nobody in the fiction has. */
+  if(!best||bestV-worstV<0.6) return null;
+  return { best:String(D.text(best.label,cast,item,sit)),
+    worst:String(D.text(worst.label,cast,item,sit)) };
+}
+
+function paintLearn(){
+  const el=$('d-learn');
+  if(!el||!item) return;
+  const axes=axesInPlay();
+  const rows=B.BLOCS.map((b)=>{
+    const f=favourOf(b);
+    return '<div class="lrow" style="--bc:'+bcOf(b.id)+'">'
+      +blocChip(b.id)
+      +'<div><b>'+esc((BLOC_UI[b.id]||{}).short||b.name)+'</b>'
+      +'<span class="lw">Wants '+esc(wantsOf(b,axes))+'</span>'
+      +(f?'<span class="lf">Would take <em>'+esc(f.best)+'</em>. '
+        +'Would fight <em>'+esc(f.worst)+'</em>.</span>'
+        :'<span class="lf">No preference between these three.</span>')
+      +'</div></div>';
+  }).join('');
+  el.innerHTML='<div class="lsec">What this ruling can move</div>'
+    +'<div class="lax">'+(axes.length
+      ? axes.map((a)=>'<div class="laxr" style="--ax:'+AXIS_HUE[a]+'">'
+        +'<b>'+esc(AXIS_SHORT[a])+'</b><span>'+esc(AXIS_ABOUT[a])+'</span></div>').join('')
+      : '<div class="laxr"><span>Nothing on the ledger. This one is about the room.</span></div>')
+    +'</div>'
+    +'<div class="lsec">What every side wants</div>'
+    +'<div class="lrows">'+rows+'</div>'
+    +'<p class="lnote">This is what they want, which any commissioner would know. '
+    +'What it costs you in points is the forecast, and that is still only as good as your '
+    +'council.</p>';
+}
 /* THE SHAPE OF A RULING, AS MARKS. Three options were three paragraphs that had to be read
    in full and held in the head together to be compared. The two or three forces each one
    pushes hardest say most of that at a glance, and the prose is then a detail rather than

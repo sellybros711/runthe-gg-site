@@ -298,6 +298,61 @@ console.log('\n=== the preview is the ruling ===');
   ok('  and says what the ruling would do', shown);
 }
 
+console.log('\n=== what every side wants, before you decide ===');
+{
+  /* THE THING A PLAYER ASKED FOR THREE TIMES. The desk gives a brief, three quotes and three
+     options. Three quotes is three of nine, and which three depends on what the item happened
+     to be written with, so six of the people in the room had no stated position anywhere and
+     the room's opinion only arrived after the ruling was already made.
+
+     UNGATED ON PURPOSE, and that is the line this checks. What each bloc WANTS is what any
+     commissioner would know and is shown to everybody. What each bloc DOES, to the decimal, is
+     the forecast, and that is still a paid power reading only your council. A panel that
+     started printing deltas would have quietly deleted the council mechanic. */
+  for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
+    if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
+    if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+    if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
+    break;
+  }
+  ok('there is an item to read about', await on('s-desk'));
+  ok('  and it is folded until asked for', await p.$eval('#d-learn', (e) => e.hidden));
+  await tap('#b-learn');
+  await p.waitForTimeout(400);
+
+  const L2 = await p.evaluate(() => {
+    const el = document.getElementById('d-learn');
+    const txt = el.textContent;
+    return {
+      open: !el.hidden,
+      axes: [...el.querySelectorAll('.laxr')].length,
+      described: [...el.querySelectorAll('.laxr span')].every((x) => x.textContent.trim().length > 20),
+      rows: [...el.querySelectorAll('.lrow')].map((r) => ({
+        chip: !!r.querySelector('.chip'),
+        wants: r.querySelector('.lw').textContent.trim(),
+        fav: r.querySelector('.lf').textContent.trim(),
+      })),
+      /* No number anywhere: a delta here would be the forecast given away. */
+      numbers: /[+\u2212-]?\d+\.\d/.test(txt),
+    };
+  });
+  ok('  opening it shows all nine sides', L2.rows.length === 9, L2.rows.length + ' rows');
+  ok('  every one of them with a chip and a want', L2.rows.every((r) => r.chip && /^Wants /.test(r.wants)),
+    L2.rows.filter((r) => !/^Wants /.test(r.wants)).map((r) => r.wants).slice(0, 2).join(' | ') || 'all nine');
+  ok('  and which of the options it would take', L2.rows.every((r) => r.fav.length > 10));
+  /* THE WORDING IS ITS OWN VOCABULARY, not the chip labels. "Wants more money, and costs less"
+     is what reusing them produced, and it is not a sentence. */
+  ok('  said as something you could want', !L2.rows.some((r) => /costs (more|less)|better for players/i.test(r.wants)),
+    L2.rows.find((r) => /costs (more|less)/i.test(r.wants)) ? 'a chip label leaked in' : 'no chip labels');
+  ok('the forces are named and defined', L2.axes > 0 && L2.described, L2.axes + ' forces in play');
+  /* AND THE ANSWER KEY IS STILL BEHIND THE COUNCIL. */
+  ok('  with no numbers given away', !L2.numbers);
+
+  await tap('#b-learn');
+  await p.waitForTimeout(250);
+  ok('  and it folds again', await p.$eval('#d-learn', (e) => e.hidden));
+}
+
 console.log('\n=== reading an option is not choosing it, and the note survives either ===');
 {
   /* THE CARD DID TWO THINGS AND SAID NEITHER, and a player found all of it in one sitting:
