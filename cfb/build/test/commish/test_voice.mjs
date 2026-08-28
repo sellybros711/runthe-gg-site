@@ -232,6 +232,50 @@ console.log('\n=== a mood never fights its own number ===');
     wrongStreak.slice(0, 3).join('; ') || 'no false streaks');
 }
 
+console.log('\n=== a mood is not a claim about the ruling ===');
+{
+  /* THE FAULT THIS CATCHES, MEASURED BEFORE IT WAS FIXED. A mood line is said whenever a bloc
+     feels that way, whatever the ruling was about, so it must not assert that a particular
+     thing happened. "The gap just got wider" was in the Group of Five's displeased pool and
+     was said seventy times across the docket, in sixty-six of which access had not narrowed by
+     a single point, including on rulings that had just HELPED them. "You have moved a game
+     people plan holidays around" turned up on rulings about roster limits, a mascot, a trophy
+     redesign and a player leaving for the professional draft.
+
+     Both were true sentences in the wrong pool. A line that names a lever belongs in `on`,
+     which only fires when that lever is what drove the ruling and the number agrees with it.
+
+     THE LIST IS THE VOCABULARY OF THE LEVERS THIS GAME PULLS, not a list of the sentences
+     that were wrong, or the check would be a tautology that passes by construction and catches
+     nothing anybody writes next. */
+  const LEVER = /\b(window|windows|slate|the gap|formality|smaller half|added games|moved that game|that bar)\b/i;
+  const claims = [];
+  B.BLOCS.forEach((b) => {
+    const v = B.VOICE[b.id] || {};
+    const pools = (v.bands || []).map((arr, i) => ['band ' + i, arr])
+      .concat([['relief', v.relief], ['grudge', v.grudge], ['streak', v.streak]]);
+    pools.forEach(([nm, arr]) => (arr || []).forEach((s) => {
+      const m = String(s).match(LEVER);
+      if (m) claims.push(b.id + '/' + nm + ' "' + m[0] + '"');
+    }));
+  });
+  ok('no mood line claims a lever moved', !claims.length,
+    claims.slice(0, 5).join(', ') || 'checked every band, relief, grudge and streak line');
+
+  /* AND THE THEMED POOLS ARE WHERE THOSE SENTENCES LIVE, which is worth asserting rather than
+     assuming: moving a line out of a band and forgetting to put it anywhere is a silent way to
+     make the room quieter. */
+  let themed = 0;
+  B.BLOCS.forEach((b) => {
+    const on = (B.VOICE[b.id] || {}).on || {};
+    Object.keys(on).forEach((ax) => ['good', 'bad'].forEach((side) => {
+      (on[ax][side] || []).forEach((s) => { if (LEVER.test(String(s))) themed++; });
+    }));
+  });
+  ok('  and the sentences that name one are in a themed pool', themed >= 8,
+    themed + ' themed lines name a lever');
+}
+
 console.log('\n=== the room does not repeat itself ===');
 {
   /* THE FAILURE THIS REPLACED. One fixed line per mood meant the SEC said the same sentence
