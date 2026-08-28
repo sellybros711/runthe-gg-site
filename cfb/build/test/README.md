@@ -59,6 +59,7 @@ before the day rather than during it.
 | `test_player_data.mjs` | The shipped data files, checked for what a player notices before a test does: that nobody has a fantasy average beside a blank stat line, that no name is one the pipeline would correct, that no chemistry label names a suffix instead of a man, and that every team the wheel can land on offers four men to choose between. Every assertion in it exists because somebody found it on their phone first. No database, no browser, no key. |
 | `test_achievements.mjs` | That every badge in the catalog can actually be earned. Builds a career out of the real player file, one designed to earn all 246, and demands the evaluator hand back all 246. Every simultaneous-roster badge is solved against the six slots, the two-back cap, the two-per-team-season cap and the $11M budget before it is believed, and the three-Heisman roster that does not fit is kept in as the negative case. No database, no browser. |
 | `test_cabinet.mjs` | The trophy case drawn on a 360px phone rather than counted: the eight shelf headings add up to the whole catalog, the biggest shelf opens and draws all of it, and nothing hangs off the side. Signed in is stubbed, because the full shelves are a signed-in feature, and the board URL points at a dead port so the case falls back to this browser's own seasons. |
+| `test_career_cache.mjs` | That a season you just finished is in your stats. Opens the profile, plays a season, opens the profile again, and demands the count go up. The ordering is the whole suite: on a page where the profile has never been opened there is nothing cached and the season always showed up, which is why this shipped. |
 | `test_board_e2e.mjs` | Real seasons played in Chromium, submitted through the real validator, listed on the real board. Guest and signed-in. Plus: a board that is not there leaves the results screen intact. |
 | `test_conference.mjs` | Conference Draft: that the wheel never once leaves the conference (checked against the conference each team was in *that season*), that the run records which competition it belongs to, and that the six boards stay apart. |
 | `test_gates.mjs` | What an account is for. School colours and the full trophy case signed in, signed out, and with the sign-in library blocked entirely. **Currently broken**, and not by anything it tests: the profile sheet became a hub and five pages, and this suite still drives the old tab strip. Its signed-out cases assert an information architecture that no longer exists, so fixing it is a product decision rather than a selector swap. |
@@ -95,6 +96,7 @@ node cfb/build/test/test_credits.mjs                            # no database, n
 (nohup python3 -m http.server 8080 &)
 (nohup node cfb/build/test/postgrest_stub.mjs 5555 cfbtest &)
 node cfb/build/test/test_board_e2e.mjs
+node cfb/build/test/test_career_cache.mjs
 node cfb/build/test/test_gates.mjs
 node cfb/build/test/test_conference.mjs
 node cfb/build/test/test_challenge.mjs
@@ -116,7 +118,21 @@ node cfb/build/test/test_launch.mjs
 node cfb/build/test/render_school_colors.mjs   # then look at the sheet
 ```
 
-## Twelve bugs these caught, so far
+## Thirteen bugs, twelve of them caught here
+
+The first one below is the exception, and it is at the top for that reason: it reached us
+from a player. Everything under it was found before anybody played it.
+
+**A season you had just played vanished from your own stats.** A signed-in player's career
+comes off the board and is fetched once per sign-in and held, which is right for a list
+that changes almost never and wrong at the one moment it does. Nothing dropped the cache
+when a season was filed, so seasons played, best overall, the seasons list and the trophy
+case all stayed on the snapshot taken when the profile was first opened, and only a page
+reload brought the new season back. This one was NOT caught here: it arrived as a bug
+report reading "I had a perfect 15-0 season just disappear off my stats", and it had been
+invisible to every suite in this directory because they all open the profile once, at the
+end. `test_career_cache.mjs` opens it first.
+
 
 **Four badges in the trophy case could not be earned by anybody.** Three asked for a
 Heisman winner and no player in the shipped file carried an award, because stage 5 of the

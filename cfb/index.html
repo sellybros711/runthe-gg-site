@@ -4785,7 +4785,7 @@ function pfWireDelete(){
     del.disabled=true; del.textContent='Deleting...';
     const a=A();
     const r=a&&a.deleteAccount?await a.deleteAccount():{error:'Accounts are not available right now.'};
-    if(r&&r.ok){ careerRows=null; careerRaw=null; careerTotal=0;
+    if(r&&r.ok){ careerForget();
       closeSheet(); toast('Your account has been deleted.'); return; }
     /* A REFUSAL IS NOT AN ERROR, and the common one is a live subscription that nothing
        here can cancel. Say which it was, put the page back at step nothing, and delete
@@ -5248,7 +5248,7 @@ async function claimPastSeasons(){
      ran. The payoff is still owed. */
   if(signInForClaim&&authState.name){ signInForClaim=false; closeSheet(); }
   /* The cabinet on screen is now several seasons short of the truth. */
-  careerRows=null; careerRaw=null; careerTotal=0;
+  careerForget();
   paintClaim();
   if($('s-board').classList.contains('on')) paintBoard();
   if($('sheet').classList.contains('on')&&profileTab==='case') openProfile('case');
@@ -5392,7 +5392,7 @@ function bootAuth(){
     if(st.signedIn) claimPastSeasons();
     /* A different account, or none, means the cabinet on screen belongs to somebody
        else. Drop it rather than show one player's badges to another. */
-    if(st.userId!==wasId){ careerRows=null; careerRaw=null; careerTotal=0;
+    if(st.userId!==wasId){ careerForget();
       myAvatar={school:null,initials:null,loaded:false}; }
     /* Colors follow the account: on when signed in, default when not. */
     syncTheme();
@@ -5541,7 +5541,7 @@ function wireAccount(){
     if(!r.error){ ga('username_set');
       /* The rename rewrote every row of yours server-side, so a board on screen behind the
          sheet is a repaint behind, and the cached career rows carry the old name too. */
-      careerRows=null; careerRaw=null; careerTotal=0;
+      careerForget();
       if($('s-board').classList.contains('on')) paintBoard(); }
     done(r,r&&!r.error?'That is your name now.':null);
   };
@@ -5551,7 +5551,7 @@ function wireAccount(){
 
   const out=box.querySelector('#ac-out');
   if(out) out.onclick=async()=>{ if(authBusy)return; busy('ac-out','Signing out...');
-    await a.signOut(); careerRows=null; careerRaw=null; careerTotal=0; authMsg=null;
+    await a.signOut(); careerForget(); authMsg=null;
     openProfile('account'); authBusy=false; };
 }
 
@@ -6135,13 +6135,33 @@ function achResolve(key){ return BYKEY?(BYKEY.get(key)||null):null; }
    careerRaw, and the two views read whichever one answers their question. One request
    either way; this is a second reference to the same array of objects, not a second copy. */
 let careerRows=null, careerRaw=null, careerTotal=0, careerLoading=null, careerFailed=false;
+/* HOW MANY TIMES THE CACHE HAS BEEN THROWN AWAY, so a fetch that was already in the air
+   when it happened cannot land on top of the throw. Without this the forget below is a
+   coin flip against the network: the request returns, assigns the rows it was sent for,
+   and the season that caused the forget is missing again. */
+let careerGen=0;
+/* THE CACHE IS A SNAPSHOT AND SOMETHING HAS MADE IT WRONG. Every caller reads it back
+   through careerLoad(), so dropping it here is the whole of the invalidation; the next
+   panel that wants seasons asks the board again and paints its own spinner while it
+   waits. careerFailed goes with it, or a board that failed once would keep the game on
+   this browser's own history for the rest of the page's life. */
+function careerForget(){
+  careerGen++;
+  careerRows=null; careerRaw=null; careerTotal=0; careerLoading=null; careerFailed=false;
+}
 function careerLoad(){
   if(!authState.signedIn||!authState.userId||!B){ careerFailed=true; return Promise.resolve(null); }
   if(careerRows) return Promise.resolve(careerRows);
   if(careerLoading) return careerLoading;
   careerFailed=false;
+  const gen=careerGen;
   careerLoading=B.mine(authState.userId,500).then((r)=>{
     careerLoading=null;
+    /* SOMETHING CHANGED THE CAREER WHILE THIS WAS IN FLIGHT, so what came back is
+       already out of date. Ask again rather than cache it: the caller is awaiting this
+       promise and has to be handed the truth, not the list that was true when it
+       asked. */
+    if(gen!==careerGen) return careerLoad();
     if(!r||!Array.isArray(r.rows)){ careerFailed=true; return null; }
     careerRaw=r.rows;
     careerTotal=r.total||r.rows.length;
@@ -6212,6 +6232,18 @@ function recordRun(row){
      never reach a badge, the trophy case or the profile counters either, all of which
      are derived from these rows. */
   if(tutorialOn){ lastEarned=[]; guestEarned=[]; return lastEarned; }
+  /* THE CACHED CAREER IS NOW A SEASON SHORT. It is fetched once per sign-in and held,
+     which is right for a list that changes almost never and wrong at the one moment it
+     does. The profile hub, the seasons list and the trophy case all read it, so a
+     signed-in player who had opened the profile at any point earlier in the page's life
+     finished a season and watched it not appear, and nothing brought it back short of a
+     reload. Reported from the game as a perfect 15-0 season disappearing off the stats,
+     and reproduced in cfb/build/test/test_career_cache.mjs.
+     THROWN AWAY RATHER THAN APPENDED TO. The board derives wins, losses and whether the
+     season was perfect, so the row worth reading back is the one the server wrote, not a
+     local guess at it. Until the re-fetch lands every badge test falls back to this
+     browser's own history, which is the line below and already has the season in it. */
+  careerForget();
   const A=window.PS_CFB_ACH;
   const rows=loadHistory();
   /* THE SEASON IS WRITTEN DOWN EITHER WAY. The row is this browser's own history and the
@@ -6763,6 +6795,11 @@ async function submitRun(o,selectionRank,stats){
        over. A signed-in player's row is already theirs, so it is marked claimed on the way
        past rather than left to be swept later. */
     stampRunId(id);
+    /* AND AGAIN, NOW THAT THE BOARD HAS IT. recordRun() dropped the cache the moment the
+       season was filed, but the submit takes a round trip, and a profile opened inside
+       that window re-fetches a list the row has not reached yet and caches THAT. Cheap
+       insurance: one extra request, the next time somebody opens the profile. */
+    careerForget();
     if(authState.signedIn){ markClaimed([id]); ga('run_recorded',{signed_in:true}); }
     else ga('run_recorded',{signed_in:false}); }
   return id;

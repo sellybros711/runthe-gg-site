@@ -156,8 +156,13 @@ console.log('\n=== a guest finishes a season ===');
     /No named season/.test(place) && /Yours would be the first/.test(place), place.slice(0, 90));
   /* AND THE OFFER IS A BUTTON, not a sentence telling them to go and find one. This
      used to read "Sign in to put your name on it" with nothing to press, on the one
-     screen where signing in is worth something. */
-  const gate = await page.$('#o-place [data-gate="guest"]');
+     screen where signing in is worth something.
+     EITHER BUTTON COUNTS, because there are deliberately never two. A guest whose season
+     earned badges gets the claim panel instead, which makes the same offer and names what
+     is waiting, and gateCta() drops its own weaker button rather than stack a second
+     full-width sign-in under the first. Asking for the small one alone made this red on
+     every run where the season happened to earn a badge, which is most of them. */
+  const gate = await page.$('#o-place [data-gate="guest"], #o-claim #cb-in');
   ok('a guest is given something to press', !!gate,
     gate ? (await gate.textContent()) : 'no button');
   const row = await page.evaluate(() => fetch('http://localhost:5555/rest/v1/cfb_runs?select=id,display_name,user_id,wins,losses,national_rank,playoff_seed,made_playoffs,bowl,picks&order=id.desc&limit=1')
