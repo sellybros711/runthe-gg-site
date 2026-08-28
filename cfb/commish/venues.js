@@ -49,8 +49,9 @@
       note: 'The mountains, the light at five o clock, and a hundred and ten years of it.' },
     { id: 'mia', name: 'Hard Rock Stadium', city: 'Miami Gardens', state: 'FL',
       dome: false, cap: 65000, draw: 1.04, fee: 0.9, heritage: 0.6, risk: 0.12, reach: 0.05,
-      note: 'January in south Florida, which sells itself to everybody except the people who '
-        + 'have to sit in the rain.' },
+      note: 'South Florida, which sells itself to everybody except the people who have to sit '
+        + 'in the rain.',
+      cold: 'In January it is the easiest ticket anybody sells all year.' },
     { id: 'phx', name: 'State Farm Stadium', city: 'Glendale', state: 'AZ',
       dome: true, cap: 63000, draw: 1.03, fee: 0.85, heritage: 0.35, risk: 0.02, reach: 0.05,
       note: 'A retractable roof, a grass field that slides outside, and a market that has to '
@@ -68,7 +69,8 @@
         + 'that city arriving whether you want them or not.' },
     { id: 'cha', name: 'Bank of America Stadium', city: 'Charlotte', state: 'NC',
       dome: false, cap: 75000, draw: 0.99, fee: 0.6, heritage: 0.3, risk: 0.14, reach: 0.05,
-      note: 'In the middle of where the sport lives, and outdoors in December.' },
+      note: 'In the middle of where the sport lives, with no roof over any of it.',
+      cold: 'Outdoors in December, which is the part nobody puts in the bid.' },
     { id: 'orl', name: 'Camping World Stadium', city: 'Orlando', state: 'FL',
       dome: false, cap: 65000, draw: 0.97, fee: 0.55, heritage: 0.3, risk: 0.12, reach: 0.05,
       note: 'Cheap, warm, and a city that will fill it with people who came for something '
@@ -88,8 +90,8 @@
         + 'loudest building in it.' },
     { id: 'nyc', name: 'MetLife Stadium', city: 'East Rutherford', state: 'NJ',
       dome: false, cap: 82000, draw: 1.02, fee: 1.0, heritage: 0.1, risk: 0.24, reach: 0.35,
-      note: 'The biggest media market on earth, in January, outdoors. Two of those three are '
-        + 'the reason and the third is the problem.' },
+      note: 'The biggest media market on earth, and nothing at all over the seats.',
+      cold: 'In January that is the coldest bid anybody has ever taken seriously.' },
     { id: 'dub', name: 'Aviva Stadium', city: 'Dublin', state: 'IE',
       dome: false, cap: 51000, draw: 0.88, fee: 0.75, heritage: 0.1, risk: 0.18, reach: 0.6,
       note: 'A kickoff at half past eight in the morning eastern, a fanbase that treats it '
@@ -109,8 +111,9 @@
        cannot put a playoff bid in Nassau. */
     { id: 'bronx', name: 'Yankee Stadium', city: 'the Bronx', state: 'NY', host: false,
       dome: false, cap: 47000, draw: 1.0, fee: 0.5, heritage: 0.4, risk: 0.26, reach: 0.3,
-      note: 'A baseball park in December, with the sport laid out corner to corner and a '
-        + 'quarter of the seats sold to people who walked over from the subway.' },
+      note: 'A baseball park with the sport laid out corner to corner, and a quarter of the '
+        + 'seats sold to people who walked over from the subway.',
+      cold: 'In December, in the Bronx, which is either the charm or the whole problem.' },
     { id: 'jax', name: 'EverBank Stadium', city: 'Jacksonville', state: 'FL', host: false,
       dome: false, cap: 67000, draw: 0.95, fee: 0.5, heritage: 0.45, risk: 0.1, reach: 0.05,
       note: 'Warm, cheap, and the one week of the year the city is the center of anything.' },
@@ -322,6 +325,19 @@
   SPONSORS.forEach(function (s) { S_BY_ID[s.id] = s; });
 
   function venue(id) { return V_BY_ID[id] || null; }
+  /* WHAT TO SAY ABOUT A SITE, AND IT DEPENDS ON WHEN THE GAME IS. The catalog's `note` used to
+     carry the month: Charlotte was "outdoors in December", MetLife was "in January". Both are
+     true of a title game and neither is true of the item that places WEEK ONE, which is the
+     last Saturday in August, and that item reads the same field. A player picked a neutral
+     site for the opener, read that it would be outdoors in December, and reasonably asked
+     whether the season now started in December.
+
+     So `note` is about the place and is true whenever the game is played. `cold` is the
+     January sentence, and only the items that place a winter game ask for it. */
+  function siteNote(v, winter) {
+    if (!v) return '';
+    return v.note + (winter && v.cold ? ' ' + v.cold : '');
+  }
   function bowl(id) { return B_BY_ID[id] || null; }
   function sponsor(id) { return S_BY_ID[id] || null; }
   function label(v) { return v ? v.city + ', ' + v.state : ''; }
@@ -418,7 +434,7 @@
     VENUES: VENUES, BOWLS: BOWLS, SPONSORS: SPONSORS,
     venue: venue, bowl: bowl, sponsor: sponsor, label: label,
     shortlist: shortlist, sponsorList: sponsorList,
-    effectsOf: effectsOf, sponsorEffects: sponsorEffects, sponsorPitch: sponsorPitch,
+    effectsOf: effectsOf, siteNote: siteNote, sponsorEffects: sponsorEffects, sponsorPitch: sponsorPitch,
   };
   root.PS_CFB_VENUES = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

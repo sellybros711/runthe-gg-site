@@ -58,6 +58,40 @@ console.log('\n=== the catalog holds together ===');
   ok('  and every major bowl can be sold', !bad2.length, bad2.join(', ') || majors.length + ' majors');
 }
 
+console.log('\n=== a note about a site does not name the wrong month ===');
+{
+  /* THE CATALOG'S NOTES ARE READ BY ITEMS IN TWO DIFFERENT SEASONS. Charlotte was "outdoors in
+     December" and MetLife was "in January", which is true of the item that places the title
+     game and false of the item that places WEEK ONE, the last Saturday in August, which reads
+     the same field. A player picked a neutral site for the opener, was told it would be
+     outdoors in December, and asked whether the season now started in December.
+
+     `note` is the place and is true whenever the game is played. `cold` is the January
+     sentence and only winter items ask for it. */
+  const MONTH = /\b(January|February|March|April|May|June|July|August|September|October|November|December|winter|midwinter)\b/i;
+  const leak = V.VENUES.filter((v) => MONTH.test(v.note));
+  ok('no site describes itself by a month', !leak.length,
+    leak.map((v) => v.city + ': ' + (v.note.match(MONTH) || [])[0]).join(', ')
+      || V.VENUES.length + ' sites');
+  /* AND THE WINTER SENTENCE STILL EXISTS, or splitting them would just have deleted the good
+     line about a January in the Bronx. */
+  const cold = V.VENUES.filter((v) => v.cold);
+  ok('  and the ones that need a winter line have one', cold.length >= 3,
+    cold.map((v) => v.city).join(', '));
+  ok('  which only shows when asked for', cold.every((v) => {
+    return V.siteNote(v, false) === v.note && V.siteNote(v, true).indexOf(v.cold) > 0;
+  }));
+
+  /* THE ITEM THAT CAUSED IT, CHECKED DIRECTLY. Week one is in August, so nothing it renders
+     may name a month at all. */
+  const w1 = D.BY_ID['kickoff-game'];
+  const cw = w1.cast(world(), L, E.createSeededRNG(9));
+  const bodies = (w1.options || []).map((o) => String(D.text(o.body, cw, w1)));
+  const wrong = bodies.filter((b2) => MONTH.test(b2) && !/August/i.test(b2));
+  ok('  so week one never mentions a month that is not August', !wrong.length,
+    wrong.map((b2) => (b2.match(MONTH) || [])[0]).join(', ') || bodies.length + ' options');
+}
+
 console.log('\n=== an offer the brief names is an offer you can take ===');
 {
   /* THE BUG THIS CATCHES. `playoff-naming` draws three sponsors, lists all three by name in

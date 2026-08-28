@@ -442,6 +442,19 @@
   /* WHY THIS IS ON YOUR DESK. Green rather than gold, because this is not a warning: it is
      the mode telling you that something you did is the reason there is a decision here at
      all, and that is the best news the screen has. */
+  /* THE SHAPE OF THE YEAR. A definition list rather than prose: nine facts that are read by
+     scanning down the values, and the ones you moved carry what they were. */
+  .yshape{display:grid;gap:5px}
+  .yr{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline;
+    padding:7px 9px;border-radius:9px;background:var(--panel);border:1px solid var(--line)}
+  .yr b{font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim)}
+  .yr u{text-decoration:none;font-family:var(--fn);font-size:12.5px;font-weight:800;
+    color:var(--ink);text-align:right}
+  .yr em{grid-column:1/-1;font-style:normal;font-size:10.5px;color:var(--gold)}
+  /* MOVED BY YOU, MARKED. The whole point of the card is telling the two apart. */
+  .yr.moved{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
+  .yr.moved b{color:var(--ink)}
+
   .setl{border-left:2px solid var(--green);background:rgba(16,185,129,.06);
     border-radius:0 10px 10px 0;padding:9px 12px;margin-bottom:7px}
   .setl:last-child{margin-bottom:0}
@@ -1715,6 +1728,14 @@
         <span id="off-msub"></span></div>
     </div>
     <div class="cal" id="off-cal"></div>
+    <!-- WHAT THE YEAR LOOKS LIKE NOW THAT YOU HAVE BEEN WRITING IT. Nineteen items reshape
+         the calendar and not one of them ever said what the calendar became. See paintYear(). -->
+    <div class="card flat" id="off-yearcard" hidden>
+      <div class="eyebrow" style="margin-bottom:4px">The year, as you have written it</div>
+      <p class="dcsub" style="margin-bottom:9px">The shape of a season is a thing you rule on,
+        one piece at a time, and this is what those rulings add up to.</p>
+      <div id="off-year"></div>
+    </div>
     <!-- The map. Realignment is the one thing a list cannot show. -->
     <div class="card flat" id="off-mapcard">
       <div class="eyebrow" style="margin-bottom:9px">The sport, by where it is played</div>
@@ -2008,8 +2029,8 @@
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
-<script src="venues.js?v=5"></script>
-<script src="docket.js?v=16"></script>
+<script src="venues.js?v=6"></script>
+<script src="docket.js?v=17"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -3002,6 +3023,7 @@ function office(){
   $('off-pollcard').hidden=!inSeason;
   paintMotion($('off-motion'),$('off-motioncard'),world);
   paintSettled($('off-settled'),$('off-setlcard'));
+  paintYear($('off-year'),$('off-yearcard'));
   $('off-mapcard').hidden=inSeason;
   if(inSeason){
     paintTv($('off-tv'),sim);
@@ -4713,6 +4735,39 @@ function settledByYou(){
   });
   return Object.keys(by).map((k)=>by[k]).filter((r)=>r.items.length);
 }
+/* ── the year, as you have written it ─────────────────────────────────────────────
+   NINETEEN ITEMS RESHAPE THE CALENDAR and not one of them says what the calendar became. A
+   player moved the portal, was told by a later screen that a game would be played in December,
+   could not tell whether that was his doing or a bug, and said the words on the screen were "a
+   bunch of nothing". They were: every ruling stated its own change and nothing anywhere stated
+   the result.
+
+   READ OFF THE LEDGER RATHER THAN REMEMBERED, so it is the year the engine will actually play
+   rather than a summary somebody has to keep in step with it. */
+const YEAR_SHAPE=['labour.portalWindows','labour.reentry','labour.proYears','labour.rulesBy',
+  'rules.confGames','posture.tvWindows','playoff.teams','playoff.autobids','playoff.sites'];
+function paintYear(el,card){
+  if(!el||!card) return;
+  let base=null;
+  try{ base=L.createWorld({year:world.startYear||world.year,membership:world.membership,seed:1}); }
+  catch(e){ base=null; }
+  const rows=YEAR_SHAPE.map((p)=>{
+    const now=L.getPath(world,p);
+    if(now==null) return null;
+    const was=base?L.getPath(base,p):null;
+    const moved=was!=null&&String(was)!==String(now);
+    return { p:p, now:pathValue(p,now), was:moved?pathValue(p,was):'' , moved:moved };
+  }).filter(Boolean);
+  if(!rows.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  el.innerHTML='<div class="yshape">'+rows.map((r)=>
+    '<div class="yr'+(r.moved?' moved':'')+'">'
+    +'<b>'+esc(pathName(r.p))+'</b><u>'+esc(r.now)+'</u>'
+    +(r.moved?'<em>was '+esc(r.was)+'</em>':'')
+    +'</div>').join('')+'</div>';
+  reveal(el.querySelector('.yshape'));
+}
+
 function paintSettled(el,card){
   if(!el||!card) return;
   let rows=[];

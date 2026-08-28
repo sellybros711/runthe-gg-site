@@ -3066,21 +3066,21 @@
       options: [
         { id: 'bid-a',
           label: (c) => (c ? VEN.label(c.bids[0]) : 'The first bid'),
-          body: (c) => (c ? c.bids[0].name + '. ' + c.bids[0].note : ''),
+          body: (c) => (c ? c.bids[0].name + '. ' + VEN.siteNote(c.bids[0], true) : ''),
           edit: (c) => (c ? {
             set: { 'venues.title': c.bids[0].id, 'venues.lastTitle': c.bids[0].id },
             effects: VEN.effectsOf(c.bids[0], 1),
           } : {}) },
         { id: 'bid-b',
           label: (c) => (c ? VEN.label(c.bids[1]) : 'The second bid'),
-          body: (c) => (c ? c.bids[1].name + '. ' + c.bids[1].note : ''),
+          body: (c) => (c ? c.bids[1].name + '. ' + VEN.siteNote(c.bids[1], true) : ''),
           edit: (c) => (c ? {
             set: { 'venues.title': c.bids[1].id, 'venues.lastTitle': c.bids[1].id },
             effects: VEN.effectsOf(c.bids[1], 1),
           } : {}) },
         { id: 'bid-c',
           label: (c) => (c ? VEN.label(c.bids[2]) : 'The third bid'),
-          body: (c) => (c ? c.bids[2].name + '. ' + c.bids[2].note : ''),
+          body: (c) => (c ? c.bids[2].name + '. ' + VEN.siteNote(c.bids[2], true) : ''),
           edit: (c) => (c ? {
             set: { 'venues.title': c.bids[2].id, 'venues.lastTitle': c.bids[2].id },
             effects: VEN.effectsOf(c.bids[2], 1),
@@ -3162,13 +3162,15 @@
         { id: 'Players', say: 'It is a road game for both of us in the last week of August.' },
       ],
       options: [
+        /* `false`: THIS ONE IS THE LAST SATURDAY IN AUGUST. It is the item that made the
+           catalog's month-carrying notes a bug, so it is the one that must not ask for them. */
         { id: 'k-a',
           label: (c) => (c ? VEN.label(c.bids[0]) : 'The first bid'),
-          body: (c) => (c ? c.bids[0].name + '. ' + c.bids[0].note : ''),
+          body: (c) => (c ? c.bids[0].name + '. ' + VEN.siteNote(c.bids[0], false) : ''),
           edit: (c) => (c ? { effects: VEN.effectsOf(c.bids[0], 0.55) } : {}) },
         { id: 'k-b',
           label: (c) => (c ? VEN.label(c.bids[1]) : 'The second bid'),
-          body: (c) => (c ? c.bids[1].name + '. ' + c.bids[1].note : ''),
+          body: (c) => (c ? c.bids[1].name + '. ' + VEN.siteNote(c.bids[1], false) : ''),
           edit: (c) => (c ? { effects: VEN.effectsOf(c.bids[1], 0.55) } : {}) },
         { id: 'campus',
           label: 'Neither. Play it on a campus',
@@ -3326,7 +3328,7 @@
       ],
       options: [
         { id: 'move', label: (c) => (c ? 'Let it go to ' + c.to.city : 'Let it move'),
-          body: (c) => (c ? c.to.name + '. ' + c.to.note : 'A better stadium and more money.'),
+          body: (c) => (c ? c.to.name + '. ' + VEN.siteNote(c.to, true) : 'A better stadium and more money.'),
           /* WHAT IT COSTS SCALES WITH HOW TIGHTLY THE NAME IS TIED DOWN. A Rose Bowl in Las
              Vegas and a Holiday Bowl in Las Vegas are not the same crime, and pricing them the
              same is how a player learns that tradition is a number rather than a thing. */
@@ -3443,7 +3445,7 @@
         { id: 'move-a',
           label: (c) => (c ? 'Move it to ' + VEN.label(c.alt[0]) : 'Move it'),
           body: (c) => (c ? c.alt[0].name + ' can take it at four months notice. '
-            + c.alt[0].note : ''),
+            + VEN.siteNote(c.alt[0], true) : ''),
           edit: (c) => (c ? {
             set: { 'venues.title': c.alt[0].id },
             effects: Object.assign(VEN.effectsOf(c.alt[0], 0.7),
