@@ -439,6 +439,17 @@
     border-color:var(--green);cursor:default}
   .opt:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 
+  /* WHY THIS IS ON YOUR DESK. Green rather than gold, because this is not a warning: it is
+     the mode telling you that something you did is the reason there is a decision here at
+     all, and that is the best news the screen has. */
+  .setl{border-left:2px solid var(--green);background:rgba(16,185,129,.06);
+    border-radius:0 10px 10px 0;padding:9px 12px;margin-bottom:7px}
+  .setl:last-child{margin-bottom:0}
+  .setl b{display:block;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--ink)}
+  .setl span{display:block;font-size:12px;line-height:1.45;color:var(--dim);margin-top:3px}
+  .setl u{display:block;text-decoration:none;font-size:11px;color:var(--dim-2);margin-top:3px}
+
   /* ---- learn more: what every side wants ----
      REFERENCE RATHER THAN NARRATIVE, so it is set quieter and denser than the quotes above it.
      Folded by default because it is nine rows and the desk is already the longest screen in
@@ -1758,6 +1769,13 @@
       <div class="eyebrow" style="margin-bottom:9px">Still working its way through</div>
       <div id="off-motion"></div>
     </div>
+    <!-- THE OTHER HALF OF THE SAME IDEA. The panel above is what your rulings have set in
+         motion; this is what they have closed off for good. Between them they are the whole
+         answer to "does anything I do here matter next year". See settledByYou(). -->
+    <div class="card flat" id="off-setlcard" hidden>
+      <div class="eyebrow" style="margin-bottom:9px">Settled, and not coming back</div>
+      <div id="off-settled"></div>
+    </div>
     <div class="card flat" id="off-pollcard" hidden>
       <div class="eyebrow" style="margin-bottom:4px" id="off-pollhead">The poll</div>
       <p class="dcsub" style="margin-bottom:9px">What the voters think, which is a different
@@ -2983,6 +3001,7 @@ function office(){
   $('off-tablecard').hidden=!inSeason;
   $('off-pollcard').hidden=!inSeason;
   paintMotion($('off-motion'),$('off-motioncard'),world);
+  paintSettled($('off-settled'),$('off-setlcard'));
   $('off-mapcard').hidden=inSeason;
   if(inSeason){
     paintTv($('off-tv'),sim);
@@ -4624,6 +4643,94 @@ const ruledWhat=(p)=>{
   return i>0?String(p.label).slice(i+2):p.option.replace(/-/g,' ');
 };
 
+/* ── what you have settled ────────────────────────────────────────────
+   "WHEN I MAKE A CHANGE IT HAS NO IMPACT ON FUTURE CHANGES, AND FUTURE CHANGES AREN'T
+   REGISTERING THAT CHANGES WERE EVEN MADE." All ninety-one items are gated on the world and
+   twenty-seven of those gates read the ledger, so the player was wrong about the mechanism and
+   completely right about the experience: nothing has ever said out loud that a ruling changed
+   what can happen next.
+
+   THE FIRST VERSION OF THIS PANEL ASKED THE WRONG QUESTION and measuring said so. It tried to
+   say why an item was ON your desk, and across a full term it fired zero times, because the
+   gates in this docket are overwhelmingly negative: `w.posture.gambling !== "banned"`,
+   `w.labour.nil !== "school-paid"`. A ruling does not usually open a door. It CLOSES one.
+
+   So the panel says the true thing instead: which arguments this office will never have again,
+   because of what you did. Derived by asking each gate directly, one ledger field at a time,
+   which is why it cannot drift from the gates it describes: put the field back to the day you
+   took the job and ask the item whether it would return. If it would, that field is what
+   closed it. Eight rulings close ten items, measured. */
+function setPathOn(obj,path,value){
+  const parts=String(path).split('.');
+  let cur=obj;
+  for(let i=0;i<parts.length-1;i++){
+    if(cur[parts[i]]==null||typeof cur[parts[i]]!=='object') return false;
+    cur=cur[parts[i]];
+  }
+  cur[parts[parts.length-1]]=value;
+  return true;
+}
+/* Every ledger path the docket can write, gathered once. A field nothing can rule on cannot
+   be a thing a ruling settled. */
+const RULED_PATHS=(()=>{
+  const seen={};
+  (D.ITEMS||[]).forEach((it)=>{
+    (it.options||[]).forEach((o)=>{
+      let e=o.edit;
+      if(typeof e==='function'){ try{ e=e(null,it); }catch(x){ return; } }
+      for(const p in (e&&e.set)||{}) seen[p]=1;
+    });
+    (it.dials||[]).forEach((d)=>{ if(d.path) seen[d.path]=1; });
+  });
+  return Object.keys(seen);
+})();
+function settledByYou(){
+  let base;
+  try{ base=L.createWorld({year:world.startYear||world.year,membership:world.membership,seed:1}); }
+  catch(e){ return []; }
+  const sit=situationNow();
+  /* The fields that have actually moved since the first day. Nothing else can have settled
+     anything. */
+  const moved=RULED_PATHS.map((p)=>({ p:p, now:L.getPath(world,p), was:L.getPath(base,p) }))
+    .filter((m)=>m.now!=null&&m.was!=null&&String(m.now)!==String(m.was));
+  if(!moved.length) return [];
+  const by={};
+  (D.ITEMS||[]).forEach((it)=>{
+    if(typeof it.when!=='function') return;
+    let here=true;
+    try{ here=!!it.when(world,L,sit); }catch(e){ return; }
+    if(here) return;
+    moved.forEach((m)=>{
+      let alt;
+      try{ alt=JSON.parse(JSON.stringify(world)); }catch(e){ return; }
+      if(!setPathOn(alt,m.p,m.was)) return;
+      let back=false;
+      try{ back=!!it.when(alt,L,sit); }catch(e){ return; }
+      if(!back) return;
+      (by[m.p]=by[m.p]||{ p:m.p, now:m.now, was:m.was, items:[] })
+        .items.push(String(D.text(it.title,null,it)));
+    });
+  });
+  return Object.keys(by).map((k)=>by[k]).filter((r)=>r.items.length);
+}
+function paintSettled(el,card){
+  if(!el||!card) return;
+  let rows=[];
+  try{ rows=settledByYou(); }catch(e){ rows=[]; }
+  if(!rows.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const n=rows.reduce((t,r)=>t+r.items.length,0);
+  el.innerHTML='<p class="dcsub" style="margin:0 0 9px">'
+    +n+(n===1?' argument this office':' arguments this office')+' will not have again, because '
+    +'of how you ruled. This is what a decision is worth after the week it was made.</p>'
+    +rows.map((r)=>'<div class="setl">'
+      +'<b>'+esc(pathName(r.p))+' is '+esc(pathValue(r.p,r.now))+'</b>'
+      +'<span>Settled: '+esc(r.items.join(', '))+'</span>'
+      +'<u>It was '+esc(pathValue(r.p,r.was))+' when you took the job.</u>'
+      +'</div>').join('');
+  reveal(el);
+}
+
 function paintPrecedent(el,w,item){
   if(!el) return;
   const past=precedent(w,item.id);
@@ -4850,6 +4957,13 @@ const PATH_NAME={
      See the guard in test_docket: every path the docket can write now has to appear here, so
      the next item that invents one fails a test rather than shipping a database key to
      somebody's screen. */
+  /* THE FOUR HEADLINE TILES ARE IN PATH_SKIP so the desk does not list them twice, and that
+     is a reason not to REPEAT them, not a reason to have no name for them. The settled panel
+     on the office reads the same table and printed "playoff.teams is 16" at a player. */
+  'playoff.teams':'The size of the playoff',
+  'playoff.autobids':'Automatic bids',
+  'labour.revShare':"The players' share",
+  'rules.confGames':'Conference games a season',
   'labour.reentry':'Going pro and coming back',
   'labour.rulesBy':'Who writes the player rules',
   'labour.proYears':'How long you can be a pro',
@@ -4914,6 +5028,10 @@ function pathValue(p,v){
   if(p==='labour.eligibility') return v+(v===1?' year':' years');
   if(p==='labour.proYears') return v+(v===1?' year':' years');
   if(p==='posture.tvWindows') return v+(v===1?' window':' windows');
+  if(p==='playoff.teams') return v+' teams';
+  if(p==='playoff.autobids') return v+(v===1?' automatic bid':' automatic bids');
+  if(p==='rules.confGames') return v+(v===1?' game':' games');
+  if(p==='labour.revShare') return Math.round(v*100)+'%';
   if(p.indexOf('labour.confReentry.')===0) return PATH_WORD['labour.reentry'][v]||String(v);
   /* A SPONSOR IS AN ARCHETYPE WITH A NAME. The ledger holds its id, so "brand.playoff" was
      printing "phone" where the desk everywhere else says "a phone company". */

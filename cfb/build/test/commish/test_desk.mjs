@@ -768,13 +768,12 @@ console.log('\n=== nothing the desk writes reaches the screen as a database key 
     if (!W || typeof W.pathName !== 'function' || typeof W.pathValue !== 'function') {
       return { missing: true };
     }
-    /* THE FOUR HEADLINE TILES ARE NAMED ELSEWHERE and never reach these two functions, so
-       checking them here would be checking a code path the panel does not use. The skip list
-       comes off the page rather than being copied, or the copy is one more thing to keep in
-       step with the original. */
-    const skip = W.skip || {};
+    /* EVERY PATH, INCLUDING THE FOUR HEADLINE TILES. `PATH_SKIP` stops the desk listing them
+       twice, which is not the same as their not needing a name: the settled panel on the
+       office reads the same table and printed "playoff.teams is 16" at a player because this
+       check was skipping exactly the paths that had no name. */
     return {
-      rows: rows.filter(([k]) => !skip[k]).map(([k, v]) => ({ k: k, v: v,
+      rows: rows.map(([k, v]) => ({ k: k, v: v,
         name: String(W.pathName(k)), word: String(W.pathValue(k, v)) })),
     };
   }, uniq);
