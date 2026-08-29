@@ -643,17 +643,22 @@ def arch_hulk(cv, spec, pose):
     body = Ramp(spec.get('shirt', spec.get('skin', '#3f2716')))
     skin = Ramp(spec.get('skin', '#a87b4c'))
     boot = Ramp(spec.get('boot', '#241608'))
+    hand = Ramp(spec.get('hand', shade(body.base, -0.3)))
+    pants = Ramp(spec['pants']) if spec.get('pants') else body
     cv.sphere(CX, 27.0, 9.2, 7.4, body, spec=False)
-    legs(cv, body, boot, pose, top=32, bot=38, spread=3)
+    legs(cv, pants, boot, pose, top=32, bot=38, spread=3)
     lo, ro = (-2, 2) if pose == 'run1' else ((2, -2) if pose == 'run2' else (0, 0))
     for side, off in ((-1, lo), (1, ro)):
         sx = CX + side * 8
         cv.sphere(sx, 23.0 + off, 4.6, 4.2, body, spec=False)
         cv.cyl(sx - 2, 23 + off, sx + 2, 33 + off, body, round_bot=2)
-        cv.sphere(sx, 33.5 + off, 3.0, 2.6, Ramp(shade(body.base, -0.3)), spec=False)
+        cv.sphere(sx, 33.5 + off, 3.0, 2.6, hand, spec=False)
     if spec.get('chest'):
         cv.sphere(CX, 27.5, 5.4, 4.2, Ramp(spec['chest']), spec=False)
-    cv.sphere(CX, 12.5, 9.8, 8.8, body)
+    # The head is SKIN, not body: for every ape and monster so far the two
+    # were the same color, but Frankenstein wears a jacket, and a jacket
+    # colored head is not a look anyone asked for.
+    cv.sphere(CX, 12.5, 9.8, 8.8, skin)
     if spec.get('muzzle'):
         cv.sphere(CX, 16.2, 6.2, 4.0, Ramp(spec['muzzle']))
 
@@ -779,10 +784,111 @@ def back_head(cv, spec):
 FRONT_ONLY_EXTRAS = {'pipe', 'monocle', 'patch'}
 
 
-def build(spec, pose='idle'):
+# ------------------------------------------------------- signatures
+# The iconic thing about a character, drawn bespoke. The archetype
+# system keeps fifty four figures consistent, but consistency is also
+# how Popeye loses his forearms: canonical pixel art of these
+# characters leads with the one feature everyone recognizes, so each
+# entry here draws that feature over (or under, via 'pre') the shared
+# body. Keyed by character key; 'pre' runs before the archetype (a
+# cape hangs BEHIND the body), 'post' after everything but the
+# outline. Both receive (cv, spec, body_pose, back).
+
+def sig_kong(cv, spec, pose, back):
+    body = Ramp(spec.get('skin', '#3f2716'))
+    muz = Ramp(spec.get('muzzle', '#b0855a'))
+    for side in (-1, 1):
+        ex = CX + side * (HEAD_RX * 0.98)
+        cv.sphere(ex, 9.5, 2.6, 2.8, body, spec=False)
+        if not back:
+            cv.sphere(ex, 9.5, 1.2, 1.4, muz, spec=False)
+    if back:
+        return
+    brow = shade(body.base, -0.45)
+    for x in range(int(CX) - 6, int(CX) + 7):
+        cv.dot(x, 10, brow)
+    # the big open grin: white teeth over a red mouth
+    for x in range(int(CX) - 4, int(CX) + 5):
+        cv.dot(x, 17, (245, 243, 240))
+        cv.dot(x, 18, (245, 243, 240))
+        cv.dot(x, 19, (150, 40, 44))
+    cv.dot(CX - 5, 17, (110, 30, 34))
+    cv.dot(CX + 5, 17, (110, 30, 34))
+
+
+def sig_franky(cv, spec, pose, back):
+    ink = Ramp('#181418')
+    # flat topped black hair, squared past the skull's curve
+    cv.rect(CX - 9, 3, CX + 9, 8, ink, l=0.5)
+    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX, HEAD_RY * 0.98, ink, ymax=8)
+    # jagged fringe
+    drops = (1, 2, 0, 2, 1, 0, 2, 1, 2, 0)
+    for i, x in enumerate(range(int(CX) - 9, int(CX) + 10, 2)):
+        for k in range(drops[i % 10] + 1):
+            cv.dot(x, 9 + k, ink.mid)
+            cv.dot(x + 1, 9 + k, ink.mid)
+    if back:
+        cv.sphere(CX, HEAD_CY, HEAD_RX * 0.99, HEAD_RY * 0.96, ink,
+                  ymax=HEAD_CY + 4)
+        return
+    # heavy brow right over the eyes
+    for x in range(int(CX) - 6, int(CX) + 7):
+        cv.dot(x, 11, ink.mid)
+
+
+def sig_popeye(cv, spec, pose, back):
+    skin = Ramp(spec.get('skin', '#f0c088'))
+    lo, ro = (-2, 2) if pose == 'run1' else ((2, -2) if pose == 'run2' else (0, 0))
+    for side, off in ((-1, lo), (1, ro)):
+        ax = CX + side * 10.5
+        # THE forearms: a swollen oval where a wrist should be
+        cv.sphere(ax, 29 + off, 3.6, 4.6, skin, spec=False)
+        cv.sphere(ax + side * 0.5, 33.5 + off, 2.4, 2.2, skin, spec=False)
+    # sailor collar
+    col = Ramp('#2a4a8a')
+    cv.rect(CX - 5, 22, CX + 5, 23, col, l=0.55)
+
+
+def sig_dracula_pre(cv, spec, pose, back):
+    if back:
+        return              # from behind the cape covers the body: see post
+    cape = Ramp('#1a1220')
+    cv.taper(20, 37, 14, 30, cape, folds=2)
+    cv.rect(CX - 14, 36, CX + 14, 37, Ramp('#7a1620'), l=0.5)
+
+
+def sig_dracula_post(cv, spec, pose, back):
+    cape = Ramp('#1a1220')
+    if back:
+        cv.taper(18, 38, 16, 30, cape, folds=3)
+        cv.rect(CX - 14, 37, CX + 14, 38, Ramp('#7a1620'), l=0.5)
+    # the high collar, framing the head
+    cv.tri([(CX - 9, 20), (CX - 12, 8), (CX - 4, 16)], cape, l=0.5)
+    cv.tri([(CX + 9, 20), (CX + 12, 8), (CX + 4, 16)], cape, l=0.4)
+
+
+def sig_liberty(cv, spec, pose, back):
+    skin = Ramp(spec.get('skin', '#6db8a2'))
+    ax = CX + 9.5
+    cv.cyl(ax - 1, 9, ax + 1, 22, skin, round_bot=1)      # the raised arm
+    cv.rect(ax - 2.5, 7, ax + 2.5, 8, Ramp('#3f7f6d'), l=0.5)
+    cv.sphere(ax, 4.0, 2.2, 3.0, Ramp('#f4b03a'), spec=True)  # the flame
+
+
+SIGNATURES = {
+    'kong': {'post': sig_kong},
+    'franky': {'post': sig_franky},
+    'popeye': {'post': sig_popeye},
+    'dracula': {'pre': sig_dracula_pre, 'post': sig_dracula_post},
+    'liberty': {'post': sig_liberty},
+}
+
+
+def build(spec, pose='idle', key=None):
     cv = Canvas()
     back = pose.startswith('back')
     body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2'}[pose] if back else pose
+    sig = SIGNATURES.get(key, {})
     if back:
         # The archetype is drawn with its FRONT features stripped: the
         # muzzle and the chest patch belong to the side facing the
@@ -791,13 +897,16 @@ def build(spec, pose='idle'):
         bspec.pop('chest', None)
         if spec.get('arch') in ('hulk', 'beast', 'cat'):
             bspec['muzzle'] = None
+        if 'pre' in sig: sig['pre'](cv, spec, body_pose, True)
         ARCH[spec.get('arch', 'human')](cv, bspec, body_pose)
         back_head(cv, spec)
         headwear(cv, spec)
         ex = [e for e in spec.get('extra', []) if e[0] not in FRONT_ONLY_EXTRAS]
         extras(cv, dict(spec, extra=ex), body_pose)
+        if 'post' in sig: sig['post'](cv, spec, body_pose, True)
         cv.outline()
         return cv
+    if 'pre' in sig: sig['pre'](cv, spec, body_pose, False)
     ARCH[spec.get('arch', 'human')](cv, spec, body_pose)
     hair(cv, spec)
     headwear(cv, spec)
@@ -817,10 +926,11 @@ def build(spec, pose='idle'):
         cy = 12.0
     skin = Ramp(spec.get('skin', '#f0c088'))
     if a == 'hulk':
-        skin = Ramp(spec.get('muzzle', spec.get('skin', '#a87b4c')))
+        skin = Ramp(spec.get('muzzle') or spec.get('skin', '#a87b4c'))
     face(cv, skin, spec, cy=cy)
     beard(cv, spec)
     extras(cv, spec, pose)
+    if 'post' in sig: sig['post'](cv, spec, body_pose, False)
     cv.outline()
     return cv
 
@@ -831,16 +941,16 @@ def build(spec, pose='idle'):
 # different from every other figure of the same build.
 SPECS = {
  'kong': dict(arch='hulk', skin='#3f2716', muzzle='#b0855a', chest='#a87b4c',
-              eyes='normal', eyespread=3, mouth='line'),
- 'franky': dict(arch='hulk', skin='#7ea86a', muzzle='#7ea86a', shirt='#7ea86a',
-                chest=None, hat='helm', hatcolor='#1a1410', eyes='normal',
-                mouth='line', extra=[('bolt',)]),
+              eyes='normal', eyespread=3, mouth='none'),
+ 'franky': dict(arch='hulk', skin='#7ea86a', muzzle=None, shirt='#5b3a28',
+                hand='#7ea86a', pants='#2c3a5c', chest='#8a8f96',
+                eyes='normal', mouth='open', extra=[('bolt',)]),
  'popeye': dict(arch='human', skin='#f0c088', shirt='#e9e9ea', pants='#1c4f96',
                 hat='cap', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
                 eyes='angry', mouth='line', extra=[('pipe',)]),
- 'dracula': dict(arch='human', skin='#cabcbc', shirt='#0f0f16', pants='#0f0f16',
+ 'dracula': dict(arch='human', skin='#cabcbc', shirt='#3a3a44', pants='#2a2a32',
                  hair='#141018', hairstyle='short', eyes='glow', eyecolor='#c94b1a',
-                 mouth='fang', extra=[('cape', '#8a1a1a')]),
+                 mouth='fang'),
  'liberty': dict(arch='robed', skin='#6db8a2', shirt='#6db8a2', hat='crown',
                  hatcolor='#f4c25a', eyes='normal', mouth='line', folds=4),
  'peter': dict(arch='human', skin='#f2ceaa', shirt='#3a8a4a', pants='#3a6a3a',
@@ -1021,7 +1131,7 @@ def main():
     for key, spec in SPECS.items():
         frames = {}
         for pose in POSES:
-            cv = build(spec, pose)
+            cv = build(spec, pose, key=key)
             pal, rows = cv.emit()
             assert len(rows) == H, f'{key}/{pose} rows={len(rows)}'
             assert all(len(r) == W for r in rows), f'{key}/{pose} width'
