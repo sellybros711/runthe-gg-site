@@ -4141,8 +4141,16 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillRect(-8, -8, w + 16, h + 16);
 
   const skyH = h * 0.105;
+  /* Sky with depth: darker at the zenith, a warm stadium-light glow low
+     over the stands, instead of one flat slab of color. */
   ctx.fillStyle = theme.sky;
-  ctx.fillRect(0, 0, w, skyH);
+  ctx.fillRect(0, 0, w, skyH + 64);
+  const horizon = ctx.createLinearGradient(0, 0, 0, skyH + 50);
+  horizon.addColorStop(0, 'rgba(0,0,0,.30)');
+  horizon.addColorStop(0.65, 'rgba(0,0,0,.05)');
+  horizon.addColorStop(1, 'rgba(255,206,130,.10)');
+  ctx.fillStyle = horizon;
+  ctx.fillRect(0, 0, w, skyH + 50);
   /* a few stars, dimmed on daytime themes */
   if (theme.sky !== '#5aa0d0') {
     ctx.fillStyle = 'rgba(234,234,234,.5)';
@@ -4184,10 +4192,6 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     const u = (x / w) * 2 - 1;
     return skyH + 4 + u * u * 56;
   };
-  /* Sky continues down behind the curve at the edges. */
-  ctx.fillStyle = theme.sky;
-  ctx.fillRect(0, skyH, w, 64);
-
   /* Stands: tiered rows of fans stepping down toward the wall, riding
      the wall's curve. A wave rolls through, and during a home run's
      camera shake the whole crowd is on its feet. */
@@ -4508,6 +4512,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       pitcherPose = 'windup';
     }
     if (pit) drawRunner(ctx, cx, moundY - 6, pit, 2.6, pitcherPose);
+    /* During the windup the ball shows raised at the pitcher's hand, so
+       the eye is already on the spot the pitch will leave from. */
+    if (pitch && inWindup) drawBaseball(ctx, cx + 10, moundY - 58);
     /* Fielder cluster, on the foreshortened diamond. Depth scaling:
        outfielders are FARTHER away, so they draw smaller than the
        infield corners, which is what sells the camera angle. */
@@ -4964,6 +4971,22 @@ function drawRunner(ctx, x, y, character, scale, pose) {
       dy = Math.floor(((performance.now() / 420) + (character.k.charCodeAt(0) % 5) * 0.2) % 2) === 0 ? 0 : -1;
     }
     ctx.drawImage(hcv, Math.round(x - hcv.width/2), Math.round(y - hcv.height + dy));
+    /* A batter waits with the bat UP. The swing arc only exists for the
+       240ms of contact, so without this the player at the plate stood
+       empty handed all at bat, which no baseball game survives. */
+    if (pose === 'batting') {
+      const bl = hcv.width * 0.58;
+      ctx.save();
+      ctx.translate(x + hcv.width * 0.30, y - hcv.height * 0.55 + dy);
+      ctx.rotate(-0.75);
+      ctx.fillStyle = '#6b4a24';                       /* grip */
+      ctx.fillRect(-1.5, 0, 3, -bl * 0.35);
+      ctx.fillStyle = '#a97f46';                       /* barrel */
+      ctx.fillRect(-2.5, -bl * 0.30, 5, -bl * 0.62);
+      ctx.fillStyle = '#c9a06a';                       /* barrel light edge */
+      ctx.fillRect(-2.5, -bl * 0.30, 2, -bl * 0.62);
+      ctx.restore();
+    }
     return;
   }
 
