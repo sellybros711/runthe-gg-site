@@ -4173,25 +4173,41 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   tower(w * 0.14);
   tower(w * 0.86);
 
-  /* Stands: tiered rows of fans stepping down toward the wall, each row
-     in front slightly larger and brighter than the one behind it, so the
-     crowd reads as seating with depth rather than a strip of static. A
-     wave of standing fans rolls through, and during a home run's camera
-     shake the whole crowd is on its feet. */
+  /* THE WALL IS AN ARC. From behind the plate the fence is deepest in
+     dead center and sweeps toward the camera at the foul lines, so its
+     top edge is a curve, not a horizontal band. The crowd, the padding,
+     the warning track and the top of the grass all follow the same
+     curve, which is most of what makes the top of the frame read as a
+     ballpark instead of a wallpaper strip. */
+  const wallH = 24, trackH = 13, crowdH = 34;
+  const wallTopAt = (x) => {
+    const u = (x / w) * 2 - 1;
+    return skyH + 4 + u * u * 56;
+  };
+  /* Sky continues down behind the curve at the edges. */
+  ctx.fillStyle = theme.sky;
+  ctx.fillRect(0, skyH, w, 64);
+
+  /* Stands: tiered rows of fans stepping down toward the wall, riding
+     the wall's curve. A wave rolls through, and during a home run's
+     camera shake the whole crowd is on its feet. */
   const crowdCols = theme.crowd;
   const tick = Math.floor(performance.now() / 350);
   const bigPlay = gShake && gShake.shakeUntil && performance.now() < gShake.shakeUntil + 1600;
   ctx.fillStyle = 'rgba(10,14,20,.55)';
-  ctx.fillRect(0, skyH - 34, w, 34);
+  for (let x = 0; x < w; x += 4) ctx.fillRect(x, wallTopAt(x) - crowdH, 4, crowdH);
+  /* Batter's eye: the dark hedge block behind dead center that every
+     park has so hitters can pick up the ball. No fans sit there. */
+  const eyeL = w * 0.44, eyeR = w * 0.56;
+  ctx.fillStyle = '#10231a';
+  for (let x = eyeL; x < eyeR; x += 4) ctx.fillRect(x, wallTopAt(x) - crowdH + 2, 4, crowdH - 2);
   for (let row = 0; row < 5; row++) {
-    const y = skyH - 30 + row * 6;
     const sz = 3 + (row >= 3 ? 1 : 0);
-    /* seat rail behind each row */
-    ctx.fillStyle = 'rgba(255,255,255,.05)';
-    ctx.fillRect(0, y + sz, w, 1);
     for (let x = 3 + (row % 2) * 3; x < w; x += 7) {
+      if (x > eyeL - 4 && x < eyeR) continue;     /* the batter's eye */
       const v = (x * 7 + row * 13) % 10;
       if (v >= 9) continue;                       /* an empty seat */
+      const y = wallTopAt(x) - 30 + row * 6;
       const wave = ((x * 31 + row * 17 + tick) % 41) < 2;
       const up = bigPlay || wave;
       ctx.fillStyle = up && (x + row) % 3 === 0 ? '#e8d8b0' : crowdCols[v % 5];
@@ -4199,42 +4215,72 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     }
   }
 
-  /* Outfield wall: padded panels with seams, distance markers in their
-     own bubbles, and the yellow home run line on top. */
-  const wallY = skyH;
-  const wallH = 26;
-  ctx.fillStyle = theme.wall;
-  ctx.fillRect(0, wallY, w, wallH);
-  /* panel seams and a soft bottom shadow give the padding depth */
-  for (let x = 0; x < w; x += 46) {
-    ctx.fillStyle = 'rgba(0,0,0,.22)';
-    ctx.fillRect(x, wallY + 2, 2, wallH - 2);
+  /* Outfield wall: padded panels with seams and the yellow home run
+     line on top, column by column along the curve. */
+  for (let x = 0; x < w; x += 4) {
+    const wy = wallTopAt(x);
+    ctx.fillStyle = theme.wall;
+    ctx.fillRect(x, wy, 4, wallH);
+    if (x % 46 < 4) {
+      ctx.fillStyle = 'rgba(0,0,0,.22)';
+      ctx.fillRect(x, wy + 2, 2, wallH - 2);
+    }
+    ctx.fillStyle = 'rgba(0,0,0,.25)';
+    ctx.fillRect(x, wy + wallH - 4, 4, 4);
+    ctx.fillStyle = theme.wallLine;
+    ctx.fillRect(x, wy, 4, 3);
+    /* Warning track hugging the wall's foot. */
+    ctx.fillStyle = theme.track;
+    ctx.fillRect(x, wy + wallH, 4, trackH);
+    ctx.fillStyle = 'rgba(0,0,0,.14)';
+    ctx.fillRect(x, wy + wallH + trackH - 2, 4, 2);
   }
-  ctx.fillStyle = 'rgba(0,0,0,.25)';
-  ctx.fillRect(0, wallY + wallH - 4, w, 4);
-  ctx.fillStyle = theme.wallLine;
-  ctx.fillRect(0, wallY, w, 3);
   ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  for (const [dist, fx] of [['342', 0.12], ['408', 0.50], ['342', 0.88]]) {
+  for (const [dist, fx] of [['342', 0.14], ['408', 0.50], ['342', 0.86]]) {
+    const my = wallTopAt(w * fx) + wallH / 2;
     ctx.fillStyle = 'rgba(0,0,0,.30)';
-    ctx.beginPath(); ctx.arc(w * fx, wallY + wallH / 2 + 1, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(w * fx, my + 1, 12, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = theme.marker;
-    ctx.fillText(dist, w * fx, wallY + wallH / 2 + 2);
+    ctx.fillText(dist, w * fx, my + 2);
   }
 
-  /* Outfield grass, themed, with a vertical light-to-dark gradient so the
-     field recedes rather than sitting flat. */
-  const grassY = wallY + wallH;
+  /* Outfield grass from the track's foot down, themed, with a vertical
+     light-to-dark gradient so the field recedes rather than sitting
+     flat. grassPath is reused to clip the mow pattern below. */
+  const grassTopAt = (x) => wallTopAt(x) + wallH + trackH;
+  const grassY = grassTopAt(w / 2);            /* shallowest point */
+  const grassPath = () => {
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    ctx.lineTo(0, grassTopAt(0));
+    for (let x = 0; x <= w; x += 8) ctx.lineTo(x, grassTopAt(x));
+    ctx.lineTo(w, h);
+    ctx.closePath();
+  };
+  grassPath();
   ctx.fillStyle = theme.grass;
-  ctx.fillRect(0, grassY, w, h - grassY);
+  ctx.fill();
   const gGrad = ctx.createLinearGradient(0, grassY, 0, h);
   gGrad.addColorStop(0, 'rgba(255,255,255,.08)');
   gGrad.addColorStop(0.5, 'rgba(0,0,0,0)');
   gGrad.addColorStop(1, 'rgba(0,0,0,.22)');
+  grassPath();
   ctx.fillStyle = gGrad;
-  ctx.fillRect(0, grassY, w, h - grassY);
+  ctx.fill();
+  /* Light pools: each tower throws a soft warm wash onto the outfield
+     below it, which is what stitches the lights at the top of the frame
+     to the grass they are supposedly lighting. */
+  for (const fx of [0.14, 0.86]) {
+    const lx = w * fx, lyTop = grassTopAt(lx);
+    const pool = ctx.createRadialGradient(lx, lyTop + 70, 8, lx, lyTop + 70, 190);
+    pool.addColorStop(0, 'rgba(245,236,200,.07)');
+    pool.addColorStop(1, 'rgba(245,236,200,0)');
+    grassPath();
+    ctx.fillStyle = pool;
+    ctx.fill();
+  }
 
   /* Home-plate camera. All of the diamond's numbers come from
      fieldGeom(), the single geometry the runner paths, ball flights and
@@ -4247,8 +4293,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      checker seen from behind the plate. The alphas look timid in the
      code and are not: both layers stack where light meets light. */
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, grassY, w, h - grassY);
+  grassPath();
   ctx.clip();
   const bandW = (h - grassY) / 5.2;
   for (let band = 0; band < 8; band++) {
@@ -4271,16 +4316,15 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     ctx.fill();
   }
   ctx.restore();
-  /* Grass speckle: deterministic hash dots, two tones. */
+  /* Grass speckle: deterministic hash dots, two tones, kept below the
+     curved grass line. */
   for (let i = 0; i < 240; i++) {
     const sx = (i * 227 + 53) % w;
-    const sy = grassY + ((i * 157 + 31) % (h - grassY));
+    const top = grassTopAt(sx);
+    const sy = top + ((i * 157 + 31) % (h - top));
     ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.045)' : 'rgba(0,0,0,.06)';
     ctx.fillRect(sx, sy, 2, 2);
   }
-  /* Warning track along the wall, themed. */
-  ctx.fillStyle = theme.track;
-  ctx.fillRect(0, grassY, w, 10);
 
   const DIRT = '#8b5a24';
   const DIRT_DARK = '#6e451c';
@@ -4325,6 +4369,21 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.strokeStyle = 'rgba(0,0,0,.18)';
   ctx.lineWidth = 2;
   ctx.stroke();
+  /* Mow stripes across the infield grass: diagonal bands clipped to the
+     diamond, the groundskeeper's touch that makes it read manicured. */
+  ctx.save();
+  ctx.clip();          /* the diamond path is still current */
+  ctx.fillStyle = 'rgba(255,255,255,.05)';
+  for (let s = -6; s < 7; s += 2) {
+    ctx.beginPath();
+    ctx.moveTo(cx + s * 34, topY);
+    ctx.lineTo(cx + (s + 1) * 34, topY);
+    ctx.lineTo(cx + (s + 1) * 34 - 60, plateY);
+    ctx.lineTo(cx + s * 34 - 60, plateY);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 
   /* Mound and home plate circle, as ground ellipses (a circle on the
      ground is an ellipse from this camera, another perspective tell). */
@@ -4370,13 +4429,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.moveTo(cx, plateY);
   ctx.lineTo(cx + w, plateY + w);   /* down-right */
   ctx.stroke();
-  /* Foul poles where the lines meet the wall. */
-  for (const px of [flx, frx]) {
-    ctx.fillStyle = '#f4d03a';
-    ctx.fillRect(px - 1.5, wallY - 12, 3, wallH + 12);
-    ctx.fillStyle = 'rgba(0,0,0,.3)';
-    ctx.fillRect(px - 1.5, wallY + wallH - 4, 3, 4);
-  }
+  /* No foul poles: with the wide camera both corners sit off frame, so
+     the chalk lines exit the sides of the picture, as they should. */
 
   /* Batter's boxes: soft chalk, sized for the bigger plate area. */
   ctx.strokeStyle = 'rgba(255,255,255,.30)';
@@ -4838,6 +4892,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
 function drawBaseball(ctx, x, y, groundY) {
   /* Optional ground shadow: pass the y of the ground plane and we drop a
      small shadow there, so a high arc reads as high. */
+  let rad = 5;
   if (typeof groundY === 'number') {
     const drop = Math.max(0, groundY - y);
     const alpha = clamp(0.35 - drop * 0.0015, 0.05, 0.35);
@@ -4846,12 +4901,16 @@ function drawBaseball(ctx, x, y, groundY) {
     ctx.beginPath();
     ctx.ellipse(x, groundY, rx, 2, 0, 0, Math.PI * 2);
     ctx.fill();
+    /* The ball swells as it climbs toward the camera: a pop fly at its
+       peak is nearer the viewer than the grass under it, and the size
+       change is what makes the arc read as UP rather than away. */
+    rad = 5 + Math.min(4, drop * 0.022);
   }
   ctx.fillStyle = '#eaeaea';
-  ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.fill();
   ctx.strokeStyle = '#c94b1a';
   ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(x, y, 4, -Math.PI*0.2, Math.PI*0.3); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, rad - 1, -Math.PI*0.2, Math.PI*0.3); ctx.stroke();
 }
 
 function drawBatSwing(ctx, x, y, t) {
