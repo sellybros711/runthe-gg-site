@@ -123,12 +123,20 @@
   var clamp = function (v, lo, hi) { return Math.max(lo, Math.min(hi, v)); };
   var poleOf = function (id, v) { return id + (v > 0 ? '+' : '-'); };
 
+  /* WHETHER A HISTORY ROW IS A DECISION SOMEBODY MADE. One predicate, in ledger.js, because
+     six places ask this question and they used to each spell out the same prefix test. See the
+     note there. Guarded rather than assumed: a caller that has somehow loaded this without the
+     ledger counts everything, which is what this file did before the predicate existed. */
+  var LED = (typeof window !== 'undefined' && window.PS_CFB_LEDGER)
+    || (typeof require === 'function' ? require('./ledger.js') : null);
+  function L_ISRULING(h) { return LED && LED.isRuling ? LED.isRuling(h) : true; }
+
   /* A SEASON IS NOT A RULING. The engine writes its own edit through the same door a
      commissioner does, so the history carries entries nobody chose, and counting those would
      read the sport's own drift back as the player's beliefs. */
   function rulingsOf(world) {
     return (world && world.history ? world.history : []).filter(function (h) {
-      return h && !(h.id && String(h.id).indexOf('season:') === 0);
+      return h && L_ISRULING(h);
     });
   }
 

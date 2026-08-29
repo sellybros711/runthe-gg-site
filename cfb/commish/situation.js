@@ -34,6 +34,14 @@
      different question and belongs to `lastYear`. */
   function inSeason(beat) { return beat >= 4 && beat <= 8; }
 
+  /* WHETHER A HISTORY ROW IS A DECISION SOMEBODY MADE. One predicate, in ledger.js, because
+     six places ask this question and they used to each spell out the same prefix test. See the
+     note there. Guarded rather than assumed: a caller that has somehow loaded this without the
+     ledger counts everything, which is what this file did before the predicate existed. */
+  var LED = (typeof window !== 'undefined' && window.PS_CFB_LEDGER)
+    || (typeof require === 'function' ? require('./ledger.js') : null);
+  function L_ISRULING(h) { return LED && LED.isRuling ? LED.isRuling(h) : true; }
+
   function nz(v, d) { return v == null ? d : v; }
 
   /* WHO IS STILL PERFECT, best first. The single most load-bearing fact in this sport for
@@ -100,6 +108,15 @@
       var row = {
         name: c, size: members.length,
         power: L && L.POWERS ? L.POWERS.indexOf(c) >= 0 : false,
+        /* NOT A LEAGUE, AND THEREFORE NEVER A DEAD ONE. "FBS Independents" is the label for
+           schools that belong to no conference, and there have never been more than a handful
+           of them, so `isDefunct` counts three members and reports it below the floor. Every
+           item and question that names the league that just died was therefore able to open
+           with "The FBS Independents does not exist any more", about a thing that has never
+           existed and cannot stop. Caught on a screenshot of the podium.
+           The row stays in `confs`, because it is a real answer to "what is this school in".
+           It is `endangered` and `gone` that must not carry it. */
+        independent: c === 'FBS Independents',
         defunct: L && L.isDefunct ? !!L.isDefunct(world, c) : false,
         share: Math.round(((world.money && world.money.share && world.money.share[c]) || 0) * 1000) / 1000,
         unbeaten: 0, best: null, wins: 0, losses: 0,
@@ -129,12 +146,14 @@
   function endangeredOf(confs, L) {
     var floor = (L && L.MIN_CONFERENCE) || 4;
     return Object.keys(confs).filter(function (c) {
-      return !confs[c].defunct && confs[c].size > 1 && confs[c].size <= floor + 2;
+      return !confs[c].defunct && !confs[c].independent
+        && confs[c].size > 1 && confs[c].size <= floor + 2;
     }).sort(function (a, b) { return confs[a].size - confs[b].size; });
   }
   function goneOf(confs) {
-    return Object.keys(confs).filter(function (c) { return confs[c].defunct; })
-      .sort(function (a, b) { return confs[b].size - confs[a].size; });
+    return Object.keys(confs).filter(function (c) {
+      return confs[c].defunct && !confs[c].independent;
+    }).sort(function (a, b) { return confs[b].size - confs[a].size; });
   }
 
   /* HOW THE AUDIENCE IS MOVING against the term so far, which is the number every television
@@ -218,9 +237,7 @@
       /* HOW MANY RULINGS DEEP, which is the mode's own measure of experience and is already
          what gates the advisory council. */
       ruled: world && world.history
-        ? world.history.filter(function (h) {
-          return !(h.id && String(h.id).indexOf('season:') === 0);
-        }).length
+        ? world.history.filter(function (h) { return L_ISRULING(h); }).length
         : 0,
       lit: world && L && L.lit ? L.lit(world) : [],
     };

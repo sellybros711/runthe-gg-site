@@ -255,6 +255,17 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
         plantedBy[pl.id] = (plantedBy[pl.id] || []).concat([it.id + '/' + o.id]);
       });
     }));
+    /* THE DOCKET IS NOT THE ONLY PLANTER ANY MORE. media.js plants a thread when an answer at
+       a lectern is a promise, and the item that collects on it lives here, so a payoff whose
+       cause is a press conference is reachable and looks orphaned to a sweep that only reads
+       this file. Both halves of the invariant still hold, they are just spread over two
+       files now. */
+    const M = require(ROOT + '/cfb/commish/media.js');
+    M.QUESTIONS.forEach((q) => (q.answers || []).forEach((a) => {
+      if (!a.promise) return;
+      const pr = typeof a.promise === 'function' ? a.promise({ conf: 'ACC', size: 5 }, q) : a.promise;
+      if (pr && pr.id) { planted.add(pr.id); plantedBy[pr.id] = ['media/' + q.id + ':' + a.id]; }
+    }));
     const paid = new Set();
     D.ITEMS.forEach((it) => [].concat(it.pays || []).forEach((id) => paid.add(id)));
 

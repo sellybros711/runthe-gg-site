@@ -43,6 +43,21 @@ const arm = `
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(TESTER)}); }catch(e){} }});
 })();`;
 
+
+/* MEDIA DAYS SITS BETWEEN THE OFFICE AND THE DESK, one beat a year. Pressing on at that beat
+   opens a lectern rather than a folder, and a walker that only knows about the desk stalls
+   there with nothing it recognises on screen. Three answers and it is a desk again. */
+async function podium(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-press', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#p-answers .opt').catch(() => {});
+    await pg.waitForTimeout(160);
+    await pg.click('#b-say').catch(() => {});
+    await pg.waitForTimeout(520);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -111,6 +126,7 @@ console.log('\n=== the tape gets written as a term is played ===');
       await p.waitForTimeout(400); continue;
     }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(360); continue; }
+    if (await on('s-press')) { await podium(p); continue; }
     if (await on('s-year')) {
       const t = await p.$eval('#b-year-next', (e) => e.textContent).catch(() => '');
       if (/take the job again/i.test(t)) { terms++; ruled = 0; }

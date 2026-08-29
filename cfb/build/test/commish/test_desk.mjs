@@ -62,6 +62,21 @@ async function skipSim(pg) {
   }
 }
 
+
+/* MEDIA DAYS SITS BETWEEN THE OFFICE AND THE DESK, one beat a year. Pressing on at that beat
+   opens a lectern rather than a folder, and a walker that only knows about the desk stalls
+   there with nothing it recognises on screen. Three answers and it is a desk again. */
+async function podium(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-press', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#p-answers .opt').catch(() => {});
+    await pg.waitForTimeout(160);
+    await pg.click('#b-say').catch(() => {});
+    await pg.waitForTimeout(520);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -84,6 +99,7 @@ for (let i = 0; i < 12; i++) {
   if (await on('s-desk')) break;
   if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
   if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(500); continue; }
+  if (await on('s-press')) { await podium(p); continue; }
   if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(500); continue; }
   break;
 }
@@ -104,6 +120,7 @@ console.log('\n=== the desk is shorter than it was ===');
   for (let i = 0; i < 14 && opened === null; i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+    if (await on('s-press')) { await podium(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
     looked++;
@@ -134,6 +151,7 @@ console.log('\n=== the desk is shorter than it was ===');
   for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+    if (await on('s-press')) { await podium(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -379,6 +397,7 @@ console.log('\n=== what every side wants, before you decide ===');
   for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+    if (await on('s-press')) { await podium(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -450,6 +469,7 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
   for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+    if (await on('s-press')) { await podium(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -460,6 +480,7 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
     if (!(await on('s-desk'))) {
       if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
       if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+      if (await on('s-press')) { await podium(p); continue; }
       if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
       break;
     }
@@ -541,6 +562,7 @@ console.log('\n=== what the desk promised is what the office got ===');
   for (let i = 0; i < budget && !promised; i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
+    if (await on('s-press')) { await podium(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
     beats++;

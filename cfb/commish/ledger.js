@@ -542,6 +542,29 @@
   const BEATS = ['Winter meetings', 'Portal and signing day', 'Spring', 'Media days',
     'September', 'October', 'November', 'Championship weekend', 'The playoff'];
 
+  /* ---------------- what counts as a ruling ----------------
+     NOT EVERY ROW OF HISTORY IS A DECISION YOU MADE. A season plays itself and files a row so
+     the tape has a point on it; a press conference files one so the record shows what you
+     said. Neither is a ruling, and six different places count rulings: the advisory council's
+     gate, the doctrine profile, the situation's `ruled`, the docket's own recency, the term
+     card and the year in review.
+
+     ALL SIX USED TO SPELL THE TEST OUT, and all six spelled it the same way, which is exactly
+     the arrangement that goes wrong the first time a seventh kind of row exists. It did: media
+     days files three answers a year under `press:`, and five of the six would have counted
+     them and one would not, so the council would open early and the year in review would
+     disagree with the card above it about how many decisions a term contained. One predicate,
+     one prefix list, one place to add the next one. */
+  const NOT_RULINGS = ['season:', 'press:'];
+  function isRuling(row) {
+    if (!row || !row.id) return true;
+    const id = String(row.id);
+    return !NOT_RULINGS.some((p) => id.indexOf(p) === 0);
+  }
+  function rulingsIn(world) {
+    return ((world && world.history) || []).filter(isRuling);
+  }
+
   /* Move the clock on. The season rolls at the end of the ninth beat, which is the point
      the year in review lands and the consequences of the whole year come due. */
   function advance(world) {
@@ -559,6 +582,7 @@
     getPath, membersOf, conferencesIn, isDefunct,
     applyEdit, applyOutcome, normalizeShare, standingFrom,
     coalition, removal, advance, hostileWeight, totalWeight, MIN_CONFERENCE,
+    isRuling, rulingsIn,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_LEDGER = publicAPI;

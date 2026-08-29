@@ -33,6 +33,14 @@
   var VEN = (typeof window !== 'undefined' && window.PS_CFB_VENUES)
     || (typeof require === 'function' ? require('./venues.js') : null);
 
+  /* WHETHER A HISTORY ROW IS A DECISION SOMEBODY MADE. One predicate, in ledger.js, because
+     six places ask this question and they used to each spell out the same prefix test. See the
+     note there. Guarded rather than assumed: a caller that has somehow loaded this without the
+     ledger counts everything, which is what this file did before the predicate existed. */
+  var LED = (typeof window !== 'undefined' && window.PS_CFB_LEDGER)
+    || (typeof require === 'function' ? require('./ledger.js') : null);
+  function L_ISRULING(h) { return LED && LED.isRuling ? LED.isRuling(h) : true; }
+
   /* Beat indices, matching ledger.BEATS. Named here so an item reads as a date rather than
      as a number, and so a renumbered calendar breaks loudly in one place. */
   const WINTER = 0, PORTAL = 1, SPRING = 2, MEDIA = 3,
@@ -45,6 +53,11 @@
   const money = (bnValue) => (Math.abs(bnValue) >= 1
     ? '$' + bnValue.toFixed(2) + 'B'
     : '$' + Math.round(bnValue * 1000) + 'M');
+
+  /* WHICH LEAGUE A PAYOFF IS ABOUT, when the cast may not have been built. See the note on
+     pay-said-bid: the prose sweep reads every title and brief with whatever the cast returns,
+     including nothing, and "the rescue you offered the undefined" is how that ships. */
+  const confOf = (c) => (c && c.conf) || 'league you promised to help';
 
   /* Conferences with enough members left to behave like one. */
   const live = (w, L) => L.POWERS.filter((c) => !L.isDefunct(w, c));
@@ -4112,6 +4125,377 @@
               'Group of Five': { money: 1.8 } } } },
       ],
     },
+
+    /* ================================================================
+       WHAT YOU SAID IN JULY.
+
+       Seven items, and every one of them is here because a commissioner stood at a lectern
+       and answered a question with a promise instead of a sentence. See media.js: an answer
+       that promises plants a thread, the thread ripens, and the bill arrives on this desk
+       with the July quote at the top of it.
+
+       THE QUOTE IS THE POINT. A payoff a player cannot connect to its cause is a random
+       item with extra steps, so each brief opens by reading the promise back. And the
+       ruling is a real one: honouring what you said costs money, votes or both, and walking
+       it back is always available and always visible.
+       ================================================================ */
+    {
+      id: 'pay-said-floor',
+      beats: [WINTER, PORTAL, SPRING, MEDIA],
+      weight: 28,
+      pays: 'said-floor',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['said-floor']),
+      eyebrow: 'On the record',
+      title: 'The floor you promised',
+      brief: 'You said at media days that no league would fall below a number and that you '
+        + 'would bring the number to a meeting. The meeting is this one. Nobody has forgotten, '
+        + 'four athletic directors have the transcript printed, and the two leagues who would '
+        + 'pay for it have already asked whether you were speaking for the office or for '
+        + 'yourself.',
+      voices: [
+        { id: 'Group of Five', say: 'You said it into a microphone with our logo behind you.' },
+        { id: 'SEC', say: 'A floor is a transfer. Say the word transfer and we can have the real argument.' },
+        { id: 'Presidents', say: 'Whatever it is, it has to be a line in a budget by Friday.' },
+      ],
+      options: [
+        { id: 'write', label: 'Write the floor',
+          body: 'A real minimum, funded out of the top of the pool, which means out of the two '
+            + 'leagues who were never going to need it. You said you would and you have.',
+          edit: { set: { 'money.share.Group of Five': 0.19 },
+            effects: { access: 3, cost: 2, money: -1.6, tradition: 1.2 },
+            aimed: { 'Group of Five': { access: 3.4 }, ACC: { access: 1.6 },
+              SEC: { money: -2.6 }, 'Big Ten': { money: -2.4 } } } },
+        { id: 'soft', label: 'Make it a target rather than a floor',
+          body: 'The number goes in a document as something the sport is working towards. It '
+            + 'costs nothing and it is not what you said in July, and everybody in the room '
+            + 'can hear the difference.',
+          edit: { effects: { access: 0.6, tradition: -1.6, autonomy: 0.8 },
+            aimed: { 'Group of Five': { access: -1.8 }, Fans: { tradition: -1.6 },
+              SEC: { money: 1.2 } } } },
+        { id: 'drop', label: 'Say you misspoke',
+          body: 'Take it back, in a room, with the transcript on the table. It is the cheapest '
+            + 'thing in this building and it is the last time anybody writes down a sentence '
+            + 'you say at a lectern.',
+          edit: { effects: { money: 1.4, access: -2, tradition: -2.4, exposure: 0.8 },
+            aimed: { 'Group of Five': { access: -3 }, Fans: { tradition: -2.6 },
+              SEC: { money: 1.8 }, Players: { labour: -1 } } } },
+      ],
+    },
+    {
+      id: 'pay-said-share',
+      beats: [WINTER, SPRING, MEDIA, PLAYOFF],
+      weight: 30,
+      pays: 'said-share',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['said-share']),
+      eyebrow: 'On the record',
+      title: 'You said it was coming',
+      brief: 'A student reporter asked whether the players would ever see any of it and you '
+        + 'said yes, without a number and without a date. That clip has eleven million views. '
+        + 'Two collectives have used it in recruiting, one senator has read it into a hearing, '
+        + 'and the presidents want to know what you have actually committed them to.',
+      voices: [
+        { id: 'Players', say: 'You said it. Everybody has the clip. Put a number under it.' },
+        { id: 'Presidents', say: 'You made a commitment on our behalf that we have not voted on.' },
+        { id: 'Big Ten', say: 'Whatever it is, it comes off the top before our distribution. Understand that.' },
+      ],
+      options: [
+        { id: 'real', label: 'Put a real number on it',
+          body: 'A tenth of the pool, written into the distribution, starting next year. It is '
+            + 'the sentence you said out loud turned into a line of accounting.',
+          edit: { set: { 'labour.revShare': 0.1 },
+            effects: { labour: 3.2, cost: 2.4, money: -1.6, exposure: -1.2 },
+            aimed: { Players: { labour: 3.6 }, Presidents: { cost: -2.4 },
+              SEC: { money: -2.2 }, 'Big Ten': { money: -2 } } } },
+        { id: 'token', label: 'Start it small',
+          body: 'Two percent, called a pilot, reviewed in three years. It is a real number and '
+            + 'it is small enough that everybody can call it whatever they need to.',
+          edit: { set: { 'labour.revShare': 0.02 },
+            effects: { labour: 1.2, cost: 0.8, money: -0.4 },
+            aimed: { Players: { labour: 0.6 }, Presidents: { cost: -0.8 },
+              Fans: { tradition: -0.6 } } } },
+        { id: 'later', label: 'Say it needs Washington first',
+          body: 'No share without an antitrust exemption, and the exemption is not yours to '
+            + 'grant. It is true and it is the second time you have said it about the same '
+            + 'promise.',
+          edit: { set: { 'pressure.congress': 40 },
+            effects: { labour: -2.4, exposure: 1.6, autonomy: -1 },
+            aimed: { Players: { labour: -3.2 }, Presidents: { cost: 1.6 },
+              Fans: { tradition: -1.2 } } } },
+      ],
+    },
+    {
+      id: 'pay-said-union',
+      beats: [WINTER, PORTAL, SPRING, MEDIA, SEPT],
+      weight: 30,
+      pays: 'said-union',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['said-union']),
+      eyebrow: 'On the record',
+      title: 'They took you at your word',
+      brief: 'You said this office would sit across from a players association if one existed. '
+        + 'One exists. Cards signed at sixty one schools, counsel retained, and a letter that '
+        + 'quotes you back to yourself in the second paragraph. They have asked for a date and '
+        + 'a room, and they have copied the letter to three committees.',
+      voices: [
+        { id: 'Players', say: 'You named the condition. We met it. Here is the letter.' },
+        { id: 'Presidents', say: 'The moment you sit down, everything after it is bargaining.' },
+        { id: 'SEC', say: 'This office does not speak for our campuses on employment. It never has.' },
+      ],
+      options: [
+        { id: 'sit', label: 'Sit down with them',
+          body: 'A room, a date, and a recognition that cannot be walked back. It is the '
+            + 'biggest thing anybody in this job has done and half the people who hired you '
+            + 'think it is the end of college sport.',
+          edit: { set: { 'labour.employment': 'contracted', 'pressure.union': 10 },
+            effects: { labour: 3.6, autonomy: -2.4, cost: 2, exposure: -1.4 },
+            aimed: { Players: { labour: 4 }, Presidents: { cost: -2.6, exposure: 1.4 },
+              SEC: { autonomy: -3 }, 'Big Ten': { autonomy: -2.6 } } },
+          plant: { id: 'the-table', wait: [8, 16],
+            note: 'A bargaining table this office agreed to sit at' } },
+        { id: 'talk', label: 'Meet them without recognising them',
+          body: 'A conversation, on the record, that is explicitly not negotiation. Everybody '
+            + 'knows what it is and nobody has to say so, which is how most of this sport works.',
+          edit: { set: { 'pressure.union': 30 },
+            effects: { labour: 1, autonomy: -0.6, exposure: 0.8 },
+            aimed: { Players: { labour: 0.8 }, Presidents: { exposure: -1 },
+              SEC: { autonomy: -0.8 } } } },
+        { id: 'refuse', label: 'Say the condition was never met',
+          body: 'Sixty one schools is not the sport. Argue the number, decline the meeting, and '
+            + 'be the man who set a bar and moved it when somebody cleared it.',
+          edit: { set: { 'pressure.union': 62 },
+            effects: { labour: -3, exposure: 2.4, autonomy: 1.6, tradition: -1.6 },
+            aimed: { Players: { labour: -3.6 }, Presidents: { exposure: -2.4 },
+              SEC: { autonomy: 2 }, Fans: { tradition: -1.4 } } } },
+      ],
+    },
+    {
+      id: 'pay-said-national',
+      beats: [WINTER, PORTAL, SPRING, MEDIA],
+      weight: 29,
+      pays: 'said-national',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['said-national']),
+      eyebrow: 'On the record',
+      title: 'The votes you announced you had',
+      brief: 'You told a room full of reporters that eligibility would be written nationally '
+        + 'again. You had not asked anybody. Two leagues found out from a push alert, and one '
+        + 'of them has spent the months since collecting the votes to make sure you cannot do '
+        + 'it. The count, as it stands, is against you by one.',
+      voices: [
+        { id: 'SEC', say: 'You announced our surrender on television. We are voting accordingly.' },
+        { id: 'Group of Five', say: 'One rulebook. You said it. Do not let them talk you out of it.' },
+        { id: 'Presidents', say: 'Losing this vote in public is worse than never calling it.' },
+      ],
+      options: [
+        { id: 'call', label: 'Call the vote anyway',
+          body: 'Put it on the floor and lose by one, in the minutes, forever. Or win it, '
+            + 'because two of them have not decided and both of them read the same clip.',
+          edit: { set: { 'labour.rulesBy': 'national' },
+            effects: { access: 2.6, autonomy: -2.4, tradition: 1.6, exposure: 1.2 },
+            aimed: { 'Group of Five': { access: 3 }, Fans: { tradition: 2 },
+              SEC: { autonomy: -3.2 }, 'Big Ten': { autonomy: -2.8 } } } },
+        { id: 'trade', label: 'Buy the vote you are short',
+          body: 'One league gets something it wants badly enough to change its mind. The rule '
+            + 'is national and everybody in the building knows what it cost.',
+          edit: { set: { 'labour.rulesBy': 'national', 'money.share.SEC': 0.3 },
+            effects: { access: 1.4, money: 1.2, autonomy: -0.8, exposure: 0.6 },
+            aimed: { SEC: { money: 2.6 }, 'Group of Five': { access: 1.4, money: -1.6 },
+              Presidents: { exposure: -1 } } } },
+        { id: 'quiet', label: 'Let it die without a vote',
+          body: 'Never bring it. It stays a thing you said in July, and the next thing you say '
+            + 'in July is heard as one of those.',
+          edit: { effects: { autonomy: 1.4, access: -1.8, tradition: -2 },
+            aimed: { SEC: { autonomy: 1.8 }, 'Big Ten': { autonomy: 1.6 },
+              'Group of Five': { access: -2.4 }, Fans: { tradition: -2 } } } },
+      ],
+    },
+    {
+      id: 'pay-said-bid',
+      beats: [WINTER, SPRING, MEDIA, NOV, CHAMP],
+      weight: 28,
+      pays: 'said-bid',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['said-bid'])
+        && (w.playoff.autobids || 0) < 8,
+      /* ONE MORE THAN THERE ARE, which is a question about the world and therefore about the
+         cast. A literal in the `set` would have quietly RAISED the bids for a commissioner who
+         had already added two of them and lowered them for one who had added three. */
+      cast: (w) => ({ bids: w.playoff.autobids || 0, next: Math.min(8, (w.playoff.autobids || 0) + 1) }),
+      /* THE PROSE RENDERS WITHOUT A CAST. test_situation walks every title and brief on seven
+         shapes of the world regardless of whether the item is eligible on them, because a
+         brief that throws is a blank desk and the way that ships is by only ever being read
+         through the gate that guarantees the cast. */
+      eyebrow: 'On the record',
+      title: 'The bid you as good as promised',
+      brief: (c) => 'Asked what a team outside the four big leagues has to do with '
+        + ((c && c.bids) || 'this many') + ' automatic bids in the field, you said out loud that '
+        + 'an unbeaten season is not enough on its own and that everybody knows it. That is the '
+        + 'most honest thing anybody in this job has said about selection, and it has been read '
+        + 'everywhere as a commitment to fix it. Twenty two athletic directors have written in.',
+      voices: [
+        { id: 'Group of Five', say: 'You said the maths does not work. So change the maths.' },
+        { id: 'SEC', say: 'Every seat you guarantee is a seat taken off a better team.' },
+        { id: 'Networks', say: 'A first round nobody wants to watch is still a first round we paid for.' },
+      ],
+      options: [
+        { id: 'bid', label: 'Add the automatic bid',
+          body: 'One more guaranteed place, taken from the at-large pool, which is taken from '
+            + 'the two leagues that fill it. It is exactly the thing you implied and it has a '
+            + 'name and a cost.',
+          edit: (c) => ({ set: { 'playoff.autobids': c.next },
+            effects: { access: 3.2, tradition: 1, money: -0.8 },
+            aimed: { 'Group of Five': { access: 3.6 }, 'Big 12': { access: 1.8 },
+              SEC: { access: -2.4 }, 'Big Ten': { access: -2.2 } } }) },
+        { id: 'criteria', label: 'Publish the criteria instead',
+          body: 'No new seat. A written standard the committee has to answer to, so an unbeaten '
+            + 'outsider at least knows what it is being measured against.',
+          edit: { set: { 'playoff.selection': 'ranking' },
+            effects: { access: 1.4, autonomy: -1, tradition: 0.6, exposure: -0.8 },
+            aimed: { 'Group of Five': { access: 1.6 }, Presidents: { exposure: 1 },
+              SEC: { autonomy: -1.2 } } } },
+        { id: 'nothing', label: 'Leave it as it is',
+          body: 'You described the problem accurately and you are not going to solve it. That '
+            + 'is a real position and it is the one every commissioner before you took.',
+          edit: { effects: { access: -2.2, tradition: -1.4, money: 0.8 },
+            aimed: { 'Group of Five': { access: -3 }, 'Big 12': { access: -1.4 },
+              SEC: { access: 1.6 }, Fans: { tradition: -1.2 } } } },
+      ],
+    },
+    {
+      id: 'pay-said-line',
+      beats: [WINTER, SPRING, MEDIA, CHAMP, PLAYOFF],
+      weight: 27,
+      pays: 'said-line',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['said-line']) && !w.brand.trophy,
+      eyebrow: 'On the record',
+      title: 'Somebody bid on the thing you said was not for sale',
+      brief: 'You promised a student reporter that the national championship trophy would never '
+        + 'carry a company on it. An offer arrived this week for the naming of exactly that '
+        + 'trophy, in writing, at a number that is roughly what eleven athletic departments '
+        + 'lose in a year. Their lawyers have seen the clip. They sent it back with the offer.',
+      voices: [
+        { id: 'Fans', say: 'You said it. It is the only thing anybody remembered you saying.' },
+        { id: 'Presidents', say: 'That number is real and eleven of us are in deficit. Read it again.' },
+        { id: 'Networks', say: 'The trophy is on screen for four minutes a year. It is not the crown jewels.' },
+      ],
+      options: [
+        { id: 'keep', label: 'Turn it down, in public',
+          body: 'Refuse it and say why, with the number attached, so everybody can see exactly '
+            + 'what the promise cost and who paid for it.',
+          edit: { effects: { tradition: 3.4, money: -2.2, cost: 1.2 },
+            aimed: { Fans: { tradition: 4 }, Presidents: { cost: -2.2 },
+              Networks: { money: -1.4 }, Players: { labour: 0.8 } } } },
+        { id: 'sell', label: 'Take the money',
+          body: 'Break it. The trophy carries a name, the deficit closes, and the clip of you '
+            + 'promising it never would runs under every shot of the presentation.',
+          edit: { set: { 'brand.trophy': 'bank' },
+            effects: { money: 2.8, tradition: -3.6, cost: -1.6, exposure: 1 },
+            aimed: { Fans: { tradition: -4 }, Presidents: { cost: 2.4 },
+              Networks: { money: 1.6 }, Players: { labour: -0.6 } } } },
+        { id: 'elsewhere', label: 'Sell them something else',
+          body: 'Offer the jersey patch instead and keep the trophy clean. It is a technically '
+            + 'kept promise and everybody can see the shape of it.',
+          edit: { set: { 'brand.patch': 'bank' },
+            effects: { money: 1.8, tradition: -1.2, cost: -0.8 },
+            aimed: { Fans: { tradition: -0.8 }, Presidents: { cost: 1.4 },
+              Networks: { money: 1 }, Players: { labour: -1.2 } } } },
+      ],
+    },
+    {
+      id: 'pay-said-rescue',
+      beats: [WINTER, PORTAL, SPRING, MEDIA, SEPT],
+      weight: 29,
+      pays: 'said-rescue',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['said-rescue']),
+      cast: (w, L, rng, sit) => {
+        const t = sit && sit.ripe && sit.ripe['said-rescue'];
+        const conf = (t && t.data && t.data.conf) || (sit && sit.endangered && sit.endangered[0]) || null;
+        if (!conf) return null;
+        const row = (sit && sit.confs && sit.confs[conf]) || null;
+        /* WHICH POT THEY DRINK FROM, not what they are called. money.share has five keys and
+           an endangered league is very often none of them: writing 'money.share.Mountain West'
+           is a path the ledger does not have, and applyEdit throws on exactly that. See
+           ledger.blocOf(). An independent drinks from nobody's pot and the item is dropped. */
+        const pot = L && L.blocOf ? L.blocOf(conf) : conf;
+        if (!pot) return null;
+        return { conf: conf, pot: pot, size: row ? row.size : 0, gone: !!(row && row.defunct) };
+      },
+      eyebrow: 'On the record',
+      title: (c) => 'The rescue you offered the ' + confOf(c),
+      brief: (c) => 'You stood at a lectern and said the office would step in. The ' + confOf(c)
+        + ' is ' + (c && c.gone ? 'below the line at ' + c.size + ' and is not a conference any more'
+          : 'at ' + ((c && c.size) || 'the line') + ' and two of those have taken calls this month')
+        + '. Their presidents have asked, politely and in writing, what stepping in was supposed '
+        + 'to mean. Nobody else in this building has ever promised them anything.',
+      voices: [
+        { id: 'ACC', say: 'You offered. We did not ask. We are asking now.' },
+        { id: 'SEC', say: 'Propping up a league nobody watches is a transfer from the leagues they do.' },
+        { id: 'Fans', say: 'Those are hundred year old programmes. Somebody should do something.' },
+      ],
+      options: [
+        { id: 'fund', label: 'Fund them out of the pool',
+          body: (c) => 'A guaranteed distribution that keeps the ' + confOf(c) + ' solvent for '
+            + 'five years, paid for by the leagues that would otherwise be picking over it.',
+          edit: (c) => ({ set: { ['money.share.' + c.pot]: 0.2 },
+            effects: { access: 2.6, cost: 2, money: -1.4, tradition: 2 },
+            aimed: { ACC: { access: 2.4 }, 'Big 12': { access: 2 },
+              Fans: { tradition: 2.4 }, SEC: { money: -2.4 }, 'Big Ten': { money: -2.2 } } }) },
+        { id: 'schedule', label: 'Give them games instead of money',
+          body: (c) => 'A scheduling agreement that puts the ' + confOf(c) + ' on television against '
+            + 'the leagues that are leaving them behind. It costs nothing and it is worth '
+            + 'something, which is the rarest thing in this building.',
+          edit: { effects: { access: 1.6, inventory: 1.2, tradition: 1.2, autonomy: -0.8 },
+            aimed: { ACC: { access: 1.6 }, 'Big 12': { access: 1.2 },
+              Networks: { inventory: 1.4 }, SEC: { autonomy: -1.2 } } } },
+        { id: 'nothing', label: 'Tell them the truth',
+          body: 'There is nothing this office can do that the market will not undo by August. '
+            + 'It is honest, it is correct, and you said the opposite of it in July with a '
+            + 'camera on you.',
+          edit: { effects: { access: -2.4, tradition: -2.6, autonomy: 1 },
+            aimed: { ACC: { access: -3 }, 'Big 12': { access: -2 },
+              Fans: { tradition: -2.8 }, SEC: { autonomy: 1.4 } } } },
+      ],
+    },
+    {
+      id: 'pay-table',
+      beats: [WINTER, PORTAL, SPRING, MEDIA, SEPT, NOV],
+      weight: 28,
+      pays: 'the-table',
+      when: (w, L, sit) => !!(sit && sit.ripe && sit.ripe['the-table']),
+      eyebrow: 'The table',
+      title: 'The first thing they asked for',
+      brief: 'The room this office agreed to sit in has met four times, and the association has '
+        + 'now put something on the table. Not money. A guaranteed medical window: every '
+        + 'scholarship carries coverage for two years past the last snap, paid centrally, and '
+        + 'no school may condition it on anything. It is the cheapest thing they could have '
+        + 'opened with and it is the one nobody in this building can argue against in public.',
+      voices: [
+        { id: 'Players', say: 'Two years of care after the last hit. Start there and we can talk about the rest.' },
+        { id: 'Presidents', say: 'Centrally paid means we pay it, and nobody has costed a decade of this.' },
+        { id: 'SEC', say: 'Agree to the first one and every one after it starts from yes.' },
+      ],
+      options: [
+        { id: 'grant', label: 'Agree to it',
+          body: 'It is cheap, it is right, and it is the first thing this office has ever '
+            + 'conceded across a table rather than announced from a lectern.',
+          edit: { set: { 'labour.revShare': 0.04 },
+            effects: { labour: 3, cost: 2.2, exposure: -1.8, tradition: 0.8 },
+            aimed: { Players: { labour: 3.4 }, Presidents: { cost: -2.2, exposure: 1.8 },
+              Fans: { tradition: 1.2 }, SEC: { cost: -1.4 } } } },
+        { id: 'trade', label: 'Agree, for something back',
+          body: 'Two years of coverage in exchange for a transfer window the association will '
+            + 'hold to. It is a negotiation rather than a concession, which is what the table '
+            + 'was for.',
+          edit: { set: { 'labour.portalWindows': 1 },
+            effects: { labour: 1.4, cost: 1.4, tradition: 1.6, inventory: 0.6 },
+            aimed: { Players: { labour: 0.8 }, Fans: { tradition: 2 },
+              Presidents: { cost: -1.2 }, SEC: { autonomy: 0.8 } } } },
+        { id: 'refuse', label: 'Refuse the first thing they asked for',
+          body: 'Say the cost is unknowable and send them away with nothing, four meetings in. '
+            + 'The table stops being a table and becomes evidence.',
+          edit: { set: { 'pressure.union': 58, 'pressure.legal': 40 },
+            effects: { labour: -3.2, exposure: 2.8, cost: -1.6 },
+            aimed: { Players: { labour: -3.8 }, Presidents: { cost: 1.8, exposure: -2.6 },
+              Fans: { tradition: -1.4 } } } },
+      ],
+    },
   ];
 
   const BY_ID = {};
@@ -4223,7 +4607,7 @@
     const h = (world && world.history) || [];
     for (let i = h.length - 1; i >= 0; i--) {
       const id = h[i] && h[i].id;
-      if (!id || String(id).indexOf('season:') === 0) continue;
+      if (!id || !L_ISRULING({ id: id })) continue;
       const it = BY_ID[id];
       return it ? it.eyebrow : null;
     }

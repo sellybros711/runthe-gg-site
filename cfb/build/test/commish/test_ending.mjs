@@ -39,6 +39,21 @@ const arm = `
     set:function(a){ v=a; try{ a.TESTERS.push(${JSON.stringify(TESTER)}); }catch(e){} }});
 })();`;
 
+
+/* MEDIA DAYS SITS BETWEEN THE OFFICE AND THE DESK, one beat a year. Pressing on at that beat
+   opens a lectern rather than a folder, and a walker that only knows about the desk stalls
+   there with nothing it recognises on screen. Three answers and it is a desk again. */
+async function podium(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-press', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#p-answers .opt').catch(() => {});
+    await pg.waitForTimeout(160);
+    await pg.click('#b-say').catch(() => {});
+    await pg.waitForTimeout(520);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -92,6 +107,7 @@ async function runTerm(mode) {
       await p.click('#b-rule').catch(() => {}); await p.waitForTimeout(240); continue;
     }
     if (await on('s-room')) { await p.click('#b-next').catch(() => {}); await p.waitForTimeout(210); continue; }
+    if (await on('s-press')) { await podium(p); continue; }
     break;
   }
   await p.waitForTimeout(900);

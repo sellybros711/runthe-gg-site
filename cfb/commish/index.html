@@ -1681,6 +1681,36 @@
       color .16s var(--ez),transform .12s var(--ez)}
     .steps button:active{transform:scale(.96)}
   }
+  /* ── the podium ───────────────────────────────────────────────────────────────
+     A LECTERN IS NOT A DESK AND IT SHOULD NOT LOOK LIKE ONE. The desk is a folder: an
+     eyebrow, a brief, the room arguing, three options and a forecast button. This is one
+     person asking you one thing, so the question is the whole top of the screen and there is
+     nothing beside it. See media.js for why the two are opposites on purpose. */
+  .pdots{display:flex;gap:6px;align-items:center;margin:2px 0 14px}
+  .pdots i{width:22px;height:3px;border-radius:2px;background:var(--line-2);display:block}
+  .pdots i.done{background:var(--green)}
+  .pdots i.now{background:var(--gold)}
+  .pdots span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--dim-2);font-weight:700;margin-left:5px}
+  /* THE QUESTION, AT THE SIZE SOMEBODY ASKS ONE. Bigger than a brief and set in the display
+     face, because it is the only thing on this screen that matters and because a wall of
+     body copy is what the desk already is. */
+  .askc{border-left:3px solid var(--gold)}
+  .askw{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;margin-bottom:9px}
+  .askw b{font-family:var(--fn);font-size:12px;font-weight:700;letter-spacing:.03em}
+  .askw span{font-size:11.5px;color:var(--dim-2);line-height:1.4}
+  .askq{margin:0;font-family:var(--fn);font-size:16px;line-height:1.45;font-weight:600}
+  @media(max-width:420px){ .askq{font-size:15px} }
+  /* WHAT GOT WRITTEN. The room's own reaction is nine numbers and nine sentences; this is
+     the three lines that ran, which is the part a player would screenshot. */
+  .wire{display:grid;gap:8px}
+  .wire p{margin:0;font-size:12.5px;line-height:1.5;color:var(--dim);
+    padding-left:11px;border-left:2px solid var(--line-2)}
+  .wire p b{color:var(--ink);font-weight:600}
+  /* The office card that remembers it, once July is over. */
+  .saidrow{display:grid;gap:7px}
+  .saidrow div{font-size:12px;line-height:1.45;color:var(--dim);
+    padding-left:10px;border-left:2px solid var(--gold-dim,var(--line-2))}
   .foot{margin-top:22px;text-align:center;font-size:11.5px;color:var(--dim-2);line-height:1.6}
 </style>
 </head>
@@ -1824,6 +1854,15 @@
       <div class="sport" id="off-sport"></div>
       <div class="fuses" id="off-fuses"></div>
     </div>
+    <!-- WHAT YOU SAID IN JULY, for the rest of the year you have to live with it. A press
+         conference that scrolls away the moment it ends is a press conference with no
+         consequences, and half of these answers are promises. See paintSaid(). -->
+    <div class="card flat" id="off-saidcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px">What you said in July</div>
+      <p class="dcsub" style="margin-bottom:9px">Media days is on the record. Anything here
+        that sounded like a promise is somewhere in the pile marked in motion.</p>
+      <div class="saidrow" id="off-said"></div>
+    </div>
     <div class="card flat" id="off-roomcard">
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
       <div class="room" id="off-room"></div>
@@ -1875,6 +1914,24 @@
       <div id="d-council"></div>
     </div>
     <div class="dock"><button class="btn" id="b-rule">Rule</button></div>
+  </div>
+
+  <!-- THE PODIUM. Media days, once a year, three questions, no forecast. See media.js. -->
+  <div class="screen" id="s-press" data-in="slide">
+    <div class="beatbar" id="press-beatbar"></div>
+    <div class="eyebrow gold" id="p-eyebrow">Media days</div>
+    <h2 id="p-title">You are on first</h2>
+    <p class="dcsub" id="p-sub"></p>
+    <div class="pdots" id="p-dots"></div>
+    <div class="card flat askc">
+      <div class="askw" id="p-who"></div>
+      <p class="askq" id="p-ask"></p>
+    </div>
+    <!-- NO TEST BUTTON, AND THE HINT SAYS SO. The absence is the design and an absence
+         nobody notices is not a design, it is a missing feature. -->
+    <div class="dsec"><b>Your answer</b><span id="p-hint"></span></div>
+    <div id="p-answers"></div>
+    <div class="dock"><button class="btn" id="b-say">Say it</button></div>
   </div>
 
   <!-- THE DATA CENTER. Where every number in the mode has been, rather than where it is. -->
@@ -1974,6 +2031,13 @@
     </div>
     <!-- What the internet said. Only after a real ruling: see paintFeed. -->
     <div class="card flat" id="r-feed" hidden></div>
+    <!-- WHAT GOT WRITTEN, after a press conference rather than a ruling. The room's own
+         reaction is the nine bloc rows above; this is the three lines that actually ran,
+         which is the part of a media day anybody outside the ballroom ever sees. -->
+    <div class="card flat" id="r-wirecard" hidden>
+      <div class="eyebrow" style="margin-bottom:9px">What got written</div>
+      <div class="wire" id="r-wire"></div>
+    </div>
     <div class="card flat" id="r-changed" hidden>
       <div class="eyebrow" style="margin-bottom:9px">What changed in the sport</div>
       <div class="sport" id="r-sport"></div>
@@ -2044,14 +2108,14 @@
 
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=4"></script>
-<script src="ledger.js?v=8"></script>
+<script src="ledger.js?v=9"></script>
 <script src="blocs.js?v=8"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=6"></script>
-<script src="docket.js?v=17"></script>
+<script src="docket.js?v=19"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2066,8 +2130,10 @@
 <script src="council.js?v=2"></script>
 <script src="feed.js?v=3"></script>
 <script src="calendar.js?v=4"></script>
-<script src="situation.js?v=6"></script>
+<script src="situation.js?v=8"></script>
 <script src="fallout.js?v=5"></script>
+<!-- The podium. Reads nothing at load time; see media.js. -->
+<script src="media.js?v=2"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=2"></script>
@@ -2076,7 +2142,7 @@
 <script src="metrics.js?v=2"></script>
 <!-- Reads nothing off window at load time: it is handed a world and returns a profile, so
      its position here is free. -->
-<script src="doctrine.js?v=2"></script>
+<script src="doctrine.js?v=3"></script>
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=3"></script>
@@ -2110,6 +2176,7 @@ const FEED=window.PS_CFB_FEED;
 const CAL=window.PS_CFB_CALENDAR;
 const SIT=window.PS_CFB_SITUATION;
 const FALL=window.PS_CFB_FALLOUT;
+const MED=window.PS_CFB_MEDIA;
 const REPORT=window.PS_CFB_REPORT;
 /* The catalog, for turning a sponsor id and a bowl id back into the names the rest of the
    mode uses. See pathName and pathValue. */
@@ -2168,7 +2235,7 @@ function bumpCareer(){
    only ever raise the number. */
 function seedCareer(w){
   if(careerOverride!=null||!w||!w.history) return;
-  const ruled=w.history.filter((h)=>!(h.id&&String(h.id).indexOf('season:')===0)).length;
+  const ruled=w.history.filter((h)=>L.isRuling(h)).length;
   if(ruled>careerRulings()){
     try{ localStorage.setItem(CAREER_KEY,JSON.stringify({v:1,rulings:ruled})); }catch(e){}
   }
@@ -2816,7 +2883,7 @@ function paintYearStrip(el,w){
   if(!el) return;
   const ruled={};
   (w.history||[]).forEach((h)=>{
-    if(h.id&&String(h.id).indexOf('season:')===0) return;
+    if(!L.isRuling(h)) return;
     ruled[h.year+':'+h.beat]=(ruled[h.year+':'+h.beat]||0)+1;
   });
   const champs=w.champions||{};
@@ -2894,7 +2961,7 @@ function paintCalendar(el,w){
      screen can exist at all. */
   const ruled={};
   (w.history||[]).forEach((h)=>{
-    if(h.id&&String(h.id).indexOf('season:')===0) return;
+    if(!L.isRuling(h)) return;
     ruled[h.year+':'+h.beat]=(ruled[h.year+':'+h.beat]||0)+1;
   });
   const champs=w.champions||{};
@@ -2936,7 +3003,7 @@ function paintCalendar(el,w){
         ? '<b>'+w.startYear+' to '+(w.startYear+TERM_SEASONS-1)+'</b><span class="done">'
           +'five seasons, served</span>'
         : '<b>'+esc(L.BEATS[w.beat])+'</b><span>'+esc(nextBeat)+'</span>')
-      +'<em>'+(w.history||[]).filter((h)=>!(h.id&&String(h.id).indexOf('season:')===0)).length
+      +'<em>'+(w.history||[]).filter((h)=>L.isRuling(h)).length
       +' rulings</em></div>'
     /* THE TITLES YOU HAVE PRESIDED OVER. A term's record is partly who won it, and until
        now the only screen that ever said so was the year in review, which is gone the
@@ -3044,6 +3111,7 @@ function office(){
   $('off-pollcard').hidden=!inSeason;
   paintMotion($('off-motion'),$('off-motioncard'),world);
   paintSettled($('off-settled'),$('off-setlcard'));
+  paintSaid($('off-said'),$('off-saidcard'));
   paintYear($('off-year'),$('off-yearcard'));
   $('off-mapcard').hidden=inSeason;
   if(inSeason){
@@ -3065,12 +3133,24 @@ function office(){
   /* THE BUTTON GOES RED WHEN THE THING BEHIND IT IS A CRISIS. Every other beat it is the same
      green invitation, so the one week it is not should not need reading. */
   const crisis=pool.some((it)=>it.crisis);
-  $('b-desk').className='btn'+(crisis?' danger':'');
-  $('b-desk').textContent=crisis
-    ? 'Deal with it'
-    : pool.length
-      ? 'See what is on the desk'
-      : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
+  /* ── THE LECTERN COMES BEFORE THE DESK ──────────────────────────────────────────
+     One July a year, and the dock is the way forward on every other screen in this mode, so
+     making the podium a second button beside it would be teaching a new navigation model for
+     one beat. The dock IS the podium at media days, and once you have stood at it the same
+     button goes back to saying what it says every other week.
+
+     EVEN OVER A CRISIS. A lawsuit lands on the desk, and the desk is the next screen after
+     this one either way: what changes is only whether you took questions before you read the
+     filing, which is the order it happens in life. */
+  const podiumUp=pressDue();
+  $('b-desk').className='btn'+(!podiumUp&&crisis?' danger':'');
+  $('b-desk').textContent=podiumUp
+    ? 'Take the podium'
+    : crisis
+      ? 'Deal with it'
+      : pool.length
+        ? 'See what is on the desk'
+        : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
   show('s-office');
 }
 /* ── what is going on right now ────────────────────────────────────────────────────
@@ -3305,6 +3385,8 @@ function dcSeg(id,attr,val){
 }
 
 $('b-desk').onclick=()=>{
+  /* MEDIA DAYS FIRST, and only once. See pressDue(). */
+  if(pressDue()){ podium(); return; }
   /* THE WINDOW DECIDES WHICH ITEM, because the item decides the day. See situationOn(). */
   sit=SIT?(function(){
     try{
@@ -5162,7 +5244,11 @@ const PATH_WORD={
   'rules.targeting':{ strict:'ejection every time', lenient:'called on the field' },
   'rules.clock':{ running:'keeps running', stopped:'stops on a first down' },
   'rules.replay':{ central:'a central booth', full:'reviewed in full', none:'no replay' },
-  'playoff.selection':{ formula:'a formula', committee:'a committee', poll:'a poll' },
+  /* `ranking` ARRIVED WITH A PAYOFF ITEM AND NOT WITH A WORD. The docket's own guard caught
+     it: pay-said-bid sets the selection to a published standard and the settled panel
+     printed `playoff.selection=ranking` at a reader. */
+  'playoff.selection':{ formula:'a formula', committee:'a committee', poll:'a poll',
+    ranking:'a published ranking' },
   'playoff.sites':{ campus:'on campus', mixed:'campus, then neutral', neutral:'neutral sites' },
   'posture.gambling':{ partnered:'partners of the sport', banned:'kept out' },
 };
@@ -5459,6 +5545,237 @@ $('b-test').onclick=()=>{
   show('s-room');
 };
 
+/* ── media days ───────────────────────────────────────────────────────────────────
+   THE OTHER HALF OF THE JOB. See the header of media.js for what this is and why it is
+   built as the desk's opposite. What lives here is the flow: three questions in sequence,
+   answered on your feet, and one reaction from the room at the end of them rather than
+   three.
+
+   RESUMABLE, WHICH IS THE WHOLE REASON THE SET IS STORED. A press conference that picked
+   its next question at the moment you answered the last one would hand somebody who closed
+   the tab a different third question, and "the room asks what it likes" is exactly the
+   feeling this screen must not have. The three are chosen when you step up and written to
+   the world; the answers are appended as they are given. */
+const PRESS_BEAT=3;
+
+/* The record for a year, built on first use and kept. */
+function pressSet(){
+  const y=String(world.year);
+  world.press=world.press||{};
+  let p=world.press[y];
+  if(!p){
+    p=world.press[y]={ qs:MED.pickSet(world,L,draw,situationNow(),MED.ASKED), said:[] };
+    save();
+  }
+  /* A QUESTION THIS BUILD NO LONGER HAS, from a save written against an older one. Dropped
+     rather than handed to the painter, which would read `undefined.answers` and take the
+     whole mode down on the one screen it is hardest to get back to. */
+  const known=(p.qs||[]).filter((id)=>MED.BY_ID[id]);
+  if(known.length!==(p.qs||[]).length){
+    p.qs=known; p.said=(p.said||[]).slice(0,known.length); save();
+  }
+  return p;
+}
+/* AN EMPTY SET COUNTS AS DONE. A world so quiet that no question is eligible is not a world
+   that should sit on a lectern with nothing to say: 0 >= 0, the podium is skipped, and the
+   beat runs the way every other beat does. */
+function pressDone(year){
+  const p=(world.press||{})[String(year)];
+  return !!p && (p.said||[]).length>=(p.qs||[]).length;
+}
+function pressDue(){
+  if(!MED||world.beat!==PRESS_BEAT) return false;
+  if(pressDone(world.year)) return false;
+  return pressSet().qs.length>0;
+}
+
+/* The question on screen and who is asking it, held so the answer handler does not have to
+   work out which one it is answering. */
+let pAsk=null, pAnswer=null;
+
+function podium(){
+  pressSet();
+  paintAsk();
+}
+
+function paintAsk(){
+  const p=pressSet();
+  const at=(p.said||[]).length;
+  if(at>=p.qs.length){ pressFinish(); return; }
+  const q=MED.BY_ID[p.qs[at]];
+  const s2=situationNow();
+  const c=MED.castOf(q,world,L,s2);
+  pAsk={q:q,cast:c};
+  pAnswer=null;
+  paintBeatbar($('press-beatbar'),world);
+  $('p-eyebrow').textContent='Media days · '+world.year;
+  $('p-title').textContent=at===0?'You are on first':'The next one is already standing';
+  /* SAY WHAT THIS SCREEN IS, ONCE. The desk explains itself with a forecast button; this
+     one has to explain itself in a sentence, because what it is missing is the point. */
+  $('p-sub').textContent=at===0
+    ? 'A ballroom, a lectern and forty minutes. Nothing you say here changes a rule. All of '
+      +'it changes what the room thinks of you, and some of it will be read back to you.'
+    : 'They heard the last answer. This is what it bought you.';
+  $('p-dots').innerHTML=p.qs.map((id,i)=>
+    '<i class="'+(i<at?'done':i===at?'now':'')+'"></i>').join('')
+    +'<span>'+(at+1)+' of '+p.qs.length+'</span>';
+  const A=MED.ASKERS[q.who]||{name:'A reporter',tone:''};
+  const desk=q.desk?String(MED.text(q.desk,c,q,s2,world)||''):'';
+  /* A MIDDOT BETWEEN THE TWO FIELDS. The flex gap separates them on screen and separates
+     nothing at all in the text, so the line read as "A morning radio hostthree hours a day"
+     to anything that is not a pair of eyes, screen readers included. */
+  /* THE QUESTION'S OWN LINE WINS. The archetype carries a general one and a question may
+     carry a specific one, and printing both put two different tenures on one person: "A beat
+     writer, has covered one school for eleven years, who covered the ACC for nineteen years".
+     The specific one is always the more interesting, so it replaces rather than joins, and
+     the archetype's line is what a question with nothing particular to say falls back on.
+     The leading "and" goes with the clause it was joined to. */
+  const line=desk?desk.replace(/^and /,''):A.tone;
+  $('p-who').innerHTML='<b>'+esc(A.name)+'</b><span>&middot; '+esc(line)+'</span>';
+  $('p-ask').textContent=MED.askText(q,c,s2,world);
+  $('p-hint').textContent='No forecast. You are on your feet.';
+  paintAnswers();
+  $('b-say').disabled=true;
+  $('b-say').textContent='Say it';
+  show('s-press');
+  reveal($('p-answers'));
+}
+
+function paintAnswers(){
+  const q=pAsk.q;
+  /* `.whole` RATHER THAN THE DESK'S CLAMP. Three bodies of two sentences each, and the
+     thing being chosen between is the tone rather than the mechanism, so hiding two of them
+     behind a control would hide the entire decision. */
+  $('p-answers').innerHTML=(q.answers||[]).map((a)=>
+    '<div class="opt whole'+(pAnswer===a.id?' on':'')+'" role="button" tabindex="0" '
+    +'aria-pressed="'+(pAnswer===a.id?'true':'false')+'" data-a="'+esc(a.id)+'">'
+    +'<b>'+esc(a.label)+'</b><span class="why">'+esc(a.body)+'</span></div>').join('');
+  $('p-answers').querySelectorAll('.opt').forEach((el)=>{
+    const take=()=>{ pAnswer=el.dataset.a; paintAnswers(); $('b-say').disabled=false; };
+    el.onclick=take;
+    el.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); take(); } };
+  });
+}
+
+$('b-say').onclick=()=>{
+  if(!pAnswer||!pAsk) return;
+  const p=pressSet();
+  p.said=(p.said||[]).concat([{q:pAsk.q.id,a:pAnswer}]);
+  save();
+  paintAsk();
+};
+
+/* Every answer given this July, resolved back into pushes. Rebuilt from the stored ids
+   rather than accumulated as you go, so a reload between the second answer and the third
+   produces the same conference. */
+function pressRows(){
+  const p=pressSet();
+  const s2=situationNow();
+  return (p.said||[]).map((r)=>{
+    const q=MED.BY_ID[r.q];
+    if(!q) return null;
+    try{ return MED.resolve(q,r.a,MED.castOf(q,world,L,s2)); }catch(e){ return null; }
+  }).filter(Boolean);
+}
+
+function pressFinish(){
+  const before=world;
+  const rows=pressRows();
+  const edit=MED.combine(world,rows);
+  lastRoom=B.react(world,edit);
+  /* ---- WORDS MOVE THE ROOM AND NOTHING ELSE ----
+     applyEdit for the history row alone: the edit carries no `set` and no `move`, so the
+     ledger is untouched and the record still shows what was said. Then the bloc deltas by
+     hand and standing recomputed from them, which is the same two lines the rebuttal on the
+     room screen runs and for the same reason.
+
+     NOT applyOutcome. That would move revenue and health off the effect vector and light
+     the three fuses, and a commissioner who can talk the sport into more money is a mode
+     with a dominant strategy in it: stand at a lectern nine times a year. */
+  let next=L.applyEdit(world,edit);
+  const d=B.deltas(world,edit);
+  for(const b in d){
+    if(next.blocs[b]==null) continue;
+    next.blocs[b]=Math.max(0,Math.min(100,next.blocs[b]+d[b]));
+  }
+  next.meters.standing=Math.max(0,Math.min(100,L.standingFrom(next.blocs)));
+  world=next;
+  /* ---- AND A PROMISE IS NOT NOTHING ----
+     After the edit, the same way a ruling plants its threads, so the date on a promise is
+     the beat it was made in rather than the one before it. */
+  rows.forEach((r)=>{ if(r.promise&&r.promise.id) world=L.plant(world,r.promise.id,r.promise); });
+  if(window.PS_CFB_METRICS) window.PS_CFB_METRICS.record(world);
+  save();
+
+  $('r-eyebrow').textContent='You took questions';
+  $('r-title').textContent='Media days '+before.year;
+  if($('r-note')) $('r-note').hidden=true;
+  $('r-tail').hidden=true;
+  $('r-split').hidden=true;
+  $('r-changed').hidden=true;
+  $('r-rebutcard').hidden=true;
+  $('r-feed').hidden=true;
+  $('r-head').textContent='The room, after forty minutes of you';
+  /* THE METERS ARE HERE TO SHOW WHAT DID NOT MOVE. Revenue and health sit exactly where
+     they were and standing does not, which is the rule of this screen stated in numbers
+     rather than in a sentence nobody reads. */
+  paintMeters($('r-meters'),world,before);
+  paintRoom($('r-room'),world,lastRoom);
+  $('r-council').innerHTML='';
+  lastBefore=before;
+  paintWire($('r-wire'),$('r-wirecard'),rows);
+  $('b-next').textContent='Back to the office';
+  $('b-next').dataset.go='office';
+  show('s-room');
+}
+
+/* The three lines that ran. Not a feed and not a quote: what a wire reporter filed, which
+   is your answer with the flattery taken out of it. */
+function paintWire(el,card,rows){
+  if(!el||!card) return;
+  const lines=(rows||[]).map((r)=>r.wrote).filter(Boolean);
+  if(!lines.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  el.innerHTML=lines.map((t)=>'<p>'+esc(t)+'</p>').join('');
+  reveal(el);
+}
+
+/* AND THE SAME THREE LINES, ON THE OFFICE, FOR THE REST OF THE YEAR. Shown only for the
+   July you are currently living in: a new year has a new lectern and nothing said at it
+   yet, and last summer's answers belong to the term rather than to this screen. */
+function paintSaid(el,card){
+  if(!el||!card) return;
+  if(!MED||world.beat<PRESS_BEAT||!pressDone(world.year)){
+    card.hidden=true; el.innerHTML=''; return;
+  }
+  const p=(world.press||{})[String(world.year)];
+  const lines=((p&&p.said)||[]).map((r)=>{
+    const q=MED.BY_ID[r.q];
+    const a=q?MED.answerOf(q,r.a):null;
+    return a?a.wrote:null;
+  }).filter(Boolean);
+  if(!lines.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  el.innerHTML=lines.map((t)=>'<div>'+esc(t)+'</div>').join('');
+  reveal(el);
+}
+
+/* A HANDLE FOR THE BROWSER GUARDS, on the same terms as PS_CFB_COMMISH_WORDS above and for
+   the same reason: this whole script is one closure, so a test cannot reach the world, the
+   clock or a repaint, and media days is a beat a walker would otherwise have to play three
+   beats of football to arrive at once per year.
+
+   IT IS ALSO CHEAT SURFACE, and that is a smaller thing than it sounds. The save file is the
+   world, it is plain JSON in this browser's own storage, and anybody who wants to edit their
+   term can already do it with two lines in the same console. Nothing here reads anything
+   private and nothing in the page reads this. See test_podium. */
+window.PS_CFB_COMMISH_TEST={
+  world:()=>world,
+  jump:(beat,year)=>{ world.beat=beat; if(year) world.year=year; save(); office(); },
+  plant:(id,opts)=>{ world=L.plant(world,id,opts); save(); },
+  repaint:()=>office(),
+};
+
 $('b-rule').onclick=()=>{
   if(!choice) return;
   let edit=D.resolve(item,choice,dials,cast);
@@ -5553,6 +5870,11 @@ $('b-rule').onclick=()=>{
 
 $('b-next').onclick=()=>{
   if($('b-next').dataset.go==='desk'){ desk(); return; }
+  /* BACK TO THE OFFICE RATHER THAN ON TO THE DESK, after a press conference. The beat is not
+     over: there is still an item waiting, the dock now says so, and the office in between is
+     where the meters that just moved are read. Routing straight to the desk would also have
+     run the calendar walk on a screen nobody was looking at. */
+  if($('b-next').dataset.go==='office'){ office(); return; }
   const out=L.removal(world);
   if(out.removed){ world.outcome=out; save(); ending(); return; }
   advance();
@@ -6201,7 +6523,7 @@ function ending(){
      commissioner is judged on, over 31 rulings", which is accurate and reads like a receipt.
      What a term is actually judged on is what the sport looks like now and who is still
      talking to you, so it says both. */
-  const ruled=world.history.filter((h)=>!(h.id&&String(h.id).indexOf('season:')===0)).length;
+  const ruled=world.history.filter((h)=>L.isRuling(h)).length;
   const titles=Object.keys(world.champions||{}).length;
   $('y-say').textContent=(o.say||'')+' '+ruled+' rulings, '+titles
     +(titles===1?' champion crowned, ':' champions crowned, ')

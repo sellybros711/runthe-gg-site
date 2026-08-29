@@ -93,6 +93,21 @@ const on=(p,id)=>p.$eval('#'+id,(e)=>e.classList.contains('on')).catch(()=>false
    twenty-four beats is a test that looks hung rather than a test that failed. Give it two
    seconds and report false, so a loop can decide what to do instead of waiting. */
 const tap=async(p,sel)=>{ try{ await p.click(sel,{timeout:2000}); return true; }catch(e){ return false; } };
+
+/* MEDIA DAYS SITS BETWEEN THE OFFICE AND THE DESK, one beat a year. Pressing on at that beat
+   opens a lectern rather than a folder, and a walker that only knows about the desk stalls
+   there with nothing it recognises on screen. Three answers and it is a desk again. */
+async function podium(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-press', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#p-answers .opt').catch(() => {});
+    await pg.waitForTimeout(160);
+    await pg.click('#b-say').catch(() => {});
+    await pg.waitForTimeout(520);
+  }
+}
+
 const txt=(p,sel)=>p.$eval(sel,(e)=>(e.textContent||'').replace(/\s+/g,' ').trim()).catch(()=>'');
 
 console.log('\n=== every module the page needs is actually loaded ===');
@@ -240,6 +255,7 @@ console.log('\n=== a tester takes the job ===');
   await p.screenshot({path:SS+'commish_office.png'});
 
   await p.click('#b-desk'); await skipSim(p); await p.waitForTimeout(600);
+  await podium(p);
   ok('the desk has something on it', await on(p,'s-desk'));
   ok('  with a title', (await txt(p,'#d-title')).length>8, await txt(p,'#d-title'));
   const opts=await p.$$eval('#d-options .opt',(e)=>e.length);
@@ -303,6 +319,7 @@ console.log('\n=== what a free player is shown ===');
   ok('  and the badge says which view this is', /free/i.test(await txt(p,'#tag')), await txt(p,'#tag'));
   await p.click('#g-start'); await p.waitForTimeout(600);
   await p.click('#b-desk'); await skipSim(p); await p.waitForTimeout(500);
+  await podium(p);
   ok('there is no box to write your own ruling', !(await p.$('#d-text')));
   ok('  and no testing a policy first', await p.$eval('#b-test',(e)=>e.hidden));
   /* NOT EVERY ITEM HAS DIALS, so landing on one and skipping is landing on nothing: the
@@ -324,6 +341,7 @@ console.log('\n=== what a free player is shown ===');
   while(beat++<Math.max(75,DOCKET_ITEMS*2)){
     if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
+    if(await on(p,'s-press')){ await podium(p); continue; }
     if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }
     if(!(await on(p,'s-desk'))){ stuck='no screen the loop knows'; break; }
     seen++;
@@ -367,6 +385,7 @@ console.log('\n=== a season, and it survives the browser closing ===');
       await p.waitForTimeout(450); continue;
     }
     if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
+    if(await on(p,'s-press')){ await podium(p); continue; }
     break;
   }
   ok('a whole season plays', await on(p,'s-year'), 'in '+guard+' steps');
