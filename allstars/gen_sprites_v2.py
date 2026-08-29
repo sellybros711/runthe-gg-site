@@ -339,27 +339,6 @@ def face(cv, skin, spec, cy=HEAD_CY):
             cv.dot(CX + dx, y + 6 - drop, glow)
             cv.dot(CX + dx, y + 7 - drop, deep)
         return
-    if style == 'one':
-        # ONE eye. He is a cyclops: two eyes at spread zero is not the
-        # same thing, it is a smudge.
-        x = int(CX)
-        for dx in (-1, 0, 1):
-            cv.dot(x + dx, y - 1, (250, 250, 252))
-            cv.dot(x + dx, y, (250, 250, 252))
-        cv.dot(x, y, hex2rgb(ec or '#3a2412'))
-        cv.dot(x, y + 1, hex2rgb(ec or '#3a2412'))
-        cv.dot(x - 2, y - 2, shade(skin.base, -0.45))
-        cv.dot(x - 1, y - 2, shade(skin.base, -0.45))
-        cv.dot(x, y - 2, shade(skin.base, -0.45))
-        cv.dot(x + 1, y - 2, shade(skin.base, -0.45))
-        cv.dot(x + 2, y - 2, shade(skin.base, -0.45))
-        m = spec.get('mouth', 'line')
-        my2 = int(cy + 6)
-        if m == 'open':
-            for xx in range(int(CX) - 2, int(CX) + 3):
-                cv.dot(xx, my2, (96, 40, 44))
-                cv.dot(xx, my2 + 1, (72, 28, 34))
-        return
     if style == 'goggles':
         # Dark round lenses on a strap. A fully hidden face on a bandaged
         # head leaves nothing for the eye to land on, and the head reads
@@ -371,53 +350,79 @@ def face(cv, skin, spec, cy=HEAD_CY):
         for side in (-1, 1):
             cv.sphere(CX + side * 4, y, 2.2, 1.9, Ramp(rgb2hex(lens)), spec=True)
         return
-    for sx in (-sp, sp):
-        x = int(CX + sx)
-        if style == 'glow':
-            g = hex2rgb(ec or '#f4c25a')
-            cv.dot(x - 1, y - 1, shade(skin.base, -0.42))
-            cv.dot(x, y - 1, shade(skin.base, -0.42))
-            cv.dot(x, y, g)
-            cv.dot(x - 1, y, shade(g, 0.45))
-            cv.dot(x, y + 1, shade(g, -0.40))
-        elif style == 'angry':
-            cv.dot(x - 1, y - 1, shade(skin.base, -0.50))
-            cv.dot(x, y - 1, shade(skin.base, -0.50))
-            cv.dot(x + 1, y - 1, shade(skin.base, -0.50))
-            cv.dot(x, y, (248, 248, 250))
-            cv.dot(x, y + 1, hex2rgb(ec or '#1a1420'))
-        elif style == 'cartoon':
-            cv.dot(x - 1, y - 1, (250, 250, 252))
-            cv.dot(x, y - 1, (250, 250, 252))
-            cv.dot(x - 1, y, (250, 250, 252))
-            cv.dot(x, y, hex2rgb(ec or '#141018'))
-            cv.dot(x, y + 1, (250, 250, 252))
-        else:
-            cv.dot(x, y, (250, 250, 252))
-            cv.dot(x - 1, y, (218, 220, 228))
-            cv.dot(x, y + 1, hex2rgb(ec or '#1a1420'))
+    # BIG eyes with visible whites. The single biggest difference between
+    # cute and mannequin at this scale: a one pixel dot on a nineteen
+    # pixel face is a bead, and a face full of beads reads as a doll
+    # watching you. Every style below is built on a 2x3 white with a fat
+    # pupil, the way the reference art draws them.
+    WHITE = (250, 250, 252)
+    if style == 'one':
+        # ONE eye, and a big one: he is a cyclops.
+        for dx in range(-2, 3):
+            for dy in (-1, 0, 1):
+                cv.dot(CX + dx, y + dy, WHITE)
+        pc = hex2rgb(ec or '#3a2412')
+        cv.dot(CX, y, pc); cv.dot(CX, y + 1, pc)
+        cv.dot(CX - 1, y, pc); cv.dot(CX - 1, y + 1, pc)
+    else:
+        for sx in (-sp, sp):
+            x = int(CX + sx)
+            inner = x - 1 if sx > 0 else x     # pupil sits toward center
+            if style == 'glow':
+                g = hex2rgb(ec or '#f4c25a')
+                for dx in (-1, 0):
+                    cv.dot(x + dx, y, g)
+                    cv.dot(x + dx, y + 1, shade(g, -0.30))
+                cv.dot(inner, y, shade(g, 0.50))
+            elif style == 'angry':
+                b = shade(skin.base, -0.50)
+                cv.dot(x - 1, y - 1, b); cv.dot(x, y - 1, b)
+                for dx in (-1, 0):
+                    cv.dot(x + dx, y, WHITE); cv.dot(x + dx, y + 1, WHITE)
+                pc = hex2rgb(ec or '#241e2e')
+                cv.dot(inner, y, pc); cv.dot(inner, y + 1, pc)
+            else:
+                # normal and cartoon: a tall white with a 1x2 pupil,
+                # leaving an L of white as the catchlight.
+                for dx in (-1, 0):
+                    for dy in (-1, 0, 1):
+                        cv.dot(x + dx, y + dy, WHITE)
+                pc = hex2rgb(ec or '#241e2e')
+                cv.dot(inner, y, pc); cv.dot(inner, y + 1, pc)
     m = spec.get('mouth', 'line')
     my = int(cy + 6)
     mc = shade(skin.base, -0.42)
     if m == 'none':
         return
+    # Every mouth is a SMILE unless the character says otherwise: the
+    # corners turn UP. A flat dark bar in the lower face reads as a
+    # grimace, and a red block reads as a wound.
     if m == 'fang':
         for x in range(int(CX) - 2, int(CX) + 3):
-            cv.dot(x, my, (92, 26, 32))
-        cv.dot(int(CX) - 2, my + 1, (250, 250, 252))
-        cv.dot(int(CX) + 2, my + 1, (250, 250, 252))
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 3, my - 1, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
+        cv.dot(int(CX) - 2, my + 1, WHITE)
+        cv.dot(int(CX) + 2, my + 1, WHITE)
     elif m == 'grin':
         for x in range(int(CX) - 3, int(CX) + 4):
             cv.dot(x, my, mc)
         cv.dot(int(CX) - 4, my - 1, mc)
         cv.dot(int(CX) + 4, my - 1, mc)
     elif m == 'open':
-        for x in range(int(CX) - 2, int(CX) + 3):
-            cv.dot(x, my, (96, 40, 44))
-            cv.dot(x, my + 1, (72, 28, 34))
+        # happy open mouth: teeth over tongue, edged, corners up
+        for x in range(int(CX) - 1, int(CX) + 2):
+            cv.dot(x, my, (240, 238, 240))
+            cv.dot(x, my + 1, (150, 52, 54))
+        cv.dot(int(CX) - 2, my, mc)
+        cv.dot(int(CX) + 2, my, mc)
+        cv.dot(int(CX) - 3, my - 1, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
     else:
         for x in range(int(CX) - 2, int(CX) + 3):
             cv.dot(x, my, mc)
+        cv.dot(int(CX) - 3, my - 1, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
 
 
 def head_edge(y, floor=0.72):
@@ -437,7 +442,7 @@ def sidelock(cv, r, side, y0, y1, w=2.0):
         outer = CX + side * head_edge(y)
         inner = outer - side * w
         lo, hi = sorted((inner, outer))
-        cv.cyl(lo, y, hi, y, r)
+        cv.rect(lo, y, hi, y, r, l=0.52 if side < 0 else 0.40)
 
 
 def hair(cv, spec):
@@ -825,16 +830,21 @@ def sig_kong(cv, spec, pose, back):
             cv.sphere(ex, 9.5, 1.2, 1.4, muz, spec=False)
     if back:
         return
-    brow = shade(body.base, -0.45)
-    for x in range(int(CX) - 6, int(CX) + 7):
-        cv.dot(x, 10, brow)
-    # the big open grin: white teeth over a red mouth
-    for x in range(int(CX) - 4, int(CX) + 5):
+    # the big happy grin: teeth in a smile whose corners turn UP.
+    # (A straight block of teeth is a grimace, and a grimacing ape is
+    # a different character.)
+    dk = shade(body.base, -0.5)
+    cv.dot(CX - 5, 16, dk)
+    cv.dot(CX + 5, 16, dk)
+    cv.dot(CX - 4, 17, dk)
+    cv.dot(CX + 4, 17, dk)
+    for x in range(int(CX) - 3, int(CX) + 4):
         cv.dot(x, 17, (245, 243, 240))
+    for x in range(int(CX) - 2, int(CX) + 3):
         cv.dot(x, 18, (245, 243, 240))
-        cv.dot(x, 19, (150, 40, 44))
-    cv.dot(CX - 5, 17, (110, 30, 34))
-    cv.dot(CX + 5, 17, (110, 30, 34))
+    cv.dot(CX - 1, 19, (170, 60, 58))
+    cv.dot(CX, 19, (170, 60, 58))
+    cv.dot(CX + 1, 19, (170, 60, 58))
 
 
 def sig_franky(cv, spec, pose, back):
@@ -843,7 +853,9 @@ def sig_franky(cv, spec, pose, back):
     cv.rect(CX - 9, 3, CX + 9, 8, ink, l=0.5)
     cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX, HEAD_RY * 0.98, ink, ymax=8)
     # jagged fringe
-    drops = (1, 2, 0, 2, 1, 0, 2, 1, 2, 0)
+    # The fringe is jagged but SHORT: hair that hangs into the eyes
+    # turns a friendly monster into a menacing one.
+    drops = (0, 1, 0, 1, 0, 0, 1, 0, 1, 0)
     for i, x in enumerate(range(int(CX) - 9, int(CX) + 10, 2)):
         for k in range(drops[i % 10] + 1):
             cv.dot(x, 9 + k, ink.mid)
@@ -852,9 +864,6 @@ def sig_franky(cv, spec, pose, back):
         cv.sphere(CX, HEAD_CY, HEAD_RX * 0.99, HEAD_RY * 0.96, ink,
                   ymax=HEAD_CY + 4)
         return
-    # heavy brow right over the eyes
-    for x in range(int(CX) - 6, int(CX) + 7):
-        cv.dot(x, 11, ink.mid)
 
 
 def sig_popeye(cv, spec, pose, back):
@@ -880,6 +889,13 @@ def sig_dracula_pre(cv, spec, pose, back):
 
 def sig_dracula_post(cv, spec, pose, back):
     cape = Ramp('#1a1220')
+    if not back:
+        # widow's peak: the hairline comes to a point on the forehead
+        ink = Ramp(spec.get('hair', '#141018'))
+        cv.dot(CX, 9, ink.mid)
+        cv.dot(CX - 1, 8, ink.mid)
+        cv.dot(CX, 8, ink.mid)
+        cv.dot(CX + 1, 8, ink.mid)
     if back:
         cv.taper(18, 38, 16, 30, cape, folds=3)
         cv.rect(CX - 14, 37, CX + 14, 38, Ramp('#7a1620'), l=0.5)
@@ -970,7 +986,7 @@ def build(spec, pose='idle', key=None):
     elif a == 'beast':
         cy = 14.0
     elif a == 'cat':
-        cy = 13.0
+        cy = 12.0
     elif a == 'bird':
         cy = 12.0
     skin = Ramp(spec.get('skin', '#f0c088'))
@@ -997,8 +1013,8 @@ SPECS = {
  'popeye': dict(arch='human', skin='#f0c088', shirt='#e9e9ea', pants='#1c4f96',
                 hat='cap', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
                 eyes='angry', mouth='line', extra=[('pipe',)]),
- 'dracula': dict(arch='human', skin='#cabcbc', shirt='#3a3a44', pants='#2a2a32',
-                 hair='#141018', hairstyle='short', eyes='glow', eyecolor='#c94b1a',
+ 'dracula': dict(arch='human', skin='#ded2cc', shirt='#3a3a44', pants='#2a2a32',
+                 hair='#141018', hairstyle='short', eyes='normal', eyecolor='#8a2430',
                  mouth='fang'),
  'liberty': dict(arch='robed', skin='#6db8a2', shirt='#6db8a2', hat='crown',
                  hatcolor='#f4c25a', eyes='normal', mouth='line', folds=4),
