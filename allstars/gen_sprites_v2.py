@@ -339,6 +339,27 @@ def face(cv, skin, spec, cy=HEAD_CY):
             cv.dot(CX + dx, y + 6 - drop, glow)
             cv.dot(CX + dx, y + 7 - drop, deep)
         return
+    if style == 'one':
+        # ONE eye. He is a cyclops: two eyes at spread zero is not the
+        # same thing, it is a smudge.
+        x = int(CX)
+        for dx in (-1, 0, 1):
+            cv.dot(x + dx, y - 1, (250, 250, 252))
+            cv.dot(x + dx, y, (250, 250, 252))
+        cv.dot(x, y, hex2rgb(ec or '#3a2412'))
+        cv.dot(x, y + 1, hex2rgb(ec or '#3a2412'))
+        cv.dot(x - 2, y - 2, shade(skin.base, -0.45))
+        cv.dot(x - 1, y - 2, shade(skin.base, -0.45))
+        cv.dot(x, y - 2, shade(skin.base, -0.45))
+        cv.dot(x + 1, y - 2, shade(skin.base, -0.45))
+        cv.dot(x + 2, y - 2, shade(skin.base, -0.45))
+        m = spec.get('mouth', 'line')
+        my2 = int(cy + 6)
+        if m == 'open':
+            for xx in range(int(CX) - 2, int(CX) + 3):
+                cv.dot(xx, my2, (96, 40, 44))
+                cv.dot(xx, my2 + 1, (72, 28, 34))
+        return
     if style == 'goggles':
         # Dark round lenses on a strap. A fully hidden face on a bandaged
         # head leaves nothing for the eye to land on, and the head reads
@@ -875,12 +896,40 @@ def sig_liberty(cv, spec, pose, back):
     cv.sphere(ax, 4.0, 2.2, 3.0, Ramp('#f4b03a'), spec=True)  # the flame
 
 
+def sig_peter(cv, spec, pose, back):
+    # the red feather in the cap
+    r = Ramp('#c93030')
+    cv.tri([(CX + 9, 1), (CX + 5, 7), (CX + 8, 7)], r, l=0.6)
+
+
+def sig_medusa(cv, spec, pose, back):
+    # the hair is SNAKES: heads and flicked tongues on the wild locks
+    head = Ramp('#3f8f4f')
+    for dx, ty in ((-7.5, 4), (-3, 1), (2, 2), (7, 3)):
+        hx, hy = CX + dx, ty
+        cv.sphere(hx, hy, 1.5, 1.2, head, spec=False)
+        cv.dot(hx - 1, hy, (240, 240, 244))
+        cv.dot(hx + 1, hy, (240, 240, 244))
+        cv.dot(hx, hy - 2, (201, 43, 43))
+
+
+def sig_pooh(cv, spec, pose, back):
+    if back:
+        return
+    # the red shirt is a CROP TOP: the round belly pokes out under it
+    belly = Ramp(spec.get('skin', '#f4c25a'))
+    cv.sphere(CX, 33.0, 5.6, 3.4, belly, spec=False)
+
+
 SIGNATURES = {
     'kong': {'post': sig_kong},
     'franky': {'post': sig_franky},
     'popeye': {'post': sig_popeye},
     'dracula': {'pre': sig_dracula_pre, 'post': sig_dracula_post},
     'liberty': {'post': sig_liberty},
+    'peter': {'post': sig_peter},
+    'medusa': {'post': sig_medusa},
+    'pooh': {'post': sig_pooh},
 }
 
 
@@ -957,7 +1006,7 @@ SPECS = {
                hat='cap', hatcolor='#3a8a4a', hair='#c07a2a', hairstyle='short',
                eyes='normal', mouth='grin'),
  'felix': dict(arch='cat', skin='#141018', chest='#f0f0f2', muzzle='#f7f7f9',
-               eyes='cartoon', eyecolor='#141018', mouth='none', eyespread=3,
+               eyes='cartoon', eyecolor='#141018', mouth='grin', eyespread=3,
                extra=[('ears', '#141018')]),
  'jack': dict(arch='human', skin='#f0c99a', shirt='#3a7f4a', pants='#5c3a1c',
               hair='#c9a256', hairstyle='mop', eyes='normal', mouth='grin'),
@@ -1050,7 +1099,7 @@ SPECS = {
                 eyes='glow', eyecolor='#f4c25a', mouth='line', folds=3,
                 hair='#57b56a', hairstyle='wild'),
  'cyclops': dict(arch='hulk', skin='#c8956a', muzzle='#c8956a', chest='#b0855a',
-                 eyes='normal', eyespread=0, mouth='open',
+                 eyes='one', eyecolor='#3a2412', mouth='open',
                  hair='#5a3a2a', hairstyle='short'),
  'phoenix': dict(arch='bird', skin='#e04520', chest='#f4922a',
                  eyes='glow', eyecolor='#f8d84a', mouth='none',
