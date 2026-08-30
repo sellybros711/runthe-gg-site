@@ -17459,3 +17459,66 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   setup. Hub card screenshotted at phone and desktop width, plus a 40-golfer strip straight off `randomLook`.
 - **If you change the golfer's art or palette, re-run the generator and the parity suite.** Nothing else
   reminds you: the hub card fails silently, by looking slightly wrong on the front page.
+
+### THE BROADCAST LAYER: cutscenes around the decision, gated to the tester accounts
+- **The owner's ask**, with a video of lockout2027.com: *"I want to add cutscenes and realistic and sometimes
+  wild conversations in any way we can like this game does. People love it and share it a lot. We can change
+  the way we do our decision making into cutscenes."* Planned first (a design artifact), then three owner
+  calls shaped it: **in-round shot decisions stay as they are** (they already work), **more story pop-ups are
+  fine if the quality is high**, and, the one that decided the architecture, **no golfer ever speaks on
+  camera, real or generated.** So the golfer is the PICTURE and an invented press is the VOICE - which also
+  made phase 1 zero-new-art and removed the real-vs-generated-golfer question entirely.
+- **A press conference used to open cold**: a modal, a mic, three answers. The world around the golfer
+  already existed in the data (a rival, a form line, a money-list rank, a season) and nobody ever SAID any of
+  it, so a beat arrived with no build-up and left with no fallout. The layer is the FRAME around the
+  decision: a scene plays (an anchor sets the stakes, a reporter reads the moment), the EXISTING choice
+  modal runs unchanged, then one aftermath beat lands.
+- **It WRAPS, it does not replace.** `showStoryline` was renamed `showStorylineModal` untouched, and the new
+  `showStoryline` is a wrapper. Gate shut, no scene, or ANYTHING throwing while building one, and it is a
+  straight passthrough to the modal that has always run - all the outcome machinery (the backfire roll,
+  confidence, followers, the two-axis reputation, the feed line, tracking) lives where it always did. The
+  aftermath rides an optional `sb.onDone` on the modal's continue button, so the modal has one new branch
+  and no new responsibilities.
+- **The gate is the house pattern, not a new one.** `cutscenesOn()` matches the server-attributed
+  `sbUsername` against `CS_TESTERS`, exactly as `devMode()`/`DEV_USERS` and the coin grants do - no email
+  hashes in a public bundle, and nothing for the owner to look up. **A guest can never see it** (the check
+  is `sbSignedIn()` first). `localStorage.bag_cs_force` is the test override. Ships with
+  `CUTSCENE_LIVE=false`; flip that one flag to launch to everyone.
+  **The three usernames currently listed are `csel8`, `runnyj`, `sophkill` - the owner should correct the
+  third if that is not the intended tester.**
+- **The invented world**: five outlets (Fairway Wire, Tee Time Tonight, Range Finder, The Sunday Bag, The
+  Turn), each with its own accent colour, and eight voices (an anchor, an on-course reporter, an analyst, a
+  numbers analyst, a podcast host, a press-room reporter, a swing coach, and the fan feed). **Not one of
+  them is a golfer** - asserted against the roster, so a future addition cannot quietly break the owner's
+  rule.
+- **Every beat gets a scene.** 11 bespoke scenes for the beats that carry the most story (the champion's
+  podium, a missed cut, a sponsor, the three rival beats, a major, world No. 1, a rookie's first press room,
+  a hot streak, a critic), and a TAG-driven fallback so all 34 storylines build one - verified, with a real
+  voice and no em dash in any line.
+- **Three frames that actually look different**, which is the part the assertions could not check:
+  BROADCAST is clean, PRESSER adds the flashbulbs and the drawn microphone (both already in the file),
+  FEED renders fan posts with generated handles.
+- **FOUR bugs were caught by LOOKING at the screenshots, with the suite green every time.** The season
+  screen bled through the overlay's gradient (now an opaque base under it). The golfer was a thumbnail at
+  the foot of a mostly-empty stage (now sized off the viewport and centred - it is the subject of the shot).
+  The presser card read `Tori Sands PRESS ROOM (PRESS ROOM)` (the frame chip is suppressed when it repeats
+  the role). And the feed frame drew **two avatars with only one line of text**, so the second post was
+  blank - a feed beat now renders one post PER LINE and every aftermath beat carries two.
+- Verified: `scratchpad/cutscene.mjs` **24 pass / 0 fail / 0 page errors** - the gate (dark by default, a
+  guest shut out, a signed-in non-tester shut out, a tester let in case-insensitively), the fallback (gate
+  shut: no cutscene, the modal opens exactly as it always has), the full chain (scene first with the modal
+  waiting, an invented outlet, a named voice, the golfer, the HUD, skip, the line typing, handing off to the
+  real modal, the choice resolving with fans moved and a feed line written, the aftermath beat, and the
+  season back afterwards), skip dropping straight into the decision, and the coverage + no-golfer-speaks
+  checks. Regressions green: nobag 10, sig01 19, lb02 15, sg03 29, wind04 23, real05 24, dec16 23, guest17
+  19, stance18 21, glove19 19, age20 32, news21 18, mp_eng 37, mp_ui 39, mp_recap 27. `board_race` fails 1
+  **identically on the deployed build** (the known stale score-format fixture). All inline script blocks
+  parse (block 0 is the JSON-LD tag, fails identically on baseline).
+- **NOT deployed.** It is gated, so it would be invisible to the public, but the standing rule is that each
+  piece is explained before it is pushed.
+- Tunable: `CS_TESTERS` (who sees it), `CUTSCENE_LIVE` (launch), `CS_OUTLETS`/`CS_CAST` (the world),
+  `CS_SCENES` + `CS_TAG_SCENES` (what is said - a bespoke scene is one entry keyed by the storyline id),
+  and `csFigH` (how big the golfer is).
+- **NEXT, if the owner likes it**: the same wrapper over `showDilemma` (the career decisions), a rival's
+  golfer actually on camera for the grudge beats, and scenes for the season's marquee moments (a Sunday
+  Moment, a Cup week) rather than press conferences alone.
