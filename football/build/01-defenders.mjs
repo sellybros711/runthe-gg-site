@@ -259,6 +259,9 @@ async function loadBio() {
       /* For seasonAge(). Kept raw so the one place that turns a date into a number is
          lib.mjs and every row in both pools is aged the same way. */
       birth_date: r.birth_date || null,
+      /* The last season he appeared in an NFL game at all, which is what lets The Gauntlet
+         say RETIRED and mean it rather than guess it. */
+      last_season: r.last_season ? Number(r.last_season) : null,
       draft_year: r.draft_year ? Number(r.draft_year) : null,
       draft_round: r.draft_round ? Number(r.draft_round) : null,
     });
@@ -375,6 +378,7 @@ async function main() {
          hands you the same man a year older every winter, so the question at the wheel is
          how many of those he has left. See seasonAge in lib.mjs for the convention. */
       age: seasonAge(bio.get(p.player_id)?.birth_date, p.season),
+      last_season: bio.get(p.player_id)?.last_season ?? null,
     }));
 
   const csvRows = rows.map((r, i) => ({

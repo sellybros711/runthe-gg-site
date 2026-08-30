@@ -1,7 +1,12 @@
 /*
- * ADD `age` TO THE SHIPPED PLAYER DATA, AND CHANGE NOTHING ELSE.
+ * ADD THE BIO FIELDS TO THE SHIPPED PLAYER DATA, AND CHANGE NOTHING ELSE.
  *
- *   node football/build/backfill-age.mjs [--check]
+ *   node football/build/backfill-bio.mjs [--check]
+ *
+ * Two of them so far: `age`, how old he was that season, and `last_season`, the final year
+ * he appeared in an NFL game at all. The second is what lets the winter say RETIRED and mean
+ * it: a man who leaves your roster and never plays again really did stop, while one who is
+ * simply absent for a year has a later season on record and is not retired.
  *
  * WHY THIS EXISTS RATHER THAN A REBUILD. 01-players.mjs and 01-defenders.mjs now emit an
  * `age` on every row, so the next full build carries it and this file becomes unnecessary.
@@ -26,9 +31,13 @@ const FILES = ['player_seasons', 'defender_seasons'];
 
 const bio = new Map();
 for (const r of parseCSVObjects(await nflverseCSV('players', 'players.csv'))) {
-  if (r.gsis_id && r.birth_date) bio.set(r.gsis_id, r.birth_date);
+  if (!r.gsis_id) continue;
+  bio.set(r.gsis_id, {
+    birth: r.birth_date || null,
+    last: r.last_season ? Number(r.last_season) : null,
+  });
 }
-console.log(`birth dates: ${bio.size}`);
+console.log(`bios: ${bio.size}`);
 
 let bad = 0;
 for (const base of FILES) {
@@ -36,11 +45,12 @@ for (const base of FILES) {
   const rows = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   let aged = 0, missing = 0;
   const out = rows.map((r) => {
-    const age = seasonAge(bio.get(r.player_id), r.season);
+    const b = bio.get(r.player_id) || {};
+    const age = seasonAge(b.birth, r.season);
     if (age == null) missing++; else aged++;
     /* Appended rather than spliced in, so the key order of every existing field is
        untouched and a diff of the file reads as one addition per row. */
-    return { ...r, age };
+    return { ...r, age, last_season: b.last ?? null };
   });
 
   if (CHECK) {
@@ -54,7 +64,7 @@ for (const base of FILES) {
       const a = now[i];
       if (typeof a.age !== 'undefined' && a.age !== null) withAge++;
       for (const k of Object.keys(a)) {
-        if (k === 'age') continue;
+        if (k === 'age' || k === 'last_season') continue;
         if (JSON.stringify(a[k]) !== JSON.stringify(rows[i][k])) { same = false; break; }
       }
     }
@@ -73,11 +83,13 @@ for (const base of FILES) {
     const table = parseCSV(fs.readFileSync(csvPath, 'utf8'));
     const head = table[0];
     const iId = head.indexOf('player_id'), iSeason = head.indexOf('season');
-    const cols = head.concat('age');
+    const cols = head.concat('age', 'last_season');
     const csvRows = table.slice(1).map((line) => {
       const o = {};
       head.forEach((h, i) => { o[h] = line[i]; });
-      o.age = seasonAge(bio.get(line[iId]), Number(line[iSeason])) ?? '';
+      const b = bio.get(line[iId]) || {};
+      o.age = seasonAge(b.birth, Number(line[iSeason])) ?? '';
+      o.last_season = b.last ?? '';
       return o;
     });
     fs.writeFileSync(csvPath, toCSV(csvRows, cols));

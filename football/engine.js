@@ -4137,11 +4137,27 @@ function dynastyAge(player, byKey, leagueYear) {
 }
 
 /**
- * Whether a man who is gone this year is gone for good, so the screen can say the true
- * thing. A row for a LATER season means he missed this one; no row at all means the pool
- * has nothing more from him. Neither is the same as retiring and neither is claimed to be.
+ * WHY A MAN IS GONE, and it is now three answers rather than two.
+ *
+ * This used to refuse to say "retired", and it was right to: a row for a later season means
+ * he missed this one, no row at all means only that the POOL has nothing more from him, and
+ * a pool with a playing-time floor on it drops plenty of men who were still playing. Calling
+ * that retirement is telling somebody a false thing about a real person.
+ *
+ * The data answers it properly now. `last_season` is the final year he appeared in an NFL
+ * game at all, floor or no floor, so:
+ *
+ *   retired  he never played again. Checkable, and true.
+ *   missed   he has a later season on record, so he was absent from this one.
+ *   out      he is below the pool's floor from here on but did play again, or the data
+ *            simply ends. Not retirement, and not claimed as it.
+ *
+ * A row written before last_season existed has none, and falls back to the old two answers
+ * rather than guessing.
  */
 function dynastyGoneFor(player, byKey, leagueYear, lastSeason) {
+  const last = player && player.last_season;
+  if (typeof last === 'number' && last <= leagueYear) return 'retired';
   for (let y = leagueYear + 1; y <= lastSeason; y++) {
     if (byKey.get(`${player.player_id}|${y}`)) return 'missed';
   }

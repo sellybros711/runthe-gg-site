@@ -684,6 +684,13 @@ window.GA_ID='G-L29P5MRWKE';
      club beside it and quieter than the money. */
   .wage{font-variant-numeric:tabular-nums;font-weight:800;color:var(--dim)}
   .wrow.aging .wage{color:#e2b25a;transition:color .3s ease}
+  /* TRADED, and RETIRED on the men who are gone. Chips rather than sentences: the winter
+     is a list you scan, and these are the two things on it you stop for. */
+  .wmoved,.wgone{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.09em;
+    padding:2px 5px;border-radius:4px;line-height:1.25}
+  .wmoved{background:rgba(96,165,250,.16);color:#93c5fd}
+  .wgone{background:rgba(255,255,255,.06);color:var(--dim-2)}
+  .wgone.retired{background:rgba(226,178,90,.16);color:#e2b25a}
   .wdelta{font-weight:800;opacity:0;transform:translateY(3px);
     transition:opacity .3s ease,transform .3s ease}
   .wdelta.in{opacity:1;transform:none}
@@ -705,23 +712,46 @@ window.GA_ID='G-L29P5MRWKE';
     border:1.5px solid rgba(248,113,113,.45);background:rgba(248,113,113,.08);
     color:rgba(248,113,113,.95)}
   .wcutb:active{transform:translateY(1px);background:rgba(248,113,113,.2)}
-  /* A man the league has no more of. Dimmer, and it says which of the two things happened
-     rather than calling it retirement, which is not something this data can know. */
+  /* A man you cannot keep. Dimmer, dashed, struck through, and it names the reason in a
+     word. These rows USED TO COLLAPSE out of the list a beat after arriving, which was
+     right when they said nothing: a row that reads "gone" is worth a second, not a
+     section. Now that each one says RETIRED or MISSED THE SEASON, it stays, and the count
+     in the heading matches what is under it. */
   .wrow.out{opacity:.55;border-style:dashed}
   .wrow.out .wnm{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.3)}
-  .wfreed{font-size:10.5px;font-weight:700;color:var(--good,#4ade80)}
+  .wfreed{font-size:10.5px;font-weight:700;color:var(--good,#4ade80);
+    opacity:0;transform:translateY(3px);
+    transition:opacity .3s ease,transform .3s cubic-bezier(.22,1,.36,1)}
+  .wrow.out.left .wfreed{opacity:1;transform:none}
 
   /* The rules again, from the screen that enforces them. A link, not a button: it must not
      compete with the one control on this screen that moves the run forward. */
-  /* The eyebrow carries the bar and the running total, which want opposite ends of the
-     line rather than a comma between them. */
-  #w-step{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-  .wscore{letter-spacing:.06em}
-  .wrules{display:inline-block;margin:0 0 14px;padding:0;border:0;background:none;
-    cursor:pointer;font-family:var(--fn);font-size:10.5px;font-weight:700;
-    letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);
+  /* ---- THE WINTER'S CARD ----
+     The same gold, the same bands and the same radius as the score and the run summary. All
+     three belong to one mode, and this screen used to look like a different game. */
+  .wintercard{border:1.5px solid rgba(226,178,90,.4);border-radius:16px;overflow:hidden;
+    margin-bottom:14px;
+    background:linear-gradient(180deg,rgba(40,32,17,.96),rgba(19,17,13,.96));
+    box-shadow:0 14px 34px -20px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  .wc-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    padding:10px 15px 0;
+    font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:rgba(243,221,174,.62)}
+  .wintercard h2{padding:0 15px;color:#F3DDAE}
+  .wc-sub{font-size:12.5px;line-height:1.45;color:rgba(243,221,174,.62);margin:0;
+    padding:0 15px 12px}
+  .wc-sub b{color:#F3DDAE}
+  .wintercard .capbar{margin:0 15px;border-radius:11px}
+  .wc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    flex-wrap:wrap;margin-top:12px;padding:9px 15px;
+    border-top:1px solid rgba(226,178,90,.18);background:rgba(0,0,0,.24);
+    font-family:var(--fn);font-size:11.5px;color:rgba(243,221,174,.6)}
+  #w-summary b{font-weight:800;color:#F3DDAE}
+  .wrules{display:inline-block;margin:0;padding:0;border:0;background:none;flex:0 0 auto;
+    cursor:pointer;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:rgba(243,221,174,.44);
     text-decoration:underline;text-underline-offset:3px}
-  .wrules:active{color:var(--ink)}
+  .wrules:active{color:#F3DDAE}
 
   /* WHAT THE OWNER WANTS, on the squad screen, in the panel the coach used to hold. One
      number, because it is the only one that decides whether the run goes on. */
@@ -5700,12 +5730,15 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
        salary counting up to whatever he is owed now, and the men the league has no more of
        fall out of the list. Then the money is yours to open. See runWinter(). -->
   <div class="screen" id="s-winter">
-    <div class="eyebrow" id="w-step">The winter</div>
-    <h2 class="display" id="w-title" style="font-size:27px;margin:5px 0 2px">&nbsp;</h2>
-    <p class="dim" id="w-sub" style="font-size:13px;margin:0 0 4px"></p>
-    <!-- The rules card again, from the screen that enforces them. Somebody who last played
-         a week ago meets the ratchet here and nowhere else. -->
-    <button class="wrules" id="b-w-rules">How this works</button>
+    <!-- THE WINTER'S OWN CARD, in the same gold the score and the run summary use, because
+         all three belong to one mode and the winter looked like a different game. It holds
+         everything that is true of the whole winter: the year, what the owner wants, what
+         the run is worth so far, the money, and what the winter did to you in one line. The
+         two lists under it are the detail. -->
+    <div class="wintercard">
+      <div class="wc-top"><span id="w-step">The winter</span><span id="w-score"></span></div>
+      <h2 class="display" id="w-title" style="font-size:30px;margin:2px 0 4px">&nbsp;</h2>
+      <p class="wc-sub" id="w-sub"></p>
 
     <!-- THE MONEY, AND IT IS A GATE RATHER THAN A CEILING. Over the cap the bar goes red
          past the line and the run is still legal: you simply cannot sign anybody until you
@@ -5718,6 +5751,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
       <div class="cb-track"><i id="w-fill" style="width:0%"></i><b id="w-over" style="width:0%"></b></div>
       <div class="cb-note" id="w-note"></div>
+      </div>
+      <!-- WHAT THE WINTER DID, IN ONE LINE, and what it leaves you to do about it. The spots
+           you have to fill were invisible until the wheel appeared, which is the one fact
+           that decides whether this screen is a formality or a problem. -->
+      <div class="wc-foot">
+        <span id="w-summary"></span>
+        <button class="wrules" id="b-w-rules">How this works</button>
+      </div>
     </div>
 
     <div class="rp-head" style="margin-top:16px"><span>Your roster</span><span class="rp-head-n" id="w-count"></span></div>
@@ -5725,7 +5766,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div id="w-list"></div>
 
     <div id="w-gonewrap" hidden>
-      <div class="rp-head"><span>No longer in the league</span><span class="rp-head-n" id="w-gonen"></span></div>
+      <!-- NOT "no longer in the league" any more: one of these three men retired, one is
+           injured and will be back, and the rows now say which. -->
+      <div class="rp-head"><span>Off your roster</span><span class="rp-head-n" id="w-gonen"></span></div>
       <div id="w-gone"></div>
     </div>
 
@@ -6306,8 +6349,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=74"></script>
-<script src="run.js?v=83"></script>
+<script src="engine.js?v=75"></script>
+<script src="run.js?v=84"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -10460,6 +10503,11 @@ function winterRow(a,i){
   const p=a.now;
   const raise=a.raise>0.05;
   const how=winterHow(a.drop);
+  /* HE PLAYED SOMEWHERE ELSE. You keep him either way, because The Gauntlet follows the man
+     and not the club, but the roster line would otherwise change its badge with no
+     explanation. Worth saying plainly: it is a real thing that happened to him that winter,
+     and it is the fact this mode exists to show you. */
+  const moved=a.was&&a.was.franchise&&p.franchise&&a.was.franchise!==p.franchise;
   return '<div class="wrow" data-i="'+i+'">'+
     '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
     '<span class="wwho"><span class="wnm">'+esc(p.name)+'</span>'+
@@ -10467,6 +10515,7 @@ function winterRow(a,i){
         a.was.season+'</span>'+
         '<span>'+esc(E.nickname(p.franchise))+'</span>'+
         (p.age?'<span class="wage">'+p.age+' yrs</span>':'')+
+        (moved?'<span class="wmoved">TRADED</span>':'')+
         '<span class="wdelta '+how[0]+'">'+how[1]+'</span>'+
       '</span></span>'+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
@@ -10481,9 +10530,11 @@ function winterGoneRow(g){
     '<span class="wpos" style="'+posPaint(g.was.position)+'">'+esc(g.was.position)+'</span>'+
     '<span class="wwho"><span class="wnm">'+esc(g.was.name)+'</span>'+
       '<span class="wsub"><span>'+g.was.season+'</span>'+
-      '<span>'+(g.why==='missed'
-        ? 'did not play this season'
-        : 'out of the league')+'</span></span></span>'+
+      '<span class="wgone '+esc(g.why)+'">'+(g.why==='retired'
+        ? 'RETIRED'
+        : g.why==='missed'
+          ? 'MISSED THE SEASON'
+          : 'OUT OF THE LEAGUE')+'</span></span></span>'+
     '<span class="wmoney"><span class="wfreed">'+M(g.salary)+' freed</span></span>'+
     '<span></span>'+
     '</div>';
@@ -10506,8 +10557,8 @@ function paintWinter(){
      stated only after the season, on the results screen, which is the wrong end: a target
      you are told you missed is a scoreboard, and a target you are told before you play is
      a game. */
-  $('w-step').innerHTML='Season '+run.seasonNo+' needs '+E.dynastyWinBar(run.seasonNo)+' wins'+
-    '<span class="wscore"><span class="scorechip">'+SCORE(run.score||0)+'</span> so far</span>';
+  $('w-step').textContent='Season '+run.seasonNo+' needs '+E.dynastyWinBar(run.seasonNo)+' wins';
+  $('w-score').innerHTML='<span class="scorechip">'+SCORE(run.score||0)+'</span> so far';
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
      silently behind a bar whose ceiling quietly changed between two paints. */
@@ -10519,6 +10570,7 @@ function paintWinter(){
   }).join('');
   $('w-count').textContent=run.roster.length+' under contract';
   $('w-hint').textContent=run.roster.length?'Tap minus to release a player.':'';
+  paintWinterSummary();
   const gw=$('w-gonewrap');
   gw.hidden=!w.gone.length;
   if(w.gone.length){
@@ -10563,9 +10615,9 @@ function paintWinter(){
     });
   });
 
-  /* 3. the men who are gone leave, and their money with them */
+  /* 3. the men you cannot keep hand back their money, one at a time */
   const t1=t0+rows.length*90+220;
-  gones.forEach((r,k)=>winterAt(t1+k*130,()=>r.classList.add('gone')));
+  gones.forEach((r,k)=>winterAt(t1+k*130,()=>r.classList.add('left')));
 
   /* 4. the bar settles on what the roster now costs */
   winterAt(t1+gones.length*130+180,()=>paintWinterCap(true));
@@ -10575,6 +10627,30 @@ function paintWinter(){
     rows.forEach(r=>r.classList.add('open'));
     $('b-winter-go').hidden=false;
   });
+}
+
+/*
+ * WHAT THE WINTER DID, AND WHAT IT LEAVES YOU TO DO.
+ *
+ * The spots you have to fill were invisible until the wheel appeared, and they are the one
+ * fact that decides whether this screen is a formality or a problem: a winter that takes
+ * three men off a six man roster is a different afternoon from one that takes none.
+ *
+ * Repainted after a release, because a release is how you change the answer.
+ */
+function paintWinterSummary(){
+  const el=$('w-summary'); if(!el||!run||!run.winter) return;
+  const holes=run.slots.length-run.roster.length;
+  const w=run.winter;
+  const bits=[];
+  bits.push(holes
+    ? '<b>'+holes+' spot'+(holes===1?'':'s')+'</b> to fill'
+    : '<b>A full roster.</b> Nothing to fill');
+  const up=w.aged.filter(a=>a.salary>a.wasSalary+0.05);
+  if(up.length) bits.push('<b>'+up.length+'</b> got a raise');
+  const gone=w.gone.length;
+  if(gone) bits.push('<b>'+gone+'</b> left');
+  el.innerHTML=bits.join(' &middot; ');
 }
 
 /* Releasing. The row collapses out of the list and the bar retracts by exactly what he was
@@ -10614,6 +10690,7 @@ function wireWinter(){
         if(p>=0) r.dataset.i=p;
       });
       $('w-count').textContent=run.roster.length+' under contract';
+      paintWinterSummary();
     },380);
   };
   $('b-winter-go').onclick=()=>{

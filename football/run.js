@@ -625,6 +625,74 @@ function openSlots(run) {
   return slotsOf(run).map((_, i) => i).filter((i) => !taken.has(i));
 }
 
+/*
+ * ─── THE ROSTER CAN SHUFFLE TO MAKE ROOM ────────────────────────────────────────────
+ *
+ * The trap this removes: your running back is sitting at FLEX, your RB spot is open, and
+ * the wheel offers a club with no back but a good receiver. He is unsignable, because the
+ * only open spot is RB and a receiver cannot play it. The spin is wasted, and the reason is
+ * bookkeeping rather than football: move the back you already have from FLEX to RB, and the
+ * receiver goes to FLEX. Any manager would do that without thinking about it.
+ *
+ * So a man is signable if there is ANY legal assignment of your roster plus him to the
+ * spots, not merely if one spot happens to fit him where everyone stands today. Six slots,
+ * so an exact backtrack costs nothing and there is no need for a heuristic.
+ *
+ * NOBODY MOVES WHO DOES NOT HAVE TO. Each man's own current spot is tried first, so the
+ * solver only reaches for a rearrangement when standing pat has no answer, and the shuffle
+ * you get is the smallest one that works.
+ *
+ * THE GAUNTLET ONLY, and that is a deliberate limit rather than an oversight. Offense,
+ * defense and Full Team have leaderboards with a hundred thousand runs on them, and widening
+ * what is signable makes every future draft easier than every past one. That is a fairness
+ * problem, not an improvement, and it is not mine to introduce quietly. The mode with no
+ * board yet is the one that can take it.
+ */
+function slotFits(run, player, i) {
+  const slots = slotsOf(run);
+  return (run.full && E.FULL_SLOT_POS && E.FULL_SLOT_POS[i])
+    ? E.FULL_SLOT_POS[i].some((pos) => E.positionsOf(player).includes(pos))
+    : E.fillsSlot(slots[i], player);
+}
+
+/**
+ * A whole-roster assignment including `player`, or null if none exists.
+ *
+ * Returns an array the length of roster+1, holding the slot index each man takes; the last
+ * entry is the newcomer's. Preference order does the work: an existing man is offered the
+ * spot he already has first, and the newcomer is offered a dedicated spot before a flex.
+ */
+function assignWith(run, player) {
+  const slots = slotsOf(run);
+  const men = run.roster.concat([player]);
+  const positions = E.positionsOf(player);
+  const cand = men.map((p, k) => {
+    const all = slots.map((_, i) => i).filter((i) => slotFits(run, p, i));
+    if (k < run.roster.length) {
+      /* His own spot first: standing still beats moving. */
+      const mine = run.slotIndex[k];
+      return [mine].concat(all.filter((i) => i !== mine));
+    }
+    /* The newcomer takes a spot of his own before he spends a flex on himself, which is the
+       same preference slotForPlayer has always had. */
+    const own = all.filter((i) => positions.includes(slots[i]));
+    return own.concat(all.filter((i) => own.indexOf(i) < 0));
+  });
+  const used = new Array(slots.length).fill(false);
+  const out = new Array(men.length).fill(-1);
+  const solve = (k) => {
+    if (k === men.length) return true;
+    for (const i of cand[k]) {
+      if (used[i]) continue;
+      used[i] = true; out[k] = i;
+      if (solve(k + 1)) return true;
+      used[i] = false; out[k] = -1;
+    }
+    return false;
+  };
+  return solve(0) ? out : null;
+}
+
 /** Which empty slot this player would fill, or null if none can take him. */
 function slotForPlayer(run, player) {
   const slots = slotsOf(run);
@@ -647,7 +715,14 @@ function slotForPlayer(run, player) {
     ? E.FULL_SLOT_POS[i].some((pos) => positions.includes(pos))
     : E.fillsSlot(slots[i], player);
   const flex = open.find(fitsFlex);
-  return flex === undefined ? null : flex;
+  if (flex !== undefined) return flex;
+  /* NOTHING OPEN FITS HIM AS THE ROSTER STANDS. See assignWith: a shuffle may still have a
+     spot for him, and in The Gauntlet it is allowed to find one. */
+  if (run.dynasty) {
+    const plan = assignWith(run, player);
+    if (plan) return plan[plan.length - 1];
+  }
+  return null;
 }
 
 /*
@@ -966,6 +1041,17 @@ function sign(run, player, want) {
     ? slotForPlayer(run, player)
     : (slotChoices(run, player).indexOf(want) >= 0 ? want : null);
   if (slot === null) throw new Error('no empty spot for a ' + player.position);
+
+  /* THE SHUFFLE IS APPLIED HERE OR IT NEVER HAPPENS. slotForPlayer can only answer where the
+     newcomer goes; if that answer came out of a rearrangement, the men already on the roster
+     have to be moved to match, or two of them end up claiming one spot. */
+  if (run.dynasty && run.slotIndex.indexOf(slot) >= 0) {
+    const plan = assignWith(run, player);
+    if (!plan || plan[plan.length - 1] !== slot) {
+      throw new Error('no empty spot for a ' + player.position);
+    }
+    for (let k = 0; k < run.roster.length; k++) run.slotIndex[k] = plan[k];
+  }
 
   run.roster.push(player);
   run.slotIndex.push(slot);

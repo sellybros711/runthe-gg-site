@@ -177,7 +177,16 @@ for (let s = 0; s < 30; s++) {
   ok('a man who aged out is off the books',
     w.gone.every((g) => !run.roster.some((p) => p.player_id === g.was.player_id)));
   ok('gone is said honestly',
-    w.gone.every((g) => g.why === 'missed' || g.why === 'out'));
+    w.gone.every((g) => g.why === 'missed' || g.why === 'out' || g.why === 'retired'),
+    [...new Set(w.gone.map((g) => g.why))].join(','));
+  /* RETIRED IS A CLAIM ABOUT A REAL PERSON, so it is only ever made when last_season says
+     he never played again. A man with a later season on record must never be called
+     retired. */
+  ok('nobody is called retired who played again',
+    w.gone.every((g) => g.why !== 'retired'
+      || (typeof g.was.last_season !== 'number' || g.was.last_season <= g.was.season)),
+    w.gone.filter((g) => g.why === 'retired')
+      .map((g) => `${g.was.name} ${g.was.season}/${g.was.last_season}`).join(', '));
 
   /* Release the worst value man, which is the decision the screen will offer. */
   if (run.roster.length) {
