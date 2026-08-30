@@ -383,8 +383,28 @@ class Canvas:
 
 # ------------------------------------------------------------- features
 def face(cv, skin, spec, cy=HEAD_CY):
-    """Eyes and mouth. Eye style varies so characters are not all the same
-    doll: normal, glow, angry, patch, hidden, cartoon."""
+    """Eyes, brow, nose and mouth, each its own parameter.
+
+    They used to be one block. The 'normal' eye drew a fixed googly pair
+    centred on CX that ignored eyespread entirely, so THIRTY ONE of the
+    fifty four characters had not similar eyes but the same eyes, pixel
+    for pixel, and the only mouths were a line and a slightly wider line.
+    Half the roster was one face in different clothes, which is what it
+    looked like.
+
+    So the face is four independent parts now. A brow is two pixels a side
+    and it is the single most identifying thing on a face at this size: it
+    is the difference between Tom Sawyer and Huck Finn when they are both
+    a boy in a straw hat. A nose is the second. Between brow, eye shape,
+    spread, nose and mouth there are enough combinations that no two
+    characters need share one.
+
+    Row budget, all relative to the eye row y:
+        y-1   brow, and the eye loses its top row to make space
+        y..y+1  the eye whites (y-1..y+1 when there is no brow)
+        y+2..y+4  the nose
+        y+6   the mouth
+    """
     style = spec.get('eyes', 'normal')
     ec = spec.get('eyecolor')
     y = int(cy)
@@ -425,12 +445,22 @@ def face(cv, skin, spec, cy=HEAD_CY):
         for side in (-1, 1):
             cv.sphere(CX + side * 4, y, 2.2, 1.9, Ramp(rgb2hex(lens)), spec=True)
         return
-    # BIG eyes with visible whites. The single biggest difference between
-    # cute and mannequin at this scale: a one pixel dot on a nineteen
-    # pixel face is a bead, and a face full of beads reads as a doll
-    # watching you. Every style below is built on a 2x3 white with a fat
-    # pupil, the way the reference art draws them.
+
     WHITE = (250, 250, 252)
+    pc = hex2rgb(ec or '#241e2e')
+    brow = spec.get('brow')
+    # A brow is the character's hair, but it has to READ against the face
+    # under it, and on the blond boys hair colour and skin colour are four
+    # points of luma apart: drawn honestly the brows were invisible and
+    # Tom and Huck went back to being the same face. Darken until it
+    # separates, however light the hair is.
+    bc = hex2rgb(spec.get('browcolor') or spec.get('hair') or
+                 rgb2hex(shade(skin.base, -0.52)))
+    for _ in range(6):
+        if luma(skin.base) - luma(bc) >= 0.26:
+            break
+        bc = shade(bc, -0.22)
+
     if style == 'one':
         # ONE eye, and a BIG one: it has to carry the whole face alone.
         for dx in range(-3, 4):
@@ -438,55 +468,136 @@ def face(cv, skin, spec, cy=HEAD_CY):
                 if abs(dx) == 3 and abs(dy) == 2:
                     continue
                 cv.dot(CX + dx, y + dy, WHITE)
-        pc = hex2rgb(ec or '#3a2412')
+        p1 = hex2rgb(ec or '#3a2412')
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
-                cv.dot(CX + dx, y + dy, pc)
-        cv.dot(CX - 1, y - 1, shade(pc, 0.55))
-    else:
-        # Two lessons from review, baked into every two eyed style:
-        #
-        # 1. The eye is 2x2 and starts a row BELOW the brow line. At 2x3
-        #    the whites touched the hair's bottom seam, and eyes plus
-        #    hairline fused into one dark band across the face, like
-        #    safety glasses.
-        # 2. The pupil is the SAME column in both eyes: shine on the lit
-        #    side, pupil on the other, like every classic chibi sheet.
-        #    Mirroring the pupils inward made everyone cross eyed.
-        for sx in (-sp, sp):
-            x = int(CX + sx)
-            if style == 'glow':
-                g = hex2rgb(ec or '#f4c25a')
-                for dx in (-1, 0):
-                    cv.dot(x + dx, y, g)
-                    cv.dot(x + dx, y + 1, shade(g, -0.30))
-                cv.dot(x - 1, y, shade(g, 0.50))
-            elif style == 'angry':
-                b = shade(skin.base, -0.50)
-                cv.dot(x - 1, y - 1, b); cv.dot(x, y - 1, b)
-                pc = hex2rgb(ec or '#241e2e')
-                for dy in (0, 1):
-                    cv.dot(x - 1, y + dy, WHITE)
-                    cv.dot(x, y + dy, pc)
-            else:
-                pass    # normal and cartoon draw as one googly pair below
-    if style in ('normal', 'cartoon'):
-        # THE GOOGLY PAIR, scaled down from the reference sheet: two
-        # round whites that touch only at a middle row waist, pupils
-        # just inside the join. Without the waist the whites fuse and
-        # the whole roster turns cyclops, which is a lesson learned the
-        # visible way.
-        pc = hex2rgb(ec or '#241e2e')
-        xC = int(CX)
+                cv.dot(CX + dx, y + dy, p1)
+        cv.dot(CX - 1, y - 1, shade(p1, 0.55))
+    elif style == 'glow':
         for side in (-1, 1):
-            for dx in (1, 2, 3):
-                x = xC + side * dx
-                for dy in (-1, 0, 1):
-                    cv.dot(x, y + dy, WHITE)
-        cv.dot(xC, y, WHITE)                    # the waist
-        for x in (xC - 1, xC + 1):
-            cv.dot(x, y, pc)
-            cv.dot(x, y + 1, pc)
+            x = int(CX + side * sp)
+            g = hex2rgb(ec or '#f4c25a')
+            for dx in (-1, 0):
+                cv.dot(x + dx, y, g)
+                cv.dot(x + dx, y + 1, shade(g, -0.30))
+            cv.dot(x - 1, y, shade(g, 0.50))
+    elif style == 'angry':
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            b = shade(skin.base, -0.50)
+            cv.dot(x - 1, y - 1, b); cv.dot(x, y - 1, b)
+            for dy in (0, 1):
+                cv.dot(x - 1, y + dy, WHITE)
+                cv.dot(x, y + dy, pc)
+    elif style == 'bead':
+        # No white at all: two beads of ink. Herge draws Tintin this way
+        # and so does every bear on the roster, and on a face otherwise
+        # made of big whites it is the most distinct eye there is.
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            for dy in (0, 1):
+                cv.dot(x, y + dy, pc)
+                cv.dot(x + (1 if side < 0 else -1), y + dy, pc)
+    elif style == 'squint':
+        # Shut, or near enough. A laugh or a scowl depending on the brow.
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            for dx in (-1, 0, 1):
+                cv.dot(x + dx, y + 1, shade(skin.base, -0.55))
+            cv.dot(x + side * 2, y, shade(skin.base, -0.55))
+    else:
+        # The white eye family. All of them respect eyespread, which is
+        # the parameter the old googly pair quietly ignored.
+        top = y if brow else y - 1
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            if style == 'wide':
+                cols, rows_, pw = (-2, -1, 0, 1), (top, y + 1), 2
+            elif style == 'oval':
+                cols, rows_, pw = (-1, 0), (top, y, y + 1), 1
+            else:                                   # round, cartoon, lash
+                cols, rows_, pw = (-1, 0, 1), (top, y, y + 1), 1
+            for dx in cols:
+                for yy in set(rows_):
+                    if yy <= y + 1:
+                        cv.dot(x + dx, yy, WHITE)
+            # The pupil sits in the SAME place in both eyes. Mirrored
+            # inward it made the whole roster cross eyed.
+            for dx in range(pw):
+                cv.dot(x + dx, y, pc)
+                cv.dot(x + dx, y + 1, pc)
+            if style == 'sleepy':
+                for dx in cols:                     # a heavy lid over the top
+                    cv.dot(x + dx, top, shade(skin.base, -0.42))
+            if style == 'lash':
+                cv.dot(x + side * 2, top - 1, pc)
+                cv.dot(x + side * 3, top, pc)
+
+    # ------------------------------------------------------------- brow
+    if brow:
+        by = y - 1
+        for side in (-1, 1):
+            x = int(CX + side * sp)
+            inner, outer = x - side, x + side
+            if brow == 'angry':                     # inner ends drive DOWN
+                cv.dot(inner, by + 1, bc)
+                cv.dot(x, by, bc)
+                cv.dot(outer, by - 1, bc)
+            elif brow == 'worried':                 # inner ends lift
+                cv.dot(inner, by - 1, bc)
+                cv.dot(x, by, bc)
+                cv.dot(outer, by + 1, bc)
+            elif brow == 'high':                    # raised, and clear of it
+                for dx in (-1, 0, 1):
+                    cv.dot(x + dx, by - 1, bc)
+            elif brow == 'bushy':
+                for dx in (-1, 0, 1, 2 * side):
+                    cv.dot(x + dx, by, bc)
+                    cv.dot(x + dx, by - 1, bc)
+            else:                                   # flat
+                for dx in (-1, 0, 1):
+                    cv.dot(x + dx, by, bc)
+
+    # ------------------------------------------------------------- nose
+    nose = spec.get('nose')
+    if nose:
+        nd = shade(skin.base, -0.34)
+        nl = skin.lit
+        ny = y + 3
+        if nose == 'dot':
+            cv.dot(CX, ny, nd)
+        elif nose == 'button':
+            cv.dot(CX, ny, nd)
+            cv.dot(CX - 1, ny, nd)
+            cv.dot(CX - 1, ny - 1, nl)
+        elif nose == 'bulb':
+            for dx in (-1, 0, 1):
+                cv.dot(CX + dx, ny, nl)
+            cv.dot(CX, ny - 1, nl)
+            for dx in (-1, 0, 1):
+                cv.dot(CX + dx, ny + 1, nd)
+        elif nose == 'long':
+            for dy in (-1, 0, 1):
+                cv.dot(CX, ny + dy, nl)
+            cv.dot(CX - 1, ny + 1, nd)
+            cv.dot(CX, ny + 2, nd)
+        elif nose == 'beak':
+            for i, wid in enumerate((2, 1, 0)):
+                for dx in range(-wid, wid + 1):
+                    cv.dot(CX + dx, ny - 1 + i, nd if i else nl)
+
+    if spec.get('freckles'):
+        f = shade(skin.base, -0.26)
+        for dx in (-6, -4, 4, 6):
+            cv.dot(CX + dx, y + 3, f)
+        cv.dot(CX - 5, y + 4, f)
+        cv.dot(CX + 5, y + 4, f)
+    if spec.get('blush'):
+        for dx in (-6, 6):
+            cv.dot(CX + dx, y + 3, (236, 156, 156))
+            cv.dot(CX + dx + (1 if dx < 0 else -1), y + 3, (236, 156, 156))
+
+    # ------------------------------------------------------------ mouth
     m = spec.get('mouth', 'line')
     my = int(cy + 6)
     mc = shade(skin.base, -0.42)
@@ -507,6 +618,31 @@ def face(cv, skin, spec, cy=HEAD_CY):
             cv.dot(x, my, mc)
         cv.dot(int(CX) - 4, my - 1, mc)
         cv.dot(int(CX) + 4, my - 1, mc)
+    elif m == 'smirk':
+        # ONE corner up. Asymmetry is the cheapest character on a face:
+        # nothing else in three pixels says pleased with itself.
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) + 3, my - 1, mc)
+        cv.dot(int(CX) + 4, my - 2, mc)
+    elif m == 'frown':
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 3, my + 1, mc)
+        cv.dot(int(CX) + 3, my + 1, mc)
+    elif m == 'oh':
+        for dx in (-1, 0, 1):
+            cv.dot(CX + dx, my, mc)
+            cv.dot(CX + dx, my + 1, mc)
+        cv.dot(CX, my, (120, 60, 58))
+        cv.dot(CX, my + 1, (120, 60, 58))
+    elif m == 'buck':
+        for x in range(int(CX) - 2, int(CX) + 3):
+            cv.dot(x, my, mc)
+        cv.dot(int(CX) - 1, my + 1, (246, 244, 238))
+        cv.dot(int(CX), my + 1, (246, 244, 238))
+        cv.dot(int(CX) - 1, my + 2, (246, 244, 238))
+        cv.dot(int(CX), my + 2, (246, 244, 238))
     elif m == 'open':
         # happy open mouth: teeth over tongue, edged, corners up
         for x in range(int(CX) - 1, int(CX) + 2):
@@ -2692,6 +2828,108 @@ SPECS = {
 # are seen from behind. A batter who faces the camera while "looking at"
 # the pitcher breaks the whole view.
 POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2')
+
+
+# ------------------------------------------------------------------ faces
+# THE CASTING SHEET. One row per character, and the rule is that no two
+# rows may be identical: the check at the bottom of this file enforces it.
+#
+# It lives here rather than inside SPECS because SPECS is about what a
+# character is made of and this is about who they are, and because thirty
+# one characters ended up sharing one face precisely by nobody being able
+# to see, in a wall of dict literals, that they had. As a table you can
+# read down a column.
+#
+#   eyes      round oval wide bead squint sleepy lash, plus the special
+#             whole face styles (glow angry one carved goggles cartoon)
+#   sp        eye spread. 3 close set, 4 default, 5 wide set
+#   brow      flat angry worried high bushy, or None. Two pixels a side
+#             and the single most identifying thing on a face this size
+#   nose      dot button bulb long beak, or None
+#   mouth     line grin smirk frown oh buck fang open, or none.
+#             There was a 'teeth' as well and it is gone: white teeth
+#             between an upper and a lower lip read as a jaw clenched
+#             on them at this size, however the corners are curved, and
+#             a mouth that reads as a grimace on a hero is not a mouth
+#
+# Characters whose signature draws its own face are absent: Popeye, Pooh,
+# Felix, the Yeti, Nessie and the Headless Horseman.
+FACES = {
+    # the leads
+    'kong':         dict(eyes='round',  eyespread=3, brow='bushy',   nose='bulb',   mouth='none'),
+    'franky':       dict(eyes='wide',   eyespread=5, brow='flat',    nose='long',   mouth='frown'),
+    'dracula':      dict(eyes='round',  eyespread=4, brow='angry',   nose='long',   mouth='fang'),
+    'liberty':      dict(eyes='oval',   eyespread=4, brow='flat',    nose='button', mouth='line'),
+    # the boys, who were the whole problem: four of them in hats, one face
+    'peter':        dict(eyes='round',  eyespread=3, brow='high',    nose='button', mouth='smirk', freckles=True),
+    'jack':         dict(eyes='round',  eyespread=4, brow='worried', nose='button', mouth='oh',    freckles=True),
+    'tom':          dict(eyes='round',  eyespread=3, brow='flat',    nose='button', mouth='smirk'),
+    'huck':         dict(eyes='sleepy', eyespread=5, brow='flat',    nose='button', mouth='grin',  freckles=True),
+    'flash':        dict(eyes='round',  eyespread=5, brow='flat',    nose='long',   mouth='open'),
+    'tintin':       dict(eyes='bead',   eyespread=4,                 nose='dot',    mouth='line'),
+    'robin':        dict(eyes='round',  eyespread=4, brow='flat',    nose='button', mouth='grin'),
+    # the detectives. Both wear a brim that owns the brow row, so neither
+    # gets one: drawn anyway it sits ON the hat.
+    'sherlock':     dict(eyes='oval',   eyespread=4,                 nose='long',   mouth='line'),
+    'tracy':        dict(eyes='angry',  eyespread=4,                 nose='long',   mouth='frown'),
+    'lupin':        dict(eyes='oval',   eyespread=5, brow='flat',    nose='long',   mouth='smirk'),
+    # the girls
+    'alice':        dict(eyes='lash',   eyespread=4, brow='high',    nose='dot',    mouth='line',  blush=True),
+    'dorothy':      dict(eyes='lash',   eyespread=3, brow='worried', nose='dot',    mouth='grin',  freckles=True, blush=True),
+    'fairy':        dict(eyes='lash',   eyespread=5, brow='high',    nose='dot',    mouth='line',  blush=True),
+    'beardedlady':  dict(eyes='lash',   eyespread=4, brow='high',    nose='button', mouth='none',  blush=True),
+    'mothernature': dict(eyes='oval',   eyespread=5, brow='high',    nose='dot',    mouth='grin',  blush=True),
+    'mrsclaus':     dict(eyes='oval',   eyespread=4, brow='high',    nose='dot',    mouth='grin',  blush=True),
+    # the seasonal
+    'santa':        dict(eyes='squint', eyespread=5, brow='bushy',                  mouth='none'),
+    'bunny':        dict(eyes='round',  eyespread=5,                                mouth='buck'),
+    'cupid':        dict(eyes='round',  eyespread=4, brow='high',    nose='button', mouth='oh',    blush=True),
+    'fathertime':   dict(eyes='sleepy', eyespread=4, brow='bushy',   nose='bulb',   mouth='none'),
+    # the circus
+    'strongman':    dict(eyes='round',  eyespread=5, brow='flat',    nose='button', mouth='none'),
+    'ringmaster':   dict(eyes='round',  eyespread=3, brow='high',    nose='bulb',   mouth='none'),
+    'acrobat':      dict(eyes='round',  eyespread=5, brow='high',    nose='dot',    mouth='grin'),
+    'firebreather': dict(eyes='angry',  eyespread=4, brow='flat',    nose='bulb',   mouth='none'),
+    # the monsters
+    'hyde':         dict(eyes='angry',  eyespread=5, brow='bushy',   nose='button', mouth='none'),
+    'vampire':      dict(eyes='glow',   eyespread=3, brow='angry',   nose='long',   mouth='fang'),
+    'witch':        dict(eyes='glow',   eyespread=5, brow='angry',   nose='beak',   mouth='none'),
+    'krampus':      dict(eyes='glow',   eyespread=4, brow='angry',   nose='long',   mouth='fang'),
+    'medusa':       dict(eyes='glow',   eyespread=4, brow='flat',    nose='dot',    mouth='line'),
+    'werewolf':     dict(eyes='glow',   eyespread=5, brow='bushy',                  mouth='none'),
+    'blackcat':     dict(eyes='glow',   eyespread=4,                                mouth='none'),
+    'phoenix':      dict(eyes='glow',   eyespread=5,                                mouth='none'),
+    'raboddog':     dict(eyes='glow',   eyespread=3,                                mouth='fang'),
+    'chupacabra':   dict(eyes='glow',   eyespread=5,                                mouth='fang'),
+    'cyclops':      dict(eyes='one',                 brow='flat',    nose='bulb',   mouth='open'),
+    'dragon':       dict(eyes='wide',   eyespread=5, brow='angry',                  mouth='none'),
+    'sasquatch':    dict(eyes='sleepy', eyespread=3, brow='bushy',   nose='bulb',   mouth='line'),
+    'zombie':       dict(eyes='cartoon', eyespread=5, brow='worried',               mouth='open'),
+    'scarecrow':    dict(eyes='cartoon', eyespread=4, brow='worried',               mouth='none'),
+    'humpty':       dict(eyes='cartoon', eyespread=4, brow='high',   nose='button', mouth='grin', blush=True),
+    # the rest
+    'invisible':    dict(eyes='goggles',                                            mouth='none'),
+    'pirate':       dict(eyes='round',  eyespread=3, brow='angry',   nose='button', mouth='grin'),
+    'centaur':      dict(eyes='oval',   eyespread=3, brow='flat',    nose='long',   mouth='line'),
+    'lion':         dict(eyes='wide',   eyespread=3, brow='worried', nose='bulb',   mouth='frown'),
+}
+
+for _k, _f in FACES.items():
+    assert _k in SPECS, f'FACES has no character {_k}'
+    SPECS[_k].update(_f)
+
+# No two characters may wear the same face. This is the guard for the bug
+# that produced the table: the old eye routine ignored eyespread, so half
+# the roster was identical and nothing anywhere said so.
+_seen = {}
+for _k, _s in SPECS.items():
+    _sig = tuple(_s.get(_f) for _f in
+                 ('eyes', 'eyespread', 'brow', 'nose', 'mouth', 'freckles', 'blush'))
+    if _sig[0] == 'hidden':
+        continue                    # these draw their own face in a signature
+    if _sig in _seen:
+        raise SystemExit(f'same face: {_k} and {_seen[_sig]} -> {_sig}')
+    _seen[_sig] = _k
 
 
 def js_block(key, frames):
