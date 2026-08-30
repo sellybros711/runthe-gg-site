@@ -1681,6 +1681,27 @@
       color .16s var(--ez),transform .12s var(--ez)}
     .steps button:active{transform:scale(.96)}
   }
+  /* ── asking about the case ─────────────────────────────────────────────────────
+     A QUESTION IS A BUTTON UNTIL IT IS ASKED AND THEN IT IS A PARAGRAPH. Two states, one
+     node, so the panel does not reflow into a different shape as it fills up. */
+  .askbox{border-left:3px solid var(--gold)}
+  .qa{display:grid;gap:8px}
+  .qa button.q{display:block;width:100%;text-align:left;background:var(--panel);cursor:pointer;
+    border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;color:inherit;
+    font:inherit;font-family:var(--fn);font-size:13.5px;font-weight:600;
+    transition:border-color .12s var(--ez),background .12s var(--ez)}
+  .qa button.q:hover:not(:disabled){border-color:var(--gold)}
+  .qa button.q:disabled{opacity:.42;cursor:default}
+  .qa button.q:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .qa .said{border-left:2px solid var(--gold);padding:1px 0 1px 11px}
+  .qa .said b{display:block;font-family:var(--fn);font-size:13.5px;font-weight:700;
+    margin-bottom:4px}
+  .qa .said span{display:block;font-size:12.5px;line-height:1.5;color:var(--dim)}
+  /* AN ANSWER THAT OPENED A DOOR SAYS SO. A fourth option appearing under a panel somebody
+     has stopped looking at is a feature nobody notices they used. */
+  .qa .said em{display:block;margin-top:6px;font-size:11.5px;font-style:normal;
+    font-weight:700;letter-spacing:.03em;color:var(--green)}
+
   /* ── the podium ───────────────────────────────────────────────────────────────
      A LECTERN IS NOT A DESK AND IT SHOULD NOT LOOK LIKE ONE. The desk is a folder: an
      eyebrow, a brief, the room arguing, three options and a forecast button. This is one
@@ -1891,6 +1912,14 @@
     <div class="brief" id="d-brief"></div>
     <!-- What this office has already done about this exact argument. -->
     <div id="d-prec"></div>
+    <!-- ASK ABOUT IT, BEFORE YOU RULE ON IT. Four questions and you get two. See asksOf() in
+         docket.js for why the budget is the mechanic, and paintUnasked() for the half you
+         never heard, which is shown to you after the ruling rather than before it. -->
+    <div class="card flat askbox" id="d-askcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px">Ask about it</div>
+      <p class="dcsub" id="d-askhint" style="margin-bottom:10px"></p>
+      <div id="d-asks"></div>
+    </div>
     <!-- Both hidden together when an item arrives with nobody arguing about it: a section
          heading over an empty box reads as something that failed to load. -->
     <div class="dsec" id="d-voices-head"><b>The room is arguing</b></div>
@@ -2031,6 +2060,14 @@
     </div>
     <!-- What the internet said. Only after a real ruling: see paintFeed. -->
     <div class="card flat" id="r-feed" hidden></div>
+    <!-- THE HALF OF THE CASE YOU NEVER HEARD. Two questions of four, and this is the other
+         two with their answers, after the ruling. It is what makes the budget cost something
+         rather than merely limit something. See paintUnasked(). -->
+    <div class="card flat" id="r-unaskedcard" hidden>
+      <div class="eyebrow" style="margin-bottom:4px">What you did not ask</div>
+      <p class="dcsub" id="r-unaskedsub" style="margin-bottom:10px"></p>
+      <div class="wire" id="r-unasked"></div>
+    </div>
     <!-- WHAT GOT WRITTEN, after a press conference rather than a ruling. The room's own
          reaction is the nine bloc rows above; this is the three lines that actually ran,
          which is the part of a media day anybody outside the ballroom ever sees. -->
@@ -2115,7 +2152,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=6"></script>
-<script src="docket.js?v=19"></script>
+<script src="docket.js?v=20"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -3163,6 +3200,10 @@ function office(){
    Built off the football that has actually been played by the time you are standing on this
    beat, which is `seasonNow()` and not this beat's own segment: standing in the office on
    October, September has happened and October has not. */
+/* WHICH QUESTIONS HAVE BEEN PUT ABOUT THE ITEM ON THE DESK. Per item and not saved, the same
+   as `choice` and the dials: the desk is not a screen a reload comes back to. */
+let asked=[];
+
 let sit=null;
 function situationNow(){
   if(!SIT) return null;
@@ -3403,7 +3444,7 @@ $('b-desk').onclick=()=>{
   }
   item=D.pick(world,L,draw,sit);
   cast=D.castOf(item,world,L,draw,sit);
-  choice=null; dials={}; written=''; optOpen={}; optLong={};
+  choice=null; dials={}; written=''; optOpen={}; optLong={}; asked=[];
   (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
   save();
   const day=CAL.decisionDay(world.year,world.beat,item.id);
@@ -3484,6 +3525,8 @@ function desk(){
      they are three people, which is what they are. */
   $('d-voices-head').hidden=!(item.voices||[]).length;
   reveal($('d-voices'));
+  /* BEFORE THE OPTIONS, because an answer can add one to them. */
+  paintAsks();
   paintOptions(true);
   paintDials();
   paintEffect();
@@ -5084,6 +5127,84 @@ function paintBrief(text){
 /* `first` IS THE ARRIVAL AND NOTHING ELSE. This repaints on every tap, because choosing an
    option restyles the other two, and re-dealing three cards each time somebody changes their
    mind is a fidget rather than an animation. The stagger belongs to the item turning up. */
+/* ── asking about the case ─────────────────────────────────────────────────────────
+   THE DESK USED TO BE A FOLDER AND NOTHING ELSE. Everything knowable about an item was in the
+   brief, and the brief is written by whoever put it on your desk. A player looking at an
+   eligibility case asked for the obvious thing: "should you be able to ask questions about the
+   case? Like did he attend minicamp or any other exploratory questions?"
+
+   FOUR QUESTIONS, TWO ANSWERS, AND THAT IS THE MECHANIC. Four free answers would be a Reveal
+   All button with extra taps. The four are written so each argues for a different ruling, so
+   which two you ask is which half of the case you hear, and the two you did not ask are shown
+   to you on the next screen once the ruling is already made.
+
+   NO FORECAST HERE EITHER, and for a different reason than the podium's: an answer is a FACT
+   about the case rather than a prediction about the room, so there is nothing to preview. What
+   it can do is open a door. See `opens` in docket.js. */
+function paintAsks(){
+  const card=$('d-askcard'), box=$('d-asks');
+  if(!card||!box) return;
+  const qs=D.asksOf?D.asksOf(item):[];
+  if(!qs.length){ card.hidden=true; box.innerHTML=''; return; }
+  card.hidden=false;
+  const left=Math.max(0,D.PROBE_MAX-asked.length);
+  /* THE COUNT IN WORDS AND THE COST IN A SENTENCE. "You have one question and there are 4"
+     was the first version and it read as arithmetic homework. */
+  $('d-askhint').textContent=left===D.PROBE_MAX
+    ? 'Four questions in the file and you get two of them. What you do not ask, you do not '
+      +'find out until the ruling is already made.'
+    : left===1
+      ? 'One question left, and you will not get to ask the other two.'
+      : 'That is both of them. The rest of the file goes back where it came from.';
+  box.innerHTML='<div class="qa">'+qs.map((q)=>{
+    const put=asked.indexOf(q.id)>=0;
+    const qt=esc(D.text(q.q,cast,item,sit));
+    if(!put){
+      return '<button type="button" class="q" data-ask="'+esc(q.id)+'"'
+        +(left?'':' disabled')+'>'+qt+'</button>';
+    }
+    /* WHAT THE ANSWER UNLOCKED, said where the answer is. A fourth option quietly appearing
+       further down the page is a thing nobody notices they did. */
+    const door=q.opens?'<em>A ruling opened below</em>':'';
+    return '<div class="said"><b>'+qt+'</b><span>'
+      +esc(D.text(q.a,cast,item,sit))+'</span>'+door+'</div>';
+  }).join('')+'</div>';
+  box.querySelectorAll('[data-ask]').forEach((b)=>{
+    b.onclick=()=>{
+      if(asked.length>=D.PROBE_MAX||asked.indexOf(b.dataset.ask)>=0) return;
+      asked=asked.concat([b.dataset.ask]);
+      paintAsks();
+      /* THE OPTIONS ARE REDRAWN BECAUSE THE ANSWER MAY HAVE ADDED ONE, and the effect panel
+         with them, because a choice can no longer be one of them. */
+      const still=D.optionsFor(item,asked).some((o)=>o.id===choice);
+      if(!still) choice=null;
+      optLong={};
+      paintOptions();
+      paintEffect();
+      paintWrite();
+      $('b-rule').disabled=!choice;
+    };
+  });
+  reveal(box.querySelector('.qa'));
+}
+
+/* THE OTHER HALF OF THE FILE, after the ruling. Two of four, and these are the two nobody read
+   to you. Shown even when the answer would not have changed anything, because finding out that
+   it would not have is the same relief either way and the panel cannot know which it is. */
+function paintUnasked(el,card,it,cst,askedIds,st){
+  if(!el||!card) return;
+  const qs=(D.asksOf?D.asksOf(it):[]).filter((q)=>(askedIds||[]).indexOf(q.id)<0);
+  if(!qs.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const sub=$('r-unaskedsub');
+  if(sub) sub.textContent=qs.length===1
+    ? 'One question was left in the file.'
+    : qs.length+' questions were left in the file.';
+  el.innerHTML=qs.map((q)=>'<p><b>'+esc(D.text(q.q,cst,it,st))+'</b> '
+    +esc(D.text(q.a,cst,it,st))+'</p>').join('');
+  reveal(el);
+}
+
 function paintOptions(first){
   /* THE LABEL AND THE BODY MAY BOTH BE FUNCTIONS OF THE CAST, because an item that offers
      four real host cities cannot have them written into the docket: which four is a question
@@ -5096,7 +5217,10 @@ function paintOptions(first){
 
      `Read more` STOPS THE EVENT. Without that it would select the option it was trying to let
      you read, which is the original fault with an extra step. */
-  $('d-options').innerHTML=item.options.map((o)=>{
+  /* NOT `item.options`. A hidden option is unreachable until its question has been put, and
+     that is a property of the item rather than of this function, so the list comes from
+     docket.optionsFor() and the button that commits the ruling asks the same question. */
+  $('d-options').innerHTML=D.optionsFor(item,asked).map((o)=>{
     const on=choice===o.id;
     /* `whole` IS NOT THE SAME AS `open`, AND MISSING THAT WOULD HIDE TEXT WITH NO WAY BACK.
        An option whose reasoning runs a line past the clamp no longer gets a Read more button,
@@ -5414,7 +5538,7 @@ function paintDials(){
    that quietly does nothing.
 
    IT WAS NOT HONEST ENOUGH AND A PLAYER PROVED IT. The heading said "or rule in your own
-   words", which promises an alternative to the three options. It is not one: b-rule's first
+   words", which promises an alternative to the rulings on the desk. It is not one: b-rule's first
    line is `if(!choice) return`, so words with no option chosen pressed a button that did
    nothing, and Test It On The Room forecast the OPTION while two paragraphs of somebody's own
    reasoning sat above it. They wrote a careful argument about a bowl's name, got back a room
@@ -5429,7 +5553,7 @@ function paintWrite(){
   $('d-write').innerHTML='<div class="dial"><div class="dh"><b>Add a note to the ruling</b>'
     +'</div><textarea class="write" id="d-text" placeholder="'+esc(writeHint())+'"></textarea>'
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:7px">This rides along with '
-    +'whichever of the three you pick, and it is kept on the record with your ruling. '
+    +'whichever ruling you pick, and it is kept on the record with it. '
     +'<b style="color:var(--dim)">The room cannot read it yet.</b> Reasoning in your own words '
     +'and having the nine of them answer it is the next piece of work, and until it is built '
     +'this screen will not pretend otherwise.</p></div>';
@@ -5473,7 +5597,7 @@ function paintTestBtn(){
   const b=$('b-test');
   if(!b||b.hidden) return;
   b.disabled=!choice;
-  b.textContent=!choice ? 'Pick one of the three to test it'
+  b.textContent=!choice ? 'Pick a ruling to test it'
     : written.trim() ? 'Test the selected ruling on the room'
       : 'Test it on the room';
 }
@@ -5532,6 +5656,10 @@ $('b-test').onclick=()=>{
   paintFeed($('r-feed'),null);
   /* AND NOBODY WANTS A WORD ABOUT A RULING YOU HAVE NOT MADE. */
   paintRebuttal($('r-rebut'),$('r-rebutcard'),null);
+  /* NOR IS THE FILE CLOSED. You are going straight back to the desk with both questions still
+     in hand, so handing over the two you did not ask would make the forecast the way to read
+     the whole file for nothing. */
+  paintUnasked($('r-unasked'),$('r-unaskedcard'),item,cast,D.asksOf(item).map((q)=>q.id),sit);
   /* NO TAIL ON A FORECAST either, and for the same reason: nothing has happened yet, so
      nothing can have happened next. */
   paintTail($('r-tail'),null);
@@ -5715,6 +5843,7 @@ function pressFinish(){
   $('r-changed').hidden=true;
   $('r-rebutcard').hidden=true;
   $('r-feed').hidden=true;
+  $('r-unaskedcard').hidden=true;
   $('r-head').textContent='The room, after forty minutes of you';
   /* THE METERS ARE HERE TO SHOW WHAT DID NOT MOVE. Revenue and health sit exactly where
      they were and standing does not, which is the rule of this screen stated in numbers
@@ -5774,10 +5903,40 @@ window.PS_CFB_COMMISH_TEST={
   jump:(beat,year)=>{ world.beat=beat; if(year) world.year=year; save(); office(); },
   plant:(id,opts)=>{ world=L.plant(world,id,opts); save(); },
   repaint:()=>office(),
+  /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety nine
+     turns up takes several terms and lands on whichever it lands on, and an assertion about
+     a specific door has to be made against that door. Same body as b-desk from the pick
+     onwards, so the desk this produces is the desk the game produces. */
+  deskItem:(id)=>{
+    const it=D.BY_ID[id];
+    if(!it) return false;
+    sit=situationNow();
+    item=it;
+    cast=D.castOf(item,world,L,draw,sit);
+    choice=null; dials={}; written=''; optOpen={}; optLong={}; asked=[];
+    (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
+    deskDay=CAL.decisionDay(world.year,world.beat,item.id);
+    sit=situationOn(deskDay)||sit;
+    desk();
+    return true;
+  },
+  /* SETTING THE VARIABLE BY HAND, which is what a console does. Returns whether the ruling
+     actually went through, so a guard can assert that a hidden option refuses rather than
+     that it is merely not painted. */
+  forceChoice:(o)=>{
+    choice=o;
+    try{ $('b-rule').onclick(); }catch(e){}
+    return $('s-room').classList.contains('on');
+  },
 };
 
 $('b-rule').onclick=()=>{
   if(!choice) return;
+  /* A HIDDEN OPTION IS UNREACHABLE, NOT MERELY UNDRAWN. `disabled` is a property on an element
+     and `choice` is a variable, and neither of those is a rule about the item. This is, and it
+     reads the same function the desk paints from. */
+  if(!D.optionsFor(item,asked).some((o)=>o.id===choice)) return;
+  const askedThis=asked.slice();
   let edit=D.resolve(item,choice,dials,cast);
   if(written.trim()) edit.written=written.trim();
   const before=world;
@@ -5846,6 +6005,10 @@ $('b-rule').onclick=()=>{
      comparison has to survive past this function. */
   lastBefore=before;
   paintRebuttal($('r-rebut'),$('r-rebutcard'),lastRoom);
+  /* THE HALF OF THE CASE THE RULING WAS MADE WITHOUT. After the meters and after the room,
+     because it is a footnote to a decision rather than part of making one, and above the
+     rebuttal because the rebuttal is the last word on this screen. */
+  paintUnasked($('r-unasked'),$('r-unaskedcard'),item,cast,askedThis,sit);
   const changed=JSON.stringify(sportFacts(world))!==JSON.stringify(sportFacts(before));
   $('r-changed').hidden=!changed;
   if(changed) paintSport($('r-sport'),world,before);

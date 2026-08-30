@@ -235,6 +235,103 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
       D.eligible(wb, L, SIT.build(wb, L, { calendar: CAL })).forEach((i) => seen.add(i.id));
     }
   }
+  /* ---- asking about the case ----
+     AN ITEM WITH FOUR QUESTIONS AND TWO ANSWERS has three ways to fail and all three are
+     silent. A question whose answer throws drops the whole panel; an `opens` naming an option
+     that does not exist leaves a door with nothing behind it; and a hidden option nothing
+     opens is writing that can never be reached, which is the same failure as an unreachable
+     badge and is why this block exists at all. */
+  {
+    const rng = E.createSeededRNG(11);
+    const withAsks = D.ITEMS.filter((it) => (it.asks || []).length);
+    ok('  cases you can ask about', withAsks.length >= 15, withAsks.length + ' items');
+    ok('    and they carry four questions each',
+      withAsks.every((it) => it.asks.length === 4),
+      withAsks.filter((it) => it.asks.length !== 4).map((it) => it.id).join(' ') || 'all four');
+    ok('    and you get fewer than that', D.PROBE_MAX < 4, D.PROBE_MAX + ' of 4');
+    const dupIds = withAsks.filter((it) =>
+      new Set(it.asks.map((q) => q.id)).size !== it.asks.length);
+    ok('    every question id is unique inside its item', !dupIds.length,
+      dupIds.map((it) => it.id).join(' '));
+
+    /* Both halves rendered against a real cast on a real world. */
+    const w0 = world0();
+    const sit0 = SIT.build(w0, L, {});
+    const broke = [];
+    withAsks.forEach((it) => {
+      const c = D.castOf(it, w0, L, rng, sit0);
+      it.asks.forEach((q) => {
+        let qt = '', a = '';
+        try { qt = String(D.text(q.q, c, it, sit0)); a = String(D.text(q.a, c, it, sit0)); }
+        catch (e) { broke.push(it.id + ':' + q.id + ' threw'); return; }
+        if (/undefined|NaN|\[object|=>/.test(qt + a)) broke.push(it.id + ':' + q.id + ' ' + qt.slice(0, 40));
+        /* THE ANSWER CARRIES THE FLOOR AND THE QUESTION BARELY HAS ONE. This wanted twelve
+           characters of question and went red on "How is he?", which is nine and is the best
+           line in the item it sits in: the shortest question in a room is usually the one
+           somebody did not want asked. */
+        if (qt.length < 8 || a.length < 40) broke.push(it.id + ':' + q.id + ' too short');
+        if (!/\?$/.test(qt)) broke.push(it.id + ':' + q.id + ' is not a question');
+      });
+    });
+    ok('    every question and answer renders', !broke.length, broke.slice(0, 3).join(' | '));
+
+    /* ---- the doors ---- */
+    const doors = [];
+    withAsks.forEach((it) => it.asks.forEach((q) => {
+      if (q.opens) [].concat(q.opens).forEach((o) => doors.push({ item: it, q: q.id, opt: o }));
+    }));
+    ok('  some questions open a ruling', doors.length >= 6, doors.length + ' doors');
+    const badDoor = doors.filter((d) => {
+      const o = (d.item.options || []).find((x) => x.id === d.opt);
+      return !o || !o.hidden;
+    });
+    ok('    every door has a hidden ruling behind it', !badDoor.length,
+      badDoor.map((d) => d.item.id + ':' + d.opt).join(' '));
+    const hidden = [];
+    D.ITEMS.forEach((it) => (it.options || []).forEach((o) => {
+      if (o.hidden) hidden.push({ item: it.id, opt: o.id });
+    }));
+    const shut = hidden.filter((h) => !doors.some((d) => d.item.id === h.item && d.opt === h.opt));
+    ok('    and every hidden ruling has a door', !shut.length,
+      shut.map((h) => h.item + ':' + h.opt).join(' ') || hidden.length + ' hidden rulings');
+    /* THE POINT OF HIDING ONE. Not painted is a property of one function; unreachable has to
+       be a property of the item, which is what optionsFor() is. */
+    const leaks = doors.filter((d) =>
+      D.optionsFor(d.item, []).some((o) => o.id === d.opt));
+    ok('    a hidden ruling is not on the desk until it is asked for', !leaks.length,
+      leaks.map((d) => d.item.id + ':' + d.opt).join(' '));
+    const stuck = doors.filter((d) =>
+      !D.optionsFor(d.item, [d.q]).some((o) => o.id === d.opt));
+    ok('    and is on it the moment it is', !stuck.length,
+      stuck.map((d) => d.item.id + ':' + d.opt).join(' '));
+    /* AND IT HAS TO BE A LEGAL RULING. A door that leads to a thrown ledger path is a dead
+       end a player reaches by investigating properly. */
+    const dead = [];
+    hidden.forEach((h) => {
+      const it = D.BY_ID[h.item];
+      const c = D.castOf(it, w0, L, rng, sit0);
+      try { L.applyEdit(w0, D.resolve(it, h.opt, {}, c)); }
+      catch (e) { dead.push(h.item + ':' + h.opt + ' ' + e.message); }
+    });
+    ok('    every hidden ruling is a legal edit', !dead.length, dead.slice(0, 2).join(' | '));
+    /* AND IT IS THE LAST OPTION ON THE ITEM. Written at the top it shunted the three rulings
+       somebody was already reading down the screen the moment it appeared, which reads as the
+       desk rebuilding itself rather than as a door opening. Caught on a browser run and
+       trivially undone by hand, which is why it is asserted rather than remembered. */
+    const notLast = hidden.filter((h) => {
+      const opts = D.BY_ID[h.item].options;
+      return opts[opts.length - 1].id !== h.opt;
+    });
+    ok('    and it is the last ruling on the list', !notLast.length,
+      notLast.map((h) => h.item).join(' '));
+    /* The budget cannot open two doors at once on an item that only has one question with a
+       door, but it can on one that has two. Nothing forbids that; this states what happens. */
+    const twoDoors = withAsks.filter((it) =>
+      it.asks.filter((q) => q.opens).length > D.PROBE_MAX);
+    ok('    no item hides more rulings than there are questions to find them',
+      !twoDoors.length, twoDoors.map((it) => it.id).join(' '));
+  }
+
   /* ---- the arcs ----
      A THREAD WITH NO PAYOFF IS A PROMISE THE MODE DOES NOT KEEP, and a payoff with no plant
      is writing nobody can ever reach. Both fail silently: the first looks like a ruling with

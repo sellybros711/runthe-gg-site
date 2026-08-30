@@ -467,6 +467,22 @@
         { id: 'Presidents', say: 'Whatever this office says on Monday gets read out in a lawsuit one day.' },
         { id: 'Networks', say: 'We ran it fourteen times. We are not the problem here.' },
       ],
+      asks: [
+        { id: 'booth', q: 'What did the booth actually say?',
+          a: 'The audio exists. It is two people agreeing they had it, one asking for a better '
+            + 'angle, and the clock running out on them while a network cut to a graphic. Nobody '
+            + 'was asleep and nobody was corrupt. They were ninety seconds short.' },
+        { id: 'crew', q: 'Who assigns that crew?',
+          a: 'The home conference, and they assigned the same crew to that programme three times '
+            + 'this season. It is legal, it is normal, and there is no version of it that looks '
+            + 'right on a Monday.' },
+        { id: 'cost', q: 'What did it actually cost them?',
+          a: 'Two spots in the poll and, on the committee\'s own published criteria, a first '
+            + 'round home game. It is the difference between a bye and a flight in December.' },
+        { id: 'saw', q: 'How many people have watched it?',
+          a: 'Forty one million on the clip alone, and it has been on a morning news programme '
+            + 'that has never mentioned this sport before. Two senators have posted about it.' },
+      ],
       options: [
         { id: 'admit', label: 'Say it was wrong, publicly',
           body: 'Name the error, name the crew, and take the week of coverage. Nobody has '
@@ -1127,6 +1143,23 @@
         { id: 'Networks', say: 'The integrity story is worse for us than the betting is.' },
         { id: 'Players', say: 'Our names and numbers are on those apps. We saw none of it.' },
       ],
+      asks: [
+        { id: 'moves', q: 'What did the line actually do?',
+          a: 'Three moves in eleven minutes, all one way, all off the same two accounts opened '
+            + 'in August, and both accounts stopped betting entirely after that Saturday.' },
+        { id: 'player', q: 'What do we know about the player?',
+          a: 'A rotational defensive back who played nineteen snaps. His phone has been off '
+            + 'since Sunday, his family has retained counsel, and he is nineteen years old.' },
+        { id: 'source', q: 'Who flagged it?',
+          a: 'The integrity arm of a company this sport takes money from, which is either the '
+            + 'system working exactly as designed or the reason nobody will believe the finding. '
+            + 'Both of those are true at once.' },
+        { id: 'proof', q: 'Is there anything that would stand up?',
+          a: 'Two account numbers, a timeline, and no way to compel a phone. Without a subpoena '
+            + 'this is a suspicion with a graph attached, and this office has never had a '
+            + 'subpoena.',
+          opens: 'refer' },
+      ],
       options: [
         { id: 'partner', label: 'Deepen the partnership',
           body: 'Their data catches more than yours does. Take the money and the monitoring '
@@ -1146,6 +1179,16 @@
           edit: { set: { 'posture.gambling': 'banned' },
             effects: { money: -3, exposure: -3, tradition: 3 },
             aimed: { Fans: { tradition: 2 }, Presidents: { exposure: 2 }, Networks: { money: -2 } } } },
+        /* BEHIND THE EVIDENCE QUESTION. This office has never had a subpoena, which is the
+           fact that decides what it can honestly do next. */
+        { id: 'refer', hidden: true, label: 'Hand it to people who can compel a phone',
+          body: 'Two account numbers and a timeline is a suspicion with a graph attached. Refer '
+            + 'it out, say publicly that this office cannot investigate its own sport, and live '
+            + 'with having said so.',
+          edit: { set: { 'pressure.legal': 34 },
+            effects: { exposure: 1.8, autonomy: -2.4, tradition: 0.8, labour: 0.6 },
+            aimed: { Presidents: { exposure: -2 }, SEC: { autonomy: -1.6 },
+              Players: { labour: 1 }, Fans: { tradition: 1.2 } } } },
       ],
       dials: [],
     },
@@ -1259,6 +1302,22 @@
         { id: 'SEC', say: 'A cap on what we can pay is a cap on what we can be.' },
         { id: 'Players', say: 'Nobody has ever held a press conference about our buyouts.' },
       ],
+      asks: [
+        { id: 'who', q: 'Who is actually paying it?',
+          a: 'A foundation at two of the three schools and the athletic department at the other, '
+            + 'which is to say the students at all three of them. None of it is public money and '
+            + 'all of it is money.' },
+        { id: 'boards', q: 'Did the boards approve the contracts?',
+          a: 'Every one of them, unanimously, and eleven of the trustees who voted have since '
+            + 'complained about the buyouts in the same room as you.' },
+        { id: 'legal', q: 'Can this office cap them at all?',
+          a: 'Counsel says a cap on what a member institution pays an employee is the single '
+            + 'cleanest antitrust case anybody could bring against this association, and that '
+            + 'somebody would bring it before Christmas.' },
+        { id: 'sports', q: 'What does it cost the rest of the department?',
+          a: 'Across the three, four programmes cut and two more on notice, all of them sports '
+            + 'that lose money and none of them football.' },
+      ],
       options: [
         { id: 'cap', label: 'Cap the buyouts',
           body: 'A ceiling on what a school can owe a coach it has fired. Everybody wanted '
@@ -1347,6 +1406,22 @@
         { id: 'Players', say: 'It is his day. He gets to have it however he wants it.' },
         { id: 'Presidents', say: 'A seventeen year old just held a press conference and we sent a camera.' },
       ],
+      asks: [
+        { id: 'fourth', q: 'Where did the fourth hat come from?',
+          a: 'A staffer for the school drove it to the gym that morning and it was under the '
+            + 'table before the cameras were set up. Three coaching staffs found out on '
+            + 'television at the same time as everybody else.' },
+        { id: 'network', q: 'Who paid for the broadcast?',
+          a: 'The network paid the high school four thousand dollars for the facility and the '
+            + 'exclusive. Nobody paid the seventeen year old anything, which is the only part of '
+            + 'this nobody is arguing about.' },
+        { id: 'mother', q: 'What did his mother mean by it?',
+          a: 'She has not said and she has been asked about two hundred times in four days. A '
+            + 'reporter went to her workplace on Tuesday.' },
+        { id: 'how-many', q: 'How many of these are there?',
+          a: 'Four hundred and ten televised commitments last cycle, up from ninety in five '
+            + 'years, and eleven of them were reversed inside a fortnight.' },
+      ],
       options: [
         { id: 'embrace', label: 'Make it an event',
           body: 'One broadcast, one afternoon, every commitment in the country. If this sport '
@@ -1423,6 +1498,22 @@
         { id: 'Players', say: 'It is an actual business. It is there when the football stops.' },
         { id: 'Presidents', say: 'Our compliance office asked me what a franchise disclosure document is.' },
         { id: 'SEC', say: 'Every collective in the country is now looking at commercial property.' },
+      ],
+      asks: [
+        { id: 'worth', q: 'What is it actually worth?',
+          a: 'The franchise clears about a hundred and ninety thousand a year on the last three '
+            + 'years of filings, and the operating rights run twenty years. Nobody has ever '
+            + 'valued a college athlete\'s deal in decades before.' },
+        { id: 'strings', q: 'What does he have to do for it?',
+          a: 'Attend two openings a year and enroll in the franchise operator programme. There '
+            + 'is no performance clause, no transfer clause and no morals clause, which is why '
+            + 'the lawyers who wrote it are pleased with themselves.' },
+        { id: 'who', q: 'Who is behind the collective?',
+          a: 'Nine donors, four of whom sit on boards at the university, and a chairman who has '
+            + 'been photographed on the sideline every home game for eleven years.' },
+        { id: 'more', q: 'Is anybody else doing this?',
+          a: 'Two car dealerships and a stake in a self storage business, all in the last four '
+            + 'months, all legal, all outside anything this office can currently see.' },
       ],
       options: [
         { id: 'allow', label: 'It is legal, so it is allowed',
@@ -1506,6 +1597,23 @@
         { id: 'Fans', say: 'Whoever threw that football deserves a scholarship.' },
         { id: 'Presidents', say: 'Two of our institutions are about to sue each other over a toy helicopter.' },
       ],
+      asks: [
+        { id: 'who', q: 'Who registered the drone?',
+          a: 'A shell company in Nevada with one director, and the director is a name that turns '
+            + 'up in two offshore betting filings. It is not a rival programme and it never was.',
+          opens: 'book' },
+        { id: 'footage', q: 'What is actually on the memory card?',
+          a: 'Forty minutes of installation periods, one full script of a red zone package, and '
+            + 'ninety seconds of a coordinator holding up a laminated call sheet to the wind.' },
+        { id: 'again', q: 'Has this happened before?',
+          a: 'Four times this season that anybody reported, at four programmes, and this is the '
+            + 'first one anybody managed to bring down. Nobody had filed any of the other three '
+            + 'with this office.' },
+        { id: 'law', q: 'Is it even illegal?',
+          a: 'Federal aviation rules cover the airspace and nothing covers the footage. There is '
+            + 'no rule in this sport that a drone breaks, which is the actual finding and the '
+            + 'one nobody wants written down.' },
+      ],
       options: [
         /* "TAKE A PICK" IS A PROFESSIONAL LEAGUE'S PUNISHMENT AND NOT THIS ONE'S. College
            football has no draft to dock, so the phrase pointed at a lever that does not exist
@@ -1528,6 +1636,17 @@
           edit: { effects: { inventory: 2.6, tradition: -2, autonomy: -2.2, exposure: 1.6 },
             aimed: { Networks: { inventory: 3 }, SEC: { autonomy: -2.6 },
               'Big Ten': { autonomy: -2.4 }, Fans: { inventory: 1.4 } } } },
+        /* BEHIND THE REGISTRATION QUESTION. It was never a rival programme, which turns a
+           story about cheating into a story about the sport's own partners. */
+        { id: 'book', hidden: true, label: 'It is not a spying case, it is a betting case',
+          body: 'A shell company that turns up in two offshore filings put a camera over a '
+            + 'closed practice to find out who was going to play. Say that out loud, cut the '
+            + 'sport off from the industry it happened inside, and take the money that goes with '
+            + 'it.',
+          edit: { set: { 'posture.gambling': 'banned' },
+            effects: { exposure: -2.6, money: -2.4, tradition: 2.4, labour: 1.2 },
+            aimed: { Presidents: { exposure: -2.8 }, Fans: { tradition: 2.6 },
+              Networks: { money: -2.2 }, Players: { labour: 1.4 } } } },
       ],
     },
 
@@ -1722,6 +1841,23 @@
         { id: 'Networks', say: 'The window is the window. We had it sold in March.' },
         { id: 'Fans', say: 'Ninety thousand people were already in the building.' },
       ],
+      asks: [
+        { id: 'plane', q: 'What actually went wrong with the aircraft?',
+          a: 'A hydraulic fault the crew found on the walk around, which is the system working. '
+            + 'The five hours were spent waiting for a replacement aircraft that a charter broker '
+            + 'had already sold to somebody else.' },
+        { id: 'sleep', q: 'How much sleep did they get?',
+          a: 'The team doctor logged an average of two hours and eleven minutes and recommended '
+            + 'in writing, before kickoff, that the game not be played. He was overruled by '
+            + 'nobody in particular.',
+          opens: 'doctor' },
+        { id: 'cost', q: 'Who was paying for the charter?',
+          a: 'They were. It is a Group of Five budget and a charter is eleven per cent of it, '
+            + 'which is why it was a broker and a spare aircraft in the first place.' },
+        { id: 'result', q: 'What happened in the game?',
+          a: 'They lost by thirty one and two starters left it. The home programme has offered, '
+            + 'in public, to play it again, and their conference has told them they cannot.' },
+      ],
       options: [
         { id: 'postpone', label: 'Write a postponement rule',
           body: 'A team that cannot get there can move the game. It will be abused within two '
@@ -1740,6 +1876,15 @@
           edit: { effects: { tradition: 1.8, labour: -2.6, inventory: 1, autonomy: 1.2 },
             aimed: { Players: { labour: -3 }, Networks: { inventory: 1.4 },
               Fans: { tradition: 1.4 } } } },
+        /* BEHIND THE SLEEP QUESTION. The doctor put it in writing before kickoff and was
+           overruled by nobody in particular, which is the actual finding. */
+        { id: 'doctor', hidden: true, label: 'The doctor decides, and nobody overrules him',
+          body: 'A team physician wrote it down before kickoff and the game was played anyway, '
+            + 'because there is nobody a physician reports to who could have stopped it. Make '
+            + 'that call his, in writing, and let a conference explain to a network afterwards.',
+          edit: { effects: { labour: 2.6, exposure: -1.8, inventory: -1.2, tradition: 0.8 },
+            aimed: { Players: { labour: 3 }, Presidents: { exposure: -1.6 },
+              Networks: { inventory: -1.6 }, 'Group of Five': { access: 1 } } } },
       ],
     },
     {
@@ -1761,6 +1906,25 @@
         { id: 'Networks', say: 'We had the graphic up. The graphic was right.' },
         { id: 'Presidents', say: 'The result of a game is now a question for lawyers.' },
       ],
+      asks: [
+        { id: 'crew', q: 'What happened on the crew?',
+          a: 'The box operator flagged it, twice, on the headset. The referee did not hear the '
+            + 'first and waved off the second. All seven have been off assignments since Sunday '
+            + 'and none of them have been told for how long.' },
+        { id: 'chain', q: 'Was there anything on the field that could have fixed it?',
+          a: 'A working headset and eleven seconds. There is no mechanism in the rulebook for '
+            + 'the box to stop a game and there never has been, because until Saturday nobody '
+            + 'thought one was needed.',
+          opens: 'stop' },
+        { id: 'before', q: 'Has a fifth down ever been reversed?',
+          a: 'Never, in either direction, in ninety years of this sport. The one everybody '
+            + 'remembers stood, the poll voters settled it instead, and that is the whole of the '
+            + 'precedent.' },
+        { id: 'stakes', q: 'What does the result decide?',
+          a: 'A division, a title game and, on this week\'s numbers, the last place in the '
+            + 'field. Both athletic directors have been told by their boosters to threaten to '
+            + 'sue and only one of them has.' },
+      ],
       options: [
         { id: 'reverse', label: 'Reverse the result',
           body: 'The rule book is the rule book and the game was decided on a down that did '
@@ -1778,6 +1942,16 @@
             + 'no results. Say it plainly and take the week you are about to have.',
           edit: { effects: { tradition: 2.4, exposure: 1.8, access: -2 },
             aimed: { Fans: { tradition: -2.4, access: -2 }, Presidents: { exposure: 1.6 } } } },
+        /* BEHIND THE HEADSET QUESTION. The box knew and had no way to stop the game, which is
+           a mechanism problem rather than a result problem. */
+        { id: 'stop', hidden: true, label: 'Give the booth a whistle',
+          body: 'The one person who had it right could not stop the game, because no rule lets '
+            + 'him. Write that rule, leave Saturday\'s result exactly where it is, and make sure '
+            + 'the next eleven seconds are enough.',
+          edit: { set: { 'rules.replay': 'central' },
+            effects: { tradition: 1.4, cost: 1.2, autonomy: -1.4, exposure: -1.2 },
+            aimed: { Fans: { tradition: 1.8 }, Presidents: { exposure: 1.4, cost: -1 },
+              SEC: { autonomy: -1.6 } } } },
       ],
     },
 
@@ -1922,6 +2096,24 @@
         { id: 'Players', say: 'Somebody is going to hide a real injury to avoid being accused of this.' },
         { id: 'Big 12', say: 'It is coaching. Unpleasant coaching. Still coaching.' },
       ],
+      asks: [
+        { id: 'tape', q: 'What does the tape actually show?',
+          a: 'Five of the six looked at the sideline before they went down. The sixth had a '
+            + 'genuine calf strain and is in a boot this week, which is the whole problem with '
+            + 'every rule anybody has drafted for this.' },
+        { id: 'staff', q: 'Was anybody on the staff coaching it?',
+          a: 'A quality control assistant has a laminated card with the word CRAMP on it. It was '
+            + 'photographed by a broadcast camera in the second quarter and nobody has explained '
+            + 'it.',
+          opens: 'staff' },
+        { id: 'rate', q: 'Is it happening everywhere?',
+          a: 'Injury stoppages against tempo offenses are running at four times the rate of '
+            + 'stoppages against everybody else, and they have been for three seasons. This is '
+            + 'the first time a camera made it a story.' },
+        { id: 'doctor', q: 'What do the doctors say?',
+          a: 'That any rule sitting a player for a series will produce men who stay on the field '
+            + 'with a real injury to avoid it, and that they will not put their names to one.' },
+      ],
       options: [
         { id: 'sit', label: 'Injured means a full series out',
           /* THE SENTENCE IS RIGHT AND READ AS A TYPO, which is the same as being wrong. The
@@ -1943,6 +2135,14 @@
             + 'by doing it back to each other in November.',
           edit: { effects: { autonomy: 2, inventory: -1.8, tradition: 0.8 },
             aimed: { SEC: { autonomy: 1.8 }, Networks: { inventory: -2 } } } },
+        /* BEHIND THE STAFF QUESTION. Somebody laminated the word. It is not the players. */
+        { id: 'staff', hidden: true, label: 'It is the staff, so punish the staff',
+          body: 'A quality control assistant with a laminated card is not a nineteen year old '
+            + 'with a hamstring. Suspend the people who coached it, name them, and write nothing '
+            + 'at all that puts a doctor in the middle of it.',
+          edit: { effects: { labour: 2.2, tradition: 1.6, exposure: 0.8, cost: -0.6 },
+            aimed: { Players: { labour: 2.6 }, Fans: { tradition: 1.8 },
+              SEC: { autonomy: -1.4 }, Presidents: { exposure: -1 } } } },
       ],
     },
 
@@ -2059,6 +2259,23 @@
         { id: 'Fans', say: 'This has happened four times. It has come back four times. It is part of it.' },
         { id: 'Presidents', say: 'It is a hundred year old object and a felony.' },
         { id: 'Networks', say: 'We would like to do a documentary about it either way.' },
+      ],
+      asks: [
+        { id: 'photo', q: 'Is the photograph real?',
+          a: 'The bathtub is in a house three blocks from campus and the object in it has the '
+            + '1934 hallmark on the base. It was posted at four in the morning and deleted at '
+            + 'nine.' },
+        { id: 'case', q: 'How did it get out of the case?',
+          a: 'With a key. The case was locked when the staff arrived and the alarm never went '
+            + 'off, which means it was somebody with an access card and everybody in both '
+            + 'buildings already knows that.' },
+        { id: 'value', q: 'What is it worth?',
+          a: 'Insured at ninety thousand dollars and worth nothing at all, because there is one '
+            + 'and no market for it. A replica is eleven thousand and six weeks.' },
+        { id: 'police', q: 'What do the police say?',
+          a: 'That it is a felony, that they will act the moment either school files, and that '
+            + 'neither school has filed. Both athletic directors have asked this office to be '
+            + 'the one that decides.' },
       ],
       options: [
         { id: 'police', label: 'Refer it and let the police work',
@@ -2354,6 +2571,23 @@
         { id: 'Players', say: 'You cannot legislate joy out of the one moment it belongs in.' },
         { id: 'Presidents', say: 'The rule exists because of things considerably worse than pointing.' },
       ],
+      asks: [
+        { id: 'rule', q: 'Was it actually a foul?',
+          a: 'By the letter, yes, and by the letter it is a foul about forty times a Saturday '
+            + 'and gets called about nine. The crew that called this one leads the country in '
+            + 'calling it.' },
+        { id: 'kid', q: 'How is he?',
+          a: 'He has not been to class since Sunday, his family have taken his phone off him, '
+            + 'and his coach has asked this office not to say his name in anything it publishes.' },
+        { id: 'block', q: 'Did the penalty cause the block?',
+          a: 'The kick was from thirty three rather than eighteen and it was blocked by a man '
+            + 'coming free off the edge, which had nothing to do with the distance. Nobody wants '
+            + 'to say that out loud because it does not help anybody.' },
+        { id: 'other', q: 'What do the other coaches want?',
+          a: 'Sixty one of a hundred and thirty six have signed a letter asking for it to be a '
+            + 'dead ball foul assessed on the kickoff. Not one of the sixty one is at a '
+            + 'programme that scores a lot of long touchdowns.' },
+      ],
       options: [
         { id: 'dead', label: 'Make it a dead ball foul',
           body: 'Penalise the kickoff, not the touchdown. The score stands, the celebration '
@@ -2572,6 +2806,28 @@
         { id: 'Fans', say: 'He said goodbye. There was a graphic. There was a video.' },
         { id: 'Networks', say: 'He is the best player who will be on a field this autumn if you let him be.' },
       ],
+      /* THE ITEM A PLAYER WAS LOOKING AT WHEN HE ASKED FOR THIS. "Should you be able to ask
+         questions about the case? Like did he attend minicamp." He should, the answer to that
+         one decides it, and it is the only one of the four that opens a door. */
+      asks: [
+        { id: 'camp', q: 'Did he go to a minicamp?',
+          a: 'Three days in May, in a helmet, on a grass field, with a playbook they took back '
+            + 'off him at the end of it. He signed for eighty one dollars a day in per diem and '
+            + 'there is a form with his name on it.',
+          opens: 'paid' },
+        { id: 'advice', q: 'Who told him not to withdraw?',
+          a: 'An agent certified by nobody, and two men in his own building who are both still '
+            + 'employed. None of the three has returned a call from this office this week.' },
+        { id: 'others', q: 'How many others missed the deadline?',
+          a: 'Nineteen. None of them were a second round grade in November and four have already '
+            + 'enrolled somewhere as ordinary students. Whatever is written for him is written '
+            + 'for all nineteen.' },
+        { id: 'school', q: (c) => 'What does ' + ((c && c.school) || 'his school') + ' actually want?',
+          a: (c) => 'Formally nothing, on advice. Their compliance office has called this office '
+            + 'four times in six days and their head coach has called twice, and '
+            + ((c && c.school) || 'the school') + ' has a hole at his position they have not '
+            + 'recruited over.' },
+      ],
       options: [
         { id: 'let-back', label: 'Let him back',
           body: 'And everybody in his position, this year and every year. It is the humane '
@@ -2593,6 +2849,18 @@
             effects: { labour: -3, tradition: 2.6, exposure: 1.2, access: 1 },
             aimed: { Players: { labour: -3.4 }, Fans: { tradition: 2 },
               Presidents: { exposure: 1.4 } } } },
+        /* BEHIND THE MINICAMP QUESTION. Nobody sees this option who does not ask, which is the
+           whole of the mechanic: the case is a calendar case until somebody finds out he was
+           paid, and then it is not a calendar case at all. */
+        { id: 'paid', hidden: true, label: 'Rule on the money, not the calendar',
+          body: 'He signed for work in a professional camp and was paid for it. That is not a '
+            + 'question about a withdrawal deadline and it is not one this office gets to be '
+            + 'sentimental about. It also writes the rule for everybody who has not been paid, '
+            + 'which is most of them, and lets those men back.',
+          edit: { set: { 'labour.reentry': 'window', 'labour.proYears': 0 },
+            effects: { labour: 0.8, tradition: 1.6, exposure: -1.4, access: 0.6 },
+            aimed: { Players: { labour: 1 }, Presidents: { exposure: -1.6 },
+              Fans: { tradition: 1.4 }, Networks: { inventory: -0.8 } } } },
       ],
     },
     {
@@ -2706,6 +2974,22 @@
         { id: 'Players', say: 'Every one of us should have had one from the day we were sixteen.' },
         { id: 'Presidents', say: 'Agents and salaries. Tell me what word is left that is not employee.' },
         { id: 'Networks', say: 'Nobody watching has ever cared about this and nobody watching ever will.' },
+      ],
+      asks: [
+        { id: 'deal', q: 'What is the agent actually negotiating?',
+          a: 'A collective deal, a shoe deal and an appearance schedule, on a standard '
+            + 'professional agency paper that has a clause about league discipline in it. The '
+            + 'league in that clause is not this one.' },
+        { id: 'cut', q: 'What is he taking?',
+          a: 'Twenty per cent of the marketing and three of any future contract. Twenty is '
+            + 'double what the professional league permits its own certified agents to take.' },
+        { id: 'how-many', q: 'How many players have one?',
+          a: 'Somewhere between four hundred and two thousand, and the honest answer is that '
+            + 'nobody in this office knows, because there is no register and nothing requires '
+            + 'anyone to file anything.' },
+        { id: 'school', q: 'Does his school know?',
+          a: 'His compliance officer has met the agent twice and has no authority to do anything '
+            + 'about him. She has written a memo about it that reads like a resignation letter.' },
       ],
       options: [
         { id: 'certify', label: 'Certify agents and register every deal',
@@ -2837,6 +3121,23 @@
         { id: 'Fans', say: 'You cannot sign a professional in October. That is not a season.' },
         { id: 'Players', say: 'He was cut. He is allowed to work.' },
       ],
+      asks: [
+        { id: 'check', q: 'How much was the paycheck?',
+          a: 'Twelve thousand four hundred dollars, gross, over three weeks, and it was payroll '
+            + 'rather than a signing bonus. He has a W-2 from a football team.' },
+        { id: 'why', q: 'Why was he released?',
+          a: 'A tackle ahead of him came off the injury list. Nothing to do with him, said in '
+            + 'writing, which is unusual and which his lawyer has already noticed.' },
+        { id: 'class', q: 'Is he still enrolled?',
+          a: 'Twelve hours this term and he never dropped them. He has been going to class in '
+            + 'the mornings and to a professional facility in the afternoons, which is a '
+            + 'sentence nobody in this building has had to think about before.',
+          opens: 'waiver' },
+        { id: 'others', q: 'Is anybody else in this position?',
+          a: 'Six men this autumn, four of whom nobody would take back anyway. The rule written '
+            + 'for him is the rule for all six and for however many there are next year, which '
+            + 'everybody expects to be more.' },
+      ],
       options: [
         { id: 'allow', label: 'Let him sign',
           body: 'And write it down properly so the next four know the rule before they need '
@@ -2859,6 +3160,16 @@
           edit: { set: { 'labour.reentry': 'closed' },
             effects: { labour: -3.2, tradition: 3, access: 1.2, exposure: -1 },
             aimed: { Players: { labour: -3.6 }, Fans: { tradition: 2.6 } } } },
+        /* BEHIND THE ENROLMENT QUESTION. He never stopped being a student, which nobody in
+           this building had thought to check. */
+        { id: 'waiver', hidden: true, label: 'Write the waiver he is asking for',
+          body: 'He never left. Twelve hours a term, all the way through, and a rule that says a '
+            + 'continuously enrolled student may return once is a rule with a bright line in it '
+            + 'that a court can read. It also has an end: one return, and the door shuts.',
+          edit: { set: { 'labour.reentry': 'window', 'labour.proYears': 1 },
+            effects: { labour: 2, tradition: 0.8, exposure: -1.6, cost: 0.4 },
+            aimed: { Players: { labour: 2.2 }, Presidents: { exposure: -1.8 },
+              Fans: { tradition: 0.6 } } } },
       ],
     },
     {
@@ -3670,6 +3981,22 @@
         { id: 'Fans', say: 'Say what it was. Say it plainly. That is the whole ask.' },
         { id: 'Networks', say: 'Nothing this office says next will be shorter than the headline.' },
       ],
+      asks: [
+        { id: 'money', q: 'Where did the four thousand actually go?',
+          a: 'To a cousin, to cover a debt that predates any of this, and back out to a '
+            + 'sportsbook in another man\'s name. Neither player received a dollar of it and '
+            + 'both of them knew where it was going.',
+          opens: 'clear' },
+        { id: 'game', q: 'Did it touch the field?',
+          a: 'The bets were on a total in a game neither of them played a snap in. There is no '
+            + 'version of this where anything they did changed anything.' },
+        { id: 'chat', q: 'What is actually in the group chat?',
+          a: 'Four hundred messages, most of them about a video game, and eleven that a '
+            + 'prosecutor would enjoy reading aloud. None of the eleven mention a spread.' },
+        { id: 'precedent', q: 'What has this office done before?',
+          a: 'Nothing, because this is the first one. Whatever it is called becomes the name for '
+            + 'the next forty, and the report is going to leak either way.' },
+      ],
       options: [
         { id: 'lifetime', label: 'Make an example',
           body: 'Permanent ineligibility, both of them, announced. Everybody who was thinking '
@@ -3690,6 +4017,16 @@
           edit: { effects: { labour: 2.4, cost: 1.6, tradition: -1.6, exposure: 1.2 },
             aimed: { Players: { labour: 3 }, Fans: { tradition: -2 },
               Presidents: { cost: -1.4 } } } },
+        /* BEHIND THE MONEY QUESTION. Neither of them ever held a dollar of it, which is the
+           difference between a scandal and two twenty year olds in a group chat. */
+        { id: 'clear', hidden: true, label: 'Clear them, and publish why',
+          body: 'The money went to a cousin\'s debt and out to a book in a third man\'s name. '
+            + 'They knew and they did nothing, which is worth a conversation and not a career. '
+            + 'Publishing the reasoning is the part that protects the next two.',
+          edit: { set: { 'pressure.legal': 10 },
+            effects: { labour: 2.4, exposure: -1.6, tradition: -0.8 },
+            aimed: { Players: { labour: 2.8 }, Presidents: { exposure: -1.4 },
+              Fans: { tradition: -1.2 }, Networks: { inventory: 0.6 } } } },
       ],
     },
     {
@@ -4654,6 +4991,54 @@
     return pool[pool.length - 1];
   }
 
+  /* ---- ASKING ABOUT THE CASE ----
+     THE DESK USED TO HAND YOU A FOLDER AND NOTHING ELSE. Everything knowable about an item
+     was in the brief, and the brief was written by whoever put it on your desk. A player
+     looking at an eligibility case asked the obvious thing: "should you be able to ask
+     questions about the case? Like did he attend minicamp or any other exploratory
+     questions?" He could not, and the answer to that particular question turns out to decide
+     the case.
+
+     SO AN ITEM MAY CARRY FOUR AND YOU MAY ASK TWO. The budget is the whole mechanic. Four
+     free answers is a Reveal All button with extra taps, and the four are written so that
+     each one argues for a different ruling: which two you ask is which half of the case you
+     hear. What you did not ask is shown to you AFTER you rule, on the room screen, which is
+     the part that makes the budget cost something rather than merely limit something.
+
+     AND AN ANSWER MAY OPEN A DOOR. `opens` names an option carrying `hidden: true`, which is
+     not on the desk until somebody asks the question that produces it. That is the difference
+     between an item with more reading on it and an item you can actually investigate: a
+     commissioner who asks about the minicamp finds out there is a fourth way to rule, and one
+     who asks about the agent instead never learns it existed. Eight of the fifteen cases have
+     a door, so finding one is a find rather than a reward for turning up.
+
+     A HIDDEN OPTION IS UNREACHABLE, NOT MERELY UNDRAWN. The page reads optionsFor() and so
+     does the button that commits the ruling, because "the option is not painted" is a
+     property of one function and this has to be a property of the item.
+
+     AND IT IS THE LAST ONE ON THE LIST. Written at the top of the options array it pushed the
+     three somebody was already reading down the screen the instant it appeared, which reads
+     as the desk rebuilding itself rather than as a door opening. test_docket asserts the
+     position, because it is easy to fix and easy to undo by hand. */
+  const PROBE_MAX = 2;
+
+  function asksOf(item) { return (item && item.asks) || []; }
+
+  /* Which options are on the desk, given what has been asked. Anything not hidden, plus every
+     hidden one whose question has been put. */
+  function optionsFor(item, askedIds) {
+    const asked = [].concat(askedIds || []);
+    const opened = {};
+    asksOf(item).forEach((q) => {
+      if (q.opens && asked.indexOf(q.id) >= 0) [].concat(q.opens).forEach((o) => { opened[o] = 1; });
+    });
+    return (item.options || []).filter((o) => !o.hidden || opened[o.id]);
+  }
+
+  /* Every option this item could ever offer, hidden ones included. The guards walk this; the
+     desk never does. */
+  function allOptions(item) { return (item && item.options) || []; }
+
   /* WHAT A DIAL IS ALLOWED TO BE, which is the whole of the tier split and it lives here
      rather than in the page so nothing on screen has to remember the rule. */
   function settings(dial, pro) {
@@ -4776,7 +5161,8 @@
 
   const publicAPI = { ITEMS, BY_ID, BEATS: { WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF },
     eligible, pick, resolve, settings, format, castOf, text, recency, sinceRuled, NOSIT,
-    plantsOf, voiceSay, voiceSays };
+    plantsOf, voiceSay, voiceSays,
+    PROBE_MAX, asksOf, optionsFor, allOptions };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_DOCKET = publicAPI;
 })();
