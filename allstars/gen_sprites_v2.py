@@ -1259,16 +1259,33 @@ def sig_humpty(cv, spec, pose, back):
 
 
 def sig_lion(cv, spec, pose, back):
-    # THE MANE. A lion without one is an orange bear.
-    mane = Ramp('#8a3d10')
+    # THE MANE, bright orange around a yellow face, with little ears
+    # poking out the top and the tail flicking its orange tuft.
+    mane = Ramp('#e07818')
     cv.sphere(CX, 12.5, 12.2, 11.2, mane, spec=False)
-    # tufted edge so it reads as fur, not a halo
     for a in range(12):
         ang = a * math.pi / 6
         tx = CX + math.cos(ang) * 12.2
         ty = 12.5 + math.sin(ang) * 11.2
         if 0 <= ty <= 24:
             cv.dot(tx, ty, mane.dark)
+    for side in (-1, 1):
+        cv.sphere(CX + side * 7, 2.0, 1.8, 1.8, mane, spec=False)
+    # the tail, swung out to his right, tufted
+    tail = Ramp(spec.get('skin', '#eab84a'))
+    for dx, dy in ((11, 32), (12.5, 30), (13.5, 28), (14, 26)):
+        cv.sphere(CX + dx, dy, 1.2, 1.2, tail, spec=False)
+    cv.sphere(CX + 14, 24.0, 1.8, 2.0, mane, spec=False)
+
+
+def sig_lion_face(cv, spec, pose, back):
+    if back:
+        return
+    # orange nose over the tan muzzle
+    n = (224, 120, 24)
+    cv.dot(CX - 1, 14, n)
+    cv.dot(CX, 14, n)
+    cv.dot(CX, 15, shade(n, -0.3))
 
 
 def sig_mrsclaus(cv, spec, pose, back):
@@ -1374,15 +1391,89 @@ def sig_chupacabra(cv, spec, pose, back):
 def sig_cupid(cv, spec, pose, back):
     if back:
         return
-    # the heart on his chest
+    # the BOW, strung and drawn, with a heart tipped arrow: the thing
+    # that makes a winged blond baby read as Cupid and not a cherub.
+    wood = (150, 96, 42)
+    for dx, dy in ((9, 23), (10, 24), (11, 26), (11, 28), (10, 30), (9, 31)):
+        cv.dot(CX + dx, dy, wood)
+    for dy in range(24, 31):
+        cv.dot(CX + 9, dy, (226, 226, 230))
+    for dx in range(5, 11):
+        cv.dot(CX + dx, 27, (200, 168, 108))
     r = (210, 73, 73)
-    for dx in (-2, -1, 1, 2):
-        cv.dot(CX + dx, 25, r)
-    for dx in range(-2, 3):
-        cv.dot(CX + dx, 26, r)
-    for dx in (-1, 0, 1):
-        cv.dot(CX + dx, 27, r)
-    cv.dot(CX, 28, r)
+    cv.dot(CX + 4, 26, r)
+    cv.dot(CX + 5, 26, r)
+    cv.dot(CX + 3, 27, r)
+    cv.dot(CX + 4, 27, r)
+    cv.dot(CX + 5, 27, r)
+    cv.dot(CX + 4, 28, r)
+
+
+def sig_yeti(cv, spec, pose, back):
+    # shaggy tufts breaking the silhouette, on both facings
+    fur = Ramp(spec.get('skin', '#f0f6fb'))
+    for side in (-1, 1):
+        for dy in (18, 22, 26):
+            cv.dot(CX + side * 12, dy, fur.mid)
+            cv.dot(CX + side * 11, dy + 2, fur.lit)
+    if back:
+        return
+    # the face is a dark patch INSIDE the white fur, with icy eyes and
+    # a white grimace of teeth
+    face = Ramp('#7a96b4')
+    cv.sphere(CX, 13.5, 6.4, 5.4, face, spec=False)
+    for sx in (-3, 3):
+        cv.dot(CX + sx - 1, 12, (240, 248, 252))
+        cv.dot(CX + sx, 12, (170, 220, 245))
+        cv.dot(CX + sx, 11, (240, 248, 252))
+    for dx in range(-3, 4):
+        cv.dot(CX + dx, 16, (245, 245, 247))
+        cv.dot(CX + dx, 15, shade(face.base, -0.4))
+    cv.dot(CX - 4, 16, shade(face.base, -0.4))
+    cv.dot(CX + 4, 16, shade(face.base, -0.4))
+
+
+def sig_sasquatch(cv, spec, pose, back):
+    # THE FEET. He is Bigfoot: wide flat feet and a heavy brow.
+    fur = Ramp(spec.get('skin', '#4a2014'))
+    for side in (-1, 1):
+        cv.sphere(CX + side * 4, 37.4, 3.4, 1.7, Ramp(shade(fur.base, -0.2)), spec=False)
+    if back:
+        return
+    brow = shade(fur.base, -0.5)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 9, brow)
+
+
+def sig_felix(cv, spec, pose, back):
+    if back:
+        return
+    # Felix IS the white face: a big white mask over the black head,
+    # eyes at its top edge, the wide grin across it, white gloves and
+    # big glossy shoe feet.
+    white = Ramp('#f7f7f9')
+    ink = (20, 16, 24)
+    cv.sphere(CX, 15.0, 6.8, 5.8, white)
+    for sx in (-3, 3):
+        x = CX + sx
+        for dx in (-1, 0):
+            for dy in (-1, 0, 1):
+                cv.dot(x + dx, 10 + dy, (250, 250, 252))
+        cv.dot(x - (1 if sx > 0 else 0), 11, ink)
+    cv.dot(CX - 1, 13, ink)
+    cv.dot(CX, 13, ink)
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 17, ink)
+    cv.dot(CX - 5, 16, ink)
+    cv.dot(CX + 5, 16, ink)
+    for side in (-1, 1):
+        hx = CX + side * 8
+        for dx in (-1, 0, 1):
+            cv.dot(hx + dx, 31, (245, 245, 247))
+            cv.dot(hx + dx, 32, (245, 245, 247))
+    shoe = Ramp('#181420')
+    for side in (-1, 1):
+        cv.sphere(CX + side * 4, 37.2, 3.2, 1.8, shoe, spec=True)
 
 
 def sig_strongman(cv, spec, pose, back):
@@ -1460,7 +1551,7 @@ SIGNATURES = {
     'alice': {'post': sig_alice},
     'dorothy': {'post': sig_dorothy},
     'scarecrow': {'post': sig_scarecrow},
-    'lion': {'pre': sig_lion},
+    'lion': {'pre': sig_lion, 'post': sig_lion_face},
     'mrsclaus': {'post': sig_mrsclaus},
     'bunny': {'post': sig_bunny},
     'fairy': {'post': sig_fairy},
@@ -1479,6 +1570,9 @@ SIGNATURES = {
     'zombie': {'post': sig_zombie},
     'werewolf': {'post': sig_werewolf},
     'humpty': {'post': sig_humpty},
+    'felix': {'post': sig_felix},
+    'yeti': {'post': sig_yeti},
+    'sasquatch': {'post': sig_sasquatch},
 }
 
 
@@ -1560,8 +1654,8 @@ SPECS = {
  'peter': dict(arch='human', skin='#f2ceaa', shirt='#3a8a4a', pants='#3a6a3a',
                hat='cap', hatcolor='#3a8a4a', hair='#c07a2a', hairstyle='short',
                eyes='normal', mouth='grin'),
- 'felix': dict(arch='cat', skin='#141018', chest='#f0f0f2', muzzle='#f7f7f9',
-               eyes='cartoon', eyecolor='#141018', mouth='grin', eyespread=3,
+ 'felix': dict(arch='cat', skin='#141018', chest='#f0f0f2', muzzle=None,
+               eyes='hidden', mouth='none',
                extra=[('ears', '#141018')]),
  'jack': dict(arch='human', skin='#f0c99a', shirt='#3a7f4a', pants='#5c3a1c',
               hair='#c9a256', hairstyle='mop', eyes='normal', mouth='grin'),
@@ -1600,8 +1694,8 @@ SPECS = {
  'scarecrow': dict(arch='human', skin='#eecc78', shirt='#7a3812', pants='#5a3010',
                    hat='point', hatcolor='#c9a256', hattrim='#8b6a3a',
                    eyes='cartoon', eyecolor='#3a2410', mouth='none'),
- 'lion': dict(arch='hulk', skin='#c25c1a', muzzle='#f5e6c8', chest='#f5c47a',
-              eyes='normal', mouth='line'),
+ 'lion': dict(arch='hulk', skin='#eab84a', muzzle='#ead0a0', chest='#eab84a',
+              eyes='normal', eyespread=3, mouth='line'),
  'pooh': dict(arch='round', skin='#f4c25a', shirt='#d24949', eyes='cartoon',
               eyecolor='#141018', mouth='grin', extra=[('ears', '#f4c25a')]),
  'robin': dict(arch='human', skin='#efc9a0', shirt='#3f7a3a', pants='#4a2d18',
@@ -1648,7 +1742,7 @@ SPECS = {
                     eyes='glow', eyecolor='#f4c25a', mouth='fang'),
  'cupid': dict(arch='round', skin='#f7dcb4', shirt='#f7dcb4', eyes='normal',
                mouth='grin', hair='#d8a24a', hairstyle='short',
-               extra=[('wings', '#fdfbf5')]),
+               extra=[('wings', '#a8d8f0')]),
  'medusa': dict(arch='robed', skin='#86c46e', shirt='#2f7a4a',
                 eyes='glow', eyecolor='#f4c25a', mouth='line', folds=3,
                 hair='#57b56a', hairstyle='wild'),
@@ -1661,10 +1755,10 @@ SPECS = {
  'dragon': dict(arch='dragon', skin='#2e8a3a', muzzle='#8fd06a',
                 eyes='normal', eyecolor='#141018', mouth='none',
                 extra=[('horns', '#f4c25a')]),
- 'sasquatch': dict(arch='hulk', skin='#4a3020', muzzle='#c8a074', chest='#8a6a44',
+ 'sasquatch': dict(arch='hulk', skin='#4a2014', muzzle='#8a5a3a', chest='#5e3220',
                    eyes='normal', mouth='line'),
- 'yeti': dict(arch='hulk', skin='#f0f6fb', muzzle='#d8e8f4', chest='#c8d8e8',
-              eyes='glow', eyecolor='#5cb6e5', mouth='open'),
+ 'yeti': dict(arch='hulk', skin='#f0f6fb', muzzle=None, chest='#dce8f2',
+              eyes='hidden', mouth='none'),
  'nessie': dict(arch='nessie', skin='#2a7a5a', muzzle='#4aa878',
                 eyes='normal', eyespread=2, mouth='none'),
  'horseman': dict(arch='human', skin='#f4922a', shirt='#2a1e2a', pants='#141014',
