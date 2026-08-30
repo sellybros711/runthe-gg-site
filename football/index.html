@@ -609,6 +609,137 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(74,222,128,.28);color:rgba(214,245,222,.92)}
   .cok b{font-weight:800;color:#4ade80;letter-spacing:.03em}
   .cok span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* ---- THE WINTER ----
+     Everything here is built to be ANIMATED INTO rather than painted. A man's row starts
+     folded and unfolds; his salary starts at last year's number and counts up; a man the
+     league has no more of collapses out of the list. The sequence is driven by
+     runWinter(), which does nothing but add classes on a timer, so the whole thing is CSS
+     and there is no animation library anywhere near it. */
+  .capbar{border:1.5px solid var(--line-2);border-radius:12px;padding:11px 12px 10px;
+    background:rgba(19,26,43,.5)}
+  .cb-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .cb-lab{font-family:var(--fn);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim-2);width:100%}
+  .cb-now{font-family:var(--fn);font-size:24px;font-weight:800;line-height:1;
+    font-variant-numeric:tabular-nums;transition:color .3s ease}
+  .cb-of{font-family:var(--fn);font-size:12px;color:var(--dim-2);font-variant-numeric:tabular-nums}
+  /* THE TRACK IS THE CAP AND THE BAR CAN LEAVE IT. Payroll under the cap fills from the
+     left; the part that is over sits past the line in red, at its own scale, so being $9M
+     over reads as being a little over rather than as a full bar. */
+  .cb-track{position:relative;height:9px;border-radius:5px;background:rgba(255,255,255,.08);
+    margin-top:9px;overflow:hidden;display:flex}
+  .cb-track i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);
+    transition:width .55s cubic-bezier(.22,1,.36,1)}
+  .cb-track b{display:block;height:100%;background:linear-gradient(90deg,#ef4444,#f87171);
+    transition:width .55s cubic-bezier(.22,1,.36,1)}
+  .cb-note{font-family:var(--fn);font-size:11px;color:var(--dim-2);margin-top:7px;min-height:14px;
+    transition:color .3s ease}
+  .capbar.over .cb-now{color:var(--bad,#f87171)}
+  .capbar.over .cb-note{color:rgba(248,113,113,.92)}
+
+  /* A MAN, IN THE WINTER. Grid rather than flex so the three columns line up down the list
+     however long a name is. */
+  /* FOUR COLUMNS AND ONE LINE. The release control was a row of its own underneath, which
+     doubled the height of every card: twelve men then scrolled for two and a half screens
+     and the money you were deciding about was never on the same screen as the roster you
+     were deciding it from. It is a column now and the whole winter fits in one view. */
+  .wrow{display:grid;grid-template-columns:32px minmax(0,1fr) auto auto;gap:8px;align-items:center;
+    padding:9px 10px;margin-bottom:5px;border:1.5px solid var(--line);border-radius:11px;
+    background:rgba(19,26,43,.55);
+    /* FOLDED UNTIL ITS TURN. Animating height is what lets a row collapse out of the list
+       and take its space with it; a fade alone leaves a hole where the man used to be. */
+    opacity:0;transform:translateY(6px);
+    transition:opacity .34s ease,transform .34s cubic-bezier(.22,1,.36,1),
+      border-color .3s ease,background .3s ease}
+  .wrow.in{opacity:1;transform:none}
+  .wrow.gone{opacity:0;transform:translateX(-14px) scale(.97);
+    margin-bottom:0;padding-top:0;padding-bottom:0;height:0;border-width:0;overflow:hidden;
+    transition:opacity .3s ease,transform .34s ease,height .34s ease .06s,
+      margin .34s ease .06s,padding .34s ease .06s,border-width .34s ease .06s}
+  /* The beat where a man ages: a single pulse of his own row, gold, then back. */
+  @keyframes wpulse{0%{border-color:var(--line)}
+    28%{border-color:rgba(226,178,90,.85);background:rgba(38,30,16,.75)}
+    100%{border-color:var(--line)}}
+  .wrow.aging{animation:wpulse .72s ease}
+  .wpos{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.04em;
+    text-align:center;padding:4px 0;border-radius:7px;color:#fff}
+  .wwho{min-width:0}
+  .wnm{font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wsub{font-family:var(--fn);font-size:10.5px;color:var(--dim-2);margin-top:2px;
+    display:flex;gap:7px;flex-wrap:wrap;align-items:baseline}
+  /* The year ticking over on his card, which is the whole conceit of the mode: he is not a
+     player who got older, he is a different real season of the same man. */
+  .wyr{font-variant-numeric:tabular-nums;transition:color .3s ease}
+  .wrow.aging .wyr{color:#e2b25a}
+  .wdelta{font-weight:800;opacity:0;transform:translateY(3px);
+    transition:opacity .3s ease,transform .3s ease}
+  .wdelta.in{opacity:1;transform:none}
+  .wdelta.up{color:var(--good,#4ade80)} .wdelta.down{color:var(--bad,#f87171)}
+  .wmoney{text-align:right;font-family:var(--fn);font-variant-numeric:tabular-nums}
+  .wsal{font-size:15px;font-weight:800;line-height:1;transition:color .3s ease}
+  .wrow.raised .wsal{color:#e2b25a}
+  .wraise{display:block;font-size:10px;font-weight:700;color:var(--dim-2);margin-top:2px;
+    min-height:12px}
+  .wraise.up{color:#e2b25a}
+  /* Opens at the end of the sequence with the rest of the screen, so nothing can be cut
+     while the roster is still ageing in front of you. Width rather than height now that it
+     is a column. */
+  .wcut{display:flex;opacity:0;width:0;overflow:hidden;
+    transition:opacity .3s ease,width .3s cubic-bezier(.22,1,.36,1)}
+  .wrow.open .wcut{opacity:1;width:34px}
+  .wcutb{width:30px;height:30px;border-radius:9px;cursor:pointer;display:grid;place-items:center;
+    font-family:var(--fn);font-size:15px;font-weight:800;line-height:1;padding:0;
+    border:1.5px solid rgba(248,113,113,.45);background:rgba(248,113,113,.08);
+    color:rgba(248,113,113,.95)}
+  .wcutb:active{transform:translateY(1px);background:rgba(248,113,113,.2)}
+  /* A man the league has no more of. Dimmer, and it says which of the two things happened
+     rather than calling it retirement, which is not something this data can know. */
+  .wrow.out{opacity:.55;border-style:dashed}
+  .wrow.out .wnm{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.3)}
+  .wfreed{font-size:10.5px;font-weight:700;color:var(--good,#4ade80)}
+
+  .drywheel{border:1.5px dashed var(--line-2);border-radius:12px;padding:16px 14px;
+    background:rgba(19,26,43,.45);text-align:center}
+  .dw-h{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.08em;
+    text-transform:uppercase;color:rgba(248,113,113,.9)}
+  .dw-p{font-size:13px;line-height:1.45;color:var(--dim);margin:8px 0 14px}
+
+  /* ---- THE OWNER, wherever the season is ----
+     A line rather than a panel: it has to sit above a screen that is already full. */
+  .ownerbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    font-family:var(--fn);font-size:11.5px;padding:8px 11px;border-radius:10px;
+    border:1.5px solid var(--line-2);background:rgba(19,26,43,.5);margin-bottom:11px}
+  .ownerbar b{font-weight:800;color:var(--ink)}
+  .ownerbar .ob-tag{font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--dim-2)}
+  .ownerbar.notice{border-color:rgba(251,191,36,.5);background:rgba(60,45,10,.4)}
+  .ownerbar.notice .ob-tag{color:#fbbf24}
+  .ownerbar.fired{border-color:rgba(248,113,113,.55);background:rgba(60,16,16,.45)}
+  .ownerbar.fired .ob-tag{color:#f87171}
+  /* HIDDEN HAS TO BEAT .btn, AND THIS IS THE FOURTH TIME. The UA rule for [hidden] is
+     display:none at the same specificity as a class, so any class that sets display wins
+     and the element stays on screen with hidden=true set on it. b-next-season was left off
+     this list and a fired dynasty kept offering the player another winter. */
+  #o-owner[hidden],#w-gonewrap[hidden],#b-winter-go[hidden],
+  #b-next-season[hidden],#o-ledwrap[hidden],#b-short[hidden]{display:none}
+
+  /* The season ledger on the results screen: one row a year, the bar it needed, and what it
+     got. The run's whole story in the space of a table. */
+  .ledger{display:flex;flex-direction:column;gap:4px;margin-top:9px}
+  .ldg{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:9px;align-items:center;
+    font-family:var(--fn);font-size:11.5px;padding:7px 10px;border-radius:9px;
+    background:rgba(0,0,0,.24);opacity:0;transform:translateY(5px);
+    transition:opacity .3s ease,transform .3s cubic-bezier(.22,1,.36,1)}
+  .ldg.in{opacity:1;transform:none}
+  .ldg .ly{color:var(--dim-2);font-variant-numeric:tabular-nums}
+  .ldg .lr{font-weight:800;font-variant-numeric:tabular-nums}
+  .ldg .lb{color:var(--dim-2)}
+  .ldg .lv{font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  .ldg.pass .lv{color:var(--good,#4ade80)}
+  .ldg.miss .lv{color:#fbbf24}
+  .ldg.fired .lv{color:var(--bad,#f87171)}
+  .ldg.fired{background:rgba(60,16,16,.4)}
+
   /* ---- the old list styles, still used by the coach line on the squad and results ---- */
   .co-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
     padding:10px 12px;margin-bottom:6px;border:1.5px solid var(--line);border-radius:11px;
@@ -5356,6 +5487,40 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div style="margin-top:18px"><button class="btn" id="b-coach-go" hidden>Play the season</button></div>
   </div>
 
+  <!-- THE WINTER. The Long Game's own screen and the only one in this game that PLAYS
+       rather than appears: the year turns, then every man you kept ages one at a time, his
+       salary counting up to whatever he is owed now, and the men the league has no more of
+       fall out of the list. Then the money is yours to open. See runWinter(). -->
+  <div class="screen" id="s-winter">
+    <div class="eyebrow" id="w-step">The winter</div>
+    <h2 class="display" id="w-title" style="font-size:27px;margin:5px 0 2px">&nbsp;</h2>
+    <p class="dim" id="w-sub" style="font-size:13px;margin:0 0 14px"></p>
+
+    <!-- THE MONEY, AND IT IS A GATE RATHER THAN A CEILING. Over the cap the bar goes red
+         past the line and the run is still legal: you simply cannot sign anybody until you
+         are back under, which the caption says in words rather than leaving to a colour. -->
+    <div class="capbar" id="w-cap">
+      <div class="cb-head">
+        <span class="cb-lab">Payroll</span>
+        <span class="cb-now" id="w-pay">$0M</span>
+        <span class="cb-of" id="w-of">of $0M</span>
+      </div>
+      <div class="cb-track"><i id="w-fill" style="width:0%"></i><b id="w-over" style="width:0%"></b></div>
+      <div class="cb-note" id="w-note"></div>
+    </div>
+
+    <div class="rp-head" style="margin-top:16px"><span>Your roster</span><span class="rp-head-n" id="w-count"></span></div>
+    <p class="dim" id="w-hint" style="font-size:11.5px;margin:0 0 8px"></p>
+    <div id="w-list"></div>
+
+    <div id="w-gonewrap" hidden>
+      <div class="rp-head"><span>No longer in the league</span><span class="rp-head-n" id="w-gonen"></span></div>
+      <div id="w-gone"></div>
+    </div>
+
+    <div style="margin-top:18px"><button class="btn" id="b-winter-go" hidden>To the wheel</button></div>
+  </div>
+
   <div class="screen" id="s-squad">
     <div class="eyebrow" id="q-step">Step 3 of 3</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Your team</h2>
@@ -5598,6 +5763,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="sf-txt"><b>This run was not saved.</b><span id="o-savefail-why">The leaderboard could not be reached, so it has not been counted.</span></div>
       <button class="btn sm" id="b-save-retry">Try again</button>
     </div>
+    <!-- THE LONG GAME ONLY: whether there is another season, and the run so far. Above the
+         record because it is the thing a dynasty player came to this screen for. -->
+    <div class="ownerbar" id="o-owner" hidden></div>
     <!-- 1. Record and how the season ended. -->
     <div class="verdict" id="o-card">
       <div class="hero-rec">
@@ -5679,6 +5847,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
+    <div id="o-ledwrap" hidden style="margin-top:12px">
+      <div class="rp-head"><span>Every season</span><span class="rp-head-n" id="o-ledn"></span></div>
+      <div class="ledger" id="o-ledger"></div>
+      <div style="margin-top:14px"><button class="btn" id="b-next-season" hidden>Next winter</button></div>
+    </div>
     <div class="otab on" id="ot-perfect">
       <div class="panel" style="margin-top:11px">
         <div class="eyebrow">How close to perfect</div>
@@ -5882,6 +6055,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
 <script src="fullteam-access.js?v=1"></script>
+<script src="dynasty-access.js?v=1"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -5947,9 +6121,22 @@ const fullSlotIsDefensive=(i)=>{
   const pos=E.FULL_SLOT_POS&&E.FULL_SLOT_POS[i];
   return !!pos&&pos.some(p=>E.DEFENSE_POSITIONS.indexOf(p)>=0);
 };
+/* WHICH SLOT THE WHEEL IS ABOUT TO FILL, which is not the same as how many men you have.
+   In an opening draft the slots fill in order, so the count and the next open spot are the
+   same number and reading either works. THE LONG GAME'S WINTER BREAKS THAT: it hands back a
+   roster with holes wherever the men left, so a team with eight men can have its openings at
+   slots 1 and 7 while the count says 8. The pool was then chosen for slot 8, the wheel spun
+   the offensive clubs at a roster needing two defenders, someAffordable found nobody who fit
+   an open spot on any of them, and the draft threw "nothing left you can afford" with $116M
+   in the bank. */
+const nextOpenSlot=()=>{
+  if(!run) return 0;
+  try{ const open=R.openSlots(run); if(open.length) return open[0]; }catch(_){}
+  return run.roster.length;
+};
 const dataNow=()=>{
   if(!run) return DATA;
-  if(run.full) return (DDATA&&fullSlotIsDefensive(run.roster.length))?DDATA:DATA;
+  if(run.full) return (DDATA&&fullSlotIsDefensive(nextOpenSlot()))?DDATA:DATA;
   return (run.defense&&DDATA)?DDATA:DATA;
 };
 function loadDefensePool(){
@@ -6065,6 +6252,16 @@ const canPlayFull=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
+/* THE LONG GAME, asked the same way and read just as defensively: a blocked, stale or
+   failed dynasty-access.js leaves PS_DYNASTY_ACCESS undefined, and the honest answer to
+   "can this person see an unannounced mode" when the list cannot be read is no. */
+const canPlayDynasty=()=>{
+  const A=window.PS_DYNASTY_ACCESS;
+  if(!A||typeof A.allowed!=='function') return false;
+  if(A.LIVE) return true;
+  if(!authState.signedIn) return false;
+  return A.allowed({name:authState.name,userId:authState.userId});
+};
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
   if(!authState.signedIn) return false;
@@ -6076,6 +6273,10 @@ const canPlayDefense=()=>{
 function runMode(){
   if(run&&run.capSurvivor) return 'capsurvivor';
   if(run&&run.tradeMachine) return 'trade';
+  /* BEFORE the full team line, because a dynasty sets full and would otherwise report as
+     one. The mode list lives in four places and disagreeing with itself has been the bug in
+     this game four separate times: see the note in 94_football_fullteam_coach.sql. */
+  if(run&&run.dynasty) return 'dynasty';
   if(run&&run.full) return 'fullteam';
   if(run&&run.defense) return 'defense';
   return (run&&run.era)?'era':(run&&run.franchise)?'club':'free';
@@ -6083,6 +6284,7 @@ function runMode(){
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
   if(run&&run.tradeMachine) return 'The Trade Machine';
+  if(run&&run.dynasty) return 'The Long Game';
   if(run&&run.full) return 'Full Team';
   if(run&&run.defense) return 'Defense';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
@@ -6677,6 +6879,7 @@ function layoutFor(){
 }
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,lastChem=1;
+let DATA_LAST_SEASON=0;
 let replaceCtx=null;
 
 /* Screens that get no ad strip: the two where a game is played out and the scoreboard sits
@@ -6760,6 +6963,11 @@ async function boot(){
        his own teams scored and allowed. It is the same array DATA was built from, not a
        copy: two of them would be two answers to "what did the 2004 Eagles do". */
     DATA=R.indexData(pl,tm); CTX={battery:bat,coaches:co,curated:cu,teamSeasons:tm};
+    /* THE NEWEST YEAR THE POOL HAS, which is the only thing that tells a man who MISSED a
+       season from one the data has nothing more of. See E.dynastyGoneFor: the difference
+       matters because the failure mode is telling somebody a false thing about a real
+       person, and "retired" is a claim this data cannot make. */
+    DATA_LAST_SEASON=Math.max(...tm.map(t=>t.season));
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');
@@ -7267,9 +7475,12 @@ function newRun(opts){
 function beginDraft(opts){
   /* Checked here as well as at the button, because the DOM is not the authority on what is
      playable. Same belt and braces the Trade Machine and the defense draft use. */
-  if(opts&&opts.full&&!canPlayFull()) return;
+  if(opts&&opts.dynasty&&!canPlayDynasty()) return;
+  /* A dynasty sets full, so the Full Team gate would refuse it to a tester who is on one
+     list and not the other. Its own gate is above and this one is for Full Team proper. */
+  if(opts&&opts.full&&!opts.dynasty&&!canPlayFull()) return;
   if(opts&&(opts.franchise||opts.era||opts.capSurvivor||opts.tradeMachine||opts.defense
-    ||opts.full)&&!oneTeamReady()){
+    ||opts.full||opts.dynasty)&&!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking',
       opts.full?'full':opts.defense?'defense':'club');
   }
@@ -7351,6 +7562,7 @@ function paintHomeStart(){
      and the full team preview are two different lists, and somebody could be on one and
      not the other. */
   ensureFullButton();
+  ensureDynastyButton();
 }
 
 /* THE FULL TEAM BUTTON, MADE RATHER THAN REVEALED.
@@ -7405,6 +7617,70 @@ function ensureFullButton(){
    Same order of checks as the defense entry point, and that order is the lesson written up
    there: the account wall comes BEFORE the download, or a walled visitor waits out six
    megabytes to be told no and comes back to a button still spinning. */
+/* THE LONG GAME'S BUTTON, made rather than revealed, for every reason ensureFullButton
+   gives: a hidden node in the markup is a hidden node anybody can read, and signing out of
+   a tester account on the same tab has to take the button with it. */
+function ensureDynastyButton(){
+  const host=$('b-start-full')||$('hp-split');
+  let el=$('b-start-dyn');
+  if(!canPlayDynasty()){
+    if(el&&el.parentNode) el.parentNode.removeChild(el);
+    return;
+  }
+  if(!host||!host.parentNode) return;
+  if(!el){
+    el=document.createElement('button');
+    el.className='btn hp-full hp-dyn';
+    el.id='b-start-dyn';
+    el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
+      '<span class="hp-full-name">The Long Game</span>'+
+      '<span class="hp-full-sub">Twelve men &middot; every winter they age &middot; last as long as you can</span>';
+    el.onclick=()=>{ beginDynastyDraft(); };
+    host.parentNode.insertBefore(el, host.nextSibling);
+  }
+  el.hidden=false;
+  el.disabled=false;
+  el.classList.remove('hp-loading');
+}
+
+/*
+ * WHERE A DYNASTY STARTS, and it is drawn rather than chosen.
+ *
+ * The wheel is locked to the league year, so the opening year decides which league you draft
+ * out of for the whole run. It has to leave room to age into: a dynasty beginning in 2024
+ * has one season of data behind it whatever the owner wants. DYNASTY_RUNWAY years of it are
+ * reserved, which is enough for a very long run and still leaves two decades of openings.
+ */
+const DYNASTY_RUNWAY=10;
+function dynastyStartYear(){
+  const years=[...new Set((DATA&&DATA.teamSeasons?DATA.teamSeasons:[]).map(t=>t.season))]
+    .sort((a,b)=>a-b);
+  if(!years.length) return null;
+  const last=years[years.length-1];
+  const legal=years.filter(y=>y<=last-DYNASTY_RUNWAY);
+  const pool=legal.length?legal:years;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+/* Same order of checks as the other two doors, and that order is the lesson written up over
+   beginFullDraft: the account wall comes BEFORE the download. */
+function beginDynastyDraft(){
+  if(!canPlayDynasty()) return;
+  if(!oneTeamReady()){
+    return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
+  }
+  const b=$('b-start-dyn');
+  if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  /* Two arguments rather than a chained catch, for the reason beginFullDraft writes out. */
+  loadDefensePool().then(()=>{
+    closeSheet();
+    beginDraft({dynasty:true,startYear:dynastyStartYear()});
+  },()=>{
+    if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
+    toast('Could not load the defensive players. Check your connection and try again.');
+  });
+}
+
 function beginFullDraft(){
   if(!canPlayFull()) return;
   if(!oneTeamReady()){
@@ -8765,6 +9041,11 @@ function nextSpin(){
   paintTop(); drawField($('field'),true);
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
+  /* A DRY WHEEL IS A LEGAL PLACE TO BE IN THE LONG GAME, and only there. The cap is a
+     signing gate, so a roster that appreciated past it has no money and there is nothing
+     any club can offer. That is the rule working rather than the game breaking, and it
+     needs a door: spin() would otherwise throw and leave a draft screen with dead wheels. */
+  if(run.dynasty&&R.wheelIsDry(run,dataNow())) return paintDryWheel();
   const draw=R.spin(run,dataNow());
   /* THE RUN CAN BE GONE BY THE TIME THE WHEEL LANDS. stopSpin() in endRun is what normally
      stops this callback ever running, and this is the belt to that brace: it costs one
@@ -9442,6 +9723,259 @@ function paintCoachLine(id){
       : '')+
     '<div class="rp-head"><span>Game plan</span></div>'+
     '<p class="dim" style="font-size:12.5px;margin:0 0 10px">'+planWords(run.plan)+'</p>';
+}
+
+/* NOTHING LEFT TO SIGN, which in The Long Game means the money ran out rather than the
+   game did. It says why in the words the winter used, and the only thing to do about it is
+   take the field with what you have. */
+function paintDryWheel(){
+  const over=Math.max(0,(R.capOf(run)-R.remaining(run))-R.capOf(run));
+  $('opts').innerHTML='<div class="drywheel">'+
+    '<div class="dw-h">Nobody left you can sign</div>'+
+    '<p class="dw-p">'+(over>0.05
+      ? 'You are '+M(over)+' over the cap, so no club can offer you anybody. Release '+
+        'somebody next winter, or take the field a man short.'
+      : 'Nothing the wheel can reach fits what is open and what is left. You can take the '+
+        'field a man short.')+'</p>'+
+    '<button class="btn" id="b-short">Take the field with '+run.roster.length+'</button>'+
+    '</div>';
+  const b=$('b-short');
+  if(b) b.onclick=()=>{
+    try{ R.takeTheField(run); }catch(err){ toast(err.message); return; }
+    ga('dynasty_short',{men:run.roster.length,season:run.leagueYear});
+    if(run.phase===R.PHASES.COACH) paintCoach(); else paintSquad();
+  };
+}
+
+/* ---------- THE WINTER ----------
+   The Long Game's own screen, and the only one in this game that plays rather than appears.
+   The beats, in order, and every one of them is a class on a timer:
+
+     1. the year turns and the roster arrives folded
+     2. each man you kept ages, one at a time, ~90ms apart: his row pulses, his season ticks
+        over, and his salary counts up to whatever he is owed now
+     3. the men the league has no more of collapse out of the list, and the cap bar retracts
+        by exactly what they were costing
+     4. the bar settles, and if the roster appreciated past the line the overspill goes red
+     5. the release buttons open and the way out appears
+
+   WHY IT IS A SEQUENCE AND NOT A PAINT. The mode's whole premise is that a year passed and
+   the men are not who they were. Rendering that as a finished table states it; playing it
+   through lets somebody watch their $48M quarterback become a $48M thirty-four-year-old. It
+   also paces a screen that is otherwise twelve rows of numbers arriving at once. */
+let winterTimers=[];
+const winterClear=()=>{ winterTimers.forEach(clearTimeout); winterTimers=[]; };
+const winterAt=(ms,fn)=>{ winterTimers.push(setTimeout(fn,ms)); };
+
+/* Money counting up, in its own little loop. Short, eased, and it lands EXACTLY on the
+   target rather than on whatever the last frame happened to compute, because a salary that
+   settles on $32.7M when the roster says $32.8M is a bug somebody will find.
+
+   NOT countTo, WHICH ALREADY EXISTS IN THIS FILE and takes (el, to, ms). Declaring a second
+   one silently replaced mine at parse time, because a later function declaration wins, and
+   every call here then ran the OLD one with my arguments in its slots: the payroll animated
+   to the right numbers in the wrong format and printed a bare "221" where "$221M" belonged.
+   Nothing threw. This is the collision CLAUDE.md warns about for the one-file games, and it
+   is exactly as easy to hit in a fifteen-thousand-line page. */
+function countMoney(el,from,to,ms,fmt){
+  if(!el) return;
+  const t0=performance.now();
+  const step=(now)=>{
+    const k=Math.min(1,(now-t0)/ms);
+    const e=1-Math.pow(1-k,3);
+    el.textContent=fmt(from+(to-from)*e);
+    if(k<1) requestAnimationFrame(step); else el.textContent=fmt(to);
+  };
+  requestAnimationFrame(step);
+}
+
+/* THE CAP BAR, and it is a gate rather than a ceiling. Payroll under the line fills from the
+   left; anything over sits past it in red at its own scale, so $9M over reads as a little
+   over instead of as a second full bar. */
+function paintWinterCap(animate){
+  const cap=R.capOf(run), pay=cap-R.remaining(run);
+  const bar=$('w-cap'); if(!bar) return;
+  const over=Math.max(0,pay-cap);
+  bar.classList.toggle('over',over>0.05);
+  const fillPct=Math.max(0,Math.min(100,(Math.min(pay,cap)/cap)*100));
+  /* The overspill is drawn against a fifth of the cap, so a small overrun is visible and a
+     large one still fits on the track. */
+  const overPct=Math.max(0,Math.min(100-fillPct,(over/(cap*0.2))*100));
+  $('w-fill').style.width=fillPct+'%';
+  $('w-over').style.width=overPct+'%';
+  $('w-of').textContent='of '+M0(cap);
+  const el=$('w-pay');
+  const was=parseFloat(String(el.textContent).replace(/[^0-9.]/g,''))||0;
+  if(animate) countMoney(el,was,pay,520,(v)=>M0(v)); else el.textContent=M0(pay);
+  $('w-note').textContent=over>0.05
+    ? 'You are '+M(over)+' over. You can keep everybody, but you cannot sign anybody until you are under.'
+    : M(cap-pay)+' of room. Releasing a player is the only way to make more.';
+}
+
+function winterRow(a,i){
+  const p=a.now;
+  const raise=a.raise>0.05;
+  const drop=a.drop;
+  return '<div class="wrow" data-i="'+i+'">'+
+    '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
+    '<span class="wwho"><span class="wnm">'+esc(p.name)+'</span>'+
+      '<span class="wsub"><span class="wyr" data-from="'+a.was.season+'" data-to="'+p.season+'">'+
+        a.was.season+'</span>'+
+        '<span>'+esc(E.nickname(p.franchise))+'</span>'+
+        '<span class="wdelta '+(drop>0.05?'up':(drop<-0.05?'down':''))+'">'+
+          (drop>0?'+':'')+drop.toFixed(1)+' a game</span>'+
+      '</span></span>'+
+    '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
+      '<span class="wraise'+(raise?' up':'')+'">'+(raise?'+'+M(a.raise):'')+'</span></span>'+
+    '<span class="wcut"><button class="wcutb" data-cut="'+i+'" '+
+      'aria-label="Release '+esc(p.name)+'" title="Release '+esc(p.name)+'">&minus;</button></span>'+
+    '</div>';
+}
+
+function winterGoneRow(g){
+  return '<div class="wrow out">'+
+    '<span class="wpos" style="'+posPaint(g.was.position)+'">'+esc(g.was.position)+'</span>'+
+    '<span class="wwho"><span class="wnm">'+esc(g.was.name)+'</span>'+
+      '<span class="wsub"><span>'+g.was.season+'</span>'+
+      '<span>'+(g.why==='missed'
+        ? 'did not play this season'
+        : 'out of the league')+'</span></span></span>'+
+    '<span class="wmoney"><span class="wfreed">'+M(g.salary)+' freed</span></span>'+
+    '<span></span>'+
+    '</div>';
+}
+
+/*
+ * Open the winter and play it.
+ *
+ * beginOffseason has already aged the roster by the time this paints, so w.aged holds the
+ * BEFORE and AFTER of every man and the screen animates between the two. The list is
+ * rendered showing last year's numbers and then walked forward, which is why the row markup
+ * carries data-from and data-to on the season.
+ */
+function paintWinter(){
+  if(!run||!run.dynasty||!run.winter) return;
+  winterClear();
+  const w=run.winter;
+  $('w-title').textContent='Winter '+w.year;
+  $('w-step').textContent='Season '+run.seasonNo+' is next';
+  $('w-sub').innerHTML='Everybody you kept is a year older, at whatever that year really was. '+
+    '<b>A salary never goes down.</b>';
+  $('w-list').innerHTML=run.roster.map((p,i)=>{
+    const a=w.aged.find(x=>x.now===p);
+    return a?winterRow(a,i):'';
+  }).join('');
+  $('w-count').textContent=run.roster.length+' under contract';
+  $('w-hint').textContent=run.roster.length?'Tap a minus to release a player and free his salary.':'';
+  const gw=$('w-gonewrap');
+  gw.hidden=!w.gone.length;
+  if(w.gone.length){
+    $('w-gone').innerHTML=w.gone.map(winterGoneRow).join('');
+    $('w-gonen').textContent=w.gone.length===1?'1 man':w.gone.length+' men';
+  }
+  $('b-winter-go').hidden=true;
+  wireWinter();
+  /* THE BAR OPENS WHERE IT CLOSED, at last year's payroll, so what the winter costs is
+     something you watch happen rather than a number that was always there. */
+  const cap=R.capOf(run);
+  const lastPay=w.aged.reduce((t,a)=>t+a.wasSalary,0)
+    +w.gone.reduce((t,g)=>t+g.salary,0)+(run.coach?run.coach.price_musd:0);
+  $('w-pay').textContent=M0(lastPay);
+  $('w-of').textContent='of '+M0(cap);
+  $('w-fill').style.width=Math.min(100,(Math.min(lastPay,cap)/cap)*100)+'%';
+  $('w-over').style.width='0%';
+  $('w-note').textContent='';
+  show('s-winter');
+
+  const rows=[...document.querySelectorAll('#w-list .wrow')];
+  const gones=[...document.querySelectorAll('#w-gone .wrow')];
+  /* 1. the roster arrives */
+  rows.forEach((r,k)=>winterAt(60+k*45,()=>r.classList.add('in')));
+  gones.forEach((r,k)=>winterAt(60+(rows.length+k)*45,()=>r.classList.add('in')));
+
+  /* 2. each man ages, one at a time */
+  const t0=160+(rows.length+gones.length)*45;
+  rows.forEach((r,k)=>{
+    const a=w.aged.find(x=>x.now===run.roster[+r.dataset.i]);
+    if(!a) return;
+    winterAt(t0+k*90,()=>{
+      r.classList.add('aging');
+      const yr=r.querySelector('.wyr');
+      if(yr) yr.textContent=a.now.season;
+      if(a.salary>a.wasSalary+0.05){
+        r.classList.add('raised');
+        countMoney(r.querySelector('.wsal'),a.wasSalary,a.salary,420,(v)=>M(v));
+      }
+      const d=r.querySelector('.wdelta'); if(d) d.classList.add('in');
+      winterAt(760,()=>r.classList.remove('aging'));
+    });
+  });
+
+  /* 3. the men who are gone leave, and their money with them */
+  const t1=t0+rows.length*90+220;
+  gones.forEach((r,k)=>winterAt(t1+k*130,()=>r.classList.add('gone')));
+
+  /* 4. the bar settles on what the roster now costs */
+  winterAt(t1+gones.length*130+180,()=>paintWinterCap(true));
+
+  /* 5. the money is yours to open, and the way out appears */
+  winterAt(t1+gones.length*130+520,()=>{
+    rows.forEach(r=>r.classList.add('open'));
+    $('b-winter-go').hidden=false;
+  });
+}
+
+/* Releasing. The row collapses out of the list and the bar retracts by exactly what he was
+   costing, which is the only feedback the action needs: you did this to make room, so the
+   room is the thing that has to move. */
+/*
+ * BOUND AT PAINT TIME, NOT AT BOOT, and the difference is not cosmetic.
+ *
+ * This was called once from the boot chain beside authBoot and wireDealNav, which reads
+ * tidily and did not work: both handlers came back null with nothing thrown, no error and
+ * no unhandled rejection, on an element that provably existed. Every screen in this file
+ * that binds inside its own paint function works, so the winter does what they do. A
+ * handler set on every paint also cannot go stale, which is worth more than the one
+ * assignment it saves.
+ */
+function wireWinter(){
+  const list=$('w-list'); if(!list) return;
+  list.onclick=(e)=>{
+    const b=e.target.closest('.wcutb'); if(!b) return;
+    const row=b.closest('.wrow'); if(!row) return;
+    const i=+row.dataset.i;
+    const man=run.roster[i];
+    if(!man) return;
+    try{ R.releaseMan(run,i); }catch(err){ toast(err.message); return; }
+    ga('dynasty_release',{name:man.name,season:run.leagueYear});
+    row.classList.add('gone');
+    paintWinterCap(true);
+    /* THE INDEXES MOVED. releaseMan splices the roster, so every data-i after this one is
+       now pointing at the man behind him. Re-stamped from the roster rather than
+       recalculated by hand, because "subtract one from everything after" is the kind of
+       arithmetic that is right until somebody releases two men quickly. */
+    setTimeout(()=>{
+      row.remove();
+      [...document.querySelectorAll('#w-list .wrow')].forEach((r)=>{
+        const p=run.roster.findIndex(x=>x.name===r.querySelector('.wnm').textContent);
+        if(p>=0) r.dataset.i=p;
+      });
+      $('w-count').textContent=run.roster.length+' under contract';
+    },380);
+  };
+  $('b-winter-go').onclick=()=>{
+    winterClear();
+    try{ R.finishOffseason(run); }catch(err){ toast(err.message); return; }
+    /* NOTHING IS PERSISTED, and that is worth knowing rather than assuming: this game has
+       never written a run to storage, so a dynasty lives in the tab it was started in. It
+       does not block the mode, because a season banks its own row the moment it finishes,
+       but a reload mid-winter loses the run and that is a gap to close before launch. */
+    /* SHOW THE SCREEN, THEN SPIN. nextSpin() paints the draft's contents and assumes it is
+       already the screen you are looking at: beginDraft calls show('s-draft') first and so
+       must this, or the wheels turn behind the winter and the button reads as dead. */
+    if(run.phase===R.PHASES.DRAFT){ show('s-draft'); nextSpin(); }
+    else paintSquad();
+  };
 }
 
 /* ---------- squad ---------- */
@@ -12423,6 +12957,60 @@ const BADGE_CROWN='<svg class="champ-svg" viewBox="0 0 24 24" fill="#f5b301" ari
 const champBadge=(b)=>b?'<span class="champbadge" title="'+(b==='crown'?'Perfect season':'Champion')+'">'+
   (b==='crown'?BADGE_CROWN:BADGE_TROPHY)+'</span>':'';
 
+/*
+ * ─── THE OWNER, ON THE SCREEN THAT ENDS A SEASON ────────────────────────────────────
+ *
+ * Three things, in the order somebody wants them: whether there is another season, what the
+ * bar was, and the whole run so far a year at a time. The ledger is the run's story and it
+ * is also the score, because the score is how many rows are in it.
+ *
+ * IT RUNS THE VERDICT, which means it must not run twice for one season. ownerVerdict
+ * guards its own history push on the league year, so a repaint is safe, and this is written
+ * on the assumption that it will be repainted.
+ */
+function paintOwner(){
+  const bar=$('o-owner'), led=$('o-ledger'), wrap=$('o-ledwrap');
+  if(!bar) return;
+  if(!run||!run.dynasty){ bar.hidden=true; if(wrap) wrap.hidden=true; return; }
+  let v; try{ v=R.ownerVerdict(run); }catch(_){ bar.hidden=true; return; }
+  bar.hidden=false;
+  bar.className='ownerbar'+(v.fired?' fired':(v.onNotice?' notice':''));
+  const seasons=R.seasonsSurvived(run);
+  bar.innerHTML='<span class="ob-tag">'+(v.fired?'Fired':(v.onNotice?'On notice':'The owner'))+'</span>'+
+    (v.fired
+      ? '<span>Two seasons under the bar. <b>'+seasons+' season'+(seasons===1?'':'s')+'</b> in the job.</span>'
+      : v.onNotice
+        ? '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. One more like that and you are gone.</span>'
+        : '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. <b>Season '+(run.seasonNo+1)+'</b> is yours.</span>');
+
+  if(wrap&&led){
+    wrap.hidden=false;
+    led.innerHTML=run.history.map((h,i)=>{
+      const cls=h.cleared?'pass':((i===run.history.length-1&&v.fired)?'fired':'miss');
+      return '<div class="ldg '+cls+'"><span class="ly">'+h.year+'</span>'+
+        '<span class="lr">'+h.wins+'-'+h.losses+'</span>'+
+        '<span class="lb">needed '+h.bar+'</span>'+
+        '<span class="lv">'+(h.title?'TITLE':(h.cleared?(h.made?'PLAYOFFS':'KEPT'):
+          (i===run.history.length-1&&v.fired?'FIRED':'MISSED')))+'</span></div>';
+    }).join('');
+    /* Dealt out rather than dropped in, oldest first, so the run reads as a sequence of
+       years and the last row lands last. */
+    [...led.children].forEach((r,i)=>setTimeout(()=>r.classList.add('in'),120+i*70));
+  }
+
+  const go=$('b-next-season');
+  if(go){
+    go.hidden=v.fired;
+    go.textContent='Winter '+(run.leagueYear+1);
+    go.onclick=()=>{
+      try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON); }
+      catch(err){ toast(err.message); return; }
+      ga('dynasty_winter',{season:run.seasonNo,year:run.leagueYear});
+      paintWinter();
+    };
+  }
+}
+
 function paintOver(){
   const o=run.outcome,s=run.season,c=$('o-card');
   /* Asked on every finished season rather than once at boot, because the promo window can
@@ -12635,6 +13223,7 @@ function paintOver(){
      anyone taps, and a new season should not open on the pane the last one ended on. */
   const defaultTab=(run.tradeMachine&&run.tradeHistory&&run.tradeHistory.length)?'trades':'perfect';
   setOverTab(defaultTab);
+  paintOwner();
   show('s-over');
 
   /* The celebration. A perfect run gets the biggest burst, a title a club-colored one;
