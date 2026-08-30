@@ -1671,15 +1671,21 @@ def sig_yeti(cv, spec, pose, back):
 
 
 def sig_sasquatch(cv, spec, pose, back):
-    # THE FEET. He is Bigfoot: wide flat feet and a heavy brow.
+    # THE FEET. He is Bigfoot: wide flat feet and a heavy brow. Plus a
+    # shaggy edge, because a smooth silhouette reads as a bear suit.
     fur = Ramp(spec.get('skin', '#4a2014'))
     for side in (-1, 1):
-        cv.sphere(CX + side * 4, 37.4, 3.4, 1.7, Ramp(shade(fur.base, -0.2)), spec=False)
+        cv.sphere(CX + side * 4, 37.4, 3.8, 1.8, Ramp(shade(fur.base, -0.2)), spec=False)
+        for dy in (18, 21, 24, 27, 30):
+            cv.dot(CX + side * 13, dy, fur.mid)
+            cv.dot(CX + side * 12, dy + 1, fur.lit)
     if back:
         return
     brow = shade(fur.base, -0.5)
-    for dx in range(-5, 6):
+    for dx in range(-6, 7):
         cv.dot(CX + dx, 9, brow)
+    for dx in (-6, 6):
+        cv.dot(CX + dx, 10, brow)
 
 
 def sig_felix(cv, spec, pose, back):
@@ -1711,6 +1717,63 @@ def sig_felix(cv, spec, pose, back):
     shoe = Ramp('#181420')
     for side in (-1, 1):
         cv.sphere(CX + side * 4, 37.2, 3.2, 1.8, shoe, spec=True)
+
+
+def sig_jack(cv, spec, pose, back):
+    # THE BEANSTALK, climbing up past his shoulder. Without it he is a
+    # boy in a green shirt, indistinguishable from every other boy on
+    # the roster.
+    vine = Ramp('#2f7a34')
+    for i in range(16):
+        u = i / 15.0
+        x = CX + 10 + math.sin(u * 3.4) * 1.6
+        y = 34 - i * 2.1
+        cv.dot(x, y, vine.mid if i % 2 else vine.lit)
+        cv.dot(x, y - 1, vine.mid)
+    leaf = Ramp('#3f9a44')
+    for lx, ly, w in ((12.5, 27, 2.4), (9.5, 19, 2.8), (12.5, 11, 2.4), (10, 4, 2.0)):
+        cv.sphere(CX + lx, ly, w, w * 0.62, leaf, spec=False)
+    if back:
+        return
+    cv.dot(CX + 9, 25, (232, 214, 140))     # a bean
+    cv.dot(CX + 10, 25, (232, 214, 140))
+
+
+def sig_robin(cv, spec, pose, back):
+    # The feather stays; add the QUIVER on his back with fletched
+    # arrows, and the bow slung on the other side.
+    sig_peter(cv, spec, pose, back)
+    q = Ramp('#6a4326')
+    cv.cyl(CX + 8, 20, CX + 11, 30, q, round_bot=1)
+    for i, dx in enumerate((8, 9, 10)):
+        cv.dot(CX + dx, 19 - i % 2, (226, 226, 230))
+        cv.dot(CX + dx, 18 - i % 2, (201, 60, 48))
+    bow = (160, 112, 52)
+    for dy, ddx in ((22, 0), (24, 1), (26, 1.4), (28, 1), (30, 0)):
+        cv.dot(CX - 10 - ddx, dy, bow)
+        cv.dot(CX - 10 - ddx, dy + 1, bow)
+    for dy in range(22, 31):
+        cv.dot(CX - 10, dy, (226, 226, 230))
+
+
+def sig_tintin(cv, spec, pose, back):
+    # THE QUIFF. It has to sweep up and FORWARD and be unmistakable at
+    # sprite size; the stock quiff was a small bump.
+    r = Ramp(spec.get('hair', '#c9a256'))
+    cv.tri([(CX - 2, 6), (CX + 7, -1), (CX + 4, 7)], r, l=0.72)
+    cv.tri([(CX - 1, 5), (CX + 5, 0), (CX + 3, 6)], r, l=0.85)
+
+
+def sig_lupin(cv, spec, pose, back):
+    # A gentleman thief wears a wing collar and a bow tie under the
+    # tails, or he is just a man in a black box.
+    if back:
+        return
+    cv.rect(CX - 3, 23, CX + 3, 24, Ramp('#f0f0f2'), l=0.72)
+    bt = Ramp('#8a1a1a')
+    cv.dot(CX - 2, 25, bt.mid); cv.dot(CX - 1, 25, bt.lit)
+    cv.dot(CX + 1, 25, bt.lit); cv.dot(CX + 2, 25, bt.mid)
+    cv.dot(CX, 25, bt.dark)
 
 
 def sig_acrobat(cv, spec, pose, back):
@@ -1821,7 +1884,7 @@ SIGNATURES = {
     'dracula': {'pre': sig_cape_pre, 'post': sig_cape_post},
     'liberty': {'post': sig_liberty},
     'peter': {'post': sig_peter},
-    'robin': {'post': sig_peter},
+    'robin': {'post': sig_robin},
     'medusa': {'post': sig_medusa},
     'pooh': {'post': sig_pooh},
     'tom': {'post': sig_tom},
@@ -1847,6 +1910,9 @@ SIGNATURES = {
     'strongman': {'post': sig_strongman},
     'cyclops': {'post': sig_cyclops},
     'acrobat': {'post': sig_acrobat},
+    'jack': {'pre': sig_jack},
+    'tintin': {'post': sig_tintin},
+    'lupin': {'post': sig_lupin},
     'phoenix': {'post': sig_phoenix},
     'ringmaster': {'post': sig_ringmaster},
     'witch': {'post': sig_witch},
@@ -2038,7 +2104,7 @@ SPECS = {
  'dragon': dict(arch='dragon', skin='#2e8a3a', muzzle='#8fd06a',
                 eyes='normal', eyecolor='#141018', mouth='none',
                 extra=[('horns', '#f4c25a')]),
- 'sasquatch': dict(arch='hulk', skin='#4a2014', muzzle='#8a5a3a', chest='#5e3220',
+ 'sasquatch': dict(arch='hulk', skin='#4a2014', muzzle='#b08256', chest='#5e3220',
                    eyes='normal', mouth='line'),
  'yeti': dict(arch='hulk', skin='#f0f6fb', muzzle=None, chest='#dce8f2',
               eyes='hidden', mouth='none'),
