@@ -299,7 +299,24 @@
   .scene-av svg{width:78px;height:78px;}
   .scene-av-narr{color:var(--gold);}
   .scene-who{font-family:var(--display);font-size:12px;color:var(--cream);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
-  .scene-line{font-size:15px;line-height:1.55;color:var(--cream);font-family:Georgia,serif;font-style:italic;}
+  .scene-line{font-size:15px;line-height:1.55;color:var(--cream);font-family:Georgia,serif;font-style:italic;min-height:1.5em;}
+  /* Typewriter caret, and the options holding back until the line lands */
+  .scene-line.typing::after,.scene-outcome-line.typing::after{content:'';display:inline-block;width:.5em;height:1em;
+    margin-left:2px;vertical-align:-2px;background:var(--gold);animation:caretBlink .75s steps(1) infinite;}
+  @keyframes caretBlink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+  .scene-optlist.pending,.scene-continue.pending,#sceneChips.pending{opacity:0;pointer-events:none;transform:translateY(6px);}
+  .scene-optlist,.scene-continue,#sceneChips{transition:opacity .35s ease,transform .35s ease;}
+  /* Media hit: portrait over a name plate with a typed quote */
+  .media-frame{border:1px solid rgba(255,255,255,.14);border-radius:6px;overflow:hidden;background:#0d0a12;margin-bottom:10px;}
+  .media-portrait{aspect-ratio:4/3;width:100%;display:block;}
+  .media-portrait svg{display:block;width:100%;height:100%;}
+  .media-plate{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+  .media-name{font-family:var(--display);font-size:17px;letter-spacing:.10em;font-weight:800;}
+  .media-outlet{font-size:11.5px;color:var(--text-faint);margin-top:1px;letter-spacing:.04em;}
+  .media-rule{height:1px;background:rgba(255,255,255,.14);margin:9px 0 10px;width:46%;}
+  .media-quote{font-family:var(--mono);font-size:14px;line-height:1.6;color:var(--cream);min-height:3em;}
+  .media-more{text-align:right;color:var(--gold);font-size:13px;margin-top:6px;animation:moreBob 1.1s ease-in-out infinite;}
+  @keyframes moreBob{0%,100%{transform:translateY(0);opacity:.75;}50%{transform:translateY(3px);opacity:1;}}
   .scene-optlist{display:flex;flex-direction:column;gap:8px;}
   .scene-opt{padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);cursor:pointer;transition:transform .1s,border-color .15s,background .15s;}
   .scene-opt:hover{transform:translateX(3px);border-color:rgba(224,179,65,.6);background:rgba(224,179,65,.08);}
@@ -7503,6 +7520,10 @@ async function runFight(){
         G.car.title=null; G.car.defenses=0;
         pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>Screwjob.</b> ${lostBelt} taken from you on a fast count.`});
       }
+      // The press will not let this one go. Queued so it plays on the
+      // results screen rather than over the top of the ring.
+      G.car._pendingMedia = { kind:'screwjob', headline:'THIS IS ALL ANYBODY IS TALKING ABOUT',
+        quote:`Whatever you want to call what happened to ${G.w.name} tonight, do not call it a wrestling match. The bell went while they had hold of nothing. I have been doing this a long time and I know a message being sent when I see one.` };
       commitFinish({type:'sub',by:false,move:'a fake submission the office called'});
       MS.ended=true;
       return endFight(false);
@@ -8899,6 +8920,25 @@ function renderMatch(o,res){
   if(o.stakes==='title'&&res.win) confetti(150);
   else if(classic) confetti(100);
   setTimeout(showMoments,750);
+  // Media coverage of the night. A genuine classic gets written up; a
+  // queued hit (a screwjob, say) takes priority over the star rating.
+  setTimeout(()=>{
+    try{
+      const q = G.car._pendingMedia;
+      if(q){
+        G.car._pendingMedia = null;
+        playMediaHit(q.kind, q.quote, {headline:q.headline});
+        return;
+      }
+      const best = (G.car.yearLog||[]).reduce((a,m)=>Math.max(a,m.q||0), 0);
+      if(res.quality>=80 && res.quality>=best && !o.tag){
+        const line = res.win
+          ? `Go and find ${G.w.name} against ${o.oppName} from tonight. That is the match. Not a good match for the card, not a good match for a Tuesday. That is the one you show somebody who says they do not get wrestling.`
+          : `${G.w.name} lost tonight and it does not matter even slightly. Twenty minutes with ${o.oppName} and the building did not sit down once. You do not need your hand raised to have the best night of your career.`;
+        playMediaHit('classic', line, {headline:'MATCH OF THE NIGHT'});
+      }
+    }catch(_){}
+  }, 2400);
   // Champion press conference fires AFTER the moments queue, so it lands
   // as the last beat of the night rather than fighting the celebration.
   if(G.car._pendingPresser){
@@ -8932,15 +8972,21 @@ function playPressConference(p){
       <div class="scene-opt" data-i="${i}"><div class="scene-opt-t">${o.t}</div></div>`).join('')}</div>
     <div class="scene-walk"><button id="sceneWalkPast">Refuse the interview →</button></div>`;
   back.classList.add('open');
-  // After the press conference, the quiet scene: the empty building, the
-  // belt on your knees, and whether you have anybody to call.
+  // After the press conference: the media react, THEN the quiet scene in
+  // the empty building. Coverage, then aftermath.
   const dismiss = () => {
     closeScene();
     setTimeout(()=>{
+      const quiet = ()=>{
+        try{
+          const sc = SCENES.find(s=>s.id==='title_night');
+          if(sc && !G.car._titleNightDone){ G.car._titleNightDone=true; playScene(sc, ()=>{}); }
+        }catch(_){}
+      };
       try{
-        const sc = SCENES.find(s=>s.id==='title_night');
-        if(sc && !G.car._titleNightDone){ G.car._titleNightDone=true; playScene(sc, ()=>{}); }
-      }catch(_){}
+        const q = `They will write about tonight for a long time. ${G.w.name} takes the ${p.belt} off ${p.from} at ${p.at}, and whatever you thought this kid was six months ago, you were wrong.`;
+        playMediaHit('title', q, {headline:'THE MORNING AFTER'}).then(()=>setTimeout(quiet, 400));
+      }catch(_){ quiet(); }
     }, 500);
   };
   setTimeout(()=>{
@@ -13505,7 +13551,147 @@ function pickSegment(){
   const idx = (h>>>0) % pool.length;
   return pool[idx];
 }
-function closeScene(){ const b=$('sceneBack'); if(b) b.classList.remove('open'); }
+function closeScene(){ const b=$('sceneBack'); if(b) b.classList.remove('open'); TYPE_CANCEL++; }
+/* ============================================================
+   THE MEDIA
+   ------------------------------------------------------------
+   Named wrestling press who react to what you actually did. A
+   talking head, their outlet, and a typed quote: the format
+   that makes a career feel COVERED rather than merely tracked.
+
+   These are invented journalists, not real ones, for the same
+   trademark reasons the roster uses legal names.
+   ============================================================ */
+const PUNDITS = [
+  { id:'kesler',  name:'Dave Kesler',      outlet:'The Ropes Report',    color:'#e0b341', lean:'analyst',
+    blurb:'Newsletter man. Twenty years of sources. Reads a match like a balance sheet.' },
+  { id:'okafor',  name:'Renee Okafor',     outlet:'Ringside Weekly',     color:'#5bb083', lean:'fair',
+    blurb:'Actually goes to the shows. Actually talks to the wrestlers.' },
+  { id:'brandt',  name:'Mickey Brandt',    outlet:'The Turnbuckle Hour', color:'#c6392c', lean:'hot',
+    blurb:'Shouts for a living. Has never knowingly under-reacted to anything.' },
+  { id:'shaw',    name:'Terrence Shaw',    outlet:'Grapple Digest',      color:'#8ab5f0', lean:'cynic',
+    blurb:'Believes the business died in 1987 and says so weekly.' },
+  { id:'lin',     name:'Wendy Lin',        outlet:'Cheap Heat Podcast',  color:'#d2687a', lean:'fan',
+    blurb:'A mark, joyfully and without apology. Enormous audience.' },
+];
+function punditById(id){ return PUNDITS.find(p=>p.id===id) || PUNDITS[0]; }
+function pickPundit(kind){
+  // The story picks the voice: a title win goes to the analyst or the fan,
+  // a screwjob goes to the hot take or the cynic.
+  const want = {
+    title:['kesler','lin','okafor'], screwjob:['brandt','shaw'], injury:['okafor','kesler'],
+    turn:['brandt','lin'], debut:['okafor','lin'], retire:['kesler','shaw','okafor'],
+    classic:['kesler','lin'], flop:['shaw','brandt'], jump:['kesler','brandt'],
+  }[kind] || ['kesler','okafor','brandt','shaw','lin'];
+  const id = want[Math.floor(rnd()*want.length)];
+  return punditById(id);
+}
+/* One media hit: portrait, name, outlet, typed quote. Resolves when the
+   player taps through, so callers can chain it after a moment card. */
+function playMediaHit(kind, quote, opts){
+  return new Promise(resolve=>{
+    const back=$('sceneBack'), body=$('sceneBody');
+    if(!back||!body){ resolve(); return; }
+    const o = opts||{};
+    const p = o.pundit || pickPundit(kind);
+    const headline = o.headline || 'REACTION';
+    body.innerHTML = `<div class="scene-tag">${headline}</div>
+      <div class="media-frame">
+        <div class="media-portrait">${punditPortrait(p)}</div>
+      </div>
+      <div class="media-plate">
+        <div class="media-name" style="color:${p.color}">${p.name.toUpperCase()}</div>
+        <div class="media-outlet">${p.outlet}</div>
+        <div class="media-rule"></div>
+        <div class="media-quote" id="mediaQuote"></div>
+        <div class="media-more" id="mediaMore">▼</div>
+      </div>`;
+    back.classList.add('open');
+    const more=document.getElementById('mediaMore');
+    if(more) more.style.visibility='hidden';
+    typeInto(document.getElementById('mediaQuote'), quote, {speed:16}).then(()=>{
+      if(more) more.style.visibility='visible';
+    });
+    const done = (ev)=>{
+      if(ev && ev.target && ev.target.closest && ev.target.closest('button')) return;
+      // first tap skips the typing; the typeInto skip handler covers that,
+      // so only close once the full quote is on screen
+      const q=document.getElementById('mediaQuote');
+      if(q && q.classList.contains('typing')) return;
+      back.removeEventListener('click', done);
+      closeScene(); resolve();
+    };
+    setTimeout(()=>back.addEventListener('click', done), 400);
+  });
+}
+/* A simple pixel talking head built from the wrestler renderer's palette
+   so the media look like they belong to the same world. */
+function punditPortrait(p){
+  const skin = ['#f3d3b3','#e8bd95','#c88f5f','#8d5a3b'][Math.abs(hashStr(p.id))%4];
+  const hair = ['#2b2b2b','#5a4632','#8a8177','#c9a227'][Math.abs(hashStr(p.name))%4];
+  return `<svg viewBox="0 0 64 48" width="100%" height="100%" shape-rendering="crispEdges" aria-hidden="true">
+    <rect x="0" y="0" width="64" height="48" fill="#141018"/>
+    <rect x="4" y="6" width="56" height="36" fill="#1e1a26"/>
+    <rect x="24" y="30" width="16" height="18" fill="${p.color}" opacity=".55"/>
+    <rect x="26" y="12" width="12" height="14" fill="${skin}"/>
+    <rect x="25" y="9"  width="14" height="6"  fill="${hair}"/>
+    <rect x="28" y="17" width="2" height="2" fill="#141018"/>
+    <rect x="34" y="17" width="2" height="2" fill="#141018"/>
+    <rect x="30" y="22" width="4" height="1" fill="#141018" opacity=".7"/>
+    <rect x="44" y="22" width="3" height="12" fill="#3a3a44"/>
+    <rect x="42" y="20" width="7" height="5"  fill="#55555f"/>
+  </svg>`;
+}
+function hashStr(s){ let h=0; s=String(s); for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; } return h; }
+/* ---- TYPEWRITER ----
+   Dialogue that appears all at once reads like a page. Dialogue that
+   types reads like something happening in front of you. Every scene line
+   now reveals character by character, with a caret while it runs and a
+   tap-anywhere to skip straight to the full line for anybody who reads
+   faster than the animation.
+
+   TYPE_CANCEL is a generation counter: bumping it aborts any run in
+   flight, so closing a scene or advancing a beat never leaves a stale
+   timer writing into a recycled element. */
+let TYPE_CANCEL = 0;
+function typeInto(el, text, opts){
+  if(!el) return Promise.resolve();
+  const o = opts||{};
+  const speed = o.speed || 18;              // ms per character
+  const gen = ++TYPE_CANCEL;
+  const plain = String(text==null?'':text);
+  el.classList.add('typing');
+  el.textContent = '';
+  return new Promise(resolve=>{
+    // Respect the reduced-motion preference and the game's own sound-off
+    // style preference for players who just want the text.
+    let reduce=false;
+    try{ reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_){}
+    if(reduce){ el.textContent = plain; el.classList.remove('typing'); resolve(); return; }
+    let i = 0;
+    const finish = ()=>{ el.textContent = plain; el.classList.remove('typing'); resolve(); };
+    const step = ()=>{
+      if(gen !== TYPE_CANCEL){ el.classList.remove('typing'); resolve(); return; }
+      if(i >= plain.length){ finish(); return; }
+      i++;
+      el.textContent = plain.slice(0, i);
+      // Pause a beat longer on sentence ends so it reads with rhythm.
+      const ch = plain[i-1];
+      const extra = (ch==='.'||ch==='!'||ch==='?') ? 260 : (ch===','||ch===';') ? 120 : 0;
+      setTimeout(step, speed + extra);
+    };
+    // Tapping the scene skips the rest of the line.
+    const skip = (ev)=>{
+      if(gen !== TYPE_CANCEL) return;
+      if(ev && ev.target && ev.target.closest && ev.target.closest('.scene-opt,button')) return;
+      finish();
+    };
+    el._skipHandler = skip;
+    const back = $('sceneBack');
+    if(back) back.addEventListener('click', skip, {once:true});
+    setTimeout(step, 90);
+  });
+}
 /* ---- multi-beat scene player ----
    Walks the beat graph. Every option can carry effects (applied
    immediately), a memory key, and a `goto` that continues the
@@ -13573,14 +13759,21 @@ function playScene(scene, onDone){
     const who = speakerOf(beat);
     let line=''; try{ line = typeof beat.line==='function' ? beat.line(x) : (beat.line||''); }catch(_){ line=''; }
     const opts = (typeof beat.opts==='function' ? beat.opts(x) : beat.opts) || [];
+    // The line types in; the options fade up once it has landed. Options
+    // start hidden so the player watches the delivery instead of reading
+    // ahead to the answers.
     body.innerHTML = `<div class="scene-tag">${scene.tag}${beatCount>1?' <span style="opacity:.55">continued</span>':''}</div>
       <div class="scene-head">${avatarFor(who)}<div>
         <div class="scene-who">${nameFor(who)}</div>
-        <div class="scene-line">${who?`"${line}"`:line}</div></div></div>
-      <div class="scene-optlist">${opts.map((o,i)=>`
+        <div class="scene-line" id="sceneLine"></div></div></div>
+      <div class="scene-optlist pending" id="sceneOpts">${opts.map((o,i)=>`
         <div class="scene-opt" data-i="${i}"><div class="scene-opt-t">${o.t}</div></div>`).join('')}</div>
       ${beatCount===1?`<div class="scene-walk"><button id="sceneWalkPast">Walk past →</button></div>`:''}`;
     back.classList.add('open');
+    const lineEl = document.getElementById('sceneLine');
+    typeInto(lineEl, who?`"${line}"`:line).then(()=>{
+      const ol=document.getElementById('sceneOpts'); if(ol) ol.classList.remove('pending');
+    });
     setTimeout(()=>{
       const wp=document.getElementById('sceneWalkPast'); if(wp) wp.onclick=finish;
       document.querySelectorAll('#sceneBody .scene-opt').forEach(el=>{
@@ -13595,10 +13788,14 @@ function playScene(scene, onDone){
               <div class="scene-who">${nameFor(who)}</div>
               <div class="scene-line">"${o.t}"</div></div></div>
             <div class="scene-outcome">
-              <div class="scene-outcome-line">${o.note||'The moment passes.'}</div>
-              ${summarizeEffect(o.eff||{})}
+              <div class="scene-outcome-line" id="sceneOutLine"></div>
+              <div id="sceneChips" class="pending">${summarizeEffect(o.eff||{})}</div>
             </div>
-            <div class="scene-continue"><button id="sceneCont">Continue →</button></div>`;
+            <div class="scene-continue pending" id="sceneContWrap"><button id="sceneCont">Continue →</button></div>`;
+          typeInto(document.getElementById('sceneOutLine'), o.note||'The moment passes.').then(()=>{
+            const ch=document.getElementById('sceneChips'); if(ch) ch.classList.remove('pending');
+            const cw=document.getElementById('sceneContWrap'); if(cw) cw.classList.remove('pending');
+          });
           setTimeout(()=>{ const cb=document.getElementById('sceneCont'); if(cb) cb.onclick=finish; },20);
         };
       });
