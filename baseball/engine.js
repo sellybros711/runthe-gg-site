@@ -709,13 +709,20 @@ function resolveGame(runsFor, runsAgainst, savePct, rng, advantage) {
   }
 
   // Round to whole runs for display
-  const yR = Math.max(0, Math.round(yourRuns));
-  const oR = Math.max(0, Math.round(oppRuns));
+  let yR = Math.max(0, Math.round(yourRuns));
+  let oR = Math.max(0, Math.round(oppRuns));
 
   let won;
   if (yR > oR) won = true;
   else if (yR < oR) won = false;
-  else won = rng() < 0.5; // extra innings coin flip
+  else {
+    // Baseball has no ties, so a level scoreboard goes to extra innings and
+    // somebody walks it off. The coin flip already decided who; the winning
+    // run has to appear on the scoreboard too, or the box score reads "4-4"
+    // with a W beside it, which it did on the playoff bracket.
+    won = rng() < 0.5;
+    if (won) yR += 1; else oR += 1;
+  }
 
   return {
     won,
