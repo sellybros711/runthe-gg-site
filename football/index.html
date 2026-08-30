@@ -852,9 +852,60 @@ window.GA_ID='G-L29P5MRWKE';
      because the panels are correct for every other mode and one screen is easier to keep
      right than two. */
   #s-over.gaunt #o-card,#s-over.gaunt .tabwrap,#s-over.gaunt #ot-perfect,
-  #s-over.gaunt #ot-ranks,#s-over.gaunt .next-panel{display:none}
+  #s-over.gaunt #ot-ranks{display:none}
+  /* THE WAY OUT IS HIDDEN WHILE THE RUN IS ALIVE AND NOT AFTER. Draft again in the middle
+     of a dynasty abandons it, so mid-run the only exits are the winter and Back to start.
+     Once the owner has ended it those buttons are exactly what somebody wants. */
+  #s-over.gaunt .next-panel{display:none}
+  #s-over.gaunt.over .next-panel{display:block}
+  /* A challenge link is one roster and one season, which a six year run is not. */
+  #s-over.gaunt #b-challenge{display:none}
+  #s-over.gaunt .next-pair{grid-template-columns:minmax(0,1fr)}
   /* Room for the dock, which is fixed and would otherwise sit on the last panel. */
   #s-over.gaunt{padding-bottom:84px}
+
+  /* ---- THE RUN, ONCE IT IS OVER ----
+     Deliberately the same material as the season card above it: same gold, same bands, same
+     radius. They are two views of one run and looking like two different products was the
+     whole complaint about this screen. This one is quieter at the top and louder in the
+     middle, because the number that matters here is how long you lasted. */
+  .runcard{border:1.5px solid rgba(226,178,90,.4);border-radius:16px;overflow:hidden;
+    margin-bottom:12px;
+    background:linear-gradient(180deg,rgba(40,32,17,.96),rgba(19,17,13,.96));
+    box-shadow:0 14px 34px -20px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  .runcard[hidden]{display:none}
+  .rc-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    padding:11px 15px;border-bottom:1px solid rgba(226,178,90,.16);
+    background:rgba(255,255,255,.02);
+    font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.15em;
+    text-transform:uppercase;color:rgba(243,221,174,.66)}
+  .rc-top span+span{letter-spacing:.06em;color:rgba(243,221,174,.44)}
+  .rc-hero{text-align:center;padding:16px 15px 2px}
+  .rc-big{font-family:var(--fd,var(--fn));font-size:82px;line-height:.9;font-weight:800;
+    font-variant-numeric:tabular-nums;color:#F3DDAE;
+    text-shadow:0 0 40px rgba(226,178,90,.4)}
+  .rc-big.pop{animation:arpop .5s cubic-bezier(.2,1.5,.4,1)}
+  .rc-lab{font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.22em;
+    text-transform:uppercase;color:rgba(243,221,174,.6);margin-top:6px}
+  .rc-pts{display:flex;align-items:baseline;justify-content:center;gap:8px;
+    padding:10px 15px 14px}
+  .rc-pts b{font-family:var(--fd,var(--fn));font-size:28px;font-weight:800;
+    font-variant-numeric:tabular-nums;color:#e2b25a}
+  .rc-pts span{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.16em;
+    text-transform:uppercase;color:rgba(243,221,174,.5)}
+  /* The highlights, dealt out one at a time. A label and a fact, never a sentence. */
+  .rc-hi{display:flex;flex-direction:column;border-top:1px solid rgba(226,178,90,.18);
+    background:rgba(0,0,0,.22)}
+  .rc-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    padding:9px 15px;font-family:var(--fn);font-size:12.5px;
+    color:rgba(243,221,174,.58);
+    opacity:0;transform:translateY(5px);
+    transition:opacity .28s ease,transform .28s cubic-bezier(.22,1,.36,1)}
+  .rc-row.in{opacity:1;transform:none}
+  .rc-row+.rc-row{border-top:1px solid rgba(226,178,90,.1)}
+  .rc-row b{font-weight:800;color:#F3DDAE;text-align:right;min-width:0;
+    font-variant-numeric:tabular-nums}
+  .rc-row.gold b{color:#ffd98a}
 
   /* ---- THE PINNED NEXT SEASON ---- */
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:40;
@@ -6040,6 +6091,21 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
+    <!-- THE RUN, ONCE IT IS OVER.
+         The card above scores one season. This one is the whole thing: how many years you
+         held the job, what they were worth, and the handful of facts worth telling somebody
+         about. Only ever shown on a firing, because until then the run is not a story yet.
+         See paintRunCard(). -->
+    <div class="runcard" id="o-run" hidden>
+      <div class="rc-top"><span>The run</span><span id="rc-years"></span></div>
+      <div class="rc-hero">
+        <div class="rc-big" id="rc-seasons">0</div>
+        <div class="rc-lab" id="rc-seasonlab">seasons</div>
+      </div>
+      <div class="rc-pts"><b id="rc-score">0</b><span>points</span></div>
+      <div class="rc-hi" id="rc-hi"></div>
+    </div>
+
     <div id="o-ledwrap" hidden style="margin-top:12px">
       <div class="rp-head"><span>Every season</span><span class="rp-head-n" id="o-ledn"></span></div>
       <div class="ledger" id="o-ledger"></div>
@@ -6241,7 +6307,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=74"></script>
-<script src="run.js?v=82"></script>
+<script src="run.js?v=83"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -13604,6 +13670,7 @@ let scoreTimers=[];
 function paintScore(v){
   const box=$('o-score'); if(!box) return;
   scoreTimers.forEach(clearTimeout); scoreTimers=[];
+  runCardTimers.forEach(clearTimeout); runCardTimers=[];
   const h=v&&v.season;
   if(!run||!run.dynasty||!h){ box.hidden=true; return; }
   const at=(ms,fn)=>scoreTimers.push(setTimeout(fn,ms));
@@ -13666,6 +13733,73 @@ function paintDock(){
     &&run.phase===R.PHASES.OVER);
 }
 
+/*
+ * THE RUN, ONCE THE OWNER HAS ENDED IT.
+ *
+ * The card above scores a season. This one is the whole story, and it is the screen people
+ * will screenshot: how many years you held the job, what they were worth, and a short list
+ * of facts worth telling somebody. Everything on it comes off run.history and the tenure
+ * count, so it is the run as it was actually played rather than a second opinion about it.
+ *
+ * A LABEL AND A FACT, NEVER A SENTENCE. Five rows at most, and only the ones that are true:
+ * a run with no title does not get a Titles row saying none.
+ */
+let runCardTimers=[];
+function runHighlights(){
+  const h=run.history||[];
+  if(!h.length) return [];
+  const out=[];
+  const best=h.slice().sort((a,b)=>b.score-a.score)[0];
+  out.push({k:'Best season',
+    v:best.year+' \u00b7 '+best.wins+'-'+best.losses+' \u00b7 '+SCORE(best.score),gold:true});
+  const titles=h.filter(x=>x.title);
+  if(titles.length){
+    out.push({k:titles.length===1?'Title':'Titles',
+      v:titles.length+' \u00b7 '+titles.map(x=>x.year).join(', '),gold:true});
+  }
+  const made=h.filter(x=>x.made).length;
+  out.push({k:'Playoffs',v:made+' of '+h.length});
+  out.push({k:'Total wins',v:h.reduce((t,x)=>t+x.wins,0)});
+  /* THE MAN WHO WAS THERE LONGEST, which is the one fact only this mode can tell you. Read
+     off tenure, and skipped rather than faked when nobody lasted more than a season. */
+  const ten=run.tenure||{};
+  let bestId=null;
+  for(const id in ten){ if(!bestId||ten[id]>ten[bestId]) bestId=id; }
+  if(bestId&&ten[bestId]>1){
+    const man=(run.roster||[]).find(p=>p.player_id===bestId);
+    const name=man?man.name:null;
+    if(name) out.push({k:'Longest serving',v:name+' \u00b7 '+ten[bestId]+' seasons'});
+  }
+  return out;
+}
+
+function paintRunCard(v){
+  const box=$('o-run'); if(!box) return;
+  runCardTimers.forEach(clearTimeout); runCardTimers=[];
+  if(!run||!run.dynasty||!v||!v.fired||!(run.history||[]).length){ box.hidden=true; return; }
+  const at=(ms,fn)=>runCardTimers.push(setTimeout(fn,ms));
+  box.hidden=false;
+  const h=run.history, n=h.length;
+  $('rc-years').textContent=h[0].year+' to '+h[n-1].year;
+  $('rc-seasonlab').textContent=n===1?'season':'seasons';
+  const seasons=$('rc-seasons'), score=$('rc-score');
+  seasons.textContent='0'; score.textContent='0';
+  const rows=runHighlights();
+  $('rc-hi').innerHTML=rows.map(r=>'<div class="rc-row'+(r.gold?' gold':'')+'">'+
+    '<span>'+esc(r.k)+'</span><b>'+esc(String(r.v))+'</b></div>').join('');
+  const els=[...document.querySelectorAll('#rc-hi .rc-row')];
+
+  /* The years land first and hardest, then what they were worth, then what happened in
+     them. Later than the season card's own sequence, so the two do not animate over each
+     other. */
+  at(1500,()=>{
+    countScore(seasons,0,n,700);
+    seasons.classList.remove('pop'); void seasons.offsetWidth; seasons.classList.add('pop');
+  });
+  at(2200,()=>countScore(score,0,v.score||0,760));
+  els.forEach((r,i)=>at(2900+i*160,()=>r.classList.add('in')));
+}
+
 function paintOwner(){
   const bar=$('o-owner'), led=$('o-ledger'), wrap=$('o-ledwrap');
   if(!bar) return;
@@ -13675,6 +13809,17 @@ function paintOwner(){
      each being reached for by hand here. Removed as carefully as it is added: the screen is
      shared, and a class left behind would strip the next classic run of its rating. */
   if(over) over.classList.toggle('gaunt',!!(run&&run.dynasty));
+  /* A RUN IS NOT A SEASON, so the button does not say season. ABOVE the early return below,
+     because the same button serves every mode: set inside the dynasty branch it would never
+     be set back, and a classic run played after a Gauntlet would offer to share a career it
+     does not have. */
+  const sh=$('b-share');
+  if(sh){
+    const lbl=sh.lastChild;
+    if(lbl&&lbl.nodeType===3){
+      lbl.nodeValue=(run&&run.dynasty)?'Share your run':'Share your season';
+    }
+  }
   paintDock();
   if(!run||!run.dynasty){ bar.hidden=true; if(wrap) wrap.hidden=true;
     const sc=$('o-score'); if(sc) sc.hidden=true; return; }
@@ -13716,8 +13861,11 @@ function paintOwner(){
 
   /* A FIRED RUN IS NOT WAITING FOR ANYBODY. The autosave's whole job is to hold a dynasty
      that is still going, and this one is over: leaving it on disk would put "Continue" on
-     the front page over a run whose only remaining move is Back to start. */
+     the front page over a run whose only remaining move is Draft again. */
   if(v.fired) dynClear();
+  /* Which unlocks the exits: see the .gaunt.over rule. */
+  if(over) over.classList.toggle('over',!!v.fired);
+  paintRunCard(v);
 
   const go=$('b-next-season');
   /* The dock carries it, so the dock is what appears and disappears. A fired run has
@@ -14250,6 +14398,19 @@ function challengeText(){
 
 function shareLines(){
   const o=run.outcome;
+  /* THE GAUNTLET SHARES THE RUN, NOT THE LAST SEASON. Its final year is usually the one
+     that got you sacked, so the ordinary line ("7-10. Missed the playoffs.") is the least
+     interesting fact about a six season career. */
+  if(run.dynasty&&(run.history||[]).length){
+    const h=run.history, n=h.length;
+    const best=h.slice().sort((a,b)=>b.score-a.score)[0];
+    const titles=h.filter(x=>x.title).length;
+    const head='The Gauntlet: '+n+' season'+(n===1?'':'s')+', '+SCORE(run.score||0)+' points.';
+    return {head,
+      text:head+' Best year '+best.wins+'-'+best.losses+' in '+best.year+'.'
+        +(titles?' '+titles+' title'+(titles===1?'':'s')+'.':'')
+        +'\nHow long can you last?\n'+SHARE_URL};
+  }
   const what=o.perfect?'Perfect season.'
     :o.titleWon?'Champions.'
     :o.eliminatedIn?'Out in the '+o.eliminatedIn+'.'
@@ -19195,6 +19356,11 @@ function endRun(){
    another free run. Nothing here has to warn anybody they have switched modes, because
    nobody does. */
 $('b-same').onclick=()=>{
+  /* A GAUNTLET RUN PLAYS ANOTHER GAUNTLET. This button asks "the same thing again", and for
+     every other mode the same thing is one draft; here it is a whole career, and dropping
+     somebody into a classic six man run off the end of a six season dynasty would be the
+     button lying about what it does. The gate is checked again inside, as ever. */
+  if(run&&run.dynasty){ beginDynastyDraft(); return; }
   const wasCap=run&&run.capSurvivor;
   const wasTrade=run&&run.tradeMachine;
   const wasDef=run&&run.defense;

@@ -974,7 +974,15 @@ function sign(run, player, want) {
      without it the winter holds a free exploit, cut your declining $40M star and re-sign
      the same man at the $32M he is now worth, which is the pay cut the ratchet exists to
      forbid. blockFor already reads usedPlayers, so a release simply never removes him. */
-  if (run.dynasty) run.salaries.push(player.price_musd);
+  if (run.dynasty) {
+    run.salaries.push(player.price_musd);
+    /* SEASONS ON YOUR ROSTER, COUNTED FROM THE DAY HE SIGNS. The field was declared with the
+       mode and never written, so every read of it fell back to 1 and it has been inert since
+       the day it was added. Nothing live read it, which is why nobody noticed: only the
+       simulator's continuity report did, and it was reporting a constant. The run summary
+       needs it for real, so it is kept for real. */
+    run.tenure[player.player_id] = 1;
+  }
   run.usedPlayers.push(player.player_id);
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   // Which team-season filled which spot. Needed for the post-run reveal, which
@@ -1103,6 +1111,7 @@ function beginOffseason(run, byKey, lastSeason) {
     const wasSal = run.salaries[i];
     const nowSal = E.dynastySalary(wasSal, next.price_musd);
     kept.push(next); slots.push(run.slotIndex[i]); sal.push(nowSal);
+    run.tenure[next.player_id] = (run.tenure[next.player_id] || 1) + 1;
     draws.push(run.draws[i] || null);
     aged.push({ was: man, now: next, wasSalary: wasSal, salary: nowSal,
       /* What the market says he is worth, which is not what you pay him. The gap between
