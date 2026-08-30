@@ -2477,6 +2477,7 @@ function startPlayoffMatch(nm) {
    GAME
    ============================================================================ */
 function startGame(opts) {
+  resetCamera();
   const battersAway = State.team.map(k => ROSTER_BY_KEY[k]);
   const battersHome = State.opponent.roster.map(k => ROSTER_BY_KEY[k]);
   /* User bats AWAY (visitor), opponent home. In playoffs the flag flips. */
@@ -4249,6 +4250,90 @@ function updateAndDrawFx(ctx, g) {
   ctx.globalAlpha = 1;
 }
 
+/* ============================================================================
+   CAMERA
+   Two framings of one field, because a pitch and a fly ball do not want
+   the same picture.
+
+   AT BAT is the close low shot: home plate large and low in the frame,
+   the pitcher small and up near the middle, the wall just clipping the
+   top. It is the shot you are reading the pitch in, so the batter, the
+   ball and the timing ring all want to be as big as the frame allows.
+
+   IN PLAY is the wide shot, which is the framing the whole field was
+   built at: every fielder, both foul lines and the wall in one picture,
+   because once the ball is up you are reading where it lands and who is
+   under it.
+
+   Nothing in the drawing code knows this exists. The field is drawn in
+   its own coordinates exactly as before and the camera is one transform
+   wrapped round the world pass, so a fielder's position, a ball's flight
+   and a runner's path are all still written in field pixels. The screen
+   pass (the swing overlays, the minigame bars, the vignette) sits
+   OUTSIDE that transform: a bar meant to span the bottom of the display
+   has no business being scaled by where the camera is.
+   ============================================================================ */
+const CAM_WIDE = { zoom: 1.00, fx: 0.500, fy: 0.500 };
+const CAM_BAT  = { zoom: 1.25, fx: 0.520, fy: 0.521 };
+/* How fast each way, in e-folds per second. Pulling OUT is quick because
+   it happens on contact and wants to feel like a launch; settling back IN
+   is slower, so the next hitter walks up rather than snapping into place. */
+const CAM_OUT_SPEED = 7.5;
+const CAM_IN_SPEED = 4.2;
+
+let Cam = null;
+
+function cameraWide(g) {
+  /* Anything that puts the ball or a runner away from the plate wants the
+     whole field: a batted ball, the replay of one, or a live run down. */
+  if (!g) return true;
+  if (g.play) return true;
+  if (g.replay) return true;
+  return false;
+}
+
+function cameraNow(g, w, h) {
+  const want = cameraWide(g) ? CAM_WIDE : CAM_BAT;
+  const target = { zoom: want.zoom, x: want.fx * w, y: want.fy * h };
+  const now = performance.now();
+  if (!Cam) Cam = { zoom: target.zoom, x: target.x, y: target.y, t: now };
+  const dt = Math.min(64, Math.max(0, now - Cam.t));
+  Cam.t = now;
+  const speed = target.zoom < Cam.zoom ? CAM_OUT_SPEED : CAM_IN_SPEED;
+  const k = 1 - Math.exp(-speed * dt / 1000);
+  Cam.zoom += (target.zoom - Cam.zoom) * k;
+  Cam.x += (target.x - Cam.x) * k;
+  Cam.y += (target.y - Cam.y) * k;
+  /* Settle, so a camera a thousandth of a zoom away stops being animated. */
+  if (Math.abs(target.zoom - Cam.zoom) < 0.002) Cam.zoom = target.zoom;
+  if (Math.abs(target.x - Cam.x) < 0.4) Cam.x = target.x;
+  if (Math.abs(target.y - Cam.y) < 0.4) Cam.y = target.y;
+  /* Keep the view inside the field. Off the edge there is nothing drawn
+     but the background fill, and a strip of it down one side reads as a
+     bug rather than as a camera move. */
+  const z = Math.max(1, Cam.zoom);
+  const halfW = w / (2 * z), halfH = h / (2 * z);
+  return {
+    zoom: z,
+    x: clamp(Cam.x, halfW, w - halfW),
+    y: clamp(Cam.y, halfH, h - halfH),
+    /* 0 wide, 1 fully at bat. Anything that should be framed differently
+       in the close shot rides this rather than reading the game state
+       again, so it moves WITH the camera instead of snapping when the
+       state flips underneath it. */
+    t: clamp((Cam.zoom - CAM_WIDE.zoom) / (CAM_BAT.zoom - CAM_WIDE.zoom), 0, 1),
+  };
+}
+
+function camApply(ctx, cam, w, h) {
+  ctx.translate(w / 2, h / 2);
+  ctx.scale(cam.zoom, cam.zoom);
+  ctx.translate(-cam.x, -cam.y);
+}
+
+/* The camera should not drift in from wherever the last game left it. */
+function resetCamera() { Cam = null; }
+
 function drawField(ctx, w, h, t, pitch, inWindup) {
   /* Night sky, crowd, light towers, outfield wall, grass, diamond.
      Everything sized to the field's own w and h so the canvas can be
@@ -4262,8 +4347,34 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
 
   const theme = currentTheme();
 
+  /* The letterbox behind everything, in SCREEN space: it has to cover the
+     display whatever the camera is doing, and a world sized rect stops
+     doing that the moment the camera moves. */
   ctx.fillStyle = '#0b1015';
   ctx.fillRect(-8, -8, w + 16, h + 16);
+
+  /* ---------------------------- world pass ---------------------------- */
+  const cam = cameraNow(State.game, w, h);
+  ctx.save();
+  camApply(ctx, cam, w, h);
+
+  /* THE BATTER IS FOREGROUND in the close shot. Standing him on the plate
+     at this zoom means standing him in FRONT of it: he covers the thing
+     the player is trying to read. Backyard solves it the way a camera
+     would, by putting him large and low at the edge of the frame with the
+     plate clear beside him, and that is what this offset is.
+
+     It rides cam.t and a caller supplied weight, so it is not a second
+     state machine. On contact the camera pulls out, cam.t falls, and the
+     same batter walks back to his real position and size as he starts up
+     the line: no snap, because nothing switched. */
+  const FG = {
+    dx: -104, dy: 20, sc: 2.3,
+    at(weight) {
+      const k = cam.t * clamp(weight, 0, 1);
+      return { dx: this.dx * k, dy: this.dy * k, sc: 3.2 + this.sc * k };
+    },
+  };
 
   const skyH = h * 0.105;
   /* Sky with depth: darker at the zenith, a warm stadium-light glow low
@@ -4611,8 +4722,17 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     /* Catcher behind plate */
     /* (This once gated on catcher.pal, a field the old sprite system
        carried and the rewrite removed, so no catcher drew at all.) */
-    const catcher = currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1];
-    if (catcher) drawRunner(ctx, cx + 18, plateY + 38, catcher, 2.3, 'back');
+    /* The catcher and the on deck circle belong to the WIDE shot. In the
+       close one the camera is standing about where the catcher is, so
+       drawing him puts a man between the player and the plate he is
+       trying to read, and the on deck circle lands underneath the
+       foreground batter. Both fade out as the camera comes in. */
+    const plateCrowd = 1 - cam.t;
+    if (plateCrowd > 0.02) {
+      ctx.save();
+      ctx.globalAlpha = plateCrowd;
+      const catcher = currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1];
+      if (catcher) drawRunner(ctx, cx + 18, plateY + 38, catcher, 2.3, 'back');
     /* On-deck circle: the next batter waits in it, bat on shoulder is
        implied by the back view. Gives the bottom corner life and tells
        the player who is up next without reading the log. */
@@ -4626,6 +4746,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.ellipse(ox, oy, 20, 9, 0, 0, Math.PI * 2); ctx.stroke();
       drawRunner(ctx, ox, oy + 2, onDeck, 2.2);
+      }
+      ctx.restore();
     }
     /* Pitcher on the mound: windup for the first 65% of the pitch's
        travel, release for the last 35%, then idle. */
@@ -4679,12 +4801,14 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       /* Batter as runner: starts moving at the same time as the ball is */
       const bt = clamp((now - p.startedAt) / Math.max(300, p.ball.duration - 100), 0, 1);
       const [bx, by] = pathPointAt(field, p.batterPath, bt);
-      drawRunner(ctx, bx, by - 4, p.batter, 3,
+      const fgb = FG.at(1 - bt);
+      drawRunner(ctx, bx + fgb.dx, by - 4 + fgb.dy, p.batter, 3 + (fgb.sc - 3.2),
                  bt > 0.05 && bt < 0.98 ? runFrameFor(p.batterPath, bt) : null);
       /* Bat swing arc, first 240ms of the play */
       if (now < p.swingUntil) {
         const st = clamp((now - p.startedAt) / (p.swingUntil - p.startedAt), 0, 1);
-        drawBatSwing(ctx, cx - 28, plateY + 4, st);
+        const f = FG.at(1 - bt);
+        drawBatSwing(ctx, cx - 28 + f.dx, plateY + 4 + f.dy, st, f.sc / 3.2);
       }
       /* Ball trajectory: plate to landing spot, with a ground shadow so
          the arc height reads. */
@@ -4710,7 +4834,10 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 6, bs[1], 2.45);
       if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 6, bs[2], 2.6);
       const batter = currentBatter();
-      if (batter) drawRunner(ctx, cx - 28, plateY + 6, batter, 3.2, 'batting');
+      if (batter) {
+        const f = FG.at(1);
+        drawRunner(ctx, cx - 28 + f.dx, plateY + 6 + f.dy, batter, f.sc, 'batting');
+      }
     }
   }
 
@@ -4810,6 +4937,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     ctx.font = 'bold 12px monospace';
     ctx.fillText(`${R.h.batterName} · ${R.h.kind.toUpperCase()}`, cx, 74);
   }
+
+  ctx.restore();
+  /* --------------------------- screen pass ---------------------------- */
 
   /* Signature moment overlays: character-specific spectacle that lands
      on top of the field during a big at bat. Each one runs for its
@@ -5021,8 +5151,15 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     }
   }
 
-  /* Particles fire on top of everything. */
-  if (g) updateAndDrawFx(ctx, g);
+  /* Particles fire on top of everything, but they were spawned at field
+     coordinates (dust at a base, confetti over the plate), so they go
+     back through the camera to land where they were thrown. */
+  if (g) {
+    ctx.save();
+    camApply(ctx, cam, w, h);
+    updateAndDrawFx(ctx, g);
+    ctx.restore();
+  }
 
   /* Soft vignette: darkens the corners so the diamond glows in the
      middle, same framing trick the golf tracer uses. */
@@ -5059,22 +5196,24 @@ function drawBaseball(ctx, x, y, groundY) {
   ctx.beginPath(); ctx.arc(x, y, rad - 1, -Math.PI*0.2, Math.PI*0.3); ctx.stroke();
 }
 
-function drawBatSwing(ctx, x, y, t) {
+function drawBatSwing(ctx, x, y, t, sc) {
   /* A wooden bat sweeping horizontally at the plate. t goes 0 to 1 over
      the swing window, so the bat rotates from behind the batter to in
-     front. */
-  const cx = x + 6, cy = y - 12;
+     front. sc tracks the batter's own scale: in the close shot he is
+     drawn half again as big and a fixed length bat reads as a pencil. */
+  sc = sc || 1;
+  const cx = x + 6 * sc, cy = y - 12 * sc;
   const angle = -Math.PI * 0.6 + Math.PI * 1.2 * t;
-  const len = 22;
+  const len = 22 * sc;
   const bx = cx + Math.cos(angle) * len;
   const by = cy + Math.sin(angle) * len;
   ctx.strokeStyle = '#8b6a3a';
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 4 * sc;
   ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
   ctx.strokeStyle = '#5a3a1c';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(angle) * 6, cy + Math.sin(angle) * 6); ctx.stroke();
+  ctx.lineWidth = 2 * sc;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(angle) * 6 * sc, cy + Math.sin(angle) * 6 * sc); ctx.stroke();
 }
 
 
