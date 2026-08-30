@@ -34,7 +34,7 @@
 import {
   SEASONS, MIN_GAMES, nflverseCSV, parseCSVObjects,
   mean, stdev, quantileSorted, round, writePair,
-  franchiseId, franchiseName,
+  franchiseId, franchiseName, seasonAge,
 } from './lib.mjs';
 
 /* The same curve as the offense pool, deliberately. See the header. */
@@ -256,6 +256,9 @@ async function loadBio() {
     if (!r.gsis_id) continue;
     bio.set(r.gsis_id, {
       college: r.college_name || null,
+      /* For seasonAge(). Kept raw so the one place that turns a date into a number is
+         lib.mjs and every row in both pools is aged the same way. */
+      birth_date: r.birth_date || null,
       draft_year: r.draft_year ? Number(r.draft_year) : null,
       draft_round: r.draft_round ? Number(r.draft_round) : null,
     });
@@ -368,6 +371,10 @@ async function main() {
       badges: p._badges.map((x) => x.text),
       college: bio.get(p.player_id)?.college ?? null,
       draft_year: bio.get(p.player_id)?.draft_year ?? null,
+      /* HOW OLD HE WAS THAT AUTUMN, which The Gauntlet needs on the draft board: the mode
+         hands you the same man a year older every winter, so the question at the wheel is
+         how many of those he has left. See seasonAge in lib.mjs for the convention. */
+      age: seasonAge(bio.get(p.player_id)?.birth_date, p.season),
     }));
 
   const csvRows = rows.map((r, i) => ({

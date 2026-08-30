@@ -680,6 +680,10 @@ window.GA_ID='G-L29P5MRWKE';
      player who got older, he is a different real season of the same man. */
   .wyr{font-variant-numeric:tabular-nums;transition:color .3s ease}
   .wrow.aging .wyr{color:#e2b25a}
+  /* His age in the winter, which is the number the whole screen is about. Louder than the
+     club beside it and quieter than the money. */
+  .wage{font-variant-numeric:tabular-nums;font-weight:800;color:var(--dim)}
+  .wrow.aging .wage{color:#e2b25a;transition:color .3s ease}
   .wdelta{font-weight:800;opacity:0;transform:translateY(3px);
     transition:opacity .3s ease,transform .3s ease}
   .wdelta.in{opacity:1;transform:none}
@@ -896,18 +900,23 @@ window.GA_ID='G-L29P5MRWKE';
   /* SMALLER THAN THE BUTTONS THAT MOVE THE GAME ON. These are an option, not the next
      step, and at the old size two of them under the wheels read as the main action on the
      screen. The label and the price go on one line for the same reason. */
-  .respins{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+  .respins{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
   /* One Franchise mode has only the year to re-roll, so the one button takes the row
      rather than sitting in half of it with a gap where the other used to be. */
   .respins.one{grid-template-columns:minmax(0,1fr)}
   /* .respins .respin, not .respin: these carry .btn.sm too, which is two classes, so a
      single-class rule loses the padding no matter where it sits in the file. */
-  .respins .respin{display:flex;align-items:baseline;justify-content:center;gap:6px;
-    text-align:center;padding:7px 8px;border-radius:9px;min-width:0;font-size:11.5px}
-  .respin b{font-family:var(--fn);font-size:11.5px;letter-spacing:.03em;
-    text-transform:uppercase;line-height:1.1}
-  .respin span{font-size:10.5px;color:var(--dim);line-height:1.2;
+  .respins .respin{display:flex;align-items:baseline;justify-content:center;gap:5px;
+    text-align:center;padding:5px 8px;border-radius:8px;min-width:0;font-size:10px}
+  .respin b{font-family:var(--fn);font-size:10px;letter-spacing:.04em;
+    text-transform:uppercase;line-height:1.1;font-weight:700}
+  .respin span{font-size:9.5px;color:var(--dim);line-height:1.2;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* A single button does not stretch to the full width. On its own across the screen it
+     reads as the thing to press next, which is exactly what these must not look like.
+     WIDTH:AUTO IS THE LOAD-BEARING LINE: .btn sets width:100%, so justify-self:center on a
+     grid item that is already as wide as its column centres nothing. */
+  .respins.one .respin{width:auto;min-width:150px;justify-self:center}
   /* A refused re-spin still has to say why, and a reason does not fit on one line, so
      that one goes back to stacking. */
   .respins .respin.off{display:block;text-align:center}
@@ -922,7 +931,7 @@ window.GA_ID='G-L29P5MRWKE';
     color:var(--dim-2)}
   .respin.off b{color:var(--dim-2)}
   .respins .respin.off span{color:var(--dim-2)}
-  .respinnote{color:var(--dim-2);font-size:11px;text-align:center;margin:8px 0 0}
+  .respinnote{color:var(--dim-2);font-size:10px;text-align:center;margin:6px 0 0}
 
   .panel{background:var(--grad-panel);border:1px solid var(--line);border-radius:16px;padding:15px;
     box-shadow:var(--shadow)}
@@ -3795,6 +3804,10 @@ window.GA_ID='G-L29P5MRWKE';
     line-height:1.1;letter-spacing:.01em;padding-bottom:2px}
   .tile .sn{display:block;margin-top:3px;font-size:10.5px;color:var(--dim-2);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* A quiet chip, not a third column: it rides on the club line and reads as part of the
+     same sentence. The dot is drawn rather than typed so the markup stays one span. */
+  .tile .sn .age{margin-left:6px;padding-left:7px;border-left:1px solid var(--line-2);
+    font-variant-numeric:tabular-nums}
   .tile .line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     margin-top:5px;font-size:10.5px;line-height:1.3;color:var(--dim)}
   .tile .tf{margin-top:auto;padding-top:7px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
@@ -9651,8 +9664,14 @@ const stagger=(i)=>Math.min(220,(i||0)*28);
 function optTile(row){
   const p=row.p, i=row.i;
   const head=posChips(p)+'<span class="pr">'+M(p.price_musd)+'</span>';
+  /* HOW OLD HE WAS THAT SEASON, on the line that already carries the year and the club.
+     It is a plain fact about the man in front of you in every mode, and in The Gauntlet it
+     is the question the mode is built on: you are keeping him, so what you want to know at
+     the wheel is how many of these he has left. Rendered from the data rather than derived
+     here, and simply absent on a row that has no birth date. */
   const who='<span class="nm">'+esc(p.name)+'</span>'+
-    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+'</span>';
+    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+
+      (p.age?'<span class="age">'+p.age+' yrs</span>':'')+'</span>';
   const pts='<span class="pts"><b>'+p.fppg.toFixed(1)+'</b><i>FPPG</i></span>';
 
   if(row.block){
@@ -9773,19 +9792,26 @@ function paintRespins(){
      explaining itself over and over; the mode's whole promise is that the team never
      changes. */
   const clubRun=!!(run&&run.franchise);
-  const y=R.canRespin(run,'year',dataNow()), t=clubRun?null:R.canRespin(run,'team',dataNow());
+  /* AND ONE BUTTON IN THE GAUNTLET, FOR THE MIRROR IMAGE OF THAT REASON. There the club is
+     locked and the year is free; here the YEAR is locked, because the wheel only ever offers
+     the league season you are playing. So "new year" is the dead control in this mode, and
+     printing it greyed out under every spin with the same sentence about there being no
+     other year is the same repeated non-choice the note above is about. */
+  const yearRun=!!(run&&run.dynasty);
+  const y=yearRun?null:R.canRespin(run,'year',dataNow());
+  const t=clubRun?null:R.canRespin(run,'team',dataNow());
   const left=E.CONSTANTS.MAX_RESPINS-run.respinsUsed;
-  if(!y.ok&&!(t&&t.ok)){
+  if(!(y&&y.ok)&&!(t&&t.ok)){
     el.innerHTML='<p class="dim" style="font-size:12px;text-align:center;margin:0">'+
-      (left<=0?'No re-spins left':esc(y.reason))+'</p>';
+      (left<=0?'No re-spins left':esc((y||t||{}).reason||'No re-spins left'))+'</p>';
     return;
   }
   const btn=(kind,label,chk)=>chk.ok
     ? '<button class="btn ghost sm respin" data-kind="'+kind+'"><b>'+label+'</b>'+
       '<span>'+M0(chk.cost)+'</span></button>'
     : '<div class="respin off"><b>'+label+'</b><span>'+esc(chk.reason)+'</span></div>';
-  el.innerHTML='<div class="respins'+(clubRun?' one':'')+'">'+
-      btn('year','New year',y)+(t?btn('team','New team',t):'')+
+  el.innerHTML='<div class="respins'+(clubRun||yearRun?' one':'')+'">'+
+      (y?btn('year','New year',y):'')+(t?btn('team','New team',t):'')+
     '</div>'+
     '<p class="respinnote">Comes off your budget. '+
       (left>1?'Next one costs '+M0(E.respinCost(run.respinsUsed+1))+'. ':'')+
@@ -10283,6 +10309,7 @@ function winterRow(a,i){
       '<span class="wsub"><span class="wyr" data-from="'+a.was.season+'" data-to="'+p.season+'">'+
         a.was.season+'</span>'+
         '<span>'+esc(E.nickname(p.franchise))+'</span>'+
+        (p.age?'<span class="wage">'+p.age+' yrs</span>':'')+
         '<span class="wdelta '+how[0]+'">'+how[1]+'</span>'+
       '</span></span>'+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
