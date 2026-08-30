@@ -3902,48 +3902,66 @@ const FULL_CAP_MUSD = 280;
  */
 const DYNASTY_SEASONS = 3;
 
-/* THE CAP GROWS, because without it decline just strangles you. A dynasty is supposed to
-   be a series of choices about who to keep, and a flat cap against a roster that gets more
-   expensive every winter removes the choice: you cut whoever costs most and there is no
-   decision in it. 5% a year is a shade under what the real cap did over this data's window
-   and it is the smallest number that keeps a good core affordable for three years. */
-const DYNASTY_CAP_GROWTH = 1.05;
-
 /*
- * WHAT A CONTRACT COSTS, AND THE TRADE INSIDE IT.
+ * ─── THE THREE RULES A WINTER RUNS ON ───────────────────────────────────────────────
  *
- * At signing you choose one, two or three years, and a longer deal is cheaper per year. The
- * price is then LOCKED: while he is under contract he costs what you signed him for, not
- * what he turns out to be worth. That is the whole bet in both directions. Lock a $48M star
- * for three and you have paid for his age-30 season at his age-27 price; lock a $6M man for
- * three and the 1% of the time he turns into a $34M player, you have him for $5.3M.
+ * 1. A SALARY NEVER GOES DOWN WHILE A MAN IS ON YOUR ROSTER. He gets a raise the year he
+ *    improves and keeps what he had the year he declines. Release him and the number goes
+ *    with him; sign somebody new and you pay what that man is worth today.
  *
- * The discounts are small on purpose. A steep ladder would make three years correct for
- * everybody and delete the decision; these are worth about a fifth of a good man over the
- * term, which is enough to tempt and not enough to dictate.
+ * 2. YOU OPEN MONEY BY RELEASING PEOPLE. There is no other way to make room.
+ *
+ * 3. THE CAP IS A SIGNING GATE, NOT A CEILING. Go over it by keeping men who got expensive
+ *    and nothing happens: the roster is legal and it plays. You simply cannot sign anybody
+ *    until you are back under. What an appreciating roster costs you is the wheel.
+ *
+ * RULE 1 IS THE ONE THAT MAKES THE MODE EXIST, and it took two whole designs to find out
+ * why. Price in this pool tracks value, so a man who declines re-prices DOWN and an ageing
+ * roster gets CHEAPER every winter. With salaries free to fall, measured at twelve men and
+ * $280M, payroll ran $279M, $266M, $261M, the gate never came within $14M of closing, and
+ * STANDING PAT WAS THE BEST STRATEGY IN THE GAME: 29.7 three-year wins against 29.6, 29.5
+ * and 29.3 for the three strategies that actually manage the roster. A winter in which
+ * doing nothing is optimal has no decision in it and is not worth a screen.
+ *
+ * The ratchet is also just what a contract is. Nobody renegotiates a veteran downward
+ * because he slipped a step; he is on the deal he signed and the club eats it. It is the
+ * honest source of the one tension a franchise mode needs and that this game cannot
+ * otherwise produce, and it costs one number per man.
+ *
+ * With it in, the same measurement at 6% cap growth:
+ *
+ *                        year 1        year 2        year 3     three-year   titles
+ *   stand pat          9.8  25% PO   7.3   7% PO   7.4   7% PO      24.6      0.3%
+ *   release on value   9.8  25% PO   9.8  31% PO  10.6  37% PO      30.2      1.7%
+ *
+ * Five and a half wins between managing the roster and refusing to. The gate closes on the
+ * GM who hoards, 23% of the time in year two, and never on the one who does not, which is
+ * exactly the right way round: the cap punishes hoarding rather than competence.
+ *
+ * WHAT WAS TRIED AND DROPPED. The first design had locked multi-year contracts at a term
+ * discount and dead money on a man who left mid-deal. Measured, the four term strategies
+ * landed within noise of each other, so term was not a decision, and the whole apparatus is
+ * gone. The ratchet does the same job in one number: a declining man on last year's salary
+ * IS an overpaid veteran, without anybody having to sign him to anything.
  */
-const DYNASTY_TERM_DISCOUNT = { 1: 1.00, 2: 0.94, 3: 0.88 };
-
-/*
- * AND THE PRICE OF BEING WRONG. A man under contract who has no next season in the data has
- * not retired, necessarily; he has fallen out of the pool. Either way he is not playing for
- * you, and the money does not come back: half his locked price stays against the cap for
- * every year left on the deal.
- *
- * HALF RATHER THAN ALL, and it is the one number here that was chosen rather than measured.
- * All of it makes a three-year deal on a 33-year-old a mode-ending mistake 12% of the time,
- * which is not a bet anybody would take twice; none of it makes term free. Half is real
- * enough to be feared and survivable enough to be risked. See --dynasty for what it does to
- * a season.
- */
-const DYNASTY_DEAD_MONEY = 0.5;
-
-/** What a man costs per year on a deal of this length. */
-function dynastyContractPrice(listPriceMusd, years) {
-  const d = DYNASTY_TERM_DISCOUNT[years];
-  if (!d) throw new Error(`a contract is 1, 2 or 3 years, not ${years}`);
-  return Math.round(listPriceMusd * d * 10) / 10;
+function dynastySalary(currentSalaryMusd, newListPriceMusd) {
+  return Math.max(currentSalaryMusd || 0, newListPriceMusd);
 }
+
+/*
+ * AND THE COUNTERWEIGHT. A growing cap was in the first design too, where it made things
+ * strictly worse: payroll FELL as the roster aged, so a rising budget pointed the same way
+ * and there was never any pressure at all. Under the ratchet the sign flips. Payroll now
+ * climbs into the ceiling, and cap growth is the only thing between the mode and a
+ * three-year slide nobody can arrest.
+ *
+ * SIX PERCENT, measured rather than borrowed from the real cap. At 0% even careful play
+ * decays (9.8, 8.0, 7.9 wins) and the mode is a punishment. At 12% a roster that is never
+ * touched recovers on its own (9.8, 8.7, 9.5) and standing pat comes back as a strategy,
+ * which is the failure this whole rule set exists to prevent. 6% is where careful play
+ * holds its level and neglect does not.
+ */
+const DYNASTY_CAP_GROWTH = 1.06;
 
 /**
  * The same man, one league year on.
@@ -4879,9 +4897,8 @@ const publicAPI = {
     ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
   ],
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
-  DYNASTY_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_TERM_DISCOUNT, DYNASTY_DEAD_MONEY,
-  DYNASTY_CONTINUITY_PER_YEAR,
-  dynastyContractPrice, dynastyAge, dynastyGoneFor, dynastyContinuity,
+  DYNASTY_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
+  dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
   fullStrength, fullOverall, fullParts, fullSideRatings,
