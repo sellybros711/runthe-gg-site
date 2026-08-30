@@ -632,10 +632,17 @@ def extras(cv, spec, pose):
             for side in (-1, 1):
                 cv.sphere(CX + side * 7.5, 5.0, 3.4, 3.4, r, spec=False)
         elif kind == 'wings':
+            # A pair of shaped wings, big lobe over small, with veins.
+            # Two plain ovals read as balloons tied to her shoulders.
             r = Ramp(e[1])
+            vein = Ramp(shade(r.base, -0.22))
             for side in (-1, 1):
-                bx = CX + side * 11
-                cv.sphere(bx, 24, 5.2, 7.0, r, spec=False)
+                bx = CX + side * 10
+                cv.sphere(bx + side * 1.5, 21.5, 4.6, 5.6, r, spec=False)
+                cv.sphere(bx + side * 0.5, 28.5, 3.4, 4.0, r, spec=False)
+                for i in range(4):
+                    cv.dot(bx + side * (1 + i * 1.1), 20 + i * 1.3, vein.mid)
+                    cv.dot(bx + side * (0.5 + i * 0.9), 27 + i * 0.9, vein.mid)
         elif kind == 'cape':
             r = Ramp(e[1])
             cv.taper(22, 36, 22, 26, r, folds=3)
@@ -811,26 +818,42 @@ def arch_robed(cv, spec, pose):
 
 
 def arch_beast(cv, spec, pose):
-    """Four legged or low slung: dog, chupacabra, nessie, dragon."""
+    """Four legged or low slung: dog, chupacabra, nessie, dragon.
+
+    BUILD matters more than color here. Two quadrupeds sharing one body
+    plan read as the same animal painted twice, which is exactly what
+    the rabid dog and the chupacabra were. 'stocky' is a barrel chested
+    dog low to the ground; 'lean' is a long legged, narrow, hungry
+    thing."""
     body = Ramp(spec.get('skin', '#5a3a20'))
     boot = Ramp(spec.get('boot', shade(body.base, -0.4)))
-    cv.sphere(CX, 28.0, 10.4, 6.2, body, spec=False)
+    build = spec.get('build', 'stocky')
+    if build == 'lean':
+        bw, bh, bcy, legtop, hy, hr = 8.4, 4.6, 26.5, 28, 12.5, 6.8
+    else:
+        bw, bh, bcy, legtop, hy, hr = 11.0, 6.8, 28.5, 31, 14.0, 7.8
+    cv.sphere(CX, bcy, bw, bh, body, spec=False)
     off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
-    for lx in (-8, -3, 3, 8):
+    spread = (-7, -3, 3, 7) if build == 'lean' else (-8, -3, 3, 8)
+    for lx in spread:
         o = off if lx < 0 else -off
-        cv.cyl(CX + lx - 1, 31 + o, CX + lx + 1, 37 + o, body)
+        cv.cyl(CX + lx - 1, legtop + o, CX + lx + 1, 37 + o, body)
         cv.cyl(CX + lx - 1, 36 + o, CX + lx + 1, 37 + o, boot)
     # neck, then a forward facing head centred over the body
-    cv.cyl(CX - 2, 19, CX + 2, 26, body, round_top=1)
-    cv.sphere(CX, 14.0, 7.8, 8.4, body)
+    if build == 'lean':
+        cv.cyl(CX - 2, 16, CX + 2, 25, body, round_top=1)
+    else:
+        cv.cyl(CX - 2, 19, CX + 2, 26, body, round_top=1)
+    cv.sphere(CX, hy, hr, hr * 1.08, body)
     if spec.get('muzzle'):
         # The muzzle needs its own value, not just its own hue. Drawn in a
         # near neighbour of the body color, the only thing that showed was
         # the sphere's rim shading, which read as a dark V scored into the
         # face rather than as a snout.
         m = Ramp(shade(spec['muzzle'], 0.18))
-        cv.sphere(CX, 18.0, 5.2, 3.8, m)
-        cv.sphere(CX, 16.4, 1.8, 1.4, Ramp(shade(spec['muzzle'], -0.55)))
+        my = hy + 4.0
+        cv.sphere(CX, my, 5.2 if build != 'lean' else 4.4, 3.8, m)
+        cv.sphere(CX, my - 0.8, 1.5, 1.1, Ramp(shade(spec['muzzle'], -0.55)))
 
 
 def arch_centaur(cv, spec, pose):
@@ -1597,6 +1620,17 @@ def sig_fathertime(cv, spec, pose, back):
 
 
 def sig_mothernature(cv, spec, pose, back):
+    # Vines and leaves growing up the robe: without them it is a flat
+    # green wall and she is a woman in a bathrobe.
+    leaf = Ramp('#2f7a34')
+    for side in (-1, 1):
+        for i in range(5):
+            x = CX + side * (3 + i * 1.6)
+            y = 36 - i * 3.4
+            cv.dot(x, y, leaf.mid)
+            cv.dot(x, y - 1, leaf.lit)
+            if i % 2 == 0:
+                cv.sphere(x + side * 2, y - 1, 1.8, 1.1, leaf, spec=False)
     # flowers in her hair
     for fx, fy in ((-5, 6), (0, 4), (5, 6)):
         x, y = CX + fx, fy
@@ -1606,6 +1640,14 @@ def sig_mothernature(cv, spec, pose, back):
 
 
 def sig_raboddog(cv, spec, pose, back):
+    # A tail up and wagging, and a collar: he was somebody's dog once.
+    fur = Ramp(spec.get('skin', '#5a3a20'))
+    wag = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    for i, (dx, dy) in enumerate(((11, 27), (13, 24), (14, 21), (14, 18))):
+        cv.sphere(CX + dx + wag * i * 0.5, dy, 1.6, 1.8, fur, spec=False)
+    col = Ramp('#8a1a1a')
+    cv.rect(CX - 5, 23, CX + 5, 24, col, l=0.55)
+    cv.dot(CX, 25, (214, 176, 60))
     if back:
         return
     # foam at the mouth: he is RABID
@@ -1614,10 +1656,16 @@ def sig_raboddog(cv, spec, pose, back):
 
 
 def sig_chupacabra(cv, spec, pose, back):
-    # the ridge of spines
-    sp = Ramp('#6a8a4a')
-    for x, top in ((-4, 4), (0, 2), (4, 4)):
-        cv.tri([(CX + x, top), (CX + x - 1, top + 3), (CX + x + 1, top + 3)], sp, l=0.5)
+    # A ridge of spines running from the crown down the spine, plus tall
+    # bat ears. Colour alone never separated him from the dog.
+    sp = Ramp('#7a9c56')
+    for x, top in ((-4, 2), (0, 0), (4, 2)):
+        cv.tri([(CX + x, top), (CX + x - 1, top + 4), (CX + x + 1, top + 4)], sp, l=0.5)
+    # Ears ABOVE the eyes and swept back. Reaching down to row 12 they
+    # crossed his face and painted a dark bar over both eyes.
+    fur = Ramp(spec.get('skin', '#4a5a3a'))
+    for side in (-1, 1):
+        cv.tri([(CX + side * 4, 8), (CX + side * 11, 1), (CX + side * 9, 9)], fur, l=0.5)
 
 
 def sig_cupid(cv, spec, pose, back):
@@ -1653,16 +1701,16 @@ def sig_yeti(cv, spec, pose, back):
     # the face is a dark patch INSIDE the white fur, with icy eyes and
     # a white grimace of teeth
     face = Ramp('#7a96b4')
-    cv.sphere(CX, 13.8, 5.6, 4.6, face, spec=False)
+    cv.sphere(CX, 14.2, 4.8, 4.0, face, spec=False)
     for sx in (-3, 3):
         cv.dot(CX + sx - 1, 12, (240, 248, 252))
         cv.dot(CX + sx, 12, (170, 220, 245))
         cv.dot(CX + sx, 11, (240, 248, 252))
-    for dx in range(-3, 4):
-        cv.dot(CX + dx, 16, (245, 245, 247))
-        cv.dot(CX + dx, 15, shade(face.base, -0.4))
-    cv.dot(CX - 4, 16, shade(face.base, -0.4))
-    cv.dot(CX + 4, 16, shade(face.base, -0.4))
+    for dx in range(-2, 3):
+        cv.dot(CX + dx, 17, (245, 245, 247))
+        cv.dot(CX + dx, 16, shade(face.base, -0.4))
+    cv.dot(CX - 3, 16, shade(face.base, -0.4))
+    cv.dot(CX + 3, 16, shade(face.base, -0.4))
     # fur brow overhanging the face, so it sits IN the fur, not on it
     for dx in range(-4, 5):
         cv.dot(CX + dx, 9, fur.lit)
@@ -1960,7 +2008,7 @@ def build(spec, pose='idle', key=None):
     elif a == 'egg':
         cy = 12.0
     elif a == 'beast':
-        cy = 14.0
+        cy = 12.5 if spec.get('build') == 'lean' else 14.0
     elif a == 'cat':
         cy = 12.0
     elif a == 'centaur':
@@ -2087,7 +2135,7 @@ SPECS = {
  'raboddog': dict(arch='beast', skin='#5a3a20', muzzle='#a88458',
                   eyes='glow', eyecolor='#c94b1a', mouth='fang',
                   extra=[('ears', '#5a3a20')]),
- 'chupacabra': dict(arch='beast', skin='#4a5a3a', muzzle='#7a9058',
+ 'chupacabra': dict(arch='beast', build='lean', skin='#4a5a3a', muzzle='#7a9058',
                     eyes='glow', eyecolor='#f4c25a', mouth='fang'),
  'cupid': dict(arch='round', skin='#f7dcb4', shirt='#f7dcb4', eyes='normal',
                mouth='grin', hair='#d8a24a', hairstyle='short',
