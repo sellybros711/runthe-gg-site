@@ -691,10 +691,26 @@ window.GA_ID='G-L29P5MRWKE';
   .wmoved{background:rgba(96,165,250,.16);color:#93c5fd}
   .wgone{background:rgba(255,255,255,.06);color:var(--dim-2)}
   .wgone.retired{background:rgba(226,178,90,.16);color:#e2b25a}
-  .wdelta{font-weight:800;opacity:0;transform:translateY(3px);
+  /* WHAT THE YEAR DID TO HIM, IN HIS OWN NUMBERS.
+     This was three words, "a step slower", off a fantasy-points delta the screen never
+     showed. Three words is not enough to decide whether to keep a man, and it was the same
+     three words for a receiver who lost a step and one who missed seven games. The strip
+     spans the row because these are the numbers, not a footnote to the name above them. */
+  .wstats{grid-column:1/-1;display:flex;gap:5px;margin-top:8px;padding-top:8px;
+    border-top:1px solid var(--line)}
+  .wst{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:5px 2px;border-radius:8px;background:rgba(255,255,255,.035);
+    font-family:var(--fn);font-variant-numeric:tabular-nums}
+  .wst i{font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.07em;
+    color:var(--dim-2);white-space:nowrap}
+  .wst b{font-size:14px;font-weight:800;line-height:1.1}
+  /* Held even when the number did not move, so the rows do not shuffle a pixel as each
+     man's turn comes round. */
+  .wsd{font-size:9.5px;font-weight:800;line-height:1;min-height:10px;color:var(--dim-2);
+    opacity:0;transform:translateY(2px);
     transition:opacity .3s ease,transform .3s ease}
-  .wdelta.in{opacity:1;transform:none}
-  .wdelta.up{color:var(--good,#4ade80)} .wdelta.down{color:var(--bad,#f87171)}
+  .wsd.in{opacity:1;transform:none}
+  .wsd.up{color:var(--good,#4ade80)} .wsd.down{color:var(--bad,#f87171)}
   .wmoney{text-align:right;font-family:var(--fn);font-variant-numeric:tabular-nums}
   .wsal{font-size:15px;font-weight:800;line-height:1;transition:color .3s ease}
   .wrow.raised .wsal{color:#e2b25a}
@@ -7247,7 +7263,15 @@ function bootStep(say){
 async function boot(){
   const t0=(window.performance&&performance.now)?performance.now():0;
   try{
-    /* v6: every team-season can now field a quarterback and a tight end. Thirteen clubs that
+    /* v7: every player-season now carries its counting stats, which the winter divides by
+       games to show what a year did to a man. A returning visitor served the v6 copy would
+       get a stat strip of zeros on every row, and nothing would throw: the numbers are read
+       off `stats` with a `||{}` behind them, because a pool that is one field short is
+       still a pool worth playing. So the bump is the only thing standing between that
+       visitor and four blank chips.
+       THE SCRIPT CACHE CHECKER DOES NOT COVER THIS. check-cachebust.mjs versions sibling
+       .js files, and this is a fetch of a data file, versioned by hand.
+       v6: every team-season can now field a quarterback and a tight end. Thirteen clubs that
        split a season between two or three starters had nobody clear the games threshold, so
        the wheel could land on the 2014 Titans and show no quarterback at all. Bumped so a
        returning visitor is not served last week's copy, which would still have the holes and
@@ -7256,7 +7280,7 @@ async function boot(){
     /* The step lands after the parse, not after the response: on a 3MB file of player
        seasons the JSON parse is a real part of the wait, and a bar that jumped to full
        while the main thread was still busy would be lying at the one moment it matters. */
-    const j=(f)=>fetch(f+'?v=6').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
+    const j=(f)=>fetch(f+'?v=7').then(r=>{if(!r.ok)throw new Error(f);return r.json();})
       .then(v=>{bootStep(); return v;});
     const [pl,tm,bat,co,cu,lg,cal]=await Promise.all([
       j('data/player_seasons.json'),j('data/team_seasons.json'),j('data/battery.json'),
@@ -10484,25 +10508,64 @@ function paintWinterCap(animate){
     : M(cap-pay)+' of room. Release a player for more.';
 }
 
-/* HOW A YEAR TREATED HIM, IN WORDS.
+/*
+ * WHAT HE ACTUALLY DID, FOUR NUMBERS WIDE.
  *
- * This was `-1.9 a game`, a fantasy-points-per-game delta, which is a real number and the
- * wrong one to put in front of somebody: it needs the scale it is on to mean anything, and
- * the scale is never shown. What the winter is actually telling you is one of three things,
- * so it says which. The number it replaces is still in the game where it belongs, driving
- * the season.
+ * The winter used to describe a year in three words: "a step slower", off the fantasy
+ * points per game the screen never showed you. That is not enough to decide with. It
+ * cannot tell a receiver who lost a step from one who missed seven games, and those are
+ * opposite decisions.
  *
- * The band is half a point a game, which is roughly the gap between a man who is the same
- * player he was and one you can feel the difference in over seventeen games. */
-function winterHow(drop){
-  if(drop>0.5) return ['up','better than last year'];
-  if(drop<-0.5) return ['down','a step slower'];
-  return ['','about the same'];
+ * So it shows the counting stats instead, per game, because a season total quietly rewards
+ * whoever stayed healthy. GAMES is the fourth chip for the same reason: it is the number
+ * that explains the other three, and a man who played nine is a different bet from a man
+ * who played seventeen at the same rate.
+ *
+ * TOUCHDOWNS ARE THE ONE SEASON TOTAL, and deliberately. Per game they read 0.5 against
+ * 0.7, which is a difference nobody can feel; as 8 against 11 it is a fact you can hold.
+ * GAMES sits beside it, so the total is never being asked to stand on its own.
+ */
+function winterChips(p){
+  const s=p.stats||{};
+  const g=p.games_played||0;
+  const per=(v)=>(g>0?(v||0)/g:0);
+  const td=(s.pass_td||0)+(s.rush_td||0)+(s.rec_td||0);
+  const games={k:'GAMES',v:g,dec:0};
+  if(p.position==='QB') return [
+    {k:'PASS/G',v:per(s.pass_yds),dec:1},
+    {k:'RUSH/G',v:per(s.rush_yds),dec:1},
+    {k:'TD',v:td,dec:0},games];
+  if(p.position==='RB') return [
+    {k:'RUSH/G',v:per(s.rush_yds),dec:1},
+    {k:'REC/G',v:per(s.rec),dec:1},
+    {k:'TD',v:td,dec:0},games];
+  return [
+    {k:'REC/G',v:per(s.rec),dec:1},
+    {k:'YDS/G',v:per(s.rec_yds),dec:1},
+    {k:'TD',v:td,dec:0},games];
 }
+
+/* Rendered showing LAST year's numbers. They count up to this year's at his beat in the
+   sequence, the same moment the season on his card ticks over, so the change is something
+   you watch happen rather than a figure that was always sitting there. */
+function winterStats(a){
+  const now=winterChips(a.now), was=winterChips(a.was);
+  return '<span class="wstats">'+now.map((c,i)=>{
+    const b=was[i]?was[i].v:c.v;
+    const f=(v)=>(c.dec?v.toFixed(1):String(Math.round(v)));
+    const diff=c.v-b;
+    const moved=Math.abs(diff)>=(c.dec?0.05:0.5);
+    const dir=moved?(diff>0?'up':'down'):'';
+    return '<span class="wst"><i>'+c.k+'</i>'+
+      '<b data-from="'+b+'" data-to="'+c.v+'" data-dec="'+c.dec+'">'+f(b)+'</b>'+
+      '<em class="wsd '+dir+'">'+(moved?(diff>0?'+':'')+f(diff):'&middot;')+'</em>'+
+      '</span>';
+  }).join('')+'</span>';
+}
+
 function winterRow(a,i){
   const p=a.now;
   const raise=a.raise>0.05;
-  const how=winterHow(a.drop);
   /* HE PLAYED SOMEWHERE ELSE. You keep him either way, because The Gauntlet follows the man
      and not the club, but the roster line would otherwise change its badge with no
      explanation. Worth saying plainly: it is a real thing that happened to him that winter,
@@ -10516,12 +10579,12 @@ function winterRow(a,i){
         '<span>'+esc(E.nickname(p.franchise))+'</span>'+
         (p.age?'<span class="wage">'+p.age+' yrs</span>':'')+
         (moved?'<span class="wmoved">TRADED</span>':'')+
-        '<span class="wdelta '+how[0]+'">'+how[1]+'</span>'+
       '</span></span>'+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
       '<span class="wraise'+(raise?' up':'')+'">'+(raise?'+'+M(a.raise):'')+'</span></span>'+
     '<span class="wcut"><button class="wcutb" data-cut="'+i+'" '+
       'aria-label="Release '+esc(p.name)+'" title="Release '+esc(p.name)+'">&minus;</button></span>'+
+    winterStats(a)+
     '</div>';
 }
 
@@ -10610,7 +10673,15 @@ function paintWinter(){
         r.classList.add('raised');
         countMoney(r.querySelector('.wsal'),a.wasSalary,a.salary,420,(v)=>M(v));
       }
-      const d=r.querySelector('.wdelta'); if(d) d.classList.add('in');
+      /* His numbers roll from last year's to this year's, and the change lands after them.
+         Same beat as the season on his card, because it is the same event. */
+      r.querySelectorAll('.wst').forEach((st)=>{
+        const b=st.querySelector('b'); if(!b) return;
+        const dec=b.dataset.dec==='1';
+        const fmt=(v)=>(dec?v.toFixed(1):String(Math.round(v)));
+        countMoney(b,+b.dataset.from,+b.dataset.to,420,fmt);
+        const d=st.querySelector('.wsd'); if(d) winterAt(300,()=>d.classList.add('in'));
+      });
       winterAt(760,()=>r.classList.remove('aging'));
     });
   });
@@ -13845,7 +13916,7 @@ function runHighlights(){
   if(bestId&&ten[bestId]>1){
     const man=(run.roster||[]).find(p=>p.player_id===bestId);
     const name=man?man.name:null;
-    if(name) out.push({k:'Longest serving',v:name+' \u00b7 '+ten[bestId]+' seasons'});
+    if(name) out.push({k:'Longest tenured',v:name+' \u00b7 '+ten[bestId]+' seasons'});
   }
   return out;
 }

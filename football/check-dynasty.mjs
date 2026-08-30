@@ -48,6 +48,38 @@ const ok = (label, cond, extra) => {
   }
 };
 
+/*
+ * THE POOL CARRIES WHAT THE WINTER READS OFF IT.
+ *
+ * The offseason shows four numbers per man: yards, catches or touchdowns per game, and the
+ * games themselves. They come off `stats`, joined on by build/backfill-stats.mjs, and the
+ * page reads them behind a `||{}` so a row without them renders four zeros rather than
+ * throwing. That is the right thing at runtime and the wrong thing to find out about in
+ * production, because a rebuild that forgets the join breaks nothing, fails nothing, and
+ * quietly tells every visitor that Marshall Faulk gained no yards. So it is asserted here,
+ * where a rebuild is what runs the check.
+ */
+{
+  const missing = players.filter((p) => !p.stats);
+  ok('every player-season carries its counting stats',
+    missing.length === 0, `${missing.length} without`);
+  ok('and every one of them played games to divide by',
+    players.every((p) => p.games_played > 0));
+  /* A MAN WITH NO NUMBERS IS ALLOWED, and 153 of them are: Devin Hester's 2006, Desmond
+     Howard, Tamarick Vanover. Return men, who scored fantasy points from kicks and gained
+     nothing from scrimmage. The pool has always shown them an empty stat line and the strip
+     will show them four zeros, which is what happened.
+     The invariant is not a count, it is agreement. The sentence and the numbers behind it
+     come from the same totals, so a man blank in one must be blank in the other. A join
+     that landed on the wrong key breaks that on the first row it touches. */
+  const blank = players.filter((p) => p.stats && Object.keys(p.stats).length === 0);
+  ok('and a man with no numbers has no stat line either',
+    blank.every((p) => !p.stat_line),
+    `${blank.length} blank, ${blank.filter((p) => p.stat_line).length} of them contradicted`);
+  ok('and every man with a stat line has the numbers under it',
+    players.every((p) => !p.stat_line || (p.stats && Object.keys(p.stats).length > 0)));
+}
+
 /* Fill every open slot off the wheel, the way a player does: spin, take a legal man, repeat.
    Takes the cheapest legal option so the roster is deliberately mediocre and the owner has
    something to be unhappy about. */
