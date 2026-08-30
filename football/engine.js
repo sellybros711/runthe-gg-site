@@ -3942,31 +3942,99 @@ const FULL_CAP_MUSD = 280;
 const DYNASTY_MAX_SEASONS = 25;
 
 /*
+ * ─── THE SCORE ─────────────────────────────────────────────────────────────────────
+ *
+ * Every other mode on this site is ranked on a rating, a number between 0 and 100 that says
+ * how good the roster was. The Gauntlet is not that shape. It is a run, it ends when you are
+ * fired, and the thing worth bragging about is how far you got and what you did on the way,
+ * so it is scored the way an arcade cabinet scores: points, named bonuses, and a multiplier
+ * that grows the longer you stay alive.
+ *
+ * SEASON N PAYS N TIMES. That is the whole multiplier and it is deliberately blunt: your
+ * fourth season is worth four times your first, so a run's total is roughly quadratic in
+ * seasons survived. The effect is that surviving dominates the score, which is correct,
+ * because surviving is the mode. Wins inside a season then break the tie between two people
+ * who lasted the same number of years.
+ *
+ * The parts are named rather than folded into one number, because an arcade score that
+ * cannot be read as a list of things you did is just a rating with more digits.
+ *
+ * REGULAR-SEASON WINS ONLY in the wins line. run.outcome.wins counts playoff games too, and
+ * paying 1,000 for a divisional round win and then 2,500 again for the same game is the kind
+ * of double count nobody notices until the leaderboard looks wrong.
+ */
+const GAUNTLET_POINTS = {
+  WIN: 1000,          // per regular-season win
+  OVER_BAR: 500,      // per win clear of what the owner asked for
+  PLAYOFF_WIN: 2500,  // per playoff game won
+  TITLE: 10000,
+  UNDEFEATED: 10000,  // 17-0 in the regular season, title or not
+  PERFECT: 25000,     // undefeated AND the title, on top of both
+};
+
+/**
+ * Score one season. Takes the plain facts rather than a run, so the page, the checker and
+ * the leaderboard all read the same function and nothing has to build a run to ask.
+ *
+ * `seasonNo` counts from 1 and is the multiplier.
+ */
+function gauntletSeasonScore(s) {
+  const P = GAUNTLET_POINTS;
+  const wins = Math.max(0, s.wins || 0);
+  const parts = [];
+  if (wins) parts.push({ key: 'wins', label: `${wins} win${wins === 1 ? '' : 's'}`, points: wins * P.WIN });
+  const over = Math.max(0, wins - (s.bar || 0));
+  if (over) {
+    parts.push({ key: 'over', label: `${over} clear of the owner`, points: over * P.OVER_BAR });
+  }
+  const po = Math.max(0, s.playoffWins || 0);
+  if (po) {
+    parts.push({ key: 'playoffs', label: `${po} playoff win${po === 1 ? '' : 's'}`, points: po * P.PLAYOFF_WIN });
+  }
+  if (s.titleWon) parts.push({ key: 'title', label: 'Champions', points: P.TITLE });
+  if (s.undefeatedRegular) parts.push({ key: 'undefeated', label: 'Undefeated', points: P.UNDEFEATED });
+  if (s.perfect) parts.push({ key: 'perfect', label: 'Perfect season', points: P.PERFECT });
+  const base = parts.reduce((t, p) => t + p.points, 0);
+  const mult = Math.max(1, s.seasonNo || 1);
+  return { parts, base, mult, total: base * mult };
+}
+
+/** Every season added up, which is what the run is ranked on. */
+function gauntletRunScore(history) {
+  return (history || []).reduce((t, h) => t + (h.score || 0), 0);
+}
+
+/*
  * Wins needed in a given season, counting from 1.
  *
- * MOVED DOWN A WIN WHEN THE COACH CAME OUT, and that is a compensation rather than a
- * loosening. The hire was worth 1.30 wins a season (11.09 against 9.79 over 400 drafts,
- * reserving his fee and hiring the best man the cap could reach, against spending the same
- * money on players), so cutting the screen and leaving the bar where it was would have made
- * the mode a win and a third harder without a word being said about it.
+ * THIS NUMBER HAS MOVED TWICE AND LANDED BACK WHERE IT STARTED, which is worth writing down
+ * so nobody reads the git log as indecision. It came down a win when the coach step was cut,
+ * because the hire was worth 1.30 wins a season and removing it silently would have made the
+ * mode harder. Then the mode became a six man offense instead of a twelve man full team, and
+ * a six man offense is a stronger team against this bar than a twelve man one was: 11.06
+ * wins in season one against 9.79. So the compensation is no longer needed and the original
+ * number is right again, for a reason that has nothing to do with the first one.
  *
- * The number was picked against whole runs rather than single seasons, because seasons
- * survived is what this mode is scored on. 260 dynasties a side, played to fourteen seasons
- * with nobody fired, then each rule applied to the win sequences afterwards:
+ * Picked against whole runs rather than single seasons, because seasons survived is what
+ * this mode is scored on. 300 runs played to sixteen seasons with nobody ever fired, then
+ * each candidate applied to the win sequences afterwards:
  *
- *   bar                 coached (the mode as it was)   uncoached (as it is)
- *   7+n, capped at 12        3.97 mean, 13% reach 6      3.30 mean,  3% reach 6
- *   6+n, capped at 11        4.60 mean, 22% reach 6      3.90 mean, 13% reach 6
- *   6+n, capped at 12        4.37 mean, 22% reach 6      3.85 mean, 13% reach 6
- *   flat 9                   5.02 mean, 27% reach 6      3.75 mean, 13% reach 6
+ *   bar                  mean   median   reach 6   reach 10
+ *   4+n, capped at 9    11.13     12       83%       62%
+ *   4+n, capped at 10   10.04      9       83%       50%
+ *   5+n, capped at 10    8.86      8       66%       39%
+ *   flat 9               8.60      7       56%       43%
+ *   6+n, capped at 11    6.92      5       47%       23%
+ *   flat 10              6.14      4       34%       23%
+ *   THIS ONE             5.52      4       32%       13%
  *
- * 6+n at a ceiling of 11 puts the coachless mode back on the curve the coached one had:
- * 3.90 against 3.97, the same median of three, and the same 13% getting to a sixth season.
- * Leaving the bar alone would have cut that long tail from 13% to 3%, which is the part of
- * the distribution the leaderboard is made of.
+ * The bottom of that table is where an arcade run wants to sit: a median of four seasons is
+ * enough to watch the score compound and short enough to want another go, and a tenth
+ * season stays a genuine achievement rather than something two players in three reach. The
+ * bot above drafts best-available inside a budget, so a person should beat these.
  */
 function dynastyWinBar(season) {
-  return Math.min(11, 6 + Math.max(1, season));
+  return Math.min(12, 7 + Math.max(1, season));
 }
 
 /**
@@ -4991,6 +5059,7 @@ const publicAPI = {
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
   DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
   dynastyWinBar, dynastySurvives,
+  GAUNTLET_POINTS, gauntletSeasonScore, gauntletRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,

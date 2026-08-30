@@ -480,11 +480,21 @@ function createRun(opts) {
   const defense = !!opts.defense;
   /* FULL TEAM. Twelve spots instead of six, alternating sides, drawn from BOTH pools out of
      one shared cap. The only run whose roster decides what both teams score. */
-  const full = !!opts.full || !!opts.dynasty;
+  const full = !!opts.full;
   if (full && defense) throw new Error('a run is full team or defense, not both');
-  /* THE GAUNTLET IS A FULL TEAM THAT KEEPS GOING, so it sets `full` rather than sitting
-     beside it: twelve men, both pools, one shared cap, a coach. What it adds is a calendar,
-     a salary per man that never falls, and an owner who wants something every autumn. */
+  /*
+   * THE GAUNTLET IS THE OFFENSE DRAFT THAT KEEPS GOING. Six men, one pool, the same cap
+   * everybody starts with. What it adds is a calendar, a salary per man that never falls,
+   * an owner who wants more every autumn, and a score.
+   *
+   * IT USED TO SET `full`, and dropping that is most of what turned it into this mode. A
+   * twelve man alternating draft out of two pools carried a coach step, a shared cap, a
+   * two-sided chemistry split, a second data file to download before the first spin, and
+   * two ratings to explain, all of it in front of an idea that is one sentence long. Every
+   * one of those behaviours keys off `run.full` and nothing else, so this line is the whole
+   * conversion: with it false the mode inherits the shape of the draft everybody on this
+   * site already knows, and the calendar is the only thing new to learn.
+   */
   const dynasty = !!opts.dynasty;
   const startYear = dynasty ? (opts.startYear ?? null) : null;
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
@@ -985,7 +995,7 @@ function sign(run, player, want) {
        a mode whose idea is one sentence, for a tenth of a win, so it is gone. Full Team
        keeps him: there the hire is the last decision of the draft rather than a toll booth
        on the way to a decade. */
-    run.phase = (run.full && !run.dynasty && !run.coach) ? PHASES.COACH : PHASES.SEASON;
+    run.phase = (run.full && !run.coach) ? PHASES.COACH : PHASES.SEASON;
   }
   return run;
 }
@@ -1160,10 +1170,10 @@ function releaseMan(run, rosterIndex) {
 function takeTheField(run) {
   if (!run.dynasty) throw new Error('only a dynasty may field a short roster');
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
-  const { off, def } = E.splitSides(run.roster);
-  if (!off.length || !def.length) {
-    throw new Error('a team needs somebody on both sides of the ball');
-  }
+  /* ONE MAN IS A TEAM'S WORTH OF MINIMUM. This asked for somebody on both sides of the
+     ball, which was right while The Gauntlet drafted twelve out of two pools and is now a
+     rule about a shape the mode does not have. */
+  if (!run.roster.length) throw new Error('a team needs somebody in it');
   run.currentDraw = null;
   /* Straight to the schedule. This read `run.coach ? SEASON : COACH`, which was right while
      The Gauntlet had a coach step and would now send a short-handed team to a screen the
@@ -1205,17 +1215,37 @@ function ownerVerdict(run) {
      history with the same year twice would fire somebody for a season they played one
      time. */
   if (!run.history.length || run.history[run.history.length - 1].year !== run.leagueYear) {
+    /* PLAYOFF WINS ARE THE DIFFERENCE, not a count kept anywhere. outcome.wins runs through
+       January and regularWins is the snapshot taken at the end of week seventeen, so the gap
+       between them is exactly the games won after it. */
+    const scored = E.gauntletSeasonScore({
+      seasonNo: run.seasonNo, wins, bar,
+      playoffWins: Math.max(0, (o.wins ?? wins) - wins),
+      titleWon: !!o.titleWon,
+      undefeatedRegular: !!o.undefeatedRegular,
+      perfect: !!o.perfect,
+    });
     run.history.push({
       year: run.leagueYear, seasonNo: run.seasonNo,
       wins, losses: 17 - wins, bar, cleared: wins >= bar,
       made: !!o.madePlayoffs, title: !!o.titleWon,
       rating: o.teamRating ?? null,
+      /* The score, and the parts it was made of, banked with the season. Kept on the row
+         rather than recomputed, so a ledger drawn a decade later still adds up to the total
+         that was shown at the time even if the table above it ever moves. */
+      score: scored.total, scoreBase: scored.base, scoreMult: scored.mult,
+      scoreParts: scored.parts,
     });
   }
   run.fired = !E.dynastySurvives(run.history);
+  run.score = E.gauntletRunScore(run.history);
   return {
     bar, wins, cleared: wins >= bar, fired: run.fired,
     seasons: run.history.length,
+    /* The season just scored and the run so far, so the screen never adds anything up
+       itself. */
+    season: run.history[run.history.length - 1],
+    score: run.score,
     /* WHY he is keeping you, which is worth saying out loud on the screen: a season below
        the bar that survives only because last year cleared it is a warning, not a pass. */
     onNotice: !run.fired && wins < bar,

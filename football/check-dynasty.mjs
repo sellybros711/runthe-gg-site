@@ -26,8 +26,6 @@ const R = require(path.join(here, 'run.js'));
 
 const load = (f) => JSON.parse(fs.readFileSync(path.join(here, 'data', f), 'utf8'));
 const players = load('player_seasons.json');
-const defenders = load('defender_seasons.json');
-for (const p of defenders) { p.ppr_ppg_mean = p.idp_ppg_mean; p.ppr_ppg_sd = p.idp_ppg_sd; }
 const teamSeasons = load('team_seasons.json');
 const leagueContext = load('league_context.json').league_avg_pts_allowed_by_season;
 const ctx = {
@@ -36,11 +34,10 @@ const ctx = {
   coachColleges: (() => { try { return load('coach_colleges.json'); } catch (_) { return {}; } })(),
 };
 const DATA = R.indexData(players, teamSeasons);
-const DDATA = R.indexData(defenders, teamSeasons);
-/* Both pools in one index, which is what beginOffseason needs and what the page already
-   holds as BYKEY. */
+/* One pool now: The Gauntlet drafts an offense, so the index beginOffseason ages against is
+   the same one the wheel draws from, and the page's BYKEY is the same map. */
 const byKey = new Map();
-for (const p of players.concat(defenders)) byKey.set(`${p.player_id}|${p.season}`, p);
+for (const p of players) byKey.set(`${p.player_id}|${p.season}`, p);
 const lastSeason = Math.max(...players.map((p) => p.season));
 
 let fails = 0;
@@ -51,17 +48,13 @@ const ok = (label, cond, extra) => {
   }
 };
 
-/* Which pool a slot draws from, the same question the page's dataNow asks. */
-const sideOf = (i) => (E.FULL_SLOT_POS[i].some((x) => E.DEFENSE_POSITIONS.indexOf(x) >= 0)
-  ? DDATA : DATA);
-
 /* Fill every open slot off the wheel, the way a player does: spin, take a legal man, repeat.
    Takes the cheapest legal option so the roster is deliberately mediocre and the owner has
    something to be unhappy about. */
 function draftHoles(run, pick) {
   let guard = 0;
   while (run.roster.length < run.slots.length && guard++ < 200) {
-    const data = sideOf(run.roster.length);
+    const data = DATA;
     let draw;
     try { draw = R.spin(run, data); } catch (e) { return e.message; }
     /* THE SAME LIST THE BOARD SHOWS, through affordableFrom, which is the point. A bot
@@ -97,9 +90,12 @@ console.log('THE GAUNTLET, driven through run.js the way the screens will\n');
 /* ─── one dynasty, all the way to the firing ─────────────────────────────────────── */
 const START = 2004;
 const run = R.createRun({ dynasty: true, seed: 20260830, startYear: START });
-ok('a dynasty is a full team', run.full && run.dynasty && run.slots.length === 12);
+ok('a dynasty is a six man offense, not a full team',
+  run.dynasty && !run.full && !run.defense && run.slots.length === 6,
+  `${run.slots.length} slots, full=${run.full}`);
 ok('it opens on the draft', run.phase === R.PHASES.DRAFT);
-ok('the cap is Full Team\'s', run.capMusd === E.FULL_CAP_MUSD, `$${run.capMusd}M`);
+ok('the cap is the one everybody starts with',
+  run.capMusd === E.CONSTANTS.CAP_MUSD, `$${run.capMusd}M`);
 
 /* Best man the board will let us have INSIDE A SHARE OF WHAT IS LEFT. Everything offered is
    already affordable, so taking the best of them every time is legal and spends the whole
@@ -114,32 +110,56 @@ const budgeted = (men, r) => {
 };
 
 draftHoles(run, budgeted);
-ok('twelve men signed', run.roster.length === 12);
+ok('six men signed', run.roster.length === 6);
 ok('every man is from the league year',
   run.roster.every((p) => p.season === START),
   `seasons: ${[...new Set(run.roster.map((p) => p.season))].join(',')}`);
-ok('salaries were recorded, one per man', run.salaries.length === 12);
+ok('salaries were recorded, one per man', run.salaries.length === 6);
 ok('a salary starts at his list price',
   run.roster.every((p, i) => run.salaries[i] === p.price_musd));
 /* NO COACH STEP, WHICH IS THE POINT OF ASSERTING IT. Full Team stops at a hire between the
    last signing and the schedule; The Gauntlet does not, and the twelfth signing must land
    on the schedule itself. Measured before it was cut: the best coach the cap could reach
    was worth 0.11 wins a season, for a screen of fifty tiles. See sign() in run.js. */
-ok('the twelfth signing goes straight to the schedule', run.phase === R.PHASES.SEASON,
+ok('the sixth signing goes straight to the schedule', run.phase === R.PHASES.SEASON,
   run.phase);
 ok('and nobody is coaching', run.coach === null);
 
 const seen = [];
 let seasons = 0;
+let lastScore = 0;
 for (let s = 0; s < 30; s++) {
   const before = run.roster.map((p, i) => ({ id: p.player_id, sal: run.salaries[i] }));
   playSeason(run);
   const v = R.ownerVerdict(run);
   seasons++;
   seen.push(`${run.leagueYear}: ${v.wins}-${17 - v.wins} needed ${v.bar}`
-    + (v.cleared ? ' PASS' : (v.fired ? ' FIRED' : ' on notice')));
+    + (v.cleared ? ' PASS' : (v.fired ? ' FIRED' : ' on notice'))
+    + `   ${String(run.history[run.history.length - 1].score).padStart(7)}`
+    + `  (run ${v.score})`);
   ok(`season ${run.seasonNo} judged against its own bar`,
-    v.bar === Math.min(11, 6 + run.seasonNo), `bar ${v.bar}`);
+    v.bar === Math.min(12, 7 + run.seasonNo), `bar ${v.bar}`);
+
+  /* ---- the score ---- */
+  const h = run.history[run.history.length - 1];
+  ok('the season banked a score', typeof h.score === 'number' && h.score >= 0,
+    `${h.score} = ${h.scoreBase} x${h.scoreMult}`);
+  ok('the multiplier is the season number', h.scoreMult === run.seasonNo);
+  ok('the total is the base times the multiplier', h.score === h.scoreBase * h.scoreMult);
+  ok('the parts add up to the base',
+    h.scoreParts.reduce((t, x) => t + x.points, 0) === h.scoreBase);
+  ok('wins are paid at the stated rate',
+    (h.scoreParts.find((x) => x.key === 'wins') || { points: 0 }).points
+      === h.wins * E.GAUNTLET_POINTS.WIN);
+  /* THE WINS LINE IS REGULAR SEASON ONLY. outcome.wins runs through January, so paying the
+     wins rate on it and the playoff rate again on the same games is the double count this
+     asserts against. */
+  ok('a playoff win is not paid twice',
+    h.wins <= 17 && h.wins === (run.outcome.regularWins ?? h.wins), `${h.wins}`);
+  ok('the run total is every season added up',
+    v.score === run.history.reduce((t, x) => t + x.score, 0), `${v.score}`);
+  ok('the run total only ever grows', v.score >= lastScore, `${lastScore} -> ${v.score}`);
+  lastScore = v.score;
   if (v.fired) break;
 
   /* ---- the winter ---- */
@@ -182,13 +202,13 @@ for (let s = 0; s < 30; s++) {
     /* A DRY WHEEL IS A LEGAL OUTCOME, not a failure: over the cap you sign nobody, so the
        holes stay open and the team takes the field short-handed. */
     if (run.phase === R.PHASES.DRAFT) {
-      ok('a dry wheel really is dry', R.wheelIsDry(run, sideOf(run.roster.length)) || !!err);
+      ok('a dry wheel really is dry', R.wheelIsDry(run, DATA) || !!err);
       const short = run.roster.length;
       R.takeTheField(run);
       ok('a short roster can still take the field',
         run.phase === R.PHASES.SEASON && run.roster.length === short, `${short} men`);
     }
-    ok('the holes were filled or the wheel was dry', run.roster.length <= 12);
+    ok('the holes were filled or the wheel was dry', run.roster.length <= 6);
     ok('every new man is from the NEW league year',
       run.roster.every((p) => p.season === run.leagueYear),
       `seasons: ${[...new Set(run.roster.map((p) => p.season))].join(',')}`);
@@ -214,6 +234,28 @@ console.log('');
 ok('the run ended because the owner ended it', run.fired || seasons >= 30);
 ok('seasons survived is the length of the history',
   R.seasonsSurvived(run) === run.history.length, `${R.seasonsSurvived(run)}`);
+ok('the run carries its own score', run.score === E.gauntletRunScore(run.history),
+  `${run.score}`);
+/* A LATER SEASON IS WORTH MORE THAN AN EARLIER ONE AT THE SAME RECORD, which is the whole
+   arcade shape and the thing a leaderboard on this score depends on. */
+{
+  const a = E.gauntletSeasonScore({ seasonNo: 1, wins: 10, bar: 8 });
+  const b = E.gauntletSeasonScore({ seasonNo: 5, wins: 10, bar: 8 });
+  ok('the same season is worth five times as much in year five',
+    b.total === a.total * 5, `${a.total} -> ${b.total}`);
+  const perfect = E.gauntletSeasonScore({ seasonNo: 1, wins: 17, bar: 8, playoffWins: 3,
+    titleWon: true, undefeatedRegular: true, perfect: true });
+  ok('a perfect season is far the biggest single year',
+    perfect.total > a.total * 5, `${a.total} ordinary -> ${perfect.total} perfect`);
+  /* AND SURVIVING STILL BEATS IT, which is the point of the multiplier rather than an
+     accident of the numbers. One perfect season and then the sack scores 74,000; six
+     ordinary ones score more, so the mode is about lasting and the bonuses are texture.
+     If this ever inverts, the leaderboard stops being about the thing the mode is. */
+  const six = [1, 2, 3, 4, 5, 6]
+    .reduce((t, n) => t + E.gauntletSeasonScore({ seasonNo: n, wins: 10, bar: 8 }).total, 0);
+  ok('six ordinary seasons beat one perfect one', six > perfect.total,
+    `${six} against ${perfect.total}`);
+}
 ok('a fired run is terminal', !run.fired || run.phase === R.PHASES.OVER);
 if (run.fired) {
   const h = run.history;

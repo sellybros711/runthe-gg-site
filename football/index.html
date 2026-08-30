@@ -709,6 +709,10 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* The rules again, from the screen that enforces them. A link, not a button: it must not
      compete with the one control on this screen that moves the run forward. */
+  /* The eyebrow carries the bar and the running total, which want opposite ends of the
+     line rather than a comma between them. */
+  #w-step{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .wscore{letter-spacing:.06em}
   .wrules{display:inline-block;margin:0 0 14px;padding:0;border:0;background:none;
     cursor:pointer;font-family:var(--fn);font-size:10.5px;font-weight:700;
     letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);
@@ -750,7 +754,52 @@ window.GA_ID='G-L29P5MRWKE';
   /* The season ledger on the results screen: one row a year, the bar it needed, and what it
      got. The run's whole story in the space of a table. */
   .ledger{display:flex;flex-direction:column;gap:4px;margin-top:9px}
-  .ldg{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:9px;align-items:center;
+  /* ---- THE SCORE, AND IT IS MEANT TO LOOK LIKE A CABINET ----
+     Every other number on this site is a rating: two significant figures, quiet, sitting in
+     a panel. This one is the opposite on purpose. Tabular figures so the digits do not
+     shuffle while they count, a gold that appears nowhere else on the results screen, and
+     the parts dealt out underneath as a list of things you did rather than folded into the
+     total. */
+  .arcade{border:1.5px solid rgba(226,178,90,.42);border-radius:13px;padding:13px 14px 11px;
+    margin-bottom:11px;text-align:center;
+    background:linear-gradient(180deg,rgba(38,30,16,.92),rgba(20,18,13,.92));
+    box-shadow:0 10px 26px -18px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  .arcade[hidden]{display:none}
+  .ar-head{display:flex;align-items:baseline;justify-content:center;gap:8px;
+    font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.13em;
+    text-transform:uppercase;color:rgba(243,221,174,.6)}
+  #ar-mult{color:#e2b25a;font-size:11px;letter-spacing:.06em;opacity:0;
+    transform:scale(.7);transition:opacity .25s ease,transform .3s cubic-bezier(.2,1.6,.4,1)}
+  #ar-mult.in{opacity:1;transform:none}
+  .ar-total{font-family:var(--fd,var(--fn));font-size:42px;line-height:1.04;font-weight:800;
+    font-variant-numeric:tabular-nums;letter-spacing:.01em;color:#F3DDAE;margin-top:1px;
+    text-shadow:0 0 26px rgba(226,178,90,.3)}
+  .ar-total.pop{animation:arpop .42s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes arpop{0%{transform:scale(1)}38%{transform:scale(1.13)}100%{transform:scale(1)}}
+  .ar-parts{display:flex;flex-direction:column;gap:2px;margin-top:7px}
+  .ar-p{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    font-family:var(--fn);font-size:11.5px;color:rgba(243,221,174,.72);
+    opacity:0;transform:translateY(4px);
+    transition:opacity .26s ease,transform .26s cubic-bezier(.22,1,.36,1)}
+  .ar-p.in{opacity:1;transform:none}
+  .ar-p b{font-weight:800;font-variant-numeric:tabular-nums;color:#F3DDAE}
+  /* The headline bonuses read louder than the wins line, because they are the ones worth
+     chasing and the ones somebody will screenshot. */
+  .ar-p.big{color:#e2b25a}
+  .ar-p.big b{color:#ffd98a}
+  .ar-run{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin-top:10px;padding-top:9px;border-top:1px solid rgba(226,178,90,.22);
+    font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;color:rgba(243,221,174,.6)}
+  .ar-run b{font-family:var(--fd,var(--fn));font-size:19px;letter-spacing:0;
+    font-variant-numeric:tabular-nums;color:#F3DDAE}
+  /* The same figure, small, wherever the run is not being scored: the winter header and the
+     ledger rows. */
+  .scorechip{font-family:var(--fn);font-variant-numeric:tabular-nums;font-weight:800;
+    color:#e2b25a}
+  .ldg .lsc{font-weight:800;font-variant-numeric:tabular-nums;color:#e2b25a}
+
+  .ldg{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;gap:9px;align-items:center;
     font-family:var(--fn);font-size:11.5px;padding:7px 10px;border-radius:9px;
     background:rgba(0,0,0,.24);opacity:0;transform:translateY(5px);
     transition:opacity .3s ease,transform .3s cubic-bezier(.22,1,.36,1)}
@@ -5790,6 +5839,16 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="sf-txt"><b>This run was not saved.</b><span id="o-savefail-why">The leaderboard could not be reached, so it has not been counted.</span></div>
       <button class="btn sm" id="b-save-retry">Try again</button>
     </div>
+    <!-- THE GAUNTLET'S SCORE, and it is the first thing on the screen because it is the
+         thing the mode is played for. The season's points are dealt out a line at a time,
+         the multiplier lands on them, and the run total counts up underneath. See
+         paintScore(). -->
+    <div class="arcade" id="o-score" hidden>
+      <div class="ar-head"><span id="ar-lab">Season score</span><span id="ar-mult"></span></div>
+      <div class="ar-total" id="ar-season">0</div>
+      <div class="ar-parts" id="ar-parts"></div>
+      <div class="ar-run"><span>Run total</span><b id="ar-run">0</b></div>
+    </div>
     <!-- THE GAUNTLET ONLY: whether there is another season, and the run so far. Above the
          record because it is the thing a dynasty player came to this screen for. -->
     <div class="ownerbar" id="o-owner" hidden></div>
@@ -6075,8 +6134,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=73"></script>
-<script src="run.js?v=81"></script>
+<script src="engine.js?v=74"></script>
+<script src="run.js?v=82"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7672,13 +7731,17 @@ function ensureDynastyButton(){
     const r=save.run;
     el.innerHTML='<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
       '<span class="hp-full-name">Continue The Gauntlet</span>'+
-      '<span class="hp-full-sub">'+r.leagueYear+' &middot; '+r.roster.length+
-        ' under contract &middot; '+dynWhere(r)+'</span>';
+      /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
+         the card offering it back reads like a run that went badly rather than one that has
+         not started: before the first season it says what is signed instead. */
+      '<span class="hp-full-sub">'+r.leagueYear+' &middot; '+
+        (r.score>0?SCORE(r.score)+' points':r.roster.length+' signed')+
+        ' &middot; '+dynWhere(r)+'</span>';
     el.onclick=()=>{ dynResume(); };
   }else{
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">The Gauntlet</span>'+
-      '<span class="hp-full-sub">Twelve men &middot; every winter they age &middot; last as long as you can</span>';
+      '<span class="hp-full-sub">Six players &middot; every winter they age &middot; last as long as you can</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
   }
   el.hidden=false;
@@ -7727,19 +7790,14 @@ function beginDynastyDraft(){
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
   }
-  const b=$('b-start-dyn');
-  if(b){ b.disabled=true; b.classList.add('hp-loading'); }
   /* Whatever was saved is gone the moment a new one is drafted. The sheet in front of this
      is where somebody agrees to that; by here it has been agreed. */
   dynClear();
-  /* Two arguments rather than a chained catch, for the reason beginFullDraft writes out. */
-  loadDefensePool().then(()=>{
-    closeSheet();
-    dynastyIntro(()=>beginDraft({dynasty:true,startYear:dynastyStartYear()}));
-  },()=>{
-    if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
-    toast('Could not load the defensive players. Check your connection and try again.');
-  });
+  /* NO DOWNLOAD IN FRONT OF THIS ANY MORE. It used to fetch the defensive pool and spin the
+     button for a second first, because the mode drafted six defenders. It drafts an offense
+     now, and an offense is in the boot bundle, so the wheel opens on the tap. */
+  closeSheet();
+  dynastyIntro(()=>beginDraft({dynasty:true,startYear:dynastyStartYear()}));
 }
 
 /*
@@ -7759,8 +7817,8 @@ function dynastyRulesHTML(go){
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">One team, for as long as '+
       'you can hold the job</h2>'+
     '<ul class="modenotes">'+
-      '<li><b>Draft twelve men out of one season</b>, six on offense and six on defense, '+
-        'under one cap. You keep that team: it is never redrafted.</li>'+
+      '<li><b>Draft six players out of one season</b> and keep them. Same six spots and the '+
+        'same cap as a normal run: QB, RB, two WR, TE and a flex.</li>'+
       '<li><b>Every winter they age.</b> Each man becomes the year he really had next. Some '+
         'get better, most get worse, and a few are out of the league. You fill the holes '+
         'they leave from that year\'s wheel.</li>'+
@@ -7768,9 +7826,12 @@ function dynastyRulesHTML(go){
         'cannot sign anybody until you release somebody.</li>'+
     '</ul>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:12px 0 0">'+
-      'The owner wants <b>7 wins</b> the first season, 8 the next, then 9, up to 11. '+
-      '<b>Miss two seasons running and you are fired.</b> Your score is how many seasons '+
-      'you lasted.</p>'+
+      'The owner wants <b>8 wins</b> the first season, 9 the next, then 10, up to 12. '+
+      '<b>Miss two seasons running and you are fired.</b></p>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:8px 0 0">'+
+      'Every season scores: <b>1,000 a win</b>, more for the playoffs and a title. '+
+      '<b>Season 4 pays quadruple, season 9 pays nine times.</b> Lasting is the whole '+
+      'game.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
 }
 function dynastyIntro(go){
@@ -7832,7 +7893,10 @@ function reviewDynastyRules(){
  * the front page with a sentence rather than on a half-built screen.
  */
 const DYN_SAVE_KEY='ps_dynasty_save';
-const DYN_SAVE_VERSION=1;
+/* 2: the mode became a six man offense and the run gained a score, so a saved twelve man
+   roster is not a run this build can open. Bumped rather than migrated: it is a preview,
+   and a wrong resume is worse than a fresh start. */
+const DYN_SAVE_VERSION=2;
 const dynKey=(p)=>(p?p.player_id+'|'+p.season:null);
 
 /* The phases a run can be put back at, which is the whole of the rule above in one
@@ -7957,23 +8021,16 @@ function dynRestore(s){
 function dynResume(){
   const s=dynRead();
   if(!s) return ensureDynastyButton();
-  const b=$('b-start-dyn');
-  if(b){ b.disabled=true; b.classList.add('hp-loading'); }
-  loadDefensePool().then(()=>{
-    let ok=false;
-    try{ ok=dynRestore(s); }catch(err){ console.error(err); ok=false; }
-    if(ok) return;
-    /* The save is unopenable, so it goes, and it is said out loud. A silent clear looks
-       exactly like the bug this whole block exists to fix. */
-    dynClear();
-    endRun();
-    show('s-intro');
-    ensureDynastyButton();
-    toast('That saved dynasty could not be opened, so it has been cleared.');
-  },()=>{
-    if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
-    toast('Could not load the defensive players. Check your connection and try again.');
-  });
+  let ok=false;
+  try{ ok=dynRestore(s); }catch(err){ console.error(err); ok=false; }
+  if(ok) return;
+  /* The save is unopenable, so it goes, and it is said out loud. A silent clear looks
+     exactly like the bug this whole block exists to fix. */
+  dynClear();
+  endRun();
+  show('s-intro');
+  ensureDynastyButton();
+  toast('That saved dynasty could not be opened, so it has been cleared.');
 }
 
 /* Throwing one away is a decision, so it is asked rather than assumed. */
@@ -8150,7 +8207,7 @@ const WALL={
      defense draft hit this first, Full Team hit it second, and it was live on this mode
      until somebody went looking. */
   dynasty:{name:'The Gauntlet',
-    what:'Draft a whole team out of one league year and keep it. Every winter your men age '+
+    what:'Draft six players out of one league year and keep them. Every winter your men age '+
       'into the season they really had next, their salaries rise and never fall, and the '+
       'owner wants more wins than he wanted last year.',
     note:'<b>The Gauntlet is scored on how long you last.</b> Miss the bar twice and you '+
@@ -10072,14 +10129,16 @@ function paintOwnerLine(el){
 
 function paintCoachLine(id){
   const el=$(id); if(!el) return;
-  if(!run||!run.full){ el.innerHTML=''; el.hidden=true; return; }
-  /* The squad screen only. On the results screen the owner has his own bar at the top and
-     the ledger under it, both of which say more than this would, and a third statement of
-     the same fact in the middle of the page is noise rather than clarity. */
+  if(!run){ el.innerHTML=''; el.hidden=true; return; }
+  /* BEFORE THE `full` TEST, because The Gauntlet is not a full team any more and would
+     otherwise fall out at the line below with the coach panel it has no coach for. The
+     squad screen only: on the results screen the owner has his own bar at the top and the
+     ledger under it, both of which say more than this would. */
   if(run.dynasty){
     if(id==='q-coach') return paintOwnerLine(el);
     el.innerHTML=''; el.hidden=true; return;
   }
+  if(!run.full){ el.innerHTML=''; el.hidden=true; return; }
   el.hidden=false;
   const c=run.coach;
   /* OFF E.coachEffect, NOT OFF A COPY OF ITS ARITHMETIC. This line multiplied the tilt by
@@ -10263,7 +10322,8 @@ function paintWinter(){
      stated only after the season, on the results screen, which is the wrong end: a target
      you are told you missed is a scoreboard, and a target you are told before you play is
      a game. */
-  $('w-step').textContent='Season '+run.seasonNo+' needs '+E.dynastyWinBar(run.seasonNo)+' wins';
+  $('w-step').innerHTML='Season '+run.seasonNo+' needs '+E.dynastyWinBar(run.seasonNo)+' wins'+
+    '<span class="wscore"><span class="scorechip">'+SCORE(run.score||0)+'</span> so far</span>';
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
      silently behind a bar whose ceiling quietly changed between two paints. */
@@ -13377,11 +13437,85 @@ const champBadge=(b)=>b?'<span class="champbadge" title="'+(b==='crown'?'Perfect
  * guards its own history push on the league year, so a repaint is safe, and this is written
  * on the assumption that it will be repainted.
  */
+/* A whole number with thousands separators, which is the only formatting an arcade score
+   needs and the one thing a bare toFixed will not do. */
+const SCORE=(n)=>Math.round(n||0).toLocaleString('en-US');
+
+/* Counting, in its own little loop, like countMoney but on integers and over a longer ramp
+   because the numbers are bigger and the climb is the point. */
+function countScore(el,from,to,ms){
+  if(!el) return;
+  if(HERO_REDUCE||ms<=0){ el.textContent=SCORE(to); return; }
+  const t0=performance.now();
+  const tick=(now)=>{
+    const k=Math.min(1,(now-t0)/ms), e=1-Math.pow(1-k,3);
+    el.textContent=SCORE(from+(to-from)*e);
+    if(k<1) requestAnimationFrame(tick); else el.textContent=SCORE(to);
+  };
+  requestAnimationFrame(tick);
+}
+/*
+ * THE SCORE, DEALT OUT.
+ *
+ * Five beats, and every one of them is something that happened rather than a step in an
+ * animation: the season's points land, the reasons for them arrive one at a time, the
+ * multiplier drops on top, the headline number jumps to what the season was really worth,
+ * and the run total climbs to include it.
+ *
+ * Off the banked row rather than recomputed, so a repaint and a reload show the same score
+ * the season was scored with.
+ */
+let scoreTimers=[];
+function paintScore(v){
+  const box=$('o-score'); if(!box) return;
+  scoreTimers.forEach(clearTimeout); scoreTimers=[];
+  const h=v&&v.season;
+  if(!run||!run.dynasty||!h){ box.hidden=true; return; }
+  const at=(ms,fn)=>scoreTimers.push(setTimeout(fn,ms));
+  box.hidden=false;
+  $('ar-lab').textContent='Season '+h.seasonNo+' score';
+  const mult=$('ar-mult');
+  mult.textContent='\u00d7'+h.scoreMult;
+  mult.classList.remove('in');
+  /* The multiplier is worth showing even at one, because the reason it is there is that it
+     will not stay at one, and a label that appears in season two reads as a new rule. */
+  const parts=h.scoreParts||[];
+  const BIG={title:1,undefeated:1,perfect:1};
+  $('ar-parts').innerHTML=parts.map((p)=>
+    '<span class="ar-p'+(BIG[p.key]?' big':'')+'"><span>'+esc(p.label)+'</span>'+
+    '<b>+'+SCORE(p.points)+'</b></span>').join('');
+  const rows=[...document.querySelectorAll('#ar-parts .ar-p')];
+  const seasonEl=$('ar-season'), runEl=$('ar-run');
+  seasonEl.textContent='0';
+  runEl.textContent=SCORE(Math.max(0,(v.score||0)-h.score));
+
+  /* 1. the base lands */
+  at(120,()=>countScore(seasonEl,0,h.scoreBase,520));
+  /* 2. the reasons for it, one at a time */
+  rows.forEach((r,i)=>at(360+i*130,()=>r.classList.add('in')));
+  const t1=420+rows.length*130;
+  /* 3. the multiplier drops on, and 4. the number jumps to what it is really worth */
+  at(t1,()=>{
+    mult.classList.add('in');
+    if(h.scoreMult>1){
+      countScore(seasonEl,h.scoreBase,h.score,560);
+      seasonEl.classList.remove('pop');
+      void seasonEl.offsetWidth;
+      seasonEl.classList.add('pop');
+    }
+  });
+  /* 5. and the run total takes it in */
+  at(t1+(h.scoreMult>1?640:180),()=>
+    countScore(runEl,Math.max(0,(v.score||0)-h.score),v.score||0,620));
+}
+
 function paintOwner(){
   const bar=$('o-owner'), led=$('o-ledger'), wrap=$('o-ledwrap');
   if(!bar) return;
-  if(!run||!run.dynasty){ bar.hidden=true; if(wrap) wrap.hidden=true; return; }
+  if(!run||!run.dynasty){ bar.hidden=true; if(wrap) wrap.hidden=true;
+    const sc=$('o-score'); if(sc) sc.hidden=true; return; }
   let v; try{ v=R.ownerVerdict(run); }catch(_){ bar.hidden=true; return; }
+  paintScore(v);
   bar.hidden=false;
   bar.className='ownerbar'+(v.fired?' fired':(v.onNotice?' notice':''));
   const seasons=R.seasonsSurvived(run);
@@ -13400,13 +13534,16 @@ function paintOwner(){
 
   if(wrap&&led){
     wrap.hidden=false;
+    const n=$('o-ledn');
+    if(n) n.innerHTML='<span class="scorechip">'+SCORE(v.score||0)+'</span> total';
     led.innerHTML=run.history.map((h,i)=>{
       const cls=h.cleared?'pass':((i===run.history.length-1&&v.fired)?'fired':'miss');
       return '<div class="ldg '+cls+'"><span class="ly">'+h.year+'</span>'+
         '<span class="lr">'+h.wins+'-'+h.losses+'</span>'+
         '<span class="lb">needed '+h.bar+'</span>'+
         '<span class="lv">'+(h.title?'TITLE':(h.cleared?(h.made?'PLAYOFFS':'KEPT'):
-          (i===run.history.length-1&&v.fired?'FIRED':'MISSED')))+'</span></div>';
+          (i===run.history.length-1&&v.fired?'FIRED':'MISSED')))+'</span>'+
+        '<span class="lsc">'+SCORE(h.score||0)+'</span></div>';
     }).join('');
     /* Dealt out rather than dropped in, oldest first, so the run reads as a sequence of
        years and the last row lands last. */
@@ -18867,6 +19004,9 @@ $('b-lb-dir').onclick=()=>{ lbDir=lbDir==='asc'?'desc':'asc'; ga('board_sort',{s
    too, but this also covers Start over, which ends with no run at all. */
 function endRun(){
   clearTimeout(simTimer); clearTimeout(poTimer); cancelAnimationFrame(poRaf); poSkip=null;
+  /* The score deals itself out over about two seconds, so it is the fifth thing that can
+     still be firing into a screen the player has left. */
+  scoreTimers.forEach(clearTimeout); scoreTimers=[];
   /* The draft wheels are the fourth thing that outlives a run, and they were the one that
      was missed. See stopSpin(): a spin ends by calling back into the run it was spinning
      for, which is exactly the "keeps firing into a screen that has moved on" this comment
