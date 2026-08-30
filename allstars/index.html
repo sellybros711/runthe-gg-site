@@ -4071,7 +4071,7 @@ function ballTrajectory(kind) {
     case 'triple':     return { dx: rand(0.75, 1.2)*sign(),  dy: -1.4, arcH: 150, duration: 1250 };
     case 'double':     return { dx: rand(0.5, 1.0)*sign(),   dy: -1.1, arcH: 110, duration: 1050 };
     case 'single':     return { dx: rand(0.3, 0.7)*sign(),   dy: -0.7, arcH: 60,  duration: 850 };
-    case 'fly out':    return { dx: rand(0.15,0.5)*sign(),   dy: -1.3, arcH: 170, duration: 1200, caught: true };
+    case 'fly out':    return { dx: rand(0.10,0.90)*sign(),  dy: rand(-1.4,-1.05), arcH: 170, duration: 1200, caught: true };
     case 'ground out': return { dx: rand(0.35,0.8)*sign(),   dy: -0.15,arcH: 18,  duration: 700,  caught: true };
     case 'bunt single':
     case 'bunt out':   return { dx: rand(0.06,0.28)*sign(),  dy: -0.22,arcH: 10,  duration: 650,  caught: kind === 'bunt out' };
@@ -5141,6 +5141,62 @@ function camApply(ctx, cam, w, h) {
 /* The camera should not drift in from wherever the last game left it. */
 function resetCamera() { Cam = null; }
 
+
+/* Where the seven non battery fielders stand. It is a table rather than
+   seven literals in the draw call because the SAME positions now have to
+   drive both the static draw and the chase: computed in two places they
+   drift, and a fielder converges on the ball from a spot he was never
+   standing on. */
+function fielderPosts(G, w) {
+  const { cx, rx, ry, midY, topY } = G;
+  return [
+    { i: 2, x: cx - rx * 0.42, y: midY - ry * 0.52, sc: 2.45 },
+    { i: 3, x: cx + rx * 0.42, y: midY - ry * 0.52, sc: 2.45 },
+    { i: 4, x: cx + rx * 0.90, y: midY + 24,        sc: 2.6  },
+    { i: 5, x: cx - rx * 0.90, y: midY + 24,        sc: 2.6  },
+    { i: 6, x: cx - w * 0.33,  y: topY - 48,        sc: 2.15 },
+    { i: 7, x: cx,             y: topY - 74,        sc: 2.05 },
+    { i: 1, x: cx + w * 0.33,  y: topY - 48,        sc: 2.15 },
+  ];
+}
+
+/* WHO IS ON THIS BALL, AND DOES HE GET THERE.
+   The outcome is already decided when the play is built; this only has to
+   SHOW it. So the nearest fielder always runs at the landing spot and the
+   single thing that differs is when he arrives: exactly as the ball does
+   on an out, and late on a hit, which is the whole tell. You watch him
+   converge and either get there or not, instead of watching a ball land
+   in an empty field and reading the caption afterwards.
+
+   Decided once and cached on the play. Recomputed per frame the nearest
+   man changes as the ball travels and the fielder teleports between two
+   of them. */
+function chaseFor(p, G, w, r) {
+  if (p.chase) return p.chase;
+  const endX = G.cx - 14 + p.ball.dx * r;
+  const endY = G.cy + p.ball.dy * r;
+  /* Nearest in REAL distance, not in pixels. The camera foreshortens
+     depth hard: a screen pixel up the field is worth roughly two and a
+     half across it, so an unweighted metric handed a ball dropping in
+     the deep outfield to the shortstop, who was closer on screen and a
+     hundred feet away in the game. Weighting y is the whole fix. */
+  const DEPTH = 2.5;
+  let best = null, bestD = Infinity;
+  for (const q of fielderPosts(G, w)) {
+    const d = (q.x - endX) ** 2 + ((q.y - endY) * DEPTH) ** 2;
+    if (d < bestD) { bestD = d; best = q; }
+  }
+  const hr = p.kind === 'home run';
+  p.chase = {
+    i: best.i, sc: best.sc, x0: best.x, y0: best.y, x1: endX, y1: endY,
+    caught: !!p.ball.caught,
+    /* How long he takes relative to the ball's flight. On a home run he
+       is running at a ball leaving the park, so he never closes it. */
+    arrive: p.ball.caught ? 1 : (hr ? 3.2 : 1.9),
+  };
+  return p.chase;
+}
+
 function drawField(ctx, w, h, t, pitch, inWindup) {
   /* Night sky, crowd, light towers, outfield wall, grass, diamond.
      Everything sized to the field's own w and h so the canvas can be
@@ -5597,13 +5653,13 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
        outfielders are FARTHER away, so they draw smaller than the
        infield corners, which is what sells the camera angle. */
     const fs = currentFieldingTeam().batters;
-    if (fs[2]) drawRunner(ctx, cx - rx*0.42, midY - ry*0.52, fs[2], 2.45);
-    if (fs[3]) drawRunner(ctx, cx + rx*0.42, midY - ry*0.52, fs[3], 2.45);
-    if (fs[4]) drawRunner(ctx, cx + rx*0.90, midY + 24, fs[4], 2.6);
-    if (fs[5]) drawRunner(ctx, cx - rx*0.90, midY + 24, fs[5], 2.6);
-    if (fs[6]) drawRunner(ctx, cx - w*0.33, topY - 48, fs[6], 2.15);
-    if (fs[7]) drawRunner(ctx, cx,           topY - 74, fs[7], 2.05);
-    if (fs[1]) drawRunner(ctx, cx + w*0.33, topY - 48, fs[1], 2.15);
+    /* The man chasing the ball is drawn on his path below, not here, or
+       he appears twice: once sprinting and once still at his post. */
+    const chasing = (g.play && g.play.ball) ? chaseFor(g.play, G, w, r).i : -1;
+    for (const q of fielderPosts(G, w)) {
+      if (q.i === chasing) continue;
+      if (fs[q.i]) drawRunner(ctx, q.x, q.y, fs[q.i], q.sc);
+    }
 
     if (g.play) {
       /* A contact play is animating. Draw the pre-play runners along
@@ -5647,6 +5703,27 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         const f = FG.at(1 - bt);
         drawBatSwing(ctx, cx - 28 + f.dx, plateY + 4 + f.dy, st, f.sc / 3.2);
       }
+      /* THE CHASE. He leaves as the ball does and closes on where it is
+         going to land; whether he is there when it arrives is the entire
+         readout. On a catch the glove flashes at the moment of arrival. */
+      const ch = chaseFor(p, G, w, r);
+      const fielder = fs[ch.i];
+      if (fielder) {
+        const ct = clamp((now - p.startedAt) / (p.ball.duration * ch.arrive), 0, 1);
+        const fx = ch.x0 + (ch.x1 - ch.x0) * ct;
+        const fy = ch.y0 + (ch.y1 - ch.y0) * ct;
+        const away = ch.y1 < ch.y0 - 2;      /* running up screen: show his back */
+        const moving = ct > 0.02 && ct < 0.995;
+        const frame = !moving ? null
+          : away ? (beatAB ? 'back-run-a' : 'back-run-b')
+                 : (beatAB ? 'run-a' : 'run-b');
+        drawRunner(ctx, fx, fy, fielder, ch.sc, frame);
+        /* No glove flash fired from here. The play already spawns one at
+           ball arrival, on a timer set when the play was built; a second
+           one from the draw loop is the same catch celebrated twice. All
+           this has to do is put the man there when it happens. */
+      }
+
       /* Ball trajectory: plate to landing spot, with a ground shadow so
          the arc height reads. */
       if (now < p.ballUntil) {
