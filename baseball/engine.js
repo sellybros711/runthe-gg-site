@@ -754,7 +754,7 @@ function buildOpponentPool(teamSeasons) {
   for (const t of teamSeasons) {
     if (typeof t.rating !== 'number') continue;
     const o = {
-      name: t.display, rating: t.rating,
+      name: t.display, team: t.team, rating: t.rating,
       off: t.offMean * SCHEDULE.OPP_OFF_SCALE,
       def: t.defMean * SCHEDULE.OPP_DEF_SCALE,
     };
@@ -899,13 +899,12 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
   // team from the elite pool, hardest saved for the World Series.
   const eliteSorted = (pool && pool.marquee && pool.marquee.length)
     ? pool.marquee.slice().sort((a, b) => a.rating - b.rating) : null;
-  const oppNameFor = (roundIdx) => {
+  const oppFor = (roundIdx) => {
     if (!eliteSorted) return null;
     const frac = rounds.length > 1 ? roundIdx / (rounds.length - 1) : 1;
     const lo = Math.floor(frac * (eliteSorted.length - 1) * 0.7);
     const hi = eliteSorted.length - 1;
-    const pick = eliteSorted[lo + Math.floor(rng() * Math.max(1, hi - lo + 1))];
-    return pick ? pick.name : null;
+    return eliteSorted[lo + Math.floor(rng() * Math.max(1, hi - lo + 1))] || null;
   };
 
   // Home-field advantage scales with regular-season wins
@@ -937,9 +936,12 @@ function generatePlayoffs(seed, runsFor, runsAgainst, savePct, rng, regularWins,
     const adv = seed.bye ? baseAdv : Math.max(1, baseAdv * 0.85);
 
     const series = playoffSeries(offAdj, oppRA, savePct, rng, bestOf, adv);
+    const opp = oppFor(i);
     results.push({
       round: roundName,
-      oppName: oppNameFor(i),
+      oppName: opp ? opp.name : null,
+      oppTeam: opp ? opp.team : null,   // club code, so the bracket can wear its colors
+      oppRating: opp ? opp.rating : null,
       ...series,
     });
 

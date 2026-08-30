@@ -337,9 +337,14 @@ h1,h2,h3{margin:0}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
 
 /* ─── playoffs ─── */
-.po-round{margin:12px 0;padding:14px 16px;border-radius:14px;background:var(--panel);
+.po-round{position:relative;margin:12px 0;padding:14px 16px 14px 21px;border-radius:14px;
+  background:var(--panel);overflow:hidden;
   border:1px solid rgba(0,0,0,.10);box-shadow:0 2px 8px -3px rgba(0,0,0,.12);
   animation:optin .3s ease both}
+/* the club you are actually playing, in its own colors */
+.po-round::before{content:'';position:absolute;left:0;top:0;bottom:0;width:7px;
+  background:linear-gradient(160deg,var(--c1,#8a7e6e) 0%,var(--c1,#8a7e6e) 52%,
+    var(--c2,#6b6252) 52%,var(--c2,#6b6252) 100%)}
 .po-round.won{border-color:rgba(46,125,50,.4)}
 .po-round.lost{border-color:rgba(192,57,43,.4)}
 .po-round.champ{border-color:rgba(184,134,11,.55);background:linear-gradient(180deg,#f7efd8,#efe3c6)}
@@ -347,6 +352,9 @@ h1,h2,h3{margin:0}
   letter-spacing:.1em;color:var(--gold);margin-bottom:3px}
 .po-round .po-opp{font-family:var(--fp);font-size:13px;font-weight:700;color:var(--dim);margin-bottom:8px}
 .po-round .po-opp b{color:var(--ink)}
+.po-round .po-rate{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;
+  background:rgba(0,0,0,.07);font-family:var(--fn);font-size:10px;font-weight:800;
+  color:var(--dim-2);vertical-align:1px}
 .po-series{font-family:'Righteous',var(--fd);font-size:20px;text-transform:uppercase;letter-spacing:.02em;margin:2px 0 10px}
 .po-series.won{color:var(--green)} .po-series.lost{color:var(--red)} .po-series.champ{color:var(--gold)}
 .po-games{display:flex;gap:6px;flex-wrap:wrap}
@@ -805,7 +813,7 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
-<script src="engine.js?v=10"></script>
+<script src="engine.js?v=11"></script>
 <script src="run.js?v=9"></script>
 <script src="achievements.js?v=2"></script>
 <script>
@@ -1752,8 +1760,15 @@ function startPlayoffs(){
       const champ=round.won&&round.round==='World Series';
       const div=document.createElement('div');
       div.className='po-round '+(champ?'champ':round.won?'won':'lost');
+      if(round.oppTeam){
+        const tc=E.teamColors(round.oppTeam);
+        div.style.setProperty('--c1',tc[0]);
+        div.style.setProperty('--c2',tc[1]||tc[0]);
+      }
       div.innerHTML='<div class="round-name">'+esc(round.round)+'</div>'+
-        (round.oppName?'<div class="po-opp">vs <b>'+esc(round.oppName)+'</b></div>':'')+
+        (round.oppName?'<div class="po-opp">vs <b>'+esc(round.oppName)+'</b>'+
+          (round.oppRating!=null?'<span class="po-rate" title="Their team rating">'+
+            Math.round(round.oppRating)+'</span>':'')+'</div>':'')+
         '<div class="po-series '+(champ?'champ':round.won?'won':'lost')+'">'+
         (champ?'&#127942; Champions '+round.yourWins+'-'+round.oppWins:
           round.won?'Won '+round.yourWins+'-'+round.oppWins:'Lost '+round.oppWins+'-'+round.yourWins)+'</div>'+
