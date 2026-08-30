@@ -40,7 +40,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&family=Russo+One&display=swap" rel="stylesheet" />
 
 <!-- Google Consent Mode v2 defaults: deny advertising storage until the certified CMP (loaded by the
      AdSense tag) records the user's choice, then updates these signals. Analytics storage defaults to
@@ -169,7 +169,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     background:radial-gradient(circle, rgba(255,255,255,.14), transparent 66%);}
   .game.golf .crest:before{background:radial-gradient(circle, rgba(235,166,31,.22), transparent 66%);}
   .g-title{min-width:0;flex:1;}
-  .g-title .nm{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:31px;line-height:1;letter-spacing:.02em;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  /* Russo One, squared and a little motorsport, in place of Anton. It sets wider
+     per character, so the size comes down from 31 to 27 to hold the same measure,
+     and the tracking goes up because the letterforms are close-fitted by default. */
+  .g-title .nm{font-family:'Russo One','Anton',Impact,sans-serif;font-weight:400;font-size:27px;line-height:1.06;letter-spacing:.04em;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   /* 2-tone for legibility: "RunThe" in cream, the sport word in the card's theme colour */
   .g-title .nm .r,.g-title .nm .t{color:var(--ink);}
   .game.golf .g-title .nm .g{color:#F2C14E;}
@@ -759,8 +762,8 @@ window.GA_ID='G-L29P5MRWKE';
       filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));}
 
     .gt-txt{display:flex;flex-direction:column;gap:6px;min-width:0;}
-    .gt-nm{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;
-      font-size:17px;line-height:1.04;color:var(--ink);text-transform:uppercase;}
+    .gt-nm{font-family:'Russo One','Anton',Impact,sans-serif;font-weight:400;letter-spacing:.04em;
+      font-size:15px;line-height:1.16;color:var(--ink);text-transform:uppercase;}
     .gt-nm b{font-weight:400;color:var(--ac);}
     /* the college edition needs its qualifier, but not at the size of a name */
     .gt-nm i{display:block;font-style:normal;font-size:11px;letter-spacing:.06em;
@@ -822,7 +825,7 @@ window.GA_ID='G-L29P5MRWKE';
     .gtile.hero{grid-column:1 / -1;flex-direction:row;align-items:center;gap:14px;padding:14px 13px;}
     .gtile.hero .gt-scr{width:62px;height:62px;}
     .gtile.hero .gt-crest{width:46px;height:46px;}
-    .gtile.hero .gt-nm{font-size:25px;}
+    .gtile.hero .gt-nm{font-size:22px;}
     .gtile.hero .gt-tag{margin:0;font-size:12.5px;}
     .gtile.hero .gt-txt{flex:1;}
 
