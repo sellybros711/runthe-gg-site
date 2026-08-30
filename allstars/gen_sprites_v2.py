@@ -734,13 +734,21 @@ def legs(cv, pants, boot, pose, top=31, bot=38, spread=3):
     cv.cyl(CX + spread, bot - 1 + ra, CX + spread + 2, bot + ra, boot)
 
 
-def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
+def run_off(pose):
+    """The vertical swing the run cycle gives each arm, as (left, right).
+
+    Anything HELD has to ride it. A magnifying glass, a fishing pole or
+    a wand pinned to fixed coordinates hangs in the air beside a runner
+    whose arms are pumping, which reads as a bug rather than as a prop."""
     if pose == 'run1':
-        lo, ro = -2, 2
-    elif pose == 'run2':
-        lo, ro = 2, -2
-    else:
-        lo, ro = 0, 0
+        return -2, 2
+    if pose == 'run2':
+        return 2, -2
+    return 0, 0
+
+
+def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
+    lo, ro = run_off(pose)
     # Same reason as the hulk's arms: a sleeve in the shirt's own ramp
     # melts into the shirt. One shade off is all it takes to read.
     cuff = Ramp(shade(sleeve.base, -0.16))
@@ -1241,10 +1249,11 @@ def sig_tom(cv, spec, pose, back):
             cv.dot(CX + side * 3, 25, (201, 160, 48))
     # the fishing pole over his shoulder: one clean unbroken diagonal
     wood = (150, 96, 42)
+    o = run_off(pose)[1]
     for i in range(13):
-        cv.dot(CX + 5 + i * 0.62, 24 - i, wood if i % 3 else (122, 82, 40))
+        cv.dot(CX + 5 + i * 0.62, 24 - i + o, wood if i % 3 else (122, 82, 40))
     for dy in (13, 14, 15, 16):
-        cv.dot(CX + 14, dy, (206, 212, 220))
+        cv.dot(CX + 14, dy + o, (206, 212, 220))
 
 
 def sig_huck(cv, spec, pose, back):
@@ -1282,7 +1291,7 @@ def sig_sherlock(cv, spec, pose, back):
         return
     # the magnifying glass, held UP beside his face where he would use it
     rim = (176, 142, 60)
-    gx, gy = CX + 11, 19
+    gx, gy = CX + 11, 19 + run_off(pose)[1]
     for dx, dy in ((-1, -3), (0, -3), (1, -3), (2, -2), (3, -1), (3, 0),
                    (2, 1), (1, 2), (0, 2), (-1, 2), (-2, 1), (-3, 0),
                    (-3, -1), (-2, -2)):
@@ -1559,14 +1568,15 @@ def sig_bunny(cv, spec, pose, back):
         cv.dot(CX + side * 5, 16, (208, 208, 212))
     # the Easter basket, eggs and all
     bk = Ramp('#a8763a')
-    cv.dot(CX + 9, 29, (232, 140, 160))
-    cv.dot(CX + 10, 28, (140, 180, 232))
-    cv.dot(CX + 11, 29, (240, 214, 110))
-    cv.rect(CX + 8, 30, CX + 12, 33, bk, l=0.55)
-    cv.dot(CX + 8, 29, bk.dark)
-    cv.dot(CX + 12, 29, bk.dark)
-    cv.dot(CX + 9, 31, bk.dark)
-    cv.dot(CX + 11, 32, bk.dark)
+    o = run_off(pose)[1]
+    cv.dot(CX + 9, 29 + o, (232, 140, 160))
+    cv.dot(CX + 10, 28 + o, (140, 180, 232))
+    cv.dot(CX + 11, 29 + o, (240, 214, 110))
+    cv.rect(CX + 8, 30 + o, CX + 12, 33 + o, bk, l=0.55)
+    cv.dot(CX + 8, 29 + o, bk.dark)
+    cv.dot(CX + 12, 29 + o, bk.dark)
+    cv.dot(CX + 9, 31 + o, bk.dark)
+    cv.dot(CX + 11, 32 + o, bk.dark)
 
 
 def sig_fairy(cv, spec, pose, back):
@@ -1574,12 +1584,13 @@ def sig_fairy(cv, spec, pose, back):
         return
     # the wand: a little gold star on a stick
     g = (248, 216, 74)
-    cv.dot(CX + 11, 30, (150, 118, 56))
-    cv.dot(CX + 12, 28, (150, 118, 56))
-    cv.dot(CX + 13, 26, g)
-    cv.dot(CX + 12, 25, g); cv.dot(CX + 14, 25, g)
-    cv.dot(CX + 13, 24, g)
-    cv.dot(CX + 13, 25, (255, 248, 225))
+    o = run_off(pose)[1]
+    cv.dot(CX + 11, 30 + o, (150, 118, 56))
+    cv.dot(CX + 12, 28 + o, (150, 118, 56))
+    cv.dot(CX + 13, 26 + o, g)
+    cv.dot(CX + 12, 25 + o, g); cv.dot(CX + 14, 25 + o, g)
+    cv.dot(CX + 13, 24 + o, g)
+    cv.dot(CX + 13, 25 + o, (255, 248, 225))
 
 
 def sig_pirate(cv, spec, pose, back):
@@ -1625,13 +1636,14 @@ def sig_fathertime(cv, spec, pose, back):
     g = (201, 160, 48)
     sand = (232, 194, 90)
     x = int(CX) - 10
+    o = run_off(pose)[0]
     for dx in (-2, -1, 0, 1, 2):
-        cv.dot(x + dx, 26, g)
-        cv.dot(x + dx, 31, g)
-    cv.dot(x - 1, 27, (207, 228, 242)); cv.dot(x + 1, 27, (207, 228, 242))
-    cv.dot(x, 28, (207, 228, 242))
-    cv.dot(x, 29, sand)
-    cv.dot(x - 1, 30, sand); cv.dot(x, 30, sand); cv.dot(x + 1, 30, sand)
+        cv.dot(x + dx, 26 + o, g)
+        cv.dot(x + dx, 31 + o, g)
+    cv.dot(x - 1, 27 + o, (207, 228, 242)); cv.dot(x + 1, 27 + o, (207, 228, 242))
+    cv.dot(x, 28 + o, (207, 228, 242))
+    cv.dot(x, 29 + o, sand)
+    cv.dot(x - 1, 30 + o, sand); cv.dot(x, 30 + o, sand); cv.dot(x + 1, 30 + o, sand)
 
 
 def sig_mothernature(cv, spec, pose, back):
@@ -1689,19 +1701,20 @@ def sig_cupid(cv, spec, pose, back):
     # the BOW, strung and drawn, with a heart tipped arrow: the thing
     # that makes a winged blond baby read as Cupid and not a cherub.
     wood = (150, 96, 42)
+    o = run_off(pose)[1]
     for dx, dy in ((9, 23), (10, 24), (11, 26), (11, 28), (10, 30), (9, 31)):
-        cv.dot(CX + dx, dy, wood)
+        cv.dot(CX + dx, dy + o, wood)
     for dy in range(24, 31):
-        cv.dot(CX + 9, dy, (226, 226, 230))
+        cv.dot(CX + 9, dy + o, (226, 226, 230))
     for dx in range(5, 11):
-        cv.dot(CX + dx, 27, (200, 168, 108))
+        cv.dot(CX + dx, 27 + o, (200, 168, 108))
     r = (210, 73, 73)
-    cv.dot(CX + 4, 26, r)
-    cv.dot(CX + 5, 26, r)
-    cv.dot(CX + 3, 27, r)
-    cv.dot(CX + 4, 27, r)
-    cv.dot(CX + 5, 27, r)
-    cv.dot(CX + 4, 28, r)
+    cv.dot(CX + 4, 26 + o, r)
+    cv.dot(CX + 5, 26 + o, r)
+    cv.dot(CX + 3, 27 + o, r)
+    cv.dot(CX + 4, 27 + o, r)
+    cv.dot(CX + 5, 27 + o, r)
+    cv.dot(CX + 4, 28 + o, r)
 
 
 def sig_yeti(cv, spec, pose, back):
@@ -1812,11 +1825,12 @@ def sig_robin(cv, spec, pose, back):
         cv.dot(CX + dx, 19 - i % 2, (226, 226, 230))
         cv.dot(CX + dx, 18 - i % 2, (201, 60, 48))
     bow = (160, 112, 52)
+    o = run_off(pose)[0]
     for dy, ddx in ((22, 0), (24, 1), (26, 1.4), (28, 1), (30, 0)):
-        cv.dot(CX - 10 - ddx, dy, bow)
-        cv.dot(CX - 10 - ddx, dy + 1, bow)
+        cv.dot(CX - 10 - ddx, dy + o, bow)
+        cv.dot(CX - 10 - ddx, dy + 1 + o, bow)
     for dy in range(22, 31):
-        cv.dot(CX - 10, dy, (226, 226, 230))
+        cv.dot(CX - 10, dy + o, (226, 226, 230))
 
 
 def sig_tintin(cv, spec, pose, back):
