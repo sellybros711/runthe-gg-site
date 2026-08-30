@@ -3863,6 +3863,147 @@ function resolveGameDefense(roster, chemistryMultiplier, opponent, leagueAvgAllo
  */
 const FULL_CAP_MUSD = 280;
 
+/*
+ * ─── THE THREE YEAR DEAL ────────────────────────────────────────────────────────────
+ *
+ * One roster carried through three real NFL seasons.
+ *
+ * THE MODE EXISTS BECAUSE OF WHAT THIS GAME'S ATOM IS. Everywhere else a franchise mode
+ * has to invent aging: a curve, a random roll, a progression system somebody tuned. Here
+ * the atom is a player-SEASON, so ageing is not a model at all. Draft Marshall Faulk's
+ * 2000 and the following winter he becomes Marshall Faulk's 2001, whose numbers are
+ * whatever they actually were, priced at whatever that year is actually worth. Nothing to
+ * tune and nothing to defend, because none of it is invented.
+ *
+ * WHAT THE DATA ALREADY SAYS, measured over all 26,397 player-seasons, by what a man cost:
+ *
+ *   tier            gone next year   worse   better   median change   median new price
+ *   star $36M+            12%         64%     14%         -2.3            $32M
+ *   good $24-36M          13%         55%     20%         -1.4            $23M
+ *   solid $12-24M         21%         40%     28%         -0.5            $16M
+ *   cheap $3-12M          38%         19%     31%         +0.5            $ 7M
+ *
+ * That is a dynasty curve: decline at the top, lottery tickets at the bottom, and men
+ * disappearing out of both ends. 22.3% of $40M men are gone or under $20M a year later;
+ * 1.0% of $3-12M men are worth $30M+. 67.6% of all rows have a next season to age into and
+ * 1,924 players have a five-year unbroken stretch, so three years is comfortably inside
+ * what the pool can carry.
+ *
+ * THE CALENDAR IS THE THING THAT MOVES, and that is what changes the wheel. Every other
+ * mode spins a year AND a club, and the freedom of the year is the whole point: 2000 Faulk
+ * beside 2019 Lamar Jackson. Here the year is the LEAGUE year, fixed, so the wheel spins
+ * clubs alone and the offseason is what advances the calendar. A dynasty walks forward
+ * through real NFL history, drafting out of the league as it actually was that autumn.
+ * There are about 349 skill players and 629 defenders in a season across 32 clubs, so a
+ * club-only wheel still offers about eleven men a spin.
+ *
+ * NOTHING IN THE LIVE GAME REACHES ANY OF THIS YET. It is measured by
+ * simulator.js --dynasty and gated to named accounts by dynasty-access.js.
+ */
+const DYNASTY_SEASONS = 3;
+
+/* THE CAP GROWS, because without it decline just strangles you. A dynasty is supposed to
+   be a series of choices about who to keep, and a flat cap against a roster that gets more
+   expensive every winter removes the choice: you cut whoever costs most and there is no
+   decision in it. 5% a year is a shade under what the real cap did over this data's window
+   and it is the smallest number that keeps a good core affordable for three years. */
+const DYNASTY_CAP_GROWTH = 1.05;
+
+/*
+ * WHAT A CONTRACT COSTS, AND THE TRADE INSIDE IT.
+ *
+ * At signing you choose one, two or three years, and a longer deal is cheaper per year. The
+ * price is then LOCKED: while he is under contract he costs what you signed him for, not
+ * what he turns out to be worth. That is the whole bet in both directions. Lock a $48M star
+ * for three and you have paid for his age-30 season at his age-27 price; lock a $6M man for
+ * three and the 1% of the time he turns into a $34M player, you have him for $5.3M.
+ *
+ * The discounts are small on purpose. A steep ladder would make three years correct for
+ * everybody and delete the decision; these are worth about a fifth of a good man over the
+ * term, which is enough to tempt and not enough to dictate.
+ */
+const DYNASTY_TERM_DISCOUNT = { 1: 1.00, 2: 0.94, 3: 0.88 };
+
+/*
+ * AND THE PRICE OF BEING WRONG. A man under contract who has no next season in the data has
+ * not retired, necessarily; he has fallen out of the pool. Either way he is not playing for
+ * you, and the money does not come back: half his locked price stays against the cap for
+ * every year left on the deal.
+ *
+ * HALF RATHER THAN ALL, and it is the one number here that was chosen rather than measured.
+ * All of it makes a three-year deal on a 33-year-old a mode-ending mistake 12% of the time,
+ * which is not a bet anybody would take twice; none of it makes term free. Half is real
+ * enough to be feared and survivable enough to be risked. See --dynasty for what it does to
+ * a season.
+ */
+const DYNASTY_DEAD_MONEY = 0.5;
+
+/** What a man costs per year on a deal of this length. */
+function dynastyContractPrice(listPriceMusd, years) {
+  const d = DYNASTY_TERM_DISCOUNT[years];
+  if (!d) throw new Error(`a contract is 1, 2 or 3 years, not ${years}`);
+  return Math.round(listPriceMusd * d * 10) / 10;
+}
+
+/**
+ * The same man, one league year on.
+ *
+ * `byKey` is a Map from `player_id|season` to the row, which the page already builds and
+ * the harness builds once. Returns null when he has no row for that year, which is the
+ * mode's central event rather than an error: 38% of cheap men and 12% of stars do not have
+ * one, and the hole they leave is what brings the wheel back out.
+ */
+function dynastyAge(player, byKey, leagueYear) {
+  if (!player || !byKey) return null;
+  return byKey.get(`${player.player_id}|${leagueYear}`) || null;
+}
+
+/**
+ * Whether a man who is gone this year is gone for good, so the screen can say the true
+ * thing. A row for a LATER season means he missed this one; no row at all means the pool
+ * has nothing more from him. Neither is the same as retiring and neither is claimed to be.
+ */
+function dynastyGoneFor(player, byKey, leagueYear, lastSeason) {
+  for (let y = leagueYear + 1; y <= lastSeason; y++) {
+    if (byKey.get(`${player.player_id}|${y}`)) return 'missed';
+  }
+  return 'out';
+}
+
+/*
+ * WHAT A CORE IS WORTH, on top of what the men are worth.
+ *
+ * Every other chemistry link in this game is a fact about history: these two were
+ * teammates, went to the same school, came out of the same draft. This is the one link that
+ * belongs to YOUR run, and the mode needs it: without it a dynasty is just three drafts
+ * where some of the players carry over, and the correct play is to cut anybody whose price
+ * went up. It is the mechanical reason to keep a declining favourite, which is the feeling
+ * the mode is for.
+ *
+ * It counts SEASONS TOGETHER, averaged across the roster, so a team that keeps four men and
+ * replaces two is worth more than one that turns over every winter and less than one that
+ * keeps all six. Year one is worth nothing, because nobody has been anywhere yet.
+ */
+const DYNASTY_CONTINUITY_PER_YEAR = 0.02;
+
+function dynastyContinuity(roster, tenure) {
+  if (!roster || roster.length < 2 || !tenure) return null;
+  let total = 0;
+  for (const p of roster) total += Math.max(1, tenure[p.player_id] || 1);
+  const mean = total / roster.length;
+  const extra = mean - 1;
+  if (!(extra > 0.01)) return null;
+  const value = Math.round(DYNASTY_CONTINUITY_PER_YEAR * extra * 1000) / 1000;
+  return {
+    type: 'continuity', value,
+    a: 'This roster', b: `${mean.toFixed(1)} seasons together`,
+    label: mean >= 2.5
+      ? 'This group has been together three years'
+      : 'This group has played together before',
+    short: 'Been here before',
+  };
+}
+
 /* WHAT A FULL TEAM'S PRODUCTION IS WORTH, and the only reason it is not 1.
  *
  * The cap above is set by how a roster should LOOK. This is set by how it should PLAY, and
@@ -4737,6 +4878,10 @@ const publicAPI = {
        offense and slot 11 completes the defense. */
     ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
   ],
+  /* The Three Year Deal. Nothing in the live game reaches these yet. */
+  DYNASTY_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_TERM_DISCOUNT, DYNASTY_DEAD_MONEY,
+  DYNASTY_CONTINUITY_PER_YEAR,
+  dynastyContractPrice, dynastyAge, dynastyGoneFor, dynastyContinuity,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
   fullStrength, fullOverall, fullParts, fullSideRatings,

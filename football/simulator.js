@@ -593,6 +593,7 @@ function draftReport(n) {
  * READ OFF rather than guessed.
  *
  *   node football/simulator.js --fullteam
+ *   node football/simulator.js --dynasty   the Three Year Deal's economics
  *   PS_N=400 node football/simulator.js --fullteam      fewer seasons, faster
  *
  * The target is the one the other modes are held to: careless play misses the
@@ -1151,6 +1152,276 @@ function policyReport(n) {
   console.log(`N (${n}) that a band would fire on sampling noise.`);
 }
 
+/*
+ * ─── THE THREE YEAR DEAL, AND WHETHER ITS ECONOMICS WORK AT ALL ─────────────────────
+ *
+ *   node football/simulator.js --dynasty
+ *
+ * THIS RUNS BEFORE ANY OF THE MODE IS BUILT, and it is the whole reason to write it first.
+ * A dynasty is a bet that a roster which ages on the real timeline stays interesting for
+ * three years. It could just as easily decay into a 3-14 team by year three, or coast,
+ * and either would make the mode not worth building. The question this answers is: what
+ * does a season look like in year one, two and three, and does the contract choice matter.
+ *
+ * FOUR STRATEGIES, because the mode's central decision is term and the only way to price it
+ * is to play it both ways:
+ *
+ *   all 1yr    re-bid on everybody every winter. Maximum flexibility, no discount, and you
+ *              pay whatever the market says for the men you keep.
+ *   all 3yr    lock the whole roster on day one. Cheapest per year, and you eat every
+ *              decline and every disappearance for three seasons.
+ *   split      three years on cheap men, one on the expensive ones. The play a careful GM
+ *              would reach for: term where the downside is small, flexibility where it is not.
+ *   inverse    the mirror, three years on the stars. Included because it is the play a
+ *              CARELESS GM makes (lock in your best men!) and the gap between it and split
+ *              is how much the decision is worth.
+ */
+/*
+ * ─── WHAT THIS FOUND, BEFORE ANY OF THE MODE WAS BUILT ──────────────────────────────
+ *
+ * THE WINTER IS EMPTY, and it is a design problem rather than a tuning one. Measured over
+ * 200 dynasties a strategy, off the wheel, with the cap growing 5% a year:
+ *
+ *   year   wins   payroll   cap    holes a winter   cap room going unspent
+ *     1    10.4    $123M   $140M        0.0                 $17M
+ *     2    10.0    $119M   $147M        1.1                 $28M
+ *     3    10.2    $116M   $154M        1.1                 $38M
+ *
+ * One man leaves a winter. That is the entire offseason: spin once, done. Wins are flat to
+ * three decimal places of interest, and all four contract strategies land within noise of
+ * each other, so the term decision is worth nothing on screen. Meanwhile the money PILES
+ * UP: $38M by year three that there is no hole to spend it on.
+ *
+ * THE ROOT CAUSE IS A PROPERTY OF THIS GAME AND NOT OF THIS MODE. Price in this pool is a
+ * monotone function of value, which is the same fact buildFullOptimal's comment records
+ * from the other direction ("the board holds no bargains"). So a man who declines gets
+ * CHEAPER, by almost exactly what he lost. Payroll therefore FALLS as a roster ages. The
+ * classic franchise-mode tension, your star is now overpaid, cannot arise here on its own:
+ * the market re-prices him down the moment he drops off.
+ *
+ * The one thing that CAN make a man overpaid is a locked contract, which is why dead money
+ * was the only lever that separated the strategies at all. It is not enough on its own.
+ *
+ * TWO THINGS WERE TRIED AND MEASURED AND NEITHER WORKS. Recorded so they are not tried again:
+ *
+ *   The cap growing. Makes it strictly worse. The roster gets cheaper as it ages AND the
+ *   budget rises, so both forces point at no pressure.
+ *
+ *   The cap SHRINKING, at 0.88 a year. This does create pressure: room falls $17M, $9M, $2M
+ *   and wins decay 10.5, 9.6, 8.7. But it produces a decline with nothing to do about it,
+ *   because the winter still only has 1.1 holes in it. Pressure is not the same as a
+ *   decision, and the mode needs the second one.
+ *
+ * SO THE WINTER NEEDS A RULE THAT FORCES TURNOVER, because money will not. Whatever that
+ * rule is, it is a design decision and belongs to the person designing the game rather than
+ * to a constant in this file.
+ *
+ * ONE MORE THING THIS HARNESS GOT WRONG FIRST, worth keeping because the error is instructive.
+ * dynastyFill originally took the best affordable man in the WHOLE league year, reasoning
+ * that if the economics fail with a free choice they will fail off a wheel. Backwards: free
+ * choice makes CHURNING optimal, so every winter the roster shed whoever had got expensive,
+ * replaced him with the best man in the league, and year three came out STRONGER than year
+ * one (13.6 wins against 12.9). The premise of the mode is a core that ages, and the harness
+ * had quietly deleted it before measuring anything.
+ */
+const DYN_STRATS = {
+  '1yr':     () => 1,
+  '3yr':     () => 3,
+  'split':   (p) => (p.price_musd < 20 ? 3 : 1),
+  'inverse': (p) => (p.price_musd < 20 ? 1 : 3),
+};
+
+/* Everything in the pool, keyed the way dynastyAge wants it. */
+const DYN_BYKEY = new Map();
+for (const p of players) DYN_BYKEY.set(`${p.player_id}|${p.season}`, p);
+const DYN_LAST_SEASON = Math.max(...players.map((p) => p.season));
+const DYN_FIRST_SEASON = Math.min(...players.map((p) => p.season));
+/* Skill players by the season they played, because the wheel's year is fixed in this mode
+   and the pool a dynasty drafts from is one league year at a time. */
+const DYN_BY_YEAR = {};
+for (const p of players) (DYN_BY_YEAR[p.season] ??= []).push(p);
+
+/* Clubs by league year, because the wheel in this mode spins clubs alone. */
+const DYN_CLUBS_BY_YEAR = {};
+for (const y in DYN_BY_YEAR) {
+  const seen = {};
+  for (const p of DYN_BY_YEAR[y]) (seen[p.team_season_id] ??= []).push(p);
+  DYN_CLUBS_BY_YEAR[y] = Object.values(seen);
+}
+
+/*
+ * FILL THE OPEN SLOTS OFF THE WHEEL, one spin a hole, exactly as the mode will.
+ *
+ * THE FIRST VERSION OF THIS TOOK THE BEST AFFORDABLE MAN IN THE WHOLE LEAGUE YEAR, on the
+ * argument that if the economics fail with a free choice of everybody they will fail off a
+ * wheel. That argument is backwards and the measurement showed it: free choice makes
+ * CHURNING optimal, so every winter the roster shed whoever had got expensive and replaced
+ * him with the best man in the league, and year three came out STRONGER than year one.
+ * The mode's whole premise is a core that ages, and the harness had quietly deleted it.
+ *
+ * A spin is one club out of the thirty-two that played that season, and you take the best
+ * man on it who fits the hole and the money. That is the real constraint and it is a severe
+ * one: the club you land on may have nobody at the position you need.
+ */
+function dynastyFill(roster, slotOf, budget, year, rng, used) {
+  const clubs = DYN_CLUBS_BY_YEAR[year] || [];
+  const out = roster.slice();
+  const open = [];
+  for (let i = 0; i < E.SLOTS.length; i++) if (!out[i]) open.push(i);
+  let left = budget;
+  for (let n = 0; n < open.length; n++) {
+    const i = open[n];
+    const share = Math.min(left / (open.length - n) * 1.5, left - (open.length - n - 1) * 3);
+    /* One spin. A club with nobody legal on it is a wasted pick, which is what the live
+       wheel does too when the reels land badly and the money is short. */
+    let club = clubs.length ? clubs[Math.floor(rng() * clubs.length)] : [];
+    const legalOn = (c, cap) => c.filter((p) => E.fillsSlot(E.SLOTS[i], p)
+      && !used.has(p.player_id) && p.price_musd <= cap);
+    let cand = legalOn(club, Math.max(3, share)).sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+    /* Nothing affordable on that club: take the cheapest legal man on it rather than
+       abandoning the slot, the same fallback buildToBudget uses. */
+    if (!cand) cand = legalOn(club, Infinity).sort((a, b) => a.price_musd - b.price_musd)[0];
+    if (!cand) continue;
+    out[i] = cand; used.add(cand.player_id); left -= cand.price_musd;
+  }
+  return out;
+}
+
+function dynastyReport(n) {
+  console.log('THE THREE YEAR DEAL: does a roster that ages stay worth managing?');
+  console.log(`N=${n} dynasties per strategy, starting years drawn from `
+    + `${DYN_FIRST_SEASON} to ${DYN_LAST_SEASON - E.DYNASTY_SEASONS + 1}.\n`);
+  console.log('  strategy   year   wins   PO%   title%   rating   payroll   cap   kept   dead'
+    + '   holes   deals up   room left');
+
+  for (const [name, term] of Object.entries(DYN_STRATS)) {
+    const acc = Array.from({ length: E.DYNASTY_SEASONS }, () => ({
+      wins: [], po: 0, title: 0, rating: [], pay: [], cap: [], kept: [], dead: [],
+      holes: [], expiring: [], room: [],
+    }));
+    for (let d = 0; d < n; d++) {
+      const rng = E.createSeededRNG(770077 + d * 7919);
+      const startMax = DYN_LAST_SEASON - E.DYNASTY_SEASONS + 1;
+      const start = DYN_FIRST_SEASON + Math.floor(rng() * (startMax - DYN_FIRST_SEASON + 1));
+      let roster = new Array(E.SLOTS.length).fill(null);
+      let contracts = [];          // per slot: { years, left, price } or null
+      let tenure = {};             // player_id -> seasons on this roster
+      let dead = 0;                // this year's dead money, from deals on men who are gone
+      const used = new Set();
+      const growth = Number(process.env.PS_DYN_GROWTH ?? E.DYNASTY_CAP_GROWTH);
+      let cap = E.CONSTANTS.CAP_MUSD;
+
+      for (let y = 0; y < E.DYNASTY_SEASONS; y++) {
+        const year = start + y;
+
+        let holes = 0, expiring = 0;
+        if (y > 0) {
+          /* ---- the winter ---- */
+          dead = 0;
+          const next = new Array(E.SLOTS.length).fill(null);
+          const nextC = new Array(E.SLOTS.length).fill(null);
+          for (let i = 0; i < roster.length; i++) {
+            const man = roster[i];
+            if (!man) continue;
+            const aged = E.dynastyAge(man, DYN_BYKEY, year);
+            const c = contracts[i];
+            if (!aged) {
+              /* He is gone. A deal with years left keeps costing, at half. */
+              if (c && c.left > 1) dead += c.price * E.DYNASTY_DEAD_MONEY;
+              holes++;
+              continue;
+            }
+            if (c && c.left > 1) {
+              /* Still under contract: he stays at the price you signed him for. */
+              next[i] = aged; nextC[i] = { years: c.years, left: c.left - 1, price: c.price };
+            } else {
+              expiring++;
+              /* Out of contract. Re-sign at what he is worth NOW, if he is worth keeping:
+                 a man whose price rose past what a replacement costs is let go, which is
+                 the decision the live mode will put in front of a player. */
+              const yrs = term(aged);
+              const price = E.dynastyContractPrice(aged.price_musd, yrs);
+              const worthIt = aged.ppr_ppg_mean / Math.max(3, price);
+              if (worthIt >= 0.30) { next[i] = aged; nextC[i] = { years: yrs, left: yrs, price }; }
+              else holes++;
+            }
+          }
+          roster = next; contracts = nextC;
+          for (const p of roster) if (p) tenure[p.player_id] = (tenure[p.player_id] || 0) + 1;
+          cap = Math.round(cap * growth * 10) / 10;
+        }
+
+        /* ---- fill what is open, out of this league year ---- */
+        const committed = contracts.reduce((t, c) => t + (c ? c.price : 0), 0) + dead;
+        roster = dynastyFill(roster, null, Math.max(0, cap - committed), year, rng, used);
+        for (let i = 0; i < roster.length; i++) {
+          if (roster[i] && !contracts[i]) {
+            const yrs = term(roster[i]);
+            contracts[i] = { years: yrs, left: yrs,
+              price: E.dynastyContractPrice(roster[i].price_musd, yrs) };
+            tenure[roster[i].player_id] = tenure[roster[i].player_id] || 1;
+          }
+        }
+        const squad = roster.filter(Boolean);
+        if (squad.length < E.SLOTS.length) break;   // the pool could not fill it; drop the run
+
+        /* ---- the season ---- */
+        const chem = E.resolveChemistry(squad, ctx);
+        const cont = E.dynastyContinuity(squad, tenure);
+        /* The continuity bonus rides the same saturation curve as every other link rather
+           than sitting outside it, which is what qbHubBonus does and for the same reason. */
+        const mult = cont
+          ? 1 + Math.min(E.CHEMISTRY.MAX, (chem.multiplier - 1) + cont.value)
+          : chem.multiplier;
+        const sched = E.generateSchedule(data, rng);
+        const playoffs = E.generatePlayoffs(data, rng);
+        const run = E.playRun(squad, mult, sched.games, playoffs, leagueContext, rng, constants);
+        const a = acc[y];
+        a.wins.push(run.regularWins);
+        if (run.seed.made) a.po++;
+        if (run.titleWon) a.title++;
+        a.rating.push(E.overallOf(squad, mult, false));
+        a.pay.push(contracts.reduce((t, c) => t + (c ? c.price : 0), 0) + dead);
+        a.cap.push(cap);
+        a.kept.push(y === 0 ? 0 : squad.filter((p) => (tenure[p.player_id] || 1) > 1).length);
+        a.dead.push(dead);
+        a.holes.push(holes); a.expiring.push(expiring);
+        a.room.push(cap - (contracts.reduce((t, c) => t + (c ? c.price : 0), 0) + dead));
+      }
+    }
+
+    for (let y = 0; y < E.DYNASTY_SEASONS; y++) {
+      const a = acc[y];
+      if (!a.wins.length) continue;
+      const m = (x) => x.reduce((s, v) => s + v, 0) / x.length;
+      console.log('  ' + (y === 0 ? name.padEnd(9) : ' '.repeat(9))
+        + String(y + 1).padStart(6)
+        + m(a.wins).toFixed(1).padStart(7)
+        + fmtPct(a.po / a.wins.length).padStart(7)
+        + fmtPct(a.title / a.wins.length).padStart(8)
+        + m(a.rating).toFixed(1).padStart(9)
+        + ('$' + m(a.pay).toFixed(0) + 'M').padStart(10)
+        + ('$' + m(a.cap).toFixed(0) + 'M').padStart(7)
+        + m(a.kept).toFixed(1).padStart(7)
+        + ('$' + m(a.dead).toFixed(1) + 'M').padStart(8)
+        + m(a.holes).toFixed(1).padStart(8)
+        + m(a.expiring).toFixed(1).padStart(11)
+        + ('$' + m(a.room).toFixed(0) + 'M').padStart(12));
+    }
+    console.log('');
+  }
+  console.log('WHAT TO LOOK FOR. Year one should look like an ordinary Classic run, because');
+  console.log('it IS one. Years two and three should DRIFT rather than collapse: if wins fall');
+  console.log('off a cliff the mode is a punishment, and if they hold flat the roster is not');
+  console.log('really ageing and the winter is decoration. The gap between "split" and');
+  console.log('"inverse" is what the contract decision is worth; if it is near zero, term is');
+  console.log('not a decision and should not be on the screen.');
+  console.log('');
+  console.log('AND WHAT IT SAYS TODAY: about 1.1 holes a winter and $28M to $40M of cap room');
+  console.log('that cannot be spent. The winter has nothing in it. See the note above this');
+  console.log('function before changing a constant to fix that, because no constant will.');
+}
+
 // ─── main ────────────────────────────────────────────────────────────────────
 
 const arg = process.argv[2];
@@ -1162,4 +1433,5 @@ else if (arg === '--draft') draftReport(Number(process.env.PS_N ?? 3000));
 else if (arg === '--fullteam') fullTeamReport(Number(process.env.PS_N ?? 400));
 else if (arg === '--record') recordReport(Number(process.env.PS_N ?? 2000));
 else if (arg === '--policies') policyReport(Number(process.env.PS_N ?? 40));
+else if (arg === '--dynasty') dynastyReport(Number(process.env.PS_N ?? 300));
 else reportMain(N);
