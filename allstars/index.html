@@ -9,17 +9,27 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1015'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle'%3E%E2%9A%BE%3C/text%3E%3C/svg%3E" />
 <style>
   :root{
-    --ink:#0b1015;
-    --panel:#141c24;
-    --panel-2:#1c2732;
-    --line:rgba(255,255,255,.10);
-    --text:#f3ecdc;
-    --text-dim:#a89d86;
-    --gold:#f4c25a;
-    --red:#d24949;
-    --green:#5bb083;
-    --blue:#6aa7c4;
-    --purple:#b08ac6;
+    /* A 1980s baseball cabinet, not a dashboard. Scorecard cream, navy
+       ink, arcade red. Every border is a real 2px line in the ink colour
+       and every shadow is a HARD offset, because the whole retro read is
+       flat colour and hard edges: a soft blurred shadow on a translucent
+       hairline is the look this is getting away from. */
+    --ink:#f1e2bb;        /* the page: warm card stock */
+    --panel:#fffcf2;      /* a panel is a card laid on it */
+    --panel-2:#ffeec0;    /* the same card, selected */
+    --line:#1b3a5c;       /* navy. There are no hairlines here */
+    --text:#14283f;
+    --text-dim:#4d5f75;
+    --gold:#cf3229;       /* the accent, and it is RED: gold on cream is
+                             invisible, which is the whole reason the old
+                             palette needed a dark ground under it */
+    --red:#9e1e18;
+    --green:#1b8a4a;
+    --blue:#1566ae;
+    --purple:#6b4296;
+    --navy:#1b3a5c;
+    --shadow:3px 3px 0 #1b3a5c;
+    --shadow-sm:2px 2px 0 #1b3a5c;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;background:var(--ink);color:var(--text);
@@ -27,72 +37,92 @@
     min-height:100vh;overscroll-behavior-y:none;}
   body{
     background:
-      radial-gradient(900px 500px at 50% 0%, rgba(91,176,131,.09), transparent 60%),
-      radial-gradient(700px 500px at 50% 110%, rgba(244,194,90,.05), transparent 66%),
+      repeating-linear-gradient(90deg, rgba(27,58,92,.05) 0 2px, transparent 2px 24px),
+      radial-gradient(900px 520px at 50% -8%, #ffeaa8, transparent 62%),
       var(--ink);
+  }
+  /* The CRT. One overlay of scanlines across everything, and it is the
+     single cheapest thing on this page that says arcade. */
+  body::after{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(180deg,
+      rgba(20,40,63,.055) 0 1px, transparent 1px 3px);
   }
   img.pico{image-rendering:pixelated;image-rendering:crisp-edges;}
   canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
 
   .wrap{max-width:920px;margin:0 auto;padding:14px 14px 60px;}
   .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;}
-  .swing-modes .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#a89d86;}
+  .swing-modes .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
   .mode-btn{font:inherit;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
-    background:#131b24;color:#cfd6de;border:1px solid #2a3644;border-radius:6px;
-    padding:6px 14px;cursor:pointer;}
-  .mode-btn.selected{background:#26343f;color:#f4c25a;border-color:#f4c25a;}
+    background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:0;
+    padding:6px 14px;cursor:pointer;font-weight:700;box-shadow:var(--shadow-sm);}
+  .mode-btn:active{transform:translate(2px,2px);box-shadow:none;}
+  .mode-btn.selected{background:var(--gold);color:#fff;}
   /* On the game screen the box opens up: the field is the point. */
   body.ingame .wrap{max-width:min(1560px, 98vw);}
   body.ingame #field{max-height:min(80vh, 900px);}
-  .brand{display:flex;align-items:center;gap:10px;padding:6px 0 14px;border-bottom:1px solid var(--line);}
-  .brand h1{margin:0;font-size:20px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+  .brand{display:flex;align-items:center;gap:10px;padding:8px 0 12px;
+    border-bottom:3px solid var(--line);margin-bottom:4px;}
+  .brand h1{margin:0;font-size:24px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gold);font-weight:900;text-shadow:2px 2px 0 var(--navy);}
   .brand .tag{color:var(--text-dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
   .brand .spacer{flex:1;}
-  .brand button{background:transparent;color:var(--text-dim);border:1px solid var(--line);
-    padding:6px 10px;font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    cursor:pointer;border-radius:4px;margin-left:6px;}
-  .brand button:hover{color:var(--text);border-color:var(--gold);}
+  .brand button{background:var(--panel);color:var(--text);border:2px solid var(--line);
+    padding:5px 10px;font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    cursor:pointer;border-radius:0;margin-left:6px;box-shadow:var(--shadow-sm);font-weight:700;}
+  .brand button:hover{background:var(--panel-2);}
+  .brand button:active{transform:translate(2px,2px);box-shadow:none;}
 
   .screen{padding:18px 0;}
   h2{margin:0 0 12px;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
   h3{margin:14px 0 6px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);}
   p{margin:0 0 10px;color:var(--text-dim);line-height:1.5;font-size:13px;}
 
-  .btn{display:inline-block;background:var(--gold);color:#1a1108;border:0;padding:10px 16px;
-    font-family:inherit;font-size:13px;letter-spacing:.12em;text-transform:uppercase;
-    cursor:pointer;border-radius:4px;font-weight:700;}
+  .btn{display:inline-block;background:var(--gold);color:#fff6ea;border:2px solid var(--line);
+    padding:10px 16px;font-family:inherit;font-size:13px;letter-spacing:.12em;
+    text-transform:uppercase;cursor:pointer;border-radius:0;font-weight:900;
+    box-shadow:var(--shadow);}
   .btn:hover{filter:brightness(1.08);}
-  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);}
-  .btn.ghost:hover{border-color:var(--gold);color:var(--gold);}
+  /* A cabinet button goes DOWN when you hit it: it travels onto its own
+     shadow. Nothing else here says arcade for one line of CSS. */
+  .btn:active{transform:translate(3px,3px);box-shadow:none;}
+  .btn.ghost{background:var(--panel);color:var(--text);}
+  .btn.ghost:hover{background:var(--panel-2);}
   .btn.red{background:var(--red);color:#fff;}
-  .btn:disabled{opacity:.45;cursor:not-allowed;filter:none;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;filter:none;box-shadow:var(--shadow);}
   .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:14px;
+    box-shadow:var(--shadow);}
   .card + .card{margin-top:12px;}
 
   .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
-  .charcard{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;
-    cursor:pointer;transition:border-color .1s,transform .1s;text-align:center;position:relative;}
-  .charcard:hover{border-color:var(--gold);}
-  .charcard.picked{border-color:var(--gold);background:var(--panel-2);}
-  .charcard canvas{width:64px;height:auto;background:#0c1218;border-radius:4px;image-rendering:pixelated;}
+  .charcard{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px;
+    cursor:pointer;transition:transform .08s;text-align:center;position:relative;
+    box-shadow:var(--shadow-sm);}
+  .charcard:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--navy);}
+  .charcard.picked{background:var(--panel-2);box-shadow:3px 3px 0 var(--gold);}
+  .charcard canvas{width:64px;height:auto;background:#bfe4f7;border:2px solid var(--line);
+    border-radius:0;image-rendering:pixelated;}
   .charcard .name{margin-top:6px;font-size:12px;color:var(--text);letter-spacing:.06em;}
   .charcard .role{font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
-  .charcard .pickno{position:absolute;top:6px;right:6px;background:var(--gold);color:#1a1108;
-    font-size:10px;padding:2px 5px;border-radius:3px;font-weight:700;}
+  .charcard .pickno{position:absolute;top:5px;right:5px;background:var(--gold);color:#fff;
+    font-size:10px;padding:2px 5px;border-radius:0;font-weight:900;border:1px solid var(--line);}
   .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:10px;color:var(--text-dim);}
   .statgrid span b{color:var(--text);}
-  .quirk{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:10px;color:var(--purple);line-height:1.4;}
+  .quirk{margin-top:6px;padding-top:6px;border-top:2px dashed rgba(27,58,92,.35);font-size:10px;color:var(--purple);line-height:1.4;}
   .charcard.locked{opacity:.55;cursor:not-allowed;}
   .charcard.locked canvas{filter:grayscale(1) brightness(.7);}
-  .charcard.locked:hover{border-color:var(--line);}
+  .charcard.locked:hover{transform:none;box-shadow:var(--shadow-sm);}
   .quirk.lockhint{color:var(--gold);}
 
   .toggle-row{display:flex;gap:6px;flex-wrap:wrap;}
-  .toggle{padding:8px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;
-    cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
-  .toggle.on{border-color:var(--gold);color:var(--gold);}
+  .toggle{padding:8px 12px;background:var(--panel);border:2px solid var(--line);border-radius:0;
+    cursor:pointer;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text);
+    font-weight:700;box-shadow:var(--shadow-sm);}
+  .toggle:active{transform:translate(2px,2px);box-shadow:none;}
+  .toggle.on{background:var(--gold);color:#fff;}
 
   /* Game.
      The field takes as much room as possible and the meter, HUD, and stat
@@ -103,12 +133,13 @@
 
   .arena{
     position:relative;
-    background:radial-gradient(700px 400px at 50% 30%, #17301f, #08110a 68%);
-    border:1px solid var(--line);
-    border-radius:8px;
+    background:#7fc9ea;
+    border:4px solid var(--line);
+    border-radius:0;
     padding:0;
     overflow:hidden;
     margin-bottom:12px;
+    box-shadow:5px 5px 0 var(--navy);
   }
   #field{
     display:block;
@@ -117,17 +148,22 @@
     max-height:min(72vh, 720px);
     background:transparent;
   }
-  .arena .corner{position:absolute;pointer-events:none;padding:10px 14px;
-    font-family:inherit;text-transform:uppercase;letter-spacing:.14em;font-size:12px;
-    color:var(--text-dim);text-shadow:0 1px 2px rgba(0,0,0,.7);}
-  .arena .corner.tl{top:0;left:0;text-align:left;}
-  .arena .corner.tr{top:0;right:0;text-align:right;}
-  .arena .corner.bl{bottom:0;left:0;text-align:left;}
-  .arena .corner.br{bottom:0;right:0;text-align:right;}
-  .arena .corner .lbl{display:block;color:var(--text-dim);font-size:10px;letter-spacing:.16em;}
-  .arena .corner .val{color:var(--text);font-size:20px;font-weight:700;line-height:1;}
+  /* Each corner is a PLACARD bolted to the screen, not floating text.
+     Dark text with a light halo reads on grass and disappears on a red
+     outfield wall, and which wall a park has is the park's business. */
+  .arena .corner{position:absolute;pointer-events:none;padding:6px 10px;
+    font-family:inherit;text-transform:uppercase;letter-spacing:.12em;font-size:12px;
+    font-weight:700;color:#0f2237;background:rgba(255,252,242,.94);
+    border:2px solid var(--navy);}
+  .arena .corner.park .lbl{color:var(--gold);font-size:11px;font-weight:900;letter-spacing:.2em;}
+  .arena .corner.tl{top:8px;left:8px;text-align:left;}
+  .arena .corner.tr{top:8px;right:8px;text-align:right;}
+  .arena .corner.bl{bottom:8px;left:8px;text-align:left;}
+  .arena .corner.br{bottom:8px;right:8px;text-align:right;}
+  .arena .corner .lbl{display:block;color:#4d5f75;font-size:9px;letter-spacing:.16em;}
+  .arena .corner .val{color:#0f2237;font-size:20px;font-weight:900;line-height:1.05;}
   .arena .corner .val.gold{color:var(--gold);}
-  .arena .corner.br .val{color:var(--text);font-size:14px;}
+  .arena .corner.br .val{color:#0f2237;font-size:14px;}
 
   .callout{
     position:absolute;
@@ -135,35 +171,37 @@
     left:50%;
     transform:translate(-50%,-50%) scale(.9);
     padding:14px 30px;
-    background:rgba(11,16,21,.86);
-    border:2px solid var(--gold);
-    border-radius:6px;
+    background:var(--panel);
+    border:3px solid var(--line);
+    border-radius:0;
     color:var(--gold);
     font-family:inherit;
     font-size:26px;
     font-weight:900;
     letter-spacing:.16em;
     text-transform:uppercase;
-    text-shadow:0 2px 0 rgba(0,0,0,.5);
     pointer-events:none;
     opacity:0;
     transition:opacity .18s ease-out, transform .28s cubic-bezier(.2,.9,.2,1.2);
-    box-shadow:0 8px 32px rgba(0,0,0,.5);
+    box-shadow:5px 5px 0 var(--navy);
     white-space:nowrap;
     z-index:6;
   }
   .callout.on{opacity:1;transform:translate(-50%,-50%) scale(1);}
-  .callout.homer{border-color:var(--gold);color:var(--gold);font-size:32px;
-    background:linear-gradient(180deg,rgba(60,30,10,.9),rgba(11,16,21,.9));}
-  .callout.hit{border-color:var(--green);color:var(--green);}
-  .callout.strike{border-color:var(--red);color:#f4a4a4;}
-  .callout.ball{border-color:var(--blue);color:var(--blue);}
-  .callout.sub{border-color:var(--text-dim);color:var(--text);font-size:18px;background:rgba(11,16,21,.7);}
+  /* No inset ring. At this plaque's size a 6px inset eats most of the
+     fill, so HOME RUN came out as pale text on gold, which is the one
+     callout that has to be readable from across the room. */
+  .callout.homer{color:#fff6ea;background:var(--gold);font-size:32px;
+    text-shadow:2px 2px 0 var(--navy);border-width:4px;}
+  .callout.hit{color:#fff6ea;background:var(--green);text-shadow:2px 2px 0 var(--navy);}
+  .callout.strike{color:#fff6ea;background:var(--red);text-shadow:2px 2px 0 var(--navy);}
+  .callout.ball{color:#fff6ea;background:var(--blue);text-shadow:2px 2px 0 var(--navy);}
+  .callout.sub{color:var(--text);font-size:18px;background:var(--panel);}
 
   @media (max-width:600px){
     .callout{font-size:18px;padding:10px 18px;}
     .callout.homer{font-size:22px;}
-    .arena .corner{padding:6px 8px;font-size:10px;}
+    .arena .corner{padding:4px 6px;font-size:10px;}
     .arena .corner .val{font-size:16px;}
     .arena .corner.br .val{font-size:11px;}
   }
@@ -171,11 +209,13 @@
   .plate-row{
     display:grid;grid-template-columns:1fr;gap:10px;align-items:stretch;
   }
-  .meter-wrap{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;}
+  .meter-wrap{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px 14px;
+    box-shadow:var(--shadow);}
   .meter-wrap .label{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);
     letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
   .meter-wrap .label b.pt{color:var(--gold);letter-spacing:.14em;}
-  #meter{width:100%;height:44px;display:block;background:#0c1218;border-radius:3px;}
+  #meter{width:100%;height:44px;display:block;background:#0f2237;border:2px solid var(--line);
+    border-radius:0;}
   .meter-wrap .hint{margin-top:6px;font-size:11px;color:var(--text-dim);
     letter-spacing:.08em;text-align:center;text-transform:uppercase;}
   .meter-wrap .hint b{color:var(--gold);}
@@ -187,31 +227,32 @@
   .pitch-select .col{display:flex;flex-direction:column;gap:4px;align-items:center;}
   .pitch-select .type-row{display:flex;gap:6px;}
   .zone-grid{display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);
-    gap:2px;background:rgba(255,255,255,.06);padding:3px;border:1px solid var(--line);
-    border-radius:4px;}
-  .zone-grid button{background:rgba(11,16,21,.6);border:1px solid rgba(255,255,255,.10);
-    cursor:pointer;padding:0;transition:background .1s;}
-  .zone-grid button:hover{background:rgba(244,194,90,.35);border-color:var(--gold);}
-  .zone-grid button.corner{background:rgba(11,16,21,.85);}
-  .zone-grid button.mid{background:rgba(91,176,131,.15);}
-  .zone-grid button.center{background:rgba(91,176,131,.30);}
-  .zone-grid button.selected{background:var(--gold);border-color:var(--gold);}
+    gap:2px;background:var(--navy);padding:3px;border:2px solid var(--line);
+    border-radius:0;box-shadow:var(--shadow-sm);}
+  .zone-grid button{background:#eadfc0;border:0;cursor:pointer;padding:0;transition:background .1s;}
+  .zone-grid button:hover{background:#ffd44a;}
+  .zone-grid button.corner{background:#d7c9a8;}
+  .zone-grid button.mid{background:#bfe0c4;}
+  .zone-grid button.center{background:#8fd0a0;}
+  .zone-grid button.selected{background:var(--gold);}
   .swing-btn{display:none;width:100%;margin-top:10px;padding:16px;font-size:16px;
-    background:var(--gold);color:#1a1108;border:0;border-radius:6px;font-weight:900;
-    letter-spacing:.28em;cursor:pointer;font-family:inherit;text-transform:uppercase;}
-  .swing-btn:active{transform:translateY(1px);filter:brightness(1.06);}
+    background:var(--gold);color:#fff6ea;border:3px solid var(--line);border-radius:0;
+    font-weight:900;letter-spacing:.28em;cursor:pointer;font-family:inherit;
+    text-transform:uppercase;box-shadow:var(--shadow);}
+  .swing-btn:active{transform:translate(3px,3px);box-shadow:none;}
   @media (max-width:900px){.swing-btn{display:block;}}
 
-  .atbat{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;
-    display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .atbat{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px 14px;
+    display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);}
   .atbat .avatar{width:36px;height:auto;image-rendering:pixelated;}
   .atbat .who{font-size:14px;letter-spacing:.06em;}
   .atbat .who b{color:var(--gold);}
   .atbat .vs{font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
   .atbat .count{margin-left:auto;font-size:16px;color:var(--text);letter-spacing:.14em;font-weight:700;}
 
-  .log{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px;
-    max-height:110px;overflow-y:auto;font-size:12px;line-height:1.6;color:var(--text-dim);}
+  .log{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:10px 14px;
+    max-height:110px;overflow-y:auto;font-size:12px;line-height:1.6;color:var(--text-dim);
+    box-shadow:var(--shadow);}
   .log .line{padding:1px 0;}
   .log .line.big{color:var(--gold);font-weight:700;letter-spacing:.05em;}
 
@@ -219,26 +260,27 @@
 
   /* Line score: the classic ballpark board, one column per inning plus runs. */
   .linescore{display:flex;justify-content:center;margin-bottom:10px;overflow-x:auto;}
-  .linescore table{border-collapse:collapse;background:var(--panel);border:1px solid var(--line);
-    border-radius:6px;overflow:hidden;font-size:13px;}
+  .linescore table{border-collapse:collapse;background:var(--panel);border:2px solid var(--line);
+    border-radius:0;overflow:hidden;font-size:13px;box-shadow:var(--shadow);}
   .linescore th,.linescore td{padding:4px 9px;text-align:center;
-    font-variant-numeric:tabular-nums;border-left:1px solid var(--line);}
+    font-variant-numeric:tabular-nums;border-left:1px solid rgba(27,58,92,.3);}
   .linescore th{color:var(--text-dim);font-weight:500;font-size:10px;letter-spacing:.1em;}
   .linescore td.team{text-align:left;color:var(--text-dim);letter-spacing:.08em;
     text-transform:uppercase;font-size:10px;border-left:0;white-space:nowrap;}
   .linescore td.r{color:var(--gold);font-weight:700;}
-  .linescore td.cur{background:rgba(244,194,90,.14);}
+  .linescore td.cur{background:rgba(207,50,41,.16);}
 
   /* Result / hub */
   .table{width:100%;border-collapse:collapse;font-size:13px;}
-  .table th,.table td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);}
+  .table th,.table td{padding:6px 8px;text-align:left;border-bottom:1px solid rgba(27,58,92,.3);}
   .table th{color:var(--text-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;}
   .table tr.you td{color:var(--gold);}
   .table td.n{text-align:right;font-variant-numeric:tabular-nums;}
 
   .bracket{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;}
   .bracket .col{display:flex;flex-direction:column;gap:10px;}
-  .bracket .match{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;}
+  .bracket .match{background:var(--panel);border:2px solid var(--line);border-radius:0;padding:8px 10px;
+    font-size:12px;box-shadow:var(--shadow-sm);}
   .bracket .match .row{display:flex;justify-content:space-between;padding:2px 0;}
   .bracket .match .row.win{color:var(--gold);}
   .bracket .match .row.you{font-weight:700;}
@@ -250,14 +292,15 @@
     gap:10px;min-width:170px;flex:1;}
   .cupbracket .roundlbl{color:var(--text-dim);font-size:10px;letter-spacing:.14em;
     text-transform:uppercase;text-align:center;margin-bottom:2px;}
-  .cupbracket .match{background:var(--panel);border:1px solid var(--line);
-    border-radius:6px;padding:7px 9px;font-size:12px;}
+  .cupbracket .match{background:var(--panel);border:2px solid var(--line);
+    border-radius:0;padding:7px 9px;font-size:12px;box-shadow:var(--shadow-sm);}
   .cupbracket .match .row{display:flex;justify-content:space-between;gap:8px;padding:2px 0;}
   .cupbracket .match .row.win{color:var(--gold);font-weight:700;}
   .cupbracket .match .row.you{text-decoration:underline;text-underline-offset:3px;}
 
-  .banner{background:linear-gradient(90deg,rgba(244,194,90,.14),transparent);
-    border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;}
+  .banner{background:var(--panel-2);
+    border:2px solid var(--line);border-radius:0;padding:10px 12px;margin-bottom:10px;
+    font-size:13px;box-shadow:var(--shadow-sm);}
   .banner b{color:var(--gold);}
 
   .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -541,9 +584,9 @@ const ROSTER_BY_KEY = Object.fromEntries(ROSTER.map(c => [c.k, c]));
    strip in the sky area, so it reads as a silhouette on the horizon. */
 const STADIUM_THEMES = {
   'Ironsides': {
-    park:'The Iron Yard', sky:'#0a0d13', wall:'#2a2a2a', wallLine:'#c94b1a',
-    marker:'#f4c25a', track:'#5a4a3a', grass:'#1e4a24',
-    crowd:['#3a2820','#2a2028','#3a3038','#302020','#404040'],
+    park:'The Iron Yard', sky:'#86bdd8', wall:'#4a5058', wallLine:'#f2ead4',
+    marker:'#f2ead4', track:'#b08a58', grass:'#3f9145',
+    crowd:['#8a97a4','#b06a4a','#6a7684','#c9a256','#9aa8b6'],
     landmark(ctx, w, h) {
       /* Gothic iron gate silhouette behind the wall */
       ctx.fillStyle = '#050508';
@@ -558,9 +601,9 @@ const STADIUM_THEMES = {
     },
   },
   'Storybook Nine': {
-    park:'Fable Field', sky:'#2a1a3a', wall:'#7a4a8a', wallLine:'#f4c25a',
-    marker:'#f4c25a', track:'#c9a256', grass:'#3a7a3a',
-    crowd:['#f4c25a','#5cb6e5','#c94b1a','#b08ac6','#5bb083'],
+    park:'Fable Field', sky:'#a9caf2', wall:'#8f5f9f', wallLine:'#f8e6b0',
+    marker:'#fffaf0', track:'#d8b070', grass:'#4aa452',
+    crowd:['#f0a8c8','#a8c8f0','#f8dc90','#c0a0e0','#a0e0c0'],
     landmark(ctx, w, h) {
       /* Storybook castle spires */
       ctx.fillStyle = '#08050f';
@@ -571,9 +614,9 @@ const STADIUM_THEMES = {
     },
   },
   'The Timekeepers': {
-    park:'Detective Downs', sky:'#221a10', wall:'#3a2818', wallLine:'#eaeaea',
-    marker:'#eaeaea', track:'#5a4a2a', grass:'#2a5a2c',
-    crowd:['#3a2818','#5a4a3a','#2a1a10','#4a3a2a','#3a3028'],
+    park:'Detective Downs', sky:'#dbbd86', wall:'#6f5030', wallLine:'#f4e8c8',
+    marker:'#fffaf0', track:'#c09a60', grass:'#4a9a48',
+    crowd:['#c9a256','#8b6a3a','#e0c898','#a08050','#d8c0a0'],
     landmark(ctx, w, h) {
       /* A giant clock face in the wall */
       ctx.fillStyle = '#0a0806';
@@ -586,9 +629,9 @@ const STADIUM_THEMES = {
     },
   },
   'Nightshift': {
-    park:'Midnight Park', sky:'#100820', wall:'#180a24', wallLine:'#8a1a1a',
-    marker:'#c94b1a', track:'#3a2a30', grass:'#183a24',
-    crowd:['#180a24','#2a1a3a','#3a1a20','#08040c','#0a0a12'],
+    park:'Midnight Park', sky:'#f2a25e', wall:'#5a3a5e', wallLine:'#ffe8a8',
+    marker:'#fffaf0', track:'#ab7c5c', grass:'#357f48',
+    crowd:['#f0c070','#e08858','#c06888','#f8d8a0','#a06898'],
     landmark(ctx, w, h) {
       /* Bat silhouettes flying across the sky */
       ctx.fillStyle = '#050508';
@@ -607,9 +650,9 @@ const STADIUM_THEMES = {
     },
   },
   'The Cartographers': {
-    park:'Explorer Grounds', sky:'#2c2418', wall:'#8b6a3a', wallLine:'#eaeaea',
-    marker:'#141014', track:'#c9a256', grass:'#3a6a2a',
-    crowd:['#8b6a3a','#c9a256','#5a4a2a','#a48856','#2c2418'],
+    park:'Explorer Grounds', sky:'#a2d3ea', wall:'#b28c52', wallLine:'#f6ecd4',
+    marker:'#fffaf0', track:'#d8b070', grass:'#4a9e46',
+    crowd:['#d8c098','#a8c8d8','#c9a256','#e8d8b0','#90b0c0'],
     landmark(ctx, w, h) {
       /* Parchment map billboard */
       ctx.fillStyle = '#d4b878';
@@ -624,9 +667,9 @@ const STADIUM_THEMES = {
     },
   },
   'Fields and Fables': {
-    park:'Emerald Meadows', sky:'#3a6a5a', wall:'#3a7a4a', wallLine:'#e9c76a',
-    marker:'#e9c76a', track:'#c9a256', grass:'#3a8a3a',
-    crowd:['#3a7a4a','#e9c76a','#c94b1a','#5cb6e5','#f4c25a'],
+    park:'Emerald Meadows', sky:'#93d3ea', wall:'#3f9c54', wallLine:'#f8f0d2',
+    marker:'#fffaf0', track:'#d8b878', grass:'#51b257',
+    crowd:['#a8d8a0','#f0e0a0','#88c8b0','#d8f0b0','#b8e0d0'],
     landmark(ctx, w, h) {
       /* Emerald City tower */
       ctx.fillStyle = '#0a2a1a';
@@ -638,9 +681,9 @@ const STADIUM_THEMES = {
     },
   },
   'The Marauders': {
-    park:'Pirate Bay', sky:'#1a2a3a', wall:'#3a2818', wallLine:'#f4c25a',
-    marker:'#f4c25a', track:'#8a6a3a', grass:'#2a5a3a',
-    crowd:['#3a2818','#5a4a2a','#8a1a1a','#3a3a4a','#2a2a3a'],
+    park:'Pirate Bay', sky:'#74c3e2', wall:'#6f4f2f', wallLine:'#f6e2a8',
+    marker:'#fffaf0', track:'#d0a878', grass:'#3f9c51',
+    crowd:['#d8c8a0','#8a6a4a','#e0b070','#a8c8d8','#c05050'],
     landmark(ctx, w, h) {
       /* Ship silhouette with sail */
       ctx.fillStyle = '#050508';
@@ -654,9 +697,9 @@ const STADIUM_THEMES = {
     },
   },
   'The Kids Table': {
-    park:'Little League Park', sky:'#5aa0d0', wall:'#c94b1a', wallLine:'#eaeaea',
-    marker:'#eaeaea', track:'#c9a256', grass:'#3a8a3a',
-    crowd:['#f4c25a','#5cb6e5','#c94b1a','#5bb083','#eaeaea'],
+    park:'Little League Park', sky:'#72c7f0', wall:'#dd5c2c', wallLine:'#fff4dc',
+    marker:'#fffaf0', track:'#d8b070', grass:'#51b257',
+    crowd:['#f05a5a','#f0c040','#50b0f0','#60d080','#f090c0'],
     landmark(ctx, w, h) {
       /* Day sky: a sun and a few clouds. */
       ctx.fillStyle = '#f4c25a';
@@ -667,9 +710,9 @@ const STADIUM_THEMES = {
     },
   },
   'The Holiday Nine': {
-    park:'North Pole Yard', sky:'#0e1e3a', wall:'#c93030', wallLine:'#f5efe8',
-    marker:'#f5efe8', track:'#f5efe8', grass:'#3aaa5a',
-    crowd:['#c93030','#3a7f4a','#f5efe8','#f4c25a','#5cb6e5'],
+    park:'North Pole Yard', sky:'#c3e7f6', wall:'#cc3434', wallLine:'#ffffff',
+    marker:'#ffffff', track:'#f0f2f6', grass:'#50b263',
+    crowd:['#e05050','#f8f8fa','#40a060','#f0d060','#c0d8e8'],
     landmark(ctx, w, h) {
       /* Big evergreen tree on the horizon, garland lights, snow atop the
          wall track. */
@@ -695,9 +738,9 @@ const STADIUM_THEMES = {
     },
   },
   'Cryptids': {
-    park:'Crater Field', sky:'#0a0a14', wall:'#1a0e1a', wallLine:'#5bb083',
-    marker:'#c94b1a', track:'#1a1010', grass:'#1a2a10',
-    crowd:['#050508','#080810','#12081a','#0a0a12','#1a0a12'],
+    park:'Crater Field', sky:'#accfb9', wall:'#5f4f70', wallLine:'#f4e8b0',
+    marker:'#fffaf0', track:'#a89078', grass:'#4a9a5a',
+    crowd:['#8fa890','#b0a0c0','#c8b890','#90b8a8','#a89078'],
     landmark(ctx, w, h) {
       /* Bone-white full moon behind ragged crater rim silhouette. */
       ctx.fillStyle = '#f5efe8';
@@ -722,9 +765,9 @@ const STADIUM_THEMES = {
     },
   },
   'The Ancients': {
-    park:'Colossus Coliseum', sky:'#3a2828', wall:'#a89058', wallLine:'#eaeaea',
-    marker:'#eaeaea', track:'#c9a256', grass:'#2a5a2c',
-    crowd:['#c9a256','#8b6a3a','#5a4a2a','#a89058','#3a2818'],
+    park:'Colossus Coliseum', sky:'#f2cb92', wall:'#d8c898', wallLine:'#ffffff',
+    marker:'#ffffff', track:'#d8b878', grass:'#4b9c49',
+    crowd:['#f0e4c8','#d8c090','#c0a878','#e8d8b8','#b09868'],
     landmark(ctx, w, h) {
       /* Marble columns behind the wall */
       ctx.fillStyle = '#eaeaea';
@@ -740,9 +783,9 @@ const STADIUM_THEMES = {
     },
   },
   'Folklore': {
-    park:'Whispering Grove', sky:'#3a1a10', wall:'#5a2a10', wallLine:'#f4c25a',
-    marker:'#f4c25a', track:'#8a5a2c', grass:'#3a5a2a',
-    crowd:['#c94b1a','#e88a3a','#8a5a2c','#c9a256','#5a2a10'],
+    park:'Whispering Grove', sky:'#f2ba7c', wall:'#8f5f2f', wallLine:'#fadfa6',
+    marker:'#fffaf0', track:'#c09060', grass:'#51a046',
+    crowd:['#e08840','#f0b860','#c06830','#d8a870','#a85828'],
     landmark(ctx, w, h) {
       /* Autumn-forest silhouette: sparse tree crowns */
       ctx.fillStyle = '#0a0806';
@@ -763,9 +806,9 @@ const STADIUM_THEMES = {
   },
 };
 const DEFAULT_THEME = {
-  park:'The Sandlot', sky:'#0e1c2c', wall:'#173a20', wallLine:'#f4c25a',
-  marker:'#eaeaea', track:'#8a5a2c', grass:'#245a2c',
-  crowd:['#3a4a5a','#5a4a3a','#4a3a4a','#3a5a4a','#5a5a6a'],
+  park:'The Sandlot', sky:'#72c7f0', wall:'#2f8a44', wallLine:'#fff4dc',
+  marker:'#fffaf0', track:'#d0a060', grass:'#47ab52',
+  crowd:['#e05a5a','#f0c050','#5aa8e0','#60c880','#e88ac0'],
   landmark(){},
 };
 function currentTheme() {
@@ -4382,15 +4425,37 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillStyle = theme.sky;
   ctx.fillRect(0, 0, w, skyH + 64);
   const horizon = ctx.createLinearGradient(0, 0, 0, skyH + 50);
-  horizon.addColorStop(0, 'rgba(0,0,0,.30)');
-  horizon.addColorStop(0.65, 'rgba(0,0,0,.05)');
-  horizon.addColorStop(1, 'rgba(255,206,130,.10)');
+  if (theme.night) {
+    horizon.addColorStop(0, 'rgba(0,0,0,.30)');
+    horizon.addColorStop(0.65, 'rgba(0,0,0,.05)');
+    horizon.addColorStop(1, 'rgba(255,206,130,.10)');
+  } else {
+    /* A day sky is DEEPER at the top and pales toward the horizon, which
+       is the opposite shape to the night one it was drawn for. */
+    horizon.addColorStop(0, 'rgba(20,70,130,.22)');
+    horizon.addColorStop(0.7, 'rgba(255,255,255,.05)');
+    horizon.addColorStop(1, 'rgba(255,255,255,.35)');
+  }
   ctx.fillStyle = horizon;
   ctx.fillRect(0, 0, w, skyH + 50);
-  /* a few stars, dimmed on daytime themes */
-  if (theme.sky !== '#5aa0d0') {
+  /* Stars are a NIGHT thing, and which nights those are is now a flag on
+     the theme. It used to be inferred by comparing the sky to one exact
+     hex string, so every park that was not that literal blue got stars,
+     and the day the palette moved to daylight all thirteen of them would
+     have come out starlit at noon. */
+  if (theme.night) {
     ctx.fillStyle = 'rgba(234,234,234,.5)';
     for (let x = 13; x < w; x += 61) ctx.fillRect(x, 6 + (x * 7) % 18, 2, 2);
+  } else {
+    /* Daylight gets clouds instead: flat pixel banks, no gradients. */
+    ctx.fillStyle = 'rgba(255,255,255,.72)';
+    for (const [cxf, cyf, cw] of [[0.13, 0.30, 46], [0.37, 0.16, 30],
+                                  [0.62, 0.34, 38], [0.86, 0.20, 52]]) {
+      const bx = w * cxf, by = skyH * cyf + 6;
+      ctx.fillRect(bx, by + 5, cw, 6);
+      ctx.fillRect(bx + cw * 0.18, by, cw * 0.5, 6);
+      ctx.fillRect(bx + cw * 0.55, by + 2, cw * 0.3, 5);
+    }
   }
 
   /* Landmark: theme-specific silhouette in the sky area. */
@@ -4408,11 +4473,13 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         ctx.fillRect(tx - 13 + i * 8, 8 + row * 5, 4, 3);
       }
     }
-    const glow = ctx.createRadialGradient(tx, 12, 2, tx, 12, 60);
-    glow.addColorStop(0, 'rgba(245,236,200,.20)');
-    glow.addColorStop(1, 'rgba(245,236,200,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(tx - 60, 0, 120, 80);
+    if (theme.night) {
+      const glow = ctx.createRadialGradient(tx, 12, 2, tx, 12, 60);
+      glow.addColorStop(0, 'rgba(245,236,200,.20)');
+      glow.addColorStop(1, 'rgba(245,236,200,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(tx - 60, 0, 120, 80);
+    }
   };
   tower(w * 0.14);
   tower(w * 0.86);
@@ -4512,7 +4579,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   /* Light pools: each tower throws a soft warm wash onto the outfield
      below it, which is what stitches the lights at the top of the frame
      to the grass they are supposedly lighting. */
-  for (const fx of [0.14, 0.86]) {
+  if (theme.night) for (const fx of [0.14, 0.86]) {
     const lx = w * fx, lyTop = grassTopAt(lx);
     const pool = ctx.createRadialGradient(lx, lyTop + 70, 8, lx, lyTop + 70, 190);
     pool.addColorStop(0, 'rgba(245,236,200,.07)');
@@ -5090,11 +5157,11 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     const rBig = 46;
     const rSmall = 12;
     const rNow = rSmall + (rBig - rSmall) * shrink;
-    ctx.strokeStyle = '#5bb083';
+    ctx.strokeStyle = '#0f6b39';
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(lx, ly, rNow, 0, Math.PI * 2); ctx.stroke();
     /* Inner sweet ring */
-    ctx.strokeStyle = 'rgba(244,194,90,.9)';
+    ctx.strokeStyle = 'rgba(232,150,12,.95)';
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
     /* Label */
@@ -5165,7 +5232,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      middle, same framing trick the golf tracer uses. */
   const vg = ctx.createRadialGradient(cx, cy, r * 0.8, cx, cy, w * 0.75);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,.30)');
+  vg.addColorStop(1, theme.night ? 'rgba(0,0,0,.30)' : 'rgba(0,0,0,.12)');
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, w, h);
 
@@ -5307,24 +5374,37 @@ function drawTimingRing(ctx, G, t, pitch, inWindup) {
     /* Windup: the full ring pulses in place, showing where the swing
        window will start from. */
     const pulse = 0.35 + 0.3 * Math.sin(performance.now() / 140);
-    ring(R0, `rgba(234,234,238,${pulse})`, 2);
-    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ring(R0, `rgba(27,58,92,${0.35 + pulse * 0.5})`, 3);
+    /* On a daylight field white text at 75 percent is a smudge. It goes
+       on a plate, like everything else that has to be read over grass. */
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('GET READY', cxp, cyp - R0 * 0.62 - 12);
+    const gy = cyp - R0 * 0.62 - 12;
+    const gw = ctx.measureText('GET READY').width + 14;
+    ctx.fillStyle = 'rgba(255,252,242,.94)';
+    ctx.fillRect(cxp - gw / 2, gy - 9, gw, 18);
+    ctx.strokeStyle = '#1b3a5c';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cxp - gw / 2, gy - 9, gw, 18);
+    ctx.fillStyle = '#cf3229';
+    ctx.fillText('GET READY', cxp, gy);
     return;
   }
   const rel = (pitch.ideal - t) / pitch.ideal;
   if (rel > 0) {
     /* Inbound: the white ring closes on the target with the pitch. */
+    /* Inbound. On grass in daylight a white ring with a dark halo is
+       the wrong way round: the halo goes light and the ring goes INK,
+       turning hot as it crosses into the good band. */
     const r = sweetR + (R0 - sweetR) * rel;
-    ring(r + 1, 'rgba(20,16,24,.55)', 4);
-    ring(r, r < foulR ? '#f4c25a' : '#eaeaee', 3);
+    ring(r + 1, 'rgba(255,252,242,.70)', 5);
+    ring(r, r < foulR ? '#cf3229' : '#1b3a5c', 3);
   } else if (t - pitch.ideal <= half) {
     /* In the sweet window past center: the target flashes hot. */
     const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 60);
-    ring(sweetR, `rgba(140,240,180,${pulse})`, 3);
+    ring(sweetR + 1, 'rgba(255,252,242,.75)', 5);
+    ring(sweetR, `rgba(232,150,12,${pulse})`, 3);
   }
 }
 
@@ -5350,10 +5430,13 @@ function renderGame() {
      from the diamond. Names inside color chips read at a glance without
      needing a label. */
   const theme = currentTheme();
-  const parkLbl = el('div','corner',
-    `<span class="lbl" style="color:${theme.wallLine}">${theme.park}</span>`
-  );
-  parkLbl.style.top = '0'; parkLbl.style.left = '50%'; parkLbl.style.transform = 'translateX(-50%)';
+  /* The park name was tinted with the park's own wall colour, which was
+     a bright accent against a dark field. On a cream placard that is
+     cream on cream, so the sign was blank in every stadium with a pale
+     wall. It takes the marquee red instead. */
+  const parkLbl = el('div','corner park', `<span class="lbl">${theme.park}</span>`);
+  parkLbl.style.top = '8px'; parkLbl.style.left = '50%';
+  parkLbl.style.transform = 'translateX(-50%)';
   parkLbl.style.textAlign = 'center';
   arena.appendChild(parkLbl);
 
