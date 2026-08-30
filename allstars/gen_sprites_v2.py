@@ -265,6 +265,14 @@ class Canvas:
                     o2 = self.owner[ny][nx]
                     if o2 is None or o2 is o:
                         continue
+                    # Materials of similar brightness get NO drawn seam.
+                    # Blond hair over a fair forehead was being edged in
+                    # dark skin tone, which drew a bar clear across the
+                    # face at brow height: safety glasses on every kid
+                    # on the roster. Where the two materials really
+                    # contrast (a jacket against skin), the seam stays.
+                    if abs(luma(o.mid) - luma(o2.mid)) < 0.17:
+                        continue
                     edits.append((nx, ny, o2.line))
         for (x, y, rgb) in edits:
             self.set(x, y, rgb, self.owner[y][x])
@@ -365,30 +373,35 @@ def face(cv, skin, spec, cy=HEAD_CY):
         cv.dot(CX, y, pc); cv.dot(CX, y + 1, pc)
         cv.dot(CX - 1, y, pc); cv.dot(CX - 1, y + 1, pc)
     else:
+        # Two lessons from review, baked into every two eyed style:
+        #
+        # 1. The eye is 2x2 and starts a row BELOW the brow line. At 2x3
+        #    the whites touched the hair's bottom seam, and eyes plus
+        #    hairline fused into one dark band across the face, like
+        #    safety glasses.
+        # 2. The pupil is the SAME column in both eyes: shine on the lit
+        #    side, pupil on the other, like every classic chibi sheet.
+        #    Mirroring the pupils inward made everyone cross eyed.
         for sx in (-sp, sp):
             x = int(CX + sx)
-            inner = x - 1 if sx > 0 else x     # pupil sits toward center
             if style == 'glow':
                 g = hex2rgb(ec or '#f4c25a')
                 for dx in (-1, 0):
                     cv.dot(x + dx, y, g)
                     cv.dot(x + dx, y + 1, shade(g, -0.30))
-                cv.dot(inner, y, shade(g, 0.50))
+                cv.dot(x - 1, y, shade(g, 0.50))
             elif style == 'angry':
                 b = shade(skin.base, -0.50)
                 cv.dot(x - 1, y - 1, b); cv.dot(x, y - 1, b)
-                for dx in (-1, 0):
-                    cv.dot(x + dx, y, WHITE); cv.dot(x + dx, y + 1, WHITE)
                 pc = hex2rgb(ec or '#241e2e')
-                cv.dot(inner, y, pc); cv.dot(inner, y + 1, pc)
+                for dy in (0, 1):
+                    cv.dot(x - 1, y + dy, WHITE)
+                    cv.dot(x, y + dy, pc)
             else:
-                # normal and cartoon: a tall white with a 1x2 pupil,
-                # leaving an L of white as the catchlight.
-                for dx in (-1, 0):
-                    for dy in (-1, 0, 1):
-                        cv.dot(x + dx, y + dy, WHITE)
                 pc = hex2rgb(ec or '#241e2e')
-                cv.dot(inner, y, pc); cv.dot(inner, y + 1, pc)
+                for dy in (0, 1):
+                    cv.dot(x - 1, y + dy, WHITE)
+                    cv.dot(x, y + dy, pc)
     m = spec.get('mouth', 'line')
     my = int(cy + 6)
     mc = shade(skin.base, -0.42)
@@ -802,10 +815,9 @@ def arch_nessie(cv, spec, pose):
     # her face lives here: the head is off center, so face() cannot
     for sx in (-2, 2):
         x = int(CX + 2 + sx)
-        for dx in (-1, 0):
-            cv.dot(x + dx, 6, (250, 250, 252))
-            cv.dot(x + dx, 7, (250, 250, 252))
-        cv.dot(x - (1 if sx > 0 else 0), 7, (24, 20, 30))
+        for dy in (6, 7):
+            cv.dot(x - 1, dy, (250, 250, 252))
+            cv.dot(x, dy, (24, 20, 30))
     for dx, dy in ((-4, 27), (2, 31), (-2, 21), (0, 15), (9, 30)):
         cv.dot(CX + dx, dy, lite.mid)
         cv.dot(CX + dx + 1, dy, lite.mid)
@@ -929,13 +941,9 @@ def sig_kong(cv, spec, pose, back):
     cv.sphere(CX, 17.2, 7.0, 4.8, muz)
     for sx in (-3, 3):
         x = int(CX + sx)
-        for dx in (-1, 0):
-            for dy in (-1, 0, 1):
-                cv.dot(x + dx, 12 + dy, (250, 250, 252))
-        pc = (36, 28, 40)
-        inner = x - 1 if sx > 0 else x
-        cv.dot(inner, 12, pc)
-        cv.dot(inner, 13, pc)
+        for dy in (12, 13):
+            cv.dot(x - 1, dy, (250, 250, 252))
+            cv.dot(x, dy, (36, 28, 40))
     cv.dot(CX - 2, 15, shade(muz.base, -0.4))
     cv.dot(CX + 2, 15, shade(muz.base, -0.4))
     dk = shade(body.base, -0.5)
