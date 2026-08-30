@@ -37,6 +37,11 @@ const PHASES = {
   /* FULL TEAM ONLY: the hire and the game plan, between the last signing and the schedule.
      A phase rather than a screen flag, so it survives a reload the way the draft does. */
   COACH: 'coach',
+  /* THE LONG GAME ONLY: the winter between two seasons. Everybody ages here, salaries
+     ratchet, and you release whoever you are not paying for any more. A phase rather than a
+     screen flag for the same reason COACH is one: a reload mid-decision has to come back to
+     the decision. */
+  OFFSEASON: 'offseason',
   SEASON: 'season',      // the 17 regular-season games
   SEEDING: 'seeding',    // record is final, showing where it left you
   PLAYOFFS: 'playoffs',  // one loss ends it
@@ -104,7 +109,13 @@ function capOf(run) {
 }
 
 function remaining(run) {
-  const spent = run.roster.reduce((s, p) => s + p.price_musd, 0);
+  /* WHAT THE ROSTER COSTS, WHICH IN A DYNASTY IS NOT WHAT IT IS WORTH. A man is paid what
+     he was signed for, raised the year he improves and held the year he declines, so the
+     cap is spent against salaries and only a first signing costs list price. Everywhere
+     else the two are the same number and this reads as it always did. */
+  const spent = run.dynasty
+    ? run.roster.reduce((s, p, i) => s + (run.salaries[i] ?? p.price_musd), 0)
+    : run.roster.reduce((s, p) => s + p.price_musd, 0);
   const fees = E.respinFees(run.respinsUsed);
   /* THE COACH COMES OUT OF THE SAME CAP, which is the entire reason he is interesting. A
      coach on a separate budget is a free bonus; a coach who costs a cornerback is a
@@ -469,8 +480,13 @@ function createRun(opts) {
   const defense = !!opts.defense;
   /* FULL TEAM. Twelve spots instead of six, alternating sides, drawn from BOTH pools out of
      one shared cap. The only run whose roster decides what both teams score. */
-  const full = !!opts.full;
+  const full = !!opts.full || !!opts.dynasty;
   if (full && defense) throw new Error('a run is full team or defense, not both');
+  /* THE LONG GAME IS A FULL TEAM THAT KEEPS GOING, so it sets `full` rather than sitting
+     beside it: twelve men, both pools, one shared cap, a coach. What it adds is a calendar,
+     a salary per man that never falls, and an owner who wants something every autumn. */
+  const dynasty = !!opts.dynasty;
+  const startYear = dynasty ? (opts.startYear ?? null) : null;
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
@@ -480,6 +496,26 @@ function createRun(opts) {
     tradeMachine,
     defense,
     full,
+    dynasty,
+    /* THE CALENDAR. leagueYear is the season being played and every wheel in the mode is
+       locked to it, which is what turns the year reel into the thing that advances between
+       seasons rather than a thing you spin. */
+    startYear,
+    leagueYear: startYear,
+    seasonNo: dynasty ? 1 : null,
+    /* WHAT EACH MAN IS PAID, index-aligned with roster, and the number the cap is spent
+       against. It is NOT p.price_musd: a salary is what he was signed for, raised the year
+       he improves and held the year he declines. See E.dynastySalary. */
+    salaries: dynasty ? [] : null,
+    /* Seasons on YOUR roster, by player id, which is what the continuity bonus counts. */
+    tenure: dynasty ? {} : null,
+    /* Every season played, oldest first: what the owner reads and what the run is scored
+       on. */
+    history: dynasty ? [] : null,
+    fired: false,
+    /* The winter's working state: who aged into what, and who is gone. Null outside the
+       offseason so a stale one cannot be painted. */
+    winter: null,
     /* THE THIRTEENTH ASSET AND THE PLAN HE BRINGS. Null until the coach step, which runs
        after the twelfth signing: a plan chosen before there is a roster to point it at is a
        guess, and a coach hired before the money is spent is a different game. */
@@ -731,6 +767,13 @@ function drawable(run, data, limit) {
        a limit of two each, so the lock can never run the pool dry. */
     .filter((t) => !run.franchise || t.franchise === run.franchise)
     .filter((t) => { if (!run.era) return true; const r = E.ERAS[run.era]; return t.season >= r[0] && t.season <= r[1]; })
+    /* THE LONG GAME SPINS CLUBS AND NOT YEARS. Every other mode leaves the year free, which
+       is the whole point of them: 2000 Faulk beside 2019 Lamar Jackson. Here the year is the
+       LEAGUE year and the offseason is what advances it, so a dynasty walks forward through
+       real NFL history drafting out of the league as it actually was that autumn. One line
+       here rather than a filter at the call site, for the reason the franchise lock above
+       documents: every question about the pool then answers correctly on its own. */
+    .filter((t) => !run.dynasty || t.season === run.leagueYear)
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }
@@ -749,7 +792,68 @@ function spin(run, data, constraint) {
   /* Attached on the first spin rather than at createRun(), which does not get the data.
      Before this point reserveFloor() has nothing to read and falls back to the flat
      constant, which is only ever the opening paint of an empty roster. */
-  run.floorLists ??= (data.cheapBy && (data.cheapBy[run.franchise || '*'] || null));
+/*
+ * THE CHEAPEST MEN IN ONE LEAGUE YEAR, per position, for The Long Game's floor.
+ *
+ * indexData's cheapBy is the forty-eight cheapest men at each position IN THE WHOLE POOL,
+ * which is exactly right for every mode whose wheel can reach any year: the cheapest
+ * receiver anywhere is genuinely reachable, so reserving his price is an honest promise.
+ *
+ * A DYNASTY'S WHEEL CANNOT LEAVE THE LEAGUE YEAR, and that turns the same table into a lie.
+ * Measured on a 2004 dynasty: the draft spent down to $9M with a receiver and a lineman
+ * still to sign, reserving $3M apiece because the pool's cheapest receiver costs $3M. There
+ * are ZERO offensive players at $3M or under in 2004. The wheel then had nothing to offer,
+ * the spin threw "nothing left you can afford", and the run was stuck at ten men. Filtering
+ * the existing table would not fix it either, because forty-eight deep across twenty-seven
+ * seasons can easily hold nobody from any one of them.
+ *
+ * So it is built from the year itself. About 350 skill players and 630 defenders a season,
+ * scanned once a winter, which is nothing.
+ */
+function yearFloorLists(players, year, depth) {
+  const out = {};
+  for (const p of players) {
+    if (p.season !== year || !p.position) continue;
+    for (const pos of E.positionsOf(p)) {
+      (out[pos] ??= []).push({ id: p.player_id, price: p.price_musd, ts: p.team_season_id });
+    }
+  }
+  for (const pos of Object.keys(out)) {
+    out[pos].sort((a, b) => a.price - b.price);
+    out[pos] = out[pos].slice(0, depth);
+  }
+  return out;
+}
+
+  /* THE FLOOR HAS TO KNOW BOTH POOLS, and until now it only ever knew one.
+     assignedFloors reads run.floorLists to answer "what is the cheapest man who could fill
+     this open spot", and this line used to capture it once, from whichever data set spun
+     first. In every single-pool mode that is the whole pool and there is nothing to miss.
+     A FULL TEAM SPINS TWO. The first spin is the quarterback slot, so floorLists arrived
+     holding QB, RB, WR and TE and nothing else, and every DL, LB and DB spot came back as
+     "a spot nobody left can fill". assignedFloors then returns null for the whole roster
+     and the caller falls back to a flat $3M a slot, which UNDER-reserves: the draft happily
+     spends down to $12M with two spots open and then finds no club in the pool that can
+     fill them, which reads as the game breaking rather than as the money running out.
+     Full Team has survived it because its wheel can reach 800 team-seasons and something
+     cheap almost always turns up. The Long Game locks the wheel to one league year, 32
+     clubs, and it strands inside twelve picks.
+     Merged rather than replaced, so each pool contributes the positions it knows and
+     neither overwrites the other. */
+  if (run.dynasty) {
+    /* Rebuilt whenever the calendar moves, because last winter's cheapest receiver is not
+       this winter's and the whole point of the table is that the wheel can reach him. */
+    if (run.floorYear !== run.leagueYear) { run.floorLists = null; run.floorYear = run.leagueYear; }
+    const src = yearFloorLists(data.players || [], run.leagueYear, 48);
+    if (!run.floorLists) run.floorLists = {};
+    for (const pos in src) if (!run.floorLists[pos]) run.floorLists[pos] = src[pos];
+  } else if (data.cheapBy) {
+    const src = data.cheapBy[run.franchise || '*'] || null;
+    if (src) {
+      if (!run.floorLists) run.floorLists = { ...src };
+      else for (const pos in src) if (!run.floorLists[pos]) run.floorLists[pos] = src[pos];
+    }
+  }
   const rng = rngFor(run);
 
   let available = drawable(run, data);
@@ -855,6 +959,12 @@ function sign(run, player, want) {
 
   run.roster.push(player);
   run.slotIndex.push(slot);
+  /* HIS SALARY IS SET THE DAY HE SIGNS and never falls after it. usedPlayers keeps him out
+     of the pool for the rest of the dynasty even after a release, which is not tidiness:
+     without it the winter holds a free exploit, cut your declining $40M star and re-sign
+     the same man at the $32M he is now worth, which is the pay cut the ratchet exists to
+     forbid. blockFor already reads usedPlayers, so a release simply never removes him. */
+  if (run.dynasty) run.salaries.push(player.price_musd);
   run.usedPlayers.push(player.player_id);
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   // Which team-season filled which spot. Needed for the post-run reveal, which
@@ -867,7 +977,10 @@ function sign(run, player, want) {
      they are a phase rather than a screen so a reload mid-decision comes back to the same
      place a reload mid-draft does. */
   if (run.roster.length === slotsOf(run).length) {
-    run.phase = run.full ? PHASES.COACH : PHASES.SEASON;
+    /* A DYNASTY HIRES ITS COACH ONCE. Season two onward refills holes and goes straight
+       back to the schedule, because the man is already under contract and being asked to
+       re-hire him every winter would be a screen with one button on it. */
+    run.phase = (run.full && !run.coach) ? PHASES.COACH : PHASES.SEASON;
   }
   return run;
 }
@@ -926,6 +1039,184 @@ function finishHiring(run) {
   if (run.phase !== PHASES.COACH) throw new Error('not hiring');
   run.phase = PHASES.SEASON;
   return run;
+}
+
+/*
+ * ─── THE LONG GAME: THE WINTER, AND THE OWNER ───────────────────────────────────────
+ *
+ * Everything below runs between two seasons and nothing else in the game calls any of it.
+ * The order is fixed and each step is its own function so the screen can animate between
+ * them rather than repainting one lump:
+ *
+ *   beginOffseason   everybody ages into his own next year and salaries ratchet
+ *   releaseMan       you open money the only way there is
+ *   finishOffseason  the holes go back to the wheel, locked to the new league year
+ *
+ * And after the season, ownerVerdict says whether there is another one.
+ */
+
+/**
+ * Open the winter.
+ *
+ * `byKey` maps `player_id|season` to a row and has to cover BOTH pools, because a full team
+ * holds both. `lastSeason` is the newest year in the data, which is only used to tell a man
+ * who missed a season from one the pool has nothing more from: see E.dynastyGoneFor. Both
+ * are passed in rather than derived, because run.js is handed one indexed data set at a time
+ * and the page is the only thing holding both.
+ *
+ * Nothing is decided here. It ages the roster, works out what everybody now costs, and puts
+ * the result on run.winter for the screen to show and for releaseMan to act on.
+ */
+function beginOffseason(run, byKey, lastSeason) {
+  if (!run.dynasty) throw new Error('not a dynasty');
+  if (run.fired) throw new Error('you were fired');
+  if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
+
+  const year = run.leagueYear + 1;
+  const kept = [], slots = [], sal = [], draws = [], aged = [], gone = [];
+  for (let i = 0; i < run.roster.length; i++) {
+    const man = run.roster[i];
+    const next = E.dynastyAge(man, byKey, year);
+    if (!next) {
+      /* NOT "RETIRED". A row for a later season means he missed this one; no row at all
+         means the pool has nothing more from him. Neither is retirement and neither is
+         claimed to be: the failure mode here is telling somebody a false thing about a
+         real person. */
+      gone.push({ was: man, salary: run.salaries[i], why: E.dynastyGoneFor(man, byKey, year, lastSeason) });
+      continue;
+    }
+    const wasSal = run.salaries[i];
+    const nowSal = E.dynastySalary(wasSal, next.price_musd);
+    kept.push(next); slots.push(run.slotIndex[i]); sal.push(nowSal);
+    draws.push(run.draws[i] || null);
+    aged.push({ was: man, now: next, wasSalary: wasSal, salary: nowSal,
+      /* What the market says he is worth, which is not what you pay him. The gap between
+         the two is the whole of what an ageing roster does to you and the screen shows it
+         as its own number. */
+      market: next.price_musd,
+      raise: Math.round((nowSal - wasSal) * 10) / 10,
+      drop: Math.round((next.ppr_ppg_mean - man.ppr_ppg_mean) * 10) / 10 });
+  }
+
+  run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
+  run.leagueYear = year;
+  run.seasonNo += 1;
+  /* THE CAP MOVES ONCE A WINTER AND ONLY HERE. Six percent, and it is the brake rather
+     than the accelerator: see DYNASTY_CAP_GROWTH. */
+  run.capMusd = money(capOf(run) * E.DYNASTY_CAP_GROWTH);
+  /* A NEW SEASON'S WHEELS ARE FRESH. usedTeamSeasons is the two-draws-a-club rule inside
+     one draft; carrying it across a decade would starve the pool of clubs. usedPlayers is
+     NOT reset, because a man who has played for you never comes back. */
+  run.usedTeamSeasons = [];
+  run.respinsUsed = 0;
+  run.currentDraw = null;
+  run.season = null;
+  run.playoffSeed = null;
+  run.outcome = null;
+  run.winter = { year, aged, gone, released: [] };
+  run.phase = PHASES.OFFSEASON;
+  return run.winter;
+}
+
+/**
+ * Let a man go, by his index in the roster.
+ *
+ * His salary comes off the books whole and his spot opens. He does NOT return to the pool:
+ * usedPlayers still holds him, which is what stops the winter's one free exploit. See sign.
+ */
+function releaseMan(run, rosterIndex) {
+  if (run.phase !== PHASES.OFFSEASON) throw new Error('not the offseason');
+  const man = run.roster[rosterIndex];
+  if (!man) throw new Error('nobody there');
+  const salary = run.salaries[rosterIndex];
+  run.roster.splice(rosterIndex, 1);
+  run.slotIndex.splice(rosterIndex, 1);
+  run.salaries.splice(rosterIndex, 1);
+  run.draws.splice(rosterIndex, 1);
+  run.winter.released.push({ was: man, salary });
+  run.winter.aged = run.winter.aged.filter((a) => a.now !== man);
+  return run;
+}
+
+/**
+ * TAKE THE FIELD SHORT-HANDED, which is a legal way to finish a dynasty draft and the one
+ * place this mode needs an exit the others do not.
+ *
+ * The cap is a signing gate. Come out of a winter with a roster that appreciated past it
+ * and there is no money, so the wheel has nothing to offer and the holes stay open. That is
+ * the rule working rather than the game breaking, and the run has to be able to continue:
+ * eleven good men beat twelve poor ones often enough to be worth trying, and the alternative
+ * is a player trapped on a draft screen that can never be finished.
+ *
+ * BOTH SIDES OF THE BALL STILL HAVE TO EXIST. resolveGameFull splits the roster and reads
+ * each half on its own; an empty one is not a team playing badly, it is arithmetic with
+ * nothing in it.
+ */
+function takeTheField(run) {
+  if (!run.dynasty) throw new Error('only a dynasty may field a short roster');
+  if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
+  const { off, def } = E.splitSides(run.roster);
+  if (!off.length || !def.length) {
+    throw new Error('a team needs somebody on both sides of the ball');
+  }
+  run.currentDraw = null;
+  run.phase = run.coach ? PHASES.SEASON : PHASES.COACH;
+  return run;
+}
+
+/** Is there anything left the wheel could give you? What the short-handed exit reads. */
+function wheelIsDry(run, data) {
+  if (run.roster.length >= slotsOf(run).length) return false;
+  try { return drawable(run, data).length === 0; } catch (_) { return true; }
+}
+
+/** Back to the wheel for whatever is open, at the new league year. */
+function finishOffseason(run) {
+  if (run.phase !== PHASES.OFFSEASON) throw new Error('not the offseason');
+  /* A ROSTER THAT IS SOMEHOW STILL FULL SKIPS THE DRAFT ENTIRELY, which happens when
+     nobody aged out and nobody was released. There is no wheel to spin, so the winter
+     ends at the schedule rather than on a draft screen with nothing to draft. */
+  run.phase = run.roster.length === slotsOf(run).length ? PHASES.SEASON : PHASES.DRAFT;
+  return run;
+}
+
+/**
+ * What the owner wants this season, and whether he got it.
+ *
+ * Called after finish(). It writes the season into run.history, which is what the run is
+ * scored on, and sets run.fired. A fired run stays on OVER and is terminal; a surviving one
+ * can open another winter.
+ */
+function ownerVerdict(run) {
+  if (!run.dynasty) return null;
+  if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
+  const o = run.outcome || {};
+  const wins = o.regularWins ?? 0;
+  const bar = E.dynastyWinBar(run.seasonNo);
+  /* PUSHED ONLY ONCE PER SEASON. This is reachable from a screen and from a reload, and a
+     history with the same year twice would fire somebody for a season they played one
+     time. */
+  if (!run.history.length || run.history[run.history.length - 1].year !== run.leagueYear) {
+    run.history.push({
+      year: run.leagueYear, seasonNo: run.seasonNo,
+      wins, losses: 17 - wins, bar, cleared: wins >= bar,
+      made: !!o.madePlayoffs, title: !!o.titleWon,
+      rating: o.teamRating ?? null,
+    });
+  }
+  run.fired = !E.dynastySurvives(run.history);
+  return {
+    bar, wins, cleared: wins >= bar, fired: run.fired,
+    seasons: run.history.length,
+    /* WHY he is keeping you, which is worth saying out loud on the screen: a season below
+       the bar that survives only because last year cleared it is a warning, not a pass. */
+    onNotice: !run.fired && wins < bar,
+  };
+}
+
+/** Seasons survived, which is the only number this mode is ranked on. */
+function seasonsSurvived(run) {
+  return (run && run.history) ? run.history.length : 0;
 }
 
 /** Build the schedule. Deliberately after the draft, per §7. */
@@ -3162,6 +3453,9 @@ const api = {
   cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
   /* Full Team's coach step. */
   coachMarket, hireCoach, setPlan, finishHiring,
+  /* The Long Game's winter and its owner. */
+  beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived,
+  takeTheField, wheelIsDry,
   /* Exported because the PAGE has to rate the live team with the same chemistry the season
      is playing with, and in Full Team that is two figures rather than one. */
   seasonChem,
