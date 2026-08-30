@@ -25,6 +25,26 @@ If a sentence seems to need one, the sentence needs rewriting.
 Two dashes in one sentence (`X — like this — Y`) almost always wants commas or
 parentheses, never one of each.
 
+## Short sentences. Few commas.
+
+Player-facing copy is read on a phone, mid-game, by somebody who wants to press
+the next button. Write it in short declarative sentences. A comma splicing two
+clauses together is nearly always two sentences that have not been separated yet.
+
+| Instead of | Write |
+|---|---|
+| `You needed 10 wins and got 14. Season 4 is yours, and it takes 11.` | `Needed 10. Won 14. Season 4 needs 11.` |
+| `Everybody you kept is a year older, at whatever that year really was.` | `Everyone is a year older.` |
+| `You are $8M over, so no club can offer you anybody.` | `$8M over. No club can offer you a player.` |
+| `Some get better, most get worse, and a few are out of the league.` | `Some improve. Most decline. Some are gone.` |
+
+This sits with the dash rule above rather than against it: that table sends a
+dash to a comma, and this one sends the comma to a full stop when what follows
+it could stand alone.
+
+It applies to copy the player reads. Code comments in this repo are prose that
+explains a decision to the next person, and they can take the room they need.
+
 ### Enforcement
 
 ```

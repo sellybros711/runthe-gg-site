@@ -764,41 +764,84 @@ window.GA_ID='G-L29P5MRWKE';
      shuffle while they count, a gold that appears nowhere else on the results screen, and
      the parts dealt out underneath as a list of things you did rather than folded into the
      total. */
-  .arcade{border:1.5px solid rgba(226,178,90,.42);border-radius:13px;padding:13px 14px 11px;
-    margin-bottom:11px;text-align:center;
-    background:linear-gradient(180deg,rgba(38,30,16,.92),rgba(20,18,13,.92));
-    box-shadow:0 10px 26px -18px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  .arcade{border:1.5px solid rgba(226,178,90,.42);border-radius:14px;padding:14px 15px 12px;
+    margin-bottom:11px;
+    background:linear-gradient(180deg,rgba(38,30,16,.94),rgba(20,18,13,.94));
+    box-shadow:0 12px 30px -18px #000,inset 0 1px 0 rgba(255,220,150,.10)}
   .arcade[hidden]{display:none}
-  .ar-head{display:flex;align-items:baseline;justify-content:center;gap:8px;
-    font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.13em;
-    text-transform:uppercase;color:rgba(243,221,174,.6)}
-  #ar-mult{color:#e2b25a;font-size:11px;letter-spacing:.06em;opacity:0;
-    transform:scale(.7);transition:opacity .25s ease,transform .3s cubic-bezier(.2,1.6,.4,1)}
-  #ar-mult.in{opacity:1;transform:none}
-  .ar-total{font-family:var(--fd,var(--fn));font-size:42px;line-height:1.04;font-weight:800;
-    font-variant-numeric:tabular-nums;letter-spacing:.01em;color:#F3DDAE;margin-top:1px;
-    text-shadow:0 0 26px rgba(226,178,90,.3)}
-  .ar-total.pop{animation:arpop .42s cubic-bezier(.2,1.5,.4,1)}
-  @keyframes arpop{0%{transform:scale(1)}38%{transform:scale(1.13)}100%{transform:scale(1)}}
-  .ar-parts{display:flex;flex-direction:column;gap:2px;margin-top:7px}
+  .ar-head{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:rgba(243,221,174,.6);text-align:center}
+  /* THE TALLY, TOP TO BOTTOM, AS ARITHMETIC YOU CAN FOLLOW.
+     The first version showed the parts and then a headline that did not equal them, because
+     the multiplier had been applied to the total and nothing on the screen said so: three
+     lines adding to 18,500 above a number reading 55,500. Every step is now on the page, in
+     the order it happens. */
+  .ar-parts{display:flex;flex-direction:column;gap:3px;margin-top:9px}
   .ar-p{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-    font-family:var(--fn);font-size:11.5px;color:rgba(243,221,174,.72);
+    font-family:var(--fn);font-size:12.5px;color:rgba(243,221,174,.78);
     opacity:0;transform:translateY(4px);
     transition:opacity .26s ease,transform .26s cubic-bezier(.22,1,.36,1)}
   .ar-p.in{opacity:1;transform:none}
   .ar-p b{font-weight:800;font-variant-numeric:tabular-nums;color:#F3DDAE}
-  /* The headline bonuses read louder than the wins line, because they are the ones worth
-     chasing and the ones somebody will screenshot. */
   .ar-p.big{color:#e2b25a}
   .ar-p.big b{color:#ffd98a}
+  .ar-sum,.ar-x{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    font-family:var(--fn);font-size:12.5px;margin-top:9px;padding-top:8px;
+    border-top:1px solid rgba(226,178,90,.22);color:rgba(243,221,174,.6)}
+  .ar-sum b{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;color:#F3DDAE}
+  /* The multiplier is the mode's whole shape, so it lands rather than appears. */
+  /* When the subtotal is hidden the multiplier row inherits the divider above the tally. */
+  .ar-sum[hidden]{display:none}
+  .ar-sum[hidden]+.ar-x{border-top:1px solid rgba(226,178,90,.22);margin-top:9px;padding-top:8px}
+  .ar-x{border-top:0;margin-top:3px;padding-top:0;
+    opacity:0;transform:scale(.9);transform-origin:right center;
+    transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1)}
+  .ar-x.in{opacity:1;transform:none}
+  .ar-x b{font-family:var(--fd,var(--fn));font-size:20px;font-weight:800;color:#ffd98a;
+    font-variant-numeric:tabular-nums}
+  .ar-total{font-family:var(--fd,var(--fn));font-size:46px;line-height:1.04;font-weight:800;
+    font-variant-numeric:tabular-nums;letter-spacing:.01em;color:#F3DDAE;
+    text-align:center;margin-top:6px;text-shadow:0 0 30px rgba(226,178,90,.34)}
+  .ar-total.pop{animation:arpop .42s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes arpop{0%{transform:scale(1)}38%{transform:scale(1.13)}100%{transform:scale(1)}}
   .ar-run{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     margin-top:10px;padding-top:9px;border-top:1px solid rgba(226,178,90,.22);
     font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
     text-transform:uppercase;color:rgba(243,221,174,.6)}
-  .ar-run b{font-family:var(--fd,var(--fn));font-size:19px;letter-spacing:0;
+  .ar-run b{font-family:var(--fd,var(--fn));font-size:22px;letter-spacing:0;
     font-variant-numeric:tabular-nums;color:#F3DDAE}
+
+  /* ---- THE RESULTS SCREEN, WHEN IT IS THE GAUNTLET ----
+     The rest of this page measures one season against everybody else's one season: a team
+     rating, how close to the best possible roster, and three placings on boards this run is
+     not on. None of that is what a run is scored on here, and putting it under the score
+     told a player the mode was two games at once. Hidden rather than rebuilt, because the
+     panels are correct for every other mode and one screen is easier to keep right than
+     two. */
+  #s-over.gaunt #o-ovr,#s-over.gaunt #o-splits,#s-over.gaunt #o-emblem,
+  #s-over.gaunt .tabwrap,#s-over.gaunt #ot-perfect,#s-over.gaunt #ot-ranks,
+  #s-over.gaunt .next-panel{display:none}
+  /* The record card stops being a hero. It is one fact about one season of a longer run. */
+  #s-over.gaunt #o-card{padding:12px 14px}
+  #s-over.gaunt #o-card .big{font-size:44px}
+  #s-over.gaunt #o-card .hero-note{display:none}
+  /* Room for the dock, which is fixed and would otherwise sit on the last panel. */
+  #s-over.gaunt{padding-bottom:84px}
+
+  /* ---- THE PINNED NEXT SEASON ---- */
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:40;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+    background:linear-gradient(180deg,rgba(10,14,24,0),rgba(10,14,24,.92) 32%,rgba(10,14,24,.98))}
+  .dock[hidden]{display:none}
+  .dock-go{max-width:572px;margin:0 auto;animation:dockpulse 2.1s ease-in-out infinite}
+  @keyframes dockpulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5),var(--shadow)}
+    55%{box-shadow:0 0 0 9px rgba(239,68,68,0),var(--shadow)}
+  }
+  @media (prefers-reduced-motion:reduce){ .dock-go{animation:none} }
+
   /* The same figure, small, wherever the run is not being scored: the winter header and the
-     ledger rows. */
+     ledger's own heading. */
   .scorechip{font-family:var(--fn);font-variant-numeric:tabular-nums;font-weight:800;
     color:#e2b25a}
   .ldg .lsc{font-weight:800;font-variant-numeric:tabular-nums;color:#e2b25a}
@@ -5844,6 +5887,21 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <button class="btn-text seed-sim" id="b-po-skip">Simulate the postseason</button>
   </div>
 
+  <!-- THE WAY TO THE NEXT SEASON, PINNED.
+       It used to sit inside the ledger, which on a phone is most of a screen below the
+       score, so the one action that continues the run was the thing you had to go looking
+       for. Fixed to the bottom of the viewport instead, and it pulses, because a run that
+       is still alive should never look like a run that has ended.
+
+       OUTSIDE THE SCREEN IT BELONGS TO, and that is not tidiness. .screen.on carries an
+       entry animation whose last keyframe is transform:none, and a FINISHED animation still
+       computes to matrix(1,0,0,1,0,0) rather than none. Any transform on an ancestor makes
+       it the containing block for a fixed child, so in there this sat 1,561px down a 930px
+       viewport instead of on the bottom of it. paintDock() is what shows and hides it. -->
+  <div class="dock" id="o-dock" hidden>
+    <button class="btn dock-go" id="b-next-season">Next winter</button>
+  </div>
+
   <div class="screen" id="s-over">
     <!-- A run that failed to send is not a footnote. It sits above the record, in red,
          with the way to fix it, because the alternative is a player believing a season
@@ -5857,9 +5915,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          the multiplier lands on them, and the run total counts up underneath. See
          paintScore(). -->
     <div class="arcade" id="o-score" hidden>
-      <div class="ar-head"><span id="ar-lab">Season score</span><span id="ar-mult"></span></div>
-      <div class="ar-total" id="ar-season">0</div>
+      <div class="ar-head" id="ar-lab">Season score</div>
       <div class="ar-parts" id="ar-parts"></div>
+      <div class="ar-sum"><span>Points this season</span><b id="ar-base">0</b></div>
+      <div class="ar-x" id="ar-x"><span id="ar-xwhy">Season 1 pays once</span><b id="ar-mult">&times;1</b></div>
+      <div class="ar-total" id="ar-season">0</div>
       <div class="ar-run"><span>Run total</span><b id="ar-run">0</b></div>
     </div>
     <!-- THE GAUNTLET ONLY: whether there is another season, and the run so far. Above the
@@ -5949,7 +6009,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div id="o-ledwrap" hidden style="margin-top:12px">
       <div class="rp-head"><span>Every season</span><span class="rp-head-n" id="o-ledn"></span></div>
       <div class="ledger" id="o-ledger"></div>
-      <div style="margin-top:14px"><button class="btn" id="b-next-season" hidden>Next winter</button></div>
     </div>
     <div class="otab on" id="ot-perfect">
       <div class="panel" style="margin-top:11px">
@@ -7001,6 +7060,8 @@ function show(id){
      rob a winner of their celebration. */
   document.querySelectorAll('.confetti-cv').forEach(cv=>cv.remove());
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
+  /* The dock is fixed and outside the screens, so leaving a screen cannot take it with it. */
+  paintDock();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
@@ -7754,7 +7815,7 @@ function ensureDynastyButton(){
   }else{
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">The Gauntlet</span>'+
-      '<span class="hp-full-sub">Six players &middot; every winter they age &middot; last as long as you can</span>';
+      '<span class="hp-full-sub">Six players &middot; one team &middot; how long can you last</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
   }
   el.hidden=false;
@@ -7827,24 +7888,22 @@ function beginDynastyDraft(){
  */
 function dynastyRulesHTML(go){
   return '<div class="eyebrow red">The Gauntlet</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">One team, for as long as '+
-      'you can hold the job</h2>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">One team. '+
+      'How long can you last?</h2>'+
     '<ul class="modenotes">'+
-      '<li><b>Draft six players out of one season</b> and keep them. Same six spots and the '+
-        'same cap as a normal run: QB, RB, two WR, TE and a flex.</li>'+
-      '<li><b>Every winter they age.</b> Each man becomes the year he really had next. Some '+
-        'get better, most get worse, and a few are out of the league. You fill the holes '+
-        'they leave from that year\'s wheel.</li>'+
-      '<li><b>A salary never goes down.</b> Over the cap you keep everybody, you just '+
-        'cannot sign anybody until you release somebody.</li>'+
+      '<li><b>Draft six players from one season.</b> You keep them. Same six spots and '+
+        'the same cap as a normal run.</li>'+
+      '<li><b>Every winter they age.</b> Each player becomes his next real season. Some '+
+        'improve. Most decline. Some are gone. You refill from that year\'s wheel.</li>'+
+      '<li><b>Salaries never drop.</b> Over the cap you keep everyone. You just cannot '+
+        'sign anyone.</li>'+
     '</ul>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:12px 0 0">'+
-      'The owner wants <b>8 wins</b> the first season, 9 the next, then 10, up to 12. '+
-      '<b>Miss two seasons running and you are fired.</b></p>'+
+      'The owner wants <b>8 wins</b>. Then 9, then 10, up to 12. '+
+      '<b>Miss twice in a row and you are fired.</b></p>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:8px 0 0">'+
-      'Every season scores: <b>1,000 a win</b>, more for the playoffs and a title. '+
-      '<b>Season 4 pays quadruple, season 9 pays nine times.</b> Lasting is the whole '+
-      'game.</p>'+
+      'You score <b>1,000 a win</b>. More for the playoffs and a title. '+
+      '<b>Season 4 pays quadruple.</b> Lasting is the whole game.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
 }
 function dynastyIntro(go){
@@ -8054,8 +8113,8 @@ function dynNewSheet(){
   $('sheet-in').innerHTML='<div class="eyebrow red">Start over</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Give up on '+r.leagueYear+'?</h2>'+
     '<p class="dim" style="font-size:13.5px;margin:0">You are '+
-      (n?n+' season'+(n===1?'':'s')+' into this one':'one draft into this one')+
-      '. A new dynasty throws it away, and there is no getting it back.</p>'+
+      (n?n+' season'+(n===1?'':'s')+' in':'one draft in')+
+      '. Starting a new run throws this one away. You cannot get it back.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dyn-drop">Start a new dynasty</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-dyn-keep">Keep playing this one</button></div>';
   $('sheet-in').dataset.kind='dynnew';
@@ -8220,15 +8279,12 @@ const WALL={
      defense draft hit this first, Full Team hit it second, and it was live on this mode
      until somebody went looking. */
   dynasty:{name:'The Gauntlet',
-    what:'Draft six players out of one league year and keep them. Every winter your men age '+
-      'into the season they really had next, their salaries rise and never fall, and the '+
-      'owner wants more wins than he wanted last year.',
-    note:'<b>The Gauntlet is scored on how long you last.</b> Miss the bar twice and you '+
-      'are gone, and the run is however many seasons you got.',
-    noname:'You are signed in. Pick a username and The Gauntlet opens, because every run on '+
-      'that board is listed under a name.',
-    out:'The Gauntlet needs a free account. It runs across seasons, and a run has to have a '+
-      'name on it to be listed.'},
+    what:'Draft six players from one season and keep them. Every winter they age. Salaries '+
+      'rise and never fall. The owner wants more wins every year.',
+    note:'<b>Scored on how long you last.</b> Miss the bar twice and you are gone.',
+    noname:'You are signed in. Pick a username and The Gauntlet opens. Every run on that '+
+      'board is listed under a name.',
+    out:'The Gauntlet needs a free account. A run has to have a name on it to be listed.'},
 };
 function oneTeamWall(why,mode){
   const w=WALL[mode]||WALL.club;
@@ -10149,8 +10205,9 @@ function paintOwnerLine(el){
   el.hidden=false;
   el.innerHTML='<div class="rp-head"><span>The owner</span>'+
       '<span class="rp-head-n">Season '+run.seasonNo+'</span></div>'+
-    '<div class="ownerwant"><b>'+bar+' wins</b><span>keeps your job this season'+
-      (prev&&!prev.cleared?', and you are already one miss down':'')+'</span></div>';
+    '<div class="ownerwant"><b>'+bar+' wins</b><span>'+
+      (prev&&!prev.cleared?'or you are out. You missed last year.':'keeps your job.')+
+      '</span></div>';
 }
 
 function paintCoachLine(id){
@@ -10205,10 +10262,9 @@ function paintDryWheel(){
   $('opts').innerHTML='<div class="drywheel">'+
     '<div class="dw-h">Nobody left you can sign</div>'+
     '<p class="dw-p">'+(over>0.05
-      ? 'You are '+M(over)+' over the cap, so no club can offer you anybody. Release '+
-        'somebody next winter, or take the field a man short.'
-      : 'Nothing the wheel can reach fits what is open and what is left. You can take the '+
-        'field a man short.')+'</p>'+
+      ? M(over)+' over the cap. No club can offer you a player. Release somebody next '+
+        'winter. For now, play a man short.'
+      : 'Nothing left fits your open spots and your money. Play a man short.')+'</p>'+
     '<button class="btn" id="b-short">Take the field with '+run.roster.length+'</button>'+
     '</div>';
   const b=$('b-short');
@@ -10280,8 +10336,8 @@ function paintWinterCap(animate){
   const was=parseFloat(String(el.textContent).replace(/[^0-9.]/g,''))||0;
   if(animate) countMoney(el,was,pay,520,(v)=>M0(v)); else el.textContent=M0(pay);
   $('w-note').textContent=over>0.05
-    ? 'You are '+M(over)+' over. You can keep everybody, but you cannot sign anybody until you are under.'
-    : M(cap-pay)+' of room. Releasing a player is the only way to make more.';
+    ? M(over)+' over. You cannot sign anyone until you are under.'
+    : M(cap-pay)+' of room. Release a player for more.';
 }
 
 /* HOW A YEAR TREATED HIM, IN WORDS.
@@ -10354,14 +10410,14 @@ function paintWinter(){
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
      silently behind a bar whose ceiling quietly changed between two paints. */
-  $('w-sub').innerHTML='Everybody you kept is a year older, at whatever that year really was. '+
-    '<b>A salary never goes down.</b> The cap is up to '+M0(R.capOf(run))+'.';
+  $('w-sub').innerHTML='Everyone is a year older. <b>Salaries never drop.</b> '+
+    'Your cap is now '+M0(R.capOf(run))+'.';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
   }).join('');
   $('w-count').textContent=run.roster.length+' under contract';
-  $('w-hint').textContent=run.roster.length?'Tap a minus to release a player and free his salary.':'';
+  $('w-hint').textContent=run.roster.length?'Tap minus to release a player.':'';
   const gw=$('w-gonewrap');
   gw.hidden=!w.gone.length;
   if(w.gone.length){
@@ -13492,6 +13548,23 @@ function countScore(el,from,to,ms){
  * Off the banked row rather than recomputed, so a repaint and a reload show the same score
  * the season was scored with.
  */
+/* "Season 3 pays triple" beats "x3" on its own. Named up to five because past that the
+   words stop being shorter than the number. */
+const PAYS=['','once','double','triple','quadruple','five times'];
+const paysWord=(n)=>(PAYS[n]?'Season '+n+' pays '+PAYS[n]:'Season '+n+' pays '+n+' times');
+
+/*
+ * THE SCORE, DEALT OUT AS ARITHMETIC YOU CAN FOLLOW.
+ *
+ * The first cut of this showed the reasons and then a headline that did not equal them:
+ * three lines adding to 18,500 above a number reading 55,500, with the multiplier applied
+ * silently in between. Every step is on the page now, in the order it happens, and the
+ * animation walks down it: the reasons, then their sum, then the multiplier landing, then
+ * what the season was actually worth, then the run.
+ *
+ * Off the banked row rather than recomputed, so a repaint and a reload show the same score
+ * the season was scored with.
+ */
 let scoreTimers=[];
 function paintScore(v){
   const box=$('o-score'); if(!box) return;
@@ -13500,45 +13573,65 @@ function paintScore(v){
   if(!run||!run.dynasty||!h){ box.hidden=true; return; }
   const at=(ms,fn)=>scoreTimers.push(setTimeout(fn,ms));
   box.hidden=false;
-  $('ar-lab').textContent='Season '+h.seasonNo+' score';
-  const mult=$('ar-mult');
-  mult.textContent='\u00d7'+h.scoreMult;
-  mult.classList.remove('in');
-  /* The multiplier is worth showing even at one, because the reason it is there is that it
-     will not stay at one, and a label that appears in season two reads as a new rule. */
+  $('ar-lab').textContent='Season '+h.seasonNo;
+
   const parts=h.scoreParts||[];
   const BIG={title:1,undefeated:1,perfect:1};
   $('ar-parts').innerHTML=parts.map((p)=>
     '<span class="ar-p'+(BIG[p.key]?' big':'')+'"><span>'+esc(p.label)+'</span>'+
     '<b>+'+SCORE(p.points)+'</b></span>').join('');
   const rows=[...document.querySelectorAll('#ar-parts .ar-p')];
-  const seasonEl=$('ar-season'), runEl=$('ar-run');
-  seasonEl.textContent='0';
-  runEl.textContent=SCORE(Math.max(0,(v.score||0)-h.score));
 
-  /* 1. the base lands */
-  at(120,()=>countScore(seasonEl,0,h.scoreBase,520));
-  /* 2. the reasons for it, one at a time */
-  rows.forEach((r,i)=>at(360+i*130,()=>r.classList.add('in')));
-  const t1=420+rows.length*130;
-  /* 3. the multiplier drops on, and 4. the number jumps to what it is really worth */
-  at(t1,()=>{
-    mult.classList.add('in');
-    if(h.scoreMult>1){
-      countScore(seasonEl,h.scoreBase,h.score,560);
-      seasonEl.classList.remove('pop');
-      void seasonEl.offsetWidth;
-      seasonEl.classList.add('pop');
-    }
+  const baseEl=$('ar-base'), xRow=$('ar-x'), totalEl=$('ar-season'), runEl=$('ar-run');
+  /* AT x1 THE SUBTOTAL IS THE TOTAL, and printing 22,000 twice with an x1 between them
+     reads as a bug rather than as arithmetic. The multiplier line stays, because season one
+     is where the rule is worth learning and it costs nothing there. */
+  const showSum=h.scoreMult>1;
+  baseEl.parentNode.hidden=!showSum;
+  $('ar-mult').textContent='\u00d7'+h.scoreMult;
+  $('ar-xwhy').textContent=paysWord(h.scoreMult);
+  xRow.classList.remove('in');
+  baseEl.textContent='0';
+  totalEl.textContent='0';
+  const before=Math.max(0,(v.score||0)-h.score);
+  runEl.textContent=SCORE(before);
+
+  /* 1. the reasons, one at a time */
+  rows.forEach((r,i)=>at(140+i*130,()=>r.classList.add('in')));
+  const t0=240+rows.length*130;
+  /* 2. what they add up to, when that is a different number from the answer */
+  if(showSum) at(t0,()=>countScore(baseEl,0,h.scoreBase,420));
+  /* 3. the multiplier lands */
+  at(t0+480,()=>xRow.classList.add('in'));
+  /* 4. and the season is worth what it is worth */
+  at(t0+700,()=>{
+    countScore(totalEl,0,h.score,620);
+    totalEl.classList.remove('pop');
+    void totalEl.offsetWidth;
+    totalEl.classList.add('pop');
   });
-  /* 5. and the run total takes it in */
-  at(t1+(h.scoreMult>1?640:180),()=>
-    countScore(runEl,Math.max(0,(v.score||0)-h.score),v.score||0,620));
+  /* 5. the run takes it in */
+  at(t0+1420,()=>countScore(runEl,before,v.score||0,620));
+}
+
+/* The dock lives outside the screens, so nothing hides it by leaving one: it is asked on
+   every screen change and on every repaint of the results. */
+function paintDock(){
+  const d=$('o-dock'); if(!d) return;
+  d.hidden=!($('s-over').classList.contains('on')&&run&&run.dynasty&&!run.fired
+    &&run.phase===R.PHASES.OVER);
 }
 
 function paintOwner(){
   const bar=$('o-owner'), led=$('o-ledger'), wrap=$('o-ledwrap');
   if(!bar) return;
+  const over=$('s-over');
+  /* ONE CLASS DECIDES WHAT THIS SCREEN IS. The panels that measure a single season against
+     everybody else's belong to the other modes and are hidden by CSS off this, rather than
+     each being reached for by hand here. Removed as carefully as it is added: the screen is
+     shared, and a class left behind would strip the next classic run of its rating. */
+  if(over) over.classList.toggle('gaunt',!!(run&&run.dynasty));
+  paintDock();
   if(!run||!run.dynasty){ bar.hidden=true; if(wrap) wrap.hidden=true;
     const sc=$('o-score'); if(sc) sc.hidden=true; return; }
   let v; try{ v=R.ownerVerdict(run); }catch(_){ bar.hidden=true; return; }
@@ -13552,12 +13645,12 @@ function paintOwner(){
   const next=E.dynastyWinBar(run.seasonNo+1);
   bar.innerHTML='<span class="ob-tag">'+(v.fired?'Fired':(v.onNotice?'On notice':'The owner'))+'</span>'+
     (v.fired
-      ? '<span>Two seasons under the bar. <b>'+seasons+' season'+(seasons===1?'':'s')+'</b> in the job.</span>'
+      ? '<span>Missed twice. You lasted <b>'+seasons+' season'+(seasons===1?'':'s')+'</b>.</span>'
       : v.onNotice
-        ? '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. Next season takes '+
-          '<b>'+next+'</b>, and another miss ends it.</span>'
-        : '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. <b>Season '+
-          (run.seasonNo+1)+'</b> is yours, and it takes <b>'+next+'</b>.</span>');
+        ? '<span>Needed <b>'+v.bar+'</b>. Won <b>'+v.wins+'</b>. Miss again and you are out. '+
+          'Season '+(run.seasonNo+1)+' needs <b>'+next+'</b>.</span>'
+        : '<span>Needed <b>'+v.bar+'</b>. Won <b>'+v.wins+'</b>. Season '+(run.seasonNo+1)+
+          ' needs <b>'+next+'</b>.</span>');
 
   if(wrap&&led){
     wrap.hidden=false;
@@ -13583,6 +13676,9 @@ function paintOwner(){
   if(v.fired) dynClear();
 
   const go=$('b-next-season');
+  /* The dock carries it, so the dock is what appears and disappears. A fired run has
+     nowhere to go and the screen ends with the ordinary Back to start. */
+  paintDock();
   if(go){
     go.hidden=v.fired;
     go.textContent='Winter '+(run.leagueYear+1);
