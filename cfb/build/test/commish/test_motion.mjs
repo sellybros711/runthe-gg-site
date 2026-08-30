@@ -53,6 +53,20 @@ async function skipSim(pg) {
   }
 }
 
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -77,6 +91,7 @@ async function walk(reduced) {
   await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
   await p.waitForTimeout(2400);
   await tap(p, '#g-start');
+  await pastScene(p);
   await p.waitForTimeout(1400);
 
   const office = {

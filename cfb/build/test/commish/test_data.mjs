@@ -58,6 +58,20 @@ async function podium(pg) {
   }
 }
 
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -69,6 +83,7 @@ await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
 await p.waitForTimeout(2400);
 await p.click('#g-start').catch(() => {});
 await p.waitForTimeout(900);
+await pastScene(p);
 
 const on = (id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 const tap = async (s) => { try { await p.click(s, { timeout: 2000 }); return true; } catch (e) { return false; } };
@@ -127,6 +142,7 @@ console.log('\n=== the tape gets written as a term is played ===');
     }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(360); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) {
       const t = await p.$eval('#b-year-next', (e) => e.textContent).catch(() => '');
       if (/take the job again/i.test(t)) { terms++; ruled = 0; }

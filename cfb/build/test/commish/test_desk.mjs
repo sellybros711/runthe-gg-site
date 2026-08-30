@@ -77,6 +77,20 @@ async function podium(pg) {
   }
 }
 
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
+
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++; console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + x : '')); };
 
@@ -88,6 +102,7 @@ await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
 await p.waitForTimeout(2400);
 await p.click('#g-start').catch(() => {});
 await p.waitForTimeout(900);
+await pastScene(p);
 
 const on = (id) => p.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
 const tap = async (s) => { try { await p.click(s, { timeout: 2000 }); return true; } catch (e) { return false; } };
@@ -100,6 +115,7 @@ for (let i = 0; i < 12; i++) {
   if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
   if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(500); continue; }
   if (await on('s-press')) { await podium(p); continue; }
+  if (await on('s-scene')) { await pastScene(p); continue; }
   if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(500); continue; }
   break;
 }
@@ -121,6 +137,7 @@ console.log('\n=== the desk is shorter than it was ===');
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
     looked++;
@@ -152,6 +169,7 @@ console.log('\n=== the desk is shorter than it was ===');
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -398,6 +416,7 @@ console.log('\n=== what every side wants, before you decide ===');
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -470,6 +489,7 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     break;
   }
@@ -481,6 +501,7 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
       if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(400); continue; }
       if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
       if (await on('s-press')) { await podium(p); continue; }
+      if (await on('s-scene')) { await pastScene(p); continue; }
       if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
       break;
     }
@@ -563,6 +584,7 @@ console.log('\n=== what the desk promised is what the office got ===');
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
     beats++;
@@ -641,6 +663,7 @@ console.log('\n=== the forecast is only as good as your council ===');
     await q.waitForTimeout(2400);
     await q.click('#g-start').catch(() => {});
     await q.waitForTimeout(900);
+    await pastScene(q);
     const at = (id) => q.$eval('#' + id, (x) => x.classList.contains('on')).catch(() => false);
     for (let i = 0; i < 10 && !(await at('s-desk')); i++) {
       if (await at('s-office')) { await q.click('#b-desk', { timeout: 2000 }).catch(() => {}); await skipSim(q); await q.waitForTimeout(380); continue; }
@@ -738,6 +761,7 @@ console.log('\n=== what every other commissioner did ===');
     await q.waitForTimeout(2400);
     await q.click('#g-start').catch(() => {});
     await q.waitForTimeout(900);
+    await pastScene(q);
     const qon = (id) => q.$eval('#' + id, (e) => e.classList.contains('on')).catch(() => false);
     for (let i = 0; i < 14; i++) {
       if (await qon('s-desk')) break;

@@ -1655,6 +1655,10 @@
     .screen.on[data-in=slide]{animation:slidein .32s var(--ez) both}
     .screen.on[data-in=land]{animation:land .34s var(--ez) both}
     .screen.on[data-in=zoom]{animation:zoom .42s var(--ez) both}
+    /* A CUTSCENE DOES NOT SLIDE IN FROM ANYWHERE. It is a cut, so the screen it replaces
+       goes dark and this one comes up out of it. */
+    .screen.on[data-in=fade]{animation:cutin .5s var(--ez) both}
+    @keyframes cutin{from{opacity:0}to{opacity:1}}
     @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
     @keyframes slidein{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
     @keyframes land{from{opacity:0;transform:scale(1.035)}to{opacity:1;transform:none}}
@@ -1681,6 +1685,66 @@
       color .16s var(--ez),transform .12s var(--ez)}
     .steps button:active{transform:scale(.96)}
   }
+  /* ── the cutscene ──────────────────────────────────────────────────────────────
+     EVERY OTHER SCREEN IN THIS MODE IS A DOCUMENT and this one is deliberately not. One
+     picture, one speaker, one line, and nothing else: no meters, no cards, no second thing
+     to look at. It takes forty seconds and it cannot be skimmed, which is the point of
+     giving the big beats a form of their own. See scene.js.
+
+     THE WHOLE SCREEN IS THE BUTTON. A cutscene with a control in the corner is a cutscene
+     people hunt for the control on. Tapping anywhere finishes the line that is typing and
+     then moves to the next one, which is the interaction every game of this shape has used
+     for thirty years and the only one nobody has to be taught. */
+  #s-scene{display:flex;flex-direction:column;min-height:calc(100vh - 150px);
+    justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none}
+  .cut{border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    background:var(--panel);box-shadow:0 18px 44px rgba(0,0,0,.5)}
+  /* 5:3, which holds a room on a phone without pushing the words off the bottom. */
+  .cutart{position:relative;aspect-ratio:5/3;background:#05070b;overflow:hidden}
+  .cutart svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  /* THE ART CROSSFADES AND THE WORDS DO NOT. Cutting between two rooms mid sentence reads
+     as a bug; a scene that changes set between speakers reads as a scene. */
+  .cutart svg.gone{opacity:0;transition:opacity .42s var(--ez)}
+  .cutart svg.here{opacity:1;transition:opacity .42s var(--ez)}
+  /* A vignette, so a flat vector room sits behind type instead of competing with it. */
+  .cutart:after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 30%,transparent 40%,rgba(5,7,11,.72) 100%)}
+  .cutbar{position:relative;padding:15px 16px 16px;border-top:2px solid var(--sc,var(--gold))}
+  .cutbar b{display:block;font-family:var(--fn);font-size:15.5px;font-weight:800;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--sc,var(--gold))}
+  .cutbar .role{display:block;font-size:11px;color:var(--dim-2);margin-top:2px;
+    padding-bottom:9px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  /* MONOSPACE, because the line is being typed and a proportional face reflows every word
+     on the line as each character lands. */
+  .cutbar p{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;
+    line-height:1.55;color:var(--ink);min-height:3.1em}
+  .cutbar .car{display:inline-block;width:8px;margin-left:1px;
+    border-bottom:2px solid var(--sc,var(--gold));vertical-align:baseline;
+    animation:blink 1s steps(1,end) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .cutbar .adv{position:absolute;right:14px;bottom:12px;font-size:13px;
+    color:var(--sc,var(--gold));opacity:0;transition:opacity .2s var(--ez)}
+  .cutbar .adv.on{opacity:.85;animation:nudge 1.5s var(--ez) infinite}
+  @keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+  .cutfoot{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .cutfoot .dots{display:flex;gap:4px}
+  .cutfoot .dots i{width:5px;height:5px;border-radius:50%;background:var(--line-2)}
+  .cutfoot .dots i.on{background:var(--gold)}
+  .cutfoot button{margin-left:auto;background:none;border:0;cursor:pointer;font:inherit;
+    font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2);padding:6px 2px}
+  .cutfoot button:hover{color:var(--ink)}
+  /* The one moving thing in each room. Enough that the picture is alive and little enough
+     that it never asks to be watched. */
+  .setglow{animation:setglow 3.4s ease-in-out infinite}
+  @keyframes setglow{0%,100%{opacity:.55}50%{opacity:1}}
+  .setflick{animation:setflick 5.5s steps(1,end) infinite}
+  @keyframes setflick{0%,88%,100%{opacity:.9}90%{opacity:.55}94%{opacity:1}}
+  @media(prefers-reduced-motion:reduce){
+    .setglow,.setflick,.cutbar .car,.cutbar .adv.on{animation:none}
+    .cutart svg.gone,.cutart svg.here{transition:none}
+  }
+
   /* ── the whip count ────────────────────────────────────────────────────────────
      THE ONE THING THIS MODE CAN DO TO YOU, DRAWN. A term ends two ways and both of them are
      arithmetic on vote weight: more than half the room turns, or the two that hold the
@@ -2015,6 +2079,23 @@
     <div class="dock"><button class="btn" id="b-rule">Rule</button></div>
   </div>
 
+  <!-- THE CUTSCENE. One picture, one speaker, one line. See scene.js and paintScene(). -->
+  <div class="screen" id="s-scene" data-in="fade">
+    <div class="cut" id="sc-card">
+      <div class="cutart" id="sc-art"></div>
+      <div class="cutbar" id="sc-bar">
+        <b id="sc-name"></b>
+        <span class="role" id="sc-role"></span>
+        <p id="sc-say"></p>
+        <i class="adv" id="sc-adv">&#9660;</i>
+      </div>
+    </div>
+    <div class="cutfoot">
+      <span class="dots" id="sc-dots"></span>
+      <button type="button" id="b-scene-skip">Skip</button>
+    </div>
+  </div>
+
   <!-- THE PODIUM. Media days, once a year, three questions, no forecast. See media.js. -->
   <div class="screen" id="s-press" data-in="slide">
     <div class="beatbar" id="press-beatbar"></div>
@@ -2244,6 +2325,8 @@
 <script src="fallout.js?v=5"></script>
 <!-- The podium. Reads nothing at load time; see media.js. -->
 <script src="media.js?v=2"></script>
+<!-- The cutscenes. Reads blocs.js at load time, so after it. -->
+<script src="scene.js?v=2"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=2"></script>
@@ -2287,6 +2370,7 @@ const CAL=window.PS_CFB_CALENDAR;
 const SIT=window.PS_CFB_SITUATION;
 const FALL=window.PS_CFB_FALLOUT;
 const MED=window.PS_CFB_MEDIA;
+const SCN=window.PS_CFB_SCENE;
 const REPORT=window.PS_CFB_REPORT;
 /* The catalog, for turning a sponsor id and a bowl id back into the names the rest of the
    mode uses. See pathName and pathValue. */
@@ -2387,6 +2471,12 @@ function openingSnapshot(w){
        later because "what it was at the start" stops being recoverable the moment anything
        moves. */
     conferences:Object.keys(confs).filter((c)=>confs[c]>=(L.MIN_CONFERENCE||4)).length,
+    /* AND WHICH ONES THEY WERE, not only how many. A count answers "is the map smaller than
+       it was" and cannot answer "which league died on your watch", which is the question a
+       cutscene about a league dying has to be able to ask: the Pac-12 is already below the
+       floor in the 2025 data, so a scene gated on `sit.gone` alone opened day one of every
+       term with a eulogy for something that folded before the player arrived. */
+    live:Object.keys(confs).filter((c)=>confs[c]>=(L.MIN_CONFERENCE||4)&&c!=='FBS Independents'),
     /* STRINGS, because that is what they are compared against when drawn. One of these four
        is a bare number and the other three are formatted, so storing them raw meant 9 was
        compared with "9", every fact read as changed, and an untouched sport claimed a term
@@ -2649,6 +2739,241 @@ function paintMeters(el,w,before,lock,since){
 /* THE THING THAT ENDS THE TERM, DRAWN. Losing the job is a coalition of voting weight, and
    until now the player had to read nine numbers, remember which four of them hold no vote
    at all, and add up the rest. It is one bar with the halfway line on it. */
+/* ── the cutscene ──────────────────────────────────────────────────────────────────
+   See scene.js for what a scene is and who is allowed to speak in one. What lives here is
+   the room it happens in and the way a line arrives.
+
+   ---- THE SETS ----
+   SEVEN ROOMS, DRAWN RATHER THAN PHOTOGRAPHED, and drawn is not a compromise. The sports
+   simulator this borrows its shape from puts a photograph of a broadcaster everybody knows
+   over a sentence that person never said, which is effective and is putting words in a
+   living person's mouth. A flat vector room with a silhouette in it says "somewhere on
+   television" without saying "this specific man", which is exactly the register the docket
+   and the podium already write in.
+
+   EACH ROOM TAKES THE SPEAKER'S COLOUR, so the wire's grey newsroom and the panel's pink
+   studio are the same drawing logic and never the same picture. `currentColor` does the
+   work; the set only has to say where the light is.
+
+   AND EACH ONE HAS EXACTLY ONE MOVING THING. A studio monitor that flickers, a lamp that
+   breathes, floodlights that swell. Enough that the picture is alive, little enough that it
+   never asks to be watched while somebody is reading. */
+const SET_ART={
+  /* A newsroom front page: masthead, a rule, a photo well and columns of type. */
+  paper:'<rect width="300" height="180" fill="#0a0d13"/>'
+    +'<rect x="26" y="16" width="248" height="148" rx="3" fill="#e8e3d8"/>'
+    +'<rect x="38" y="30" width="224" height="9" fill="#1a1a1a" opacity=".85"/>'
+    +'<rect x="38" y="45" width="224" height="1.5" fill="#1a1a1a" opacity=".4"/>'
+    +'<rect x="38" y="54" width="150" height="13" fill="#1a1a1a" opacity=".9"/>'
+    +'<rect x="38" y="72" width="112" height="13" fill="#1a1a1a" opacity=".9"/>'
+    +'<rect x="196" y="54" width="66" height="48" fill="currentColor" opacity=".55" class="setflick"/>'
+    +'<path d="M212 102v-16a17 17 0 0 1 34 0v16z" fill="#1a1a1a" opacity=".5"/>'
+    +'<circle cx="229" cy="74" r="9" fill="#1a1a1a" opacity=".5"/>'
+    +[0,1,2,3,4,5,6,7].map((i)=>'<rect x="38" y="'+(96+i*8)+'" width="'
+      +(148-(i%3)*22)+'" height="3" fill="#1a1a1a" opacity=".28"/>').join('')
+    +[0,1,2,3,4].map((i)=>'<rect x="196" y="'+(112+i*8)+'" width="'
+      +(66-(i%2)*16)+'" height="3" fill="#1a1a1a" opacity=".28"/>').join(''),
+  /* A television set: a desk, a bank of screens, a light rig. */
+  studio:'<rect width="300" height="180" fill="#080b12"/>'
+    +'<rect x="0" y="0" width="300" height="118" fill="currentColor" opacity=".1"/>'
+    +[26,110,194].map((x,i)=>'<rect x="'+x+'" y="26" width="72" height="46" rx="3" '
+      +'fill="currentColor" opacity="'+[.55,.75,.45][i]+'" class="'
+      +(i===1?'setflick':'')+'"/>').join('')
+    +'<rect x="0" y="118" width="300" height="62" fill="#05070b"/>'
+    +'<rect x="52" y="118" width="196" height="10" rx="2" fill="currentColor" opacity=".35"/>'
+    /* The person at the desk, from behind the shoulders, which is how a panel is shot. */
+    +'<path d="M104 180v-22a46 46 0 0 1 92 0v22z" fill="#05070b"/>'
+    +'<path d="M110 180v-20a40 40 0 0 1 80 0v20z" fill="currentColor" opacity=".3"/>'
+    +'<circle cx="150" cy="128" r="20" fill="#05070b"/>'
+    +'<circle cx="150" cy="128" r="17" fill="currentColor" opacity=".38"/>'
+    +[40,150,260].map((x)=>'<rect x="'+(x-3)+'" y="0" width="6" height="14" '
+      +'fill="currentColor" opacity=".7"/>').join(''),
+  /* A studio microphone, close, with the lamp on. */
+  radio:'<rect width="300" height="180" fill="#07090f"/>'
+    +'<circle cx="150" cy="96" r="74" fill="currentColor" opacity=".08"/>'
+    +'<rect x="126" y="34" width="48" height="72" rx="24" fill="#0d1117" '
+      +'stroke="currentColor" stroke-opacity=".65" stroke-width="2"/>'
+    +[0,1,2,3,4,5].map((i)=>'<rect x="132" y="'+(42+i*11)+'" width="36" height="4" rx="2" '
+      +'fill="currentColor" opacity=".45"/>').join('')
+    +'<rect x="146" y="106" width="8" height="30" fill="currentColor" opacity=".55"/>'
+    +'<rect x="118" y="136" width="64" height="7" rx="3" fill="currentColor" opacity=".4"/>'
+    +'<rect x="196" y="26" width="70" height="24" rx="4" fill="#0d1117" '
+      +'stroke="currentColor" stroke-opacity=".8" stroke-width="1.5" class="setglow"/>'
+    +'<text x="231" y="42" text-anchor="middle" font-family="Archivo,sans-serif" '
+      +'font-size="11" font-weight="700" letter-spacing="1.5" fill="currentColor" '
+      +'class="setglow">ON AIR</text>',
+  /* Your own office at night: a window, a lamp, the back of a chair. */
+  office:'<rect width="300" height="180" fill="#070a10"/>'
+    +'<rect x="22" y="18" width="256" height="96" rx="2" fill="#0b1220"/>'
+    +[0,1,2,3,4,5,6,7,8,9,10,11].map((i)=>'<rect x="'+(30+i*21)+'" y="'
+      +(46+(i%4)*13)+'" width="14" height="'+(68-(i%4)*13)+'" fill="currentColor" '
+      +'opacity="'+(0.14+(i%3)*0.07)+'"/>').join('')
+    +[0,1,2,3,4,5,6,7].map((i)=>'<rect x="'+(34+i*30)+'" y="'+(58+(i%5)*11)
+      +'" width="4" height="4" fill="currentColor" opacity=".7" class="'
+      +(i===3?'setglow':'')+'"/>').join('')
+    +'<rect x="22" y="18" width="256" height="96" fill="none" stroke="#05070b" stroke-width="6"/>'
+    +'<rect x="0" y="114" width="300" height="66" fill="#05070b"/>'
+    +'<path d="M198 114l30 0 14 66h-58z" fill="currentColor" opacity=".22"/>'
+    +'<rect x="196" y="96" width="34" height="6" rx="3" fill="currentColor" opacity=".65" class="setglow"/>'
+    +'<path d="M50 180v-34a34 34 0 0 1 68 0v34z" fill="#05070b"/>'
+    +'<path d="M56 180v-30a28 28 0 0 1 56 0v30z" fill="currentColor" opacity=".2"/>',
+  /* A hotel ballroom: a lectern, a bank of microphone flags, a step and repeat. */
+  ballroom:'<rect width="300" height="180" fill="#080a11"/>'
+    +[0,1,2,3,4,5,6,7,8,9].map((i)=>'<rect x="'+(i*30)+'" y="0" width="30" height="112" '
+      +'fill="currentColor" opacity="'+(i%2?.09:.05)+'"/>').join('')
+    +[0,1,2,3,4].map((i)=>'<circle cx="'+(28+i*61)+'" cy="30" r="7" fill="currentColor" '
+      +'opacity=".3"/>').join('')
+    +'<path d="M118 180v-58h64v58z" fill="#05070b"/>'
+    +'<path d="M124 180v-52h52v52z" fill="currentColor" opacity=".3"/>'
+    +[0,1,2,3].map((i)=>'<g><rect x="'+(128+i*13)+'" y="'+(96+(i%2)*5)+'" width="3" '
+      +'height="28" fill="currentColor" opacity=".5"/><rect x="'+(124+i*13)+'" y="'
+      +(88+(i%2)*5)+'" width="11" height="9" rx="1.5" fill="currentColor" opacity=".7"/></g>').join('')
+    +'<circle cx="150" cy="72" r="19" fill="#05070b"/>'
+    +'<circle cx="150" cy="72" r="15" fill="currentColor" opacity=".35" class="setglow"/>',
+  /* A stadium at night, from the deck: bowl, floodlights, crowd. */
+  stadium:'<rect width="300" height="180" fill="#060810"/>'
+    +[44,150,256].map((x)=>'<g><rect x="'+(x-2)+'" y="10" width="4" height="44" '
+      +'fill="currentColor" opacity=".4"/><rect x="'+(x-16)+'" y="4" width="32" height="12" '
+      +'rx="2" fill="currentColor" opacity=".85" class="setglow"/>'
+      +'<path d="M'+(x-16)+' 16 L'+(x-52)+' 108 L'+(x+52)+' 108 L'+(x+16)+' 16z" '
+      +'fill="currentColor" opacity=".1"/></g>').join('')
+    +'<ellipse cx="150" cy="150" rx="132" ry="42" fill="currentColor" opacity=".22"/>'
+    +'<ellipse cx="150" cy="152" rx="104" ry="30" fill="#0a1a12"/>'
+    +[0,1,2,3,4].map((i)=>'<rect x="'+(70+i*40)+'" y="138" width="1.5" height="28" '
+      +'fill="currentColor" opacity=".35"/>').join('')
+    +[].concat.apply([],[0,1,2,3].map((r)=>[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+      .map((i)=>'<rect x="'+(6+i*17+(r%2)*8)+'" y="'+(108+r*8)+'" width="9" height="5" '
+      +'rx="2" fill="currentColor" opacity="'+(0.5-r*0.09)+'"/>'))).join(''),
+  /* A courtroom: columns, a rail, a seal. */
+  court:'<rect width="300" height="180" fill="#080a0f"/>'
+    +[0,1,2,3,4].map((i)=>'<g><rect x="'+(24+i*56)+'" y="26" width="22" height="104" '
+      +'fill="currentColor" opacity=".13"/><rect x="'+(20+i*56)+'" y="20" width="30" '
+      +'height="8" fill="currentColor" opacity=".22"/></g>').join('')
+    +'<rect x="0" y="12" width="300" height="10" fill="currentColor" opacity=".25"/>'
+    +'<circle cx="150" cy="76" r="26" fill="none" stroke="currentColor" stroke-opacity=".55" '
+      +'stroke-width="2" class="setglow"/>'
+    +'<path d="M150 62v28M138 70h24M133 70l-6 13h12zM167 70l-6 13h12z" fill="none" '
+      +'stroke="currentColor" stroke-opacity=".7" stroke-width="1.6"/>'
+    +'<rect x="0" y="130" width="300" height="6" fill="currentColor" opacity=".4"/>'
+    +'<rect x="0" y="136" width="300" height="44" fill="#05070b"/>'
+    +[0,1,2,3,4,5,6,7,8].map((i)=>'<rect x="'+(10+i*34)+'" y="136" width="4" height="44" '
+      +'fill="currentColor" opacity=".18"/>').join(''),
+};
+
+/* WHERE A SCENE IS, DRAWN. Swapped in rather than replaced, so a change of room between two
+   speakers crossfades instead of blinking. */
+let setNow=null;
+function paintSet(el,kind,colour){
+  if(!el) return;
+  const k=SET_ART[kind]?kind:'office';
+  if(setNow===k+'|'+colour) return;
+  setNow=k+'|'+colour;
+  const svg='<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid slice" '
+    +'style="color:'+esc(colour||'#8b98ad')+'" aria-hidden="true" class="'
+    +(REDUCED?'here':'gone')+'">'+SET_ART[k]+'</svg>';
+  const old=el.querySelector('svg');
+  el.insertAdjacentHTML('beforeend',svg);
+  const fresh=el.lastElementChild;
+  if(!REDUCED){ void fresh.offsetWidth; fresh.classList.remove('gone'); fresh.classList.add('here'); }
+  if(old){
+    old.classList.remove('here'); old.classList.add('gone');
+    setTimeout(()=>{ if(old.parentNode) old.parentNode.removeChild(old); },REDUCED?0:460);
+  }
+}
+
+/* ---- the runner ----
+   A scene is a list of frames and a position in it. `after` is what to do when it ends,
+   which is the only thing the caller has to supply: a cutscene is a detour and it has to
+   know the way back. */
+let scFrames=[], scAt=0, scAfter=null, scTimer=null, scTyped=0, scDone=false;
+
+function playScene(sceneOrId,after){
+  const sc=typeof sceneOrId==='string'?(SCN&&SCN.BY_ID[sceneOrId]):sceneOrId;
+  if(!SCN||!sc){ if(after) after(); return false; }
+  const cast=SCN.castOf(sc,world,L,situationNow());
+  scFrames=SCN.framesOf(sc,cast);
+  if(!scFrames.length){ if(after) after(); return false; }
+  /* SEEN IS RECORDED ON THE WAY IN, not on the way out. A player who closes the tab in the
+     middle of a cutscene does not want it again on the next load, and `once` has to mean
+     once whatever happens to the browser. */
+  world.scenes=world.scenes||{};
+  world.scenes[sc.id]=L.beatOf(world);
+  save();
+  scAt=0; scAfter=after||null; setNow=null;
+  $('sc-art').innerHTML='';
+  show('s-scene');
+  paintFrame();
+  return true;
+}
+
+function paintFrame(){
+  const f=scFrames[scAt];
+  if(!f){ endScene(); return; }
+  const c=f.c||bcOf(f.who)||'#f5b301';
+  $('sc-card').style.setProperty('--sc',c);
+  paintSet($('sc-art'),f.set,c);
+  $('sc-name').textContent=f.name;
+  $('sc-role').textContent=f.role;
+  $('sc-dots').innerHTML=scFrames.map((x,i)=>'<i class="'+(i<=scAt?'on':'')+'"></i>').join('');
+  typeLine(f.say);
+}
+
+/* THE LINE ARRIVES AT THE SPEED SOMEBODY SAYS IT. Not decoration: it is what stops the eye
+   racing ahead to the button, which is the whole reason a cutscene is a cutscene and not a
+   paragraph. Somebody who has asked their device to stop moving things gets the line whole. */
+const TYPE_MS=26;
+function typeLine(text){
+  clearTimeout(scTimer);
+  scDone=false; scTyped=0;
+  $('sc-adv').classList.remove('on');
+  const el=$('sc-say');
+  if(REDUCED){ el.textContent=text; finishLine(); return; }
+  const step=()=>{
+    scTyped++;
+    el.innerHTML=esc(text.slice(0,scTyped))+'<i class="car"></i>';
+    if(scTyped>=text.length){ finishLine(); return; }
+    /* A beat at a full stop, so two sentences do not run together. */
+    const ch=text[scTyped-1];
+    scTimer=setTimeout(step,ch==='.'||ch==='?'?TYPE_MS*9:ch===','?TYPE_MS*4:TYPE_MS);
+  };
+  step();
+}
+function finishLine(){
+  clearTimeout(scTimer);
+  scDone=true;
+  const f=scFrames[scAt];
+  if(f) $('sc-say').textContent=f.say;
+  $('sc-adv').classList.add('on');
+}
+
+/* ONE TAP FINISHES THE LINE AND THE NEXT ONE MOVES ON. Anything else and somebody who taps
+   twice quickly loses a line they never read. */
+function advanceScene(){
+  if(!scDone){ finishLine(); return; }
+  scAt++;
+  if(scAt>=scFrames.length){ endScene(); return; }
+  paintFrame();
+}
+function endScene(){
+  clearTimeout(scTimer);
+  const go=scAfter; scAfter=null; scFrames=[]; scAt=0;
+  if(go) go(); else office();
+}
+
+$('s-scene').onclick=(e)=>{ if(e.target.closest('#b-scene-skip')) return; advanceScene(); };
+$('s-scene').onkeydown=(e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); advanceScene(); } };
+$('b-scene-skip').onclick=(e)=>{ e.stopPropagation(); endScene(); };
+
+/* THE ONE PLACE A SCENE CAN INTERRUPT, which is the office, on arrival. Anywhere else and a
+   cutscene would land in the middle of a decision. Returns whether it took the screen, so
+   the caller knows whether to carry on painting. */
+function sceneCheck(after){
+  if(!SCN) return false;
+  const sc=SCN.next(world,L,situationNow());
+  if(!sc) return false;
+  return playScene(sc,after);
+}
+
 /* ── the whip count ────────────────────────────────────────────────────────────────
    See the CSS above for what this is and why it is sorted by mood. `before` is the world one
    ruling ago, and it is only used to say who crossed the line, which is the single most
@@ -3218,6 +3543,16 @@ function paintFuses(el,w){
 
 /* ── the office ───────────────────────────────────────────────────────────────── */
 function office(){
+  /* A CUTSCENE COMES BEFORE THE BRIEFING AND NEVER INSTEAD OF IT. The office is the one
+     screen a scene may take, because it is the only one you arrive at rather than work on:
+     landing a lawsuit in the middle of a ruling would be interrupting a decision. Guarded on
+     `sceneOff` so the office can repaint itself from inside a scene's own callback without
+     the scene checking again and playing forever. See sceneCheck(). */
+  /* THE FLAG IS SET IN THE WAY BACK, NOT AFTER THE CHECK. Written the other way round the
+     callback cleared it before calling office(), so the office looked for a scene again the
+     moment one finished and a term with two events due on one beat played them in a chain
+     that only ended when it ran out of scenes. One event a beat. */
+  if(!sceneOff&&sceneCheck(()=>{ sceneOff=true; office(); sceneOff=false; })) return;
   /* ── THE TAPE GETS A POINT ──────────────────────────────────────────────────────
      HERE AND AFTER A RULING, and those two are the whole recorder. The office is the top of
      every beat, so a point here is the state you were handed; a point after a ruling is the
@@ -3327,6 +3662,10 @@ function office(){
 /* WHICH QUESTIONS HAVE BEEN PUT ABOUT THE ITEM ON THE DESK. Per item and not saved, the same
    as `choice` and the dials: the desk is not a screen a reload comes back to. */
 let asked=[];
+
+/* Whether the office is being painted as the way back OUT of a cutscene, in which case it
+   must not look for another one. */
+let sceneOff=false;
 
 let sit=null;
 function situationNow(){
@@ -6037,6 +6376,9 @@ window.PS_CFB_COMMISH_TEST={
   /* The strip is a second implementation of removal(), so a guard has to be able to draw it
      against a world it chose rather than against whatever the office happens to hold. */
   whip:(el,w,before)=>paintWhip(el,w,before),
+  /* A scene by name, so a guard can walk one to its last line without having to reach the
+     beat that fires it. */
+  play:(id)=>playScene(id,()=>office()),
   /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety nine
      turns up takes several terms and lands on whichever it lands on, and an assertion about
      a specific door has to be made against that door. Same body as b-desk from the pick
@@ -6857,6 +7199,14 @@ function ending(){
   $('b-year-next').onclick=()=>{ newTerm(2025); office(); };
   $('b-quit').textContent='Back to the game';
   $('b-quit').onclick=()=>{ location.href='/cfb/'; };
+  /* THE LAST MORNING, BEFORE THE REPORT CARD RATHER THAN AFTER IT. A verdict read out over
+     a grade is a footnote to the grade; read out first it is the thing the grade explains.
+     Manual, because there is no beat this can be gated on: the term ending IS the gate. */
+  const last=world.outcome&&world.outcome.removed?'removed':'served';
+  if(SCN&&SCN.BY_ID[last]&&!(world.scenes||{})[last]){
+    playScene(last,()=>{ show('s-year'); recordTerm(world,doc); });
+    return;
+  }
   show('s-year');
   /* LAST, AND AFTER show(), like every other thing on this page that talks to a network.
      The ending is finished before this is asked for, and if it never answers the card
@@ -7149,6 +7499,11 @@ function gate(){
         ?'You are looking at the free version. <a href="?">Switch back</a>.'
         :'<a href="?tier=free">See what a free player sees</a>.')+'</p>';
   const r=$('g-resume'); if(r) r.onclick=()=>office();
+  /* THE JOB OFFER IS ACCEPTED AND THEN SOMETHING HAPPENS. The intro screen states the
+     rubric, which belongs in writing; this is the forty seconds after you say yes, which the
+     mode had no form for at all. office() would find the same scene on its own, and going
+     straight to it means the last thing a new player sees before the cutscene is the button
+     they pressed rather than a briefing they have not read yet. */
   $('g-start').onclick=()=>{ newTerm(2025); office(); };
 }
 

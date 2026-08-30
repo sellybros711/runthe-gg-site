@@ -78,6 +78,20 @@ async function skipSim(pg) {
   }
 }
 
+
+/* A CUTSCENE CAN TAKE THE SCREEN THE MOMENT A TERM STARTS, and one that a walker does not
+   know about is a walker that stalls on the one screen with no dock. Skip it: the scenes have
+   their own suite in test_scene, and every other file here is testing something behind them.
+   Called after anything that could arrive at the office. */
+async function pastScene(pg) {
+  for (let i = 0; i < 6; i++) {
+    const up = await pg.$eval('#s-scene', (e) => e.classList.contains('on')).catch(() => false);
+    if (!up) return;
+    await pg.click('#b-scene-skip').catch(() => {});
+    await pg.waitForTimeout(320);
+  }
+}
+
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefined?'   '+x:''));};
 const open=async(init,w)=>{
@@ -237,6 +251,7 @@ console.log('\n=== a tester takes the job ===');
   await p.screenshot({path:SS+'commish_gate.png'});
 
   await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
   ok('the office is the first thing you see', await on(p,'s-office'));
   /* THE LABEL SPAN, not every span. The office tiles carry a second one now saying where the
      number started, so a bare `span` counts six and reports three meters as a failure. */
@@ -318,6 +333,7 @@ console.log('\n=== what a free player is shown ===');
   ok('a tester can look at the free version', !!(await p.$('#g-start')));
   ok('  and the badge says which view this is', /free/i.test(await txt(p,'#tag')), await txt(p,'#tag'));
   await p.click('#g-start'); await p.waitForTimeout(600);
+  await pastScene(p);
   await p.click('#b-desk'); await skipSim(p); await p.waitForTimeout(500);
   await podium(p);
   ok('there is no box to write your own ruling', !(await p.$('#d-text')));
@@ -342,6 +358,7 @@ console.log('\n=== what a free player is shown ===');
     if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
     if(await on(p,'s-press')){ await podium(p); continue; }
+    if(await on(p,'s-scene')){ await pastScene(p); continue; }
     if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }
     if(!(await on(p,'s-desk'))){ stuck='no screen the loop knows'; break; }
     seen++;
@@ -373,6 +390,7 @@ console.log('\n=== a season, and it survives the browser closing ===');
 {
   const {p,errs}=await open(tester());
   await p.click('#g-start'); await p.waitForTimeout(600);
+  await pastScene(p);
   /* Play until the year turns, which is the year in review. */
   let guard=0;
   while(guard++<40){
@@ -386,6 +404,7 @@ console.log('\n=== a season, and it survives the browser closing ===');
     }
     if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
     if(await on(p,'s-press')){ await podium(p); continue; }
+    if(await on(p,'s-scene')){ await pastScene(p); continue; }
     break;
   }
   ok('a whole season plays', await on(p,'s-year'), 'in '+guard+' steps');
