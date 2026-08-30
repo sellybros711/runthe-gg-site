@@ -398,10 +398,24 @@ def face(cv, skin, spec, cy=HEAD_CY):
                     cv.dot(x - 1, y + dy, WHITE)
                     cv.dot(x, y + dy, pc)
             else:
-                pc = hex2rgb(ec or '#241e2e')
-                for dy in (0, 1):
-                    cv.dot(x - 1, y + dy, WHITE)
-                    cv.dot(x, y + dy, pc)
+                pass    # normal and cartoon draw as one googly pair below
+    if style in ('normal', 'cartoon'):
+        # THE GOOGLY PAIR, scaled down from the reference sheet: two
+        # round whites that touch only at a middle row waist, pupils
+        # just inside the join. Without the waist the whites fuse and
+        # the whole roster turns cyclops, which is a lesson learned the
+        # visible way.
+        pc = hex2rgb(ec or '#241e2e')
+        xC = int(CX)
+        for side in (-1, 1):
+            for dx in (1, 2, 3):
+                x = xC + side * dx
+                for dy in (-1, 0, 1):
+                    cv.dot(x, y + dy, WHITE)
+        cv.dot(xC, y, WHITE)                    # the waist
+        for x in (xC - 1, xC + 1):
+            cv.dot(x, y, pc)
+            cv.dot(x, y + 1, pc)
     m = spec.get('mouth', 'line')
     my = int(cy + 6)
     mc = shade(skin.base, -0.42)
@@ -939,11 +953,15 @@ def sig_kong(cv, spec, pose, back):
     # ape's does, with the eyes perched right on its top edge and the
     # big happy grin across it.
     cv.sphere(CX, 17.2, 7.0, 4.8, muz)
-    for sx in (-3, 3):
-        x = int(CX + sx)
-        for dy in (12, 13):
-            cv.dot(x - 1, dy, (250, 250, 252))
-            cv.dot(x, dy, (36, 28, 40))
+    xC = int(CX)
+    for side in (-1, 1):
+        for dx in (1, 2, 3):
+            for dy in (11, 12, 13):
+                cv.dot(xC + side * dx, dy, (250, 250, 252))
+    cv.dot(xC, 12, (250, 250, 252))
+    for x in (xC - 1, xC + 1):
+        cv.dot(x, 12, (36, 28, 40))
+        cv.dot(x, 13, (36, 28, 40))
     cv.dot(CX - 2, 15, shade(muz.base, -0.4))
     cv.dot(CX + 2, 15, shade(muz.base, -0.4))
     dk = shade(body.base, -0.5)
