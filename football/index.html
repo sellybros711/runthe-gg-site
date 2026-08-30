@@ -5496,7 +5496,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div style="margin-top:18px"><button class="btn" id="b-coach-go" hidden>Play the season</button></div>
   </div>
 
-  <!-- THE WINTER. The Long Game's own screen and the only one in this game that PLAYS
+  <!-- THE WINTER. The Gauntlet's own screen and the only one in this game that PLAYS
        rather than appears: the year turns, then every man you kept ages one at a time, his
        salary counting up to whatever he is owed now, and the men the league has no more of
        fall out of the list. Then the money is yours to open. See runWinter(). -->
@@ -5772,7 +5772,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="sf-txt"><b>This run was not saved.</b><span id="o-savefail-why">The leaderboard could not be reached, so it has not been counted.</span></div>
       <button class="btn sm" id="b-save-retry">Try again</button>
     </div>
-    <!-- THE LONG GAME ONLY: whether there is another season, and the run so far. Above the
+    <!-- THE GAUNTLET ONLY: whether there is another season, and the run so far. Above the
          record because it is the thing a dynasty player came to this screen for. -->
     <div class="ownerbar" id="o-owner" hidden></div>
     <!-- 1. Record and how the season ended. -->
@@ -6058,13 +6058,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=72"></script>
-<script src="run.js?v=79"></script>
+<script src="run.js?v=80"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
 <script src="fullteam-access.js?v=1"></script>
-<script src="dynasty-access.js?v=1"></script>
+<script src="dynasty-access.js?v=2"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -6132,7 +6132,7 @@ const fullSlotIsDefensive=(i)=>{
 };
 /* WHICH SLOT THE WHEEL IS ABOUT TO FILL, which is not the same as how many men you have.
    In an opening draft the slots fill in order, so the count and the next open spot are the
-   same number and reading either works. THE LONG GAME'S WINTER BREAKS THAT: it hands back a
+   same number and reading either works. THE GAUNTLET'S WINTER BREAKS THAT: it hands back a
    roster with holes wherever the men left, so a team with eight men can have its openings at
    slots 1 and 7 while the count says 8. The pool was then chosen for slot 8, the wheel spun
    the offensive clubs at a roster needing two defenders, someAffordable found nobody who fit
@@ -6261,7 +6261,7 @@ const canPlayFull=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
-/* THE LONG GAME, asked the same way and read just as defensively: a blocked, stale or
+/* THE GAUNTLET, asked the same way and read just as defensively: a blocked, stale or
    failed dynasty-access.js leaves PS_DYNASTY_ACCESS undefined, and the honest answer to
    "can this person see an unannounced mode" when the list cannot be read is no. */
 const canPlayDynasty=()=>{
@@ -6293,7 +6293,7 @@ function runMode(){
 function runModeLabel(){
   if(run&&run.capSurvivor) return 'Salary Cap Survivor';
   if(run&&run.tradeMachine) return 'The Trade Machine';
-  if(run&&run.dynasty) return 'The Long Game';
+  if(run&&run.dynasty) return 'The Gauntlet';
   if(run&&run.full) return 'Full Team';
   if(run&&run.defense) return 'Defense';
   if(run&&run.franchise) return 'One Franchise: '+E.cityLabel(run.franchise);
@@ -7626,7 +7626,7 @@ function ensureFullButton(){
    Same order of checks as the defense entry point, and that order is the lesson written up
    there: the account wall comes BEFORE the download, or a walled visitor waits out six
    megabytes to be told no and comes back to a button still spinning. */
-/* THE LONG GAME'S BUTTON, made rather than revealed, for every reason ensureFullButton
+/* THE GAUNTLET'S BUTTON, made rather than revealed, for every reason ensureFullButton
    gives: a hidden node in the markup is a hidden node anybody can read, and signing out of
    a tester account on the same tab has to take the button with it. */
 function ensureDynastyButton(){
@@ -7653,13 +7653,13 @@ function ensureDynastyButton(){
   if(save){
     const r=save.run;
     el.innerHTML='<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
-      '<span class="hp-full-name">Continue The Long Game</span>'+
+      '<span class="hp-full-name">Continue The Gauntlet</span>'+
       '<span class="hp-full-sub">'+r.leagueYear+' &middot; '+r.roster.length+
         ' under contract &middot; '+dynWhere(r)+'</span>';
     el.onclick=()=>{ dynResume(); };
   }else{
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
-      '<span class="hp-full-name">The Long Game</span>'+
+      '<span class="hp-full-name">The Gauntlet</span>'+
       '<span class="hp-full-sub">Twelve men &middot; every winter they age &middot; last as long as you can</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
   }
@@ -7724,7 +7724,7 @@ function beginDynastyDraft(){
   });
 }
 
-/* ───────── THE LONG GAME IS WRITTEN DOWN ────────────────────────────────────────────
+/* ───────── THE GAUNTLET IS WRITTEN DOWN ────────────────────────────────────────────
  *
  * Every other mode in this game is one sitting. You draft, you play, you see where it
  * placed, and closing the tab costs you a few minutes. A dynasty is not that. Six winters
@@ -8024,6 +8024,8 @@ let wantOneTeam=false;
 let wantDefense=false;
 /* And for Full Team, which is behind the same wall plus the tester list. */
 let wantFull=false;
+/* And for The Gauntlet, which is behind the same wall plus its own tester list. */
+let wantDynasty=false;
 
 $('b-teams').onclick=()=>{ modeMenu(); };
 
@@ -8070,6 +8072,21 @@ const WALL={
       'that board is listed under a name.',
     out:'Full Team needs a free account. It has its own leaderboard, and a run has to have '+
       'a name on it to be listed.'},
+  /* AND THE FOURTH DOOR, for the reason written over the third: without an entry here the
+     wall falls back to WALL.club, so a tester pressing The Gauntlet without a username got
+     a sheet headed One Franchise telling them about thirty-two club leaderboards. The
+     defense draft hit this first, Full Team hit it second, and it was live on this mode
+     until somebody went looking. */
+  dynasty:{name:'The Gauntlet',
+    what:'Draft a whole team out of one league year and keep it. Every winter your men age '+
+      'into the season they really had next, their salaries rise and never fall, and the '+
+      'owner wants more wins than he wanted last year.',
+    note:'<b>The Gauntlet is scored on how long you last.</b> Miss the bar twice and you '+
+      'are gone, and the run is however many seasons you got.',
+    noname:'You are signed in. Pick a username and The Gauntlet opens, because every run on '+
+      'that board is listed under a name.',
+    out:'The Gauntlet needs a free account. It runs across seasons, and a run has to have a '+
+      'name on it to be listed.'},
 };
 function oneTeamWall(why,mode){
   const w=WALL[mode]||WALL.club;
@@ -8098,7 +8115,8 @@ function oneTeamWall(why,mode){
        A chain of two was already one comparison per mode; a third makes it worth naming. */
     wantDefense=(w===WALL.defense);
     wantFull=(w===WALL.full);
-    wantOneTeam=!wantDefense&&!wantFull;
+    wantDynasty=(w===WALL.dynasty);
+    wantOneTeam=!wantDefense&&!wantFull&&!wantDynasty;
     profileSheet(); };
   const free=$('b-wall-free');
   if(free) free.onclick=()=>{ closeSheet(); beginDraft({}); };
@@ -8964,7 +8982,7 @@ function firstRunGuide(){
   if(frgSeen()) return false;
   if(!$('s-intro').classList.contains('on')) return false;
   if($('sheet').classList.contains('on')) return false;
-  if(wantModes||wantOneTeam||wantDefense||wantFull) return false;
+  if(wantModes||wantOneTeam||wantDefense||wantFull||wantDynasty) return false;
   const el=$('frg'); if(!el) return false;
   /* The button has to be on screen for an arrow to point at it. */
   const tgt=frgTarget();
@@ -9013,7 +9031,7 @@ function askArcadeAd(){
      they did not. */
   if(!$('s-intro').classList.contains('on')) return;
   if($('sheet').classList.contains('on')) return;
-  if(wantModes||wantOneTeam||wantDefense||wantFull) return;
+  if(wantModes||wantOneTeam||wantDefense||wantFull||wantDynasty) return;
   A.show({from:'football'});
 }
 
@@ -9313,7 +9331,7 @@ function nextSpin(existing){
     spinBoth(existing,()=>{ if(run) paintOpts(existing); });
     return;
   }
-  /* A DRY WHEEL IS A LEGAL PLACE TO BE IN THE LONG GAME, and only there. The cap is a
+  /* A DRY WHEEL IS A LEGAL PLACE TO BE IN THE GAUNTLET, and only there. The cap is a
      signing gate, so a roster that appreciated past it has no money and there is nothing
      any club can offer. That is the rule working rather than the game breaking, and it
      needs a door: spin() would otherwise throw and leave a draft screen with dead wheels. */
@@ -9997,7 +10015,7 @@ function paintCoachLine(id){
     '<p class="dim" style="font-size:12.5px;margin:0 0 10px">'+planWords(run.plan)+'</p>';
 }
 
-/* NOTHING LEFT TO SIGN, which in The Long Game means the money ran out rather than the
+/* NOTHING LEFT TO SIGN, which in The Gauntlet means the money ran out rather than the
    game did. It says why in the words the winter used, and the only thing to do about it is
    take the field with what you have. */
 function paintDryWheel(){
@@ -10020,7 +10038,7 @@ function paintDryWheel(){
 }
 
 /* ---------- THE WINTER ----------
-   The Long Game's own screen, and the only one in this game that plays rather than appears.
+   The Gauntlet's own screen, and the only one in this game that plays rather than appears.
    The beats, in order, and every one of them is a class on a timer:
 
      1. the year turns and the roster arrives folded
@@ -14942,6 +14960,13 @@ function authBoot(){
       wantFull=false;
       closeSheet();
       beginFullDraft();
+    }
+    /* And The Gauntlet, the fourth. Same note as Full Team: beginDynastyDraft asks its own
+       gate again, so signing up does not smuggle anybody onto the tester list. */
+    if(wantDynasty&&oneTeamReady()){
+      wantDynasty=false;
+      closeSheet();
+      beginDynastyDraft();
     }
     if(wantModes&&oneTeamReady()){
       wantModes=false;

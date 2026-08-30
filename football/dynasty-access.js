@@ -1,9 +1,15 @@
-/* WHO CAN SEE THE THREE YEAR DEAL, in one file, because more than one thing asks.
+/* WHO CAN SEE THE GAUNTLET, in one file, because more than one thing asks.
  *
- * A dynasty is one roster carried through three real NFL seasons: the men you keep age
- * into their own next year, at whatever those years actually were, and you pay for them at
- * whatever they turn out to be worth. Today it is neither paid nor announced: it is a
- * preview for named accounts.
+ * The Gauntlet is one roster carried through as many real NFL seasons as you can survive:
+ * the men you keep age into their own next year, at whatever those years actually were,
+ * you pay for them at whatever they turn out to be worth, and the owner wants more wins
+ * every autumn than he wanted last one. Miss his bar twice and the run is over. Today it
+ * is neither paid nor announced: it is a preview for named accounts.
+ *
+ * The file, the flag and every identifier in it still say `dynasty`, which was the mode's
+ * name while it was being built. That is a name in the code and not on the screen, and the
+ * screen is the only place it matters: renaming it would touch the run object, the page,
+ * two checkers and a database column to change nothing anybody can see.
  *
  * A COPY OF fullteam-access.js AND DELIBERATELY SO. Both are feature flags for unannounced
  * modes, both are asked about by the home screen button and by the two functions behind it,

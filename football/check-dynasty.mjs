@@ -1,5 +1,5 @@
 /*
- * The Long Game, played through run.js exactly as the page will drive it.
+ * The Gauntlet, played through run.js exactly as the page will drive it.
  *
  *   node football/check-dynasty.mjs
  *
@@ -92,7 +92,7 @@ function playSeason(run) {
   if (run.phase !== R.PHASES.OVER) throw new Error('season did not finish: ' + run.phase);
 }
 
-console.log('THE LONG GAME, driven through run.js the way the screens will\n');
+console.log('THE GAUNTLET, driven through run.js the way the screens will\n');
 
 /* ─── one dynasty, all the way to the firing ─────────────────────────────────────── */
 const START = 2004;

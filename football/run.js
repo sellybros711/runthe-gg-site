@@ -37,7 +37,7 @@ const PHASES = {
   /* FULL TEAM ONLY: the hire and the game plan, between the last signing and the schedule.
      A phase rather than a screen flag, so it survives a reload the way the draft does. */
   COACH: 'coach',
-  /* THE LONG GAME ONLY: the winter between two seasons. Everybody ages here, salaries
+  /* THE GAUNTLET ONLY: the winter between two seasons. Everybody ages here, salaries
      ratchet, and you release whoever you are not paying for any more. A phase rather than a
      screen flag for the same reason COACH is one: a reload mid-decision has to come back to
      the decision. */
@@ -482,7 +482,7 @@ function createRun(opts) {
      one shared cap. The only run whose roster decides what both teams score. */
   const full = !!opts.full || !!opts.dynasty;
   if (full && defense) throw new Error('a run is full team or defense, not both');
-  /* THE LONG GAME IS A FULL TEAM THAT KEEPS GOING, so it sets `full` rather than sitting
+  /* THE GAUNTLET IS A FULL TEAM THAT KEEPS GOING, so it sets `full` rather than sitting
      beside it: twelve men, both pools, one shared cap, a coach. What it adds is a calendar,
      a salary per man that never falls, and an owner who wants something every autumn. */
   const dynasty = !!opts.dynasty;
@@ -767,7 +767,7 @@ function drawable(run, data, limit) {
        a limit of two each, so the lock can never run the pool dry. */
     .filter((t) => !run.franchise || t.franchise === run.franchise)
     .filter((t) => { if (!run.era) return true; const r = E.ERAS[run.era]; return t.season >= r[0] && t.season <= r[1]; })
-    /* THE LONG GAME SPINS CLUBS AND NOT YEARS. Every other mode leaves the year free, which
+    /* THE GAUNTLET SPINS CLUBS AND NOT YEARS. Every other mode leaves the year free, which
        is the whole point of them: 2000 Faulk beside 2019 Lamar Jackson. Here the year is the
        LEAGUE year and the offseason is what advances it, so a dynasty walks forward through
        real NFL history drafting out of the league as it actually was that autumn. One line
@@ -793,7 +793,7 @@ function spin(run, data, constraint) {
      Before this point reserveFloor() has nothing to read and falls back to the flat
      constant, which is only ever the opening paint of an empty roster. */
 /*
- * THE CHEAPEST MEN IN ONE LEAGUE YEAR, per position, for The Long Game's floor.
+ * THE CHEAPEST MEN IN ONE LEAGUE YEAR, per position, for The Gauntlet's floor.
  *
  * indexData's cheapBy is the forty-eight cheapest men at each position IN THE WHOLE POOL,
  * which is exactly right for every mode whose wheel can reach any year: the cheapest
@@ -836,7 +836,7 @@ function yearFloorLists(players, year, depth) {
      spends down to $12M with two spots open and then finds no club in the pool that can
      fill them, which reads as the game breaking rather than as the money running out.
      Full Team has survived it because its wheel can reach 800 team-seasons and something
-     cheap almost always turns up. The Long Game locks the wheel to one league year, 32
+     cheap almost always turns up. The Gauntlet locks the wheel to one league year, 32
      clubs, and it strands inside twelve picks.
      Merged rather than replaced, so each pool contributes the positions it knows and
      neither overwrites the other. */
@@ -1042,7 +1042,7 @@ function finishHiring(run) {
 }
 
 /*
- * ─── THE LONG GAME: THE WINTER, AND THE OWNER ───────────────────────────────────────
+ * ─── THE GAUNTLET: THE WINTER, AND THE OWNER ───────────────────────────────────────
  *
  * Everything below runs between two seasons and nothing else in the game calls any of it.
  * The order is fixed and each step is its own function so the screen can animate between
@@ -3453,7 +3453,7 @@ const api = {
   cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
   /* Full Team's coach step. */
   coachMarket, hireCoach, setPlan, finishHiring,
-  /* The Long Game's winter and its owner. */
+  /* The Gauntlet's winter and its owner. */
   beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived,
   takeTheField, wheelIsDry,
   /* Exported because the PAGE has to rate the live team with the same chemistry the season
