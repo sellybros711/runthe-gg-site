@@ -7829,7 +7829,7 @@ function ensureDynastyButton(){
       nb=document.createElement('button');
       nb.className='btn ghost sm hp-dynnew';
       nb.id='b-dyn-new';
-      nb.textContent='Start a new dynasty';
+      nb.textContent='Start a new run';
       nb.onclick=()=>{ dynNewSheet(); };
     }
     if(nb.previousSibling!==el) el.parentNode.insertBefore(nb, el.nextSibling);
@@ -8037,8 +8037,9 @@ function dynWhere(r){
   const P=R.PHASES;
   if(r.phase===P.OFFSEASON) return 'mid-winter';
   if(r.phase===P.DRAFT) return 'still drafting';
-  if(r.phase===P.COACH) return 'hiring a coach';
   if(r.phase===P.OVER) return 'season played';
+  /* No COACH branch. The mode has no hire, and save version 2 refuses every run written
+     while it did, so a saved run can no longer be sitting in that phase. */
   return 'ready to play';
 }
 
@@ -8102,7 +8103,7 @@ function dynResume(){
   endRun();
   show('s-intro');
   ensureDynastyButton();
-  toast('That saved dynasty could not be opened, so it has been cleared.');
+  toast('That saved run could not be opened. It has been cleared.');
 }
 
 /* Throwing one away is a decision, so it is asked rather than assumed. */
@@ -8115,7 +8116,7 @@ function dynNewSheet(){
     '<p class="dim" style="font-size:13.5px;margin:0">You are '+
       (n?n+' season'+(n===1?'':'s')+' in':'one draft in')+
       '. Starting a new run throws this one away. You cannot get it back.</p>'+
-    '<div style="margin-top:14px"><button class="btn" id="b-dyn-drop">Start a new dynasty</button></div>'+
+    '<div style="margin-top:14px"><button class="btn" id="b-dyn-drop">Start a new run</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-dyn-keep">Keep playing this one</button></div>';
   $('sheet-in').dataset.kind='dynnew';
   openSheet();
