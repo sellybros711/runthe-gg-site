@@ -508,9 +508,14 @@ def beard(cv, spec):
         cv.sphere(CX, HEAD_CY + 8.2, HEAD_RX * 0.96, HEAD_RY * 0.58, r)
         cv.taper(HEAD_CY + 10, HEAD_CY + 19, 13, 7, r)
     elif size == 'moustache':
-        cv.rect(CX - 5, HEAD_CY + 4, CX + 5, HEAD_CY + 5, r, l=0.6)
-        cv.dot(CX - 6, HEAD_CY + 4, shade(r.base, -0.2))
-        cv.dot(CX + 6, HEAD_CY + 4, shade(r.base, -0.2))
+        # One row plus drooping tips. Two rows of dark ten wide reads as
+        # a gaping mouth, which made the Ringmaster look mid holler.
+        cv.rect(CX - 4, HEAD_CY + 4, CX + 4, HEAD_CY + 4, r, l=0.6)
+        cv.dot(CX - 5, HEAD_CY + 5, r.mid)
+        cv.dot(CX + 5, HEAD_CY + 5, r.mid)
+        cv.dot(CX - 1, HEAD_CY + 5, r.mid)
+        cv.dot(CX, HEAD_CY + 5, r.mid)
+        cv.dot(CX + 1, HEAD_CY + 5, r.mid)
 
 
 def headwear(cv, spec):
@@ -772,6 +777,49 @@ def arch_centaur(cv, spec, pose):
     cv.sphere(CX, 7.6, 6.4, 4.6, Ramp('#5a3a1c'), ymax=7)   # hair
 
 
+def arch_nessie(cv, spec, pose):
+    """The Loch Ness silhouette: a hump or two low in the water and the
+    long neck rising to a small head. The generic beast body was a
+    quadruped, which is a dog, not a lake monster."""
+    body = Ramp(spec.get('skin', '#2a7a5a'))
+    lite = Ramp(spec.get('muzzle') or '#4aa878')
+    off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    for side, o in ((-1, off), (1, -off)):
+        cv.cyl(CX + side * 7 - 1, 33 + o, CX + side * 7 + 1, 38 + o, body, round_bot=1)
+    cv.sphere(CX + 10, 31.5, 4.4, 3.2, body, spec=False)    # tail hump
+    cv.sphere(CX - 1, 30.0, 8.6, 6.4, body, spec=False)     # main hump
+    cv.cyl(CX - 2, 10, CX + 2, 27, body, round_top=2)       # the neck
+    cv.sphere(CX, 8.0, 4.8, 4.2, body)                      # little head
+    cv.sphere(CX, 10.4, 3.0, 1.8, lite)                     # muzzle
+    for dx, dy in ((-4, 27), (2, 31), (-1, 20), (1, 15), (9, 30)):
+        cv.dot(CX + dx, dy, lite.mid)
+        cv.dot(CX + dx + 1, dy, lite.mid)
+
+
+def arch_dragon(cv, spec, pose):
+    """A chunky dragon SITTING: lighter belly, a wing nub, and the thick
+    tail curling up beside him."""
+    body = Ramp(spec.get('skin', '#2e8a3a'))
+    belly = Ramp(spec.get('muzzle') or '#8fd06a')
+    for dx, dy, r_ in ((8, 34, 2.6), (11, 32, 2.4), (13, 29, 2.2),
+                       (13.5, 25.5, 1.8), (12.5, 22.5, 1.4)):
+        cv.sphere(CX + dx, dy, r_, r_, body, spec=False)     # the tail curl
+    cv.sphere(CX + 12.5, 21.0, 1.0, 1.0, belly, spec=False)  # tail tip
+    off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
+    for side, o in ((-1, off), (1, -off)):
+        cv.cyl(CX + side * 5 - 1, 32 + o, CX + side * 5 + 1, 38 + o, body, round_bot=1)
+    cv.sphere(CX - 1, 27.5, 9.0, 7.6, body, spec=False)      # sitting body
+    cv.sphere(CX - 2, 28.5, 5.4, 6.0, belly, spec=False)     # the belly
+    wing = Ramp(shade(body.base, -0.15))
+    cv.tri([(CX - 11, 17), (CX - 6, 23), (CX - 12, 25)], wing, l=0.55)
+    cv.sphere(CX, 12.0, 8.2, 7.2, body)                      # broad head
+    cv.sphere(CX, 15.8, 5.6, 3.2, belly)                     # big muzzle
+    cv.dot(CX - 2, 15, shade(body.base, -0.4))               # nostrils
+    cv.dot(CX + 2, 15, shade(body.base, -0.4))
+    cv.dot(CX - 3, 17, (245, 243, 240))                      # little fangs
+    cv.dot(CX + 3, 17, (245, 243, 240))
+
+
 def arch_cat(cv, spec, pose):
     body = Ramp(spec.get('skin', '#141018'))
     belly = Ramp(spec.get('chest', '#eaeaea'))
@@ -796,8 +844,9 @@ def arch_bird(cv, spec, pose):
     wing = Ramp(spec.get('chest', '#f4922a'))
     cv.sphere(CX, 25.0, 8.0, 9.0, body)
     off = 2 if pose == 'run1' else (-2 if pose == 'run2' else 0)
-    for side in (-1, 1):
-        cv.sphere(CX + side * 10, 24 + side * off, 4.6, 7.4, wing, spec=False)
+    if not spec.get('nowings'):
+        for side in (-1, 1):
+            cv.sphere(CX + side * 10, 24 + side * off, 4.6, 7.4, wing, spec=False)
     cv.cyl(CX - 4, 34, CX - 2, 38, wing)
     cv.cyl(CX + 2, 34, CX + 4, 38, wing)
     cv.sphere(CX, 12.0, 8.4, 7.6, body)
@@ -807,6 +856,7 @@ ARCH = {
     'human': arch_human, 'hulk': arch_hulk, 'round': arch_round,
     'egg': arch_egg, 'robed': arch_robed, 'beast': arch_beast,
     'cat': arch_cat, 'bird': arch_bird, 'centaur': arch_centaur,
+    'nessie': arch_nessie, 'dragon': arch_dragon,
 }
 
 
@@ -1211,6 +1261,50 @@ def sig_strongman(cv, spec, pose, back):
     cv.dot(CX - 5, 14, m); cv.dot(CX + 5, 14, m)
 
 
+def sig_phoenix(cv, spec, pose, back):
+    # wings SPREAD, swept up like flames: a red outer layer, an orange
+    # inner layer, gold feather tips flicking off the top edge. Drawn
+    # over the body (the bird archetype's own egg wings are suppressed
+    # with the nowings flag, or they paint over these).
+    red = Ramp('#c93018')
+    org = Ramp('#f4922a')
+    gold = (248, 216, 74)
+    flap = 2 if pose == 'run1' else (-2 if pose == 'run2' else 0)
+    for side in (-1, 1):
+        sx = side
+        f = flap * (1 if side > 0 else -1) * 0.0 + flap
+        cv.tri([(CX + sx * 3, 26), (CX + sx * 15, 5 + f), (CX + sx * 12, 20 + f)], red, l=0.45)
+        cv.tri([(CX + sx * 4, 25), (CX + sx * 11, 8 + f), (CX + sx * 8, 20 + f)], org, l=0.62)
+        cv.dot(CX + sx * 15, 4 + f, gold)
+        cv.dot(CX + sx * 13, 4 + f, gold)
+        cv.dot(CX + sx * 11, 6 + f, gold)
+    for dx, dy in ((-2, 34), (0, 36), (2, 34), (0, 38), (-1, 36), (1, 37)):
+        cv.dot(CX + dx, dy, (244, 146, 42))
+        cv.dot(CX + dx, dy + 1, gold)
+
+
+def sig_ringmaster(cv, spec, pose, back):
+    gold = (201, 160, 48)
+    glove = (245, 245, 247)
+    # gold cuffs and white gloves on both facings
+    for side in (-1, 1):
+        x = CX + side * 9
+        cv.rect(x - 1, 30, x + 1, 30, Ramp('#c9a030'), l=0.6)
+        for dx in (-1, 0, 1):
+            cv.dot(x + dx, 32, glove)
+            cv.dot(x + dx, 33, glove)
+    if back:
+        return
+    # lapels, double breasted gold buttons, white shirt V and tie
+    for i in range(3):
+        cv.dot(CX - 2 - i, 23 + i, gold)
+        cv.dot(CX + 2 + i, 23 + i, gold)
+    cv.dot(CX - 2, 26, gold); cv.dot(CX + 2, 26, gold)
+    cv.dot(CX - 2, 28, gold); cv.dot(CX + 2, 28, gold)
+    cv.dot(CX, 23, (245, 245, 247))
+    cv.dot(CX, 24, (26, 26, 32))
+
+
 SIGNATURES = {
     'kong': {'post': sig_kong},
     'franky': {'post': sig_franky},
@@ -1242,6 +1336,8 @@ SIGNATURES = {
     'chupacabra': {'post': sig_chupacabra},
     'cupid': {'post': sig_cupid},
     'strongman': {'post': sig_strongman},
+    'phoenix': {'post': sig_phoenix},
+    'ringmaster': {'post': sig_ringmaster},
 }
 
 
@@ -1285,6 +1381,10 @@ def build(spec, pose='idle', key=None):
         cy = 12.0
     elif a == 'centaur':
         cy = 9.5
+    elif a == 'nessie':
+        cy = 7.0
+    elif a == 'dragon':
+        cy = 11.0
     elif a == 'bird':
         cy = 12.0
     skin = Ramp(spec.get('skin', '#f0c088'))
@@ -1414,18 +1514,18 @@ SPECS = {
  'cyclops': dict(arch='hulk', skin='#c8956a', muzzle='#c8956a', chest='#b0855a',
                  eyes='one', eyecolor='#3a2412', mouth='open',
                  hair='#5a3a2a', hairstyle='short'),
- 'phoenix': dict(arch='bird', skin='#e04520', chest='#f4922a',
+ 'phoenix': dict(arch='bird', skin='#e04520', chest='#f4922a', nowings=True,
                  eyes='glow', eyecolor='#f8d84a', mouth='none',
                  extra=[('flame', '#f8d84a')]),
- 'dragon': dict(arch='beast', skin='#2e8a3a', muzzle='#5cc060',
-                eyes='glow', eyecolor='#f4c25a', mouth='fang',
+ 'dragon': dict(arch='dragon', skin='#2e8a3a', muzzle='#8fd06a',
+                eyes='normal', eyecolor='#141018', mouth='none',
                 extra=[('horns', '#f4c25a')]),
  'sasquatch': dict(arch='hulk', skin='#4a3020', muzzle='#c8a074', chest='#8a6a44',
                    eyes='normal', mouth='line'),
  'yeti': dict(arch='hulk', skin='#f0f6fb', muzzle='#d8e8f4', chest='#c8d8e8',
               eyes='glow', eyecolor='#5cb6e5', mouth='open'),
- 'nessie': dict(arch='beast', skin='#2a7a5a', muzzle='#4aa878',
-                eyes='normal', mouth='line'),
+ 'nessie': dict(arch='nessie', skin='#2a7a5a', muzzle='#4aa878',
+                eyes='normal', eyespread=2, mouth='none'),
  'horseman': dict(arch='human', skin='#f4922a', shirt='#2a1e2a', pants='#141014',
                   eyes='carved', eyecolor='#5e2a06', mouth='none'),
  'zombie': dict(arch='human', skin='#8aae64', shirt='#3a2818', pants='#2a1a10',
@@ -1441,9 +1541,9 @@ SPECS = {
                      hair='#3a2414', hairstyle='long', beard='#3a2414',
                      beardsize='full', eyes='normal', mouth='none'),
  'ringmaster': dict(arch='human', skin='#e8b888', shirt='#c93030', pants='#141014',
-                    hat='top', hatcolor='#141010', hattrim='#f4c25a',
+                    hat='top', hatcolor='#141010', hattrim='#c93030',
                     beard='#141010', beardsize='moustache',
-                    eyes='normal', mouth='line', belt='#f4c25a'),
+                    eyes='normal', mouth='none', belt='#f4c25a'),
  'acrobat': dict(arch='human', skin='#e8b888', shirt='#c93a6a', pants='#c93a6a',
                  hair='#5a3a1c', hairstyle='short', eyes='normal', mouth='grin',
                  boot='#f4c25a'),
