@@ -777,7 +777,15 @@ window.GA_ID='G-L29P5MRWKE';
        read as a picture behind the words rather than as texture, and the
        tagline crosses them. Desaturated they behave: the shape still says which
        game it is, the colour is the tile's own. */
-    .gtile:not(.hero) .gt-crest{width:96px;height:96px;filter:grayscale(1) contrast(.9);}
+    .gtile:not(.hero) .gt-crest{width:96px;height:96px;filter:grayscale(1) contrast(.9);
+      /* Not every crest is a mark on transparency. The two football games now use
+         mark.png, which is, but Run The Tour has only its app icon, and an app
+         icon carries its own filled square. Unmasked that square reads as a grey
+         box in the corner rather than as a watermark. The radial mask fades any
+         of them out before their own edge is reached, so the shape is what shows
+         and the container never does. */
+      -webkit-mask-image:radial-gradient(closest-side,#000 52%,rgba(0,0,0,.35) 78%,transparent 100%);
+      mask-image:radial-gradient(closest-side,#000 52%,rgba(0,0,0,.35) 78%,transparent 100%);}
     /* the words sit above it, and take the full width now that nothing shares the corner */
     .gtile:not(.hero) .gt-txt{position:relative;z-index:1;width:100%;flex:1;}
     /* one step lighter than the name's supporting text used to be, so the gap
@@ -957,14 +965,14 @@ window.GA_ID='G-L29P5MRWKE';
            never sees the tiles: it has the room for the cards themselves. -->
       <div class="gtiles">
         <a class="gtile cfb" href="/cfb/">
-          <span class="gt-scr"><img class="gt-crest" src="/cfb/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
+          <span class="gt-scr"><img class="gt-crest" src="/cfb/mark.png" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
             <span class="gt-nm">Perfect <b>Season</b><i>College Football</i></span>
             <span class="gt-tag">Sign six stars, chase the national title.</span>
           </span>
         </a>
         <a class="gtile football" href="/football/">
-          <span class="gt-scr"><img class="gt-crest" src="/football/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
+          <span class="gt-scr"><img class="gt-crest" src="/football/mark.png" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
             <span class="gt-nm">The Perfect <b>Season</b></span>
             <span class="gt-tag">Sign six legends, play a full NFL season.</span>
