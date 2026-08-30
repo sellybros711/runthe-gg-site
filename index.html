@@ -750,9 +750,14 @@ window.GA_ID='G-L29P5MRWKE';
     .gtile:active{transform:translateY(2px);
       box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,0,0,.4), 0 6px 14px -12px rgba(0,0,0,.9);}
 
-    /* The crest sits the way it sits on the desktop card: the icon itself, a
-       thin accent edge, and the card's own colour showing through behind it.
-       No fill and no scanlines, because the colour is the tile now. */
+    /* The crest used to sit in the top-left corner, which is where reading
+       starts, so the name was the SECOND thing found on its own tile and the
+       tagline underneath was set nearly as loud as it. The name leads now.
+       On the four grid tiles the crest stops being a boxed icon and becomes the
+       tile's own watermark, bled off the bottom corner at low opacity, so it
+       still says which game this is without standing in front of the name. The
+       Arcade bar keeps its boxed crest: that layout already reads name-first,
+       because there the crest is beside the name rather than above it. */
     .gt-txt,.gt-scr{position:relative;z-index:1;}
     .gt-scr{display:grid;place-items:center;flex:0 0 auto;
       width:54px;height:54px;border-radius:9px;overflow:hidden;
@@ -761,9 +766,29 @@ window.GA_ID='G-L29P5MRWKE';
     .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;
       filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));}
 
+    /* the watermark, on the four grid tiles only */
+    .gtile:not(.hero):not(.soonTile){overflow:hidden;}
+    .gtile:not(.hero) .gt-scr{
+      position:absolute;right:-19px;bottom:-21px;z-index:0;
+      width:96px;height:96px;border-radius:0;overflow:visible;
+      background:none;box-shadow:none;
+      opacity:.16;pointer-events:none;transform:rotate(-8deg);}
+    /* The crests are full-colour app icons, not flat marks. Left in colour they
+       read as a picture behind the words rather than as texture, and the
+       tagline crosses them. Desaturated they behave: the shape still says which
+       game it is, the colour is the tile's own. */
+    .gtile:not(.hero) .gt-crest{width:96px;height:96px;filter:grayscale(1) contrast(.9);}
+    /* the words sit above it, and take the full width now that nothing shares the corner */
+    .gtile:not(.hero) .gt-txt{position:relative;z-index:1;width:100%;flex:1;}
+    /* one step lighter than the name's supporting text used to be, so the gap
+       between headline and caption is a real one rather than half a step */
+    .gtile:not(.hero) .gt-tag{font-weight:500;}
+
     .gt-txt{display:flex;flex-direction:column;gap:6px;min-width:0;}
     .gt-nm{font-family:'Russo One','Anton',Impact,sans-serif;font-weight:400;letter-spacing:.04em;
       font-size:15px;line-height:1.16;color:var(--ink);text-transform:uppercase;}
+    /* the name gets the room the crest was taking */
+    .gtile:not(.hero) .gt-nm{font-size:17px;}
     .gt-nm b{font-weight:400;color:var(--ac);}
     /* the college edition needs its qualifier, but not at the size of a name */
     .gt-nm i{display:block;font-style:normal;font-size:11px;letter-spacing:.06em;
