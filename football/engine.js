@@ -3900,7 +3900,76 @@ const FULL_CAP_MUSD = 280;
  * NOTHING IN THE LIVE GAME REACHES ANY OF THIS YET. It is measured by
  * simulator.js --dynasty and gated to named accounts by dynasty-access.js.
  */
-const DYNASTY_SEASONS = 3;
+/*
+ * ─── THE OWNER, AND HOW LONG HE GIVES YOU ───────────────────────────────────────────
+ *
+ * A dynasty is not a fixed number of seasons. It is as many as you can keep the job for,
+ * and the score is how many that turned out to be: one integer, which ranks itself, and
+ * which lets somebody stop after any season with their run already banked. That last part
+ * matters more than it sounds. A three-season commitment is twenty-five minutes before you
+ * have a score; this is five minutes a season with a number that is already yours.
+ *
+ * THE BAR CLIMBS AND THE OWNER IS PATIENT ONCE.
+ *
+ *   season 1   8 wins        season 4   11 wins
+ *   season 2   9 wins        season 5+  12 wins, which is the playoffs
+ *   season 3  10 wins
+ *
+ * Miss your bar two seasons RUNNING and you are done. One bad year is a bad year; two in a
+ * row is a pattern, which is how football actually treats it. So the mode opens as "have a
+ * winning season" and becomes "make the playoffs every year, forever", and nobody is ever
+ * fired after their first season.
+ *
+ * MEASURED, not chosen. Seven rules were played to the firing, 200 dynasties each, against
+ * four winter strategies. Seasons survived by the best and worst of those strategies:
+ *
+ *   rule                       worst    best    fired in year 1   rode to the 25 stop
+ *   make the playoffs, always    1.2     1.4          79.0%              0.0%
+ *   10 wins, always             1.7     3.4          52.5%              0.0%
+ *   9 wins, always              2.5     5.4          36.0%              0.5%
+ *   climbing bar, no patience   2.1     3.8          27.5%              0.0%
+ *   playoffs, two in a row      2.7     4.5           0.0%              0.5%
+ *   9 wins, two in a row        5.7    12.8           0.0%              6.5%
+ *   THIS ONE                    4.0     9.5           0.0%              3.0%
+ *
+ * Demanding the playoffs every year fires four players in five after their FIRST season,
+ * which is a mode nobody plays twice. A flat nine-win bar with two strikes goes the other
+ * way: the crude bot's median run is thirteen seasons and 6.5% of them ride the safety stop,
+ * so there is nothing left for a human to be better at. This rule sits between them, and
+ * the bot's best strategy lasts 2.4 times as long as its worst, which is the room a person
+ * needs to visibly outplay it.
+ */
+const DYNASTY_MAX_SEASONS = 25;
+
+/** Wins needed in a given season, counting from 1. */
+function dynastyWinBar(season) {
+  return Math.min(12, 7 + Math.max(1, season));
+}
+
+/**
+ * Whether the owner keeps you, given every season so far, newest last. Each entry needs
+ * only `wins`.
+ *
+ * TWO IN A ROW AGAINST EACH SEASON'S OWN BAR, which is not the same as two against today's:
+ * a nine-win season two is a pass, and it still counts as a pass in the winter after season
+ * three when the bar has moved to ten. You are not fired retroactively for clearing a bar
+ * that has since risen.
+ */
+function dynastySurvives(history) {
+  if (!history || history.length < 2) return true;
+  const n = history.length;
+  const ok = (i) => history[i].wins >= dynastyWinBar(i + 1);
+  return ok(n - 1) || ok(n - 2);
+}
+
+/*
+ * AND A MAN YOU RELEASE DOES NOT COME BACK. A rule rather than a convenience: salaries
+ * ratchet, so without it every winter holds a free exploit, which is to cut your declining
+ * $40M star and re-sign the same man off the wheel at the $32M he is now worth. That is
+ * exactly the pay cut the ratchet exists to forbid. Once he has played for you he is out of
+ * your pool for the rest of the dynasty, whatever season he would be drawn from.
+ */
+
 
 /*
  * ─── THE THREE RULES A WINTER RUNS ON ───────────────────────────────────────────────
@@ -4897,7 +4966,8 @@ const publicAPI = {
     ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
   ],
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
-  DYNASTY_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
+  DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
+  dynastyWinBar, dynastySurvives,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,

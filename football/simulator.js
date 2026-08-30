@@ -1329,142 +1329,164 @@ const DYN_CUTS = {
 const worth = (x) => x.p.ppr_ppg_mean / Math.max(3, x.sal);
 const rankByValue = (rows) => rows.slice().sort((a, b) => worth(a) - worth(b));
 
+/*
+ * ─── HOW LONG DO YOU LAST ───────────────────────────────────────────────────────────
+ *
+ * The mode is not three seasons. It is as many as you can keep the job for: every autumn
+ * the owner wants something, and the winter you do not deliver it is the winter you are
+ * fired. The score is the number of seasons you survived, which is one integer, ranks
+ * itself, and lets somebody stop after any season with their run already banked.
+ *
+ * WHICH MAKES THE THRESHOLD THE ENTIRE MODE, so it is measured rather than picked. Five
+ * candidate rules, each played against every winter strategy until the bot is fired:
+ *
+ *   win 9        a winning record, every year, forever
+ *   win 10       one better, which in this game is a real step
+ *   playoffs     12 wins, every year, no excuses
+ *   ramp         8 the first year, then 9, 10, 11, 12, and 12 from then on
+ *   two strikes  miss the playoffs in two consecutive seasons and you are gone
+ *
+ * WHAT A GOOD ANSWER LOOKS LIKE. The bot here is crude, so it should sit at the LOW end of
+ * what the rule allows: a median around two or three seasons for the best bot leaves the
+ * room a human needs to be visibly better, and a long thin tail is what makes a
+ * leaderboard worth climbing. A rule the bot cannot beat once is unplayable; a rule the bot
+ * rides to the safety stop has no difficulty in it at all.
+ */
+/* THE RULE THAT SHIPPED reads from the engine rather than being restated here, because the
+   page will apply the same one and two implementations of a firing rule is how a player
+   gets fired on one screen and not on another. The rest are the candidates it beat, kept so
+   the comparison in dynastyWinBar's note can be reproduced. */
+const DYN_GOALS = {
+  'SHIPPED (2x ramp)': (h) => E.dynastySurvives(h),
+  'win 9':       (h) => h[h.length - 1].wins >= 9,
+  'win 10':      (h) => h[h.length - 1].wins >= 10,
+  'playoffs':    (h) => h[h.length - 1].made,
+  'ramp':        (h) => h[h.length - 1].wins >= Math.min(12, 7 + h.length),
+  /* The forgiving one, and the most like real football: one bad year is a bad year, two in
+     a row is a pattern. Nobody is fired after a single season. */
+  'two strikes': (h) => h.length < 2 || h[h.length - 1].made || h[h.length - 2].made,
+  /* The same patience, against the bar that produced the widest skill spread. */
+  '2x losing':   (h) => h.length < 2 || h[h.length - 1].wins >= 9 || h[h.length - 2].wins >= 9,
+  /* Two misses EVER rather than two in a row: the owner remembers. */
+  'two total':   (h) => h.filter((x) => x.wins < 9).length < 2,
+};
+
+/* A safety stop, not a length. A dynasty ends when the owner ends it. */
+const DYN_MAX_SEASONS = E.DYNASTY_MAX_SEASONS;
+
+/*
+ * Play one dynasty until the owner has seen enough. Returns the seasons survived and the
+ * year-by-year history.
+ *
+ * A MAN YOU RELEASE DOES NOT COME BACK, which is a rule rather than a convenience. Salaries
+ * ratchet, so without it the winter has a free exploit in it: cut your declining $40M star
+ * and re-sign the same man off the wheel at the $32M he is now worth, which is a pay cut
+ * the ratchet exists to forbid. `used` is keyed on the player and not the player-season, so
+ * once he has been on your roster he is gone from your pool for good.
+ */
+function playDynasty(rng, cutter, goal, coaches) {
+  const CAP0 = E.FULL_CAP_MUSD;
+  let roster = new Array(E.FULL_SLOTS.length).fill(null);
+  let salary = new Array(E.FULL_SLOTS.length).fill(0);
+  let coach = null, tenure = {}, cap = CAP0;
+  const used = new Set();
+  const history = [];
+
+  for (let y = 0; y < DYN_MAX_SEASONS; y++) {
+    const year = DYN_START(rng, y, history);
+    let gone = 0, cut = 0;
+
+    if (y > 0) {
+      cap = Math.round(cap * DYN_GROWTH);
+      const aged = roster.map((m) => (m ? E.dynastyAge(m, DYN_BYKEY, year) : null));
+      const nextSal = aged.map((m, i) => (m
+        ? (DYN_RATCHET ? E.dynastySalary(salary[i], m.price_musd) : m.price_musd)
+        : 0));
+      for (let i = 0; i < roster.length; i++) if (roster[i] && !aged[i]) gone++;
+      const rows = [];
+      for (let i = 0; i < aged.length; i++) if (aged[i]) rows.push({ i, p: aged[i], sal: nextSal[i] });
+      for (const x of cutter(rows)) { aged[x.i] = null; nextSal[x.i] = 0; cut++; }
+      roster = aged; salary = nextSal;
+      for (const p of roster) if (p) tenure[p.player_id] = (tenure[p.player_id] || 0) + 1;
+    }
+
+    let payroll = salary.reduce((t, v) => t + v, 0) + (coach ? coach.price_musd : 0);
+    const filled = dynastyFill(roster, salary, payroll, cap, year, rng, used);
+    roster = filled.roster; salary = filled.salary; payroll = filled.spend;
+    for (const p of roster) if (p) tenure[p.player_id] = tenure[p.player_id] || 1;
+    if (!coach) {
+      const afford = coaches.filter((c) => c.price_musd <= cap - payroll);
+      coach = afford.sort((a, b) => (b.off + b.def) - (a.off + a.def))[0] || null;
+      if (coach) payroll += coach.price_musd;
+    }
+
+    const squad = roster.filter(Boolean);
+    const { off, def } = E.splitSides(squad);
+    /* A side wiped out is a roster that cannot take the field, which in a survival mode is
+       simply the end of the run rather than an error to swallow. */
+    if (!off.length || !def.length) break;
+
+    const chem = E.resolveChemistry(squad, ctx, { twoSided: true, coach });
+    const cont = E.dynastyContinuity(squad, tenure);
+    const bump = cont ? cont.value : 0;
+    const chemNow = bump ? {
+      multiplier: chem.multiplier + bump,
+      offMultiplier: (chem.offMultiplier ?? chem.multiplier) + bump,
+      defMultiplier: (chem.defMultiplier ?? chem.multiplier) + bump,
+    } : chem;
+    const run = E.playRun(squad, chemNow, E.generateSchedule(data, rng).games,
+      E.generatePlayoffs(data, rng), leagueContext, rng, constants,
+      { full: true, coach, plan: E.planFromCoach(coach) });
+
+    history.push({ year, wins: run.regularWins, made: run.seed.made, title: run.titleWon,
+      rating: E.overallOf(squad, chemNow, 'full', coach), payroll, cap, gone, cut,
+      men: squad.length });
+    if (!goal(history)) break;
+  }
+  return history;
+}
+
+/* Where a dynasty starts, and it has to leave room to run: a run beginning in 2023 has two
+   seasons of data left in the pool whatever the owner wants. Ten years of runway. */
+const DYN_START = (rng, y, history) => (history.length
+  ? history[0].year + y
+  : DYN_FIRST_SEASON + Math.floor(rng() * Math.max(1, (DYN_LAST_SEASON - 10) - DYN_FIRST_SEASON + 1)));
+
 function dynastyReport(n) {
-  const CAP = E.FULL_CAP_MUSD;
   const coaches = E.coachTable(ctx) || [];
-  console.log('THE THREE YEAR DEAL: is releasing ever the right move?');
-  console.log(`N=${n} dynasties per strategy, twelve men and a coach at $${CAP}M, starting `
-    + `years ${DYN_FIRST_SEASON} to ${DYN_LAST_SEASON - E.DYNASTY_SEASONS + 1}.\n`);
-  console.log('  winter        year   wins   PO%   title%   rating   payroll   left'
-    + '   aged out   released   signed   over cap');
+  console.log('THE LONG GAME: how many seasons does the owner give you?');
+  console.log(`N=${n} dynasties per cell, twelve men and a coach at $${E.FULL_CAP_MUSD}M, `
+    + `starting years ${DYN_FIRST_SEASON} to ${DYN_LAST_SEASON - 10}.\n`);
 
-  const summary = {};
-  for (const [name, cutter] of Object.entries(DYN_CUTS)) {
-    const acc = Array.from({ length: E.DYNASTY_SEASONS }, () => ({
-      wins: [], po: 0, title: 0, rating: [], pay: [], cap: [], gone: [], cut: [], signed: [], over: 0, n: 0,
-    }));
-    for (let d = 0; d < n; d++) {
-      const rng = E.createSeededRNG(770077 + d * 7919);
-      const startMax = DYN_LAST_SEASON - E.DYNASTY_SEASONS + 1;
-      const start = DYN_FIRST_SEASON + Math.floor(rng() * (startMax - DYN_FIRST_SEASON + 1));
-      let roster = new Array(E.FULL_SLOTS.length).fill(null);
-      let salary = new Array(E.FULL_SLOTS.length).fill(0);
-      let coach = null;
-      let tenure = {};
-      const used = new Set();
+  const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(p * (a.length - 1))];
+  const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
 
-      let CAPY = CAP;
-      for (let y = 0; y < E.DYNASTY_SEASONS; y++) {
-        const year = start + y;
-        let gone = 0, cut = 0;
-        if (y > 0) CAPY = Math.round(CAPY * DYN_GROWTH);
-
-        if (y > 0) {
-          /* ---- the winter: everybody ages, then you choose who to let go ---- */
-          const aged = roster.map((m) => (m ? E.dynastyAge(m, DYN_BYKEY, year) : null));
-          /* Off the engine's own rule rather than a copy of it: the page will apply the
-             same one and two implementations of a ratchet is how they drift. */
-          const nextSal = aged.map((m, i) => (m
-            ? (DYN_RATCHET ? E.dynastySalary(salary[i], m.price_musd) : m.price_musd)
-            : 0));
-          for (let i = 0; i < roster.length; i++) if (roster[i] && !aged[i]) gone++;
-          const rows = [];
-          for (let i = 0; i < aged.length; i++) if (aged[i]) rows.push({ i, p: aged[i], sal: nextSal[i] });
-          const drop = new Set(cutter(rows).map((x) => x.i));
-          for (const i of drop) { aged[i] = null; nextSal[i] = 0; cut++; }
-          roster = aged; salary = nextSal;
-          for (const p of roster) if (p) tenure[p.player_id] = (tenure[p.player_id] || 0) + 1;
-        }
-
-        /* ---- what the roster costs now, and what that leaves ---- */
-        const before = roster.filter(Boolean).length;
-        let payroll = salary.reduce((t, v) => t + v, 0) + (coach ? coach.price_musd : 0);
-        const filled = dynastyFill(roster, salary, payroll, CAPY, year, rng, used);
-        roster = filled.roster; salary = filled.salary; payroll = filled.spend;
-        const signed = roster.filter(Boolean).length - before;
-        for (const p of roster) if (p) tenure[p.player_id] = tenure[p.player_id] || 1;
-
-        /* The coach is hired once, out of what is left, and kept. */
-        if (!coach) {
-          const afford = coaches.filter((c) => c.price_musd <= CAPY - payroll);
-          coach = afford.sort((a, b) => (b.off + b.def) - (a.off + a.def))[0] || null;
-          if (coach) payroll += coach.price_musd;
-        }
-
-        const squad = roster.filter(Boolean);
-        const { off, def } = E.splitSides(squad);
-        if (!off.length || !def.length) break;   // a side wiped out; the run cannot be played
-
-        const chem = E.resolveChemistry(squad, ctx, { twoSided: true, coach });
-        /* The continuity bonus rides the same saturation ceiling as every other link rather
-           than sitting outside it, which is what qbHubBonus does and for the same reason. */
-        const cont = E.dynastyContinuity(squad, tenure);
-        const bump = cont ? cont.value : 0;
-        const chemNow = bump ? {
-          multiplier: chem.multiplier + bump,
-          offMultiplier: (chem.offMultiplier ?? chem.multiplier) + bump,
-          defMultiplier: (chem.defMultiplier ?? chem.multiplier) + bump,
-        } : chem;
-
-        const sched = E.generateSchedule(data, rng);
-        const playoffs = E.generatePlayoffs(data, rng);
-        const run = E.playRun(squad, chemNow, sched.games, playoffs, leagueContext, rng,
-          constants, { full: true, coach, plan: E.planFromCoach(coach) });
-
-        const a = acc[y];
-        a.n++;
-        a.wins.push(run.regularWins);
-        if (run.seed.made) a.po++;
-        if (run.titleWon) a.title++;
-        a.rating.push(E.overallOf(squad, chemNow, 'full', coach));
-        a.pay.push(payroll);
-        a.gone.push(gone); a.cut.push(cut); a.signed.push(signed);
-        if (payroll > CAPY) a.over++;
-        a.cap.push(CAPY);
+  for (const [gname, goal] of Object.entries(DYN_GOALS)) {
+    console.log('  ' + gname.toUpperCase());
+    console.log('    winter        median   mean    p75    p90    best   fired in yr 1   hit the stop');
+    for (const [cname, cutter] of Object.entries(DYN_CUTS)) {
+      const lens = [];
+      for (let d = 0; d < n; d++) {
+        const rng = E.createSeededRNG(551100 + d * 7919);
+        lens.push(playDynasty(rng, cutter, goal, coaches).length);
       }
+      console.log('    ' + cname.padEnd(12)
+        + String(q(lens, 0.5)).padStart(7)
+        + mean(lens).toFixed(1).padStart(7)
+        + String(q(lens, 0.75)).padStart(7)
+        + String(q(lens, 0.9)).padStart(7)
+        + String(Math.max(...lens)).padStart(7)
+        + fmtPct(lens.filter((x) => x <= 1).length / lens.length).padStart(16)
+        + fmtPct(lens.filter((x) => x >= DYN_MAX_SEASONS).length / lens.length).padStart(15));
     }
-
-    const m = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : 0);
-    for (let y = 0; y < E.DYNASTY_SEASONS; y++) {
-      const a = acc[y];
-      if (!a.n) continue;
-      console.log('  ' + (y === 0 ? name.padEnd(12) : ' '.repeat(12))
-        + String(y + 1).padStart(6)
-        + m(a.wins).toFixed(1).padStart(7)
-        + fmtPct(a.po / a.n).padStart(7)
-        + fmtPct(a.title / a.n).padStart(8)
-        + m(a.rating).toFixed(1).padStart(9)
-        + ('$' + m(a.pay).toFixed(0) + 'M').padStart(10)
-        + ('$' + (m(a.cap) - m(a.pay)).toFixed(0) + 'M').padStart(8)
-        + m(a.gone).toFixed(1).padStart(10)
-        + m(a.cut).toFixed(1).padStart(11)
-        + m(a.signed).toFixed(1).padStart(9)
-        + fmtPct(a.over / a.n).padStart(11));
-    }
-    summary[name] = {
-      wins: acc.reduce((t, a) => t + (a.n ? m(a.wins) : 0), 0),
-      titles: acc.reduce((t, a) => t + (a.n ? a.title / a.n : 0), 0),
-    };
     console.log('');
   }
-
-  console.log('  three-year totals');
-  for (const [name, v] of Object.entries(summary)) {
-    console.log('    ' + name.padEnd(12) + v.wins.toFixed(1).padStart(6) + ' wins   '
-      + fmtPct(v.titles / E.DYNASTY_SEASONS).padStart(6) + ' titles a year');
-  }
-  console.log('');
-  console.log('WHAT TO LOOK FOR. One number decides whether this mode exists: the spread in');
-  console.log('three-year wins between "stand pat" and the strategies that release people. A');
-  console.log('winter where doing nothing is as good as managing has no decision in it. And');
-  console.log('watch "over cap": if it is near zero the gate never bites and rule 3 is');
-  console.log('decoration, and if it is near 100% the roster is trapped every winter and the');
-  console.log('wheel never comes out.');
-  console.log('');
-  console.log('WHERE IT STANDS. About five and a half wins between managing and refusing to,');
-  console.log('and the gate closing on the GM who hoards in year two and on nobody else. Set');
-  console.log('PS_DYN_RATCHET=0 to watch that spread collapse to nothing, which is what the');
-  console.log('mode looked like before salaries stopped falling: see dynastySalary.');
+  console.log('WHAT TO LOOK FOR. The bot is crude, so the rule to ship is the one where its');
+  console.log('best strategy sits around two or three seasons with a tail that reaches into');
+  console.log('double figures: that leaves the room a human needs to be visibly better. A rule');
+  console.log('that fires the bot in year one most of the time is unplayable, and one it rides');
+  console.log('to the safety stop has no difficulty in it. The spread between "stand pat" and');
+  console.log('the rest is, as ever, what managing the roster is worth.');
 }
 
 // ─── main ────────────────────────────────────────────────────────────────────
