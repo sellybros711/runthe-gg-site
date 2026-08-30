@@ -371,13 +371,17 @@ def face(cv, skin, spec, cy=HEAD_CY):
     # pupil, the way the reference art draws them.
     WHITE = (250, 250, 252)
     if style == 'one':
-        # ONE eye, and a big one: he is a cyclops.
-        for dx in range(-2, 3):
-            for dy in (-1, 0, 1):
+        # ONE eye, and a BIG one: it has to carry the whole face alone.
+        for dx in range(-3, 4):
+            for dy in (-2, -1, 0, 1, 2):
+                if abs(dx) == 3 and abs(dy) == 2:
+                    continue
                 cv.dot(CX + dx, y + dy, WHITE)
         pc = hex2rgb(ec or '#3a2412')
-        cv.dot(CX, y, pc); cv.dot(CX, y + 1, pc)
-        cv.dot(CX - 1, y, pc); cv.dot(CX - 1, y + 1, pc)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                cv.dot(CX + dx, y + dy, pc)
+        cv.dot(CX - 1, y - 1, shade(pc, 0.55))
     else:
         # Two lessons from review, baked into every two eyed style:
         #
@@ -540,10 +544,12 @@ def beard(cv, spec):
     # face() puts the eyes: every bearded character came out as a blank
     # oval with no face in it at all, and Father Time had no face to find.
     if size == 'full':
-        cv.sphere(CX, HEAD_CY + 8.6, HEAD_RX * 0.94, HEAD_RY * 0.62, r)
+        cv.sphere(CX, HEAD_CY + 9.0, HEAD_RX * 0.94, HEAD_RY * 0.58, r, spec=False)
     elif size == 'long':
-        cv.sphere(CX, HEAD_CY + 8.2, HEAD_RX * 0.96, HEAD_RY * 0.58, r)
-        cv.taper(HEAD_CY + 10, HEAD_CY + 19, 13, 7, r)
+        # Starts BELOW the mouth and falls: centered higher it swallowed
+        # the whole face and Father Time had nothing above his beard.
+        cv.sphere(CX, HEAD_CY + 9.4, HEAD_RX * 0.90, HEAD_RY * 0.52, r, spec=False)
+        cv.taper(HEAD_CY + 11, HEAD_CY + 16, 12, 7, r)
     elif size == 'moustache':
         # One row plus drooping tips. Two rows of dark ten wide reads as
         # a gaping mouth, which made the Ringmaster look mid holler.
@@ -615,12 +621,16 @@ def extras(cv, spec, pose):
             for sx in (-7, 7):
                 for i in range(4):
                     cv.dot(CX + sx + (1 if sx > 0 else -1) * (i // 2), 4 - i, shade(c, 0.1 * i))
-        elif kind == 'ears':                # cat / animal ears
+        elif kind == 'ears':                # cat / animal ears, POINTED
             r = Ramp(e[1])
             # Upright triangles. The old pair splayed outward and down,
             # which is a bat, not a cat.
             cv.tri([(CX - 7, 0), (CX - 10, 8), (CX - 3, 7)], r, l=0.6)
             cv.tri([(CX + 7, 0), (CX + 10, 8), (CX + 3, 7)], r, l=0.5)
+        elif kind == 'roundears':           # bear ears: semicircles
+            r = Ramp(e[1])
+            for side in (-1, 1):
+                cv.sphere(CX + side * 7.5, 5.0, 3.4, 3.4, r, spec=False)
         elif kind == 'wings':
             r = Ramp(e[1])
             for side in (-1, 1):
@@ -641,6 +651,18 @@ def extras(cv, spec, pose):
             for sx in (-10, 10):
                 cv.dot(CX + sx, HEAD_CY + 3, (206, 170, 92))
                 cv.dot(CX + sx, HEAD_CY + 4, (150, 118, 56))
+        elif kind == 'breath':
+            # A plume blown UPWARD past his own face. On the crown it
+            # just read as orange hair on a fire eater who was not
+            # breathing anything.
+            hot = Ramp(e[1])
+            core = Ramp('#f8e07a')
+            for i, (dx, dy, r_) in enumerate(
+                    ((6.5, 18, 2.0), (9.5, 14, 2.8), (11.5, 9, 3.2),
+                     (12.5, 4, 2.4), (12.5, 0, 1.5))):
+                cv.sphere(CX + dx, dy, r_, r_ * 1.15, hot, spec=True)
+                if i >= 1:
+                    cv.sphere(CX + dx, dy, r_ * 0.45, r_ * 0.6, core, spec=True)
         elif kind == 'flame':
             r = Ramp(e[1])
             # Rooted on the crown. Floating clear of the skull made it read
@@ -652,6 +674,13 @@ def extras(cv, spec, pose):
             pass
         elif kind == 'bandage':
             r = Ramp(e[1])
+            # A turned up trench collar under the wraps, the other half
+            # of the look: bandages plus a coat he is hiding inside.
+            coat = Ramp(shade(spec.get('shirt', '#4a4a5a'), -0.3))
+            cv.taper(21, 27, 20, 21, coat)
+            for i in range(4):
+                cv.dot(CX - 5 - i * 0.5, 22 + i, coat.lit)
+                cv.dot(CX + 5 + i * 0.5, 22 + i, coat.lit)
             # Wrapped ON the head, so each turn is clipped to the skull's
             # width at that row. Flat full width bars turned the head into
             # a rectangular bucket with no shape under the wrapping.
@@ -819,8 +848,13 @@ def arch_centaur(cv, spec, pose):
         o = off if lx < 0 else -off
         cv.cyl(CX + lx - 1, 30 + o, CX + lx + 1, 37 + o, horse)
         cv.cyl(CX + lx - 1, 36 + o, CX + lx + 1, 37 + o, boot)
-    # the human half, rising from the horse's shoulders
+    # the human half, rising from the horse's shoulders, in a tunic
     cv.cyl(CX - 4, 15, CX + 4, 24, skin, round_top=2)
+    # A tunic that FOLLOWS the torso and flares at the waist. A straight
+    # box across his chest read as a signboard hung round his neck.
+    tunic = Ramp(spec.get('tunic', '#8a4a3a'))
+    cv.taper(19, 26, 7, 12, tunic, folds=2)
+    cv.rect(CX - 3, 18, CX + 3, 18, Ramp(shade(tunic.base, 0.2)), l=0.6)
     lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
     for side, o in ((-1, lo), (1, ro)):
         cv.cyl(CX + side * 6 - 1, 17 + o, CX + side * 6 + 1, 23 + o, skin, round_bot=1)
@@ -1120,7 +1154,10 @@ def sig_cape_post(cv, spec, pose, back):
 def sig_liberty(cv, spec, pose, back):
     skin = Ramp(spec.get('skin', '#6db8a2'))
     ax = CX + 9.5
-    cv.cyl(ax - 1, 9, ax + 1, 22, skin, round_bot=1)      # the raised arm
+    # The arm has to reach the SHOULDER. Starting at row 22 it floated
+    # in the top corner with nothing holding it up.
+    cv.cyl(ax - 1, 9, ax + 1, 25, skin, round_bot=1)
+    cv.sphere(CX + 7, 24.5, 3.2, 3.0, skin, spec=False)   # the shoulder
     cv.rect(ax - 2.5, 7, ax + 2.5, 8, Ramp('#3f7f6d'), l=0.5)
     cv.sphere(ax, 3.4, 2.6, 3.4, Ramp('#f4b03a'), spec=True)  # the flame
     cv.dot(ax, 3, (255, 248, 225))
@@ -1195,27 +1232,47 @@ def sig_flash(cv, spec, pose, back):
 
 
 def sig_sherlock(cv, spec, pose, back):
+    hat = Ramp(spec.get('hatcolor', '#8b6a3a'))
+    # The deerstalker's EAR FLAPS, the thing that makes the silhouette
+    # his. Without them it is any old fedora.
+    for side in (-1, 1):
+        cv.sphere(CX + side * 9.5, 8.5, 2.6, 3.4, hat, spec=False)
+    # the Inverness cape over the shoulders
+    cape = Ramp(shade(spec.get('shirt', '#8b6a3a'), -0.22))
+    cv.taper(22, 27, 19, 22, cape)
     if back:
         return
-    # the magnifying glass, held up in his right hand
-    rim = (160, 128, 52)
-    for dx, dy in ((-1, -2), (0, -2), (1, -2), (2, -1), (2, 0), (1, 1),
-                   (0, 1), (-1, 1), (-2, 0), (-2, -1)):
-        cv.dot(CX + 12 + dx, 27 + dy, rim)
-    cv.dot(CX + 12, 26, (200, 224, 236))
-    cv.dot(CX + 11, 27, (200, 224, 236))
-    cv.dot(CX + 12, 27, (170, 200, 220))
-    cv.dot(CX + 11, 29, rim)
-    cv.dot(CX + 11, 30, rim)
+    # the magnifying glass, held UP beside his face where he would use it
+    rim = (176, 142, 60)
+    gx, gy = CX + 11, 19
+    for dx, dy in ((-1, -3), (0, -3), (1, -3), (2, -2), (3, -1), (3, 0),
+                   (2, 1), (1, 2), (0, 2), (-1, 2), (-2, 1), (-3, 0),
+                   (-3, -1), (-2, -2)):
+        cv.dot(gx + dx, gy + dy, rim)
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            cv.dot(gx + dx, gy + dy, (188, 214, 232) if dx + dy else (214, 234, 246))
+    for i in range(4):
+        cv.dot(gx - 3 - i, gy + 3 + i, shade(rim, -0.3))
 
 
 def sig_tracy(cv, spec, pose, back):
+    coat = Ramp(shade(spec.get('shirt', '#f4c25a'), -0.22))
+    cv.taper(22, 26, 17, 19, coat)      # the trench coat's collar
     if back:
         return
-    # black tie on the yellow coat
+    # A white shirt V under the tie. The bare tie on the coat read as a
+    # black hole punched in his chest.
+    sh = Ramp('#eceff2')
+    for i in range(4):
+        cv.rect(CX - 3 + i * 0.4, 24 + i, CX + 3 - i * 0.4, 24 + i, sh, l=0.7)
     tie = Ramp('#1a1a20')
-    cv.rect(CX - 1, 24, CX + 1, 28, tie, l=0.5)
-    cv.dot(CX, 29, tie.dark)
+    cv.rect(CX - 1, 25, CX + 1, 29, tie, l=0.5)
+    cv.dot(CX, 24, tie.mid)
+    # lapels
+    for i in range(4):
+        cv.dot(CX - 4 - i * 0.5, 24 + i, coat.dark)
+        cv.dot(CX + 4 + i * 0.5, 24 + i, coat.dark)
 
 
 def sig_alice(cv, spec, pose, back):
@@ -1507,14 +1564,20 @@ def sig_krampus(cv, spec, pose, back):
     t = (201, 75, 75)
     cv.dot(CX, 19, t); cv.dot(CX, 20, t)
     cv.dot(CX, 21, t); cv.dot(CX + 1, 21, t)
-    # the chain slung across his chest, bell on the end
-    ch = (150, 155, 165)
-    for i in range(7):
-        cv.dot(CX - 6 + i * 2, 23 + i, ch)
+    # The chain hangs in a SWAG across his chest, links touching, with
+    # the bell at the low point. Scattered single dots read as noise.
+    ch = (168, 172, 182)
+    dk = (96, 100, 112)
+    for i in range(13):
+        u = i / 12.0
+        x = CX - 7 + u * 14
+        y = 24 + math.sin(u * math.pi) * 5
+        cv.dot(x, y, ch if i % 2 else dk)
     g = (201, 160, 48)
-    cv.dot(CX + 7, 30, g); cv.dot(CX + 8, 30, g)
-    cv.dot(CX + 7, 31, g); cv.dot(CX + 8, 31, g)
-    cv.dot(CX + 8, 32, (110, 88, 30))
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 30, g)
+        cv.dot(CX + dx, 31, shade(g, -0.2))
+    cv.dot(CX, 32, (110, 88, 30))
 
 
 def sig_fathertime(cv, spec, pose, back):
@@ -1650,7 +1713,49 @@ def sig_felix(cv, spec, pose, back):
         cv.sphere(CX + side * 4, 37.2, 3.2, 1.8, shoe, spec=True)
 
 
+def sig_acrobat(cv, spec, pose, back):
+    # A gold sash across the leotard and a star on the chest: circus.
+    g = Ramp('#e8c04a')
+    for i in range(11):
+        cv.dot(CX - 5 + i, 24 + i * 0.45, g.mid)
+        cv.dot(CX - 5 + i, 25 + i * 0.45, g.dark)
+    if back:
+        return
+    st = (250, 244, 210)
+    cv.dot(CX - 2, 28, st)
+    for dx in (-3, -2, -1, 0, 1):
+        cv.dot(CX + dx - 1, 29, st)
+    cv.dot(CX - 3, 30, st); cv.dot(CX - 1, 30, st)
+
+
+def sig_cyclops(cv, spec, pose, back):
+    # The hide tunic over one shoulder, and a brow heavy enough to make
+    # the single eye read as deliberate rather than as a missing pair.
+    # A hide that DRAPES and flares, with a ragged hem and one strap over
+    # the shoulder. A straight rectangle read as a sandwich board.
+    hide = Ramp('#8a6a3a')
+    cv.taper(23, 33, 9, 15, hide, folds=2)
+    cv.cyl(CX - 6, 20, CX - 4, 25, hide)
+    for i, dx in enumerate(range(-7, 8, 2)):
+        for k in range((i * 5) % 3):
+            cv.dot(CX + dx, 33 + k, hide.dark)
+            cv.dot(CX + dx + 1, 33 + k, hide.dark)
+    if back:
+        return
+    brow = shade(spec.get('skin', '#c8956a'), -0.5)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 9, brow)
+    for dx in (-5, 5):
+        cv.dot(CX + dx, 10, brow)
+
+
 def sig_strongman(cv, spec, pose, back):
+    # THE SINGLET. A red sphere on the chest read as a beach ball; the
+    # classic strongman wears a one strap leotard.
+    red = Ramp('#c02a2a')
+    cv.cyl(CX - 6, 26, CX + 6, 33, red, round_bot=2)
+    for side in (-1, 1):
+        cv.cyl(CX + side * 4 - 1, 22, CX + side * 4 + 1, 26, red)
     if back:
         return
     # the handlebar mustache, waxed and curled
@@ -1740,6 +1845,8 @@ SIGNATURES = {
     'chupacabra': {'post': sig_chupacabra},
     'cupid': {'post': sig_cupid},
     'strongman': {'post': sig_strongman},
+    'cyclops': {'post': sig_cyclops},
+    'acrobat': {'post': sig_acrobat},
     'phoenix': {'post': sig_phoenix},
     'ringmaster': {'post': sig_ringmaster},
     'witch': {'post': sig_witch},
@@ -1874,7 +1981,7 @@ SPECS = {
  'lion': dict(arch='hulk', skin='#eab84a', muzzle='#ead0a0', chest='#eab84a',
               eyes='normal', eyespread=3, mouth='line'),
  'pooh': dict(arch='round', skin='#f4c25a', shirt='#d24949', eyes='cartoon',
-              eyecolor='#141018', mouth='grin', extra=[('ears', '#f4c25a')]),
+              eyecolor='#141018', mouth='grin', extra=[('roundears', '#f4c25a')]),
  'robin': dict(arch='human', skin='#efc9a0', shirt='#3f7a3a', pants='#4a2d18',
                hat='cap', hatcolor='#3f7a3a', hair='#a45b1a', hairstyle='bald',
                eyes='normal', mouth='grin', belt='#f4c25a'),
@@ -1903,7 +2010,7 @@ SPECS = {
                folds=3),
  'centaur': dict(arch='centaur', skin='#e8b888', pants='#8b6a3a',
                  eyes='normal', mouth='grin'),
- 'krampus': dict(arch='hulk', skin='#5a2812', muzzle='#5a2812', chest='#3a2010',
+ 'krampus': dict(arch='hulk', skin='#5a2812', muzzle='#5a2812', chest=None,
                  eyes='glow', eyecolor='#c94b1a', mouth='fang'),
  'fathertime': dict(arch='robed', skin='#e5c8a5', shirt='#5a4020',
                     hair='#f5efe8', hairstyle='short', beard='#f5efe8',
@@ -1922,7 +2029,7 @@ SPECS = {
  'medusa': dict(arch='robed', skin='#86c46e', shirt='#2f7a4a',
                 eyes='glow', eyecolor='#f4c25a', mouth='line', folds=3,
                 hair='#57b56a', hairstyle='wild'),
- 'cyclops': dict(arch='hulk', skin='#c8956a', muzzle='#c8956a', chest='#b0855a',
+ 'cyclops': dict(arch='hulk', skin='#c8956a', muzzle='#c8956a', chest=None,
                  eyes='one', eyecolor='#3a2412', mouth='open',
                  hair='#5a3a2a', hairstyle='short'),
  'phoenix': dict(arch='bird', skin='#e04520', chest='#f4922a', nowings=True,
@@ -1945,12 +2052,12 @@ SPECS = {
  'werewolf': dict(arch='hulk', skin='#4a3524', muzzle=None, chest='#6a4e34',
                   wolfmuzzle='#a88458', eyes='glow', eyecolor='#f4c25a',
                   mouth='none'),
- 'strongman': dict(arch='hulk', skin='#e8b888', muzzle='#e8b888', chest='#c93030',
+ 'strongman': dict(arch='hulk', skin='#e8b888', muzzle='#e8b888', chest=None,
                    hair='#5a3a1c', hairstyle='short',
                    eyes='normal', mouth='none'),
  'beardedlady': dict(arch='human', skin='#f2ceaa', shirt='#b0447a', pants='#7a2a54',
-                     hair='#3a2414', hairstyle='long', beard='#3a2414',
-                     beardsize='full', eyes='normal', mouth='none'),
+                     hair='#3a2414', hairstyle='long', beard='#4a2f1a',
+                     beardsize='long', eyes='normal', mouth='none'),
  'ringmaster': dict(arch='human', skin='#e8b888', shirt='#c93030', pants='#141014',
                     hat='top', hatcolor='#141010', hattrim='#c93030',
                     beard='#141010', beardsize='moustache',
@@ -1960,7 +2067,7 @@ SPECS = {
                  boot='#f4c25a'),
  'firebreather': dict(arch='human', skin='#c8956a', shirt='#3a2418', pants='#3a2418',
                       hair='#141010', hairstyle='short', eyes='angry',
-                      mouth='open', extra=[('flame', '#f4922a')]),
+                      mouth='open', extra=[('breath', '#f4922a')]),
  'blackcat': dict(arch='cat', skin='#141018', chest='#eaeaea', muzzle='#d8d8dc',
                   eyes='glow', eyecolor='#f4c25a', mouth='none', eyespread=3,
                   extra=[('ears', '#141018')]),
