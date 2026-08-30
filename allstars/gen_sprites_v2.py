@@ -873,17 +873,35 @@ def arch_beast(cv, spec, pose):
     body = Ramp(spec.get('skin', '#5a3a20'))
     boot = Ramp(spec.get('boot', shade(body.base, -0.4)))
     build = spec.get('build', 'stocky')
+    # The body used to sit so low that only two rows of leg showed under
+    # it, which is why both quadrupeds read as a barrel on castors. It
+    # rides higher now and the legs get six to nine rows to be legs in.
     if build == 'lean':
-        bw, bh, bcy, legtop, hy, hr = 8.4, 4.6, 26.5, 28, 12.5, 6.8
+        bw, bh, bcy, legtop, hy, hr = 8.2, 4.4, 24.5, 27, 12.5, 6.8
+        hindx, frontx, thigh = (-7, -2), (2, 7), 3.6
     else:
-        bw, bh, bcy, legtop, hy, hr = 11.0, 6.8, 28.5, 31, 14.0, 7.8
+        bw, bh, bcy, legtop, hy, hr = 11.0, 6.2, 26.5, 29, 14.0, 7.8
+        hindx, frontx, thigh = (-8, -3), (2, 7), 4.6
     cv.sphere(CX, bcy, bw, bh, body, spec=False)
     off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
-    spread = (-7, -3, 3, 7) if build == 'lean' else (-8, -3, 3, 8)
-    for lx in spread:
-        o = off if lx < 0 else -off
-        cv.cyl(CX + lx - 1, legtop + o, CX + lx + 1, 37 + o, body)
-        cv.cyl(CX + lx - 1, 36 + o, CX + lx + 1, 37 + o, boot)
+    # FRONT and HIND legs are not the same leg. Four identical posts under
+    # a barrel is a table, and it is what made the rabid dog and the
+    # chupacabra read as one animal painted twice however their bodies
+    # differed. A front leg is a straight column off a shoulder; a hind
+    # leg is a thigh, then a shank angled FORWARD off the hock, then a
+    # foot that lands ahead of where the thigh started.
+    for lx in frontx:
+        o = -off
+        cv.sphere(CX + lx, legtop + o, 2.6, 2.4, body, spec=False)
+        cv.cyl(CX + lx - 1, legtop + o, CX + lx + 1, 36 + o, body)
+        cv.cyl(CX + lx - 1, 36 + o, CX + lx + 2, 37 + o, boot)
+    for lx in hindx:
+        o = off
+        hock = legtop + 3
+        cv.sphere(CX + lx, legtop - 1 + o, thigh, thigh * 0.86, body, spec=False)
+        cv.cyl(CX + lx - 1, legtop + o, CX + lx + 1, hock + o, body)
+        cv.cyl(CX + lx, hock + o, CX + lx + 2, 36 + o, body)
+        cv.cyl(CX + lx, 36 + o, CX + lx + 3, 37 + o, boot)
     # neck, then a forward facing head centred over the body
     if build == 'lean':
         cv.cyl(CX - 2, 16, CX + 2, 25, body, round_top=1)
@@ -896,9 +914,17 @@ def arch_beast(cv, spec, pose):
         # the sphere's rim shading, which read as a dark V scored into the
         # face rather than as a snout.
         m = Ramp(shade(spec['muzzle'], 0.18))
-        my = hy + 4.0
+        my = hy + 5.6
         cv.sphere(CX, my, 5.2 if build != 'lean' else 4.4, 3.8, m)
-        cv.sphere(CX, my - 0.8, 1.5, 1.1, Ramp(shade(spec['muzzle'], -0.55)))
+        # The seam where the muzzle meets the head is a straight bar two
+        # rows deep across the top of the snout. A round bead below it
+        # left the bar reading as a visor; a wedge sitting ON it reads as
+        # the nose it is.
+        nose = shade(spec['muzzle'], -0.62)
+        ny = int(my) - 2
+        for i, w in enumerate((2, 1, 0)):
+            for dx in range(-w, w + 1):
+                cv.dot(CX + dx, ny + i, nose)
 
 
 def arch_centaur(cv, spec, pose):
@@ -931,32 +957,44 @@ def arch_centaur(cv, spec, pose):
 
 
 def arch_nessie(cv, spec, pose):
-    """The Loch Ness silhouette: a hump or two low in the water and the
-    long neck rising to a small head. The generic beast body was a
-    quadruped, which is a dog, not a lake monster."""
+    """The Loch Ness silhouette: humps low in the water and a long neck
+    rising to a small head. She was drawn thin and small inside the frame,
+    so she read as a lizard on a stick; the neck is the widest thing about
+    her after the body and it has to be built like a neck, tapering."""
     body = Ramp(spec.get('skin', '#2a7a5a'))
     lite = Ramp(spec.get('muzzle') or '#4aa878')
     off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
-    for side, o in ((-1, off), (1, -off)):
-        cv.cyl(CX + side * 7 - 1, 33 + o, CX + side * 7 + 1, 38 + o, body, round_bot=1)
-    cv.sphere(CX + 10, 31.5, 4.4, 3.2, body, spec=False)    # tail hump
-    cv.sphere(CX - 1, 30.0, 8.6, 6.4, body, spec=False)     # main hump
-    # the neck leans as it rises, so she reads curved, not planted
-    cv.cyl(CX - 3, 18, CX + 1, 28, body)
-    cv.cyl(CX - 1, 9, CX + 3, 20, body, round_top=2)
-    cv.sphere(CX + 2, 7.4, 4.8, 4.2, body)                  # little head
-    cv.sphere(CX + 2.4, 9.8, 3.0, 1.8, lite)                # muzzle
-    cv.dot(CX + 4, 11, (240, 214, 110))                     # little teeth
-    cv.dot(CX + 2, 11, (240, 214, 110))
-    # her face lives here: the head is off center, so face() cannot
+    # the tail, curling up and away behind the second hump
+    for i, (dx, dy, r) in enumerate(((10, 32, 3.0), (13, 30, 2.4),
+                                     (14, 27, 1.8), (14, 24, 1.3))):
+        cv.sphere(CX + dx, dy + (off if i > 1 else 0), r, r * 0.9, body,
+                  spec=False)
+    cv.sphere(CX + 7.5, 31.0, 5.0, 3.4, body, spec=False)   # second hump
+    cv.sphere(CX - 2.0, 30.5, 9.8, 5.8, body, spec=False)   # main hump
+    for side, o in ((-1, off), (1, -off)):                  # flippers
+        cv.sphere(CX + side * 6, 35.5 + o, 3.4, 2.2, body, spec=False)
+    # THE NECK, tapering in three stages and leaning as it rises, so it
+    # reads as a curve of muscle rather than a pipe stuck in a hump
+    cv.cyl(CX - 5, 20, CX + 2, 31, body)
+    cv.cyl(CX - 3, 12, CX + 3, 22, body)
+    cv.cyl(CX, 6, CX + 5, 14, body, round_top=2)
+    cv.sphere(CX + 3.4, 6.0, 5.2, 4.6, body)                # the head
+    cv.sphere(CX + 4.6, 8.4, 3.4, 2.0, lite)                # the muzzle
+    # her face lives here: the head is off centre, so face() cannot
     for sx in (-2, 2):
-        x = int(CX + 2 + sx)
-        for dy in (6, 7):
-            cv.dot(x - 1, dy, (250, 250, 252))
-            cv.dot(x, dy, (24, 20, 30))
-    for dx, dy in ((-4, 27), (2, 31), (-2, 21), (0, 15), (9, 30)):
+        x = int(CX + 3 + sx)
+        cv.dot(x - 1, 4, (250, 250, 252))
+        cv.dot(x, 4, (250, 250, 252))
+        cv.dot(x - 1, 5, (250, 250, 252))
+        cv.dot(x, 5, (24, 20, 30))
+    for dx in (2, 4, 6):                                    # a small smile
+        cv.dot(CX + dx, 10, shade(lite.base, -0.45))
+    cv.dot(CX + 3, 11, shade(lite.base, -0.45))
+    cv.dot(CX + 5, 11, shade(lite.base, -0.45))
+    # a run of lighter scutes down the neck and over the humps
+    for dx, dy in ((0, 14), (-2, 19), (-4, 24), (-6, 29), (1, 31), (8, 30)):
         cv.dot(CX + dx, dy, lite.mid)
-        cv.dot(CX + dx + 1, dy, lite.mid)
+        cv.dot(CX + dx + 1, dy, lite.lit)
 
 
 def arch_dragon(cv, spec, pose):
@@ -1826,10 +1864,43 @@ def sig_fairy(cv, spec, pose, back):
 
 
 def sig_pirate(cv, spec, pose, back):
-    # the striped shirt
+    """A patch and a black hat is any of four characters on this roster.
+    What is only his: the sash, the coat over the stripes, and a cutlass."""
+    # the coat, open down the front over the striped shirt
+    coat = Ramp('#5a1c22')
+    for side in (-1, 1):
+        cv.cyl(CX + side * 6 - 1, 23, CX + side * 6 + 1, 31, coat, round_bot=1)
+    # the striped shirt in the gap the coat leaves
     red = Ramp('#c93030')
     for yy in (24, 26, 28):
-        cv.rect(CX - 5, yy, CX + 5, yy, red, l=0.5)
+        cv.rect(CX - 4, yy, CX + 4, yy, red, l=0.5)
+    # the sash, tied at the hip with the tail hanging
+    sash = Ramp('#b8451c')
+    cv.rect(CX - 6, 29, CX + 6, 30, sash, l=0.58)
+    cv.dot(CX + 6, 31, sash.mid)
+    cv.dot(CX + 6, 32, sash.dark)
+    if back:
+        return
+    # A full beard puts its top edge at row 16 and the stock mouth at 19,
+    # so his grin was under it. Drawn on top, with the gold tooth.
+    for dx in range(-3, 4):
+        cv.dot(CX + dx, 19, (40, 24, 22))
+    for dx in (-2, 0, 2):
+        cv.dot(CX + dx, 20, (240, 236, 226))
+    cv.dot(CX + 1, 20, (222, 184, 66))
+    cv.dot(CX - 4, 18, (40, 24, 22))
+    cv.dot(CX + 4, 18, (40, 24, 22))
+    # gold buttons down the coat's near edge
+    for dy in (24, 27, 30):
+        cv.dot(CX - 6, dy, (222, 184, 66))
+    # the CUTLASS, hilt at the sash and the blade curving down and out
+    o = run_off(pose)[1]
+    cv.dot(CX + 8, 29 + o, (222, 184, 66))
+    cv.dot(CX + 8, 30 + o, (222, 184, 66))
+    steel = (206, 212, 222)
+    for dx, dy in ((9, 31), (10, 32), (11, 33), (12, 34), (12, 35), (11, 36)):
+        cv.dot(CX + dx, dy + o, steel)
+        cv.dot(CX + dx, dy + 1 + o, (150, 158, 170))
 
 
 def sig_krampus(cv, spec, pose, back):
@@ -1928,25 +1999,42 @@ def sig_chupacabra(cv, spec, pose, back):
 
 
 def sig_cupid(cv, spec, pose, back):
+    """A winged blond adult is an angel. Cupid is a BABY: curls, a nappy,
+    and a bow he is actually holding rather than one hanging beside him."""
+    skin = Ramp(spec.get('skin', '#f7dcb4'))
+    # the cloth, which is the only thing he is wearing
+    cloth = Ramp('#f4f2ee')
+    cv.rect(CX - 6, 30, CX + 6, 33, cloth, l=0.74)
+    cv.dot(CX - 6, 29, cloth.mid)
+    cv.dot(CX + 6, 29, cloth.mid)
     if back:
         return
-    # the BOW, strung and drawn, with a heart tipped arrow: the thing
-    # that makes a winged blond baby read as Cupid and not a cherub.
+    # curls, so the head is not a bald dome
+    curl = Ramp(spec.get('hair', '#d8a24a'))
+    for dx, dy in ((-6, 8), (-3, 6), (0, 5), (3, 6), (6, 8), (-5, 5), (5, 5)):
+        cv.sphere(CX + dx, dy, 2.2, 1.9, curl, spec=False)
+    for side in (-1, 1):                        # apple cheeks
+        cv.dot(CX + side * 6, 17, (240, 172, 164))
+        cv.dot(CX + side * 7, 17, (240, 172, 164))
+    # THE BOW: a thick limb, a drawn string, and an arrow ON it. The old
+    # one was a line of single dots and read as a crack in the sprite.
     wood = (150, 96, 42)
+    lit = (186, 128, 62)
     o = run_off(pose)[1]
-    for dx, dy in ((9, 23), (10, 24), (11, 26), (11, 28), (10, 30), (9, 31)):
+    for dy, dx in ((21, 9), (22, 10), (23, 11), (24, 11), (25, 11), (26, 11),
+                   (27, 11), (28, 10), (29, 9)):
         cv.dot(CX + dx, dy + o, wood)
-    for dy in range(24, 31):
-        cv.dot(CX + 9, dy + o, (226, 226, 230))
-    for dx in range(5, 11):
-        cv.dot(CX + dx, 27 + o, (200, 168, 108))
-    r = (210, 73, 73)
-    cv.dot(CX + 4, 26 + o, r)
-    cv.dot(CX + 5, 26 + o, r)
-    cv.dot(CX + 3, 27 + o, r)
-    cv.dot(CX + 4, 27 + o, r)
-    cv.dot(CX + 5, 27 + o, r)
-    cv.dot(CX + 4, 28 + o, r)
+        cv.dot(CX + dx - 1, dy + o, lit)
+    for dy in range(21, 30):                    # the string, drawn back
+        cv.dot(CX + 6, dy + o, (232, 230, 234))
+    for dx in range(-1, 11):                    # the shaft
+        cv.dot(CX + dx, 25 + o, (214, 190, 140))
+    for dy in (24, 26):                         # fletching
+        cv.dot(CX - 1, dy + o, (240, 240, 244))
+        cv.dot(CX, dy + o, (200, 200, 208))
+    r = (210, 73, 73)                           # the heart on the tip
+    for dx, dy in ((10, 24), (12, 24), (10, 25), (11, 25), (12, 25), (11, 26)):
+        cv.dot(CX + dx, dy + o, r)
 
 
 def sig_yeti(cv, spec, pose, back):
@@ -2300,7 +2388,7 @@ def build(spec, pose='idle', key=None):
     elif a == 'egg':
         cy = 12.0
     elif a == 'beast':
-        cy = 12.5 if spec.get('build') == 'lean' else 14.0
+        cy = 11.0 if spec.get('build') == 'lean' else 12.5
     elif a == 'cat':
         cy = 12.0
     elif a == 'centaur':
@@ -2410,7 +2498,8 @@ SPECS = {
                  mouth='fang', capecolor='#241430', capehem='#5a2a6a'),
  'pirate': dict(arch='human', skin='#efc9a0', shirt='#e8e8ea', pants='#3a2818',
                 hat='tricorn', hatcolor='#141010', hair='#141010', hairstyle='bald',
-                eyes='normal', mouth='grin', belt='#8a1a1a', extra=[('patch',)]),
+                beard='#241c1c', beardsize='full',
+                eyes='normal', mouth='grin', extra=[('patch',)]),
  'witch': dict(arch='robed', skin='#7ea86a', shirt='#1a2a30', hat='point',
                hatcolor='#141020', hattrim='#3a5a4a', hair='#141018',
                hairstyle='long', eyes='glow', eyecolor='#5bb083', mouth='none',
@@ -2431,8 +2520,8 @@ SPECS = {
  'chupacabra': dict(arch='beast', build='lean', skin='#4a5a3a', muzzle='#7a9058',
                     eyes='glow', eyecolor='#f4c25a', mouth='fang'),
  'cupid': dict(arch='round', skin='#f7dcb4', shirt='#f7dcb4', eyes='normal',
-               mouth='grin', hair='#d8a24a', hairstyle='short',
-               extra=[('wings', '#a8d8f0')]),
+               mouth='grin', hair='#d8a24a', hairstyle='bald',
+               extra=[('wings', '#f2f4ff')]),
  'medusa': dict(arch='robed', skin='#86c46e', shirt='#2f7a4a',
                 eyes='glow', eyecolor='#f4c25a', mouth='line', folds=3,
                 hair='#57b56a', hairstyle='wild'),
