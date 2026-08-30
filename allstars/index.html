@@ -35,6 +35,15 @@
   canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
 
   .wrap{max-width:920px;margin:0 auto;padding:14px 14px 60px;}
+  .swing-modes{display:flex;align-items:center;gap:8px;margin:8px 0 2px;}
+  .swing-modes .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#a89d86;}
+  .mode-btn{font:inherit;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    background:#131b24;color:#cfd6de;border:1px solid #2a3644;border-radius:6px;
+    padding:6px 14px;cursor:pointer;}
+  .mode-btn.selected{background:#26343f;color:#f4c25a;border-color:#f4c25a;}
+  /* On the game screen the box opens up: the field is the point. */
+  body.ingame .wrap{max-width:min(1560px, 98vw);}
+  body.ingame #field{max-height:min(80vh, 900px);}
   .brand{display:flex;align-items:center;gap:10px;padding:6px 0 14px;border-bottom:1px solid var(--line);}
   .brand h1{margin:0;font-size:20px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
   .brand .tag{color:var(--text-dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase;}
@@ -1650,6 +1659,7 @@ const el = (tag, cls, html) => {
 function render() {
   app.innerHTML = '';
   const s = State.screen;
+  document.body.classList.toggle('ingame', s === 'game');
   if (s === 'menu') renderMenu();
   else if (s === 'roster') renderRoster();
   else if (s === 'settings') renderSettings();
@@ -2525,10 +2535,52 @@ function statBump(k, key) {
    ideal[a,b] = the fraction-of-meter window that produces solid contact.
    speed = seconds for the meter cursor to sweep across.
    pitcherSkill = multiplier on pitcher CON that shifts the meter's ideal spot. */
+/* Every pitch type the game knows. `speed` multiplies the meter sweep
+   (lower = faster pitch), `ideal` is where the sweet spot sits, `wob`
+   adds per pitch randomness to it (the knuckler's whole personality).
+   Modeled on Backyard Baseball's arsenal: every pitcher OWNS a three
+   pitch repertoire below, so facing a new team means learning a new
+   pitcher rather than the same three pitches forever. */
+const PITCHES = {
+  fastball:  { label: 'Fastball',  speed: 0.85, ideal: 0.50 },
+  curveball: { label: 'Curveball', speed: 1.15, ideal: 0.60 },
+  changeup:  { label: 'Changeup',  speed: 1.00, ideal: 0.62 },
+  slowball:  { label: 'Slowball',  speed: 1.48, ideal: 0.58 },
+  heat:      { label: 'The Heat',  speed: 0.70, ideal: 0.48 },
+  knuckler:  { label: 'Knuckler',  speed: 1.25, ideal: 0.55, wob: 0.10 },
+  screwball: { label: 'Screwball', speed: 1.12, ideal: 0.58 },
+};
+const DEFAULT_PITCHES = ['fastball', 'curveball', 'changeup'];
+const PITCH_BOOK = {
+  kong:       ['heat', 'fastball', 'slowball'],
+  franky:     ['fastball', 'slowball', 'changeup'],
+  popeye:     ['heat', 'fastball', 'curveball'],
+  dracula:    ['curveball', 'knuckler', 'changeup'],
+  liberty:    ['fastball', 'slowball', 'curveball'],
+  peter:      ['screwball', 'fastball', 'curveball'],
+  felix:      ['screwball', 'knuckler', 'changeup'],
+  sherlock:   ['curveball', 'changeup', 'screwball'],
+  witch:      ['knuckler', 'curveball', 'slowball'],
+  medusa:     ['knuckler', 'screwball', 'changeup'],
+  cyclops:    ['heat', 'fastball', 'changeup'],
+  dragon:     ['heat', 'curveball', 'changeup'],
+  phoenix:    ['heat', 'screwball', 'fastball'],
+  santa:      ['slowball', 'changeup', 'curveball'],
+  krampus:    ['heat', 'knuckler', 'fastball'],
+  fathertime: ['slowball', 'knuckler', 'changeup'],
+  horseman:   ['knuckler', 'heat', 'curveball'],
+  nessie:     ['slowball', 'curveball', 'changeup'],
+  strongman:  ['heat', 'fastball', 'changeup'],
+  zombie:     ['slowball', 'knuckler', 'changeup'],
+};
+function pitcherRepertoire(p) {
+  return PITCH_BOOK[p.k] || DEFAULT_PITCHES;
+}
+
 const DIFF = {
-  easy:   { speed: 2.1, sweetWidth: 0.26, pitcherSkill: 0.85 },
-  medium: { speed: 1.7, sweetWidth: 0.20, pitcherSkill: 1.00 },
-  hard:   { speed: 1.35, sweetWidth: 0.16, pitcherSkill: 1.12 },
+  easy:   { speed: 2.7, sweetWidth: 0.26, pitcherSkill: 0.85 },
+  medium: { speed: 2.3, sweetWidth: 0.20, pitcherSkill: 1.00 },
+  hard:   { speed: 1.9, sweetWidth: 0.16, pitcherSkill: 1.12 },
 };
 
 /* Pitcher fatigue: each inning past the third, the pitcher tires. The
@@ -2549,15 +2601,18 @@ function pitcherFatigue() {
    else. These are the authored NORMAL values; the live BEAT below is these
    scaled by the player's game speed setting. */
 const BASE_BEAT = {
-  windup:    700,   /* pitcher into set, meter shows but does not sweep yet */
-  betweenPitches: 900,   /* after ball/called strike/foul */
-  afterWhiff: 950,
-  afterOut:   1500,
-  afterWalk:  1600,
-  afterHit:   2000,
-  afterHomer: 2600,
-  betweenHalfInnings: 2600,
-  intoAtBat: 700,   /* new batter walks up */
+  /* Tuned to Backyard Baseball's rhythm: every pitch is a deliberate
+     event with air around it, not a stream. The playtest verdict was
+     "slow down a lot", and these are the numbers that did it. */
+  windup:    1150,  /* pitcher into set, meter shows but does not sweep yet */
+  betweenPitches: 1700,  /* after ball/called strike/foul */
+  afterWhiff: 1500,
+  afterOut:   2100,
+  afterWalk:  2000,
+  afterHit:   2600,
+  afterHomer: 3200,
+  betweenHalfInnings: 3000,
+  intoAtBat: 1200,  /* new batter walks up */
 };
 
 /* Game speed. A full five inning game at NORMAL runs past ten minutes,
@@ -2566,9 +2621,9 @@ const BASE_BEAT = {
    between events; `meter` scales the pitch sweep, kept mild because it
    also changes how hard the timing is. */
 const SPEEDS = {
-  relaxed: { beat: 1.25, meter: 1.15, label:'Relaxed' },
+  relaxed: { beat: 1.30, meter: 1.20, label:'Relaxed' },
   normal:  { beat: 1.00, meter: 1.00, label:'Normal' },
-  fast:    { beat: 0.55, meter: 0.85, label:'Fast' },
+  fast:    { beat: 0.60, meter: 0.85, label:'Fast' },
 };
 const BEAT = Object.assign({}, BASE_BEAT);
 function applyGameSpeed() {
@@ -2642,6 +2697,8 @@ function startAtBat() {
   const lsKey = g.half === 'top' ? 'away' : 'home';
   while (g.lineScore[lsKey].length < g.inning) g.lineScore[lsKey].push(0);
   const b = currentBatter();
+  g.swingMode = 'contact';
+  syncSwingModeButtons();
   g.batterCtx = batterContext(b);
   for (const note of g.batterCtx.notes) addLog(note, true);
   if (g.batterCtx.flags.spinach) {
@@ -2678,17 +2735,20 @@ function cpuCallPitch() {
   const batter = currentBatter();
   const pitcher = currentPitcher();
   const fat = pitcherFatigue();
-  const pitchTypes = ['fastball','curveball','changeup'];
+  const rep = pitcherRepertoire(pitcher);
 
-  /* Type choice: mix, but repeat rarely. */
+  /* Type choice from HIS repertoire: mix, but repeat rarely. */
   let pt;
   if (g.lastCpuPitchType && Math.random() < 0.65) {
-    pt = pitchTypes.filter(x => x !== g.lastCpuPitchType)[Math.floor(Math.random()*2)];
+    const alts = rep.filter(x => x !== g.lastCpuPitchType);
+    pt = alts[Math.floor(Math.random() * alts.length)] || rep[0];
   } else {
-    pt = pitchTypes[Math.floor(Math.random()*3)];
+    pt = rep[Math.floor(Math.random() * rep.length)];
   }
-  /* Gassed pitcher: fastballs only, he can't spin the ball. */
-  if (fat.level >= 2) pt = 'fastball';
+  /* Gassed pitcher: he leans on his straightest, hardest pitch. */
+  if (fat.level >= 2) {
+    pt = rep.reduce((a, b) => (PITCHES[a].speed <= PITCHES[b].speed ? a : b));
+  }
   g.lastCpuPitchType = pt;
 
   /* Zone choice: 3x3 grid indices 0..8, 4 = center. */
@@ -2731,6 +2791,13 @@ function offerPitchSelection() {
   if (!g || g.over) return;
   const row = document.getElementById('pitch-select');
   if (!row) return throwPitch();
+  /* The buttons are THIS pitcher's own pitches, rebuilt per windup. */
+  const rep = pitcherRepertoire(currentPitcher());
+  const typeRow = row.querySelector('.type-row');
+  if (typeRow) {
+    typeRow.innerHTML = rep.map(pt =>
+      `<button class="btn ghost" data-pt="${pt}">${PITCHES[pt].label}</button>`).join('');
+  }
   row.style.display = '';
   let chosenPt = null, chosenZone = null;
   let done = false;
@@ -2740,8 +2807,8 @@ function offerPitchSelection() {
     row.style.display = 'none';
     clearTimeout(timer);
     for (const btn of row.querySelectorAll('button')) btn.onclick = null;
-    /* Sensible defaults so the game never stalls: fastball down the middle. */
-    throwPitch(chosenPt || 'fastball', chosenZone == null ? 4 : chosenZone);
+    /* Sensible defaults so the game never stalls: his first pitch, middle. */
+    throwPitch(chosenPt || rep[0], chosenZone == null ? 4 : chosenZone);
   };
   const timer = setTimeout(fire, 5000);
   for (const btn of row.querySelectorAll('button[data-pt]')) {
@@ -2860,26 +2927,28 @@ function throwPitch(chosenPt, chosenZone) {
   const diff = DIFF[State.difficulty];
   const batter = currentBatter();
   const pitcher = currentPitcher();
-  /* Pick a pitch type: player choice when they're calling, else random. */
-  const pitchTypes = ['fastball','curveball','changeup'];
-  const pt = chosenPt && pitchTypes.includes(chosenPt) ? chosenPt : pitchTypes[Math.floor(Math.random()*3)];
+  /* Pick a pitch type from THIS pitcher's own repertoire: player choice
+     when they're calling, else random from what he actually throws. */
+  const rep = pitcherRepertoire(pitcher);
+  const pt = chosenPt && rep.includes(chosenPt) ? chosenPt : rep[Math.floor(Math.random()*rep.length)];
   /* Each CPU at bat has a hidden weak pitch. Hitting it costs the batter
      a chunk of contact quality, which the swing AI reads. */
   if (!g.batterCtx.weakPitch) {
-    g.batterCtx.weakPitch = pitchTypes[Math.floor(Math.random()*3)];
+    g.batterCtx.weakPitch = rep[Math.floor(Math.random()*rep.length)];
   }
-  /* speed multiplier: fastball fast, curve normal, change starts fast slows down */
   let baseSpeed = diff.speed * meterScale()
-    * (pt === 'fastball' ? 0.85 : pt === 'curveball' ? 1.15 : 1.0)
+    * PITCHES[pt].speed
     / (0.85 + pitcher.pow / 400);
   /* Father Time drags out every at bat; his stall quirk multiplies the
      meter duration, making pitches read easier for him and everyone
      else who watches him. */
   if (g.batterCtx && g.batterCtx.flags && g.batterCtx.flags.stall) baseSpeed *= 1.4;
-  /* ideal timing sweet spot centered around 0.55, shifted by pitcher control */
-  const idealBase = pt === 'fastball' ? 0.5 : pt === 'curveball' ? 0.60 : 0.62;
+  /* ideal timing sweet spot per pitch type, shifted by pitcher control */
+  const idealBase = PITCHES[pt].ideal;
   const fatigue = pitcherFatigue();
   let wobble = (Math.random() - 0.5) * 0.06 * diff.pitcherSkill * fatigue.wobbleMult;
+  /* The knuckler's whole personality: nobody knows where it sits. */
+  if (PITCHES[pt].wob) wobble += (Math.random() - 0.5) * 2 * PITCHES[pt].wob;
   /* Season ramp, felt from the batter's box: a sharper opponent's pitcher
      works the edges of the meter, so the sweet spot sits further from the
      middle and the timing is less forgiving. Only when the player bats;
@@ -3074,7 +3143,13 @@ function resolveSwing(cursorT) {
   const pitcher = currentPitcher();
   const ctx = g.batterCtx || { pow: batter.pow, con: batter.con, spd: batter.spd, flags:{} };
   const diff = DIFF[State.difficulty];
-  const half = diff.sweetWidth / 2;
+  /* Swing selection, Backyard style. Contact widens the zone and trades
+     power away; Power narrows it and swings for the fences; Bunt is its
+     own play entirely, resolved below. The CPU always swings normal. */
+  const mode = playerIsBatting() ? (g.swingMode || 'contact') : 'normal';
+  let half = diff.sweetWidth / 2;
+  if (mode === 'contact') half *= 1.25;
+  if (mode === 'power') half *= 0.75;
   const perfectDist = Math.abs(cursorT - p.ideal);
   /* Contact quality in [0,1], measured against the SWEET ZONE, not the
      whole meter. The first version used 1 - dist/0.5, and a Monte Carlo
@@ -3114,6 +3189,24 @@ function resolveSwing(cursorT) {
     addLog(`${batter.n} flinches away from the pitch.`);
   }
 
+  /* The bunt: a wide, forgiving window, but the ceiling is a dribbler.
+     Good timing lays it down; runners move up a station and a fast
+     batter can beat the throw. Bad timing is a foul, and bunting foul
+     with two strikes is a strikeout, per the oldest rule in the book. */
+  if (mode === 'bunt') {
+    if (perfectDist > 0.30) {
+      g.strikes++;
+      addLog(`${batter.n} fouls off the bunt.`);
+      showCallout('FOUL BUNT', 'sub');
+      Sound.play('foul');
+      refreshHud();
+      if (g.strikes >= 3) return recordOut('bunted foul with two strikes', true);
+      return setTimeout(throwPitch, BEAT.betweenPitches);
+    }
+    const legOut = Math.random() < clamp(0.10 + (ctx.spd - 40) / 260, 0.06, 0.5);
+    return scheduleContactPlay(legOut ? 'bunt single' : 'bunt out', batter);
+  }
+
   /* Whiff. The swing missed entirely. */
   if (!inZone && perfectDist > foulBand) {
     g.strikes++;
@@ -3148,13 +3241,18 @@ function resolveSwing(cursorT) {
      simulation of full plate appearances (scratch tune.mjs): a perfect
      player hits about .67 with 18% homers, a sloppy one about .50, a
      careless one about .30, which is the arcade band this game wants. */
-  const hrChance = (0.018 + 0.155 * contact * contact) * (0.45 + powForRoll / 110);
+  let hrChance = (0.018 + 0.155 * contact * contact) * (0.45 + powForRoll / 110);
+  let xbhChance = (0.045 + 0.115 * contact) * (0.55 + powForRoll / 150);
+  if (mode === 'power') { hrChance *= 1.75; xbhChance *= 1.45; }
+  if (mode === 'contact') { hrChance *= 0.45; xbhChance *= 0.8; }
   if (Math.random() < hrChance) return scheduleContactPlay('home run', batter);
 
-  if (Math.random() < (0.045 + 0.115 * contact) * (0.55 + powForRoll / 150)) {
+  if (Math.random() < xbhChance) {
     return scheduleContactPlay(Math.random() < 0.35 ? 'triple' : 'double', batter);
   }
   let hitOdds = 0.13 + contact * 0.36 + (ctx.spd - 50)/450;
+  if (mode === 'contact') hitOdds += 0.09;
+  if (mode === 'power') hitOdds -= 0.04;
   if (batter.k === 'invisible') hitOdds += 0.05;
   if (Math.random() < hitOdds) return scheduleContactPlay('single', batter);
   /* Out on contact: same staging, the callout fires when the fielder gets
@@ -3183,6 +3281,8 @@ function ballTrajectory(kind) {
     case 'single':     return { dx: rand(0.3, 0.7)*sign(),   dy: -0.7, arcH: 60,  duration: 850 };
     case 'fly out':    return { dx: rand(0.15,0.5)*sign(),   dy: -1.3, arcH: 170, duration: 1200, caught: true };
     case 'ground out': return { dx: rand(0.35,0.8)*sign(),   dy: -0.15,arcH: 18,  duration: 700,  caught: true };
+    case 'bunt single':
+    case 'bunt out':   return { dx: rand(0.06,0.28)*sign(),  dy: -0.22,arcH: 10,  duration: 650,  caught: kind === 'bunt out' };
   }
   return { dx: 0, dy: 0, arcH: 0, duration: 700 };
 }
@@ -3191,7 +3291,8 @@ function ballTrajectory(kind) {
    home (a HR); -2 means the batter is out (ground/fly out). */
 function batterEndBase(kind) {
   return { 'single':0, 'double':1, 'triple':2, 'home run':-1,
-           'ground out':-2, 'fly out':-2 }[kind];
+           'ground out':-2, 'fly out':-2,
+           'bunt single':0, 'bunt out':-2 }[kind];
 }
 
 /* Named waypoints on the diamond, keyed by an integer index. drawField
@@ -3301,7 +3402,8 @@ function scheduleContactPlay(kind, batter) {
   }
   const traj = ballTrajectory(effective);
   rememberHighlight(effective, batter, traj);
-  const isOut = effective === 'ground out' || effective === 'fly out';
+  const isOut = effective === 'ground out' || effective === 'fly out'
+             || effective === 'bunt out';
   const preBases = [...g.bases];
 
   /* Double play: ground out with a runner on 1st and less than 2 outs. */
@@ -3502,6 +3604,16 @@ function applyOutMutation(kind, batter) {
   const g = State.game;
   statBump(batter.k,'ab');
   noteFragileOut(batter);
+  if (kind === 'bunt out') {
+    /* The sacrifice: the batter is out, everybody else moves up. */
+    const fromThird = g.bases[2];
+    g.bases = [null, g.bases[0], g.bases[1]];
+    g.outs++;
+    if (fromThird) scoreRuns(1);
+    addLog(`${batter.n} lays down a sacrifice bunt${fromThird ? ', a run scores' : ''}. ${g.outs} out.`);
+    showCallout(fromThird ? 'SQUEEZE! RUN SCORES' : 'SACRIFICE BUNT', fromThird ? 'homer' : 'sub');
+    return;
+  }
   g.outs++;
   addLog(`${batter.n} out (${kind}) to the ${randPos(kind)}. ${g.outs} out.`);
   showCallout(kind === 'ground out' ? 'GROUND OUT' : 'FLY OUT', 'sub');
@@ -3789,7 +3901,7 @@ function recordHit(kind, batter) {
   const g = State.game;
   statBump(batter.k,'ab');
   statBump(batter.k,'hits');
-  const bases = { 'single':1,'double':2,'triple':3,'home run':4 }[kind];
+  const bases = { 'single':1,'double':2,'triple':3,'home run':4,'bunt single':1 }[kind];
   if (kind === 'home run') {
     statBump(batter.k,'hr');
     let scored = 1;   /* the batter */
@@ -3812,7 +3924,9 @@ function recordHit(kind, batter) {
     if (bases < 4) newBases[bases-1] = batter;
     g.bases = newBases;
     if (scored) scoreRuns(scored);
-    addLog(`${batter.n} lines a ${kind}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
+    const verb = kind === 'bunt single' ? 'drops a bunt and beats it out'
+               : `lines a ${kind}`;
+    addLog(`${batter.n} ${verb}${scored ? `, ${scored} run${scored>1?'s':''} score` : ''}.`);
     showCallout(kind.toUpperCase() + (scored ? ` · ${scored} IN` : ''), scored ? 'homer' : 'hit');
   }
   nextBatter();
@@ -4627,10 +4741,21 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       /* Late break: barely moves early, sweeps hard in the last third. */
       const bend = Math.pow(e, 2.2) * Math.sin(e * Math.PI);
       ballX += bend * 34 * (pitch.ideal < 0.5 ? -1 : 1);
+    } else if (pitch.pt === 'screwball') {
+      /* The curveball's mirror: it breaks the other way. */
+      const bend = Math.pow(e, 2.2) * Math.sin(e * Math.PI);
+      ballX -= bend * 34 * (pitch.ideal < 0.5 ? -1 : 1);
     } else if (pitch.pt === 'changeup') {
       /* Small fade plus a visible dip at the end. */
       ballX += Math.sin(e * Math.PI) * 8;
       ballY += Math.pow(e, 3) * 10;
+    } else if (pitch.pt === 'slowball') {
+      /* Floats up on a rainbow, drops in lazily. */
+      ballY -= Math.sin(e * Math.PI) * 14;
+    } else if (pitch.pt === 'knuckler') {
+      /* It flutters. Even the pitcher does not know. */
+      ballX += Math.sin(e * 17) * 4 + Math.sin(e * 7) * 3;
+      ballY += Math.sin(e * 11) * 2;
     }
     /* Trail: three ghosts behind the ball so speed reads. */
     for (let gi = 1; gi <= 3; gi++) {
@@ -5009,7 +5134,15 @@ function drawMeter(ctx, w, h, t, pitch, inWindup) {
   ctx.fillStyle = '#0c1218';
   ctx.fillRect(0,0,w,h);
   const diff = DIFF[State.difficulty];
-  const half = diff.sweetWidth / 2;
+  let half = diff.sweetWidth / 2;
+  /* The drawn green zone tracks the chosen swing, so Contact visibly
+     widens the target and Power visibly narrows it. */
+  if (State.game && playerIsBatting()) {
+    const mode = State.game.swingMode || 'contact';
+    if (mode === 'contact') half *= 1.25;
+    if (mode === 'power') half *= 0.75;
+    if (mode === 'bunt') half = 0.30;
+  }
   const ideal = pitch.ideal;
   /* Ok zones (wider yellow band around the green) */
   ctx.fillStyle = 'rgba(244,194,90,.28)';
@@ -5098,6 +5231,23 @@ function renderGame() {
     + `<span id="meter-side">Click anywhere or press Space</span></div>`;
   const m = document.createElement('canvas'); m.id='meter'; m.width=720; m.height=52;
   meter.appendChild(m);
+  /* Swing selection, Backyard style: pick HOW you swing before the
+     pitch arrives. Contact is wide and safe, Power is narrow and loud,
+     Bunt lays it down. Keys 1/2/3 work too. */
+  const modes = el('div','swing-modes');
+  modes.id = 'swing-modes';
+  modes.innerHTML = `<span class="lbl">Swing (1/2/3)</span>`
+    + `<button class="mode-btn selected" data-mode="contact">Contact</button>`
+    + `<button class="mode-btn" data-mode="power">Power</button>`
+    + `<button class="mode-btn" data-mode="bunt">Bunt</button>`;
+  for (const b of modes.querySelectorAll('button')) {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      if (State.game) State.game.swingMode = b.dataset.mode;
+      syncSwingModeButtons();
+    };
+  }
+  meter.appendChild(modes);
   const hint = el('div','hint', 'Land the marker on the <b>green zone</b> to make solid contact.');
   hint.id = 'meter-hint';
   meter.appendChild(hint);
@@ -5268,7 +5418,10 @@ function refreshHud() {
     log.scrollTop = log.scrollHeight;
   }
   const ptName = document.getElementById('pt-name');
-  if (ptName && g.pitch) ptName.textContent = g.pitch.pt.toUpperCase();
+  if (ptName && g.pitch) {
+    const info = PITCHES[g.pitch.pt];
+    ptName.textContent = (info ? info.label : g.pitch.pt).toUpperCase();
+  }
   refreshStealButton();
   /* Show swing controls only when the player is batting; show the
      "you're pitching" hint when the CPU is at the plate. */
@@ -5278,6 +5431,8 @@ function refreshHud() {
   const youBat = playerIsBatting();
   if (side) side.textContent = youBat ? 'Click anywhere or press Space' : 'You are pitching · call a pitch each windup';
   if (hint) hint.style.display = youBat ? '' : 'none';
+  const modesRow = document.getElementById('swing-modes');
+  if (modesRow) modesRow.style.display = youBat ? '' : 'none';
   if (swingBtn) swingBtn.style.display = youBat ? '' : 'none';
   /* Replay is offered whenever a highlight is stored and nothing is
      already animating. */
@@ -5288,6 +5443,22 @@ function refreshHud() {
     if (can) rb.textContent = `Replay ${g.highlight.kind}`;
   }
 }
+
+function syncSwingModeButtons() {
+  const row = document.getElementById('swing-modes');
+  if (!row) return;
+  const mode = (State.game && State.game.swingMode) || 'contact';
+  for (const b of row.querySelectorAll('button')) {
+    b.classList.toggle('selected', b.dataset.mode === mode);
+  }
+}
+document.addEventListener('keydown', (e) => {
+  if (State.screen !== 'game' || !State.game || !playerIsBatting()) return;
+  const map = { '1': 'contact', '2': 'power', '3': 'bunt' };
+  if (!map[e.key]) return;
+  State.game.swingMode = map[e.key];
+  syncSwingModeButtons();
+});
 
 function refreshStealButton() {
   const btn = document.getElementById('steal-btn');
@@ -5499,9 +5670,16 @@ function renderHowTo() {
     + '<p>The pitch reaches the plate exactly when the marker crosses the green, '
     + 'so you can watch the ball or watch the meter. During GET READY the pitcher '
     + 'is still winding up and swings are ignored.</p>'
+    + '<p>Before each pitch, choose your swing with the buttons or keys <b>1/2/3</b>: '
+    + '<b>Contact</b> widens the green zone but trades power away, <b>Power</b> '
+    + 'narrows it and swings for the fences, and <b>Bunt</b> lays one down: runners '
+    + 'move up a base, a fast batter can beat the throw, and a badly timed bunt '
+    + 'goes foul (with two strikes, that is a strikeout).</p>'
     + '<p>Pitches behave differently: a <b>fastball</b> comes in hard and straight, '
-    + 'a <b>curveball</b> breaks late and sharply, and a <b>changeup</b> floats, '
-    + 'fades, and dies at the end.</p>';
+    + 'a <b>curveball</b> breaks late, a <b>screwball</b> breaks the other way, '
+    + 'a <b>changeup</b> floats and dies, a <b>slowball</b> drops in on a rainbow, '
+    + 'the <b>knuckler</b> flutters so hard even the pitcher cannot say where the '
+    + 'zone sits, and <b>The Heat</b> is simply faster than everything else.</p>';
   s.appendChild(bat);
 
   const pitch = el('div','card');
@@ -5509,7 +5687,9 @@ function renderHowTo() {
       '<h3>Pitching</h3>'
     + '<p>When the other team bats, you are on the mound. Each windup you make '
     + 'two picks: the <b>pitch type</b> and the <b>location</b> on a three by three '
-    + 'strike zone grid.</p>'
+    + 'strike zone grid. Every pitcher owns a personal three pitch repertoire, so '
+    + 'the buttons change with whoever you put on the mound, and so does what the '
+    + 'other team throws at you.</p>'
     + '<p><b>Middle:</b> always a strike, but easy for the hitter to square up. '
     + '<b>Edges and corners:</b> much harder to hit, but your pitcher can miss the '
     + 'spot and the umpire calls a ball. Better control means you hit your spot '
