@@ -701,9 +701,11 @@ def extras(cv, spec, pose):
             # breathing anything.
             hot = Ramp(e[1])
             core = Ramp('#f8e07a')
+            # It leaves the MOUTH. Rooted at the head's edge it was a
+            # column of fire standing next to a man, which is a torch.
             for i, (dx, dy, r_) in enumerate(
-                    ((6.5, 18, 2.0), (9.5, 14, 2.8), (11.5, 9, 3.2),
-                     (12.5, 4, 2.4), (12.5, 0, 1.5))):
+                    ((5.0, 19, 1.5), (7.5, 17, 2.2), (10.0, 13, 3.0),
+                     (12.0, 8, 3.2), (12.5, 3, 2.2), (12.0, 0, 1.3))):
                 cv.sphere(CX + dx, dy, r_, r_ * 1.15, hot, spec=True)
                 if i >= 1:
                     cv.sphere(CX + dx, dy, r_ * 0.45, r_ * 0.6, core, spec=True)
@@ -2038,32 +2040,47 @@ def sig_cupid(cv, spec, pose, back):
 
 
 def sig_yeti(cv, spec, pose, back):
-    # shaggy tufts breaking the silhouette, on both facings
+    """A grey oval on a white ball is a hippo mask. What a yeti has is a
+    shaggy MANE breaking the whole silhouette, a heavy brow of fur over
+    the eyes, and a roar with square teeth in it."""
     fur = Ramp(spec.get('skin', '#f0f6fb'))
-    for side in (-1, 1):
-        for dy in (18, 22, 26):
-            cv.dot(CX + side * 12, dy, fur.mid)
-            cv.dot(CX + side * 11, dy + 2, fur.lit)
+    # the mane: tufts all round the head and shoulders, on both facings
+    # They have to OVERLAP and vary. Evenly spaced circles of one size at
+    # arm's length from the body read as a cog, not as fur.
+    for dx, dy, r_ in ((-9, 6, 3.0), (-10.5, 10, 2.4), (-10, 14, 3.2),
+                       (-11, 18, 2.5), (-10, 22, 3.0), (-9.5, 26, 2.4),
+                       (-9, 29, 2.8),
+                       (9, 6, 3.0), (10.5, 10, 2.4), (10, 14, 3.2),
+                       (11, 18, 2.5), (10, 22, 3.0), (9.5, 26, 2.4),
+                       (9, 29, 2.8), (-5, 3, 2.8), (0, 2, 2.4), (5, 3, 2.8)):
+        cv.sphere(CX + dx, dy, r_, r_ * 0.86, fur, spec=False)
     if back:
         return
-    # the face is a dark patch INSIDE the white fur, with icy eyes and
-    # a white grimace of teeth
-    face = Ramp('#7a96b4')
-    cv.sphere(CX, 14.2, 4.8, 4.0, face, spec=False)
-    for sx in (-3, 3):
-        cv.dot(CX + sx - 1, 12, (240, 248, 252))
-        cv.dot(CX + sx, 12, (170, 220, 245))
-        cv.dot(CX + sx, 11, (240, 248, 252))
-    for dx in range(-2, 3):
-        cv.dot(CX + dx, 17, (245, 245, 247))
-        cv.dot(CX + dx, 16, shade(face.base, -0.4))
-    cv.dot(CX - 3, 16, shade(face.base, -0.4))
-    cv.dot(CX + 3, 16, shade(face.base, -0.4))
-    # fur brow overhanging the face, so it sits IN the fur, not on it
+    face = Ramp('#93aec6')
+    cv.sphere(CX, 15.2, 6.6, 4.4, face, spec=False)
+    # the brow: a shelf of fur over the eyes, which is what keeps the
+    # face from reading as a patch stuck on the front of a snowball
+    for dx in range(-6, 7):
+        cv.dot(CX + dx, 11, fur.dark)
+    for dx in (-7, 7):
+        cv.dot(CX + dx, 12, fur.dark)
+    for side in (-1, 1):                        # eyes, deep under it
+        x = int(CX + side * 3)
+        for dy in (13, 14):
+            cv.dot(x, dy, (22, 26, 38))
+            cv.dot(x + side, dy, (22, 26, 38))
+        cv.dot(x, 13, (150, 208, 240))
+    # THE ROAR
     for dx in range(-4, 5):
-        cv.dot(CX + dx, 9, fur.lit)
-    cv.dot(CX - 5, 10, fur.mid)
-    cv.dot(CX + 5, 10, fur.mid)
+        cv.dot(CX + dx, 16, (30, 34, 46))
+        cv.dot(CX + dx, 17, (30, 34, 46))
+    for dx in (-4, -2, 0, 2, 4):
+        cv.dot(CX + dx, 16, (246, 250, 252))
+    for dx in (-3, -1, 1, 3):
+        cv.dot(CX + dx, 17, (222, 232, 240))
+    for side in (-1, 1):                        # two tusks, pointing up
+        cv.dot(CX + side * 5, 16, (246, 250, 252))
+        cv.dot(CX + side * 5, 15, (246, 250, 252))
 
 
 def sig_sasquatch(cv, spec, pose, back):
@@ -2238,23 +2255,61 @@ def sig_cyclops(cv, spec, pose, back):
         cv.dot(CX + dx, 10, brow)
 
 
+def sig_firebreather(cv, spec, pose, back):
+    """The plume has to come out of an OPEN mouth. Out of a closed one it
+    reads as something burning behind him."""
+    if back:
+        return
+    for dx in range(-3, 4):
+        cv.dot(CX + dx, 18, (56, 26, 22))
+    for dx in range(-2, 3):
+        for dy in (19, 20):
+            cv.dot(CX + dx, dy, (120, 44, 40))
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 19, (196, 76, 52))
+    cv.dot(CX - 3, 19, (56, 26, 22))
+    cv.dot(CX + 3, 19, (56, 26, 22))
+    # the torch he lit it from, held low on the other side
+    o = run_off(pose)[0]
+    cv.cyl(CX - 11, 28 + o, CX - 10, 35 + o, Ramp('#6a4a2a'))
+    for dy, r_ in ((26, 2.2), (23, 1.6)):
+        cv.sphere(CX - 10.5, dy + o, r_, r_ * 1.3, Ramp('#f4922a'), spec=True)
+    cv.dot(CX - 10, 26 + o, (250, 232, 140))
+
+
 def sig_strongman(cv, spec, pose, back):
-    # THE SINGLET. A red sphere on the chest read as a beach ball; the
-    # classic strongman wears a one strap leotard.
+    """The singlet, the handlebar and a weight in his hand. Without the
+    weight he is a large man in a leotard, which is the acrobat."""
     red = Ramp('#c02a2a')
     cv.cyl(CX - 6, 26, CX + 6, 33, red, round_bot=2)
     for side in (-1, 1):
         cv.cyl(CX + side * 4 - 1, 22, CX + side * 4 + 1, 26, red)
+    # the dumbbell, held down at his side and riding the arm swing
+    o = run_off(pose)[1]
+    iron = Ramp('#4a4e58')
+    cv.rect(CX + 9, 33 + o, CX + 13, 34 + o, iron, l=0.5)
+    cv.rect(CX + 8, 31 + o, CX + 9, 36 + o, iron, l=0.62)
+    cv.rect(CX + 13, 31 + o, CX + 14, 36 + o, iron, l=0.44)
     if back:
         return
-    # the handlebar mustache, waxed and curled
+    # THE HANDLEBAR: one band, and ends that curl UP off the lip. Two
+    # solid rows across the middle of a face is an open mouth, which is
+    # what the first one read as.
     m = (58, 36, 16)
-    for dx in range(-3, 4):
+    hi = (92, 62, 30)
+    for dx in range(-4, 5):
         cv.dot(CX + dx, 16, m)
     for dx in (-2, -1, 0, 1, 2):
         cv.dot(CX + dx, 17, m)
-    cv.dot(CX - 4, 15, m); cv.dot(CX + 4, 15, m)
-    cv.dot(CX - 5, 14, m); cv.dot(CX + 5, 14, m)
+    for side in (-1, 1):
+        cv.dot(CX + side * 5, 15, m)
+        cv.dot(CX + side * 6, 14, m)
+        cv.dot(CX + side * 6, 13, hi)
+    for dx in (-1, 0, 1):                       # a mouth under it
+        cv.dot(CX + dx, 19, (120, 60, 52))
+    # a stripe of chest, so the singlet has a body behind it
+    cv.dot(CX - 3, 24, shade(spec.get('skin', '#e8b888'), -0.22))
+    cv.dot(CX + 3, 24, shade(spec.get('skin', '#e8b888'), -0.22))
 
 
 def sig_phoenix(cv, spec, pose, back):
@@ -2336,6 +2391,7 @@ SIGNATURES = {
     'chupacabra': {'post': sig_chupacabra},
     'cupid': {'post': sig_cupid},
     'strongman': {'post': sig_strongman},
+    'firebreather': {'post': sig_firebreather},
     'cyclops': {'post': sig_cyclops},
     'acrobat': {'post': sig_acrobat},
     'jack': {'pre': sig_jack},
@@ -2549,7 +2605,7 @@ SPECS = {
                   wolfmuzzle='#a88458', eyes='glow', eyecolor='#f4c25a',
                   mouth='none'),
  'strongman': dict(arch='hulk', skin='#e8b888', muzzle='#e8b888', chest=None,
-                   hair='#5a3a1c', hairstyle='short',
+                   hair='#2a1c10', hairstyle='bald',
                    eyes='normal', mouth='none'),
  'beardedlady': dict(arch='human', skin='#f2ceaa', shirt='#b0447a', pants='#7a2a54',
                      hair='#3a2414', hairstyle='long', beard='#4a2f1a',
