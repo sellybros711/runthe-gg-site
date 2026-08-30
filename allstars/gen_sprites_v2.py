@@ -662,7 +662,8 @@ def arch_human(cv, spec, pose):
     pants = Ramp(spec.get('pants', '#2a3550'))
     boot = Ramp(spec.get('boot', '#2a2018'))
     legs(cv, pants, boot, pose)
-    arms(cv, shirt, skin, pose)
+    if not spec.get('noarms'):
+        arms(cv, shirt, skin, pose)
     cv.cyl(CX - TORSO_HW, 23, CX + TORSO_HW, 31, shirt, round_bot=1)
     if spec.get('belt'):
         cv.rect(CX - TORSO_HW, 29, CX + TORSO_HW, 30, Ramp(spec['belt']), l=0.45)
@@ -1110,8 +1111,17 @@ def sig_dorothy(cv, spec, pose, back):
 
 
 def sig_scarecrow(cv, spec, pose, back):
-    # straw pokes out at the collar and the wrists
+    # A scarecrow is straw wearing clothes: the tunic flares and ends in
+    # a jagged straw fringe, straw pokes out at the collar and wrists,
+    # and the mouth is STITCHED on.
     st = (232, 194, 90)
+    tunic = Ramp(spec.get('shirt', '#7a3812'))
+    cv.taper(24, 31, 13, 19, tunic, folds=2)
+    for i, dx in enumerate(range(-9, 10, 2)):
+        drop = (0, 2, 1, 2, 0, 2, 1, 2, 0, 1)[i % 10]
+        for k in range(drop + 1):
+            cv.dot(CX + dx, 31 + k, st)
+            cv.dot(CX + dx + 1, 31 + k, tunic.dark)
     for dx in (-4, -2, 0, 2, 4):
         cv.dot(CX + dx, 22 + (dx % 2 == 0), st)
     for side in (-1, 1):
@@ -1119,6 +1129,133 @@ def sig_scarecrow(cv, spec, pose, back):
         cv.dot(wx, 33, st)
         cv.dot(wx - side, 34, st)
         cv.dot(wx + side, 34, st)
+    if back:
+        return
+    # the stitched smile
+    mc = shade(hex2rgb(spec.get('skin', '#eecc78')), -0.5)
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 18, mc)
+    for dx in (-2, 0, 2):
+        cv.dot(CX + dx, 17, mc)
+        cv.dot(CX + dx, 19, mc)
+
+
+def sig_witch(cv, spec, pose, back):
+    # She is all hat and NOSE. The brim grows past the standard point
+    # hat, the tip flops over, and the long green nose hooks down over
+    # a two toothed grimace.
+    hatc = Ramp(spec.get('hatcolor', '#141020'))
+    for side in (-1, 1):
+        for dx in (12, 13):
+            cv.dot(CX + side * dx, HEAD_CY - 5, hatc.mid)
+        cv.dot(CX + side * 12, HEAD_CY - 4, hatc.dark)
+    cv.dot(CX + 1, 0, hatc.mid); cv.dot(CX + 2, 0, hatc.mid)
+    cv.dot(CX + 3, 1, hatc.mid)
+    if back:
+        return
+    skin = Ramp(spec.get('skin', '#7ea86a'))
+    # The nose has to PROTRUDE: lit on top, shadowed underneath, and a
+    # tip that hangs over the mouth. Painted flat in the face's own
+    # color it simply vanished.
+    nd = shade(skin.base, -0.45)
+    cv.dot(CX - 1, 13, skin.spec)
+    cv.dot(CX, 13, skin.lit)
+    cv.dot(CX - 1, 14, skin.lit)
+    cv.dot(CX, 14, skin.mid)
+    cv.dot(CX + 1, 14, nd)
+    cv.dot(CX - 1, 15, skin.mid)
+    cv.dot(CX, 15, skin.mid)
+    cv.dot(CX + 1, 15, nd)
+    cv.dot(CX, 16, skin.mid)
+    cv.dot(CX + 1, 16, nd)
+    cv.dot(CX, 17, nd)
+    mc = shade(skin.base, -0.5)
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 18, mc)
+    cv.dot(CX - 1, 19, (245, 243, 240))
+    cv.dot(CX + 1, 19, (245, 243, 240))
+
+
+def sig_zombie(cv, spec, pose, back):
+    # THE LURCH: both arms straight out, one higher than the other,
+    # over a torn white tee and ragged cuffs.
+    skin = Ramp(spec.get('skin', '#8aae64'))
+    shirt = Ramp(spec.get('shirt', '#e8e8e6'))
+    lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
+    for side, o in ((-1, 24 + lo), (1, 26 + ro)):
+        sx = side if side > 0 else side
+        x0 = CX + side * 6
+        x1 = CX + side * 13
+        lo2, hi = sorted((x0, x1))
+        cv.rect(lo2, o, hi, o + 1, shirt, l=0.6)
+        cv.rect(CX + side * 12, o, CX + side * 13, o + 1, skin, l=0.55)
+        cv.dot(CX + side * 14, o, skin.mid)
+    # torn shirt hem
+    for dx in (-5, -3, -1, 1, 3, 5):
+        cv.dot(CX + dx, 31, shirt.mid)
+        cv.dot(CX + dx, 32, shirt.dark)
+    # ragged pant cuffs
+    for side in (-1, 1):
+        cv.dot(CX + side * 4, 36, skin.mid)
+
+
+def sig_werewolf(cv, spec, pose, back):
+    # A real SNOUT with a toothy grin, tall pointed ears, fur tufts on
+    # the shoulders, and the bushy tail.
+    fur = Ramp(spec.get('skin', '#4a3524'))
+    for side in (-1, 1):
+        ex = CX + side * 6
+        cv.tri([(ex, 1), (ex - 2, 6), (ex + 2, 6)], fur, l=0.5)
+        if not back:
+            cv.dot(ex, 4, (168, 132, 88))
+    # the tail, swinging off his right hip
+    for dx, dy, r_ in ((11, 30, 1.6), (13, 27.5, 2.0), (14, 24.5, 1.8), (13.5, 22, 1.2)):
+        cv.sphere(CX + dx, dy, r_, r_ + 0.4, fur, spec=False)
+    # shoulder fur tufts
+    for side in (-1, 1):
+        cv.dot(CX + side * 10, 20, fur.mid)
+        cv.dot(CX + side * 11, 21, fur.mid)
+        cv.dot(CX + side * 10, 22, fur.dark)
+    if back:
+        return
+    muz = Ramp(spec.get('wolfmuzzle', '#a88458'))
+    cv.sphere(CX, 16.6, 6.4, 3.8, muz)
+    cv.dot(CX - 1, 14, shade(muz.base, -0.55))
+    cv.dot(CX, 14, shade(muz.base, -0.55))
+    # a wolfish grin: dark smile line with two fangs, not a grate of
+    # teeth across the whole snout
+    for dx in (-3, -2, -1, 0, 1, 2, 3):
+        cv.dot(CX + dx, 17, shade(muz.base, -0.5))
+    cv.dot(CX - 4, 16, shade(muz.base, -0.5))
+    cv.dot(CX + 4, 16, shade(muz.base, -0.5))
+    cv.dot(CX - 2, 18, (245, 243, 240))
+    cv.dot(CX + 2, 18, (245, 243, 240))
+
+
+def sig_humpty(cv, spec, pose, back):
+    # Humpty is DRESSED: the big grey collar, the red sash under it,
+    # blue trousers over the lower half of the egg, grey boots.
+    col = Ramp('#9a9aa2')
+    blue = Ramp('#3a6aa8')
+    # trousers: the egg's own curve, filled blue from the waist down
+    for y in range(25, 33):
+        t = (y + 0.5 - 18.0) / 15.0
+        half = 10.0 * math.sqrt(max(0.0, 1 - t * t)) - 0.6
+        cv.rect(CX - half, y, CX + half, y, blue, l=0.62 - (y - 25) * 0.03)
+    cv.rect(CX - 1, 26, CX, 32, Ramp(shade(blue.base, -0.25)), l=0.45)
+    # legs in blue, boots grey
+    for side in (-1, 1):
+        lx = CX + side * 4
+        cv.rect(lx - 1, 33, lx + 1, 35, blue, l=0.5)
+        cv.rect(lx - 1, 36, lx + 1, 38, col, l=0.5)
+    # the collar: BIG grey wings, wider than the egg, the sash beneath
+    for side in (-1, 1):
+        a, b = sorted((CX + side * 5, CX + side * 11))
+        cv.rect(a, 19, b, 20, col, l=0.66)
+        a, b = sorted((CX + side * 6, CX + side * 11))
+        cv.rect(a, 21, b, 21, col, l=0.5)
+        cv.dot(CX + side * 11, 22, col.dark)
+    cv.rect(CX - 5, 20, CX + 5, 21, col, l=0.55)
 
 
 def sig_lion(cv, spec, pose, back):
@@ -1338,6 +1475,10 @@ SIGNATURES = {
     'strongman': {'post': sig_strongman},
     'phoenix': {'post': sig_phoenix},
     'ringmaster': {'post': sig_ringmaster},
+    'witch': {'post': sig_witch},
+    'zombie': {'post': sig_zombie},
+    'werewolf': {'post': sig_werewolf},
+    'humpty': {'post': sig_humpty},
 }
 
 
@@ -1458,7 +1599,7 @@ SPECS = {
               mouth='grin'),
  'scarecrow': dict(arch='human', skin='#eecc78', shirt='#7a3812', pants='#5a3010',
                    hat='point', hatcolor='#c9a256', hattrim='#8b6a3a',
-                   eyes='cartoon', eyecolor='#3a2410', mouth='line'),
+                   eyes='cartoon', eyecolor='#3a2410', mouth='none'),
  'lion': dict(arch='hulk', skin='#c25c1a', muzzle='#f5e6c8', chest='#f5c47a',
               eyes='normal', mouth='line'),
  'pooh': dict(arch='round', skin='#f4c25a', shirt='#d24949', eyes='cartoon',
@@ -1485,9 +1626,9 @@ SPECS = {
  'pirate': dict(arch='human', skin='#efc9a0', shirt='#e8e8ea', pants='#3a2818',
                 hat='tricorn', hatcolor='#141010', hair='#141010', hairstyle='bald',
                 eyes='normal', mouth='grin', belt='#8a1a1a', extra=[('patch',)]),
- 'witch': dict(arch='robed', skin='#7ea86a', shirt='#141020', hat='point',
-               hatcolor='#141020', hattrim='#f4c25a', hair='#141018',
-               hairstyle='long', eyes='glow', eyecolor='#5bb083', mouth='grin',
+ 'witch': dict(arch='robed', skin='#7ea86a', shirt='#1a2a30', hat='point',
+               hatcolor='#141020', hattrim='#3a5a4a', hair='#141018',
+               hairstyle='long', eyes='glow', eyecolor='#5bb083', mouth='none',
                folds=3),
  'centaur': dict(arch='centaur', skin='#e8b888', pants='#8b6a3a',
                  eyes='normal', mouth='grin'),
@@ -1528,12 +1669,12 @@ SPECS = {
                 eyes='normal', eyespread=2, mouth='none'),
  'horseman': dict(arch='human', skin='#f4922a', shirt='#2a1e2a', pants='#141014',
                   eyes='carved', eyecolor='#5e2a06', mouth='none'),
- 'zombie': dict(arch='human', skin='#8aae64', shirt='#3a2818', pants='#2a1a10',
+ 'zombie': dict(arch='human', skin='#8aae64', shirt='#e8e8e6', pants='#3a5a8a',
                 hair='#3a5424', hairstyle='short', eyes='cartoon',
-                eyecolor='#8a2b2a', mouth='open'),
- 'werewolf': dict(arch='hulk', skin='#4a3524', muzzle='#a88458', chest='#6a4e34',
-                  eyes='glow', eyecolor='#f4c25a', mouth='fang',
-                  extra=[('ears', '#4a3524')]),
+                eyecolor='#8a2b2a', mouth='open', noarms=True),
+ 'werewolf': dict(arch='hulk', skin='#4a3524', muzzle=None, chest='#6a4e34',
+                  wolfmuzzle='#a88458', eyes='glow', eyecolor='#f4c25a',
+                  mouth='none'),
  'strongman': dict(arch='hulk', skin='#e8b888', muzzle='#e8b888', chest='#c93030',
                    hair='#5a3a1c', hairstyle='short',
                    eyes='normal', mouth='none'),
@@ -1553,7 +1694,7 @@ SPECS = {
  'blackcat': dict(arch='cat', skin='#141018', chest='#eaeaea', muzzle='#d8d8dc',
                   eyes='glow', eyecolor='#f4c25a', mouth='none', eyespread=3,
                   extra=[('ears', '#141018')]),
- 'humpty': dict(arch='egg', skin='#f2e2c4', shirt='#c93030', boot='#3a2818',
+ 'humpty': dict(arch='egg', skin='#f2e2c4', shirt='#c93030', boot='#6a6a72',
                 eyes='cartoon', eyecolor='#141018', mouth='grin'),
 }
 
