@@ -764,19 +764,33 @@ window.GA_ID='G-L29P5MRWKE';
      shuffle while they count, a gold that appears nowhere else on the results screen, and
      the parts dealt out underneath as a list of things you did rather than folded into the
      total. */
-  .arcade{border:1.5px solid rgba(226,178,90,.42);border-radius:14px;padding:14px 15px 12px;
-    margin-bottom:11px;
-    background:linear-gradient(180deg,rgba(38,30,16,.94),rgba(20,18,13,.94));
-    box-shadow:0 12px 30px -18px #000,inset 0 1px 0 rgba(255,220,150,.10)}
+  .arcade{border:1.5px solid rgba(226,178,90,.4);border-radius:16px;overflow:hidden;
+    margin-bottom:12px;
+    background:linear-gradient(180deg,rgba(40,32,17,.96),rgba(19,17,13,.96));
+    box-shadow:0 14px 34px -20px #000,inset 0 1px 0 rgba(255,220,150,.10)}
   .arcade[hidden]{display:none}
-  .ar-head{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.14em;
-    text-transform:uppercase;color:rgba(243,221,174,.6);text-align:center}
+  /* WHICH SEASON, AND HOW IT ENDED, on one line at the top. The record used to be a 44px
+     hero in a red card of its own, competing with the number this mode is actually played
+     for. It is a fact about the season, so it sits with the season. */
+  .ar-top{display:flex;align-items:baseline;justify-content:space-between;gap:4px 10px;
+    flex-wrap:wrap;
+    padding:11px 15px;border-bottom:1px solid rgba(226,178,90,.16);
+    background:rgba(255,255,255,.02)}
+  .ar-season{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.15em;
+    text-transform:uppercase;color:rgba(243,221,174,.66)}
+  /* WRAPS RATHER THAN TRUNCATES. "Out in the Conference Championship" beside a record does
+     not fit a 320px phone on one line, and half a sentence with an ellipsis on it is worse
+     than a second line. */
+  .ar-rec{font-family:var(--fn);font-size:11.5px;font-weight:700;color:rgba(243,221,174,.5);
+    text-align:right;min-width:0}
+  .ar-rec b{font-family:var(--fd,var(--fn));font-size:15px;font-weight:800;color:#F3DDAE;
+    font-variant-numeric:tabular-nums;margin-right:6px}
+
   /* THE TALLY, TOP TO BOTTOM, AS ARITHMETIC YOU CAN FOLLOW.
-     The first version showed the parts and then a headline that did not equal them, because
-     the multiplier had been applied to the total and nothing on the screen said so: three
-     lines adding to 18,500 above a number reading 55,500. Every step is now on the page, in
-     the order it happens. */
-  .ar-parts{display:flex;flex-direction:column;gap:3px;margin-top:9px}
+     The first cut showed the reasons and then a headline that did not equal them: three
+     lines adding to 18,500 above a number reading 55,500, with the multiplier applied
+     silently in between. Every step is on the page now, in the order it happens. */
+  .ar-parts{display:flex;flex-direction:column;gap:3px;padding:12px 15px 0}
   .ar-p{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
     font-family:var(--fn);font-size:12.5px;color:rgba(243,221,174,.78);
     opacity:0;transform:translateY(4px);
@@ -786,45 +800,59 @@ window.GA_ID='G-L29P5MRWKE';
   .ar-p.big{color:#e2b25a}
   .ar-p.big b{color:#ffd98a}
   .ar-sum,.ar-x{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-    font-family:var(--fn);font-size:12.5px;margin-top:9px;padding-top:8px;
-    border-top:1px solid rgba(226,178,90,.22);color:rgba(243,221,174,.6)}
+    font-family:var(--fn);font-size:12.5px;margin:9px 15px 0;padding-top:8px;
+    border-top:1px solid rgba(226,178,90,.18);color:rgba(243,221,174,.6)}
   .ar-sum b{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;color:#F3DDAE}
-  /* The multiplier is the mode's whole shape, so it lands rather than appears. */
   /* When the subtotal is hidden the multiplier row inherits the divider above the tally. */
   .ar-sum[hidden]{display:none}
-  .ar-sum[hidden]+.ar-x{border-top:1px solid rgba(226,178,90,.22);margin-top:9px;padding-top:8px}
+  /* The multiplier is the mode's whole shape, so it lands rather than appears. */
   .ar-x{border-top:0;margin-top:3px;padding-top:0;
     opacity:0;transform:scale(.9);transform-origin:right center;
     transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1)}
+  .ar-sum[hidden]+.ar-x{border-top:1px solid rgba(226,178,90,.18);margin-top:9px;padding-top:8px}
   .ar-x.in{opacity:1;transform:none}
   .ar-x b{font-family:var(--fd,var(--fn));font-size:20px;font-weight:800;color:#ffd98a;
     font-variant-numeric:tabular-nums}
-  .ar-total{font-family:var(--fd,var(--fn));font-size:46px;line-height:1.04;font-weight:800;
+  .ar-total{font-family:var(--fd,var(--fn));font-size:52px;line-height:1;font-weight:800;
     font-variant-numeric:tabular-nums;letter-spacing:.01em;color:#F3DDAE;
-    text-align:center;margin-top:6px;text-shadow:0 0 30px rgba(226,178,90,.34)}
+    text-align:center;padding:10px 15px 12px;text-shadow:0 0 32px rgba(226,178,90,.36)}
   .ar-total.pop{animation:arpop .42s cubic-bezier(.2,1.5,.4,1)}
   @keyframes arpop{0%{transform:scale(1)}38%{transform:scale(1.13)}100%{transform:scale(1)}}
   .ar-run{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-    margin-top:10px;padding-top:9px;border-top:1px solid rgba(226,178,90,.22);
+    padding:10px 15px;border-top:1px solid rgba(226,178,90,.18);
+    background:rgba(0,0,0,.22);
     font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.12em;
-    text-transform:uppercase;color:rgba(243,221,174,.6)}
-  .ar-run b{font-family:var(--fd,var(--fn));font-size:22px;letter-spacing:0;
+    text-transform:uppercase;color:rgba(243,221,174,.62)}
+  .ar-run b{font-family:var(--fd,var(--fn));font-size:24px;letter-spacing:0;
     font-variant-numeric:tabular-nums;color:#F3DDAE}
+
+  /* ---- THE OWNER, AS THE FOOT OF THAT CARD ----
+     A strip inside the card rather than a box beside it, so the only border on the screen
+     is the card's own. This is the one place state gets a colour: gold is the mode, red is
+     being fired. */
+  .arcade .ownerbar{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:0;
+    border:0;border-top:1px solid rgba(226,178,90,.18);border-radius:0;
+    background:rgba(0,0,0,.3);padding:10px 15px;
+    font-family:var(--fn);font-size:12px;color:rgba(243,221,174,.72)}
+  .arcade .ownerbar b{font-weight:800;color:#F3DDAE}
+  .arcade .ownerbar .ob-tag{font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+    font-weight:800;color:rgba(243,221,174,.5);flex:0 0 auto}
+  .arcade .ownerbar.notice{background:rgba(60,45,10,.5)}
+  .arcade .ownerbar.notice .ob-tag{color:#fbbf24}
+  .arcade .ownerbar.fired{background:rgba(60,16,16,.55)}
+  .arcade .ownerbar.fired .ob-tag{color:#f87171}
+  .arcade .ownerbar[hidden]{display:none}
 
   /* ---- THE RESULTS SCREEN, WHEN IT IS THE GAUNTLET ----
      The rest of this page measures one season against everybody else's one season: a team
      rating, how close to the best possible roster, and three placings on boards this run is
-     not on. None of that is what a run is scored on here, and putting it under the score
-     told a player the mode was two games at once. Hidden rather than rebuilt, because the
-     panels are correct for every other mode and one screen is easier to keep right than
-     two. */
-  #s-over.gaunt #o-ovr,#s-over.gaunt #o-splits,#s-over.gaunt #o-emblem,
-  #s-over.gaunt .tabwrap,#s-over.gaunt #ot-perfect,#s-over.gaunt #ot-ranks,
-  #s-over.gaunt .next-panel{display:none}
-  /* The record card stops being a hero. It is one fact about one season of a longer run. */
-  #s-over.gaunt #o-card{padding:12px 14px}
-  #s-over.gaunt #o-card .big{font-size:44px}
-  #s-over.gaunt #o-card .hero-note{display:none}
+     not on. None of that is what a run is scored on here. The record card goes with them,
+     because its record is now the top line of the card above and a second copy of it as a
+     44px hero was the loudest of the three competing headlines. Hidden rather than rebuilt,
+     because the panels are correct for every other mode and one screen is easier to keep
+     right than two. */
+  #s-over.gaunt #o-card,#s-over.gaunt .tabwrap,#s-over.gaunt #ot-perfect,
+  #s-over.gaunt #ot-ranks,#s-over.gaunt .next-panel{display:none}
   /* Room for the dock, which is fixed and would otherwise sit on the last panel. */
   #s-over.gaunt{padding-bottom:84px}
 
@@ -5910,21 +5938,27 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="sf-txt"><b>This run was not saved.</b><span id="o-savefail-why">The leaderboard could not be reached, so it has not been counted.</span></div>
       <button class="btn sm" id="b-save-retry">Try again</button>
     </div>
-    <!-- THE GAUNTLET'S SCORE, and it is the first thing on the screen because it is the
-         thing the mode is played for. The season's points are dealt out a line at a time,
-         the multiplier lands on them, and the run total counts up underneath. See
-         paintScore(). -->
+    <!-- THE SEASON, AS ONE CARD.
+         This was three: a gold score panel, a red owner strip and a red record hero, each
+         with its own border, its own background and its own idea of what the screen was
+         about. They are one thing, so they are now one card: which season and how it ended
+         at the top, the points in the middle, and the owner's word at the foot. The record
+         stopped being a second headline competing with the score, because the score is what
+         this mode is played for and a screen can only have one hero. -->
     <div class="arcade" id="o-score" hidden>
-      <div class="ar-head" id="ar-lab">Season score</div>
+      <div class="ar-top">
+        <span class="ar-season" id="ar-lab">Season 1</span>
+        <span class="ar-rec" id="ar-rec"></span>
+      </div>
       <div class="ar-parts" id="ar-parts"></div>
       <div class="ar-sum"><span>Points this season</span><b id="ar-base">0</b></div>
       <div class="ar-x" id="ar-x"><span id="ar-xwhy">Season 1 pays once</span><b id="ar-mult">&times;1</b></div>
       <div class="ar-total" id="ar-season">0</div>
       <div class="ar-run"><span>Run total</span><b id="ar-run">0</b></div>
+      <!-- The owner's verdict, as the card's foot rather than a bar of its own. Its state is
+           the only place red or green appears on this card. -->
+      <div class="ownerbar" id="o-owner" hidden></div>
     </div>
-    <!-- THE GAUNTLET ONLY: whether there is another season, and the run so far. Above the
-         record because it is the thing a dynasty player came to this screen for. -->
-    <div class="ownerbar" id="o-owner" hidden></div>
     <!-- 1. Record and how the season ended. -->
     <div class="verdict" id="o-card">
       <div class="hero-rec">
@@ -13575,6 +13609,15 @@ function paintScore(v){
   const at=(ms,fn)=>scoreTimers.push(setTimeout(fn,ms));
   box.hidden=false;
   $('ar-lab').textContent='Season '+h.seasonNo;
+  /* THE RECORD, AND HOW IT ENDED, ON THE CARD'S TOP LINE. Same four outcomes the results
+     hero used to shout in 44px type; here they are the caption on the season the score
+     belongs to. */
+  const o=run.outcome||{};
+  const how=o.perfect?'Perfect season'
+    :o.titleWon?'Champions'
+      :o.eliminatedIn?'Out in the '+o.eliminatedIn
+        :'Missed the playoffs';
+  $('ar-rec').innerHTML='<b>'+esc(o.record||(h.wins+'-'+h.losses))+'</b>'+esc(how);
 
   const parts=h.scoreParts||[];
   const BIG={title:1,undefeated:1,perfect:1};
