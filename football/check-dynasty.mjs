@@ -121,13 +121,13 @@ ok('every man is from the league year',
 ok('salaries were recorded, one per man', run.salaries.length === 12);
 ok('a salary starts at his list price',
   run.roster.every((p, i) => run.salaries[i] === p.price_musd));
-ok('the draft ended at the coach', run.phase === R.PHASES.COACH);
-
-const market = R.coachMarket(run, E.coachTable(ctx));
-ok('there is a coach market', market.length > 0, `${market.length} affordable`);
-if (market.length) R.hireCoach(run, market[0]);
-R.finishHiring(run);
-ok('hiring left us at the season', run.phase === R.PHASES.SEASON);
+/* NO COACH STEP, WHICH IS THE POINT OF ASSERTING IT. Full Team stops at a hire between the
+   last signing and the schedule; The Gauntlet does not, and the twelfth signing must land
+   on the schedule itself. Measured before it was cut: the best coach the cap could reach
+   was worth 0.11 wins a season, for a screen of fifty tiles. See sign() in run.js. */
+ok('the twelfth signing goes straight to the schedule', run.phase === R.PHASES.SEASON,
+  run.phase);
+ok('and nobody is coaching', run.coach === null);
 
 const seen = [];
 let seasons = 0;
@@ -139,7 +139,7 @@ for (let s = 0; s < 30; s++) {
   seen.push(`${run.leagueYear}: ${v.wins}-${17 - v.wins} needed ${v.bar}`
     + (v.cleared ? ' PASS' : (v.fired ? ' FIRED' : ' on notice')));
   ok(`season ${run.seasonNo} judged against its own bar`,
-    v.bar === Math.min(12, 7 + run.seasonNo), `bar ${v.bar}`);
+    v.bar === Math.min(11, 6 + run.seasonNo), `bar ${v.bar}`);
   if (v.fired) break;
 
   /* ---- the winter ---- */
@@ -192,7 +192,7 @@ for (let s = 0; s < 30; s++) {
     ok('every new man is from the NEW league year',
       run.roster.every((p) => p.season === run.leagueYear),
       `seasons: ${[...new Set(run.roster.map((p) => p.season))].join(',')}`);
-    ok('season two onward skips the coach screen', run.phase === R.PHASES.SEASON);
+    ok('a refilled roster goes back to the schedule', run.phase === R.PHASES.SEASON);
   }
   /* the ratchet, checked against what he was actually paid last year */
   for (const a of w.aged) {

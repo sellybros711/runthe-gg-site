@@ -707,6 +707,21 @@ window.GA_ID='G-L29P5MRWKE';
   .wrow.out .wnm{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.3)}
   .wfreed{font-size:10.5px;font-weight:700;color:var(--good,#4ade80)}
 
+  /* The rules again, from the screen that enforces them. A link, not a button: it must not
+     compete with the one control on this screen that moves the run forward. */
+  .wrules{display:inline-block;margin:0 0 14px;padding:0;border:0;background:none;
+    cursor:pointer;font-family:var(--fn);font-size:10.5px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--dim-2);
+    text-decoration:underline;text-underline-offset:3px}
+  .wrules:active{color:var(--ink)}
+
+  /* WHAT THE OWNER WANTS, on the squad screen, in the panel the coach used to hold. One
+     number, because it is the only one that decides whether the run goes on. */
+  .ownerwant{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .ownerwant b{font-family:var(--fd,var(--fn));font-size:21px;font-weight:800;
+    line-height:1;color:#e2b25a}
+  .ownerwant span{font-family:var(--fn);font-size:11.5px;color:var(--dim)}
+
   .drywheel{border:1.5px dashed var(--line-2);border-radius:12px;padding:16px 14px;
     background:rgba(19,26,43,.45);text-align:center}
   .dw-h{font-family:var(--fn);font-size:12px;font-weight:800;letter-spacing:.08em;
@@ -5503,7 +5518,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <div class="screen" id="s-winter">
     <div class="eyebrow" id="w-step">The winter</div>
     <h2 class="display" id="w-title" style="font-size:27px;margin:5px 0 2px">&nbsp;</h2>
-    <p class="dim" id="w-sub" style="font-size:13px;margin:0 0 14px"></p>
+    <p class="dim" id="w-sub" style="font-size:13px;margin:0 0 4px"></p>
+    <!-- The rules card again, from the screen that enforces them. Somebody who last played
+         a week ago meets the ratchet here and nowhere else. -->
+    <button class="wrules" id="b-w-rules">How this works</button>
 
     <!-- THE MONEY, AND IT IS A GATE RATHER THAN A CEILING. Over the cap the bar goes red
          past the line and the run is still legal: you simply cannot sign anybody until you
@@ -6057,8 +6075,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=72"></script>
-<script src="run.js?v=80"></script>
+<script src="engine.js?v=73"></script>
+<script src="run.js?v=81"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7717,11 +7735,65 @@ function beginDynastyDraft(){
   /* Two arguments rather than a chained catch, for the reason beginFullDraft writes out. */
   loadDefensePool().then(()=>{
     closeSheet();
-    beginDraft({dynasty:true,startYear:dynastyStartYear()});
+    dynastyIntro(()=>beginDraft({dynasty:true,startYear:dynastyStartYear()}));
   },()=>{
     if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
     toast('Could not load the defensive players. Check your connection and try again.');
   });
+}
+
+/*
+ * THE RULES, ONCE, BEFORE THE FIRST DRAFT.
+ *
+ * Every other mode on this page explains itself by being obvious: six spins, a cap, a
+ * season. This one has a calendar in it, and a player who presses the button learns that
+ * their men age, that a salary ratchets, and that somebody is counting their wins by
+ * meeting each of those for the first time in the middle of a run. That is not difficulty,
+ * it is a missing sentence.
+ *
+ * Same shape as tradeIntro, which solved this for the Trade Machine: shown once, remembered,
+ * and reachable again from the screen where the rules actually bite.
+ */
+function dynastyRulesHTML(go){
+  return '<div class="eyebrow red">The Gauntlet</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">One team, for as long as '+
+      'you can hold the job</h2>'+
+    '<ul class="modenotes">'+
+      '<li><b>Draft twelve men out of one season</b>, six on offense and six on defense, '+
+        'under one cap. You keep that team: it is never redrafted.</li>'+
+      '<li><b>Every winter they age.</b> Each man becomes the year he really had next. Some '+
+        'get better, most get worse, and a few are out of the league. You fill the holes '+
+        'they leave from that year\'s wheel.</li>'+
+      '<li><b>A salary never goes down.</b> Over the cap you keep everybody, you just '+
+        'cannot sign anybody until you release somebody.</li>'+
+    '</ul>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:12px 0 0">'+
+      'The owner wants <b>7 wins</b> the first season, 8 the next, then 9, up to 11. '+
+      '<b>Miss two seasons running and you are fired.</b> Your score is how many seasons '+
+      'you lasted.</p>'+
+    '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
+}
+function dynastyIntro(go){
+  let seen=false;
+  try{ seen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ seen=!!window.__dynIntro; }
+  if(seen){ go(); return; }
+  window.__dynIntro=true;
+  try{ localStorage.setItem('ps_dynintro','1'); }catch(_){}
+  $('sheet-in').innerHTML=dynastyRulesHTML('Draft my team');
+  $('sheet-in').dataset.kind='dynintro';
+  /* However it is dismissed the draft proceeds, because a rules popup that can strand a run
+     is worse than no rules at all. The Trade Machine's intro writes this out at length. */
+  sheetOnClose=go;
+  openSheet();
+  $('b-dyni-go').onclick=closeSheet;
+}
+/* The same card on demand, with no continuation: it closes back to wherever you were. */
+function reviewDynastyRules(){
+  $('sheet-in').innerHTML=dynastyRulesHTML('Got it');
+  $('sheet-in').dataset.kind='dynintro';
+  sheetOnClose=null;
+  openSheet();
+  $('b-dyni-go').onclick=closeSheet;
 }
 
 /* ───────── THE GAUNTLET IS WRITTEN DOWN ────────────────────────────────────────────
@@ -9980,9 +10052,34 @@ function planWords(plan){
   });
   return say.length?say.join(' &middot; '):'Balanced across the board';
 }
+/* WHAT THE OWNER WANTS, in the space the coach used to take.
+ *
+ * The Gauntlet hires nobody (see sign() in run.js for the measurement that decided it), so
+ * the panel that named a coach and his two tilts would say "No coach" on every screen of
+ * every season. The number that actually governs the mode goes there instead: the bar for
+ * the season about to be played, before it is played, on the screen with the Play button
+ * on it. It was previously only ever stated after the fact, on the results screen, which
+ * is the wrong half of the sentence to be told. */
+function paintOwnerLine(el){
+  const bar=E.dynastyWinBar(run.seasonNo);
+  const prev=run.history&&run.history.length?run.history[run.history.length-1]:null;
+  el.hidden=false;
+  el.innerHTML='<div class="rp-head"><span>The owner</span>'+
+      '<span class="rp-head-n">Season '+run.seasonNo+'</span></div>'+
+    '<div class="ownerwant"><b>'+bar+' wins</b><span>keeps your job this season'+
+      (prev&&!prev.cleared?', and you are already one miss down':'')+'</span></div>';
+}
+
 function paintCoachLine(id){
   const el=$(id); if(!el) return;
   if(!run||!run.full){ el.innerHTML=''; el.hidden=true; return; }
+  /* The squad screen only. On the results screen the owner has his own bar at the top and
+     the ledger under it, both of which say more than this would, and a third statement of
+     the same fact in the middle of the page is noise rather than clarity. */
+  if(run.dynasty){
+    if(id==='q-coach') return paintOwnerLine(el);
+    el.innerHTML=''; el.hidden=true; return;
+  }
   el.hidden=false;
   const c=run.coach;
   /* OFF E.coachEffect, NOT OFF A COPY OF ITS ARITHMETIC. This line multiplied the tilt by
@@ -10102,18 +10199,32 @@ function paintWinterCap(animate){
     : M(cap-pay)+' of room. Releasing a player is the only way to make more.';
 }
 
+/* HOW A YEAR TREATED HIM, IN WORDS.
+ *
+ * This was `-1.9 a game`, a fantasy-points-per-game delta, which is a real number and the
+ * wrong one to put in front of somebody: it needs the scale it is on to mean anything, and
+ * the scale is never shown. What the winter is actually telling you is one of three things,
+ * so it says which. The number it replaces is still in the game where it belongs, driving
+ * the season.
+ *
+ * The band is half a point a game, which is roughly the gap between a man who is the same
+ * player he was and one you can feel the difference in over seventeen games. */
+function winterHow(drop){
+  if(drop>0.5) return ['up','better than last year'];
+  if(drop<-0.5) return ['down','a step slower'];
+  return ['','about the same'];
+}
 function winterRow(a,i){
   const p=a.now;
   const raise=a.raise>0.05;
-  const drop=a.drop;
+  const how=winterHow(a.drop);
   return '<div class="wrow" data-i="'+i+'">'+
     '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
     '<span class="wwho"><span class="wnm">'+esc(p.name)+'</span>'+
       '<span class="wsub"><span class="wyr" data-from="'+a.was.season+'" data-to="'+p.season+'">'+
         a.was.season+'</span>'+
         '<span>'+esc(E.nickname(p.franchise))+'</span>'+
-        '<span class="wdelta '+(drop>0.05?'up':(drop<-0.05?'down':''))+'">'+
-          (drop>0?'+':'')+drop.toFixed(1)+' a game</span>'+
+        '<span class="wdelta '+how[0]+'">'+how[1]+'</span>'+
       '</span></span>'+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
       '<span class="wraise'+(raise?' up':'')+'">'+(raise?'+'+M(a.raise):'')+'</span></span>'+
@@ -10148,9 +10259,16 @@ function paintWinter(){
   winterClear();
   const w=run.winter;
   $('w-title').textContent='Winter '+w.year;
-  $('w-step').textContent='Season '+run.seasonNo+' is next';
+  /* THE WHOLE SEASON AHEAD IN ONE LINE, and the bar is the half that was missing. It was
+     stated only after the season, on the results screen, which is the wrong end: a target
+     you are told you missed is a scoreboard, and a target you are told before you play is
+     a game. */
+  $('w-step').textContent='Season '+run.seasonNo+' needs '+E.dynastyWinBar(run.seasonNo)+' wins';
+  /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
+     thing working in your favour against salaries that only ever rise, and it was happening
+     silently behind a bar whose ceiling quietly changed between two paints. */
   $('w-sub').innerHTML='Everybody you kept is a year older, at whatever that year really was. '+
-    '<b>A salary never goes down.</b>';
+    '<b>A salary never goes down.</b> The cap is up to '+M0(R.capOf(run))+'.';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
@@ -10230,6 +10348,7 @@ function paintWinter(){
  */
 function wireWinter(){
   const list=$('w-list'); if(!list) return;
+  const rules=$('b-w-rules'); if(rules) rules.onclick=reviewDynastyRules;
   list.onclick=(e)=>{
     const b=e.target.closest('.wcutb'); if(!b) return;
     const row=b.closest('.wrow'); if(!row) return;
@@ -13266,12 +13385,18 @@ function paintOwner(){
   bar.hidden=false;
   bar.className='ownerbar'+(v.fired?' fired':(v.onNotice?' notice':''));
   const seasons=R.seasonsSurvived(run);
+  /* NEXT YEAR'S NUMBER, SAID OUT LOUD. The bar climbs a win a season to a ceiling of
+     twelve, and a player who is not told that learns it by being fired by a number they
+     had not seen. It costs six words. */
+  const next=E.dynastyWinBar(run.seasonNo+1);
   bar.innerHTML='<span class="ob-tag">'+(v.fired?'Fired':(v.onNotice?'On notice':'The owner'))+'</span>'+
     (v.fired
       ? '<span>Two seasons under the bar. <b>'+seasons+' season'+(seasons===1?'':'s')+'</b> in the job.</span>'
       : v.onNotice
-        ? '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. One more like that and you are gone.</span>'
-        : '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. <b>Season '+(run.seasonNo+1)+'</b> is yours.</span>');
+        ? '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. Next season takes '+
+          '<b>'+next+'</b>, and another miss ends it.</span>'
+        : '<span>You needed <b>'+v.bar+' wins</b> and got <b>'+v.wins+'</b>. <b>Season '+
+          (run.seasonNo+1)+'</b> is yours, and it takes <b>'+next+'</b>.</span>');
 
   if(wrap&&led){
     wrap.hidden=false;

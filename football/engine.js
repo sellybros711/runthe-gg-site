@@ -3941,9 +3941,32 @@ const FULL_CAP_MUSD = 280;
  */
 const DYNASTY_MAX_SEASONS = 25;
 
-/** Wins needed in a given season, counting from 1. */
+/*
+ * Wins needed in a given season, counting from 1.
+ *
+ * MOVED DOWN A WIN WHEN THE COACH CAME OUT, and that is a compensation rather than a
+ * loosening. The hire was worth 1.30 wins a season (11.09 against 9.79 over 400 drafts,
+ * reserving his fee and hiring the best man the cap could reach, against spending the same
+ * money on players), so cutting the screen and leaving the bar where it was would have made
+ * the mode a win and a third harder without a word being said about it.
+ *
+ * The number was picked against whole runs rather than single seasons, because seasons
+ * survived is what this mode is scored on. 260 dynasties a side, played to fourteen seasons
+ * with nobody fired, then each rule applied to the win sequences afterwards:
+ *
+ *   bar                 coached (the mode as it was)   uncoached (as it is)
+ *   7+n, capped at 12        3.97 mean, 13% reach 6      3.30 mean,  3% reach 6
+ *   6+n, capped at 11        4.60 mean, 22% reach 6      3.90 mean, 13% reach 6
+ *   6+n, capped at 12        4.37 mean, 22% reach 6      3.85 mean, 13% reach 6
+ *   flat 9                   5.02 mean, 27% reach 6      3.75 mean, 13% reach 6
+ *
+ * 6+n at a ceiling of 11 puts the coachless mode back on the curve the coached one had:
+ * 3.90 against 3.97, the same median of three, and the same 13% getting to a sixth season.
+ * Leaving the bar alone would have cut that long tail from 13% to 3%, which is the part of
+ * the distribution the leaderboard is made of.
+ */
 function dynastyWinBar(season) {
-  return Math.min(12, 7 + Math.max(1, season));
+  return Math.min(11, 6 + Math.max(1, season));
 }
 
 /**

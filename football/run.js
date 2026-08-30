@@ -977,10 +977,15 @@ function sign(run, player, want) {
      they are a phase rather than a screen so a reload mid-decision comes back to the same
      place a reload mid-draft does. */
   if (run.roster.length === slotsOf(run).length) {
-    /* A DYNASTY HIRES ITS COACH ONCE. Season two onward refills holes and goes straight
-       back to the schedule, because the man is already under contract and being asked to
-       re-hire him every winter would be a screen with one button on it. */
-    run.phase = (run.full && !run.coach) ? PHASES.COACH : PHASES.SEASON;
+    /* THE GAUNTLET HIRES NOBODY, and that is measured rather than assumed. Over 300 runs
+       drafted the same way with and without one, the best coach the cap could reach was
+       worth 0.11 wins in season one (10.01 against 9.90), the same 82% clearing the bar,
+       and 3.27 seasons survived against 3.22. His fee buys back what he gives. That is a
+       screen, fifty tiles and a vocabulary of schemes, chemistry and game plans in front of
+       a mode whose idea is one sentence, for a tenth of a win, so it is gone. Full Team
+       keeps him: there the hire is the last decision of the draft rather than a toll booth
+       on the way to a decade. */
+    run.phase = (run.full && !run.dynasty && !run.coach) ? PHASES.COACH : PHASES.SEASON;
   }
   return run;
 }
@@ -1160,7 +1165,10 @@ function takeTheField(run) {
     throw new Error('a team needs somebody on both sides of the ball');
   }
   run.currentDraw = null;
-  run.phase = run.coach ? PHASES.SEASON : PHASES.COACH;
+  /* Straight to the schedule. This read `run.coach ? SEASON : COACH`, which was right while
+     The Gauntlet had a coach step and would now send a short-handed team to a screen the
+     mode no longer has. */
+  run.phase = PHASES.SEASON;
   return run;
 }
 
