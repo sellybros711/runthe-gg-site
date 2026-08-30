@@ -763,6 +763,9 @@ def arch_centaur(cv, spec, pose):
     horse = Ramp(spec.get('pants', '#8b6a3a'))
     skin = Ramp(spec.get('skin', '#e8b888'))
     boot = Ramp(spec.get('boot', shade(horse.base, -0.4)))
+    tail = Ramp('#3a2412')
+    for dx, dy in ((10.5, 26), (12, 28), (12.5, 31), (12, 34)):
+        cv.sphere(CX + dx, dy, 1.3, 1.7, tail, spec=False)
     cv.sphere(CX, 28.0, 10.4, 6.0, horse, spec=False)
     off = 1 if pose == 'run1' else (-1 if pose == 'run2' else 0)
     for lx in (-8, -3, 3, 8):
@@ -789,10 +792,21 @@ def arch_nessie(cv, spec, pose):
         cv.cyl(CX + side * 7 - 1, 33 + o, CX + side * 7 + 1, 38 + o, body, round_bot=1)
     cv.sphere(CX + 10, 31.5, 4.4, 3.2, body, spec=False)    # tail hump
     cv.sphere(CX - 1, 30.0, 8.6, 6.4, body, spec=False)     # main hump
-    cv.cyl(CX - 2, 10, CX + 2, 27, body, round_top=2)       # the neck
-    cv.sphere(CX, 8.0, 4.8, 4.2, body)                      # little head
-    cv.sphere(CX, 10.4, 3.0, 1.8, lite)                     # muzzle
-    for dx, dy in ((-4, 27), (2, 31), (-1, 20), (1, 15), (9, 30)):
+    # the neck leans as it rises, so she reads curved, not planted
+    cv.cyl(CX - 3, 18, CX + 1, 28, body)
+    cv.cyl(CX - 1, 9, CX + 3, 20, body, round_top=2)
+    cv.sphere(CX + 2, 7.4, 4.8, 4.2, body)                  # little head
+    cv.sphere(CX + 2.4, 9.8, 3.0, 1.8, lite)                # muzzle
+    cv.dot(CX + 4, 11, (240, 214, 110))                     # little teeth
+    cv.dot(CX + 2, 11, (240, 214, 110))
+    # her face lives here: the head is off center, so face() cannot
+    for sx in (-2, 2):
+        x = int(CX + 2 + sx)
+        for dx in (-1, 0):
+            cv.dot(x + dx, 6, (250, 250, 252))
+            cv.dot(x + dx, 7, (250, 250, 252))
+        cv.dot(x - (1 if sx > 0 else 0), 7, (24, 20, 30))
+    for dx, dy in ((-4, 27), (2, 31), (-2, 21), (0, 15), (9, 30)):
         cv.dot(CX + dx, dy, lite.mid)
         cv.dot(CX + dx + 1, dy, lite.mid)
 
@@ -812,7 +826,14 @@ def arch_dragon(cv, spec, pose):
     cv.sphere(CX - 1, 27.5, 9.0, 7.6, body, spec=False)      # sitting body
     cv.sphere(CX - 2, 28.5, 5.4, 6.0, belly, spec=False)     # the belly
     wing = Ramp(shade(body.base, -0.15))
-    cv.tri([(CX - 11, 17), (CX - 6, 23), (CX - 12, 25)], wing, l=0.55)
+    cv.tri([(CX - 13, 14), (CX - 5, 22), (CX - 13, 26)], wing, l=0.55)
+    # belly ridge lines
+    ridge = Ramp(shade(belly.base, -0.14))
+    for yy in (26, 28, 30):
+        t = (yy - 28.5) / 6.0
+        halfw = 5.4 * math.sqrt(max(0.0, 1 - t * t)) - 0.8
+        if halfw > 1:
+            cv.rect(CX - 2 - halfw, yy, CX - 2 + halfw, yy, ridge, l=0.5)
     cv.sphere(CX, 12.0, 8.2, 7.2, body)                      # broad head
     cv.sphere(CX, 15.8, 5.6, 3.2, belly)                     # big muzzle
     cv.dot(CX - 2, 15, shade(body.base, -0.4))               # nostrils
@@ -902,9 +923,21 @@ def sig_kong(cv, spec, pose, back):
             cv.sphere(ex, 9.5, 1.2, 1.4, muz, spec=False)
     if back:
         return
-    # the big happy grin: teeth in a smile whose corners turn UP.
-    # (A straight block of teeth is a grimace, and a grimacing ape is
-    # a different character.)
+    # The muzzle takes over the whole lower face, the way the reference
+    # ape's does, with the eyes perched right on its top edge and the
+    # big happy grin across it.
+    cv.sphere(CX, 17.2, 7.0, 4.8, muz)
+    for sx in (-3, 3):
+        x = int(CX + sx)
+        for dx in (-1, 0):
+            for dy in (-1, 0, 1):
+                cv.dot(x + dx, 12 + dy, (250, 250, 252))
+        pc = (36, 28, 40)
+        inner = x - 1 if sx > 0 else x
+        cv.dot(inner, 12, pc)
+        cv.dot(inner, 13, pc)
+    cv.dot(CX - 2, 15, shade(muz.base, -0.4))
+    cv.dot(CX + 2, 15, shade(muz.base, -0.4))
     dk = shade(body.base, -0.5)
     cv.dot(CX - 5, 16, dk)
     cv.dot(CX + 5, 16, dk)
@@ -912,7 +945,6 @@ def sig_kong(cv, spec, pose, back):
     cv.dot(CX + 4, 17, dk)
     for x in range(int(CX) - 3, int(CX) + 4):
         cv.dot(x, 17, (245, 243, 240))
-    for x in range(int(CX) - 2, int(CX) + 3):
         cv.dot(x, 18, (245, 243, 240))
     cv.dot(CX - 1, 19, (170, 60, 58))
     cv.dot(CX, 19, (170, 60, 58))
@@ -965,6 +997,19 @@ def sig_popeye(cv, spec, pose, back):
     cv.dot(CX + 9, 30, ink)
     cv.dot(CX + 10, 30, ink)
     cv.dot(CX + 11, 30, ink)
+    # the corncob pipe, jutting, with a puff of smoke
+    wood = (150, 96, 42)
+    for x in range(int(CX) + 4, int(CX) + 9):
+        cv.dot(x, 18, wood)
+    cv.dot(CX + 9, 18, (200, 168, 108))
+    cv.dot(CX + 9, 17, (200, 168, 108))
+    cv.dot(CX + 10, 15, (200, 205, 212))
+    cv.dot(CX + 11, 13, (170, 178, 188))
+    # the jaw: his chin leads
+    cv.dot(CX - 1, 21, skin.mid)
+    cv.dot(CX, 21, skin.mid)
+    cv.dot(CX + 1, 21, skin.mid)
+    cv.dot(CX, 22, skin.dark)
 
 
 def sig_cape_pre(cv, spec, pose, back):
@@ -997,7 +1042,12 @@ def sig_liberty(cv, spec, pose, back):
     ax = CX + 9.5
     cv.cyl(ax - 1, 9, ax + 1, 22, skin, round_bot=1)      # the raised arm
     cv.rect(ax - 2.5, 7, ax + 2.5, 8, Ramp('#3f7f6d'), l=0.5)
-    cv.sphere(ax, 4.0, 2.2, 3.0, Ramp('#f4b03a'), spec=True)  # the flame
+    cv.sphere(ax, 3.4, 2.6, 3.4, Ramp('#f4b03a'), spec=True)  # the flame
+    cv.dot(ax, 3, (255, 248, 225))
+    # the tablet, held against her left side
+    tab = Ramp('#b8a888')
+    cv.rect(CX - 12, 25, CX - 8, 30, tab, l=0.6)
+    cv.rect(CX - 12, 25, CX - 12, 30, Ramp('#8a7a5c'), l=0.4)
 
 
 def sig_peter(cv, spec, pose, back):
@@ -1034,6 +1084,15 @@ def sig_tom(cv, spec, pose, back):
         cv.dot(CX + side * 5, 23, den.mid)
         if not back:
             cv.dot(CX + side * 3, 25, (201, 160, 48))
+    # the fishing pole over his shoulder, line dangling
+    wood = (122, 82, 40)
+    for dx, dy in ((6, 22), (8, 20), (9, 18), (11, 16), (12, 14), (13, 12)):
+        cv.dot(CX + dx, dy, wood)
+        cv.dot(CX + dx + 1, dy, (150, 96, 42))
+    for dy in (13, 15, 17):
+        cv.dot(CX + 14, dy, (210, 214, 220))
+    cv.dot(CX + 14, 18, (180, 186, 196))
+    cv.dot(CX + 13, 19, (180, 186, 196))
 
 
 def sig_huck(cv, spec, pose, back):
@@ -1216,6 +1275,12 @@ def sig_werewolf(cv, spec, pose, back):
         cv.dot(CX + side * 10, 20, fur.mid)
         cv.dot(CX + side * 11, 21, fur.mid)
         cv.dot(CX + side * 10, 22, fur.dark)
+    # torn shorts: the tell that he WAS a person at moonrise
+    den = Ramp('#3a4e6a')
+    for x0 in (-5, 3):
+        cv.rect(CX + x0, 32, CX + x0 + 2, 34, den, l=0.5)
+    for dx in (-5, -3, 3, 5):
+        cv.dot(CX + dx, 35, den.mid)
     if back:
         return
     muz = Ramp(spec.get('wolfmuzzle', '#a88458'))
@@ -1317,6 +1382,19 @@ def sig_bunny(cv, spec, pose, back):
     cv.dot(CX - 1, 17, (232, 140, 160))
     cv.dot(CX - 1, 21, (250, 250, 252))
     cv.dot(CX, 21, (250, 250, 252))
+    for side in (-1, 1):
+        cv.dot(CX + side * 4, 17, (208, 208, 212))
+        cv.dot(CX + side * 5, 16, (208, 208, 212))
+    # the Easter basket, eggs and all
+    bk = Ramp('#a8763a')
+    cv.dot(CX + 9, 29, (232, 140, 160))
+    cv.dot(CX + 10, 28, (140, 180, 232))
+    cv.dot(CX + 11, 29, (240, 214, 110))
+    cv.rect(CX + 8, 30, CX + 12, 33, bk, l=0.55)
+    cv.dot(CX + 8, 29, bk.dark)
+    cv.dot(CX + 12, 29, bk.dark)
+    cv.dot(CX + 9, 31, bk.dark)
+    cv.dot(CX + 11, 32, bk.dark)
 
 
 def sig_fairy(cv, spec, pose, back):
@@ -1340,12 +1418,26 @@ def sig_pirate(cv, spec, pose, back):
 
 
 def sig_krampus(cv, spec, pose, back):
+    # BIG curled ram horns, replacing the little nubs
+    h = Ramp('#c9a256')
+    for side in (-1, 1):
+        for dx, dy in ((6, 5), (7, 4), (8, 3), (9, 2), (10, 2), (11, 3), (11, 4)):
+            cv.dot(CX + side * dx, dy, h.mid)
+            cv.dot(CX + side * dx, dy + 1, h.dark)
     if back:
         return
     # the long tongue, hanging out
     t = (201, 75, 75)
     cv.dot(CX, 19, t); cv.dot(CX, 20, t)
     cv.dot(CX, 21, t); cv.dot(CX + 1, 21, t)
+    # the chain slung across his chest, bell on the end
+    ch = (150, 155, 165)
+    for i in range(7):
+        cv.dot(CX - 6 + i * 2, 23 + i, ch)
+    g = (201, 160, 48)
+    cv.dot(CX + 7, 30, g); cv.dot(CX + 8, 30, g)
+    cv.dot(CX + 7, 31, g); cv.dot(CX + 8, 31, g)
+    cv.dot(CX + 8, 32, (110, 88, 30))
 
 
 def sig_fathertime(cv, spec, pose, back):
@@ -1421,7 +1513,7 @@ def sig_yeti(cv, spec, pose, back):
     # the face is a dark patch INSIDE the white fur, with icy eyes and
     # a white grimace of teeth
     face = Ramp('#7a96b4')
-    cv.sphere(CX, 13.5, 6.4, 5.4, face, spec=False)
+    cv.sphere(CX, 13.8, 5.6, 4.6, face, spec=False)
     for sx in (-3, 3):
         cv.dot(CX + sx - 1, 12, (240, 248, 252))
         cv.dot(CX + sx, 12, (170, 220, 245))
@@ -1431,6 +1523,11 @@ def sig_yeti(cv, spec, pose, back):
         cv.dot(CX + dx, 15, shade(face.base, -0.4))
     cv.dot(CX - 4, 16, shade(face.base, -0.4))
     cv.dot(CX + 4, 16, shade(face.base, -0.4))
+    # fur brow overhanging the face, so it sits IN the fur, not on it
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 9, fur.lit)
+    cv.dot(CX - 5, 10, fur.mid)
+    cv.dot(CX + 5, 10, fur.mid)
 
 
 def sig_sasquatch(cv, spec, pose, back):
@@ -1506,9 +1603,11 @@ def sig_phoenix(cv, spec, pose, back):
         cv.dot(CX + sx * 15, 4 + f, gold)
         cv.dot(CX + sx * 13, 4 + f, gold)
         cv.dot(CX + sx * 11, 6 + f, gold)
-    for dx, dy in ((-2, 34), (0, 36), (2, 34), (0, 38), (-1, 36), (1, 37)):
-        cv.dot(CX + dx, dy, (244, 146, 42))
-        cv.dot(CX + dx, dy + 1, gold)
+    # tail streamers, flowing long below the body
+    for dx, col in ((-3, (201, 48, 24)), (0, (244, 146, 42)), (3, (248, 216, 74))):
+        for i, dy in enumerate(range(33, 40)):
+            wob = 1 if (i + abs(dx)) % 3 == 0 else 0
+            cv.dot(CX + dx + (wob if dx >= 0 else -wob), dy, col)
 
 
 def sig_ringmaster(cv, spec, pose, back):
@@ -1645,7 +1744,7 @@ SPECS = {
                 eyes='normal', mouth='open', extra=[('bolt',)]),
  'popeye': dict(arch='human', skin='#f0c088', shirt='#e9e9ea', pants='#1c4f96',
                 hat='cap', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
-                eyes='angry', mouth='line', extra=[('pipe',)]),
+                eyes='angry', mouth='line'),
  'dracula': dict(arch='human', skin='#ded2cc', shirt='#3a3a44', pants='#2a2a32',
                  hair='#141018', hairstyle='short', eyes='normal', eyecolor='#8a2430',
                  mouth='fang'),
@@ -1727,8 +1826,7 @@ SPECS = {
  'centaur': dict(arch='centaur', skin='#e8b888', pants='#8b6a3a',
                  eyes='normal', mouth='grin'),
  'krampus': dict(arch='hulk', skin='#5a2812', muzzle='#5a2812', chest='#3a2010',
-                 eyes='glow', eyecolor='#c94b1a', mouth='fang',
-                 extra=[('horns', '#c9a256')]),
+                 eyes='glow', eyecolor='#c94b1a', mouth='fang'),
  'fathertime': dict(arch='robed', skin='#e5c8a5', shirt='#5a4020',
                     hair='#f5efe8', hairstyle='short', beard='#f5efe8',
                     beardsize='long', eyes='normal', mouth='none', folds=4),
@@ -1760,7 +1858,7 @@ SPECS = {
  'yeti': dict(arch='hulk', skin='#f0f6fb', muzzle=None, chest='#dce8f2',
               eyes='hidden', mouth='none'),
  'nessie': dict(arch='nessie', skin='#2a7a5a', muzzle='#4aa878',
-                eyes='normal', eyespread=2, mouth='none'),
+                eyes='hidden', mouth='none'),
  'horseman': dict(arch='human', skin='#f4922a', shirt='#2a1e2a', pants='#141014',
                   eyes='carved', eyecolor='#5e2a06', mouth='none'),
  'zombie': dict(arch='human', skin='#8aae64', shirt='#e8e8e6', pants='#3a5a8a',
