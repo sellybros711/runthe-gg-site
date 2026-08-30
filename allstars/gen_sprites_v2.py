@@ -28,6 +28,39 @@ import math
 import sys
 
 W, H = 32, 40
+# ------------------------------------------------------------ proportions
+# Every coordinate in this file is LOGICAL, on a 32 by 40 grid, and every
+# head coordinate means exactly what it says: rows above NECK are drawn one
+# to one. Below it the body is stretched on the way to the pixels.
+#
+# It has to be done here rather than by moving numbers, because the figures
+# were a head and a half tall. The skull runs rows 3 to 23 and everything
+# else, torso and legs together, ran 23 to 38: fifteen rows of body under
+# twenty rows of head, which is a bobblehead rather than the Backyard
+# proportion of roughly two and a quarter heads. Shrinking the skull was the
+# other way to get there and it is the wrong one, because the faces are
+# where all the work is and they are already tight at twenty rows.
+#
+# So the sprite grows downward instead. Everything the archetypes and the
+# signatures say about the body still reads on the 40 row grid; the stretch
+# happens in the primitives, once, so a leg drawn from 31 to 38 comes out
+# twelve pixels long instead of eight and no signature had to move.
+NECK = 22.0
+OUT_H = 50
+BODY_STRETCH = (OUT_H - NECK) / (H - NECK)
+
+
+def ymap(y):
+    """Logical row to physical row."""
+    return y if y <= NECK else NECK + (y - NECK) * BODY_STRETCH
+
+
+def yinv(py):
+    """Physical row back to logical, for shading a shape at the right point
+    along its own form rather than at the row it happens to land on."""
+    return py if py <= NECK else NECK + (py - NECK) / BODY_STRETCH
+
+
 WHITEISH = (252, 232, 200)
 LIGHT = (-0.55, -0.62, 0.56)   # upper left, slightly toward the viewer
 SIL = (14, 11, 20)             # shared outer silhouette line
@@ -132,17 +165,19 @@ class Ramp:
 # --------------------------------------------------------------- canvas
 class Canvas:
     def __init__(self):
-        self.px = [[None] * W for _ in range(H)]
-        self.owner = [[None] * W for _ in range(H)]
+        self.px = [[None] * W for _ in range(OUT_H)]
+        self.owner = [[None] * W for _ in range(OUT_H)]
 
     def set(self, x, y, rgb, ramp=None):
+        """x, y are PHYSICAL here. Only the primitives call this, and each
+        of them has already put its logical rows through ymap."""
         x, y = int(x), int(y)
-        if 0 <= x < W and 0 <= y < H:
+        if 0 <= x < W and 0 <= y < OUT_H:
             self.px[y][x] = rgb
             self.owner[y][x] = ramp
 
     def get(self, x, y):
-        if 0 <= x < W and 0 <= y < H:
+        if 0 <= x < W and 0 <= y < OUT_H:
             return self.px[y][x]
         return None
 
@@ -150,12 +185,16 @@ class Canvas:
         """ymax cuts the sphere off below that row, so a hair or hat shape
         can be a CAP that follows the skull's own curve rather than a
         separate wider ellipse pasted over it."""
-        for y in range(H):
-            if ymax is not None and y > ymax:
+        for py in range(OUT_H):
+            ly = yinv(py + 0.5)
+            if ymax is not None and ly > ymax + 0.5:
                 break
             for x in range(W):
                 nx = (x + 0.5 - cx) / rx
-                ny = (y + 0.5 - cy) / ry
+                # the normal comes from the LOGICAL position on the form, so
+                # a stretched sphere is lit like a stretched sphere and not
+                # like a circle whose bands got pulled apart
+                ny = (ly - cy) / ry
                 d2 = nx * nx + ny * ny
                 if d2 > 1.0:
                     continue
@@ -166,20 +205,32 @@ class Canvas:
                 l = (sum(n[i] * LIGHT[i] for i in range(3)) + 1) / 2
                 if d2 > 0.90:
                     l *= 0.55
-                self.set(x, y, ramp.at(l, spec), ramp)
+                self.set(x, py, ramp.at(l, spec), ramp)
+
+    def ball(self, cx, cy, rx, ry, ramp, spec=True):
+        """A sphere that comes out ROUND on the finished sprite.
+
+        Below the neck a plain sphere() is stretched along with everything
+        else, which is what a torso wants and is wrong for anything whose
+        shape IS its roundness: a fist, a belly, a bear, a tuft of fur.
+        ry here is the radius you want in PIXELS, and the centre lands at
+        ymap(cy) either way."""
+        self.sphere(cx, cy, rx, ry / BODY_STRETCH if cy > NECK else ry,
+                    ramp, spec=spec)
 
     def cyl(self, x0, y0, x1, y1, ramp, round_top=0, round_bot=0, spec=False):
         """Vertical cylinder; shading varies across x like a limb."""
         x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
-        for y in range(y0, y1 + 1):
+        for py in range(int(round(ymap(y0))), int(round(ymap(y1 + 1)))):
+            ly = yinv(py + 0.5) - 0.5
             for x in range(x0, x1 + 1):
                 u = 0.0 if x1 == x0 else (x + 0.5 - x0) / (x1 + 1 - x0) * 2 - 1
                 if round_top:
-                    ty = (y - y0) / max(1, round_top)
+                    ty = (ly - y0) / max(1, round_top)
                     if ty < 1 and abs(u) > math.sqrt(max(0.0, 1 - (1 - ty) ** 2)):
                         continue
                 if round_bot:
-                    by = (y1 - y) / max(1, round_bot)
+                    by = (y1 - ly) / max(1, round_bot)
                     if by < 1 and abs(u) > math.sqrt(max(0.0, 1 - (1 - by) ** 2)):
                         continue
                 nz = math.sqrt(max(0.0, 1 - u * u))
@@ -189,13 +240,14 @@ class Canvas:
                 l = (sum(n[i] * LIGHT[i] for i in range(3)) + 1) / 2
                 if abs(u) > 0.88:
                     l *= 0.6
-                self.set(x, y, ramp.at(l, spec), ramp)
+                self.set(x, py, ramp.at(l, spec), ramp)
 
     def taper(self, y0, y1, w0, w1, ramp, cx=CX, folds=0):
         """A robe or gown: a cylinder whose width grows down the shape, so
         it reads as cloth hanging rather than a box. Optional vertical
         fold lines that darken with the same light model."""
-        for y in range(int(y0), int(y1) + 1):
+        for py in range(int(round(ymap(y0))), int(round(ymap(int(y1) + 1)))):
+            y = yinv(py + 0.5) - 0.5
             t = (y - y0) / max(1, (y1 - y0))
             half = (w0 + (w1 - w0) * t) / 2
             for x in range(int(cx - half), int(cx + half) + 1):
@@ -209,21 +261,22 @@ class Canvas:
                 l = (sum(n[i] * LIGHT[i] for i in range(3)) + 1) / 2
                 if abs(u) > 0.9:
                     l *= 0.62
-                self.set(x, y, ramp.at(l), ramp)
+                self.set(x, py, ramp.at(l), ramp)
             if folds:
                 for k in range(folds):
                     fu = -0.55 + 1.1 * (k / max(1, folds - 1))
                     fx = int(cx + fu * half)
                     if abs(fu) < 0.92:
-                        self.set(fx, y, ramp.at(0.22), ramp)
+                        self.set(fx, py, ramp.at(0.22), ramp)
 
     def rect(self, x0, y0, x1, y1, ramp, l=0.55):
-        for y in range(int(y0), int(y1) + 1):
+        for py in range(int(round(ymap(int(y0)))), int(round(ymap(int(y1) + 1)))):
             for x in range(int(x0), int(x1) + 1):
                 u = (x - x0) / max(1, (x1 - x0))
-                self.set(x, y, ramp.at(l + 0.26 * (0.5 - u)), ramp)
+                self.set(x, py, ramp.at(l + 0.26 * (0.5 - u)), ramp)
 
     def tri(self, pts, ramp, l=0.55):
+        pts = [(p[0], ymap(p[1])) for p in pts]
         ys = [p[1] for p in pts]
         for y in range(int(min(ys)), int(max(ys)) + 1):
             xs = []
@@ -242,32 +295,39 @@ class Canvas:
                     self.set(x, y, ramp.at(l + 0.28 * (0.5 - u)), ramp)
 
     def dot(self, x, y, rgb):
-        self.set(x, y, rgb, None)
+        """One logical pixel, which below the neck is one and a bit physical
+        ones. It has to fill its whole span or every hand drawn line in the
+        body region comes out dashed."""
+        y = int(y)
+        p0 = int(math.floor(ymap(y)))
+        p1 = max(p0, int(math.ceil(ymap(y + 1))) - 1)
+        for py in range(p0, p1 + 1):
+            self.set(x, py, rgb, None)
 
     def outline(self):
         """Outer silhouette in shared dark; interior material seams in the
         darker material's own line color."""
         adds = []
-        for y in range(H):
+        for y in range(OUT_H):
             for x in range(W):
                 if self.px[y][x] is not None:
                     continue
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     if self.get(x + dx, y + dy) is not None:
-                        o = self.owner[y + dy][x + dx] if 0 <= y + dy < H and 0 <= x + dx < W else None
+                        o = self.owner[y + dy][x + dx] if 0 <= y + dy < OUT_H and 0 <= x + dx < W else None
                         adds.append((x, y, o))
                         break
         for (x, y, o) in adds:
             self.set(x, y, SIL, o)
         edits = []
-        for y in range(H):
+        for y in range(OUT_H):
             for x in range(W):
                 o = self.owner[y][x]
                 if o is None or self.px[y][x] is None:
                     continue
                 for dx, dy in ((1, 0), (0, 1)):
                     nx, ny = x + dx, y + dy
-                    if not (0 <= nx < W and 0 <= ny < H):
+                    if not (0 <= nx < W and 0 <= ny < OUT_H):
                         continue
                     o2 = self.owner[ny][nx]
                     if o2 is None or o2 is o:
@@ -308,7 +368,7 @@ class Canvas:
             pal[alpha[i]] = c
             rev[c] = alpha[i]
         rows = []
-        for y in range(H):
+        for y in range(OUT_H):
             r = ''
             for x in range(W):
                 c = self.px[y][x]
@@ -752,10 +812,10 @@ def legs(cv, pants, boot, pose, top=31, bot=38, spread=3):
         la, ra = 1, -1
     else:
         la, ra = 0, 0
-    cv.cyl(CX - spread - 2, top + max(0, la), CX - spread, bot + la, pants)
-    cv.cyl(CX + spread, top + max(0, ra), CX + spread + 2, bot + ra, pants)
-    cv.cyl(CX - spread - 2, bot - 1 + la, CX - spread, bot + la, boot)
-    cv.cyl(CX + spread, bot - 1 + ra, CX + spread + 2, bot + ra, boot)
+    cv.cyl(CX - spread - 3, top + max(0, la), CX - spread, bot + la, pants)
+    cv.cyl(CX + spread, top + max(0, ra), CX + spread + 3, bot + ra, pants)
+    cv.cyl(CX - spread - 3, bot - 1 + la, CX - spread, bot + la, boot)
+    cv.cyl(CX + spread, bot - 1 + ra, CX + spread + 3, bot + ra, boot)
 
 
 def run_off(pose):
@@ -787,12 +847,12 @@ def arch_human(cv, spec, pose):
     shirt = Ramp(spec.get('shirt', '#c93030'))
     pants = Ramp(spec.get('pants', '#2a3550'))
     boot = Ramp(spec.get('boot', '#2a2018'))
-    legs(cv, pants, boot, pose)
+    legs(cv, pants, boot, pose, top=30)
     if not spec.get('noarms'):
         arms(cv, shirt, skin, pose)
-    cv.cyl(CX - TORSO_HW, 23, CX + TORSO_HW, 31, shirt, round_bot=1)
+    cv.cyl(CX - TORSO_HW, 23, CX + TORSO_HW, 30, shirt, round_bot=1)
     if spec.get('belt'):
-        cv.rect(CX - TORSO_HW, 29, CX + TORSO_HW, 30, Ramp(spec['belt']), l=0.45)
+        cv.rect(CX - TORSO_HW, 28, CX + TORSO_HW, 29, Ramp(spec['belt']), l=0.45)
     cv.sphere(CX, HEAD_CY, HEAD_RX, HEAD_RY, skin)
 
 
@@ -812,9 +872,9 @@ def arch_hulk(cv, spec, pose):
     arm = Ramp(shade(body.base, -0.20))
     for side, off in ((-1, lo), (1, ro)):
         sx = CX + side * 8
-        cv.sphere(sx, 23.0 + off, 4.6, 4.2, arm, spec=False)
+        cv.ball(sx, 23.0 + off, 4.6, 4.2, arm, spec=False)
         cv.cyl(sx - 2, 23 + off, sx + 2, 33 + off, arm, round_bot=2)
-        cv.sphere(sx, 33.5 + off, 3.0, 2.6, hand, spec=False)
+        cv.ball(sx, 33.5 + off, 3.0, 2.8, hand, spec=False)
     if spec.get('chest'):
         cv.sphere(CX, 27.5, 5.4, 4.2, Ramp(spec['chest']), spec=False)
     # The head is SKIN, not body: for every ape and monster so far the two
@@ -830,11 +890,11 @@ def arch_round(cv, spec, pose):
     body = Ramp(spec.get('shirt', '#f4c25a'))
     skin = Ramp(spec.get('skin', body.base))
     boot = Ramp(spec.get('boot', '#2a2018'))
-    cv.sphere(CX, 27.5, 9.6, 8.4, body)
-    legs(cv, body, boot, pose, top=34, bot=38, spread=3)
+    cv.ball(CX, 28.0, 9.6, 8.6, body)
+    legs(cv, body, boot, pose, top=33, bot=38, spread=3)
     lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
     for side, off in ((-1, lo), (1, ro)):
-        cv.cyl(CX + side * 10 - 1, 24 + off, CX + side * 10 + 1, 29 + off, body, round_bot=1)
+        cv.cyl(CX + side * 10 - 1, 24 + off, CX + side * 10 + 1, 31 + off, body, round_bot=1)
     cv.sphere(CX, HEAD_CY + 1, HEAD_RX * 0.94, HEAD_RY * 0.94, skin)
 
 
@@ -843,12 +903,12 @@ def arch_egg(cv, spec, pose):
     body = Ramp(spec.get('skin', '#f2e2c4'))
     boot = Ramp(spec.get('boot', '#3a2818'))
     band = spec.get('shirt')
-    cv.sphere(CX, 18.0, 10.0, 15.0, body)
+    cv.sphere(CX, 16.0, 10.0, 13.0, body)
     if band:
         cv.rect(CX - 9, 22, CX + 9, 24, Ramp(band), l=0.5)
     lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
     for side, off in ((-1, lo), (1, ro)):
-        cv.cyl(CX + side * 4 - 1, 33 + off, CX + side * 4 + 1, 37 + off, body)
+        cv.cyl(CX + side * 4 - 1, 29 + off, CX + side * 4 + 1, 37 + off, body)
         cv.cyl(CX + side * 4 - 1, 37 + off, CX + side * 4 + 1, 38 + off, boot)
 
 
@@ -1033,8 +1093,8 @@ def arch_dragon(cv, spec, pose):
 def arch_cat(cv, spec, pose):
     body = Ramp(spec.get('skin', '#141018'))
     belly = Ramp(spec.get('chest', '#eaeaea'))
-    cv.sphere(CX, 27.0, 8.0, 7.4, body, spec=False)
-    cv.sphere(CX, 28.5, 4.4, 4.6, belly, spec=False)
+    cv.ball(CX, 27.0, 8.0, 9.4, body, spec=False)
+    cv.ball(CX, 28.0, 4.4, 5.4, belly, spec=False)
     legs(cv, body, body, pose, top=33, bot=38, spread=3)
     cv.sphere(CX, 13.0, 9.4, 8.2, body, spec=False)
     # A cat drawn in near black loses its whole face. Give it a lighter
@@ -1052,13 +1112,13 @@ def arch_cat(cv, spec, pose):
 def arch_bird(cv, spec, pose):
     body = Ramp(spec.get('skin', '#e04520'))
     wing = Ramp(spec.get('chest', '#f4922a'))
-    cv.sphere(CX, 25.0, 8.0, 9.0, body)
+    cv.ball(CX, 25.0, 8.6, 9.4, body)
     off = 2 if pose == 'run1' else (-2 if pose == 'run2' else 0)
     if not spec.get('nowings'):
         for side in (-1, 1):
             cv.sphere(CX + side * 10, 24 + side * off, 4.6, 7.4, wing, spec=False)
-    cv.cyl(CX - 4, 34, CX - 2, 38, wing)
-    cv.cyl(CX + 2, 34, CX + 4, 38, wing)
+    cv.cyl(CX - 4, 31, CX - 2, 38, wing)
+    cv.cyl(CX + 2, 31, CX + 4, 38, wing)
     cv.sphere(CX, 12.0, 8.4, 7.6, body)
 
 
@@ -1195,10 +1255,10 @@ def sig_popeye(cv, spec, pose, back):
         # THE forearms. They have to GROW out of a normal upper arm, or
         # they read as two mittens floating beside him: short sleeve,
         # then the swell, then the fist.
-        cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 26 + off, sleeve, round_bot=1)
-        cv.sphere(ax, 29.5 + off, 3.8, 4.4, skin, spec=False)
-        cv.sphere(ax + side * 0.5, 33.5 + off, 2.6, 2.2,
-                  Ramp(shade(skin.base, -0.12)), spec=False)
+        cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 27 + off, sleeve, round_bot=1)
+        cv.ball(ax, 29.5 + off, 3.8, 5.4, skin, spec=False)
+        cv.ball(ax + side * 0.5, 34.5 + off, 2.8, 2.8,
+                Ramp(shade(skin.base, -0.12)), spec=False)
     # THE JAW, which is the entire character. A skull ellipse tapers to
     # about four pixels wide by row 22; his does the opposite, so the
     # lantern chin is hung UNDER the face as its own mass, wider at row
@@ -1345,7 +1405,7 @@ def sig_pooh(cv, spec, pose, back):
     if back:
         return
     # the red shirt is a CROP TOP: the round belly pokes out under it
-    cv.sphere(CX, 33.0, 5.6, 3.4, body, spec=False)
+    cv.ball(CX, 33.0, 5.6, 4.2, body, spec=False)
     # THE MUZZLE, which is the whole face. Pooh is a pale snout with a
     # black bead on the end of it and two dots above; drawn with the
     # roster's standard googly pair and a grin he was a yellow ball.
@@ -2122,11 +2182,11 @@ def sig_felix(cv, spec, pose, back):
         cv.dot(CX + dx, 17, ink)
     cv.dot(CX - 5, 16, ink)
     cv.dot(CX + 5, 16, ink)
+    # the gloves sit ON the body's edge. Hung at the row the arms used to
+    # end at, they float clear of it now the torso is longer than it is
+    # wide there.
     for side in (-1, 1):
-        hx = CX + side * 8
-        for dx in (-1, 0, 1):
-            cv.dot(hx + dx, 31, (245, 245, 247))
-            cv.dot(hx + dx, 32, (245, 245, 247))
+        cv.ball(CX + side * 7.6, 28.5, 2.6, 2.8, white, spec=False)
     shoe = Ramp('#181420')
     for side in (-1, 1):
         cv.sphere(CX + side * 4, 37.2, 3.2, 1.8, shoe, spec=True)
@@ -2281,9 +2341,9 @@ def sig_strongman(cv, spec, pose, back):
     """The singlet, the handlebar and a weight in his hand. Without the
     weight he is a large man in a leotard, which is the acrobat."""
     red = Ramp('#c02a2a')
-    cv.cyl(CX - 6, 26, CX + 6, 33, red, round_bot=2)
+    cv.cyl(CX - 7, 25, CX + 7, 32, red, round_bot=2)
     for side in (-1, 1):
-        cv.cyl(CX + side * 4 - 1, 22, CX + side * 4 + 1, 26, red)
+        cv.cyl(CX + side * 4 - 1, 22, CX + side * 4 + 1, 25, red)
     # the dumbbell, held down at his side and riding the arm swing
     o = run_off(pose)[1]
     iron = Ramp('#4a4e58')
@@ -2665,11 +2725,11 @@ def main():
         for pose in POSES:
             cv = build(spec, pose, key=key)
             pal, rows = cv.emit()
-            assert len(rows) == H, f'{key}/{pose} rows={len(rows)}'
+            assert len(rows) == OUT_H, f'{key}/{pose} rows={len(rows)}'
             assert all(len(r) == W for r in rows), f'{key}/{pose} width'
             frames[pose] = (pal, rows)
         blocks.append(js_block(key, frames))
-    print(f"const V2_W = {W}, V2_H = {H};")
+    print(f"const V2_W = {W}, V2_H = {OUT_H};")
     print("const V2_SPRITES = {")
     print('\n'.join(blocks))
     print("};")
