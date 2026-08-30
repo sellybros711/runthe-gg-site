@@ -89,8 +89,14 @@ class Ramp:
         # from BELOW: lengthening their highlight instead just puts a white
         # blob on a black shape, which is not a form either.
         t = max(0.0, min(1.0, (0.16 - y) / 0.16))
-        self.spec = shade(self.base, 0.55)
-        self.lit = shade(self.base, 0.26)
+        # A near black material's LIT tone is the other half of the
+        # problem yesterday's shadow floor solved. At a flat 0.26 offset,
+        # black hair lands on mid grey over the whole upper half of a
+        # sphere, so Dracula and Frankenstein both wore grey caps. The
+        # lit band shrinks toward the base as the base gets darker; the
+        # small specular glint (spec, l > 0.93) still carries the sheen.
+        self.spec = shade(self.base, 0.55 - 0.18 * t)
+        self.lit = shade(self.base, 0.26 * (1 - 0.85 * t))
         self.mid = self.base
         self.dark = self._floor(shade(self.base, -0.26), t)
         self.core = self._floor(shade(self.base, -0.44), t)
@@ -480,8 +486,11 @@ def hair(cv, spec):
     kind = spec.get('hairstyle', 'short')
     # Every cap is drawn INSIDE the skull box and cut off at the brow, so
     # the outline the eye follows is the head's, not the hair's.
+    # MATTE. Hair has no specular hotspot: a glint sized for wet skin
+    # put a grey cap on every dark haired character on the roster.
     cap = lambda rx, ry, dy=0.0: cv.sphere(CX, HEAD_CY + dy, HEAD_RX * rx,
-                                           HEAD_RY * ry, r, ymax=HEAD_BROW)
+                                           HEAD_RY * ry, r, spec=False,
+                                           ymax=HEAD_BROW)
     if kind == 'short':
         cap(0.99, 0.99, -0.6)
     elif kind == 'long':
@@ -494,7 +503,8 @@ def hair(cv, spec):
         # equal height read as the teeth of a comb; bars packed edge to
         # edge read as one slab with notches cut in it. Neither reads as
         # hair, so: four locks, uneven heights, daylight in between.
-        for dx, up, lean in ((-6.0, 4, -2), (-2.0, 7, -1), (2.5, 5, 1), (6.5, 6, 3)):
+        for dx, up, lean in ((-7.5, 3, -2), (-4.5, 6, -2), (-1.5, 8, 0),
+                            (1.5, 5, 1), (4.5, 7, 2), (7.5, 4, 3)):
             top = HEAD_CY - HEAD_RY * math.sqrt(max(0.0, 1 - (dx / HEAD_RX) ** 2))
             cv.tri([(CX + dx + lean, top - up),
                     (CX + dx - 2.0, top + 2),
@@ -555,7 +565,8 @@ def headwear(cv, spec):
     # same way hair is. Brims stay inside +/-11 of a 32 wide sprite: past
     # that the hat becomes the character and the head underneath is gone.
     crown = lambda rx, ry, dy: cv.sphere(CX, HEAD_CY + dy, HEAD_RX * rx,
-                                         HEAD_RY * ry, c, ymax=HEAD_CY - 2)
+                                         HEAD_RY * ry, c, spec=False,
+                                         ymax=HEAD_CY - 2)
     if hw == 'cap':
         crown(0.99, 0.99, -0.8)
         cv.rect(CX - 10, HEAD_CY - 3, CX + 3, HEAD_CY - 2, c, l=0.40)
@@ -606,8 +617,10 @@ def extras(cv, spec, pose):
                     cv.dot(CX + sx + (1 if sx > 0 else -1) * (i // 2), 4 - i, shade(c, 0.1 * i))
         elif kind == 'ears':                # cat / animal ears
             r = Ramp(e[1])
-            cv.tri([(CX - 9, 1), (CX - 4, 6), (CX - 12, 6)], r, l=0.6)
-            cv.tri([(CX + 9, 1), (CX + 4, 6), (CX + 12, 6)], r, l=0.5)
+            # Upright triangles. The old pair splayed outward and down,
+            # which is a bat, not a cat.
+            cv.tri([(CX - 7, 0), (CX - 10, 8), (CX - 3, 7)], r, l=0.6)
+            cv.tri([(CX + 7, 0), (CX + 10, 8), (CX + 3, 7)], r, l=0.5)
         elif kind == 'wings':
             r = Ramp(e[1])
             for side in (-1, 1):
@@ -677,9 +690,12 @@ def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
         lo, ro = 2, -2
     else:
         lo, ro = 0, 0
+    # Same reason as the hulk's arms: a sleeve in the shirt's own ramp
+    # melts into the shirt. One shade off is all it takes to read.
+    cuff = Ramp(shade(sleeve.base, -0.16))
     for side, off in ((-1, lo), (1, ro)):
         x0 = CX + side * (9 + out) - 1
-        cv.cyl(x0, top + off, x0 + 2, top + length + off, sleeve, round_bot=1)
+        cv.cyl(x0, top + off, x0 + 2, top + length + off, cuff, round_bot=1)
         cv.cyl(x0, top + length + off, x0 + 2, top + length + 2 + off, skin, round_bot=1)
 
 
@@ -707,10 +723,14 @@ def arch_hulk(cv, spec, pose):
     cv.sphere(CX, 27.0, 9.2, 7.4, body, spec=False)
     legs(cv, pants, boot, pose, top=32, bot=38, spread=3)
     lo, ro = (-2, 2) if pose == 'run1' else ((2, -2) if pose == 'run2' else (0, 0))
+    # The arms take their OWN ramp, a shade off the body. Drawn in the
+    # body's ramp they share an owner, outline() skips the seam, and the
+    # whole figure reads as one blob with no limbs in it.
+    arm = Ramp(shade(body.base, -0.20))
     for side, off in ((-1, lo), (1, ro)):
         sx = CX + side * 8
-        cv.sphere(sx, 23.0 + off, 4.6, 4.2, body, spec=False)
-        cv.cyl(sx - 2, 23 + off, sx + 2, 33 + off, body, round_bot=2)
+        cv.sphere(sx, 23.0 + off, 4.6, 4.2, arm, spec=False)
+        cv.cyl(sx - 2, 23 + off, sx + 2, 33 + off, arm, round_bot=2)
         cv.sphere(sx, 33.5 + off, 3.0, 2.6, hand, spec=False)
     if spec.get('chest'):
         cv.sphere(CX, 27.5, 5.4, 4.2, Ramp(spec['chest']), spec=False)
@@ -871,10 +891,10 @@ def arch_dragon(cv, spec, pose):
 def arch_cat(cv, spec, pose):
     body = Ramp(spec.get('skin', '#141018'))
     belly = Ramp(spec.get('chest', '#eaeaea'))
-    cv.sphere(CX, 27.0, 8.0, 7.4, body)
+    cv.sphere(CX, 27.0, 8.0, 7.4, body, spec=False)
     cv.sphere(CX, 28.5, 4.4, 4.6, belly, spec=False)
     legs(cv, body, body, pose, top=33, bot=38, spread=3)
-    cv.sphere(CX, 13.0, 9.4, 8.2, body)
+    cv.sphere(CX, 13.0, 9.4, 8.2, body, spec=False)
     # A cat drawn in near black loses its whole face. Give it a lighter
     # muzzle so the eyes, nose and whiskers have something to sit on.
     # muzzle=None (the back view) suppresses the whole face group.
@@ -918,7 +938,7 @@ def back_head(cv, spec):
         return
     r = Ramp(h)
     cv.sphere(CX, HEAD_CY - 0.4, HEAD_RX * 0.99, HEAD_RY * 0.96, r,
-              ymax=HEAD_CY + 6)
+              spec=False, ymax=HEAD_CY + 6)
     kind = spec.get('hairstyle', 'short')
     if kind in ('long', 'braids'):
         sidelock(cv, r, -1, HEAD_CY - 2, HEAD_CY + 9, 2.4)
@@ -978,10 +998,38 @@ def sig_kong(cv, spec, pose, back):
 
 
 def sig_franky(cv, spec, pose, back):
+    skin = Ramp(spec.get('skin', '#7ea86a'))
+    # The neck: he is famously a head bolted onto a body, so give him
+    # one, with the bolts THROUGH IT rather than stuck to his skull.
+    cv.cyl(CX - 4, 20, CX + 4, 23, skin)
+    if not back:
+        bolt = (196, 168, 92)
+        for side in (-1, 1):
+            cv.dot(CX + side * 5, 21, bolt)
+            cv.dot(CX + side * 6, 21, shade(bolt, -0.25))
+            cv.dot(CX + side * 5, 22, shade(bolt, -0.35))
+        # the stitch scar across one cheek
+        st = shade(skin.base, -0.5)
+        for dy in (14, 15, 16, 17):
+            cv.dot(CX - 7, dy, st)
+        cv.dot(CX - 8, 15, st)
+        cv.dot(CX - 6, 15, st)
+        cv.dot(CX - 8, 17, st)
+        cv.dot(CX - 6, 17, st)
+        # suit lapels over a white shirt V
+        coat = Ramp(shade(spec.get('shirt', '#3f2a1c'), -0.25))
+        for i in range(4):
+            cv.dot(CX - 2 - i, 24 + i, coat.mid)
+            cv.dot(CX - 1 - i, 24 + i, coat.dark)
+            cv.dot(CX + 2 + i, 24 + i, coat.mid)
+            cv.dot(CX + 1 + i, 24 + i, coat.dark)
+        for dy in (24, 25, 26):
+            cv.dot(CX, dy, (232, 232, 234))
+        cv.dot(CX, 27, (40, 40, 48))
     ink = Ramp('#181418')
     # flat topped black hair, squared past the skull's curve
     cv.rect(CX - 9, 3, CX + 9, 8, ink, l=0.5)
-    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX, HEAD_RY * 0.98, ink, ymax=8)
+    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX, HEAD_RY * 0.98, ink, spec=False, ymax=8)
     # jagged fringe
     # The fringe is jagged but SHORT: hair that hangs into the eyes
     # turns a friendly monster into a menacing one.
@@ -992,18 +1040,23 @@ def sig_franky(cv, spec, pose, back):
             cv.dot(x + 1, 9 + k, ink.mid)
     if back:
         cv.sphere(CX, HEAD_CY, HEAD_RX * 0.99, HEAD_RY * 0.96, ink,
-                  ymax=HEAD_CY + 4)
+                  spec=False, ymax=HEAD_CY + 4)
         return
 
 
 def sig_popeye(cv, spec, pose, back):
     skin = Ramp(spec.get('skin', '#f0c088'))
     lo, ro = (-2, 2) if pose == 'run1' else ((2, -2) if pose == 'run2' else (0, 0))
+    sleeve = Ramp(shade(spec.get('shirt', '#e9e9ea'), -0.16))
     for side, off in ((-1, lo), (1, ro)):
         ax = CX + side * 10.5
-        # THE forearms: a swollen oval where a wrist should be
-        cv.sphere(ax, 29 + off, 3.6, 4.6, skin, spec=False)
-        cv.sphere(ax + side * 0.5, 33.5 + off, 2.4, 2.2, skin, spec=False)
+        # THE forearms. They have to GROW out of a normal upper arm, or
+        # they read as two mittens floating beside him: short sleeve,
+        # then the swell, then the fist.
+        cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 26 + off, sleeve, round_bot=1)
+        cv.sphere(ax, 29.5 + off, 3.8, 4.4, skin, spec=False)
+        cv.sphere(ax + side * 0.5, 33.5 + off, 2.6, 2.2,
+                  Ramp(shade(skin.base, -0.12)), spec=False)
     # sailor collar
     col = Ramp('#2a4a8a')
     cv.rect(CX - 5, 22, CX + 5, 23, col, l=0.55)
@@ -1058,9 +1111,10 @@ def sig_cape_post(cv, spec, pose, back):
     if back:
         cv.taper(18, 38, 16, 30, cape, folds=3)
         cv.rect(CX - 14, 37, CX + 14, 38, Ramp(spec.get('capehem', '#7a1620')), l=0.5)
-    # the high collar, framing the head
-    cv.tri([(CX - 9, 20), (CX - 12, 8), (CX - 4, 16)], cape, l=0.5)
-    cv.tri([(CX + 9, 20), (CX + 12, 8), (CX + 4, 16)], cape, l=0.4)
+    # The high collar frames the SHOULDERS. Drawn up to row 8 it rose
+    # past his ears and read as two black horns on his head.
+    cv.tri([(CX - 9, 25), (CX - 13, 16), (CX - 6, 22)], cape, l=0.5)
+    cv.tri([(CX + 9, 25), (CX + 13, 16), (CX + 6, 22)], cape, l=0.4)
 
 
 def sig_liberty(cv, spec, pose, back):
@@ -1110,15 +1164,12 @@ def sig_tom(cv, spec, pose, back):
         cv.dot(CX + side * 5, 23, den.mid)
         if not back:
             cv.dot(CX + side * 3, 25, (201, 160, 48))
-    # the fishing pole over his shoulder, line dangling
-    wood = (122, 82, 40)
-    for dx, dy in ((6, 22), (8, 20), (9, 18), (11, 16), (12, 14), (13, 12)):
-        cv.dot(CX + dx, dy, wood)
-        cv.dot(CX + dx + 1, dy, (150, 96, 42))
-    for dy in (13, 15, 17):
-        cv.dot(CX + 14, dy, (210, 214, 220))
-    cv.dot(CX + 14, 18, (180, 186, 196))
-    cv.dot(CX + 13, 19, (180, 186, 196))
+    # the fishing pole over his shoulder: one clean unbroken diagonal
+    wood = (150, 96, 42)
+    for i in range(13):
+        cv.dot(CX + 5 + i * 0.62, 24 - i, wood if i % 3 else (122, 82, 40))
+    for dy in (13, 14, 15, 16):
+        cv.dot(CX + 14, dy, (206, 212, 220))
 
 
 def sig_huck(cv, spec, pose, back):
@@ -1763,11 +1814,12 @@ def build(spec, pose='idle', key=None):
 # archetype default, so a spec only says what makes that character
 # different from every other figure of the same build.
 SPECS = {
- 'kong': dict(arch='hulk', skin='#3f2716', muzzle='#b0855a', chest='#a87b4c',
+ 'kong': dict(arch='hulk', skin='#4a2f1a', muzzle='#c29a6a', chest='#9c7448',
+              hand='#33200f', boot='#33200f',
               eyes='normal', eyespread=3, mouth='none'),
- 'franky': dict(arch='hulk', skin='#7ea86a', muzzle=None, shirt='#5b3a28',
-                hand='#7ea86a', pants='#2c3a5c', chest='#8a8f96',
-                eyes='normal', mouth='open', extra=[('bolt',)]),
+ 'franky': dict(arch='hulk', skin='#7ea86a', muzzle=None, shirt='#3f2a1c',
+                hand='#7ea86a', pants='#22283a', chest=None,
+                eyes='normal', mouth='open'),
  'popeye': dict(arch='human', skin='#f0c088', shirt='#e9e9ea', pants='#1c4f96',
                 hat='cap', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
                 eyes='angry', mouth='line'),
