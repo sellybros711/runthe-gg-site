@@ -588,6 +588,17 @@ def headwear(cv, spec):
         cv.tri([(CX, 0), (CX - 7, HEAD_CY - 5), (CX + 7, HEAD_CY - 5)], c, l=0.52)
         cv.rect(CX - 11, HEAD_CY - 5, CX + 11, HEAD_CY - 4, c, l=0.40)
         cv.rect(CX - 5, HEAD_CY - 7, CX + 5, HEAD_CY - 6, trim, l=0.62)
+    elif hw == 'floppy':                    # a battered scarecrow hat
+        # Pointed, but the point has GIVEN UP and flopped over, and the
+        # brim waves. A clean cone is a wizard's hat, not a farm one.
+        cv.tri([(CX + 1, 1), (CX - 7, HEAD_CY - 5), (CX + 7, HEAD_CY - 5)], c, l=0.52)
+        cv.sphere(CX + 4, 1.5, 3.0, 2.0, c, spec=False)
+        # A CONTINUOUS brim that waves. Alternating two pixel chunks
+        # broke it into scattered bits of straw with gaps between them.
+        for dx in range(-11, 12):
+            dy = HEAD_CY - 4 + (0 if (dx + 12) % 6 < 3 else 1)
+            cv.rect(CX + dx, dy, CX + dx, dy + 1, c, l=0.42)
+        cv.rect(CX - 6, HEAD_CY - 7, CX + 6, HEAD_CY - 6, trim, l=0.6)
     elif hw == 'straw':
         crown(0.86, 0.80, -2.2)
         cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.46)
@@ -652,8 +663,12 @@ def extras(cv, spec, pose):
             cv.dot(CX + 4, HEAD_CY - 2, (240, 226, 150))
             cv.dot(CX + 4, HEAD_CY + 1, (240, 226, 150))
         elif kind == 'patch':               # eye patch
-            cv.rect(CX - 8, HEAD_CY - 2, CX - 1, HEAD_CY + 1, Ramp('#141018'), l=0.4)
-            cv.rect(CX - 8, HEAD_CY - 3, CX + 9, HEAD_CY - 3, Ramp('#141018'), l=0.5)
+            # An oval over ONE eye on a thin strap. The old version was
+            # an eight by four slab that blacked out half his face.
+            blk = Ramp('#141018')
+            cv.sphere(CX - 3.5, HEAD_CY, 3.0, 2.6, blk, spec=False)
+            for x in range(int(CX) - 8, int(CX) + 9):
+                cv.dot(x, HEAD_CY - 3 + (0 if x < CX else 1), blk.lit)
         elif kind == 'bolt':
             for sx in (-10, 10):
                 cv.dot(CX + sx, HEAD_CY + 3, (206, 170, 92))
@@ -2090,7 +2105,7 @@ SPECS = {
               hair='#141018', hairstyle='wild', eyes='angry', eyecolor='#c94b1a',
               mouth='grin'),
  'scarecrow': dict(arch='human', skin='#eecc78', shirt='#7a3812', pants='#5a3010',
-                   hat='point', hatcolor='#c9a256', hattrim='#8b6a3a',
+                   hat='floppy', hatcolor='#c9a256', hattrim='#8b6a3a',
                    eyes='cartoon', eyecolor='#3a2410', mouth='none'),
  'lion': dict(arch='hulk', skin='#eab84a', muzzle='#ead0a0', chest='#eab84a',
               eyes='normal', eyespread=3, mouth='line'),
