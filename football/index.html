@@ -469,6 +469,15 @@ window.GA_ID='G-L29P5MRWKE';
     .hp-full-name{font-size:17px}
     .hp-full-sub{font-size:9px;letter-spacing:.03em}
   }
+  /* THE WAY OUT OF A SAVED DYNASTY, under the door back into it. Deliberately the quietest
+     control on the front page: it throws a run away, and the thing somebody came back for
+     is the one above it. */
+  .hp-dynnew{margin-top:6px;background:none;border:0;box-shadow:none;
+    font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.04em;
+    text-transform:uppercase;color:rgba(243,221,174,.44);padding:6px 8px}
+  .hp-dynnew[hidden]{display:none}
+  .hp-dynnew:before{display:none}
+  .hp-dynnew:active{color:rgba(243,221,174,.7)}
   /* THE UNIT HEADING on a Full Team roster list. Quiet: it is a divider that happens to
      carry two numbers, not a title competing with the names under it. */
   .rp-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
@@ -7622,9 +7631,10 @@ function ensureFullButton(){
    a tester account on the same tab has to take the button with it. */
 function ensureDynastyButton(){
   const host=$('b-start-full')||$('hp-split');
-  let el=$('b-start-dyn');
+  let el=$('b-start-dyn'), nb=$('b-dyn-new');
   if(!canPlayDynasty()){
     if(el&&el.parentNode) el.parentNode.removeChild(el);
+    if(nb&&nb.parentNode) nb.parentNode.removeChild(nb);
     return;
   }
   if(!host||!host.parentNode) return;
@@ -7632,15 +7642,45 @@ function ensureDynastyButton(){
     el=document.createElement('button');
     el.className='btn hp-full hp-dyn';
     el.id='b-start-dyn';
+    /* Directly after the pair, which is where the layout expects it. */
+    host.parentNode.insertBefore(el, host.nextSibling);
+  }
+  /* THE CONTENTS ARE REBUILT ON EVERY CALL, not only on the one that made the node. This
+     runs on every return to the front page, and between two of them a dynasty can have been
+     started, survived a winter or been ended: a button written once would still be offering
+     a new run over one that is sitting there waiting. */
+  const save=dynRead();
+  if(save){
+    const r=save.run;
+    el.innerHTML='<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
+      '<span class="hp-full-name">Continue The Long Game</span>'+
+      '<span class="hp-full-sub">'+r.leagueYear+' &middot; '+r.roster.length+
+        ' under contract &middot; '+dynWhere(r)+'</span>';
+    el.onclick=()=>{ dynResume(); };
+  }else{
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">The Long Game</span>'+
       '<span class="hp-full-sub">Twelve men &middot; every winter they age &middot; last as long as you can</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
-    host.parentNode.insertBefore(el, host.nextSibling);
   }
   el.hidden=false;
   el.disabled=false;
   el.classList.remove('hp-loading');
+
+  /* The way out of a saved run, and it only exists while there is one to leave. Small and
+     quiet on purpose: continuing is the thing somebody came back for. */
+  if(save){
+    if(!nb){
+      nb=document.createElement('button');
+      nb.className='btn ghost sm hp-dynnew';
+      nb.id='b-dyn-new';
+      nb.textContent='Start a new dynasty';
+      nb.onclick=()=>{ dynNewSheet(); };
+    }
+    if(nb.previousSibling!==el) el.parentNode.insertBefore(nb, el.nextSibling);
+  }else if(nb&&nb.parentNode){
+    nb.parentNode.removeChild(nb);
+  }
 }
 
 /*
@@ -7671,6 +7711,9 @@ function beginDynastyDraft(){
   }
   const b=$('b-start-dyn');
   if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  /* Whatever was saved is gone the moment a new one is drafted. The sheet in front of this
+     is where somebody agrees to that; by here it has been agreed. */
+  dynClear();
   /* Two arguments rather than a chained catch, for the reason beginFullDraft writes out. */
   loadDefensePool().then(()=>{
     closeSheet();
@@ -7680,6 +7723,228 @@ function beginDynastyDraft(){
     toast('Could not load the defensive players. Check your connection and try again.');
   });
 }
+
+/* ───────── THE LONG GAME IS WRITTEN DOWN ────────────────────────────────────────────
+ *
+ * Every other mode in this game is one sitting. You draft, you play, you see where it
+ * placed, and closing the tab costs you a few minutes. A dynasty is not that. Six winters
+ * is half an hour of decisions, and until this block existed all of it lived in the tab it
+ * was started in: a reload, a phone locking, a browser reclaiming a backgrounded page, and
+ * the run was gone with nothing on screen to say why.
+ *
+ * Three things are worth knowing about how it is written.
+ *
+ * IT SAVES AT REST, NOT MID-SEASON. A run is written when it is somewhere a person can be
+ * put back: the draft, the coach step, the squad before kickoff, the winter, and the
+ * results. It is deliberately NOT written once the season is under way, and the previous
+ * checkpoint is left standing instead. Two reasons, and the second is the real one. The
+ * season is a broadcast with timers and animation state, so dropping somebody into the
+ * middle of one is a screen nobody has designed. And a finished season banks its row on
+ * the board, so a save taken at week nine would resume into a season that had already been
+ * recorded and record it a second time. Resuming at the last checkpoint replays the season
+ * off the same stored RNG stream instead, so it comes out as the season it was going to be
+ * and it is banked once.
+ *
+ * IT STORES KEYS, NOT PEOPLE. A roster is twelve player-seasons out of a pool of megabytes,
+ * so what goes in is `player_id|season` and what comes back is the object out of BYKEY.
+ * That keeps the save small, and it keeps every man in it identical BY REFERENCE to the one
+ * in the pool, which run.js depends on: releaseMan trims the winter with `a.now !== man`.
+ *
+ * IT BELONGS TO ONE ACCOUNT. The save records whose it is and is only ever offered back to
+ * that account, because a shared phone must not hand somebody else's dynasty to whoever
+ * signs in next.
+ *
+ * DYN_SAVE_VERSION is hand-carried, like the ?v= on the scripts beside this page: bump it
+ * when the shape of a run changes in a way an old save cannot survive. The belt to that
+ * brace is that restoring is wrapped, and anything that throws clears the save and lands on
+ * the front page with a sentence rather than on a half-built screen.
+ */
+const DYN_SAVE_KEY='ps_dynasty_save';
+const DYN_SAVE_VERSION=1;
+const dynKey=(p)=>(p?p.player_id+'|'+p.season:null);
+
+/* The phases a run can be put back at, which is the whole of the rule above in one
+   function. Week zero is the squad screen: the season exists because paintSquad built it,
+   but not a game of it has been played. */
+function dynAtRest(){
+  if(!run||!run.dynasty) return false;
+  const P=R.PHASES;
+  if(run.phase===P.DRAFT||run.phase===P.COACH||run.phase===P.OFFSEASON
+    ||run.phase===P.OVER) return true;
+  return run.phase===P.SEASON&&(!run.season||run.season.week===0);
+}
+
+function dynPack(){
+  const w=run.winter;
+  return {
+    v:DYN_SAVE_VERSION,
+    /* Not a gate, a note to whoever is reading a broken save: which run.js the run was
+       played against. DYN_SAVE_VERSION is what decides whether it loads. */
+    api:NEED_VERSION,
+    user:authState.userId||null,
+    at:Date.now(),
+    /* THE ROW ID, CARRIED WITH THE RUN. recordRun refuses to send twice on a non-null
+       `submitted`, and that guard is the only thing standing between a resumed results
+       screen and a duplicate row on the board. */
+    submitted:submitted,
+    run:Object.assign({},run,{
+      roster:run.roster.map(dynKey),
+      coach:run.coach?run.coach.name:null,
+      winter:w?Object.assign({},w,{
+        aged:w.aged.map(a=>Object.assign({},a,{was:dynKey(a.was),now:dynKey(a.now)})),
+        gone:w.gone.map(g=>Object.assign({},g,{was:dynKey(g.was)})),
+        released:(w.released||[]).map(x=>Object.assign({},x,{was:dynKey(x.was)})),
+      }):null,
+    }),
+  };
+}
+
+/* localStorage throws rather than returning null in a browser with storage blocked, and a
+   dynasty that cannot be saved is still a dynasty worth playing, so every door here is
+   quiet. */
+function dynSave(){
+  if(!dynAtRest()) return;
+  try{ localStorage.setItem(DYN_SAVE_KEY,JSON.stringify(dynPack())); }catch(_){}
+}
+function dynClear(){ try{ localStorage.removeItem(DYN_SAVE_KEY); }catch(_){} }
+
+/* The header only. Cheap enough to call from every repaint of the front page, and it never
+   touches the player pool, so it answers "is there one waiting" before the defensive
+   download that resuming needs. */
+function dynRead(){
+  let raw=null;
+  try{ raw=localStorage.getItem(DYN_SAVE_KEY); }catch(_){ return null; }
+  if(!raw) return null;
+  let s=null;
+  try{ s=JSON.parse(raw); }catch(_){ return null; }
+  if(!s||s.v!==DYN_SAVE_VERSION||!s.run||!s.run.dynasty||!Array.isArray(s.run.roster)) return null;
+  /* Whoever saved it and nobody else. Both sides normalised to null so a signed-out run,
+     which is only reachable once the mode goes live to everybody, still finds its own. */
+  if((s.user||null)!==(authState.userId||null)) return null;
+  return s;
+}
+
+/* Where they left off, for the button. Short enough to sit in a sub-line. */
+function dynWhere(r){
+  const P=R.PHASES;
+  if(r.phase===P.OFFSEASON) return 'mid-winter';
+  if(r.phase===P.DRAFT) return 'still drafting';
+  if(r.phase===P.COACH) return 'hiring a coach';
+  if(r.phase===P.OVER) return 'season played';
+  return 'ready to play';
+}
+
+/*
+ * PUT THE RUN BACK, AND THEN PUT THE PLAYER BACK ON THE SCREEN IT WAS AT.
+ *
+ * Returns false rather than throwing on anything it can see is wrong, and the caller
+ * clears the save on false. A key the pool does not have is the case that matters: it means
+ * the data underneath moved, and half a roster is worse than none.
+ */
+function dynRestore(s){
+  const r=s.run;
+  const get=(k)=>(k?BYKEY.get(k)||null:null);
+  let missing=false;
+  const need=(k)=>{ const p=get(k); if(!p) missing=true; return p; };
+
+  r.roster=r.roster.map(need);
+  if(r.winter){
+    r.winter.aged=(r.winter.aged||[]).map(a=>Object.assign({},a,{was:need(a.was),now:need(a.now)}));
+    r.winter.gone=(r.winter.gone||[]).map(g=>Object.assign({},g,{was:need(g.was)}));
+    r.winter.released=(r.winter.released||[]).map(x=>Object.assign({},x,{was:need(x.was)}));
+  }
+  if(missing) return false;
+  if(r.coach){
+    const name=r.coach;
+    r.coach=coachList().find(c=>c.name===name)||null;
+    if(!r.coach) return false;
+  }
+
+  /* Tears down whatever the page was doing, exactly as starting a run does: the timers and
+     the draft wheels outlive a run and there is one function that knows all of them. */
+  endRun();
+  run=r;
+  lastChem=1;
+  submitted=(s.submitted===undefined?null:s.submitted);
+  $('b-sim').style.display='';
+  closeSheet();
+  dressTeam();
+
+  const P=R.PHASES;
+  if(run.phase===P.OFFSEASON){ paintWinter(); return true; }
+  if(run.phase===P.COACH){ paintCoach(); return true; }
+  if(run.phase===P.OVER){ paintOver(); return true; }
+  if(run.phase===P.SEASON){ paintSquad(!!run.season); return true; }
+  show('s-draft');
+  nextSpin(run.currentDraw||null);
+  return true;
+}
+
+/* Same shape as beginDynastyDraft, and for the same reason: the defensive pool is not in
+   the boot bundle, and half the roster is in it. */
+function dynResume(){
+  const s=dynRead();
+  if(!s) return ensureDynastyButton();
+  const b=$('b-start-dyn');
+  if(b){ b.disabled=true; b.classList.add('hp-loading'); }
+  loadDefensePool().then(()=>{
+    let ok=false;
+    try{ ok=dynRestore(s); }catch(err){ console.error(err); ok=false; }
+    if(ok) return;
+    /* The save is unopenable, so it goes, and it is said out loud. A silent clear looks
+       exactly like the bug this whole block exists to fix. */
+    dynClear();
+    endRun();
+    show('s-intro');
+    ensureDynastyButton();
+    toast('That saved dynasty could not be opened, so it has been cleared.');
+  },()=>{
+    if(b){ b.disabled=false; b.classList.remove('hp-loading'); }
+    toast('Could not load the defensive players. Check your connection and try again.');
+  });
+}
+
+/* Throwing one away is a decision, so it is asked rather than assumed. */
+function dynNewSheet(){
+  const s=dynRead();
+  if(!s) return beginDynastyDraft();
+  const r=s.run, n=(r.history||[]).length;
+  $('sheet-in').innerHTML='<div class="eyebrow red">Start over</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Give up on '+r.leagueYear+'?</h2>'+
+    '<p class="dim" style="font-size:13.5px;margin:0">You are '+
+      (n?n+' season'+(n===1?'':'s')+' into this one':'one draft into this one')+
+      '. A new dynasty throws it away, and there is no getting it back.</p>'+
+    '<div style="margin-top:14px"><button class="btn" id="b-dyn-drop">Start a new dynasty</button></div>'+
+    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-dyn-keep">Keep playing this one</button></div>';
+  $('sheet-in').dataset.kind='dynnew';
+  openSheet();
+  $('b-dyn-keep').onclick=closeSheet;
+  $('b-dyn-drop').onclick=()=>{ closeSheet(); dynClear(); ensureDynastyButton(); beginDynastyDraft(); };
+}
+
+/*
+ * EVERY MUTATION SAVES, AND NOT ONE CALL SITE SAYS SO.
+ *
+ * run.js is where a dynasty changes, and there are fourteen places on this page that reach
+ * into it to do it. A dynSave() after each is the version of this that works today and rots
+ * on the first one somebody forgets, and what a forgotten one loses is the run. So the
+ * module's exported entry points are wrapped once, here, and the save cannot drift from the
+ * mutation because it is the mutation returning.
+ *
+ * The EXPORTED object only. run.js calls its own functions through their local bindings, so
+ * nothing inside it re-enters this and a single click writes once. A throw skips the save,
+ * which is right: a throw means nothing changed.
+ *
+ * dynSave is the thing that decides whether there is anything to do, so this costs a
+ * property read and a comparison in every other mode.
+ */
+['spin','respin','sign','startSeason','advanceWeek','startPlayoffs','hireCoach','setPlan',
+ 'finishHiring','takeTheField','beginOffseason','releaseMan','finishOffseason','ownerVerdict']
+  .forEach((fn)=>{
+    const orig=R[fn];
+    if(typeof orig!=='function') return;
+    R[fn]=function(){ const out=orig.apply(this,arguments); dynSave(); return out; };
+  });
 
 function beginFullDraft(){
   if(!canPlayFull()) return;
@@ -9036,11 +9301,18 @@ function dressInTeamColors(franchise){
   };
 }
 
-function nextSpin(){
+/* `existing` is a draw that has already been paid for: a resumed dynasty lands on the club
+   it was looking at rather than spinning again, because a reload must not be the free
+   re-roll the respin fee is there to charge for. Everything else calls this with nothing. */
+function nextSpin(existing){
   resetQuit();
   paintTop(); drawField($('field'),true);
   $('opts').innerHTML=''; $('tabs').innerHTML=''; $('d-respin').innerHTML='';
   activeTab=null;
+  if(existing){
+    spinBoth(existing,()=>{ if(run) paintOpts(existing); });
+    return;
+  }
   /* A DRY WHEEL IS A LEGAL PLACE TO BE IN THE LONG GAME, and only there. The cap is a
      signing gate, so a roster that appreciated past it has no money and there is nothing
      any club can offer. That is the rule working rather than the game breaking, and it
@@ -9966,10 +10238,6 @@ function wireWinter(){
   $('b-winter-go').onclick=()=>{
     winterClear();
     try{ R.finishOffseason(run); }catch(err){ toast(err.message); return; }
-    /* NOTHING IS PERSISTED, and that is worth knowing rather than assuming: this game has
-       never written a run to storage, so a dynasty lives in the tab it was started in. It
-       does not block the mode, because a season banks its own row the moment it finishes,
-       but a reload mid-winter loses the run and that is a gap to close before launch. */
     /* SHOW THE SCREEN, THEN SPIN. nextSpin() paints the draft's contents and assumes it is
        already the screen you are looking at: beginDraft calls show('s-draft') first and so
        must this, or the wheels turn behind the winter and the button reads as dead. */
@@ -10043,8 +10311,12 @@ function paintChemSplit(){
   el.innerHTML=cell(s.chemistryOff,'Offense')+cell(s.chemistryDef,'Defense');
 }
 
-function paintSquad(){
-  R.startSeason(run,dataNow(),CTX);
+/* `keepSeason` is for a resumed dynasty and nothing else: the schedule and the playoff
+   ladder were drawn when this screen was first painted and they are in the save, so drawing
+   them again would hand a reload a fresh set of opponents. Every other caller arrives with
+   no season at all and wants one built. */
+function paintSquad(keepSeason){
+  if(!(keepSeason&&run.season)) R.startSeason(run,dataNow(),CTX);
   if(tutorialOn) tutFinish();
   drawField($('field2'),false);
   const rl=$('q-roster-list');
@@ -12998,11 +13270,25 @@ function paintOwner(){
     [...led.children].forEach((r,i)=>setTimeout(()=>r.classList.add('in'),120+i*70));
   }
 
+  /* A FIRED RUN IS NOT WAITING FOR ANYBODY. The autosave's whole job is to hold a dynasty
+     that is still going, and this one is over: leaving it on disk would put "Continue" on
+     the front page over a run whose only remaining move is Back to start. */
+  if(v.fired) dynClear();
+
   const go=$('b-next-season');
   if(go){
     go.hidden=v.fired;
     go.textContent='Winter '+(run.leagueYear+1);
     go.onclick=()=>{
+      /* THE SEASON THAT JUST ENDED IS RECORDED; THE NEXT ONE IS NOT YET.
+         `submitted` and the placings belong to one season, and outside a dynasty a run only
+         ever has one, so nothing has ever cleared them between two. Here a run has many:
+         left alone, recordRun's "already sent" guard would hold for the rest of the dynasty
+         and every season after the first would quietly fail to reach the board.
+         Before beginOffseason rather than after, because the save is written the instant it
+         returns and the cleared value is the one that belongs in it. */
+      submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null;
+      lastPerfectShare=null;
       try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON); }
       catch(err){ toast(err.message); return; }
       ga('dynasty_winter',{season:run.seasonNo,year:run.leagueYear});
