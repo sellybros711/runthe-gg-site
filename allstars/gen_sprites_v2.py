@@ -28,6 +28,7 @@ import math
 import sys
 
 W, H = 32, 40
+WHITEISH = (252, 232, 200)
 LIGHT = (-0.55, -0.62, 0.56)   # upper left, slightly toward the viewer
 SIL = (14, 11, 20)             # shared outer silhouette line
 
@@ -576,6 +577,14 @@ def headwear(cv, spec):
     if hw == 'cap':
         crown(0.99, 0.99, -0.8)
         cv.rect(CX - 10, HEAD_CY - 3, CX + 3, HEAD_CY - 2, c, l=0.40)
+    elif hw == 'sailor':
+        # A Dixie cup rides HIGH on the skull, and that is the point of
+        # having it: a cap cut at the brow leaves four rows of face, and
+        # a face with a jaw in it needs nine. Crown to row 8, fold at
+        # 8 and 9, so the cap seam lands at row 10 instead of 12.
+        cv.sphere(CX, HEAD_CY - 2.0, HEAD_RX * 0.98, HEAD_RY * 0.92, c,
+                  spec=False, ymax=8)
+        cv.rect(CX - 9, 8, CX + 9, 9, Ramp(shade(c.base, -0.10)), l=0.50)
     elif hw == 'brim':                      # fedora / detective
         crown(0.92, 0.92, -1.6)
         cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.42)
@@ -1137,18 +1146,61 @@ def sig_popeye(cv, spec, pose, back):
         cv.sphere(ax, 29.5 + off, 3.8, 4.4, skin, spec=False)
         cv.sphere(ax + side * 0.5, 33.5 + off, 2.6, 2.2,
                   Ramp(shade(skin.base, -0.12)), spec=False)
-    # sailor collar
+    # THE JAW, which is the entire character. A skull ellipse tapers to
+    # about four pixels wide by row 22; his does the opposite, so the
+    # lantern chin is hung UNDER the face as its own mass, wider at row
+    # 21 than the cheeks are. Same ramp as the skin so no seam cuts him
+    # in half, and drawn before the collar so the collar sits in front.
+    if not back:
+        # THE JAW. A skull ellipse tapers to four pixels wide by row 22;
+        # his does the opposite. Hung under the face as its own mass so
+        # the silhouette goes SQUARE at the chin, which is the character.
+        cv.sphere(CX, 19.5, 7.8, 4.4, skin, spec=False)
+    # sailor collar, low enough that the chin clears it
     col = Ramp('#2a4a8a')
-    cv.rect(CX - 5, 22, CX + 5, 23, col, l=0.55)
+    cv.rect(CX - 5, 24, CX + 5, 25, col, l=0.55)
     if back:
         return
-    # the squint: his left eye is shut, always
-    dk = shade(skin.base, -0.5)
-    for dx in (-5, -4):
-        for dy in (11, 12, 13):
-            cv.dot(CX + dx, dy, skin.mid)
-    for dx in (-5, -4, -3):
-        cv.dot(CX + dx, 12, dk)
+    dk = shade(skin.base, -0.55)
+    mid = shade(skin.base, -0.32)
+    lit = skin.lit
+    # BOTH eyes are shut. He has one open eye in no drawing of him: the
+    # squint IS the face. The lash slopes DOWN toward the nose, which is
+    # what separates a squint from two flat bars ruled across a head.
+    for side in (-1, 1):
+        for dx in (4, 5, 6):
+            cv.dot(CX + side * dx, 12, dk)
+        cv.dot(CX + side * 3, 13, dk)
+        cv.dot(CX + side * 7, 13, dk)
+    # THE NOSE, and it has to be a bulb with a hard edge on it. Drawn as
+    # lighter skin on lighter skin it vanished: at this size a feature
+    # exists only if something dark closes it off.
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 14, lit)
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 15, lit)
+        cv.dot(CX + dx, 16, skin.mid)
+    cv.dot(CX - 2, 15, WHITEISH)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 17, dk)
+    for side in (-1, 1):
+        cv.dot(CX + side * 2, 17, mid)
+        cv.dot(CX + side * 3, 16, mid)
+    # the laugh: wide open, top teeth showing, corners hooked up ABOVE
+    # the lip line. A closed line here reads as a boxer, not a sailor.
+    mdk = (72, 32, 28)
+    cv.dot(CX - 5, 18, mdk)
+    cv.dot(CX + 5, 18, mdk)
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 19, mdk)
+    for dx in range(-3, 4):
+        cv.dot(CX + dx, 20, (246, 244, 240))
+    for dx in range(-2, 3):
+        cv.dot(CX + dx, 21, (150, 52, 54))
+    # two full rows of chin below it, which is the whole silhouette
+    cv.dot(CX, 22, shade(skin.base, -0.16))
+    for side in (-1, 1):
+        cv.dot(CX + side * 5, 21, mid)
     # anchor tattoo on the right forearm
     ink = (60, 74, 108)
     cv.dot(CX + 10, 28, ink)
@@ -1156,19 +1208,16 @@ def sig_popeye(cv, spec, pose, back):
     cv.dot(CX + 9, 30, ink)
     cv.dot(CX + 10, 30, ink)
     cv.dot(CX + 11, 30, ink)
-    # the corncob pipe, jutting, with a puff of smoke
-    wood = (150, 96, 42)
-    for x in range(int(CX) + 4, int(CX) + 9):
-        cv.dot(x, 18, wood)
-    cv.dot(CX + 9, 18, (200, 168, 108))
-    cv.dot(CX + 9, 17, (200, 168, 108))
-    cv.dot(CX + 10, 15, (200, 205, 212))
-    cv.dot(CX + 11, 13, (170, 178, 188))
-    # the jaw: his chin leads
-    cv.dot(CX - 1, 21, skin.mid)
-    cv.dot(CX, 21, skin.mid)
-    cv.dot(CX + 1, 21, skin.mid)
-    cv.dot(CX, 22, skin.dark)
+    # the corncob pipe, CLENCHED in the corner of the mouth and angled
+    # up, which is where it lives. Beside the cheek it read as a stick
+    # somebody was holding near him.
+    wood = (168, 116, 48)
+    cv.dot(CX + 6, 18, wood)
+    cv.dot(CX + 7, 17, wood)
+    cv.dot(CX + 8, 16, wood)
+    cv.cyl(CX + 9, 12, CX + 10, 16, Ramp('#d9b45e'), spec=False)
+    cv.dot(CX + 11, 10, (206, 210, 216))
+    cv.dot(CX + 12, 8, (176, 182, 192))
 
 
 def sig_cape_pre(cv, spec, pose, back):
@@ -2071,8 +2120,8 @@ SPECS = {
                 hand='#7ea86a', pants='#22283a', chest=None,
                 eyes='normal', mouth='open'),
  'popeye': dict(arch='human', skin='#f0c088', shirt='#e9e9ea', pants='#1c4f96',
-                hat='cap', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
-                eyes='angry', mouth='line'),
+                hat='sailor', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
+                eyes='hidden', mouth='none'),
  'dracula': dict(arch='human', skin='#ded2cc', shirt='#3a3a44', pants='#2a2a32',
                  hair='#141018', hairstyle='short', eyes='normal', eyecolor='#8a2430',
                  mouth='fang'),
