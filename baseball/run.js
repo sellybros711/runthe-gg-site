@@ -305,9 +305,11 @@ function respin(run, data, focus) {
 function eligibleFranchises(data) {
   const byTeam = {};
   for (const ts of data.teamSeasons) {
-    (byTeam[ts.team] = byTeam[ts.team] || { seasons: 0, players: {} });
-    byTeam[ts.team].seasons++;
-    for (const p of (data.byTeamSeason[ts.team_season_id] || [])) byTeam[ts.team].players[pkey(p)] = p;
+    const info = (byTeam[ts.team] = byTeam[ts.team] || { seasons: 0, players: {}, lo: Infinity, hi: 0 });
+    info.seasons++;
+    if (ts.season < info.lo) info.lo = ts.season;
+    if (ts.season > info.hi) info.hi = ts.season;
+    for (const p of (data.byTeamSeason[ts.team_season_id] || [])) info.players[pkey(p)] = p;
   }
   const out = [];
   for (const team of Object.keys(byTeam)) {
@@ -318,7 +320,17 @@ function eligibleFranchises(data) {
     const countSlot = (slot) => players.filter(p => E.canFillSlot(p, slot)).length;
     if (!has('C') || !has('CL') || countSlot('SP1') < 2) continue;
     if (players.length < 16) continue;
-    out.push({ team, seasons: info.seasons, depth: players.length });
+    // The best bat and the best arm the club can offer, as a teaser on the card.
+    let bat = null, arm = null;
+    for (const p of players) {
+      if (p.r === 'p') { if (!arm || p.w > arm.w) arm = p; }
+      else if (!bat || p.w > bat.w) bat = p;
+    }
+    out.push({
+      team, seasons: info.seasons, depth: players.length,
+      lo: info.lo, hi: info.hi,
+      best: bat && arm ? (bat.w >= arm.w ? bat : arm) : (bat || arm),
+    });
   }
   out.sort((a, b) => b.depth - a.depth);
   return out;
@@ -445,7 +457,8 @@ function advanceGame(run, gameIndex) {
     const savePct = E.closerSavePct(tagged);
     const pool = poolFor(run);
     const schedule = E.generateSchedule(rng, E.CONSTANTS.REGULAR_SEASON_GAMES, pool);
-    const rating = E.overallRating(E.teamWinPct(offense, defense));
+    // Same basis as every real club in ratingTable. See squadRating().
+    const rating = E.squadRating(run.roster);
 
     run._simState = {
       rng, tagged, chem, structure, offense, defense, savePct, schedule, rating,

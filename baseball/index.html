@@ -119,6 +119,11 @@ h1,h2,h3{margin:0}
 .hnote{margin:11px 0 0;text-align:center;font-size:12.5px;color:var(--dim-2)}
 .hp-start{margin-bottom:10px}
 .hp-secondary{margin-bottom:10px}
+.mode-row{display:flex;gap:8px;margin-bottom:10px}
+.mode-btn{flex:1;width:auto;flex-direction:column;gap:2px;padding:11px 8px;line-height:1.15}
+.mode-btn b{font-weight:400;font-size:14px;letter-spacing:.05em}
+.mode-btn span{font-family:var(--fn);font-size:10px;font-weight:600;letter-spacing:.02em;
+  text-transform:none;color:var(--dim-2)}
 .hrow{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .hp-util-btn{width:auto;flex:1}
 
@@ -374,8 +379,12 @@ h1,h2,h3{margin:0}
 .roster-final{display:flex;flex-direction:column;gap:4px;margin:12px 0}
 .rslot{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid rgba(0,0,0,.08);
   border-radius:8px;padding:8px 12px;min-height:40px}
-.rslot .rpos{font-family:var(--fn);font-size:10px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.06em;width:28px;text-align:center;color:var(--dim-2)}
+/* posPaint() paints a dark gradient behind this chip, so it needs white ink and
+   real padding. It read as a blank colored block while it inherited --dim-2. */
+.rslot .rpos{flex:0 0 auto;font-family:var(--fn);font-size:10px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.04em;min-width:32px;padding:4px 5px;
+  border-radius:6px;text-align:center;color:#fff;
+  text-shadow:0 1px 1px rgba(0,0,0,.35)}
 .rslot .rname{font-family:var(--fp);font-size:15px;font-weight:700;flex:1}
 .rslot .rteam{font-family:var(--fn);font-size:10px;color:var(--dim);font-weight:600}
 .rslot .rprice{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--green)}
@@ -518,6 +527,38 @@ h1,h2,h3{margin:0}
   color:var(--ink);transition:border-color .15s}
 .era-btn:hover{border-color:var(--gold)}
 
+/* ─── franchise picker ─── */
+.fran-sec{display:flex;align-items:center;gap:9px;margin:20px 0 9px;
+  font-family:var(--fn);font-size:11px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim-2)}
+.fran-sec::after{content:'';flex:1;height:1px;background:rgba(0,0,0,.12)}
+.fran-sec .n{font-weight:700;color:var(--dim-2);opacity:.7;letter-spacing:.04em}
+.fran-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:8px}
+.fran-card{position:relative;display:block;width:100%;text-align:left;cursor:pointer;
+  background:var(--panel);border:1px solid rgba(0,0,0,.10);border-radius:10px;
+  padding:10px 11px 10px 17px;overflow:hidden;font-family:var(--fn);
+  transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+/* the club's own colors, as a spine down the left edge */
+.fran-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:7px;
+  background:linear-gradient(160deg,var(--c1) 0%,var(--c1) 52%,var(--c2) 52%,var(--c2) 100%);
+  transition:width .14s ease}
+.fran-card:hover,.fran-card:focus-visible{transform:translateY(-2px);border-color:rgba(0,0,0,.2);
+  box-shadow:0 5px 14px rgba(60,40,15,.16);outline:none}
+.fran-card:hover::before,.fran-card:focus-visible::before{width:10px}
+.fran-card:active{transform:translateY(0)}
+.fran-name{font-size:13px;font-weight:800;line-height:1.24;color:var(--ink)}
+.fran-yrs{margin-top:3px;font-size:10.5px;font-weight:700;color:var(--dim-2);
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fran-best{margin-top:5px;font-size:10.5px;font-weight:600;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fran-depth{display:flex;gap:3px;margin-top:7px}
+.fran-depth i{flex:1;height:3px;border-radius:2px;background:rgba(0,0,0,.11)}
+.fran-depth i.on{background:var(--c1)}
+@media (prefers-reduced-motion:reduce){
+  .fran-card,.fran-card::before{transition:none}
+  .fran-card:hover,.fran-card:focus-visible{transform:none}
+}
+
 /* ─── footer ─── */
 .legal{margin-top:32px;padding:16px 0;border-top:1px solid rgba(0,0,0,.08);font-size:12px;color:var(--dim);text-align:center}
 .legal a{color:var(--dim-2)} .legal p{margin:6px 0} .legal span{margin:0 6px}
@@ -571,8 +612,10 @@ h1,h2,h3{margin:0}
   </div>
 
   <button class="btn hp-start" id="b-start">&#9918; Start a run &#9918;</button>
-  <button class="btn ghost hp-secondary" id="b-era">Eras Mode</button>
-  <button class="btn ghost hp-secondary" id="b-fran">Franchise Mode</button>
+  <div class="mode-row">
+    <button class="btn ghost mode-btn" id="b-era"><b>Eras Mode</b><span>One decade only</span></button>
+    <button class="btn ghost mode-btn" id="b-fran"><b>Franchise Mode</b><span>One club, max chemistry</span></button>
+  </div>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
     <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
@@ -600,7 +643,7 @@ h1,h2,h3{margin:0}
   <div class="eyebrow">Franchise Mode</div>
   <h2 class="display" style="font-size:27px;margin:5px 0 8px">Build a dynasty</h2>
   <p class="dim" style="font-size:13px;margin:0 0 12px">Draft one franchise's all-time roster. Every teammate shares the uniform, so your chemistry runs sky-high. But you're on your own for talent.</p>
-  <div class="era-grid" id="fran-grid"></div>
+  <div id="fran-sections"></div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-fran-back">Back</button></div>
 </div>
 
@@ -759,9 +802,9 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
-<script src="engine.js?v=8"></script>
-<script src="run.js?v=8"></script>
-<script src="achievements.js?v=1"></script>
+<script src="engine.js?v=9"></script>
+<script src="run.js?v=9"></script>
+<script src="achievements.js?v=2"></script>
 <script>
 (function(){
 'use strict';
@@ -1308,17 +1351,53 @@ function buildEraGrid(){
 }
 
 /* ─── franchise mode ─── */
+/* The thirty clubs playing today. Everything else in the picker is a club that
+ * moved, was renamed, or folded, which is the more evocative half of the list
+ * and deserves its own heading rather than being interleaved alphabetically. */
+const CURRENT_CLUBS=new Set(['ARI','ATL','BAL','BOS','CHC','CHW','CIN','CLE','COL','DET',
+  'HOU','KCR','LAA','LAD','MIA','MIL','MIN','NYM','NYY','OAK','PHI','PIT','SDP','SEA',
+  'SFG','STL','TBR','TEX','TOR','WSN']);
+
+function franCard(f,maxDepth){
+  const tc=E.teamColors(f.team);
+  const btn=document.createElement('button');
+  btn.className='fran-card';
+  btn.style.setProperty('--c1',tc[0]);
+  btn.style.setProperty('--c2',tc[1]||tc[0]);
+  // Five pips on a square-root scale: the deepest club fills all five, and the
+  // thinnest still shows one, so the meter reads as a comparison and never as
+  // an empty card.
+  const tier=Math.max(1,Math.min(5,Math.round(Math.sqrt(f.depth/maxDepth)*5)));
+  let pips='';
+  for(let i=0;i<5;i++) pips+='<i class="'+(i<tier?'on':'')+'"></i>';
+  const yrs=f.lo===f.hi?String(f.lo):f.lo+'&ndash;'+f.hi;
+  const best=f.best?esc(f.best.n):'';
+  btn.innerHTML='<div class="fran-name">'+esc(teamFullName(f.team))+'</div>'+
+    '<div class="fran-yrs">'+yrs+' &middot; '+f.seasons+' seasons</div>'+
+    (best?'<div class="fran-best">Best: '+best+'</div>':'')+
+    '<div class="fran-depth">'+pips+'</div>';
+  btn.setAttribute('aria-label',teamFullName(f.team)+', '+f.lo+' to '+f.hi+', '+f.seasons+' seasons');
+  btn.addEventListener('click',()=>startRun({franchise:f.team}));
+  return btn;
+}
+
 function buildFranGrid(){
-  const grid=$('fran-grid');grid.innerHTML='';
+  const host=$('fran-sections');host.innerHTML='';
   const list=R.eligibleFranchises(DATA);
-  // sort by full name for a browsable grid
-  list.sort((a,b)=>teamFullName(a.team).localeCompare(teamFullName(b.team)));
-  for(const f of list){
-    const btn=document.createElement('button');
-    btn.className='era-btn';btn.style.fontSize='12px';
-    btn.textContent=teamFullName(f.team);
-    btn.addEventListener('click',()=>startRun({franchise:f.team}));
-    grid.appendChild(btn);
+  const maxDepth=list.reduce((m,f)=>Math.max(m,f.depth),1);
+  const byName=(a,b)=>teamFullName(a.team).localeCompare(teamFullName(b.team));
+  const now=list.filter(f=>CURRENT_CLUBS.has(f.team)).sort(byName);
+  const old=list.filter(f=>!CURRENT_CLUBS.has(f.team)).sort(byName);
+  for(const sec of [{label:'Playing today',rows:now},{label:'Moved, renamed, folded',rows:old}]){
+    if(!sec.rows.length) continue;
+    const h=document.createElement('div');
+    h.className='fran-sec';
+    h.innerHTML='<span>'+sec.label+'</span><span class="n">'+sec.rows.length+'</span>';
+    host.appendChild(h);
+    const grid=document.createElement('div');
+    grid.className='fran-grid';
+    for(const f of sec.rows) grid.appendChild(franCard(f,maxDepth));
+    host.appendChild(grid);
   }
 }
 

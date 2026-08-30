@@ -340,6 +340,26 @@ function overallRating(winPct) {
   return Math.max(1, Math.min(100, Math.round(r * 10) / 10));
 }
 
+/* The rating and all-time rank the player is shown.
+ *
+ * Every real team-season in ratingTable is scored by teamStrength(), which
+ * reads a roster's top nine bats and top two starters and applies neither a
+ * chemistry nor a roster-shape multiplier. A drafted squad used to be scored
+ * by its own pipeline instead, which applies both, so the two numbers were on
+ * different scales: real clubs' projections median out near 64 wins and a
+ * drafted squad's near 88, which lifted the squad clear of all 2,594 real
+ * clubs. It billed 63% of finished seasons as the greatest team of all time,
+ * printed directly above records like 74-88.
+ *
+ * So the shown rating scores the squad the same way the field is scored.
+ * Chemistry and roster shape still do all their work: they move the runs the
+ * team scores and therefore the record. They just stop being counted twice,
+ * once in the season and again in the yardstick it is measured against. */
+function squadRating(roster) {
+  const st = teamStrength(roster);
+  return overallRating(teamWinPct(st.offense, st.defense));
+}
+
 /* National rank: where a finished season's rating places among all
  * spinnable team-seasons (1 = best ever). */
 function nationalRank(rating, ratingTable) {
@@ -1007,7 +1027,7 @@ function playRun(roster, rng, slotNames, pool) {
 
   const record = { wins, losses };
   const seed = seedFromRecord(wins);
-  const rating = overallRating(teamWinPct(offense, defense));
+  const rating = squadRating(roster);
   const playoffs = generatePlayoffs(seed, offense, defense, savePct, rng, wins, rating, pool);
 
   const titleWon = playoffs && playoffs.won;
@@ -1052,6 +1072,12 @@ const TEAM_COLORS = {
   BRO: ['#005A9C', '#FFFFFF'], NYG: ['#FD5A1E', '#27251F'], PHO: ['#003831', '#FFFFFF'],
   MLN: ['#CE1141', '#13274F'], MON: ['#003087', '#E4002B'], BSN: ['#CE1141', '#13274F'],
   WSH: ['#AB0003', '#14225A'], SLB: ['#BA0021', '#003263'],
+  // The rest of the relocated and renamed clubs, so none of them falls back to
+  // gray in the Franchise Mode picker. WSA is the expansion Senators and takes
+  // the reverse of WSH's pairing, or the two cards read as the same club.
+  PHA: ['#003278', '#C4CED4'], CAL: ['#BA0021', '#003263'], ANA: ['#BA0021', '#0C2340'],
+  FLA: ['#0077C8', '#231F20'], TBD: ['#5F259F', '#00A3A3'], WSA: ['#14225A', '#AB0003'],
+  KCA: ['#006341', '#FFB81C'],
   // Negro Leagues
   PS: ['#1a1a1a', '#d4af37'], CAG: ['#8B0000', '#FFFFFF'], KCM: ['#003087', '#C4CED4'],
   HG: ['#4A4A4A', '#C4CED4'], NLG: ['#2F4F4F', '#D4AF37'],
@@ -1071,7 +1097,7 @@ const publicAPI = {
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry, setCuratedChemistry,
-  teamStrength, teamWinPct, overallRating, nationalRank,
+  teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,
   seedFromRecord, playoffRoundNames, PLAYOFF_ROUND_NAMES, titleEdge,
