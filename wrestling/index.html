@@ -6951,6 +6951,93 @@ function decide(head,sub,opts){
   });
 }
 
+/* ---- MID-MATCH EXCHANGE ----
+   Wrestlers talk to each other in the ring. This pauses the match at a
+   dramatic beat, has the opponent say something in THEIR voice and
+   coloured by your history with them, and lets you answer. The answer
+   moves momentum, match quality and heat, so trash talk is a real
+   mechanic rather than decoration. Fires at most once per match. */
+const MID_EXCHANGES = [
+  { id:'mid_taunt', when:(ms)=>ms.mom < -18,
+    line:(ch)=>voiced(ch,{
+      brash:`"Is that IT? They told me you were the next big thing."`,
+      cold:`"You are not going to win this. I want you to know that now, while it still hurts."`,
+      warm:`"Stay down, kid. I do not want to keep doing this to you."`,
+      unhinged:`"I can do this ALL NIGHT. I have nowhere to BE."`,
+      pro:`"Your left side is dropping. I am going to keep going there until you fix it."`,
+      bitter:`"They will still put you on the poster after this. That is what gets me."`,
+    }),
+    opts:(ch)=>[
+      { name:'Spit back at them', desc:'Answer the trash talk. The crowd wants it.', p:0.72, eff:{mom:+16, q:+4, heat:+10} },
+      { name:'Say nothing. Get up.', desc:'No words. Just refuse to stay down.', p:0.85, eff:{mom:+10, q:+6, react:true} },
+      { name:'Laugh at them', desc:'Risky. Infuriating. Great television if it lands.', p:0.55, eff:{mom:+22, q:+8, heat:+16} },
+    ]},
+  { id:'mid_respect', when:(ms)=>ms.quality>=58 && ms.beat>=8,
+    line:(ch)=>voiced(ch,{
+      brash:`Between exchanges, quietly, so only you hear it: "...Okay. You are actually good. Do not tell anyone I said that."`,
+      cold:`They hold the lock-up a half second too long. "Do not embarrass us. Take it home properly."`,
+      warm:`"You alright? Genuinely." A beat. "Good. Because I am not going easy now."`,
+      unhinged:`"THIS is what I am TALKING about! Let us hurt each other for these people!"`,
+      pro:`"Two more near-falls and then we go home. On your call. Yes?"`,
+      bitter:`"Enjoy this. They do not give you many of these."`,
+    }),
+    opts:(ch)=>[
+      { name:'"Take it home."', desc:'Agree. Work the finish together properly.', p:0.88, eff:{q:+12, respect:+14} },
+      { name:'"We are not done yet."', desc:'Push for more. More risk, more match.', p:0.62, eff:{q:+16, mom:+8, cond:-4} },
+      { name:'Go into business for yourself', desc:'Take the moment for yourself. They will remember.', p:0.50, eff:{q:-6, mom:+24, heat:+26, standing:-4} },
+    ]},
+  { id:'mid_hostile', when:(ms)=>true,
+    line:(ch)=>voiced(ch,{
+      brash:`"Everybody out there knows I am carrying you right now."`,
+      cold:`"I have watched every match you have ever had. There is nothing here I have not seen."`,
+      warm:`"I hate that it is you. I do. But I am going to beat you."`,
+      unhinged:`"Do you ever wonder what the ceiling looks like from a stretcher?"`,
+      pro:`"Tighten up. You are telegraphing everything."`,
+      bitter:`"Ten years I waited for a spot like this. You got it in one."`,
+    }),
+    opts:(ch)=>[
+      { name:'Answer with a receipt', desc:'Hit them harder than the spot called for.', p:0.66, eff:{mom:+14, heat:+20, q:+3, cond:-3} },
+      { name:'"Then beat me."', desc:'Cold, quiet, straight back at them.', p:0.80, eff:{mom:+10, q:+8, heat:+8, react:true} },
+      { name:'Break character and grin', desc:'Let them see you enjoying it. Disarming.', p:0.74, eff:{q:+10, respect:+10, react:true} },
+    ]},
+];
+async function midMatchExchange(){
+  if(MS._exchanged || MS.ended) return;
+  const o=MS.o; if(!o || o.stip==='rumble') return;
+  const ch = charById(o.oppId); if(!ch) return;
+  MS._exchanged = true;
+  const pool = MID_EXCHANGES.filter(e=>{ try{ return e.when(MS); }catch(_){ return false; } });
+  const ex = pool.length ? pool[Math.floor(rnd()*pool.length)] : MID_EXCHANGES[MID_EXCHANGES.length-1];
+  // Relationship colours the framing above the line.
+  const tone = relTone(ch.id);
+  const frame = tone==='hostile'||tone==='betrayed' ? 'THEY HAVE SOMETHING TO SAY'
+              : tone==='ally' ? 'YOUR FRIEND, ACROSS THE RING'
+              : tone==='friendly' ? 'A WORD BETWEEN PROFESSIONALS'
+              : 'IN THE CLINCH';
+  let line=''; try{ line = ex.line(ch); }catch(_){ line=`"${ch.name} says something you do not catch."`; }
+  const opts = ex.opts(ch);
+  fLog(`<span class="say"><b>${ch.name}</b>: ${line}</span>`);
+  const pick = await decide(frame, line, opts);
+  if(!pick) return;
+  const landed = rnd() < (pick.p||0.7);
+  const e = pick.eff||{};
+  if(landed){
+    if(e.mom)  { MS.mom = clamp(MS.mom + e.mom, -100, 100); setMom(); }
+    if(e.q)    MS.quality = clamp(MS.quality + e.q, 0, 100);
+    if(e.cond) G.car.cond = clamp((G.car.cond||100) + e.cond, 0, 100);
+    if(e.heat) { const R=rel(ch.id); R.heat=clamp(R.heat+e.heat,0,100); }
+    if(e.respect){ const R=rel(ch.id); R.respect=clamp(R.respect+e.respect,0,100); }
+    if(e.standing) G.car.standing = clamp((G.car.standing||50)+e.standing);
+    if(e.react) G.car.reaction = clamp((G.car.reaction==null?G.car.pop:G.car.reaction)+2, 0, 100);
+    fLog(`<span class="good">It lands. The crowd heard every word of that.</span>`);
+    sfx('crowdRise');
+  } else {
+    MS.quality = clamp(MS.quality - 4, 0, 100);
+    MS.mom = clamp(MS.mom - 8, -100, 100); setMom();
+    fLog(`<span class="bad">It does not come off. The moment gets away from you.</span>`);
+  }
+}
+
 async function startFight(o){
   // rumble runs its own compact eliminations loop, no shine/heat/stretch cycle
   if(o && o.stip==='rumble'){ return runRumble(o); }
@@ -7362,6 +7449,13 @@ async function runFight(){
     if(!MS.ended && ph.id==='stretch' && !MS.finishTried && MS.stretch>=2){ await finishDecision(); }
     else if(!MS.ended && ph.id==='heat' && MS.phaseBeat===2 && MS.decisions<3){ await comebackDecision(); }
     else if(!MS.ended && ph.id==='shine' && MS.phaseBeat===2){ await midDecision(); }
+    // Wrestlers talk to each other in there. Once a match, late in the heat
+    // or early in the stretch, the opponent says something and you answer.
+    if(!MS.ended && !MS._exchanged && !MS.tag
+       && ((ph.id==='heat' && MS.phaseBeat===3) || (ph.id==='stretch' && MS.stretch===1))
+       && rnd()<0.55){
+      await midMatchExchange();
+    }
 
     // ---- advance the story ----
     if(!MS.ended && MS.phaseBeat>=ph.beats && MS.phase<PHASES.length-1){ MS.phase++; MS.phaseBeat=0; }
@@ -8838,7 +8932,17 @@ function playPressConference(p){
       <div class="scene-opt" data-i="${i}"><div class="scene-opt-t">${o.t}</div></div>`).join('')}</div>
     <div class="scene-walk"><button id="sceneWalkPast">Refuse the interview →</button></div>`;
   back.classList.add('open');
-  const dismiss = () => { closeScene(); };
+  // After the press conference, the quiet scene: the empty building, the
+  // belt on your knees, and whether you have anybody to call.
+  const dismiss = () => {
+    closeScene();
+    setTimeout(()=>{
+      try{
+        const sc = SCENES.find(s=>s.id==='title_night');
+        if(sc && !G.car._titleNightDone){ G.car._titleNightDone=true; playScene(sc, ()=>{}); }
+      }catch(_){}
+    }, 500);
+  };
   setTimeout(()=>{
     const wp = document.getElementById('sceneWalkPast'); if(wp) wp.onclick = dismiss;
     document.querySelectorAll('#sceneBody .scene-opt').forEach(el=>{
@@ -12157,6 +12261,14 @@ function signDeal(i){
     pushLog(`You re-sign with <b>${pr.name}</b> at ${money(o.weekly)}/week.`);
   }
   save(); go('career'); toast('Deal signed');
+  // Signing day is a scene, not a receipt. Fires after the moment card so
+  // the two do not fight for the screen.
+  setTimeout(()=>{
+    try{
+      const sc = SCENES.find(s=>s.id==='signing_day');
+      if(sc && !segmentsPlayedThisWeek()) playScene(sc, ()=>{});
+    }catch(_){}
+  }, 1400);
 }
 function renegotiate(){
   const c=G.car, d=c.deal;
@@ -12723,10 +12835,66 @@ function backstageInteract(charId, verb){
    Effects accumulate across every beat, so a three-beat scene
    pays out everything you picked along the way.
    ============================================================ */
+/* ---- VOICES ----
+   The same scenario should not read identically out of every mouth. Each
+   wrestler resolves to a voice archetype, derived from the traits and
+   alignment already on their character record so no new data is needed
+   and every roster (including generated rookies) gets one. Scene lines
+   call voiced() to pick the phrasing that suits whoever got cast. */
+const VOICE_BY_TRAIT = {
+  loudmouth:'brash',  arrogant:'brash',   cocky:'brash',    showman:'brash',
+  beloved:'warm',     gentle:'warm',      kind:'warm',      loyal:'warm',
+  chaotic:'unhinged', deranged:'unhinged',wild:'unhinged',  reckless:'unhinged',
+  stoic:'cold',       silent:'cold',      calculating:'cold', ruthless:'cold',
+  veteran:'pro',      technical:'pro',    disciplined:'pro', workhorse:'pro',
+  jaded:'bitter',     resentful:'bitter', overlooked:'bitter',
+};
+function voiceOf(ch){
+  if(!ch) return 'pro';
+  if(ch._voice) return ch._voice;
+  let v=null;
+  (ch.traits||[]).some(t=>{ const m=VOICE_BY_TRAIT[String(t).toLowerCase()]; if(m){ v=m; return true; } return false; });
+  if(!v){
+    // Deterministic fallback from id + alignment so it never shifts.
+    const pool = ch.align==='heel' ? ['brash','cold','bitter']
+               : ch.align==='face' ? ['warm','pro','brash']
+               : ['cold','pro','unhinged'];
+    let h=2166136261>>>0; const s=String(ch.id||ch.name||'x');
+    for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); }
+    v = pool[(h>>>0)%pool.length];
+  }
+  ch._voice=v; return v;
+}
+const VOICE_LABEL = {brash:'Loud',warm:'Warm',cold:'Cold',unhinged:'Unhinged',pro:'Professional',bitter:'Bitter'};
+/* Pick the phrasing for whoever is speaking. Falls back to `any`. */
+function voiced(ch, map){
+  const v = voiceOf(ch);
+  return map[v] || map.any || Object.values(map)[0] || '';
+}
+/* ---- RELATIONSHIP TONE ----
+   An ally and an enemy do not open the same conversation the same way.
+   toned() lets one scene carry several relationships worth of dialogue. */
+function relTone(id){
+  if(!id) return 'neutral';
+  const R = rel(id);
+  if(allyOf(id)) return 'ally';
+  if(R.betrayed || R.betrayedMe) return 'betrayed';
+  if(R.heat>=55) return 'hostile';
+  if(R.heat>=30) return 'tense';
+  if(R.respect>=55) return 'friendly';
+  return 'neutral';
+}
+function toned(id, map){
+  const t = relTone(id);
+  return map[t] || map.any || map.neutral || Object.values(map)[0] || '';
+}
 function sceneCtx(){
   const c=G.car, w=G.w, promo=myPromo();
   return { c, w, promo, booker:bookerFor(promo.id),
-           me:w.name, tier:workTier(), a:null, b:null };
+           me:w.name, tier:workTier(), a:null, b:null,
+           // helpers scenes can call inline
+           v:(ch,map)=>voiced(ch,map),
+           t:(id,map)=>toned(id,map) };
 }
 /* Cast helpers scenes use to find people worth talking to. */
 function castRival(){ const s=story(); return s?charById(s.charId):(G.car.rivalId?charById(G.car.rivalId):null); }
@@ -13077,6 +13245,133 @@ const SCENES = [
         opts:[
           { t:'"I\'m honoured."', eff:{respectA:+12, gimHeat:+4}, note:'There is a small snake somewhere with your name. Immortality of a kind.' },
           { t:'"Snakes cannot remember."', eff:{heatA:+10, gimHeat:+3}, note:'"She REMEMBERS."' },
+        ]},
+    }},
+
+  /* ---------- RELATIONSHIP-AWARE: one scenario, six openings ---------- */
+  { id:'rel_hallway', tag:'THE HALLWAY', trig:'any', weight:1.5,
+    when:x=>houseRoster(x.promo.id).length>1,
+    cast:x=>({a:castAnyone()}),
+    beats:{
+      start:{ who:'a', line:x=>toned(x.a.id,{
+          ally:      `${x.a.name} falls into step beside you like it is the most natural thing in the world. "Walk with me a minute. I want to run something past you."`,
+          friendly:  `${x.a.name} slows down so you catch up. "Hey. You got a second? Nothing bad."`,
+          neutral:   voiced(x.a,{ brash:`${x.a.name} blocks the hallway, not entirely by accident. "You. I have been meaning to get a look at you up close."`,
+                                  warm:`${x.a.name} holds a door you were not going through. "After you. Sorry. That was weird."`,
+                                  cold:`${x.a.name} is standing in the corridor doing nothing at all, and watches you the entire way past.`,
+                                  unhinged:`${x.a.name} is sitting on the floor of the corridor eating an orange. "Sit down. I am having a WONDERFUL day."`,
+                                  pro:`${x.a.name} nods at you the way professionals do. "Good match last week. The spot in the corner. Clean."`,
+                                  bitter:`${x.a.name} watches you walk the whole hallway before speaking. "Must be nice."` }),
+          tense:     `${x.a.name} does not move out of the way, and you both know it is deliberate.`,
+          hostile:   voiced(x.a,{ brash:`${x.a.name} sees you and laughs, loud, so everybody in the corridor hears it. "Oh, THIS guy."`,
+                                  cold:`${x.a.name} stops dead in the corridor and stares at you without blinking or speaking.`,
+                                  unhinged:`${x.a.name} starts humming your entrance theme. Wrong. On purpose. Getting louder.`,
+                                  any:`${x.a.name} steps directly into your path. "We are going to have a problem, you and me."` }),
+          betrayed:  `${x.a.name} sees you, and everything in their face closes. "Do not. Whatever it is. Do not."`,
+        }),
+        opts:x=>{
+          const tone = relTone(x.a.id);
+          if(tone==='ally'||tone==='friendly') return [
+            { t:'"Go on then."', eff:{respectA:+8}, goto:'friendly_ask' },
+            { t:'"Can it wait? Head is somewhere else."', eff:{respectA:-4}, note:'They said of course. They looked a bit deflated.' },
+          ];
+          if(tone==='hostile'||tone==='betrayed') return [
+            { t:'Keep walking.', eff:{heatA:+6, standing:+2}, note:'You gave them nothing. Sometimes that is the entire move.' },
+            { t:'"Say it properly or get out of my way."', eff:{heatA:+16, gimHeat:+5}, goto:'confront' },
+            { t:'"You want to do this here?"', eff:{heatA:+22, gimHeat:+7, standing:-3}, goto:'confront' },
+          ];
+          return [
+            { t:'"Something I can help you with?"', eff:{respectA:+6}, goto:'neutral_open' },
+            { t:'Nod and keep moving.', eff:{}, note:'Two professionals passing in a corridor. That is most of this job.' },
+            { t:'"You are in my way."', eff:{heatA:+14, gimHeat:+3}, goto:'confront' },
+          ];
+        }},
+      friendly_ask:{ who:'a', line:x=>voiced(x.a,{
+          brash:`"I want us on the same card. Not against each other, WITH each other. Think about how loud that would be."`,
+          warm:`"I have been struggling, honestly. And you always look like you know what you are doing. How do you do it?"`,
+          cold:`"There is a spot opening up. I am telling you before I tell the office. Do what you like with that."`,
+          unhinged:`"I had a dream you turned on me and it was AMAZING and I have not stopped thinking about it. Would you consider it?"`,
+          pro:`"Your finish is landing about a beat late. Nobody else will tell you. I would want to be told."`,
+          bitter:`"They are going to push you. Not me. I am not angry about it, I just wanted to say it out loud to somebody."`,
+        }),
+        opts:[
+          { t:'Take it seriously.', eff:{respectA:+16, standing:+2}, note:'You listened properly, and they noticed that you did.' },
+          { t:'Make a joke of it.', eff:{respectA:-4, gimHeat:+5}, note:'They laughed. It did not quite reach their eyes.' },
+          { t:'"Then let\'s do something about it."', eff:{respectA:+20, loyaltyA:+8, gimHeat:+3}, note:'Whatever it was, it is now a thing the two of you are doing together.' },
+        ]},
+      neutral_open:{ who:'a', line:x=>voiced(x.a,{
+          brash:`"Yeah. Stay out of my spot on the card." A beat. "That was mostly a joke."`,
+          warm:`"No. Sorry. I just wanted to say I think you are good. That is all. That is the whole thing."`,
+          cold:`"No." They keep looking at you. "I am deciding something."`,
+          unhinged:`"Do you ever think about how the ropes are just ROPES? We are all agreeing about the ropes."`,
+          pro:`"Only that you are working too tight on the arm. You will hurt somebody who cannot take it."`,
+          bitter:`"Nothing you can help with. You are doing fine. Everyone is doing fine."`,
+        }),
+        opts:[
+          { t:'"Noted. Thanks."', eff:{respectA:+10}, note:'Short, straight, and it landed.' },
+          { t:'"That was strange, and I liked it."', eff:{respectA:+8, gimHeat:+5}, note:'You have made an odd friend. Those are the best ones.' },
+          { t:'Say nothing and go.', eff:{heatA:+4}, note:'They watched you the whole way down the corridor.' },
+        ]},
+      confront:{ who:'a', line:x=>voiced(x.a,{
+          brash:`"THERE it is." They are delighted. This is exactly what they wanted. "Everybody, come and watch this."`,
+          warm:`They look genuinely hurt, which is somehow worse. "I did not want it to be like this with you."`,
+          cold:`They do not raise their voice at all. "Whenever you are ready. I am not going anywhere."`,
+          unhinged:`They grin so wide it is unsettling. "OH, we are DOING this? Today? Now? Here?"`,
+          pro:`"Not in a corridor. Book it properly and I will give you everything I have."`,
+          bitter:`"Of course. Of course it is you." They shake their head. "It is always somebody like you."`,
+        }),
+        opts:[
+          { t:'Back off. Not here.', eff:{standing:+4, heatA:+8}, note:'You both walked away. It is not finished, and you both know it.' },
+          { t:'Get in their face.', eff:{heatA:+26, gimHeat:+8, standing:-5}, note:'Somebody filmed it. Of course somebody filmed it.', mem:'corridorConfrontation' },
+          { t:'"Then book it."', eff:{heatA:+18, gimHeat:+6, standing:+2}, note:'You turned a hallway argument into a match. That is the professional version of losing your temper.' },
+        ]},
+    }},
+
+  /* ---------- MILESTONE SCENES: signing day, title night ---------- */
+  { id:'signing_day', tag:'SIGNING DAY', trig:'signing', weight:1,
+    when:x=>true,
+    beats:{
+      start:{ line:x=>`The contract is on the table with a pen on top of it. ${x.booker.name} slides it across and sits back. "Read it. Actually read it. Most people don't."`,
+        opts:[
+          { t:'Read every line.', eff:{standing:+4}, goto:'read' },
+          { t:'Sign it without looking.', eff:{standing:+2, gimHeat:+4}, goto:'blind' },
+          { t:'"What is not in here that should be?"', eff:{standing:+6}, goto:'sharp' },
+        ]},
+      read:{ line:x=>`It takes eleven minutes. ${x.booker.name} waits without once checking their phone, which tells you something about them.`,
+        opts:[
+          { t:'"This clause about creative. Explain it."', eff:{standing:+5}, note:'They explained it honestly, including the part that is bad for you. You start this deal knowing what you signed.' },
+          { t:'"It\'s fine. Where do I sign?"', eff:{standing:+2}, note:'You read it, and you signed it. That is all anybody can ask.' },
+        ]},
+      blind:{ line:x=>`They watch you sign, then take the pen back slowly. "You are going to get hurt one day doing that. Not tonight. But one day."`,
+        opts:[
+          { t:'"Then it will be my own fault."', eff:{gimHeat:+6, standing:+1}, note:'They almost respected it. Almost.', mem:'signedBlind' },
+          { t:'"...Can I read it now?"', eff:{standing:+2}, note:'They laughed and slid it back. You read it. It was fine.' },
+        ]},
+      sharp:{ line:x=>`${x.booker.name} looks up properly for the first time. "Now THAT is a good question. Nobody asks me that."`,
+        opts:[
+          { t:'"So what is missing?"', eff:{standing:+8}, note:'They told you. A downside guarantee you did not know to ask for. They wrote it in.', mem:'negotiatedWell' },
+          { t:'"I\'ll take that as a compliment and sign."', eff:{standing:+4, gimHeat:+3}, note:'You left something on the table, and gained something better.' },
+        ]},
+    }},
+
+  { id:'title_night', tag:'AFTER THE BELL', trig:'titlewin', weight:1,
+    when:x=>true,
+    beats:{
+      start:{ line:x=>`The building has emptied out. You are sitting on the apron with the belt across your knees and somebody has turned half the lights off already.`,
+        opts:[
+          { t:'Sit with it a while longer.', eff:{cond:+5, reactionBoost:true}, goto:'sit' },
+          { t:'Call somebody.', eff:{cond:+3}, goto:'call' },
+          { t:'Get changed and go. It is a Tuesday.', eff:{standing:+3, gimHeat:+4}, note:'You put it in a bag like it was a pair of boots. Somebody saw you do that, and it became part of the legend.' },
+        ]},
+      sit:{ line:x=>`A cleaner works around you without saying anything for a long time. Eventually: "You the one that won it?"`,
+        opts:[
+          { t:'"Yeah."', eff:{reactionBoost:true, cond:+3}, note:'"Good for you." They kept sweeping. It is the best review you will ever get.' },
+          { t:'"I think so. It has not landed yet."', eff:{cond:+5, gimHeat:+3}, note:'"It will at about four in the morning." They were right.' },
+        ]},
+      call:{ line:x=>`It rings four times. You almost hang up. Then somebody picks up, sleepy, and says your name like a question.`,
+        opts:[
+          { t:'"I did it."', eff:{cond:+8, reactionBoost:true}, note:'You did not say what. They knew. That is the whole point of having somebody to call.', mem:'madeTheCall' },
+          { t:'"Sorry. Wrong number."', eff:{cond:-2, gimHeat:+5}, note:'You hung up and sat in the dark with a championship. Both things are true at once.' },
         ]},
     }},
 
