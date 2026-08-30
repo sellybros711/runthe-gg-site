@@ -585,6 +585,19 @@ def headwear(cv, spec):
         cv.sphere(CX, HEAD_CY - 2.0, HEAD_RX * 0.98, HEAD_RY * 0.92, c,
                   spec=False, ymax=8)
         cv.rect(CX - 9, 8, CX + 9, 9, Ramp(shade(c.base, -0.10)), l=0.50)
+    elif hw == 'deerstalker':
+        # The bill goes front AND back, which from the front reads as one
+        # wide flat brim, and the crown is two lobes with a seam between.
+        # A dome plus a narrow brim is a fedora, which is Watson's hat.
+        crown(0.97, 0.88, -2.4)
+        cv.rect(CX - 11, HEAD_CY - 2, CX + 11, HEAD_CY - 1, c, l=0.36)
+        seam = shade(c.base, -0.30)
+        for y in range(3, int(HEAD_CY) - 2):
+            cv.dot(CX, y, seam)
+        # tweed check, which is what stops the crown reading as a helmet
+        for gy in range(4, int(HEAD_CY) - 2, 3):
+            for gx in range(-7, 8, 3):
+                cv.dot(CX + gx, gy, seam)
     elif hw == 'brim':                      # fedora / detective
         crown(0.92, 0.92, -1.6)
         cv.rect(CX - 11, HEAD_CY - 4, CX + 11, HEAD_CY - 3, c, l=0.42)
@@ -1280,11 +1293,47 @@ def sig_medusa(cv, spec, pose, back):
 
 
 def sig_pooh(cv, spec, pose, back):
+    gold = spec.get('skin', '#f4c25a')
+    body = Ramp(gold)
+    # EARS on the upper SIDES of the skull, small and round. Sat on top
+    # they are Mickey's, and a bear with mouse ears is nobody.
+    for side in (-1, 1):
+        cv.sphere(CX + side * 7.6, 8.2, 3.4, 3.2, body, spec=False)
+        if not back:
+            cv.sphere(CX + side * 7.6, 8.4, 1.8, 1.7,
+                      Ramp(shade(gold, -0.22)), spec=False)
     if back:
         return
     # the red shirt is a CROP TOP: the round belly pokes out under it
-    belly = Ramp(spec.get('skin', '#f4c25a'))
-    cv.sphere(CX, 33.0, 5.6, 3.4, belly, spec=False)
+    cv.sphere(CX, 33.0, 5.6, 3.4, body, spec=False)
+    # THE MUZZLE, which is the whole face. Pooh is a pale snout with a
+    # black bead on the end of it and two dots above; drawn with the
+    # roster's standard googly pair and a grin he was a yellow ball.
+    cv.sphere(CX, 17.4, 5.6, 3.8, Ramp(shade(gold, 0.42)), spec=False)
+    ink = (26, 20, 18)
+    # the nose is a rounded WEDGE on the top of the snout, not a square
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 14, ink)
+        cv.dot(CX + dx, 15, ink)
+    for dx in (-2, 2):
+        cv.dot(CX + dx, 14, ink)
+    cv.dot(CX, 16, ink)
+    cv.dot(CX - 1, 14, (96, 84, 78))        # one highlight, so it reads wet
+    # eyes: two beads set CLOSE, just above and outside the nose. Wide
+    # apart on a round head they read as a teddy bear rather than as him.
+    for side in (-1, 1):
+        x = int(CX + side * 3)
+        for dy in (12, 13):
+            cv.dot(x, dy, ink)
+    # the philtrum line and the smile under it, which is how every Pooh
+    # since Shepard has been drawn: nose, stroke down, small curve
+    md = shade(gold, -0.55)
+    cv.dot(CX, 17, md)
+    cv.dot(CX, 18, md)
+    for dx in (-1, 1):
+        cv.dot(CX + dx, 19, md)
+    for dx in (-2, 2):
+        cv.dot(CX + dx, 18, md)
 
 
 def sig_tom(cv, spec, pose, back):
@@ -1327,17 +1376,70 @@ def sig_flash(cv, spec, pose, back):
     cv.dot(CX, 25, g); cv.dot(CX - 1, 26, g)
 
 
+def sig_hyde(cv, spec, pose, back):
+    """Hyde is not Jekyll in a bad mood. He is SHORTER, WIDER and lower to
+    the ground, and every drawing of him since 1886 says so with the
+    shoulders. Drawn on the human frame with wild hair he was a tidy
+    gentleman having a rough evening."""
+    coat = Ramp(spec.get('shirt', '#2f2418'))
+    lo, ro = run_off(pose)
+    # the hunch: two mounds of shoulder standing PROUD of the neck, so
+    # the head sits down between them instead of on top of a body
+    for side, off in ((-1, lo), (1, ro)):
+        cv.sphere(CX + side * 7.4, 23.5 + off * 0.5, 4.6, 3.4, coat, spec=False)
+    cv.rect(CX - 5, 23, CX + 5, 24, Ramp(shade(coat.base, -0.28)), l=0.45)
+    if back:
+        return
+    skin = Ramp(spec.get('skin', '#c8a878'))
+    # A hulk's face runs rows 10 to 20 and no further: the body sphere
+    # takes over at 20 and the shoulders above cover the rest. The snarl
+    # went in at 18 to 21 and came out on his collarbone.
+    hollow = shade(skin.base, -0.30)
+    for dx in (-8, -7, 7, 8):
+        cv.dot(CX + dx, 11, hollow)
+        cv.dot(CX + dx, 12, hollow)
+    # THE SNARL: uneven square teeth, which is the whole difference
+    # between a monster and a man smiling
+    lip = (52, 26, 22)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 16, lip)
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 19, lip)
+    for dx in range(-4, 5):
+        cv.dot(CX + dx, 17, (34, 18, 16))
+        cv.dot(CX + dx, 18, (34, 18, 16))
+    for dx in (-4, -2, 0, 2, 4):
+        cv.dot(CX + dx, 17, (238, 232, 216))
+    for dx in (-3, 1, 3):
+        cv.dot(CX + dx, 18, (214, 206, 188))
+    for dx in (-5, 5):                      # the two that stick out
+        cv.dot(CX + dx, 17, (238, 232, 216))
+        cv.dot(CX + dx, 18, (214, 206, 188))
+    # the coat is TORN: a ragged hem rather than a hem
+    tear = shade(coat.base, -0.45)
+    for dx in (-7, -4, -1, 2, 5):
+        cv.dot(CX + dx, 32, tear)
+        cv.dot(CX + dx + 1, 33, tear)
+
+
 def sig_sherlock(cv, spec, pose, back):
     hat = Ramp(spec.get('hatcolor', '#8b6a3a'))
     # The deerstalker's EAR FLAPS, the thing that makes the silhouette
     # his. Without them it is any old fedora.
     for side in (-1, 1):
-        cv.sphere(CX + side * 9.5, 8.5, 2.6, 3.4, hat, spec=False)
-    # the Inverness cape over the shoulders
+        cv.sphere(CX + side * 10.0, 7.6, 2.8, 3.6, hat, spec=False)
+        cv.dot(CX + side * 10, 4, shade(hat.base, -0.30))
+    # the Inverness cape over the shoulders, with a standing collar
     cape = Ramp(shade(spec.get('shirt', '#8b6a3a'), -0.22))
-    cv.taper(22, 27, 19, 22, cape)
+    cv.taper(22, 28, 19, 23, cape)
+    cv.rect(CX - 6, 21, CX + 6, 22, Ramp(shade(cape.base, -0.24)), l=0.5)
     if back:
         return
+    # the calabash pipe, curved down out of the corner of his mouth
+    wood = (122, 82, 40)
+    for dx, dy in ((-5, 19), (-6, 20), (-7, 21), (-7, 22)):
+        cv.dot(CX + dx, dy, wood)
+    cv.sphere(CX - 8.5, 23.5, 2.4, 2.0, Ramp('#8a5a28'), spec=False)
     # the magnifying glass, held UP beside his face where he would use it
     rim = (176, 142, 60)
     gx, gy = CX + 11, 19 + run_off(pose)[1]
@@ -1845,23 +1947,36 @@ def sig_felix(cv, spec, pose, back):
 
 
 def sig_jack(cv, spec, pose, back):
-    # THE BEANSTALK, climbing up past his shoulder. Without it he is a
-    # boy in a green shirt, indistinguishable from every other boy on
-    # the roster.
+    # THE BEANSTALK, climbing past his shoulder. A line of single dots
+    # was a piece of string hung beside a boy. It is a STALK: three wide,
+    # twisting the whole height of the frame, with tendrils curling off
+    # it and leaves big enough to read at this size.
     vine = Ramp('#2f7a34')
-    for i in range(16):
-        u = i / 15.0
-        x = CX + 10 + math.sin(u * 3.4) * 1.6
-        y = 34 - i * 2.1
-        cv.dot(x, y, vine.mid if i % 2 else vine.lit)
-        cv.dot(x, y - 1, vine.mid)
+    dk = shade(vine.base, -0.34)
+    xs = []
+    for y in range(0, 39):
+        x = CX + 11.0 + math.sin(y / 38.0 * 6.0 + 0.7) * 2.0
+        xs.append(x)
+        cv.cyl(x - 1.5, y, x + 1.5, y, vine)
+        if y % 5 == 0:
+            cv.dot(x - 1, y, dk)      # the coil seam, so it reads twisted
+            cv.dot(x + 1, y, dk)
+    # tendrils: a curl of three off the stalk, alternating sides
+    for y, side in ((6, -1), (17, 1), (29, -1), (36, 1)):
+        x = xs[y]
+        cv.dot(x + side * 2, y, vine.lit)
+        cv.dot(x + side * 3, y - 1, vine.mid)
+        cv.dot(x + side * 3, y - 2, vine.lit)
     leaf = Ramp('#3f9a44')
-    for lx, ly, w in ((12.5, 27, 2.4), (9.5, 19, 2.8), (12.5, 11, 2.4), (10, 4, 2.0)):
-        cv.sphere(CX + lx, ly, w, w * 0.62, leaf, spec=False)
+    for y, side in ((3, -1), (12, 1), (21, -1), (31, 1), (37, -1)):
+        x = xs[y]
+        cv.sphere(x + side * 3.4, y, 3.2, 2.0, leaf, spec=False)
+        cv.dot(x + side * 3, y, shade(leaf.base, -0.28))
     if back:
         return
-    cv.dot(CX + 9, 25, (232, 214, 140))     # a bean
-    cv.dot(CX + 10, 25, (232, 214, 140))
+    for dx in (8, 9):                       # a couple of beans in hand
+        cv.dot(CX + dx, 25, (232, 214, 140))
+        cv.dot(CX + dx, 26, (206, 188, 116))
 
 
 def sig_robin(cv, spec, pose, back):
@@ -2017,6 +2132,7 @@ SIGNATURES = {
     'huck': {'post': sig_huck},
     'flash': {'post': sig_flash},
     'sherlock': {'post': sig_sherlock},
+    'hyde': {'post': sig_hyde},
     'tracy': {'post': sig_tracy},
     'alice': {'post': sig_alice},
     'dorothy': {'post': sig_dorothy},
@@ -2149,7 +2265,7 @@ SPECS = {
                    eyes='goggles', eyecolor='#15151f', mouth='none',
                    extra=[('bandage', '#eaeaea')]),
  'sherlock': dict(arch='human', skin='#efc9a0', shirt='#8b6a3a', pants='#241812',
-                  hat='brim', hatcolor='#8b6a3a', hattrim='#5a4020',
+                  hat='deerstalker', hatcolor='#8b6a3a', hattrim='#5a4020',
                   hair='#3a1e08', hairstyle='bald', eyes='normal', mouth='line',
                   extra=[('pipe',)]),
  'tracy': dict(arch='human', skin='#efc9a0', shirt='#f4c25a', pants='#0e1a3a',
@@ -2164,16 +2280,17 @@ SPECS = {
  'lupin': dict(arch='human', skin='#efc9a0', shirt='#0f0f16', pants='#0f0f16',
                hat='top', hatcolor='#141018', hattrim='#8a1a1a',
                eyes='normal', mouth='line', extra=[('monocle',)]),
- 'hyde': dict(arch='human', skin='#c8a878', shirt='#3a2818', pants='#241812',
-              hair='#141018', hairstyle='wild', eyes='angry', eyecolor='#c94b1a',
-              mouth='grin'),
+ 'hyde': dict(arch='hulk', skin='#c8a878', muzzle='#c8a878',
+              shirt='#2f2418', pants='#241812', hand='#bda070',
+              hair='#141018', hairstyle='wild', eyes='angry',
+              eyecolor='#c94b1a', mouth='none'),
  'scarecrow': dict(arch='human', skin='#eecc78', shirt='#7a3812', pants='#5a3010',
                    hat='floppy', hatcolor='#c9a256', hattrim='#8b6a3a',
                    eyes='cartoon', eyecolor='#3a2410', mouth='none'),
  'lion': dict(arch='hulk', skin='#eab84a', muzzle='#ead0a0', chest='#eab84a',
               eyes='normal', eyespread=3, mouth='line'),
- 'pooh': dict(arch='round', skin='#f4c25a', shirt='#d24949', eyes='cartoon',
-              eyecolor='#141018', mouth='grin', extra=[('roundears', '#f4c25a')]),
+ 'pooh': dict(arch='round', skin='#f4c25a', shirt='#d24949', eyes='hidden',
+              eyecolor='#141018', mouth='none'),
  'robin': dict(arch='human', skin='#efc9a0', shirt='#3f7a3a', pants='#4a2d18',
                hat='cap', hatcolor='#3f7a3a', hair='#a45b1a', hairstyle='bald',
                eyes='normal', mouth='grin', belt='#f4c25a'),
