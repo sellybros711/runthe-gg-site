@@ -750,9 +750,12 @@ window.GA_ID='G-L29P5MRWKE';
     .gtile:active{transform:translateY(2px);
       box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,0,0,.4), 0 6px 14px -12px rgba(0,0,0,.9);}
 
-    /* The crest sits the way it sits on the desktop card: the icon itself, a
-       thin accent edge, and the card's own colour showing through behind it.
-       No fill and no scanlines, because the colour is the tile now. */
+    /* The crest used to sit in the top-left corner, which is where reading
+       starts, so the name was the SECOND thing found on its own tile and the
+       tagline underneath was set nearly as loud as it. The crest is still a
+       logo, it just moved off the top of the tile and onto the side of it, so
+       the name is what the eye meets at the top. The Arcade bar already worked
+       this way, which is why it was the one tile that never had the problem. */
     .gt-txt,.gt-scr{position:relative;z-index:1;}
     .gt-scr{display:grid;place-items:center;flex:0 0 auto;
       width:54px;height:54px;border-radius:9px;overflow:hidden;
@@ -761,6 +764,25 @@ window.GA_ID='G-L29P5MRWKE';
     .gt-crest{width:38px;height:38px;object-fit:contain;image-rendering:pixelated;
       filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));}
 
+    /* The app logo, kept as a logo, moved to the left of the words instead of
+       sitting above them. The tile becomes a two-column grid: icon and name on
+       the first row, tagline spanning both columns underneath, so the tagline
+       still gets the full width instead of being squeezed into a 92px gutter.
+       .gt-txt goes display:contents so its two children become grid items
+       directly, which is what lets the tagline span without touching markup. */
+    .gtile:not(.hero):not(.soonTile){
+      display:grid;grid-template-columns:46px minmax(0,1fr);
+      gap:9px 11px;align-items:center;}
+    .gtile:not(.hero):not(.soonTile) .gt-txt{display:contents;}
+    .gtile:not(.hero):not(.soonTile) .gt-scr{width:46px;height:46px;grid-column:1;}
+    .gtile:not(.hero):not(.soonTile) .gt-crest{width:34px;height:34px;}
+    .gtile:not(.hero):not(.soonTile) .gt-nm{grid-column:2;font-size:16px;}
+    /* Rows are not numbered. The qualifier exists on one tile out of four, and
+       auto-placement puts it on its own row there and skips the row entirely
+       everywhere else, which a fixed grid-row cannot do without a rule per case. */
+    .gtile:not(.hero):not(.soonTile) .gt-sub,
+    .gtile:not(.hero):not(.soonTile) .gt-tag{grid-column:1 / -1;margin-top:0;}
+
     .gt-txt{display:flex;flex-direction:column;gap:6px;min-width:0;}
     .gt-nm{font-family:'Russo One','Anton',Impact,sans-serif;font-weight:400;letter-spacing:.04em;
       font-size:15px;line-height:1.16;color:var(--ink);text-transform:uppercase;}
@@ -768,12 +790,17 @@ window.GA_ID='G-L29P5MRWKE';
     /* the college edition needs its qualifier, but not at the size of a name */
     .gt-nm i{display:block;font-style:normal;font-size:11px;letter-spacing:.06em;
       color:var(--mut);margin-top:3px;}
+    .gt-sub{font-family:'Russo One','Anton',Impact,sans-serif;font-size:11px;letter-spacing:.06em;
+      text-transform:uppercase;color:var(--mut);margin-top:-2px;}
     /* A tagline, not a spec sheet. No accent bar: the colour lives in the tile
        itself, and a rule down the middle of one this small only chopped it in
        two. Set at 700 rather than 800 and given real leading, because bold
        small text packed tight is the other half of what looked cheap. */
     .gt-tag{font-size:11.5px;font-weight:600;line-height:1.5;color:var(--mut);
       margin-top:auto;letter-spacing:.005em;}
+    /* one step lighter on the grid tiles, so the name and its caption are a
+       real step apart rather than half a one */
+    .gtile:not(.hero):not(.soonTile) .gt-tag{font-weight:500;}
     /* the badge belongs to the tile, so it sits inside it and not in the gutter */
     .gt-new{position:absolute;top:9px;right:9px;z-index:2;font-size:9px;letter-spacing:.08em;
       text-transform:uppercase;font-weight:900;}
@@ -934,7 +961,8 @@ window.GA_ID='G-L29P5MRWKE';
         <a class="gtile cfb" href="/cfb/">
           <span class="gt-scr"><img class="gt-crest" src="/cfb/icon-192.png" alt="" width="76" height="76" loading="lazy" /></span>
           <span class="gt-txt">
-            <span class="gt-nm">Perfect <b>Season</b><i>College Football</i></span>
+            <span class="gt-nm">Perfect <b>Season</b></span>
+            <span class="gt-sub">College Football</span>
             <span class="gt-tag">Sign six stars, chase the national title.</span>
           </span>
         </a>
