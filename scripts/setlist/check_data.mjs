@@ -681,8 +681,19 @@ check(/class="segout"/.test(game) && /class="segmark"/.test(game),
   check(/S\.missed\.took\.subtotal/.test(ga), 'the card shows what the song you took scored');
   check(/S\.missed\.score\.subtotal/.test(ga), 'and what the one you left scored');
   check(/S\.missed\.instead\.song/.test(ga), 'naming the song it is measured against');
-  check(/class="ga-fine"/.test(ga) && /no longer than the one you took/.test(ga),
-    'and saying the clock was never what stopped you');
+  /* THE SWAP IS DRAWN, not described. 39 words compared two numbers that are
+     comparable by construction, which is the one case prose is worst at: same
+     show, same slot, same role, so they belong on one axis. Two bars on that
+     axis, and the running times beside them do the job the affordability
+     sentence used to: the one you left is visibly no longer than the one you
+     took, rather than being asserted to be. */
+  check(/class="ga-swap"/.test(ga), 'the two are drawn on one scale');
+  check((ga.match(/class="gs-bar"/g) || []).length === 2, 'one bar each');
+  check(/gs-miss/.test(ga) && /gs-took/.test(ga),
+    'the one you left and the one you took are told apart');
+  check((ga.match(/class="gs-t"/g) || []).length === 2,
+    'and both running times are shown, so the swap is visibly affordable');
+  check(!/class="ga-fine"/.test(gameBare), 'the sentence that asserted it is gone');
 }
 /* THE TWO MODULES CARRY A CACHE VERSION, and it has to be covered.
  *
@@ -761,10 +772,40 @@ check(/\.scoresheet\[open\] \.ss-open:after\{content:'Hide';?\}/.test(game),
    said they were a breakdown of the score at all. */
 check(/Where the \$\{r\.total\} came from/.test(game),
   'the four numbers say what they are a breakdown of');
-/* ALL FOUR, not "at least one". The first version of this passed with three of
-   the four captions deleted, which is exactly the state it exists to catch. */
-check((game.match(/class="bw"/g) || []).length === 4,
-  'and all four say what they reward');
+/* AND THEY ARE DRAWN AS A SUM. They were four tiles under the sentence "Four
+   things are scored, and they add up to your total", with a line of prose
+   under each saying what it rewarded: 37 words for a sum and four labels, and
+   still nothing showing the shape of the night. A stacked bar IS that
+   sentence, so the sentence is gone and the bar has to be real.
+   ALL FOUR, not "at least one". The caption version of this guard once passed
+   with three of the four deleted, which is the exact state it exists to catch,
+   so the parts are counted off the source rather than eyeballed. */
+{
+  const parts = (game.match(/\{ k: '[A-Za-z]+',\s+v: r\.[a-zA-Z]+,\s+c: 'var\(--[a-zA-Z]+\)' \}/g) || []);
+  check(parts.length === 4, `the breakdown has ${parts.length} parts`);
+  const totals = parts.map(x => (x.match(/v: r\.([a-zA-Z]+)/) || [])[1]).sort();
+  check(totals.join(',') === 'breadthTotal,flowTotal,songTotal,timeTotal',
+    'and they are the four the scoring actually produces', totals.join(','));
+  check(/class="stack"/.test(game), 'drawn as one stacked bar');
+  check(/flex:\$\{x\.v\}/.test(game),
+    'each segment sized by its own share, so the bar IS the sum');
+  /* .stk has a min-width so a small share stays visible, which drew a 3px
+     segment for a Flow of zero: points on the picture that were never scored.
+     The key row still reports the 0, which is the honest version. */
+  check(/parts\.filter\(x => x\.v > 0\)/.test(game),
+    'and a part worth nothing draws nothing');
+  check(/\.stk\{[^}]*min-width:\dpx/.test(game),
+    'while a part worth a little still shows');
+  check(/class="stkey"/.test(game) && /class="stk-p"/.test(game),
+    'with a key that names each part and its percentage');
+  /* gameBare, because the comment above the bar QUOTES the sentence it
+     replaced, and the file has caught itself with its own documentation
+     before. */
+  check(!/class="bw"/.test(gameBare) && !/Four things are scored/.test(gameBare),
+    'and the sentence that used to say all this is gone');
+  /* A bar is a picture, so it needs a text alternative. */
+  check(/aria-label="\$\{parts\.map/.test(game), 'and the bar reads out to a screen reader');
+}
 
 /* Two things that looked fine in the CSS and were wrong on the screen. */
 console.log('the header');
@@ -1320,8 +1361,23 @@ check(/<span class="sg-w">Their<\/span> \$\{\s*esc\(setLabel\(k\)\)\}/.test(game
   /* The interpolation is part of the anchor: rankCard reuses `.ceiling` for
      the leaderboard panel and comes first in the file, so `class="card
      ceiling` alone sliced the wrong card and the guard could not fail. */
-  const ceil = cdSlice('class="card ceiling${gap <= 0', 'ceil-fine');
-  check(!/\$\{pct\}%/.test(ceil), 'the card below does not repeat the figure');
+  const ceil = cdSlice('class="card ceiling${gap <= 0', '</div>`;');
+  /* NOT THE SAME SENTENCE TWICE. The figure itself may appear again, because
+     the ceiling bar labels its own axis with it and a comparison needs both
+     numbers on it; what must not come back is the scorebox's CLAIM restated
+     underneath, which is what made neither of them land. */
+  check(!/best show those nights had in them/.test(ceil),
+    'the card below does not restate the scorebox line');
+  /* AND THE BENCHMARK IS ON THE BAR. 29 words of fine print explained the
+     replay and ended with "picking at random gets about 77% of it", asking
+     the reader to compare that to their own percentage in their head. A tick
+     does the comparing. */
+  check(/class="ceil-mark"/.test(ceil) && /left:\$\{RANDOM_PCT\}%/.test(ceil),
+    'and marks what random play is worth');
+  check(/const RANDOM_PCT = \d+;/.test(gameBare), 'from one named constant');
+  /* gameBare for the same reason: the code comment beside the tick quotes the
+     fine print it replaced, word for word. */
+  check(!/Picking at\s+random gets about/.test(gameBare), 'rather than saying it in prose');
 }
 
 /* THE DRIFT GATE HAS TO COUNT LENGTH AS AN INPUT.
