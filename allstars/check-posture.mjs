@@ -173,6 +173,51 @@ if (!opponentsMatch) {
   });
 }
 
+/* ---------------------------------------------------------------- the press
+   Two things about the cutscene tables can only go wrong quietly.
+
+   A speaker key that is not in PRESS_CAST falls back to Dick Tracy, so a
+   typo does not throw: it just silently attributes somebody else's line to
+   the wrong reporter, forever.
+
+   A {slot} nobody fills is worse. It used to print as the literal text
+   {star} on screen, and now it is stripped, which means a new template
+   naming a slot that does not exist quietly loses half its sentence and
+   still reads as English. Both need catching here rather than in play. */
+{
+  const castBlock = page.match(/const PRESS_CAST = \{([\s\S]*?)\n\};/);
+  const pressBlock = page.match(/const PRESS = \{([\s\S]*?)\n\};/);
+  const cbBlock = page.match(/const PRESS_CALLBACK = \{([\s\S]*?)\n\};/);
+  if (!castBlock || !pressBlock) {
+    problems.push('the press tables (PRESS_CAST / PRESS) are missing or no longer '
+      + 'match the shape this check reads.');
+  } else {
+    const cast = new Set([...castBlock[1].matchAll(/^\s{2}(\w+):/gm)].map(m => m[1]));
+    const body = pressBlock[1] + (cbBlock ? cbBlock[1] : '');
+
+    const speakers = [...body.matchAll(/\[\s*"(\w+)"\s*,/g)].map(m => m[1]);
+    const whos = [...body.matchAll(/who:\s*['"](\w+)['"]/g)].map(m => m[1]);
+    const unknown = [...new Set([...speakers, ...whos])].filter(k => !cast.has(k));
+    if (unknown.length) {
+      problems.push(`press lines are attributed to speakers with no PRESS_CAST entry: `
+        + `${unknown.join(', ')}. They would all be delivered by whoever is first in the cast.`);
+    }
+
+    /* Every slot the templates use has to be one something actually sets:
+       pressCtx builds the common ones and the call sites add the rest. */
+    const known = new Set(['team','foe','park','rec','gameNo','lastTag',
+                           'you','them','margin','star','slot','ask']);
+    const slots = [...new Set([...body.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
+    const orphan = slots.filter(k => !known.has(k));
+    if (orphan.length) {
+      problems.push(`press templates use slots nothing fills: ${orphan.join(', ')}. `
+        + `They are stripped at render time, so the line still reads as a sentence `
+        + `with a piece missing. Add them to pressCtx or to this list.`);
+    }
+  }
+}
+
+
 if (problems.length) {
   console.error(`Run The All-Stars posture: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error('  ' + p);

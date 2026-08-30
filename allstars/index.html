@@ -303,6 +303,32 @@
     font-size:13px;box-shadow:var(--shadow-sm);}
   .banner b{color:var(--gold);}
 
+  /* The press room. A portrait, a name plate, and a line that types itself
+     out: the whole screen is one plaque so it reads as a cut AWAY from the
+     game rather than another panel on the same page. */
+  .press{max-width:760px;margin:0 auto;cursor:pointer;user-select:none;}
+  .press-stage{background:var(--panel);border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);}
+  .press-portrait{background:linear-gradient(180deg,#bfe4f7,#8fd0e8);
+    border-bottom:3px solid var(--line);display:flex;justify-content:center;
+    align-items:flex-end;overflow:hidden;}
+  .press-portrait canvas{display:block;image-rendering:pixelated;}
+  .press-box{padding:12px 16px 14px;position:relative;min-height:132px;}
+  .press-name{font-size:20px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;}
+  .press-outlet{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);
+    padding-bottom:8px;margin-bottom:10px;border-bottom:2px solid rgba(27,58,92,.25);}
+  .press-text{font-size:15px;line-height:1.65;color:var(--text);min-height:52px;}
+  .press-more{position:absolute;right:14px;bottom:10px;color:var(--gold);font-size:14px;
+    animation:pressblink 1s steps(2,start) infinite;}
+  @keyframes pressblink{0%,60%{opacity:1}61%,100%{opacity:.15}}
+  .press-choices{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+  .press-choices .btn{text-align:left;text-transform:none;letter-spacing:.04em;font-size:13px;}
+  .press-bar{display:flex;justify-content:flex-end;margin-top:12px;}
+  @media (max-width:600px){
+    .press-portrait canvas{max-width:100%;}
+    .press-name{font-size:16px;}
+    .press-text{font-size:14px;}
+  }
+
   .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   @media (max-width:640px){
     .row-2{grid-template-columns:1fr;}
@@ -1598,6 +1624,9 @@ const loadPrefs = () => {
 };
 const PREFS = loadPrefs();
 Sound.muted = !!PREFS.muted;
+/* Cutscenes default ON: they are the reason the season mode has a shape.
+   The toggle exists for a second playthrough, not for the first. */
+if (PREFS.cutscenes === undefined) PREFS.cutscenes = true;
 function savePrefs() {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
@@ -1606,6 +1635,7 @@ function savePrefs() {
       gameSpeed: State.gameSpeed,
       teamName: State.teamName,
       muted: Sound.muted,
+      cutscenes: PREFS.cutscenes !== false,
       progress: PROGRESS,
     }));
   } catch (e) {}
@@ -1713,6 +1743,7 @@ function render() {
   else if (s === 'bracket') renderBracket();
   else if (s === 'howto') renderHowTo();
   else if (s === 'cup') renderCup();
+  else if (s === 'cutscene') renderCutscene();
 }
 $('#btn-home').addEventListener('click', () => {
   if (State.game && State.game.live) {
@@ -1722,6 +1753,440 @@ $('#btn-home').addEventListener('click', () => {
   State.screen = 'menu';
   render();
 });
+
+
+/* ============================================================================
+   THE PRESS ROOM
+   Cutscenes between games: a talking head, a name, an outlet, and a line
+   that types itself out. Season and Cup only, because a one off exhibition
+   has no story to be part of and nobody wants a press conference before a
+   pick up game.
+
+   The cast is IN WORLD on purpose. The obvious way to build this is the
+   way the game that inspired it does: real broadcasters, real photographs,
+   invented quotes. That is putting words in the mouths of named living
+   people, and this whole roster exists to be public domain precisely so
+   nothing here rests on somebody else's name. So the pundits are our own,
+   drawn with the sprite engine that already exists, and half the joke is
+   that the beat writer covering the game also plays third base.
+   ============================================================================ */
+const PRESS_CAST = {
+  tracy:      { name:'Dick Tracy',     outlet:'City Desk Radio',      color:'#cf3229' },
+  sherlock:   { name:'Sherlock',       outlet:'The Evening Wire',     color:'#1566ae' },
+  ringmaster: { name:'The Ringmaster', outlet:'Center Ring Tonight',  color:'#b8541a' },
+  witch:      { name:'The Witch',      outlet:'Midnight Hex Radio',   color:'#1b8a4a' },
+  mrsclaus:   { name:'Mrs Claus',      outlet:'The Sunshine Desk',    color:'#c2185b' },
+  lupin:      { name:'Arsene Lupin',   outlet:'Le Scoop',             color:'#6b4296' },
+  tintin:     { name:'Tintin',         outlet:'Cub Desk',             color:'#c1601a' },
+  humpty:     { name:'Humpty Dumpty',  outlet:'Wall Street Wrap',     color:'#8a6a20' },
+  medusa:     { name:'Medusa',         outlet:'Stone Cold Sports',    color:'#0f6b39' },
+  krampus:    { name:'Krampus',        outlet:'The Villain Beat',     color:'#7a4a20' },
+};
+const PRESS_KEYS = Object.keys(PRESS_CAST);
+
+/* A portrait is the sprite's own head, blown up. The head is rows 1 to 25
+   of the fifty row sprite, so the panel scales to those and crops the rest;
+   drawing the whole figure in a bust frame gives you a full body the size
+   of a thumbnail, which is not a portrait. */
+function pressPortrait(key, w, h) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const scale = h / 24;
+  const sw = Math.max(8, Math.round(32 * scale));
+  const spr = heroSpriteCanvas(key, sw, 'idle');
+  ctx.drawImage(spr, Math.round(w / 2 - sw / 2), Math.round(-1.5 * scale));
+  return cv;
+}
+
+/* ---------------------------------------------------------------- content
+   Every line is a template. The slots are filled from what actually just
+   happened, which is the whole difference between a cutscene and a loading
+   screen: {foe} lost by {margin} and {star} did it is a line about YOUR
+   game, and the same sentence with the numbers taken out is filler.
+
+     {team} {foe} {you} {them} {margin} {star} {rec} {gameNo} {park}
+
+   Each pool mixes two registers deliberately. Half of these are things a
+   real radio host would say about a real ballgame. The other half are what
+   you get when the radio host is a witch and the third baseman is an egg. */
+const PRESS = {
+  mediaDay: [
+    ["tracy", "{team} report to camp today. Seven games, then the bracket. Nobody in this league has ever called that enough baseball."],
+    ["sherlock", "I have read their roster twice. I can tell you their weakness. I cannot tell you it politely."],
+    ["ringmaster", "LADIES AND GENTLEMEN. Nine of them. One diamond. I have not slept."],
+    ["mrsclaus", "They all look so tired already. I have made soup for the entire dugout."],
+    ["humpty", "I have been told I am fragile. I have been told this by a man who was recently a monkey."],
+    ["witch", "I read the entrails this morning. The entrails said seven and zero. The entrails have been wrong before."],
+    ["lupin", "A source inside the clubhouse tells me everything. The source is me. I was inside the clubhouse."],
+    ["medusa", "Everyone is picking them. Everyone is always picking someone. I have turned better teams to gravel."],
+    ["tintin", "My first assignment! I have brought a notebook, a pencil, and a spare pencil."],
+    ["krampus", "I keep a list. Every club that has ever been rude to me is on it. {team} are now on it, for reasons I will explain in August."],
+  ],
+  openerAsk: {
+    text: "So. Give me a headline for the season. Something I can print.",
+    who: "tracy",
+    choices: [
+      { label: "We win it all.",        tag:'brash',  reply:"Bold. I am printing it in the largest type I own." },
+      { label: "One game at a time.",   tag:'humble', reply:"That is the most boring true thing anyone has said to me all week." },
+      { label: "No comment.",           tag:'silent', reply:"Perfect. I will make something up and you will read it tomorrow." },
+    ],
+  },
+  pregame: {
+    first: [
+      ["tintin", "Opening day at {park}. I have never seen so many people who are technically fictional."],
+      ["tracy", "{team} open against {foe}. First pitch in an hour. Somebody on that field is about to have the day of their life."],
+      ["ringmaster", "THE GATES ARE OPEN. THE POPCORN IS WARM. SOMEONE HAS ALREADY LOST A SHOE."],
+    ],
+    mid: [
+      ["sherlock", "{team} sit at {rec}. That record tells me three things, and two of them are about their pitching."],
+      ["tracy", "Game {gameNo} of seven. {foe} today. {team} are {rec} and the schedule does not get kinder."],
+      ["humpty", "I am told this is a big one. Every one of them has been a big one. My shell is not what it was."],
+      ["witch", "The omens today are mixed. There was a crow. There is always a crow. I may be overreading the crow."],
+      ["medusa", "{foe} have been talking. Loudly. I would advise them not to look directly at anything for a while."],
+      ["mrsclaus", "Whatever happens today, they are all doing their best, and I will be proud of every single one of them."],
+      ["lupin", "I have obtained {foe}'s lineup card. I obtained it from the wall it was pinned to. It is now my lineup card."],
+    ],
+    finale: [
+      ["tracy", "Last one before the bracket. {team} are {rec}. Everything after today is win or go home."],
+      ["ringmaster", "THE FINALE OF THE REGULAR SEASON. After this, the TOURNAMENT. I have already ordered confetti."],
+      ["sherlock", "Seventh game. If they have a weakness left to hide, they are out of games to hide it in."],
+    ],
+    playoff: [
+      ["tracy", "Playoff baseball. Different air. {team} against {foe} and one of them stops existing tonight."],
+      ["krampus", "I love this round. Somebody goes home sad, and I get to watch it happen from a very good seat."],
+      ["witch", "I have stopped reading the omens. At this stage the omens read YOU."],
+      ["ringmaster", "ELIMINATION. My favourite word. Say it with the teeth."],
+    ],
+    final: [
+      ["tracy", "The final. {team} and {foe}. Whatever you were doing, stop it and watch this."],
+      ["mrsclaus", "The final! I have knitted something for both teams. Only one of them will want it afterwards."],
+      ["ringmaster", "THE LAST GAME. THE LAST OUT. THE LAST WORD. I HAVE NOT BLINKED SINCE TUESDAY."],
+      ["humpty", "I have waited my whole career for one of these. Please do not let anyone sit on me before first pitch."],
+    ],
+  },
+  postgame: {
+    blowoutWin: [
+      ["tracy", "{you} to {them}. {team} did not beat {foe} tonight, they took the afternoon off from them."],
+      ["ringmaster", "{margin} RUNS. I RAN OUT OF ADJECTIVES IN THE FOURTH AND HAVE BEEN POINTING SINCE."],
+      ["medusa", "That was not a contest, that was a demonstration. {foe} may wish to consider a different sport."],
+      ["krampus", "I have crossed {foe} off my list. Not out of mercy. There is simply nothing left to punish."],
+      ["sherlock", "{star} was the difference, though calling one player the difference in a {margin} run game is generous to the other eight."],
+    ],
+    closeWin: [
+      ["tracy", "{you} to {them}. {team} needed all nine innings and most of a tenth man's nerve."],
+      ["sherlock", "One run. In a one run game the mistake that decides it happened in the third and nobody noticed until now."],
+      ["tintin", "They won! I wrote four different endings during the last inning and had to throw three of them away."],
+      ["humpty", "Close games are bad for me structurally. I felt a hairline go in the eighth."],
+      ["mrsclaus", "A narrow one. Both teams were wonderful. One of them was slightly more wonderful."],
+    ],
+    walkoffWin: [
+      ["ringmaster", "WALK OFF. WALK OFF. THE CROWD IS ON THE FIELD. SOME OF THEM WORK HERE. MOST OF THEM DO NOT."],
+      ["tracy", "Last at bat, {you} to {them}. {foe} were nine outs from the flight home and now they are not."],
+      ["witch", "I said there would be a sign. I did not say the sign would be {star} hitting it four hundred feet."],
+      ["medusa", "{foe} were frozen. Not by me. I want that on the record. Not by me this time."],
+    ],
+    shutoutWin: [
+      ["sherlock", "Zero. {foe} did not score. In seven innings of baseball that is not luck, that is a plan working."],
+      ["tracy", "Shutout. {you} to nothing. Somebody in that dugout is going to be unbearable at breakfast."],
+      ["krampus", "A shutout is the cruelest score. It denies them even the dignity of a bad inning."],
+    ],
+    closeLoss: [
+      ["tracy", "{them} to {you}. {team} had it. They had it in their hands and it went somewhere else."],
+      ["sherlock", "They lost by one, which means they can point at any of about forty moments and be correct."],
+      ["mrsclaus", "Oh, they tried so hard. I am going to say that until somebody makes me stop."],
+      ["humpty", "I have fallen off things before. This felt worse and I was on the ground the whole time."],
+      ["medusa", "One run. I have seen clubs never recover from one run. I have also seen clubs win nine straight after. It is a coin."],
+    ],
+    blowoutLoss: [
+      ["tracy", "{them} to {you}. Not much to say about that one that the scoreboard did not already say louder."],
+      ["krampus", "Delicious. Absolutely delicious. I will be describing this game at parties for a decade."],
+      ["ringmaster", "Well. Every circus has the act where the tent falls down. Tonight was that act. It was a very big tent."],
+      ["witch", "The crow was not overread. The crow was, if anything, underread."],
+      ["medusa", "{foe} put up {them}. At some point you stop analysing and start apologising."],
+      ["mrsclaus", "That was hard to watch and I watched all of it, because that is what you do."],
+    ],
+    comebackWin: [
+      ["tracy", "{team} trailed and won it {you} to {them}. That is the kind of night that turns a season sideways."],
+      ["ringmaster", "THEY WERE DEAD. I DECLARED THEM DEAD ON AIR. I WOULD LIKE TO RETRACT THAT."],
+      ["lupin", "A comeback. My favourite genre. You let them believe they have it, and then you simply take it."],
+      ["tintin", "I had already filed the loss. I have never unfiled anything so fast in my life."],
+    ],
+    star: [
+      ["sherlock", "{star} was the story. Anyone watching the box score can see it. I saw it in the fourth."],
+      ["ringmaster", "{star}! {star}! I would like {star} to be given something. A trophy. A sandwich. Anything."],
+      ["tintin", "I asked {star} for a quote afterwards. {star} said 'yeah' and walked into a wall."],
+      ["humpty", "{star} had a night. I would like to note that I have also had nights."],
+      ["medusa", "{star} was excellent. Say that once, clearly, and then never say it again where {star} can hear."],
+    ],
+  },
+  seasonEnd: {
+    good: [
+      ["tracy", "{team} finish {rec}. Whatever happens next, they made this a season worth arguing about."],
+      ["ringmaster", "WHAT A RUN. WHAT A CAMPAIGN. I AM GOING TO LIE DOWN IN THE CENTRE RING."],
+      ["mrsclaus", "I am proud of them and I have told each of them individually, which took some time."],
+    ],
+    bad: [
+      ["tracy", "{team} finish {rec}. Long winter. Short list of excuses."],
+      ["krampus", "I will remember this season fondly. I appreciate that nobody else will."],
+      ["witch", "Next year the omens will be different. They will be wrong differently."],
+      ["humpty", "We will be back. Some of us in more pieces than others."],
+    ],
+  },
+  askPool: [
+    { who:'tracy', text:"They are calling {star} the best player in this league. Care to respond?",
+      choices:[
+        { label:"{star} is the best.",   tag:'brash',  reply:"Written down. Circled. Underlined twice." },
+        { label:"We have nine of those.",tag:'humble', reply:"Diplomatic. Useless to me. Thank you." },
+        { label:"Ask {foe} about it.",   tag:'petty',  reply:"Oh, that is going in the headline. That is the headline now." },
+      ] },
+    { who:'medusa', text:"{foe} said your club got lucky. On the record. By name.",
+      choices:[
+        { label:"Then beat us again.",   tag:'brash',  reply:"I will run that word for word and I will enjoy it." },
+        { label:"They are not wrong.",   tag:'humble', reply:"Nobody has ever agreed with the other team in this room. I am unsettled." },
+        { label:"Who said it?",          tag:'petty',  reply:"I am not telling you. I want to see what you do with not knowing." },
+      ] },
+    { who:'witch', text:"I have seen how this season ends. Do you want to know?",
+      choices:[
+        { label:"Tell me.",              tag:'brash',  reply:"No. I wanted to see if you would ask. You would. Noted." },
+        { label:"Keep it.",              tag:'humble', reply:"Wise. Most people who know the ending stop playing properly." },
+        { label:"You are guessing.",     tag:'petty',  reply:"I am. That has never once stopped me." },
+      ] },
+  ],
+};
+
+/* The press REMEMBERS. Every answer is stored on the season and the next
+   scene can open on it, which is the entire reason a choice is worth having
+   here: it does not need to change the baseball to change the story. */
+const PRESS_CALLBACK = {
+  brash:  [["tracy", "Last time we spoke you talked a big game. The tape is still on my desk."],
+           ["medusa", "You said something bold to a reporter recently. Bold is a bill that arrives later."]],
+  humble: [["tracy", "You gave me nothing last time. I respect it and I resent it."],
+           ["mrsclaus", "You were very gracious the other day. I have not stopped thinking about it."]],
+  silent: [["tracy", "You said no comment. So I wrote the piece myself. You loved it. I said so in the piece."]],
+  petty:  [["lupin", "You made an enemy in the press room. I collect those. Yours is very good."],
+           ["krampus", "You were unkind to somebody recently. I have added you to a different list. A nicer list."]],
+};
+
+function pressPick(pool, n) {
+  const a = pool.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
+function pressFill(t, c) {
+  /* A slot with nothing behind it is stripped, never printed. Showing a
+     player the literal text {star} is the single most immersion breaking
+     thing a system like this can do. */
+  return String(t).replace(/\{(\w+)\}/g, (m, k) => (c[k] != null ? c[k] : ''))
+                  .replace(/\s{2,}/g, ' ').trim();
+}
+
+/* A line may only be chosen if the context can fill every slot it uses.
+   This is the real guard: one of the blowout lines names {star}, and on a
+   night when nobody had two hits there is no star, so without this the
+   pundit says "was the difference" about nobody. Gating the star POOL was
+   not enough, because the slot also appears outside it. */
+function pressUsable(pool, c) {
+  return pool.filter((entry) => {
+    const text = Array.isArray(entry) ? entry[1] : entry.text;
+    const slots = String(text).match(/\{(\w+)\}/g) || [];
+    return slots.every(m => c[m.slice(1, -1)] != null);
+  });
+}
+
+/* Build the cast of beats for a moment. ctx carries what happened. */
+function pressScene(kind, c) {
+  const beats = [];
+  const add = (arr) => { for (const [who, text] of arr) beats.push({ who, text: pressFill(text, c) }); };
+  const pick = (pool, n) => pressPick(pressUsable(pool, c), n);
+  if (kind === 'mediaDay') {
+    add(pick(PRESS.mediaDay, 3));
+    const a = PRESS.openerAsk;
+    beats.push({ who:a.who, text:pressFill(a.text, c), choices:a.choices.map(o => ({
+      label: pressFill(o.label, c), tag:o.tag, reply: pressFill(o.reply, c) })) });
+  } else if (kind === 'pregame') {
+    const cb = c.lastTag && PRESS_CALLBACK[c.lastTag];
+    if (cb && Math.random() < 0.6) add(pick(cb, 1));
+    add(pick(PRESS.pregame[c.slot] || PRESS.pregame.mid, cb ? 1 : 2));
+  } else if (kind === 'postgame') {
+    add(pick(PRESS.postgame[c.slot] || PRESS.postgame.closeWin, 2));
+    if (c.star) add(pick(PRESS.postgame.star, 1));
+    if (c.ask) {
+      const asks = PRESS.askPool.filter(q => pressUsable(
+        [q].concat(q.choices.map(o => ({ text: o.label + ' ' + o.reply }))), c
+      ).length === q.choices.length + 1);
+      const a = asks.length ? asks[Math.floor(Math.random() * asks.length)] : null;
+      if (a)
+      beats.push({ who:a.who, text:pressFill(a.text, c), choices:a.choices.map(o => ({
+        label: pressFill(o.label, c), tag:o.tag, reply: pressFill(o.reply, c) })) });
+    }
+  } else if (kind === 'seasonEnd') {
+    add(pick(PRESS.seasonEnd[c.slot] || PRESS.seasonEnd.good, 2));
+  }
+  return beats;
+}
+
+
+/* One place builds the slot values, so every line in every pool is talking
+   about the same game. Split across the call sites they drift, and a pundit
+   ends up quoting a score from the game before. */
+function pressCtx(extra) {
+  const S = State.season;
+  const rec = S ? seasonRecord(S) : null;
+  return Object.assign({
+    team: State.teamName || 'your club',
+    foe: (State.opponent && State.opponent.name) || 'the opposition',
+    park: (currentTheme() || {}).park || 'the yard',
+    rec: rec ? `${rec.w}-${rec.l}` : '0-0',
+    gameNo: S ? S.results.length + 1 : 1,
+    lastTag: S && S.press && S.press.lastTag,
+  }, extra || {});
+}
+
+/* Which postgame pool the result belongs in, most specific first: a walk
+   off that is also a blowout is a walk off, and a shutout you lost is just
+   a loss. Ordering this wrong is how you get a pundit calling a one run
+   thriller a demolition. */
+function pressResultSlot(g, win, margin) {
+  if (win && g.walkoff) return 'walkoffWin';
+  if (win && g.comeback) return 'comebackWin';
+  const foe = g.away.isYou ? g.home : g.away;
+  if (win && foe.score === 0) return 'shutoutWin';
+  if (win) return margin >= 6 ? 'blowoutWin' : 'closeWin';
+  return margin >= 6 ? 'blowoutLoss' : 'closeLoss';
+}
+
+/* The night's best bat on your side, by hits then home runs. Null when
+   nobody did anything, because "{star} was the story" over an 0 for 4 is
+   the kind of line that makes a whole system feel fake. */
+function pressStar(g, you) {
+  let best = null, bestScore = 0;
+  for (const b of you.batters) {
+    const hr = (g.stats.hr[b.k] || 0), h = (g.stats.hits[b.k] || 0);
+    const sc = h + hr * 2;
+    if (sc > bestScore) { bestScore = sc; best = b; }
+  }
+  return bestScore >= 2 ? (best.n || best.k) : null;
+}
+
+/* Where the press is allowed to speak. Exhibition is a pick up game. */
+function pressActive() { return State.mode === 'season' || State.mode === 'playoff' || State.mode === 'cup'; }
+
+function pressPlay(kind, ctx, then) {
+  if (!PREFS.cutscenes) { then(); return; }
+  const beats = pressScene(kind, ctx);
+  if (!beats.length) { then(); return; }
+  State.cutscene = { beats, i: 0, then, ctx };
+  State.screen = 'cutscene';
+  render();
+}
+
+let pressTimer = 0;
+function renderCutscene() {
+  const C = State.cutscene;
+  clearInterval(pressTimer);
+  /* renderCutscene is only ever reached through render(), which empties the
+     app node first. Advancing by calling it directly appends the next beat
+     UNDER the last one and the conversation grows down the page, so every
+     step below goes back through render(). */
+  if (!C || C.i >= C.beats.length) {
+    const then = C && C.then;
+    State.cutscene = null;
+    if (then) then(); else { State.screen = 'menu'; render(); }
+    return;
+  }
+  const beat = C.beats[C.i];
+  const cast = PRESS_CAST[beat.who] || PRESS_CAST.tracy;
+  const s = el('div','screen press');
+
+  const stage = el('div','press-stage');
+  const port = el('div','press-portrait');
+  port.appendChild(pressPortrait(beat.who, 260, 200));
+  stage.appendChild(port);
+
+  const box = el('div','press-box');
+  const nm = el('div','press-name', cast.name);
+  nm.style.color = cast.color;
+  box.appendChild(nm);
+  box.appendChild(el('div','press-outlet', cast.outlet));
+  const body = el('div','press-text');
+  box.appendChild(body);
+  const more = el('div','press-more', '&#9660;');
+  box.appendChild(more);
+  stage.appendChild(box);
+  s.appendChild(stage);
+
+  const bar = el('div','press-bar');
+  const skip = el('button','btn ghost','Skip');
+  skip.onclick = (e) => { e.stopPropagation(); clearInterval(pressTimer);
+    C.i = C.beats.length; render(); };
+  bar.appendChild(skip);
+  s.appendChild(bar);
+  app.appendChild(s);
+
+  /* The typewriter. It is the whole feel of the thing: a line that simply
+     appears is a label, and a line that arrives one character at a time is
+     somebody talking. A click part way through finishes it rather than
+     skipping it, because being made to wait for text you can already read
+     is the fastest way to make a player hate a cutscene. */
+  const full = beat.text;
+  let n = 0, done = false;
+  more.style.visibility = 'hidden';
+  const finish = () => {
+    clearInterval(pressTimer);
+    body.textContent = full;
+    done = true;
+    if (beat.choices) showChoices(); else more.style.visibility = 'visible';
+  };
+  pressTimer = setInterval(() => {
+    n += 1;
+    body.textContent = full.slice(0, n);
+    if (n >= full.length) finish();
+  }, 18);
+
+  function showChoices() {
+    const wrap = el('div','press-choices');
+    for (const opt of beat.choices) {
+      const b = el('button','btn', opt.label);
+      b.onclick = (e) => {
+        e.stopPropagation();
+        if (State.season) {
+          State.season.press = State.season.press || { tags: [] };
+          State.season.press.lastTag = opt.tag;
+          State.season.press.tags.push(opt.tag);
+          saveSeason(State.season);
+        }
+        Sound.play('ball');
+        /* The reply becomes the next beat, so the answer lands in the same
+           conversation instead of the screen simply ending on your line. */
+        C.beats.splice(C.i + 1, 0, { who: beat.who, text: opt.reply });
+        C.i += 1;
+        render();
+      };
+      wrap.appendChild(b);
+    }
+    box.appendChild(wrap);
+  }
+
+  const advance = () => {
+    if (!done) { finish(); return; }
+    if (beat.choices) return;              /* a question waits for an answer */
+    C.i += 1;
+    render();
+  };
+  s.onclick = advance;
+  s.tabIndex = 0;
+  pressKeyHandler = (e) => {
+    if (State.screen !== 'cutscene') return;
+    if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); advance(); }
+  };
+}
+let pressKeyHandler = null;
+document.addEventListener('keydown', (e) => { if (pressKeyHandler) pressKeyHandler(e); });
 
 /* ============================================================================
    MENU
@@ -1960,6 +2425,18 @@ function renderSettings() {
     'How long the game pauses between pitches and plays. Fast also brings the '
     + 'pitch in a little quicker, so the timing is slightly tighter.'));
 
+  card.appendChild(el('h3', null, 'Press room'));
+  const csRow = el('div','toggle-row');
+  const csT = el('div','toggle', PREFS.cutscenes !== false ? 'Cutscenes: on' : 'Cutscenes: off');
+  if (PREFS.cutscenes !== false) csT.classList.add('on');
+  csT.onclick = () => { PREFS.cutscenes = (PREFS.cutscenes === false); savePrefs(); render(); };
+  csRow.appendChild(csT);
+  card.appendChild(csRow);
+  card.appendChild(el('p', null,
+    'Reporters before and after every Season and Cup game. They react to the '
+    + 'actual score, they remember what you said to them, and they are not '
+    + 'always reasonable. Exhibition games are never interrupted.'));
+
   if (State.mode === 'season') {
     card.appendChild(el('h3', null, 'Season format'));
     card.appendChild(el('p', null,
@@ -2093,7 +2570,10 @@ function startCupMatch(C, nm) {
   State.difficulty = C.difficulty;
   /* Higher seed (lower index) hosts. */
   const youHome = (youIsA ? m.a : m.b) < (youIsA ? m.b : m.a);
-  startGame({ mode:'cup', cupR: nm.r, cupI: nm.i, youHome });
+  State.mode = 'cup';
+  const slot = nm.r >= C.rounds.length - 1 ? 'final' : 'playoff';
+  pressPlay('pregame', pressCtx({ slot }),
+            () => startGame({ mode:'cup', cupR: nm.r, cupI: nm.i, youHome }));
 }
 
 const CUP_ROUND_NAMES = ['Quarterfinals','Semifinals','Final'];
@@ -2187,8 +2667,11 @@ function startSeason() {
     league: simulateLeagueSeasons(),
   };
   saveSeason(State.season);
-  State.screen = 'season-hub';
-  render();
+  State.mode = 'season';
+  pressPlay('mediaDay', pressCtx({ foe: 'the league' }), () => {
+    State.screen = 'season-hub';
+    render();
+  });
 }
 
 /* The other eight teams need records so a playoff picture exists. Rather than
@@ -2244,7 +2727,9 @@ function renderSeasonHub() {
         State.innings = S.innings;
         State.difficulty = S.difficulty;
         State.opponent = next;
-        startGame({ mode:'season' });
+        State.mode = 'season';
+        const slot = games === 0 ? 'first' : (games === 6 ? 'finale' : 'mid');
+        pressPlay('pregame', pressCtx({ slot }), () => startGame({ mode:'season' }));
       };
       nextCard.appendChild(play);
     } else {
@@ -2452,7 +2937,12 @@ function renderBracket() {
   } else {
     /* All matches done */
     const b = el('button','btn','View Season Summary');
-    b.onclick = () => { State.screen='season-end'; render(); };
+    b.onclick = () => {
+      const rec = seasonRecord(S);
+      State.mode = 'season';
+      pressPlay('seasonEnd', pressCtx({ slot: rec.w >= rec.l ? 'good' : 'bad' }),
+                () => { State.screen='season-end'; render(); });
+    };
     row.appendChild(b);
   }
   const hub = el('button','btn ghost','Back to Hub');
@@ -2513,7 +3003,9 @@ function startPlayoffMatch(nm) {
   State.opponent = { name: foe.name, color: (opponentByName(foe.name)?.color) || '#8a1a1a', roster: foe.roster };
   State.innings = S.innings;
   State.difficulty = S.difficulty;
-  startGame({ mode:'playoff', round: nm.round, matchIdx: nm.idx, youHome });
+  State.mode = 'playoff';
+  pressPlay('pregame', pressCtx({ slot: nm.round === 'final' ? 'final' : 'playoff' }),
+            () => startGame({ mode:'playoff', round: nm.round, matchIdx: nm.idx, youHome }));
 }
 
 /* ============================================================================
@@ -4192,12 +4684,22 @@ function finishGame() {
       if (mine < theirs) trailed = true;
     }
     if (trailed) PROGRESS.comebacks = (PROGRESS.comebacks|0) + 1;
+    g.comeback = trailed;   /* the press asks for this a few lines below */
   }
   saveProgress();
   g.freshUnlocks = refreshUnlocks();
 
-  State.screen = 'result';
-  render();
+  const toResult = () => { State.screen = 'result'; render(); };
+  if (!pressActive()) { toResult(); return; }
+  const margin = Math.abs(you.score - foe.score);
+  /* A question every third game or so. Asked every time it is an interview
+     show; asked never and the choices may as well not exist. */
+  const ask = Math.random() < 0.34;
+  pressPlay('postgame', pressCtx({
+    slot: pressResultSlot(g, win, margin),
+    foe: foe.name, you: you.score, them: foe.score, margin,
+    star: pressStar(g, you), ask,
+  }), toResult);
 }
 
 /* ============================================================================
