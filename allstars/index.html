@@ -225,6 +225,8 @@
     display:block;margin-bottom:4px;text-align:center;}
   .pitch-select .btn{padding:8px 12px;font-size:11px;letter-spacing:.14em;}
   .pitch-select .col{display:flex;flex-direction:column;gap:4px;align-items:center;}
+  .pitch-select .throw-hint{font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-dim);}
   .pitch-select .type-row{display:flex;gap:6px;}
   .zone-grid{display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);
     gap:2px;background:var(--navy);padding:3px;border:2px solid var(--line);
@@ -1696,7 +1698,7 @@ const State = {
   difficulty: ['easy','medium','hard'].includes(PREFS.difficulty) ? PREFS.difficulty : 'medium',
   gameSpeed: ['relaxed','normal','fast'].includes(PREFS.gameSpeed) ? PREFS.gameSpeed : 'normal',
   game: null,
-  season: loadSeason(),
+  season: migrateSeason(loadSeason()),
   cup: loadCup(),
 };
 
@@ -2837,8 +2839,11 @@ function startSeason() {
     playoffs: null,
     playerStats: { hr:0, so:0, sb:0, hits:0, ab:0 },
     perPlayer: {},   /* per character running totals across the season */
-    league: simulateLeagueSeasons(),
+    league: emptyLeague(),
+    leagueSchedule: null,   /* filled below: it needs the schedule */
+    leagueDone: 0,
   };
+  State.season.leagueSchedule = buildLeagueSchedule(State.season.schedule);
   saveSeason(State.season);
   State.mode = 'season';
   pressPlay('mediaDay', pressCtx({ foe: 'the league' }), () => {
@@ -2847,20 +2852,70 @@ function startSeason() {
   });
 }
 
-/* The other eight teams need records so a playoff picture exists. Rather than
-   simulate every game the league plays behind the scenes, generate a plausible
-   seven game record for each opponent up front. The user's own results get
-   subbed in as their games are played. */
-function simulateLeagueSeasons() {
-  const out = {};
-  for (const o of OPPONENTS) {
-    const rating = teamRating(o.roster);
-    const winRate = 0.35 + (rating - 60) * 0.008;   /* soft curve around .500 */
-    let w = 0;
-    for (let i=0;i<7;i++) if (Math.random() < winRate) w++;
-    out[o.name] = { w, l: 7 - w };
+/* THE LEAGUE PLAYS WHEN YOU DO.
+   These records used to be rolled out in full the moment a season started:
+   every other club arrived at day one already 5-2, already finished, while
+   you sat at 0-0 and worked through seven games to catch a table that had
+   stopped moving. It reads as broken because it is: a standings table is a
+   claim that these teams are in a season together.
+
+   So the league gets a real schedule instead. Eighteen clubs, seven rounds,
+   and on the day you play your opponent the other sixteen pair off and play
+   each other. One round is simulated per game you finish, so the table below
+   your record always shows the same number of games played as your own. */
+function buildLeagueSchedule(mySchedule) {
+  const rounds = [];
+  for (let r = 0; r < 7; r++) {
+    const pool = OPPONENTS.map(o => o.name).filter(n => n !== mySchedule[r]);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const pairs = [];
+    for (let i = 0; i + 1 < pool.length; i += 2) pairs.push([pool[i], pool[i + 1]]);
+    rounds.push(pairs);
   }
+  return rounds;
+}
+function emptyLeague() {
+  const out = {};
+  for (const o of OPPONENTS) out[o.name] = { w: 0, l: 0 };
   return out;
+}
+/* One CPU game. A logistic on the rating gap rather than a threshold, so the
+   better club is favoured without the worse one being unable to win. */
+function simulateLeagueGame(a, b) {
+  const ra = teamRating((opponentByName(a) || {}).roster || []);
+  const rb = teamRating((opponentByName(b) || {}).roster || []);
+  const p = 1 / (1 + Math.exp(-(ra - rb) / 6));
+  return Math.random() < p ? a : b;
+}
+/* Advance the league through one round. Guarded on leagueDone so a double
+   call, a reload part way through, or a replayed save cannot run the same
+   round twice and inflate the table. */
+function advanceLeague(S, roundIdx, myFoe, iWon) {
+  if (!S.leagueSchedule || roundIdx < 0) return;
+  if ((S.leagueDone | 0) > roundIdx) return;
+  const bump = (n, win) => { const t = S.league[n]; if (t) { if (win) t.w++; else t.l++; } };
+  bump(myFoe, !iWon);
+  for (const [a, b] of (S.leagueSchedule[roundIdx] || [])) {
+    const w = simulateLeagueGame(a, b);
+    bump(a, w === a);
+    bump(b, w === b);
+  }
+  S.leagueDone = roundIdx + 1;
+}
+/* A season saved before the league had a schedule carries a finished table
+   and no way to know which games produced it. Rebuild one from the results
+   it does have, so an in progress save comes back consistent rather than
+   keeping a table that never matched. */
+function migrateSeason(S) {
+  if (!S || S.leagueSchedule) return S;
+  S.leagueSchedule = buildLeagueSchedule(S.schedule || []);
+  S.league = emptyLeague();
+  S.leagueDone = 0;
+  (S.results || []).forEach((r, i) => advanceLeague(S, i, r.opponent, r.win));
+  return S;
 }
 function teamRating(keys) {
   const chars = keys.map(k => ROSTER_BY_KEY[k]);
@@ -3486,13 +3541,29 @@ function cpuCallPitch() {
   return { pt, zone };
 }
 
-/* When the CPU bats, the player picks the pitch and the target zone. Two
-   picks needed; the pitch fires as soon as both are chosen, or after
-   five seconds with default values so the game never stalls. The
-   selected pitch type matters (each CPU batter has a hidden weak
-   pitch), and the target zone shifts both the ideal meter spot and
-   the CPU batter's read: corners are hard to square up but risk a
-   ball. */
+/* When the CPU bats, the player picks the pitch type and the target zone
+   and then throws it. Nothing fires on its own. The selected type matters
+   (each CPU batter has a hidden weak pitch), and the zone shifts both the
+   ideal meter spot and the CPU batter's read: corners are hard to square
+   up but risk a ball. */
+/* EVERY pitch after the first went through setTimeout(throwPitch), which
+   throws immediately with whatever defaults it can find. Only the first
+   pitch of an at bat ever went through the selection screen, so you called
+   one pitch and then watched the other five get thrown for you.
+
+   One router now decides who is pitching, and every next pitch site calls
+   it instead of calling throwPitch directly. */
+function nextPitch() {
+  const g = State.game;
+  if (!g || g.over) return;
+  if (playerIsBatting()) {
+    const pick = cpuCallPitch();
+    throwPitch(pick.pt, pick.zone);
+  } else {
+    offerPitchSelection();
+  }
+}
+
 function offerPitchSelection() {
   const g = State.game;
   if (!g || g.over) return;
@@ -3508,23 +3579,35 @@ function offerPitchSelection() {
   row.style.display = '';
   let chosenPt = null, chosenZone = null;
   let done = false;
+  const throwBtn = row.querySelector('#throw-btn');
+  const hint = row.querySelector('#throw-hint');
+
+  /* No clock. There was a five second timer that threw the pitch for you
+     with defaults, which means the half you are supposed to be MANAGING
+     ran itself if you thought about it too long. The pitcher waits. */
   const fire = () => {
-    if (done) return;
+    if (done || !chosenPt || chosenZone == null) return;
     done = true;
     row.style.display = 'none';
-    clearTimeout(timer);
     for (const btn of row.querySelectorAll('button')) btn.onclick = null;
-    /* Sensible defaults so the game never stalls: his first pitch, middle. */
-    throwPitch(chosenPt || rep[0], chosenZone == null ? 4 : chosenZone);
+    throwPitch(chosenPt, chosenZone);
   };
-  const timer = setTimeout(fire, 5000);
+  const refresh = () => {
+    const ready = chosenPt && chosenZone != null;
+    if (throwBtn) throwBtn.disabled = !ready;
+    if (hint) {
+      hint.textContent = ready ? 'Ready.'
+        : !chosenPt ? 'Pick a pitch.'
+        : 'Pick a spot.';
+    }
+  };
   for (const btn of row.querySelectorAll('button[data-pt]')) {
     btn.onclick = (e) => {
       e.stopPropagation();
       chosenPt = btn.dataset.pt;
       for (const b of row.querySelectorAll('button[data-pt]')) b.classList.remove('selected');
       btn.classList.add('selected');
-      if (chosenZone != null) fire();
+      refresh();
     };
   }
   for (const btn of row.querySelectorAll('button[data-zone]')) {
@@ -3533,9 +3616,11 @@ function offerPitchSelection() {
       chosenZone = parseInt(btn.dataset.zone, 10);
       for (const b of row.querySelectorAll('button[data-zone]')) b.classList.remove('selected');
       btn.classList.add('selected');
-      if (chosenPt) fire();
+      refresh();
     };
   }
+  if (throwBtn) throwBtn.onclick = (e) => { e.stopPropagation(); fire(); };
+  refresh();
 }
 
 /* Quirk hook. Called once per at bat. Returns a stat snapshot the swing
@@ -3839,7 +3924,7 @@ function resolveCalledPitch() {
   refreshHud();
   if (g.strikes >= 3) return recordOut('called strikeout', true);
   if (g.balls >= 4) return recordWalk();
-  setTimeout(throwPitch, BEAT.betweenPitches);
+  setTimeout(nextPitch, BEAT.betweenPitches);
 }
 
 function resolveSwing(cursorT) {
@@ -3908,7 +3993,7 @@ function resolveSwing(cursorT) {
       Sound.play('foul');
       refreshHud();
       if (g.strikes >= 3) return recordOut('bunted foul with two strikes', true);
-      return setTimeout(throwPitch, BEAT.betweenPitches);
+      return setTimeout(nextPitch, BEAT.betweenPitches);
     }
     const legOut = Math.random() < clamp(0.10 + (ctx.spd - 40) / 260, 0.06, 0.5);
     return scheduleContactPlay(legOut ? 'bunt single' : 'bunt out', batter);
@@ -3922,7 +4007,7 @@ function resolveSwing(cursorT) {
     Sound.play('whiff');
     refreshHud();
     if (g.strikes >= 3) return recordOut('swinging strikeout', true);
-    return setTimeout(throwPitch, BEAT.afterWhiff);
+    return setTimeout(nextPitch, BEAT.afterWhiff);
   }
 
   /* Foul: near miss on strike, count strike (but never third strike) */
@@ -3932,7 +4017,7 @@ function resolveSwing(cursorT) {
     showCallout('FOUL BALL', 'sub');
     Sound.play('foul');
     refreshHud();
-    return setTimeout(throwPitch, BEAT.betweenPitches);
+    return setTimeout(nextPitch, BEAT.betweenPitches);
   }
 
   /* Cowardly Lion who did commit gets a burst of nerve on the swing. */
@@ -4803,6 +4888,8 @@ function finishGame() {
     for (const [k, v] of Object.entries(g.stats.sb || {})) bumpPer(k, 'sb', v);
     for (const [k, v] of Object.entries(g.stats.hits || {})) bumpPer(k, 'hits', v);
     for (const [k, v] of Object.entries(g.stats.ab || {})) bumpPer(k, 'ab', v);
+    /* The rest of the league played today too. */
+    advanceLeague(State.season, State.season.results.length - 1, foe.name, win);
     saveSeason(State.season);
   } else if (State.mode === 'playoff' && State.season) {
     /* Record playoff result */
@@ -5078,18 +5165,18 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.save();
   camApply(ctx, cam, w, h);
 
-  /* THE BATTER IS FOREGROUND in the close shot. Standing him on the plate
-     at this zoom means standing him in FRONT of it: he covers the thing
-     the player is trying to read. Backyard solves it the way a camera
-     would, by putting him large and low at the edge of the frame with the
-     plate clear beside him, and that is what this offset is.
+  /* THE BATTER STANDS IN THE BOX. He used to be thrown out to the edge of
+     the frame at more than five times scale, the way Backyard puts a
+     foreground batter in its close shot, and it did read well THERE. It
+     read badly everywhere else: on the wide camera the same offset left a
+     player two heads taller than the pitcher standing in foul ground, and
+     a batter who is not in the batter's box is just wrong.
 
-     It rides cam.t and a caller supplied weight, so it is not a second
-     state machine. On contact the camera pulls out, cam.t falls, and the
-     same batter walks back to his real position and size as he starts up
-     the line: no snap, because nothing switched. */
+     What survives is a small size bump, because he is the nearest figure
+     to the camera and should be. It still rides cam.t so it grows as the
+     camera comes in, and it is small enough that no framing can break it. */
   const FG = {
-    dx: -104, dy: 20, sc: 2.3,
+    dx: 0, dy: 0, sc: 0.5,
     at(weight) {
       const k = cam.t * clamp(weight, 0, 1);
       return { dx: this.dx * k, dy: this.dy * k, sc: 3.2 + this.sc * k };
@@ -5525,7 +5612,13 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
          apply timer fires. */
       const p = g.play;
       const now = performance.now();
-      const rt = clamp((now - p.runnerStart) / (p.runnerUntil - p.runnerStart), 0, 1);
+      /* RUNNERS LEAD. They used to start at p.runnerStart, most of the
+         ball's flight AFTER the batter left the box, so with a man on
+         first the batter sprinted past a runner who had not moved yet.
+         Everyone is on the batter's clock now and the runners are ahead
+         on it: they were already on base and moving at the crack. */
+      const bt0 = clamp((now - p.startedAt) / Math.max(300, p.ball.duration - 100), 0, 1);
+      const rt = clamp(bt0 * 1.35, 0, 1);
       const beatAB = Math.floor(now / 130) % 2 === 0;
       /* A runner moving up the screen is running away from the camera,
          so they get the back frames. Sampled from the path itself. */
@@ -5542,8 +5635,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         drawRunner(ctx, wx, wy - 4, runner, 2.6,
                    rt > 0 && rt < 1 ? runFrameFor(p.runnerPaths[i], rt) : null);
       });
-      /* Batter as runner: starts moving at the same time as the ball is */
-      const bt = clamp((now - p.startedAt) / Math.max(300, p.ball.duration - 100), 0, 1);
+      /* Batter as runner: same clock, a step behind the men in front. */
+      const bt = bt0;
       const [bx, by] = pathPointAt(field, p.batterPath, bt);
       const fgb = FG.at(1 - bt);
       drawRunner(ctx, bx + fgb.dx, by - 4 + fgb.dy, p.batter, 3 + (fgb.sc - 3.2),
@@ -6184,7 +6277,10 @@ function renderGame() {
     + `<button class="btn ghost" data-pt="changeup">Changeup</button>`
     + `</div></div>`
     + `<div class="col"><span class="lbl">Location</span>`
-    + `<div class="zone-grid" id="zone-grid">${zoneHtml}</div></div>`;
+    + `<div class="zone-grid" id="zone-grid">${zoneHtml}</div></div>`
+    + `<div class="col"><span class="lbl">Deliver</span>`
+    + `<button class="btn" id="throw-btn" disabled>Throw It</button>`
+    + `<span class="throw-hint" id="throw-hint">Pick a pitch.</span></div>`;
   meter.appendChild(psel);
 
   /* Big touch-friendly SWING button under the meter, for phones and
@@ -6411,7 +6507,7 @@ function attemptSteal() {
     }
     refreshHud();
     if (g.outs >= 3) return setTimeout(endHalfInning, 1200);
-    setTimeout(throwPitch, 1400);
+    setTimeout(nextPitch, 1400);
   }, 900);
 }
 
