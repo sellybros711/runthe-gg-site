@@ -107,10 +107,10 @@
        top of the column and the pill starts underneath it. */
     '.rtgaa .rtgaa-x{align-self:flex-end;flex:0 0 auto;border:1px solid rgba(244,247,251,.2);',
     '  background:rgba(244,247,251,.05);color:#a9b8cb;border-radius:999px;padding:8px 13px;',
-    '  font:700 13.5px/1 inherit;cursor:pointer}',
+    '  font-weight:700;font-size:13.5px;line-height:1;font-family:inherit;cursor:pointer}',
     '.rtgaa .rtgaa-x:hover{border-color:rgba(255,138,61,.5);color:#e8f0f8}',
     '.rtgaa .rtgaa-wrap{margin:auto;width:100%;max-width:440px}',
-    '.rtgaa .rtgaa-kick{display:inline-flex;align-items:center;gap:7px;font:800 10.5px/1 inherit;',
+    '.rtgaa .rtgaa-kick{display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:10.5px;line-height:1;font-family:inherit;',
     '  letter-spacing:.16em;text-transform:uppercase;color:#FF8A3D;',
     '  border:1px solid rgba(255,138,61,.5);background:rgba(255,138,61,.1);',
     '  border-radius:999px;padding:6px 13px}',
@@ -131,7 +131,7 @@
     '  border:1px solid rgba(244,247,251,.14);border-radius:16px;padding:15px 14px 13px;',
     '  margin:0 0 12px;box-shadow:0 18px 40px -22px #000}',
     '.rtgaa .rtgaa-grid{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}',
-    '.rtgaa .rtgaa-chip{font:800 11.5px/1 inherit;letter-spacing:.02em;color:var(--c);',
+    '.rtgaa .rtgaa-chip{font-weight:800;font-size:11.5px;line-height:1;font-family:inherit;letter-spacing:.02em;color:var(--c);',
     '  border:1px solid color-mix(in srgb,var(--c) 55%,transparent);',
     '  background:color-mix(in srgb,var(--c) 14%,transparent);',
     '  border-radius:999px;padding:7px 11px;white-space:nowrap}',
@@ -140,15 +140,16 @@
     '  border-radius:11px;padding:9px 6px}',
     '.rtgaa .rtgaa-stat b{display:block;font-family:"Anton",Impact,sans-serif;font-weight:400;',
     '  font-size:19px;color:#F4F7FB;line-height:1.05}',
-    '.rtgaa .rtgaa-stat span{display:block;font:800 9.5px/1.3 inherit;letter-spacing:.1em;',
+    '.rtgaa .rtgaa-stat span{display:block;font-weight:800;font-size:9.5px;line-height:1.3;font-family:inherit;letter-spacing:.1em;',
     '  text-transform:uppercase;color:#8fa4bb;margin-top:3px}',
     '.rtgaa .rtgaa-fine{color:#a9b8cb;font-size:13.5px;line-height:1.5;margin:0 0 13px}',
     '.rtgaa .rtgaa-btn{display:block;width:100%;max-width:380px;margin:0 auto;border:0;cursor:pointer;',
-    '  border-radius:12px;padding:13px 16px;font:800 15px/1.15 inherit;text-decoration:none;',
+    '  border-radius:12px;padding:13px 16px;font-weight:800;font-size:15px;line-height:1.15;font-family:inherit;text-decoration:none;',
     '  text-align:center}',
     '.rtgaa .rtgaa-go{background:linear-gradient(160deg,#FFA95C,#FF8A3D 45%,#F0662E);color:#20100a;',
     '  box-shadow:0 8px 26px -8px rgba(255,138,61,.6),inset 0 1px 0 rgba(255,255,255,.45)}',
-    '.rtgaa .rtgaa-go .rtgaa-sub{display:block;font:700 11px/1.3 inherit;color:#3a1f0c;margin-top:3px}',
+    '.rtgaa .rtgaa-go .rtgaa-cta{display:block;font-weight:900;font-size:16px;letter-spacing:.005em}',
+    '.rtgaa .rtgaa-go .rtgaa-sub{display:block;font-weight:700;font-size:11px;line-height:1.3;font-family:inherit;color:#3a1f0c;margin-top:3px}',
     '.rtgaa .rtgaa-later{background:rgba(244,247,251,.04);color:#a9b8cb;',
     '  border:1px solid rgba(244,247,251,.2);margin-top:9px}',
     '.rtgaa .rtgaa-later:hover{border-color:rgba(255,138,61,.45);color:#cfe0f2}',
@@ -157,7 +158,7 @@
     '.rtgaa .rtgaa-chk{display:flex;align-items:center;justify-content:center;gap:10px;',
     '  margin:13px auto 0;min-height:46px;padding:0 16px;max-width:380px;border-radius:12px;',
     '  border:1px solid rgba(244,247,251,.14);background:rgba(244,247,251,.04);',
-    '  font:700 13.5px/1 inherit;color:#a9b8cb;cursor:pointer;user-select:none}',
+    '  font-weight:700;font-size:13.5px;line-height:1;font-family:inherit;color:#a9b8cb;cursor:pointer;user-select:none}',
     '.rtgaa .rtgaa-chk:hover{border-color:rgba(255,138,61,.45);color:#cfe0f2}',
     '.rtgaa .rtgaa-chk input{width:19px;height:19px;accent-color:#FF8A3D;flex:0 0 auto;cursor:pointer}',
     '@media(min-width:700px){',
@@ -233,8 +234,8 @@
       '<div class="rtgaa-wrap">' +
         '<div class="rtgaa-kick"><span class="rtgaa-dot"></span>Also from RunThe.GG</div>' +
         '<h2 class="rtgaa-head">Run The Arcade</h2>' +
-        '<p class="rtgaa-lede">Twelve quick sports brain-games, <b>new every single day</b>, ' +
-          'and four of them are free every day. Two minutes each, one streak to protect.</p>' +
+        '<p class="rtgaa-lede">Daily Sports Trivia Games. ' +
+          '<b>How many days in a row can you pass the test?</b></p>' +
         '<div class="rtgaa-panel">' +
           '<div class="rtgaa-grid">' + chips + '</div>' +
           '<div class="rtgaa-stats">' +
@@ -246,7 +247,7 @@
         '<p class="rtgaa-fine">Same free RunThe.GG account you use here. Your streak carries ' +
           'across the whole site.</p>' +
         '<a class="rtgaa-btn rtgaa-go" href="' + URL_ARCADE + '" target="_blank" rel="noopener">' +
-          'Play the Arcade &#8599;' +
+          '<b class="rtgaa-cta">Play the Arcade &#8599;</b>' +
           '<span class="rtgaa-sub">Opens in a new tab, nothing here is lost</span></a>' +
         '<button class="rtgaa-btn rtgaa-later" type="button">Maybe later</button>' +
         '<label class="rtgaa-chk"><input type="checkbox"' + (isOff() ? ' checked' : '') + '>' +
