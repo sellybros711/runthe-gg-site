@@ -210,10 +210,10 @@ h1,h2,h3{margin:0}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
 .chip .lab{display:block}
 .chip{--labw:min(78px,19vw)}
-.chip .who{width:var(--labw);margin:3px 0 2px calc((62px - var(--labw))/2);
-  font-size:9px;font-weight:800;line-height:1.1;text-shadow:0 1px 4px rgba(0,0,0,.5);color:#fff;
+.chip .who{width:var(--labw);margin:2px 0 1px calc((62px - var(--labw))/2);
+  font-size:9px;font-weight:800;line-height:10px;text-shadow:0 1px 4px rgba(0,0,0,.5);color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip .yr{font-size:8px;color:rgba(255,255,255,.85);font-weight:700;line-height:13px;
+.chip .yr{font-size:8px;color:rgba(255,255,255,.85);font-weight:700;line-height:11px;
   max-width:100%;overflow:hidden;white-space:nowrap}
 .chip .yr .tc{display:inline-block;padding:0 4px;border-radius:4px;line-height:12px;
   font-size:7.5px;letter-spacing:.05em;vertical-align:1px;
@@ -329,8 +329,11 @@ h1,h2,h3{margin:0}
 .sim-game .gruns{width:54px;text-align:center;flex:0 0 auto;font-weight:700}
 .sim-game.marquee{background:rgba(184,134,11,.07);margin:0 -8px;padding:6px 8px;border-radius:6px}
 .sim-game.marquee .gopp{color:var(--gold);font-weight:700}
-.sim-progress{display:flex;flex-wrap:wrap;gap:2px;margin:12px 0;justify-content:center}
-.sim-pip{width:5px;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
+/* 162 pips laid out as a fixed 54x3 block. Wrapping a centred flex row left the
+   last row indented and the row lengths at the mercy of the viewport width. */
+.sim-progress{display:grid;grid-template-columns:repeat(54,1fr);gap:2px;margin:12px 0}
+@media (max-width:360px){.sim-progress{grid-template-columns:repeat(27,1fr);gap:1.5px}}
+.sim-pip{width:auto;height:14px;border-radius:2px;background:rgba(0,0,0,.08)}
 .sim-pip.w{background:var(--green)} .sim-pip.l{background:var(--red)}
 
 /* ─── playoffs ─── */
@@ -920,10 +923,16 @@ function tcPlate(team,season){
 
 /* ─── diamond coordinates ─── */
 /* SLOTS: C,1B,2B,3B,SS, LF,CF,RF, DH, SP1,SP2,CL */
+/* A filled chip hangs below its spot: a disc plus two lines of label, about
+ * 52px once the label block is tightened. Two spots within a chip width of each
+ * other in x therefore need a chip height between them in y, and nothing can sit
+ * so low that its label falls off the bottom edge. The middle infield and the
+ * corners used to be 18% apart, so 1B covered 2B's name and SS covered 3B's,
+ * and the catcher and DH labels were clipped by the boundary. */
 const DIAMOND_SPOTS=[
-  {x:50,y:84},{x:67,y:55},{x:63,y:37},{x:33,y:55},{x:37,y:37},
-  {x:14,y:25},{x:50,y:10},{x:86,y:25},{x:13,y:89},
-  {x:50,y:57},{x:50,y:57},{x:50,y:57},
+  {x:50,y:79},{x:69,y:59},{x:65,y:34},{x:31,y:59},{x:35,y:34},
+  {x:13,y:23},{x:50,y:8},{x:87,y:23},{x:13,y:81},
+  {x:50,y:51},{x:50,y:51},{x:50,y:51},
 ];
 
 /* ─── reel system ─── */
@@ -1695,7 +1704,7 @@ function simGame(idx){
   if(pip) pip.className='sim-pip '+(result.won?'w':'l');
   $('s-record').innerHTML='<span class="w">'+result.record.wins+'</span><span class="sep">-</span><span class="l">'+result.record.losses+'</span>';
   const gp=idx+1;
-  $('s-pace').textContent='Game '+gp+' of 162 | On pace for '+Math.round(result.record.wins/gp*162)+' wins';
+  $('s-pace').innerHTML='Game '+gp+' of 162 &middot; On pace for <b>'+Math.round(result.record.wins/gp*162)+' wins</b>';
   const feed=$('s-feed');
   const row=document.createElement('div');row.className='sim-game'+(result.marquee?' marquee':'');
   const opp=result.oppName?'<span class="gopp">'+(result.marquee?'&starf; ':'')+'vs '+esc(result.oppName)+'</span>':'';
