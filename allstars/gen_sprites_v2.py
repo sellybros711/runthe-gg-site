@@ -1322,8 +1322,8 @@ def sig_pooh(cv, spec, pose, back):
     # eyes: two beads set CLOSE, just above and outside the nose. Wide
     # apart on a round head they read as a teddy bear rather than as him.
     for side in (-1, 1):
-        x = int(CX + side * 3)
-        for dy in (12, 13):
+        x = int(CX + side * 4)
+        for dy in (11, 12):
             cv.dot(x, dy, ink)
     # the philtrum line and the smile under it, which is how every Pooh
     # since Shepard has been drawn: nose, stroke down, small curve
@@ -1685,17 +1685,74 @@ def sig_lion_face(cv, spec, pose, back):
     cv.dot(CX, 15, shade(n, -0.3))
 
 
-def sig_mrsclaus(cv, spec, pose, back):
+def sig_santa(cv, spec, pose, back):
+    """A white sphere for a beard and nothing else is a snowman in a hat.
+    What makes him Santa is the mouth and moustache INSIDE the beard, the
+    belt, and the fur cuffs."""
+    white = Ramp(spec.get('beard', '#f5efe8'))
+    # the black belt with its brass buckle, across the widest of him
+    cv.rect(CX - 10, 29, CX + 10, 31, Ramp('#2a2018'), l=0.42)
+    buck = Ramp('#e0b038')
+    cv.rect(CX - 3, 29, CX + 3, 31, buck, l=0.62)
+    cv.rect(CX - 1, 30, CX + 1, 30, Ramp('#8a6a20'), l=0.5)
+    # fur cuffs at both wrists and along the hem
+    for side in (-1, 1):
+        o = run_off(pose)[0 if side < 0 else 1]
+        cv.cyl(CX + side * 10 - 1, 28 + o, CX + side * 10 + 1, 29 + o, white)
     if back:
         return
-    # round spectacles, gold rims, joined at the bridge
+    # the moustache: one band with tips that DROOP, sitting on the beard
+    cv.rect(CX - 5, 18, CX + 5, 18, Ramp(shade(white.base, -0.10)), l=0.72)
+    for side in (-1, 1):
+        cv.dot(CX + side * 6, 19, white.mid)
+        cv.dot(CX + side * 6, 20, white.dark)
+    # a mouth in the gap below it, or the beard is a bib
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 20, (122, 58, 54))
+    cv.dot(CX - 3, 19, (122, 58, 54))
+    cv.dot(CX + 3, 19, (122, 58, 54))
+    # the nose and two cheeks, which are the only skin left showing
+    nose = (226, 138, 118)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 16, nose)
+    cv.dot(CX, 17, (200, 112, 96))
+    for side in (-1, 1):
+        cv.dot(CX + side * 6, 16, (238, 168, 160))
+        cv.dot(CX + side * 7, 16, (238, 168, 160))
+
+
+def sig_mrsclaus(cv, spec, pose, back):
+    """Long loose hair and a plain red dress is any woman in red. Hers is
+    a white BUN, an apron and half moon spectacles."""
+    hair = Ramp(spec.get('hair', '#dcdcd8'))
+    cv.sphere(CX, 2.6, 4.0, 3.0, hair, spec=False)          # the bun
+    cv.dot(CX - 4, 4, shade(hair.base, -0.28))
+    cv.dot(CX + 4, 4, shade(hair.base, -0.28))
+    # the white apron, edge to edge down the front of the dress
+    if not back:
+        ap = Ramp('#f2efe8')
+        cv.rect(CX - 4, 25, CX + 4, 31, ap, l=0.72)
+        cv.rect(CX - 5, 25, CX + 5, 25, ap, l=0.60)
+        cv.rect(CX - 6, 23, CX + 6, 24, ap, l=0.66)         # the collar
+    if back:
+        return
+    # HALF MOON spectacles. The old pair were two gold hoops the size of
+    # her eyes, which reads as goggles rather than as reading glasses.
     rim = (201, 160, 48)
-    for x in (CX - 4, CX + 4):
-        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2),
-                       (-1, -2), (1, -2), (-1, 2), (1, 2), (-2, -1),
-                       (2, -1), (-2, 1), (2, 1)):
-            cv.dot(x + dx, 12 + dy, rim)
-    cv.dot(CX, 11, rim)
+    for side in (-1, 1):
+        x = int(CX + side * 4)
+        for dx in (-2, -1, 0, 1, 2):
+            cv.dot(x + dx, 16, rim)     # only the BOTTOM arc is rimmed
+            cv.dot(x + dx, 12, rim)
+        cv.dot(x - 3, 15, rim)
+        cv.dot(x + 3, 15, rim)
+        cv.dot(x - 3, 12, rim)
+        cv.dot(x + 3, 12, rim)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 12, rim)
+    for side in (-1, 1):                                    # rosy cheeks
+        cv.dot(CX + side * 7, 16, (238, 168, 168))
+        cv.dot(CX + side * 6, 17, (238, 168, 168))
 
 
 def sig_bunny(cv, spec, pose, back):
@@ -1731,17 +1788,41 @@ def sig_bunny(cv, spec, pose, back):
 
 
 def sig_fairy(cv, spec, pose, back):
+    """She is the TOOTH fairy, and nothing on her said so: a gold star on
+    a stick is every fairy on every roster. The wand carries a tooth, and
+    there is a pouch on her hip to put them in."""
+    # a tulle skirt, so the body is not a rectangle of dress
+    tut = Ramp(shade(spec.get('shirt', '#b08ac6'), 0.24))
+    cv.taper(29, 33, 16, 22, tut, folds=2)
     if back:
         return
-    # the wand: a little gold star on a stick
+    # a small tiara
     g = (248, 216, 74)
+    for dx, dy in ((-3, 6), (-2, 5), (-1, 6), (0, 5), (1, 6), (2, 5), (3, 6)):
+        cv.dot(CX + dx, dy, g)
     o = run_off(pose)[1]
+    # the wand: a stick with a MOLAR on the end of it, roots and all
     cv.dot(CX + 11, 30 + o, (150, 118, 56))
     cv.dot(CX + 12, 28 + o, (150, 118, 56))
-    cv.dot(CX + 13, 26 + o, g)
-    cv.dot(CX + 12, 25 + o, g); cv.dot(CX + 14, 25 + o, g)
-    cv.dot(CX + 13, 24 + o, g)
-    cv.dot(CX + 13, 25 + o, (255, 248, 225))
+    cv.dot(CX + 12, 27 + o, (150, 118, 56))
+    tooth = (250, 248, 240)
+    shad = (206, 202, 192)
+    for dy in (21, 22, 23, 24):
+        for dx in (10, 11, 12, 13, 14):
+            cv.dot(CX + dx, dy + o, tooth)
+    cv.dot(CX + 10, 21 + o, shad)
+    cv.dot(CX + 14, 21 + o, shad)
+    for dx in (10, 11, 13, 14):                 # two roots, and the gap
+        cv.dot(CX + dx, 25 + o, shad)
+    cv.dot(CX + 11, 26 + o, shad)
+    cv.dot(CX + 13, 26 + o, shad)
+    cv.dot(CX + 11, 22 + o, (255, 255, 255))
+    # the pouch of collected teeth, on her other hip
+    pouch = Ramp('#7a5aa0')
+    cv.sphere(CX - 8, 30, 2.8, 3.0, pouch, spec=False)
+    cv.rect(CX - 10, 27, CX - 6, 27, Ramp('#c8b0e0'), l=0.6)
+    cv.dot(CX - 8, 29, tooth)
+    cv.dot(CX - 9, 30, tooth)
 
 
 def sig_pirate(cv, spec, pose, back):
@@ -1998,11 +2079,27 @@ def sig_robin(cv, spec, pose, back):
 
 
 def sig_tintin(cv, spec, pose, back):
-    # THE QUIFF. It has to sweep up and FORWARD and be unmistakable at
-    # sprite size; the stock quiff was a small bump.
+    """The quiff and the PLUS FOURS. Long trousers on a blue jumper is a
+    boy in a blue jumper; the breeches ending at the knee over pale socks
+    are half of why he is recognisable from behind."""
     r = Ramp(spec.get('hair', '#c9a256'))
-    cv.tri([(CX - 2, 6), (CX + 7, -1), (CX + 4, 7)], r, l=0.72)
-    cv.tri([(CX - 1, 5), (CX + 5, 0), (CX + 3, 6)], r, l=0.85)
+    # THE QUIFF, swept up and forward off the brow in one curl
+    cv.tri([(CX - 3, 7), (CX + 2, -1), (CX + 6, 4)], r, l=0.70)
+    cv.tri([(CX - 1, 6), (CX + 2, 1), (CX + 4, 4)], r, l=0.88)
+    cv.tri([(CX + 2, 0), (CX + 7, 2), (CX + 3, 5)], r, l=0.60)
+    # the breeches stop at the knee and BLOUSE out over the sock
+    br = Ramp(spec.get('pants', '#6a4a2a'))
+    if pose == 'run1':
+        la, ra = -1, 1
+    elif pose == 'run2':
+        la, ra = 1, -1
+    else:
+        la, ra = 0, 0
+    sock = Ramp('#e4e0d4')
+    for side, a in ((-1, la), (1, ra)):
+        x0 = CX + side * 3 - (2 if side < 0 else 0)
+        cv.cyl(x0 - 1, 31 + max(0, a), x0 + 3, 34 + a, br, round_bot=1)
+        cv.cyl(x0, 34 + a, x0 + 2, 36 + a, sock)
 
 
 def sig_lupin(cv, spec, pose, back):
@@ -2139,6 +2236,7 @@ SIGNATURES = {
     'scarecrow': {'post': sig_scarecrow},
     'lion': {'pre': sig_lion, 'post': sig_lion_face},
     'mrsclaus': {'post': sig_mrsclaus},
+    'santa': {'post': sig_santa},
     'bunny': {'post': sig_bunny},
     'fairy': {'post': sig_fairy},
     'vampire': {'pre': sig_cape_pre, 'post': sig_cape_post},
@@ -2295,12 +2393,12 @@ SPECS = {
                hat='cap', hatcolor='#3f7a3a', hair='#a45b1a', hairstyle='bald',
                eyes='normal', mouth='grin', belt='#f4c25a'),
  'tintin': dict(arch='human', skin='#f5d5a8', shirt='#5cb6e5', pants='#6a4a2a',
-                hair='#c9a256', hairstyle='quiff', eyes='normal', mouth='line'),
+                hair='#d98a3a', hairstyle='quiff', eyes='normal', mouth='line'),
  'santa': dict(arch='round', skin='#f5d2a3', shirt='#c93030', hat='santa',
                hatcolor='#c93030', hattrim='#f5efe8', beard='#f5efe8',
                beardsize='full', eyes='normal', mouth='none'),
  'mrsclaus': dict(arch='human', skin='#f5d2a3', shirt='#c93030', pants='#c93030',
-                  hair='#dcdcd8', hairstyle='long', eyes='normal', mouth='grin',
+                  hair='#dcdcd8', hairstyle='short', eyes='normal', mouth='grin',
                   belt='#f5efe8'),
  'bunny': dict(arch='round', skin='#f5efe8', shirt='#f5efe8', eyes='normal',
                eyecolor='#b06a80', mouth='line'),
