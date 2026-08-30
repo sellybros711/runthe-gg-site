@@ -1681,6 +1681,76 @@
       color .16s var(--ez),transform .12s var(--ez)}
     .steps button:active{transform:scale(.96)}
   }
+  /* ── the whip count ────────────────────────────────────────────────────────────
+     THE ONE THING THIS MODE CAN DO TO YOU, DRAWN. A term ends two ways and both of them are
+     arithmetic on vote weight: more than half the room turns, or the two that hold the
+     inventory both turn whatever the rest does. That was nine rows of a name, a bar and a
+     number, and the player was being asked to add 2 + 2 + 1.5 in their head and compare it
+     to 3.75 every time they ruled on anything.
+
+     AGAINST YOU ON THE LEFT, WITH YOU ON THE RIGHT, AND A LINE AT HALF. Sorting by mood
+     rather than by name is the whole reason it reads at a glance: red grows from the left,
+     the gold line does not move, and "am I still in this job" is answered by whether one
+     has reached the other. The reorder as a bloc changes its mind is not noise, it is the
+     drama. Nobody without a vote is on it, which is a fact this mode had never said out
+     loud: the networks, the players and the fans cannot remove you. */
+  .whip{margin-bottom:14px}
+  .whip .wh{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .whip .wh b{font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .whip .wh .state{margin-left:auto;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+    border:1px solid currentColor}
+  .whip.safe .state{color:var(--green)}
+  .whip.thin .state{color:var(--gold)}
+  .whip.gone .state{color:var(--red)}
+  /* NO GAP BETWEEN SEGMENTS, which is the difference between six boxes and two blocks. The
+     first version put 2px between them and outlined the hostile ones in red, and the left
+     hand side read as four separate angry conferences rather than as one mass of vote weight
+     approaching a line. A hairline divider keeps them countable. */
+  .whip .track{position:relative;display:flex;height:36px;border-radius:9px;
+    background:var(--line);overflow:visible}
+  /* PADDING AND BORDER ARE BOTH A FLOOR ON A FLEX ITEM WITH A ZERO BASIS, and this segment
+     inherited two pixels of one and one of the other. The Group of Five's half a vote came
+     out 26.4px wide against the SEC's 87.5 where the weights say four to one, because every
+     segment was carrying six pixels that are not a proportion of anything. A bar whose
+     smallest seat is a fifth too big is a bar that lies about the room. Measured in
+     test_whip, not eyeballed: at these sizes the error is a pixel and a half. */
+  .whip .seg{position:relative;display:flex;align-items:center;justify-content:center;
+    min-width:0;padding:0;border:0;overflow:hidden;border-radius:0;
+    box-shadow:inset -1px 0 0 rgba(0,0,0,.45)}
+  .whip .seg:last-child{box-shadow:none}
+  .whip .seg:first-child{border-radius:9px 0 0 9px}
+  .whip .seg:last-child{border-radius:0 9px 9px 0}
+  .whip .seg b{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.04em;
+    white-space:nowrap;color:rgba(255,255,255,.86)}
+  /* ONE QUESTION, ONE COLOUR CHANNEL. The first version tinted each segment with the bloc's
+     own brand hue and washed the hostile ones red on top of it, and the SEC's brand hue IS
+     red: a supportive SEC came out looking exactly like a conference that had turned, on the
+     strip whose entire job is telling those two apart. The bloc is named on the segment and
+     keeps a hairline of its own colour on top; the fill says with or against and nothing
+     else. */
+  .whip .seg.with{background:rgba(16,185,129,.30);
+    box-shadow:inset -1px 0 0 rgba(0,0,0,.45),inset 0 3px 0 var(--bc)}
+  .whip .seg.against{background:rgba(239,68,68,.34);
+    box-shadow:inset -1px 0 0 rgba(0,0,0,.45),inset 0 3px 0 var(--bc)}
+  .whip .seg.with:last-child,.whip .seg.against:last-child{
+    box-shadow:inset 0 3px 0 var(--bc)}
+  .whip .seg.against b{color:rgba(255,255,255,.72)}
+  /* THE TWO THAT CAN END YOU ON THEIR OWN. A second failure condition needs a second mark,
+     or the strip is telling a player they are safe at 3 of 7.5 while both of them are red. */
+  .whip .seg.big:after{content:'';position:absolute;top:4px;right:4px;width:5px;height:5px;
+    border-radius:50%;background:var(--gold);opacity:.9}
+  /* THE LINE DOES NOT MOVE, which is the point of it. */
+  .whip .cut{position:absolute;left:50%;top:-5px;bottom:-5px;width:2px;margin-left:-1px;
+    background:var(--gold);border-radius:2px;pointer-events:none}
+  .whip .foot{display:flex;gap:10px;align-items:baseline;margin-top:9px;font-size:11.5px;
+    color:var(--dim);line-height:1.4}
+  .whip .foot b{color:var(--ink);font-weight:600}
+  .whip .foot .r{margin-left:auto;color:var(--dim-2);white-space:nowrap}
+  .whip .moved{margin-top:8px;font-size:12px;line-height:1.45;color:var(--gold)}
+  @media(max-width:400px){ .whip .seg b{font-size:9px} }
+
   /* ── asking about the case ─────────────────────────────────────────────────────
      A QUESTION IS A BUTTON UNTIL IT IS ASKED AND THEN IT IS A PARAGRAPH. Two states, one
      node, so the panel does not reflow into a different shape as it fills up. */
@@ -1812,9 +1882,9 @@
     <div class="eyebrow" id="off-when">Winter meetings</div>
     <h2 id="off-title">Your office</h2>
     <div class="meters" id="off-meters"></div>
-    <!-- The coalition, which is how the term actually ends, drawn rather than left to be
-         worked out from nine numbers four of which do not count. -->
-    <div class="coal" id="off-coal"></div>
+    <!-- THE VOTE THAT ENDS A TERM, drawn rather than left to be worked out from nine numbers
+         three of which do not count. See paintWhip(). -->
+    <div class="whip" id="off-whip"></div>
 
     <!-- ---- while the football is on ----
          Hidden in the offseason and the only thing that matters from September to January.
@@ -2054,6 +2124,7 @@
     <div class="card flat split" id="r-split" hidden></div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px" id="r-head">The room</div>
+      <div class="whip" id="r-whip"></div>
       <div class="room" id="r-room"></div>
       <!-- How much of that was a read and how much was guesswork. -->
       <div id="r-council"></div>
@@ -2113,14 +2184,13 @@
     <div class="card flat" id="y-feed" hidden></div>
     <!-- The term so far, on the screen where a year is being closed out. -->
     <div class="cal" id="y-cal"></div>
-    <!-- The same vote that ends a term, on the screen where a term can end. -->
-    <div class="coal" id="y-coal"></div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px">The sport you are running</div>
       <div class="sport" id="y-sport"></div>
     </div>
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
+      <div class="whip" id="y-whip"></div>
       <div class="room" id="y-room"></div>
     </div>
     <!-- A CARD THAT STATES A FACT, NOT A SCORE. See drawTermCard(). Above the dock, on the
@@ -2579,25 +2649,75 @@ function paintMeters(el,w,before,lock,since){
 /* THE THING THAT ENDS THE TERM, DRAWN. Losing the job is a coalition of voting weight, and
    until now the player had to read nine numbers, remember which four of them hold no vote
    at all, and add up the rest. It is one bar with the halfway line on it. */
-function paintCoalition(el,w){
-  const hostile=L.hostileWeight(w), total=L.totalWeight();
-  const pct=Math.max(0,Math.min(100,(hostile/total)*100));
+/* ── the whip count ────────────────────────────────────────────────────────────────
+   See the CSS above for what this is and why it is sorted by mood. `before` is the world one
+   ruling ago, and it is only used to say who crossed the line, which is the single most
+   consequential thing that can happen on a reaction screen and had no way of being noticed. */
+function whipState(w){
+  const total=L.totalWeight();
+  const hostile=L.hostileWeight(w);
   const angry=L.coalition(w);
-  const danger=hostile>total/2||(angry.indexOf('SEC')>=0&&angry.indexOf('Big Ten')>=0);
-  const note=!angry.length
-    ? 'Nobody with a vote has stopped listening.'
-    : angry.map((a)=>(B.BY_ID[a]||{}).name||a).join(', ')+(angry.length===1?' has':' have')+' stopped listening.';
-  el.className='coal'+(danger?' danger':'');
-  el.innerHTML='<div class="ch"><b>The vote against you</b>'
-    +'<span>'+(Math.round(hostile*10)/10)+' of '+total+'</span></div>'
-    /* ROUNDED RATHER THAN FIXED TO ONE PLACE. toFixed writes "0.0%", the browser stores it
-       back as "0%", and the two no longer match, which is only a problem because the check
-       that every bar reached its width compares them literally. A tenth of this track is a
-       third of a pixel, so there is nothing to lose by writing the number plainly. */
-    +'<div class="track"><em data-w="'+(Math.round(pct*10)/10)+'%" style="width:0"></em><u></u></div>'
-    +'<div class="note">'+esc(note)+'</div>';
-  grow(el);
+  const bigTwo=angry.indexOf('SEC')>=0&&angry.indexOf('Big Ten')>=0;
+  const gone=bigTwo||hostile>total/2;
+  /* THIN IS NOT A THIRD STATE OF THE RULE, it is a warning about the one rule there is: one
+     more vote of weight and the count is over the line, or one of the two is already gone. */
+  const thin=!gone&&(hostile+1>total/2||angry.indexOf('SEC')>=0||angry.indexOf('Big Ten')>=0);
+  return { total:total, hostile:Math.round(hostile*10)/10, with:Math.round((total-hostile)*10)/10,
+    limit:Math.round((total/2)*100)/100, angry:angry, bigTwo:bigTwo, gone:gone, thin:thin };
 }
+
+function paintWhip(el,w,before){
+  if(!el) return;
+  const st=whipState(w);
+  const VW=L.VOTE_WEIGHT;
+  /* Against you first and biggest first inside each half, so the red block is contiguous and
+     the eye only ever has to compare one edge against one line. */
+  const seats=Object.keys(VW)
+    .filter((b)=>w.blocs[b]!=null)
+    .map((b)=>({ id:b, weight:VW[b], v:w.blocs[b], against:w.blocs[b]<L.HOSTILE }))
+    .sort((a,b)=>(a.against===b.against?b.weight-a.weight:(a.against?-1:1)));
+  const totalW=seats.reduce((t,x)=>t+x.weight,0)||1;
+  const label=st.gone?'Removed':st.thin?'On the edge':'Holding';
+  el.className='whip '+(st.gone?'gone':st.thin?'thin':'safe');
+  /* SHORT ENOUGH TO SHARE A LINE WITH THE PILL. "The vote that can remove you" wrapped onto
+     two lines at 390px and the pill sat on top of the second one. The foot says the rest. */
+  el.innerHTML='<div class="wh"><b>Your job</b>'
+    +'<span class="state">'+esc(label)+'</span></div>'
+    +'<div class="track">'
+    +seats.map((x)=>{
+      const ui=BLOC_UI[x.id]||{};
+      const big=x.id==='SEC'||x.id==='Big Ten';
+      return '<span class="seg '+(x.against?'against':'with')+(big?' big':'')+'" '
+        +'style="flex:'+x.weight+' 0 0;--bc:'+(ui.c||'#8b98ad')+'" '
+        +'title="'+esc(x.id+', '+x.weight+(x.weight===1?' vote':' votes'))+'">'
+        +'<b>'+esc(ui.tag||ui.short||x.id)+'</b></span>';
+    }).join('')
+    +'<i class="cut"></i></div>'
+    /* AT EXACTLY HALF YOU SURVIVE, and the first version said "4 against you, you go at 4",
+       which reads as a contradiction and is one sentence away from being a bug report. The
+       rule is strictly greater than half and the words now say so. */
+    +'<div class="foot"><span><b>'+st.hostile.toFixed(1)+'</b> of '+st.total+' against you</span>'
+    +'<span class="r">'+(st.gone
+      ? (st.bigTwo?'both of the two are gone':'over the line')
+      : 'removed above '+st.limit.toFixed(1))+'</span></div>'
+    /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A bloc going under twenty five is the whole
+       failure condition arriving one step closer and it used to be a number changing colour
+       in a list of nine. */
+    +(function(){
+      if(!before) return '';
+      const moved=Object.keys(VW).filter((b)=>w.blocs[b]!=null&&before.blocs[b]!=null
+        &&(w.blocs[b]<L.HOSTILE)!==(before.blocs[b]<L.HOSTILE));
+      if(!moved.length) return '';
+      const names=moved.map((b)=>(B.BY_ID[b]||{}).name||b).join(' and ');
+      const out=w.blocs[moved[0]]<L.HOSTILE;
+      return '<div class="moved">'+esc(names)+(moved.length===1?' has ':' have ')
+        +(out?'crossed the line against you.':'come back over the line.')+'</div>';
+    })();
+  /* The segments are laid out by flex, so nothing here has to be grown: what would animate
+     is the reorder, and a bar that shuffles while you read it is worse than one that does
+     not. */
+}
+
 
 /* ONE ROW PER BLOC, AND IT ANSWERS FOUR QUESTIONS AT A GLANCE: who, do they hold a vote,
    how do they feel, and which way did they just move. `rows` is the reaction to a ruling
@@ -2625,15 +2745,16 @@ function paintRoom(el,w,rows,blind){
      headers is three chances for one of them to end up calling the number something the other
      two do not. The reaction screen gets its own wording because its right-hand column is not
      the same column: there the standing goes quiet and the MOVE is the big figure. */
+  /* TWO SENTENCES BECAME ONE, because the strip above this list now draws the threshold and
+     the vote instead of explaining them. What is left is the only thing a caption still has
+     to say, which is what the number in the right-hand column is. */
   const key='<div class="rkey"><span>'
     +(react
       /* NEUTRAL ON TENSE, because this same branch draws the forecast ("if you ruled that
          way") and the ruling itself, and a caption that says "moved" is a lie on one of
          them. */
-      ? 'How far each bloc moves, and where that leaves them. '
-        +'Below 25 they are counted against you in a vote to remove you.'
-      : 'How each bloc feels about you: 0 is at war, 100 is an ally. Below 25, the mark on '
-        +'each bar, they are counted against you in a vote to remove you.')
+      ? 'How far each bloc moves, and where that leaves them.'
+      : 'How each bloc feels about you: 0 is at war, 100 is an ally.')
     +'</span><b>'+(react?'Standing, and the move':'Standing, 0 to 100')+'</b></div>';
   el.innerHTML=key+B.BLOCS.map((b)=>{
     const v=w.blocs[b.id], r=byId[b.id];
@@ -3133,7 +3254,7 @@ function office(){
       ? (angry.length===1?angry[0]+' has stopped listening':angry.length+' of the room have stopped listening')
       : 'Your office';
   paintMeters($('off-meters'),world,null,null,'start');
-  paintCoalition($('off-coal'),world);
+  paintWhip($('off-whip'),world,null);
   paintSport($('off-sport'),world,null);
   paintFuses($('off-fuses'),world);
 
@@ -5652,6 +5773,7 @@ $('b-test').onclick=()=>{
   const willMove=JSON.stringify(sportFacts(after))!==JSON.stringify(sportFacts(world));
   $('r-changed').hidden=!willMove;
   if(willMove) paintSport($('r-sport'),after,world);
+  paintWhip($('r-whip'),after,world);
   paintRoom($('r-room'),after,lastRoom,blind);
   paintCouncilNote($('r-council'),seats);
   /* NO FEED ON A FORECAST. The internet cannot react to a ruling nobody has made, and it is
@@ -5852,6 +5974,7 @@ function pressFinish(){
      they were and standing does not, which is the rule of this screen stated in numbers
      rather than in a sentence nobody reads. */
   paintMeters($('r-meters'),world,before);
+  paintWhip($('r-whip'),world,before);
   paintRoom($('r-room'),world,lastRoom);
   $('r-council').innerHTML='';
   lastBefore=before;
@@ -5911,6 +6034,9 @@ window.PS_CFB_COMMISH_TEST={
   termCard:()=>drawTermCard(),
   termText:()=>termShareText(),
   termData:()=>termCardData(),
+  /* The strip is a second implementation of removal(), so a guard has to be able to draw it
+     against a world it chose rather than against whatever the office happens to hold. */
+  whip:(el,w,before)=>paintWhip(el,w,before),
   /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety nine
      turns up takes several terms and lands on whichever it lands on, and an assertion about
      a specific door has to be made against that door. Same body as b-desk from the pick
@@ -6003,6 +6129,7 @@ $('b-rule').onclick=()=>{
   /* NO COUNCIL HERE, ON PURPOSE. This is what happened, and the whole room answers whether
      you had people inside it or not. Gating a forecast is difficulty; gating a consequence
      would just be hiding the game. */
+  paintWhip($('r-whip'),world,before);
   paintRoom($('r-room'),world,lastRoom);
   paintCouncilNote($('r-council'),C.SEATS.length);
   paintFeed($('r-feed'),FEED.onRuling({
@@ -6664,8 +6791,8 @@ function yearEnd(year){
     trend:(function(){ const a=ratingsAverage(); return a&&a.perGame?lastSeason.perGame-a.perGame:0; })(),
   }):null,'What the internet said about the '+year+' season');
   paintCalendar($('y-cal'),world);
-  paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
+  paintWhip($('y-whip'),world,null);
   paintRoom($('y-room'),world,null);
   if(done>=TERM_SEASONS){ ending(); return; }
   /* NO CARD ON A YEAR IN REVIEW. It states what a TERM turned out to believe, and a term with
@@ -6722,8 +6849,8 @@ function ending(){
   paintCalendar($('y-cal'),world);
   paintFeed($('y-feed'),FEED.onTerm({year:world.year,removed:!!o.removed}),
     o.removed?'The morning after':'The verdict');
-  paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
+  paintWhip($('y-whip'),world,null);
   paintRoom($('y-room'),world,null);
   $('b-term-share').hidden=false;
   $('b-year-next').textContent='Take the job again';
