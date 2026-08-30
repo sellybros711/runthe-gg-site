@@ -2656,8 +2656,7 @@ function startFieldLoop() {
       return;
     }
     const fCv = document.getElementById('field');
-    const mCv = document.getElementById('meter');
-    if (fCv && mCv) {
+    if (fCv) {
       const g = State.game;
       const p = g.pitch;
       let t = 0, inWindup = true;
@@ -2676,7 +2675,6 @@ function startFieldLoop() {
         }
       }
       drawField(fCv.getContext('2d'), fCv.width, fCv.height, t, p || null, inWindup);
-      drawMeter(mCv.getContext('2d'), mCv.width, mCv.height, t, p || { ideal: 0.5, pt: 'fastball' }, inWindup);
       refreshStealButton();
     }
     fieldRafId = requestAnimationFrame(paint);
@@ -4767,6 +4765,9 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     }
     drawBaseball(ctx, ballX, ballY);
   }
+  if (pitch && !(g && g.play)) {
+    drawTimingRing(ctx, G, t, pitch, inWindup);
+  }
 
   /* Instant replay: re-runs the stored highlight's flight over the live
      field, with a broadcast style badge. Purely cosmetic; it reads no
@@ -5130,49 +5131,62 @@ function drawRunner(ctx, x, y, character, scale, pose) {
 
 }
 
-function drawMeter(ctx, w, h, t, pitch, inWindup) {
-  ctx.fillStyle = '#0c1218';
-  ctx.fillRect(0,0,w,h);
+/* The timing read lives ON THE FIELD now: a ring that shrinks onto a
+   green target circle at the contact point as the pitch flies in. The
+   ball arrives exactly when the ring closes on the target, so watching
+   the ball and watching the ring are the same act, which is the whole
+   Backyard trick the old bottom bar never managed. */
+function drawTimingRing(ctx, G, t, pitch, inWindup) {
+  /* Centered where the pitch actually arrives, sized to read from a
+     couch: the first cut was 62px on the batter's knee and vanished. */
+  const cxp = G.cx - 2, cyp = G.plateY - 8;
+  const R0 = 84;
   const diff = DIFF[State.difficulty];
   let half = diff.sweetWidth / 2;
-  /* The drawn green zone tracks the chosen swing, so Contact visibly
-     widens the target and Power visibly narrows it. */
-  if (State.game && playerIsBatting()) {
-    const mode = State.game.swingMode || 'contact';
+  const mode = (State.game && State.game.swingMode) || 'contact';
+  if (playerIsBatting()) {
     if (mode === 'contact') half *= 1.25;
     if (mode === 'power') half *= 0.75;
     if (mode === 'bunt') half = 0.30;
   }
-  const ideal = pitch.ideal;
-  /* Ok zones (wider yellow band around the green) */
-  ctx.fillStyle = 'rgba(244,194,90,.28)';
-  ctx.fillRect((ideal - half*1.8) * w, 0, half*3.6*w, h);
-  /* Perfect zone */
-  ctx.fillStyle = 'rgba(91,176,131,.65)';
-  ctx.fillRect((ideal - half) * w, 0, half*2 * w, h);
-  /* Cursor: brighter and thicker so it reads through the gradient */
-  if (!inWindup) {
-    const x = t * w;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(x - 2, 0, 4, h);
-    ctx.fillStyle = '#f4c25a';
-    ctx.fillRect(x - 1, 0, 2, h);
-  } else {
-    /* windup: dim the whole meter and pulse a hint at the ideal spot */
-    ctx.fillStyle = 'rgba(0,0,0,.35)';
-    ctx.fillRect(0, 0, w, h);
-    const pulse = 0.5 + 0.5 * Math.sin(performance.now()/140);
-    ctx.fillStyle = `rgba(244,194,90,${0.35 + pulse*0.4})`;
-    ctx.fillRect(ideal*w - 2, 0, 4, h);
-    ctx.fillStyle = 'rgba(255,255,255,.55)';
-    ctx.font = 'bold 13px monospace';
+  const sweetR = Math.max(17, R0 * Math.min(0.55, half / pitch.ideal));
+  const foulR = Math.min(R0 - 6, sweetR * 1.7);
+  const ring = (r, color, wdt) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = wdt;
+    ctx.beginPath();
+    ctx.ellipse(cxp, cyp, r, r * 0.62, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  };
+  /* The target: yellow ok band, green sweet circle. */
+  ctx.fillStyle = 'rgba(244,194,90,.22)';
+  ctx.beginPath(); ctx.ellipse(cxp, cyp, foulR, foulR * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(91,176,131,.45)';
+  ctx.beginPath(); ctx.ellipse(cxp, cyp, sweetR, sweetR * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+  ring(sweetR, 'rgba(140,235,175,.95)', 3);
+  if (inWindup) {
+    /* Windup: the full ring pulses in place, showing where the swing
+       window will start from. */
+    const pulse = 0.35 + 0.3 * Math.sin(performance.now() / 140);
+    ring(R0, `rgba(234,234,238,${pulse})`, 2);
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('GET READY', w/2, h/2);
+    ctx.fillText('GET READY', cxp, cyp - R0 * 0.62 - 12);
+    return;
   }
-  /* Ticks along the bottom */
-  ctx.fillStyle = 'rgba(255,255,255,.20)';
-  for (let i=1;i<10;i++) ctx.fillRect(i*w/10, h-5, 1, 5);
+  const rel = (pitch.ideal - t) / pitch.ideal;
+  if (rel > 0) {
+    /* Inbound: the white ring closes on the target with the pitch. */
+    const r = sweetR + (R0 - sweetR) * rel;
+    ring(r + 1, 'rgba(20,16,24,.55)', 4);
+    ring(r, r < foulR ? '#f4c25a' : '#eaeaee', 3);
+  } else if (t - pitch.ideal <= half) {
+    /* In the sweet window past center: the target flashes hot. */
+    const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 60);
+    ring(sweetR, `rgba(140,240,180,${pulse})`, 3);
+  }
 }
 
 /* ============================================================================
@@ -5229,8 +5243,6 @@ function renderGame() {
   meter.innerHTML = `<div class="label">`
     + `<span><b class="pt" id="pt-name">Get ready</b></span>`
     + `<span id="meter-side">Click anywhere or press Space</span></div>`;
-  const m = document.createElement('canvas'); m.id='meter'; m.width=720; m.height=52;
-  meter.appendChild(m);
   /* Swing selection, Backyard style: pick HOW you swing before the
      pitch arrives. Contact is wide and safe, Power is narrow and loud,
      Bunt lays it down. Keys 1/2/3 work too. */
@@ -5248,7 +5260,7 @@ function renderGame() {
     };
   }
   meter.appendChild(modes);
-  const hint = el('div','hint', 'Land the marker on the <b>green zone</b> to make solid contact.');
+  const hint = el('div','hint', 'Swing when the shrinking ring reaches the <b>green circle</b> at the plate.');
   hint.id = 'meter-hint';
   meter.appendChild(hint);
 
