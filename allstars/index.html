@@ -1784,6 +1784,145 @@ const PRESS_CAST = {
 };
 const PRESS_KEYS = Object.keys(PRESS_CAST);
 
+
+/* ------------------------------------------------------------- the clubhouse
+   The pundits are ten people. Your own nine are drawn from fifty four, and
+   they are the reason anybody picked this roster in the first place, so they
+   get to talk too.
+
+   One bespoke line each. Role pools would have been a tenth of the writing
+   and it would have shown: the whole value here is that Dracula does not
+   sound like Popeye, and a shared "the Power hitters say this" pool is
+   exactly the machine that made every face the same earlier in this project.
+   The role pools below exist only for the moments the bespoke line cannot
+   cover, which is a specific thing happening to a specific player. */
+const PLAYER_LINES = {
+  kong:        "I hit it. I do not run after. That is somebody else's part of the job.",
+  franky:      "They made me for this. Not for baseball specifically. But it has worked out.",
+  popeye:      "I et me spinach in the on deck circle. Regulations say nothing about it.",
+  dracula:     "A day game. A DAY game. I have filed a complaint with the league office.",
+  liberty:     "I have stood in one place for a very long time. A nine inning game is nothing.",
+  peter:       "I am the fastest player in this league and I have been for about a century.",
+  felix:       "Nine lives. Eight of them spent diving into the gap. Worth it.",
+  jack:        "I climbed a beanstalk and robbed a giant. A fastball does not frighten me.",
+  tom:         "I told the third baseman his fence needed painting. He is out there now.",
+  huck:        "No shoes. Never had shoes. The bases do not care and neither do I.",
+  flash:       "I have saved several planets. Nobody in this dugout seems impressed by that.",
+  invisible:   "The umpire has called me out twice for things I was not near.",
+  sherlock:    "The pitcher touches his cap before the curveball. He has done it all afternoon.",
+  tracy:       "I know where that pitch is going. I have known since he came out of the dugout.",
+  alice:       "Everything here is a normal size, which I find genuinely unsettling.",
+  dorothy:     "There is no place like home plate. I have been asked not to say that again.",
+  lupin:       "I have already stolen second. Nobody has noticed. I will tell them at the end.",
+  hyde:        "I am fine. I am completely fine. Please do not walk me.",
+  scarecrow:   "They said I had no brain. I have a scouting report. Same thing, cheaper.",
+  lion:        "I am not afraid of the fastball. I am afraid of what happens after the fastball.",
+  pooh:        "I am not a very good ballplayer, but I am a very patient one, and there is honey in the dugout.",
+  robin:       "I take from the rich pitchers and give to the runners on base. It is a system.",
+  tintin:      "I have covered wars, a moon landing and a yeti. This is the tense one.",
+  santa:       "I know which of these players have been good. It has not helped my swing at all.",
+  mrsclaus:    "I have baked for both dugouts. Winning does not mean they should go hungry.",
+  bunny:       "I hid eggs all through the outfield last night and I regret nothing.",
+  fairy:       "Somebody lost a tooth on that slide. I am contractually obliged to go and get it.",
+  vampire:     "I have played baseball in four centuries. It was better before the gloves.",
+  pirate:      "Stealing bases is not stealing if you were always going to give them back.",
+  witch:       "I have hexed the opposing pitcher. Lightly. He will find it hard to sleep, not to pitch.",
+  centaur:     "I am the only player here with a legitimate case for four stolen bases at once.",
+  krampus:     "I keep a list of every fielder who has tagged me hard. It is not a short list.",
+  fathertime:  "I have watched this game invented, ruined, fixed and ruined again. Batting eighth.",
+  mothernature:"If the wind is blowing out today, that was me, and you are welcome.",
+  raboddog:    "GRRRRR. Sorry. GRRRR. Sorry. It is the ninth inning, I get like this.",
+  chupacabra:  "They keep saying I am not real. I am on the lineup card. Check the lineup card.",
+  cupid:       "I aim for the gap the way I aim for the heart, which is to say hopefully.",
+  medusa:      "The shortstop looked at me. Once. There is now a statue at shortstop.",
+  cyclops:     "One eye. No depth perception. Somehow batting .290. Nobody can explain it.",
+  phoenix:     "I struck out, burst into flames and came back. The at bat still counts as an out.",
+  dragon:      "I am not allowed to breathe fire on the field. This has been made very clear.",
+  sasquatch:   "There are eleven photographs of me in existence and nine of them are from this dugout.",
+  yeti:        "I came down the mountain for this. The mountain was quieter. The mountain had no umpires.",
+  nessie:      "I am a lake monster playing left field. Somebody has made a scheduling error.",
+  horseman:    "I do not need a head to see a fastball. I need it for the batting helmet, which is the issue.",
+  zombie:      "I am slow. I am relentless. I will reach that base eventually and you will be tired.",
+  werewolf:    "Night games I am a problem. Day games I am a man with unusual sideburns.",
+  strongman:   "I can lift the entire infield. They have asked me to focus on hitting instead.",
+  beardedlady: "Every ballpark in this league sells a hat with my face on it. I get nothing.",
+  ringmaster:  "EVERY AT BAT IS THE MAIN EVENT. Yes, even the ones where I ground out.",
+  acrobat:     "I could catch that one handed, upside down, from the top of a pole. I will not. But I could.",
+  firebreather:"I warm up by breathing fire. The grounds crew has asked me to warm up elsewhere.",
+  blackcat:    "I walked in front of the other dugout on the way here. Purely by accident.",
+  humpty:      "I have had one great fall. I would like the record to show it was not in a baseball context.",
+};
+/* Only for the moments a single fixed line cannot carry: something specific
+   just happened TO this player and they are reacting to that. */
+const PLAYER_MOOD = {
+  star: [
+    "Everything looked slow today. I have no idea why. I hope it happens again.",
+    "I was seeing it out of the hand. That does not happen often and I am not going to explain it.",
+    "Ask me about it tomorrow. Right now I would like to sit down.",
+    "That was the best I have felt at the plate in my entire unnatural life.",
+  ],
+  win: [
+    "We were better today. That is the whole quote. You can have the whole quote.",
+    "Good win. Long season. Somebody get the door for me, my hands are full.",
+    "I did not do much out there, but the eight of them did, so I will take it.",
+  ],
+  loss: [
+    "We lost. I was there. I would rather not go over it inning by inning.",
+    "They were better today. I do not have to like saying it.",
+    "We will be fine. I have said that after worse and been right about half the time.",
+  ],
+};
+const ROLE_COLOR = {
+  Power:'#cf3229', Speed:'#1566ae', Contact:'#1b8a4a', Defense:'#6b4296',
+  Wild:'#8a3fa0', Underdog:'#b8541a', Balanced:'#8a6a20',
+};
+
+/* A speaker is a pundit or one of your own nine. Roster players get their
+   own name, their position on YOUR club as the outlet, and a colour off
+   their role, so the clubhouse reads as a different room to the press box. */
+function pressSpeaker(key) {
+  if (PRESS_CAST[key]) return PRESS_CAST[key];
+  const c = ROSTER.find(r => r.k === key);
+  if (!c) return PRESS_CAST.tracy;
+  return {
+    name: c.n,
+    outlet: (State.teamName || 'Clubhouse') + ' · ' + c.role,
+    color: ROLE_COLOR[c.role] || '#14283f',
+  };
+}
+
+/* ------------------------------------------------------------------ rivalry
+   Opponents do not repeat inside a seven game schedule, so a rivalry that
+   only remembered this season would never once fire. It reads the playoff
+   rematch first, which is the common case, then a lifetime record kept in
+   PROGRESS, which is what makes a fourth straight loss to the same club land
+   the way it should. Null when there is no story, and lines that use it are
+   filtered out on null rather than dressing up a first meeting as history. */
+function pressRival(foeName) {
+  const S = State.season;
+  if (S && S.results) {
+    const prior = S.results.filter(r => r.opponent === foeName);
+    if (prior.length) {
+      const p = prior[prior.length - 1];
+      return p.win
+        ? `you took them ${p.you} to ${p.them} in the regular season`
+        : `they took you ${p.them} to ${p.you} in the regular season`;
+    }
+  }
+  const v = (PROGRESS.vs || {})[foeName];
+  if (v && (v.w + v.l) >= 3) {
+    if (v.w === 0) return `you have never beaten this club, ${v.w} and ${v.l} all time`;
+    if (v.l === 0) return `you have never lost to this club, ${v.w} and ${v.l} all time`;
+    return `you are ${v.w} and ${v.l} against them all time`;
+  }
+  return null;
+}
+function pressBumpRival(foeName, win) {
+  PROGRESS.vs = PROGRESS.vs || {};
+  const v = PROGRESS.vs[foeName] || (PROGRESS.vs[foeName] = { w:0, l:0 });
+  if (win) v.w++; else v.l++;
+}
+
 /* A portrait is the sprite's own head, blown up. The head is rows 1 to 25
    of the fifty row sprite, so the panel scales to those and crops the rest;
    drawing the whole figure in a bust frame gives you a full body the size
@@ -1841,6 +1980,8 @@ const PRESS = {
     ],
     mid: [
       ["sherlock", "{team} sit at {rec}. That record tells me three things, and two of them are about their pitching."],
+      ["tracy", "History with this one: {rivalNote}. Records get short memories. Clubhouses do not."],
+      ["medusa", "I looked it up. {rivalNote}. Somebody should read that out loud before first pitch."],
       ["tracy", "Game {gameNo} of seven. {foe} today. {team} are {rec} and the schedule does not get kinder."],
       ["humpty", "I am told this is a big one. Every one of them has been a big one. My shell is not what it was."],
       ["witch", "The omens today are mixed. There was a crow. There is always a crow. I may be overreading the crow."],
@@ -1855,12 +1996,15 @@ const PRESS = {
     ],
     playoff: [
       ["tracy", "Playoff baseball. Different air. {team} against {foe} and one of them stops existing tonight."],
+      ["sherlock", "A note from the file on {foe}: {rivalNote}. Postseason does not care, but you will."],
+      ["krampus", "{foe} again. And {rivalNote}. I do hope somebody in that clubhouse has been counting."],
       ["krampus", "I love this round. Somebody goes home sad, and I get to watch it happen from a very good seat."],
       ["witch", "I have stopped reading the omens. At this stage the omens read YOU."],
       ["ringmaster", "ELIMINATION. My favourite word. Say it with the teeth."],
     ],
     final: [
       ["tracy", "The final. {team} and {foe}. Whatever you were doing, stop it and watch this."],
+      ["lupin", "The final, against this club, and {rivalNote}. You could not write it. I have tried."],
       ["mrsclaus", "The final! I have knitted something for both teams. Only one of them will want it afterwards."],
       ["ringmaster", "THE LAST GAME. THE LAST OUT. THE LAST WORD. I HAVE NOT BLINKED SINCE TUESDAY."],
       ["humpty", "I have waited my whole career for one of these. Please do not let anyone sit on me before first pitch."],
@@ -1912,6 +2056,11 @@ const PRESS = {
       ["ringmaster", "THEY WERE DEAD. I DECLARED THEM DEAD ON AIR. I WOULD LIKE TO RETRACT THAT."],
       ["lupin", "A comeback. My favourite genre. You let them believe they have it, and then you simply take it."],
       ["tintin", "I had already filed the loss. I have never unfiled anything so fast in my life."],
+    ],
+    rival: [
+      ["tracy", "Worth saying, given {rivalNote}: that one carried more than a game's worth of weight."],
+      ["krampus", "And to think, {rivalNote}. I shall be dining out on the arithmetic for weeks."],
+      ["sherlock", "For the file: {rivalNote}. The pattern is now long enough to be called a pattern."],
     ],
     star: [
       ["sherlock", "{star} was the story. Anyone watching the box score can see it. I saw it in the fourth."],
@@ -2003,6 +2152,17 @@ function pressScene(kind, c) {
   const beats = [];
   const add = (arr) => { for (const [who, text] of arr) beats.push({ who, text: pressFill(text, c) }); };
   const pick = (pool, n) => pressPick(pressUsable(pool, c), n);
+  /* A voice from your own dugout. It takes a roster key rather than a cast
+     key, which is why pressSpeaker exists: the clubhouse and the press box
+     are the same screen with different name plates. */
+  const clubhouse = (key, mood) => {
+    if (!key) return;
+    const line = mood ? mood[Math.floor(Math.random() * mood.length)] : PLAYER_LINES[key];
+    if (line) beats.push({ who: key, text: pressFill(line, c) });
+  };
+  const myNine = (State.team || []).slice();
+  const someone = () => myNine.length
+    ? myNine[Math.floor(Math.random() * myNine.length)] : null;
   if (kind === 'mediaDay') {
     add(pick(PRESS.mediaDay, 3));
     const a = PRESS.openerAsk;
@@ -2012,9 +2172,18 @@ function pressScene(kind, c) {
     const cb = c.lastTag && PRESS_CALLBACK[c.lastTag];
     if (cb && Math.random() < 0.6) add(pick(cb, 1));
     add(pick(PRESS.pregame[c.slot] || PRESS.pregame.mid, cb ? 1 : 2));
+    if (Math.random() < 0.75) clubhouse(someone());
   } else if (kind === 'postgame') {
     add(pick(PRESS.postgame[c.slot] || PRESS.postgame.closeWin, 2));
-    if (c.star) add(pick(PRESS.postgame.star, 1));
+    if (c.rivalNote) add(pick(PRESS.postgame.rival, 1));
+    if (c.starKey) {
+      /* The player who did it speaks BEFORE the analysis of what they did.
+         The other way round is a press release. */
+      clubhouse(c.starKey, PLAYER_MOOD.star);
+      add(pick(PRESS.postgame.star, 1));
+    } else if (Math.random() < 0.6) {
+      clubhouse(someone(), c.won ? PLAYER_MOOD.win : PLAYER_MOOD.loss);
+    }
     if (c.ask) {
       const asks = PRESS.askPool.filter(q => pressUsable(
         [q].concat(q.choices.map(o => ({ text: o.label + ' ' + o.reply }))), c
@@ -2044,6 +2213,7 @@ function pressCtx(extra) {
     rec: rec ? `${rec.w}-${rec.l}` : '0-0',
     gameNo: S ? S.results.length + 1 : 1,
     lastTag: S && S.press && S.press.lastTag,
+    rivalNote: State.opponent ? pressRival(State.opponent.name) : null,
   }, extra || {});
 }
 
@@ -2070,7 +2240,10 @@ function pressStar(g, you) {
     const sc = h + hr * 2;
     if (sc > bestScore) { bestScore = sc; best = b; }
   }
-  return bestScore >= 2 ? (best.n || best.k) : null;
+  /* The key comes back with the name because the star gets to answer for
+     themselves in the clubhouse, and that needs the roster key, not a
+     display string. */
+  return bestScore >= 2 ? { name: best.n || best.k, key: best.k } : null;
 }
 
 /* Where the press is allowed to speak. Exhibition is a pick up game. */
@@ -2100,7 +2273,7 @@ function renderCutscene() {
     return;
   }
   const beat = C.beats[C.i];
-  const cast = PRESS_CAST[beat.who] || PRESS_CAST.tracy;
+  const cast = pressSpeaker(beat.who);
   const s = el('div','screen press');
 
   const stage = el('div','press-stage');
@@ -4686,6 +4859,7 @@ function finishGame() {
     if (trailed) PROGRESS.comebacks = (PROGRESS.comebacks|0) + 1;
     g.comeback = trailed;   /* the press asks for this a few lines below */
   }
+  if (pressActive()) pressBumpRival(foe.name, win);
   saveProgress();
   g.freshUnlocks = refreshUnlocks();
 
@@ -4695,10 +4869,11 @@ function finishGame() {
   /* A question every third game or so. Asked every time it is an interview
      show; asked never and the choices may as well not exist. */
   const ask = Math.random() < 0.34;
+  const st = pressStar(g, you);
   pressPlay('postgame', pressCtx({
     slot: pressResultSlot(g, win, margin),
     foe: foe.name, you: you.score, them: foe.score, margin,
-    star: pressStar(g, you), ask,
+    star: st && st.name, starKey: st && st.key, won: win, ask,
   }), toResult);
 }
 

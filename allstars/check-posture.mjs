@@ -197,7 +197,11 @@ if (!opponentsMatch) {
 
     const speakers = [...body.matchAll(/\[\s*"(\w+)"\s*,/g)].map(m => m[1]);
     const whos = [...body.matchAll(/who:\s*['"](\w+)['"]/g)].map(m => m[1]);
-    const unknown = [...new Set([...speakers, ...whos])].filter(k => !cast.has(k));
+    /* A line may also be spoken by one of the fifty four, since the
+       clubhouse and the press box share this screen. */
+    const rosterSpeakers = new Set([...page.matchAll(/\{ k:'(\w+)'/g)].map(m => m[1]));
+    const unknown = [...new Set([...speakers, ...whos])]
+      .filter(k => !cast.has(k) && !rosterSpeakers.has(k));
     if (unknown.length) {
       problems.push(`press lines are attributed to speakers with no PRESS_CAST entry: `
         + `${unknown.join(', ')}. They would all be delivered by whoever is first in the cast.`);
@@ -205,8 +209,8 @@ if (!opponentsMatch) {
 
     /* Every slot the templates use has to be one something actually sets:
        pressCtx builds the common ones and the call sites add the rest. */
-    const known = new Set(['team','foe','park','rec','gameNo','lastTag',
-                           'you','them','margin','star','slot','ask']);
+    const known = new Set(['team','foe','park','rec','gameNo','lastTag','rivalNote',
+                           'you','them','margin','star','starKey','won','slot','ask']);
     const slots = [...new Set([...body.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
     const orphan = slots.filter(k => !known.has(k));
     if (orphan.length) {
