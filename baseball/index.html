@@ -572,6 +572,7 @@ h1,h2,h3{margin:0}
 
   <button class="btn hp-start" id="b-start">&#9918; Start a run &#9918;</button>
   <button class="btn ghost hp-secondary" id="b-era">Eras Mode</button>
+  <button class="btn ghost hp-secondary" id="b-fran">Franchise Mode</button>
   <div class="hrow">
     <button class="btn ghost hp-util-btn" id="b-how-play">How to play</button>
     <button class="btn ghost hp-util-btn" id="b-trophy">Trophy case</button>
@@ -593,6 +594,14 @@ h1,h2,h3{margin:0}
   <p class="dim" style="font-size:13px;margin:0 0 12px">Draft only from players of a single decade. Chase each era's best-ever record.</p>
   <div class="era-grid" id="era-grid"></div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-era-back">Back</button></div>
+</div>
+
+<div class="screen" id="s-fran">
+  <div class="eyebrow">Franchise Mode</div>
+  <h2 class="display" style="font-size:27px;margin:5px 0 8px">Build a dynasty</h2>
+  <p class="dim" style="font-size:13px;margin:0 0 12px">Draft one franchise's all-time roster. Every teammate shares the uniform, so your chemistry runs sky-high. But you're on your own for talent.</p>
+  <div class="era-grid" id="fran-grid"></div>
+  <div style="margin-top:16px"><button class="btn ghost sm" id="b-fran-back">Back</button></div>
 </div>
 
 <div class="screen" id="s-how">
@@ -751,7 +760,7 @@ h1,h2,h3{margin:0}
 </div>
 
 <script src="engine.js?v=8"></script>
-<script src="run.js?v=7"></script>
+<script src="run.js?v=8"></script>
 <script src="achievements.js?v=1"></script>
 <script>
 (function(){
@@ -784,7 +793,7 @@ function rowFromRun(o){
     chemPct:o.chemistry?Math.round((o.chemistry.multiplier-1)*1000)/10:null,
     spend:RUN.roster.reduce((s,p)=>s+p.p,0),respins:RUN.respinsUsed||0,
     efficiency:bps?bps.efficiency:null,archetype:o.structure&&o.structure.archetype?o.structure.archetype.key:null,
-    chemLinks:[...new Set(links)],era:RUN.era||null,
+    chemLinks:[...new Set(links)],era:RUN.era||null,franchise:RUN.franchise||null,
     eliminatedWS:!!(last&&last.round==='World Series'&&!o.titleWon),
     picks:RUN.roster.map((p,i)=>({i:p.i,s:p.s,t:p.t,slot:E.SLOTS[RUN.slotIndex[i]],w:p.w})),
   };
@@ -1269,6 +1278,8 @@ async function boot(){
 $('b-start').addEventListener('click',()=>startRun());
 $('b-era').addEventListener('click',()=>{buildEraGrid();show('s-era');});
 $('b-era-back').addEventListener('click',()=>{show('s-intro');heroSync();});
+$('b-fran').addEventListener('click',()=>{buildFranGrid();show('s-fran');});
+$('b-fran-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-how-play').addEventListener('click',()=>show('s-how'));
 $('b-how-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-quit').addEventListener('click',()=>{
@@ -1292,6 +1303,21 @@ function buildEraGrid(){
     const btn=document.createElement('button');
     btn.className='era-btn';btn.textContent=era;
     btn.addEventListener('click',()=>startRun({era}));
+    grid.appendChild(btn);
+  }
+}
+
+/* ─── franchise mode ─── */
+function buildFranGrid(){
+  const grid=$('fran-grid');grid.innerHTML='';
+  const list=R.eligibleFranchises(DATA);
+  // sort by full name for a browsable grid
+  list.sort((a,b)=>teamFullName(a.team).localeCompare(teamFullName(b.team)));
+  for(const f of list){
+    const btn=document.createElement('button');
+    btn.className='era-btn';btn.style.fontSize='12px';
+    btn.textContent=teamFullName(f.team);
+    btn.addEventListener('click',()=>startRun({franchise:f.team}));
     grid.appendChild(btn);
   }
 }
@@ -1349,7 +1375,8 @@ function buildDrawExtras(draw){
   if(!DATA) return;
   const ts=DATA.teamSeasons;
   const era=RUN.era?E.ERAS[RUN.era]:null;
-  const pool=era?ts.filter(t=>t.season>=era[0]&&t.season<=era[1]):ts;
+  let pool=era?ts.filter(t=>t.season>=era[0]&&t.season<=era[1]):ts;
+  if(RUN.franchise)pool=pool.filter(t=>t.team===RUN.franchise);
   draw.yearOptions=[...new Set(pool.map(t=>String(t.season)))].sort();
   draw.teamOptions=[...new Set(pool.map(t=>t.team))];
   if(!draw.teamOptions.length) draw.teamOptions=[draw.team];
@@ -1673,7 +1700,11 @@ function showResult(){
   else if(o.madePlayoffs){const last=RUN.playoffs.rounds[RUN.playoffs.rounds.length-1];
     hero.className='ro-hero lose';vd.textContent='Out in the '+last.round;vd.className='ro-verdict';}
   else{hero.className='ro-hero lose';vd.textContent='Missed the playoffs';vd.className='ro-verdict';}
-  $('ro-sub').textContent=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
+  let modeLabel='';
+  if(RUN.franchise)modeLabel='The all-time '+teamFullName(RUN.franchise);
+  else if(RUN.era)modeLabel=RUN.era+' era';
+  const seedTxt=o.seedLabel&&o.madePlayoffs?o.seedLabel:'';
+  $('ro-sub').textContent=[modeLabel,seedTxt].filter(Boolean).join(' · ');
 
   // GOAT / record banner
   const goatDiv=$('r-goat');goatDiv.innerHTML='';goatDiv.style.display='none';
@@ -1785,8 +1816,8 @@ function shareVerdict(o){
   return 'Missed the playoffs';
 }
 function shareLines(o){
-  const era=RUN.era?' ('+RUN.era+')':'';
-  let t='Run The Diamond'+era+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
+  const tag=RUN.franchise?' ('+teamFullName(RUN.franchise)+')':(RUN.era?' ('+RUN.era+')':'');
+  let t='Run The Diamond'+tag+': '+o.wins+'-'+o.losses+'. '+shareVerdict(o)+'.';
   if(o.rating!=null) t+=' Team rating '+Math.round(o.rating)+'.';
   t+='\nCan you draft a better team?\nrunthe.gg/baseball';
   return t;

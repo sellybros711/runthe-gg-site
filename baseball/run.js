@@ -184,10 +184,12 @@ function openSlotNames(run) {
 function createRun(opts) {
   const era = opts.era ?? null;
   if (era !== null && !E.ERAS[era]) throw new Error(`unknown era ${era}`);
+  const franchise = opts.franchise ?? null;
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
     era,
+    franchise,
     seed,
     rngCalls: 0,
     capMusd: E.CONSTANTS.CAP_MUSD,
@@ -214,8 +216,10 @@ function rngFor(run) {
   return () => { run.rngCalls++; return rng(); };
 }
 
-/* What team-seasons can the wheel land on right now? */
-function drawable(run, data) {
+/* What team-seasons can the wheel land on right now? An optional focus
+ * narrows the pool to build chemistry deliberately: {franchise:'NYY'} draws
+ * only that franchise's seasons, {era:'1970s'} only that decade. */
+function drawable(run, data, focus) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
 
@@ -225,7 +229,13 @@ function drawable(run, data) {
     .filter(t => {
       if (run.era) {
         const r = E.ERAS[run.era];
-        return t.season >= r[0] && t.season <= r[1];
+        if (!(t.season >= r[0] && t.season <= r[1])) return false;
+      }
+      if (run.franchise && t.team !== run.franchise) return false;   // Franchise mode
+      if (focus && focus.franchise && t.team !== focus.franchise) return false;
+      if (focus && focus.era) {
+        const r = E.ERAS[focus.era];
+        if (!(r && t.season >= r[0] && t.season <= r[1])) return false;
       }
       return true;
     })
@@ -240,12 +250,15 @@ function drawable(run, data) {
     });
 }
 
-/* Spin the draft: draw a team-season and build the board. */
-function spin(run, data) {
+/* Spin the draft: draw a team-season and build the board. An optional focus
+ * steers the draw (franchise/era) to let you build chemistry on purpose;
+ * falls back to an unfocused draw if the focus has nothing signable left. */
+function spin(run, data, focus) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   const rng = rngFor(run);
 
-  const available = drawable(run, data);
+  let available = focus ? drawable(run, data, focus) : null;
+  if (!available || !available.length) available = drawable(run, data);
   if (!available.length) throw new Error('nothing left you can afford');
 
   const t = available[Math.floor(rng() * available.length)];
@@ -274,15 +287,58 @@ function spin(run, data) {
   return run.currentDraw;
 }
 
-/* Re-spin: pay the fee and draw again. */
-function respin(run, data) {
+/* Re-spin: pay the fee and draw again, optionally toward a focus. */
+function respin(run, data, focus) {
   const check = canRespin(run);
   if (!check.ok) throw new Error(`cannot re-spin: ${check.reason}`);
   const draw = run.currentDraw;
   run.respinsUsed++;
   if (draw) run.usedTeamSeasons.push(draw.team_season_id);
   run.currentDraw = null;
-  return spin(run, data);
+  return spin(run, data, focus);
+}
+
+/* Franchises deep enough to draft a full 12-man roster from: enough team-
+ * seasons (you draw one team-season per pick, max 2 each) and at least one
+ * eligible player for every hard slot (C, closer, two starters). Returns
+ * codes sorted by pool depth, for the Franchise Mode picker. */
+function eligibleFranchises(data) {
+  const byTeam = {};
+  for (const ts of data.teamSeasons) {
+    (byTeam[ts.team] = byTeam[ts.team] || { seasons: 0, players: {} });
+    byTeam[ts.team].seasons++;
+    for (const p of (data.byTeamSeason[ts.team_season_id] || [])) byTeam[ts.team].players[pkey(p)] = p;
+  }
+  const out = [];
+  for (const team of Object.keys(byTeam)) {
+    const info = byTeam[team];
+    if (info.seasons < 6) continue;
+    const players = Object.values(info.players);
+    const has = (slot) => players.some(p => E.canFillSlot(p, slot));
+    const countSlot = (slot) => players.filter(p => E.canFillSlot(p, slot)).length;
+    if (!has('C') || !has('CL') || countSlot('SP1') < 2) continue;
+    if (players.length < 16) continue;
+    out.push({ team, seasons: info.seasons, depth: players.length });
+  }
+  out.sort((a, b) => b.depth - a.depth);
+  return out;
+}
+
+/* Franchise focus targets: franchises you already have a player from that
+ * still have a signable season on the wheel. Lets you deliberately stack a
+ * franchise for chemistry. Returned most-invested first. */
+function focusTargets(run, data) {
+  if (run.phase !== PHASES.DRAFT) return [];
+  const counts = {};
+  for (const p of run.roster) counts[p.t] = (counts[p.t] || 0) + 1;
+  const targets = [];
+  for (const team of Object.keys(counts)) {
+    if (drawable(run, data, { franchise: team }).length > 0) {
+      targets.push({ franchise: team, have: counts[team] });
+    }
+  }
+  targets.sort((a, b) => b.have - a.have);
+  return targets;
 }
 
 /* Open slot indices this player is eligible to fill (for the position chooser). */
@@ -558,7 +614,7 @@ const publicAPI = {
   API_VERSION: 1,
   PHASES,
   createRun,
-  spin, respin, sign,
+  spin, respin, sign, focusTargets, eligibleFranchises,
   playSeason, advanceGame, finalizeSeason,
   previewSigning, bestPossibleSquad, projectSeason,
   indexData,
