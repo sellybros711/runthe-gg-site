@@ -109,10 +109,12 @@ async function run(width, suffix) {
       await p.screenshot({ path: OUT + 'ui_desk' + suffix + '.png', fullPage: true });
       shot = true;
       await tap(p, '#b-rule'); await p.waitForTimeout(700);
+      await pastScene(p);
       await p.screenshot({ path: OUT + 'ui_room' + suffix + '.png', fullPage: true });
       break;
     }
     await tap(p, '#b-rule'); await p.waitForTimeout(500);
+    await pastScene(p);
     if (await on(p, 's-room')) { await p.screenshot({ path: OUT + 'ui_room' + suffix + '.png', fullPage: true }); }
   }
 

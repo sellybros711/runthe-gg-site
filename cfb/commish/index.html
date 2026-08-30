@@ -2306,7 +2306,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=6"></script>
-<script src="docket.js?v=20"></script>
+<script src="docket.js?v=21"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2326,7 +2326,7 @@
 <!-- The podium. Reads nothing at load time; see media.js. -->
 <script src="media.js?v=2"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=2"></script>
+<script src="scene.js?v=4"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=2"></script>
@@ -2887,11 +2887,14 @@ function paintSet(el,kind,colour){
    know the way back. */
 let scFrames=[], scAt=0, scAfter=null, scTimer=null, scTyped=0, scDone=false;
 
-function playScene(sceneOrId,after){
+function playScene(sceneOrId,after,withCast){
   const sc=typeof sceneOrId==='string'?(SCN&&SCN.BY_ID[sceneOrId]):sceneOrId;
   if(!SCN||!sc){ if(after) after(); return false; }
-  const cast=SCN.castOf(sc,world,L,situationNow());
-  scFrames=SCN.framesOf(sc,cast);
+  /* A RULING'S SCENE TAKES THE RULING'S CAST. A raid knows which two schools moved because
+     the docket item that moved them worked it out, and a scene computing that again would be
+     a second chance to disagree with the map. Everything else builds its own. */
+  const cast=withCast||SCN.castOf(sc,world,L,situationNow());
+  scFrames=SCN.framesOf(sc,cast,world);
   if(!scFrames.length){ if(after) after(); return false; }
   /* SEEN IS RECORDED ON THE WAY IN, not on the way out. A player who closes the tab in the
      middle of a cutscene does not want it again on the next load, and `once` has to mean
@@ -6501,11 +6504,22 @@ $('b-rule').onclick=()=>{
     ? 'Continue to the year in review'
     : 'Continue to '+String(L.BEATS[world.beat+1]).toLowerCase();
   $('b-next').dataset.go='on';
-  show('s-room');
-  /* LAST, AND AFTER show(). Everything above this is the screen; this is a request over a
-     network that may not answer, so it goes out once the screen the player is looking at is
-     already finished. See recordRuling for the sequence guard. */
-  recordRuling(item,choice);
+  /* ---- WHAT IT LOOKED LIKE FROM OUTSIDE THE BUILDING ----
+     A handful of rulings are big enough to happen to somebody, and those carry a scene. The
+     room above is already painted; it is simply not on screen yet. So the numbers, the room
+     and the tail are all settled before a word of the cutscene is spoken, which is what
+     keeps a scene free: it is the twenty seconds between deciding and finding out, and it
+     cannot change either. See scene.js. */
+  const shown=()=>{
+    show('s-room');
+    /* LAST, AND AFTER show(). Everything above this is the screen; this is a request over a
+       network that may not answer, so it goes out once the screen the player is looking at is
+       already finished. See recordRuling for the sequence guard. */
+    recordRuling(item,choice);
+  };
+  const ruledScene=(item.options.find((x)=>x.id===choice)||{}).scene;
+  if(ruledScene&&SCN&&SCN.BY_ID[ruledScene]) playScene(ruledScene,shown,cast);
+  else shown();
 };
 
 $('b-next').onclick=()=>{

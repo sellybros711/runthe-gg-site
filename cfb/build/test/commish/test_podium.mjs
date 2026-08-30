@@ -211,6 +211,7 @@ console.log('\n=== and the beat carries on ===');
   ok('the way out names where it goes', /office/i.test(label), label);
   await p.click('#b-next');
   await p.waitForTimeout(800);
+  await pastScene(p);
   ok('the office is back', await on('s-office'));
   const said = await p.$$eval('#off-said div', (e) => e.map((x) => x.textContent.trim()));
   ok('the office remembers what you said', said.length === 3, said.length);

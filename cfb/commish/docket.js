@@ -197,7 +197,7 @@
         { id: 'Networks', say: 'If there is no championship weekend there is no contract to talk about.' },
       ],
       options: [
-        { id: 'recognize', label: 'Recognize them and bargain',
+        { id: 'recognize', scene: 'r-union', label: 'Recognize them and bargain',
           body: 'The end of a hundred years of pretending. Every cost in this sport becomes '
             + 'negotiable and every rule becomes a term of employment.',
           edit: { set: { 'pressure.union': 10, 'labour.employment': 'employee' },
@@ -380,7 +380,7 @@
         { id: 'Networks', say: 'We bought a month of programming and half of it is unwatchable.' },
       ],
       options: [
-        { id: 'cut', label: 'Cut the field in half',
+        { id: 'cut', scene: 'r-bowls', label: 'Cut the field in half',
           body: 'A bowl becomes something you earn again. Fifteen cities lose a game and '
             + 'about forty schools lose a week of December practice.',
           edit: { set: { 'posture.bowlTieIns': false },
@@ -756,10 +756,10 @@
         { id: 'hold', label: 'Leave it at twelve',
           body: 'It works. Nobody is happy, which is usually the sign of a settlement.',
           edit: { effects: { tradition: 1, autonomy: 1 } } },
-        { id: 'to14', label: 'Fourteen',
+        { id: 'to14', scene: 'r-format', label: 'Fourteen',
           body: 'Two more seats. The smallest change that can be called a change.',
           edit: { set: { 'playoff.teams': 14 }, effects: { access: 1, inventory: 1, money: 1, tradition: -1 } } },
-        { id: 'to16', label: 'Sixteen',
+        { id: 'to16', scene: 'r-format', label: 'Sixteen',
           body: 'A fourth of the country in the bracket. The regular season becomes '
             + 'something else, and nobody agrees what.',
           edit: { set: { 'playoff.teams': 16 },
@@ -944,7 +944,7 @@
         { id: 'Fans', say: 'They have played each other for a hundred years.' },
       ],
       options: [
-        { id: 'allow', label: 'Stay out of it',
+        { id: 'allow', scene: 'r-raid', label: 'Stay out of it',
           body: 'Schools move. They always have. It is not this office\'s business and '
             + 'saying so is the whole job some days.',
           /* AND IT REALLY MOVES THEM. The first version of this had effects and no `move`,
@@ -961,7 +961,7 @@
           body: 'Use the office. It works once.',
           edit: () => ({ effects: { autonomy: -3, tradition: 2, exposure: 3 },
             aimed: { ACC: { autonomy: 3 }, SEC: { autonomy: -2 }, 'Big Ten': { autonomy: -2 } } }) },
-        { id: 'toll', label: 'Let them go, at a price',
+        { id: 'toll', scene: 'r-raid', label: 'Let them go, at a price',
           body: 'An exit fee that funds the conference losing them. Everybody leaves the '
             + 'room having lost something, which is what a settlement looks like.',
           edit: (c) => ({ move: moveAll(c),
@@ -1025,7 +1025,7 @@
         { id: 'Fans', say: 'Not every game at eleven in the morning on a channel we have to buy twice.' },
       ],
       options: [
-        { id: 'one-deal', label: 'Sell it as one package',
+        { id: 'one-deal', scene: 'r-deal', label: 'Sell it as one package',
           body: 'The sport negotiates together. The most money, the least autonomy, and one '
             + 'phone number for every argument about a kickoff time for seven years.',
           edit: (c) => ({ set: { 'money.dealYears': 7 },
@@ -1037,7 +1037,7 @@
           edit: (c) => ({ set: { 'money.dealYears': 7 },
             effects: { money: c && c.up ? 1.8 : 1, autonomy: 3, access: -2, inventory: -1 },
             aimed: { SEC: { money: 3 }, 'Big Ten': { money: 3 }, 'Group of Five': { money: -2 } } }) },
-        { id: 'streaming', label: 'Take the streaming money',
+        { id: 'streaming', scene: 'r-deal', label: 'Take the streaming money',
           body: 'More money now, a smaller audience, and a generation that finds the sport '
             + 'somewhere else or does not find it at all.',
           edit: (c) => ({ set: { 'money.dealYears': 7, 'posture.tvWindows': 8 },
@@ -1173,7 +1173,7 @@
           body: 'Keep the money, end the marketing, hand the monitoring to somebody with '
             + 'no stake in the outcome.',
           edit: { effects: { exposure: -1, tradition: 1, money: -1 } } },
-        { id: 'ban', label: 'Cut it off entirely',
+        { id: 'ban', scene: 'r-gambling-out', label: 'Cut it off entirely',
           body: 'No sponsorship, no data deals, no odds on the broadcast. The money goes '
             + 'and the problem does not, because it never lived here.',
           edit: { set: { 'posture.gambling': 'banned' },

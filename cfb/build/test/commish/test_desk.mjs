@@ -155,6 +155,7 @@ console.log('\n=== the desk is shorter than it was ===');
     /* Short brief, nothing folded. Rule on anything and look at the next item. */
     const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(250); }
     if (!(await tap('#b-rule'))) break;
+    await p.waitForTimeout(200); await pastScene(p);
     await p.waitForTimeout(700);
   }
   ok('a setup long enough to be folded turns up', !!opened && opened.agree !== false,
@@ -381,6 +382,8 @@ console.log('\n=== you get to answer the room ===');
       const o = await p.$('#d-options .opt'); if (o) await o.click();
       await p.waitForTimeout(200);
       if (!(await tap('#b-rule'))) break;
+      await p.waitForTimeout(200); await pastScene(p);
+    await p.waitForTimeout(200); await pastScene(p);
       await p.waitForTimeout(650); continue;
     }
     break;
@@ -611,6 +614,7 @@ console.log('\n=== what the desk promised is what the office got ===');
     }
     if (promised) break;
     if (!(await tap('#b-rule'))) break;
+    await p.waitForTimeout(200); await pastScene(p);
     await p.waitForTimeout(700);
   }
 
@@ -621,10 +625,12 @@ console.log('\n=== what the desk promised is what the office got ===');
 
   if (promised) {
     await tap('#b-rule');
+    await p.waitForTimeout(200); await pastScene(p);
     await p.waitForTimeout(900);
     ok('  the ruling lands on the reaction screen', await on('s-room'));
     await tap('#b-next');
     await p.waitForTimeout(900);
+    await pastScene(p);
     /* Carrying on can roll into a year in review; either screen draws the same four facts. */
     const where = (await on('s-office')) ? '#off-sport' : (await on('s-year')) ? '#y-sport' : null;
     ok('  and the sport is on screen afterwards', !!where, where || 'neither screen');
@@ -780,11 +786,14 @@ console.log('\n=== what every other commissioner did ===');
       shown: await q.$eval('#r-split', (e) => !e.hidden).catch(() => null),
     };
     await q.click('#b-next').catch(() => {});
+    await q.waitForTimeout(250); await pastScene(q);
     await q.waitForTimeout(500);
     const o2 = await q.$('#d-options .opt');
     if (o2) { await o2.click(); await q.waitForTimeout(300); }
     await q.click('#b-rule').catch(() => {});
+    await q.waitForTimeout(200); await pastScene(q);
     await q.waitForTimeout(1200);
+    await pastScene(q);
     const box = await q.evaluate(() => {
       const e = document.getElementById('r-split');
       if (!e) return { missing: true };

@@ -344,6 +344,188 @@
           say: 'For what it is worth, three of the things they removed you over were right.' },
       ],
     },
+    /* ================================================================
+       WHAT A RULING LOOKS LIKE FROM OUTSIDE THE BUILDING.
+
+       These do not gate on the world and never turn up on their own. A docket option names
+       one, and it plays between the ruling and the room: the numbers have already moved, the
+       room has already answered, and this is the twenty seconds in between where the thing
+       you decided actually happens to somebody.
+
+       THE CAST IS THE DOCKET ITEM'S, not one of these scenes' own. A raid knows which two
+       schools moved because the item that moved them worked it out, and a second copy of
+       that arithmetic here would be a second chance to disagree with the map. Every line
+       reads it defensively, because an item's cast is its own shape and a scene attached to
+       the wrong one must go quiet rather than print a hole.
+       ================================================================ */
+    {
+      id: 'r-raid', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: function (c) {
+            var who = c && c.schools && c.schools.length
+              ? c.schools.join(' and ') : 'Two schools';
+            return who + ' are leaving. The releases went out four minutes apart and said the '
+              + 'same thing.';
+          } },
+        { who: 'beat', set: 'paper',
+          say: function (c) {
+            return 'I have been in the ' + ((c && c.from) || 'league') + ' office all evening. '
+              + 'Nobody has come out and the lights are on.';
+          } },
+        { who: 'crowd', set: 'stadium',
+          say: 'Ninety years. Ninety years of that game and it is a scheduling agreement now.' },
+        { who: 'anchor',
+          say: function (c) {
+            return 'The ' + ((c && c.to) || 'other league') + ' is now the largest thing in '
+              + 'American sport that is not a professional league.';
+          } },
+      ],
+    },
+    {
+      id: 'r-union', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'College football has recognised a players association. The vote was taken at '
+            + 'sixty one schools and it was not close.' },
+        { who: 'Players', set: 'ballroom',
+          say: 'We are not asking any more. We are across the table and there is a table.' },
+        { who: 'counsel', set: 'office',
+          say: 'Everything after this is bargaining. That is not a warning, it is a '
+            + 'description.' },
+        { who: 'radio',
+          say: 'Half my callers think this is the end of it. The other half are nineteen.' },
+      ],
+    },
+    {
+      id: 'r-deal', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: function (c, w) {
+            return 'Signed. ' + (w && w.money ? bn(w.money.pool) + ' a year' : 'A decade of money')
+              + ', and every Saturday in it belongs to somebody now.';
+          } },
+        { who: 'anchor',
+          say: 'Somewhere in this contract is the sentence that decides what time your team '
+            + 'plays for the next ten years.' },
+        { who: 'chief', set: 'office',
+          say: 'Eleven athletic directors have already spent it. Two of them called before the '
+            + 'ink.' },
+      ],
+    },
+    {
+      id: 'r-format', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: function (c, w) {
+            return 'The field is ' + ((w && w.playoff && w.playoff.teams) || 'bigger')
+              + ' teams. It was twelve for about as long as it took everybody to get used to '
+              + 'twelve.';
+          } },
+        { who: 'crowd', set: 'stadium',
+          say: 'We are in it. I do not care how, I do not care who else is, we are in it.' },
+        { who: 'beat', set: 'paper',
+          say: 'The best regular season in sport just got a little less load bearing. Ask me '
+            + 'in November whether that matters.' },
+      ],
+    },
+    {
+      id: 'r-bowls', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'The tie-ins are gone. Sixteen bowl games have no contract and about six weeks '
+            + 'to find out what they are for.' },
+        { who: 'crowd', set: 'stadium',
+          say: 'We drove eleven hours to that thing every year. Every year. My dad is in that '
+            + 'stadium in a photograph.' },
+        { who: 'chief', set: 'office',
+          say: 'Four cities have written in. One of them enclosed the attendance figures going '
+            + 'back to 1974.' },
+      ],
+    },
+    {
+      id: 'r-gambling-out', manual: true, when: function () { return false; },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'College football has cut itself off from the betting industry entirely. No '
+            + 'other league in the country has done it.' },
+        { who: 'anchor',
+          say: 'That is a great deal of money to leave on a table you are also standing on.' },
+        { who: 'crowd', set: 'stadium',
+          say: 'Thank you. Genuinely. My kid is nineteen and plays and he was getting messages.' },
+        { who: 'counsel', set: 'office',
+          say: 'It is still legal in forty states. We can decline the money. We cannot decline '
+            + 'the market.' },
+      ],
+    },
+
+    /* ================================================================
+       AND THREE MORE THE SPORT PRODUCES ON ITS OWN.
+       ================================================================ */
+    {
+      id: 'two-am',
+      cool: 20,
+      when: function (w, L, sit) {
+        var r = (w && w.rules) || {};
+        return !!(sit && sit.inSeason) && (r.clock !== 'running' || r.overtime !== 'twopoint');
+      },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: 'The game finished at 2:11 in the morning on the east coast. It kicked off at '
+            + 'eight.' },
+        { who: 'crowd', set: 'stadium',
+          say: 'There were maybe four hundred of us left. I have work. I am forty one years '
+            + 'old.' },
+        { who: 'radio',
+          say: 'Best football anybody has seen all year and nobody east of Denver watched the '
+            + 'end of it.' },
+        { who: 'chief', set: 'office',
+          say: 'The rule you wrote did that. Not the network, not the officials. The rule.' },
+      ],
+    },
+    {
+      id: 'left-out',
+      cool: 20,
+      when: function (w, L, sit) {
+        return !!(sit && sit.outsider && sit.week && sit.week >= 10);
+      },
+      cast: function (w, L, sit) {
+        return { school: sit.outsider.school, conf: sit.outsider.conference,
+          bids: (w.playoff && w.playoff.autobids) || 0 };
+      },
+      lines: [
+        { who: 'wire', set: 'paper',
+          say: function (c) {
+            return c.school + ' is unbeaten and outside the four biggest leagues, which is a '
+              + 'sentence this sport has never handled well.';
+          } },
+        { who: 'anchor',
+          say: function (c) {
+            return 'There are ' + c.bids + ' automatic bids. Everything after that is twelve '
+              + 'people in a hotel in Texas.';
+          } },
+        { who: 'crowd', set: 'stadium',
+          say: 'We have not lost. Say the thing you need us to do and we will do it. Say it.' },
+      ],
+    },
+    {
+      id: 'sold-it',
+      once: true,
+      when: function (w) {
+        var b = (w && w.brand) || {};
+        return !!(b.playoff && b.patch && b.trophy);
+      },
+      lines: [
+        { who: 'anchor',
+          say: 'There is a company name on the playoff, on the jersey and on the trophy. All '
+            + 'three, in the same season.' },
+        { who: 'student', set: 'ballroom',
+          say: 'I counted eleven on the walk in. I stopped counting at the door.' },
+        { who: 'chief', set: 'office',
+          say: 'Every one of them pays for something real. That is true and it is not an '
+            + 'answer.' },
+      ],
+    },
   ];
 
   var BY_ID = {};
@@ -383,26 +565,40 @@
   function castOf(scene, world, L, sit) {
     return scene && scene.cast ? scene.cast(world, L, sit || null) : null;
   }
-  function text(v, cast) { return typeof v === 'function' ? v(cast) : v; }
+  /* A LINE SEES THE CAST AND THE WORLD. The cast is what the moment is about and the world is
+     what the sport looks like at the moment it happens, and a ruling's scene needs the second
+     one: it plays AFTER the edit, so "the field is sixteen teams" is a fact it can read
+     rather than a number it has to be handed. The first version had no world and the format
+     scene said "The field is bigger teams", because a docket item with no cast handed it
+     nothing and the fallback was a word rather than a number. */
+  function text(v, cast, world) { return typeof v === 'function' ? v(cast, world) : v; }
 
   /* One scene, resolved into what the page draws: a flat list of {who, name, role, c, set,
      say}. Resolving here rather than in the page means the guards can read exactly what a
      player would see. */
-  function framesOf(scene, cast) {
+  function framesOf(scene, cast, world) {
     if (!scene) return [];
     return (scene.lines || []).map(function (ln) {
       var sp = speaker(ln.who);
       return { who: sp.id, name: sp.name, role: sp.role, c: sp.c,
-        set: ln.set || sp.set || 'office', say: String(text(ln.say, cast) || '') };
+        set: ln.set || sp.set || 'office', say: String(text(ln.say, cast, world) || '') };
     });
   }
 
   /* Every string a scene can produce, for the width and prose guards, against a cast shaped
      like the real thing. */
   var SAMPLE = { conf: 'Pac-12', a: 'SEC', b: 'The presidents', n: 3, champ: 'Texas',
-    year: 2027, teams: 12, share: 0.15, pool: 1.3 };
+    year: 2027, teams: 12, share: 0.15, pool: 1.3,
+    /* The ruling scenes read a DOCKET item's cast, so the sample has to carry those shapes
+       too or the guards walk half the lines against nothing. */
+    school: 'Boise State', bids: 5, from: 'SEC', to: 'Big Ten',
+    schools: ['South Carolina', 'Tennessee'] };
+  /* A world shaped like one a scene could be played against, so the guards see the same
+     strings a player would rather than the fallbacks. */
+  var SAMPLE_WORLD = { playoff: { teams: 16, autobids: 5 }, money: { pool: 1.42 },
+    labour: { revShare: 0.15 }, rules: {}, brand: {}, posture: {} };
   function saysOf(scene) {
-    return framesOf(scene, SAMPLE).map(function (f) { return f.say; });
+    return framesOf(scene, SAMPLE, SAMPLE_WORLD).map(function (f) { return f.say; });
   }
 
   var api = { SCENES: SCENES, BY_ID: BY_ID, CAST: CAST, SETS: SETS,

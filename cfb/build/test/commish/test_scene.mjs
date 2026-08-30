@@ -137,15 +137,31 @@ console.log('\n=== every scene can actually fire ===');
     'they-turned': (w) => { w.blocs.ACC = 10; w.blocs['Big 12'] = 12; },
     champion: (w) => { w.year = 2026; w.champs = { 2025: { school: 'Texas' } }; },
     'first-share': (w) => { w.labour.revShare = 0.15; },
+    'two-am': (w) => { w.beat = 5; w.rules.overtime = 'sudden'; },
+    'left-out': (w) => { w.beat = 6; },
+    'sold-it': (w) => { w.brand.playoff = 'bank'; w.brand.patch = 'phone'; w.brand.trophy = 'airline'; },
   };
+  /* `left-out` needs an unbeaten team from outside the four, which is a fact about a season
+     rather than about the ledger, so the situation is handed one rather than the world being
+     bent into producing one. */
+  const SEASON = { unbeaten: [{ school: 'Boise State', conference: 'Mountain West', wins: 10 }],
+    through: 11, teams: [{ school: 'Boise State', conference: 'Mountain West', wins: 10, losses: 0 }],
+    games: [], polls: [] };
+  /* MANUAL MEANS SOMETHING ELSE PLAYS IT. Two of them are the last morning of a term, which
+     the ending screen fires because there is no beat to gate on; the rest are named by a
+     docket option and play between the ruling and the room. Neither kind may gate on the
+     world, or a raid cutscene turns up on a beat where nothing was raided. */
+  const w0 = world();
   const manual = SCN.SCENES.filter((s) => s.manual).map((s) => s.id);
-  ok('the two endings are manual', manual.length === 2, manual.join(' '));
+  ok('the endings and the rulings are manual', manual.length >= 8, manual.length + ': ' + manual.join(' '));
+  ok('  and the two last mornings are among them',
+    manual.indexOf('served') >= 0 && manual.indexOf('removed') >= 0);
   const dead = [];
   const blank = [];
   SCN.SCENES.forEach((sc) => {
     if (sc.manual) {
       /* They never gate; the term ending is the gate. They still have to render. */
-      SCN.framesOf(sc, null).forEach((f) => {
+      SCN.framesOf(sc, null, w0).forEach((f) => {
         if (/undefined|NaN|\[object|=>/.test(f.say)) blank.push(sc.id + ': ' + f.say.slice(0, 40));
       });
       return;
@@ -153,10 +169,10 @@ console.log('\n=== every scene can actually fire ===');
     if (!setups[sc.id]) { dead.push(sc.id + ' has no setup in this test'); return; }
     const w = world();
     setups[sc.id](w);
-    const sit = SIT.build(w, L, {});
+    const sit = SIT.build(w, L, sc.id === 'left-out' ? { sim: SEASON } : {});
     if (SCN.eligible(w, L, sit).indexOf(sc) < 0) { dead.push(sc.id + ' never fires'); return; }
     const cast = SCN.castOf(sc, w, L, sit);
-    SCN.framesOf(sc, cast).forEach((f) => {
+    SCN.framesOf(sc, cast, w).forEach((f) => {
       if (/undefined|NaN|\[object|=>/.test(f.say)) blank.push(sc.id + ': ' + f.say.slice(0, 40));
     });
   });
@@ -183,6 +199,39 @@ console.log('\n=== every scene can actually fire ===');
   w2.year += 3;
   ok('  and comes back after it',
     SCN.eligible(w2, L, SIT.build(w2, L, {})).indexOf(gone) >= 0);
+}
+
+console.log('\n=== a ruling can play out ===');
+{
+  const D = require(ROOT + '/cfb/commish/docket.js');
+  const attached = [];
+  D.ITEMS.forEach((it) => (it.options || []).forEach((o) => {
+    if (o.scene) attached.push({ item: it.id, opt: o.id, scene: o.scene });
+  }));
+  ok('rulings that play out', attached.length >= 6, attached.length + ' of them');
+  const missing = attached.filter((a) => !SCN.BY_ID[a.scene]);
+  ok('  every one names a scene that exists', !missing.length,
+    missing.map((a) => a.item + ':' + a.scene).join(' '));
+  /* A RULING'S SCENE MUST NOT ALSO FIRE ON ITS OWN, or a player gets the raid cutscene on a
+     beat where nothing was raided. */
+  const loose = attached.filter((a) => !SCN.BY_ID[a.scene].manual);
+  ok('  and none of them gate on the world as well', !loose.length,
+    loose.map((a) => a.scene).join(' '));
+  /* THE CAST IS THE DOCKET ITEM'S, so every line has to render against the shape that item
+     actually produces rather than against the shape the scene hoped for. */
+  const E = require(ROOT + '/cfb/engine.js');
+  const w = world();
+  const sit = SIT.build(w, L, {});
+  const holes = [];
+  attached.forEach((a) => {
+    const it = D.BY_ID[a.item];
+    const cast = D.castOf(it, w, L, E.createSeededRNG(3), sit);
+    SCN.framesOf(SCN.BY_ID[a.scene], cast, w).forEach((f) => {
+      if (/undefined|NaN|\[object|=>/.test(f.say)) holes.push(a.item + ': ' + f.say.slice(0, 46));
+    });
+  });
+  ok('  every line renders against the ruling that plays it', !holes.length,
+    holes.slice(0, 3).join(' | '));
 }
 
 console.log('\n=== and it plays, and it ends ===');
@@ -266,6 +315,53 @@ console.log('\n=== the way out ===');
     return { taps: taps, out: !document.getElementById('s-scene').classList.contains('on') };
   });
   ok('tapping to the last line ends it', played.out, played.taps + ' taps');
+}
+
+console.log('\n=== a ruling plays out and then hands over to the room ===');
+{
+  /* THE WHOLE POINT OF ATTACHING A SCENE TO A RULING. The room is painted before the scene
+     starts and simply not shown, so what has to be true is that the scene comes up, that the
+     room is waiting behind it, and that the ruling actually landed on the ledger while
+     nobody was looking. A scene that ate the ruling would be the worst bug in the mode. */
+  const before = await p.evaluate(() => {
+    const T = window.PS_CFB_COMMISH_TEST;
+    T.deskItem('playoff-format');
+    return T.world().playoff.teams;
+  });
+  await p.waitForTimeout(600);
+  ok('a ruling that plays out is on the desk', await on('s-desk'), 'field was ' + before);
+  const picked = await p.evaluate(() => {
+    const el = document.querySelector('#d-options .opt[data-o="to16"]');
+    if (!el) return false;
+    el.click();
+    return true;
+  });
+  ok('  and the option that carries the scene can be taken', picked);
+  await p.waitForTimeout(250);
+  await p.click('#b-rule');
+  await p.waitForTimeout(900);
+  ok('ruling opens the scene rather than the room', await on('s-scene'));
+  ok('  and the room is not up yet', !(await on('s-room')));
+  /* THE LEDGER MOVED BEFORE A WORD WAS SPOKEN. */
+  const now = await p.evaluate(() => window.PS_CFB_COMMISH_TEST.world().playoff.teams);
+  ok('  but the ruling already landed', now === 16, before + ' to ' + now);
+  const line = await p.evaluate(() => document.getElementById('sc-say').textContent);
+  /* THE SCENE PLAYS AFTER THE EDIT, so it can read the field it is about rather than being
+     handed it. The first version said "The field is bigger teams", because playoff-format has
+     no cast and the fallback was a word. */
+  ok('  and the scene names the field it just made', /\b16\b/.test(line), line.slice(0, 56));
+  const out = await p.evaluate(async () => {
+    let taps = 0;
+    while (document.getElementById('s-scene').classList.contains('on') && taps < 40) {
+      document.getElementById('sc-card').click();
+      taps++;
+      await new Promise((r) => setTimeout(r, 80));
+    }
+    return { room: document.getElementById('s-room').classList.contains('on'), taps: taps };
+  });
+  ok('and when it finishes the room is there', out.room, out.taps + ' taps');
+  ok('  with the ruling on it',
+    /ruled/i.test(await p.textContent('#r-eyebrow')), (await p.textContent('#r-eyebrow')).trim());
 }
 
 ok('nothing threw', errs.length === 0, errs.slice(0, 2).join(' | '));

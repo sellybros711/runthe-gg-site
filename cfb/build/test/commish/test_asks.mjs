@@ -179,6 +179,7 @@ console.log('\n=== and afterwards you find out what was in the rest of it ===');
     await p.$eval('#b-rule', (e) => e.disabled) === false);
   await p.click('#b-rule');
   await p.waitForTimeout(1400);
+  await pastScene(p);
   ok('the room answered', await on('s-room'));
   ok('the file came back open', await p.$eval('#r-unaskedcard', (e) => e.hidden) === false);
   const rest = await p.$$eval('#r-unasked p', (e) => e.map((x) => x.textContent.trim()));
@@ -195,6 +196,7 @@ console.log('\n=== an item with no file has no panel ===');
   ok('found one', !!plain, plain && plain.id);
   await p.click('#b-next');
   await p.waitForTimeout(700);
+  await pastScene(p);
   ok('put it on the desk', await deskWith(plain.id));
   ok('the panel stays down', await p.$eval('#d-askcard', (e) => e.hidden) === true);
   ok('  and the ruling still commits',
