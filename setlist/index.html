@@ -388,40 +388,47 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .how h3:after{content:''; flex:1; height:3px; background:var(--ink); opacity:.85; order:1;}
   .how h3 .btn{order:2; flex:0 0 auto; letter-spacing:.2px; text-transform:none;
     font-family:var(--body, inherit);}
-  /* Numbered teal circles are the single most default component on the web,
-     and five of them stacked is what made this read as a template. The number
-     is set in the display face at the size of a track number on a sleeve, and
-     the rule between rows does the separating that the circles were doing. */
-  .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;}
-  /* 6px rather than 8. Five rows share the fold with a play button now, and
-     20px of row padding is what stood between the button and the bottom of a
-     390x844 screen. */
-  .steps li{display:flex; gap:10px; align-items:flex-start; padding:6px 0;
-    border-top:1px solid var(--line);}
-  .steps li:first-child{border-top:0; padding-top:2px;}
-  /* The numerals were baseline aligned and still read as floating: measured,
-     the numeral's box sat 11px above the first text line's top while their
-     bottoms matched to the pixel. Baselines were never the problem, the size
-     gap was. A 30px numeral beside 13.5px copy towers over the line it is
-     supposed to belong to.
-     21px keeps the numeral clearly the loudest thing in the row and cuts the
-     overhang to about 4px, which reads as a lead-in rather than as a mistake. */
-  .steps b{flex:0 0 auto; width:17px; font-family:var(--ui); font-weight:400;
-    font-size:21px; line-height:1; color:var(--acc-step, var(--dim)); text-align:left;}
-  .steps li:nth-child(1) b{--acc-step:var(--coralT);}
-  .steps li:nth-child(2) b{--acc-step:var(--goldT);}
-  .steps li:nth-child(3) b{--acc-step:var(--greenT);}
-  .steps li:nth-child(4) b{--acc-step:var(--tealT);}
-  .steps li:nth-child(5) b{--acc-step:var(--violetT);}
-  /* Aligned on the CAP TOPS, not on baselines and not on box tops.
-     Baseline alignment hung the numeral above its own sentence. flex-start
-     lines the boxes up but not the ink: a 21px numeral at line-height 1 and
-     13.5px copy at 1.45 carry different half-leading, so measuring the first
-     row of actual ink in each still showed the text 3.4px low. This closes
-     that, and it was measured off rendered pixels rather than derived from
-     font metrics, because the metrics are what disagree. */
-  .steps span{font-size:13.5px; line-height:1.45; color:var(--ink); font-weight:600;
-    margin-top:-3.4px;}
+  /* ---------------- THE LOOP, DRAWN ----------------
+     Five numbered sentences, 84 words, describing three beats that the game
+     itself draws on its own screens a tap later: a setlist, a row with a clock
+     on it, three set blocks. The home screen was narrating pixels.
+     Three panels, side by side on a phone, because the beats are a sequence
+     and a column of them would read as three unrelated facts. */
+  .loop{list-style:none; margin:0; padding:0; display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
+  .loop li{display:flex; flex-direction:column; gap:5px; min-width:0;}
+  .loop b{font-size:12px; font-weight:900; letter-spacing:.2px; color:var(--ink);
+    line-height:1.2;}
+  .loop span{font-size:11px; font-weight:600; color:var(--dim); line-height:1.35;}
+  /* Each panel is a small picture of the real screen, not an icon. */
+  .lp-art{display:flex; height:44px; padding:6px; border-radius:8px;
+    background:var(--card); border:1px solid var(--line2);}
+  .lp-show, .lp-take{flex-direction:column; justify-content:space-between;}
+  .lp-show i, .lp-take i{display:block; height:5px; border-radius:99px;
+    background:var(--line2);}
+  /* The one you took: the accent colour the game uses for a taken song, with
+     its running time on it, because the cost is the whole beat. */
+  .lp-take i.on{height:13px; background:color-mix(in srgb,var(--teal) 26%, var(--card));
+    border:1px solid var(--teal); display:flex; align-items:center;
+    padding:0 4px; margin:1px 0;}
+  .lp-take i.on em{font-style:normal; font-size:8.5px; font-weight:900;
+    color:var(--tealT); letter-spacing:.2px; font-variant-numeric:tabular-nums;}
+  /* Sized by the real budgets, so the encore is the sliver it actually is. */
+  .lp-night{gap:3px; align-items:stretch;}
+  /* min-width:0 AND overflow:hidden. A flex item's default min-width is auto,
+     which is its CONTENT, so the encore block refused to shrink below the
+     width of its own label and pushed itself past the panel's right edge at
+     390px. Sized by the real budgets means the encore is 10 of 155, about 7px,
+     and 7px is narrower than any label it could carry. */
+  .lp-night i{display:flex; align-items:center; justify-content:center;
+    border-radius:5px; background:var(--card3); min-width:0; overflow:hidden;}
+  .lp-night i:first-child{background:color-mix(in srgb,var(--teal) 30%, var(--card3));}
+  .lp-night i em{font-style:normal; font-size:8px; font-weight:900; letter-spacing:.3px;
+    text-transform:uppercase; color:var(--dim); white-space:nowrap; overflow:hidden;}
+  .lp-night i:first-child em{color:var(--tealT);}
+  /* The one fact left that is not a picture: what actually scores. */
+  .how-scores{margin:11px 0 0; font-size:12px; font-weight:700; color:var(--mut);
+    line-height:1.45;}
 
   /* The coming-soon card is the same object as a band card with the ink
      turned down, so it reads as a sibling in the list rather than as an ad
@@ -1381,23 +1388,49 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .ceil-bar{height:5px; border-radius:99px; background:var(--card3); overflow:hidden; margin:10px 0 7px;}
   .ceil-bar > span{display:block; height:100%; border-radius:99px; background:var(--tealT);}
   .ceiling.maxed .ceil-bar > span{background:var(--greenT);}
+  /* THE BENCHMARK, ON THE BAR. A tick at what random play is worth, so the
+     reader's own fill either reaches it or does not. That comparison was a
+     sentence asking them to hold two percentages in their head. */
+  .ceil-bar{position:relative; overflow:visible;}
+  .ceil-bar > span{border-radius:99px;}
+  .ceil-mark{position:absolute; top:-3px; bottom:-3px; width:2px; margin-left:-1px;
+    background:var(--ink); opacity:.55; border-radius:2px;}
+  .ceil-scale{position:relative; height:13px; margin-top:5px; font-size:10px;
+    font-weight:800; letter-spacing:.4px; color:var(--dim);
+    font-variant-numeric:tabular-nums;}
+  .cs-you{position:absolute; left:0; top:0;}
+  .cs-you.ahead{color:var(--greenT);}
+  /* Translated by half its own width so the label centres on the tick rather
+     than starting at it, and clamped so it cannot run off either end. */
+  .cs-rnd{position:absolute; top:0; transform:translateX(-50%); white-space:nowrap;}
   .ceil-fine{font-size:11px; font-weight:600; color:var(--dim); line-height:1.45;}
-  .breakdown{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin:16px 0;}
-  @media (min-width:520px){ .breakdown{grid-template-columns:repeat(4,minmax(0,1fr));} }
-  .bd{padding:12px 10px; text-align:center; border-radius:var(--r-md); background:var(--card2);
-    border:1px solid var(--line);}
-  .bd .v{font-family:var(--hero); font-size:24px; line-height:1;}
-  .bd .k{font-size:10px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
-    color:var(--dim); margin-top:5px;}
-  /* One word was not enough. "Breadth 92" tells a first-time player nothing
-     about what earned it, and these four are the entire scoring model. */
-  .bd .bw{font-size:10.5px; font-weight:600; color:var(--dim); margin-top:3px;
-    line-height:1.3;}
+  /* ---------------- THE SCORE, DRAWN ----------------
+     Four numbers in four tiles under "Four things are scored, and they add up
+     to your total", with a line of prose under each saying what it was for.
+     37 words to convey a sum and four labels, and it still did not show the
+     one thing a breakdown is for: the SHAPE of the night. Songs is usually
+     about two thirds of a score and nothing on that card said so.
+     A stacked bar is the sentence. Segments sized by their share demonstrate
+     that they add up rather than asserting it, and the proportions are read
+     off the picture instead of divided in your head. */
+  .stack{display:flex; height:16px; border-radius:99px; overflow:hidden; margin:12px 0 11px;
+    background:var(--card3); gap:2px;}
+  .stk{display:block; min-width:3px;}
+  .stkey{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 14px;}
+  @media (min-width:460px){ .stkey{grid-template-columns:repeat(4,minmax(0,1fr));} }
+  /* The key is a row per part: swatch, name, points, share. Reading down the
+     percentages is the comparison the four tiles never allowed. */
+  .stk-row{display:flex; align-items:baseline; gap:6px; min-width:0;}
+  .stk-dot{width:9px; height:9px; border-radius:3px; flex:0 0 auto;}
+  .stk-k{font-size:11px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--dim); flex:1 1 auto; min-width:0;}
+  .stk-v{font-family:var(--ui); font-weight:400; font-size:16px; color:var(--ink);
+    font-variant-numeric:tabular-nums;}
+  .stk-p{font-size:10.5px; font-weight:800; color:var(--dim); font-variant-numeric:tabular-nums;
+    flex:0 0 auto;}
   .wherefrom{padding:16px 15px; margin-top:14px;}
   .wherefrom h2{font-family:var(--hero); font-size:21px; margin:0 0 3px;
     text-transform:uppercase;}
-  .wherefrom .sub{font-size:12.5px; color:var(--mut); font-weight:600;}
-  .wherefrom .breakdown{margin:12px 0 0;}
   .actions{display:flex; flex-direction:column; gap:9px; margin-top:14px;}
 
   /* ---------------- bottom sheet ----------------
@@ -1679,13 +1712,36 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     border-left:3px solid var(--coral);}
   .ga-lbl{font-size:10px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
     color:var(--coralT);}
-  .ga-song{font-family:var(--hero); font-size:22px; margin-top:4px; line-height:1.1;}
-  .ga-len{font-family:var(--body); font-size:13px; font-weight:800; color:var(--mut);}
   .ga-meta{font-size:12px; font-weight:700; color:var(--dim); margin-top:3px;}
   .ga-why{font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.5; margin-top:7px;}
   .ga-why b{color:var(--ink);}
-  /* The clause that stops the card being arguable: the swap was affordable. */
-  .ga-fine{font-size:11px; font-weight:600; color:var(--dim); line-height:1.45; margin-top:5px;}
+  /* THE SWAP, ON ONE SCALE. Both numbers are scorePerf of one song in one
+     role, and it is the same role, so they belong on the same axis and a
+     reader should never have to hold them in their head. Longest first, and
+     the running time on the right is what used to be a sentence saying the
+     clock was not the problem: the one you left is visibly no longer than the
+     one you took. */
+  .ga-swap{margin-top:10px; display:flex; flex-direction:column; gap:6px;}
+  .gs-row{display:grid; grid-template-columns:minmax(0,1fr) 84px 30px 40px;
+    align-items:center; gap:8px;}
+  .gs-n{font-size:12.5px; font-weight:800; color:var(--ink); min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .gs-bar{display:block; height:9px; border-radius:99px; background:var(--card3);
+    overflow:hidden;}
+  .gs-bar i{display:block; height:100%; border-radius:99px;}
+  .gs-miss .gs-bar i{background:var(--coralT);}
+  .gs-took .gs-bar i{background:var(--dim);}
+  .gs-v{font-family:var(--ui); font-weight:400; font-size:16px; text-align:right;
+    font-variant-numeric:tabular-nums;}
+  .gs-miss .gs-v{color:var(--coralT);}
+  .gs-took .gs-v{color:var(--mut);}
+  .gs-t{font-size:11px; font-weight:700; color:var(--dim); text-align:right;
+    font-variant-numeric:tabular-nums;}
+  .gs-took .gs-n{color:var(--mut); font-weight:700;}
+  /* Which of the two was yours, on the row rather than in the sentence under
+     it. Small caps beside the title, so the pair reads as one comparison. */
+  .gs-n em{font-style:normal; margin-left:6px; font-size:9px; font-weight:900;
+    letter-spacing:1.2px; text-transform:uppercase; color:var(--dim);}
 
   .headline{font-size:15px; font-weight:800; line-height:1.4; margin-top:8px;
     color:var(--mut); font-style:italic;}
@@ -3336,24 +3392,45 @@ function renderHome(){
            of reading the same rules is not worth a row to itself. -->
       <h3>How it works<button class="btn ghost tiny" type="button"
         id="guideBtn">Show me around</button></h3>
-      <ol class="steps">
-        <li><b>1</b><span>You get a random show from the band's history.
-          Pick one song off it.</span></li>
-        <li><b>2</b><span>That song uses up its real running time, so a
-          20-minute jam costs you 20 minutes.</span></li>
-        ${/* NOT "you decide when a set ends". Measured over 400 identical show
-              sequences, closing a set early cost points at every threshold from
-              4 to 25 minutes and cost more the earlier it happened, and 100% of
-              sets ended on the clock. See bankGoesTo. Promising a decision the
-              scoring does not reward is how a player learns to distrust the
-              rules, so the step says what actually ends a set. */''}
-        <li><b>3</b><span>You've got two sets and an encore, each on a clock.
-          A set runs until the clock does.</span></li>
-        <li><b>4</b><span>Rare songs, great versions and real segues are worth
-          the most.</span></li>
-        <li><b>5</b><span>When you're done, the show plays back song by song
-          and the crowd reacts.</span></li>
+      ${/* THE LOOP, DRAWN. This was five numbered sentences, 84 words, to say
+              a thing with three beats in it: a real show turns up, you take one
+              song off it, and that song's real running time comes out of your
+              night. Every one of those three is a picture the game already
+              draws on its own screens (a setlist, a row with a clock on it, the
+              three set blocks in the HUD), so the home screen was describing in
+              prose what the game shows in pixels a tap later.
+              The panels are sized like the real thing: the set blocks are in
+              proportion to the actual budgets, 75 / 70 / 10 minutes, so the
+              encore reads as the sliver it is before anybody has played. */''}
+      <ol class="loop">
+        <li>
+          <div class="lp-art lp-show" aria-hidden="true">
+            <i style="width:78%"></i><i style="width:54%"></i>
+            <i style="width:88%"></i><i style="width:41%"></i>
+          </div>
+          <b>A real show</b>
+          <span>One night from the archive, as they played it.</span>
+        </li>
+        <li>
+          <div class="lp-art lp-take" aria-hidden="true">
+            <i style="width:78%"></i>
+            <i class="on" style="width:88%"><em>12:41</em></i>
+            <i style="width:41%"></i>
+          </div>
+          <b>Take one song</b>
+          <span>Any one. It costs the time it really ran.</span>
+        </li>
+        <li>
+          <div class="lp-art lp-night" aria-hidden="true">
+            <i style="flex:75"><em>Set I</em></i>
+            <i style="flex:70"><em>Set II</em></i>
+            <i style="flex:10"><em>E</em></i>
+          </div>
+          <b>Fill the night</b>
+          <span>75, 70 and 10 minutes. Then the crowd hears it.</span>
+        </li>
       </ol>
+      <p class="how-scores">Rare songs, great versions and real segues score most.</p>
     </section>
 
     <div class="bands">${real.map(card).join('')}
@@ -3560,6 +3637,13 @@ function renderReveal(){
  * change and not a wording one. Until then the copy says what is true: closing
  * early is the way out when nothing fits, and it costs. */
 function bankGoesTo(si){ return SETS[si + 1] ? SETS[si + 1].label : null; }
+
+/* WHAT PICKING AT RANDOM IS WORTH, as a mark on the ceiling bar rather than a
+   sentence under it. Six full games played by choosing a random legal song
+   every round: 71, 71, 76, 78, 88 and 93 percent of the ceiling, median 77.
+   It is the only benchmark on the scorecard that says whether a percentage is
+   any good, so it is drawn where the percentage is. */
+const RANDOM_PCT = 77;
 
 function setsPanelHTML({ live }){
   const bud = budgets(S.sets, S.closed, S.spent);
@@ -4175,10 +4259,27 @@ function renderResult(){
               : `is the most those nights could have scored, so ${gap} points
                  were left on the table.`}</div>
           </div>
-          <div class="ceil-bar"><span style="width:${Math.min(100, pct)}%"></span></div>
-          <div class="ceil-fine">We replayed the same shows in the same order and
-            played them as well as we could. Same rules, same clock. Picking at
-            random gets about 77% of it.</div>
+          ${/* THE BENCHMARK IS ON THE BAR, not underneath it in prose. This
+                 said "We replayed the same shows in the same order and played
+                 them as well as we could. Same rules, same clock. Picking at
+                 random gets about 77% of it": 29 words, of which the only
+                 actionable one is 77, and it asked the reader to compare that
+                 number to their own percentage in their head.
+                 A tick at 77% does the comparing. Your fill either reaches it
+                 or it does not, and which side you are on is the entire
+                 question the sentence was circling. 77 is measured, not
+                 picked: six full games played by choosing a random legal song
+                 every round came in at 71, 71, 76, 78, 88 and 93 percent of
+                 the ceiling. */''}
+          <div class="ceil-bar">
+            <span style="width:${Math.min(100, pct)}%"></span>
+            <i class="ceil-mark" style="left:${RANDOM_PCT}%"
+              aria-hidden="true"></i>
+          </div>
+          <div class="ceil-scale">
+            <span class="cs-you ${pct >= RANDOM_PCT ? 'ahead' : ''}">You ${pct}%</span>
+            <span class="cs-rnd" style="left:${RANDOM_PCT}%">Random ${RANDOM_PCT}%</span>
+          </div>
         </div>`;
       })() : ''}
 
@@ -4198,48 +4299,90 @@ function renderResult(){
       ${S.missed ? `
       <div class="card gotaway">
         <div class="ga-lbl">The one that got away</div>
-        <div class="ga-song">${esc(S.missed.perf.song)}
-          <span class="ga-len">${fmtClock(lenOf(S.missed.perf))}</span></div>
-        <div class="ga-meta">${esc(fmtDate(S.missed.perf.show_date))} ·
+        ${/* NO SEPARATE HEADLINE. It printed the missed song's title and its
+              running time above the bars, and then the first bar printed both
+              again: once the swap is drawn, the headline is a duplicate of row
+              one. The bars carry the names because a comparison needs both
+              labelled, so the heading is the label and the date, and the rest
+              is the picture.
+              The trailing sentence lost "You took Torero from that show" for
+              the same reason: the row says whose it was. What is left is the
+              part no bar can show, which is the role they shared and why the
+              version was worth more. */''}
+        <div class="ga-meta">${esc(fmtDate(S.missed.perf.show_date))} &middot;
           ${esc(S.missed.perf.venue || '')}</div>
-        ${/* THE TWO NUMBERS ARE THE POINT, and until now there was only one of
-              them. "It was worth 176" sat beside a setlist of songs scoring
-              27 to 59 with nothing saying why the scales differed: the card
-              took the best song ever offered, judged in the best of six roles
-              it never had to earn, and beat everything the player did in 296
-              of 300 measured games.
-              It names the swap instead. Same show, same slot in the set, same
-              role, and no longer than what was actually spent there, so the
-              only thing that differs between the two numbers is the song. */''}
-        <div class="ga-why">You took <b>${esc(S.missed.instead.song)}</b> out of
-          that show for <b>${S.missed.took.subtotal}</b>. In the same slot, this
-          was worth <b>${S.missed.score.subtotal}</b>${
-            S.missed.role ? ` as ${esc(S.missed.role.name.toLowerCase())}` : ''}${
-            S.missed.score.versionReasons.length
-              ? ': ' + esc(S.missed.score.versionReasons.map(v => v.label.toLowerCase()).join(', '))
-              : ''}.</div>
-        <div class="ga-fine">It was no longer than the one you took, so the
-          clock was never what stopped you.</div>
+        <div class="ga-swap">
+          <div class="gs-row gs-miss">
+            <span class="gs-n">${esc(S.missed.perf.song)}</span>
+            <span class="gs-bar"><i style="width:100%"></i></span>
+            <span class="gs-v">${S.missed.score.subtotal}</span>
+            <span class="gs-t">${fmtClock(lenOf(S.missed.perf))}</span>
+          </div>
+          <div class="gs-row gs-took">
+            <span class="gs-n">${esc(S.missed.instead.song)}<em>yours</em></span>
+            <span class="gs-bar"><i style="width:${
+              Math.round(100 * S.missed.took.subtotal / Math.max(1, S.missed.score.subtotal))}%"></i></span>
+            <span class="gs-v">${S.missed.took.subtotal}</span>
+            <span class="gs-t">${fmtClock(lenOf(S.missed.instead))}</span>
+          </div>
+        </div>
+        ${/* ONLY WHEN IT HAS SOMETHING TO ADD. With no role and no version
+              reason this rendered the bare fragment "Same slot.", which is a
+              line of type saying what the two bars already say by being two
+              bars on one scale. */''}
+        ${(S.missed.role || S.missed.score.versionReasons.length)
+          ? `<div class="ga-why">Same slot${S.missed.role
+              ? `, as ${esc(S.missed.role.name.toLowerCase())}` : ''}${
+              S.missed.score.versionReasons.length
+                ? `: ${esc(S.missed.score.versionReasons.map(v => v.label.toLowerCase()).join(', '))}`
+                : ''}.</div>`
+          : ''}
       </div>` : ''}
 
       <!-- FOUR NUMBERS THAT NOW SAY WHAT THEY ARE. They were a bare row under
            the headline: no title, no sign that they add up to the score, and a
            one-word label each. Each one says what it rewards, and the row says
            what it is a breakdown of. -->
-      <div class="card wherefrom">
-        <h2>Where the ${r.total} came from</h2>
-        <div class="sub">Four things are scored, and they add up to your total.</div>
-        <div class="breakdown">
-          <div class="bd"><div class="v">${r.songTotal}</div><div class="k">Songs</div>
-            <div class="bw">what you played</div></div>
-          <div class="bd"><div class="v">${r.timeTotal}</div><div class="k">Time</div>
-            <div class="bw">filling the sets</div></div>
-          <div class="bd"><div class="v">${r.flowTotal}</div><div class="k">Flow</div>
-            <div class="bw">the running order</div></div>
-          <div class="bd"><div class="v">${r.breadthTotal}</div><div class="k">Breadth</div>
-            <div class="bw">range of the night</div></div>
-        </div>
-      </div>
+      ${(() => {
+        /* DRAWN, NOT EXPLAINED. This was four numbers in four tiles under the
+           sentence "Four things are scored, and they add up to your total",
+           plus a line of prose under each tile saying what it was for: 37
+           words to convey a sum and four labels.
+           A stacked bar IS the sentence. Four segments across one track,
+           sized by their share, demonstrate that they add up rather than
+           claiming it, and they also say the thing the tiles could not: which
+           part of your night the points actually came from. Songs is usually
+           two thirds of it, and seeing that is the whole point of a
+           breakdown. */
+        const parts = [
+          { k: 'Songs',   v: r.songTotal,    c: 'var(--violetT)' },
+          { k: 'Time',    v: r.timeTotal,    c: 'var(--tealT)' },
+          { k: 'Flow',    v: r.flowTotal,    c: 'var(--greenT)' },
+          { k: 'Breadth', v: r.breadthTotal, c: 'var(--goldT)' },
+        ];
+        const sum = parts.reduce((a, x) => a + Math.max(0, x.v), 0) || 1;
+        return `<div class="card wherefrom">
+          <h2>Where the ${r.total} came from</h2>
+          <div class="stack" role="img"
+            aria-label="${parts.map(x => `${x.k} ${x.v}`).join(', ')}">
+            ${/* A PART WORTH NOTHING DRAWS NOTHING. .stk carries a min-width so
+                   a genuinely small share is still visible, and that turned a
+                   Flow of 0 into a 3px green sliver: a segment on the bar for
+                   points that were never scored. The key row still says Flow 0,
+                   which is the true and useful version of the same fact. */''}
+            ${parts.filter(x => x.v > 0).map(x => `<span class="stk"
+              style="flex:${x.v}; background:${x.c}" title="${esc(x.k)} ${x.v}"></span>`).join('')}
+          </div>
+          <div class="stkey">
+            ${parts.map(x => `<div class="stk-row">
+              <span class="stk-dot" style="background:${x.c}"></span>
+              <span class="stk-k">${x.k}</span>
+              <span class="stk-v">${x.v}</span>
+              <span class="stk-p">${Math.round(100 * Math.max(0, x.v) / sum)}%</span>
+            </div>`).join('')}
+          </div>
+        </div>`;
+      })()}
 
       ${rankCardHTML()}
 
