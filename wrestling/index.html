@@ -8150,7 +8150,14 @@ function doPrep(id){
   save(); renderCareer();
 }
 // a dark week ends when you say it does
-function endDarkWeek(){ advanceWeek(); toast('The week goes by.'); go('career'); }
+// An off week is not nothing. Before the week rolls over, the halls get one
+// scene: somebody catches you, something happens in the car park, the office
+// wants a word. A quiet week should still have a story in it.
+function endDarkWeek(){
+  const roll = () => { advanceWeek(); toast('The week goes by.'); go('career'); };
+  if(typeof maybeScene==='function' && maybeScene('any', roll)) return;
+  roll();
+}
 // what the office is willing to hear, and what it costs you to ask
 function officeOptions(){
   const c=G.car, b=c.booking, p=pullOf(), out=[];
@@ -12693,6 +12700,399 @@ function backstageInteract(charId, verb){
    in hand, your rival ambushes you if a story is live, an
    interviewer talks to you on a slow week.
    ============================================================ */
+/* ============================================================
+   THE CONVERSATION ENGINE
+   ------------------------------------------------------------
+   The old segment format was one line, one pick, one outcome.
+   Real scenes are a back-and-forth: you say something, they
+   ANSWER, and the answer changes what you can say next.
+
+   A SCENE is a small graph of beats:
+
+     { id, tag, trig, weight, when(x), cast(x), beats:{
+         start:{ who:'a', line:x=>'...', opts:[
+           { t:'what you say', eff:{...}, goto:'pushed' },
+           { t:'...', eff:{...}, note:'how it lands' }   // no goto = ends
+         ]},
+         pushed:{ who:'a', line:x=>'...', opts:[...] }
+       } }
+
+   `x` is the scene context: {c, w, a, b, promo, booker, rel}.
+   `a` and `b` are cast members resolved by cast(). An option with
+   a `goto` continues the conversation; one without resolves it.
+   Effects accumulate across every beat, so a three-beat scene
+   pays out everything you picked along the way.
+   ============================================================ */
+function sceneCtx(){
+  const c=G.car, w=G.w, promo=myPromo();
+  return { c, w, promo, booker:bookerFor(promo.id),
+           me:w.name, tier:workTier(), a:null, b:null };
+}
+/* Cast helpers scenes use to find people worth talking to. */
+function castRival(){ const s=story(); return s?charById(s.charId):(G.car.rivalId?charById(G.car.rivalId):null); }
+function castChamp(){ const h=champOf(); return (h&&!h.you)?h:null; }
+function castAlly(){ const a=(G.car.allies||[])[0]; return a?charById(a.id):null; }
+function castAnyone(excl){
+  const ex=new Set([].concat(excl||[]).filter(Boolean));
+  const pool=houseRoster(myPromo().id).filter(x=>!ex.has(x.id));
+  return pool.length?pool[Math.floor(rnd()*pool.length)]:null;
+}
+function castRookie(){
+  const pool=houseRoster(myPromo().id).filter(x=>(x.over||55)<50);
+  return pool.length?pool[Math.floor(rnd()*pool.length)]:null;
+}
+function castVeteran(){
+  const pool=houseRoster(myPromo().id).filter(x=>(x.over||55)>=65);
+  return pool.length?pool[Math.floor(rnd()*pool.length)]:null;
+}
+/* Scene memory: what you said sticks, and later scenes can check it. */
+function sceneRemember(key, val){
+  const c=G.car; c._sceneMem = c._sceneMem || {};
+  c._sceneMem[key] = (val===undefined) ? true : val;
+}
+function sceneRecalls(key){ return !!((G.car._sceneMem||{})[key]); }
+
+const SCENES = [
+  /* ---------- THE JOB: office, bookers, contracts ---------- */
+  { id:'booker_direction', tag:'A WORD FROM THE OFFICE', trig:'prematch', weight:1,
+    when:x=>(x.c.standing||50)<48,
+    beats:{
+      start:{ line:x=>`${x.booker.name} catches you by the monitors. "We need to talk about where you're going. Right now I don't know what you are, and if I don't know, the crowd definitely doesn't."`,
+        opts:[
+          { t:'"Then let me show you tonight."', eff:{standing:+3}, goto:'showme' },
+          { t:'"Maybe that\'s a writing problem, not a me problem."', eff:{standing:-5, gimHeat:+5}, goto:'pushback' },
+          { t:'"You\'re right. What do you want me to be?"', eff:{standing:+5}, goto:'humble' },
+        ]},
+      showme:{ line:x=>`"Good. That's the answer I wanted." ${x.booker.name} taps the monitor. "Ten minutes. Make me remember it."`,
+        opts:[
+          { t:'Nod and go.', eff:{}, note:'No more talking. Just work.' },
+          { t:'"Give me fifteen and I\'ll make you cry."', eff:{standing:+2, gimHeat:+4}, note:'They laughed. They also wrote fifteen.' },
+        ]},
+      pushback:{ line:x=>`They go very still. "Say that again slowly, and think about who signs the cheques."`,
+        opts:[
+          { t:'"I said what I said."', eff:{standing:-6, gimHeat:+8, reactionBoost:true}, note:'That will be repeated in every locker room by Friday.', mem:'toldOfficeOff' },
+          { t:'"...That came out wrong."', eff:{standing:+2}, note:'You climbed down. They let you.' },
+        ]},
+      humble:{ line:x=>`"Honestly? I want you to pick one thing and do it until we're sick of it. That's the whole trick."`,
+        opts:[
+          { t:'"One thing. Got it."', eff:{standing:+3, gimHeat:+3}, note:'The most useful sentence anyone has said to you all year.' },
+          { t:'"That sounds boring."', eff:{standing:-3, gimHeat:+4}, note:'"Boring pays your rent, kid."' },
+        ]},
+    }},
+
+  { id:'contract_whisper', tag:'THE PARKING LOT', trig:'any', weight:1,
+    when:x=>x.c.deal && x.c.deal.weeksLeft<=10,
+    beats:{
+      start:{ line:x=>`Someone you half recognise is leaning on your car. "Not here to cause trouble. I work for people who've been watching you. Your deal's nearly up, isn't it."`,
+        opts:[
+          { t:'"Who do you work for?"', eff:{}, goto:'who' },
+          { t:'"I don\'t take meetings in car parks."', eff:{standing:+3}, note:'They smiled, left a card under your wiper, and went.' },
+          { t:'"I\'m listening."', eff:{standing:-3}, goto:'listening' },
+        ]},
+      who:{ line:x=>`"People who pay better than this." They shrug. "That's all you get standing in the rain."`,
+        opts:[
+          { t:'Take the card.', eff:{}, note:'It is in your pocket now. That is its own kind of decision.', mem:'tookTheCard' },
+          { t:'"Then we\'re done."', eff:{standing:+2}, note:'You went inside. They did not follow.' },
+        ]},
+      listening:{ line:x=>`"Good. Don't sign anything before you talk to us. That's the whole message."`,
+        opts:[
+          { t:'"Understood."', eff:{}, note:'Somebody else knows your contract is up. That is worth knowing.', mem:'tookTheCard' },
+        ]},
+    }},
+
+  /* ---------- RIVALS AND TENSION ---------- */
+  { id:'rival_ambush', tag:'AMBUSH', trig:'prematch', weight:1.4,
+    when:x=>!!castRival(),
+    cast:x=>({a:castRival()}),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} puts you into the wall as you round the corner. Cameras appear from nowhere.`,
+        opts:[
+          { t:'Shove them straight back.', eff:{heat:+22, cond:-4, gimHeat:+4}, goto:'brawl' },
+          { t:'Do not react. Smile.', eff:{heat:+14, standing:+3, reactionBoost:true}, goto:'smile' },
+          { t:'"Do it again. I dare you."', eff:{heat:+18, gimHeat:+6}, goto:'dare' },
+        ]},
+      brawl:{ who:'a', line:x=>`It takes four people to get between you. ${x.a.name} is still talking over their shoulder as they drag him off.`,
+        opts:[
+          { t:'Let them pull you back.', eff:{adv:true}, note:'The footage runs all week.' },
+          { t:'Get one more in.', eff:{heat:+10, standing:-5, cond:-3, adv:true}, note:'The office will fine you. It was worth it.' },
+        ]},
+      smile:{ who:'a', line:x=>`That gets under his skin worse than a punch. "What is WRONG with you?"`,
+        opts:[
+          { t:'Keep smiling. Walk away.', eff:{heat:+10, reactionBoost:true, adv:true}, note:'He is the one who looks unhinged now. That is the trick.' },
+          { t:'"See you out there."', eff:{heat:+8, gimHeat:+4, adv:true}, note:'Quiet. Certain. The camera loved it.' },
+        ]},
+      dare:{ who:'a', line:x=>`He steps in close enough that you can hear him breathing. "You think I won't?"`,
+        opts:[
+          { t:'Do not move.', eff:{heat:+16, standing:+2, reactionBoost:true, adv:true}, note:'He blinked first, and everyone saw it.' },
+          { t:'Headbutt him.', eff:{heat:+30, standing:-8, cond:-6, gimHeat:+8, adv:true}, note:'The hallway went silent. This is a different feud now.', mem:'headbuttedRival' },
+        ]},
+    }},
+
+  { id:'champ_sizeup', tag:'CHAMPION VISIT', trig:'prematch', weight:1.3,
+    when:x=>!!castChamp(),
+    cast:x=>({a:castChamp()}),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} pushes the curtain open, belt on the shoulder, and looks at you for slightly too long. "You're the one they keep telling me about."`,
+        opts:[
+          { t:'"And here you are, checking."', eff:{heat:+16, standing:+2, reactionBoost:true}, goto:'checking' },
+          { t:'"I want that."', eff:{heat:+14, gimHeat:+5}, goto:'want' },
+          { t:'Keep taping your wrists. Say nothing.', eff:{heat:+10, standing:+3}, goto:'silence' },
+        ]},
+      checking:{ who:'a', line:x=>`He laughs, once, with no warmth in it. "I check on everything that might become a problem."`,
+        opts:[
+          { t:'"Then I\'m already doing my job."', eff:{heat:+12, gimHeat:+4}, note:'He left without another word. That counts as a win.' },
+          { t:'"I\'m not a problem. I\'m the ending."', eff:{heat:+18, gimHeat:+7, reactionBoost:true}, note:'Somebody in catering wrote that down.' },
+        ]},
+      want:{ who:'a', line:x=>`He unhooks the belt and holds it out, just far enough that you would have to reach. "Go on then."`,
+        opts:[
+          { t:'Do not reach.', eff:{heat:+14, standing:+4}, note:'You did not take the bait. He put it back on his shoulder looking annoyed.' },
+          { t:'Take it.', eff:{heat:+26, standing:-4, gimHeat:+9, reactionBoost:true}, note:'You held his title in front of a camera crew. That is a promo you did not have to cut.', mem:'grabbedTheBelt' },
+        ]},
+      silence:{ who:'a', line:x=>`The silence stretches. "Nothing? Really?" He waits. You keep taping.`,
+        opts:[
+          { t:'Finish the tape. Look up. Nod once.', eff:{heat:+12, standing:+3, reactionBoost:true}, note:'He walked off first. Everybody in that hallway noticed.' },
+        ]},
+    }},
+
+  { id:'locker_accusation', tag:'THE LOCKER ROOM', trig:'any', weight:0.9,
+    when:x=>houseRoster(x.promo.id).length>2,
+    cast:x=>({a:castAnyone()}),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} is waiting by your bag and does not look friendly. "You went into business for yourself out there. My shoulder's still not right."`,
+        opts:[
+          { t:'"That was a stiff spot. I\'m sorry."', eff:{respectA:+12}, goto:'apology' },
+          { t:'"You called it too slow."', eff:{heat:+18}, goto:'blame' },
+          { t:'"Then call it tighter next time."', eff:{heat:+10, respectA:+4}, goto:'tighter' },
+        ]},
+      apology:{ who:'a', line:x=>`He deflates a bit. "...Yeah. Alright. It happens." He puts a hand out.`,
+        opts:[
+          { t:'Shake it.', eff:{respectA:+14}, note:'That is how you get a reputation as someone safe to work with.' },
+          { t:'"Buy you a beer after."', eff:{respectA:+18}, note:'You made an actual friend in a business that does not hand them out.' },
+        ]},
+      blame:{ who:'a', line:x=>`"Too slow." He repeats it back at you, flat. "Say that to the boys."`,
+        opts:[
+          { t:'"I will."', eff:{heat:+14, heatAll:+4, gimHeat:+5}, note:'The room heard. Half of them think you are right. All of them think you are difficult.', mem:'blamedAWorker' },
+          { t:'"...No. That was on me."', eff:{respectA:+8, standing:+2}, note:'Walking it back cost you nothing but pride.' },
+        ]},
+      tighter:{ who:'a', line:x=>`He snorts. "Fair. You didn't hide behind it, at least."`,
+        opts:[
+          { t:'"Never do."', eff:{respectA:+10, gimHeat:+3}, note:'Blunt, but honest. That travels well in a locker room.' },
+        ]},
+    }},
+
+  /* ---------- ALLIES AND THE GOOD SIDE OF THE JOB ---------- */
+  { id:'ally_pep', tag:'A FRIEND', trig:'prematch', weight:1,
+    when:x=>!!castAlly(),
+    cast:x=>({a:castAlly()}),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} drops onto the bench next to you. "Whatever tonight is. You've got it. I'm not just saying that."`,
+        opts:[
+          { t:'"Watch my back out there."', eff:{cond:+4, loyaltyA:+8}, note:'They will be watching. That is worth more than the four points of condition.' },
+          { t:'"I know."', eff:{gimHeat:+3, loyaltyA:+2}, note:'They laughed and shoved your shoulder.' },
+          { t:'"I\'m not sure I do, actually."', eff:{cond:+2, loyaltyA:+12}, goto:'honest' },
+        ]},
+      honest:{ who:'a', line:x=>`They go quiet for a second. "Okay. Then go out there and find out. That's all anybody does."`,
+        opts:[
+          { t:'"Thanks."', eff:{cond:+5, loyaltyA:+8}, note:'You needed to say it out loud to somebody. Now you have.' },
+        ]},
+    }},
+
+  { id:'rookie_asks', tag:'A ROOKIE', trig:'any', weight:1,
+    when:x=>(x.c.standing||50)>=55 && !!castRookie(),
+    cast:x=>({a:castRookie()}),
+    beats:{
+      start:{ who:'a', line:x=>`A very nervous ${x.a.name} intercepts you. "Sorry. Sorry. If you ever need someone to work with, I'm here. I'll do anything."`,
+        opts:[
+          { t:'"Meet me at eleven. We\'ll run a spot."', eff:{standing:+2, respectA:+18}, goto:'coach' },
+          { t:'"Don\'t say you\'ll do anything. Ever."', eff:{respectA:+12, gimHeat:+3}, goto:'lesson' },
+          { t:'"Not now, kid."', eff:{standing:-1, respectA:-8}, note:'They said sorry again and left. You have been that person.' },
+        ]},
+      coach:{ who:'a', line:x=>`Eleven o'clock, empty building, one light on. They are terrible and completely fearless. It is the best hour of your week.`,
+        opts:[
+          { t:'Tell them the truth about what needs work.', eff:{respectA:+14, standing:+2}, note:'They wrote it on their hand. They will remember you for twenty years.' },
+          { t:'Tell them they were great.', eff:{respectA:+6}, note:'Kind. Not useful. They will find out the hard way.' },
+        ]},
+      lesson:{ who:'a', line:x=>`They blink. "...Why not?"`,
+        opts:[
+          { t:'"Because somebody will take you up on it."', eff:{respectA:+16, standing:+2}, note:'The most valuable thing anybody told you in your first year, passed on.' },
+        ]},
+    }},
+
+  /* ---------- MEDIA ---------- */
+  { id:'interviewer', tag:'INTERVIEW', trig:'prematch', weight:1,
+    when:x=>true,
+    beats:{
+      start:{ line:x=>`A backstage interviewer steps into your path with a microphone already up. "A quick word before your match?"`,
+        opts:[
+          { t:'Talk about the match ahead.', eff:{standing:+2, gimHeat:+3}, note:'Clean, professional, on point.' },
+          { t:'Cut a promo on the entire locker room.', eff:{heatAll:+4, gimHeat:+8, standing:-1}, goto:'wholeRoom' },
+          { t:'Take the microphone out of their hand.', eff:{gimHeat:+7, standing:-2, reactionBoost:true}, goto:'tookMic' },
+          { t:'Walk straight past.', eff:{standing:-2, gimHeat:+2, reactionBoost:true}, note:'No comment is a comment. The camera followed you all the way down the hall.' },
+        ]},
+      wholeRoom:{ line:x=>`The interviewer's eyes go wide and they let you keep going. Somewhere off camera a door closes hard.`,
+        opts:[
+          { t:'Name names.', eff:{heatAll:+7, gimHeat:+6}, note:'Every person you named is now a match the office can book.', mem:'namedNames' },
+          { t:'Stop while it is still deniable.', eff:{gimHeat:+4, standing:+1}, note:'You made your point and left yourself a door.' },
+        ]},
+      tookMic:{ line:x=>`You are holding their microphone. They are holding nothing. The camera has not stopped.`,
+        opts:[
+          { t:'Say one sentence and hand it back.', eff:{gimHeat:+9, reactionBoost:true, standing:+1}, note:'One sentence, perfectly placed. That clip travels.' },
+          { t:'Keep it. Walk off with it.', eff:{gimHeat:+12, standing:-5, reactionBoost:true}, note:'Production is furious. The internet is delighted.', mem:'stoleTheMic' },
+        ]},
+    }},
+
+  /* ---------- WILD ---------- */
+  { id:'wild_snake', tag:'THE PARKING LOT', trig:'any', weight:0.5,
+    when:x=>true,
+    cast:x=>({a:castAnyone()}),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} is going car to car in the lot with an empty pillowcase. "Do not panic. But do not walk barefoot anywhere tonight."`,
+        opts:[
+          { t:'"What is in the pillowcase normally?"', eff:{}, goto:'snake' },
+          { t:'Get in your car and close the door.', eff:{standing:+1}, note:'Not your snake. Not your problem. Correct answer.' },
+          { t:'"I\'ll help you look."', eff:{respectA:+14}, goto:'help' },
+        ]},
+      snake:{ who:'a', line:x=>`"Her name is Deborah and she is EIGHT FEET LONG and she is somebody's problem in about ten minutes."`,
+        opts:[
+          { t:'"Whose problem?"', eff:{gimHeat:+5}, note:'"Yours, if you keep asking questions instead of looking."' },
+          { t:'Quietly tell the referee.', eff:{standing:+3, heatA:+12}, note:'Deborah was recovered from the ring skirt. Nobody has forgiven you for telling.', mem:'rattedOnTheSnake' },
+        ]},
+      help:{ who:'a', line:x=>`Forty minutes later you find Deborah asleep in the timekeeper's chair. ${x.a.name} nearly cries.`,
+        opts:[
+          { t:'"You owe me forever."', eff:{respectA:+20, gimHeat:+4}, note:'They genuinely do. This gets brought up at your Hall of Fame induction.', mem:'savedDeborah' },
+          { t:'"Never speak of this."', eff:{respectA:+16}, note:'They speak of it constantly.' },
+        ]},
+    }},
+
+  { id:'wild_impostor', tag:'GORILLA POSITION', trig:'prematch', weight:0.5,
+    when:x=>true,
+    beats:{
+      start:{ line:x=>`There is a man at gorilla in full gear, mask, boots, the lot. Nobody booked him. Nobody knows him. He is stretching like he is on next.`,
+        opts:[
+          { t:'"Who are you?"', eff:{}, goto:'who' },
+          { t:'Get security.', eff:{standing:+3}, note:'He was escorted out still insisting he had a match. He may have been right.' },
+          { t:'Say nothing and see what happens.', eff:{gimHeat:+6}, goto:'watch' },
+        ]},
+      who:{ line:x=>`He looks at you with total sincerity. "I'm the one they've been building to."`,
+        opts:[
+          { t:'"Building to for how long?"', eff:{gimHeat:+7}, note:'"Nine years." He said it like it was obvious. He is gone now. You still think about it.', mem:'metTheImpostor' },
+          { t:'"Good luck out there."', eff:{gimHeat:+5, standing:-1}, note:'You let him go through the curtain. The commentary team improvised for six minutes.' },
+        ]},
+      watch:{ line:x=>`He walks through the curtain to no music. The crowd, magnificently, pops anyway.`,
+        opts:[
+          { t:'Watch the monitor.', eff:{gimHeat:+8, standing:-3, reactionBoost:true}, note:'He did a headstand, bowed, and left. It is the most talked-about segment of the year and it was not booked.', mem:'metTheImpostor' },
+        ]},
+    }},
+
+  { id:'wild_catering', tag:'CATERING', trig:'any', weight:0.6,
+    when:x=>houseRoster(x.promo.id).length>2,
+    cast:x=>({a:castAnyone()}),
+    beats:{
+      start:{ who:'a', line:x=>`Two of the boys are having a genuine, shouting argument about whether a hot dog is a sandwich. ${x.a.name} turns to you. "Settle it. You're the tiebreak."`,
+        opts:[
+          { t:'"It\'s a sandwich."', eff:{heatAll:+3, gimHeat:+4}, goto:'aftermath' },
+          { t:'"It\'s absolutely not a sandwich."', eff:{heatAll:+3, gimHeat:+4}, goto:'aftermath' },
+          { t:'"I\'m not doing this."', eff:{standing:+2}, note:'They booed you out of catering. You ate in your car. Worth it.' },
+        ]},
+      aftermath:{ who:'a', line:x=>`The room erupts. Somebody stands on a chair. A veteran who has not spoken in three weeks says "finally, some sense" and leaves.`,
+        opts:[
+          { t:'Hold the line.', eff:{heatAll:+4, gimHeat:+6}, note:'You have made four enemies and two friends over a hot dog. This is the business.', mem:'hotDogPosition' },
+          { t:'"I was joking, obviously."', eff:{heatAll:-2, standing:+1}, note:'Coward. Everybody says so. Affectionately.' },
+        ]},
+    }},
+
+  { id:'wild_fan', tag:'BACKSTAGE', trig:'any', weight:0.5,
+    when:x=>true,
+    beats:{
+      start:{ line:x=>`A kid of about eleven is standing in the corridor holding a homemade sign with YOUR name on it. There is no adult anywhere. Security is nowhere.`,
+        opts:[
+          { t:'"How did you get back here?"', eff:{}, goto:'how' },
+          { t:'Sign the sign.', eff:{reactionBoost:true, standing:+1, gimHeat:+4}, goto:'sign' },
+          { t:'Walk them to security.', eff:{standing:+4}, note:'The correct, boring, adult thing to do. Their mother was in tears in the lobby.' },
+        ]},
+      how:{ line:x=>`"I just walked in." Beat. "Nobody stopped me."`,
+        opts:[
+          { t:'"...Nobody stopped you."', eff:{standing:+2}, note:'You reported it. The building manager had a very bad night. The kid got front row seats.' },
+          { t:'"Don\'t tell anyone. Come on."', eff:{reactionBoost:true, gimHeat:+6, standing:-2}, note:'You walked them out yourself. They will tell that story for the rest of their life.', mem:'walkedTheKidOut' },
+        ]},
+      sign:{ line:x=>`They hold it completely still while you sign, like it might break. Then: "Are you going to win?"`,
+        opts:[
+          { t:'"Yes."', eff:{reactionBoost:true, gimHeat:+5, cond:+3}, note:'You had better, now.' },
+          { t:'"I\'m going to try like hell."', eff:{reactionBoost:true, gimHeat:+4, standing:+2}, note:'The honest answer, and somehow the better one.' },
+        ]},
+    }},
+
+  { id:'wild_repossession', tag:'THE PARKING LOT', trig:'any', weight:0.4,
+    when:x=>houseRoster(x.promo.id).length>2,
+    cast:x=>({a:castAnyone()}),
+    beats:{
+      start:{ who:'a', line:x=>`A tow truck is taking ${x.a.name}'s car out of the lot. ${x.a.name} is watching it go with a paper plate of catering in one hand, completely calm.`,
+        opts:[
+          { t:'"Do you need a ride?"', eff:{respectA:+16}, goto:'ride' },
+          { t:'"Are you okay?"', eff:{respectA:+8}, goto:'okay' },
+          { t:'Keep walking. Give them the dignity.', eff:{respectA:+4, standing:+1}, note:'Sometimes the kindest thing is not seeing it.' },
+        ]},
+      ride:{ who:'a', line:x=>`Three hundred miles in your car. Somewhere around hour four they tell you the whole thing: the divorce, the second mortgage, why they still do this.`,
+        opts:[
+          { t:'Listen.', eff:{respectA:+22, cond:-3}, note:'You did not fix anything. You did not need to.', mem:'droveThemHome' },
+          { t:'Offer to lend them the money.', eff:{respectA:+14, standing:+1}, note:'They said no twice and then said yes. It is never mentioned again.', mem:'lentTheMoney' },
+        ]},
+      okay:{ who:'a', line:x=>`"Yeah." They eat a bit of pasta salad. "This is the third time. You get better at it."`,
+        opts:[
+          { t:'"That\'s bleak."', eff:{respectA:+8, gimHeat:+3}, note:'"It\'s wrestling." They offered you some pasta salad.' },
+          { t:'Sit down next to them.', eff:{respectA:+16}, note:'You sat in a car park and ate catering with somebody having the worst day of their year.' },
+        ]},
+    }},
+
+  { id:'wild_wrongname', tag:'GORILLA POSITION', trig:'prematch', weight:0.4,
+    when:x=>true,
+    beats:{
+      start:{ line:x=>`The ring announcer catches your arm, panicking. "I've been saying your name wrong. All year. Somebody just told me. I'm so sorry."`,
+        opts:[
+          { t:'"Say it right tonight and we\'re fine."', eff:{standing:+2, gimHeat:+3}, note:'They said it perfectly and looked at you for approval like a nervous dog.' },
+          { t:'"Keep saying it wrong. It\'s mine now."', eff:{gimHeat:+9, reactionBoost:true}, note:'The wrong pronunciation is now on merchandise. It outsells everything else you have.', mem:'keptTheWrongName' },
+          { t:'"...All year?"', eff:{gimHeat:+4}, note:'"All year." You both stood there with that for a second.' },
+        ]},
+    }},
+
+  /* ---------- CALLBACKS: scenes that only exist because of what you did ---------- */
+  { id:'callback_mic', tag:'PRODUCTION', trig:'any', weight:1.6,
+    when:x=>sceneRecalls('stoleTheMic'),
+    beats:{
+      start:{ line:x=>`A production assistant blocks the hallway with a clipboard and the expression of someone who has been told to do this. "We would like the microphone back."`,
+        opts:[
+          { t:'"What microphone?"', eff:{gimHeat:+7, standing:-3}, note:'It is on your mantelpiece. Everyone knows. The bit continues.' },
+          { t:'Hand it back.', eff:{standing:+5}, note:'You gave it back. They looked so relieved it was almost sad.' },
+          { t:'Hand back a different microphone.', eff:{gimHeat:+10, standing:-2, reactionBoost:true}, note:'They did not notice for six weeks.' },
+        ]},
+    }},
+
+  { id:'callback_snake', tag:'CATERING', trig:'any', weight:1.6,
+    when:x=>sceneRecalls('savedDeborah') || sceneRecalls('rattedOnTheSnake'),
+    cast:x=>({a:castAnyone()}),
+    beats:{
+      start:{ who:'a', line:x=>sceneRecalls('savedDeborah')
+          ? `${x.a.name} sits down across from you holding a photograph. "Deborah's had eggs. I've named one after you."`
+          : `${x.a.name} sits down across from you and does not say anything for a full minute. "Deborah remembers, you know."`,
+        opts:[
+          { t:'"I\'m honoured."', eff:{respectA:+12, gimHeat:+4}, note:'There is a small snake somewhere with your name. Immortality of a kind.' },
+          { t:'"Snakes cannot remember."', eff:{heatA:+10, gimHeat:+3}, note:'"She REMEMBERS."' },
+        ]},
+    }},
+
+  { id:'callback_office', tag:'A WORD FROM THE OFFICE', trig:'any', weight:1.5,
+    when:x=>sceneRecalls('toldOfficeOff'),
+    beats:{
+      start:{ line:x=>`${x.booker.name} falls into step beside you without looking over. "You know what the funny thing is. That thing you said to me. Half the roster has said it to me since."`,
+        opts:[
+          { t:'"You\'re welcome."', eff:{standing:-4, gimHeat:+8, reactionBoost:true}, note:'They laughed genuinely, which was somehow worse.' },
+          { t:'"Are they wrong?"', eff:{standing:-2, gimHeat:+5}, note:'"No." They kept walking. That is the closest thing to an apology you will get.' },
+          { t:'"I was out of line."', eff:{standing:+7}, note:'A year late, and it still landed. The temperature dropped a few degrees.' },
+        ]},
+    }},
+];
+
+/* Legacy single-beat library, still used as a fallback pool. */
 const SEGMENT_LIB = [
   // Champion pops in when you have a shot in hand at them
   { id:'champVisit', tag:'CHAMPION VISIT',
@@ -12811,6 +13211,127 @@ function pickSegment(){
   return pool[idx];
 }
 function closeScene(){ const b=$('sceneBack'); if(b) b.classList.remove('open'); }
+/* ---- multi-beat scene player ----
+   Walks the beat graph. Every option can carry effects (applied
+   immediately), a memory key, and a `goto` that continues the
+   conversation. An option with no goto ends the scene on its note. */
+function pickScene(trigger){
+  const c=G.car; const x=sceneCtx();
+  const pool = SCENES.filter(s=>{
+    if(s.trig && s.trig!=='any' && trigger && s.trig!==trigger) return false;
+    // do not repeat a scene until the deck has been worked through
+    if((c._scenesSeen||[]).includes(s.id)) return false;
+    try{ return s.when ? s.when(x) : true; }catch(_){ return false; }
+  });
+  if(!pool.length){
+    // deck exhausted for this trigger: reshuffle so scenes can recur later
+    c._scenesSeen = (c._scenesSeen||[]).filter(id=>{
+      const s=SCENES.find(y=>y.id===id); return s && s.trig && s.trig!=='any' && s.trig!==trigger;
+    });
+    return null;
+  }
+  // weighted pick, deterministic per week so a reload shows the same scene
+  const seed=`${c.year}-${c.week}-${trigger||'any'}`;
+  let h=2166136261>>>0;
+  for(let i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); }
+  const total=pool.reduce((s,p)=>s+(p.weight||1),0);
+  let r=((h>>>0)%10000)/10000*total;
+  for(const p of pool){ r-=(p.weight||1); if(r<=0) return p; }
+  return pool[pool.length-1];
+}
+function playScene(scene, onDone){
+  if(typeof endTour==='function' && TOUR_I>=0) endTour();
+  const back=$('sceneBack'), body=$('sceneBody');
+  if(!back||!body){ if(onDone) onDone(); return; }
+  const x = sceneCtx();
+  // A scene that declares a cast needs that cast to exist. (An earlier version
+  // sniffed the beat source with JSON.stringify, which silently drops
+  // functions, so the guard never fired and a castless scene could throw
+  // mid-render.) Declaring `cast` is the contract: no lead, no scene.
+  if(scene.cast){
+    let filled=null;
+    try{ filled = scene.cast(x)||{}; }catch(_){ filled=null; }
+    if(!filled || !filled.a){ if(onDone) onDone(); return; }
+    Object.assign(x, filled);
+  }
+
+  const c=G.car;
+  c._scenesSeen = (c._scenesSeen||[]).concat([scene.id]).slice(-40);
+
+  const finish = ()=>{ markSegmentPlayed(); save(); closeScene(); if(onDone) onDone(); };
+
+  const speakerOf = (beat)=> (beat.who==='a' ? x.a : beat.who==='b' ? x.b : null);
+  const avatarFor = (who)=> who
+      ? `<div class="scene-av">${wrestlerSVG(who.look,{frame:'head'})}</div>`
+      : `<div class="scene-av scene-av-narr">${pico('microphone',36)}</div>`;
+  // With no on-screen speaker the header would otherwise repeat the scene tag
+  // directly under itself. Narrated beats get the promotion's name instead.
+  const nameFor = (who)=> who
+      ? `${who.name}${who.nick?` <span style="opacity:.6">"${who.nick}"</span>`:''}`
+      : (x.promo && x.promo.name) || 'Backstage';
+
+  let beatCount = 0;
+  const renderBeat = (key)=>{
+    const beat = scene.beats[key];
+    if(!beat){ finish(); return; }
+    beatCount++;
+    const who = speakerOf(beat);
+    let line=''; try{ line = typeof beat.line==='function' ? beat.line(x) : (beat.line||''); }catch(_){ line=''; }
+    const opts = (typeof beat.opts==='function' ? beat.opts(x) : beat.opts) || [];
+    body.innerHTML = `<div class="scene-tag">${scene.tag}${beatCount>1?' <span style="opacity:.55">continued</span>':''}</div>
+      <div class="scene-head">${avatarFor(who)}<div>
+        <div class="scene-who">${nameFor(who)}</div>
+        <div class="scene-line">${who?`"${line}"`:line}</div></div></div>
+      <div class="scene-optlist">${opts.map((o,i)=>`
+        <div class="scene-opt" data-i="${i}"><div class="scene-opt-t">${o.t}</div></div>`).join('')}</div>
+      ${beatCount===1?`<div class="scene-walk"><button id="sceneWalkPast">Walk past →</button></div>`:''}`;
+    back.classList.add('open');
+    setTimeout(()=>{
+      const wp=document.getElementById('sceneWalkPast'); if(wp) wp.onclick=finish;
+      document.querySelectorAll('#sceneBody .scene-opt').forEach(el=>{
+        el.onclick=()=>{
+          const o=opts[+el.dataset.i]; if(!o) return;
+          applySceneEffect(o.eff||{}, x);
+          if(o.mem) sceneRemember(o.mem);
+          if(o.goto && scene.beats[o.goto]){ renderBeat(o.goto); return; }
+          // resolve
+          body.innerHTML = `<div class="scene-tag">${scene.tag} <span style="opacity:.55">you chose</span></div>
+            <div class="scene-head">${avatarFor(who)}<div>
+              <div class="scene-who">${nameFor(who)}</div>
+              <div class="scene-line">"${o.t}"</div></div></div>
+            <div class="scene-outcome">
+              <div class="scene-outcome-line">${o.note||'The moment passes.'}</div>
+              ${summarizeEffect(o.eff||{})}
+            </div>
+            <div class="scene-continue"><button id="sceneCont">Continue →</button></div>`;
+          setTimeout(()=>{ const cb=document.getElementById('sceneCont'); if(cb) cb.onclick=finish; },20);
+        };
+      });
+    },30);
+  };
+  renderBeat('start');
+}
+/* Scene effects. Superset of the legacy segment effects, with per-cast
+   targeting (heatA / respectA / loyaltyA) so a scene can act on whoever
+   it actually cast rather than a single implicit "who". */
+function applySceneEffect(eff, x){
+  const c=G.car, w=G.w;
+  if(eff.standing) c.standing=clamp((c.standing||50)+eff.standing);
+  if(eff.cond)     c.cond=clamp((c.cond||100)+eff.cond, 0, 100);
+  if(eff.gimHeat && w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+eff.gimHeat,0,100);
+  if(eff.reactionBoost) c.reaction=clamp((c.reaction==null?c.pop:c.reaction)+3, 0, 100);
+  if(eff.adv && story()) advanceStory();
+  const A = x && x.a;
+  if(A){
+    if(eff.heat)     { const R=rel(A.id); R.heat=clamp(R.heat+eff.heat,0,100); }
+    if(eff.heatA)    { const R=rel(A.id); R.heat=clamp(R.heat+eff.heatA,0,100); }
+    if(eff.respectA) { const R=rel(A.id); R.respect=clamp(R.respect+eff.respectA,0,100); }
+    if(eff.loyaltyA) nudgeLoyalty(A.id, eff.loyaltyA);
+  }
+  if(eff.heatAll){
+    houseRoster(myPromo().id).slice(0,6).forEach(p=>{ const R=rel(p.id); R.heat=clamp(R.heat+eff.heatAll,0,100); });
+  }
+}
 function playSegment(seg, onDone){
   const c=G.car;
   // If the guided tour is still on screen, close it: it sits at z-index 150,
@@ -12868,6 +13389,10 @@ function summarizeEffect(eff){
   if(eff.adv)      chips.push(`<span class="pchip gold" style="animation:none;opacity:1;">Feud advances</span>`);
   if(eff.allyLoyalty && eff.allyLoyalty.d) chips.push(`<span class="pchip" style="animation:none;opacity:1;">Loyalty ${fmt(eff.allyLoyalty.d)}</span>`);
   if(eff.respect && eff.respect.d) chips.push(`<span class="pchip" style="animation:none;opacity:1;">Respect ${fmt(eff.respect.d)}</span>`);
+  if(eff.heatA)    chips.push(`<span class="pchip gold" style="animation:none;opacity:1;">Heat ${fmt(eff.heatA)}</span>`);
+  if(eff.respectA) chips.push(`<span class="pchip ${eff.respectA>0?'':'red'}" style="animation:none;opacity:1;">Respect ${fmt(eff.respectA)}</span>`);
+  if(eff.loyaltyA) chips.push(`<span class="pchip" style="animation:none;opacity:1;">Loyalty ${fmt(eff.loyaltyA)}</span>`);
+  if(eff.heatAll)  chips.push(`<span class="pchip" style="animation:none;opacity:1;">Locker room ${fmt(eff.heatAll)}</span>`);
   if(!chips.length) return '';
   return `<div class="scene-outcome-note"><div class="paychips" style="margin-top:4px;">${chips.join('')}</div></div>`;
 }
@@ -12892,9 +13417,24 @@ function applySegmentEffect(eff, who){
    like part of walking out to gorilla. */
 function maybeShowPreMatchSegment(onDone){
   if(segmentsPlayedThisWeek()){ onDone(); return; }
+  // Prefer the multi-beat conversation engine. Fall back to the legacy
+  // single-beat library only if no scene qualifies this week.
+  const scene = pickScene('prematch');
+  if(scene){ playScene(scene, onDone); return; }
   const seg = pickSegment();
   if(!seg){ onDone(); return; }
   playSegment(seg, onDone);
+}
+/* Scenes now fire in more places than the walk to gorilla. This is the
+   generic entry point: pass a trigger, get a scene if one qualifies.
+   Returns true if a scene took the screen. */
+function maybeScene(trigger, onDone){
+  const done = onDone || function(){};
+  if(segmentsPlayedThisWeek()){ done(); return false; }
+  const scene = pickScene(trigger);
+  if(!scene){ done(); return false; }
+  playScene(scene, done);
+  return true;
 }
 
 function showLineage(promoId, kind){
