@@ -684,8 +684,8 @@ window.GA_ID='G-L29P5MRWKE';
      club beside it and quieter than the money. */
   .wage{font-variant-numeric:tabular-nums;font-weight:800;color:var(--dim)}
   .wrow.aging .wage{color:#e2b25a;transition:color .3s ease}
-  /* TRADED, and RETIRED on the men who are gone. Chips rather than sentences: the winter
-     is a list you scan, and these are the two things on it you stop for. */
+  /* SIGNED WITH, and RETIRED on the men who are gone. Chips rather than sentences: the
+     winter is a list you scan, and these are the two things on it you stop for. */
   .wmoved,.wgone{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.09em;
     padding:2px 5px;border-radius:4px;line-height:1.25}
   .wmoved{background:rgba(96,165,250,.16);color:#93c5fd}
@@ -10569,7 +10569,11 @@ function winterRow(a,i){
   /* HE PLAYED SOMEWHERE ELSE. You keep him either way, because The Gauntlet follows the man
      and not the club, but the roster line would otherwise change its badge with no
      explanation. Worth saying plainly: it is a real thing that happened to him that winter,
-     and it is the fact this mode exists to show you. */
+     and it is the fact this mode exists to show you.
+     SIGNED WITH, NOT TRADED, and the difference is whose decision it reads as. The data
+     knows only that the club on his card changed, so either word is a guess at the
+     mechanism; this one at least guesses in the direction of something you had no say in.
+     TRADED reads like a move you made, and you did not make it. */
   const moved=a.was&&a.was.franchise&&p.franchise&&a.was.franchise!==p.franchise;
   return '<div class="wrow" data-i="'+i+'">'+
     '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
@@ -10578,7 +10582,7 @@ function winterRow(a,i){
         a.was.season+'</span>'+
         '<span>'+esc(E.nickname(p.franchise))+'</span>'+
         (p.age?'<span class="wage">'+p.age+' yrs</span>':'')+
-        (moved?'<span class="wmoved">TRADED</span>':'')+
+        (moved?'<span class="wmoved">SIGNED WITH '+esc(p.franchise)+'</span>':'')+
       '</span></span>'+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
       '<span class="wraise'+(raise?' up':'')+'">'+(raise?'+'+M(a.raise):'')+'</span></span>'+
