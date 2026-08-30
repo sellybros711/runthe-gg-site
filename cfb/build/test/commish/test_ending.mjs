@@ -239,6 +239,56 @@ console.log('\n=== the state the live project is in until the migration is run =
   await down.p.close();
 }
 
+console.log('\n=== the card states a fact and not a score ===');
+{
+  const run = await runTerm('up');
+  const card = await run.p.evaluate(async () => {
+    const T = window.PS_CFB_COMMISH_TEST;
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const c = T.termCard();
+    /* Pixel variance, so "it drew" is a fact rather than a canvas of the right size. */
+    const g = c.getContext('2d').getImageData(0, 0, c.width, Math.min(600, c.height)).data;
+    const seen = {};
+    for (let i = 0; i < g.length; i += 4 * 97) seen[g[i] + ',' + g[i + 1] + ',' + g[i + 2]] = 1;
+    return { w: c.width, h: c.height, bottom: Number(c.dataset.bottom || 0),
+      colors: Object.keys(seen).length,
+      text: T.termText(), data: T.termData(),
+      shown: !document.getElementById('b-term-share').hidden };
+  });
+  ok('the button is on the screen that ends a term', card.shown);
+  ok('the card is a poster rather than a strip',
+    card.w === 1080 && card.h >= 1350 && card.h <= 1780, card.w + 'x' + card.h);
+  /* AND NOTHING IS CUT OFF IT. The height clamps, so a ceiling set below the worst case
+     would take the last sentence off the card that needed it most. */
+  ok('  and nothing runs off the bottom of it', card.h - card.bottom >= 90,
+    card.bottom + ' of ' + card.h);
+  ok('  and something is actually drawn on it', card.colors > 8, card.colors + ' colors');
+  /* THE WHOLE BRIEF, ASSERTED. A card reading "I got a B" is a thing nobody has ever posted,
+     so nothing that reaches this one may be a grade or a score. The data the card is built
+     from is checked rather than the pixels, because that is where a score would be added. */
+  const flat = JSON.stringify(card.data);
+  ok('nothing on the card is a score', !/"score"|"grade"|"points"/.test(flat),
+    (flat.match(/"(score|grade|points)"/g) || []).join(' '));
+  /* NOT A BARE CAPITAL LETTER. The first version of this asked for /\b[A-F][+-]?\b/ and went
+     red on "A 12 team playoff", which is an article. A grade in a sentence is the words or a
+     letter carrying a sign. */
+  ok('  and the words that go with it are not either',
+    !/\bscores?\b|\bgraded?\b|\b[A-F][+-]\B|\b\d{1,3}\s*\/\s*100\b/i.test(card.text),
+    card.text.slice(0, 70));
+  /* And it does say the things it is for. */
+  ok('it names what the term turned out to believe',
+    !!(card.data.doc && card.data.doc.name), card.data.doc && card.data.doc.name);
+  ok('  with the four axes behind it',
+    !!(card.data.doc && card.data.doc.axes) && card.data.spectra.length === 4,
+    card.data.spectra.map((x) => x.id).join(' '));
+  ok('  and facts about the sport it left', card.data.evidence.length >= 3,
+    card.data.evidence.length + ' facts');
+  ok('the share text leads with a fact',
+    /five years/i.test(card.text) && /runthe\.gg/.test(card.text), card.text.split('\n')[0]);
+  ok('no page errors', !run.errs.length, run.errs.join(' | ') || 'none');
+  await run.p.close();
+}
+
 await b.close();
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

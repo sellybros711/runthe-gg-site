@@ -2123,6 +2123,9 @@
       <div class="eyebrow" style="margin-bottom:9px">The room</div>
       <div class="room" id="y-room"></div>
     </div>
+    <!-- A CARD THAT STATES A FACT, NOT A SCORE. See drawTermCard(). Above the dock, on the
+         pattern the office uses for its second action, and only at the end of a term. -->
+    <button class="btn ghost" id="b-term-share" hidden>Share the term</button>
     <div class="dock">
       <button class="btn" id="b-year-next">Next season</button>
       <button class="btn ghost" id="b-quit">Leave the office</button>
@@ -5903,6 +5906,11 @@ window.PS_CFB_COMMISH_TEST={
   jump:(beat,year)=>{ world.beat=beat; if(year) world.year=year; save(); office(); },
   plant:(id,opts)=>{ world=L.plant(world,id,opts); save(); },
   repaint:()=>office(),
+  /* The ending, and the card it produces, without playing five seasons to reach them. */
+  ending:()=>ending(),
+  termCard:()=>drawTermCard(),
+  termText:()=>termShareText(),
+  termData:()=>termCardData(),
   /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety nine
      turns up takes several terms and lands on whichever it lands on, and an assertion about
      a specific door has to be made against that door. Same body as b-desk from the pick
@@ -6660,6 +6668,9 @@ function yearEnd(year){
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);
   if(done>=TERM_SEASONS){ ending(); return; }
+  /* NO CARD ON A YEAR IN REVIEW. It states what a TERM turned out to believe, and a term with
+     two seasons in it has not turned out to believe anything yet. */
+  $('b-term-share').hidden=true;
   $('b-year-next').textContent='Season '+(done+1)+' of '+TERM_SEASONS;
   show('s-year');
 }
@@ -6714,6 +6725,7 @@ function ending(){
   paintCoalition($('y-coal'),world);
   paintSport($('y-sport'),world,null);
   paintRoom($('y-room'),world,null);
+  $('b-term-share').hidden=false;
   $('b-year-next').textContent='Take the job again';
   $('b-year-next').onclick=()=>{ newTerm(2025); office(); };
   $('b-quit').textContent='Back to the game';
@@ -6724,6 +6736,200 @@ function ending(){
      simply has no comparison on it. */
   recordTerm(world,doc);
 }
+
+/* ── the card that states a fact ───────────────────────────────────────────────────
+   WHAT A SHARE CARD IS FOR, AND WHY THIS ONE HAS NO GRADE ON IT. The mode already produces
+   six letter grades and a verdict, and a card reading "I got a B" is a thing nobody has ever
+   posted. What is worth posting is a claim: "the players ended on 25% of the pool, in a
+   sixteen team playoff, and three conferences went under while I was in the chair." That is
+   an argument somebody's group chat can have. A grade is not.
+
+   SO NOTHING ON THIS CARD IS A SCORE. It leads with what the term turned out to believe
+   (doctrine.js reads that off the effect vector of every ruling, so it is what you kept
+   voting for rather than where you ended up), proves it with four diverging bars, and lands
+   on four facts about the sport as it was handed over. The one sentence at the bottom is
+   report.loudest, which is whichever of the six things a term is judged on came out furthest
+   from the middle: a term is remembered for its best or its worst thing and never for its
+   mean.
+
+   READABLE AT THUMBNAIL SIZE, which is where a share card is actually seen first. The top
+   third is a name in Anton at 118px and one sentence. Everything below it is the evidence for
+   somebody who taps in. */
+const TCARD={W:1080,H:1350,PAD:78,KEEL:10};
+
+function termCardData(){
+  /* GRABBED HERE RATHER THAN AT THE TOP OF THE FILE. `DOC` is declared twice in this script
+     and both of them are inside a function, so a reference at this depth resolves to nothing.
+     One line is cheaper than a third global with the same name in it. */
+  const DOCT=window.PS_CFB_DOCTRINE;
+  const doc=DOCT?DOCT.profile(world):null;
+  const rep=REPORT?REPORT.report(world):null;
+  return {
+    doc:doc,
+    evidence:DOCT?DOCT.evidence(world).slice(0,4):[],
+    spectra:(DOCT&&DOCT.SPECTRA)||[],
+    /* THE LABEL AND THE SENTENCE, AND NOT THE MARK. `loudest` is a whole report card and it
+       carries `points` and `grade` with it, which is exactly what this card exists not to
+       show. Narrowed here rather than at the point it is drawn, so a card that never asks
+       for a score cannot be handed one by accident. */
+    loudest:rep&&rep.loudest?{label:rep.loudest.label,line:rep.loudest.line}:null,
+    years:world.startYear+' to '+(world.year-1),
+    removed:!!(world.outcome&&world.outcome.removed),
+  };
+}
+
+/* TWO PASSES, BECAUSE THE CONTENT DECIDES THE HEIGHT AND NOT THE OTHER WAY ROUND. An
+   archetype name is one line in Anton and two in the fallback a blocked font leaves behind;
+   four evidence facts are four lines or seven depending on how long the sport's own numbers
+   came out. The first version of this was 1350px tall with the blocks stacked off constants,
+   and the last section ran off the bottom edge the first time it was rendered.
+
+   So the layout function draws into whatever context it is handed and returns the y it
+   reached. It is called once against a throwaway canvas to find that number and once against
+   the real one, which costs a few milliseconds and cannot produce a card with the point of it
+   cut off. */
+function termCardLayout(x,d,W,H){
+  const PAD=TCARD.PAD, INNER=W-PAD*2;
+  const GOLD='#f5b301', GREEN='#10b981', INK='#e8edf6', DIM='#8b98ad';
+
+  x.fillStyle='#0d1117'; x.fillRect(0,0,W,H);
+  const g=x.createRadialGradient(W*0.18,-120,40,W*0.18,-120,W*1.25);
+  g.addColorStop(0,d.removed?'#7f1d1d':'#134e4a'); g.addColorStop(1,'rgba(13,17,23,0)');
+  x.globalAlpha=0.55; x.fillStyle=g; x.fillRect(0,0,W,H*0.6); x.globalAlpha=1;
+  for(let i=1;i<26;i++){
+    const ly=Math.round(i*(H/26));
+    x.fillStyle='rgba(255,255,255,'+(i%2?0.018:0.038)+')';
+    x.fillRect(0,ly,W,i%2?1:2);
+  }
+  x.fillStyle=GOLD; x.fillRect(0,H-TCARD.KEEL,W,TCARD.KEEL);
+
+  const A=(sz)=>{ x.font="400 "+sz+"px 'Anton',Impact,sans-serif"; };
+  const F=(sz,wt)=>{ x.font=(wt||600)+" "+sz+"px 'Archivo',system-ui,sans-serif"; };
+  const wrap=(text,left,top,width,lh,max)=>{
+    const words=String(text||'').split(' ');
+    let line='', y=top, n=0;
+    for(let i=0;i<words.length;i++){
+      const t=line?line+' '+words[i]:words[i];
+      if(x.measureText(t).width>width&&line){
+        x.fillText(line,left,y); y+=lh; line=words[i]; n++;
+        if(max&&n>=max){ line=''; break; }
+      }else line=t;
+    }
+    if(line){ x.fillText(line,left,y); y+=lh; }
+    return y;
+  };
+  const rule=(y)=>{ x.fillStyle='rgba(255,255,255,.1)'; x.fillRect(PAD,y,INNER,2); return y+44; };
+  const head=(t,y)=>{ F(21,700); x.fillStyle=DIM; x.fillText(t,PAD,y); return y+36; };
+
+  x.textAlign='left'; x.textBaseline='alphabetic';
+  F(26,700); x.fillStyle=GOLD; x.fillText('COMMISH SIMULATOR',PAD,PAD+26);
+  x.textAlign='right'; x.fillStyle=DIM; x.fillText(d.years.toUpperCase(),W-PAD,PAD+26);
+  x.textAlign='left';
+
+  /* ---- what you turned out to believe ---- */
+  A(118); x.fillStyle=INK;
+  let y=wrap(((d.doc&&d.doc.name)||'The Caretaker').toUpperCase(),PAD,PAD+178,INNER,112,2);
+  F(31,500); x.fillStyle=DIM;
+  y=wrap((d.doc&&d.doc.line)||'',PAD,y+22,INNER,44,3);
+
+  /* ---- the four bars ----
+     DIVERGING FROM THE MIDDLE, with both poles named, because neither end of these axes is
+     the good one and a bar growing from the left would say otherwise. */
+  y=head('WHAT YOU KEPT VOTING FOR',rule(y+36));
+  const mid=PAD+INNER/2, half=INNER/2;
+  (d.spectra||[]).forEach((sp)=>{
+    const v=Math.max(-100,Math.min(100,(d.doc&&d.doc.axes&&d.doc.axes[sp.id])||0));
+    F(19,600); x.fillStyle='rgba(255,255,255,.38)';
+    x.fillText(sp.lo.toUpperCase(),PAD,y+16);
+    x.textAlign='right'; x.fillText(sp.hi.toUpperCase(),W-PAD,y+16); x.textAlign='left';
+    const track=y+30;
+    x.fillStyle='rgba(255,255,255,.07)'; x.fillRect(PAD,track,INNER,14);
+    x.fillStyle='rgba(255,255,255,.28)'; x.fillRect(mid-1,track-6,2,26);
+    const w=Math.round(Math.abs(v)/100*half);
+    if(w>1){ x.fillStyle=v>=0?GREEN:GOLD; x.fillRect(v>=0?mid:mid-w,track,w,14); }
+    y=track+48;
+  });
+
+  /* ---- the sport you handed over ---- */
+  y=head('THE SPORT YOU HANDED OVER',rule(y+8));
+  (d.evidence||[]).forEach((e)=>{
+    x.fillStyle=GOLD; x.fillRect(PAD,y-13,5,18);
+    F(28,500); x.fillStyle=INK;
+    y=wrap(e.say,PAD+22,y,INNER-22,38,2)+12;
+  });
+
+  /* ---- and the one line worth saying out loud ---- */
+  if(d.loudest&&d.loudest.line){
+    y=head(String(d.loudest.label||'').toUpperCase(),rule(y+10));
+    F(29,600); x.fillStyle=INK;
+    y=wrap(d.loudest.line,PAD,y,INNER,40,3);
+  }
+
+  F(24,700); x.fillStyle=DIM; x.textAlign='center';
+  x.fillText('runthe.gg/cfb/commish',W/2,H-48);
+  x.textAlign='left';
+  return y;
+}
+
+function drawTermCard(){
+  const d=termCardData();
+  const W=TCARD.W;
+  /* The measuring pass. Nothing is kept off it except the number. */
+  const probe=document.createElement('canvas');
+  probe.width=W; probe.height=2200;
+  const bottom=termCardLayout(probe.getContext('2d'),d,W,2200);
+  /* A FLOOR AND A CEILING. Under the floor the card reads as a receipt rather than a poster;
+     over the ceiling it is a column nobody scrolls in a timeline.
+     THE CEILING HAS TO CLEAR THE WORST CASE OR IT IS A CLIP. A two line archetype name, three
+     lines of doctrine, four bars, four facts that each wrap, and a three line closer comes to
+     just over sixteen hundred, and the first ceiling was 1620: it fitted the card that was on
+     screen and would have cut the last sentence off the card that was not. `fits` is carried
+     on the canvas so a guard can assert the difference rather than eyeball one render. */
+  const H=Math.max(TCARD.H,Math.min(1780,Math.round(bottom+112)));
+  const c=document.createElement('canvas');
+  c.width=W; c.height=H;
+  termCardLayout(c.getContext('2d'),d,W,H);
+  c.dataset.bottom=String(Math.round(bottom));
+  return c;
+}
+
+/* The words that go with it, which have to stand alone: most of the places this is shared
+   strip the image and keep the text. Same rule as the card, so neither of them is a score. */
+function termShareText(){
+  const d=termCardData();
+  const bits=['I ran college football for five years.'];
+  if(d.evidence[0]) bits.push(d.evidence[0].say);
+  if(d.evidence[1]) bits.push(d.evidence[1].say);
+  if(d.doc&&d.doc.name) bits.push('They called me '+d.doc.name+'.');
+  return bits.join(' ')+'\n\nrunthe.gg/cfb/commish';
+}
+
+const termBlob=(c)=>new Promise((res)=>{ try{ c.toBlob(res,'image/png'); }catch(e){ res(null); } });
+
+$('b-term-share').onclick=async()=>{
+  const text=termShareText();
+  let file=null;
+  try{
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    const blob=await termBlob(drawTermCard());
+    if(blob) file=new File([blob],'commish-simulator.png',{type:'image/png'});
+  }catch(e){ file=null; }
+  try{
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({text:text,files:[file]}); return;
+    }
+    if(navigator.share){ await navigator.share({text:text}); return; }
+    throw new Error('no share');
+  }catch(e){
+    if(e&&e.name==='AbortError') return;
+    try{ await navigator.clipboard.writeText(text); toast('Copied'); }catch(_){ toast('Could not copy'); }
+    if(file){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(file); a.download='commish-simulator.png'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    }
+  }
+};
 
 /* ── the door ─────────────────────────────────────────────────────────────────── */
 function gate(){
