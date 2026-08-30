@@ -665,11 +665,16 @@ window.GA_ID='G-L29P5MRWKE';
     margin-bottom:0;padding-top:0;padding-bottom:0;height:0;border-width:0;overflow:hidden;
     transition:opacity .3s ease,transform .34s ease,height .34s ease .06s,
       margin .34s ease .06s,padding .34s ease .06s,border-width .34s ease .06s}
-  /* The beat where a man ages: a single pulse of his own row, gold, then back. */
-  @keyframes wpulse{0%{border-color:var(--line)}
-    28%{border-color:rgba(226,178,90,.85);background:rgba(38,30,16,.75)}
-    100%{border-color:var(--line)}}
-  .wrow.aging{animation:wpulse .72s ease}
+  /* THE BEAT WHERE A MAN AGES, and it now HOLDS. The pulse used to flash gold and release
+     inside a fifth of a second while the next five men were doing the same thing, so six
+     rows shimmered at once and none of them read. It stays lit for most of his beat now,
+     and lifts a hair off the list, so at any moment exactly one row is the one changing. */
+  @keyframes wpulse{
+    0%{border-color:var(--line);transform:none}
+    14%{border-color:rgba(226,178,90,.95);background:rgba(38,30,16,.82);transform:scale(1.015)}
+    72%{border-color:rgba(226,178,90,.8);background:rgba(38,30,16,.7);transform:scale(1.015)}
+    100%{border-color:var(--line);transform:none}}
+  .wrow.aging{animation:wpulse .82s ease}
   .wpos{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.04em;
     text-align:center;padding:4px 0;border-radius:7px;color:#fff}
   .wwho{min-width:0}
@@ -714,9 +719,18 @@ window.GA_ID='G-L29P5MRWKE';
   .wmoney{text-align:right;font-family:var(--fn);font-variant-numeric:tabular-nums}
   .wsal{font-size:15px;font-weight:800;line-height:1;transition:color .3s ease}
   .wrow.raised .wsal{color:#e2b25a}
+  /* WHAT THE MONEY DID, and it lands at his beat rather than sitting there from the start,
+     because "+$1.1M" appearing out of nothing is the moment somebody asks why.
+     THE OTHER HALF OF THE RATCHET IS HERE TOO. A man whose price fell shows no raise, and
+     for a year that read as nothing happening. What actually happened is that he is now
+     worth less than you pay him, which is the single fact that decides who to release, and
+     it was computed every offseason and shown to nobody. */
   .wraise{display:block;font-size:10px;font-weight:700;color:var(--dim-2);margin-top:2px;
-    min-height:12px}
+    min-height:12px;opacity:0;transform:translateY(2px);
+    transition:opacity .3s ease,transform .3s ease}
+  .wraise.in{opacity:1;transform:none}
   .wraise.up{color:#e2b25a}
+  .wraise.over{color:rgba(248,113,113,.92)}
   /* Opens at the end of the sequence with the rest of the screen, so nothing can be cut
      while the roster is still ageing in front of you. Width rather than height now that it
      is a column. */
@@ -964,6 +978,26 @@ window.GA_ID='G-L29P5MRWKE';
     55%{box-shadow:0 0 0 9px rgba(239,68,68,0),var(--shadow)}
   }
   @media (prefers-reduced-motion:reduce){ .dock-go{animation:none} }
+
+  /* ---- THE OFFSEASON'S NARRATOR ---- */
+  .narr{position:fixed;left:0;right:0;bottom:0;z-index:41;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+    background:linear-gradient(180deg,rgba(10,14,24,0),rgba(10,14,24,.94) 30%,rgba(10,14,24,.99))}
+  .narr[hidden]{display:none}
+  .narr-in{max-width:572px;margin:0 auto;display:flex;gap:10px;align-items:center;
+    padding:10px 12px;border-radius:13px;
+    border:1.5px solid rgba(226,178,90,.3);background:rgba(34,27,15,.86)}
+  #w-narr-t{flex:1;min-width:0;font-size:13px;line-height:1.35;color:var(--dim);
+    opacity:0;transform:translateY(4px);
+    transition:opacity .2s ease,transform .2s cubic-bezier(.22,1,.36,1)}
+  #w-narr-t.in{opacity:1;transform:none}
+  #w-narr-t b{color:#F3DDAE;font-weight:800}
+  /* SKIP IS NOT AN ESCAPE HATCH, it is the second time you see this screen. The show is
+     paced for somebody who has never met it, and everybody becomes somebody who has. */
+  .narr-skip{flex:none;cursor:pointer;font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.09em;padding:7px 10px;border-radius:9px;
+    border:1.5px solid var(--line);background:transparent;color:var(--dim-2)}
+  .narr-skip:active{background:rgba(255,255,255,.06)}
 
   /* The same figure, small, wherever the run is not being scored: the winter header and the
      ledger's own heading. */
@@ -5752,7 +5786,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          the run is worth so far, the money, and what the winter did to you in one line. The
          two lists under it are the detail. -->
     <div class="wintercard">
-      <div class="wc-top"><span id="w-step">The winter</span><span id="w-score"></span></div>
+      <div class="wc-top"><span id="w-step">The offseason</span><span id="w-score"></span></div>
       <h2 class="display" id="w-title" style="font-size:30px;margin:2px 0 4px">&nbsp;</h2>
       <p class="wc-sub" id="w-sub"></p>
 
@@ -6037,7 +6071,23 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
        it the containing block for a fixed child, so in there this sat 1,561px down a 930px
        viewport instead of on the bottom of it. paintDock() is what shows and hides it. -->
   <div class="dock" id="o-dock" hidden>
-    <button class="btn dock-go" id="b-next-season">Next winter</button>
+    <button class="btn dock-go" id="b-next-season">Next offseason</button>
+  </div>
+
+  <!-- THE OFFSEASON'S NARRATOR. The screen animates six men, and the fix for "it goes too
+       fast and I cannot tell what is changing" is only half about timing: the other half is
+       that a number rolling from 46.9 to 48.0 says WHAT happened and never says WHY. This
+       says why, one man at a time, while his row is the one lit up.
+
+       Pinned rather than placed, because the show scrolls each man into the middle of the
+       screen and anything in the flow would have scrolled away with him. OUTSIDE #s-winter
+       for the same reason the dock above is: .screen.on leaves a finished transform on the
+       ancestor, which becomes the containing block for a fixed child. -->
+  <div class="narr" id="w-narr" hidden>
+    <div class="narr-in">
+      <span id="w-narr-t"></span>
+      <button class="narr-skip" id="b-w-skip">Skip</button>
+    </div>
   </div>
 
   <div class="screen" id="s-over">
@@ -7221,6 +7271,11 @@ function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');window.scrollTo({top:0});
   /* The dock is fixed and outside the screens, so leaving a screen cannot take it with it. */
   paintDock();
+  /* SO IS THE OFFSEASON'S NARRATOR, and it has a running show behind it. Leaving mid-show
+     (the header, the home button, the rules sheet's own way out) would otherwise leave a
+     line about Andre Johnson's contract pinned across the front page while timers went on
+     firing at rows nobody can see. */
+  if(id!=='s-winter'&&typeof winterNarrOff==='function'){ winterClear(); winterNarrOff(); }
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
@@ -8060,7 +8115,7 @@ function dynastyRulesHTML(go){
     '<ul class="modenotes">'+
       '<li><b>Draft six players from one season.</b> You keep them. Same six spots and '+
         'the same cap as a normal run.</li>'+
-      '<li><b>Every winter they age.</b> Each player becomes his next real season. Some '+
+      '<li><b>Every offseason they age.</b> Each player becomes his next real season. Some '+
         'improve. Most decline. Some are gone. You refill from that year\'s wheel.</li>'+
       '<li><b>Salaries never drop.</b> Over the cap you keep everyone. You just cannot '+
         'sign anyone.</li>'+
@@ -8202,7 +8257,7 @@ function dynRead(){
 /* Where they left off, for the button. Short enough to sit in a sub-line. */
 function dynWhere(r){
   const P=R.PHASES;
-  if(r.phase===P.OFFSEASON) return 'mid-winter';
+  if(r.phase===P.OFFSEASON) return 'mid-offseason';
   if(r.phase===P.DRAFT) return 'still drafting';
   if(r.phase===P.OVER) return 'season played';
   /* No COACH branch. The mode has no hire, and save version 2 refuses every run written
@@ -8447,7 +8502,7 @@ const WALL={
      defense draft hit this first, Full Team hit it second, and it was live on this mode
      until somebody went looking. */
   dynasty:{name:'The Gauntlet',
-    what:'Draft six players from one season and keep them. Every winter they age. Salaries '+
+    what:'Draft six players from one season and keep them. Every offseason they age. Salaries '+
       'rise and never fall. The owner wants more wins every year.',
     note:'<b>Scored on how long you last.</b> Miss the bar twice and you are gone.',
     noname:'You are signed in. Pick a username and The Gauntlet opens. Every run on that '+
@@ -10431,7 +10486,7 @@ function paintDryWheel(){
     '<div class="dw-h">Nobody left you can sign</div>'+
     '<p class="dw-p">'+(over>0.05
       ? M(over)+' over the cap. No club can offer you a player. Release somebody next '+
-        'winter. For now, play a man short.'
+        'offseason. For now, play a man short.'
       : 'Nothing left fits your open spots and your money. Play a man short.')+'</p>'+
     '<button class="btn" id="b-short">Take the field with '+run.roster.length+'</button>'+
     '</div>';
@@ -10473,10 +10528,20 @@ const winterAt=(ms,fn)=>{ winterTimers.push(setTimeout(fn,ms)); };
    to the right numbers in the wrong format and printed a bare "221" where "$221M" belonged.
    Nothing threw. This is the collision CLAUDE.md warns about for the one-file games, and it
    is exactly as easy to hit in a fifteen-thousand-line page. */
+/* A COUNT THAT CAN BE CALLED OFF. rAF is not a timer and does not clear with the rest of
+   them, so an offseason skipped a beat into somebody's numbers wrote his final figures and
+   then had a roll still in flight write intermediate ones over the top for another half
+   second. It lands on the right value either way, which is exactly why it went unnoticed:
+   the wrong number is on screen only until the frame after next. The same stamp settles two
+   counts started on one element, where before they simply fought. */
+const countGen=new WeakMap();
+function countStop(el){ if(el) countGen.set(el,(countGen.get(el)||0)+1); }
 function countMoney(el,from,to,ms,fmt){
   if(!el) return;
+  const gen=(countGen.get(el)||0)+1; countGen.set(el,gen);
   const t0=performance.now();
   const step=(now)=>{
+    if(countGen.get(el)!==gen) return;
     const k=Math.min(1,(now-t0)/ms);
     const e=1-Math.pow(1-k,3);
     el.textContent=fmt(from+(to-from)*e);
@@ -10502,7 +10567,8 @@ function paintWinterCap(animate){
   $('w-of').textContent='of '+M0(cap);
   const el=$('w-pay');
   const was=parseFloat(String(el.textContent).replace(/[^0-9.]/g,''))||0;
-  if(animate) countMoney(el,was,pay,520,(v)=>M0(v)); else el.textContent=M0(pay);
+  if(animate) countMoney(el,was,pay,520,(v)=>M0(v));
+  else { countStop(el); el.textContent=M0(pay); }
   $('w-note').textContent=over>0.05
     ? M(over)+' over. You cannot sign anyone until you are under.'
     : M(cap-pay)+' of room. Release a player for more.';
@@ -10525,15 +10591,25 @@ function paintWinterCap(animate){
  * 0.7, which is a difference nobody can feel; as 8 against 11 it is a fact you can hold.
  * GAMES sits beside it, so the total is never being asked to stand on its own.
  */
-function winterChips(p){
+function qbRuns(p){
+  const g=p.games_played||0;
+  return g>0 && ((p.stats||{}).rush_yds||0)/g>=5;
+}
+function winterChips(p,qbRush){
   const s=p.stats||{};
   const g=p.games_played||0;
   const per=(v)=>(g>0?(v||0)/g:0);
   const td=(s.pass_td||0)+(s.rush_td||0)+(s.rec_td||0);
   const games={k:'GAMES',v:g,dec:0};
+  /* A POCKET QUARTERBACK RUSHES FOR MINUS A YARD AND A HALF A GAME, because a kneel-down is
+     a rushing attempt and nflverse counts it. RUSH/G is the right chip for the men it is
+     about and reads as a bug for everyone else, so a quarterback who does not run shows his
+     interceptions instead. The pair of seasons decides together, or his labels would change
+     under him halfway through his own beat. */
   if(p.position==='QB') return [
     {k:'PASS/G',v:per(s.pass_yds),dec:1},
-    {k:'RUSH/G',v:per(s.rush_yds),dec:1},
+    qbRush ? {k:'RUSH/G',v:per(s.rush_yds),dec:1}
+           : {k:'INT',v:(s.int||0),dec:0,lower:1},
     {k:'TD',v:td,dec:0},games];
   if(p.position==='RB') return [
     {k:'RUSH/G',v:per(s.rush_yds),dec:1},
@@ -10549,13 +10625,17 @@ function winterChips(p){
    sequence, the same moment the season on his card ticks over, so the change is something
    you watch happen rather than a figure that was always sitting there. */
 function winterStats(a){
-  const now=winterChips(a.now), was=winterChips(a.was);
+  const qbRush=qbRuns(a.now)||qbRuns(a.was);
+  const now=winterChips(a.now,qbRush), was=winterChips(a.was,qbRush);
   return '<span class="wstats">'+now.map((c,i)=>{
     const b=was[i]?was[i].v:c.v;
     const f=(v)=>(c.dec?v.toFixed(1):String(Math.round(v)));
     const diff=c.v-b;
     const moved=Math.abs(diff)>=(c.dec?0.05:0.5);
-    const dir=moved?(diff>0?'up':'down'):'';
+    /* GREEN IS GOOD, NOT UP. Three more interceptions is the one number on this strip that
+       gets worse as it grows, and colouring it by direction would paint it green. */
+    const good=c.lower?diff<0:diff>0;
+    const dir=moved?(good?'up':'down'):'';
     return '<span class="wst"><i>'+c.k+'</i>'+
       '<b data-from="'+b+'" data-to="'+c.v+'" data-dec="'+c.dec+'">'+f(b)+'</b>'+
       '<em class="wsd '+dir+'">'+(moved?(diff>0?'+':'')+f(diff):'&middot;')+'</em>'+
@@ -10563,9 +10643,24 @@ function winterStats(a){
   }).join('')+'</span>';
 }
 
+/* The one test, used by the row and by the narrator, so a man cannot be called overpaid in
+   one place and not the other. */
+const WIN_OVERPAY=2;
+function winterOverpaid(a){
+  return a && a.market!=null && a.salary-a.market>=WIN_OVERPAY;
+}
+
 function winterRow(a,i){
   const p=a.now;
   const raise=a.raise>0.05;
+  /* WHAT HE IS WORTH AGAINST WHAT HE COSTS. beginOffseason has banked `market` since the
+     mode was built and nothing had ever shown it. A man past his best keeps the salary he
+     earned at his peak, so the gap between the two grows every year, and it is the only
+     number on this screen that answers "who do I release".
+     TWO MILLION IS WHERE IT STARTS MATTERING. Below that the figures round to the same
+     number on screen: "worth $9M" beside "$9.6M" is not an overpay, it is a rounding
+     artefact wearing red. */
+  const over=!raise&&winterOverpaid(a);
   /* HE PLAYED SOMEWHERE ELSE. You keep him either way, because The Gauntlet follows the man
      and not the club, but the roster line would otherwise change its badge with no
      explanation. Worth saying plainly: it is a real thing that happened to him that winter,
@@ -10585,7 +10680,8 @@ function winterRow(a,i){
         (moved?'<span class="wmoved">SIGNED WITH '+esc(p.franchise)+'</span>':'')+
       '</span></span>'+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
-      '<span class="wraise'+(raise?' up':'')+'">'+(raise?'+'+M(a.raise):'')+'</span></span>'+
+      '<span class="wraise'+(raise?' up':(over?' over':''))+'">'+
+        (raise?'+'+M(a.raise):(over?'worth '+M0(a.market):''))+'</span></span>'+
     '<span class="wcut"><button class="wcutb" data-cut="'+i+'" '+
       'aria-label="Release '+esc(p.name)+'" title="Release '+esc(p.name)+'">&minus;</button></span>'+
     winterStats(a)+
@@ -10619,7 +10715,7 @@ function paintWinter(){
   if(!run||!run.dynasty||!run.winter) return;
   winterClear();
   const w=run.winter;
-  $('w-title').textContent='Winter '+w.year;
+  $('w-title').textContent='Offseason '+w.year;
   /* THE WHOLE SEASON AHEAD IN ONE LINE, and the bar is the half that was missing. It was
      stated only after the season, on the results screen, which is the wrong end: a target
      you are told you missed is a scoreboard, and a target you are told before you play is
@@ -10629,8 +10725,11 @@ function paintWinter(){
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
      silently behind a bar whose ceiling quietly changed between two paints. */
-  $('w-sub').innerHTML='Everyone is a year older. <b>Salaries never drop.</b> '+
-    'Your cap is now '+M0(R.capOf(run))+'.';
+  /* THE RULE, NOT JUST THE CONSEQUENCE. "Salaries never drop" says why a number cannot
+     fall and never said why one goes UP, so a raise arrived on a row looking like a
+     penalty for something you did. It is the price of the season he just became. */
+  $('w-sub').innerHTML='Everyone becomes his next real season. A better year costs more. '+
+    '<b>Salaries never drop.</b> Your cap is now '+M0(R.capOf(run))+'.';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
@@ -10660,47 +10759,166 @@ function paintWinter(){
 
   const rows=[...document.querySelectorAll('#w-list .wrow')];
   const gones=[...document.querySelectorAll('#w-gone .wrow')];
-  /* 1. the roster arrives */
-  rows.forEach((r,k)=>winterAt(60+k*45,()=>r.classList.add('in')));
-  gones.forEach((r,k)=>winterAt(60+(rows.length+k)*45,()=>r.classList.add('in')));
+  const agedOf=(r)=>w.aged.find(x=>x.now===run.roster[+r.dataset.i]);
+  runWinterShow(rows,gones,agedOf,w);
+}
 
-  /* 2. each man ages, one at a time */
-  const t0=160+(rows.length+gones.length)*45;
+/*
+ * THE OFFSEASON PLAYS. ONE MAN AT A TIME, AND SLOWLY.
+ *
+ * IT USED TO RUN AT 90ms A MAN while each man's own numbers took 420ms to roll. Six players
+ * therefore changed at once, five of them while somebody else was still moving, and the
+ * whole thing was over in a second and a bit. Everything was on screen and none of it was
+ * legible. The report was "it goes too fast and I cannot tell what is actually changing",
+ * which is the correct reading of a screen where six things move together.
+ *
+ * So a beat is 820ms and nothing shares it. His row is the only one lit, the page brings
+ * him to the middle of the screen, and a pinned line says in words what the numbers are
+ * doing. Six men and two departures runs about seven seconds.
+ *
+ * WHICH IS TOO LONG THE FOURTH TIME, so it skips: the Skip button, or a tap anywhere on the
+ * screen. Skipping runs the same landing function with the animation switched off rather
+ * than keeping a second copy of the end state, because two code paths to one end state is
+ * how a skipped offseason ends up showing last year's numbers for the rest of the run.
+ *
+ * A reader who has asked not to be animated at gets the end state and no show at all.
+ */
+const WIN_ARRIVE=90, WIN_BEAT=820, WIN_LEFT=700;
+
+/* Everything a man's beat leaves behind it, with or without the animation that usually puts
+   it there. The only difference between watching the offseason and skipping it. */
+function winterLand(r,a,animate){
+  if(!r||!a) return;
+  const yr=r.querySelector('.wyr'); if(yr) yr.textContent=a.now.season;
+  const sal=r.querySelector('.wsal');
+  if(a.salary>a.wasSalary+0.05){
+    r.classList.add('raised');
+    if(animate) countMoney(sal,a.wasSalary,a.salary,520,(v)=>M(v));
+    else if(sal){ countStop(sal); sal.textContent=M(a.salary); }
+  }
+  r.querySelectorAll('.wst').forEach((st)=>{
+    const b=st.querySelector('b'); if(!b) return;
+    const dec=b.dataset.dec==='1';
+    const fmt=(v)=>(dec?v.toFixed(1):String(Math.round(v)));
+    if(animate) countMoney(b,+b.dataset.from,+b.dataset.to,520,fmt);
+    else { countStop(b); b.textContent=fmt(+b.dataset.to); }
+    const d=st.querySelector('.wsd'); if(!d) return;
+    if(animate) winterAt(360,()=>d.classList.add('in')); else d.classList.add('in');
+  });
+  const money=r.querySelector('.wraise');
+  if(money){ if(animate) winterAt(440,()=>money.classList.add('in'));
+             else money.classList.add('in'); }
+}
+
+/* WHY THE NUMBER MOVED, which the number itself never says. "+$1.1M" appearing beside a
+   salary is exactly where a first run stops and asks what it did wrong. Four cases, and
+   between them they are the whole of the ratchet: he got better and costs more, he is
+   priced higher anyway, he is worth less than you pay him, or nothing happened. */
+function winterSay(a){
+  const nm='<b>'+esc(a.now.name)+'</b>';
+  if(a.salary>a.wasSalary+0.05){
+    /* "A BETTER YEAR" IS A CLAIM ABOUT A REAL SEASON, and it is false about 4% of the time:
+       price moves with what the rest of his position did that year too, so a man can cost
+       more off a quieter season. Checked against his own numbers rather than assumed. */
+    return (a.drop>0 ? nm+' had a better year.' : nm+' is priced higher this year.')
+      +' He costs '+M(a.raise)+' more.';
+  }
+  if(winterOverpaid(a)){
+    return nm+' is worth '+M0(a.market)+' now. You still pay '+M0(a.salary)+'.';
+  }
+  return nm+' costs the same as last year.';
+}
+
+function winterSayGone(g){
+  const why=g.why==='retired' ? ' retired.'
+    : g.why==='missed' ? ' missed the season.'
+    : ' is out of the league.';
+  return '<b>'+esc(g.was.name)+'</b>'+why+' '+M(g.salary)+' comes off the books.';
+}
+
+function winterNarr(html){
+  const bar=$('w-narr'), t=$('w-narr-t');
+  if(!bar||!t) return;
+  bar.hidden=false;
+  t.innerHTML=html;
+  t.classList.remove('in');
+  void t.offsetWidth;                    // restart the entrance, one line into the next
+  t.classList.add('in');
+}
+/* ONE PLACE THAT ENDS THE SHOW, and it takes the tap listener with it. That listener is on
+   the document rather than the screen, so a player who walks out mid-show and comes back
+   would otherwise be running two of them: the older one closes over the previous paint's
+   rows, and its finish() would end the new show a beat after it started. */
+let winterTapper=null;
+function winterNarrOff(){
+  const b=$('w-narr'); if(b) b.hidden=true;
+  if(winterTapper){ document.removeEventListener('click',winterTapper,true); winterTapper=null; }
+}
+
+function runWinterShow(rows,gones,agedOf,w){
+  const reduced=window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Anywhere on the screen, capturing, and it does NOT swallow the tap: the only live
+     control while the show runs is How this works, and somebody who taps that wants both
+     things to happen. */
+  const tapSkip=(e)=>{ const sc=$('s-winter'); if(sc&&sc.contains(e.target)) finish(); };
+  function finish(){
+    winterClear();
+    rows.forEach((r)=>{
+      r.classList.add('in','open');
+      r.classList.remove('aging');
+      winterLand(r,agedOf(r),false);
+    });
+    gones.forEach((r)=>r.classList.add('in','left'));
+    paintWinterCap(false);
+    $('b-winter-go').hidden=false;
+    winterNarrOff();
+  }
+  const skip=$('b-w-skip'); if(skip) skip.onclick=finish;
+
+  winterNarrOff();                          // whatever was running, it is not running now
+  if(reduced){ finish(); return; }
+  winterTapper=tapSkip;
+  document.addEventListener('click',tapSkip,true);
+
+  /* Centred rather than scrolled to the top, because the narrator is pinned across the
+     bottom and a row aligned to the top of the viewport sits underneath it. */
+  const bring=(r)=>{ try{ r.scrollIntoView({block:'center',behavior:'smooth'}); }catch(_){} };
+
+  /* 1. the roster arrives */
+  winterNarr('Everyone becomes his next real season.');
+  rows.forEach((r,k)=>winterAt(60+k*WIN_ARRIVE,()=>r.classList.add('in')));
+  gones.forEach((r,k)=>winterAt(60+(rows.length+k)*WIN_ARRIVE,()=>r.classList.add('in')));
+
+  /* 2. each man ages, alone, with his row brought to you and the reason said out loud */
+  const t0=260+(rows.length+gones.length)*WIN_ARRIVE;
   rows.forEach((r,k)=>{
-    const a=w.aged.find(x=>x.now===run.roster[+r.dataset.i]);
-    if(!a) return;
-    winterAt(t0+k*90,()=>{
+    const a=agedOf(r); if(!a) return;
+    winterAt(t0+k*WIN_BEAT,()=>{
+      bring(r);
       r.classList.add('aging');
-      const yr=r.querySelector('.wyr');
-      if(yr) yr.textContent=a.now.season;
-      if(a.salary>a.wasSalary+0.05){
-        r.classList.add('raised');
-        countMoney(r.querySelector('.wsal'),a.wasSalary,a.salary,420,(v)=>M(v));
-      }
-      /* His numbers roll from last year's to this year's, and the change lands after them.
-         Same beat as the season on his card, because it is the same event. */
-      r.querySelectorAll('.wst').forEach((st)=>{
-        const b=st.querySelector('b'); if(!b) return;
-        const dec=b.dataset.dec==='1';
-        const fmt=(v)=>(dec?v.toFixed(1):String(Math.round(v)));
-        countMoney(b,+b.dataset.from,+b.dataset.to,420,fmt);
-        const d=st.querySelector('.wsd'); if(d) winterAt(300,()=>d.classList.add('in'));
-      });
-      winterAt(760,()=>r.classList.remove('aging'));
+      winterNarr(winterSay(a));
+      winterLand(r,a,true);
+      winterAt(WIN_BEAT-40,()=>r.classList.remove('aging'));
     });
   });
 
   /* 3. the men you cannot keep hand back their money, one at a time */
-  const t1=t0+rows.length*90+220;
-  gones.forEach((r,k)=>winterAt(t1+k*130,()=>r.classList.add('left')));
+  const t1=t0+rows.length*WIN_BEAT+120;
+  gones.forEach((r,k)=>winterAt(t1+k*WIN_LEFT,()=>{
+    bring(r);
+    r.classList.add('left');
+    const g=w.gone[k]; if(g) winterNarr(winterSayGone(g));
+  }));
 
-  /* 4. the bar settles on what the roster now costs */
-  winterAt(t1+gones.length*130+180,()=>paintWinterCap(true));
-
-  /* 5. the money is yours to open, and the way out appears */
-  winterAt(t1+gones.length*130+520,()=>{
-    rows.forEach(r=>r.classList.add('open'));
+  /* 4. the bar settles on what the roster now costs, and the way out appears with it */
+  const t2=t1+gones.length*WIN_LEFT+240;
+  winterAt(t2,()=>paintWinterCap(true));
+  winterAt(t2+560,()=>{
+    rows.forEach((r)=>r.classList.add('open'));
     $('b-winter-go').hidden=false;
+    winterNarrOff();
   });
 }
 
@@ -14025,7 +14243,7 @@ function paintOwner(){
   paintDock();
   if(go){
     go.hidden=v.fired;
-    go.textContent='Winter '+(run.leagueYear+1);
+    go.textContent='Offseason '+(run.leagueYear+1);
     go.onclick=()=>{
       /* THE SEASON THAT JUST ENDED IS RECORDED; THE NEXT ONE IS NOT YET.
          `submitted` and the placings belong to one season, and outside a dynasty a run only
