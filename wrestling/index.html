@@ -629,6 +629,26 @@
   .hl-b i{display:block;height:100%;border-radius:3px;transition:width .5s;}
   .hl-s{font-size:12px;margin-top:6px;letter-spacing:.03em;}
   .headline-notes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+  /* The three rooms: crowd, locker room, office. Stacked rather than three
+     across because this panel lives in the narrow column, where "LOCKER
+     ROOM" wraps to two lines and knocks the other two cards out of line.
+     Stacked they also sit directly under each other, which is the whole
+     point: you read them against one another, not one at a time. */
+  .rooms{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;}
+  .rm-row{padding:10px 13px 11px;cursor:pointer;transition:background .15s;}
+  .rm-row + .rm-row{border-top:1px solid var(--line);}
+  .rm-row:hover{background:rgba(255,255,255,.035);}
+  .rm-row:active{background:rgba(255,255,255,.06);}
+  .rm-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .rm-l{font-family:var(--display);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--text-faint);font-weight:800;white-space:nowrap;}
+  .rm-v{font-family:var(--mono);font-size:23px;font-weight:800;line-height:1;
+    display:flex;align-items:baseline;gap:6px;white-space:nowrap;}
+  .rm-d{font-size:10px;font-weight:800;letter-spacing:.04em;}
+  .rm-d.up{color:var(--green);} .rm-d.dn{color:#f0907f;} .rm-d.fl{color:var(--text-faint);font-weight:600;}
+  .rm-b{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin:7px 0 5px;}
+  .rm-b i{display:block;height:100%;border-radius:3px;transition:width .5s;}
+  .rm-s{font-size:11.5px;letter-spacing:.02em;line-height:1.3;}
   .detailtoggle{width:100%;font-size:11px;letter-spacing:.06em;padding:8px 10px;margin-bottom:8px;}
   .vitalsdetail{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:12px;}
   /* Stripped booking sheet: opponent + one-line stakes + single CTA, details tucked */
@@ -1948,6 +1968,93 @@ function heatBand(v){
   if(v>=45) return {t:'Warm',                   c:'var(--cream)'};
   if(v>=28) return {t:'Cooling off',            c:'var(--text-dim)'};
   return       {t:'Ice cold',                 c:'#f0907f'};
+}
+/* ============================================================
+   THE THREE ROOMS
+   ------------------------------------------------------------
+   A wrestling career is judged by three constituencies who do not
+   agree with each other, and the whole job is deciding which one to
+   disappoint this week. Working hurt keeps the office happy and costs
+   you the locker room. Blowing off a rival in a stretcher match makes
+   you a star and makes eight veterans decide you are reckless.
+
+   All three numbers already existed and were scattered: reaction lived
+   behind a details toggle, standing was one tile among six, and the
+   locker room was only ever visible one wrestler at a time. Shown side
+   by side they stop being stats and become a position.
+
+   Nothing new is stored except the week-over-week delta, because the
+   point of a meter is watching it move. ============================================================ */
+function crowdScore(){ return Math.round(reactionOf()); }
+function officeScore(){ return Math.round(clamp(G.car.standing==null?50:G.car.standing,0,100)); }
+// Derived, not stored: what the room thinks is the sum of what each
+// person in it thinks. People you have never worked with go on the
+// ambient read of your work, and that read matters less as you meet more.
+function lockerScore(){
+  const c=G.car, R=G.rel||{};
+  let sum=0, n=0;
+  houseRoster(myPromoId()).forEach(x=>{
+    // an opinion counts whether or not you have shared a ring: the room talks
+    const r=R[x.id]; if(!r || !(r.met || r.respect>0 || r.heat>0)) return;
+    // heat is bad blood with one man, and every win banks some of it. Weight
+    // it below respect or beating people would make the room like you less,
+    // which is exactly backwards.
+    sum += clamp(50 + (r.respect||0)*0.60 - (r.heat||0)*0.35, 0, 100);
+    n++;
+  });
+  const ambient = clamp(40 + (c.standing||50)*0.16 + Math.min(20, (c.rep||0)/760), 0, 100);
+  const w = n/(n+6);                             // your own history outweighs hearsay slowly
+  let v = ambient*(1-w) + (n?sum/n:50)*w;
+  const al=allies();
+  if(al.length){
+    const loy = al.reduce((s,a)=>s+clamp(a.loyalty||50,0,100),0)/al.length;
+    v += Math.min(10, al.length*2.2 + (loy-55)/9);
+  }
+  // a betrayal is not private. The whole room heard about it.
+  const burned = Object.keys(R).filter(k=>R[k].betrayed).length;
+  v -= Math.min(20, burned*7);
+  return Math.round(clamp(v,0,100));
+}
+function sentiment(){ return {crowd:crowdScore(), locker:lockerScore(), office:officeScore()}; }
+const SENT_BANDS = {
+  crowd:  [[80,'They chant your name','var(--gold)'],[62,'Loud for you','var(--green)'],
+           [42,'They know who you are','var(--cream)'],[24,'Polite at best','var(--text-dim)'],
+           [0,'Silence','#f0907f']],
+  locker: [[80,'The boys trust you','var(--gold)'],[62,'Well liked back there','var(--green)'],
+           [42,'One of the roster','var(--cream)'],[24,'People keep their distance','var(--text-dim)'],
+           [0,'Nobody wants to work with you','#f0907f']],
+  office: [[80,'They build shows around you','var(--gold)'],[62,'On the plan','var(--green)'],
+           [42,'A hand they can use','var(--cream)'],[24,'Off the whiteboard','var(--text-dim)'],
+           [0,'One bad night from released','#f0907f']],
+};
+function sentBand(which,v){
+  const set=SENT_BANDS[which]||SENT_BANDS.crowd;
+  const hit=set.find(r=>v>=r[0])||set[set.length-1];
+  return {t:hit[1], c:hit[2]};
+}
+// What each room is actually reacting to. This is the answer to "why did
+// that go down", and it is why the meters are tappable.
+const SENT_DRIVERS = {
+  crowd: { name:'The Crowd', up:['Great matches, whatever the result','Promos that land',
+      'Working the alignment they have decided you are','Winning big on a supercard'],
+    down:['Weeks off television','A stale gimmick','Working against your own alignment','Short, forgettable matches'] },
+  locker:{ name:'The Locker Room', up:['Making your opponent look good','Allies you keep',
+      'Long clean matches with the veterans','Turning down a match you would obviously win'],
+    down:['Turning on a partner','Bad blood you started','Refusing to put anyone over','Hogging the finish every week'] },
+  office:{ name:'The Office', up:['Hitting your season goal','Drawing money','Working hurt when they ask',
+      'Anything that makes their television look good'],
+    down:['Injuries and missed dates','Turning down bookings','Bad matches on big nights','Going into business for yourself'] },
+};
+function explainSentiment(which){
+  const d=SENT_DRIVERS[which]; if(!d) return;
+  const s=sentiment(), v=s[which], b=sentBand(which,v);
+  const list=(arr,col)=>arr.map(t=>`<li style="color:${col}">${t}</li>`).join('');
+  modal(d.name, `<div style="font-family:var(--mono);font-size:34px;font-weight:800;color:${b.c};line-height:1;">${v}<span style="font-size:15px;color:var(--text-faint);">/100</span></div>
+    <div style="color:${b.c};font-size:13px;margin:4px 0 12px;">${b.t}</div>
+    <div class="hint" style="margin-bottom:4px;color:var(--green);font-weight:800;">RAISES IT</div>
+    <ul style="margin:0 0 12px 16px;padding:0;font-size:13px;line-height:1.7;">${list(d.up,'var(--text-dim)')}</ul>
+    <div class="hint" style="margin-bottom:4px;color:#f0907f;font-weight:800;">LOWERS IT</div>
+    <ul style="margin:0 0 0 16px;padding:0;font-size:13px;line-height:1.7;">${list(d.down,'var(--text-dim)')}</ul>`);
 }
 /* ============================================================
    SEASON GOALS
@@ -4597,8 +4704,8 @@ const TOURS={
   {sel:'.planwhy', title:'Game plan',
    body:'The two <b>move categories you emphasise</b> in every match. They build mastery, and mastery unlocks better moves. Change them any time you want to grow differently.',
    before:()=>{ if(G && G.car && !G.car._wkExtras){ G.car._wkExtras=true; try{ renderWeek(); }catch(_){} } }},
-  {sel:'#carTiles', title:'Where you stand, how hot you are',
-   body:'Two numbers, one glance. <b>Where you stand</b> blends office trust, popularity and tier progress. <b>How hot you are</b> blends gimmick heat, crowd reaction and momentum. Tap <i>Show the numbers behind these</i> if you want the six individual stats.'},
+  {sel:'#carTiles', title:'Three rooms are watching',
+   body:'<b>The crowd</b> decides if you are over. <b>The locker room</b> decides who wants to work with you. <b>The office</b> decides if you are on television. They do not agree, and most weeks you pick one to disappoint. Tap any of the three to see exactly what moves it, and the arrow tells you what last week did.'},
   {sel:'.hud', title:'The clock is running',
    body:'You start at <b>21</b>. Attributes grow fast until your mid twenties, peak around <b>30-32</b>, then decline, and mileage brings that forward. A careful main-eventer can work at world-class level well into their forties, and legends have gone longer. You can walk away any time from <b>34</b>; the ones who never quit end up in somebody else\'s corner years later, still on the road.'},
   {sel:'[data-nav="skills"]', title:'Skills: get better',
@@ -4760,6 +4867,14 @@ const RULES=[
   <p class="log">You are a <b>babyface</b>, a <b>heel</b> or a <b>tweener</b>. Cut promos against your own alignment often enough and you <b>turn</b>, which is a real career move. But the crowd can only get behind somebody consistent: say three different things in three weeks and they stop taking you seriously.</p>
   <p class="log">You can also <b>tease</b> a turn, work <b>cheap heat</b>, <b>pander</b>, or <b>shoot</b>. All of them pop a crowd once. None of them work twice in a row.</p>
   <p class="log">Your <b>gimmick</b> has freshness that decays every week. When the act goes cold the office wants a repackage or a turn.</p>`},
+ {n:'The Three Rooms', h:`
+  <p class="log">Three groups decide what your career is, and they do not agree with each other. The hub shows all three, and tapping any one tells you exactly what moves it.</p>
+  <ul class="ruleul">
+    <li><b>The Crowd</b> is how hot you are right now. It drifts back toward your popularity every week, lifted by a hot act and dragged under by a stale one, so silence means you have fallen below your own name.</li>
+    <li><b>The Locker Room</b> is what the boys think. It goes up when you make somebody look good and comes down when you turn on people. <b>Losing a great match pays more respect than winning a bad one.</b></li>
+    <li><b>The Office</b> is whether you are on television. It pays for drawing money, hitting your season goal and working when they ask, and it charges for injuries, refused bookings and bad nights on big shows.</li>
+  </ul>
+  <p class="log">Most weeks the interesting decision is which of the three to disappoint.</p>`},
  {n:'The Locker Room', h:`
   <p class="log">Everyone on the roster tracks two numbers about you: <b>respect</b> (they rate you) and <b>heat</b> (bad blood).</p>
   <ul class="ruleul">
@@ -5287,24 +5402,29 @@ function renderCareer(){
     <div class="tile"><div class="lab">Condition</div><div class="val">${Math.round(c.cond)}</div><div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div></div>
     <div class="tile"><div class="lab">Momentum</div><div class="val">${Math.round(c.mom)}</div><div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div></div>
     <div class="tile"><div class="lab">Popularity</div><div class="val">${Math.round(c.pop||50)}</div><div class="bar g"><i style="width:${clamp(c.pop||50)}%"></i></div></div>
-    <div class="tile"><div class="lab">Office standing</div><div class="val">${Math.round(c.standing||50)}</div><div class="bar b"><i style="width:${clamp(c.standing||50)}%"></i></div></div>
+    <div class="tile"><div class="lab">Where you stand</div><div class="val" style="color:${tb.c}">${traj}</div><div class="bar b"><i style="width:${traj}%"></i></div><div class="hint" style="margin-top:3px;color:${tb.c}">${tb.t}</div></div>
+    <div class="tile"><div class="lab">How hot you are</div><div class="val" style="color:${hb.c}">${heat}</div><div class="bar g"><i style="width:${heat}%"></i></div><div class="hint" style="margin-top:3px;color:${hb.c}">${hb.t}</div></div>
   </div>` : '';
-  $('carTiles').innerHTML = `<div class="headline">
-      <div class="hl-meter">
-        <div class="hl-l">Where you stand</div>
-        <div class="hl-v" style="color:${tb.c}">${traj}<span class="hl-o">/100</span></div>
-        <div class="hl-b"><i style="width:${traj}%;background:${tb.c}"></i></div>
-        <div class="hl-s" style="color:${tb.c}">${tb.t}</div>
-      </div>
-      <div class="hl-meter">
-        <div class="hl-l">How hot you are</div>
-        <div class="hl-v" style="color:${hb.c}">${heat}<span class="hl-o">/100</span></div>
-        <div class="hl-b"><i style="width:${heat}%;background:${hb.c}"></i></div>
-        <div class="hl-s" style="color:${hb.c}">${hb.t}</div>
-      </div>
+  const sent = sentiment(), sd = c._sentDelta || {};
+  const room = (key,label)=>{
+    const v = sent[key], b = sentBand(key,v), d = Math.round(sd[key]||0);
+    const arrow = d>0 ? `<span class="rm-d up" title="over the last month">▲ ${d}</span>`
+                : d<0 ? `<span class="rm-d dn" title="over the last month">▼ ${Math.abs(d)}</span>`
+                      : `<span class="rm-d fl" title="over the last month">holding</span>`;
+    return `<div class="rm-row" onclick="explainSentiment('${key}')" title="What moves this">
+        <div class="rm-top">
+          <div class="rm-l">${label}</div>
+          <div class="rm-v" style="color:${b.c}">${v}${arrow}</div>
+        </div>
+        <div class="rm-b"><i style="width:${v}%;background:${b.c}"></i></div>
+        <div class="rm-s" style="color:${b.c}">${b.t}</div>
+      </div>`;
+  };
+  $('carTiles').innerHTML = `<div class="rooms">
+      ${room('crowd','Crowd')}${room('locker','Locker Room')}${room('office','Office')}
     </div>
     ${notesRow?`<div class="headline-notes">${notesRow}</div>`:''}
-    <button class="ghost detailtoggle" onclick="toggleVitalsDetail()">${detailsOpen?'Hide':'Show'} the numbers behind these</button>
+    <button class="ghost detailtoggle" onclick="toggleVitalsDetail()">${detailsOpen?'Hide':'Show'} every stat</button>
     ${detailPanel}`;
   // secondary detail lives behind a pager so the week's decision stays on screen
   const HUB=['Business','Attributes'];
@@ -8673,7 +8793,11 @@ function applyMatch(o,res){
   if(res.finish && res.finish.by && (res.finish.type==='pin'||res.finish.type==='sub')){
     R.finisherScouted = (R.finisherScouted||0) + 1;
   }
-  if(draw){ R.respect+=6; R.heat+=3; } else if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=2; R.heat+=2; }
+  // Going out on your back for somebody is the single most respected thing
+  // a worker does, so a loss pays MORE respect than a win. It used to pay
+  // less, which quietly made the locker room punish the exact behaviour the
+  // rest of the game keeps telling the player is the point.
+  if(draw){ R.respect+=6; R.heat+=3; } else if(res.win){ R.wins++; R.heat+=9; R.respect+=3; } else { R.losses++; R.respect+=7; R.heat+=2; }
   // Underdog shape: if your first match against a story rival is a loss and
   // the shape is still unset, the arc becomes David-and-Goliath.
   if(story() && story().charId===o.oppId && !story().shape){
@@ -8683,6 +8807,22 @@ function applyMatch(o,res){
   if(res.quality>=82) R.respect+=7;
   if(o.stakes==='title'||o.stakes==='defense') R.heat+=6;
   R.respect=clamp(R.respect,0,100); R.heat=clamp(R.heat,0,100);
+  /* The room hears about it either way. A long clean match you lost gets
+     talked about in the back; a five-minute squash where nobody got anything
+     does too, in the other direction. This is the only thing that moves the
+     locker room meter every week rather than once a year, and it moves it on
+     a decision the player is actually making. */
+  try{
+    const _pool = houseRoster(myPromoId()).filter(x=>x.id!==o.oppId);
+    const _pick=(n)=>{ const a=_pool.slice(), out=[];
+      while(out.length<n && a.length) out.push(a.splice(Math.floor(rnd()*a.length),1)[0]);
+      return out; };
+    if(!res.win && !draw && res.quality>=68){
+      _pick(5).forEach(x=>{ const r2=rel(x.id); r2.respect=clamp((r2.respect||0)+1.4,0,100); });
+    } else if(res.win && res.quality<48){
+      _pick(4).forEach(x=>{ const r2=rel(x.id); r2.heat=clamp((r2.heat||0)+1.2,0,100); });
+    }
+  }catch(_){}
   // a genuine nemesis emerges from repeated bad blood
   const _now=c.year*1000+c.week;
   if(!c.rivalId && !story() && R.heat>=42 && R.matches>=2 && (!R.cooldown||_now>R.cooldown)) {
@@ -9152,7 +9292,19 @@ function advanceWeek(){
   if(c.pop>ceil) c.pop=Math.max(ceil,c.pop-(c.pop-ceil)*0.09);
   if(c.reaction==null) c.reaction=c.pop;
   if(c.reaction>ceil) c.reaction=Math.max(ceil,c.reaction-(c.reaction-ceil)*0.09);
-  c.reaction=clamp(c.reaction-0.35-alignMismatch()*0.5,0,100);      // silence creeps back in
+  /* The crowd forgets what you did last month. They do not forget who you
+     are. Reaction used to decay a flat 0.35 a week toward silence, which
+     on the indies outran everything a rookie could earn: pop climbed to 15
+     over two years while reaction sat at 0 and the game told the player
+     "nobody reacts" forever. It drifts toward your FAME now, scaled by how
+     hot the act is, so a cold gimmick pulls you below your own name and a
+     hot one lifts you above it. Silence is a thing you fall to, not the
+     place everybody starts and stays. */
+  const rBase = clamp((c.pop||5) * (0.55 + gimHeat()/250), 0, 100);
+  const mism = alignMismatch()*0.5;
+  c.reaction = clamp(c.reaction > rBase
+    ? c.reaction - 0.35 - mism
+    : c.reaction + (rBase - c.reaction)*0.16 - mism, 0, 100);
   c.lean=(c.lean||0)*0.985;
   // ---- healing ----
   if(c.injWeeks>0){
@@ -9183,6 +9335,19 @@ function advanceWeek(){
   maybeTourOffer();  // a promoter overseas rings up now and then
   postPowerRankings();  // monthly ranking of the roster on the news feed
   checkMidYear();       // half-year report card at week 20
+  // Bank what the week just did to the three rooms. Computed once here
+  // rather than on every render, so the arrows hold still while you read
+  // them instead of resetting to zero the moment you look.
+  // Week to week these move by fractions of a point, so a weekly arrow reads
+  // "no change" forever. Four weeks is the window where a run of good nights
+  // is actually visible as a run.
+  try{
+    const _sn = sentiment();
+    const h = (c._sentHist = c._sentHist || []);
+    h.push(_sn); while(h.length>5) h.shift();
+    const _sp = h[0];
+    c._sentDelta = {crowd:_sn.crowd-_sp.crowd, locker:_sn.locker-_sp.locker, office:_sn.office-_sp.office};
+  }catch(_){}
   save();
   setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
 }
