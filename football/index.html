@@ -652,7 +652,7 @@ window.GA_ID='G-L29P5MRWKE';
      doubled the height of every card: twelve men then scrolled for two and a half screens
      and the money you were deciding about was never on the same screen as the roster you
      were deciding it from. It is a column now and the whole winter fits in one view. */
-  .wrow{display:grid;grid-template-columns:32px minmax(0,1fr) auto auto;gap:8px;align-items:center;
+  .wrow{display:grid;grid-template-columns:32px minmax(0,1fr) auto auto auto;gap:7px;align-items:center;
     padding:9px 10px;margin-bottom:5px;border:1.5px solid var(--line);border-radius:11px;
     background:rgba(19,26,43,.55);
     /* FOLDED UNTIL ITS TURN. Animating height is what lets a row collapse out of the list
@@ -668,12 +668,21 @@ window.GA_ID='G-L29P5MRWKE';
   /* THE BEAT WHERE A MAN AGES, and it now HOLDS. The pulse used to flash gold and release
      inside a fifth of a second while the next five men were doing the same thing, so six
      rows shimmered at once and none of them read. It stays lit for most of his beat now,
-     and lifts a hair off the list, so at any moment exactly one row is the one changing. */
+     and lifts a hair off the list, so at any moment exactly one row is the one changing.
+
+     AND IT IS THE COLOUR OF THE NEWS. Gold on everybody said only "this one is changing",
+     which the lift and the scroll already said. Green is a man worth more than he was and
+     red is a man worth less, so the shape of a whole offseason reads off the screen before
+     a single number does. The keyframes take the colour from a variable rather than
+     existing three times, because a fourth case would then be one line rather than five. */
   @keyframes wpulse{
     0%{border-color:var(--line);transform:none}
-    14%{border-color:rgba(226,178,90,.95);background:rgba(38,30,16,.82);transform:scale(1.015)}
-    72%{border-color:rgba(226,178,90,.8);background:rgba(38,30,16,.7);transform:scale(1.015)}
+    14%{border-color:var(--pc);background:var(--pbg);transform:scale(1.015)}
+    72%{border-color:var(--pc);background:var(--pbg);transform:scale(1.015)}
     100%{border-color:var(--line);transform:none}}
+  .wrow{--pc:rgba(226,178,90,.95);--pbg:rgba(38,30,16,.82);--sp:var(--dim-2)}
+  .wrow.better{--pc:rgba(74,222,128,.9);--pbg:rgba(13,38,25,.85);--sp:var(--good,#4ade80)}
+  .wrow.worse{--pc:rgba(248,113,113,.9);--pbg:rgba(44,20,20,.85);--sp:var(--bad,#f87171)}
   .wrow.aging{animation:wpulse .82s ease}
   .wpos{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.04em;
     text-align:center;padding:4px 0;border-radius:7px;color:#fff}
@@ -684,11 +693,11 @@ window.GA_ID='G-L29P5MRWKE';
   /* The year ticking over on his card, which is the whole conceit of the mode: he is not a
      player who got older, he is a different real season of the same man. */
   .wyr{font-variant-numeric:tabular-nums;transition:color .3s ease}
-  .wrow.aging .wyr{color:#e2b25a}
+  .wrow.aging .wyr{color:var(--pc)}
   /* His age in the winter, which is the number the whole screen is about. Louder than the
      club beside it and quieter than the money. */
   .wage{font-variant-numeric:tabular-nums;font-weight:800;color:var(--dim)}
-  .wrow.aging .wage{color:#e2b25a;transition:color .3s ease}
+  .wrow.aging .wage{color:var(--pc);transition:color .3s ease}
   /* SIGNED WITH, and RETIRED on the men who are gone. Chips rather than sentences: the
      winter is a list you scan, and these are the two things on it you stop for. */
   .wmoved,.wgone{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.09em;
@@ -716,6 +725,35 @@ window.GA_ID='G-L29P5MRWKE';
     transition:opacity .3s ease,transform .3s ease}
   .wsd.in{opacity:1;transform:none}
   .wsd.up{color:var(--good,#4ade80)} .wsd.down{color:var(--bad,#f87171)}
+  /* ---- FOUR YEARS OF HIM, IN THE GAP BESIDE HIS NAME ----
+     The strip below says what he did LAST year against THIS one, which is one step and
+     cannot tell a man on the way down from a man having an off year on the way up. Four
+     seasons of what the league says he is worth can.
+     THE MONEY RATHER THAN THE PRODUCTION, and deliberately: it is the same unit as the
+     salary a thumb's width to its right, which is the comparison the screen exists to
+     make. His last step draws itself at his beat, so the new year is something that
+     arrives rather than something that was always on the chart. */
+  .wspark{width:74px;height:34px;display:block}
+  .wspark svg{display:block;width:100%;height:100%;overflow:visible}
+  .sp-h{fill:none;stroke:rgba(255,255,255,.3);stroke-width:1.6;
+    stroke-linejoin:round;stroke-linecap:round}
+  /* Drawn by retracting its own dash, which is why the length is measured in JS and handed
+     over: a straight segment has no getTotalLength worth calling for. */
+  /* THE GAP HAS TO BE LONGER THAN THE PATH, and a one-value dasharray does not give you
+     one. `stroke-dasharray: L` means dash L, gap L, dash L, forever, so pushing the offset
+     to L+3 to clear the round cap slid the NEXT dash into the last three pixels of the
+     chart: every row the show had not reached yet wore a small coloured tick at the end of
+     its line, which reads as a data point and is a repeat of the pattern. A second value
+     past any length this chart can have leaves one dash and no encore. */
+  .sp-n{fill:none;stroke:var(--sp);stroke-width:2.3;stroke-linecap:round;
+    stroke-dasharray:var(--len) 999px;stroke-dashoffset:calc(var(--len) + 3px);
+    transition:stroke-dashoffset .5s cubic-bezier(.22,1,.36,1)}
+  .wrow.landed .sp-n{stroke-dashoffset:0}
+  .sp-d{fill:var(--sp);opacity:0;transition:opacity .3s ease .3s}
+  .wrow.landed .sp-d{opacity:1}
+  /* A skipped offseason is not a fast offseason. Nothing eases; it is simply already
+     over. */
+  .wrow.snap .sp-n,.wrow.snap .sp-d{transition:none}
   .wmoney{text-align:right;font-family:var(--fn);font-variant-numeric:tabular-nums}
   .wsal{font-size:15px;font-weight:800;line-height:1;transition:color .3s ease}
   .wrow.raised .wsal{color:#e2b25a}
@@ -984,9 +1022,16 @@ window.GA_ID='G-L29P5MRWKE';
     padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
     background:linear-gradient(180deg,rgba(10,14,24,0),rgba(10,14,24,.94) 30%,rgba(10,14,24,.99))}
   .narr[hidden]{display:none}
+  /* IT WEARS THE BEAT'S COLOUR TOO. The row lighting green while the line about it sits in
+     a gold box reads as two separate things happening. */
   .narr-in{max-width:572px;margin:0 auto;display:flex;gap:10px;align-items:center;
     padding:10px 12px;border-radius:13px;
-    border:1.5px solid rgba(226,178,90,.3);background:rgba(34,27,15,.86)}
+    border:1.5px solid rgba(226,178,90,.3);background:rgba(34,27,15,.86);
+    transition:border-color .3s ease,background .3s ease}
+  .narr.better .narr-in{border-color:rgba(74,222,128,.34);background:rgba(13,34,22,.88)}
+  .narr.worse .narr-in{border-color:rgba(248,113,113,.34);background:rgba(40,20,20,.88)}
+  .narr.better #w-narr-t b{color:#8ef0b4}
+  .narr.worse #w-narr-t b{color:#ffb4b4}
   #w-narr-t{flex:1;min-width:0;font-size:13px;line-height:1.35;color:var(--dim);
     opacity:0;transform:translateY(4px);
     transition:opacity .2s ease,transform .2s cubic-bezier(.22,1,.36,1)}
@@ -10643,6 +10688,74 @@ function winterStats(a){
   }).join('')+'</span>';
 }
 
+/*
+ * WHAT THE LEAGUE HAS THOUGHT OF HIM FOR FOUR YEARS, drawn 74 pixels wide.
+ *
+ * The stat strip is one step: last season against this one. A step cannot tell a man on the
+ * way down from a good player having an off year, and those are opposite decisions about
+ * whether to keep him. Four points can.
+ *
+ * IT PLOTS PRICE, not production, for two reasons. It is the same unit as the salary
+ * sitting a thumb's width to its right, so the two are comparable by eye, which is the
+ * comparison this whole screen exists to make. And price is what the mode charges you: a
+ * man whose production dipped while his price held is not a problem, and a man whose price
+ * has fallen for three straight years is, whatever one season's numbers say.
+ *
+ * A year he does not appear in leaves no point. The pool drops anybody under twelve minutes
+ * a game across twenty games, so an absent season means he was hurt or out, and the line
+ * spans the gap rather than inventing a zero he did not earn.
+ */
+const SPARK_YEARS=4, SPARK_W=74, SPARK_H=34, SPARK_PX=4, SPARK_PY=6;
+function winterSpark(a){
+  const id=a.now.player_id, s=a.now.season;
+  const slots=[];
+  for(let y=s-(SPARK_YEARS-1);y<=s;y++){
+    const row=(y===s) ? a.now : (BYKEY ? BYKEY.get(id+'|'+y) : null);
+    slots.push(row?{y,v:row.price_musd}:null);
+  }
+  /* Leading blanks are years before he existed, not years he missed, so they take no
+     width: a rookie's two points span the whole box rather than huddling on the right. */
+  while(slots.length>2&&!slots[0]) slots.shift();
+  const real=slots.map((p,i)=>(p?{i,v:p.v}:null)).filter(Boolean);
+  if(real.length<2) return '<span class="wspark"></span>';
+  const vs=real.map((p)=>p.v);
+  /* A FLOOR ON THE RANGE. Auto-scaling alone turns a man who moved half a million into a
+     cliff, and every chart on the screen then looks like a crisis. */
+  let lo=Math.min(...vs), hi=Math.max(...vs);
+  const span=Math.max(10,hi-lo), mid=(lo+hi)/2;
+  lo=mid-span/2; hi=mid+span/2;
+  const n=slots.length;
+  const X=(i)=>SPARK_PX+(SPARK_W-2*SPARK_PX)*(n<2?0.5:i/(n-1));
+  const Y=(v)=>SPARK_PY+(SPARK_H-2*SPARK_PY)*(1-(v-lo)/(hi-lo));
+  const last=real[real.length-1], prev=real[real.length-2];
+  const hist=real.slice(0,-1).map((p)=>X(p.i).toFixed(1)+','+Y(p.v).toFixed(1)).join(' ');
+  const x1=X(prev.i), y1=Y(prev.v), x2=X(last.i), y2=Y(last.v);
+  /* In px so the stylesheet can add its cap width to it. A bare number cannot be calc'd
+     against one. */
+  const len=Math.hypot(x2-x1,y2-y1).toFixed(2)+'px';
+  return '<span class="wspark" aria-hidden="true">'
+    +'<svg viewBox="0 0 '+SPARK_W+' '+SPARK_H+'" preserveAspectRatio="none">'
+    +(real.length>2?'<polyline class="sp-h" points="'+hist+'"/>':'')
+    +'<path class="sp-n" style="--len:'+len+'" d="M'+x1.toFixed(1)+' '+y1.toFixed(1)
+      +'L'+x2.toFixed(1)+' '+y2.toFixed(1)+'"/>'
+    +'<circle class="sp-d" cx="'+x2.toFixed(1)+'" cy="'+y2.toFixed(1)+'" r="2.7"/>'
+    +'</svg></span>';
+}
+
+/*
+ * GREEN OR RED, AND ONE ANSWER FOR THE WHOLE ROW: the pulse, the year, his age and the new
+ * segment of his chart all take it. Off the same price the chart plots, so the line cannot
+ * rise in red. A million and a half is the band, below which the chart is drawing noise and
+ * the row says nothing rather than picking a side.
+ */
+function winterWay(a){
+  if(!a||!a.was||!a.now) return '';
+  const d=a.now.price_musd-a.was.price_musd;
+  if(d>=1.5) return 'better';
+  if(d<=-1.5) return 'worse';
+  return '';
+}
+
 /* The one test, used by the row and by the narrator, so a man cannot be called overpaid in
    one place and not the other. */
 const WIN_OVERPAY=2;
@@ -10670,7 +10783,7 @@ function winterRow(a,i){
      mechanism; this one at least guesses in the direction of something you had no say in.
      TRADED reads like a move you made, and you did not make it. */
   const moved=a.was&&a.was.franchise&&p.franchise&&a.was.franchise!==p.franchise;
-  return '<div class="wrow" data-i="'+i+'">'+
+  return '<div class="wrow '+winterWay(a)+'" data-i="'+i+'">'+
     '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
     '<span class="wwho"><span class="wnm">'+esc(p.name)+'</span>'+
       '<span class="wsub"><span class="wyr" data-from="'+a.was.season+'" data-to="'+p.season+'">'+
@@ -10679,6 +10792,7 @@ function winterRow(a,i){
         (p.age?'<span class="wage">'+p.age+' yrs</span>':'')+
         (moved?'<span class="wmoved">SIGNED WITH '+esc(p.franchise)+'</span>':'')+
       '</span></span>'+
+    winterSpark(a)+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
       '<span class="wraise'+(raise?' up':(over?' over':''))+'">'+
         (raise?'+'+M(a.raise):(over?'worth '+M0(a.market):''))+'</span></span>'+
@@ -10789,6 +10903,11 @@ const WIN_ARRIVE=90, WIN_BEAT=820, WIN_LEFT=700;
    it there. The only difference between watching the offseason and skipping it. */
 function winterLand(r,a,animate){
   if(!r||!a) return;
+  /* The chart's last segment and its dot are CSS transitions off this one class, so the
+     skip turns them off rather than racing them: an offseason you skipped is already over,
+     not running fast. */
+  if(!animate) r.classList.add('snap');
+  r.classList.add('landed');
   const yr=r.querySelector('.wyr'); if(yr) yr.textContent=a.now.season;
   const sal=r.querySelector('.wsal');
   if(a.salary>a.wasSalary+0.05){
@@ -10810,23 +10929,32 @@ function winterLand(r,a,animate){
              else money.classList.add('in'); }
 }
 
-/* WHY THE NUMBER MOVED, which the number itself never says. "+$1.1M" appearing beside a
-   salary is exactly where a first run stops and asks what it did wrong. Four cases, and
-   between them they are the whole of the ratchet: he got better and costs more, he is
-   priced higher anyway, he is worth less than you pay him, or nothing happened. */
+/*
+ * WHY THE NUMBER MOVED, which the number itself never says. "+$1.1M" appearing beside a
+ * salary is exactly where a first run stops and asks what it did wrong.
+ *
+ * TWO HALVES, EACH TRUE ON ITS OWN. The first is what happened to HIM and comes from
+ * winterWay, the same test that colours his row and his chart, so the sentence can never
+ * call a man improved while his line falls in red beside it. The second is what it costs
+ * YOU, which is a different question: a man can be worth more this year and still be the
+ * most overpaid contract on the roster.
+ */
 function winterSay(a){
   const nm='<b>'+esc(a.now.name)+'</b>';
-  if(a.salary>a.wasSalary+0.05){
-    /* "A BETTER YEAR" IS A CLAIM ABOUT A REAL SEASON, and it is false about 4% of the time:
-       price moves with what the rest of his position did that year too, so a man can cost
-       more off a quieter season. Checked against his own numbers rather than assumed. */
-    return (a.drop>0 ? nm+' had a better year.' : nm+' is priced higher this year.')
-      +' He costs '+M(a.raise)+' more.';
-  }
-  if(winterOverpaid(a)){
-    return nm+' is worth '+M0(a.market)+' now. You still pay '+M0(a.salary)+'.';
-  }
-  return nm+' costs the same as last year.';
+  const way=winterWay(a);
+  /* "A BETTER YEAR" IS A CLAIM ABOUT A REAL SEASON, and price alone cannot make it: price
+     also moves with what the rest of his position did that year, so a man can cost more off
+     a quieter season. Only said when his own numbers back it. */
+  const him=way==='better' ? (a.drop>0 ? ' had a better year.' : ' is worth more this year.')
+    : way==='worse' ? ' is worth less this year.'
+    : ' is where he was.';
+  const you=a.salary>a.wasSalary+0.05 ? ' He costs '+M(a.raise)+' more.'
+    /* "for a $8M player" needed an "an", and 8, 11, 18 and the eighties all take one while
+       every other figure does not. Rephrased around the article rather than teaching the
+       page to count. */
+    : winterOverpaid(a) ? ' You pay '+M0(a.salary)+' for '+M0(a.market)+' of value.'
+    : ' His '+M0(a.salary)+' holds.';
+  return nm+him+you;
 }
 
 function winterSayGone(g){
@@ -10836,10 +10964,12 @@ function winterSayGone(g){
   return '<b>'+esc(g.was.name)+'</b>'+why+' '+M(g.salary)+' comes off the books.';
 }
 
-function winterNarr(html){
+function winterNarr(html,way){
   const bar=$('w-narr'), t=$('w-narr-t');
   if(!bar||!t) return;
   bar.hidden=false;
+  bar.classList.toggle('better',way==='better');
+  bar.classList.toggle('worse',way==='worse');
   t.innerHTML=html;
   t.classList.remove('in');
   void t.offsetWidth;                    // restart the entrance, one line into the next
@@ -10898,7 +11028,7 @@ function runWinterShow(rows,gones,agedOf,w){
     winterAt(t0+k*WIN_BEAT,()=>{
       bring(r);
       r.classList.add('aging');
-      winterNarr(winterSay(a));
+      winterNarr(winterSay(a),winterWay(a));
       winterLand(r,a,true);
       winterAt(WIN_BEAT-40,()=>r.classList.remove('aging'));
     });
@@ -10909,7 +11039,7 @@ function runWinterShow(rows,gones,agedOf,w){
   gones.forEach((r,k)=>winterAt(t1+k*WIN_LEFT,()=>{
     bring(r);
     r.classList.add('left');
-    const g=w.gone[k]; if(g) winterNarr(winterSayGone(g));
+    const g=w.gone[k]; if(g) winterNarr(winterSayGone(g),'worse');
   }));
 
   /* 4. the bar settles on what the roster now costs, and the way out appears with it */
