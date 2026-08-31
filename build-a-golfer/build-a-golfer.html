@@ -2051,6 +2051,29 @@ window.GA_ID='G-L29P5MRWKE';
     .holeview svg{border-radius:0;border-left:none;border-right:none}
     .hvbrand,.hvstat{padding-left:calc(10px + env(safe-area-inset-left,0px));padding-right:calc(10px + env(safe-area-inset-right,0px))}
   }
+  /* DESKTOP (>=1000px): the round plays as TWO COLUMNS - the tracer window on the left, sized off the
+     VIEWPORT HEIGHT so the whole round fits one screen, and everything else (the score line, the
+     decision cards, the scorecard, the controls) stacked in a column on the right. The broadcast header
+     spans both. Purely a CSS grid over the existing DOM order, so nothing in scrDailyRound moves and the
+     phone layout (full-bleed window + fixed bottom bar, the <=700px block above) is untouched. */
+  @media (min-width:1000px){
+    .screen.scr-dailyround{display:grid; grid-template-columns:minmax(0,1fr) minmax(340px,500px); gap:0 26px; align-content:start}
+    .screen.scr-dailyround > .bcasthd{grid-column:1 / -1; grid-row:1; max-width:none; margin:0 0 10px}
+    /* height-bounded off the svg's 464/560 aspect ratio, so the window is as big as the screen allows
+       without pushing the right-hand column below the fold */
+    .screen.scr-dailyround > .holeview{grid-column:1; grid-row:2 / span 30; align-self:start;
+      justify-self:center; margin:0; max-width:100%;
+      width:min(620px, max(360px, calc((100vh - 205px) * 464 / 560)))}
+    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd){grid-column:2; min-width:0}
+    .screen.scr-dailyround > .dcardwrap,
+    .screen.scr-dailyround > .hvctrl{max-width:none; margin-left:0; margin-right:0}
+    .screen.scr-dailyround > .dcardwrap{margin-top:0}
+    /* the round is the whole screen on desktop too: the compact footer link row is dropped while a round
+       is live (the same links live in the ≡ menu), which is what lets the window + the right-hand column
+       fit one viewport. Same reasoning as the phone's #app.has-roundbar .foot rule. */
+    #app:has(.scr-dailyround) .foot{display:none}
+    body:has(.scr-dailyround) .rtt-about{display:none}
+  }
   /* one-window HUD: scoreboard / hole info / current-shot description float ON the tracer
      as translucent chips (Pixel-Pro-style), so the course view is the whole screen */
   .hvshell{position:relative}
