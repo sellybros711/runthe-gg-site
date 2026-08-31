@@ -1307,6 +1307,31 @@ check(!!homePage, 'renderHome can be read');
      about by regex; one written here would simply go stale, which is the
      failure the about copy already had once. */
   check(!/\d{3,} shows/.test(loop), 'the loop states no count that would go stale');
+
+  /* AND THE STRATEGY LINE UNDER IT HAS TO BE TRUE. It is the one piece of copy
+     on the home screen that tells a player how to WIN, and the first attempt
+     at making it a dare got both halves backwards. Seven strategies, 400
+     identical show sequences each:
+
+       1170 chase segues · 1092 best-scoring pick · 1077 jamcharted first
+       1063 the most-played song · 1048 random · 1036 the rarest song
+        959 the longest song
+
+     So chasing rarity is second worst, below random, and taking the hits beats
+     random. "Rarities pay best. Anyone can pick the hits" was false twice over.
+     What survives is what the numbers actually show, and it happens to be the
+     better dare: segues are the one big lever, and the intuitive grab is the
+     trap. Both claims are asserted here so the line cannot drift back into
+     advice the scoring does not give, which is the same failure the banking
+     copy had. */
+  const dare = cdSlice('class="how-scores"', '</p>');
+  check(/segue/i.test(dare), 'the strategy line names the lever that actually pays');
+  check(/\blose\b|\btrap\b|\bhow you lose\b/i.test(dare),
+    'and warns off the intuitive grab');
+  check(!/rarit/i.test(dare) && !/rare songs/i.test(dare),
+    'and no longer sells rarity, which measures below random');
+  check(!/pick the hits/i.test(dare),
+    'nor sneers at the hits, which measure above it');
 }
 
 /* 2. THE SAMPLE BAND WAS ON THE LIVE PAGE, one tap under the real one, over the
