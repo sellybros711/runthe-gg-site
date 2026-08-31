@@ -4115,11 +4115,37 @@ function dynastySalary(currentSalaryMusd, newListPriceMusd) {
  * climbs into the ceiling, and cap growth is the only thing between the mode and a
  * three-year slide nobody can arrest.
  *
- * SIX PERCENT, measured rather than borrowed from the real cap. At 0% even careful play
- * decays (9.8, 8.0, 7.9 wins) and the mode is a punishment. At 12% a roster that is never
- * touched recovers on its own (9.8, 8.7, 9.5) and standing pat comes back as a strategy,
- * which is the failure this whole rule set exists to prevent. 6% is where careful play
- * holds its level and neglect does not.
+ * SIX PERCENT, and the reason written here for a year was wrong.
+ *
+ * It said that at 12% a roster nobody touches recovers on its own and standing pat comes
+ * back as a strategy. That was measured on the twelve man coached mode this one replaced,
+ * and it does not survive the six man offense that shipped. Re-measured through run.js,
+ * 150 runs an arm, same seeds, one manager who never releases anybody against one who
+ * clears out whoever is worth less than half what he is paid:
+ *
+ *   growth   stand pat            manage the roster     the gap   payroll of cap, season 6
+ *     0%     4.09 seasons          5.19 seasons          +1.10     $134M of $140M
+ *     3%     4.49                  7.54                  +3.05     $151M of $162M
+ *     6%     5.62                  9.35                  +3.73     $160M of $187M
+ *     9%     6.08                 10.51                  +4.43     $167M of $215M
+ *    12%     6.59                 10.16                  +3.57     $169M of $247M
+ *
+ * The gap does not close. It WIDENS with the budget, because money is only worth what you
+ * have a slot to spend it on, and releasing a man is what makes a slot.
+ *
+ * WHAT ACTUALLY BREAKS AT 12% IS THE ENDING. A managed roster averages 13 wins a season by
+ * year five and $78M of the budget has nothing to buy, because six slots is all there is.
+ * The cap stops being a constraint and the owner stops being a threat. That is the real
+ * argument against a bigger number, and it is an argument about the mode finishing rather
+ * than about which strategy wins.
+ *
+ * 6% is not obviously the answer to it either: a quarter of managed runs are still alive at
+ * sixteen seasons. Raising the win bar is the lever for that, not this constant, and
+ * dynastyWinBar carries its own sweep. Left where it is on purpose, with the numbers now
+ * saying what they actually say.
+ *
+ *   node football/simulator.js --dynasty   is the OLD twelve man harness. PS_DYN_GROWTH
+ *   sweeps it, and it answers a question about a mode that no longer ships.
  */
 const DYNASTY_CAP_GROWTH = 1.06;
 
