@@ -507,24 +507,25 @@ function createRun(opts) {
     defense,
     full,
     dynasty,
-    /* THE CALENDAR. leagueYear is the season being played and every wheel in the mode is
-       locked to it, which is what turns the year reel into the thing that advances between
-       seasons rather than a thing you spin. */
+    /*
+     * NO SHARED CALENDAR. Every man ages into his own next real season, so a roster is six
+     * clocks rather than one, and there is no single year for the run to be in.
+     *
+     * `startYear` is kept because the wheel accepts one and the other modes' era locks use
+     * the same door, but a dynasty leaves it null: it drafts off the ordinary wheel, out of
+     * every club in history, which is where the mode's best trick lives.
+     */
     startYear,
     leagueYear: startYear,
     seasonNo: dynasty ? 1 : null,
-    /* WHICH TIME AROUND. The calendar wraps at the end of the pool, so a run can pass the
-       year it began in and keep going. `lap` is how many times it has, and `startYear` is
-       what a lap is measured against: getting back to the year you chose is the goal the
-       mode states, and it is a different number of seasons for nobody, since every lap is
-       the whole calendar. */
-    lap: dynasty ? 1 : null,
-    /* HOW MANY SEASONS GO ROUND, taken from the pool by whoever has it in front of them
-       rather than assumed here. It decides both the goal the mode states and when the
-       target steps up, so a wrong one is a lap that does not land on the year the player
-       was told to aim at. E.DYNASTY_LAP_SEASONS is the answer for the pool that ships and
-       check-dynasty.mjs asserts the two agree. */
-    lapSeasons: dynasty ? (opts.lapSeasons || E.DYNASTY_LAP_SEASONS) : null,
+    /* EVERY REAL SEASON THIS RUN HAS EVER FIELDED, which is a fact only this mode can
+       report: six clocks over ten or fifteen seasons touch a wide spread of league
+       history. Recorded as it happens because the roster that played 2003 is long gone by
+       the time the run summary asks. */
+    eras: dynasty ? [] : null,
+    /* HOW MANY SEASONS BETWEEN STEPS UP IN THE TARGET. Flat inside a stretch so "beat this
+       season" is one rule and not a moving one; see E.dynastyWinBar. */
+    stepSeasons: dynasty ? (opts.stepSeasons || E.DYNASTY_STEP_SEASONS) : null,
     /* WHAT EACH MAN IS PAID, index-aligned with roster, and the number the cap is spent
        against. It is NOT p.price_musd: a salary is what he was signed for, raised the year
        he improves and held the year he declines. See E.dynastySalary. */
@@ -864,13 +865,17 @@ function drawable(run, data, limit) {
        a limit of two each, so the lock can never run the pool dry. */
     .filter((t) => !run.franchise || t.franchise === run.franchise)
     .filter((t) => { if (!run.era) return true; const r = E.ERAS[run.era]; return t.season >= r[0] && t.season <= r[1]; })
-    /* THE GAUNTLET SPINS CLUBS AND NOT YEARS. Every other mode leaves the year free, which
-       is the whole point of them: 2000 Faulk beside 2019 Lamar Jackson. Here the year is the
-       LEAGUE year and the offseason is what advances it, so a dynasty walks forward through
-       real NFL history drafting out of the league as it actually was that autumn. One line
-       here rather than a filter at the call site, for the reason the franchise lock above
-       documents: every question about the pool then answers correctly on its own. */
-    .filter((t) => !run.dynasty || t.season === run.leagueYear)
+    /*
+     * THE GAUNTLET DRAFTS OFF THE SAME WHEEL AS EVERYTHING ELSE, and it took a detour to
+     * get back here. There was a filter on this line locking the wheel to the run's league
+     * year, so a dynasty drafted out of one autumn and walked the whole roster forward
+     * together. That made the mode a tour of one season at a time and it cost the game its
+     * best trick: 2000 Faulk beside 2019 Lamar Jackson.
+     *
+     * The clock moved to the MAN instead. Every player ages into his own next real season,
+     * so a roster is six careers running at once out of six different decades, and the
+     * question at every draft is not only how good he is but how much of him is left.
+     */
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }
@@ -889,38 +894,6 @@ function spin(run, data, constraint) {
   /* Attached on the first spin rather than at createRun(), which does not get the data.
      Before this point reserveFloor() has nothing to read and falls back to the flat
      constant, which is only ever the opening paint of an empty roster. */
-/*
- * THE CHEAPEST MEN IN ONE LEAGUE YEAR, per position, for The Gauntlet's floor.
- *
- * indexData's cheapBy is the forty-eight cheapest men at each position IN THE WHOLE POOL,
- * which is exactly right for every mode whose wheel can reach any year: the cheapest
- * receiver anywhere is genuinely reachable, so reserving his price is an honest promise.
- *
- * A DYNASTY'S WHEEL CANNOT LEAVE THE LEAGUE YEAR, and that turns the same table into a lie.
- * Measured on a 2004 dynasty: the draft spent down to $9M with a receiver and a lineman
- * still to sign, reserving $3M apiece because the pool's cheapest receiver costs $3M. There
- * are ZERO offensive players at $3M or under in 2004. The wheel then had nothing to offer,
- * the spin threw "nothing left you can afford", and the run was stuck at ten men. Filtering
- * the existing table would not fix it either, because forty-eight deep across twenty-seven
- * seasons can easily hold nobody from any one of them.
- *
- * So it is built from the year itself. About 350 skill players and 630 defenders a season,
- * scanned once a winter, which is nothing.
- */
-function yearFloorLists(players, year, depth) {
-  const out = {};
-  for (const p of players) {
-    if (p.season !== year || !p.position) continue;
-    for (const pos of E.positionsOf(p)) {
-      (out[pos] ??= []).push({ id: p.player_id, price: p.price_musd, ts: p.team_season_id });
-    }
-  }
-  for (const pos of Object.keys(out)) {
-    out[pos].sort((a, b) => a.price - b.price);
-    out[pos] = out[pos].slice(0, depth);
-  }
-  return out;
-}
 
   /* THE FLOOR HAS TO KNOW BOTH POOLS, and until now it only ever knew one.
      assignedFloors reads run.floorLists to answer "what is the cheapest man who could fill
@@ -933,18 +906,16 @@ function yearFloorLists(players, year, depth) {
      spends down to $12M with two spots open and then finds no club in the pool that can
      fill them, which reads as the game breaking rather than as the money running out.
      Full Team has survived it because its wheel can reach 800 team-seasons and something
-     cheap almost always turns up. The Gauntlet locks the wheel to one league year, 32
-     clubs, and it strands inside twelve picks.
+     cheap almost always turns up.
      Merged rather than replaced, so each pool contributes the positions it knows and
-     neither overwrites the other. */
-  if (run.dynasty) {
-    /* Rebuilt whenever the calendar moves, because last winter's cheapest receiver is not
-       this winter's and the whole point of the table is that the wheel can reach him. */
-    if (run.floorYear !== run.leagueYear) { run.floorLists = null; run.floorYear = run.leagueYear; }
-    const src = yearFloorLists(data.players || [], run.leagueYear, 48);
-    if (!run.floorLists) run.floorLists = {};
-    for (const pos in src) if (!run.floorLists[pos]) run.floorLists[pos] = src[pos];
-  } else if (data.cheapBy) {
+     neither overwrites the other.
+
+     THE GAUNTLET USED TO NEED ITS OWN BRANCH HERE, rebuilt every winter off the run's
+     league year, because its wheel was locked to one autumn and 32 clubs is few enough to
+     strand a draft inside twelve picks. The clock is per player now and the wheel is the
+     ordinary one, so it reaches the same 800 team-seasons as everything else and wants the
+     same table. One mode fewer with a private answer to a shared question. */
+  if (data.cheapBy) {
     const src = data.cheapBy[run.franchise || '*'] || null;
     if (src) {
       if (!run.floorLists) run.floorLists = { ...src };
@@ -1082,6 +1053,7 @@ function sign(run, player, want) {
     run.tenure[player.player_id] = 1;
   }
   run.usedPlayers.push(player.player_id);
+  if (run.dynasty && run.eras && run.eras.indexOf(player.season) < 0) run.eras.push(player.season);
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   // Which team-season filled which spot. Needed for the post-run reveal, which
   // can only consider the team-seasons the wheel actually gave you.
@@ -1188,48 +1160,50 @@ function finishHiring(run) {
  * Nothing is decided here. It ages the roster, works out what everybody now costs, and puts
  * the result on run.winter for the screen to show and for releaseMan to act on.
  */
-function beginOffseason(run, byKey, lastSeason, firstSeason) {
+function beginOffseason(run, byKey, lastSeason) {
   if (!run.dynasty) throw new Error('not a dynasty');
   if (run.fired) throw new Error('you were fired');
   if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
 
   /*
-   * THE CALENDAR TURNS OVER RATHER THAN RUNNING OUT.
+   * EVERY MAN HAS HIS OWN CLOCK, and that is the whole mode.
    *
-   * Played straight, the year after the last one in the pool has no clubs on the wheel and
-   * no next season for anybody, so the whole roster aged into nothing and the draft that
-   * followed threw "a team needs somebody in it". DYNASTY_RUNWAY, which held the opening
-   * year ten seasons back from the end, was a fence around that cliff rather than a fix:
-   * a run long enough still walked off it, and it cost the player the last ten years of
-   * league history as a place to start.
+   * This used to age the roster against a single LEAGUE YEAR: the run began in a season,
+   * the wheel was locked to it, and everybody moved forward together. It made the calendar
+   * the thing you were playing, and it had to solve a problem of its own making at the end
+   * of the data, where there was no next year for anybody.
    *
-   * So the year after the last is the first. Nobody survives it, and not by coincidence:
-   * no man in the pool played both 2025 and 1999, but relying on that would be relying on
-   * an accident of who is in the data. The rule is stated instead.
+   * Now the season belongs to the player. Draft 2023 Burrow and 2019 Ochocinco off the
+   * normal wheel and next winter they are 2024 Burrow and 2020 Ochocinco: six careers
+   * running at once out of six different decades, each one a different distance from its
+   * own end.
    *
-   * `firstSeason` omitted means no wrap, which is what every caller did before this and
-   * what the checks that predate it still expect.
+   * WHICH TURNS THE DRAFT INTO A SECOND QUESTION. A man drafted at his last season is gone
+   * the moment the offseason opens, and a twenty-two year old out of 2003 can be kept for
+   * two decades. How good he is and how much of him is left are now different things, and
+   * the wheel offers both.
+   *
+   * There is no wrap and no runway, because there is no shared calendar to run out.
    */
-  const wrapped = firstSeason != null && run.leagueYear + 1 > lastSeason;
-  const year = wrapped ? firstSeason : run.leagueYear + 1;
+  const seasonYear = (man) => man.season + 1;
   const kept = [], slots = [], sal = [], draws = [], aged = [], gone = [];
   for (let i = 0; i < run.roster.length; i++) {
     const man = run.roster[i];
-    const next = wrapped ? null : E.dynastyAge(man, byKey, year);
+    const year = seasonYear(man);
+    const next = E.dynastyAge(man, byKey, year);
     if (!next) {
       /* NOT "RETIRED". A row for a later season means he missed this one; no row at all
          means the pool has nothing more from him. Neither is retirement and neither is
          claimed to be: the failure mode here is telling somebody a false thing about a
-         real person. And on a wrap it is neither: the league went back to the beginning
-         and he has not been born into it yet, which is the one reason here that is about
-         the calendar rather than about him. */
+         real person. */
       gone.push({ was: man, salary: run.salaries[i],
-        why: wrapped ? 'era' : E.dynastyGoneFor(man, byKey, year, lastSeason) });
+        why: E.dynastyGoneFor(man, byKey, year, lastSeason) });
       continue;
     }
     const wasSal = run.salaries[i];
     const nowSal = E.dynastySalary(wasSal, next.price_musd);
     kept.push(next); slots.push(run.slotIndex[i]); sal.push(nowSal);
+    if (run.eras && run.eras.indexOf(next.season) < 0) run.eras.push(next.season);
     run.tenure[next.player_id] = (run.tenure[next.player_id] || 1) + 1;
     draws.push(run.draws[i] || null);
     aged.push({ was: man, now: next, wasSalary: wasSal, salary: nowSal,
@@ -1242,39 +1216,22 @@ function beginOffseason(run, byKey, lastSeason, firstSeason) {
   }
 
   run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
-  run.leagueYear = year;
   run.seasonNo += 1;
-  if (wrapped) {
-    /*
-     * A NEW LAP IS A NEW ECONOMY. The cap grows 6% a winter, which is the right brake over
-     * the eight or nine seasons a run used to last and is $676M by the far side of a
-     * twenty-seven season lap: enough to buy six of the most expensive men in history and
-     * still have change. The ratchet's whole pressure comes from payroll climbing into a
-     * ceiling, and there is no ceiling at $676M.
-     *
-     * usedPlayers goes with it. Within a lap it is the rule that a man who has played for
-     * you never comes back; carried into the next lap it would quietly delete every good
-     * player of the era you have already been through.
-     */
-    run.capMusd = E.CONSTANTS.CAP_MUSD;
-    run.usedPlayers = [];
-    run.tenure = {};
-    run.lap = (run.lap || 1) + 1;
-  } else {
-    /* THE CAP MOVES ONCE A WINTER AND ONLY HERE. Six percent, and it is the brake rather
-       than the accelerator: see DYNASTY_CAP_GROWTH. */
-    run.capMusd = money(capOf(run) * E.DYNASTY_CAP_GROWTH);
-  }
+  /* THE CAP MOVES ONCE A WINTER AND ONLY HERE. Six percent, and it is the brake rather
+     than the accelerator: see DYNASTY_CAP_GROWTH. */
+  run.capMusd = money(capOf(run) * E.DYNASTY_CAP_GROWTH);
   /* A NEW SEASON'S WHEELS ARE FRESH. usedTeamSeasons is the two-draws-a-club rule inside
      one draft; carrying it across a decade would starve the pool of clubs. usedPlayers is
-     NOT reset here, because a man who has played for you never comes back inside one lap. */
+     NOT reset, because a man who has played for you never comes back. */
   run.usedTeamSeasons = [];
   run.respinsUsed = 0;
   run.currentDraw = null;
   run.season = null;
   run.playoffSeed = null;
   run.outcome = null;
-  run.winter = { year, aged, gone, released: [], wrapped };
+  /* `year` on the winter is the SEASON NUMBER now, not a league year: with six clocks
+     running there is no single year for the screen to name. */
+  run.winter = { year: run.seasonNo, aged, gone, released: [] };
   run.phase = PHASES.OFFSEASON;
   return run.winter;
 }
@@ -1356,11 +1313,15 @@ function ownerVerdict(run) {
   if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
   const o = run.outcome || {};
   const wins = o.regularWins ?? 0;
-  const bar = E.dynastyWinBar(run.seasonNo, run.lapSeasons);
+  const bar = E.dynastyWinBar(run.seasonNo, run.stepSeasons);
   /* PUSHED ONLY ONCE PER SEASON. This is reachable from a screen and from a reload, and a
      history with the same year twice would fire somebody for a season they played one
      time. */
-  if (!run.history.length || run.history[run.history.length - 1].year !== run.leagueYear) {
+  /* KEYED ON THE SEASON NUMBER, not a league year. There is no league year any more, and
+     the guard is the same one: this is reachable from a screen and from a reload, and a
+     history with the same season twice would score somebody for a year they played once. */
+  if (!run.history.length
+      || run.history[run.history.length - 1].seasonNo !== run.seasonNo) {
     /* PLAYOFF WINS ARE THE DIFFERENCE, not a count kept anywhere. outcome.wins runs through
        January and regularWins is the snapshot taken at the end of week seventeen, so the gap
        between them is exactly the games won after it. */
@@ -1372,7 +1333,9 @@ function ownerVerdict(run) {
       perfect: !!o.perfect,
     });
     run.history.push({
-      year: run.leagueYear, seasonNo: run.seasonNo,
+      /* `year` is the season number: the ledger lists seasons, and a roster out of six
+         decades has no one year to file itself under. */
+      year: run.seasonNo, seasonNo: run.seasonNo,
       wins, losses: 17 - wins, bar, cleared: wins >= bar,
       made: !!o.madePlayoffs, title: !!o.titleWon,
       rating: o.teamRating ?? null,
@@ -1383,7 +1346,7 @@ function ownerVerdict(run) {
       scoreParts: scored.parts,
     });
   }
-  run.fired = !E.dynastySurvives(run.history, run.lapSeasons);
+  run.fired = !E.dynastySurvives(run.history, run.stepSeasons);
   run.score = E.gauntletRunScore(run.history);
   return {
     bar, wins, cleared: wins >= bar, fired: run.fired,
@@ -1732,6 +1695,7 @@ function capSign(run, player) {
   run.roster.push(player);
   run.slotIndex.push(slot);
   run.usedPlayers.push(player.player_id);
+  if (run.dynasty && run.eras && run.eras.indexOf(player.season) < 0) run.eras.push(player.season);
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   run.currentDraw = null;
   return run;
@@ -3037,6 +3001,7 @@ function signFreeAgent(run, player, ctx) {
   run.roster.push(player);
   run.slotIndex.push(pending.slotIndex);
   run.usedPlayers.push(player.player_id);
+  if (run.dynasty && run.eras && run.eras.indexOf(player.season) < 0) run.eras.push(player.season);
   run.pendingFreeAgency = null;
   /* Hung on the trade that opened the hole rather than logged as a move of its own. A
      pending signing only ever follows a two-for-one, whose printed line already ends
