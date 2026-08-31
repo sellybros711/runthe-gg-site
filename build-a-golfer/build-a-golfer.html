@@ -4986,6 +4986,7 @@ function overlayArcadeAd(screen){
       .ov.aaov .aastat span{display:block;font:800 9.5px/1.3 var(--body);letter-spacing:.1em;text-transform:uppercase;color:#8fa4bb;margin-top:3px}
       .ov.aaov .aago{background:linear-gradient(160deg,#FFA95C,#FF8A3D 45%,#F0662E) !important;color:#20100a !important;
         border:0 !important;box-shadow:0 8px 26px -8px rgba(255,138,61,.6),inset 0 1px 0 rgba(255,255,255,.45) !important}
+      .ov.aaov .aago .aacta{display:block;font-weight:900;font-size:16px;letter-spacing:.005em}
       .ov.aaov .aalater{color:#a9b8cb !important;border-color:rgba(244,247,251,.2) !important}
       .ov.aaov .aachk{display:flex;align-items:center;justify-content:center;gap:10px;margin:16px auto 0;
         min-height:46px;padding:0 16px;max-width:380px;border-radius:12px;
@@ -5006,17 +5007,17 @@ function overlayArcadeAd(screen){
     <div class="aawrap">
       <div class="aakick"><span class="aadot"></span>Also from RunThe.GG</div>
       <h3 class="aahead">Run The Arcade</h3>
-      <p class="aalede">Ten quick sports brain-games, <b>new every single day</b>. Two minutes each, one streak to protect.</p>
+      <p class="aalede">Daily Sports Trivia Games. <b>How many days in a row can you pass the test?</b></p>
       <div class="aapanel">
         <div class="aagrid">${chips}</div>
         <div class="aastats">
-          <div class="aastat"><b>10</b><span>Games</span></div>
+          <div class="aastat"><b>12</b><span>Games</span></div>
           <div class="aastat"><b>Daily</b><span>New set</span></div>
-          <div class="aastat"><b>Free</b><span>To play</span></div>
+          <div class="aastat"><b>4 free</b><span>Every day</span></div>
         </div>
       </div>
       <p class="aalede" style="font-size:13.5px;color:#a9b8cb;margin-bottom:16px">Same free RunThe.GG account you use here. Your streak carries across the whole site.</p>
-      <button class="btn aago go" style="max-width:380px;margin:0 auto">Play the Arcade ↗<span class="sub" style="color:#3a1f0c">Opens in a new tab, your round is safe</span></button>
+      <button class="btn aago go" style="max-width:380px;margin:0 auto"><b class="aacta">Play the Arcade ↗</b><span class="sub" style="color:#3a1f0c">Opens in a new tab, your round is safe</span></button>
       <button class="btn ghost aalater later" style="max-width:380px;margin:9px auto 0">Maybe later</button>
       <label class="aachk"><input type="checkbox" class="aaoff" ${arcadeAdOff()?'checked':''}><span>Don't show this again</span></label>
     </div></div>`);
