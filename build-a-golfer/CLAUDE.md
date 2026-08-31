@@ -17534,3 +17534,59 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - **NEXT, if the owner likes it**: the same wrapper over `showDilemma` (the career decisions), a rival's
   golfer actually on camera for the grudge beats, and scenes for the season's marquee moments (a Sunday
   Moment, a Cup week) rather than press conferences alone.
+
+### THREE MOBILE ASKS: Season Goals remember, the auto-sim beat is shorter, and the fortnight fits a phone
+- **The owner sent one message with a mobile screenshot and three asks**: *"Can season goals be collapsible
+  and it should stay whatever you set it at (open or closed) until you change it. Also the beat in between
+  tournaments on autoplay is too long. It's too slow. We also need to speed up and enhance the ux of the
+  bracket experience. It's too much tapping and scrolling around on a mobile experience."*
+- **Season Goals collapse and STAY that way** (`goals_coll` 17/17). The card is a native `<details>` whose
+  open state is persisted, so it survives the many re-renders a live season does and the way you left it is
+  the way you find it next week.
+- **The beat between tournaments is shorter** (`pace34` 11/11): a week on Standard measured **4,430ms ->
+  ~3,356ms** on the clock, driving the real scheduler, with the drama-weighted hold intact (a win still
+  holds longer than a routine week, a major longer still) and Broadcast keeping its long gap for people who
+  want to watch. The week rows still render, so the time saved is not information lost.
+- **The fortnight on a phone was the big one, and it was a LAYOUT problem, not a tapping one.** Measured on
+  the deployed build at 390x844: **6 of 14 screens put the primary action BELOW the fold**, worst **883px of
+  scrolling to reach "Play Day 2"**, on a **3,019px** page, with the control bar `position:static` on every
+  screen. Every screen of the fortnight ends in a decision (tee off, play it or sim it, play the next day,
+  continue) and every one of them sat under a full group stage or a bracket tree.
+  - **The controls are PINNED**, the proven `.cupctrl`/`.hvctrl.fixed` way: `position:fixed;bottom:0`, opaque,
+    safe-area padded, and **never a transform** - a transform on a fixed element is what makes iOS anchor it
+    to the document, which this file has now chased down seven times. `brBarFit` MEASURES the bar after paint
+    and reserves exactly its height through `#app.has-brbar`, because the bar is one button on most screens
+    and three on the pause; a fixed reserve would either clip or leave a hole.
+  - **The tab bar steps aside** (`showNav` gains `has-brbar`, exactly as it already did for `has-cupbar`).
+    **A SCREENSHOT caught this, not an assertion** - every check was green, the bar was correctly pinned at
+    `bottom===844`, and the nav was sitting on top of "PLAY DAY 2".
+  - **Eight stacked group tables is a ~3,000px page**, so your group leads and spans the width and the other
+    seven sit two-up and condensed - all eight still visible, because the reveal is settling matches in them
+    and hiding that is hiding the show.
+  - **A pre-existing CSS collision was found and fixed**: `.gcard` is BOTH the group card and the home-screen
+    mode card, and the home rule is declared LATER, so its `border:0` had been quietly erasing every group
+    card's outline, gold "Yours" one included. Scoped with `.gin .gcard` (0,2,0 beats 0,1,0). Its `margin:0
+    auto` also made a grid item shrink-to-fit, which is why the cards sat ragged in their columns.
+  - **A group day is sixteen matches, a knockout day is eight**, so `mpStepMs(n)` paces the reveal to the
+    day's size (floored so it never becomes a flicker): a group day reveals in **~4.1s instead of ~6.9s**
+    while a knockout day keeps the full beat.
+- **After: 0 screens below the fold, worst scroll 0px, tallest page 2,016px, the bar fixed and pinned on
+  every screen, nothing painted over the button.**
+- Verified: `br_mobile` **19/19** (it walks the whole fortnight and judges every screen the same way - the
+  decision on screen with zero scroll, nothing painted over it via `elementFromPoint`, exactly one control
+  bar, `barBottom===844`, the reserve >= the bar height, and desktop still `position:static`) and a new
+  `br_nav` **4/4** guarding the global `showNav` change (the tab bar is there on the title and on an
+  ordinary season week, steps aside for the fortnight, and comes back with the reserve cleared).
+  **`br_mobile` was run against the deployed build and FAILS there** (4 checks plus a crash on the missing
+  `mpStepMs`), so it pins the report rather than asserting the setup. Regressions green: mp_eng 37, mp_ui 39,
+  mp_playgroup 21, mp_recap 27, route_check 6, bpath_check 32, goals_coll 17. All 7 inline script blocks
+  parse. Screenshots of the draw, a reveal, the pause, a day end, qualification and a knockout pause reviewed
+  by eye.
+- **A FLAKY FIXTURE was hardened, not worked around.** `pace34`'s clock run bailed the moment a storyline or
+  Moment pop-up changed the screen, so it sometimes measured ONE week and called a 4.0s first week (startup
+  included) the median - 11/0, 8/3 and 9/2 across three runs of the same build. It now spends the season's
+  interruption budget before timing, because what is being measured is the BEAT, not the beats: **11/11 on
+  three consecutive runs.**
+- **NOT deployed** - the owner's standing rule is that work is explained before it is pushed to the site.
+- Tunable: `mpStepMs` (the reveal ladder), the `.bctrl` fixed block + `--brbar` reserve, the `.gin .gcard`
+  two-up breakpoint, and the `PACE` map for the between-tournament beat.

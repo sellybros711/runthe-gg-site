@@ -407,6 +407,19 @@ window.GA_ID='G-L29P5MRWKE';
   .bdraw>summary{cursor:pointer; font:800 11px/1 var(--body); letter-spacing:.14em; text-transform:uppercase;
     color:var(--muted); padding:9px 11px}
   .bctrl{max-width:440px; margin:12px auto 6px; display:grid; gap:8px}
+  /* The fortnight on a phone: every screen of it ends in a decision (tee off, play it or sim it, play the
+     next day, continue), and every one of them used to sit under a full group stage or a bracket tree - a
+     measured 883px of scrolling to reach "Play Day 2". PIN the controls to the bottom of the viewport, the
+     same fixed-never-transformed pattern as .cupctrl/.hvctrl (a transform anchors it to the document on
+     iOS), and reserve the bar's own measured height via #app.has-brbar so it never covers the day. */
+  @media(max-width:700px){
+    .bctrl{position:fixed; left:0; right:0; bottom:0; z-index:22; max-width:none; margin:0;
+      padding:9px 12px calc(8px + env(safe-area-inset-bottom,0px));
+      background:#06200f; border-top:1px solid rgba(241,208,74,.28); box-shadow:0 -12px 26px -12px rgba(0,0,0,.85)}
+    .bctrl > *{max-width:440px; margin-left:auto; margin-right:auto; width:100%}
+    #app.has-brbar{padding-bottom:calc(var(--brbar,132px) + 16px + env(safe-area-inset-bottom,0px))}
+    #app.has-brbar .foot{display:none}
+  }
 
   /* ===== THE KNOCKOUT'S SHARED VOCABULARY =====
      Two weeks: three group days (top two of every group go through), then four knockout days on a new
@@ -512,6 +525,28 @@ window.GA_ID='G-L29P5MRWKE';
     font-variant-numeric:tabular-nums}
   .gc-r.q .gc-pt{color:#35d6a0}
   .gc-ms{display:flex; flex-direction:column; gap:5px; margin-top:8px}
+  /* .gcard is also the home screen's mode card, and THAT rule is declared later in this sheet, so it was
+     winning: border:0 quietly erased every group card's outline, gold one included. Scope the group card's
+     own look to .gin/.solo (0,2,0 beats 0,1,0) so it reads as a card again. */
+  .gin .gcard, .gcard.solo{border:1px solid var(--line); border-radius:11px; cursor:default; width:auto}
+  /* the home rule also carries margin:0 auto, and auto side margins make a grid item shrink-to-fit
+     instead of filling its track, so the cards sat ragged in their columns */
+  .gin .gcard{max-width:none; margin:0}
+  .gin .gcard.mine, .gcard.solo{border-color:rgba(241,208,74,.5)}
+  /* Eight stacked group tables is a ~3000px page on a 390px screen. Your group leads and spans the width;
+     the other seven sit two-up and condensed - still all visible, because the reveal is settling matches
+     in them and hiding that is hiding the show. */
+  @media(max-width:700px){
+    .gin{grid-template-columns:1fr 1fr; gap:7px}
+    .gin .gcard{padding:7px 6px 6px}
+    .gin .gcard.mine{grid-column:1 / -1}
+    .gin .gcard:not(.mine) .gc-h{font-size:8px; letter-spacing:.12em; margin-bottom:5px}
+    .gin .gcard:not(.mine) .gc-r{padding:3px 5px; font-size:9.5px; gap:4px}
+    .gin .gcard:not(.mine) .gc-w{display:none}
+    .gin .gcard:not(.mine) .gc-p{flex-basis:9px; font-size:8px}
+    .gin .gcard:not(.mine) .gc-pt{min-width:16px; font-size:10px}
+    .gin .gcard:not(.mine) .gc-ms{margin-top:6px; gap:4px}
+  }
   /* a halved match: both names stand, both read AS */
   .mptr.h .n{color:#e6ecdf}
   .mptr.h .s{background:#9aa8a0}
@@ -1463,6 +1498,16 @@ window.GA_ID='G-L29P5MRWKE';
   .sg-tgt{color:rgba(172,202,187,.65)}
   .sg-foot{margin-top:10px; padding-top:8px; border-top:1px dashed rgba(244,227,201,.09);
     font:700 12px/1.4 var(--body); text-align:center}
+  /* The in-season sheet collapses. The header IS the toggle and the state lives on S.goalsOpen, because
+     the live sim rebuilds this card every event - see the sponsor accordion for the same problem. */
+  .sgcard.coll .sg-hd{cursor:pointer; user-select:none; margin-bottom:0; touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent; min-height:34px}
+  .sgcard.coll.open .sg-hd{margin-bottom:8px}
+  .sgcard.coll:not(.open) .sg-list{display:none}
+  .sgcard.coll:not(.open) .sg-foot{display:none}
+  .sg-chev{flex:0 0 auto; display:inline-block; color:var(--gold); font:900 15px/1 var(--body);
+    transition:transform .15s ease}
+  .sgcard.coll.open .sg-chev{transform:rotate(90deg)}
   .oslabel{max-width:520px; margin:2px auto 5px; font:800 10px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--muted); text-align:left; padding-left:2px}
   .osstat{max-width:520px; margin:0 auto 8px; text-align:center; font-size:12px; color:var(--muted); line-height:1.45}
   /* CS341: bigger, more-noticeable wheel with an inviting glow */
@@ -10634,6 +10679,7 @@ function render(){
   try{
   app.classList.remove('has-cupbar');   // CS298: cleared each render; only the team-cup reveal re-adds it (reserves space for the fixed control bar)
   app.classList.remove('has-roundbar'); // CS513: cleared each render; scrDailyRound re-adds it when the fixed round-control bar is shown
+  app.classList.remove('has-brbar');    // cleared each render; scrBracket re-adds it for the fortnight's fixed control bar
   // clear any stranded draft-spin height reservation once we've left the draft/offseason screens (reveal()
   // holds it so the shorter spinning state can't shrink the page + clamp scroll; finish() clears it on the
   // draft/offseason screen itself, so only clear here for OTHER screens to avoid fighting finish's re-render).
@@ -10818,7 +10864,9 @@ function render(){
   // buttons (Continue / Leaderboard / Exit / Retire in .sumacts), so the persistent nav was redundant AND
   // ate ~48px of vertical room on every tab, forcing scrolling. Home + the rest stay in the ≡ menu.
   const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','setup','draft','build','offseason','summary'];
-  const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
+  // the team cup and the Cup Finale fortnight both run their own pinned control bar at the bottom of the
+  // viewport, and the tab bar would sit straight on top of it; Home stays one tap away in the ≡ menu
+  const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar') && !app.classList.contains('has-brbar');
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
   // CS306: the nav lives on <body>, NOT #app - a position:fixed element pins to the viewport most reliably
@@ -16795,8 +16843,10 @@ function seasonGoalsCard(opts){
     D:'A quiet year, expect the phone to go quiet too.',
     F:'A season to forget, sponsors will cool off.',
   })[graded.grade] : '';
-  return $(`<div class="sgcard${opts.compact?' compact':''}">
-    <div class="sg-hd">
+  // The in-season sheet is collapsible; the graded end-of-season one always shows in full.
+  const coll = !!opts.compact, open = coll ? (S.goalsOpen!==false) : true;
+  const card=$(`<div class="sgcard${opts.compact?' compact':''}${coll?' coll':''}${coll&&open?' open':''}">
+    <div class="sg-hd"${coll?` role="button" tabindex="0" aria-expanded="${open?'true':'false'}"`:''}>
       <div class="sg-hd-l">
         <span class="sg-tag">Season goals</span>
         <span class="sg-tier">${esc(tierName)}</span>
@@ -16804,11 +16854,22 @@ function seasonGoalsCard(opts){
       <div class="sg-hd-r">
         ${graded?`<span class="sg-grade" style="color:${gCol};border-color:${gCol}">${graded.grade}</span>`:''}
         <span class="sg-count" style="color:${graded?gCol:'var(--oncard)'}">${hits}/${sg.ids.length}</span>
+        ${coll?`<span class="sg-chev" aria-hidden="true">›</span>`:''}
       </div>
     </div>
     <div class="sg-list">${rows}</div>
     ${footTxt?`<div class="sg-foot" style="color:${gCol}">${footTxt}</div>`:''}
   </div>`);
+  if(coll){
+    // Toggle in place, never through render(): a re-render mid-season would fight the sim's own redraws.
+    const hd=card.querySelector('.sg-hd');
+    const flip=()=>{ S.goalsOpen = !card.classList.contains('open');
+      card.classList.toggle('open', S.goalsOpen);
+      hd.setAttribute('aria-expanded', S.goalsOpen?'true':'false'); };
+    hd.addEventListener('click', flip);
+    hd.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(); } });
+  }
+  return card;
 }
 
 function startSeason(majorsOnly){
@@ -16921,7 +16982,10 @@ function startSeason(majorsOnly){
 const DAYS=['THU','FRI','SAT','SUN'];
 // Pacing: default to a slow, readable "sweat" cadence so a round lands and can be absorbed
 // (testers said the old ~0.8s/round blew by too fast to read). Players can speed it up.
-const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:820,e:1250,lbl:'Standard'}, fast:{r:460,e:820,lbl:'Fast'}};   // Standard sped up + is now the default (owner)
+// r = a round, e = the floor on the gap between tournaments. Broadcast keeps its long gap on purpose - that
+// tier exists for someone who wants to watch. Standard and Fast were cut (owner: the beat between events is
+// too slow); the drama-weighted hold below is what earns a longer one back on the weeks that deserve it.
+const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:820,e:850,lbl:'Standard'}, fast:{r:460,e:520,lbl:'Fast'}};
 function paceMs(){ let p=S.simPace; if(p==='fast'&&!passProActive()) p='normal'; return PACE[p]||PACE.normal; }   // Fast pace is a Tour Pass Pro perk
 let _lbRects=null;   // {name: top-within-board} from the previous season render, for FLIP glide
 let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
@@ -21625,7 +21689,10 @@ function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (
    than as a timer with notifications bolted on. */
 var _wkQuiet=false;                       // headless / skip-to-end paths record nothing (you chose not to watch)
 const WK_MAX_ROWS=10, WK_MAX_FEED=60;
-const WK_HOLD_BASE=1900, WK_HOLD_STEP=380, WK_HOLD_MAX=4200;
+// The beat on a finished week. Cut roughly in half (owner: too slow) - a routine week is now a glance, and
+// only a week that actually did something buys real time. The SHAPE is the point, not the size: whatever
+// these are tuned to, a win or a major must still hold visibly longer than a missed cut.
+const WK_HOLD_BASE=850, WK_HOLD_STEP=220, WK_HOLD_MAX=2400;
 // the ledger only owns the SEASON SCREEN. Off it (the summary's end-of-year payout, the off-season, a
 // ceremony) a toast is the right surface again, and a note recorded there would render nowhere.
 function wkOn(){ return !!(S.season && S.career && !S.daily && !_wkQuiet && S.screen==='season'); }
@@ -23287,6 +23354,10 @@ function overlayTourNews(app){
 // round was over in under two seconds. These are the beats you actually watch, so they are slow enough
 // to follow a name across the draw, and Skip is always there for anyone who would rather not.
 const MP_FIRST=520, MP_IN=430, MP_HOLD=430, MP_MINE_HOLD=1150, MP_AFTER_MINE=1250;
+/* A knockout day is 8 matches or fewer; a GROUP day is sixteen, and at a flat 430ms that is a seven second
+   reveal before you can do anything. Pace the day to its size: eight or fewer keeps the full beat, sixteen
+   plays about twice as quick, floored so it never becomes a flicker. Your own match keeps MP_AFTER_MINE. */
+function mpStepMs(n){ return Math.max(240, Math.round(MP_IN * Math.min(1, 9/Math.max(1,n)))); }
 let mpTimer=null;
 function mpClearTimer(){ if(mpTimer){ clearTimeout(mpTimer); mpTimer=null; } }
 function mpReduce(){ try{ return matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){ return false; } }
@@ -23395,7 +23466,7 @@ function mpRunReveal(host, B){
     S.brShown=si+1;
     mpSetProgress(si+1, st.slots.length);   // the pinned header counts along with the reveal
     if(s.mine){ const won=!s.res.half && !!s.res.win.p.you; try{ sfx(won?'win':'hole'); buzz(won?[14,50,14]:12); }catch(e){} }
-    mpTimer=setTimeout(step, reduce?15:(s.mine?MP_AFTER_MINE:MP_IN));
+    mpTimer=setTimeout(step, reduce?15:(s.mine?MP_AFTER_MINE:mpStepMs(st.slots.length)));
   };
   mpTimer=setTimeout(step, reduce?15:MP_FIRST);
 }
@@ -23561,10 +23632,29 @@ function groupMatchHTML(s, si, settled){
   }).join('');
   return `<div class="mptm live${s.mine?' mine':''}${settled?' done':''}${s.mine&&!s.res?' await':''}" id="mpl-${si}" data-si="${si}">${rows}</div>`;
 }
+/* Pin the fortnight's controls and reserve exactly their height: the bar is one button on most screens
+   and three on the pause, so a fixed reserve would either clip or leave a hole. Measured after paint. */
+function brBarFit(ctrl){
+  try{
+    const app=document.getElementById('app'); if(!app||!ctrl) return;
+    app.classList.add('has-brbar');
+    const set=()=>{ try{
+      if(!ctrl.isConnected || !app.classList.contains('has-brbar')) return;
+      const h=Math.round(ctrl.getBoundingClientRect().height);
+      if(h>0) app.style.setProperty('--brbar', h+'px');
+    }catch(e){} };
+    requestAnimationFrame(set); setTimeout(set,140);
+  }catch(e){}
+}
 function mpGroupsBuild(B, st){
   const shown=st?(S.brShown||0):null;
   const box=$(`<div class="gwrap"><div class="gin"></div></div>`), inner=box.querySelector('.gin');
-  B.groups.forEach(g=>{
+  // your group leads, so on a phone the one table you care about is the one at the top of the screen
+  const gs=B.groups.slice().sort((a,b)=>{
+    const ay=(B.you&&B.you.gi===a.gi)?0:1, by=(B.you&&B.you.gi===b.gi)?0:1;
+    return ay-by || a.gi-b.gi;
+  });
+  gs.forEach(g=>{
     const mine=!!(B.you && B.you.gi===g.gi);
     const ms=[];
     if(st) st.slots.forEach((s,si)=>{ if(s.gi===g.gi) ms.push(groupMatchHTML(s, si, !!(s.res && si<shown))); });
@@ -23757,9 +23847,9 @@ function scrBracket(){
     const det=$(`<details class="bfulldraw"><summary>See all ${B.groups.length} groups</summary></details>`);
     det.appendChild(mpGroupsBuild(B, null));
     W(det);
-    const b=$(`<button class="btn goldfill" style="max-width:440px;margin:14px auto 0">Tee off ▸<span class="sub">${B.groups.length*2} matches today</span></button>`);
+    const b=$(`<button class="btn goldfill">Tee off ▸<span class="sub">${B.groups.length*2} matches today</span></button>`);
     b.onclick=()=>{ mpStartDay(B); track('bracket_start',{seed:you?you.seed:null, year:S.year||1, groups:1}); };
-    W(b);
+    const c0=$(`<div class="bctrl"></div>`); c0.appendChild(b); W(c0); brBarFit(c0);
     { const rail=seasonRailNode(); if(rail) add(rail); }
     return;
   }
@@ -23784,9 +23874,9 @@ function scrBracket(){
     const drawTree=mpTreeBuild(B, null); det.appendChild(drawTree);
     det.addEventListener('toggle', ()=>{ if(det.open) bracketFocusScroll(drawTree, B, null); });
     W(det);
-    const b=$(`<button class="btn goldfill" style="max-width:440px;margin:14px auto 0">Tee off ▸<span class="sub">${B.players.length/2} matches today</span></button>`);
+    const b=$(`<button class="btn goldfill">Tee off ▸<span class="sub">${B.players.length/2} matches today</span></button>`);
     b.onclick=()=>{ mpStartDay(B); track('bracket_start',{seed:you?you.seed:null, year:S.year||1}); };
-    W(b);
+    const c0=$(`<div class="bctrl"></div>`); c0.appendChild(b); W(c0); brBarFit(c0);
     { const rail=seasonRailNode(); if(rail) add(rail); }
     return;
   }
@@ -23819,14 +23909,13 @@ function scrBracket(){
         <div class="bhero-row">${bracketH2H(opp)}<span class="bchip">${R.holes} holes</span>${st.group?'<span class="bchip">A half is worth half a point</span>':''}</div>
       </div>`));
       W($(st.group?bracketGroupStakes():bracketStakes(B, st.ri)));
-      const bp=$(`<button class="btn goldfill" style="max-width:440px;margin:13px auto 0">⛳ Play it<span class="sub">${R.holes} holes · every call is yours</span></button>`);
+      const bp=$(`<button class="btn goldfill">⛳ Play it<span class="sub">${R.holes} holes · every call is yours</span></button>`);
       bp.onclick=()=>{ mpClearTimer(); track('bracket_play',{round:st.ri}); bracketStartMatch(B, {me, opp}); };
-      W(bp);
-      const bs=$(`<button class="btn ghost" style="max-width:440px;margin:8px auto 0">Sim it ▸<span class="sub">Watch the bracket decide</span></button>`);
+      const bs=$(`<button class="btn ghost">Sim it ▸<span class="sub">Watch the bracket decide</span></button>`);
       bs.onclick=()=>{ mpClearTimer(); if(!S.brMode) S.brMode={}; S.brMode[st.ri]='sim';
         bracketResolveMine(B, st); S.brPause=false; track('bracket_sim',{round:st.ri}); render(); };
-      W(bs);
       W($(`<div class="bwait">The bracket is waiting on you</div>`));
+      const cp=$(`<div class="bctrl"></div>`); cp.appendChild(bp); cp.appendChild(bs); W(cp); brBarFit(cp);
       // Auto Sim deliberately does NOT answer this one. It auto-advances the tour so you are not clicking
       // through weeks you do not care about; your own match in a knockout is the opposite of that, and a
       // 1.6s timer that picked Sim for you meant you never got the chance to play it.
@@ -24006,7 +24095,8 @@ function scrBracket(){
       ctrl.appendChild(sh);
     }
   }
-  W(ctrl);
+  // an empty bar would still paint (and, pinned, sit on top of the pause screen's own one), so only mount it
+  if(ctrl.children.length){ W(ctrl); brBarFit(ctrl); }
   { const rail=seasonRailNode(); if(rail) add(rail); }
 
   if(S.brStage==='reveal' && !S.brPause) mpRunReveal(tree, B);
@@ -24472,8 +24562,8 @@ function scrSeason(){
     const p=paceMs();
     seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ simNextRound(); render(); } }, evt.olympics?Math.round(p.r*1.5):p.r);   // the Games play out slower for drama
   } else if(S.autoSim){
-    // hold on the finished week in proportion to what happened (a routine week ~2s, a win at a major with a
-    // brief landing ~4s), so the sim spends its time where the story is instead of on a flat timer
+    // hold on the finished week in proportion to what happened (a routine week ~0.9s, a win at a major with a
+    // brief landing ~2.4s), so the sim spends its time where the story is instead of on a flat timer
     seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ advanceEvent(); render(); } }, Math.max(paceMs().e, wkHoldMs(ce)));
   }
 }
