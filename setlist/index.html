@@ -3436,7 +3436,7 @@ function renderHome(){
                  the mechanic in words the art now shows anyway. What is left
                  is the part no picture carries: the night is real, it is not
                  yours to choose, and its songs are the whole menu. */''}
-          <span>A random real night. Its songs are your options.</span>
+          <span>The wheel picks the night. Not you.</span>
         </li>
         <li>
           <div class="lp-art lp-take" aria-hidden="true">
@@ -3445,7 +3445,7 @@ function renderHome(){
             <i style="width:41%"></i>
           </div>
           <b>Take one song</b>
-          <span>Any one. It costs the time it really ran.</span>
+          <span>Just one. It costs every second it ran.</span>
         </li>
         <li>
           <div class="lp-art lp-night" aria-hidden="true">
@@ -3454,10 +3454,35 @@ function renderHome(){
             <i style="flex:10"><em>E</em></i>
           </div>
           <b>Fill the night</b>
-          <span>75, 70 and 10 minutes. Then the crowd hears it.</span>
+          <span>75, 70 and 10 minutes. Then the crowd decides.</span>
         </li>
       </ol>
-      <p class="how-scores">Rare songs, great versions and real segues score most.</p>
+      ${/* THE DARE, AND IT HAD TO SURVIVE BEING MEASURED. The line read "Rare
+       *      songs, great versions and real segues score most", which is a
+       *      scoring note rather than a reason to press the button. The first
+       *      rewrite made it a dare, "Rarities, monster versions and real
+       *      segues pay best. Anyone can pick the hits", and that was WRONG in
+       *      both halves. Seven strategies, 400 identical show sequences each:
+       *
+       *        1170  chase segues
+       *        1092  take the best-scoring song available
+       *        1077  take anything jamcharted
+       *        1063  take the most-played song
+       *        1048  random
+       *        1036  take the rarest song
+       *         959  take the longest song
+       *
+       *      Chasing rarity is the second WORST line in the game, below random,
+       *      so "rarities pay best" is false. And picking the hits beats random
+       *      by 15, so "anyone can pick the hits" sneers at a perfectly decent
+       *      strategy.
+       *      What the numbers actually support is a better dare anyway, because
+       *      both halves of it are counterintuitive: segues are the one big
+       *      lever (+107 over the hits), and hoovering up the twenty-minute
+       *      monsters is the worst thing you can do, 89 below picking at
+       *      random, because they eat the clock and the set goes one-note. */''}
+      <p class="how-scores">Real segues are where the points are.
+        Grabbing every monster jam is how you lose.</p>
     </section>
 
     <div class="bands">${real.map(card).join('')}
