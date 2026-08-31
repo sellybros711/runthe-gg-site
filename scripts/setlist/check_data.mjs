@@ -1272,6 +1272,43 @@ check(!!homePage, 'renderHome can be read');
   check(/running\s+time/i.test(hero), 'and what that song costs');
 }
 
+/* THE LOOP IS THREE ACTIONS AND THREE PICTURES. Five numbered sentences became
+   three panels, and the first of them described an OUTCOME ("A real show")
+   while the other two described things you do, so the row read as a list
+   rather than a sequence. Spinning is what you actually do first and it is
+   what the screen shows a tap later, so the panel says the verb and draws the
+   reel.
+   Guarded as a set: three panels, each with a picture and a verb, and the art
+   matching the screen it stands for. A panel whose label and art disagree is
+   the exact state this replaced. */
+{
+  const loop = cdSlice('<ol class="loop">', '</ol>');
+  check(!!loop, 'the home screen draws the loop');
+  const arts = [...loop.matchAll(/class="lp-art (lp-[a-z]+)"/g)].map(m => m[1]);
+  check(arts.length === 3, `three panels, drawn (${arts.join(', ')})`);
+  check(arts.join(',') === 'lp-spin,lp-take,lp-night',
+    'spin, then take, then fill', arts.join(','));
+  const verbs = [...loop.matchAll(/<b>([^<]+)<\/b>/g)].map(m => m[1]);
+  check(verbs.length === 3 && verbs.every(v => /^(Spin|Take|Fill|Pick|Play|Build)\b/.test(v)),
+    `each panel names an action (${verbs.join(' / ')})`);
+  /* The reel is the one that just changed, so it is the one asserted in
+     detail: a lit landing row between neighbours, under the same fade the real
+     .reel uses, or it reads as three stacked years rather than a spin. */
+  check(/<i class="on">/.test(loop), 'the reel has a landing row');
+  check(/\.lp-spin:after\{[^}]*linear-gradient/.test(game),
+    'and the rows above and below run off under a fade');
+  check(/\.lp-spin\{[^}]*overflow:hidden/.test(game), 'inside a window');
+  /* The set blocks are sized by the real budgets, so the encore is the sliver
+     it is. min-width:0 because a flex item defaults to its content width and
+     the encore label pushed the block past the panel edge at 390px. */
+  check(/\.lp-night i\{[^}]*min-width:0/.test(game),
+    'and the encore block can shrink to the sliver it really is');
+  /* NO HAND-WRITTEN ARCHIVE COUNT. sync_counts patches the numbers it knows
+     about by regex; one written here would simply go stale, which is the
+     failure the about copy already had once. */
+  check(!/\d{3,} shows/.test(loop), 'the loop states no count that would go stale');
+}
+
 /* 2. THE SAMPLE BAND WAS ON THE LIVE PAGE, one tap under the real one, over the
       words "Made-up data we use for testing". Nothing on the page told a new
       player that is not part of the game. */
