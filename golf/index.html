@@ -19669,7 +19669,319 @@ function pressBuzzHTML(bz){
     ${bz.rows.map(tweet).join('')}${opp}
     <div class="pb-hl"><div class="pb-outlet">${esc(bz.headline.outlet)}</div><div class="pb-hltx">${esc(bz.headline.text)}</div></div></div>`;
 }
+/* ================= THE BROADCAST LAYER (cutscenes) ==============================================
+   A press conference used to open cold: a modal, a mic, three answers. The world around the golfer
+   already exists in the data (a rival, a form line, a money-list rank, a season) but nobody ever SAID
+   any of it, so a beat arrived with no build-up and left with no fallout.
+
+   The broadcast layer is the frame around the decision, not a replacement for it. A scene plays first
+   (an anchor sets the stakes, an on-course reporter reads the moment, a fan feed reacts), then the
+   EXISTING choice modal runs unchanged with all of its outcome machinery, then one aftermath beat
+   lands the consequence. If a scene can't be built, or the gate is shut, showStoryline behaves
+   EXACTLY as it always has, so this can never cost a player a decision.
+
+   OWNER DECISIONS baked in here:
+     - No golfer ever speaks on camera. Every voice is an invented broadcaster, never a real player and
+       never your own golfer. The golfer is the PICTURE; the world is the VOICE.
+     - A fictional world: five outlets and eight voices of our own, no real network or byline.
+     - Gated to the tester accounts while it's live (usernames, the same server-attributed handle the
+       dev flags use), so the public site is untouched until it's launched.
+   To LAUNCH to everyone: flip CUTSCENE_LIVE to true. -------------------------------------------- */
+var CUTSCENE_LIVE=false;                                   // flip to true to release to everyone
+var CS_TESTERS=['csel8','runnyj','malikwillislover'];      // tester accounts (lowercased usernames)
+function cutscenesOn(){
+  try{
+    if(CUTSCENE_LIVE) return true;
+    if(localStorage.getItem('bag_cs_force')==='1') return true;   // local override, used by the tests
+    return sbSignedIn() && CS_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
+  }catch(e){ return false; }
+}
+// The invented press. Nothing here is a real outlet or a real person.
+var CS_OUTLETS={
+  wire:   {name:'Fairway Wire',     kind:'Wire service', col:'#5fd0e0'},
+  tonight:{name:'Tee Time Tonight', kind:'Nightly desk', col:'#f1d04a'},
+  range:  {name:'Range Finder',     kind:'Analysis',     col:'#35d6a0'},
+  bag:    {name:'The Sunday Bag',   kind:'Podcast',      col:'#b69bff'},
+  turn:   {name:'The Turn',         kind:'Fan feed',     col:'#ff9d3a'}
+};
+var CS_CAST={
+  vane: {name:'Marcus Vane',   role:'Lead anchor',        outlet:'tonight'},
+  okoye:{name:'Dani Okoye',    role:'On-course reporter', outlet:'wire'},
+  brant:{name:'Hal Brantley',  role:'Analyst',            outlet:'range'},
+  nair: {name:'Priya Nair',    role:'Numbers',            outlet:'range'},
+  duck: {name:'Wes Duckworth', role:'Host',               outlet:'bag'},
+  sands:{name:'Tori Sands',    role:'Press room',         outlet:'wire'},
+  ellis:{name:'Ray Ellis',     role:'Swing coach',        outlet:'bag'},
+  feed: {name:'The Turn',      role:'Fan reaction',       outlet:'turn'}
+};
+function csVoice(id){ return CS_CAST[id]||CS_CAST.vane; }
+function csOutlet(id){ const v=csVoice(id); return CS_OUTLETS[v.outlet]||CS_OUTLETS.wire; }
+function csMe(){ try{ return dShort((S.season&&S.season.me&&S.season.me.name)||S.name||'Your golfer'); }catch(e){ return 'Your golfer'; } }
+// A deterministic look for an opponent we only know by name, so a rival beat shows a rival, not a clone.
+function csLookFor(name){
+  try{
+    const h=dHash(String(name||'x')), b=(n)=>(h>>>n)&0xff;
+    const L=Object.assign({},DEFLOOK);
+    L.skinTone=Math.round(b(0)/255*100);
+    L.hair=HAIRS[b(4)%HAIRS.length].id;
+    L.hairStyle=HAIRSTYLES[b(8)%HAIRSTYLES.length].id;
+    L.polo=POLOS[b(12)%POLOS.length].id;
+    L.hat=POLOS[b(18)%POLOS.length].id;
+    L.cap=(b(22)&1)===1; L.lefty=(b(24)&7)===0;
+    delete L.skin; delete L.fx; delete L.acc;
+    return L;
+  }catch(e){ return DEFLOOK; }
+}
+// Sized off the viewport so the golfer is the subject of the shot on a phone AND on a desktop.
+function csFigH(k){ try{ return Math.round(Math.max(150, Math.min(300, innerHeight*0.30))*(k||1)); }catch(e){ return 200; } }
+// The golfer shown in a beat: 'me' is yours (aged), 'rival' the nemesis, null draws no figure.
+function csFigure(pic, ctx){
+  try{
+    if(pic==='rival'){ const n=(ctx&&ctx.rivalName)||(ctx&&ctx.starName)||''; if(!n) return ''; return pxFigureHTML(csLookFor(n),csFigH(0.86)); }
+    if(pic==='me'||pic===true){ let L=S.look||DEFLOOK; try{ L=withAge(L,(typeof playerAge==='function')?playerAge():22); }catch(e){} return pxFigureHTML(L,csFigH(1)); }
+  }catch(e){}
+  return '';
+}
+/* ---- the scenes -------------------------------------------------------------------------------
+   Keyed by storyline id, with a tag-driven fallback so EVERY beat gets a frame. A scene is
+   {in:[...], out:[...]}; a scene beat is {who, tx, frame, pic}. tx may be a function of ctx. -- */
+function csT(v, ctx){ return typeof v==='function'?v(ctx):v; }
+var CS_SCENES={
+  press_win:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:c=>`They're still on their feet out here. ${csMe()} has won ${c.lastName||c.upName||'out here'}.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:c=>`A first look at a champion tells you plenty. Whatever's said in the next ten minutes gets played all week.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`The room's packed. First question's yours to answer however you want it answered.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:c=>[`That quote's already clipped. Everyone has an opinion by morning.`,`champions get to say what they want honestly`]}]
+  },
+  press_miss:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:c=>`Weekend's off. ${csMe()} signs for a number that doesn't get them to Saturday at ${c.lastName||c.upName||'the tournament'}.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Nobody has to talk after a missed cut. Most do anyway. The recorders are on.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`You learn more about a player in that room on a Friday night than you do on a Sunday.`}]
+  },
+  sponsor:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:c=>`${c.sponsorBrand||'A brand'} has been circling since the weekend. That's not a coincidence, that's a marketing department.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Their people are outside. Whatever you say next, they're listening to it too.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Money talks. So does turning it down.`,`whatever they signed, somebody's agent is furious tonight`]}]
+  },
+  rival_shot:{
+    in:[{who:'vane',  frame:'broadcast', pic:'rival', tx:c=>`${c.rivalName||'Your rival'} was asked about you today. They didn't leave it alone.`},
+        {who:'duck',  frame:'broadcast', pic:'rival', tx:`Now, you can let that sit. Or you can hand them a headline back. Both have a cost.`},
+        {who:'sands', frame:'presser',   pic:'me',    tx:`They'll ask you about it. They always ask.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Two players, one story, and a very long week ahead.`,`pairing them together on Sunday is the only correct decision`]}]
+  },
+  rival_ahead:{
+    in:[{who:'nair',  frame:'broadcast', pic:'rival', tx:c=>`${c.rivalName||'Your rival'} is ahead of you on the money list. Not by much. Enough.`},
+        {who:'sands', frame:'presser',   pic:'me',    tx:`Somebody's going to put that number in front of you. What you do with it is the story.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Say it out loud and you own it. That's the whole gamble.`}]
+  },
+  rival_grudge:{
+    in:[{who:'duck',  frame:'broadcast', pic:'rival', tx:c=>`Head to head, it's ${c.grudgeW||0} and ${c.grudgeL||0}. People keep score whether you do or not.`},
+        {who:'sands', frame:'presser',   pic:'me',    tx:`So: is it a rivalry, or is it just a record?`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`The bookmarks are out. This one runs all season.`,`saving this for the end of the year`]}]
+  },
+  major_champ:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:c=>`A major championship. Whatever else happens in this career, that sentence is permanent now.`},
+        {who:'okoye', frame:'broadcast', pic:'me', tx:`They haven't stopped clapping since the last putt dropped.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Every word from here gets read back in twenty years. No pressure.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`That's how a champion sounds. Or doesn't. The tour heard it either way.`}]
+  },
+  world_no1:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:`The ranking updated overnight. There's nobody above you.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:`It's the only spot on tour where everyone else is behind you and every one of them is coming.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`So how does the best player in the world want to sound today?`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Number one. Now try keeping it.`,`the whole field just circled one name`]}]
+  },
+  rookie_intro:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:c=>`First season on tour, and the press room already wants a name to attach a story to.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Nobody in here knows you yet. That changes with the next answer.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Rookies get one first impression. Veterans remember it for a decade.`}]
+  },
+  hot_streak:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:`Two top fives in a row. The numbers say this isn't luck any more.`},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Form's a strange thing. Talk about it and half the locker room says you've jinxed it.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`They're all watching now.`,`form like this doesn't stay quiet for long`]}]
+  },
+  media_critic:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:`Somebody on our own network took a swing at you this week. In print. With your name on it.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`They're in the room. Third row. You get to decide whether to look at them.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`The clip's doing numbers. That cuts both ways.`,`the pundit's mentions are not a nice place right now`]}]
+  }
+};
+// Tag-driven fallback: every storyline gets a frame even if nobody wrote it a bespoke scene.
+var CS_TAG_SCENES={
+  'PRESS ROOM':{in:[{who:'okoye',frame:'broadcast',pic:'me',tx:c=>`We're live from ${c.upName||'the tournament'}, and the press room is filling up.`},
+                    {who:'sands',frame:'presser',pic:'me',tx:`They're ready for you. Take your time.`}],
+                out:[{who:'feed',frame:'feed',pic:'me',tx:[`And that's the quote that runs.`,`every outlet leading with the same line by morning`]}]},
+  'SPONSORS':{in:[{who:'duck',frame:'broadcast',pic:'me',tx:`There's a business side to this week, and it wants an answer.`}],
+              out:[{who:'feed',frame:'feed',pic:'me',tx:[`Somebody's agent is either delighted or furious.`,`business decisions, and everyone has a take on this one`]}]},
+  'RIVALRY':{in:[{who:'vane',frame:'broadcast',pic:'rival',tx:c=>`This one has history, and history has a way of getting asked about.`},
+                 {who:'sands',frame:'presser',pic:'me',tx:`The question's coming. It's just a matter of who asks it first.`}],
+             out:[{who:'feed',frame:'feed',pic:'me',tx:[`Nobody's letting that go quietly.`,`this one has legs. see you Sunday`]}]},
+  'THE LEAGUE':{in:[{who:'vane',frame:'broadcast',pic:'me',tx:`Golf's split in two and every microphone in the building wants your side of it.`},
+                    {who:'sands',frame:'presser',pic:'me',tx:`There's no neutral answer to this one. There hasn't been for a while.`}],
+                out:[{who:'brant',frame:'broadcast', pic:'me',tx:`Every player who answers that question ends up on somebody's list.`}]},
+  _default:{in:[{who:'vane',frame:'broadcast',pic:'me',tx:c=>`${csMe()} at ${c.upName||'the tournament'}, and there's a story here worth telling.`},
+                {who:'sands',frame:'presser',pic:'me',tx:`Whenever you're ready.`}],
+            out:[{who:'feed',frame:'feed',pic:'me',tx:[`The reaction's already rolling in.`,`golf twitter waking up to this at 6am`]}]}
+};
+function csSceneFor(beat, ctx){
+  const s=CS_SCENES[beat.id]; if(s) return s;
+  const tag=String(csT(beat.tag,ctx)||'').toUpperCase();
+  for(const k in CS_TAG_SCENES){ if(k!=='_default' && tag.indexOf(k)>=0) return CS_TAG_SCENES[k]; }
+  return CS_TAG_SCENES._default;
+}
+/* ---- the player -------------------------------------------------------------------------------
+   A persistent HUD (where we are, and who's talking), one picture, one line at a time. Tap to finish
+   the line, tap again to advance. Skip leaves the whole scene. Reduced motion prints each line whole. */
+var _csStyled=false;
+function csStyleOnce(){
+  if(_csStyled) return; _csStyled=true;
+  document.head.appendChild($(`<style>
+  .csov{position:fixed;inset:0;z-index:62;display:flex;flex-direction:column;overflow:hidden;cursor:pointer;
+    background:#030709;background-image:radial-gradient(130% 90% at 50% 0%, rgba(12,44,62,.95), rgba(3,7,9,1) 66%)}
+  .cs-hud{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px;
+    border-bottom:1px solid rgba(255,255,255,.08)}
+  .cs-out{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:999px;
+    border:1px solid currentColor;font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase}
+  .cs-live{width:7px;height:7px;border-radius:50%;background:#ff5b52;box-shadow:0 0 8px #ff5b52;animation:csPulse 1.5s ease-in-out infinite}
+  .cs-where{flex:1;min-width:0;text-align:right;font:700 10.5px/1.35 var(--body);letter-spacing:.05em;color:#7fa8b8;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cs-skip{flex:0 0 auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#cfe0e8;
+    border-radius:999px;padding:5px 11px;font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+  .cs-stage{flex:1 1 auto;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;padding:10px 10px 18px}
+  .cs-stage::before{content:'';position:absolute;left:50%;bottom:0;width:min(420px,86%);height:70%;transform:translateX(-50%);
+    background:radial-gradient(60% 70% at 50% 100%, rgba(95,208,224,.20), transparent 72%);pointer-events:none}
+  .cs-fig{position:relative;image-rendering:pixelated;filter:drop-shadow(0 12px 22px rgba(0,0,0,.55))}
+  .cs-fig .pxfigsm{height:auto}
+  .cs-bulbs{position:absolute;inset:0 0 auto 0;height:150px;pointer-events:none}
+  .cs-mic{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);opacity:.85;pointer-events:none}
+  .cs-frame{font:800 9px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
+    border:1px solid currentColor}
+  .cs-body{flex:0 0 auto;padding:0 14px calc(16px + env(safe-area-inset-bottom,0px))}
+  .cs-card{max-width:520px;margin:0 auto;background:linear-gradient(180deg,rgba(13,35,52,.96),rgba(6,15,22,.98));
+    border:1px solid #2f6f86;border-left-width:4px;border-radius:14px;padding:13px 15px 15px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+  .cs-who{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .cs-nm{font:800 14px/1.1 var(--body);color:#fff}
+  .cs-role{font:700 10px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#7fa8b8}
+  .cs-tx{color:#eef4f7;font-size:15px;line-height:1.45;min-height:2.9em}
+  .cs-caret{display:inline-block;width:7px;color:#5fd0e0;animation:csPulse 1s steps(2) infinite}
+  .cs-next{margin-top:9px;font:700 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#5f8ea0}
+  .cs-feed{display:flex;flex-direction:column;gap:7px;margin-top:2px}
+  .cs-post{display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;padding:8px 10px}
+  .cs-av{flex:0 0 auto;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font:800 11px/1 var(--body);color:#06131a}
+  .cs-ph{font:800 11px/1.2 var(--body);color:#9fc4d2}
+  .cs-pt{color:#dbe7ee;font-size:13px;line-height:1.35;margin-top:2px}
+  @keyframes csPulse{0%,100%{opacity:1}50%{opacity:.28}}
+  @media (prefers-reduced-motion:reduce){.cs-live,.cs-caret{animation:none}}
+  </style>`));
+}
+function csWhereLine(ctx){
+  const bits=[];
+  try{ bits.push(String(calYear(S.year||1))); }catch(e){}
+  if(ctx&&ctx.upName) bits.push(ctx.upName);
+  return bits.join(' · ');
+}
+function csFeedHTML(tx){
+  const lines=(Array.isArray(tx)?tx:[tx]).map(x=>String(x||'').trim()).filter(Boolean);
+  const cols=['#5fd0e0','#ff9d3a','#b69bff','#35d6a0'];
+  return `<div class="cs-feed">${lines.map((t,i)=>{
+    let h='fan'+i; try{ h=pbHandle(); }catch(e){}
+    return `<div class="cs-post">
+      <div class="cs-av" style="background:${cols[(i*2+h.length)%cols.length]}">${esc(h[0].toUpperCase())}</div>
+      <div style="min-width:0"><div class="cs-ph">@${esc(h)}</div>
+        <div class="cs-pt">${esc(t)}</div></div></div>`;
+  }).join('')}</div>`;
+}
+function csPlay(beats, ctx, done){
+  const list=(beats||[]).filter(Boolean);
+  if(!list.length){ done&&done(); return; }
+  csStyleOnce();
+  const reduce=(function(){ try{ return matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){ return false; } })();
+  document.querySelectorAll('.csov').forEach(n=>n.remove());
+  const ov=$(`<div class="csov">
+    <div class="cs-hud">
+      <span class="cs-out js-out"><span class="cs-live"></span><span class="js-outnm">Fairway Wire</span></span>
+      <span class="cs-where">${esc(csWhereLine(ctx))}</span>
+      <button class="cs-skip" type="button">Skip ▸</button>
+    </div>
+    <div class="cs-stage"><div class="cs-fig js-fig"></div></div>
+    <div class="cs-body"><div class="cs-card js-card">
+      <div class="cs-who"><span class="cs-nm js-nm"></span><span class="cs-role js-role"></span><span class="cs-frame js-frame"></span></div>
+      <div class="cs-tx js-tx"></div>
+      <div class="cs-next js-next">Tap to continue</div>
+    </div></div></div>`);
+  const outChip=ov.querySelector('.js-out'), outNm=ov.querySelector('.js-outnm'), fig=ov.querySelector('.js-fig');
+  const card=ov.querySelector('.js-card'), nm=ov.querySelector('.js-nm'), role=ov.querySelector('.js-role');
+  const frameEl=ov.querySelector('.js-frame'), stage=ov.querySelector('.cs-stage');
+  const txEl=ov.querySelector('.js-tx'), nextEl=ov.querySelector('.js-next');
+  let i=0, typing=false, timer=null, full='', shown=0, finished=false;
+  const stop=()=>{ if(timer){ clearInterval(timer); timer=null; } };
+  const finish=()=>{ if(finished) return; finished=true; stop(); ov.remove(); done&&done(); };
+  const paint=()=>{
+    const b=list[i]; if(!b){ finish(); return; }
+    const v=csVoice(b.who), o=csOutlet(b.who);
+    outChip.style.color=o.col; outNm.textContent=o.name;
+    card.style.borderLeftColor=o.col;
+    nm.textContent=v.name; role.textContent=v.role;
+    const fr=b.frame||'broadcast';
+    const fl = fr==='presser'?'Press room' : fr==='feed'?'Online' : 'Live';
+    // don't say the same thing twice: Tori Sands is already "Press room"
+    const dupe = fl.toLowerCase()===String(v.role||'').toLowerCase();
+    frameEl.textContent = dupe?'' : fl;
+    frameEl.style.display = dupe?'none':'';
+    frameEl.style.color=o.col;
+    // the frames are dressed differently: a presser gets the flashbulbs and the mic, a broadcast is clean
+    stage.querySelectorAll('.cs-bulbs,.cs-mic').forEach(n=>n.remove());
+    if(fr==='presser'){
+      if(!reduce) stage.insertBefore($(`<div class="cs-bulbs">${[[10,26],[30,14],[56,11],[78,18],[92,30]].map(([l,t],k)=>
+        `<span class="flashbulb" style="left:${l}%;top:${t}px;animation:pressFlash ${2.2+k*0.5}s ease-in-out ${k*0.4}s infinite"></span>`).join('')}</div>`), stage.firstChild);
+      stage.appendChild($(`<div class="cs-mic">${PRESS_MIC}</div>`));
+    }
+    const pic=csFigure(b.pic, ctx);
+    fig.innerHTML=pic||'';
+    const raw=csT(b.tx,ctx); full=Array.isArray(raw)?raw.join(' '):String(raw||'');
+    nextEl.textContent = (i>=list.length-1) ? 'Tap to continue ▸' : 'Tap to continue';
+    if(b.frame==='feed'){ txEl.innerHTML=csFeedHTML(raw); typing=false; return; }
+    if(reduce){ txEl.textContent=full; typing=false; return; }
+    shown=0; typing=true; txEl.innerHTML='<span class="cs-caret">▌</span>';
+    stop();
+    timer=setInterval(()=>{
+      shown+=2;
+      if(shown>=full.length){ stop(); typing=false; txEl.textContent=full; return; }
+      txEl.innerHTML=esc(full.slice(0,shown))+'<span class="cs-caret">▌</span>';
+    }, 18);
+  };
+  const advance=()=>{
+    if(typing){ stop(); typing=false; txEl.textContent=full; return; }
+    i++;
+    if(i>=list.length){ finish(); return; }
+    paint();
+  };
+  ov.addEventListener('click', (e)=>{ if(e.target.closest('.cs-skip')) return; advance(); });
+  ov.querySelector('.cs-skip').onclick=(e)=>{ e.stopPropagation(); track('cutscene_skip',{}); finish(); };
+  document.body.appendChild(ov);
+  paint();
+}
+/* The wrapper. Gate shut, or anything at all goes wrong building the scene, and this is a straight
+   passthrough to the modal that has always run, with its outcome machinery untouched. */
 function showStoryline(sb){
+  let scene=null;
+  if(cutscenesOn()){ try{ scene=csSceneFor(sb.beat, sb.ctx); }catch(e){ scene=null; } }
+  if(!scene || !(scene.in&&scene.in.length)) return showStorylineModal(sb);
+  track('cutscene_shown',{id:sb.beat.id});
+  const runModal=()=>{
+    const after=(scene.out&&scene.out.length)?scene.out:null;
+    showStorylineModal(Object.assign({}, sb, after?{onDone:(res)=>{
+      // one aftermath beat: the world reacting to the answer that was just given
+      try{ csPlay(after, sb.ctx, ()=>render()); }catch(e){ render(); }
+    }}:{}));
+  };
+  try{ csPlay(scene.in, sb.ctx, runModal); }catch(e){ runModal(); }
+}
+
+function showStorylineModal(sb){
   const {beat, ctx}=sb, story=careerStory();
   if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
   story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story._beatsYr=(story._beatsYr||0)+1; story.seenEvt[beat.id]=S.evtIndex;
@@ -19792,7 +20104,7 @@ function showStoryline(sb){
       // CS291: the world reacts, fan tweets, a headline, and an occasional opponent quote
       try{ replyBox.appendChild($(pressBuzzHTML(pressBuzz(ch, beat, ctx, backfired)))); }catch(e){}
       const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
-      cont.onclick=()=>{ ov.remove(); render(); };
+      cont.onclick=()=>{ ov.remove(); if(sb.onDone){ sb.onDone({ch, backfired}); } else render(); };
       replyBox.appendChild(cont);
       replyBox.scrollIntoView({block:'nearest'});
     };
