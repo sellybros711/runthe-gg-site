@@ -17484,8 +17484,8 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   hashes in a public bundle, and nothing for the owner to look up. **A guest can never see it** (the check
   is `sbSignedIn()` first). `localStorage.bag_cs_force` is the test override. Ships with
   `CUTSCENE_LIVE=false`; flip that one flag to launch to everyone.
-  **The three usernames currently listed are `csel8`, `runnyj`, `sophkill` - the owner should correct the
-  third if that is not the intended tester.**
+  **The three tester usernames are `csel8`, `runnyj`, `malikwillislover`** (the owner named the third; it
+  is stored lowercased because the check lowercases `sbUsername` before matching).
 - **The invented world**: five outlets (Fairway Wire, Tee Time Tonight, Range Finder, The Sunday Bag, The
   Turn), each with its own accent colour, and eight voices (an anchor, an on-course reporter, an analyst, a
   numbers analyst, a podcast host, a press-room reporter, a swing coach, and the fan feed). **Not one of
