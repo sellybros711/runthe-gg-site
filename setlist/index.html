@@ -403,9 +403,22 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   /* Each panel is a small picture of the real screen, not an icon. */
   .lp-art{display:flex; height:44px; padding:6px; border-radius:8px;
     background:var(--card); border:1px solid var(--line2);}
-  .lp-show, .lp-take{flex-direction:column; justify-content:space-between;}
-  .lp-show i, .lp-take i{display:block; height:5px; border-radius:99px;
-    background:var(--line2);}
+  .lp-take{flex-direction:column; justify-content:space-between;}
+  .lp-take i{display:block; height:5px; border-radius:99px; background:var(--line2);}
+  /* THE REEL, mid-spin. Same shape as the real one on the reveal screen: a
+     window with the landing row lit and its neighbours running off the top and
+     bottom under a fade. The fade is the reason the outer rows read as motion
+     rather than as a list of three years, and it is the same trick .reel:after
+     plays, written here against --card because the panel is a card. */
+  .lp-spin{flex-direction:column; justify-content:center; align-items:stretch;
+    position:relative; overflow:hidden; padding:0;}
+  .lp-spin i{display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+    height:15px; font-family:var(--ui); font-weight:400; font-size:12px;
+    letter-spacing:.5px; color:var(--dim); font-variant-numeric:tabular-nums;}
+  .lp-spin i.on{color:var(--tealT); font-size:14px;
+    background:color-mix(in srgb,var(--teal) 14%, transparent);}
+  .lp-spin:after{content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(var(--card), transparent 42%, transparent 58%, var(--card));}
   /* The one you took: the accent colour the game uses for a taken song, with
      its running time on it, because the cost is the whole beat. */
   .lp-take i.on{height:13px; background:color-mix(in srgb,var(--teal) 26%, var(--card));
@@ -3404,12 +3417,26 @@ function renderHome(){
               encore reads as the sliver it is before anybody has played. */''}
       <ol class="loop">
         <li>
-          <div class="lp-art lp-show" aria-hidden="true">
-            <i style="width:78%"></i><i style="width:54%"></i>
-            <i style="width:88%"></i><i style="width:41%"></i>
+          ${/* THE ART IS THE REEL, because the label is now the action. It drew
+                a little setlist under the words "A real show", which described
+                the OUTCOME while the panel beside it described an action and
+                the panel after it described a state. Spinning is the thing you
+                actually do first, and a reel mid-spin is what the screen
+                actually shows a tap later.
+                Centre row lit, neighbours cut off top and bottom by the same
+                fade the real .reel uses, so it reads as a wheel in motion
+                rather than three stacked years. */''}
+          <div class="lp-art lp-spin" aria-hidden="true">
+            <i>2021</i><i class="on">2019</i><i>2023</i>
           </div>
-          <b>A real show</b>
-          <span>One night from the archive, as they played it.</span>
+          <b>Spin the wheel</b>
+          ${/* Sized to its neighbours. "Two reels pick a year, then a night.
+                 Real setlist, exactly as played." ran to five lines in a 110px
+                 column against their three, which made the row ragged and put
+                 the mechanic in words the art now shows anyway. What is left
+                 is the part no picture carries: the night is real, it is not
+                 yours to choose, and its songs are the whole menu. */''}
+          <span>A random real night. Its songs are your options.</span>
         </li>
         <li>
           <div class="lp-art lp-take" aria-hidden="true">
