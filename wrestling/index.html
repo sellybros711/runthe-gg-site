@@ -308,8 +308,16 @@
   .scene-optlist,.scene-continue,#sceneChips{transition:opacity .35s ease,transform .35s ease;}
   /* Media hit: portrait over a name plate with a typed quote */
   .media-frame{border:1px solid rgba(255,255,255,.14);border-radius:6px;overflow:hidden;background:#0d0a12;margin-bottom:10px;}
-  .media-portrait{aspect-ratio:4/3;width:100%;display:block;}
+  .media-portrait{aspect-ratio:4/3;width:100%;display:block;position:relative;overflow:hidden;}
   .media-portrait svg{display:block;width:100%;height:100%;}
+  /* backdrop, subject and foreground props are three stacked layers so the
+     head keeps the renderer's own proportions instead of being stretched
+     to the frame */
+  .media-portrait .mp-lay{position:absolute;inset:0;width:100%;height:100%;}
+  .media-portrait .mp-head{position:absolute;left:0;right:0;bottom:4%;height:70%;
+    display:flex;align-items:flex-end;justify-content:center;pointer-events:none;}
+  .media-portrait .mp-head svg{width:auto;height:100%;display:block;
+    filter:drop-shadow(0 2px 0 rgba(0,0,0,.55));}
   .media-plate{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
   .media-name{font-family:var(--display);font-size:17px;letter-spacing:.10em;font-weight:800;}
   .media-outlet{font-size:11.5px;color:var(--text-faint);margin-top:1px;letter-spacing:.04em;}
@@ -13564,15 +13572,30 @@ function closeScene(){ const b=$('sceneBack'); if(b) b.classList.remove('open');
    ============================================================ */
 const PUNDITS = [
   { id:'kesler',  name:'Dave Kesler',      outlet:'The Ropes Report',    color:'#e0b341', lean:'analyst',
-    blurb:'Newsletter man. Twenty years of sources. Reads a match like a balance sheet.' },
+    blurb:'Newsletter man. Twenty years of sources. Reads a match like a balance sheet.',
+    set:'desk',
+    look:{ skin:'#e8bd95', hair:'#8a8177', gear:'#2f3a4a', trim:'#b9c4d2',
+           hairStyle:'short', face:'goatee', attire:'vest', build:'athletic' } },
   { id:'okafor',  name:'Renee Okafor',     outlet:'Ringside Weekly',     color:'#5bb083', lean:'fair',
-    blurb:'Actually goes to the shows. Actually talks to the wrestlers.' },
+    blurb:'Actually goes to the shows. Actually talks to the wrestlers.',
+    set:'arena',
+    look:{ skin:'#8d5a3b', hair:'#1f1a17', gear:'#2c5f4a', trim:'#e6d9c2',
+           hairStyle:'bun', face:'none', attire:'jacket', build:'lean' } },
   { id:'brandt',  name:'Mickey Brandt',    outlet:'The Turnbuckle Hour', color:'#c6392c', lean:'hot',
-    blurb:'Shouts for a living. Has never knowingly under-reacted to anything.' },
+    blurb:'Shouts for a living. Has never knowingly under-reacted to anything.',
+    set:'studio',
+    look:{ skin:'#f3d3b3', hair:'#c9a227', gear:'#7a1f1a', trim:'#f0d8a8',
+           hairStyle:'slick', face:'none', attire:'vest', build:'heavy' } },
   { id:'shaw',    name:'Terrence Shaw',    outlet:'Grapple Digest',      color:'#8ab5f0', lean:'cynic',
-    blurb:'Believes the business died in 1987 and says so weekly.' },
+    blurb:'Believes the business died in 1987 and says so weekly.',
+    set:'desk',
+    look:{ skin:'#c88f5f', hair:'#3a3a3a', gear:'#26303c', trim:'#8ab5f0',
+           hairStyle:'bald', face:'fullbeard', attire:'jacket', build:'athletic' } },
   { id:'lin',     name:'Wendy Lin',        outlet:'Cheap Heat Podcast',  color:'#d2687a', lean:'fan',
-    blurb:'A mark, joyfully and without apology. Enormous audience.' },
+    blurb:'A mark, joyfully and without apology. Enormous audience.',
+    set:'studio',
+    look:{ skin:'#f3d3b3', hair:'#2b1e2b', gear:'#8e2f4a', trim:'#f2b8c6',
+           hairStyle:'long', face:'none', attire:'hoodie', build:'lean' } },
 ];
 function punditById(id){ return PUNDITS.find(p=>p.id===id) || PUNDITS[0]; }
 function pickPundit(kind){
@@ -13624,23 +13647,91 @@ function playMediaHit(kind, quote, opts){
     setTimeout(()=>back.addEventListener('click', done), 400);
   });
 }
-/* A simple pixel talking head built from the wrestler renderer's palette
-   so the media look like they belong to the same world. */
+/* The media are drawn by the SAME renderer as the roster.
+   The first version of this was a hand-rolled stack of boxes: a grey
+   slab for hair, two dots for eyes, and a microphone that read as a
+   hammer. It looked like a different game. wrestlerSVG already knows how
+   to draw a head, so the pundits now carry a real `look` and get cropped
+   to the head frame, then set into a broadcast backdrop chosen by their
+   beat: a desk, an arena bay, or a podcast studio. */
+function punditSet(p){
+  const c = p.color || '#e0b341';
+  const set = p.set || 'desk';
+  const seed = Math.abs(hashStr(p.id));
+  // deterministic scatter so a pundit's backdrop never changes on them
+  let s = seed || 1;
+  const nx = ()=>{ s = (s*1103515245 + 12345) & 0x7fffffff; return s/0x7fffffff; };
+  let back='', front='';
+  if(set==='desk'){
+    // the lit band sits BELOW the eyeline on purpose: run it across the
+    // middle of the wall and it reads as a stripe painted on the face
+    back = `<rect x="0" y="0" width="64" height="38" fill="#1b1622"/>
+      <rect x="0" y="0" width="64" height="7" fill="#15111c"/>
+      ${[4,13,51,60].map(x=>`<rect x="${x}" y="7" width="1" height="31" fill="#241e30"/>`).join('')}
+      <rect x="0" y="33" width="64" height="5" fill="${c}" opacity=".13"/>
+      <rect x="0" y="32" width="64" height="1" fill="${c}" opacity=".30"/>`;
+    front = `<rect x="52" y="29" width="7" height="9" fill="#3b3446"/>
+      <rect x="53" y="30" width="5" height="7" fill="#cfc6b8"/>
+      <rect x="53" y="33" width="5" height="2" fill="${c}" opacity=".8"/>
+      <rect x="59" y="31" width="2" height="1" fill="#3b3446"/>
+      <rect x="60" y="32" width="1" height="3" fill="#3b3446"/>
+      <rect x="59" y="35" width="2" height="1" fill="#3b3446"/>
+      <rect x="0" y="38" width="64" height="10" fill="#2a2236"/>
+      <rect x="0" y="38" width="64" height="1" fill="${c}" opacity=".75"/>
+      <rect x="0" y="39" width="64" height="1" fill="#3b3446"/>
+      <rect x="4" y="41" width="13" height="4" fill="#cfc6b8" opacity=".85"/>
+      <rect x="5" y="42" width="10" height="1" fill="#8d8578"/>
+      <rect x="5" y="44" width="7" height="1" fill="#8d8578"/>
+      <rect x="0" y="46" width="64" height="2" fill="${c}" opacity=".55"/>`;
+  } else if(set==='arena'){
+    let crowd='';
+    for(let i=0;i<70;i++){
+      const x=Math.floor(nx()*64), y=Math.floor(nx()*22)+2;
+      const a=(0.10+nx()*0.28).toFixed(2);
+      crowd += `<rect x="${x}" y="${y}" width="1" height="1" fill="#e8e2d4" opacity="${a}"/>`;
+    }
+    back = `<rect x="0" y="0" width="64" height="48" fill="#120e18"/>
+      <rect x="0" y="0" width="64" height="26" fill="#171222"/>
+      ${[6,20,44,57].map(x=>`<rect x="${x}" y="1" width="5" height="2" fill="#fff6d2" opacity=".55"/>`).join('')}
+      ${crowd}
+      <rect x="0" y="26" width="64" height="22" fill="#0f0b14"/>
+      <rect x="0" y="26" width="64" height="1" fill="${c}" opacity=".45"/>`;
+    front = `<rect x="0" y="41" width="64" height="1" fill="#3d3648"/>
+      <rect x="0" y="46" width="64" height="1" fill="#3d3648"/>
+      ${[2,14,26,38,50,62].map(x=>`<rect x="${x}" y="41" width="1" height="7" fill="#332d3e"/>`).join('')}
+      <rect x="7" y="30" width="3" height="18" fill="#2e2b38"/>
+      <rect x="6" y="25" width="5" height="6" fill="#4a4655"/>
+      <rect x="7" y="26" width="3" height="4" fill="#6b6678"/>`;
+  } else {
+    let foam='';
+    for(let gy=0; gy<6; gy++) for(let gx=0; gx<8; gx++){
+      const on=((gx+gy)%2)===0;
+      foam += `<rect x="${gx*8}" y="${gy*8}" width="8" height="8" fill="${on?'#1d1728':'#191322'}"/>`;
+    }
+    back = `${foam}
+      <circle cx="32" cy="20" r="17" fill="${c}" opacity=".14"/>
+      <circle cx="32" cy="20" r="11" fill="${c}" opacity=".12"/>`;
+    front = `<rect x="54" y="-2" width="2" height="14" fill="#2b2837" transform="rotate(20 55 5)"/>
+      <rect x="49" y="9" width="5" height="8" fill="#4a4655"/>
+      <rect x="50" y="10" width="3" height="6" fill="#6b6678"/>
+      <rect x="0" y="43" width="64" height="5" fill="#0d0a12"/>
+      <rect x="0" y="43" width="64" height="1" fill="${c}" opacity=".5"/>`;
+  }
+  return {back, front};
+}
 function punditPortrait(p){
-  const skin = ['#f3d3b3','#e8bd95','#c88f5f','#8d5a3b'][Math.abs(hashStr(p.id))%4];
-  const hair = ['#2b2b2b','#5a4632','#8a8177','#c9a227'][Math.abs(hashStr(p.name))%4];
-  return `<svg viewBox="0 0 64 48" width="100%" height="100%" shape-rendering="crispEdges" aria-hidden="true">
-    <rect x="0" y="0" width="64" height="48" fill="#141018"/>
-    <rect x="4" y="6" width="56" height="36" fill="#1e1a26"/>
-    <rect x="24" y="30" width="16" height="18" fill="${p.color}" opacity=".55"/>
-    <rect x="26" y="12" width="12" height="14" fill="${skin}"/>
-    <rect x="25" y="9"  width="14" height="6"  fill="${hair}"/>
-    <rect x="28" y="17" width="2" height="2" fill="#141018"/>
-    <rect x="34" y="17" width="2" height="2" fill="#141018"/>
-    <rect x="30" y="22" width="4" height="1" fill="#141018" opacity=".7"/>
-    <rect x="44" y="22" width="3" height="12" fill="#3a3a44"/>
-    <rect x="42" y="20" width="7" height="5"  fill="#55555f"/>
-  </svg>`;
+  const c = p.color || '#e0b341';
+  const {back, front} = punditSet(p);
+  let head = '';
+  try{ head = wrestlerSVG(p.look||{}, {frame:'head'}); }catch(_){ head=''; }
+  const lay = (inner)=>`<svg class="mp-lay" viewBox="0 0 64 48" preserveAspectRatio="none"
+    shape-rendering="crispEdges" aria-hidden="true">${inner}</svg>`;
+  return lay(`<rect x="0" y="0" width="64" height="48" fill="#0d0a12"/>${back}`)
+    + `<div class="mp-head">${head}</div>`
+    + lay(`${front}
+        <rect x="3" y="3" width="2" height="2" fill="#c6392c"/>
+        <text x="7" y="5.4" font-size="4" font-family="ui-monospace,monospace" letter-spacing=".2"
+              fill="#e8e2d4" opacity=".8" shape-rendering="auto">LIVE</text>`);
 }
 function hashStr(s){ let h=0; s=String(s); for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; } return h; }
 /* ---- TYPEWRITER ----
