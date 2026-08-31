@@ -705,6 +705,7 @@ window.GA_ID='G-L29P5MRWKE';
   .wmoved{background:rgba(96,165,250,.16);color:#93c5fd}
   .wgone{background:rgba(255,255,255,.06);color:var(--dim-2)}
   .wgone.retired{background:rgba(226,178,90,.16);color:#e2b25a}
+  .wgone.era{background:rgba(147,197,253,.14);color:#93c5fd}
   /* WHAT THE YEAR DID TO HIM, IN HIS OWN NUMBERS.
      This was three words, "a step slower", off a fantasy-points delta the screen never
      showed. Three words is not enough to decide whether to keep a man, and it was the same
@@ -1016,6 +1017,27 @@ window.GA_ID='G-L29P5MRWKE';
     55%{box-shadow:0 0 0 9px rgba(239,68,68,0),var(--shadow)}
   }
   @media (prefers-reduced-motion:reduce){ .dock-go{animation:none} }
+
+  /* ---- HOW FAR ROUND THE CALENDAR ----
+     The one thing a player is holding on to between seasons, so it is a bar rather than a
+     sentence: a sentence says nine of twenty-seven and a bar says how much is left. */
+  .lapbar{height:5px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;
+    margin-top:9px}
+  .lapbar i{display:block;height:100%;border-radius:3px;
+    background:linear-gradient(90deg,#e2b25a,#F3DDAE);
+    transition:width .5s cubic-bezier(.22,1,.36,1)}
+  .lapnote{font-family:var(--fn);font-size:10.5px;color:var(--dim-2);margin-top:6px}
+  .lapnote b{color:#F3DDAE;font-weight:800}
+
+  /* ---- PICKING THE YEAR THE RUN STARTS IN ----
+     Twenty-seven of them, newest first, because the years somebody recognises are the
+     recent ones and a grid that opens on 1999 asks them to scroll to find their own era. */
+  .yrgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px;
+    max-height:46vh;overflow-y:auto;padding:2px}
+  .yrb{font-family:var(--fn);font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;
+    padding:11px 0;border-radius:10px;cursor:pointer;
+    border:1.5px solid var(--line);background:rgba(19,26,43,.7);color:var(--ink)}
+  .yrb:active{background:rgba(226,178,90,.16);border-color:rgba(226,178,90,.6)}
 
   /* ---- THE OFFSEASON'S NARRATOR ---- */
   .narr{position:fixed;left:0;right:0;bottom:0;z-index:41;
@@ -5850,6 +5872,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- WHAT THE WINTER DID, IN ONE LINE, and what it leaves you to do about it. The spots
            you have to fill were invisible until the wheel appeared, which is the one fact
            that decides whether this screen is a formality or a problem. -->
+      <!-- HOW FAR ROUND, on the screen between seasons. The offseason is where somebody
+           decides whether to come back, so it is where the destination belongs. -->
+      <div class="lapbar"><i id="w-lapfill" style="width:0%"></i></div>
+      <div class="lapnote" id="w-lapnote"></div>
       <div class="wc-foot">
         <span id="w-summary"></span>
         <button class="wrules" id="b-w-rules">How this works</button>
@@ -6460,8 +6486,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=76"></script>
-<script src="run.js?v=84"></script>
+<script src="engine.js?v=77"></script>
+<script src="run.js?v=85"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7291,7 +7317,7 @@ function layoutFor(){
 }
 
 let DATA=null,CTX=null,LEAGUE=null,CAL=null,BYKEY=null,run=null,simTimer=null,lastChem=1;
-let DATA_LAST_SEASON=0;
+let DATA_LAST_SEASON=0,DATA_FIRST_SEASON=0,DATA_LAP_SEASONS=0;
 let replaceCtx=null;
 
 /* Screens that get no ad strip: the two where a game is played out and the scoreboard sits
@@ -7395,6 +7421,13 @@ async function boot(){
        matters because the failure mode is telling somebody a false thing about a real
        person, and "retired" is a claim this data cannot make. */
     DATA_LAST_SEASON=Math.max(...tm.map(t=>t.season));
+    /* THE OTHER END OF THE CALENDAR, and the length of it. The Gauntlet runs the years in
+       order and turns over at the top rather than running out, so the first year is where
+       it lands and the count is how many seasons a full lap takes. Both come off the pool
+       rather than being written down, because a season added to the data has to move them
+       and nobody would remember to. */
+    DATA_FIRST_SEASON=Math.min(...tm.map(t=>t.season));
+    DATA_LAP_SEASONS=new Set(tm.map(t=>t.season)).size;
     LEAGUE=lg.league_avg_pts_allowed_by_season; CAL=cal;
     BYKEY=new Map(pl.map(p=>[p.player_id+'|'+p.season,p]));
     bootStep('Building the league');
@@ -8082,7 +8115,7 @@ function ensureDynastyButton(){
   }else{
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">The Gauntlet</span>'+
-      '<span class="hp-full-sub">Six players &middot; one team &middot; how long can you last</span>';
+      '<span class="hp-full-sub">Pick a year &middot; six players &middot; play every season after it</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
   }
   el.hidden=false;
@@ -8105,25 +8138,6 @@ function ensureDynastyButton(){
   }
 }
 
-/*
- * WHERE A DYNASTY STARTS, and it is drawn rather than chosen.
- *
- * The wheel is locked to the league year, so the opening year decides which league you draft
- * out of for the whole run. It has to leave room to age into: a dynasty beginning in 2024
- * has one season of data behind it whatever the owner wants. DYNASTY_RUNWAY years of it are
- * reserved, which is enough for a very long run and still leaves two decades of openings.
- */
-const DYNASTY_RUNWAY=10;
-function dynastyStartYear(){
-  const years=[...new Set((DATA&&DATA.teamSeasons?DATA.teamSeasons:[]).map(t=>t.season))]
-    .sort((a,b)=>a-b);
-  if(!years.length) return null;
-  const last=years[years.length-1];
-  const legal=years.filter(y=>y<=last-DYNASTY_RUNWAY);
-  const pool=legal.length?legal:years;
-  return pool[Math.floor(Math.random()*pool.length)];
-}
-
 /* Same order of checks as the other two doors, and that order is the lesson written up over
    beginFullDraft: the account wall comes BEFORE the download. */
 function beginDynastyDraft(){
@@ -8138,7 +8152,10 @@ function beginDynastyDraft(){
      button for a second first, because the mode drafted six defenders. It drafts an offense
      now, and an offense is in the boot bundle, so the wheel opens on the tap. */
   closeSheet();
-  dynastyIntro(()=>beginDraft({dynasty:true,startYear:dynastyStartYear()}));
+  dynastyIntro(()=>dynastyPickYear((y)=>{
+    if(y==null) return;
+    beginDraft({dynasty:true,startYear:y,lapSeasons:DATA_LAP_SEASONS});
+  }));
 }
 
 /*
@@ -8154,24 +8171,77 @@ function beginDynastyDraft(){
  * and reachable again from the screen where the rules actually bite.
  */
 function dynastyRulesHTML(go){
+  const lap=DATA_LAP_SEASONS||E.DYNASTY_LAP_SEASONS;
+  const base=E.DYNASTY_BASE_WINS;
   return '<div class="eyebrow red">The Gauntlet</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">One team. '+
-      'How long can you last?</h2>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Play every season '+
+      'since '+(DATA_FIRST_SEASON||1999)+'.</h2>'+
     '<ul class="modenotes">'+
-      '<li><b>Draft six players from one season.</b> You keep them. Same six spots and '+
-        'the same cap as a normal run.</li>'+
-      '<li><b>Every offseason they age.</b> Each player becomes his next real season. Some '+
+      '<li><b>Pick the year you start.</b> Draft six players from it. You play that '+
+        'season against that season\'s teams.</li>'+
+      '<li><b>Win '+base+' games and the calendar moves on.</b> Miss and the run is over. '+
+        'There is no second chance.</li>'+
+      '<li><b>Your six come with you and age.</b> Each becomes his next real season. Some '+
         'improve. Most decline. Some are gone. You refill from that year\'s wheel.</li>'+
       '<li><b>Salaries never drop.</b> Over the cap you keep everyone. You just cannot '+
         'sign anyone.</li>'+
     '</ul>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:12px 0 0">'+
-      'The owner wants <b>8 wins</b>. Then 9, then 10, up to 12. '+
-      '<b>Miss twice in a row and you are fired.</b></p>'+
+      'Past '+(DATA_LAST_SEASON||2025)+' the calendar turns over to '+(DATA_FIRST_SEASON||1999)+
+      ' and you draft again. <b>'+lap+' seasons gets you back to the year you chose.</b> '+
+      'That is a lap. Do it and every year after wants one more win.</p>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:8px 0 0">'+
       'You score <b>1,000 a win</b>. More for the playoffs and a title. '+
       '<b>Season 4 pays quadruple.</b> Lasting is the whole game.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
+}
+
+/*
+ * ─── WHERE THE RUN STARTS, AND IT IS CHOSEN NOW ─────────────────────────────────────
+ *
+ * It used to be drawn, from a pool that stopped ten years short of the end of the data.
+ * That fence existed because the calendar ran out: a run beginning in 2020 reached 2026,
+ * where there are no clubs to draft from and no next season for anybody, and the draft
+ * after it threw "a team needs somebody in it". The fence did not fix that, it only made
+ * it rare, and it cost the player the last decade of league history as a place to begin.
+ *
+ * The calendar wraps now, so every year is legal, and picking one is the first decision of
+ * the run. It is a real decision: the year you choose is the league you draft out of, the
+ * era you play through, and how far you get before the calendar turns over and takes your
+ * roster with it.
+ */
+function dynastyYears(){
+  return [...new Set((DATA&&DATA.teamSeasons?DATA.teamSeasons:[]).map(t=>t.season))]
+    .sort((a,b)=>b-a);
+}
+function dynastyPickYear(go){
+  const years=dynastyYears();
+  if(!years.length){ go(null); return; }
+  const lap=DATA_LAP_SEASONS||years.length;
+  $('sheet-in').innerHTML='<div class="eyebrow red">The Gauntlet</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Which year do you '+
+      'want to start in?</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 12px">'+
+      'You draft from this season and play its schedule. Then the next one, and the one '+
+      'after. <b>'+lap+' seasons brings you back here.</b></p>'+
+    '<div class="yrgrid" id="dy-years">'+
+      years.map(y=>'<button class="yrb" data-y="'+y+'">'+y+'</button>').join('')+
+    '</div>'+
+    '<button class="btn ghost sm" id="b-dy-any" style="width:100%;margin-top:12px">'+
+      'Surprise me</button>';
+  $('sheet-in').dataset.kind='dynyear';
+  /* CLOSING WITHOUT PICKING IS BACKING OUT, not a draft with no year: startYear null would
+     put the wheel on every club in history at once. The rules sheet before this one can
+     hand off to whatever dismisses it because a draft is a fine outcome there; here it is
+     not. */
+  sheetOnClose=null;
+  openSheet();
+  const take=(y)=>{ sheetOnClose=null; closeSheet(); setTimeout(()=>go(y),160); };
+  $('dy-years').onclick=(e)=>{
+    const b=e.target.closest('.yrb'); if(!b) return;
+    take(+b.dataset.y);
+  };
+  $('b-dy-any').onclick=()=>take(years[Math.floor(Math.random()*years.length)]);
 }
 function dynastyIntro(go){
   let seen=false;
@@ -8234,8 +8304,12 @@ function reviewDynastyRules(){
 const DYN_SAVE_KEY='ps_dynasty_save';
 /* 2: the mode became a six man offense and the run gained a score, so a saved twelve man
    roster is not a run this build can open. Bumped rather than migrated: it is a preview,
-   and a wrong resume is worse than a fresh start. */
-const DYN_SAVE_VERSION=2;
+   and a wrong resume is worse than a fresh start.
+   3: the calendar. A run now carries the year it began in as a destination, how many
+   seasons go round, and which time round it is on, and the target it is played against is
+   a different number from the one a version 2 run was scored by. Restoring one would put
+   somebody back on a run whose rules had changed underneath them. */
+const DYN_SAVE_VERSION=3;
 const dynKey=(p)=>(p?p.player_id+'|'+p.season:null);
 
 /* The phases a run can be put back at, which is the whole of the rule above in one
@@ -8547,9 +8621,10 @@ const WALL={
      defense draft hit this first, Full Team hit it second, and it was live on this mode
      until somebody went looking. */
   dynasty:{name:'The Gauntlet',
-    what:'Draft six players from one season and keep them. Every offseason they age. Salaries '+
-      'rise and never fall. The owner wants more wins every year.',
-    note:'<b>Scored on how long you last.</b> Miss the bar twice and you are gone.',
+    what:'Pick a year and draft six players from it. Beat the season and the calendar moves '+
+      'on. They age with it, and salaries rise and never fall.',
+    note:'<b>One miss and the run is over.</b> Get back to the year you chose and you have '+
+      'played every season there is.',
     noname:'You are signed in. Pick a username and The Gauntlet opens. Every run on that '+
       'board is listed under a name.',
     out:'The Gauntlet needs a free account. A run has to have a name on it to be listed.'},
@@ -10467,15 +10542,39 @@ function planWords(plan){
  * the season about to be played, before it is played, on the screen with the Play button
  * on it. It was previously only ever stated after the fact, on the results screen, which
  * is the wrong half of the sentence to be told. */
+/*
+ * WHERE THE RUN IS ON THE CALENDAR, in one place because three screens ask.
+ *
+ * A lap is the whole pool, so the season number and the year are two views of the same
+ * fact and the player is given both: the year is what he is playing, and the count is how
+ * far round he has come. `home` is the year he chose, which is where a lap ends, and
+ * saying it by name is what turns a number into a destination.
+ */
+function dynastyLap(){
+  const lap=run.lapSeasons||E.DYNASTY_LAP_SEASONS;
+  const done=(run.seasonNo-1)%lap;               // seasons finished on this time round
+  return {
+    lap, home:run.startYear,
+    round:Math.floor((run.seasonNo-1)/lap)+1,    // which time round, counting from 1
+    at:done+1,                                   // this season's place in the lap
+    left:lap-done,                               // seasons still to play to get home
+  };
+}
+
 function paintOwnerLine(el){
-  const bar=E.dynastyWinBar(run.seasonNo);
-  const prev=run.history&&run.history.length?run.history[run.history.length-1]:null;
+  const bar=E.dynastyWinBar(run.seasonNo,run.lapSeasons);
+  const L=dynastyLap();
   el.hidden=false;
-  el.innerHTML='<div class="rp-head"><span>The owner</span>'+
-      '<span class="rp-head-n">Season '+run.seasonNo+'</span></div>'+
-    '<div class="ownerwant"><b>'+bar+' wins</b><span>'+
-      (prev&&!prev.cleared?'or you are out. You missed last year.':'keeps your job.')+
-      '</span></div>';
+  /* NO "OR YOU ARE OUT" QUALIFIER ANY MORE. Under one life it is always true, and a
+     warning that never turns off is not a warning. */
+  el.innerHTML='<div class="rp-head"><span>'+run.leagueYear+'</span>'+
+      '<span class="rp-head-n">'+L.at+' of '+L.lap+'</span></div>'+
+    '<div class="ownerwant"><b>'+bar+' wins</b><span>and you are through to '+
+      (run.leagueYear+1>DATA_LAST_SEASON?DATA_FIRST_SEASON:run.leagueYear+1)+'.</span></div>'+
+    '<div class="lapbar"><i style="width:'+(100*(L.at-1)/L.lap).toFixed(1)+'%"></i></div>'+
+    '<div class="lapnote">'+(L.left===1
+      ? 'Win this one and you are back where you started.'
+      : '<b>'+L.left+'</b> more gets you back to <b>'+L.home+'</b>.')+'</div>';
 }
 
 function paintCoachLine(id){
@@ -10811,7 +10910,11 @@ function winterGoneRow(g){
         ? 'RETIRED'
         : g.why==='missed'
           ? 'MISSED THE SEASON'
-          : 'OUT OF THE LEAGUE')+'</span></span></span>'+
+          : g.why==='era'
+            /* Not a thing that happened to him. The league went back to the beginning and
+               his career is thirty years the other side of it. */
+            ? 'A DIFFERENT ERA'
+            : 'OUT OF THE LEAGUE')+'</span></span></span>'+
     '<span class="wmoney"><span class="wfreed">'+M(g.salary)+' freed</span></span>'+
     '<span></span>'+
     '</div>';
@@ -10829,21 +10932,37 @@ function paintWinter(){
   if(!run||!run.dynasty||!run.winter) return;
   winterClear();
   const w=run.winter;
-  $('w-title').textContent='Offseason '+w.year;
+  $('w-title').textContent=w.wrapped?('The calendar turns over'):('Offseason '+w.year);
   /* THE WHOLE SEASON AHEAD IN ONE LINE, and the bar is the half that was missing. It was
      stated only after the season, on the results screen, which is the wrong end: a target
      you are told you missed is a scoreboard, and a target you are told before you play is
      a game. */
-  $('w-step').textContent='Season '+run.seasonNo+' needs '+E.dynastyWinBar(run.seasonNo)+' wins';
+  /* THE YEAR, NOT THE SEASON NUMBER. The calendar is the mode: "2006 needs 8 wins" is the
+     sentence a player is holding, and the season number is on the lap bar under it. */
+  $('w-step').textContent=w.year+' needs '
+    +E.dynastyWinBar(run.seasonNo,run.lapSeasons)+' wins';
   $('w-score').innerHTML='<span class="scorechip">'+SCORE(run.score||0)+'</span> so far';
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
      silently behind a bar whose ceiling quietly changed between two paints. */
-  /* THE RULE, NOT JUST THE CONSEQUENCE. "Salaries never drop" says why a number cannot
-     fall and never said why one goes UP, so a raise arrived on a row looking like a
-     penalty for something you did. It is the price of the season he just became. */
-  $('w-sub').innerHTML='Everyone becomes his next real season. A better year costs more. '+
-    '<b>Salaries never drop.</b> Your cap is now '+M0(R.capOf(run))+'.';
+  /*
+   * THE RULE, NOT JUST THE CONSEQUENCE. "Salaries never drop" says why a number cannot
+   * fall and never said why one goes UP, so a raise arrived on a row looking like a
+   * penalty for something you did. It is the price of the season he just became.
+   *
+   * AND ON THE TURN OF THE CALENDAR IT IS A DIFFERENT SCREEN ENTIRELY. Nobody survives
+   * the wrap, so none of the above is true of it: there is no roster to age, no salary to
+   * hold, and the cap is back where it started. Saying "everyone becomes his next real
+   * season" over an empty list would be the game explaining a rule it has just suspended.
+   */
+  if(w.wrapped){
+    $('w-sub').innerHTML='The calendar is back at <b>'+w.year+'</b>. Nobody you had has '+
+      'played a down in this league yet. Draft six more. Your cap is '+M0(R.capOf(run))+
+      ' again.';
+  }else{
+    $('w-sub').innerHTML='Everyone becomes his next real season. A better year costs more. '+
+      '<b>Salaries never drop.</b> Your cap is now '+M0(R.capOf(run))+'.';
+  }
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
@@ -10851,6 +10970,16 @@ function paintWinter(){
   $('w-count').textContent=run.roster.length+' under contract';
   $('w-hint').textContent=run.roster.length?'Tap minus to release a player.':'';
   paintWinterSummary();
+  /* THE DESTINATION, REPAINTED EVERY OFFSEASON. `at` is the season about to be played, so
+     the bar fills for the ones behind it. */
+  {
+    const L=dynastyLap();
+    const fill=$('w-lapfill'), note=$('w-lapnote');
+    if(fill) fill.style.width=(100*(L.at-1)/L.lap).toFixed(1)+'%';
+    if(note) note.innerHTML='Season <b>'+L.at+'</b> of <b>'+L.lap+'</b>. '+(L.left===1
+      ? 'One more and you are back where you started.'
+      : '<b>'+L.left+'</b> more to get back to <b>'+L.home+'</b>.');
+  }
   const gw=$('w-gonewrap');
   gw.hidden=!w.gone.length;
   if(w.gone.length){
@@ -11065,6 +11194,12 @@ function paintWinterSummary(){
   const el=$('w-summary'); if(!el||!run||!run.winter) return;
   const holes=run.slots.length-run.roster.length;
   const w=run.winter;
+  if(w.wrapped){
+    /* Nothing aged and nobody got a raise, so the usual three counts are three zeroes and
+       a sentence about the one thing that did happen is worth more than all of them. */
+    el.innerHTML='<b>A whole new squad.</b> Six to draft';
+    return;
+  }
   const bits=[];
   bits.push(holes
     ? '<b>'+holes+' spot'+(holes===1?'':'s')+'</b> to fill'
@@ -11114,6 +11249,16 @@ function wireWinter(){
       });
       $('w-count').textContent=run.roster.length+' under contract';
       paintWinterSummary();
+  /* THE DESTINATION, REPAINTED EVERY OFFSEASON. `at` is the season about to be played, so
+     the bar fills for the ones behind it. */
+  {
+    const L=dynastyLap();
+    const fill=$('w-lapfill'), note=$('w-lapnote');
+    if(fill) fill.style.width=(100*(L.at-1)/L.lap).toFixed(1)+'%';
+    if(note) note.innerHTML='Season <b>'+L.at+'</b> of <b>'+L.lap+'</b>. '+(L.left===1
+      ? 'One more and you are back where you started.'
+      : '<b>'+L.left+'</b> more to get back to <b>'+L.home+'</b>.');
+  }
     },380);
   };
   $('b-winter-go').onclick=()=>{
@@ -14326,20 +14471,29 @@ function paintOwner(){
   let v; try{ v=R.ownerVerdict(run); }catch(_){ bar.hidden=true; return; }
   paintScore(v);
   bar.hidden=false;
-  bar.className='ownerbar'+(v.fired?' fired':(v.onNotice?' notice':''));
+  bar.className='ownerbar'+(v.fired?' fired':'');
   const seasons=R.seasonsSurvived(run);
-  /* NEXT YEAR'S NUMBER, SAID OUT LOUD. The bar climbs a win a season to a ceiling of
-     twelve, and a player who is not told that learns it by being fired by a number they
-     had not seen. It costs six words. */
-  const next=E.dynastyWinBar(run.seasonNo+1);
-  bar.innerHTML='<span class="ob-tag">'+(v.fired?'Fired':(v.onNotice?'On notice':'The owner'))+'</span>'+
+  /*
+   * WHAT THE SEASON DID AND WHERE IT PUTS YOU, in two short sentences.
+   *
+   * ONE LIFE MADE THIS COPY SIMPLE. It used to have three states and the middle one, "on
+   * notice", was a sentence nobody read the same way twice: you had missed, you had not
+   * been fired, and whether that was good news depended on a rule about last season that
+   * was not on the screen. Miss and you are out is one sentence and needs no state.
+   *
+   * THE NEXT YEAR IS NAMED, not the next season number. The calendar is the mode now, so
+   * "2013 is next" is the thing a player is actually holding on to, and the target is
+   * flat inside a lap so it only needs saying when it moves.
+   */
+  const nextYear=run.leagueYear+1>DATA_LAST_SEASON?DATA_FIRST_SEASON:run.leagueYear+1;
+  const next=E.dynastyWinBar(run.seasonNo+1,run.lapSeasons);
+  const stepped=next>v.bar;
+  bar.innerHTML='<span class="ob-tag">'+(v.fired?'Run over':'Through')+'</span>'+
     (v.fired
-      ? '<span>Missed twice. You lasted <b>'+seasons+' season'+(seasons===1?'':'s')+'</b>.</span>'
-      : v.onNotice
-        ? '<span>Needed <b>'+v.bar+'</b>. Won <b>'+v.wins+'</b>. Miss again and you are out. '+
-          'Season '+(run.seasonNo+1)+' needs <b>'+next+'</b>.</span>'
-        : '<span>Needed <b>'+v.bar+'</b>. Won <b>'+v.wins+'</b>. Season '+(run.seasonNo+1)+
-          ' needs <b>'+next+'</b>.</span>');
+      ? '<span>Needed <b>'+v.bar+'</b>. Won <b>'+v.wins+'</b>. You got <b>'
+        +seasons+' season'+(seasons===1?'':'s')+'</b>.</span>'
+      : '<span>Needed <b>'+v.bar+'</b>. Won <b>'+v.wins+'</b>. <b>'+nextYear+'</b> is next'
+        +(stepped?', and it needs <b>'+next+'</b>':'')+'.</span>');
 
   if(wrap&&led){
     wrap.hidden=false;
@@ -14384,7 +14538,7 @@ function paintOwner(){
          returns and the cleared value is the one that belongs in it. */
       submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null;
       lastPerfectShare=null;
-      try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON); }
+      try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON,DATA_FIRST_SEASON); }
       catch(err){ toast(err.message); return; }
       ga('dynasty_winter',{season:run.seasonNo,year:run.leagueYear});
       paintWinter();
@@ -14909,7 +15063,7 @@ function shareLines(){
     return {head,
       text:head+' Best year '+best.wins+'-'+best.losses+' in '+best.year+'.'
         +(titles?' '+titles+' title'+(titles===1?'':'s')+'.':'')
-        +'\nHow long can you last?\n'+SHARE_URL};
+        +'\nHow far round the calendar can you get?\n'+SHARE_URL};
   }
   const what=o.perfect?'Perfect season.'
     :o.titleWon?'Champions.'

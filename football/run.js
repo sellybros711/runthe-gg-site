@@ -513,6 +513,18 @@ function createRun(opts) {
     startYear,
     leagueYear: startYear,
     seasonNo: dynasty ? 1 : null,
+    /* WHICH TIME AROUND. The calendar wraps at the end of the pool, so a run can pass the
+       year it began in and keep going. `lap` is how many times it has, and `startYear` is
+       what a lap is measured against: getting back to the year you chose is the goal the
+       mode states, and it is a different number of seasons for nobody, since every lap is
+       the whole calendar. */
+    lap: dynasty ? 1 : null,
+    /* HOW MANY SEASONS GO ROUND, taken from the pool by whoever has it in front of them
+       rather than assumed here. It decides both the goal the mode states and when the
+       target steps up, so a wrong one is a lap that does not land on the year the player
+       was told to aim at. E.DYNASTY_LAP_SEASONS is the answer for the pool that ships and
+       check-dynasty.mjs asserts the two agree. */
+    lapSeasons: dynasty ? (opts.lapSeasons || E.DYNASTY_LAP_SEASONS) : null,
     /* WHAT EACH MAN IS PAID, index-aligned with roster, and the number the cap is spent
        against. It is NOT p.price_musd: a salary is what he was signed for, raised the year
        he improves and held the year he declines. See E.dynastySalary. */
@@ -1176,22 +1188,43 @@ function finishHiring(run) {
  * Nothing is decided here. It ages the roster, works out what everybody now costs, and puts
  * the result on run.winter for the screen to show and for releaseMan to act on.
  */
-function beginOffseason(run, byKey, lastSeason) {
+function beginOffseason(run, byKey, lastSeason, firstSeason) {
   if (!run.dynasty) throw new Error('not a dynasty');
   if (run.fired) throw new Error('you were fired');
   if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
 
-  const year = run.leagueYear + 1;
+  /*
+   * THE CALENDAR TURNS OVER RATHER THAN RUNNING OUT.
+   *
+   * Played straight, the year after the last one in the pool has no clubs on the wheel and
+   * no next season for anybody, so the whole roster aged into nothing and the draft that
+   * followed threw "a team needs somebody in it". DYNASTY_RUNWAY, which held the opening
+   * year ten seasons back from the end, was a fence around that cliff rather than a fix:
+   * a run long enough still walked off it, and it cost the player the last ten years of
+   * league history as a place to start.
+   *
+   * So the year after the last is the first. Nobody survives it, and not by coincidence:
+   * no man in the pool played both 2025 and 1999, but relying on that would be relying on
+   * an accident of who is in the data. The rule is stated instead.
+   *
+   * `firstSeason` omitted means no wrap, which is what every caller did before this and
+   * what the checks that predate it still expect.
+   */
+  const wrapped = firstSeason != null && run.leagueYear + 1 > lastSeason;
+  const year = wrapped ? firstSeason : run.leagueYear + 1;
   const kept = [], slots = [], sal = [], draws = [], aged = [], gone = [];
   for (let i = 0; i < run.roster.length; i++) {
     const man = run.roster[i];
-    const next = E.dynastyAge(man, byKey, year);
+    const next = wrapped ? null : E.dynastyAge(man, byKey, year);
     if (!next) {
       /* NOT "RETIRED". A row for a later season means he missed this one; no row at all
          means the pool has nothing more from him. Neither is retirement and neither is
          claimed to be: the failure mode here is telling somebody a false thing about a
-         real person. */
-      gone.push({ was: man, salary: run.salaries[i], why: E.dynastyGoneFor(man, byKey, year, lastSeason) });
+         real person. And on a wrap it is neither: the league went back to the beginning
+         and he has not been born into it yet, which is the one reason here that is about
+         the calendar rather than about him. */
+      gone.push({ was: man, salary: run.salaries[i],
+        why: wrapped ? 'era' : E.dynastyGoneFor(man, byKey, year, lastSeason) });
       continue;
     }
     const wasSal = run.salaries[i];
@@ -1211,19 +1244,37 @@ function beginOffseason(run, byKey, lastSeason) {
   run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
   run.leagueYear = year;
   run.seasonNo += 1;
-  /* THE CAP MOVES ONCE A WINTER AND ONLY HERE. Six percent, and it is the brake rather
-     than the accelerator: see DYNASTY_CAP_GROWTH. */
-  run.capMusd = money(capOf(run) * E.DYNASTY_CAP_GROWTH);
+  if (wrapped) {
+    /*
+     * A NEW LAP IS A NEW ECONOMY. The cap grows 6% a winter, which is the right brake over
+     * the eight or nine seasons a run used to last and is $676M by the far side of a
+     * twenty-seven season lap: enough to buy six of the most expensive men in history and
+     * still have change. The ratchet's whole pressure comes from payroll climbing into a
+     * ceiling, and there is no ceiling at $676M.
+     *
+     * usedPlayers goes with it. Within a lap it is the rule that a man who has played for
+     * you never comes back; carried into the next lap it would quietly delete every good
+     * player of the era you have already been through.
+     */
+    run.capMusd = E.CONSTANTS.CAP_MUSD;
+    run.usedPlayers = [];
+    run.tenure = {};
+    run.lap = (run.lap || 1) + 1;
+  } else {
+    /* THE CAP MOVES ONCE A WINTER AND ONLY HERE. Six percent, and it is the brake rather
+       than the accelerator: see DYNASTY_CAP_GROWTH. */
+    run.capMusd = money(capOf(run) * E.DYNASTY_CAP_GROWTH);
+  }
   /* A NEW SEASON'S WHEELS ARE FRESH. usedTeamSeasons is the two-draws-a-club rule inside
      one draft; carrying it across a decade would starve the pool of clubs. usedPlayers is
-     NOT reset, because a man who has played for you never comes back. */
+     NOT reset here, because a man who has played for you never comes back inside one lap. */
   run.usedTeamSeasons = [];
   run.respinsUsed = 0;
   run.currentDraw = null;
   run.season = null;
   run.playoffSeed = null;
   run.outcome = null;
-  run.winter = { year, aged, gone, released: [] };
+  run.winter = { year, aged, gone, released: [], wrapped };
   run.phase = PHASES.OFFSEASON;
   return run.winter;
 }
@@ -1305,7 +1356,7 @@ function ownerVerdict(run) {
   if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
   const o = run.outcome || {};
   const wins = o.regularWins ?? 0;
-  const bar = E.dynastyWinBar(run.seasonNo);
+  const bar = E.dynastyWinBar(run.seasonNo, run.lapSeasons);
   /* PUSHED ONLY ONCE PER SEASON. This is reachable from a screen and from a reload, and a
      history with the same year twice would fire somebody for a season they played one
      time. */
@@ -1332,7 +1383,7 @@ function ownerVerdict(run) {
       scoreParts: scored.parts,
     });
   }
-  run.fired = !E.dynastySurvives(run.history);
+  run.fired = !E.dynastySurvives(run.history, run.lapSeasons);
   run.score = E.gauntletRunScore(run.history);
   return {
     bar, wins, cleared: wins >= bar, fired: run.fired,

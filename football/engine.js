@@ -4005,52 +4005,80 @@ function gauntletRunScore(history) {
 }
 
 /*
+ * ─── THE CALENDAR IS THE MODE, AND A LAP OF IT IS THE GOAL ──────────────────────────
+ *
+ * The Gauntlet used to be a run of unspecified length against a bar that climbed every year
+ * until it stopped at twelve. It read as an arcade run and it had no destination: a player
+ * eight seasons in could not say what he was playing towards, only that it kept getting
+ * harder until he lost.
+ *
+ * It has one now, and it is the pool itself. You choose the year you start in, the calendar
+ * carries you forward one real season at a time, and at the end of the data it turns over
+ * to the beginning rather than running out. Twenty-seven seasons from wherever you began
+ * puts you back on the year you chose, which is a LAP, and that is the thing to aim at.
+ *
+ * So the target is FLAT inside a lap. "Beat this season to see the next one" is one rule
+ * that holds all the way round, rather than a number the player has to keep re-learning,
+ * and it is the lap that raises it: come back round to your own year and the next time
+ * asks one more win a season.
+ */
+const DYNASTY_BASE_WINS = 8;
+
+/*
+ * HOW MANY SEASONS ARE IN A LAP, which is a property of the DATA and not of this file.
+ * Every caller that has the pool in front of it passes the real number; this is the answer
+ * for the pool that ships, and check-dynasty.mjs asserts the two agree. Wrong here and
+ * silent is exactly the failure this repo keeps writing up: a lap would quietly stop
+ * landing on the year the player was told to aim at.
+ */
+const DYNASTY_LAP_SEASONS = 27;
+
+/*
  * Wins needed in a given season, counting from 1.
  *
- * THIS NUMBER HAS MOVED TWICE AND LANDED BACK WHERE IT STARTED, which is worth writing down
- * so nobody reads the git log as indecision. It came down a win when the coach step was cut,
- * because the hire was worth 1.30 wins a season and removing it silently would have made the
- * mode harder. Then the mode became a six man offense instead of a twelve man full team, and
- * a six man offense is a stronger team against this bar than a twelve man one was: 11.06
- * wins in season one against 9.79. So the compensation is no longer needed and the original
- * number is right again, for a reason that has nothing to do with the first one.
+ * EIGHT, FLAT, AND +1 A LAP. Measured against whole runs rather than single seasons, one
+ * life, 60 runs played forty seasons deep with nobody ever stopped, then each candidate
+ * applied to the win sequences afterwards. A lap is 27 seasons:
  *
- * Picked against whole runs rather than single seasons, because seasons survived is what
- * this mode is scored on. 300 runs played to sixteen seasons with nobody ever fired, then
- * each candidate applied to the win sequences afterwards:
+ *   target        seasons: mean / median    reach 10    get round a lap
+ *   flat 7          16.7 / 15                 62%           35%
+ *   THIS ONE        15.1 / 10                 52%           20%
+ *   flat 9           7.6 /  4                 30%            0%
+ *   flat 10          4.5 /  3                 12%            0%
+ *   the old 8+n     5.1 /  4                  8%            0%
  *
- *   bar                  mean   median   reach 6   reach 10
- *   4+n, capped at 9    11.13     12       83%       62%
- *   4+n, capped at 10   10.04      9       83%       50%
- *   5+n, capped at 10    8.86      8       66%       39%
- *   flat 9               8.60      7       56%       43%
- *   6+n, capped at 11    6.92      5       47%       23%
- *   flat 10              6.14      4       34%       23%
- *   THIS ONE             5.52      4       32%       13%
+ * Nine is where the lap stops being reachable at all, and a goal nobody reaches is not a
+ * goal. Eight leaves a typical run at ten seasons, which is about where the old rising bar
+ * left it, and makes getting the whole way round a one-in-five afternoon for a bot that
+ * drafts best-available inside a budget. A person should beat that.
  *
- * The bottom of that table is where an arcade run wants to sit: a median of four seasons is
- * enough to watch the score compound and short enough to want another go, and a tenth
- * season stays a genuine achievement rather than something two players in three reach. The
- * bot above drafts best-available inside a budget, so a person should beat these.
+ * THE OLD BAR IS WHY THIS HAD TO CHANGE at all. 8+n capped at 12 was tuned for a mode that
+ * ended after four or five seasons on purpose, and under one life it ends at five and no
+ * run in sixty ever saw the calendar turn over. The wrap would have been a feature nobody
+ * could reach.
  */
-function dynastyWinBar(season) {
-  return Math.min(12, 7 + Math.max(1, season));
+function dynastyWinBar(season, lapSeasons) {
+  const lap = Math.floor(Math.max(0, Math.max(1, season) - 1) / (lapSeasons || DYNASTY_LAP_SEASONS));
+  return DYNASTY_BASE_WINS + lap;
 }
 
 /**
- * Whether the owner keeps you, given every season so far, newest last. Each entry needs
- * only `wins`.
+ * Whether the run goes on, given every season so far, newest last. Each entry needs only
+ * `wins`.
  *
- * TWO IN A ROW AGAINST EACH SEASON'S OWN BAR, which is not the same as two against today's:
- * a nine-win season two is a pass, and it still counts as a pass in the winter after season
- * three when the bar has moved to ten. You are not fired retroactively for clearing a bar
- * that has since risen.
+ * ONE LIFE. Miss the year's target and the run is over, which is the whole of the
+ * structure: every season is a door and you either open it or you do not. It used to be
+ * two misses in a row, a rule that needed a paragraph to state and a sentence on screen
+ * that nobody read the same way twice ("on notice", "miss again and you are out").
+ *
+ * AGAINST ITS OWN SEASON'S TARGET, which matters again now that the target moves: a run
+ * that cleared eight on lap one is not retroactively failed when lap two starts asking for
+ * nine.
  */
-function dynastySurvives(history) {
-  if (!history || history.length < 2) return true;
+function dynastySurvives(history, lapSeasons) {
+  if (!history || !history.length) return true;
   const n = history.length;
-  const ok = (i) => history[i].wins >= dynastyWinBar(i + 1);
-  return ok(n - 1) || ok(n - 2);
+  return history[n - 1].wins >= dynastyWinBar(n, lapSeasons);
 }
 
 /*
@@ -5100,7 +5128,7 @@ const publicAPI = {
   ],
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
   DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
-  dynastyWinBar, dynastySurvives,
+  dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_LAP_SEASONS,
   GAUNTLET_POINTS, gauntletSeasonScore, gauntletRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */

@@ -39,6 +39,17 @@ const DATA = R.indexData(players, teamSeasons);
 const byKey = new Map();
 for (const p of players) byKey.set(`${p.player_id}|${p.season}`, p);
 const lastSeason = Math.max(...players.map((p) => p.season));
+const firstSeason = Math.min(...players.map((p) => p.season));
+/*
+ * HOW MANY SEASONS GO ROUND. The calendar is the mode: it runs the years in order and
+ * turns over at the top rather than running out, so a lap is every season the pool holds
+ * and getting back to the year you began in is the goal the game states.
+ *
+ * ASSERTED AGAINST THE ENGINE'S DEFAULT, because engine.js has to carry a number for the
+ * callers that do not have the pool in front of them, and a stale one there is a lap that
+ * quietly stops landing on the year the player was told to aim at.
+ */
+const LAP_SEASONS = new Set(players.map((p) => p.season)).size;
 
 let fails = 0;
 const ok = (label, cond, extra) => {
@@ -47,6 +58,13 @@ const ok = (label, cond, extra) => {
     console.log(`  ${cond ? 'ok  ' : 'FAIL'}  ${label}${extra ? '   ' + extra : ''}`);
   }
 };
+
+ok('the engine knows how long a lap is', E.DYNASTY_LAP_SEASONS === LAP_SEASONS,
+  `engine says ${E.DYNASTY_LAP_SEASONS}, the pool holds ${LAP_SEASONS}`);
+ok('and the calendar has no holes in it',
+  lastSeason - firstSeason + 1 === LAP_SEASONS,
+  `${firstSeason} to ${lastSeason} is ${lastSeason - firstSeason + 1} years, `
+  + `${LAP_SEASONS} of them have players`);
 
 /*
  * THE POOL CARRIES WHAT THE WINTER READS OFF IT.
@@ -169,8 +187,12 @@ for (let s = 0; s < 30; s++) {
     + (v.cleared ? ' PASS' : (v.fired ? ' FIRED' : ' on notice'))
     + `   ${String(run.history[run.history.length - 1].score).padStart(7)}`
     + `  (run ${v.score})`);
-  ok(`season ${run.seasonNo} judged against its own bar`,
-    v.bar === Math.min(12, 7 + run.seasonNo), `bar ${v.bar}`);
+  /* FLAT INSIDE A LAP, +1 A LAP ROUND. The target is the same number all the way round
+     the calendar, which is what makes "beat this season" one rule rather than a moving
+     one, and it steps up when you come back to the year you started in. */
+  ok(`season ${run.seasonNo} judged against its own target`,
+    v.bar === E.DYNASTY_BASE_WINS + Math.floor((run.seasonNo - 1) / LAP_SEASONS),
+    `bar ${v.bar} in season ${run.seasonNo}`);
 
   /* ---- the score ---- */
   const h = run.history[run.history.length - 1];
@@ -300,14 +322,101 @@ ok('the run carries its own score', run.score === E.gauntletRunScore(run.history
 ok('a fired run is terminal', !run.fired || run.phase === R.PHASES.OVER);
 if (run.fired) {
   const h = run.history;
-  ok('fired means two consecutive misses',
-    h.length >= 2 && h[h.length - 1].wins < h[h.length - 1].bar
-      && h[h.length - 2].wins < h[h.length - 2].bar,
-    h.slice(-2).map((x) => `${x.wins}/${x.bar}`).join(' then '));
+  /* ONE LIFE. The run ends on the season it ends on, and every season before it cleared
+     its own target, or it would have ended there instead. */
+  ok('the run ended on a miss', h.length >= 1
+    && h[h.length - 1].wins < h[h.length - 1].bar,
+    `${h[h.length - 1].wins}/${h[h.length - 1].bar}`);
+  ok('and every season before it was a pass',
+    h.slice(0, -1).every((x) => x.wins >= x.bar),
+    h.map((x) => `${x.wins}/${x.bar}`).join(' '));
   let threw = false;
-  try { R.beginOffseason(run, byKey, lastSeason); } catch (_) { threw = true; }
-  ok('a fired dynasty cannot open another winter', threw);
+  try { R.beginOffseason(run, byKey, lastSeason, firstSeason); } catch (_) { threw = true; }
+  ok('a finished dynasty cannot open another offseason', threw);
 }
+
+/*
+ * ─── THE CALENDAR TURNS OVER ────────────────────────────────────────────────────────
+ *
+ * The one thing in this mode with no natural test above it, because reaching it takes
+ * twenty-odd seasons of not being fired. So it is driven straight: start the season before
+ * the last one the pool holds and walk into the wrap.
+ *
+ * WHAT USED TO HAPPEN HERE. The year after the last had no clubs on the wheel and no next
+ * season for anybody, so the whole roster aged into nothing and the refill threw "a team
+ * needs somebody in it". The runway that held the opening year ten seasons back from the
+ * end was a fence around that rather than a fix.
+ */
+{
+  const w = R.createRun({ dynasty: true, seed: 4242, startYear: lastSeason - 1,
+    lapSeasons: LAP_SEASONS });
+  draftHoles(w, budgeted);
+  ok('a run near the end of the data drafts normally', w.roster.length === 6);
+  playSeason(w);
+  R.ownerVerdict(w);
+  R.beginOffseason(w, byKey, lastSeason, firstSeason);
+  ok('the season before the last is an ordinary offseason',
+    w.leagueYear === lastSeason && !w.winter.wrapped, `${w.leagueYear}`);
+  R.finishOffseason(w);
+  if (w.phase === R.PHASES.DRAFT) { draftHoles(w, budgeted); R.takeTheField(w); }
+
+  const beforeCap = w.capMusd;
+  const beforeUsed = w.usedPlayers.length;
+  playSeason(w);
+  R.ownerVerdict(w);
+  R.beginOffseason(w, byKey, lastSeason, firstSeason);
+  const win = w.winter;
+
+  ok('past the last season the calendar goes back to the first',
+    w.leagueYear === firstSeason, `${w.leagueYear}, expected ${firstSeason}`);
+  ok('and it says so', win.wrapped === true);
+  ok('nobody survives the turn', w.roster.length === 0 && win.aged.length === 0,
+    `${w.roster.length} kept`);
+  /* NOT LEFT TO COINCIDENCE. No man in this pool played both the first season and the
+     last, so the aging lookup would have emptied the roster on its own. Relying on that is
+     relying on who happens to be in the data. */
+  ok('and every one of them is gone for the calendar, not for himself',
+    win.gone.length > 0 && win.gone.every((g) => g.why === 'era'),
+    [...new Set(win.gone.map((g) => g.why))].join(','));
+  ok('the cap goes back to the one everybody starts with',
+    w.capMusd === E.CONSTANTS.CAP_MUSD, `$${w.capMusd}M, was $${beforeCap}M`);
+  /* A NEW LAP IS A NEW POOL OF MEN. Carried across, usedPlayers would delete every good
+     player of the era just played from the era about to be replayed. */
+  ok('and the men already used come back into the pool',
+    w.usedPlayers.length === 0, `${beforeUsed} used, now ${w.usedPlayers.length}`);
+  ok('the run is on its second time round', w.lap === 2, `lap ${w.lap}`);
+
+  R.finishOffseason(w);
+  ok('every spot is open again', w.slots.length - w.roster.length === 6);
+  const err = draftHoles(w, budgeted);
+  ok('and the first year of the pool has a wheel to draft off', !err, err || '');
+  ok('six men signed out of the new era', w.roster.length === 6);
+  ok('and every one of them is from the first season',
+    w.roster.every((p) => p.season === firstSeason),
+    [...new Set(w.roster.map((p) => p.season))].join(','));
+  playSeason(w);
+  const v2 = R.ownerVerdict(w);
+  ok('the season after the turn plays', v2.wins >= 0 && v2.wins <= 17, `${v2.wins} wins`);
+  ok('and it is still judged against the first lap target',
+    v2.bar === E.DYNASTY_BASE_WINS, `bar ${v2.bar}`);
+}
+
+/*
+ * ─── AND THE TARGET STEPS UP ONE LAP ROUND, NOT ONE SEASON ──────────────────────────
+ */
+ok('the target is flat all the way round a lap',
+  [1, 2, 14, LAP_SEASONS].every((n) => E.dynastyWinBar(n, LAP_SEASONS) === E.DYNASTY_BASE_WINS),
+  [1, 2, 14, LAP_SEASONS].map((n) => E.dynastyWinBar(n, LAP_SEASONS)).join(','));
+ok('and steps up the season you get back to where you started',
+  E.dynastyWinBar(LAP_SEASONS + 1, LAP_SEASONS) === E.DYNASTY_BASE_WINS + 1
+  && E.dynastyWinBar(LAP_SEASONS * 2 + 1, LAP_SEASONS) === E.DYNASTY_BASE_WINS + 2,
+  `${E.dynastyWinBar(LAP_SEASONS + 1, LAP_SEASONS)}, `
+  + `${E.dynastyWinBar(LAP_SEASONS * 2 + 1, LAP_SEASONS)}`);
+/* ONE LIFE, and the whole of it: a season at the target survives and one below it does
+   not, whatever came before. */
+ok('one miss ends a run of any length',
+  !E.dynastySurvives([{ wins: 12 }, { wins: 12 }, { wins: 7 }], LAP_SEASONS)
+  && E.dynastySurvives([{ wins: 7 }, { wins: 8 }], LAP_SEASONS) === true);
 
 /* ─── and the modes that already ship are not a dynasty ──────────────────────────── */
 const plain = R.createRun({ seed: 1 });
