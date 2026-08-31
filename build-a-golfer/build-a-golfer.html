@@ -2073,6 +2073,19 @@ window.GA_ID='G-L29P5MRWKE';
        fit one viewport. Same reasoning as the phone's #app.has-roundbar .foot rule. */
     #app:has(.scr-dailyround) .foot{display:none}
     body:has(.scr-dailyround) .rtt-about{display:none}
+    /* SEASON (see seasonDesktopCols): the live tournament is the hero on the left, the season's context
+       is a right-hand rail. Below 1000px seasonDesktopCols never runs, so there is no wrap and the
+       phone's single stacked column is untouched. */
+    .seasonwrap{display:grid; grid-template-columns:minmax(0,1fr) minmax(292px,344px); gap:0 22px; align-items:start}
+    .seasonmain,.seasonside{min-width:0}
+    .seasonside > .sgcard{max-width:none; margin:0 0 12px}
+    .seasonside > *{max-width:none}
+    /* the banner was three stacked rows in 1108px of width; on desktop the stat row sits INLINE with the
+       identity, which is ~75px of pure empty space returned to the tournament below it */
+    .careerbanner .cb-stats{flex:1 1 auto; flex-basis:auto; width:auto; margin-top:0; padding-top:0;
+      border-top:0; border-left:1px solid rgba(255,255,255,.09); padding-left:20px; margin-left:6px; gap:19px}
+    .careerbanner .cb-nethero{order:3; margin-left:auto; align-self:center}
+    .careerbanner .cb-meters{order:4}
   }
   /* one-window HUD: scoreboard / hole info / current-shot description float ON the tracer
      as translucent chips (Pixel-Pro-style), so the course view is the whole screen */
@@ -24029,6 +24042,29 @@ function seasonRailNode(){
   }catch(e){} });
   return rail;
 }
+// DESKTOP (>=1000px): the season screen was one 1140px column, so the live tournament started ~600px
+// down (below the fold on landing) under a 520px Season Goals island floating in all that width. This
+// re-parents the ALREADY-BUILT nodes once, at the end of the render, into a two-column wrap: the
+// tournament + its controls are the hero on the left, and the season's context (goals, Race to the Cup,
+// briefs, sponsors, the story feed, momentum) becomes a right-hand rail. The banner and the season rail
+// stay full width above it. Nothing about what scrSeason BUILDS changes, and on a phone this is a no-op,
+// so the mobile layout is untouched by construction.
+function seasonDesktopCols(scr){
+  try{
+    if(!scr || !scr.querySelector(':scope > .cols.seasoncols')) return;   // only the live-tournament screen
+    if(!matchMedia('(min-width:1000px)').matches) return;
+    const wrap=$(`<div class="seasonwrap"></div>`);
+    const main=$(`<div class="seasonmain"></div>`), side=$(`<div class="seasonside"></div>`);
+    wrap.appendChild(main); wrap.appendChild(side);
+    let placed=false;
+    [...scr.children].forEach(el=>{
+      const c=' '+(el.className||'')+' ';
+      if(/ careerbanner | seasonrail /.test(c)) return;               // full width, above the two columns
+      if(!placed){ scr.insertBefore(wrap, el); placed=true; }
+      (/ seasoncols | seasonctrl | majorbanner /.test(c) ? main : side).appendChild(el);
+    });
+  }catch(e){}
+}
 function scrSeason(){
   clearTimeout(seasonTimer);
   if(!S.simPace) S.simPace=LS.get('bag_pace','normal');   // default to the brisk Standard cadence (owner)
@@ -24268,7 +24304,7 @@ function scrSeason(){
 
   // controls
   const lastEvent=(S.evtIndex>=S.schedule.length-1);
-  const ctrl=$(`<div style="margin-top:12px"></div>`);
+  const ctrl=$(`<div class="seasonctrl" style="margin-top:12px"></div>`);
   // CS243: the primary control keeps a CONSTANT height whether the round is playing or the results are in
   // (a two-line button in every state) so the tournament block doesn't grow when results come up and shove
   // the controls / Race to the Cup / sponsors / momentum down (owner: "everything slightly moves").
@@ -24314,6 +24350,7 @@ function scrSeason(){
   if(!S.daily && !S.circuitMode){ const cn=contractStripNode(); if(cn) add(cn); }
   { const fn=seasonFeedNode(); if(fn) add(fn); }   // the season's running story, so nothing is lost to a fade
   { const mn=momentumNode(); if(mn) add(mn); }   // CS226 live confidence + following
+  seasonDesktopCols(RT);   // DESKTOP ONLY: the live tournament becomes the hero, the season's context a side rail
 
   // ---- smooth "sweaty" motion: FLIP-glide the leaderboard to its new order + count-up the big to-par ----
   // Rows teleporting to new standings each round read as janky; instead capture where each named row was
