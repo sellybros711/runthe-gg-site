@@ -4019,33 +4019,49 @@ function gauntletRunScore(history) {
 const DYNASTY_BASE_WINS = 8;
 
 /*
- * TEN, AND IT WAS 27 UNTIL THE MODE CHANGED SHAPE UNDER IT. 27 was the number of seasons
- * in the pool, back when a run walked the calendar and a lap of it was the goal. The clock
- * moved to the player, the calendar stopped being a thing you travelled, and 27 was left
- * as an arbitrary number wearing a retired name.
+ * HOW OFTEN THE TARGET GOES UP, and it barely matters any more, which is the honest thing
+ * to say about it.
  *
- * Measured on the mode as it now is. 60 runs played forty seasons deep, one life, nobody
- * ever stopped, each candidate applied to the same win sequences afterwards:
+ * It was 27 when a run walked the calendar and a lap of it was the goal, then 10 when the
+ * clock moved to the player and a mode that never ended was the risk. Freezing the cap took
+ * that risk away entirely: nothing in sixty runs now reaches season twenty-five, so the
+ * step is a guard on the rare long run rather than a thing most players will meet.
  *
- *   rule            seasons: mean / median   reach 10   reach 25   NEVER END
- *   flat 8            18.5 / 17               65%        33%         15%
- *   8, +1 every 27    17.9 / 17               65%        33%          8%
- *   8, +1 every 15    16.1 / 16               65%        25%          2%
- *   THIS ONE          14.3 / 15               65%        17%          0%
- *   8, +1 every 6     11.3 / 12               57%         8%          0%
- *   flat 9             9.9 /  6               40%        12%          2%
+ * Measured with the cap fixed, 60 runs forty seasons deep, one life:
  *
- * THE LAST COLUMN IS WHY. A mode that does not end is not a mode: at 27, one run in twelve
- * was still going after forty seasons and would have gone on until somebody got bored,
- * which is a worse ending than losing. Ten closes that without costing the run its length,
- * and it puts a milestone every tenth season instead of one nobody reaches.
+ *   +1 every 27   5.1 seasons mean, median 4
+ *   +1 every 15   5.1                     4
+ *   THIS ONE      5.0                     4
+ *   +1 every 8    4.8                     4
+ *   +1 every 6    4.6                     4
  *
- * Nine as a starting target is a different mode, not a harder one: a median of six seasons
- * against fifteen. The bot drafts best-available inside a budget and wins 12.7 games a
- * season, so a person should beat all of this.
+ * Ten is kept because it is the one that costs nothing and still closes the door.
  */
 const DYNASTY_STEP_SEASONS = 10;
 
+/*
+ * AND THE TARGET ITSELF IS EIGHT, which is where it has been all along and now means
+ * something quite different.
+ *
+ * A growing cap paid for the roster getting older, so a competent manager won 12.7 games a
+ * season forever and eight was a formality. With the cap fixed at $140M the ratchet closes:
+ * wins run 11.1 in season one and then 9.4, 9.1, 9.3, 9.1, payroll pins at $133M of $140M
+ * from season five onward, and the team you field gets worse every year because the room to
+ * replace anybody is the room you free by letting somebody go.
+ *
+ *   target   seasons: mean / median   reach 10   reach 25
+ *   flat 7     8.0 / 6                 28%         3%
+ *   THIS ONE   5.1 / 4                 10%         0%
+ *   flat 9     3.3 / 3                  0%         0%
+ *
+ * A MEDIAN OF FOUR IS WHERE THIS MODE WAS ALWAYS TRYING TO SIT. The first version of this
+ * comment said so in as many words, back when it was aiming at it with a rising bar and a
+ * growing cap and hitting eight instead. It gets there now off the mechanic rather than off
+ * the number: you lose because your men got old, which is the mode.
+ *
+ * The bot drafts best-available inside a budget and releases whoever is worth less than half
+ * what he is paid. A person who reads the offseason should beat it.
+ */
 /* Wins needed in a given season, counting from 1. */
 function dynastyWinBar(season, stepEvery) {
   const step = Math.floor(Math.max(0, Math.max(1, season) - 1)
@@ -4127,45 +4143,42 @@ function dynastySalary(currentSalaryMusd, newListPriceMusd) {
 }
 
 /*
- * AND THE COUNTERWEIGHT. A growing cap was in the first design too, where it made things
- * strictly worse: payroll FELL as the roster aged, so a rising budget pointed the same way
- * and there was never any pressure at all. Under the ratchet the sign flips. Payroll now
- * climbs into the ceiling, and cap growth is the only thing between the mode and a
- * three-year slide nobody can arrest.
+ * ─── THE CAP DOES NOT MOVE, AND THAT IS THE MODE ────────────────────────────────────
  *
- * SIX PERCENT, and the reason written here for a year was wrong.
+ * It grew six percent a winter for most of this mode's life, as a counterweight: salaries
+ * ratchet and never fall, so payroll only ever climbs, and a rising budget was what stopped
+ * that becoming a slide nobody could arrest.
  *
- * It said that at 12% a roster nobody touches recovers on its own and standing pat comes
- * back as a strategy. That was measured on the twelve man coached mode this one replaced,
- * and it does not survive the six man offense that shipped. Re-measured through run.js,
- * 150 runs an arm, same seeds, one manager who never releases anybody against one who
- * clears out whoever is worth less than half what he is paid:
+ * It is $140M in season one and $140M in season thirty now, on purpose. The counterweight
+ * was the thing standing between the player and the mode's own mechanic. Your men age, they
+ * decline, they sign somewhere else and they retire, and the cap closing on you at exactly
+ * the rate that happens is what turns each of those into a decision instead of a caption.
  *
- *   growth   stand pat            manage the roster     the gap   payroll of cap, season 6
- *     0%     4.09 seasons          5.19 seasons          +1.10     $134M of $140M
- *     3%     4.49                  7.54                  +3.05     $151M of $162M
- *     6%     5.62                  9.35                  +3.73     $160M of $187M
- *     9%     6.08                 10.51                  +4.43     $167M of $215M
- *    12%     6.59                 10.16                  +3.57     $169M of $247M
+ * KEPT AS A RECORD, because the sweep behind it is worth not repeating and because it says
+ * what a growing cap actually did. 150 runs an arm, same seeds, one manager who never
+ * releases anybody against one who clears out whoever is worth less than half what he is
+ * paid, measured on the twelve man shape that preceded this one:
  *
- * The gap does not close. It WIDENS with the budget, because money is only worth what you
- * have a slot to spend it on, and releasing a man is what makes a slot.
+ *   growth   stand pat     manage the roster   the gap   payroll of cap, season 6
+ *     0%     4.09 seasons   5.19 seasons        +1.10     $134M of $140M
+ *     3%     4.49           7.54                +3.05     $151M of $162M
+ *     6%     5.62           9.35                +3.73     $160M of $187M
+ *     9%     6.08          10.51                +4.43     $167M of $215M
+ *    12%     6.59          10.16                +3.57     $169M of $247M
  *
- * WHAT ACTUALLY BREAKS AT 12% IS THE ENDING. A managed roster averages 13 wins a season by
- * year five and $78M of the budget has nothing to buy, because six slots is all there is.
- * The cap stops being a constraint and the owner stops being a threat. That is the real
- * argument against a bigger number, and it is an argument about the mode finishing rather
- * than about which strategy wins.
+ * Two things in that table outlived the constant. Managing the roster beats standing pat at
+ * every budget, and the gap WIDENS with money rather than closing, because money is only
+ * worth what you have a slot to spend it on and releasing a man is what makes a slot. And a
+ * budget that outruns six slots stops being a constraint at all: at 12% a managed roster
+ * had $78M with nothing to buy.
  *
- * 6% is not obviously the answer to it either: a quarter of managed runs are still alive at
- * sixteen seasons. Raising the win bar is the lever for that, not this constant, and
- * dynastyWinBar carries its own sweep. Left where it is on purpose, with the numbers now
- * saying what they actually say.
+ * At 0%, the row this mode now sits on, payroll runs $134M of $140M by season six. That is
+ * the ceiling doing its job.
  *
- *   node football/simulator.js --dynasty   is the OLD twelve man harness. PS_DYN_GROWTH
- *   sweeps it, and it answers a question about a mode that no longer ships.
+ * Nothing reads this. It is here so that the next person to think a rising cap sounds
+ * generous can see what it was measured to do.
  */
-const DYNASTY_CAP_GROWTH = 1.06;
+const DYNASTY_CAP_GROWTH = 1.00;
 
 /**
  * The same man, one league year on.

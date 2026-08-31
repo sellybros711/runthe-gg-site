@@ -6476,8 +6476,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=78"></script>
-<script src="run.js?v=86"></script>
+<script src="engine.js?v=79"></script>
+<script src="run.js?v=87"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8163,8 +8163,8 @@ function dynastyRulesHTML(go){
         'over. There is no second chance.</li>'+
       '<li><b>Every offseason each man becomes his own next year.</b> Draft 2023 Burrow '+
         'and 2019 Ochocinco and next season they are 2024 Burrow and 2020 Ochocinco.</li>'+
-      '<li><b>Salaries never drop.</b> Over the cap you keep everyone. You just cannot '+
-        'sign anyone.</li>'+
+      '<li><b>Salaries never drop. Neither does the cap.</b> It is $140M every season. '+
+        'Over it you keep everyone, you just cannot sign anyone.</li>'+
     '</ul>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:12px 0 0">'+
       'So how much of a man is left matters as much as how good he is. A rookie has a '+
@@ -8555,7 +8555,7 @@ const WALL={
      until somebody went looking. */
   dynasty:{name:'The Gauntlet',
     what:'Draft six players from any year and keep them. Every offseason each becomes his '+
-      'own next real season. Salaries rise and never fall.',
+      'own next real season. Salaries rise and never fall, on a cap that never moves.',
     note:'<b>One miss and the run is over.</b> Scored on how long you last.',
     noname:'You are signed in. Pick a username and The Gauntlet opens. Every run on that '+
       'board is listed under a name.',
@@ -10885,8 +10885,11 @@ function paintWinter(){
    * hold, and the cap is back where it started. Saying "everyone becomes his next real
    * season" over an empty list would be the game explaining a rule it has just suspended.
    */
+  /* THE CAP IS THE ONE NUMBER ON THIS SCREEN THAT NEVER MOVES, and saying so is the point:
+     it used to grow six percent a winter, which quietly paid for the roster getting older.
+     Now nothing does, and the sentence has to make that a rule rather than an omission. */
   $('w-sub').innerHTML='Everyone becomes his next real season. A better year costs more. '+
-    '<b>Salaries never drop.</b> Your cap is now '+M0(R.capOf(run))+'.';
+    '<b>Salaries never drop, and neither does your '+M0(R.capOf(run))+' cap.</b>';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';

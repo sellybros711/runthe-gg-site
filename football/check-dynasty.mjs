@@ -217,8 +217,11 @@ for (let s = 0; s < 30; s++) {
   const w = R.beginOffseason(run, byKey, lastSeason);
   ok('the offseason advanced the season count', run.seasonNo === seasons + 1,
     `season ${run.seasonNo} after ${seasons} played`);
-  ok('the cap grew six percent',
-    Math.abs(run.capMusd - capBefore * E.DYNASTY_CAP_GROWTH) < 0.05,
+  /* THE CEILING NEVER MOVES, which is the whole of the mode's pressure: salaries only ever
+     climb and the room they climb into is fixed. It grew six percent a winter until it was
+     measured to be the thing paying for the roster getting older. */
+  ok('the cap did not move',
+    run.capMusd === capBefore && run.capMusd === E.CONSTANTS.CAP_MUSD,
     `$${capBefore}M -> $${run.capMusd}M`);
   /* EACH ON HIS OWN CLOCK. Not "the same year as everyone else" but "one year on from
      where HE was", which is the difference the whole mode turns on. */

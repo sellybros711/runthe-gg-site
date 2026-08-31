@@ -1217,9 +1217,10 @@ function beginOffseason(run, byKey, lastSeason) {
 
   run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
   run.seasonNo += 1;
-  /* THE CAP MOVES ONCE A WINTER AND ONLY HERE. Six percent, and it is the brake rather
-     than the accelerator: see DYNASTY_CAP_GROWTH. */
-  run.capMusd = money(capOf(run) * E.DYNASTY_CAP_GROWTH);
+  /* THE CAP DOES NOT MOVE. It is $140M in season one and $140M in season thirty, which is
+     what makes the ratchet the whole game: payroll only ever climbs, so the ceiling closes
+     on you at exactly the rate your roster ages. See DYNASTY_CAP_GROWTH, kept as a record
+     of the six percent that used to be here and why it went. */
   /* A NEW SEASON'S WHEELS ARE FRESH. usedTeamSeasons is the two-draws-a-club rule inside
      one draft; carrying it across a decade would starve the pool of clubs. usedPlayers is
      NOT reset, because a man who has played for you never comes back. */
