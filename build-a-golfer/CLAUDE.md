@@ -17514,8 +17514,20 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   19, stance18 21, glove19 19, age20 32, news21 18, mp_eng 37, mp_ui 39, mp_recap 27. `board_race` fails 1
   **identically on the deployed build** (the known stale score-format fixture). All inline script blocks
   parse (block 0 is the JSON-LD tag, fails identically on baseline).
-- **NOT deployed.** It is gated, so it would be invisible to the public, but the standing rule is that each
-  piece is explained before it is pushed.
+- **DEPLOYED to /golf** (owner: *"Let's deploy"*) - `main` commit `0b24ad72`, regenerated from
+  `build-a-golfer.html`, **only `golf/index.html` touched** (+313/-1) and verified byte-identical afterward.
+  It is live but DARK: `CUTSCENE_LIVE=false`, so only `csel8`, `runnyj` and `malikwillislover` see it and a
+  guest never can. Re-ran the suite plus `nobag` / `sig01` / `news21` against the file exactly as pushed -
+  **24 / 10 / 19 / 18 pass, 0 fail, 0 page errors**.
+- **A PARALLEL SESSION'S WORK WAS ADOPTED FIRST, and this is the fourth time.** Commit `53b6c524`
+  ("Arcade panel: new lede, a bold call to action, and seven dead font rules") edited `golf/index.html`
+  DIRECTLY - a new lede, 12 games, "4 free every day", and a `.aacta` rule that finally makes the CTA bold
+  (its `font:800 15px/1.15 inherit` shorthand was invalid, so the browser dropped the weight with it).
+  Deploying over it would have reverted all of it. Brought back into `build-a-golfer.html` verbatim
+  (`987cefd2`) and verified in the browser rather than by eye - the panel renders their copy and the CTA
+  computes **900 at 16px**, so the rule does what they proved it should. **`golf/index.html` is regenerated
+  from `build-a-golfer.html` on every golf deploy: a change made only to the deployed file is one deploy
+  away from being reverted.**
 - Tunable: `CS_TESTERS` (who sees it), `CUTSCENE_LIVE` (launch), `CS_OUTLETS`/`CS_CAST` (the world),
   `CS_SCENES` + `CS_TAG_SCENES` (what is said - a bespoke scene is one entry keyed by the storyline id),
   and `csFigH` (how big the golfer is).
