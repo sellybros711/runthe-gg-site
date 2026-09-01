@@ -34,7 +34,9 @@ delete from auth.users;
 -- ---------------------------------------------------------------------------
 -- three accounts
 -- ---------------------------------------------------------------------------
-select mkuser('sellybros') as a \gset
+-- :a is an ADMIN, per the list in ideas_set_status. If that list changes, this name
+-- has to change with it, or the admin checks pass for the wrong reason.
+select mkuser('malikwillislover') as a \gset
 select mkuser('runnyj')    as b \gset
 select mkuser('randomfan') as c \gset
 
@@ -113,8 +115,20 @@ select become(:'c');
 select throws('a stranger setting status', format($$select ideas_set_status(%s,'shipped')$$, :i1));
 select become(:'a');
 select ideas_set_status(:i1, 'planned');
-select ok('the owner can set it', (select status from ideas where id=:i1), 'planned');
+select ok('an admin can set it', (select status from ideas where id=:i1), 'planned');
+-- BOTH NAMES ON THE LIST, not just the first. The list had two entries before this and
+-- only one of them was ever exercised, so a typo in the second would have passed.
+select become(:'b');
+select ideas_set_status(:i1, 'shipped');
+select ok('and so can the other one', (select status from ideas where id=:i1), 'shipped');
+select ideas_set_status(:i1, 'planned');
 select throws('a status that is not one', format($$select ideas_set_status(%s,'maybe')$$, :i1));
+
+-- THE NAME THAT USED TO BE ON THE LIST IS NOT ANY MORE. Without this the admin checks
+-- above pass whatever the list says, as long as it contains :a.
+select mkuser('sellybros') as old \gset
+select become(:'old');
+select throws('the previous admin name', format($$select ideas_set_status(%s,'shipped')$$, :i1));
 
 -- ---------------------------------------------------------------------------
 -- the read view

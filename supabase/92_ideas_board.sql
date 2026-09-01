@@ -291,7 +291,9 @@ declare
   v_name text;
 begin
   select username into v_name from profiles where id = auth.uid();
-  if v_name is null or lower(v_name) not in ('sellybros','runnyj') then
+  -- THE ADMIN LIST, and it is compared in lower case because a username that differs
+  -- only in capitals is the same person to everybody except a string comparison.
+  if v_name is null or lower(v_name) not in ('malikwillislover','runnyj') then
     raise exception 'not yours to set';
   end if;
   if p_status not in ('open','planned','shipped','declined') then

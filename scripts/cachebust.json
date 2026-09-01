@@ -195,6 +195,12 @@
       "sha": "0b4588cf96acbdd3"
     }
   },
+  "ideas/index.html": {
+    "ideas.js": {
+      "v": "1",
+      "sha": "5f16eaceec9d2b5b"
+    }
+  },
   "setlist/index.html": {
     "scoring.js": {
       "v": "40",
