@@ -134,8 +134,8 @@
           say: 'College football has a new commissioner this morning. The last one did not '
             + 'finish the term.' },
         { who: 'wire', set: 'paper',
-          say: 'The office is unchanged: one desk, five years, and everything nobody else will '
-            + 'sign.' },
+          say: 'The job has not changed: one desk, a fresh five year term, and everything '
+            + 'nobody else will sign.' },
         { who: 'anchor',
           say: 'Nobody was pushed out over one thing. It was all of it, and all of it is still '
             + 'on that desk.' },
