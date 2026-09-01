@@ -95,6 +95,9 @@ async function strip(moods) {
     return {
       cls: el.className,
       state: el.querySelector('.state').textContent.trim(),
+      head: el.querySelector('.wh b').textContent.trim(),
+      lede: (el.querySelector('.lede') || {}).textContent || '',
+      mark: (el.querySelector('.marks') || {}).textContent || '',
       foot: el.querySelector('.foot').innerText.replace(/\s+/g, ' ').trim(),
       moved: (el.querySelector('.moved') || {}).textContent || null,
       segs: segs,
@@ -107,6 +110,26 @@ async function strip(moods) {
       hostile: LD.hostileWeight(w),
     };
   }, moods || {});
+}
+
+/* A DIAGRAM NOBODY EXPLAINED IS A DIAGRAM NOBODY READS. Every one of these numbers can be
+   correct and the strip still fail, because width-is-vote-weight, red-is-against,
+   line-is-half and dot-is-the-second-rule are four conventions this mode invented and none
+   of them is guessable. The first thing a player asked about the finished strip was "what
+   does the bar mean". So the words that answer that are asserted with the same weight as
+   the arithmetic: the header names the picture, the gloss says how to read it, and the line
+   carries a label of its own. */
+console.log('\n=== and it says what it is ===');
+{
+  const s = await strip({});
+  ok('the header names what the picture is about', /remove you/i.test(s.head), s.head);
+  ok('the gloss explains the width', /as wide as its vote/i.test(s.lede), s.lede.slice(0, 60));
+  ok('  and the colour', /red is against you/i.test(s.lede));
+  ok('  and both ways a term ends', /gold line/i.test(s.lede) && /dots/i.test(s.lede));
+  ok('the line is labelled where it sits', /half/i.test(s.mark), s.mark.trim());
+  ok('  with the vote count it stands for',
+    s.mark.indexOf((L.totalWeight() / 2).toFixed(1)) >= 0, s.mark.trim());
+  ok('and the count says what it is counting', /votes against you/i.test(s.foot), s.foot);
 }
 
 console.log('\n=== the strip is the rule, drawn ===');

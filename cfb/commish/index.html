@@ -102,7 +102,6 @@
      data center with the whole office sitting above it. */
   #s-office.on{display:flex;flex-direction:column}
   .ocol{display:contents}
-  #off-cal{order:1}
   .ob>*{order:2}
   #off-mapcard{order:3}
   #off-roomcard{order:4}
@@ -1244,9 +1243,19 @@
   .cgrid.compact .cd svg{width:46%;height:46%}
   .cgrid.compact i{font-size:8px;padding:5px 0 4px}
   .mcard{padding-bottom:9px}
-  .mcard .ch b{font-family:var(--fd);font-size:17px;line-height:1;letter-spacing:.01em;
+  /* THE MONTH'S OWN HEADER, which is not the card's header any more: the card is headed by
+     the year strip above it and this names the zoom. A rule across the top is the whole of
+     the visual break between "the year" and "this month". */
+  .mh{display:flex;align-items:baseline;gap:8px;margin:11px 0 9px;padding-top:11px;
+    border-top:1px solid var(--line)}
+  .mcard .mh b{font-family:var(--fd);font-size:17px;line-height:1;letter-spacing:.01em;
     text-transform:uppercase;color:var(--ink)}
-  .mcard .ch span{margin-left:auto;font-size:10.5px;color:var(--dim-2);font-weight:700}
+  .mcard .mh span{margin-left:auto;font-size:10.5px;color:var(--dim-2);font-weight:700}
+  /* The strip, now that it lives inside another card, carries no chrome of its own. The
+     footer line keeps its reserved height: it is what a hovered beat's sentence lands in,
+     and giving that back would shunt the month grid down every time the pointer crossed a
+     square on the way to it. */
+  .yearband .calsay{margin-top:8px}
   /* WHILE IT IS WALKING, the card says so by lighting its own edge rather than by taking
      over the screen, and the whole thing becomes the skip target. */
   .mcard.running{border-color:rgba(16,185,129,.45);cursor:pointer}
@@ -1695,7 +1704,12 @@
      people hunt for the control on. Tapping anywhere finishes the line that is typing and
      then moves to the next one, which is the interaction every game of this shape has used
      for thirty years and the only one nobody has to be taught. */
-  #s-scene{display:flex;flex-direction:column;min-height:calc(100vh - 150px);
+  /* `.on` IS LOAD BEARING HERE, exactly as it is on the office. `.screen{display:none}` is
+     one class and `#s-scene` is an id, so a bare `#s-scene{display:flex}` outranks it and
+     the cutscene renders at the bottom of every other screen in the mode. It did: a
+     screenshot of the data center had a chief of staff sitting under the charts, typing.
+     A screen's display rule goes on `#id.on`, never on `#id`. */
+  #s-scene.on{display:flex;flex-direction:column;min-height:calc(100vh - 150px);
     justify-content:center;cursor:pointer;user-select:none;-webkit-user-select:none}
   .cut{border:1px solid var(--line);border-radius:16px;overflow:hidden;
     background:var(--panel);box-shadow:0 18px 44px rgba(0,0,0,.5)}
@@ -1768,6 +1782,14 @@
   .whip.safe .state{color:var(--green)}
   .whip.thin .state{color:var(--gold)}
   .whip.gone .state{color:var(--red)}
+  /* A DIAGRAM NOBODY EXPLAINED IS A DIAGRAM NOBODY READS. The strip shipped with a header,
+     six coloured segments, a gold line and a count, and the first thing a player asked about
+     it was "what does the bar mean". Every part of that is a convention this mode invented:
+     that width is vote weight, that red is against, that the line is half, that a dot is the
+     second removal rule. None of it is guessable and all of it fits in four short sentences,
+     so the sentences are here rather than in a rulebook nobody opens. */
+  .whip .lede{margin:-2px 0 10px;font-size:11.5px;line-height:1.5;color:var(--dim)}
+  .whip .lede b{color:var(--ink);font-weight:600}
   /* NO GAP BETWEEN SEGMENTS, which is the difference between six boxes and two blocks. The
      first version put 2px between them and outlined the hostile ones in red, and the left
      hand side read as four separate angry conferences rather than as one mass of vote weight
@@ -1808,7 +1830,14 @@
   /* THE LINE DOES NOT MOVE, which is the point of it. */
   .whip .cut{position:absolute;left:50%;top:-5px;bottom:-5px;width:2px;margin-left:-1px;
     background:var(--gold);border-radius:2px;pointer-events:none}
-  .whip .foot{display:flex;gap:10px;align-items:baseline;margin-top:9px;font-size:11.5px;
+  /* AND IT SAYS WHAT IT IS, under the track rather than over it: above the bar it would sit
+     on the gloss, and inside the bar it would sit on a segment's name. Its own row, so the
+     label can be centred on the line and nothing has to be moved out of its way. */
+  .whip .marks{position:relative;height:12px;margin-top:6px}
+  .whip .marks span{position:absolute;left:50%;transform:translateX(-50%);
+    font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--gold);white-space:nowrap;opacity:.85}
+  .whip .foot{display:flex;gap:10px;align-items:baseline;margin-top:7px;font-size:11.5px;
     color:var(--dim);line-height:1.4}
   .whip .foot b{color:var(--ink);font-weight:600}
   .whip .foot .r{margin-left:auto;color:var(--dim-2);white-space:nowrap}
@@ -1916,8 +1945,19 @@
          else. Same animation, same days, but the calendar is a fixture the player can look
          at whenever they want rather than something that flashes past on the way to a
          decision. -->
+    <!-- ── ONE CALENDAR, AT TWO ZOOMS ────────────────────────────────────────────
+         The year strip and the month grid used to be two cards sitting one on top of the
+         other, each with its own border and its own header, and the question that came back
+         was "why do we have two calendars". Fair: they are the same calendar. The strip is
+         the nine beats of this year and the grid is the thirty days of the beat you are
+         standing on, which is a zoom level rather than a second subject.
+
+         So they are one card now. The year is the header, the month is the body, and the
+         rule between them is the zoom. Nothing about either painter changed except that the
+         strip no longer writes a card header of its own: see paintYearStrip(). -->
     <div class="cal mcard" id="off-monthcard">
-      <div class="ch"><b id="off-mtitle">January 2025</b><span id="off-mday"></span></div>
+      <div class="yearband" id="off-cal"></div>
+      <div class="mh"><b id="off-mtitle">January 2025</b><span id="off-mday"></span></div>
       <div class="cgrid compact" id="off-month"></div>
       <div class="simbar"><span id="off-mbar"></span></div>
       <!-- `off-mrows` IS THE SATURDAY SLATE. A week of football used to arrive as one line,
@@ -1926,13 +1966,14 @@
       <div class="mtick"><p id="off-mtext"></p><div class="mrows" id="off-mrows"></div>
         <span id="off-msub"></span></div>
     </div>
-    <div class="cal" id="off-cal"></div>
     <!-- WHAT THE YEAR LOOKS LIKE NOW THAT YOU HAVE BEEN WRITING IT. Nineteen items reshape
-         the calendar and not one of them ever said what the calendar became. See paintYear(). -->
+         the calendar and not one of them ever said what the calendar became. See paintYear().
+         THE HEADING IS WRITTEN BY paintYear AND NOT HERE, because on the first morning of a
+         term nothing in this list has moved and "as you have written it" was sitting over
+         nine defaults the player had never touched. -->
     <div class="card flat" id="off-yearcard" hidden>
-      <div class="eyebrow" style="margin-bottom:4px">The year, as you have written it</div>
-      <p class="dcsub" style="margin-bottom:9px">The shape of a season is a thing you rule on,
-        one piece at a time, and this is what those rulings add up to.</p>
+      <div class="eyebrow" style="margin-bottom:4px" id="off-yearhead">The year</div>
+      <p class="dcsub" style="margin-bottom:9px" id="off-yearsub"></p>
       <div id="off-year"></div>
     </div>
     <!-- The map. Realignment is the one thing a list cannot show. -->
@@ -2326,7 +2367,7 @@
 <!-- The podium. Reads nothing at load time; see media.js. -->
 <script src="media.js?v=2"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=4"></script>
+<script src="scene.js?v=5"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=2"></script>
@@ -3008,9 +3049,14 @@ function paintWhip(el,w,before){
   const label=st.gone?'Removed':st.thin?'On the edge':'Holding';
   el.className='whip '+(st.gone?'gone':st.thin?'thin':'safe');
   /* SHORT ENOUGH TO SHARE A LINE WITH THE PILL. "The vote that can remove you" wrapped onto
-     two lines at 390px and the pill sat on top of the second one. The foot says the rest. */
-  el.innerHTML='<div class="wh"><b>Your job</b>'
+     two lines at 390px and the pill sat on top of the second one. "Your job" fitted and said
+     nothing: it named the stake and left the diagram under it unexplained, which is how the
+     strip came back as "what does the bar mean". The header now names what the picture IS and
+     the gloss under it says how to read the picture. */
+  el.innerHTML='<div class="wh"><b>Who can remove you</b>'
     +'<span class="state">'+esc(label)+'</span></div>'
+    +'<p class="lede">Each bar is a bloc, as wide as its vote. Red is against you. '
+    +'Past the gold line your term ends. So does both dots going red.</p>'
     +'<div class="track">'
     +seats.map((x)=>{
       const ui=BLOC_UI[x.id]||{};
@@ -3021,13 +3067,15 @@ function paintWhip(el,w,before){
         +'<b>'+esc(ui.tag||ui.short||x.id)+'</b></span>';
     }).join('')
     +'<i class="cut"></i></div>'
+    +'<div class="marks"><span>half: '+st.limit.toFixed(1)+' votes</span></div>'
     /* AT EXACTLY HALF YOU SURVIVE, and the first version said "4 against you, you go at 4",
        which reads as a contradiction and is one sentence away from being a bug report. The
        rule is strictly greater than half and the words now say so. */
-    +'<div class="foot"><span><b>'+st.hostile.toFixed(1)+'</b> of '+st.total+' against you</span>'
+    +'<div class="foot"><span><b>'+st.hostile.toFixed(1)+'</b> of '+st.total
+    +' votes against you</span>'
     +'<span class="r">'+(st.gone
       ? (st.bigTwo?'both of the two are gone':'over the line')
-      : 'removed above '+st.limit.toFixed(1))+'</span></div>'
+      : 'out above '+st.limit.toFixed(1))+'</span></div>'
     /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A bloc going under twenty five is the whole
        failure condition arriving one step closer and it used to be a number changing colour
        in a list of nine. */
@@ -3411,7 +3459,11 @@ function paintYearStrip(el,w){
         :(w.year+1<=w.startYear+TERM_SEASONS-1?'the '+w.year+' season':'the end of the term')))
     +'</span>';
 
-  el.innerHTML='<div class="ch"><b>'+y+'</b><span>'
+  /* THIS IS THE WHOLE CARD'S HEADER NOW. The strip lives inside the month card, so it names
+     the calendar once for both zooms: "The 2025 calendar" over the year, and the month writes
+     its own smaller heading under the rule. Two cards each headed as a calendar was the thing
+     that read as two calendars. */
+  el.innerHTML='<div class="ch"><b>The '+y+' calendar</b><span>'
       +(over?'The term, in full':'Year '+(spent+1)+' of '+TERM_SEASONS)+'</span></div>'
     +'<div class="phrow" style="grid-template-columns:'
       +groups.map((g)=>g.w+'fr').join(' ')+'">'+groups.map((g)=>{
@@ -3835,7 +3887,11 @@ P.finishTerm({
    hundred pixels tall on a desktop. Every other caller of paintData runs while the screen is
    already up, which is why this was the only one that got it wrong. */
 $('b-data').onclick=()=>{ show('s-data'); paintData(); };
-$('b-dcback').onclick=()=>{ office(); show('s-office'); };
+/* THE DATA CENTER IS NOT AN ARRIVAL. Opening your own numbers and closing them again leaves
+   you standing on the beat you were already standing on, so the office it comes back to is a
+   repaint. Unguarded, office() went looking for a scene on the way back and one played there:
+   a lawsuit cutscene triggered by closing a chart. Scenes belong to arriving at a beat. */
+$('b-dcback').onclick=()=>{ sceneOff=true; office(); sceneOff=false; show('s-office'); };
 $('dc-range').onclick=(e)=>{
   const b=e.target.closest('button[data-r]'); if(!b) return;
   dcState.range=b.dataset.r; dcState.at=-1;
@@ -5464,6 +5520,20 @@ function paintYear(el,card){
   }).filter(Boolean);
   if(!rows.length){ card.hidden=true; el.innerHTML=''; return; }
   card.hidden=false;
+  /* THE HEADING DEPENDS ON WHETHER YOU HAVE WRITTEN ANY OF IT. On the first morning of a term
+     these nine rows are the defaults the sport handed you, and the card said "The year, as you
+     have written it" over all nine of them. A player who has ruled on nothing reads that as
+     the game claiming they did something, and then cannot tell which of the nine they are
+     supposed to have done. `moved` is already computed per row against the opening world, so
+     the card only has to count them. */
+  const nmoved=rows.filter((r)=>r.moved).length;
+  const head=$('off-yearhead'), sub=$('off-yearsub');
+  if(head) head.textContent=nmoved?'The year, as you have written it':'The year, as you were handed it';
+  if(sub) sub.textContent=nmoved
+    ? 'The shape of a season is a thing you rule on, one piece at a time. '
+      +nmoved+(nmoved===1?' of these has moved':' of these have moved')+' since you took the job.'
+    : 'The shape of a season is a thing you rule on, one piece at a time. Nothing here has '
+      +'moved yet. What you change will show up as a was line.';
   el.innerHTML='<div class="yshape">'+rows.map((r)=>
     '<div class="yr'+(r.moved?' moved':'')+'">'
     +'<b>'+esc(pathName(r.p))+'</b><u>'+esc(r.now)+'</u>'
@@ -6370,7 +6440,9 @@ window.PS_CFB_COMMISH_TEST={
   world:()=>world,
   jump:(beat,year)=>{ world.beat=beat; if(year) world.year=year; save(); office(); },
   plant:(id,opts)=>{ world=L.plant(world,id,opts); save(); },
-  repaint:()=>office(),
+  /* A repaint, not an arrival: a guard asking for the office to be redrawn against a world it
+     just set is not walking onto a beat, so no scene may take the screen out from under it. */
+  repaint:()=>{ sceneOff=true; office(); sceneOff=false; },
   /* The ending, and the card it produces, without playing five seasons to reach them. */
   ending:()=>ending(),
   termCard:()=>drawTermCard(),

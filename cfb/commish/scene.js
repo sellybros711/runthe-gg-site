@@ -116,27 +116,41 @@
        THE MORNING YOU GET THE JOB.
        Replaces nothing: the intro screen still states what the job is and what it is graded
        on, because that is a rubric and a rubric belongs in writing. This is the forty seconds
-       after you accept it, which the mode had no form for at all.
-       ================================================================ */
+       after you are named, which the mode had no form for at all.
+
+       THE OFFICE IS OLDER THAN YOU ARE. The first version of this scene had the job being
+       invented on the morning you took it, and that is the wrong story twice over: it makes
+       the sport's problems start when you arrive, and it leaves nobody to have failed at them
+       first. What actually happens is that the chaos is already running, the last person did
+       not survive it, and you are the replacement. That premise pays for everything else in
+       the mode. The blocs are already angry when you sit down. Two of them can remove you, and
+       the reason you believe that is that you watched them do it last night. */
     {
       id: 'take-office',
       once: true,
       when: function (w, L, sit) { return !!(sit && sit.firstYear) && (w.beat || 0) === 0; },
       lines: [
         { who: 'wire', set: 'paper',
-          say: 'College football has a commissioner. One office, one desk, and a five year term.' },
+          say: 'College football has a new commissioner this morning. The last one did not '
+            + 'finish the term.' },
         { who: 'wire', set: 'paper',
-          say: 'Nobody has ever held this job, because until this morning it did not exist.' },
+          say: 'The office is unchanged: one desk, five years, and everything nobody else will '
+            + 'sign.' },
         { who: 'anchor',
-          say: 'Four conferences, a hundred and thirty six schools, and one person is now '
-            + 'responsible for all of it.' },
+          say: 'Nobody was pushed out over one thing. It was all of it, and all of it is still '
+            + 'on that desk.' },
         { who: 'radio',
-          say: 'My phone has not stopped since six. Not one caller thinks this is a good idea.' },
+          say: 'My phone has not stopped since six. Every caller had a candidate and not one of '
+            + 'them said your name.' },
         { who: 'chief', set: 'office',
-          say: 'Morning. Your first meeting moved to nine and the second one is a lawsuit.' },
+          say: 'Morning. You were named at seven. Your first meeting moved to nine and the '
+            + 'second one is a lawsuit.' },
         { who: 'chief', set: 'office',
-          say: 'Two of the four leagues can end your term with a phone call. You will want to '
-            + 'know which two.' },
+          say: 'Same office, same desk. Nobody cleared the drawers, so some of what is in them '
+            + 'is theirs.' },
+        { who: 'chief', set: 'office',
+          say: 'Two of the four leagues can end a term with a phone call. You just watched them '
+            + 'make it.' },
         { who: 'chief', set: 'office',
           say: 'Everything that reaches this desk got here because nobody underneath us would '
             + 'touch it. That is the job.' },
@@ -313,11 +327,11 @@
       when: function () { return false; },
       lines: [
         { who: 'wire', set: 'paper',
-          say: 'The first commissioner of college football leaves office today, having served '
-            + 'the full term.' },
+          say: 'The commissioner of college football leaves office today, having served the '
+            + 'whole term.' },
         { who: 'anchor',
-          say: 'Whatever you think of the five years, somebody has to be second and they '
-            + 'inherit all of it.' },
+          say: 'Whatever you make of the five years, they finished them. The one before did '
+            + 'not.' },
         { who: 'chief', set: 'office',
           say: 'Box is by the door. I put the four numbers on top so you can see what you did '
             + 'with them.' },

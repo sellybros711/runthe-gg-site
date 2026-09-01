@@ -186,6 +186,20 @@ console.log('\n=== every scene can actually fire ===');
   const first = SCN.next(w, L, sit);
   ok('the first beat of a term opens on one', !!first && first.id === 'take-office',
     first && first.id);
+  /* AND IT OPENS ON THE RIGHT STORY. The first version had the office being invented on the
+     morning you took it, which is the wrong premise twice: it makes the sport's problems
+     start when you arrive, and it leaves nobody to have failed at them first. Every other
+     screen in this mode assumes an office that was already running and a room that is
+     already angry, so the intro has to hand over a job rather than create one. Asserted on
+     the two things the premise turns on: somebody held it before you, and they did not
+     finish. Not on the wording, which is free to change. */
+  {
+    const said = SCN.saysOf(SCN.BY_ID['take-office']).join(' ').toLowerCase();
+    ok('  and somebody held the job before you', /the last one|before you|predecessor/.test(said));
+    ok('  and did not finish the term', /did not finish|pushed out|removed/.test(said));
+    ok('  rather than the job being invented this morning',
+      !/did not exist|nobody has ever held/.test(said));
+  }
   w.scenes = {}; w.scenes[first.id] = L.beatOf(w);
   ok('  and it does not come back', SCN.next(w, L, SIT.build(w, L, {})) !== first);
   /* A REPEATABLE ONE COMES BACK, BUT NOT IMMEDIATELY. "A league has folded" stays true for
@@ -291,6 +305,26 @@ console.log('\n=== the way out ===');
   ok('skip hands the screen back', await on('s-office'));
   ok('  and the office is drawn behind it',
     (await p.$eval('#off-whip', (e) => e.textContent.trim().length)) > 10);
+  /* AND THE SCENE IS ACTUALLY GONE, which is not the same assertion as the office being up.
+     `.screen{display:none}` is one class and `#s-scene` is an id, so the scene's own layout
+     rule outranked it and the cutscene stayed laid out at the bottom of every other screen
+     in the mode. Nothing failed: every walker here checks `.on`, which was correctly off,
+     and the only symptom was a chief of staff sitting under the charts in the data center.
+     Measured as pixels rather than as a class, because a class was what missed it. */
+  ok('  and the scene is not laid out underneath it', await p.evaluate(() => {
+    const r = document.getElementById('s-scene').getBoundingClientRect();
+    return r.width === 0 && r.height === 0;
+  }));
+  ok('  on every other screen too', await p.evaluate(async () => {
+    const b = document.getElementById('b-data');
+    if (b) b.click();
+    await new Promise((r) => setTimeout(r, 500));
+    const r = document.getElementById('s-scene').getBoundingClientRect();
+    const back = document.getElementById('b-dcback');
+    if (back) back.click();
+    await new Promise((r) => setTimeout(r, 400));
+    return r.width === 0 && r.height === 0;
+  }));
   /* AND NOTHING ELSE IS WAITING BEHIND IT on the first beat of a term. This caught a real
      one: the 2025 data has the Pac-12 below the conference floor already, so a scene gated
      on "a league has folded" fired on day one about something that folded before the player

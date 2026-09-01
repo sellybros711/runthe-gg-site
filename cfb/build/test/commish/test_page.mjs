@@ -267,6 +267,20 @@ console.log('\n=== a tester takes the job ===');
   ok('  who hold votes', (await p.$$eval('#off-room .vt',(e)=>e.length))>0);
   const sport=await p.$$eval('#off-sport .fact',(e)=>e.map((x)=>x.textContent.replace(/\s+/g,' ')));
   ok('  with the sport as it stands', sport.length===4, sport.join(' | '));
+  /* ONE CALENDAR. The year strip and the month grid are the same calendar at two zooms and
+     they used to be two cards stacked on each other, each headed as a calendar. The question
+     that came back was "why do we have two calendars". Counting cards is the assertion,
+     because either painter could be perfect and the screen still ask that question. */
+  ok('  and one calendar rather than two',
+    (await p.$$eval('#s-office .cal',(e)=>e.length))===1
+    && (await p.$eval('#off-monthcard #off-cal',(e)=>!!e).catch(()=>false)));
+  /* AND THE YEAR CARD DOES NOT CREDIT YOU WITH A YEAR YOU HAVE NOT WRITTEN. On the first
+     morning these nine rows are the defaults the sport handed over, and the card was headed
+     "The year, as you have written it" above every one of them. */
+  const yhead=(await txt(p,'#off-yearhead'));
+  ok('  the year you were handed says so', /handed/i.test(yhead), yhead);
+  ok('    with nothing marked as changed',
+    (await p.$$eval('#off-year .yr.moved',(e)=>e.length))===0);
   await p.screenshot({path:SS+'commish_office.png'});
 
   await p.click('#b-desk'); await skipSim(p); await p.waitForTimeout(600);
