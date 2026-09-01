@@ -698,14 +698,18 @@ window.GA_ID='G-L29P5MRWKE';
      club beside it and quieter than the money. */
   .wage{font-variant-numeric:tabular-nums;font-weight:800;color:var(--dim)}
   .wrow.aging .wage{color:var(--pc);transition:color .3s ease}
-  /* SIGNED WITH, and RETIRED on the men who are gone. Chips rather than sentences: the
-     winter is a list you scan, and these are the two things on it you stop for. */
-  .wmoved,.wgone{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.09em;
+  /* WHY A MAN IS OFF THE ROSTER, in a word. Chips rather than sentences: the offseason is
+     a list you scan, and these are the things on it you stop for.
+     THERE IS NO CHIP ON A MAN YOU KEPT ANY MORE. A blue SIGNED WITH used to sit on a
+     ROSTER row, because the mode followed the man and not the club and he stayed when he
+     changed shirts. He leaves now, so the only place that chip belongs is the list of men
+     who are gone. */
+  .wgone{font-family:var(--fn);font-size:9px;font-weight:800;letter-spacing:.09em;
     padding:2px 5px;border-radius:4px;line-height:1.25}
-  .wmoved{background:rgba(96,165,250,.16);color:#93c5fd}
   .wgone{background:rgba(255,255,255,.06);color:var(--dim-2)}
   .wgone.retired{background:rgba(226,178,90,.16);color:#e2b25a}
   .wgone.end{background:rgba(147,197,253,.14);color:#93c5fd}
+  .wgone.signed{background:rgba(96,165,250,.18);color:#93c5fd}
   /* WHAT THE YEAR DID TO HIM, IN HIS OWN NUMBERS.
      This was three words, "a step slower", off a fantasy-points delta the screen never
      showed. Three words is not enough to decide whether to keep a man, and it was the same
@@ -6507,7 +6511,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=79"></script>
-<script src="run.js?v=87"></script>
+<script src="run.js?v=88"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8193,6 +8197,8 @@ function dynastyRulesHTML(go){
         'over. There is no second chance.</li>'+
       '<li><b>Every offseason each man becomes his own next year.</b> Draft 2023 Burrow '+
         'and 2019 Ochocinco and next season they are 2024 Burrow and 2020 Ochocinco.</li>'+
+      '<li><b>You lose men three ways.</b> They retire, they run out of seasons, or they '+
+        'sign somewhere else. A man who changes club is gone.</li>'+
       '<li><b>Salaries never drop. Neither does the cap.</b> It is $140M every season. '+
         'Over it you keep everyone, you just cannot sign anyone.</li>'+
     '</ul>'+
@@ -8589,8 +8595,8 @@ const WALL={
      defense draft hit this first, Full Team hit it second, and it was live on this mode
      until somebody went looking. */
   dynasty:{name:'The Gauntlet',
-    what:'Draft six players from any year and keep them. Every offseason each becomes his '+
-      'own next real season. Salaries rise and never fall, on a cap that never moves.',
+    what:'Draft six players from any year. Every offseason each becomes his own next real '+
+      'season, unless he retires or signs somewhere else. The cap never moves.',
     note:'<b>One miss and the run is over.</b> Scored on how long you last.',
     noname:'You are signed in. Pick a username and The Gauntlet opens. Every run on that '+
       'board is listed under a name.',
@@ -10843,15 +10849,6 @@ function winterRow(a,i){
      number on screen: "worth $9M" beside "$9.6M" is not an overpay, it is a rounding
      artefact wearing red. */
   const over=!raise&&winterOverpaid(a);
-  /* HE PLAYED SOMEWHERE ELSE. You keep him either way, because The Gauntlet follows the man
-     and not the club, but the roster line would otherwise change its badge with no
-     explanation. Worth saying plainly: it is a real thing that happened to him that winter,
-     and it is the fact this mode exists to show you.
-     SIGNED WITH, NOT TRADED, and the difference is whose decision it reads as. The data
-     knows only that the club on his card changed, so either word is a guess at the
-     mechanism; this one at least guesses in the direction of something you had no say in.
-     TRADED reads like a move you made, and you did not make it. */
-  const moved=a.was&&a.was.franchise&&p.franchise&&a.was.franchise!==p.franchise;
   return '<div class="wrow '+winterWay(a)+'" data-i="'+i+'">'+
     '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
     '<span class="wwho"><span class="wnm">'+esc(p.name)+'</span>'+
@@ -10859,7 +10856,6 @@ function winterRow(a,i){
         a.was.season+'</span>'+
         '<span>'+esc(E.nickname(p.franchise))+'</span>'+
         (p.age?'<span class="wage">'+p.age+' yrs</span>':'')+
-        (moved?'<span class="wmoved">SIGNED WITH '+esc(p.franchise)+'</span>':'')+
       '</span></span>'+
     winterSpark(a)+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
@@ -10878,14 +10874,20 @@ function winterGoneRow(g){
       '<span class="wsub"><span>'+g.was.season+'</span>'+
       '<span class="wgone '+esc(g.why)+'">'+(g.why==='retired'
         ? 'RETIRED'
-        : g.why==='missed'
-          ? 'MISSED THE SEASON'
-          : g.why==='end'
-            /* NOT A THING THAT HAPPENED TO HIM. He reached the last season the game holds
-               and there is no next one to become. Saying anything about his career here
-               would be inventing it: this is where the data stops, not where he did. */
-            ? 'OUT OF SEASONS'
-            : 'OUT OF THE LEAGUE')+'</span></span></span>'+
+        : g.why==='signed'
+          /* THE ONE THAT IS SOMEBODY ELSE'S DOING. He is still playing, he is still good,
+             and he is not yours. Named, because "left" would be the mode declining to say
+             the most interesting thing it knows. */
+          ? 'SIGNED WITH '+esc(g.to||'')
+          : g.why==='missed'
+            ? 'MISSED THE SEASON'
+            : g.why==='end'
+              /* NOT A THING THAT HAPPENED TO HIM. He reached the last season the game
+                 holds and there is no next one to become. Saying anything about his career
+                 here would be inventing it: this is where the data stops, not where he
+                 did. */
+              ? 'OUT OF SEASONS'
+              : 'OUT OF THE LEAGUE')+'</span></span></span>'+
     '<span class="wmoney"><span class="wfreed">'+M(g.salary)+' freed</span></span>'+
     '<span></span>'+
     '</div>';

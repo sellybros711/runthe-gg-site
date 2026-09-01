@@ -229,13 +229,25 @@ for (let s = 0; s < 30; s++) {
     w.aged.every((a) => a.now.season === a.was.season + 1
       && a.now.player_id === a.was.player_id),
     w.aged.map((a) => `${a.was.season}->${a.now.season}`).join(' '));
+  /* AND EVERYBODY KEPT IS STILL AT THE SAME CLUB, because a man who changes club leaves.
+     This is the assertion that would catch the old behaviour coming back. */
+  ok('and everybody kept is at the club he was at',
+    w.aged.every((a) => a.now.franchise === a.was.franchise),
+    w.aged.filter((a) => a.now.franchise !== a.was.franchise)
+      .map((a) => `${a.was.name} ${a.was.franchise}->${a.now.franchise}`).join(', '));
+  ok('a man who signed elsewhere is named and gone',
+    w.gone.filter((g) => g.why === 'signed').every((g) => !!g.to
+      && g.to !== g.was.franchise
+      && !run.roster.some((p) => p.player_id === g.was.player_id)),
+    w.gone.filter((g) => g.why === 'signed')
+      .map((g) => `${g.was.name} ${g.was.franchise}->${g.to}`).join(', ') || 'none this winter');
   ok('no salary went down',
     w.aged.every((a) => a.salary >= a.wasSalary),
     w.aged.filter((a) => a.salary < a.wasSalary).map((a) => a.now.name).join(', '));
   ok('a man who aged out is off the books',
     w.gone.every((g) => !run.roster.some((p) => p.player_id === g.was.player_id)));
   ok('gone is said honestly',
-    w.gone.every((g) => ['missed', 'out', 'retired', 'end'].indexOf(g.why) >= 0),
+    w.gone.every((g) => ['missed', 'out', 'retired', 'end', 'signed'].indexOf(g.why) >= 0),
     [...new Set(w.gone.map((g) => g.why))].join(','));
   /* RETIRED IS A CLAIM ABOUT A REAL PERSON, so it is only ever made when last_season says
      he never played again. A man with a later season on record must never be called

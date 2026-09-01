@@ -1200,6 +1200,25 @@ function beginOffseason(run, byKey, lastSeason) {
         why: E.dynastyGoneFor(man, byKey, year, lastSeason) });
       continue;
     }
+    /*
+     * HE SIGNED SOMEWHERE ELSE, SO HE IS GONE.
+     *
+     * The mode used to follow the man and not the club: he changed shirts, you kept him,
+     * and the row wore a SIGNED WITH DEN chip to explain why his badge had changed. That
+     * made the one thing a real roster cannot survive into a cosmetic note.
+     *
+     * It is a departure now, and it is the third way to lose a man beside retiring and
+     * running out of seasons. 19% of consecutive season pairs in this pool change club, so
+     * on six players it costs a little over one a year on top of the rest.
+     *
+     * SAFE TO CALL A MOVE. `franchise` is normalised to the modern club, so San Diego and
+     * Los Angeles are one code and a relocation cannot masquerade as a signing. Houston is
+     * the only code that does not span the pool and that is expansion, not a move.
+     */
+    if (next.franchise && man.franchise && next.franchise !== man.franchise) {
+      gone.push({ was: man, salary: run.salaries[i], why: 'signed', to: next.franchise });
+      continue;
+    }
     const wasSal = run.salaries[i];
     const nowSal = E.dynastySalary(wasSal, next.price_musd);
     kept.push(next); slots.push(run.slotIndex[i]); sal.push(nowSal);
