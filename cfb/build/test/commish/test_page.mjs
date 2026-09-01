@@ -313,6 +313,12 @@ console.log('\n=== a tester takes the job ===');
   ok('  and it goes back to the desk', await on(p,'s-desk'));
 
   await p.click('#b-rule'); await p.waitForTimeout(800);
+  /* NINE RULINGS PLAY OUT AS A CUTSCENE BEFORE THE ROOM ANSWERS, and which item is on the
+     desk here depends on the term's seed, so whether this particular ruling is one of them
+     is a coin flip from run to run. The scene is asserted in test_scene; here it is a screen
+     on the way to the one being tested. Without this the suite fails a few runs in ten on a
+     feature that is working. */
+  await pastScene(p);
   ok('ruling shows the room answering', await on(p,'s-room'));
   const says=await p.$$eval('#r-room .say',(e)=>e.map((x)=>x.textContent.trim()));
   ok('  every bloc says something', says.length===9, says.length+' answered');
