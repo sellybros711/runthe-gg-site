@@ -17590,3 +17590,59 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - **NOT deployed** - the owner's standing rule is that work is explained before it is pushed to the site.
 - Tunable: `mpStepMs` (the reveal ladder), the `.bctrl` fixed block + `--brbar` reserve, the `.gin .gcard`
   two-up breakpoint, and the `PACE` map for the between-tournament beat.
+
+### THE DESKTOP TOURTRACER: the course fills the width, the scoreboard sits below
+- **The owner's ask, with a desktop screenshot of The Sahara**: *"Next we must totally revamp the tour tracer
+  mode for desktop. The scoreboard should remain below and the course should take up way more of the width of
+  the screen."* The round screen was a two-column grid capped at a **620px** window with the scorecard in a
+  right-hand rail, leaving large empty green areas right and below.
+- **The load-bearing insight, and it decided the whole design.** The hole spans the FULL 560 units of `HV_H`,
+  so the hole's on-screen width is `boxH * 360/560` - **independent of the frame's aspect ratio**. A wider
+  camera is therefore FREE extra scenery: it can never shrink the golf. The golf's size is set by the window
+  HEIGHT alone. So "way more of the width" is bought by widening the CAMERA, not by stretching the hole.
+- **A live camera, pinned once per render.** `HV_EXL`/`HV_CAML` replace the fixed `HV_CAM` at every
+  INTERACTIVE site; `hvViewEx()` computes the margin this viewport wants (up to `HV_EX_MAX=300`, a 1.71:1
+  broadcast frame) and `hvSetCam()` pins it ONCE at the top of every `hvNode` build, so the viewBox, the
+  terrain tile, the close-up target and the HUD are all computed against the same frame even if the window is
+  resized mid-render. The svg carries that frame as an inline `aspect-ratio`, so the CSS box and the viewBox
+  can never disagree and `preserveAspectRatio="slice"` never crops. **Share, GIF and geometry deliberately stay
+  on the fixed `HV_CAM`** (`hvGeom`'s `lim` too), so hole geometry and any shared image are viewport-independent.
+- **`HV_EXL`/`HV_CAML` are `var`, not `let`** - reachable before their line executes, and a TDZ binding throws
+  rather than reading undefined, which would abort the whole inline script. The trap `acctKey`, `boardEpoch`,
+  `_fwCache`, `_driftCache` and `GEN_BAND` each learned the hard way.
+- **THE SCREENSHOT CAUGHT WHAT 33 GREEN ASSERTIONS DID NOT.** Every measurement passed while the scorecard was
+  BURIED under the fixed control bar (card at y=811, bar at y=831) - all you saw was a "SCORECARD · THRU 1"
+  header before the bar covered it, which reads as broken rather than as "scroll for more". On desktop the bar
+  is now **in flow** directly under the window via a flex `order` swap (controls `order:1`, scorecard
+  `order:2`), so the action stays in view and the card is a short scroll below. **The phone keeps the fixed
+  bar** (the `<=700px` rules), where the window is full-bleed and there is no room for both.
+- **Two more faults only visible by looking**: auto margins in a flex column DISABLE stretch, so the bar
+  shrink-wrapped to 369px and wrapped "LAST HOLE" / "SIM TO END" onto two lines (given a real
+  `width:min(720px,100%)`); and `HV_DESK_CHROME` had to rise 280 -> **296** to fit the ~122px in-flow bar,
+  which the earlier fixed-bar measurement had not needed.
+- **The design tension was resolved by measurement, not taste.** Fitting the scorecard entirely above the
+  controls needs `CHROME ≈ 408`, which on a 1280x800 laptop shrinks the hole to ~276px on screen - **smaller
+  than the old two-column layout's 382px**. So the golf stays big and the card is the thing you scroll to.
+  Lowering `HV_EX_MAX` was also considered and rejected: since hole width is independent of AR, a narrower cap
+  would only shrink the picture without growing the golf.
+- Measured at 1512x945: window **1113x667** (was capped at 620), viewBox `-300 0 960 560`, controls in flow at
+  805-927 and on screen, scorecard below them. The phone is byte-for-byte untouched: viewBox `-52 0 464 560`,
+  still full-bleed, bar still `position:fixed` pinned to 900.
+- Verified: `scratchpad/desk.mjs` **73 pass / 0 fail / 0 page errors** across 1512x945, 1920x1080, 1280x800,
+  1440x900, a short 1200x700 window and a 430x900 phone - the window fills the exact box the camera was sized
+  for, the viewBox widened with it, the hole still spans the full 560, the svg's shape matches the camera (no
+  crop), the controls are in flow / under the window / on screen, the scorecard is below them and never behind
+  them, nothing overflows sideways, and the phone keeps its fixed bar.
+- **`desk30.mjs` was RETIRED, not left red.** It asserted the two-column contract ("round screen is a grid",
+  "tracer left, scorecard right", "everything fits one screen") that this instruction explicitly replaced, so
+  keeping it would be a suite that is red about the right thing. Its two unique viewports (1440x900 and the
+  short 1200x700 window) were folded into `desk.mjs` instead.
+- **A short window is only a LITTLE wider than before, and the test says so rather than hiding it**: at
+  1200x700 the window is 693px against the old 620, because a 700px-tall window is genuinely short. The
+  ">= 860" check is gated on `vh >= 800`.
+- Regressions green: carry 23, sig01 19, lb02 15, wind_e2e 5, dec16 23, nobag 10, cutscene 24, guest17 19,
+  br_mobile 19. Inline scripts parse (block 0 is the JSON-LD tag, fails identically on baseline).
+- **NOT deployed** - the standing rule is that work is explained before it is pushed to the site.
+- Tunable: `HV_EX_MAX` (how much scenery the widest frame paints), `HV_DESK_CHROME` / `HV_DESK_MAXW` (which
+  must stay in sync with the `.scr-dailyround > .holeview` width expression), and the desktop `order` swap +
+  in-flow bar rules in the `@media (min-width:1000px)` block.
