@@ -264,7 +264,16 @@ console.log('\n=== a tester takes the job ===');
     && froms.every((s)=>s.length>0), froms.join(' | '));
   const room=await p.$$eval('#off-room .bl',(e)=>e.length);
   ok('  and the whole room', room===9, room+' blocs');
-  ok('  who hold votes', (await p.$$eval('#off-room .vt',(e)=>e.length))>0);
+  /* AND ONLY ONCE. The strip above draws the six blocs that hold a vote, weighted, against
+     the line that ends the term; this list draws all nine with a number on them. They were
+     both drawing a vote badge and a bar per bloc, which is one card's worth of information
+     laid out twice on one screen. The office's list gives up everything the strip says. */
+  ok('  each with a number rather than a second bar',
+    (await p.$$eval('#off-room .bl .dl',(e)=>e.length))===9
+    && (await p.$$eval('#off-room .bar',(e)=>e.length))===0
+    && (await p.$$eval('#off-room .vt',(e)=>e.length))===0);
+  ok('  and it points at the strip for the votes',
+    /strip above/i.test(await txt(p,'#off-room .rkey')));
   const sport=await p.$$eval('#off-sport .fact',(e)=>e.map((x)=>x.textContent.replace(/\s+/g,' ')));
   ok('  with the sport as it stands', sport.length===4, sport.join(' | '));
   /* ONE CALENDAR. The year strip and the month grid are the same calendar at two zooms and
@@ -322,6 +331,12 @@ console.log('\n=== a tester takes the job ===');
   ok('ruling shows the room answering', await on(p,'s-room'));
   const says=await p.$$eval('#r-room .say',(e)=>e.map((x)=>x.textContent.trim()));
   ok('  every bloc says something', says.length===9, says.length+' answered');
+  /* AND THE FULL FORM IS STILL THE FULL FORM WHERE THE EXTRA COLUMNS MEAN SOMETHING. The
+     office's list is compact because the strip above it already carries the votes. Here the
+     row carries a move, a direction and a line of dialogue, none of which is on any strip,
+     so the compact form must not have followed the function onto this screen. */
+  ok('  the reaction screen keeps the votes it was given',
+    (await p.$$eval('#r-room .vt',(e)=>e.length))>0);
   ok('  in their own words', new Set(says).size>3, says.slice(0,3).join(' | '));
   const deltas=await p.$$eval('#r-room .dl',(e)=>e.map((x)=>x.textContent.trim()));
   ok('  with a number each', deltas.length===9, deltas.join(' '));

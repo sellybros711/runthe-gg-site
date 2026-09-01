@@ -673,5 +673,50 @@ console.log('\n=== a term off the real docket ===');
     moved.length > 0, moved.slice(0, 3).join('   |   ') + (moved.length > 3 ? '   (+' + (moved.length - 3) + ' more)' : ''));
 }
 
+/* THE ONE PIECE OF WRITING A PLAYER IS SHOWN AS A QUOTATION.
+   `gameday-sign` used to describe its own joke instead of printing it: a sign that "referred
+   to this office by name, an amount of money, and a verb". Nothing failed, and nothing could,
+   because a placeholder is a valid string. The rule now is that the sign is on the screen, in
+   the words somebody painted, and these assertions are what stops it sliding back into being
+   summarised. They are also the shape of the rule for anything else in this file that quotes
+   somebody: print the thing, do not describe the thing. */
+console.log('\n=== what the sign said ===');
+{
+  const SIGNS = D.SIGNS || [];
+  const item = D.BY_ID['gameday-sign'];
+  ok('there is more than one sign', SIGNS.length >= 8, SIGNS.length);
+  ok('  and no two of them are the same',
+    new Set(SIGNS.map((s) => s.say)).size === SIGNS.length);
+  ok('  nor two of the things that happened next',
+    new Set(SIGNS.map((s) => s.then)).size === SIGNS.length);
+  /* A BEDSHEET AT SEVEN IN THE MORNING. Block capitals, one breath, and short enough to be
+     read off a television in eleven seconds. */
+  const shape = SIGNS.filter((s) => s.say !== s.say.toUpperCase() || s.say.length > 66
+    || !/^[A-Z ,.]+$/.test(s.say));
+  ok('every one of them is a sign rather than a sentence',
+    !shape.length, shape.map((s) => s.say).join(' | ').slice(0, 90));
+  ok('  and every one says what happened next',
+    SIGNS.every((s) => (s.then || '').length > 40 && /\.$/.test(s.then)));
+  /* AND IT IS PRINTED. Walked over the whole pool rather than one draw, because the failure
+     this replaces was a brief that read the same on every seed. */
+  const briefs = SIGNS.map((s) => D.text(item.brief, { sign: s }, item));
+  ok('the brief quotes the sign it drew',
+    briefs.every((b, i) => b.indexOf(SIGNS[i].say) >= 0 && b.indexOf(SIGNS[i].then) >= 0));
+  ok('  and never describes one instead',
+    !briefs.some((b) => /\ba verb\b|an amount of money|words to that effect/i.test(b)));
+  ok('  and every draw reads differently', new Set(briefs).size === SIGNS.length);
+  /* The cast is what the page hands the prose, so the draw itself has to produce a sign. */
+  const drawn = [];
+  for (let i = 0; i < 200; i++) {
+    let s = i * 2654435761 % 4294967296;
+    const rng = () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+    const c = item.cast({}, null, rng);
+    drawn.push(c && c.sign && c.sign.say);
+  }
+  ok('the draw always lands on a real sign', drawn.every((x) => !!x));
+  ok('  and reaches most of them', new Set(drawn).size >= Math.min(8, SIGNS.length),
+    new Set(drawn).size + ' of ' + SIGNS.length);
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

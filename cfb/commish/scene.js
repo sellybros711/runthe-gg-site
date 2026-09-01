@@ -134,8 +134,14 @@
           say: 'College football has a new commissioner this morning. The last one did not '
             + 'finish the term.' },
         { who: 'wire', set: 'paper',
-          say: 'The job has not changed: one desk, a fresh five year term, and everything '
-            + 'nobody else will sign.' },
+          say: 'The new commissioner has five years. Same as the last one had.' },
+        /* THE STAKES, SAID OUT LOUD, in the one voice that is paid to pose them. The term
+           has exactly two endings and the scene used to describe neither: you serve the five
+           years and are judged on what moved, or the room votes you out before they are up.
+           That is the whole game and it belongs in the first forty seconds. */
+        { who: 'anchor',
+          say: 'Five years to leave this sport better than they found it. Or however long it '
+            + 'takes the room to vote them out.' },
         { who: 'anchor',
           say: 'Nobody was pushed out over one thing. It was all of it, and all of it is still '
             + 'on that desk.' },

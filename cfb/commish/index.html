@@ -178,6 +178,13 @@
     box-shadow:none;font-size:15px}
   .btn.danger{background:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%);color:#fff}
   .btn.sm{padding:10px 12px;font-size:13px}
+  /* THE ONE BUTTON THAT MOVES TIME SAYS WHICH PART OF THE YEAR IT IS MOVING YOU INTO. It
+     said "See what is on the desk" on all nine beats of five years, which is what the press
+     does and never where it lands you. The stage goes on a line of its own above the verb:
+     the calendar above the button already draws the nine, and this names the one you are
+     about to play. */
+  .btn .stage{display:block;font-size:9.5px;letter-spacing:.16em;line-height:1;
+    margin-bottom:6px;opacity:.62}
   .btn+.btn{margin-top:9px}
 
   /* ---- the office: three meters and the room ----
@@ -247,6 +254,13 @@
   .coal.danger .note{color:#fca5a5}
 
   .room{display:grid;gap:5px}
+  /* THE OFFICE'S FORM. Three cells rather than five, and as many columns as fit, because the
+     strip above it has already drawn the votes and the threshold and what is left is nine
+     numbers. See paintRoom(). The caption spans whatever the grid ends up being, or it lands
+     in the first column and the first bloc sits beside it. */
+  .room.brief{grid-template-columns:repeat(auto-fit,minmax(208px,1fr));gap:6px}
+  .room.brief .rkey{grid-column:1/-1}
+  .room.brief .bl{grid-template-columns:auto 1fr auto;gap:8px;padding:7px 10px}
   /* WHAT THE NUMBER ON THE RIGHT IS.
      It went the whole build unnamed: nine rows of chip, name, bar and a figure somewhere in
      the forties, with nothing anywhere on the screen saying what was being measured. A
@@ -2059,8 +2073,11 @@
         that sounded like a promise is somewhere in the pile marked in motion.</p>
       <div class="saidrow" id="off-said"></div>
     </div>
+    <!-- THE STRIP ABOVE IS THE RULE AND THIS IS THE TEMPERATURE. Same room, different
+         question, and the heading has to say which or the two read as one card drawn twice.
+         See paintRoom() and its `brief` form. -->
     <div class="card flat" id="off-roomcard">
-      <div class="eyebrow" style="margin-bottom:9px">The room</div>
+      <div class="eyebrow" style="margin-bottom:9px">The whole room</div>
       <div class="room" id="off-room"></div>
     </div>
     <!-- DOCKED, because the office runs to two screens and the only action on it was at the
@@ -2347,7 +2364,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=6"></script>
-<script src="docket.js?v=21"></script>
+<script src="docket.js?v=23"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -3106,10 +3123,43 @@ function paintWhip(el,w,before){
 
    Withheld includes the quote. The line a bloc says is generated from its own delta, so
    printing it beside a hidden number would hand over the answer in words. */
-function paintRoom(el,w,rows,blind){
+/* `brief` IS THE OFFICE'S FORM AND NOWHERE ELSE'S.
+   THE STRIP AND THE LIST WERE ANSWERING THE SAME QUESTION TWICE. The office drew the whip
+   count (six blocs, weighted, against the line that ends the term) and then, four cards
+   further down, drew the same six again with a vote badge and a bar each, plus the three that
+   hold no vote. Two rows of bars about the room, one above the other, and the honest reading
+   of that screen was "why is this here twice".
+
+   They are not the same thing, though, and which part is which is worth saying: the strip is
+   the RULE, and it is the only place the arithmetic of removal is drawn. The list is the
+   TEMPERATURE, and it is the only place all nine appear with a number on them. So the office
+   keeps both and the list gives up everything the strip already says: no vote badge, no bar,
+   no threshold tick. A chip, a name and a number, flowing into as many columns as the screen
+   has room for.
+
+   The reaction screen and the year in review still draw the full form. There the row carries
+   a move, a direction and a line of dialogue, none of which is on any strip. */
+function paintRoom(el,w,rows,blind,mode){
   const byId={}; (rows||[]).forEach((r)=>{byId[r.id]=r;});
   const dark=blind||{};
   const react=!!(rows&&rows.length);
+  const brief=mode==='brief'&&!react;
+  if(el) el.className='room'+(brief?' brief':'');
+  if(brief){
+    el.innerHTML='<div class="rkey"><span>How each bloc feels about you: 0 is at war, 100 is '
+      +'an ally. The six that can remove you are on the strip above.</span>'
+      +'<b>Standing, 0 to 100</b></div>'
+      +B.BLOCS.map((b)=>{
+        const v=w.blocs[b.id];
+        return '<div class="bl'+(v<L.HOSTILE?' hostile':'')+'" style="--bc:'+bcOf(b.id)+'">'
+          +blocChip(b.id)
+          +'<span class="nm">'+esc((BLOC_UI[b.id]||{}).short||b.name)+'</span>'
+          +'<span class="dl" style="color:'+moodCol(v)+'">'+Math.round(v)+'</span>'
+          +'</div>';
+      }).join('');
+    reveal(el);
+    return;
+  }
   /* SCALED TO THE BIGGEST MOVER IN THIS RULING, not to a fixed ceiling. A fixed one was
      tried and every bar came out a stub: real moves are one to four points against a scale
      built for ten, so the room's whole answer rendered as nine dots. Relative means the
@@ -3679,7 +3729,7 @@ function office(){
   }else{
     paintMap($('off-map'),world,{showMoves:true});
   }
-  paintRoom($('off-room'),world,null);
+  paintRoom($('off-room'),world,null,null,'brief');
   const pool=D.eligible(world,L,situationNow());
   /* THE BUTTON GOES RED WHEN THE THING BEHIND IT IS A CRISIS. Every other beat it is the same
      green invitation, so the one week it is not should not need reading. */
@@ -3695,13 +3745,24 @@ function office(){
      filing, which is the order it happens in life. */
   const podiumUp=pressDue();
   $('b-desk').className='btn'+(!podiumUp&&crisis?' danger':'');
-  $('b-desk').textContent=podiumUp
+  /* WHERE THE PRESS TAKES YOU, THEN WHAT HAPPENS THERE. The label used to be only the second
+     half, so the same nine words sat on the button through winter meetings, the portal, media
+     days and the playoff. The stage it opens is the thing the calendar above is about, and
+     naming it here is what ties the two together: you press "November" and the month grid
+     walks November.
+
+     NOT THE BEAT AFTER THIS ONE. Pressing plays the window you are standing in, and the beat
+     that follows is already named under the calendar strip as "next". Calling this one "next"
+     as well would put two different beats behind the same word on one screen. */
+  const doing=podiumUp
     ? 'Take the podium'
     : crisis
       ? 'Deal with it'
       : pool.length
         ? 'See what is on the desk'
         : (inSeason?'Nothing on the desk. Play on.':'Nothing on the desk. Move on.');
+  $('b-desk').innerHTML='<span class="stage">Next stage: '+esc(L.BEATS[world.beat])+'</span>'
+    +esc(doing);
   show('s-office');
 }
 /* ── what is going on right now ────────────────────────────────────────────────────

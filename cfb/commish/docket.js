@@ -67,6 +67,54 @@
     return out;
   };
 
+  /* ---- WHAT THE SIGN SAID ----
+     NEVER "A VERB". The first draft of `gameday-sign` described the sign instead of printing
+     it: "referred to this office by name, an amount of money, and a verb". That is a joke the
+     player is told exists rather than one they get to read, and it is the single least
+     shareable sentence in the file. If a scenario is about a piece of writing, the writing has
+     to be on the screen.
+
+     THIRTEEN OF THEM, PICKED OFF THE TERM'S OWN RNG, so the case can come back in year four
+     with a different sign and land as the same running joke rather than as a repeat. Each one
+     carries the fallout it earned: the sign is the setup and `then` is the punchline, and a
+     shared pair of them is the whole point of the card.
+
+     Rules for adding one. It goes on a bedsheet at seven in the morning behind a television
+     set, so: block capitals, one breath, no profanity, and no real person's name. It has to be
+     about something this office actually does, because a sign about nothing is a sign nobody
+     paints a barn with. */
+  const SIGNS = [
+    { say: 'THE COMMISSIONER OWES MY ROOMMATE FOUR DOLLARS',
+      then: 'The roommate has been interviewed twice and has changed the amount both times.' },
+    { say: 'MY TUITION IS FIFTY EIGHT THOUSAND AND KICKOFF IS AT ELEVEN PM',
+      then: 'It was fact checked by a newspaper, which found the tuition figure was low.' },
+    { say: 'THE PORTAL TOOK MY BOYFRIEND',
+      then: 'He has since transferred a second time and the sign is now treated as journalism.' },
+    { say: 'I HAVE READ THE PLAYOFF FORMAT AND I NEED TO SPEAK TO SOMEBODY',
+      then: 'Four different conference offices have privately said they agree with it.' },
+    { say: 'GIVE THE GROUP OF FIVE A BID YOU COWARDS',
+      then: 'It has been reprinted, without permission, in a Mountain West season ticket flyer.' },
+    { say: 'PAY THE PLAYERS, I AM ONE OF THEM',
+      then: 'They were on scholarship and on camera, and the compliance office is still writing.' },
+    { say: 'MY GRANDMOTHER WANTS HER BOWL GAME BACK AND SHE IS RIGHT BEHIND ME',
+      then: 'She was, and she waved, and it is the most watched eleven seconds of the season.' },
+    { say: 'MY DAD DROVE ELEVEN HOURS FOR AN ELEVEN AM KICKOFF',
+      then: 'The father was found asleep in section 114 and is now a recurring broadcast segment.' },
+    { say: 'THIS OFFICE HAS NEVER BEEN TO A TAILGATE',
+      then: 'Your own staff bought eleven of the shirts before anybody thought to check.' },
+    { say: 'I AM AN ACCOUNTING MAJOR AND I CANNOT FIND THE MONEY EITHER',
+      then: 'Their professor has built a lecture around it and the lecture is on the internet.' },
+    { say: 'FIRE THE COMMISSIONER, HIRE MY DAD, HE IS FREE SATURDAYS',
+      then: 'The father gave a sixteen minute interview in which he outlined an actual platform.' },
+    { say: 'TWELVE TEAMS, SIXTEEN TEAMS, WE ARE STILL NOT IN',
+      then: 'Two athletic directors have asked, seriously, whether the student is available.' },
+    { say: 'SOMEBODY IN THIS SPORT HAS TO OWN A CALENDAR',
+      then: 'It has been read into the record of a state senate committee on higher education.' },
+  ];
+  /* The sign the prose falls back on when the guards walk these strings with no cast. A real
+     one rather than a placeholder, because a placeholder is how "a verb" got shipped. */
+  const signOf = (c) => (c && c.sign) || SIGNS[0];
+
   const ITEMS = [
     /* ================================================================
        WHEN A FUSE GOES OFF.
@@ -2047,17 +2095,19 @@
       beats: [OCT, NOV],
       weight: 4,
       when: () => true,
+      /* THE SIGN IS THE ITEM, so it is drawn off the term's own rng and printed. See SIGNS. */
+      cast: (w, L, rng) => ({ sign: SIGNS[Math.floor((rng ? rng() : 0) * SIGNS.length) % SIGNS.length] }),
       eyebrow: 'The broadcast',
       title: 'The sign got on television',
-      brief: 'A student held up a sign behind the pregame set on Saturday morning that referred '
-        + 'to this office by name, an amount of money, and a verb. It was on air for eleven '
-        + 'seconds. It has since been printed on shirts, painted on a barn in Kentucky, and '
-        + 'read aloud in a state senate. Two athletic directors have apologized to you '
-        + 'personally and both of them were laughing.',
+      brief: (c) => 'A student stood behind the pregame set on Saturday morning holding a '
+        + 'bedsheet that read, in block capitals, ' + signOf(c).say + '. It was on air for '
+        + 'eleven seconds. It is now on shirts, on a barn in Kentucky, and on the front of a '
+        + 'newspaper that does not cover sport. ' + signOf(c).then + ' Two athletic directors '
+        + 'have apologized to you personally and both of them were laughing.',
       voices: [
         { id: 'Networks', say: 'We have a seven second delay for audio. Signs are not audio.' },
         { id: 'Fans', say: 'It has been the same joke behind that set for forty years and it is the best part.' },
-        { id: 'Presidents', say: 'He is enrolled at one of our institutions and is now nationally famous.' },
+        { id: 'Presidents', say: 'They are enrolled at one of our institutions and are now nationally famous.' },
       ],
       options: [
         { id: 'ignore', label: 'Say nothing',
@@ -3065,7 +3115,11 @@
       weight: 6,
       when: (w, L, sit) => sit.reentry !== 'open' || sit.proYears < 2,
       eyebrow: 'The calendar',
-      title: 'The deadline is in the wrong place',
+      /* A TITLE STATES THE CASE AND NOT THE RULING. "The deadline is in the wrong place" is
+         one of the three options talking: the dates are where the sport put them, on purpose,
+         and whether to move them is the whole question in front of you. A headline that has
+         already answered it makes "Leave the dates alone" read as the wrong button. */
+      title: 'The deadline comes before the information',
       brief: 'A player has to decide whether to withdraw from the draft eleven weeks before '
         + 'the draft tells him anything, and four weeks before the portal window he would need '
         + 'if he withdrew. So the decision every one of them makes is a guess made in the wrong '
@@ -5162,6 +5216,10 @@
   const publicAPI = { ITEMS, BY_ID, BEATS: { WINTER, PORTAL, SPRING, MEDIA, SEPT, OCT, NOV, CHAMP, PLAYOFF },
     eligible, pick, resolve, settings, format, castOf, text, recency, sinceRuled, NOSIT,
     plantsOf, voiceSay, voiceSays,
+    /* Exported for the guard rather than for the page: the sign is the one piece of writing
+       in this file that a player is shown as a quotation, so what it may say has rules and
+       something has to hold them. See SIGNS. */
+    SIGNS,
     PROBE_MAX, asksOf, optionsFor, allOptions };
   if (typeof module !== 'undefined' && module.exports) module.exports = publicAPI;
   if (typeof window !== 'undefined') window.PS_CFB_DOCKET = publicAPI;
