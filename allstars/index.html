@@ -1719,7 +1719,11 @@ const State = {
   difficulty: ['easy','medium','hard'].includes(PREFS.difficulty) ? PREFS.difficulty : 'medium',
   gameSpeed: ['relaxed','normal','fast'].includes(PREFS.gameSpeed) ? PREFS.gameSpeed : 'normal',
   game: null,
-  season: migrateSeason(loadSeason()),
+  /* Raw here on purpose. migrateSeason() reaches for the franchise tables
+     (CITIES, KITS, PARKS) which are declared further down this file, and a
+     const is not hoisted, so migrating at this point throws before the app
+     ever renders. The migration runs at boot instead, below render(). */
+  season: loadSeason(),
   franchise: null,   /* set from the season below, or by founding one */
   cup: loadCup(),
 };
@@ -2772,7 +2776,7 @@ function renderRoster() {
       if (picked.size === 9) {
         setTimeout(() => {
           State.team = [...picked];
-          State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+          State.teamName = (nameInput.value || 'Your Team').slice(0,32);
           savePrefs();
           State.screen = 'settings';
           render();
@@ -2790,7 +2794,7 @@ function renderRoster() {
   const founded = State.mode === 'season' && State.franchise;
   const nameLabel = el('label', null, founded ? '' : 'Team name: ');
   const nameInput = el('input', null);
-  nameInput.type='text'; nameInput.maxLength = 20;
+  nameInput.type='text'; nameInput.maxLength = 32;
   nameInput.value = State.teamName || 'Your Team';
   if (founded) {
     /* The name was settled at the founding. A second box for it here is a
@@ -2801,7 +2805,7 @@ function renderRoster() {
       + `<b style="letter-spacing:.06em">${State.teamName}</b>`;
   }
   Object.assign(nameInput.style, {
-    background:'#0c1218', border:'1px solid var(--line)', color:'var(--text)',
+    background:'#fffcf2', border:'2px solid var(--line)', color:'var(--text)',
     padding:'6px 8px', borderRadius:'4px', fontFamily:'inherit', fontSize:'13px', marginLeft:'6px', width:'180px'
   });
   nameLabel.appendChild(nameInput);
@@ -2818,7 +2822,7 @@ function renderRoster() {
     /* Same auto advance as the ninth click: nine is nine. */
     setTimeout(() => {
       State.team = [...picked];
-      State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+      State.teamName = (nameInput.value || 'Your Team').slice(0,32);
       savePrefs();
       State.screen = 'settings';
       render();
@@ -2828,7 +2832,7 @@ function renderRoster() {
   go.onclick = () => {
     if (picked.size !== 9) return;
     State.team = [...picked];
-    State.teamName = (nameInput.value || 'Your Team').slice(0,20);
+    State.teamName = (nameInput.value || 'Your Team').slice(0,32);
     State.screen = 'settings';
     render();
   };
@@ -7240,6 +7244,16 @@ function renderSeasonEnd() {
    ============================================================================ */
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
+/* Boot. The saved season is brought up to the current shape here, at the
+   bottom, because the migration reads tables declared above this line and
+   below the State object. Anything that throws here takes the whole page
+   down with it, so a save this build cannot read is dropped rather than
+   allowed to blank the app. */
+try {
+  State.season = migrateSeason(State.season);
+} catch (e) {
+  State.season = null;
+}
 render();
 </script>
 </body>
