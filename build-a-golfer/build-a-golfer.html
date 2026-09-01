@@ -28320,8 +28320,12 @@ function hvPlaceLabel(cands, txt, col, obs){
   }
   return best;
 }
-// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it
-function hvYardageSVG(g, avoid){
+// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it.
+// `opts.carry` gates the CARRY arc (owner: it must not be on screen before the tee shot is hit - it belongs to
+// the drive that has just landed). `opts.live` hides it until the animator settles the ball, exactly like the
+// distance chip, so it appears as the ball comes to rest rather than while it is still in the air.
+function hvYardageSVG(g, avoid, opts){
+  const O=opts||{};
   if(!g || g.par===3) return '';
   let s='', L150=null;
   // sand, in screen space, so a chip never lands on the trouble it is drawn to explain
@@ -28345,6 +28349,7 @@ function hvYardageSVG(g, avoid){
   // the carry: the far edge of whatever the tee shot is being asked to fly, if anything is out there.
   // Only trouble in the DRIVING ZONE counts (170-330 yds and inside the front two thirds of the hole) -
   // a greenside bunker isn't a carry, it's an approach.
+  if(!O.carry) return s;
   let carry=0, hz=null, hzR=6;
   const consider=(c,x,y,r)=>{ if(c>=170 && c<=330 && y<g.L*0.72 && c>carry){ carry=c; hz=[x,y]; hzR=r; } };
   for(const bk of (g.bunkers||[])) if(bk.y<g.L-40) consider(Math.hypot(bk.x,bk.y)+bk.r, bk.x, bk.y, bk.r);
@@ -28366,8 +28371,9 @@ function hvYardageSVG(g, avoid){
       const cb=hvPlaceLabel([[side*off,0],[-side*off,0],[side*off,17],[-side*off,17],[side*off,-17],
         [-side*off,-17],[side*(off+34),0],[-side*(off+34),0],[side*off,34],[-side*off,34]]
         .map(o=>[P[0]+o[0], P[1]+o[1]]), txt, gold, obs);
-      s+=`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`;
-      s+=cb.svg; }
+      s+=`<g id="hv-carry" opacity="${O.live?'0':'1'}">`
+        +`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`
+        +cb.svg+`</g>`; }
   }
   return s;
 }
@@ -28395,7 +28401,9 @@ function hvDistChip(g,p,live,small){
   return `<g id="hv-dist" opacity="${live?'0':'1'}"><rect x="${(x-w/2).toFixed(1)}" y="${(cy-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="${(h/2).toFixed(1)}" fill="rgba(6,18,12,.86)" stroke="rgba(241,208,74,.6)" stroke-width="${small?0.4:0.8}"/>`
     +`<text x="${x.toFixed(1)}" y="${(cy+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#F1D04A" font-family="inherit">${txt}</text></g>`;
 }
-function hvRevealDist(){ const d=document.getElementById('hv-dist'); if(d) d.setAttribute('opacity','1'); }
+// the ball has come to rest: show the readouts that belong to a ball on the ground. The CARRY arc rides the
+// same settle hook as the distance chip, so it arrives as the tee shot lands and never while it is in flight.
+function hvRevealDist(){ ['hv-dist','hv-carry'].forEach(id=>{ const d=document.getElementById(id); if(d) d.setAttribute('opacity','1'); }); }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
 function hvDoneShot(g,p,dim,small,pcol){
@@ -28696,7 +28704,9 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   // distance-to-pin chip rides the current shot's resting ball, hidden until the ball settles.
   const curP=(idx>=0&&plots[idx])?plots[idx]:null;
   const dsmall=curP?small&&inCam(curP):false;
-  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall));
+  // the carry arc belongs to the tee shot that has just landed: drawn only while the DRIVE is the shot on the
+  // map (idx 0), hidden until the animator settles it, and gone the moment the next shot is played (idx > 0).
+  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall), {carry:(idx===0 && !!curP), live:(live&&idx===0)});
   const dchip=curP?hvDistChip(g,curP,live,dsmall):'';
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
     <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${yard}${inner}${dchip}${overlay||''}</svg></div></div>`);
