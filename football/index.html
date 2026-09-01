@@ -811,8 +811,9 @@ window.GA_ID='G-L29P5MRWKE';
     padding:0 15px 12px}
   .wc-sub b{color:#F3DDAE}
   .wintercard .capbar{margin:0 15px;border-radius:11px}
+  .wc-step{padding:11px 15px 0;margin-top:10px}
   .wc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
-    flex-wrap:wrap;margin-top:12px;padding:9px 15px;
+    flex-wrap:wrap;margin-top:11px;padding:9px 15px;
     border-top:1px solid rgba(226,178,90,.18);background:rgba(0,0,0,.24);
     font-family:var(--fn);font-size:11.5px;color:rgba(243,221,174,.6)}
   #w-summary b{font-weight:800;color:#F3DDAE}
@@ -1018,16 +1019,42 @@ window.GA_ID='G-L29P5MRWKE';
   }
   @media (prefers-reduced-motion:reduce){ .dock-go{animation:none} }
 
-  /* ---- HOW FAR ROUND THE CALENDAR ----
-     The one thing a player is holding on to between seasons, so it is a bar rather than a
-     sentence: a sentence says nine of twenty-seven and a bar says how much is left. */
-  .lapbar{height:5px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;
-    margin-top:9px}
-  .lapbar i{display:block;height:100%;border-radius:3px;
-    background:linear-gradient(90deg,#e2b25a,#F3DDAE);
-    transition:width .5s cubic-bezier(.22,1,.36,1)}
-  .lapnote{font-family:var(--fn);font-size:10.5px;color:var(--dim-2);margin-top:6px}
-  .lapnote b{color:#F3DDAE;font-weight:800}
+  /* ---- HOW LONG THIS TARGET LASTS ----
+     A featureless five-pixel bar under a sentence, which is what this was, tells you a
+     proportion and nothing else: it cannot say ten, so the sentence had to, and then the
+     bar was decoration beside its own caption.
+     TEN PIPS, ONE A SEASON, because ten is a number you can count on a screen. Done ones
+     are lit, the season about to be played is ringed, and what is left is what is left. */
+  .steprow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:rgba(243,221,174,.55)}
+  .steprow b{color:#F3DDAE}
+  .stepnext{flex:0 0 auto;color:rgba(243,221,174,.4)}
+  .stepnext b{color:#e2b25a}
+  .pips{display:flex;gap:4px;margin-top:7px}
+  .pip{flex:1 1 0;height:6px;border-radius:3px;background:rgba(255,255,255,.08);
+    transition:background .4s ease,box-shadow .4s ease}
+  .pip.done{background:linear-gradient(90deg,#e2b25a,#F3DDAE)}
+  /* The one about to be played. Ringed rather than filled: it has not happened yet. */
+  .pip.now{background:rgba(226,178,90,.28);box-shadow:0 0 0 1.5px rgba(226,178,90,.85)}
+
+  /* ---- WHAT THE OFFSEASON DID, AS THREE NUMBERS ----
+     It was a sentence with bold numbers in it: "1 spot to fill, 1 got a raise, 1 left". The
+     numbers were the content and the words were carrying them, which reads as prose and
+     scans as nothing. Same shape as the four chips on every player row below, because it is
+     the same kind of thing: a count with a label under it. */
+  .wsum{display:flex;gap:6px;flex:1 1 auto;min-width:0}
+  .wsumc{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:6px 2px;border-radius:9px;background:rgba(0,0,0,.26);
+    font-family:var(--fn);font-variant-numeric:tabular-nums}
+  .wsumc b{font-size:16px;font-weight:800;line-height:1;color:rgba(243,221,174,.5)}
+  .wsumc i{font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.08em;
+    color:rgba(243,221,174,.45);white-space:nowrap}
+  /* A count that is not zero is a thing that happened, and the one you must act on is the
+     only one that gets the loud colour. */
+  .wsumc.on b{color:#F3DDAE}
+  .wsumc.act{background:rgba(226,178,90,.14)}
+  .wsumc.act b,.wsumc.act i{color:#e2b25a}
 
   /* ---- THE OFFSEASON'S NARRATOR ---- */
   .narr{position:fixed;left:0;right:0;bottom:0;z-index:41;
@@ -5862,12 +5889,15 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- WHAT THE WINTER DID, IN ONE LINE, and what it leaves you to do about it. The spots
            you have to fill were invisible until the wheel appeared, which is the one fact
            that decides whether this screen is a formality or a problem. -->
-      <!-- HOW FAR ROUND, on the screen between seasons. The offseason is where somebody
-           decides whether to come back, so it is where the destination belongs. -->
-      <div class="lapbar"><i id="w-lapfill" style="width:0%"></i></div>
-      <div class="lapnote" id="w-lapnote"></div>
+      <!-- HOW LONG THIS TARGET LASTS, on the screen between seasons. The offseason is
+           where somebody decides whether to come back, so it is where the run's shape
+           belongs. -->
+      <div class="wc-step">
+        <div class="steprow"><span id="w-lapnote"></span><span class="stepnext" id="w-lapnext"></span></div>
+        <div class="pips" id="w-pips"></div>
+      </div>
       <div class="wc-foot">
-        <span id="w-summary"></span>
+        <span class="wsum" id="w-summary"></span>
         <button class="wrules" id="b-w-rules">How this works</button>
       </div>
     </div>
@@ -8241,8 +8271,13 @@ const DYN_SAVE_KEY='ps_dynasty_save';
    3: the calendar. A run now carries the year it began in as a destination, how many
    seasons go round, and which time round it is on, and the target it is played against is
    a different number from the one a version 2 run was scored by. Restoring one would put
-   somebody back on a run whose rules had changed underneath them. */
-const DYN_SAVE_VERSION=3;
+   somebody back on a run whose rules had changed underneath them.
+   4: THE CAP STOPPED GROWING, and a saved run carries the cap it had grown to. A version 3
+   run resumed into this build kept its $177M in season five and played on an economy this
+   build does not have, under a header that told it the cap never moves. The number a run is
+   played against is part of the run, so a run played against a different one is a different
+   game and does not reopen. */
+const DYN_SAVE_VERSION=4;
 const dynKey=(p)=>(p?p.player_id+'|'+p.season:null);
 
 /* The phases a run can be put back at, which is the whole of the rule above in one
@@ -10499,13 +10534,17 @@ function paintOwnerLine(el){
   el.hidden=false;
   /* NO "OR YOU ARE OUT" QUALIFIER ANY MORE. Under one life it is always true, and a
      warning that never turns off is not a warning. */
+  /* THE SAME PIPS AS THE OFFSEASON CARD, because it is the same fact and a player who has
+     learned to read it once should not have to learn it again. */
+  let pips='';
+  for(let i=1;i<=L.lap;i++) pips+='<i class="pip'+(i<L.at?' done':(i===L.at?' now':''))+'"></i>';
   el.innerHTML='<div class="rp-head"><span>The owner</span>'+
       '<span class="rp-head-n">Season '+run.seasonNo+'</span></div>'+
     '<div class="ownerwant"><b>'+bar+' wins</b><span>and you play another season.</span></div>'+
-    '<div class="lapbar"><i style="width:'+(100*(L.at-1)/L.lap).toFixed(1)+'%"></i></div>'+
-    '<div class="lapnote">'+(L.left===1
-      ? 'Win this one and the target goes to <b>'+L.next+'</b>.'
-      : '<b>'+L.left+'</b> more at <b>'+bar+'</b> before it goes to <b>'+L.next+'</b>.')+'</div>';
+    '<div class="steprow"><span>Season <b>'+L.at+'</b> of <b>'+L.lap+'</b> at <b>'+bar+
+      '</b> wins</span><span class="stepnext">'+(L.left===1
+        ? 'then <b>'+L.next+'</b> next season' : 'then <b>'+L.next+'</b>')+'</span></div>'+
+    '<div class="pips">'+pips+'</div>';
 }
 
 function paintCoachLine(id){
@@ -10900,13 +10939,7 @@ function paintWinter(){
   /* THE DESTINATION, REPAINTED EVERY OFFSEASON. `at` is the season about to be played, so
      the bar fills for the ones behind it. */
   {
-    const L=dynastyLap();
-    const fill=$('w-lapfill'), note=$('w-lapnote');
-    if(fill) fill.style.width=(100*(L.at-1)/L.lap).toFixed(1)+'%';
-    if(note) note.innerHTML=(L.left===1
-      ? 'Win this one and the target goes to <b>'+L.next+'</b>.'
-      : '<b>'+L.left+'</b> more at <b>'+E.dynastyWinBar(run.seasonNo,run.stepSeasons)
-        +'</b> before it goes to <b>'+L.next+'</b>.');
+    paintStep();
   }
   const gw=$('w-gonewrap');
   gw.hidden=!w.gone.length;
@@ -11118,20 +11151,54 @@ function runWinterShow(rows,gones,agedOf,w){
  *
  * Repainted after a release, because a release is how you change the answer.
  */
+/*
+ * THE TARGET, AND HOW MANY SEASONS IT HAS LEFT TO RUN.
+ *
+ * Ten pips, one a season, lit for the ones behind you and ringed on the one about to be
+ * played. What was here said "6 more at 8 before it goes to 9", which is three numbers in a
+ * row of prose and reads as none of them, over a five-pixel bar that could show a
+ * proportion and could not show ten.
+ */
+function paintStep(){
+  if(!run||!run.dynasty) return;
+  const L=dynastyLap();
+  const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
+  const note=$('w-lapnote'), next=$('w-lapnext'), pips=$('w-pips');
+  if(note) note.innerHTML='Season <b>'+L.at+'</b> of <b>'+L.lap+'</b> at <b>'+bar+'</b> wins';
+  if(next) next.innerHTML=(L.left===1?'then <b>'+L.next+'</b> next season'
+    :'then <b>'+L.next+'</b>');
+  if(pips){
+    let out='';
+    for(let i=1;i<=L.lap;i++){
+      out+='<i class="pip'+(i<L.at?' done':(i===L.at?' now':''))+'"></i>';
+    }
+    pips.innerHTML=out;
+  }
+}
+
+/*
+ * WHAT THE OFFSEASON DID, AS THREE NUMBERS RATHER THAN A SENTENCE.
+ *
+ * "1 spot to fill, 1 got a raise, 1 left" put the content in the numerals and the structure
+ * in the words, so it scanned as prose and answered nothing at a glance. Three counts with
+ * their labels under them is the same shape as the four chips on every player row below,
+ * which is right, because it is the same kind of thing.
+ *
+ * THE SPOTS TO FILL ARE THE ONLY ONE YOU CAN ACT ON, so it is the only one that shouts.
+ */
 function paintWinterSummary(){
   const el=$('w-summary'); if(!el||!run||!run.winter) return;
-  const holes=run.slots.length-run.roster.length;
   const w=run.winter;
-  const bits=[];
-  bits.push(holes
-    ? '<b>'+holes+' spot'+(holes===1?'':'s')+'</b> to fill'
-    : '<b>A full roster.</b> Nothing to fill');
-  const up=w.aged.filter(a=>a.salary>a.wasSalary+0.05);
-  if(up.length) bits.push('<b>'+up.length+'</b> got a raise');
+  const holes=run.slots.length-run.roster.length;
+  const raises=w.aged.filter(a=>a.salary>a.wasSalary+0.05).length;
   const gone=w.gone.length;
-  if(gone) bits.push('<b>'+gone+'</b> left');
-  el.innerHTML=bits.join(' &middot; ');
+  const cell=(n,label,act)=>'<span class="wsumc'+(n?' on':'')+(n&&act?' act':'')+'">'
+    +'<b>'+n+'</b><i>'+label+'</i></span>';
+  el.innerHTML=cell(holes,holes===1?'SPOT TO FILL':'SPOTS TO FILL',true)
+    +cell(raises,raises===1?'RAISE':'RAISES',false)
+    +cell(gone,'LEFT',false);
 }
+
 
 /* Releasing. The row collapses out of the list and the bar retracts by exactly what he was
    costing, which is the only feedback the action needs: you did this to make room, so the
@@ -11174,13 +11241,7 @@ function wireWinter(){
   /* THE DESTINATION, REPAINTED EVERY OFFSEASON. `at` is the season about to be played, so
      the bar fills for the ones behind it. */
   {
-    const L=dynastyLap();
-    const fill=$('w-lapfill'), note=$('w-lapnote');
-    if(fill) fill.style.width=(100*(L.at-1)/L.lap).toFixed(1)+'%';
-    if(note) note.innerHTML=(L.left===1
-      ? 'Win this one and the target goes to <b>'+L.next+'</b>.'
-      : '<b>'+L.left+'</b> more at <b>'+E.dynastyWinBar(run.seasonNo,run.stepSeasons)
-        +'</b> before it goes to <b>'+L.next+'</b>.');
+    paintStep();
   }
     },380);
   };
