@@ -1803,6 +1803,14 @@ check(/\.song\.finishes \.tbar\{[^}]*background:var\(--greenT\)/.test(game),
    person can actually read. */
 console.log('the automatic refresh');
 const wf = read('.github/workflows/setlist-data.yml');
+/* AND A COPY WITH THE COMMENTS OUT, for the checks that assert a mechanism is
+   GONE. The comment block above the gate quotes the wall-clock line it
+   replaced, verbatim and on purpose, so a naive search finds it in the
+   explanation and reports the bug as still present. Same trap as gameBare,
+   which this file has fallen into twice. A '#' inside a quoted string would
+   be mangled by this, and there is none in the file: every '#' in it starts a
+   comment. */
+const wfBare = wf.split('\n').map(l => l.replace(/(^|\s)#.*$/, '')).join('\n');
 check(/cron:/.test(wf), 'the refresh is scheduled');
 /* --strict IS THE WHOLE SAFETY STORY. Without it the ingester warns about a
    throttled year, a truncated year or a jamchart outage and still exits 0,
@@ -2534,8 +2542,31 @@ check(/cron: '0 10 \* \* \*'/.test(wf) && /cron: '0 11 \* \* \*'/.test(wf),
   'the refresh runs daily on both UTC hours');
 /* TWO ENTRIES BECAUSE GITHUB CRON HAS NO DAYLIGHT SAVING. 6am Eastern is 10:00
    UTC from March to November and 11:00 UTC the rest of the year, so a single
-   entry would be 5am for half of it. The gate lets exactly one through. */
-check(/TZ=America\/New_York date \+%H/.test(wf), 'and only the one that is 6am in New York proceeds');
+   entry would be 5am for half of it. The gate lets exactly one through.
+ *
+ * AND IT DECIDES BY WHICH SCHEDULE FIRED, NOT BY THE WALL CLOCK. It used to
+ * read `TZ=America/New_York date +%H` and proceed only when that said 06,
+ * which is correct exactly as long as GitHub starts a scheduled run at the
+ * minute it is scheduled for. GitHub does not promise that.
+ *
+ * It broke that way silently for six days. Every run from 27 August started
+ * four to eleven hours late, so New York said 13:00 or 17:00 by the time the
+ * runner asked, both entries stopped, and the job reported SUCCESS with every
+ * later step skipped. Green ticks and no new setlists since 26 August.
+ *
+ * github.event.schedule carries the cron that actually fired and says so no
+ * matter how late the runner picks it up, so that is what the gate reads now,
+ * paired with the day's real UTC offset. */
+check(!/TZ=America\/New_York date \+%H/.test(wfBare),
+  'the gate does not depend on the runner starting on time');
+check(/github\.event\.schedule/.test(wf), 'it reads which schedule actually fired');
+check(/date \+%z/.test(wf), 'against the day\'s real UTC offset');
+/* BOTH ARMS, or half the year silently stops refreshing. The failure this
+   replaces was exactly one arm of a two-arm decision never being reachable. */
+check(/-0400.*\n?.*0 10 \* \* \*/.test(wf) || /"-0400" \] && \[ "\$FIRED" = "0 10 \* \* \*"/.test(wf),
+  'EDT proceeds on the 10:00 UTC entry');
+check(/"-0500" \] && \[ "\$FIRED" = "0 11 \* \* \*"/.test(wf),
+  'and EST on the 11:00 UTC one');
 check(/steps\.when\.outputs\.go == 'yes'/.test(wf), 'every later step is gated on it');
 check(/workflow_dispatch/.test(wf) && /github\.event_name.*workflow_dispatch/.test(wf),
   'a manual run is always let through');
