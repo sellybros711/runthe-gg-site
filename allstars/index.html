@@ -331,6 +331,22 @@
     .press-text{font-size:14px;}
   }
 
+  /* Park cards: a three band mock of the park's own palette above the
+     name, so the choice reads visually before it reads numerically. */
+  .park-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+  .park-card{border:2px solid var(--line);background:var(--panel);cursor:pointer;
+    box-shadow:var(--shadow-sm);padding:0 0 10px;transition:transform .08s;}
+  .park-card:hover{transform:translate(-1px,-1px);}
+  .park-card.on{background:var(--panel-2);box-shadow:3px 3px 0 var(--gold);}
+  .park-card .pk-sky{height:48px;position:relative;border-bottom:2px solid var(--line);}
+  .park-card .pk-wall{position:absolute;left:0;right:0;top:22px;height:9px;}
+  .park-card .pk-grass{position:absolute;left:0;right:0;top:31px;bottom:0;}
+  .park-card .pk-name{font-size:13px;font-weight:900;letter-spacing:.1em;
+    text-transform:uppercase;padding:8px 10px 2px;}
+  .park-card .pk-blurb{font-size:11px;line-height:1.45;color:var(--text-dim);padding:0 10px 6px;}
+  .park-card .pk-effect{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--gold);font-weight:700;padding:0 10px;}
+
   .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   @media (max-width:640px){
     .row-2{grid-template-columns:1fr;}
@@ -840,6 +856,11 @@ const DEFAULT_THEME = {
   landmark(){},
 };
 function currentTheme() {
+  /* You are at HOME in your own park. The theme used to be the opponent's
+     in every game, so a franchise could pick a stadium and never play in
+     it once. */
+  const g = State.game;
+  if (g && g.home && g.home.isYou && State.franchise) return franchiseTheme(State.franchise);
   const oppName = State.opponent && State.opponent.name;
   return STADIUM_THEMES[oppName] || DEFAULT_THEME;
 }
@@ -1699,6 +1720,7 @@ const State = {
   gameSpeed: ['relaxed','normal','fast'].includes(PREFS.gameSpeed) ? PREFS.gameSpeed : 'normal',
   game: null,
   season: migrateSeason(loadSeason()),
+  franchise: null,   /* set from the season below, or by founding one */
   cup: loadCup(),
 };
 
@@ -1746,6 +1768,7 @@ function render() {
   else if (s === 'howto') renderHowTo();
   else if (s === 'cup') renderCup();
   else if (s === 'cutscene') renderCutscene();
+  else if (s === 'franchise') renderFranchise();
 }
 $('#btn-home').addEventListener('click', () => {
   if (State.game && State.game.live) {
@@ -2212,6 +2235,7 @@ function pressCtx(extra) {
     team: State.teamName || 'your club',
     foe: (State.opponent && State.opponent.name) || 'the opposition',
     park: (currentTheme() || {}).park || 'the yard',
+    city: (State.franchise && State.franchise.city) || null,
     rec: rec ? `${rec.w}-${rec.l}` : '0-0',
     gameNo: S ? S.results.length + 1 : 1,
     lastTag: S && S.press && S.press.lastTag,
@@ -2363,6 +2387,267 @@ function renderCutscene() {
 let pressKeyHandler = null;
 document.addEventListener('keydown', (e) => { if (pressKeyHandler) pressKeyHandler(e); });
 
+
+/* ============================================================================
+   THE FRANCHISE
+   Season mode used to open on a roster grid with a text box labelled Team
+   name, which is a settings field, not a founding. You pick a city, you
+   pick what they are called, you pick the colours, and you pick the yard
+   you play half your games in, and only then do you pick nine players.
+
+   The park is the one that is not decoration. Each has a PARK FACTOR that
+   applies to both clubs while you are at home, so choosing the Bandbox is
+   choosing to play seven games of a different sport to the one you get in
+   the Cavern. It is stated in plain numbers on the card, because a hidden
+   modifier on a choice the player makes once is just an unexplained
+   losing streak later.
+   ============================================================================ */
+const CITIES = [
+  { n:'Hollow Creek',  blurb:'Mill town. Everyone knows the lineup by heart.' },
+  { n:'Port Marrow',   blurb:'Docks, fog, and a crowd that arrives already angry.' },
+  { n:'Ember Falls',   blurb:'Built on a waterfall. The outfield is always damp.' },
+  { n:'Gallows Hill',  blurb:'Nobody agrees how the town got its name.' },
+  { n:'Saltwind Bay',  blurb:'The wind comes off the water and never stops.' },
+  { n:'Thistledown',   blurb:'Small, green, and entirely too pleased with itself.' },
+  { n:'Ironvale',      blurb:'Foundry town. They boo their own club on principle.' },
+  { n:'Copperkettle',  blurb:'Famous for pie. Tolerant of a losing season.' },
+  { n:'Lantern Point', blurb:'A lighthouse beyond centre field. It is in play.' },
+  { n:'Bramblewick',   blurb:'The hedges around the park have never been cut.' },
+  { n:'Chimney Rock',  blurb:'Thin air, tall sky, and a very long walk to the park.' },
+  { n:'Mudlark Flats', blurb:'Floods every spring. They play anyway.' },
+];
+const NICKNAMES = [
+  'Nine','Sluggers','Ramblers','Growlers','Cyclones','Bandits','Mudlarks',
+  'Lanterns','Jackrabbits','Haymakers','Ghosts','Anvils','Comets','Wolves',
+  'Kettles','Bootleggers','Hollers','Sandhogs',
+];
+const KITS = [
+  { n:'Firebrick',  a:'#cf3229', b:'#14283f' },
+  { n:'Harbour',    a:'#1566ae', b:'#f2e3bb' },
+  { n:'Clover',     a:'#1b8a4a', b:'#f8e9c0' },
+  { n:'Mustard',    a:'#d8a017', b:'#2a2a34' },
+  { n:'Plum',       a:'#6b4296', b:'#f3e6cf' },
+  { n:'Ironwork',   a:'#3f4a58', b:'#e8823a' },
+  { n:'Seafoam',    a:'#2f9c8e', b:'#2a2a34' },
+  { n:'Rust',       a:'#a84a1c', b:'#f0dfb8' },
+];
+
+/* Each park is a real place to play, not a backdrop. hr and xbh multiply
+   the home run and extra base rolls for BOTH clubs while you are at home,
+   which is what a park factor is: it is the field, not the team. */
+const PARKS = {
+  bandbox: {
+    name:'The Bandbox', hr:1.32, xbh:0.92, crowd:0,
+    blurb:'Three hundred feet to the porch. Fly balls leave that nobody meant to hit.',
+    effect:'Home runs +32% · extra base hits -8%',
+    theme:{ sky:'#7fb8d8', wall:'#9e3a2a', wallLine:'#f6ead2', marker:'#fffaf0',
+            track:'#c08a58', grass:'#43a049',
+            crowd:['#e05a5a','#f0c050','#5aa8e0','#d8b070','#c06888'] },
+  },
+  cavern: {
+    name:'Cavern Park', hr:0.68, xbh:1.28, crowd:0,
+    blurb:'Four hundred and thirty to dead centre. Balls die out there and doubles live.',
+    effect:'Home runs -32% · extra base hits +28%',
+    theme:{ sky:'#8fd0e8', wall:'#22643a', wallLine:'#f8f0d2', marker:'#fffaf0',
+            track:'#b8945e', grass:'#2f8a44',
+            crowd:['#6a9a7a','#8fbfa0','#c8d8b0','#4a7a58','#a8c898'] },
+  },
+  sandlot: {
+    name:'Sandlot Common', hr:1.0, xbh:1.0, crowd:0,
+    blurb:'A wooden fence, a scoreboard somebody paints by hand, and no tricks at all.',
+    effect:'Plays completely straight',
+    theme:{ sky:'#72c7f0', wall:'#8a5f36', wallLine:'#fff4dc', marker:'#fffaf0',
+            track:'#d0a060', grass:'#4fb055',
+            crowd:['#e0b070','#c8a880','#e8d8b0','#b09060','#d8c8a0'] },
+  },
+  icebox: {
+    name:'The Icebox', hr:0.78, xbh:0.94, crowd:0,
+    blurb:'Cold off the lake all season. The ball does not carry and everyone knows it.',
+    effect:'Home runs -22% · extra base hits -6%',
+    theme:{ sky:'#c3e7f6', wall:'#4a6a80', wallLine:'#ffffff', marker:'#ffffff',
+            track:'#c8ccd4', grass:'#5aa87a',
+            crowd:['#c0d8e8','#f8f8fa','#9ab8cc','#e0eef6','#8aa8bc'] },
+  },
+  bowl: {
+    name:'The Thunder Bowl', hr:1.0, xbh:1.0, crowd:4,
+    blurb:'Fifty thousand of them, straight up, right on top of the field.',
+    effect:'No park factor · your hitters get a real home crowd bump',
+    theme:{ sky:'#86bdd8', wall:'#38404c', wallLine:'#ffd44a', marker:'#fffaf0',
+            track:'#b08a58', grass:'#3f9145',
+            crowd:['#cf3229','#f0c050','#1566ae','#eeeeee','#cf3229'] },
+  },
+  flats: {
+    name:'Sunset Flats', hr:1.18, xbh:1.12, crowd:0,
+    blurb:'Dry, high and hot. Everything carries, including the ones you got under.',
+    effect:'Home runs +18% · extra base hits +12%',
+    theme:{ sky:'#f2ba7c', wall:'#a8703a', wallLine:'#fadfa6', marker:'#fffaf0',
+            track:'#d8a860', grass:'#63a84a',
+            crowd:['#e08840','#f0b860','#c06830','#d8a870','#f0d0a0'] },
+  },
+};
+const PARK_KEYS = Object.keys(PARKS);
+
+/* The franchise's own park, as a full theme the field renderer can use. */
+function franchiseTheme(F) {
+  const P = PARKS[F && F.park] || PARKS.sandlot;
+  return Object.assign({ park: F && F.parkName ? F.parkName : P.name, landmark(){} }, P.theme);
+}
+/* The factors in force for the game being played: your park when you are
+   home, otherwise none. A visiting club does not carry its fences with it. */
+function parkFactors() {
+  const g = State.game;
+  const F = State.franchise;
+  if (!g || !F || !g.home || !g.home.isYou) return { hr:1, xbh:1, crowd:0 };
+  const P = PARKS[F.park];
+  return P ? { hr:P.hr, xbh:P.xbh, crowd:P.crowd } : { hr:1, xbh:1, crowd:0 };
+}
+
+function teamKitColor() {
+  const F = State.franchise;
+  return (F && KITS[F.kit]) ? KITS[F.kit].a : '#f4c25a';
+}
+
+function randomFranchise() {
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const city = pick(CITIES);
+  return {
+    city: city.n, nickname: pick(NICKNAMES), kit: Math.floor(Math.random() * KITS.length),
+    park: pick(PARK_KEYS),
+  };
+}
+function franchiseName(F) {
+  return F ? `${F.city} ${F.nickname}` : 'Your Team';
+}
+
+function renderFranchise() {
+  const F = State.franchise || (State.franchise = randomFranchise());
+  const s = el('div','screen');
+  s.appendChild(el('h2', null, 'Found your franchise'));
+  s.appendChild(el('p', null,
+    'Four choices, and the park is the one that changes the baseball. '
+    + 'Everything here is saved with the season.'));
+
+  /* The marquee, live: it is the thing all four choices are building. */
+  const bannerCard = el('div','card');
+  bannerCard.id = 'fr-banner';
+  const paint = () => {
+    const kit = KITS[F.kit] || KITS[0];
+    const P = PARKS[F.park] || PARKS.sandlot;
+    bannerCard.innerHTML =
+        `<div style="background:${kit.a};color:${kit.b};border:3px solid var(--navy);`
+      + `padding:14px 16px;text-align:center">`
+      + `<div style="font-size:11px;letter-spacing:.24em;text-transform:uppercase;opacity:.85">`
+      + `${F.city}</div>`
+      + `<div style="font-size:30px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;`
+      + `line-height:1.1">${F.nickname}</div>`
+      + `<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;margin-top:6px;`
+      + `opacity:.85">${P.name}</div></div>`;
+  };
+  paint();
+  s.appendChild(bannerCard);
+
+  const chipRow = (items, isOn, onPick) => {
+    const row = el('div','toggle-row');
+    for (const it of items) {
+      const t = el('div','toggle', it.label);
+      if (isOn(it)) t.classList.add('on');
+      if (it.title) t.title = it.title;
+      t.onclick = () => { onPick(it); render(); };
+      row.appendChild(t);
+    }
+    return row;
+  };
+
+  /* City */
+  const cityCard = el('div','card');
+  cityCard.appendChild(el('h3', null, 'City'));
+  cityCard.appendChild(chipRow(
+    CITIES.map(c => ({ label:c.n, v:c.n, title:c.blurb })),
+    (it) => it.v === F.city,
+    (it) => { F.city = it.v; }));
+  const cb = CITIES.find(c => c.n === F.city);
+  cityCard.appendChild(el('p', null, cb ? cb.blurb : ''));
+  s.appendChild(cityCard);
+
+  /* Nickname, from the list or your own */
+  const nickCard = el('div','card');
+  nickCard.appendChild(el('h3', null, 'They are called the'));
+  nickCard.appendChild(chipRow(
+    NICKNAMES.map(n => ({ label:n, v:n })),
+    (it) => it.v === F.nickname,
+    (it) => { F.nickname = it.v; }));
+  const own = el('div','btn-row');
+  const inp = el('input');
+  inp.type = 'text'; inp.maxLength = 16; inp.placeholder = 'or type your own';
+  inp.value = NICKNAMES.includes(F.nickname) ? '' : F.nickname;
+  Object.assign(inp.style, {
+    background:'var(--panel)', border:'2px solid var(--line)', color:'var(--text)',
+    padding:'8px 10px', borderRadius:'0', fontFamily:'inherit', fontSize:'13px', width:'220px',
+  });
+  inp.oninput = () => { if (inp.value.trim()) { F.nickname = inp.value.trim(); paint(); } };
+  own.appendChild(inp);
+  nickCard.appendChild(own);
+  s.appendChild(nickCard);
+
+  /* Colours */
+  const kitCard = el('div','card');
+  kitCard.appendChild(el('h3', null, 'Colours'));
+  const kitRow = el('div','toggle-row');
+  KITS.forEach((k, i) => {
+    const t = el('div','toggle', k.n);
+    if (F.kit === i) t.classList.add('on');
+    t.style.background = k.a;
+    t.style.color = k.b;
+    /* The chip is already painted its own colour, so .toggle.on has
+       nothing left to change. The selected one gets a ring instead. */
+    t.style.borderColor = 'var(--navy)';
+    if (F.kit === i) t.style.boxShadow = '0 0 0 3px var(--gold), 2px 2px 0 var(--navy)';
+    t.onclick = () => { F.kit = i; render(); };
+    kitRow.appendChild(t);
+  });
+  kitCard.appendChild(kitRow);
+  s.appendChild(kitCard);
+
+  /* Park. The only choice with numbers on it, so it gets cards. */
+  const parkCard = el('div','card');
+  parkCard.appendChild(el('h3', null, 'Home park'));
+  parkCard.appendChild(el('p', null,
+    'You play four of your seven at home. The factor applies to BOTH clubs '
+    + 'while you are there, because it is the field and not the team.'));
+  const pg = el('div','park-grid');
+  for (const key of PARK_KEYS) {
+    const P = PARKS[key];
+    const c = el('div','park-card' + (F.park === key ? ' on' : ''));
+    c.innerHTML =
+        `<div class="pk-sky" style="background:${P.theme.sky}">`
+      + `<div class="pk-wall" style="background:${P.theme.wall}"></div>`
+      + `<div class="pk-grass" style="background:${P.theme.grass}"></div></div>`
+      + `<div class="pk-name">${P.name}</div>`
+      + `<div class="pk-blurb">${P.blurb}</div>`
+      + `<div class="pk-effect">${P.effect}</div>`;
+    c.onclick = () => { F.park = key; render(); };
+    pg.appendChild(c);
+  }
+  parkCard.appendChild(pg);
+  s.appendChild(parkCard);
+
+  const row = el('div','btn-row');
+  const back = el('button','btn ghost','Back');
+  back.onclick = () => { State.screen = 'menu'; render(); };
+  const shuffle = el('button','btn ghost','Surprise Me');
+  shuffle.onclick = () => { State.franchise = randomFranchise(); render(); };
+  const go = el('button','btn','Sign the Lease');
+  go.onclick = () => {
+    F.parkName = (PARKS[F.park] || PARKS.sandlot).name;
+    State.teamName = franchiseName(F);
+    State.screen = 'roster';
+    render();
+  };
+  row.append(back, shuffle, go);
+  s.appendChild(row);
+  app.appendChild(s);
+}
+
 /* ============================================================================
    MENU
    ============================================================================ */
@@ -2381,7 +2666,8 @@ function renderMenu() {
   const season = el('button','btn', State.season ? 'Resume Season' : 'Start Season');
   season.onclick = () => {
     if (State.season) { State.screen = 'season-hub'; render(); }
-    else { State.mode='season'; State.screen='roster'; render(); }
+    else { State.mode='season'; State.franchise = randomFranchise();
+           State.screen='franchise'; render(); }
   };
   const cup = el('button','btn', State.cup ? 'Resume Cup' : 'Play The Cup');
   cup.onclick = () => {
@@ -2501,10 +2787,19 @@ function renderRoster() {
 
   const foot = el('div','card');
   const counter = el('div', null);
-  const nameLabel = el('label', null, 'Team name: ');
+  const founded = State.mode === 'season' && State.franchise;
+  const nameLabel = el('label', null, founded ? '' : 'Team name: ');
   const nameInput = el('input', null);
   nameInput.type='text'; nameInput.maxLength = 20;
   nameInput.value = State.teamName || 'Your Team';
+  if (founded) {
+    /* The name was settled at the founding. A second box for it here is a
+       second source of truth for the same string. */
+    nameInput.type = 'hidden';
+    nameLabel.innerHTML = `<span style="font-size:12px;letter-spacing:.1em;`
+      + `text-transform:uppercase;color:var(--text-dim)">Drafting for</span> `
+      + `<b style="letter-spacing:.06em">${State.teamName}</b>`;
+  }
   Object.assign(nameInput.style, {
     background:'#0c1218', border:'1px solid var(--line)', color:'var(--text)',
     padding:'6px 8px', borderRadius:'4px', fontFamily:'inherit', fontSize:'13px', marginLeft:'6px', width:'180px'
@@ -2656,6 +2951,13 @@ function randomOpponent(exclude) {
 function buildSchedule() {
   const bag = [...OPPONENTS].sort(() => Math.random() - 0.5);
   return bag.slice(0,7).map(o => o.name);
+}
+/* Four of the seven at home, alternating from the opener, so the park you
+   chose is the one you see most. Before this every season game was played
+   on the road: youHome was never passed and the franchise had a home park
+   it never once played in. */
+function buildHomeDates() {
+  return [true, false, true, false, true, false, true];
 }
 function opponentByName(name) {
   return OPPONENTS.find(o => o.name === name);
@@ -2832,6 +3134,8 @@ function startSeason() {
   State.season = {
     team: State.team,
     teamName: State.teamName,
+    franchise: State.franchise || randomFranchise(),
+    homeAt: buildHomeDates(),
     innings: State.innings,
     difficulty: State.difficulty,
     schedule: buildSchedule(),
@@ -2910,7 +3214,16 @@ function advanceLeague(S, roundIdx, myFoe, iWon) {
    it does have, so an in progress save comes back consistent rather than
    keeping a table that never matched. */
 function migrateSeason(S) {
-  if (!S || S.leagueSchedule) return S;
+  if (!S) return S;
+  /* A season saved before franchises existed has a name and nothing else,
+     so it gets one built round the name it already has rather than being
+     handed a city it never chose. */
+  if (!S.franchise) {
+    S.franchise = Object.assign(randomFranchise(), { nickname: S.teamName || 'Nine' });
+    S.franchise.parkName = PARKS[S.franchise.park].name;
+  }
+  if (!S.homeAt) S.homeAt = buildHomeDates();
+  if (S.leagueSchedule) return S;
   S.leagueSchedule = buildLeagueSchedule(S.schedule || []);
   S.league = emptyLeague();
   S.leagueDone = 0;
@@ -2926,8 +3239,29 @@ function teamRating(keys) {
 
 function renderSeasonHub() {
   const S = State.season;
+  State.franchise = S.franchise;      /* a resumed season brings its own */
+  State.teamName = S.teamName;
+  const F = S.franchise;
+  const P = (F && PARKS[F.park]) || PARKS.sandlot;
+  const kit = (F && KITS[F.kit]) || KITS[0];
   const s = el('div','screen');
   s.appendChild(el('h2', null, S.teamName + ' · Season'));
+
+  /* The franchise card: who you are, where you play, and what that park
+     does, because the factor was chosen once and is felt every home game. */
+  const idCard = el('div','card');
+  idCard.innerHTML =
+      `<div style="background:${kit.a};color:${kit.b};border:2px solid var(--navy);`
+    + `padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">`
+    + `<div><div style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.85">`
+    + `${F ? F.city : ''}</div>`
+    + `<div style="font-size:22px;font-weight:900;letter-spacing:.08em;text-transform:uppercase">`
+    + `${F ? F.nickname : S.teamName}</div></div>`
+    + `<div style="text-align:right"><div style="font-size:14px;font-weight:900;`
+    + `letter-spacing:.08em;text-transform:uppercase">${P.name}</div>`
+    + `<div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.85">`
+    + `${P.effect}</div></div></div>`;
+  s.appendChild(idCard);
 
   const rec = seasonRecord(S);
   const games = S.results.length;
@@ -2946,18 +3280,23 @@ function renderSeasonHub() {
       nextCard.appendChild(el('h3', null, 'Next game'));
       const style = TEAM_STYLE[next.name] || DEFAULT_STYLE;
       const sharp = clamp(games / 8, 0, 1);
+      const atHome = !!(S.homeAt && S.homeAt[games]);
       nextCard.appendChild(el('p', null,
-        `vs ${next.name} · ${style.label} · ${sharpnessLabel(sharp)}`));
+        `${atHome ? 'vs' : 'at'} ${next.name} · ${style.label} · ${sharpnessLabel(sharp)}`
+        + `<br><b>${atHome ? P.name + ' (home)' : (STADIUM_THEMES[next.name] || DEFAULT_THEME).park + ' (away)'}</b>`));
       const play = el('button','btn','Play Next Game');
       play.onclick = () => {
         State.team = S.team;
         State.teamName = S.teamName;
+        State.franchise = S.franchise;
         State.innings = S.innings;
         State.difficulty = S.difficulty;
         State.opponent = next;
         State.mode = 'season';
+        const home = !!(S.homeAt && S.homeAt[games]);
         const slot = games === 0 ? 'first' : (games === 6 ? 'finale' : 'mid');
-        pressPlay('pregame', pressCtx({ slot }), () => startGame({ mode:'season' }));
+        pressPlay('pregame', pressCtx({ slot }),
+                  () => startGame({ mode:'season', youHome: home }));
       };
       nextCard.appendChild(play);
     } else {
@@ -3255,8 +3594,8 @@ function startGame(opts) {
     outs: 0,
     balls: 0, strikes: 0,
     bases: [null,null,null],
-    away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : '#f4c25a' },
-    home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? '#f4c25a' : State.opponent.color },
+    away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : teamKitColor() },
+    home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? teamKitColor() : State.opponent.color },
     stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{} },
     lineScore: { away:[0], home:[] },   /* runs per inning, per side */
     fx: [],           /* live particles: dust, confetti, glove flashes */
@@ -3634,6 +3973,13 @@ function batterContext(b) {
   if (g.half === 'bottom' && (State.mode === 'playoff' || State.mode === 'cup')) {
     ctx.pow = Math.min(100, ctx.pow + 3);
     ctx.con = Math.min(100, ctx.con + 2);
+  }
+  /* A park built to be loud gives its own hitters the same kind of bump in
+     any round, which is the Thunder Bowl's whole reason to exist. */
+  const pfc = parkFactors().crowd;
+  if (pfc && g.half === 'bottom' && g.home && g.home.isYou) {
+    ctx.pow = Math.min(100, ctx.pow + pfc);
+    ctx.con = Math.min(100, ctx.con + Math.round(pfc * 0.6));
   }
   if (b.quirk === 'transform' && Math.random() < 0.16) {
     ctx.pow = Math.max(ctx.pow, 96);
@@ -4037,6 +4383,10 @@ function resolveSwing(cursorT) {
   let xbhChance = (0.045 + 0.115 * contact) * (0.55 + powForRoll / 150);
   if (mode === 'power') { hrChance *= 1.75; xbhChance *= 1.45; }
   if (mode === 'contact') { hrChance *= 0.45; xbhChance *= 0.8; }
+  /* The park, for both clubs, only while you are at home. */
+  const pf = parkFactors();
+  hrChance *= pf.hr;
+  xbhChance *= pf.xbh;
   if (Math.random() < hrChance) return scheduleContactPlay('home run', batter);
 
   if (Math.random() < xbhChance) {
