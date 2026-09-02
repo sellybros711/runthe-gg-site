@@ -17151,6 +17151,8 @@ function momentPosTxt(info){
   return `You sit ${info.pos<=1?'':'T'}${info.pos}, ${info.gap} back of ${esc(info.leaderName)}`;
 }
 function momentPopup(ce, info){
+  // the first Sunday a career is close enough to be offered the round
+  if(firstDue('moment')) return maybeFirst('moment', {upName:(ce.evt&&ce.evt.name)||''}, ()=>momentPopup(ce, info));
   const evt=ce.evt;
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -20665,10 +20667,7 @@ function csPlay(beats, ctx, done, opts){
       try{ extra.appendChild($(pressBuzzHTML(b.buzz))); }catch(e){}
       return; }
     if(fr==='feed' && !b.choice){ txEl.innerHTML=csFeedHTML(raw); typing=false; return; }
-    const showRest=()=>{
-      if(b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
-      if(b.choice) mountChoices(b);
-    };
+    const showRest=()=>{ csRest(b); };
     if(reduce){ txEl.textContent=full; typing=false; showRest(); return; }
     shown=0; typing=true; txEl.innerHTML='<span class="cs-caret">▌</span>';
     stop();
@@ -20678,6 +20677,15 @@ function csPlay(beats, ctx, done, opts){
       txEl.innerHTML=esc(full.slice(0,shown))+'<span class="cs-caret">▌</span>';
     }, 18);
   };
+  // Whatever a beat carries UNDER its line: a facts card (the first-time inductions), the stat row a
+  // decision's fallout prints, and the answers themselves. One place, because the typewriter can be
+  // finished two ways (it runs out, or you tap through it) and both have to land the same beat.
+  function csRest(b){
+    if(!b) return;
+    if(b.facts){ card.classList.add('wide'); extra.innerHTML=b.facts; }
+    else if(b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
+    if(b.choice) mountChoices(b);
+  }
   // the answers, in the box. Tapping the scene can't skip past a decision, and neither can Skip.
   function mountChoices(b){
     choosing=true; nextEl.style.display='none'; skipBtn.style.display='none';
@@ -20702,10 +20710,7 @@ function csPlay(beats, ctx, done, opts){
   }
   const advance=()=>{
     if(choosing) return;                                   // a decision is up: it has to be answered
-    if(typing){ stop(); typing=false; txEl.textContent=full;
-      const b=list[i]; if(b&&b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
-      if(b&&b.choice) mountChoices(b);
-      return; }
+    if(typing){ stop(); typing=false; txEl.textContent=full; csRest(list[i]); return; }
     i++;
     if(i>=list.length){ finish(); return; }
     paint();
@@ -20751,9 +20756,204 @@ function csStoryPlay(sb, scene){
   track('storyline_shown',{id:beat.id});
   csPlay(list, ctx, ()=>{ if(sb.onDone) sb.onDone({}); else render(); }, {onChoice, room:scene.room});
 }
+/* ==================== FIRST-TIME REVEALS: THE INDUCTION ====================
+   A career keeps handing you things you have never seen before: a seat on the Player Advisory
+   Council, the first time a microphone is put in front of you, the first decision that is nobody's
+   but yours, the first Sunday you are close enough to play. They used to SIMPLY APPEAR, mid-career,
+   with no word about what they were or why you of all people were being shown one.
+
+   Now the first one ARRIVES. What you did to earn it, what it lets you do, and - the first time ever
+   on this account - how it actually works.
+
+   TWO LEDGERS, because they answer two different questions:
+     - the ACCOUNT (bag_firsts, cloud-synced) decides whether the TEACHING half plays. You only ever
+       need to be told what a press conference is once, on any device.
+     - the CAREER (S.career.firsts) decides whether it plays AT ALL this career. Earning a seat is an
+       accomplishment every single time you earn it, so the celebration comes back with a new golfer.
+       The tutorial does not.
+
+   maybeFirst(id, ctx, next) IS THE WHOLE GATE. Wrap anything that can arrive cold and it inducts the
+   player the first time and is a straight passthrough forever after, so adding the next one is one
+   row in FIRSTS plus one wrapped call. It rides the cutscene layer when that is on, and falls back to
+   a card when it is not - and a failure anywhere is a passthrough, never a career that cannot move. */
+var FIRSTS={
+  council:{
+    room:'desk', accent:'#5fd0e0', tag:'The Player Advisory Council',
+    kick:'A seat at the table',
+    lead:()=>`The tour does not decide anything alone. There is a room where the rule changes get argued over before anybody outside hears about them, and this morning they added a chair to it. Your name is on the back of it.`,
+    said:()=>`Players get put in that room for one reason. Somebody looked at what ${csMe()} has done out here and decided the tour should be asking, not telling.`,
+    earned:()=>{
+      const c=S.career||{}, out=[], yr=S.year||1, w=c.wins||0, m=c.majors||0;
+      out.push(yr+(yr===1?' season':' seasons')+' on tour');
+      if(m>0) out.push(m===1?'A major championship':m+' major championships');
+      if(w>0) out.push(w===1?'A tour win':w+' tour wins');
+      try{ const r=myWorldRank(); if(r&&r<=40) out.push('World number '+r); }catch(e){}
+      if(out.length<2) out.push('A record the tour cannot ignore');
+      return out;
+    },
+    power:()=>[
+      'A proposal comes to you before it lands, not after',
+      'You see exactly which way it cuts for the golfer you built',
+      'Your seat swings the room by '+COUNCIL_SWING+' points, either way'
+    ],
+    how:()=>[
+      'The room has its own leaning before you speak. You move it, you do not own it',
+      'A proposal can pass over your objection, and fail with your support',
+      'Whatever passes is in force until the tour votes it back'
+    ],
+    cta:'See the proposal ▸'
+  },
+  press:{
+    room:'wall', accent:'#f1d04a', tag:'The press room',
+    kick:'They want to hear from you',
+    lead:()=>`There is a room down the corridor with a wall of logos and a lot of chairs in it, and for the first time this week it is full because of you.`,
+    said:()=>`Nobody sets that room up for a player nobody has heard of. This is the sport deciding ${csMe()} is worth quoting.`,
+    earned:()=>['You are somebody the tour wants to put on camera','What you say from here on is on the record'],
+    power:()=>[
+      'Every answer moves your Popularity and your Respect',
+      'Popularity is what fans and sponsors pay for. Respect is what the locker room gives you',
+      'The two rarely move the same way, so there is no safe answer'
+    ],
+    how:()=>[
+      'Bold answers are marked risky. They can land, or they can backfire on you',
+      'A backfire costs confidence and a slice of your fan base',
+      'Who your golfer becomes is built out of these answers, one at a time'
+    ],
+    cta:'Face the room ▸'
+  },
+  dilemma:{
+    room:'clubhouse', accent:'#e9a23b', tag:'Career decisions',
+    kick:'Not every call is a golf shot',
+    lead:()=>`Something has come up that has nothing to do with a golf ball, and it is sitting on your side of the desk.`,
+    said:()=>`Careers turn on these as often as they turn on Sundays. Nobody outside the room ever sees the ones that mattered.`,
+    earned:()=>['You have a career worth making decisions about'],
+    power:()=>[
+      'The choice is yours, and it is not always a good one against a bad one',
+      'What happens next is weighed, not scripted. The same call can pay or cost',
+      'Some of them come back later in your career'
+    ],
+    how:()=>[
+      'An outcome can leave a temporary effect on your game for a few events',
+      'It can move your money, your fans, your confidence and your reputation',
+      'A risky call is marked. Taking it is the point'
+    ],
+    cta:'Hear it out ▸'
+  },
+  moment:{
+    room:'course', accent:'#35d6a0', tag:'The Moment',
+    kick:'Sunday, and you are in it',
+    lead:()=>`You have played your way into the last group's air on a Sunday that matters. From here you do not have to watch this one happen to you.`,
+    said:()=>`Any player can be simulated. This is the tour offering ${csMe()} the chance to go and play it.`,
+    earned:()=>['In contention on the final day of a week that counts'],
+    power:()=>[
+      'Play the final round yourself, hole by hole, with the shot decisions in your hands',
+      'Or sim it and let the round play out as it always has',
+      'Playing it pays coins on top of whatever you earn on the leaderboard'
+    ],
+    how:()=>[
+      'Your score is your score. What you shoot is what goes on the board',
+      'The bold calls that come off pay extra. The ones that do not, cost you',
+      'You are only asked when you are genuinely in it, and never more than twice a season'
+    ],
+    cta:'See the situation ▸'
+  }
+};
+function firstsState(){ try{ const s=LS.get(acctKey('bag_firsts'), null); return (s&&typeof s==='object')?s:{}; }catch(e){ return {}; } }
+function firstSeenEver(id){ return !!firstsState()[id]; }
+function markFirstEver(id){
+  try{ const s=firstsState(); if(s[id]) return; s[id]=1; LS.set(acctKey('bag_firsts'), s); cloudPush(); }catch(e){}
+}
+function careerFirsts(){
+  if(!S.career) S.career={};
+  if(!S.career.firsts || typeof S.career.firsts!=='object') S.career.firsts={};
+  return S.career.firsts;
+}
+function firstDue(id){
+  try{
+    if(S.daily) return false;
+    if(!FIRSTS[id]) return false;
+    return !careerFirsts()[id];
+  }catch(e){ return false; }
+}
+// The scannable half of the reveal: a labelled card the beat can carry, so what you earned and what
+// it gives you can be read at a glance instead of only heard.
+function firstFactsHTML(label, lines, col){
+  const L=(lines||[]).filter(Boolean);
+  if(!L.length) return '';
+  return `<div style="margin-top:9px;border:1px solid ${col};border-radius:12px;background:rgba(255,255,255,.035);padding:10px 12px">
+    <div style="font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:${col};margin-bottom:6px">${esc(label)}</div>
+    ${L.map(t=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-top:5px">
+      <span style="color:${col};flex:0 0 auto;font-size:12px;line-height:1.35">▸</span>
+      <span style="font:600 13px/1.35 var(--body);color:#dbe7ee">${esc(t)}</span></div>`).join('')}
+  </div>`;
+}
+function firstVal(f, k, ctx){ try{ const v=f[k]; return typeof v==='function'?v(ctx):v; }catch(e){ return null; } }
+function firstBeats(f, ctx, teach){
+  const col=f.accent||'var(--gold)';
+  const beats=[
+    {who:'vane', frame:'broadcast', pic:'me', kick:firstVal(f,'kick',ctx), tx:firstVal(f,'lead',ctx)},
+    {who:'brant', frame:'broadcast', pic:'me', tx:firstVal(f,'said',ctx),
+     facts:firstFactsHTML('What you did', firstVal(f,'earned',ctx), col)}
+  ];
+  if(teach) beats.push({who:'nair', frame:'broadcast', pic:'me',
+    tx:`Here is how it works, because you have not seen one of these before.`,
+    facts:firstFactsHTML('How it works', firstVal(f,'how',ctx), col)});
+  beats.push({who:'duck', frame:'broadcast', pic:'me',
+    tx:teach?`And this is what it hands you.`:`You know what this is. You have earned it again.`,
+    facts:firstFactsHTML('What it gives you', firstVal(f,'power',ctx), col),
+    nextLabel:(f.cta||'Continue ▸')});
+  return beats;
+}
+/* The fallback, for a player with the cutscene layer off. Same words, one card, one button - and it
+   mounts on the body like the other set pieces, so it works from a routed screen or from mid-season. */
+function firstModal(f, ctx, teach, done){
+  const col=f.accent||'#f1d04a';
+  document.querySelectorAll('.firstov').forEach(n=>n.remove());
+  const ov=$(`<div class="firstov" style="position:fixed;inset:0;z-index:62;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
+      background:radial-gradient(120% 90% at 50% 6%, rgba(12,34,30,.86), rgba(3,7,5,.98) 72%)">
+    <div style="max-width:452px;width:100%;background:linear-gradient(180deg,#12251a,#070f0a);border:1px solid ${col};border-radius:18px;padding:20px 20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+      <div style="text-align:center">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border:1px solid ${col};border-radius:999px;background:rgba(255,255,255,.06);margin-bottom:8px">
+          <span style="font:800 10px/1 var(--body);letter-spacing:.24em;color:${col};text-transform:uppercase">${esc(f.tag||'Something new')}</span></div>
+        <h2 style="margin:6px 0 8px;font-size:21px;color:#fff;line-height:1.15">${esc(firstVal(f,'kick',ctx)||'')}</h2>
+        <p class="lede" style="margin:0 auto 12px;color:#dbe7ee;max-width:400px">${esc(firstVal(f,'lead',ctx)||'')}</p>
+      </div>
+      <div style="text-align:left">
+        ${firstFactsHTML('What you did', firstVal(f,'earned',ctx), col)}
+        ${teach?firstFactsHTML('How it works', firstVal(f,'how',ctx), col):''}
+        ${firstFactsHTML('What it gives you', firstVal(f,'power',ctx), col)}
+      </div>
+    </div></div>`);
+  const b=$(`<button class="btn goldfill" style="max-width:420px;margin:15px auto 0">${esc(f.cta||'Continue ▸')}</button>`);
+  b.onclick=()=>{ ov.remove(); done&&done(); };
+  ov.querySelector('div>div').appendChild(b);
+  document.body.appendChild(ov);
+}
+/* The gate. Marks it seen BEFORE it plays, for the same reason storyBeatOpened does: an induction
+   that throws halfway must not leave the flag unset and fire again every render for the rest of the
+   career. Anything that goes wrong here falls through to next(), so this can never block a career. */
+function maybeFirst(id, ctx, next){
+  next=next||function(){};
+  if(!firstDue(id)) return next();
+  const f=FIRSTS[id];
+  let teach=true;
+  try{ teach=!firstSeenEver(id); }catch(e){}
+  try{ careerFirsts()[id]=1; markFirstEver(id); }catch(e){}
+  try{ track('first_reveal',{id, teach, year:S.year||1}); }catch(e){}
+  try{
+    if(cutscenesOn()){
+      const beats=firstBeats(f, ctx||{}, teach);
+      if(beats.length){ csPlay(beats, ctx||{}, next, {room:f.room}); return; }
+    }
+  }catch(e){ console.error('first reveal failed', e); }
+  try{ firstModal(f, ctx||{}, teach, next); }catch(e){ next(); }
+}
+
 /* The wrapper. Gate shut, or anything at all goes wrong building the scene, and this is a straight
    passthrough to the modal that has always run, with its outcome machinery untouched. */
 function showStoryline(sb){
+  // The first microphone of a career gets introduced before it is answered.
+  if(firstDue('press')) return maybeFirst('press', sb.ctx, ()=>showStoryline(sb));
   let scene=null;
   // pin the line-variation seed ONCE per showing, so a scene reads the same while you're in it and
   // different the next time this beat fires (csVary reads it at render time).
@@ -20917,6 +21117,8 @@ function showStorylineModal(sb){
 }
 // ---- CS325: the Career Dilemma overlay, a specific situation, risky choices, then a ROLLED outcome ----
 function showDilemma(sb){
+  // the first decision a career hands you that has nothing to do with a golf ball
+  if(firstDue('dilemma')) return maybeFirst('dilemma', sb.ctx, ()=>showDilemma(sb));
   const {beat, ctx}=sb, story=careerStory();
   if(S.season) S.season.stops=(S.season.stops||0)+1;
   story._lastDom=beat.dom;
@@ -23439,6 +23641,9 @@ function tourResync(){
 function scrCouncilVote(){
   const p=S.pendingTourVote, d=p&&TOUR_BY_ID[p.id];
   if(!d){ S.pendingTourVote=null; return scrSeason(); }
+  // The seat itself is news. The induction plays over the top and the proposal is underneath it when
+  // it finishes, so being appointed to the board is an event rather than a screen you walk into.
+  if(firstDue('council')){ maybeFirst('council', {upName:(S.schedule&&S.schedule[0]&&S.schedule[0].name)||''}); }
   RT.classList.add('major-screen');
   const res=S.tourVoteResult;
   add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--teal);border-color:rgba(47,208,168,.5);background:rgba(47,208,168,.10)">⚖ Player Advisory Council · ${calYear()}</span></div>`));
@@ -35228,6 +35433,7 @@ function cloudBundle(){
     bucketpacks: LS.get(acctKey('bag_bucket_packs'), null),      // coin-bucket bonus packs already granted (stripe_event set)
     login: LS.get(acctKey('bag_login'), null),                   // CS461: daily-login bonus loop {day, n}
     primes: LS.get(acctKey('bag_primes'), null),                 // distinct Prime cards rolled on the draft wheel (name→1 map)
+    firsts: LS.get(acctKey('bag_firsts'), null),                 // first-time inductions already taught (id→1 map)
     pass: LS.get(acctKey('bag_pass'), null),                     // (dormant paid subscription) {claimed:'YYYY-MM'} — the month whose seasonal packs were granted
     tourpass: LS.get(acctKey('bag_tourpass'), null),             // Tour Pass Track: {season, xp, pro, claimed:{free[],prem[]}}
     wheel: LS.get(acctKey('bag_wheel'), null),                   // Prize Wheel: free-spin day, banked spins, 2x XP boost expiry
@@ -35476,6 +35682,7 @@ async function cloudPull(){
     { const mb=mergeBucketPacks(LS.get(acctKey('bag_bucket_packs'),null), server.bucketpacks); if(mb&&Object.keys(mb.granted||{}).length) LS.set(acctKey('bag_bucket_packs'), mb); }   // bucket bonus packs granted-set cross-device
     { const ml=mergeLogin(LS.get(acctKey('bag_login'),null), server.login); if(ml&&(ml.day||ml.n)) LS.set(acctKey('bag_login'), ml); }   // CS461: daily-login loop cross-device
     { const mp=mergePrimes(LS.get(acctKey('bag_primes'),null), server.primes); if(mp&&Object.keys(mp).length) LS.set(acctKey('bag_primes'), mp); }   // distinct Prime pulls cross-device
+    { const mf=mergePrimes(LS.get(acctKey('bag_firsts'),null), server.firsts); if(mf&&Object.keys(mf).length) LS.set(acctKey('bag_firsts'), mf); }   // first-time inductions already taught: union only, a teaching flag is never un-taught
     { const mpass=mergePass(LS.get(acctKey('bag_pass'),null), server.pass); if(mpass&&mpass.claimed) LS.set(acctKey('bag_pass'), mpass); }   // Tour Pass per-period pack-claim flag cross-device
     { const mtp=mergeTourPass(LS.get(acctKey('bag_tourpass'),null), server.tourpass); if(mtp) LS.set(acctKey('bag_tourpass'), mtp); }   // Tour Pass Track progress cross-device
     { const mw=mergeWheel(LS.get(acctKey('bag_wheel'),null), server.wheel); if(mw) LS.set(acctKey('bag_wheel'), mw); }   // Prize Wheel: used free spin / banked spins / boost cross-device

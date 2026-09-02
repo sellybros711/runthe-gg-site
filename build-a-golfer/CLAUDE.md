@@ -17740,3 +17740,51 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   to remove that confound.
 - Tunable: `HV_GROUND` / `HV_GBALL` / `HV_AIRPEAK` and the `bScale()` floor (the sizes `restR` interpolates
   between), and the inline `#hvball` gradient stops in `hvLiveShot`.
+
+### FIRST-TIME REVEALS: nothing new arrives as a pop-up you have never seen before
+- **The owner's ask**, sent with a phone screenshot of a Player Advisory Council vote screen: *"I also
+  received this pop up with no prior knowledge to what this is. If it's the first time you're seeing a new
+  kind of pop up or something in your career I want it to be a bigger reveal instead of it just appearing.
+  If you've been appointed to the board there should be a celebration beat telling you what you accomplished
+  and the power you now have. Things like this should apply everywhere."*
+- **`maybeFirst(id, ctx, next)` is the whole feature, and it is ONE reusable gate rather than a card per
+  feature.** Wrap anything that can arrive cold: once the career has seen that kind of thing it is a
+  straight passthrough to `next()`, and the first time it plays a broadcast induction (what you did, how it
+  works, what it gives you) that hands STRAIGHT on to the thing itself. Adding the next one is one row in
+  `FIRSTS` plus one wrapped call. Four cold arrivals are wired today: the council seat, the first press
+  conference, the first career dilemma, and the first playable Moment.
+- **Failure is a PASSTHROUGH, at every layer.** `csPlay` throwing falls to a plain card, the card throwing
+  falls to `next()`, so the gate can never swallow the thing it is introducing. Asserted both ways.
+- **A TWO-TIER LEDGER, and it is what reconciles the owner's own two instructions.** They asked for a
+  celebration "in your career" while having previously objected to careers feeling repetitive. So the
+  CELEBRATION returns each career (`S.career.firsts`, which rides `saveCareer` for free), and the TUTORIAL -
+  the paragraph explaining how the thing works - plays once per ACCOUNT (`bag_firsts`, account-scoped via
+  `acctKey`, in the cloud bundle with a UNION-only merge, so a stale device can never un-teach a flag).
+  Your second career is congratulated on making the board; it is not taught what the board is.
+- **It is marked seen BEFORE it plays**, so a crash mid-reveal cannot loop it forever.
+- **THREE COPY FIXES CAME OUT OF READING THE RENDERED SCREENSHOTS, with the suite green throughout** - the
+  fourth feature in a row where that has been true:
+  - `'A proposal is put to you BEFORE it lands'` read as shouting on screen; now "comes to you before it
+    lands, not after".
+  - `'Whatever passes is in force for the rest of your career'` was **overstated** - `TOUR_CHANGES` have
+    supersede groups, so the tour can vote a rule back. Now "in force until the tour votes it back".
+  - `'You can turn these off in Settings'` was **factually false**: the Settings toggle (`marqueeFinalsPref`)
+    governs MARQUEE finals only, not the ordinary in-contention Moment that line was introducing. Replaced
+    with what is actually true - you are only asked when you are genuinely in it, and never more than twice
+    a season.
+- Verified: `scratchpad/firsts.mjs` **37 pass / 0 fail / 0 page errors**, walking the real gate, the real
+  scene player, the real card fallback and all four arrival points - the two-ledger split (celebration
+  returns, tutorial does not), marked-seen-before-it-plays, the facts landing whether the line runs out or
+  you tap through, skip handing on, both failure paths, the cloud bundle carrying `firsts` with a union
+  merge, and a season still opening with no error card. **It CRASHES on the deployed build**
+  (`FIRSTS is not defined`), so it discriminates rather than asserting the setup.
+- **FIVE FIXTURES were updated to the new contract, not worked around**, and the reason is worth keeping:
+  `cutscene`, `csdec`, `cslive` and `csroom` all drive `showStoryline` on a BRAND NEW career, so the press
+  induction now legitimately interposes before the beat they assert on. Their real intent is the **Nth**
+  press conference, so each marks the induction already seen (`careerFirsts().press = 1`) - preserving the
+  intent rather than weakening the check. All green afterward: cutscene 24, csdec 21, cslive 20, csroom 32.
+- Regressions green: firsts 37, nobag 10, sig01 19, dec16 23.
+- **NOT deployed** - the standing rule is that each item is explained before it is pushed to the site, and
+  the cutscene-rooms commit (`7728bbc0`) is still waiting on that go-ahead too.
+- Tunable: the `FIRSTS` table (each entry is `{room, accent, tag, kick, lead, said, earned, power, how,
+  cta}`; a value may be a function of the ctx), and `firstBeats` (how many beats the induction runs).
