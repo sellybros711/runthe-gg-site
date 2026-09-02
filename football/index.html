@@ -821,18 +821,22 @@ window.GA_ID='G-L29P5MRWKE';
     border-top:1px solid rgba(226,178,90,.18);background:rgba(0,0,0,.24);
     font-family:var(--fn);font-size:11.5px;color:rgba(243,221,174,.6)}
   #w-summary b{font-weight:800;color:#F3DDAE}
-  .wrules{display:inline-block;margin:0;padding:0;border:0;background:none;flex:0 0 auto;
-    cursor:pointer;font-family:var(--fn);font-size:10px;font-weight:700;
-    letter-spacing:.06em;text-transform:uppercase;color:rgba(243,221,174,.44);
-    text-decoration:underline;text-underline-offset:3px}
-  .wrules:active{color:#F3DDAE}
+  /* THE WAY TO THE RULES, AND IT HAS TO BE FINDABLE. This was ten point small caps at 44%
+     opacity with an underline, which is how you draw a link you do not want pressed. The
+     complaint that started this pass was a tester saying he did not know how the mode
+     worked, and the answer to that was already on the page behind this. A bordered pill,
+     because everything else on this row is a number and a pill is the only thing on it
+     that looks like somewhere to go. */
+  .wrules{display:inline-block;margin:0;padding:5px 11px;flex:0 0 auto;cursor:pointer;
+    border:1px solid rgba(226,178,90,.38);border-radius:999px;
+    background:rgba(226,178,90,.09);
+    font-family:var(--fn);font-size:10px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;color:rgba(243,221,174,.82)}
+  .wrules:active{background:rgba(226,178,90,.2);color:#F3DDAE}
 
-  /* WHAT THE OWNER WANTS, on the squad screen, in the panel the coach used to hold. One
-     number, because it is the only one that decides whether the run goes on. */
-  .ownerwant{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
-  .ownerwant b{font-family:var(--fd,var(--fn));font-size:21px;font-weight:800;
-    line-height:1;color:#e2b25a}
-  .ownerwant span{font-family:var(--fn);font-size:11.5px;color:var(--dim)}
+  /* WHAT THE OWNER WANTS, on the squad screen, in the panel the coach used to hold. It had
+     its own type here and its own sentence in paintOwnerLine, and the offseason card had a
+     different sentence for the same rule. Both say .ultim now: see dynastyGoalHTML. */
 
   .drywheel{border:1.5px dashed var(--line-2);border-radius:12px;padding:16px 14px;
     background:rgba(19,26,43,.45);text-align:center}
@@ -1029,13 +1033,65 @@ window.GA_ID='G-L29P5MRWKE';
      bar was decoration beside its own caption.
      TEN PIPS, ONE A SEASON, because ten is a number you can count on a screen. Done ones
      are lit, the season about to be played is ringed, and what is left is what is left. */
-  .steprow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-    font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.1em;
-    text-transform:uppercase;color:rgba(243,221,174,.55)}
-  .steprow b{color:#F3DDAE}
-  .stepnext{flex:0 0 auto;color:rgba(243,221,174,.4)}
-  .stepnext b{color:#e2b25a}
-  .pips{display:flex;gap:4px;margin-top:7px}
+  /* ---- THE ULTIMATUM ----
+     What was here read "SEASON 3 OF 10 AT 8 WINS ... THEN 9": three numbers in a row of
+     nine and a half point small caps, none of which said what happens if you do not get
+     them. A tester played several seasons and said he did not know how the mode worked.
+     He was right, and it was not his fault: the one rule that ends a run was never on the
+     screen in a sentence.
+
+     TWO LINES AND ONE OF THEM IS A THREAT. The season is the label. The target and the
+     consequence are the same line, because they are one fact.
+
+     "OF 10" IS GONE, AND DELIBERATELY. The ten was the length of the stretch this target
+     holds for, not the length of the run, and "Season 3 of 10" is read by everybody as
+     ten seasons and then you are done. The mode is endless. The pips still carry the
+     stretch, and the line under them names the season the target moves in, which is the
+     same fact stated as something that cannot be misread. */
+  .ultim{display:block}
+  .ul-top{display:block;font-family:var(--fn);font-size:9.5px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:rgba(243,221,174,.55)}
+  .ul-top b{color:#F3DDAE}
+  .ul-line{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin-top:3px}
+  .ul-line b{font-family:var(--fd,var(--fn));font-size:23px;font-weight:800;line-height:1.05;
+    color:#F3DDAE}
+  .ul-line i{font-style:normal;font-family:var(--fn);font-size:11px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;color:#f87171}
+  .stepnote{margin-top:7px;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:rgba(243,221,174,.42)}
+  .stepnote b{color:#e2b25a}
+  /* ---- THE TARGET, WHILE THE SEASON IS BEING PLAYED ----
+     The screen a Gauntlet player spends the most time on had a score bug, a schedule and
+     a record, and no target. Seventeen weeks of watching a number climb with nothing on
+     the page saying what it has to reach.
+
+     ONE CELL PER WIN THE OWNER WANTS, filling as they land, because "6 of 8" is a fact you
+     read and eight boxes with six lit is a fact you see. The two states that change the
+     season are colored rather than only worded: cleared goes green and stays there, and
+     out of reach goes red the moment the arithmetic closes. */
+  .gauntbar{margin-top:11px;padding:11px 13px 10px;border-radius:12px;
+    border:1.5px solid rgba(226,178,90,.34);
+    background:linear-gradient(180deg,rgba(40,32,17,.9),rgba(19,17,13,.9))}
+  .gauntbar[hidden]{display:none}
+  .gb-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.09em;
+    text-transform:uppercase;color:rgba(243,221,174,.58)}
+  .gb-top b{font-family:var(--fd,var(--fn));font-size:17px;letter-spacing:0;color:#F3DDAE;
+    font-variant-numeric:tabular-nums}
+  .gb-or{color:#f87171}
+  .gb-track{display:flex;gap:3px;margin-top:8px}
+  .gb-track i{flex:1 1 0;height:7px;border-radius:3px;background:rgba(255,255,255,.08);
+    transition:background .35s ease}
+  .gb-track i.won{background:linear-gradient(90deg,#e2b25a,#F3DDAE)}
+  .gb-note{margin-top:8px;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:rgba(243,221,174,.45)}
+  .gauntbar.safe{border-color:rgba(74,222,128,.45)}
+  .gauntbar.safe .gb-track i.won{background:linear-gradient(90deg,#4ade80,#a7f3d0)}
+  .gauntbar.safe .gb-or,.gauntbar.safe .gb-note{color:#4ade80}
+  .gauntbar.dead{border-color:rgba(248,113,113,.5)}
+  .gauntbar.dead .gb-note{color:#f87171}
+
+  .pips{display:flex;gap:4px;margin-top:9px}
   .pip{flex:1 1 0;height:6px;border-radius:3px;background:rgba(255,255,255,.08);
     transition:background .4s ease,box-shadow .4s ease}
   .pip.done{background:linear-gradient(90deg,#e2b25a,#F3DDAE)}
@@ -1954,6 +2010,26 @@ window.GA_ID='G-L29P5MRWKE';
   .modenotes li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;
     border-radius:50%;background:var(--red-2)}
   .modenotes b{color:var(--ink);font-weight:700}
+
+  /* ---- THE GAUNTLET'S RULES SHEET ----
+     A list of five bullets treated the loss condition as the second of five equal facts,
+     and a mode whose whole shape is "one life" cannot bury that. It gets the panel, in the
+     same gold and with the same .ul-line type as the block on the screens themselves, so
+     the sentence somebody reads here is the sentence they meet later. */
+  .dynrule{margin:12px 0 6px;padding:12px 14px;border-radius:12px;
+    border:1.5px solid rgba(226,178,90,.42);
+    background:linear-gradient(180deg,rgba(40,32,17,.92),rgba(19,17,13,.92))}
+  .dynrule p{margin:7px 0 0;font-size:12.5px;line-height:1.42;color:rgba(243,221,174,.68)}
+  /* NUMBERED BECAUSE A SEASON IS ACTUALLY A SEQUENCE. Draft, play, offseason, again. The
+     bullets under it are not a sequence and stay dots. */
+  .modesteps{list-style:none;margin:0;padding:0;display:grid;gap:7px;counter-reset:ms}
+  .modesteps li{counter-increment:ms;font-size:12.5px;line-height:1.4;color:var(--dim-2);
+    padding-left:23px;position:relative}
+  .modesteps li:before{content:counter(ms);position:absolute;left:0;top:1px;
+    width:15px;height:15px;border-radius:50%;
+    background:rgba(226,178,90,.16);border:1px solid rgba(226,178,90,.45);color:#e2b25a;
+    font-family:var(--fn);font-size:9px;font-weight:800;line-height:14px;text-align:center}
+  .modesteps b{color:var(--ink);font-weight:700}
   /* Sheet heading override — Archivo instead of Anton for a bolder, more legible title. */
   .display.mtitle{font-family:var(--fn);font-weight:800;letter-spacing:0}
   .modecards{display:grid;gap:14px;margin-top:6px}
@@ -5897,10 +5973,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <!-- HOW LONG THIS TARGET LASTS, on the screen between seasons. The offseason is
            where somebody decides whether to come back, so it is where the run's shape
            belongs. -->
-      <div class="wc-step">
-        <div class="steprow"><span id="w-lapnote"></span><span class="stepnext" id="w-lapnext"></span></div>
-        <div class="pips" id="w-pips"></div>
-      </div>
+      <div class="wc-step" id="w-goal"></div>
       <div class="wc-foot">
         <span class="wsum" id="w-summary"></span>
         <button class="wrules" id="b-w-rules">How this works</button>
@@ -6006,6 +6079,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            while it is still live rather than revealed at seeding. -->
       <div class="seedchase" id="v-chase" hidden></div>
     </div>
+    <!-- THE GAUNTLET ONLY. Seventeen weeks are played on this screen and nothing on it
+         said what the record has to be, so the mode's one rule was invisible for the
+         hour a player spends here. See paintGauntletBar(). -->
+    <div class="gauntbar" id="v-gaunt" hidden></div>
     <div class="cap-tracker" id="cap-tracker" hidden>
       <div class="cap-bar"><div class="cap-fill" id="cap-fill"></div></div>
       <div class="cap-labels">
@@ -8133,7 +8210,11 @@ function ensureDynastyButton(){
   }else{
     el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">The Gauntlet</span>'+
-      '<span class="hp-full-sub">Six players &middot; every one ages a year &middot; how long can you last</span>';
+      /* THE RULE, ON THE DOOR. "How long can you last" is a mood, not a mode: it says
+         nothing about what you do or what ends it, and the tester who played several
+         seasons without knowing how the game worked started here. */
+      '<span class="hp-full-sub">Win '+E.DYNASTY_BASE_WINS+' or you are fired &middot; '+
+        'every player ages a year &middot; it never ends</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
   }
   el.hidden=false;
@@ -8189,25 +8270,37 @@ function dynastyRulesHTML(go){
   const step=E.DYNASTY_STEP_SEASONS;
   const base=E.DYNASTY_BASE_WINS;
   return '<div class="eyebrow red">The Gauntlet</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Six careers. '+
-      'How long can you keep it going?</h2>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 2px">One team. One life. '+
+      'How long can you last?</h2>'+
+    /* THE RULE FIRST AND ON ITS OWN. Everything under this is detail. Somebody who reads
+       only the panel knows what the mode is and how it ends, which was not true of any
+       version of this sheet before it. */
+    '<div class="dynrule">'+
+      '<span class="ul-line"><b>'+base+' wins</b><i>or you are fired</i></span>'+
+      '<p>That is the whole mode. Win '+base+' games and you play another season. '+
+        'Miss once and the run is over.</p>'+
+    '</div>'+
+    '<div class="eyebrow" style="margin:14px 0 7px">How a season goes</div>'+
+    '<ul class="modesteps">'+
+      '<li><b>Draft six players off the wheel.</b> Any year, any club, one $140M cap. '+
+        'The same six spots as a normal run.</li>'+
+      '<li><b>Play the season.</b> Win '+base+' and you keep your job.</li>'+
+      '<li><b>Every man ages one year.</b> Draft 2023 Burrow and 2019 Ochocinco. Next '+
+        'season they are 2024 Burrow and 2020 Ochocinco.</li>'+
+      '<li><b>Fill the holes and go again.</b> Then again. It does not end.</li>'+
+    '</ul>'+
+    '<div class="eyebrow" style="margin:14px 0 7px">Why it gets harder</div>'+
     '<ul class="modenotes">'+
-      '<li><b>Draft six players, any year.</b> Same six spots and the same cap as a '+
-        'normal run.</li>'+
-      '<li><b>Win '+base+' games and you play another season.</b> Miss and the run is '+
-        'over. There is no second chance.</li>'+
-      '<li><b>Every offseason each man becomes his own next year.</b> Draft 2023 Burrow '+
-        'and 2019 Ochocinco and next season they are 2024 Burrow and 2020 Ochocinco.</li>'+
+      '<li><b>Your men age.</b> Some improve. Most decline. A rookie has a decade in him. '+
+        'A man at his last season is gone in the spring.</li>'+
       '<li><b>You lose men three ways.</b> They retire, they run out of seasons, or they '+
-        'sign somewhere else. A man who changes club is gone.</li>'+
-      '<li><b>Salaries never drop. Neither does the cap.</b> It is $140M every season. '+
-        'Over it you keep everyone, you just cannot sign anyone.</li>'+
+        'sign somewhere else. A man who changes club leaves your roster.</li>'+
+      '<li><b>Salaries never drop. Neither does the cap.</b> It is $140M every season, '+
+        'forever. Over it you keep everyone, you just cannot sign anyone.</li>'+
+      '<li><b>Every '+step+' seasons the target goes up a win.</b> '+base+', then '+
+        (base+1)+', then '+(base+2)+'.</li>'+
     '</ul>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:12px 0 0">'+
-      'So how much of a man is left matters as much as how good he is. A rookie has a '+
-      'decade in him. <b>A man at his last season is gone in the spring.</b> '+
-      'Every '+step+' seasons the target goes up a win.</p>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:8px 0 0">'+
       'You score <b>1,000 a win</b>. More for the playoffs and a title. '+
       '<b>Season 4 pays quadruple.</b> Lasting is the whole game.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
@@ -10535,23 +10628,49 @@ function dynastyLap(){
   };
 }
 
-function paintOwnerLine(el){
+/*
+ * THE ONE RULE THAT ENDS A RUN, WRITTEN THE SAME WAY ON EVERY SCREEN THAT SHOWS IT.
+ *
+ * It used to be two different sentences on two screens, neither of which said what happens
+ * when you miss. The squad screen said "8 wins / and you play another season", which states
+ * the reward and leaves the punishment to be worked out. The offseason card said "SEASON 3
+ * OF 10 AT 8 WINS", which states neither. A player is meant to learn this rule once and
+ * then recognise it, so it is one string built in one place.
+ *
+ * THE CONSEQUENCE IS THE POINT AND IT IS SAID IN THE PRESENT TENSE. "Or you are fired" is
+ * on the screen at all times because under one life it is true at all times, and the note
+ * over paintOwnerLine that said a permanent warning is not a warning had it backwards: a
+ * permanent RULE is not a warning, it is the game, and the mode was unreadable without it.
+ *
+ * `withSeason` is off where the surrounding panel already names the season, which the
+ * squad screen's own heading does.
+ */
+function dynastyGoalHTML(withSeason){
   const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
   const L=dynastyLap();
-  el.hidden=false;
-  /* NO "OR YOU ARE OUT" QUALIFIER ANY MORE. Under one life it is always true, and a
-     warning that never turns off is not a warning. */
-  /* THE SAME PIPS AS THE OFFSEASON CARD, because it is the same fact and a player who has
-     learned to read it once should not have to learn it again. */
   let pips='';
   for(let i=1;i<=L.lap;i++) pips+='<i class="pip'+(i<L.at?' done':(i===L.at?' now':''))+'"></i>';
+  /* WHEN THE TARGET MOVES, AS A SEASON NUMBER RATHER THAN A COUNTDOWN. "Then 9" left open
+     whether that meant next season or eight seasons away, and both were on the screen at
+     different times looking identical. */
+  const at=run.seasonNo+L.left;
+  return '<div class="ultim">'+
+      (withSeason?'<span class="ul-top">Season <b>'+run.seasonNo+'</b></span>':'')+
+      '<span class="ul-line"><b>'+bar+' wins</b><i>or you are fired</i></span>'+
+    '</div>'+
+    '<div class="pips">'+pips+'</div>'+
+    '<div class="stepnote">'+(L.left===1
+      ? 'Next season it is <b>'+L.next+'</b>'
+      : 'It goes to <b>'+L.next+'</b> in season <b>'+at+'</b>')+'</div>';
+}
+
+function paintOwnerLine(el){
+  el.hidden=false;
+  /* THE SAME BLOCK AS THE OFFSEASON CARD, because it is the same fact and a player who has
+     learned to read it once should not have to learn it again. */
   el.innerHTML='<div class="rp-head"><span>The owner</span>'+
       '<span class="rp-head-n">Season '+run.seasonNo+'</span></div>'+
-    '<div class="ownerwant"><b>'+bar+' wins</b><span>and you play another season.</span></div>'+
-    '<div class="steprow"><span>Season <b>'+L.at+'</b> of <b>'+L.lap+'</b> at <b>'+bar+
-      '</b> wins</span><span class="stepnext">'+(L.left===1
-        ? 'then <b>'+L.next+'</b> next season' : 'then <b>'+L.next+'</b>')+'</span></div>'+
-    '<div class="pips">'+pips+'</div>';
+    dynastyGoalHTML(false);
 }
 
 function paintCoachLine(id){
@@ -10907,12 +11026,11 @@ function paintWinter(){
   winterClear();
   const w=run.winter;
   $('w-title').textContent='Offseason '+run.seasonNo;
-  /* THE WHOLE SEASON AHEAD IN ONE LINE, and the bar is the half that was missing. It was
-     stated only after the season, on the results screen, which is the wrong end: a target
-     you are told you missed is a scoreboard, and a target you are told before you play is
-     a game. */
-  $('w-step').textContent='Season '+run.seasonNo+' needs '
-    +E.dynastyWinBar(run.seasonNo,run.stepSeasons)+' wins';
+  /* THE MODE NAMES ITSELF AT THE TOP OF ITS OWN SCREEN. This eyebrow used to repeat the
+     target ("Season 3 needs 8 wins"), which the block at the foot of the same card now
+     says at four times the size and with the consequence attached. A player who has
+     arrived here confused is better served by being told which game he is in. */
+  $('w-step').textContent='The Gauntlet';
   $('w-score').innerHTML='<span class="scorechip">'+SCORE(run.score||0)+'</span> so far';
   /* THE CAP MOVED AND NOTHING SAID SO. It grows six percent every winter, which is the one
      thing working in your favour against salaries that only ever rise, and it was happening
@@ -10931,7 +11049,7 @@ function paintWinter(){
      it used to grow six percent a winter, which quietly paid for the roster getting older.
      Now nothing does, and the sentence has to make that a rule rather than an omission. */
   $('w-sub').innerHTML='Everyone becomes his next real season. A better year costs more. '+
-    '<b>Salaries never drop, and neither does your '+M0(R.capOf(run))+' cap.</b>';
+    '<b>Salaries never drop. Neither does your '+M0(R.capOf(run))+' cap.</b>';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
@@ -11161,22 +11279,13 @@ function runWinterShow(rows,gones,agedOf,w){
  * played. What was here said "6 more at 8 before it goes to 9", which is three numbers in a
  * row of prose and reads as none of them, over a five-pixel bar that could show a
  * proportion and could not show ten.
+ *
+ * The prose above the pips is now one sentence with the consequence in it. See
+ * dynastyGoalHTML.
  */
 function paintStep(){
   if(!run||!run.dynasty) return;
-  const L=dynastyLap();
-  const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
-  const note=$('w-lapnote'), next=$('w-lapnext'), pips=$('w-pips');
-  if(note) note.innerHTML='Season <b>'+L.at+'</b> of <b>'+L.lap+'</b> at <b>'+bar+'</b> wins';
-  if(next) next.innerHTML=(L.left===1?'then <b>'+L.next+'</b> next season'
-    :'then <b>'+L.next+'</b>');
-  if(pips){
-    let out='';
-    for(let i=1;i<=L.lap;i++){
-      out+='<i class="pip'+(i<L.at?' done':(i===L.at?' now':''))+'"></i>';
-    }
-    pips.innerHTML=out;
-  }
+  const el=$('w-goal'); if(el) el.innerHTML=dynastyGoalHTML(true);
 }
 
 /*
@@ -11718,6 +11827,48 @@ function paintCalendar(justPlayed){
   $('v-list').innerHTML=cells.join('');
   const w=s.results.filter(r=>r.won).length;
   $('v-calrec').textContent=w+'-'+(s.results.length-w);
+  paintGauntletBar(s);
+}
+
+/*
+ * THE OWNER'S NUMBER, ON THE SCREEN WHERE THE WINS HAPPEN.
+ *
+ * Every other Gauntlet screen states the target now, and this one is the one a player is
+ * actually looking at: seventeen weeks reveal here, one at a time. It had a record and no
+ * target, so the number climbing on the right meant nothing on its own.
+ *
+ * REGULAR SEASON RESULTS ONLY. `s.results` collects playoff games too, and the owner is
+ * counting neither those nor a title: the bar is a regular season win count and a January
+ * run that pushed the total past it would light this thing on a season that missed.
+ *
+ * TWO STATES WORTH A COLOUR. Cleared is the moment the run is safe, and it should be
+ * unmissable rather than something you work out. Out of reach is the other one: once the
+ * wins left to play cannot cover what is left to get, the season is over and pretending
+ * otherwise for six more weeks is the game hiding from the player.
+ */
+function paintGauntletBar(s){
+  const el=$('v-gaunt'); if(!el) return;
+  if(!run||!run.dynasty||!s){ el.hidden=true; return; }
+  const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
+  const reg=s.results.filter(r=>!r.playoff);
+  const wins=reg.filter(r=>r.won).length;
+  const left=Math.max(0,run.schedule.length-reg.length);
+  const need=Math.max(0,bar-wins);
+  const done=wins>=bar, dead=need>left;
+  el.hidden=false;
+  el.className='gauntbar'+(done?' safe':(dead?' dead':''));
+  let track='';
+  for(let i=0;i<bar;i++) track+='<i'+(i<wins?' class="won"':'')+'></i>';
+  el.innerHTML='<div class="gb-top">'+
+      '<span>Wins <b>'+wins+'</b> of <b>'+bar+'</b></span>'+
+      '<span class="gb-or">'+(done?'You keep your job':'or you are fired')+'</span>'+
+    '</div>'+
+    '<div class="gb-track">'+track+'</div>'+
+    '<div class="gb-note">'+(done
+      ? 'Season '+(run.seasonNo+1)+' is yours.'
+      : (dead
+        ? 'You cannot get there. This is the last season.'
+        : need+' more from '+left+' game'+(left===1?'':'s')+'.'))+'</div>';
 }
 
 /* WHOSE COLORS YOUR SIDE OF THE SCORE BUG WEARS.
