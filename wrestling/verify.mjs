@@ -302,11 +302,17 @@ if(!QUICK){
         const sg=currentSeasonGoal(); if(!sg) P('no season goal');
         const st=story();
         if(st){ const rv=charById(st.charId); if(!rv) P('story points at a missing character');
-          else if(G.world.retired && G.world.retired[rv.id]) P('story points at a retired wrestler',{name:rv.name}); }
+          else if(G.world.retired && G.world.retired[rv.id]) P('story points at a retired wrestler',{name:rv.name});
+          if(!st.reason) P('story has no reason');
+          // weeks the player spent injured do not count: nobody can book a
+          // feud for somebody in rehab
+          const nowAbs=c.year*WEEKS_PER_YEAR+c.week, sinceAbs=nowAbs-(st.lastBooked||(st.startYear*WEEKS_PER_YEAR+st.startWeek))-(st._injWeeks||0);
+          if(sinceAbs>20) P('feud unbooked for 20+ weeks',{weeks:sinceAbs, stage:st.stage}); }
+        (c.storiesResolved||[]).forEach(r=>{ if(!r.reason && r.kind) P('resolved story without a reason',{name:r.name}); });
         while(G.w.tp>0){ const b=G.w.tp; try{ spendTP((catById(c.plan.a)||{}).attr||'po'); }catch(_){ G.w.tp--; } if(G.w.tp>=b) G.w.tp--; }
         if(c.retired){ log.push(`Y${c.year} retired at ${c.age}`); break; }
         if(c.freeAgent){ try{ signDeal(0); }catch(_){ c.freeAgent=false; } continue; }
-        if(c.injWeeks>0){ doRest(); continue; }
+        if(c.injWeeks>0){ if(story()) story()._injWeeks=(story()._injWeeks||0)+1; doRest(); continue; }
         if(c.mentorWeeks>0){ doMentorWeek(); continue; }
         try{ bookWeek(); }catch(e){ P('bookWeek threw: '+e.message); break; }
         const b=c.booking; if(!b){ P('no booking'); advanceWeek(); continue; }
@@ -320,8 +326,8 @@ if(!QUICK){
           if(!(res.moved && res.moved.length===7)) P('result has no what-moved rows',{stip:o.stipLabel});
           if(res.retainedDirty){ dirty++; if(c.title!==titleBefore) P('belt moved on a '+res.retainedDirty,{stakes:o.stakes}); }
           if(!titleBefore && c.title){ titleWins++; log.push(`Y${c.year}W${c.week} won the ${c.title} from ${o.oppName} (${res.quality})`); }
-          if(!stBefore && story()) { stories++; log.push(`Y${c.year}W${c.week} feud starts with ${charById(story().charId).name}`); }
-          if(stBefore && !story()) log.push(`Y${c.year}W${c.week} feud settled`);
+          if(!stBefore && story()) { stories++; log.push(`Y${c.year}W${c.week} feud starts with ${charById(story().charId).name}: ${story().reason}`); }
+          if(stBefore && !story()){ const r0=(c.storiesResolved||[])[0]||{}; log.push(`Y${c.year}W${c.week} feud settled ${r0.resolution||''} after ${r0.matches||0} matches (avg ${r0.avg||0})${res.storyEnded?' · ceremony':''}`); }
           // applyMatch ends the week itself. Calling advanceWeek here too
           // skipped every other week and halved the match count for months
           // before anybody noticed.

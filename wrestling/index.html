@@ -92,6 +92,7 @@
   .dirt-rows{display:flex;flex-direction:column;gap:6px;font-size:13px;}
   .dirt-row{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed rgba(255,255,255,.08);padding-top:6px;}
   .dirt-l{color:var(--text-faint);font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding-top:2px;}
+  .feud-marks{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);margin-top:3px;}
   .numband{display:block;font-family:var(--body);font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-dim);margin-top:2px;line-height:1.2;}
   .bizcard .numband{font-size:11.5px;}
   .term{cursor:pointer;border-bottom:1px dotted rgba(244,232,219,.35);}
@@ -4401,10 +4402,33 @@ function newsPush(entry){
   G.world.news.unshift(Object.assign({y:c.year, w:c.week}, e));
   if(G.world.news.length>120) G.world.news.pop();
 }
+/* A feud whose rival retires, is released or leaves the company cannot be
+   booked and cannot end, so it used to sit on the panel forever. It ends
+   here, on the record, as its own kind of beat. */
+function storyRivalGone(){
+  const st=story(); if(!st) return false;
+  const rv=charById(st.charId); const W=G.world||{};
+  const gone = !rv || (W.retired&&W.retired[rv.id]) || rv.promo!==myPromoId();
+  if(!gone) return false;
+  const name=rv?rv.name:'Your rival';
+  const why = !rv ? 'is gone' : (W.retired&&W.retired[rv.id]&&W.retired[rv.id].released) ? 'was released' : (W.retired&&W.retired[rv.id]) ? 'retired' : 'left the company';
+  const c=G.car;
+  const matches=(G.hist||[]).filter(m=>rv&&m.opp===rv.name);
+  const avg = matches.length ? Math.round(matches.reduce((s,m)=>s+m.q,0)/matches.length) : 0;
+  c.storiesResolved = c.storiesResolved || [];
+  c.storiesResolved.unshift({y:c.year, w:c.week, charId:st.charId, name, resolution:'walked', matches:matches.length, avg,
+    beats:(st.beats||[]).length, reason:st.reason||null, kind:st.kind||'grudge', started:{y:st.startYear,w:st.startWeek}});
+  pushInboxItem({ico:pico('swap',18),sev:'story',txt:`<b>${name} ${why}.</b> The feud ends without a blow-off. Some of them do.`});
+  pushLog(`Your war with <b>${name}</b> ended when they ${why}. No blow-off. It will be remembered anyway.`);
+  const R=rel(st.charId); R.cooldown=(c.year*1000+c.week)+45;
+  G.story=null; c.rivalId=null;
+  return true;
+}
 function worldTick(){
   if(!G.world) initWorld();
   migrateChampions();
   const c=G.car; const w=G.world;
+  try{ storyRivalGone(); }catch(_){}
   // A title change happens somewhere in the world every few weeks.
   if(rnd()<0.10){
     const promo = PROMOS[Math.floor(rnd()*PROMOS.length)];
@@ -5688,13 +5712,25 @@ function renderStoryPanel(){
     G.car._feudSeen=key;
     const shapeMap = {aggressive:{t:'Bloodbath',c:'#f0907f'}, cool:{t:'Cold war',c:'var(--cream)'}, cerebral:{t:'Chess match',c:'var(--gold)'}, underdog:{t:'David vs Goliath',c:'var(--green)'}};
     const shapeChip = st.shape && shapeMap[st.shape] ? `<span class="feudshape" style="color:${shapeMap[st.shape].c};border-color:${shapeMap[st.shape].c};">${shapeMap[st.shape].t}</span>` : '';
+    // a live story is never "Settled": stage 4 reached by a scene still has
+    // its blow-off to wrestle, so it reads as the blow-off
+    const shown=Math.min(3,st.stage), stgShown=STORY_STAGES[shown];
+    const payoff = st.payoffAt ? `${st.payoffAt.name||'the next supercard'} (Y${st.payoffAt.y}W${st.payoffAt.w})` : null;
+    const nextBeat = shown>=3
+      ? `Blow-off${payoff?` booked for ${payoff}`:''}. Win it clean, or wrestle a 72+ match, to settle it with respect.`
+      : `Next beat: a 64+ match against them, a backstage scene, or a promo. ${payoff?`Pays off at ${payoff}.`:'It pays off at a supercard.'}`;
+    const started=`Y${st.startYear}W${st.startWeek}`;
     h+=`<div class="storycard" id="feudCard">
       <div class="sh"><div style="width:52px;flex:none;">${wrestlerSVG(c.look,{frame:'head'})}</div>
-        <div><div class="st">Feud · ${stg.name}${shapeChip}</div>
+        <div><div class="st">Feud · ${stgShown.name}${shapeChip}</div>
         <div class="sn">${G.w.name} vs ${c.name}</div>
-        <div class="hint">${stg.label}</div></div></div>
-      <div class="bar" style="margin-top:8px;"><i id="feudBar" style="width:${(feudAdv?feudFrom:(st.stage/3)*100)}%;background:var(--brandred)"></i></div>
-      <div class="hint" style="margin-top:4px;">Bad blood ${Math.round(R.heat)} · ${R.wins}-${R.losses} against them${st.stage>=3?' · <b style="color:var(--gold)">BLOW-OFF AVAILABLE</b>':''}</div>
+        <div class="hint">${stgShown.label}</div></div></div>
+      ${st.reason?`<div class="hint" style="margin-top:6px;">Started ${started}: ${c.name} ${st.reason}</div>`:''}
+      <div class="bar" style="margin-top:8px;"><i id="feudBar" style="width:${(feudAdv?feudFrom:(shown/3)*100)}%;background:var(--brandred)"></i></div>
+      <div class="feud-marks"><span>Spark</span><span>Escalation</span><span>Personal</span><span>Blow-off</span></div>
+      <div class="hint" style="margin-top:6px;">Bad blood <b>${Math.round(R.heat)}</b> · ${bandOf('heat',R.heat).toLowerCase()} · ${R.wins}-${R.losses} against them</div>
+      <div class="bar" style="margin-top:3px;height:4px;"><i style="width:${clamp(R.heat)}%;background:#c0392b"></i></div>
+      <div class="hint" style="margin-top:6px;color:${shown>=3?'var(--gold)':'var(--text-dim)'}">${nextBeat}</div>
     </div>`;
   }
   if(inbox.length) h+=`<div class="card" style="margin-top:10px;"><div class="flab">Recent</div>`+
@@ -6472,7 +6508,10 @@ function startStory(charId,reason){
   // shape defaults to unset; set on first backstage action or promo choice.
   // Once set, the feud takes a distinct SHAPE (aggressive, cool, cerebral,
   // or underdog) that colours later beats, segment picks and match story.
-  G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year, shape:null };
+  // The reason is kept, not just logged: the panel reads it back for as
+  // long as the feud runs, and the resolution record carries it out.
+  G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year, shape:null,
+            kind:'grudge', reason:String(reason||'').replace(/<[^>]+>/g,''), payoffAt:null, lastBooked:null };
   G.car.rivalId=charId; G.car.offers=null;
   pushLog(`<b>${c.name}</b>: ${reason}`);
   pushInboxItem({ico:pico('fire',18),sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
@@ -6495,6 +6534,7 @@ function advanceStory(){
   st.lastAdv=wk;
   st.stage=Math.min(4,st.stage+1);
   const c=charById(st.charId);
+  if(st.stage>=3 && !st.payoffAt){ try{ const pv=ppvForShot(); st.payoffAt={y:pv.year, w:pv.week, name:pv.name}; }catch(_){} }
   if(st.stage===3){
     pushInboxItem({ico:pico('impact',18),sev:'story',txt:`It is time to settle it with <b>${c.name}</b>. Take the blow-off match.`});
     // Rival gimmick evolves at the blow-off stage, once. The character shows
@@ -6535,7 +6575,9 @@ function endStory(resolution){
   const avg = matches.length ? Math.round(matches.reduce((s,m)=>s+m.q,0)/matches.length) : 0;
   G.car.storiesResolved = G.car.storiesResolved || [];
   G.car.storiesResolved.unshift({y:G.car.year, w:G.car.week, charId:st.charId, name:c.name,
-    resolution, matches:matches.length, avg, beats:(st.beats||[]).length});
+    resolution, matches:matches.length, avg, beats:(st.beats||[]).length,
+    reason:st.reason||null, kind:st.kind||'grudge', started:{y:st.startYear,w:st.startWeek}});
+  G.car._lastStoryEnd={name:c.name, resolution, avg, weeks:(G.car.year*WEEKS_PER_YEAR+G.car.week)-(st.startYear*WEEKS_PER_YEAR+st.startWeek)};
   if(G.car.storiesResolved.length>60) G.car.storiesResolved.pop();
   G.story=null; G.car.rivalId=null;
 }
@@ -8568,9 +8610,18 @@ function bookWeek(){
                   + ({'Main Event':40,'Mid-Card':20,'Opener':0}[o.card]||0) + o.purse/400;
     offs.sort((a,b)=>worth(b)-worth(a));
     const p=pullOf();
-    const pick = p>=3 ? 0 : p>=2 ? Math.min(1,offs.length-1)
+    let pick = p>=3 ? 0 : p>=2 ? Math.min(1,offs.length-1)
                : p>=1 ? Math.min(1+Math.floor(rnd()*2),offs.length-1)
                : offs.length-1;
+    // A feud the office has not booked in six weeks gets booked, pull or no
+    // pull. Without this a rookie's first feud could sit at "Escalation"
+    // for a season while the rival headlined cards the player was not on.
+    const _st=story();
+    if(_st){
+      const now=c.year*WEEKS_PER_YEAR+c.week, since=now-(_st.lastBooked||(_st.startYear*WEEKS_PER_YEAR+_st.startWeek));
+      const ri=offs.findIndex(o=>o.oppId===_st.charId);
+      if(ri>=0 && since>=6) pick=ri;
+    }
     c.booking={type:'match', o:offs[pick], asked:false};
   } else if(r<clamp(pMatch,0.30,0.86)+pPromo){
     const t=(typeof promoTargets==='function'?promoTargets():[])[0];
@@ -9052,10 +9103,25 @@ function applyMatch(o,res){
   // ---- storyline progression ----
   const _st=story();
   if(_st && _st.charId===o.oppId){
+    _st.lastBooked=c.year*WEEKS_PER_YEAR+c.week;
     if(_st.stage>=3){
       // the blow-off: a great match settles it with respect, a bitter one does not
       endStory((res.quality>=72 || (res.win && rel(o.oppId).respect>=40))?'respect':'blood');
       c.rep+=260; G.bag.coins+=Math.round(o.purse*1.5);
+      /* THE BLOW-OFF CEREMONY. A feud is the spine of a career and its
+         ending used to be an inbox row. It gets what a title change gets:
+         a banner on the result, a moment card, and the press. */
+      const _e=c._lastStoryEnd; c._lastStoryEnd=null;
+      if(_e){
+        res.storyEnded=_e;
+        queueMoment(pico(_e.resolution==='respect'?'handshake':'impact',36),
+          _e.resolution==='respect' ? `You and ${_e.name} settled it. With respect.` : `You and ${_e.name} settled it. In blood.`,
+          {kick:'FEUD OVER', sub:`${_e.weeks} weeks. ${_e.avg?`Average match: ${_e.avg}.`:''} ${res.win?'You won the last one.':'They won the last one.'}`});
+        c._pendingMedia = { kind:_e.resolution==='respect'?'classic':'screwjob', headline:'THE FEUD IS OVER',
+          quote: _e.resolution==='respect'
+            ? `${G.w.name} and ${_e.name}, ${_e.weeks} weeks, and it ends with a handshake in the middle of the ring. That is the business at its best. Somebody put the whole thing on tape.`
+            : `${_e.weeks} weeks of ${G.w.name} and ${_e.name} and it ends the way it was always going to end: ugly. Nobody shook hands. Nobody is going to. Good.` };
+      }
     } else if(res.quality>=64 || o.stakes==='rivalry'){ advanceStory(); }
   }
   // ---- relationship with this character ----
@@ -9098,7 +9164,17 @@ function applyMatch(o,res){
   // a genuine nemesis emerges from repeated bad blood
   const _now=c.year*1000+c.week;
   if(!c.rivalId && !story() && R.heat>=42 && R.matches>=2 && (!R.cooldown||_now>R.cooldown)) {
-    startStory(o.oppId, res.win?'is sick of losing to you.':'has your number, and they know it.'); }
+    // the reason is read back on the panel for the life of the feud, so
+    // it should not be the same sentence every time
+    const _v=voiceOf(charById(o.oppId));
+    const _why = res.win
+      ? ({brash:'is sick of losing to you, and said so on television.', cold:'lost to you again and has not said a word since. That is worse.',
+          unhinged:'lost to you and threw a chair through the production truck window.', warm:'is sick of losing to you. It stopped being friendly tonight.',
+          bitter:'has decided you are the reason they are stuck here.', pro:'has taken three losses to you personally. Now it is a project.'})[_v]
+      : ({brash:'has your number, and will not stop telling people.', cold:'has your number. They know it. They are patient about it.',
+          unhinged:'beat you again and left a note in your bag. Nobody knows how.', warm:'beat you again and apologised. That is the part you cannot stand.',
+          bitter:'beat you again and told the office you are not ready.', pro:'has your number, and they know exactly why.'})[_v];
+    startStory(o.oppId, _why || (res.win?'is sick of losing to you.':'has your number, and they know it.')); }
   else if(c.rivalId===o.oppId && R.heat<20 && R.respect>=60){ c.rivalId=null;
     const rc=charById(o.oppId);
     if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef. There is real respect there now.`); }
@@ -9342,11 +9418,16 @@ function renderMatch(o,res){
   let banner='';
   const _dk = res.retainedDirty;
   const _beltOf = o.belt || (o.stakes==='defense'?c.title : o.stakes==='secondary_defense'?c.secondary : o.stakes==='tag_defense'?c.tagTitle : beltName(workTier()));
+  if(res.storyEnded){
+    const e=res.storyEnded;
+    banner=`<div class="champbanner ${e.resolution==='respect'?'':'lost'}"><div class="cb-kick">Feud over</div><div class="cb-t">Settled with ${e.name} ${e.resolution==='respect'?'with respect':'in blood'}<span style="color:var(--gold)"> · ${e.weeks} weeks</span></div></div>`;
+  }
   const _challenging = o.stakes==='title'||o.stakes==='secondary'||o.stakes==='tag_title';
   if(_dk && _challenging && res.win)
     banner=`<div class="champbanner lost"><div class="cb-kick">No title change</div><div class="cb-t">Won by ${_dk}. ${o.oppName} keeps the ${_beltOf}.</div></div>`;
   else if(_dk && !_challenging && !draw)
     banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${_beltOf}<span style="color:var(--gold)"> · retained by ${_dk}</span></div></div>`;
+  else if(banner) {}
   else if(o.stakes==='title'&&res.win)
     banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-t">${c.title||beltName(workTier())}</div></div>`;
   else if(o.stakes==='defense'&&(res.win||draw))
