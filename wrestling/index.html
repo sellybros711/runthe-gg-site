@@ -1845,6 +1845,19 @@ function nextPpv(){
   // wrap to next year's first PPV
   return {week:PPV_WEEKS[0], weeksUntil:(WEEKS_PER_YEAR-c.week)+PPV_WEEKS[0], name:ppvNameFor(c.deal&&c.deal.promo, PPV_WEEKS[0]), year:c.year+1};
 }
+/* The PPV a title shot is booked FOR. nextPpv() on a PPV night returns that
+   same night, so a shot earned by pinning the champion at a supercard was due
+   the week it was earned and expired unpaid seven days later, with "the
+   rematch clause expired" landing in the inbox directly under "you are #1
+   contender". This is always strictly after tonight. */
+function ppvForShot(){
+  const c=G.car;
+  const n=nextPpv();
+  if(n.weeksUntil>0) return n;
+  const after = PPV_WEEKS.find(w=>w>c.week);
+  if(after) return {week:after, weeksUntil:after-c.week, name:ppvNameFor(c.deal&&c.deal.promo, after), year:c.year};
+  return {week:PPV_WEEKS[0], weeksUntil:(WEEKS_PER_YEAR-c.week)+PPV_WEEKS[0], name:ppvNameFor(c.deal&&c.deal.promo, PPV_WEEKS[0]), year:c.year+1};
+}
 function currentPpv(){
   if(!isPpvWeek(G.car.week)) return null;
   return {week:G.car.week, name:ppvNameFor(G.car.deal&&G.car.deal.promo, G.car.week), year:G.car.year};
@@ -2702,6 +2715,51 @@ function showCoach(id, title, body){
   setTimeout(()=>{
     modal(title, `<p class="log">${body}</p>`, [{label:'Got it',fn:closeModal}]);
   }, 240);
+}
+/* The first result screen a player sees is the moment they decide whether
+   there is a fourth week. It is also seven numbers with no anchor. This card
+   runs once, after the very first match, and points at two of them: the
+   rating, because it is what pays, and standing, because it is what books. */
+function firstNightDebrief(o,res){
+  const c=G.car; if(!c||!res) return;
+  const total=(c.rec.w||0)+(c.rec.l||0)+(c.rec.d||0);
+  if(total!==1) return;
+  c.coachSeen=c.coachSeen||{}; if(c.coachSeen.firstNight) return;
+  c.coachSeen.firstNight=true; save();
+  const s=starsOf(res.quality);
+  const st=Math.round(c.standing||50);
+  const stBand = st>=72?'Protected':st>=52?'Trusted':st>=34?'Just a body':'In the doghouse';
+  // one instruction, from the thing that held the match back
+  const bad=(res.bad||[])[0]||'';
+  const next = /psychology/i.test(bad) ? 'Put your next training point in Psychology.'
+             : /stamina|gassed/i.test(bad) ? 'Put your next training point in Stamina.'
+             : /banged up|condition/i.test(bad) ? 'Rest before your next match.'
+             : /near-fall/i.test(bad) ? 'Next match, build to the near-falls. Hit the big spots when the match asks.'
+             : 'Study the tape before your next match. It raises your odds.';
+  const verdict = res.draw||res.win===null ? 'A draw.' : res.win ? 'You won.' : 'You lost.';
+  const body=`<div class="seasonbrief">
+    <div class="sb-quote">${verdict} That is the least important thing that happened tonight.</div>
+    <div class="sb-rows">
+      <div class="sbrow"><div class="sbrow-h"><span class="sbrow-l">Match rating</span><span class="sbrow-v ${res.quality>=62?'ok':''}"><b>${res.quality}</b> <span class="sbrow-arrow">of</span> 100</span></div>
+        <div class="sbrow-bar"><i style="width:${res.quality}%"></i></div>
+        <div class="sbrow-why">${starBand(s)} A rookie lands near 50. Sixty-two is a good night. Eighty is a classic. This number pays you. The win does not.</div></div>
+      <div class="sbrow"><div class="sbrow-h"><span class="sbrow-l">Standing with the office</span><span class="sbrow-v ${st>=52?'ok':''}"><b>${st}</b> <span class="sbrow-arrow">of</span> 100 · ${stBand}</span></div>
+        <div class="sbrow-bar"><i style="width:${st}%"></i></div>
+        <div class="sbrow-why">Good matches raise it. It decides where you go on the card.</div></div>
+    </div>
+    <div class="sb-terms"><div class="sb-term"><span class="sb-term-l">Next week</span><span class="sb-term-v gold">${next}</span></div></div>
+  </div>`;
+  // A first win also fires the "First professional victory" moment card, and
+  // two overlays at once is the exact thing the audit flagged. The moment
+  // goes first (it is the celebration); this waits until it is gone.
+  let tries=0;
+  const show=()=>{
+    const mo=$('momentBack'), sc=$('sceneBack');
+    const busyNow=(mo&&mo.classList.contains('open'))||(sc&&sc.classList.contains('open'))||(MOMENT_Q&&MOMENT_Q.length);
+    if(busyNow && tries++<80){ setTimeout(show,400); return; }
+    try{ closeModal(); modal('Your first night', body, [{label:'Got it',cls:'primary',fn:closeModal}]); }catch(_){}
+  };
+  setTimeout(show, 1100);
 }
 function starBand(s){
   return s>=5   ? 'A perfect match. They will talk about this forever.'
@@ -5675,6 +5733,10 @@ function weekArcHeader(){
 }
 function renderWeek(){
   const c=G.car, el=$('weekBody');
+  // Book first, THEN draw the arc header. It used to be the other way round,
+  // so on every fresh week the header read "Off Week · Nothing on the card"
+  // directly above a booking sheet that said "Singles Match · Your Debut".
+  bookWeek();
   const arc = weekArcHeader() + seasonChip();
   if(c.freeAgent){
     el.innerHTML=`${arc}<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You are a <b style="color:var(--gold)">free agent</b>.</p>
@@ -5801,8 +5863,15 @@ function renderWeek(){
   } else {
     // Arc header already frames the off-week. Sheet keeps just the "what
     // happens now" line and the CTA.
+    // An off week used to be one sentence and a button. It still plays a
+    // scene on the way out and still pays double at the gym; now the sheet
+    // says so, because a week with nothing visible to do reads as a week the
+    // game forgot about.
+    const _offScene = (function(){ try{ return pickScene('any'); }catch(_){ return null; } })();
     sheet=`<div class="bksheet dark">
-      <div class="bs-vs">${(c.standing||50)<45?'No card, no interest, no plan. Weeks like this are where careers get built.':'No card this week. Prep the ones that are coming.'}</div>
+      <div class="bs-vs">${(c.standing||50)<45?'No card this week. Weeks like this build careers.':'No card this week. Get ready for the ones coming.'}</div>
+      ${_offScene?`<div class="bs-scene-tease">${pico('microphone',12)} Something happens on the way out: <b>${String(_offScene.tag||'').trim().toLowerCase()}</b></div>`:''}
+      ${!c.prep?`<div class="bs-scene-tease">${pico('dumbbell',12)} The gym pays double on an off week. Pick it below.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="endDarkWeek()">Call It A Week →</button>
     </div>`;
   }
@@ -5987,6 +6056,13 @@ function makeOffers(){
     if(filtered.length>=3) house=filtered;
   }
   const pool=house.length>=3 ? house : charsForTier(t.id);
+  // Night one is never against a champion. On a small roster the champions
+  // are most of the room, so without this a debut was routinely a non-title
+  // match with the belt-holder, and the second thing a brand-new player read
+  // was "a clean pin over the champion earns the shot".
+  const _worked0=(G.car.rec.w||0)+(G.car.rec.l||0)+(G.car.rec.d||0);
+  const _debutPool = _worked0===0 ? pool.filter(x=>!titlesHeldBy(x.id).length) : pool;
+  const pickPool = _debutPool.length>=2 ? _debutPool : pool;
   const offs=[];
   // your bitterest rival muscles onto the card
   const rivalId=G.car.rivalId;
@@ -6005,7 +6081,7 @@ function makeOffers(){
     ? charById(G.car.titleShot.targetId) : null;
   for(let i=0;i<3;i++){
     const taken=offs.map(x=>x.oppId);
-    let cand=pool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
+    let cand=pickPool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
     let opp=cand.length?cand[Math.floor(rnd()*cand.length)]:CHARS[0];
     if(_story && i===0){ const rc=charById(_story.charId); if(rc) opp=rc; }   // the feud headlines
     else if(shotTarget && i===2){ opp=shotTarget; }   // your title shot lands on top
@@ -6101,7 +6177,7 @@ function makeOffers(){
     // match at non-title stakes, note it: the pre-match card calls it out as
     // NON-TITLE (SD SYM style) and pinning them clean earns a title shot.
     const oppTitles = titlesHeldBy(opp.id);
-    const isNonTitleVsChamp = oppTitles.length>0
+    const isNonTitleVsChamp = oppTitles.length>0 && _worked0>0
       && stakes!=='title' && stakes!=='defense'
       && stakes!=='secondary' && stakes!=='secondary_defense';
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
@@ -8223,6 +8299,7 @@ function finalizeFight(iWon){
   applyMatch(o,res);
   if(G.car.retired){ go('hof'); return; }
   renderMatch(o,res); go('match');
+  firstNightDebrief(o,res);
 }
 // "Forearm Smash ×8" instead of listing it eight times
 function groupMoves(used){
@@ -8319,7 +8396,10 @@ function bookWeek(){
   // Promos got rarer on purpose. A promo every other week is filler; a promo
   // every four or five weeks lands like the event a real cut promo is.
   const pPromo=0.07+(gimHeat()<40?0.04:0)+(story()?0.05:0);
-  const r=rnd();
+  // Night one is a match. A third of debuts were rolling a promo or an off
+  // week, so a brand-new player's first screen was "Call It A Week".
+  const _workedYet=(c.rec.w||0)+(c.rec.l||0)+(c.rec.d||0);
+  const r=_workedYet===0 ? 0 : rnd();
   if(r<clamp(pMatch,0.30,0.86)){
     if(!c.offers) c.offers=makeOffers();
     const offs=c.offers.slice();
@@ -8474,7 +8554,7 @@ function doAsk(id){
     if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
     if(id==='shot'){
       const me=myPromo();
-      const _npv=(function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv=(function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       const bn=beltNameByPromo(me.id,'world');
       c.titleShot={promoId:me.id, from:'you demanded it', y:c.year, w:c.week, kind:'world',
                    belt:bn, targetId:o.target, dueBy:{y:_npv.year, w:_npv.week}};
@@ -8619,7 +8699,7 @@ function applyMatch(o,res){
       c._lastPinChamp = _pcNow;
       res.pinnedChamp = {oppName:o.oppName, oppId:o.oppId, belt:target.name, kind:target.kind};
       if(!c.titleShot){
-        const _npv = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+        const _npv = (function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
         c.titleShot = {promoId:target.promoId, from:`pinned ${o.oppName} clean`, y:c.year, w:c.week,
                        kind:target.kind, belt:target.name, targetId:o.oppId,
                        dueBy:{y:_npv.year, w:_npv.week}};
@@ -8688,7 +8768,7 @@ function applyMatch(o,res){
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
       // Rematch clause: a title loss is not the end of the story. The office
       // owes you one shot before this rival can defend against anyone else.
-      const _npv = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv = (function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'world',
                    dueBy:{y:_npv.year, w:_npv.week}, belt:belt};
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause is in.</b> One shot at the ${belt} back by Y${_npv.year}W${_npv.week} or it burns.`});
@@ -8711,7 +8791,7 @@ function applyMatch(o,res){
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
       const lostBelt = c.secondary;
       c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100);
-      const _npv2 = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv2 = (function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'secondary', belt:lostBelt,
                    dueBy:{y:_npv2.year, w:_npv2.week}};
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause.</b> One shot at the ${lostBelt} back by Y${_npv2.year}W${_npv2.week} or it burns.`});
@@ -12956,7 +13036,7 @@ function backstageAskGM(id){
     if(id==='gm_shot'){
       const chId = G.world.champions[me.id].world.holder;
       const bn = beltNameByPromo(me.id,'world');
-      const _npv=(function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv=(function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       c.titleShot={promoId:me.id, from:'went into the office and asked', y:c.year, w:c.week, kind:'world',
                    belt:bn, targetId:chId, dueBy:{y:_npv.year, w:_npv.week}};
       pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>The office booked it.</b> A shot at the ${bn} at the next PPV.`});
@@ -13173,6 +13253,26 @@ function sceneRemember(key, val){
 function sceneRecalls(key){ return !!((G.car._sceneMem||{})[key]); }
 
 const SCENES = [
+  /* ---------- NIGHT ONE ----------
+     The one scene that is not a roll of the dice. The most experienced hand
+     in the room stops you at the curtain and says, in three sentences, what
+     the game is actually judging. The tour explains the hub; this explains
+     the match, from somebody who has had a thousand of them. */
+  { id:'first_night', tag:'YOUR FIRST NIGHT', trig:'prematch', weight:1, priority:true,
+    when:x=>((x.c.rec.w||0)+(x.c.rec.l||0)+(x.c.rec.d||0))===0,
+    cast:x=>({ a: houseRoster(myPromoId())
+                   .filter(y=>!(G.car.booking&&G.car.booking.o&&G.car.booking.o.oppId===y.id))
+                   .sort((p,q)=>(q.over||0)-(p.over||0))[0] }),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} stops you at the curtain. "First night. Three things. Build to your near-falls. Do not go home early. When the match asks you to call something, call it."`,
+        opts:[
+          { t:'"Got it."', eff:{respectA:+4, standing:+1}, note:'A nod. That is all the welcome you get here.', mem:'listenedNightOne' },
+          { t:'"What happens if I go home early?"', eff:{respectA:+2}, goto:'early' },
+          { t:'"I know what I am doing."', eff:{heatA:+5, gimHeat:+3}, note:'They laughed. Not unkindly. "Everybody does, once."' },
+        ]},
+      early:{ who:'a', line:x=>`"The rating dies. Nobody remembers who won a five-minute match. They remember a twenty-minute one they lost." They hold the curtain open. "Go."`,
+        opts:[ { t:'Go.', eff:{standing:+1}, note:'You will hear that again from a newsletter in about a year.' } ]},
+    }},
   /* ---------- THE JOB: office, bookers, contracts ---------- */
   { id:'booker_direction', tag:'A WORD FROM THE OFFICE', trig:'prematch', weight:1,
     when:x=>(x.c.standing||50)<48,
@@ -14000,6 +14100,8 @@ function pickScene(trigger){
     });
     return null;
   }
+  // a scene that declares priority is the one that plays (night one, say)
+  const pri=pool.find(s=>s.priority); if(pri) return pri;
   // weighted pick, deterministic per week so a reload shows the same scene
   const seed=`${c.year}-${c.week}-${trigger||'any'}`;
   let h=2166136261>>>0;
