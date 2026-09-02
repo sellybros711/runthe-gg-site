@@ -17198,11 +17198,15 @@ function momentPopup(ce, info){
    a career PERSONA (traits), can grant a small one-event confidence perk, and is logged to a "Career
    Story" feed shown on the season summary + career end. Interactive CAREER play only (never daily,
    circuit, or headless). The ONLY sim effect is a tiny, capped composure boost consumed in beginEvent. */
-const STORY_CONF_CAP=0.8, STORY_PER_SEASON=1, STORY_GAP=2;   // CS352: 2→1 presser/season (owner: too many pop-ups)
+// Owner (cutscene launch): "the amount that pop up should increase as the cutscenes are really cool."
+// This RAISES what CS352 cut to 1/season, and the reason it's safe to reverse is that the thing being
+// counted changed: those were plain choice modals, these are broadcast scenes with a bespoke room per
+// beat. STORY_GAP stays 2, so they can still never land in back-to-back weeks.
+const STORY_CONF_CAP=0.8, STORY_PER_SEASON=3, STORY_GAP=2;
 // Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans, cap the total
 // number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
 // nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
-const SEASON_STOP_BUDGET=2, MOMENT_PER_SEASON=2;   // CS352/CS356r: the shared budget (2) restrains the INTERRUPT-y pop-ups (pressers/dilemmas/arcs). Moments (opt-in "play your Sunday") are DECOUPLED - up to 2/season, not blocked by the shared budget - so a contending season reliably offers them.
+const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=2;   // raised 2→4 with STORY_PER_SEASON so the extra cutscenes actually have budget to fire. The budget restrains the INTERRUPT-y pop-ups (pressers/dilemmas/arcs); Moments (opt-in "play your Sunday") are DECOUPLED - up to 2/season, not blocked by it.
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
@@ -19885,6 +19889,15 @@ function csFigure(pic, ctx){
    Keyed by storyline id, with a tag-driven fallback so EVERY beat gets a frame. A scene is
    {in:[...], out:[...]}; a scene beat is {who, tx, frame, pic}. tx may be a function of ctx. -- */
 function csT(v, ctx){ return typeof v==='function'?v(ctx):v; }
+/* A beat that always says the same words stops being a conversation the second time you see it. csVary
+   takes a list of alternates and returns one of them, picked from a seed pinned ONCE per showing (year +
+   event + beat id), so a scene is stable while you're reading it and different the next time it fires.
+   `var`, not `let`: this is reachable before its own line executes and a TDZ binding would throw. */
+var _csSeed=0, _csVaryN=0;
+function csVary(list){
+  const off=(_csVaryN++)*0x9e3779b1;   // each line gets its own offset, so a scene doesn't pick alternate #2 all the way down
+  return function(c){ const v=list[((_csSeed+off)>>>0) % list.length]; return typeof v==='function'?v(c):v; };
+}
 var CS_SCENES={
   press_win:{
     in:[{who:'okoye', frame:'broadcast', pic:'me', tx:c=>`They're still on their feet out here. ${csMe()} has won ${c.lastName||c.upName||'out here'}.`},
@@ -19944,6 +19957,245 @@ var CS_SCENES={
     in:[{who:'duck',  frame:'broadcast', pic:'me', tx:`Somebody on our own network took a swing at you this week. In print. With your name on it.`},
         {who:'sands', frame:'presser',   pic:'me', tx:`They're in the room. Third row. You get to decide whether to look at them.`}],
     out:[{who:'feed', frame:'feed', pic:'me', tx:[`The clip's doing numbers. That cuts both ways.`,`the pundit's mentions are not a nice place right now`]}]
+  },
+  /* ---- every remaining storyline gets its own room, its own voice and its own stakes. A tag fallback
+     is a safety net, not a scene: when the same two generic lines frame a rookie's first press room AND
+     a legend's farewell, the layer stops being a broadcast and starts being wallpaper. ---- */
+  rival:{
+    in:[{who:'vane',  frame:'broadcast', pic:'rival', tx:csVary([
+          c=>`${c.rivalName||'Your rival'} is in the field this week, and the pairings sheet did not separate you.`,
+          c=>`Every era needs two names. Right now this one has yours and ${c.rivalName||'theirs'}.`])},
+        {who:'sands', frame:'presser',   pic:'me',    tx:csVary([
+          `The first question in here is about them. It always is.`,
+          `You know what's coming. They want you to say the name.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Two names, one leaderboard. That's a season.`,`putting a reminder in my calendar for Sunday`]}]
+  },
+  fan_kid:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `There's a kid behind the ropes on eighteen who has been holding the same hat out for four hours.`,
+          `Somebody very small in a very large cap has been following you since the front nine.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Nobody remembers your third round. They remember whether you stopped.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`That photo goes further than any of today's golf.`,`this is the stuff that makes a fan for thirty years`]}]
+  },
+  media_fav:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:c=>`Number ${c.rank||3} on the money list, and every preview show this week opens on your name.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:`Being the story is a job of its own. Some players never learn to do it.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:csVary([
+          `The favourite always gets asked the hardest question. That's the tax on being good.`,
+          `You can hear a locker room recalibrate when somebody talks like that.`])}]
+  },
+  slump:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:csVary([
+          `The last few weeks have not been kind, and the numbers are not hiding it.`,
+          `Form's gone. The stats say it, the leaderboard says it, and now somebody's going to ask about it.`])},
+        {who:'ellis', frame:'broadcast', pic:'me', tx:`I've seen this. It's rarely the swing. It's what a player says about the swing.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`So. Bad run. How do you want this written up?`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`A slump is only a slump until somebody names it something else.`,`quietly rooting for a bounce back here`]}]
+  },
+  vet:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:c=>`${c.vetName||'One of the old guard'} pulled you aside in the locker room this week. That's not nothing.`},
+        {who:'brant', frame:'broadcast', pic:'me', tx:`The locker room has a longer memory than the leaderboard does.`}],
+    out:[{who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `Players talk. Whatever was said in there will be repeated for years.`,
+          `That room decides who gets the benefit of the doubt in ten years' time.`])}]
+  },
+  home:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`Home week. Half the gallery went to school with somebody in your family.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `The local paper's here, and they want more than a scorecard.`,
+          `This crowd is going to be loud for you whatever you shoot. That has a weight to it.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`A hometown week is never just a week.`,`the whole town watching one leaderboard tonight`]}]
+  },
+  charity:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`There's a foundation asking for a day of your off-season, and they've gone public with the ask.`},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`It costs you a week. It buys something you can't earn on a golf course.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Not every headline this week is about golf.`,`this is the good part of the sport`]}]
+  },
+  gear:{
+    in:[{who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `A rep has been on the range all morning with something new and a very persuasive smile.`,
+          `Equipment week. There's a van outside and everybody in it wants your hands on their club.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`The numbers on it are real. The question is whether they're real under pressure.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Changing equipment mid-season is either brave or expensive. Usually both.`}]
+  },
+  major_presser:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:c=>`Major week at ${c.upName||'the championship'}. The whole calendar bends toward these four.`},
+        {who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `The interview room is twice the size it was last week and it is already full.`,
+          `Three times the cameras, and every one of them is pointed at that chair.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Tuesday of a major. Everything you say now gets replayed on Sunday.`}],
+    out:[{who:'nair', frame:'broadcast', pic:'me', tx:`Now they go and play it. That's the only part that counts.`}]
+  },
+  runner_up:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `Second. After all that, second, and the trophy is being handed to somebody else about forty feet away.`,
+          `The runner-up walk is the longest one in golf, and you've just made it.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Nobody enjoys this room. But how you handle it says more than the win would have.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Close hurts. It also tells you exactly how close you are.`}]
+  },
+  rookie_win:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`A maiden win. There is exactly one of these in a career and this is it.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `Everything after today is measured against this afternoon.`,
+          `The tour just found out your name the hard way.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`First time in this chair as a winner. Take a second if you need it.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`A first win changes how a whole locker room says your name.`,`remember where you were for this one`]}]
+  },
+  veteran_legacy:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:c=>`${c.seasons||10} seasons out here. That's long enough that people have started using the word legacy.`},
+        {who:'brant', frame:'broadcast', pic:'me', tx:csVary([
+          `At some point a career stops being about the next win and starts being about what it added up to.`,
+          `The young players in that locker room grew up watching this.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Careers get written while they're still being played.`,`been watching this one since the start`]}]
+  },
+  twilight_retire:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `The question nobody wants to ask first has been asked. How much longer?`,
+          `There's a word going round the media centre this week and the word is retirement.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`You don't owe anybody an answer. They're going to ask anyway.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Every player gets to choose the ending. Very few get to choose it out loud.`}]
+  },
+  social_flare:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `Something you posted is going round. Fast. Faster than anything you did on the golf course this week.`,
+          `The internet has decided you're the main character today, and the internet did not ask first.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`Reach like that is worth money. It's also worth trouble.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Timeline's gone. Completely gone.`,`this is the only thing on my feed right now`,`somebody's media team is having a long night`]}]
+  },
+  caddie:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`There's been a long conversation on the range and neither of you looked happy at the end of it.`},
+        {who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `A player and a caddie is a marriage with a scorecard. Bad weeks test it.`,
+          `You can hear a partnership fraying. It sounds like silence on the walk between shots.`])}],
+    out:[{who:'duck', frame:'broadcast', pic:'me', tx:`Whatever gets said between those two, they've got eighteen holes to live with it.`}]
+  },
+  money_lead:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:c=>`Number ${c.rank||1} on the money list. That number changes how a season gets talked about.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `Leading it is one thing. Being asked about leading it every week is another.`,
+          `Everybody behind you can see that number too.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Top of the list, and the whole tour reading the same page.`,`money list doesn't lie`]}]
+  },
+  appearance_fee:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `An offer landed this week. A big one, from a long way away, for one week of your time.`,
+          `Somebody wants to pay you a lot of money to tee it up somewhere the tour doesn't go.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`The cheque is real. So is the week of the schedule it costs you.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Every player makes that call once. Most of them make it twice.`}]
+  },
+  caddie_words:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`Something happened inside the ropes today and it did not stay inside the ropes.`},
+        {who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `The only person out there who tells you the truth is the one carrying the clubs.`,
+          `When a caddie speaks up, it's because nobody else will.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Hard words from the one person who has to walk every step with you.`,`sounds like that needed saying`]}]
+  },
+  agent_panic:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `The phone's been going all week and it isn't the good kind of ringing.`,
+          `Somebody's representation is making calls this morning, and none of them are celebratory.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`Reputation shows up on a balance sheet eventually. This is eventually.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Brands are patient right up until the moment they aren't.`}]
+  },
+  villain_embrace:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `The gallery has picked a side and it isn't yours. They're loud about it.`,
+          `There's a noise that follows a certain kind of player around a golf course, and it's following you.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Now: fight it, or lean all the way into it. Both sell tickets.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Every sport needs one. The ratings agree.`,`i will be watching every single shot out of pure spite`,`admit it, this is more fun`]}]
+  },
+  elder_shot:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:c=>`A player with more majors than you have seasons said your name on camera this week, and not kindly.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `The clip is on every phone in this room. Including mine.`,
+          `They've quoted it back to three players already today. You're the fourth.`])}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Answering a legend is a coin flip. Heads you're brave, tails you're the story for a month.`}]
+  },
+  underexposed:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `There's a room somewhere deciding which players get put in front of a camera, and you keep not being in it.`,
+          `Good golf, no profile. Marketing has noticed, and they've noticed out loud.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`The results are there. The reach isn't. Only one of those pays twice.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Most underrated player out here, and it isn't close.`,`why does nobody talk about this`]}]
+  },
+  gentleman_tribute:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `Something small happened on fifteen today that the cameras nearly missed, and the players didn't.`,
+          `The word going round the locker room about you this week is one most players never get.`])},
+        {who:'brant', frame:'broadcast', pic:'me', tx:`Respect out here is slow to earn and quick to lose. That was earning.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Class. That's the whole post.`,`this is why people love this sport`]}]
+  },
+  crossover:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `You're being asked to appear on things that have nothing to do with golf. That's a threshold.`,
+          `The requests coming in this week are from people who could not name a single other player on tour.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Bigger than the sport is a nice sentence. It's also a very long leash to hold.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`My mum knows who this is now. That's the metric.`,`genuinely crossed over`]}]
+  },
+  /* ---- the breakaway league: golf split in two and every microphone wants your side of it ---- */
+  lg_why_stay:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`Half this locker room took the money. You didn't, and everybody in here wants to know why.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `Loyalty is a lovely word. It's also a very expensive one right now.`,
+          `You can give them the diplomatic answer. Nobody in this room will believe it.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Whatever side you're on, that answer gets screenshotted.`,`the split is the only story in golf now`]}]
+  },
+  lg_peer_gone:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `A locker two down from yours is empty this week. They signed on Tuesday.`,
+          `Somebody you came up with is gone. The nameplate's already been changed.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Friendships survive it or they don't. Usually there's a press conference in between.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Every player who leaves takes a few more with them. That's how this works.`}]
+  },
+  lg_field_thin:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:`Look at the field list. Count the names that were here two years ago.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `A win means what the field says it means. People are starting to say that out loud.`,
+          `Nobody can tell you what this tour's trophies are worth any more. They're all guessing.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Asterisks are the internet's favourite punctuation.`,`the field argument is exhausting and it isn't going away`]}]
+  },
+  lg_why_go:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`You signed. There's a number attached to that and everybody has decided what it says about you.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `Every question in here is the same question wearing a different hat.`,
+          `They want you to say it was the money. Or to say it wasn't. There's no third door.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`That's the quote that follows them for a decade.`,`say what you want, that took nerve`]}]
+  },
+  lg_locked_out:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:csVary([
+          `No ranking points out there. The maths has been quietly eating your world ranking all year.`,
+          `The ranking doesn't argue and it doesn't forgive. It just counts, and it's stopped counting you.`])},
+        {who:'brant', frame:'broadcast', pic:'me', tx:`Four majors a year. That's the whole window, and it's closing.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Money now, majors never. That was always the deal.`,`this is the part nobody mentioned in the announcement`]}]
+  },
+  lg_fan_turn:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `The gallery got personal on the back nine today. Security had a word with two of them.`,
+          `Some of what got shouted out there does not go on television.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`You cannot out-argue a crowd. You can only out-last one.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Rough week to be that guy inside the ropes.`,`the heckling has gone too far honestly`]}]
+  },
+  lg_h2h_win:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:c=>`Everybody in golf was in the same field this week, and you won ${c.lastName||'it'}.`},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:csVary([
+          `No asterisk. No qualifier. Both sides, one leaderboard, one winner.`,
+          `That is the only result all year that nobody can argue with.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`So you get the room, and both halves of the sport are listening.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Settled it on the golf course. Novel idea.`,`this is what everyone actually wants`]}]
+  },
+  lg_peace_talks:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `There are lawyers in a room somewhere deciding what the next ten years of this sport look like.`,
+          `Peace talks. Nobody in a locker room was invited to them, which tells you plenty.`])},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:`Players get asked about it. Players never get consulted about it.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Whatever gets signed, somebody in that locker room ends up on the wrong side of it.`}]
+  },
+  lg_cup_born:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`It's official. Twelve who stayed against twelve who left, and they're calling it a cup.`},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `They spent three years arguing about it. Now they get to settle it in match play.`,
+          `The most loaded team event ever put on a golf course, and everybody knows it.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Best thing to come out of the whole mess.`,`i will be watching every single match`]}]
   }
 };
 // Tag-driven fallback: every storyline gets a frame even if nobody wrote it a bespoke scene.
@@ -19959,8 +20211,11 @@ var CS_TAG_SCENES={
   'THE LEAGUE':{in:[{who:'vane',frame:'broadcast',pic:'me',tx:`Golf's split in two and every microphone in the building wants your side of it.`},
                     {who:'sands',frame:'presser',pic:'me',tx:`There's no neutral answer to this one. There hasn't been for a while.`}],
                 out:[{who:'brant',frame:'broadcast', pic:'me',tx:`Every player who answers that question ends up on somebody's list.`}]},
-  _default:{in:[{who:'vane',frame:'broadcast',pic:'me',tx:c=>`${csMe()} at ${c.upName||'the tournament'}, and there's a story here worth telling.`},
-                {who:'sands',frame:'presser',pic:'me',tx:`Whenever you're ready.`}],
+  _default:{in:[{who:'vane',frame:'broadcast',pic:'me',tx:csVary([
+                  c=>`${csMe()} at ${c.upName||'the tournament'}, and there's a story here worth telling.`,
+                  c=>`We're on site at ${c.upName||'the tournament'}, and this one has a story attached to it.`,
+                  c=>`There's a conversation to be had this week, and ${csMe()} is at the middle of it.`])},
+                {who:'sands',frame:'presser',pic:'me',tx:csVary([`Whenever you're ready.`,`The room's yours.`,`They're waiting on you.`])}],
             out:[{who:'feed',frame:'feed',pic:'me',tx:[`The reaction's already rolling in.`,`golf twitter waking up to this at 6am`]}]}
 };
 function csSceneFor(beat, ctx){
@@ -20255,6 +20510,9 @@ function csStoryPlay(sb, scene){
    passthrough to the modal that has always run, with its outcome machinery untouched. */
 function showStoryline(sb){
   let scene=null;
+  // pin the line-variation seed ONCE per showing, so a scene reads the same while you're in it and
+  // different the next time this beat fires (csVary reads it at render time).
+  try{ _csSeed=dHash(String(S.year||0)+':'+String(S.evtIndex||0)+':'+String((sb.beat&&sb.beat.id)||'')); }catch(e){ _csSeed=0; }
   if(cutscenesOn()){ try{ scene=csSceneFor(sb.beat, sb.ctx); }catch(e){ scene=null; } }
   if(!scene || !(scene.in&&scene.in.length) || !(sb.beat&&sb.beat.ch&&sb.beat.ch.length)) return showStorylineModal(sb);
   track('cutscene_shown',{id:sb.beat.id});
@@ -24720,9 +24978,13 @@ function scrSeason(){
         const mark=()=>{ ce._interrupted=true; S.season._lastStopEvt=S.evtIndex; clearTimeout(seasonTimer); };
         const dil = maybeDilemma(ce);   // includes any due follow-up arc (priority)
         if(dil && dil.isArc && gatesOpen){ mark(); showDilemma(dil); return; }   // an owed follow-up payoff always lands
-        const early = gatesOpen && Math.random() < (prog<0.5?0.07:0.14);   // occasional earlier beat; most seasons wait for the guaranteed one
+        // THIS is the real frequency dial, not STORY_PER_SEASON: at 7%/14% almost every season fired only
+        // the one guaranteed beat. Raised with the cutscene launch (owner: "the amount that pop up should
+        // increase"), still bounded by STORY_PER_SEASON, the shared budget and the no-back-to-back gap.
+        const early = gatesOpen && Math.random() < (prog<0.5?0.18:0.30);
         if(guaranteeDue || early){
-          if(dil && Math.random()<0.5){ mark(); showDilemma(dil); return; }
+          // and lean toward the STORYLINE, since that's the one that plays as a cutscene
+          if(dil && Math.random()<0.3){ mark(); showDilemma(dil); return; }
           const sb=maybeStoryline(ce);   // enforces the once-a-season guarantee (jittered) itself
           if(sb){ mark(); showStoryline(sb); return; }
           if(dil){ mark(); showDilemma(dil); return; }   // no storyline available → the dilemma
