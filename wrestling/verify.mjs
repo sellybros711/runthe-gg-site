@@ -199,16 +199,26 @@ section('the first night is a show, not a sheet');
     // (the pre-bell "Your first match" explainer is a modal that holds the
     // bell until it is dismissed; dismiss it the way a player would)
     for(let i=0;i<8 && !(typeof MS!=='undefined' && MS && !MS.ended);i++){
-      const opt=document.querySelector('#sceneBody .scene-opt');
-      const cont=document.querySelector('#sceneBody .scene-continue button');
+      const sceneOpen=document.getElementById('sceneBack').classList.contains('open');
+      const opt=sceneOpen && document.querySelector('#sceneBody .scene-opt');
+      const cont=sceneOpen && document.querySelector('#sceneBody .scene-continue button');
       const mb=document.querySelector('#modalBack.open #modalBtns button');
-      if(opt) opt.click(); else if(cont) cont.click(); else if(mb) mb.click();
+      // a modal on top of everything gets dismissed first, then the scene
+      if(mb) mb.click(); else if(opt) opt.click(); else if(cont) cont.click();
       await new Promise(r=>setTimeout(r,900));
     }
     out.fightStarted = !!(typeof MS!=='undefined' && MS);
-    // let the match resolve without playing it, and wait for the debrief
+    // let the match resolve without playing it, tap away any milestone card
+    // (a first win queues one and the debrief waits behind it), then wait
+    // for the debrief
     try{ skipFight(); }catch(e){ out.skipErr=e.message; }
-    await new Promise(r=>setTimeout(r,3200));
+    await new Promise(r=>setTimeout(r,2600));
+    for(let i=0;i<4;i++){
+      const mo=document.getElementById('momentBack');
+      if(mo && mo.classList.contains('open')){ try{ nextMoment(); }catch(_){} await new Promise(r=>setTimeout(r,700)); }
+      else break;
+    }
+    await new Promise(r=>setTimeout(r,1400));
     out.debrief = !!(G.car.coachSeen && G.car.coachSeen.firstNight);
     out.modalTitle = (document.getElementById('modalTitle')||{}).textContent||'';
     out.modalOpen = document.getElementById('modalBack').classList.contains('open');
