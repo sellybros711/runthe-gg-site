@@ -14,6 +14,9 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/fetch-rosters.mjs
+      # Pack before the bump, so the version moves with the bytes that ship.
+      # Shape-preserving and idempotent: see scripts/lib/packdata.mjs.
+      - run: node scripts/pack-arcade-data.mjs rosters
       # A data file that changed and kept its ?v= hands a returning visitor the
       # old data against the new page. Only when it actually moved: a bump with
       # no change is a re-download for everybody who already has the file.

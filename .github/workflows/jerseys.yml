@@ -50,6 +50,9 @@ jobs:
       - name: Commit if requested
         if: ${{ (github.event_name == 'schedule' || github.event.inputs.commit == 'true') && github.event.inputs.only == '' }}
         run: |
+          # Pack before the bump, so the version moves with the bytes that
+          # ship. Shape-preserving and idempotent: see scripts/lib/packdata.mjs.
+          node scripts/pack-arcade-data.mjs jerseys
           # A data file that changed and kept its ?v= hands a returning visitor
           # the old data against the new page. Only when it actually moved: a
           # bump with no change is a re-download for everybody who already has

@@ -204,7 +204,7 @@
     var s = stats(), ti = tierInfo();
     var tier = flameTier(s.cur);
     var initial = esc((ti.name.charAt(0) || 'P').toUpperCase());
-    var ICON = 'https://runthe.gg/arcade/assets/arcade-icon.png?v=2';
+    var ICON = 'https://runthe.gg/arcade/assets/arcade-icon.png?v=3';
 
     // achievements: only genuinely-earned tiles (plus best streak, always shown)
     var ach = [];

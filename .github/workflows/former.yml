@@ -15,6 +15,13 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/fetch-former.mjs
+      # Pack it before anything else looks at it, so the gate below and the
+      # cache bump both see the bytes that will actually ship. The scraper
+      # writes one object per player with every field name spelled out; packing
+      # writes the names once and the repeated strings once, which is 1225 KB
+      # down to 468 KB and about 130 ms of phone parsing saved on eight pages.
+      # Shape-preserving and idempotent: see scripts/lib/packdata.mjs.
+      - run: node scripts/pack-arcade-data.mjs former
       # GATE THE REFRESH ON THE ANSWER CHECK. This job rewrites the college
       # every Alma Mater round is scored against, so a feed that starts writing
       # a school a new way ships straight to players. Checking after the commit
