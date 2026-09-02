@@ -5715,19 +5715,18 @@ function renderStoryPanel(){
     // a live story is never "Settled": stage 4 reached by a scene still has
     // its blow-off to wrestle, so it reads as the blow-off
     const shown=Math.min(3,st.stage), stgShown=STORY_STAGES[shown];
+    const kind=STORY_KINDS[st.kind]||STORY_KINDS.grudge;
     const payoff = st.payoffAt ? `${st.payoffAt.name||'the next supercard'} (Y${st.payoffAt.y}W${st.payoffAt.w})` : null;
-    const nextBeat = shown>=3
-      ? `Blow-off${payoff?` booked for ${payoff}`:''}. Win it clean, or wrestle a 72+ match, to settle it with respect.`
-      : `Next beat: a 64+ match against them, a backstage scene, or a promo. ${payoff?`Pays off at ${payoff}.`:'It pays off at a supercard.'}`;
+    const nextBeat = `${kind.next[shown]||''} ${payoff?`Pays off at ${payoff}.`:`Pays off with ${kind.payoff}.`}`;
     const started=`Y${st.startYear}W${st.startWeek}`;
     h+=`<div class="storycard" id="feudCard">
       <div class="sh"><div style="width:52px;flex:none;">${wrestlerSVG(c.look,{frame:'head'})}</div>
-        <div><div class="st">Feud · ${stgShown.name}${shapeChip}</div>
+        <div><div class="st">${kind.name} · ${kind.stages[shown]||stgShown.name}${shapeChip}</div>
         <div class="sn">${G.w.name} vs ${c.name}</div>
         <div class="hint">${stgShown.label}</div></div></div>
       ${st.reason?`<div class="hint" style="margin-top:6px;">Started ${started}: ${c.name} ${st.reason}</div>`:''}
       <div class="bar" style="margin-top:8px;"><i id="feudBar" style="width:${(feudAdv?feudFrom:(shown/3)*100)}%;background:var(--brandred)"></i></div>
-      <div class="feud-marks"><span>Spark</span><span>Escalation</span><span>Personal</span><span>Blow-off</span></div>
+      <div class="feud-marks">${kind.stages.map(x=>`<span>${x}</span>`).join('')}</div>
       <div class="hint" style="margin-top:6px;">Bad blood <b>${Math.round(R.heat)}</b> · ${bandOf('heat',R.heat).toLowerCase()} · ${R.wins}-${R.losses} against them</div>
       <div class="bar" style="margin-top:3px;height:4px;"><i style="width:${clamp(R.heat)}%;background:#c0392b"></i></div>
       <div class="hint" style="margin-top:6px;color:${shown>=3?'var(--gold)':'var(--text-dim)'}">${nextBeat}</div>
@@ -6337,7 +6336,10 @@ function makeOffers(){
     else if(rivalId===opp.id) stakes='rival';
     const _s=story();
     if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=ripStipFor(_s.stage, _s.shape);
-      st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
+      st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2];
+      // a title chase pays off as a title match, if they still hold it
+      if(_s.kind==='title' && _s.stage>=3 && !holds && titlesHeldBy(opp.id).some(b=>b.kind==='world' && b.promoId===me.id)) stakes='title';
+      if(_s.kind==='betrayal' && _s.stage>=3){ st[0]='Steel Cage'; st[1]='cage'; st[2]=1.3; } }
     // PPV night: a live feud is booked to blow off, and every offer moves up to Main Event.
     if(ppv){
       if(_s && _s.charId===opp.id && _s.stage<3) _s.stage=3;   // force to blow-off intensity
@@ -6502,6 +6504,50 @@ function ripStipFor(stage, shape){
   return track[Math.min(track.length-1, stage||0)];
 }
 
+/* ============================================================
+   STORY KINDS
+   ------------------------------------------------------------
+   Every feud used to be the same feud with a different name on it. A
+   kind is inferred when the story starts, from who the rival is and why
+   it started, and it changes three things: what the panel calls each
+   beat, what the blow-off is booked as, and what it takes to settle it
+   with respect rather than blood. Every kind ends the same ways a grudge
+   does (blow-off, truce, the rival leaving), so nothing runs forever.
+   ============================================================ */
+const STORY_KINDS = {
+  grudge:   { name:'Grudge',            stages:['Spark','Escalation','Personal','Blow-off'],
+              next:['A 64+ match against them, a scene, or a promo.','Keep meeting them. It is getting personal.','One more good match and the office books the blow-off.','Settle it. Win it clean or wrestle a 72+ match and it ends with respect.'],
+              payoff:'a blow-off at the next supercard' },
+  title:    { name:'Title chase',       stages:['Contender','Non-title','Contract signing','Title match'],
+              next:['Beat them non-title, or cut a promo that names the belt.','A good match against them and the office books the shot.','The blow-off is a TITLE match. Win it and the belt is yours.','The belt is on the line. A clean win takes it.'],
+              payoff:'a title match at the next supercard' },
+  betrayal: { name:'Betrayal',          stages:['The turn','They cost you','Grudge match','Blow-off'],
+              next:['Somebody who had your back does not any more. Meet them in the ring.','They will cost you a match before this is over. Keep working.','A cage or a street fight is coming. The office knows.','Blood, almost certainly. Only a win at 80+ ends this with a handshake.'],
+              payoff:'a cage or street fight at the next supercard' },
+  underdog: { name:'Underdog rise',     stages:['The loss','Near miss','The upset','Rubber match'],
+              next:['You lost to somebody better. Wrestle them again.','A draw or a 70+ loss keeps this alive. A win changes it.','Beat them once and the office has to book the rubber match.','The rubber match. Win it and you are not the underdog any more.'],
+              payoff:'a rubber match at the next supercard' },
+  veteran:  { name:'Veteran and rookie',stages:['The lesson','The stolen pin','Last stand','Handshake or not'],
+              next:['You are in with somebody who has seen it all. Lose well.','Steal one. A 64+ match against them, however it ends.','Their last stand. The office books the blow-off.','A 62+ match ends this with respect. That is the whole point of it.'],
+              payoff:'a respect match at the next supercard' },
+};
+function storyKind(){ const st=story(); return STORY_KINDS[(st&&st.kind)||'grudge']||STORY_KINDS.grudge; }
+function inferStoryKind(charId, reason){
+  const rv=charById(charId); const r=String(reason||'').toLowerCase();
+  if(/betray|never really with you|what you did|turned on/.test(r)) return 'betrayal';
+  const belts=(typeof titlesHeldBy==='function')?titlesHeldBy(charId):[];
+  if(belts.some(b=>b.kind==='world') || /ringside|title|belt/.test(r)) return 'title';
+  const mine=ovr(G.w);
+  const theirs = rv&&rv.attrs ? Math.round(Object.values(rv.attrs).reduce((a,b)=>a+b,0)/Math.max(1,Object.keys(rv.attrs).length)) : mine;
+  const vetTraits=(rv&&rv.traits||[]).some(t=>/veteran|respected|ace|stoic|iron/i.test(String(t)));
+  const R=rel(charId);
+  if(vetTraits && theirs>=mine+4) return 'veteran';
+  if(rv && (rv.traits||[]).some(t=>/newcomer/i.test(String(t))) && G.car.age>=28) return 'veteran';
+  // an underdog story needs you to actually be losing to them. A rookie is
+  // under everybody on paper; that alone is not a story.
+  if(theirs>=mine+8 && (R.losses||0)>(R.wins||0)) return 'underdog';
+  return 'grudge';
+}
 function story(){ return G.story||null; }
 function startStory(charId,reason){
   const c=charById(charId); if(!c) return;
@@ -6511,7 +6557,8 @@ function startStory(charId,reason){
   // The reason is kept, not just logged: the panel reads it back for as
   // long as the feud runs, and the resolution record carries it out.
   G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year, shape:null,
-            kind:'grudge', reason:String(reason||'').replace(/<[^>]+>/g,''), payoffAt:null, lastBooked:null };
+            kind:inferStoryKind(charId, reason), reason:String(reason||'').replace(/<[^>]+>/g,''), payoffAt:null, lastBooked:null };
+  if(G.story.kind==='underdog') G.story.shape='underdog';
   G.car.rivalId=charId; G.car.offers=null;
   pushLog(`<b>${c.name}</b>: ${reason}`);
   pushInboxItem({ico:pico('fire',18),sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
@@ -9106,7 +9153,12 @@ function applyMatch(o,res){
     _st.lastBooked=c.year*WEEKS_PER_YEAR+c.week;
     if(_st.stage>=3){
       // the blow-off: a great match settles it with respect, a bitter one does not
-      endStory((res.quality>=72 || (res.win && rel(o.oppId).respect>=40))?'respect':'blood');
+      const _k=_st.kind||'grudge';
+      const _respect = _k==='veteran'  ? res.quality>=62
+                     : _k==='betrayal' ? (res.win && res.quality>=80)
+                     : _k==='underdog' ? (res.win || res.quality>=72)
+                     : (res.quality>=72 || (res.win && rel(o.oppId).respect>=40));
+      endStory(_respect?'respect':'blood');
       c.rep+=260; G.bag.coins+=Math.round(o.purse*1.5);
       /* THE BLOW-OFF CEREMONY. A feud is the spine of a career and its
          ending used to be an inbox row. It gets what a title change gets:
