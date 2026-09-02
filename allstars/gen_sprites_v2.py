@@ -1543,6 +1543,19 @@ def sig_peter(cv, spec, pose, back):
     # the red feather in the cap
     r = Ramp('#c93030')
     cv.tri([(CX + 9, 1), (CX + 5, 7), (CX + 8, 7)], r, l=0.6)
+    # THE LEAF HEM. A tunic of leaves ends in points, not a straight
+    # line: a row of darker leaf tips hanging off the bottom of the shirt,
+    # plus a lighter vein on the chest, so the green reads as foliage
+    # rather than as a jersey.
+    leaf = Ramp(shade(spec.get('shirt', '#7a9a3a'), -0.28))
+    for i, dx in enumerate((-6, -3, 0, 3, 6)):
+        tip = 32 if i % 2 else 31
+        cv.tri([(CX + dx - 1.5, 29.5), (CX + dx + 1.5, 29.5), (CX + dx, tip)], leaf, l=0.5)
+    if not back:
+        vein = shade(spec.get('shirt', '#7a9a3a'), 0.3)
+        for dy in range(24, 29):
+            cv.dot(CX, dy, vein)
+        cv.dot(CX - 1, 26, vein); cv.dot(CX + 1, 25, vein)
 
 
 def sig_medusa(cv, spec, pose, back):
@@ -1568,8 +1581,18 @@ def sig_pooh(cv, spec, pose, back):
                       Ramp(shade(gold, -0.22)), spec=False)
     if back:
         return
-    # the red shirt is a CROP TOP: the round belly pokes out under it
-    cv.ball(CX, 33.0, 5.6, 4.2, body, spec=False)
+    # the round belly, lighter, so a bear with no shirt still has a front
+    cv.ball(CX, 30.0, 5.6, 5.2, Ramp(shade(gold, 0.16)), spec=False)
+    # THE HONEY POT, hugged at his side: a little blue-grey crock with a
+    # pale band and a drip of honey over the lip. It rides the arm.
+    o = run_off(pose)[1]
+    px, py = CX + 11, 30 + o
+    pot = Ramp('#8fa4c4')
+    cv.cyl(px - 2, py - 3, px + 2, py + 2, pot, round_bot=1)
+    cv.rect(px - 2, py - 2, px + 2, py - 2, Ramp('#e8e4d8'), l=0.6)
+    honey = (232, 170, 48)
+    cv.dot(px - 1, py - 4, honey); cv.dot(px, py - 4, honey); cv.dot(px + 1, py - 4, honey)
+    cv.dot(px + 1, py - 3, honey)
     # THE MUZZLE, which is the whole face. Pooh is a pale snout with a
     # black bead on the end of it and two dots above; drawn with the
     # roster's standard googly pair and a grin he was a yellow ball.
@@ -2710,9 +2733,15 @@ SPECS = {
                  mouth='fang'),
  'liberty': dict(arch='robed', skin='#6db8a2', shirt='#6db8a2', hat='crown',
                  hatcolor='#f4c25a', eyes='normal', mouth='line', folds=4),
- 'peter': dict(arch='human', skin='#f2ceaa', shirt='#3a8a4a', pants='#3a6a3a',
-               hat='cap', hatcolor='#3a8a4a', hair='#c07a2a', hairstyle='short',
-               eyes='normal', mouth='grin'),
+ # Barrie's Peter is "clad in skeleton leaves and the juices that ooze out
+ # of trees", and the stage Peter that followed wore a leaf edged tunic and
+ # a feathered cap. The flat green tunic, green cap and belt are the 1953
+ # film's, which is not public domain, and they also made him Robin Hood
+ # with a different feather. Leaf green, a jagged leaf hem, red hair,
+ # and no shoes: he never wore any.
+ 'peter': dict(arch='human', skin='#f2ceaa', shirt='#7a9a3a', pants='#5a7a30',
+               hat='cap', hatcolor='#6a8a34', hair='#c94b1a', hairstyle='short',
+               boot='#f2ceaa', eyes='normal', mouth='grin'),
  'felix': dict(arch='cat', skin='#141018', chest='#f0f0f2', muzzle=None,
                eyes='hidden', mouth='none',
                extra=[('ears', '#141018')]),
@@ -2741,9 +2770,12 @@ SPECS = {
  'alice': dict(arch='human', skin='#f5d5a8', shirt='#5cb6e5', pants='#eaeaea',
                hair='#e9c76a', hairstyle='long', eyes='normal', mouth='grin',
                belt='#eaeaea'),
+ # SILVER shoes. In the 1900 book Dorothy's shoes are silver; the ruby
+ # slippers are the 1939 film's invention and the film is not public
+ # domain until 2035. The blue and white checked gingham is Baum's.
  'dorothy': dict(arch='human', skin='#f5d5a8', shirt='#5cb6e5', pants='#eaeaea',
                  hair='#5a3618', hairstyle='braids', eyes='normal', mouth='grin',
-                 boot='#c94b1a'),
+                 boot='#cfd3dc'),
  'lupin': dict(arch='human', skin='#efc9a0', shirt='#0f0f16', pants='#0f0f16',
                hat='top', hatcolor='#141018', hattrim='#8a1a1a',
                eyes='normal', mouth='line', extra=[('monocle',)]),
@@ -2756,13 +2788,22 @@ SPECS = {
                    eyes='cartoon', eyecolor='#3a2410', mouth='none'),
  'lion': dict(arch='hulk', skin='#eab84a', muzzle='#ead0a0', chest='#eab84a',
               eyes='normal', eyespread=3, mouth='line'),
- 'pooh': dict(arch='round', skin='#f4c25a', shirt='#d24949', eyes='hidden',
+ # NO SHIRT. Shepard's 1926 Pooh, the one that is public domain, is a bare
+ # honey coloured bear; the red shirt arrived on a 1932 licence and is not
+ # public domain until 2028. He carries the honey pot instead, which is
+ # the thing that was always his.
+ 'pooh': dict(arch='round', skin='#f4c25a', shirt='#f4c25a', eyes='hidden',
               eyecolor='#141018', mouth='none'),
  'robin': dict(arch='human', skin='#efc9a0', shirt='#3f7a3a', pants='#4a2d18',
                hat='cap', hatcolor='#3f7a3a', hair='#a45b1a', hairstyle='bald',
                eyes='normal', mouth='grin', belt='#f4c25a'),
- 'tintin': dict(arch='human', skin='#f5d5a8', shirt='#5cb6e5', pants='#6a4a2a',
-                hair='#d98a3a', hairstyle='quiff', eyes='normal', mouth='line'),
+ # The TRENCH COAT. The Tintin that is public domain is the 1929 one, who
+ # reports from the Soviet Union in a tan trench coat over plus-fours; the
+ # pale blue sweater is a later look and stays under copyright into the
+ # 2030s. The quiff is his in every year.
+ 'tintin': dict(arch='human', skin='#f5d5a8', shirt='#c9a97a', pants='#6a4a2a',
+                hair='#d98a3a', hairstyle='quiff', eyes='normal', mouth='line',
+                belt='#a88a5a'),
  'santa': dict(arch='round', skin='#f5d2a3', shirt='#c93030', hat='santa',
                hatcolor='#c93030', hattrim='#f5efe8', beard='#f5efe8',
                beardsize='full', eyes='normal', mouth='none'),
