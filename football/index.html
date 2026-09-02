@@ -469,15 +469,88 @@ window.GA_ID='G-L29P5MRWKE';
     .hp-full-name{font-size:17px}
     .hp-full-sub{font-size:9px;letter-spacing:.03em}
   }
+  /* ---- THE GAUNTLET'S DOOR, and why it is not the gold one ----
+
+     Full Team wears the warm edge above because it is a preview of another draft inside the
+     classic game. The Gauntlet is not another draft. It is the other half of the front page,
+     so it gets a world of its own rather than a second copy of Full Team's, and the gold is
+     the first thing to go: two warm buttons in a stack read as one menu of side modes.
+
+     THE ROAD IS THE COPY. The target starts at DYNASTY_BASE_WINS and goes up a win every
+     DYNASTY_STEP_SEASONS seasons, and saying that in words took a three field caption nobody
+     read. Two stretches of the same road at two angles is a hill: the far half is rotated
+     LESS than the near half and sits higher, so the ground rises as it goes away. One
+     stretch at one angle is a plain, which is what the button looked like before the second
+     layer went in, so the .hp-rise block below is the whole idea rather than a highlight.
+
+     The honest limit, written here rather than discovered later: a rising road is atmosphere.
+     Nobody reads a win total out of it. It sets the mood and the caption under it carries the
+     number, which is why that caption is the one line on the button and cannot be cut. */
+  .hp-dyn{overflow:hidden;gap:11px;padding:18px 15px 16px;border-radius:15px;
+    background:linear-gradient(180deg,#20242c 0%,#12141a 58%,#0b0d11 100%);
+    border:1.5px solid rgba(255,255,255,.30);
+    box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14)}
+  .hp-lanes,.hp-rise{position:absolute;left:-45%;right:-45%;pointer-events:none}
+  /* THE NEAR HALF. Rotated hard and pushed below the button's own floor, so what survives the
+     crop is the far end of it rather than a grid lying flat. */
+  .hp-lanes{bottom:-30px;height:132px;
+    transform:perspective(90px) rotateX(62deg);transform-origin:50% 100%;
+    background:
+      repeating-linear-gradient(180deg,rgba(233,238,247,.60) 0 2px,transparent 2px 17px),
+      repeating-linear-gradient(90deg,rgba(233,238,247,.26) 0 2px,transparent 2px 40px);
+    -webkit-mask-image:linear-gradient(180deg,transparent 2%,#000 60%);
+    mask-image:linear-gradient(180deg,transparent 2%,#000 60%)}
+  /* The far half, and the climb. */
+  .hp-rise{bottom:44px;height:92px;
+    transform:perspective(150px) rotateX(74deg);transform-origin:50% 100%;
+    background:
+      repeating-linear-gradient(180deg,rgba(233,238,247,.34) 0 2px,transparent 2px 21px),
+      repeating-linear-gradient(90deg,rgba(233,238,247,.16) 0 2px,transparent 2px 46px);
+    -webkit-mask-image:linear-gradient(180deg,transparent 4%,#000 72%);
+    mask-image:linear-gradient(180deg,transparent 4%,#000 72%)}
+  /* Above the road. .hp-full lays its lines out in the flow and both road layers are
+     absolute, so without a stacking order of their own the words paint under the lanes. */
+  .hp-dyn .hp-full-name,.hp-dyn .hp-full-sub{position:relative;z-index:1}
+  .hp-dyn .hp-tag{z-index:1}
+  /* Set in the display face, which nothing else on the front page is, and uppercased here
+     rather than in the string so the accessible name stays a name. */
+  .hp-dyn .hp-full-name{font-family:var(--fd);font-size:30px;font-weight:400;
+    letter-spacing:.02em;text-transform:uppercase;color:#f4f7fc}
+  .hp-dyn .hp-full-sub{font-size:9.5px;font-weight:800;letter-spacing:.15em;
+    color:rgba(226,233,245,.56)}
+  .hp-dyn .hp-tag-pro{background:rgba(255,255,255,.10);
+    border-color:rgba(255,255,255,.28);color:rgba(238,242,249,.86)}
+  @media (max-width:340px){
+    .hp-dyn .hp-full-name{font-size:26px}
+    .hp-dyn .hp-full-sub{letter-spacing:.11em}
+  }
+  /* ---- THE TWO HEADINGS THAT TURN THREE BUTTONS INTO TWO CHOICES ----
+     Offense and Defense are two ways to do the same quick thing, and the Gauntlet is not a
+     third one. Without a line between them the front page is a column of buttons and a
+     visitor picks by size. Both are built by ensureDynastyButton, so they exist only where
+     the door they organise does, and the page reads exactly as it did before that door is
+     switched on. */
+  .hp-quick{display:flex;align-items:center;gap:9px;margin:2px 0 8px}
+  .hp-quick span{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.15em;
+    text-transform:uppercase;color:var(--dim-2);white-space:nowrap}
+  .hp-quick:after{content:'';height:1px;background:var(--line);flex:1}
+  .hp-leadin{display:flex;align-items:center;gap:10px;margin:17px 0 9px}
+  .hp-leadin span{font-family:var(--fn);font-size:11px;font-weight:600;color:var(--dim);
+    white-space:nowrap;font-style:italic}
+  .hp-leadin:before,.hp-leadin:after{content:'';height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.20),transparent)}
+  /* The lead-in already spaces the door off the pair above it, and .hp-full adds its own
+     margin on top of that. */
+  .hp-leadin+.hp-dyn{margin-top:0}
   /* THE WAY OUT OF A SAVED DYNASTY, under the door back into it. Deliberately the quietest
      control on the front page: it throws a run away, and the thing somebody came back for
      is the one above it. */
   .hp-dynnew{margin-top:6px;background:none;border:0;box-shadow:none;
     font-family:var(--fn);font-size:11px;font-weight:600;letter-spacing:.04em;
-    text-transform:uppercase;color:rgba(243,221,174,.44);padding:6px 8px}
+    text-transform:uppercase;color:rgba(226,233,245,.44);padding:6px 8px}
   .hp-dynnew[hidden]{display:none}
   .hp-dynnew:before{display:none}
-  .hp-dynnew:active{color:rgba(243,221,174,.7)}
+  .hp-dynnew:active{color:rgba(226,233,245,.7)}
   /* THE UNIT HEADING on a Full Team roster list. Quiet: it is a divider that happens to
      carry two numbers, not a title competing with the names under it. */
   .rp-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
@@ -1509,7 +1582,10 @@ window.GA_ID='G-L29P5MRWKE';
     #s-intro{display:flex;flex-direction:column}
     #s-intro>*{order:5}
     #s-intro .htitle{order:1;margin-bottom:12px}
-    #s-intro #b-start,#s-intro #hp-split{order:2}
+    /* The starters and everything that belongs to them, so a phone held sideways gets the
+       whole front page in one block instead of the Gauntlet door under the utility row. */
+    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-quick,#s-intro #hp-leadin,
+    #s-intro #b-start-full,#s-intro #b-start-dyn,#s-intro #b-dyn-new{order:2}
     #s-intro #b-teams{order:3}
     #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
@@ -4152,7 +4228,12 @@ window.GA_ID='G-L29P5MRWKE';
        things named below opt into a column. */
     #s-intro>*{grid-column:1/-1}
     #s-intro>.hero{grid-column:1;grid-row:2/span 5;margin-bottom:0}
+    /* The doors built at runtime are named here too. Without them they fall to the catch-all
+       above, which is full width: the Gauntlet would span under the hero rather than sitting
+       in the column with every other control. */
     #s-intro>#b-start,#s-intro>#hp-pick,#s-intro>#hp-split,
+    #s-intro>#hp-quick,#s-intro>#hp-leadin,#s-intro>#b-start-full,
+    #s-intro>#b-start-dyn,#s-intro>#b-dyn-new,
     #s-intro>#b-teams,#s-intro>.hrow.hp-util{grid-column:2}
     #s-intro>.htitle{margin-bottom:24px}
     /* AND THE CONTROLS STOP BEING PHONE-SIZED. Half of 1040 is 500px, and a 44px-tall button
@@ -4168,7 +4249,9 @@ window.GA_ID='G-L29P5MRWKE';
     /* The right column starts a little below the reels rather than level with them, so the
        two columns read as balanced against each other. The hero is the taller of the two by
        about a hundred pixels and always will be: it is a housing plus a field. */
-    #s-intro>#hp-pick,#s-intro>#b-start{margin-top:30px}
+    #s-intro>#hp-pick,#s-intro>#b-start,#s-intro>#hp-quick{margin-top:30px}
+    /* Whichever of the two comes first pays the gap, not both. */
+    #s-intro>#hp-quick+#b-start{margin-top:0}
     #s-intro>#b-teams{margin-top:14px}
     .hp-pick{font-size:13.5px;margin-bottom:12px}
     .hp-side{padding:36px 14px 26px}
@@ -8228,10 +8311,15 @@ function ensureFullButton(){
    a tester account on the same tab has to take the button with it. */
 function ensureDynastyButton(){
   const host=$('b-start-full')||$('hp-split');
-  let el=$('b-start-dyn'), nb=$('b-dyn-new');
+  let el=$('b-start-dyn'), nb=$('b-dyn-new'), hd=$('hp-quick'), li=$('hp-leadin');
   if(!canPlayDynasty()){
-    if(el&&el.parentNode) el.parentNode.removeChild(el);
-    if(nb&&nb.parentNode) nb.parentNode.removeChild(nb);
+    /* THE HEADINGS COME OFF WITH THE DOOR, and that is not tidiness. "Quick draft" is only
+       true against something slow, and "or see how far you can last on" over a page with
+       nothing under it is a promise the page cannot keep. Signing out of a tester account on
+       the same tab has to take all three. */
+    [el,nb,hd,li].forEach(n=>{ if(n&&n.parentNode) n.parentNode.removeChild(n); });
+    const pick=$('hp-pick');
+    if(pick) pick.hidden=!canPlayDefense();
     return;
   }
   if(!host||!host.parentNode) return;
@@ -8242,30 +8330,69 @@ function ensureDynastyButton(){
     /* Directly after the pair, which is where the layout expects it. */
     host.parentNode.insertBefore(el, host.nextSibling);
   }
+
+  /* THE TWO HEADINGS. Offense and Defense are two ways to do the same quick thing and the
+     Gauntlet is a different question, so the page says which is which rather than leaving a
+     visitor to rank three buttons by size.
+     Built here rather than written into the markup for the reason the door itself is: a
+     hidden node still ships to everybody, and "or see how far you can last on" over a page
+     with no third door under it is worse than no line at all.
+     ABOVE WHICHEVER STARTER IS SHOWING. The split and the lone Start a run are the same slot
+     wearing two faces, and only one of them is ever in the layout. */
+  const one=$('b-start'), split=$('hp-split');
+  const top=(split&&!split.hidden)?split:one;
+  if(top&&top.parentNode){
+    if(!hd){
+      hd=document.createElement('div');
+      hd.className='hp-quick'; hd.id='hp-quick';
+      hd.innerHTML='<span>Quick draft</span>';
+    }
+    if(hd.nextSibling!==top) top.parentNode.insertBefore(hd, top);
+  }
+  if(!li){
+    li=document.createElement('div');
+    li.className='hp-leadin'; li.id='hp-leadin';
+    li.innerHTML='<span>or see how far you can last on</span>';
+  }
+  if(li.nextSibling!==el) el.parentNode.insertBefore(li, el);
+  /* The caption over the pair asked which side of the ball you were drafting, which was the
+     whole question when the pair was the whole page. It is one of two questions now, and the
+     heading above it answers the same thing in three words. */
+  const pick=$('hp-pick');
+  if(pick) pick.hidden=true;
+
   /* THE CONTENTS ARE REBUILT ON EVERY CALL, not only on the one that made the node. This
      runs on every return to the front page, and between two of them a dynasty can have been
      started, survived a winter or been ended: a button written once would still be offering
      a new run over one that is sitting there waiting. */
   const save=dynRead();
+  /* THE ROAD IS PART OF THE REBUILD. Both layers are children of the button and the two
+     branches below replace its innerHTML, so drawing them once at creation would put the
+     picture on the front page until the first auth change wiped it. First in the string, so
+     the words that follow paint over them. */
+  const road='<span class="hp-lanes"></span><span class="hp-rise"></span>';
   if(save){
     const r=save.run;
-    el.innerHTML='<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
-      '<span class="hp-full-name">Continue The Gauntlet</span>'+
+    /* The season is the sticker rather than the first field of the caption. It was in both
+       and the caption is a line shorter without it. */
+    el.innerHTML=road+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
+      '<span class="hp-full-name">The Gauntlet</span>'+
       /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
          the card offering it back reads like a run that went badly rather than one that has
          not started: before the first season it says what is signed instead. */
-      '<span class="hp-full-sub">Season '+r.seasonNo+' &middot; '+
+      '<span class="hp-full-sub">Continue &middot; '+
         (r.score>0?SCORE(r.score)+' points':r.roster.length+' signed')+
         ' &middot; '+dynWhere(r)+'</span>';
     el.onclick=()=>{ dynResume(); };
   }else{
-    el.innerHTML='<span class="hp-tag hp-tag-pro">Preview</span>'+
+    /* THE NUMBER, AND THAT IT MOVES. The old caption ran three fields wide and carried the
+       ageing and the endlessness as well, which is the rules sheet on the first tap doing
+       its job on a button. What a door has to say is what the game asks of you and that the
+       ask grows: the road behind this line draws the second half, the line names the first.
+       Read from the constant, so a rebalance cannot leave the front page lying. */
+    el.innerHTML=road+'<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">The Gauntlet</span>'+
-      /* THE RULE, ON THE DOOR. "How long can you last" is a mood, not a mode: it says
-         nothing about what you do or what ends it, and the tester who played several
-         seasons without knowing how the game worked started here. */
-      '<span class="hp-full-sub">Win '+E.DYNASTY_BASE_WINS+' or you are fired &middot; '+
-        'every player ages a year &middot; it never ends</span>';
+      '<span class="hp-full-sub">'+E.DYNASTY_BASE_WINS+' wins, and it goes up</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
   }
   el.hidden=false;
