@@ -17788,3 +17788,43 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   the cutscene-rooms commit (`7728bbc0`) is still waiting on that go-ahead too.
 - Tunable: the `FIRSTS` table (each entry is `{room, accent, tag, kick, lead, said, earned, power, how,
   cta}`; a value may be a function of the ctx), and `firstBeats` (how many beats the induction runs).
+
+### WHAT YOU DID: the induction names the REAL qualification, not a flattering stat list
+- **The owner's follow-up to the first-time reveals**: *"I have no idea what I did to earn that pop up
+  either as a user."* The induction explained WHAT the thing was and never named the QUALIFICATION, so the
+  card told you about the room without telling you why you were in it.
+- **`councilWhy()` lives IMMEDIATELY BESIDE `councilSeat()` and walks the SAME routes in the SAME order**,
+  which is the load-bearing decision: the reveal can never congratulate you for a qualification the gate did
+  not actually use. Two wins / a major / a genuine top-40 world ranking, and the card names the one you
+  cleared it with plus any extras. A career with nothing behind it is offered no route at all rather than an
+  invented one.
+- The other three cold arrivals now read the REAL trigger out of their own ctx: the press room names the
+  finish that put you in front of the cameras (won / second / top ten / missed the cut, with the tournament),
+  the Moment names the 54 holes, exactly where you stand and **the bar THIS tier of event actually uses**
+  (read off `MOMENT_TIERS`, not a hardcoded sentence), and a dilemma is framed as **"Why this reached you"** -
+  it is not something you earned, and saying so would be a small lie.
+- **`earnedLabel` is per-first**, so the card's heading is the question the entry is answering rather than one
+  generic label. The default is still "What you did" for a first that does not set one.
+- **A plain-text equivalent of `momentPosTxt` was written inline rather than reusing it** - that helper
+  returns `esc()`-ed HTML and `firstFactsHTML` escapes its lines again, so reuse would have shown entities on
+  screen.
+- **THE SCREENSHOT CAUGHT WHAT 26 GREEN ASSERTIONS DID NOT** - the fifth feature in a row where that has been
+  true. Qualifying in the OPENING year read *"The tour opens the room from your 6th season. This is your
+  6th"* - the same fact twice. It now says it once, and a check was ADDED so it cannot come back.
+- Verified: `scratchpad/firstwhy.mjs` **27 pass / 0 fail / 0 page errors** - `councilWhy` mirroring the gate
+  (the win count, a major alone, several routes with their plurals, an unseeded world granting nothing on
+  ranking, and no phantom extras on a one-route career), the four cards' copy, no em dash anywhere, and TWO
+  LIVE RENDERS (the cutscene reveal stepped to the reason beat, and the card fallback with `CUTSCENE_LIVE`
+  off) so the facts are proven to reach the screen and not just the string.
+- **FIVE FIXTURES were updated to the new contract, not worked around**: `cutscene`/`csdec`/`cslive`/`csroom`
+  each test the **Nth** press conference on a fresh career, where the induction now legitimately interposes,
+  so each marks it already seen (`careerFirsts().press = 1`); and `firsts` asserted the literal default label
+  "What you did" in three places, which every wired first now overrides - it reads the label off the entry
+  (`firstVal(FIRSTS.council,'earnedLabel',{})`) so a future rewording cannot break it again.
+- Regressions green: firsts 37, cutscene 24, csdec 21, cslive 20, csroom 32, nobag 10, sig01 19, dec16 23.
+  Main script parses (block 0 is the JSON-LD tag, fails identically on baseline).
+- **NOT deployed** - the standing rule is that each item is explained before it is pushed to the site. The
+  cutscene-rooms commit (`7728bbc0`) and the first-time reveals (`6d06749b`) are also still waiting on that
+  go-ahead.
+- Tunable: `councilWhy` (the routes, which MUST stay in step with `councilSeat`), and each entry's `earned` /
+  `earnedLabel` in `FIRSTS`.

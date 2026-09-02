@@ -17152,7 +17152,7 @@ function momentPosTxt(info){
 }
 function momentPopup(ce, info){
   // the first Sunday a career is close enough to be offered the round
-  if(firstDue('moment')) return maybeFirst('moment', {upName:(ce.evt&&ce.evt.name)||''}, ()=>momentPopup(ce, info));
+  if(firstDue('moment')) return maybeFirst('moment', {upName:(ce.evt&&ce.evt.name)||'', evt:ce.evt, info}, ()=>momentPopup(ce, info));
   const evt=ce.evt;
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -17993,6 +17993,16 @@ function councilSeat(){
   // default, which would hand a seat to somebody who has done nothing.
   try{ if(worldRankSize()>=50){ const r=myWorldRank(); if(r && r<=40) return true; } }catch(e){}
   return false;
+}
+/* WHY the tour gave you the seat, in the player's own terms. It lives here, beside the gate, and walks
+   the SAME routes in the SAME order councilSeat checks them - so the reveal can never congratulate you
+   for a qualification the gate did not actually use. */
+function councilWhy(){
+  const c=S.career||{}, w=c.wins||0, m=c.majors||0, routes=[];
+  if(w>=2) routes.push(w+' tour wins');
+  if(m>=1) routes.push(m===1?'a major championship':m+' major championships');
+  try{ if(worldRankSize()>=50){ const r=myWorldRank(); if(r && r<=40) routes.push('a world ranking of '+r); } }catch(e){}
+  return {routes, primary:routes[0]||null, rest:routes.slice(1)};
 }
 // the room's own leaning, before you speak. Deterministic per proposal so it cannot be re-rolled.
 function councilBase(entry){
@@ -20776,19 +20786,26 @@ function csStoryPlay(sb, scene){
    player the first time and is a straight passthrough forever after, so adding the next one is one
    row in FIRSTS plus one wrapped call. It rides the cutscene layer when that is on, and falls back to
    a card when it is not - and a failure anywhere is a passthrough, never a career that cannot move. */
+// "a, b and c" - plain text, because these lines are escaped where they render
+function listTxt(a){ const L=(a||[]).filter(Boolean); return L.length<2?(L[0]||''):L.slice(0,-1).join(', ')+' and '+L[L.length-1]; }
 var FIRSTS={
   council:{
     room:'desk', accent:'#5fd0e0', tag:'The Player Advisory Council',
     kick:'A seat at the table',
     lead:()=>`The tour does not decide anything alone. There is a room where the rule changes get argued over before anybody outside hears about them, and this morning they added a chair to it. Your name is on the back of it.`,
     said:()=>`Players get put in that room for one reason. Somebody looked at what ${csMe()} has done out here and decided the tour should be asking, not telling.`,
+    earnedLabel:'Why you, and why now',
     earned:()=>{
-      const c=S.career||{}, out=[], yr=S.year||1, w=c.wins||0, m=c.majors||0;
-      out.push(yr+(yr===1?' season':' seasons')+' on tour');
-      if(m>0) out.push(m===1?'A major championship':m+' major championships');
-      if(w>0) out.push(w===1?'A tour win':w+' tour wins');
-      try{ const r=myWorldRank(); if(r&&r<=40) out.push('World number '+r); }catch(e){}
-      if(out.length<2) out.push('A record the tour cannot ignore');
+      // the actual gate, said out loud: the season it opens, the bar, and which route YOU cleared
+      const yr=S.year||1, why=councilWhy(), out=[];
+      // in the opening year the two clauses are the same fact, so say it once
+      out.push(yr>COUNCIL_YEAR
+        ? 'The tour opens the room from your '+ord(COUNCIL_YEAR)+' season. This is your '+ord(yr)
+        : 'The tour opens the room from your '+ord(COUNCIL_YEAR)+' season, and you are in it');
+      out.push('The bar is two tour wins, a major, or a top 40 world ranking');
+      if(why.primary) out.push('You cleared it with '+why.primary);
+      else out.push('You cleared it on a record the tour could not ignore');
+      if(why.rest.length) out.push('You also have '+listTxt(why.rest));
       return out;
     },
     power:()=>[
@@ -20808,7 +20825,21 @@ var FIRSTS={
     kick:'They want to hear from you',
     lead:()=>`There is a room down the corridor with a wall of logos and a lot of chairs in it, and for the first time this week it is full because of you.`,
     said:()=>`Nobody sets that room up for a player nobody has heard of. This is the sport deciding ${csMe()} is worth quoting.`,
-    earned:()=>['You are somebody the tour wants to put on camera','What you say from here on is on the record'],
+    earnedLabel:'Why they want you',
+    earned:(c)=>{
+      // the finish that actually put you in front of the cameras this week
+      const out=[], w=(c&&c.lastName)||'';
+      if(w){
+        if(c.won) out.push('You won '+w);
+        else if(c.runnerUp) out.push('You finished second at '+w);
+        else if(c.top10) out.push('You finished inside the top ten at '+w);
+        else if(c.missed) out.push('You missed the cut at '+w);
+        else out.push('Your week at '+w);
+      }
+      out.push('The room fills for the players who are part of the story that week');
+      out.push('What you say from here on is on the record');
+      return out;
+    },
     power:()=>[
       'Every answer moves your Popularity and your Respect',
       'Popularity is what fans and sponsors pay for. Respect is what the locker room gives you',
@@ -20826,7 +20857,15 @@ var FIRSTS={
     kick:'Not every call is a golf shot',
     lead:()=>`Something has come up that has nothing to do with a golf ball, and it is sitting on your side of the desk.`,
     said:()=>`Careers turn on these as often as they turn on Sundays. Nobody outside the room ever sees the ones that mattered.`,
-    earned:()=>['You have a career worth making decisions about'],
+    earnedLabel:'Why this reached you',
+    earned:()=>{
+      const s=(S.career&&S.career.seasons&&S.career.seasons.length)||0, out=[];
+      out.push('Something has come up away from the golf course');
+      out.push(s>0 ? (s+(s===1?' season':' seasons')+' in, your career is big enough to attract them')
+                   : 'Your career is big enough now to attract them');
+      out.push('A few of these a season, and never in back to back weeks');
+      return out;
+    },
     power:()=>[
       'The choice is yours, and it is not always a good one against a bad one',
       'What happens next is weighed, not scripted. The same call can pay or cost',
@@ -20844,7 +20883,20 @@ var FIRSTS={
     kick:'Sunday, and you are in it',
     lead:()=>`You have played your way into the last group's air on a Sunday that matters. From here you do not have to watch this one happen to you.`,
     said:()=>`Any player can be simulated. This is the tour offering ${csMe()} the chance to go and play it.`,
-    earned:()=>['In contention on the final day of a week that counts'],
+    earnedLabel:'Why you are being asked',
+    earned:(c)=>{
+      // 54 holes down, where you stand, and the bar this tier of event actually sets
+      const i=(c&&c.info)||null, ev=(c&&c.evt)||null, out=[];
+      out.push('54 holes played'+(c&&c.upName?(' at '+c.upName):'')+', one round left');
+      if(i){
+        if(i.pos===1) out.push(i.margin>0?('You lead by '+i.margin):'You are tied for the lead');
+        else if(i.gap===0) out.push('You are tied for the lead');
+        else out.push('You sit T'+i.pos+', '+i.gap+' back of '+i.leaderName);
+      }
+      const th = ev&&ev.major ? MOMENT_TIERS.major : (ev&&(ev.big||ev.playoff||ev.stagger)) ? MOMENT_TIERS.big : MOMENT_TIERS.reg;
+      out.push('The bar '+(ev&&ev.major?'at a major':'here')+' is the top '+th.pos+' and within '+th.gap+' of the lead');
+      return out;
+    },
     power:()=>[
       'Play the final round yourself, hole by hole, with the shot decisions in your hands',
       'Or sim it and let the round play out as it always has',
@@ -20893,7 +20945,7 @@ function firstBeats(f, ctx, teach){
   const beats=[
     {who:'vane', frame:'broadcast', pic:'me', kick:firstVal(f,'kick',ctx), tx:firstVal(f,'lead',ctx)},
     {who:'brant', frame:'broadcast', pic:'me', tx:firstVal(f,'said',ctx),
-     facts:firstFactsHTML('What you did', firstVal(f,'earned',ctx), col)}
+     facts:firstFactsHTML(firstVal(f,'earnedLabel',ctx)||'What you did', firstVal(f,'earned',ctx), col)}
   ];
   if(teach) beats.push({who:'nair', frame:'broadcast', pic:'me',
     tx:`Here is how it works, because you have not seen one of these before.`,
@@ -20919,7 +20971,7 @@ function firstModal(f, ctx, teach, done){
         <p class="lede" style="margin:0 auto 12px;color:#dbe7ee;max-width:400px">${esc(firstVal(f,'lead',ctx)||'')}</p>
       </div>
       <div style="text-align:left">
-        ${firstFactsHTML('What you did', firstVal(f,'earned',ctx), col)}
+        ${firstFactsHTML(firstVal(f,'earnedLabel',ctx)||'What you did', firstVal(f,'earned',ctx), col)}
         ${teach?firstFactsHTML('How it works', firstVal(f,'how',ctx), col):''}
         ${firstFactsHTML('What it gives you', firstVal(f,'power',ctx), col)}
       </div>
