@@ -19809,7 +19809,7 @@ function pressBuzzHTML(bz){
      - Gated to the tester accounts while it's live (usernames, the same server-attributed handle the
        dev flags use), so the public site is untouched until it's launched.
    To LAUNCH to everyone: flip CUTSCENE_LIVE to true. -------------------------------------------- */
-var CUTSCENE_LIVE=false;                                   // flip to true to release to everyone
+var CUTSCENE_LIVE=true;                                    // live for everyone (was tester-only)
 var CS_TESTERS=['csel8','runnyj','malikwillislover'];      // tester accounts (lowercased usernames)
 function cutscenesOn(){
   try{
@@ -19970,11 +19970,34 @@ function csStyleOnce(){
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cs-skip{flex:0 0 auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#cfe0e8;
     border-radius:999px;padding:5px 11px;font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
-  .cs-stage{flex:1 1 auto;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;padding:10px 10px 18px}
+  .cs-stage{flex:1 1 auto;position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:10px 10px 14px;overflow:hidden}
   .cs-stage::before{content:'';position:absolute;left:50%;bottom:0;width:min(420px,86%);height:70%;transform:translateX(-50%);
-    background:radial-gradient(60% 70% at 50% 100%, rgba(95,208,224,.20), transparent 72%);pointer-events:none}
+    background:radial-gradient(60% 70% at 50% 100%, rgba(95,208,224,.20), transparent 72%);pointer-events:none;z-index:1}
+  /* the scene sinks into the card instead of stopping at a hard line */
+  .cs-stage::after{content:'';position:absolute;left:0;right:0;bottom:0;height:96px;z-index:1;pointer-events:none;
+    background:linear-gradient(180deg,rgba(3,7,9,0),rgba(3,7,9,.92) 78%,#030709)}
   .cs-fig{position:relative;image-rendering:pixelated;filter:drop-shadow(0 12px 22px rgba(0,0,0,.55))}
   .cs-fig .pxfigsm{height:auto}
+  /* the scene behind the golfer: a course, a media wall, or the feed's own dark */
+  .cs-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .cs-bg-course{position:absolute;inset:0;background:linear-gradient(180deg,#07202f 0%,#0e3a4c 34%,#17544f 52%,#1f5c34 60%,#174526 100%)}
+  .cs-bg-course::before{content:'';position:absolute;left:-4%;right:-4%;top:47%;height:34px;
+    background:repeating-linear-gradient(90deg,#0a2418 0 13px,#0e3320 13px 27px,#092017 27px 28px);opacity:.92;border-radius:40% 40% 0 0/60% 60% 0 0}
+  .cs-bg-course::after{content:'';position:absolute;left:0;right:0;bottom:0;height:44%;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 26px,transparent 26px 52px)}
+  .cs-bg-wall{position:absolute;inset:0;background:#08202c;
+    background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 48px),
+      repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 78px),
+      radial-gradient(120% 80% at 50% -10%,rgba(95,208,224,.18),transparent 62%)}
+  .cs-bg-feed{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 0%,rgba(24,20,48,.9),rgba(3,7,9,1) 68%)}
+  .cs-cast{position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:center;gap:clamp(8px,6vw,52px);width:100%}
+  .cs-slot{display:flex;flex-direction:column;align-items:center;gap:7px;
+    transition:opacity .28s ease,transform .28s ease,filter .28s ease}
+  .cs-slot.dim{opacity:.42;filter:saturate(.45) brightness(.72);transform:scale(.87) translateY(8px)}
+  .cs-plate{font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:#cfe0e8;
+    background:rgba(3,12,18,.72);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px;
+    max-width:44vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cs-slot.lit .cs-plate{color:#06131a;background:#f1d04a;border-color:#f1d04a}
   .cs-bulbs{position:absolute;inset:0 0 auto 0;height:150px;pointer-events:none}
   .cs-mic{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);opacity:.85;pointer-events:none}
   .cs-frame{font:800 9px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
@@ -19995,6 +20018,25 @@ function csStyleOnce(){
     font:800 11px/1 var(--body);color:#06131a}
   .cs-ph{font:800 11px/1.2 var(--body);color:#9fc4d2}
   .cs-pt{color:#dbe7ee;font-size:13px;line-height:1.35;margin-top:2px}
+  /* the decision, inside the conversation: the question is a line, the answers are the next line */
+  .cs-kick{font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#5fd0e0;margin-bottom:7px}
+  .cs-choices{display:grid;gap:8px;margin-top:11px}
+  .cs-opt{display:block;width:100%;text-align:left;position:relative;padding:11px 13px 11px 30px;border-radius:11px;
+    border:1px solid #2f6f86;background:rgba(9,32,46,.72);color:#eef4f7;font:800 14px/1.3 var(--body);cursor:pointer;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+    transition:border-color .15s ease,background .15s ease,transform .12s ease}
+  .cs-opt:hover,.cs-opt:focus-visible{border-color:#5fd0e0;background:rgba(14,52,72,.92);outline:none;transform:translateX(2px)}
+  .cs-opt .cs-cur{position:absolute;left:11px;top:14px;color:#5fd0e0;opacity:0;transition:opacity .15s ease}
+  .cs-opt:hover .cs-cur,.cs-opt:focus-visible .cs-cur{opacity:1}
+  .cs-opt .cs-sub{display:block;margin-top:3px;font:700 11px/1.3 var(--body);color:#8fb6c6;letter-spacing:.04em}
+  .cs-risk{display:inline-block;margin-left:7px;font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;
+    border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase;vertical-align:middle}
+  .cs-card.wide{max-height:min(54vh,440px);overflow:auto;-webkit-overflow-scrolling:touch}
+  /* the tap hint stays in view while a long reaction scrolls under it */
+  .cs-card.wide .cs-next{position:sticky;bottom:-2px;margin-top:0;padding:12px 0 3px;
+    background:linear-gradient(180deg,rgba(6,15,22,0),rgba(6,15,22,1) 46%)}
+  .cs-card.wide .js-extra{padding-bottom:6px}
+  .cs-card.you{border-color:#f1d04a}
   @keyframes csPulse{0%,100%{opacity:1}50%{opacity:.28}}
   @media (prefers-reduced-motion:reduce){.cs-live,.cs-caret{animation:none}}
   </style>`));
@@ -20016,7 +20058,32 @@ function csFeedHTML(tx){
         <div class="cs-pt">${esc(t)}</div></div></div>`;
   }).join('')}</div>`;
 }
-function csPlay(beats, ctx, done){
+// A beat's text may be a body string that already carries entities or markup (the storylines escape their
+// own names). The typewriter prints PLAIN text, so decode once and type that.
+function csPlain(s){
+  try{ const d=document.createElement('div'); d.innerHTML=String(s==null?'':s); return (d.textContent||'').replace(/\s+/g,' ').trim(); }
+  catch(e){ return String(s==null?'':s); }
+}
+var CS_ME_OUT={name:'Your answer', col:'#f1d04a'};
+// Who is ON stage, and who the line is about: the speaker is lit, anyone else steps back.
+function csCastHTML(b, ctx){
+  const pic=b.pic, out=[];
+  const focus = b.who==='me' ? 'me' : (b.focus || (pic==='rival'?'rival':'me'));
+  const slot=(kind)=>{
+    const fig=csFigure(kind, ctx); if(!fig) return '';
+    const nm = kind==='me' ? csMe() : dShort((ctx&&ctx.rivalName)||(ctx&&ctx.starName)||'');
+    return `<div class="cs-slot ${focus===kind?'lit':'dim'}">
+      <div class="cs-fig">${fig}</div>${nm?`<div class="cs-plate">${esc(nm)}</div>`:''}</div>`;
+  };
+  if(pic==='both'){ out.push(slot('rival'), slot('me')); }
+  else if(pic) out.push(slot(pic));
+  return out.filter(Boolean).join('');
+}
+/* The player. One picture, one line at a time; tap to finish the line, tap again to advance.
+   A beat carrying `choice` stops the tapping and puts the answers in the box: the decision IS the
+   conversation, not a modal that opens afterwards. */
+function csPlay(beats, ctx, done, opts){
+  opts=opts||{};
   const list=(beats||[]).filter(Boolean);
   if(!list.length){ done&&done(); return; }
   csStyleOnce();
@@ -20024,89 +20091,245 @@ function csPlay(beats, ctx, done){
   document.querySelectorAll('.csov').forEach(n=>n.remove());
   const ov=$(`<div class="csov">
     <div class="cs-hud">
-      <span class="cs-out js-out"><span class="cs-live"></span><span class="js-outnm">Fairway Wire</span></span>
+      <span class="cs-out js-out"><span class="cs-live js-live"></span><span class="js-outnm">Fairway Wire</span></span>
       <span class="cs-where">${esc(csWhereLine(ctx))}</span>
       <button class="cs-skip" type="button">Skip ▸</button>
     </div>
-    <div class="cs-stage"><div class="cs-fig js-fig"></div></div>
+    <div class="cs-stage"><div class="cs-bg js-bg"></div><div class="cs-cast js-cast"></div></div>
     <div class="cs-body"><div class="cs-card js-card">
+      <div class="cs-kick js-kick" style="display:none"></div>
       <div class="cs-who"><span class="cs-nm js-nm"></span><span class="cs-role js-role"></span><span class="cs-frame js-frame"></span></div>
       <div class="cs-tx js-tx"></div>
+      <div class="js-extra"></div>
       <div class="cs-next js-next">Tap to continue</div>
     </div></div></div>`);
-  const outChip=ov.querySelector('.js-out'), outNm=ov.querySelector('.js-outnm'), fig=ov.querySelector('.js-fig');
+  const outChip=ov.querySelector('.js-out'), outNm=ov.querySelector('.js-outnm'), live=ov.querySelector('.js-live');
+  const bg=ov.querySelector('.js-bg'), cast=ov.querySelector('.js-cast');
   const card=ov.querySelector('.js-card'), nm=ov.querySelector('.js-nm'), role=ov.querySelector('.js-role');
-  const frameEl=ov.querySelector('.js-frame'), stage=ov.querySelector('.cs-stage');
-  const txEl=ov.querySelector('.js-tx'), nextEl=ov.querySelector('.js-next');
-  let i=0, typing=false, timer=null, full='', shown=0, finished=false;
+  const frameEl=ov.querySelector('.js-frame'), stage=ov.querySelector('.cs-stage'), kick=ov.querySelector('.js-kick');
+  const txEl=ov.querySelector('.js-tx'), nextEl=ov.querySelector('.js-next'), extra=ov.querySelector('.js-extra');
+  const skipBtn=ov.querySelector('.cs-skip');
+  let i=0, typing=false, timer=null, full='', shown=0, finished=false, choosing=false;
   const stop=()=>{ if(timer){ clearInterval(timer); timer=null; } };
   const finish=()=>{ if(finished) return; finished=true; stop(); ov.remove(); done&&done(); };
   const paint=()=>{
     const b=list[i]; if(!b){ finish(); return; }
-    const v=csVoice(b.who), o=csOutlet(b.who);
-    outChip.style.color=o.col; outNm.textContent=o.name;
-    card.style.borderLeftColor=o.col;
+    // the speaker: an invented broadcaster, or your own golfer answering (words you picked)
+    const mine=b.who==='me';
+    const v=mine?{name:csMe(), role:'You'}:csVoice(b.who), o=mine?CS_ME_OUT:csOutlet(b.who);
+    outChip.style.color=o.col; outNm.textContent=o.name; live.style.display=mine?'none':'';
+    card.style.borderLeftColor=o.col; card.classList.toggle('you', mine);
     nm.textContent=v.name; role.textContent=v.role;
     const fr=b.frame||'broadcast';
-    const fl = fr==='presser'?'Press room' : fr==='feed'?'Online' : 'Live';
+    const fl = mine?'' : fr==='presser'?'Press room' : fr==='feed'?'Online' : 'Live';
     // don't say the same thing twice: Tori Sands is already "Press room"
-    const dupe = fl.toLowerCase()===String(v.role||'').toLowerCase();
+    const dupe = !fl || fl.toLowerCase()===String(v.role||'').toLowerCase();
     frameEl.textContent = dupe?'' : fl;
     frameEl.style.display = dupe?'none':'';
     frameEl.style.color=o.col;
-    // the frames are dressed differently: a presser gets the flashbulbs and the mic, a broadcast is clean
+    // the scene behind the golfer, and the dressing on top of it
+    bg.innerHTML = `<div class="${fr==='presser'?'cs-bg-wall':fr==='feed'?'cs-bg-feed':'cs-bg-course'}"></div>`;
     stage.querySelectorAll('.cs-bulbs,.cs-mic').forEach(n=>n.remove());
     if(fr==='presser'){
       if(!reduce) stage.insertBefore($(`<div class="cs-bulbs">${[[10,26],[30,14],[56,11],[78,18],[92,30]].map(([l,t],k)=>
         `<span class="flashbulb" style="left:${l}%;top:${t}px;animation:pressFlash ${2.2+k*0.5}s ease-in-out ${k*0.4}s infinite"></span>`).join('')}</div>`), stage.firstChild);
       stage.appendChild($(`<div class="cs-mic">${PRESS_MIC}</div>`));
     }
-    const pic=csFigure(b.pic, ctx);
-    fig.innerHTML=pic||'';
-    const raw=csT(b.tx,ctx); full=Array.isArray(raw)?raw.join(' '):String(raw||'');
-    nextEl.textContent = (i>=list.length-1) ? 'Tap to continue ▸' : 'Tap to continue';
-    if(b.frame==='feed'){ txEl.innerHTML=csFeedHTML(raw); typing=false; return; }
-    if(reduce){ txEl.textContent=full; typing=false; return; }
+    cast.innerHTML=csCastHTML(b, ctx);
+    const kickTx=csT(b.kick,ctx);
+    kick.textContent=kickTx?csPlain(kickTx):''; kick.style.display=kickTx?'':'none';
+    extra.innerHTML=''; card.classList.remove('wide');
+    skipBtn.style.display = b.choice ? 'none' : '';   // a decision can't be skipped, even mid-line
+    const raw=csT(b.tx,ctx); full=Array.isArray(raw)?raw.join(' '):csPlain(raw);
+    nextEl.style.display=''; nextEl.textContent = b.nextLabel || ((i>=list.length-1) ? 'Tap to continue ▸' : 'Tap to continue');
+    // the world's own reaction, tone-matched to the answer that was just given
+    txEl.style.display='';
+    if(b.buzz){ card.classList.add('wide'); txEl.innerHTML=''; txEl.style.display='none'; typing=false;
+      try{ extra.appendChild($(pressBuzzHTML(b.buzz))); }catch(e){}
+      return; }
+    if(fr==='feed' && !b.choice){ txEl.innerHTML=csFeedHTML(raw); typing=false; return; }
+    const showRest=()=>{
+      if(b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
+      if(b.choice) mountChoices(b);
+    };
+    if(reduce){ txEl.textContent=full; typing=false; showRest(); return; }
     shown=0; typing=true; txEl.innerHTML='<span class="cs-caret">▌</span>';
     stop();
     timer=setInterval(()=>{
       shown+=2;
-      if(shown>=full.length){ stop(); typing=false; txEl.textContent=full; return; }
+      if(shown>=full.length){ stop(); typing=false; txEl.textContent=full; showRest(); return; }
       txEl.innerHTML=esc(full.slice(0,shown))+'<span class="cs-caret">▌</span>';
     }, 18);
   };
+  // the answers, in the box. Tapping the scene can't skip past a decision, and neither can Skip.
+  function mountChoices(b){
+    choosing=true; nextEl.style.display='none'; skipBtn.style.display='none';
+    const T=(v)=>typeof v==='function'?v(ctx):v;
+    const box=$(`<div class="cs-choices"></div>`);
+    (b.choice||[]).forEach(ch=>{
+      const sub=T(ch.s), risk=ch.risk?`<span class="cs-risk">⚡ Risky</span>`:'';
+      const btn=$(`<button class="cs-opt" type="button"><span class="cs-cur">▸</span>${esc(csPlain(T(ch.t)))}${risk}${sub?`<span class="cs-sub">${esc(csPlain(sub))}</span>`:''}</button>`);
+      btn.onclick=(e)=>{
+        e.stopPropagation();
+        choosing=false; skipBtn.style.display='';
+        box.remove();
+        const push=(x)=>{ if(x) list.push(x); };
+        const next=()=>{ i++; if(i>=list.length){ finish(); return; } paint(); };
+        try{ opts.onChoice && opts.onChoice(ch, push, next); }
+        catch(err){ console.error('cutscene choice failed', err); finish(); }
+      };
+      box.appendChild(btn);
+    });
+    extra.appendChild(box);
+    try{ box.scrollIntoView({block:'nearest'}); }catch(e){}
+  }
   const advance=()=>{
-    if(typing){ stop(); typing=false; txEl.textContent=full; return; }
+    if(choosing) return;                                   // a decision is up: it has to be answered
+    if(typing){ stop(); typing=false; txEl.textContent=full;
+      const b=list[i]; if(b&&b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
+      if(b&&b.choice) mountChoices(b);
+      return; }
     i++;
     if(i>=list.length){ finish(); return; }
     paint();
   };
-  ov.addEventListener('click', (e)=>{ if(e.target.closest('.cs-skip')) return; advance(); });
-  ov.querySelector('.cs-skip').onclick=(e)=>{ e.stopPropagation(); track('cutscene_skip',{}); finish(); };
+  ov.addEventListener('click', (e)=>{ if(e.target.closest('.cs-skip')||e.target.closest('.cs-opt')) return; advance(); });
+  skipBtn.onclick=(e)=>{
+    e.stopPropagation(); track('cutscene_skip',{});
+    // skipping the build-up jumps to the question, it never skips the decision itself
+    for(let k=i;k<list.length;k++) if(list[k].choice){
+      if(k===i){ advance(); return; }                    // already on it: finish the line, show the answers
+      stop(); typing=false; i=k; paint(); return; }
+    finish();
+  };
   document.body.appendChild(ov);
   paint();
+}
+/* The beat AS a conversation: the scene sets it up, the question is asked in the box, the answers are
+   the next line, and the fallout is spoken by the people who were already talking. No modal opens. */
+function csStoryPlay(sb, scene){
+  const {beat, ctx}=sb, T=(v)=>typeof v==='function'?v(ctx):v;
+  // build EVERYTHING that could throw before the beat is marked as opened, so a failure falls back to
+  // the modal without having already spent the interruption budget.
+  const lead=(scene.in||[]).filter(Boolean);
+  const asker=(()=>{ const last=lead[lead.length-1]; return (last&&last.frame==='presser'&&last.who)||'sands'; })();
+  const ask={who:asker, frame:'presser', pic:'me',
+    kick:csPlain(T(beat.title)), tx:csPlain(T(beat.body)), choice:beat.ch};
+  const list=lead.concat([ask]);
+  const fin=(b)=>Object.assign({}, b, {nextLabel:'Back to the tournament ▸'});
+  const onChoice=(ch, push, next)=>{
+    const res=applyStoryChoice(beat, ch, ctx);
+    // your own golfer, saying the words you picked (the one voice on camera that is ever yours)
+    const said=csPlain(T(ch.t)), q=/^[“"‘']/.test(said)?said:('“'+said+'”');
+    const tail=[{who:'me', frame:'presser', pic:'me', tx:q},
+      {who:res.backfired?'brant':'vane', frame:'broadcast', pic:'me',
+       kick:res.backfired?'It backfired':'The reaction', tx:res.reaction, stats:res}];
+    let buzz=null; try{ buzz=pressBuzz(ch, beat, ctx, res.backfired); }catch(e){}
+    if(buzz) tail.push({who:'feed', frame:'feed', pic:'me', buzz:buzz});   // the buzz block carries its own header
+    else if(scene.out&&scene.out.length) scene.out.filter(Boolean).forEach(b=>tail.push(b));
+    tail.forEach((b,k)=>push(k===tail.length-1?fin(b):b));
+    next();
+  };
+  storyBeatOpened(beat);
+  track('storyline_shown',{id:beat.id});
+  csPlay(list, ctx, ()=>{ if(sb.onDone) sb.onDone({}); else render(); }, {onChoice});
 }
 /* The wrapper. Gate shut, or anything at all goes wrong building the scene, and this is a straight
    passthrough to the modal that has always run, with its outcome machinery untouched. */
 function showStoryline(sb){
   let scene=null;
   if(cutscenesOn()){ try{ scene=csSceneFor(sb.beat, sb.ctx); }catch(e){ scene=null; } }
-  if(!scene || !(scene.in&&scene.in.length)) return showStorylineModal(sb);
+  if(!scene || !(scene.in&&scene.in.length) || !(sb.beat&&sb.beat.ch&&sb.beat.ch.length)) return showStorylineModal(sb);
   track('cutscene_shown',{id:sb.beat.id});
-  const runModal=()=>{
-    const after=(scene.out&&scene.out.length)?scene.out:null;
-    showStorylineModal(Object.assign({}, sb, after?{onDone:(res)=>{
-      // one aftermath beat: the world reacting to the answer that was just given
-      try{ csPlay(after, sb.ctx, ()=>render()); }catch(e){ render(); }
-    }}:{}));
+  try{ csStoryPlay(sb, scene); }
+  catch(e){ console.error('cutscene failed', e); showStorylineModal(sb); }
+}
+
+/* ---- the outcome machinery, in ONE place ------------------------------------------------------
+   A storyline beat costs something: the risk roll, confidence, fans, the two-axis reputation, the
+   persona threshold, the feed line. The modal and the dialogue scene both spend it, so it lives here
+   once. Two copies of this WOULD drift the first time a rule changed. */
+function storyBeatOpened(beat){
+  const story=careerStory();
+  if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
+  story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story._beatsYr=(story._beatsYr||0)+1; story.seenEvt[beat.id]=S.evtIndex;
+}
+function applyStoryChoice(beat, ch, ctx){
+  const story=careerStory(), T=(v)=>typeof v==='function'?v(ctx):v;
+  // apply, capture before/after momentum for the on-screen deltas
+  const conf0=seasonConf(), fol0=story.followers||0, fans0=repFans(), resp0=repRespect();
+  // CS279: risky choices ROLL, a backfire costs confidence + followers and grants no reputation (the
+  // choice didn't land). Safe choices (no ch.risk) always resolve to their intended upside/trade-off.
+  const backfired = ch.risk ? (Math.random() < ch.risk) : false;
+  let personaNew=null, reaction, headline;
+  if(backfired){
+    const hit = -(Math.abs(ch.conf||0.32)*0.9 + 0.12);   // scale the confidence hit to the choice's ambition
+    storyGainConf(hit);
+    // CS401: a PR backfire costs 5-10% of your fans, scaled by how DETRIMENTAL the call was (the choice's
+    // riskiness). An explicit ch.folBad wins; otherwise ranges 5% (low-risk) .. 10% (a reckless gamble).
+    const folLoss = Math.max(0.05, Math.min(0.10, (ch.folBad!=null?ch.folBad:(0.05 + (ch.risk||0)*0.13))));
+    gainFollowers(-folLoss, 0);
+    reaction = T(ch.rBad) || 'It lands badly. The clip is everywhere for the wrong reasons and the room turns on you.';
+    headline = T(ch.headBad) || ((T(ch.head)||T(beat.title))+', and it backfired');
+    track('storyline_backfire',{id:beat.id, choice:String(T(ch.t))});
+  } else {
+    if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
+    personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
+    if(ch.conf) storyGainConf(ch.conf);
+    // followers: an explicit ch.fol (a pct, may be NEGATIVE for a guaranteed trade-off) overrides the default growth
+    let folPct, folFlat;
+    if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:1000; }   // CS398: press/interview decisions are a top fan driver
+    else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
+      folPct=(ch.fan?(showman?0.14:0.09):0.025)+(showman?0.03:0); folFlat=ch.fan?1800:600; }
+    gainFollowers(folPct, folFlat);
+    if(ch.endo) story.endorsements=(story.endorsements||0)+1;
+    if(ch.fan) story.fan=(story.fan||0)+1;
+    reaction = T(ch.r);
+    headline = T(ch.head)||T(beat.title);
+  }
+  // CS280: move the two-axis reputation (Fans <-> Respect), the core trade-off, no "right" answer
+  const persona0=repPersona();
+  repApplyChoice(ch, backfired);
+  const personaShift = repPersona()!==persona0 ? repPersona() : null;
+  story.feed.unshift({year:S.year||1, evt:ctx.upName, text:headline}); if(story.feed.length>60) story.feed.length=60;
+  track('storyline_choice',{id:beat.id, choice:String(T(ch.t)), backfired});
+  return {backfired, reaction, headline, personaNew, personaShift, endo:!!ch.endo,
+    dConf:Math.round(seasonConf()-conf0), dFol:Math.round((story.followers||0)-fol0),
+    dFans:Math.round(repFans()-fans0), dResp:Math.round(repRespect()-resp0),
+    fansNow:repFans(), respNow:repRespect(), confNow:Math.round(seasonConf())};
+}
+/* CS301: the tangible fallout, shown as RATINGS out of 100 (Popularity / Respect / Confidence) so they
+   read clearly next to the raw fan count, which is reach, not a rating. */
+function storyStatsRowHTML(res){
+  const tile=(label,dv,now,upCol)=>{
+    const dcol = dv>0?upCol : dv<0?'#E14A33':'#67839a';
+    const arrow = dv>0?'▲' : dv<0?'▼' : '–';
+    return `<div style="flex:1 1 86px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 9px">
+      <div style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">${label}</div>
+      <div style="display:flex;align-items:baseline;gap:5px;margin-top:4px">
+        <span style="color:${dcol};font-weight:800;font-size:12.5px">${arrow}${dv>0?' +':dv<0?' ':' '}${dv||0}</span>
+        <span style="color:#eef4f7;font-weight:800;font-size:15px">${Math.round(now)}</span>
+        <span style="color:#5f7d90;font-size:9px;font-weight:700">/100</span>
+      </div></div>`;
   };
-  try{ csPlay(scene.in, sb.ctx, runModal); }catch(e){ runModal(); }
+  const story=careerStory();
+  const reachRow = res.dFol!==0 ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+    <span style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">Fans</span>
+    <span style="color:${res.dFol>0?'#35d6a0':'#c98'};font-weight:800">${res.dFol>0?'▲':'▼'} ${fmtFollowers(Math.abs(res.dFol))}</span>
+    <span class="small" style="color:#9fb3a8">now ${fmtFollowers(story.followers)} fans</span></div>` : '';
+  const badge = (!res.backfired && res.personaShift) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ Now: ${esc(res.personaShift.name)}</div>`
+    : (!res.backfired && res.personaNew) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ You’re becoming ${esc(res.personaNew)}</div>` : '';
+  const endoBadge = (!res.backfired && res.endo) ? `<div style="margin-top:6px;color:#ffd45e;font-weight:800">✍ Endorsement signed</div>` : '';
+  return `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      ${tile('Popularity',res.dFans,res.fansNow,'#ff9d3a')}
+      ${tile('Respect',res.dResp,res.respNow,'#5fd0e0')}
+      ${tile('Confidence',res.dConf,res.confNow,'#35d6a0')}
+    </div>${reachRow}${endoBadge}${badge}`;
 }
 
 function showStorylineModal(sb){
   const {beat, ctx}=sb, story=careerStory();
-  if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
-  story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story._beatsYr=(story._beatsYr||0)+1; story.seenEvt[beat.id]=S.evtIndex;
+  storyBeatOpened(beat);
   const T=(v)=>typeof v==='function'?v(ctx):v;
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const pressish=/PRESS|RIVAL|STORY|MAJOR|SPONSOR/.test(String(T(beat.tag)).toUpperCase());
@@ -20144,85 +20367,21 @@ function showStorylineModal(sb){
       <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#5fd0e0;font-size:15px">“</span>
       ${esc(T(ch.t))}${ch.s?`<span class="sub">${esc(T(ch.s))}</span>`:''}${riskTag}</button>`);
     b.onclick=()=>{
-      // apply, capture before/after momentum for the on-screen deltas
-      const conf0=seasonConf(), fol0=story.followers||0, fans0=repFans(), resp0=repRespect();
-      // CS279: risky choices ROLL, a backfire costs confidence + followers and grants no reputation (the
-      // choice didn't land). Safe choices (no ch.risk) always resolve to their intended upside/trade-off.
-      const backfired = ch.risk ? (Math.random() < ch.risk) : false;
-      let personaNew=null, reaction, headline;
-      if(backfired){
-        const hit = -(Math.abs(ch.conf||0.32)*0.9 + 0.12);   // scale the confidence hit to the choice's ambition
-        storyGainConf(hit);
-        // CS401: a PR backfire costs 5-10% of your fans, scaled by how DETRIMENTAL the call was (the choice's
-        // riskiness). An explicit ch.folBad wins; otherwise ranges 5% (low-risk) .. 10% (a reckless gamble).
-        const folLoss = Math.max(0.05, Math.min(0.10, (ch.folBad!=null?ch.folBad:(0.05 + (ch.risk||0)*0.13))));
-        gainFollowers(-folLoss, 0);
-        reaction = T(ch.rBad) || 'It lands badly. The clip is everywhere for the wrong reasons and the room turns on you.';
-        headline = T(ch.headBad) || ((T(ch.head)||T(beat.title))+', and it backfired');
-        track('storyline_backfire',{id:beat.id, choice:String(T(ch.t))});
-      } else {
-        if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
-        personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
-        if(ch.conf) storyGainConf(ch.conf);
-        // followers: an explicit ch.fol (a pct, may be NEGATIVE for a guaranteed trade-off) overrides the default growth
-        let folPct, folFlat;
-        if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:1000; }   // CS398: press/interview decisions are a top fan driver
-        else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
-          folPct=(ch.fan?(showman?0.14:0.09):0.025)+(showman?0.03:0); folFlat=ch.fan?1800:600; }
-        gainFollowers(folPct, folFlat);
-        if(ch.endo) story.endorsements=(story.endorsements||0)+1;
-        if(ch.fan) story.fan=(story.fan||0)+1;
-        reaction = T(ch.r);
-        headline = T(ch.head)||T(beat.title);
-      }
-      // CS280: move the two-axis reputation (Fans ↔ Respect), the core trade-off, no "right" answer
-      const persona0=repPersona();
-      const rd=repApplyChoice(ch, backfired);
-      const personaShift = repPersona()!==persona0 ? repPersona() : null;
-      story.feed.unshift({year:S.year||1, evt:ctx.upName, text:headline}); if(story.feed.length>60) story.feed.length=60;
-      track('storyline_choice',{id:beat.id, choice:String(T(ch.t)), backfired});
-      const dConf=Math.round(seasonConf()-conf0), dFol=Math.round((story.followers||0)-fol0);
-      const dFans=Math.round(repFans()-fans0), dResp=Math.round(repRespect()-resp0);
+      const res=applyStoryChoice(beat, ch, ctx);
+      const backfired=res.backfired;
       // tick the at-stake two-axis meter to its new values (meter width animates via CSS)
       const repBox=ov.querySelector('.js-rep');
       if(repBox) repBox.innerHTML=repMeterHTML();
-      // CS301: reporter reaction + the tangible fallout, redesigned so the 0-100 REPUTATION ratings
-      // (Fan Support / Respect / Confidence) read clearly as ratings out of 100, distinct from your raw
-      // "following" reach count, the owner was confused by "Fans +6" sitting next to "371M following".
       // CS311 (owner): keep the chosen answer highlighted at the top and drop the other options, so it's
       // clear which one you said. The risk pill is removed (the roll is resolved).
       btns.querySelectorAll('button').forEach(x=>{ if(x!==b) x.remove(); });
       b.disabled=true; b.classList.remove('ghost'); b.classList.add('sb-chosen');
       const rp=b.querySelector('.sb-risk'); if(rp) rp.remove();
-      const fansNow=repFans(), respNow=repRespect(), confNow=Math.round(seasonConf());
-      const statTile=(label,dv,now,upCol)=>{
-        const dcol = dv>0?upCol : dv<0?'#E14A33':'#67839a';
-        const arrow = dv>0?'▲' : dv<0?'▼' : '–';
-        return `<div style="flex:1 1 86px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 9px">
-          <div style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">${label}</div>
-          <div style="display:flex;align-items:baseline;gap:5px;margin-top:4px">
-            <span style="color:${dcol};font-weight:800;font-size:12.5px">${arrow}${dv>0?' +':dv<0?' ':' '}${dv||0}</span>
-            <span style="color:#eef4f7;font-weight:800;font-size:15px">${Math.round(now)}</span>
-            <span style="color:#5f7d90;font-size:9px;font-weight:700">/100</span>
-          </div></div>`;
-      };
-      const reachRow = dFol!==0 ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <span style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">Fans</span>
-        <span style="color:${dFol>0?'#35d6a0':'#c98'};font-weight:800">${dFol>0?'▲':'▼'} ${fmtFollowers(Math.abs(dFol))}</span>
-        <span class="small" style="color:#9fb3a8">now ${fmtFollowers(story.followers)} fans</span></div>` : '';
-      const badge = (!backfired && personaShift) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ Now: ${esc(personaShift.name)}</div>`
-        : (!backfired && personaNew) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ You’re becoming ${esc(personaNew)}</div>` : '';
-      const endoBadge = (!backfired && ch.endo) ? `<div style="margin-top:6px;color:#ffd45e;font-weight:800">✍ Endorsement signed</div>` : '';
       replyBox.innerHTML='';
       replyBox.appendChild($(`<div class="scout" style="border-color:${backfired?'#E14A33':'#2f6f86'};text-align:left;margin:2px 0 10px;padding:12px 13px">
         <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px">${backfired?'It backfired':'The reaction'}</div>
-        <div style="color:#eef4f7;font-size:14.5px;line-height:1.4">${esc(reaction)}</div>
-        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-          ${statTile('Popularity',dFans,fansNow,'#ff9d3a')}
-          ${statTile('Respect',dResp,respNow,'#5fd0e0')}
-          ${statTile('Confidence',dConf,confNow,'#35d6a0')}
-        </div>
-        ${reachRow}${endoBadge}${badge}</div>`));
+        <div style="color:#eef4f7;font-size:14.5px;line-height:1.4">${esc(res.reaction)}</div>
+        ${storyStatsRowHTML(res)}</div>`));
       // CS291: the world reacts, fan tweets, a headline, and an occasional opponent quote
       try{ replyBox.appendChild($(pressBuzzHTML(pressBuzz(ch, beat, ctx, backfired)))); }catch(e){}
       const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
