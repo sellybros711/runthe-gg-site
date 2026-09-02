@@ -178,13 +178,15 @@ declare
 begin
   -- ---- which competition ----
   v_mode := lower(btrim(coalesce(p_mode, 'free')));
-  -- THE FOURTH COPY OF THE MODE LIST, and the fourth time it has been the bug. There is
-  -- one in ps_runs_run_mode_ck, one in board.js's SOLO_MODES, one in the page's runMode,
-  -- and this. 93 widened the constraint and this list still said no, so a full team run
-  -- passed the table's rule and was refused by the function guarding it.
-  -- THE FIFTH COPY IS GONE. This was a literal list, and so was the table constraint,
-  -- and the two disagreeing has been the bug in this game four separate times. Both now
-  -- read ps_football_modes(), so a new mode is one word in one place on the SQL side.
+  -- THE FOURTH COPY OF THE MODE LIST IS GONE FROM HERE. There were four: this one, the
+  -- table constraint, board.js's SOLO_MODES and the page's runMode. Two of them
+  -- disagreeing has been the bug in this game four separate times, most recently when 93
+  -- widened the constraint and this list still said no, so a full team run passed the
+  -- table's rule and was refused by the function guarding it.
+  --
+  -- This and the constraint now both read ps_football_modes(), so a new mode is one word
+  -- in one place on the SQL side. The two outside the database still have to be kept in
+  -- step by hand.
   --
   -- EXCEPT 'daily', WHICH A CLIENT MAY NOT CLAIM. It is a real recorded mode, so the
   -- constraint has to allow it, and it is set BELOW out of p_daily_date rather than sent:
