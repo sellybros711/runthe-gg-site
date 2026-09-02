@@ -236,6 +236,39 @@ section('the first night is a show, not a sheet');
   await page.close();
 }
 
+/* ---------- 4c. numbers carry context ---------- */
+section('every number on a tile has a band beside it');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const bare=[];
+    const scan=(screen)=>{
+      document.querySelectorAll('.screen.active .tile').forEach(t=>{
+        const v=t.querySelector('.val'); if(!v) return;
+        const txt=(v.childNodes[0]&&v.childNodes[0].textContent||v.textContent).trim();
+        const numeric=/^[\d,.%$+\-]+$/.test(txt);
+        if(numeric && !v.querySelector('.numband') && !t.querySelector('.numband')){
+          bare.push(`${screen}: ${(t.querySelector('.lab')||{}).textContent} = ${txt}`);
+        }
+      });
+    };
+    G.car._detailsOpen=true; renderCareer(); scan('hub');
+    const o=G.car.booking && G.car.booking.o;
+    if(o){ const res=simMatch(o); applyMatch(o,res); renderMatch(o,res); go('match'); scan('result'); }
+    go('record'); scan('record');
+    return {bare};
+  });
+  if(errs.length) bad('numbers page errors: '+errs.slice(0,2).join(' | '));
+  // tiles that are legitimately a count with no scale (a record, a total)
+  const allowed=/Record|Title Reigns|Moves Known|Years Active|Coins|Shards|Career Earnings|Injuries|Titles|Moves|Years/;
+  const offenders=r.bare.filter(b=>!allowed.test(b));
+  if(offenders.length) bad('bare numbers: '+offenders.join(' | ')); else ok(`no bare numbers on the hub, the result or the record (${r.bare.length} counted-only tiles allowed)`);
+  await page.close();
+}
+
 /* ---------- 5. careers play out ---------- */
 if(!QUICK){
   section(`${RUNS} careers x ${YEARS} years`);
