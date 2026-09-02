@@ -17646,3 +17646,41 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: `HV_EX_MAX` (how much scenery the widest frame paints), `HV_DESK_CHROME` / `HV_DESK_MAXW` (which
   must stay in sync with the `.scr-dailyround > .holeview` width expression), and the desktop `order` swap +
   in-flow bar rules in the `@media (min-width:1000px)` block.
+
+### THE BROADCAST LAYER IS LIVE FOR EVERYONE, and the decision happens inside the conversation
+- **Two things went live together** (owner: *"Deploy. Let's also push this live to all users as I believe
+  the cutscenes are only for testers."*): the in-conversation decision (task #38) and the launch flip.
+  `main` commit `8526c539`, regenerated from `build-a-golfer.html`, **only `golf/index.html` touched**,
+  verified byte-identical afterward.
+- **The decision no longer hands off to a modal.** The reporter asks the question IN the dialogue box, the
+  answers mount as the next line, your golfer answers in your words, and a broadcaster reads the reaction
+  with the stats it moved. `showStorylineModal` is untouched and still runs for a beat with no scene, or if
+  anything throws - so all the outcome machinery (`storyBeatOpened`, `applyStoryChoice`, the backfire roll,
+  confidence, followers, the two-axis reputation, the feed line, tracking) lives exactly where it always did.
+- **`CUTSCENE_LIVE` false -> true.** The gate short-circuits on the flag BEFORE the `sbSignedIn()` check, so
+  this admits **guests** as well as every signed-in account - which is why the launch needed its own test
+  rather than a flag flip on trust. `CS_TESTERS` is kept, so the gate can be closed again, and the kill
+  switch (`CUTSCENE_LIVE=false`) is the same branch the fallback has always used.
+- **`cslive.mjs` is the launch suite and it deliberately sets NO `bag_cs_force`**, so it walks the REAL gate:
+  a signed-out guest and an ordinary signed-in non-tester each drafted through the whole conversation, which
+  the tester gate meant nobody had ever done. **20/20**, and it fails 6 checks then hard-times-out on a
+  `CUTSCENE_LIVE=false` copy, so it discriminates.
+- **THREE STALE FIXTURES were updated to the launched contract, not worked around** - and two of them were
+  green while asserting the wrong thing:
+  - `cutscene.mjs` and `csdec.mjs` shut the gate with `bag_cs_force='0'`, which only ever worked because the
+    flag was off. Both now reach the fallback through the **kill switch**, which is the same branch and the
+    realistic way the layer would be turned off again.
+  - `cslaunch.mjs`'s "nothing is stuck" check tested `document.body.textContent` for the render-error card.
+    **The whole game is one inline `<script>` inside `<body>`, so `body.textContent` contains the card's
+    string LITERAL** - the check reported `err:true` on a perfectly healthy title screen and had never once
+    measured a real error. Verified directly: `inScript:true, inBody:true, inApp:false` on a freshly loaded
+    title. Scoped to `#app`. **A body-wide text regex is meaningless in this file**; scope to `#app`.
+- Verified against the file exactly as pushed: `cslive` **20**, `cutscene` **24**, `csdec` **21**,
+  `cslaunch` **7** - 0 fail, 0 page errors. Regressions green: nobag 10, news21 18, sig01 19, dec16 23,
+  guest17 19. `parsecheck` 1 bad is block 0, the JSON-LD tag, which fails identically on baseline.
+- **No parallel edits to adopt this time** - `origin/main:golf/index.html` was byte-identical to my own
+  source at `b6496fbf` (the Ideas footer link had already been folded in), so the delta going live was
+  exactly the two commits. The check still has to be run every deploy: `golf/index.html` is regenerated from
+  `build-a-golfer.html`, so a change made only to the deployed file is one deploy away from being reverted.
+- Tunable: `CUTSCENE_LIVE` (the kill switch), `CS_TESTERS`, `CS_OUTLETS`/`CS_CAST`, `CS_SCENES` +
+  `CS_TAG_SCENES`.
