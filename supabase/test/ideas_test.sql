@@ -11,6 +11,20 @@ begin
   raise notice '%  %  got=% want=%',
     case when got is not distinct from want then ' ok  ' else 'FAIL ' end, lbl, got, want;
 end $$;
+-- Run a scalar query and HAND BACK THE ERROR INSTEAD OF RAISING IT. The switched-role
+-- checks at the bottom of this file are checks about permission, so "permission denied"
+-- is a result to report, not a crash: ON_ERROR_STOP would otherwise take the whole file
+-- down on the first one and print nothing about the rest.
+create or replace function q(sql text) returns text
+  language plpgsql as $$
+declare v text;
+begin
+  execute sql into v;
+  return coalesce(v, '(null)');
+exception when others then
+  return sqlstate || ' ' || sqlerrm;
+end $$;
+
 create or replace function throws(lbl text, sql text) returns void
   language plpgsql as $$
 begin
@@ -164,3 +178,75 @@ select ok('votes exist before the delete',
 delete from ideas where id = :i1;
 select ok('and are gone after it',
   (select count(*)::text from idea_votes where idea_id=:i1), '0');
+
+-- ---------------------------------------------------------------------------
+-- WHAT A BROWSER CAN ACTUALLY READ
+--
+-- Every check above this line ran as the owner of the database. That is what psql hands
+-- you, and it is also what the Supabase SQL editor hands you, and that role bypasses
+-- both table grants and row level security. So all of them passed on a board no visitor
+-- could open: ideas_public is a security_invoker view, the base tables carried no grant
+-- to anon or authenticated, and the live page said "Community Ideas is unavailable right
+-- now" for as long as it was up. Sixty-three green lines and a dead board.
+--
+-- `set local role` is the only way to get the visitor's own privileges out of psql, and
+-- it needs a transaction to be local to. The blocks roll back rather than commit, so a
+-- write that is supposed to be refused cannot leave anything behind if it is not.
+-- ---------------------------------------------------------------------------
+select become(:'c');
+select ideas_post('nfl','An idea the browser can open','Body text.') as i7 \gset
+select ideas_post('nfl','An idea a moderator hid','') as i8 \gset
+update ideas set hidden = true where id = :i8;
+select become(:'b');
+select ideas_vote(:i7, 1);
+
+-- SIGNED OUT, which is every first visit: no session, and the anon role.
+delete from auth.session;
+begin;
+set local role anon;
+select ok('anon opens the board',
+  q(format($$select title from ideas_public where id=%s$$, :i7)), 'An idea the browser can open');
+select ok('anon reads the author off the join',
+  q(format($$select author_name from ideas_public where id=%s$$, :i7)), 'randomfan');
+select ok('anon is not shown a hidden idea',
+  q(format($$select count(*)::text from ideas_public where id=%s$$, :i8)), '0');
+-- The page reads this table directly, not through a view, to know which arrow to light.
+-- Signed out there is nothing to light, and that is zero rows rather than an error.
+select ok('anon reads the vote table and sees none',
+  q($$select count(*)::text from idea_votes$$), '0');
+-- THE GRANT IS NOT THE FENCE, the policy is. anon can read the ideas table directly now,
+-- and what comes back is exactly what the policy allows: a hidden idea is missing from a
+-- straight table read, not just from the view that filters it.
+select ok('a hidden idea is gone from the table too',
+  q(format($$select count(*)::text from ideas where id=%s$$, :i8)), '0');
+select ok('no hidden idea is reachable at all',
+  q($$select count(*)::text from ideas where hidden$$), '0');
+select throws('anon posting', $$select ideas_post('nfl','A real title here','')$$);
+select throws('anon writing a vote row by hand',
+  format($$insert into idea_votes(idea_id,user_id,dir) values (%s, gen_random_uuid(), 1)$$, :i7));
+rollback;
+
+-- SIGNED IN: b, who voted for i7 above, and c, who did not.
+select become(:'b');
+begin;
+set local role authenticated;
+select ok('a signed in reader opens the board',
+  q(format($$select title from ideas_public where id=%s$$, :i7)), 'An idea the browser can open');
+select ok('and sees their own vote',
+  q(format($$select dir::text from idea_votes where idea_id=%s$$, :i7)), '1');
+select ok('and the score the view carries',
+  q(format($$select score::text from ideas_public where id=%s$$, :i7)), '2');
+select throws('editing an idea by hand',
+  format($$update ideas set title='Mine now' where id=%s$$, :i7));
+rollback;
+
+select become(:'c');
+begin;
+set local role authenticated;
+-- THE VOTE TABLE IS NOT A REGISTER OF WHO VOTED FOR WHAT. c posted i7, so c holds a vote
+-- row on it, and b's row on the same idea is none of c's business.
+select ok('somebody else votes and you cannot see it',
+  q(format($$select count(*)::text from idea_votes where idea_id=%s$$, :i7)), '1');
+select ok('the totals are public, the names are not',
+  q(format($$select (up_count-down_count)::text from ideas_public where id=%s$$, :i7)), '2');
+rollback;

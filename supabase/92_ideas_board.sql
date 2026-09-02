@@ -180,6 +180,28 @@ with (security_invoker = true) as
 
 grant select on public.ideas_public to anon, authenticated;
 
+-- ---------------------------------------------------------------------------
+-- AND ON THE TABLES UNDER IT, WHICH IS NOT OPTIONAL WITH security_invoker.
+--
+-- This is the line that was missing and it cost a live outage. A view normally runs with
+-- its OWNER's privileges, so a grant on the view alone is enough. `security_invoker = true`
+-- flips that: the reader's own privileges apply to the base tables too, and the browser had
+-- none, so every read of the board came back
+--
+--     42501: permission denied for table ideas
+--
+-- and the page showed "Community Ideas is unavailable right now" to everybody.
+--
+-- SAFE, BECAUSE RLS IS STILL THE FENCE. Both tables have row level security on, so a
+-- direct read gets exactly what the policies allow: non-hidden ideas, and your own votes
+-- and nobody else's. The grant opens the door; the policies still decide what is behind it.
+--
+-- idea_votes is granted for the same reason and a different caller: the page reads it
+-- directly, not through a view, to know which arrow to light.
+-- ---------------------------------------------------------------------------
+grant select on public.ideas      to anon, authenticated;
+grant select on public.idea_votes to anon, authenticated;
+
 -- ---------- 6) posting -----------------------------------------------------
 create or replace function public.ideas_post(p_game text, p_title text, p_body text default '')
 returns bigint
