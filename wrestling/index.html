@@ -81,6 +81,13 @@
   .tile{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
   .tile .lab{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); font-weight:700;}
   .tile .val{font-family:var(--mono); font-size:21px; font-weight:800; color:var(--cream); margin-top:3px;}
+  /* the band beside a number: what the number means, in two words */
+  .numband{display:block;font-family:var(--body);font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-dim);margin-top:2px;line-height:1.2;}
+  .bizcard .numband{font-size:11.5px;}
+  .term{cursor:pointer;border-bottom:1px dotted rgba(244,232,219,.35);}
+  .term-q{display:inline-block;margin-left:4px;font-size:9px;opacity:.6;font-weight:800;}
+  .term:hover{color:var(--cream);}
+  .bs-tag.tap{cursor:pointer;} .bs-tag.tap:after{content:' ?';opacity:.55;font-size:10px;}
 
   .bar{height:8px; background:rgba(0,0,0,.45); border-radius:4px; overflow:hidden; margin-top:5px;}
   .bar i{display:block; height:100%; background:var(--brandred);}
@@ -1254,8 +1261,8 @@
   <div class="hud">
     <div class="cell"><div class="label">Yr · Wk</div><div class="value" id="hYW">1·1</div></div>
     <div class="cell"><div class="label">Age</div><div class="value" id="hAge">21</div></div>
-    <div class="cell"><div class="label">OVR</div><div class="value" id="hOvr">40</div></div>
-    <div class="cell"><div class="label">Pop</div><div class="value" id="hPop">5</div></div>
+    <div class="cell" style="cursor:pointer;" onclick="explainHud('ovr')" title="Overall rating. Tap for the scale."><div class="label">OVR</div><div class="value" id="hOvr">40</div></div>
+    <div class="cell" style="cursor:pointer;" onclick="explainHud('pop')" title="Popularity. Tap for the scale."><div class="label">Pop</div><div class="value" id="hPop">5</div></div>
     <div class="cell"><div class="label">Coins</div><div class="value" id="hCoins">0</div></div>
   </div>
 </div>
@@ -1973,7 +1980,110 @@ function trajectoryBand(v){
   if(v>=65) return {t:'On the rise',            c:'var(--green)'};
   if(v>=50) return {t:'Holding your spot',      c:'var(--cream)'};
   if(v>=35) return {t:'Below the office\'s eye',c:'var(--text-dim)'};
-  return       {t:'On the way out',           c:'#f0907f'};
+  // a debuting rookie is not "on the way out". They are at the bottom.
+  return       {t:'Bottom of the card',       c:'#f0907f'};
+}
+/* ============================================================
+   NUMBERS WITH CONTEXT
+   ------------------------------------------------------------
+   A 74 means nothing on its own. Every number the player sees gets a
+   band beside it, the way the three rooms and the star rating already
+   do. One table, one helper, used everywhere a bare number used to be.
+   Bands are ordered high to low; the first threshold at or below the
+   value wins. ============================================================ */
+const BANDS = {
+  ovr:      [[85,'Main-event class'],[70,'World class'],[59,'National level'],[44,'Regional level'],[0,'Rookie']],
+  attr:     [[80,'Elite'],[60,'Star level'],[45,'Competent'],[35,'Green'],[0,'Raw']],
+  rep:      [[14000,'Global main-eventer'],[5200,'National name'],[1400,'Regional name'],[300,'Getting known'],[0,'Unknown']],
+  standing: [[72,'Protected'],[52,'Trusted'],[34,'Just a body'],[0,'In the doghouse']],
+  mom:      [[75,'On fire'],[60,'Building'],[40,'Steady'],[25,'Cooling'],[0,'Cold']],
+  cond:     [[85,'Fresh'],[70,'Match ready'],[50,'Banged up'],[0,'Should not be working']],
+  wear:     [[80,'Running on fumes'],[50,'Heavy miles'],[25,'Some miles'],[0,'Fresh legs']],
+  fresh:    [[73,'Hot'],[50,'Working'],[32,'Going stale'],[0,'Stale']],
+  pop:      [[85,'Household name'],[64,'National name'],[38,'Regional draw'],[15,'Known on the scene'],[0,'Nobody yet']],
+  respect:  [[55,'Would work with you'],[25,'Rates you'],[1,'Noticed you'],[0,'No opinion']],
+  heat:     [[55,'Bitter'],[25,'Bad blood'],[1,'Friction'],[0,'None']],
+  age:      [[38,'Veteran'],[33,'Late prime'],[27,'Prime'],[24,'Rising'],[0,'Rookie']],
+  legacy:   [[80,'Immortal'],[60,'Hall of Fame'],[40,'A good career'],[20,'A career'],[0,'A footnote']],
+  score:    [[80,'Elite'],[60,'Strong'],[40,'Average'],[0,'Weak']],
+};
+function bandOf(kind, v){
+  if(kind==='crowd') return sentBand('crowd', v).t;
+  const set=BANDS[kind]; if(!set) return '';
+  const n=+v||0;
+  const hit=set.find(r=>n>=r[0]);
+  return hit ? hit[1] : set[set.length-1][1];
+}
+// purse relative to where you work: the same $800 is a main event on the
+// indies and an opener on national television
+function purseBand(p){
+  const t=workTier(); const lo=t.purse[0], hi=t.purse[1];
+  if(p>=hi*1.8) return 'Supercard money';
+  if(p>=hi*0.95) return 'Main-event money';
+  if(p>=lo*0.85) return 'Mid-card money';
+  return 'Opener money';
+}
+// reputation, as distance to the next rung
+function repBand(rep){
+  const ei=TIERS.findIndex(x=>x.id===tierOf(rep).id), nx=TIERS[ei+1];
+  return nx ? `${Math.max(0,Math.round(nx.rep-rep)).toLocaleString()} to ${nx.name}` : 'Top of the business';
+}
+function withBand(kind, v, shown){
+  const label = kind==='purse' ? purseBand(v) : kind==='repTo' ? repBand(v) : bandOf(kind, v);
+  return `${shown!=null?shown:Math.round(v)}<span class="numband">${label}</span>`;
+}
+/* Tappable labels: the codex already explains every one of these terms,
+   it was just four taps away. ruleIdx finds the entry by name. */
+function ruleIdx(name){ const i=RULES.findIndex(r=>r.n===name); return i<0?0:i; }
+const TERM_RULE = { Reputation:'The Climb', Standing:'The Business', 'Standing with the office':'The Business',
+  Momentum:'Matches', Popularity:'Crowd & Character', Crowd:'Crowd & Character', Condition:'The Business',
+  Mileage:'The Business', Freshness:'Crowd & Character', OVR:'Getting Better', Purse:'Money', XP:'Getting Better',
+  'Where you stand':'The Three Rooms', 'How hot you are':'Crowd & Character', Respect:'The Locker Room', 'Bad blood':'The Locker Room' };
+function termLabel(label){
+  const r=TERM_RULE[label];
+  return r ? `<span class="term" onclick="event.stopPropagation();openRules(ruleIdx('${r}'))">${label}<span class="term-q">?</span></span>` : label;
+}
+/* Card position is the most learnable lever in the game and the rule was
+   hidden inside makeOffers. One function computes it, and one modal shows
+   the player their own three inputs against the two thresholds. */
+function cardDraw(){
+  const c=G.car;
+  const ceil=([38,64,85,100][tierIdx()]||38);
+  const reactionRel=clamp((reactionOf()/ceil)*100,0,100);
+  const draw=(c.standing||50)*0.34 + gimHeat()*0.22 + reactionRel*0.44;
+  return {draw, standing:(c.standing||50), gim:gimHeat(), reactionRel, reaction:reactionOf(), ceil};
+}
+function explainCard(card){
+  const d=cardDraw();
+  const row=(l,v,w,why)=>`<div class="sbrow"><div class="sbrow-h"><span class="sbrow-l">${l} <span class="hint">${w}% of it</span></span><span class="sbrow-v"><b>${Math.round(v)}</b> <span class="sbrow-arrow">of</span> 100</span></div>
+    <div class="sbrow-bar"><i style="width:${clamp(v)}%"></i></div><div class="sbrow-why">${why}</div></div>`;
+  const where = d.draw>=62?'Main event':d.draw>=40?'Mid-card':'Opener';
+  const body=`<div class="seasonbrief">
+    <div class="sb-quote">Your draw is <b>${Math.round(d.draw)}</b>. Under 40 opens the show. 40 to 61 is the middle. 62 and up main-events.</div>
+    <div class="sb-rows">
+      ${row('Standing with the office', d.standing, 34, 'Good matches raise it. Bad nights and refused bookings lower it.')}
+      ${row('How fresh the act is', d.gim, 22, 'Promos and wins keep it up. It fades every week.')}
+      ${row('Crowd, for this level', d.reactionRel, 44, `They are at ${Math.round(d.reaction)} of the ${d.ceil} a crowd on this circuit can give. Better matches raise it.`)}
+    </div>
+    <div class="sb-terms"><div class="sb-term"><span class="sb-term-l">Tonight</span><span class="sb-term-v gold">${card||where}</span></div>
+      <div class="sb-term"><span class="sb-term-l">Skips the maths</span><span class="sb-term-v">Title matches and feud blow-offs main-event regardless.</span></div></div>
+  </div>`;
+  modal('Where you go on the card', body, [{label:'Got it',cls:'primary',fn:closeModal}]);
+}
+/* The two numbers in the top bar that mean nothing without a scale. */
+function explainHud(kind){
+  if(!G) return;
+  const scale=(set,unit)=>`<ul class="ruleul">${set.slice().reverse().map(r=>`<li><b>${r[0]}${unit||''}+</b>: ${r[1]}</li>`).join('')}</ul>`;
+  if(kind==='ovr'){
+    const o=ovr(G.w);
+    modal('Overall rating', `<div class="seasonbrief"><div class="sb-quote">You are <b>${o}</b>. ${bandOf('ovr',o)}.</div>
+      <p class="log">A weighted blend of your seven attributes. Technique and psychology count most. It decides who the office books you against and gates each tier of the business.</p>${scale(BANDS.ovr)}
+      <p class="log">Raise it in Training. Matches earn the points.</p></div>`, [{label:'Got it',cls:'primary',fn:closeModal}]);
+  } else {
+    const p=Math.round(G.car.pop);
+    modal('Popularity', `<div class="seasonbrief"><div class="sb-quote">You are at <b>${p}</b>. ${bandOf('pop',p)}.</div>
+      <p class="log">How many people know your name. It is capped by where you work: an indie wrestler tops out near 38, a national one near 85. Great matches and promos raise it. It pays merch and it is what bigger companies scout.</p>${scale(BANDS.pop)}</div>`, [{label:'Got it',cls:'primary',fn:closeModal}]);
+  }
 }
 function heatBand(v){
   if(v>=80) return {t:'Red-hot right now',      c:'var(--gold)'};
@@ -2097,7 +2207,7 @@ const SEASON_GOALS = [
       return nx?`Get yourself out of ${(TIERS[idx-1]||{}).name||'here'} and onto the ${nx.name}. Bigger buildings, better money, tougher opponents.`:'Stay on top.'; },
     fit:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?1:0; },
     payout:{coins:1500,standing:6} },
-  { id:'world_title', label:c=>`Win the ${beltName()}`,
+  { id:'world_title', label:c=>`Win the ${beltName()}`, kindWord:'the top belt',
     desc:c=>`Take the world title from ${(charById((G.world.champions[myPromo().id]||{}).world&&G.world.champions[myPromo().id].world.holder)||{}).name||'whoever holds it'} before year end.`,
     check:(c,w)=>c.title===beltName() || (c.reigns||[]).some(r=>r.title===beltName() && r.year===c.year),
     progress:(c,w)=>{ if(c.title===beltName()) return 100; const need=Math.min(70,18+tierIdx()*16); return clamp(reactionOf()/need*100*0.6 + (c.titleShot?30:0), 0, 99); },
@@ -2108,7 +2218,7 @@ const SEASON_GOALS = [
       return `Take the belt off ${ch||'the champion'}. Get over enough that the office has to book the match, then win it.`; },
     fit:(c,w)=>{ const ti=tierIdx(); return ti>=1 && !c.title ? 1 : 0.4; },
     payout:{coins:5000,standing:12} },
-  { id:'defend_title', label:c=>`Defend the ${c.title||beltName()} three times`,
+  { id:'defend_title', label:c=>`Defend the ${c.title||beltName()} three times`, kindWord:'your belt',
     desc:c=>`Three successful championship defences before year end. Long reigns build legacies.`,
     check:(c,w)=>c.title && (c.defenses||0)>=3,
     progress:(c,w)=>c.title ? clamp((c.defenses||0)/3*100) : 0,
@@ -2116,13 +2226,13 @@ const SEASON_GOALS = [
     plain:c=>`You have the belt. Now prove it was not a fluke: three clean defences before the year is out.`,
     fit:(c,w)=>c.title ? 1.2 : 0,
     payout:{coins:3500,standing:10} },
-  { id:'mid_title', label:c=>`Win the ${beltName(workTier(),'secondary')}`,
-    desc:c=>`Take the mid-card belt. Prove you can carry a division.`,
+  { id:'mid_title', label:c=>`Win the ${beltName(workTier(),'secondary')}`, kindWord:'the mid-card belt',
+    desc:c=>`Take the ${beltName(workTier(),'secondary')}, the mid-card belt. Prove you can carry a division.`,
     check:(c,w)=>c.secondary===beltName(workTier(),'secondary') || (c.reigns||[]).some(r=>r.title===beltName(workTier(),'secondary')&&r.year===c.year),
     progress:(c,w)=>c.secondary?100:clamp(c.standing/62*100),
     rows:(c,w)=>[ {l:'Standing with the office', now:Math.round(c.standing||50), goal:62, why:'Good matches raise it. Missed cues and bad nights lower it.'},
                   {l:'Hold the belt', now:c.secondary?1:0, goal:1, bool:true, why:'The office books the shot once they trust you.'} ],
-    plain:c=>`Win the mid-card belt. It is the step every main eventer takes first.`,
+    plain:c=>`Win the ${beltName(workTier(),'secondary')}. It is the mid-card belt, and the step every main eventer takes first.`,
     fit:(c,w)=>{ const ti=tierIdx(); return ti>=0 && !c.title && !c.secondary ? 1 : 0.3; },
     payout:{coins:1800,standing:6} },
   { id:'classic', label:c=>`Have a 5-star match`,
@@ -3956,6 +4066,7 @@ function renderStyles(){
       <div class="sc-bars">
         <div class="sc-key"><span>Starting stats</span><span>Growth</span></div>
         ${bars}
+        <div class="hint" style="margin-top:6px;">The scale: 30 is green, 45 is competent, 60 is a star, 80 is elite. Everybody starts green.</div>
       </div>
       ${traits.length?`<div class="sc-traits">${traits.map(t=>`<span>${t}</span>`).join('')}</div>`:''}
       ${cats.length?`<div class="sc-mast"><b>Learns fastest:</b> ${cats.join(', ')}</div>`:''}
@@ -4892,6 +5003,7 @@ const RULES=[
   </ul>
   <p class="log"><b>Pull</b> grows with standing, the title and crowd reaction. It buys one conversation a week with the office (more time, a different opponent, a stipulation, even the finish), and being told no costs standing, so asking is a real decision. Your <b>downside guarantee</b> pays every week whether you wrestle or not.</p>`},
  {n:'Matches', h:`
+  <p class="log"><b>Momentum</b> is how you are running right now, 0 to 100. Wins and good matches push it up. Losses and weeks off pull it back to 50. It nudges your odds in the next match.</p>
   <p class="log">Matches are wrestled, not simulated. They play out live and end the way real matches end.</p>
   <ul class="ruleul">
     <li><b>Pinfall.</b> A cover, a referee count, and a kickout at one, two or two and a half. Only a finisher in the closing stretch is likely to get three.</li>
@@ -4951,6 +5063,24 @@ const RULES=[
     <li><b>Injuries</b> cost you real weeks and take an attribute hit. Serious ones can leave permanent damage. Working hurt makes all of it worse.</li>
     <li><b>Mileage</b> never resets. It is what decides how early you decline.</li>
   </ul>`},
+ {n:'Card Position', h:`
+  <p class="log">Every match is booked as the <b>opener</b>, the <b>mid-card</b> or the <b>main event</b>. Openers pay 0.6x. Main events pay 1.6x.</p>
+  <p class="log">Your spot comes from one number, your <b>draw</b>. Standing with the office is 34% of it. How fresh the act is, 22%. How loud the crowd is for this level, 44%.</p>
+  <ul class="ruleul">
+    <li>Under <b>40</b>: you open the show.</li>
+    <li><b>40 to 61</b>: the middle of the card.</li>
+    <li><b>62 and up</b>: you main-event.</li>
+    <li>Title matches and feud blow-offs main-event regardless.</li>
+  </ul>
+  <p class="log">Tap the position tag on any booking sheet to see your three inputs.</p>`},
+ {n:'Money', h:`
+  <p class="log">Two streams. Your <b>downside</b> is guaranteed every week whether you wrestle or not. Your <b>purse</b> is per match, and it scales with card position, stakes and the size of the company.</p>
+  <ul class="ruleul">
+    <li>Indie purses run $250 to $800. National television runs $3,200 to $9,500.</li>
+    <li>A title match pays 2.2x. A supercard pays 2.2x on top of that.</li>
+    <li>A great match pays up to 1.4x its purse. A bad one pays 0.4x.</li>
+  </ul>
+  <p class="log">Coins buy cosmetics at the Merch Stand. Nothing that affects a match is for sale.</p>`},
  {n:'The Climb', h:`
   <p class="log">Four tiers. Reputation opens the door and your overall decides whether you can walk through it.</p>
   <table class="ruletbl">
@@ -5452,16 +5582,15 @@ function renderCareer(){
   ].filter(Boolean).join('');
   const detailsOpen = G.car._detailsOpen;
   const detailPanel = detailsOpen ? `<div class="vitalsdetail">
-    <div class="tile"><div class="lab">Reputation</div><div class="val">${Math.round(c.rep)}</div>${repHint}</div>
-    <div class="tile"><div class="lab">Crowd</div><div class="val">${Math.round(reactionOf())}</div>${(()=>{ const cl=crowdLabel(), l=leanOf(); const tp=turnProgress();
+    <div class="tile"><div class="lab">${termLabel('Reputation')}</div><div class="val">${withBand('rep',c.rep)}</div>${repHint}</div>
+    <div class="tile"><div class="lab">${termLabel('Crowd')}</div><div class="val">${Math.round(reactionOf())}<span class="numband" style="color:${crowdLabel().c}">${crowdLabel().t}</span></div>${(()=>{ const cl=crowdLabel(), l=leanOf(); const tp=turnProgress();
       return `<div class="cm-bar" style="height:9px;margin-top:5px;"><i style="width:${100-reactionOf()}%"></i><span class="cm-tick"></span><b style="left:${(l+100)/2}%;top:-2px;height:13px;width:5px;"></b></div>
-        <div class="hint" style="margin-top:4px;color:${cl.c}">${cl.t}</div>
         ${tp.to&&tp.p>0.2?`<div class="hint" style="color:var(--gold)">${tp.to} turn ${Math.round(tp.p*100)}%</div>`:''}`;})()}</div>
-    <div class="tile"><div class="lab">Condition</div><div class="val">${Math.round(c.cond)}</div><div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div></div>
-    <div class="tile"><div class="lab">Momentum</div><div class="val">${Math.round(c.mom)}</div><div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div></div>
-    <div class="tile"><div class="lab">Popularity</div><div class="val">${Math.round(c.pop||50)}</div><div class="bar g"><i style="width:${clamp(c.pop||50)}%"></i></div></div>
-    <div class="tile"><div class="lab">Where you stand</div><div class="val" style="color:${tb.c}">${traj}</div><div class="bar b"><i style="width:${traj}%"></i></div><div class="hint" style="margin-top:3px;color:${tb.c}">${tb.t}</div></div>
-    <div class="tile"><div class="lab">How hot you are</div><div class="val" style="color:${hb.c}">${heat}</div><div class="bar g"><i style="width:${heat}%"></i></div><div class="hint" style="margin-top:3px;color:${hb.c}">${hb.t}</div></div>
+    <div class="tile"><div class="lab">${termLabel('Condition')}</div><div class="val">${withBand('cond',c.cond)}</div><div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('Momentum')}</div><div class="val">${withBand('mom',c.mom)}</div><div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('Popularity')}</div><div class="val">${withBand('pop',c.pop||50)}</div><div class="bar g"><i style="width:${clamp(c.pop||50)}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('Where you stand')}</div><div class="val" style="color:${tb.c}">${traj}<span class="numband" style="color:${tb.c}">${tb.t}</span></div><div class="bar b"><i style="width:${traj}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('How hot you are')}</div><div class="val" style="color:${hb.c}">${heat}<span class="numband" style="color:${hb.c}">${hb.t}</span></div><div class="bar g"><i style="width:${heat}%"></i></div></div>
   </div>` : '';
   const sent = sentiment(), sd = c._sentDelta || {};
   const room = (key,label)=>{
@@ -5669,8 +5798,13 @@ function nextGoals(){
     if(!best||p>best.p) best={l:`Unlock ${m.name}`, sub:`${cat.name} · ${need.join(' · ')||'ready'}`, p};
   });
   if(best) out.push(best);
-  if(!c.title){ const need=Math.min(70,18+tierIdx()*16);
-    out.push({l:`Win the ${beltName()}`, sub:`Crowd reaction ${Math.round(reactionOf())}/${need} to be considered`, p:clamp(reactionOf()/need*100)}); }
+  // the same belt the season goal names, under the same name, so the hub
+  // never shows two belts that are one belt and one belt that is two
+  const _sg=currentSeasonGoal();
+  if(_sg && _sg.id==='mid_title' && !c.secondary){
+    out.push({l:`Win the ${beltName(workTier(),'secondary')}`, sub:`The mid-card belt · standing ${Math.round(c.standing||50)}/62 for the office to book it`, p:clamp((c.standing||50)/62*100)}); }
+  else if(!c.title){ const need=Math.min(70,18+tierIdx()*16);
+    out.push({l:`Win the ${beltName()}`, sub:`The top belt · crowd ${Math.round(reactionOf())}/${need} to be considered`, p:clamp(reactionOf()/need*100)}); }
   else out.push({l:'Defend the title', sub:`${c.defenses||0} successful defence${(c.defenses||0)===1?'':'s'} so far`, p:clamp((c.defenses||0)/5*100)});
   return out.slice(0,3);
 }
@@ -5689,7 +5823,7 @@ function seasonChip(){
   const label = g.label(c);
   return `<div class="arc-goal ${done?'done':''}" onclick="showSeasonBriefing()">
     <div class="arc-goal-h"><span class="arc-goal-k">Season goal</span><span class="arc-goal-w">${weeksLeft} wk${weeksLeft===1?'':'s'} left</span></div>
-    <div class="arc-goal-t">${label}${done?' ✓':''}</div>
+    <div class="arc-goal-t">${label}${g.kindWord?` <span class="hint">· ${g.kindWord}</span>`:''}${done?' ✓':''}</div>
     <div class="arc-goal-b"><i style="width:${p}%"></i></div>
   </div>`;
 }
@@ -5836,7 +5970,7 @@ function renderWeek(){
       ${ppvCard}
       <div class="bs-headline">
         <div class="bs-stip">${o.stipLabel}</div>
-        <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
+        <div class="bs-tag tap ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}" onclick="explainCard('${o.card}')">${stakesTag}</div>
       </div>
       <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
       ${bookDetailsOpen?'':`<div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>`}
@@ -5951,18 +6085,18 @@ function renderBizPanel(){
       <div class="bl">The act</div>
       <div class="bv" style="font-size:17px;">${g?g.name:'-'}</div>
       <div class="bs">${cap(G.w.align)} · ${c.turns||0} turn${(c.turns||0)===1?'':'s'}</div>
-      <div class="hint" style="margin-top:6px;">Freshness ${Math.round(heat)}${heat<32?', <b style="color:#f0907f">stale</b>':heat>72?', <b style="color:var(--green)">hot</b>':''}</div>
+      <div class="hint" style="margin-top:6px;">${termLabel('Freshness')} ${Math.round(heat)}: <b style="color:${heat<32?'#f0907f':heat>72?'var(--green)':'var(--text-dim)'}">${bandOf('fresh',heat).toLowerCase()}</b></div>
       <div class="bar ${heat<32?'':'g'}" style="margin-top:6px;"><i style="width:${heat}%;${heat<32?'background:#c0392b':''}"></i></div>
     </div>
     <div class="bizcard">
-      <div class="bl">Standing with the office</div>
+      <div class="bl">${termLabel('Standing with the office')}</div>
       <div class="bv">${Math.round(c.standing||50)}</div>
       <div class="bs">${(c.standing||50)>=72?'Protected':(c.standing||50)>=52?'Trusted':(c.standing||50)>=34?'Just a body':'In the doghouse'}</div>
       <div class="bar gd" style="margin-top:6px;"><i style="width:${clamp(c.standing||50)}%"></i></div>
     </div>
     <div class="bizcard">
-      <div class="bl">Mileage</div>
-      <div class="bv">${Math.round(c.wear||0)}</div>
+      <div class="bl">${termLabel('Mileage')}</div>
+      <div class="bv">${Math.round(c.wear||0)}<span class="numband">${bandOf('wear',c.wear||0)}</span></div>
       <div class="bs">${sc.name} · ${sc.dates}</div>
       <div class="hint" style="margin-top:6px;">${chron.length? chron.map(x=>`${x.part} (−${x.pen})`).join(' · ') : 'No lasting damage yet'}</div>
     </div>
@@ -6158,9 +6292,7 @@ function makeOffers(){
     // draw in their company and still be booked to open the show forever:
     // four-year playtests were finishing with 57 of 66 matches in the Opener.
     // Reaction is now measured against what is achievable where you work.
-    const _popCeil = ([38,64,85,100][tierIdx()] || 38);
-    const reactionRel = clamp((reactionOf()/_popCeil)*100, 0, 100);
-    const draw=(G.car.standing*0.34 + gimHeat()*0.22 + reactionRel*0.44);
+    const draw=cardDraw().draw;
     let card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
                : (stakes==='secondary'||stakes==='secondary_defense') ? 'Mid-Card'
                : draw>=62 ? 'Main Event' : draw>=40 ? 'Mid-Card' : 'Opener';
@@ -9075,14 +9207,14 @@ function renderMatch(o,res){
     :res.win?'<span style="color:var(--green)">WIN</span>':'<span style="color:#f0907f">LOSS</span>')+` vs ${o.oppName}`;
 
   // every number in the tiles ticks up instead of sitting there
-  const tileOf=(l,id,col)=>`<div class="tile"><div class="lab">${l}</div><div class="val" id="${id}" ${col?`style="color:${col}"`:''}>0</div></div>`;
+  const tileOf=(l,id,col,band)=>`<div class="tile"><div class="lab">${termLabel(l)}</div><div class="val"><span id="${id}" ${col?`style="color:${col}"`:''}>0</span>${band?`<span class="numband">${band}</span>`:''}</div></div>`;
   // round to a tenth FIRST, so a -0.04 does not print as "-0.0" in red on the
   // very first result screen a player sees
   const pg=(Math.round((+res.popGain||0)*10)/10)||0;
-  $('mTiles').innerHTML=tileOf('Purse','mtPurse')
-    +tileOf('Reputation','mtRep','var(--green)')
-    +tileOf('Popularity','mtPop',pg>0?'var(--green)':pg<0?'#f0907f':'var(--text-dim)')
-    +tileOf('XP','mtXp');
+  $('mTiles').innerHTML=tileOf('Purse','mtPurse',null,purseBand(res.coins||0))
+    +tileOf('Reputation','mtRep','var(--green)',repBand(c.rep))
+    +tileOf('Popularity','mtPop',pg>0?'var(--green)':pg<0?'#f0907f':'var(--text-dim)',`now ${Math.round(c.pop)}: ${bandOf('pop',c.pop).toLowerCase()}`)
+    +tileOf('XP','mtXp',null,`${G.w.xp} of 100 to a training point`);
   countUp($('mtPurse'),res.coins||0,{fmt:v=>'$'+Math.round(v).toLocaleString()});
   countUp($('mtRep'),res.repGain||0,{fmt:v=>'+'+Math.round(v)});
   countUp($('mtPop'),pg,{fmt:v=>{ const r=(Math.round(v*10)/10)||0; return (r>0?'+':'')+r.toFixed(1); }});
@@ -10246,7 +10378,7 @@ function renderTrain(){
       <div><div style="font-weight:800;color:var(--cream);font-size:15px;">${label}
         ${growMult(k)>1.05?`<span class="badge b-leg" style="margin-left:6px;">${styleOf().name} ×${growMult(k).toFixed(2)}</span>`:''}</div>
       <div class="hint">${gateHint(k)}</div></div>
-      <div style="text-align:right;"><div class="mono" style="font-size:22px;font-weight:800;">${Math.round(v)}</div>
+      <div style="text-align:right;"><div class="mono" style="font-size:22px;font-weight:800;">${Math.round(v)}<span class="numband">${bandOf('attr',v)}</span></div>
       <button ${G.w.tp<cost||v>=99?'disabled':''} onclick="spendTP('${k}')">+1</button></div></div>
       <div class="bar" style="margin-top:8px;"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`</div>
@@ -12373,7 +12505,7 @@ function renderCrew(){
       </div>
       <div class="cc-l"><span>Loyalty</span><b style="color:${L.c}">${L.t}</b></div>
       <div class="bar ${a.loyalty>=55?'g':''}"><i style="width:${a.loyalty}%;${a.loyalty<35?'background:#c0392b':''}"></i></div>
-      <div class="hint" style="margin-top:5px;">Respect ${Math.round(R.respect)} · ${R.wins||0}-${R.losses||0} against them</div>
+      <div class="hint" style="margin-top:5px;">Respect ${Math.round(R.respect)} (${bandOf('respect',R.respect).toLowerCase()}) · ${R.wins||0}-${R.losses||0} against them</div>
       <div class="row" style="margin-top:9px;gap:6px;">
         ${canTag(a.id)?`<button class="ghost" style="padding:5px 10px;font-size:11px;" onclick="askTeam('${a.id}')">Form a tag team</button>`:''}
         ${c.managerId===a.id
@@ -12404,8 +12536,8 @@ function renderCrew(){
         </div>
       </div>
       <div class="cc-two">
-        <div><div class="hint">Respect ${Math.round(R.respect)}</div><div class="bar g"><i style="width:${R.respect}%"></i></div></div>
-        <div><div class="hint">Bad blood ${Math.round(R.heat)}</div><div class="bar"><i style="width:${R.heat}%;background:#c0392b"></i></div></div>
+        <div><div class="hint">Respect ${Math.round(R.respect)} · ${bandOf('respect',R.respect).toLowerCase()}</div><div class="bar g"><i style="width:${R.respect}%"></i></div></div>
+        <div><div class="hint">Bad blood ${Math.round(R.heat)} · ${bandOf('heat',R.heat).toLowerCase()}</div><div class="bar"><i style="width:${R.heat}%;background:#c0392b"></i></div></div>
       </div>
       ${ok?`<div class="row" style="margin-top:9px;gap:6px;">
         <button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>
@@ -14400,11 +14532,11 @@ function storySoFar(){
 function renderRecord(){
   const c=G.car;
   let h=`<div class="grid g4">`+[
-    ['Record',`${c.rec.w}-${c.rec.l}`],['Win %',c.rec.w+c.rec.l?Math.round(c.rec.w/(c.rec.w+c.rec.l)*100)+'%':'-'],
-    ['Career Earnings',money(c.earnings)],['Reputation',Math.round(c.rep)],
+    ['Record',`${c.rec.w}-${c.rec.l}`],['Win %',c.rec.w+c.rec.l?`${Math.round(c.rec.w/(c.rec.w+c.rec.l)*100)}%<span class="numband">over ${c.rec.w+c.rec.l} match${c.rec.w+c.rec.l===1?'':'es'}</span>`:'-'],
+    ['Career Earnings',money(c.earnings)],['Reputation',withBand('rep',c.rep)],
     ['Title Reigns',c.reigns.length],['Moves Known',G.w.moves.length+'/'+MOVES.length],
-    ['Years Active',c.year],['Age',c.age],
-  ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')+`</div>`;
+    ['Years Active',c.year],['Age',withBand('age',c.age)],
+  ].map(([l,v])=>`<div class="tile"><div class="lab">${termLabel(l)}</div><div class="val">${v}</div></div>`).join('')+`</div>`;
   const acc=c.accolades||[];
   const story=storySoFar();
   const chips=[{t:`Story So Far <span class="pgr-x">${story.length}</span>`},
@@ -14579,7 +14711,7 @@ function renderHof(){
         <p class="log" style="margin-top:10px;">${c.retireReason||''}</p>
         <div class="row" style="margin-top:10px;">
           <div class="tile"><div class="lab">Legacy Grade</div><div class="val" style="color:var(--gold)">${grade}</div></div>
-          <div class="tile"><div class="lab">Legacy Score</div><div class="val">${legacy}</div></div>
+          <div class="tile"><div class="lab">Legacy Score</div><div class="val">${withBand('legacy',legacy)}</div></div>
         </div>
         ${inducted?`<p style="color:var(--gold);font-weight:800;margin-top:12px;">${pico('trophy',16)} Inducted into the Hall of Immortals.</p>`
           :`<p class="hint" style="margin-top:12px;">Fell short of the Hall. Build a bigger legend next time.</p>`}
@@ -14587,7 +14719,7 @@ function renderHof(){
       </div>
       <div class="grid g2" style="margin-top:12px;">${[
         ['Record',`${c.rec.w}-${c.rec.l}`],['Titles',c.reigns.length],['Earnings',money(c.earnings)],
-        ['Years',c.year],['Final OVR',ovr(w)],['Moves',w.moves.length]
+        ['Years',c.year],['Final OVR',withBand('ovr',ovr(w))],['Moves',w.moves.length]
       ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}</div>
       ${drRow}${ribbon}${belts}
       <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:6px;">
