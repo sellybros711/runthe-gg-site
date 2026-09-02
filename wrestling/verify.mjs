@@ -278,6 +278,126 @@ section('every number on a tile has a band beside it');
   await page.close();
 }
 
+/* ---------- 4d. promos know their stage ---------- */
+section('promos know which beat of which story they are in');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={segments:0, stageMiss:[], emptyLines:0, dash:0, callbacksSeen:{}, alignTagged:0, generic:0};
+    const DASHES=[String.fromCharCode(8212),String.fromCharCode(8211)];
+    const hasDash=s=>DASHES.some(d=>String(s||'').indexOf(d)>=0);
+    const rv=houseRoster(myPromoId())[1];
+    const stages=[['none',null],['opening',0],['escalation',1],['personal',2],['final',3]];
+    for(const align of ['face','heel']){
+      G.w.align=align;
+      for(const [label,stage] of stages){
+        for(const kind of ['grudge','title','betrayal','underdog','veteran']){
+          if(stage==null){ G.story=null; G.car.rivalId=null; }
+          else { startStory(rv.id,'test'); story().stage=stage; story().kind=kind; story().events=1; }
+          // plant the facts callbacks read
+          rel(rv.id).betrayedMe = (kind==='betrayal');
+          PM={mode:'callout',target:rv,directive:'feud',stance:'comply',phase:'hook',beat:0,maxBeats:5,score:0,usedChips:{},usedLines:{},usedCuts:{},picking:[]};
+          PMCTX=buildPromoCtx(rv);
+          const tags=stakesForPromo(PMCTX);
+          const stageTag=tags.find(t=>/^stage_/.test(t));
+          for(const ph of ['hook','thesis','meat','personal','close']){
+            PM.phase=ph; PM.beat=['hook','thesis','meat','personal','close'].indexOf(ph);
+            const cuts=cutsFor(ph); const chips=chipsFor(ph);
+            out.segments++;
+            const stageCutExists=CUT_BANK.some(c=>c.phase.includes(ph)&&c.stakes&&stageTag&&c.stakes.includes(stageTag));
+            if(stageTag && stageCutExists && !cuts.some(c=>(c.stakes||[]).includes(stageTag))) out.stageMiss.push(`${align}/${label}/${kind}/${ph}`);
+            cuts.forEach(c=>{ let l=''; try{ l=c.line(PMCTX); }catch(_){} if(!l) out.emptyLines++; if(hasDash(l)) out.dash++; if(c.align) out.alignTagged++; if(!c.stakes) out.generic++; });
+            chips.forEach(ch=>{ const l=chipLine(ch,PMCTX); if(!l) out.emptyLines++; if(hasDash(l)) out.dash++; if(/^cb_/.test(ch.id)) out.callbacksSeen[ch.id]=(out.callbacksSeen[ch.id]||0)+1; });
+          }
+        }
+      }
+    }
+    G.story=null; G.car.rivalId=null; rel(rv.id).betrayedMe=false;
+    return out;
+  });
+  if(errs.length) bad('promo sweep page errors: '+errs.slice(0,2).join(' | '));
+  (r.stageMiss.length===0) ? ok(`${r.segments} beats swept across 2 alignments x 5 stages x 5 kinds: a stage cut is offered wherever one exists`) : bad('stage cut missing in: '+r.stageMiss.slice(0,6).join(', ')+` (${r.stageMiss.length})`);
+  (r.emptyLines===0) ? ok('no cut or chip rendered an empty line') : bad(`${r.emptyLines} empty lines`);
+  (r.dash===0) ? ok('no dashes in any generated line') : bad(`${r.dash} generated lines carry a dash`);
+  (Object.keys(r.callbacksSeen).length>=1) ? ok('event callback chips surface when the fact exists: '+JSON.stringify(r.callbacksSeen)) : bad('no callback chip surfaced with events planted');
+  await page.close();
+}
+
+/* ---------- 4e. backstage is a conversation ---------- */
+section('backstage rooms and the office are conversations');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(async ()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={};
+    go('backstage');
+    const st=backstageState(); const who=st.layout.flatMap(r=>r.occ)[0];
+    backstageOpen(who);
+    await new Promise(r=>setTimeout(r,300));
+    out.sceneOpen=document.getElementById('sceneBack').classList.contains('open');
+    out.tag=(document.querySelector('#sceneBody .scene-tag')||{}).textContent||'';
+    out.opts=document.querySelectorAll('#sceneBody .scene-opt').length;
+    const usedBefore=backstageState().used;
+    const opt=[...document.querySelectorAll('#sceneBody .scene-opt')].find(e=>/Run through a spot|Bury the hatchet/.test(e.textContent))||document.querySelector('#sceneBody .scene-opt');
+    if(opt) opt.click();
+    await new Promise(r=>setTimeout(r,1500));
+    out.usedAfter=backstageState().used;
+    out.outcome=(document.getElementById('sceneOutLine')||{}).textContent||'';
+    const cont=document.querySelector('#sceneBody .scene-continue button'); if(cont) cont.click();
+    await new Promise(r=>setTimeout(r,300));
+    out.segmentStillFree = !segmentsPlayedThisWeek();
+    backstageOpenGM();
+    await new Promise(r=>setTimeout(r,300));
+    out.gmTag=(document.querySelector('#sceneBody .scene-tag')||{}).textContent||'';
+    out.gmName=(document.querySelector('#sceneBody .scene-who')||{}).textContent||'';
+    closeScene();
+    return out;
+  });
+  if(errs.length) bad('backstage page errors: '+errs.slice(0,2).join(' | '));
+  (r.sceneOpen && /BACKSTAGE/.test(r.tag) && r.opts>=3) ? ok(`walking into a room opens a conversation (${r.tag}, ${r.opts} things to say)`) : bad('backstage did not open as a scene: '+JSON.stringify(r));
+  (r.usedAfter===r.usedBefore+1 || r.usedAfter===1) ? ok(`choosing a line runs the action (visits used ${r.usedAfter}) and types the outcome: "${r.outcome.slice(0,80)}"`) : bad('backstage option did not run: '+JSON.stringify(r));
+  r.segmentStillFree ? ok('a backstage chat does not use up the walk to gorilla') : bad('backstage chat consumed the pre-match segment');
+  (/OFFICE/.test(r.gmTag) && r.gmName) ? ok(`the office is a conversation with ${r.gmName.trim()}`) : bad('office did not open as a scene: '+JSON.stringify({tag:r.gmTag, name:r.gmName}));
+  await page.close();
+}
+
+/* ---------- 4f. the storyline has scenes ---------- */
+section('each beat of a story has a scene on the walk to the ring');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={};
+    G.car.rec.w=1;                       // past night one, so the priority scene stands down
+    const rv=houseRoster(myPromoId())[1];
+    const pick=(trig)=>{ const sc=pickScene(trig); return sc?sc.id:null; };
+    const reset=()=>{ G.car._scenesSeen=[]; G.car._sceneMem={}; };
+    const setup=(kind,stage)=>{ G.story=null; G.car.rivalId=null; startStory(rv.id,'test'); story().kind=kind; story().stage=stage; reset(); };
+    setup('grudge',1);   out.s1=pick('prematch');
+    setup('grudge',2);   out.s2=pick('prematch');
+    setup('grudge',3);   out.s3=pick('prematch');
+    setup('title',3);    out.s3title=pick('prematch');
+    setup('betrayal',0); out.betrayal=pick('prematch');
+    setup('veteran',1);  out.veteran=pick('prematch');
+    setup('underdog',1); out.underdog=pick('prematch');
+    // after the blow-off, the hallway afterwards
+    setup('grudge',3); endStory('respect'); reset(); out.post=pick('any');
+    G.story=null; G.car.rivalId=null;
+    return out;
+  });
+  if(errs.length) bad('storyline scene page errors: '+errs.slice(0,2).join(' | '));
+  const want={s1:'feud_s1', s2:'feud_s2', s3:'feud_s3', s3title:'feud_s3_signing', betrayal:'betrayal_open', veteran:'veteran_lesson', underdog:'underdog_pep', post:'feud_post'};
+  Object.keys(want).forEach(k=>{ (r[k]===want[k]) ? ok(`${k}: ${r[k]}`) : bad(`${k}: expected ${want[k]}, picked ${r[k]}`); });
+  await page.close();
+}
+
 /* ---------- 5. careers play out ---------- */
 const KINDS_SEEN={};
 if(!QUICK){
@@ -291,7 +411,7 @@ if(!QUICK){
       const problems=[], log=[];
       const P=(msg,ctx)=>problems.push(Object.assign({msg, y:G.car.year, w:G.car.week}, ctx||{}));
       const startYear=G.car.year; let guard=0;
-      let matches=0, wins=0, titleWins=0, dirty=0, stories=0, promos=0; const kinds={};
+      let matches=0, wins=0, titleWins=0, dirty=0, stories=0, promos=0; const kinds={}, scenesPlayed={};
       while(G.car.year < startYear+YEARS && guard++<4000){
         const c=G.car;
         if(!(c.cond>=0&&c.cond<=100)) P('condition out of range',{cond:c.cond});
@@ -319,6 +439,36 @@ if(!QUICK){
         const b=c.booking; if(!b){ P('no booking'); advanceWeek(); continue; }
         if(b.type==='match'){
           const o=b.o; const titleBefore=c.title, stBefore=story()&&story().charId;
+          // Walk to gorilla. The UI plays a scene here; headless we pick the
+          // same scene, take the first line and apply it, so a career proves
+          // story beats actually surface and their effects survive real state.
+          try{
+            const sc=pickScene('prematch');
+            if(sc){
+              const x=sceneCtx();
+              let cast=null; try{ cast=sc.cast?sc.cast(x):{a:null}; }catch(_){ cast=null; }
+              if(sc.cast && (!cast||!cast.a)){ /* no lead, no scene, as playScene rules */ }
+              else{
+                Object.assign(x, cast||{});
+                c._scenesSeen=(c._scenesSeen||[]).concat([sc.id]).slice(-40);
+                scenesPlayed[sc.id]=(scenesPlayed[sc.id]||0)+1;
+                const start=sc.beats&&sc.beats.start;
+                if(start){
+                  let line=''; try{ line=typeof start.line==='function'?start.line(x):start.line; }catch(e){ P('scene line threw: '+e.message,{scene:sc.id}); }
+                  if(!line) P('scene rendered an empty line',{scene:sc.id});
+                  if(line && (line.indexOf(String.fromCharCode(8212))>=0||line.indexOf(String.fromCharCode(8211))>=0)) P('scene line has a dash',{scene:sc.id});
+                  let opts=[]; try{ opts=typeof start.opts==='function'?start.opts(x):(start.opts||[]); }catch(e){ P('scene opts threw: '+e.message,{scene:sc.id}); }
+                  if(!opts.length) P('scene offered nothing to say',{scene:sc.id});
+                  const pick=opts[0];
+                  if(pick){
+                    if(pick.eff) applySceneEffect(pick.eff, x);
+                    if(pick.mem) sceneRemember(pick.mem);
+                  }
+                }
+                if(!sc.noMark) markSegmentPlayed();
+              }
+            }
+          }catch(e){ P('prematch scene threw: '+e.message); }
           let res; try{ res=simMatch(o); }catch(e){ P('simMatch threw: '+e.message,{stip:o.stipLabel}); advanceWeek(); continue; }
           // one match in eight ends dirty, so the title rule is exercised in play
           if(matches%8===3 && (o.stakes==='title'||o.stakes==='defense')){ res.finish={type:'dq', by:res.win}; }
@@ -337,7 +487,8 @@ if(!QUICK){
         try{ advanceWeek(); }catch(e){ P('advanceWeek threw: '+e.message); break; }
       }
       (G.car.storiesResolved||[]).forEach(r=>{ if(!r.kind) P('resolved story without a kind',{name:r.name}); });
-      return {problems, log, summary:{years:G.car.year-startYear, matches, wins, titleWins, dirty, stories, kinds, promos, ovr:ovr(G.w), pop:Math.round(G.car.pop), rooms:sentiment()}};
+      const storyScenes=Object.keys(scenesPlayed).filter(id=>/^(feud_|betrayal_open|veteran_lesson|underdog_pep)/.test(id)).reduce((n,id)=>n+scenesPlayed[id],0);
+      return {problems, log, summary:{years:G.car.year-startYear, matches, wins, titleWins, dirty, stories, kinds, storyScenes, scenesPlayed, promos, ovr:ovr(G.w), pop:Math.round(G.car.pop), rooms:sentiment()}};
     }, YEARS);
     if(errs.length) bad(`run ${run} page errors: `+errs.slice(0,3).join(' | '));
     if(result.problems.length){ bad(`run ${run}: ${result.problems.length} problems`); result.problems.slice(0,6).forEach(p=>console.log('       '+JSON.stringify(p))); }
