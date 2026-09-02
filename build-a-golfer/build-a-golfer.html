@@ -28823,6 +28823,14 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }   // a ball resting ON the green (any shot) is the small green size, not the big ground ball
     hvRestShadow(g,p); if(pf) pf.setAttribute('opacity','0'); hvRevealDist(); _hvA.done=true; };
   const tipOff=()=>{ const tp=q('hv-tip'); if(tp) tp.setAttribute('opacity','0'); };
+  // How big the ball is SITTING AT A GIVEN SPOT. On the putting surface it is the fixed green size
+  // (the cup is a fixed viewBox size too, so the ball has to be one for the ratio to stay honest);
+  // anywhere else it is the zoom-compensated ground size. The two only coincide at full zoom, so
+  // without a single source of truth a ball at rest on the green INFLATED the moment the next shot's
+  // animation began (measured 0.86 -> 1.28 in one frame under the hole-out camera). Every phase now
+  // interpolates between these sizes, so the ball only ever changes size for a reason.
+  const restR=(pl)=>!pl ? HV_GROUND*bScale()
+    : (pl.hole?0 : ((pl.k==='putt'||pl.k==='hole'||pl.onGreen)?HV_GBALL:HV_GROUND*bScale()));
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
   // CS355: hold the ball at address while the golfer swings; it leaves at impact (chip is a quicker stroke)
@@ -28861,12 +28869,16 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         const tp=q('hv-tip'); if(tp){ tp.style.strokeDasharray=`${Math.min(26,traceLen*0.22)} ${traceLen}`; tp.style.strokeDashoffset=Math.min(26,traceLen*0.22); } }
       if(rollEl&&rollLen==null){ rollLen=rollEl.getTotalLength(); rollEl.style.strokeDasharray=rollLen; rollEl.style.strokeDashoffset=rollLen; }
       const elF=el-swingMs;   // CS355: the golfer swings for swingMs, then the ball launches at impact
-      if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',(HV_GROUND*bScale()).toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
+      // the ball at address is the size it was lying at, and grows into the size it will land at, so
+      // launch and touchdown are both continuous with the shot either side of them
+      const r0=restR(pPrev||null), rL=p.onGreen?HV_GBALL:HV_GROUND*bScale();
+      if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',r0.toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
       if(elF<=flyMs){
         const t=elF/flyMs, te=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;   // fast off the club, hangs, dives
         const bp=hvBez3(A,C[0],C[1],B,te), x=bp[0], y=bp[1];        // ITEM 16: ride the shaped tracer
         const h=4*te*(1-te)*(p.k==='tee'?1:(p.k==='chip'?0.45:0.75))*Math.min(1,p.dist/240+0.35);
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',((HV_GROUND+h*(HV_AIRPEAK-HV_GROUND))*bScale()).toFixed(2));
+        const base=r0+(rL-r0)*te;
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',(base+h*(HV_AIRPEAK-HV_GROUND)*bScale()).toFixed(2));
         if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.42*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); sh.setAttribute('ry',(1.6-h*0.5).toFixed(2)); }
         if(trace){ const off=traceLen*(1-te); trace.style.strokeDashoffset=off;
           const tg=q('hv-traceg'); if(tg) tg.style.strokeDashoffset=off;
@@ -28890,7 +28902,11 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         tipOff();
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
         const hop=(t<0.55)?Math.abs(Math.sin(t*3*Math.PI/0.55))*(0.16*(1-t/0.55)):0;
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(p.onGreen?(HV_GBALL+hop*1.6):((HV_GROUND+hop*2.4)*bScale())).toFixed(2));   // shrink to the green ball as it rolls onto the surface
+        // the bounce/roll-out starts at the size the ball came down at and eases into its resting size,
+        // so touchdown and the settle either side of it are both continuous (a ball landing on the green
+        // used to step 2.05 -> 0.98 in a single frame, which read as a snap rather than a settle)
+        const rEnd=p.hole?rL:restR(p);
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(rL+(rEnd-rL)*te+hop*(p.onGreen?1.6:2.4*bScale())).toFixed(2));
         if(sh) sh.setAttribute('opacity',(hop>0.02?0.22:(p.onGreen?0:0.16)).toFixed(2)), sh.setAttribute('cx',(x+1.3).toFixed(1)), sh.setAttribute('cy',(y+1.3).toFixed(1)), sh.setAttribute('rx','2.6'), sh.setAttribute('ry','1.25');
         const pf=q('hv-puff'), pt=(elF-flyMs)/300;   // touchdown puff ring at the landing spot
         if(pf){ if(pt<=1){ pf.setAttribute('cx',B[0]);pf.setAttribute('cy',B[1]);pf.setAttribute('r',(2+pt*7).toFixed(1));pf.setAttribute('opacity',(0.5*(1-pt)).toFixed(2)); } else pf.setAttribute('opacity','0'); }
