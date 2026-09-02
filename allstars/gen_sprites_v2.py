@@ -942,29 +942,57 @@ def extras(cv, spec, pose):
 # ----------------------------------------------------------- archetypes
 def legs(cv, pants, boot, pose, top=31, bot=38, spread=3):
     """Three pose variants drive the run cycle."""
-    if pose == 'run1':
-        la, ra = -1, 1
-    elif pose == 'run2':
-        la, ra = 1, -1
-    else:
-        la, ra = 0, 0
+    la, ra = LEG_OFF.get(pose, (0, 0))
     cv.cyl(CX - spread - 3, top + max(0, la), CX - spread, bot + la, pants)
     cv.cyl(CX + spread, top + max(0, ra), CX + spread + 3, bot + ra, pants)
     cv.cyl(CX - spread - 3, bot - 1 + la, CX - spread, bot + la, boot)
     cv.cyl(CX + spread, bot - 1 + ra, CX + spread + 3, bot + ra, boot)
 
 
+# THE POSES, AS OFFSETS. Every limb in every archetype is a cylinder at a
+# fixed x, so a pose is a vertical offset per arm and per leg: the run cycle
+# pumps them in opposition, the windup throws the pitching arm straight up
+# beside the head and lifts the stride leg, the release drives that arm
+# down and forward over a planted front leg, and the swing (seen from
+# behind) carries both arms up and through. The pitcher was drawn with the
+# idle frame all game before these existed: drawField asked for windup and
+# release and nothing answered.
+#
+# Arm offsets are given at the human amplitude (2 px per run beat); an
+# archetype with shorter arms asks for amp=1 and gets the same shape at
+# half the swing. The windup and release keep their full reach at any amp,
+# because a raised arm that is only raised a pixel is not a raised arm.
+ARM_OFF = {
+    'run1':    (-2, 2),
+    'run2':    (2, -2),
+    'windup':  (1, -7),
+    'release': (-2, 3),
+    'swing':   (-5, -5),
+}
+LEG_OFF = {
+    'run1':    (-1, 1),
+    'run2':    (1, -1),
+    'windup':  (-3, 0),
+    'release': (1, -1),
+    'swing':   (0, 0),
+}
+
+
+def arm_off(pose, amp=2):
+    """(left, right) vertical offset for the arms in this pose."""
+    lo, ro = ARM_OFF.get(pose, (0, 0))
+    if pose in ('run1', 'run2'):
+        return lo * amp // 2, ro * amp // 2
+    return lo, ro
+
+
 def run_off(pose):
-    """The vertical swing the run cycle gives each arm, as (left, right).
+    """The vertical swing the pose gives each arm, as (left, right).
 
     Anything HELD has to ride it. A magnifying glass, a fishing pole or
     a wand pinned to fixed coordinates hangs in the air beside a runner
     whose arms are pumping, which reads as a bug rather than as a prop."""
-    if pose == 'run1':
-        return -2, 2
-    if pose == 'run2':
-        return 2, -2
-    return 0, 0
+    return arm_off(pose, 2)
 
 
 def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
@@ -1001,7 +1029,7 @@ def arch_hulk(cv, spec, pose):
     pants = Ramp(spec['pants']) if spec.get('pants') else body
     cv.sphere(CX, 27.0, 9.2, 7.4, body, spec=False)
     legs(cv, pants, boot, pose, top=32, bot=38, spread=3)
-    lo, ro = (-2, 2) if pose == 'run1' else ((2, -2) if pose == 'run2' else (0, 0))
+    lo, ro = arm_off(pose, 2)
     # The arms take their OWN ramp, a shade off the body. Drawn in the
     # body's ramp they share an owner, outline() skips the seam, and the
     # whole figure reads as one blob with no limbs in it.
@@ -1028,7 +1056,7 @@ def arch_round(cv, spec, pose):
     boot = Ramp(spec.get('boot', '#2a2018'))
     cv.ball(CX, 28.0, 9.6, 8.6, body)
     legs(cv, body, boot, pose, top=33, bot=38, spread=3)
-    lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
+    lo, ro = arm_off(pose, 1)
     for side, off in ((-1, lo), (1, ro)):
         cv.cyl(CX + side * 10 - 1, 24 + off, CX + side * 10 + 1, 31 + off, body, round_bot=1)
     cv.sphere(CX, HEAD_CY + 1, HEAD_RX * 0.94, HEAD_RY * 0.94, skin)
@@ -1042,7 +1070,7 @@ def arch_egg(cv, spec, pose):
     cv.sphere(CX, 16.0, 10.0, 13.0, body)
     if band:
         cv.rect(CX - 9, 22, CX + 9, 24, Ramp(band), l=0.5)
-    lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
+    lo, ro = arm_off(pose, 1)
     for side, off in ((-1, lo), (1, ro)):
         cv.cyl(CX + side * 4 - 1, 29 + off, CX + side * 4 + 1, 37 + off, body)
         cv.cyl(CX + side * 4 - 1, 37 + off, CX + side * 4 + 1, 38 + off, boot)
@@ -1053,7 +1081,7 @@ def arch_robed(cv, spec, pose):
     robe = Ramp(spec.get('shirt', '#6db8a2'))
     skin = Ramp(spec.get('skin', '#f0c088'))
     cv.taper(21, 38, 12, 24, robe, folds=spec.get('folds', 3))
-    lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
+    lo, ro = arm_off(pose, 1)
     for side, off in ((-1, lo), (1, ro)):
         cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 30 + off, robe, round_bot=1)
         cv.cyl(CX + side * 8 - 1, 30 + off, CX + side * 8 + 1, 32 + off, skin, round_bot=1)
@@ -1147,7 +1175,7 @@ def arch_centaur(cv, spec, pose):
     tunic = Ramp(spec.get('tunic', '#8a4a3a'))
     cv.taper(19, 26, 7, 12, tunic, folds=2)
     cv.rect(CX - 3, 18, CX + 3, 18, Ramp(shade(tunic.base, 0.2)), l=0.6)
-    lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
+    lo, ro = arm_off(pose, 1)
     for side, o in ((-1, lo), (1, ro)):
         cv.cyl(CX + side * 6 - 1, 17 + o, CX + side * 6 + 1, 23 + o, skin, round_bot=1)
     cv.sphere(CX, 9.5, 6.8, 7.4, skin)
@@ -1384,7 +1412,7 @@ def sig_franky(cv, spec, pose, back):
 
 def sig_popeye(cv, spec, pose, back):
     skin = Ramp(spec.get('skin', '#f0c088'))
-    lo, ro = (-2, 2) if pose == 'run1' else ((2, -2) if pose == 'run2' else (0, 0))
+    lo, ro = arm_off(pose, 2)
     sleeve = Ramp(shade(spec.get('shirt', '#e9e9ea'), -0.16))
     for side, off in ((-1, lo), (1, ro)):
         ax = CX + side * 10.5
@@ -1808,7 +1836,7 @@ def sig_zombie(cv, spec, pose, back):
     # over a torn white tee and ragged cuffs.
     skin = Ramp(spec.get('skin', '#8aae64'))
     shirt = Ramp(spec.get('shirt', '#e8e8e6'))
-    lo, ro = (-1, 1) if pose == 'run1' else ((1, -1) if pose == 'run2' else (0, 0))
+    lo, ro = arm_off(pose, 1)
     for side, o in ((-1, 24 + lo), (1, 26 + ro)):
         sx = side if side > 0 else side
         x0 = CX + side * 6
@@ -2607,8 +2635,9 @@ SIGNATURES = {
 
 def build(spec, pose='idle', key=None):
     cv = Canvas()
-    back = pose.startswith('back')
-    body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2'}[pose] if back else pose
+    # The swing is seen from behind, like everything a batter does.
+    back = pose.startswith('back') or pose == 'swing'
+    body_pose = {'back': 'idle', 'backrun1': 'run1', 'backrun2': 'run2', 'swing': 'swing'}[pose] if back else pose
     sig = SIGNATURES.get(key, {})
     if back:
         # The archetype is drawn with its FRONT features stripped: the
@@ -2827,7 +2856,11 @@ SPECS = {
 # behind home plate, so the batter and any runner heading up the screen
 # are seen from behind. A batter who faces the camera while "looking at"
 # the pitcher breaks the whole view.
-POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2')
+# The pitcher's two frames and the batter's swing came later: drawField had
+# been asking for windup and release since the first camera, and the draw
+# routine answered with idle because no such frame existed.
+POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
+         'windup', 'release', 'swing')
 
 
 # ------------------------------------------------------------------ faces
