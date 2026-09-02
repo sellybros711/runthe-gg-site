@@ -268,7 +268,7 @@
 <div id="gameShell" style="display:none;">
   <div class="masthead">
     <div>
-      <h1 id="promoName">WWE</h1>
+      <h1 id="promoName">Colossus Wrestling</h1>
       <div class="sub">RunTheRopes · <span id="hudMode">Booking Sim</span></div>
     </div>
     <div class="hud">
@@ -486,36 +486,36 @@
 /* ============================================================
    RunTheRopes: Booking Terminal (Beta)
    Deterministic career-mode wrestling sim. Single save, localStorage.
-   Data source: roster.js (window.RTR_ROSTER, 286 real workers, v0.1 to retune)
+   Data source: roster.js (window.RTR_ROSTER, 286 workers under legal names, v0.1 to retune)
    ============================================================ */
 
 const SAVE_KEY = 'rtr_save_v1';
 const SCHEMA = 1;
 
 const PROMO_META = {
-  WWE:     { cash: 3000000, popW: 0.65, perfW: 0.35, tierLabel: 'International',        product: 'Sports-Entertainment' },
-  AEW:     { cash: 1500000, popW: 0.50, perfW: 0.50, tierLabel: 'International',        product: 'Workrate / Spectacle' },
-  TNA:     { cash: 350000,  popW: 0.45, perfW: 0.55, tierLabel: 'National',            product: 'X-Division Athletic' },
-  AAA:     { cash: 300000,  popW: 0.55, perfW: 0.45, tierLabel: 'National (Lucha)',    product: 'Lucha Libre' },
-  ROH:     { cash: 150000,  popW: 0.40, perfW: 0.60, tierLabel: 'Regional',            product: 'Pure Wrestling' },
-  NJPW:    { cash: 450000,  popW: 0.40, perfW: 0.60, tierLabel: 'International (Puro)', product: 'Strong Style' },
-  Stardom: { cash: 200000,  popW: 0.45, perfW: 0.55, tierLabel: 'National (Joshi)',    product: 'Joshi' },
-  TJPW:    { cash: 100000,  popW: 0.50, perfW: 0.50, tierLabel: 'Regional (Joshi)',    product: 'Joshi / Idol' },
+  'Colossus Wrestling':  { cash: 3000000, popW: 0.65, perfW: 0.35, tierLabel: 'International',        product: 'Sports-Entertainment' },
+  'Vanguard Pro':        { cash: 1500000, popW: 0.50, perfW: 0.50, tierLabel: 'International',        product: 'Workrate / Spectacle' },
+  'Crossfire Wrestling': { cash: 350000,  popW: 0.45, perfW: 0.55, tierLabel: 'National',            product: 'High-Speed Athletic' },
+  'Lucha Suprema':       { cash: 300000,  popW: 0.55, perfW: 0.45, tierLabel: 'National (Lucha)',    product: 'Lucha Libre' },
+  'Pure Circuit':        { cash: 150000,  popW: 0.40, perfW: 0.60, tierLabel: 'Regional',            product: 'Pure Wrestling' },
+  'Rising Sun Pro':      { cash: 450000,  popW: 0.40, perfW: 0.60, tierLabel: 'International (Puro)', product: 'Strong Style' },
+  'Starlight Joshi':     { cash: 200000,  popW: 0.45, perfW: 0.55, tierLabel: 'National (Joshi)',    product: 'Joshi' },
+  'Sakura Joshi':        { cash: 100000,  popW: 0.50, perfW: 0.50, tierLabel: 'Regional (Joshi)',    product: 'Joshi / Idol' },
 };
 
-// ---------- Premium Live Events (PPVs) ----------
+// ---------- Supercards (PPVs) ----------
 // Every 4th week is a big event: the spectacle scales up, feuds pay off, and
 // PPV buys are a major payday that scales with the promotion's TV tier.
 const PPV_EVERY = 4;
 const PPV_NAMES = {
-  WWE:['WrestleMania','Backlash','Money in the Bank','SummerSlam','Bad Blood','Survivor Series','Royal Rumble','Elimination Chamber'],
-  AEW:['Revolution','Double or Nothing','All Out','WrestleDream','Full Gear','Worlds End','Grand Slam','Forbidden Door'],
-  TNA:['Hard to Kill','Rebellion','Under Siege','Slammiversary','Emergence','Bound for Glory','Turning Point','Genesis'],
-  AAA:['Rey de Reyes','Verano de Escandalo','Triplemania','Heroes Inmortales','Guerra de Titanes'],
-  ROH:['Supercard of Honor','Best in the World','Death Before Dishonor','Final Battle'],
-  NJPW:['Wrestle Kingdom','New Beginning','Dominion','G1 Climax Final','Destruction','Power Struggle'],
-  Stardom:['Supreme Fight','Cinderella Tournament','Grand Prix','5STAR Grand Prix','Dream Queendom'],
-  TJPW:['Tokyo Princess Cup','Summer Sun Princess','Grand Princess','Wrestle Princess'],
+  'Colossus Wrestling':  ['Colossal Night','Aftershock','Ladder to Glory','Summer Heat','Bad Intentions','Last Stand','The Gauntlet','Lockdown'],
+  'Vanguard Pro':        ['Uprising','Double Down','Full Tilt','Dream Match','Cold Steel','Year\'s End','Grand Stage','Open Door'],
+  'Crossfire Wrestling': ['Hard Road','Insurrection','Under Fire','Anniversary Bash','Breakout','Road to Gold','Turning Tide','Origins'],
+  'Lucha Suprema':       ['Rey Supremo','Verano de Fuego','Noche Triple','Heroes de la Arena','Guerra de Gigantes'],
+  'Pure Circuit':        ['The Purest Card','Best of the Circuit','Code of Conduct','Final Bell'],
+  'Rising Sun Pro':      ['First Light','New Dawn','Dominance','Summer Series Final','Devastation','Autumn Struggle'],
+  'Starlight Joshi':     ['Supreme Star','Glass Slipper Cup','Star Grand Prix','Constellation Series','Dream Crown'],
+  'Sakura Joshi':        ['Sakura Cup','Summer Blossom','Grand Sakura','Spring Bloom'],
 };
 function isPpvWeek(){ return S && S.week % PPV_EVERY === 0; }
 function nextPpvWeek(){ return isPpvWeek() ? S.week : (Math.floor(S.week/PPV_EVERY)+1)*PPV_EVERY; }
@@ -809,9 +809,10 @@ function defaultTitles(promoName, roster){
   return titles;
 }
 function worldTitleName(p){
-  const map = { WWE:'Undisputed Championship', AEW:'World Championship', TNA:'World Championship',
-    AAA:'Mega Championship', ROH:'World Championship', NJPW:'IWGP World Heavyweight Championship',
-    Stardom:'World of Stardom Championship', TJPW:'Princess of Princess Championship' };
+  const map = { 'Colossus Wrestling':'Colossus World Championship', 'Vanguard Pro':'Vanguard World Championship',
+    'Crossfire Wrestling':'Crossfire World Championship', 'Lucha Suprema':'Campeonato Supremo',
+    'Pure Circuit':'Pure Circuit Championship', 'Rising Sun Pro':'Rising Sun Heavyweight Championship',
+    'Starlight Joshi':'Starlight World Championship', 'Sakura Joshi':'Sakura Grand Championship' };
   return map[p] || 'World Championship';
 }
 
@@ -1079,7 +1080,7 @@ function onSegTypeChange(){ updateRoadNote(); }
 function renderBuildSelectors(){
   const venInfo = S.mode==='junkie' ? ` · ${effectiveVenue(isPpvWeek()).name} · ${money(S.promo.ticketPrice)}/ticket` : '';
   $('buildWeekLbl').innerHTML = isPpvWeek()
-    ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">🔴 Premium Live Event</span> ${ppvName()} · Week ${S.week}${venInfo}`
+    ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">🔴 Supercard</span> ${ppvName()} · Week ${S.week}${venInfo}`
     : `Week ${S.week} · next big event in ${weeksToPpv()} wk${weeksToPpv()!==1?'s':''}${venInfo}`;
   const runBtn = $('runShowBtn'); if(runBtn) runBtn.innerHTML = isPpvWeek()? `Run ${ppvName()} ▶` : 'Run Show &amp; Advance Week ▶';
   const avail = availableRoster();
@@ -1223,7 +1224,7 @@ function calcSegmentRating(seg){
   // Title match adds stakes
   if(seg.titleId){ base += 4; notes.push({t:'championship on the line → +4', k:'pos'}); }
   // Big-event spectacle
-  if(isPpvWeek()){ base += 5; notes.push({t:'premium live event → +5', k:'pos'}); }
+  if(isPpvWeek()){ base += 5; notes.push({t:'supercard → +5', k:'pos'}); }
 
   // Team chemistry: a cohesive tag team / stable in the match performs better
   if(!isPromo){
@@ -1315,7 +1316,7 @@ function showScorecard(M, deltas){
     cells.push(['Merch', money(M.merch), '<span class="dlt flat">at the venue</span>']);
   }
   cells.push(['Net Profit', `<span style="color:${M.net>=0?'var(--green)':'#f08a76'}">${money(M.net)}</span>`, dArrow(deltas.net)]);
-  const title = M.ppv ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">Premium Live Event</span> ${M.eventName}` : `Week ${S.week} Show Grade`;
+  const title = M.ppv ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">Supercard</span> ${M.eventName}` : `Week ${S.week} Show Grade`;
   let body = `<div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
       <span class="grade-badge" style="background:rgba(255,255,255,.05); color:${gradeColor(M.grade)}; border:1px solid ${gradeColor(M.grade)}">${M.grade}</span>
       <div><div class="vs-line">${title}</div>
@@ -1551,7 +1552,7 @@ function weeklyTick(usedIds, showInfo){
   startInbox.forEach(i=>inbox.push(i));
   // big-event countdown
   const wtp = weeksToPpv();
-  if(wtp===0) inbox.push({ico:'🔴', sev:'story', txt:`<b>${ppvName()}</b> is TONIGHT: your Premium Live Event. Book the biggest card you can and pay off your hottest feuds.`});
+  if(wtp===0) inbox.push({ico:'🔴', sev:'story', txt:`<b>${ppvName()}</b> is TONIGHT: your Supercard. Book the biggest card you can and pay off your hottest feuds.`});
   else if(wtp<=2) inbox.push({ico:'📅', sev:'story', txt:`<b>${ppvName(nextPpvWeek())}</b> is ${wtp} week${wtp!==1?'s':''} away. Build heat now so the big show delivers.`});
   // feud blow-off nudges
   S.feuds.filter(f=>f.blowoffReady && f.coldWeeks>=2).forEach(f=>{

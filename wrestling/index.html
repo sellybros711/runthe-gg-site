@@ -5225,7 +5225,7 @@ const HOME_CARDS=[
   {n:4, stip:'Tag Team Match',     pose:['ready','lockup','lockup','ready']},
   {n:4, stip:'Tornado Tag Match',  pose:['strike','reel','chop','guard']},
   {n:6, stip:'Six-Man Tag',        pose:['taunt','ready','grapple','grapple','ready','point']},
-  {n:8, stip:'Royal Rumble',       pose:['ready','grapple','grapple','reel','strike','taunt','guard','ready']},
+  {n:8, stip:'Battle Royal',       pose:['ready','grapple','grapple','reel','strike','taunt','guard','ready']},
   {n:5, stip:'Battle Royal',       pose:['grapple','reel','strike','ready','taunt']},
   {n:3, stip:'Triple Threat',      pose:['grapple','ready','strike']},
 ];
@@ -5387,7 +5387,7 @@ function renderCareer(){
   const notesRow = [
     (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('crown',12)} ${held.length===1?held[0].name:held.length+' belts'}</span>` : '',
     c.titleShot ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Title shot in hand</span>` : '',
-    c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Money in the Bank</span>` : '',
+    c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Holding the briefcase</span>` : '',
     c.tourn ? `<span class="pchip gold" style="animation:none;opacity:1;"><a href="#" onclick="showBracket();return false;">In ${c.tourn.name}, round ${c.tourn.round}/${c.tourn.rounds}</a></span>` : '',
     c.streak>=3 ? `<span class="pchip" style="animation:none;opacity:1;color:#f0b060;">${pico('fire',12)} ${c.streak}-match streak</span>` : '',
     (c.rec.w+c.rec.l+c.rec.d)>=3 ? `<span class="pchip" style="animation:none;opacity:1;">Record ${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</span>` : '',
@@ -5785,7 +5785,7 @@ function renderWeek(){
         <button class="ghost" onclick="toggleBookingDetail()">${bookDetailsOpen?'Hide':'Show'} the details</button>
         <button class="ghost" onclick="go('backstage')">Backstage</button>
         ${p>0?`<button class="ghost" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'Had your say':'Talk to office'}</button>`:''}
-        ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' && o.stakes!=='tag_defense' && o.stakes!=='tag_title' && o.stip!=='rumble' && o.stip!=='chamber' && o.stip!=='mitb' ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in MITB</button>`:''}
+        ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' && o.stakes!=='tag_defense' && o.stakes!=='tag_title' && o.stip!=='rumble' && o.stip!=='chamber' && o.stip!=='mitb' ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in the briefcase</button>`:''}
       </div>
       ${details}
     </div>`;
@@ -6024,7 +6024,7 @@ function makeOffers(){
     // PPV nights get the marquee stipulations. The office only puts you in one
     // if you have earned the spot, and only on the biggest match of the card.
     if(ppv && i===2 && G.car.standing>=48 && matchesWorked>=6 && rnd()<0.55){
-      const mm=[['Iron Man Match','iron',1.5],['Elimination Chamber','chamber',1.55],['Money in the Bank','mitb',1.5],['Tables, Ladders, Chairs','tlc',1.45]];
+      const mm=[['Iron Man Match','iron',1.5],['Steel Dome','chamber',1.55],['Briefcase Ladder Match','mitb',1.5],['Tables, Ladders, Chairs','tlc',1.45]];
       st = mm[Math.floor(rnd()*mm.length)];
     }
     // a tag team gets booked as a tag team
@@ -6167,9 +6167,9 @@ const STIP_RULES = {
              ends:['sub'],                 danger:.8, mod:4, noDQ:true, noCount:true, lenient:true },
   iron:    { label:'Iron Man Match',      desc:'Twenty-minute time limit. Every pin or submission is a fall on the scoreboard. Most falls at the bell wins; a tie goes to sudden death.',
              ends:['pin','sub'],           danger:.4, mod:5, marquee:true },
-  chamber: { label:'Elimination Chamber', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
+  chamber: { label:'Steel Dome', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
              ends:['pin','sub'],           danger:1,   mod:6, marquee:true, noDQ:true, noCount:true },
-  mitb:    { label:'Money in the Bank',   desc:'Ladders and a briefcase above the ring. Win it, cash in on any champion, any time.',
+  mitb:    { label:'Briefcase Ladder Match',   desc:'Ladders and a briefcase above the ring. Win it, cash in on any champion, any time.',
              ends:['climb'],               danger:1,   mod:5, marquee:true },
   tlc:     { label:'Tables, Ladders, Chairs', desc:'Every weapon legal, prize hanging above. Climb to take it, put someone through everything on the way.',
              ends:['climb'],               danger:1.2, mod:5, marquee:true, noDQ:true },
@@ -8641,13 +8641,28 @@ function applyMatch(o,res){
   // title
   let titleMsg=null;
   const tt=workTier(), belt=beltName(tt), secBelt=beltName(tt,'secondary');
-  if(o.stakes==='title' && c.titleShot){
+  /* The rule every promotion on earth runs: a championship does not change
+     hands on a disqualification or a count-out. It used to here. A challenger
+     who won by DQ took the belt and a champion who was counted out lost it,
+     which turned every dirty finish into a title change instead of the story
+     beat it is supposed to be. `dirtyKind` names the finish so the result
+     screen can say why the belt stayed put. A challenger who WON dirty keeps
+     the shot: the office owes them a real one. */
+  const dirtyKind = finT==='dq' ? 'disqualification' : finT==='count' ? 'count-out' : null;
+  if(dirtyKind && (o.stakes==='title'||o.stakes==='defense'||o.stakes==='secondary'||o.stakes==='secondary_defense'||o.stakes==='tag_title'||o.stakes==='tag_defense')){
+    res.retainedDirty = dirtyKind;
+  }
+  if(o.stakes==='title' && c.titleShot && !(dirtyKind && res.win)){
     c.titleShot=null;
     // A promised rematch queued behind a guaranteed shot slides forward now.
     if(c.titleShotPending){ c.titleShot=c.titleShotPending; c.titleShotPending=null;
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`Your rematch clause is back on the books.`}); }
   }
-  if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0;
+  if(o.stakes==='title' && res.win && dirtyKind){
+    titleMsg=`You won by ${dirtyKind}, and the <b>${belt}</b> does not change hands on a ${dirtyKind}. ${o.oppName} keeps it${c.titleShot?', and you keep your shot':''}.`;
+    c.standing=clamp(c.standing+1);
+  }
+  else if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0;
     // Prestige tracks how much a specific reign means: earned by the OVR
     // gap between you and who you beat, the match rating, and (later) the
     // defenses stacked onto it. Read by Hall of Fame and end-of-year awards.
@@ -8667,6 +8682,8 @@ function applyMatch(o,res){
       // higher-rated challengers, breaking star-rating ceiling, PPV nights.
       r.prestige = (r.prestige||30) + Math.round(8 + Math.max(0,o.oppOvr-ovr(w))*0.5 + Math.max(0,res.quality-70)*0.3 + (o.ppv?4:0)); }
       titleMsg=`Successful defence #${c.defenses}.`; }
+    else if(dirtyKind){ titleMsg=`${dirtyKind==='disqualification'?'Disqualified':'Counted out'}, but the <b>${c.title}</b> does not change hands on a ${dirtyKind}. You retain, and nobody is happy about it.`;
+      c.standing=clamp(c.standing-1.5); }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
       // Rematch clause: a title loss is not the end of the story. The office
@@ -8677,6 +8694,8 @@ function applyMatch(o,res){
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause is in.</b> One shot at the ${belt} back by Y${_npv.year}W${_npv.week} or it burns.`});
     }
   }
+  else if(o.stakes==='secondary' && res.win && dirtyKind){
+    titleMsg=`You won by ${dirtyKind}, and the <b>${secBelt}</b> does not change hands on a ${dirtyKind}. ${o.oppName} keeps it.`; }
   else if(o.stakes==='secondary'&&res.win){ c.secondary=secBelt; c.secDefenses=0;
     c.reigns.push({title:secBelt,year:c.year,week:c.week,defenses:0,kind:'secondary'});
     titleMsg=`You are the new <b>${secBelt}</b>!`; c.pop=clamp(c.pop+3,1,100); c.standing=clamp(c.standing+4);
@@ -8686,6 +8705,7 @@ function applyMatch(o,res){
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r) r.defenses=c.secDefenses;
       titleMsg=`Successful defence of the ${c.secondary} · #${c.secDefenses}.`; }
+    else if(dirtyKind){ titleMsg=`${dirtyKind==='disqualification'?'Disqualified':'Counted out'}, but the <b>${c.secondary}</b> does not change hands on a ${dirtyKind}. You retain.`; }
     else { titleMsg=`You <b>lost</b> the ${c.secondary} to ${o.oppName}.`;
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
@@ -8697,6 +8717,8 @@ function applyMatch(o,res){
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause.</b> One shot at the ${lostBelt} back by Y${_npv2.year}W${_npv2.week} or it burns.`});
     }
   }
+  else if(o.stakes==='tag_title' && res.win && dirtyKind){
+    titleMsg=`You won by ${dirtyKind}, and the <b>${o.belt || beltName(tt,'tag')}</b> do not change hands on a ${dirtyKind}.`; }
   else if(o.stakes==='tag_title' && res.win){
     const tb = o.belt || beltName(tt,'tag');
     c.tagTitle = tb; c.tagDefenses = 0;
@@ -8710,6 +8732,8 @@ function applyMatch(o,res){
       const r=c.reigns.slice().reverse().find(r=>r.title===c.tagTitle&&!r.lostYear);
       if(r) r.defenses=c.tagDefenses;
       titleMsg = `Successful defence of the ${c.tagTitle} · #${c.tagDefenses}.`;
+    } else if(dirtyKind){
+      titleMsg = `${dirtyKind==='disqualification'?'Disqualified':'Counted out'}, but the <b>${c.tagTitle}</b> do not change hands on a ${dirtyKind}. You retain.`;
     } else {
       titleMsg = `You <b>lost</b> the ${c.tagTitle} to ${o.oppName} and their partner.`;
       const r=c.reigns.slice().reverse().find(r=>r.title===c.tagTitle&&!r.lostYear);
@@ -8750,13 +8774,13 @@ function applyMatch(o,res){
     pushInboxItem({ico:pico('starBig',18),sev:'good',txt:`<b>${o.tour&&o.tour.region||'The tour'} tape is doing numbers back home.</b> +${tourPop} fame.`});
     G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:`Toured ${o.tour&&o.tour.region||'abroad'}: ${res.win?'won':'lost'} vs ${o.oppName}`});
   }
-  // ---- Money in the Bank: winning the climb grants the briefcase ----
+  // ---- the briefcase: winning the climb grants a cash-in on any champion ----
   if(o.stip==='mitb' && res.win){
     c.mitb={ year:c.year, week:c.week, promoId:myPromo().id, belt:beltName(tt) };
-    titleMsg=(titleMsg?titleMsg+' ':'')+`You have the <b>Money in the Bank</b> briefcase. Cash it in on any champion, any time.`;
+    titleMsg=(titleMsg?titleMsg+' ':'')+`You have the <b>briefcase</b>. Cash it in on any champion, any time.`;
     pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Briefcase in hand.</b> You can cash in the ${c.mitb.belt} whenever you want.`});
-    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won Money in the Bank'});
-    showCoach('mitb','You are carrying Money in the Bank',
+    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won the briefcase'});
+    showCoach('mitb','You are carrying the briefcase',
       'On any match, before you head to the ring, a Cash In button appears. Win that night and the title is yours, no matter the stipulation. You only get one shot.');
   }
   // First tag title reign earns a coach mark on how to defend it
@@ -8972,19 +8996,28 @@ function renderMatch(o,res){
 
   // every number in the tiles ticks up instead of sitting there
   const tileOf=(l,id,col)=>`<div class="tile"><div class="lab">${l}</div><div class="val" id="${id}" ${col?`style="color:${col}"`:''}>0</div></div>`;
-  const pg=+res.popGain||0;
+  // round to a tenth FIRST, so a -0.04 does not print as "-0.0" in red on the
+  // very first result screen a player sees
+  const pg=(Math.round((+res.popGain||0)*10)/10)||0;
   $('mTiles').innerHTML=tileOf('Purse','mtPurse')
     +tileOf('Reputation','mtRep','var(--green)')
-    +tileOf('Popularity','mtPop',pg>=0?'var(--green)':'#f0907f')
+    +tileOf('Popularity','mtPop',pg>0?'var(--green)':pg<0?'#f0907f':'var(--text-dim)')
     +tileOf('XP','mtXp');
   countUp($('mtPurse'),res.coins||0,{fmt:v=>'$'+Math.round(v).toLocaleString()});
   countUp($('mtRep'),res.repGain||0,{fmt:v=>'+'+Math.round(v)});
-  countUp($('mtPop'),pg,{fmt:v=>(v>=0?'+':'')+v.toFixed(1)});
+  countUp($('mtPop'),pg,{fmt:v=>{ const r=(Math.round(v*10)/10)||0; return (r>0?'+':'')+r.toFixed(1); }});
   countUp($('mtXp'),res.xp||0,{fmt:v=>'+'+Math.round(v)});
 
   // ---- the championship ceremony, called the way a ring announcer calls it ----
   let banner='';
-  if(o.stakes==='title'&&res.win)
+  const _dk = res.retainedDirty;
+  const _beltOf = o.belt || (o.stakes==='defense'?c.title : o.stakes==='secondary_defense'?c.secondary : o.stakes==='tag_defense'?c.tagTitle : beltName(workTier()));
+  const _challenging = o.stakes==='title'||o.stakes==='secondary'||o.stakes==='tag_title';
+  if(_dk && _challenging && res.win)
+    banner=`<div class="champbanner lost"><div class="cb-kick">No title change</div><div class="cb-t">Won by ${_dk}. ${o.oppName} keeps the ${_beltOf}.</div></div>`;
+  else if(_dk && !_challenging && !draw)
+    banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${_beltOf}<span style="color:var(--gold)"> · retained by ${_dk}</span></div></div>`;
+  else if(o.stakes==='title'&&res.win)
     banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-t">${c.title||beltName(workTier())}</div></div>`;
   else if(o.stakes==='defense'&&(res.win||draw))
     banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${c.title}<span style="color:var(--gold)"> · defence #${c.defenses||0}</span></div></div>`;
@@ -12349,7 +12382,7 @@ function askCashIn(){
      {label:'Cash in tonight',fn:()=>{
        closeModal();
        o.stakes='title'; o.card='Main Event'; o.belt=mb.belt;
-       o.blurb=`Cashing in Money in the Bank: beat ${o.oppName} and the ${mb.belt} is yours.`;
+       o.blurb=`Cashing in the briefcase: beat ${o.oppName} and the ${mb.belt} is yours.`;
        o.guaranteed=true;   // read by startFight to boost momentum
        G.car.mitb=null;
        pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Cashing in tonight.</b> The ${mb.belt} is on the line.`});
