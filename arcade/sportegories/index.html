@@ -388,6 +388,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/demo.js?v=3"></script>
 <script src="/arcade/pregame.js?v=24"></script>
+<script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/funnel.js?v=10"></script>
 <script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
@@ -721,6 +722,12 @@ window.GA_ID='G-L29P5MRWKE';
       $('mFilled').textContent=correct+'/'+n;
       $('mBonus').textContent=bonus;
       $('mBest').textContent=best;
+      /* One line for the shared result row (result.js): the rank, the best
+         as an event, and the streak, in the same order on every game.
+         isBest is the only part this file has to supply, because by the
+         time the modal is open the new best is already in storage. */
+      try{ window.RTGResultSpec = { key:GAME, date:pdate(), statInt:total, best:best,
+        prevBest:(prevBest>0?prevBest:null), isBest:(isDaily && !ARCHIVE && total>prevBest), streak:null }; }catch(e){}
       /* Confetti has to MEAN something. The old rule (6 of 8, or 14 points) was
          a guess at an absolute bar, and an absolute bar is either so low it
          fires most days and stops registering, or so high a decent card gets
