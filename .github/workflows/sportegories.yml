@@ -35,11 +35,17 @@ jobs:
       # yesterday's working corpus stays on the site.
       - name: The rebuilt corpus must still answer correctly
         run: node scripts/check-sportegories.mjs
+      # A data file that changed and kept its ?v= hands a returning visitor the
+      # old data against the new page. Only when it actually moved: a bump with
+      # no change is a re-download for everybody who already has the file.
+      - name: Bump the cache version if the data moved
+        run: git diff --quiet -- arcade/sportegories-data.js || node scripts/bump-cachebust.mjs arcade/sportegories-data.js
       - name: Commit if changed
         run: |
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"
-          git add arcade/sportegories-data.js
+          # -u picks up the pages the bump rewrote and scripts/cachebust.json.
+          git add arcade/sportegories-data.js && git add -u
           git diff --cached --quiet && echo "no changes" || {
             git commit -m "Rebuild Sportegories corpus from refreshed rosters"
             for i in 1 2 3 4 5; do

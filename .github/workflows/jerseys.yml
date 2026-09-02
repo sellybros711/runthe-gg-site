@@ -50,12 +50,19 @@ jobs:
       - name: Commit if requested
         if: ${{ (github.event_name == 'schedule' || github.event.inputs.commit == 'true') && github.event.inputs.only == '' }}
         run: |
+          # A data file that changed and kept its ?v= hands a returning visitor
+          # the old data against the new page. Only when it actually moved: a
+          # bump with no change is a re-download for everybody who already has
+          # the file.
+          git diff --quiet -- arcade/jerseys.js || node scripts/bump-cachebust.mjs arcade/jerseys.js
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"
           # arcade/rosters/*.js rides along: the same scrape produces both, and a
           # jerseys.js that moved without its roster shards would leave Roll
           # Call judging one day's squad against another day's answer key.
           git add -A arcade/jerseys.js arcade/rosters
+          # -u picks up the pages the bump rewrote and scripts/cachebust.json.
+          git add -u
           git diff --cached --quiet && echo "no changes" || {
             git commit -m "Refresh jersey stints and Roll Call rosters"
             for i in 1 2 3 4 5; do

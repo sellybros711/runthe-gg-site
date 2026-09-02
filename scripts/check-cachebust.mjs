@@ -37,8 +37,11 @@ const MANIFEST = path.join(ROOT, 'scripts', 'cachebust.json');
 const UPDATE = process.argv.includes('--update');
 
 /* Every page that loads a local script with a version on it. Found rather than listed, so a
-   new game cannot be added to the site and left out of this by forgetting a list. */
-const TAG = /<script[^>]*\ssrc="([A-Za-z0-9_.-]+\.js)\?v=([^"]+)"/g;
+   new game cannot be added to the site and left out of this by forgetting a list.
+   The path may be beside the page (engine.js), up and over (../match/entities.js) or from
+   the site root (/arcade/tokens.js). All three cache separately from the page and all three
+   are the bug this file exists for. */
+const TAG = /<script[^>]*\ssrc="([A-Za-z0-9_./-]+\.js)\?v=([^"]+)"/g;
 
 /* AND EVERY PAGE THAT IMPORTS ONE AS A MODULE, which this did not see for a year.
  *
@@ -90,12 +93,57 @@ for (const page of pages(ROOT)) {
   const rel = path.relative(ROOT, page);
   for (const re of [TAG, MOD]) {
     for (const m of html.matchAll(re)) {
-      const script = path.join(path.dirname(page), m[1]);
-      /* Only files that live beside the page. A missing one is somebody else's bug. */
+      /* A leading slash is the SITE root, not the filesystem root. Every arcade game
+         reaches its shared scripts that way (/arcade/tokens.js?v=13), and for a year
+         this checker resolved that against the page's own directory, got
+         arcade/sportegories/arcade/tokens.js, found nothing there and skipped it. So
+         eleven pages were covered and fifteen arcade games were not, silently: the
+         run said "ok" on commits that changed a shared file, because it was never
+         looking at the pages that load it. Found while bumping sportegories.js. */
+      const script = m[1].startsWith('/')
+        ? path.join(ROOT, m[1].slice(1))
+        : path.join(path.dirname(page), m[1]);
+      /* A file that is not in the repo is somebody else's bug. */
       if (!fs.existsSync(script)) continue;
       (found[rel] ??= {})[m[1]] = { v: m[2], sha: sha(script) };
     }
   }
+}
+
+/* ONE FILE, ONE VERSION, ACROSS EVERY PAGE THAT ASKS FOR IT.
+ *
+ * The manifest above is per page, which is right for a sibling script but blind to the
+ * shared ones: fifteen arcade games load /arcade/tokens.js, and nothing stopped fourteen
+ * of them from moving to v=13 while the fifteenth stayed on v=12. The stale page then
+ * serves TODAY'S file under YESTERDAY'S URL, so a visitor who has that URL cached keeps
+ * the old code on a page written for the new. That is this file's whole subject, arriving
+ * from the direction the per-page record cannot see.
+ *
+ * It was true when this ran: alltime.js was v=3 on nine pages and v=2 on Chain and Roll
+ * Call, and auth.js and auth-ui.js were a version behind on /ideas/. Three files, and the
+ * check was green, because it was green on eleven pages that load none of them.
+ *
+ * Bump every page in the same commit. There is no case for two.
+ */
+const versions = {};
+for (const [page, scripts] of Object.entries(found)) {
+  for (const [name, cur] of Object.entries(scripts)) {
+    if (!name.startsWith('/')) continue;      // a sibling script is nobody else's
+    ((versions[name] ??= {})[cur.v] ??= []).push(page);
+  }
+}
+const split = Object.entries(versions).filter(([, byV]) => Object.keys(byV).length > 1);
+if (split.length) {
+  console.error('\nA shared script is asked for at two different versions.\n');
+  for (const [name, byV] of split) {
+    console.error('  ' + name);
+    for (const [v, pages_] of Object.entries(byV)) {
+      console.error(`    v=${v}: ${pages_.join(', ')}`);
+    }
+  }
+  console.error('\nEvery page that loads a shared file has to ask for the same version.');
+  console.error('Move the stragglers up to the highest, then run --update.\n');
+  process.exit(1);
 }
 
 if (UPDATE) {
