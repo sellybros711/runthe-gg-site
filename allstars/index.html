@@ -59,9 +59,12 @@
     padding:6px 14px;cursor:pointer;font-weight:700;box-shadow:var(--shadow-sm);}
   .mode-btn:active{transform:translate(2px,2px);box-shadow:none;}
   .mode-btn.selected{background:var(--gold);color:#fff;}
-  /* On the game screen the box opens up: the field is the point. */
+  /* On the game screen the box opens up: the field is the point. The
+     height cap leaves room for the swing strip under the field, which on
+     an 800px desktop used to sit just below the fold while the first pitch
+     was already on its way. */
   body.ingame .wrap{max-width:min(1560px, 98vw);}
-  body.ingame #field{max-height:min(80vh, 900px);}
+  body.ingame #field{max-width:calc(min(100vh - 265px, 760px) * 1.4545);}
   .brand{display:flex;align-items:center;gap:10px;padding:8px 0 12px;
     border-bottom:3px solid var(--line);margin-bottom:4px;}
   .brand h1{margin:0;font-size:24px;letter-spacing:.16em;text-transform:uppercase;
@@ -138,14 +141,25 @@
     border-radius:0;
     padding:0;
     overflow:hidden;
-    margin-bottom:12px;
+    margin:0 auto 12px;
     box-shadow:5px 5px 0 var(--navy);
+    width:fit-content;
+    max-width:100%;
   }
+  /* THE FIELD KEEPS ITS SHAPE. It used to be width:100% with an
+     aspect-ratio AND a max-height, and when the height cap won the width
+     did not follow: on every desktop the 960x660 canvas was painted 1218
+     wide by 640 tall, a 31 percent horizontal stretch, and nobody noticed
+     because a stretched diamond still looks like a diamond. The cap is on
+     the WIDTH now, derived from the height budget through the canvas's own
+     ratio, so the height falls out of the intrinsic size and cannot
+     disagree with it. The arena shrinks to fit so the placards stay on the
+     grass. */
   #field{
     display:block;
     width:100%;
-    aspect-ratio:16/11;
-    max-height:min(72vh, 720px);
+    height:auto;
+    max-width:calc(min(72vh, 720px) * 1.4545);
     background:transparent;
   }
   /* Each corner is a PLACARD bolted to the screen, not floating text.
@@ -164,6 +178,23 @@
   .arena .corner .val{color:#0f2237;font-size:20px;font-weight:900;line-height:1.05;}
   .arena .corner .val.gold{color:var(--gold);}
   .arena .corner.br .val{color:#0f2237;font-size:14px;}
+  .arena .corner .short{display:none;}
+  @media (max-width:700px){
+    .arena .corner .long{display:none;}
+    .arena .corner .short{display:inline;}
+  }
+
+  /* The coach: a plaque over the field with a numbered note and two
+     buttons. Sits above the callout so a STRIKE cannot land on top of it. */
+  .coach{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(540px,92%);background:var(--panel);border:3px solid var(--line);
+    box-shadow:5px 5px 0 var(--navy);padding:14px 16px;z-index:9;
+    font-size:14px;line-height:1.55;color:var(--text);}
+  .coach b{color:var(--gold);}
+  .coach-step{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:6px;}
+  .coach-bar{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+  @media (max-width:600px){.coach{font-size:12px;padding:10px 12px;}}
 
   .callout{
     position:absolute;
@@ -214,8 +245,6 @@
   .meter-wrap .label{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);
     letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
   .meter-wrap .label b.pt{color:var(--gold);letter-spacing:.14em;}
-  #meter{width:100%;height:44px;display:block;background:#0f2237;border:2px solid var(--line);
-    border-radius:0;}
   .meter-wrap .hint{margin-top:6px;font-size:11px;color:var(--text-dim);
     letter-spacing:.08em;text-align:center;text-transform:uppercase;}
   .meter-wrap .hint b{color:var(--gold);}
@@ -346,6 +375,19 @@
   .park-card .pk-blurb{font-size:11px;line-height:1.45;color:var(--text-dim);padding:0 10px 6px;}
   .park-card .pk-effect{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--gold);font-weight:700;padding:0 10px;}
+
+  /* Mode cards on the menu: a button and the one line that says what it is. */
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+  .mode{display:flex;flex-direction:column;gap:8px;}
+  .mode .btn{width:100%;}
+  .mode p{margin:0;font-size:11px;line-height:1.45;}
+
+  /* How To Play figures: drawn by the game's own functions, so they cannot
+     go stale the way the old text did. */
+  .howto-fig{display:block;width:100%;max-width:400px;height:auto;
+    border:2px solid var(--line);box-shadow:var(--shadow-sm);margin:8px 0 10px;}
+  .howto-grid{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin:8px 0 10px;}
+  .howto-grid .zone-grid button{cursor:default;}
 
   .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   @media (max-width:640px){
@@ -1659,6 +1701,9 @@ function savePrefs() {
       teamName: State.teamName,
       muted: Sound.muted,
       cutscenes: PREFS.cutscenes !== false,
+      coach: PREFS.coach !== false,
+      coach_bat: !!PREFS.coach_bat,
+      coach_pitch: !!PREFS.coach_pitch,
       progress: PROGRESS,
     }));
   } catch (e) {}
@@ -2682,30 +2727,45 @@ function renderMenu() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, 'Choose a mode'));
   s.appendChild(el('p', null,
-    'A pick-up-and-play arcade baseball game starring characters everyone knows. '
-    + 'Exhibition is a single game against a random opponent. Season is seven games '
-    + 'and a four-team playoff bracket, saved to this browser.'
+    'Arcade baseball with fifty four characters everyone knows. Pick nine, '
+    + 'time your swing to a ring at the plate, call your own pitches when the '
+    + 'other side bats.'
   ));
 
   const card = el('div','card');
-  const exh = el('button','btn','Exhibition Game');
-  exh.onclick = () => { State.mode='exhibition'; State.screen='roster'; render(); };
-  const season = el('button','btn', State.season ? 'Resume Season' : 'Start Season');
-  season.onclick = () => {
-    if (State.season) { State.screen = 'season-hub'; render(); }
-    else { State.mode='season'; State.franchise = randomFranchise();
-           State.screen='franchise'; render(); }
+  /* Each mode says what it is before the button is pressed: how many games,
+     how long, whether it saves. The old row was four unlabelled buttons and
+     an intro paragraph that never mentioned the third one. */
+  const modes = el('div','modes');
+  const mode = (label, blurb, onclick, ghost) => {
+    const box = el('div','mode');
+    const b = el('button', ghost ? 'btn ghost' : 'btn', label);
+    b.onclick = onclick;
+    box.appendChild(b);
+    box.appendChild(el('p', null, blurb));
+    modes.appendChild(box);
   };
-  const cup = el('button','btn', State.cup ? 'Resume Cup' : 'Play The Cup');
-  cup.onclick = () => {
-    if (State.cup) { State.screen = 'cup'; render(); }
-    else { State.mode='cup'; State.screen='roster'; render(); }
-  };
-  const howto = el('button','btn ghost','How To Play');
-  howto.onclick = () => { State.screen='howto'; render(); };
-  const row = el('div','btn-row');
-  row.append(exh, season, cup, howto);
-  card.appendChild(row);
+  mode('Exhibition Game',
+       'One game against a random club. About ten minutes at five innings. Nothing to save.',
+       () => { State.mode='exhibition'; State.screen='roster'; render(); });
+  mode(State.season ? 'Resume Season' : 'Start Season',
+       'Found a club, play seven games, make the top four and win the bracket. '
+       + 'Reporters between games. Saved to this browser.',
+       () => {
+         if (State.season) { State.screen = 'season-hub'; render(); }
+         else { State.mode='season'; State.franchise = randomFranchise();
+                State.screen='franchise'; render(); }
+       });
+  mode(State.cup ? 'Resume Cup' : 'Play The Cup',
+       'Eight clubs, single elimination, three rounds. Lose once and you are out. Its own save.',
+       () => {
+         if (State.cup) { State.screen = 'cup'; render(); }
+         else { State.mode='cup'; State.screen='roster'; render(); }
+       });
+  mode('How To Play',
+       'The ring, the grid, the throw, and what the four numbers on a card mean.',
+       () => { State.screen='howto'; render(); }, true);
+  card.appendChild(modes);
 
   if (State.season) {
     const rec = seasonRecord(State.season);
@@ -2728,6 +2788,7 @@ function renderMenu() {
 
   const roster = el('div','card');
   roster.appendChild(el('h3', null, 'Roster'));
+  roster.appendChild(el('p', null, STAT_LEGEND));
   const grid = el('div','roster');
   ROSTER.forEach(c => {
     const cc = el('div','charcard');
@@ -2755,11 +2816,25 @@ function renderMenu() {
    ROSTER PICK
    User selects nine of twelve for their team.
    ============================================================================ */
+/* What the four numbers on a card do in play. Said once, in one place, and
+   shown wherever the numbers are: on the menu wall, on the draft screen and
+   in How To Play. Before this a first-timer read POW SPD CON DEF as
+   decoration. */
+const STAT_LEGEND =
+    '<b>POW</b> how far the ball goes when you hit it square · '
+  + '<b>SPD</b> singles beat the throw, steals and extra bases · '
+  + '<b>CON</b> forgives an early or late swing · '
+  + '<b>DEF</b> wider catch and throw windows when you field';
+
 function renderRoster() {
   const picked = new Set();
   const s = el('div','screen');
   s.appendChild(el('h2', null, State.mode === 'season' ? 'Build your season team' : 'Pick your lineup'));
-  s.appendChild(el('p', null, 'Choose nine characters. First pick bats first and pitches.'));
+  s.appendChild(el('p', null,
+    'Choose nine. <b>Your first pick pitches every inning</b> and bats first, so '
+    + 'start with someone whose CON you trust on the mound. Randomize builds a '
+    + 'lineup and moves on.'));
+  s.appendChild(el('p', null, STAT_LEGEND));
 
   const card = el('div','card');
   const grid = el('div','roster');
@@ -2899,7 +2974,9 @@ function renderSettings() {
   });
   card.appendChild(innRow);
   card.appendChild(el('p', null,
-    `A tie goes to extra innings. A lead of ${MERCY_RUNS} from the `
+    'Five innings is about ten minutes at Normal speed. Nine is about twenty, and '
+    + 'finishing one unlocks Father Time. '
+    + `A tie goes to extra innings. A lead of ${MERCY_RUNS} from the `
     + `${ordinal(Math.max(3, State.innings - 1))} inning on ends the game early (mercy rule). `
     + 'Ending a Season or Cup game early counts as a loss.'));
 
@@ -2933,6 +3010,23 @@ function renderSettings() {
   csT.onclick = () => { PREFS.cutscenes = (PREFS.cutscenes === false); savePrefs(); render(); };
   csRow.appendChild(csT);
   card.appendChild(csRow);
+
+  card.appendChild(el('h3', null, 'Coach'));
+  const coRow = el('div','toggle-row');
+  const coOn = PREFS.coach !== false;
+  const coT = el('div','toggle', coOn ? 'First-timer tips: on' : 'First-timer tips: off');
+  if (coOn) coT.classList.add('on');
+  coT.onclick = () => {
+    PREFS.coach = !coOn;
+    /* Turning them back on means seeing them again. */
+    if (!coOn) { PREFS.coach_bat = false; PREFS.coach_pitch = false; }
+    savePrefs(); render();
+  };
+  coRow.appendChild(coT);
+  card.appendChild(coRow);
+  card.appendChild(el('p', null,
+    'Three short notes over the field before your first swing and before your '
+    + 'first pitch, then never again unless you switch them back on.'));
   card.appendChild(el('p', null,
     'Reporters before and after every Season and Cup game. They react to the '
     + 'actual score, they remember what you said to them, and they are not '
@@ -3899,6 +3993,9 @@ function endAtBatCleanup() {
    here so the diamond stays visible between pitches, half innings, and
    result callouts. */
 let fieldRafId = 0;
+/* The logical field, the size every coordinate in fieldGeom() is in, and the
+   factor the on screen bitmap is larger by. */
+const FIELD_W = 960, FIELD_H = 660, FIELD_K = 1.5;
 function startFieldLoop() {
   cancelAnimationFrame(fieldRafId);
   const paint = () => {
@@ -3925,7 +4022,12 @@ function startFieldLoop() {
           }
         }
       }
-      drawField(fCv.getContext('2d'), fCv.width, fCv.height, t, p || null, inWindup);
+      const ctx = fCv.getContext('2d');
+      /* Logical 960x660 onto the larger bitmap. drawField saves and
+         restores around its own transforms, so this base survives it. */
+      ctx.setTransform(FIELD_K, 0, 0, FIELD_K, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      drawField(ctx, FIELD_W, FIELD_H, t, p || null, inWindup);
       refreshStealButton();
     }
     fieldRafId = requestAnimationFrame(paint);
@@ -3964,15 +4066,66 @@ function startAtBat() {
   }
   refreshHud();
   if (playerIsBatting()) {
-    /* CPU calls its own pitch. */
-    setTimeout(() => {
+    /* CPU calls its own pitch, once the coach (first swing only) is done. */
+    coachShow('bat', COACH.bat, () => setTimeout(() => {
       const pick = cpuCallPitch();
       throwPitch(pick.pt, pick.zone);
-    }, BEAT.intoAtBat);
+    }, BEAT.intoAtBat));
   } else {
     /* Your defense is on the field: you call the pitch. */
-    setTimeout(offerPitchSelection, BEAT.intoAtBat);
+    coachShow('pitch', COACH.pitch, () => setTimeout(offerPitchSelection, BEAT.intoAtBat));
   }
+}
+
+/* THE COACH. Three notes over the field before the first swing this browser
+   has ever taken, and three more before its first pitch. Nothing is live
+   underneath them: the pitch is not thrown until the last one is dismissed,
+   so a click on Got it cannot be read as a swing. Shown once each, or never
+   if the player turns them off, and again if they turn them back on. The
+   audit's first-timer walked into the first pitch with GET READY as the only
+   instruction on screen; this is the fix for that. */
+const COACH = {
+  bat: [
+    '<b>You are batting.</b> The pitcher throws toward the ring at the plate, '
+    + 'and the ring closes as the pitch comes in. Watch the ring, or watch the ball: '
+    + 'they arrive together.',
+    '<b>Swing</b> when the closing ring meets the <b>green circle</b>: click anywhere, '
+    + 'press <b>Space</b>, or tap SWING. Early or late is a foul or a miss.',
+    '<b>Contact, Power, Bunt</b> (keys 1, 2, 3) change your swing before the pitch. '
+    + 'Contact widens the green. Power narrows it and swings for the fence. '
+    + 'Start with Contact.',
+  ],
+  pitch: [
+    '<b>You are pitching.</b> Your first pick is on the mound for the whole game. '
+    + 'Nothing is thrown until you throw it.',
+    'Pick a <b>pitch</b>, then a <b>spot</b> on the grid. The middle is always a '
+    + 'strike and easy to hit. The corners are hard to hit, and a miss there is a ball.',
+    'Press <b>Throw It</b>. If they hit a grounder you time a throw to first; a fly '
+    + 'ball you catch by clicking when the ring is tightest. Every hitter has one '
+    + 'pitch they cannot handle. Find it.',
+  ],
+};
+function coachDue(kind) { return PREFS.coach !== false && !PREFS['coach_' + kind]; }
+function coachShow(kind, steps, then) {
+  const arena = document.querySelector('.arena');
+  if (!arena || !coachDue(kind) || !State.game || State.game.over) { then(); return; }
+  let i = 0;
+  const box = el('div', 'coach');
+  const text = el('div', 'coach-text');
+  const bar = el('div', 'coach-bar');
+  const skip = el('button', 'btn ghost', 'Skip tips');
+  const next = el('button', 'btn', 'Got it');
+  bar.append(skip, next);
+  box.append(text, bar);
+  arena.appendChild(box);
+  const show = () => {
+    text.innerHTML = `<span class="coach-step">${i + 1} of ${steps.length}</span>` + steps[i];
+    next.textContent = i === steps.length - 1 ? 'Play ball' : 'Got it';
+  };
+  const done = () => { box.remove(); PREFS['coach_' + kind] = true; savePrefs(); then(); };
+  next.onclick = (e) => { e.stopPropagation(); if (++i >= steps.length) done(); else show(); };
+  skip.onclick = (e) => { e.stopPropagation(); PREFS.coach = false; box.remove(); savePrefs(); then(); };
+  show();
 }
 
 /* CPU pitching AI. Decides pitch type and zone against the current
@@ -5305,8 +5458,8 @@ function scoreRuns(n) {
 
 function endHalfInning() {
   const g = State.game;
-  addLog(`Side retired. End of ${g.half === 'top' ? 'top' : 'bottom'} of ${g.inning}.`, true);
-  showCallout('SIDE RETIRED', 'homer');
+  addLog(`Three out. End of the ${g.half === 'top' ? 'top' : 'bottom'} of the ${ordinal(g.inning)}.`, true);
+  showCallout('3 OUTS · SIDES CHANGE', 'homer');
   Sound.play('inning');
   g.bases = [null,null,null];
   g.outs = 0;
@@ -6533,61 +6686,16 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      the tightest ring for a catch. */
   if (g && g.play && g.play.catchActive && g.play.catchWindow) {
     const cw = g.play.catchWindow;
-    const now = performance.now();
-    const t = clamp((now - cw.startedAt) / cw.duration, 0, 1);
-    const [lx, ly] = [cw.landingX, cw.landingY];
-    /* Green target ring: shrinks as t moves through the middle, widens
-       past the sweet spot. Radius drives visual read of when to click. */
-    const shrink = 1 - 4 * Math.abs(t - 0.5) * (1 - Math.abs(t - 0.5));
-    const rBig = 46;
-    const rSmall = 12;
-    const rNow = rSmall + (rBig - rSmall) * shrink;
-    ctx.strokeStyle = '#0f6b39';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(lx, ly, rNow, 0, Math.PI * 2); ctx.stroke();
-    /* Inner sweet ring */
-    ctx.strokeStyle = 'rgba(232,150,12,.95)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
-    /* Label */
-    ctx.fillStyle = '#f4c25a';
-    ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('CATCH IT!', lx, ly - rBig - 12);
-    ctx.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+    const t = clamp((performance.now() - cw.startedAt) / cw.duration, 0, 1);
+    drawCatchRing(ctx, cw.landingX, cw.landingY, t);
   }
 
   /* Throw minigame overlay: appears when a grounder is in the field and
      the player has a window to complete the throw. */
   if (g && g.play && g.play.throwActive && g.play.throwWindow) {
     const win = g.play.throwWindow;
-    const now = performance.now();
-    const t = clamp((now - win.startedAt) / win.duration, 0, 1);
-    const barW = w * 0.5;
-    const barX = cx - barW/2;
-    const barY = h * 0.90;
-    const barH = 22;
-    /* Background */
-    ctx.fillStyle = 'rgba(11,16,21,.92)';
-    ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + 34);
-    /* Yellow zone */
-    ctx.fillStyle = 'rgba(244,194,90,.36)';
-    ctx.fillRect(barX + (win.ideal - win.yellowHalf) * barW, barY,
-                 win.yellowHalf * 2 * barW, barH);
-    /* Green zone */
-    ctx.fillStyle = 'rgba(91,176,131,.72)';
-    ctx.fillRect(barX + (win.ideal - win.greenHalf) * barW, barY,
-                 win.greenHalf * 2 * barW, barH);
-    /* Cursor */
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(barX + t * barW - 2, barY - 3, 4, barH + 6);
-    /* Label */
-    ctx.fillStyle = '#f4c25a';
-    ctx.font = 'bold 12px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
+    const t = clamp((performance.now() - win.startedAt) / win.duration, 0, 1);
+    drawThrowBar(ctx, w, h, cx, win, t);
   }
 
   /* Pitcher fatigue chip in the top strip so a player can see it. */
@@ -6622,6 +6730,57 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   ctx.fillRect(0, 0, w, h);
 
   ctx.restore();
+}
+
+/* The two fielding reads, as functions, so How To Play can draw the real
+   thing instead of describing it. */
+function drawCatchRing(ctx, lx, ly, t) {
+  /* Green target ring: shrinks as t moves through the middle, widens
+     past the sweet spot. Radius drives visual read of when to click. */
+  const shrink = 1 - 4 * Math.abs(t - 0.5) * (1 - Math.abs(t - 0.5));
+  const rBig = 46;
+  const rSmall = 12;
+  const rNow = rSmall + (rBig - rSmall) * shrink;
+  ctx.strokeStyle = '#0f6b39';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(lx, ly, rNow, 0, Math.PI * 2); ctx.stroke();
+  /* Inner sweet ring */
+  ctx.strokeStyle = 'rgba(232,150,12,.95)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(lx, ly, rSmall, 0, Math.PI * 2); ctx.stroke();
+  /* Label */
+  ctx.fillStyle = '#f4c25a';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('CATCH IT!', lx, ly - rBig - 12);
+  ctx.fillText('SPACE / CLICK', lx, ly + rBig + 12);
+}
+function drawThrowBar(ctx, w, h, cx, win, t) {
+  const barW = w * 0.5;
+  const barX = cx - barW/2;
+  const barY = h * 0.90;
+  const barH = 22;
+  /* Background */
+  ctx.fillStyle = 'rgba(11,16,21,.92)';
+  ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + 34);
+  /* Yellow zone */
+  ctx.fillStyle = 'rgba(244,194,90,.36)';
+  ctx.fillRect(barX + (win.ideal - win.yellowHalf) * barW, barY,
+               win.yellowHalf * 2 * barW, barH);
+  /* Green zone */
+  ctx.fillStyle = 'rgba(91,176,131,.72)';
+  ctx.fillRect(barX + (win.ideal - win.greenHalf) * barW, barY,
+               win.greenHalf * 2 * barW, barH);
+  /* Cursor */
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(barX + t * barW - 2, barY - 3, 4, barH + 6);
+  /* Label */
+  ctx.fillStyle = '#f4c25a';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
 }
 
 function drawBaseball(ctx, x, y, groundY) {
@@ -6735,7 +6894,7 @@ function drawTimingRing(ctx, G, t, pitch, inWindup) {
   const diff = DIFF[State.difficulty];
   let half = diff.sweetWidth / 2;
   const mode = (State.game && State.game.swingMode) || 'contact';
-  if (playerIsBatting()) {
+  if (State.game && playerIsBatting()) {
     if (mode === 'contact') half *= 1.25;
     if (mode === 'power') half *= 0.75;
     if (mode === 'bunt') half = 0.30;
@@ -6808,7 +6967,11 @@ function renderGame() {
 
   const arena = el('div','arena');
   const cv = document.createElement('canvas');
-  cv.id = 'field'; cv.width = 960; cv.height = 660;
+  /* The bitmap is one and a half times the logical field, so a wide desktop
+     gets a large field that is scaled DOWN to it rather than a 960 wide one
+     scaled up and blurred. Everything else still thinks in 960x660: the
+     paint loop applies the scale once, before drawField. */
+  cv.id = 'field'; cv.width = FIELD_W * FIELD_K; cv.height = FIELD_H * FIELD_K;
   arena.appendChild(cv);
 
   /* Score and inning overlaid on the field's corners so nothing steals room
@@ -6833,12 +6996,15 @@ function renderGame() {
     `<span class="lbl">${g.home.name}${g.home.isYou?' (you)':''}</span>`
     + `<span class="val ${g.home.isYou?'gold':''}" id="hud-home">${g.home.score}</span>`
   );
+  /* The inning chip says whose turn it is, and the count chip says what the
+     numbers are. "Top 1/5" and "0-0" are baseball shorthand; a first-timer
+     does not know 0-0 is balls and strikes. */
   const bl = el('div','corner bl',
-    `<span class="lbl">Inning</span>`
-    + `<span class="val" id="hud-inning">${g.half==='top'?'Top':'Bot'} ${g.inning}/${g.innings}</span>`
+    `<span class="lbl" id="hud-side">${hudSideText()}</span>`
+    + `<span class="val" id="hud-inning">${hudInningText(g)}</span>`
   );
   const br = el('div','corner br',
-    `<span class="val" id="hud-count">Outs ${g.outs} · ${g.balls}-${g.strikes}</span>`
+    `<span class="val" id="hud-count">${hudCountText(g)}</span>`
   );
   arena.append(tl, tr, bl, br);
 
@@ -7024,8 +7190,10 @@ function refreshHud() {
   const hudCount = document.getElementById('hud-count');
   if (hudAway) hudAway.textContent = g.away.score;
   if (hudHome) hudHome.textContent = g.home.score;
-  if (hudInn) hudInn.textContent = `${g.half==='top'?'Top':'Bot'} ${g.inning}/${g.innings}`;
-  if (hudCount) hudCount.textContent = `Outs ${g.outs} · ${g.balls}-${g.strikes}`;
+  if (hudInn) hudInn.textContent = hudInningText(g);
+  const hudSide = document.getElementById('hud-side');
+  if (hudSide) hudSide.textContent = hudSideText();
+  if (hudCount) hudCount.innerHTML = hudCountText(g);
   const ab = document.getElementById('atbat');
   if (ab) refreshAtBatCard(ab);
   const log = document.getElementById('log');
@@ -7062,6 +7230,20 @@ function refreshHud() {
     rb.style.display = can ? '' : 'none';
     if (can) rb.textContent = `Replay ${g.highlight.kind}`;
   }
+}
+
+function hudInningText(g) {
+  const extra = g.inning > g.innings ? ' · extra' : '';
+  return `${g.half === 'top' ? 'Top' : 'Bottom'} ${g.inning} of ${g.innings}${extra}`;
+}
+function hudSideText() {
+  return playerIsBatting() ? 'You bat' : 'You pitch';
+}
+/* Long on a desk, short on a phone: the same numbers, both spelled. */
+function hudCountText(g) {
+  const b = g.balls, s = g.strikes, o = g.outs;
+  return `<span class="long">${o} out · ${b} ball${b === 1 ? '' : 's'} · ${s} strike${s === 1 ? '' : 's'}</span>`
+       + `<span class="short">${o} out · B${b} S${s}</span>`;
 }
 
 function syncSwingModeButtons() {
@@ -7281,106 +7463,179 @@ function renderResult() {
    picks mean when they are pitching, the two fielding minigames, base
    running, and how a season is shaped.
    ============================================================================ */
+/* The pictures in How To Play are drawn by the same functions that draw the
+   game, on small canvases, so the help cannot describe a control the game no
+   longer has. It did: for a long stretch this screen taught a marker sweeping
+   a bar under the field, and the bar had been replaced by the ring. */
+function howtoFigure(w, h, draw) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h; cv.className = 'howto-fig';
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#4c9a48';
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#9a6a3c';
+  ctx.fillRect(0, h * 0.55, w, h * 0.45);
+  ctx.fillStyle = 'rgba(0,0,0,.10)';
+  for (let x = 0; x < w; x += 24) ctx.fillRect(x, 0, 12, h * 0.55);
+  draw(ctx, w, h);
+  return cv;
+}
+function howtoRing(t) {
+  return howtoFigure(400, 170, (ctx, w, h) => {
+    const G = { cx: w / 2, plateY: h * 0.70 };
+    /* Home plate. */
+    ctx.fillStyle = '#f5ecc8';
+    ctx.beginPath();
+    ctx.moveTo(G.cx - 12, G.plateY + 14); ctx.lineTo(G.cx + 12, G.plateY + 14);
+    ctx.lineTo(G.cx + 12, G.plateY + 22); ctx.lineTo(G.cx, G.plateY + 28); ctx.lineTo(G.cx - 12, G.plateY + 22);
+    ctx.closePath(); ctx.fill();
+    drawTimingRing(ctx, G, t, { ideal: 0.5, pt: 'fastball' }, t === 0);
+    if (t > 0) drawBaseball(ctx, G.cx, G.plateY - 8 - (0.5 - Math.min(t, 0.5)) * 160);
+  });
+}
+function howtoCatch() {
+  return howtoFigure(400, 170, (ctx, w, h) => {
+    drawCatchRing(ctx, w / 2, h * 0.5, 0.42);
+  });
+}
+function howtoThrow() {
+  return howtoFigure(400, 120, (ctx, w, h) => {
+    drawThrowBar(ctx, w, h, w / 2, { ideal: 0.55, greenHalf: 0.07, yellowHalf: 0.14 }, 0.41);
+  });
+}
+function howtoGrid() {
+  const wrap = el('div', 'howto-grid');
+  const grid = el('div', 'zone-grid');
+  const cells = ['corner','mid','corner','mid','center','mid','corner','mid','corner'];
+  grid.innerHTML = cells.map(c => `<button class="${c}" disabled></button>`).join('');
+  wrap.appendChild(grid);
+  wrap.appendChild(el('p', null,
+    '<b>Middle</b> (dark green): always a strike, easiest to hit.<br>'
+    + '<b>Edges</b> (light green): harder to hit, sometimes a ball.<br>'
+    + '<b>Corners</b> (tan): hardest to hit, a miss is a ball.'));
+  return wrap;
+}
+
 function renderHowTo() {
   const s = el('div','screen');
+  /* Appended as nodes, never innerHTML +=: that re-parses the card and
+     hands back a fresh, blank canvas in place of every drawn figure. */
+  const add = (card, html) => card.appendChild(el('div', null, html));
   s.appendChild(el('h2', null, 'How to play'));
 
   const bat = el('div','card');
-  bat.innerHTML =
+  add(bat,
       '<h3>Batting</h3>'
-    + '<p>A marker sweeps left to right across the meter under the field. '
-    + 'Click anywhere, press <b>Space</b>, or tap the big SWING button to swing.</p>'
-    + '<p><b>Green zone:</b> solid contact. The closer to the middle, the better '
-    + 'the ball is struck. <b>Yellow band:</b> a piece of it, usually a foul or '
-    + 'weak contact. <b>Outside both:</b> a swing and a miss.</p>'
-    + '<p>The pitch reaches the plate exactly when the marker crosses the green, '
-    + 'so you can watch the ball or watch the meter. During GET READY the pitcher '
-    + 'is still winding up and swings are ignored.</p>'
-    + '<p>Before each pitch, choose your swing with the buttons or keys <b>1/2/3</b>: '
-    + '<b>Contact</b> widens the green zone but trades power away, <b>Power</b> '
-    + 'narrows it and swings for the fences, and <b>Bunt</b> lays one down: runners '
-    + 'move up a base, a fast batter can beat the throw, and a badly timed bunt '
-    + 'goes foul (with two strikes, that is a strikeout).</p>'
-    + '<p>Pitches behave differently: a <b>fastball</b> comes in hard and straight, '
-    + 'a <b>curveball</b> breaks late, a <b>screwball</b> breaks the other way, '
-    + 'a <b>changeup</b> floats and dies, a <b>slowball</b> drops in on a rainbow, '
-    + 'the <b>knuckler</b> flutters so hard even the pitcher cannot say where the '
-    + 'zone sits, and <b>The Heat</b> is simply faster than everything else.</p>';
+    + '<p>A ring at the plate <b>closes as the pitch comes in</b>. The ball arrives '
+    + 'exactly when the ring reaches the green circle, so watch either one. '
+    + 'Swing by <b>clicking anywhere</b>, pressing <b>Space</b>, or tapping the '
+    + 'SWING button on a phone.</p>');
+  bat.appendChild(howtoRing(0.3));
+  add(bat,
+      '<p><b>Green circle:</b> solid contact. Dead centre is what clears the wall. '
+    + '<b>Yellow band:</b> a piece of it, usually a foul. <b>Outside both:</b> a '
+    + 'swing and a miss. During GET READY the pitcher is winding up and swings '
+    + 'are ignored.</p>'
+    + '<p>Before each pitch choose your swing with the buttons or keys <b>1, 2, 3</b>: '
+    + '<b>Contact</b> widens the green and trades power away, <b>Power</b> narrows '
+    + 'it and swings for the fence, and <b>Bunt</b> lays one down: runners move up, '
+    + 'a fast batter can beat the throw, and a badly timed bunt goes foul (with two '
+    + 'strikes, that is a strikeout).</p>'
+    + '<p>Pitches fly differently: a <b>fastball</b> comes in hard and straight, a '
+    + '<b>curveball</b> breaks late, a <b>screwball</b> breaks the other way, a '
+    + '<b>changeup</b> floats and dies, a <b>slowball</b> drops in on a rainbow, the '
+    + '<b>knuckler</b> flutters so hard even the pitcher cannot say where the ring '
+    + 'will close, and <b>The Heat</b> is simply faster than everything else.</p>');
   s.appendChild(bat);
 
   const pitch = el('div','card');
-  pitch.innerHTML =
+  add(pitch,
       '<h3>Pitching</h3>'
-    + '<p>When the other team bats, you are on the mound. Each windup you make '
-    + 'two picks: the <b>pitch type</b> and the <b>location</b> on a three by three '
-    + 'strike zone grid. Every pitcher owns a personal three pitch repertoire, so '
-    + 'the buttons change with whoever you put on the mound, and so does what the '
-    + 'other team throws at you.</p>'
-    + '<p><b>Middle:</b> always a strike, but easy for the hitter to square up. '
-    + '<b>Edges and corners:</b> much harder to hit, but your pitcher can miss the '
-    + 'spot and the umpire calls a ball. Better control means you hit your spot '
-    + 'more often.</p>'
-    + '<p>Every batter has a hidden weak pitch. Find it and their timing falls apart. '
-    + 'No pick within five seconds and the pitcher shakes off the sign and throws '
-    + 'his own choice.</p>'
+    + '<p>When the other team bats you are on the mound, and <b>your first pick '
+    + 'pitches every inning</b>. Nothing is thrown until you throw it. Each windup '
+    + 'you make two picks, the <b>pitch</b> and the <b>spot</b>, then press '
+    + '<b>Throw It</b>. Every pitcher owns three pitches, so the buttons change with '
+    + 'whoever you put on the mound.</p>');
+  pitch.appendChild(howtoGrid());
+  add(pitch,
+      '<p>Better control (CON) means your pitcher hits the spot more often. Every '
+    + 'batter has one pitch they cannot handle: throw it and their timing falls '
+    + 'apart.</p>'
     + '<p>Pitchers tire. Past the third inning the chip above the mound reads WARM, '
-    + 'then TIRING, then GASSED, and a tired arm loses the plate.</p>';
+    + 'then TIRING, then GASSED, and a tired arm loses the plate.</p>');
   s.appendChild(pitch);
 
   const field = el('div','card');
-  field.innerHTML =
+  add(field,
       '<h3>Fielding</h3>'
-    + '<p><b>Ground balls:</b> a timing bar appears at the bottom of the field. '
-    + 'Hit the green for the out, the yellow lets the batter beat the throw for an '
-    + 'infield single, and a miss is a throwing error that lets every runner take '
-    + 'an extra base.</p>'
-    + '<p><b>Fly balls:</b> a ring shrinks over the landing spot. Click or press '
+    + '<p>Your fielders run to the ball on their own. Two plays need you.</p>'
+    + '<p><b>Ground balls:</b> a bar appears at the bottom of the field. Click or '
+    + 'press Space in the green for the out. Yellow lets the batter beat the throw '
+    + 'for an infield single. A miss is a throwing error and every runner takes an '
+    + 'extra base.</p>');
+  field.appendChild(howtoThrow());
+  add(field,
+      '<p><b>Fly balls:</b> a ring shrinks over the landing spot. Click or press '
     + 'Space when it is tightest to make the catch. Slightly off and the ball drops '
-    + 'in for a single; badly off and it sails over the fielder for a triple.</p>'
-    + '<p>Your fielders\' defense ratings widen both safe windows, so a strong '
-    + 'defensive lineup is easier to play.</p>';
+    + 'in for a single; badly off and it sails over the fielder for a triple.</p>');
+  field.appendChild(howtoCatch());
+  add(field,
+      '<p>Your fielders\' DEF widens both safe windows, so a strong defensive '
+    + 'lineup is easier to play.</p>');
   s.appendChild(field);
 
   const run = el('div','card');
-  run.innerHTML =
+  add(run,
       '<h3>Base running</h3>'
     + '<p>With a runner on first and second base empty, a <b>Steal 2nd</b> button '
-    + 'appears during the windup. Success depends on the runner\'s speed against the '
-    + 'pitcher\'s control.</p>'
+    + 'appears during the windup. Success depends on the runner\'s SPD against the '
+    + 'pitcher\'s CON.</p>'
     + '<p>Fast runners are aggressive on hits: a quick runner on second will try to '
     + 'score on a single rather than stop at third. Sometimes they get thrown out '
-    + 'at the plate. Speed lineups score more and risk more.</p>';
+    + 'at the plate. Speed lineups score more and risk more.</p>');
   s.appendChild(run);
 
   const chars = el('div','card');
-  chars.innerHTML =
-      '<h3>Characters</h3>'
-    + '<p>Every character has Power, Speed, Contact, and Defense, and many carry a '
-    + 'quirk that genuinely changes how they play. A few examples:</p>'
-    + '<p><b>Lady Liberty</b> never runs: every real swing is a home run or a '
+  add(chars,
+      '<h3>The four numbers</h3>'
+    + '<p>' + STAT_LEGEND + '</p>'
+    + '<p>Many characters also carry a quirk that genuinely changes how they play. '
+    + 'A few: <b>Lady Liberty</b> never runs, so every real swing is a home run or a '
     + 'strikeout. <b>Mr. Hyde</b> transforms in about one at bat in six. '
     + '<b>Popeye</b> eats his spinach on his third trip to the plate. '
-    + '<b>Father Time</b> slows the meter down. <b>The Phoenix</b> turns her first '
+    + '<b>Father Time</b> slows the ring down. <b>The Phoenix</b> turns her first '
     + 'strikeout of the game into a walk. <b>Black Cat</b> makes fielders bobble. '
-    + '<b>Dracula</b> and the <b>Werewolf</b> get stronger in late innings.</p>';
+    + '<b>Dracula</b> and the <b>Werewolf</b> get stronger in late innings. '
+    + '<b>Humpty Dumpty</b> cracks a little with every out.</p>');
   s.appendChild(chars);
 
   const season = el('div','card');
-  season.innerHTML =
-      '<h3>Season</h3>'
-    + '<p>Pick nine characters and play seven games against a rotating cast of '
-    + 'opponent teams, each with its own park and its own batting personality: some '
-    + 'hack at everything, some are patient.</p>'
-    + '<p>The top four records make a single elimination playoff bracket. The higher '
-    + 'seed hosts, and home teams get a small crowd boost. Your season saves to this '
-    + 'browser automatically, so you can close the tab and come back.</p>'
+  add(season,
+      '<h3>The rules of a game</h3>'
+    + '<p>Five or nine innings. A tie goes to extra innings until somebody leads. '
+    + `A lead of ${MERCY_RUNS} from the second last inning on ends the game early `
+    + '(mercy rule). If the home team takes the lead in the bottom of the last '
+    + 'inning the game ends on the spot: a walk-off.</p>'
+    + '<h3>Exhibition</h3>'
+    + '<p>One game against a random club, about ten minutes at five innings. '
+    + 'Nothing is saved and nothing counts, except unlock progress.</p>'
+    + '<h3>Season</h3>'
+    + '<p>Found a club (city, name, colours, home park), pick nine, and play seven '
+    + 'games, four of them at home. Every club has its own park and its own batting '
+    + 'personality: some hack at everything, some are patient. The other sixteen '
+    + 'clubs play each other on the days you play, so the standings move with you.</p>'
+    + '<p>The <b>top four</b> make a single elimination bracket. Ties break on head '
+    + 'to head, then run differential. The higher seed hosts, and home teams get a '
+    + 'small crowd boost. Reporters talk to you before and after every game, and '
+    + 'they remember what you said. Your season saves to this browser automatically. '
+    + 'Ending a game early counts as a loss.</p>'
     + '<h3>The Cup</h3>'
     + '<p>A short, high stakes alternative: eight teams, single elimination, three '
-    + 'rounds. Quarterfinal, semifinal, final. Lose once and you are out. It has its '
-    + 'own save, so a cup run never disturbs a season in progress.</p>'
+    + 'rounds. Lose once and you are out. It has its own save, so a cup run never '
+    + 'disturbs a season in progress.</p>'
     + '<h3>Unlocks</h3>'
     + '<p>A few characters start locked. Their card says exactly what to do to earn '
-    + 'them, and progress carries across every game you play in any mode.</p>';
+    + 'them, and progress carries across every game you play in any mode.</p>');
   s.appendChild(season);
 
   const row = el('div','btn-row');

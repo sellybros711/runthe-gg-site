@@ -221,6 +221,33 @@ if (!opponentsMatch) {
   }
 }
 
+/* ----------------------------------------------------------- how to play
+   The help once taught a marker sweeping a bar under the field, with green
+   and yellow bands and a five second pitch clock, for a long time after the
+   game had replaced all three with a ring at the plate and a Throw It
+   button. Nothing failed, because help text is not code. The figures are
+   drawn by the game's own functions now, and the copy is held to the
+   controls that exist. */
+{
+  const howto = page.match(/function renderHowTo\(\)[\s\S]*?\n\}\n/);
+  if (!howto) {
+    problems.push('could not find renderHowTo() in allstars/index.html.');
+  } else {
+    const text = howto[0];
+    for (const stale of ['marker', 'meter under the field', 'five seconds', 'shakes off the sign']) {
+      if (text.includes(stale)) {
+        problems.push(`How To Play still says "${stale}". That control no longer exists; the help `
+          + 'is describing a game the player is not playing.');
+      }
+    }
+    for (const live of ['ring', 'Throw It', 'STAT_LEGEND', 'howtoRing(', 'howtoCatch(', 'howtoThrow(']) {
+      if (!text.includes(live)) {
+        problems.push(`How To Play no longer mentions "${live}". The batting ring, the Throw It button, `
+          + 'the stat legend and the drawn figures are what keep the help honest.');
+      }
+    }
+  }
+}
 
 if (problems.length) {
   console.error(`Run The All-Stars posture: ${problems.length} problem(s)\n`);

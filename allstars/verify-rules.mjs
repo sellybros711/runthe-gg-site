@@ -51,6 +51,7 @@ async function fresh(browser) {
   await pg.evaluate(() => {
     Sound.muted = true;
     PREFS.cutscenes = false;
+    PREFS.coach = false;          /* the first-timer notes are not what is under test */
     window.confirm = () => true;
     State.gameSpeed = 'fast'; applyGameSpeed();
   });
