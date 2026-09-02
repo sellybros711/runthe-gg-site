@@ -279,6 +279,7 @@ section('every number on a tile has a band beside it');
 }
 
 /* ---------- 5. careers play out ---------- */
+const KINDS_SEEN={};
 if(!QUICK){
   section(`${RUNS} careers x ${YEARS} years`);
   for(let run=0; run<RUNS; run++){
@@ -290,7 +291,7 @@ if(!QUICK){
       const problems=[], log=[];
       const P=(msg,ctx)=>problems.push(Object.assign({msg, y:G.car.year, w:G.car.week}, ctx||{}));
       const startYear=G.car.year; let guard=0;
-      let matches=0, wins=0, titleWins=0, dirty=0, stories=0, promos=0;
+      let matches=0, wins=0, titleWins=0, dirty=0, stories=0, promos=0; const kinds={};
       while(G.car.year < startYear+YEARS && guard++<4000){
         const c=G.car;
         if(!(c.cond>=0&&c.cond<=100)) P('condition out of range',{cond:c.cond});
@@ -326,7 +327,7 @@ if(!QUICK){
           if(!(res.moved && res.moved.length===7)) P('result has no what-moved rows',{stip:o.stipLabel});
           if(res.retainedDirty){ dirty++; if(c.title!==titleBefore) P('belt moved on a '+res.retainedDirty,{stakes:o.stakes}); }
           if(!titleBefore && c.title){ titleWins++; log.push(`Y${c.year}W${c.week} won the ${c.title} from ${o.oppName} (${res.quality})`); }
-          if(!stBefore && story()) { stories++; log.push(`Y${c.year}W${c.week} feud starts with ${charById(story().charId).name}: ${story().reason}`); }
+          if(!stBefore && story()) { stories++; kinds[story().kind||'?']=(kinds[story().kind||'?']||0)+1; log.push(`Y${c.year}W${c.week} ${(STORY_KINDS[story().kind]||{}).name||story().kind} with ${charById(story().charId).name}: ${story().reason}`); }
           if(stBefore && !story()){ const r0=(c.storiesResolved||[])[0]||{}; log.push(`Y${c.year}W${c.week} feud settled ${r0.resolution||''} after ${r0.matches||0} matches (avg ${r0.avg||0})${res.storyEnded?' · ceremony':''}`); }
           // applyMatch ends the week itself. Calling advanceWeek here too
           // skipped every other week and halved the match count for months
@@ -335,16 +336,22 @@ if(!QUICK){
         } else if(b.type==='promo'){ promos++; }
         try{ advanceWeek(); }catch(e){ P('advanceWeek threw: '+e.message); break; }
       }
-      return {problems, log, summary:{years:G.car.year-startYear, matches, wins, titleWins, dirty, stories, promos, ovr:ovr(G.w), pop:Math.round(G.car.pop), rooms:sentiment()}};
+      (G.car.storiesResolved||[]).forEach(r=>{ if(!r.kind) P('resolved story without a kind',{name:r.name}); });
+      return {problems, log, summary:{years:G.car.year-startYear, matches, wins, titleWins, dirty, stories, kinds, promos, ovr:ovr(G.w), pop:Math.round(G.car.pop), rooms:sentiment()}};
     }, YEARS);
     if(errs.length) bad(`run ${run} page errors: `+errs.slice(0,3).join(' | '));
     if(result.problems.length){ bad(`run ${run}: ${result.problems.length} problems`); result.problems.slice(0,6).forEach(p=>console.log('       '+JSON.stringify(p))); }
     else ok(`run ${run}: ${JSON.stringify(result.summary)}`);
+    Object.keys(result.summary.kinds||{}).forEach(k=>{ KINDS_SEEN[k]=(KINDS_SEEN[k]||0)+result.summary.kinds[k]; });
     result.log.slice(0,12).forEach(l=>console.log('       '+l));
     await page.close();
   }
 }
 
+if(!QUICK){
+  const n=Object.keys(KINDS_SEEN).length;
+  (n>=2) ? ok(`story kinds seen across the careers: ${JSON.stringify(KINDS_SEEN)}`) : bad(`only ${n} story kind(s) seen across the careers: ${JSON.stringify(KINDS_SEEN)}`);
+}
 await browser.close();
 server.close();
 console.log(fails ? `\n${fails} FAILED` : '\nall good');
