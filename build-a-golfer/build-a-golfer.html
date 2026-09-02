@@ -17984,6 +17984,9 @@ function applyTourChange(entry){
    the whole point. A council that always does what you want is just a menu of buffs.                */
 const COUNCIL_YEAR=6;        // you have to be somebody before they hand you a seat
 const COUNCIL_SWING=9;       // percentage points your vote moves the room
+// the ranking route. ONE number, read by the gate, by the reveal that explains the gate, and by the copy
+// that states the bar - so the three can never drift apart.
+const COUNCIL_RANK=5;        // top 5 in the world, if you have not won your way in
 function councilSeat(){
   if(!tourOn()) return false;
   if((S.year||1)<COUNCIL_YEAR) return false;
@@ -17991,7 +17994,7 @@ function councilSeat(){
   if((c.wins||0)>=2 || (c.majors||0)>=1) return true;
   // the ranking route only counts against a real field: in an unseeded world myWorldRank() is 1 by
   // default, which would hand a seat to somebody who has done nothing.
-  try{ if(worldRankSize()>=50){ const r=myWorldRank(); if(r && r<=40) return true; } }catch(e){}
+  try{ if(worldRankSize()>=50){ const r=myWorldRank(); if(r && r<=COUNCIL_RANK) return true; } }catch(e){}
   return false;
 }
 /* WHY the tour gave you the seat, in the player's own terms. It lives here, beside the gate, and walks
@@ -18001,7 +18004,7 @@ function councilWhy(){
   const c=S.career||{}, w=c.wins||0, m=c.majors||0, routes=[];
   if(w>=2) routes.push(w+' tour wins');
   if(m>=1) routes.push(m===1?'a major championship':m+' major championships');
-  try{ if(worldRankSize()>=50){ const r=myWorldRank(); if(r && r<=40) routes.push('a world ranking of '+r); } }catch(e){}
+  try{ if(worldRankSize()>=50){ const r=myWorldRank(); if(r && r<=COUNCIL_RANK) routes.push('a world ranking of '+r); } }catch(e){}
   return {routes, primary:routes[0]||null, rest:routes.slice(1)};
 }
 // the room's own leaning, before you speak. Deterministic per proposal so it cannot be re-rolled.
@@ -20802,7 +20805,7 @@ var FIRSTS={
       out.push(yr>COUNCIL_YEAR
         ? 'The tour opens the room from your '+ord(COUNCIL_YEAR)+' season. This is your '+ord(yr)
         : 'The tour opens the room from your '+ord(COUNCIL_YEAR)+' season, and you are in it');
-      out.push('The bar is two tour wins, a major, or a top 40 world ranking');
+      out.push('The bar is two tour wins, a major, or a top '+COUNCIL_RANK+' world ranking');
       if(why.primary) out.push('You cleared it with '+why.primary);
       else out.push('You cleared it on a record the tour could not ignore');
       if(why.rest.length) out.push('You also have '+listTxt(why.rest));

@@ -17823,8 +17823,31 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   (`firstVal(FIRSTS.council,'earnedLabel',{})`) so a future rewording cannot break it again.
 - Regressions green: firsts 37, cutscene 24, csdec 21, cslive 20, csroom 32, nobag 10, sig01 19, dec16 23.
   Main script parses (block 0 is the JSON-LD tag, fails identically on baseline).
-- **NOT deployed** - the standing rule is that each item is explained before it is pushed to the site. The
-  cutscene-rooms commit (`7728bbc0`) and the first-time reveals (`6d06749b`) are also still waiting on that
-  go-ahead.
+- **DEPLOYED to /golf** in the batch below, alongside the cutscene rooms (`7728bbc0`) and the first-time
+  reveals (`6d06749b`).
 - Tunable: `councilWhy` (the routes, which MUST stay in step with `councilSeat`), and each entry's `earned` /
   `earnedLabel` in `FIRSTS`.
+
+### THE BAR FOR A COUNCIL SEAT IS THE TOP 5, and the gate, the reveal and the copy read one number
+- **The owner's ask**: *"The bar for a seat should be top 5 not top 40."* The Player Advisory Council's
+  ranking route was a top-40 world ranking, which on a 151-player field is the top quarter of the tour -
+  generous enough that a solid career drifted onto the board without noticing. It is now the top 5.
+- **The number was written down THREE TIMES** - in `councilSeat()` (the gate), in `councilWhy()` (the reveal
+  that explains the gate) and in the induction copy that states the bar out loud - so a change had three
+  chances to half-land and leave the card congratulating you for a qualification the gate no longer uses.
+  All three now read a single `COUNCIL_RANK=5`, declared beside `COUNCIL_YEAR`/`COUNCIL_SWING`, and the
+  suite asserts the copy against the constant rather than against a literal.
+- **THE SEEDED WORLD HAS TIED POINT TOTALS, and it cost three attempts at the test to notice.** Rory and
+  Xander both sit on 4440, so beating #6 also beats #5 and rank 6 is simply UNREACHABLE - a fixture that
+  hunted for an exact rank scanned the whole field and gave up at 149. The game was right every time; the
+  test was assuming a dense ranking. It now scans for the first rank matching a PREDICATE (inside the bar,
+  outside it) and asserts the contract - outside the top 5 gets no seat and is offered no route - rather
+  than an arbitrary numeric window.
+- Verified: `firstwhy` **32 pass / 0 fail / 0 page errors**, including both sides of the new boundary
+  (a genuine top-5 ranking is a route in on its own and the reveal names it; the closest achievable rank
+  outside it is not, and gets nothing) and a check that the old top-40 bar no longer admits anyone.
+  Regressions green: firsts 37, cutscene 24, csdec 21, cslive 20, csroom 32, nobag 10, sig01 19, dec16 23.
+  Main script parses (block 0 is the JSON-LD tag, fails identically on baseline).
+- Tunable: `COUNCIL_RANK` (the ranking route), `COUNCIL_YEAR` (when the room opens), `COUNCIL_SWING` (what a
+  seat is worth in the room). The wins/majors routes are still hardcoded in `councilSeat`/`councilWhy`; if
+  either ever moves, give it the same treatment.
