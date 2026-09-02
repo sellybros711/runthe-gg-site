@@ -222,6 +222,13 @@ section('the first night is a show, not a sheet');
     out.debrief = !!(G.car.coachSeen && G.car.coachSeen.firstNight);
     out.modalTitle = (document.getElementById('modalTitle')||{}).textContent||'';
     out.modalOpen = document.getElementById('modalBack').classList.contains('open');
+    // the result carries what moved, and Continue opens the dirt sheet
+    out.moved = !!(LAST_RESULT && LAST_RESULT.res && LAST_RESULT.res.moved && LAST_RESULT.res.moved.length===7);
+    out.movedStrip = !!document.querySelector('#mBody .moved');
+    closeModal(); leaveResult();
+    await new Promise(r=>setTimeout(r,400));
+    out.dirtTitle = (document.getElementById('modalTitle')||{}).textContent||'';
+    out.dirtHead = (document.querySelector('#modalBody .dirt-head')||{}).textContent||'';
     return out;
   });
   if(errs.length) bad('first night page errors: '+errs.slice(0,2).join(' | '));
@@ -233,6 +240,8 @@ section('the first night is a show, not a sheet');
   }
   (r.sceneTag==='YOUR FIRST NIGHT') ? ok('the night-one scene plays at the curtain') : bad('night-one scene did not play: '+r.sceneTag);
   (r.debrief && r.modalOpen && /first night/i.test(r.modalTitle)) ? ok('the first-result debrief opened') : bad('no first-result debrief: '+JSON.stringify({debrief:r.debrief, open:r.modalOpen, title:r.modalTitle, skip:r.skipErr}));
+  (r.moved && r.movedStrip) ? ok('the result carries what moved (7 rows) and renders the strip') : bad('what-moved missing: '+JSON.stringify({moved:r.moved, strip:r.movedStrip}));
+  (/dirt sheet/i.test(r.dirtTitle) && r.dirtHead) ? ok(`Continue opens the dirt sheet: "${r.dirtHead}"`) : bad('no dirt sheet after Continue: '+JSON.stringify({title:r.dirtTitle}));
   await page.close();
 }
 
@@ -308,6 +317,7 @@ if(!QUICK){
           if(matches%8===3 && (o.stakes==='title'||o.stakes==='defense')){ res.finish={type:'dq', by:res.win}; }
           try{ applyMatch(o,res); }catch(e){ P('applyMatch threw: '+e.message,{stip:o.stipLabel}); }
           matches++; if(res.win) wins++;
+          if(!(res.moved && res.moved.length===7)) P('result has no what-moved rows',{stip:o.stipLabel});
           if(res.retainedDirty){ dirty++; if(c.title!==titleBefore) P('belt moved on a '+res.retainedDirty,{stakes:o.stakes}); }
           if(!titleBefore && c.title){ titleWins++; log.push(`Y${c.year}W${c.week} won the ${c.title} from ${o.oppName} (${res.quality})`); }
           if(!stBefore && story()) { stories++; log.push(`Y${c.year}W${c.week} feud starts with ${charById(story().charId).name}`); }

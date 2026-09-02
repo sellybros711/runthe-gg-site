@@ -82,6 +82,16 @@
   .tile .lab{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); font-weight:700;}
   .tile .val{font-family:var(--mono); font-size:21px; font-weight:800; color:var(--cream); margin-top:3px;}
   /* the band beside a number: what the number means, in two words */
+  .moved{margin:12px 0 4px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.025);}
+  .moved-k{font-family:var(--display);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px;}
+  .moved-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;align-items:baseline;padding:4px 0;border-top:1px dashed rgba(255,255,255,.07);font-size:12.5px;}
+  .moved-row .mv-l{color:var(--text-dim);} .moved-row .mv-v{font-family:var(--mono);color:var(--cream);} .moved-row .mv-b{font-size:11px;color:var(--text-faint);text-align:right;}
+  .mv-arrow{color:var(--text-faint);} .moved-row.up .mv-d{color:var(--green);font-weight:800;} .moved-row.dn .mv-d{color:#f0907f;font-weight:800;} .moved-row.fl .mv-d{color:var(--text-faint);}
+  @media (max-width:520px){ .moved-row{grid-template-columns:1.2fr 1fr;} .moved-row .mv-b{grid-column:1 / -1;text-align:left;margin-top:-2px;} }
+  .dirt-head{font-family:var(--display);font-size:20px;line-height:1.15;color:var(--cream);text-transform:uppercase;letter-spacing:.02em;margin-bottom:10px;}
+  .dirt-rows{display:flex;flex-direction:column;gap:6px;font-size:13px;}
+  .dirt-row{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed rgba(255,255,255,.08);padding-top:6px;}
+  .dirt-l{color:var(--text-faint);font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding-top:2px;}
   .numband{display:block;font-family:var(--body);font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-dim);margin-top:2px;line-height:1.2;}
   .bizcard .numband{font-size:11.5px;}
   .term{cursor:pointer;border-bottom:1px dotted rgba(244,232,219,.35);}
@@ -1561,7 +1571,7 @@
       <div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">Payoff</h3><div id="mRewards" class="log"></div></div>
     </div>
   </div>
-  <div class="row" style="margin-top:18px;"><button class="big" onclick="go('career')">Continue →</button><span id="postMicSlot"></span></div>
+  <div class="row" style="margin-top:18px;"><button class="big" onclick="leaveResult()">Continue →</button><span id="postMicSlot"></span></div>
 </div>
 
 <!-- ============ ARSENAL / MOVES ============ -->
@@ -5573,7 +5583,7 @@ function renderCareer(){
   const tb = trajectoryBand(traj), hb = heatBand(heat);
   const held = heldBelts();
   const notesRow = [
-    (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('crown',12)} ${held.length===1?held[0].name:held.length+' belts'}</span>` : '',
+    (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('crown',12)} ${held.length===1?held[0].name:held.length+' belts'} · ${reignChip()}</span>` : '',
     c.titleShot ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Title shot in hand</span>` : '',
     c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Holding the briefcase</span>` : '',
     c.tourn ? `<span class="pchip gold" style="animation:none;opacity:1;"><a href="#" onclick="showBracket();return false;">In ${c.tourn.name}, round ${c.tourn.round}/${c.tourn.rounds}</a></span>` : '',
@@ -5607,8 +5617,19 @@ function renderCareer(){
         <div class="rm-s" style="color:${b.c}">${b.t}</div>
       </div>`;
   };
+  // Momentum is the number that actually moves week to week for a rookie,
+  // so it gets a row of its own under the three rooms: this week's delta,
+  // not the month's.
+  const _mom=Math.round(c.mom||50), _momD=Math.round((c.mom||50)-(c._momPrev==null?c.mom:c._momPrev)), _momB=bandOf('mom',_mom);
+  const _momCol=_mom>=75?'var(--gold)':_mom>=60?'var(--green)':_mom>=40?'var(--cream)':_mom>=25?'var(--text-dim)':'#f0907f';
+  const momRow=`<div class="rm-row" onclick="openRules(ruleIdx('Matches'))" title="What moves this">
+        <div class="rm-top"><div class="rm-l">Momentum</div>
+          <div class="rm-v" style="color:${_momCol}">${_mom}${_momD>0?`<span class="rm-d up">▲ ${_momD}</span>`:_momD<0?`<span class="rm-d dn">▼ ${Math.abs(_momD)}</span>`:`<span class="rm-d fl">holding</span>`}</div></div>
+        <div class="rm-b"><i style="width:${_mom}%;background:${_momCol}"></i></div>
+        <div class="rm-s" style="color:${_momCol}">${_momB}${_mom>=60?': the office books you stronger':_mom<40?': a win fixes it':''}</div>
+      </div>`;
   $('carTiles').innerHTML = `<div class="rooms">
-      ${room('crowd','Crowd')}${room('locker','Locker Room')}${room('office','Office')}
+      ${room('crowd','Crowd')}${room('locker','Locker Room')}${room('office','Office')}${momRow}
     </div>
     ${notesRow?`<div class="headline-notes">${notesRow}</div>`:''}
     <button class="ghost detailtoggle" onclick="toggleVitalsDetail()">${detailsOpen?'Hide':'Show'} every stat</button>
@@ -5621,6 +5642,7 @@ function renderCareer(){
     : `<div class="card">${renderAttrs()}</div>`;
   renderStoryPanel();
   renderWeek();
+  if(c._momToast){ const _t=c._momToast; c._momToast=null; setTimeout(()=>toast(_t),600); }
   // the manual runs itself once, on the first week you ever see. Re-check on
   // fire: anything can happen in the 420ms, including the player skipping it.
   if(!c.tourDone && TOUR_I<0){
@@ -6578,7 +6600,7 @@ function backstageEvent(){
   },0);
   return true;
 }
-function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; G.car.inbox.unshift(it); if(G.car.inbox.length>12) G.car.inbox.pop(); }
+function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; if(it&&it.y==null){ it.y=G.car.year; it.w=G.car.week; } G.car.inbox.unshift(it); if(G.car.inbox.length>12) G.car.inbox.pop(); }
 
 /* ============================================================
    LIVE MATCH ENGINE: animated, momentum-driven, with decisions
@@ -7548,6 +7570,11 @@ async function runFight(){
       await exchange(true, moveNameForLog, dmg, 7+mv.pop*0.06, isFin?'FINISHER!':mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
       hurtLimb(MS.opp, limbFor(mv.cat, MS.me), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
+      // the room, in words, as the match climbs: once per threshold
+      MS._crowdStage=MS._crowdStage||0;
+      if(MS.quality>=85&&MS._crowdStage<3){ MS._crowdStage=3; fLog(`<span class="say">Nobody in the building is sitting down.</span>`); }
+      else if(MS.quality>=70&&MS._crowdStage<2){ MS._crowdStage=2; fLog(`<span class="say">They are on their feet now.</span>`); }
+      else if(MS.quality>=55&&MS._crowdStage<1){ MS._crowdStage=1; fLog(`<span class="say">The room is coming alive.</span>`); }
       lastMove=mv.name; lastCat=mv.cat; if(isFin) MS.finisherHit++;
       if(isFin || rnd()<0.18) commLine(mv.cat, null);
     } else {
@@ -8234,6 +8261,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     await callout(hardKickout?'KICKED OUT WITH AUTHORITY!':'KICKOUT!');
     fLog(`<span class="hi">${hardKickout?'Shoulder up with force! The place is unglued!':'Shoulder up at two and a half!'} How did he survive the ${bare(mvName)}?!</span>`);
     MS.nearFalls++; MS.quality+=isFin?15:10 + (hardKickout?3:0); MS.big++;
+    if(!MS._nfLine){ MS._nfLine=true; fLog(`<span class="say">The whole room bought that one.</span>`); }
     sfx('crowdRise'); crowdIntensify(0.008);
     if(hardKickout){ sfx('pop'); MS.mom = clamp(MS.mom + (iAmPinning?-24:24), -100, 100); }
     arena.classList.remove('tense');
@@ -8767,6 +8795,14 @@ function simMatch(o){
 }
 function applyMatch(o,res){
   const c=G.car, w=G.w, sc=schedOf(c.deal&&c.deal.sched);
+  /* WHAT TONIGHT DID TO YOU. The result screen used to show what you earned
+     (purse, rep, XP) and nothing about what CHANGED (standing, the act,
+     momentum, condition, the opponent's opinion of you). Every one of those
+     is the answer to "why", and every one was silent until next week. This
+     snapshot is taken before and after the match itself, not the week roll
+     that follows, so the strip shows the match and only the match. */
+  const _R0=rel(o.oppId);
+  const _before={standing:c.standing||50, fresh:gimHeat(), mom:c.mom, cond:c.cond, reaction:reactionOf(), respect:_R0.respect||0, heat:_R0.heat||0};
   // record: a time-limit draw is neither a win nor a loss
   const draw=res.draw||res.win===null;
   if(draw){ c.rec.d=(c.rec.d||0)+1; c.streak=0; }
@@ -9109,6 +9145,15 @@ function applyMatch(o,res){
     queueMoment(pico('starBig',36), `A new career-best against ${o.oppName}.`, {kick:'Better Than The Last One'});
   }
   res.coins=coins; res.repGain=repGain; res.popGain=popGain; res.xp=xp; res.unlocked=unlocked; res.titleMsg=titleMsg; res.injMsg=injMsg;
+  try{
+    const _R1=rel(o.oppId);
+    const _after={standing:c.standing||50, fresh:gimHeat(), mom:c.mom, cond:c.cond, reaction:reactionOf(), respect:_R1.respect||0, heat:_R1.heat||0};
+    const row=(l,k,kind,who)=>({l, before:Math.round(_before[k]), after:Math.round(_after[k]), band:bandOf(kind,_after[k]), who:who||null});
+    res.moved=[ row('Standing with the office','standing','standing'), row('The act','fresh','fresh'), row('Momentum','mom','mom'),
+                row('Condition','cond','cond'), row('Crowd','reaction','crowd'),
+                row(`${o.oppName} respects you`,'respect','respect',o.oppName), row(`Bad blood with ${o.oppName}`,'heat','heat',o.oppName) ];
+    res.roomsBefore = c._sentPrev || null;
+  }catch(_){}
   advanceWeek();
 }
 /* PPV RESULTS CARD.
@@ -9160,13 +9205,15 @@ function nightCardHTML(o,res){
   const me = myPromo();
   const roster = houseRoster(me.id).filter(x=>x.id!==o.oppId);
   if(roster.length<4) return '';
-  const pairs = pickUndercardPairs(o, roster, 2);
-  const under = pairs.map(([a,b])=>{
-    const q = 42 + Math.floor(rnd()*30);
-    const winner = rnd()<0.5 ? a : b;
-    const loser  = winner===a ? b : a;
-    const flavor = a.debut||b.debut ? ' <span class="hint">(debut)</span>' : '';
-    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> beat <span class="ppv-l">${loser.name}</span>${flavor} <span class="ppv-s">${starStr(q)}★</span></div>`;
+  // the night's undercard is decided once and kept on the result, so the
+  // dirt sheet can name the match of the night without re-rolling it
+  if(!res._under){
+    const pairs = pickUndercardPairs(o, roster, 2);
+    res._under = pairs.map(([a,b])=>{ const q=42+Math.floor(rnd()*30); const win=rnd()<0.5; return {a:a.name,b:b.name,q,winner:win?a.name:b.name,loser:win?b.name:a.name,debut:!!(a.debut||b.debut)}; });
+  }
+  const under = res._under.map(u=>{
+    const flavor = u.debut ? ' <span class="hint">(debut)</span>' : '';
+    return `<div class="ppv-row"><span class="ppv-w">${u.winner}</span> beat <span class="ppv-l">${u.loser}</span>${flavor} <span class="ppv-s">${starStr(u.q)}★</span></div>`;
   }).join('');
   return `<div class="ppvcard nightcard">
     <div class="ppv-k">Also on tonight's show</div>
@@ -9200,8 +9247,79 @@ function ppvCardHTML(o,res){
     ${pairs.length?'<div class="ppv-under-label">Also on the card</div>'+undercards:''}
   </div>`;
 }
+
+/* ---- REIGN CHIP: a belt on the hub says how long and how many ---- */
+function reignChip(){
+  const c=G.car; const r=(c.reigns||[]).slice().reverse().find(x=>!x.lostYear);
+  if(!r) return '';
+  const wk=(c.year*WEEKS_PER_YEAR+c.week)-((r.year||c.year)*WEEKS_PER_YEAR+(r.week||c.week));
+  const def=r.defenses||0;
+  return `week ${Math.max(1,wk+1)} · ${def} defence${def===1?'':'s'}`;
+}
+/* ============================================================
+   THE DIRT SHEET
+   ------------------------------------------------------------
+   A post-show recap in a pundit's voice, once per match, on the way out
+   of the result screen: the headline, where your match sat on the card,
+   the match of the night, and what the room made of it. The undercard
+   comes from the same roll the result screen showed. Tap to dismiss.
+   ============================================================ */
+let LAST_RESULT=null;
+function leaveResult(){
+  const lr=LAST_RESULT; LAST_RESULT=null;
+  if(lr && lr.res && !lr.res._dirtShown){ lr.res._dirtShown=true; showDirtSheet(lr.o, lr.res, ()=>go('career')); return; }
+  go('career');
+}
+function dirtHeadline(o,res,s,p){
+  const me=G.w.name, opp=o.oppName, q=res.quality;
+  const win=res.win===true, loss=res.win===false;
+  const title=o.stakes==='title'||o.stakes==='defense';
+  const by=p.lean;
+  if(res.retainedDirty) return `${res.retainedDirty==='disqualification'?'DQ':'Count-out'} finish. Belt stays put. Nobody is happy.`;
+  if(title&&win&&o.stakes==='title') return by==='hot'?`${me.toUpperCase()} WINS THE BELT. DID YOU SEE THAT?`:`New champion. ${me} takes the belt off ${opp}.`;
+  if(o.stakes==='defense'&&loss) return by==='cynic'?`Reign over. ${opp} was better, and it was not close.`:`${opp} ends the reign.`;
+  if(res.pinnedChamp) return `${me} pins the champion. Somebody book the title match.`;
+  if(s>=4.5) return by==='fan'?`I am still shaking. ${me} vs ${opp}. Watch it twice.`:`${me} and ${opp} tore the house down.`;
+  if(s>=3.5) return by==='cynic'?`Fine. That was good. Do not let it go to your heads.`:`${me} and ${opp} had the match of the night.`;
+  if(q<=35) return by==='hot'?`WHAT WAS THAT.`:by==='cynic'?`The business died a little more tonight.`:`${me} and ${opp} never got out of first gear.`;
+  // the common nights rotate through a few lines each, so eight weeks of
+  // openers do not read as the same sentence eight times
+  const rot=(arr)=>arr[((G.car.year*WEEKS_PER_YEAR+G.car.week)+arr.length)%arr.length];
+  if(win&&o.card==='Opener') return rot([`${me} wins the opener. Warmed the room up nicely.`,`Opener: ${me} over ${opp}. A good ten minutes.`,`${me} sends the early crowd home happy. ${opp} did the job.`,`${me} opens with a win. The office will have noticed the near-falls.`]);
+  if(win) return rot([by==='analyst'?`${me} goes over ${opp}. Quietly efficient.`:`${me} beats ${opp}.`,`${me} over ${opp}, clean. Nothing to argue with.`,`Another one for ${me}. ${opp} is going to want that back.`]);
+  if(loss&&q>=62) return rot([by==='analyst'?`${me} loses, and comes out of it looking better than the winner.`:`${opp} takes it. ${me} took the whole match to lose it.`,`${opp} wins. ${me} was the story of the match anyway.`,`A loss for ${me} that reads like a win on tape.`]);
+  if(loss) return rot([`${opp} over ${me}. Not much to say.`,`${opp} beats ${me}. Forgettable, and that is the problem.`,`${me} drops one to ${opp}. The room did not mind either way.`,`${opp} gets the fall. ${me} needs a better night than that.`]);
+  return `${me} and ${opp} wrestled to a draw.`;
+}
+function showDirtSheet(o,res,onDone){
+  const c=G.car;
+  const s=starsOf(res.quality);
+  const kind = (o.stakes==='title'&&res.win)?'title' : res.retainedDirty?'screwjob' : s>=4.5?'classic' : res.quality<=35?'flop' : null;
+  const p = pickPundit(kind||'any');
+  const head = dirtHeadline(o,res,s,p);
+  const under=(res._under||[]).slice();
+  const best=under.slice().sort((a,b)=>b.q-a.q)[0];
+  const motn = (best && best.q>res.quality) ? `${best.winner} vs ${best.loser} (${starStr(best.q)}★)` : `yours, ${o.oppName} (${starStr(res.quality)}★)`;
+  const spot = o.ppv ? `Main event of ${o.ppv}` : `${o.card||'Mid-Card'}${o.stakes==='title'?', for the belt':o.stakes==='defense'?', defending':''}`;
+  const rooms = c._sentDelta ? [['crowd','Crowd'],['locker','Locker room'],['office','Office']].map(([k,l])=>{ const d=Math.round(c._sentDelta[k]||0); return `${l} ${d>0?'+'+d:d<0?d:'='}`; }).join(' · ') : '';
+  const body=`<div class="media-frame"><div class="media-portrait">${punditPortrait(p)}</div></div>
+    <div class="media-plate">
+      <div class="media-name" style="color:${p.color}">${p.name.toUpperCase()}</div>
+      <div class="media-outlet">${p.outlet} · the morning after</div>
+      <div class="media-rule"></div>
+      <div class="dirt-head">${head}</div>
+      <div class="dirt-rows">
+        <div class="dirt-row"><span class="dirt-l">Your spot</span><span>${spot}</span></div>
+        <div class="dirt-row"><span class="dirt-l">Your match</span><span>${starStr(res.quality)}★ · ${starBand(s)}</span></div>
+        <div class="dirt-row"><span class="dirt-l">Match of the night</span><span>${motn}</span></div>
+        ${rooms?`<div class="dirt-row"><span class="dirt-l">The rooms, this month</span><span>${rooms}</span></div>`:''}
+      </div>
+    </div>`;
+  modal('The dirt sheet', body, [{label:'On to next week',cls:'primary',fn:()=>{ closeModal(); if(onDone) onDone(); }}]);
+}
 function renderMatch(o,res){
   const c=G.car;
+  LAST_RESULT={o,res};
   const draw=res.draw||res.win===null;
   $('mTitle').innerHTML=(draw?'<span style="color:var(--gold)">DRAW</span>'
     :res.win?'<span style="color:var(--green)">WIN</span>':'<span style="color:#f0907f">LOSS</span>')+` vs ${o.oppName}`;
@@ -9264,6 +9382,10 @@ function renderMatch(o,res){
       <div class="mf-sub">${o.stipLabel} · ${o.oppName} (OVR ${o.oppOvr})${o.card?` · ${o.card}`:''}</div>
     </div>
     <p class="mstory">${matchStory(o,res)}</p>
+    ${(res.moved&&res.moved.length)?`<div class="moved"><div class="moved-k">What tonight did to you</div>${res.moved.map(m=>{
+      const d=m.after-m.before; const dir=d>0?'up':d<0?'dn':'fl';
+      return `<div class="moved-row ${dir}"><span class="mv-l">${m.l}</span><span class="mv-v">${m.before} <span class="mv-arrow">→</span> <b>${m.after}</b> <span class="mv-d">${d>0?'+'+d:d<0?d:'='}</span></span><span class="mv-b">${m.band}</span></div>`;
+    }).join('')}</div>`:''}
     ${(q=>q?`<div class="dirtsheet"><div class="dq">"${q}"</div><div class="ds">The Ropes Report · Year ${c.year}, Week ${c.week}</div></div>`:'')(pressQuote(o,res,s))}
     <div class="mstats">
       <span><b>${res.time||'-'}</b> time</span>
@@ -9580,6 +9702,13 @@ function advanceWeek(){
   maybeTourOffer();  // a promoter overseas rings up now and then
   postPowerRankings();  // monthly ranking of the roster on the news feed
   checkMidYear();       // half-year report card at week 20
+  // momentum: remember last week's value for the hub arrow, and say so out
+  // loud when it crosses a band ("You are building")
+  try{
+    const _mb0=bandOf('mom',c._momPrev==null?c.mom:c._momPrev), _mb1=bandOf('mom',c.mom);
+    c._momPrev=c.mom;
+    if(_mb0!==_mb1){ c._momToast = (c.mom>=60?'You are building. ':c.mom<40?'Cooling off. ':'')+'Momentum: '+_mb1.toLowerCase()+'.'; }
+  }catch(_){}
   // Bank what the week just did to the three rooms. Computed once here
   // rather than on every render, so the arrows hold still while you read
   // them instead of resetting to zero the moment you look.
