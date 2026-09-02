@@ -2096,23 +2096,44 @@ window.GA_ID='G-L29P5MRWKE';
     .holeview svg{border-radius:0;border-left:none;border-right:none}
     .hvbrand,.hvstat{padding-left:calc(10px + env(safe-area-inset-left,0px));padding-right:calc(10px + env(safe-area-inset-right,0px))}
   }
-  /* DESKTOP (>=1000px): the round plays as TWO COLUMNS - the tracer window on the left, sized off the
-     VIEWPORT HEIGHT so the whole round fits one screen, and everything else (the score line, the
-     decision cards, the scorecard, the controls) stacked in a column on the right. The broadcast header
-     spans both. Purely a CSS grid over the existing DOM order, so nothing in scrDailyRound moves and the
-     phone layout (full-bleed window + fixed bottom bar, the <=700px block above) is untouched. */
+  /* DESKTOP (>=1000px): the course is the screen. The round breaks out of the 600px content column and
+     the tracer window spans the viewport (capped at 1600), with the scoreboard, the scorecard and the
+     controls stacked BELOW it (owner: "the scoreboard should remain below and the course should take up
+     way more of the width of the screen"). The window's aspect ratio is not fixed here - hvViewEx() picks
+     the painted side margin to match this box, and hvNode writes the resulting ratio onto the svg inline -
+     so a wider screen paints MORE COURSE either side rather than stretching or shrinking the hole.
+     Keep the width expression in sync with HV_DESK_CHROME / HV_DESK_MAXW. The phone layout (full-bleed
+     window + fixed bottom bar, the <=700px block above) is untouched. */
   @media (min-width:1000px){
-    .screen.scr-dailyround{display:grid; grid-template-columns:minmax(0,1fr) minmax(340px,500px); gap:0 26px; align-content:start}
-    .screen.scr-dailyround > .bcasthd{grid-column:1 / -1; grid-row:1; max-width:none; margin:0 0 10px}
-    /* height-bounded off the svg's 464/560 aspect ratio, so the window is as big as the screen allows
-       without pushing the right-hand column below the fold */
-    .screen.scr-dailyround > .holeview{grid-column:1; grid-row:2 / span 30; align-self:start;
-      justify-self:center; margin:0; max-width:100%;
-      width:min(620px, max(360px, calc((100vh - 205px) * 464 / 560)))}
-    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd){grid-column:2; min-width:0}
-    .screen.scr-dailyround > .dcardwrap,
-    .screen.scr-dailyround > .hvctrl{max-width:none; margin-left:0; margin-right:0}
+    .screen.scr-dailyround{max-width:none; padding-left:24px; padding-right:24px}
+    .screen.scr-dailyround > .bcasthd{max-width:none; margin:0 auto 10px; width:min(calc(100vw - 48px), 1600px)}
+    /* as wide as the screen allows, but never taller than the room above the fixed control bar.
+       1.7142857 is HV_AR_MAX ((360 + 2*300) / 560) and 296px is HV_DESK_CHROME - keep both in sync
+       with hvViewEx(), which sizes the camera to this exact box. */
+    .screen.scr-dailyround > .holeview{margin:0 auto 8px; max-width:none;
+      width:min(calc(100vw - 48px), 1600px, calc((100vh - 296px) * 1.7142857))}
+    /* the scorecard has the width to be a real one: front nine and back nine side by side, one row */
+    .screen.scr-dailyround > .dcardwrap{max-width:1100px}
+    .screen.scr-dailyround .rsc{max-width:none; flex-direction:row; flex-wrap:wrap; gap:6px 16px; align-items:flex-start}
+    .screen.scr-dailyround .rsc-leg{flex:1 0 100%}
+    .screen.scr-dailyround .rsc-block{flex:1 1 0; min-width:0}
+    /* everything else stays a readable column, centred under the window */
+    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd){max-width:760px; margin-left:auto; margin-right:auto}
     .screen.scr-dailyround > .dcardwrap{margin-top:0}
+    /* On desktop the control bar sits IN FLOW directly under the window (order:1) with the scorecard
+       below it (order:2), so the fixed bottom bar can never cover the card - which it did, leaving a
+       "SCORECARD" header peeking out from behind the controls. The controls are the action, so they
+       stay in view; the card is reference, one short scroll down. A phone keeps the fixed bar (the
+       <=700px rules), where the window is full-bleed and there is no room for both. */
+    .screen.scr-dailyround{display:flex; flex-direction:column}
+    .screen.scr-dailyround > .hvctrl{order:1}
+    .screen.scr-dailyround > .dcardwrap{order:2}
+    /* auto margins in a flex column disable stretch, so the bar would shrink-wrap and wrap its
+       labels onto two lines - give it a real width so LAST HOLE / SIM TO END read on one line. */
+    .screen.scr-dailyround > .hvctrl.fixed{position:static; width:min(720px,100%); max-width:720px; margin:0 auto;
+      border:1px solid rgba(241,208,74,.28); border-radius:16px; padding:12px 14px;
+      box-shadow:0 12px 28px -18px rgba(0,0,0,.85)}
+    #app.has-roundbar{padding-bottom:0}
     /* the round is the whole screen on desktop too: the compact footer link row is dropped while a round
        is live (the same links live in the ≡ menu), which is what lets the window + the right-hand column
        fit one viewport. Same reasoning as the phone's #app.has-roundbar .foot rule. */
@@ -2262,19 +2283,19 @@ window.GA_ID='G-L29P5MRWKE';
   .hvctrl-cap{text-align:center;margin-top:9px;font:800 9.5px/1.3 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#a9c3b2}
   .hvctrl-cap .sk{color:var(--gold);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
   @media (prefers-reduced-motion:reduce){ .hvctrl-side .ci,.hvctrl-play .cb{transition:none} }
-  /* CS513: on mobile, PIN the round controls to the bottom of the viewport so the player never scrolls to
-     reach Play/Pause/Next - the tracer window is the game, and it's the focus. Same fixed-not-transformed
+  /* CS513: PIN the round controls to the bottom of the viewport so the player never scrolls to reach
+     Play/Pause/Next - the tracer window is the game, and it's the focus. Same fixed-not-transformed
      pattern as .cupctrl (a transform anchors it to the document on iOS); reserve bottom padding via
-     #app.has-roundbar so it never covers the scorecard, and hide the compact footer (links live in the ≡ menu). */
-  @media(max-width:700px){
-    .hvctrl.fixed{position:fixed; left:0; right:0; bottom:0; z-index:22; max-width:none; margin:0; border-radius:0;
-      border:0; border-top:1px solid rgba(241,208,74,.28);
-      padding:9px 12px calc(8px + env(safe-area-inset-bottom,0px));
-      background:#06200f; box-shadow:0 -12px 26px -12px rgba(0,0,0,.85)}
-    .hvctrl.fixed > *{max-width:540px; margin-left:auto; margin-right:auto}
-    #app.has-roundbar{padding-bottom:calc(148px + env(safe-area-inset-bottom,0px))}
-    #app.has-roundbar .foot{display:none}
-  }
+     #app.has-roundbar so it never covers the scorecard, and hide the compact footer (links live in the ≡ menu).
+     At EVERY width, not just phones: on desktop the window now spans the screen with the scorecard below it,
+     so the controls would otherwise sit under the fold there too. */
+  .hvctrl.fixed{position:fixed; left:0; right:0; bottom:0; z-index:22; max-width:none; margin:0; border-radius:0;
+    border:0; border-top:1px solid rgba(241,208,74,.28);
+    padding:9px 12px calc(8px + env(safe-area-inset-bottom,0px));
+    background:#06200f; box-shadow:0 -12px 26px -12px rgba(0,0,0,.85)}
+  .hvctrl.fixed > *{max-width:540px; margin-left:auto; margin-right:auto}
+  #app.has-roundbar{padding-bottom:calc(148px + env(safe-area-inset-bottom,0px))}
+  #app.has-roundbar .foot{display:none}
   .hvdesc{left:8px;right:8px;bottom:8px;background:rgba(8,17,26,.74);border:1px solid rgba(255,255,255,.16);border-radius:10px;
     padding:7px 11px;font:600 11.5px/1.4 var(--body);color:#f2f7f2;text-align:center;animation:hvdin .28s ease}
   @keyframes hvdin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
@@ -26791,6 +26812,36 @@ const HV_W=360, HV_H=560, HV_TAPER=0.26;   // HV_H taller (was 470) → a bigger
 // so the floating HUD chips (scoreboard, hole info) sit over scenery instead of blocking the hole.
 // Keep the CSS aspect-ratio on `.holeview svg` (464/560) in sync: (HV_W+2*HV_EX)/HV_H.
 const HV_EX=52, HV_CAM=[-HV_EX,0,HV_W+2*HV_EX,HV_H];
+// DESKTOP: the frame WIDENS. The hole's on-screen size is set by the window HEIGHT alone (it spans the
+// full HV_H), so a wider camera can never shrink the golf - it paints more of the course either side, so
+// the scene fills a wide screen instead of leaving a tall strip in the middle of an empty page (owner:
+// "the course should take up way more of the width of the screen"). HV_EXL is the margin in force for the
+// CURRENT render; every derived expression below reads it, so one value keeps the viewBox, the terrain
+// tile, the close-up camera and the HUD in agreement. The share/GIF paths deliberately stay on HV_CAM.
+const HV_EX_MAX=300;        // widest painted margin (frame 960 units = 1.71:1) - past this the hole reads thin
+const HV_WIDE_MIN=1000;     // the desktop breakpoint the round layout uses
+const HV_DESK_CHROME=296;   // banner + broadcast header ABOVE, the in-flow control bar BELOW (measured: ~126px bar + gaps)
+const HV_DESK_MAXW=1600;    // even on a huge screen the frame stops here
+const HV_AR_MAX=(HV_W+2*HV_EX_MAX)/HV_H;   // the widest frame shape the camera will paint
+var HV_EXL=HV_EX, HV_CAML=HV_CAM;
+function hvViewEx(){        // the margin this viewport wants (phones + tablets keep the standard frame)
+  try{
+    if(typeof window==='undefined') return HV_EX;
+    if(window.__hvEx!=null) return Math.max(HV_EX, Math.min(HV_EX_MAX, +window.__hvEx||HV_EX));   // tests
+    const vw=window.innerWidth||0, vh=window.innerHeight||0;
+    if(vw<HV_WIDE_MIN) return HV_EX;
+    // the same box the CSS gives the window (keep the .scr-dailyround > .holeview width in sync): as wide
+    // as the screen allows, but never taller than the space above the fixed control bar - so the frame
+    // shape is decided ONCE and the svg's inline aspect-ratio lands the window exactly in it.
+    const boxH=Math.max(320, vh-HV_DESK_CHROME);
+    const boxW=Math.min(vw-48, HV_DESK_MAXW, boxH*HV_AR_MAX);
+    return Math.max(HV_EX, Math.min(HV_EX_MAX, Math.round((boxW/boxH*HV_H-HV_W)/2)));
+  }catch(e){ return HV_EX; }
+}
+// Pin the camera for one render pass. Called at the top of every hvNode build, so a whole frame (markup,
+// terrain tile, close-up target, HUD percentages) is computed against ONE camera even if the window is
+// resized underneath it; the animator then reads the viewBox off the DOM, so it stays consistent too.
+function hvSetCam(){ HV_EXL=hvViewEx(); HV_CAML=[-HV_EXL,0,HV_W+2*HV_EXL,HV_H]; return HV_CAML; }
 // cup + on-green ball sizes (viewBox units). A real ball (1.68") is ~0.4× the hole's width (4.25"), so on
 // the green the ball is drawn at a FIXED small radius - because ball AND cup are both in viewBox units, the
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
@@ -27405,7 +27456,7 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
     // ADAPTIVE close-up: frame the ball AND the cup with a margin, zooming as tight as the putt
     // allows - a tap-in gets a much closer camera than a 40-footer, so short putts finally read.
     const P=hvProj(g,g.pin[0],g.pin[1]), A=hvProj(g,p.from[0],p.from[1]);
-    const AR=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
+    const AR=(HV_W+2*HV_EXL)/HV_H, AR0=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
     // tighter framing than before (owner/Jordo: "the green can be bigger - an 8ft putt is not right on
     // top of the hole"): less padding + a smaller floor so the green fills the frame and putt distance reads.
     let w;
@@ -27415,20 +27466,22 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
       // as far as it can while still showing the whole shot; a long fairway hole-out or an ace can't fit
       // both in a tight frame, so it keeps the full hole rather than losing the ball off-screen.
       const len=Math.hypot(A[0]-P[0], A[1]-P[1]);
-      w=Math.max(90, Math.abs(A[0]-P[0])+62+len*0.34, (Math.abs(A[1]-P[1])+74+len*0.34)*AR);
+      // the floor is a HEIGHT floor written as a width, so a wide desktop frame shows the same amount of
+      // green rather than zooming twice as far in (AR/AR0 converts the phone-frame number to this frame's)
+      w=Math.max(90*AR/AR0, Math.abs(A[0]-P[0])+62+len*0.34, (Math.abs(A[1]-P[1])+74+len*0.34)*AR);
       // stay on the same close-up threshold the renderer uses (markers draw to scale + the high-density
       // detail tile kicks in below HV_W*0.6), so a hole-out either gets a true close-up or the full hole.
-      if(w >= HV_W*0.6) return HV_CAM;
+      if(w >= HV_W*0.6) return HV_CAML;
     } else {
-      w=Math.max(60, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
-      w=Math.min(w, 210);
+      w=Math.max(60*AR/AR0, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
+      w=Math.min(w, 210*AR/AR0);
     }
     const h=w/AR;
     const cx=(A[0]+P[0])/2, cy=(A[1]+P[1])/2-h*0.04;
-    const x=Math.max(-HV_EX,Math.min(HV_W+HV_EX-w,cx-w/2)), y=Math.max(0,Math.min(HV_H-h,cy-h/2));
+    const x=Math.max(-HV_EXL,Math.min(HV_W+HV_EXL-w,cx-w/2)), y=Math.max(0,Math.min(HV_H-h,cy-h/2));
     return [+x.toFixed(1),+y.toFixed(1),+w.toFixed(1),+h.toFixed(1)];
   }
-  return HV_CAM;
+  return HV_CAML;
 }
 // flight-curve control points in SCREEN space, perpendicular to the shot line and capped relative
 // to its length - a course-space control point warped under the perspective taper near the top of
@@ -27497,8 +27550,8 @@ function hvPuttRead(g,p,cam){
   // frames the ball and the cup and can zoom to ~60 viewBox units, where a chip drawn at a fixed
   // "close-up" size covered a third of the green. The gentle power curve keeps the read the same
   // size on SCREEN whether the frame is the whole hole or a six-foot putt.
-  const C=(cam&&cam.length===4)?cam:HV_CAM;
-  const sc=Math.pow(Math.max(24,C[2])/(HV_W+HV_EX*2), 0.85), gap=HV_GBALL*1.7;
+  const C=(cam&&cam.length===4)?cam:HV_CAML;
+  const sc=Math.pow(Math.max(24,C[2])/(HV_W+HV_EXL*2), 0.85), gap=HV_GBALL*1.7;
   // the LINE gets a floor the text doesn't: a hairline that is fine across a whole hole disappears
   // entirely once the frame is six feet of green, and the line is the read.
   const ls=Math.max(sc, 0.42);
@@ -27989,13 +28042,16 @@ function hvPinTeePixel(g,B){
 }
 function hvBackdrop(g, seedN, B, detailCam){
   if(hvArtMode()==='pixel'){
-    try{ const url=pxTerrainURL(g, seedN, B);
+    // the base tile spans the LIVE camera, and its pixel COUNT grows with it, so a wide desktop frame
+    // paints more course at exactly the same pixel size rather than stretching the same tile
+    const bw=Math.round(210*(HV_W+HV_EXL*2)/(HV_W+HV_EX*2));
+    try{ const url=pxTerrainURL(g, seedN, B, HV_EXL===HV_EX?null:{cam:HV_CAML, gw:bw});
       if(url){
-        let s=`<image href="${url}" xlink:href="${url}" x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
+        let s=`<image href="${url}" xlink:href="${url}" x="${-HV_EXL}" y="0" width="${HV_W+HV_EXL*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
         // when zoomed to a close-up, overlay a high-density tile of the visible region so the course pixels
         // match the golfer's pixel size instead of blowing up into big blocks (owner: pixels should match on zoom)
         if(detailCam){
-          const gh=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL))), gw=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL*detailCam[2]/detailCam[3])));
+          const gh=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL))), gw=Math.max(120,Math.min(760,Math.round(HV_PX_DETAIL*detailCam[2]/detailCam[3])));
           // os = detail px-density / base px-density → scenery + course features keep their true course scale
           const os=(gh/detailCam[3])/(HV_PX_BASEH/HV_H);
           const durl=pxTerrainURL(g, seedN, B, {cam:detailCam, gw, gh, os});
@@ -28006,7 +28062,7 @@ function hvBackdrop(g, seedN, B, detailCam){
     }catch(e){ console.warn('pixel terrain failed, using flat fallback', e); }
   }
   // pixel terrain unavailable (very rare) → a flat colored ground so the tracer still has a surface, never blank.
-  return `<rect x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" fill="${(B&&B.base)||'#3f7a28'}"/>`+hvPinTeePixel(g,B);
+  return `<rect x="${-HV_EXL}" y="0" width="${HV_W+HV_EXL*2}" height="${HV_H}" fill="${(B&&B.base)||'#3f7a28'}"/>`+hvPinTeePixel(g,B);
 }
 const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
 const HV_PX_BASEH=254;    // base tile vertical pixel count (pxTerrainURL default GH), over HV_H course-units
@@ -28298,7 +28354,7 @@ function hvArcD(g, ox, oy, R, cx, halfW, sign){
 // its markup, so the caller can see whether two labels would land on top of each other and move one.
 function hvLabelAt(px, py, txt, col){
   const fs=7, w=String(txt).length*fs*0.6+9;
-  const x=Math.max(HV_CAM[0]+w/2+2, Math.min(HV_CAM[0]+HV_CAM[2]-w/2-2, px));
+  const x=Math.max(HV_CAML[0]+w/2+2, Math.min(HV_CAML[0]+HV_CAML[2]-w/2-2, px));
   const y=Math.max(12, Math.min(HV_H-8, py));
   return {x, y, w,
     svg:`<g opacity=".92"><rect x="${(x-w/2).toFixed(1)}" y="${(y-6).toFixed(1)}" width="${w.toFixed(1)}" height="12" rx="6" fill="rgba(6,18,12,.78)" stroke="${col}" stroke-width=".7"/>`
@@ -28321,8 +28377,12 @@ function hvPlaceLabel(cands, txt, col, obs){
   }
   return best;
 }
-// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it
-function hvYardageSVG(g, avoid){
+// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it.
+// `opts.carry` gates the CARRY arc (owner: it must not be on screen before the tee shot is hit - it belongs to
+// the drive that has just landed). `opts.live` hides it until the animator settles the ball, exactly like the
+// distance chip, so it appears as the ball comes to rest rather than while it is still in the air.
+function hvYardageSVG(g, avoid, opts){
+  const O=opts||{};
   if(!g || g.par===3) return '';
   let s='', L150=null;
   // sand, in screen space, so a chip never lands on the trouble it is drawn to explain
@@ -28346,6 +28406,7 @@ function hvYardageSVG(g, avoid){
   // the carry: the far edge of whatever the tee shot is being asked to fly, if anything is out there.
   // Only trouble in the DRIVING ZONE counts (170-330 yds and inside the front two thirds of the hole) -
   // a greenside bunker isn't a carry, it's an approach.
+  if(!O.carry) return s;
   let carry=0, hz=null, hzR=6;
   const consider=(c,x,y,r)=>{ if(c>=170 && c<=330 && y<g.L*0.72 && c>carry){ carry=c; hz=[x,y]; hzR=r; } };
   for(const bk of (g.bunkers||[])) if(bk.y<g.L-40) consider(Math.hypot(bk.x,bk.y)+bk.r, bk.x, bk.y, bk.r);
@@ -28367,8 +28428,9 @@ function hvYardageSVG(g, avoid){
       const cb=hvPlaceLabel([[side*off,0],[-side*off,0],[side*off,17],[-side*off,17],[side*off,-17],
         [-side*off,-17],[side*(off+34),0],[-side*(off+34),0],[side*off,34],[-side*off,34]]
         .map(o=>[P[0]+o[0], P[1]+o[1]]), txt, gold, obs);
-      s+=`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`;
-      s+=cb.svg; }
+      s+=`<g id="hv-carry" opacity="${O.live?'0':'1'}">`
+        +`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`
+        +cb.svg+`</g>`; }
   }
   return s;
 }
@@ -28396,7 +28458,9 @@ function hvDistChip(g,p,live,small){
   return `<g id="hv-dist" opacity="${live?'0':'1'}"><rect x="${(x-w/2).toFixed(1)}" y="${(cy-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="${(h/2).toFixed(1)}" fill="rgba(6,18,12,.86)" stroke="rgba(241,208,74,.6)" stroke-width="${small?0.4:0.8}"/>`
     +`<text x="${x.toFixed(1)}" y="${(cy+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#F1D04A" font-family="inherit">${txt}</text></g>`;
 }
-function hvRevealDist(){ const d=document.getElementById('hv-dist'); if(d) d.setAttribute('opacity','1'); }
+// the ball has come to rest: show the readouts that belong to a ball on the ground. The CARRY arc rides the
+// same settle hook as the distance chip, so it arrives as the tee shot lands and never while it is in flight.
+function hvRevealDist(){ ['hv-dist','hv-carry'].forEach(id=>{ const d=document.getElementById(id); if(d) d.setAttribute('opacity','1'); }); }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
 function hvDoneShot(g,p,dim,small,pcol){
@@ -28626,7 +28690,10 @@ function hvFrameStyle(courseKey){ const a=hvThemeAccent(courseKey);
   return `border-color:${a}99;box-shadow:0 0 0 2px ${a}3d, 0 0 20px -6px ${a}66, 0 16px 36px -22px rgba(0,0,0,.82), inset 0 1px 0 rgba(255,255,255,.05)`; }
 function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
-  const fst=hvFrameStyle(courseKey);   // themed frame for every svg in this node
+  // Pin the camera for THIS build: one hvSetCam per node, so the viewBox, the terrain tile, the close-up
+  // target and the HUD are all computed against the same frame even if the window is resized mid-render.
+  hvSetCam();
+  const fst=hvFrameStyle(courseKey)+`;aspect-ratio:${HV_CAML[2]}/${HV_CAML[3]}`;   // themed frame + live frame shape
   if(multi){
     const order=multi.order||[];
     if(!order.length || !multi.shots.every(ss=>ss.length&&ss[0].k)) return null;
@@ -28641,7 +28708,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const cur=order[showN-1], prev=showN>1?order[showN-2]:null;
     const curP=cur?plots[cur.u][cur.i]:null, prevP=prev?plots[prev.u][prev.i]:null;
     const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-    const camTarget=(live&&curP)?hvCamFor2(g,curP):HV_CAM;
+    const camTarget=(live&&curP)?hvCamFor2(g,curP):HV_CAML;
     const small=camTarget[2]<HV_W*0.6;
     const inCam=(p)=>{ const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
       return x>=camTarget[0]-8&&x<=camTarget[0]+camTarget[2]+8&&y>=camTarget[1]-8&&y<=camTarget[1]+camTarget[3]+8; };
@@ -28651,7 +28718,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const holed=(showN>=total);
     if(live && curP) inner+=hvLiveShot(g,curP,small,multi.cols[cur.u],camTarget);
     else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
-    const cam=live?hvCamFor2(g,prevP):HV_CAM;
+    const cam=live?hvCamFor2(g,prevP):HV_CAML;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
     const detailCam=hvDetailCam(camTarget, live&&!!curP);
     const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
@@ -28671,7 +28738,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
     return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
-      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
+      <div class="hvshell"><svg viewBox="${HV_CAML.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
@@ -28680,7 +28747,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const showN=live?revealN:shots.length;
   const idx=showN-1;
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const camTarget=live?hvCamFor(g,plots,idx):HV_CAM;
+  const camTarget=live?hvCamFor(g,plots,idx):HV_CAML;
   const small=camTarget[2]<HV_W*0.6;   // green close-up → draw markers/strokes to scale
   // under the green close-up, shrink ANY marker inside the camera box (fringe/collar/greenside-
   // bunker rests aren't flagged onGreen but sit in frame - full-size chips read huge when zoomed)
@@ -28691,13 +28758,15 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const holed=(showN>=shots.length);
   if(live && idx>=0 && plots[idx]) inner+=hvLiveShot(g,plots[idx],small,null,camTarget);
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
-  const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
+  const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAML;
   const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
   // ITEM 13: the map's yardage references (full-hole camera only) sit under the tracers; the
   // distance-to-pin chip rides the current shot's resting ball, hidden until the ball settles.
   const curP=(idx>=0&&plots[idx])?plots[idx]:null;
   const dsmall=curP?small&&inCam(curP):false;
-  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall));
+  // the carry arc belongs to the tee shot that has just landed: drawn only while the DRIVE is the shot on the
+  // map (idx 0), hidden until the animator settles it, and gone the moment the next shot is played (idx > 0).
+  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall), {carry:(idx===0 && !!curP), live:(live&&idx===0)});
   const dchip=curP?hvDistChip(g,curP,live,dsmall):'';
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
     <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${yard}${inner}${dchip}${overlay||''}</svg></div></div>`);
@@ -30459,7 +30528,7 @@ function dPlaceTargets(shell, g, sc, pick){
     // ITEM 07: the decision panel now docks along the BOTTOM of the window, so a target can no longer
     // sit in the lower third - it would land under the panel. The green (and so the aggressive target)
     // is near the top of the frame anyway; only a deep layup target is pulled up by this.
-    let lf=Math.max(11,Math.min(89,(p[0]+HV_EX)/(HV_W+2*HV_EX)*100)), tp=Math.max(9,Math.min(HV_DEC_TOP,p[1]/HV_H*100));
+    let lf=Math.max(11,Math.min(89,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100)), tp=Math.max(9,Math.min(HV_DEC_TOP,p[1]/HV_H*100));
     // nudge apart if the two chips would collide (close in screen space)
     for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(HV_DEC_TOP, q.tp+11); } }
     // and out from under the fixed top-left hole chip - on a short hole the green (and so a target)
