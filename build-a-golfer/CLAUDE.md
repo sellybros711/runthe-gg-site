@@ -17684,3 +17684,59 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   `build-a-golfer.html`, so a change made only to the deployed file is one deploy away from being reverted.
 - Tunable: `CUTSCENE_LIVE` (the kill switch), `CS_TESTERS`, `CS_OUTLETS`/`CS_CAST`, `CS_SCENES` +
   `CS_TAG_SCENES`.
+
+### THE TOURTRACER REVAMP: the ball that was never painted, and one source of truth for its size
+- **Two commits, NOT deployed** (`c8a15e89` graphics, `69a2fd78` animation), held at the owner's standing
+  rule that each item is explained before it is pushed to the site.
+- **The headline is a shipped rendering bug, live on /golf right now.** The in-flight ball is painted
+  `fill="url(#hvball)"` and **that gradient was never defined anywhere in the file**, so the paint
+  reference is unresolvable and the browser falls back to `fill:none` - the ball has been a bare stroked
+  ring you can see the course through ever since CS139 introduced it. Traced to its introducing commit
+  with `git log -S'url(#hvball)'` and confirmed on `origin/main`. **An SVG paint reference with no matching
+  element and no fallback renders as fill:none, silently** - it does not throw and it does not warn, which
+  is how it survived this long.
+  - The gradient is emitted INLINE in `hvLiveShot`, beside the one ball that uses it (a live shot draws
+    exactly one, so the id cannot collide), and **tinted to the player's ball colour** rather than put in
+    the shared `hvBackdrop` - a single white gradient there would have flattened the per-player colours an
+    H2H field reads by. `hvBallHex` normalises `#rgb` and stray css names first so the shade helpers can
+    never be handed something that renders as NaN.
+- **The animation pass: `restR(plot)` now owns how big the ball is SITTING AT A GIVEN SPOT**, and every
+  phase interpolates between those sizes instead of asserting its own. Three phases each asserting
+  independently is what made a ball at rest on the green INFLATE 0.86 -> 1.28 the moment the next shot's
+  animation began, and a ball landing on the green step 2.05 -> 0.98 in one 16.7ms frame.
+  - **The cause is that the two sizes only coincide at one zoom.** `HV_GBALL` is FIXED (the cup is a fixed
+    viewBox size, so the ball has to be one for the ball-to-cup ratio to stay honest at every zoom) while
+    the ground ball is zoom-compensated by `bScale()`. `HV_GROUND*0.42 === HV_GBALL`, and 0.42 is the
+    `bScale` floor - so they agree at full zoom and nowhere else.
+  - Behaviour is unchanged in the common case: a non-green shot under the full camera has
+    `r0 === rL === rEnd`, so flight is still `2.05 + h*5.75` and the roll still `2.05 + hop*2.4`.
+- **The measurement is the useful part, and the first three guesses were all wrong.** An in-page rAF
+  recorder (`scratchpad/tt_anim.mjs`) samples the ball every frame - sampling from Node is far coarser than
+  the animator's own frame rate, and a jump that lasts ONE frame is exactly what was being hunted. The
+  worst single-frame radius step went **1.07 -> 0.35 -> 0.22**. Three hypotheses were tried and discarded
+  (bScale changing mid-tween, two `#hv-ball` elements, `hvSettle` disagreeing) before instrumenting the
+  recorder with `n` / `done` / `dailyRevealN` instead - and `dailyRevealN` going 2 -> 3 at the jump is what
+  identified it as a SHOT BOUNDARY rather than anything inside one shot. **Fix the instrument, not the
+  guess.**
+  - **0.22 is the FLOOR, not a residual defect**: it is the smooth per-frame swell of the ball climbing
+    (`4.59 -> 4.81 -> 5.03 -> 5.24 -> 5.46`), so the threshold cannot be tightened past ~0.25 without
+    failing on the flight arc itself. Written into the test so nobody tries.
+- **`tt_ball.mjs` is the proof the ball is filled, and two sampling strategies had to be thrown away first.**
+  It FREEZES the animator before reading the ball's position (the ball moves every frame, so reading it and
+  then screenshotting samples a spot the ball has already left - which is how a centre sample lands on the
+  tracer instead of the ball), samples a RING inside the ball rather than its centre (the white tracer core
+  runs straight through the centre and reads bright whether the ball is filled or not - the pre-fix build
+  passed a centre check), and samples a second ring well OUTSIDE it as a terrain reference so a coloured
+  ball is judged the same way a white one is (distance-to-white is too weak: dark green is "closer to
+  orange" too, so the pre-fix build passed that as well). **12 pass on the fix, 5 pass / 7 fail on the
+  pre-fix build.**
+- Verified: tt_anim 4, tt_ball 12, tt_revamp 21, sig01 19, dec16 23, carry 23, wind_e2e 5, nobag 10,
+  cutscene 24 - 0 fail, 0 page errors; main script parses. **No parallel edits to adopt**: the deployed
+  `golf/index.html` is byte-identical to the source at `c1f4b8b3`, so the delta going live is exactly these
+  two commits.
+- Screenshots: `scratchpad/shots/tt/cmp.png` (the full hole, before/after) and
+  `scratchpad/shots/tt/zoom_cmp.png` (tight on the ball - a hollow ring against a lit, shaded ball). The
+  full-hole pair draws DIFFERENT shots because practice mode re-salts every attempt; the tight crop exists
+  to remove that confound.
+- Tunable: `HV_GROUND` / `HV_GBALL` / `HV_AIRPEAK` and the `bScale()` floor (the sizes `restR` interpolates
+  between), and the inline `#hvball` gradient stops in `hvLiveShot`.
