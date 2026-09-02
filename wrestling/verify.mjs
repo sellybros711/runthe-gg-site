@@ -176,6 +176,56 @@ section('a belt never moves on a DQ or a count-out');
   await page.close();
 }
 
+/* ---------- 4b. the first night ---------- */
+section('the first night is a show, not a sheet');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(async ()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={};
+    ['gcw','cdp','scw','rose','sbcw'].forEach(p=>{ out['room_'+p]=houseRoster(p).length; });
+    const o=G.car.booking && G.car.booking.o;
+    out.bookedMatch = !!(G.car.booking && G.car.booking.type==='match');
+    if(o){ out.oppHoldsBelt = titlesHeldBy(o.oppId).length>0; out.nonTitleBanner = !!o.nonTitleVsChamp; out.opp=o.oppName; }
+    // walk to the ring: the night-one scene must be the one that plays
+    goBooking();
+    await new Promise(r=>setTimeout(r,500));
+    const tag=document.querySelector('#sceneBody .scene-tag');
+    out.sceneTag = tag ? tag.textContent.trim() : null;
+    // step through the scene: an option, then whatever continue button the
+    // note leaves behind, until the fight has actually started
+    // (the pre-bell "Your first match" explainer is a modal that holds the
+    // bell until it is dismissed; dismiss it the way a player would)
+    for(let i=0;i<8 && !(typeof MS!=='undefined' && MS && !MS.ended);i++){
+      const opt=document.querySelector('#sceneBody .scene-opt');
+      const cont=document.querySelector('#sceneBody .scene-continue button');
+      const mb=document.querySelector('#modalBack.open #modalBtns button');
+      if(opt) opt.click(); else if(cont) cont.click(); else if(mb) mb.click();
+      await new Promise(r=>setTimeout(r,900));
+    }
+    out.fightStarted = !!(typeof MS!=='undefined' && MS);
+    // let the match resolve without playing it, and wait for the debrief
+    try{ skipFight(); }catch(e){ out.skipErr=e.message; }
+    await new Promise(r=>setTimeout(r,3200));
+    out.debrief = !!(G.car.coachSeen && G.car.coachSeen.firstNight);
+    out.modalTitle = (document.getElementById('modalTitle')||{}).textContent||'';
+    out.modalOpen = document.getElementById('modalBack').classList.contains('open');
+    return out;
+  });
+  if(errs.length) bad('first night page errors: '+errs.slice(0,2).join(' | '));
+  for(const p of ['gcw','cdp','scw','rose']) (r['room_'+p]>=5) ? ok(`${p} has ${r['room_'+p]} wrestlers`) : bad(`${p} has only ${r['room_'+p]} wrestlers`);
+  if(!r.bookedMatch) bad('week one is not a match');
+  else {
+    (r.oppHoldsBelt===false) ? ok(`debut opponent (${r.opp}) holds no belt`) : bad(`debut opponent (${r.opp}) is a champion`);
+    (!r.nonTitleBanner) ? ok('no non-title banner on the debut') : bad('debut sheet shows the non-title banner');
+  }
+  (r.sceneTag==='YOUR FIRST NIGHT') ? ok('the night-one scene plays at the curtain') : bad('night-one scene did not play: '+r.sceneTag);
+  (r.debrief && r.modalOpen && /first night/i.test(r.modalTitle)) ? ok('the first-result debrief opened') : bad('no first-result debrief: '+JSON.stringify({debrief:r.debrief, open:r.modalOpen, title:r.modalTitle, skip:r.skipErr}));
+  await page.close();
+}
+
 /* ---------- 5. careers play out ---------- */
 if(!QUICK){
   section(`${RUNS} careers x ${YEARS} years`);
@@ -219,6 +269,10 @@ if(!QUICK){
           if(!titleBefore && c.title){ titleWins++; log.push(`Y${c.year}W${c.week} won the ${c.title} from ${o.oppName} (${res.quality})`); }
           if(!stBefore && story()) { stories++; log.push(`Y${c.year}W${c.week} feud starts with ${charById(story().charId).name}`); }
           if(stBefore && !story()) log.push(`Y${c.year}W${c.week} feud settled`);
+          // applyMatch ends the week itself. Calling advanceWeek here too
+          // skipped every other week and halved the match count for months
+          // before anybody noticed.
+          continue;
         } else if(b.type==='promo'){ promos++; }
         try{ advanceWeek(); }catch(e){ P('advanceWeek threw: '+e.message); break; }
       }

@@ -358,6 +358,92 @@ window.RTR_CHARS = [
     lines:{ taunt:['Everybody has to come through me. Nobody has ever liked it.','I am not the mountain, kid. I am the door. And it is shut.'],
             win:['Not yet. And I will tell anyone who asks exactly why.'], lose:['...Door is open. Go on. Do not look back at me.'],
             respect:['I have sent home four hundred people. I am telling the office about you tonight.'] } },
+
+  // ================= SECOND ROW: bodies for the small rooms =================
+  // The indie and regional promotions had three people in them, so a first
+  // year was the same two opponents forty times. Nine more, written to the
+  // same schema, so a debut has somebody to be against who is not a champion.
+  { id:'c_moth', name:'Bea Mothersole', nick:'The Moth', promo:'cdp', align:'tweener', over:38,
+    style:'technician', attrs:{po:34,te:66,ae:58,ch:48,ps:62,to:44,st:70}, finisher:'Lights Out',
+    gimmick:'Wrestles like she is solving a puzzle nobody else can see. Drawn to the brightest thing in the room, then takes it apart.',
+    traits:['calculating','patient','overlooked'],
+    look:L('#f3d3b3','#7a3f9d','#1a1a1a','#e0b341',{hairStyle:'buzz',attire:'singlet',boots:'short',acc:'wrist',pattern:'split'}),
+    lines:{ taunt:['I have already counted your moves. Eleven. I will need four.','Do not rush. It will not help you.'],
+            win:['Four.'], lose:['Interesting. A variable I did not have.'],
+            respect:['You are not a solved problem. That is rare.'] } },
+
+  { id:'c_dutch', name:'Dutch Halloran', nick:'The Understudy', promo:'cdp', align:'face', over:36,
+    style:'brawler', attrs:{po:52,te:44,ae:30,ch:56,ps:40,to:70,st:64}, finisher:'Curtain Call',
+    gimmick:'Failed actor, working stagehand, and the most enthusiastic man in the building. Has read every wrestling book ever printed.',
+    traits:['beloved','workhorse','kind'],
+    look:L('#e8bd95','#8a5a2b','#2f7fbf','#F4E8DB',{hairStyle:'mullet',face:'stache',attire:'trunks',boots:'pads',acc:'elbow',pattern:'stripe'}),
+    lines:{ taunt:['I waited three years for a spot on this card. I am not giving it back.','Every night is opening night.'],
+            win:['Thank you. Thank you. Really.'], lose:['Notes. I will take notes.'],
+            respect:['You made me look good out there. That is the whole job.'] } },
+
+  { id:'c_shiv', name:'Shiv Danko', nick:'The Fork', promo:'gcw', align:'heel', over:40,
+    style:'brawler', attrs:{po:50,te:36,ae:26,ch:60,ps:44,to:84,st:58}, finisher:'Table Manners',
+    gimmick:'Deathmatch lifer. Counts scars the way other people count title reigns. Smiles the whole time.',
+    traits:['violent','chaotic','loudmouth'],
+    look:L('#d29b6e','#b03a2e','#1a1a1a','#C6392C',{hairStyle:'spiky',face:'beard',attire:'tank',boots:'short',acc:'chain',pattern:'flame'}),
+    lines:{ taunt:['You bleed? Good. We can be friends.','I have been stapled, sawed and set on fire. You are a Tuesday.'],
+            win:['Cleanup on aisle you.'], lose:['Ha! HA! Again. Do it again.'],
+            respect:['You took the light tube. You are one of us now.'] } },
+
+  { id:'c_mabel', name:'Mabel Okonkwo', nick:'The Landlord', promo:'gcw', align:'face', over:43,
+    style:'powerhouse', attrs:{po:80,te:42,ae:24,ch:62,ps:52,to:70,st:56}, finisher:'Eviction Notice',
+    gimmick:'Owns the building GCW runs in. Wrestles because somebody has to keep the tenants in line.',
+    traits:['strong','respected','stoic'],
+    look:L('#5d3a22','#241a12','#e07b39','#1a1a1a',{hairStyle:'short',attire:'singlet',boots:'tall',acc:'belt',pattern:'solid'}),
+    lines:{ taunt:['Rent is due.','I do not throw people out. I throw them through.'],
+            win:['Out.'], lose:['You can stay. For now.'],
+            respect:['Lease renewed. Do not make me regret it.'] } },
+
+  { id:'c_lux', name:'Lux Delgado', nick:'Golden Hour', promo:'scw', align:'face', over:50,
+    style:'highflyer', attrs:{po:42,te:58,ae:82,ch:78,ps:50,to:46,st:72}, finisher:'Sunset Flip Bomb',
+    gimmick:'Skater, model, part-time stuntman. Every move is timed to the lighting rig.',
+    traits:['showman','agile','cocky'],
+    look:L('#d29b6e','#c99b3d','#d2687a','#F4E8DB',{hairStyle:'swoop',attire:'tights',boots:'sneak',acc:'shades',pattern:'gold'}),
+    lines:{ taunt:['Golden hour is in twelve minutes. I will be done by then.','Smile. You are in the background of my highlight.'],
+            win:['Print it.'], lose:['Bad angle. Bad light. Bad night.'],
+            respect:['You would look good in the reel. I mean that.'] } },
+
+  { id:'c_rocco', name:'Rocco Santangelo', nick:'The Bouncer', promo:'scw', align:'heel', over:47,
+    style:'powerhouse', attrs:{po:74,te:44,ae:28,ch:58,ps:56,to:76,st:52}, finisher:'Last Orders',
+    gimmick:'Worked the door at every club on the strip. Wrestles like a man ending a night out.',
+    traits:['ruthless','disciplined','veteran'],
+    look:L('#e8bd95','#241a12','#1a1a1a','#e0b341',{hairStyle:'bald',face:'beard',attire:'trunks',boots:'tall',acc:'wrist',pattern:'solid'}),
+    lines:{ taunt:['You are not on the list.','I have thrown out bigger men for less.'],
+            win:['Out you go.'], lose:['Alright. You are on the list.'],
+            respect:['You can come in. Do not make it a habit.'] } },
+
+  { id:'c_kaede', name:'Kaede Sato', nick:'Second Year', promo:'rose', align:'face', over:44,
+    style:'technician', attrs:{po:44,te:70,ae:62,ch:54,ps:58,to:60,st:78}, finisher:'Sato Special',
+    gimmick:'Second year in. Still bows to the ring on the way out. Will chop you until her hand goes numb.',
+    traits:['disciplined','workhorse','loyal'],
+    look:L('#f3d3b3','#241a12','#c0455f','#F4E8DB',{hairStyle:'short',attire:'singlet',boots:'pads',acc:'wrist',pattern:'stripe'}),
+    lines:{ taunt:['Please. Teach me something.','I will not stay down. It is the only thing I am good at.'],
+            win:['Thank you for the match!'], lose:['Again. Please. Again.'],
+            respect:['You did not go easy. That is respect.'] } },
+
+  { id:'c_ren', name:'Ren Kurosawa', nick:'The Black Rose', promo:'rose', align:'heel', over:55,
+    style:'technician', attrs:{po:52,te:82,ae:56,ch:70,ps:78,to:64,st:70}, finisher:'Thorn',
+    gimmick:'Left the company once and came back colder. Treats every match as a debt being collected.',
+    traits:['ruthless','calculating','resentful'],
+    look:L('#e8bd95','#1a1a1a','#1a1a1a','#C6392C',{hairStyle:'long',attire:'tights',boots:'tall',acc:'cape',pattern:'split'}),
+    lines:{ taunt:['This company forgot me. I did not forget it.','You are in my way. It is not personal. It is exactly personal.'],
+            win:['Paid.'], lose:['A delay. Not a cancellation.'],
+            respect:['You fought like it mattered. Few here do.'] } },
+
+  { id:'c_momo', name:'Momo Hayashi', nick:'The Comet', promo:'rose', align:'face', over:40,
+    style:'highflyer', attrs:{po:36,te:56,ae:80,ch:66,ps:44,to:42,st:80}, finisher:'Comet Tail',
+    gimmick:'Youngest on the roster. Runs everywhere, including into things. The crowd adores her for it.',
+    traits:['reckless','beloved','agile'],
+    look:L('#f3d3b3','#e0e0e0','#2fbfa8','#F4E8DB',{hairStyle:'pony',attire:'tights',boots:'sneak',acc:'elbow',pattern:'stars'}),
+    lines:{ taunt:['Faster! Everything is better faster!','I am going to jump. I do not know where yet.'],
+            win:['Did you SEE that?!'], lose:['Ow. Okay. Ow.'],
+            respect:['You caught me! Nobody catches me!'] } },
+
 ];
 
 /* Every character starts neutral with you; the career mutates this. */
