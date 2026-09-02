@@ -107,6 +107,24 @@ open('/tmp/x.js','w').write(b)
 " && node --check /tmp/x.js
 ```
 
+Then the regression suite, which needs no network:
+
+```
+node wrestling/verify.mjs            script tags resolve, no trademarks, both pages load,
+                                     the title rule, and 2 careers x 4 years of invariants
+node wrestling/verify.mjs --quick    everything but the careers
+```
+
+It covers `wrestling/booking/` too. That page loads `../roster.js`, `../corrections.js`
+and `../personalities.js`, which look unused from the career game and are not: they
+were deleted once as dead code and the booking sim shipped broken for a week. The
+suite's first section fails on any script tag that points at a missing file.
+
+The roster, the mentors in `legends.js`, the free agents in `personalities.js` and the
+booking sim's promotions all use LEGAL names and invented companies. No ring names,
+no trademarked match or event names, no catchphrases. The suite's second section
+carries the blocklist; add to it when you remove something.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked.
 

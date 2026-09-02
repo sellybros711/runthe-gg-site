@@ -351,6 +351,64 @@ console.log('\n=== the way out ===');
   ok('tapping to the last line ends it', played.out, played.taps + ' taps');
 }
 
+/* THE OPENING HANDS YOU THE PHONE.
+   The chief's last lines are "your first call is already holding" and "fair warning, it is a
+   lawsuit", and the way out of that used to be a briefing screen with nine cards on it. The
+   intro ends on the call now, and the call is the one place this mode explains itself.
+
+   SKIP IS THE OTHER PATH AND IT HAS TO STAY THE OTHER PATH. Somebody pressing Skip on an
+   intro has played this before and wants the office; dropping them into a tutorial lawsuit
+   would make the button a trap for the only person it is for. Both ways out are walked, on a
+   fresh term each time, because "once" means the intro cannot be replayed in this one. */
+console.log('\n=== the intro ends on the first case ===');
+{
+  const fresh = async () => {
+    await p.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
+    await p.reload({ waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(2200);
+    await p.click('#g-start').catch(() => {});
+    await p.waitForTimeout(900);
+  };
+
+  await fresh();
+  ok('a new term opens on the cutscene', await on('s-scene'));
+  /* Tap to the last line rather than skipping. */
+  await p.evaluate(async () => {
+    let taps = 0;
+    while (document.getElementById('s-scene').classList.contains('on') && taps < 60) {
+      document.getElementById('sc-card').click();
+      taps++;
+      await new Promise((r) => setTimeout(r, 70));
+    }
+  });
+  await p.waitForTimeout(700);
+  ok('watching it out lands on the desk rather than the office', await on('s-desk'));
+  ok('  and the case is the first call', /first call/i.test(await p.textContent('#d-eyebrow')),
+    (await p.textContent('#d-eyebrow')).trim());
+  ok('  which is a lawsuit, as the chief said it would be',
+    /suing|lawsuit|filed/i.test(await p.textContent('#d-brief')));
+  /* AND THE FOUR THINGS THE SCREEN ASKS OF YOU, which is the whole tutorial: no tour, no
+     modal, no flag on the player. It is a property of this one case. */
+  const steps = await p.$$eval('#d-teach li', (e) => e.map((x) => x.textContent.trim()));
+  ok('the desk says how a decision works', steps.length === 4, steps.length + ' steps');
+  ok('  numbered, and each one a sentence',
+    steps.every((s, i) => s.indexOf(String(i + 1)) === 0 && s.length > 30),
+    (steps[0] || '').slice(0, 50));
+  ok('  and it can be ruled on like any other case',
+    !!(await p.$('#d-options .opt')) && (await p.$$('#d-options .opt')).length >= 3);
+  /* AND IT DOES NOT FOLLOW YOU. The panel belongs to the item, so the next case has none. */
+  await p.evaluate(() => window.PS_CFB_COMMISH_TEST.deskItem('gameday-sign'));
+  await p.waitForTimeout(500);
+  ok('  and no other case is taught', await p.$eval('#d-teach', (e) => e.hidden) === true);
+
+  await fresh();
+  ok('a second new term opens on the cutscene again', await on('s-scene'));
+  await p.click('#b-scene-skip');
+  await p.waitForTimeout(800);
+  ok('but skipping it goes to the office, not the lawsuit', await on('s-office'));
+  ok('  and the desk did not open behind it', !(await on('s-desk')));
+}
+
 console.log('\n=== a ruling plays out and then hands over to the room ===');
 {
   /* THE WHOLE POINT OF ATTACHING A SCENE TO A RULING. The room is painted before the scene

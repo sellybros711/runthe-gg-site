@@ -2096,23 +2096,44 @@ window.GA_ID='G-L29P5MRWKE';
     .holeview svg{border-radius:0;border-left:none;border-right:none}
     .hvbrand,.hvstat{padding-left:calc(10px + env(safe-area-inset-left,0px));padding-right:calc(10px + env(safe-area-inset-right,0px))}
   }
-  /* DESKTOP (>=1000px): the round plays as TWO COLUMNS - the tracer window on the left, sized off the
-     VIEWPORT HEIGHT so the whole round fits one screen, and everything else (the score line, the
-     decision cards, the scorecard, the controls) stacked in a column on the right. The broadcast header
-     spans both. Purely a CSS grid over the existing DOM order, so nothing in scrDailyRound moves and the
-     phone layout (full-bleed window + fixed bottom bar, the <=700px block above) is untouched. */
+  /* DESKTOP (>=1000px): the course is the screen. The round breaks out of the 600px content column and
+     the tracer window spans the viewport (capped at 1600), with the scoreboard, the scorecard and the
+     controls stacked BELOW it (owner: "the scoreboard should remain below and the course should take up
+     way more of the width of the screen"). The window's aspect ratio is not fixed here - hvViewEx() picks
+     the painted side margin to match this box, and hvNode writes the resulting ratio onto the svg inline -
+     so a wider screen paints MORE COURSE either side rather than stretching or shrinking the hole.
+     Keep the width expression in sync with HV_DESK_CHROME / HV_DESK_MAXW. The phone layout (full-bleed
+     window + fixed bottom bar, the <=700px block above) is untouched. */
   @media (min-width:1000px){
-    .screen.scr-dailyround{display:grid; grid-template-columns:minmax(0,1fr) minmax(340px,500px); gap:0 26px; align-content:start}
-    .screen.scr-dailyround > .bcasthd{grid-column:1 / -1; grid-row:1; max-width:none; margin:0 0 10px}
-    /* height-bounded off the svg's 464/560 aspect ratio, so the window is as big as the screen allows
-       without pushing the right-hand column below the fold */
-    .screen.scr-dailyround > .holeview{grid-column:1; grid-row:2 / span 30; align-self:start;
-      justify-self:center; margin:0; max-width:100%;
-      width:min(620px, max(360px, calc((100vh - 205px) * 464 / 560)))}
-    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd){grid-column:2; min-width:0}
-    .screen.scr-dailyround > .dcardwrap,
-    .screen.scr-dailyround > .hvctrl{max-width:none; margin-left:0; margin-right:0}
+    .screen.scr-dailyround{max-width:none; padding-left:24px; padding-right:24px}
+    .screen.scr-dailyround > .bcasthd{max-width:none; margin:0 auto 10px; width:min(calc(100vw - 48px), 1600px)}
+    /* as wide as the screen allows, but never taller than the room above the fixed control bar.
+       1.7142857 is HV_AR_MAX ((360 + 2*300) / 560) and 296px is HV_DESK_CHROME - keep both in sync
+       with hvViewEx(), which sizes the camera to this exact box. */
+    .screen.scr-dailyround > .holeview{margin:0 auto 8px; max-width:none;
+      width:min(calc(100vw - 48px), 1600px, calc((100vh - 296px) * 1.7142857))}
+    /* the scorecard has the width to be a real one: front nine and back nine side by side, one row */
+    .screen.scr-dailyround > .dcardwrap{max-width:1100px}
+    .screen.scr-dailyround .rsc{max-width:none; flex-direction:row; flex-wrap:wrap; gap:6px 16px; align-items:flex-start}
+    .screen.scr-dailyround .rsc-leg{flex:1 0 100%}
+    .screen.scr-dailyround .rsc-block{flex:1 1 0; min-width:0}
+    /* everything else stays a readable column, centred under the window */
+    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd){max-width:760px; margin-left:auto; margin-right:auto}
     .screen.scr-dailyround > .dcardwrap{margin-top:0}
+    /* On desktop the control bar sits IN FLOW directly under the window (order:1) with the scorecard
+       below it (order:2), so the fixed bottom bar can never cover the card - which it did, leaving a
+       "SCORECARD" header peeking out from behind the controls. The controls are the action, so they
+       stay in view; the card is reference, one short scroll down. A phone keeps the fixed bar (the
+       <=700px rules), where the window is full-bleed and there is no room for both. */
+    .screen.scr-dailyround{display:flex; flex-direction:column}
+    .screen.scr-dailyround > .hvctrl{order:1}
+    .screen.scr-dailyround > .dcardwrap{order:2}
+    /* auto margins in a flex column disable stretch, so the bar would shrink-wrap and wrap its
+       labels onto two lines - give it a real width so LAST HOLE / SIM TO END read on one line. */
+    .screen.scr-dailyround > .hvctrl.fixed{position:static; width:min(720px,100%); max-width:720px; margin:0 auto;
+      border:1px solid rgba(241,208,74,.28); border-radius:16px; padding:12px 14px;
+      box-shadow:0 12px 28px -18px rgba(0,0,0,.85)}
+    #app.has-roundbar{padding-bottom:0}
     /* the round is the whole screen on desktop too: the compact footer link row is dropped while a round
        is live (the same links live in the ≡ menu), which is what lets the window + the right-hand column
        fit one viewport. Same reasoning as the phone's #app.has-roundbar .foot rule. */
@@ -2262,19 +2283,19 @@ window.GA_ID='G-L29P5MRWKE';
   .hvctrl-cap{text-align:center;margin-top:9px;font:800 9.5px/1.3 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#a9c3b2}
   .hvctrl-cap .sk{color:var(--gold);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
   @media (prefers-reduced-motion:reduce){ .hvctrl-side .ci,.hvctrl-play .cb{transition:none} }
-  /* CS513: on mobile, PIN the round controls to the bottom of the viewport so the player never scrolls to
-     reach Play/Pause/Next - the tracer window is the game, and it's the focus. Same fixed-not-transformed
+  /* CS513: PIN the round controls to the bottom of the viewport so the player never scrolls to reach
+     Play/Pause/Next - the tracer window is the game, and it's the focus. Same fixed-not-transformed
      pattern as .cupctrl (a transform anchors it to the document on iOS); reserve bottom padding via
-     #app.has-roundbar so it never covers the scorecard, and hide the compact footer (links live in the ≡ menu). */
-  @media(max-width:700px){
-    .hvctrl.fixed{position:fixed; left:0; right:0; bottom:0; z-index:22; max-width:none; margin:0; border-radius:0;
-      border:0; border-top:1px solid rgba(241,208,74,.28);
-      padding:9px 12px calc(8px + env(safe-area-inset-bottom,0px));
-      background:#06200f; box-shadow:0 -12px 26px -12px rgba(0,0,0,.85)}
-    .hvctrl.fixed > *{max-width:540px; margin-left:auto; margin-right:auto}
-    #app.has-roundbar{padding-bottom:calc(148px + env(safe-area-inset-bottom,0px))}
-    #app.has-roundbar .foot{display:none}
-  }
+     #app.has-roundbar so it never covers the scorecard, and hide the compact footer (links live in the ≡ menu).
+     At EVERY width, not just phones: on desktop the window now spans the screen with the scorecard below it,
+     so the controls would otherwise sit under the fold there too. */
+  .hvctrl.fixed{position:fixed; left:0; right:0; bottom:0; z-index:22; max-width:none; margin:0; border-radius:0;
+    border:0; border-top:1px solid rgba(241,208,74,.28);
+    padding:9px 12px calc(8px + env(safe-area-inset-bottom,0px));
+    background:#06200f; box-shadow:0 -12px 26px -12px rgba(0,0,0,.85)}
+  .hvctrl.fixed > *{max-width:540px; margin-left:auto; margin-right:auto}
+  #app.has-roundbar{padding-bottom:calc(148px + env(safe-area-inset-bottom,0px))}
+  #app.has-roundbar .foot{display:none}
   .hvdesc{left:8px;right:8px;bottom:8px;background:rgba(8,17,26,.74);border:1px solid rgba(255,255,255,.16);border-radius:10px;
     padding:7px 11px;font:600 11.5px/1.4 var(--body);color:#f2f7f2;text-align:center;animation:hvdin .28s ease}
   @keyframes hvdin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
@@ -19788,7 +19809,7 @@ function pressBuzzHTML(bz){
      - Gated to the tester accounts while it's live (usernames, the same server-attributed handle the
        dev flags use), so the public site is untouched until it's launched.
    To LAUNCH to everyone: flip CUTSCENE_LIVE to true. -------------------------------------------- */
-var CUTSCENE_LIVE=false;                                   // flip to true to release to everyone
+var CUTSCENE_LIVE=true;                                    // live for everyone (was tester-only)
 var CS_TESTERS=['csel8','runnyj','malikwillislover'];      // tester accounts (lowercased usernames)
 function cutscenesOn(){
   try{
@@ -19949,11 +19970,34 @@ function csStyleOnce(){
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cs-skip{flex:0 0 auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#cfe0e8;
     border-radius:999px;padding:5px 11px;font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
-  .cs-stage{flex:1 1 auto;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;padding:10px 10px 18px}
+  .cs-stage{flex:1 1 auto;position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:10px 10px 14px;overflow:hidden}
   .cs-stage::before{content:'';position:absolute;left:50%;bottom:0;width:min(420px,86%);height:70%;transform:translateX(-50%);
-    background:radial-gradient(60% 70% at 50% 100%, rgba(95,208,224,.20), transparent 72%);pointer-events:none}
+    background:radial-gradient(60% 70% at 50% 100%, rgba(95,208,224,.20), transparent 72%);pointer-events:none;z-index:1}
+  /* the scene sinks into the card instead of stopping at a hard line */
+  .cs-stage::after{content:'';position:absolute;left:0;right:0;bottom:0;height:96px;z-index:1;pointer-events:none;
+    background:linear-gradient(180deg,rgba(3,7,9,0),rgba(3,7,9,.92) 78%,#030709)}
   .cs-fig{position:relative;image-rendering:pixelated;filter:drop-shadow(0 12px 22px rgba(0,0,0,.55))}
   .cs-fig .pxfigsm{height:auto}
+  /* the scene behind the golfer: a course, a media wall, or the feed's own dark */
+  .cs-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .cs-bg-course{position:absolute;inset:0;background:linear-gradient(180deg,#07202f 0%,#0e3a4c 34%,#17544f 52%,#1f5c34 60%,#174526 100%)}
+  .cs-bg-course::before{content:'';position:absolute;left:-4%;right:-4%;top:47%;height:34px;
+    background:repeating-linear-gradient(90deg,#0a2418 0 13px,#0e3320 13px 27px,#092017 27px 28px);opacity:.92;border-radius:40% 40% 0 0/60% 60% 0 0}
+  .cs-bg-course::after{content:'';position:absolute;left:0;right:0;bottom:0;height:44%;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 26px,transparent 26px 52px)}
+  .cs-bg-wall{position:absolute;inset:0;background:#08202c;
+    background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 48px),
+      repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 78px),
+      radial-gradient(120% 80% at 50% -10%,rgba(95,208,224,.18),transparent 62%)}
+  .cs-bg-feed{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 0%,rgba(24,20,48,.9),rgba(3,7,9,1) 68%)}
+  .cs-cast{position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:center;gap:clamp(8px,6vw,52px);width:100%}
+  .cs-slot{display:flex;flex-direction:column;align-items:center;gap:7px;
+    transition:opacity .28s ease,transform .28s ease,filter .28s ease}
+  .cs-slot.dim{opacity:.42;filter:saturate(.45) brightness(.72);transform:scale(.87) translateY(8px)}
+  .cs-plate{font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:#cfe0e8;
+    background:rgba(3,12,18,.72);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px;
+    max-width:44vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cs-slot.lit .cs-plate{color:#06131a;background:#f1d04a;border-color:#f1d04a}
   .cs-bulbs{position:absolute;inset:0 0 auto 0;height:150px;pointer-events:none}
   .cs-mic{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);opacity:.85;pointer-events:none}
   .cs-frame{font:800 9px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
@@ -19974,6 +20018,25 @@ function csStyleOnce(){
     font:800 11px/1 var(--body);color:#06131a}
   .cs-ph{font:800 11px/1.2 var(--body);color:#9fc4d2}
   .cs-pt{color:#dbe7ee;font-size:13px;line-height:1.35;margin-top:2px}
+  /* the decision, inside the conversation: the question is a line, the answers are the next line */
+  .cs-kick{font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#5fd0e0;margin-bottom:7px}
+  .cs-choices{display:grid;gap:8px;margin-top:11px}
+  .cs-opt{display:block;width:100%;text-align:left;position:relative;padding:11px 13px 11px 30px;border-radius:11px;
+    border:1px solid #2f6f86;background:rgba(9,32,46,.72);color:#eef4f7;font:800 14px/1.3 var(--body);cursor:pointer;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+    transition:border-color .15s ease,background .15s ease,transform .12s ease}
+  .cs-opt:hover,.cs-opt:focus-visible{border-color:#5fd0e0;background:rgba(14,52,72,.92);outline:none;transform:translateX(2px)}
+  .cs-opt .cs-cur{position:absolute;left:11px;top:14px;color:#5fd0e0;opacity:0;transition:opacity .15s ease}
+  .cs-opt:hover .cs-cur,.cs-opt:focus-visible .cs-cur{opacity:1}
+  .cs-opt .cs-sub{display:block;margin-top:3px;font:700 11px/1.3 var(--body);color:#8fb6c6;letter-spacing:.04em}
+  .cs-risk{display:inline-block;margin-left:7px;font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;
+    border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase;vertical-align:middle}
+  .cs-card.wide{max-height:min(54vh,440px);overflow:auto;-webkit-overflow-scrolling:touch}
+  /* the tap hint stays in view while a long reaction scrolls under it */
+  .cs-card.wide .cs-next{position:sticky;bottom:-2px;margin-top:0;padding:12px 0 3px;
+    background:linear-gradient(180deg,rgba(6,15,22,0),rgba(6,15,22,1) 46%)}
+  .cs-card.wide .js-extra{padding-bottom:6px}
+  .cs-card.you{border-color:#f1d04a}
   @keyframes csPulse{0%,100%{opacity:1}50%{opacity:.28}}
   @media (prefers-reduced-motion:reduce){.cs-live,.cs-caret{animation:none}}
   </style>`));
@@ -19995,7 +20058,32 @@ function csFeedHTML(tx){
         <div class="cs-pt">${esc(t)}</div></div></div>`;
   }).join('')}</div>`;
 }
-function csPlay(beats, ctx, done){
+// A beat's text may be a body string that already carries entities or markup (the storylines escape their
+// own names). The typewriter prints PLAIN text, so decode once and type that.
+function csPlain(s){
+  try{ const d=document.createElement('div'); d.innerHTML=String(s==null?'':s); return (d.textContent||'').replace(/\s+/g,' ').trim(); }
+  catch(e){ return String(s==null?'':s); }
+}
+var CS_ME_OUT={name:'Your answer', col:'#f1d04a'};
+// Who is ON stage, and who the line is about: the speaker is lit, anyone else steps back.
+function csCastHTML(b, ctx){
+  const pic=b.pic, out=[];
+  const focus = b.who==='me' ? 'me' : (b.focus || (pic==='rival'?'rival':'me'));
+  const slot=(kind)=>{
+    const fig=csFigure(kind, ctx); if(!fig) return '';
+    const nm = kind==='me' ? csMe() : dShort((ctx&&ctx.rivalName)||(ctx&&ctx.starName)||'');
+    return `<div class="cs-slot ${focus===kind?'lit':'dim'}">
+      <div class="cs-fig">${fig}</div>${nm?`<div class="cs-plate">${esc(nm)}</div>`:''}</div>`;
+  };
+  if(pic==='both'){ out.push(slot('rival'), slot('me')); }
+  else if(pic) out.push(slot(pic));
+  return out.filter(Boolean).join('');
+}
+/* The player. One picture, one line at a time; tap to finish the line, tap again to advance.
+   A beat carrying `choice` stops the tapping and puts the answers in the box: the decision IS the
+   conversation, not a modal that opens afterwards. */
+function csPlay(beats, ctx, done, opts){
+  opts=opts||{};
   const list=(beats||[]).filter(Boolean);
   if(!list.length){ done&&done(); return; }
   csStyleOnce();
@@ -20003,89 +20091,245 @@ function csPlay(beats, ctx, done){
   document.querySelectorAll('.csov').forEach(n=>n.remove());
   const ov=$(`<div class="csov">
     <div class="cs-hud">
-      <span class="cs-out js-out"><span class="cs-live"></span><span class="js-outnm">Fairway Wire</span></span>
+      <span class="cs-out js-out"><span class="cs-live js-live"></span><span class="js-outnm">Fairway Wire</span></span>
       <span class="cs-where">${esc(csWhereLine(ctx))}</span>
       <button class="cs-skip" type="button">Skip ▸</button>
     </div>
-    <div class="cs-stage"><div class="cs-fig js-fig"></div></div>
+    <div class="cs-stage"><div class="cs-bg js-bg"></div><div class="cs-cast js-cast"></div></div>
     <div class="cs-body"><div class="cs-card js-card">
+      <div class="cs-kick js-kick" style="display:none"></div>
       <div class="cs-who"><span class="cs-nm js-nm"></span><span class="cs-role js-role"></span><span class="cs-frame js-frame"></span></div>
       <div class="cs-tx js-tx"></div>
+      <div class="js-extra"></div>
       <div class="cs-next js-next">Tap to continue</div>
     </div></div></div>`);
-  const outChip=ov.querySelector('.js-out'), outNm=ov.querySelector('.js-outnm'), fig=ov.querySelector('.js-fig');
+  const outChip=ov.querySelector('.js-out'), outNm=ov.querySelector('.js-outnm'), live=ov.querySelector('.js-live');
+  const bg=ov.querySelector('.js-bg'), cast=ov.querySelector('.js-cast');
   const card=ov.querySelector('.js-card'), nm=ov.querySelector('.js-nm'), role=ov.querySelector('.js-role');
-  const frameEl=ov.querySelector('.js-frame'), stage=ov.querySelector('.cs-stage');
-  const txEl=ov.querySelector('.js-tx'), nextEl=ov.querySelector('.js-next');
-  let i=0, typing=false, timer=null, full='', shown=0, finished=false;
+  const frameEl=ov.querySelector('.js-frame'), stage=ov.querySelector('.cs-stage'), kick=ov.querySelector('.js-kick');
+  const txEl=ov.querySelector('.js-tx'), nextEl=ov.querySelector('.js-next'), extra=ov.querySelector('.js-extra');
+  const skipBtn=ov.querySelector('.cs-skip');
+  let i=0, typing=false, timer=null, full='', shown=0, finished=false, choosing=false;
   const stop=()=>{ if(timer){ clearInterval(timer); timer=null; } };
   const finish=()=>{ if(finished) return; finished=true; stop(); ov.remove(); done&&done(); };
   const paint=()=>{
     const b=list[i]; if(!b){ finish(); return; }
-    const v=csVoice(b.who), o=csOutlet(b.who);
-    outChip.style.color=o.col; outNm.textContent=o.name;
-    card.style.borderLeftColor=o.col;
+    // the speaker: an invented broadcaster, or your own golfer answering (words you picked)
+    const mine=b.who==='me';
+    const v=mine?{name:csMe(), role:'You'}:csVoice(b.who), o=mine?CS_ME_OUT:csOutlet(b.who);
+    outChip.style.color=o.col; outNm.textContent=o.name; live.style.display=mine?'none':'';
+    card.style.borderLeftColor=o.col; card.classList.toggle('you', mine);
     nm.textContent=v.name; role.textContent=v.role;
     const fr=b.frame||'broadcast';
-    const fl = fr==='presser'?'Press room' : fr==='feed'?'Online' : 'Live';
+    const fl = mine?'' : fr==='presser'?'Press room' : fr==='feed'?'Online' : 'Live';
     // don't say the same thing twice: Tori Sands is already "Press room"
-    const dupe = fl.toLowerCase()===String(v.role||'').toLowerCase();
+    const dupe = !fl || fl.toLowerCase()===String(v.role||'').toLowerCase();
     frameEl.textContent = dupe?'' : fl;
     frameEl.style.display = dupe?'none':'';
     frameEl.style.color=o.col;
-    // the frames are dressed differently: a presser gets the flashbulbs and the mic, a broadcast is clean
+    // the scene behind the golfer, and the dressing on top of it
+    bg.innerHTML = `<div class="${fr==='presser'?'cs-bg-wall':fr==='feed'?'cs-bg-feed':'cs-bg-course'}"></div>`;
     stage.querySelectorAll('.cs-bulbs,.cs-mic').forEach(n=>n.remove());
     if(fr==='presser'){
       if(!reduce) stage.insertBefore($(`<div class="cs-bulbs">${[[10,26],[30,14],[56,11],[78,18],[92,30]].map(([l,t],k)=>
         `<span class="flashbulb" style="left:${l}%;top:${t}px;animation:pressFlash ${2.2+k*0.5}s ease-in-out ${k*0.4}s infinite"></span>`).join('')}</div>`), stage.firstChild);
       stage.appendChild($(`<div class="cs-mic">${PRESS_MIC}</div>`));
     }
-    const pic=csFigure(b.pic, ctx);
-    fig.innerHTML=pic||'';
-    const raw=csT(b.tx,ctx); full=Array.isArray(raw)?raw.join(' '):String(raw||'');
-    nextEl.textContent = (i>=list.length-1) ? 'Tap to continue ▸' : 'Tap to continue';
-    if(b.frame==='feed'){ txEl.innerHTML=csFeedHTML(raw); typing=false; return; }
-    if(reduce){ txEl.textContent=full; typing=false; return; }
+    cast.innerHTML=csCastHTML(b, ctx);
+    const kickTx=csT(b.kick,ctx);
+    kick.textContent=kickTx?csPlain(kickTx):''; kick.style.display=kickTx?'':'none';
+    extra.innerHTML=''; card.classList.remove('wide');
+    skipBtn.style.display = b.choice ? 'none' : '';   // a decision can't be skipped, even mid-line
+    const raw=csT(b.tx,ctx); full=Array.isArray(raw)?raw.join(' '):csPlain(raw);
+    nextEl.style.display=''; nextEl.textContent = b.nextLabel || ((i>=list.length-1) ? 'Tap to continue ▸' : 'Tap to continue');
+    // the world's own reaction, tone-matched to the answer that was just given
+    txEl.style.display='';
+    if(b.buzz){ card.classList.add('wide'); txEl.innerHTML=''; txEl.style.display='none'; typing=false;
+      try{ extra.appendChild($(pressBuzzHTML(b.buzz))); }catch(e){}
+      return; }
+    if(fr==='feed' && !b.choice){ txEl.innerHTML=csFeedHTML(raw); typing=false; return; }
+    const showRest=()=>{
+      if(b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
+      if(b.choice) mountChoices(b);
+    };
+    if(reduce){ txEl.textContent=full; typing=false; showRest(); return; }
     shown=0; typing=true; txEl.innerHTML='<span class="cs-caret">▌</span>';
     stop();
     timer=setInterval(()=>{
       shown+=2;
-      if(shown>=full.length){ stop(); typing=false; txEl.textContent=full; return; }
+      if(shown>=full.length){ stop(); typing=false; txEl.textContent=full; showRest(); return; }
       txEl.innerHTML=esc(full.slice(0,shown))+'<span class="cs-caret">▌</span>';
     }, 18);
   };
+  // the answers, in the box. Tapping the scene can't skip past a decision, and neither can Skip.
+  function mountChoices(b){
+    choosing=true; nextEl.style.display='none'; skipBtn.style.display='none';
+    const T=(v)=>typeof v==='function'?v(ctx):v;
+    const box=$(`<div class="cs-choices"></div>`);
+    (b.choice||[]).forEach(ch=>{
+      const sub=T(ch.s), risk=ch.risk?`<span class="cs-risk">⚡ Risky</span>`:'';
+      const btn=$(`<button class="cs-opt" type="button"><span class="cs-cur">▸</span>${esc(csPlain(T(ch.t)))}${risk}${sub?`<span class="cs-sub">${esc(csPlain(sub))}</span>`:''}</button>`);
+      btn.onclick=(e)=>{
+        e.stopPropagation();
+        choosing=false; skipBtn.style.display='';
+        box.remove();
+        const push=(x)=>{ if(x) list.push(x); };
+        const next=()=>{ i++; if(i>=list.length){ finish(); return; } paint(); };
+        try{ opts.onChoice && opts.onChoice(ch, push, next); }
+        catch(err){ console.error('cutscene choice failed', err); finish(); }
+      };
+      box.appendChild(btn);
+    });
+    extra.appendChild(box);
+    try{ box.scrollIntoView({block:'nearest'}); }catch(e){}
+  }
   const advance=()=>{
-    if(typing){ stop(); typing=false; txEl.textContent=full; return; }
+    if(choosing) return;                                   // a decision is up: it has to be answered
+    if(typing){ stop(); typing=false; txEl.textContent=full;
+      const b=list[i]; if(b&&b.stats){ card.classList.add('wide'); extra.innerHTML=`<div style="margin-top:2px">${storyStatsRowHTML(b.stats)}</div>`; }
+      if(b&&b.choice) mountChoices(b);
+      return; }
     i++;
     if(i>=list.length){ finish(); return; }
     paint();
   };
-  ov.addEventListener('click', (e)=>{ if(e.target.closest('.cs-skip')) return; advance(); });
-  ov.querySelector('.cs-skip').onclick=(e)=>{ e.stopPropagation(); track('cutscene_skip',{}); finish(); };
+  ov.addEventListener('click', (e)=>{ if(e.target.closest('.cs-skip')||e.target.closest('.cs-opt')) return; advance(); });
+  skipBtn.onclick=(e)=>{
+    e.stopPropagation(); track('cutscene_skip',{});
+    // skipping the build-up jumps to the question, it never skips the decision itself
+    for(let k=i;k<list.length;k++) if(list[k].choice){
+      if(k===i){ advance(); return; }                    // already on it: finish the line, show the answers
+      stop(); typing=false; i=k; paint(); return; }
+    finish();
+  };
   document.body.appendChild(ov);
   paint();
+}
+/* The beat AS a conversation: the scene sets it up, the question is asked in the box, the answers are
+   the next line, and the fallout is spoken by the people who were already talking. No modal opens. */
+function csStoryPlay(sb, scene){
+  const {beat, ctx}=sb, T=(v)=>typeof v==='function'?v(ctx):v;
+  // build EVERYTHING that could throw before the beat is marked as opened, so a failure falls back to
+  // the modal without having already spent the interruption budget.
+  const lead=(scene.in||[]).filter(Boolean);
+  const asker=(()=>{ const last=lead[lead.length-1]; return (last&&last.frame==='presser'&&last.who)||'sands'; })();
+  const ask={who:asker, frame:'presser', pic:'me',
+    kick:csPlain(T(beat.title)), tx:csPlain(T(beat.body)), choice:beat.ch};
+  const list=lead.concat([ask]);
+  const fin=(b)=>Object.assign({}, b, {nextLabel:'Back to the tournament ▸'});
+  const onChoice=(ch, push, next)=>{
+    const res=applyStoryChoice(beat, ch, ctx);
+    // your own golfer, saying the words you picked (the one voice on camera that is ever yours)
+    const said=csPlain(T(ch.t)), q=/^[“"‘']/.test(said)?said:('“'+said+'”');
+    const tail=[{who:'me', frame:'presser', pic:'me', tx:q},
+      {who:res.backfired?'brant':'vane', frame:'broadcast', pic:'me',
+       kick:res.backfired?'It backfired':'The reaction', tx:res.reaction, stats:res}];
+    let buzz=null; try{ buzz=pressBuzz(ch, beat, ctx, res.backfired); }catch(e){}
+    if(buzz) tail.push({who:'feed', frame:'feed', pic:'me', buzz:buzz});   // the buzz block carries its own header
+    else if(scene.out&&scene.out.length) scene.out.filter(Boolean).forEach(b=>tail.push(b));
+    tail.forEach((b,k)=>push(k===tail.length-1?fin(b):b));
+    next();
+  };
+  storyBeatOpened(beat);
+  track('storyline_shown',{id:beat.id});
+  csPlay(list, ctx, ()=>{ if(sb.onDone) sb.onDone({}); else render(); }, {onChoice});
 }
 /* The wrapper. Gate shut, or anything at all goes wrong building the scene, and this is a straight
    passthrough to the modal that has always run, with its outcome machinery untouched. */
 function showStoryline(sb){
   let scene=null;
   if(cutscenesOn()){ try{ scene=csSceneFor(sb.beat, sb.ctx); }catch(e){ scene=null; } }
-  if(!scene || !(scene.in&&scene.in.length)) return showStorylineModal(sb);
+  if(!scene || !(scene.in&&scene.in.length) || !(sb.beat&&sb.beat.ch&&sb.beat.ch.length)) return showStorylineModal(sb);
   track('cutscene_shown',{id:sb.beat.id});
-  const runModal=()=>{
-    const after=(scene.out&&scene.out.length)?scene.out:null;
-    showStorylineModal(Object.assign({}, sb, after?{onDone:(res)=>{
-      // one aftermath beat: the world reacting to the answer that was just given
-      try{ csPlay(after, sb.ctx, ()=>render()); }catch(e){ render(); }
-    }}:{}));
+  try{ csStoryPlay(sb, scene); }
+  catch(e){ console.error('cutscene failed', e); showStorylineModal(sb); }
+}
+
+/* ---- the outcome machinery, in ONE place ------------------------------------------------------
+   A storyline beat costs something: the risk roll, confidence, fans, the two-axis reputation, the
+   persona threshold, the feed line. The modal and the dialogue scene both spend it, so it lives here
+   once. Two copies of this WOULD drift the first time a rule changed. */
+function storyBeatOpened(beat){
+  const story=careerStory();
+  if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
+  story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story._beatsYr=(story._beatsYr||0)+1; story.seenEvt[beat.id]=S.evtIndex;
+}
+function applyStoryChoice(beat, ch, ctx){
+  const story=careerStory(), T=(v)=>typeof v==='function'?v(ctx):v;
+  // apply, capture before/after momentum for the on-screen deltas
+  const conf0=seasonConf(), fol0=story.followers||0, fans0=repFans(), resp0=repRespect();
+  // CS279: risky choices ROLL, a backfire costs confidence + followers and grants no reputation (the
+  // choice didn't land). Safe choices (no ch.risk) always resolve to their intended upside/trade-off.
+  const backfired = ch.risk ? (Math.random() < ch.risk) : false;
+  let personaNew=null, reaction, headline;
+  if(backfired){
+    const hit = -(Math.abs(ch.conf||0.32)*0.9 + 0.12);   // scale the confidence hit to the choice's ambition
+    storyGainConf(hit);
+    // CS401: a PR backfire costs 5-10% of your fans, scaled by how DETRIMENTAL the call was (the choice's
+    // riskiness). An explicit ch.folBad wins; otherwise ranges 5% (low-risk) .. 10% (a reckless gamble).
+    const folLoss = Math.max(0.05, Math.min(0.10, (ch.folBad!=null?ch.folBad:(0.05 + (ch.risk||0)*0.13))));
+    gainFollowers(-folLoss, 0);
+    reaction = T(ch.rBad) || 'It lands badly. The clip is everywhere for the wrong reasons and the room turns on you.';
+    headline = T(ch.headBad) || ((T(ch.head)||T(beat.title))+', and it backfired');
+    track('storyline_backfire',{id:beat.id, choice:String(T(ch.t))});
+  } else {
+    if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
+    personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
+    if(ch.conf) storyGainConf(ch.conf);
+    // followers: an explicit ch.fol (a pct, may be NEGATIVE for a guaranteed trade-off) overrides the default growth
+    let folPct, folFlat;
+    if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:1000; }   // CS398: press/interview decisions are a top fan driver
+    else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
+      folPct=(ch.fan?(showman?0.14:0.09):0.025)+(showman?0.03:0); folFlat=ch.fan?1800:600; }
+    gainFollowers(folPct, folFlat);
+    if(ch.endo) story.endorsements=(story.endorsements||0)+1;
+    if(ch.fan) story.fan=(story.fan||0)+1;
+    reaction = T(ch.r);
+    headline = T(ch.head)||T(beat.title);
+  }
+  // CS280: move the two-axis reputation (Fans <-> Respect), the core trade-off, no "right" answer
+  const persona0=repPersona();
+  repApplyChoice(ch, backfired);
+  const personaShift = repPersona()!==persona0 ? repPersona() : null;
+  story.feed.unshift({year:S.year||1, evt:ctx.upName, text:headline}); if(story.feed.length>60) story.feed.length=60;
+  track('storyline_choice',{id:beat.id, choice:String(T(ch.t)), backfired});
+  return {backfired, reaction, headline, personaNew, personaShift, endo:!!ch.endo,
+    dConf:Math.round(seasonConf()-conf0), dFol:Math.round((story.followers||0)-fol0),
+    dFans:Math.round(repFans()-fans0), dResp:Math.round(repRespect()-resp0),
+    fansNow:repFans(), respNow:repRespect(), confNow:Math.round(seasonConf())};
+}
+/* CS301: the tangible fallout, shown as RATINGS out of 100 (Popularity / Respect / Confidence) so they
+   read clearly next to the raw fan count, which is reach, not a rating. */
+function storyStatsRowHTML(res){
+  const tile=(label,dv,now,upCol)=>{
+    const dcol = dv>0?upCol : dv<0?'#E14A33':'#67839a';
+    const arrow = dv>0?'▲' : dv<0?'▼' : '–';
+    return `<div style="flex:1 1 86px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 9px">
+      <div style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">${label}</div>
+      <div style="display:flex;align-items:baseline;gap:5px;margin-top:4px">
+        <span style="color:${dcol};font-weight:800;font-size:12.5px">${arrow}${dv>0?' +':dv<0?' ':' '}${dv||0}</span>
+        <span style="color:#eef4f7;font-weight:800;font-size:15px">${Math.round(now)}</span>
+        <span style="color:#5f7d90;font-size:9px;font-weight:700">/100</span>
+      </div></div>`;
   };
-  try{ csPlay(scene.in, sb.ctx, runModal); }catch(e){ runModal(); }
+  const story=careerStory();
+  const reachRow = res.dFol!==0 ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+    <span style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">Fans</span>
+    <span style="color:${res.dFol>0?'#35d6a0':'#c98'};font-weight:800">${res.dFol>0?'▲':'▼'} ${fmtFollowers(Math.abs(res.dFol))}</span>
+    <span class="small" style="color:#9fb3a8">now ${fmtFollowers(story.followers)} fans</span></div>` : '';
+  const badge = (!res.backfired && res.personaShift) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ Now: ${esc(res.personaShift.name)}</div>`
+    : (!res.backfired && res.personaNew) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ You’re becoming ${esc(res.personaNew)}</div>` : '';
+  const endoBadge = (!res.backfired && res.endo) ? `<div style="margin-top:6px;color:#ffd45e;font-weight:800">✍ Endorsement signed</div>` : '';
+  return `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      ${tile('Popularity',res.dFans,res.fansNow,'#ff9d3a')}
+      ${tile('Respect',res.dResp,res.respNow,'#5fd0e0')}
+      ${tile('Confidence',res.dConf,res.confNow,'#35d6a0')}
+    </div>${reachRow}${endoBadge}${badge}`;
 }
 
 function showStorylineModal(sb){
   const {beat, ctx}=sb, story=careerStory();
-  if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
-  story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story._beatsYr=(story._beatsYr||0)+1; story.seenEvt[beat.id]=S.evtIndex;
+  storyBeatOpened(beat);
   const T=(v)=>typeof v==='function'?v(ctx):v;
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const pressish=/PRESS|RIVAL|STORY|MAJOR|SPONSOR/.test(String(T(beat.tag)).toUpperCase());
@@ -20123,85 +20367,21 @@ function showStorylineModal(sb){
       <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#5fd0e0;font-size:15px">“</span>
       ${esc(T(ch.t))}${ch.s?`<span class="sub">${esc(T(ch.s))}</span>`:''}${riskTag}</button>`);
     b.onclick=()=>{
-      // apply, capture before/after momentum for the on-screen deltas
-      const conf0=seasonConf(), fol0=story.followers||0, fans0=repFans(), resp0=repRespect();
-      // CS279: risky choices ROLL, a backfire costs confidence + followers and grants no reputation (the
-      // choice didn't land). Safe choices (no ch.risk) always resolve to their intended upside/trade-off.
-      const backfired = ch.risk ? (Math.random() < ch.risk) : false;
-      let personaNew=null, reaction, headline;
-      if(backfired){
-        const hit = -(Math.abs(ch.conf||0.32)*0.9 + 0.12);   // scale the confidence hit to the choice's ambition
-        storyGainConf(hit);
-        // CS401: a PR backfire costs 5-10% of your fans, scaled by how DETRIMENTAL the call was (the choice's
-        // riskiness). An explicit ch.folBad wins; otherwise ranges 5% (low-risk) .. 10% (a reckless gamble).
-        const folLoss = Math.max(0.05, Math.min(0.10, (ch.folBad!=null?ch.folBad:(0.05 + (ch.risk||0)*0.13))));
-        gainFollowers(-folLoss, 0);
-        reaction = T(ch.rBad) || 'It lands badly. The clip is everywhere for the wrong reasons and the room turns on you.';
-        headline = T(ch.headBad) || ((T(ch.head)||T(beat.title))+', and it backfired');
-        track('storyline_backfire',{id:beat.id, choice:String(T(ch.t))});
-      } else {
-        if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
-        personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
-        if(ch.conf) storyGainConf(ch.conf);
-        // followers: an explicit ch.fol (a pct, may be NEGATIVE for a guaranteed trade-off) overrides the default growth
-        let folPct, folFlat;
-        if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:1000; }   // CS398: press/interview decisions are a top fan driver
-        else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
-          folPct=(ch.fan?(showman?0.14:0.09):0.025)+(showman?0.03:0); folFlat=ch.fan?1800:600; }
-        gainFollowers(folPct, folFlat);
-        if(ch.endo) story.endorsements=(story.endorsements||0)+1;
-        if(ch.fan) story.fan=(story.fan||0)+1;
-        reaction = T(ch.r);
-        headline = T(ch.head)||T(beat.title);
-      }
-      // CS280: move the two-axis reputation (Fans ↔ Respect), the core trade-off, no "right" answer
-      const persona0=repPersona();
-      const rd=repApplyChoice(ch, backfired);
-      const personaShift = repPersona()!==persona0 ? repPersona() : null;
-      story.feed.unshift({year:S.year||1, evt:ctx.upName, text:headline}); if(story.feed.length>60) story.feed.length=60;
-      track('storyline_choice',{id:beat.id, choice:String(T(ch.t)), backfired});
-      const dConf=Math.round(seasonConf()-conf0), dFol=Math.round((story.followers||0)-fol0);
-      const dFans=Math.round(repFans()-fans0), dResp=Math.round(repRespect()-resp0);
+      const res=applyStoryChoice(beat, ch, ctx);
+      const backfired=res.backfired;
       // tick the at-stake two-axis meter to its new values (meter width animates via CSS)
       const repBox=ov.querySelector('.js-rep');
       if(repBox) repBox.innerHTML=repMeterHTML();
-      // CS301: reporter reaction + the tangible fallout, redesigned so the 0-100 REPUTATION ratings
-      // (Fan Support / Respect / Confidence) read clearly as ratings out of 100, distinct from your raw
-      // "following" reach count, the owner was confused by "Fans +6" sitting next to "371M following".
       // CS311 (owner): keep the chosen answer highlighted at the top and drop the other options, so it's
       // clear which one you said. The risk pill is removed (the roll is resolved).
       btns.querySelectorAll('button').forEach(x=>{ if(x!==b) x.remove(); });
       b.disabled=true; b.classList.remove('ghost'); b.classList.add('sb-chosen');
       const rp=b.querySelector('.sb-risk'); if(rp) rp.remove();
-      const fansNow=repFans(), respNow=repRespect(), confNow=Math.round(seasonConf());
-      const statTile=(label,dv,now,upCol)=>{
-        const dcol = dv>0?upCol : dv<0?'#E14A33':'#67839a';
-        const arrow = dv>0?'▲' : dv<0?'▼' : '–';
-        return `<div style="flex:1 1 86px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 9px">
-          <div style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">${label}</div>
-          <div style="display:flex;align-items:baseline;gap:5px;margin-top:4px">
-            <span style="color:${dcol};font-weight:800;font-size:12.5px">${arrow}${dv>0?' +':dv<0?' ':' '}${dv||0}</span>
-            <span style="color:#eef4f7;font-weight:800;font-size:15px">${Math.round(now)}</span>
-            <span style="color:#5f7d90;font-size:9px;font-weight:700">/100</span>
-          </div></div>`;
-      };
-      const reachRow = dFol!==0 ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <span style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">Fans</span>
-        <span style="color:${dFol>0?'#35d6a0':'#c98'};font-weight:800">${dFol>0?'▲':'▼'} ${fmtFollowers(Math.abs(dFol))}</span>
-        <span class="small" style="color:#9fb3a8">now ${fmtFollowers(story.followers)} fans</span></div>` : '';
-      const badge = (!backfired && personaShift) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ Now: ${esc(personaShift.name)}</div>`
-        : (!backfired && personaNew) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ You’re becoming ${esc(personaNew)}</div>` : '';
-      const endoBadge = (!backfired && ch.endo) ? `<div style="margin-top:6px;color:#ffd45e;font-weight:800">✍ Endorsement signed</div>` : '';
       replyBox.innerHTML='';
       replyBox.appendChild($(`<div class="scout" style="border-color:${backfired?'#E14A33':'#2f6f86'};text-align:left;margin:2px 0 10px;padding:12px 13px">
         <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px">${backfired?'It backfired':'The reaction'}</div>
-        <div style="color:#eef4f7;font-size:14.5px;line-height:1.4">${esc(reaction)}</div>
-        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-          ${statTile('Popularity',dFans,fansNow,'#ff9d3a')}
-          ${statTile('Respect',dResp,respNow,'#5fd0e0')}
-          ${statTile('Confidence',dConf,confNow,'#35d6a0')}
-        </div>
-        ${reachRow}${endoBadge}${badge}</div>`));
+        <div style="color:#eef4f7;font-size:14.5px;line-height:1.4">${esc(res.reaction)}</div>
+        ${storyStatsRowHTML(res)}</div>`));
       // CS291: the world reacts, fan tweets, a headline, and an occasional opponent quote
       try{ replyBox.appendChild($(pressBuzzHTML(pressBuzz(ch, beat, ctx, backfired)))); }catch(e){}
       const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
@@ -26791,6 +26971,36 @@ const HV_W=360, HV_H=560, HV_TAPER=0.26;   // HV_H taller (was 470) → a bigger
 // so the floating HUD chips (scoreboard, hole info) sit over scenery instead of blocking the hole.
 // Keep the CSS aspect-ratio on `.holeview svg` (464/560) in sync: (HV_W+2*HV_EX)/HV_H.
 const HV_EX=52, HV_CAM=[-HV_EX,0,HV_W+2*HV_EX,HV_H];
+// DESKTOP: the frame WIDENS. The hole's on-screen size is set by the window HEIGHT alone (it spans the
+// full HV_H), so a wider camera can never shrink the golf - it paints more of the course either side, so
+// the scene fills a wide screen instead of leaving a tall strip in the middle of an empty page (owner:
+// "the course should take up way more of the width of the screen"). HV_EXL is the margin in force for the
+// CURRENT render; every derived expression below reads it, so one value keeps the viewBox, the terrain
+// tile, the close-up camera and the HUD in agreement. The share/GIF paths deliberately stay on HV_CAM.
+const HV_EX_MAX=300;        // widest painted margin (frame 960 units = 1.71:1) - past this the hole reads thin
+const HV_WIDE_MIN=1000;     // the desktop breakpoint the round layout uses
+const HV_DESK_CHROME=296;   // banner + broadcast header ABOVE, the in-flow control bar BELOW (measured: ~126px bar + gaps)
+const HV_DESK_MAXW=1600;    // even on a huge screen the frame stops here
+const HV_AR_MAX=(HV_W+2*HV_EX_MAX)/HV_H;   // the widest frame shape the camera will paint
+var HV_EXL=HV_EX, HV_CAML=HV_CAM;
+function hvViewEx(){        // the margin this viewport wants (phones + tablets keep the standard frame)
+  try{
+    if(typeof window==='undefined') return HV_EX;
+    if(window.__hvEx!=null) return Math.max(HV_EX, Math.min(HV_EX_MAX, +window.__hvEx||HV_EX));   // tests
+    const vw=window.innerWidth||0, vh=window.innerHeight||0;
+    if(vw<HV_WIDE_MIN) return HV_EX;
+    // the same box the CSS gives the window (keep the .scr-dailyround > .holeview width in sync): as wide
+    // as the screen allows, but never taller than the space above the fixed control bar - so the frame
+    // shape is decided ONCE and the svg's inline aspect-ratio lands the window exactly in it.
+    const boxH=Math.max(320, vh-HV_DESK_CHROME);
+    const boxW=Math.min(vw-48, HV_DESK_MAXW, boxH*HV_AR_MAX);
+    return Math.max(HV_EX, Math.min(HV_EX_MAX, Math.round((boxW/boxH*HV_H-HV_W)/2)));
+  }catch(e){ return HV_EX; }
+}
+// Pin the camera for one render pass. Called at the top of every hvNode build, so a whole frame (markup,
+// terrain tile, close-up target, HUD percentages) is computed against ONE camera even if the window is
+// resized underneath it; the animator then reads the viewBox off the DOM, so it stays consistent too.
+function hvSetCam(){ HV_EXL=hvViewEx(); HV_CAML=[-HV_EXL,0,HV_W+2*HV_EXL,HV_H]; return HV_CAML; }
 // cup + on-green ball sizes (viewBox units). A real ball (1.68") is ~0.4× the hole's width (4.25"), so on
 // the green the ball is drawn at a FIXED small radius - because ball AND cup are both in viewBox units, the
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
@@ -27405,7 +27615,7 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
     // ADAPTIVE close-up: frame the ball AND the cup with a margin, zooming as tight as the putt
     // allows - a tap-in gets a much closer camera than a 40-footer, so short putts finally read.
     const P=hvProj(g,g.pin[0],g.pin[1]), A=hvProj(g,p.from[0],p.from[1]);
-    const AR=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
+    const AR=(HV_W+2*HV_EXL)/HV_H, AR0=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
     // tighter framing than before (owner/Jordo: "the green can be bigger - an 8ft putt is not right on
     // top of the hole"): less padding + a smaller floor so the green fills the frame and putt distance reads.
     let w;
@@ -27415,20 +27625,22 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
       // as far as it can while still showing the whole shot; a long fairway hole-out or an ace can't fit
       // both in a tight frame, so it keeps the full hole rather than losing the ball off-screen.
       const len=Math.hypot(A[0]-P[0], A[1]-P[1]);
-      w=Math.max(90, Math.abs(A[0]-P[0])+62+len*0.34, (Math.abs(A[1]-P[1])+74+len*0.34)*AR);
+      // the floor is a HEIGHT floor written as a width, so a wide desktop frame shows the same amount of
+      // green rather than zooming twice as far in (AR/AR0 converts the phone-frame number to this frame's)
+      w=Math.max(90*AR/AR0, Math.abs(A[0]-P[0])+62+len*0.34, (Math.abs(A[1]-P[1])+74+len*0.34)*AR);
       // stay on the same close-up threshold the renderer uses (markers draw to scale + the high-density
       // detail tile kicks in below HV_W*0.6), so a hole-out either gets a true close-up or the full hole.
-      if(w >= HV_W*0.6) return HV_CAM;
+      if(w >= HV_W*0.6) return HV_CAML;
     } else {
-      w=Math.max(60, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
-      w=Math.min(w, 210);
+      w=Math.max(60*AR/AR0, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
+      w=Math.min(w, 210*AR/AR0);
     }
     const h=w/AR;
     const cx=(A[0]+P[0])/2, cy=(A[1]+P[1])/2-h*0.04;
-    const x=Math.max(-HV_EX,Math.min(HV_W+HV_EX-w,cx-w/2)), y=Math.max(0,Math.min(HV_H-h,cy-h/2));
+    const x=Math.max(-HV_EXL,Math.min(HV_W+HV_EXL-w,cx-w/2)), y=Math.max(0,Math.min(HV_H-h,cy-h/2));
     return [+x.toFixed(1),+y.toFixed(1),+w.toFixed(1),+h.toFixed(1)];
   }
-  return HV_CAM;
+  return HV_CAML;
 }
 // flight-curve control points in SCREEN space, perpendicular to the shot line and capped relative
 // to its length - a course-space control point warped under the perspective taper near the top of
@@ -27497,8 +27709,8 @@ function hvPuttRead(g,p,cam){
   // frames the ball and the cup and can zoom to ~60 viewBox units, where a chip drawn at a fixed
   // "close-up" size covered a third of the green. The gentle power curve keeps the read the same
   // size on SCREEN whether the frame is the whole hole or a six-foot putt.
-  const C=(cam&&cam.length===4)?cam:HV_CAM;
-  const sc=Math.pow(Math.max(24,C[2])/(HV_W+HV_EX*2), 0.85), gap=HV_GBALL*1.7;
+  const C=(cam&&cam.length===4)?cam:HV_CAML;
+  const sc=Math.pow(Math.max(24,C[2])/(HV_W+HV_EXL*2), 0.85), gap=HV_GBALL*1.7;
   // the LINE gets a floor the text doesn't: a hairline that is fine across a whole hole disappears
   // entirely once the frame is six feet of green, and the line is the read.
   const ls=Math.max(sc, 0.42);
@@ -27989,13 +28201,16 @@ function hvPinTeePixel(g,B){
 }
 function hvBackdrop(g, seedN, B, detailCam){
   if(hvArtMode()==='pixel'){
-    try{ const url=pxTerrainURL(g, seedN, B);
+    // the base tile spans the LIVE camera, and its pixel COUNT grows with it, so a wide desktop frame
+    // paints more course at exactly the same pixel size rather than stretching the same tile
+    const bw=Math.round(210*(HV_W+HV_EXL*2)/(HV_W+HV_EX*2));
+    try{ const url=pxTerrainURL(g, seedN, B, HV_EXL===HV_EX?null:{cam:HV_CAML, gw:bw});
       if(url){
-        let s=`<image href="${url}" xlink:href="${url}" x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
+        let s=`<image href="${url}" xlink:href="${url}" x="${-HV_EXL}" y="0" width="${HV_W+HV_EXL*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
         // when zoomed to a close-up, overlay a high-density tile of the visible region so the course pixels
         // match the golfer's pixel size instead of blowing up into big blocks (owner: pixels should match on zoom)
         if(detailCam){
-          const gh=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL))), gw=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL*detailCam[2]/detailCam[3])));
+          const gh=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL))), gw=Math.max(120,Math.min(760,Math.round(HV_PX_DETAIL*detailCam[2]/detailCam[3])));
           // os = detail px-density / base px-density → scenery + course features keep their true course scale
           const os=(gh/detailCam[3])/(HV_PX_BASEH/HV_H);
           const durl=pxTerrainURL(g, seedN, B, {cam:detailCam, gw, gh, os});
@@ -28006,7 +28221,7 @@ function hvBackdrop(g, seedN, B, detailCam){
     }catch(e){ console.warn('pixel terrain failed, using flat fallback', e); }
   }
   // pixel terrain unavailable (very rare) → a flat colored ground so the tracer still has a surface, never blank.
-  return `<rect x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" fill="${(B&&B.base)||'#3f7a28'}"/>`+hvPinTeePixel(g,B);
+  return `<rect x="${-HV_EXL}" y="0" width="${HV_W+HV_EXL*2}" height="${HV_H}" fill="${(B&&B.base)||'#3f7a28'}"/>`+hvPinTeePixel(g,B);
 }
 const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
 const HV_PX_BASEH=254;    // base tile vertical pixel count (pxTerrainURL default GH), over HV_H course-units
@@ -28298,7 +28513,7 @@ function hvArcD(g, ox, oy, R, cx, halfW, sign){
 // its markup, so the caller can see whether two labels would land on top of each other and move one.
 function hvLabelAt(px, py, txt, col){
   const fs=7, w=String(txt).length*fs*0.6+9;
-  const x=Math.max(HV_CAM[0]+w/2+2, Math.min(HV_CAM[0]+HV_CAM[2]-w/2-2, px));
+  const x=Math.max(HV_CAML[0]+w/2+2, Math.min(HV_CAML[0]+HV_CAML[2]-w/2-2, px));
   const y=Math.max(12, Math.min(HV_H-8, py));
   return {x, y, w,
     svg:`<g opacity=".92"><rect x="${(x-w/2).toFixed(1)}" y="${(y-6).toFixed(1)}" width="${w.toFixed(1)}" height="12" rx="6" fill="rgba(6,18,12,.78)" stroke="${col}" stroke-width=".7"/>`
@@ -28321,8 +28536,12 @@ function hvPlaceLabel(cands, txt, col, obs){
   }
   return best;
 }
-// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it
-function hvYardageSVG(g, avoid){
+// `avoid` is the resting ball's distance readout, when one is on the map - the yardage chips give way to it.
+// `opts.carry` gates the CARRY arc (owner: it must not be on screen before the tee shot is hit - it belongs to
+// the drive that has just landed). `opts.live` hides it until the animator settles the ball, exactly like the
+// distance chip, so it appears as the ball comes to rest rather than while it is still in the air.
+function hvYardageSVG(g, avoid, opts){
+  const O=opts||{};
   if(!g || g.par===3) return '';
   let s='', L150=null;
   // sand, in screen space, so a chip never lands on the trouble it is drawn to explain
@@ -28346,6 +28565,7 @@ function hvYardageSVG(g, avoid){
   // the carry: the far edge of whatever the tee shot is being asked to fly, if anything is out there.
   // Only trouble in the DRIVING ZONE counts (170-330 yds and inside the front two thirds of the hole) -
   // a greenside bunker isn't a carry, it's an approach.
+  if(!O.carry) return s;
   let carry=0, hz=null, hzR=6;
   const consider=(c,x,y,r)=>{ if(c>=170 && c<=330 && y<g.L*0.72 && c>carry){ carry=c; hz=[x,y]; hzR=r; } };
   for(const bk of (g.bunkers||[])) if(bk.y<g.L-40) consider(Math.hypot(bk.x,bk.y)+bk.r, bk.x, bk.y, bk.r);
@@ -28367,8 +28587,9 @@ function hvYardageSVG(g, avoid){
       const cb=hvPlaceLabel([[side*off,0],[-side*off,0],[side*off,17],[-side*off,17],[side*off,-17],
         [-side*off,-17],[side*(off+34),0],[-side*(off+34),0],[side*off,34],[-side*off,34]]
         .map(o=>[P[0]+o[0], P[1]+o[1]]), txt, gold, obs);
-      s+=`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`;
-      s+=cb.svg; }
+      s+=`<g id="hv-carry" opacity="${O.live?'0':'1'}">`
+        +`<path d="${d}" fill="none" stroke="rgba(241,208,74,.58)" stroke-width="1.4" stroke-dasharray="4 5"/>`
+        +cb.svg+`</g>`; }
   }
   return s;
 }
@@ -28396,7 +28617,9 @@ function hvDistChip(g,p,live,small){
   return `<g id="hv-dist" opacity="${live?'0':'1'}"><rect x="${(x-w/2).toFixed(1)}" y="${(cy-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="${(h/2).toFixed(1)}" fill="rgba(6,18,12,.86)" stroke="rgba(241,208,74,.6)" stroke-width="${small?0.4:0.8}"/>`
     +`<text x="${x.toFixed(1)}" y="${(cy+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#F1D04A" font-family="inherit">${txt}</text></g>`;
 }
-function hvRevealDist(){ const d=document.getElementById('hv-dist'); if(d) d.setAttribute('opacity','1'); }
+// the ball has come to rest: show the readouts that belong to a ball on the ground. The CARRY arc rides the
+// same settle hook as the distance chip, so it arrives as the tee shot lands and never while it is in flight.
+function hvRevealDist(){ ['hv-dist','hv-carry'].forEach(id=>{ const d=document.getElementById(id); if(d) d.setAttribute('opacity','1'); }); }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
 function hvDoneShot(g,p,dim,small,pcol){
@@ -28626,7 +28849,10 @@ function hvFrameStyle(courseKey){ const a=hvThemeAccent(courseKey);
   return `border-color:${a}99;box-shadow:0 0 0 2px ${a}3d, 0 0 20px -6px ${a}66, 0 16px 36px -22px rgba(0,0,0,.82), inset 0 1px 0 rgba(255,255,255,.05)`; }
 function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
-  const fst=hvFrameStyle(courseKey);   // themed frame for every svg in this node
+  // Pin the camera for THIS build: one hvSetCam per node, so the viewBox, the terrain tile, the close-up
+  // target and the HUD are all computed against the same frame even if the window is resized mid-render.
+  hvSetCam();
+  const fst=hvFrameStyle(courseKey)+`;aspect-ratio:${HV_CAML[2]}/${HV_CAML[3]}`;   // themed frame + live frame shape
   if(multi){
     const order=multi.order||[];
     if(!order.length || !multi.shots.every(ss=>ss.length&&ss[0].k)) return null;
@@ -28641,7 +28867,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const cur=order[showN-1], prev=showN>1?order[showN-2]:null;
     const curP=cur?plots[cur.u][cur.i]:null, prevP=prev?plots[prev.u][prev.i]:null;
     const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-    const camTarget=(live&&curP)?hvCamFor2(g,curP):HV_CAM;
+    const camTarget=(live&&curP)?hvCamFor2(g,curP):HV_CAML;
     const small=camTarget[2]<HV_W*0.6;
     const inCam=(p)=>{ const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
       return x>=camTarget[0]-8&&x<=camTarget[0]+camTarget[2]+8&&y>=camTarget[1]-8&&y<=camTarget[1]+camTarget[3]+8; };
@@ -28651,7 +28877,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const holed=(showN>=total);
     if(live && curP) inner+=hvLiveShot(g,curP,small,multi.cols[cur.u],camTarget);
     else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
-    const cam=live?hvCamFor2(g,prevP):HV_CAM;
+    const cam=live?hvCamFor2(g,prevP):HV_CAML;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
     const detailCam=hvDetailCam(camTarget, live&&!!curP);
     const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
@@ -28671,7 +28897,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
     return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
-      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
+      <div class="hvshell"><svg viewBox="${HV_CAML.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
@@ -28680,7 +28906,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const showN=live?revealN:shots.length;
   const idx=showN-1;
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const camTarget=live?hvCamFor(g,plots,idx):HV_CAM;
+  const camTarget=live?hvCamFor(g,plots,idx):HV_CAML;
   const small=camTarget[2]<HV_W*0.6;   // green close-up → draw markers/strokes to scale
   // under the green close-up, shrink ANY marker inside the camera box (fringe/collar/greenside-
   // bunker rests aren't flagged onGreen but sit in frame - full-size chips read huge when zoomed)
@@ -28691,13 +28917,15 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const holed=(showN>=shots.length);
   if(live && idx>=0 && plots[idx]) inner+=hvLiveShot(g,plots[idx],small,null,camTarget);
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
-  const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
+  const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAML;
   const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
   // ITEM 13: the map's yardage references (full-hole camera only) sit under the tracers; the
   // distance-to-pin chip rides the current shot's resting ball, hidden until the ball settles.
   const curP=(idx>=0&&plots[idx])?plots[idx]:null;
   const dsmall=curP?small&&inCam(curP):false;
-  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall));
+  // the carry arc belongs to the tee shot that has just landed: drawn only while the DRIVE is the shot on the
+  // map (idx 0), hidden until the animator settles it, and gone the moment the next shot is played (idx > 0).
+  const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall), {carry:(idx===0 && !!curP), live:(live&&idx===0)});
   const dchip=curP?hvDistChip(g,curP,live,dsmall):'';
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
     <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${yard}${inner}${dchip}${overlay||''}</svg></div></div>`);
@@ -30459,7 +30687,7 @@ function dPlaceTargets(shell, g, sc, pick){
     // ITEM 07: the decision panel now docks along the BOTTOM of the window, so a target can no longer
     // sit in the lower third - it would land under the panel. The green (and so the aggressive target)
     // is near the top of the frame anyway; only a deep layup target is pulled up by this.
-    let lf=Math.max(11,Math.min(89,(p[0]+HV_EX)/(HV_W+2*HV_EX)*100)), tp=Math.max(9,Math.min(HV_DEC_TOP,p[1]/HV_H*100));
+    let lf=Math.max(11,Math.min(89,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100)), tp=Math.max(9,Math.min(HV_DEC_TOP,p[1]/HV_H*100));
     // nudge apart if the two chips would collide (close in screen space)
     for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(HV_DEC_TOP, q.tp+11); } }
     // and out from under the fixed top-left hole chip - on a short hole the green (and so a target)

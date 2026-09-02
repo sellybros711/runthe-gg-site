@@ -81,6 +81,24 @@
   .tile{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
   .tile .lab{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); font-weight:700;}
   .tile .val{font-family:var(--mono); font-size:21px; font-weight:800; color:var(--cream); margin-top:3px;}
+  /* the band beside a number: what the number means, in two words */
+  .moved{margin:12px 0 4px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.025);}
+  .moved-k{font-family:var(--display);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);margin-bottom:4px;}
+  .moved-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;align-items:baseline;padding:4px 0;border-top:1px dashed rgba(255,255,255,.07);font-size:12.5px;}
+  .moved-row .mv-l{color:var(--text-dim);} .moved-row .mv-v{font-family:var(--mono);color:var(--cream);} .moved-row .mv-b{font-size:11px;color:var(--text-faint);text-align:right;}
+  .mv-arrow{color:var(--text-faint);} .moved-row.up .mv-d{color:var(--green);font-weight:800;} .moved-row.dn .mv-d{color:#f0907f;font-weight:800;} .moved-row.fl .mv-d{color:var(--text-faint);}
+  @media (max-width:520px){ .moved-row{grid-template-columns:1.2fr 1fr;} .moved-row .mv-b{grid-column:1 / -1;text-align:left;margin-top:-2px;} }
+  .dirt-head{font-family:var(--display);font-size:20px;line-height:1.15;color:var(--cream);text-transform:uppercase;letter-spacing:.02em;margin-bottom:10px;}
+  .dirt-rows{display:flex;flex-direction:column;gap:6px;font-size:13px;}
+  .dirt-row{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed rgba(255,255,255,.08);padding-top:6px;}
+  .dirt-l{color:var(--text-faint);font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding-top:2px;}
+  .feud-marks{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);margin-top:3px;}
+  .numband{display:block;font-family:var(--body);font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-dim);margin-top:2px;line-height:1.2;}
+  .bizcard .numband{font-size:11.5px;}
+  .term{cursor:pointer;border-bottom:1px dotted rgba(244,232,219,.35);}
+  .term-q{display:inline-block;margin-left:4px;font-size:9px;opacity:.6;font-weight:800;}
+  .term:hover{color:var(--cream);}
+  .bs-tag.tap{cursor:pointer;} .bs-tag.tap:after{content:' ?';opacity:.55;font-size:10px;}
 
   .bar{height:8px; background:rgba(0,0,0,.45); border-radius:4px; overflow:hidden; margin-top:5px;}
   .bar i{display:block; height:100%; background:var(--brandred);}
@@ -1254,8 +1272,8 @@
   <div class="hud">
     <div class="cell"><div class="label">Yr · Wk</div><div class="value" id="hYW">1·1</div></div>
     <div class="cell"><div class="label">Age</div><div class="value" id="hAge">21</div></div>
-    <div class="cell"><div class="label">OVR</div><div class="value" id="hOvr">40</div></div>
-    <div class="cell"><div class="label">Pop</div><div class="value" id="hPop">5</div></div>
+    <div class="cell" style="cursor:pointer;" onclick="explainHud('ovr')" title="Overall rating. Tap for the scale."><div class="label">OVR</div><div class="value" id="hOvr">40</div></div>
+    <div class="cell" style="cursor:pointer;" onclick="explainHud('pop')" title="Popularity. Tap for the scale."><div class="label">Pop</div><div class="value" id="hPop">5</div></div>
     <div class="cell"><div class="label">Coins</div><div class="value" id="hCoins">0</div></div>
   </div>
 </div>
@@ -1554,7 +1572,7 @@
       <div class="card" style="margin-top:12px;"><h3 style="margin-top:0;">Payoff</h3><div id="mRewards" class="log"></div></div>
     </div>
   </div>
-  <div class="row" style="margin-top:18px;"><button class="big" onclick="go('career')">Continue →</button><span id="postMicSlot"></span></div>
+  <div class="row" style="margin-top:18px;"><button class="big" onclick="leaveResult()">Continue →</button><span id="postMicSlot"></span></div>
 </div>
 
 <!-- ============ ARSENAL / MOVES ============ -->
@@ -1845,6 +1863,19 @@ function nextPpv(){
   // wrap to next year's first PPV
   return {week:PPV_WEEKS[0], weeksUntil:(WEEKS_PER_YEAR-c.week)+PPV_WEEKS[0], name:ppvNameFor(c.deal&&c.deal.promo, PPV_WEEKS[0]), year:c.year+1};
 }
+/* The PPV a title shot is booked FOR. nextPpv() on a PPV night returns that
+   same night, so a shot earned by pinning the champion at a supercard was due
+   the week it was earned and expired unpaid seven days later, with "the
+   rematch clause expired" landing in the inbox directly under "you are #1
+   contender". This is always strictly after tonight. */
+function ppvForShot(){
+  const c=G.car;
+  const n=nextPpv();
+  if(n.weeksUntil>0) return n;
+  const after = PPV_WEEKS.find(w=>w>c.week);
+  if(after) return {week:after, weeksUntil:after-c.week, name:ppvNameFor(c.deal&&c.deal.promo, after), year:c.year};
+  return {week:PPV_WEEKS[0], weeksUntil:(WEEKS_PER_YEAR-c.week)+PPV_WEEKS[0], name:ppvNameFor(c.deal&&c.deal.promo, PPV_WEEKS[0]), year:c.year+1};
+}
 function currentPpv(){
   if(!isPpvWeek(G.car.week)) return null;
   return {week:G.car.week, name:ppvNameFor(G.car.deal&&G.car.deal.promo, G.car.week), year:G.car.year};
@@ -1960,7 +1991,110 @@ function trajectoryBand(v){
   if(v>=65) return {t:'On the rise',            c:'var(--green)'};
   if(v>=50) return {t:'Holding your spot',      c:'var(--cream)'};
   if(v>=35) return {t:'Below the office\'s eye',c:'var(--text-dim)'};
-  return       {t:'On the way out',           c:'#f0907f'};
+  // a debuting rookie is not "on the way out". They are at the bottom.
+  return       {t:'Bottom of the card',       c:'#f0907f'};
+}
+/* ============================================================
+   NUMBERS WITH CONTEXT
+   ------------------------------------------------------------
+   A 74 means nothing on its own. Every number the player sees gets a
+   band beside it, the way the three rooms and the star rating already
+   do. One table, one helper, used everywhere a bare number used to be.
+   Bands are ordered high to low; the first threshold at or below the
+   value wins. ============================================================ */
+const BANDS = {
+  ovr:      [[85,'Main-event class'],[70,'World class'],[59,'National level'],[44,'Regional level'],[0,'Rookie']],
+  attr:     [[80,'Elite'],[60,'Star level'],[45,'Competent'],[35,'Green'],[0,'Raw']],
+  rep:      [[14000,'Global main-eventer'],[5200,'National name'],[1400,'Regional name'],[300,'Getting known'],[0,'Unknown']],
+  standing: [[72,'Protected'],[52,'Trusted'],[34,'Just a body'],[0,'In the doghouse']],
+  mom:      [[75,'On fire'],[60,'Building'],[40,'Steady'],[25,'Cooling'],[0,'Cold']],
+  cond:     [[85,'Fresh'],[70,'Match ready'],[50,'Banged up'],[0,'Should not be working']],
+  wear:     [[80,'Running on fumes'],[50,'Heavy miles'],[25,'Some miles'],[0,'Fresh legs']],
+  fresh:    [[73,'Hot'],[50,'Working'],[32,'Going stale'],[0,'Stale']],
+  pop:      [[85,'Household name'],[64,'National name'],[38,'Regional draw'],[15,'Known on the scene'],[0,'Nobody yet']],
+  respect:  [[55,'Would work with you'],[25,'Rates you'],[1,'Noticed you'],[0,'No opinion']],
+  heat:     [[55,'Bitter'],[25,'Bad blood'],[1,'Friction'],[0,'None']],
+  age:      [[38,'Veteran'],[33,'Late prime'],[27,'Prime'],[24,'Rising'],[0,'Rookie']],
+  legacy:   [[80,'Immortal'],[60,'Hall of Fame'],[40,'A good career'],[20,'A career'],[0,'A footnote']],
+  score:    [[80,'Elite'],[60,'Strong'],[40,'Average'],[0,'Weak']],
+};
+function bandOf(kind, v){
+  if(kind==='crowd') return sentBand('crowd', v).t;
+  const set=BANDS[kind]; if(!set) return '';
+  const n=+v||0;
+  const hit=set.find(r=>n>=r[0]);
+  return hit ? hit[1] : set[set.length-1][1];
+}
+// purse relative to where you work: the same $800 is a main event on the
+// indies and an opener on national television
+function purseBand(p){
+  const t=workTier(); const lo=t.purse[0], hi=t.purse[1];
+  if(p>=hi*1.8) return 'Supercard money';
+  if(p>=hi*0.95) return 'Main-event money';
+  if(p>=lo*0.85) return 'Mid-card money';
+  return 'Opener money';
+}
+// reputation, as distance to the next rung
+function repBand(rep){
+  const ei=TIERS.findIndex(x=>x.id===tierOf(rep).id), nx=TIERS[ei+1];
+  return nx ? `${Math.max(0,Math.round(nx.rep-rep)).toLocaleString()} to ${nx.name}` : 'Top of the business';
+}
+function withBand(kind, v, shown){
+  const label = kind==='purse' ? purseBand(v) : kind==='repTo' ? repBand(v) : bandOf(kind, v);
+  return `${shown!=null?shown:Math.round(v)}<span class="numband">${label}</span>`;
+}
+/* Tappable labels: the codex already explains every one of these terms,
+   it was just four taps away. ruleIdx finds the entry by name. */
+function ruleIdx(name){ const i=RULES.findIndex(r=>r.n===name); return i<0?0:i; }
+const TERM_RULE = { Reputation:'The Climb', Standing:'The Business', 'Standing with the office':'The Business',
+  Momentum:'Matches', Popularity:'Crowd & Character', Crowd:'Crowd & Character', Condition:'The Business',
+  Mileage:'The Business', Freshness:'Crowd & Character', OVR:'Getting Better', Purse:'Money', XP:'Getting Better',
+  'Where you stand':'The Three Rooms', 'How hot you are':'Crowd & Character', Respect:'The Locker Room', 'Bad blood':'The Locker Room' };
+function termLabel(label){
+  const r=TERM_RULE[label];
+  return r ? `<span class="term" onclick="event.stopPropagation();openRules(ruleIdx('${r}'))">${label}<span class="term-q">?</span></span>` : label;
+}
+/* Card position is the most learnable lever in the game and the rule was
+   hidden inside makeOffers. One function computes it, and one modal shows
+   the player their own three inputs against the two thresholds. */
+function cardDraw(){
+  const c=G.car;
+  const ceil=([38,64,85,100][tierIdx()]||38);
+  const reactionRel=clamp((reactionOf()/ceil)*100,0,100);
+  const draw=(c.standing||50)*0.34 + gimHeat()*0.22 + reactionRel*0.44;
+  return {draw, standing:(c.standing||50), gim:gimHeat(), reactionRel, reaction:reactionOf(), ceil};
+}
+function explainCard(card){
+  const d=cardDraw();
+  const row=(l,v,w,why)=>`<div class="sbrow"><div class="sbrow-h"><span class="sbrow-l">${l} <span class="hint">${w}% of it</span></span><span class="sbrow-v"><b>${Math.round(v)}</b> <span class="sbrow-arrow">of</span> 100</span></div>
+    <div class="sbrow-bar"><i style="width:${clamp(v)}%"></i></div><div class="sbrow-why">${why}</div></div>`;
+  const where = d.draw>=62?'Main event':d.draw>=40?'Mid-card':'Opener';
+  const body=`<div class="seasonbrief">
+    <div class="sb-quote">Your draw is <b>${Math.round(d.draw)}</b>. Under 40 opens the show. 40 to 61 is the middle. 62 and up main-events.</div>
+    <div class="sb-rows">
+      ${row('Standing with the office', d.standing, 34, 'Good matches raise it. Bad nights and refused bookings lower it.')}
+      ${row('How fresh the act is', d.gim, 22, 'Promos and wins keep it up. It fades every week.')}
+      ${row('Crowd, for this level', d.reactionRel, 44, `They are at ${Math.round(d.reaction)} of the ${d.ceil} a crowd on this circuit can give. Better matches raise it.`)}
+    </div>
+    <div class="sb-terms"><div class="sb-term"><span class="sb-term-l">Tonight</span><span class="sb-term-v gold">${card||where}</span></div>
+      <div class="sb-term"><span class="sb-term-l">Skips the maths</span><span class="sb-term-v">Title matches and feud blow-offs main-event regardless.</span></div></div>
+  </div>`;
+  modal('Where you go on the card', body, [{label:'Got it',cls:'primary',fn:closeModal}]);
+}
+/* The two numbers in the top bar that mean nothing without a scale. */
+function explainHud(kind){
+  if(!G) return;
+  const scale=(set,unit)=>`<ul class="ruleul">${set.slice().reverse().map(r=>`<li><b>${r[0]}${unit||''}+</b>: ${r[1]}</li>`).join('')}</ul>`;
+  if(kind==='ovr'){
+    const o=ovr(G.w);
+    modal('Overall rating', `<div class="seasonbrief"><div class="sb-quote">You are <b>${o}</b>. ${bandOf('ovr',o)}.</div>
+      <p class="log">A weighted blend of your seven attributes. Technique and psychology count most. It decides who the office books you against and gates each tier of the business.</p>${scale(BANDS.ovr)}
+      <p class="log">Raise it in Training. Matches earn the points.</p></div>`, [{label:'Got it',cls:'primary',fn:closeModal}]);
+  } else {
+    const p=Math.round(G.car.pop);
+    modal('Popularity', `<div class="seasonbrief"><div class="sb-quote">You are at <b>${p}</b>. ${bandOf('pop',p)}.</div>
+      <p class="log">How many people know your name. It is capped by where you work: an indie wrestler tops out near 38, a national one near 85. Great matches and promos raise it. It pays merch and it is what bigger companies scout.</p>${scale(BANDS.pop)}</div>`, [{label:'Got it',cls:'primary',fn:closeModal}]);
+  }
 }
 function heatBand(v){
   if(v>=80) return {t:'Red-hot right now',      c:'var(--gold)'};
@@ -2084,7 +2218,7 @@ const SEASON_GOALS = [
       return nx?`Get yourself out of ${(TIERS[idx-1]||{}).name||'here'} and onto the ${nx.name}. Bigger buildings, better money, tougher opponents.`:'Stay on top.'; },
     fit:(c,w)=>{ const nx=TIERS[TIERS.findIndex(t=>t.id===tierOf(c.rep).id)+1]; return nx?1:0; },
     payout:{coins:1500,standing:6} },
-  { id:'world_title', label:c=>`Win the ${beltName()}`,
+  { id:'world_title', label:c=>`Win the ${beltName()}`, kindWord:'the top belt',
     desc:c=>`Take the world title from ${(charById((G.world.champions[myPromo().id]||{}).world&&G.world.champions[myPromo().id].world.holder)||{}).name||'whoever holds it'} before year end.`,
     check:(c,w)=>c.title===beltName() || (c.reigns||[]).some(r=>r.title===beltName() && r.year===c.year),
     progress:(c,w)=>{ if(c.title===beltName()) return 100; const need=Math.min(70,18+tierIdx()*16); return clamp(reactionOf()/need*100*0.6 + (c.titleShot?30:0), 0, 99); },
@@ -2095,7 +2229,7 @@ const SEASON_GOALS = [
       return `Take the belt off ${ch||'the champion'}. Get over enough that the office has to book the match, then win it.`; },
     fit:(c,w)=>{ const ti=tierIdx(); return ti>=1 && !c.title ? 1 : 0.4; },
     payout:{coins:5000,standing:12} },
-  { id:'defend_title', label:c=>`Defend the ${c.title||beltName()} three times`,
+  { id:'defend_title', label:c=>`Defend the ${c.title||beltName()} three times`, kindWord:'your belt',
     desc:c=>`Three successful championship defences before year end. Long reigns build legacies.`,
     check:(c,w)=>c.title && (c.defenses||0)>=3,
     progress:(c,w)=>c.title ? clamp((c.defenses||0)/3*100) : 0,
@@ -2103,13 +2237,13 @@ const SEASON_GOALS = [
     plain:c=>`You have the belt. Now prove it was not a fluke: three clean defences before the year is out.`,
     fit:(c,w)=>c.title ? 1.2 : 0,
     payout:{coins:3500,standing:10} },
-  { id:'mid_title', label:c=>`Win the ${beltName(workTier(),'secondary')}`,
-    desc:c=>`Take the mid-card belt. Prove you can carry a division.`,
+  { id:'mid_title', label:c=>`Win the ${beltName(workTier(),'secondary')}`, kindWord:'the mid-card belt',
+    desc:c=>`Take the ${beltName(workTier(),'secondary')}, the mid-card belt. Prove you can carry a division.`,
     check:(c,w)=>c.secondary===beltName(workTier(),'secondary') || (c.reigns||[]).some(r=>r.title===beltName(workTier(),'secondary')&&r.year===c.year),
     progress:(c,w)=>c.secondary?100:clamp(c.standing/62*100),
     rows:(c,w)=>[ {l:'Standing with the office', now:Math.round(c.standing||50), goal:62, why:'Good matches raise it. Missed cues and bad nights lower it.'},
                   {l:'Hold the belt', now:c.secondary?1:0, goal:1, bool:true, why:'The office books the shot once they trust you.'} ],
-    plain:c=>`Win the mid-card belt. It is the step every main eventer takes first.`,
+    plain:c=>`Win the ${beltName(workTier(),'secondary')}. It is the mid-card belt, and the step every main eventer takes first.`,
     fit:(c,w)=>{ const ti=tierIdx(); return ti>=0 && !c.title && !c.secondary ? 1 : 0.3; },
     payout:{coins:1800,standing:6} },
   { id:'classic', label:c=>`Have a 5-star match`,
@@ -2702,6 +2836,51 @@ function showCoach(id, title, body){
   setTimeout(()=>{
     modal(title, `<p class="log">${body}</p>`, [{label:'Got it',fn:closeModal}]);
   }, 240);
+}
+/* The first result screen a player sees is the moment they decide whether
+   there is a fourth week. It is also seven numbers with no anchor. This card
+   runs once, after the very first match, and points at two of them: the
+   rating, because it is what pays, and standing, because it is what books. */
+function firstNightDebrief(o,res){
+  const c=G.car; if(!c||!res) return;
+  const total=(c.rec.w||0)+(c.rec.l||0)+(c.rec.d||0);
+  if(total!==1) return;
+  c.coachSeen=c.coachSeen||{}; if(c.coachSeen.firstNight) return;
+  c.coachSeen.firstNight=true; save();
+  const s=starsOf(res.quality);
+  const st=Math.round(c.standing||50);
+  const stBand = st>=72?'Protected':st>=52?'Trusted':st>=34?'Just a body':'In the doghouse';
+  // one instruction, from the thing that held the match back
+  const bad=(res.bad||[])[0]||'';
+  const next = /psychology/i.test(bad) ? 'Put your next training point in Psychology.'
+             : /stamina|gassed/i.test(bad) ? 'Put your next training point in Stamina.'
+             : /banged up|condition/i.test(bad) ? 'Rest before your next match.'
+             : /near-fall/i.test(bad) ? 'Next match, build to the near-falls. Hit the big spots when the match asks.'
+             : 'Study the tape before your next match. It raises your odds.';
+  const verdict = res.draw||res.win===null ? 'A draw.' : res.win ? 'You won.' : 'You lost.';
+  const body=`<div class="seasonbrief">
+    <div class="sb-quote">${verdict} That is the least important thing that happened tonight.</div>
+    <div class="sb-rows">
+      <div class="sbrow"><div class="sbrow-h"><span class="sbrow-l">Match rating</span><span class="sbrow-v ${res.quality>=62?'ok':''}"><b>${res.quality}</b> <span class="sbrow-arrow">of</span> 100</span></div>
+        <div class="sbrow-bar"><i style="width:${res.quality}%"></i></div>
+        <div class="sbrow-why">${starBand(s)} A rookie lands near 50. Sixty-two is a good night. Eighty is a classic. This number pays you. The win does not.</div></div>
+      <div class="sbrow"><div class="sbrow-h"><span class="sbrow-l">Standing with the office</span><span class="sbrow-v ${st>=52?'ok':''}"><b>${st}</b> <span class="sbrow-arrow">of</span> 100 · ${stBand}</span></div>
+        <div class="sbrow-bar"><i style="width:${st}%"></i></div>
+        <div class="sbrow-why">Good matches raise it. It decides where you go on the card.</div></div>
+    </div>
+    <div class="sb-terms"><div class="sb-term"><span class="sb-term-l">Next week</span><span class="sb-term-v gold">${next}</span></div></div>
+  </div>`;
+  // A first win also fires the "First professional victory" moment card, and
+  // two overlays at once is the exact thing the audit flagged. The moment
+  // goes first (it is the celebration); this waits until it is gone.
+  let tries=0;
+  const show=()=>{
+    const mo=$('momentBack'), sc=$('sceneBack');
+    const busyNow=(mo&&mo.classList.contains('open'))||(sc&&sc.classList.contains('open'))||(MOMENT_Q&&MOMENT_Q.length);
+    if(busyNow && tries++<80){ setTimeout(show,400); return; }
+    try{ closeModal(); modal('Your first night', body, [{label:'Got it',cls:'primary',fn:closeModal}]); }catch(_){}
+  };
+  setTimeout(show, 1100);
 }
 function starBand(s){
   return s>=5   ? 'A perfect match. They will talk about this forever.'
@@ -3898,6 +4077,7 @@ function renderStyles(){
       <div class="sc-bars">
         <div class="sc-key"><span>Starting stats</span><span>Growth</span></div>
         ${bars}
+        <div class="hint" style="margin-top:6px;">The scale: 30 is green, 45 is competent, 60 is a star, 80 is elite. Everybody starts green.</div>
       </div>
       ${traits.length?`<div class="sc-traits">${traits.map(t=>`<span>${t}</span>`).join('')}</div>`:''}
       ${cats.length?`<div class="sc-mast"><b>Learns fastest:</b> ${cats.join(', ')}</div>`:''}
@@ -4222,10 +4402,33 @@ function newsPush(entry){
   G.world.news.unshift(Object.assign({y:c.year, w:c.week}, e));
   if(G.world.news.length>120) G.world.news.pop();
 }
+/* A feud whose rival retires, is released or leaves the company cannot be
+   booked and cannot end, so it used to sit on the panel forever. It ends
+   here, on the record, as its own kind of beat. */
+function storyRivalGone(){
+  const st=story(); if(!st) return false;
+  const rv=charById(st.charId); const W=G.world||{};
+  const gone = !rv || (W.retired&&W.retired[rv.id]) || rv.promo!==myPromoId();
+  if(!gone) return false;
+  const name=rv?rv.name:'Your rival';
+  const why = !rv ? 'is gone' : (W.retired&&W.retired[rv.id]&&W.retired[rv.id].released) ? 'was released' : (W.retired&&W.retired[rv.id]) ? 'retired' : 'left the company';
+  const c=G.car;
+  const matches=(G.hist||[]).filter(m=>rv&&m.opp===rv.name);
+  const avg = matches.length ? Math.round(matches.reduce((s,m)=>s+m.q,0)/matches.length) : 0;
+  c.storiesResolved = c.storiesResolved || [];
+  c.storiesResolved.unshift({y:c.year, w:c.week, charId:st.charId, name, resolution:'walked', matches:matches.length, avg,
+    beats:(st.beats||[]).length, reason:st.reason||null, kind:st.kind||'grudge', started:{y:st.startYear,w:st.startWeek}});
+  pushInboxItem({ico:pico('swap',18),sev:'story',txt:`<b>${name} ${why}.</b> The feud ends without a blow-off. Some of them do.`});
+  pushLog(`Your war with <b>${name}</b> ended when they ${why}. No blow-off. It will be remembered anyway.`);
+  const R=rel(st.charId); R.cooldown=(c.year*1000+c.week)+45;
+  G.story=null; c.rivalId=null;
+  return true;
+}
 function worldTick(){
   if(!G.world) initWorld();
   migrateChampions();
   const c=G.car; const w=G.world;
+  try{ storyRivalGone(); }catch(_){}
   // A title change happens somewhere in the world every few weeks.
   if(rnd()<0.10){
     const promo = PROMOS[Math.floor(rnd()*PROMOS.length)];
@@ -4834,6 +5037,7 @@ const RULES=[
   </ul>
   <p class="log"><b>Pull</b> grows with standing, the title and crowd reaction. It buys one conversation a week with the office (more time, a different opponent, a stipulation, even the finish), and being told no costs standing, so asking is a real decision. Your <b>downside guarantee</b> pays every week whether you wrestle or not.</p>`},
  {n:'Matches', h:`
+  <p class="log"><b>Momentum</b> is how you are running right now, 0 to 100. Wins and good matches push it up. Losses and weeks off pull it back to 50. It nudges your odds in the next match.</p>
   <p class="log">Matches are wrestled, not simulated. They play out live and end the way real matches end.</p>
   <ul class="ruleul">
     <li><b>Pinfall.</b> A cover, a referee count, and a kickout at one, two or two and a half. Only a finisher in the closing stretch is likely to get three.</li>
@@ -4893,6 +5097,24 @@ const RULES=[
     <li><b>Injuries</b> cost you real weeks and take an attribute hit. Serious ones can leave permanent damage. Working hurt makes all of it worse.</li>
     <li><b>Mileage</b> never resets. It is what decides how early you decline.</li>
   </ul>`},
+ {n:'Card Position', h:`
+  <p class="log">Every match is booked as the <b>opener</b>, the <b>mid-card</b> or the <b>main event</b>. Openers pay 0.6x. Main events pay 1.6x.</p>
+  <p class="log">Your spot comes from one number, your <b>draw</b>. Standing with the office is 34% of it. How fresh the act is, 22%. How loud the crowd is for this level, 44%.</p>
+  <ul class="ruleul">
+    <li>Under <b>40</b>: you open the show.</li>
+    <li><b>40 to 61</b>: the middle of the card.</li>
+    <li><b>62 and up</b>: you main-event.</li>
+    <li>Title matches and feud blow-offs main-event regardless.</li>
+  </ul>
+  <p class="log">Tap the position tag on any booking sheet to see your three inputs.</p>`},
+ {n:'Money', h:`
+  <p class="log">Two streams. Your <b>downside</b> is guaranteed every week whether you wrestle or not. Your <b>purse</b> is per match, and it scales with card position, stakes and the size of the company.</p>
+  <ul class="ruleul">
+    <li>Indie purses run $250 to $800. National television runs $3,200 to $9,500.</li>
+    <li>A title match pays 2.2x. A supercard pays 2.2x on top of that.</li>
+    <li>A great match pays up to 1.4x its purse. A bad one pays 0.4x.</li>
+  </ul>
+  <p class="log">Coins buy cosmetics at the Merch Stand. Nothing that affects a match is for sale.</p>`},
  {n:'The Climb', h:`
   <p class="log">Four tiers. Reputation opens the door and your overall decides whether you can walk through it.</p>
   <table class="ruletbl">
@@ -5225,7 +5447,7 @@ const HOME_CARDS=[
   {n:4, stip:'Tag Team Match',     pose:['ready','lockup','lockup','ready']},
   {n:4, stip:'Tornado Tag Match',  pose:['strike','reel','chop','guard']},
   {n:6, stip:'Six-Man Tag',        pose:['taunt','ready','grapple','grapple','ready','point']},
-  {n:8, stip:'Royal Rumble',       pose:['ready','grapple','grapple','reel','strike','taunt','guard','ready']},
+  {n:8, stip:'Battle Royal',       pose:['ready','grapple','grapple','reel','strike','taunt','guard','ready']},
   {n:5, stip:'Battle Royal',       pose:['grapple','reel','strike','ready','taunt']},
   {n:3, stip:'Triple Threat',      pose:['grapple','ready','strike']},
 ];
@@ -5385,25 +5607,24 @@ function renderCareer(){
   const tb = trajectoryBand(traj), hb = heatBand(heat);
   const held = heldBelts();
   const notesRow = [
-    (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('crown',12)} ${held.length===1?held[0].name:held.length+' belts'}</span>` : '',
+    (c.title||c.secondary||c.tagTitle) ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('crown',12)} ${held.length===1?held[0].name:held.length+' belts'} · ${reignChip()}</span>` : '',
     c.titleShot ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Title shot in hand</span>` : '',
-    c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Money in the Bank</span>` : '',
+    c.mitb ? `<span class="pchip gold" style="animation:none;opacity:1;">${pico('trophy',12)} Holding the briefcase</span>` : '',
     c.tourn ? `<span class="pchip gold" style="animation:none;opacity:1;"><a href="#" onclick="showBracket();return false;">In ${c.tourn.name}, round ${c.tourn.round}/${c.tourn.rounds}</a></span>` : '',
     c.streak>=3 ? `<span class="pchip" style="animation:none;opacity:1;color:#f0b060;">${pico('fire',12)} ${c.streak}-match streak</span>` : '',
     (c.rec.w+c.rec.l+c.rec.d)>=3 ? `<span class="pchip" style="animation:none;opacity:1;">Record ${c.rec.w}-${c.rec.l}${c.rec.d?'-'+c.rec.d:''}</span>` : '',
   ].filter(Boolean).join('');
   const detailsOpen = G.car._detailsOpen;
   const detailPanel = detailsOpen ? `<div class="vitalsdetail">
-    <div class="tile"><div class="lab">Reputation</div><div class="val">${Math.round(c.rep)}</div>${repHint}</div>
-    <div class="tile"><div class="lab">Crowd</div><div class="val">${Math.round(reactionOf())}</div>${(()=>{ const cl=crowdLabel(), l=leanOf(); const tp=turnProgress();
+    <div class="tile"><div class="lab">${termLabel('Reputation')}</div><div class="val">${withBand('rep',c.rep)}</div>${repHint}</div>
+    <div class="tile"><div class="lab">${termLabel('Crowd')}</div><div class="val">${Math.round(reactionOf())}<span class="numband" style="color:${crowdLabel().c}">${crowdLabel().t}</span></div>${(()=>{ const cl=crowdLabel(), l=leanOf(); const tp=turnProgress();
       return `<div class="cm-bar" style="height:9px;margin-top:5px;"><i style="width:${100-reactionOf()}%"></i><span class="cm-tick"></span><b style="left:${(l+100)/2}%;top:-2px;height:13px;width:5px;"></b></div>
-        <div class="hint" style="margin-top:4px;color:${cl.c}">${cl.t}</div>
         ${tp.to&&tp.p>0.2?`<div class="hint" style="color:var(--gold)">${tp.to} turn ${Math.round(tp.p*100)}%</div>`:''}`;})()}</div>
-    <div class="tile"><div class="lab">Condition</div><div class="val">${Math.round(c.cond)}</div><div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div></div>
-    <div class="tile"><div class="lab">Momentum</div><div class="val">${Math.round(c.mom)}</div><div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div></div>
-    <div class="tile"><div class="lab">Popularity</div><div class="val">${Math.round(c.pop||50)}</div><div class="bar g"><i style="width:${clamp(c.pop||50)}%"></i></div></div>
-    <div class="tile"><div class="lab">Where you stand</div><div class="val" style="color:${tb.c}">${traj}</div><div class="bar b"><i style="width:${traj}%"></i></div><div class="hint" style="margin-top:3px;color:${tb.c}">${tb.t}</div></div>
-    <div class="tile"><div class="lab">How hot you are</div><div class="val" style="color:${hb.c}">${heat}</div><div class="bar g"><i style="width:${heat}%"></i></div><div class="hint" style="margin-top:3px;color:${hb.c}">${hb.t}</div></div>
+    <div class="tile"><div class="lab">${termLabel('Condition')}</div><div class="val">${withBand('cond',c.cond)}</div><div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('Momentum')}</div><div class="val">${withBand('mom',c.mom)}</div><div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('Popularity')}</div><div class="val">${withBand('pop',c.pop||50)}</div><div class="bar g"><i style="width:${clamp(c.pop||50)}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('Where you stand')}</div><div class="val" style="color:${tb.c}">${traj}<span class="numband" style="color:${tb.c}">${tb.t}</span></div><div class="bar b"><i style="width:${traj}%"></i></div></div>
+    <div class="tile"><div class="lab">${termLabel('How hot you are')}</div><div class="val" style="color:${hb.c}">${heat}<span class="numband" style="color:${hb.c}">${hb.t}</span></div><div class="bar g"><i style="width:${heat}%"></i></div></div>
   </div>` : '';
   const sent = sentiment(), sd = c._sentDelta || {};
   const room = (key,label)=>{
@@ -5420,8 +5641,19 @@ function renderCareer(){
         <div class="rm-s" style="color:${b.c}">${b.t}</div>
       </div>`;
   };
+  // Momentum is the number that actually moves week to week for a rookie,
+  // so it gets a row of its own under the three rooms: this week's delta,
+  // not the month's.
+  const _mom=Math.round(c.mom||50), _momD=Math.round((c.mom||50)-(c._momPrev==null?c.mom:c._momPrev)), _momB=bandOf('mom',_mom);
+  const _momCol=_mom>=75?'var(--gold)':_mom>=60?'var(--green)':_mom>=40?'var(--cream)':_mom>=25?'var(--text-dim)':'#f0907f';
+  const momRow=`<div class="rm-row" onclick="openRules(ruleIdx('Matches'))" title="What moves this">
+        <div class="rm-top"><div class="rm-l">Momentum</div>
+          <div class="rm-v" style="color:${_momCol}">${_mom}${_momD>0?`<span class="rm-d up">▲ ${_momD}</span>`:_momD<0?`<span class="rm-d dn">▼ ${Math.abs(_momD)}</span>`:`<span class="rm-d fl">holding</span>`}</div></div>
+        <div class="rm-b"><i style="width:${_mom}%;background:${_momCol}"></i></div>
+        <div class="rm-s" style="color:${_momCol}">${_momB}${_mom>=60?': the office books you stronger':_mom<40?': a win fixes it':''}</div>
+      </div>`;
   $('carTiles').innerHTML = `<div class="rooms">
-      ${room('crowd','Crowd')}${room('locker','Locker Room')}${room('office','Office')}
+      ${room('crowd','Crowd')}${room('locker','Locker Room')}${room('office','Office')}${momRow}
     </div>
     ${notesRow?`<div class="headline-notes">${notesRow}</div>`:''}
     <button class="ghost detailtoggle" onclick="toggleVitalsDetail()">${detailsOpen?'Hide':'Show'} every stat</button>
@@ -5434,6 +5666,7 @@ function renderCareer(){
     : `<div class="card">${renderAttrs()}</div>`;
   renderStoryPanel();
   renderWeek();
+  if(c._momToast){ const _t=c._momToast; c._momToast=null; setTimeout(()=>toast(_t),600); }
   // the manual runs itself once, on the first week you ever see. Re-check on
   // fire: anything can happen in the 420ms, including the player skipping it.
   if(!c.tourDone && TOUR_I<0){
@@ -5479,13 +5712,24 @@ function renderStoryPanel(){
     G.car._feudSeen=key;
     const shapeMap = {aggressive:{t:'Bloodbath',c:'#f0907f'}, cool:{t:'Cold war',c:'var(--cream)'}, cerebral:{t:'Chess match',c:'var(--gold)'}, underdog:{t:'David vs Goliath',c:'var(--green)'}};
     const shapeChip = st.shape && shapeMap[st.shape] ? `<span class="feudshape" style="color:${shapeMap[st.shape].c};border-color:${shapeMap[st.shape].c};">${shapeMap[st.shape].t}</span>` : '';
+    // a live story is never "Settled": stage 4 reached by a scene still has
+    // its blow-off to wrestle, so it reads as the blow-off
+    const shown=Math.min(3,st.stage), stgShown=STORY_STAGES[shown];
+    const kind=STORY_KINDS[st.kind]||STORY_KINDS.grudge;
+    const payoff = st.payoffAt ? `${st.payoffAt.name||'the next supercard'} (Y${st.payoffAt.y}W${st.payoffAt.w})` : null;
+    const nextBeat = `${kind.next[shown]||''} ${payoff?`Pays off at ${payoff}.`:`Pays off with ${kind.payoff}.`}`;
+    const started=`Y${st.startYear}W${st.startWeek}`;
     h+=`<div class="storycard" id="feudCard">
       <div class="sh"><div style="width:52px;flex:none;">${wrestlerSVG(c.look,{frame:'head'})}</div>
-        <div><div class="st">Feud · ${stg.name}${shapeChip}</div>
+        <div><div class="st">${kind.name} · ${kind.stages[shown]||stgShown.name}${shapeChip}</div>
         <div class="sn">${G.w.name} vs ${c.name}</div>
-        <div class="hint">${stg.label}</div></div></div>
-      <div class="bar" style="margin-top:8px;"><i id="feudBar" style="width:${(feudAdv?feudFrom:(st.stage/3)*100)}%;background:var(--brandred)"></i></div>
-      <div class="hint" style="margin-top:4px;">Bad blood ${Math.round(R.heat)} · ${R.wins}-${R.losses} against them${st.stage>=3?' · <b style="color:var(--gold)">BLOW-OFF AVAILABLE</b>':''}</div>
+        <div class="hint">${stgShown.label}</div></div></div>
+      ${st.reason?`<div class="hint" style="margin-top:6px;">Started ${started}: ${c.name} ${st.reason}</div>`:''}
+      <div class="bar" style="margin-top:8px;"><i id="feudBar" style="width:${(feudAdv?feudFrom:(shown/3)*100)}%;background:var(--brandred)"></i></div>
+      <div class="feud-marks">${kind.stages.map(x=>`<span>${x}</span>`).join('')}</div>
+      <div class="hint" style="margin-top:6px;">Bad blood <b>${Math.round(R.heat)}</b> · ${bandOf('heat',R.heat).toLowerCase()} · ${R.wins}-${R.losses} against them</div>
+      <div class="bar" style="margin-top:3px;height:4px;"><i style="width:${clamp(R.heat)}%;background:#c0392b"></i></div>
+      <div class="hint" style="margin-top:6px;color:${shown>=3?'var(--gold)':'var(--text-dim)'}">${nextBeat}</div>
     </div>`;
   }
   if(inbox.length) h+=`<div class="card" style="margin-top:10px;"><div class="flab">Recent</div>`+
@@ -5611,8 +5855,13 @@ function nextGoals(){
     if(!best||p>best.p) best={l:`Unlock ${m.name}`, sub:`${cat.name} · ${need.join(' · ')||'ready'}`, p};
   });
   if(best) out.push(best);
-  if(!c.title){ const need=Math.min(70,18+tierIdx()*16);
-    out.push({l:`Win the ${beltName()}`, sub:`Crowd reaction ${Math.round(reactionOf())}/${need} to be considered`, p:clamp(reactionOf()/need*100)}); }
+  // the same belt the season goal names, under the same name, so the hub
+  // never shows two belts that are one belt and one belt that is two
+  const _sg=currentSeasonGoal();
+  if(_sg && _sg.id==='mid_title' && !c.secondary){
+    out.push({l:`Win the ${beltName(workTier(),'secondary')}`, sub:`The mid-card belt · standing ${Math.round(c.standing||50)}/62 for the office to book it`, p:clamp((c.standing||50)/62*100)}); }
+  else if(!c.title){ const need=Math.min(70,18+tierIdx()*16);
+    out.push({l:`Win the ${beltName()}`, sub:`The top belt · crowd ${Math.round(reactionOf())}/${need} to be considered`, p:clamp(reactionOf()/need*100)}); }
   else out.push({l:'Defend the title', sub:`${c.defenses||0} successful defence${(c.defenses||0)===1?'':'s'} so far`, p:clamp((c.defenses||0)/5*100)});
   return out.slice(0,3);
 }
@@ -5631,7 +5880,7 @@ function seasonChip(){
   const label = g.label(c);
   return `<div class="arc-goal ${done?'done':''}" onclick="showSeasonBriefing()">
     <div class="arc-goal-h"><span class="arc-goal-k">Season goal</span><span class="arc-goal-w">${weeksLeft} wk${weeksLeft===1?'':'s'} left</span></div>
-    <div class="arc-goal-t">${label}${done?' ✓':''}</div>
+    <div class="arc-goal-t">${label}${g.kindWord?` <span class="hint">· ${g.kindWord}</span>`:''}${done?' ✓':''}</div>
     <div class="arc-goal-b"><i style="width:${p}%"></i></div>
   </div>`;
 }
@@ -5675,6 +5924,10 @@ function weekArcHeader(){
 }
 function renderWeek(){
   const c=G.car, el=$('weekBody');
+  // Book first, THEN draw the arc header. It used to be the other way round,
+  // so on every fresh week the header read "Off Week · Nothing on the card"
+  // directly above a booking sheet that said "Singles Match · Your Debut".
+  bookWeek();
   const arc = weekArcHeader() + seasonChip();
   if(c.freeAgent){
     el.innerHTML=`${arc}<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You are a <b style="color:var(--gold)">free agent</b>.</p>
@@ -5774,7 +6027,7 @@ function renderWeek(){
       ${ppvCard}
       <div class="bs-headline">
         <div class="bs-stip">${o.stipLabel}</div>
-        <div class="bs-tag ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}">${stakesTag}</div>
+        <div class="bs-tag tap ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}" onclick="explainCard('${o.card}')">${stakesTag}</div>
       </div>
       <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
       ${bookDetailsOpen?'':`<div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>`}
@@ -5785,7 +6038,7 @@ function renderWeek(){
         <button class="ghost" onclick="toggleBookingDetail()">${bookDetailsOpen?'Hide':'Show'} the details</button>
         <button class="ghost" onclick="go('backstage')">Backstage</button>
         ${p>0?`<button class="ghost" onclick="askOffice()" ${b.asked?'disabled':''}>${b.asked?'Had your say':'Talk to office'}</button>`:''}
-        ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' && o.stakes!=='tag_defense' && o.stakes!=='tag_title' && o.stip!=='rumble' && o.stip!=='chamber' && o.stip!=='mitb' ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in MITB</button>`:''}
+        ${c.mitb && o.stakes!=='title' && o.stakes!=='defense' && o.stakes!=='tag_defense' && o.stakes!=='tag_title' && o.stip!=='rumble' && o.stip!=='chamber' && o.stip!=='mitb' ? `<button class="ghost" style="border-color:var(--gold);color:var(--gold);" onclick="askCashIn()">Cash in the briefcase</button>`:''}
       </div>
       ${details}
     </div>`;
@@ -5801,8 +6054,15 @@ function renderWeek(){
   } else {
     // Arc header already frames the off-week. Sheet keeps just the "what
     // happens now" line and the CTA.
+    // An off week used to be one sentence and a button. It still plays a
+    // scene on the way out and still pays double at the gym; now the sheet
+    // says so, because a week with nothing visible to do reads as a week the
+    // game forgot about.
+    const _offScene = (function(){ try{ return pickScene('any'); }catch(_){ return null; } })();
     sheet=`<div class="bksheet dark">
-      <div class="bs-vs">${(c.standing||50)<45?'No card, no interest, no plan. Weeks like this are where careers get built.':'No card this week. Prep the ones that are coming.'}</div>
+      <div class="bs-vs">${(c.standing||50)<45?'No card this week. Weeks like this build careers.':'No card this week. Get ready for the ones coming.'}</div>
+      ${_offScene?`<div class="bs-scene-tease">${pico('microphone',12)} Something happens on the way out: <b>${String(_offScene.tag||'').trim().toLowerCase()}</b></div>`:''}
+      ${!c.prep?`<div class="bs-scene-tease">${pico('dumbbell',12)} The gym pays double on an off week. Pick it below.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="endDarkWeek()">Call It A Week →</button>
     </div>`;
   }
@@ -5882,18 +6142,18 @@ function renderBizPanel(){
       <div class="bl">The act</div>
       <div class="bv" style="font-size:17px;">${g?g.name:'-'}</div>
       <div class="bs">${cap(G.w.align)} · ${c.turns||0} turn${(c.turns||0)===1?'':'s'}</div>
-      <div class="hint" style="margin-top:6px;">Freshness ${Math.round(heat)}${heat<32?', <b style="color:#f0907f">stale</b>':heat>72?', <b style="color:var(--green)">hot</b>':''}</div>
+      <div class="hint" style="margin-top:6px;">${termLabel('Freshness')} ${Math.round(heat)}: <b style="color:${heat<32?'#f0907f':heat>72?'var(--green)':'var(--text-dim)'}">${bandOf('fresh',heat).toLowerCase()}</b></div>
       <div class="bar ${heat<32?'':'g'}" style="margin-top:6px;"><i style="width:${heat}%;${heat<32?'background:#c0392b':''}"></i></div>
     </div>
     <div class="bizcard">
-      <div class="bl">Standing with the office</div>
+      <div class="bl">${termLabel('Standing with the office')}</div>
       <div class="bv">${Math.round(c.standing||50)}</div>
       <div class="bs">${(c.standing||50)>=72?'Protected':(c.standing||50)>=52?'Trusted':(c.standing||50)>=34?'Just a body':'In the doghouse'}</div>
       <div class="bar gd" style="margin-top:6px;"><i style="width:${clamp(c.standing||50)}%"></i></div>
     </div>
     <div class="bizcard">
-      <div class="bl">Mileage</div>
-      <div class="bv">${Math.round(c.wear||0)}</div>
+      <div class="bl">${termLabel('Mileage')}</div>
+      <div class="bv">${Math.round(c.wear||0)}<span class="numband">${bandOf('wear',c.wear||0)}</span></div>
       <div class="bs">${sc.name} · ${sc.dates}</div>
       <div class="hint" style="margin-top:6px;">${chron.length? chron.map(x=>`${x.part} (−${x.pen})`).join(' · ') : 'No lasting damage yet'}</div>
     </div>
@@ -5987,6 +6247,13 @@ function makeOffers(){
     if(filtered.length>=3) house=filtered;
   }
   const pool=house.length>=3 ? house : charsForTier(t.id);
+  // Night one is never against a champion. On a small roster the champions
+  // are most of the room, so without this a debut was routinely a non-title
+  // match with the belt-holder, and the second thing a brand-new player read
+  // was "a clean pin over the champion earns the shot".
+  const _worked0=(G.car.rec.w||0)+(G.car.rec.l||0)+(G.car.rec.d||0);
+  const _debutPool = _worked0===0 ? pool.filter(x=>!titlesHeldBy(x.id).length) : pool;
+  const pickPool = _debutPool.length>=2 ? _debutPool : pool;
   const offs=[];
   // your bitterest rival muscles onto the card
   const rivalId=G.car.rivalId;
@@ -6005,7 +6272,7 @@ function makeOffers(){
     ? charById(G.car.titleShot.targetId) : null;
   for(let i=0;i<3;i++){
     const taken=offs.map(x=>x.oppId);
-    let cand=pool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
+    let cand=pickPool.filter(x=>!taken.includes(x.id)); if(!cand.length) cand=pool;
     let opp=cand.length?cand[Math.floor(rnd()*cand.length)]:CHARS[0];
     if(_story && i===0){ const rc=charById(_story.charId); if(rc) opp=rc; }   // the feud headlines
     else if(shotTarget && i===2){ opp=shotTarget; }   // your title shot lands on top
@@ -6024,7 +6291,7 @@ function makeOffers(){
     // PPV nights get the marquee stipulations. The office only puts you in one
     // if you have earned the spot, and only on the biggest match of the card.
     if(ppv && i===2 && G.car.standing>=48 && matchesWorked>=6 && rnd()<0.55){
-      const mm=[['Iron Man Match','iron',1.5],['Elimination Chamber','chamber',1.55],['Money in the Bank','mitb',1.5],['Tables, Ladders, Chairs','tlc',1.45]];
+      const mm=[['Iron Man Match','iron',1.5],['Steel Dome','chamber',1.55],['Briefcase Ladder Match','mitb',1.5],['Tables, Ladders, Chairs','tlc',1.45]];
       st = mm[Math.floor(rnd()*mm.length)];
     }
     // a tag team gets booked as a tag team
@@ -6069,7 +6336,10 @@ function makeOffers(){
     else if(rivalId===opp.id) stakes='rival';
     const _s=story();
     if(_s && _s.charId===opp.id){ stakes='rivalry'; const rs=ripStipFor(_s.stage, _s.shape);
-      st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2]; }
+      st[0]=rs[0]; st[1]=rs[1]; st[2]=rs[2];
+      // a title chase pays off as a title match, if they still hold it
+      if(_s.kind==='title' && _s.stage>=3 && !holds && titlesHeldBy(opp.id).some(b=>b.kind==='world' && b.promoId===me.id)) stakes='title';
+      if(_s.kind==='betrayal' && _s.stage>=3){ st[0]='Steel Cage'; st[1]='cage'; st[2]=1.3; } }
     // PPV night: a live feud is booked to blow off, and every offer moves up to Main Event.
     if(ppv){
       if(_s && _s.charId===opp.id && _s.stage<3) _s.stage=3;   // force to blow-off intensity
@@ -6082,9 +6352,7 @@ function makeOffers(){
     // draw in their company and still be booked to open the show forever:
     // four-year playtests were finishing with 57 of 66 matches in the Opener.
     // Reaction is now measured against what is achievable where you work.
-    const _popCeil = ([38,64,85,100][tierIdx()] || 38);
-    const reactionRel = clamp((reactionOf()/_popCeil)*100, 0, 100);
-    const draw=(G.car.standing*0.34 + gimHeat()*0.22 + reactionRel*0.44);
+    const draw=cardDraw().draw;
     let card = (stakes==='title'||stakes==='defense'||stakes==='rivalry') ? 'Main Event'
                : (stakes==='secondary'||stakes==='secondary_defense') ? 'Mid-Card'
                : draw>=62 ? 'Main Event' : draw>=40 ? 'Mid-Card' : 'Opener';
@@ -6101,7 +6369,7 @@ function makeOffers(){
     // match at non-title stakes, note it: the pre-match card calls it out as
     // NON-TITLE (SD SYM style) and pinning them clean earns a title shot.
     const oppTitles = titlesHeldBy(opp.id);
-    const isNonTitleVsChamp = oppTitles.length>0
+    const isNonTitleVsChamp = oppTitles.length>0 && _worked0>0
       && stakes!=='title' && stakes!=='defense'
       && stakes!=='secondary' && stakes!=='secondary_defense';
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
@@ -6167,9 +6435,9 @@ const STIP_RULES = {
              ends:['sub'],                 danger:.8, mod:4, noDQ:true, noCount:true, lenient:true },
   iron:    { label:'Iron Man Match',      desc:'Twenty-minute time limit. Every pin or submission is a fall on the scoreboard. Most falls at the bell wins; a tie goes to sudden death.',
              ends:['pin','sub'],           danger:.4, mod:5, marquee:true },
-  chamber: { label:'Elimination Chamber', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
+  chamber: { label:'Steel Dome', desc:'Six wrestlers, staggered entries, no way out. Eliminate them all to win.',
              ends:['pin','sub'],           danger:1,   mod:6, marquee:true, noDQ:true, noCount:true },
-  mitb:    { label:'Money in the Bank',   desc:'Ladders and a briefcase above the ring. Win it, cash in on any champion, any time.',
+  mitb:    { label:'Briefcase Ladder Match',   desc:'Ladders and a briefcase above the ring. Win it, cash in on any champion, any time.',
              ends:['climb'],               danger:1,   mod:5, marquee:true },
   tlc:     { label:'Tables, Ladders, Chairs', desc:'Every weapon legal, prize hanging above. Climb to take it, put someone through everything on the way.',
              ends:['climb'],               danger:1.2, mod:5, marquee:true, noDQ:true },
@@ -6236,13 +6504,61 @@ function ripStipFor(stage, shape){
   return track[Math.min(track.length-1, stage||0)];
 }
 
+/* ============================================================
+   STORY KINDS
+   ------------------------------------------------------------
+   Every feud used to be the same feud with a different name on it. A
+   kind is inferred when the story starts, from who the rival is and why
+   it started, and it changes three things: what the panel calls each
+   beat, what the blow-off is booked as, and what it takes to settle it
+   with respect rather than blood. Every kind ends the same ways a grudge
+   does (blow-off, truce, the rival leaving), so nothing runs forever.
+   ============================================================ */
+const STORY_KINDS = {
+  grudge:   { name:'Grudge',            stages:['Spark','Escalation','Personal','Blow-off'],
+              next:['A 64+ match against them, a scene, or a promo.','Keep meeting them. It is getting personal.','One more good match and the office books the blow-off.','Settle it. Win it clean or wrestle a 72+ match and it ends with respect.'],
+              payoff:'a blow-off at the next supercard' },
+  title:    { name:'Title chase',       stages:['Contender','Non-title','Contract signing','Title match'],
+              next:['Beat them non-title, or cut a promo that names the belt.','A good match against them and the office books the shot.','The blow-off is a TITLE match. Win it and the belt is yours.','The belt is on the line. A clean win takes it.'],
+              payoff:'a title match at the next supercard' },
+  betrayal: { name:'Betrayal',          stages:['The turn','They cost you','Grudge match','Blow-off'],
+              next:['Somebody who had your back does not any more. Meet them in the ring.','They will cost you a match before this is over. Keep working.','A cage or a street fight is coming. The office knows.','Blood, almost certainly. Only a win at 80+ ends this with a handshake.'],
+              payoff:'a cage or street fight at the next supercard' },
+  underdog: { name:'Underdog rise',     stages:['The loss','Near miss','The upset','Rubber match'],
+              next:['You lost to somebody better. Wrestle them again.','A draw or a 70+ loss keeps this alive. A win changes it.','Beat them once and the office has to book the rubber match.','The rubber match. Win it and you are not the underdog any more.'],
+              payoff:'a rubber match at the next supercard' },
+  veteran:  { name:'Veteran and rookie',stages:['The lesson','The stolen pin','Last stand','Handshake or not'],
+              next:['You are in with somebody who has seen it all. Lose well.','Steal one. A 64+ match against them, however it ends.','Their last stand. The office books the blow-off.','A 62+ match ends this with respect. That is the whole point of it.'],
+              payoff:'a respect match at the next supercard' },
+};
+function storyKind(){ const st=story(); return STORY_KINDS[(st&&st.kind)||'grudge']||STORY_KINDS.grudge; }
+function inferStoryKind(charId, reason){
+  const rv=charById(charId); const r=String(reason||'').toLowerCase();
+  if(/betray|never really with you|what you did|turned on/.test(r)) return 'betrayal';
+  const belts=(typeof titlesHeldBy==='function')?titlesHeldBy(charId):[];
+  if(belts.some(b=>b.kind==='world') || /ringside|title|belt/.test(r)) return 'title';
+  const mine=ovr(G.w);
+  const theirs = rv&&rv.attrs ? Math.round(Object.values(rv.attrs).reduce((a,b)=>a+b,0)/Math.max(1,Object.keys(rv.attrs).length)) : mine;
+  const vetTraits=(rv&&rv.traits||[]).some(t=>/veteran|respected|ace|stoic|iron/i.test(String(t)));
+  const R=rel(charId);
+  if(vetTraits && theirs>=mine+4) return 'veteran';
+  if(rv && (rv.traits||[]).some(t=>/newcomer/i.test(String(t))) && G.car.age>=28) return 'veteran';
+  // an underdog story needs you to actually be losing to them. A rookie is
+  // under everybody on paper; that alone is not a story.
+  if(theirs>=mine+8 && (R.losses||0)>(R.wins||0)) return 'underdog';
+  return 'grudge';
+}
 function story(){ return G.story||null; }
 function startStory(charId,reason){
   const c=charById(charId); if(!c) return;
   // shape defaults to unset; set on first backstage action or promo choice.
   // Once set, the feud takes a distinct SHAPE (aggressive, cool, cerebral,
   // or underdog) that colours later beats, segment picks and match story.
-  G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year, shape:null };
+  // The reason is kept, not just logged: the panel reads it back for as
+  // long as the feud runs, and the resolution record carries it out.
+  G.story={ charId, stage:0, beats:[], events:0, startWeek:G.car.week, startYear:G.car.year, shape:null,
+            kind:inferStoryKind(charId, reason), reason:String(reason||'').replace(/<[^>]+>/g,''), payoffAt:null, lastBooked:null };
+  if(G.story.kind==='underdog') G.story.shape='underdog';
   G.car.rivalId=charId; G.car.offers=null;
   pushLog(`<b>${c.name}</b>: ${reason}`);
   pushInboxItem({ico:pico('fire',18),sev:'story',txt:`<b>${c.name}</b> ${reason} A rivalry is born.`});
@@ -6265,6 +6581,7 @@ function advanceStory(){
   st.lastAdv=wk;
   st.stage=Math.min(4,st.stage+1);
   const c=charById(st.charId);
+  if(st.stage>=3 && !st.payoffAt){ try{ const pv=ppvForShot(); st.payoffAt={y:pv.year, w:pv.week, name:pv.name}; }catch(_){} }
   if(st.stage===3){
     pushInboxItem({ico:pico('impact',18),sev:'story',txt:`It is time to settle it with <b>${c.name}</b>. Take the blow-off match.`});
     // Rival gimmick evolves at the blow-off stage, once. The character shows
@@ -6305,7 +6622,9 @@ function endStory(resolution){
   const avg = matches.length ? Math.round(matches.reduce((s,m)=>s+m.q,0)/matches.length) : 0;
   G.car.storiesResolved = G.car.storiesResolved || [];
   G.car.storiesResolved.unshift({y:G.car.year, w:G.car.week, charId:st.charId, name:c.name,
-    resolution, matches:matches.length, avg, beats:(st.beats||[]).length});
+    resolution, matches:matches.length, avg, beats:(st.beats||[]).length,
+    reason:st.reason||null, kind:st.kind||'grudge', started:{y:st.startYear,w:st.startWeek}});
+  G.car._lastStoryEnd={name:c.name, resolution, avg, weeks:(G.car.year*WEEKS_PER_YEAR+G.car.week)-(st.startYear*WEEKS_PER_YEAR+st.startWeek)};
   if(G.car.storiesResolved.length>60) G.car.storiesResolved.pop();
   G.story=null; G.car.rivalId=null;
 }
@@ -6370,7 +6689,7 @@ function backstageEvent(){
   },0);
   return true;
 }
-function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; G.car.inbox.unshift(it); if(G.car.inbox.length>12) G.car.inbox.pop(); }
+function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; if(it&&it.y==null){ it.y=G.car.year; it.w=G.car.week; } G.car.inbox.unshift(it); if(G.car.inbox.length>12) G.car.inbox.pop(); }
 
 /* ============================================================
    LIVE MATCH ENGINE: animated, momentum-driven, with decisions
@@ -7340,6 +7659,11 @@ async function runFight(){
       await exchange(true, moveNameForLog, dmg, 7+mv.pop*0.06, isFin?'FINISHER!':mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
       hurtLimb(MS.opp, limbFor(mv.cat, MS.me), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
+      // the room, in words, as the match climbs: once per threshold
+      MS._crowdStage=MS._crowdStage||0;
+      if(MS.quality>=85&&MS._crowdStage<3){ MS._crowdStage=3; fLog(`<span class="say">Nobody in the building is sitting down.</span>`); }
+      else if(MS.quality>=70&&MS._crowdStage<2){ MS._crowdStage=2; fLog(`<span class="say">They are on their feet now.</span>`); }
+      else if(MS.quality>=55&&MS._crowdStage<1){ MS._crowdStage=1; fLog(`<span class="say">The room is coming alive.</span>`); }
       lastMove=mv.name; lastCat=mv.cat; if(isFin) MS.finisherHit++;
       if(isFin || rnd()<0.18) commLine(mv.cat, null);
     } else {
@@ -8026,6 +8350,7 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     await callout(hardKickout?'KICKED OUT WITH AUTHORITY!':'KICKOUT!');
     fLog(`<span class="hi">${hardKickout?'Shoulder up with force! The place is unglued!':'Shoulder up at two and a half!'} How did he survive the ${bare(mvName)}?!</span>`);
     MS.nearFalls++; MS.quality+=isFin?15:10 + (hardKickout?3:0); MS.big++;
+    if(!MS._nfLine){ MS._nfLine=true; fLog(`<span class="say">The whole room bought that one.</span>`); }
     sfx('crowdRise'); crowdIntensify(0.008);
     if(hardKickout){ sfx('pop'); MS.mom = clamp(MS.mom + (iAmPinning?-24:24), -100, 100); }
     arena.classList.remove('tense');
@@ -8223,6 +8548,7 @@ function finalizeFight(iWon){
   applyMatch(o,res);
   if(G.car.retired){ go('hof'); return; }
   renderMatch(o,res); go('match');
+  firstNightDebrief(o,res);
 }
 // "Forearm Smash ×8" instead of listing it eight times
 function groupMoves(used){
@@ -8319,7 +8645,10 @@ function bookWeek(){
   // Promos got rarer on purpose. A promo every other week is filler; a promo
   // every four or five weeks lands like the event a real cut promo is.
   const pPromo=0.07+(gimHeat()<40?0.04:0)+(story()?0.05:0);
-  const r=rnd();
+  // Night one is a match. A third of debuts were rolling a promo or an off
+  // week, so a brand-new player's first screen was "Call It A Week".
+  const _workedYet=(c.rec.w||0)+(c.rec.l||0)+(c.rec.d||0);
+  const r=_workedYet===0 ? 0 : rnd();
   if(r<clamp(pMatch,0.30,0.86)){
     if(!c.offers) c.offers=makeOffers();
     const offs=c.offers.slice();
@@ -8328,9 +8657,18 @@ function bookWeek(){
                   + ({'Main Event':40,'Mid-Card':20,'Opener':0}[o.card]||0) + o.purse/400;
     offs.sort((a,b)=>worth(b)-worth(a));
     const p=pullOf();
-    const pick = p>=3 ? 0 : p>=2 ? Math.min(1,offs.length-1)
+    let pick = p>=3 ? 0 : p>=2 ? Math.min(1,offs.length-1)
                : p>=1 ? Math.min(1+Math.floor(rnd()*2),offs.length-1)
                : offs.length-1;
+    // A feud the office has not booked in six weeks gets booked, pull or no
+    // pull. Without this a rookie's first feud could sit at "Escalation"
+    // for a season while the rival headlined cards the player was not on.
+    const _st=story();
+    if(_st){
+      const now=c.year*WEEKS_PER_YEAR+c.week, since=now-(_st.lastBooked||(_st.startYear*WEEKS_PER_YEAR+_st.startWeek));
+      const ri=offs.findIndex(o=>o.oppId===_st.charId);
+      if(ri>=0 && since>=6) pick=ri;
+    }
     c.booking={type:'match', o:offs[pick], asked:false};
   } else if(r<clamp(pMatch,0.30,0.86)+pPromo){
     const t=(typeof promoTargets==='function'?promoTargets():[])[0];
@@ -8474,7 +8812,7 @@ function doAsk(id){
     if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
     if(id==='shot'){
       const me=myPromo();
-      const _npv=(function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv=(function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       const bn=beltNameByPromo(me.id,'world');
       c.titleShot={promoId:me.id, from:'you demanded it', y:c.year, w:c.week, kind:'world',
                    belt:bn, targetId:o.target, dueBy:{y:_npv.year, w:_npv.week}};
@@ -8555,6 +8893,14 @@ function simMatch(o){
 }
 function applyMatch(o,res){
   const c=G.car, w=G.w, sc=schedOf(c.deal&&c.deal.sched);
+  /* WHAT TONIGHT DID TO YOU. The result screen used to show what you earned
+     (purse, rep, XP) and nothing about what CHANGED (standing, the act,
+     momentum, condition, the opponent's opinion of you). Every one of those
+     is the answer to "why", and every one was silent until next week. This
+     snapshot is taken before and after the match itself, not the week roll
+     that follows, so the strip shows the match and only the match. */
+  const _R0=rel(o.oppId);
+  const _before={standing:c.standing||50, fresh:gimHeat(), mom:c.mom, cond:c.cond, reaction:reactionOf(), respect:_R0.respect||0, heat:_R0.heat||0};
   // record: a time-limit draw is neither a win nor a loss
   const draw=res.draw||res.win===null;
   if(draw){ c.rec.d=(c.rec.d||0)+1; c.streak=0; }
@@ -8619,7 +8965,7 @@ function applyMatch(o,res){
       c._lastPinChamp = _pcNow;
       res.pinnedChamp = {oppName:o.oppName, oppId:o.oppId, belt:target.name, kind:target.kind};
       if(!c.titleShot){
-        const _npv = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+        const _npv = (function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
         c.titleShot = {promoId:target.promoId, from:`pinned ${o.oppName} clean`, y:c.year, w:c.week,
                        kind:target.kind, belt:target.name, targetId:o.oppId,
                        dueBy:{y:_npv.year, w:_npv.week}};
@@ -8641,13 +8987,28 @@ function applyMatch(o,res){
   // title
   let titleMsg=null;
   const tt=workTier(), belt=beltName(tt), secBelt=beltName(tt,'secondary');
-  if(o.stakes==='title' && c.titleShot){
+  /* The rule every promotion on earth runs: a championship does not change
+     hands on a disqualification or a count-out. It used to here. A challenger
+     who won by DQ took the belt and a champion who was counted out lost it,
+     which turned every dirty finish into a title change instead of the story
+     beat it is supposed to be. `dirtyKind` names the finish so the result
+     screen can say why the belt stayed put. A challenger who WON dirty keeps
+     the shot: the office owes them a real one. */
+  const dirtyKind = finT==='dq' ? 'disqualification' : finT==='count' ? 'count-out' : null;
+  if(dirtyKind && (o.stakes==='title'||o.stakes==='defense'||o.stakes==='secondary'||o.stakes==='secondary_defense'||o.stakes==='tag_title'||o.stakes==='tag_defense')){
+    res.retainedDirty = dirtyKind;
+  }
+  if(o.stakes==='title' && c.titleShot && !(dirtyKind && res.win)){
     c.titleShot=null;
     // A promised rematch queued behind a guaranteed shot slides forward now.
     if(c.titleShotPending){ c.titleShot=c.titleShotPending; c.titleShotPending=null;
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`Your rematch clause is back on the books.`}); }
   }
-  if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0;
+  if(o.stakes==='title' && res.win && dirtyKind){
+    titleMsg=`You won by ${dirtyKind}, and the <b>${belt}</b> does not change hands on a ${dirtyKind}. ${o.oppName} keeps it${c.titleShot?', and you keep your shot':''}.`;
+    c.standing=clamp(c.standing+1);
+  }
+  else if(o.stakes==='title'&&res.win){ c.title=belt; c.defenses=0;
     // Prestige tracks how much a specific reign means: earned by the OVR
     // gap between you and who you beat, the match rating, and (later) the
     // defenses stacked onto it. Read by Hall of Fame and end-of-year awards.
@@ -8667,16 +9028,20 @@ function applyMatch(o,res){
       // higher-rated challengers, breaking star-rating ceiling, PPV nights.
       r.prestige = (r.prestige||30) + Math.round(8 + Math.max(0,o.oppOvr-ovr(w))*0.5 + Math.max(0,res.quality-70)*0.3 + (o.ppv?4:0)); }
       titleMsg=`Successful defence #${c.defenses}.`; }
+    else if(dirtyKind){ titleMsg=`${dirtyKind==='disqualification'?'Disqualified':'Counted out'}, but the <b>${c.title}</b> does not change hands on a ${dirtyKind}. You retain, and nobody is happy about it.`;
+      c.standing=clamp(c.standing-1.5); }
     else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
       // Rematch clause: a title loss is not the end of the story. The office
       // owes you one shot before this rival can defend against anyone else.
-      const _npv = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv = (function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'world',
                    dueBy:{y:_npv.year, w:_npv.week}, belt:belt};
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause is in.</b> One shot at the ${belt} back by Y${_npv.year}W${_npv.week} or it burns.`});
     }
   }
+  else if(o.stakes==='secondary' && res.win && dirtyKind){
+    titleMsg=`You won by ${dirtyKind}, and the <b>${secBelt}</b> does not change hands on a ${dirtyKind}. ${o.oppName} keeps it.`; }
   else if(o.stakes==='secondary'&&res.win){ c.secondary=secBelt; c.secDefenses=0;
     c.reigns.push({title:secBelt,year:c.year,week:c.week,defenses:0,kind:'secondary'});
     titleMsg=`You are the new <b>${secBelt}</b>!`; c.pop=clamp(c.pop+3,1,100); c.standing=clamp(c.standing+4);
@@ -8686,17 +9051,20 @@ function applyMatch(o,res){
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r) r.defenses=c.secDefenses;
       titleMsg=`Successful defence of the ${c.secondary} · #${c.secDefenses}.`; }
+    else if(dirtyKind){ titleMsg=`${dirtyKind==='disqualification'?'Disqualified':'Counted out'}, but the <b>${c.secondary}</b> does not change hands on a ${dirtyKind}. You retain.`; }
     else { titleMsg=`You <b>lost</b> the ${c.secondary} to ${o.oppName}.`;
       const r=c.reigns.slice().reverse().find(r=>r.title===c.secondary&&!r.lostYear);
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; }
       const lostBelt = c.secondary;
       c.secondary=null; c.secDefenses=0; c.pop=clamp(c.pop-2,1,100);
-      const _npv2 = (function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv2 = (function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       c.titleShot={promoId:myPromo().id, from:'rematch clause', y:c.year, w:c.week, kind:'secondary', belt:lostBelt,
                    dueBy:{y:_npv2.year, w:_npv2.week}};
       pushInboxItem({ico:pico('trophy',18),sev:'act',txt:`<b>Rematch clause.</b> One shot at the ${lostBelt} back by Y${_npv2.year}W${_npv2.week} or it burns.`});
     }
   }
+  else if(o.stakes==='tag_title' && res.win && dirtyKind){
+    titleMsg=`You won by ${dirtyKind}, and the <b>${o.belt || beltName(tt,'tag')}</b> do not change hands on a ${dirtyKind}.`; }
   else if(o.stakes==='tag_title' && res.win){
     const tb = o.belt || beltName(tt,'tag');
     c.tagTitle = tb; c.tagDefenses = 0;
@@ -8710,6 +9078,8 @@ function applyMatch(o,res){
       const r=c.reigns.slice().reverse().find(r=>r.title===c.tagTitle&&!r.lostYear);
       if(r) r.defenses=c.tagDefenses;
       titleMsg = `Successful defence of the ${c.tagTitle} · #${c.tagDefenses}.`;
+    } else if(dirtyKind){
+      titleMsg = `${dirtyKind==='disqualification'?'Disqualified':'Counted out'}, but the <b>${c.tagTitle}</b> do not change hands on a ${dirtyKind}. You retain.`;
     } else {
       titleMsg = `You <b>lost</b> the ${c.tagTitle} to ${o.oppName} and their partner.`;
       const r=c.reigns.slice().reverse().find(r=>r.title===c.tagTitle&&!r.lostYear);
@@ -8750,13 +9120,13 @@ function applyMatch(o,res){
     pushInboxItem({ico:pico('starBig',18),sev:'good',txt:`<b>${o.tour&&o.tour.region||'The tour'} tape is doing numbers back home.</b> +${tourPop} fame.`});
     G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:`Toured ${o.tour&&o.tour.region||'abroad'}: ${res.win?'won':'lost'} vs ${o.oppName}`});
   }
-  // ---- Money in the Bank: winning the climb grants the briefcase ----
+  // ---- the briefcase: winning the climb grants a cash-in on any champion ----
   if(o.stip==='mitb' && res.win){
     c.mitb={ year:c.year, week:c.week, promoId:myPromo().id, belt:beltName(tt) };
-    titleMsg=(titleMsg?titleMsg+' ':'')+`You have the <b>Money in the Bank</b> briefcase. Cash it in on any champion, any time.`;
+    titleMsg=(titleMsg?titleMsg+' ':'')+`You have the <b>briefcase</b>. Cash it in on any champion, any time.`;
     pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Briefcase in hand.</b> You can cash in the ${c.mitb.belt} whenever you want.`});
-    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won Money in the Bank'});
-    showCoach('mitb','You are carrying Money in the Bank',
+    G.hi=G.hi||[]; G.hi.unshift({y:c.year,w:c.week,t:'Won the briefcase'});
+    showCoach('mitb','You are carrying the briefcase',
       'On any match, before you head to the ring, a Cash In button appears. Win that night and the title is yours, no matter the stipulation. You only get one shot.');
   }
   // First tag title reign earns a coach mark on how to defend it
@@ -8780,10 +9150,30 @@ function applyMatch(o,res){
   // ---- storyline progression ----
   const _st=story();
   if(_st && _st.charId===o.oppId){
+    _st.lastBooked=c.year*WEEKS_PER_YEAR+c.week;
     if(_st.stage>=3){
       // the blow-off: a great match settles it with respect, a bitter one does not
-      endStory((res.quality>=72 || (res.win && rel(o.oppId).respect>=40))?'respect':'blood');
+      const _k=_st.kind||'grudge';
+      const _respect = _k==='veteran'  ? res.quality>=62
+                     : _k==='betrayal' ? (res.win && res.quality>=80)
+                     : _k==='underdog' ? (res.win || res.quality>=72)
+                     : (res.quality>=72 || (res.win && rel(o.oppId).respect>=40));
+      endStory(_respect?'respect':'blood');
       c.rep+=260; G.bag.coins+=Math.round(o.purse*1.5);
+      /* THE BLOW-OFF CEREMONY. A feud is the spine of a career and its
+         ending used to be an inbox row. It gets what a title change gets:
+         a banner on the result, a moment card, and the press. */
+      const _e=c._lastStoryEnd; c._lastStoryEnd=null;
+      if(_e){
+        res.storyEnded=_e;
+        queueMoment(pico(_e.resolution==='respect'?'handshake':'impact',36),
+          _e.resolution==='respect' ? `You and ${_e.name} settled it. With respect.` : `You and ${_e.name} settled it. In blood.`,
+          {kick:'FEUD OVER', sub:`${_e.weeks} weeks. ${_e.avg?`Average match: ${_e.avg}.`:''} ${res.win?'You won the last one.':'They won the last one.'}`});
+        c._pendingMedia = { kind:_e.resolution==='respect'?'classic':'screwjob', headline:'THE FEUD IS OVER',
+          quote: _e.resolution==='respect'
+            ? `${G.w.name} and ${_e.name}, ${_e.weeks} weeks, and it ends with a handshake in the middle of the ring. That is the business at its best. Somebody put the whole thing on tape.`
+            : `${_e.weeks} weeks of ${G.w.name} and ${_e.name} and it ends the way it was always going to end: ugly. Nobody shook hands. Nobody is going to. Good.` };
+      }
     } else if(res.quality>=64 || o.stakes==='rivalry'){ advanceStory(); }
   }
   // ---- relationship with this character ----
@@ -8826,7 +9216,17 @@ function applyMatch(o,res){
   // a genuine nemesis emerges from repeated bad blood
   const _now=c.year*1000+c.week;
   if(!c.rivalId && !story() && R.heat>=42 && R.matches>=2 && (!R.cooldown||_now>R.cooldown)) {
-    startStory(o.oppId, res.win?'is sick of losing to you.':'has your number, and they know it.'); }
+    // the reason is read back on the panel for the life of the feud, so
+    // it should not be the same sentence every time
+    const _v=voiceOf(charById(o.oppId));
+    const _why = res.win
+      ? ({brash:'is sick of losing to you, and said so on television.', cold:'lost to you again and has not said a word since. That is worse.',
+          unhinged:'lost to you and threw a chair through the production truck window.', warm:'is sick of losing to you. It stopped being friendly tonight.',
+          bitter:'has decided you are the reason they are stuck here.', pro:'has taken three losses to you personally. Now it is a project.'})[_v]
+      : ({brash:'has your number, and will not stop telling people.', cold:'has your number. They know it. They are patient about it.',
+          unhinged:'beat you again and left a note in your bag. Nobody knows how.', warm:'beat you again and apologised. That is the part you cannot stand.',
+          bitter:'beat you again and told the office you are not ready.', pro:'has your number, and they know exactly why.'})[_v];
+    startStory(o.oppId, _why || (res.win?'is sick of losing to you.':'has your number, and they know it.')); }
   else if(c.rivalId===o.oppId && R.heat<20 && R.respect>=60){ c.rivalId=null;
     const rc=charById(o.oppId);
     if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef. There is real respect there now.`); }
@@ -8873,6 +9273,15 @@ function applyMatch(o,res){
     queueMoment(pico('starBig',36), `A new career-best against ${o.oppName}.`, {kick:'Better Than The Last One'});
   }
   res.coins=coins; res.repGain=repGain; res.popGain=popGain; res.xp=xp; res.unlocked=unlocked; res.titleMsg=titleMsg; res.injMsg=injMsg;
+  try{
+    const _R1=rel(o.oppId);
+    const _after={standing:c.standing||50, fresh:gimHeat(), mom:c.mom, cond:c.cond, reaction:reactionOf(), respect:_R1.respect||0, heat:_R1.heat||0};
+    const row=(l,k,kind,who)=>({l, before:Math.round(_before[k]), after:Math.round(_after[k]), band:bandOf(kind,_after[k]), who:who||null});
+    res.moved=[ row('Standing with the office','standing','standing'), row('The act','fresh','fresh'), row('Momentum','mom','mom'),
+                row('Condition','cond','cond'), row('Crowd','reaction','crowd'),
+                row(`${o.oppName} respects you`,'respect','respect',o.oppName), row(`Bad blood with ${o.oppName}`,'heat','heat',o.oppName) ];
+    res.roomsBefore = c._sentPrev || null;
+  }catch(_){}
   advanceWeek();
 }
 /* PPV RESULTS CARD.
@@ -8924,13 +9333,15 @@ function nightCardHTML(o,res){
   const me = myPromo();
   const roster = houseRoster(me.id).filter(x=>x.id!==o.oppId);
   if(roster.length<4) return '';
-  const pairs = pickUndercardPairs(o, roster, 2);
-  const under = pairs.map(([a,b])=>{
-    const q = 42 + Math.floor(rnd()*30);
-    const winner = rnd()<0.5 ? a : b;
-    const loser  = winner===a ? b : a;
-    const flavor = a.debut||b.debut ? ' <span class="hint">(debut)</span>' : '';
-    return `<div class="ppv-row"><span class="ppv-w">${winner.name}</span> beat <span class="ppv-l">${loser.name}</span>${flavor} <span class="ppv-s">${starStr(q)}★</span></div>`;
+  // the night's undercard is decided once and kept on the result, so the
+  // dirt sheet can name the match of the night without re-rolling it
+  if(!res._under){
+    const pairs = pickUndercardPairs(o, roster, 2);
+    res._under = pairs.map(([a,b])=>{ const q=42+Math.floor(rnd()*30); const win=rnd()<0.5; return {a:a.name,b:b.name,q,winner:win?a.name:b.name,loser:win?b.name:a.name,debut:!!(a.debut||b.debut)}; });
+  }
+  const under = res._under.map(u=>{
+    const flavor = u.debut ? ' <span class="hint">(debut)</span>' : '';
+    return `<div class="ppv-row"><span class="ppv-w">${u.winner}</span> beat <span class="ppv-l">${u.loser}</span>${flavor} <span class="ppv-s">${starStr(u.q)}★</span></div>`;
   }).join('');
   return `<div class="ppvcard nightcard">
     <div class="ppv-k">Also on tonight's show</div>
@@ -8964,27 +9375,112 @@ function ppvCardHTML(o,res){
     ${pairs.length?'<div class="ppv-under-label">Also on the card</div>'+undercards:''}
   </div>`;
 }
+
+/* ---- REIGN CHIP: a belt on the hub says how long and how many ---- */
+function reignChip(){
+  const c=G.car; const r=(c.reigns||[]).slice().reverse().find(x=>!x.lostYear);
+  if(!r) return '';
+  const wk=(c.year*WEEKS_PER_YEAR+c.week)-((r.year||c.year)*WEEKS_PER_YEAR+(r.week||c.week));
+  const def=r.defenses||0;
+  return `week ${Math.max(1,wk+1)} · ${def} defence${def===1?'':'s'}`;
+}
+/* ============================================================
+   THE DIRT SHEET
+   ------------------------------------------------------------
+   A post-show recap in a pundit's voice, once per match, on the way out
+   of the result screen: the headline, where your match sat on the card,
+   the match of the night, and what the room made of it. The undercard
+   comes from the same roll the result screen showed. Tap to dismiss.
+   ============================================================ */
+let LAST_RESULT=null;
+function leaveResult(){
+  const lr=LAST_RESULT; LAST_RESULT=null;
+  if(lr && lr.res && !lr.res._dirtShown){ lr.res._dirtShown=true; showDirtSheet(lr.o, lr.res, ()=>go('career')); return; }
+  go('career');
+}
+function dirtHeadline(o,res,s,p){
+  const me=G.w.name, opp=o.oppName, q=res.quality;
+  const win=res.win===true, loss=res.win===false;
+  const title=o.stakes==='title'||o.stakes==='defense';
+  const by=p.lean;
+  if(res.retainedDirty) return `${res.retainedDirty==='disqualification'?'DQ':'Count-out'} finish. Belt stays put. Nobody is happy.`;
+  if(title&&win&&o.stakes==='title') return by==='hot'?`${me.toUpperCase()} WINS THE BELT. DID YOU SEE THAT?`:`New champion. ${me} takes the belt off ${opp}.`;
+  if(o.stakes==='defense'&&loss) return by==='cynic'?`Reign over. ${opp} was better, and it was not close.`:`${opp} ends the reign.`;
+  if(res.pinnedChamp) return `${me} pins the champion. Somebody book the title match.`;
+  if(s>=4.5) return by==='fan'?`I am still shaking. ${me} vs ${opp}. Watch it twice.`:`${me} and ${opp} tore the house down.`;
+  if(s>=3.5) return by==='cynic'?`Fine. That was good. Do not let it go to your heads.`:`${me} and ${opp} had the match of the night.`;
+  if(q<=35) return by==='hot'?`WHAT WAS THAT.`:by==='cynic'?`The business died a little more tonight.`:`${me} and ${opp} never got out of first gear.`;
+  // the common nights rotate through a few lines each, so eight weeks of
+  // openers do not read as the same sentence eight times
+  const rot=(arr)=>arr[((G.car.year*WEEKS_PER_YEAR+G.car.week)+arr.length)%arr.length];
+  if(win&&o.card==='Opener') return rot([`${me} wins the opener. Warmed the room up nicely.`,`Opener: ${me} over ${opp}. A good ten minutes.`,`${me} sends the early crowd home happy. ${opp} did the job.`,`${me} opens with a win. The office will have noticed the near-falls.`]);
+  if(win) return rot([by==='analyst'?`${me} goes over ${opp}. Quietly efficient.`:`${me} beats ${opp}.`,`${me} over ${opp}, clean. Nothing to argue with.`,`Another one for ${me}. ${opp} is going to want that back.`]);
+  if(loss&&q>=62) return rot([by==='analyst'?`${me} loses, and comes out of it looking better than the winner.`:`${opp} takes it. ${me} took the whole match to lose it.`,`${opp} wins. ${me} was the story of the match anyway.`,`A loss for ${me} that reads like a win on tape.`]);
+  if(loss) return rot([`${opp} over ${me}. Not much to say.`,`${opp} beats ${me}. Forgettable, and that is the problem.`,`${me} drops one to ${opp}. The room did not mind either way.`,`${opp} gets the fall. ${me} needs a better night than that.`]);
+  return `${me} and ${opp} wrestled to a draw.`;
+}
+function showDirtSheet(o,res,onDone){
+  const c=G.car;
+  const s=starsOf(res.quality);
+  const kind = (o.stakes==='title'&&res.win)?'title' : res.retainedDirty?'screwjob' : s>=4.5?'classic' : res.quality<=35?'flop' : null;
+  const p = pickPundit(kind||'any');
+  const head = dirtHeadline(o,res,s,p);
+  const under=(res._under||[]).slice();
+  const best=under.slice().sort((a,b)=>b.q-a.q)[0];
+  const motn = (best && best.q>res.quality) ? `${best.winner} vs ${best.loser} (${starStr(best.q)}★)` : `yours, ${o.oppName} (${starStr(res.quality)}★)`;
+  const spot = o.ppv ? `Main event of ${o.ppv}` : `${o.card||'Mid-Card'}${o.stakes==='title'?', for the belt':o.stakes==='defense'?', defending':''}`;
+  const rooms = c._sentDelta ? [['crowd','Crowd'],['locker','Locker room'],['office','Office']].map(([k,l])=>{ const d=Math.round(c._sentDelta[k]||0); return `${l} ${d>0?'+'+d:d<0?d:'='}`; }).join(' · ') : '';
+  const body=`<div class="media-frame"><div class="media-portrait">${punditPortrait(p)}</div></div>
+    <div class="media-plate">
+      <div class="media-name" style="color:${p.color}">${p.name.toUpperCase()}</div>
+      <div class="media-outlet">${p.outlet} · the morning after</div>
+      <div class="media-rule"></div>
+      <div class="dirt-head">${head}</div>
+      <div class="dirt-rows">
+        <div class="dirt-row"><span class="dirt-l">Your spot</span><span>${spot}</span></div>
+        <div class="dirt-row"><span class="dirt-l">Your match</span><span>${starStr(res.quality)}★ · ${starBand(s)}</span></div>
+        <div class="dirt-row"><span class="dirt-l">Match of the night</span><span>${motn}</span></div>
+        ${rooms?`<div class="dirt-row"><span class="dirt-l">The rooms, this month</span><span>${rooms}</span></div>`:''}
+      </div>
+    </div>`;
+  modal('The dirt sheet', body, [{label:'On to next week',cls:'primary',fn:()=>{ closeModal(); if(onDone) onDone(); }}]);
+}
 function renderMatch(o,res){
   const c=G.car;
+  LAST_RESULT={o,res};
   const draw=res.draw||res.win===null;
   $('mTitle').innerHTML=(draw?'<span style="color:var(--gold)">DRAW</span>'
     :res.win?'<span style="color:var(--green)">WIN</span>':'<span style="color:#f0907f">LOSS</span>')+` vs ${o.oppName}`;
 
   // every number in the tiles ticks up instead of sitting there
-  const tileOf=(l,id,col)=>`<div class="tile"><div class="lab">${l}</div><div class="val" id="${id}" ${col?`style="color:${col}"`:''}>0</div></div>`;
-  const pg=+res.popGain||0;
-  $('mTiles').innerHTML=tileOf('Purse','mtPurse')
-    +tileOf('Reputation','mtRep','var(--green)')
-    +tileOf('Popularity','mtPop',pg>=0?'var(--green)':'#f0907f')
-    +tileOf('XP','mtXp');
+  const tileOf=(l,id,col,band)=>`<div class="tile"><div class="lab">${termLabel(l)}</div><div class="val"><span id="${id}" ${col?`style="color:${col}"`:''}>0</span>${band?`<span class="numband">${band}</span>`:''}</div></div>`;
+  // round to a tenth FIRST, so a -0.04 does not print as "-0.0" in red on the
+  // very first result screen a player sees
+  const pg=(Math.round((+res.popGain||0)*10)/10)||0;
+  $('mTiles').innerHTML=tileOf('Purse','mtPurse',null,purseBand(res.coins||0))
+    +tileOf('Reputation','mtRep','var(--green)',repBand(c.rep))
+    +tileOf('Popularity','mtPop',pg>0?'var(--green)':pg<0?'#f0907f':'var(--text-dim)',`now ${Math.round(c.pop)}: ${bandOf('pop',c.pop).toLowerCase()}`)
+    +tileOf('XP','mtXp',null,`${G.w.xp} of 100 to a training point`);
   countUp($('mtPurse'),res.coins||0,{fmt:v=>'$'+Math.round(v).toLocaleString()});
   countUp($('mtRep'),res.repGain||0,{fmt:v=>'+'+Math.round(v)});
-  countUp($('mtPop'),pg,{fmt:v=>(v>=0?'+':'')+v.toFixed(1)});
+  countUp($('mtPop'),pg,{fmt:v=>{ const r=(Math.round(v*10)/10)||0; return (r>0?'+':'')+r.toFixed(1); }});
   countUp($('mtXp'),res.xp||0,{fmt:v=>'+'+Math.round(v)});
 
   // ---- the championship ceremony, called the way a ring announcer calls it ----
   let banner='';
-  if(o.stakes==='title'&&res.win)
+  const _dk = res.retainedDirty;
+  const _beltOf = o.belt || (o.stakes==='defense'?c.title : o.stakes==='secondary_defense'?c.secondary : o.stakes==='tag_defense'?c.tagTitle : beltName(workTier()));
+  if(res.storyEnded){
+    const e=res.storyEnded;
+    banner=`<div class="champbanner ${e.resolution==='respect'?'':'lost'}"><div class="cb-kick">Feud over</div><div class="cb-t">Settled with ${e.name} ${e.resolution==='respect'?'with respect':'in blood'}<span style="color:var(--gold)"> · ${e.weeks} weeks</span></div></div>`;
+  }
+  const _challenging = o.stakes==='title'||o.stakes==='secondary'||o.stakes==='tag_title';
+  if(_dk && _challenging && res.win)
+    banner=`<div class="champbanner lost"><div class="cb-kick">No title change</div><div class="cb-t">Won by ${_dk}. ${o.oppName} keeps the ${_beltOf}.</div></div>`;
+  else if(_dk && !_challenging && !draw)
+    banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${_beltOf}<span style="color:var(--gold)"> · retained by ${_dk}</span></div></div>`;
+  else if(banner) {}
+  else if(o.stakes==='title'&&res.win)
     banner=`<div class="champbanner"><div class="cb-kick">And NEW</div><div class="cb-t">${c.title||beltName(workTier())}</div></div>`;
   else if(o.stakes==='defense'&&(res.win||draw))
     banner=`<div class="champbanner"><div class="cb-kick">And STILL</div><div class="cb-t">${c.title}<span style="color:var(--gold)"> · defence #${c.defenses||0}</span></div></div>`;
@@ -9019,6 +9515,10 @@ function renderMatch(o,res){
       <div class="mf-sub">${o.stipLabel} · ${o.oppName} (OVR ${o.oppOvr})${o.card?` · ${o.card}`:''}</div>
     </div>
     <p class="mstory">${matchStory(o,res)}</p>
+    ${(res.moved&&res.moved.length)?`<div class="moved"><div class="moved-k">What tonight did to you</div>${res.moved.map(m=>{
+      const d=m.after-m.before; const dir=d>0?'up':d<0?'dn':'fl';
+      return `<div class="moved-row ${dir}"><span class="mv-l">${m.l}</span><span class="mv-v">${m.before} <span class="mv-arrow">→</span> <b>${m.after}</b> <span class="mv-d">${d>0?'+'+d:d<0?d:'='}</span></span><span class="mv-b">${m.band}</span></div>`;
+    }).join('')}</div>`:''}
     ${(q=>q?`<div class="dirtsheet"><div class="dq">"${q}"</div><div class="ds">The Ropes Report · Year ${c.year}, Week ${c.week}</div></div>`:'')(pressQuote(o,res,s))}
     <div class="mstats">
       <span><b>${res.time||'-'}</b> time</span>
@@ -9335,6 +9835,13 @@ function advanceWeek(){
   maybeTourOffer();  // a promoter overseas rings up now and then
   postPowerRankings();  // monthly ranking of the roster on the news feed
   checkMidYear();       // half-year report card at week 20
+  // momentum: remember last week's value for the hub arrow, and say so out
+  // loud when it crosses a band ("You are building")
+  try{
+    const _mb0=bandOf('mom',c._momPrev==null?c.mom:c._momPrev), _mb1=bandOf('mom',c.mom);
+    c._momPrev=c.mom;
+    if(_mb0!==_mb1){ c._momToast = (c.mom>=60?'You are building. ':c.mom<40?'Cooling off. ':'')+'Momentum: '+_mb1.toLowerCase()+'.'; }
+  }catch(_){}
   // Bank what the week just did to the three rooms. Computed once here
   // rather than on every render, so the arrows hold still while you read
   // them instead of resetting to zero the moment you look.
@@ -10133,7 +10640,7 @@ function renderTrain(){
       <div><div style="font-weight:800;color:var(--cream);font-size:15px;">${label}
         ${growMult(k)>1.05?`<span class="badge b-leg" style="margin-left:6px;">${styleOf().name} ×${growMult(k).toFixed(2)}</span>`:''}</div>
       <div class="hint">${gateHint(k)}</div></div>
-      <div style="text-align:right;"><div class="mono" style="font-size:22px;font-weight:800;">${Math.round(v)}</div>
+      <div style="text-align:right;"><div class="mono" style="font-size:22px;font-weight:800;">${Math.round(v)}<span class="numband">${bandOf('attr',v)}</span></div>
       <button ${G.w.tp<cost||v>=99?'disabled':''} onclick="spendTP('${k}')">+1</button></div></div>
       <div class="bar" style="margin-top:8px;"><i style="width:${clamp(v)}%"></i></div></div>`;
   }).join('')+`</div>
@@ -12260,7 +12767,7 @@ function renderCrew(){
       </div>
       <div class="cc-l"><span>Loyalty</span><b style="color:${L.c}">${L.t}</b></div>
       <div class="bar ${a.loyalty>=55?'g':''}"><i style="width:${a.loyalty}%;${a.loyalty<35?'background:#c0392b':''}"></i></div>
-      <div class="hint" style="margin-top:5px;">Respect ${Math.round(R.respect)} · ${R.wins||0}-${R.losses||0} against them</div>
+      <div class="hint" style="margin-top:5px;">Respect ${Math.round(R.respect)} (${bandOf('respect',R.respect).toLowerCase()}) · ${R.wins||0}-${R.losses||0} against them</div>
       <div class="row" style="margin-top:9px;gap:6px;">
         ${canTag(a.id)?`<button class="ghost" style="padding:5px 10px;font-size:11px;" onclick="askTeam('${a.id}')">Form a tag team</button>`:''}
         ${c.managerId===a.id
@@ -12291,8 +12798,8 @@ function renderCrew(){
         </div>
       </div>
       <div class="cc-two">
-        <div><div class="hint">Respect ${Math.round(R.respect)}</div><div class="bar g"><i style="width:${R.respect}%"></i></div></div>
-        <div><div class="hint">Bad blood ${Math.round(R.heat)}</div><div class="bar"><i style="width:${R.heat}%;background:#c0392b"></i></div></div>
+        <div><div class="hint">Respect ${Math.round(R.respect)} · ${bandOf('respect',R.respect).toLowerCase()}</div><div class="bar g"><i style="width:${R.respect}%"></i></div></div>
+        <div><div class="hint">Bad blood ${Math.round(R.heat)} · ${bandOf('heat',R.heat).toLowerCase()}</div><div class="bar"><i style="width:${R.heat}%;background:#c0392b"></i></div></div>
       </div>
       ${ok?`<div class="row" style="margin-top:9px;gap:6px;">
         <button style="padding:5px 10px;font-size:11px;" onclick="askAlly('${ch.id}')">Ask to work together</button>
@@ -12349,7 +12856,7 @@ function askCashIn(){
      {label:'Cash in tonight',fn:()=>{
        closeModal();
        o.stakes='title'; o.card='Main Event'; o.belt=mb.belt;
-       o.blurb=`Cashing in Money in the Bank: beat ${o.oppName} and the ${mb.belt} is yours.`;
+       o.blurb=`Cashing in the briefcase: beat ${o.oppName} and the ${mb.belt} is yours.`;
        o.guaranteed=true;   // read by startFight to boost momentum
        G.car.mitb=null;
        pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>Cashing in tonight.</b> The ${mb.belt} is on the line.`});
@@ -12923,7 +13430,7 @@ function backstageAskGM(id){
     if(id==='gm_shot'){
       const chId = G.world.champions[me.id].world.holder;
       const bn = beltNameByPromo(me.id,'world');
-      const _npv=(function(){ try{ return nextPpv(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
+      const _npv=(function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
       c.titleShot={promoId:me.id, from:'went into the office and asked', y:c.year, w:c.week, kind:'world',
                    belt:bn, targetId:chId, dueBy:{y:_npv.year, w:_npv.week}};
       pushInboxItem({ico:pico('trophy',18),sev:'good',txt:`<b>The office booked it.</b> A shot at the ${bn} at the next PPV.`});
@@ -13140,6 +13647,26 @@ function sceneRemember(key, val){
 function sceneRecalls(key){ return !!((G.car._sceneMem||{})[key]); }
 
 const SCENES = [
+  /* ---------- NIGHT ONE ----------
+     The one scene that is not a roll of the dice. The most experienced hand
+     in the room stops you at the curtain and says, in three sentences, what
+     the game is actually judging. The tour explains the hub; this explains
+     the match, from somebody who has had a thousand of them. */
+  { id:'first_night', tag:'YOUR FIRST NIGHT', trig:'prematch', weight:1, priority:true,
+    when:x=>((x.c.rec.w||0)+(x.c.rec.l||0)+(x.c.rec.d||0))===0,
+    cast:x=>({ a: houseRoster(myPromoId())
+                   .filter(y=>!(G.car.booking&&G.car.booking.o&&G.car.booking.o.oppId===y.id))
+                   .sort((p,q)=>(q.over||0)-(p.over||0))[0] }),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} stops you at the curtain. "First night. Three things. Build to your near-falls. Do not go home early. When the match asks you to call something, call it."`,
+        opts:[
+          { t:'"Got it."', eff:{respectA:+4, standing:+1}, note:'A nod. That is all the welcome you get here.', mem:'listenedNightOne' },
+          { t:'"What happens if I go home early?"', eff:{respectA:+2}, goto:'early' },
+          { t:'"I know what I am doing."', eff:{heatA:+5, gimHeat:+3}, note:'They laughed. Not unkindly. "Everybody does, once."' },
+        ]},
+      early:{ who:'a', line:x=>`"The rating dies. Nobody remembers who won a five-minute match. They remember a twenty-minute one they lost." They hold the curtain open. "Go."`,
+        opts:[ { t:'Go.', eff:{standing:+1}, note:'You will hear that again from a newsletter in about a year.' } ]},
+    }},
   /* ---------- THE JOB: office, bookers, contracts ---------- */
   { id:'booker_direction', tag:'A WORD FROM THE OFFICE', trig:'prematch', weight:1,
     when:x=>(x.c.standing||50)<48,
@@ -13967,6 +14494,8 @@ function pickScene(trigger){
     });
     return null;
   }
+  // a scene that declares priority is the one that plays (night one, say)
+  const pri=pool.find(s=>s.priority); if(pri) return pri;
   // weighted pick, deterministic per week so a reload shows the same scene
   const seed=`${c.year}-${c.week}-${trigger||'any'}`;
   let h=2166136261>>>0;
@@ -14265,11 +14794,11 @@ function storySoFar(){
 function renderRecord(){
   const c=G.car;
   let h=`<div class="grid g4">`+[
-    ['Record',`${c.rec.w}-${c.rec.l}`],['Win %',c.rec.w+c.rec.l?Math.round(c.rec.w/(c.rec.w+c.rec.l)*100)+'%':'-'],
-    ['Career Earnings',money(c.earnings)],['Reputation',Math.round(c.rep)],
+    ['Record',`${c.rec.w}-${c.rec.l}`],['Win %',c.rec.w+c.rec.l?`${Math.round(c.rec.w/(c.rec.w+c.rec.l)*100)}%<span class="numband">over ${c.rec.w+c.rec.l} match${c.rec.w+c.rec.l===1?'':'es'}</span>`:'-'],
+    ['Career Earnings',money(c.earnings)],['Reputation',withBand('rep',c.rep)],
     ['Title Reigns',c.reigns.length],['Moves Known',G.w.moves.length+'/'+MOVES.length],
-    ['Years Active',c.year],['Age',c.age],
-  ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')+`</div>`;
+    ['Years Active',c.year],['Age',withBand('age',c.age)],
+  ].map(([l,v])=>`<div class="tile"><div class="lab">${termLabel(l)}</div><div class="val">${v}</div></div>`).join('')+`</div>`;
   const acc=c.accolades||[];
   const story=storySoFar();
   const chips=[{t:`Story So Far <span class="pgr-x">${story.length}</span>`},
@@ -14444,7 +14973,7 @@ function renderHof(){
         <p class="log" style="margin-top:10px;">${c.retireReason||''}</p>
         <div class="row" style="margin-top:10px;">
           <div class="tile"><div class="lab">Legacy Grade</div><div class="val" style="color:var(--gold)">${grade}</div></div>
-          <div class="tile"><div class="lab">Legacy Score</div><div class="val">${legacy}</div></div>
+          <div class="tile"><div class="lab">Legacy Score</div><div class="val">${withBand('legacy',legacy)}</div></div>
         </div>
         ${inducted?`<p style="color:var(--gold);font-weight:800;margin-top:12px;">${pico('trophy',16)} Inducted into the Hall of Immortals.</p>`
           :`<p class="hint" style="margin-top:12px;">Fell short of the Hall. Build a bigger legend next time.</p>`}
@@ -14452,7 +14981,7 @@ function renderHof(){
       </div>
       <div class="grid g2" style="margin-top:12px;">${[
         ['Record',`${c.rec.w}-${c.rec.l}`],['Titles',c.reigns.length],['Earnings',money(c.earnings)],
-        ['Years',c.year],['Final OVR',ovr(w)],['Moves',w.moves.length]
+        ['Years',c.year],['Final OVR',withBand('ovr',ovr(w))],['Moves',w.moves.length]
       ].map(([l,v])=>`<div class="tile"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('')}</div>
       ${drRow}${ribbon}${belts}
       <div class="row" style="margin-top:12px;flex-wrap:wrap;gap:6px;">

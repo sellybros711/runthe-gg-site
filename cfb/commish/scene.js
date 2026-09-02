@@ -142,24 +142,23 @@
         { who: 'anchor',
           say: 'Five years to leave this sport better than they found it. Or however long it '
             + 'takes the room to vote them out.' },
-        { who: 'anchor',
-          say: 'Nobody was pushed out over one thing. It was all of it, and all of it is still '
-            + 'on that desk.' },
         { who: 'radio',
           say: 'My phone has not stopped since six. Every caller had a candidate and not one of '
             + 'them said your name.' },
+        /* AND THEN THE CHIEF HANDS YOU THE PHONE. Three lines, and the last thing the third
+           one does is start the first case: see sceneCheck() in the page, which routes the
+           way out of this scene to the desk rather than to the briefing screen. A scene that
+           says "your first call is a lawsuit" and then drops you on a dashboard has told you
+           about the job instead of giving it to you. */
         { who: 'chief', set: 'office',
-          say: 'Morning. You were named at seven. Your first meeting moved to nine and the '
-            + 'second one is a lawsuit.' },
+          say: 'Morning boss. Congratulations on the job. Your first call is already holding.' },
         { who: 'chief', set: 'office',
-          say: 'Same office, same desk. Nobody cleared the drawers, so some of what is in them '
-            + 'is theirs.' },
+          say: 'Fair warning: it is a lawsuit. Welcome to the office.' },
         { who: 'chief', set: 'office',
-          say: 'Two of the four leagues can end a term with a phone call. You just watched them '
-            + 'make it.' },
+          say: 'The last commissioner never cleared their desk, so who knows what you will find '
+            + 'in there.' },
         { who: 'chief', set: 'office',
-          say: 'Everything that reaches this desk got here because nobody underneath us would '
-            + 'touch it. That is the job.' },
+          say: 'Good luck doing the impossible. Saving college football is a tall task.' },
       ],
     },
 

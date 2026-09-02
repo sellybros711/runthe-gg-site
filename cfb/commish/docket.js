@@ -117,6 +117,76 @@
 
   const ITEMS = [
     /* ================================================================
+       THE FIRST CALL.
+
+       The opening cutscene ends with the chief saying your first call is already holding and
+       that it is a lawsuit. This is the call. It is a real case that goes on the record like
+       every other one, and it is also the only place this mode has ever explained itself.
+
+       WHY HERE AND NOT ON THE OFFICE. The office is a briefing with nine cards on it, and a
+       tour of nine cards is nine callouts before the player has made a single decision. The
+       desk is where the whole mode happens: read what landed, hear the room, pick, live with
+       it. Four numbered lines beside a real lawsuit teaches that by doing one. The office
+       explains itself in place instead, which is what the strip's gloss and the year card's
+       heading are for.
+
+       IT OUTRANKS EVERYTHING, including a crisis, because a tutorial that fires two beats in
+       is not a tutorial. See `first` in pick(). Its own gate is what keeps it to one beat:
+       first year, first window, nothing ruled yet, and after that it can never come back.
+       ================================================================ */
+    {
+      id: 'welcome-suit',
+      first: true,
+      beats: [WINTER],
+      weight: 1,
+      when: (w, L, sit) => !!(sit && sit.firstYear) && (w.beat || 0) === WINTER
+        && !(w.history || []).some(L_ISRULING),
+      teach: {
+        head: 'Your first case',
+        say: 'Every decision in this office looks like this one.',
+        steps: [
+          'Read what landed. One case a screen, and this is the whole of it.',
+          'The room argues first. Nine blocs, and six of them hold a vote on your job.',
+          'Pick a ruling. The chips under it say what it moves and who it upsets.',
+          'Press Rule. The room answers, and the record keeps it for five years.',
+        ],
+      },
+      eyebrow: 'Your first call',
+      title: 'The lawsuit was already on the desk',
+      brief: 'It was filed at 8:51 this morning, nine minutes before you were sworn in, which '
+        + 'counsel calls either a coincidence or the most organised thing anybody has done all '
+        + 'year. Sixty two athletes are suing over an eligibility rule your predecessor wrote '
+        + 'and then declined to explain. The rule is four sentences long. One of them '
+        + 'contradicts another one. Their lawyer is booked on a morning show at seven.',
+      voices: [
+        { id: 'Players', say: 'We asked for that rule in writing for two years. Now a judge is asking.' },
+        { id: 'Presidents', say: 'Your first day and our first headline. Do not let it be your second.' },
+        { id: 'Networks', say: 'We have their lawyer booked at seven. We would rather have you.' },
+      ],
+      options: [
+        { id: 'rewrite', label: 'Rewrite the rule this week',
+          body: 'Four sentences, one contradiction, gone by Friday. The suit loses its subject '
+            + 'and sixty two athletes get the thing they were asking for.',
+          edit: { effects: { labour: 2.4, exposure: -1.8, autonomy: -0.8, tradition: -1 },
+            aimed: { Players: { labour: 2.8 }, Presidents: { exposure: -1.6 } } } },
+        { id: 'defend', label: 'Defend the rule you did not write',
+          body: 'You did not write it and you are about to own it under oath. It holds the line '
+            + 'for every badly written rule this office has ever issued, which is the argument '
+            + 'and also the problem.',
+          edit: { effects: { autonomy: 2, cost: 1.4, labour: -2, exposure: 1.2 },
+            aimed: { SEC: { autonomy: 1.6 }, Players: { labour: -2.4 },
+              Presidents: { exposure: -1.2 } } },
+          /* A trial has a verdict at the end of it, and this office chose to find out. */
+          plant: { id: 'fought-it', wait: [14, 24], note: 'A lawsuit this office chose to fight' } },
+        { id: 'settle', label: 'Settle it before the seven o\'clock',
+          body: 'A cheque this afternoon, no finding, no admission. The interview becomes an '
+            + 'eleven second mention and the sixty two sign something.',
+          edit: { effects: { cost: 2.2, money: -1.6, labour: 1.2, exposure: -2.4 },
+            aimed: { Presidents: { cost: -2 }, Players: { labour: 1.4 },
+              SEC: { money: -1.4 } } } },
+      ],
+    },
+    /* ================================================================
        WHEN A FUSE GOES OFF.
 
        The three pressures sat on the office screen for a whole term being decorative: the
@@ -5012,6 +5082,12 @@
        two are lit the older one goes first, because that is the order the letters arrived
        in. Weights are not consulted at all: a hundred against a five would still leave a one
        in twenty chance of the sport ignoring a lawsuit for a beat. */
+    /* AND ONE THING OUTRANKS EVEN A CRISIS: the case somebody is being taught on. A tutorial
+       that fires two beats into a term is not a tutorial, and there is exactly one item in
+       this file carrying the flag. Its gate is first year, first window, nothing ruled yet,
+       so this branch is dead from the second ruling of a career onward. See welcome-suit. */
+    const opening = pool.filter((it) => it.first);
+    if (opening.length) return opening[0];
     const urgent = pool.filter((it) => it.crisis);
     if (urgent.length) {
       if (urgent.length === 1) return urgent[0];

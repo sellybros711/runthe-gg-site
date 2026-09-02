@@ -836,7 +836,7 @@ show_id,show_date,year,tour_id,tour,venue,city,state,country,has_setlist,show_or
 1769450728,2026-08-28,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,true,1
 1775581872,2026-08-29,2026,44,Summer Tour 2026,Civic Center,Salt Lake City,UT,USA,true,1
 1782144765,2026-08-31,2026,44,Summer Tour 2026,The Mishawaka,Bellvue,CO,USA,true,1
-1782144766,2026-09-01,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,false,1
+1782144766,2026-09-01,2026,44,Summer Tour 2026,Red Rocks Park and Amphitheater,Morrison,CO,USA,true,1
 1782144767,2026-09-02,2026,44,Summer Tour 2026,Dillon Amphitheatre,Dillon,CO,USA,false,1
 1771450166,2026-09-26,2026,1,,Kentucky Expo Center,Louisville,KY,USA,false,1
 1780327768,2026-11-03,2026,45,Fall Tour 2026,The Midland,Kansas City,MO,USA,false,1

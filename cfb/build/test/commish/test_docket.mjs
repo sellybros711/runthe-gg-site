@@ -163,6 +163,11 @@ console.log('\n=== the desk is not empty, and it is not the same every year ==='
      opening world and it is not unreachable, it is waiting. Checked on the world it needs. */
   const burning = world0();
   burning.pressure = { legal: 90, congress: 90, union: 90 };
+  /* AND SOMEBODY HAS BEEN IN THE JOB LONG ENOUGH TO LIGHT ONE. A fuse at ninety on a world
+     where nothing has been ruled is a hand-built shape rather than a reachable one, and the
+     first case of a term outranks even a crisis on purpose, so without this the lawsuit that
+     is supposed to be tested here is behind the tutorial. See welcome-suit. */
+  burning.history = [{ id: 'played-something', year: burning.year, beat: 0, label: 'A ruling' }];
   D.eligible(Object.assign({}, burning, { beat: D.BEATS.WINTER }), L).forEach((i) => seen.add(i.id));
   /* AND THE ONES THAT GATE ON WHAT IS HAPPENING NEED FOOTBALL TO HAVE HAPPENED. Half the
      docket now asks the situation rather than the ledger: is anybody unbeaten, did somebody
@@ -632,7 +637,15 @@ console.log('\n=== a term off the real docket ===');
     }
     return { w, ruled, empty };
   }
-  const a = term(11, false);
+  /* THE SEED IS A FIXTURE INPUT AND IT MOVED ONCE, WHICH IS WORTH SAYING. Every term now
+     opens on the same case (see welcome-suit), so every seed's sequence shifted by one and
+     11 started ending with the bot voted out in its second season after ten rulings. That is
+     a legal outcome and a useless fixture: the three assertions under this one are about a
+     sport that has been governed for five years. 15 plays the full term and moves two of the
+     four numbers. Re-picking an arbitrary input is not the same as loosening a threshold,
+     and the thresholds below are untouched. */
+  const SEED = 15;
+  const a = term(SEED, false);
   /* A TERM ENDS ONE OF TWO WAYS AND BOTH ARE A PASS. This asked for more than twenty
      rulings and got eighteen, because the bot was fired in the fourth season: it rules at
      random off a docket with real consequences, so of course it is. Getting removed is the
@@ -651,9 +664,9 @@ console.log('\n=== a term off the real docket ===');
     a.w.playoff.teams !== 12 || a.w.labour.revShare > 0 || a.w.rules.confGames !== 9,
     a.w.playoff.teams + '-team playoff, ' + Math.round(a.w.labour.revShare * 100) + '% to the players, '
     + a.w.rules.confGames + ' conference games');
-  const b = term(11, false);
+  const b = term(SEED, false);
   ok('  the same seed replays it exactly', JSON.stringify(a.w) === JSON.stringify(b.w));
-  const c = term(11, true);
+  const c = term(SEED, true);
   /* NAME THE FIELDS THAT MOVED rather than printing three chosen in advance. The first
      version of this line printed the playoff size, the autobids and the players' share
      for both terms, and on this seed all three matched: a passing assertion under a
