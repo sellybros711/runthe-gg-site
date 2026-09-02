@@ -558,6 +558,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/data.js?v=2"></script>
 <script src="gen.js?v=14"></script>
 <script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/funnel.js?v=10"></script>
 <script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
@@ -1033,6 +1034,13 @@ window.GA_ID='G-L29P5MRWKE';
     document.getElementById('mTime').textContent = fmt(elapsed);
     document.getElementById('mStreak').textContent = s.streak||1;
     document.getElementById('mBest').textContent = fmt(s.best||elapsed);
+    /* One line for the shared result row (result.js): the rank, the best
+       as an event, and the streak, in the same order on every game.
+       isBest is the only part this file has to supply, because by the
+       time the modal is open the new best is already in storage. */
+    try{ window.RTGResultSpec = { key:'crossword', date:DATE, statInt:Math.round(elapsed),
+      bestText:fmt(s.best||elapsed), prevBest:(typeof prevBestT==='number'&&prevBestT>0?fmt(prevBestT):null),
+      isBest:!!(typeof newBestT!=='undefined'&&newBestT), streak:s.streak||0, higherBetter:false }; }catch(e){}
     document.getElementById('mTimeK').textContent = 'Your time';
     var nSolv = s.solves||1;
     document.getElementById('mAvg').textContent = s.timeSum ? fmt(Math.round(s.timeSum/nSolv)) : fmt(elapsed);
