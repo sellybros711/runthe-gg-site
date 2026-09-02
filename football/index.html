@@ -3689,6 +3689,38 @@ window.GA_ID='G-L29P5MRWKE';
   .dpips i.on{border-style:solid;border-color:transparent;color:#fff}
   .dpips i.on b{font-weight:700}
   .dpips i.on span{font-size:8px;font-weight:600;letter-spacing:.02em;opacity:.72}
+  /* ---- THE GAUNTLET, ON THE WHEEL ----
+     A draft in this mode happens in the middle of a career, and the sticky HUD said only
+     what a first draft needs: money and chemistry. Which season, what the owner wants and
+     how last year finished were all on other screens.
+
+     THE SAME TWO ROWS AS THE BLOCK BELOW IT, labels then values, so the eye reads one HUD
+     rather than a strip bolted onto one. Columns are built from what is TRUE: season one
+     has no last year and no points, so it gets neither column rather than a pair of
+     dashes. Gold, because everything belonging to this mode is gold. */
+  .gdraft{margin:0 0 9px;padding:8px 11px 9px;border-radius:10px;
+    border:1px solid rgba(226,178,90,.34);
+    background:linear-gradient(180deg,rgba(40,32,17,.85),rgba(19,17,13,.85))}
+  .gdraft[hidden]{display:none}
+  .gd-hd,.gd-vals{display:grid;grid-template-columns:var(--gdc,1fr);gap:10px;
+    align-items:baseline}
+  .gd-hd .eyebrow{font-size:9px;letter-spacing:.13em;color:rgba(243,221,174,.5)}
+  .gd-hd span+span,.gd-vals span+span{text-align:right}
+  .gd-vals{margin-top:3px}
+  /* The ultimatum, at the size this row can carry. It is the same sentence as the offseason
+     card and the squad screen, so somebody who has read it once recognises it here. */
+  .gd-goal{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;min-width:0}
+  .gd-goal b{font-family:var(--fd,var(--fn));font-size:19px;font-weight:800;line-height:1;
+    color:#F3DDAE}
+  .gd-goal i{font-style:normal;font-family:var(--fn);font-size:9px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;color:#f87171;white-space:nowrap}
+  .gd-num{font-family:var(--fd,var(--fn));font-size:19px;font-weight:800;line-height:1;
+    color:#F3DDAE;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .gd-num small{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.05em;
+    color:rgba(243,221,174,.5);margin-left:4px}
+  /* Money that buys nobody, in the colour every other screen gives it. */
+  .gd-num.gd-bad{color:rgba(248,113,113,.92)}
+
   .cap-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
   /* 6px, not 3. The right-hand column stacks an eyebrow over a 22px display figure, and
      Anton is set at line-height 1, so at 3px the ascenders of "None" came up level with the
@@ -5844,6 +5876,13 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            than measuring what you have. That row is the widest thing here, so the counter
            is allowed to shrink and, in One Franchise runs where it carries the club name
            as well, to truncate rather than shove the money figure around. -->
+      <!-- THE GAUNTLET'S OWN LINE, and only its own. Every other mode drafts once and the
+           money is the whole context; this one arrives at the wheel in the middle of a
+           career and the money says nothing about which season it is, what the owner wants
+           or how last year went. Two rows in the same labels-then-values shape as the
+           block under it, so it reads as part of the same HUD rather than a banner stuck
+           on top of one. See paintDynastyDraftBar(). -->
+      <div class="gdraft" id="d-gaunt" hidden></div>
       <div class="cap-hd">
         <span class="eyebrow">Money left</span>
         <span class="eyebrow">Chemistry</span>
@@ -9743,8 +9782,71 @@ function clubPicker(){
   });
 }
 
+/*
+ * ─── THE GAUNTLET'S OWN HEADER ON THE WHEEL ─────────────────────────────────────────
+ *
+ * A draft in every other mode is the start of everything, so money and chemistry are the
+ * whole story. The Gauntlet drafts in the middle of a career: you are filling two holes on
+ * a roster that already exists, against an owner who wants a number, in a season that has a
+ * number, after a season that had a record. None of that was on this screen.
+ *
+ * COLUMNS ARE BUILT FROM WHAT IS TRUE. In season one there is no last year and no score, so
+ * there is no Last year column and no Points column, rather than two columns of dashes.
+ * That is also why the grid is set from script: the template has to match how many there
+ * turned out to be.
+ *
+ * THE SENTENCE IS THE SAME SENTENCE. dynastyGoalHTML writes "8 wins or you are fired" on the
+ * offseason card and the squad screen. It is shortened here only in the sense of being set
+ * smaller, because a player who has learned to read it twice should not meet a third
+ * wording of it.
+ */
+function paintDynastyDraftBar(){
+  const el=$('d-gaunt'); if(!el) return;
+  if(!run||!run.dynasty){ el.hidden=true; return; }
+  const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
+  const h=run.history||[];
+  const last=h.length?h[h.length-1]:null;
+  const cols=[];
+  cols.push({
+    lab:'Season '+run.seasonNo,
+    val:'<span class="gd-goal"><b>'+bar+' wins</b><i>or you are fired</i></span>',
+  });
+  if(last){
+    /* HOW LAST YEAR FINISHED, AND BY HOW MUCH. The record on its own does not say whether
+       it was comfortable, and the margin over the bar is the one number that turns a
+       record into a verdict on the roster you are about to add to. */
+    const spare=last.wins-(last.bar!=null?last.bar:bar);
+    cols.push({
+      lab:'Last year',
+      val:'<span class="gd-num">'+last.wins+'-'+last.losses+
+        (spare>0?'<small>+'+spare+'</small>':'')+'</span>',
+    });
+  }
+  /*
+   * THREE COLUMNS AT MOST, AND THE THIRD IS WHICHEVER MONEY MATTERS MORE.
+   *
+   * A fourth column pushes "or you are fired" onto its own line at 390px and the strip
+   * stops being compact, which was the whole brief. So the last slot goes to dead money
+   * when there is any and to the score when there is not. That is the right way round:
+   * dead money is a live constraint on the decision being made three inches below it, and
+   * the score is a number you look at after a season rather than during a draft.
+   */
+  const dead=R.deadOf(run);
+  if(dead>0.05){
+    cols.push({lab:'Dead',val:'<span class="gd-num gd-bad">'+M(dead)+'</span>'});
+  }else if(run.score>0){
+    cols.push({lab:'Points',val:'<span class="gd-num">'+SCORE(run.score)+'</span>'});
+  }
+  el.hidden=false;
+  el.style.setProperty('--gdc','1fr'+' auto'.repeat(cols.length-1));
+  el.innerHTML='<div class="gd-hd">'
+      +cols.map(c=>'<span class="eyebrow">'+esc(c.lab)+'</span>').join('')
+    +'</div><div class="gd-vals">'+cols.map(c=>c.val).join('')+'</div>';
+}
+
 /* ---------- draft ---------- */
 function paintTop(){
+  paintDynastyDraftBar();
   const rem=R.remaining(run),floor=R.reserveFloor(run),left=R.slotsLeft(run),low=rem<=floor+6;
   $('c-amt').textContent=M(rem); $('c-amt').classList.toggle('low',low);
   /* WHAT IS LEFT, PER SPOT STILL TO FILL.
@@ -9777,15 +9879,12 @@ function paintTop(){
   if(Math.abs(chem-lastChem)>0.0005){el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),640);}
   lastChem=chem;
   const n=$('c-note');
-  /* AND WHY THE MONEY IS SHORT, WHICH THE WHEEL NEVER SAID. Dead money comes off the cap
-     the moment you cut somebody, so a player who released two men in the winter arrives
-     here with a budget that does not match the one he was looking at, and nothing on this
-     screen accounted for the difference. Third in the order because the two above it are
-     about the spin in front of you and this is about a decision already made. */
-  const dead=run&&run.dynasty?R.deadOf(run):0;
+  /* DEAD MONEY IS NOT HERE ANY MORE. It had a line in this note for an afternoon, and this
+     note is the third of three that share one slot, so the fact most likely to be preempted
+     was the one that never goes away. It has its own column in the Gauntlet strip at the top
+     of this HUD, which is on screen at every scroll position. See paintDynastyDraftBar. */
   if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
   else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
-  else if(dead>0.05){n.style.display='block';n.textContent=M(dead)+' of your cap is dead money from players you released.';}
   else n.style.display='none';
   /* The club goes here rather than into a banner of its own. It is the one thing about an
      One Franchise run that is not true of a free one, and this eyebrow is already the line
