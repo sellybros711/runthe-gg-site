@@ -93,6 +93,8 @@
   .dirt-row{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed rgba(255,255,255,.08);padding-top:6px;}
   .dirt-l{color:var(--text-faint);font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding-top:2px;}
   .feud-marks{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);margin-top:3px;}
+  .ch-al{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;vertical-align:middle;}
+  .ch-al.heel{background:rgba(198,57,44,.25);color:#f0907f;} .ch-al.face{background:rgba(91,176,131,.22);color:#7dc4a4;} .ch-al.stage{background:rgba(224,179,65,.2);color:var(--gold);}
   .numband{display:block;font-family:var(--body);font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-dim);margin-top:2px;line-height:1.2;}
   .bizcard .numband{font-size:11.5px;}
   .term{cursor:pointer;border-bottom:1px dotted rgba(244,232,219,.35);}
@@ -9030,7 +9032,7 @@ function applyMatch(o,res){
       titleMsg=`Successful defence #${c.defenses}.`; }
     else if(dirtyKind){ titleMsg=`${dirtyKind==='disqualification'?'Disqualified':'Counted out'}, but the <b>${c.title}</b> does not change hands on a ${dirtyKind}. You retain, and nobody is happy about it.`;
       c.standing=clamp(c.standing-1.5); }
-    else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1];
+    else { titleMsg=`You <b>lost</b> the ${c.title} to ${o.oppName}.`; const r=c.reigns[c.reigns.length-1]; if(r) r.lostTo=o.oppName;
       if(r){ r.lostYear=c.year; r.lostWeek=c.week; } c.title=null; c.defenses=0; c.pop=clamp(c.pop-4,1,100);
       // Rematch clause: a title loss is not the end of the story. The office
       // owes you one shot before this rival can defend against anyone else.
@@ -9252,7 +9254,7 @@ function applyMatch(o,res){
     if(_p<=0.30) award(`Defied the odds against ${o.oppName}.`, pico('starBig',36));
   }
   c.yearLog=c.yearLog||[]; c.yearLog.push({q:res.quality,opp:o.oppName,win:res.win,w:c.week});
-  G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title'});
+  G.hist.unshift({y:c.year,w:c.week,opp:o.oppName,q:res.quality,win:res.win,stip:o.stipLabel,title:o.stakes==='title',dirty:res.retainedDirty||(res.finish&&(res.finish.type==='dq'||res.finish.type==='count')?res.finish.type:null)});
   if(G.hist.length>120) G.hist.pop();
   // Career-defining rival: track the opponent who has produced the most matches
   // with you at 4-star and up. Read by the HOF induction and the awards ribbon.
@@ -9395,7 +9397,10 @@ function reignChip(){
 let LAST_RESULT=null;
 function leaveResult(){
   const lr=LAST_RESULT; LAST_RESULT=null;
-  if(lr && lr.res && !lr.res._dirtShown){ lr.res._dirtShown=true; showDirtSheet(lr.o, lr.res, ()=>go('career')); return; }
+  if(lr && lr.res && !lr.res._dirtShown){ lr.res._dirtShown=true;
+    // a title win gets its quiet scene after the press have had theirs
+    const after = (lr.res.win && lr.o.stakes==='title') ? ()=>{ const sc=pickScene('titlewin'); if(sc) playScene(sc, ()=>go('career')); else go('career'); } : ()=>go('career');
+    showDirtSheet(lr.o, lr.res, after); return; }
   go('career');
 }
 function dirtHeadline(o,res,s,p){
@@ -11040,7 +11045,19 @@ function buildPromoCtx(target){
     me, opp, venue, belt,
     champion: ch ? {name:ch.you?me.name:ch.name, you:!!ch.you} : null,
     hist:{ count:hist.length, best, last, wins:hist.filter(x=>x.win===true).length, losses:hist.filter(x=>x.win===false).length },
-    feud:feudWith ? {stage:feudWith.stage, weeks:(c.year*40+c.week)-(feudWith.startYear*40+feudWith.startWeek)} : null,
+    feud:feudWith ? {stage:feudWith.stage, kind:feudWith.kind||'grudge', reason:feudWith.reason||'', events:feudWith.events||0,
+                     weeks:(c.year*40+c.week)-(feudWith.startYear*40+feudWith.startWeek)} : null,
+    // the last feud with this person that already ended, if it was recent
+    resolved:(()=>{ if(!t) return null; const r=(c.storiesResolved||[]).find(x=>x.charId===t.id); if(!r) return null;
+      const ago=(c.year*40+c.week)-(r.y*40+r.w); return ago<=10 ? {resolution:r.resolution, weeks:ago, avg:r.avg, kind:r.kind} : null; })(),
+    // things that actually happened between you, for callbacks
+    events:{
+      tookBelt: !!(t && (c.reigns||[]).some(r=>r.lostTo===t.name)),
+      screwed:  !!(t && (G.hist||[]).some(h=>h.opp===t.name && h.dirty && h.win===false)),
+      attacked: !!(feudWith && (feudWith.events||0)>0),
+      partnerTurned: !!(R && R.betrayedMe),
+      youTurned: !!(R && R.betrayed),
+    },
     directive: PM && PM.directive,
     stance: PM && PM.stance,
     mode: PM && PM.mode,
@@ -11074,6 +11091,23 @@ function pronounsFor(align){
    `gimmick`) narrow who the chip is FOR; `when(ctx)` narrows when the
    chip APPLIES. */
 const CHIP_BANK=[
+  // ---------- CALLBACKS to things that actually happened ----------
+  {id:'cb_took_belt', tag:'ref', phase:['hook','thesis','meat','personal'],
+    when:c=>c.opp&&c.events.tookBelt,
+    fn:c=>[`${c.opp.name} took my belt. Took. I want that word in the record.`,`Everybody keeps calling ${c.opp.name} the champion. I keep calling them the caretaker.`]},
+  {id:'cb_screwed', tag:'ref', phase:['hook','meat','personal'],
+    when:c=>c.opp&&c.events.screwed,
+    fn:c=>[`${c.opp.name} could not beat me. So they made sure the referee did not have to count.`,`Last time ${c.opp.name} needed a disqualification to walk out of here. Tonight there is no exit.`]},
+  {id:'cb_attacked', tag:'ref', phase:['hook','personal'],
+    when:c=>c.opp&&c.events.attacked,
+    fn:c=>[`${c.opp.name} put hands on me with no referee in sight. I have not forgotten where.`,`No bell. No camera they knew about. ${c.opp.name} knows exactly what I am talking about.`]},
+  {id:'cb_partner_turned', tag:'ref', phase:['hook','personal','meat'],
+    when:c=>c.opp&&c.events.partnerTurned,
+    fn:c=>[`${c.opp.name} had my back. That was the problem. They knew exactly where to put the knife.`,`I trusted ${c.opp.name}. Say that out loud and listen to how it sounds now.`]},
+  {id:'cb_you_turned', tag:'twist', phase:['personal','meat'],
+    when:c=>c.opp&&c.events.youTurned,
+    fn:c=>[`Yes, I turned on ${c.opp.name}. I would do it again tonight. Somebody had to.`,`${c.opp.name} keeps saying I betrayed them. I did. It was the best decision I have made in this company.`]},
+
   // ---------- REFERENCES: things that are on the record ----------
   {id:'ref_prev_win',    tag:'ref', phase:['hook','thesis','meat','personal'],
     when:c=>c.opp&&c.hist.wins>0,
@@ -11483,6 +11517,51 @@ function chipTag(tag){ return {ref:'k-crowd',boast:'k-heel',threat:'k-heel',ques
    below as the build-your-own alternative.
    ============================================================ */
 const CUT_BANK=[
+  // ----- STAGE cuts: the beat of the story this promo is cut in -----
+  // Each line reads the alignment and, where it matters, the KIND of story.
+  {id:'cut_st_open_hook', phase:['hook'], stakes:['stage_opening'], tags:['callout','ref'], hostile:-0.4, intensity:0.75,
+    line:c=>c.opp ? (c.feud&&c.feud.kind==='title'
+      ? (c.me.align==='heel' ? `${c.opp.name} is carrying my belt around like it was given to them. It was. I am here to take it back.` : `${c.opp.name}, you are the champion. Congratulations. I am the reason that is temporary.`)
+      : (c.me.align==='heel' ? `${c.opp.name}. Something started between us and I want everybody to know I started it on purpose.` : `${c.opp.name}, you and I have a problem now. I did not go looking for it. I am not walking away from it either.`))
+      : `Something started this week. I am on this microphone so nobody can pretend it did not.`},
+  {id:'cut_st_open_meat', phase:['meat','thesis'], stakes:['stage_opening'], tags:['ref','boast'], hostile:-0.3, intensity:0.7,
+    line:c=>c.opp ? `Here is what ${c.opp.name} does not understand yet. I do not do this for a week. I do this until it is finished.` : `I do not start things for a week. I start them so they finish.`},
+  {id:'cut_st_open_close', phase:['close'], stakes:['stage_opening'], tags:['threat'], hostile:-0.5, intensity:0.8,
+    line:c=>c.opp ? (c.me.align==='heel' ? `${c.opp.name}, this is the last week you get to be surprised by me.` : `${c.opp.name}, find me. Any night. I will be the one who did not blink.`) : `Whoever it is: find me. I will be easy to find.`},
+
+  {id:'cut_st_esc_hook', phase:['hook'], stakes:['stage_escalation'], tags:['ref','threat'], hostile:-0.45, intensity:0.8,
+    line:c=>c.opp ? `Week ${c.feud&&c.feud.weeks?c.feud.weeks:'two'} of ${c.opp.name} and me, and it is not business any more. Everybody back there knows it. Now you do too.` : `This has gone past business. I am fine with that.`},
+  {id:'cut_st_esc_meat', phase:['meat'], stakes:['stage_escalation'], tags:['ref','question'], hostile:-0.35, intensity:0.8,
+    line:c=>c.opp ? (c.hist.wins>c.hist.losses ? `${c.opp.name} keeps coming back after I keep beating them. Ask yourself why. Then ask what they think happens differently this time.` : `${c.opp.name} has beaten me. Fine. Ask them how many nights they slept afterwards. I know the answer, because I am in their head.`) : `Ask anybody back there what this is now. They will not answer. That is the answer.`},
+  {id:'cut_st_esc_close', phase:['close'], stakes:['stage_escalation'], tags:['threat','callback'], hostile:-0.55, intensity:0.85,
+    line:c=>c.opp ? (c.me.align==='heel' ? `Next time I see ${c.opp.name} there will not be a referee close enough to matter.` : `${c.opp.name}, you have made this personal. Good. I am better when it is personal.`) : `Next time. Not a referee in the building close enough to matter.`},
+
+  {id:'cut_st_pers_hook', phase:['hook','personal'], stakes:['stage_personal'], tags:['ref','twist'], hostile:-0.3, intensity:0.9,
+    line:c=>c.opp ? (c.events.attacked ? `${c.opp.name} put hands on me where there was no bell and no referee. Remember that, when you decide who to feel sorry for tonight.`
+      : c.events.tookBelt ? `${c.opp.name} took my belt. I did not lose it. It was taken. There is a difference, and I am going to explain it to them in the ring.`
+      : c.events.partnerTurned ? `${c.opp.name} had my back. Then they put a boot in it. You do not come back from that. You come back FOR it.`
+      : `This stopped being about wins and losses with ${c.opp.name} a while ago. I am not sure it was ever about them.`) : `This stopped being about wins and losses a while ago.`},
+  {id:'cut_st_pers_meat', phase:['meat','personal'], stakes:['stage_personal'], tags:['concession','threat'], hostile:-0.2, intensity:0.9,
+    line:c=>c.opp ? (c.me.align==='heel' ? `I will say this once, and honestly: ${c.opp.name} is good. Good enough that hurting them will mean something.` : `I respect ${c.opp.name}. I want everybody to hear that. It changes nothing about what I have to do to them.`) : `Honestly: they are good. Good enough that this will mean something.`},
+  {id:'cut_st_pers_close', phase:['close'], stakes:['stage_personal'], tags:['threat'], hostile:-0.6, intensity:0.95,
+    line:c=>c.opp ? `${c.opp.name}, one of us leaves this with something we cannot get back. I have made my peace with it being me. Have you?` : `One of us leaves this with something we cannot get back.`},
+
+  {id:'cut_st_final_hook', phase:['hook'], stakes:['stage_final'], tags:['ref','callout'], hostile:-0.5, intensity:0.95,
+    line:c=>c.opp ? (c.feud&&c.feud.kind==='title' ? `${c.opp.name}, the belt is on the line and so is everything I have said about you for ${c.feud.weeks||'these'} weeks. One of those two things is coming home with me.`
+      : c.feud&&c.feud.kind==='betrayal' ? `${c.opp.name}. No more words. There is a cage and there is a bell and there is you and me, and I have been waiting for exactly this.`
+      : `${c.opp.name}, this is the last time I say your name into a microphone. After the bell there will be nothing left to say.`) : `Last time I say it into a microphone. After the bell there is nothing left to say.`},
+  {id:'cut_st_final_meat', phase:['meat','thesis'], stakes:['stage_final'], tags:['ref','boast'], hostile:-0.4, intensity:0.9,
+    line:c=>c.opp ? `${c.hist.count} matches. ${c.hist.wins} mine, ${c.hist.losses} theirs. The best of them was a ${c.hist.best?c.hist.best.q:'good'}. This one has to be better than that, ${c.opp.name}, and we both know only one of us can carry it there.` : `Every match we have had is on tape. The last one has to be the best one.`},
+  {id:'cut_st_final_close', phase:['close'], stakes:['stage_final'], tags:['threat','callback'], hostile:-0.5, intensity:1,
+    line:c=>c.opp ? (c.me.align==='heel' ? `${c.opp.name}, when it is over, I am going to stand over you and say nothing. That silence is the last thing you get from me.` : `${c.opp.name}, when it is over I will offer my hand. Whether you take it is the only question left.`) : `When it is over, I will offer my hand. Whether they take it is the only question left.`},
+
+  {id:'cut_st_post_hook', phase:['hook'], stakes:['stage_post'], tags:['ref','concession'], hostile:0.3, intensity:0.7,
+    line:c=>c.opp ? (c.resolved&&c.resolved.resolution==='respect' ? `${c.opp.name} and I settled it ${c.resolved.weeks?c.resolved.weeks+' weeks ago':'recently'}. In the middle of the ring, with a handshake. I meant it then. I mean it now.` : `${c.opp.name} and I are done. Not settled. Done. There is a difference and I am not pretending otherwise.`) : `That one is finished. I am not going to pretend it is not.`},
+  {id:'cut_st_post_meat', phase:['meat','personal'], stakes:['stage_post'], tags:['ref','twist'], hostile:0.1, intensity:0.75,
+    line:c=>c.opp ? `What ${c.opp.name} and I did out there made both of us. Anybody who watched it knows what I am capable of. Anybody who did not is about to find out.` : `What we did out there made both of us. Anybody who watched it knows.`},
+  {id:'cut_st_post_close', phase:['close'], stakes:['stage_post'], tags:['callback','threat'], hostile:-0.2, intensity:0.8,
+    line:c=>c.opp ? `So here is my problem, ${c.opp.name}. I know exactly what it took to finish with you. And I am looking around this room for the next one who thinks they can go there.` : `I know exactly what it took to finish that. I am looking around this room for the next one.`},
+
   // ----- FIRST-MEETING cuts -----
   {id:'cut_first_open',   phase:['hook'],   stakes:['first'], tags:['boast','ref'],
     hostile:-0.2, intensity:0.7,
@@ -11651,7 +11730,10 @@ function stakesForPromo(ctx){
     tags.push('feud');
     if(ctx.feud.stage<=1) tags.push('feud_early');
     if(ctx.feud.stage>=3) tags.push('feud_end');
-  }
+    // exactly one STAGE tag: the beat of the story this promo is cut in
+    tags.push(ctx.feud.stage<=0?'stage_opening' : ctx.feud.stage===1?'stage_escalation' : ctx.feud.stage===2?'stage_personal' : 'stage_final');
+    tags.push('kind_'+(ctx.feud.kind||'grudge'));
+  } else if(ctx.resolved){ tags.push('stage_post'); }
   if(ctx.opp && ctx.opp.holdsBelt) tags.push('title_chase');
   if(ctx.me.title && ctx.stakes==='defense') tags.push('title_defense');
   if(ctx.mode==='title') tags.push('title_call');
@@ -11787,7 +11869,10 @@ function cutsFor(phase){
   };
   // Prefer cuts whose stakes actually apply; only fall back to generic (no
   // stakes tag) if nothing situational is available.
-  const situational=CUT_BANK.filter(c=>ok(c)&&c.stakes);
+  // a cut written for THIS beat of the story comes first; a cut for the
+  // situation (a rematch, a title chase) second; a generic one last
+  const staged=CUT_BANK.filter(c=>ok(c)&&c.stakes&&c.stakes.some(t=>/^stage_/.test(t)));
+  const situational=CUT_BANK.filter(c=>ok(c)&&c.stakes&&!c.stakes.some(t=>/^stage_/.test(t)));
   const generic=CUT_BANK.filter(c=>ok(c)&&!c.stakes);
   // Deterministic pick per beat so the marquee cut is stable while the beat
   // is being deliberated. Situational first, then a generic to round it out.
@@ -11797,7 +11882,7 @@ function cutsFor(phase){
     // if the modulo collision left it short, fill in order
     for(const c of arr){ if(out.length>=n) break; if(!out.includes(c)) out.push(c); }
     return out; };
-  return pickN(situational,2).concat(pickN(generic,1)).slice(0,3);
+  return pickN(staged,2).concat(pickN(situational,2)).concat(pickN(generic,1)).slice(0,3);
 }
 function promoKinds(target,mode,phase){
   const l=leanOf(), established=Math.abs(l)>=32;
@@ -12171,7 +12256,7 @@ function pmChoices(){
     let line=''; try{ line=cut.line(PMCTX); }catch(e){}
     if(!line) return '';
     return `<div class="cutcard" onclick="pmSayCut('${cut.id}')">
-      <div class="cc-k">Signature cut</div>
+      <div class="cc-k">Signature cut${cut.align?`<span class="ch-al ${cut.align}">${cut.align}</span>`:''}${(cut.stakes||[]).some(t=>/^stage_/.test(t))?`<span class="ch-al stage">this beat</span>`:''}</div>
       <div class="cc-t">${line}</div>
     </div>`;
   }).filter(Boolean).join('') : '';
@@ -12185,7 +12270,7 @@ function pmChoices(){
     const clickable=on || (PM.picking||[]).length<maxThis;
     return `<div class="chip ${on?'on':''} ${clickable?'':'off'}"
       onclick="${clickable?`pmToggleChip('${ch.id}')`:''}">
-      <div class="ch-k ${chipTag(ch.tag)}">${chipLabel(ch.tag)}</div>
+      <div class="ch-k ${chipTag(ch.tag)}">${chipLabel(ch.tag)}${ch.align?`<span class="ch-al ${ch.align}">${ch.align}</span>`:''}</div>
       <div class="ch-t">${chipLine(ch,PMCTX)}</div>
     </div>`;
   }).join('') : `<div class="hint">No fresh chips for this beat. Write your own below.</div>`;
@@ -12330,6 +12415,13 @@ async function pmSay(payload){
   : sh.mode==='flipflop' ? `<span class="bad">You have said three different things in three weeks. They have stopped taking you seriously. Reaction +${sh.gain}.</span>`
   : sh.mode==='wobble'   ? `<span class="bad">Half-hearted, and off from what you have been doing. It landed on nobody.</span>`
   :                        `<span class="hint">${DEFAULT_HITS[PM.beat % DEFAULT_HITS.length]}</span>`);
+  // the first line said against your own billing gets named, once, so a
+  // face who picks three threats knows the word for what they are doing
+  if(!PM._alignNoted && G.w.align!=='tweener' && !read.kind){
+    const heelLine=read.hostile<=-0.45, faceLine=read.hostile>=0.45;
+    if((G.w.align==='face'&&heelLine)||(G.w.align==='heel'&&faceLine)){ PM._alignNoted=true;
+      pmLog(`<span class="hint">That is a ${G.w.align==='face'?'heel':'face'} line from a ${G.w.align}. Say enough of them and it is a turn.</span>`); }
+  }
   // a turn completes when you have stayed with it
   const turned=maybeTurn();
   if(turned){ await flashScreen(); await pmCall('THE TURN','#C6392C');
@@ -12364,6 +12456,7 @@ async function pmSay(payload){
   const fits=(PPHASES[PM.phase]||PPHASES.hook).fits;
   const fit = fitsCheat ? 1 : fits.includes(kind) ? 1 : (kind==='cheap'||kind==='pander') ? -0.4 : -0.6;
   PM.fitSum += fit;
+  if(fit>=0) PM.fitOk=(PM.fitOk||0)+1;
   if(fit<0){
     pmLog(fit<=-0.6
       ? `<span class="bad">Wrong beat for that line. The room reads you as scattered.</span>`
@@ -12630,12 +12723,17 @@ async function pmFinish(suppressPop){
   const standingSwing = (q>=60 ? 1.4 : q<35 ? -1.2 : 0.3) * (PM.stance==='off'?stanceMult:1)
                       + comply*(PM.stance==='comply'?2:PM.stance==='wrinkle'?1:-0.5);
   c.standing=clamp(c.standing+standingSwing);
+  c.mom=clamp((c.mom||50)+(q-50)/8);     // a promo that lands is momentum; one that dies costs it
   w.xp+=Math.round(18+q*0.35); while(w.xp>=100){ w.xp-=100; w.tp+=1; }
   const cl=crowdLabel();
   fmv('me',{pose:q>=60?'celebrate':'ready',fwd:0},280);
   if(!suppressPop) await pmCall(q>=75?'THEY ARE ON THEIR FEET':q>=45?'THAT LANDED':'FLAT','#e0b341');
   pmLog(`<b>Segment rating ${Math.round(q)}.</b> <span class="hint">Reaction ${Math.round(reactionOf())} · ${cl.t}</span>`);
   pmLog(`<span class="hint">Structure ${structure}/22 · office directive ${comply>=0.35?'delivered':comply<=-0.35?'ignored':'partial'}${PM.stance==='off'?' (off script)':''}.</span>`);
+  // coherence, said out loud: how many beats belonged where they were said,
+  // and which beat of which story this promo was cut in
+  const _fk=PMCTX&&PMCTX.feud ? `${(STORY_KINDS[PMCTX.feud.kind]||STORY_KINDS.grudge).name.toLowerCase()}, ${['spark','escalation','personal','blow-off'][Math.min(3,PMCTX.feud.stage)]} beat` : PMCTX&&PMCTX.resolved ? 'after the blow-off' : 'no story yet';
+  pmLog(`<span class="hint">${PM.fitOk||0} of ${PM.maxBeats} beats landed where the story is (${_fk}).</span>`);
   if(PM.stance==='off'){
     if(q>=70) pmLog(`<span class="hi">You went off script and the room was with you. The office will remember.</span>`);
     else if(q<40) pmLog(`<span class="bad">You went off script and it did not land. The office will remember that too.</span>`);
@@ -13381,7 +13479,33 @@ function backstageOpen(charId){
         <div class="bs-opt-d">${o.d}</div>
       </div>`).join('')}</div>
   </div>`;
+  if(typeof playScene==='function'){ backstageScene(ch, opts, !disabled, R, storyLive); return; }
   modal(`Backstage`, body, [{label:'Walk on',cls:'ghost',fn:closeModal}]);
+}
+/* Walking into a room is a conversation, not a menu. The person opens in
+   their own voice, coloured by what they think of you, and the things you
+   can do are the things you could always do here, said back as dialogue. */
+function backstageScene(ch, opts, canMore, R, storyLive){
+  const me=G.w.name;
+  const st=story();
+  const kindName = st ? (STORY_KINDS[st.kind]||STORY_KINDS.grudge).name.toLowerCase() : '';
+  const open = storyLive
+    ? (st.stage>=3
+        ? voiced(ch,{brash:`${me}. Tonight, then. I have been ready for a month.`, cold:`Tonight. Do not be late.`, unhinged:`${me}! Tonight! I brought something. You will see.`, warm:`${me}. Whatever happens tonight, I want you to know I meant all of it.`, bitter:`Tonight you find out what it is like to be me.`, pro:`${me}. Tonight. Whatever we said, we work it clean and we work it hard.`})
+        : voiced(ch,{brash:`Look who found the locker room. ${me}. Say it to my face, then.`, cold:`You. Say what you came to say.`, unhinged:`${me}! I was JUST talking about you. To nobody. Loudly.`, warm:`${me}. I did not think you would come back here. Sit. Or do not.`, bitter:`Come to gloat? Everybody does eventually.`, pro:`${me}. We are booked. Keep it professional. Or do not, and see what happens.`}))
+    : toned(ch.id,{
+        ally:    voiced(ch,{brash:`There you are. What do you need?`, warm:`Hey. You good? You look like you need something.`, cold:`Speak.`, unhinged:`Partner! Do not sit there. Something is under it.`, bitter:`Still talking to me. Most people stop.`, pro:`${me}. What is the plan tonight?`}),
+        hostile: voiced(ch,{brash:`Wrong room, ${me}.`, cold:`Leave.`, unhinged:`Oh good. Somebody to throw.`, warm:`I am not going to pretend I am happy to see you.`, bitter:`Of course it is you.`, pro:`${me}. We are not friends. What?`}),
+        tense:   voiced(ch,{brash:`Make it quick. I have a match to think about and it is not with you.`, cold:`...`, unhinged:`Careful. I am in a mood.`, warm:`${me}. Keep it short. I am trying to stay calm tonight.`, bitter:`What now?`, pro:`${me}. Keep it short.`}),
+        friendly:voiced(ch,{brash:`${me}! Grab a seat. Tell me something good.`, cold:`${me}. Good. Sit.`, unhinged:`My favourite person! Today. Sit!`, warm:`Hey, you. Come in.`, bitter:`Still talking to me? Most people stop. Sit.`, pro:`${me}. Good tape last week. What is up?`}),
+        betrayed:voiced(ch,{brash:`You have got some nerve.`, cold:`We have nothing to say to each other.`, unhinged:`HA. Look who it is.`, warm:`I really thought we were something. Say your piece.`, bitter:`Knew you would come crawling back.`, pro:`${me}. I will be professional. That is all you get.`}),
+        neutral: voiced(ch,{brash:`Do I know you? Kidding. I know everybody. What do you want?`, cold:`Yes?`, unhinged:`Hi! Do not touch the bag.`, warm:`Hey. New around here? Sit, sit.`, bitter:`Let me guess. You want something.`, pro:`${me}, right? Good tape. What can I do for you?`}),
+      });
+  const scene={ id:'bs_'+ch.id, tag:`BACKSTAGE · ${relLabel(R).t.toUpperCase()}${storyLive?` · YOUR ${kindName.toUpperCase()}`:''}`, noMark:true,
+    cast:()=>({a:ch}),
+    beats:{ start:{ who:'a', line:()=>open,
+      opts: canMore ? opts.map(o=>({ t:`${o.l} · ${Math.round(o.p*100)}%`, eff:{}, fn:()=>backstageInteract(ch.id,o.id,true) })) : [] } } };
+  playScene(scene, ()=>renderBackstage());
 }
 /* The GM's office: a distinct menu built around bookings, not brawls. */
 function backstageOpenGM(){
@@ -13414,10 +13538,19 @@ function backstageOpenGM(){
         <div class="bs-opt-d">${o.d}</div>
       </div>`).join('')}</div>
   </div>`;
+  if(typeof playScene==='function'){
+    const openers={ protector:`"Sit down. Whatever it is, I have probably already thought about it. Go on."`, sports:`"Two minutes. I have a card to fix."`,
+      showman:`"${G.w.name}! Love the look. Now, what are we selling?"`, traditionalist:`"You knock before you come in here. Next time. What is it?"`,
+      wildcard:`"Perfect timing. I was about to do something stupid to your booking. Talk me out of it, or into it."` };
+    const scene={ id:'bs_gm', tag:'THE OFFICE · RUNS THE BOOK', noMark:true, cast:()=>({a:{id:'__gm__', name:bk.name, nick:'', look:null, _gm:true}}),
+      beats:{ start:{ who:'a', line:()=>(openers[bk.arch]||openers.protector).replace(/^"|"$/g,''),
+        opts: disabled ? [] : opts.map(o=>({ t:`${o.l} · ${Math.round(o.p*100)}%`, eff:{}, fn:()=>backstageAskGM(o.id,true) })) } } };
+    playScene(scene, ()=>renderBackstage()); return;
+  }
   modal(`In the office`, body, [{label:'Walk on',cls:'ghost',fn:closeModal}]);
 }
-function backstageAskGM(id){
-  closeModal();
+function backstageAskGM(id, quiet){
+  if(!quiet) closeModal();
   const c=G.car, me=myPromo();
   const st=backstageState();
   const map = {
@@ -13438,16 +13571,23 @@ function backstageAskGM(id){
     if(id==='gm_time'){ c._nextBookBonus = (c._nextBookBonus||0)+0.20; pushInboxItem({ico:pico('handshake',18),sev:'good',txt:`<b>More runway.</b> Your next match gets extra time.`}); }
     if(id==='gm_push'){ c.standing=clamp(c.standing+5); pushInboxItem({ico:pico('graphUp',18),sev:'good',txt:`<b>They heard you.</b> Standing up.`}); }
     if(id==='gm_gimmick' && G.w.gimmick){ G.w.gimmick.heat=clamp(G.w.gimmick.heat+8,0,100); pushInboxItem({ico:pico('star',18),sev:'good',txt:`<b>A wrinkle to try.</b> Gimmick heat up.`}); }
-    toast('They went for it');
+    if(!quiet) toast('They went for it');
   } else {
     c.standing=clamp(c.standing-(id==='gm_shot'?4:2));
     pushInboxItem({ico:pico('clipboard',18),sev:'bad',txt:`<b>Not tonight.</b> ${bookerFor(me.id).name} passed.`});
-    toast('They passed');
+    if(!quiet) toast('They passed');
   }
-  save(); renderBackstage();
+  save();
+  if(quiet){
+    const bk=bookerFor(me.id);
+    const yes={gm_shot:'"Fine. You have your shot. Do not make me regret it."', gm_time:'"You get the time. Use it."', gm_push:'"I hear you. I have been hearing you. Standing up."', gm_gimmick:'"Try it. If it dies, it dies on you."'};
+    const no={protector:'"Not yet. Trust me on this one."', sports:'"Win more. Then we talk."', showman:'"Come back with something I can put in a trailer."', traditionalist:'"That is not how it is done here. Earn it."', wildcard:'"No. Ask me again next week, I might say yes for no reason."'};
+    return {msg: won ? (yes[id]||'"Fine."') : (no[bk.arch]||'"Not tonight."'), sev: won?'good':'bad'};
+  }
+  renderBackstage();
 }
-function backstageInteract(charId, verb){
-  closeModal();
+function backstageInteract(charId, verb, quiet){
+  if(!quiet) closeModal();
   const ch=charById(charId); if(!ch) return;
   const c=G.car, w=G.w, st=backstageState();
   st.used += 1; st.done[charId] = true;
@@ -13522,6 +13662,7 @@ function backstageInteract(charId, verb){
   }
   pushInboxItem({ico:pico('microphone',18),sev,txt:`<b>Backstage.</b> ${msg}`});
   save();
+  if(quiet) return {msg, sev};
   renderBackstage();
 }
 
@@ -13652,7 +13793,121 @@ const SCENES = [
      in the room stops you at the curtain and says, in three sentences, what
      the game is actually judging. The tour explains the hub; this explains
      the match, from somebody who has had a thousand of them. */
-  { id:'first_night', tag:'YOUR FIRST NIGHT', trig:'prematch', weight:1, priority:true,
+
+  /* ---------- STORYLINE BEATS ----------
+     SD SYM's season is built on this: the feud does not only happen in
+     the ring, it happens in the hallway on the way to it. One scene per
+     stage per story, in the rival's voice, shaped by the kind of story it
+     is. Each remembers itself so it plays once per feud. */
+  { id:'feud_s1', tag:'THE HALLWAY', trig:'prematch', weight:6, priority:2,
+    when:x=>{ const st=story(); return st && st.stage===1 && !sceneRecalls('fs1_'+st.charId); },
+    cast:x=>({a:castRival()}),
+    beats:{
+      start:{ who:'a', line:x=>x.v(x.a,{brash:`${x.me}. You keep saying my name on television. Say it now. Nobody is filming.`, cold:`We are past the point where this is business. I wanted you to hear that from me.`, unhinged:`${x.me}! I have been thinking about you. Constantly. It is a problem.`, warm:`${x.me}, I do not want this to get ugly. I am telling you that now so you remember I said it.`, bitter:`You think this is a story. It is not a story to me.`, pro:`${x.me}. Escalation. That is what the office calls it. I call it Tuesday.`}),
+        opts:x=>[
+          { t:'"It is business until you make it something else."', eff:{respectA:+4, heatA:+4}, mem:'fs1_'+x.a.id, note:'They nodded. Slowly. That was a promise, not an agreement.' },
+          { t:'"Then let us stop pretending."', eff:{heatA:+12, gimHeat:+4, adv:1}, mem:'fs1_'+x.a.id, note:'Something in the hallway changed temperature. The story moves.' },
+          { t:'Walk past without a word.', eff:{heatA:+6, standing:+1, reactionBoost:true}, mem:'fs1_'+x.a.id, note:'They watched you all the way to the curtain.' },
+        ]},
+    }},
+  { id:'feud_s2', tag:'PERSONAL', trig:'prematch', weight:6, priority:2,
+    when:x=>{ const st=story(); return st && st.stage===2 && !sceneRecalls('fs2_'+st.charId); },
+    cast:x=>({a:castRival()}),
+    beats:{
+      start:{ who:'a', line:x=>{ const st=story(); const k=st&&st.kind;
+          if(k==='title') return `${x.a.name} has the belt over one shoulder and does not take it off to talk to you. "You want to know what this weighs? You will never know."`;
+          if(k==='betrayal') return x.v(x.a,{any:`"Do you know what the worst part is? I still know everything about how you work. Every tell. I used to cover for them."`});
+          if(k==='veteran') return `${x.a.name} is taping wrists and does not look up. "Twenty years. You know how many of you I have seen come through here? You are better than most. It will not matter."`;
+          if(k==='underdog') return x.v(x.a,{brash:`"You are not in my league. Say it back to me. I want to hear it in your voice."`, any:`"I do not lose to people like you. That is not a boast. It is just the record."`});
+          return x.v(x.a,{brash:`"I have been to your town. I know where you drink. I know who you drink with. Just so we are clear about what this is now."`, cold:`"I looked up your family. I am not going to do anything with it. I want you to know I could."`, unhinged:`"I had a dream about you. You lost. Then I woke up and you had still lost."`, warm:`"I told my kids about you. About what you did. I should not have had to."`, bitter:`"Everything you have, you got by stepping over me. I have decided to stop lying down."`, pro:`"I watched the tape of our last one four times. I know where it hurts you now."`}); },
+        opts:x=>[
+          { t:'Say nothing. Let it sit.', eff:{heatA:+8, standing:+1}, mem:'fs2_'+x.a.id, note:'Silence, and a door. They will replay it all week.' },
+          { t:'"You are scared. That is what this is."', eff:{heatA:+14, gimHeat:+6, adv:1}, mem:'fs2_'+x.a.id, note:'They laughed, and it was not a laugh. The story moves.' },
+          { t:'"Whatever this is, it ends in the ring."', eff:{respectA:+6, heatA:+4}, mem:'fs2_'+x.a.id, note:'A nod from across the room. Two professionals, for one second.' },
+        ]},
+    }},
+  { id:'feud_s3_signing', tag:'CONTRACT SIGNING', trig:'prematch', weight:8, priority:3,
+    when:x=>{ const st=story(); return st && st.stage>=3 && st.kind==='title' && !sceneRecalls('fs3_'+st.charId); },
+    cast:x=>({a:castRival()}),
+    beats:{
+      start:{ line:x=>`A table in the ring. Two chairs. ${x.booker.name} in the middle with a contract, and ${x.a.name} already sitting with the belt on the table between you. The crowd is quieter than you have ever heard it.`,
+        opts:x=>[
+          { t:'Sign it and slide it across without looking at them.', eff:{standing:+3, heatA:+6, reactionBoost:true}, goto:'signed' },
+          { t:'Sign it, then pick the belt up.', eff:{heatA:+14, gimHeat:+8, reactionBoost:true}, goto:'grabbed' },
+          { t:'Sign it and offer your hand.', eff:{respectA:+8, standing:+2}, goto:'hand' },
+        ]},
+      signed:{ who:'a', line:x=>x.v(x.a,{brash:`"Cute. See you at the supercard. Bring a friend to carry you out."`, cold:`"Signed. Good. No more talking."`, any:`"That is that, then."`}),
+        opts:x=>[{ t:'Leave the table.', eff:{}, mem:'fs3_'+x.a.id, note:'The match is signed. Everything after this is the match.' }]},
+      grabbed:{ who:'a', line:x=>`${x.a.name} is out of the chair before the belt is off the table. ${x.booker.name} is between you. The table is not going to survive this.`,
+        opts:x=>[
+          { t:'Put the table through them.', eff:{heatA:+18, standing:-4, gimHeat:+10, reactionBoost:true, cond:-4}, mem:'fs3_'+x.a.id, note:'The table went. So did the segment plan. The building lost its mind.' },
+          { t:'Put the belt down. Slowly.', eff:{heatA:+6, standing:+2}, mem:'fs3_'+x.a.id, note:'You set it down and walked. Louder than any table.' },
+        ]},
+      hand:{ who:'a', line:x=>x.v(x.a,{warm:`"...Alright. Alright." They shake it.`, pro:`They shake it. Once. "Clean, then."`, cold:`They look at the hand for a long time and do not take it.`, brash:`They slap it away. "Save it."`, unhinged:`They lick their own palm and offer it back.`, bitter:`"Now you want to shake. Now."`}),
+        opts:x=>[{ t:'Head to the back.', eff:{}, mem:'fs3_'+x.a.id, note:'Signed. Whatever happens at the supercard, that moment will be on the tape.' }]},
+    }},
+  { id:'feud_s3', tag:'TONIGHT', trig:'prematch', weight:7, priority:2,
+    when:x=>{ const st=story(); return st && st.stage>=3 && st.kind!=='title' && !sceneRecalls('fs3_'+st.charId); },
+    cast:x=>({a:castRival()}),
+    beats:{
+      start:{ who:'a', line:x=>{ const k=story()&&story().kind;
+          if(k==='betrayal') return `"I want you to know I planned it. Every week of it. Tonight is just the last page."`;
+          if(k==='veteran') return `"Whatever happens out there tonight, you listen to me now: do not go easy. I will know. And I will never forgive it."`;
+          if(k==='underdog') return x.v(x.a,{brash:`"Rubber match. You got lucky once. Luck does not come to supercards."`, any:`"I do not lose these. Ask around."`});
+          return x.v(x.a,{brash:`"Tonight. No more words. I am sick of the sound of both of us."`, cold:`"Tonight, then."`, unhinged:`"I have not slept. On purpose. I want to be like this for it."`, warm:`"Whatever happens, it was a good one. I want to say that before I cannot."`, bitter:`"Tonight everybody finds out which of us they should have been paying attention to."`, pro:`"Tonight. We go long, we go hard, and we do not cut corners. Agreed?"`}); },
+        opts:x=>[
+          { t:'"Agreed."', eff:{respectA:+8}, mem:'fs3_'+x.a.id, note:'A nod. That is all either of you has left to say.' },
+          { t:'"I am going to enjoy this."', eff:{heatA:+10, gimHeat:+5}, mem:'fs3_'+x.a.id, note:'They smiled. It was not friendly.' },
+          { t:'Say nothing and keep walking.', eff:{heatA:+6, reactionBoost:true}, mem:'fs3_'+x.a.id, note:'The curtain. The music. Nothing else.' },
+        ]},
+    }},
+  { id:'feud_post', tag:'AFTERWARDS', trig:'any', weight:5, priority:2,
+    when:x=>{ const r=(G.car.storiesResolved||[])[0]; if(!r||!charById(r.charId)) return false; const ago=(G.car.year*40+G.car.week)-(r.y*40+r.w); return ago>=0 && ago<=3 && !sceneRecalls('fpost_'+r.charId+'_'+r.y+'_'+r.w); },
+    cast:x=>{ const r=(G.car.storiesResolved||[])[0]; return {a:r?charById(r.charId):null}; },
+    beats:{
+      start:{ who:'a', line:x=>{ const r=(G.car.storiesResolved||[])[0]||{};
+          if(r.resolution==='respect') return x.v(x.a,{warm:`"Hey. That was the best thing I have been part of. Thank you."`, cold:`"It was good work." They almost smile.`, brash:`"Do not tell anybody I said this. That was a hell of a run."`, pro:`"Good series. If they ever ask, I will say yes again."`, unhinged:`"I miss it already. Want to start another one? Kidding. Not kidding."`, bitter:`"You beat me fair. I hate it. I respect it. Both."`});
+          if(r.resolution==='walked') return `"You heard, then." ${x.a.name} has a bag packed. "It was not about you. It was never about you."`;
+          return x.v(x.a,{brash:`"This is not over. Everybody thinks it is over. It is not."`, cold:`They see you and turn around. That is the whole conversation.`, unhinged:`"I have been keeping a list. You are the whole list."`, warm:`"I do not want to talk to you. I need you to know that I do not."`, bitter:`"Enjoy it. I will be here when it wears off."`, pro:`"We are done. Professionally. That is the only way we are done."`}); },
+        opts:x=>{ const r=(G.car.storiesResolved||[])[0]||{}; const k='fpost_'+(x.a&&x.a.id)+'_'+r.y+'_'+r.w; return [
+          { t:'"Any time."', eff:{respectA:+6}, mem:k, note:'Some feuds end in a handshake that happens weeks later, in a hallway, with nobody watching.' },
+          { t:'Say nothing.', eff:{heatA:+2}, mem:k, note:'You let it be what it was.' },
+        ]; }},
+    }},
+  { id:'betrayal_open', tag:'THE TURN', trig:'prematch', weight:8, priority:3,
+    when:x=>{ const st=story(); return st && st.kind==='betrayal' && st.stage<=1 && !sceneRecalls('fb0_'+st.charId); },
+    cast:x=>({a:castRival()}),
+    beats:{
+      start:{ who:'a', line:x=>x.v(x.a,{brash:`"You want to know why? Because I was tired of being the one who carried you out."`, cold:`"Do not ask me why. You know why. You just do not like it."`, unhinged:`"Why? WHY? Because it was FUNNY. Look at your face."`, warm:`"I did not want to. I need you to believe that. I had to."`, bitter:`"Ten years I watched you get everything. Ten. It was my turn."`, pro:`"Business. That is all it was. It is still all it is."`}),
+        opts:x=>[
+          { t:'"There is no why. There is only what you did."', eff:{heatA:+14, gimHeat:+6, adv:1}, mem:'fb0_'+x.a.id, note:'They stopped explaining. That is all you wanted.' },
+          { t:'"I would have done the same." (You would not have.)', eff:{heatA:+6, respectA:+4}, mem:'fb0_'+x.a.id, note:'They believed you. That is going to hurt them later.' },
+          { t:'Swing.', eff:{heatA:+22, standing:-3, cond:-5, gimHeat:+8}, mem:'fb0_'+x.a.id, note:'Security. Cameras. Exactly what the office did not want and exactly what the crowd did.' },
+        ]},
+    }},
+  { id:'veteran_lesson', tag:'THE LESSON', trig:'prematch', weight:7, priority:3,
+    when:x=>{ const st=story(); return st && st.kind==='veteran' && st.stage<=1 && !sceneRecalls('fv0_'+st.charId); },
+    cast:x=>({a:castRival()}),
+    beats:{
+      start:{ who:'a', line:x=>`${x.a.name} is sitting on a road case with their boots off. "Sit. Two minutes. I am going to tell you the thing nobody told me, and then tonight I am going to beat you anyway."`,
+        opts:x=>[
+          { t:'Sit.', eff:{respectA:+10, standing:+1}, goto:'lesson' },
+          { t:'"Save it. I will learn it in the ring."', eff:{heatA:+8, gimHeat:+4}, mem:'fv0_'+x.a.id, note:'"Suit yourself." They lace up slower than they needed to.' },
+        ]},
+      lesson:{ who:'a', line:x=>x.v(x.a,{any:`"The crowd does not remember who won. They remember who they believed. Go out there and make them believe you might. That is the whole job. Now get out of my locker room."`}),
+        opts:x=>[{ t:'"...Thanks."', eff:{respectA:+6}, mem:'fv0_'+x.a.id, note:'The best advice you will get this year, from the person about to beat you.' }]},
+    }},
+  { id:'underdog_pep', tag:'BEFORE THE BELL', trig:'prematch', weight:6, priority:3,
+    when:x=>{ const st=story(); return st && st.kind==='underdog' && st.stage<=2 && !sceneRecalls('fu0_'+st.charId) && !!(castAlly()||castAnyone(st.charId)); },
+    cast:x=>({a:castAlly()||castAnyone(story()&&story().charId)}),
+    beats:{
+      start:{ who:'a', line:x=>{ const rv=castRival(); return x.v(x.a,{warm:`"Hey. ${rv?rv.name:'They'} bleeds like everybody else. I have seen it. Go make them bleed."`, brash:`"Everybody back here has you losing. I put money on you. Do not embarrass me."`, cold:`"They are better than you. Tonight that does not have to matter."`, pro:`"Watch their left knee. They favour it after ten minutes. Nobody else has noticed."`, unhinged:`"If you win I will do something insane. That is a promise and a threat."`, bitter:`"Nobody thought I could either. Once."`}); },
+        opts:x=>[
+          { t:'"I know."', eff:{respectA:+4}, mem:'fu0_'+x.a.id, note:'You believed it for a second. Sometimes a second is enough.' },
+          { t:'"Watch the left knee. Got it."', eff:{respectA:+6, standing:+1}, mem:'fu0_'+x.a.id, note:'A plan. That is more than you walked in with.' },
+        ]},
+    }},
+  { id:'first_night', tag:'YOUR FIRST NIGHT', trig:'prematch', weight:1, priority:5,
     when:x=>((x.c.rec.w||0)+(x.c.rec.l||0)+(x.c.rec.d||0))===0,
     cast:x=>({ a: houseRoster(myPromoId())
                    .filter(y=>!(G.car.booking&&G.car.booking.o&&G.car.booking.o.oppId===y.id))
@@ -14494,8 +14749,9 @@ function pickScene(trigger){
     });
     return null;
   }
-  // a scene that declares priority is the one that plays (night one, say)
-  const pri=pool.find(s=>s.priority); if(pri) return pri;
+  // a scene that declares priority is the one that plays (night one, a
+  // story beat that is due); the highest priority wins when two are due
+  const pris=pool.filter(s=>s.priority).sort((a,b)=>(+b.priority)-(+a.priority)); if(pris.length) return pris[0];
   // weighted pick, deterministic per week so a reload shows the same scene
   const seed=`${c.year}-${c.week}-${trigger||'any'}`;
   let h=2166136261>>>0;
@@ -14524,12 +14780,14 @@ function playScene(scene, onDone){
   const c=G.car;
   c._scenesSeen = (c._scenesSeen||[]).concat([scene.id]).slice(-40);
 
-  const finish = ()=>{ markSegmentPlayed(); save(); closeScene(); if(onDone) onDone(); };
+  // a backstage conversation is not the week's segment: it must not use up
+  // the walk to gorilla
+  const finish = ()=>{ if(!scene.noMark) markSegmentPlayed(); save(); closeScene(); if(onDone) onDone(); };
 
   const speakerOf = (beat)=> (beat.who==='a' ? x.a : beat.who==='b' ? x.b : null);
-  const avatarFor = (who)=> who
+  const avatarFor = (who)=> (who && who.look)
       ? `<div class="scene-av">${wrestlerSVG(who.look,{frame:'head'})}</div>`
-      : `<div class="scene-av scene-av-narr">${pico('microphone',36)}</div>`;
+      : `<div class="scene-av scene-av-narr">${pico(who&&who._gm?'clipboard':'microphone',36)}</div>`;
   // With no on-screen speaker the header would otherwise repeat the scene tag
   // directly under itself. Narrated beats get the promotion's name instead.
   const nameFor = (who)=> who
@@ -14565,6 +14823,9 @@ function playScene(scene, onDone){
         el.onclick=()=>{
           const o=opts[+el.dataset.i]; if(!o) return;
           applySceneEffect(o.eff||{}, x);
+          // an option can run game code and hand back the line to type
+          let fnNote=null;
+          if(typeof o.fn==='function'){ try{ const r=o.fn(x); if(r&&r.msg) fnNote=String(r.msg).replace(/<[^>]+>/g,''); }catch(_){} }
           if(o.mem) sceneRemember(o.mem);
           if(o.goto && scene.beats[o.goto]){ renderBeat(o.goto); return; }
           // resolve
@@ -14577,7 +14838,7 @@ function playScene(scene, onDone){
               <div id="sceneChips" class="pending">${summarizeEffect(o.eff||{})}</div>
             </div>
             <div class="scene-continue pending" id="sceneContWrap"><button id="sceneCont">Continue →</button></div>`;
-          typeInto(document.getElementById('sceneOutLine'), o.note||'The moment passes.').then(()=>{
+          typeInto(document.getElementById('sceneOutLine'), o.note||fnNote||'The moment passes.').then(()=>{
             const ch=document.getElementById('sceneChips'); if(ch) ch.classList.remove('pending');
             const cw=document.getElementById('sceneContWrap'); if(cw) cw.classList.remove('pending');
           });
@@ -14598,7 +14859,7 @@ function applySceneEffect(eff, x){
   if(eff.gimHeat && w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+eff.gimHeat,0,100);
   if(eff.reactionBoost) c.reaction=clamp((c.reaction==null?c.pop:c.reaction)+3, 0, 100);
   if(eff.adv && story()) advanceStory();
-  const A = x && x.a;
+  const A = x && x.a && !x.a._gm ? x.a : null;
   if(A){
     if(eff.heat)     { const R=rel(A.id); R.heat=clamp(R.heat+eff.heat,0,100); }
     if(eff.heatA)    { const R=rel(A.id); R.heat=clamp(R.heat+eff.heatA,0,100); }
