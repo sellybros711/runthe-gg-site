@@ -8,9 +8,10 @@
  * engine. This answers a different one: does the LIFECYCLE hold. It drives the same
  * functions in the same order the screens will (beginOffseason, releaseMan, finishOffseason,
  * spin, sign, startSeason, advanceWeek, ownerVerdict) and asserts the things that would
- * quietly rot a save: that the wheel stays inside the league year, that salaries ratchet and
- * never fall, that a released man never comes back, that the cap is spent against salaries
- * rather than list prices, and that the owner fires on exactly the rule the engine states.
+ * quietly rot a save: that the wheel stays inside the league year, that a contract holds at
+ * the price it was signed at, that a released man never comes back, that the cap is spent
+ * against salaries rather than list prices, and that the owner fires on exactly the rule the
+ * engine states.
  *
  * It is fast and it needs no network, so it can run on every change to either file.
  */
@@ -296,13 +297,29 @@ for (let s = 0; s < 30; s++) {
       `seasons: ${[...new Set(run.roster.map((p) => p.season))].sort().join(',')}`);
     ok('a refilled roster goes back to the schedule', run.phase === R.PHASES.SEASON);
   }
-  /* the ratchet, checked against what he was actually paid last year */
+  /*
+   * THE CONTRACT, CHECKED AGAINST WHAT HE WAS ACTUALLY PAID LAST YEAR.
+   *
+   * EQUALITY, NOT "AT LEAST". This asserted `>=` while salaries ratcheted, and a `>=` still
+   * passes under a lock, which is exactly why it has to be tightened: the assertion that
+   * survives both rules is the assertion that tests neither. A man is on the deal he signed
+   * at the draft, so the only correct number here is the same number.
+   *
+   * AND AT LEAST ONE MAN MUST HAVE MOVED IN VALUE, or this is passing on a winter where
+   * nothing happened and the salary held for want of anything to hold against.
+   */
+  let moved = 0;
   for (const a of w.aged) {
     const was = before.find((b) => b.id === a.now.player_id);
     if (was) {
-      ok(`${a.now.name} is paid at least what he was`, a.salary >= was.sal,
+      ok(`${a.now.name} is paid what he was signed for`, Math.abs(a.salary - was.sal) < 0.001,
         `$${was.sal}M -> $${a.salary}M (market $${a.market}M)`);
+      if (Math.abs(a.market - was.sal) >= 1) moved += 1;
     }
+  }
+  if (w.aged.length) {
+    ok('and somebody\'s market value moved while it held', moved > 0,
+      `${moved} of ${w.aged.length}`);
   }
   ok('the cap is spent against salaries, not list prices',
     Math.abs((run.capMusd - R.remaining(run))

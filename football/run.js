@@ -527,8 +527,8 @@ function createRun(opts) {
        season" is one rule and not a moving one; see E.dynastyWinBar. */
     stepSeasons: dynasty ? (opts.stepSeasons || E.DYNASTY_STEP_SEASONS) : null,
     /* WHAT EACH MAN IS PAID, index-aligned with roster, and the number the cap is spent
-       against. It is NOT p.price_musd: a salary is what he was signed for, raised the year
-       he improves and held the year he declines. See E.dynastySalary. */
+       against. It is NOT p.price_musd: a salary is what he was signed for, and it does not
+       move again while he is yours, whichever way he goes. See E.dynastySalary. */
     salaries: dynasty ? [] : null,
     /* Seasons on YOUR roster, by player id, which is what the continuity bonus counts. */
     tenure: dynasty ? {} : null,
@@ -1141,7 +1141,7 @@ function finishHiring(run) {
  * The order is fixed and each step is its own function so the screen can animate between
  * them rather than repainting one lump:
  *
- *   beginOffseason   everybody ages into his own next year and salaries ratchet
+ *   beginOffseason   everybody ages into his own next year and every contract holds
  *   releaseMan       you open money the only way there is
  *   finishOffseason  the holes go back to the wheel, locked to the new league year
  *
@@ -1220,26 +1220,35 @@ function beginOffseason(run, byKey, lastSeason) {
       continue;
     }
     const wasSal = run.salaries[i];
+    /* THE CONTRACT DOES NOT MOVE. He is on the deal he signed at the draft for as long as
+       you keep him, so this is wasSal every time. Kept as a call rather than an assignment
+       because the rule and the whole history of getting it wrong live at that function. */
     const nowSal = E.dynastySalary(wasSal, next.price_musd);
     kept.push(next); slots.push(run.slotIndex[i]); sal.push(nowSal);
     if (run.eras && run.eras.indexOf(next.season) < 0) run.eras.push(next.season);
     run.tenure[next.player_id] = (run.tenure[next.player_id] || 1) + 1;
     draws.push(run.draws[i] || null);
     aged.push({ was: man, now: next, wasSalary: wasSal, salary: nowSal,
-      /* What the market says he is worth, which is not what you pay him. The gap between
-         the two is the whole of what an ageing roster does to you and the screen shows it
-         as its own number. */
+      /* WHAT THE MARKET SAYS HE IS WORTH, WHICH IS NOT WHAT YOU PAY HIM, and now that the
+         salary is frozen this is the only number on the row that moves. The gap between
+         the two is the state of your roster in one figure, and it runs BOTH ways: a man
+         who improved is cap you did not have to spend, and a man who did not is a bill. */
       market: next.price_musd,
+      /* Always zero now. Kept so a save written under the ratchet still reads, and so the
+         screen has one place to ask rather than testing two numbers itself. */
       raise: Math.round((nowSal - wasSal) * 10) / 10,
+      /* WHAT YOU PAY AGAINST WHAT HE IS WORTH, signed: positive is a bargain. */
+      edge: Math.round((next.price_musd - nowSal) * 10) / 10,
       drop: Math.round((next.ppr_ppg_mean - man.ppr_ppg_mean) * 10) / 10 });
   }
 
   run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
   run.seasonNo += 1;
-  /* THE CAP DOES NOT MOVE. It is $140M in season one and $140M in season thirty, which is
-     what makes the ratchet the whole game: payroll only ever climbs, so the ceiling closes
-     on you at exactly the rate your roster ages. See DYNASTY_CAP_GROWTH, kept as a record
-     of the six percent that used to be here and why it went. */
+  /* THE CAP DOES NOT MOVE. It is $140M in season one and $140M in season thirty. Payroll
+     does not move either, now that a contract is locked, so what closes on you is not the
+     money: it is that the men you are paying get worse while the wheel keeps offering men
+     who are not. See DYNASTY_CAP_GROWTH, kept as a record of the six percent growth that
+     used to be here and why it went. */
   /* A NEW SEASON'S WHEELS ARE FRESH. usedTeamSeasons is the two-draws-a-club rule inside
      one draft; carrying it across a decade would starve the pool of clubs. usedPlayers is
      NOT reset, because a man who has played for you never comes back. */

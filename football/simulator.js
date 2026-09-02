@@ -1230,10 +1230,17 @@ function policyReport(n) {
  * strategy in the game at 29.7 three-year wins against 29.6, 29.5 and 29.3 for the three
  * that manage the roster. A winter where doing nothing is optimal has no decision in it.
  *
- * The ratchet is what a contract actually is. Nobody renegotiates a veteran downward
- * because he slipped; he is on the deal he signed and the team eats it. It is the honest
- * source of the one tension a franchise mode needs and this game could not otherwise
- * produce, and it costs one number per man on the roster.
+ * A contract is what a contract actually is. Nobody renegotiates a veteran downward because
+ * he slipped; he is on the deal he signed and the team eats it. It is the honest source of
+ * the one tension a franchise mode needs and this game could not otherwise produce, and it
+ * costs one number per man on the roster.
+ *
+ * THE SHIPPING RULE IS NO LONGER A RATCHET AND THIS FLAG STILL WORKS. E.dynastySalary now
+ * holds a man at the price he was DRAFTED at rather than raising him when he improves, so
+ * the flag on means whatever that function currently says and the flag off means the
+ * free-to-fall rule the table above measured. The name is kept because the experiment it
+ * names is the one it still reproduces. See dynastySalary in engine.js for all three rules
+ * and what each of them measured.
  *
  * PS_DYN_RATCHET=0 turns it off, which reproduces the table above.
  */

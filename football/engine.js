@@ -4019,23 +4019,40 @@ function gauntletRunScore(history) {
 const DYNASTY_BASE_WINS = 8;
 
 /*
- * HOW OFTEN THE TARGET GOES UP, and it barely matters any more, which is the honest thing
- * to say about it.
+ * HOW OFTEN THE TARGET GOES UP. It was a formality and it is not one any more, and that
+ * change is worth the space because the reason is somewhere else in this file.
  *
  * It was 27 when a run walked the calendar and a lap of it was the goal, then 10 when the
  * clock moved to the player and a mode that never ended was the risk. Freezing the cap took
- * that risk away entirely: nothing in sixty runs now reaches season twenty-five, so the
- * step is a guard on the rare long run rather than a thing most players will meet.
+ * that risk away: with the salary ratchet in, nothing in sixty runs reached season
+ * twenty-five, and every candidate step landed within half a season of every other
+ * (+1 every 27 gave 5.1 seasons, every 6 gave 4.6, and this one 5.0). Ten was kept because
+ * it cost nothing and still closed the door.
  *
- * Measured with the cap fixed, 60 runs forty seasons deep, one life:
+ * THEN THE CONTRACT WAS LOCKED, and the step became the only thing holding the door at all.
+ * See dynastySalary: a man is now on the deal he signed at the draft forever, payroll stops
+ * climbing, and a run lasts about twice as long. 80 runs, 30 seasons deep, one life, scored
+ * offline against one set of locked seasons so no rule gets a luckier board:
  *
- *   +1 every 27   5.1 seasons mean, median 4
- *   +1 every 15   5.1                     4
- *   THIS ONE      5.0                     4
- *   +1 every 8    4.8                     4
- *   +1 every 6    4.6                     4
+ *   rule                  seasons mean / median    reach 10   reach 25
+ *   THIS ONE, 8 +1/10       10.1        10            51%         3%
+ *   8, +1 every 6            8.6         8            39%         0%
+ *   8, +1 every 5            7.9         7            31%         0%
+ *   8, +1 every 4            7.4         7            24%         0%
+ *   8, +1 every 3            6.8         6            21%         0%
+ *   9, +1 every 10           6.2         5            23%         1%
+ *   10, +1 every 10          3.7         3             6%         0%
  *
- * Ten is kept because it is the one that costs nothing and still closes the door.
+ * For scale, the ratcheted mode at this same rule measured 6.0 mean, median 5, 23% reaching
+ * season ten. So "9 wins, +1 every 10" reproduces the old difficulty almost exactly, and
+ * "8 wins, +1 every 3" gets close while keeping eight as the opening number.
+ *
+ * TEN IS KEPT ON PURPOSE AND NOT BY DEFAULT. Locking the contract was asked for as a game
+ * design change, not as a difficulty change, and the mode being twice as long is the
+ * mechanic working: a roster that holds its value is supposed to last. Anybody tightening
+ * this should move THIS constant rather than DYNASTY_BASE_WINS, because eight is on the
+ * front page, on the squad screen, on the season screen and in the rules sheet, and the
+ * step is on none of them.
  */
 const DYNASTY_STEP_SEASONS = 10;
 
@@ -4088,58 +4105,99 @@ function dynastySurvives(history, stepEvery) {
 }
 
 /*
- * AND A MAN YOU RELEASE DOES NOT COME BACK. A rule rather than a convenience: salaries
- * ratchet, so without it every winter holds a free exploit, which is to cut your declining
- * $40M star and re-sign the same man off the wheel at the $32M he is now worth. That is
- * exactly the pay cut the ratchet exists to forbid. Once he has played for you he is out of
- * your pool for the rest of the dynasty, whatever season he would be drawn from.
+ * AND A MAN YOU RELEASE DOES NOT COME BACK. A rule rather than a convenience: a contract is
+ * locked at what you paid, so without it every winter holds a free exploit, which is to cut
+ * your declining $40M star and re-sign the same man off the wheel at the $32M he is now
+ * worth. That is exactly the renegotiation a locked deal exists to forbid. Once he has
+ * played for you he is out of your pool for the rest of the dynasty, whatever season he
+ * would be drawn from.
  */
 
 
 /*
  * ─── THE THREE RULES A WINTER RUNS ON ───────────────────────────────────────────────
  *
- * 1. A SALARY NEVER GOES DOWN WHILE A MAN IS ON YOUR ROSTER. He gets a raise the year he
- *    improves and keeps what he had the year he declines. Release him and the number goes
- *    with him; sign somebody new and you pay what that man is worth today.
+ * 1. YOU PAY WHAT YOU DRAFTED HIM FOR, FOR AS LONG AS YOU HAVE HIM. It is a contract, and
+ *    the contract does not move. He improves and you still pay the old number, which is the
+ *    reward. He declines and you still pay the old number, which is the bill. Release him
+ *    and the number goes with him; sign somebody new and you pay what that man is worth
+ *    today.
  *
  * 2. YOU OPEN MONEY BY RELEASING PEOPLE. There is no other way to make room.
  *
- * 3. THE CAP IS A SIGNING GATE, NOT A CEILING. Go over it by keeping men who got expensive
- *    and nothing happens: the roster is legal and it plays. You simply cannot sign anybody
- *    until you are back under. What an appreciating roster costs you is the wheel.
+ * 3. THE CAP IS A SIGNING GATE, NOT A CEILING. Go over it and nothing happens: the roster
+ *    is legal and it plays. You simply cannot sign anybody until you are back under.
  *
- * RULE 1 IS THE ONE THAT MAKES THE MODE EXIST, and it took two whole designs to find out
- * why. Price in this pool tracks value, so a man who declines re-prices DOWN and an ageing
- * roster gets CHEAPER every winter. With salaries free to fall, measured at twelve men and
- * $280M, payroll ran $279M, $266M, $261M, the gate never came within $14M of closing, and
- * STANDING PAT WAS THE BEST STRATEGY IN THE GAME: 29.7 three-year wins against 29.6, 29.5
- * and 29.3 for the three strategies that actually manage the roster. A winter in which
- * doing nothing is optimal has no decision in it and is not worth a screen.
+ * RULE 1 HAS HAD THREE ANSWERS AND THIS IS THE THIRD. All three are written down because
+ * the two that lost were each losing for a reason worth keeping.
  *
- * The ratchet is also just what a contract is. Nobody renegotiates a veteran downward
- * because he slipped a step; he is on the deal he signed and the club eats it. It is the
- * honest source of the one tension a franchise mode needs and that this game cannot
- * otherwise produce, and it costs one number per man.
+ * THE FIRST WAS NO RULE AT ALL: a salary was re-read off the price list every winter, so it
+ * fell when he declined. Price in this pool tracks value, so an ageing roster got CHEAPER
+ * every year. Measured at twelve men and $280M, payroll ran $279M, $266M, $261M, the gate
+ * never came within $14M of closing, and STANDING PAT WAS THE BEST STRATEGY IN THE GAME:
+ * 29.7 three-year wins against 29.6, 29.5 and 29.3 for the three strategies that actually
+ * manage a roster. A winter in which doing nothing is optimal has no decision in it.
  *
- * With it in, the same measurement at 6% cap growth:
+ * THE SECOND WAS THE RATCHET: max(what you pay, what he is worth now). It fixed that, and
+ * at 6% cap growth it measured
  *
  *                        year 1        year 2        year 3     three-year   titles
  *   stand pat          9.8  25% PO   7.3   7% PO   7.4   7% PO      24.6      0.3%
  *   release on value   9.8  25% PO   9.8  31% PO  10.6  37% PO      30.2      1.7%
  *
- * Five and a half wins between managing the roster and refusing to. The gate closes on the
- * GM who hoards, 23% of the time in year two, and never on the one who does not, which is
- * exactly the right way round: the cap punishes hoarding rather than competence.
+ * five and a half wins between managing the roster and refusing to. But a ratchet is only
+ * half a contract. It charges you for a man getting better, which no real deal does, so the
+ * one thing a franchise mode is supposed to reward, finding a cheap young player before
+ * anybody else, paid nothing: his price simply followed him up and you were back where you
+ * started. Every road led to renting whoever was best this year.
  *
- * WHAT WAS TRIED AND DROPPED. The first design had locked multi-year contracts at a term
- * discount and dead money on a man who left mid-deal. Measured, the four term strategies
- * landed within noise of each other, so term was not a decision, and the whole apparatus is
- * gone. The ratchet does the same job in one number: a declining man on last year's salary
- * IS an overpaid veteran, without anybody having to sign him to anything.
+ * THE THIRD IS THE ONE HERE. The number you signed is the number you pay. It keeps
+ * everything the ratchet was protecting, because a declining man on his old deal is still
+ * an overpaid veteran, and it adds the half the ratchet was throwing away: a 24 year old
+ * signed at $9M who becomes a $40M player is $31M of cap you did not have to spend.
+ *
+ * WHAT IT COSTS, MEASURED. 100 runs, 30 seasons deep, same seeds, same bot, one life at
+ * eight wins with a win more every ten seasons:
+ *
+ *                          seasons survived      wins a season    roster worth
+ *                          mean  median  best    s3    s10        s3     s10
+ *   ratchet                 6.0     5     19     9.2    9.1      $121M  $118M
+ *   locked at draft price   9.9     9     30    10.5   10.9      $130M  $128M
+ *
+ * A run lasts about twice as long, and the reason is visible in the last column: under the
+ * ratchet a roster's VALUE bled away while its cost did not, and under a lock the men who
+ * improve hold the line for the men who do not. That is the mode working as intended and
+ * it is also a real difficulty cut, so the bar is where any correction belongs. The sweep
+ * over (base, step) lives beside DYNASTY_STEP_SEASONS.
+ *
+ * DOES IT ACTUALLY PAY TO DRAFT YOUNG? That was the point of the change, so it was measured
+ * rather than assumed. 80 runs, same seeds, same bar, four drafting bots:
+ *
+ *   best available on the wheel            10.1 seasons, median 10, drafted at 27.1
+ *   younger of two comparable men          10.9              10                26.0
+ *   youngest of the top third of the board  7.1               6                24.7
+ *   cheapest of the top third               3.3               2                26.9
+ *
+ * READ THAT SECOND ROW AND THEN THE THIRD. Taking the younger man when two are within a
+ * point and a half of each other is worth most of a season, so the incentive is real. Going
+ * down in quality to get a younger man costs three seasons, and going down in price costs
+ * seven. Under one life you have to survive season one before any of this pays, and a
+ * cheaper roster does not.
+ *
+ * So the lock rewards age as a TIE BREAK and not as a strategy, which is the right shape:
+ * it gives the draft a second question without making the first one wrong.
+ *
+ * WHAT WAS TRIED AND DROPPED. An earlier design had multi-year terms at a discount and dead
+ * money on a man who left mid-deal. Measured, the four term strategies landed within noise
+ * of each other, so term was not a decision, and the apparatus is gone. A locked price does
+ * the same job in one number and nobody has to sign anything.
+ *
+ * The second argument is what the market says he is worth now. It is no longer part of the
+ * answer and is kept because every caller has it and the screen needs it beside the answer:
+ * the gap between the two IS the state of your roster.
  */
-function dynastySalary(currentSalaryMusd, newListPriceMusd) {
-  return Math.max(currentSalaryMusd || 0, newListPriceMusd);
+function dynastySalary(currentSalaryMusd, _marketPriceMusd) {
+  return currentSalaryMusd || 0;
 }
 
 /*

@@ -761,18 +761,22 @@ window.GA_ID='G-L29P5MRWKE';
   .wrow.snap .sp-n,.wrow.snap .sp-d{transition:none}
   .wmoney{text-align:right;font-family:var(--fn);font-variant-numeric:tabular-nums}
   .wsal{font-size:15px;font-weight:800;line-height:1;transition:color .3s ease}
-  .wrow.raised .wsal{color:#e2b25a}
-  /* WHAT THE MONEY DID, and it lands at his beat rather than sitting there from the start,
-     because "+$1.1M" appearing out of nothing is the moment somebody asks why.
-     THE OTHER HALF OF THE RATCHET IS HERE TOO. A man whose price fell shows no raise, and
-     for a year that read as nothing happening. What actually happened is that he is now
-     worth less than you pay him, which is the single fact that decides who to release, and
-     it was computed every offseason and shown to nobody. */
+  /* WHAT HE IS WORTH AGAINST WHAT HE COSTS, and it lands at his beat rather than sitting
+     there from the start, because a number appearing out of nothing is the moment somebody
+     asks why.
+
+     THIS IS THE ONLY FIGURE ON THE ROW THAT MOVES NOW. The salary is the deal you signed
+     at the draft and it is the same every winter for the rest of his career, so the thing
+     worth animating is not the price, it is the distance between the price and the player.
+     It runs both ways: green is a man who outgrew his contract, which is the whole reward
+     for drafting young, and red is a man who did not, which is the single fact that
+     decides who to release. Green used to be impossible: under the ratchet a man who
+     improved simply got more expensive. */
   .wraise{display:block;font-size:10px;font-weight:700;color:var(--dim-2);margin-top:2px;
     min-height:12px;opacity:0;transform:translateY(2px);
     transition:opacity .3s ease,transform .3s ease}
   .wraise.in{opacity:1;transform:none}
-  .wraise.up{color:#e2b25a}
+  .wraise.up{color:#4ade80}
   .wraise.over{color:rgba(248,113,113,.92)}
   /* Opens at the end of the sequence with the rest of the screen, so nothing can be cut
      while the roster is still ageing in front of you. Width rather than height now that it
@@ -5976,7 +5980,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="wc-step" id="w-goal"></div>
       <div class="wc-foot">
         <span class="wsum" id="w-summary"></span>
-        <button class="wrules" id="b-w-rules">How this works</button>
+        <button class="wrules" id="b-w-rules">Gauntlet rules</button>
       </div>
     </div>
 
@@ -6588,8 +6592,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=79"></script>
-<script src="run.js?v=88"></script>
+<script src="engine.js?v=80"></script>
+<script src="run.js?v=89"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8287,7 +8291,19 @@ function dynastyRulesHTML(go){
       '<li><b>Play the season.</b> Win '+base+' and you keep your job.</li>'+
       '<li><b>Every man ages one year.</b> Draft 2023 Burrow and 2019 Ochocinco. Next '+
         'season they are 2024 Burrow and 2020 Ochocinco.</li>'+
+      '<li><b>His price does not.</b> You signed him at the draft and you pay that every '+
+        'season until he leaves. Better or worse, it is the same number.</li>'+
       '<li><b>Fill the holes and go again.</b> Then again. It does not end.</li>'+
+    '</ul>'+
+    /* THE CONTRACT IS THE ONE RULE THAT PAYS YOU, so it gets said twice: once as a step of
+       the season above, and once here as the thing to do something about. Every other line
+       on this sheet is a way to lose. */
+    '<div class="eyebrow" style="margin:14px 0 7px">Where the edge is</div>'+
+    '<ul class="modenotes">'+
+      '<li><b>A cheap young player is the whole game.</b> Draft a 24 year old at $9M and '+
+        'he is $9M at 27 too, when he is worth $40M. That gap is cap you never spent.</li>'+
+      '<li><b>An old star is the other side of it.</b> He costs what he was worth on the '+
+        'day you signed him, and he will not be worth it for long.</li>'+
     '</ul>'+
     '<div class="eyebrow" style="margin:14px 0 7px">Why it gets harder</div>'+
     '<ul class="modenotes">'+
@@ -8295,8 +8311,8 @@ function dynastyRulesHTML(go){
         'A man at his last season is gone in the spring.</li>'+
       '<li><b>You lose men three ways.</b> They retire, they run out of seasons, or they '+
         'sign somewhere else. A man who changes club leaves your roster.</li>'+
-      '<li><b>Salaries never drop. Neither does the cap.</b> It is $140M every season, '+
-        'forever. Over it you keep everyone, you just cannot sign anyone.</li>'+
+      '<li><b>The cap never moves.</b> It is $140M every season, forever. Over it you keep '+
+        'everyone, you just cannot sign anyone. Releasing is the only way to make room.</li>'+
       '<li><b>Every '+step+' seasons the target goes up a win.</b> '+base+', then '+
         (base+1)+', then '+(base+2)+'.</li>'+
     '</ul>'+
@@ -10951,24 +10967,31 @@ function winterWay(a){
   return '';
 }
 
-/* The one test, used by the row and by the narrator, so a man cannot be called overpaid in
-   one place and not the other. */
+/*
+ * WHAT YOU PAY AGAINST WHAT HE IS WORTH, as one signed number, used by the row, the
+ * narrator and the counts, so a man cannot be called a bargain in one place and not
+ * another. Positive is a bargain.
+ *
+ * TWO MILLION IS WHERE IT STARTS MATTERING, in both directions. Below that the figures
+ * round to the same number on screen, and "worth $9M" beside "$9.6M" is not a verdict, it
+ * is a rounding artefact wearing a colour.
+ */
 const WIN_OVERPAY=2;
-function winterOverpaid(a){
-  return a && a.market!=null && a.salary-a.market>=WIN_OVERPAY;
+function winterEdge(a){
+  if(!a||a.market==null) return 0;
+  return (a.edge!=null?a.edge:(a.market-a.salary));
 }
+function winterOverpaid(a){ return winterEdge(a)<=-WIN_OVERPAY; }
+function winterBargain(a){ return winterEdge(a)>=WIN_OVERPAY; }
 
 function winterRow(a,i){
   const p=a.now;
-  const raise=a.raise>0.05;
-  /* WHAT HE IS WORTH AGAINST WHAT HE COSTS. beginOffseason has banked `market` since the
-     mode was built and nothing had ever shown it. A man past his best keeps the salary he
-     earned at his peak, so the gap between the two grows every year, and it is the only
-     number on this screen that answers "who do I release".
-     TWO MILLION IS WHERE IT STARTS MATTERING. Below that the figures round to the same
-     number on screen: "worth $9M" beside "$9.6M" is not an overpay, it is a rounding
-     artefact wearing red. */
-  const over=!raise&&winterOverpaid(a);
+  /* WHAT HE IS WORTH AGAINST WHAT HE COSTS, which is now the whole story of the row. His
+     salary is the deal you signed at the draft and it never moves again, so the only
+     question left about him is whether he is still worth it. Both answers are shown: green
+     when he has outgrown his contract, red when the contract has outgrown him. */
+  const up=winterBargain(a);
+  const over=winterOverpaid(a);
   return '<div class="wrow '+winterWay(a)+'" data-i="'+i+'">'+
     '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
     '<span class="wwho"><span class="wnm">'+esc(p.name)+'</span>'+
@@ -10979,8 +11002,8 @@ function winterRow(a,i){
       '</span></span>'+
     winterSpark(a)+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
-      '<span class="wraise'+(raise?' up':(over?' over':''))+'">'+
-        (raise?'+'+M(a.raise):(over?'worth '+M0(a.market):''))+'</span></span>'+
+      '<span class="wraise'+(up?' up':(over?' over':''))+'">'+
+        (up||over?'worth '+M0(a.market):'')+'</span></span>'+
     '<span class="wcut"><button class="wcutb" data-cut="'+i+'" '+
       'aria-label="Release '+esc(p.name)+'" title="Release '+esc(p.name)+'">&minus;</button></span>'+
     winterStats(a)+
@@ -11045,11 +11068,13 @@ function paintWinter(){
    * hold, and the cap is back where it started. Saying "everyone becomes his next real
    * season" over an empty list would be the game explaining a rule it has just suspended.
    */
-  /* THE CAP IS THE ONE NUMBER ON THIS SCREEN THAT NEVER MOVES, and saying so is the point:
-     it used to grow six percent a winter, which quietly paid for the roster getting older.
-     Now nothing does, and the sentence has to make that a rule rather than an omission. */
-  $('w-sub').innerHTML='Everyone becomes his next real season. A better year costs more. '+
-    '<b>Salaries never drop. Neither does your '+M0(R.capOf(run))+' cap.</b>';
+  /* NEITHER NUMBER ON THIS SCREEN MOVES, AND SAYING SO IS THE POINT. The cap used to grow
+     six percent a winter and salaries used to climb with the men who earned them; both are
+     frozen now, so the sentence has to make that a rule rather than an omission. What is
+     left moving is the players, which is the sentence in front of it. */
+  $('w-sub').innerHTML='Everyone becomes his next real season. '+
+    '<b>You keep paying what you drafted him for.</b> That never changes, and neither does '+
+    'your '+M0(R.capOf(run))+' cap.';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
@@ -11120,12 +11145,13 @@ function winterLand(r,a,animate){
   if(!animate) r.classList.add('snap');
   r.classList.add('landed');
   const yr=r.querySelector('.wyr'); if(yr) yr.textContent=a.now.season;
-  const sal=r.querySelector('.wsal');
-  if(a.salary>a.wasSalary+0.05){
-    r.classList.add('raised');
-    if(animate) countMoney(sal,a.wasSalary,a.salary,520,(v)=>M(v));
-    else if(sal){ countStop(sal); sal.textContent=M(a.salary); }
-  }
+  /* NOTHING TO COUNT UP ANY MORE, AND NOTHING TO COLOUR EITHER. What used to run here was
+     a count from last year's salary to this year's, and there is no longer a gap between
+     the two: the salary is the figure you signed him at and it will be the same next
+     winter. It is drawn plainly for exactly that reason. The verdict on him goes on the
+     small line under it, where it can be green while his chart is red, which is a thing
+     that happens all the time: a man can lose value all year and still be worth double
+     what you pay him. */
   r.querySelectorAll('.wst').forEach((st)=>{
     const b=st.querySelector('b'); if(!b) return;
     const dec=b.dataset.dec==='1';
@@ -11159,10 +11185,10 @@ function winterSay(a){
   const him=way==='better' ? (a.drop>0 ? ' had a better year.' : ' is worth more this year.')
     : way==='worse' ? ' is worth less this year.'
     : ' is where he was.';
-  const you=a.salary>a.wasSalary+0.05 ? ' He costs '+M(a.raise)+' more.'
-    /* "for a $8M player" needed an "an", and 8, 11, 18 and the eighties all take one while
-       every other figure does not. Rephrased around the article rather than teaching the
-       page to count. */
+  /* "for a $8M player" needed an "an", and 8, 11, 18 and the eighties all take one while
+     every other figure does not. Rephrased around the article rather than teaching the
+     page to count. */
+  const you=winterBargain(a) ? ' You still pay '+M0(a.salary)+' for '+M0(a.market)+' of value.'
     : winterOverpaid(a) ? ' You pay '+M0(a.salary)+' for '+M0(a.market)+' of value.'
     : ' His '+M0(a.salary)+' holds.';
   return nm+him+you;
@@ -11201,7 +11227,7 @@ function runWinterShow(rows,gones,agedOf,w){
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* Anywhere on the screen, capturing, and it does NOT swallow the tap: the only live
-     control while the show runs is How this works, and somebody who taps that wants both
+     control while the show runs is Gauntlet rules, and somebody who taps that wants both
      things to happen. */
   const tapSkip=(e)=>{ const sc=$('s-winter'); if(sc&&sc.contains(e.target)) finish(); };
   function finish(){
@@ -11296,18 +11322,28 @@ function paintStep(){
  * their labels under them is the same shape as the four chips on every player row below,
  * which is right, because it is the same kind of thing.
  *
- * THE SPOTS TO FILL ARE THE ONLY ONE YOU CAN ACT ON, so it is the only one that shouts.
+ * ONE CHIP SHOUTS AND IT IS THE FIRST ONE WITH SOMETHING IN IT. Spots to fill sends you to
+ * the wheel and overpaid men send you to the minus buttons, so both are actions and the
+ * third is not. Filling the team comes first while there is a hole, and once the roster is
+ * full the overpay is what is left to do something about. Two gold chips would be no
+ * hierarchy at all.
+ *
+ * THE MIDDLE ONE USED TO COUNT RAISES AND THERE ARE NO RAISES NOW. A contract is locked at
+ * the price you drafted him for, so that count was zero every winter forever. What replaced
+ * it is the number a person is actually on this screen to find: how many men you are paying
+ * more than they are worth. It is the answer to "who do I release", which is the one thing
+ * this screen lets you do.
  */
 function paintWinterSummary(){
   const el=$('w-summary'); if(!el||!run||!run.winter) return;
   const w=run.winter;
   const holes=run.slots.length-run.roster.length;
-  const raises=w.aged.filter(a=>a.salary>a.wasSalary+0.05).length;
+  const over=w.aged.filter(winterOverpaid).length;
   const gone=w.gone.length;
   const cell=(n,label,act)=>'<span class="wsumc'+(n?' on':'')+(n&&act?' act':'')+'">'
     +'<b>'+n+'</b><i>'+label+'</i></span>';
   el.innerHTML=cell(holes,holes===1?'SPOT TO FILL':'SPOTS TO FILL',true)
-    +cell(raises,raises===1?'RAISE':'RAISES',false)
+    +cell(over,'OVERPAID',holes===0)
     +cell(gone,'LEFT',false);
 }
 
@@ -14915,8 +14951,14 @@ function paintOver(){
     const r=run.season.results[+row.dataset.gi]; if(r) boxScore(r); };
   $('o-gcount').textContent=' \u00b7 '+s.results.length+' games';
   /* Back to the default tab. The class is on the markup, but it moves as soon as
-     anyone taps, and a new season should not open on the pane the last one ended on. */
-  const defaultTab=(run.tradeMachine&&run.tradeHistory&&run.tradeHistory.length)?'trades':'perfect';
+     anyone taps, and a new season should not open on the pane the last one ended on.
+     THE GAUNTLET OPENS ON THE SCHEDULE, because the tab bar is hidden in that mode and
+     the pane this lands on is the only one it will ever show. "How close to perfect" and
+     "Where it ranks" measure one season against everybody else's one season, which a run
+     of seasons is not scored on, so they stay hidden. What is left is the seventeen games
+     that produced the record above, which is the thing somebody wants to look back at. */
+  const defaultTab=run.dynasty?'games'
+    :((run.tradeMachine&&run.tradeHistory&&run.tradeHistory.length)?'trades':'perfect');
   setOverTab(defaultTab);
   paintOwner();
   show('s-over');
