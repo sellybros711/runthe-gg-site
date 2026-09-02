@@ -2156,6 +2156,22 @@ window.GA_ID='G-L29P5MRWKE';
   /* one-window HUD: scoreboard / hole info / current-shot description float ON the tracer
      as translucent chips (Pixel-Pro-style), so the course view is the whole screen */
   .hvshell{position:relative}
+  /* TRACER REVAMP: ambient + transition motion. Nothing here is position:fixed, so transforms are safe (the
+     iOS drift bug only bites a fixed element). The flag waves from its pole edge, cloud shadows drift across
+     the course, a new hole cross-fades in, the HUD chips slide in once per hole, and a freshly-finished shot's
+     marker pops in. Reduced motion turns every one of them off. */
+  .hvflag{transform-box:fill-box;transform-origin:0 50%;animation:hvflagWave 1.7s ease-in-out infinite}
+  @keyframes hvflagWave{0%,100%{transform:scaleX(1) skewY(0deg)}50%{transform:scaleX(.88) skewY(-5deg)}}
+  .hvcloud{animation:hvcloudDrift 70s linear infinite}
+  .hvcloud.c2{animation-duration:95s}
+  @keyframes hvcloudDrift{from{transform:translateX(0)}to{transform:translateX(1500px)}}
+  .holeview.hv-in svg{animation:hvHoleIn .42s ease-out}
+  @keyframes hvHoleIn{from{opacity:0;transform:scale(1.015)}to{opacity:1;transform:none}}
+  .hvob.hvnew{animation:hvObIn .34s ease-out both}
+  @keyframes hvObIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+  .hvmark-in{transform-box:fill-box;transform-origin:center;animation:hvMarkIn .38s cubic-bezier(.2,1.3,.4,1) both}
+  @keyframes hvMarkIn{from{opacity:0;transform:scale(.35)}to{opacity:1;transform:scale(1)}}
+  @media (prefers-reduced-motion:reduce){ .hvflag,.hvcloud,.holeview.hv-in svg,.hvob.hvnew,.hvmark-in{animation:none} }
   /* CS356n: swinging mini golfer - swings once then HOLDS the finish pose (no fade-out). Between shots the
      hole view re-renders and the golfer simply teleports to the next spot, so it no longer fades in/out
      over and over. Impact ~34%. */
@@ -17011,6 +17027,7 @@ const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:820,e:850,lbl:'Stan
 function paceMs(){ let p=S.simPace; if(p==='fast'&&!passProActive()) p='normal'; return PACE[p]||PACE.normal; }   // Fast pace is a Tour Pass Pro perk
 let _lbRects=null;   // {name: top-within-board} from the previous season render, for FLIP glide
 let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
+var _hvHudHole=null; // TRACER REVAMP: course:hole the HUD chips were last built for (they slide in on a new hole only). `var`: read before this line can execute.
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
 function beginEvent(){
   let evt=S.schedule[S.evtIndex];
@@ -17181,11 +17198,15 @@ function momentPopup(ce, info){
    a career PERSONA (traits), can grant a small one-event confidence perk, and is logged to a "Career
    Story" feed shown on the season summary + career end. Interactive CAREER play only (never daily,
    circuit, or headless). The ONLY sim effect is a tiny, capped composure boost consumed in beginEvent. */
-const STORY_CONF_CAP=0.8, STORY_PER_SEASON=1, STORY_GAP=2;   // CS352: 2→1 presser/season (owner: too many pop-ups)
+// Owner (cutscene launch): "the amount that pop up should increase as the cutscenes are really cool."
+// This RAISES what CS352 cut to 1/season, and the reason it's safe to reverse is that the thing being
+// counted changed: those were plain choice modals, these are broadcast scenes with a bespoke room per
+// beat. STORY_GAP stays 2, so they can still never land in back-to-back weeks.
+const STORY_CONF_CAP=0.8, STORY_PER_SEASON=3, STORY_GAP=2;
 // Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans, cap the total
 // number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
 // nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
-const SEASON_STOP_BUDGET=2, MOMENT_PER_SEASON=2;   // CS352/CS356r: the shared budget (2) restrains the INTERRUPT-y pop-ups (pressers/dilemmas/arcs). Moments (opt-in "play your Sunday") are DECOUPLED - up to 2/season, not blocked by the shared budget - so a contending season reliably offers them.
+const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=2;   // raised 2→4 with STORY_PER_SEASON so the extra cutscenes actually have budget to fire. The budget restrains the INTERRUPT-y pop-ups (pressers/dilemmas/arcs); Moments (opt-in "play your Sunday") are DECOUPLED - up to 2/season, not blocked by it.
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
@@ -19868,6 +19889,15 @@ function csFigure(pic, ctx){
    Keyed by storyline id, with a tag-driven fallback so EVERY beat gets a frame. A scene is
    {in:[...], out:[...]}; a scene beat is {who, tx, frame, pic}. tx may be a function of ctx. -- */
 function csT(v, ctx){ return typeof v==='function'?v(ctx):v; }
+/* A beat that always says the same words stops being a conversation the second time you see it. csVary
+   takes a list of alternates and returns one of them, picked from a seed pinned ONCE per showing (year +
+   event + beat id), so a scene is stable while you're reading it and different the next time it fires.
+   `var`, not `let`: this is reachable before its own line executes and a TDZ binding would throw. */
+var _csSeed=0, _csVaryN=0;
+function csVary(list){
+  const off=(_csVaryN++)*0x9e3779b1;   // each line gets its own offset, so a scene doesn't pick alternate #2 all the way down
+  return function(c){ const v=list[((_csSeed+off)>>>0) % list.length]; return typeof v==='function'?v(c):v; };
+}
 var CS_SCENES={
   press_win:{
     in:[{who:'okoye', frame:'broadcast', pic:'me', tx:c=>`They're still on their feet out here. ${csMe()} has won ${c.lastName||c.upName||'out here'}.`},
@@ -19927,6 +19957,245 @@ var CS_SCENES={
     in:[{who:'duck',  frame:'broadcast', pic:'me', tx:`Somebody on our own network took a swing at you this week. In print. With your name on it.`},
         {who:'sands', frame:'presser',   pic:'me', tx:`They're in the room. Third row. You get to decide whether to look at them.`}],
     out:[{who:'feed', frame:'feed', pic:'me', tx:[`The clip's doing numbers. That cuts both ways.`,`the pundit's mentions are not a nice place right now`]}]
+  },
+  /* ---- every remaining storyline gets its own room, its own voice and its own stakes. A tag fallback
+     is a safety net, not a scene: when the same two generic lines frame a rookie's first press room AND
+     a legend's farewell, the layer stops being a broadcast and starts being wallpaper. ---- */
+  rival:{
+    in:[{who:'vane',  frame:'broadcast', pic:'rival', tx:csVary([
+          c=>`${c.rivalName||'Your rival'} is in the field this week, and the pairings sheet did not separate you.`,
+          c=>`Every era needs two names. Right now this one has yours and ${c.rivalName||'theirs'}.`])},
+        {who:'sands', frame:'presser',   pic:'me',    tx:csVary([
+          `The first question in here is about them. It always is.`,
+          `You know what's coming. They want you to say the name.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Two names, one leaderboard. That's a season.`,`putting a reminder in my calendar for Sunday`]}]
+  },
+  fan_kid:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `There's a kid behind the ropes on eighteen who has been holding the same hat out for four hours.`,
+          `Somebody very small in a very large cap has been following you since the front nine.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Nobody remembers your third round. They remember whether you stopped.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`That photo goes further than any of today's golf.`,`this is the stuff that makes a fan for thirty years`]}]
+  },
+  media_fav:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:c=>`Number ${c.rank||3} on the money list, and every preview show this week opens on your name.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:`Being the story is a job of its own. Some players never learn to do it.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:csVary([
+          `The favourite always gets asked the hardest question. That's the tax on being good.`,
+          `You can hear a locker room recalibrate when somebody talks like that.`])}]
+  },
+  slump:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:csVary([
+          `The last few weeks have not been kind, and the numbers are not hiding it.`,
+          `Form's gone. The stats say it, the leaderboard says it, and now somebody's going to ask about it.`])},
+        {who:'ellis', frame:'broadcast', pic:'me', tx:`I've seen this. It's rarely the swing. It's what a player says about the swing.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:`So. Bad run. How do you want this written up?`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`A slump is only a slump until somebody names it something else.`,`quietly rooting for a bounce back here`]}]
+  },
+  vet:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:c=>`${c.vetName||'One of the old guard'} pulled you aside in the locker room this week. That's not nothing.`},
+        {who:'brant', frame:'broadcast', pic:'me', tx:`The locker room has a longer memory than the leaderboard does.`}],
+    out:[{who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `Players talk. Whatever was said in there will be repeated for years.`,
+          `That room decides who gets the benefit of the doubt in ten years' time.`])}]
+  },
+  home:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`Home week. Half the gallery went to school with somebody in your family.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `The local paper's here, and they want more than a scorecard.`,
+          `This crowd is going to be loud for you whatever you shoot. That has a weight to it.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`A hometown week is never just a week.`,`the whole town watching one leaderboard tonight`]}]
+  },
+  charity:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`There's a foundation asking for a day of your off-season, and they've gone public with the ask.`},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`It costs you a week. It buys something you can't earn on a golf course.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Not every headline this week is about golf.`,`this is the good part of the sport`]}]
+  },
+  gear:{
+    in:[{who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `A rep has been on the range all morning with something new and a very persuasive smile.`,
+          `Equipment week. There's a van outside and everybody in it wants your hands on their club.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`The numbers on it are real. The question is whether they're real under pressure.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Changing equipment mid-season is either brave or expensive. Usually both.`}]
+  },
+  major_presser:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:c=>`Major week at ${c.upName||'the championship'}. The whole calendar bends toward these four.`},
+        {who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `The interview room is twice the size it was last week and it is already full.`,
+          `Three times the cameras, and every one of them is pointed at that chair.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Tuesday of a major. Everything you say now gets replayed on Sunday.`}],
+    out:[{who:'nair', frame:'broadcast', pic:'me', tx:`Now they go and play it. That's the only part that counts.`}]
+  },
+  runner_up:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `Second. After all that, second, and the trophy is being handed to somebody else about forty feet away.`,
+          `The runner-up walk is the longest one in golf, and you've just made it.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`Nobody enjoys this room. But how you handle it says more than the win would have.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Close hurts. It also tells you exactly how close you are.`}]
+  },
+  rookie_win:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`A maiden win. There is exactly one of these in a career and this is it.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `Everything after today is measured against this afternoon.`,
+          `The tour just found out your name the hard way.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`First time in this chair as a winner. Take a second if you need it.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`A first win changes how a whole locker room says your name.`,`remember where you were for this one`]}]
+  },
+  veteran_legacy:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:c=>`${c.seasons||10} seasons out here. That's long enough that people have started using the word legacy.`},
+        {who:'brant', frame:'broadcast', pic:'me', tx:csVary([
+          `At some point a career stops being about the next win and starts being about what it added up to.`,
+          `The young players in that locker room grew up watching this.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Careers get written while they're still being played.`,`been watching this one since the start`]}]
+  },
+  twilight_retire:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `The question nobody wants to ask first has been asked. How much longer?`,
+          `There's a word going round the media centre this week and the word is retirement.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`You don't owe anybody an answer. They're going to ask anyway.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Every player gets to choose the ending. Very few get to choose it out loud.`}]
+  },
+  social_flare:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `Something you posted is going round. Fast. Faster than anything you did on the golf course this week.`,
+          `The internet has decided you're the main character today, and the internet did not ask first.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`Reach like that is worth money. It's also worth trouble.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Timeline's gone. Completely gone.`,`this is the only thing on my feed right now`,`somebody's media team is having a long night`]}]
+  },
+  caddie:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`There's been a long conversation on the range and neither of you looked happy at the end of it.`},
+        {who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `A player and a caddie is a marriage with a scorecard. Bad weeks test it.`,
+          `You can hear a partnership fraying. It sounds like silence on the walk between shots.`])}],
+    out:[{who:'duck', frame:'broadcast', pic:'me', tx:`Whatever gets said between those two, they've got eighteen holes to live with it.`}]
+  },
+  money_lead:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:c=>`Number ${c.rank||1} on the money list. That number changes how a season gets talked about.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `Leading it is one thing. Being asked about leading it every week is another.`,
+          `Everybody behind you can see that number too.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Top of the list, and the whole tour reading the same page.`,`money list doesn't lie`]}]
+  },
+  appearance_fee:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `An offer landed this week. A big one, from a long way away, for one week of your time.`,
+          `Somebody wants to pay you a lot of money to tee it up somewhere the tour doesn't go.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`The cheque is real. So is the week of the schedule it costs you.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Every player makes that call once. Most of them make it twice.`}]
+  },
+  caddie_words:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:`Something happened inside the ropes today and it did not stay inside the ropes.`},
+        {who:'ellis', frame:'broadcast', pic:'me', tx:csVary([
+          `The only person out there who tells you the truth is the one carrying the clubs.`,
+          `When a caddie speaks up, it's because nobody else will.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Hard words from the one person who has to walk every step with you.`,`sounds like that needed saying`]}]
+  },
+  agent_panic:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `The phone's been going all week and it isn't the good kind of ringing.`,
+          `Somebody's representation is making calls this morning, and none of them are celebratory.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`Reputation shows up on a balance sheet eventually. This is eventually.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Brands are patient right up until the moment they aren't.`}]
+  },
+  villain_embrace:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `The gallery has picked a side and it isn't yours. They're loud about it.`,
+          `There's a noise that follows a certain kind of player around a golf course, and it's following you.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Now: fight it, or lean all the way into it. Both sell tickets.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Every sport needs one. The ratings agree.`,`i will be watching every single shot out of pure spite`,`admit it, this is more fun`]}]
+  },
+  elder_shot:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:c=>`A player with more majors than you have seasons said your name on camera this week, and not kindly.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `The clip is on every phone in this room. Including mine.`,
+          `They've quoted it back to three players already today. You're the fourth.`])}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Answering a legend is a coin flip. Heads you're brave, tails you're the story for a month.`}]
+  },
+  underexposed:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `There's a room somewhere deciding which players get put in front of a camera, and you keep not being in it.`,
+          `Good golf, no profile. Marketing has noticed, and they've noticed out loud.`])},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:`The results are there. The reach isn't. Only one of those pays twice.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Most underrated player out here, and it isn't close.`,`why does nobody talk about this`]}]
+  },
+  gentleman_tribute:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `Something small happened on fifteen today that the cameras nearly missed, and the players didn't.`,
+          `The word going round the locker room about you this week is one most players never get.`])},
+        {who:'brant', frame:'broadcast', pic:'me', tx:`Respect out here is slow to earn and quick to lose. That was earning.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Class. That's the whole post.`,`this is why people love this sport`]}]
+  },
+  crossover:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `You're being asked to appear on things that have nothing to do with golf. That's a threshold.`,
+          `The requests coming in this week are from people who could not name a single other player on tour.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Bigger than the sport is a nice sentence. It's also a very long leash to hold.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`My mum knows who this is now. That's the metric.`,`genuinely crossed over`]}]
+  },
+  /* ---- the breakaway league: golf split in two and every microphone wants your side of it ---- */
+  lg_why_stay:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`Half this locker room took the money. You didn't, and everybody in here wants to know why.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `Loyalty is a lovely word. It's also a very expensive one right now.`,
+          `You can give them the diplomatic answer. Nobody in this room will believe it.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Whatever side you're on, that answer gets screenshotted.`,`the split is the only story in golf now`]}]
+  },
+  lg_peer_gone:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `A locker two down from yours is empty this week. They signed on Tuesday.`,
+          `Somebody you came up with is gone. The nameplate's already been changed.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`Friendships survive it or they don't. Usually there's a press conference in between.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Every player who leaves takes a few more with them. That's how this works.`}]
+  },
+  lg_field_thin:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:`Look at the field list. Count the names that were here two years ago.`},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:csVary([
+          `A win means what the field says it means. People are starting to say that out loud.`,
+          `Nobody can tell you what this tour's trophies are worth any more. They're all guessing.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Asterisks are the internet's favourite punctuation.`,`the field argument is exhausting and it isn't going away`]}]
+  },
+  lg_why_go:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`You signed. There's a number attached to that and everybody has decided what it says about you.`},
+        {who:'sands', frame:'presser',   pic:'me', tx:csVary([
+          `Every question in here is the same question wearing a different hat.`,
+          `They want you to say it was the money. Or to say it wasn't. There's no third door.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`That's the quote that follows them for a decade.`,`say what you want, that took nerve`]}]
+  },
+  lg_locked_out:{
+    in:[{who:'nair',  frame:'broadcast', pic:'me', tx:csVary([
+          `No ranking points out there. The maths has been quietly eating your world ranking all year.`,
+          `The ranking doesn't argue and it doesn't forgive. It just counts, and it's stopped counting you.`])},
+        {who:'brant', frame:'broadcast', pic:'me', tx:`Four majors a year. That's the whole window, and it's closing.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Money now, majors never. That was always the deal.`,`this is the part nobody mentioned in the announcement`]}]
+  },
+  lg_fan_turn:{
+    in:[{who:'okoye', frame:'broadcast', pic:'me', tx:csVary([
+          `The gallery got personal on the back nine today. Security had a word with two of them.`,
+          `Some of what got shouted out there does not go on television.`])},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:`You cannot out-argue a crowd. You can only out-last one.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Rough week to be that guy inside the ropes.`,`the heckling has gone too far honestly`]}]
+  },
+  lg_h2h_win:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:c=>`Everybody in golf was in the same field this week, and you won ${c.lastName||'it'}.`},
+        {who:'nair',  frame:'broadcast', pic:'me', tx:csVary([
+          `No asterisk. No qualifier. Both sides, one leaderboard, one winner.`,
+          `That is the only result all year that nobody can argue with.`])},
+        {who:'sands', frame:'presser',   pic:'me', tx:`So you get the room, and both halves of the sport are listening.`}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Settled it on the golf course. Novel idea.`,`this is what everyone actually wants`]}]
+  },
+  lg_peace_talks:{
+    in:[{who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `There are lawyers in a room somewhere deciding what the next ten years of this sport look like.`,
+          `Peace talks. Nobody in a locker room was invited to them, which tells you plenty.`])},
+        {who:'vane',  frame:'broadcast', pic:'me', tx:`Players get asked about it. Players never get consulted about it.`}],
+    out:[{who:'brant', frame:'broadcast', pic:'me', tx:`Whatever gets signed, somebody in that locker room ends up on the wrong side of it.`}]
+  },
+  lg_cup_born:{
+    in:[{who:'vane',  frame:'broadcast', pic:'me', tx:`It's official. Twelve who stayed against twelve who left, and they're calling it a cup.`},
+        {who:'duck',  frame:'broadcast', pic:'me', tx:csVary([
+          `They spent three years arguing about it. Now they get to settle it in match play.`,
+          `The most loaded team event ever put on a golf course, and everybody knows it.`])}],
+    out:[{who:'feed', frame:'feed', pic:'me', tx:[`Best thing to come out of the whole mess.`,`i will be watching every single match`]}]
   }
 };
 // Tag-driven fallback: every storyline gets a frame even if nobody wrote it a bespoke scene.
@@ -19942,8 +20211,11 @@ var CS_TAG_SCENES={
   'THE LEAGUE':{in:[{who:'vane',frame:'broadcast',pic:'me',tx:`Golf's split in two and every microphone in the building wants your side of it.`},
                     {who:'sands',frame:'presser',pic:'me',tx:`There's no neutral answer to this one. There hasn't been for a while.`}],
                 out:[{who:'brant',frame:'broadcast', pic:'me',tx:`Every player who answers that question ends up on somebody's list.`}]},
-  _default:{in:[{who:'vane',frame:'broadcast',pic:'me',tx:c=>`${csMe()} at ${c.upName||'the tournament'}, and there's a story here worth telling.`},
-                {who:'sands',frame:'presser',pic:'me',tx:`Whenever you're ready.`}],
+  _default:{in:[{who:'vane',frame:'broadcast',pic:'me',tx:csVary([
+                  c=>`${csMe()} at ${c.upName||'the tournament'}, and there's a story here worth telling.`,
+                  c=>`We're on site at ${c.upName||'the tournament'}, and this one has a story attached to it.`,
+                  c=>`There's a conversation to be had this week, and ${csMe()} is at the middle of it.`])},
+                {who:'sands',frame:'presser',pic:'me',tx:csVary([`Whenever you're ready.`,`The room's yours.`,`They're waiting on you.`])}],
             out:[{who:'feed',frame:'feed',pic:'me',tx:[`The reaction's already rolling in.`,`golf twitter waking up to this at 6am`]}]}
 };
 function csSceneFor(beat, ctx){
@@ -20238,6 +20510,9 @@ function csStoryPlay(sb, scene){
    passthrough to the modal that has always run, with its outcome machinery untouched. */
 function showStoryline(sb){
   let scene=null;
+  // pin the line-variation seed ONCE per showing, so a scene reads the same while you're in it and
+  // different the next time this beat fires (csVary reads it at render time).
+  try{ _csSeed=dHash(String(S.year||0)+':'+String(S.evtIndex||0)+':'+String((sb.beat&&sb.beat.id)||'')); }catch(e){ _csSeed=0; }
   if(cutscenesOn()){ try{ scene=csSceneFor(sb.beat, sb.ctx); }catch(e){ scene=null; } }
   if(!scene || !(scene.in&&scene.in.length) || !(sb.beat&&sb.beat.ch&&sb.beat.ch.length)) return showStorylineModal(sb);
   track('cutscene_shown',{id:sb.beat.id});
@@ -24703,9 +24978,13 @@ function scrSeason(){
         const mark=()=>{ ce._interrupted=true; S.season._lastStopEvt=S.evtIndex; clearTimeout(seasonTimer); };
         const dil = maybeDilemma(ce);   // includes any due follow-up arc (priority)
         if(dil && dil.isArc && gatesOpen){ mark(); showDilemma(dil); return; }   // an owed follow-up payoff always lands
-        const early = gatesOpen && Math.random() < (prog<0.5?0.07:0.14);   // occasional earlier beat; most seasons wait for the guaranteed one
+        // THIS is the real frequency dial, not STORY_PER_SEASON: at 7%/14% almost every season fired only
+        // the one guaranteed beat. Raised with the cutscene launch (owner: "the amount that pop up should
+        // increase"), still bounded by STORY_PER_SEASON, the shared budget and the no-back-to-back gap.
+        const early = gatesOpen && Math.random() < (prog<0.5?0.18:0.30);
         if(guaranteeDue || early){
-          if(dil && Math.random()<0.5){ mark(); showDilemma(dil); return; }
+          // and lean toward the STORYLINE, since that's the one that plays as a cutscene
+          if(dil && Math.random()<0.3){ mark(); showDilemma(dil); return; }
           const sb=maybeStoryline(ce);   // enforces the once-a-season guarantee (jittered) itself
           if(sb){ mark(); showStoryline(sb); return; }
           if(dil){ mark(); showDilemma(dil); return; }   // no storyline available → the dilemma
@@ -28193,20 +28472,39 @@ function hvPinTeePixel(g,B){
     case 'cross':  return col===midc||row===mid;
     case 'diag':   return col<=row;
     default:       return false; } };
+  // TRACER REVAMP: the flag cloth waves on its pole (a gentle scaleX/skew on the group, hoist edge
+  // pinned) so the pin is never a dead sprite. CSS-driven, reduced-motion turns it off.
+  s+=`<g class="hvflag">`;   // the wave's origin is the pole side of the cloth (CSS transform-box:fill-box, origin 0 50%)
   for(let r=0;r<H;r++){ const fw=W-notch(r);
     for(let col=0;col<fw;col++){ const fill=isAcc(col,r)?(fl.a||'#ffffff'):fl.c;
       s+=R(fx0+col*FPX, fy0+r*FPX, FPX+0.03, FPX+0.03, fill); } }
-  s+=`</g>`;
+  s+=`</g></g>`;
   return s;
+}
+// the base (full-frame) terrain tile for the LIVE camera. Shared by hvBackdrop and the pre-warm in
+// scheduleDailyAdvance, so the cache key (seed + tile size + camera) is built in exactly one place.
+function hvBaseTileURL(g, seedN, B){
+  const bw=Math.round(210*(HV_W+HV_EXL*2)/(HV_W+HV_EX*2));
+  return pxTerrainURL(g, seedN, B, HV_EXL===HV_EX?null:{cam:HV_CAML, gw:bw});
+}
+// TRACER REVAMP: two slow cloud shadows drift across the course so the scene is never a frozen still. The
+// phase is resumed from the wall clock (negative animation-delay) so a re-render mid-shot never makes the
+// shadow jump back to its start. Skipped on the green close-up, where a drifting blob reads as a smear.
+function hvCloudSVG(){
+  const ph=(Date.now()/1000);
+  const a=-(ph%70).toFixed(1), b=-((ph+31)%95).toFixed(1);
+  const x0=-HV_EXL-260, y=HV_H*0.36;
+  return `<ellipse class="hvcloud" cx="${x0}" cy="${y.toFixed(0)}" rx="150" ry="62" fill="#04150a" opacity=".075" style="animation-delay:${a}s"/>`
+       +`<ellipse class="hvcloud c2" cx="${x0}" cy="${(y+150).toFixed(0)}" rx="96" ry="40" fill="#04150a" opacity=".06" style="animation-delay:${b}s"/>`;
 }
 function hvBackdrop(g, seedN, B, detailCam){
   if(hvArtMode()==='pixel'){
     // the base tile spans the LIVE camera, and its pixel COUNT grows with it, so a wide desktop frame
     // paints more course at exactly the same pixel size rather than stretching the same tile
-    const bw=Math.round(210*(HV_W+HV_EXL*2)/(HV_W+HV_EX*2));
-    try{ const url=pxTerrainURL(g, seedN, B, HV_EXL===HV_EX?null:{cam:HV_CAML, gw:bw});
+    try{ const url=hvBaseTileURL(g, seedN, B);
       if(url){
         let s=`<image href="${url}" xlink:href="${url}" x="${-HV_EXL}" y="0" width="${HV_W+HV_EXL*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
+        if(!detailCam) s+=hvCloudSVG();
         // when zoomed to a close-up, overlay a high-density tile of the visible region so the course pixels
         // match the golfer's pixel size instead of blowing up into big blocks (owner: pixels should match on zoom)
         if(detailCam){
@@ -28352,7 +28650,17 @@ function pxTerrainURL(g, seedN, B, opts){
       if(((cx+cy*2)%7)<3)col=shade(col,7);                                     // banding across the collar
       if(at(cx,cy-1)===GR||at(cx,cy+1)===GR||at(cx-1,cy)===GR||at(cx+1,cy)===GR)col=shade(C.fringe,10);  // the mow line at the surface
       else if(edge(cx,cy,FR))col=shade(C.fringe,-20);}
-    else if(id===WA){const x=XY[(cy*GW+cx)*2],y=XY[(cy*GW+cx)*2+1];let deep=0;if(g.water)deep=1-Math.min(1,Math.hypot((x-g.water.x)/(g.water.rx),(y-g.water.y)/(g.water.ry)));col=deep>0.4?shade(C.water,-16):C.water;const wave=Math.round(1.6+Math.sin(cx*0.28+cy*0.05)*1.3);if((cy&3)===(wave&3))col=shade(C.ripple,deep>0.4?-10:0);if(edge(cx,cy,WA))col=shade(C.ripple,22);}
+    else if(id===WA){const x=XY[(cy*GW+cx)*2],y=XY[(cy*GW+cx)*2+1];let deep=0;if(g.water)deep=1-Math.min(1,Math.hypot((x-g.water.x)/(g.water.rx),(y-g.water.y)/(g.water.ry)));
+      // TRACER REVAMP: water used to be a flat blue with a checker of pale speckle rows every 4th line, which
+      // read as static/noise. Now a smooth two-tone body (deep centre, a soft value-noise mottle), SPARSE
+      // broken glints (only where the noise allows, every 6th row) so they read as light on a surface, a
+      // pale foam band hugging the bank, and the bright shoreline pixel kept.
+      const dt=Math.max(0,Math.min(1,(deep-0.25)/0.5)); col=mix(C.water,shade(C.water,-18),dt);
+      const wn=vnoise(cx*0.16+3,cy*0.3+11); if(wn>0.6) col=shade(col,Math.round((wn-0.6)*18));
+      const wave=Math.round(1.6+Math.sin(cx*0.28+cy*0.05)*1.3);
+      if((cy%6)===(wave%6) && vnoise(cx*0.5+9,cy*0.9+2)>0.52) col=shade(C.ripple,deep>0.4?-4:6);
+      const nearBank=at(cx-2,cy)!==WA||at(cx+2,cy)!==WA||at(cx,cy-2)!==WA||at(cx,cy+2)!==WA;
+      if(edge(cx,cy,WA))col=shade(C.ripple,22); else if(nearBank && dith(cx,cy,0.55))col=shade(C.water,12);}
     else if(id===SA){col=dith(cx,cy,lv)?shade(C.sand,7):C.sand;if(((cx+(cy&1?2:0))%6)===0&&cy%3===0)col=C.sandSpeck;if(edge(cx,cy,SA))col=C.sandLine;}
     else if(id===FW){const stripe=(Math.floor(cy/(6*os))%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);
       if(edge(cx,cy,FW)){const nb=at(cx,cy-1);
@@ -28366,14 +28674,22 @@ function pxTerrainURL(g, seedN, B, opts){
     else if(id===TE){col=C.cut;if(edge(cx,cy,TE))col=C.fwEdge;}
     else if(id===OC){const vy2=(cy+0.5)/GH*cam[3]+cam[1],vx2=(cx+0.5)/GW*cam[2]+cam[0];
       const dS=oceanSide>0?vx2-oedge(vy2):oedge(vy2)-vx2;
-      col=dS>18?oDeep:(dith(cx,cy,0.5)?shade(oShallow,-6):oShallow);
+      // TRACER REVAMP: the sea grades smoothly from the shallows into the deep (no hard band at 18), the
+      // swell lines are sparser (every 6th row) and the whitecaps are broken flecks, not a dense dot field.
+      const dd=Math.max(0,Math.min(1,(dS-8)/22)); col=mix(dith(cx,cy,0.5)?shade(oShallow,-6):oShallow,oDeep,dd);
+      const on=vnoise(cx*0.12+5,cy*0.2+8); if(on>0.62) col=shade(col,Math.round((on-0.62)*14));
       const wv=Math.round(2+Math.sin(cx*0.22+cy*0.06+(oceanSide<0?3:0))*1.6);
-      if((cy&3)===(wv&3))col=shade(col,dS>18?13:9);
-      if(dS>16&&(cy&3)===(wv&3)&&vnoise(cx*0.32+7,cy*0.5)>0.74)col=[224,240,255];}
-    else{const t3=lv;let base=dith(cx,cy,t3)?(dith(cx,cy,(t3-0.42)*1.7)?C.roughL:C.rough):C.roughD;
+      if((cy%6)===(wv%6) && vnoise(cx*0.4+3,cy*0.8+1)>0.45)col=shade(col,dS>18?11:8);
+      if(dS>16&&(cy%6)===(wv%6)&&vnoise(cx*0.32+7,cy*0.5)>0.8)col=[224,240,255];}
+    else{const t3=lv;
+      // TRACER REVAMP: the rough was a three-tone Bayer dither (dark / mid / light on every pixel), which
+      // read as TV static. Now a two-tone dither carries the elevation, and the LIGHT tone only appears in
+      // clustered patches gated by a low-frequency noise, so the texture reads as grass tufts, not noise.
+      let base=dith(cx,cy,t3*0.92)?C.rough:C.roughD;
+      if(vnoise(cx*0.09+31,cy*0.11+17)>0.64 && dith(cx,cy,(t3-0.3)*1.3)) base=C.roughL;
       const dd=DIST[cy*GW+cx];
       const lr=vnoise(cx*0.04+50,cy*0.045+30);
-      if(dd>4&&lr>0.64){base=shade(base,-8);if(dith(cx,cy,(lr-0.5)*3))base=shade(C.roughL,-2);}
+      if(dd>4&&lr>0.64){base=shade(base,-8);if(dith(cx,cy,(lr-0.55)*2.4))base=shade(C.roughL,-4);}
       if(dd<=2)base=shade(base,-7*(3-dd));
       if(id===DE)base=shade(base,-14-Math.round((0.5-cy/GH)*20));
       col=base;}
@@ -28622,8 +28938,9 @@ function hvDistChip(g,p,live,small){
 function hvRevealDist(){ ['hv-dist','hv-carry'].forEach(id=>{ const d=document.getElementById(id); if(d) d.setAttribute('opacity','1'); }); }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
-function hvDoneShot(g,p,dim,small,pcol){
+function hvDoneShot(g,p,dim,small,pcol,fresh){
   // pcol = the player's assigned ball color (multi-ball H2H); default = the single-player teal
+  // fresh = this marker was just left by the shot that finished (TRACER REVAMP: it pops in instead of appearing)
   const base=pcol||'#0a5e53';
   const col=`${base}${dim?'8c':'e6'}`;   // hex alpha: dim .55 / bright .9
   const w=(dim?1.6:2)*(small?0.45:1);
@@ -28637,9 +28954,15 @@ function hvDoneShot(g,p,dim,small,pcol){
   // keeps the tight green close-up uncrowded; the current shot number lives on the gold pin above the golfer.
   if(!p.hole && !p.onGreen){ const [mx,my]=hvProj(g,p.rest[0],p.rest[1]);
     const mr=small?2.7:6.5, fs=small?3.6:8, sw=small?0.6:1.3;
-    s+=`<g><circle cx="${(mx+0.8).toFixed(1)}" cy="${(my+1).toFixed(1)}" r="${mr}" fill="#04150a" opacity=".35"/><circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${mr}" fill="${p.splash?'#8a2f22':'#0a1626'}" stroke="${pcol||(dim?'#3d5a52':'#06A291')}" stroke-width="${sw}"/><text x="${mx.toFixed(1)}" y="${(my+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" font-family="inherit">${p.i+1}</text></g>`; }
+    s+=`<g${fresh?' class="hvmark-in"':''}><circle cx="${(mx+0.8).toFixed(1)}" cy="${(my+1).toFixed(1)}" r="${mr}" fill="#04150a" opacity=".35"/><circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${mr}" fill="${p.splash?'#8a2f22':'#0a1626'}" stroke="${pcol||(dim?'#3d5a52':'#06A291')}" stroke-width="${sw}"/><text x="${mx.toFixed(1)}" y="${(my+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" font-family="inherit">${p.i+1}</text></g>`; }
   return s;
 }
+// pxLiteHex/pxShadeHex assume a 6-digit hex; a ball colour can arrive as #rgb or (in theory) a css name,
+// so normalise first rather than let the gradient render as NaN.
+function hvBallHex(c){ c=String(c||'').trim();
+  if(/^#[0-9a-f]{6}$/i.test(c)) return c;
+  if(/^#[0-9a-f]{3}$/i.test(c)) return '#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
+  return '#f4f7f4'; }
 // the in-flight shot's elements (hidden tracer + ball + shadow), the animator drives them.
 // pcol tints the tracer glow / roll / ball ring to the player's assigned color (multi-ball H2H).
 function hvLiveShot(g,p,small,pcol,cam){
@@ -28656,14 +28979,25 @@ function hvLiveShot(g,p,small,pcol,cam){
   if(!pcol) s+=hvSwingMarkup(g,p,S.look);   // CS355: the created golfer plays the shot (single-ball; excludes H2H multi-ball, which passes pcol). NOT gated on `small` so it still shows on the putt close-up.
   if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvPuttPathD(g,p)}" fill="none" stroke="${pcol||'#fff'}" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
   else if(p.k==='pen'){ s+=`<path id="hv-roll" d="M ${A[0]} ${A[1]} L ${hvProj(g,p.rest[0],p.rest[1]).map(v=>v.toFixed(1)).join(' ')}" fill="none" stroke="#274238" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
-  else { s+=`<path id="hv-traceg" d="${hvPathD(g,p)}" fill="none" stroke="${glow}" stroke-width="5" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
-    s+=`<path id="hv-trace" d="${hvPathD(g,p)}" fill="none" stroke="${core}" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
+  else { const pd=hvPathD(g,p);
+    // TRACER REVAMP: a four-layer COMET - a wide soft outer glow, the colored glow, the bright core, and a
+    // short hot tip that rides the drawing edge (the comet head). Everything starts hidden; hvKick draws it in.
+    s+=`<path id="hv-traceo" d="${pd}" fill="none" stroke="${glow}" stroke-width="9.5" stroke-linecap="round" opacity=".38" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
+    s+=`<path id="hv-traceg" d="${pd}" fill="none" stroke="${glow}" stroke-width="5" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
+    s+=`<path id="hv-trace" d="${pd}" fill="none" stroke="${core}" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
+    s+=`<path id="hv-tip" d="${pd}" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" opacity="0" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
     s+=`<path id="hv-roll" d="${hvRollD(g,p)}" fill="none" stroke="${pcol||'#ffffff'}" stroke-width="1.4" opacity=".8" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
   s+=`<circle id="hv-splash" cx="0" cy="0" r="0" fill="none" stroke="#7fd4ff" stroke-width="2" opacity="0"/>`;
   s+=`<circle id="hv-splash2" cx="0" cy="0" r="0" fill="none" stroke="#c7edff" stroke-width="1.3" opacity="0"/>`;
   for(let d=0;d<5;d++) s+=`<circle id="hv-drop${d}" cx="0" cy="0" r="0" fill="#a9def7" opacity="0"/>`;
   s+=`<circle id="hv-puff" cx="0" cy="0" r="0" fill="none" stroke="#eaf5ee" stroke-width="1.5" opacity="0"/>`;
   s+=`<ellipse id="hv-shadow" cx="${A[0].toFixed(1)}" cy="${(A[1]+2).toFixed(1)}" rx="3" ry="1.6" fill="#000" opacity="0"/>`;
+  // CS139 painted the ball with url(#hvball) but the gradient was NEVER defined anywhere, so an
+  // unresolvable paint reference has been rendering the in-flight ball as fill:none (a bare ring) ever
+  // since. Define it here, beside the one ball that uses it (a live shot draws exactly one, so the id
+  // can't collide), and tint it to the player's ball colour so an H2H field still reads by colour.
+  const bc=hvBallHex(pcol||(ball&&ball.col)||'#f4f7f4');
+  s+=`<radialGradient id="hvball" cx="34%" cy="28%" r="76%"><stop offset="0" stop-color="${pxLiteHex(bc,.72)}"/><stop offset=".45" stop-color="${bc}"/><stop offset="1" stop-color="${pxShadeHex(bc,.66)}"/></radialGradient>`;
   s+=`<circle id="hv-ball" cx="${A[0].toFixed(1)}" cy="${A[1].toFixed(1)}" r="${ballR}" fill="url(#hvball)" stroke="${pcol||(ball?ball.col:'rgba(8,22,14,.5)')}" stroke-width="${(pcol||ball)?'.9':'.55'}"/>`;
   s+=`<circle id="hv-sink" cx="0" cy="0" r="0" fill="none" stroke="${pcol||'#F1D04A'}" stroke-width="2" opacity="0"/>`;
   return s;
@@ -28690,15 +29024,30 @@ function hvStatHTML(s, holed, who, pcol){
    The ball SHRINKS as the camera zooms into the green (bScale reads the live viewBox) so it
    stops swallowing the putting surface on the close-up. ---- */
 let _hvA={key:null, raf:0, done:false};
+// TRACER REVAMP: which hole / which shot the window last drew, so a NEW hole can cross-fade in and a
+// freshly-finished shot's marker can pop in, while the many same-state re-renders stay perfectly still.
+// `var`, not `let`: hvNode can run before this line executes (a TDZ binding would abort the script).
+var _hvLastKey=null, _hvLastShowKey=null;
 // reveal a shot's trace/roll paths to their final (fully-drawn) state. The live-shot markup starts
 // them hidden (stroke-dashoffset) so they don't pre-flash before the animator draws them; when a
 // re-render rebuilds the DOM for a shot we've ALREADY finished animating (e.g. the post-hole beat),
 // the fresh paths are hidden with no running frame loop - so show their final state here.
 function hvRevealPaths(p){
-  const t=document.getElementById('hv-trace'), r=document.getElementById('hv-roll'), tg=document.getElementById('hv-traceg');
+  const t=document.getElementById('hv-trace'), r=document.getElementById('hv-roll'), tg=document.getElementById('hv-traceg'), to=document.getElementById('hv-traceo'), tip=document.getElementById('hv-tip');
   if(t){t.style.strokeDasharray='none';t.style.strokeDashoffset='0';}
   if(tg){tg.style.strokeDasharray='none';tg.style.strokeDashoffset='0';}
+  if(to){to.style.strokeDasharray='none';to.style.strokeDashoffset='0';}
+  if(tip) tip.setAttribute('opacity','0');   // the comet head only exists while the ball is in the air
   if(r){r.style.strokeDasharray=(p&&p.k==='pen')?'3 4':'none';r.style.strokeDashoffset='0';}
+}
+// a ball at rest on grass keeps a faint contact shadow (it used to vanish the moment the ball settled, which
+// made a resting ball look pasted on); on the green / in the cup / in the water there is nothing to cast one.
+function hvRestShadow(g,p){
+  const sh=document.getElementById('hv-shadow'); if(!sh||!p) return;
+  const fly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
+  if(fly && !p.hole && !p.onGreen && !p.splash){ const R=hvProj(g,p.rest[0],p.rest[1]);
+    sh.setAttribute('cx',(R[0]+1.2).toFixed(1)); sh.setAttribute('cy',(R[1]+1.3).toFixed(1)); sh.setAttribute('rx','2.6'); sh.setAttribute('ry','1.25'); sh.setAttribute('opacity','.16'); }
+  else sh.setAttribute('opacity','0');
 }
 // a re-render for an ALREADY-completed shot rebuilds hv-ball at the shot's START (hvLiveShot draws it at
 // the from-point), but the animator won't run again - so the ball would sit at the origin. Snap it to its
@@ -28714,6 +29063,7 @@ function hvSettle(g,p){
   const R=hvProj(g,p.rest[0],p.rest[1]);
   const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bs));
   b.setAttribute('cx',R[0]); b.setAttribute('cy',R[1]); b.setAttribute('r',(+rr).toFixed(2)); b.setAttribute('opacity','1');
+  hvRestShadow(g,p);
 }
 function hvKick(key, g, p, pPrev, reduce, opts){
   if(_hvA.key===key){ if(_hvA.done) hvSettle(g,p); return; }
@@ -28724,13 +29074,25 @@ function hvKick(key, g, p, pPrev, reduce, opts){
   const bScale=()=>{ const sv=q('hv-svg'); if(!sv) return 1;
     const w=parseFloat((sv.getAttribute('viewBox')||'').split(' ')[2])||HV_W;
     return Math.max(0.42, Math.min(1, (w/HV_W)*1.55)); };
-  const setFinal=()=>{ const t=q('hv-trace'),r=q('hv-roll'),b=q('hv-ball'),sh=q('hv-shadow'),pf=q('hv-puff'),sv=q('hv-svg');
+  const setFinal=()=>{ const t=q('hv-trace'),r=q('hv-roll'),b=q('hv-ball'),pf=q('hv-puff'),sv=q('hv-svg'),tg=q('hv-traceg'),to=q('hv-traceo'),tip=q('hv-tip');
     if(t){t.style.strokeDasharray='none';t.style.strokeDashoffset='0';}
+    if(tg){tg.style.strokeDasharray='none';tg.style.strokeDashoffset='0';}
+    if(to){to.style.strokeDasharray='none';to.style.strokeDashoffset='0';}
+    if(tip) tip.setAttribute('opacity','0');
     if(r){r.style.strokeDasharray=(p.k==='pen')?'3 4':'none';r.style.strokeDashoffset='0';}
     if(sv) sv.setAttribute('viewBox', hvCamFor2(g,p).join(' '));   // reduced-motion users still get the right camera
     if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);
       const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }   // a ball resting ON the green (any shot) is the small green size, not the big ground ball
-    if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); hvRevealDist(); _hvA.done=true; };
+    hvRestShadow(g,p); if(pf) pf.setAttribute('opacity','0'); hvRevealDist(); _hvA.done=true; };
+  const tipOff=()=>{ const tp=q('hv-tip'); if(tp) tp.setAttribute('opacity','0'); };
+  // How big the ball is SITTING AT A GIVEN SPOT. On the putting surface it is the fixed green size
+  // (the cup is a fixed viewBox size too, so the ball has to be one for the ratio to stay honest);
+  // anywhere else it is the zoom-compensated ground size. The two only coincide at full zoom, so
+  // without a single source of truth a ball at rest on the green INFLATED the moment the next shot's
+  // animation began (measured 0.86 -> 1.28 in one frame under the hole-out camera). Every phase now
+  // interpolates between these sizes, so the ball only ever changes size for a reason.
+  const restR=(pl)=>!pl ? HV_GROUND*bScale()
+    : (pl.hole?0 : ((pl.k==='putt'||pl.k==='hole'||pl.onGreen)?HV_GBALL:HV_GROUND*bScale()));
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
   // CS355: hold the ball at address while the golfer swings; it leaves at impact (chip is a quicker stroke)
@@ -28740,7 +29102,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
   const groundMs=isFly?(p.dist>40?520:340):0;
   const rollMs=(p.k==='putt'||p.k==='hole')?Math.max(650,Math.min(1900,700+Math.min(70,p.dist*3||8)*13)):0;
   const penMs=(p.k==='pen')?700:0;
-  const camMs=460;
+  const camMs=560;   // TRACER REVAMP: a slightly longer, ease-in-out camera move (was a 460ms quad ease-out that arrived with a jolt)
   const t0=performance.now();
   // daily/Moment playback speed scales the whole animation timeline (kept in sync with the reveal
   // scheduler via dspd); every other screen plays at 1x.
@@ -28757,24 +29119,35 @@ function hvKick(key, g, p, pPrev, reduce, opts){
     const el=(now-t0)*spd;
     const svg=q('hv-svg'), ball=q('hv-ball'), sh=q('hv-shadow');
     if(!svg||!ball){ if(el<4000){_hvA.raf=requestAnimationFrame(frame);} return; }   // mid re-render; retry
-    if(camMove){ const ct=Math.min(1,el/camMs), ce=ct*(2-ct);
+    if(camMove){ const ct=Math.min(1,el/camMs), ce=ct<0.5?2*ct*ct:1-Math.pow(-2*ct+2,2)/2;
       svg.setAttribute('viewBox', camFrom.map((v,i)=>(v+(camTo[i]-v)*ce).toFixed(1)).join(' ')); }
     else svg.setAttribute('viewBox', camTo.join(' '));
     const trace=q('hv-trace'), rollEl=q('hv-roll');
     if(isFly){
-      if(trace&&traceLen==null){ traceLen=trace.getTotalLength(); trace.style.strokeDasharray=traceLen; trace.style.strokeDashoffset=traceLen; const tg=q('hv-traceg'); if(tg){tg.style.strokeDasharray=traceLen; tg.style.strokeDashoffset=traceLen;} }
+      if(trace&&traceLen==null){ traceLen=trace.getTotalLength(); trace.style.strokeDasharray=traceLen; trace.style.strokeDashoffset=traceLen;
+        const tg=q('hv-traceg'); if(tg){tg.style.strokeDasharray=traceLen; tg.style.strokeDashoffset=traceLen;}
+        const to=q('hv-traceo'); if(to){to.style.strokeDasharray=traceLen; to.style.strokeDashoffset=traceLen;}
+        // the comet head: a dash of tipLen followed by a gap of the whole path, offset so only [d-tipLen, d) shows
+        const tp=q('hv-tip'); if(tp){ tp.style.strokeDasharray=`${Math.min(26,traceLen*0.22)} ${traceLen}`; tp.style.strokeDashoffset=Math.min(26,traceLen*0.22); } }
       if(rollEl&&rollLen==null){ rollLen=rollEl.getTotalLength(); rollEl.style.strokeDasharray=rollLen; rollEl.style.strokeDashoffset=rollLen; }
       const elF=el-swingMs;   // CS355: the golfer swings for swingMs, then the ball launches at impact
-      if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',(HV_GROUND*bScale()).toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
+      // the ball at address is the size it was lying at, and grows into the size it will land at, so
+      // launch and touchdown are both continuous with the shot either side of them
+      const r0=restR(pPrev||null), rL=p.onGreen?HV_GBALL:HV_GROUND*bScale();
+      if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',r0.toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
       if(elF<=flyMs){
         const t=elF/flyMs, te=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;   // fast off the club, hangs, dives
         const bp=hvBez3(A,C[0],C[1],B,te), x=bp[0], y=bp[1];        // ITEM 16: ride the shaped tracer
         const h=4*te*(1-te)*(p.k==='tee'?1:(p.k==='chip'?0.45:0.75))*Math.min(1,p.dist/240+0.35);
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',((HV_GROUND+h*(HV_AIRPEAK-HV_GROUND))*bScale()).toFixed(2));
-        if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.28*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); }
-        if(trace){ trace.style.strokeDashoffset=traceLen*(1-te); const tg=q('hv-traceg'); if(tg) tg.style.strokeDashoffset=traceLen*(1-te); }
+        const base=r0+(rL-r0)*te;
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',(base+h*(HV_AIRPEAK-HV_GROUND)*bScale()).toFixed(2));
+        if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.42*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); sh.setAttribute('ry',(1.6-h*0.5).toFixed(2)); }
+        if(trace){ const off=traceLen*(1-te); trace.style.strokeDashoffset=off;
+          const tg=q('hv-traceg'); if(tg) tg.style.strokeDashoffset=off;
+          const to=q('hv-traceo'); if(to) to.style.strokeDashoffset=off;
+          const tp=q('hv-tip'); if(tp){ const tl=Math.min(26,traceLen*0.22); tp.style.strokeDashoffset=tl-traceLen*te; tp.setAttribute('opacity',(te<0.06?te/0.06:1).toFixed(2)); } }
       } else if(p.splash){
-        const st=Math.min(1,(elF-flyMs)/560);
+        const st=Math.min(1,(elF-flyMs)/560); tipOff();
         ball.setAttribute('r','0'); if(sh)sh.setAttribute('opacity','0');
         if(!_hvA.splashed){ _hvA.splashed=true; if(!reduce) hvSplashSound(); }   // splash sound on entry
         const sp=q('hv-splash'), sp2=q('hv-splash2');
@@ -28788,10 +29161,15 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         if(elF>flyMs+600){ hvRevealDist(); _hvA.raf=0; _hvA.done=true; return; }
       } else if(elF<=flyMs+groundMs){
         const t=(elF-flyMs)/groundMs, te=1-Math.pow(1-t,2.2);       // decelerating bounce + roll-out
+        tipOff();
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
         const hop=(t<0.55)?Math.abs(Math.sin(t*3*Math.PI/0.55))*(0.16*(1-t/0.55)):0;
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(p.onGreen?(HV_GBALL+hop*1.6):((HV_GROUND+hop*2.4)*bScale())).toFixed(2));   // shrink to the green ball as it rolls onto the surface
-        if(sh) sh.setAttribute('opacity',(hop>0.02?0.2:0).toFixed(2)), sh.setAttribute('cx',(x+1.5).toFixed(1)), sh.setAttribute('cy',(y+1.5).toFixed(1));
+        // the bounce/roll-out starts at the size the ball came down at and eases into its resting size,
+        // so touchdown and the settle either side of it are both continuous (a ball landing on the green
+        // used to step 2.05 -> 0.98 in a single frame, which read as a snap rather than a settle)
+        const rEnd=p.hole?rL:restR(p);
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(rL+(rEnd-rL)*te+hop*(p.onGreen?1.6:2.4*bScale())).toFixed(2));
+        if(sh) sh.setAttribute('opacity',(hop>0.02?0.22:(p.onGreen?0:0.16)).toFixed(2)), sh.setAttribute('cx',(x+1.3).toFixed(1)), sh.setAttribute('cy',(y+1.3).toFixed(1)), sh.setAttribute('rx','2.6'), sh.setAttribute('ry','1.25');
         const pf=q('hv-puff'), pt=(elF-flyMs)/300;   // touchdown puff ring at the landing spot
         if(pf){ if(pt<=1){ pf.setAttribute('cx',B[0]);pf.setAttribute('cy',B[1]);pf.setAttribute('r',(2+pt*7).toFixed(1));pf.setAttribute('opacity',(0.5*(1-pt)).toFixed(2)); } else pf.setAttribute('opacity','0'); }
         if(rollEl) rollEl.style.strokeDashoffset=rollLen*(1-te);
@@ -28853,6 +29231,10 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   // target and the HUD are all computed against the same frame even if the window is resized mid-render.
   hvSetCam();
   const fst=hvFrameStyle(courseKey)+`;aspect-ratio:${HV_CAML[2]}/${HV_CAML[3]}`;   // themed frame + live frame shape
+  // TRACER REVAMP: a hole the window has not shown yet cross-fades in (hv-in); a re-render of the same
+  // hole never re-animates. Keyed by course + hole (+ multi), NOT by shot, so the preview of the next
+  // hole fades once and its first live shot then draws on the already-settled map.
+  const hk=(courseKey||'')+':'+holeIdx+(multi?':m':''), hin=(hk!==_hvLastKey); _hvLastKey=hk;
   if(multi){
     const order=multi.order||[];
     if(!order.length || !multi.shots.every(ss=>ss.length&&ss[0].k)) return null;
@@ -28871,16 +29253,18 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     const small=camTarget[2]<HV_W*0.6;
     const inCam=(p)=>{ const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
       return x>=camTarget[0]-8&&x<=camTarget[0]+camTarget[2]+8&&y>=camTarget[1]-8&&y<=camTarget[1]+camTarget[3]+8; };
+    // the shot that just finished (order[showN-2]) leaves its marker for the first time on THIS render: pop it in
+    const smk=(courseKey||'')+':m'+holeIdx+':'+showN, fresh=live&&(smk!==_hvLastShowKey); _hvLastShowKey=smk;
     let inner='';
     for(let k=0;k<showN-1;k++){ const r=order[k], p=plots[r.u][r.i];
-      inner+=hvDoneShot(g,p,true,small&&inCam(p),multi.cols[r.u]); }
+      inner+=hvDoneShot(g,p,true,small&&inCam(p),multi.cols[r.u],fresh&&k===showN-2); }
     const holed=(showN>=total);
     if(live && curP) inner+=hvLiveShot(g,curP,small,multi.cols[cur.u],camTarget);
     else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
     const cam=live?hvCamFor2(g,prevP):HV_CAML;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
     const detailCam=hvDetailCam(camTarget, live&&!!curP);
-    const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
+    const node=$(`<div class="holeview${hin?' hv-in':''}"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
       <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${inner}</svg></div></div>`);
     if(live && curP){
       const key=(courseKey||'')+':m'+holeIdx+':'+showN;
@@ -28896,7 +29280,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
     if(holeIdx==null || !courseKey || hole.par==null) return null;
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
-    return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
+    return $(`<div class="holeview${hin?' hv-in':''}"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
       <div class="hvshell"><svg viewBox="${HV_CAML.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}${hvYardageSVG(g)}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
@@ -28912,8 +29296,10 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   // bunker rests aren't flagged onGreen but sit in frame - full-size chips read huge when zoomed)
   const inCam=(p)=>{ const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
     return x>=camTarget[0]-8&&x<=camTarget[0]+camTarget[2]+8&&y>=camTarget[1]-8&&y<=camTarget[1]+camTarget[3]+8; };
+  // the shot that just finished (plots[idx-1]) leaves its marker for the first time on THIS render: pop it in
+  const smk=(courseKey||'')+':'+holeIdx+':'+showN, fresh=live&&(smk!==_hvLastShowKey); _hvLastShowKey=smk;
   let inner='';
-  for(let i=0;i<Math.min(idx,plots.length);i++) inner+=hvDoneShot(g,plots[i],true,small&&inCam(plots[i]));
+  for(let i=0;i<Math.min(idx,plots.length);i++) inner+=hvDoneShot(g,plots[i],true,small&&inCam(plots[i]),null,fresh&&i===idx-1);
   const holed=(showN>=shots.length);
   if(live && idx>=0 && plots[idx]) inner+=hvLiveShot(g,plots[idx],small,null,camTarget);
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
@@ -28927,13 +29313,22 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   // map (idx 0), hidden until the animator settles it, and gone the moment the next shot is played (idx > 0).
   const yard=small?'':hvYardageSVG(g, hvDistBox(g,curP,dsmall), {carry:(idx===0 && !!curP), live:(live&&idx===0)});
   const dchip=curP?hvDistChip(g,curP,live,dsmall):'';
-  const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
+  const node=$(`<div class="holeview${hin?' hv-in':''}"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
     <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${yard}${inner}${dchip}${overlay||''}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN+(animNonce!=null?':r'+animNonce:'');
     requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
   }
   return node;
+}
+// TRACER REVAMP: paint the NEXT hole's pixel terrain tile during the post-hole beat, so its first render is
+// served from the cache (the ~100ms first-paint hitch on a phone was the "jump" between holes). Same
+// geometry/seed derivation as hvNode, so it lands in the same _pxCache slot; any failure is silently ignored.
+function hvPrewarmHole(courseKey, holeIdx){
+  try{ const c=DAILY_COURSES[courseKey]; const hh=c&&c.holes&&c.holes[holeIdx]; if(!hh) return;
+    const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
+    const g=hvGeom(seedN, hh[0], hh[1]||400, courseKey, holeIdx);
+    hvSetCam(); hvBaseTileURL(g, seedN, hvBiome(courseKey)); }catch(e){}
 }
 function startDailyChallenge(){
   homeSetLastMode('daily');   // the home hero follows whatever you were last playing
@@ -29311,6 +29706,8 @@ function scheduleDailyAdvance(){
     S.dailyProv=null; render(); return; }
   const started=i>0;   // the very first tee shot fires quickly; the post-hole beat only applies once a hole is done
   S.dailyHolePause=started; if(started) render();
+  // TRACER REVAMP: while the result beat holds, paint the NEXT hole's terrain tile so it renders from cache
+  if(started && i<18) setTimeout(()=>{ if(S.screen==='dailyround') hvPrewarmHole(S.dailyCourse, i); }, 60);
   _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto){ S.dailyHolePause=false; playDailyHole(null); } }, started?dspd(dailyDwell(),400):dspd(450));
 }
 // ---- Mulligan offer (streak reward): when a bogey-or-worse finishes and a mulligan is available, prompt
@@ -30949,13 +31346,17 @@ function scrDailyRound(){
     const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null, overlay||null);
     if(!hvn) return;
     const shell=hvn.querySelector('.hvshell'), h=hole;
+    // TRACER REVAMP: the HUD chips slide in the first time a hole's window is drawn (hvnew), and stay
+    // perfectly still on every same-hole re-render. Keyed by course + hole, like the window's own cross-fade.
+    const hudK=(S.dailyCourse||'')+':'+holeIdx, hudNew=(hudK!==_hvHudHole); _hvHudHole=hudK;
+    const hudCls=s2=>hudNew?s2.replace('class="hvob ','class="hvob hvnew '):s2;
     // (CS246: the themed accent frame now lives on the svg itself via hvFrameStyle, so the whole window is framed)
     // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
-    shell.appendChild($(hvHoleChipHTML(S.dailyCourse, h, !!dec)));
+    shell.appendChild($(hudCls(hvHoleChipHTML(S.dailyCourse, h, !!dec))));
     // (item 07: while a decision is docked at the bottom, the wind moves INTO the panel's header -
     // the standalone chip lives bottom-left, which the panel now occupies)
     if(!dec){ const wc=hvWindChipHTML(h.i!=null?h.i:(h.n-1), !(descShot && descShot.d && !holePauseFlag));
-      if(wc) shell.appendChild($(wc)); }
+      if(wc) shell.appendChild($(hudCls(wc))); }
     if(holePauseFlag && lastIdx>=0){
       const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
       const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
@@ -30977,7 +31378,7 @@ function scrDailyRound(){
       const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
       const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
       const noDesc=!(descShot && descShot.d && !holePauseFlag);   // board drops to the very bottom when no shot-desc bar
-      const bd=$(`<div class="hvob hvboard${noDesc?' nodesc':''}"></div>`);
+      const bd=$(`<div class="hvob hvboard${noDesc?' nodesc':''}${hudNew?' hvnew':''}"></div>`);
       if(S.matchPlay){
         // MATCH PLAY: your total, their total, holes left, and a per-hole strip below so you can
         // see the box score of each played hole - both scores + who won it - not just the running
