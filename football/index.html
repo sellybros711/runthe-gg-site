@@ -6650,7 +6650,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=26"></script>
+<script src="board.js?v=27"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -18614,10 +18614,27 @@ function runPayload(){
     playoffWins:o.wins-o.regularWins,
     pointDiff:pts(r=>r.shownYou??r.yourScore)-pts(r=>r.shownThem??r.oppScore),
     chemistryPct:(run.season.chemistry-1)*100,
-    /* THE COACH IS PART OF THE SPEND, and leaving him out would report a $280M roster as a
-       $253M one on every board. He comes out of the same cap, so he is in the same total. */
-    spendMusd:run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed)
-      +((run.full&&run.coach&&run.coach.price_musd)||0),
+    /* WHAT THIS RUN HAS ACTUALLY COMMITTED AGAINST ITS CAP.
+       THE COACH IS PART OF THE SPEND, and leaving him out would report a $280M roster as a
+       $253M one on every board. He comes out of the same cap, so he is in the same total.
+
+       AND IN THE GAUNTLET, LIST PRICE IS NOT WHAT YOU PAID. Everywhere else the two are
+       the same number, which is why summing price_musd has always been right. In this mode
+       a man is on the deal he was drafted at and what he is worth now is a different figure,
+       and dead money from a release is a third one that is also against the cap. Summing
+       list prices overstated the spend by more the BETTER the run went, because the whole
+       reward is holding a cheap man who became expensive: measured over 480 played seasons,
+       11% of them reported a payroll over the $140M cap and ps_submit_run refused every one.
+       The worst claimed $176.5M on a season that had spent $137.4M.
+
+       Asked of the run rather than recomputed here, so the number on the board and the
+       number on the payroll bar cannot be two different quantities: remaining() already
+       nets off salaries, respin fees, the coach and dead money, so the cap less what is
+       left IS what was committed. */
+    spendMusd:run.dynasty
+      ? R.capOf(run)-R.remaining(run)
+      : run.roster.reduce((t,p)=>t+p.price_musd,0)+E.respinFees(run.respinsUsed)
+        +((run.full&&run.coach&&run.coach.price_musd)||0),
     respins:run.respinsUsed,
     /* THE CLUB THIS DRAFT WAS LOCKED TO, and null for a free run. The server does not
        infer the mode from it: the column predates One Franchise mode and the oldest rows

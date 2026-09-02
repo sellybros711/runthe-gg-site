@@ -386,11 +386,20 @@
      Club and era need a second field to name the competition, so a run claiming one of
      those without it is not that competition and falls back to free play. The Trade
      Machine and One Stop need nothing: the mode IS the competition. */
-  /* THIS LIST HAS NOW BEEN THE BUG THREE TIMES. 'trade' was missing from the submit,
-     'defense' from all four call sites, and 'fullteam' from here, added in the same commit
-     that shipped the mode's button to testers. The consolidation above is what turned the
-     third one into a single missing word instead of four. */
-  const SOLO_MODES = ['trade', 'defense', 'fullteam'];
+  /* THIS LIST HAS NOW BEEN THE BUG FOUR TIMES. 'trade' was missing from the submit,
+     'defense' from all four call sites, 'fullteam' from here, and 'dynasty' from here and
+     from both SQL sites at once. The consolidation above is what turned the third one into
+     a single missing word instead of four.
+
+     THE FOURTH ONE WAS THE WORST AND IT IS WORTH SAYING WHY. The fallback above is a
+     kindness for a typo: an unknown mode records as free play rather than being refused,
+     because a misfiled run loses less than a rejected one. That reasoning does not hold
+     for a whole MODE. With 'dynasty' missing, every Gauntlet season was being submitted as
+     free play, so a nine season run would have put nine rows on the classic leaderboard,
+     each a roster built over several seasons under an economy classic play does not have,
+     ranked against people who drafted once with $140M. Caught before the mode went live
+     rather than after, which is the first time out of four. */
+  const SOLO_MODES = ['trade', 'defense', 'fullteam', 'dynasty'];
   function modeOf(mode, franchise, era) {
     if (SOLO_MODES.indexOf(mode) >= 0) return mode;
     if (mode === 'era' && era) return 'era';
