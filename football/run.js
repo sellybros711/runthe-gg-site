@@ -1242,6 +1242,33 @@ function beginOffseason(run, byKey, lastSeason) {
       drop: Math.round((next.ppr_ppg_mean - man.ppr_ppg_mean) * 10) / 10 });
   }
 
+  /*
+   * A WINTER CAN TAKE ALL SIX, AND THAT IS NOT A WAY TO LOSE.
+   *
+   * Somebody hit it and asked whether the run should end there. It should not. Retiring,
+   * running out of seasons and signing elsewhere are the three ways to lose a man and not
+   * one of them is a decision you made, so ending a run on it would be the only defeat in
+   * the mode that nobody earned. The one the mode promises is the one it keeps: eight wins
+   * or you are fired.
+   *
+   * AND IT IS NOT A DEATH SENTENCE EITHER, which was the other half of the worry. 120 runs,
+   * 30 seasons deep, departures only:
+   *
+   *   the winter took   share of winters   the season after: wins   cleared the bar
+   *     0 or 1 man            33%                  10.97                 81%
+   *     2 or 3                56%                  10.92                 81%
+   *     4 or 5                10%                  10.68                 79%
+   *     all six                0.1%                11.33                100% (of 3)
+   *
+   * Every season in that sample averages 10.92 and clears 81%, so a rebuilt roster is an
+   * ordinary roster. You get the whole cap back and a clean wheel, and under a locked
+   * contract that is worth roughly what the men you lost were worth.
+   *
+   * WHICH IS THE REAL FINDING AND IT IS NOT COMFORTABLE: losing people is close to free.
+   * Four or five departures cost a quarter of a win. If a departure is ever meant to hurt,
+   * that is the number to move, and it wants dead money or a spot you cannot fill until
+   * next season rather than anything here.
+   */
   run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
   run.seasonNo += 1;
   /* THE CAP DOES NOT MOVE. It is $140M in season one and $140M in season thirty. Payroll

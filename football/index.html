@@ -6593,7 +6593,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=80"></script>
-<script src="run.js?v=89"></script>
+<script src="run.js?v=90"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -10825,9 +10825,12 @@ function paintWinterCap(animate){
   const was=parseFloat(String(el.textContent).replace(/[^0-9.]/g,''))||0;
   if(animate) countMoney(el,was,pay,520,(v)=>M0(v));
   else { countStop(el); el.textContent=M0(pay); }
+  /* "RELEASE A PLAYER FOR MORE" WITH NOBODY TO RELEASE. A winter can take all six men,
+     and on that screen this line was advice about a button that is not on the page. Rare
+     is not the same as impossible: it happened to somebody in their second season. */
   $('w-note').textContent=over>0.05
     ? M(over)+' over. You cannot sign anyone until you are under.'
-    : M(cap-pay)+' of room. Release a player for more.';
+    : M(cap-pay)+' of room.'+(run.roster.length?' Release a player for more.':'');
 }
 
 /*
@@ -11071,10 +11074,19 @@ function paintWinter(){
   /* NEITHER NUMBER ON THIS SCREEN MOVES, AND SAYING SO IS THE POINT. The cap used to grow
      six percent a winter and salaries used to climb with the men who earned them; both are
      frozen now, so the sentence has to make that a rule rather than an omission. What is
-     left moving is the players, which is the sentence in front of it. */
-  $('w-sub').innerHTML='Everyone becomes his next real season. '+
-    '<b>You keep paying what you drafted him for.</b> That never changes, and neither does '+
-    'your '+M0(R.capOf(run))+' cap.';
+     left moving is the players, which is the sentence in front of it.
+     UNLESS A WINTER TOOK ALL OF THEM, and one can. Both of those rules are about men you
+     still have, so over an empty list they are the game explaining itself to nobody: it
+     said "everyone becomes his next real season" and "you keep paying what you drafted him
+     for" to a player who had just lost his entire roster. That is the loudest thing that
+     can happen in this mode and it deserves its own sentence. */
+  const wiped=!w.aged.length&&w.gone.length>0;
+  $('w-sub').innerHTML=wiped
+    ? 'Every man you had is gone. <b>The whole roster came off the books.</b> '+
+      'Draft a new one.'
+    : 'Everyone becomes his next real season. '+
+      '<b>You keep paying what you drafted him for.</b> That never changes, and neither does '+
+      'your '+M0(R.capOf(run))+' cap.';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
     const a=w.aged.find(x=>x.now===p);
     return a?winterRow(a,i):'';
