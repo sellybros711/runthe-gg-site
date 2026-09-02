@@ -19,7 +19,7 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Twelve quick daily sports puzzles on RunThe.GG. Four free every day, no account needed: Daily Crossword, Sportegories, Alma Mater and Career Path. Play today's board, keep your streak." />
+<meta name="description" content="Twelve quick daily sports puzzles on RunThe.GG. Four free every day, no account needed: Sportegories, Career Path, Guess the Player and Common Ground. Play today's board, keep your streak." />
 <link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=2" />
 <link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
 <meta property="og:type" content="website" />
@@ -335,6 +335,13 @@
      stay in the markup for the games' own paint calls and are not shown. */
   .dprog .pips{display:none; gap:5px;}
   .dprog .dring{display:inline-flex;}
+  /* THE ARCADE'S STREAK, next to the ring that fills it. One number for the
+     whole arcade: the flame in the nav has been showing the largest of the
+     twelve per-game streaks, which climbs while you skip eleven games. This
+     one only moves when a day does. */
+  .dprog .dstreak{display:inline-flex; align-items:center; gap:4px; color:var(--goldT); font-size:11px; letter-spacing:.06em;}
+  .dprog .dstreak[hidden]{display:none;}
+  .dprog .dstreak svg{width:12px; height:12px;}
   .dprog .pip{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--line2); background:transparent;}
   /* each pip carries its game's color; a played pip fills with it (empty ones
      keep a faint ring of the same color, so the row reads as the games) */
@@ -699,7 +706,7 @@ window.GA_ID='G-L29P5MRWKE';
             <span>Daily <b>sports</b> puzzles &middot; NBA &middot; NFL &middot; MLB</span>
           </span>
           <span class="day">Today's Games</span>
-          <span class="dprog" id="dprog"><span class="dring" id="dring" aria-hidden="true"></span><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
+          <span class="dprog" id="dprog"><span class="dring" id="dring" aria-hidden="true"></span><span class="dstreak" id="dstreak" hidden></span><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
@@ -984,7 +991,7 @@ window.GA_ID='G-L29P5MRWKE';
             <li><a href="/arcade/chain/">Chain</a>: connect two players through their teammates.</li>
             <li><a href="/arcade/highlow/">High Low</a>: an endless higher-or-lower streak.</li>
           </ul>
-          <p>A free RunThe.GG account plays the Daily Crossword, Sportegories, Alma Mater and Career Path
+          <p>A free RunThe.GG account plays Sportegories, Career Path, Guess the Player and Common Ground
             every day, and the Arcade Card opens all twelve without limits, plus the Archive of past
             days. The same account carries your trophies and streaks across every game on
             <a href="/">RunThe.GG</a>.</p>
@@ -1017,11 +1024,11 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 
 <script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=12"></script>
-<script src="/arcade/day.js?v=1"></script>
+<script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=19"></script>
+<script src="/arcade/board.js?v=20"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=11"></script>
 <script src="/arcade/topbanner.js?v=8"></script>
@@ -1172,7 +1179,14 @@ window.GA_ID='G-L29P5MRWKE';
        each game needs lives on its own tile copy. */
     var ALL = ['sportegories','crossword','almamater','career',
                'match','rollcall','chain','rankit','guess','table','oddone','highlow'];
-    var FREE4 = ['sportegories','crossword','almamater','career'];
+    /* The free four, from the one place that defines them. This used to be a
+       fourth copy of that list (tokens.js, the SQL, day.js and here), and the
+       day the set changed is the day a fourth copy is a fourth chance to
+       miss one. */
+    var FREE4 = (function(){
+      try { if (TOK && TOK.FREE_GAMES && TOK.FREE_GAMES.length) return TOK.FREE_GAMES.slice(); } catch(e){}
+      return ['sportegories','career','guess','match'];
+    })();
     /* THE ORDER DOES NOT MOVE WHEN YOU PLAY.
        Three separate sorts used to rearrange this page underneath somebody who
        had just finished a game: played sank to the back of its rung, and a
@@ -1665,6 +1679,29 @@ window.GA_ID='G-L29P5MRWKE';
   document.getElementById('dprogT').textContent = n + ' / ' + total + ' played';
   try { RTGDay.ring(document.getElementById('dring'), { n: n, total: total, size: 30, stroke: 3.5, label: '' }); } catch (e) {}
   try { paintDayCard(); } catch (e) {}
+  /* The streak answers twice: once from what this device knows, then again
+     when the server says. A day-one player and a signed-out one see nothing
+     rather than a 1 that means "you played today" dressed up as a run.
+     PAINTED ON EVERY BOARD CHANGE, not once. board.js restores its session
+     off the network, so at first paint there is usually no session yet, the
+     RPC resolves null, and a chip painted only here would stay empty for a
+     signed-in player until they reloaded. */
+  function paintStreak() {
+    try {
+      RTGDay.streak(function (st) {
+        var el = document.getElementById('dstreak'); if (!el) return;
+        var n = (st && st.streak) || 0;
+        if (n < 2) { el.hidden = true; return; }
+        el.hidden = false;
+        el.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2s5 4.5 5 9a5 5 0 0 1-10 0c0-1.6.6-3 1.4-4.2C9 9.6 12 8 12 2z"/></svg>' +
+          '<b>' + n + '</b> day' + (n === 1 ? '' : 's');
+        el.setAttribute('title', 'Days in a row with at least one game played' + (st.best ? '. Best ' + st.best : ''));
+      });
+    } catch (e) {}
+  }
+  paintStreak();
+  document.addEventListener('rtg:tokens', paintStreak);
+  try { if (window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(paintStreak); } catch (e) {}
   if (n === total) {
     document.getElementById('dprog').classList.add('all');
     document.getElementById('double').classList.add('on');

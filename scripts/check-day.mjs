@@ -68,6 +68,16 @@ const SAVES = {
   oddone:       (t) => ['rtg:oddone:v1', JSON.stringify({ lastDone: t, last: { run: 3 } })]
 };
 const MEMBER = { 'sb-jcrrxqfpdelrmvjuihnm-auth-token': SESSION, runthegrid_pro: '1' };
+/* The card games, derived rather than listed. These fixtures used to name the
+   eight by hand, so the day the free four changed they were seeding trials on
+   games that had become free and leaving the newly locked ones open, and the
+   failures pointed at day.js rather than at themselves. */
+const B0 = boot({});
+const T0 = B0.RTGTokens;
+const HUB = B0.RTGDay.GAMES;      // hub order, which is day.js's order and not tokens.js's
+const FREE = T0.FREE_GAMES.slice();
+const CARD = T0.GAMES.filter((g) => FREE.indexOf(g) < 0);
+const ALL_TRIALS_SPENT = JSON.stringify({ used: CARD.reduce((o, g) => (o[g] = 1, o), {}) });
 for (const [key, mk] of Object.entries(SAVES)) {
   const [k, v] = mk(TODAY);
   const s = boot({ ...MEMBER, [k]: v }).RTGDay.state();
@@ -92,7 +102,7 @@ console.log('\n3) what each tier can open, and the count');
   eq([guest.total, guest.doneN, guest.allDone, guest.next], [4, 0, false, 'sportegories'], 'guest: four on offer, nothing done, Sportegories first');
   const free = boot({ 'sb-jcrrxqfpdelrmvjuihnm-auth-token': SESSION }).RTGDay.state();
   eq([free.total, free.next], [12, 'sportegories'], 'free account with every try open: twelve');
-  const spent = boot({ 'sb-jcrrxqfpdelrmvjuihnm-auth-token': SESSION, 'rtg:trial:v1': JSON.stringify({ used: { match: 1, rollcall: 1, chain: 1, rankit: 1, guess: 1, table: 1, oddone: 1, highlow: 1 } }) }).RTGDay.state();
+  const spent = boot({ 'sb-jcrrxqfpdelrmvjuihnm-auth-token': SESSION, 'rtg:trial:v1': ALL_TRIALS_SPENT }).RTGDay.state();
   eq(spent.total, 4, 'free account, every try spent: four');
   const member = boot(MEMBER).RTGDay.state();
   eq(member.total, 12, 'member: twelve');
@@ -103,7 +113,7 @@ console.log('\n4) a trial spent AND played today is still on the ring');
 {
   const [k, v] = SAVES.rollcall(TODAY);
   const s = boot({ 'sb-jcrrxqfpdelrmvjuihnm-auth-token': SESSION,
-                   'rtg:trial:v1': JSON.stringify({ used: { match: 1, rollcall: 1, chain: 1, rankit: 1, guess: 1, table: 1, oddone: 1, highlow: 1 } }),
+                   'rtg:trial:v1': ALL_TRIALS_SPENT,
                    [k]: v }).RTGDay.state();
   eq([s.total, s.doneN, s.avail.indexOf('rollcall') >= 0], [5, 1, true], 'four free plus the Roll Call they played: 5 total, 1 done');
 }
@@ -130,13 +140,21 @@ console.log('\n6) the day card reads right');
   const [k1, v1] = SAVES.sportegories(TODAY);
   const [k2, v2] = SAVES.career(TODAY);
   const txt = boot({ 'sb-jcrrxqfpdelrmvjuihnm-auth-token': SESSION,
-                     'rtg:trial:v1': JSON.stringify({ used: { match: 1, rollcall: 1, chain: 1, rankit: 1, guess: 1, table: 1, oddone: 1, highlow: 1 } }),
+                     'rtg:trial:v1': ALL_TRIALS_SPENT,
                      [k1]: v1, [k2]: v2 }).RTGDay.shareText();
   const lines = txt.split('\n');
-  if (!/^Run The Arcade · Day #\d+ · 2\/4$/.test(lines[0])) fail('header: ' + lines[0]);
+  if (!new RegExp('^Run The Arcade · Day #\\d+ · 2/' + FREE.length + '$').test(lines[0])) fail('header: ' + lines[0]);
   else ok('header: ' + lines[0]);
-  eq(lines.slice(1, 5), ['✅ Sportegories · 41 pts', '⬜ Daily Crossword', '⬜ Alma Mater', '✅ Career Path · 18 pts'], 'one line per game, in order, done ticked');
-  eq(lines[5], 'https://runthe.gg/arcade/', 'the link last');
+  /* One line per FREE game, in hub order, whatever the free four happen to be. */
+  const names = { sportegories: 'Sportegories', crossword: 'Daily Crossword', almamater: 'Alma Mater',
+                  career: 'Career Path', match: 'Common Ground', rollcall: 'Roll Call', chain: 'Chain',
+                  rankit: 'Rank It', guess: 'Guess the Player', table: 'Number Game',
+                  oddone: 'Odd One Out', highlow: 'High Low' };
+  const done = { sportegories: ' · 41 pts', career: ' · 18 pts' };
+  const want = HUB.filter((g) => FREE.indexOf(g) >= 0)
+    .map((g) => (done[g] ? '✅ ' : '⬜ ') + names[g] + (done[g] || ''));
+  eq(lines.slice(1, 1 + want.length), want, 'one line per free game, in hub order, done ticked');
+  eq(lines[1 + want.length], 'https://runthe.gg/arcade/', 'the link last');
   // the two dash code points, built rather than typed, so this file passes its own rule
   var DASH = new RegExp('[' + String.fromCharCode(0x2014) + String.fromCharCode(0x2013) + ']');
   if (DASH.test(txt)) fail('share text contains an em or en dash');

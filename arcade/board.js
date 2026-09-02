@@ -503,6 +503,22 @@
     return withTimeout(sb.rpc('arcade_game_status').then(function (r) { return (r && !r.error) ? r.data : null; }));
   }
 
+  /* ---- the arcade's own streak: days in a row with any game finished -------
+     One number for the whole arcade, which is the number a daily habit is
+     actually built on. The twelve per-game streaks in grid_streaks stay where
+     they are; this is the one the hub shows.
+     Resolves null when signed out, offline, OR when the RPC is not there yet,
+     which is deliberate: the site can deploy ahead of the migration and every
+     caller falls back to what it showed before rather than erroring. See
+     supabase/97_arcade_day_streak.sql. */
+  function dayStreak() {
+    if (!sb || !session) return Promise.resolve(null);
+    return withTimeout(sb.rpc('arcade_day_streak').then(function (r) {
+      if (!r || r.error || !r.data || r.data.signed_in === false) return null;
+      return r.data;                      // { streak, best, last_date, played_today }
+    }).catch(function () { return null; }));
+  }
+
   // ---- referrals (see supabase/83_referrals.sql). All resolve null when
   // signed-out / offline / the RPC is missing, so a site deployed ahead of the
   // migration simply shows no invite affordance rather than erroring. ----
@@ -640,6 +656,7 @@
     allTimeStats: allTimeStats,
     spendToken: spendToken,
     tokenStatus: tokenStatus,
+    dayStreak: dayStreak,
     referralCode: referralCode,
     referralClaim: referralClaim,
     referralLookup: referralLookup,

@@ -96,9 +96,18 @@
       out.push({ key: G.key, name: G.name, done: d, avail: av, line: line });
       if (av) { avail.push(G.key); if (d) doneN++; else if (!next) next = G.key; }
     }
-    // Signed out, nothing is "available" by the token rule until you play;
-    // the hub shows the four on offer, so the ring counts those.
-    if (!avail.length) { avail = GAMES.slice(0, 4).map(function (x) { return x.key; }); next = avail[0]; }
+    /* Signed out, nothing is "available" by the token rule until you play, so
+       the ring counts the four on offer. Read from tokens.js rather than taken
+       off the front of the list: the free four are not the first four in hub
+       order any more, and slicing quietly counted the wrong games. */
+    if (!avail.length) {
+      var free = [];
+      try { free = (window.RTGTokens && RTGTokens.FREE_GAMES) ? RTGTokens.FREE_GAMES.slice() : []; } catch (e) {}
+      if (!free.length) free = GAMES.slice(0, 4).map(function (x) { return x.key; });
+      // keep hub order, whatever order the entitlement list is written in
+      avail = GAMES.map(function (x) { return x.key; }).filter(function (k) { return free.indexOf(k) >= 0; });
+      next = avail[0];
+    }
     var total = avail.length;
     return { date: t, games: out, avail: avail, doneN: doneN, total: total, allDone: total > 0 && doneN >= total, next: next };
   }
@@ -214,6 +223,41 @@
     note('Sharing isn’t supported here');
   }
 
+  /* ---- the arcade's streak ------------------------------------------------
+     Days in a row with at least one game finished. ONE number for the whole
+     arcade, which is the number a daily habit is built on and the number this
+     site did not have: the flame in the nav has been showing the LARGEST of
+     the twelve per-game streaks, which goes up while you skip eleven games.
+     The server computes it from the dates already in grid_runs
+     (supabase/97_arcade_day_streak.sql). Until that migration is run, or when
+     signed out, this falls back to counting the local saves, and says which
+     kind of answer it is giving so a caller can label it honestly. */
+  var STREAK_KEY = 'rtg:daystreak:v1';
+  function localStreak() {
+    // The only local evidence of a finished day is each game's own save, and
+    // those keep one date, not a history. So this can prove TODAY and not the
+    // run behind it: it returns 1 or 0, never a number it cannot stand up.
+    var s = state();
+    return s.doneN > 0 ? 1 : 0;
+  }
+  function cachedStreak() {
+    try { var c = JSON.parse(LS.getItem(STREAK_KEY) || 'null'); return (c && typeof c.streak === 'number') ? c : null; } catch (e) { return null; }
+  }
+  function streak(cb) {
+    var cached = cachedStreak();
+    // answer immediately with what is known, then correct it from the server
+    if (cb) cb(cached ? { streak: cached.streak, best: cached.best || cached.streak, source: 'cache' }
+                      : { streak: localStreak(), best: localStreak(), source: 'local' });
+    try {
+      if (!(window.RTG_BOARD && RTG_BOARD.dayStreak)) return;
+      RTG_BOARD.dayStreak().then(function (r) {
+        if (!r || typeof r.streak !== 'number') return;
+        try { LS.setItem(STREAK_KEY, JSON.stringify({ streak: r.streak, best: r.best, d: dateStr() })); } catch (e) {}
+        if (cb) cb({ streak: r.streak, best: r.best, playedToday: r.played_today, source: 'server' });
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   window.RTGDay = {
     GAMES: GAMES.map(function (x) { return x.key; }),
     nameOf: nameOf,
@@ -223,6 +267,8 @@
     ring: ring,
     dayNo: dayNo,
     shareText: shareText,
-    shareDay: shareDay
+    shareDay: shareDay,
+    streak: streak,
+    localStreak: localStreak
   };
 })();

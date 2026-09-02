@@ -90,7 +90,12 @@ console.log('\n2) ordinals, including the ones people get wrong');
    with the fields the row reads. */
 console.log('\n3) every wired game loads result.js and sets a spec');
 {
-  const WIRED = ['sportegories', 'career', 'almamater', 'crossword'];
+  /* Wired = the free four plus the two that were free before the swap, whose
+     players still land on these screens every day. Read from tokens.js rather
+     than listed, so the day the free set moves again this follows it. */
+  const tk = readFileSync('arcade/tokens.js', 'utf8');
+  const free = new Function('return ' + /var FREE_LIST\s*=\s*(\[[^\]]*\])/.exec(tk)[1])();
+  const WIRED = [...new Set([...free, 'almamater', 'crossword'])];
   const NEED = ['key:', 'date:', 'isBest:'];
   for (const g of WIRED) {
     const src = readFileSync('arcade/' + g + '/index.html', 'utf8');
@@ -115,7 +120,9 @@ console.log('\n4) isBest is computed against a previous best, not a stored one')
     sportegories: /total>prevBest/,
     career: /run>PREVBEST/,
     almamater: /run>PREVBEST/,
-    crossword: /newBestT/
+    crossword: /newBestT/,
+    guess: />PREVBEST/,
+    match: />\s*mBest/
   };
   for (const [g, re] of Object.entries(EXPECT)) {
     const src = readFileSync('arcade/' + g + '/index.html', 'utf8');

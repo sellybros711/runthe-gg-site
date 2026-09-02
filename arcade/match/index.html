@@ -631,7 +631,7 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Four misses close the board; a clean solve punches the day on your Arcade ticket.</li>
 </ul>
 <h3>One board a day</h3>
-<p>Everyone plays the same sixteen names, and a fresh board arrives at midnight local time. Solving it keeps your streak alive. Common Ground is an Arcade Card game. Members play all twelve Arcade titles without limits, replay any past day from the <a href="/arcade/archive/">Archive</a>, and get NBA, NFL and MLB editions of five of the games. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
+<p>Everyone plays the same sixteen names, and a fresh board arrives at midnight local time. Solving it keeps your streak alive. Common Ground is one of the four games that are free every day, no account needed, alongside Sportegories, Career Path and Guess the Player. The Arcade Card opens all twelve Arcade titles without limits, every past day in the <a href="/arcade/archive/">Archive</a>, and NBA, NFL and MLB editions of five of the games.</p>
 <h3>Habits of clean solvers</h3>
 <ul>
   <li>Lock your surest group first. Every clear shrinks the decisions that remain.</li>
@@ -762,19 +762,20 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/data.js?v=2"></script>
   <script src="generator.js?v=14"></script>
   <script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/funnel.js?v=10"></script>
 <script src="/arcade/share.js?v=8"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/challenge.js?v=3"></script>
 <script src="/arcade/modal-a11y.js?v=1"></script>
-  <script src="/arcade/tokens.js?v=12"></script>
-<script src="/arcade/day.js?v=1"></script>
+  <script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
 <script src="/arcade/mode.js?v=7"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
   <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js?v=19"></script>
+  <script src="/arcade/board.js?v=20"></script>
 <script src="/arcade/leaderboard.js?v=14"></script>
 <script src="/arcade/alltime.js?v=3"></script>
 <script src="/arcade/auth.js?v=4"></script>
@@ -1464,6 +1465,16 @@ window.GA_ID='G-L29P5MRWKE';
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
+      /* One line for the shared result row (result.js). Common Ground's own
+         best is its longest streak, and r.streak is this run's, so a new best
+         is simply the run passing what was stored before it. */
+      try {
+        var mBest = 0; try { mBest = parseInt(LS.getItem('grid_best_streak') || '0', 10) || 0; } catch (e) {}
+        window.RTGResultSpec = { key: 'match', date: r.date || DATE, statInt: r.streak || 0,
+          best: Math.max(mBest, r.streak || 0), prevBest: (mBest > 0 ? mBest : null),
+          isBest: !!(!r.archive && !r.tester && !r.practice && (r.streak || 0) > mBest),
+          streak: r.streak || 0 };
+      } catch (e) {}
       document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : (r.practice ? 'Practice, not counted' : ''));
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
