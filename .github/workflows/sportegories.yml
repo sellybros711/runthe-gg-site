@@ -8,7 +8,7 @@ permissions:
 
 # arcade/sportegories-data.js is DERIVED from rosters.js, former.js, awards.js
 # and the stats files. Those each refresh on their own schedule, and until this
-# job existed nothing rebuilt the corpus afterwards — so a rookie could sign on
+# job existed nothing rebuilt the corpus afterwards, so a rookie could sign on
 # Monday, land in rosters.js, and still be unknown to the game months later.
 #
 # This is deliberately a job of its own rather than a step bolted onto each
@@ -26,6 +26,15 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/build-sportegories.mjs
+      # GATE THE REBUILD ON THE ANSWER CHECK, the way former.yml is gated.
+      # Every category in this game is scored against the file this job writes,
+      # and the way it goes wrong is silent: a retired player in an "Active"
+      # category renders, scores and reads perfectly plausibly, so the only
+      # thing that catches it is a player who knows the sport writing in. That
+      # happened. Checking after the commit is checking too late: fail here and
+      # yesterday's working corpus stays on the site.
+      - name: The rebuilt corpus must still answer correctly
+        run: node scripts/check-sportegories.mjs
       - name: Commit if changed
         run: |
           git config user.name "roster-bot"

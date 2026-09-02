@@ -1,4 +1,4 @@
-/* sportegories.js — the Sportegories engine (window.RTG_SPORTEGORIES).
+/* sportegories.js: the Sportegories engine (window.RTG_SPORTEGORIES).
  *
  * Consumes arcade/sportegories-data.js and provides everything the future game
  * page needs, with no DOM dependencies so it can be unit-tested in node:
@@ -60,6 +60,12 @@
         col: r[4] >= 0 ? D.cols[r[4]] : null,
         aw: r[5].map(function (x) { return D.awards[x]; }),
         decBits: r[6], act: !!(r[7] & 1), dp1: !!(r[7] & 2), tpart: !!(r[7] & 4), f: r[8], st: r[9] || null,
+        /* The position his club lists him at THIS season, when it differs
+           from the career label. Both are true and either proves a
+           category: Jalen Williams is a Small Forward by career and a
+           Guard on today's roster, and he was being refused for
+           "Active NBA Guard" on the strength of the older one. */
+        rpos: (r[10] != null && r[10] >= 0) ? D.pos[r[10]] : null,
         first: t[0] || '', last: t.length > 1 ? t[t.length - 1] : (t[0] || ''), toks: t
       };
     });
@@ -91,11 +97,14 @@
   function posParent(v) { return ((D && D.posParent) || {})[v]; }
   function posProves(have, want) { return !!have && (have === want || posParent(have) === want); }
   function posAllows(have, want) { return posProves(have, want) || posParent(want) === have; }
+  // Either label proves it: the career one, or the one his club lists today.
+  function posProves2(p, want) { return posProves(p.pos, want) || posProves(p.rpos, want); }
+  function posAllows2(p, want) { return posAllows(p.pos, want) || (!!p.rpos && posAllows(p.rpos, want)); }
   function test(p, pr) {
     if (pr.all) { for (var i = 0; i < pr.all.length; i++) if (!test(p, pr.all[i])) return false; return true; }
     switch (pr.k) {
       case 'sport': return p.sport === pr.v;
-      case 'pos': return posProves(p.pos, pr.v);
+      case 'pos': return posProves2(p, pr.v);
       case 'team': return p.teams.indexOf(pr.v) >= 0;
       case 'award': return p.aw.indexOf(pr.v) >= 0;
       case 'awardRe': return p.aw.some(function (a) { return a.indexOf(pr.v) >= 0; });
@@ -121,7 +130,7 @@
   }
 
   /* Tri-state evaluation: true / false / NULL, where null means a field this
-   * category needs is missing from OUR record — not that the player fails it.
+   * category needs is missing from OUR record, not that the player fails it.
    *
    * test() above answers yes/no, which is right for building a puzzle and
    * wrong for judging an answer. We hold a college for 49% of recognizable
@@ -154,7 +163,7 @@
       case 'decades':  return bitCount(p.decBits) >= pr.min ? true : null;
       case 'decade':   return p.decBits ? !!(p.decBits & (1 << Math.round((pr.v - D.dec0) / 10))) : null;
       // present most of the time; absence is not a no
-      case 'pos':      return p.pos ? posAllows(p.pos, pr.v) : null;
+      case 'pos':      return (p.pos || p.rpos) ? posAllows2(p, pr.v) : null;
       case 'team':     return p.teams.length ? (p.teams.indexOf(pr.v) >= 0) : null;
       case 'col':      return p.col ? (p.col === pr.v) : null;
       case 'conf':     return p.col ? ((D.conf[pr.v] || []).indexOf(p.col) >= 0) : null;
@@ -226,7 +235,7 @@
     var l = L.toLowerCase(), ids = D.byLetter[L] || [];
     return ids.map(function (i) { return D.cats[i]; });
   }
-  /* The letters a puzzle can actually roll — also the wheel's segments, so the
+  /* The letters a puzzle can actually roll. Also the wheel's segments, so the
    * spin shows exactly the pool the draw comes from. */
   function wheelLetters() {
     if (!data()) return [];
@@ -243,7 +252,7 @@
    * the library serves it (the same n^2 weighting as before, so S still beats
    * N over the long run), the deck is shuffled once per cycle from a cycle
    * seed, and consecutive days walk it. Every letter's long-run frequency is
-   * unchanged, but a letter cannot come back until the deck does — and the
+   * unchanged, but a letter cannot come back until the deck does, and the
    * shuffle is de-clumped so the same letter never lands twice in a row,
    * including across a cycle boundary. */
   var DECK_TARGET = 120;
@@ -339,7 +348,7 @@
   // ---------- grading ----------
   /* Returns:
    *   { ok:false, reason:'empty'|'fullname'|'letter'|'unknown'|'category'|'dup', msg }
-   *   reason 'unknown' carries live:true — the name is absent from OUR data,
+   *   reason 'unknown' carries live:true: the name is absent from OUR data,
    *   which livecheck.js can still resolve against the wider world.
    *   { ok:true, player, points, base, allit, rarity:{pct,bonus} } */
   function check(puz, catIndex, text, usedPlayers) {
@@ -351,7 +360,7 @@
     if (!toks.length) return { ok: false, reason: 'empty', msg: '' };
 
     var t = trimSuffix(toks);
-    if (t.length < 2) return { ok: false, reason: 'fullname', msg: 'Enter the full name — first and last.' };
+    if (t.length < 2) return { ok: false, reason: 'fullname', msg: 'Enter the full name. First and last.' };
 
     // Letter first: a wrong letter is wrong whoever they are, and settling it
     // here means an unknown name only reaches the live check when it could
@@ -361,7 +370,7 @@
     }
 
     /* Absent from our file. This game is about deep cuts, so our file is never
-     * the boundary of who counts — the miss goes to the live check, and even
+     * the boundary of who counts. The miss goes to the live check, and even
      * the fallback wording claims only that WE couldn't confirm them. */
     var ids = BY_KEY[keyOf(toks)] || [];
     if (!ids.length) {
@@ -369,7 +378,7 @@
     }
 
     // Among same-named players, take any that satisfies the category. A player
-    // we simply lack a field for is not a wrong answer — send it to the live
+    // we simply lack a field for is not a wrong answer. Send it to the live
     // check rather than calling it one.
     var def = D.cats[cat.i], hit = null, unsure = false;
     for (var i = 0; i < ids.length; i++) {
@@ -411,7 +420,7 @@
   }
 
   // ---------- typeahead ----------
-  /* Deliberately searches ALL players, never the category's answers — a
+  /* Deliberately searches ALL players, never the category's answers. A
    * category-filtered suggester would hand the player the answer. */
   function suggest(prefix, limit) {
     if (!data()) return [];
@@ -428,10 +437,22 @@
   function answersFor(puz, catIndex, limit) {
     if (!data()) return [];
     var cat = puz.cats[catIndex], def = D.cats[cat.i], L = puz.letter.toLowerCase();
-    return P.filter(function (p) {
+    /* One NAME per suggestion, not one record. A player who is held twice
+       (the merge keeps a career record and a coarser one, so James Harden is
+       both a Shooting Guard and a Guard) was offered twice in the same
+       breath: "Could have said: James Harden, James Harden, Ja Morant".
+       Deduped on the name, keeping the first and therefore the famous one,
+       because the list is already sorted by fame. */
+    var seen = {}, out = [];
+    var hits = P.filter(function (p) {
       return (p.first[0] === L || p.last[0] === L) && test(p, def.p);
-    }).sort(function (a, b) { return (b.f || 0) - (a.f || 0); })
-      .slice(0, limit || 10).map(function (p) { return p.name; });
+    }).sort(function (a, b) { return (b.f || 0) - (a.f || 0); });
+    for (var i = 0; i < hits.length && out.length < (limit || 10); i++) {
+      var n = hits[i].name;
+      if (seen[n.toLowerCase()]) continue;
+      seen[n.toLowerCase()] = 1; out.push(n);
+    }
+    return out;
   }
 
   function scoreOf(results) {

@@ -39,7 +39,7 @@ new Function('window', 'self', 'module', R('arcade/match/entities.js'))(G, G, {}
    generator did not, so 69 of its 74 hand-curated names were absent from
    Sportegories alone. Nate Robinson, Earl Boykins, Kris Humphries, Sebastian
    Telfair: exactly the "oh yeah, that guy" answers this game is for. */
-for (const f of ['arcade/former.js', 'arcade/rosters.js', 'arcade/supplement.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js']) {
+for (const f of ['arcade/former.js', 'arcade/rosters.js', 'arcade/supplement.js', 'arcade/awards.js', 'arcade/hlstats.js', 'arcade/rosterstats.js', 'arcade/stats.js', 'arcade/jerseys.js']) {
   try { new Function('window', 'self', R(f))(G, G); } catch (e) { console.warn('skip ' + f + ': ' + e.message); }
 }
 const CORPUS = G.GRID_ENTITIES || [];
@@ -50,7 +50,7 @@ const SUPPLEMENT = (G.RTG_SUPPLEMENT && G.RTG_SUPPLEMENT.players) || [];
 
 /* Every active pro belongs in here.
  *
- * The corpus and the former-players set are both curated for RECOGNITION —
+ * The corpus and the former-players set are both curated for RECOGNITION:
  * they answer "who would a fan name?" That is the right question for building
  * a solvable puzzle and the wrong one for judging an answer. Sportegories is a
  * deep-cuts game: a player who dredges up the Bengals' third-year back should
@@ -63,7 +63,7 @@ const SUPPLEMENT = (G.RTG_SUPPLEMENT && G.RTG_SUPPLEMENT.players) || [];
 const THIS_YEAR = new Date().getUTCFullYear();
 function fromRoster(p) {
   // ESPN gives seasons of experience, not a debut year, so the span is
-  // approximate — good enough for "played in the 2020s", not for anything
+  // approximate, good enough for "played in the 2020s", not for anything
   // that turns on an exact year.
   const exp = Math.max(0, Math.min(30, +p.exp || 0));
   const decade = [];
@@ -73,7 +73,7 @@ function fromRoster(p) {
     aw: [], decade, act: 1, f: 0,
     // A roster is a snapshot of TODAY. It says nothing about the four other
     // uniforms a ten-year veteran wore, so a one-team record here is not
-    // evidence of a one-team career — see tpart below.
+    // evidence of a one-team career. See tpart below.
     tpart: exp > 2 ? 1 : 0
   };
 }
@@ -171,9 +171,14 @@ const POS_PARENT = {
   'Place Kicker': 'Kicker'
 };
 // provable: the record's position is the asked-for one, or sits under it
-function posMatch(have, want) {
+function posOne(have, want) {
   if (!have) return false;
   return have === want || POS_PARENT[have] === want;
+}
+// A player can hold two true labels: the career one and the one his club lists
+// him at this season. Either proves the category.
+function posMatch(have, want, alt) {
+  return posOne(have, want) || posOne(alt, want);
 }
 
 /* Colleges disagree constantly without meaning anything: Ole Miss against
@@ -273,6 +278,7 @@ function put(e, fromCorpus, isRoster, src) {
       name: e.name, sport: e.sport, pos: e.pos || null, t: (e.t || []).slice(),
       col: e.col || null, aw: (e.aw || []).slice(), decade: (e.decade || []).slice(),
       act: e.act === 1 ? 1 : 0, hof: e.hof ? 1 : 0, dp: typeof e.dp === 'number' ? e.dp : null,
+      rpos: null,
       f: e.f || 0, ids: e.id ? [e.id] : [], corpus: fromCorpus ? 1 : 0,
       tpart: e.tpart ? 1 : 0, src: {}
     };
@@ -285,6 +291,16 @@ function put(e, fromCorpus, isRoster, src) {
   if (!e.tpart) cur.tpart = 0;
   // keep the richer record
   if (!cur.pos && e.pos) cur.pos = e.pos;
+  /* THE ROSTER'S POSITION IS TODAY'S, and it is kept beside the curated one
+     rather than instead of it. They disagree honestly: a corpus record is a
+     career summary ("Small Forward") and a roster row is what the club lists
+     him at this season ("Guard"). Jalen Williams is both, and a player who
+     typed him into "Active NBA Guard" was told he does not fit, because the
+     older label won an argument it should never have been in. Keeping the
+     coarse roster label alone would cost the other direction: Curry's roster
+     row says Guard, and overwriting "Point Guard" with it would empty every
+     Active Point Guard category. So: both, and either one proves it. */
+  if (isRoster && e.pos && e.pos !== cur.pos) cur.rpos = e.pos;
   if (!cur.col && e.col) cur.col = e.col;
   /* Union the team lists, do not keep whichever source happened to be longest.
      Three sources name the same franchise differently, so "longest wins" threw
@@ -369,6 +385,87 @@ if (collisions.length) {
 }
 
 const PLAYERS = [...pool.values()].flat().filter((p) => nameKey(p.name));
+
+/* ------------------------------------------------------- who is ACTIVE
+ *
+ * A player emailed in: category "Active NBA Guard", and all three of the
+ * examples it offered were retired. Russell Westbrook, Kemba Walker and Lou
+ * Williams, offered to somebody as players they could have named TODAY.
+ *
+ * The flag came from entities.js, where `act` was written by hand and was true
+ * when it was written. Nothing ages worse than that, and the merge made it
+ * permanent: `act` was a one-way union, so a stale yes could never be
+ * corrected by a fresher no. 151 players were carrying one.
+ *
+ * WHAT IS NOT THE FIX: letting rosters.js decide alone. It is a snapshot of
+ * who is signed today and it is missing people who plainly are: Aaron Judge,
+ * Tyreek Hill, Clayton Kershaw and Jimmy Butler are all absent, because an
+ * injured or unsettled player drops out of a roster feed. MLB carries 782 rows
+ * for thirty clubs, which is not a league. Trusting it in both directions
+ * would have retired four stars to fix three, and being refused for a right
+ * answer is the complaint that actually makes people leave.
+ *
+ * SO: three sources, in order of how much they know.
+ *   1. A hand list of retirements always wins. It is the only thing that can
+ *      know a man has stopped playing before any feed says so, and it is the
+ *      lever to pull the next time somebody writes in.
+ *   2. On a current roster is active. Definitive when it fires.
+ *   3. Otherwise, active if they appeared in THIS season or LAST one. Last
+ *      one matters: this runs in September, when the NFL season is days old
+ *      and jerseys.js has barely any 2026 stints, so a current-year-only test
+ *      retired Tyreek Hill. A year of grace is the difference between a rule
+ *      that is wrong for a fortnight every autumn and one that is not. It
+ *      still retires the stale names: Kemba Walker last played in 2023.
+ * A sport with no roster and no season coverage keeps what its sources said,
+ * rather than having every golfer silently retired by files that never mention
+ * one. */
+const RETIRED = new Set([
+  // Reported by a player, 2 September 2026: all three were being offered as
+  // answers to "Active NBA Guard". Add a name here the day somebody writes in;
+  // it needs no rebuild of anything else.
+  'Russell Westbrook', 'Kemba Walker', 'Lou Williams'
+].map((n) => nkFull(n)));
+
+const ROSTERED = new Map();          // sport -> Set of merged name keys
+for (const r of ROSTERS) {
+  if (!r || !r.n || !r.s) continue;
+  const k = nkFull(r.n);
+  if (!k) continue;
+  if (!ROSTERED.has(r.s)) ROSTERED.set(r.s, new Set());
+  ROSTERED.get(r.s).add(k);
+}
+
+/* Last season anyone appeared in, from the jersey stints, which are built from
+   season data rather than from who is signed this morning. */
+const LAST_SEASON = new Map();       // sport|key -> year
+try {
+  const JS = (G.RTG_JERSEYS && G.RTG_JERSEYS.stints) || [];
+  for (const st of JS) {
+    if (!st || !st.name || !st.sport) continue;
+    const k = st.sport + '|' + nkFull(st.name);
+    const y = +st.y1 || 0;
+    if (y > (LAST_SEASON.get(k) || 0)) LAST_SEASON.set(k, y);
+  }
+} catch (e) {}
+
+let actOn = 0, actOff = 0, keptBySeason = 0;
+for (const p of PLAYERS) {
+  const set = ROSTERED.get(p.sport);
+  const key = nkFull(p.name);
+  if (RETIRED.has(key)) { if (p.act) actOff++; p.act = 0; continue; }
+  const seen = LAST_SEASON.get(p.sport + '|' + key) || 0;
+  if (!set && !seen) continue;                 // no coverage for this sport: leave it alone
+  const onRoster = !!(set && set.has(key));
+  const playedThisYear = seen >= THIS_YEAR - 1;
+  const on = (onRoster || playedThisYear) ? 1 : 0;
+  if (on && !p.act) actOn++;
+  if (!on && p.act) actOff++;
+  if (on && !onRoster) keptBySeason++;
+  p.act = on;
+}
+console.log('active: rosters + last season decide. ' + actOn + ' marked active, ' +
+            actOff + ' retired that a source still called active, ' +
+            keptBySeason + ' kept by their last season that no roster lists.');
 
 /* ------------------------------------------------------- one franchise, one name
  *
@@ -657,7 +754,7 @@ function test(p, pr) {
   if (pr.all) return pr.all.every((x) => test(p, x));
   switch (pr.k) {
     case 'sport': return p.sport === pr.v;
-    case 'pos': return posMatch(p.pos, pr.v);
+    case 'pos': return posMatch(p.pos, pr.v, p.rpos);
     case 'team': return p.t.includes(pr.v);
     case 'award': return p.aw.includes(pr.v);
     case 'awardRe': return p.aw.some((a) => a.includes(pr.v));
@@ -761,7 +858,11 @@ const compact = PLAYERS.map((p) => {
     (p.act ? 1 : 0) | (p.dp === 1 ? 2 : 0) | (p.tpart ? 4 : 0),
     p.f || 0
   ];
-  if (p.st) rec.push(p.st);
+  /* The roster's own position, when it differs from the curated one. Appended
+     rather than slotted in, so a record without one is byte-identical to what
+     this file has always emitted and the stats object keeps its place. */
+  if (p.st || p.rpos != null) rec.push(p.st || null);
+  if (p.rpos != null) rec.push(iP.get(p.rpos));
   return rec;
 });
 
