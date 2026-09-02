@@ -17,7 +17,7 @@ Pass 1 is built and on the branch. The rest wait.
 | 2 | **Shared result screen** (`result.js`): one layout for every game, percentile line from the rank RPC, personal-best-as-event, streak line. Applied to the four free games first | 3 | high | high | |
 | 3 | Shared result screen applied to the eight card games | 2 | med | med | Pass 2 |
 | 4 | **Cut the payload**: per-day data slices built at fetch time, under 150 KB per game page, next game preloaded from the result screen | 3 | high | med | |
-| 5 | **The Arcade streak**: `arcade_day_streak` RPC, hub and result screen show one streak, milestones at 3/7/14/30/100, streak-at-risk sentence after 8pm | 2 | low | **high** | **ASK** (one new server read) |
+| 5 | **The Arcade streak**: `arcade_day_streak` RPC, hub shows one streak. Migration applied 2 Sep; milestones at 3/7/14/30/100 and the streak-at-risk sentence are still to build | 2 | low | **high** | **part done** |
 | 6 | **Grid shares for every game**: Sportegories 8 squares, Career Path reveal position, Chain as the chain, Crossword shape and time, Starting Five row | 2 | med | med | |
 | 7 | **Shared feedback**: one right/wrong/perfect colour rule, one `+N` pop, one shake, one Check button label, countdown timers only | 2 | med | low | |
 | 8 | **Career Path bounded**: five players a day, partial credit, par, no "until you miss" | 2 | high | med | |
@@ -26,7 +26,7 @@ Pass 1 is built and on the branch. The rest wait.
 | 11 | **Common Ground absorbs "name the link"**; Odd One Out retired to the archive | 2 | low | low | **ASK** (a cut) |
 | 12 | **Golden game**: High Low unlocks on a full ring, tile leaves the daily grid | 1 | low | med | **ASK** (a lineup change) |
 | 13 | **Cut Number Game and Rank It**: tiles off, routes to hub, records kept in My Card and the archive | 1 | low | low | **ASK** |
-| 14 | **The free set** becomes Sportegories, Career Path, Guess the Player, Common Ground | 1 | high | high | **ASK** (free-to-play model) |
+| ~~14~~ | ~~**The free set** becomes Sportegories, Career Path, Guess the Player, Common Ground~~ **Proposed, applied, reverted 2 Sep.** The argument stands (the two games that end in a shareable grid were both behind the card) and the counter-argument won: the crossword is a daily habit for people who already have one, so the cost is paid today by real players against a growth benefit that is a bet. Revisiting it is one line in tokens.js and one in arcade_free_games(). | 1 | high | high | **declined** |
 | 15 | **Stat Line**, new game, on the shell | 3 | low | med | Passes 2 and 7 |
 | 16 | **Comeback and near-miss** lines on hub and result screen | 1 | low | med | |
 | 17 | **Weekly recap** card on the hub, Sundays | 2 | low | med | |

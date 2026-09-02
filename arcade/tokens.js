@@ -2,8 +2,8 @@
  *
  * THE MODEL
  *   SIGNED OUT           → the four free games, one play each per day, with no
- *                          account and no sign-up: Sportegories, Career Path,
- *                          Guess the Player, Common Ground. The hub shows those four and
+ *                          account and no sign-up: Daily Crossword, Sportegories,
+ *                          Alma Mater, Career Path. The hub shows those four and
  *                          nothing else. Kept on the device only: no leaderboard
  *                          row, no streak that survives a new phone (board.js
  *                          submits nothing without a session), and no free try of
@@ -24,15 +24,19 @@
  * are locked rather than rationed. Plays reset at local midnight, the same
  * boundary the daily puzzles use, and do NOT bank.
  *
- * WHY THESE FOUR: two of them make you PRODUCE an answer and two of them make
- * an artefact worth sending. Sportegories and Career Path are the habit worth
- * giving away, because a player who types a name into an empty box comes back.
- * Guess the Player and Common Ground are the two games here that end in a grid
- * a person screenshots, and a daily spreads on what it hands you at the end;
- * both were behind the card, so the games most likely to travel were the ones
- * almost nobody could play. The Daily Crossword and Alma Mater moved the other
- * way: the crossword is the most generic format here and the clearest reason
- * to buy a card. See supabase/98_free_games_shareable.sql.
+ * WHY THESE FOUR: every one of them makes you PRODUCE the answer. You type a
+ * name, a college, a word into a grid; nothing on screen can be tapped until it
+ * turns green. That is what the two most-played games have in common, and it is
+ * the habit worth giving away, because a player who can do it comes back.
+ *
+ * A swap was proposed and reverted on 2 September 2026: the four most
+ * SHAREABLE games (Sportegories, Career Path, Guess the Player, Common Ground)
+ * instead of the four most producible, on the argument that the two games that
+ * end in a grid worth screenshotting were both behind the card. It is a real
+ * argument and the counter-argument won: the crossword is a daily habit for
+ * people who already have one, and taking it from them is a cost paid today
+ * against a growth benefit that is a bet. If it is ever revisited, the whole
+ * change is one line here and one line in arcade_free_games().
  *
  * ENTITLEMENT: Arcade Card is the paid membership. Server truth lives in the
  * Supabase `subscriptions` row; board.js mirrors an active/trialing sub into
@@ -58,18 +62,7 @@
   // difference between them shows FREE on a game the spend RPC then refuses.
   // scripts/check-freegames.mjs fails the build if they drift.
   // See supabase/84_free_games_crossword.sql.
-  /* THE FOUR MOST SHAREABLE, not the four most producible.
-     A daily spreads on the artefact it hands you at the end, and exactly two
-     games here make one worth sending: Guess the Player's eight rows of tiles
-     and Common Ground's four rows of colour. Both were behind the card, so the
-     games most likely to travel were the ones almost nobody could play.
-     Sportegories and Career Path stay, because making somebody PRODUCE an
-     answer is the habit worth giving away. The set is now produce, produce,
-     share, share. The crossword, the most generic format here, becomes the
-     clearest reason to buy a card. See supabase/98_free_games_shareable.sql,
-     which must be applied in the same deploy: check-freegames.mjs fails the
-     build when this list and that function disagree. */
-  var FREE_LIST = ['sportegories','career','guess','match'];
+  var FREE_LIST = ['crossword','sportegories','almamater','career'];
   var FREE = {};
   for (var fi=0; fi<FREE_LIST.length; fi++) FREE[FREE_LIST[fi]] = 1;
 
