@@ -17686,8 +17686,7 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   `CS_TAG_SCENES`.
 
 ### THE TOURTRACER REVAMP: the ball that was never painted, and one source of truth for its size
-- **Two commits, NOT deployed** (`c8a15e89` graphics, `69a2fd78` animation), held at the owner's standing
-  rule that each item is explained before it is pushed to the site.
+- **Two commits** (`c8a15e89` graphics, `69a2fd78` animation), DEPLOYED to /golf in `ae5aff8b`.
 - **The headline is a shipped rendering bug, live on /golf right now.** The in-flight ball is painted
   `fill="url(#hvball)"` and **that gradient was never defined anywhere in the file**, so the paint
   reference is unresolvable and the browser falls back to `fill:none` - the ball has been a bare stroked
@@ -17784,8 +17783,8 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   press conference, so each marks the induction already seen (`careerFirsts().press = 1`) - preserving the
   intent rather than weakening the check. All green afterward: cutscene 24, csdec 21, cslive 20, csroom 32.
 - Regressions green: firsts 37, nobag 10, sig01 19, dec16 23.
-- **NOT deployed** - the standing rule is that each item is explained before it is pushed to the site, and
-  the cutscene-rooms commit (`7728bbc0`) is still waiting on that go-ahead too.
+- **DEPLOYED to /golf** in `a5a63f76`, together with the cutscene rooms (`7728bbc0`) and the top-5 council
+  bar.
 - Tunable: the `FIRSTS` table (each entry is `{room, accent, tag, kick, lead, said, earned, power, how,
   cta}`; a value may be a function of the ctx), and `firstBeats` (how many beats the induction runs).
 
@@ -17848,6 +17847,12 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   outside it is not, and gets nothing) and a check that the old top-40 bar no longer admits anyone.
   Regressions green: firsts 37, cutscene 24, csdec 21, cslive 20, csroom 32, nobag 10, sig01 19, dec16 23.
   Main script parses (block 0 is the JSON-LD tag, fails identically on baseline).
+- **DEPLOYED to /golf** (owner: *"We can deploy all of this to main when done"*) - `main` commit `a5a63f76`,
+  regenerated from `build-a-golfer.html`, **only `golf/index.html` touched**, verified byte-identical
+  afterward. The batch that went live: the cutscene rooms (`7728bbc0`), the first-time reveals (`6d06749b`),
+  the real-qualification reveal (`20f86711`) and this. **The parallel-edit check was clean** - the deployed
+  file was byte-identical to my own branch commit `1fda79cb`, so there was nothing to adopt (the previous
+  deploy `ae5aff8b` shipped the line variation + the TourTracer revamp but predated the rooms).
 - Tunable: `COUNCIL_RANK` (the ranking route), `COUNCIL_YEAR` (when the room opens), `COUNCIL_SWING` (what a
   seat is worth in the room). The wins/majors routes are still hardcoded in `councilSeat`/`councilWhy`; if
   either ever moves, give it the same treatment.
