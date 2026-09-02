@@ -4123,7 +4123,10 @@ function dynastySurvives(history, stepEvery) {
  *    and the number goes with him; sign somebody new and you pay what that man is worth
  *    today.
  *
- * 2. YOU OPEN MONEY BY RELEASING PEOPLE. There is no other way to make room.
+ * 2. YOU OPEN MONEY BY RELEASING PEOPLE, AND YOU DO NOT GET ALL OF IT. Three quarters of
+ *    his deal comes back. The last quarter stays on your books as dead money you cannot
+ *    spend on anybody. A man who leaves on his own costs you nothing: the difference is
+ *    that one of those was your decision. See DYNASTY_DEAD_SHARE.
  *
  * 3. THE CAP IS A SIGNING GATE, NOT A CEILING. Go over it and nothing happens: the roster
  *    is legal and it plays. You simply cannot sign anybody until you are back under.
@@ -4198,6 +4201,102 @@ function dynastySurvives(history, stepEvery) {
  */
 function dynastySalary(currentSalaryMusd, _marketPriceMusd) {
   return currentSalaryMusd || 0;
+}
+
+/*
+ * ─── WHAT A RELEASE COSTS ────────────────────────────────────────────────────────────
+ *
+ * Cutting a man returns three quarters of his deal. The last quarter is dead money: it sits
+ * against your cap and buys nothing, for the rest of the run.
+ *
+ * WHY IT EXISTS. Measured across 120 runs, a winter that took four or five men off you cost
+ * a quarter of a win the following season, and one that took all six cost nothing at all.
+ * Losing people was free, and so was cutting them, so the winter had one move in it and no
+ * price on that move: release whoever looked worst, sign the best man the wheel offered,
+ * repeat. Every roster converged on the same roster.
+ *
+ * A DEPARTURE STILL COSTS YOU NOTHING, AND THAT ASYMMETRY IS THE WHOLE POINT. Retiring,
+ * running out of seasons and signing elsewhere are things done to you, and charging for
+ * them would be charging for a dice roll. Cutting a man is a decision, and a decision is
+ * the only thing a game may charge for.
+ *
+ * IT ALSO GIVES THE DRAFT ITS TEETH BACK. An expensive man you regret is now expensive
+ * twice: once while you keep him and once when you stop. That is what makes a contract a
+ * commitment rather than a subscription, and it is the counterweight the mode lost when
+ * salaries stopped ratcheting.
+ *
+ * THE TWO NUMBERS WERE SWEPT RATHER THAN CHOSEN. A dead-money rule changes what a bot can
+ * afford mid-draft, so unlike a win bar it cannot be scored offline against one set of
+ * seasons: every rule was played, 80 runs each, same seeds, 30 seasons deep, one life.
+ *
+ *   rule                     seasons mean / median   reach 10   dead at s5 / s10 / s20
+ *   nothing dead              10.1        10            51%      $0M  /  $0M  /  $0M
+ *   15% dead, forever          8.7         9            46%      $6M  / $13M  / $26M
+ *   THIS ONE, 25% forever      7.1         7            25%     $10M  / $20M  / $38M
+ *   40% dead, forever          6.1         5            19%     $17M  / $30M  / $52M
+ *   25%, expiring after 1 yr   9.0         9            48%      $3M  /  $1M  /  $3M
+ *   25%, expiring after 2 yrs  9.2         9            45%      $5M  /  $4M  /  $5M
+ *   25%, expiring after 3 yrs  8.6         8            38%      $7M  /  $7M  /  $7M
+ *
+ * READ THE BOTTOM THREE FIRST, because they are the ones that settle the design. A charge
+ * that expires is barely a rule, and the reason is in their last column: it plateaus. One,
+ * two or three seasons of life all park at a handful of millions and stay there forever,
+ * because what expires each winter is about what the next cut adds. Nothing accumulates, so
+ * nothing closes in, and the run lands within a season or two of free cuts. The cost has to
+ * persist to be a cost, which is also what "dead money you cannot spend" plainly means to
+ * anybody reading it.
+ *
+ * A QUARTER IS THE NUMBER THAT SPLITS THE DIFFERENCE. Free cuts ran 10.1 seasons and the
+ * old ratcheted economy ran 6.0, so a quarter lands at 7.1: the mode keeps the length that
+ * locking the contract bought it and gives back most of the pressure that locking it took
+ * away. Forty percent lands on the old economy exactly, if that is ever wanted.
+ *
+ * THE CUT RATE BARELY MOVES: 0.39 cuts a season with nothing dead, 0.33 with a quarter. It
+ * is not stopping anybody from cutting. It is charging them for it, and the bill arrives
+ * ten seasons later as $20M of cap that buys nobody.
+ */
+const DYNASTY_DEAD_SHARE = 0.25;
+
+/*
+ * HOW LONG A CHARGE SITS ON THE BOOKS, counted in seasons from the one it was made for.
+ * Infinity is for the rest of the run, which is what "dead" plainly means and what a player
+ * will assume; 1 means it clears at the next offseason. The sweep beside DYNASTY_DEAD_SHARE
+ * is what decided between them.
+ */
+const DYNASTY_DEAD_SEASONS = Infinity;
+
+/*
+ * AND A CEILING ON IT, WHICH IS A GUARD RATHER THAN A BALANCE KNOB.
+ *
+ * Dead money is self-limiting on paper: you can only ever cut what you could afford, and
+ * what you can afford is the cap minus what is already dead, so the total converges on the
+ * cap without reaching it. Converging on the cap is close enough to be a bug. A winter can
+ * take all six men off you, and a run that arrives at an empty roster with no room to sign
+ * anybody reaches paintDryWheel offering "take the field with 0", which takeTheField
+ * refuses because a team needs somebody in it. That is a stranded run, and it would be
+ * stranded by arithmetic rather than by anything the player could have done about it.
+ *
+ * Half the cap is the ceiling. Measured, an ordinary run carries $10M dead by season five,
+ * $20M by season ten and $38M by season twenty, so this never binds in normal play: it is
+ * a floor under the failure mode, not a rule anybody meets.
+ */
+const DYNASTY_DEAD_CEILING = 0.5;
+
+/*
+ * WHAT IS DEAD RIGHT NOW. `charges` is every cut the run has ever made, each carrying the
+ * season it was made for, so expiry is arithmetic rather than bookkeeping: nothing has to
+ * be swept at the turn of a year and a save cannot restore a stale total.
+ */
+function dynastyDead(charges, seasonNo, lifeSeasons, capMusd) {
+  if (!charges || !charges.length) return 0;
+  const life = lifeSeasons == null ? DYNASTY_DEAD_SEASONS : lifeSeasons;
+  let total = 0;
+  for (const c of charges) {
+    if (!c || !(c.musd > 0)) continue;
+    if (!isFinite(life) || seasonNo < c.season + life) total += c.musd;
+  }
+  const cap = typeof capMusd === 'number' && capMusd > 0 ? capMusd : CONSTANTS.CAP_MUSD;
+  return Math.round(Math.min(total, cap * DYNASTY_DEAD_CEILING) * 10) / 10;
 }
 
 /*
@@ -5210,6 +5309,7 @@ const publicAPI = {
   dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
   GAUNTLET_POINTS, gauntletSeasonScore, gauntletRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
+  DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
   FULL_CAP_MUSD: FULL_CAP_MUSD, FULL_TALENT: FULL_TALENT,
   fullStrength, fullOverall, fullParts, fullSideRatings,

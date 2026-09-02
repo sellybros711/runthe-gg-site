@@ -9,8 +9,9 @@
  * functions in the same order the screens will (beginOffseason, releaseMan, finishOffseason,
  * spin, sign, startSeason, advanceWeek, ownerVerdict) and asserts the things that would
  * quietly rot a save: that the wheel stays inside the league year, that a contract holds at
- * the price it was signed at, that a released man never comes back, that the cap is spent
- * against salaries rather than list prices, and that the owner fires on exactly the rule the
+ * the price it was signed at, that a cut gives back three quarters and leaves a quarter
+ * dead, that a released man never comes back, that the cap is spent against salaries and
+ * dead money rather than list prices, and that the owner fires on exactly the rule the
  * engine states.
  *
  * It is fast and it needs no network, so it can run on every change to either file.
@@ -215,6 +216,10 @@ for (let s = 0; s < 30; s++) {
 
   /* ---- the winter ---- */
   const capBefore = run.capMusd;
+  /* WHAT THE RUN OWED BEFORE THE WINTER OPENED. beginOffseason takes men off you, and none
+     of those may cost a penny: only a cut does. Captured here so the release check below
+     can tell a charge made by a departure from a charge made by the cut it is testing. */
+  const deadCarried = R.deadOf(run);
   const w = R.beginOffseason(run, byKey, lastSeason);
   ok('the offseason advanced the season count', run.seasonNo === seasons + 1,
     `season ${run.seasonNo} after ${seasons} played`);
@@ -265,11 +270,31 @@ for (let s = 0; s < 30; s++) {
       .map((p, i) => ({ i, v: p.ppr_ppg_mean / Math.max(3, run.salaries[i]) }))
       .sort((a, b) => a.v - b.v)[0];
     const man = run.roster[worst.i];
-    const payBefore = R.remaining(run);
+    const paid = run.salaries[worst.i];
+    const roomBefore = R.remaining(run);
+    const deadBefore = R.deadOf(run);
     R.releaseMan(run, worst.i);
-    ok('a release opens his salary',
-      R.remaining(run) > payBefore,
-      `$${payBefore.toFixed(1)}M -> $${R.remaining(run).toFixed(1)}M`);
+    /*
+     * THREE QUARTERS BACK, NOT ALL OF IT. This asserted only that the room went UP, which
+     * is true of a full refund and of a partial one alike, so it would have passed on the
+     * day the quarter went missing. The share is read off the engine rather than written
+     * as 0.75 here, or this becomes a second copy of the rule that can disagree with the
+     * first.
+     */
+    const back = paid * (1 - E.DYNASTY_DEAD_SHARE);
+    const dead = paid * E.DYNASTY_DEAD_SHARE;
+    ok('a release opens three quarters of his deal',
+      Math.abs((R.remaining(run) - roomBefore) - back) < 0.15,
+      `$${paid.toFixed(1)}M deal: room +$${(R.remaining(run) - roomBefore).toFixed(1)}M,`
+      + ` wanted +$${back.toFixed(1)}M`);
+    ok('and the last quarter is dead',
+      Math.abs((R.deadOf(run) - deadBefore) - dead) < 0.15,
+      `dead +$${(R.deadOf(run) - deadBefore).toFixed(1)}M, wanted +$${dead.toFixed(1)}M`);
+    /* AND A MAN WHO LEFT ON HIS OWN CHARGED NOTHING, which is the asymmetry the rule is
+       for. Every departure this winter is already in w.gone; if any of them had been
+       charged, dead money would have moved before this release did. */
+    ok('a departure costs nothing', deadBefore === deadCarried,
+      `$${deadBefore.toFixed(1)}M against $${deadCarried.toFixed(1)}M carried in`);
     ok('a released man is still blocked from the wheel',
       run.usedPlayers.includes(man.player_id));
   }
@@ -321,10 +346,10 @@ for (let s = 0; s < 30; s++) {
     ok('and somebody\'s market value moved while it held', moved > 0,
       `${moved} of ${w.aged.length}`);
   }
-  ok('the cap is spent against salaries, not list prices',
+  ok('the cap is spent against salaries and dead money, not list prices',
     Math.abs((run.capMusd - R.remaining(run))
       - (run.salaries.reduce((t, v) => t + v, 0) + (run.coach ? run.coach.price_musd : 0)
-         + E.respinFees(run.respinsUsed))) < 0.05);
+         + E.respinFees(run.respinsUsed) + R.deadOf(run))) < 0.05);
 }
 
 console.log('  the dynasty, season by season:');

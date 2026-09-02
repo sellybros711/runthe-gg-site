@@ -122,7 +122,19 @@ function remaining(run) {
      decision. He is added here rather than at the callers so every screen, every floor
      check and every affordability question sees the same number. */
   const coach = (run.coach && run.coach.price_musd) || 0;
-  return money(capOf(run) - spent - fees - coach);
+  /* DEAD MONEY, WHICH IS SPENT AND BUYS NOBODY. Subtracted here for the same reason the
+     coach is: every screen, every affordability question and every floor check then sees
+     one number, and none of them has to remember the rule. Old saves have no list and read
+     as zero, which is the right answer for a run made before the rule existed. */
+  const dead = run.dynasty ? E.dynastyDead(run.dead, run.seasonNo, undefined, capOf(run)) : 0;
+  return money(capOf(run) - spent - fees - coach - dead);
+}
+
+/** What is dead against the cap right now. The page needs it beside the payroll. */
+function deadOf(run) {
+  return run && run.dynasty
+    ? E.dynastyDead(run.dead, run.seasonNo, undefined, capOf(run))
+    : 0;
 }
 
 /** Slots still to fill, including the current one. */
@@ -530,6 +542,11 @@ function createRun(opts) {
        against. It is NOT p.price_musd: a salary is what he was signed for, and it does not
        move again while he is yours, whichever way he goes. See E.dynastySalary. */
     salaries: dynasty ? [] : null,
+    /* EVERY CUT THIS RUN HAS EVER MADE, as {musd, season}: a quarter of the deal, and the
+       season it was charged against. Kept as a list rather than a running total so expiry
+       is arithmetic and a resumed save cannot restore a number that has gone stale. See
+       E.dynastyDead. */
+    dead: dynasty ? [] : null,
     /* Seasons on YOUR roster, by player id, which is what the continuity bonus counts. */
     tenure: dynasty ? {} : null,
     /* Every season played, oldest first: what the owner reads and what the run is scored
@@ -1303,11 +1320,25 @@ function releaseMan(run, rosterIndex) {
   const man = run.roster[rosterIndex];
   if (!man) throw new Error('nobody there');
   const salary = run.salaries[rosterIndex];
+  /*
+   * THREE QUARTERS BACK, AND THE LAST QUARTER STAYS DEAD.
+   *
+   * A man who leaves on his own costs you nothing and a man you cut costs you a quarter of
+   * his deal, for the rest of the run. The asymmetry is the rule: one of those was your
+   * decision. See E.DYNASTY_DEAD_SHARE for what it is worth and what it was measured at.
+   *
+   * CHARGED AGAINST run.seasonNo, WHICH IS THE SEASON ABOUT TO BE PLAYED. beginOffseason
+   * has already advanced it by the time anybody can press a cut button, so a release made
+   * in this winter is a charge against next season and not the one just finished.
+   */
+  const dead = Math.round(salary * E.DYNASTY_DEAD_SHARE * 10) / 10;
   run.roster.splice(rosterIndex, 1);
   run.slotIndex.splice(rosterIndex, 1);
   run.salaries.splice(rosterIndex, 1);
   run.draws.splice(rosterIndex, 1);
-  run.winter.released.push({ was: man, salary });
+  if (!run.dead) run.dead = [];
+  if (dead > 0) run.dead.push({ musd: dead, season: run.seasonNo });
+  run.winter.released.push({ was: man, salary, dead });
   run.winter.aged = run.winter.aged.filter((a) => a.now !== man);
   return run;
 }
@@ -3659,7 +3690,7 @@ const api = {
   /* Full Team's coach step. */
   coachMarket, hireCoach, setPlan, finishHiring,
   /* The Gauntlet's winter and its owner. */
-  beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived,
+  beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived, deadOf,
   takeTheField, wheelIsDry,
   /* Exported because the PAGE has to rate the live team with the same chemistry the season
      is playing with, and in Full Team that is two figures rather than one. */

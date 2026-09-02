@@ -641,6 +641,14 @@ window.GA_ID='G-L29P5MRWKE';
     transition:width .55s cubic-bezier(.22,1,.36,1)}
   .cb-track b{display:block;height:100%;background:linear-gradient(90deg,#ef4444,#f87171);
     transition:width .55s cubic-bezier(.22,1,.36,1)}
+  /* DEAD MONEY, WHICH IS SPENT AND BUYS NOBODY. It sits on the track between the payroll
+     and the empty room, because that is exactly where it sits against the cap: gone, but
+     not gone on a player. Striped rather than coloured, so it reads as absence rather than
+     as a third kind of spending, and it takes no width when there is none. */
+  .cb-track u{display:block;height:100%;text-decoration:none;
+    background:repeating-linear-gradient(115deg,rgba(248,113,113,.55) 0 3px,
+      rgba(248,113,113,.16) 3px 7px);
+    transition:width .55s cubic-bezier(.22,1,.36,1)}
   .cb-note{font-family:var(--fn);font-size:11px;color:var(--dim-2);margin-top:7px;min-height:14px;
     transition:color .3s ease}
   .capbar.over .cb-now{color:var(--bad,#f87171)}
@@ -5968,7 +5976,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="cb-now" id="w-pay">$0M</span>
         <span class="cb-of" id="w-of">of $0M</span>
       </div>
-      <div class="cb-track"><i id="w-fill" style="width:0%"></i><b id="w-over" style="width:0%"></b></div>
+      <div class="cb-track"><i id="w-fill" style="width:0%"></i><u id="w-dead" style="width:0%"></u><b id="w-over" style="width:0%"></b></div>
       <div class="cb-note" id="w-note"></div>
       </div>
       <!-- WHAT THE WINTER DID, IN ONE LINE, and what it leaves you to do about it. The spots
@@ -6592,8 +6600,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=80"></script>
-<script src="run.js?v=90"></script>
+<script src="engine.js?v=81"></script>
+<script src="run.js?v=91"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -8303,7 +8311,8 @@ function dynastyRulesHTML(go){
       '<li><b>A cheap young player is the whole game.</b> Draft a 24 year old at $9M and '+
         'he is $9M at 27 too, when he is worth $40M. That gap is cap you never spent.</li>'+
       '<li><b>An old star is the other side of it.</b> He costs what he was worth on the '+
-        'day you signed him, and he will not be worth it for long.</li>'+
+        'day you signed him, he will not be worth it for long, and cutting him leaves a '+
+        'quarter of that number on your books.</li>'+
     '</ul>'+
     '<div class="eyebrow" style="margin:14px 0 7px">Why it gets harder</div>'+
     '<ul class="modenotes">'+
@@ -8312,7 +8321,10 @@ function dynastyRulesHTML(go){
       '<li><b>You lose men three ways.</b> They retire, they run out of seasons, or they '+
         'sign somewhere else. A man who changes club leaves your roster.</li>'+
       '<li><b>The cap never moves.</b> It is $140M every season, forever. Over it you keep '+
-        'everyone, you just cannot sign anyone. Releasing is the only way to make room.</li>'+
+        'everyone, you just cannot sign anyone.</li>'+
+      '<li><b>Cutting a man costs you a quarter of him.</b> Releasing is the only way to '+
+        'make room, and you get three quarters of his deal back. The last quarter is dead '+
+        'money for the rest of the run. A man who leaves on his own costs you nothing.</li>'+
       '<li><b>Every '+step+' seasons the target goes up a win.</b> '+base+', then '+
         (base+1)+', then '+(base+2)+'.</li>'+
     '</ul>'+
@@ -8392,8 +8404,13 @@ const DYN_SAVE_KEY='ps_dynasty_save';
    run resumed into this build kept its $177M in season five and played on an economy this
    build does not have, under a header that told it the cap never moves. The number a run is
    played against is part of the run, so a run played against a different one is a different
-   game and does not reopen. */
-const DYN_SAVE_VERSION=4;
+   game and does not reopen.
+   5: TWO CHANGES TO THE MONEY IN ONE BUILD. A contract now holds at the price it was
+   drafted at rather than ratcheting up, and cutting a man leaves a quarter of his deal
+   dead against the cap. A version 4 run carries salaries that were raised under the old
+   rule and no record of what it cut, so resuming one would put a roster priced by one
+   economy into another and start it with a clean sheet it never earned. */
+const DYN_SAVE_VERSION=5;
 const dynKey=(p)=>(p?p.player_id+'|'+p.season:null);
 
 /* The phases a run can be put back at, which is the whole of the rule above in one
@@ -9760,8 +9777,15 @@ function paintTop(){
   if(Math.abs(chem-lastChem)>0.0005){el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),640);}
   lastChem=chem;
   const n=$('c-note');
+  /* AND WHY THE MONEY IS SHORT, WHICH THE WHEEL NEVER SAID. Dead money comes off the cap
+     the moment you cut somebody, so a player who released two men in the winter arrives
+     here with a budget that does not match the one he was looking at, and nothing on this
+     screen accounted for the difference. Third in the order because the two above it are
+     about the spin in front of you and this is about a decision already made. */
+  const dead=run&&run.dynasty?R.deadOf(run):0;
   if(left>1&&rem-floor<8){n.style.display='block';n.textContent='Keep at least '+M(floor)+' back or you cannot fill the rest of your team.';}
   else if(left===1&&rem>25){n.style.display='block';n.textContent='You still have '+M(rem)+' left and this is the last spot to spend it on.';}
+  else if(dead>0.05){n.style.display='block';n.textContent=M(dead)+' of your cap is dead money from players you released.';}
   else n.style.display='none';
   /* The club goes here rather than into a banner of its own. It is the one thing about an
      One Franchise run that is not true of a free one, and this eyebrow is already the line
@@ -10744,7 +10768,14 @@ function paintDryWheel(){
       ? M(over)+' over the cap. No club can offer you a player. Release somebody next '+
         'offseason. For now, play a man short.'
       : 'Nothing left fits your open spots and your money. Play a man short.')+'</p>'+
-    '<button class="btn" id="b-short">Take the field with '+run.roster.length+'</button>'+
+    /* NOT A BUTTON THAT CANNOT WORK. takeTheField refuses an empty roster, so offering
+       "take the field with 0" strands the run on this screen behind a toast. The ceiling on
+       dead money is what makes that unreachable (see E.DYNASTY_DEAD_CEILING); this is the
+       belt to that brace, and it says the true thing rather than nothing. */
+    (run.roster.length
+      ? '<button class="btn" id="b-short">Take the field with '+run.roster.length+'</button>'
+      : '<p class="dw-p">There is nobody to field and nobody you can sign. This should not '+
+        'be reachable: if you are seeing it, the run is stuck and worth reporting.</p>')+
     '</div>';
   const b=$('b-short');
   if(b) b.onclick=()=>{
@@ -10810,15 +10841,28 @@ function countMoney(el,from,to,ms,fmt){
    left; anything over sits past it in red at its own scale, so $9M over reads as a little
    over instead of as a second full bar. */
 function paintWinterCap(animate){
-  const cap=R.capOf(run), pay=cap-R.remaining(run);
+  const cap=R.capOf(run), committed=cap-R.remaining(run);
   const bar=$('w-cap'); if(!bar) return;
-  const over=Math.max(0,pay-cap);
+  /*
+   * THREE THINGS ARE AGAINST THE CAP AND ONLY TWO OF THEM ARE A ROSTER.
+   *
+   * remaining() nets off dead money along with the salaries, which is right for every
+   * affordability question and wrong for this headline: a bar that reads PAYROLL $112M
+   * when $8M of it is owed to men who are not on the team is telling a player his roster
+   * costs more than it does. The number is the roster, and the dead money gets its own
+   * stripe on the track and its own clause in the caption.
+   */
+  const dead=R.deadOf(run);
+  const pay=Math.max(0,committed-dead);
+  const over=Math.max(0,committed-cap);
   bar.classList.toggle('over',over>0.05);
   const fillPct=Math.max(0,Math.min(100,(Math.min(pay,cap)/cap)*100));
+  const deadPct=Math.max(0,Math.min(100-fillPct,(dead/cap)*100));
   /* The overspill is drawn against a fifth of the cap, so a small overrun is visible and a
      large one still fits on the track. */
-  const overPct=Math.max(0,Math.min(100-fillPct,(over/(cap*0.2))*100));
+  const overPct=Math.max(0,Math.min(100-fillPct-deadPct,(over/(cap*0.2))*100));
   $('w-fill').style.width=fillPct+'%';
+  $('w-dead').style.width=deadPct+'%';
   $('w-over').style.width=overPct+'%';
   $('w-of').textContent='of '+M0(cap);
   const el=$('w-pay');
@@ -10827,10 +10871,17 @@ function paintWinterCap(animate){
   else { countStop(el); el.textContent=M0(pay); }
   /* "RELEASE A PLAYER FOR MORE" WITH NOBODY TO RELEASE. A winter can take all six men,
      and on that screen this line was advice about a button that is not on the page. Rare
-     is not the same as impossible: it happened to somebody in their second season. */
+     is not the same as impossible: it happened to somebody in their second season.
+     AND THE PRICE OF THE RELEASE IS ON THE SAME LINE AS THE OFFER OF IT, because a
+     quarter of a deal is not a thing to find out about afterwards. */
+  /* ROOM, THEN WHAT IS DEAD, THEN WHAT YOU CAN DO ABOUT IT. "$4.8M of that is dead" put
+     the dead money after the offer and pointed the word "that" at the room, which is the
+     one number it is not part of. */
+  const deadNote=dead>0.05?' '+M(dead)+' is dead.':'';
+  const cutNote=run.roster.length?' A cut returns three quarters.':'';
   $('w-note').textContent=over>0.05
-    ? M(over)+' over. You cannot sign anyone until you are under.'
-    : M(cap-pay)+' of room.'+(run.roster.length?' Release a player for more.':'');
+    ? M(over)+' over. You cannot sign anyone until you are under.'+deadNote+cutNote
+    : M(cap-committed)+' of room.'+deadNote+cutNote;
 }
 
 /*
@@ -11382,8 +11433,16 @@ function wireWinter(){
     const i=+row.dataset.i;
     const man=run.roster[i];
     if(!man) return;
+    const paid=run.salaries[i];
     try{ R.releaseMan(run,i); }catch(err){ toast(err.message); return; }
     ga('dynasty_release',{name:man.name,season:run.seasonNo});
+    /* WHAT THE CUT ACTUALLY DID, SAID ONCE, AT THE MOMENT IT HAPPENS. The bar retracting by
+       three quarters and a striped segment appearing is the honest feedback, but it is also
+       a thing a player has to notice and then work out. A quarter of a deal is too large a
+       cost to be inferred from two animations. */
+    const back=Math.round((paid-Math.round(paid*E.DYNASTY_DEAD_SHARE*10)/10)*10)/10;
+    const dead=Math.round(paid*E.DYNASTY_DEAD_SHARE*10)/10;
+    toast(E.lastName(man.name)+' released. '+M(back)+' back, '+M(dead)+' dead.');
     row.classList.add('gone');
     paintWinterCap(true);
     /* THE INDEXES MOVED. releaseMan splices the roster, so every data-i after this one is
