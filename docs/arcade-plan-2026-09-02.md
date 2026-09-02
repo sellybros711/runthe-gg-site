@@ -1,0 +1,86 @@
+# Run The Arcade: the plan
+
+2 September 2026. A ranked backlog from the code on `main` to
+`docs/arcade-redesign-2026-09-02.md`, in passes of one to three hours that
+each ship on their own.
+
+Ranked by one question: **does this make a new player more likely to finish
+day one and come back on day two?** Passes that need your approval before
+they start are marked **ASK**. Nothing below changes ads, pricing, or the
+server schema without one.
+
+Pass 1 is built and on the branch. The rest wait.
+
+| # | Pass | Hours | Day-one | Day-two | Needs |
+|---|---|---|---|---|---|
+| **1** | **The Day spine**: `day.js`, the ring on the hub and on every result screen, the Day Card when the ring is full, share-the-day, "Next" pulled up to the primary action | 3 | high | high | built |
+| 2 | **Shared result screen** (`result.js`): one layout for every game, percentile line from the rank RPC, personal-best-as-event, streak line. Applied to the four free games first | 3 | high | high | |
+| 3 | Shared result screen applied to the eight card games | 2 | med | med | Pass 2 |
+| 4 | **Cut the payload**: per-day data slices built at fetch time, under 150 KB per game page, next game preloaded from the result screen | 3 | high | med | |
+| 5 | **The Arcade streak**: `arcade_day_streak` RPC, hub and result screen show one streak, milestones at 3/7/14/30/100, streak-at-risk sentence after 8pm | 2 | low | **high** | **ASK** (one new server read) |
+| 6 | **Grid shares for every game**: Sportegories 8 squares, Career Path reveal position, Chain as the chain, Crossword shape and time, Starting Five row | 2 | med | med | |
+| 7 | **Shared feedback**: one right/wrong/perfect colour rule, one `+N` pop, one shake, one Check button label, countdown timers only | 2 | med | low | |
+| 8 | **Career Path bounded**: five players a day, partial credit, par, no "until you miss" | 2 | high | med | |
+| 9 | **Starting Five** (Roll Call reworked): ten names, five started, decoys by adjacency | 3 | med | med | |
+| 10 | **Chain onboarding**: demo-first gate until the first solve, the chain as the share | 1 | med | low | |
+| 11 | **Common Ground absorbs "name the link"**; Odd One Out retired to the archive | 2 | low | low | **ASK** (a cut) |
+| 12 | **Golden game**: High Low unlocks on a full ring, tile leaves the daily grid | 1 | low | med | **ASK** (a lineup change) |
+| 13 | **Cut Number Game and Rank It**: tiles off, routes to hub, records kept in My Card and the archive | 1 | low | low | **ASK** |
+| 14 | **The free set** becomes Sportegories, Career Path, Guess the Player, Common Ground | 1 | high | high | **ASK** (free-to-play model) |
+| 15 | **Stat Line**, new game, on the shell | 3 | low | med | Passes 2 and 7 |
+| 16 | **Comeback and near-miss** lines on hub and result screen | 1 | low | med | |
+| 17 | **Weekly recap** card on the hub, Sundays | 2 | low | med | |
+| 18 | **Timeline**, new game, on the shell | 3 | low | med | Passes 2 and 7 |
+| 19 | **`check-daily.mjs`**: 30 days of every game asserted solvable, single-answer, fair, unrepeated, unleaked; gates the data refreshes | 3 | med (fewer bad days) | med | |
+| 20 | **One clock**: the day boundary computed in one place, and the client and `arcade_spend_game` agreeing on it | 2 | low | low | **ASK** (touches the spend RPC) |
+| 21 | Alma Mater folded into Career Path's scouting file and Stat Line's hints; tile retired | 2 | low | low | **ASK** (a cut) |
+| 22 | Tests: scoring maps for every game, streak extend and reset, midnight rollover, missed day, all-done, guest vs signed-in, run as one suite in CI | 3 | (prevents regressions in all of the above) | | |
+
+Passes 2 to 7 are the shell. After them, every later pass is a game being
+built *on* the shell rather than beside it, which is what keeps this from
+becoming twelve more one-off modals.
+
+Pass 22 is listed last because it is ranked by player impact, and it should
+be *done* alongside Passes 2, 5 and 8, not after them. Each of those passes
+adds its own tests as it goes.
+
+## What Pass 1 is, and why it went first
+
+The critique found the loop breaks at "see your streak" and "a reason to come
+back," and both breaks are the same absence: nothing accumulates across a
+day, and nothing carries across days. The Day spine is the smallest thing
+that makes something accumulate. It touches no game's board, no scoring, and
+no server. It is one shared module, the hub, and the strip that already
+sits on every result screen.
+
+What it does, end to end:
+- **`arcade/day.js`**: one place that knows, for today, which games are
+  available to this player, which are done, and what each one's result line
+  is. The hub and every game page read it.
+- **The ring**: an SVG ring, games done of games available, on the hub in
+  place of "N / M played," and in every game's result strip.
+- **NEXT as the primary action**: the result strip's "Next: X" becomes the
+  button, above the game's own buttons, styled like the game's PLAY pill.
+- **The Day Card**: when the ring is full, the hub's top block becomes the
+  card: full ring, every game's line, "Share today" (an emoji row per game
+  through `share.js`), and the countdown.
+- **The last result screen** says SEE YOUR DAY and opens the hub on the card.
+
+What it does *not* do, on purpose: no Day Score yet (the per-game 0 to 100
+maps are Pass 2's scoring contract and should be tested, not guessed at
+midnight), no Arcade streak (needs the server read, Pass 5), no percentile
+(Pass 2).
+
+## How to play Pass 1
+
+It is on the branch, not on `main`. Locally:
+
+```
+git fetch origin claude/runthe-gg-design-background-l1u1h5
+git checkout claude/runthe-gg-design-background-l1u1h5
+python3 -m http.server 8000
+```
+
+then open `http://localhost:8000/arcade/`. Play any game to the result
+screen and watch the strip; play all of the free four (or all twelve as a
+member) and go back to the hub.

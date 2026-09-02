@@ -41,7 +41,13 @@
   function injectCSS() {
     if (styled) return; styled = true;
     var s = document.createElement('style');
-    s.textContent = '.funprog{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--mut,#8aa0b8);margin:10px 0 -4px;}' +
+    s.textContent = '.funprog{display:flex;align-items:center;justify-content:center;gap:8px;font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--mut,#8aa0b8);margin:10px 0 -4px;}' +
+      '.funprog .funring{display:inline-flex;}' +
+      /* The link is an <a> wearing each game's button class, and two games
+         style .btn as inline, which split the two-line NEXT label into a
+         broken box. Flex column, whatever the game says. */
+      '[data-fun-link]{display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box;line-height:1.1;}' +
+      '[data-fun-link] small{display:block;font-size:9.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;opacity:.75;line-height:1;margin-bottom:3px;}' +
       '.funrow{display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;margin:10px 0 0;}' +
       '.funhome,.funlb{display:inline-block;margin:0;background:none;border:0;font:800 12px var(--f,system-ui);color:var(--mut,#8aa0b8);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}' +
       /* Rank, not restyle. Each game keeps its own button skin; these only say
@@ -71,30 +77,46 @@
     // home link, which also points at /arcade/). Mark it once, find it by
     // the marker forever after.
     var link = document.querySelector('[data-fun-link]') ||
-               document.querySelector('.sheet a[href="/arcade/"]:not(.funhome), a.abtn[href="/arcade/"]:not(.funhome)');
+               document.querySelector('.sheet a[href="/arcade/"]:not(.funhome), .modal a[href="/arcade/"]:not(.funhome), a.abtn[href="/arcade/"]:not(.funhome)');
     if (!link) return;
     link.setAttribute('data-fun-link', '1');
     var cur = currentGame();
-    // Only offer what this player can actually open next. Handing a free
-    // account "Next: Career Path" when Career Path is an Arcade Card game sends
-    // them to a wall, and counts a game they can never punch toward a total
-    // they can never reach.
-    var pool = GAMES.filter(function (g) {
-      try { return !(window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(g[0])); }
-      catch (e) { return true; }
-    });
-    if (!pool.length) pool = GAMES;
-    var played = 0, next = null;
-    pool.forEach(function (g) {
-      var done = g[0] === cur || playedToday(g[0]);   // the game you're IN counts as played
-      if (done) played++;
-      else if (!next) next = g;
-    });
+    /* WHAT IS NEXT, AND HOW FAR ALONG THE DAY IS, come from day.js: the same
+       answer the hub's ring shows, so the number a player watches here is
+       the number they see when they get back. This module used to work it
+       out itself from the token rules and a per-game save check, which was
+       the third copy of that logic on the site and the one most likely to
+       drift. The game you are IN counts as played: its save may land a beat
+       after the modal opens. */
+    var pool, played = 0, total = 0, next = null, allDone = false;
+    try {
+      var ds = RTGDay.state();
+      pool = ds.avail.map(function (k) { return [k, RTGDay.nameOf(k)]; });
+      var doneMap = {}; ds.games.forEach(function (x) { doneMap[x.key] = x.done; });
+      if (cur && ds.avail.indexOf(cur) >= 0 && !doneMap[cur]) { doneMap[cur] = true; }
+      pool.forEach(function (g) { if (doneMap[g[0]]) played++; });
+      total = pool.length;
+      var nk = RTGDay.next(cur);
+      if (nk && doneMap[nk]) nk = null;
+      next = nk ? [nk, RTGDay.nameOf(nk)] : null;
+      allDone = total > 0 && played >= total;
+    } catch (e) {
+      pool = GAMES.filter(function (g) {
+        try { return !(window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(g[0])); }
+        catch (x) { return true; }
+      });
+      if (!pool.length) pool = GAMES;
+      pool.forEach(function (g) {
+        var done = g[0] === cur || playedToday(g[0]);
+        if (done) played++; else if (!next) next = g;
+      });
+      total = pool.length; allDone = played >= total;
+    }
     injectCSS();
     /* Where to hang our own elements. Most games wrap the modal buttons in a
        row div, so we sit outside that wrapper. Sportegories puts its buttons
        straight on the sheet, and inserting "outside the wrapper" there means
-       outside the modal entirely — the row rendered off-screen. Anchor on the
+       outside the modal entirely: the row rendered off-screen. Anchor on the
        wrapper only when there is one. */
     var sheetEl = link.closest ? link.closest('.sheet, .modal') : null;
     var anchor = (link.parentNode && link.parentNode !== sheetEl) ? link.parentNode : link;
@@ -123,18 +145,33 @@
     }
     guestNotice(rowEl);
     var home = document.getElementById('funHome');
+    /* The ring, small, with the count beside it. The same ring the hub draws,
+       so finishing a game shows the day filling right here rather than
+       telling you a fraction and leaving you to picture it. */
+    prog.innerHTML = '<span class="funring"></span><span class="funprogT"></span>';
+    try { RTGDay.ring(prog.querySelector('.funring'), { n: played, total: total, size: 22, stroke: 3, label: '' }); } catch (e) {}
+    var pt = prog.querySelector('.funprogT');
     if (next) {
-      prog.textContent = played + ' of ' + pool.length + ' played today';
+      if (pt) pt.textContent = played + ' of ' + total + ' today';
       link.setAttribute('href', '/arcade/' + next[0] + '/');
-      link.innerHTML = 'Next: ' + next[1] + ' <span aria-hidden="true">→</span>';
+      link.innerHTML = '<small>Next</small><span>' + next[1] + ' <span aria-hidden="true">→</span></span>';
       if (home) home.style.display = '';
     } else {
-      prog.textContent = 'Clean sweep! All ' + pool.length + ' played!';
-      link.setAttribute('href', '/arcade/');
-      link.textContent = 'Back to the arcade';
+      if (pt) pt.textContent = allDone ? ('All ' + total + ' played') : (played + ' of ' + total + ' today');
+      /* The last game's button opens the Day Card rather than the hub: the
+         hash lands the page on it. */
+      link.setAttribute('href', '/arcade/#day');
+      link.innerHTML = '<span>See your day <span aria-hidden="true">→</span></span>';
       if (home) home.style.display = 'none';   // the main button is the way home
     }
-    rank(sheetEl || link.closest('.sheet, .modal'), link, !!next);
+    rank(sheetEl || link.closest('.sheet, .modal'), link, !!next || allDone);
+    /* Score, then the ring, then NEXT: the strip reads as one sentence when
+       the ring sits directly above the button it is arguing for. rank() has
+       just decided which row leads, so this goes in front of that row. */
+    try {
+      var lead = rowOf(link, sheetEl || link.closest('.sheet, .modal'));
+      if (lead && lead.parentNode && prog.parentNode && prog !== lead) lead.parentNode.insertBefore(prog, lead);
+    } catch (e) {}
   }
 
   /* ---- one hierarchy, instead of four modules each appending a button ------
@@ -148,7 +185,12 @@
    * finished; going again IS the loop, and sending someone away from a run they
    * are enjoying is the wrong call. So the primary button is the next game on a
    * daily and Play again on a streak, and the other one drops to secondary. */
-  var STREAK = { table: 1, oddone: 1, career: 1, almamater: 1, highlow: 1 };
+  /* Play again stays primary on High Low only. It is endless and going again
+     IS the loop. Career Path, Alma Mater, Number Game and Odd One Out used to
+     sit in this list as "streak games", and for a free player Play again on
+     them is the card offer, so the primary button after a good run was a
+     paywall. On a daily the only forward move is the next game. */
+  var STREAK = { highlow: 1 };
   function rank(sheet, link, haveNext) {
     if (!sheet) return;
     var again = sheet.querySelector('#mAgain, #resAgain');
@@ -202,13 +244,13 @@
     var r = el.parentNode;
     return (r && r !== sheet) ? r : el;
   }
-  /* A guest and a cardholder used to get byte-identical result screens — same
+  /* A guest and a cardholder used to get byte-identical result screens: same
      streak, same "best ever", same Leaderboard button. But board.js submits
      nothing without a session (grid_submit_run refuses anonymous callers), so
      a guest was being shown a board they are not on and a streak that lives
      only in this browser, with nothing saying so.
      One line, stating both facts, plus the action that fixes them. Signed-in
-     players never see it — their score really is posted. */
+     players never see it, their score really is posted. */
   function isGuest() {
     try { return !!(window.RTGTokens && RTGTokens.signedIn) && !RTGTokens.signedIn(); }
     catch (e) { return false; }

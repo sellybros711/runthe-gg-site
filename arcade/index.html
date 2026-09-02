@@ -329,7 +329,12 @@
   .zone-head .kicker .l3{color:var(--greenT);}
   @media (max-width:640px){ .zone-head .kicker{font-size:10px; letter-spacing:.08em; gap:6px;} }
   .dprog{margin-left:auto; display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--mut);}
-  .dprog .pips{display:flex; gap:5px;}
+  /* THE RING IS THE PROGRESS. Twelve pips were a map of the games; one ring
+     is the day, and it is the same ring every result screen shows, so a
+     player watches one thing fill from the first game to the last. The pips
+     stay in the markup for the games' own paint calls and are not shown. */
+  .dprog .pips{display:none; gap:5px;}
+  .dprog .dring{display:inline-flex;}
   .dprog .pip{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--line2); background:transparent;}
   /* each pip carries its game's color; a played pip fills with it (empty ones
      keep a faint ring of the same color, so the row reads as the games) */
@@ -616,13 +621,24 @@
   }
 
   /* ---- daily double banner (all solved) ---- */
-  .double{display:none; align-items:center; gap:12px; margin-top:16px; padding:14px 18px; border-radius:16px;
-    background:linear-gradient(90deg, color-mix(in srgb,var(--coral) 18%, var(--card)), color-mix(in srgb,var(--gold) 18%, var(--card)));
+  .double{display:none; flex-direction:column; gap:12px; margin-top:16px; padding:16px 18px 14px; border-radius:16px;
+    background:linear-gradient(135deg, color-mix(in srgb,var(--coral) 16%, var(--card)), color-mix(in srgb,var(--gold) 18%, var(--card)));
     border:1px solid color-mix(in srgb, var(--gold) 45%, transparent); font-weight:800; font-size:14px; color:var(--ink);}
   .double.on{display:flex; animation:dpop .5s ease;}
   @keyframes dpop{0%{transform:scale(.94); opacity:0;}100%{transform:scale(1); opacity:1;}}
-  .double svg{color:var(--goldT); flex:0 0 auto;}
-  .double .sub{display:block; font-weight:600; font-size:12px; color:var(--mut); margin-top:2px;}
+  .double .sub{display:block; font-weight:600; font-size:12px; color:var(--mut); margin-top:3px;}
+  .double .dc-top{display:flex; align-items:center; gap:14px;}
+  .double #dcTitle{display:block; font-family:var(--hero); font-weight:400; letter-spacing:.03em; text-transform:uppercase; font-size:22px; line-height:1;}
+  .double .sub b{color:var(--ink);}
+  .double .dc-lines{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:4px 14px;}
+  .double .dc-lines li{display:flex; justify-content:space-between; gap:8px; font-size:12.5px; font-weight:700; padding:5px 0; border-bottom:1px solid color-mix(in srgb, var(--ink) 8%, transparent);}
+  .double .dc-lines li span:last-child{color:var(--greenT); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .double .dc-row{display:flex; gap:10px; align-items:center; margin-top:2px;}
+  .double .dc-share{display:inline-flex; align-items:center; gap:7px; appearance:none; border:0; border-radius:999px; padding:11px 16px; min-height:42px;
+    font-family:var(--hero); font-weight:400; letter-spacing:.05em; text-transform:uppercase; font-size:14px; background:var(--gold); color:#20160a; cursor:pointer;}
+  .double .dc-share svg{width:15px; height:15px;}
+  .double .dc-share:hover{filter:brightness(1.05);}
+  @media (max-width:420px){ .double .dc-lines{grid-template-columns:1fr;} }
 
   /* ---- bottom nav ---- */
   /* The bottom bar is arcade/nav.js now: four destinations, not twelve games. */
@@ -683,7 +699,7 @@ window.GA_ID='G-L29P5MRWKE';
             <span>Daily <b>sports</b> puzzles &middot; NBA &middot; NFL &middot; MLB</span>
           </span>
           <span class="day">Today's Games</span>
-          <span class="dprog" id="dprog"><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
+          <span class="dprog" id="dprog"><span class="dring" id="dring" aria-hidden="true"></span><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
         </div>
 
         <div class="tiles">
@@ -865,9 +881,22 @@ window.GA_ID='G-L29P5MRWKE';
           <span class="vb-end" id="vbEnd" aria-hidden="true">›</span>
         </button>
 
+        <!-- THE DAY CARD. When the ring is full this is the top of the page:
+             every game's line, the count, Share today, and the countdown.
+             It used to be one sentence ("Clean sweep!") and a gold ticket,
+             which is a receipt. This is the thing you send. -->
         <div class="double" id="double">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2l-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
-          <span>Clean sweep!<span class="sub">You played every one of today's puzzles. New ones drop in <b id="cdT2">--</b>.</span></span>
+          <div class="dc-top">
+            <span class="dc-ring" id="dcRing" aria-hidden="true"></span>
+            <div class="dc-head">
+              <b id="dcTitle">Day done</b>
+              <span class="sub" id="dcSub">Every game, played. New ones drop in <b id="cdT2">--</b>.</span>
+            </div>
+          </div>
+          <ul class="dc-lines" id="dcLines"></ul>
+          <div class="dc-row">
+            <button class="dc-share" id="dcShare" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>Share today</button>
+          </div>
         </div>
 
         <!-- ORDER IS THE ARGUMENT. For a free player whose free tries are spent,
@@ -989,6 +1018,7 @@ window.GA_ID='G-L29P5MRWKE';
 
 <script src="/arcade/favteam.js"></script>
 <script src="/arcade/tokens.js?v=12"></script>
+<script src="/arcade/day.js?v=1"></script>
 <script src="/arcade/dayroll.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/arcade/board.js?v=19"></script>
@@ -1068,6 +1098,25 @@ window.GA_ID='G-L29P5MRWKE';
     applyFavCard();
   });
 
+  // ---- the Day Card, filled from day.js when the ring is full ----
+  function paintDayCard() {
+    var box = document.getElementById('double'); if (!box || !window.RTGDay) return;
+    var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var s = RTGDay.state();
+    if (!s.allDone) { box.classList.remove('on'); return; }
+    var lines = document.getElementById('dcLines');
+    if (lines) lines.innerHTML = s.games.filter(function (x) { return x.avail; }).map(function (x) {
+      return '<li><span>' + esc(x.name) + '</span><span>' + esc(x.line || 'Played') + '</span></li>';
+    }).join('');
+    var no = RTGDay.dayNo(s.date);
+    var ttl = document.getElementById('dcTitle'); if (ttl) ttl.textContent = 'Day' + (no ? ' ' + no : '') + ' done';
+    RTGDay.ring(document.getElementById('dcRing'), { n: s.doneN, total: s.total, size: 54, stroke: 5, label: s.doneN + '/' + s.total });
+    box.classList.add('on');
+    var sh = document.getElementById('dcShare');
+    if (sh && !sh._wired) { sh._wired = true; sh.addEventListener('click', function () { RTGDay.shareDay(); }); }
+    // Arrived from the last result screen (SEE YOUR DAY): land on the card.
+    if (location.hash === '#day') { try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
+  }
   // ---- live countdown to local midnight (feeds the clean-sweep banner) ----
   function pad(n) { return String(n).padStart(2, '0'); }
   function tickCd() {
@@ -1284,17 +1333,24 @@ window.GA_ID='G-L29P5MRWKE';
   }
   var t = todayStr();
   var mRes = null; try { mRes = JSON.parse(g('grid_match_result_' + t, 'null')); } catch (e) {}
-  var mDone = !!mRes;
-  var cDone = (cw.lastDone === t);
-  var gDone = (gs.lastDone === t);
-  var tDone = (ts.lastDone === t);
-  var oDone = (os.lastDone === t);
-  var rDone = (rs.lastDone === t);
-  var kDone = (ks.lastDone === t);
-  var aDone = (as.lastDone === t);
-  var sDone = !!(sg.last && sg.last.d === t);
-  var lDone = !!(rc.last && rc.last.d === t);
-  var nDone = !!(ch.last && ch.last.d === t);
+  /* WHAT IS DONE TODAY comes from day.js now, which reads the same saves and
+     is the single place that knows their shapes. This page used to derive
+     the eleven flags inline, the ticket below filtered them a second way and
+     every result screen a third; the ring, the Day Card and the NEXT button
+     all read the one answer. Status TEXT stays here for now: it is tile copy
+     and the shared result screen (plan, pass 2) is where it moves. */
+  var DAY0 = {}; try { RTGDay.state().games.forEach(function (x) { DAY0[x.key] = x.done; }); } catch (e) {}
+  var mDone = !!DAY0.match;
+  var cDone = !!DAY0.crossword;
+  var gDone = !!DAY0.guess;
+  var tDone = !!DAY0.table;
+  var oDone = !!DAY0.oddone;
+  var rDone = !!DAY0.career;
+  var kDone = !!DAY0.rankit;
+  var aDone = !!DAY0.almamater;
+  var sDone = !!DAY0.sportegories;
+  var lDone = !!DAY0.rollcall;
+  var nDone = !!DAY0.chain;
 
   // ---- ARCADE TICKET: one daily punch-card ----
   // A ticket you cannot finish is not a ticket. Members get all twelve punches;
@@ -1313,7 +1369,10 @@ window.GA_ID='G-L29P5MRWKE';
       ['High Low',hlDone,'var(--hlT)','highlow'],  ['Crossword',cDone,'var(--newsT)','crossword'],
       ['Roll Call',lDone,'var(--tealT)','rollcall'], ['Chain',nDone,'var(--mossT)','chain']
     ];
+    // played today stays counted even when its one free try is now spent:
+    // the same rule day.js uses, so the ticket and the ring agree
     var GAMES = ALL.filter(function(x){
+      if(x[1]) return true;
       try{ return !(window.RTGTokens && RTGTokens.cardOnly && RTGTokens.cardOnly(x[3])); }catch(e){ return true; }
     });
     if(!GAMES.length) GAMES = ALL.slice(0,4);       // signed out: show the four on offer
@@ -1599,7 +1658,13 @@ window.GA_ID='G-L29P5MRWKE';
     total++; if (p[2]) { n++; el.classList.add('done'); }
   });
   if (!total) { total = 4; }                       // signed out: the four on offer
+  // day.js is the authority on the count: it applies the played-stays-counted
+  // rule above, which the pip loop does not, so the two can differ by one for
+  // a free player who played a trial today. The ring shows day.js.
+  try { var DS = RTGDay.state(); n = DS.doneN; total = DS.total; } catch (e) {}
   document.getElementById('dprogT').textContent = n + ' / ' + total + ' played';
+  try { RTGDay.ring(document.getElementById('dring'), { n: n, total: total, size: 30, stroke: 3.5, label: '' }); } catch (e) {}
+  try { paintDayCard(); } catch (e) {}
   if (n === total) {
     document.getElementById('dprog').classList.add('all');
     document.getElementById('double').classList.add('on');
