@@ -1,0 +1,55 @@
+name: All-Stars checks
+
+# Run The All-Stars is one self contained file that touches the DOM on every
+# line, so its rules are replayed in a headless browser rather than imported.
+# Both commands run locally, unchanged:
+#
+#   node allstars/check-posture.mjs   the game stays out of the indexed site
+#   node allstars/verify-rules.mjs    walk-offs, the mercy rule, extra innings,
+#                                     one standings order, abandoned games
+#
+# The second needs Playwright's Chromium, installed here and nowhere else.
+# No secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'allstars/**'
+      - 'sitemap.xml'
+      - 'index.html'
+      - '.github/workflows/allstars-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'allstars/**'
+      - 'sitemap.xml'
+      - 'index.html'
+      - '.github/workflows/allstars-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: allstars-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # First, because it is the one with consequences beyond this game: the
+      # robots tag is what keeps an unlaunched game out of the AdSense audit.
+      - name: Discoverability posture
+        run: node allstars/check-posture.mjs
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+
+      - name: The rules, replayed
+        run: node allstars/verify-rules.mjs

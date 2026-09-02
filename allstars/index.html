@@ -1776,12 +1776,35 @@ function render() {
 }
 $('#btn-home').addEventListener('click', () => {
   if (State.game && State.game.live) {
-    if (!confirm('Abandon the current game and return to the menu?')) return;
+    if (!abandonGame()) return;
   }
   State.game = null;
   State.screen = 'menu';
   render();
 });
+
+/* Leaving a live game. An exhibition is a pick up game and just stops. A
+   season, playoff or cup game COUNTS: it is filed as a loss at the score it
+   stood at, and the confirm says so, because the old behaviour recorded
+   nothing and "End Game" was a free replay of any afternoon going badly.
+   Returns false if the player changed their mind. */
+function abandonGame() {
+  const g = State.game;
+  if (!g || !g.live) { State.game = null; return true; }
+  const counts = State.mode !== 'exhibition';
+  const you = g.away.isYou ? g.away : g.home;
+  const foe = g.away.isYou ? g.home : g.away;
+  const msg = counts
+    ? `End this game? It counts as a loss, ${you.score} to ${foe.score} as it stands.`
+    : 'End this game and return to the menu?';
+  if (!confirm(msg)) return false;
+  endAtBatCleanup();
+  Sound.music.stop();
+  if (!counts) { State.game = null; return true; }
+  g.forfeit = true;
+  finishGame();
+  return true;
+}
 
 
 /* ============================================================================
@@ -2875,6 +2898,10 @@ function renderSettings() {
     innRow.appendChild(t);
   });
   card.appendChild(innRow);
+  card.appendChild(el('p', null,
+    `A tie goes to extra innings. A lead of ${MERCY_RUNS} from the `
+    + `${ordinal(Math.max(3, State.innings - 1))} inning on ends the game early (mercy rule). `
+    + 'Ending a Season or Cup game early counts as a loss.'));
 
   card.appendChild(el('h3', null, 'Difficulty'));
   const dRow = el('div','toggle-row');
@@ -3150,6 +3177,7 @@ function startSeason() {
     league: emptyLeague(),
     leagueSchedule: null,   /* filled below: it needs the schedule */
     leagueDone: 0,
+    tiebreak: drawTiebreaks(),
   };
   State.season.leagueSchedule = buildLeagueSchedule(State.season.schedule);
   saveSeason(State.season);
@@ -3187,31 +3215,120 @@ function buildLeagueSchedule(mySchedule) {
 }
 function emptyLeague() {
   const out = {};
-  for (const o of OPPONENTS) out[o.name] = { w: 0, l: 0 };
+  for (const o of OPPONENTS) out[o.name] = { w: 0, l: 0, rd: 0 };
   return out;
 }
 /* One CPU game. A logistic on the rating gap rather than a threshold, so the
-   better club is favoured without the worse one being unable to win. */
+   better club is favoured without the worse one being unable to win. Comes
+   back with a scoreline, because run differential is the second tiebreak and
+   a table that breaks ties on a number nobody generated is a coin flip with
+   a column header. */
 function simulateLeagueGame(a, b) {
   const ra = teamRating((opponentByName(a) || {}).roster || []);
   const rb = teamRating((opponentByName(b) || {}).roster || []);
   const p = 1 / (1 + Math.exp(-(ra - rb) / 6));
-  return Math.random() < p ? a : b;
+  const winner = Math.random() < p ? a : b;
+  const loser = winner === a ? b : a;
+  const ls = Math.floor(Math.random() * 5);                 /* 0-4 */
+  const ws = ls + 1 + Math.floor(Math.random() * 6);        /* by 1-6 */
+  return { winner, loser, ws, ls };
 }
 /* Advance the league through one round. Guarded on leagueDone so a double
    call, a reload part way through, or a replayed save cannot run the same
-   round twice and inflate the table. */
-function advanceLeague(S, roundIdx, myFoe, iWon) {
+   round twice and inflate the table. The player's own score comes in so the
+   opponent's run differential is the real one. */
+function advanceLeague(S, roundIdx, myFoe, iWon, myScore, foeScore) {
   if (!S.leagueSchedule || roundIdx < 0) return;
   if ((S.leagueDone | 0) > roundIdx) return;
-  const bump = (n, win) => { const t = S.league[n]; if (t) { if (win) t.w++; else t.l++; } };
-  bump(myFoe, !iWon);
+  const bump = (n, win, rd) => {
+    const t = S.league[n];
+    if (!t) return;
+    if (win) t.w++; else t.l++;
+    t.rd = (t.rd | 0) + (rd | 0);
+  };
+  const haveScore = typeof myScore === 'number' && typeof foeScore === 'number';
+  bump(myFoe, !iWon, haveScore ? foeScore - myScore : (iWon ? -3 : 3));
   for (const [a, b] of (S.leagueSchedule[roundIdx] || [])) {
-    const w = simulateLeagueGame(a, b);
-    bump(a, w === a);
-    bump(b, w === b);
+    const r = simulateLeagueGame(a, b);
+    bump(r.winner, true, r.ws - r.ls);
+    bump(r.loser, false, r.ls - r.ws);
   }
   S.leagueDone = roundIdx + 1;
+}
+
+/* ONE ORDER FOR THE TABLE AND THE BRACKET.
+   The hub sorted wins then losses; the seeding sorted wins then a fresh
+   Math.random(). Two orders for the same eighteen clubs, so the hub could
+   show you fourth and the bracket could leave you out, and the coin was
+   tossed again every time the screen drew. Everything that ranks clubs now
+   asks this, and the last resort is a coin stored on the season so it
+   lands the same way on every screen.
+
+   Order: wins, then run differential, then the stored coin. Head to head
+   settles a TWO way tie only, after the sort: as a sort key it makes cycles
+   (you beat X, Y out-scores you, X out-coins Y) and a comparator with a
+   cycle in it hands back whatever order the engine felt like. Only the
+   player's games are recorded, so it only ever separates you from one club. */
+function standingsOrder(S) {
+  const rec = seasonRecord(S);
+  const myRd = S.results.reduce((a, r) => a + ((r.you | 0) - (r.them | 0)), 0);
+  const rows = [{ name: S.teamName, roster: S.team, w: rec.w, l: rec.l, rd: myRd, you: true }];
+  for (const o of OPPONENTS) {
+    const t = S.league[o.name] || { w: 0, l: 0, rd: 0 };
+    rows.push({ name: o.name, roster: o.roster, w: t.w, l: t.l, rd: t.rd | 0, you: false });
+  }
+  const coin = S.tiebreak || {};
+  const h2h = (a, b) => {
+    /* Positive when a beat b more than b beat a, over the games recorded. */
+    const me = a.you ? a : (b.you ? b : null);
+    if (!me) return 0;
+    const other = me === a ? b : a;
+    let d = 0;
+    for (const r of S.results) if (r.opponent === other.name) d += r.win ? 1 : -1;
+    return me === a ? d : -d;
+  };
+  rows.sort((a, b) =>
+    (b.w - a.w) || (a.l - b.l) || (b.rd - a.rd)
+    || ((coin[b.name] || 0) - (coin[a.name] || 0)));
+  /* Two way ties go to the head to head result. */
+  for (let i = 0; i + 1 < rows.length; i++) {
+    const a = rows[i], b = rows[i + 1];
+    const tiedPair = a.w === b.w && a.l === b.l
+      && !(i > 0 && rows[i - 1].w === a.w && rows[i - 1].l === a.l)
+      && !(i + 2 < rows.length && rows[i + 2].w === a.w && rows[i + 2].l === a.l);
+    if (tiedPair && h2h(b, a) > 0) { rows[i] = b; rows[i + 1] = a; }
+  }
+  rows.forEach((r, i) => { r.rank = i + 1; });
+  return rows;
+}
+/* The stored coin: one number per club, drawn once per season. */
+function drawTiebreaks() {
+  const out = {};
+  for (const o of OPPONENTS) out[o.name] = Math.random();
+  out[State.teamName] = Math.random();
+  return out;
+}
+/* Where the player finished, and how far off the bracket. */
+function seasonFinish(S) {
+  const rows = standingsOrder(S);
+  const me = rows.find(r => r.you);
+  const fourth = rows[3];
+  const short = fourth ? Math.max(0, fourth.w - me.w) : 0;
+  return { rank: me.rank, of: rows.length, w: me.w, l: me.l, madeIt: me.rank <= 4,
+           short, onTiebreak: me.rank > 4 && short === 0 };
+}
+/* "5th of 18" and the like, for the banners. */
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+/* One sentence on where a finished regular season left the player. */
+function finishLine(S) {
+  const f = seasonFinish(S);
+  if (f.madeIt) return `You finished ${ordinal(f.rank)} of ${f.of} at ${f.w}-${f.l}: in the bracket.`;
+  const why = f.onTiebreak ? 'out on the tiebreak (head to head in a two way tie, then run differential)'
+            : `${f.short} game${f.short === 1 ? '' : 's'} short of the bracket`;
+  return `You finished ${ordinal(f.rank)} of ${f.of} at ${f.w}-${f.l}, ${why}.`;
 }
 /* A season saved before the league had a schedule carries a finished table
    and no way to know which games produced it. Rebuild one from the results
@@ -3227,11 +3344,18 @@ function migrateSeason(S) {
     S.franchise.parkName = PARKS[S.franchise.park].name;
   }
   if (!S.homeAt) S.homeAt = buildHomeDates();
+  if (!S.tiebreak) {
+    /* Drawn once and kept, so the order never changes between screens. */
+    S.tiebreak = {};
+    for (const o of OPPONENTS) S.tiebreak[o.name] = Math.random();
+    S.tiebreak[S.teamName] = Math.random();
+  }
+  if (S.league) for (const n of Object.keys(S.league)) if (S.league[n].rd == null) S.league[n].rd = 0;
   if (S.leagueSchedule) return S;
   S.leagueSchedule = buildLeagueSchedule(S.schedule || []);
   S.league = emptyLeague();
   S.leagueDone = 0;
-  (S.results || []).forEach((r, i) => advanceLeague(S, i, r.opponent, r.win));
+  (S.results || []).forEach((r, i) => advanceLeague(S, i, r.opponent, r.win, r.you, r.them));
   return S;
 }
 function teamRating(keys) {
@@ -3270,8 +3394,12 @@ function renderSeasonHub() {
   const rec = seasonRecord(S);
   const games = S.results.length;
   const banner = el('div','banner');
-  if (S.playoffs) {
-    banner.innerHTML = `<b>Playoffs.</b> Regular season done at ${rec.w}-${rec.l}.`;
+  const inBracket = !!(S.playoffs && S.playoffs.seeds.some(r => r.you));
+  if (S.playoffs && inBracket) {
+    banner.innerHTML = `<b>Playoffs.</b> Regular season done at ${rec.w}-${rec.l}. ${finishLine(S)}`;
+  } else if (S.playoffs) {
+    /* This used to say "Playoffs." to a team that was not in them. */
+    banner.innerHTML = `<b>Season over.</b> ${finishLine(S)} The top four play on without you.`;
   } else {
     banner.innerHTML = `<b>Regular season.</b> ${rec.w}-${rec.l} through ${games} game${games===1?'':'s'} of 7.`;
   }
@@ -3304,9 +3432,12 @@ function renderSeasonHub() {
       };
       nextCard.appendChild(play);
     } else {
+      const fin = seasonFinish(S);
       nextCard.appendChild(el('h3', null, 'Regular season complete'));
-      nextCard.appendChild(el('p', null, 'Ready to seed the playoff bracket.'));
-      const b = el('button','btn','Enter Playoffs');
+      nextCard.appendChild(el('p', null, finishLine(S)
+        + (fin.madeIt ? ' The top four play a single elimination bracket; the higher seed hosts.'
+                      : ' You can watch the bracket play out, then close the season.')));
+      const b = el('button','btn', fin.madeIt ? 'Enter Playoffs' : 'See the Bracket');
       b.onclick = () => {
         S.playoffs = seedPlayoffs(S);
         saveSeason(S);
@@ -3319,7 +3450,7 @@ function renderSeasonHub() {
   } else {
     const bcard = el('div','card');
     bcard.appendChild(el('h3', null, 'Playoff bracket'));
-    const b = el('button','btn','Open Bracket');
+    const b = el('button','btn', inBracket ? 'Open Bracket' : 'See the Playoffs');
     b.onclick = () => { State.screen='bracket'; render(); };
     bcard.appendChild(b);
     s.appendChild(bcard);
@@ -3329,21 +3460,18 @@ function renderSeasonHub() {
   const stCard = el('div','card');
   stCard.appendChild(el('h3', null, 'League standings'));
   const table = el('table','table');
-  table.innerHTML = '<thead><tr><th>Team</th><th class="n">W</th><th class="n">L</th></tr></thead>';
+  table.innerHTML = '<thead><tr><th>Team</th><th class="n">W</th><th class="n">L</th><th class="n" title="Run differential">RD</th></tr></thead>';
   const tbody = el('tbody');
-  const rows = [];
-  rows.push({ name: S.teamName, w: rec.w, l: rec.l, you:true });
-  for (const o of OPPONENTS) {
-    rows.push({ name:o.name, w:S.league[o.name].w, l:S.league[o.name].l });
-  }
-  rows.sort((a,b) => b.w - a.w || a.l - b.l);
-  for (const r of rows) {
+  /* The one order. The bracket is seeded from the same list. */
+  for (const r of standingsOrder(S)) {
     const tr = el('tr', r.you ? 'you' : '');
-    tr.innerHTML = `<td>${r.name}</td><td class="n">${r.w}</td><td class="n">${r.l}</td>`;
+    const rd = (r.rd > 0 ? '+' : '') + r.rd;
+    tr.innerHTML = `<td>${r.rank}. ${r.name}</td><td class="n">${r.w}</td><td class="n">${r.l}</td><td class="n">${rd}</td>`;
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
   stCard.appendChild(table);
+  stCard.appendChild(el('p', null, 'Top four make the playoffs. Ties: head to head in a two way tie, then run differential, then a coin drawn once at the start of the season.'));
   s.appendChild(stCard);
 
   /* Past results */
@@ -3358,7 +3486,8 @@ function renderSeasonHub() {
     S.results.forEach((r,i) => {
       const tr = el('tr');
       tr.innerHTML = `<td>${i+1}</td><td>${r.opponent}</td>`
-        + `<td>${r.win?'<span style="color:var(--gold)">W</span>':'<span style="color:var(--red)">L</span>'}</td>`
+        + `<td>${r.win?'<span style="color:var(--gold)">W</span>':'<span style="color:var(--red)">L</span>'}`
+        + `${r.forfeit ? ' <span style="color:var(--text-dim)">(abandoned)</span>' : ''}</td>`
         + `<td class="n">${r.you} to ${r.them}</td>`;
       tb.appendChild(tr);
     });
@@ -3422,11 +3551,10 @@ function renderSeasonHub() {
 }
 
 function seedPlayoffs(S) {
-  const rows = [];
-  rows.push({ name: S.teamName, roster: S.team, w: seasonRecord(S).w, you:true });
-  for (const o of OPPONENTS) rows.push({ name:o.name, roster:o.roster, w: S.league[o.name].w });
-  rows.sort((a,b) => b.w - a.w || Math.random() - 0.5);
-  const top4 = rows.slice(0,4);
+  /* The same order the hub shows. If the table says fourth, the bracket
+     says fourth. */
+  const top4 = standingsOrder(S).slice(0, 4)
+    .map(r => ({ name: r.name, roster: r.roster, w: r.w, you: r.you }));
   return {
     seeds: top4,
     semis: [
@@ -3443,6 +3571,12 @@ function renderBracket() {
   const P = S.playoffs;
   const s = el('div','screen');
   s.appendChild(el('h2', null, 'Playoff bracket'));
+  const inBracket = P.seeds.some(r => r.you);
+  if (!inBracket) {
+    const out = el('div','banner');
+    out.innerHTML = `<b>You are not in it.</b> ${finishLine(S)}`;
+    s.appendChild(out);
+  }
 
   const seedsCard = el('div','card');
   seedsCard.appendChild(el('h3', null, 'Seeds'));
@@ -3499,6 +3633,16 @@ function renderBracket() {
     if (nextMatch.playerInvolved) {
       const b = el('button','btn','Play Your Match');
       b.onclick = () => startPlayoffMatch(nextMatch);
+      row.appendChild(b);
+    } else if (!inBracket) {
+      /* Three clicks of "Simulate CPU Match" for a season you are already
+         out of is a chore. One click plays the bracket out. */
+      const b = el('button','btn','Simulate the Playoffs');
+      b.onclick = () => {
+        let nm;
+        while ((nm = nextPlayoffMatch(P)) && !nm.playerInvolved) simulateCpuMatch(nm);
+        saveSeason(S); render();
+      };
       row.appendChild(b);
     } else {
       const b = el('button','btn','Simulate CPU Match');
@@ -3796,6 +3940,9 @@ function stopFieldLoop() {
 function startAtBat() {
   const g = State.game;
   if (g.over) return;
+  /* Belt and braces: nothing starts an at bat after a walk-off, whichever
+     path scored the run. */
+  if (g.walkoff) { g.over = true; g.winner = 'home'; return finishGame(); }
   g.balls = 0; g.strikes = 0;
   /* Open this half inning's bucket on the line score so the board shows a
      zero for an inning in progress and stays blank for ones not reached. */
@@ -5092,6 +5239,15 @@ function recordWalk() {
   else if (bases[0]) { g.bases = [batter, bases[0], bases[2]]; }
   else { g.bases = [batter, bases[1], bases[2]]; }
   if (scored) scoreRuns(scored);
+  refreshHud();
+  /* A walk-off WALK. scoreRuns raised the plaque, and this path used to
+     walk straight past it: next batter, next pitch, a game the board said
+     was over still being played. Hits end through afterHitTransition; a
+     forced-in winning run ends here. */
+  if (g.walkoff) {
+    g.over = true; g.winner = 'home';
+    return setTimeout(finishGame, BEAT.afterHomer);
+  }
   nextBatter();
   refreshHud();
   setTimeout(startAtBat, BEAT.afterWalk);
@@ -5163,10 +5319,24 @@ function endHalfInning() {
   }
   const done = checkGameOver();
   refreshHud();
-  if (done) return finishGame();
+  if (done) {
+    if (g.mercy) {
+      /* Say it before the screen changes, or the game just stops. */
+      addLog(`Mercy rule: a lead of ${MERCY_RUNS} ends it.`, true);
+      showCallout('MERCY RULE', 'homer');
+      return setTimeout(finishGame, BEAT.afterOut);
+    }
+    return finishGame();
+  }
   /* Also fire a walk-off check right after flipping to the bottom of the
      final inning, in case the home team is already ahead. */
   if (checkWalkOff()) return finishGame();
+  /* Into extra innings: the board grows a column and the plaque says so,
+     after SIDE RETIRED has had its moment. */
+  if (g.half === 'top' && g.inning > g.innings) {
+    addLog(`Tied after ${g.innings}. Extra innings.`, true);
+    setTimeout(() => { if (State.game === g && !g.over) showCallout('EXTRA INNINGS', 'homer'); }, 1200);
+  }
   setTimeout(startAtBat, BEAT.betweenHalfInnings);
 }
 
@@ -5201,28 +5371,40 @@ function checkGameOver() {
   if (g.half === 'bottom' && g.inning === g.innings && g.home.score > g.away.score) {
     g.over = true; g.winner = 'home'; return true;
   }
-  /* Cap arcade blowouts at 25 to prevent slog */
-  if (g.away.score - g.home.score >= 15 && g.inning >= Math.max(3, g.innings - 1)) {
-    g.over = true; g.winner = 'away'; return true;
+  /* Mercy rule: a lead of MERCY_RUNS from the second last inning on ends it.
+     Flagged on the game so the plaque, the result screen and the press all
+     say so; for a long time this just ended the game and let the player
+     wonder why. */
+  if (g.away.score - g.home.score >= MERCY_RUNS && g.inning >= mercyFrom(g)) {
+    g.over = true; g.winner = 'away'; g.mercy = true; return true;
   }
-  if (g.home.score - g.away.score >= 15 && g.inning >= Math.max(3, g.innings - 1)) {
-    g.over = true; g.winner = 'home'; return true;
+  if (g.home.score - g.away.score >= MERCY_RUNS && g.inning >= mercyFrom(g)) {
+    g.over = true; g.winner = 'home'; g.mercy = true; return true;
   }
   return false;
 }
+const MERCY_RUNS = 15;
+function mercyFrom(g) { return Math.max(3, g.innings - 1); }
 
 function finishGame() {
   const g = State.game;
+  /* Once. A pending play timer can land here after the game has already
+     been filed (an abandoned game, a double play that also ended the half),
+     and a second pass would record the result twice. */
+  if (g.finished) return;
+  g.finished = true;
   g.live = false;
+  g.over = true;
   stopFieldLoop();
   Sound.music.stop();
   const you = g.away.isYou ? g.away : g.home;
   const foe = g.away.isYou ? g.home : g.away;
-  const win = you.score > foe.score;
+  const win = you.score > foe.score && !g.forfeit;
 
   if (State.mode === 'season' && State.season && !State.season.playoffs) {
     State.season.results.push({
       opponent: foe.name, win, you: you.score, them: foe.score,
+      forfeit: !!g.forfeit,
     });
     /* Roll individual stats forward */
     const ps = State.season.playerStats;
@@ -5243,7 +5425,7 @@ function finishGame() {
     for (const [k, v] of Object.entries(g.stats.hits || {})) bumpPer(k, 'hits', v);
     for (const [k, v] of Object.entries(g.stats.ab || {})) bumpPer(k, 'ab', v);
     /* The rest of the league played today too. */
-    advanceLeague(State.season, State.season.results.length - 1, foe.name, win);
+    advanceLeague(State.season, State.season.results.length - 1, foe.name, win, you.score, foe.score);
     saveSeason(State.season);
   } else if (State.mode === 'playoff' && State.season) {
     /* Record playoff result */
@@ -5305,7 +5487,9 @@ function finishGame() {
   g.freshUnlocks = refreshUnlocks();
 
   const toResult = () => { State.screen = 'result'; render(); };
-  if (!pressActive()) { toResult(); return; }
+  /* No press conference after a forfeit: every line in the pool quotes a
+     score that decided something, and this one did not. */
+  if (!pressActive() || g.forfeit) { toResult(); return; }
   const margin = Math.abs(you.score - foe.score);
   /* A question every third game or so. Asked every time it is an interview
      show; asked never and the choices may as well not exist. */
@@ -6763,12 +6947,8 @@ function renderGame() {
   const ctrl = el('div','controls');
   const abort = el('button','btn ghost','End Game');
   abort.onclick = () => {
-    if (confirm('End this game and return to the menu?')) {
-      endAtBatCleanup();
-      Sound.music.stop();
-      State.game = null; State.screen = State.mode==='exhibition' ? 'menu' : 'season-hub';
-      render();
-    }
+    if (!abandonGame()) return;
+    if (!State.game) { State.screen = 'menu'; render(); }
   };
   ctrl.appendChild(abort);
   s.appendChild(ctrl);
@@ -6810,7 +6990,9 @@ function refreshAtBatCard(node) {
 function renderLineScore(node) {
   const g = State.game;
   if (!g) return;
-  const innings = g.innings;
+  /* Extra innings grow the board. It used to stop at the scheduled count,
+     so a tenth inning was played on a nine column board. */
+  const innings = Math.max(g.innings, g.inning, g.lineScore.away.length, g.lineScore.home.length);
   const rowFor = (label, arr, score, isYou) => {
     let html = `<td class="team">${label}${isYou?' *':''}</td>`;
     for (let i = 0; i < innings; i++) {
@@ -6957,15 +7139,21 @@ function renderResult() {
   const win = you.score > foe.score;
 
   const s = el('div','screen');
-  s.appendChild(el('h2', null, win ? 'You win.' : 'You lose.'));
+  s.appendChild(el('h2', null, g.forfeit ? 'Game abandoned.' : win ? 'You win.' : 'You lose.'));
 
-  /* Headline: final score, with a walk-off note when it earned one. */
+  /* Headline: final score, with a note when the ending had a name. */
   const head = el('div','card');
+  const note = g.forfeit
+    ? `Left in the ${ordinal(g.inning)} inning. It counts as a loss.`
+    : g.walkoff ? 'Walk-off win.'
+    : g.mercy ? `Mercy rule: a lead of ${MERCY_RUNS} from the ${ordinal(mercyFrom(g))} inning on ends the game.`
+    : g.inning > g.innings ? `Decided in ${g.inning} innings.`
+    : '';
   head.innerHTML =
     `<h3>Final</h3>`
     + `<p style="font-size:18px;color:var(--text)">${you.name} <b style="color:var(--gold)">${you.score}</b>`
     + ` &nbsp;·&nbsp; ${foe.name} <b>${foe.score}</b></p>`
-    + (g.walkoff ? `<p style="color:var(--gold)">Walk-off win.</p>` : '');
+    + (note ? `<p style="color:var(--gold)">${note}</p>` : '');
   s.appendChild(head);
 
   /* Anything unlocked by this game gets its own celebration card. */
@@ -7215,8 +7403,7 @@ function renderSeasonEnd() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, youWon ? 'Champions.' : 'Season complete.'));
   const card = el('div','card');
-  const rec = seasonRecord(S);
-  card.innerHTML = `<p>Regular season ${rec.w}-${rec.l}.</p>`;
+  card.innerHTML = `<p>${finishLine(S)}</p>`;
   if (champ) card.innerHTML += `<p>Champion: <b style="color:var(--gold)">${champ.name}</b></p>`;
   const ps = S.playerStats;
   card.innerHTML +=
