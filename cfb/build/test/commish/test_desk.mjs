@@ -360,7 +360,15 @@ console.log('\n=== you get to answer the room ===');
       if (st && st.forecast) onForecast++;
       if (st && !st.forecast) {
         offered++;
-        const before = await p.$$eval('#r-room .bl .lv', (e) => e.map((x) => Number(x.textContent)));
+        /* THE REAL NUMBERS, NOT THE PRINTED ONES. A rebuttal moves a bloc by six tenths of a
+           point on purpose (see REBUT_ANGRY and REBUTTALS), and the reaction screen prints
+           standings rounded to whole numbers. So "did the room move" read off the page is
+           really "did any of nine fractional moves happen to cross a rounding boundary",
+           which is true on some draws and false on others: the assertion passed for months
+           and then failed the first time the docket dealt a different case first. Read the
+           ledger the page is drawing from, and the question is the one being asked. */
+        const before = await p.evaluate(() =>
+          Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
         const says = await p.$$eval('#r-room .bl .say', (e) => e.length);
         await p.click('#r-rebutcard .reb:nth-child(1)');
         await p.waitForTimeout(500);
@@ -373,7 +381,8 @@ console.log('\n=== you get to answer the room ===');
         }));
         answered.opts = st.opts;
         answered.before = before;
-        answered.after = await p.$$eval('#r-room .bl .lv', (e) => e.map((x) => Number(x.textContent)));
+        answered.after = await p.evaluate(() =>
+          Object.assign({}, window.PS_CFB_COMMISH_TEST.world().blocs));
         answered.saysBefore = says;
       }
       await tap('#b-next'); await p.waitForTimeout(400); continue;
@@ -395,8 +404,10 @@ console.log('\n=== you get to answer the room ===');
     ok('  answering says what it did', answered.said && answered.chips.length > 0,
       answered.chips.join(', '));
     ok('  and can only be done once', answered.gone);
-    ok('  it moves the room', answered.after.some((v, i) => v !== answered.before[i]),
-      answered.before.join(' ') + '  ->  ' + answered.after.join(' '));
+    const shifted = Object.keys(answered.after)
+      .filter((b) => answered.after[b] !== answered.before[b])
+      .map((b) => b + ' ' + answered.before[b].toFixed(1) + ' to ' + answered.after[b].toFixed(1));
+    ok('  it moves the room', shifted.length > 0, shifted.join(', ') || 'nothing moved');
     /* THE REGRESSION THIS EXISTS FOR. */
     ok('  and the room is still the reaction screen afterwards',
       answered.says === answered.saysBefore && answered.deltas === 9,

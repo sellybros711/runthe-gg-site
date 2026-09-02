@@ -321,6 +321,24 @@
   .bl .mv em{position:absolute;top:0;bottom:0;border-radius:3px;transition:width .5s var(--ez)}
   .bl.react .dl{font-size:15px}
 
+  /* ---- being taught the desk, once ----
+     A MODE WITH NINETY-NINE CASES IN IT NEVER SAID HOW ONE WORKS. The opening now ends on a
+     real case rather than on a briefing screen, which is the right place to say it: four
+     lines, numbered, on the first case of a term and on nothing else afterwards. It is not a
+     tour and it does not block anything. It is the label on the thing you are already looking
+     at. */
+  .teach{border:1px solid rgba(245,179,1,.34);background:rgba(245,179,1,.05);
+    border-radius:12px;padding:12px 13px;margin-bottom:14px}
+  .teach>b{display:block;font-family:var(--fn);font-size:10px;font-weight:700;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .teach>span{display:block;margin-top:5px;font-size:12px;line-height:1.45;color:var(--dim)}
+  .teach ol{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:7px}
+  .teach li{display:grid;grid-template-columns:19px 1fr;gap:9px;align-items:start;
+    font-size:12.5px;line-height:1.4;color:var(--ink)}
+  .teach li i{font-style:normal;font-family:var(--fn);font-size:9.5px;font-weight:800;
+    line-height:19px;text-align:center;border-radius:50%;background:rgba(245,179,1,.18);
+    color:var(--gold)}
+
   /* ---- the desk ----
      THE SCREEN WHERE THE MODE IS ACTUALLY PLAYED, and it was a column of prose. A setup
      paragraph, three quotes each with its own header line, and three options each with a
@@ -2097,6 +2115,10 @@
   <!-- The desk: one item, one ruling. -->
   <div class="screen" id="s-desk" data-in="slide">
     <div class="beatbar" id="desk-beatbar"></div>
+    <!-- HOW THIS SCREEN WORKS, on the one case that is somebody's first and on no other.
+         Written on the item rather than here, because the only thing that should ever be
+         able to teach the desk is a case sitting on it. See paintTeach(). -->
+    <div class="teach" id="d-teach" hidden></div>
     <div class="eyebrow gold" id="d-eyebrow"></div>
     <h2 id="d-title"></h2>
     <!-- Where the sport is standing while this lands. See paintSituation(). -->
@@ -2364,7 +2386,7 @@
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=6"></script>
-<script src="docket.js?v=23"></script>
+<script src="docket.js?v=24"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2384,7 +2406,7 @@
 <!-- The podium. Reads nothing at load time; see media.js. -->
 <script src="media.js?v=2"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=6"></script>
+<script src="scene.js?v=7"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=2"></script>
@@ -3015,15 +3037,19 @@ function advanceScene(){
   if(scAt>=scFrames.length){ endScene(); return; }
   paintFrame();
 }
-function endScene(){
+/* `skipped` SAYS WHICH WAY IT ENDED, and the intro is the one scene that cares. Watching the
+   opening to its last line means the chief hands you the phone and you take the call; pressing
+   Skip means you have played this before and want the office. Skip has to mean skip the whole
+   opening, the first case included, or the button is a trap for the one player it is for. */
+function endScene(skipped){
   clearTimeout(scTimer);
   const go=scAfter; scAfter=null; scFrames=[]; scAt=0;
-  if(go) go(); else office();
+  if(go) go(!!skipped); else office();
 }
 
 $('s-scene').onclick=(e)=>{ if(e.target.closest('#b-scene-skip')) return; advanceScene(); };
 $('s-scene').onkeydown=(e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); advanceScene(); } };
-$('b-scene-skip').onclick=(e)=>{ e.stopPropagation(); endScene(); };
+$('b-scene-skip').onclick=(e)=>{ e.stopPropagation(); endScene(true); };
 
 /* THE ONE PLACE A SCENE CAN INTERRUPT, which is the office, on arrival. Anywhere else and a
    cutscene would land in the middle of a decision. Returns whether it took the screen, so
@@ -3032,6 +3058,18 @@ function sceneCheck(after){
   if(!SCN) return false;
   const sc=SCN.next(world,L,situationNow());
   if(!sc) return false;
+  /* THE OPENING HANDS YOU THE PHONE. The chief's last three lines are "your first call is
+     already holding", "fair warning, it is a lawsuit", and "good luck", and the way out of
+     that used to be a briefing screen with nine cards on it. So the intro ends ON the call:
+     one case, on the desk, with the four things this mode asks of you written beside it. It
+     is the tutorial, and it is a real ruling that goes on the record like every other one.
+
+     UNLESS YOU SKIPPED. See endScene(). */
+  if(sc.id==='take-office'){
+    return playScene(sc,(skipped)=>{
+      if(skipped||!openCase(FIRST_CASE)){ sceneOff=true; office(); sceneOff=false; }
+    });
+  }
   return playScene(sc,after);
 }
 
@@ -4065,8 +4103,47 @@ function paintSituation(el,s){
 }
 
 /* ── the desk ─────────────────────────────────────────────────────────────────── */
+/* THE ONE PLACE THE MODE EXPLAINS ITSELF, and it is a property of the case rather than a
+   setting on the player. An item that carries `teach` gets the panel and every other item on
+   every other beat does not, so the coaching cannot follow somebody into year three and there
+   is no flag anywhere that has to be turned off. */
+function paintTeach(el,it){
+  if(!el) return;
+  const t=(it&&it.teach)||null;
+  if(!t||!t.steps||!t.steps.length){ el.hidden=true; el.innerHTML=''; return; }
+  el.hidden=false;
+  el.innerHTML='<b>'+esc(t.head||'Your first case')+'</b>'
+    +(t.say?'<span>'+esc(t.say)+'</span>':'')
+    +'<ol>'+t.steps.map((s,i)=>'<li><i>'+(i+1)+'</i><span>'+esc(s)+'</span></li>').join('')
+    +'</ol>';
+  reveal(el);
+}
+
+/* PUT A NAMED CASE ON THE DESK, without walking the calendar to find it. Two callers: the
+   opening cutscene, which ends on the first case rather than on a dashboard, and the guards,
+   which have to make an assertion about a particular one of ninety-nine items rather than
+   about whichever one a seed produced. Returns whether it opened. */
+const FIRST_CASE='welcome-suit';
+function openCase(id){
+  const it=D.BY_ID[id];
+  if(!it) return false;
+  sit=situationNow();
+  item=it;
+  cast=D.castOf(item,world,L,draw,sit);
+  choice=null; dials={}; written=''; optOpen={}; optLong={}; asked=[];
+  (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
+  deskDay=CAL.decisionDay(world.year,world.beat,item.id);
+  sit=situationOn(deskDay)||sit;
+  save();
+  desk();
+  return true;
+}
+
 function desk(){
   paintBeatbar($('desk-beatbar'),world);
+  /* THE FOUR THINGS THIS SCREEN ASKS OF YOU, on the one case that is somebody's first. See
+     `teach` on welcome-suit in docket.js, and paintTeach(). */
+  paintTeach($('d-teach'),item);
   /* THE DATE, NOT THE BEAT NAME. The simulation has just walked to this day; the desk saying
      "Portal and signing day" after that reads as though the calendar was decoration. */
   $('d-eyebrow').textContent=(item.eyebrow||'')+' · '
@@ -6519,19 +6596,7 @@ window.PS_CFB_COMMISH_TEST={
      turns up takes several terms and lands on whichever it lands on, and an assertion about
      a specific door has to be made against that door. Same body as b-desk from the pick
      onwards, so the desk this produces is the desk the game produces. */
-  deskItem:(id)=>{
-    const it=D.BY_ID[id];
-    if(!it) return false;
-    sit=situationNow();
-    item=it;
-    cast=D.castOf(item,world,L,draw,sit);
-    choice=null; dials={}; written=''; optOpen={}; optLong={}; asked=[];
-    (item.dials||[]).forEach((d)=>{ dials[d.id]=d.base; });
-    deskDay=CAL.decisionDay(world.year,world.beat,item.id);
-    sit=situationOn(deskDay)||sit;
-    desk();
-    return true;
-  },
+  deskItem:(id)=>openCase(id),
   /* SETTING THE VARIABLE BY HAND, which is what a console does. Returns whether the ruling
      actually went through, so a guard can assert that a hidden option refuses rather than
      that it is merely not painted. */

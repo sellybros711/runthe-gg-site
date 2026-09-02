@@ -130,7 +130,14 @@ async function walk(reduced) {
   for (let i = 0; i < 24 && !ruled; i++) {
     if (await on(p, 's-office')) { await tap(p, '#b-desk'); await skipSim(p); await p.waitForTimeout(350); continue; }
     if (await on(p, 's-desk')) {
-      const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(200); }
+      /* CLICKED IN THE PAGE RATHER THAN THROUGH THE POINTER. The dock is sticky at the
+         bottom of the desk, so whether an option happens to sit under it depends on how
+         tall the case above it is, and a walker that fails on a long brief is a walker
+         that reports layout as a broken ruling. What this suite is measuring is what the
+         bars do afterwards. */
+      const o = await p.$('#d-options .opt');
+      if (o) { await p.evaluate(() => document.querySelector('#d-options .opt').click());
+        await p.waitForTimeout(200); }
       if (!(await tap(p, '#b-rule'))) break;
       await p.waitForTimeout(1500);
       ruled = await on(p, 's-room');
