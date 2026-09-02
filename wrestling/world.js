@@ -45,7 +45,7 @@ const L=(skin,hair,gear,trim,o)=>Object.assign({skin,hair,gear,trim},o||{});
 
 window.RTR_CHARS = [
   // ================= GRIT CITY WRESTLING (indie) =================
-  { id:'c_slade', name:'Deacon Slade', nick:'The Undertaker of Grit City', promo:'gcw', align:'heel', over:44,
+  { id:'c_slade', name:'Deacon Slade', nick:'The Gravedigger of Grit City', promo:'gcw', align:'heel', over:44,
     style:'brawler', attrs:{po:62,te:44,ae:30,ch:58,ps:66,to:88,st:60}, finisher:'The Last Rites',
     gimmick:'A soft-spoken deathmatch preacher who treats every match as a sermon and every weapon as scripture.',
     traits:['fearless','respected','violent'],

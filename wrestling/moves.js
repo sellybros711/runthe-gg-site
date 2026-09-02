@@ -94,7 +94,7 @@ window.RTR_MOVES = [
   M('u3a','submission',3,'Figure-Four Leglock',40,36,8,0.03,54),
   M('u3b','submission',3,'Crossface',      42,38, 8,0.03,56),
   M('u3c','submission',3,'Ankle Lock',     41,35, 8,0.03,55),
-  M('u4a','submission',4,'Sharpshooter',   54,56,10,0.04,66),
+  M('u4a','submission',4,'Scorpion Leglock',   54,56,10,0.04,66),
   M('u4b','submission',4,'Texas Cloverleaf',53,50,10,0.04,65),
   M('u4c','submission',4,'Triangle Choke', 52,48, 9,0.04,64),
   M('u5a','submission',5,'Walls of Jericho',72,74,13,0.05,78),
