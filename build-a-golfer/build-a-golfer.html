@@ -13997,7 +13997,41 @@ function scrSetup(){
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
   const wrap=$(`<div class="retro-creator setup-shop"></div>`);
   wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Your Closet':'Create Your Golfer'}</div>`));
-  wrap.appendChild($(`<div class="retro-sub">${editing?'Your closet &middot; dress your golfer with everything you own':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
+  wrap.appendChild($(`<div class="retro-sub">${editing?(guest?'Designing your golfer is part of a free account':'Your closet &middot; dress your golfer with everything you own'):((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+(guest?' &middot; sign in to design your golfer':' &middot; style your golfer, then build your skills'))}</div>`));
+
+  // A signed-out player does not design a golfer. Not the appearance chips, not the skin slider, not the
+  // name: the whole designer is an account feature, and the guest sees the golfer they will play as plus
+  // one clear way in. (This reverses the earlier decision that gave a guest the free appearance controls.)
+  if(guest){
+    wrap.appendChild($(`<div class="closet-hero" style="margin-top:6px"><div class="shop-preview">${avatarShowHTML()}</div></div>`));
+    const lock=$(`<div style="margin-top:14px;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(241,208,74,.10),rgba(10,22,38,.28));padding:16px 15px 15px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px"><span style="font-size:20px">🔒</span><b style="color:var(--gold);font-size:16px">Designing your golfer needs an account</b></div>
+      <div class="small muted" style="margin-bottom:13px;line-height:1.55">Skin tone, hair, style, handedness, your kit and your name are all yours the moment you sign in. It is free, it takes about twenty seconds, and it also puts <b style="color:var(--oncard)">your name on the leaderboards</b>, flies your <b style="color:var(--oncard)">country's flag</b> and <b style="color:var(--oncard)">saves your career</b>.</div>
+      ${unlockPerks()}
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 170px;padding:12px;margin:0">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:1 1 120px;padding:12px;margin:0">Sign In</button></div>
+      <div class="small muted center" style="margin-top:11px">${editing?'Until then you play as the standard golfer.':'Until then you play as the standard golfer, and your skills are still yours to draft.'}</div>
+    </div>`);
+    lock.querySelector('#setup-signup').onclick=()=>{ track('setup_signup_click'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
+    lock.querySelector('#setup-signin').onclick=()=>{ track('setup_signin_click'); S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
+    wrap.appendChild(lock);
+    add(wrap);
+    const gbar=$(`<div class="setup-actionbar"></div>`);
+    if(editing){
+      const back=$(`<button class="btn ghost" style="margin:0;flex:1 1 auto">‹ Back</button>`);
+      back.onclick=()=>{ S.shopPreview=null; S.setupEdit=false; const r=S.setupReturn; S.setupReturn=null;
+        if(r && typeof r==='object'){ S.screen=(r.screen&&r.screen!=='setup')?r.screen:'title'; S.overlay=r.overlay||null; }
+        else { S.screen='title'; S.overlay=(r==='record'?'record':null); }
+        render(); };
+      gbar.appendChild(back);
+    } else {
+      const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
+      back.onclick=()=>{S.shopPreview=null;reset();S.screen='title';render();};
+      const go=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Build Your Golfer ▸</button>`);
+      go.onclick=()=>{ S.shopPreview=null; if(!(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest:true}); S.screen='draft'; render(); };
+      gbar.appendChild(back); gbar.appendChild(go);
+    }
+    add(gbar); return;
+  }
 
   // CS484: CLOSET revamp — one clean two-tier layout (owner: "way too much scrolling ... don't like a bunch
   // of loose tabs ... tie everything together into one clean intuitive layout"). A SECTION segmented control
