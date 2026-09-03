@@ -6686,8 +6686,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <div class="bt them" id="bg-them"><span class="cd">OPP</span>
           <span class="rc"></span><b class="sc" id="bg-sthem">0</b></div>
       </div>
-      <div class="bbot"><span class="q name" id="bg-state">SCOUTING</span>
-        <span class="rd">BOSS</span></div>
+      <div class="bbot"><span class="q" id="bg-q">1ST</span>
+        <span class="ck" id="bg-ck">15:00</span>
+        <span class="rd" id="bg-state">BOSS</span></div>
+    </div>
+    <!-- The same field the playoffs draw drives on, played forward here: each drive appears
+         as the sim produces it, and the situation a call is made in is the one on the field. -->
+    <div class="pofield" id="bg-field">
+      <canvas id="bg-fcanvas" width="600" height="150"></canvas>
     </div>
     <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
     <!-- The two live calls, one at a time. Built by bossAsk, cleared as each resolves. -->
@@ -6872,8 +6878,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=82"></script>
-<script src="run.js?v=92"></script>
+<script src="engine.js?v=83"></script>
+<script src="run.js?v=93"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7202,7 +7208,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=44;
+const NEED_VERSION=45;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -7733,6 +7739,9 @@ function show(id){
      line about Andre Johnson's contract pinned across the front page while timers went on
      firing at rows nobody can see. */
   if(id!=='s-winter'&&typeof winterNarrOff==='function'){ winterClear(); winterNarrOff(); }
+  /* The boss game runs on its own timer and rAF, the way the playoffs do; leaving its screen
+     by any door has to stop them, or a drive keeps animating over whatever comes next. */
+  if(id!=='s-bgame'&&typeof bossStop==='function') bossStop();
   document.body.classList.toggle('rtp-hide-ads',NO_ADS.indexOf(id)>=0);
   /* THE FRONT PAGE IS REPAINTED EVERY TIME IT IS ARRIVED AT, not only at boot and on an
      auth change. It is the one screen a player comes back to from everywhere in the game
@@ -15218,44 +15227,61 @@ function dynToWinter(){
 /*
  * ─── THE BOSS GAME, ON SCREEN ──────────────────────────────────────────────────────
  *
- * Three screens, one flow: SCOUT (pick how to attack), PLAY (make two live calls on the
- * broadcast bug), RESULT (a reward or a sting, then into the winter). The game itself is
- * resolved by the engine: bossGameStart applies the scout read, bossGameCall resolves each
- * gamble, bossGameFinal reads the verdict. This file only drives the screens and animates
- * the numbers the engine hands back, the way runSim animates a season it did not decide.
+ * Three screens, one flow: SCOUT (pick how to attack), PLAY (a game played forward on the
+ * playoff field), RESULT (a reward or a sting, then into the winter).
+ *
+ * THE GAME IS THE ENGINE'S SIM, DRAWN. bossSimAdvance plays down by down and hands back a
+ * completed drive, a decision, or the final; this file animates each drive on the same
+ * drive chart the playoffs use, keeps the score bug and the clock, and when the sim stops on
+ * a real fourth down or two-point try it shows the actual situation and waits. The call goes
+ * straight back into bossSimResolve, which runs the play and decides where the ball goes. So
+ * the situation is the sim's own and the choice genuinely branches it.
  *
  * NOT SAVED MID-GAME. run.js autosaves at rest, and a boss game is not rest: a reload lands
  * on the OVER screen (dynResume routes phase OVER to paintOver), which offers the boss again.
  * The result is banked only when applyBossResult runs on the far side, and that call IS
  * wrapped, so once the reward is taken it survives a reload.
  */
-let bossState=null, bossRng=null, bossSpecNow=null;
-
-/* Two calls, in order. Words only; the swing and the odds are the engine's. */
-const BOSS_CALLS=[
-  { kind:'fourth', q:'Fourth and one, near midfield.',
-    go:{ b:'Go for it', s:'Convert and the drive lives' },
-    safe:{ b:'Punt', s:'Play field position' } },
-  { kind:'two', q:'You score. The chart says two is live.',
-    go:{ b:'Go for two', s:'Swing the margin' },
-    safe:{ b:'Kick the point', s:'Take the sure one' } },
-];
+let bossSim=null, bossRng=null, bossSpecNow=null, bossOppNow=null;
+let bossField=null, bossFcv=null, bossYouCol='#3a7bd5', bossThemCol='#e87461';
+let bossShown=0, bossTimer=null, bossRaf=0;
 
 function bossOppRow(){ const b=R.bossFor(run); return b?DATA.byTeamSeasonId[b.team_season_id]:null; }
 function bossThreeLetter(o){
   return String(E.nickname(o.franchise)||o.franchise).replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'OPP';
 }
-function setLeadBoss(){
-  const y=bossState.you, t=bossState.them;
-  $('bg-you').classList.toggle('lead',y>=t);
-  $('bg-them').classList.toggle('lead',t>=y);
+function bossStop(){ clearTimeout(bossTimer); cancelAnimationFrame(bossRaf); }
+function bossRenderScore(){
+  $('bg-syou').textContent=bossSim.you; $('bg-sthem').textContent=bossSim.them;
+  $('bg-you').classList.toggle('lead',bossSim.you>=bossSim.them);
+  $('bg-them').classList.toggle('lead',bossSim.them>=bossSim.you);
 }
+function bossSetClock(elapsed){
+  const q=Math.min(4,Math.floor(elapsed/900)+1);
+  $('bg-q').textContent=QNAME[q-1];
+  $('bg-ck').textContent=clockText(Math.max(0,900-(elapsed-(q-1)*900)));
+}
+/* Draw the completed drives up to a time, optionally with the drive in progress laid on top
+   so a fourth-down decision shows the ball where it actually is. */
+function bossDraw(upTo,live){
+  if(!bossField) return;
+  let ds=bossSim.drives;
+  if(live){
+    const c=bossSim.cur;
+    if(c) ds=ds.concat([{team:c.team,startYard:c.startAbs,
+      endYard:E_absYard(c.team,c.y),result:'live',tStart:c.tStart,tEnd:upTo}]);
+  }
+  drawDriveChart(bossField,bossFcv.width,bossFcv.height,ds,upTo,bossYouCol,bossThemCol,
+    'YOU',bossThreeLetter(bossOppNow));
+}
+/* Absolute yard, mirrored for the boss, matching the engine's own frame. */
+function E_absYard(team,y){ const v=team==='you'?y:100-y; return Math.max(0,Math.min(100,v)); }
 
 /* THE SCOUT. Shows the boss and its tell and offers the three attacks. */
 function bossScout(){
   const b=R.bossFor(run), o=bossOppRow();
   if(!b||!o){ dynToWinter(); return; }        // no boss data: do not strand the run
-  bossSpecNow=b;
+  bossSpecNow=b; bossOppNow=o;
   $('bs-season').textContent=run.seasonNo;
   $('bs-name').textContent=o.display;
   $('bs-rec').textContent=o.record+', and one of the best there has ever been.';
@@ -15274,83 +15300,141 @@ function bossScout(){
   show('s-bscout');
 }
 
-/* THE GAME. Start it with the chosen read, animate the kickoff scores, then ask the calls. */
+/* THE GAME. Build the sim with the chosen read, set up the field, then run it forward. */
 function bossPlay(read){
-  const b=bossSpecNow||R.bossFor(run), o=bossOppRow();
+  const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
   if(!b||!o){ dynToWinter(); return; }
+  bossStop();
   const chem=(run.season&&run.season.chemistry)
     || E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
   const leagueAvg=(LEAGUE&&LEAGUE[o.season])||21.5;
   bossRng=E.createSeededRNG(E.hashSeed('boss|'+run.seed+'|'+run.seasonNo+'|'+read));
-  bossState=E.bossGameStart(run.roster,chem,b,o,leagueAvg,read,bossRng,E.CONSTANTS,1,CAL);
+  bossSim=E.bossSimCreate(run.roster,chem,b,o,leagueAvg,read,E.CONSTANTS,CAL);
+  bossShown=0;
+  /* The bug and field colors, the same way the playoffs pick them: your side the game's blue
+     (or your club), the boss their real color, nudged apart if they collide on the field. */
+  const them=E.washColors(o.franchise), me=youColors(them);
+  const youEl=$('bg-you'), themEl=$('bg-them');
+  youEl.style.setProperty('--tcol',me.a); youEl.style.setProperty('--tcol2',me.b);
+  themEl.style.setProperty('--tcol',them.a); themEl.style.setProperty('--tcol2',them.b||'rgba(255,255,255,.3)');
+  themEl.querySelector('.cd').textContent=bossThreeLetter(o);
+  bossYouCol=me.a;
+  bossThemCol=(them.a&&them.a.toLowerCase()!=='#000000'&&them.a!==me.a)?them.a:'#e87461';
   $('bg-eye').textContent='Boss game · Season '+run.seasonNo;
   $('bg-opp').textContent=o.display;
-  $('bg-them').querySelector('.cd').textContent=bossThreeLetter(o);
   $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
-  $('bg-you').classList.add('lead'); $('bg-them').classList.remove('lead');
-  $('bg-state').textContent='KICKOFF';
-  $('bg-narr').innerHTML=bossState.readRight
+  youEl.classList.add('lead'); themEl.classList.remove('lead');
+  $('bg-q').textContent='1ST'; $('bg-ck').textContent='15:00'; $('bg-state').textContent='BOSS';
+  $('bg-narr').innerHTML=bossSim.readRight
     ? '<b class="good">Good read.</b> Your plan has them on their heels.'
-    : bossState.readTrap
-      ? '<b class="bad">They saw it coming.</b> That is the one thing they eat alive.'
+    : bossSim.readTrap
+      ? '<b class="bad">They saw it coming.</b> It plays into their hands.'
       : 'The plan is set. Kickoff.';
-  const calls=$('bg-calls'); calls.hidden=false; calls.innerHTML='';
-  $('bg-done').hidden=true;
+  $('bg-calls').hidden=true; $('bg-calls').innerHTML=''; $('bg-done').hidden=true;
   show('s-bgame');
-  afterPaint(()=>{
-    countTo($('bg-syou'),bossState.you,650);
-    countTo($('bg-sthem'),bossState.them,650);
-    setTimeout(()=>{ setLeadBoss(); bossAsk(0); },850);
-  });
+  bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
+  bossDraw(0,false);
+  bossTimer=setTimeout(bossLoop,600);
 }
 
-/* ONE CALL. Presents the two options, resolves the chosen one through the engine, animates
-   the score, then moves to the next call or the verdict. */
-function bossAsk(i){
-  if(i>=BOSS_CALLS.length){ bossFinish(); return; }
-  const c=BOSS_CALLS[i];
+/* Play one event, drawing any drives it produced, then either pause for a decision, show the
+   verdict, or keep going. */
+function bossLoop(){
+  const ev=E.bossSimAdvance(bossSim,bossRng);
+  if(ev.type==='over'){ bossFlush(()=>{ bossRenderScore(); bossFinish(ev); }); return; }
+  if(ev.type==='decision'){ bossFlush(()=>bossShowDecision(ev.decision)); return; }
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,200); });
+}
+
+/* Animate every drive the sim has produced but not yet drawn, in order, then continue. */
+function bossFlush(cb){
+  if(bossShown>=bossSim.drives.length){ cb(); return; }
+  const d=bossSim.drives[bossShown++];
+  bossAnimateDrive(d,()=>bossFlush(cb));
+}
+
+/* One drive growing across the field, the clock running with it, the score landing at the end. */
+function bossAnimateDrive(d,cb){
+  const dur=Math.max(360,Math.min(1000,(d.plays||4)*95));
+  const t0=(window.performance||Date).now();
+  const scored=d.result==='td'||d.result==='fg';
+  const tick=()=>{
+    const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
+    const upTo=d.tStart+(d.tEnd-d.tStart)*k;
+    bossDraw(upTo,false); bossSetClock(upTo);
+    $('bg-bug').classList.toggle('urgent',upTo>=3300);
+    if(k<1){ bossRaf=requestAnimationFrame(tick); return; }
+    bossRenderScore();
+    if(scored){ const cell=d.team==='you'?$('bg-you'):$('bg-them');
+      cell.classList.add('scored'); setTimeout(()=>cell.classList.remove('scored'),480); }
+    cb();
+  };
+  bossRaf=requestAnimationFrame(tick);
+}
+
+/* THE CALL. The real situation, and the two or three things you can do about it. */
+function bossShowDecision(d){
+  bossRenderScore(); bossSetClock((d.quarter-1)*900+(900-d.secs));
+  bossDraw((d.quarter-1)*900+(900-d.secs),true);
   $('bg-state').textContent='YOUR CALL';
   const box=$('bg-calls'); box.hidden=false;
-  box.innerHTML='<div class="bcall-q">'+esc(c.q)+'</div>'+
-    '<div class="bcall-row">'+
-      '<button class="bcall go" data-c="go"><b>'+c.go.b+'</b><span>'+c.go.s+'</span></button>'+
-      '<button class="bcall safe" data-c="safe"><b>'+c.safe.b+'</b><span>'+c.safe.s+'</span></button>'+
-    '</div>';
+  let q, opts;
+  if(d.kind==='two'){
+    $('bg-narr').innerHTML='<b>Touchdown.</b> Kick the point, or go for two.';
+    q='After the score: '+d.you+'-'+d.them+', '+ordinalQ(d.quarter);
+    opts=[['two','Go for two','About even, and it swings the margin'],
+          ['kick','Kick the point','Take the sure one']];
+  }else{
+    const spot=d.ball.side==='own'?('your '+d.ball.yard):('their '+d.ball.yard);
+    $('bg-narr').innerHTML='<b>4th and '+d.toGo+'</b> at '+spot+'. '
+      +(d.you<d.them?'You are chasing.':'')+' Your call.';
+    q='4th & '+d.toGo+' · '+spot+' · '+ordinalQ(d.quarter)+' · '+clockText(d.secs);
+    opts=[['go','Go for it','Convert and the drive lives on']];
+    if(d.inFgRange) opts.push(['fg','Kick the field goal','About '+(d.toGoal+17)+' yards, for three']);
+    else opts.push(['punt','Punt','Give it back, pin them deep']);
+  }
+  box.innerHTML='<div class="bcall-q">'+esc(q)+'</div><div class="bcall-row">'+
+    opts.map(o=>'<button class="bcall '+(o[0]==='go'||o[0]==='two'?'go':'safe')+'" data-c="'+o[0]+
+      '"><b>'+esc(o[1])+'</b><span>'+esc(o[2])+'</span></button>').join('')+'</div>';
   box.querySelectorAll('.bcall').forEach((btn)=>{
     btn.onclick=()=>{
       const choice=btn.dataset.c;
-      const res=E.bossGameCall(bossState,c.kind,choice,bossRng);
-      box.innerHTML='';
-      let msg;
-      if(choice==='safe'){
-        msg=c.kind==='two'?'You kick the extra point.':'You punt it away.';
-      }else if(res.ok){
-        msg='<span class="good">Got it.</span> '
-          +(c.kind==='two'?'The two-point try is good.':'Fourth down, converted.');
-      }else{
-        msg='<span class="bad">No good.</span> '
-          +(c.kind==='two'?'The two fails.':'Stuffed. Turnover on downs.');
-      }
-      $('bg-narr').innerHTML=msg;
-      $('bg-state').textContent=(i>=BOSS_CALLS.length-1)?'FINAL':'IN PLAY';
-      countTo($('bg-syou'),bossState.you,480);
-      setTimeout(()=>{ setLeadBoss(); bossAsk(i+1); },1150);
+      const res=E.bossSimResolve(bossSim,choice,bossRng);
+      box.innerHTML=''; box.hidden=true;
+      $('bg-narr').innerHTML=bossCallNarr(d.kind,choice,res);
+      bossRenderScore();
+      bossFlush(()=>{ bossTimer=setTimeout(bossLoop,260); });
     };
   });
+}
+function ordinalQ(q){ return QNAME[q-1]+' quarter'; }
+function bossCallNarr(kind,choice,res){
+  if(kind==='two'){
+    if(choice==='kick') return 'The extra point is good.';
+    return res.converted?'<span class="good">Two-point try is good.</span>'
+      :'<span class="bad">The two-point try fails.</span>';
+  }
+  if(choice==='fg') return (res.end&&res.end.drive&&res.end.drive.result==='fg')
+    ? '<span class="good">The kick is good.</span>' : '<span class="bad">The kick is no good.</span>';
+  if(choice==='punt') return 'You punt it away.';
+  if(res.td) return '<span class="good">Fourth down, and you take it to the house.</span>';
+  return res.converted?'<span class="good">Got it. Fresh set of downs.</span>'
+    :'<span class="bad">Stuffed. Turnover on downs.</span>';
 }
 
 /* THE VERDICT, and the door out of it: a reward on a win, a sting on a loss, the winter on
    the far side of both. */
-function bossFinish(){
-  const fin=E.bossGameFinal(bossState);
-  const b=bossSpecNow||R.bossFor(run), o=bossOppRow();
-  $('bg-state').textContent='FINAL';
-  $('bg-syou').textContent=fin.you; $('bg-sthem').textContent=fin.them; setLeadBoss();
+function bossFinish(ev){
+  bossStop();
+  const b=bossSpecNow||R.bossFor(run), o=bossOppNow||bossOppRow();
+  $('bg-state').textContent='FINAL'; $('bg-q').textContent='FINAL';
+  $('bg-ck').textContent=ev.won?'YOU WIN':'YOU LOSE';
+  bossRenderScore(); bossDraw(3600,false);
   $('bg-calls').hidden=true;
-  const vd=$('bg-verdict'); vd.className='bg-verdict '+(fin.won?'won':'lost');
-  $('bg-outcome').textContent=fin.won?'You win':'You lose';
+  const vd=$('bg-verdict'); vd.className='bg-verdict '+(ev.won?'won':'lost');
+  $('bg-outcome').textContent=ev.won?'You win':'You lose';
   const cont=$('b-boss-continue');
-  if(fin.won){
+  if(ev.won){
     if(b.reward==='freeze'){
       $('bg-note').textContent='You beat '+o.display+'. Now pick a man to keep forever.';
       cont.textContent='Choose a player';
@@ -15366,8 +15450,8 @@ function bossFinish(){
     cont.textContent='Into the offseason';
     cont.onclick=()=>{ R.applyBossResult(run,false); dynToWinter(); };
   }
-  ga('boss_result',{season:run.seasonNo,boss:b.team_season_id,won:fin.won,
-    read:bossState.read,readRight:bossState.readRight});
+  ga('boss_result',{season:run.seasonNo,boss:b.team_season_id,won:ev.won,read:bossSim.read,
+    readRight:bossSim.readRight});
   $('bg-done').hidden=false;
 }
 

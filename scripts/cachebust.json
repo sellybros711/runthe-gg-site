@@ -149,12 +149,12 @@
   },
   "football/index.html": {
     "engine.js": {
-      "v": "82",
-      "sha": "64b883248d38ad7b"
+      "v": "83",
+      "sha": "912e0f15940dcf9f"
     },
     "run.js": {
-      "v": "92",
-      "sha": "e1f955cd311600f7"
+      "v": "93",
+      "sha": "d7dc4455375dcedc"
     },
     "fullteam-access.js": {
       "v": "1",
