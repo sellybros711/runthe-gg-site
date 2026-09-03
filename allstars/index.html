@@ -375,6 +375,21 @@
   .table th{color:var(--text-dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;}
   .table tr.you td{color:var(--gold);}
   .table td.n{text-align:right;font-variant-numeric:tabular-nums;}
+  .table td.n,.table th.n{white-space:nowrap;}
+  /* The playoff line runs above fifth place. */
+  .table tr.cut td{border-top:2px solid var(--gold);}
+  .mark{display:inline-block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+    font-weight:900;padding:1px 5px;border:2px solid var(--line);margin-left:6px;vertical-align:middle;}
+  .mark.x{color:var(--green);} .mark.e{color:var(--text-dim);}
+  .table.sched tr.next td{background:rgba(227,176,76,.18);}
+  /* Season awards: one plaque per winner. */
+  .awards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .award{border:2px solid var(--line);padding:8px;text-align:center;background:var(--panel-2);
+    box-shadow:var(--shadow-sm);}
+  .award .ttl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:900;}
+  .award canvas{display:block;margin:6px auto;image-rendering:pixelated;}
+  .award .nm{font-weight:900;font-size:12px;}
+  .award .ln{font-size:10px;color:var(--text-dim);margin-top:2px;}
 
   .bracket{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;}
   .bracket .col{display:flex;flex-direction:column;gap:10px;}
@@ -2004,7 +2019,7 @@ const UNLOCKS = {
 };
 const PROGRESS = Object.assign(
   { seasonHR:0, playoffWins:0, titles:0, comebacks:0, blowouts:0, nineInningGames:0,
-    wins:0, games:0, unlocked:[] },
+    wins:0, games:0, unlocked:[], seasons:[] },
   PREFS.progress || {}
 );
 function saveProgress() {
@@ -3066,6 +3081,36 @@ function renderMenu() {
 
   s.appendChild(card);
 
+  /* The trophy case: what this browser has won. An empty case stays shut. */
+  const seasons = PROGRESS.seasons || [];
+  const titles = PROGRESS.titles | 0;
+  if (seasons.length || titles) {
+    const tc = el('div','card');
+    tc.appendChild(el('h3', null, 'Trophy case'));
+    const best = seasons.slice().sort((a, b) => b.w - a.w || a.l - b.l)[0];
+    const bits = [];
+    if (titles) bits.push(`<b>${titles}</b> title${titles === 1 ? '' : 's'}`);
+    if (seasons.length) bits.push(`<b>${seasons.length}</b> season${seasons.length === 1 ? '' : 's'} played`);
+    if (best) bits.push(`best record <b>${best.w}-${best.l}</b>`);
+    tc.appendChild(el('p', null, bits.join(' · ')));
+    if (seasons.length) {
+      const t = el('table','table');
+      t.innerHTML = '<thead><tr><th>Season</th><th class="n">W-L</th><th>Finish</th><th>Awards</th></tr></thead>';
+      const tb = el('tbody');
+      for (const sn of seasons.slice().reverse().slice(0, 6)) {
+        const tr = el('tr', sn.champion ? 'you' : '');
+        const won = (sn.awards || []).map(a => `${a.title}: ${(ROSTER_BY_KEY[a.key] || {}).n || a.key}`).join(' · ');
+        tr.innerHTML = `<td>${sn.team}${sn.champion ? ' <span class="mark x">champions</span>' : ''}</td>`
+          + `<td class="n">${sn.w}-${sn.l}</td><td>${ordinal(sn.rank)} of ${sn.of}</td>`
+          + `<td style="font-size:11px;color:var(--text-dim)">${won}</td>`;
+        tb.appendChild(tr);
+      }
+      t.appendChild(tb);
+      tc.appendChild(t);
+    }
+    s.appendChild(tc);
+  }
+
   const roster = el('div','card');
   roster.appendChild(el('h3', null, 'Roster'));
   roster.appendChild(el('p', null, STAT_LEGEND));
@@ -3714,6 +3759,94 @@ function finishLine(S) {
             : `${f.short} game${f.short === 1 ? '' : 's'} short of the bracket`;
   return `You finished ${ordinal(f.rank)} of ${f.of} at ${f.w}-${f.l}, ${why}.`;
 }
+/* GAMES LEFT, PER CLUB. Each round pairs the seventeen clubs not playing
+   you, so one of them sits out every round: a club's season is six or seven
+   games and the table cannot assume seven. Counted from the rounds not yet
+   played, which is what clinching and elimination need. */
+function gamesLeft(S, row) {
+  if (row.you) return Math.max(0, 7 - S.results.length);
+  const done = S.leagueDone | 0;
+  if (!S.leagueSchedule) return Math.max(0, 7 - done);
+  let n = 0;
+  for (let r = done; r < 7; r++) {
+    if (S.schedule[r] === row.name) { n++; continue; }
+    if ((S.leagueSchedule[r] || []).some(p => p[0] === row.name || p[1] === row.name)) n++;
+  }
+  return n;
+}
+/* WHO IS IN AND WHO IS OUT, said only when it is certain. A club has
+   clinched when fewer than four others can still reach its win total, and
+   is out when four clubs already have more wins than it can still reach.
+   Ties go to run differential and a coin, which nobody can count on, so a
+   club that can only TIE its way in is marked neither. */
+function clubOutlook(S) {
+  const rows = standingsOrder(S);
+  const left = new Map(rows.map(r => [r.name, gamesLeft(S, r)]));
+  const out = {};
+  for (const r of rows) {
+    const canReach = rows.filter(o => o !== r && o.w + left.get(o.name) >= r.w).length;
+    const ahead = rows.filter(o => o !== r && o.w > r.w + left.get(r.name)).length;
+    out[r.name] = { left: left.get(r.name), clinched: canReach < 4, eliminated: ahead >= 4 };
+  }
+  return out;
+}
+/* Where you stand against the line, for the hub banner mid season. */
+function lineLine(S) {
+  const rows = standingsOrder(S);
+  const me = rows.find(r => r.you);
+  const look = clubOutlook(S)[me.name] || {};
+  const place = `${ordinal(me.rank)} of ${rows.length}`;
+  if (look.clinched) return `${place}, and in: a top four place is yours.`;
+  if (look.eliminated) return `${place}, and out of the bracket.`;
+  const games = (n) => `${n} game${n === 1 ? '' : 's'}`;
+  if (me.rank <= 4) {
+    const gap = me.w - rows[4].w;
+    return `${place}, ${gap ? games(gap) + ' clear of' : 'level with'} the line.`;
+  }
+  const gap = rows[3].w - me.w;
+  return `${place}, ${gap ? games(gap) + ' off' : 'level with'} the line.`;
+}
+/* SEASON AWARDS, from the numbers the season already keeps. Each carries a
+   floor, so a lineup that did nothing wins nothing: an award for one stolen
+   base is not an award. Golden Arm is your pitcher's own strikeouts, kept
+   per character. There is no fielding award, because no play records which
+   fielder made it, and an award drawn from a number the game does not have
+   would be a lie. Ties go to hits, then the roster key, so a fixed season
+   always hands out the same hardware. */
+function seasonAwards(S) {
+  const per = S.perPlayer || {};
+  const rows = Object.entries(per).map(([k, v]) => Object.assign({}, v, {
+    k, n: (ROSTER_BY_KEY[k] || {}).n || k,
+    avg: v.ab ? v.hits / v.ab : 0,
+    mvp: (v.hits | 0) + (v.hr | 0) * 2 + (v.sb | 0),
+  }));
+  const later = (a, b, key) => (b[key] || 0) - (a[key] || 0) || (b.hits | 0) - (a.hits | 0) || a.k.localeCompare(b.k);
+  const top = (key, min) => rows.filter(r => (r[key] || 0) >= min).sort((a, b) => later(a, b, key))[0];
+  const out = [];
+  const add = (title, r, line) => { if (r) out.push({ title, key: r.k, name: r.n, line: line(r) }); };
+  add('Most Valuable', top('mvp', 4), r => `${r.hits} hits · ${r.hr} HR · ${r.sb} SB`);
+  add('Home Run King', top('hr', 2), r => `${r.hr} home runs`);
+  add('Best Bat', rows.filter(r => r.ab >= 8).sort((a, b) => b.avg - a.avg || later(a, b, 'hits'))[0],
+      r => `${r.avg.toFixed(3).replace(/^0/, '')} in ${r.ab} at bats`);
+  add('Speed Demon', top('sb', 2), r => `${r.sb} stolen bases`);
+  add('Golden Arm', top('kp', 5), r => `${r.kp} strikeouts on the mound`);
+  return out;
+}
+/* The season goes into the trophy case before the save is cleared. Once:
+   the end screen can draw more than once and the case must not. */
+function archiveSeason(S) {
+  if (S.archived) return;
+  const f = seasonFinish(S);
+  const P = S.playoffs;
+  const champ = P && P.final && P.final.result ? P.seeds[P.final.result.winner] : null;
+  PROGRESS.seasons = (PROGRESS.seasons || []).concat([{
+    team: S.teamName, w: f.w, l: f.l, rank: f.rank, of: f.of, champion: !!(champ && champ.you),
+    hr: S.playerStats.hr | 0, awards: seasonAwards(S).map(a => ({ title: a.title, key: a.key })),
+  }]).slice(-12);
+  S.archived = true;
+  saveProgress();
+  saveSeason(S);
+}
 /* A season saved before the league had a schedule carries a finished table
    and no way to know which games produced it. Rebuild one from the results
    it does have, so an in progress save comes back consistent rather than
@@ -3788,7 +3921,8 @@ function renderSeasonHub() {
     /* This used to say "Playoffs." to a team that was not in them. */
     banner.innerHTML = `<b>Season over.</b> ${finishLine(S)} The top four play on without you.`;
   } else {
-    banner.innerHTML = `<b>Regular season.</b> ${rec.w}-${rec.l} through ${games} game${games===1?'':'s'} of 7.`;
+    banner.innerHTML = `<b>Regular season.</b> ${rec.w}-${rec.l} through ${games} game${games===1?'':'s'} of 7.`
+      + (games ? ' ' + lineLine(S) : '');
   }
   s.appendChild(banner);
 
@@ -3803,6 +3937,9 @@ function renderSeasonHub() {
       nextCard.appendChild(el('p', null,
         `${atHome ? 'vs' : 'at'} ${next.name} · ${style.label} · ${sharpnessLabel(sharp)}`
         + `<br><b>${atHome ? P.name + ' (home)' : (STADIUM_THEMES[next.name] || DEFAULT_THEME).park + ' (away)'}</b>`));
+      /* The history, when there is one: the press room knows it already. */
+      const riv = pressRival(next.name);
+      if (riv) nextCard.appendChild(el('p', null, `<i>${riv.charAt(0).toUpperCase() + riv.slice(1)}.</i>`));
       const play = el('button','btn','Play Next Game');
       play.onclick = () => {
         State.team = S.team;
@@ -3847,40 +3984,58 @@ function renderSeasonHub() {
   const stCard = el('div','card');
   stCard.appendChild(el('h3', null, 'League standings'));
   const table = el('table','table');
-  table.innerHTML = '<thead><tr><th>Team</th><th class="n">W</th><th class="n">L</th><th class="n" title="Run differential">RD</th></tr></thead>';
+  table.innerHTML = '<thead><tr><th>Team</th><th class="n">W</th><th class="n">L</th>'
+    + '<th class="n" title="Games behind the leader">GB</th><th class="n" title="Run differential">RD</th>'
+    + '<th class="n" title="Games left to play">Left</th></tr></thead>';
   const tbody = el('tbody');
-  /* The one order. The bracket is seeded from the same list. */
-  for (const r of standingsOrder(S)) {
-    const tr = el('tr', r.you ? 'you' : '');
+  /* The one order. The bracket is seeded from the same list. The line is
+     drawn above fifth, and a club is marked in or out only once the games
+     left make it certain. */
+  const rows = standingsOrder(S);
+  const look = clubOutlook(S);
+  const lead = rows[0];
+  for (const r of rows) {
+    const tr = el('tr', (r.you ? 'you' : '') + (r.rank === 5 ? ' cut' : ''));
     const rd = (r.rd > 0 ? '+' : '') + r.rd;
-    tr.innerHTML = `<td>${r.rank}. ${r.name}</td><td class="n">${r.w}</td><td class="n">${r.l}</td><td class="n">${rd}</td>`;
+    const gb = ((lead.w - r.w) + (r.l - lead.l)) / 2;
+    const o = look[r.name] || {};
+    const mark = S.playoffs ? ''
+      : o.clinched ? ' <span class="mark x" title="A top four place is certain">in</span>'
+      : o.eliminated ? ' <span class="mark e" title="Cannot reach the top four">out</span>' : '';
+    tr.innerHTML = `<td>${r.rank}. ${r.name}${mark}</td><td class="n">${r.w}</td><td class="n">${r.l}</td>`
+      + `<td class="n">${gb > 0 ? gb : '-'}</td><td class="n">${rd}</td><td class="n">${o.left | 0}</td>`;
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
   stCard.appendChild(table);
-  stCard.appendChild(el('p', null, 'Top four make the playoffs. Ties: head to head in a two way tie, then run differential, then a coin drawn once at the start of the season.'));
+  stCard.appendChild(el('p', null, 'Top four make the playoffs; the line runs above fifth. '
+    + 'IN and OUT appear only once the games left make them certain. '
+    + 'Ties: head to head in a two way tie, then run differential, then a coin drawn once at the start of the season.'));
   s.appendChild(stCard);
 
-  /* Past results */
+  /* The schedule: all seven, home or away and where, with the results
+     filled in as they come and the next one lit. It used to be a list of
+     past results only, so the season had no shape until it was over. */
   const rCard = el('div','card');
-  rCard.appendChild(el('h3', null, 'Past results'));
-  if (!S.results.length) {
-    rCard.appendChild(el('p', null, 'No games played yet.'));
-  } else {
-    const t = el('table','table');
-    t.innerHTML = '<thead><tr><th>#</th><th>Opponent</th><th>Result</th><th class="n">Score</th></tr></thead>';
-    const tb = el('tbody');
-    S.results.forEach((r,i) => {
-      const tr = el('tr');
-      tr.innerHTML = `<td>${i+1}</td><td>${r.opponent}</td>`
-        + `<td>${r.win?'<span style="color:var(--gold)">W</span>':'<span style="color:var(--red)">L</span>'}`
-        + `${r.forfeit ? ' <span style="color:var(--text-dim)">(abandoned)</span>' : ''}</td>`
-        + `<td class="n">${r.you} to ${r.them}</td>`;
-      tb.appendChild(tr);
-    });
-    t.appendChild(tb);
-    rCard.appendChild(t);
-  }
+  rCard.appendChild(el('h3', null, 'Schedule'));
+  const t = el('table','table sched');
+  t.innerHTML = '<thead><tr><th>#</th><th>Game</th><th>Park</th><th>Result</th></tr></thead>';
+  const tb = el('tbody');
+  S.schedule.forEach((name, i) => {
+    const r = S.results[i];
+    const atHome = !!(S.homeAt && S.homeAt[i]);
+    const isNext = !r && i === games && !S.playoffs;
+    const tr = el('tr', isNext ? 'next' : '');
+    const park = atHome ? P.name : (STADIUM_THEMES[name] || DEFAULT_THEME).park;
+    const res = r
+      ? (r.win ? '<span style="color:var(--gold)">W</span>' : '<span style="color:var(--red)">L</span>')
+        + ` ${r.you} to ${r.them}` + (r.forfeit ? ' <span style="color:var(--text-dim)">(abandoned)</span>' : '')
+      : isNext ? '<span class="mark">next</span>' : '';
+    tr.innerHTML = `<td>${i+1}</td><td>${atHome ? 'vs' : 'at'} ${name}</td><td>${park}</td><td>${res}</td>`;
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  rCard.appendChild(t);
   s.appendChild(rCard);
 
   /* Season stats */
@@ -5963,14 +6118,16 @@ function finishGame() {
     /* Per-character season stats for the leaderboard. */
     const per = State.season.perPlayer || (State.season.perPlayer = {});
     const bumpPer = (k, key, n) => {
-      if (!per[k]) per[k] = { hr:0, hits:0, ab:0, so:0, sb:0 };
-      per[k][key] += n;
+      if (!per[k]) per[k] = { hr:0, hits:0, ab:0, so:0, sb:0, kp:0 };
+      per[k][key] = (per[k][key] || 0) + n;
     };
     for (const [k, v] of Object.entries(g.stats.hr || {})) bumpPer(k, 'hr', v);
     for (const [k, v] of Object.entries(g.stats.so || {})) bumpPer(k, 'so', v);
     for (const [k, v] of Object.entries(g.stats.sb || {})) bumpPer(k, 'sb', v);
     for (const [k, v] of Object.entries(g.stats.hits || {})) bumpPer(k, 'hits', v);
     for (const [k, v] of Object.entries(g.stats.ab || {})) bumpPer(k, 'ab', v);
+    /* Your pitcher's strikeouts, for the Golden Arm. */
+    if (g.yourK) bumpPer(you.batters[0].k, 'kp', g.yourK | 0);
     /* The rest of the league played today too. */
     advanceLeague(State.season, State.season.results.length - 1, foe.name, win, you.score, foe.score);
     saveSeason(State.season);
@@ -8224,8 +8381,27 @@ function renderSeasonEnd() {
   const ps = S.playerStats;
   card.innerHTML +=
     `<h3>Season totals</h3>`
-    + `<p>Hits ${ps.hits} · HR ${ps.hr} · K ${ps.so} · AB ${ps.ab}</p>`;
+    + `<p>Hits ${ps.hits} · HR ${ps.hr} · K ${ps.so} · SB ${ps.sb | 0} · AB ${ps.ab}</p>`;
   s.appendChild(card);
+
+  const awards = seasonAwards(S);
+  if (awards.length) {
+    const ac = el('div','card');
+    ac.appendChild(el('h3', null, 'Season awards'));
+    const grid = el('div','awards');
+    for (const a of awards) {
+      const c = ROSTER_BY_KEY[a.key];
+      const box = el('div','award');
+      box.appendChild(el('div','ttl', a.title));
+      if (c) box.appendChild(spriteCanvas(c, 48));
+      box.appendChild(el('div','nm', a.name));
+      box.appendChild(el('div','ln', a.line));
+      grid.appendChild(box);
+    }
+    ac.appendChild(grid);
+    s.appendChild(ac);
+  }
+  archiveSeason(S);
 
   const row = el('div','btn-row');
   const restart = el('button','btn','Play Again');

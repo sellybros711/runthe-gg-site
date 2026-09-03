@@ -19,6 +19,8 @@
      weak pitch           the found weak pitch is announced, marked and logged
      batting windup       the full windup when you bat, a short one when you pitch
      cup sim              one click runs the CPU matches to yours, or to the end
+     clinch, elimination  in and out are marked only once the games left make it certain
+     season awards        a fixed season hands out the same hardware, archived once
 
    Needs Playwright with Chromium. Locally:
      node allstars/verify-rules.mjs
@@ -370,6 +372,103 @@ async function main() {
       });
       ok(r.label1 === 'Simulate to Your Match' && r.played === 3 && r.mine && r.offered, 'one click reaches your quarterfinal', JSON.stringify(r));
       ok(r.label2 === 'Simulate the Cup' && r.done && /wins the Cup/.test(r.banner), 'out of it, one click finishes the cup', JSON.stringify(r));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- clinched and eliminated, only when certain ---- */
+    {
+      console.log('clinch and elimination');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.innings = 5; State.difficulty = 'medium'; State.mode = 'season';
+        State.franchise = randomFranchise();
+        startSeason();
+        const S = State.season;
+        /* Five played, five won, two to go; the league has played five rounds. */
+        S.results = S.schedule.slice(0, 5).map(o => ({ opponent: o, win: true, you: 4, them: 1 }));
+        S.leagueDone = 5;
+        const names = OPPONENTS.map(o => o.name);
+        for (const n of names) S.league[n] = { w: 2, l: 3, rd: -4 };
+        /* Case A: everyone else 2-3 with at most two left: nobody can reach 5. */
+        const a = clubOutlook(S);
+        const meA = a['Testers'];
+        const anyOutA = names.some(n => a[n].eliminated);
+        /* Case B: four clubs at 5-0. Now a 2-3 club with two left cannot catch
+           four of them, and nobody has clinched: five clubs can all reach 5. */
+        for (const n of names.slice(0, 4)) S.league[n] = { w: 5, l: 0, rd: 12 };
+        const b = clubOutlook(S);
+        const meB = b['Testers'];
+        const outB = names.slice(4).filter(n => b[n].eliminated).length;
+        const inB = names.slice(0, 4).filter(n => b[n].clinched).length;
+        /* Case C: a club that can only tie its way in is marked neither. */
+        S.league[names[4]] = { w: 3, l: 2, rd: 0 };   /* two left, can reach 5 */
+        const lookC = clubOutlook(S);
+        const c = lookC[names[4]];
+        const outC = names.filter(n => lookC[n].eliminated).length;
+        /* The hub draws the marks and the line. */
+        State.screen = 'season-hub'; render();
+        const marks = { x: document.querySelectorAll('#app .mark.x').length, e: document.querySelectorAll('#app .mark.e').length };
+        const cut = document.querySelectorAll('#app tr.cut').length;
+        const banner = document.querySelector('#app .banner').textContent;
+        const sched = [...document.querySelectorAll('#app table.sched tbody tr')];
+        const nextRow = sched.findIndex(tr => tr.classList.contains('next'));
+        return { meA, anyOutA, meB, outB, inB, c, outC, marks, cut, banner, schedRows: sched.length, nextRow,
+                 leftHeader: !!document.querySelector('#app th[title="Games left to play"]') };
+      });
+      ok(r.meA.clinched && r.meA.left === 2 && !r.anyOutA, '5-0 with two left, everyone else 2-3: clinched, nobody out yet', JSON.stringify({ meA: r.meA, anyOutA: r.anyOutA }));
+      ok(!r.meB.clinched && !r.meB.eliminated && r.inB === 0, 'five clubs at 5-0: nobody has clinched', JSON.stringify({ meB: r.meB, inB: r.inB }));
+      ok(r.outB > 0, 'a 2-3 club with two left is out behind four 5-0 clubs', 'out=' + r.outB);
+      ok(!r.c.clinched && !r.c.eliminated, 'a club that can only tie its way in is neither', JSON.stringify(r.c));
+      ok(r.marks.x === 0 && r.marks.e === r.outC && r.cut === 1, 'the hub draws the marks and one line', JSON.stringify({ marks: r.marks, cut: r.cut, outC: r.outC }));
+      ok(/level with the line|clear of the line|off the line/.test(r.banner), 'the banner says where you stand', r.banner);
+      ok(r.schedRows === 7 && r.nextRow === 5 && r.leftHeader, 'the schedule lists seven games with the sixth lit', JSON.stringify({ rows: r.schedRows, next: r.nextRow }));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- awards are deterministic, and the case fills once ---- */
+    {
+      console.log('season awards');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.innings = 5; State.difficulty = 'medium'; State.mode = 'season';
+        State.franchise = randomFranchise();
+        startSeason();
+        const S = State.season;
+        S.results = S.schedule.map((o, i) => ({ opponent: o, win: i < 4, you: i < 4 ? 5 : 2, them: i < 4 ? 2 : 5 }));
+        S.leagueDone = 7;
+        const k = State.team;
+        S.perPlayer = {
+          [k[0]]: { hr: 1, hits: 9, ab: 20, so: 3, sb: 0, kp: 14 },
+          [k[1]]: { hr: 4, hits: 7, ab: 22, so: 6, sb: 1 },
+          [k[2]]: { hr: 0, hits: 5, ab: 21, so: 4, sb: 3 },
+          [k[3]]: { hr: 1, hits: 2, ab: 4, so: 1, sb: 1 },    /* .500 but too few at bats */
+          [k[4]]: { hr: 0, hits: 0, ab: 18, so: 9, sb: 0 },
+        };
+        S.playerStats.hr = 6;
+        const a1 = seasonAwards(S), a2 = seasonAwards(S);
+        S.playoffs = seedPlayoffs(S);
+        State.screen = 'season-end'; render();
+        const cards = document.querySelectorAll('#app .award').length;
+        const n1 = (PROGRESS.seasons || []).length;
+        render();
+        const n2 = (PROGRESS.seasons || []).length;
+        const last = PROGRESS.seasons[PROGRESS.seasons.length - 1];
+        State.screen = 'menu'; render();
+        const caseText = [...document.querySelectorAll('#app .card h3')].map(h => h.textContent);
+        return { a1: a1.map(a => a.title + ':' + a.key), same: JSON.stringify(a1) === JSON.stringify(a2),
+                 k, cards, n1, n2, last, caseText };
+      });
+      const want = ['Most Valuable:' + r.k[1], 'Home Run King:' + r.k[1], 'Best Bat:' + r.k[0], 'Speed Demon:' + r.k[2], 'Golden Arm:' + r.k[0]];
+      ok(JSON.stringify(r.a1) === JSON.stringify(want), 'five awards to the right players', JSON.stringify(r.a1) + ' wanted ' + JSON.stringify(want));
+      ok(r.same, 'the same season hands out the same awards twice');
+      ok(r.cards === 5, 'the end screen draws five plaques', 'cards=' + r.cards);
+      ok(r.n1 === 1 && r.n2 === 1, 'the season is archived once, not per render', JSON.stringify({ n1: r.n1, n2: r.n2 }));
+      ok(r.last && r.last.w === 4 && r.last.l === 3 && r.last.awards.length === 5, 'the archive carries the record and the awards', JSON.stringify(r.last));
+      ok(r.caseText.includes('Trophy case'), 'the menu opens the trophy case', JSON.stringify(r.caseText));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
