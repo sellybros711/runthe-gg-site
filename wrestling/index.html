@@ -3241,7 +3241,22 @@ function checkBetrayal(){
     const R=rel(a.id); R.heat=clamp(R.heat+55,0,100); R.respect=clamp(R.respect-25,0,100); R.betrayedMe=true;
     G.car.reaction=clamp(reactionOf()+7,0,100);
     G.car.mom=clamp(G.car.mom-14);
-    if(!story()) startStory(a.id,'was never really with you.');
+    // A betrayal is the biggest thing that can happen to you this year. It
+    // used to be swallowed whenever any other feud was live, which is most
+    // of the time, so the story with the person who actually turned on you
+    // never started. Now it takes the screen: whatever else was running goes
+    // cold, and the turn is the story.
+    const st0=story();
+    if(st0 && st0.charId!==a.id) dropStory(`${c.name} turned on you. Nothing else mattered after that.`);
+    if(!story()){
+      const why=({brash:'sold you out on live television and smiled doing it.',
+                  cold:'turned on you without changing expression.',
+                  unhinged:'turned on you. They had been planning it for weeks. There were notes.',
+                  warm:'turned on you, and cried about it after. That does not help.',
+                  bitter:'walked out on you. They say you never once looked back at them.',
+                  pro:'turned on you. Business, they called it. It was not business.'})[voiceOf(c)] || 'was never really with you.';
+      startStory(a.id, why);
+    }
     pushInboxItem({ico:pico('knife',18),sev:'bad',txt:`<b>Betrayed.</b> ${c.name} turned on you. You never saw it coming.`});
     pushLog(`<b>${c.name} turned on you.</b> Every camera in the building caught it.`);
     return c;
@@ -3260,12 +3275,28 @@ function weeklyLoyalty(){
     if(c.streak>0) d+=1.0;
     if(c.streak<-2) d-=1.8;
     if(a.tag) d+=0.6;
-    if(c.title) d+=0.4;
+    if(c.tagTitle) d+=0.5;
     if(reactionOf()>60) d+=0.5;
-    if(reactionOf()<28) d-=0.9;
-    if(ch && ch.align && G.w.align!=='tweener' && ch.align!==G.w.align) d-=1.1;
+    // a rookie's crowd is nobody's fault; this used to be -0.9 and, with the
+    // alignment pull below, walked every indie partner out in twenty weeks
+    if(reactionOf()<28) d-=0.4;
+    if(ch && ch.align && G.w.align!=='tweener' && ch.align!==G.w.align) d-=0.8;
     if(rel(a.id).heat>=45) d-=1.2;
+    /* Jealousy. Loyalty used to go UP when you held a belt, so the only
+       partner who ever turned was one standing next to a loser. The turn
+       everybody remembers is the other one: you have the belt, they carry
+       your bags, and one night they stop. A singles belt they do not share
+       and a crowd that only knows your name both pull, slowly. */
+    const theirBelts = (typeof titlesHeldBy==='function') ? titlesHeldBy(a.id).length : 0;
+    if(c.title && !theirBelts) d-=0.55;
+    if(ch && (c.pop||0) >= (ch.pop||0)+25) d-=0.35;
     a.loyalty=clamp(a.loyalty+d,0,100);
+    // one warning, in the inbox, while there is still time to do something
+    if(a.loyalty<35 && !a._warned && ch){
+      a._warned=true;
+      pushInboxItem({ico:pico('impact',18),sev:'bad',txt:`<b>${ch.name}</b> has gone quiet. Somebody in the back says they have been asking the office about going solo.`});
+    }
+    if(a.loyalty>=50) a._warned=false;
   });
 }
 
@@ -6536,7 +6567,11 @@ const STORY_KINDS = {
 function storyKind(){ const st=story(); return STORY_KINDS[(st&&st.kind)||'grudge']||STORY_KINDS.grudge; }
 function inferStoryKind(charId, reason){
   const rv=charById(charId); const r=String(reason||'').toLowerCase();
-  if(/betray|never really with you|what you did|turned on/.test(r)) return 'betrayal';
+  if(/betray|never really with you|what you did|turned on|walked out on you|sold you out/.test(r)) return 'betrayal';
+  // an underdog reason is written by the loss trigger in applyMatch and
+  // outranks the belt check: a champion who keeps beating you is a mountain,
+  // not a contender's ladder
+  if(/not in their league|not ready|better than you|try harder|does not consider you/.test(r)) return 'underdog';
   const belts=(typeof titlesHeldBy==='function')?titlesHeldBy(charId):[];
   if(belts.some(b=>b.kind==='world') || /ringside|title|belt/.test(r)) return 'title';
   const mine=ovr(G.w);
@@ -6547,8 +6582,37 @@ function inferStoryKind(charId, reason){
   if(rv && (rv.traits||[]).some(t=>/newcomer/i.test(String(t))) && G.car.age>=28) return 'veteran';
   // an underdog story needs you to actually be losing to them. A rookie is
   // under everybody on paper; that alone is not a story.
-  if(theirs>=mine+8 && (R.losses||0)>(R.wins||0)) return 'underdog';
+  if(theirs>=mine+4 && (R.losses||0)>(R.wins||0)) return 'underdog';
   return 'grudge';
+}
+/* Better than you, in the sense the crowd would agree with: they hold a belt
+   you do not, they were booked above you tonight, or they are one of the two
+   best in the room. The number alone is not it; on the indies everybody is
+   within five points of everybody. */
+function betterThanMe(opp, o){
+  if(!opp) return false;
+  const theirBelts=(typeof titlesHeldBy==='function')?titlesHeldBy(opp.id).length:0;
+  if(theirBelts && !G.car.title) return true;
+  if(o && o.oppOvr>=ovr(G.w)+3) return true;
+  const top=houseRoster(myPromoId()).map(x=>x.over||55).sort((a,b)=>b-a);
+  return (opp.over||55) >= (top[1]||top[0]||99);
+}
+/* Drop a feud without settling it. The one caller today is a betrayal, which
+   is bigger than whatever else was running. The record says dropped, not
+   blood or respect, so Feud of the Year and the hallway afterwards both skip
+   it, and the cooldown means the office will not book it back next week. */
+function dropStory(why){
+  const st=story(); if(!st) return;
+  const c=charById(st.charId), R=rel(st.charId);
+  const matches=(G.hist||[]).filter(m=>c&&m.opp===c.name);
+  const avg = matches.length ? Math.round(matches.reduce((s,m)=>s+m.q,0)/matches.length) : 0;
+  G.car.storiesResolved = G.car.storiesResolved || [];
+  G.car.storiesResolved.unshift({y:G.car.year, w:G.car.week, charId:st.charId, name:c?c.name:'?', resolution:'dropped',
+    matches:matches.length, avg, beats:(st.beats||[]).length, reason:st.reason||null, kind:st.kind||'grudge', started:{y:st.startYear,w:st.startWeek}});
+  if(G.car.storiesResolved.length>60) G.car.storiesResolved.pop();
+  R.cooldown=(G.car.year*1000+G.car.week)+20;
+  if(c) pushInboxItem({ico:pico('impact',18),sev:'story',txt:`The feud with <b>${c.name}</b> goes cold. ${why||''}`});
+  G.story=null; G.car.rivalId=null;
 }
 function story(){ return G.story||null; }
 function startStory(charId,reason){
@@ -9229,6 +9293,25 @@ function applyMatch(o,res){
           unhinged:'beat you again and left a note in your bag. Nobody knows how.', warm:'beat you again and apologised. That is the part you cannot stand.',
           bitter:'beat you again and told the office you are not ready.', pro:'has your number, and they know exactly why.'})[_v];
     startStory(o.oppId, _why || (res.win?'is sick of losing to you.':'has your number, and they know it.')); }
+  /* The underdog story. It never started in play, because the only door into
+     a feud was bad blood, and losing to somebody better does not make bad
+     blood. It makes a mountain. A loss to somebody the crowd would call
+     better, in a match worth watching, is its own way in: twice, or once if
+     the gap was wide and you still had a match with them. */
+  else if(!c.rivalId && !story() && !res.win && !draw && res.quality>=50 && (!R.cooldown||_now>R.cooldown)){
+    const _opp=charById(o.oppId);
+    const _gap=o.oppOvr-ovr(G.w);
+    const _way = ((R.losses||0)>=2 && !(R.wins||0)) || ((R.losses||0)>=1 && _gap>=8 && res.quality>=58);
+    if(_opp && _way && betterThanMe(_opp,o)){
+      const _why=({brash:'beat you twice and told the dirt sheets you are not in their league.',
+                   cold:'has beaten you twice and does not consider you a rival. Yet.',
+                   unhinged:'beat you again and sent flowers. The card said try harder.',
+                   warm:'beat you again and told you, kindly, that you are not ready. You are going to prove them wrong.',
+                   bitter:'is better than you and knows it. Everybody knows it.',
+                   pro:'is better than you. For now. They said so, and they were not being unkind.'})[voiceOf(_opp)];
+      startStory(o.oppId, _why || 'is better than you. For now.');
+    }
+  }
   else if(c.rivalId===o.oppId && R.heat<20 && R.respect>=60){ c.rivalId=null;
     const rc=charById(o.oppId);
     if(rc) pushLog(`You and <b>${rc.name}</b> have squashed the beef. There is real respect there now.`); }
@@ -13780,6 +13863,11 @@ function castVeteran(){
   const pool=houseRoster(myPromo().id).filter(x=>(x.over||55)>=65);
   return pool.length?pool[Math.floor(rnd()*pool.length)]:null;
 }
+/* The ally closest to walking, if any of them is close. */
+function castWavering(){
+  const a=allies().filter(x=>x.loyalty<35).sort((p,q)=>p.loyalty-q.loyalty)[0];
+  return a?charById(a.id):null;
+}
 /* Scene memory: what you said sticks, and later scenes can check it. */
 function sceneRemember(key, val){
   const c=G.car; c._sceneMem = c._sceneMem || {};
@@ -13800,7 +13888,9 @@ const SCENES = [
      stage per story, in the rival's voice, shaped by the kind of story it
      is. Each remembers itself so it plays once per feud. */
   { id:'feud_s1', tag:'THE HALLWAY', trig:'prematch', weight:6, priority:2,
-    when:x=>{ const st=story(); return st && st.stage===1 && !sceneRecalls('fs1_'+st.charId); },
+    // stage 0 as well as 1: the first walk to the ring after a feud sparks
+    // should be the hallway, not a hot dog argument
+    when:x=>{ const st=story(); return st && st.stage<=1 && !sceneRecalls('fs1_'+st.charId); },
     cast:x=>({a:castRival()}),
     beats:{
       start:{ who:'a', line:x=>x.v(x.a,{brash:`${x.me}. You keep saying my name on television. Say it now. Nobody is filming.`, cold:`We are past the point where this is business. I wanted you to hear that from me.`, unhinged:`${x.me}! I have been thinking about you. Constantly. It is a problem.`, warm:`${x.me}, I do not want this to get ugly. I am telling you that now so you remember I said it.`, bitter:`You think this is a story. It is not a story to me.`, pro:`${x.me}. Escalation. That is what the office calls it. I call it Tuesday.`}),
@@ -13862,7 +13952,7 @@ const SCENES = [
         ]},
     }},
   { id:'feud_post', tag:'AFTERWARDS', trig:'any', weight:5, priority:2,
-    when:x=>{ const r=(G.car.storiesResolved||[])[0]; if(!r||!charById(r.charId)) return false; const ago=(G.car.year*40+G.car.week)-(r.y*40+r.w); return ago>=0 && ago<=3 && !sceneRecalls('fpost_'+r.charId+'_'+r.y+'_'+r.w); },
+    when:x=>{ const r=(G.car.storiesResolved||[])[0]; if(!r||r.resolution==='dropped'||!charById(r.charId)) return false; const ago=(G.car.year*40+G.car.week)-(r.y*40+r.w); return ago>=0 && ago<=3 && !sceneRecalls('fpost_'+r.charId+'_'+r.y+'_'+r.w); },
     cast:x=>{ const r=(G.car.storiesResolved||[])[0]; return {a:r?charById(r.charId):null}; },
     beats:{
       start:{ who:'a', line:x=>{ const r=(G.car.storiesResolved||[])[0]||{};
@@ -13873,6 +13963,28 @@ const SCENES = [
           { t:'"Any time."', eff:{respectA:+6}, mem:k, note:'Some feuds end in a handshake that happens weeks later, in a hallway, with nobody watching.' },
           { t:'Say nothing.', eff:{heatA:+2}, mem:k, note:'You let it be what it was.' },
         ]; }},
+    }},
+  /* The turn you can still stop. An ally under 35 loyalty stops you on the
+     way out, once a year, and what you say to them is the whole scene. It is
+     the difference between a betrayal that comes from nowhere and one you
+     saw coming and chose not to prevent. */
+  { id:'ally_wavering', tag:'YOUR CORNER', trig:'prematch', weight:8, priority:3,
+    when:x=>{ const a=castWavering(); return !!a && !sceneRecalls('aw_'+a.id+'_'+G.car.year); },
+    cast:x=>({a:castWavering()}),
+    beats:{
+      start:{ who:'a', line:x=>x.v(x.a,{
+          brash:`${x.a.name} is waiting by the door with a bag over one shoulder. "Everybody keeps asking me what I do. Carry your jacket, I tell them. They laugh."`,
+          cold:`${x.a.name} catches you at the curtain and does not smile. "I want to know what this is. Because from where I stand, it is your career with me next to it."`,
+          unhinged:`${x.a.name} has been standing very still in the corridor for a long time. "I counted. Fourteen weeks since you said my name on a microphone. Fourteen."`,
+          warm:`${x.a.name} stops you and does not quite look at you. "I am not asking for anything. I just want to know if you would notice if I was not here."`,
+          bitter:`${x.a.name} does not stop you. They just say it as you go past. "Your corner. That is what they call me. Nobody calls me anything else any more."`,
+          pro:`${x.a.name} is professional about it, which is worse. "I am getting offers. I have not answered them. I wanted to tell you first."`,
+          any:`${x.a.name} stops you at the curtain. "Are we still a thing? Because I have been wondering."`}),
+        opts:x=>[
+          { t:'"You are with me. Tonight, and after. I mean it."', eff:{loyaltyA:+14, respectA:+4}, mem:'aw_'+x.a.id+'_'+G.car.year, note:'Something in their shoulders let go. It will hold for a while. It will not hold forever.' },
+          { t:'"Next show, you are in it with me. I will make the office do it."', eff:{loyaltyA:+9, standing:-2}, mem:'aw_'+x.a.id+'_'+G.car.year, note:'A promise costs you something with the office. They know that. That is why it worked.' },
+          { t:'"If you want to go, go."', eff:{loyaltyA:-16, heatA:+12, gimHeat:+3}, mem:'aw_'+x.a.id+'_'+G.car.year, note:'They nodded once and walked. Whatever happens next, you were told.' },
+        ]},
     }},
   { id:'betrayal_open', tag:'THE TURN', trig:'prematch', weight:8, priority:3,
     when:x=>{ const st=story(); return st && st.kind==='betrayal' && st.stage<=1 && !sceneRecalls('fb0_'+st.charId); },
