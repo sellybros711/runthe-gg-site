@@ -1,10 +1,25 @@
-node_modules/
+# No trailing slash, and it matters. The browser suites are ESM, so `import
+# { chromium } from 'playwright'` will not read NODE_PATH, and the way they find the
+# sandbox's global packages is a node_modules SYMLINK at the repo root. Git treats a
+# symlink as a file, so `node_modules/` does not match it and it turns up untracked on
+# every test run. This form covers the directory and the link alike.
+node_modules
 football/build/.cache/
 cfb/build/.cache/
 
 # Fonts cached by scripts/setlist/make_brand.mjs
 .cache/
-node_modules/
 
 # Local data exports (scripts/pull-ps-runs.mjs)
 ps_runs_export.csv
+
+# Browser-test copies of the games, rebuilt from source before every test run.
+# These MUST NOT be committed: the site deploys straight from main, so a tracked
+# football/__test.html would publish a copy of the game at runthe.gg with the real
+# auth client swapped out for a stub. They are build output, not source -- delete
+# them freely, the harness writes them again.
+# The prefix, not one name: the next throwaway will not be called __test either. One
+# called __smoke has already been written here, and it was only kept out of a commit by
+# being listed by hand.
+__*.html
+__authstub.js

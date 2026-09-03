@@ -51,7 +51,8 @@ export const NEUTRAL_BASE = 30;
 // ── the show ─────────────────────────────────────────────────────────────────
 /* Budgets are the archive's medians. maxSongs caps a set so a run of four-minute
    songs cannot turn a set into a twelve-song sprint — real Set Is top out around
-   eight. The encore also collects whatever time the two sets left behind. */
+   eight. Time a set does not use carries into the NEXT one, so Set I's leftovers
+   are Set II's to spend and Set II's reach the encore. */
 export const SETS = [
   { key: '1', label: 'Set I',  seconds: 75 * 60, maxSongs: 8 },
   { key: '2', label: 'Set II', seconds: 70 * 60, maxSongs: 8 },
@@ -153,6 +154,31 @@ export const SEGUE_POINTS = 34;         // the pair is canonical for this band
 export const SEGUE_EXACT_BONUS = 26;    // ...and it is the pair THAT take played
 export const SEGUE_CHAIN_BONUS = 18;    // per link past the second in a run
 export const SANDWICH_BONUS = 70;       // A > B > A, closed
+
+/* ── SUITES ──────────────────────────────────────────────────────────────────
+ *
+ * Jive I > Jive II > Jive Lee. Seekers on the Ridge pt I > pt II. One piece of
+ * music in several movements, and putting one back together is the best thing
+ * a setlist builder can do with this catalogue.
+ *
+ * THE MODEL HAD THESE EXACTLY BACKWARDS. familiarityMult discounts a pair by
+ * how often the band plays it, which is right for an ordinary segue and wrong
+ * for a suite: the whole point of a suite is that it is always played that way.
+ * Seekers pt I > pt II is the MOST PLAYED PAIR IN THE ARCHIVE at 57 times, so
+ * it sat on the 0.30 floor and scored 18 out of a possible 60. Jive I > Jive
+ * Lee, 33 times, the same 18. The two most canonical links in the catalogue
+ * paid less than a pair the band had thrown together once.
+ *
+ * So a suite link is exempt from BOTH brakes and paid a bonus on top. The
+ * brakes exist to stop segue farming, and they cannot be farmed away here:
+ * suites are a closed set of 8 songs in 3 families, and you only get one if
+ * the shows you are dealt happen to offer two movements in consecutive rounds.
+ * Simulated over 6000 games: a two-part suite is linkable in 52.8% of them and
+ * a three-part in 2.65%. The band itself has managed a full Jive twice in 660
+ * shows, which is the number this is priced against.
+ */
+export const SUITE_BONUS = 55;          // per link between movements of one piece
+export const SUITE_FULL_BONUS = 90;     // once, for carrying a suite past two parts
 
 /*
  * TWO BRAKES ON SEGUE FARMING.
@@ -459,13 +485,21 @@ export function fmtClock(sec) {
 // ── budgets ──────────────────────────────────────────────────────────────────
 /**
  * How much stage time each set actually has, given what the earlier sets left.
- * Only the encore inherits leftovers — that is the whole reason to think about
- * pace rather than just filling.
+ *
+ * TIME CASCADES FORWARD, ONE SET AT A TIME. Finish Set I five minutes early and
+ * those five minutes are Set II's to spend; whatever Set II then leaves over
+ * (its own plus anything it inherited and did not use) goes to the encore. It
+ * used to skip the middle: both sets paid straight into the encore, so time
+ * banked in Set I could only ever be spent on a ten-minute slot at the end of
+ * the night. Running short early is a real decision now, because the set you
+ * are about to play is where it lands.
  *
  * A set only hands its leftovers over once it is CLOSED. An open set has not
  * left anything behind yet, it is simply still being played. Without that, an
  * untouched night reports an encore budget of 2h35m, which is nonsense to show
- * a player mid-game.
+ * a player mid-game. And because the carry is a chain, an open set stops it
+ * dead: while Set I is still going, Set II's inheritance is not decided, so the
+ * encore's cannot be either.
  *
  * @param {Array<Array>} sets    three arrays of performance rows
  * @param {Array<boolean>} closed which sets are finished; defaults to all of
@@ -473,13 +507,15 @@ export function fmtClock(sec) {
  */
 export function budgets(sets, closed, spent) {
   const out = SETS.map((s, i) => s.seconds - ((spent && spent[i]) || 0));
-  let spare = 0;
-  for (let i = 0; i < ENCORE_INDEX; i++) {
-    if (closed && !closed[i]) continue;
+  let carry = 0;
+  for (let i = 0; i < SETS.length; i++) {
+    out[i] += carry;
+    if (i === ENCORE_INDEX) break;          // nothing flows out of the encore
+    // No `closed` at all means a finished show, where every set has closed.
+    if (closed && !closed[i]) break;        // still open: it has banked nothing yet
     const used = (sets[i] || []).reduce((a, p) => a + lenOf(p), 0);
-    spare += Math.max(0, out[i] - used);
+    carry = Math.max(0, out[i] - used);
   }
-  out[ENCORE_INDEX] += spare;
   return out;
 }
 
@@ -965,41 +1001,69 @@ export function setOpenLine(setIdx) {
 
 // ── the one that got away ────────────────────────────────────────────────────
 /**
- * The best song a player was shown and did not play.
+ * THE SWAP YOU COULD HAVE MADE, and it has to be a swap or it is a taunt.
  *
- * Scored against the role it would most likely have filled, so the number is
- * comparable with what they did play rather than a raw song value. Every show
- * that appeared is a candidate, minus what actually made the setlist — a song
- * offered twice and never taken should still only surface once.
+ * This used to take the best of every song ever shown, scored in the best of
+ * six hypothetical roles, and print the number beside a setlist whose songs
+ * were each scored in the one role they actually landed in. Measured over 300
+ * random games it beat every song the player played in 296 of them: median 166
+ * against a best-played of 93 and a median song of 43. A card that says "you
+ * missed something better than anything you did" every single game carries no
+ * information, and the number had no peer anywhere on the page.
  *
- * @param {Array} seen        every performance row the player was shown
+ * It is now one round, one slot, one swap. For each pick, the alternatives are
+ * the other songs in THE SAME SHOW, scored in THE SAME ROLE the pick ended up
+ * filling, and capped at the length of the song actually taken so the swap was
+ * certainly affordable. The regret reported is the biggest of those gaps.
+ *
+ * That makes the two numbers comparable by construction: same slot, same role,
+ * same clock, one song different. It is also a smaller and more useful claim,
+ * because it names a decision the player actually made.
+ *
+ * @param {Array} drafted     {show, perf, si} per pick, in the order taken
  * @param {Array<Array>} sets what they actually played
  */
-export function theOneThatGotAway(seen, sets) {
+export function theOneThatGotAway(drafted, sets) {
   const played = new Set(sets.flat().map(p => p.song_id));
-  let best = null, bestScore = -1;
+  let best = null;
 
-  for (const p of seen) {
-    if (played.has(p.song_id)) continue;
-    if (!lenOf(p)) continue;
-    // Judge it in the role it suits best — the fairest reading of what it was
-    // worth, rather than punishing it for a slot the player never offered it.
-    // One role of each kind the game can produce. roleAt(1,2,4) is the only way
-    // to reach a pure Peak — at length 3 the last index is the Closer instead,
-    // which was labelling every peak song a closer.
-    for (const role of [roleAt(0, 0, 3),   // Opener
-                        roleAt(0, 2, 3),   // Set I Closer  (closer|jam)
-                        roleAt(1, 2, 4),   // Set II Peak
-                        roleAt(1, 3, 4),   // Set II Closer (closer|peak)
-                        roleAt(2, 0, 1),   // Encore
-                        roleAt(0, 1, 3)]){ // Mid — where a ballad belongs
-      const sc = scorePerf(p, role);
-      if (sc.subtotal > bestScore) { bestScore = sc.subtotal; best = { perf: p, score: sc, role }; }
+  // Where each pick ended up sitting, so it can be scored in its real role.
+  const at = [0, 0, 0];
+
+  for (const d of drafted || []) {
+    if (!d || !d.perf || !d.show) continue;
+    const si = d.si;
+    const idx = at[si]++;
+    const len = lenOf(d.perf);
+    if (!len) continue;
+    const role = roleAt(si, idx, (sets[si] || []).length);
+    const took = scorePerf(d.perf, role);
+
+    for (const alt of d.show.songs || []) {
+      if (alt === d.perf) continue;
+      if (played.has(alt.song_id)) continue;      // you got it in the end
+      const al = lenOf(alt);
+      // NO LONGER THAN WHAT YOU SPENT THERE. The taken song fitted, so anything
+      // this length or shorter certainly fitted too. Without the cap the card
+      // can report a regret that was never actually available, which is the
+      // whole failure being fixed.
+      if (!al || al > len) continue;
+      /* AND NOT A TEASE. The cap above lets anything short through, so 13% of
+         the regrets it surfaced were takes under three minutes: the card read
+         "you took SALT for 36, this was worth 64" about a 1:23 snippet. This
+         file already has a name for those and does not count them as songs
+         anywhere else, and "you should have played the 83 second one" is not a
+         note anybody wants on their night. */
+      if (al < TEASE_SECONDS) continue;
+      const sc = scorePerf(alt, role);
+      const gap = sc.subtotal - took.subtotal;
+      if (gap <= 0) continue;
+      if (!best || gap > best.gap) best = { perf: alt, score: sc, role, gap, took, instead: d.perf };
     }
   }
-  // Only claim a role when the song actually suits one. When every role scores
-  // the same the winner is just whichever was tested first, and "as opener it
-  // was worth 161" about a twenty-two minute jam reads as nonsense.
+  // Only claim a role when the song actually suits one. When the fit is neutral
+  // the role name is describing the slot rather than the song, and "as opener
+  // it was worth 71" about a song that opens nothing reads as nonsense.
   if (best && best.score.fit === 'neutral') best.role = null;
   return best;
 }
@@ -1046,7 +1110,10 @@ export function gradeRunning(running, progress) {
   return gradeScore(running / progress);
 }
 
-export function scoreShow(sets, segues, spent, segueCounts) {
+/* `suites` is optional: a Map of song_id to family key from dataLoader. Left
+   out, suite links simply score as ordinary segues, which is what every
+   caller did before suites existed. */
+export function scoreShow(sets, segues, spent, segueCounts, suites) {
   const s = [sets[0] || [], sets[1] || [], sets[2] || []];
   const bud = budgets(s, undefined, spent);
 
@@ -1098,13 +1165,22 @@ export function scoreShow(sets, segues, spent, segueCounts) {
   const segueHits = [];
   s.forEach((songs, si) => {
     let run = 0;
+    // Movements of the current suite carried so far, so the third one can be
+    // told from the second. Reset by anything that breaks the chain.
+    let suiteRun = 0;
     for (let i = 0; i < songs.length - 1; i++) {
       const a = songs[i], b = songs[i + 1];
       // The take has to have actually segued. A clean take of the same song
       // stops here, which is what makes the arrow worth chasing.
-      if (String(a.is_segue) !== 'true') { run = 0; continue; }
-      if (!segues || !segues.has(segueKey(a, b))) { run = 0; continue; }
+      if (String(a.is_segue) !== 'true') { run = 0; suiteRun = 0; continue; }
+      if (!segues || !segues.has(segueKey(a, b))) { run = 0; suiteRun = 0; continue; }
       run += 1;
+      {
+        const fa = suites && suites.get(a.song_id);
+        const fb = suites && suites.get(b.song_id);
+        // Two movements once the first link lands, then one per link after.
+        suiteRun = (fa && fa === fb) ? (suiteRun ? suiteRun + 1 : 2) : 0;
+      }
 
       const kinds = ['Segue'];
       let points = SEGUE_POINTS;
@@ -1122,16 +1198,33 @@ export function scoreShow(sets, segues, spent, segueCounts) {
         kinds.push('sandwich');
       }
 
+      /* A SUITE LINK, which is a different thing from a common segue. Two
+         movements of one piece, so it is paid a bonus and exempted from both
+         brakes below: discounting Seekers pt I > pt II for being played 57
+         times punishes the player for the one property that makes it a suite.
+         Cannot be farmed, being 8 songs in 3 families that have to turn up in
+         consecutive rounds. */
+      const suite = !!(suites && suites.get(a.song_id)
+        && suites.get(a.song_id) === suites.get(b.song_id));
+      if (suite) {
+        points += SUITE_BONUS;
+        kinds.push('suite');
+        /* Past two movements. The band has carried a full Jive I > II > Lee
+           exactly twice in 660 shows, so this is priced as the rarity it is.
+           `suiteRun` counts movements, not links, hence >= 3 for the second. */
+        if (suiteRun >= 3) { points += SUITE_FULL_BONUS; kinds.push('full suite'); }
+      }
+
       // Then the two brakes, applied to the graded total: how routine this
       // pair is for the band, and how many links the night has already had.
       const times = (segueCounts && segueCounts.get(segueKey(a, b))) || 1;
-      const fam = familiarityMult(times);
-      const decay = segueDecay(segueHits.length + 1);
+      const fam = suite ? 1 : familiarityMult(times);
+      const decay = suite ? 1 : segueDecay(segueHits.length + 1);
       const raw = points;
       points = Math.round(points * fam * decay);
-      if (fam < 0.75) kinds.push('routine');
+      if (!suite && fam < 0.75) kinds.push('routine');
 
-      segueHits.push({ set: si, from: i, to: i + 1, points, kinds,
+      segueHits.push({ set: si, from: i, to: i + 1, points, kinds, suite,
         raw, times, fam, decay, a: a.song, b: b.song });
     }
   });
@@ -1219,7 +1312,11 @@ export function scoreShow(sets, segues, spent, segueCounts) {
 export const BEST_BEAM = 24;
 export const BEST_CANDIDATES = 8;
 
-export function bestPossible(drafted, segues, segueCounts, spent) {
+/* `suites` threads through to scoreShow. WITHOUT IT THE CEILING IS WRONG in
+   the one case that matters: a player who lands a suite would be measured
+   against a best line scored as if suites paid nothing, and could beat 100%
+   of a target that was supposed to be unreachable. */
+export function bestPossible(drafted, segues, segueCounts, spent, suites) {
   const seq = (drafted || []).filter(d => d && d.show && d.show.songs && d.show.songs.length);
   if (!seq.length) return null;
 
@@ -1230,7 +1327,7 @@ export function bestPossible(drafted, segues, segueCounts, spent) {
     taken: new Set(st.taken),
     total: st.total,
   });
-  const rank = st => scoreShow(st.sets, segues, spent, segueCounts).total;
+  const rank = st => scoreShow(st.sets, segues, spent, segueCounts, suites).total;
 
   const fresh = () => ({ sets: [[], [], []], closed: [false, false, false], si: 0,
                          taken: new Set(), total: 0 });
@@ -1313,13 +1410,13 @@ export function bestPossible(drafted, segues, segueCounts, spent) {
   let best = all[0];
   for (const st of all) if (st.total > best.total) best = st;
   return {
-    total: scoreShow(best.sets, segues, spent, segueCounts).total,
+    total: scoreShow(best.sets, segues, spent, segueCounts, suites).total,
     sets: best.sets,
     // True when the search could not beat the line the player actually played.
     matchedPlayer: !!mirror && best === mirror,
   };
 }
 
-export function calcTotal(sets, segues, segueCounts) {
-  return scoreShow(sets, segues, undefined, segueCounts).total;
+export function calcTotal(sets, segues, segueCounts, suites) {
+  return scoreShow(sets, segues, undefined, segueCounts, suites).total;
 }

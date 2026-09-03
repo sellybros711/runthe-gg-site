@@ -1,7 +1,7 @@
 /* Former-player ingestion pipeline -> arcade/former.js (window.RTG_FORMER).
  *
  * Builds a large, shared dataset of RECOGNIZABLE former players that the
- * combinatorial games (Career, Table, Odd One, Match, Crossword, Word Search)
+ * combinatorial games (Career, Table, Odd One, Match, Crossword)
  * merge in alongside the hand-curated corpus (entities.js) and the live
  * current rosters (rosters.js). Run by .github/workflows/former.yml on a
  * schedule (Actions runners have open network); also runnable locally:
@@ -20,6 +20,64 @@
  * (nflverse CSVs) and NBA (ESPN core season leaders).
  */
 import { writeFileSync } from 'fs';
+
+
+/* Whitelist of hand-curated names we always keep even if auto-scraped fame
+ * comes back as 3. Ensures Bob Pettit / Jim Kelly / Rod Carew / Christy
+ * Mathewson etc. survive the "drop fame-3 for wire size" cull below. */
+import { readFileSync as _rfs } from 'fs';
+const WHITELIST = (() => {
+  try {
+    const src = _rfs('arcade/stars.js', 'utf8');
+    const grab = (name) => {
+      const m = src.match(new RegExp(name + '\\s*=\\s*\\[([^\\]]*)\\]'));
+      if (!m) return [];
+      return [...m[1].matchAll(/'([^']*)'/g)].map((x) => x[1]);
+    };
+    const norm = (s) => s.toLowerCase().replace(/[\\.\\']/g, '').trim();
+    const out = { NBA: new Set(), NFL: new Set(), MLB: new Set() };
+    for (const sp of ['NBA', 'NFL', 'MLB']) {
+      [...grab(sp + '_ICONS'), ...grab(sp + '_STARS')].forEach((n) => out[sp].add(norm(n)));
+    }
+    return out;
+  } catch (e) { return { NBA: new Set(), NFL: new Set(), MLB: new Set() }; }
+})();
+const _wnorm = (s) => String(s || '').toLowerCase().replace(/[\.\']/g, '').trim();
+const isWhitelisted = (sport, name) => (WHITELIST[sport] || new Set()).has(_wnorm(name));
+
+// ESPN's core API serves display strings HTML-encoded ("Texas A&amp;M",
+// "William &amp; Mary"), while the MLB Stats API returns them plain. Left as-is
+// they render literally as "TEXAS A&AMP;M" in-game and split one school into two
+// pool entries. Decode every string field once at generation so the data is
+// always clean regardless of source. Handles the entities ESPN actually emits
+// plus numeric refs; safe to run on already-plain text (no entities -> no-op).
+const _NAMED_ENTS = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', '#39': "'", '#039': "'" };
+function decodeEntities(s) {
+  if (typeof s !== 'string' || s.indexOf('&') < 0) return s;
+  let prev;
+  do { // loop to collapse double-encoding ("&amp;amp;" -> "&amp;" -> "&")
+    prev = s;
+    s = s.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (m, ent) => {
+      if (ent[0] === '#') {
+        const code = ent[1] === 'x' || ent[1] === 'X'
+          ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10);
+        return isFinite(code) ? String.fromCodePoint(code) : m;
+      }
+      const k = ent.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(_NAMED_ENTS, k) ? _NAMED_ENTS[k] : m;
+    });
+  } while (s !== prev);
+  return s;
+}
+// Recursively decode string leaves of a player record (name, col, pos, teams[]).
+function decodeRecord(p) {
+  for (const k in p) {
+    const v = p[k];
+    if (typeof v === 'string') p[k] = decodeEntities(v);
+    else if (Array.isArray(v)) p[k] = v.map((x) => (typeof x === 'string' ? decodeEntities(x) : x));
+  }
+  return p;
+}
 
 const NOW_YEAR = new Date().getFullYear();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -141,12 +199,24 @@ async function buildMLB() {
   for (const [id, e] of acc) if (e.ns >= 2) candidates.push(id);
 
   // Batch-fetch people detail (position, jersey, birth country, debut).
+  // hydrate=education adds high-school/college history -> college for Alma
+  // Mater. Players with no US college (common for international signings)
+  // simply come back without one and Alma's pool filter skips them.
   const detail = new Map();
   for (let i = 0; i < candidates.length; i += 100) {
     const ids = candidates.slice(i, i + 100).join(',');
-    const d = await j(`${MLB_BASE}/people?personIds=${ids}`);
+    const d = await j(`${MLB_BASE}/people?personIds=${ids}&hydrate=education`);
     (d && d.people ? d.people : []).forEach((p) => detail.set(p.id, p));
     await sleep(120);
+  }
+  // most recent college on record (the school a player is known for); the
+  // education shape has drifted before, so accept the common name keys.
+  function colMLB(p) {
+    const ed = p && p.education;
+    const cs = ed && (ed.colleges || ed.college);
+    if (!Array.isArray(cs) || !cs.length) return null;
+    const c = cs[cs.length - 1];
+    return (c && (c.schoolName || c.name || c.school)) || null;
   }
 
   const players = [];
@@ -165,6 +235,7 @@ async function buildMLB() {
     // high picks toward 4 so they surface in the fame>=4 games too.
     let f = 3;
     if (ns >= 6 || (hp && pick && pick <= 10)) f = 4;
+    if (f < 4 && !isWhitelisted('MLB', name)) continue;   // recognizable-tier or curated star
     players.push({
       id: 'former:mlb:' + id,
       name,
@@ -175,6 +246,7 @@ async function buildMLB() {
       pos: posMLB((p.primaryPosition && p.primaryPosition.name) || null),
       decade,
       nat: normNat(p.birthCountry),
+      col: colMLB(p),
       ns, hp: hp ? 1 : 0
     });
   }
@@ -247,6 +319,8 @@ async function buildNFL() {
     if (nseason < 3 && !hp) continue;            // notable: 3+ seasons OR high pick
     const teams = Object.keys(e.teams).sort((a, b) => e.teams[a] - e.teams[b]);
     let f = 3; if (nseason >= 8 || (hp && pick && pick <= 15)) f = 4;
+    if (f < 4 && !isWhitelisted('NFL', e.name)) continue;
+    if (posNFL(e.pos) === 'Long Snapper') continue;   // no one recognizes long snappers - keep them out of every game
     players.push({
       id: 'former:nfl:' + k, name: e.name, sport: 'NFL', f, t: teams, col: e.col || null,
       j: Object.keys(e.jerseys).map(Number).sort((a, b) => a - b).slice(0, 4),
@@ -284,6 +358,20 @@ async function buildNBA() {
     }
     return null;
   }
+  // ESPN's core API serves `college` as a bare $ref (never an inline name), so
+  // the old inline read always produced null -> zero retired NBA players in
+  // Alma Mater. Resolve and cache it like teams/positions (~350 unique refs).
+  const colNameNBA = new Map();
+  async function resolveCollege(a) {
+    const c = a && a.college; if (!c) return null;
+    if (c.name || c.shortName) return c.name || c.shortName;
+    if (c.$ref) {
+      if (colNameNBA.has(c.$ref)) return colNameNBA.get(c.$ref);
+      const d = await j(c.$ref); const nm = (d && (d.name || d.shortName || d.displayName)) || null;
+      colNameNBA.set(c.$ref, nm); await sleep(30); return nm;
+    }
+    return null;
+  }
 
   for (let y = NBA_START; y <= NOW_YEAR; y++) {
     const d = await j(`${NBA_BASE}/seasons/${y}/types/2/leaders`);
@@ -316,12 +404,13 @@ async function buildNBA() {
     for (const tr of teamRefs) { const nm = await resolveTeam(tr); if (nm && teams.indexOf(nm) < 0) teams.push(nm); }
     const jn = (a.jersey != null && a.jersey !== '') ? Number(a.jersey) : null;
     let f = 3; if (e.ns >= 6) f = 4;
+    if (f < 4 && !isWhitelisted('NBA', name)) continue;
     players.push({
       id: 'former:nba:' + aid, name, sport: 'NBA', f, t: teams,
       j: (jn != null && !isNaN(jn)) ? [jn] : [], pos: await resolvePos(a),
       decade: decadesFromSeasons(Object.keys(e.seasons).map(Number)),
       nat: normNat(a.birthPlace && a.birthPlace.country),
-      col: (a.college && (a.college.name || a.college.shortName)) || null, ns: e.ns, hp: 0
+      col: await resolveCollege(a), ns: e.ns, hp: 0
     });
   }
   console.log('NBA former:', players.length, 'from', acc.size, 'leader athletes');
@@ -333,6 +422,10 @@ const players = [];
 try { players.push(...await buildMLB()); } catch (e) { console.error('MLB build failed:', e.message); }
 try { players.push(...await buildNFL()); } catch (e) { console.error('NFL build failed:', e.message); }
 try { players.push(...await buildNBA()); } catch (e) { console.error('NBA build failed:', e.message); }
+
+// Normalize away any HTML entities from the source APIs before de-duping, so a
+// school like "Texas A&M" can't survive as two distinct spellings.
+players.forEach(decodeRecord);
 
 // De-dupe by name+sport, keeping the entry with more team history.
 const byKey = new Map();

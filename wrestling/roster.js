@@ -1,8 +1,8 @@
 window.RTR_ROSTER = [
  {
   "id": "w0001",
-  "name": "Cody Rhodes",
-  "promotion": "WWE",
+  "name": "Cody Runnels",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "heel",
   "inRing": 84,
@@ -18,8 +18,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0002",
-  "name": "Roman Reigns",
-  "promotion": "WWE",
+  "name": "Joe Anoa'i",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "heel",
   "inRing": 88,
@@ -35,8 +35,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0003",
-  "name": "Seth Rollins",
-  "promotion": "WWE",
+  "name": "Colby Lopez",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "heel",
   "inRing": 87,
@@ -52,8 +52,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0004",
-  "name": "CM Punk",
-  "promotion": "WWE",
+  "name": "Phil Brooks",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "heel",
   "inRing": 92,
@@ -69,8 +69,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0005",
-  "name": "Gunther",
-  "promotion": "WWE",
+  "name": "Walter Hahn",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "face",
   "inRing": 84,
@@ -86,8 +86,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0006",
-  "name": "Rhea Ripley",
-  "promotion": "WWE",
+  "name": "Demi Bennett",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "face",
   "inRing": 91,
@@ -103,8 +103,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0007",
-  "name": "Bianca Belair",
-  "promotion": "WWE",
+  "name": "Bianca Crawford",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "face",
   "inRing": 86,
@@ -121,7 +121,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0008",
   "name": "Jacob Fatu",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "elite",
   "align": "heel",
   "inRing": 84,
@@ -137,8 +137,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0009",
-  "name": "Jey Uso",
-  "promotion": "WWE",
+  "name": "Joshua Fatu",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 78,
@@ -154,8 +154,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0010",
-  "name": "Jimmy Uso",
-  "promotion": "WWE",
+  "name": "Jonathan Fatu",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 74,
@@ -171,8 +171,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0011",
-  "name": "Damian Priest",
-  "promotion": "WWE",
+  "name": "Luis Martinez",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 76,
@@ -188,8 +188,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0012",
-  "name": "Drew McIntyre",
-  "promotion": "WWE",
+  "name": "Drew Galloway",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 82,
@@ -205,8 +205,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0013",
-  "name": "LA Knight",
-  "promotion": "WWE",
+  "name": "Shaun Ricker",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 79,
@@ -223,7 +223,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0014",
   "name": "Randy Orton",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 78,
@@ -239,8 +239,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0015",
-  "name": "Liv Morgan",
-  "promotion": "WWE",
+  "name": "Gionna Daddio",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 81,
@@ -256,8 +256,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0016",
-  "name": "IYO SKY",
-  "promotion": "WWE",
+  "name": "Masami Odate",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 75,
@@ -273,8 +273,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0017",
-  "name": "Bron Breakker",
-  "promotion": "WWE",
+  "name": "Bronson Rechsteiner",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 73,
@@ -290,8 +290,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0018",
-  "name": "Sami Zayn",
-  "promotion": "WWE",
+  "name": "Rami Sebei",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 75,
@@ -307,8 +307,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0019",
-  "name": "Finn Balor",
-  "promotion": "WWE",
+  "name": "Fergal Devitt",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 79,
@@ -324,8 +324,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0020",
-  "name": "Kevin Owens",
-  "promotion": "WWE",
+  "name": "Kevin Steen",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 83,
@@ -341,8 +341,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0021",
-  "name": "Solo Sikoa",
-  "promotion": "WWE",
+  "name": "Joseph Fatu",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 81,
@@ -358,8 +358,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0022",
-  "name": "Dominik Mysterio",
-  "promotion": "WWE",
+  "name": "Dominik Gutierrez",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 86,
@@ -375,8 +375,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0023",
-  "name": "Rey Mysterio",
-  "promotion": "WWE",
+  "name": "Oscar Gutierrez",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 76,
@@ -392,8 +392,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0024",
-  "name": "Bayley",
-  "promotion": "WWE",
+  "name": "Pamela Martinez",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 82,
@@ -409,8 +409,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0025",
-  "name": "Becky Lynch",
-  "promotion": "WWE",
+  "name": "Rebecca Quin",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 83,
@@ -427,7 +427,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0026",
   "name": "Stephanie Vaquer",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 74,
@@ -443,8 +443,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0027",
-  "name": "Tiffany Stratton",
-  "promotion": "WWE",
+  "name": "Jessica Woynilko",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 74,
@@ -461,7 +461,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0028",
   "name": "Jade Cargill",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 76,
@@ -477,8 +477,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0029",
-  "name": "Austin Theory",
-  "promotion": "WWE",
+  "name": "Austin White",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 69,
@@ -494,8 +494,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0030",
-  "name": "Bronson Reed",
-  "promotion": "WWE",
+  "name": "Jermaine Haley",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 66,
@@ -511,8 +511,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0031",
-  "name": "Chad Gable",
-  "promotion": "WWE",
+  "name": "Charles Betts",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -529,7 +529,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0032",
   "name": "Dragon Lee",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 68,
@@ -545,8 +545,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0033",
-  "name": "Ethan Page",
-  "promotion": "WWE",
+  "name": "Julian Micevski",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 62,
@@ -562,8 +562,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0034",
-  "name": "Grayson Waller",
-  "promotion": "WWE",
+  "name": "Matthew Farrelly",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 60,
@@ -580,7 +580,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0035",
   "name": "Ivar",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 64,
@@ -597,7 +597,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0036",
   "name": "Erik",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 74,
@@ -613,8 +613,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0037",
-  "name": "JD McDonagh",
-  "promotion": "WWE",
+  "name": "Jordan Devlin",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -630,8 +630,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0038",
-  "name": "Ludwig Kaiser",
-  "promotion": "WWE",
+  "name": "Marcel Barthel",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 70,
@@ -647,8 +647,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0039",
-  "name": "Montez Ford",
-  "promotion": "WWE",
+  "name": "Kenneth Crawford",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 69,
@@ -664,8 +664,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0040",
-  "name": "Angelo Dawkins",
-  "promotion": "WWE",
+  "name": "Gary Green",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 63,
@@ -682,7 +682,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0041",
   "name": "Oba Femi",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 63,
@@ -698,8 +698,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0042",
-  "name": "Otis",
-  "promotion": "WWE",
+  "name": "Nikola Bogojevic",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 66,
@@ -716,7 +716,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0043",
   "name": "Penta",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 67,
@@ -733,7 +733,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0044",
   "name": "Rey Fenix",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 61,
@@ -749,8 +749,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0045",
-  "name": "Rusev",
-  "promotion": "WWE",
+  "name": "Miroslav Barnyashev",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 72,
@@ -766,8 +766,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0046",
-  "name": "Sheamus",
-  "promotion": "WWE",
+  "name": "Stephen Farrelly",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 70,
@@ -784,7 +784,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0047",
   "name": "Tyler Bate",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 75,
@@ -800,8 +800,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0048",
-  "name": "Pete Dunne",
-  "promotion": "WWE",
+  "name": "Peter England",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 70,
@@ -817,8 +817,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0049",
-  "name": "Carmelo Hayes",
-  "promotion": "WWE",
+  "name": "Christian Casanova",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 71,
@@ -834,8 +834,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0050",
-  "name": "Ilja Dragunov",
-  "promotion": "WWE",
+  "name": "Ilja Rukober",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 70,
@@ -852,7 +852,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0051",
   "name": "Johnny Gargano",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 71,
@@ -868,8 +868,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0052",
-  "name": "The Miz",
-  "promotion": "WWE",
+  "name": "Michael Mizanin",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 71,
@@ -885,8 +885,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0053",
-  "name": "R-Truth",
-  "promotion": "WWE",
+  "name": "Ronnie Killings",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 72,
@@ -903,7 +903,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0054",
   "name": "Shinsuke Nakamura",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -919,8 +919,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0055",
-  "name": "Trick Williams",
-  "promotion": "WWE",
+  "name": "Matrix Brown",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -937,7 +937,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0056",
   "name": "Ricky Saints",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 72,
@@ -954,7 +954,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0057",
   "name": "Nathan Frazer",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 75,
@@ -971,7 +971,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0058",
   "name": "Axiom",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 72,
@@ -987,8 +987,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0059",
-  "name": "Alexa Bliss",
-  "promotion": "WWE",
+  "name": "Alexis Kaufman",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -1005,7 +1005,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0060",
   "name": "Michin",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 69,
@@ -1021,8 +1021,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0061",
-  "name": "Nia Jax",
-  "promotion": "WWE",
+  "name": "Savelina Fanene",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 72,
@@ -1038,8 +1038,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0062",
-  "name": "Piper Niven",
-  "promotion": "WWE",
+  "name": "Kimberly Benson",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 69,
@@ -1055,8 +1055,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0063",
-  "name": "Chelsea Green",
-  "promotion": "WWE",
+  "name": "Chelsea Anderson",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 68,
@@ -1073,7 +1073,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0064",
   "name": "Giulia",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 61,
@@ -1090,7 +1090,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0065",
   "name": "Jordynne Grace",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 75,
@@ -1107,7 +1107,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0066",
   "name": "Mariah May",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -1124,7 +1124,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0067",
   "name": "Jacy Jayne",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 64,
@@ -1141,7 +1141,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0068",
   "name": "Fallon Henley",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 62,
@@ -1158,7 +1158,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0069",
   "name": "Kiana James",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 65,
@@ -1174,8 +1174,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0070",
-  "name": "Natalya",
-  "promotion": "WWE",
+  "name": "Natalie Neidhart",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 67,
@@ -1191,8 +1191,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0071",
-  "name": "Lyra Valkyria",
-  "promotion": "WWE",
+  "name": "Aoife Cusack",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 71,
@@ -1208,8 +1208,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0072",
-  "name": "Maxxine Dupri",
-  "promotion": "WWE",
+  "name": "Sydney Zmrzel",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -1225,8 +1225,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0073",
-  "name": "Roxanne Perez",
-  "promotion": "WWE",
+  "name": "Carla Gonzalez",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 61,
@@ -1242,8 +1242,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0074",
-  "name": "Raquel Rodriguez",
-  "promotion": "WWE",
+  "name": "Victoria Gonzalez",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 65,
@@ -1260,7 +1260,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0075",
   "name": "Sol Ruca",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -1276,8 +1276,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0076",
-  "name": "Ivy Nile",
-  "promotion": "WWE",
+  "name": "Rachel Gulotta",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 62,
@@ -1293,8 +1293,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0077",
-  "name": "Brie Bella",
-  "promotion": "WWE",
+  "name": "Brianna Danielson",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -1310,8 +1310,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0078",
-  "name": "Paige",
-  "promotion": "WWE",
+  "name": "Saraya Bevis",
+  "promotion": "Colossus Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 72,
@@ -1328,7 +1328,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0079",
   "name": "Akira Tozawa",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 54,
@@ -1345,7 +1345,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0080",
   "name": "Bravo Americano",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 61,
@@ -1362,7 +1362,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0081",
   "name": "El Grande Americano",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 56,
@@ -1379,7 +1379,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0082",
   "name": "Rayo Americano",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 65,
@@ -1396,7 +1396,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0083",
   "name": "Cruz Del Toro",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 60,
@@ -1413,7 +1413,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0084",
   "name": "Joaquin Wilde",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 65,
@@ -1430,7 +1430,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0085",
   "name": "Je'Von Evans",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 54,
@@ -1446,8 +1446,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0086",
-  "name": "Julius Creed",
-  "promotion": "WWE",
+  "name": "Julius Rechsteiner",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 50,
@@ -1463,8 +1463,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0087",
-  "name": "Brutus Creed",
-  "promotion": "WWE",
+  "name": "Brutus Rechsteiner",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 56,
@@ -1481,7 +1481,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0088",
   "name": "Joe Hendry",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 60,
@@ -1498,7 +1498,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0089",
   "name": "Angel",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 65,
@@ -1515,7 +1515,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0090",
   "name": "Berto",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 65,
@@ -1532,7 +1532,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0091",
   "name": "Danhausen",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 65,
@@ -1549,7 +1549,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0092",
   "name": "Elton Prince",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 52,
@@ -1566,7 +1566,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0093",
   "name": "Kit Wilson",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 64,
@@ -1583,7 +1583,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0094",
   "name": "Matt Cardona",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 65,
@@ -1600,7 +1600,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0095",
   "name": "Royce Keys",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 62,
@@ -1617,7 +1617,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0096",
   "name": "Talla Tonga",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 59,
@@ -1634,7 +1634,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0097",
   "name": "Tama Tonga",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 54,
@@ -1651,7 +1651,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0098",
   "name": "B-Fab",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 57,
@@ -1667,8 +1667,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0099",
-  "name": "Candice LeRae",
-  "promotion": "WWE",
+  "name": "Candice Dawson",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 55,
@@ -1685,7 +1685,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0100",
   "name": "Kali Armstrong",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 58,
@@ -1702,7 +1702,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0101",
   "name": "Lainey Reid",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 64,
@@ -1719,7 +1719,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0102",
   "name": "Lash Legend",
-  "promotion": "WWE",
+  "promotion": "Colossus Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 61,
@@ -1735,8 +1735,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0103",
-  "name": "Jon Moxley",
-  "promotion": "AEW",
+  "name": "Jonathan Good",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "heel",
   "inRing": 78,
@@ -1752,8 +1752,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0104",
-  "name": "Will Ospreay",
-  "promotion": "AEW",
+  "name": "William Ospreay",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "face",
   "inRing": 92,
@@ -1769,8 +1769,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0105",
-  "name": "MJF",
-  "promotion": "AEW",
+  "name": "Maxwell Friedman",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "face",
   "inRing": 87,
@@ -1787,7 +1787,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0106",
   "name": "Bryan Danielson",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "heel",
   "inRing": 92,
@@ -1803,8 +1803,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0107",
-  "name": "Kenny Omega",
-  "promotion": "AEW",
+  "name": "Tyson Smith",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "face",
   "inRing": 84,
@@ -1820,8 +1820,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0108",
-  "name": "Swerve Strickland",
-  "promotion": "AEW",
+  "name": "Shane Strickland",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "face",
   "inRing": 91,
@@ -1837,8 +1837,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0109",
-  "name": "Toni Storm",
-  "promotion": "AEW",
+  "name": "Toni Rossall",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "heel",
   "inRing": 91,
@@ -1854,8 +1854,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0110",
-  "name": "Mercedes Mone",
-  "promotion": "AEW",
+  "name": "Mercedes Varnado",
+  "promotion": "Vanguard Pro",
   "tier": "elite",
   "align": "heel",
   "inRing": 84,
@@ -1872,7 +1872,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0111",
   "name": "Adam Copeland",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 84,
@@ -1888,8 +1888,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0112",
-  "name": "Hangman Page",
-  "promotion": "AEW",
+  "name": "Stephen Woltz",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 86,
@@ -1905,8 +1905,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0113",
-  "name": "Chris Jericho",
-  "promotion": "AEW",
+  "name": "Chris Irvine",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 82,
@@ -1922,8 +1922,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0114",
-  "name": "Christian Cage",
-  "promotion": "AEW",
+  "name": "William Reso",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 72,
@@ -1940,7 +1940,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0115",
   "name": "Claudio Castagnoli",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 76,
@@ -1956,8 +1956,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0116",
-  "name": "Darby Allin",
-  "promotion": "AEW",
+  "name": "Samuel Ratsch",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 75,
@@ -1973,8 +1973,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0117",
-  "name": "Samoa Joe",
-  "promotion": "AEW",
+  "name": "Nuufolau Seanoa",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 73,
@@ -1991,7 +1991,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0118",
   "name": "Kazuchika Okada",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 73,
@@ -2008,7 +2008,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0119",
   "name": "Konosuke Takeshita",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 81,
@@ -2025,7 +2025,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0120",
   "name": "Jay White",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 76,
@@ -2041,8 +2041,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0121",
-  "name": "Ricochet",
-  "promotion": "AEW",
+  "name": "Trevor Mann",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 83,
@@ -2058,8 +2058,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0122",
-  "name": "Athena",
-  "promotion": "AEW",
+  "name": "Adrienne Reese",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 82,
@@ -2076,7 +2076,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0123",
   "name": "Hikaru Shida",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 80,
@@ -2093,7 +2093,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0124",
   "name": "Jamie Hayter",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 75,
@@ -2110,7 +2110,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0125",
   "name": "Julia Hart",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 81,
@@ -2127,7 +2127,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0126",
   "name": "Kris Statlander",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 79,
@@ -2144,7 +2144,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0127",
   "name": "Willow Nightingale",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "face",
   "inRing": 78,
@@ -2160,8 +2160,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0128",
-  "name": "Britt Baker",
-  "promotion": "AEW",
+  "name": "Brittany Baker",
+  "promotion": "Vanguard Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 75,
@@ -2177,8 +2177,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0129",
-  "name": "Adam Cole",
-  "promotion": "AEW",
+  "name": "Austin Jenkins",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 61,
@@ -2195,7 +2195,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0130",
   "name": "Andrade El Idolo",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -2211,8 +2211,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0131",
-  "name": "Bandido",
-  "promotion": "AEW",
+  "name": "Luis Perales",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 65,
@@ -2228,8 +2228,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0132",
-  "name": "Brody King",
-  "promotion": "AEW",
+  "name": "Andrew Gordy",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -2245,8 +2245,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0133",
-  "name": "Buddy Matthews",
-  "promotion": "AEW",
+  "name": "Matthew Adams",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -2262,8 +2262,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0134",
-  "name": "Cash Wheeler",
-  "promotion": "AEW",
+  "name": "Daniel Wheeler",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 67,
@@ -2279,8 +2279,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0135",
-  "name": "Dax Harwood",
-  "promotion": "AEW",
+  "name": "David Harwood",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -2297,7 +2297,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0136",
   "name": "Daniel Garcia",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 61,
@@ -2313,8 +2313,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0137",
-  "name": "Eddie Kingston",
-  "promotion": "AEW",
+  "name": "Edward Moore",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 70,
@@ -2331,7 +2331,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0138",
   "name": "Jack Perry",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -2348,7 +2348,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0139",
   "name": "Kyle Fletcher",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 74,
@@ -2364,8 +2364,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0140",
-  "name": "Lance Archer",
-  "promotion": "AEW",
+  "name": "Lance Hoyt",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 66,
@@ -2381,8 +2381,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0141",
-  "name": "Josh Alexander",
-  "promotion": "AEW",
+  "name": "Josh Lemay",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 70,
@@ -2399,7 +2399,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0142",
   "name": "PAC",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 68,
@@ -2416,7 +2416,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0143",
   "name": "Rocky Romero",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 66,
@@ -2433,7 +2433,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0144",
   "name": "Trent Beretta",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -2449,8 +2449,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0145",
-  "name": "Wardlow",
-  "promotion": "AEW",
+  "name": "Michael Wardlow",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 73,
@@ -2466,8 +2466,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0146",
-  "name": "Roderick Strong",
-  "promotion": "AEW",
+  "name": "Christopher Lindsey",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 74,
@@ -2484,7 +2484,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0147",
   "name": "Wheeler Yuta",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 66,
@@ -2501,7 +2501,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0148",
   "name": "Mike Bailey",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 70,
@@ -2518,7 +2518,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0149",
   "name": "Komander",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 71,
@@ -2534,8 +2534,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0150",
-  "name": "Orange Cassidy",
-  "promotion": "AEW",
+  "name": "James Cipperly",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 73,
@@ -2551,8 +2551,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0151",
-  "name": "Matthew Jackson",
-  "promotion": "AEW",
+  "name": "Matthew Massie",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 62,
@@ -2568,8 +2568,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0152",
-  "name": "Nicholas Jackson",
-  "promotion": "AEW",
+  "name": "Nicholas Massie",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 74,
@@ -2586,7 +2586,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0153",
   "name": "Marshall Von Erich",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -2603,7 +2603,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0154",
   "name": "Ross Von Erich",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 66,
@@ -2620,7 +2620,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0155",
   "name": "Deonna Purrazzo",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 68,
@@ -2637,7 +2637,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0156",
   "name": "Riho",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 64,
@@ -2653,8 +2653,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0157",
-  "name": "Ruby Soho",
-  "promotion": "AEW",
+  "name": "Dori Elizabeth Prange",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 71,
@@ -2671,7 +2671,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0158",
   "name": "Serena Deeb",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 61,
@@ -2688,7 +2688,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0159",
   "name": "Skye Blue",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 72,
@@ -2704,8 +2704,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0160",
-  "name": "Thunder Rosa",
-  "promotion": "AEW",
+  "name": "Melissa Cervantes",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 74,
@@ -2722,7 +2722,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0161",
   "name": "Yuka Sakazaki",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 61,
@@ -2739,7 +2739,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0162",
   "name": "Mina Shirakawa",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 70,
@@ -2755,8 +2755,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0163",
-  "name": "Big Bill",
-  "promotion": "AEW",
+  "name": "Bill Morrissey",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "face",
   "inRing": 54,
@@ -2772,8 +2772,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0164",
-  "name": "Billy Gunn",
-  "promotion": "AEW",
+  "name": "Monty Sopp",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 63,
@@ -2789,8 +2789,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0165",
-  "name": "Bobby Lashley",
-  "promotion": "AEW",
+  "name": "Franklin Lashley",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 51,
@@ -2807,7 +2807,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0166",
   "name": "Brian Cage",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "face",
   "inRing": 60,
@@ -2823,8 +2823,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0167",
-  "name": "MVP",
-  "promotion": "AEW",
+  "name": "Hassan Assad",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 53,
@@ -2841,7 +2841,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0168",
   "name": "Shelton Benjamin",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 51,
@@ -2857,8 +2857,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0169",
-  "name": "Hook",
-  "promotion": "AEW",
+  "name": "Tyler Senerchia",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 60,
@@ -2875,7 +2875,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0170",
   "name": "Kevin Knight",
-  "promotion": "AEW",
+  "promotion": "Vanguard Pro",
   "tier": "lower",
   "align": "face",
   "inRing": 58,
@@ -2891,8 +2891,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0171",
-  "name": "Moose",
-  "promotion": "TNA",
+  "name": "Quinn Ojinnaka",
+  "promotion": "Crossfire Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 78,
@@ -2908,8 +2908,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0172",
-  "name": "Nic Nemeth",
-  "promotion": "TNA",
+  "name": "Nicholas Nemeth",
+  "promotion": "Crossfire Wrestling",
   "tier": "upper",
   "align": "heel",
   "inRing": 75,
@@ -2926,7 +2926,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0173",
   "name": "Mike Santana",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 82,
@@ -2943,7 +2943,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0174",
   "name": "Jordynne Grace",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "upper",
   "align": "face",
   "inRing": 85,
@@ -2960,7 +2960,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0175",
   "name": "A.J. Francis",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 70,
@@ -2977,7 +2977,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0176",
   "name": "Eddie Edwards",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 66,
@@ -2993,8 +2993,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0177",
-  "name": "Frankie Kazarian",
-  "promotion": "TNA",
+  "name": "Frank Gerdelman",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -3011,7 +3011,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0178",
   "name": "Jeff Hardy",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 73,
@@ -3028,7 +3028,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0179",
   "name": "Matt Hardy",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 63,
@@ -3044,8 +3044,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0180",
-  "name": "Mustafa Ali",
-  "promotion": "TNA",
+  "name": "Adeel Alam",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 68,
@@ -3062,7 +3062,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0181",
   "name": "Rich Swann",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 71,
@@ -3079,7 +3079,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0182",
   "name": "Leon Slater",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 75,
@@ -3096,7 +3096,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0183",
   "name": "Alisha Edwards",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "face",
   "inRing": 71,
@@ -3113,7 +3113,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0184",
   "name": "Masha Slamovich",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 75,
@@ -3130,7 +3130,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0185",
   "name": "Tasha Steelz",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 73,
@@ -3147,7 +3147,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0186",
   "name": "Xia Brookside",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 71,
@@ -3164,7 +3164,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0187",
   "name": "Jody Threat",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "mid",
   "align": "heel",
   "inRing": 70,
@@ -3181,7 +3181,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0188",
   "name": "BDE",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 52,
@@ -3198,7 +3198,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0189",
   "name": "Brian Myers",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 62,
@@ -3215,7 +3215,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0190",
   "name": "Cedric Alexander",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 61,
@@ -3232,7 +3232,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0191",
   "name": "Ricky Sosa",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 63,
@@ -3249,7 +3249,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0192",
   "name": "Ash by Elegance",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 55,
@@ -3266,7 +3266,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0193",
   "name": "Allie",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 52,
@@ -3283,7 +3283,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0194",
   "name": "Indi Hartwell",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 51,
@@ -3300,7 +3300,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0195",
   "name": "Mara Sade",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 61,
@@ -3317,7 +3317,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0196",
   "name": "Rosemary",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 56,
@@ -3334,7 +3334,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0197",
   "name": "KiLynn King",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "heel",
   "inRing": 51,
@@ -3351,7 +3351,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0198",
   "name": "Lei Ying Lee",
-  "promotion": "TNA",
+  "promotion": "Crossfire Wrestling",
   "tier": "lower",
   "align": "face",
   "inRing": 51,
@@ -3368,7 +3368,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0199",
   "name": "El Hijo del Vikingo",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "upper",
   "align": "heel",
   "inRing": 72,
@@ -3384,8 +3384,8 @@ window.RTR_ROSTER = [
  },
  {
   "id": "w0200",
-  "name": "Dominik Mysterio",
-  "promotion": "AAA",
+  "name": "Dominik Gutierrez",
+  "promotion": "Lucha Suprema",
   "tier": "upper",
   "align": "face",
   "inRing": 86,
@@ -3402,7 +3402,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0201",
   "name": "Chavo Guerrero Jr.",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "upper",
   "align": "heel",
   "inRing": 85,
@@ -3419,7 +3419,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0202",
   "name": "El Hijo de Dr. Wagner Jr.",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "mid",
   "align": "heel",
   "inRing": 74,
@@ -3436,7 +3436,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0203",
   "name": "El Texano Jr.",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "mid",
   "align": "face",
   "inRing": 62,
@@ -3453,7 +3453,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0204",
   "name": "Octagon Jr.",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "mid",
   "align": "face",
   "inRing": 75,
@@ -3470,7 +3470,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0205",
   "name": "Psycho Clown",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "mid",
   "align": "face",
   "inRing": 62,
@@ -3487,7 +3487,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0206",
   "name": "Pagano",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "mid",
   "align": "face",
   "inRing": 66,
@@ -3504,7 +3504,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0207",
   "name": "Laredo Kid",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -3521,7 +3521,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0208",
   "name": "Drago",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "mid",
   "align": "heel",
   "inRing": 73,
@@ -3538,7 +3538,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0209",
   "name": "Myzteziz Jr.",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "heel",
   "inRing": 60,
@@ -3555,7 +3555,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0210",
   "name": "Abismo Negro Jr.",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "heel",
   "inRing": 62,
@@ -3572,7 +3572,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0211",
   "name": "Andy Panda Jr.",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "face",
   "inRing": 62,
@@ -3589,7 +3589,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0212",
   "name": "Mr. Iguana",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "face",
   "inRing": 53,
@@ -3606,7 +3606,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0213",
   "name": "Kali Armstrong AAA",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "face",
   "inRing": 63,
@@ -3623,7 +3623,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0214",
   "name": "Myka Lockwood",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "face",
   "inRing": 58,
@@ -3640,7 +3640,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0215",
   "name": "Tavion Heights",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "face",
   "inRing": 50,
@@ -3657,7 +3657,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0216",
   "name": "Tate Wilder",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "heel",
   "inRing": 52,
@@ -3674,7 +3674,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0217",
   "name": "NWA Gretta",
-  "promotion": "AAA",
+  "promotion": "Lucha Suprema",
   "tier": "lower",
   "align": "face",
   "inRing": 56,
@@ -3691,7 +3691,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0218",
   "name": "Dalton Castle",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "upper",
   "align": "face",
   "inRing": 75,
@@ -3708,7 +3708,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0219",
   "name": "Mercedes Martinez",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "upper",
   "align": "face",
   "inRing": 74,
@@ -3725,7 +3725,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0220",
   "name": "Matt Taven",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "mid",
   "align": "heel",
   "inRing": 69,
@@ -3742,7 +3742,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0221",
   "name": "Anthony Henry",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "mid",
   "align": "heel",
   "inRing": 67,
@@ -3759,7 +3759,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0222",
   "name": "Red Velvet",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "mid",
   "align": "heel",
   "inRing": 72,
@@ -3776,7 +3776,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0223",
   "name": "Lady Frost",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "mid",
   "align": "face",
   "inRing": 74,
@@ -3793,7 +3793,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0224",
   "name": "Christyan Reid",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "lower",
   "align": "heel",
   "inRing": 58,
@@ -3810,7 +3810,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0225",
   "name": "Trish Adora",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "lower",
   "align": "face",
   "inRing": 56,
@@ -3827,7 +3827,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0226",
   "name": "Charlette Renegade",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "lower",
   "align": "heel",
   "inRing": 60,
@@ -3844,7 +3844,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0227",
   "name": "Robyn Renegade",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "lower",
   "align": "heel",
   "inRing": 61,
@@ -3861,7 +3861,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0228",
   "name": "Jacked Jameson",
-  "promotion": "ROH",
+  "promotion": "Pure Circuit",
   "tier": "lower",
   "align": "face",
   "inRing": 61,
@@ -3878,7 +3878,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0229",
   "name": "Zack Sabre Jr.",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "elite",
   "align": "face",
   "inRing": 90,
@@ -3895,7 +3895,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0230",
   "name": "Hiroshi Tanahashi",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "elite",
   "align": "face",
   "inRing": 86,
@@ -3912,7 +3912,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0231",
   "name": "SANADA",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 72,
@@ -3929,7 +3929,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0232",
   "name": "EVIL",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 73,
@@ -3946,7 +3946,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0233",
   "name": "Tomohiro Ishii",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 80,
@@ -3963,7 +3963,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0234",
   "name": "El Phantasmo",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 81,
@@ -3980,7 +3980,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0235",
   "name": "Hirooki Goto",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "upper",
   "align": "heel",
   "inRing": 83,
@@ -3997,7 +3997,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0236",
   "name": "Shota Umino",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -4014,7 +4014,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0237",
   "name": "Yota Tsuji",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 65,
@@ -4031,7 +4031,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0238",
   "name": "Great-O-Kharn",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 65,
@@ -4048,7 +4048,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0239",
   "name": "Taichi",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 69,
@@ -4065,7 +4065,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0240",
   "name": "Douki",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 60,
@@ -4082,7 +4082,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0241",
   "name": "Hikuleo",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 62,
@@ -4099,7 +4099,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0242",
   "name": "Robbie Eagles",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 60,
@@ -4116,7 +4116,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0243",
   "name": "YOSHI-HASHI",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -4133,7 +4133,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0244",
   "name": "Toru Yano",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 74,
@@ -4150,7 +4150,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0245",
   "name": "Taiji Ishimori",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "heel",
   "inRing": 74,
@@ -4167,7 +4167,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0246",
   "name": "TAKA Michinoku",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "mid",
   "align": "face",
   "inRing": 74,
@@ -4184,7 +4184,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0247",
   "name": "Yuya Uemura",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 64,
@@ -4201,7 +4201,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0248",
   "name": "Ren Narita",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 53,
@@ -4218,7 +4218,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0249",
   "name": "Kosei Fujita",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "lower",
   "align": "face",
   "inRing": 56,
@@ -4235,7 +4235,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0250",
   "name": "Master Wato",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "lower",
   "align": "face",
   "inRing": 54,
@@ -4252,7 +4252,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0251",
   "name": "Titan",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 58,
@@ -4269,7 +4269,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0252",
   "name": "Atlantis Jr.",
-  "promotion": "NJPW",
+  "promotion": "Rising Sun Pro",
   "tier": "lower",
   "align": "heel",
   "inRing": 56,
@@ -4286,7 +4286,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0253",
   "name": "Mayu Iwatani",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "elite",
   "align": "heel",
   "inRing": 92,
@@ -4303,7 +4303,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0254",
   "name": "Momo Watanabe",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "upper",
   "align": "face",
   "inRing": 78,
@@ -4320,7 +4320,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0255",
   "name": "Saya Kamitani",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "upper",
   "align": "heel",
   "inRing": 72,
@@ -4337,7 +4337,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0256",
   "name": "Suzu Suzuki",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "upper",
   "align": "face",
   "inRing": 86,
@@ -4354,7 +4354,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0257",
   "name": "Ami Sohrei",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "mid",
   "align": "heel",
   "inRing": 70,
@@ -4371,7 +4371,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0258",
   "name": "Koguma",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 75,
@@ -4388,7 +4388,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0259",
   "name": "Natsupoi",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -4405,7 +4405,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0260",
   "name": "Starlight Kid",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 72,
@@ -4422,7 +4422,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0261",
   "name": "AZM",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 72,
@@ -4439,7 +4439,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0262",
   "name": "Hanan",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -4456,7 +4456,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0263",
   "name": "Saori Anou",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 59,
@@ -4473,7 +4473,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0264",
   "name": "Rina",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "lower",
   "align": "face",
   "inRing": 63,
@@ -4490,7 +4490,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0265",
   "name": "Konami",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "lower",
   "align": "face",
   "inRing": 57,
@@ -4507,7 +4507,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0266",
   "name": "Waka Tsukiyama",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "lower",
   "align": "face",
   "inRing": 59,
@@ -4524,7 +4524,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0267",
   "name": "Yuna Mizumori",
-  "promotion": "Stardom",
+  "promotion": "Starlight Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 59,
@@ -4541,7 +4541,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0268",
   "name": "Miyu Yamashita",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "elite",
   "align": "face",
   "inRing": 87,
@@ -4558,7 +4558,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0269",
   "name": "Shoko Nakajima",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "upper",
   "align": "heel",
   "inRing": 80,
@@ -4575,7 +4575,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0270",
   "name": "Rika Tatsumi",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "upper",
   "align": "face",
   "inRing": 72,
@@ -4592,7 +4592,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0271",
   "name": "Mizuki",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "upper",
   "align": "heel",
   "inRing": 84,
@@ -4609,7 +4609,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0272",
   "name": "Yuka Sakazaki",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 61,
@@ -4626,7 +4626,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0273",
   "name": "Miu Watanabe",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -4643,7 +4643,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0274",
   "name": "Yuki Kamifuku",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "mid",
   "align": "heel",
   "inRing": 60,
@@ -4660,7 +4660,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0275",
   "name": "Wakana Uehara",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 64,
@@ -4677,7 +4677,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0276",
   "name": "Hyper Misao",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "mid",
   "align": "face",
   "inRing": 66,
@@ -4694,7 +4694,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0277",
   "name": "Suzume",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "mid",
   "align": "heel",
   "inRing": 63,
@@ -4711,7 +4711,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0278",
   "name": "Raku",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "face",
   "inRing": 50,
@@ -4728,7 +4728,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0279",
   "name": "Yuki Aino",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 62,
@@ -4745,7 +4745,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0280",
   "name": "Pom Harajuku",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "face",
   "inRing": 55,
@@ -4762,7 +4762,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0281",
   "name": "Yuki Arai",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 60,
@@ -4779,7 +4779,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0282",
   "name": "Kaya Toribami",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "face",
   "inRing": 58,
@@ -4796,7 +4796,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0283",
   "name": "Shino Suzuki",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 54,
@@ -4813,7 +4813,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0284",
   "name": "HIMAWARI",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 55,
@@ -4830,7 +4830,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0285",
   "name": "Toga",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 54,
@@ -4847,7 +4847,7 @@ window.RTR_ROSTER = [
  {
   "id": "w0286",
   "name": "Uta Takami",
-  "promotion": "TJPW",
+  "promotion": "Sakura Joshi",
   "tier": "lower",
   "align": "heel",
   "inRing": 64,

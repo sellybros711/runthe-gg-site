@@ -1,0 +1,41 @@
+name: Free games check
+
+# Which games a free account may play is written down twice: arcade/tokens.js
+# paints the locks, public.arcade_free_games() in the database is what actually
+# refuses a play. Nothing reconciles them at runtime, so a difference between
+# them shows FREE on a tile that the spend RPC then turns away.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-freegames.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/tokens.js'
+      - 'supabase/*.sql'
+      - 'scripts/check-freegames.mjs'
+      - '.github/workflows/freegames-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/tokens.js'
+      - 'supabase/*.sql'
+      - 'scripts/check-freegames.mjs'
+      - '.github/workflows/freegames-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: freegames-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-freegames.mjs

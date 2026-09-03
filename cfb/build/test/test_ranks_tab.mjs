@@ -21,15 +21,31 @@
  */
 import { chromium } from 'playwright';
 import http from 'node:http';
+import { execFileSync } from 'node:child_process';
 const SS='/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
+/* Same database the stub is serving. See the header of test_bowl_key.mjs for why
+   getting this wrong fails in a way that reads like a code regression. */
+const DB=process.argv[2]||'cfbe2e';
+const psql=(sql)=>execFileSync('psql',['-X','-A','-t','-d',DB,'-c',sql],
+  { encoding:'utf8', env:{ ...process.env, PGHOST:process.env.PGHOST||'/tmp',
+    PGPORT:process.env.PGPORT||'5433', PGUSER:process.env.PGUSER||'postgres' } }).trim();
 const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--no-sandbox'] });
+
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefined?'   '+x:''));};
 
 async function playToResults(page){
   await page.evaluate(()=>document.getElementById('b-play-intro').click());
   await page.waitForTimeout(1400);
-  for(let i=0;i<14;i++){
+  for(let i=0;i<20;i++){
+    /* A DUAL-POSITION PLAYER STOPS THE DRAFT AND ASKS. Taking one opens the slot
+       sheet over the wheel, and the sheet swallows every click until it is
+       answered, so a loop that only knows about tiles sits there retrying until
+       the whole suite times out. It is not rare and it is not deterministic:
+       which players the wheel offers depends on the run, which is why this used
+       to look like a flake. Answer it with the first slot and carry on. */
+    const slot=await page.$('#sheet.on .slotopt');
+    if(slot){await slot.click();await page.waitForTimeout(900);continue;}
     const t=await page.$('#opts .tile:not(.off)');
     if(!t){await page.waitForTimeout(1300);continue;}
     await t.click();
@@ -69,11 +85,25 @@ const noTable=http.createServer((req,res)=>{
 });
 await new Promise((r)=>noTable.listen(5556,r));
 
+/* SIGNED OUT, BUT KNOWN TO BE SIGNED OUT, which is not the same thing and is the only
+   state the sign-in prompt draws in. The real library comes from a CDN this sandbox
+   cannot reach, so without a stub authState never becomes ready and gateState() quite
+   correctly says nothing: asking somebody to sign in before you know whether they
+   already have is worse than not asking. Only the section that tests the prompt needs
+   it, so it is opt-in and the rest of the file keeps the behaviour it has always had. */
+const AUTH_STUB=`window.supabase={createClient(){return{
+  auth:{onAuthStateChange(){return{data:{}}},
+    getSession:()=>Promise.resolve({data:{session:null}}),
+    signOut:()=>Promise.resolve({})},
+  from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve({data:null})}}}}}},
+  rpc:()=>Promise.resolve({data:null,error:null})}}};`;
+
 /* live: true pins on, false pins off, null leaves it to work itself out. */
-async function newPage(live,port){
+async function newPage(live,port,auth){
   const page=await b.newPage({viewport:{width:600,height:1000}});
   page.on('pageerror',(e)=>{console.log('  PAGE ERROR: '+e.message);bad++;});
   await page.addInitScript(`window.PS_CFB_BOARD_URL='http://localhost:${port||5555}';
+    ${auth?AUTH_STUB:''}
     ${live===null?'':'window.PS_CFB_RANKS_LIVE='+(live?'true':'false')+';'}`);
   await page.goto('http://localhost:8080/cfb/index.html',{waitUntil:'domcontentloaded',timeout:40000});
   await page.waitForTimeout(2500);
@@ -119,6 +149,21 @@ console.log('\n=== nothing pinned, table not there: the same placeholder ===');
 
 console.log('\n=== nothing pinned, the board answering: live with no flag flipped ===');
 {
+  /* SEEDS ITS OWN FIELD, because these windows count NAMED seasons only and this test
+     plays signed out. Against an empty board the honest answer is "nobody yet" and the
+     placings below would rightly not appear. This passed for a while on whatever named
+     row test_board_e2e happened to leave behind, which is a pass that depends on run
+     order and would have gone red the first time somebody ran this file on its own. */
+  psql("delete from cfb_runs where display_name = 'rankfield'");
+  for (let i = 0; i < 3; i++) {
+    psql(`insert into cfb_runs (regular_wins, playoff_wins, wins, losses, games,
+      national_rank, made_playoffs, title_won, perfect, bowl_won, seed_label,
+      point_diff, chemistry_pct, spend_musd, overall, picks, run_mode, display_name)
+      values (${8 + i}, 0, ${8 + i}, ${4 - i}, 12, ${20 - i * 5}, false, false, false,
+      false, 'Bowl Game', ${3.0 + i}, 2.0, 10.0, ${88 + i},
+      array['rf${i}a:2016','rf${i}b:2007','rf${i}c:2014','rf${i}d:2011','rf${i}e:2009','rf${i}f:2017'],
+      'free', 'rankfield')`);
+  }
   const p=await newPage(null);
   ok('reached the results screen', await playToResults(p));
   await p.click('.overtab[data-t="ranks"]');
@@ -126,8 +171,129 @@ console.log('\n=== nothing pinned, the board answering: live with no flag flippe
   const cells=await p.$$eval('#o-ranks .rcell',(els)=>els.map(e=>e.textContent));
   ok('three windows come back', cells.length===3, cells.length+' cells');
   ok('with real placings', cells.every(c=>/#\d/.test(c)&&/of \d/.test(c)), cells.join('  '));
+  /* The field a guest is placed against is the NAMED one, so the "of" can never be
+     smaller than the place: the off-by-one that would read "4th of 3" is corrected in
+     rankCell(). */
+  const bad3=cells.filter((c)=>{
+    const m=c.match(/#([\d,]+)of ([\d,]+)/);
+    if(!m) return false;
+    return Number(m[1].replace(/,/g,'')) > Number(m[2].replace(/,/g,''));
+  });
+  ok('and never a place past the end of the field', bad3.length===0, bad3.join('  '));
   await p.screenshot({path:SS+'ranks_live.png'});
   await p.close();
+  psql("delete from cfb_runs where display_name = 'rankfield'");
+}
+
+console.log('\n=== a window nobody has signed in for says so ===');
+{
+  /* THE OTHER SIDE OF THE NAMED BOARD, and the bug this change would otherwise have
+     shipped: with no named season in the window, place is 1 and the field is 0, and the
+     arithmetic says "#1 of 0". A brand new board is in exactly that state, so this is
+     what most players would have seen on launch day. */
+  psql('truncate cfb_runs');
+  const p=await newPage(null);
+  ok('reached the results screen', await playToResults(p));
+  await p.click('.overtab[data-t="ranks"]');
+  await p.waitForTimeout(2500);
+  const cells=await p.$$eval('#o-ranks .rcell',(els)=>els.map(e=>e.textContent));
+  ok('no window claims a first place on an empty field',
+    cells.every((c)=>!/#1/.test(c)), cells.join('  '));
+  ok('they say nobody yet instead', cells.some((c)=>/nobody yet/.test(c)), cells.join('  '));
+  await p.screenshot({path:SS+'ranks_empty.png'});
+  await p.close();
+}
+
+/* ── the ask itself ────────────────────────────────────────────────────────────
+   THE PLACINGS AND THE PROMPT ARE ON THE PAGE, NOT BEHIND A TAB.
+
+   Everything above tests the Where it ranks tab, which is not the tab this screen
+   opens on. That is exactly how signing up came to lag the football game: three
+   placings and a sign-in button existed and almost nobody was shown them, and the one
+   line that WAS shown ended with "This one is saved either way" -- a true sentence
+   that answers the question the button is asking.
+
+   So this checks the surface a guest actually lands on: three windows in the open,
+   the prompt under them, and a sentence that makes the placing contingent rather than
+   talking the reader out of it. */
+console.log('\n=== the sign-in ask on the results screen itself ===');
+{
+  psql("delete from cfb_runs where display_name = 'askfield'");
+  for (let i = 0; i < 3; i++) {
+    psql(`insert into cfb_runs (regular_wins, playoff_wins, wins, losses, games,
+      national_rank, made_playoffs, title_won, perfect, bowl_won, seed_label,
+      point_diff, chemistry_pct, spend_musd, overall, picks, run_mode, display_name)
+      values (${8 + i}, 0, ${8 + i}, ${4 - i}, 12, ${20 - i * 5}, false, false, false,
+      false, 'Bowl Game', ${3.0 + i}, 2.0, 10.0, ${88 + i},
+      array['af${i}a:2016','af${i}b:2007','af${i}c:2014','af${i}d:2011','af${i}e:2009','af${i}f:2017'],
+      'free', 'askfield')`);
+  }
+  const p=await newPage(null,null,true);
+  ok('reached the results screen', await playToResults(p));
+  await p.waitForTimeout(2600);
+
+  /* Three windows, WITHOUT opening any tab. */
+  const cells=await p.$$eval('#o-place .rcell',(els)=>els.map(e=>e.textContent));
+  ok('three placings show without opening a tab', cells.length===3, cells.length+' cells');
+  ok('  labelled Today, This week, All time',
+    /Today/.test(cells[0]||'')&&/This week/.test(cells[1]||'')&&/All time/.test(cells[2]||''),
+    cells.join('  '));
+  /* At least one, not all three. A window with no named season in it correctly draws
+     "nobody yet", and which windows are populated depends on what is in the database
+     when this runs; the claim here is that the placings reach the page, not that this
+     machine's board happens to have a row in every window. */
+  ok('  with a real number on at least one', cells.some(c=>/#\d/.test(c)), cells.join('  '));
+
+  const gateEl=await p.$('#o-place .gateline');
+  const gate=gateEl?((await gateEl.textContent())||''):'';
+  /* THE SENTENCE IS ALWAYS THERE, and it is the explanation of the number directly above
+     it: where the season WOULD sit, and why it is not on the list. */
+  ok('the sign-in prompt is there too', /go on the board/.test(gate), gate.slice(0,80));
+  /* The whole point. "would sit" makes the number contingent on the button. */
+  ok('  and it says the placing is what you WOULD get', /would/i.test(gate), gate.slice(0,90));
+  /* And it does NOT hand back the reason not to bother. That sentence belongs only
+     where there is no placing on screen to be contingent about. */
+  ok('  without telling them it is saved either way anyway',
+    !/either way/i.test(gate), gate.slice(0,120));
+
+  /* WHICH BUTTON IS THE ASK DEPENDS ON WHETHER THE SEASON EARNED ANYTHING, and one of
+     them is always the ask. A guest who earned badges gets the claim panel, which says
+     everything this line says and names what is waiting as well, so this line keeps its
+     sentence and gives up its button rather than stacking a second full-width sign-in
+     under the first. A season that earned nothing leaves this line as the only ask, and
+     it keeps its button. */
+  const which=await p.evaluate(()=>({
+    claim:!!document.querySelector('#o-claim .claimbox'),
+    gateBtn:!!document.querySelector('#o-place .gateline button'),
+  }));
+  ok('  exactly one sign-in button on the screen', which.claim!==which.gateBtn,
+    JSON.stringify(which));
+
+  /* Above the fold on a small phone, because a prompt below it is the tab problem
+     again in a different costume. Whichever of the two is the ask. */
+  await p.setViewportSize({width:375,height:667});
+  await p.waitForTimeout(400);
+  const seen=await p.evaluate(()=>{
+    const btn=document.querySelector('#o-claim .claimbox button')
+      ||document.querySelector('#o-place .gateline button');
+    if(!btn) return null;
+    const r=btn.getBoundingClientRect();
+    return {top:Math.round(r.top),vh:window.innerHeight,
+      label:(btn.textContent||'').trim()};
+  });
+  ok('the button is on the first screen of a 375x667 phone',
+    seen&&seen.top<seen.vh, JSON.stringify(seen));
+
+  /* A placing is a way into the board. */
+  await p.setViewportSize({width:390,height:844});
+  await p.waitForTimeout(300);
+  await p.$eval('#o-place .rcell.go',(el)=>el.click());
+  await p.waitForTimeout(1200);
+  ok('tapping a placing opens the board', !!(await p.$('#s-board.on')));
+
+  await p.screenshot({path:SS+'place_ask.png'});
+  await p.close();
+  psql("delete from cfb_runs where display_name = 'askfield'");
 }
 
 noTable.close();

@@ -4,7 +4,7 @@ A daily sports crossword. One puzzle a day, fill the grid, beat the clock, keep
 your streak alive. Lives at `runthe.gg/arcade/crossword/`.
 
 `RunTheGrid` is the **hub** for grid games — this Daily Crossword is one game
-inside it; the Daily Matching Game is its sibling (`/arcade/match/`). The hub
+inside it; Common Ground is its sibling (`/arcade/match/`). The hub
 landing is at `/arcade/`.
 
 ## What's here

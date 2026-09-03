@@ -14,10 +14,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   SEASONS, POSITIONS, MIN_GAMES, DATA_DIR, BUILD_DIR,
-  cfbdFetchRetry, isDrawable,
+  cfbdFetchRetry, isDrawable, fixName,
   mean, stdev, quantileSorted, round, writePair,
 } from './lib.mjs';
 import { secondPosition } from './dual-positions.mjs';
@@ -26,7 +27,23 @@ import { secondPosition } from './dual-positions.mjs';
 
 export const BASE_PRICE = 0.3;
 export const MAX_PRICE = 4.8;
-export const PRICE_K = 1.8;
+/* THE CURVE THROUGH THE MIDDLE. price = BASE + (MAX-BASE) * t^K, and both ends
+   are pinned: the cheapest player costs BASE and the best costs MAX whatever K
+   is. So K only moves what the MIDDLE costs, which is exactly where six slots on
+   an $11M budget shop, and lowering it makes a good-but-not-elite player dearer.
+
+   1.80 to 1.74 to make a high overall a little harder to assemble. Measured over
+   520 drafts, paired: reaching 90 fell from 24% of drafts to 19%, 95 from 11% to
+   7%, and 100 stayed reachable at 1%. Keeping that last number alive is the point
+   of the small step, because the title now concentrates above 95 and squeezing
+   the curve harder empties the band that wins it: at 1.72, 95+ halves again and
+   at 1.65 it is gone.
+
+   Chosen over lowering the cap, which does the same arithmetic from the other
+   side. The cap is $11M in the rules, the copy, the how-to-play and the server's
+   own bound, and it is the number a player is told they are spending. Moving what
+   the money buys leaves all of that true. */
+export const PRICE_K = 1.74;
 export const BASELINE_RANK = 120;
 
 export const SLOT_ELIGIBILITY = {
@@ -104,19 +121,47 @@ function modeSplit(t, games, actualPpg) {
   };
 }
 
-function statLine(position, t) {
+/*
+ * THE LINE UNDER A PLAYER'S NAME, and the one rule it has: IT IS NEVER EMPTY.
+ *
+ * The thresholds below are about tidiness, not truth. A running back who threw one
+ * trick-play pass should not have "8 pass yds, 0 TD, 0 INT" hung off his name, so
+ * each category has to clear a bar before it is worth printing.
+ *
+ * What nobody checked was the case where a man clears NONE of them. Ninety-three
+ * players came out with an empty line and a real fantasy average beside it, which on
+ * screen is a name, a team, a blank where the season should be, and a number: it reads
+ * as missing data rather than as a quiet season. They are all men who just scraped past
+ * the six-game minimum and did very little with it, a backup quarterback with
+ * twenty-five completions being the shape of it.
+ *
+ * So the thresholds still decide what is worth a headline, and if that comes to nothing
+ * the fallback prints what he actually did without them. A small line is honest; a
+ * blank one is not.
+ */
+export function statLine(position, t) {
   const n = (v) => v.toLocaleString('en-US');
+  const pass = () => [`${n(t.passing_yards)} pass yds`, `${t.passing_tds} TD`, `${t.passing_interceptions} INT`];
+  const rush = () => [`${n(t.rushing_yards)} rush yds`, `${t.rushing_tds} TD`];
+  const rec = () => [`${t.receptions} rec`, `${n(t.receiving_yards)} yds`, `${t.receiving_tds} TD`];
+
   const parts = [];
-  if (t.completions >= 30) {
-    parts.push(`${n(t.passing_yards)} pass yds`, `${t.passing_tds} TD`, `${t.passing_interceptions} INT`);
-  }
+  if (t.completions >= 30) parts.push(...pass());
   const runs = t.rushing_yards > 0
     && (position === 'RB' ? t.carries > 0 : (t.rushing_yards >= 100 || t.rushing_tds >= 2));
-  if (runs) parts.push(`${n(t.rushing_yards)} rush yds`, `${t.rushing_tds} TD`);
+  if (runs) parts.push(...rush());
   if (t.receptions >= 8 || (['WR', 'TE'].includes(position) && t.receptions > 0)) {
-    parts.push(`${t.receptions} rec`, `${n(t.receiving_yards)} yds`, `${t.receiving_tds} TD`);
+    parts.push(...rec());
   }
-  return parts.join(', ');
+  if (parts.length) return parts.join(', ');
+
+  /* Nothing cleared a bar. Print whatever he did, biggest first, and if he genuinely
+     did nothing at all say so in words rather than handing back an empty string. */
+  const back = [];
+  if (t.attempts > 0 || t.passing_yards) back.push(...pass());
+  if (t.carries > 0 || t.rushing_yards) back.push(...rush());
+  if (t.receptions > 0) back.push(...rec());
+  return back.length ? back.join(', ') : 'No offensive stats recorded';
 }
 
 const STAT_KEYS = [
@@ -414,7 +459,9 @@ async function main() {
       const team = Object.entries(p.teams).sort((a, b) => b[1] - a[1])[0]?.[0] ?? p.apiTeam;
       return {
         player_id: p.player_id,
-        name: p.name,
+        /* Corrected on the way in, so every file downstream of this one carries the
+           same spelling and nothing has to be fixed twice. See fixName in lib.mjs. */
+        name: fixName(p.name),
         season: p.season,
         school: team,
         team_season_id: team ? `${team}-${p.season}` : null,
@@ -569,4 +616,9 @@ async function main() {
               `$${BASE_PRICE}M floor.`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+/* Only when this file IS the command. Exported for cfb/build/test/test_player_data.mjs,
+   which exercises statLine() directly, and importing a module must not set a pipeline
+   running against an API key the importer does not have. */
+const invokedDirectly = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) main().catch((e) => { console.error(e); process.exit(1); });

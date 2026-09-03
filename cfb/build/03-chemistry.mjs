@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   SEASONS, DATA_DIR,
-  cfbdFetchRetry, round,
+  cfbdFetchRetry, round, lastName,
 } from './lib.mjs';
 
 const BATTERY_MIN_RECEPTIONS = 40;
@@ -134,9 +134,13 @@ async function main() {
     if (!eligibleKeys.has(qbKey)) continue;
     const season = Number(key.split('|')[1]);
     const qbName = nameOf.get(qbKey) ?? '';
+    /* lastName() and not split(' ').pop(). A suffix is not a surname, and the naive
+       version made a hundred and fourteen of these read "Sr. threw Robiskie 8 touchdowns"
+       and "Smith threw Jr. 43 catches". It is the same function the game draws its field
+       chips with, so one man never appears under two different surnames. */
     const label = e.recTd >= BATTERY_MIN_REC_TDS
-      ? `${qbName.split(' ').pop()} threw ${e.name.split(' ').pop()} ${e.recTd} touchdowns in ${season}`
-      : `${qbName.split(' ').pop()} threw ${e.name.split(' ').pop()} ${e.rec} catches in ${season}`;
+      ? `${lastName(qbName)} threw ${lastName(e.name)} ${e.recTd} touchdowns in ${season}`
+      : `${lastName(qbName)} threw ${lastName(e.name)} ${e.rec} catches in ${season}`;
     (battery[qbKey] ??= []).push({ receiver: key, receptions: e.rec, rec_tds: e.recTd, label });
     pairs++;
   }

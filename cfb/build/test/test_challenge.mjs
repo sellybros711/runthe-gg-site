@@ -25,6 +25,7 @@ Object.defineProperty(navigator,'clipboard',{configurable:true,
   value:{writeText:(t)=>{window.__copied=t;return Promise.resolve();}}});`;
 
 const b = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args:['--no-sandbox'] });
+
 let bad=0;
 const ok=(n,p,x)=>{if(!p)bad++;console.log((p?'  ok   ':' FAIL  ')+n+(x!==undefined?'   '+x:''));};
 
@@ -36,7 +37,11 @@ async function newPage(signedIn){
 }
 async function draftSix(page){
   await page.waitForTimeout(1400);
-  for(let i=0;i<14;i++){
+  for(let i=0;i<20;i++){
+    /* Taking a dual-position player opens the slot sheet over the wheel, and the
+       sheet swallows every click until it is answered. See test_ranks_tab. */
+    const slot=await page.$('#sheet.on .slotopt');
+    if(slot){await slot.click();await page.waitForTimeout(900);continue;}
     const t=await page.$('#opts .tile:not(.off)');
     if(!t){await page.waitForTimeout(1300);continue;}
     await t.click();
@@ -93,7 +98,7 @@ await B.goto('http://localhost:8080/cfb/index.html?k='+kParam,{waitUntil:'domcon
 await B.waitForTimeout(2500);
 ok('the accept screen takes over', !!(await B.$('#s-challenge.on')));
 ok('named after the sender', (await B.textContent('#ch-title')).includes('coachprime'));
-ok('mode is shown', /Free play|draft/.test(await B.textContent('#ch-mode')), await B.textContent('#ch-mode'));
+ok('mode is shown', /Classic draft|draft/.test(await B.textContent('#ch-mode')), await B.textContent('#ch-mode'));
 const bSeen=await B.$$eval('#ch-rost .rrow .nm b',(els)=>els.map(e=>e.textContent));
 ok('all six of the sender\'s players survive the trip', bSeen.length===6&&bSeen.join('|')===aNames.join('|'));
 const chRating=parseFloat(await B.textContent('#ch-rating'));

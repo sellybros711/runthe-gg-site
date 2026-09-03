@@ -38,3 +38,20 @@
   Cache-Control: public, max-age=31536000
 /setlist/data/*
   Cache-Control: public, max-age=31536000
+
+# Run The Arcade. Its pages are served at /arcade/ and /arcade/<game>/ (no
+# ".html" in the URL, so the /*.html rule above never matches them), and its
+# shared modules (tokens.js, card.js, board.js, calendar.js, pregame.js, …) are
+# edited in place rather than ?v=-bumped. So revalidate everything under
+# /arcade/ on every load: a push to main then reaches every browser immediately
+# (ETag → 304 when unchanged, so it stays cheap). Big static assets keep a hard
+# cache below.
+/arcade/
+  Cache-Control: no-cache
+/arcade/*
+  Cache-Control: no-cache
+
+# Fonts/images/audio under the arcade rarely change and are large — let them
+# cache hard (override the broad no-cache above for these extensions).
+/arcade/assets/*
+  Cache-Control: public, max-age=604800

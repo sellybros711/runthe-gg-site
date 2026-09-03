@@ -2,6 +2,12 @@
  *
  *   node cfb/build/test/test_bowl_key.mjs [dbname]
  *
+ * DBNAME MUST BE THE DATABASE THE POSTGREST STUB IS SERVING. The browser half
+ * seeds rows with psql and then reads them back through board.js, so if psql and
+ * the stub point at different databases every seeded assertion still passes and
+ * only the ones that cross the seam fail, which reads like a code regression and
+ * is not one. Start the stub and run this with the same name.
+ *
  * Two things, and the second is why this file exists.
  *
  * WHICH BOWL. cfb_runs stores a slug and the client resolves it to a name against
@@ -211,9 +217,14 @@ window.PS_CFB_BOARD_URL = 'http://localhost:5555';`;
   console.log('\n=== the leaderboard says which bowl ===');
   await p.click('#b-lb-intro');
   await p.waitForTimeout(3000);
-  const rows = await p.$$eval('#lb-rows .lbr', (els) => els.map((e) => e.textContent));
-  /* Four: the three seeded above plus the one board.js just submitted. */
-  ok('the board lists every season', rows.length === 4, rows.length + '');
+  /* PODIUM AND LIST TOGETHER. The top three are now steps above the list rather than
+     the first three rows of it, so counting only #lb-rows counts everything except the
+     seasons this suite most wants to read. Both carry the fate, which is the text under
+     test here. */
+  const rows = await p.$$eval('#lb-podium .pod, #lb-rows .lbr', (els) => els.map((e) => e.textContent));
+  /* At least four: the three seeded above plus the one board.js just submitted. More if
+     this database has been used before, which it is allowed to have been. */
+  ok('the board lists every season', rows.length >= 4, rows.length + '');
   ok('a named win says which bowl', rows.some((r) => /Garland Bowl champions/.test(r)),
     rows.join(' | ').slice(0, 110));
   ok('including the one board.js sent', rows.some((r) => /Mesa Bowl champions/.test(r)));
@@ -232,8 +243,14 @@ window.PS_CFB_BOARD_URL = 'http://localhost:5555';`;
      history, which is what made it invisible. */
   await p.evaluate(() => { const x = document.getElementById('lb-x'); if (x) x.click(); });
   await p.waitForTimeout(700);
-  await p.click('#b-profile'); await p.waitForTimeout(700);
-  await p.click('.achtabs button[data-tab="case"]'); await p.waitForTimeout(3000);
+  /* THE PROFILE IS A HUB AND FIVE PAGES NOW, not one sheet with a tab strip. The
+     route a player takes is the avatar, then the Trophy case row on the hub, and
+     that is what this drives. Not openProfile('case') from evaluate(): the whole
+     game is inside an IIFE, so none of its functions are reachable from the page
+     context and a test that reaches for one gets a ReferenceError rather than a
+     failed assertion. */
+  await p.click('#b-profile'); await p.waitForTimeout(900);
+  await p.click('#pf-go-case'); await p.waitForTimeout(3000);
   const caseText = (await p.textContent('#sheet-in')).replace(/\s+/g, ' ');
   const tally = (caseText.match(/Achievements (\d+) of (\d+)/) || [])[1];
   ok('the case is built from the board', Number(tally) > 0,

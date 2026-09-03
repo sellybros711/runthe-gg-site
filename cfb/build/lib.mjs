@@ -27,6 +27,57 @@ export const POSITIONS = ['QB', 'RB', 'WR', 'TE'];
 /** Below this many games the weekly variance estimate is noise. */
 export const MIN_GAMES = 6;
 
+// ─── names ──────────────────────────────────────────────────────────────────
+
+/*
+ * NAMES ARE PRINTED, SO THEY HAVE TO BE RIGHT. The API title-cases what it sends,
+ * which is correct for almost every name and wrong for two shapes of it: a Scottish
+ * or Irish Mc, which loses the capital on the syllable after it, and a Roman-numeral
+ * suffix, which comes back as "Ii". Both are mechanical and both are fixed by rule
+ * here rather than by listing the players they happen to hit, so a name that arrives
+ * in a later season is fixed on the way in.
+ *
+ * OVERRIDES ARE THE OTHER KIND. A rule cannot know that a name is simply misspelled
+ * at the source, so those are listed one at a time, keyed on exactly what arrives.
+ * Keep this short and keep every entry checkable.
+ */
+const NAME_OVERRIDES = {
+  /* Spelled Isiah. The stats feed has carried "Isaih" for every one of his four
+     seasons, so it is the source and not one bad row. */
+  'Isaih Pacheco': 'Isiah Pacheco',
+};
+
+export function fixName(name) {
+  const raw = String(name || '').trim();
+  if (!raw) return raw;
+  if (NAME_OVERRIDES[raw]) return NAME_OVERRIDES[raw];
+  return raw
+    .split(/\s+/)
+    .map((w) => {
+      /* Mcmillan to McMillan. Left alone when the letter after Mc is already a capital,
+         so a correctly cased name is never touched. */
+      const mc = w.match(/^(Mc)([a-z])(.*)\.?$/);
+      if (mc) return mc[1] + mc[2].toUpperCase() + mc[3];
+      /* A trailing Roman numeral, which is a suffix and not a word. Bounded at eight so
+         this can never fire on a name that merely starts with those letters. */
+      if (/^(i{1,3}|iv|v|vi{1,3})$/i.test(w) && w.length <= 8) return w.toUpperCase();
+      return w;
+    })
+    .join(' ');
+}
+
+/* Suffixes are not surnames. "Michael Penix Jr." is Penix, and a naive split on spaces
+   makes him "Jr.", which is how the chemistry rail came to say "Sr. threw Robiskie 8
+   touchdowns". Kept identical to lastName() in cfb/index.html on purpose: the label is
+   baked at build time and the field chip is drawn at run time, and a player seeing two
+   different surnames for one man would be right to trust neither. */
+const SUFFIX = /^(jr|sr|ii|iii|iv|v)\.?$/i;
+
+export function lastName(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter((w) => !SUFFIX.test(w));
+  return parts[parts.length - 1] || String(name || '');
+}
+
 // ─── CFBD API ───────────────────────────────────────────────────────────────
 
 const CFBD_BASE = 'https://api.collegefootballdata.com';

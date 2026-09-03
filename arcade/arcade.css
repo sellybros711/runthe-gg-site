@@ -1,3 +1,9 @@
+
+/* Reserve the scrollbar gutter. pregame.js / modals lock body overflow to
+   stop background scroll; without a stable gutter that removes the
+   scrollbar, re-widths the viewport and shifts the whole page (this was
+   the dominant layout-shift source across the arcade). */
+html{scrollbar-gutter:stable;}
 /* ============================================================================
    Run The Arcade — shared design layer ("Sports Arcade Control Room")
    ----------------------------------------------------------------------------
@@ -155,20 +161,52 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
   display:inline-block; max-width:100%;
   font-family:'Anton', Impact, sans-serif; font-weight:400; text-transform:uppercase;
   font-size:clamp(30px, 8vw, 58px); letter-spacing:.035em; line-height:.92;
-  color:transparent; -webkit-text-stroke:2px var(--a-tc, #F2B632); text-shadow:none;
+  color:var(--a-tc, #F2B632); -webkit-text-stroke:0;
+  text-shadow:0 0 26px color-mix(in srgb, var(--a-tc, #F2B632) 30%, transparent), 0 2px 0 rgba(0,0,0,.35);
   padding-bottom:9px; border-bottom:5px solid var(--a-tc, #F2B632);
 }
 /* uniform treatment across the whole title, so <b> just matches its surroundings */
 .a-gametitle__plate b{font-weight:400; color:inherit; -webkit-text-stroke:inherit; text-shadow:inherit;}
-/* dark = hollow accent outline; light = solid accent fill with a soft shadow */
+/* dark = solid accent fill with a restrained neon glow (a lit marquee sign, and
+   far more legible than the old hollow outline — dark accents like a maroon
+   fav-team red were unreadable as strokes). light = solid accent fill darkened
+   toward near-black so every accent clears WCAG large-text contrast. */
 :root[data-theme="light"] .a-gametitle__plate{
-  color:var(--a-tc, #F2B632); -webkit-text-stroke:0;
-  text-shadow:2px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 20%, transparent);}
+  color:color-mix(in srgb, var(--a-tc, #F2B632) 55%, #140d02); -webkit-text-stroke:0;
+  border-bottom-color:color-mix(in srgb, var(--a-tc, #F2B632) 64%, #140d02);
+  text-shadow:2px 3px 0 color-mix(in srgb, var(--a-tc, #F2B632) 22%, transparent);}
 @media (max-width:760px){
   body:has(.a-gametitle) .brand.logo img{height:60px;}
   .a-gametitle{margin:3px 0 14px;}
-  .a-gametitle__plate{-webkit-text-stroke-width:1.6px; padding-bottom:7px; border-bottom-width:4px;}
+  .a-gametitle__plate{padding-bottom:7px; border-bottom-width:4px;}
 }
+
+/* ---- result screen: one hero, one quiet line -----------------------------
+   Every game ends by telling you one number. Which number differs — a time, a
+   run, guesses used, points — but the shape of the telling shouldn't, and it
+   had drifted: six games led with a 60px hero while Guess and Daily Match
+   split their result across three equal boxes, so the thing you actually
+   earned sat at the same weight as "1 miss".
+
+   The hero is the currency. Everything else is one line under it. This is the
+   Mini's hierarchy, and it collapses a screen that used to need scrolling.
+
+   Font is per-page on purpose: most games load Anton for display type, but the
+   Crossword deliberately ships Archivo + Rubik only, so forcing --hero there
+   would fall through Anton to Impact. Pages that differ set --a-heroFont. */
+.a-rhero{margin:2px 0 12px; text-align:center;}
+.a-rhero .v{font-family:var(--a-heroFont, var(--hero)); font-weight:400;
+  font-size:clamp(48px,16vw,64px); line-height:.92; color:var(--a-heroInk, var(--ink));
+  font-variant-numeric:tabular-nums; letter-spacing:.01em;}
+.a-rhero .k{font-size:10px; font-weight:900; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--mut); margin-top:8px;}
+/* Secondary stats: a sentence, not a row of cards. */
+.a-runline{display:flex; align-items:center; justify-content:center; gap:11px; flex-wrap:wrap;
+  margin:0 0 16px; font-size:12px; font-weight:700; color:var(--mut);}
+.a-runline span{display:inline-flex; align-items:baseline; gap:4px;}
+.a-runline b{font-family:var(--a-heroFont, var(--hero)); font-weight:400; font-size:19px;
+  color:var(--ink); font-variant-numeric:tabular-nums; line-height:1;}
+.a-runline i{width:3px; height:3px; border-radius:50%; background:var(--mut); opacity:.5; flex:0 0 auto;}
 
 /* ---- shared focus + reduced motion (scoped to a- components only) --------- */
 .a-btn:focus-visible,.a-card:focus-visible,.a-status:focus-visible,
@@ -177,4 +215,49 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
 @media (prefers-reduced-motion: reduce){
   .a-card,.a-btn{transition:none !important;}
   .a-status--progress::before{animation:none !important;}
+}
+
+/* ---- How to play: one tab at the foot of every game ---------------------- */
+/* The long-form rules used to sit permanently open under every game. On a
+   desktop screen that is a wall of text nobody asked for and cannot dismiss,
+   and it pushed the board itself below the fold. A native <details> keeps
+   every word in the DOM for search while costing one line until a player
+   actually wants it. The hub keeps its own open .gj explainer: that page is
+   the pitch, so there the words are the point. */
+.gj{margin:34px 0 10px; border-top:1px solid var(--line2,rgba(148,163,184,.25));
+  padding-top:18px; text-align:left;}
+.gj > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:12px;
+  padding:13px 15px; border:1px solid var(--line2,rgba(148,163,184,.25)); border-radius:13px;
+  background:var(--card2,rgba(148,163,184,.08));
+  transition:border-color .12s, background .12s;}
+.gj > summary::-webkit-details-marker{display:none;}
+.gj > summary::marker{content:'';}
+.gj > summary:hover{border-color:var(--tealT,#37C5D5);}
+.gj > summary h2{flex:1; min-width:0; margin:0;
+  font-family:var(--hero,'Anton',Impact,sans-serif); font-weight:400; letter-spacing:.02em;
+  text-transform:uppercase; font-size:16px; line-height:1.15; color:var(--ink,#F4F7FB);}
+.gj > summary:focus-visible{outline:none;
+  box-shadow:var(--a-ring, 0 0 0 3px rgba(55,197,213,.45));}
+.gj-hint{font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--mut,#A9B8CB); flex:0 0 auto;}
+.gj-chev{color:var(--mut,#A9B8CB); font-size:12px; flex:0 0 auto; transition:transform .2s;}
+.gj[open] > summary{border-color:var(--tealT,#37C5D5);}
+.gj[open] > summary .gj-chev{transform:rotate(180deg);}
+/* Open on a wide monitor the panel is the full grid width, and a 1200px line of
+   13px prose is unreadable. Cap the measure, keep it left aligned with the tab. */
+.gj-body{padding:18px 3px 2px; max-width:760px;}
+.gj h3{font-family:var(--hero,'Anton',Impact,sans-serif); font-weight:400; letter-spacing:.02em;
+  text-transform:uppercase; font-size:15px; margin:20px 0 8px; color:var(--ink,#F4F7FB);}
+.gj-body > h3:first-child{margin-top:0;}
+.gj p{font-size:13.5px; line-height:1.65; color:var(--mut,#A9B8CB); margin:0 0 10px; font-weight:600;}
+.gj ul{margin:0 0 10px; padding-left:20px;}
+.gj li{font-size:13.5px; line-height:1.6; color:var(--mut,#A9B8CB); margin:5px 0; font-weight:600;}
+.gj a{color:var(--tealT,#37C5D5); font-weight:800; text-decoration:none;}
+.gj a:hover{text-decoration:underline;}
+@media (max-width:520px){
+  .gj-hint{display:none;}
+  .gj > summary h2{font-size:15px;}
+}
+@media (prefers-reduced-motion: reduce){
+  .gj > summary,.gj-chev{transition:none;}
 }

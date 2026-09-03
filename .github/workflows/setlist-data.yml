@@ -1,0 +1,190 @@
+name: Refresh setlist data
+
+# Goose plays, elgoose.net gets the setlist, and this puts it in the game.
+#
+# EVERY MORNING AT 6AM EASTERN, so the setlist from last night's show is in the
+# game before most people are awake to look for it. The band tours in runs of
+# consecutive nights, so "the day after each show" and "every day" are the same
+# schedule for weeks at a time, and a day with no new show costs one no-op run.
+#
+# GITHUB'S CRON IS UTC AND HAS NO IDEA WHAT DAYLIGHT SAVING IS, so a single
+# entry cannot mean 6am Eastern all year: it is 10:00 UTC from March to
+# November and 11:00 UTC the rest of the time. Both are listed and the job
+# checks the actual New York clock before doing anything, so exactly one of the
+# two proceeds on any given day. Doing it the other way, picking one and living
+# with it, would put the refresh at 5am half the year.
+#
+# The trade this schedule makes, stated plainly: the jamcharts and the
+# "recommended" flags that drive song esteem are curated by hand AFTER a show
+# and take days to settle, so a show refreshed the next morning arrives with
+# its esteem provisional. That is fine and self correcting: when a curator does
+# write that version up, the next run moves THAT SONG's esteem and leaves the
+# rest of the archive alone.
+#
+# A REFRESH IS AN APPEND, and it is worth saying because it was not always and
+# the comments here used to say the opposite. crowd_rating is derived, and it
+# was scaled against the CURRENT LEADER's jamchart tally, so one song being
+# written up moved every other song's esteem and a one-show refresh rewrote
+# thousands of lines. The ceiling is pinned now: a song's esteem is a fact about
+# that song, and adding a show touches the rows it adds plus any song a curator
+# actually wrote up.
+#
+# So the diff IS readable now, and data_drift enforces that it stays that way:
+# derived values may only move for songs whose own history moved. The four gates
+# below still run in this order, and NOTHING is committed unless all four pass:
+#
+#   1. ingest --strict    the fetch itself was clean: no throttled year, no
+#                         truncated year, no jamchart outage. Without --strict
+#                         this script warns and exits 0, which for an unattended
+#                         job means committing a quietly broken file over a good
+#                         one.
+#   2. data_drift         the counts only grew, grew plausibly, and the esteem
+#                         scale did not shift under the whole archive.
+#   3. check_data         the standing regression net, including that the home
+#                         screen's stated archive size matches the file.
+#   4. verify-scoring     the scoring spec, which the data can influence.
+#
+# The working tree is left dirty on failure and simply not committed. There is
+# no cleanup step: a failed run changes nothing on main, and the next run starts
+# from a fresh checkout.
+
+on:
+  schedule:
+    - cron: '0 10 * * *'    # 6am Eastern while daylight saving is in effect
+    - cron: '0 11 * * *'    # 6am Eastern the rest of the year
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: setlist-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      # THE GATE THAT MAKES TWO CRON LINES BEHAVE AS ONE. Only the entry that
+      # means 6am in New York gets past here; the other exits cleanly. A manual
+      # run is always allowed through, since somebody asked for it.
+      #
+      # IT ASKS WHICH SCHEDULE FIRED, NOT WHAT TIME IT IS NOW, and that is the
+      # whole point of this step rather than an implementation detail.
+      #
+      # It used to read the wall clock: `HOUR=$(TZ=America/New_York date +%H)`
+      # and proceed only when that said 06. That is correct exactly as long as
+      # GitHub starts a scheduled run at the minute it is scheduled for, and
+      # GitHub does not promise that. Scheduled workflows are queued and can be
+      # delayed heavily, especially on the hour, which is when both of these
+      # fire.
+      #
+      # It broke that way silently for six days. Every run from 27 August
+      # onwards started between four and eleven hours late, so by the time the
+      # runner asked, New York said 13:00 or 17:00, both entries said "not 6am"
+      # and stopped, and the job reported SUCCESS with every later step marked
+      # skipped. Green ticks all the way down and no new setlists since 26
+      # August.
+      #
+      #   Aug 26  10:38 UTC  06:38 New York  refreshed
+      #   Aug 27  20:13 UTC  16:13 New York  no-op
+      #   Aug 28  21:08 UTC  17:08 New York  no-op
+      #   Aug 31  17:28 UTC  13:28 New York  no-op
+      #
+      # github.event.schedule carries the cron expression that actually
+      # triggered the run, and it says so no matter how late the runner picks
+      # it up. Pair it with whether New York is on EDT or EST today and the
+      # decision is exact: 6am Eastern is 10:00 UTC on EDT and 11:00 UTC on
+      # EST, so each entry proceeds only in the half of the year it is right
+      # for.
+      #
+      # The one day this can still land oddly is a switchover, if a run is
+      # delayed across 2am and the offset changes underneath it. That gives a
+      # doubled run or a skipped one, and both are harmless: the ingester
+      # fetches the whole history every time rather than a delta, so a doubled
+      # run is a no-op append and a skipped day is picked up in full the next
+      # morning.
+      - name: Is this the 6am Eastern entry
+        id: when
+        run: |
+          OFFSET=$(TZ=America/New_York date +%z)
+          FIRED='${{ github.event.schedule }}'
+          echo "New York is at UTC${OFFSET} ($(TZ=America/New_York date))"
+          echo "the schedule that fired: '${FIRED}'"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "manual run, proceeding"
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0400" ] && [ "$FIRED" = "0 10 * * *" ]; then
+            echo "EDT, so 10:00 UTC is 6am Eastern. Proceeding."
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$OFFSET" = "-0500" ] && [ "$FIRED" = "0 11 * * *" ]; then
+            echo "EST, so 11:00 UTC is 6am Eastern. Proceeding."
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "this is the other cron entry for the current offset. Stopping."
+            echo "go=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.when.outputs.go == 'yes'
+
+      - uses: actions/setup-node@v4
+        if: steps.when.outputs.go == 'yes'
+        with:
+          node-version: '20'
+
+      # No API key: elgoose.net's v2 API is open, and a full 2014-to-now fetch
+      # takes about half a minute. The script paces itself between years because
+      # the API throttles by answering an empty 200 rather than a 429.
+      #
+      # This also writes goose_shows.csv, the show-level table that carries the
+      # tour names and every date still to be played. The setlist file cannot
+      # hold those: it is one row per performance, and an unplayed show has none.
+      - name: Fetch from elgoose.net
+        if: steps.when.outputs.go == 'yes'
+        run: node scripts/setlist/ingest_band.mjs --strict
+
+      # The home screen states the archive size and DATA_CONTRACT states the
+      # counts. check_data asserts both against the file, so without this step
+      # every SUCCESSFUL refresh would fail the checks.
+      - name: Put the new counts into the copy
+        if: steps.when.outputs.go == 'yes'
+        run: node scripts/setlist/sync_counts.mjs
+
+      - name: Is this refresh safe to commit
+        if: steps.when.outputs.go == 'yes'
+        run: node scripts/setlist/data_drift.mjs
+
+      - name: Data and discoverability
+        if: steps.when.outputs.go == 'yes'
+        run: node scripts/setlist/check_data.mjs
+
+      - name: Scoring spec
+        if: steps.when.outputs.go == 'yes'
+        run: node setlist/verify-scoring.mjs
+
+      # Only reached when all four gates passed.
+      - name: Commit if the archive moved
+        if: steps.when.outputs.go == 'yes'
+        run: |
+          git config user.name "setlist-bot"
+          git config user.email "noreply@anthropic.com"
+          git add setlist/data/goose.csv setlist/data/goose_shows.csv \
+                  setlist/data/goose_latest.json \
+                  setlist/data/DATA_CONTRACT.md setlist/index.html
+          if git diff --cached --quiet; then
+            echo "no new shows"
+            exit 0
+          fi
+          # show_id is the first column and is always a bare number, so cut is
+          # safe here and does not need the CSV parser or a node invocation.
+          SHOWS=$(tail -n +2 setlist/data/goose.csv | cut -d, -f1 | sort -u | wc -l | tr -d ' ')
+          git commit -m "Refresh goose setlist data ($SHOWS shows)"
+          # Other scheduled jobs in this repo push to main too, so a concurrent
+          # run can advance the ref mid-job. Rebase and retry rather than fail on
+          # a non-fast-forward; nothing else touches these files.
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing onto latest main (attempt $i)"
+            git pull --rebase origin main || exit 1
+          done

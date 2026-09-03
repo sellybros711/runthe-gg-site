@@ -1,6 +1,6 @@
-# Run The Arcade — content corpus (Daily Match)
+# Run The Arcade content corpus (Common Ground)
 
-**This folder feeds Daily Match.** Add JSON here, rebuild, and the game gets
+**This folder feeds Common Ground.** Add JSON here, rebuild, and the game gets
 richer. `match/entities.js` is **generated** from these files — never hand-edit it.
 
 > The Daily Crossword currently keeps its own data in `grid/crossword/data/`
@@ -31,7 +31,7 @@ richer. `match/entities.js` is **generated** from these files — never hand-edi
 ## Schema
 
 ```jsonc
-// ATHLETE / COACH  (the tagged core Daily Match builds categories from)
+// ATHLETE / COACH  (the tagged core Common Ground builds categories from)
 {
   "id": "nba_lebron_james",        // lowercase sport_first_last — UNIQUE, the join key
   "name": "LeBron James",

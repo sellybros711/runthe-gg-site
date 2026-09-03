@@ -1,0 +1,392 @@
+/*
+ * auth.js - accounts for Run The Arcade.
+ *
+ * There is NO new account system here. It is the SAME RunThe.GG account the rest of
+ * the site uses: `profiles` from supabase/10_accounts.sql, and the email+password,
+ * username, and Google sign-in the other games already have configured on the project.
+ * A RunThe.GG account IS the account here, so this needed no dashboard work.
+ *
+ * The session lives in supabase-js under its default storage key, the same key
+ * board.js and every other game read, so signing in here signs you in everywhere and
+ * the other way round. RunTheTour (/golf) keeps its own session key, so we bridge the
+ * session blob to it the same way the home page does - this is what makes one account
+ * follow you into Arcade, Football, Soccer, Golf and back.
+ *
+ * OPTIONAL, exactly like board.js. If the supabase-js CDN is blocked or the library
+ * fails to load, every function answers "not signed in" and the games run exactly as
+ * before, recording runs locally. Accounts put your name on a run; they never gate one.
+ *
+ * The display name is never sent from here. grid_submit_run() reads it out of profiles
+ * for auth.uid(); nothing in this file can put a name on a row.
+ */
+(function () {
+  'use strict';
+
+  var SB_URL = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
+  var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
+  var PROJECT_REF = 'jcrrxqfpdelrmvjuihnm';
+  var DEFAULT_KEY = 'sb-' + PROJECT_REF + '-auth-token';   // supabase-js default key (Arcade, Football, Soccer read this)
+  var GOLF_KEY = 'sb-runtour-auth';                        // RunTheTour's dedicated session key
+
+  var sb = null;
+  var session = null;
+  var profile = null;                 // { username }
+  var recovery = false;               // true after arriving via a password-reset link
+  var listeners = [];
+
+  /* HAS THE AUTH LIBRARY ACTUALLY ANSWERED YET. `ready` cannot say: it is !!sb, which is
+     true the instant createClient returns and therefore true a long time before getSession()
+     comes back off the network. Anything painting a signed-out state off `ready` paints it
+     at every returning player on every load and then corrects itself, which is the "header
+     flashes Sign in" flicker. This flips once, on the first real answer, whichever way that
+     answer goes. */
+  var resolved = false;
+  function resolve() { resolved = true; }
+  function fire() { for (var i = 0; i < listeners.length; i++) { try { listeners[i](state()); } catch (e) {} } }
+
+  /* DID AN ACCOUNT JUST GET CREATED, and off the back of which ask.
+     Supabase reports a sign-up and a sign-in as the same SIGNED_IN event, so
+     the only thing separating them is the user's own created_at: minutes old
+     means the account is new. The ask that produced it comes from the stash
+     auth-ui.js writes when it opens the sign-up modal, because a Google
+     sign-up leaves the page and returns, and by the time this runs the click
+     is two documents ago.
+     Fired once per account: the stash is cleared and the id is remembered, so
+     a reload or the second of the two boot paths cannot count it twice. */
+  var SRC_KEY = 'rtg:signupsrc', DONE_KEY = 'rtg:signupfired';
+  function noteAccount() {
+    try {
+      var u = session && session.user; if (!u || !u.created_at) return;
+      var age = Date.now() - Date.parse(u.created_at);
+      if (!(age >= 0 && age < 30 * 60 * 1000)) return;         // not a fresh sign-up
+      if (localStorage.getItem(DONE_KEY) === u.id) return;      // already counted
+      var src = 'unknown', pg = 'other';
+      try {
+        var m = (location.pathname || '').match(/\/arcade\/([a-z]+)\//);
+        pg = m ? m[1] : (/\/arcade\/?$/.test(location.pathname) ? 'hub' : 'other');
+      } catch (e) {}
+      try {
+        var st = JSON.parse(localStorage.getItem(SRC_KEY) || 'null');
+        if (st && Date.now() - (st.t || 0) < 2 * 60 * 60 * 1000) { src = st.s || src; pg = st.g || pg; }
+      } catch (e) {}
+      localStorage.setItem(DONE_KEY, u.id);
+      try { localStorage.removeItem(SRC_KEY); } catch (e) {}
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'arcade_signup_completed', {
+          game_name: 'Run The Arcade', signup_src: src, signup_page: pg
+        });
+      }
+    } catch (e) {}
+  }
+  function state() {
+    return {
+      ready: !!sb,
+      resolved: resolved,
+      signedIn: !!session,
+      email: session && session.user && session.user.email,
+      userId: session && session.user && session.user.id,
+      name: profile && profile.username,
+      recovery: recovery
+    };
+  }
+
+  // ---- cross-game session bridge (mirror of the home page's) --------------------
+  // The default key already covers Arcade/Football/Soccer. Golf reads GOLF_KEY, so we
+  // copy the token blob there on sign-in and purge it on sign-out. On boot we also
+  // copy an existing Golf session INTO the default key so arriving from Golf reads
+  // as signed-in before createClient looks.
+  function sessionBlob() {
+    try {
+      var b = localStorage.getItem(DEFAULT_KEY);
+      if (b && b.indexOf('access_token') >= 0) return b;
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('sb-') === 0 && /auth-token$/.test(k) && k !== GOLF_KEY) {
+          var v = localStorage.getItem(k);
+          if (v && v.indexOf('access_token') >= 0) return v;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+  function bridgeSession() {
+    try {
+      var blob = sessionBlob();
+      if (blob) { localStorage.setItem(GOLF_KEY, blob); localStorage.setItem('rtt_remember', '1'); }
+    } catch (e) {}
+  }
+  function bridgeClear() {
+    try {
+      localStorage.removeItem(GOLF_KEY);
+      localStorage.removeItem('rtt_remember');
+      localStorage.removeItem('rtt_oauth_pending');
+      localStorage.removeItem('rtp_oauth_pending');
+      // Shared-device hygiene: the previous account's remaining token count
+      // and Pro flag would otherwise carry over to the next signer on this
+      // browser until the next reconcile / syncPro (a ~1s window on Pro,
+      // longer on the token counter). Clear them at sign-out.
+      localStorage.removeItem('runthegrid_tokens_v3');
+      localStorage.removeItem('runthegrid_pro');
+    } catch (e) {}
+  }
+  /* Signing out has to leave this browser looking exactly like a browser that
+   * has never signed in. It did not: the pro flag and the wallet were cleared,
+   * but every streak, every daily result, the lifetime totals behind My Arcade
+   * Card, the resume snapshots and the chosen sport edition all stayed, so a
+   * signed-out visitor kept seeing "Solved", their streak, their Archive pills
+   * and their punched ticket. On a shared device the next person saw them too.
+   *
+   * Sweep by prefix with a keep-list, rather than naming every key to delete.
+   * The old code named them, which is precisely why it fell behind: eleven more
+   * keys have been added since it was written and none of them made the list.
+   * Anything new is now cleared by default, and only what is deliberately
+   * device-scoped (theme, sound nudge, onboarding seen-flags) survives.
+   *
+   * NOT called on a merely-absent session: that fires during boot before the
+   * session resolves, and wiping there would eat a signed-in player's progress.
+   * Only an explicit sign-out and a SIGNED_OUT event reach this. */
+  var KEEP = {
+    runthegrid_theme: 1,        // device appearance
+    runthegrid_sound_nudged: 1, // "we turned sound on" notice, shown once ever
+    grid_tester: 1,             // local dev toggle, not account state
+    'rtg:fav_cfb': 1            // a browsing preference, not a score
+  };
+  function keepKey(k) {
+    if (KEEP[k]) return true;
+    return k.indexOf('rtg:howto:') === 0 || k.indexOf('rtg:tour:') === 0;
+  }
+  function oursKey(k) {
+    return k === GOLF_KEY ||
+      k.indexOf('rtg:') === 0 || k.indexOf('rtg_') === 0 || k.indexOf('grid_') === 0 ||
+      k.indexOf('runthegrid_') === 0 || k.indexOf('rtt_') === 0 || k.indexOf('rtp_') === 0;
+  }
+  function wipeLocal() {
+    try {
+      var kill = [], i, k;
+      for (i = 0; i < localStorage.length; i++) {
+        k = localStorage.key(i);
+        if (k && oursKey(k) && !keepKey(k)) kill.push(k);
+      }
+      for (i = 0; i < kill.length; i++) localStorage.removeItem(kill[i]);
+    } catch (e) {}
+    // Resume snapshots and one-shot flags also live in sessionStorage.
+    try {
+      var sk = [], j, s;
+      for (j = 0; j < sessionStorage.length; j++) {
+        s = sessionStorage.key(j);
+        if (s && oursKey(s)) sk.push(s);
+      }
+      for (j = 0; j < sk.length; j++) sessionStorage.removeItem(sk[j]);
+    } catch (e) {}
+  }
+
+  function bridgeInbound() {
+    // arriving from Golf: if the default key is empty but Golf has a session, adopt it
+    try {
+      var def = localStorage.getItem(DEFAULT_KEY);
+      if (!(def && def.indexOf('access_token') >= 0)) {
+        var golf = localStorage.getItem(GOLF_KEY);
+        if (golf && golf.indexOf('access_token') >= 0) localStorage.setItem(DEFAULT_KEY, golf);
+      }
+    } catch (e) {}
+  }
+
+  /* ONE GoTrue client per page. Two Supabase clients sharing a storage key both try to
+     consume the single-use OAuth code when Google redirects back, so whichever loses the
+     race reports a failure and the first Google sign-in appears not to work (the second
+     attempt then succeeds because the session is already stored). board.js and auth.js
+     both need a client, so they share this one. */
+  function rtgSharedClient(url, anon) {
+    try { if (window.__RTG_SB__ && window.__RTG_SB__.__rtgUrl === url) return window.__RTG_SB__; } catch (e) {}
+    var c = window.supabase.createClient(url, anon, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+    try { c.__rtgUrl = url; window.__RTG_SB__ = c; } catch (e) {}
+    return c;
+  }
+
+  function boot() {
+    if (sb) return true;
+    if (!(window.supabase && window.supabase.createClient)) return false;
+    bridgeInbound();
+    try {
+      sb = rtgSharedClient(SB_URL, SB_ANON);
+    } catch (e) { sb = null; return false; }
+    sb.auth.onAuthStateChange(function (evt, s) {
+      // Only a NULL initial session is ignored; one carrying a session is how a Google
+      // redirect delivers it, and dropping it left the page rendered as signed out.
+      if (evt === 'INITIAL_SESSION' && !s) return;
+      // Arrived from a reset email: supabase-js parsed the recovery token into a
+      // short-lived session. Flag it so the UI can show "set a new password".
+      if (evt === 'PASSWORD_RECOVERY') recovery = true;
+      // A real sign-out elsewhere (another tab, or a token that will not
+      // refresh) clears everything too - but only when this page HAD a session
+      // to lose. A SIGNED_OUT on a page that was never signed in is boot noise
+      // and must not touch storage.
+      if (evt === 'SIGNED_OUT' && session) wipeLocal();
+      session = s || null;
+      resolve();
+      if (session) noteAccount();
+      if (session) bridgeSession(); else bridgeClear();
+      if (session) loadProfile().then(fire); else { profile = null; fire(); }
+    });
+    sb.auth.getSession().then(function (r) {
+      session = (r && r.data && r.data.session) || null;
+      resolve();
+      if (session) { noteAccount(); bridgeSession(); return loadProfile().then(fire); }
+      fire();
+    }).catch(function () { resolve(); fire(); });
+    return true;
+  }
+
+  // profile row is created by handle_new_user at sign-up; a null username is the
+  // normal state right after a Google sign-in (hence the "choose a name" step).
+  function loadProfile() {
+    if (!sb || !session) { profile = null; return Promise.resolve(); }
+    return sb.from('profiles').select('username').eq('id', session.user.id).maybeSingle()
+      .then(function (r) { profile = (r && r.data) || null; })
+      .catch(function () { profile = null; });
+  }
+
+  // Errors come back as the server's own words ("Invalid login credentials" is worth
+  // showing, "an error occurred" is not), never thrown.
+  function wrap(p) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return Promise.resolve(p)
+      .then(function (r) { return { error: r && r.error ? (r.error.message || String(r.error)) : null }; })
+      .catch(function (e) { return { error: (e && e.message) || 'That did not work.' }; });
+  }
+
+  // Username OR email login: a bare username is resolved to its email first, but only
+  // if the password checks out (email_for_login is the site's current, password-gated
+  // login RPC - the old anon email_for_username hole was revoked).
+  function signIn(idOrEmail, password) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    var id = String(idOrEmail || '').trim();
+    var pre = id.indexOf('@') < 0
+      ? sb.rpc('email_for_login', { p_username: id, p_password: password })
+          .then(function (r) { if (r.error || !r.data) throw new Error('Wrong username or password.'); return r.data; })
+      : Promise.resolve(id);
+    return pre
+      .then(function (email) { return sb.auth.signInWithPassword({ email: email, password: password }); })
+      .then(function (res) {
+        if (res.error) throw new Error(/invalid/i.test(res.error.message || '') ? 'Wrong email/username or password.' : (res.error.message || 'Sign-in failed.'));
+        return { error: null };
+      })
+      .catch(function (e) { return { error: (e && e.message) || 'Sign-in failed.' }; });
+  }
+
+  // The username travels in sign-up metadata (handle_new_user reads it to make the
+  // profile row). Availability is checked first so a taken name fails before the
+  // account exists rather than after.
+  function signUp(email, password, username) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return available(username).then(function (free) {
+      if (free === false) return { error: 'That username is taken. Try another.' };
+      if (free === null) return { error: 'Could not check that name. Try again.' };
+      return wrap(sb.auth.signUp({
+        email: String(email).trim(), password: password,
+        options: { data: { username: username }, emailRedirectTo: location.origin + location.pathname }
+      })).then(function (r) {
+        // no session back = email confirmation required; caller shows the note
+        if (!r.error && !(session)) { r.needsConfirm = true; }
+        return r;
+      });
+    });
+  }
+
+  function signInGoogle() {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    try { localStorage.setItem('rtp_oauth_pending', '1'); localStorage.setItem('rtt_oauth_pending', '1'); } catch (e) {}
+    return wrap(sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + location.pathname }
+    })).then(function (r) {
+      if (r.error) { try { localStorage.removeItem('rtp_oauth_pending'); localStorage.removeItem('rtt_oauth_pending'); } catch (e) {} }
+      return r;
+    });
+  }
+
+  // Sign-out ends with a reload, deliberately. Half the arcade paints its
+  // signed-in state once at boot and never re-reads it: the hub's tiles, its
+  // ticket and its dot row, each game's streak panel and saved result, the
+  // Archive pills a cardholder gets. Repainting all of that from an event would
+  // mean auditing every surface forever; one reload is a guarantee, and it
+  // lands on the same page the reader was already on.
+  function signOut() {
+    function done() {
+      session = null; profile = null; wipeLocal(); bridgeClear(); fire();
+      // A tick of slack so the caller's promise chain and any last render (the
+      // delete-account confirmation, the modal closing) run before the reload.
+      try { setTimeout(function () { location.reload(); }, 80); } catch (e) {}
+    }
+    if (!sb) { done(); return Promise.resolve(); }
+    return sb.auth.signOut({ scope: 'local' })
+      .catch(function () { return sb.auth.signOut().catch(function () {}); })
+      .then(done);
+  }
+
+  function available(username) {
+    if (!sb) return Promise.resolve(null);
+    return sb.rpc('username_available', { p_username: username })
+      .then(function (r) { return r.error ? null : !!r.data; })
+      .catch(function () { return null; });
+  }
+
+  // set_username validates format + uniqueness server-side; the client check is a
+  // courtesy. New name applies to future runs; older grid_runs keep the copied name.
+  function setName(username) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return wrap(sb.rpc('set_username', { p_username: username })).then(function (r) {
+      if (r.error) return r;
+      return loadProfile().then(function () { bridgeSession(); fire(); return { error: null }; });
+    });
+  }
+
+  // ---- password reset ----------------------------------------------------------
+  // Step 1: email a reset link. redirectTo brings the reader back to the page they
+  // asked from; on arrival supabase-js fires PASSWORD_RECOVERY (handled above) and
+  // the UI shows the "set a new password" step. We do not reveal whether the email
+  // exists - the caller shows the same "check your email" note either way.
+  function resetPassword(email) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return wrap(sb.auth.resetPasswordForEmail(String(email || '').trim(), {
+      redirectTo: location.origin + location.pathname
+    }));
+  }
+  // Step 2: set the new password inside the recovery session. On success the reader
+  // is signed in with the new password; clear the recovery flag so the UI moves on.
+  function updatePassword(newPassword) {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return wrap(sb.auth.updateUser({ password: newPassword })).then(function (r) {
+      if (!r.error) { recovery = false; fire(); }
+      return r;
+    });
+  }
+
+  var token = function () { return (session && session.access_token) || null; };
+
+  // Ending the account is one RPC (supabase/65_delete_account.sql). A refusal (e.g. a
+  // live Stripe subscription) is NOT an error; the caller tells the outcomes apart.
+  function deleteAccount() {
+    if (!sb) return Promise.resolve({ error: 'Accounts are offline right now. Try again shortly.' });
+    return sb.rpc('rtg_delete_my_account')
+      .then(function (r) {
+        if (r.error) return { error: r.error.message || String(r.error) };
+        var d = r.data;
+        if (!d || d.ok !== true) return { reason: (d && d.reason) || 'failed', status: d && d.status };
+        return signOut().then(function () { return { ok: true }; });
+      })
+      .catch(function (e) { return { error: (e && e.message) || 'That did not work.' }; });
+  }
+
+  window.RTG_AUTH = {
+    API_VERSION: 1,
+    boot: boot,
+    state: state,
+    onChange: function (f) { listeners.push(f); if (sb) f(state()); return function () {}; },
+    signIn: signIn, signUp: signUp, signInGoogle: signInGoogle, signOut: signOut,
+    available: available, setName: setName, token: token, deleteAccount: deleteAccount,
+    resetPassword: resetPassword, updatePassword: updatePassword
+  };
+})();

@@ -48,6 +48,10 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* The loader, so the latest-setlist file is grouped by the SAME code the game
+   reads with, rather than a second implementation of set order that could
+   disagree with it. */
+import { loadBand, setLabel } from '../../setlist/dataLoader.js';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dir, '..', '..');
@@ -87,11 +91,39 @@ function arg(name, fallback) {
   return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
 const OUT = resolve(repoRoot, arg('out', 'setlist/data/goose.csv'));
+// Derived from --out so a band added later gets both files in one place.
+const SHOWS_OUT = resolve(repoRoot, arg('shows-out', OUT.replace(/\.csv$/, '_shows.csv')));
+const LATEST_OUT = resolve(repoRoot, arg('latest-out', OUT.replace(/\.csv$/, '_latest.json')));
 const LIMIT = Number(arg('limit', 0)) || 0;
 const KEY = arg('key', process.env.ELGOOSE_API_KEY || '');
 const FROM = Number(arg('from', 2014));   // Goose's first setlist on the site is 2014
 const TO = Number(arg('to', new Date().getFullYear()));
 const PROBE = process.argv.includes('--probe');
+
+/* ---------------------------------------------------------------------------
+ * --strict : every warning becomes a failure.
+ * ---------------------------------------------------------------------------
+ * FOR UNATTENDED RUNS, and it exists because this script's whole degraded-output
+ * story is `console.warn` followed by writing the file and exiting 0. That is
+ * right for a person, who reads the output and decides. It is exactly wrong for
+ * a scheduled job, which reads nothing: a throttled year, a truncated year or a
+ * jamchart outage would each commit a quietly broken CSV over a good one.
+ *
+ * The three that matter, all of which the header already documents as real:
+ *   - a year that failed or came back empty. The API throttles by answering an
+ *     empty 200 rather than a 429, so this is the common one, and it silently
+ *     removes a whole year of shows.
+ *   - a year that hit the 4000-row cap. The array just ends; the year is
+ *     incomplete and nothing in the payload says so.
+ *   - jamcharts unavailable. crowd_rating goes blank, which means every song
+ *     scores identically. That is the exact bug v2 shipped with.
+ *
+ * Collected rather than thrown at the point of failure, so one run reports
+ * everything wrong with it instead of one thing at a time.
+ */
+const STRICT = process.argv.includes('--strict');
+const degraded = [];
+const degrade = (msg) => { degraded.push(msg); console.warn(`  ${msg}`); };
 
 // elgoose artist ids: 1 Goose · 8 Orebolo · 2 Vasudo · 3 Great Blue.
 // Pass --artist '' to keep every band (almost never what you want).
@@ -200,13 +232,13 @@ async function fetchAllRows() {
       `shape has probably changed — run with --probe to see what the API returns.`
     );
   }
-  if (failures.length) console.warn(`\n  NOTE: ${failures.length} year(s) failed: ${failures.join(', ')}`);
+  if (failures.length) degrade(`${failures.length} year(s) failed: ${failures.join(', ')}`);
   if (empty.length) {
-    console.warn(`  NOTE: ${empty.length} year(s) returned nothing: ${empty.join(', ')}`);
+    degrade(`${empty.length} year(s) returned nothing: ${empty.join(', ')}`);
     console.warn('  If the band was active then, this is throttling — just run it again.');
   }
   if (truncated.length) {
-    console.warn(`\n  WARNING: ${truncated.join(', ')} hit the ${ROW_CAP}-row cap and are INCOMPLETE.`);
+    degrade(`${truncated.join(', ')} hit the ${ROW_CAP}-row cap and are INCOMPLETE.`);
     console.warn('  Split those years further (the API has no paging) before trusting the file.');
   }
   if (ARTIST_ID && !out.length) {
@@ -239,10 +271,140 @@ async function fetchJamcharts() {
     }
     console.log(`  ${map.size} jamchart entries`);
   } catch (e) {
-    console.warn(`  WARNING: jamcharts unavailable (${e.message})`);
+    degrade(`jamcharts unavailable (${e.message})`);
     console.warn('  crowd_rating and jamchart_note will be blank — scoring falls back to neutral.');
   }
   return map;
+}
+
+/* ── the show table ──────────────────────────────────────────────────────────
+ *
+ * A SECOND FILE, and the reason is that it holds rows the setlist file cannot.
+ * goose.csv is one row per PERFORMANCE, so a show with no setlist has nothing
+ * to put in it, and every show Goose has not played yet is exactly that. The
+ * band is on tour right now; those dates are the point.
+ *
+ * It also carries the tour name, which the setlist endpoint does not return at
+ * all. 43 distinct tours across 855 shows, from "Summer Tour 2018" to
+ * "Goosemas VI", plus "Not Part of a Tour" for the 247 one-offs and festivals.
+ *
+ * The counts to expect for Goose, measured Aug 2026: 855 shows total, 827 of
+ * them in the past, and only ~656 of those carry a setlist. That gap is not an
+ * error, it is announced-but-unplayed dates plus shows nobody has transcribed.
+ */
+const SHOW_COLUMNS = [
+  'show_id', 'show_date', 'year', 'tour_id', 'tour',
+  'venue', 'city', 'state', 'country', 'has_setlist', 'show_order',
+];
+
+async function fetchShowTable(playedIds) {
+  const url = ARTIST_ID ? `${API}/shows/artist_id/${ARTIST_ID}.json` : `${API}/shows.json`;
+  const rows = await getJSON(url, { retryEmpty: true });
+  if (!rows.length) throw new Error('the shows endpoint returned nothing');
+
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const id = String(r.show_id || '');
+    const date = String(r.showdate || '');
+    // The endpoint can list a show twice when it is tied to two artists.
+    if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(date) || seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      show_id: id,
+      show_date: date,
+      year: date.slice(0, 4),
+      tour_id: String(r.tour_id || ''),
+      /* "Not Part of a Tour" is elgoose's label for a one-off, and it is a
+         sentence rather than a name. Blanked here so the UI can decide how to
+         say it instead of having that string wired into a dropdown. */
+      tour: /^not part of a tour$/i.test(clean(r.tourname)) ? '' : clean(r.tourname),
+      venue: clean(r.venuename),
+      city: clean(r.city),
+      state: clean(r.state),
+      country: clean(r.country),
+      has_setlist: playedIds.has(id) ? 'true' : 'false',
+      /* SOME NIGHTS ARE TWO SHOWS. Seven date-and-venue pairs in this archive
+         carry two distinct show_ids with entirely different setlists: the Cabo
+         destination runs play twice in a day, and a festival can too. Without
+         elgoose's own ordering the browser prints two identical rows and
+         nobody can tell which one they were at. */
+      show_order: String(r.showorder || ''),
+    });
+  }
+  out.sort((a, b) => a.show_date.localeCompare(b.show_date) || a.show_id.localeCompare(b.show_id));
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = out.filter(r => r.show_date >= today).length;
+  const withSet = out.filter(r => r.has_setlist === 'true').length;
+  console.log(`  ${out.length} shows · ${withSet} with a setlist · ${upcoming} still to play`);
+  /* AN EMPTY SCHEDULE IS NOT AN ERROR, and it must not be treated as one. A
+     band between tours genuinely has no announced dates, and failing --strict
+     on that would block every setlist refresh until they booked something. The
+     shape of a broken response is the ROW COUNT collapsing, which data_drift
+     checks against the committed file. So this is a note, not a failure. */
+  if (!upcoming) console.warn('  note: no upcoming shows announced');
+  /* Tour names going missing IS a schema break: every row in a healthy response
+     carries one, even if it is the "not part of a tour" placeholder. */
+  if (!out.some(r => r.tour)) degrade('no tour names in the show table');
+  return out;
+}
+
+/* ── the front page's own little file ────────────────────────────────────────
+ *
+ * A THIRD FILE, and it is here so the home screen does not have to download a
+ * megabyte to print fifteen song titles. Showing "here is what they played
+ * last night" needs one show's setlist; the archive that holds it is 1.2MB and
+ * the show table is 72KB, and neither is a defensible cost for a panel that
+ * has to be on screen before anybody has decided to play.
+ *
+ * THE NEXT THREE SHOWS, not the next one, because this file is written by a
+ * scheduled job and read whenever somebody visits. One date goes stale the
+ * moment the band plays it; three lets the page pick the first that is still
+ * ahead and stay correct even if a refresh is missed.
+ */
+function buildLatest(csvText, table) {
+  const { shows } = loadBand(csvText);
+  const played = shows.slice().sort((a, b) => String(a.show_date).localeCompare(String(b.show_date)));
+  const last = played[played.length - 1];
+  if (!last) throw new Error('no shows to take a latest setlist from');
+
+  const meta = new Map(table.map(r => [r.show_id, r]));
+  const m = meta.get(last.show_id) || {};
+
+  // Songs arrive in running order across all sets, so grouping is a fold.
+  const sets = [];
+  for (const p of last.songs) {
+    const label = setLabel(p.set);
+    if (!sets.length || sets[sets.length - 1].label !== label) sets.push({ label, songs: [] });
+    sets[sets.length - 1].songs.push({
+      n: p.song,
+      ...(String(p.is_segue) === 'true' ? { s: 1 } : {}),
+      ...(Number(p.length_sec) ? { l: Number(p.length_sec) } : {}),
+    });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const place = r => ({
+    venue: r.venue || '', city: r.city || '', state: r.state || '',
+    country: r.country || '', tour: r.tour || '',
+  });
+
+  return {
+    last: {
+      show_id: last.show_id,
+      date: last.show_date,
+      venue: last.venue || m.venue || '',
+      city: last.city || m.city || '',
+      state: last.state || m.state || '',
+      country: m.country || '',
+      tour: m.tour || '',
+      ...(last.run ? { run: last.run } : {}),
+      sets,
+    },
+    upcoming: table.filter(r => r.show_date >= today).slice(0, 3)
+      .map(r => ({ date: r.show_date, ...place(r) })),
+  };
 }
 
 /**
@@ -306,7 +468,7 @@ function sanityCheck(rows) {
 
   if (notes.length) {
     console.warn('\nSANITY CHECK — these columns look wrong, the CSV may be degraded:');
-    notes.forEach(n => console.warn(n));
+    notes.forEach(n => degraded.push(n.trim()) || console.warn(n));
     console.warn('Run with --probe to compare against the live field names.');
   } else {
     console.log('  sanity check passed — venue, length, jamcharts and segues all present');
@@ -332,6 +494,75 @@ function decodeEntities(s) {
       return name.toLowerCase() in named ? named[name.toLowerCase()] : m;
     }
   );
+}
+
+/* One line, entities decoded. Used for venue and tour names and for the
+   curators' notes, all of which arrive with &quot; and stray newlines in them. */
+const clean = s => decodeEntities(s || '').replace(/\s+/g, ' ').trim();
+
+/* SHOW NOTES, MINUS THE THINGS THAT ARE NOT NOTES. One row in the archive has
+   the site's own next-show navigation sitting in the shownotes field:
+   "Next Show: 2021-06-07 <bullet> Livingston, MT <bullet> Pine Creek Lodge",
+   double-encoded bullets and all. It is one row today, but it is a CLASS of
+   value rather than a typo, and the game now prints this text to players, so
+   it is dropped rather than cleaned up. Anything that is genuinely about the
+   night survives untouched. */
+const showNote = s => {
+  const t = clean(s);
+  return /^(next|previous|prev)\s+show\s*:/i.test(t) ? '' : t;
+};
+
+/* ── TEASES ──────────────────────────────────────────────────────────────────
+ *
+ * WHAT THE BAND QUOTED WITHOUT PLAYING. "With Axel F teases from Rick", "With
+ * Carol Of The Bells teases from Rick and Give Up The Funk tease from Trevor".
+ * A few bars of somebody else's song dropped inside this one, and catching one
+ * is the sort of thing a fan remembers a night for.
+ *
+ * It exists only as footnote prose, so it is parsed HERE and stored as its own
+ * column rather than re-parsed in the browser on every profile render. Measured
+ * over the archive: 254 footnotes mention a tease, in 201 of 660 shows, and this
+ * names the song in 100% of them, 259 teases of 123 distinct songs.
+ *
+ * ANCHORED ON THE WORD "tease", TAKING THE PHRASE BEFORE IT. The first version
+ * split the clause on commas and "and", which is what a list looks like, and it
+ * was wrong in three ways at once:
+ *
+ *   "With One In, One Out teases"        -> "One In" and "One Out", two songs
+ *                                           where the band teased one
+ *   "With Mercy, Mercy, Mercy tease"     -> three
+ *   "...Chris Tomson on drums, and       -> "vocals", "and Jessica", neither of
+ *      Jessica tease from Rick"             which is a song
+ *
+ * So the phrase is trimmed at the NEAREST boundary before the word instead:
+ * "with", "and", or a sentence stop. Never a comma, since titles contain them,
+ * and never an acronym's own full stop, since "Still D.R.E." and "S.O.S." are
+ * titles too and their last period is not a sentence end.
+ *
+ * THE ONE IT STILL GETS WRONG, stated because it cannot be fixed by rule: a
+ * title containing "and" is cut at its own conjunction, so "Workin' Day and
+ * Night" is recorded as "Night". It is structurally identical to the cut that
+ * makes "and Jessica tease" come out right, and it costs 1 of the 123 songs.
+ */
+function teasesIn(footnote) {
+  const s = clean(footnote);
+  if (!s || !/\btease[sd]?\b/i.test(s)) return [];
+  const CUT = /\b(?:with|and)\b|(?<![A-Z])[.;]/gi;
+  const out = [];
+  for (const m of s.matchAll(/\btease[sd]?\b/gi)) {
+    const before = s.slice(0, m.index);
+    let start = 0;
+    for (const c of before.matchAll(CUT)) start = c.index + c[0].length;
+    const p = before.slice(start).trim()
+      .replace(/\s*\([^)]*\)$/, '')             // "(John Williams)"
+      .replace(/^["'“]|["'”]$/g, '')
+      .replace(/^[,\s]+|[,\s]+$/g, '').trim();
+    if (!p || p.length > 60) continue;
+    if (/\bon\s+\w+$/i.test(p)) continue;       // a guest musician, not a song
+    if (/^(a|an|the)$/i.test(p)) continue;
+    out.push(p);
+  }
+  return out;
 }
 
 const pick = (row, ...names) => {
@@ -396,6 +627,13 @@ function median(nums) {
 export const NEUTRAL_ESTEEM = 30;   // must match scoring.js NEUTRAL_BASE
 const ESTEEM_MAX = 75;              // the very top of the jamcharts
 const ESTEEM_REC_WEIGHT = 2;        // a "recommended" version counts double
+/* The weighted jamchart tally that earns ESTEEM_MAX. Pinned rather than read
+   off the current leader, so one song being written up cannot move every other
+   song's esteem. 62 was Madhuvan's tally on the day it was pinned, chosen
+   because it left all 99 rated songs exactly where they already were. Raising
+   it is a gameplay change and a full regeneration; do it deliberately or not
+   at all. */
+const ESTEEM_FULL = 62;
 
 function esteemBySong(rows) {
   const tally = new Map();
@@ -404,13 +642,31 @@ function esteemBySong(rows) {
     if (!tally.has(r.song_id)) tally.set(r.song_id, 0);
     tally.set(r.song_id, tally.get(r.song_id) + 1 + (r.is_recommended === 'true' ? ESTEEM_REC_WEIGHT : 0));
   }
-  // Rank-free scaling: the top song sets the ceiling, everything else lands in
-  // proportion. Songs the curators never wrote up stay neutral rather than
-  // being punished — plenty of well-loved songs are simply not jam vehicles.
-  const top = Math.max(1, ...tally.values());
+  /* A FIXED CEILING, NOT THE CURRENT LEADER'S TALLY, and that one word is the
+   * difference between a refresh that appends and a refresh that restates the
+   * whole archive.
+   *
+   * This used to scale everything against `Math.max(...tally.values())`. So the
+   * moment the most-jamcharted song gained a single entry the divisor moved and
+   * every other song's esteem shifted with it, having done nothing: measured on
+   * today's data, 9 of the 99 rated songs move when the leader alone gains one.
+   * That churn is what made a one-show refresh rewrite thousands of rows, which
+   * in turn made the diff unreviewable and re-downloaded the whole 1.2MB
+   * archive for every returning player.
+   *
+   * Pinned at the leader's tally on the day it was pinned, so switching moved
+   * NOTHING: 0 of 99 songs changed value. A song's esteem is now a fact about
+   * that song alone, and adding a show touches only the songs that were
+   * actually written up.
+   *
+   * Past the ceiling it CLAMPS rather than rescaling. When Goose eventually has
+   * several songs at the top they will share it, which is honest, and
+   * re-anchoring is then a deliberate regeneration rather than something a cron
+   * job does to everybody overnight. */
   const out = new Map();
   for (const [id, n] of tally) {
-    out.set(id, Math.round(NEUTRAL_ESTEEM + (ESTEEM_MAX - NEUTRAL_ESTEEM) * Math.sqrt(n / top)));
+    const share = Math.min(n, ESTEEM_FULL) / ESTEEM_FULL;
+    out.set(id, Math.round(NEUTRAL_ESTEEM + (ESTEEM_MAX - NEUTRAL_ESTEEM) * Math.sqrt(share)));
   }
   return out;
 }
@@ -425,11 +681,31 @@ function rarityTier(gap) {
 }
 
 // ── CSV writing ──────────────────────────────────────────────────────────────
+/* THE CURATORS' OWN NOTES, and where each one lives.
+ *
+ * elgoose carries two kinds of prose the game had been throwing away: a
+ * `footnote` on a PERFORMANCE ("First known version.", "With Jeff Engborg on
+ * keys.") and `shownotes` on a SHOW ("This was Aaron and Kris' first show as
+ * members of Goose."). Measured over ten sampled years, 36% of performances
+ * carry a footnote and 54% of shows carry a note.
+ *
+ * footnote is per row and costs 8.4 chars a row, about 62KB raw on the archive.
+ * Fine.
+ *
+ * show_notes is per SHOW, and denormalising it onto all eleven-odd rows of that
+ * show would add 436KB raw to a 1.2MB file: a 37% bigger parse for one string
+ * repeated eleven times. It gzips away to nothing, but the parse does not, and
+ * the archive is parsed on every draft. So it is written ONCE, on the first row
+ * of each show, and blank on the rest: 36KB instead of 436KB. The loader scans
+ * a show's rows for the one that carries it, so nothing depends on which row
+ * that is.
+ */
 const COLUMNS = [
   'show_id', 'show_date', 'year', 'venue', 'city', 'state', 'set', 'position',
   'song', 'song_id', 'is_cover', 'original_artist', 'length_sec', 'show_gap',
   'times_played', 'rarity_rating', 'crowd_rating', 'is_jamchart', 'is_recommended',
-  'jamchart_note', 'transition', 'is_segue', 'tags',
+  'jamchart_note', 'transition', 'is_segue', 'tags', 'footnote', 'show_notes',
+  'teases',
 ];
 
 function csvCell(v) {
@@ -481,6 +757,17 @@ export function buildCSV(raw, opts = {}) {
       is_recommended: jc && jc.recommended ? 'true' : 'false',
       jamchart_note: jc ? jc.note : '',
       transition: String(pick(r, 'transition') || '').trim(),
+      /* `footnote`, not `footnotes`: the API carries both and they are the same
+         prose, but footnotes is a JSON-encoded array of it
+         (`["First known version."]`) on every one of the 3039 rows that has
+         either. Collapsed to one line because 610 raw values contain a newline
+         and these render inline; the CSV would survive them, a reviewer reading
+         the diff would not. */
+      footnote: clean(pick(r, 'footnote')),
+      // Pipe-delimited, the same shape `tags` uses.
+      teases: teasesIn(pick(r, 'footnote')).join('|'),
+      // Carried on every row here, thinned to one row per show further down.
+      show_notes: showNote(pick(r, 'shownotes')),
     });
   }
   rows.forEach(r => { r.is_segue = isSegue(r.transition) ? 'true' : 'false'; });
@@ -503,6 +790,16 @@ export function buildCSV(raw, opts = {}) {
 
   if (limit) shows = shows.slice(-limit);
   say(`  ${shows.length} shows`);
+
+  /* THE SHOW NOTE, WRITTEN ONCE. It arrives on every row of a show, and keeping
+     it there would add 436KB raw to a 1.2MB file for one string repeated eleven
+     times. Blanked on every row but the first, which the loader finds by
+     scanning rather than by trusting a position. Done after the sort, so "first"
+     means first in the file. */
+  for (const show of shows) {
+    const note = show.songs.map(r => r.show_notes).find(Boolean) || '';
+    show.songs.forEach((r, i) => { r.show_notes = i === 0 ? note : ''; });
+  }
 
   // Pass 1 — per-song history: gap, play count, and the stats tags derive from.
   const stats = new Map();  // song_id → aggregate
@@ -620,6 +917,27 @@ async function main() {
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, csv, 'utf8');
 
+  /* The show table, written beside the setlists. Skipped under --limit, which
+     exists to produce a small file for testing and would otherwise pair a
+     10-show CSV with the full 855-row schedule. */
+  if (!LIMIT) {
+    console.log('\nFetching the show table (tours and upcoming dates)...');
+    const played = new Set(raw.map(r => String(r.show_id)));
+    const table = await fetchShowTable(played);
+    const text = [SHOW_COLUMNS.join(',')]
+      .concat(table.map(r => SHOW_COLUMNS.map(c => csvCell(r[c])).join(',')))
+      .join('\n') + '\n';
+    writeFileSync(SHOWS_OUT, text, 'utf8');
+    console.log(`Wrote ${SHOWS_OUT}`);
+
+    const latest = buildLatest(csv, table);
+    writeFileSync(LATEST_OUT, JSON.stringify(latest) + '\n', 'utf8');
+    const songs = latest.last.sets.reduce((a, s) => a + s.songs.length, 0);
+    console.log(`Wrote ${LATEST_OUT}`);
+    console.log(`  last show ${latest.last.date}, ${songs} songs in ${
+      latest.last.sets.length} sets · ${latest.upcoming.length} upcoming carried`);
+  }
+
   console.log(`\nWrote ${OUT}`);
   console.log(`  ${performances} performances · ${shows} shows · ${songs} distinct songs`);
 
@@ -637,5 +955,20 @@ async function main() {
 
 // Only fetch when run directly — importing this file just gets buildCSV.
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(e => { console.error(`\nFailed: ${e.message}`); process.exit(1); });
+  main()
+    .then(() => {
+      /* THE FILE IS ALREADY WRITTEN by the time this runs, and that is
+         deliberate: a human running without --strict still wants the partial
+         file to look at. Under --strict the non-zero exit is what stops the
+         caller committing it, and the workflow leaves the working tree dirty
+         and untouched rather than trying to undo the write. */
+      if (STRICT && degraded.length) {
+        console.error(`\nFailed: --strict, and this run was degraded:`);
+        degraded.forEach(d => console.error(`  - ${d}`));
+        console.error('\nThe file was written but should NOT be committed. ' +
+          'Most of these are throttling; run it again.');
+        process.exit(1);
+      }
+    })
+    .catch(e => { console.error(`\nFailed: ${e.message}`); process.exit(1); });
 }

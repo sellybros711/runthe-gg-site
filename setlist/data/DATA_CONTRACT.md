@@ -1,8 +1,15 @@
 # Segue — band data contract
 
-One CSV per band, served from `/setlist/data/<band>.csv`. The CSV is the single
+Two CSVs per band, served from `/setlist/data/`. `<band>.csv` is the single
 source of truth for the game: `dataLoader.js` turns it into `{ shows, segues }`
 and `scoring.js` scores against it. Nothing else feeds the game.
+
+`<band>_shows.csv` is the show-level table beside it, and it exists to hold the
+rows the setlist file cannot. The setlist file is one row per **performance**,
+so a show with no setlist has nothing to put in it, and every date the band has
+not played yet is exactly that. It also carries the tour name, which the
+setlist endpoint does not return at all. It feeds the tour schedule and the
+show browser, and nothing in the scoring reads it.
 
 Generate with:
 
@@ -11,8 +18,57 @@ node scripts/setlist/ingest_band.mjs        # → setlist/data/goose.csv
 node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a run
 ```
 
-As of the last run: **7504 performances · 655 shows · 366 songs**, 2014–2026.
+As of the last run: **7712 performances · 670 shows · 368 songs**, 2014-2026.
 A run that lands far below that is a bad run, not a smaller band — see below.
+
+The show table from the same run: **856 shows · 670 with a setlist · 18 still to
+play**. The gap between those first two figures is not an error. It is announced
+dates that were never played, plus shows nobody has transcribed.
+
+(Deliberately not restating either number in this sentence: `sync_counts.mjs`
+keeps the bolded line current on every refresh and cannot reach prose, so a
+figure repeated here goes stale the next time the band plays. It already did.)
+
+## `<band>_shows.csv`
+
+| column | notes |
+|---|---|
+| `show_id` | joins to `show_id` in the setlist CSV |
+| `show_date` | `YYYY-MM-DD`, past and future |
+| `year` | the first four characters of `show_date` |
+| `tour_id` | elgoose's tour key |
+| `tour` | display name, **blank for a one-off**. elgoose writes "Not Part of a Tour", which is a sentence rather than a name, so the ingester blanks it and the UI decides how to say it |
+| `venue`, `city`, `state`, `country` | display text, entity-decoded |
+| `has_setlist` | `true` when the setlist CSV has rows for this `show_id` |
+| `show_order` | elgoose's ordering when a date and venue hold more than one show. Seven pairs in this archive do, with entirely different setlists (the Cabo destination runs play twice in a day), and without this the browser prints two identical rows |
+
+## `<band>_latest.json`
+
+About 1KB, and that size is the reason it exists. The home screen prints last
+night's setlist and a countdown to the next date; reading those out of the
+1.2MB archive or even the 72KB show table is not a defensible cost for a panel
+that has to be on screen before anybody has decided to play.
+
+```
+{ "last":     { show_id, date, venue, city, state, country, tour,
+                run?: {night, of},
+                sets: [ { label, songs: [ { n, s?, l? } ] } ] },
+  "upcoming": [ { date, venue, city, state, country, tour }, ... ] }
+```
+
+`n` is the title, `s` is `1` when the song segued into the next one, and `l` is
+its length in seconds when the archive has one (a show transcribed overnight
+often has none yet). Sets are grouped by `dataLoader.setLabel`, so set order
+here and in the game come from the same code.
+
+**`upcoming` carries three dates, not one.** This file is written by a scheduled
+job and read whenever somebody visits, so the top of the list goes stale the
+moment the band plays it. Three lets the page pick the first date still ahead
+and stay right even if a refresh is missed.
+
+Nothing in the scoring reads this file, and the home screen treats it as
+optional: if it 404s, fails, or parses badly, the band panel simply renders
+without the live section.
 
 ### Two things that will silently corrupt a run
 
@@ -48,7 +104,7 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `song_id` | Stable song identity. **Segues and gap are keyed on this**, so it must be consistent across shows. |
 | `is_cover` | `true` / `false`. |
 | `original_artist` | Blank for originals. |
-| `length_sec` | Integer seconds. **Load-bearing since v4** — it is the resource a player spends, so a show is only drawable when every song in it is timed. Also feeds the version multiplier (15 / 20 min tiers). |
+| `length_sec` | Integer seconds. **Load-bearing since v4**: it is the resource a player spends, so a show is only drawable when every song in it is timed. Also feeds the version multiplier (15 / 20 min tiers). **Blank on a show elgoose has typed up but not yet timed**, which is normal for a week or two after a run: the setlist appears the same night, the track times follow. A show with any untimed song is not drawable, so it cannot be dealt in the game until they arrive. 176 of 660 shows are in that state, including the whole of the August 2026 run. |
 | `show_gap` | Shows between this play and the song's previous one. `0` on debut. **Feeds rarity scoring.** |
 | `times_played` | Running count including this play. Display only. |
 | `rarity_rating` | The rarity tier this gap lands in. Display only — `scoring.js` recomputes from `show_gap`. |
@@ -59,6 +115,39 @@ not enforced — but the ingester writes them in this order and should keep doin
 | `transition` | Raw transition mark out of this song (`>`, `->`, `,`, ``). |
 | `is_segue` | `true` when `transition` is a real segue (`>` / `->`). Shown in the draft as a `>` on the song and drives the segue-building mechanic. 30% of performances. |
 | `tags` | Pipe-delimited role tags. **Drives placement scoring.** |
+| `footnote` | The curators' note on **this performance**: `Unfinished.`, `80s synth version.`, `With Carol Of The Bells teases from Rick.` Display only. 38% of rows carry one, but 43% of those are nothing but the cover artist, which the row already prints as `orig. X`, so the game strips that prefix at render and 21% of rows end up showing something. |
+| `show_notes` | The curators' note on **the night**: `This was Aaron and Kris' first show as members of Goose.` 55% of shows have one. **Written on exactly one row per show and blank on the rest.** See below. Display only. |
+| `teases` | Pipe-delimited songs the band **quoted without playing** inside this one, parsed out of `footnote` prose ("With Axel F teases from Rick"). Display only. 254 rows carry one, 259 teases of 123 distinct songs across 201 shows. Parsed at ingest rather than in the browser: see below. |
+
+### Why `teases` is parsed here and not in the game
+
+It only exists as prose, and one performance can carry several, so the count on
+the profile is teases and not performances. Parsing once, offline, keeps the
+regex out of every profile render and lets `check_data` verify it against the
+footnotes it came from.
+
+The rule anchors on the word *tease* and takes the phrase before it, trimmed at
+the nearest `with` / `and` / sentence stop. It does **not** split on commas: an
+earlier version did, and turned `With One In, One Out teases` into two songs,
+`Mercy, Mercy, Mercy` into three, and a guest list into `vocals` and
+`and Jessica`. It also does not treat an acronym's own full stop as a sentence
+end, because `Still D.R.E.` and `S.O.S.` are titles.
+
+One case it still gets wrong, and cannot by rule: a title containing "and" is
+cut at its own conjunction, so `Workin' Day and Night` is recorded as `Night`.
+That is structurally identical to the cut that makes `and Jessica tease` come
+out right. It costs 1 of the 123 songs.
+
+### Why `show_notes` is on one row and not all of them
+
+It belongs to the show, and the show has eleven-odd rows. Denormalising it the
+way `crowd_rating` is denormalised would add **436KB raw to a 1.2MB file** for
+one string repeated eleven times. It gzips away to almost nothing, but the parse
+does not, and the archive is parsed on every draft. Written once, it costs 36KB.
+
+The ingester writes it on the first row of each show after sorting. Nothing may
+depend on that: `dataLoader.js` hoists it onto the show by scanning the rows for
+whichever one carries it, so a reordering cannot silently drop the note.
 
 ## Tags
 

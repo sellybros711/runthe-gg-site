@@ -14,6 +14,11 @@
  *   record   what each regular-season record is worth
  *   rounds   the per-game win rate, regular season and each playoff round
  *   nfl      the same headline numbers for the NFL game, as a yardstick
+ *   policies the five ways a person really plays, BOTH games side by side.
+ *            This is the section that answers "is a perfect season as hard
+ *            here as it is there", because it measures the same ladder in
+ *            both, ending at a solver that plays the wheel perfectly.
+ *   margin   MARGIN_GAIN, refitted: the player's z against a real team's
  *   bands    what each overall band is rare enough to be, and worth
  *   curve    the same thing two points at a time, to show it scales
  *   far      how far a season gets, by overall: where it ends
@@ -194,6 +199,82 @@ if (want('record') || want('rounds')) {
   }
 }
 
+/* MARGIN_GAIN, re-measured rather than remembered.
+ *
+ * A player's margin is not a real point differential. It is a fantasy total
+ * against an opponent's real points, so the two sides of the subtraction are in
+ * different units and the z that falls out is flatter than a real team's.
+ * MARGIN_GAIN is the slope that puts the player's season on the same scale as
+ * the teams it is ranked against, and engine.js says in as many words to
+ * re-measure it if SCALE, the cap or DEFENSE_WEIGHT move.
+ *
+ * It said that with no tool to do it: the 1.30 in the file was fitted once by
+ * hand and never again, so the instruction was unfollowable. This is that tool.
+ * Match on RECORD, because that is the thing both sides have in common: for
+ * every win total, what does a real team of that record score on strength_z, and
+ * what does a player of that record score on the raw z? The ratio of those two,
+ * regressed through the origin, is the gain.
+ */
+if (want('margin')) {
+  const { E, data, league } = CFB;
+  const GAMES = E.CONSTANTS.REGULAR_SEASON_GAMES;
+  const prepared = data.prepared;
+
+  /* Real teams, bucketed by wins. Their strength_z is the target scale. */
+  const realByWins = {};
+  for (const t of CFB.teams) {
+    const w = Number(String(t.record).split('-')[0]);
+    if (!Number.isFinite(w)) continue;
+    (realByWins[w] ??= []).push(t.strength_z);
+  }
+
+  /* Player seasons, bucketed the same way, carrying the RAW z: the margin
+     standardised, before any gain is applied. Undoing the constant rather than
+     recomputing it keeps this honest if the formula around it changes. */
+  const mineByWins = {};
+  for (let d = 0; d < 40; d++) {
+    const run = draft(CFB, STRATS.greedy);
+    if (!run) continue;
+    const schedule = run.schedule.map((id) => data.byTeamSeasonId[id]);
+    const playoffs = run.playoffs.map((id) => data.byTeamSeasonId[id]);
+    for (let i = 0; i < 250; i++) {
+      const rng = E.createSeededRNG(E.hashSeed('margin|' + run.seed + '|' + i));
+      const out = E.playRun(run.roster, run.season.chemistry, schedule, playoffs,
+        league, rng, prepared);
+      (mineByWins[out.regularWins] ??= []).push(out.ranking.z / E.MARGIN_GAIN);
+    }
+  }
+
+  console.log('=== MARGIN_GAIN, measured ===');
+  console.log('  record      real z    yours (raw)     ratio       n real   n yours');
+  const pts = [];
+  for (const w of Object.keys(mineByWins).map(Number).sort((a, b) => a - b)) {
+    const mine = mineByWins[w], real = realByWins[w];
+    /* Records a real team cannot have in this data are no use as a reference. */
+    if (!real || real.length < 20 || mine.length < 40) continue;
+    const my = mean(mine), rl = mean(real);
+    pts.push([my, rl]);
+    console.log('  ' + (w + '-' + (GAMES - w)).padEnd(11)
+      + rl.toFixed(3).padStart(8) + my.toFixed(3).padStart(15)
+      + (my !== 0 ? (rl / my).toFixed(3) : '  -').padStart(11)
+      + String(real.length).padStart(12) + String(mine.length).padStart(10));
+  }
+  /* Through the origin: a season with no margin is an average season on either
+     scale, so the line has no business having an intercept. */
+  const num = pts.reduce((s, [x, y]) => s + x * y, 0);
+  const den = pts.reduce((s, [x]) => s + x * x, 0);
+  const slope = den ? num / den : 0;
+  const ybar = pts.reduce((s, [, y]) => s + y, 0) / Math.max(1, pts.length);
+  const ssTot = pts.reduce((s, [, y]) => s + (y - ybar) ** 2, 0);
+  const ssRes = pts.reduce((s, [x, y]) => s + (y - slope * x) ** 2, 0);
+  console.log('\n  fitted MARGIN_GAIN = ' + slope.toFixed(3)
+    + '   (R2 ' + (ssTot ? (1 - ssRes / ssTot).toFixed(3) : 'n/a')
+    + ', ' + pts.length + ' records)');
+  console.log('  engine.js currently says ' + E.MARGIN_GAIN
+    + (Math.abs(slope - E.MARGIN_GAIN) > 0.05 ? '   <-- STALE, update it' : '   (in line)'));
+  console.log('');
+}
+
 if (want('nfl')) {
   console.log('=== the same headline numbers, both games ===');
   for (const game of ['football', 'cfb']) {
@@ -217,6 +298,110 @@ if (want('nfl')) {
       + '   perfect ' + (mean(A.pf) * 100).toFixed(2) + '%');
   }
   console.log('');
+}
+
+/* THE FIVE WAYS A PERSON REALLY PLAYS, IN BOTH GAMES, ON THE SAME LADDER.
+ *
+ * Every other section here drafts greedily, which is a policy, not a player.
+ * Greedy takes the highest scorer on every spin and never once thinks about
+ * what it is leaving itself: it overspends early, strands the last two slots
+ * and builds a shape the structure model punishes. Judging difficulty by it
+ * says the game is harder than it is for somebody who is actually trying.
+ *
+ * The top of the ladder is `bestPossibleSquad`, the solver behind the perfect
+ * draft badge. It sees the same six wheels the player saw and returns the best
+ * legal roster inside those draws, so it is not cheating with players nobody
+ * was offered: it is the ceiling of what the run allowed. A good human sits
+ * between the top row and that, closer to it the more they play. So the honest
+ * question is not "what does greedy get" but "what is at each rung, in both
+ * games", and that is what this prints.
+ *
+ * THIS IS THE SECTION THAT ANSWERS whether a perfect season is as hard here as
+ * it is in the NFL game. Compare rung to rung, not headline to headline: the
+ * NFL is 17 games plus 3, this is 12 plus 4, so only the same policy in both is
+ * a fair comparison. Ported from football/simulator.js --policies, which is the
+ * same five names against the same solver, so the two really are one ladder.
+ */
+if (want('policies')) {
+  const N = Number(process.env.PROBE_N ?? 60);
+  console.log('=== the five ways a person really plays, both games (' + N + ' runs each) ===');
+  console.log('  game  policy                  spend   FPPG   chem   record   playoff  title  perfect');
+  for (const game of ['football', 'cfb']) {
+    const G = game === 'cfb' ? CFB : load(game);
+    const { E, R, data, league } = G;
+    const GAMES = E.CONSTANTS.REGULAR_SEASON_GAMES;
+    /* The NFL harness needs the coach and battery tables to start a season; the
+       college one takes the league context alone. Passing the wrong shape gives
+       a chemistry of 1.0 everywhere, which would quietly flatten the ladder. */
+    const CTX = game === 'cfb' ? { league } : {
+      battery: JSON.parse(fs.readFileSync(ROOT + '/football/data/battery.json', 'utf8')),
+      coaches: JSON.parse(fs.readFileSync(ROOT + '/football/data/coaches.json', 'utf8')),
+      curated: JSON.parse(fs.readFileSync(ROOT + '/football/data/curated.json', 'utf8')),
+    };
+    const LEAGUE = game === 'cfb' ? league : league.league_avg_pts_allowed_by_season;
+    const POLICIES = {
+      'cheapest every time': (o) => o.reduce((b, p) => (p.price_musd < b.price_musd ? p : b)),
+      'best points per dollar': (o) => o.reduce((b, p) =>
+        (p.ppr_ppg_mean / Math.max(3, p.price_musd) > b.ppr_ppg_mean / Math.max(3, b.price_musd) ? p : b)),
+      'random tap': (o, rng) => o[Math.floor(rng() * o.length)],
+      'taps the top row': (o) => o.reduce((b, p) => (p.ppr_ppg_mean > b.ppr_ppg_mean ? p : b)),
+      'perfect play (solver)': (o) => o.reduce((b, p) => (p.ppr_ppg_mean > b.ppr_ppg_mean ? p : b)),
+    };
+    for (const name of Object.keys(POLICIES)) {
+      const A = { sp: [], fp: [], ch: [], w: [], po: [], ti: [], pf: [] };
+      for (let i = 0; i < N; i++) {
+        const seed = 20000 + i * 7919;
+        const run = R.createRun({ seed });
+        const rng = E.createSeededRNG(seed ^ 0x5f5f);
+        let stranded = false;
+        while (run.roster.length < E.SLOTS.length) {
+          let draw;
+          try { draw = R.spin(run, data); } catch (e) { stranded = true; break; }
+          const list = data.playersByTeamSeason[draw.team_season_id] || [];
+          const opts = draw.options
+            .map((k) => { const [id, s] = k.split('|');
+              return list.find((p) => String(p.player_id) === id && String(p.season) === s); })
+            .filter(Boolean).filter((p) => R.slotForPlayer(run, p) !== null);
+          /* KEEP ENOUGH BACK TO FILL THE REST, which every one of these policies
+             has to respect or it is not a policy a person could follow: the game
+             will not let you sign a man who leaves a slot unfillable. Without
+             this filter "taps the top row" strands itself and the ladder measures
+             the stranding rather than the strategy. */
+          const budget = R.remaining(run) - R.reserveFloor(run);
+          const legal = opts.filter((p) => p.price_musd <= budget);
+          const pick = (legal.length ? POLICIES[name](legal, rng) : opts[0]);
+          if (!pick) { stranded = true; break; }
+          /* TWO ARGUMENTS, NOT THREE. sign()'s third is the slot the player asked
+             for, and it is checked rather than trusted, so passing anything else
+             there (`data`, say) fails the check and throws "no empty spot". */
+          R.sign(run, pick);
+        }
+        if (stranded || run.roster.length !== E.SLOTS.length) continue;
+        R.startSeason(run, data, CTX);
+        let roster = run.roster, chem = run.season.chemistry;
+        if (name === 'perfect play (solver)') {
+          let best = null;
+          try { best = R.bestPossibleSquad(run, data, CTX); } catch (e) { best = null; }
+          if (best && best.squad) { roster = best.squad; chem = best.chemistry; }
+        }
+        const pr = R.projectSeason(roster, chem, run, data, LEAGUE, 400);
+        A.sp.push(roster.reduce((t, p) => t + p.price_musd, 0));
+        A.fp.push(roster.reduce((t, p) => t + p.ppr_ppg_mean, 0));
+        A.ch.push(chem); A.w.push(pr.meanWins);
+        A.po.push(pr.playoffRate); A.ti.push(pr.titleRate); A.pf.push(pr.perfectRate);
+      }
+      if (!A.w.length) { console.log('  ' + game.padEnd(6) + name.padEnd(24) + '  no legal run'); continue; }
+      console.log('  ' + (game === 'cfb' ? 'CFB' : 'NFL').padEnd(6) + name.padEnd(24)
+        + ('$' + mean(A.sp).toFixed(0) + 'M').padStart(6)
+        + mean(A.fp).toFixed(0).padStart(7)
+        + ('+' + ((mean(A.ch) - 1) * 100).toFixed(1) + '%').padStart(7)
+        + (mean(A.w).toFixed(1) + '-' + (GAMES - mean(A.w)).toFixed(1)).padStart(9)
+        + (mean(A.po) * 100).toFixed(0).padStart(9) + '%'
+        + (mean(A.ti) * 100).toFixed(1).padStart(6) + '%'
+        + (mean(A.pf) * 100).toFixed(2).padStart(8) + '%');
+    }
+    console.log('');
+  }
 }
 
 /* What the displayed overall is worth, band by band, and how often a draft lands
@@ -428,5 +613,109 @@ if (want('far')) {
     up ? r[i] < rows[k][i] - 0.01 : r[i] > rows[k][i] + 0.01).length;
   console.log('  steps the wrong way, out of ' + (rows.length - 1)
     + ':   missed ' + dips(0, false) + '   won it ' + dips(6, true));
+  console.log('');
+}
+
+/* ── does the best team win the most, and finish first ──────────────────────
+ *
+ * WHY THIS EXISTS SEPARATELY FROM `bands`. That section lets every team play its
+ * OWN run's schedule. Across twenty teams a band the draw outweighs the rating,
+ * and it shows: measured that way the 100+ band came out WORSE at going
+ * undefeated than 95-100, which is not a real effect and is not a close call
+ * either. Any tuning argued from those two columns was arguing partly with noise.
+ *
+ * Here the schedule is held still. Every band plays the SAME set of schedules and
+ * the same seeds, so the only thing that differs between rows is the roster, and
+ * the head-to-head goes further: two teams, one schedule, one seed, and the only
+ * difference between the two seasons is which players are in them.
+ */
+if (want('top')) {
+  const { E, R, data, league } = CFB;
+  const CTX = { league };
+  const GAMES = E.CONSTANTS.REGULAR_SEASON_GAMES;
+
+  const pool = [];
+  const picks = [STRATS.greedy, STRATS.value, STRATS.random];
+  for (let i = 0; i < 900 && pool.length < 500; i++) {
+    const run = draft(CFB, picks[i % 3]);
+    if (!run) continue;
+    pool.push({ roster: run.roster, chem: run.season.chemistry,
+      ov: E.teamOverall(run.roster, run.season.chemistry) });
+    /* bestPossibleSquad is the only thing that reaches the top of the range, so
+       without it the bands this section exists to measure hold three teams. */
+    try {
+      const bp = R.bestPossibleSquad(run, data, CTX);
+      if (bp && bp.squad) pool.push({ roster: bp.squad, chem: bp.chemistry,
+        ov: E.teamOverall(bp.squad, bp.chemistry) });
+    } catch (e) { /* not always computable */ }
+  }
+
+  const SCHEDULES = [];
+  for (let i = 0; i < 24; i++) {
+    const rng = E.createSeededRNG(E.hashSeed('sched|' + i));
+    SCHEDULES.push({
+      sch: E.generateSchedule(data.prepared, rng).games.map((g) => data.byTeamSeasonId[g.team_season_id]),
+      pl: E.generatePlayoffs(data.prepared, rng).map((g) => data.byTeamSeasonId[g.team_season_id]),
+    });
+  }
+
+  const BANDS = [[75, 80], [80, 85], [85, 90], [90, 95], [95, 100], [100, 999]];
+  const lab = ([lo, hi]) => (hi === 999 ? '100+' : lo + '-' + hi);
+  console.log('=== what a rating is worth, every band on the SAME '
+    + SCHEDULES.length + ' schedules ===');
+  console.log('  band     teams  seasons   wins   undefeated    No. 1    top 4   mean rank');
+  for (const b of BANDS) {
+    const inb = pool.filter((t) => t.ov >= b[0] && t.ov < b[1]);
+    const take = [];
+    for (let i = 0; i < inb.length && take.length < 20; i += Math.max(1, Math.floor(inb.length / 20))) take.push(inb[i]);
+    if (take.length < 3) continue;
+    let n = 0, w = 0, un = 0, one = 0, t4 = 0, rs = 0;
+    for (const t of take) for (const [si, S] of SCHEDULES.entries()) {
+      for (let i = 0; i < 12; i++) {
+        const rng = E.createSeededRNG(E.hashSeed('fix|' + si + '|' + i));
+        const o = E.playRun(t.roster, t.chem, S.sch, S.pl, league, rng, data.prepared);
+        n++; w += o.regularWins;
+        if (o.regularWins === GAMES) un++;
+        const rk = o.seed && o.seed.rank;
+        if (rk === 1) one++;
+        if (rk && rk <= 4) t4++;
+        if (rk) rs += rk;
+      }
+    }
+    const pc = (x) => (100 * x / n).toFixed(2).padStart(9) + '%';
+    console.log('  ' + lab(b).padEnd(8) + String(take.length).padStart(5) + String(n).padStart(9)
+      + (w / n).toFixed(2).padStart(7) + pc(un) + pc(one) + pc(t4) + (rs / n).toFixed(1).padStart(11));
+  }
+
+  /* Two rosters, one schedule, one seed. A tie is the honest third column: in a
+     twelve-game season two close teams landing on the same record is the common
+     case, not a failure of the rating. */
+  const strong = pool.filter((t) => t.ov >= 82).sort((a, b) => a.ov - b.ov);
+  const S0 = SCHEDULES[0];
+  console.log('\n=== the better roster, same schedule, same seed ===');
+  console.log('  rating edge   pairs   better record   same   worse   mean win gap');
+  for (const [glo, ghi] of [[2, 4], [4, 7], [7, 12], [12, 20]]) {
+    let pairs = 0, better = 0, tie = 0, worse = 0, gap = 0, n = 0;
+    for (let a = 0; a < strong.length && pairs < 30; a += 4) {
+      const A = strong[a];
+      const c = strong.filter((t) => t.ov - A.ov >= glo && t.ov - A.ov < ghi);
+      if (!c.length) continue;
+      const B = c[Math.floor(c.length / 2)];
+      pairs++;
+      for (let i = 0; i < 120; i++) {
+        const s = 'h2h|' + glo + '|' + pairs + '|' + i;
+        const oa = E.playRun(A.roster, A.chem, S0.sch, S0.pl, league, E.createSeededRNG(E.hashSeed(s)), data.prepared);
+        const ob = E.playRun(B.roster, B.chem, S0.sch, S0.pl, league, E.createSeededRNG(E.hashSeed(s)), data.prepared);
+        n++; gap += ob.regularWins - oa.regularWins;
+        if (ob.regularWins > oa.regularWins) better++;
+        else if (ob.regularWins === oa.regularWins) tie++; else worse++;
+      }
+    }
+    if (!n) continue;
+    const p = (x) => (100 * x / n).toFixed(1).padStart(8) + '%';
+    console.log('  +' + String(glo).padStart(2) + ' to ' + String(ghi).padEnd(4)
+      + String(pairs).padStart(7) + p(better) + p(tie) + p(worse)
+      + (gap / n).toFixed(2).padStart(13));
+  }
   console.log('');
 }

@@ -79,10 +79,13 @@ export function setLabel(set) {
  * Build the game's view of a band's history.
  *
  * @param {string} csvText raw contents of e.g. data/goose.csv
- * @returns {{shows: Array, segues: Set<string>, partners: Map, performances: number}}
+ * @returns {{shows: Array, segues: Set<string>, partners: Map, suites: Map,
+ *            performances: number}}
  *   shows — one entry per concert, songs in running order across all sets
  *   segues — canonical "songIdA|songIdB" pairs the band has actually played
  *            back-to-back with a segue transition
+ *   suites: song_id to family key for songs that are movements of one piece
+ *            (Jive I / Jive II / Jive Lee), derived from the titles
  */
 export function loadBand(csvText) {
   const rows = parseCSV(csvText);
@@ -99,9 +102,16 @@ export function loadBand(csvText) {
         city: r.city,
         state: r.state,
         songs: [],
+        /* The curators' note about the night. Written on ONE row of the show
+           rather than all eleven (see COLUMNS in ingest_band.mjs: repeating it
+           costs 436KB raw), so it is hoisted here by scanning for whichever row
+           carries it. Nothing depends on that being the first. */
+        notes: '',
       });
     }
-    byShow.get(r.show_id).songs.push(r);
+    const show = byShow.get(r.show_id);
+    if (!show.notes && r.show_notes) show.notes = r.show_notes;
+    show.songs.push(r);
   }
 
   const shows = Array.from(byShow.values());
@@ -175,7 +185,116 @@ export function loadBand(csvText) {
     partners.get(a).add(b);
   }
 
-  return { shows, segues, segueCounts, partners, performances: rows.length };
+  /* ---------------------------------------------------------------------
+   * SUITES: the songs that are written to go together.
+   * ---------------------------------------------------------------------
+   * Jive I > Jive II > Jive Lee, Seekers on the Ridge pt I > pt II. These are
+   * not ordinary segues that happen to be common, they are one piece of music
+   * in several movements, and linking one back up is the most satisfying thing
+   * a setlist builder can do with this band's catalogue.
+   *
+   * The scoring had them exactly backwards. familiarityMult discounts a pair
+   * by how often the band plays it, which is right for an ordinary segue and
+   * wrong for these: Seekers pt I > pt II is the MOST played pair in the whole
+   * archive at 57 times, so it hit the 0.30 floor and scored 18 of a possible
+   * 60. The most canonical link in the catalogue paid the least.
+   *
+   * DERIVED FROM THE TITLES, NOT A LIST. A hardcoded set of ids would be wrong
+   * for the next band and would silently miss a new part. A family is a stem
+   * that two or more titles share, where at least one of them ends in a part
+   * marker:
+   *
+   *   Jive I · Jive II          -> stem "jive", and then "Jive Lee" joins on
+   *                                the stem even though it carries no numeral
+   *   Seekers on the Ridge pt I · pt II
+   *   Interlude I · II · III
+   *
+   * THE SEPARATOR IS REQUIRED and that is not fussiness. Without it "Yeti"
+   * parses as "Yet" + roman numeral I, "2021" as "202" + 1, and "Weird Fishes
+   * / Arpeggi" as "...Arpegg" + I. All three are single-member today so none
+   * would have formed a family, but each was one new song title away from
+   * inventing one. Measured over all 367 titles, the rule below matches 7 and
+   * builds exactly the 3 families above.
+   */
+  const PART = /^(.{3,}?)[\s,:]+(?:\b(?:pt\.?|part)\s+)?(?:[IVX]{1,4}|[1-9])$/i;
+  const suites = new Map();                 // song_id -> family key
+  {
+    const titles = new Map();               // song_id -> title
+    for (const show of shows) for (const p of show.songs) titles.set(p.song_id, p.song);
+    // Stems that some title spells out with a part marker.
+    const stems = new Set();
+    for (const t of titles.values()) {
+      const m = t.match(PART);
+      if (m) {
+        const stem = m[1].trim().replace(/[,:]+$/, '').toLowerCase();
+        if (stem.length >= 3) stems.add(stem);
+      }
+    }
+    const claim = new Map();                // stem -> Set(song_id)
+    for (const [id, t] of titles) {
+      const m = t.match(PART);
+      let key = null;
+      if (m) {
+        const stem = m[1].trim().replace(/[,:]+$/, '').toLowerCase();
+        if (stems.has(stem)) key = stem;
+      }
+      // A sibling with no numeral of its own, which is how Jive Lee belongs.
+      if (!key) for (const s of stems) if (t.toLowerCase().startsWith(s + ' ')) { key = s; break; }
+      if (!key) continue;
+      if (!claim.has(key)) claim.set(key, new Set());
+      claim.get(key).add(id);
+    }
+    // One title is not a family. Two movements of the same piece is.
+    for (const [key, ids] of claim) if (ids.size > 1) for (const id of ids) suites.set(id, key);
+  }
+
+  /* ---------------------------------------------------------------------
+   * WHICH VERSION THIS IS, which is the thing the game is actually about.
+   * ---------------------------------------------------------------------
+   * You do not pick "Echo of a Rose". You pick the one from a particular
+   * night, and across 114 plays that song runs anywhere from 1:00 to 44:24.
+   * Measured across the 166 songs with five or more plays, the longest
+   * version of a song is a MEDIAN of 2.7 times the shortest, and 13.8 times
+   * at the 90th percentile. "You played Echo of a Rose" says almost nothing;
+   * "you played the 44 minute one" is the whole story.
+   *
+   * So every performance learns where it sits among its own siblings: its
+   * rank by length, out of how many. Computed once here, off the same rows
+   * the rest of the loader walks, rather than by the UI on every render.
+   *
+   * Rank 1 is the LONGEST. Songs played once get {rank:1, of:1}, which the UI
+   * reads as "nothing to compare it to" rather than "the best ever".
+   */
+  const byySong = new Map();
+  for (const show of shows) {
+    for (const p of show.songs) {
+      const len = Number(p.length_sec) || 0;
+      if (!p.song_id || !len) continue;
+      if (!byySong.has(p.song_id)) byySong.set(p.song_id, []);
+      byySong.get(p.song_id).push(p);
+    }
+  }
+  for (const takes of byySong.values()) {
+    takes.sort((a, b) => (Number(b.length_sec) || 0) - (Number(a.length_sec) || 0));
+    const of = takes.length;
+    const med = Number(takes[Math.floor(of / 2)].length_sec) || 0;
+    /* TIES SHARE A RANK, so two identical 8:12 takes are both "4th of 30"
+       rather than one of them being arbitrarily 5th. */
+    let rank = 0, prev = null;
+    takes.forEach((p, i) => {
+      const len = Number(p.length_sec) || 0;
+      if (len !== prev) { rank = i + 1; prev = len; }
+      p.version_rank = rank;
+      p.version_of = of;
+      /* THE TYPICAL LENGTH, so a rank can gain a feel. "3rd longest of 60"
+         says where it sits; "usually 19:46, you got 29:38" says what that
+         MEANS. Median rather than mean because a single 44-minute outlier
+         drags an average somewhere no real version lives. */
+      p.version_median = med;
+    });
+  }
+
+  return { shows, segues, segueCounts, partners, suites, performances: rows.length };
 }
 
 export default loadBand;

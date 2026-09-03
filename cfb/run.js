@@ -208,6 +208,10 @@ function createRun(opts) {
     playoffs: null,
     season: null,
     playoffSeed: null,
+    // The twelve-team field, built on Selection Sunday. Null until then, and null all
+    // season for a run that does not make it.
+    bracket: null,
+    bracketRound: null,
     outcome: null,
     bowlInfo: null,
   };
@@ -255,12 +259,32 @@ function openSlotNames(run) {
 
 const TUNING = {
   MAX_DRAWS_PER_TEAM_SEASON: 2,
+  /*
+   * A BOARD HAS TO BE A CHOICE. 2020 was the covid season and half its teams played
+   * six or seven games, so the six-game minimum that keeps a player's weekly variance
+   * honest cut almost everybody off those rosters. Twelve team-seasons came out under
+   * six players, all but one of them from 2020, and the two worst were unplayable: a
+   * player who spun 2020 Wisconsin was offered a quarterback and a tight end and told
+   * to pick, and 2020 Stanford offered three.
+   *
+   * FOUR IS THE FLOOR, and it costs two team-seasons out of 1,372. It is set here and
+   * not by rebuilding the data because lowering the games minimum would weaken every
+   * variance estimate in twenty other seasons to rescue eleven rosters, and because
+   * the rest of the thin ones are worth keeping: four players on 2020 Ohio State is
+   * still a choice, and one of them is Justin Fields.
+   */
+  MIN_BOARD: 4,
 };
 
 function drawable(run, data, limit) {
   const drawn = {};
   for (const id of run.usedTeamSeasons) drawn[id] = (drawn[id] || 0) + 1;
   const canFill = (t) => someAffordable(run, t.team_season_id, data.playersByTeamSeason);
+  /* Enough men to choose between, before anything about this particular run is asked.
+     canFill below is the other half and moves as the budget does: this one is a
+     property of the team-season and the same on every spin. */
+  const deepEnough = (t) =>
+    (data.playersByTeamSeason[t.team_season_id] ?? []).length >= TUNING.MIN_BOARD;
   /* Matched on the conference the team was in THAT SEASON, which is what makes a
      Pac-12 draft the actual Pac-12 rather than wherever its members ended up. */
   const inConf = run.conference
@@ -268,6 +292,7 @@ function drawable(run, data, limit) {
     : () => true;
   return data.teamSeasons
     .filter(inConf)
+    .filter(deepEnough)
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }
@@ -324,12 +349,59 @@ function respin(run, data, kind) {
   return spin(run, data, constraint);
 }
 
-function sign(run, player) {
+/*
+ * EVERY EMPTY SPOT THIS MAN COULD TAKE, one per distinct spot NAME, in slot order.
+ *
+ * slotForPlayer() answers "where does he go", which is the right question for somebody who
+ * played one position and the wrong one for somebody who played two. Randall Cobb caught
+ * passes and carried the ball; with a receiver spot and a back spot both open, the function
+ * above puts him at receiver because his PRIMARY comes first in his own list, and that is
+ * not a tidying detail -- it decides what is left for the five picks after him. There is no
+ * default that is right there, so the caller has to be able to ask.
+ *
+ * THE POSITION CAP IS APPLIED THE SAME WAY IT IS THERE, and it has to be: this list decides
+ * what the chooser may offer, and offering a spot that sign() would then refuse is worse
+ * than never having asked. Two backs is the limit, so a third RB has nowhere to go -- but a
+ * hybrid whose OTHER position is still under its cap can be taken at that one.
+ *
+ * ONE PER NAME. The slot list carries two WR spots and two FLEX spots, and a choice between
+ * two identical things is not a choice.
+ */
+function slotChoices(run, player) {
+  const caps = E.CONSTANTS.POSITION_MAX || {};
+  const held = (pos) => run.roster.filter((p) => p.position === pos).length;
+  const allowed = E.positionsOf(player)
+    .filter((pos) => { const c = caps[pos]; return c == null || held(pos) < c; });
+  if (!allowed.length) return [];
+  const seen = new Set();
+  const out = [];
+  for (const i of openSlots(run)) {
+    const name = E.SLOTS[i];
+    if (seen.has(name)) continue;
+    const fits = allowed.some((pos) => name === pos
+      || (E.SLOT_ELIGIBILITY[name] || []).includes(pos));
+    if (!fits) continue;
+    seen.add(name);
+    out.push(i);
+  }
+  return out;
+}
+
+/*
+ * `want` is an optional slot index, for the caller that asked. It is CHECKED and not
+ * trusted -- it has to be an empty spot this player can actually fill, position cap and all
+ * -- because it arrives from the client and a slot index is the one number here that decides
+ * what the rest of the draft may hold. Left out, the old rule applies and nothing about a
+ * one-position signing changes.
+ */
+function sign(run, player, want) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
   if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
   if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('cannot afford');
-  const slot = slotForPlayer(run, player);
+  const slot = (want === undefined || want === null)
+    ? slotForPlayer(run, player)
+    : (slotChoices(run, player).indexOf(want) >= 0 ? want : null);
   if (slot === null) throw new Error('no empty spot for a ' + player.position);
 
   run.roster.push(player);
@@ -372,11 +444,19 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   }
 
   const playoff = run.phase === PHASES.PLAYOFFS;
-  const oppId = playoff
-    ? E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound)
-    : run.schedule[s.week];
-  const opp = data.byTeamSeasonId[oppId];
+  /* WHERE THIS GAME SITS IN THE TWELVE-TEAM BRACKET, which is not where it sits in the
+     player's own postseason: a bye seed plays three games and the first of them is the
+     bracket's second round. run.playoffs, the old strength ladder, is still read when
+     there is no bracket, so an older caller keeps working. */
+  const bracketRound = playoff
+    ? E.PLAYOFF_ROUND_NAMES.length - run.playoffSeed.rounds + s.playoffRound : 0;
   const rng = rngFor(run);
+  if (playoff && run.bracket) E.openBracket(run.bracket, bracketRound, rng);
+  const seat = playoff && run.bracket ? E.bracketPending(run.bracket, bracketRound) : null;
+  const oppId = !playoff ? run.schedule[s.week]
+    : seat && seat.team ? seat.team.team_season_id
+      : E.playoffOpponent(run.playoffs, run.playoffSeed.rounds, s.playoffRound);
+  const opp = data.byTeamSeasonId[oppId];
   const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
   // Seeding carries into the bracket: the top seeds host early and are the
   // higher seed after that, and by the semifinal the field is neutral.
@@ -386,10 +466,16 @@ function advanceWeek(run, data, leagueContext, displayCal) {
      playRun is not, so leaving it out here would have meant the whole thing
      showed up in the projected percentages and nowhere else. */
   const isFinal = playoff && roundName === 'CFP Championship';
-  const ovr = playoff ? E.teamOverall(run.roster, s.chemistry) : 0;
+  const ovr = E.teamOverall(run.roster, s.chemistry);
   const edge = playoff ? E.roundEdge(ovr, roundName) : 1;
+  /* THE REGULAR SEASON'S OWN EDGE, and it runs the other way: a team everybody is chasing
+     gets everybody's best game, in the weeks against opponents good enough to raise theirs.
+     This is the path a real season takes and playRun is not, so leaving it out here would
+     have put the whole thing in the projected odds and nowhere else, which is the mistake
+     the round edge above already made once. */
+  const week = playoff ? 1 : E.weekAdvantage(ovr, opp);
   const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 25,
-    rng, E.CONSTANTS, advantage / edge);
+    rng, E.CONSTANTS, advantage * week / edge);
   if (isFinal && ovr < E.CONSTANTS.TITLE_FLOOR && r.won) {
     r.oppScore = r.yourScore * 1.04;
     r.won = false;
@@ -402,6 +488,10 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     playoff,
     opponent: opp.display,
     opponent_id: oppId,
+    /* THE OPPONENT'S SEED IN THIS BRACKET, which is the whole of the four-plays-a-four
+       complaint: what used to be printed there was where that team finished in its own
+       real season, so two unrelated fours could sit either side of the scoreboard. */
+    opponentSeed: seat ? seat.seed : null,
     won: r.won,
     yourScore: Math.round(r.yourScore * 10) / 10,
     oppScore: Math.round(r.oppScore * 10) / 10,
@@ -411,6 +501,12 @@ function advanceWeek(run, data, leagueContext, displayCal) {
   s.results.push(result);
 
   if (playoff) {
+    /* Settle the whole round, the player's game included, before moving on. Everything
+       else in it is decided here in one go and the screen reveals it a game at a time. */
+    if (run.bracket) {
+      E.advanceBracket(run.bracket, bracketRound, r.won, rng);
+      run.bracketRound = bracketRound;
+    }
     s.playoffRound++;
     if (!r.won) {
       finish(run, { eliminatedIn: roundName });
@@ -439,6 +535,14 @@ function advanceWeek(run, data, leagueContext, displayCal) {
         regularRecord: s.wins + '-' + s.losses,
       };
       run.phase = PHASES.SEEDING;
+      /* THE FIELD IS SET ON SELECTION SUNDAY, not one game at a time, because that is
+         when a player is shown it. The other eleven are drawn here against the seed just
+         earned, and nothing in it is resolved yet: the first round is played when the
+         postseason starts, so the bracket on the seeding screen is the empty one. */
+      if (seed.made) {
+        run.bracket = E.buildBracket(data.prepared, rngFor(run), seed.seed);
+        run.bracketRound = null;
+      }
       if (!seed.made && !seed.bowl) {
         finish(run, { missedPlayoffs: true });
       } else if (!seed.made && seed.bowl) {
@@ -455,6 +559,13 @@ function advanceWeek(run, data, leagueContext, displayCal) {
 function startPlayoffs(run) {
   if (run.phase !== PHASES.SEEDING) throw new Error('not at seeding');
   if (!run.playoffSeed.made) throw new Error('did not make the playoffs');
+  /* A BYE SEED WATCHES THE FIRST ROUND. Their quarterfinal is against the winner of one
+     of those games, so it has to be played before anybody can be asked who that is, and
+     playing it here rather than inside the first game means the screen can show it. */
+  if (run.bracket) {
+    E.openBracket(run.bracket, E.PLAYOFF_ROUND_NAMES.length - run.playoffSeed.rounds,
+      rngFor(run));
+  }
   run.season.playoffRound = 0;
   run.phase = PHASES.PLAYOFFS;
   return run;
@@ -789,7 +900,7 @@ const api = {
   previewSigning,
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
   boardFrom, blockFor, BLOCK, drawable,
-  openSlots, openSlotNames, slotForPlayer, TUNING,
+  openSlots, openSlotNames, slotForPlayer, slotChoices, TUNING,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

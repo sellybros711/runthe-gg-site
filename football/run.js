@@ -24,13 +24,24 @@ const E = (typeof require !== 'undefined')
    and falls back by mode so a run restored from storage without it still resolves. */
 const TRADE_SLOTS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLEX'];
 const slotsOf = (run) => (run && run.slots)
-  || (run && run.tradeMachine ? TRADE_SLOTS : E.SLOTS);
+  || (run && run.full ? E.FULL_SLOTS
+    : run && run.tradeMachine ? TRADE_SLOTS
+      : run && run.defense ? E.DEFENSE_SLOTS
+        : E.SLOTS);
 
 /* PICK_FRANCHISE is gone. There is no favorite club to choose, so a run opens on the draft:
    the schedule is 17 random historic team-seasons and the playoffs are a fixed difficulty
    ladder, neither of which depends on who you support. */
 const PHASES = {
   DRAFT: 'draft',
+  /* FULL TEAM ONLY: the hire and the game plan, between the last signing and the schedule.
+     A phase rather than a screen flag, so it survives a reload the way the draft does. */
+  COACH: 'coach',
+  /* THE GAUNTLET ONLY: the winter between two seasons. Everybody ages here, salaries
+     ratchet, and you release whoever you are not paying for any more. A phase rather than a
+     screen flag for the same reason COACH is one: a reload mid-decision has to come back to
+     the decision. */
+  OFFSEASON: 'offseason',
   SEASON: 'season',      // the 17 regular-season games
   SEEDING: 'seeding',    // record is final, showing where it left you
   PLAYOFFS: 'playoffs',  // one loss ends it
@@ -49,7 +60,18 @@ const runKey = (p) => `${p.player_id}:${p.season}`;
  * chemistry it reports. Get one wrong and the tile promises a bonus the season
  * does not pay.
  */
-const chemOpts = (run) => ({ sameClub: !!(run && run.franchise) });
+/* twoSided is on for Full Team and only Full Team: it is the one mode holding both units,
+   so it is the one mode where a chemistry pair can span two men who never played a down
+   together. See resolveChemistry. */
+/* THE COACH RIDES ALONG, because in Full Team he is a source of chemistry like any player:
+   see E.coachLinks. He is null during the draft (he is hired after it) and null in every
+   other mode, and resolveChemistry only looks at him when twoSided is on, so the same object
+   serves the draft preview and the season. */
+const chemOpts = (run) => ({
+  sameClub: !!(run && run.franchise),
+  twoSided: !!(run && run.full),
+  coach: (run && run.coach) || null,
+});
 
 /**
  * Money still available. The re-spin fee comes out of the cap, so the budget
@@ -87,13 +109,41 @@ function capOf(run) {
 }
 
 function remaining(run) {
-  const spent = run.roster.reduce((s, p) => s + p.price_musd, 0);
+  /* WHAT THE ROSTER COSTS, WHICH IN A DYNASTY IS NOT WHAT IT IS WORTH. A man is paid what
+     he was signed for, raised the year he improves and held the year he declines, so the
+     cap is spent against salaries and only a first signing costs list price. Everywhere
+     else the two are the same number and this reads as it always did. */
+  const spent = run.dynasty
+    ? run.roster.reduce((s, p, i) => s + (run.salaries[i] ?? p.price_musd), 0)
+    : run.roster.reduce((s, p) => s + p.price_musd, 0);
   const fees = E.respinFees(run.respinsUsed);
-  return money(capOf(run) - spent - fees);
+  /* THE COACH COMES OUT OF THE SAME CAP, which is the entire reason he is interesting. A
+     coach on a separate budget is a free bonus; a coach who costs a cornerback is a
+     decision. He is added here rather than at the callers so every screen, every floor
+     check and every affordability question sees the same number. */
+  const coach = (run.coach && run.coach.price_musd) || 0;
+  /* DEAD MONEY, WHICH IS SPENT AND BUYS NOBODY. Subtracted here for the same reason the
+     coach is: every screen, every affordability question and every floor check then sees
+     one number, and none of them has to remember the rule. Old saves have no list and read
+     as zero, which is the right answer for a run made before the rule existed. */
+  const dead = run.dynasty ? E.dynastyDead(run.dead, run.seasonNo, undefined, capOf(run)) : 0;
+  return money(capOf(run) - spent - fees - coach - dead);
+}
+
+/** What is dead against the cap right now. The page needs it beside the payroll. */
+function deadOf(run) {
+  return run && run.dynasty
+    ? E.dynastyDead(run.dead, run.seasonNo, undefined, capOf(run))
+    : 0;
 }
 
 /** Slots still to fill, including the current one. */
-const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
+/* ASKS THE RUN, NOT THE MODULE. This read E.SLOTS.length, which is six, and every mode
+   that has ever existed also had six slots, so it was right by coincidence rather than by
+   construction: the defense draft has its own six and the Trade Machine swaps one slot for
+   another without changing the count. Full Team has twelve, and at twelve a hardcoded six
+   ends the draft halfway through with a legal-looking half a roster. */
+const slotsLeft = (run) => slotsOf(run).length - run.roster.length;
 
 /**
  * The floor the UI warns about: money you must keep back or you cannot legally
@@ -124,12 +174,22 @@ const slotsLeft = (run) => E.SLOTS.length - run.roster.length;
  * the price floor is $3M and every position has somebody at it, so the pool
  * calculation lands on the same $3M a slot the constant always meant.
  */
+/* THE COACH IS AN OPEN SPOT TOO, and forgetting that made him unreachable. A player who
+   simply takes the best man he can afford twelve times finishes with $0.8M, which hires
+   nobody, so the thirteenth asset existed only for somebody who already knew to save for it.
+   Reserving the cheapest coach guarantees the hire can always happen.
+   The RESERVE IS ONLY THE FLOOR, deliberately. It buys the worst coach in the game. Getting
+   a good one still means finishing the draft under budget, which is the decision: Belichick
+   costs $27.3M, and that is a cornerback. */
+const coachFloor = (run) => (run && run.full && !run.coach) ? COACH_FLOOR_MUSD : 0;
+const COACH_FLOOR_MUSD = 3;
+
 function reserveFloor(run) {
   const flat = Math.max(0, slotsLeft(run) - 1) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
   const per = assignedFloors(run);
-  if (!per || per.length !== slotsLeft(run)) return flat;
+  if (!per || per.length !== slotsLeft(run)) return money(flat + coachFloor(run));
   const sum = per.reduce((a, c) => a + c, 0);
-  return money(Math.max(flat, sum - Math.min(...per)));
+  return money(Math.max(flat, sum - Math.min(...per)) + coachFloor(run));
 }
 
 /**
@@ -141,8 +201,8 @@ function reserveFloor(run) {
 function fullFloor(run) {
   const per = assignedFloors(run);
   const flat = slotsLeft(run) * E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD;
-  if (!per || per.length !== slotsLeft(run)) return flat;
-  return money(Math.max(flat, per.reduce((a, c) => a + c, 0)));
+  if (!per || per.length !== slotsLeft(run)) return money(flat + coachFloor(run));
+  return money(Math.max(flat, per.reduce((a, c) => a + c, 0)) + coachFloor(run));
 }
 
 /**
@@ -170,12 +230,23 @@ function assignedFloors(run) {
   for (const id of run.usedTeamSeasons) spent[id] = (spent[id] || 0) + 1;
   const reachable = (c) => (spent[c.ts] || 0) < TUNING.MAX_DRAWS_PER_TEAM_SEASON;
   const slots = slotsOf(run);
-  const open = openSlots(run).map((i) => slots[i])
-    .sort((a, b) => E.SLOT_ELIGIBILITY[a].length - E.SLOT_ELIGIBILITY[b].length);
+  /* ELIGIBILITY BY SLOT INDEX, NOT BY SLOT NAME, and only Full Team needs the difference.
+     E.SLOT_ELIGIBILITY.FLEX is the shared list of all six skill and defensive positions,
+     which is right in the two single-pool modes because the pool is what narrows it. Here
+     both pools are on the board, and reading it would let the OFFENSIVE flex be floored by
+     the cheapest linebacker in the game: a promise the wheel can never keep, which is the
+     opposite of what this function is for. FULL_SLOT_POS is the per-side answer.
+
+     It also means the sort has to carry the index through rather than mapping to names
+     first, because the two FLEX slots share a name and no longer share an answer. */
+  const eligAt = (i) => (run.full && E.FULL_SLOT_POS) ? E.FULL_SLOT_POS[i]
+    : E.SLOT_ELIGIBILITY[slots[i]];
+  const open = openSlots(run)
+    .sort((a, b) => eligAt(a).length - eligAt(b).length);
   const out = [];
-  for (const slot of open) {
+  for (const slotIdx of open) {
     let best = null;
-    for (const pos of E.SLOT_ELIGIBILITY[slot]) {
+    for (const pos of eligAt(slotIdx)) {
       for (const c of (lists[pos] || [])) {
         if (taken.has(c.id) || !reachable(c)) continue;
         if (best === null || c.price < best.price) best = c;
@@ -416,6 +487,28 @@ function createRun(opts) {
   }
   const capSurvivor = !!opts.capSurvivor;
   const tradeMachine = !!opts.tradeMachine;
+  /* THE DEFENSE DRAFT. Six spots like everything else, drawn from the defender pool, and
+     the only run whose roster decides what the OTHER team scores. */
+  const defense = !!opts.defense;
+  /* FULL TEAM. Twelve spots instead of six, alternating sides, drawn from BOTH pools out of
+     one shared cap. The only run whose roster decides what both teams score. */
+  const full = !!opts.full;
+  if (full && defense) throw new Error('a run is full team or defense, not both');
+  /*
+   * THE GAUNTLET IS THE OFFENSE DRAFT THAT KEEPS GOING. Six men, one pool, the same cap
+   * everybody starts with. What it adds is a calendar, a salary per man that never falls,
+   * an owner who wants more every autumn, and a score.
+   *
+   * IT USED TO SET `full`, and dropping that is most of what turned it into this mode. A
+   * twelve man alternating draft out of two pools carried a coach step, a shared cap, a
+   * two-sided chemistry split, a second data file to download before the first spin, and
+   * two ratings to explain, all of it in front of an idea that is one sentence long. Every
+   * one of those behaviours keys off `run.full` and nothing else, so this line is the whole
+   * conversion: with it false the mode inherits the shape of the draft everybody on this
+   * site already knows, and the calendar is the only thing new to learn.
+   */
+  const dynasty = !!opts.dynasty;
+  const startYear = dynasty ? (opts.startYear ?? null) : null;
   const seed = opts.seed ?? E.hashSeed(String(Math.random()));
   return {
     version: 1,
@@ -423,13 +516,68 @@ function createRun(opts) {
     era,
     capSurvivor,
     tradeMachine,
-    // The Trade Machine runs a second flex in place of the second receiver.
-    slots: tradeMachine ? TRADE_SLOTS.slice() : E.SLOTS.slice(),
+    defense,
+    full,
+    dynasty,
+    /*
+     * NO SHARED CALENDAR. Every man ages into his own next real season, so a roster is six
+     * clocks rather than one, and there is no single year for the run to be in.
+     *
+     * `startYear` is kept because the wheel accepts one and the other modes' era locks use
+     * the same door, but a dynasty leaves it null: it drafts off the ordinary wheel, out of
+     * every club in history, which is where the mode's best trick lives.
+     */
+    startYear,
+    leagueYear: startYear,
+    seasonNo: dynasty ? 1 : null,
+    /* EVERY REAL SEASON THIS RUN HAS EVER FIELDED, which is a fact only this mode can
+       report: six clocks over ten or fifteen seasons touch a wide spread of league
+       history. Recorded as it happens because the roster that played 2003 is long gone by
+       the time the run summary asks. */
+    eras: dynasty ? [] : null,
+    /* HOW MANY SEASONS BETWEEN STEPS UP IN THE TARGET. Flat inside a stretch so "beat this
+       season" is one rule and not a moving one; see E.dynastyWinBar. */
+    stepSeasons: dynasty ? (opts.stepSeasons || E.DYNASTY_STEP_SEASONS) : null,
+    /* WHAT EACH MAN IS PAID, index-aligned with roster, and the number the cap is spent
+       against. It is NOT p.price_musd: a salary is what he was signed for, and it does not
+       move again while he is yours, whichever way he goes. See E.dynastySalary. */
+    salaries: dynasty ? [] : null,
+    /* EVERY CUT THIS RUN HAS EVER MADE, as {musd, season}: a quarter of the deal, and the
+       season it was charged against. Kept as a list rather than a running total so expiry
+       is arithmetic and a resumed save cannot restore a number that has gone stale. See
+       E.dynastyDead. */
+    dead: dynasty ? [] : null,
+    /* Seasons on YOUR roster, by player id, which is what the continuity bonus counts. */
+    tenure: dynasty ? {} : null,
+    /* Every season played, oldest first: what the owner reads and what the run is scored
+       on. */
+    history: dynasty ? [] : null,
+    fired: false,
+    /* The winter's working state: who aged into what, and who is gone. Null outside the
+       offseason so a stale one cannot be painted. */
+    winter: null,
+    /* THE THIRTEENTH ASSET AND THE PLAN HE BRINGS. Null until the coach step, which runs
+       after the twelfth signing: a plan chosen before there is a roster to point it at is a
+       guess, and a coach hired before the money is spent is a different game. */
+    coach: null,
+    plan: full ? E.normalizePlan(null) : null,
+    // The Trade Machine runs a second flex in place of the second receiver; the defense
+    // draft runs its own six; full team runs twelve with the sides interleaved.
+    slots: (full ? E.FULL_SLOTS
+      : tradeMachine ? TRADE_SLOTS
+        : defense ? E.DEFENSE_SLOTS
+          : E.SLOTS).slice(),
     seed,
     rngCalls: 0,
     /* The ceiling for THIS run. Only GM mode moves it, and only downward, as cash goes out
-       the door in trades -- see capOf() and CONSTANTS.TRADE_CASH_*. */
-    capMusd: E.CONSTANTS.CAP_MUSD,
+       the door in trades -- see capOf() and CONSTANTS.TRADE_CASH_*.
+
+       FULL TEAM CARRIES ITS OWN, and it is one shared budget for all twelve rather than two
+       of anything. $170M is measured: simulator.js --fullteam puts optimal play there at
+       81.2% against offense mode's 80.7%. It is NOT double the six-man cap, because Full
+       Team removes the crutch each of the other two modes leans on and the men have to be
+       cheaper to pay for that. */
+    capMusd: full ? E.FULL_CAP_MUSD : E.CONSTANTS.CAP_MUSD,
     cashPaid: 0,
     cashReceived: 0,
     /* EVERYONE WHO HAS LEFT THIS ROSTER, traded or released, and they do not come back.
@@ -507,6 +655,74 @@ function openSlots(run) {
   return slotsOf(run).map((_, i) => i).filter((i) => !taken.has(i));
 }
 
+/*
+ * ─── THE ROSTER CAN SHUFFLE TO MAKE ROOM ────────────────────────────────────────────
+ *
+ * The trap this removes: your running back is sitting at FLEX, your RB spot is open, and
+ * the wheel offers a club with no back but a good receiver. He is unsignable, because the
+ * only open spot is RB and a receiver cannot play it. The spin is wasted, and the reason is
+ * bookkeeping rather than football: move the back you already have from FLEX to RB, and the
+ * receiver goes to FLEX. Any manager would do that without thinking about it.
+ *
+ * So a man is signable if there is ANY legal assignment of your roster plus him to the
+ * spots, not merely if one spot happens to fit him where everyone stands today. Six slots,
+ * so an exact backtrack costs nothing and there is no need for a heuristic.
+ *
+ * NOBODY MOVES WHO DOES NOT HAVE TO. Each man's own current spot is tried first, so the
+ * solver only reaches for a rearrangement when standing pat has no answer, and the shuffle
+ * you get is the smallest one that works.
+ *
+ * THE GAUNTLET ONLY, and that is a deliberate limit rather than an oversight. Offense,
+ * defense and Full Team have leaderboards with a hundred thousand runs on them, and widening
+ * what is signable makes every future draft easier than every past one. That is a fairness
+ * problem, not an improvement, and it is not mine to introduce quietly. The mode with no
+ * board yet is the one that can take it.
+ */
+function slotFits(run, player, i) {
+  const slots = slotsOf(run);
+  return (run.full && E.FULL_SLOT_POS && E.FULL_SLOT_POS[i])
+    ? E.FULL_SLOT_POS[i].some((pos) => E.positionsOf(player).includes(pos))
+    : E.fillsSlot(slots[i], player);
+}
+
+/**
+ * A whole-roster assignment including `player`, or null if none exists.
+ *
+ * Returns an array the length of roster+1, holding the slot index each man takes; the last
+ * entry is the newcomer's. Preference order does the work: an existing man is offered the
+ * spot he already has first, and the newcomer is offered a dedicated spot before a flex.
+ */
+function assignWith(run, player) {
+  const slots = slotsOf(run);
+  const men = run.roster.concat([player]);
+  const positions = E.positionsOf(player);
+  const cand = men.map((p, k) => {
+    const all = slots.map((_, i) => i).filter((i) => slotFits(run, p, i));
+    if (k < run.roster.length) {
+      /* His own spot first: standing still beats moving. */
+      const mine = run.slotIndex[k];
+      return [mine].concat(all.filter((i) => i !== mine));
+    }
+    /* The newcomer takes a spot of his own before he spends a flex on himself, which is the
+       same preference slotForPlayer has always had. */
+    const own = all.filter((i) => positions.includes(slots[i]));
+    return own.concat(all.filter((i) => own.indexOf(i) < 0));
+  });
+  const used = new Array(slots.length).fill(false);
+  const out = new Array(men.length).fill(-1);
+  const solve = (k) => {
+    if (k === men.length) return true;
+    for (const i of cand[k]) {
+      if (used[i]) continue;
+      used[i] = true; out[k] = i;
+      if (solve(k + 1)) return true;
+      used[i] = false; out[k] = -1;
+    }
+    return false;
+  };
+  return solve(0) ? out : null;
+}
+
 /** Which empty slot this player would fill, or null if none can take him. */
 function slotForPlayer(run, player) {
   const slots = slotsOf(run);
@@ -516,8 +732,74 @@ function slotForPlayer(run, player) {
   const positions = E.positionsOf(player);
   const dedicated = open.find((i) => positions.includes(slots[i]));
   if (dedicated !== undefined) return dedicated;
-  const flex = open.find((i) => E.fillsSlot(slots[i], player));
-  return flex === undefined ? null : flex;
+  /* THE FLEX FALLBACK IS SIDE-AWARE, and only Full Team has a side for it to get wrong.
+     E.fillsSlot resolves FLEX from the shared table, where it means all six skill and
+     defensive positions. In the two single-pool modes that is safe, because the pool is
+     what narrows it. Here both pools are live, and it let a defensive lineman fall into the
+     OFFENSIVE flex: a twelve man roster with seven defenders on it, six a side broken, and
+     every fillability question downstream answered against a slot the wheel would never
+     have offered him for.
+     This is the one function sign(), canFinishAfter(), blockFor() and someAffordable() all
+     reach through, so fixing it here fixes the arithmetic in all four. */
+  const fitsFlex = (i) => (run.full && E.FULL_SLOT_POS && E.FULL_SLOT_POS[i])
+    ? E.FULL_SLOT_POS[i].some((pos) => positions.includes(pos))
+    : E.fillsSlot(slots[i], player);
+  const flex = open.find(fitsFlex);
+  if (flex !== undefined) return flex;
+  /* NOTHING OPEN FITS HIM AS THE ROSTER STANDS. See assignWith: a shuffle may still have a
+     spot for him, and in The Gauntlet it is allowed to find one. */
+  if (run.dynasty) {
+    const plan = assignWith(run, player);
+    if (plan) return plan[plan.length - 1];
+  }
+  return null;
+}
+
+/*
+ * EVERY EMPTY SPOT THIS MAN COULD TAKE, one per distinct spot NAME, in slot order.
+ *
+ * slotForPlayer() answers "where does he go", which is the right question for a man who
+ * plays one position: his own spot if it is open, FLEX if it is not, and that ordering is
+ * strictly better for him than any other. It is the wrong question for a man who plays two.
+ * Cordarrelle Patterson is a running back and a receiver, and with both spots open the
+ * function above puts him at running back for no better reason than that RB comes before WR
+ * in the slot list -- and that is not a tidying detail, it decides which spots are left for
+ * the five picks after him. Taking him at receiver keeps the running back spot open. There
+ * is no default that is right there, so the caller has to be able to ask.
+ *
+ * ONE PER NAME. The slot list carries two WR spots, and offering "WR" twice is a choice
+ * between two identical things.
+ */
+function slotChoices(run, player) {
+  const slots = slotsOf(run);
+  /* SIDE-AWARE, AND DEDUPED ON THE ELIGIBILITY RATHER THAN THE NAME. Both halves of that
+     matter and only in Full Team.
+
+     fillsSlot resolves FLEX from the shared table, so it would offer a defensive lineman the
+     offensive flex. The dedupe is the sharper one: FULL_SLOTS holds TWO slots called FLEX,
+     one per side, and collapsing by name meant only the first of them was ever offered. A
+     defender whose only remaining home was the defensive flex got handed the offensive one
+     instead, sign() rejected the mismatch, and the draft died with "no empty spot for a LB"
+     while a legal spot for him sat open.
+
+     Keying on the eligibility list keeps the two apart: 'RB,WR,TE' and 'DL,LB,DB' are
+     different keys, while the two DL slots and the two WR slots still collapse to one
+     choice each, which is the behaviour every other mode has. */
+  const full = run.full && E.FULL_SLOT_POS;
+  const positions = full ? E.positionsOf(player) : null;
+  const seen = new Set();
+  const out = [];
+  for (const i of openSlots(run)) {
+    const elig = full ? E.FULL_SLOT_POS[i] : null;
+    const fits = full ? elig.some((x) => positions.includes(x))
+      : E.fillsSlot(slots[i], player);
+    if (!fits) continue;
+    const key = full ? elig.join(',') : slots[i];
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(i);
+  }
+  return out;
 }
 
 /** Names of the spots still to fill, for display. */
@@ -600,6 +882,17 @@ function drawable(run, data, limit) {
        a limit of two each, so the lock can never run the pool dry. */
     .filter((t) => !run.franchise || t.franchise === run.franchise)
     .filter((t) => { if (!run.era) return true; const r = E.ERAS[run.era]; return t.season >= r[0] && t.season <= r[1]; })
+    /*
+     * THE GAUNTLET DRAFTS OFF THE SAME WHEEL AS EVERYTHING ELSE, and it took a detour to
+     * get back here. There was a filter on this line locking the wheel to the run's league
+     * year, so a dynasty drafted out of one autumn and walked the whole roster forward
+     * together. That made the mode a tour of one season at a time and it cost the game its
+     * best trick: 2000 Faulk beside 2019 Lamar Jackson.
+     *
+     * The clock moved to the MAN instead. Every player ages into his own next real season,
+     * so a roster is six careers running at once out of six different decades, and the
+     * question at every draft is not only how good he is but how much of him is left.
+     */
     .filter((t) => (drawn[t.team_season_id] || 0) < (limit ?? TUNING.MAX_DRAWS_PER_TEAM_SEASON))
     .filter(canFill);
 }
@@ -618,7 +911,34 @@ function spin(run, data, constraint) {
   /* Attached on the first spin rather than at createRun(), which does not get the data.
      Before this point reserveFloor() has nothing to read and falls back to the flat
      constant, which is only ever the opening paint of an empty roster. */
-  run.floorLists ??= (data.cheapBy && (data.cheapBy[run.franchise || '*'] || null));
+
+  /* THE FLOOR HAS TO KNOW BOTH POOLS, and until now it only ever knew one.
+     assignedFloors reads run.floorLists to answer "what is the cheapest man who could fill
+     this open spot", and this line used to capture it once, from whichever data set spun
+     first. In every single-pool mode that is the whole pool and there is nothing to miss.
+     A FULL TEAM SPINS TWO. The first spin is the quarterback slot, so floorLists arrived
+     holding QB, RB, WR and TE and nothing else, and every DL, LB and DB spot came back as
+     "a spot nobody left can fill". assignedFloors then returns null for the whole roster
+     and the caller falls back to a flat $3M a slot, which UNDER-reserves: the draft happily
+     spends down to $12M with two spots open and then finds no club in the pool that can
+     fill them, which reads as the game breaking rather than as the money running out.
+     Full Team has survived it because its wheel can reach 800 team-seasons and something
+     cheap almost always turns up.
+     Merged rather than replaced, so each pool contributes the positions it knows and
+     neither overwrites the other.
+
+     THE GAUNTLET USED TO NEED ITS OWN BRANCH HERE, rebuilt every winter off the run's
+     league year, because its wheel was locked to one autumn and 32 clubs is few enough to
+     strand a draft inside twelve picks. The clock is per player now and the wheel is the
+     ordinary one, so it reaches the same 800 team-seasons as everything else and wants the
+     same table. One mode fewer with a private answer to a shared question. */
+  if (data.cheapBy) {
+    const src = data.cheapBy[run.franchise || '*'] || null;
+    if (src) {
+      if (!run.floorLists) run.floorLists = { ...src };
+      else for (const pos in src) if (!run.floorLists[pos]) run.floorLists[pos] = src[pos];
+    }
+  }
   const rng = rngFor(run);
 
   let available = drawable(run, data);
@@ -704,30 +1024,441 @@ function respin(run, data, kind) {
   return spin(run, data, constraint);
 }
 
-function sign(run, player) {
+/*
+ * `want` is an optional slot index, for the caller that asked. It is CHECKED and not
+ * trusted -- it has to be an empty spot this player can actually fill -- because it arrives
+ * from the client and a slot index is the one number here that decides what the rest of the
+ * draft may hold. Left out, the old rule applies and nothing about a one-position signing
+ * changes.
+ */
+function sign(run, player, want) {
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   if (!run.currentDraw) throw new Error('nothing drawn');
   if (!run.currentDraw.options.includes(pkey(player))) throw new Error('player not on this team');
   /* The same predicate the board uses, so a tile you can see is a tile you can take. */
   if (!canFinishAfter(run, player, run.currentDraw.team_season_id)) throw new Error('cannot afford');
-  const slot = slotForPlayer(run, player);
+  const slot = (want === undefined || want === null)
+    ? slotForPlayer(run, player)
+    : (slotChoices(run, player).indexOf(want) >= 0 ? want : null);
   if (slot === null) throw new Error('no empty spot for a ' + player.position);
+
+  /* THE SHUFFLE IS APPLIED HERE OR IT NEVER HAPPENS. slotForPlayer can only answer where the
+     newcomer goes; if that answer came out of a rearrangement, the men already on the roster
+     have to be moved to match, or two of them end up claiming one spot. */
+  if (run.dynasty && run.slotIndex.indexOf(slot) >= 0) {
+    const plan = assignWith(run, player);
+    if (!plan || plan[plan.length - 1] !== slot) {
+      throw new Error('no empty spot for a ' + player.position);
+    }
+    for (let k = 0; k < run.roster.length; k++) run.slotIndex[k] = plan[k];
+  }
 
   run.roster.push(player);
   run.slotIndex.push(slot);
+  /* HIS SALARY IS SET THE DAY HE SIGNS and never falls after it. usedPlayers keeps him out
+     of the pool for the rest of the dynasty even after a release, which is not tidiness:
+     without it the winter holds a free exploit, cut your declining $40M star and re-sign
+     the same man at the $32M he is now worth, which is the pay cut the ratchet exists to
+     forbid. blockFor already reads usedPlayers, so a release simply never removes him. */
+  if (run.dynasty) {
+    run.salaries.push(player.price_musd);
+    /* SEASONS ON YOUR ROSTER, COUNTED FROM THE DAY HE SIGNS. The field was declared with the
+       mode and never written, so every read of it fell back to 1 and it has been inert since
+       the day it was added. Nothing live read it, which is why nobody noticed: only the
+       simulator's continuity report did, and it was reporting a constant. The run summary
+       needs it for real, so it is kept for real. */
+    run.tenure[player.player_id] = 1;
+  }
   run.usedPlayers.push(player.player_id);
+  if (run.dynasty && run.eras && run.eras.indexOf(player.season) < 0) run.eras.push(player.season);
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   // Which team-season filled which spot. Needed for the post-run reveal, which
   // can only consider the team-seasons the wheel actually gave you.
   run.draws.push({ slot: slotsOf(run)[slot], team_season_id: run.currentDraw.team_season_id });
   run.currentDraw = null;
 
-  if (run.roster.length === E.SLOTS.length) run.phase = PHASES.SEASON;
+  /* A FULL RUN STOPS AT THE COACH, not at the season. Every other mode goes straight from
+     its last signing to the schedule; this one has a hire and a game plan in between, and
+     they are a phase rather than a screen so a reload mid-decision comes back to the same
+     place a reload mid-draft does. */
+  if (run.roster.length === slotsOf(run).length) {
+    /* THE GAUNTLET HIRES NOBODY, and that is measured rather than assumed. Over 300 runs
+       drafted the same way with and without one, the best coach the cap could reach was
+       worth 0.11 wins in season one (10.01 against 9.90), the same 82% clearing the bar,
+       and 3.27 seasons survived against 3.22. His fee buys back what he gives. That is a
+       screen, fifty tiles and a vocabulary of schemes, chemistry and game plans in front of
+       a mode whose idea is one sentence, for a tenth of a win, so it is gone. Full Team
+       keeps him: there the hire is the last decision of the draft rather than a toll booth
+       on the way to a decade. */
+    run.phase = (run.full && !run.coach) ? PHASES.COACH : PHASES.SEASON;
+  }
   return run;
+}
+
+/*
+ * WHO IS STILL AFFORDABLE, cheapest-worst to dearest-best. Called with the whole table so
+ * the caller decides how many to show; the money check is here because remaining() already
+ * knows about a coach and would otherwise be asked the question twice, differently.
+ */
+function coachMarket(run, table) {
+  if (!run || !run.full) return [];
+  const left = remaining(run);
+  return (table || []).filter((c) => c.price_musd <= left + 1e-9);
+}
+
+/** Hire, or hire nobody. Either is legal and going without is a real, cheap choice. */
+function hireCoach(run, coach) {
+  if (!run.full) throw new Error('not a full team run');
+  if (run.phase !== PHASES.COACH) throw new Error('not hiring');
+  if (coach) {
+    /* Checked against remaining() with any PREVIOUS hire already refunded, so changing your
+       mind between two coaches is not blocked by the one you have not confirmed. */
+    const had = (run.coach && run.coach.price_musd) || 0;
+    if (coach.price_musd > money(remaining(run) + had)) throw new Error('cannot afford him');
+  }
+  run.coach = coach || null;
+  /* HIS SCHEME COMES WITH HIM, always. It used to respect a plan the player had already
+     set, which sounds respectful and was the wrong model: it meant hiring the best coach in
+     the game and then overruling him, so his expertise was free and his scheme was
+     decoration. Hire a man and you play his way. Hire nobody and it is yours.
+     planTouched is cleared too, so hiring, changing your mind, and going without leaves the
+     plan editable again rather than stuck on the last coach's philosophy. */
+  run.plan = E.planFromCoach(coach);
+  run.planTouched = false;
+  /* A DECISION WAS MADE, and declining is one. Without this the screen could not tell
+     "has not chosen yet" from "chose nobody", so pressing No coach left the play button
+     hidden and the step with no way out of it. */
+  run.coachDecided = true;
+  return run;
+}
+
+/** Set one axis of the game plan. Marks the plan as chosen, so a later hire respects it. */
+function setPlan(run, plan) {
+  if (!run.full) throw new Error('not a full team run');
+  /* ONLY WHEN NOBODY IS COACHING. Checked here rather than only in the screen, because the
+     screen is not the authority on the rules: hideing the editor is presentation, and this
+     is what makes the scheme actually belong to the coach. */
+  if (run.coach) throw new Error(run.coach.name + ' calls the game plan');
+  run.plan = E.normalizePlan(plan);
+  run.planTouched = true;
+  return run;
+}
+
+/** Leave the coach step and play the season. */
+function finishHiring(run) {
+  if (run.phase !== PHASES.COACH) throw new Error('not hiring');
+  run.phase = PHASES.SEASON;
+  return run;
+}
+
+/*
+ * ─── THE GAUNTLET: THE WINTER, AND THE OWNER ───────────────────────────────────────
+ *
+ * Everything below runs between two seasons and nothing else in the game calls any of it.
+ * The order is fixed and each step is its own function so the screen can animate between
+ * them rather than repainting one lump:
+ *
+ *   beginOffseason   everybody ages into his own next year and every contract holds
+ *   releaseMan       you open money the only way there is
+ *   finishOffseason  the holes go back to the wheel, locked to the new league year
+ *
+ * And after the season, ownerVerdict says whether there is another one.
+ */
+
+/**
+ * Open the winter.
+ *
+ * `byKey` maps `player_id|season` to a row and has to cover BOTH pools, because a full team
+ * holds both. `lastSeason` is the newest year in the data, which is only used to tell a man
+ * who missed a season from one the pool has nothing more from: see E.dynastyGoneFor. Both
+ * are passed in rather than derived, because run.js is handed one indexed data set at a time
+ * and the page is the only thing holding both.
+ *
+ * Nothing is decided here. It ages the roster, works out what everybody now costs, and puts
+ * the result on run.winter for the screen to show and for releaseMan to act on.
+ */
+function beginOffseason(run, byKey, lastSeason) {
+  if (!run.dynasty) throw new Error('not a dynasty');
+  if (run.fired) throw new Error('you were fired');
+  if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
+
+  /*
+   * EVERY MAN HAS HIS OWN CLOCK, and that is the whole mode.
+   *
+   * This used to age the roster against a single LEAGUE YEAR: the run began in a season,
+   * the wheel was locked to it, and everybody moved forward together. It made the calendar
+   * the thing you were playing, and it had to solve a problem of its own making at the end
+   * of the data, where there was no next year for anybody.
+   *
+   * Now the season belongs to the player. Draft 2023 Burrow and 2019 Ochocinco off the
+   * normal wheel and next winter they are 2024 Burrow and 2020 Ochocinco: six careers
+   * running at once out of six different decades, each one a different distance from its
+   * own end.
+   *
+   * WHICH TURNS THE DRAFT INTO A SECOND QUESTION. A man drafted at his last season is gone
+   * the moment the offseason opens, and a twenty-two year old out of 2003 can be kept for
+   * two decades. How good he is and how much of him is left are now different things, and
+   * the wheel offers both.
+   *
+   * There is no wrap and no runway, because there is no shared calendar to run out.
+   */
+  const seasonYear = (man) => man.season + 1;
+  const kept = [], slots = [], sal = [], draws = [], aged = [], gone = [];
+  for (let i = 0; i < run.roster.length; i++) {
+    const man = run.roster[i];
+    const year = seasonYear(man);
+    const next = E.dynastyAge(man, byKey, year);
+    if (!next) {
+      /* NOT "RETIRED". A row for a later season means he missed this one; no row at all
+         means the pool has nothing more from him. Neither is retirement and neither is
+         claimed to be: the failure mode here is telling somebody a false thing about a
+         real person. */
+      gone.push({ was: man, salary: run.salaries[i],
+        why: E.dynastyGoneFor(man, byKey, year, lastSeason) });
+      continue;
+    }
+    /*
+     * HE SIGNED SOMEWHERE ELSE, SO HE IS GONE.
+     *
+     * The mode used to follow the man and not the club: he changed shirts, you kept him,
+     * and the row wore a SIGNED WITH DEN chip to explain why his badge had changed. That
+     * made the one thing a real roster cannot survive into a cosmetic note.
+     *
+     * It is a departure now, and it is the third way to lose a man beside retiring and
+     * running out of seasons. 19% of consecutive season pairs in this pool change club, so
+     * on six players it costs a little over one a year on top of the rest.
+     *
+     * SAFE TO CALL A MOVE. `franchise` is normalised to the modern club, so San Diego and
+     * Los Angeles are one code and a relocation cannot masquerade as a signing. Houston is
+     * the only code that does not span the pool and that is expansion, not a move.
+     */
+    if (next.franchise && man.franchise && next.franchise !== man.franchise) {
+      gone.push({ was: man, salary: run.salaries[i], why: 'signed', to: next.franchise });
+      continue;
+    }
+    const wasSal = run.salaries[i];
+    /* THE CONTRACT DOES NOT MOVE. He is on the deal he signed at the draft for as long as
+       you keep him, so this is wasSal every time. Kept as a call rather than an assignment
+       because the rule and the whole history of getting it wrong live at that function. */
+    const nowSal = E.dynastySalary(wasSal, next.price_musd);
+    kept.push(next); slots.push(run.slotIndex[i]); sal.push(nowSal);
+    if (run.eras && run.eras.indexOf(next.season) < 0) run.eras.push(next.season);
+    run.tenure[next.player_id] = (run.tenure[next.player_id] || 1) + 1;
+    draws.push(run.draws[i] || null);
+    aged.push({ was: man, now: next, wasSalary: wasSal, salary: nowSal,
+      /* WHAT THE MARKET SAYS HE IS WORTH, WHICH IS NOT WHAT YOU PAY HIM, and now that the
+         salary is frozen this is the only number on the row that moves. The gap between
+         the two is the state of your roster in one figure, and it runs BOTH ways: a man
+         who improved is cap you did not have to spend, and a man who did not is a bill. */
+      market: next.price_musd,
+      /* Always zero now. Kept so a save written under the ratchet still reads, and so the
+         screen has one place to ask rather than testing two numbers itself. */
+      raise: Math.round((nowSal - wasSal) * 10) / 10,
+      /* WHAT YOU PAY AGAINST WHAT HE IS WORTH, signed: positive is a bargain. */
+      edge: Math.round((next.price_musd - nowSal) * 10) / 10,
+      drop: Math.round((next.ppr_ppg_mean - man.ppr_ppg_mean) * 10) / 10 });
+  }
+
+  /*
+   * A WINTER CAN TAKE ALL SIX, AND THAT IS NOT A WAY TO LOSE.
+   *
+   * Somebody hit it and asked whether the run should end there. It should not. Retiring,
+   * running out of seasons and signing elsewhere are the three ways to lose a man and not
+   * one of them is a decision you made, so ending a run on it would be the only defeat in
+   * the mode that nobody earned. The one the mode promises is the one it keeps: eight wins
+   * or you are fired.
+   *
+   * AND IT IS NOT A DEATH SENTENCE EITHER, which was the other half of the worry. 120 runs,
+   * 30 seasons deep, departures only:
+   *
+   *   the winter took   share of winters   the season after: wins   cleared the bar
+   *     0 or 1 man            33%                  10.97                 81%
+   *     2 or 3                56%                  10.92                 81%
+   *     4 or 5                10%                  10.68                 79%
+   *     all six                0.1%                11.33                100% (of 3)
+   *
+   * Every season in that sample averages 10.92 and clears 81%, so a rebuilt roster is an
+   * ordinary roster. You get the whole cap back and a clean wheel, and under a locked
+   * contract that is worth roughly what the men you lost were worth.
+   *
+   * WHICH IS THE REAL FINDING AND IT IS NOT COMFORTABLE: losing people is close to free.
+   * Four or five departures cost a quarter of a win. If a departure is ever meant to hurt,
+   * that is the number to move, and it wants dead money or a spot you cannot fill until
+   * next season rather than anything here.
+   */
+  run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
+  run.seasonNo += 1;
+  /* THE CAP DOES NOT MOVE. It is $140M in season one and $140M in season thirty. Payroll
+     does not move either, now that a contract is locked, so what closes on you is not the
+     money: it is that the men you are paying get worse while the wheel keeps offering men
+     who are not. See DYNASTY_CAP_GROWTH, kept as a record of the six percent growth that
+     used to be here and why it went. */
+  /* A NEW SEASON'S WHEELS ARE FRESH. usedTeamSeasons is the two-draws-a-club rule inside
+     one draft; carrying it across a decade would starve the pool of clubs. usedPlayers is
+     NOT reset, because a man who has played for you never comes back. */
+  run.usedTeamSeasons = [];
+  run.respinsUsed = 0;
+  run.currentDraw = null;
+  run.season = null;
+  run.playoffSeed = null;
+  run.outcome = null;
+  /* `year` on the winter is the SEASON NUMBER now, not a league year: with six clocks
+     running there is no single year for the screen to name. */
+  run.winter = { year: run.seasonNo, aged, gone, released: [] };
+  run.phase = PHASES.OFFSEASON;
+  return run.winter;
+}
+
+/**
+ * Let a man go, by his index in the roster.
+ *
+ * His salary comes off the books whole and his spot opens. He does NOT return to the pool:
+ * usedPlayers still holds him, which is what stops the winter's one free exploit. See sign.
+ */
+function releaseMan(run, rosterIndex) {
+  if (run.phase !== PHASES.OFFSEASON) throw new Error('not the offseason');
+  const man = run.roster[rosterIndex];
+  if (!man) throw new Error('nobody there');
+  const salary = run.salaries[rosterIndex];
+  /*
+   * THREE QUARTERS BACK, AND THE LAST QUARTER STAYS DEAD.
+   *
+   * A man who leaves on his own costs you nothing and a man you cut costs you a quarter of
+   * his deal, for the rest of the run. The asymmetry is the rule: one of those was your
+   * decision. See E.DYNASTY_DEAD_SHARE for what it is worth and what it was measured at.
+   *
+   * CHARGED AGAINST run.seasonNo, WHICH IS THE SEASON ABOUT TO BE PLAYED. beginOffseason
+   * has already advanced it by the time anybody can press a cut button, so a release made
+   * in this winter is a charge against next season and not the one just finished.
+   */
+  const dead = Math.round(salary * E.DYNASTY_DEAD_SHARE * 10) / 10;
+  run.roster.splice(rosterIndex, 1);
+  run.slotIndex.splice(rosterIndex, 1);
+  run.salaries.splice(rosterIndex, 1);
+  run.draws.splice(rosterIndex, 1);
+  if (!run.dead) run.dead = [];
+  if (dead > 0) run.dead.push({ musd: dead, season: run.seasonNo });
+  run.winter.released.push({ was: man, salary, dead });
+  run.winter.aged = run.winter.aged.filter((a) => a.now !== man);
+  return run;
+}
+
+/**
+ * TAKE THE FIELD SHORT-HANDED, which is a legal way to finish a dynasty draft and the one
+ * place this mode needs an exit the others do not.
+ *
+ * The cap is a signing gate. Come out of a winter with a roster that appreciated past it
+ * and there is no money, so the wheel has nothing to offer and the holes stay open. That is
+ * the rule working rather than the game breaking, and the run has to be able to continue:
+ * eleven good men beat twelve poor ones often enough to be worth trying, and the alternative
+ * is a player trapped on a draft screen that can never be finished.
+ *
+ * BOTH SIDES OF THE BALL STILL HAVE TO EXIST. resolveGameFull splits the roster and reads
+ * each half on its own; an empty one is not a team playing badly, it is arithmetic with
+ * nothing in it.
+ */
+function takeTheField(run) {
+  if (!run.dynasty) throw new Error('only a dynasty may field a short roster');
+  if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
+  /* ONE MAN IS A TEAM'S WORTH OF MINIMUM. This asked for somebody on both sides of the
+     ball, which was right while The Gauntlet drafted twelve out of two pools and is now a
+     rule about a shape the mode does not have. */
+  if (!run.roster.length) throw new Error('a team needs somebody in it');
+  run.currentDraw = null;
+  /* Straight to the schedule. This read `run.coach ? SEASON : COACH`, which was right while
+     The Gauntlet had a coach step and would now send a short-handed team to a screen the
+     mode no longer has. */
+  run.phase = PHASES.SEASON;
+  return run;
+}
+
+/** Is there anything left the wheel could give you? What the short-handed exit reads. */
+function wheelIsDry(run, data) {
+  if (run.roster.length >= slotsOf(run).length) return false;
+  try { return drawable(run, data).length === 0; } catch (_) { return true; }
+}
+
+/** Back to the wheel for whatever is open, at the new league year. */
+function finishOffseason(run) {
+  if (run.phase !== PHASES.OFFSEASON) throw new Error('not the offseason');
+  /* A ROSTER THAT IS SOMEHOW STILL FULL SKIPS THE DRAFT ENTIRELY, which happens when
+     nobody aged out and nobody was released. There is no wheel to spin, so the winter
+     ends at the schedule rather than on a draft screen with nothing to draft. */
+  run.phase = run.roster.length === slotsOf(run).length ? PHASES.SEASON : PHASES.DRAFT;
+  return run;
+}
+
+/**
+ * What the owner wants this season, and whether he got it.
+ *
+ * Called after finish(). It writes the season into run.history, which is what the run is
+ * scored on, and sets run.fired. A fired run stays on OVER and is terminal; a surviving one
+ * can open another winter.
+ */
+function ownerVerdict(run) {
+  if (!run.dynasty) return null;
+  if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
+  const o = run.outcome || {};
+  const wins = o.regularWins ?? 0;
+  const bar = E.dynastyWinBar(run.seasonNo, run.stepSeasons);
+  /* PUSHED ONLY ONCE PER SEASON. This is reachable from a screen and from a reload, and a
+     history with the same year twice would fire somebody for a season they played one
+     time. */
+  /* KEYED ON THE SEASON NUMBER, not a league year. There is no league year any more, and
+     the guard is the same one: this is reachable from a screen and from a reload, and a
+     history with the same season twice would score somebody for a year they played once. */
+  if (!run.history.length
+      || run.history[run.history.length - 1].seasonNo !== run.seasonNo) {
+    /* PLAYOFF WINS ARE THE DIFFERENCE, not a count kept anywhere. outcome.wins runs through
+       January and regularWins is the snapshot taken at the end of week seventeen, so the gap
+       between them is exactly the games won after it. */
+    const scored = E.gauntletSeasonScore({
+      seasonNo: run.seasonNo, wins, bar,
+      playoffWins: Math.max(0, (o.wins ?? wins) - wins),
+      titleWon: !!o.titleWon,
+      undefeatedRegular: !!o.undefeatedRegular,
+      perfect: !!o.perfect,
+    });
+    run.history.push({
+      /* `year` is the season number: the ledger lists seasons, and a roster out of six
+         decades has no one year to file itself under. */
+      year: run.seasonNo, seasonNo: run.seasonNo,
+      wins, losses: 17 - wins, bar, cleared: wins >= bar,
+      made: !!o.madePlayoffs, title: !!o.titleWon,
+      rating: o.teamRating ?? null,
+      /* The score, and the parts it was made of, banked with the season. Kept on the row
+         rather than recomputed, so a ledger drawn a decade later still adds up to the total
+         that was shown at the time even if the table above it ever moves. */
+      score: scored.total, scoreBase: scored.base, scoreMult: scored.mult,
+      scoreParts: scored.parts,
+    });
+  }
+  run.fired = !E.dynastySurvives(run.history, run.stepSeasons);
+  run.score = E.gauntletRunScore(run.history);
+  return {
+    bar, wins, cleared: wins >= bar, fired: run.fired,
+    seasons: run.history.length,
+    /* The season just scored and the run so far, so the screen never adds anything up
+       itself. */
+    season: run.history[run.history.length - 1],
+    score: run.score,
+    /* WHY he is keeping you, which is worth saying out loud on the screen: a season below
+       the bar that survives only because last year cleared it is a warning, not a pass. */
+    onNotice: !run.fired && wins < bar,
+  };
+}
+
+/** Seasons survived, which is the only number this mode is ranked on. */
+function seasonsSurvived(run) {
+  return (run && run.history) ? run.history.length : 0;
 }
 
 /** Build the schedule. Deliberately after the draft, per §7. */
 function startSeason(run, data, ctx) {
+  /* COACH is a legal predecessor for a full run: the screen calls finishHiring first, but a
+     saved run reloaded on the season screen has to be able to start without going back
+     through a decision it already made. */
+  if (run.phase === PHASES.COACH && run.full) run.phase = PHASES.SEASON;
   if (run.phase !== PHASES.SEASON) throw new Error('draft not finished');
   const rng = rngFor(run);
   const chem = E.resolveChemistry(run.roster, ctx, chemOpts(run));
@@ -742,6 +1473,11 @@ function startSeason(run, data, ctx) {
   run.playoffs = E.generatePlayoffs(data.prepared, rng, poOpts).map((g) => g.team_season_id);
   run.season = {
     chemistry: chem.multiplier,
+    /* FULL TEAM CARRIES BOTH SIDES, because it plays with both and one figure cannot stand
+       in for two. Absent in every other mode, and seasonChem falls back to the single
+       number, so a run saved before this existed still resolves. */
+    chemistryOff: typeof chem.offMultiplier === 'number' ? chem.offMultiplier : null,
+    chemistryDef: typeof chem.defMultiplier === 'number' ? chem.defMultiplier : null,
     chemistryLinks: chem.links,
     week: 0,
     playoffRound: 0,
@@ -788,7 +1524,22 @@ function advanceWeek(run, data, leagueContext, displayCal) {
     ? homeField(run, s.regularWins, isFinal)
     : E.weeklyEdgeVs(liveRating(run), opp);
   const gameSlots = slotsOf(run);
-  const r = E.resolveGame(run.roster, s.chemistry, opp, leagueContext[opp.season] ?? 21.5, rng, E.CONSTANTS, advantage);
+  /* THE DEFENSE DRAFT PLAYS THE MIRROR GAME. Same opponent, same advantage, same league
+     context: what changes is which side of the scoreboard the roster is attached to. */
+  /* FULL TEAM PLAYS BOTH HALVES: its roster decides what you score AND what they score.
+     Picked by name rather than by nested ternary, because there are three of these now. */
+  const resolver = run.full ? E.resolveGameFull
+    : run.defense ? E.resolveGameDefense
+      : E.resolveGame;
+  /* THE COACH AND THE GAME PLAN HAVE TO REACH THE GAME. They were being left off this call,
+     so a mode built around hiring a coach and setting a scheme played every one of its
+     seventeen weeks with neither: the screens worked, the rating moved, and the season was
+     decided by a neutral plan and no coach at all. Nothing failed, which is why it survived.
+     Passed only for full runs, because resolveGame and resolveGameDefense have no eighth
+     argument and handing them one would be the next version of this bug. */
+  const r = resolver(run.roster, seasonChem(run), opp, leagueContext[opp.season] ?? 21.5,
+    rng, E.CONSTANTS, advantage,
+    run.full ? { coach: run.coach || null, plan: run.plan || null } : null);
   const shown = displayCal ? E.toFootballScore(r.yourScore, r.oppScore, r.won, rng, displayCal) : null;
 
   const roundName = playoff ? run.playoffSeed.roundNames[s.playoffRound] : null;
@@ -808,6 +1559,11 @@ function advanceWeek(run, data, leagueContext, displayCal) {
        Machine, so a box score has to remember who was actually on the field that week
        rather than reading today's roster. Each man's season average rides along so the
        box score can show who beat his number and who did not. */
+    /* THE PRODUCTION MIX RIDES ALONG TOO, because who scored the touchdown is drawn from
+       what kind of player a man is and the box score is the only snapshot of the lineup
+       that played. Three small numbers a man a week, and they mean different things either
+       side of the ball: passing, rushing and receiving on offense, pass rush, coverage and
+       tackling on a defense. E.touchdownCredits and E.takeawayScript read them. */
     lines: r.lines ? run.roster.map((p, i) => ({
       slot: gameSlots[run.slotIndex[i]],
       pos: p.position,
@@ -816,6 +1572,17 @@ function advanceWeek(run, data, leagueContext, displayCal) {
       franchise: p.franchise,
       pts: Math.round(r.lines[i] * 10) / 10,
       avg: Math.round(p.ppr_ppg_mean * 10) / 10,
+      /* WHICH THREE NUMBERS A MAN CARRIES IS A FACT ABOUT HIM, NOT ABOUT THE MODE, and in
+         Full Team the same box score holds both kinds. Read off his own position, which is
+         what run.defense was standing in for in a mode where every man was a defender. */
+      ...(E.DEFENSE_POSITIONS.indexOf(p.position) >= 0
+        ? { rush: p.rush_ppg || 0, cover: p.cover_ppg || 0, tackle: p.tackle_ppg || 0 }
+        : { pass: p.pass_ppg || 0, rush: p.rush_ppg || 0, rec: p.rec_ppg || 0 }),
+      /* Which half of the scoreboard this line belongs to. An offensive line is points and
+         the offensive lines sum to the score; a defensive line is a share of the
+         suppression effort and sums to the defensive total. Same column, two meanings, and
+         a results screen that prints them together has to be able to tell them apart. */
+      side: E.DEFENSE_POSITIONS.indexOf(p.position) >= 0 ? 'def' : 'off',
     })) : null,
     defMod: Math.round((r.defenseModifier || 1) * 1000) / 1000,
   };
@@ -878,7 +1645,16 @@ function advanceWeek(run, data, leagueContext, displayCal) {
  */
 function homeField(run, regularWins, isFinal) {
   const C = E.CONSTANTS;
-  if (isFinal && !run.tradeMachine) return E.finalEdge(liveRating(run));
+  if (isFinal && !run.tradeMachine) {
+    /* THE RING GETS NEARER ONCE THE PERFECT SEASON IS GONE, and nearest for the rosters
+       that should already have been winning it. Nothing at all while the run is still
+       unbeaten, so the hardest thing in the game stays the hardest thing in the game and
+       a loss can never be worth taking on purpose. */
+    const rating = liveRating(run);
+    const s2 = run.season || {};
+    const losses = Math.max(0, (s2.losses || 0));
+    return E.finalEdge(rating) + E.finalRecordEase(losses, rating);
+  }
   let k = C.PLAYOFF_HOME_FIELD || 0;
   if (isFinal) k *= C.GM_FINAL_HOME_FIELD || 0;
   if (!k) return 1;
@@ -901,8 +1677,32 @@ function homeField(run, regularWins, isFinal) {
 function liveRating(run) {
   const s = run && run.season;
   if (!s || !run.roster || !run.roster.length) return 0;
-  const pts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
-  return pts * (s.chemistry || 1) * E.rosterStructure(run.roster).multiplier;
+  /* A DEFENSE IS READ BY ITS OWN STRUCTURE AND PUT ON THE OFFENSE'S SCALE, which is the
+     whole of what overallOf does. rosterStructure is an offensive reading that returns
+     about 0.57 for any six defenders, so it cannot be used here; but dropping it and
+     returning the raw product was only half a fix, because everything downstream of this
+     number, weeklyEdgeVs and seedFromRecord and playoffShare and homeField, is calibrated
+     on a range a defensive product cannot reach. A top defense was seeded as a bottom
+     team all the way through the back half of the season. */
+  return E.overallOf(run.roster, seasonChem(run), run.full ? 'full' : !!run.defense, run.coach);
+}
+
+/*
+ * The season's chemistry, in the shape the mode needs it.
+ *
+ * Full Team resolves two multipliers, one per unit, and everything else resolves one. This
+ * hands the engine whichever the run actually has: the object for a full run that stored
+ * both, the plain number otherwise. A full run saved before the split existed has only the
+ * one number, and returning it is exactly right for that run, since it was played that way.
+ */
+function seasonChem(run) {
+  const s = run && run.season;
+  if (!s) return 1;
+  if (run.full && typeof s.chemistryOff === 'number' && typeof s.chemistryDef === 'number') {
+    return { multiplier: s.chemistry || 1,
+      offMultiplier: s.chemistryOff, defMultiplier: s.chemistryDef };
+  }
+  return s.chemistry || 1;
 }
 
 /** Leave SEEDING and start the playoffs. */
@@ -982,6 +1782,7 @@ function capSign(run, player) {
   run.roster.push(player);
   run.slotIndex.push(slot);
   run.usedPlayers.push(player.player_id);
+  if (run.dynasty && run.eras && run.eras.indexOf(player.season) < 0) run.eras.push(player.season);
   run.usedTeamSeasons.push(run.currentDraw.team_season_id);
   run.currentDraw = null;
   return run;
@@ -1005,7 +1806,7 @@ function autoDraftTrade(run, data, ctx) {
     // The RNG is NOT rewound between attempts, so each retry draws a genuinely
     // different roster while the whole sequence stays a pure function of the seed.
     run.phase = PHASES.DRAFT;
-    for (let pick = 0; pick < E.SLOTS.length; pick++) {
+    for (let pick = 0; pick < slotsOf(run).length; pick++) {
       spin(run, data);
       const rng = rngFor(run);
       const opts = run.currentDraw.options;
@@ -2287,6 +3088,7 @@ function signFreeAgent(run, player, ctx) {
   run.roster.push(player);
   run.slotIndex.push(pending.slotIndex);
   run.usedPlayers.push(player.player_id);
+  if (run.dynasty && run.eras && run.eras.indexOf(player.season) < 0) run.eras.push(player.season);
   run.pendingFreeAgency = null;
   /* Hung on the trade that opened the hole rather than logged as a move of its own. A
      pending signing only ever follows a two-for-one, whose printed line already ends
@@ -2565,10 +3367,25 @@ function indexData(players, teamSeasons) {
  * you have already signed. The UI says so rather than implying otherwise.
  */
 function bestPossibleSquad(run, data, ctx) {
+  /* NOT ANSWERED FOR FULL TEAM, deliberately, and null is a shape every caller already
+     handles because the drawn pool can fail to fill a slot.
+     The objective below is a single scalar: points times chemistry times ONE reading of
+     roster shape. That works when every man reaches the scoreboard through the same term.
+     In Full Team six of them reach it through rosterStructure and six through
+     defenseSuppression, which is steep and saturating, so no weighted sum of the two is
+     the thing the season actually rewards. The harness had to solve this as a budget SPLIT
+     rather than a knapsack for exactly this reason (see simulator.js --fullteam), and that
+     does not fit in this DP.
+     Saying nothing is the honest answer. A "best possible" panel that ranked twelve men by
+     an offensive reading would tell somebody their defense was the problem when it was not. */
+  if (run.full) return null;
   const BUCKET = 0.5;
   const budget = capOf(run) - E.respinFees(run.respinsUsed);
   const NB = Math.round(budget / BUCKET) + 1;
-  const nSlots = E.SLOTS.length;
+  /* The bitmask below is one bit per slot, so this has to be the RUN's slot count and not
+     the module's. At twelve slots a hardcoded six would mask off half the roster and the
+     "best possible" panel would quietly rate a six-man subset of a twelve-man team. */
+  const nSlots = slotsOf(run).length;
   const FULL = (1 << nSlots) - 1;
 
   // Everyone available from each drawn team, at any position.
@@ -2695,9 +3512,13 @@ function bestPossibleSquad(run, data, ctx) {
   const score = (arr) => {
     const spend = arr.reduce((t, p) => t + p.price_musd, 0);
     if (spend > budget + 1e-9) return -1;
+    /* SAME READING THE SEASON USES, on either side of the ball. rosterStructure on six
+       defenders is a near-constant 0.57 that knows nothing about the schemes, so on a
+       One Stop run this was ranking candidates by points and chemistry alone and calling
+       the result the best possible team. */
     return arr.reduce((t, p) => t + p.ppr_ppg_mean, 0)
       * E.resolveChemistry(arr, ctx, chemOpts(run)).multiplier
-      * E.rosterStructure(arr).multiplier;
+      * (run.defense ? E.defenseStructure(arr) : E.rosterStructure(arr)).multiplier;
   };
   const climb = (start, ofSlot) => {
     let cur = start.slice(), curScore = score(cur);
@@ -2736,6 +3557,9 @@ function bestPossibleSquad(run, data, ctx) {
 
   const chem = E.resolveChemistry(best, ctx, chemOpts(run));
   const yourPts = run.roster.reduce((t, p) => t + p.ppr_ppg_mean, 0);
+  /* One reading of a roster's shape for this whole answer, picked by the side of the ball,
+     so the two halves of the comparison cannot be measured differently from each other. */
+  const struct = (arr) => (run.defense ? E.defenseStructure(arr) : E.rosterStructure(arr));
 
   return {
     squad: best,
@@ -2745,11 +3569,11 @@ function bestPossibleSquad(run, data, ctx) {
     spend: best.reduce((t, p) => t + p.price_musd, 0),
     yourSpend: run.roster.reduce((t, p) => t + p.price_musd, 0),
     yourChemistry: run.season.chemistry,
-    yourStructure: E.rosterStructure(run.roster).multiplier,
-    bestStructure: E.rosterStructure(best).multiplier,
+    yourStructure: struct(run.roster).multiplier,
+    bestStructure: struct(best).multiplier,
     // Both sides measured the same way, so the ratio between them is the honest
     // answer to "how close was I", and cannot come out above 100%.
-    yourProjected: yourPts * run.season.chemistry * E.rosterStructure(run.roster).multiplier,
+    yourProjected: yourPts * run.season.chemistry * struct(run.roster).multiplier,
     bestProjected: bestScore,
     /* One row per spot, so it always says who replaces whom. */
     lineup: bpSlots.map((slot, s) => {
@@ -2779,21 +3603,43 @@ function bestPossibleSquad(run, data, ctx) {
  * results page, and separately from the season you actually played so this does
  * not just re-report the same luck.
  */
-function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400) {
+function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400, displayCal = null) {
   const schedule = run.schedule.map((id) => data.byTeamSeasonId[id]);
   const playoffs = run.playoffs.map((id) => data.byTeamSeasonId[id]);
   const wins = [];
   let madePlayoffs = 0, titles = 0, perfect = 0, bye = 0;
+  /* THE SCOREBOARD, ON ITS OWN STREAM.
+   *
+   * A rating says how good the six are; this says what they did to the scoreboard, which is
+   * the thing the mode is actually about on a defense and the thing anybody would ask about
+   * on an offense. Averaged over every game of every trial, so it is the season this roster
+   * typically plays rather than the one it happened to play.
+   *
+   * toFootballScore is what turns the engine's continuous score into a scoreline the NFL has
+   * really produced, and it DRAWS FROM THE RNG. Drawing from the season's own stream here
+   * would consume values the next game depends on and silently rewrite every later week, so
+   * this gets a second seeded stream of its own. Same reason the file's own suite asserts
+   * that both paths through that function draw exactly one value.
+   */
+  const srng = displayCal ? E.createSeededRNG(E.hashSeed(`projscore|${run.seed}`)) : null;
+  let ptsFor = 0, ptsAgainst = 0, scored = 0;
 
   for (let i = 0; i < trials; i++) {
     const rng = E.createSeededRNG(E.hashSeed(`project|${run.seed}|${i}`));
     const out = E.playRun(roster, chemistry, schedule, playoffs, leagueContext, rng,
-      E.CONSTANTS, { gm: !!run.tradeMachine });
+      E.CONSTANTS, { gm: !!run.tradeMachine, defense: !!run.defense, full: !!run.full,
+        coach: run.coach, plan: run.plan });
     wins.push(out.regularWins);
     if (out.seed.made) madePlayoffs++;
     if (out.seed.bye) bye++;
     if (out.titleWon) titles++;
     if (out.perfect) perfect++;
+    for (const r of out.results) {
+      const shown = srng ? E.toFootballScore(r.yourScore, r.oppScore, r.won, srng, displayCal) : null;
+      ptsFor += shown ? shown.you : r.yourScore;
+      ptsAgainst += shown ? shown.them : r.oppScore;
+      scored++;
+    }
   }
   wins.sort((a, b) => a - b);
   const games = E.CONSTANTS.REGULAR_SEASON_GAMES;
@@ -2804,6 +3650,10 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
     meanWins: wins.reduce((a, b) => a + b, 0) / trials,
     bestWins: wins[trials - 1],
     worstWins: wins[0],
+    /* Per game across every trial, playoffs included, which is what the season stats tab
+       averages over so the two cannot disagree about the same season. */
+    pointsFor: scored ? ptsFor / scored : 0,
+    pointsAgainst: scored ? ptsAgainst / scored : 0,
     playoffRate: madePlayoffs / trials,
     byeRate: bye / trials,
     titleRate: titles / trials,
@@ -2821,7 +3671,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 37;
+const RUN_API_VERSION = 43;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
@@ -2830,13 +3680,21 @@ const api = {
   previewSigning,
   remaining, reserveFloor, spendable, canRespin, slotsLeft, affordableFrom,
   boardFrom, blockFor, BLOCK, drawable,
-  openSlots, openSlotNames, slotForPlayer, TUNING,
+  openSlots, openSlotNames, slotForPlayer, slotChoices, TUNING,
   inflateCap, capCut, capSpin, capSign,
   autoDraftTrade, isTradeWindow, inflateContracts, findOffers, previewTrade, rosterRating,
   pushBack,
   TRADE_WEEKS, TRADE_DEADLINE_WEEK, CONTRACT_INFLATION,
   generateFreeAgents, acceptTrade, signFreeAgent, computeGMRating, capMark, FA_TYPICAL_MUSD,
   cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
+  /* Full Team's coach step. */
+  coachMarket, hireCoach, setPlan, finishHiring,
+  /* The Gauntlet's winter and its owner. */
+  beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived, deadOf,
+  takeTheField, wheelIsDry,
+  /* Exported because the PAGE has to rate the live team with the same chemistry the season
+     is playing with, and in Full Team that is two figures rather than one. */
+  seasonChem,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = api;

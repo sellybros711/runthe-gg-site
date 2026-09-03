@@ -49,7 +49,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <!-- Primary Meta Tags -->
-<title>RunThePitch — Free World Cup Simulation Game</title>
+<title>RunThePitch: Free World Cup Simulation Game</title>
 <meta name="title" content="RunThePitch: World Cup Game" />
 <meta name="description" content="RunThePitch is a free World Cup simulation game. Spin a nation and year, draft a squad of legends, and simulate your run to the trophy. Play solo, online 1v1, or in a 48-player pool - no download." />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
@@ -3233,7 +3233,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 window.GA_ID='G-L29P5MRWKE';
 (function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
   window.dataLayer=window.dataLayer||[]; window.gtag=function(){dataLayer.push(arguments);};
-  gtag('js',new Date()); gtag('config',id);
+  gtag('js',new Date()); gtag('set',{game_name:'Run The Pitch'}); gtag('config',id);
   var s=document.createElement('script'); s.async=true;
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
@@ -4284,7 +4284,8 @@ window.GA_ID='G-L29P5MRWKE';
       <button id="btn-feedback-foot" type="button" class="footer-btn fb-footer"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Feedback</button>
     </div>
     <div class="x-follow"><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b> on X for News and Updates</a></div>
-    <a href="/">Home</a><span class="sep">·</span><a href="/soccer/how-to-play.html">How to play</a><span class="sep">·</span><a href="/soccer/about.html">About</a><span class="sep">·</span><a href="/soccer/privacy.html">Privacy</a><span class="sep">·</span><a href="/terms.html">Terms</a><span class="sep">·</span><a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span><a href="/soccer/contact.html">Contact</a>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0;"><span style="font-size:12px;opacity:.72;">Free to play, funded by players.</span><a href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi" style="display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:12.5px;line-height:1;color:#fff;background:linear-gradient(180deg,#ff7a6b,#ec4863);border-radius:999px;padding:9px 16px;text-decoration:none;box-shadow:0 8px 18px -10px rgba(236,72,99,.85);white-space:nowrap;">&#9829; Support us</a></div>
+      <a href="/">Home</a><span class="sep">·</span><a href="/soccer/how-to-play.html">How to play</a><span class="sep">·</span><a href="/soccer/about.html">About</a><span class="sep">·</span><a href="/soccer/privacy.html">Privacy</a><span class="sep">·</span><a href="/terms.html">Terms</a><span class="sep">·</span><a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span><a href="/soccer/contact.html">Contact</a>
   </footer>
 
 </div>
@@ -9845,7 +9846,7 @@ $('roster-close').addEventListener('click', closeRosterUpdates);
 $('roster-bg').addEventListener('click', e=>{ if(e.target===$('roster-bg')) closeRosterUpdates(); });
 
 // ---------- rating feedback form ----------
-const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
+const RATING_FEEDBACK_EMAIL='RunTheGames@outlook.com';
 // Paste your Formspree form endpoint here (Formspree → your form → it looks like
 // https://formspree.io/f/abcdwxyz). When set, submissions are emailed silently
 // to the address on that form; until then it falls back to opening the mail app.
@@ -15036,6 +15037,7 @@ boot().then(async ()=>{
     <a href="/soccer/privacy.html">Privacy</a><span class="sep">·</span>
     <a href="/terms.html">Terms</a><span class="sep">·</span>
     <a href="/disclaimer.html">Disclaimer</a><span class="sep">·</span>
+    <a href="/ideas/#soccer">Ideas</a><span class="sep">·</span>
     <a href="/soccer/contact.html">Contact</a>
   </div>
 </footer>

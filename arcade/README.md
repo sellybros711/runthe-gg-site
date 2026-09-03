@@ -11,7 +11,7 @@ homepage — same as `/touchdown/` while it's in development.
 ```
 /arcade/
   index.html            RunTheGrid hub — lists the day's puzzles
-  match/                 Daily Match (live)
+  match/                 Common Ground (live)
     index.html          the whole game UI, self-contained
     entities.js         tagged entity database — the real content source
     generator.js        seeded RNG + inverted-index generator + uniqueness solver
@@ -25,16 +25,17 @@ homepage — same as `/touchdown/` while it's in development.
 
 | Puzzle | Path | Status |
 |---|---|---|
-| **Daily Match** | `/arcade/match/` | Playable prototype |
+| **Common Ground** | `/arcade/match/` | Playable prototype |
 | **Daily Crossword** | `/arcade/crossword/` | Planned |
 
-Coins are a shared RunTheGrid wallet (`runthegrid_coins`); each game keeps its
-own streak (`grid_match_streak`, etc.). In the prototype these live in
-localStorage; the real build reads the shared RunThe.GG account.
+There is no coin economy — the arcade is about building the longest daily
+streak (NYT-style). Each game keeps its own streak (`grid_match_streak`, etc.);
+in the prototype these live in localStorage, and the real build reads the
+shared RunThe.GG account.
 
 ---
 
-## Daily Match — "The Draft Board"
+## Common Ground: "The Draft Board"
 
 Sort 25 sports names into five hidden categories of five. A lane only checks
 when it's full, so you can stage guesses freely; a wrong lane costs a miss and

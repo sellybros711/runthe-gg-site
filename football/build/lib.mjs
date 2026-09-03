@@ -248,3 +248,27 @@ export function writePair(basename, rows, columns, csvRows, csvColumns) {
   fs.writeFileSync(csv, toCSV(csvRows ?? rows, csvColumns ?? columns));
   return { json, csv, bytes: fs.statSync(json).size };
 }
+
+/*
+ * HOW OLD HE WAS THAT SEASON.
+ *
+ * Age on 31 December of the season year, which is the convention
+ * Pro-Football-Reference uses and therefore the number anybody checking this
+ * against another source will have in front of them. A season runs September to
+ * February, so no single date is unarguable; what matters is that it is stated
+ * and applied the same way to all 26,000 rows.
+ *
+ * Returns null rather than guessing when there is no birth date, because a wrong
+ * age is a false claim about a real person and a blank is only a gap.
+ */
+export function seasonAge(birthDate, season) {
+  if (!birthDate || !season) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(birthDate));
+  if (!m) return null;
+  const y = Number(m[1]);
+  if (!y || y < 1900 || y > season) return null;
+  const age = season - y;
+  /* Nobody has played a down at 15 or at 55. A row outside that is a bad birth
+     date rather than a remarkable career, and it is dropped instead of shown. */
+  return age >= 16 && age <= 50 ? age : null;
+}

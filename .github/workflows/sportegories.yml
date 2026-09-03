@@ -1,0 +1,56 @@
+name: Rebuild Sportegories corpus
+on:
+  schedule:
+    - cron: '30 12 * * *'   # daily, after the roster/former refreshes have landed
+  workflow_dispatch: {}
+permissions:
+  contents: write
+
+# arcade/sportegories-data.js is DERIVED from rosters.js, former.js, awards.js
+# and the stats files. Those each refresh on their own schedule, and until this
+# job existed nothing rebuilt the corpus afterwards, so a rookie could sign on
+# Monday, land in rosters.js, and still be unknown to the game months later.
+#
+# This is deliberately a job of its own rather than a step bolted onto each
+# refresh. Those workflows push to main and recover from races by rebasing,
+# which only stays clean because no two of them write the same file. One writer
+# for the generated file keeps that property true. A push-triggered run would
+# be tidier still, but a push made with GITHUB_TOKEN doesn't trigger workflows,
+# so a daily cron is what actually runs.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/build-sportegories.mjs
+      # GATE THE REBUILD ON THE ANSWER CHECK, the way former.yml is gated.
+      # Every category in this game is scored against the file this job writes,
+      # and the way it goes wrong is silent: a retired player in an "Active"
+      # category renders, scores and reads perfectly plausibly, so the only
+      # thing that catches it is a player who knows the sport writing in. That
+      # happened. Checking after the commit is checking too late: fail here and
+      # yesterday's working corpus stays on the site.
+      - name: The rebuilt corpus must still answer correctly
+        run: node scripts/check-sportegories.mjs
+      # A data file that changed and kept its ?v= hands a returning visitor the
+      # old data against the new page. Only when it actually moved: a bump with
+      # no change is a re-download for everybody who already has the file.
+      - name: Bump the cache version if the data moved
+        run: git diff --quiet -- arcade/sportegories-data.js || node scripts/bump-cachebust.mjs arcade/sportegories-data.js
+      - name: Commit if changed
+        run: |
+          git config user.name "roster-bot"
+          git config user.email "noreply@anthropic.com"
+          # -u picks up the pages the bump rewrote and scripts/cachebust.json.
+          git add arcade/sportegories-data.js && git add -u
+          git diff --cached --quiet && echo "no changes" || {
+            git commit -m "Rebuild Sportegories corpus from refreshed rosters"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing onto latest main (attempt $i)"
+              git pull --rebase origin main || exit 1
+            done
+          }

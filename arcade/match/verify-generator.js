@@ -1,4 +1,4 @@
-/* RunTheGrid / Daily Match — data-driven generator QA.
+/* RunTheGrid / Common Ground: data-driven generator QA.
  * node verify-generator.js
  * Proves the DB generates unique, varied, recognizable boards and measures how
  * fast it repeats — the numbers behind "each day is different". */

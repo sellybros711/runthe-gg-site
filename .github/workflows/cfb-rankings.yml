@@ -1,0 +1,111 @@
+# Build the college game's poll from the real historical rankings.
+#
+# WHY A WORKFLOW AND NOT A COMMAND. cfb/data/cfb_rankings.json is built from the
+# CFBD API, which needs a key, and the key must never be committed to this repo or
+# pasted anywhere it would be stored. A repository secret is the one place it can
+# live: GitHub holds it encrypted, the job reads it into an env var for the length
+# of one step, and it never appears in the checkout, the log or the commit.
+#
+# ONE-TIME SETUP. Add the key at
+#   Settings > Secrets and variables > Actions > New repository secret
+#   Name: CFBD_KEY
+#   Value: the key from collegefootballdata.com/key
+# That page works on a phone.
+#
+# THEN, TO RUN IT. Actions tab > "Build the college rankings" > Run workflow, with
+# commit set to true. It takes a couple of minutes and pushes the data file itself.
+# Leave commit false for a dry run: the file is still built and attached to the run
+# as an artifact, and nothing is written to the repo.
+#
+# WHAT IT PRODUCES. The last poll of each season from 2005 on: the CFP committee's
+# final rankings from 2014, the final AP poll before that. The game reads it and
+# stops using the computed stand-in the moment the file is on the server, with no
+# code change. Until then a player sees the stand-in, and "Check the connection" on
+# the leaderboard says so in plain words.
+#
+# FIRST RUN NEEDS NO CACHE BUMP, A LATER ONE DOES. The game fetches this file as
+# cfb_rankings.json?v=7. Nothing has ever been served from that URL, so the first
+# publish is safe. If you rerun this after a new season to refresh the poll, bump
+# the ?v= on that fetch in cfb/index.html in the same commit, or returning players
+# keep the poll they already cached.
+#
+# IT CANNOT PUBLISH A BROKEN POLL. 07-rankings.mjs refuses to write fewer than
+# twenty ranked teams per season and exits non-zero instead, so a bad key or a
+# CFBD outage fails the run rather than committing an empty file. That matters
+# because an empty poll would leave every team unranked and quietly make the five
+# badges that need a ranked win unearnable, which is worse than no file at all.
+name: Build the college rankings
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Commit cfb/data/cfb_rankings.json back to this branch (true/false)'
+        required: false
+        default: 'true'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Fails the run with a readable message rather than twenty seasons of
+      # "CFBD_KEY environment variable is required" followed by a refusal.
+      - name: Check the key is set
+        env:
+          CFBD_KEY: ${{ secrets.CFBD_KEY }}
+        run: |
+          if [ -z "$CFBD_KEY" ]; then
+            echo "::error::No CFBD_KEY secret. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "CFBD_KEY is set (${#CFBD_KEY} characters)."
+
+      - name: Build the poll
+        env:
+          CFBD_KEY: ${{ secrets.CFBD_KEY }}
+        run: node cfb/build/07-rankings.mjs
+
+      # Read this in the log before trusting the file. The per-season match counts
+      # and the top-five spot checks are printed by the build; this is the shape of
+      # what it wrote, and a poll that joined to nothing is visible here.
+      - name: Show what was built
+        run: |
+          node -e '
+            const r = require("./cfb/data/cfb_rankings.json");
+            const n = Object.keys(r).length;
+            console.log(n + " ranked team-seasons");
+            for (const yr of [2015, 2019, 2023]) {
+              const top = Object.entries(r).filter(([id]) => id.endsWith("-" + yr))
+                .sort((a, b) => a[1] - b[1]).slice(0, 5)
+                .map(([id, k]) => "#" + k + " " + id.replace("-" + yr, ""));
+              if (top.length) console.log(yr + ": " + top.join(", "));
+            }
+          '
+
+      - name: Upload the poll as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfb-rankings
+          path: cfb/data/cfb_rankings.json
+          if-no-files-found: error
+
+      - name: Commit if requested
+        if: ${{ github.event.inputs.commit == 'true' }}
+        run: |
+          git config user.name "rankings-bot"
+          git config user.email "noreply@anthropic.com"
+          git add cfb/data/cfb_rankings.json
+          git diff --cached --quiet && echo "no change, the poll is already current" || {
+            git commit -m "The college game's poll is the one that really happened"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing (attempt $i)"
+              git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+            done
+          }

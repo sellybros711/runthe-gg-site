@@ -80,9 +80,33 @@
      the names and avatars are there and these are not. Only the badge cabinet reads them,
      so losing them costs a few Trade Machine badges rather than the board. */
   let tradeColumns = true;
+  /* A FOURTH, arriving with 86_football_defense_stats.sql, dropped on its own for exactly
+     the reason the other three are: between the deploy and the migration a project is in a
+     real state where everything else is there and these are not, and losing them should cost
+     three numbers on a defense run rather than the whole board. */
+  let defColumns = true;
+  /* The crest pair, from 88. Optional in exactly the same way as the four sets above and
+     for the same reason: a database one file behind should cost the board its crests, not
+     the board. Without them every row draws the flat disc, which is what it drew before
+     88 existed. */
+  let crestColumns = true;
+  /* 89's column is tracked SEPARATELY from 88's two, and that is not tidiness. A project
+     that has run 88 and not 89 has display_mark and display_rung and no display_tier, and
+     one flag covering all three would drop the two that work because the third does not:
+     running one migration and not the next would turn the crest off on the board entirely
+     rather than costing it a rank seal. */
+  let tierColumn = true;
+  /* 90's column, tracked separately again and for the third time for the same reason. Each
+     migration's columns get their own flag or running N and not N+1 costs the board
+     everything the earlier files added. */
+  let ringColumn = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
     (avatarColumns ? ',display_color,display_initials' : '') +
-    (tradeColumns ? ',gm_rating,trade_moves' : '');
+    (tradeColumns ? ',gm_rating,trade_moves' : '') +
+    (defColumns ? ',def_takeaways,def_tds,points_allowed' : '') +
+    (crestColumns ? ',display_mark,display_rung' : '') +
+    (crestColumns && tierColumn ? ',display_tier' : '') +
+    (crestColumns && ringColumn ? ',display_ring' : '');
   const missingCol = (body, re) => {
     const m = (body && body.message) || '';
     return re.test(m) && /does not exist/i.test(m);
@@ -90,6 +114,10 @@
   const missingAvatarColumn = (body) => missingCol(body, /display_color|display_initials/);
   const missingNameColumn = (body) => missingCol(body, /display_name/);
   const missingTradeColumn = (body) => missingCol(body, /gm_rating|trade_moves/);
+  const missingDefColumn = (body) => missingCol(body, /def_takeaways|def_tds|points_allowed/);
+  const missingCrestColumn = (body) => missingCol(body, /display_mark|display_rung/);
+  const missingTierColumn = (body) => missingCol(body, /display_tier/);
+  const missingRingColumn = (body) => missingCol(body, /display_ring/);
   /* Not retried, only remembered, for the reason above BASE_COLS. Set so the connection
      check can say which file to run instead of "the board cannot be read".
 
@@ -116,6 +144,18 @@
        this axis returns an empty board rather than a wrong one.
        ps_runs_trade_gm_idx is (gm_rating desc, created_at asc) where run_mode='trade'. */
     gm: 'gm_rating',
+    /* POINT DIFFERENTIAL, ON ITS OWN. It is already inside `score`, where it is the
+       tiebreak behind wins, so a 13-4 season that won by forty a week ranks under a 14-3
+       that squeaked every game. As an axis of its own it answers the other question: not
+       who won most, but who was furthest ahead. Offense boards only. */
+    diff: 'point_diff',
+    /* POINTS ALLOWED PER GAME, and the defense board's own axis for the same reason the GM
+       rating is the Trade Machine's: record and team rating describe a roster, and this is
+       the one number that measures what the roster was drafted to do. Null on every other
+       mode, so the not.is.null the query already appends keeps other boards empty rather
+       than wrong. LOWER IS BETTER, which is the first axis here where that is true, and the
+       page opens it ascending for that reason. */
+    pa: 'points_allowed',
   };
 
   /* THE TIEBREAK REVERSES WITH THE SORT, and that is a performance decision as much
@@ -331,16 +371,48 @@
      costs nothing here for the same reason it costs nothing on the free board, which is
      written out at length above. All-time only would have been less code and a worse
      board: after a month nobody new can reach the top of it. */
+  /* ---------------- THE ONE PLACE A MODE NAME IS DECIDED ----------------
+     Four call sites each carried their own copy of this ladder: the board query, the
+     submit, the batched rank call and its fallback. Keeping them in step was left to
+     whoever added the next mode, and both times it went wrong the same way. 'trade' was
+     missing from the submit, so every Trade Machine season until it was noticed went onto
+     the free-play board. 'defense' was missing from all four, so a One Stop run would have
+     recorded as free play and been ranked against six-pick offensive drafts.
+
+     A WHITELIST, NOT A PASS-THROUGH. An unknown mode records as free play rather than
+     being rejected by ps_runs_run_mode_ck, because a rejected submit loses somebody's
+     season and a misfiled one does not.
+
+     Club and era need a second field to name the competition, so a run claiming one of
+     those without it is not that competition and falls back to free play. The Trade
+     Machine and One Stop need nothing: the mode IS the competition. */
+  /* THIS LIST HAS NOW BEEN THE BUG FOUR TIMES. 'trade' was missing from the submit,
+     'defense' from all four call sites, 'fullteam' from here, and 'dynasty' from here and
+     from both SQL sites at once. The consolidation above is what turned the third one into
+     a single missing word instead of four.
+
+     THE FOURTH ONE WAS THE WORST AND IT IS WORTH SAYING WHY. The fallback above is a
+     kindness for a typo: an unknown mode records as free play rather than being refused,
+     because a misfiled run loses less than a rejected one. That reasoning does not hold
+     for a whole MODE. With 'dynasty' missing, every Gauntlet season was being submitted as
+     free play, so a nine season run would have put nine rows on the classic leaderboard,
+     each a roster built over several seasons under an economy classic play does not have,
+     ranked against people who drafted once with $140M. Caught before the mode went live
+     rather than after, which is the first time out of four. */
+  const SOLO_MODES = ['trade', 'defense', 'fullteam', 'dynasty'];
+  function modeOf(mode, franchise, era) {
+    if (SOLO_MODES.indexOf(mode) >= 0) return mode;
+    if (mode === 'era' && era) return 'era';
+    if (mode === 'club' && franchise) return 'club';
+    return 'free';
+  }
+
   function scope(opts) {
     opts = opts || {};
-    const club = opts.mode === 'club' && opts.franchise;
-    const eraMode = opts.mode === 'era' && opts.era;
-    /* The Trade Machine needs no second field the way club and era do: the mode IS the
-       competition, so one board serves it. */
-    const trade = opts.mode === 'trade';
-    let f = '&run_mode=eq.' + (trade ? 'trade' : eraMode ? 'era' : club ? 'club' : 'free');
-    if (club) f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
-    if (eraMode) f += '&era=eq.' + encodeURIComponent(opts.era);
+    const m = modeOf(opts.mode, opts.franchise, opts.era);
+    let f = '&run_mode=eq.' + m;
+    if (m === 'club') f += '&franchise=eq.' + encodeURIComponent(opts.franchise);
+    if (m === 'era') f += '&era=eq.' + encodeURIComponent(opts.era);
     /* NAMED RUNS ONLY, when asked for. A guest run is a real draft and counts towards how
        many have been played, but it carries no name, so listing it puts a row of Anonymous
        on a board whose whole job is to say who did what. Every ranking call asks for this
@@ -382,13 +454,7 @@
       p_respins: payload.respins || 0,
       p_franchise: payload.franchise || null,
       p_era: payload.era || null,
-      /* WHITELISTED, NOT PASSED THROUGH, so an unknown mode records as free play rather
-         than being rejected by the server's check and losing the run. 'trade' was missing
-         from this list, which is why every Trade Machine season until now went onto the
-         free-play board: a different game, ranked against six-pick drafts. */
-      p_mode: payload.mode === 'era' ? 'era'
-        : payload.mode === 'club' ? 'club'
-        : payload.mode === 'trade' ? 'trade' : 'free',
+      p_mode: modeOf(payload.mode, payload.franchise, payload.era),
       p_picks: payload.picks,
       p_slots: payload.slots || null,
       p_seed: payload.seed || null,
@@ -406,6 +472,27 @@
        case is that trade runs fail there, which is what they already do today. */
     if (payload.gmRating != null) args.p_gm_rating = payload.gmRating;
     if (payload.tradeMoves != null) args.p_trade_moves = payload.tradeMoves;
+    /* THE DEFENSE COLUMNS, on the same terms and for the same reason: PostgREST resolves an
+       RPC by the set of keys in the body, so naming these on every submit would 404 every
+       run on a database that has not run 86_football_defense_stats.sql. Sent only by a
+       defense run, so the worst case is that defense runs fail there until it is applied,
+       which is exactly the bargain 61 struck for the Trade Machine. */
+    if (payload.defTakeaways != null) args.p_def_takeaways = payload.defTakeaways;
+    if (payload.defTds != null) args.p_def_tds = payload.defTds;
+    if (payload.pointsAllowed != null) args.p_points_allowed = round1(payload.pointsAllowed);
+    /* FULL TEAM'S COACH AND PLAN, on exactly the same terms as the two sets above, and the
+       terms are the point: PostgREST resolves an RPC by the set of keys in the body, so a
+       key the installed function has never heard of is a 404 rather than an ignored field.
+       Sent only by a full team run, so a database that has not run
+       94_football_fullteam_coach.sql fails those and nothing else, which is the bargain 61
+       struck for the Trade Machine and 86 struck for the defense columns.
+       BOTH OR NEITHER. They are two halves of one description of how a season was played,
+       and a row with a coach and no plan reads as a plan nobody chose rather than one that
+       was not recorded. */
+    if (payload.coach != null && payload.plan != null) {
+      args.p_coach = payload.coach;
+      args.p_plan = payload.plan;
+    }
     const body = JSON.stringify(args);
     const ATTEMPTS = 3;
     for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
@@ -538,11 +625,9 @@
   async function ranksBatch(score, mode, franchise, era) {
     if (!batchSupported) return null;
     try {
-      /* WHITELISTED, same as p_mode on submit. ps_rank_windows filters on run_mode and never
-         validated it, so 'trade' needed no SQL change to be countable here. */
-      const m = mode === 'trade' ? 'trade'
-        : (mode === 'era' && era) ? 'era'
-        : (mode === 'club' && franchise) ? 'club' : 'free';
+      /* ps_rank_windows filters on run_mode and never validated it, so a new mode is
+         countable here as soon as modeOf knows the name, with no SQL change. */
+      const m = modeOf(mode, franchise, era);
       const res = await timed(base() + 'rpc/ps_rank_windows', {
         method: 'POST',
         headers: headers(),
@@ -565,11 +650,12 @@
   async function ranks(score, mode, franchise, era) {
     const batch = await ranksBatch(score, mode, franchise, era);
     if (batch) return batch;
+    const m = modeOf(mode, franchise, era);
     const of = (win) => {
-      if (mode === 'trade') return { mode: 'trade', win, named: true };
-      if (mode === 'era' && era) return { mode: 'era', era, win, named: true };
-      if (mode === 'club' && franchise) return { mode: 'club', franchise, win, named: true };
-      return { mode: 'free', win, named: true };
+      const o = { mode: m, win, named: true };
+      if (m === 'club') o.franchise = franchise;
+      if (m === 'era') o.era = era;
+      return o;
     };
     const scopes = [['day', of('day')], ['week', of('week')], ['all', of('all')]];
     const got = await Promise.all(scopes.map(([, o]) =>
@@ -600,13 +686,22 @@
       (col !== 'score' ? '&' + col + '=not.is.null' : '');
     try {
       let res = await timed(url(), { headers: headers() });
-      /* UP TO THREE RETRIES, one per optional set, narrowest first. Each pass reads the
+      /* ONE RETRY PER OPTIONAL SET, narrowest first. Each pass reads the
          body before deciding, so a genuinely broken query still surfaces as itself rather
          than being mistaken for a schema one file behind. The loop cannot run away: each
          branch permanently clears the flag that let it in. */
-      for (let pass = 0; pass < 3 && !res.ok && res.status === 400; pass++) {
+      /* ONE PASS PER OPTIONAL SET, narrowest first. */
+      for (let pass = 0; pass < 7 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (tradeColumns && missingTradeColumn(body)) {
+        if (ringColumn && missingRingColumn(body)) {
+          ringColumn = false;
+        } else if (tierColumn && missingTierColumn(body)) {
+          tierColumn = false;
+        } else if (crestColumns && missingCrestColumn(body)) {
+          crestColumns = false;
+        } else if (defColumns && missingDefColumn(body)) {
+          defColumns = false;
+        } else if (tradeColumns && missingTradeColumn(body)) {
           tradeColumns = false;
         } else if (avatarColumns && missingAvatarColumn(body)) {
           avatarColumns = false;
@@ -691,12 +786,12 @@
         '&user_id=eq.' + encodeURIComponent(userId) +
         '&order=created_at.desc&limit=' + (limit || 500);
       let res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
-      if (!res.ok && res.status === 400 && tradeColumns) {
+      for (let pass = 0; pass < 2 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
-        if (missingTradeColumn(body)) {
-          tradeColumns = false;
-          res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
-        }
+        if (defColumns && missingDefColumn(body)) defColumns = false;
+        else if (tradeColumns && missingTradeColumn(body)) tradeColumns = false;
+        else break;
+        res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
       }
       if (!res.ok) return await fail('mine', res);
       const rows = await res.json().catch(() => null);
@@ -723,17 +818,60 @@
   async function myAvatar(userId) {
     if (!userId) return null;
     try {
-      const q = base() + 'profiles?select=avatar_color,avatar_initials&id=eq.' +
-        encodeURIComponent(userId);
-      const res = await timed(q, { headers: headers() });
-      /* A project that has not run 53 yet has no such columns, and that is not an error
-         worth surfacing: it is the same "one file behind" state top() handles, and the
-         answer is the same, which is that nothing has been chosen. */
-      if (!res.ok) { if (res.status === 400) return { color: null, initials: null }; 
-        return await fail('avatar', res); }
-      const rows = await res.json().catch(() => null);
-      const r = (Array.isArray(rows) && rows[0]) || {};
-      return { color: r.avatar_color || null, initials: r.avatar_initials || null };
+      /* THE CREST MARK COMES BACK WITH THE COLOUR, and it has to come from here rather
+         than from this browser: it is a choice that belongs to the account, so a player who
+         picks a mark on their phone should be wearing it when they open the game on a
+         laptop. Asked for separately so a project one file behind loses the mark and keeps
+         the colour, rather than the whole select 400ing. */
+      const one = async (cols) => {
+        const res = await timed(base() + 'profiles?select=' + cols + '&id=eq.' +
+          encodeURIComponent(userId), { headers: headers() });
+        if (!res.ok) return res.status === 400 ? null : Promise.reject(res);
+        const rows = await res.json().catch(() => null);
+        return (Array.isArray(rows) && rows[0]) || {};
+      };
+      /* A LADDER OF COLUMN SETS, widest first, each rung dropping the flag that let it in
+         and falling to the next. Written as a table rather than as a chain of ifs because
+         there are three optional crest columns now, from three migrations, and the chain
+         that handled two was already hard to check by eye. 88 without 89 asks for the mark
+         and not the rank; 89 without 90 asks for the rank and not the ring; a project that
+         has run none of them lands on the pre-88 pair, which is what it drew before. */
+      const rungs = [
+        { on: () => crestColumns && tierColumn && ringColumn,
+          cols: 'avatar_color,avatar_initials,crest_mark,crest_tier,crest_ring',
+          drop: () => { ringColumn = false; } },
+        { on: () => crestColumns && tierColumn,
+          cols: 'avatar_color,avatar_initials,crest_mark,crest_tier',
+          drop: () => { tierColumn = false; } },
+        { on: () => crestColumns,
+          cols: 'avatar_color,avatar_initials,crest_mark',
+          drop: () => { crestColumns = false; } },
+        /* A project that has not run 53 yet has no such columns either, and that is not an
+           error worth surfacing: it is the same "one file behind" state top() handles, and
+           the answer is the same, which is that nothing has been chosen. */
+        { on: () => true, cols: 'avatar_color,avatar_initials', drop: () => {} }
+      ];
+      let r = null, asked = '';
+      for (let i = 0; i < rungs.length; i++) {
+        if (!rungs[i].on()) continue;
+        asked = rungs[i].cols;
+        /* Null means 400, which on this table means the column is not there yet. */
+        r = await one(asked);
+        if (r !== null) break;
+        rungs[i].drop();
+      }
+      if (r === null) return { color: null, initials: null, mark: null, tier: null,
+        ring: null };
+      /* UNDEFINED WHERE THE COLUMN WAS NEVER ASKED FOR, which is a different answer from
+         null and the callers already read it as one: null means the account has chosen
+         nothing, undefined means this database cannot say. Returning null for both is how a
+         player on a project one file behind gets the mark they picked on this browser wiped
+         by a column that does not exist. */
+      const had = (c) => asked.indexOf(c) >= 0;
+      return { color: r.avatar_color || null, initials: r.avatar_initials || null,
+        mark: had('crest_mark') ? (r.crest_mark || null) : undefined,
+        tier: had('crest_tier') ? (r.crest_tier || null) : undefined,
+        ring: had('crest_ring') ? (r.crest_ring || null) : undefined };
     } catch (e) { return failThrown('avatar', e); }
   }
 
@@ -742,6 +880,67 @@
      the same transaction, so the board never shows one player in two colors. What it
      returns is what it stored, which is what the caller should then draw: sending 'xyz' and
      rendering 'xyz' while the database holds 'XY' is how a settings screen starts lying. */
+  /* ---------------- the crest mark ----------------
+     ps_set_crest stores the mark and returns the pair it actually holds, mark AND rung,
+     because the rung is derived server-side and the client has no way to know that a
+     backfill or a club change moved it.
+
+     Missing-function handling is deliberately the SAME flag setAvatar uses. Both are the
+     profile writer, both are missing for exactly one reason (a migration has not been run),
+     and one flag means the diagnostics have one sentence to say rather than two. */
+  /* AN ARGUMENT IS AS DROPPABLE AS A COLUMN, and for a sharper reason. PostgREST resolves an
+     RPC by the argument NAMES in the body, so sending p_ring to a project that has run 89 and
+     not 90 does not ignore the extra argument: it finds no function of that shape and answers
+     404 PGRST202, which reads exactly like "ps_set_crest does not exist". Without the ladder
+     below, one migration behind would set avatarFnMissing and stop the mark being saved at
+     all, which is worse than the ring not being saved. Same three flags as the reads, so a
+     project one file behind says so once rather than in two places. */
+  async function setCrest(mark, tier, ring) {
+    try {
+      /* p_tier and p_ring are omitted rather than sent empty when there is nothing to say.
+         Null means "leave it alone" for both in 89 and 90, and both move on their own as
+         badges are earned, so a call that is only changing the mark must not touch either. */
+      const send = async (withTier, withRing) => {
+        const b = { p_mark: mark || '' };
+        if (withTier && tier) b.p_tier = tier;
+        if (withRing && ring) b.p_ring = ring;
+        const res = await timed(base() + 'rpc/ps_set_crest', {
+          method: 'POST', headers: headers(), body: JSON.stringify(b) });
+        return { res, body: await res.json().catch(() => null) };
+      };
+      const gone = (res, body) => res.status === 404 ||
+        ((body && body.code) || '') === 'PGRST202';
+      let { res, body } = await send(tierColumn, ringColumn);
+      /* One retry per optional argument, narrowest first, each clearing the flag that let it
+         in so the next call goes straight to the shape that works. */
+      if (!res.ok && gone(res, body) && ringColumn && ring) {
+        ringColumn = false;
+        ({ res, body } = await send(tierColumn, false));
+      }
+      if (!res.ok && gone(res, body) && tierColumn && tier) {
+        tierColumn = false;
+        ({ res, body } = await send(false, false));
+      }
+      if (!res.ok) {
+        lastError = { where: 'crest', status: res.status, code: (body && body.code) || '',
+          message: (body && (body.message || body.hint)) || res.statusText || 'no message' };
+        if (gone(res, body)) avatarFnMissing = true;
+        return { error: lastError.message, code: lastError.code, status: res.status,
+          missing: avatarFnMissing };
+      }
+      const row = Array.isArray(body) ? body[0] : body;
+      return { mark: (row && row.mark) || null, tier: (row && row.tier) || null,
+        /* Undefined once the ladder above has learned this project has no ring yet, for the
+           reason myAvatar spells out: null would read as "the account wears none", and the
+           caller would push the same ring again on every refresh forever. */
+        ring: ringColumn ? ((row && row.ring) || null) : undefined,
+        rung: (row && row.rung !== null && row.rung !== undefined) ? Number(row.rung) : 0 };
+    } catch (e) {
+      lastError = { where: 'crest', status: 0, code: '', message: String(e && e.message || e) };
+      return { error: lastError.message };
+    }
+  }
+
   async function setAvatar(color, initials) {
     try {
       const res = await timed(base() + 'rpc/ps_set_avatar', {
@@ -803,9 +1002,9 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 9,
+    API_VERSION: 11,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
-    SORTS, probe, myAvatar, setAvatar,
+    SORTS, probe, myAvatar, setAvatar, setCrest,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },

@@ -15,11 +15,30 @@ jobs:
         with:
           node-version: 20
       - run: node scripts/fetch-former.mjs
+      # Pack it before anything else looks at it, so the gate below and the
+      # cache bump both see the bytes that will actually ship. The scraper
+      # writes one object per player with every field name spelled out; packing
+      # writes the names once and the repeated strings once, which is 1225 KB
+      # down to 468 KB and about 130 ms of phone parsing saved on eight pages.
+      # Shape-preserving and idempotent: see scripts/lib/packdata.mjs.
+      - run: node scripts/pack-arcade-data.mjs former
+      # GATE THE REFRESH ON THE ANSWER CHECK. This job rewrites the college
+      # every Alma Mater round is scored against, so a feed that starts writing
+      # a school a new way ships straight to players. Checking after the commit
+      # is checking too late: fail here and the old, working data stays.
+      - name: The refreshed data must still answer correctly
+        run: node scripts/check-colleges.mjs
+      # A data file that changed and kept its ?v= hands a returning visitor the
+      # old data against the new page. Only when it actually moved: a bump with
+      # no change is a re-download for everybody who already has the file.
+      - name: Bump the cache version if the data moved
+        run: git diff --quiet -- arcade/former.js || node scripts/bump-cachebust.mjs arcade/former.js
       - name: Commit if changed
         run: |
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"
-          git add arcade/former.js
+          # -u picks up the pages the bump rewrote and scripts/cachebust.json.
+          git add arcade/former.js && git add -u
           git diff --cached --quiet && echo "no changes" || {
             git commit -m "Refresh former-player dataset"
             # Rebase-and-retry: the rosters/leaderboard Actions push to main too,

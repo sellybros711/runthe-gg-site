@@ -31,6 +31,12 @@ export async function onRequestPost(context) {
   const type = event.type;
   const obj = event.data && event.data.object;
 
+  // Idempotency: claim the event id once. A duplicate delivery is acknowledged
+  // without reprocessing. If the dedupe table is missing we fail OPEN (process
+  // anyway) since the entitlement upsert is itself idempotent.
+  const claim = await claimEvent(env, event.id, type);
+  if (claim === 'dup') return new Response('ok (dup)');
+
   try {
     if (type === 'checkout.session.completed') {
       const userId = obj.client_reference_id || (obj.metadata && obj.metadata.supabase_user_id);
@@ -44,9 +50,42 @@ export async function onRequestPost(context) {
       if (userId) await upsertSub(env, userId, obj.customer, obj);
     }
   } catch (e) {
-    return new Response('handler error', { status: 500 });
+    // release the claim so Stripe's retry can reprocess this event
+    if (claim === 'new') await unclaimEvent(env, event.id);
+    // surface the real reason in the response body — this is only visible to the
+    // account owner in the Stripe dashboard's delivery log, never to end users.
+    return new Response('handler error: ' + ((e && e.message) ? e.message : String(e)), { status: 500 });
   }
   return new Response('ok');
+}
+
+// Returns 'new' (first time — claimed), 'dup' (already processed), or 'error'
+// (couldn't reach the dedupe table → caller fails open and processes anyway).
+async function claimEvent(env, id, type) {
+  if (!id) return 'error';
+  try {
+    const res = await fetch(env.SUPABASE_URL + '/rest/v1/stripe_events', {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE,
+        Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ id: id, type: type || null })
+    });
+    if (res.status === 409) return 'dup';        // unique violation → already handled
+    if (res.ok) return 'new';
+    return 'error';
+  } catch (e) { return 'error'; }
+}
+async function unclaimEvent(env, id) {
+  try {
+    await fetch(env.SUPABASE_URL + '/rest/v1/stripe_events?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE }
+    });
+  } catch (e) {}
 }
 
 async function upsertSub(env, userId, customerId, sub) {
@@ -69,14 +108,22 @@ async function upsertSub(env, userId, customerId, sub) {
     },
     body: JSON.stringify(row)
   });
-  if (!res.ok) throw new Error('supabase upsert failed ' + res.status);
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('supabase upsert ' + res.status + ' ' + detail);
+  }
 }
 
 async function stripeGet(env, path) {
   const res = await fetch('https://api.stripe.com' + path, {
     headers: { Authorization: 'Bearer ' + env.STRIPE_SECRET_KEY }
   });
-  if (!res.ok) throw new Error('stripe get failed');
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('stripe get ' + res.status + ' ' + path + ' ' + detail);
+  }
   return res.json();
 }
 

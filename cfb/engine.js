@@ -23,14 +23,23 @@ const ENGINE_API_VERSION = 1;
 const CONSTANTS = {
   /* SCALE turns an opponent's real points a game into engine points, which is
      the only place the two sides of a scoreline meet. It is therefore the whole
-     difficulty dial: raise it and every opponent is harder. It was 2.2, and came
-     down when the cap did, so that a smaller budget did not quietly turn into a
-     losing season. At 2.0, with two marquee games on the schedule, a squad
-     drafted best-available wins 68% of its games, goes 12-0 in 2.2% of seasons
-     and reaches the playoff in a quarter of them. It was 76%, 7% and 33% before
-     the marquee games went in; that difficulty is the price of an unbeaten
-     season being rare, and the two move together. */
-  SCALE: 2.0,
+     difficulty dial: raise it and every opponent is harder.
+
+     IT IS ALSO WHERE THE CROSSOVER SITS, which is the thing that decides whether
+     drafting well matters. Win probability is a sigmoid in (your mean minus
+     theirs), and at 2.0 the crossover sat BELOW the entire roster range: a
+     75-overall roster already outscored the average opponent, so 75 and 100
+     both lived on the flat top of the curve and were worth 8.7 and 10.4 wins.
+     Twenty points of overall, which is most of what a draft is, bought under two
+     wins, and a roster at 85 or better went 12-0 in 12% of its seasons.
+
+     At 2.3 the crossover lands inside the range instead, so the ladder is a
+     ladder: about 4-8 for a bad draft, 8-4 in the middle, 10-2 at the top, 12-0
+     in 5% of seasons rather than 12%.
+
+     RAISING THIS ALONE MAKES A WORSE GAME, and so does damping alone. See
+     CONSISTENCY below: the two are one change. */
+  SCALE: 2.7,
   /* THE BUDGET HAS TO SAY NO, or there is no decision in the draft. At $14M it
      almost never did: drafting the highest scorer on every board spent 90% of it
      and ran into the price on 9% of picks. The NFL game, which is the same six
@@ -61,7 +70,7 @@ const CONSTANTS = {
      seasons rank inside the top twelve and more drafts reach the bracket. Making
      the field is meant to be common; winning it is not, and that half is the
      round pivots below, not this. */
-  POOL_GAMMA: 1.35,
+  POOL_GAMMA: 1.55,
   PLAYOFF_ROUNDS_WITH_BYE: 3,
   PLAYOFF_ROUNDS_NO_BYE: 4,
   /* OFF, AND LEFT IN PLACE. Two of the twelve used to come from the eleven-win
@@ -74,11 +83,119 @@ const CONSTANTS = {
   /* THE TWO FLOORS UNDER THE TITLE. See teamRating() and titleEdge(). They are
      in rating points, which is what the screens show, because there is no scale
      factor any more: see teamOverall(). */
-  TITLE_FLOOR: 89,
-  PERFECT_FLOOR: 92,
+  /* Lowered with the season. These gate the last game on the roster, and they
+     were set when the RECORD gated nothing: a 9-3 team could rank into the field,
+     so something had to stop it winning the title. Now the field itself is the
+     filter, and getting in means 11-1 or better. Best-available drafting lands
+     around 90 overall, so a floor at 89 was barring half of the teams that had
+     just gone unbeaten from finishing the job: going 12-0 converted to a title
+     2.2% of the time, which is the wrong shape for an undefeated No. 1 seed.
+     86 to 84 when PRICE_K came down and made a high overall dearer to assemble:
+     the floor is a point on the overall scale, so squeezing the scale without
+     moving the floor raises the bar by exactly as much as the prices did. Both
+     floors follow the distribution rather than standing still in front of it. */
+  TITLE_FLOOR: 84,
+  /* THE SAME BAR AS THE TITLE, not a higher one. This used to sit above the title
+     floor on the argument that the game's own name is on the outcome, and that
+     was right when a mediocre roster could luck into 12-0 against a soft season.
+     It cannot now: going unbeaten means winning twelve against a real schedule
+     with the crossover inside the roster range, and then winning the bracket. At
+     89 the floor was quietly disqualifying half of the undefeated champions the
+     game produced, which is a strange thing to tell somebody who just went 12-0
+     and won the national title. The record is the proof; the floor only has to
+     agree with the one on the trophy. */
+  PERFECT_FLOOR: 84,
   ROUND_EDGE_MAX: 3.20,
-  ROUND_EDGE_MIN: 0.86,
+  /* THE FLOOR UNDER THE BRACKET, AND THE ONLY DIAL THAT REACHES THE VERY BEST
+     ROSTERS. roundEdge clamps here, so ANY pivot more than about two points
+     below your overall lands on this number and the pivot stops mattering. At
+     0.86 that was true of nearly every playoff team: moving the first two pivots
+     eight points measured as literally no change, 96% and 69% won either way,
+     because both were already clamped. Two things followed. The bracket had
+     nothing left to decide early, so all of the difficulty piled onto the last
+     game, which came out won 4% of the time by 36 points: you cruised to the
+     title game and were annihilated in it, every time. And a 105-overall roster,
+     which is exactly the kind that goes unbeaten, got the floor's advantage in
+     the FINAL, so hardening the pivots barely touched the perfect-season rate
+     no matter how far they moved.
+     0.97 fixes both. It gives the ladder its range back and it bites at the top
+     of the scale, which is where a perfect season comes from. Measured on the
+     solver: 85% / 42% / 21% / 12% won by round, at +12 / -3 / -13 / -19. 1.00
+     overshoots, at 80% / 35% / 18% / 8% and a fifth of the titles. */
+  ROUND_EDGE_MIN: 0.97,
   ROUND_EDGE_SLOPE: 0.075,
+  /* ─── EVERYBODY'S SUPER BOWL ────────────────────────────────────────────────
+     What stops a great roster running the twelve. See weekAdvantage().
+
+     THE PROBLEM THIS SOLVES IS SPECIFIC. Going unbeaten and winning the title are
+     the same run of games, so hardening the bracket makes both rarer together:
+     that is the whole argument written into the round pivots above, and it is why
+     they cannot be the answer here. MARQUEE_GAMES was the first attempt at the
+     other half and it is switched off for a measured reason: even ONE of twelve
+     drawn from the eleven-win pool cut a 95-99 roster's 12-0 by 68% and took the
+     rest of the scale down with it, an 85-89 roster's playoff odds falling from
+     14.2% to 5.0%. Making the whole season harder is not the same thing as making
+     an unbeaten season harder.
+
+     SO THE COST IS PAID ONLY WHERE AN UNBEATEN SEASON IS ACTUALLY DECIDED. A team
+     everybody is chasing gets everybody's best game, which in this sport is the
+     truest thing there is, and it shows up against the teams good enough to raise
+     theirs. Full strength against an opponent at or above WEEK_FOE_HIGH in
+     schedule strength, fading to nothing at WEEK_FOE_LOW and below. A season
+     carries about 3 games past the low mark, 1.8 past 1.0 and under one past the
+     high mark, so this is a light touch on nine games and a real one on the two or
+     three that decide whether a record stays clean. An average season barely
+     moves; twelve straight gets harder.
+
+     AND SCALED BY HOW GOOD YOU ARE. Nothing at all below WEEK_FLOOR, ramping to
+     full at WEEK_FULL. The floor started at 90 and came down to 84 so the band
+     under the one that was asked about pays too: at 90 a 92-overall roster was
+     getting six percent of the tax and running the twelve 1.13% of the time, and
+     the point of the change is not to draw a line at 95.
+
+     IT DOES NOT GO LOWER THAN 84, AND THE REASON IS A MEASUREMENT RATHER THAN A
+     PREFERENCE. There is nothing under there left to make harder. An 85-89 roster
+     goes unbeaten 0 times in 24,000 seasons and reaches 12-0 in 0.12% of them, so
+     dropping the floor to 78 moves that column by two hundredths of a point and
+     takes 1.2 points off the same band's playoff rate. That is paying in the one
+     currency the game is trying to be generous with (making the field is meant to
+     be common) for a rate that is already zero.
+
+     HOW BIG, AND MEASURED ON THE RIGHT COLUMN. The number a player says out loud
+     is 15-0, but that column cannot be tuned on directly: it lands about thirty
+     times in twelve thousand seasons a band, so the difference between two
+     candidates there is the difference between twenty events and twenty-four.
+     Two of the readings taken while sweeping this looked like results and were
+     noise. 12-0 is the same thing measured with five hundred events, and what
+     follows it (three playoff games from a bye) is untouched by anything here, so
+     the regular-season column is the honest dial and the unbeaten rate rides on
+     it. Over 40 rosters a band and 600 seasons each, before against after:
+
+       overall    12-0              playoff           title
+       80-84      0.00% unchanged    2.25% unchanged  0.00%
+       85-89      0.12% to 0.10%    13.9% to 13.4%    0.00%
+       90-94      1.13% to 0.91%    36.0% to 32.7%    0.00%
+       95-99      4.51% to 2.91%    63.0% to 55.2%    1.29% to 1.05%
+       100+      13.43% to 7.22%    83.4% to 73.5%    7.28% to 5.69%
+
+     A third off the top band's unbeaten seasons and nearly half off the very best
+     rosters', for a fifth of a win on the average season and no movement at all
+     below 90, where WEEK_FLOOR puts the whole thing out of reach: the 85-89 row is
+     identical to the digit because the function returns exactly 1 there.
+
+     THE TITLE COLUMN MOVES TOO, and it is worth being straight about why rather
+     than calling it a rounding error. Fewer 12-0 seasons means fewer top seeds and
+     fewer byes, so a shorter path to the trophy is handed out less often. That is
+     a consequence of the change and not a bug in it: if being untouchable is meant
+     to be rarer, the reward for being untouchable follows it down. If the title
+     rate ever needs holding exactly where it was, the dial for that is the round
+     pivots below, which is the half of the game that is supposed to decide how far
+     a season goes. Do not fix a title rate from up here. */
+  WEEK_UPSET: 0.10,
+  WEEK_FLOOR: 84,
+  WEEK_FULL: 102,
+  WEEK_FOE_LOW: 0.7,
+  WEEK_FOE_HIGH: 1.8,
   /* THE BAR RISES ROUND BY ROUND. One pivot each: the overall at which that
      round is an even game. A first-round opponent is beatable by a team that
      scraped into the field; the team waiting in the final is not. This is what
@@ -96,14 +213,115 @@ const CONSTANTS = {
      factor rewards, so the average roster got stronger and titles crept up
      again. Both still sit a clear eight-plus points under the 111 max, so a
      perfect season stays reachable rather than mathematically impossible. */
+  /* The overall each round is played AGAINST. Lowered together when the season
+     was re-tuned: they were set when a 90-overall roster reached the playoff 39%
+     of the time and the rounds were the filter. Now the RECORD is the filter, and
+     a team that gets in has already proved something, so the door it arrives at
+     was gating almost nobody. Measured at the old numbers against the new season,
+     titles came out at 0.0%. Re-anchored on the probe's greedy drafts. Lowered
+     two more points each when PRICE_K came down, for the same reason as the two
+     floors above: these are overalls, and the drafts that have to clear them all
+     moved down together.
+
+     THEN THE LAST TWO WENT BACK UP, A LONG WAY, BECAUSE GREEDY WAS THE WRONG
+     YARDSTICK. Every number above was anchored on best-available drafting, which
+     takes the highest scorer on every spin and never thinks about what it is
+     leaving itself. That is not a person trying to win. Measured against the
+     solver instead, on the same ladder as the NFL game (probe_economy policies),
+     84 and 89 gave perfect play a 7.9% title and a 0.37% perfect season against
+     the NFL's 0.4% and 0.04%: about twenty times easier to win it all, in a game
+     whose name is the outcome. Somebody who merely tapped the best player every
+     time was taking more titles here than optimal play takes there.
+
+     THE FIRST ATTEMPT MOVED ONLY THE LAST TWO, to 92 and 101, and hit the target
+     rate exactly while making a bad game: with ROUND_EDGE_MIN still at 0.86 the
+     first two rounds were a formality, so all of the difficulty landed on the
+     final, which came out won 4% of the time by 36 points. Right number, wrong
+     season. The floor moved to 0.93 in the same change and all four pivots came
+     back down to sit near the top of the scale, which puts the difficulty across
+     the bracket instead of in one game.
+
+     THE PIVOTS ALONE COULD NOT GET THERE, and the reason is ROUND_EDGE_MIN: see
+     that constant. While the floor sat at 0.86 the whole bracket was clamped for
+     any strong roster, so pushing the last two pivots as far as 96 and 101 still
+     left perfect seasons at twice the NFL rate while turning the final into a
+     3%-win, 25-point blowout. The floor and the pivots had to move together, the
+     floor up so the bracket reaches the top of the scale at all, the pivots down
+     so it does not swallow everyone else.
+
+     82/88/94/97 at a 0.97 floor, measured against the NFL game on the same
+     harness, the same solver and the SAME 110 draft seeds, 99,000 seasons each:
+
+       perfect play        title    perfect season
+       NFL                 0.54%       0.046%
+       CFB                 0.45%       0.053%
+
+     and a bracket that reads 85% / 42% / 21% / 12% won by round, at +12 / -3 /
+     -13 / -19. The gaps between the four narrow on the way up (6, 6, 3) because
+     the last two are already near the top of the scale and a wider step there
+     just turns the final into a formality. 97 still sits about ten under the
+     best overall the wheel can hand you, so the final stays reachable rather
+     than mathematically impossible.
+
+     MEASURE PAIRED, ON THE SAME SEEDS, AND AT N ABOVE 100. This rate is heavy
+     tailed: it is carried by the handful of draft pools that can produce a
+     105-overall roster, so the same settings measured 0.050% at 80 seeds and
+     0.110% at 110. Two of the readings taken while tuning this were sampling
+     noise, and both of them looked like a result.
+     Re-measure with `policies` after ANY change to prices, the cap, chemistry or
+     the season, and compare rung to rung against the NFL rather than reading the
+     CFB column alone. Greedy drafting is NOT a yardstick: it was the yardstick
+     that let this drift twenty times off. */
   ROUND_EDGE_PIVOT: {
     'CFP First Round': 82,
-    'CFP Quarterfinal': 90,
-    'CFP Semifinal': 100,
-    'CFP Championship': 102,
+    'CFP Quarterfinal': 88,
+    'CFP Semifinal': 94,
+    'CFP Championship': 97,
   },
   // Extra, per point below TITLE_FLOOR, on top of the ordinary slope. Final only.
   TITLE_EDGE_CLIFF: 0.16,
+  /* HOW HARD THE FIELD IS, which is a separate question from how hard each game is.
+     buildBracket deals the other eleven seats out of three pools by seed: the top
+     BRACKET_ELITE_SEEDS come from the best seasons in the data, everything down to
+     BRACKET_GREAT_SEEDS from eleven-win teams, the rest from nine and ten-win ones. So
+     at 1 and 7: one all-time season at the top, eleven-win teams down to the seven seed,
+     and a nine or ten-win team in each of the last five seats, which is what a twelve
+     seed is in the real thing.
+
+     THESE TWO NUMBERS ARE WHY NO PIVOT ABOVE HAD TO MOVE. The bracket replaced a strength
+     ladder that put exactly one all-time season in a player's way, always in the final,
+     and nothing better than an eleven-win team before it. Filling all four bye seats from
+     that same top pool put two of them in front of anybody who reached the semifinal, and
+     the title rate fell by half. Tuning it back with the pivots was not possible: they
+     bottom out on ROUND_EDGE_MIN for exactly the rosters that reach a final, so four
+     settings in a row measured the same. The field is the lever, not the games.
+
+     MEASURED, at 57,200 seasons a candidate, against the ladder run over the same ones:
+
+       the old ladder    title 0.217%   from a bye 2.68%
+       1 elite, 7 great  title 0.215%   from a bye 3.65%     <- shipped
+       1 elite, 6 great  title 0.253%
+       2 elite, 6 great  title 0.203%
+       4 elite, 8 great  title 0.112%   the first cut, half the old rate
+
+     A title is as hard as it was, to within one title in fifty-seven thousand seasons.
+     What did move is that a bye is worth more, which is the bracket being real rather
+     than a difficulty change: on a ladder the top seed skipped a rung, in a bracket it
+     skips a rung AND gets the weakest survivor. Re-measure with tune_bracket.mjs after
+     any change here, and read the title column rather than the perfect one, which is
+     counted in the tens and is noise at this sample size. */
+  BRACKET_ELITE_SEEDS: 1,
+  /* SEVEN UNTIL THE FIELD GOT A BAR ON IT. The bottom seats used to be any nine or ten
+     win team and are now only the ones this game's own ranking puts inside twelve, which
+     is a stronger last five seeds and made the title 24% rarer on its own: 0.199% to
+     0.152% over 57,200 seasons. Moving one seat back out of the eleven-win tier put it
+     back exactly, 0.199% and 114 titles against 0.199% and 114. The field is the lever,
+     the same way the note above says it is. */
+  BRACKET_GREAT_SEEDS: 6,
+  /* Off means playRun falls back to the old strength ladder. Nothing ships with this
+     off; it is here so the ladder's rates can still be measured at full sample size,
+     which is the only honest thing to tune the bracket against. */
+  BRACKET_ENABLED: true,
   /* BOWL ELIGIBILITY IS SIX WINS, the way it is in real college football: win half
      your games and you have earned a bowl. Which bowl is set by where you finish
      in the country, not by your record, so a strong team that just missed the
@@ -114,15 +332,87 @@ const CONSTANTS = {
   BOWL_MIN_WINS: 6,
   BOWL_NY6_RANK: 18,
   BOWL_MAJOR_RANK: 40,
+  /* ── HOW HARD A SCHEDULE IS ALLOWED TO BE, in the unit that decides a season ───────
+     generateSchedule balanced every slate to the same TOTAL opponent strength, which
+     says nothing about its shape, and the shape is the whole of it: three ranked teams
+     and three cupcakes totals the same as twelve ordinary opponents and is a completely
+     different season, because the cupcakes were already wins and the ranked teams mostly
+     are not. Measured, that was worth more to a season than the draft was.
+
+     So a slate is scored on EXPECTED LOSSES: every opponent's z through this curve,
+     summed, held to a band. Total strength is linear in z and cannot see a shape; a loss
+     probability is not, which is the entire difference.
+
+     THE CURVE IS MEASURED AND NOT FITTED, and that is not fussiness. Two closed forms
+     were tried first and both broke in the same place. The win rate runs 93% at z -1 and
+     61% at 0, which looks like a logistic of slope 2.4, and then falls off a cliff: 10%
+     at +1, 0.5% at +1.5, 0% at +2, because damping the week-to-week variance means an
+     opponent whose mean clears yours is not an upset waiting to happen, it is a result
+     already written. A logistic undercharges exactly those games; balancing on it let
+     top-heavy slates through on the strength of cupcakes that were never going to be
+     losses, and the playoff spread came out WIDER than it started, 20.3% at nought
+     ranked opponents against 4.8% at two. Holding the top of the schedule instead
+     overcorrected the other way, because at a fixed top-four average a spiky slate is
+     easier than a flat one, for the same reason in reverse.
+
+     So: the readings, in order, and interpolated between. Re-measure with
+     `probe_economy.mjs rounds` after any move to SCALE, the cap, DEFENSE_WEIGHT or the
+     consistency pair, all of which change what a game against a given z is worth.
+
+     THE TOLERANCE IS A BAND, NOT A CAGE. Nought is not the target: slates should still
+     differ, they should just stop deciding.
+
+     PAR IS MEASURED, NOT DERIVED, and getting it wrong is a difficulty change wearing a
+     fairness change's clothes. Three numbers, and they are all different:
+
+       5.38   twelve opponents drawn at random from the data
+       5.49   what this generator was already dealing, one season per PROGRAM and then
+              balanced on the total, both of which pull it upwards
+       5.45   what the band is centred on, and what holds the game where it was
+
+     Centring on 5.38 made every schedule a tenth of a loss easier than the ones it
+     replaced and put a whole point on the playoff rate. Centring on 5.49, the honest
+     mean of what was being dealt before, took two thirds of a point OFF it, and that is
+     worth understanding rather than patching: playoff odds are CONVEX in how easy a
+     schedule is, so the lucky tail was contributing more berths than the unlucky tail
+     was taking away, and clipping both ends at the old mean is a net loss of berths.
+     They have to be given back somewhere, and par is where. At 5.45 the playoff rate is
+     15.40% against 15.45% before and the title rate is 0.192% against 0.199%, which is
+     four titles in 57,200 seasons and not a difference.
+     probe_schedule.mjs prints par against what is actually dealt, so if the team data
+     changes enough for these to part company, that is where it will show. */
+  SCHEDULE_LOSS_PAR: 5.45,
+  SCHEDULE_LOSS_CURVE: [
+    [-2.5, 0.00], [-2.0, 0.01], [-1.5, 0.03], [-1.0, 0.07], [-0.5, 0.16],
+    [0.0, 0.39], [0.5, 0.68], [1.0, 0.90], [1.5, 0.995], [2.0, 1.00],
+  ],
+  SCHEDULE_LOSS_TOL: 0.20,
   // How often, out of every bowl, the assignment is the house's own RunThe.GG Bowl.
   RUNTHE_BOWL_CHANCE: 0.05,
-  // How much each side's score is pulled toward its true mean each game. Higher
-  // means less week-to-week noise, so roster strength wins out and better teams go
-  // farther. The opponent used to be fully random (OPP_CONSISTENCY effectively 0),
-  // which let weak opponents get hot and upset strong rosters regardless of talent;
-  // damping both sides makes the playoff and a title track real quality.
-  CONSISTENCY: 0.40,
-  OPP_CONSISTENCY: 0.40,
+  /* How much each side's score is pulled toward its true mean each game. Higher
+     means less week-to-week noise, so roster strength wins out.
+
+     THESE ONLY WORK WITH SCALE, AND THE MEASUREMENT IS COUNTERINTUITIVE. Damping
+     variance on its own made EVERY band win MORE, not just the good ones: at
+     SCALE 2.0 your mean beat the average opponent's at essentially any roster
+     quality, so variance was the only thing causing losses, and removing it just
+     let the favourite always win. Raising both to 0.85 moved a 75-80 roster from
+     8.7 wins to 9.3 and left the spread across the whole range unchanged.
+
+     They are the steepness, not the level. SCALE puts the crossover inside the
+     roster range; these sharpen the curve through it so landing on the right
+     side of it is decided by the roster rather than by a hot week. Set together
+     with SCALE 2.3, measured on real drafts with cfb/build/test/probe_economy.mjs.
+
+     Your side is damped less than the opponent's on purpose: your six players
+     having an off week is the drama the player owns, and theirs is the drama
+     that happens to them. */
+  CONSISTENCY: 0.80,
+  OPP_CONSISTENCY: 0.85,
+  /* See resolveGame. 1 is the real spread of college scoring offences and it is
+     far wider than a draft can move a roster, which is why every draft used to
+     end in one of three records. */
+  OPP_SPREAD: 0.55,
   PLAYOFF_HOME_FIELD: 0.35,
   // How much of an opponent's defense is applied to your offense. See resolveGame.
   DEFENSE_WEIGHT: 0.65,
@@ -226,49 +516,129 @@ function scoreParts(total, rng) {
   return out;
 }
 
+/**
+ * WHEN POINTS ACTUALLY GET SCORED, as each quarter's share of a game's scoring. The second
+ * quarter and the fourth carry the game because both end in a drive played against the
+ * clock; the first is two teams feeling each other out and the third is the one after the
+ * interval.
+ *
+ * This game had it close to backwards, the same way the NFL one did: the placer handed
+ * every score an even slice of the hour, and the late-field-goal guard below only ever
+ * moved kicks EARLIER, so points drained forwards on every pass and the fourth quarter
+ * ended up the quietest.
+ *
+ * THE SHARES ARE THE NFL'S. College clock rules are not the same -- the clock stops on
+ * first downs, which lends the closing minutes of each half even more scoring -- but there
+ * is no college quarter-by-quarter reference in this repo to calibrate against, and the
+ * shape is the same in both codes. Borrowed knowingly rather than invented precisely.
+ */
+const QUARTER_SCORING_SHARE = [0.21, 0.29, 0.22, 0.28];
+const QUARTER_SCORING_CDF = (() => {
+  const c = [0];
+  for (const sh of QUARTER_SCORING_SHARE) c.push(c[c.length - 1] + sh);
+  return c;
+})();
+function scoreTimeAt(u, QSEC) {
+  const pr = Math.max(0, Math.min(0.999999, u));
+  let q = 0;
+  while (q < 3 && pr >= QUARTER_SCORING_CDF[q + 1]) q++;
+  const lo = QUARTER_SCORING_CDF[q], span = QUARTER_SCORING_CDF[q + 1] - lo;
+  return (q + (span > 0 ? (pr - lo) / span : 0)) * QSEC;
+}
+
 function scoringScript(you, them, won, rng) {
   const QUARTERS = 4, QSEC = 15 * 60, GAME = QUARTERS * QSEC;
-  const yParts = scoreParts(you, rng).map((k) => ({ ...k, team: 'you' }));
-  const tParts = scoreParts(them, rng).map((k) => ({ ...k, team: 'them' }));
+  /* MIX EACH SIDE'S OWN SCORES. scoreParts walks a composition and emits the kinds in
+     groups -- every touchdown, then every field goal, then the odd safety -- so a team's
+     scoring arrived sorted by value and never mixed. Two teams each sorted by value,
+     alternated against each other, give a running score that barely wobbles, which is half
+     of why the lead stopped changing hands. */
+  const shuffle = (a) => {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      const sw = a[i]; a[i] = a[j]; a[j] = sw;
+    }
+    return a;
+  };
+  const yParts = shuffle(scoreParts(you, rng).map((k) => ({ ...k, team: 'you' })));
+  const tParts = shuffle(scoreParts(them, rng).map((k) => ({ ...k, team: 'them' })));
   if (!yParts.length && !tParts.length) return [];
 
   const margin = you - them;
   const winner = margin >= 0 ? 'you' : 'them';
+  /* NOT EVERY ONE-SCORE GAME IS DECIDED LATE. Holding the winner's last score back in all
+     of them left the winner having been behind just beforehand in almost every close game,
+     which is far more comebacks than really happen. */
+  const CLINCHER_CHANCE = 0.6;
   let clincher = null;
-  if (margin !== 0 && Math.abs(margin) <= 8) {
+  if (margin !== 0 && Math.abs(margin) <= 8 && rng() < CLINCHER_CHANCE) {
     clincher = (winner === 'you' ? yParts : tParts).pop();
   }
 
+  /* INTERLEAVE THE POSSESSIONS -- but drawn, not decided. Handing the next score to
+     whoever had more left, and forcing a change after two, produced a strict alternation
+     whenever both sides had the same number of scores, and a strict alternation means the
+     side that scores first is usually ahead from the first whistle to the last.
+     THE TRAILING SIDE IS LIKELIER TO SCORE NEXT, which a shuffle alone cannot reach:
+     weighting only by scores remaining is a uniformly random interleaving, and that tracks
+     the final proportionally, so the eventual winner spends most of the game in front. Real
+     football reacts to the scoreboard -- the side behind opens up, the side ahead runs the
+     clock. SCALED BY HOW CLOSE THE GAME FINISHES, because that feedback is not equally
+     true everywhere: a three-score win is led wire to wire, a three-point win is a seesaw,
+     and real scoreboards put nearly all their lead changes in the close ones. */
+  const RUN_DAMP = 0.3, TRAIL_PULL = 0.16, TRAIL_CAP = 0.3;
+  const closeness = Math.max(0, 1 - Math.abs(margin) / 20);
   const y = yParts.slice(), t = tParts.slice(), order = [];
+  let ordY = 0, ordT = 0;
   while (y.length || t.length) {
-    const a = order.length;
-    const twoSame = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
     let takeYou;
     if (!t.length) takeYou = true;
     else if (!y.length) takeYou = false;
-    else if (twoSame === 'you') takeYou = false;
-    else if (twoSame === 'them') takeYou = true;
-    else takeYou = y.length >= t.length;
-    order.push((takeYou ? y : t).shift());
+    else {
+      const a = order.length;
+      const run = a >= 2 && order[a - 1].team === order[a - 2].team ? order[a - 1].team : null;
+      let pr = y.length / (y.length + t.length);
+      if (run === 'you') pr *= RUN_DAMP;
+      else if (run === 'them') pr = 1 - (1 - pr) * RUN_DAMP;
+      const lead = ordY - ordT;
+      if (lead !== 0) {
+        const pull = Math.min(TRAIL_CAP, Math.abs(lead) * TRAIL_PULL) * closeness;
+        pr = lead > 0 ? pr * (1 - pull) : pr + (1 - pr) * pull;
+      }
+      takeYou = rng() < pr;
+    }
+    const next = (takeYou ? y : t).shift();
+    if (next.team === 'you') ordY += next.points; else ordT += next.points;
+    order.push(next);
   }
   if (clincher) order.push(clincher);
 
   const n = order.length;
   const el = [];
+  /* The others fill the share the clincher does not, so the top of the fourth is reachable
+     in every game rather than only the close ones. */
+  const spread = clincher ? n - 1 : n;
+  const top = clincher ? 0.93 : 1;
   for (let i = 0; i < n; i++) {
     if (clincher && i === n - 1) { el.push(GAME - (25 + Math.floor(rng() * (5 * 60)))); continue; }
-    const lo = (i / n) * GAME, span = GAME / n;
-    el.push(lo + span * (0.15 + rng() * 0.7));
+    el.push(scoreTimeAt(top * (i + 0.15 + rng() * 0.7) / spread, QSEC));
   }
 
   const quarterOf = (t0) => Math.min(QUARTERS - 1, Math.floor(t0 / QSEC));
+  /* Three minutes left: past here a field goal that still leaves you behind has spent the
+     possession you needed. Before it, the same kick is ordinary game management -- a team
+     down six with ten minutes to go kicks and makes it a one-score game. Banning the whole
+     quarter cost realism twice, because every kick it caught was then moved earlier. */
+  const LATE_FG_CUTOFF = GAME - 180;
+  const LATE_FG_SHARE = QUARTER_SCORING_CDF[3] +
+    ((LATE_FG_CUTOFF - 3 * QSEC) / QSEC) * QUARTER_SCORING_SHARE[3];
   const badLateFG = () => {
     const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
     let ry = 0, rt = 0;
     for (const i of idx) {
       const e = order[i];
       const behind = e.team === 'you' ? rt - ry : ry - rt;
-      if (e.kind === 'FIELD GOAL' && quarterOf(el[i]) === QUARTERS - 1 && behind > 3) return i;
+      if (e.kind === 'FIELD GOAL' && el[i] >= LATE_FG_CUTOFF && behind > 3) return i;
       if (e.team === 'you') ry += e.points; else rt += e.points;
     }
     return -1;
@@ -276,12 +646,19 @@ function scoringScript(you, them, won, rng) {
   for (let guard = 0; guard < n + 4; guard++) {
     const bad = badLateFG();
     if (bad < 0) break;
-    el[bad] = Math.floor(rng() * (3 * QSEC));
+    el[bad] = Math.floor(scoreTimeAt(rng() * LATE_FG_SHARE, QSEC));
   }
 
   const idx = order.map((e, i) => i).sort((a, b) => el[a] - el[b]);
   const secs = idx.map((i) => Math.max(1, Math.min(GAME - 1, Math.floor(el[i]))));
-  for (let i = 1; i < secs.length; i++) if (secs[i] <= secs[i - 1]) secs[i] = Math.min(GAME - 1, secs[i - 1] + 1);
+  for (let i = 0; i < secs.length; i++) {
+    if (i > 0 && secs[i] <= secs[i - 1]) secs[i] = secs[i - 1] + 1;
+    /* An exact quarter boundary displays as the second after it: the clock below is time
+       REMAINING clamped to QSEC-1, so an elapsed 45:00 and 45:01 both print "14:59 in the
+       fourth". The distinct-seconds rule above dedupes ELAPSED time and cannot see it. */
+    if (secs[i] % QSEC === 0) secs[i] += 1;
+    secs[i] = Math.min(GAME - 1, secs[i]);
+  }
 
   let ry = 0, rt = 0;
   return idx.map((i, k) => {
@@ -297,6 +674,225 @@ function scoringScript(you, them, won, rng) {
       you: ry, them: rt,
     };
   });
+}
+
+/* ─── WHOSE TOUCHDOWN IT WAS ──────────────────────────────────────────────────
+ *
+ * The broadcast knew a touchdown had happened and never knew whose, so a drafted roster
+ * could play a whole postseason without one of its six names being said out loud. The call
+ * banner read "TOUCHDOWN / You" and the log read "You touchdown", and which of the six men
+ * you spent the budget on did it was nowhere on the screen you are watching. This puts a
+ * man on each of them, and a line of commentary under his name.
+ *
+ * CREDIT IS DRAWN, NOT SIMULATED, which is the bargain scoringScript already makes one
+ * level up: the game was settled in fantasy space long before this runs, and the only
+ * question left is which legal, watchable version of it to show. A touchdown goes to one of
+ * the six on a weight that is how much of his season is the kind of work that ends in an end
+ * zone, times a form draw for the day. The man having the big afternoon scores most of them,
+ * the decoy tight end scores few, and neither is ever impossible.
+ *
+ * THE FORM IS DRAWN HERE RATHER THAN READ OFF THE GAME, which is the one place this differs
+ * from the NFL game's version of it. That game keeps a per-player box score for every week
+ * and weights on the column; this one resolves a game to a team total and never breaks it
+ * out, so there is no per-man number to read. Inventing one and showing it would be a box
+ * score the engine cannot stand behind. Drawing a form multiplier instead gives the same
+ * shape (somebody is hot, somebody is quiet) without claiming a stat line that does not
+ * exist anywhere else in the game.
+ *
+ * IT MUST HAVE ITS OWN RNG, AND THAT IS NOT A STYLE NOTE. The season's `rng` is one
+ * sequential stream shared by every game in a run, so drawing a scorer from it would consume
+ * values the next week depends on and silently rewrite every later result: not a crash, just
+ * a leaderboard that disagrees with itself. Callers seed a separate stream off the finished
+ * game; nothing in here is reachable from the stream that plays seasons.
+ */
+
+/* The name a commentator would use on second reference. Suffixes ride along on purpose:
+   "Ted Ginn Jr." is how that man is said out loud, and cutting to "Ginn" to satisfy a rule
+   about the last token reads as a different player. */
+function lastName(name) {
+  const parts = String(name || '').trim().split(/\s+/);
+  return parts.length > 1 ? parts.slice(1).join(' ') : (parts[0] || '');
+}
+
+function pickWeighted(items, weights, rng) {
+  let sum = 0;
+  for (const w of weights) sum += Math.max(0, w) || 0;
+  if (!(sum > 0)) return items.length ? items[Math.floor(rng() * items.length)] : null;
+  let r = rng() * sum;
+  for (let i = 0; i < items.length; i++) {
+    r -= Math.max(0, weights[i]) || 0;
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+/* HOW GOOD A DAY HE IS HAVING, on the same [0.35, 2.2] band the NFL game clips its measured
+   form to. Right-skewed: most of the six are having an ordinary afternoon and one of them is
+   not, which is what makes a game worth watching rather than six even sixths. */
+function formDraw(rng) {
+  return 0.35 + 1.85 * Math.pow(rng(), 1.7);
+}
+
+/* HOW LONG THE SCORING PLAY WAS. Most touchdowns are short and a few are the highlight of
+   somebody's season, so this is a tight base with a long tail rather than anything even.
+   Runs sit closer to the goal line than catches do, which is the shape the real thing has. */
+function touchdownYards(play, rng) {
+  const r = rng();
+  if (play === 'run') {
+    if (r < 0.72) return 1 + Math.floor(rng() * 5);
+    if (r < 0.95) return 6 + Math.floor(rng() * 15);
+    return 21 + Math.floor(rng() * 50);
+  }
+  if (r < 0.45) return 2 + Math.floor(rng() * 8);
+  if (r < 0.85) return 10 + Math.floor(rng() * 16);
+  return 26 + Math.floor(rng() * 50);
+}
+
+/*
+ * How long the kick was.
+ *
+ * BANDS RATHER THAN A FORMULA. The chip shot exists but is not the common case, the bulk of
+ * them sit between thirty and fifty, and the fifty-plus kick is ordinary now rather than
+ * remarkable. Drawing evenly across the legal range would land the median in roughly the
+ * right place and still be wrong in both tails: far too many twenty yard kicks, far too few
+ * long ones, which is the half a broadcast notices.
+ *
+ * THE BANDS ARE THE NFL GAME'S, for the same reason QUARTER_SCORING_SHARE above is. College
+ * kicking is not identical to the professional game (shorter median, a thinner fifty-plus
+ * tail) but there is no college kicking reference in this repo to calibrate against, and the
+ * shape is the same in both codes. Borrowed knowingly rather than invented precisely.
+ *
+ * BOTH TEAMS, unlike the touchdown credits above. A distance is a fact about the kick and
+ * needs no drafted player behind it, so the opponent's kicks get one too and the log reads
+ * the same on either side of the ball.
+ */
+const FIELD_GOAL_BANDS = [
+  [18, 29, 0.22],
+  [30, 39, 0.26],
+  [40, 49, 0.30],
+  [50, 56, 0.19],
+  [57, 63, 0.03],
+];
+function fieldGoalYards(rng) {
+  let r = rng();
+  for (const [lo, hi, w] of FIELD_GOAL_BANDS) {
+    if (r < w) return lo + Math.floor(rng() * (hi - lo + 1));
+    r -= w;
+  }
+  const last = FIELD_GOAL_BANDS[FIELD_GOAL_BANDS.length - 1];
+  return last[0] + Math.floor(rng() * (last[1] - last[0] + 1));
+}
+
+/*
+ * Every kick in a script, keyed by its place in it.
+ *
+ * Keyed by index rather than handed back in order because the call banner and the play log
+ * ask at different moments: the banner as the clock stops on one score, the log when the
+ * whole game is replayed at the end. Both look the kick up by the same index, so a game
+ * cannot show 48 yards live and 31 in the log afterwards.
+ */
+function fieldGoalDistances(script, rng) {
+  const out = new Map();
+  if (!Array.isArray(script)) return out;
+  script.forEach((e, i) => { if (e.kind === 'FIELD GOAL') out.set(i, fieldGoalYards(rng)); });
+  return out;
+}
+
+/* One line of commentary per touchdown. Several shapes each, drawn on the same stream, so a
+   roster that scores four in a game does not read the same sentence four times.
+   THE PHRASING IS BANDED BY DISTANCE, which is not decoration: "punches it in" is a
+   goal-line verb and reads as a mistake on a 40-yard run, and "breaks away" reads as one on
+   a sneak. Each band only holds verbs that are true at that distance. */
+function touchdownBlurb(scorer, passer, yards, play, rng) {
+  const who = scorer.name, yd = yards;
+  const pick = (forms) => forms[Math.floor(rng() * forms.length)];
+  if (play === 'run') {
+    if (yd <= 5) return pick([
+      who + ' punches it in from the ' + yd,
+      who + ' powers in from ' + yd + ' yards out',
+      who + ' gets in behind his line from the ' + yd,
+    ]);
+    if (yd <= 20) return pick([
+      who + ' finds the corner from ' + yd + ' yards',
+      who + ' cuts back for a ' + yd + '-yard touchdown',
+      who + ' carries it in from ' + yd + ' out',
+    ]);
+    return pick([
+      who + ' breaks away for ' + yd + ' yards',
+      who + ' takes it ' + yd + ' yards to the house',
+      who + ' is gone, ' + yd + ' yards untouched',
+    ]);
+  }
+  if (passer) {
+    if (yd <= 9) return pick([
+      passer.name + ' finds ' + who + ' from ' + yd + ' yards',
+      who + ' comes down with it in the corner, ' + yd + ' yards from ' + passer.name,
+      passer.name + ' to ' + who + ' for the score from the ' + yd,
+    ]);
+    if (yd <= 25) return pick([
+      who + ' hauls in a ' + yd + '-yard score from ' + passer.name,
+      passer.name + ' to ' + who + ', ' + yd + ' yards, touchdown',
+      who + ' finds the soft spot, ' + yd + ' yards from ' + passer.name,
+    ]);
+    return pick([
+      who + ' gets behind the secondary, ' + yd + ' yards from ' + passer.name,
+      passer.name + ' goes deep and ' + who + ' runs under it, ' + yd + ' yards',
+      who + ' takes the top off it, ' + yd + ' yards from ' + passer.name,
+    ]);
+  }
+  return pick([
+    who + ' scores on a ' + yd + '-yard catch',
+    who + ' comes down with it from ' + yd + ' yards',
+  ]);
+}
+
+/**
+ * Credit every touchdown in `script` that belongs to `you` to one of the drafted six.
+ *
+ * `men` is the roster as the broadcast has it: { name, pos, slot, pass, rush, rec }, the
+ * three production columns being a man's season per-game passing, rushing and receiving.
+ * Returns one credit per touchdown, each carrying the index of the event in `script` so a
+ * caller can hang it on the play it belongs to without matching on anything fuzzy.
+ *
+ * A roster with nobody who can reach an end zone returns an empty list, and the caller shows
+ * what it always showed. That is the honest answer: there is no drafted man to name.
+ */
+function touchdownCredits(script, men, rng) {
+  const out = [];
+  if (!Array.isArray(script) || !Array.isArray(men) || !men.length) return out;
+  /* The end-zone share of a man's game. A quarterback's passing does not make HIM the
+     scorer, it makes him the passer, so only what he does with the ball in his own hands
+     counts towards being credited with the score. */
+  const reach = men.map((m) => Math.max(0, (m.rush || 0) + (m.rec || 0)));
+  if (!reach.some((v) => v > 0)) return out;
+  /* One form draw a man, before the script is walked, so he is hot or quiet for the whole
+     game rather than re-rolled play by play. */
+  const weights = men.map((m, i) => reach[i] * formDraw(rng));
+  /* The man who throws it, if the roster has one: the biggest passing season on it. A
+     quarterback-less roster simply has no passer and the catches say so. */
+  let passer = null;
+  for (const m of men) if ((m.pass || 0) > (passer ? passer.pass : 0)) passer = m;
+
+  script.forEach((e, i) => {
+    if (e.team !== 'you' || e.kind !== 'TOUCHDOWN') return;
+    const scorer = pickWeighted(men, weights, rng);
+    if (!scorer) return;
+    /* How he got there, from what he is. A quarterback credited with a touchdown ran it in
+       himself by definition, and everybody else splits on his own rushing and receiving. */
+    const isQB = String(scorer.pos || '').toUpperCase() === 'QB';
+    const rushW = Math.max(0, scorer.rush || 0), recW = Math.max(0, scorer.rec || 0);
+    const play = isQB || (rushW + recW > 0 && rng() < rushW / (rushW + recW)) ? 'run' : 'catch';
+    const yards = touchdownYards(play, rng);
+    const withPasser = play === 'catch' && passer && passer !== scorer ? passer : null;
+    out.push({
+      at: i, kind: 'TOUCHDOWN', team: 'you',
+      scorer: scorer.name, slot: scorer.slot || scorer.pos, play, yards,
+      passer: withPasser ? withPasser.name : null,
+      short: lastName(scorer.name) + ' ' + yards + '-yard TD ' + (play === 'run' ? 'run' : 'catch'),
+      blurb: touchdownBlurb(scorer, withPasser, yards, play, rng),
+    });
+  });
+  return out;
 }
 
 // ─── playoff / bowl structure ───────────────────────────────────────────────
@@ -320,8 +916,67 @@ function playoffRoundNames(rounds) {
    was worth about 1.8, so being dominant was arithmetically incapable of making
    up for losing once, and the playoff was a cliff at eleven wins.
    Only WIN + LOSS matters for ordering, not the split: the formula is
-   (WIN + LOSS) * w - LOSS * games, and the second term is the same for everyone. */
-const RESUME = { WIN: 3.6, LOSS: 3.9, Z: 4.5, SOS: 1.8 };
+   (WIN + LOSS) * w - LOSS * games, and the second term is the same for everyone.
+   SLATE is the half of who-you-played that the mean cannot see, weighted in the same
+   units before SOS multiplies the pair: see scheduleStrength below. At 3.2 the whole
+   range of schedules this game deals is worth about a quarter of a win, which is a
+   tie-break between two teams with the same record and nothing more than that. */
+const RESUME = { WIN: 3.6, LOSS: 3.9, Z: 4.5, SOS: 1.8, SLATE: 3.2 };
+
+/* HOW LIKELY A GAME AGAINST THIS OPPONENT IS TO BE A LOSS, read off the measured curve
+   on SCHEDULE_LOSS_CURVE and interpolated between its readings. Flat outside the ends,
+   because past z 2 it is a loss and below -2.5 it is a win.
+   BOTH THE SCHEDULE AND THE RESUME ASK THIS, and they have to get the same answer, which
+   is the only reason it lives up here on its own. */
+function lossOdds(z, constants = CONSTANTS) {
+  const c = constants.SCHEDULE_LOSS_CURVE;
+  if (!c || !c.length) return 0.5;
+  if (z <= c[0][0]) return c[0][1];
+  for (let i = 1; i < c.length; i++) {
+    if (z <= c[i][0]) {
+      const [x0, y0] = c[i - 1], [x1, y1] = c[i];
+      return y0 + (y1 - y0) * (z - x0) / (x1 - x0);
+    }
+  }
+  return c[c.length - 1][1];
+}
+/* The losses a slate is worth, which is the whole of what makes one schedule harder
+   than another. Takes team seasons or bare z values. */
+function expectedLosses(games, constants = CONSTANTS) {
+  if (!games || !games.length) return 0;
+  return games.reduce((s, g) =>
+    s + lossOdds(typeof g === 'number' ? g : (g && g.strength_z) || 0, constants), 0);
+}
+
+/* HOW HARD THE SCHEDULE WAS, in the one number the resume reads.
+ *
+ * It used to be the plain mean of the opponents' z, and against this game's schedules
+ * that is very nearly a constant: the generator balances every slate to the same total,
+ * so the mean ran from -0.04 to +0.04 and the term multiplying it was worth about a
+ * seventh of a win across that entire range. Strength of schedule was in the formula and
+ * absent from the game.
+ *
+ * So the difficulty the mean cannot see is added to it: the losses this slate was worth
+ * against the losses an average slate is worth, which is the same measure the generator
+ * balances on. Positive for a hard draw, negative for a soft one, nought for a normal
+ * one. Centred on nought is what keeps this comparable with the real team seasons in the
+ * resume table, whose sos is the conference they played in that year: they have no game
+ * list to take a loss count from, and a term that averages to zero leaves their side of
+ * the comparison exactly where it was.
+ *
+ * IT IS A TIE-BREAK, NOT A VERDICT, deliberately. The generator holds expected losses to
+ * a band, so what reaches here is the difference left over inside that band. A term big
+ * enough to overturn a win would be a thumb on the scale of exactly the kind this is
+ * fixing, pressing the other way. */
+function scheduleStrength(oppZs, prepared, constants = CONSTANTS) {
+  if (!oppZs || !oppZs.length) return 0;
+  const mean = oppZs.reduce((a, b) => a + b, 0) / oppZs.length;
+  const base = prepared && prepared.meanScheduleLosses;
+  if (base == null) return mean;
+  const games = oppZs.length;
+  const par = base * games / (constants.REGULAR_SEASON_GAMES || games);
+  return mean + RESUME.SLATE * (expectedLosses(oppZs, constants) - par);
+}
 
 function resumeScore(wins, losses, z, sos) {
   const played = wins + losses;
@@ -361,20 +1016,62 @@ function nationalRank(resume, prepared) {
    MARGIN_GAIN finishes that standardisation. Your margin is not a real point
    differential: it is your fantasy total against an opponent's real points, so
    the units on the two sides of the subtraction do not match and the z that
-   falls out is flatter than a real team's. Measured over 17,000 seasons at every
-   record from 6-6 to 12-0, a real team's strength_z is 1.30 times yours, with an
-   intercept of 0.008 and an R2 of 0.974. Multiplying by that puts your season on
-   the same scale as the teams it is being ranked against, which it was not
-   before: without it you look better than a real team at 6-6 and worse at 12-0.
-   Re-measure it with cfb/build/test/probe_economy.mjs if SCALE, the cap or
-   DEFENSE_WEIGHT move, because all three change what a margin looks like. */
-const MARGIN_GAIN = 1.30;
+   falls out is flatter than a real team's.
+
+   IT IS NO LONGER A CLEAN REGRESSION SLOPE, and the honest version of that is
+   worth writing down. It was fitted once, at 1.30, against a five-slot roster
+   and SCALE 2.0. `probe_economy.mjs margin` now refits it on demand, which the
+   old comment told you to do without providing the tool. Two things it reports:
+   at SCALE 2.0 with six slots the fit had already drifted to 1.15, so the
+   constant was over-crediting every season by about 13% and quietly making the
+   playoff easier than intended. And under the re-tuned season the relationship
+   is not linear any more: damping the opponent flattened the margin at the top,
+   so an unbeaten player wins by less than an unbeaten real team does and the
+   per-record ratio runs from 0.6 to 2.4 (R2 0.90 against 0.99 before).
+
+   So this is held at the value where the RANK LADDER comes out right, which is
+   the thing it exists to serve, rather than at the raw slope of a fit that no
+   longer describes a line. Check it against `probe_economy.mjs record`: 12-0
+   should rank about 1st, 11-1 about 4th, 10-2 about 10th, 9-3 outside the field.
+   Re-check after any move to SCALE, the cap, DEFENSE_WEIGHT or the consistency
+   pair, because all of them change what a margin looks like.
+
+   TWO CONSTANTS NOW, AND THE SECOND IS WHY. A player wrote in: "I never get the middle
+   seeds in the playoffs. I'm always top 4 or bottom 3." They were right, and the ladder
+   above is the reason. A seed IS a national rank; a rank comes off the resume; and one
+   win is worth WIN + LOSS = 7.5 of resume while ranks 5 to 10 are 5.2 of resume wide,
+   because that part of the real country is densely packed. So one win LEAPS the middle
+   of the field, and the only way to land in it is to be an unusual example of your
+   record.
+
+   A REAL TEAM IS UNUSUAL OFTEN AND A PLAYER WAS NOT. Season to season inside one record,
+   a real team's z has an sd around 0.47; at gain 1.30 a player's had an sd of 0.19. Less
+   than half, so a player's resume moved in near-lockstep with their record: every 11-1
+   landed within a rank or two of every other 11-1, and there was nothing left over to
+   carry anybody into the gap. Measured over 3,600 seasons, seeds 6 and 7 never came up
+   at all and the eleven seed took 49% of the whole field.
+
+   So the gain is raised to where the spread MATCHES the country's, and MARGIN_SHIFT holds
+   the ladder where it was while that happens: raising the gain alone lifts every mean as
+   well as widening it, which would have made the playoff easier rather than fairer. The
+   pair is fitted by cfb/build/test/probe_seeds.mjs, which sweeps them against two things
+   that must not move, the playoff rate and the record ladder, and one that must: how
+   evenly the twelve seats are handed out. Reading after: every seed reachable, the eleven
+   seed down from 49% to 26%, playoff 14.78% against 14.83%, and 12-0, 11-1, 10-2 and 9-3
+   still ranking 1st, 4th, 10th and 20th.
+
+   The cost is real and it is the point. A 10-2 that wins ugly can now miss the field
+   (97% in, against 100%), and a 9-3 that wins big can now make it (3%, against 0%).
+   Margin was worth almost nothing next to a record and is now worth about a third of a
+   win at one standard deviation. */
+const MARGIN_GAIN = 3.90;
+const MARGIN_SHIFT = -0.25;
 
 function rankSeason(wins, losses, marginPerGame, oppZs, prepared) {
   const mu = prepared && prepared.pointDiffMean != null ? prepared.pointDiffMean : 0;
   const sd = prepared && prepared.pointDiffSd ? prepared.pointDiffSd : 1;
-  const z = (marginPerGame - mu) / sd * MARGIN_GAIN;
-  const sos = oppZs && oppZs.length ? oppZs.reduce((a, b) => a + b, 0) / oppZs.length : 0;
+  const z = (marginPerGame - mu) / sd * MARGIN_GAIN + MARGIN_SHIFT;
+  const sos = scheduleStrength(oppZs, prepared);
   const resume = resumeScore(wins, losses, z, sos);
   return { z, sos, resume, rank: nationalRank(resume, prepared) };
 }
@@ -464,6 +1161,35 @@ function seedFromRanking(rank, wins) {
     return { ...out, bowl: 'major', rounds: 1, label: 'Bowl Game' };
   }
   return { ...out, bowl: 'minor', rounds: 1, label: 'Bowl Game' };
+}
+
+/*
+ * THE PRICE OF BEING THE TEAM EVERYBODY WANTS. See the WEEK_ constants.
+ *
+ * Returns an advantage for one regular-season game, in the same units resolveGame takes from
+ * seedAdvantage and roundEdge: 1 is a fair fight and below 1 lifts the other team. It is
+ * never above 1, so this can only ever cost a roster and never hand one a game.
+ *
+ * Two gates, multiplied, and BOTH have to open before anything happens:
+ *   how good you are      nothing under WEEK_FLOOR, full at WEEK_FULL
+ *   who you are playing   nothing at WEEK_FOE_LOW and below, full at WEEK_FOE_HIGH
+ *
+ * That pairing is the whole design. One gate alone is MARQUEE_GAMES again, in one direction
+ * or the other: scale the whole season by roster quality and a 96 simply wins fewer games,
+ * which is a worse average season rather than a rarer unbeaten one; scale it by opponent
+ * alone and every roster in the game pays for a change aimed at the top of the scale.
+ */
+function weekAdvantage(rating, opponent, constants = CONSTANTS) {
+  const C = constants;
+  if (!(C.WEEK_UPSET > 0)) return 1;
+  const rspan = C.WEEK_FULL - C.WEEK_FLOOR;
+  const cls = rspan > 0 ? Math.max(0, Math.min(1, (rating - C.WEEK_FLOOR) / rspan)) : 1;
+  if (cls <= 0) return 1;
+  const z = opponent && typeof opponent.strength_z === 'number' ? opponent.strength_z : 0;
+  const fspan = C.WEEK_FOE_HIGH - C.WEEK_FOE_LOW;
+  const foe = fspan > 0 ? Math.max(0, Math.min(1, (z - C.WEEK_FOE_LOW) / fspan)) : 1;
+  if (foe <= 0) return 1;
+  return 1 / (1 + C.WEEK_UPSET * cls * foe);
 }
 
 /* Seeding is worth something. The top seeds host the first round and are the
@@ -971,6 +1697,93 @@ function rosterStructure(roster) {
     schemeBonus, shape, shapeDamped };
 }
 
+/*
+ * WHAT EACH PART OF THE SHAPE IS COSTING, in the same percent the squad panel already
+ * prints at the top of the coach's take.
+ *
+ * WHY THIS EXISTS. The report card used to score its four meters with curves invented in
+ * the page, with different tolerances from the ones above: the run and pass meter used a
+ * span of 0.20 where balance() uses a tolerance of 0.12, so on 15.5% of drafted rosters
+ * it drew a red bar for a split the engine charges NOTHING for. Measured, not guessed:
+ * cfb/build/test/probe_report.mjs. A bar that says "weak" about something the game does
+ * not act on teaches a player to distrust the whole panel.
+ *
+ * So the page no longer scores anything. shape is a product of four factors, so for any
+ * one of them, putting it right and leaving the rest alone moves the multiplier by
+ * shape * (1/f - 1) * SHAPE_STRENGTH. That is a straight answer to "what is this line
+ * costing me", it is the same unit on all four lines, and it is the same unit as the
+ * headline. Zero means this part of the roster is costing nothing at all.
+ *
+ * `pass` is the odd one only in what it is made of: the other three are single factors,
+ * while this is base = effective/total, whose whole shortfall is the receiving points a
+ * quarterback who does not throw leaves on the floor. Which is why it is named for the
+ * passing game and not for the quarterback: a run-first quarterback with no receivers to
+ * strand costs nothing here, and the panel should say so rather than calling the best
+ * rushing season in the game a weakness.
+ */
+/*
+ * SIGNED, because three of these four can only cost and one of them can pay. balance,
+ * concentration and floor are capped at 1 and only ever subtract, but base runs past it:
+ * qbSupport is clamped to [0.62, 1.18], so a quarterback with a real arm lifts the
+ * receivers ABOVE their own numbers. Measured over 2,100 drafts, the passing line is
+ * worth -4.0% at the 5th percentile and +11.6% at the 95th, so clamping the gain away
+ * would have hidden the single biggest thing a good quarterback does for a roster. A
+ * negative number here means this part of the roster is paying you.
+ *
+ * AND THEY ADD UP, which took a second try. The obvious way to price a line is "what
+ * would fixing this one be worth", holding the others where they are. Each of those is
+ * true on its own and they do NOT sum to the whole, because shape is a PRODUCT: measure
+ * each factor against a shape the other three have already dragged down and every one of
+ * them comes out too small. Over 400 drafts the four fell short of the real shortfall by
+ * up to 14 points, which is exactly the arithmetic a player would try and find broken.
+ *
+ * A product is a sum of logs, so the split happens there: each factor's share of the
+ * shortfall is its share of -ln(f). That sums to the whole by construction, at the ends
+ * of the scale as well, because it divides up the shortfall the engine ACTUALLY has
+ * after damping and clamping rather than a modelled one.
+ */
+function structureCosts(st) {
+  const none = { pass: 0, balance: 0, concentration: 0, floor: 0 };
+  if (!st || !st.total) return none;
+  const fl = Math.max(0.3, st.floor);
+  const rest = st.balance * st.concentration * fl;
+  const base = rest ? st.shape / rest : 1;
+  const parts = { pass: base, balance: st.balance, concentration: st.concentration, floor: fl };
+
+  /* What the roster gives up against a shape that costs nothing, which is 1 plus whatever
+     the scheme pays. Read off the multiplier itself, so damping and the clamp are both
+     already in it. */
+  const shortfall = (1 + (st.schemeBonus || 0)) - st.multiplier;
+
+  const w = {}; let sum = 0;
+  for (const k of Object.keys(parts)) {
+    const f = parts[k];
+    w[k] = f > 0 ? -Math.log(f) : 0;
+    sum += w[k];
+  }
+  /* Nothing to divide, or a total so near zero that a share of it is noise being
+     amplified. Either way there is no story to tell and every line reads as free. */
+  if (!isFinite(sum) || Math.abs(sum) < 1e-6 || Math.abs(shortfall) < 1e-9) return none;
+
+  const out = {};
+  for (const k of Object.keys(parts)) out[k] = shortfall * (w[k] / sum);
+  return out;
+}
+
+/*
+ * THE THREE WORDS, AND WHERE THEY SIT. Set on cost rather than on each metric's own
+ * scale, so "OK" means the same thing on every line. 1.2% of a team's scoring is under a
+ * point a game on a good roster and is not worth calling a weakness; past 4% it is a real
+ * part of why a team underperforms the six names on it. Over 2,100 drafted rosters that
+ * puts 12% to 32% of them in Weak on any one line and roughly half in Strong, which is
+ * the shape a report card should have: praise that costs something to earn, and a
+ * warning that means the game is really taking points off you.
+ */
+const REPORT_BANDS = { ok: 0.012, weak: 0.040 };
+function reportBand(cost) {
+  return cost < REPORT_BANDS.ok ? 'strong' : cost < REPORT_BANDS.weak ? 'ok' : 'weak';
+}
+
 // ─── coach report ───────────────────────────────────────────────────────────
 
 function coachReport(roster, chemResult) {
@@ -1248,6 +2061,34 @@ function generateSchedule(data, rng, opts = {}) {
   const hard = (data.greatPool && data.greatPool.length) ? data.greatPool : null;
   const ordinary = count - (hard ? marquee : 0);
   const target = meanScheduleStrength * ordinary / count;
+  /* ── AND THE SHAPE OF IT, NOT ONLY THE TOTAL ───────────────────────────────
+   *
+   * Balancing the total left the one thing that actually decides a season free to
+   * wander. Three ranked teams and three cupcakes has the SAME total as twelve
+   * ordinary opponents and is a different season, because the cupcakes were already
+   * wins and the ranked ones mostly are not: measured over 2,880 seasons, at a record
+   * that moves by a tenth of a win, the playoff rate ran
+   *
+   *     0 ranked opponents 16.4%     1 ranked 12.2%     2 ranked 7.8%
+   *
+   * so the slate the wheel happened to deal was worth twice what the draft was. A
+   * player wrote in having noticed, which is the part that matters: they were 9-3 with
+   * a hard schedule watching 9-3 teams in the field.
+   *
+   * The resume cannot fix this on its own. Its strength-of-schedule term reads the MEAN,
+   * and the mean is what was already pinned; the shape is invisible to it. So the shape
+   * is pinned here, where the schedule is made, in expected losses: see the curve on
+   * SCHEDULE_LOSS_CURVE, which also records the two ways of doing this that did not
+   * work. The resume then credits what is left over inside the band, which is small
+   * enough to be a tie-break rather than a verdict.
+   *
+   * WHAT THIS IS NOT is a flat schedule. Every slate still has its ranked teams and its
+   * cupcakes and they are different teams every season. What it does not have any more
+   * is a season where the wheel quietly dealt you four of them, or none. */
+  const C = opts.constants || CONSTANTS;
+  const lossTol = opts.lossTolerance ?? C.SCHEDULE_LOSS_TOL ?? 0.2;
+  const lossTarget = opts.lossTarget != null ? opts.lossTarget * ordinary / count
+    : (data.meanScheduleLosses == null ? null : data.meanScheduleLosses * ordinary / count);
 
   let best = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -1294,12 +2135,22 @@ function generateSchedule(data, rng, opts = {}) {
        attempts before falling through to the least bad one it saw. */
     const ordElite = unordered.slice(0, ordinary).filter(g => g.strength_z >= eliteThreshold).length;
     const drift = Math.abs(ordTotal - target);
+    const losses = expectedLosses(unordered.slice(0, ordinary), C);
+    const lossDrift = lossTarget == null ? 0 : Math.abs(losses - lossTarget);
     const ok = drift <= Math.abs(target * tolerance) + tolerance * ordinary
-      && ordElite <= maxElite;
-    if (ok) return { games: ordered, total, elite, attempts: attempt + 1 };
-    if (!best || drift < best.drift) best = { games: ordered, total, elite, drift, attempts: attempt + 1 };
+      && ordElite <= maxElite
+      && lossDrift <= lossTol;
+    if (ok) return { games: ordered, total, elite, losses, attempts: attempt + 1 };
+    /* THE LEAST BAD ONE SEEN has to be judged on both, or a run of four hundred attempts
+       that never satisfies the loss band falls back to whichever schedule had the
+       flattest total, which is the schedule this is trying not to deal. A loss is worth
+       a great deal of z, hence the weight on it. */
+    const cost = drift + lossDrift * ordinary;
+    if (!best || cost < best.cost) {
+      best = { games: ordered, total, elite, losses, drift, cost, attempts: attempt + 1 };
+    }
   }
-  return { games: best.games, total: best.total, elite: best.elite,
+  return { games: best.games, total: best.total, elite: best.elite, losses: best.losses,
     attempts: maxAttempts, relaxed: true };
 }
 
@@ -1309,9 +2160,10 @@ function pickFrom(pool, rng) {
   return pool[Math.floor(rng() * pool.length)];
 }
 
-/* The four opponents a bracket can put in front of you, weakest first: a nine or
-   ten win team in the first round, then a conference winner, then two of the
-   best seasons in the game. A top-four seed never meets the first of them. */
+/* THE OLD LADDER, kept as the fallback for a caller with no bracket: four opponents by
+   strength, weakest first, a nine or ten win team in the first round, then a conference
+   winner, then two of the best seasons in the game, with a top-four seed never meeting
+   the first of them. buildBracket below is what a real run walks through now. */
 function generatePlayoffs(data, rng, opts = {}) {
   const { goodPool, greatPool, elitePool } = data;
   const elite = elitePool.length ? elitePool : greatPool;
@@ -1332,7 +2184,7 @@ function generatePlayoffs(data, rng, opts = {}) {
   return count ? ladder.slice(ladder.length - Math.min(count, ladder.length)) : ladder;
 }
 
-/* Read the ladder from the back, so a team playing three rounds starts at the
+/* Read that ladder from the back, so a team playing three rounds starts at the
    quarterfinal and a team playing four starts at the first round. */
 function playoffOpponent(playoffs, rounds, roundIdx) {
   if (!playoffs || !playoffs.length) return null;
@@ -1340,10 +2192,224 @@ function playoffOpponent(playoffs, rounds, roundIdx) {
   return playoffs[Math.min(start + roundIdx, playoffs.length - 1)];
 }
 
+// ─── the bracket ────────────────────────────────────────────────────────────
+
+/*
+ * A REAL TWELVE-TEAM FIELD, because the ladder above is not one and this replaced it.
+ *
+ * What the ladder did was hand you the next rung by STRENGTH: a nine-or-ten-win team,
+ * then two eleven-win teams, then one of the best seasons in the data. Nobody else was in
+ * the field, nothing advanced, and there was no sense in which a seed played another seed.
+ * On screen that produced a four seed apparently drawn against a four seed, which is what
+ * a player reported: their own "#4" is a bracket seed and the opponent's "#4" is where
+ * that team finished in its OWN real season, and the two collided by coincidence.
+ *
+ * THE SHAPE IS THE REAL ONE. Seeds one to four have the first round off.
+ *
+ *   First round   5v12   6v11   7v10   8v9
+ *   Quarterfinal  1 vs W(8/9)      2 vs W(7/10)     3 vs W(6/11)     4 vs W(5/12)
+ *   Semifinal     W(1/8/9) vs W(4/5/12)             W(2/7/10) vs W(3/6/11)
+ *   Final         the two survivors
+ *
+ * So a four seed's quarterfinal is the 5/12 winner and never another four, which is the
+ * whole of the complaint.
+ */
+const BRACKET = {
+  /* Seed pairs, in bracket order. Index is the game number within the round. */
+  first: [[5, 12], [6, 11], [7, 10], [8, 9]],
+  /* Each quarterfinal is a bye seed against the winner of one first-round game, named by
+     that game's index above. */
+  quarter: [[1, 3], [2, 2], [3, 1], [4, 0]],
+  /* Each semifinal is two quarterfinal winners, by quarterfinal index. */
+  semi: [[0, 3], [1, 2]],
+};
+
+/*
+ * THE OTHER ELEVEN, seeded so the number means something. A one seed has to be a better
+ * season than a twelve or the bracket reads as broken the first time anybody looks at it,
+ * so the field is drawn from the same pools the ladder used and dealt out in strength
+ * order: the top from the best seasons in the data, the middle from eleven-win teams,
+ * the bottom from nine and ten-win teams.
+ *
+ * WHERE THE TIERS BREAK IS A DIFFICULTY SETTING, not a detail, and it is the one this
+ * change turns on. The ladder it replaced put exactly one of the best seasons in the data
+ * in a player's way, in the final, and nothing better than an eleven-win team before it.
+ * A bracket puts a whole field in the way instead, so if the top four seats are all drawn
+ * from that same top pool, a bye seed has to beat two of them back to back and the title
+ * gets much harder without anybody having decided that it should. BRACKET_ELITE_SEEDS is
+ * how many seats come out of the top pool; see the note on it in CONSTANTS.
+ *
+ * YOUR SEED IS YOUR RANK, and it is left empty here rather than filled, because the
+ * roster in that slot is the player's own and does not come out of a pool.
+ */
+function buildBracket(data, rng, yourSeed, constants = CONSTANTS) {
+  /* EVERY SEAT COMES OUT OF THE FIELD, which is the list of real seasons this game's own
+     ranking puts inside the top twelve. It arrives best first, so the three tiers are
+     slices of it rather than three separate win-count filters: the top slice for the
+     seats BRACKET_ELITE_SEEDS covers, the next for everything down to
+     BRACKET_GREAT_SEEDS, the tail for the rest. The tiers are proportional to the seats
+     they fill, so a one seed is drawn from the best twelfth or so of the qualified
+     seasons and a twelve seed from the last third of them.
+     The old win-count pools are the fallback for data too thin to rank, which is only
+     ever a test fixture: a real prepareData always returns a field. */
+  const { goodPool, greatPool, elitePool, fringePool } = data;
+  const topN = constants.BRACKET_ELITE_SEEDS;
+  const midN = constants.BRACKET_GREAT_SEEDS;
+  const elite = elitePool.length ? elitePool : greatPool;
+  const great = greatPool.length ? greatPool : goodPool;
+  /* ONLY THE BOTTOM TIER CHANGED, and only by having a bar. The top two tiers are eleven
+     and twelve win teams, every one of which this game's ranking puts inside the field
+     anyway, so they are what they were and the difficulty they were tuned to holds.
+     The bottom seats used to be ANY nine or ten win team, half of which would never have
+     been selected, and are now the ones that would: mostly 10-2, some 11-2, and a 9-3
+     only when that particular 9-3 really does rank inside twelve. */
+  const good = (fringePool && fringePool.length >= constants.PLAYOFF_TEAMS)
+    ? fringePool : (goodPool.length ? goodPool : greatPool);
+  const poolFor = (seed) => (seed <= topN ? elite : seed <= midN ? great : good);
+
+  /* NO SCHOOL TWICE IN ONE BRACKET, not merely no season twice. The pools hold many
+     seasons of the same program (Alabama has a dozen, Ohio State nearly as many), so a
+     draw that only blocked a repeated team_season_id still put "Alabama '12" on one line
+     and "Alabama '20" on another about seven brackets in ten. A real playoff never has a
+     school in it twice, and on a phone the year is small: a player reads their opponent
+     as "ALA", sees another "ALA" across the bracket, and the whole thing stops looking
+     like the team they are actually facing. Blocking the SCHOOL fixes both, and it
+     subsumes the season block, since two of the same season are the same school. */
+  const schoolOf = (t) => String(t.team_season_id || '').replace(/-\d{4}$/, '') || t.school || '';
+  const used = new Set();
+  const field = {};
+  for (let seed = 1; seed <= constants.PLAYOFF_TEAMS; seed++) {
+    if (seed === yourSeed) { field[seed] = { seed, you: true, team: null }; continue; }
+    let team = null;
+    for (let tries = 0; tries < 40; tries++) {
+      const t = pickFrom(poolFor(seed), rng);
+      if (t && !used.has(schoolOf(t))) { team = t; break; }
+    }
+    /* The safety valve, for a pool too school-poor to answer in 40 tries: take any team
+       whose school is not already in the field, scanning the pool once; only if even that
+       fails does a repeat slip through, which the field diversity makes vanishingly rare. */
+    if (!team) {
+      const pool = poolFor(seed);
+      team = pool.find((t) => !used.has(schoolOf(t))) || pickFrom(pool, rng);
+    }
+    if (team) used.add(schoolOf(team));
+    field[seed] = { seed, you: false, team };
+  }
+  return { field, rounds: [[], [], [], []], yourSeed };
+}
+
+/* Two seeds meet: the better one wins more often, and the gap decides how much more. The
+   strength each carries is its own season's z-score, so a twelve seed beating a five is
+   about as likely here as it is in the real thing rather than a coin flip. */
+function bracketFavourite(a, b, rng) {
+  const z = (e) => (e && e.team ? (e.team.strength_z || 0) : 0);
+  /* The seed itself carries weight beyond the two seasons' z-scores, because a bracket
+     that ignored it would put a nine seed through as often as a one. */
+  const edge = (b.seed - a.seed) * 0.06 + (z(a) - z(b)) * 0.55;
+  const pA = 1 / (1 + Math.exp(-edge));
+  return rng() < pA ? a : b;
+}
+
+/* Who meets who in a round, read off the shape above and the round before it. Both the
+   drawing of a round and the resolving of it go through here, because the one thing that
+   must never differ is who the game was between. */
+function bracketPairs(bracket, roundIdx) {
+  const F = bracket.field;
+  const prev = (i) => ((bracket.rounds[roundIdx - 1] || [])[i] || {}).winner;
+  if (roundIdx === 0) return BRACKET.first.map(([a, b]) => [F[a], F[b]]);
+  if (roundIdx === 1) return BRACKET.quarter.map(([s, g]) => [F[s], prev(g)]);
+  if (roundIdx === 2) return BRACKET.semi.map(([a, b]) => [prev(a), prev(b)]);
+  return [[prev(0), prev(1)]];
+}
+
+/* Whether a round is one the player is in. A bye seed is in three of the four, and the
+   rounds they are not in still have to be played by somebody. */
+function bracketYourRound(bracket, roundIdx) {
+  return bracketPairs(bracket, roundIdx).some(([a, b]) => (a && a.you) || (b && b.you));
+}
+
+/*
+ * PLAY THE ROUNDS THE PLAYER IS NOT IN. A bye seed enters at the quarterfinal, and a
+ * quarterfinal is against the winner of a first-round game: ask for that pairing with the
+ * first round still empty and the opponent is nobody. That is not a hypothetical, it is
+ * what the first cut of this did for all four bye seeds, every time.
+ *
+ * Call this before asking who a player's opponent is, and advanceBracket calls it on the
+ * way past as well, so neither order of use can leave a hole.
+ */
+function openBracket(bracket, roundIdx, rng) {
+  for (let r = 0; r < roundIdx; r++) {
+    if ((bracket.rounds[r] || []).length) continue;
+    /* Never settle the player's own game as a side effect: if theirs is the unplayed one
+       then the caller has skipped a round, and guessing that result would be worse than
+       the empty pairing this is here to prevent. */
+    if (bracketYourRound(bracket, r)) break;
+    advanceBracket(bracket, r, false, rng);
+  }
+  return bracket;
+}
+
+/* Everything in one round that is not the player's game. `youWon` settles theirs, so the
+   bracket can be walked forward one round at a time and drawn between them. */
+function advanceBracket(bracket, roundIdx, youWon, rng) {
+  openBracket(bracket, roundIdx, rng);
+  bracket.rounds[roundIdx] = bracketPairs(bracket, roundIdx).map(([a, b]) => {
+    if (!a || !b) return { a: a || null, b: b || null, winner: a || b || null };
+    const mine = a.you || b.you;
+    const winner = mine
+      ? (youWon ? (a.you ? a : b) : (a.you ? b : a))
+      : bracketFavourite(a, b, rng);
+    return { a, b, winner, yours: !!mine };
+  });
+  return bracket.rounds[roundIdx];
+}
+
+/* Who the player is put in front of this round, once the round has been resolved, as a
+   bracket ENTRY and not a team-season: the entry carries the opponent's SEED, which is
+   the number that has to appear beside their name. Their `.team` is the season itself.
+   Null on a bye, because a bye seed has no game in round 0. */
+function bracketOpponent(bracket, roundIdx) {
+  const games = (bracket && bracket.rounds[roundIdx]) || [];
+  for (const g of games) {
+    if (!g.yours) continue;
+    return (g.a && g.a.you ? g.b : g.a) || null;
+  }
+  return null;
+}
+
+/* The pairing a player's game WILL be, before the round is resolved, so the opponent can
+   be named on a scoreboard and a bracket drawn with the game still ahead of it. Same
+   shape as bracketOpponent: an entry, so read `.team` for the season and `.seed` for the
+   number. */
+function bracketPending(bracket, roundIdx) {
+  for (const [a, b] of bracketPairs(bracket, roundIdx)) {
+    if (a && a.you) return b || null;
+    if (b && b.you) return a || null;
+  }
+  return null;
+}
+
+/* WHO ELSE IS IN THIS BOWL, and the answer has to be a team that is IN A BOWL.
+ *
+ * It used to be a win count: a New Year's Six opponent was any eleven-win team in the
+ * data, which has no ceiling on it, so a quarter of them were undefeated and one in six
+ * was 13-0. A player wrote in about it, and they were right twice over. The bowl is
+ * where ranks 13 to 18 go, so they were a three-loss team being sent out against the
+ * national champion; and the champion was in a bowl at all, which cannot happen, because
+ * a team that good is playing in the bracket.
+ *
+ * Now each tier draws from the teams whose own season ended in that same tier, worked out
+ * by running the country through nationalRank and seedFromRanking. So the Fiesta is the
+ * best teams that missed the field, the marquee bowls are the tier under that, and the
+ * rest of the slate is the rest of the bowl-eligible country. Nobody in a bowl here is
+ * somebody the game would have put in the playoff.
+ *
+ * The win-count pools remain the fallback, for a caller whose data was too thin to rank. */
 function generateBowlOpponent(data, rng, tier) {
-  if (tier === 'ny6') return pickFrom(data.greatPool.length ? data.greatPool : data.goodPool, rng);
-  if (tier === 'major') return pickFrom(data.goodPool.length ? data.goodPool : data.bowlPool, rng);
-  return pickFrom(data.bowlPool.length ? data.bowlPool : data.goodPool, rng);
+  const use = (a, b) => pickFrom(a && a.length ? a : b, rng);
+  if (tier === 'ny6') return use(data.ny6Pool, data.greatPool.length ? data.greatPool : data.goodPool);
+  if (tier === 'major') return use(data.majorPool, data.goodPool.length ? data.goodPool : data.bowlPool);
+  return use(data.minorPool, data.bowlPool.length ? data.bowlPool : data.goodPool);
 }
 
 // ─── game resolution ────────────────────────────────────────────────────────
@@ -1370,9 +2436,28 @@ function resolveGame(roster, chemistryMultiplier, opponent, leagueAvgAllowed, rn
     (opponent.pts_allowed_mean / leagueAvgAllowed - 1) * (constants.DEFENSE_WEIGHT ?? 1);
   const yourScore = raw * chemistryMultiplier * structure * defenseModifier;
 
-  let oppRaw = sampleGamma(opponent.pts_scored_mean, opponent.pts_scored_sd, rng);
+  /* HOW FAR APART THE TEAMS YOU PLAY ARE, which is what decides whether your
+     draft shows up in your record.
+
+     Real scoring offences span 18 to 43 points a game, which is 41 to 99 engine
+     points once SCALE is applied: a field 58 points wide. A roster range of 75 to
+     100 overall spans 25. So moving your team twenty-five points, which is most
+     of what a draft can do, crossed under half the field, and after in-game noise
+     that came to about two wins. Meanwhile one roster's win count wanders 1.05
+     season to season. The signal was the size of the noise, so a 78-overall
+     roster and a 95 produced the same record and the draft stopped showing.
+
+     This pulls every opponent toward the league average for its season, tightening
+     the field so a point of overall is worth more of a game. It compresses the
+     MEAN only: how much a team varies week to week is OPP_CONSISTENCY's job, and
+     how good it was is still what strength_z says, so beating a ranked team is
+     still worth what it was on the ranking even though the scoreboard is closer. */
+  const spread = constants.OPP_SPREAD ?? 1;
+  const oppMean = leagueAvgAllowed
+    + (opponent.pts_scored_mean - leagueAvgAllowed) * spread;
+  let oppRaw = sampleGamma(oppMean, opponent.pts_scored_sd, rng);
   const OC = constants.OPP_CONSISTENCY || 0;
-  if (OC > 0) oppRaw = oppRaw * (1 - OC) + opponent.pts_scored_mean * OC;
+  if (OC > 0) oppRaw = oppRaw * (1 - OC) + oppMean * OC;
   const oppScore = oppRaw * constants.SCALE / advantage;
 
   let won;
@@ -1457,12 +2542,27 @@ function toFootballScore(yourScore, oppScore, won, rng, cal) {
   const marginTarget = Math.max(1, valueAt(cal.real_margin_q,
     percentileIn(cal.internal_margin_q, internalMargin)));
 
-  if (!cal.real_pairs || !cal.internal_offense_q) {
+  /* internal_offenCe_q, WITH A C, because that is the key 04-display.mjs writes.
+     This read said `internal_offense_q` and no such key has ever existed in the
+     file, so the guard below was true on every call and EVERY scoreline this game
+     has ever shown came out of legacyFootballScore instead of the sampler. That is
+     why teams were scoring 1 and 4: the fallback builds a scoreline arithmetically
+     from a total and a margin, and half of one odd number is a point total real
+     football cannot produce. Measured over 58,928 games before the fix, 0.32% of
+     teams scored 1 and 0.48% scored 4, against 0.000% and 0.000% in the 16,820
+     real games this same file is built from.
+
+     The one-word typo is not the interesting part. The interesting part is that a
+     silent fallback hid it: the good path was dead for the entire life of the game
+     and nothing failed, because the bad path returns a plausible-looking number.
+     test_scorelines.mjs now asserts the sampler is the path that runs. */
+  const offenceQ = cal.internal_offence_q;
+  if (!cal.real_pairs || !offenceQ) {
     return legacyFootballScore(marginTarget, won, rng, cal);
   }
 
   const pointsTarget = valueAt(cal.real_team_pts_q,
-    percentileIn(cal.internal_offense_q, yourScore));
+    percentileIn(offenceQ, yourScore));
 
   const TM = SCORELINE_TOLERANCE.margin, TP = SCORELINE_TOLERANCE.points;
   const pairs = cal.real_pairs;
@@ -1504,9 +2604,14 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
   const results = [];
   let wins = 0, losses = 0;
 
+  /* Computed once. It is a property of the roster, not of the week, and calling it twelve
+     times would say the same thing twelve times. */
+  const seasonOverall = teamOverall(roster, chemistryMultiplier, constants);
+
   const play = (opp, meta) => {
     const leagueAvg = leagueContext[opp.season] ?? 25;
-    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants);
+    const r = resolveGame(roster, chemistryMultiplier, opp, leagueAvg, rng, constants,
+      weekAdvantage(seasonOverall, opp, constants));
     results.push({ opponent: opp.display, opponent_id: opp.team_season_id, ...meta, ...r });
     if (r.won) wins++; else losses++;
     return r.won;
@@ -1534,8 +2639,21 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
 
   if (seed.made) {
     const names = playoffRoundNames(seed.rounds);
+    /* THE BRACKET, BUILT ONCE THE SEED IS KNOWN, because the seed is what a player's slot
+       in it is. Everything else in the field is drawn here so the projection and a real
+       season walk the same twelve teams. `playoffs`, the old strength ladder, is still
+       accepted and still used when a caller has not moved over: see buildBracket. */
+    const bracket = constants.BRACKET_ENABLED !== false && prepared && prepared.goodPool
+      ? buildBracket(prepared, rng, seed.seed, constants) : null;
+    const firstRound = PLAYOFF_ROUND_NAMES.length - seed.rounds;
+    // A bye seed's quarterfinal opponent is a first-round winner, so play that round.
+    if (bracket) openBracket(bracket, firstRound, rng);
     for (let i = 0; i < seed.rounds; i++) {
-      const opp = playoffOpponent(playoffs, seed.rounds, i);
+      /* Asked BEFORE the game and settled after, so the bracket records what really
+         happened rather than assuming the player through. The pending call hands back a
+         bracket entry, so the season itself is one step in. */
+      const pending = bracket ? bracketPending(bracket, firstRound + i) : null;
+      const opp = (pending && pending.team) || playoffOpponent(playoffs, seed.rounds, i);
       const leagueAvg = leagueContext[opp.season] ?? 25;
       /* EVERY ROUND is scaled to the roster in front of it, on its own pivot, so
          how far a season goes tracks the team rather than the draw. advantage
@@ -1556,6 +2674,7 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
       }
       results.push({ opponent: opp.display, opponent_id: opp.team_season_id,
         week: schedule.length + i + 1, playoff: true, bowl: false, round: names[i], ...r });
+      if (bracket) advanceBracket(bracket, firstRound + i, r.won, rng);
       if (r.won) wins++; else { losses++; exitRound = names[i]; break; }
       if (i === seed.rounds - 1) titleWon = true;
     }
@@ -1578,8 +2697,11 @@ function playRun(roster, chemistryMultiplier, schedule, playoffs, leagueContext,
     bowlResult,
     /* A perfect season is unbeaten AND champion AND a roster that belongs in the
        conversation. The first two are played out; the third is PERFECT_FLOOR,
-       which sits two points above the title floor because the game's own name is
-       on this outcome. */
+       which is the SAME bar as the title floor, not a higher one. See the
+       constant. Measured against the current season it blocks nobody: every
+       roster that goes unbeaten and then wins four playoff games is already
+       above it, which is the shape it is supposed to have. It stays because it
+       is the backstop if the season is ever loosened again. */
     perfect: losses === 0 && titleWon
       && teamOverall(roster, chemistryMultiplier, constants) >= constants.PERFECT_FLOOR,
     undefeatedRegular: regularLosses === 0,
@@ -1630,13 +2752,63 @@ function prepareData(teamSeasons) {
     confSum[k] = (confSum[k] || 0) + t.strength_z;
     confCount[k] = (confCount[k] || 0) + 1;
   }
-  const resumeTable = teamSeasons.map((t) => {
+  const scored = teamSeasons.map((t) => {
     const parts = String(t.record).split('-');
     const w = Number(parts[0]) || 0, l = Number(parts[1]) || 0;
     const k = t.season + '|' + t.conference;
     const sos = confCount[k] ? confSum[k] / confCount[k] : 0;
-    return resumeScore(w, l, t.strength_z, sos);
-  }).sort((a, b) => b - a);
+    return { team: t, wins: w, games: w + l, resume: resumeScore(w, l, t.strength_z, sos) };
+  });
+  const resumeTable = scored.map(s => s.resume).sort((a, b) => b - a);
+
+  /* ── THE POSTSEASON, SELECTED RATHER THAN DEALT ────────────────────────────
+   *
+   * The pools above sort real seasons by WIN COUNT, and every postseason opponent used
+   * to be drawn from one of them. That is not the rule the player is judged by, and the
+   * two disagreed loudly enough that a player wrote in about both ends of it:
+   *
+   *   the bracket's bottom seats came out of goodPool, ANY nine or ten win team, so
+   *   seeds 8 through 12 were a 9-3 team about four times in ten -- while the player's
+   *   own 9-3 was ranked 20th and missed the field in 556 seasons out of 556. Only 21
+   *   of the 130 nine-win seasons in the data rank inside twelve on their own resume.
+   *
+   *   a New Year's Six opponent came out of greatPool, ELEVEN WINS AND UP WITH NO
+   *   CEILING, so a quarter of them were undefeated. That bowl is where ranks 13 to 18
+   *   go, which is a nine or ten win team being sent to play the national champion.
+   *
+   * So the country is run through the game's own two functions instead. Every real
+   * season already has a resume here; nationalRank turns it into a place and
+   * seedFromRanking says what that place earns. A team is in the bracket because it
+   * would have been selected, and in the Fiesta Bowl because that is where its season
+   * finished, by the same arithmetic that decides where the player goes.
+   *
+   * THE OLD POOLS STAY. generatePlayoffs, the pre-bracket ladder, still reads them, and
+   * generateSchedule uses greatPool for its marquee games. Nothing here is about who you
+   * play in September; it is about who is standing in the postseason.
+   */
+  const ranked = scored.map(s => ({ ...s, rank: nationalRank(s.resume, { resumeTable }) }))
+    .sort((a, b) => a.rank - b.rank || b.resume - a.resume);
+  /* WIN HALF YOUR GAMES, which is the bar the player clears at six of twelve and the bar
+     real college football uses. As a fraction rather than a count on purpose: 2020 was
+     five and six game seasons, and 4-1 Colorado went bowling that year on a record that
+     never reaches six. A flat six would have called them ineligible for a bowl they
+     actually played in. */
+  const bowlEligible = (s) => s.wins * 2 >= s.games;
+  const band = (lo, hi) => ranked
+    .filter(s => s.rank >= lo && s.rank <= hi && bowlEligible(s)).map(s => s.team);
+  /* Best first, so buildBracket can cut it into strength tiers without sorting again.
+     No eligibility filter on the field: a team ranked inside twelve has a record that
+     clears any bar there is, and the bracket is not a bowl. */
+  const fieldPool = ranked.filter(s => s.rank <= CONSTANTS.PLAYOFF_TEAMS).map(s => s.team);
+  /* THE LAST TEAMS IN: qualified, but not by the win count that fills the top of a
+     bracket. Every eleven-win season in the data ranks inside twelve on its own, so
+     greatPool is already a subset of the field and the two top tiers did not need
+     filtering; this is the tier that did. */
+  const fringePool = fieldPool.filter(t => (Number(String(t.record).split('-')[0]) || 0) < 11);
+  const ny6Pool = band(CONSTANTS.PLAYOFF_TEAMS + 1, CONSTANTS.BOWL_NY6_RANK);
+  const majorPool = band(CONSTANTS.BOWL_NY6_RANK + 1, CONSTANTS.BOWL_MAJOR_RANK);
+  /* And the rest of the bowl-eligible country. */
+  const minorPool = band(CONSTANTS.BOWL_MAJOR_RANK + 1, CONSTANTS.FIELD_SIZE);
 
   const diffs = teamSeasons.map(t => t.point_diff_pg || 0);
   const pointDiffMean = diffs.reduce((a, b) => a + b, 0) / (diffs.length || 1);
@@ -1644,6 +2816,13 @@ function prepareData(teamSeasons) {
     diffs.reduce((s, d) => s + (d - pointDiffMean) * (d - pointDiffMean), 0) / (diffs.length || 1)) || 1;
 
   const meanZ = zs.reduce((a, b) => a + b, 0) / zs.length;
+  /* WHAT AN AVERAGE SLATE IS WORTH IN LOSSES, so generateSchedule has something to hold
+     against and rankSeason has something to measure yours against. The measured par,
+     which is what the generator deals rather than what a random draw is worth; see the
+     note on SCHEDULE_LOSS_PAR for why those differ and why the difference matters. The
+     random draw is the fallback, for data this constant was never measured against. */
+  const meanScheduleLosses = CONSTANTS.SCHEDULE_LOSS_PAR
+    ?? (expectedLosses(teamSeasons) / (teamSeasons.length || 1) * CONSTANTS.REGULAR_SEASON_GAMES);
   return {
     byProgram,
     eliteThreshold,
@@ -1651,11 +2830,17 @@ function prepareData(teamSeasons) {
     greatPool,
     elitePool,
     bowlPool,
+    fieldPool,
+    fringePool,
+    ny6Pool,
+    majorPool,
+    minorPool,
     resumeTable,
     pointDiffMean,
     pointDiffSd,
     byId: (id) => index[id],
     meanScheduleStrength: meanZ * CONSTANTS.REGULAR_SEASON_GAMES,
+    meanScheduleLosses,
   };
 }
 
@@ -1668,16 +2853,21 @@ const publicAPI = {
   pairLinks, resolveChemistry,
   generateSchedule, generatePlayoffs, generateBowlOpponent,
   resolveGame, resolveHeadToHead, playRun, playBowlGame, prepareData, toFootballScore,
-  playoffOpponent, playoffRoundNames,
+  playoffOpponent, playoffRoundNames, PLAYOFF_ROUND_NAMES,
+  BRACKET, buildBracket, openBracket, advanceBracket, bracketPairs, bracketYourRound,
+  bracketOpponent, bracketPending, bracketFavourite,
   resumeScore, nationalRank, rankSeason, seedFromRanking, seedAdvantage,
-  teamRating, teamOverall, titleEdge, roundEdge,
+  scheduleStrength, expectedLosses, lossOdds,
+  teamRating, teamOverall, titleEdge, roundEdge, weekAdvantage,
   respinCost, respinFees,
   scoringScript, scoreParts, SCORE_KINDS,
+  touchdownCredits, lastName,
+  fieldGoalYards, fieldGoalDistances, FIELD_GOAL_BANDS,
   contrast, teamColors, washColors, wheelColors, teamButton, teamInk,
   CONFERENCE_LINEAGE, conferenceOf, POWER_CONFERENCES, isPowerConference,
   LINK_TIERS, linkTier,
-  rosterStructure, STRUCTURE, coachReport,
-  selectBowl, BOWLS, bowlKey, bowlName,
+  rosterStructure, STRUCTURE, coachReport, structureCosts, reportBand, REPORT_BANDS,
+  selectBowl, BOWLS, bowlKey, bowlName, MARGIN_GAIN, MARGIN_SHIFT,
   SCHEME_NAMES: Object.fromEntries(SCHEMES.map(s => [s.key, s.name])),
   SCHEME_TAGLINES: Object.fromEntries(SCHEMES.map(s => {
     const cut = s.strength.indexOf('. ');

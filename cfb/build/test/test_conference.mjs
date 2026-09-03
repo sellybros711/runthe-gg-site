@@ -16,9 +16,34 @@
  * season ever played.
  */
 import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
+
+/* Same database the PostgREST stub is serving. See test_bowl_key.mjs's header. */
+const DB = process.argv[2] || 'cfbe2e';
+const psql = (sql) => execFileSync('psql', ['-X', '-A', '-t', '-d', DB, '-c', sql],
+  { encoding: 'utf8', env: { ...process.env, PGHOST: process.env.PGHOST || '/tmp',
+    PGPORT: process.env.PGPORT || '5433', PGUSER: process.env.PGUSER || 'postgres' } }).trim();
+
+/* A NAMED SEASON IN ONE COMPETITION, so there is a field to be placed against. The
+   board lists named seasons only, and the account this suite signs in as has no name
+   on it, so the season it plays is ranked and not listed: without this row the Pac-12
+   board is empty and the honest answer is "nobody has put a name on this one yet"
+   rather than a placing. That is correct behaviour and not what this file is trying to
+   test: the property here is that a conference season is counted against ITS OWN
+   competition and not against free play, which needs a field in one of them and
+   nothing in the other to be visible at all. */
+const seedNamed = (mode, tag) => psql(
+  `delete from cfb_runs where display_name = '${tag}';
+   insert into cfb_runs (regular_wins, playoff_wins, wins, losses, games, national_rank,
+     made_playoffs, title_won, perfect, bowl_won, seed_label, point_diff, chemistry_pct,
+     spend_musd, overall, picks, run_mode, display_name)
+   values (11, 0, 11, 1, 12, 3, false, false, false, false, 'Bowl Game', 18.0, 2.0, 10.5, 99.0,
+     array['${tag}1:2016','${tag}2:2007','${tag}3:2014','${tag}4:2011','${tag}5:2009','${tag}6:2017'],
+     '${mode}', '${tag}')`);
 
 const SS = '/tmp/claude-0/-home-user-runthe-gg-site/3b48ad95-6870-50f0-afce-ff2b1ab755e2/scratchpad/';
 const browser = await chromium.launch({
+
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: ['--no-sandbox'],
 });
@@ -28,10 +53,22 @@ const ok = (name, pass, extra) => {
   console.log((pass ? '  ok   ' : ' FAIL  ') + name + (extra ? '   ' + extra : ''));
 };
 
+/* SIGNED IN, because Conference Draft is an account feature now. It is not a leaderboard
+   stub and it is not trying to be: the board still answers from PostgREST, and this only
+   gets the mode unlocked. Signed out, #b-mc-conf is not a button at all, it is the locked
+   card with the gate on it, and every click below waits thirty seconds for an element the
+   page is deliberately not drawing. */
+const SIGNED_IN = `window.supabase={createClient(){return{
+  auth:{onAuthStateChange(cb){setTimeout(()=>cb('SIGNED_IN',{user:{id:'u1',email:'a@b.c'}}),0);return{data:{}}},
+    getSession:()=>Promise.resolve({data:{session:{user:{id:'u1',email:'a@b.c'}}}}),
+    signOut:()=>Promise.resolve({})},
+  from(){return{select(){return{eq(){return{maybeSingle:()=>Promise.resolve({data:{username:'tester'}})}}}}}},
+  rpc:()=>Promise.resolve({data:null,error:null})}}};`;
+
 async function open() {
   const page = await browser.newPage({ viewport: { width: 600, height: 1000 } });
   page.on('pageerror', (e) => { console.log('  PAGE ERROR: ' + e.message); bad++; });
-  await page.addInitScript("window.PS_CFB_BOARD_URL='http://localhost:5555';");
+  await page.addInitScript(SIGNED_IN + "window.PS_CFB_BOARD_URL='http://localhost:5555';");
   await page.goto('http://localhost:8080/cfb/index.html', { waitUntil: 'domcontentloaded', timeout: 40000 });
   await page.waitForTimeout(2800);
   await page.evaluate(async () => {
@@ -54,7 +91,11 @@ const whoIsUp = (page) => page.evaluate(() => {
 /* Signs six players, returning the "<year> <school>" of each team the wheel gave. */
 async function draftSix(page) {
   const seen = [];
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 20; i++) {
+    /* Taking a dual-position player opens the slot sheet over the wheel, and the
+       sheet swallows every click until it is answered. See test_ranks_tab. */
+    const slot = await page.$('#sheet.on .slotopt');
+    if (slot) { await slot.click(); await page.waitForTimeout(900); continue; }
     const t = await page.$('#opts .tile:not(.off)');
     if (!t) { await page.waitForTimeout(1200); continue; }
     const who = await whoIsUp(page);
@@ -127,6 +168,17 @@ console.log('\n=== the wheel never leaves the conference ===');
 
 console.log('\n=== a conference season, all the way through ===');
 {
+  /* EMPTY FIRST, the same reason test_board_e2e does it. The competition check
+     below reads the NEWEST row in cfb_runs and expects it to be the season this
+     block just played. Rows left by whatever ran before, and this suite is usually
+     run after test_board_e2e, mean that assertion can be answered by somebody
+     else's free-play season. It then reports run_mode "free" on a Pac-12 run,
+     which reads exactly like the competition failing to record and is not: the
+     same block passes on an empty table. A suite that fails on what ran before it
+     is worse than no suite, because the next person spends the afternoon looking
+     for a bug in the game. */
+  psql('truncate cfb_runs');
+  seedNamed('conf:Pac-12', 'pacfield');
   const page = await open();
   await pickConference(page, 'Pac-12');
   ok('the draft screen says which competition', /Pac-12 draft/.test(await page.textContent('#d-mode')));
@@ -143,15 +195,30 @@ console.log('\n=== a conference season, all the way through ===');
     row ? row.run_mode : 'no row');
 
   const place = (await page.textContent('#o-place')).replace(/\s+/g, ' ');
-  ok('the place is counted inside that competition', /Pac-12 draft seasons/.test(place),
-    place.slice(0, 70));
+  /* "Among every Pac-12 draft season recorded." Singular, because the line reads as a
+     sentence rather than a count; it was written plural here and the two never met,
+     because the mode being locked meant this assertion had not run in a while. */
+  ok('the place is counted inside that competition', /Pac-12 draft season/.test(place),
+    place.slice(0, 90));
 
   console.log('\n=== the boards stay apart ===');
   await page.click('#o-lb'); await page.waitForTimeout(2600);
   ok('the board opens on the competition just played',
     (await page.$eval('#lb-comp', (e) => e.value)) === 'conf:Pac-12');
-  ok('and the season is on it', (await page.$$eval('.lbr', (e) => e.length)) >= 1);
-  ok('the blurb says why it is its own board',
+  /* THE SEEDED NAMED SEASON IS ON IT. The one just played is not, and must not be: it
+     was played signed out, and the board lists named seasons only.
+     Podium AND list: the top three are steps above the list rather than the first three
+     rows of it, so `.lbr` alone would look right on a board of three and find nothing.
+     And `.mine`, not `.me` -- the class was renamed when both games settled on one
+     spelling, so this half of the assertion had been selecting an empty set. */
+  ok('the named season in this competition is on it',
+    (await page.$$eval('#lb-rows .lbr, #lb-podium .pod', (e) => e.length)) >= 1);
+  ok('and the signed-out season just played is not',
+    (await page.$$eval('#lb-rows .lbr.mine, #lb-podium .pod.mine', (e) => e.length)) === 0);
+  /* Counted as ACTIVITY on this competition even so, which is the other half of what
+     "the boards stay apart" means. */
+  const cCount = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
+  ok('and the season is counted on it', /^[1-9]/.test(cCount), cCount);  ok('the blurb says why it is its own board',
     /not the same competition/.test(await page.textContent('#lb-blurb')));
   await page.screenshot({ path: SS + 'conf_board.png', fullPage: true });
   await page.selectOption('#lb-comp', 'free'); await page.waitForTimeout(2200);
@@ -161,8 +228,10 @@ console.log('\n=== a conference season, all the way through ===');
      went red the moment another test left a free-play row behind. */
   const onFree = await page.evaluate((id) => fetch('http://localhost:5555/rest/v1/cfb_runs?select=id&run_mode=eq.free&id=eq.' + id)
     .then((r) => r.json()).then((a) => a.length), row.id);
+  /* `.lbr.me` was the class before both games settled on `.mine`, so this half of the
+     assertion had stopped selecting anything and had been passing on an empty set. */
   ok('and it is not on the free-play board', onFree === 0 &&
-    (await page.$$eval('.lbr.me', (e) => e.length)) === 0);
+    (await page.$$eval('.lbr.mine, .pod.mine', (e) => e.length)) === 0);
   ok('every competition is selectable',
     (await page.$$eval('#lb-comp option', (e) => e.length)) === 6);
   await page.close();

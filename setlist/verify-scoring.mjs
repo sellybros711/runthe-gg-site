@@ -11,6 +11,7 @@ import {
   V_RECOMMENDED, V_JAMCHART, V_LEN_20MIN, V_LEN_15MIN,
   MULT_PERFECT, MULT_PARTIAL, MULT_NEUTRAL, MULT_CLASH,
   SEGUE_POINTS, SEGUE_EXACT_BONUS, SEGUE_CHAIN_BONUS, SANDWICH_BONUS,
+  SUITE_BONUS, SUITE_FULL_BONUS,
   MIN_LANDING_SECONDS, wouldStrand, danglingSegue, closesSandwich,
   ARC_MAX, ARC_ZERO_AT, BREADTH, BREADTH_MAX, BREADTH_BUSTOUT_GAP, BREADTH_BIG_JAM,
   ROLE_KINDS, BREADTH_ROLES, rolesMissing,
@@ -62,25 +63,41 @@ group('the show', () => {
   eq(fmtClock(75), '1:15', 'clock formatting, seconds padded');
 });
 
-group('budgets — the encore inherits leftovers', () => {
+group('budgets: time cascades into the next set', () => {
   const OPEN = [false, false, false];
   eq(budgets([[], [], []], OPEN), [4500, 4200, 600],
-     'mid-game with both sets still open, the encore has only its own 10 minutes');
+     'mid-game with both sets still open, nobody has inherited anything');
 
+  /* THE CHANGE THIS GROUP EXISTS FOR. Time used to jump the middle: both sets
+     paid straight into the encore, so 25 minutes banked in Set I could only be
+     spent on a ten-minute slot at the end of the night. It carries one step
+     now, which is what makes running short early a real decision. */
   const short1 = [[perf({ len: 3000 })], [], []];
-  eq(budgets(short1, [true, false, false])[2], 600 + 1500,
-     'once Set I closes 25 minutes short, the encore inherits them');
-  eq(budgets(short1, OPEN)[2], 600, 'while Set I is still open it has left nothing behind');
+  eq(budgets(short1, [true, false, false])[1], 4200 + 1500,
+     'Set I closes 25 minutes short and SET II gets them');
+  eq(budgets(short1, [true, false, false])[2], 600,
+     'and the encore gets nothing yet, because Set II may spend them');
+  eq(budgets(short1, OPEN)[1], 4200, 'while Set I is still open it has left nothing behind');
 
   const full1 = [[perf({ len: 4500 })], [], []];
-  eq(budgets(full1, [true, false, false])[2], 600, 'a set used in full leaves nothing behind');
+  eq(budgets(full1, [true, false, false])[1], 4200, 'a set used in full leaves nothing behind');
 
+  // Set I banks 25 min, Set II uses 50 of its 70+25, so 45 reach the encore.
   const both = [[perf({ len: 3000 })], [perf({ len: 3000 })], []];
-  eq(budgets(both, [true, true, false])[2], 600 + 1500 + 1200,
-     'both sets closed short: the encore collects from each');
+  eq(budgets(both, [true, true, false])[2], 600 + 1200 + 1500,
+     'what Set II does not use, inherited time included, reaches the encore');
+  eq(budgets(both, [true, false, false])[2], 600,
+     'an open Set II stops the chain: the encore cannot know its share yet');
   eq(budgets(both)[0], 4500, 'Set I own budget is never changed by the maths');
-  eq(budgets(both)[2], 600 + 1500 + 1200,
+  eq(budgets(both)[2], 600 + 1200 + 1500,
      'with no closed argument every set counts, which is how a finished show scores');
+
+  /* Set II spending what Set I banked is the whole point, so it is checked
+     directly: 65 minutes does not fit 70 alone once 10 are already played, and
+     does fit when Set I handed 25 over. */
+  const spend = [[perf({ len: 3000 })], [perf({ len: 600 })], []];
+  eq(budgets(spend, [true, false, false])[1] - 600, 4200 + 1500 - 600,
+     'Set II can actually spend what Set I left');
 });
 
 group('remaining / canPlace / setFull', () => {
@@ -552,6 +569,58 @@ group('segues count only inside a set', () => {
   eq(scoreShow([[a, b], [], []], seg).segues[0].points, SEGUE_POINTS, 'worth SEGUE_POINTS');
 });
 
+group('suites: the movements of one piece', () => {
+  /* THE BUG THIS EXISTS FOR. familiarityMult discounts a pair by how often the
+     band plays it, and Seekers on the Ridge pt I > pt II is the MOST PLAYED
+     PAIR IN THE ARCHIVE at 57 times, so it sat on the 0.30 floor and scored 18
+     of a possible 60. The most canonical link in the catalogue paid the least
+     of any link in the game. */
+  const A = { ...perf({ song_id: 'j1', len: 600 }), is_segue: 'true', song: 'Jive I' };
+  const B = { ...perf({ song_id: 'j2', len: 600 }), is_segue: 'true', song: 'Jive II' };
+  const C = { ...perf({ song_id: 'jl', len: 600 }), song: 'Jive Lee' };
+  const X = { ...perf({ song_id: 'x', len: 600 }), is_segue: 'true' };
+  const Y = { ...perf({ song_id: 'y', len: 600 }) };
+  const seg = new Set(['j1|j2', 'j2|jl', 'x|y']);
+  const counts = new Map([['j1|j2', 57], ['j2|jl', 57], ['x|y', 57]]);
+  const suites = new Map([['j1', 'jive'], ['j2', 'jive'], ['jl', 'jive']]);
+
+  const plain = scoreShow([[X, Y], [], []], seg, undefined, counts, suites).segues[0];
+  const suite = scoreShow([[A, B], [], []], seg, undefined, counts, suites).segues[0];
+  eq(plain.fam < 0.35, true, 'an ordinary pair played 57 times is still braked hard');
+  eq(suite.fam, 1, 'a suite link is not braked for being canonical');
+  eq(suite.points > plain.points * 3, true,
+     `a suite link is worth several times the same pair as an ordinary segue (${suite.points} vs ${plain.points})`);
+  /* The bonus ITSELF, not just the missing brake. Checked against raw, which is
+     the graded total before the brakes: without this the test passed with
+     SUITE_BONUS deleted, because the exemption alone already cleared 3x. */
+  eq(suite.raw, SEGUE_POINTS + SUITE_BONUS, 'and carries the suite bonus on top');
+  eq(suite.kinds.includes('suite'), true, 'and is named as one');
+  eq(suite.suite, true, 'and flagged for the scoresheet');
+
+  /* Two movements is a suite; three is the thing the band has managed twice in
+     660 shows. The full bonus fires on the SECOND link, not the first. */
+  const two = scoreShow([[A, B], [], []], seg, undefined, counts, suites).segues;
+  eq(two.some(h => h.kinds.includes('full suite')), false,
+     'two movements is not a full suite');
+  const three = scoreShow([[A, B, C], [], []], seg, undefined, counts, suites).segues;
+  eq(three.length, 2, 'three movements make two links');
+  eq(three[0].kinds.includes('full suite'), false, 'the first link is not yet the full one');
+  eq(three[1].kinds.includes('full suite'), true, 'the second one carries it past two');
+  eq(three[1].raw, SEGUE_POINTS + SUITE_BONUS + SUITE_FULL_BONUS,
+     'and is paid both bonuses');
+
+  // Only within one family, and only pairs the band has actually segued.
+  const other = new Map([['j1', 'jive'], ['j2', 'seekers'], ['jl', 'jive']]);
+  eq(scoreShow([[A, B], [], []], seg, undefined, counts, other).segues[0].suite, false,
+     'two different pieces are not a suite');
+  eq(scoreShow([[A, B], [], []], new Set(), undefined, counts, suites).segues.length, 0,
+     'and a pair the band never segued is not a link at all');
+
+  // Every caller that predates suites still works, unchanged.
+  eq(scoreShow([[A, B], [], []], seg, undefined, counts).segues[0].suite, false,
+     'without a suites map, a suite link scores as an ordinary segue');
+});
+
 group('fan headline', () => {
   // An ORDINARY night: real-length songs, a bit of breadth, nothing anybody
   // would still be talking about. Filler alone is not ordinary — a night with
@@ -603,34 +672,97 @@ group('fan headline', () => {
   eq(typeof scoreShow([[], [], []], new Set()).headline, 'string', 'an empty night still gets a line');
 });
 
+/* THE CARD IS A SWAP, and every assertion here is about that being a fair one.
+   It used to take the best song ever offered, judged in the best of six roles,
+   and print the number next to a setlist scored one role per song: measured
+   over 300 random games it beat every song the player played in 296 of them.
+   Same show, same slot, same role, and no longer than what was spent there. */
 group('the one that got away', () => {
-  const seen = [
-    perf({ song_id: 'a', song: 'Ordinary', crowd: 30, len: 600 }),
-    perf({ song_id: 'b', song: 'The Monster', crowd: 75, len: 1400, rec: 1, tags: 'peak' }),
-    perf({ song_id: 'c', song: 'Fine', crowd: 45, len: 700 }),
-  ];
-  const played = [[seen[0]], [], []];
-  const miss = theOneThatGotAway(seen, played);
-  eq(miss.perf.song, 'The Monster', 'the best thing left behind is what surfaces');
-  eq(miss.score.subtotal > 100, true, 'and it is scored, not just named');
-  eq(miss.role && miss.role.name, 'Peak', 'a peak song is named as a peak');
+  const ordinary = perf({ song_id: 'a', song: 'Ordinary', crowd: 30, len: 600 });
+  const monster  = perf({ song_id: 'b', song: 'The Monster', crowd: 75, len: 600,
+                          rec: 1, tags: 'peak' });
+  const fine     = perf({ song_id: 'c', song: 'Fine', crowd: 45, len: 600 });
+  const show = { show_id: 's1', songs: [ordinary, monster, fine] };
+  const draft = p => [{ show, perf: p, si: 0 }];
 
-  // A song that suits no role in particular must not be labelled one.
-  const bland = [perf({ song_id: 'q', song: 'Bland', crowd: 70, len: 800 })];
-  eq(theOneThatGotAway(bland, [[], [], []]).role, null,
-     'a song with no role fit is not given a role it does not have');
+  const miss = theOneThatGotAway(draft(ordinary), [[ordinary], [], []]);
+  eq(miss.perf.song, 'The Monster', 'the better song in the same show surfaces');
+  eq(miss.instead.song, 'Ordinary', 'named against the song actually taken');
+  eq(miss.took.subtotal, miss.score.subtotal - miss.gap,
+     'and the gap is the difference between the two');
+  eq(miss.gap > 0, true, 'only a song that would have scored MORE is a regret');
 
-  eq(theOneThatGotAway(seen, [[seen[0]], [seen[1]], [seen[2]]]), null,
-     'nothing got away when everything was played');
-  eq(theOneThatGotAway([], [[], [], []]), null, 'nothing seen, nothing missed');
+  /* THE TWO NUMBERS ARE COMPARABLE BY CONSTRUCTION, which is the whole fix:
+     both are scorePerf of one song in one role, and it is the same role. */
+  eq(miss.score.role, miss.took.role, 'both scored in the same role');
 
-  // A song shown twice and never played should not beat itself.
-  const twice = [seen[1], seen[1]];
-  eq(theOneThatGotAway(twice, [[], [], []]).perf.song, 'The Monster', 'duplicates are fine');
+  /* THE CAP IS LOAD-BEARING. A longer alternative might not have fitted the
+     clock, and reporting a regret that was never available is exactly what
+     made the old card a taunt. */
+  const huge = perf({ song_id: 'd', song: 'Twenty Two Minutes', crowd: 75,
+                      len: 1400, rec: 1, tags: 'peak' });
+  const bigShow = { show_id: 's2', songs: [ordinary, huge] };
+  eq(theOneThatGotAway([{ show: bigShow, perf: ordinary, si: 0 }], [[ordinary], [], []]),
+     null, 'a song longer than the one you took is not counted as missed');
+  /* The cap is a ceiling, not a floor. A long DULL pick leaves room for a
+     short strong one, and that is a real regret. Dull rather than the peak
+     song above, because the version multiplier tiers on length: a 23-minute
+     take of anything outscores a 10-minute take of the same thing, so a long
+     great song is not something a short great song beats. */
+  const longDull = perf({ song_id: 'e', song: 'Long Dull One', crowd: 30, len: 1400 });
+  const roomy = { show_id: 's3', songs: [longDull, monster] };
+  eq(theOneThatGotAway([{ show: roomy, perf: longDull, si: 0 }], [[longDull], [], []]).perf.song,
+     'The Monster', 'but a shorter one against a long weak pick is');
+
+  /* THE SLOT ADVANCES WITH THE PICKS. Judging every round in the first slot's
+     role passes every single-pick test above, so this one has two picks in one
+     set and an alternative whose fit depends on which of them it is measured
+     against: with a set of two, index 0 is the Opener and index 1 the Closer,
+     and a closer-tagged song is only a big regret against the second. */
+  const dullA = perf({ song_id: 'm', song: 'Filler One', crowd: 30, len: 600 });
+  const dullB = perf({ song_id: 'n', song: 'Filler Two', crowd: 30, len: 600 });
+  const opens = perf({ song_id: 'o', song: 'The Opener', crowd: 45, len: 600, tags: 'opener' });
+  const shuts = perf({ song_id: 'p', song: 'The Closer', crowd: 75, len: 600,
+                       rec: 1, tags: 'closer' });
+  const twoSlot = { show_id: 's6', songs: [dullA, dullB, opens, shuts] };
+  const both = theOneThatGotAway(
+    [{ show: twoSlot, perf: dullA, si: 0 }, { show: twoSlot, perf: dullB, si: 0 }],
+    [[dullA, dullB], [], []]);
+  eq(both.perf.song, 'The Closer', 'a later pick is judged in the slot it really filled');
+  eq(both.instead.song, 'Filler Two', 'and named against the song taken in that slot');
+
+  /* A song you took LATER is not one that got away. */
+  eq(theOneThatGotAway(draft(ordinary), [[ordinary], [monster], [fine]]), null,
+     'nothing got away when everything was played somewhere');
+  eq(theOneThatGotAway([], [[], [], []]), null, 'nothing drafted, nothing missed');
+  eq(theOneThatGotAway(null, [[], [], []]), null, 'and no drafted list at all is safe');
+
+  /* GOOD PLAY MAKES IT DISAPPEAR, which is the property the old card lacked:
+     it fired every game regardless of how well anybody did. */
+  eq(theOneThatGotAway(draft(monster), [[monster], [], []]), null,
+     'taking the best song in the show leaves no regret');
+
+  /* A TEASE IS NOT A SONG YOU MISSED. The length cap lets anything short
+     through, so 13% of the regrets it surfaced were takes under three minutes:
+     "you took SALT for 36, this was worth 64" about a 1:23 snippet. */
+  const snippet = perf({ song_id: 't', song: 'Snippet', crowd: 75, len: 83,
+                         rec: 1, tags: 'peak' });
+  eq(theOneThatGotAway([{ show: { show_id: 's7', songs: [ordinary, snippet] },
+     perf: ordinary, si: 0 }], [[ordinary], [], []]), null,
+     'a take under three minutes is a tease, not a song you missed');
 
   // An untimed song can never be played, so it never counts as missed.
-  eq(theOneThatGotAway([perf({ song_id: 'z', song: 'No Clock', len: 0, crowd: 75 })],
-     [[], [], []]), null, 'an untimed song was never really on offer');
+  const noClock = perf({ song_id: 'z', song: 'No Clock', len: 0, crowd: 75 });
+  eq(theOneThatGotAway([{ show: { show_id: 's4', songs: [ordinary, noClock] },
+     perf: ordinary, si: 0 }], [[ordinary], [], []]), null,
+     'an untimed song was never really on offer');
+
+  // A song that suits no role in particular must not be labelled one.
+  const bland = perf({ song_id: 'q', song: 'Bland', crowd: 70, len: 600 });
+  const dull  = perf({ song_id: 'r', song: 'Duller', crowd: 30, len: 600 });
+  const b = theOneThatGotAway([{ show: { show_id: 's5', songs: [dull, bland] },
+    perf: dull, si: 0 }], [[dull], [], []]);
+  eq(b && b.role, null, 'a song with no role fit is not given a role it does not have');
 });
 
 group('fan reactions are keyed to why', () => {

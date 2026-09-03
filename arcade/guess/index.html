@@ -4,7 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Run The Arcade: Guess the Player | RunThe.GG</title>
-<meta name="robots" content="noindex, nofollow" />
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 (function(){ var t; try{ t=localStorage.getItem('runthegrid_theme'); }catch(e){}
@@ -12,19 +13,33 @@
   document.documentElement.setAttribute('data-theme',t); })();
 </script>
 <meta name="description" content="Guess the mystery athlete in Run The Arcade. Each guess reveals how close you are on team, position, era, number and more." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%232F6BFF'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Guess the Player: Daily Sports Puzzle" />
+<meta property="og:description" content="One mystery athlete a day. Crack it in eight guesses." />
+<meta property="og:url" content="https://runthe.gg/arcade/guess/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Guess the Player: Daily Sports Puzzle" />
+<meta name="twitter:description" content="One mystery athlete a day. Crack it in eight guesses." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<link rel="canonical" href="https://runthe.gg/arcade/guess/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
     --ink:#F4F7FB; --mut:#A9B8CB; --dim:#7C8DA3;
     --line:rgba(244,247,251,.08); --line2:rgba(244,247,251,.15);
     --coral:#F06A5F; --blue:#2F6BFF; --violet:#A982F3; --gold:#F2B632; --teal:#37C5D5; --green:#48D17A;
-    --coralT:#F06A5F; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
+    --coralT:#FF5A4E; --brand:#FF8A3D; --brandT:#FF8A3D; --coral:#FF5A4E; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --goldT:#F2B632; --tealT:#37C5D5; --greenT:#48D17A;
     --hit:#2FA968; --close:#C79114; --miss:#26364C;
     --shadow:0 6px 18px -10px rgba(0,0,0,.55);
     --f:'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -34,7 +49,7 @@
     --bg:#EEF2F7; --card:#FFFFFF; --card2:#F1F5FA; --card3:#E3EDF8;
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --coralT:#D8452F; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A;
+    --coralT:#C4372C; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A;
     --hit:#2FA968; --close:#E0A21C; --miss:#D5DEEA;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
@@ -45,7 +60,7 @@
   :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
   .wrap{width:100%; max-width:600px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 14px 40px;}
 
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto;}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0;}
   .brand.logo img{height:54px; width:auto; display:block;}
@@ -63,27 +78,42 @@
   .chip .n{font-family:var(--hero); font-weight:400; font-size:17px; line-height:1; color:var(--coralT); font-variant-numeric:tabular-nums;}
   .chip .l{font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
 
-  .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:14px; padding:11px 15px; box-shadow:var(--shadow); margin-bottom:14px;}
+  .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--coral); border-radius:14px; padding:11px 15px; box-shadow:var(--shadow); margin-bottom:14px;}
   .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
   .lead .v{display:block; font-size:13.5px; line-height:1.45; color:var(--ink); margin-top:4px;}
-  .lead .v b{color:var(--blue);}
+  .lead .v b{color:var(--coral);}
   /* The sport is a given, not a guess. It rides on the label so it reads as a
      fact about today's puzzle rather than another thing to work out. */
-  .lead .sportbadge{display:inline-block; margin-left:7px; font-size:10px; font-weight:900;
-    letter-spacing:.1em; color:#fff; background:var(--blue); border-radius:999px; padding:2px 8px;}
+  /* min-width holds the badge's footprint through the "-" -> "NBA" repaint.
+     Without it the placeholder was narrow enough that the lead's first line
+     fit, and widening it rewrapped the sentence - a 39px jolt that pushed the
+     search box, the guess counter and the clue panel down after first paint. */
+  .lead .sportbadge{display:inline-block; min-width:43px; text-align:center; margin-left:7px; font-size:10px; font-weight:900;
+    letter-spacing:.1em; color:#fff; background:var(--coral); border-radius:999px; padding:2px 8px;}
 
   /* guess input */
   /* Pro version switcher: change sport without leaving the game */
   .modesw{display:flex; gap:6px; margin:0 0 12px;}
-  .modesw.hidden{display:none;}
+  /* Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the whole
+     board below it gets shoved down a row mid-boot. :empty retires the
+     reservation the instant the real buttons arrive. */
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  /* keep the row's space while hidden: mode.js may reveal a locked
+     switcher after boot, and display:none made the page jump */
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
   .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase; border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer; transition:color .12s, border-color .12s, background .12s;}
-  .modesw button:hover{color:var(--ink); border-color:var(--blue);}
-  .modesw button.on{background:var(--blue); color:#fff; border-color:transparent;}
+  .modesw button:hover{color:var(--ink); border-color:var(--coral);}
+  .modesw button.on{background:var(--coral); color:var(--onAccent,#160B02); border-color:transparent;}
   .searchwrap{position:relative; margin-bottom:8px;}
   .search{display:flex; gap:8px;}
-  .search input{flex:1; min-width:0; background:var(--card); border:1px solid var(--line2); border-radius:11px; color:var(--ink); font-family:var(--f); font-size:15px; font-weight:700; padding:13px 14px; box-shadow:var(--shadow);}
+  .search input{font-size:16px; flex:1; min-width:0; background:var(--card); border:1px solid var(--line2); border-radius:11px; color:var(--ink); font-family:var(--f); font-size:15px; font-weight:700; padding:13px 14px; box-shadow:var(--shadow);}
   .search input::placeholder{color:var(--dim); font-weight:600;}
-  .search .go{flex:0 0 auto; border:0; background:var(--blue); color:#fff; font-weight:900; font-size:14px; border-radius:11px; padding:0 18px; cursor:pointer;}
+  .search .go{flex:0 0 auto; border:0; background:var(--coral); color:var(--onAccent,#160B02); font-weight:900; font-size:14px; border-radius:11px; padding:0 18px; cursor:pointer;}
   .search .go:disabled{background:var(--card2); color:var(--mut); cursor:default;}
   .ac{position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:20; background:var(--card); border:1px solid var(--line2); border-radius:11px; box-shadow:0 20px 50px -18px rgba(0,0,0,.7); overflow:hidden; display:none;}
   .ac.on{display:block;}
@@ -102,11 +132,19 @@
   #clues .clue{font-style:italic; font-size:12.5px; font-weight:600; color:var(--mut); line-height:1.45; margin-top:4px; animation:gin .25s ease;}
 
   /* the board.
-     All eight rows are on the page from the first moment, empty, the way a
-     crossword shows you its squares before you write in any. You can see how
-     many guesses the game is worth without having to spend one to find out. */
+     All eight rows live in the DOM from the first moment (guesses fill them
+     top-down, resume repaints them), but only the ACTIVE blank row plus a
+     faded peek at the next stays visible - a wall of eight empty dashed rows
+     made the pre-game board read as a giant blank form. The "8 guesses left"
+     counter already says how much rope you have. */
   .board{background:var(--card); border:1px solid var(--line); border-radius:14px;
     padding:12px 12px 6px; box-shadow:var(--shadow);}
+  /* pre-guess: hide the whole readout board (header labels + eight empty rows)
+     - before any guess exists it teaches nothing and just makes the game feel
+     enormous. It appears the moment you submit your first name. */
+  .board:not(.hasfilled){display:none;}
+  .board.hasfilled .guess:not(.filled) ~ .guess:not(.filled){opacity:.45;}
+  .board.hasfilled .guess:not(.filled) ~ .guess:not(.filled) ~ .guess:not(.filled){display:none;}
   .collab{display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:6px; padding:0 1px;}
   .collab span{font-size:8.5px; font-weight:900; letter-spacing:.03em; text-transform:uppercase; color:var(--mut); text-align:center;}
   .guess{margin-bottom:9px;}
@@ -114,7 +152,7 @@
   @keyframes gin{from{opacity:0; transform:translateY(-6px);}to{opacity:1; transform:none;}}
   .guess .nm{font-weight:900; font-size:13.5px; margin:0 1px 5px; color:var(--ink); min-height:18px;}
   .guess .row{display:grid; grid-template-columns:repeat(5,1fr); gap:5px;}
-  .tile{aspect-ratio:1/1.02; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:3px; text-align:center; background:var(--miss); color:#fff; overflow:hidden;}
+  .tile{aspect-ratio:1/1.24; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px 3px; text-align:center; background:var(--miss); color:#fff; overflow:hidden;}
   .tile.hit{background:var(--hit);} .tile.close{background:var(--close);}
   /* An empty square reads as somewhere to write, not as a miss, so it is an
      outline rather than the grey a wrong answer earns. */
@@ -163,16 +201,25 @@
   .sheet{width:100%; max-width:380px; background:var(--card); border:1px solid var(--line2); border-radius:16px; padding:22px 20px; position:relative; box-shadow:0 30px 80px -20px rgba(0,0,0,.7); margin:auto 0; text-align:center;}
   .sheet .x{position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-size:14px; cursor:pointer;}
   .sheet h2{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase; font-size:26px; margin:2px 0 2px;}
+  /* The hero takes the game's accent, the way .runbig does in the six games
+     that already led with a number. */
+  .sheet{--a-heroInk:var(--coralT);}
   .sheet h2.win{color:var(--greenT);} .sheet h2.lose{color:var(--coralT);}
+  .milestone{display:none; margin:2px 0 10px; font-weight:900; font-size:13px; color:var(--goldT); letter-spacing:.03em;}
+  .milestone.on{display:block; animation:mpop .5s ease;}
+  @keyframes mpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   .revcard{display:flex; align-items:center; gap:12px; text-align:left; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:12px 0;}
   .revcard .rn{font-weight:900; font-size:17px; color:var(--ink);} .revcard .rs{font-size:12px; color:var(--mut); margin-top:2px;}
+  /* one line of real history, so a loss teaches something instead of just ending */
+  .revcard .rf{font-size:12.5px; font-weight:700; color:var(--ink); margin-top:7px; line-height:1.4;}
+  .revcard .rf:empty{display:none;}
   .rstats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0 4px;}
   .rstat{background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:11px 6px;}
   .rstat .v{font-family:var(--hero); font-weight:400; font-size:24px; line-height:1; color:var(--ink);}
   .rstat .l{font-size:9.5px; font-weight:900; letter-spacing:.09em; text-transform:uppercase; color:var(--mut); margin-top:5px;}
   .rcta{display:flex; gap:9px; margin-top:16px;}
   .abtn{flex:1; appearance:none; border:1px solid var(--line2); background:var(--card2); color:var(--ink); font-weight:800; font-size:13px; border-radius:11px; padding:12px; min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;}
-  .abtn.gold{background:var(--blue); color:#fff; border-color:transparent;}
+  .abtn.gold{background:var(--coral); color:var(--onAccent,#160B02); border-color:transparent;}
   .abtn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
   .countdown{margin-top:14px; font-size:12px; font-weight:800; color:var(--mut);} .countdown b{color:var(--ink); font-variant-numeric:tabular-nums;}
 
@@ -190,20 +237,16 @@
   .search .go:active, .cluebtn:active{transform:translate(1px,1px);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Guess "Scouting Terminal"
+     BOLD SPORTS-MACHINE - Guess "Scouting Terminal"
      A caged terminal console: titled header bar, console column strip,
      record-style name bars, bordered readout cells with status LEDs.
-     Visual only — no logic changes.
+     Visual only - no logic changes.
      ================================================================= */
   body{ background-color:var(--bg);
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
     background-attachment:fixed; }
 
-  /* the lead becomes a marquee dossier header */
-  .lead{ position:relative; overflow:hidden; border-radius:8px; padding-top:36px; }
-  .lead::before{ content:"📡 SCOUTING TERMINAL"; position:absolute; top:0; left:0; right:0;
-    background:var(--blue); color:#fff; font-family:var(--hero); font-weight:400; font-size:12.5px;
-    letter-spacing:.16em; padding:7px 15px; }
+  .lead{ position:relative; overflow:hidden; border-radius:8px; }
 
   /* terminal cabinet */
   .board{ position:relative; border:2px solid var(--line2); border-radius:9px; padding:14px 12px 10px;
@@ -234,13 +277,52 @@
   .search input{ border-width:2px; border-radius:6px; }
   .search .go{ border-radius:6px; text-transform:uppercase; letter-spacing:.06em;
     clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%); }
+
+  /* ===== desktop dashboard: full-width header, play left, stats+board rail right ===== */
+  @media (min-width:1000px){
+    .wrap{ max-width:1200px; display:grid; column-gap:30px; align-items:start;
+      grid-template-columns:minmax(0,1fr) 344px;
+      grid-template-areas:
+        "top   top" "title title" "mode mode" "lead lead"
+        "srch lbd" "gl lbd" "clue lbd" "brd lbd" "leg lbd" "gj    gj" "foot foot";
+    .topbar{grid-area:top;} .a-gametitle{grid-area:title;} .lead{grid-area:lead;} .modesw{grid-area:mode;}
+    .searchwrap{grid-area:srch;} .guessesLeft{grid-area:gl;} .cluewrap{grid-area:clue;} .board{grid-area:brd;} .legend{grid-area:leg;}
+    .lb{grid-area:lbd;} .gj{grid-area:gj;} .foot{grid-area:foot;}
+      }
+    .foot{ grid-column:1 / -1; margin-top:18px; }
+    .a-gametitle{ margin:2px 0 8px; }
+    .lb{ margin:0; }
+    /* desktop tiles are already width-driven and tall; keep them from ballooning */
+    .tile{ aspect-ratio:1/1.02; }
+  }
 </style>
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
+     defaults above so no advertising cookie is set before the certified CMP answers. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
+     game can be reported on its own. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('set',{game_name:'Run The Arcade', arcade_game:'Guess the Player'});
+  gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
     <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">GUESS THE PLAYER</span></a>
+    <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">GUESS THE PLAYER</span></a>
     <div class="spacer"></div>
     <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
       <svg class="ic-snd-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
@@ -253,11 +335,12 @@
     <div class="chip"><span class="n" id="streakN">0</span><span class="l">Streak</span></div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--blue)"><span class="a-gametitle__plate">Guess The <b>Player</b></span></div>
-
-  <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">–</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
+  <div class="a-gametitle" style="--a-tc:var(--coral)"><span class="a-gametitle__plate">Guess The <b>Player</b></span></div>
 
   <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
+
+  <div class="lead"><span class="k">Today's mystery player<b class="sportbadge" id="sportBadge">-</b></span><span class="v">Guess the athlete in <b>8 tries</b>. Every guess shows how close you are on each trait.</span></div>
+
   <div class="searchwrap">
     <div class="search">
       <input id="q" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a player's name…" aria-label="Guess a player" />
@@ -279,11 +362,11 @@
 
   <div class="legend"><span><i style="background:var(--hit)"></i>Match</span><span><i style="background:var(--close)"></i>Close</span><span><i style="background:var(--miss)"></i>Miss</span><span>↑ higher · ↓ lower</span></div>
 
-  <div class="lb">
+  <div class="lb" id="lb">
     <h3>Daily Leaderboard <span class="lb-pill">Sample</span></h3>
     <div class="lb-you">
-      <div class="box me"><span class="cap">Today</span><span class="big" id="yourTm">–</span></div>
-      <div class="box"><span class="cap">Best streak</span><span class="big" id="yourBest">–</span></div>
+      <div class="box me"><span class="cap">Today</span><span class="big" id="yourTm">-</span></div>
+      <div class="box"><span class="cap">Best streak</span><span class="big" id="yourBest">-</span></div>
     </div>
     <div class="lb-sample" id="lbSample">
       <div class="lb-samplab">Illustrative ranking</div>
@@ -294,7 +377,31 @@
     <div class="note" id="lbNote">These names are a sample. Live daily rankings arrive with accounts. Sign in with your RunThe.GG account to post your result.</div>
   </div>
 
-  <div class="foot">A daily guessing game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:sellybros711@gmail.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
+<details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Guess the Player</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
+<p>One mystery athlete a day, from any era, and the sport is given. Type any player from that sport and the tiles tell you how close you landed. They compare careers, not this season: position, franchises, debut decade, college and honours.</p>
+<ul>
+  <li>Green means a match, yellow means close, and arrows point higher or lower.</li>
+  <li>You get eight guesses to crack it.</li>
+  <li>Stuck? Burn a clue for a hint and keep the run alive.</li>
+</ul>
+<h3>One mystery a day</h3>
+<p>A new athlete arrives at midnight local time, the same one for everybody, so the group chat comparison is fair. Guess the Player is an Arcade Card game. Members play all twelve Arcade titles without limits, replay any past day from the <a href="/arcade/archive/">Archive</a>, and get NBA, NFL and MLB editions of five of the games. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
+<h3>Opening moves that earn information</h3>
+<ul>
+  <li>Your first guess is sonar, not a solution. Pick a well-travelled star whose tiles will split the field.</li>
+  <li>Debut decade narrows harder than position. Chase the era arrow before anything else.</li>
+  <li>The franchise tile rewards guessing players with many stops; one guess can test five teams at once.</li>
+</ul>
+<p>Like the deduction? Try <a href="/arcade/oddone/">Odd One Out</a>, or go endless in <a href="/arcade/highlow/">High Low</a>.</p>
+</div>
+</details>
+  <div class="foot">A daily guessing game inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
 </div>
 
 <div class="scrim hidden" id="scrim">
@@ -302,11 +409,15 @@
     <button class="x" id="mClose" type="button" aria-label="Close">✕</button>
     <h2 id="mTitle" class="win">SOLVED</h2>
     <div class="sub-h" id="mSub"></div>
-    <div class="revcard"><div style="flex:1"><div class="rn" id="mName">–</div><div class="rs" id="mMeta">–</div></div></div>
-    <div class="rstats">
-      <div class="rstat"><div class="v" id="mGuesses">1</div><div class="l">Guesses</div></div>
-      <div class="rstat"><div class="v" id="mTime">0:00</div><div class="l">Time</div></div>
-      <div class="rstat"><div class="v" id="mStreak">1</div><div class="l">Streak</div></div>
+    <div class="milestone" id="mMilestone"></div>
+    <div class="revcard"><div style="flex:1"><div class="rn" id="mName">-</div><div class="rs" id="mMeta">-</div><div class="rf" id="mFact"></div></div></div>
+    <div class="a-rhero">
+      <div class="v" id="mGuesses">1</div>
+      <div class="k" id="mGuessesK">Guesses</div>
+    </div>
+    <div class="a-runline">
+      <span><b id="mTime">0:00</b> time</span><i></i>
+      <span><b id="mStreak">1</b> day streak</span>
     </div>
     <div class="rcta">
       <button class="abtn gold" id="mAgain" type="button">Play again</button>
@@ -321,15 +432,44 @@
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
-<script src="/arcade/rosters.js"></script>
-<script src="/arcade/teamcolors.js"></script>
-<script src="/arcade/sfx.js"></script>
-<script src="/arcade/tokens.js"></script>
-<script src="/arcade/mode.js"></script>
-<script src="/arcade/archive.js"></script>
+<script src="/arcade/former.js?v=2"></script>
+<script src="/arcade/stars.js?v=4"></script>
+<script src="/arcade/awards.js?v=2"></script>
+<script src="/arcade/supplement.js?v=4"></script>
+<script src="/arcade/cluebank.js?v=2"></script>
+<script src="/arcade/data.js?v=2"></script>
+<script src="/arcade/rosters.js?v=2"></script>
+<script src="/arcade/teamcolors.js?v=2"></script>
+<script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/result.js?v=1"></script>
+<script src="/arcade/funnel.js?v=11"></script>
+<script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/resultart.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/challenge.js?v=3"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
+<script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
+<script src="/arcade/mode.js?v=7"></script>
+<script src="/arcade/archive.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js"></script>
-<script src="/arcade/howto.js"></script>
+<script src="/arcade/board.js?v=20"></script>
+<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/mycard.js?v=12"></script>
+<script src="/arcade/topbanner.js?v=9"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/card.js?v=19"></script>
+<script src="/arcade/referral.js?v=9"></script>
+<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/calendar.js?v=15"></script>
+<script src="/arcade/archivecta.js?v=2"></script>
+<script src="/arcade/demo.js?v=3"></script>
+<script src="/arcade/pregame.js?v=24"></script>
+<script src="/arcade/howto.js?v=21"></script>
+<script src="/arcade/fact.js?v=1"></script>
 <script>
 (function(){
   'use strict';
@@ -380,10 +520,18 @@
   /* pools: GUESSABLE is what you can type; TARGETS is what the game answers
      with. In ROSTER MODE both are built from the live, self-updating roster
      feed (every current NBA/NFL/MLB player), so the pool is ~1,500 names and
-     grows with each roster refresh — rookies included. Without an enriched
+     grows with each roster refresh - rookies included. Without an enriched
      feed we fall back to the curated corpus behavior. */
+  /* CAREER MODE IS THE GAME NOW.
+     The roster feed is still loaded (jerseys and current teams are useful
+     elsewhere), but it no longer decides who can be the answer. Building the
+     pool from the live rosters meant the whole game only knew about players
+     on a team this minute: the clue columns could only describe this season,
+     and anyone who retired was ineligible to be the mystery player. Sports
+     history is the subject, so the corpus is the pool. */
+  var CAREER_MODE = true;
   var GUESSABLE, TARGETS, ROSTER_MODE = false, byId = {};
-  if(ROS_RICH){
+  if(ROS_RICH && !CAREER_MODE){
     ROSTER_MODE = true;
     // corpus fame by name+sport, so daily answers can prefer household names
     var corpF = {}; ENT.forEach(function(e){ if(TEAM_SPORTS[e.sport]) corpF[e.name+'|'+e.sport]=(e.f||0); });
@@ -417,12 +565,30 @@
     if(TARGETS.length<60) TARGETS = GUESSABLE.slice();
   } else {
     // ---- curated-corpus fallback (thin/absent roster file) -----------------
-    GUESSABLE = ENT.filter(function(e){ return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length && (e.f||0)>=3; });
-    if(ROSTERS){ var live=GUESSABLE.filter(function(e){ return !!rosterOf(e); }); if(live.length>=20) GUESSABLE=live; else ROSTERS=null; }
-    var targetsFor = function(fMin, requireAct){ return GUESSABLE.filter(function(e){ return (ROSTERS ? true : (!requireAct || e.act===1)) && TARGET_SPORTS[e.sport] && (e.f||0)>=fMin; }); };
-    TARGETS = targetsFor(4,true);
-    if(TARGETS.length<20) TARGETS = targetsFor(3,true);
-    if(!TARGETS.length) TARGETS = targetsFor(3,false);
+    // Guessable = anything the corpus knows enough about to build a readout.
+    // Target (the mystery player) has to be recognizable - .star from stars.js
+    // is the primary signal; fall through to auto-detected fame for uncurated
+    // names so a fresh corpus player can still shine through.
+    /* Guessable: anyone the corpus can fill a career row for. Deliberately
+       wide (thousands of names) because a guess should never be refused for
+       being obscure - refusing a real player is the one thing that makes a
+       word-game feel broken. */
+    GUESSABLE = ENT.filter(function(e){
+      return TEAM_SPORTS[e.sport] && e.pos && e.t && e.t.length && e.decade && e.decade.length;
+    });
+    /* The ANSWER is a different question from the guess pool, and the gate is
+       tighter. Recognisable by the shared rule, and then either a genuine star
+       or someone from an era people have watched: a 1930s Hall of Famer is a
+       fair fact and an unfair thing to ask anyone to type. */
+    function targetOK(e){
+      if(!TARGET_SPORTS[e.sport]) return false;
+      if(!(window.RTG_KNOWN ? RTG_KNOWN(e) : ((e.f||0)>=4))) return false;
+      if(e.star) return true;
+      var d=(e.decade||[]); var last=d.length?d[d.length-1]:0;
+      return last >= 1980;
+    }
+    TARGETS = GUESSABLE.filter(targetOK);
+    if(TARGETS.length<40) TARGETS = GUESSABLE.filter(function(e){ return TARGET_SPORTS[e.sport] && (e.f||0)>=4; });
     if(!TARGETS.length) TARGETS = GUESSABLE;
   }
   var HAS_DIV = !!(ROSTERS && ROSTERS.divisions && Object.keys(ROSTERS.divisions).length);
@@ -448,7 +614,7 @@
   function intersect(a,b){ var s={}; a.forEach(function(x){s[x]=1;}); return b.some(function(x){return s[x];}); }
   /* Which side of the ball an NFL position plays. Derived by keyword because
      the pos strings are prose ("Defensive Lineman", "Cornerback"): defensive
-     keywords first, then special teams, and everything left is offense —
+     keywords first, then special teams, and everything left is offense -
      quarterback, running back, receiver, tight end, linemen, fullback all
      land there without needing their own list. */
   function sideOf(pos){
@@ -470,7 +636,7 @@
     var gc=curTeamOf(g), tc=curTeamOf(t);
     var st = (gc && tc && gc===tc) ? 'hit'
            : (((gc && (t.t||[]).indexOf(gc)>=0) || (tc && (g.t||[]).indexOf(tc)>=0)) ? 'close' : 'miss');
-    return { st:st, v:(gc||'–') };
+    return { st:st, v:(gc||'-') };
   } };
   var colPos  = { label:'Pos',  cell:function(g,t){ return { st: g.pos===t.pos?'hit':(posFam(g.pos)===posFam(t.pos)?'close':'miss'), v:g.pos }; } };
   var colNat  = { label:'Nat',  cell:function(g,t){ return { st: g.nat===t.nat?'hit':'miss', v:g.nat }; } };
@@ -478,14 +644,14 @@
   var colEra  = { label:'Era',  cell:function(g,t){
     var gd=primaryDecade(g), td=primaryDecade(t);
     var eSt = gd===td?'hit':(intersect(g.decade,t.decade)?'close':'miss');
-    return { st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'–'), a:(td>gd?'up':(td<gd?'down':null)) };
+    return { st:eSt, v:(gd!=null?("'"+String(gd).slice(2)+"s"):'-'), a:(td>gd?'up':(td<gd?'down':null)) };
   } };
   // Jersey: prefer the live roster number for display and compare; the corpus
   // number list still powers the "close" (wore it at some point) state.
   var colNo   = { label:'No.',  cell:function(g,t){
     var gj=jerseyOf(g), tj=jerseyOf(t), jSt, jA=null;
     if(gj==null||tj==null){ jSt='miss'; } else if(gj===tj){ jSt='hit'; } else { jSt=(intersect(g.j||[],t.j||[])?'close':'miss'); jA=tj>gj?'up':'down'; }
-    return { st:jSt, v:(gj!=null?('#'+gj):'–'), a:jA };
+    return { st:jSt, v:(gj!=null?('#'+gj):'-'), a:jA };
   } };
   // Division of the current team (e.g. "NFC East"). hit: same division;
   // close: same conference (first word matches). Only offered when the roster
@@ -493,34 +659,105 @@
   var colDiv  = { label:'Div',  cell:function(g,t){
     var gd=divisionOf(g), td=divisionOf(t), st='miss';
     if(gd && td){ st = gd===td ? 'hit' : (gd.split(' ')[0]===td.split(' ')[0] ? 'close' : 'miss'); }
-    return { st:st, v:(gd||'–') };
+    return { st:st, v:(gd||'-') };
   } };
   // Age: numeric axis with arrows pointing toward the target; "close" within
   // two years. Meaningful in roster mode, where every player is current and
   // the era column no longer separates anyone.
   var colAge  = { label:'Age',  cell:function(g,t){
     var ga=g.age, ta=t.age;
-    if(ga==null||ta==null) return { st:'miss', v:(ga!=null?String(ga):'–') };
+    if(ga==null||ta==null) return { st:'miss', v:(ga!=null?String(ga):'-') };
     var st = ga===ta?'hit':(Math.abs(ga-ta)<=2?'close':'miss');
     return { st:st, v:String(ga), a:(ta>ga?'up':(ta<ga?'down':null)) };
   } };
-  var COL_SETS = {
-    NFL:     [colTeam, colPos, colSide, colEra, colNo],
-    DEFAULT: [colTeam, colPos, colNat,  colEra, colNo]
-  };
-  var COL_SETS_DIV = {
-    NFL:     [colTeam, colPos, colSide, colDiv, colEra, colNo],
-    DEFAULT: [colTeam, colPos, colDiv,  colEra, colNo]
-  };
+  /* ---- CAREER COLUMNS ------------------------------------------------------
+     Team, Division, Side, Age and Number all describe THIS SEASON. That made
+     the game a test of whether you have looked at a depth chart lately rather
+     than of what you know about the sport, and it meant a player who retired
+     in 2011 could not be the answer at all. These five read a career instead,
+     so the pool is everyone who ever played and every column is a fact that
+     stays true forever.
+
+     Teams: how many franchises, with an arrow toward the target. "Close" is
+     off by one, but sharing an actual franchise is the stronger signal, so
+     that wins when both apply. */
+  function teamCount(e){ var s={},n=0; (e.t||[]).forEach(function(t){ if(t&&!s[t]){s[t]=1;n++;} }); return n; }
+  var colTeams = { label:'Teams', cell:function(g,t){
+    var gn=teamCount(g), tn=teamCount(t);
+    var shares = intersect(g.t||[], t.t||[]);
+    var st = gn===tn ? 'hit' : ((shares || Math.abs(gn-tn)<=1) ? 'close' : 'miss');
+    return { st:st, v:String(gn), a:(tn>gn?'up':(tn<gn?'down':null)) };
+  } };
+  // Debut: the decade they first appeared, which is the spine of the whole
+  // board. Close means the decade either side.
+  function debutOf(e){ var d=e.decade||[]; return d.length?d[0]:null; }
+  var colDebut = { label:'Debut', cell:function(g,t){
+    var gd=debutOf(g), td=debutOf(t);
+    if(gd==null||td==null) return { st:'miss', v:'-' };
+    var st = gd===td ? 'hit' : (Math.abs(gd-td)<=10 ? 'close' : 'miss');
+    return { st:st, v:("'"+String(gd).slice(2)+'s'), a:(td>gd?'up':(td<gd?'down':null)) };
+  } };
+  // College. Only offered when the target has one on file, so the column is
+  // never dead for a whole round. A guess we hold no college for reads "-",
+  // which is honestly what we know rather than a wrong answer.
+  var colCollege = { label:'College', cell:function(g,t){
+    if(!g.col) return { st:'miss', v:'-' };
+    var same = window.RTGType ? RTGType.sameCollege(g.col, t.col) : (g.col===t.col);
+    // display form: the feed's "Miami, O." is a school nobody writes that way.
+    var shown = g.col; try{ if(window.RTGType && RTGType.schoolLabel) shown = RTGType.schoolLabel(g.col); }catch(e){}
+    return { st: same ? 'hit' : 'miss', v:shown };
+  } };
+  /* Honours, as four rungs rather than a list. A raw award list cannot be
+     compared tile-to-tile, but "how decorated" can, and it is the axis people
+     actually reason on: is this a Hall of Famer or a solid starter? */
+  var HON = ['None','All-Star','MVP class','Hall of Fame'];
+  function honourOf(e){
+    if(e.hof) return 3;
+    var aw=(e.aw||[]).concat(e.ml||[]).join('|');
+    if(/\b(MVP|Cy Young|Triple Crown|Finals MVP)\b/i.test(aw)) return 2;
+    if(/\b(All-Star|Pro Bowl|All-Pro|Gold Glove|Silver Slugger|Rookie of the Year|Defensive Player|Offensive Player|Scoring Champ|Batting Title)\b/i.test(aw)) return 1;
+    return 0;
+  }
+  var colHon = { label:'Honours', cell:function(g,t){
+    var gh=honourOf(g), th=honourOf(t);
+    var st = gh===th ? 'hit' : (Math.abs(gh-th)===1 ? 'close' : 'miss');
+    return { st:st, v:HON[gh], a:(th>gh?'up':(th<gh?'down':null)) };
+  } };
+  // Seasons: the stand-in when we hold no college for the target.
+  var colSeasons = { label:'Seasons', cell:function(g,t){
+    var gs=g.ns, ts=t.ns;
+    if(gs==null||ts==null) return { st:'miss', v:(gs!=null?String(gs):'-') };
+    var st = gs===ts ? 'hit' : (Math.abs(gs-ts)<=2 ? 'close' : 'miss');
+    return { st:st, v:String(gs), a:(ts>gs?'up':(ts<gs?'down':null)) };
+  } };
+  /* The reveal now describes a career rather than a roster slot: sport,
+     position, and the span of clubs. "Chicago Bulls" alone was a fine line for
+     a current player and a strange one for a fifteen-year journeyman. */
+  function revealTeam(e){ return ROSTER_MODE ? curTeamOf(e) : ((e.t&&e.t.length)?e.t[0]:null); }
+  function revealMeta(e){
+    if(ROSTER_MODE) return [e.sport, e.pos, curTeamOf(e)].filter(Boolean).join(' · ');
+    var t=[], seen={};
+    (e.t||[]).forEach(function(x){ if(x&&!seen[x]){seen[x]=1;t.push(x);} });
+    var clubs = t.length===0 ? null
+              : t.length===1 ? t[0]
+              : (t.length===2 ? (t[0]+' and '+t[1]) : (t[0]+' to '+t[t.length-1]+' ('+t.length+' clubs)'));
+    return [e.sport, e.pos, clubs].filter(Boolean).join(' · ');
+  }
   function activeCols(){
     if(ROSTER_MODE){
       // current-player board: Team, [Div], Pos, Side (NFL) / Nat (NBA·MLB),
-      // Age, No. — every column carries signal for active players.
+      // Age, No. - every column carries signal for active players.
       var cols=[colTeam]; if(HAS_DIV) cols.push(colDiv);
       cols.push(colPos, SPORT==='NFL'?colSide:colNat, colAge, colNo);
       return cols;
     }
-    var m=HAS_DIV?COL_SETS_DIV:COL_SETS; return m[SPORT] || m.DEFAULT;
+    /* Five career columns. The fourth is whichever of college, seasons or
+       nationality the TARGET actually has on file: a column the answer cannot
+       fill is a column that reads "-" on every row and teaches nothing for the
+       whole round, which is the exact failure the roster board had. */
+    var fourth = (TARGET && TARGET.col) ? colCollege
+               : ((TARGET && TARGET.ns != null) ? colSeasons : colNat);
+    return [colPos, colTeams, colDebut, fourth, colHon];
   }
   function cmp(g){
     var t=TARGET;
@@ -528,10 +765,10 @@
   }
 
   /* ---- Clues: Masked-Singer-vague hints built from the target's own data.
-     Deliberately foggy — a clue never names a team, position or number value,
+     Deliberately foggy - a clue never names a team, position or number value,
      because earning those is what the five columns are for. Ordered vaguest
      first; each press reveals the next one down. FREE players get 1 clue per
-     play; PRO is unlimited (same gating pattern as wordsearch's hint). */
+     play; PRO is unlimited (same gating pattern as the crossword's reveal). */
   function buildClues(t){
     var c=[];
     if(t.na && t.na.length) c.push("The name doubles as something you might find outside a stadium.");
@@ -551,26 +788,52 @@
     if(c.length<2) c.push("A name that comes up when fans argue about the greats.");
     return c;
   }
-  /* Roster-mode clues: vague hints built from the current player's live data
-     (nationality, experience, division, side of the ball, age, number). Never
-     names a team/position/number value — earning those is the board's job. */
+  /* Roster-mode clues: atmospheric riddles built from the current player's
+     live data. Never names a team / position / number VALUE - earning those
+     is the board's job - and never names a division either (a division name
+     leaks the sport and narrows to 4-5 teams in one line). Clues read as
+     lateral hints, not fact-cards. */
   function buildCluesRoster(t){
     var c=[], div=divisionOf(t), side=(t.sport==='NFL')?sideOf(t.pos):null, jn=jerseyOf(t);
-    if(t.nat && !/^(usa|united states)$/i.test(t.nat)) c.push("This player was born outside the United States.");
-    if(t.exp!=null && t.exp>=12) c.push("A grizzled veteran, well over a decade in the league.");
-    else if(t.exp!=null && t.exp<=1) c.push("One of the newer arrivals in the league.");
-    if(div) c.push("Suits up in the "+div+".");
-    if(side==='Defense') c.push("Earns a living on the defensive side of the ball.");
-    else if(side==='Special') c.push("A special-teams specialist.");
-    if(t.age!=null && t.age<=23) c.push("Still one of the younger faces around.");
-    else if(t.age!=null && t.age>=35) c.push("On the wrong side of 35 and still going.");
-    if(jn!=null && jn<=9) c.push("Wears a single-digit number.");
-    else if(jn!=null && jn>=90) c.push("The number on the jersey is way up in the 90s.");
-    if(c.length<2) c.push("A current "+t.sport+" player you'll find on an active roster.");
-    if(c.length<2) c.push("Check today's box scores and you might spot this one.");
+    if(t.nat){
+      var n=t.nat.toLowerCase();
+      if(/canada/.test(n)) c.push("Grew up further north than most of the league.");
+      else if(/mexico|dominic|venezu|colomb|cuba|puerto|panam|nicar/.test(n)) c.push("Learned the game far south of any of this league's markets.");
+      else if(/japan|korea|china|taiwan/.test(n)) c.push("A flight home from All-Star break crosses an ocean.");
+      else if(/australia|new zealand/.test(n)) c.push("Would need most of a day just to walk into their childhood gym.");
+      else if(!/^(usa|united states)$/.test(n)) c.push("The national anthem this player grew up hearing isn’t ours.");
+    }
+    if(t.exp!=null && t.exp>=12) c.push("Has outlasted more head coaches than most fans have season tickets.");
+    else if(t.exp!=null && t.exp<=1) c.push("Still learning which airport to sprint through on road trips.");
+    // atmospheric take on the division - no league or place named
+    if(div){
+      if(/east|atlantic/i.test(div)) c.push("Home tip-off shows up early on the coast-to-coast TV grid.");
+      else if(/west|pacific|northwest|southwest/i.test(div)) c.push("Home games run late enough that half the country is asleep.");
+      else if(/north|central/i.test(div)) c.push("Home crowds have wiped snow off their car more than once this year.");
+      else if(/south/i.test(div)) c.push("Home fans rarely need a jacket at kickoff.");
+    }
+    if(side==='Defense') c.push("Paid to spoil someone else’s highlight reel.");
+    else if(side==='Special') c.push("Only hits the field when possession is about to flip.");
+    if(t.age!=null && t.age<=23) c.push("Younger than most of the assistant coaches.");
+    else if(t.age!=null && t.age>=35) c.push("Older than the average bat boy’s dad.");
+    if(jn!=null && jn<=9) c.push("Wears a number a soccer captain would recognize.");
+    else if(jn!=null && jn>=90) c.push("Wears the kind of number linemen tend to hoard.");
+    if(c.length<2) c.push("Not the flashiest name, just the one you should’ve thought of first.");
+    if(c.length<2) c.push("Their name showed up in a recent box score if you were paying attention.");
     return c;
   }
-  function cluesFor(t){ return (ROSTER_MODE?buildCluesRoster:buildClues)(t); }
+  /* Hand-written clues (cluebank.js) come first when this player has any ,
+     a real moment beats anything assembled from the data fields. Only clues
+     tagged safe for this game are returned: one naming his own team, position
+     or number would hand over a board column the player is meant to earn.
+     The generated hints still follow, so the clue button never runs dry. */
+  function cluesFor(t){
+    var gen = (ROSTER_MODE?buildCluesRoster:buildClues)(t), hand = [];
+    try {
+      if(window.RTG_CLUES && t && t.name) hand = RTG_CLUES.forGuess(t.sport, t.name) || [];
+    } catch(e){}
+    return hand.concat(gen);
+  }
   var CLUES=[], cluesUsed=0;
   function isProClues(){ return !!(window.RTGTokens && RTGTokens.isPro()); }
   function updateClueBtn(){
@@ -671,6 +934,7 @@
     html+='</div>';
     slot.innerHTML=html;
     slot.classList.add('filled');
+    var b=document.querySelector('.board'); if(b) b.classList.add('hasfilled');
   }
 
   // ---- timer ----
@@ -682,16 +946,14 @@
   function updateLead(){
     var b=document.getElementById('sportBadge'); if(b) b.textContent=SPORT;
     var v=document.querySelector('.lead .v'); if(!v) return;
-    var lbl = ARCHIVE ? ' · Archive practice' : (window.RTGTokens ? (' · '+RTGTokens.label(GAME)+' today') : '');
+    var lbl = ARCHIVE ? ' · Archive · your personal best' : (window.RTGTokens ? (' · '+RTGTokens.hint(GAME)) : '');
     /* "This player", not "today's": a replay or an archive round is not today's. */
     var traits = ROSTER_MODE
       ? (SPORT==='NFL'
           ? ((HAS_DIV?'team, division, ':'team, ')+'position, side of the ball, age and number')
           : ((HAS_DIV?'team, division, ':'team, ')+'position, nationality, age and number'))
-      : (SPORT==='NFL'
-          ? (HAS_DIV ? 'team, position, side of the ball, division, era and number' : 'team, position, side of the ball, era and number')
-          : (HAS_DIV ? 'team, position, division, era and number' : 'team, position, nationality, era and number'));
-    v.innerHTML='This player is from the <b>'+esc(SPORT)+'</b>. Name them in <b>8 tries</b>. '+
+      : ('position, how many franchises, debut decade, '+((TARGET&&TARGET.col)?'college':'seasons played')+' and honours');
+    v.innerHTML='This player is from the <b>'+esc(SPORT)+'</b>, from any era. Name them in <b>8 tries</b>. '+
       'Every guess shows how close you are on '+traits+'.'+esc(lbl);
   }
   function beginAttempt(){
@@ -714,7 +976,7 @@
     updateLead();
   }
   // Resume an interrupted ranked attempt: rebuild today's deterministic target,
-  // then re-render the stored guesses and clues against it — no re-charge, no
+  // then re-render the stored guesses and clues against it - no re-charge, no
   // sounds, no animations. If the stored guesses already decided the game
   // (a hit, or all eight spent), finish immediately so the result is recorded.
   function resumeAttempt(r){
@@ -749,7 +1011,7 @@
   }
   function updateAgainBtn(){
     var b=document.getElementById('mAgain'); if(!b) return;
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ b.textContent='No plays left today'; b.disabled=true; b.classList.add('spent'); }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent=RTGTokens.blockMsg(GAME);b.disabled=true;b.classList.add('spent');} }
     else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
   }
 
@@ -767,39 +1029,59 @@
     try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, elapsed:Math.round((performance.now()-startTs)/1000), g:guesses.map(function(e){ return e.id; }), c:cluesUsed })); }catch(e){} }
   function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
 
-  function finish(w){
+  var PREVBEST = 0;
+  var MSTONE='';
+  function streakMilestone(n){
+    var map={3:'3-day streak. Rolling!',5:'5 days in a row!',7:'One-week streak!',
+      14:'Two weeks strong!',30:'30-day streak. Elite!',50:'50 days. Unreal.',100:'100-day streak!'};
+    return map[n]||'';
+  }
+  function finish(w){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('guess', DATE);
     if(done) return; done=true; won=w; if(tick) clearInterval(tick);
     if(!ARCHIVE) clearResume();
     elapsed = started ? (performance.now()-startTs)/1000 : 0;
     var s=load(), today=DATE, y=shiftDay(today,-1);
+    MSTONE='';
     if(s.lastDone!==today){
       // streak counts a day you SOLVED it; a loss breaks the streak
       s.streak = w ? ((s.lastDone===y)?(s.streak||0)+1:1) : 0;
+      PREVBEST = s.bestStreak||0;   // read before the write, for result.js
       s.bestStreak=Math.max(s.bestStreak||0, s.streak);
-      if(w){ s.wins=(s.wins||0)+1; }
+      if(w){ s.wins=(s.wins||0)+1; if(!ARCHIVE && attemptFirst) MSTONE=streakMilestone(s.streak); }
     }
     s.lastDone=today; s.last={ won:w, guesses:guesses.length, seconds:Math.round(elapsed) };
     save(s);
+    if(ARCHIVE && w && window.RTGArchive && RTGArchive.recordBest) RTGArchive.recordBest(GAME, guesses.length, { higherIsBetter:false, label:'guesses' });
     document.getElementById('streakN').textContent=s.streak||0;
     var wrong = guesses.length-(w?1:0);
     // modal
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
-    // skill tier by guesses used — instant dopamine on a win (becomes a live
+    // skill tier by guesses used - instant dopamine on a win (becomes a live
     // percentile once the leaderboard has a real distribution to rank against)
-    var TIER=['','Bullseye — first try! 🎯','Sniper — 2 guesses 🎯','Scout-level — 3 guesses 🔭','Sharp — 4 guesses','Solid — 5 guesses','Clutch — 6 guesses','Down to the wire — 7','Buzzer-beater — 8 ⏱'];
+    var TIER=['','Bullseye: first try!','Sniper: 2 guesses','Scout-level: 3 guesses','Sharp: 4 guesses','Solid: 5 guesses','Clutch: 6 guesses','Down to the wire: 7','Buzzer-beater: 8'];
     document.getElementById('mSub').textContent = !attemptFirst ? 'Practice, not ranked' : (w ? (TIER[guesses.length] || ('In '+guesses.length+' guesses')) : 'The answer was');
     document.getElementById('mName').textContent=TARGET.name;
-    (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(curTeamOf(TARGET)); var rc=document.querySelector('.revcard');
+    (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(revealTeam(TARGET)); var rc=document.querySelector('.revcard');
       if(rc){ rc.style.borderLeft=c?('5px solid '+c.p):''; rc.style.background=c?('color-mix(in srgb, '+c.p+' 10%, var(--card2))'):''; } })();
-    document.getElementById('mMeta').textContent=[TARGET.sport, TARGET.pos, curTeamOf(TARGET)].filter(Boolean).join(' · ');
-    document.getElementById('mGuesses').textContent=w?guesses.length:'–';
+    document.getElementById('mMeta').textContent=revealMeta(TARGET);
+    (function(){ var f=document.getElementById('mFact');
+      if(f) f.textContent = (window.RTGFact ? (RTGFact.of(TARGET,{seed:guesses.length, skip:{teams:1,pos:1}})||'') : ''); })();
+    document.getElementById('mGuesses').textContent=w?guesses.length:'-';
     document.getElementById('mTime').textContent=fmt(elapsed);
     document.getElementById('mStreak').textContent=s.streak||0;
+    /* One line for the shared result row (result.js). See arcade/result.js:
+       isBest is the only field this page has to supply, because the new
+       best is already in storage by the time the modal opens. */
+    try{ window.RTGResultSpec = { key:GAME, date:DATE, statInt:(s.streak||0),
+      best:(s.bestStreak||0), prevBest:(PREVBEST>0?PREVBEST:null),
+      isBest:(!ARCHIVE && attemptFirst && (s.streak||0)>PREVBEST), streak:s.streak||0 }; }catch(e){}
     document.getElementById('yourTm').textContent = w ? (guesses.length+' · '+fmt(elapsed)) : 'X';
     document.getElementById('yourBest').textContent = s.bestStreak||0;
+    var mm=document.getElementById('mMilestone');
+    if(mm){ if(MSTONE){ mm.textContent='\ud83d\udd25 '+MSTONE; mm.classList.add('on'); } else { mm.textContent=''; mm.classList.remove('on'); } }
 
-    if(w && attemptFirst && window.RTG_BOARD){
-      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0 }).then(function(res){
+    if(w && !ARCHIVE && window.RTG_BOARD){
+      RTG_BOARD.submit(GAME, DATE, { seconds:Math.round(elapsed), mistakes:wrong, reveals:0, replay:!attemptFirst }).then(function(res){
         if(res&&res.streak){ document.getElementById('streakN').textContent=res.streak; document.getElementById('mStreak').textContent=res.streak; }
         renderRealBoard();
       });
@@ -810,22 +1092,23 @@
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); stopCountdown(); });
   document.getElementById('mAgain').addEventListener('click', function(){
-    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast('No plays left today'); updateAgainBtn(); return; }
+    if(window.RTGTokens && !RTGTokens.canPlay(GAME)){ toast(RTGTokens.blockMsg(GAME)); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
     beginAttempt();
   });
-  document.getElementById('mShare').addEventListener('click', function(){
+  /* The result screen shows this card too (resultart.js), so the spec the
+     share button builds is now a function both can call. */
+  function cardSpec(){
     var grid=guesses.map(function(g){ return cmp(g).map(function(c){ return c.st==='hit'?'🟩':(c.st==='close'?'🟨':'⬛'); }).join(''); }).join('\n');
-    var head='Run The Arcade · Guess the Player\n'+(won?(guesses.length+'/'+MAX):'X/'+MAX)+' · '+fmt(elapsed)+'\n';
-    var txt=head+grid+'\nrunthe.gg/arcade/';
-    if(navigator.share){ navigator.share({text:txt}).catch(function(){}); }
-    else if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ toast('Copied to clipboard'); }); }
-    else toast('Sharing not supported');
-  });
+    var stat=(won?('🎯 '+guesses.length+'/'+MAX):('❌ X/'+MAX))+' · '+fmt(elapsed);
+    return { key:'guess', date:DATE, grid:grid, stat:stat, statInt:(won?guesses.length:null) };
+  }
+  window.RTG_CARD_SPEC = cardSpec;
+  document.getElementById('mShare').addEventListener('click', function(){ RTGShare.send(cardSpec()); });
 
   var cdT=null;
   function startCountdown(){ stopCountdown(); tickCd(); cdT=setInterval(tickCd,1000); }
   function stopCountdown(){ if(cdT){ clearInterval(cdT); cdT=null; } }
-  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='Next player in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m</b>'; }
+  function tickCd(){ var n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1,0,0,0,0)-n, s=Math.max(0,Math.floor(t/1000)); document.getElementById('mCountdown').innerHTML='New boards in <b>'+Math.floor(s/3600)+'h '+String(Math.floor((s%3600)/60)).padStart(2,'0')+'m '+String(s%60).padStart(2,'0')+'s</b>'; }
 
   var CFC=['#F06A5F','#37C5D5','#F2B632','#A982F3','#48D17A','#2F6BFF'];
   function confetti(count,gold){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
@@ -862,16 +1145,18 @@
   function lockToday(sv){
     buildBoard(); updateLead();
     done=true; qEl.disabled=true; goEl.disabled=true; qEl.placeholder='Come back tomorrow';
-    document.getElementById('guessesLeft').textContent='No plays left. Back tomorrow.';
+    document.getElementById('guessesLeft').textContent=(window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.');
     var cb=document.getElementById('btnClue'); if(cb) cb.disabled=true;
     var w=sv.last.won;
     var tt=document.getElementById('mTitle'); tt.textContent=w?'SOLVED':'SO CLOSE'; tt.className=w?'win':'lose';
     document.getElementById('mSub').textContent = w ? ('In '+sv.last.guesses+' guess'+(sv.last.guesses===1?'':'es')) : 'The answer was';
     document.getElementById('mName').textContent=TARGET.name;
-    (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(curTeamOf(TARGET)); var rc=document.querySelector('.revcard');
+    (function(){ var c=window.RTG_TEAMCOLORS&&RTG_TEAMCOLORS.get(revealTeam(TARGET)); var rc=document.querySelector('.revcard');
       if(rc){ rc.style.borderLeft=c?('5px solid '+c.p):''; rc.style.background=c?('color-mix(in srgb, '+c.p+' 10%, var(--card2))'):''; } })();
-    document.getElementById('mMeta').textContent=[TARGET.sport,TARGET.pos,curTeamOf(TARGET)].filter(Boolean).join(' · ');
-    document.getElementById('mGuesses').textContent=w?sv.last.guesses:'–';
+    document.getElementById('mMeta').textContent=revealMeta(TARGET);
+    (function(){ var f=document.getElementById('mFact');
+      if(f) f.textContent = (window.RTGFact ? (RTGFact.of(TARGET,{seed:guesses.length, skip:{teams:1,pos:1}})||'') : ''); })();
+    document.getElementById('mGuesses').textContent=w?sv.last.guesses:'-';
     document.getElementById('mTime').textContent=fmt(sv.last.seconds||0);
     document.getElementById('mStreak').textContent=sv.streak||0;
     document.getElementById('yourTm').textContent = w ? (sv.last.guesses+' · '+fmt(sv.last.seconds||0)) : 'X';
@@ -889,10 +1174,10 @@
   }
   function renderSwitcher(){
     var el=document.getElementById('modesw'); if(!el) return;
-    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
+    if(ARCHIVE || !(window.RTGMode && RTGMode.eligible())){ el.classList.add('hidden'); if(ARCHIVE) el.classList.add('gone'); el.innerHTML=''; return; }
+    el.classList.remove('hidden'); el.classList.remove('gone');
     el.innerHTML = RTGMode.MODES.map(function(m){
-      var lab = m.k==='all' ? 'All' : m.label;
+      var lab = m.k==='all' ? 'Random' : m.label;   // "Random" reads clearer than "All" for the mystery-player game
       return '<button type="button" role="tab" data-m="'+m.k+'" aria-selected="'+(m.k===MODE)+'" class="'+(m.k===MODE?'on':'')+'">'+lab+'</button>';
     }).join('');
     [].forEach.call(el.querySelectorAll('button'), function(b){ b.addEventListener('click', function(){ switchMode(b.dataset.m); }); });
@@ -900,13 +1185,15 @@
   function switchMode(mode){
     if(!window.RTGMode || mode===MODE) return;
     try{ LS.setItem('rtg:mode:'+GAME_BASE, mode); }catch(e){}
-    if(!ARCHIVE && !done) clearResume();   // leaving mid-game abandons this version's attempt
+    if(!ARCHIVE && !done) saveResume();   // keep this version's progress so switching back resumes it
     configureMode(mode);
     servedDaily=false;                     // new version's first play is its ranked daily
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden'); stopCountdown();
     renderSwitcher();
+    // the board is per-version, so follow the switch
+    try{ if(window.RTG_LB) RTG_LB.setGame(GAME, RTGMode.label(mode)); }catch(e){}
     bootCurrentMode();
-    toast((mode==='all'?'All Sports':(RTGMode.sportOf(mode)||mode))+' version');
+    toast((mode==='all'?'Random':(RTGMode.sportOf(mode)||mode))+' version');
   }
   function bootCurrentMode(){
     var saved=load();
@@ -950,6 +1237,32 @@
       renderRealBoard();
     });
   }
+})();
+</script>
+<script>
+/* Shared leaderboard (arcade/leaderboard.js). Mounted from here rather than
+   inside the game's own IIFE so the game code needs no changes: it takes over
+   the .lb rail and replaces the per-game board that used to live there. */
+(function(){
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function go(){
+    var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
+    if(!el||!window.RTG_LB) return;
+    RTG_LB.mount({ el:el, game:function(){ return window.RTGMode?RTGMode.boardKey('guess'):'guess'; }, variant:function(){ return window.RTGMode?RTGMode.boardLabel('guess'):null; }, date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
+  }
+  /* mode.js decides which version's board this is. It can still be parsing
+     when the document is ready, and mounting without it would query the
+     all-sports board first and then switch - a wasted request and a visible
+     flicker on the wrong ranking. Wait briefly for it, then mount regardless
+     so a failed load can never leave the board unmounted. */
+  function ready(){
+    var tries=0;
+    (function wait(){
+      if(window.RTGMode || tries++>40) return go();
+      setTimeout(wait,25);
+    })();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ready); else ready();
 })();
 </script>
 </body>

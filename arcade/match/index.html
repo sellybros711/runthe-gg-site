@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>Daily Match | Run The Arcade Sports Matching Puzzle</title>
-<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Common Ground | Run The Arcade Sports Grouping Puzzle</title>
+<meta name="apple-mobile-web-app-title" content="Run The Arcade" />
+<meta name="application-name" content="Run The Arcade" />
 <meta name="theme-color" content="#071426" id="themeMeta" />
 <script>
 /* theme boot: runs before first paint. Manual choice persists in
@@ -18,14 +19,27 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
-<meta name="description" content="Sort 20 sports names into five hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23071426'/%3E%3Crect x='7' y='7' width='7' height='7' rx='1.5' fill='%2337C5D5'/%3E%3Crect x='18' y='7' width='7' height='7' rx='1.5' fill='%23F2B632'/%3E%3Crect x='7' y='18' width='7' height='7' rx='1.5' fill='%23F06A5F'/%3E%3Crect x='18' y='18' width='7' height='7' rx='1.5' fill='%23A982F3'/%3E%3C/svg%3E" />
+<meta name="description" content="Sort 16 sports names into four hidden groups of four before you run out of guesses, a daily sports matching puzzle on RunThe.GG." />
+<link rel="icon" type="image/png" href="/arcade/assets/arcade-icon.png?v=3" />
+<link rel="apple-touch-icon" href="/arcade/assets/arcade-apple-180.png?v=2" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThe.GG" />
+<meta property="og:title" content="Common Ground: sort sixteen names into four groups" />
+<meta property="og:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
+<meta property="og:url" content="https://runthe.gg/arcade/match/" />
+<meta property="og:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Common Ground: sort sixteen names into four groups" />
+<meta name="twitter:description" content="Sixteen names hide four secret groups of four. Find them all before four mistakes." />
+<meta name="twitter:image" content="https://runthe.gg/arcade/assets/arcade-share.png?v=3" />
+<link rel="canonical" href="https://runthe.gg/arcade/match/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=1" />
-<script src="/arcade/icons.js?v=1"></script>
+<link rel="stylesheet" href="/arcade/arcade.css?v=3" />
+<script src="/arcade/icons.js?v=2"></script>
 <style>
   /* ---------------- design tokens (dark default + light override) ---------------- */
   :root{
@@ -43,7 +57,7 @@
     --blue:#2F6BFF;
     --green:#48D17A; --red:#FF625F;
     /* text-safe accent variants (meet contrast on the current surface) */
-    --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --redT:#FF625F;
+    --tealT:#37C5D5; --goldT:#F2B632; --coralT:#F06A5F; --brand:#FF8A3D; --brandT:#FF8A3D; --brand2:#FF5A4E; --brand2T:#FF5A4E; --onAccent:#160B02; --moss:#96B93C; --mossT:#96B93C; --redT:#FF625F;
     --banner-ink:#FFDFA3;
     --lane-neutral:#3A506B;       /* unsolved, unrevealed lane accent */
     /* inverse chrome (toast / popup) */
@@ -60,14 +74,15 @@
     --dropbg:#E8F1FA; --slotbg:rgba(13,27,44,.03);
     --ink:#0D1B2C; --mut:#51637A;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
-    --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --redT:#C4372C;
+    --tealT:#0E7C89; --goldT:#A87508; --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --redT:#C4372C;
     --banner-ink:#7A4E00;
     --lane-neutral:#C4D0DE;
     --inv-bg:#0D1B2C; --inv-ink:#F4F7FB; --inv-mut:#B6C3D2;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
-  /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps
-     (tiles keep touch-action:none below for dragging; that still wins). */
+  /* touch-action:manipulation disables mobile double-tap-to-zoom on fast taps.
+     Tiles are tap-to-select (no drag), so they keep manipulation too and the
+     page scrolls normally when a touch starts on a name. */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   html,body{margin:0;padding:0;}
   body{
@@ -76,12 +91,12 @@
   }
   button{font-family:inherit; color:inherit; cursor:pointer;}
   .hidden{display:none !important;}
-  :focus-visible{outline:2px solid var(--teal); outline-offset:2px; border-radius:4px;}
+  :focus-visible{outline:2px solid var(--blue); outline-offset:2px; border-radius:4px;}
   .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;}
 
   /* ---------------- topbar (uniform across RunTheGrid games) ---------------- */
   .topwrap{max-width:1160px; margin:0 auto; padding:calc(10px + env(safe-area-inset-top,0)) 20px 0;}
-  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px;}
+  .topbar{display:flex; align-items:center; gap:8px; padding:6px 2px 12px; min-height:48px;}
   .icon-btn{width:30px; height:36px; display:inline-flex; align-items:center; justify-content:center; font-size:24px; color:var(--mut); flex:0 0 auto; text-decoration:none;}
   .icon-btn:hover{color:var(--ink);}
   .brand.logo{display:inline-flex; flex-direction:column; align-items:flex-start; line-height:0; min-width:0; text-decoration:none;}
@@ -90,13 +105,13 @@
   .spacer{flex:1;}
   .themeBtn{width:36px; height:36px; border-radius:9px; border:1px solid var(--line2); background:var(--card);
     color:var(--mut); display:inline-flex; align-items:center; justify-content:center; box-shadow:var(--shadow); cursor:pointer; padding:0; flex:0 0 auto;}
-  .themeBtn:hover{color:var(--ink); border-color:var(--teal);}
+  .themeBtn:hover{color:var(--ink); border-color:var(--blue);}
   /* show the icon of the theme you'd switch TO */
   .themeBtn .ic-moon{display:none;} .themeBtn .ic-sun{display:block;}
   :root[data-theme="light"] .themeBtn .ic-moon{display:block;}
   :root[data-theme="light"] .themeBtn .ic-sun{display:none;}
   .sndBtn .ic-snd-on{display:none;} .sndBtn .ic-snd-off{display:block;}
-  .sndBtn.snd-on{color:var(--tealT); border-color:var(--teal);}
+  .sndBtn.snd-on{color:var(--blueT); border-color:var(--blue);}
   .sndBtn.snd-on .ic-snd-on{display:block;} .sndBtn.snd-on .ic-snd-off{display:none;}
   .helpBtn{font-weight:900; font-size:15px; line-height:1;}
   .chip{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:48px; padding:5px 8px;
@@ -107,6 +122,24 @@
   .chip.coins .n{color:var(--goldT);}
 
   /* ---------------- lead card (description, below the topbar) ---------------- */
+  /* Arcade Card version switcher: change sport without leaving the game.
+     Something always fills this row a moment after first paint - the real
+     switcher for members, a padlocked one for everyone else - and mode.js
+     loads behind a megabyte of corpus data, so the fill lands late. Reserve
+     the row's height here, in CSS the first paint already has, or the board
+     below gets shoved down mid-boot. :empty retires the reservation the
+     instant the real buttons arrive. */
+  .modesw{display:flex; gap:6px; margin:0 0 12px;}
+  .modesw:empty{min-height:48px;}
+  @media (min-width:521px){ .modesw:empty{min-height:38px;} }
+  .modesw.hidden{visibility:hidden;}
+  .modesw.gone{display:none;}
+  .modesw button{flex:1; border:1px solid var(--line2); background:var(--card); color:var(--mut);
+    font-family:var(--f); font-weight:900; font-size:12px; letter-spacing:.03em; text-transform:uppercase;
+    border-radius:10px; padding:9px 4px; min-height:38px; cursor:pointer;
+    transition:color .12s, border-color .12s, background .12s;}
+  .modesw button:hover{color:var(--ink); border-color:var(--blue);}
+  .modesw button.on{background:var(--blue); color:#fff; border-color:transparent;}
   .lead{background:var(--card); border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:14px;
     padding:11px 15px; box-shadow:var(--shadow); margin:0 0 var(--sp-2);}
   .lead .k{display:block; font-size:9.5px; font-weight:900; letter-spacing:.13em; text-transform:uppercase; color:var(--mut);}
@@ -138,7 +171,7 @@
   .dot.used{background:var(--red); border-color:var(--red);}
   .dot.pop{transform:scale(1.3);}
   .progress{margin-top:14px; font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--mut);}
-  .progress b{color:var(--tealT); font-weight:900;}
+  .progress b{color:var(--blueT); font-weight:900;}
 
   /* ---------------- sidebar: actions ---------------- */
   .actionsCard{padding:14px; display:flex; flex-direction:column; gap:10px;}
@@ -153,7 +186,7 @@
   .abtn.gold .cost{color:rgba(255,255,255,.8);}
   .abtn.gold:hover{filter:brightness(1.06);}
   .abtn.gold:disabled{filter:none;}
-  .abtn.ghost:hover{border-color:var(--teal);}
+  .abtn.ghost:hover{border-color:var(--blue);}
   .abtn.arm{background:var(--red); color:#071426; border-color:transparent;}
   .abtn.arm .cost{color:rgba(7,20,38,.7);}
 
@@ -194,12 +227,21 @@
 
   /* ---------------- group boards ---------------- */
   .board{display:flex; flex-direction:column; gap:10px; margin-bottom:var(--sp-3);}
+  /* The pool (16 name tiles) and the board (4 racks) are both built by JS, so
+     for the first second of every visit they were zero-height and everything
+     under them - the group header, the whole sidebar - sat near the top of the
+     page and then got thrown 800px down when the puzzle mounted. That single
+     reflow was the arcade's worst layout shift. Both are fixed-count grids, so
+     their filled height is knowable per breakpoint; hold it until the real
+     children arrive and :empty retires the reservation. */
+  .board:empty{min-height:389px;}
+  .pool.pool-hold{min-height:303px;}
   /* compact "rack" rows: header block left, four slim slots right */
   .lane{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
     border:1px solid var(--line); border-left:4px solid var(--lc); border-radius:var(--r-md); background:var(--card);
     box-shadow:var(--shadow); padding:9px 12px; transition:border-color .2s, background .3s;}
-  .lane.drop{border-color:var(--teal); background:var(--dropbg);}
-  .lane.drop .slot:not(.filled){border-color:var(--teal); background:rgba(55,197,213,.07);}
+  .lane.drop{border-color:var(--blue); background:var(--dropbg);}
+  .lane.drop .slot:not(.filled){border-color:var(--blue); background:rgba(47,107,255,.07);}
   .lane.locked{background:linear-gradient(180deg, color-mix(in srgb, var(--lc) 14%, var(--card)), var(--card)); border-color:color-mix(in srgb, var(--lc) 55%, transparent);}
   .lane.bad{animation:shake .4s; border-color:var(--red);}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(4px);}}
@@ -208,8 +250,8 @@
   .lane.locked .lane-chip{box-shadow:0 1px 2px rgba(0,0,0,.28);}
   .lane-name{font-weight:900; font-size:13.5px; letter-spacing:.01em; color:var(--ink); min-width:0;}
   .lane-hidden .lane-name{color:var(--mut); font-weight:800;}
-  .lane-sport{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--mut);
-    border:1px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
+  .lane-sport{font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--ink);
+    border:1.5px solid var(--line2); border-radius:5px; padding:2px 7px; flex:0 0 auto;}
   .lane-check{margin-left:auto; color:var(--lc); font-weight:900; font-size:12.5px; display:none;}
   .lane.locked .lane-check{display:inline;} .lane.locked .lane-sport{display:none;}
   .slots{flex:1 1 320px; display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
@@ -223,8 +265,8 @@
     padding:4px 9px; min-height:26px; transition:color .12s, border-color .12s;}
   .clearbtn:hover{color:var(--coralT); border-color:var(--coralT);}
   .pool-h .shufbtn{margin-left:auto; display:inline-flex; align-items:center; gap:5px;}
-  .pool-h .shufbtn:hover{color:var(--tealT); border-color:var(--teal);}
-  .checkbtn{appearance:none; border:0; background:var(--teal); color:#071426; font-weight:900; font-size:12.5px;
+  .pool-h .shufbtn:hover{color:var(--blueT); border-color:var(--blue);}
+  .checkbtn{appearance:none; border:0; background:var(--blue); color:#071426; font-weight:900; font-size:12.5px;
     letter-spacing:.03em; border-radius:var(--r-sm); padding:9px 12px; min-height:40px; box-shadow:var(--shadow);
     display:inline-flex; align-items:center; justify-content:center; gap:7px; transition:filter .12s, transform .08s;}
   .checkbtn:hover{filter:brightness(1.07);}
@@ -237,13 +279,13 @@
   /* ---------------- tiles ---------------- */
   .tile{width:100%; height:100%; min-height:44px; min-width:0; border-radius:var(--r-sm); border:1px solid var(--line2);
     background:var(--card2); color:var(--ink); font-weight:800; font-size:12px; line-height:1.18;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:grab;
-    overflow:hidden; overflow-wrap:anywhere; hyphens:auto; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
-    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:none;}
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 5px; text-align:center; cursor:pointer;
+    overflow:hidden; overflow-wrap:break-word; hyphens:none; -webkit-hyphens:none; box-shadow:0 2px 5px -3px rgba(0,0,0,.5);
+    user-select:none; transition:transform .12s, box-shadow .12s, border-color .12s, background .15s; touch-action:manipulation;}
   .tile .tn{display:block; width:100%;}
-  .tile:hover{border-color:rgba(55,197,213,.55);}
-  .tile:active{cursor:grabbing;}
-  .tile.sel{border-color:var(--teal); box-shadow:0 0 0 2px rgba(55,197,213,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
+  .tile:hover{border-color:rgba(47,107,255,.55);}
+  .tile:active{transform:scale(.97);}
+  .tile.sel{border-color:var(--blue); box-shadow:0 0 0 2px rgba(47,107,255,.45), 0 6px 14px -8px rgba(0,0,0,.6); transform:translateY(-2px); background:var(--card3);}
   .tile.locked{background:var(--lc); color:#071426; border-color:transparent; cursor:default; font-weight:900; box-shadow:none;}
   .tile.ghost{opacity:.28;}
   .tile.solvefill{background:transparent; color:var(--mut); border-style:dashed; cursor:default; box-shadow:none;}
@@ -254,11 +296,11 @@
   /* ---------------- pool ---------------- */
   .pool-h{display:flex; align-items:baseline; gap:10px; margin:0 2px 10px;}
   .pool-h .t{font-family:var(--hero); font-weight:400; letter-spacing:.04em; text-transform:uppercase; font-size:16px; color:var(--ink);}
-  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--tealT);}
+  .pool-h .n{font-size:11.5px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:var(--blueT);}
   .pool{display:grid; grid-template-columns:repeat(5,1fr); gap:9px; min-height:52px; margin-bottom:var(--sp-3);}
   .pool .tile{min-height:62px; font-size:12.5px;}
   .groups-h .n{color:var(--mut); text-transform:none; letter-spacing:.02em; font-weight:700;}
-  .pool.drop{outline:2px dashed var(--teal); outline-offset:4px; border-radius:var(--r-md);}
+  .pool.drop{outline:2px dashed var(--blue); outline-offset:4px; border-radius:var(--r-md);}
 
   /* ---------------- modals ---------------- */
   .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:flex-start; justify-content:center;
@@ -286,7 +328,7 @@
     font-weight:800; font-size:13px; border-radius:var(--r-md); padding:11px 14px; min-height:44px; display:inline-flex; align-items:center;
     gap:7px; justify-content:center; transition:filter .12s, border-color .12s, transform .08s;}
   .btn:active{transform:translateY(1px);}
-  .btn:hover{border-color:var(--teal);}
+  .btn:hover{border-color:var(--blue);}
   .btn.primary{background:var(--blue); color:#fff; border-color:transparent;}
   .btn.primary:hover{filter:brightness(1.05);}
   .btn.spent{background:var(--card2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; font-weight:800; opacity:1;}
@@ -356,6 +398,7 @@
   @media (max-width:1000px){
     .app{grid-template-columns:minmax(0,1fr) 280px; gap:var(--sp-2);}
     .pool{grid-template-columns:repeat(4,1fr);}
+    .board:empty{min-height:637px;} .pool.pool-hold{min-height:374px;}
   }
   @media (max-width:760px){
     .app{display:block; padding:var(--sp-2) 14px 40px;}
@@ -370,7 +413,7 @@
     .mstatus .mdots .dots{margin-top:4px;}
     .mstatus .dot{width:12px; height:12px;}
     .mstatus .mprog{font-size:11px; font-weight:900; color:var(--mut); letter-spacing:.06em; text-transform:uppercase;}
-    .mstatus .mprog b{color:var(--tealT);}
+    .mstatus .mprog b{color:var(--blueT);}
     .lane{display:block;}
     .lane-head{margin-bottom:8px;}
     .lane-note{margin-top:9px;}
@@ -378,14 +421,15 @@
     .slot{min-height:48px;}
     .pool{grid-template-columns:repeat(2,1fr);}
     .pool .tile{min-height:56px; font-size:13px;}
+    .board:empty{min-height:805px;} .pool.pool-hold{min-height:669px;}
     .statgrid .rstat .v{font-size:20px;}
   }
-  /* very narrow phones: the coins chip is the one non-uniform extra — drop it
+  /* very narrow phones: the coins chip is the one non-uniform extra - drop it
      before the topbar can overflow (coins still show in the result modal) */
   @media (max-width:480px){
     .chip.coins{display:none;}
   }
-  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} .confetti{display:none;} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} .confetti{display:none;} }
   /* arcade tactile polish */
   .abtn{border-width:2px; box-shadow:var(--a-shadow,4px 4px 0 rgba(7,20,38,.22)); transition:transform .08s, box-shadow .08s, filter .12s;}
   .abtn:active{transform:translate(2px,2px); box-shadow:var(--a-shadow-press,2px 2px 0 rgba(7,20,38,.22));}
@@ -394,25 +438,20 @@
   .checkbtn:active, .btn:active{transform:translate(2px,2px);}
 
   /* =================================================================
-     BOLD SPORTS-MACHINE — Match "Locker Room Board"
+     BOLD SPORTS-MACHINE - Match "Locker Room Board"
      Marquee banner, caged roster cabinet, scoreboard section bars,
      nameplate tiles + chunky lineup racks. Solved groups keep their
-     solid team-colour jerseys. Visual only — no DOM / logic / key changes.
+     solid team-colour jerseys. Visual only - no DOM / logic / key changes.
      ================================================================= */
   :root{ --r-lg:6px; --r-md:5px; --r-sm:4px; }
   body{ background-color:var(--bg);
     background-image:repeating-linear-gradient(0deg, color-mix(in srgb, var(--ink) 4%, transparent) 0 1px, transparent 1px 44px);
     background-attachment:fixed; }
 
-  /* marquee banner over the lead */
-  .lead{ position:relative; overflow:hidden; border-radius:8px; padding-top:36px; }
-  .lead::before{ content:"🧢 LOCKER ROOM"; position:absolute; top:0; left:0; right:0;
-    background:var(--teal); color:#071426; font-family:var(--hero); font-weight:400; font-size:12.5px;
-    letter-spacing:.18em; padding:7px 15px; }
 
   /* scoreboard section-header bars */
   .pool-h{ align-items:center; background:color-mix(in srgb, var(--ink) 9%, var(--card));
-    border:2px solid var(--line2); border-left:6px solid var(--teal); border-radius:6px; padding:9px 13px; margin-bottom:12px; }
+    border:2px solid var(--line2); border-left:6px solid var(--blue); border-radius:6px; padding:9px 13px; margin-bottom:12px; }
   .pool-h.groups-h{ border-left-color:var(--gold); }
   .pool-h .t{ font-size:16px; letter-spacing:.05em; }
 
@@ -422,7 +461,7 @@
     box-shadow:inset 0 3px 16px -9px rgba(0,0,0,.7); }
 
   /* nameplate tiles (unplaced + in-slot; solved jersey keeps its solid team colour).
-     Names keep the original readable title-case font — only the frame is nameplated. */
+     Names keep the original readable title-case font - only the frame is nameplated. */
   .tile{ border-width:2px; border-radius:4px;
     box-shadow:var(--a-shadow,3px 3px 0 rgba(7,20,38,.16)); }
   .tile:active{ box-shadow:var(--a-shadow-press,1px 1px 0 rgba(7,20,38,.16)); }
@@ -435,13 +474,92 @@
   .lane-chip{ width:18px; height:18px; border-radius:3px; box-shadow:0 0 0 3px color-mix(in srgb, var(--lc) 26%, transparent); }
   .slot{ border-radius:4px; }
   .checkbtn{ border-radius:4px; text-transform:uppercase; letter-spacing:.05em; }
+
+  /* ===== NYT-Connections layout: solved rows on top, one tappable grid below ===== */
+  /* the board now holds only SOLVED rows, so kill the old empty-rack reservations */
+  .board:empty{ min-height:0 !important; margin:0 !important; }
+  .board{ gap:8px; margin-bottom:12px; }
+  .pool.pool-hold{ min-height:0 !important; }
+
+  /* solved group: colored header line + its four names as chips */
+  .lane.locked .lane-names{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .lane-tile{ font-size:12.5px; font-weight:800; color:#071426; background:var(--lc);
+    border-radius:6px; padding:6px 10px; line-height:1.1; }
+  .lane.autofill{ opacity:.92; }
+  .lane.autofill .lane-tile{ background:color-mix(in srgb, var(--lc) 20%, var(--card));
+    color:var(--ink); border:1px dashed color-mix(in srgb, var(--lc) 55%, transparent); }
+  .lane .lane-check{ display:inline; }
+
+  /* revealed-category hint chips (above the grid) */
+  .hints{ display:flex; flex-wrap:wrap; gap:7px; margin:0 2px 12px; }
+  .hints:empty{ display:none; }
+  .hint-chip{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800;
+    color:var(--ink); background:color-mix(in srgb, var(--lc) 12%, var(--card));
+    border:1px solid color-mix(in srgb, var(--lc) 45%, transparent); border-radius:999px; padding:5px 11px; }
+  .hint-chip .hint-dot{ width:10px; height:10px; border-radius:3px; background:var(--lc); flex:0 0 auto; }
+
+  /* the pick-four grid: four across at every width, so sixteen tiles form a
+     square and every row is a candidate group. Five across would leave a
+     ragged row of one. Names wrap; fitPool() shrinks any that don't fit. */
+  .pool{ grid-template-columns:repeat(4,1fr); gap:8px; }
+  .pool .tile{ min-height:60px; font-size:12.5px; padding:6px 6px; display:flex; align-items:center; justify-content:center; text-align:center; }
+  /* whole words only (no mid-word breaks / hyphens); fitPool() shrinks the font
+     so the longest word fits, then the name wraps at the space onto two lines */
+  .pool .tile .tn{ line-height:1.15; white-space:normal; word-break:normal; overflow-wrap:normal; hyphens:none; -webkit-hyphens:none; }
+  .tile.bad{ animation:shake .4s; border-color:var(--red); }
+
+  /* submit / deselect bar */
+  .submitbar{ display:flex; gap:10px; justify-content:center; margin:2px 2px 0; }
+  .submit-go,.submit-ghost{ appearance:none; border-radius:999px; padding:13px 26px; min-height:50px;
+    font-family:inherit; font-weight:900; font-size:14px; letter-spacing:.03em; cursor:pointer; }
+  .submit-go{ border:0; background:var(--blue); color:#071426; }
+  .submit-go:hover:not(:disabled){ filter:brightness(1.07); }
+  .submit-go:disabled{ background:var(--card2); color:var(--mut); cursor:default; }
+  .submit-ghost{ background:transparent; border:1px solid var(--line2); color:var(--ink); }
+  .submit-ghost:disabled{ opacity:.5; cursor:default; }
+  .mfeedback{ margin:10px 2px 0; text-align:center; font-size:13px; font-weight:800; border-radius:10px; padding:9px 12px; display:none; }
+  .mfeedback.close{ background:rgba(242,182,50,.12); color:var(--goldT); border:1px solid rgba(242,182,50,.35); }
+  .mfeedback.miss{ background:rgba(255,98,95,.10); color:var(--redT); border:1px solid rgba(255,98,95,.35); }
+  .mfeedback.free{ background:rgba(47,107,255,.10); color:var(--blueT); border:1px solid rgba(47,107,255,.32); }
+
+  @media (max-width:760px){
+    .board:empty{ min-height:0 !important; }
+    .pool{ grid-template-columns:repeat(4,1fr); gap:7px; }
+    .pool .tile{ min-height:62px; font-size:12px; }
+    .submit-go,.submit-ghost{ flex:1; padding:13px 12px; }
+  }
+  @media (max-width:380px){
+    .pool .tile{ font-size:11px; }
+    .lane-tile{ font-size:11.5px; padding:5px 8px; }
+  }
 </style>
+<script>
+window.dataLayer=window.dataLayer||[];
+window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted',wait_for_update:500});
+</script>
+<!-- Google AdSense, same publisher as the rest of runthe.gg. Placed after the Consent Mode
+     defaults above so no advertising cookie is set before the certified CMP answers. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<!-- Google Analytics 4. game_name (and arcade_game) ride on every event so each
+     game can be reported on its own. -->
+<script>
+window.GA_ID='G-L29P5MRWKE';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=window.gtag||function(){dataLayer.push(arguments);};
+  gtag('js',new Date());
+  gtag('set',{game_name:'Run The Arcade', arcade_game:'Common Ground'});
+  gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 </head>
 <body>
   <div class="topwrap">
     <div class="topbar">
       <a class="icon-btn" href="/arcade/" aria-label="Back to Run The Arcade">‹</a>
-      <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><img src="/arcade/assets/runthearcade-logo.png" alt="Run The Arcade" width="900" height="521" /><span class="sub">DAILY MATCH</span></a>
+      <a class="brand logo" href="/arcade/" aria-label="Run The Arcade home"><span class="sub">COMMON GROUND</span></a>
       <div class="spacer"></div>
       <button class="themeBtn helpBtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
       <button class="themeBtn sndBtn snd-off" data-sound-toggle type="button" aria-label="Sound off, tap to unmute" title="Sound off">
@@ -453,15 +571,15 @@
         <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
       </button>
       <div class="chip tap" id="streakStat" role="button" tabindex="0" title="Your stats" aria-label="Open your stats"><span class="n" id="streakVal">0</span><span class="l">Streak</span></div>
-      <div class="chip coins" id="coinStat" aria-label="Coins"><span class="n" id="coinVal">0</span><span class="l">Coins</span></div>
     </div>
   </div>
 
-  <div class="a-gametitle" style="--a-tc:var(--teal)"><span class="a-gametitle__plate">Daily <b>Match</b></span></div>
+  <div class="a-gametitle" style="--a-tc:var(--blue)"><span class="a-gametitle__plate">Daily <b>Match</b></span></div>
 
   <div class="app">
     <main class="gameCol">
-      <div class="lead"><span class="k">Today's board · <span id="datep">–</span></span><span class="v explain">Sort 20 sports names into five hidden groups of four.</span></div>
+      <div class="modesw hidden" id="modesw" role="tablist" aria-label="Choose sport version"></div>
+      <div class="lead"><span class="k">Today's board · <span id="datep">-</span></span><span class="v explain">Tap four names that belong together. Find all four groups before four mistakes.</span></div>
 
       <div class="tester-banner" id="testerBanner" hidden><b>Tester mode</b>: unlimited plays. Use <b>New board</b> in the sidebar for a fresh puzzle.</div>
 
@@ -475,25 +593,56 @@
           <span class="mlab">Guesses left</span>
           <div class="dots" id="dotsM"></div>
         </div>
-        <div class="mprog" id="progressM"><b>0</b> / 5 solved</div>
+        <div class="mprog" id="progressM"><b>0</b> / 4 solved</div>
       </div>
 
+      <!-- solved groups stack here, the category name sitting above its four -->
+      <div class="board" id="board" role="list" aria-label="Solved groups"></div>
+      <!-- revealed-but-unsolved category names (hints) -->
+      <div class="hints" id="hints" aria-label="Revealed categories"></div>
+
       <div class="pool-h">
-        <span class="t">Today's 20</span>
-        <span class="n"><span id="poolCount">20</span> left to place</span>
+        <span class="t">Pick four that go together</span>
+        <span class="n"><span id="poolCount">20</span> names left</span>
         <button class="clearbtn shufbtn" id="shuffleBtn" type="button" aria-label="Shuffle the names">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
           Shuffle
         </button>
       </div>
-      <div class="pool" id="pool" role="list" aria-label="Unplaced names"></div>
+      <div class="pool pool-hold" id="pool" role="list" aria-label="Names, tap to select four"></div>
 
-      <div class="pool-h groups-h">
-        <span class="t">Build your groups</span>
-        <span class="n">drag or tap a name, then a rack</span>
+      <div class="submitbar" id="submitbar">
+        <button class="submit-ghost" id="btnDeselect" type="button" disabled>Deselect all</button>
+        <button class="submit-go" id="btnSubmit" type="button" disabled>Submit</button>
       </div>
-      <div class="board" id="board" role="list" aria-label="Five group racks"></div>
-    </main>
+      <div class="mfeedback" id="mFeedback" role="status" aria-live="polite"></div>
+    <details class="gj" id="howtoTab">
+<summary>
+  <h2>How to play Common Ground</h2>
+  <span class="gj-hint">Rules and tips</span>
+  <span class="gj-chev" aria-hidden="true">▾</span>
+</summary>
+<div class="gj-body">
+<p>Common Ground is a daily sports grouping puzzle. Sixteen names hide four secret groups of four, and a group can be anything its members truly share: a franchise, a college, a jersey number, a surname, a title-winning team. Your job is to find all four groups before four mistakes end the day.</p>
+<ul>
+  <li>Tap four names you believe belong together, then lock the group in.</li>
+  <li>"One away" means exactly three of your picks share the thread, so swap one name, not the whole group.</li>
+  <li>A correct group clears off the board and reveals its connection.</li>
+  <li>Four misses close the board; a clean solve punches the day on your Arcade ticket.</li>
+</ul>
+<h3>One board a day</h3>
+<p>Everyone plays the same sixteen names, and a fresh board arrives at midnight local time. Solving it keeps your streak alive. Common Ground is an Arcade Card game. Members play all twelve Arcade titles without limits, replay any past day from the <a href="/arcade/archive/">Archive</a>, and get NBA, NFL and MLB editions of five of the games. A free RunThe.GG account still gets a daily play of the Daily Crossword, Sportegories, Alma Mater and Career Path.</p>
+<h3>Habits of clean solvers</h3>
+<ul>
+  <li>Lock your surest group first. Every clear shrinks the decisions that remain.</li>
+  <li>The bait is the obvious theme. When five names fit one idea, one of them is doing quieter work in another group.</li>
+  <li>Read the names as words, not resumes. Surnames, numbers and nicknames hide threads a stat sheet never shows.</li>
+</ul>
+<p>More from Run The Arcade: spot the impostor in <a href="/arcade/oddone/">Odd One Out</a>, or put five careers in order in <a href="/arcade/rankit/">Rank It</a>.</p>
+</div>
+</details>
+<div class="gjfoot">A daily grouping puzzle inside <b>Run The Arcade</b> · <a href="/">RunThe.GG</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
+</main>
 
     <aside class="side" aria-label="Game status and controls">
       <div class="card statusCard">
@@ -503,7 +652,7 @@
           <span class="sLabel">Guesses left</span>
           <div class="dots" id="dots"></div>
         </div>
-        <div class="progress" id="progress"><b>0</b> / 5 groups solved</div>
+        <div class="progress" id="progress"><b>0</b> / 4 groups solved</div>
       </div>
 
       <div class="card actionsCard">
@@ -513,7 +662,7 @@
         </button>
         <button class="abtn ghost" id="btnClear" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-          Clear board
+          Deselect all
         </button>
         <button class="abtn ghost" id="btnNew" type="button" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
@@ -524,17 +673,16 @@
       <details class="card howto" id="howto">
         <summary>How to play <span class="chev" aria-hidden="true">▼</span></summary>
         <ol>
-          <li><b>Find the five hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
-          <li><b>Drag a name onto a rack</b>, or tap the name then the rack. Your first group is revealed free to get you rolling.</li>
-          <li>Filled a rack? <b>Hit Check group.</b> Nail it and it locks in; miss and it costs you a guess.</li>
-          <li>Stuck? <b>Reveal a group</b> for one guess. Six misses and your board's done.</li>
+          <li><b>Find the four hidden groups.</b> Every name shares a team, a jersey number, a surname, or a feat with exactly three others.</li>
+          <li><b>Tap four names</b> you think go together, then <b>Submit</b>. Nail it and the group locks in on top; miss and it costs you a guess.</li>
+          <li>Stuck? <b>Reveal a group</b> for one guess. Four misses and your board's done.</li>
         </ol>
       </details>
 
-      <div class="card mlb">
+      <div class="card mlb" id="lb">
         <h3 class="mlb-h">Daily Leaderboard <span class="mlb-pill">Sample</span></h3>
         <div class="lb-you">
-          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">–</span></div>
+          <div class="box me"><span class="cap">Your time today</span><span class="big" id="mYourTm">-</span></div>
           <div class="box"><span class="cap">Your streak</span><span class="big" id="mYourStreak">0</span></div>
         </div>
         <div class="lb-sample" id="mlbSample">
@@ -556,17 +704,20 @@
         <div class="g" id="resGrade">BOARD CLEARED!</div>
         <div class="verdict" id="resVerdict"></div>
       </div>
-      <div class="rstats">
-        <div class="rstat"><div class="v" id="resTime">0:00</div><div class="l">Time</div></div>
-        <div class="rstat"><div class="v" id="resMiss">0</div><div class="l">Misses</div></div>
-        <div class="rstat"><div class="v" id="resStreak">1</div><div class="l">Streak</div></div>
+      <div class="a-rhero">
+        <div class="v" id="resTime">0:00</div>
+        <div class="k">Your time</div>
+      </div>
+      <div class="a-runline">
+        <span><b id="resMiss">0</b> misses</span><i></i>
+        <span><b id="resStreak">1</b> day streak</span>
       </div>
       <div class="strip" id="resStrip"></div>
       <div class="strip-cap">Solve order, no answers leaked</div>
       <div class="milestone" id="resMilestone"></div>
-      <div class="coinline" id="resCoins">+0 coins</div>
+      <div class="coinline" id="resCoins"></div>
       <div class="countdown" id="resCountdown"></div>
-      <div class="reportline"><a href="mailto:sellybros711@gmail.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
+      <div class="reportline"><a href="mailto:RunTheGames@outlook.com?subject=Run%20The%20Arcade%20data%20error">Spot a data error? Tell us</a></div>
       <div class="rcta">
         <button class="btn primary" id="mAgain" type="button">Play again</button>
       </div>
@@ -582,7 +733,7 @@
     <div class="sheet">
       <button class="x" id="stClose" type="button" aria-label="Close">✕</button>
       <h2>Your Stats</h2>
-      <div class="sub-h">Run The Arcade · Daily Match</div>
+      <div class="sub-h">Run The Arcade · Common Ground</div>
       <div class="statgrid">
         <div class="rstat"><div class="v" id="stPlayed">0</div><div class="l">Played</div></div>
         <div class="rstat"><div class="v" id="stWin">0%</div><div class="l">Win</div></div>
@@ -604,25 +755,63 @@
   <!-- cache-busted: bump ?v= whenever entities/generator change, or stale
        browser caches will pair fresh HTML with old boards/engine -->
   <script src="entities.js?v=12"></script>
-  <script src="/arcade/former.js"></script>
-  <script src="/arcade/data.js"></script>
-  <script src="generator.js?v=12"></script>
-  <script src="/arcade/sfx.js"></script>
-  <script src="/arcade/tokens.js"></script>
-  <script src="/arcade/archive.js"></script>
+  <script src="/arcade/former.js?v=2"></script>
+<script src="/arcade/stars.js?v=4"></script>
+  <script src="/arcade/awards.js?v=2"></script>
+<script src="/arcade/supplement.js?v=4"></script>
+<script src="/arcade/data.js?v=2"></script>
+  <script src="generator.js?v=14"></script>
+  <script src="/arcade/sfx.js?v=2"></script>
+<script src="/arcade/result.js?v=1"></script>
+<script src="/arcade/funnel.js?v=11"></script>
+<script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/resultart.js?v=2"></script>
+<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/challenge.js?v=3"></script>
+<script src="/arcade/modal-a11y.js?v=1"></script>
+  <script src="/arcade/tokens.js?v=13"></script>
+<script src="/arcade/day.js?v=2"></script>
+<script src="/arcade/mode.js?v=7"></script>
+<script src="/arcade/dayroll.js?v=1"></script>
+  <script src="/arcade/archive.js?v=2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/arcade/board.js"></script>
+  <script src="/arcade/board.js?v=20"></script>
+<script src="/arcade/leaderboard.js?v=14"></script>
+<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/mycard.js?v=12"></script>
+<script src="/arcade/topbanner.js?v=9"></script>
+<script src="/arcade/auth-ui.js?v=5"></script>
+<script src="/arcade/card.js?v=19"></script>
+<script src="/arcade/referral.js?v=9"></script>
+<script src="/arcade/gamemarks.js?v=3"></script>
+<script src="/arcade/calendar.js?v=15"></script>
+<script src="/arcade/archivecta.js?v=2"></script>
+<script src="/arcade/demo.js?v=3"></script>
+<script src="/arcade/pregame.js?v=24"></script>
+<script src="/arcade/howto.js?v=21"></script>
   <script>
   (function () {
     'use strict';
+    if (window.RTGHowto) RTGHowto.init('match');
+    /* 16 names a board, the widest surface in the arcade, and until now the
+       only gate was the category maths - which cares whether a group is
+       solvable, not whether you have heard of anyone in it. Over half the
+       names it showed were unrecognisable. The recognisable pool still yields
+       337 viable categories against the 4 a board needs, so nothing is lost
+       but the journeymen. */
     var ENT = window.GRID_ENTITIES, Gen = window.GridGen;
+    if (window.RTG_KNOWN) {
+      var _known = ENT.filter(RTG_KNOWN);
+      if (_known.length > 400) ENT = _known;   // never strand the game if the overlay failed to load
+    }
     var LS = window.localStorage;
     var GROUP = Gen.GROUP_SIZE || 4;   // tiles per category
-    var CATS = 5;                       // categories per board
-    var MISTAKE_LIMIT = 6;             // wrong guesses (a hint spends one); the 6th ends the board
+    var CATS = 4;                       // categories per board (16 tiles)
+    var MISTAKE_LIMIT = 4;             // wrong guesses (a hint spends one); the 4th ends the board
 
     // group accent palette by lane order: teal, gold, coral, purple, blue
-    var PALETTE = ['#37C5D5', '#F2B632', '#F06A5F', '#A982F3', '#2F6BFF'];
+    var PALETTE = ['#37C5D5', '#F2B632', '#F06A5F', '#A982F3'];
 
     // ---- today's date (local) ----
     function todayStr() {
@@ -632,48 +821,50 @@
     var ARCHIVE = !!(window.RTGArchive && RTGArchive.active());   // past-day practice mode (Pro + ?date=)
     var DATE = (window.RTGArchive ? RTGArchive.date() : todayStr());   // seeds the generator AND the board/result key
 
-    // ---- tester mode: unlimited plays + fresh boards (for RunnyJ / CSel8) ----
-    // Enable with ?test=1 (persists); disable with ?test=0. Site is hidden, so
-    // only people with the link get it. Tester plays don't touch streak/coins.
-    var TESTER = (function () {
-      try {
-        var q = new URLSearchParams(location.search);
-        if (q.has('test') || q.has('tester')) {
-          var on = (q.get('test') || q.get('tester') || '1') !== '0';
-          LS.setItem('grid_tester', on ? '1' : '');
-        }
-        return LS.getItem('grid_tester') === '1';
-      } catch (e) { return false; }
-    })();
-    var boardNo = 0;                                   // which tester board we're on
+    /* Sport editions (Arcade Card). Each is its own daily board, its own
+       leaderboard and its own streak, keyed 'match_nba' / 'match_nfl' /
+       'match_mlb' by mode.js; 'all' keeps the bare 'match' key so every
+       existing board, streak and save carries over untouched. Free players and
+       the archive silently stay on 'all'. */
+    var GAME_BASE = 'match';
+    var MODE = 'all', SPORTFILTER = null, GAME = GAME_BASE;
+    function modeSuffix() { return MODE === 'all' ? '' : ('_' + MODE); }
+
+    // ---- tester mode: removed for public launch ----
+    // The old ?test=1 backdoor gave unlimited plays + fresh boards. It's now
+    // permanently off (entitlement is the real Arcade Card). Any stale flag from
+    // a prior tester session is cleared so nobody keeps unlimited access.
+    var TESTER = false;
+    try { LS.removeItem('grid_tester'); } catch (e) {}
+    var boardNo = 0;                                   // (unused now TESTER is off)
     // First (ranked) play uses the deterministic daily seed so everyone gets the
     // same board for the leaderboard. Replays reseed randomly for a fresh board.
     var servedDaily = false;                           // true once the daily board has been served this session
     var replaySeed = null;                             // when set, the generator seeds from this random string instead of DATE
-    function boardSeed() { return TESTER ? (DATE + '#' + boardNo) : (replaySeed || DATE); }
+    function boardSeed() {
+      if (replaySeed) return replaySeed;
+      var d = TESTER ? (DATE + '#' + boardNo) : DATE;
+      return MODE === 'all' ? d : (MODE + '-' + d);
+    }
 
-    // ---- wallet / streak ----
-    // Coins are the RunTheGrid suite wallet (shared with the Daily Crossword);
-    // streak is per-game (this Daily Match). Prototype uses localStorage; the real
-    // build reads the shared RunThe.GG account wallet.
-    function walletGet() { return parseInt(LS.getItem('runthegrid_coins') || '0', 10) || 0; }
-    function walletSet(v) { LS.setItem('runthegrid_coins', String(Math.max(0, v))); renderWallet(); }
-    function streakGet() { return parseInt(LS.getItem('grid_match_streak') || '0', 10) || 0; }
+    // ---- streak ----
+    // The arcade has no coin economy; the game is about building the longest
+    // daily streak. Streak is per-game (this Common Ground board).
+    function streakGet() { return parseInt(LS.getItem('grid_match_streak' + modeSuffix()) || '0', 10) || 0; }
 
     // ---- lifetime stats (played / wins / flawless / best streak / grade histogram) ----
     var GRADE_KEYS = ['A+', 'A', 'B', 'C', 'D', 'F'];
     function statsGet() {
       var s = null;
-      try { s = JSON.parse(LS.getItem('grid_match_stats')); } catch (e) { s = null; }
+      try { s = JSON.parse(LS.getItem('grid_match_stats' + modeSuffix())); } catch (e) { s = null; }
       if (!s || typeof s !== 'object') s = {};
       s.played = s.played | 0; s.wins = s.wins | 0; s.perfects = s.perfects | 0; s.best = s.best | 0;
       if (!s.grades || typeof s.grades !== 'object') s.grades = {};
       if (s.best < streakGet()) s.best = streakGet();  // keep best in sync with a running streak
       return s;
     }
-    function statsSet(s) { LS.setItem('grid_match_stats', JSON.stringify(s)); }
+    function statsSet(s) { LS.setItem('grid_match_stats' + modeSuffix(), JSON.stringify(s)); }
     function renderWallet() {
-      document.getElementById('coinVal').textContent = walletGet();
       document.getElementById('streakVal').textContent = streakGet();
     }
 
@@ -685,17 +876,22 @@
     var laneCat = {};                  // laneIndex -> catId (filled on solve)
     var locked = {};                   // laneIndex -> true
     var solveOrder = [];               // laneIndex in order solved
+    var solveTimes = [];               // elapsed seconds at each solve (parallel to solveOrder) - for the share timeline
     var poolOrder = [];                // tileId display order in the pool (shuffleable)
     var mistakes = 0, penalty = 0, started = false, startTs = 0, tick = null;
     var selected = null, done = false, revealedCats = {};   // revealedCats: catId -> true (from hints)
+    var sel = [];                      // NYT-style: tile ids currently selected (max GROUP)
+    var lastMissSet = '';              // 'id,id,id,id' of the last wrong submit (blocks re-submitting the same four)
+    var fbT = null;                    // feedback auto-clear timer
     var charged = false, attemptFirst = false;   // play-token economy: one token per attempt, first===ranked
     var lastMissIds = {};              // laneIndex -> 'id,id,id,id' of the last wrong check (disables re-checking the same four)
+    var dealingLane = -1;              // lane currently receiving the auto-dealt final group (suppresses its Check/Clear during the deal)
 
     var laneById = {};                 // catId -> lane meta (color etc.)
 
     function buildDay() {
       // data-driven board from the tagged DB (5 groups of four, categories hidden)
-      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3 } });
+      day = Gen.daily(boardSeed(), { entities: ENT, opts: { avgFame: 3.2, anchors: 3, sport: SPORTFILTER, cats: CATS } });
       byId = {}; day.tiles.forEach(function (t) { byId[t.id] = t; });
       solById = {};
       Object.keys(day.solution).forEach(function (cid) {
@@ -710,12 +906,12 @@
     }
 
     // ---- persistence of today's result so a refresh doesn't replay ----
-    function resultKey() { return 'grid_match_result_' + DATE; }
+    function resultKey() { return 'grid_match_result' + modeSuffix() + '_' + DATE; }
     function savedResult() { if (ARCHIVE) return null; try { return JSON.parse(LS.getItem(resultKey())); } catch (e) { return null; } }   // archive: always a fresh play
 
     // ---- mid-attempt resume: a refresh during the RANKED daily attempt must not burn it.
     // Snapshot only during the charged first (ranked) play; never in archive or tester mode. ----
-    var RESUME_KEY = 'rtg:resume:match';
+    var RESUME_KEY = 'rtg:resume:match';   // re-keyed per edition by configureMode()
     function resumeSave() {
       if (ARCHIVE || TESTER || !attemptFirst || done) return;
       try {
@@ -738,38 +934,35 @@
 
     // ---- reset play state ----
     function resetState() {
-      place = {}; laneCat = {}; locked = {}; solveOrder = []; lastMissIds = {};
-      mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; done = false; revealedCats = {};
+      place = {}; laneCat = {}; locked = {}; solveOrder = []; solveTimes = []; lastMissIds = {};
+      mistakes = 0; penalty = 0; started = false; startTs = 0; selected = null; sel = []; lastMissSet = ''; done = false; revealedCats = {};
       if (tick) { clearInterval(tick); tick = null; }
       day.tiles.forEach(function (t) { place[t.id] = null; });
-      // free foothold: reveal the easiest group's name to start (no guess cost)
-      if (day.lanes && day.lanes[0]) revealedCats[day.lanes[0].id] = true;
+      poolOrder = day.tiles.map(function (t) { return t.id; });   // fresh board -> fresh pool order (a new board still has the same tile count, so the count-based guard in render() wouldn't catch it)
+      /* No free category. The board used to open with the easiest group's name
+         already showing, which handed over a quarter of the puzzle before the
+         first tap and told the player which four names to stop thinking about.
+         Every group is now found, or revealed for a guess like the rest. */
     }
 
     // ---- render ----
     var boardEl = document.getElementById('board'), poolEl = document.getElementById('pool');
 
-    function tileEl(tid, opts) {
-      opts = opts || {};
+    // A selectable name in the pool. No drag/drop (that trapped touch-scroll on
+    // mobile): you tap to toggle it into your selection of four, then Submit.
+    function tileEl(tid) {
       var t = byId[tid];
+      var isSel = sel.indexOf(tid) >= 0;
       var el = document.createElement('div');
-      el.className = 'tile' + (opts.locked ? ' locked' : '') + (selected === tid ? ' sel' : '');
+      el.className = 'tile' + (isSel ? ' sel' : '');
       el.dataset.tid = tid;
-      var sub = t.sport && t.sport !== 'multi' ? '<span class="sub">' + t.sport + '</span>' : '';
-      el.innerHTML = '<span class="tn">' + escapeHtml(t.name) + '</span>' + (opts.locked ? sub : '');
-      if (opts.color) el.style.cssText = '--lc:' + opts.color;
-      if (!opts.locked) {
-        el.setAttribute('draggable', 'true');
-        el.setAttribute('role', 'button');
-        el.setAttribute('tabindex', '0');
-        el.setAttribute('aria-pressed', selected === tid ? 'true' : 'false');
-        el.setAttribute('aria-label', t.name + (selected === tid ? ', selected' : ''));
-        el.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/plain', tid); selected = tid; });
-        el.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTileClick(tid); }
-        });
-      }
+      el.innerHTML = '<span class="tn">' + escapeHtml(t.name) + '</span>';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+      el.setAttribute('aria-label', t.name + (isSel ? ', selected' : ''));
       el.addEventListener('click', function (e) { e.stopPropagation(); onTileClick(tid); });
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTileClick(tid); } });
       return el;
     }
 
@@ -785,124 +978,87 @@
       return '<span class="lane-chip"></span>';
     }
 
+    var DIFF = ['Easiest', 'Easy', 'Medium', 'Hard', 'Trickiest'];
     function render() {
-      // revealed-but-unsolved categories label lanes from the top down (the
-      // free one lands on Group 1). Labels are display-only: any valid four
-      // still locks in any lane, so a label may move if its lane solves as
-      // something else.
-      var revealedQueue = day.lanes.filter(function (l) { return revealedCats[l.id] && !usedCat(l.id); });
-      var revPtr = 0;
-      // lanes
+      // ---- solved groups stack on top, category name above its four names ----
       boardEl.innerHTML = '';
-      for (var i = 0; i < 5; i++) {
+      var order = solveOrder.slice();
+      for (var ai = 0; ai < CATS; ai++) { if (locked[ai] && order.indexOf(ai) < 0) order.push(ai); }  // auto (loss) reveals
+      order.forEach(function (i) {
+        if (!locked[i]) return;
+        var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
+        if (!cat) return;
+        var isAuto = locked[i] === 'auto';
         var lane = document.createElement('div');
-        lane.className = 'lane';
+        lane.className = 'lane locked' + (isAuto ? ' autofill' : '');
         lane.dataset.idx = i;
         lane.setAttribute('role', 'listitem');
-        var isLocked = !!locked[i];
-        var cat = laneCat[i] != null ? laneById[laneCat[i]] : null;
-
-        // colour only when something is KNOWN about the lane: solved, or
-        // carrying a revealed-category label. Otherwise stay neutral.
-        var revLabel = (!isLocked && revPtr < revealedQueue.length) ? revealedQueue[revPtr++] : null;
-        var color = isLocked && cat ? cat.color : (revLabel ? revLabel.color : 'var(--lane-neutral)');
-        lane.style.setProperty('--lc', color);
-        if (isLocked) lane.classList.add('locked');
-
+        lane.style.setProperty('--lc', cat.color);
+        var dIdx = -1; for (var dj = 0; dj < day.lanes.length; dj++) { if (day.lanes[dj].id === cat.id) { dIdx = dj; break; } }
         var head = document.createElement('div');
         head.className = 'lane-head';
-        if (isLocked && cat) {
-          // difficulty tag: lane order in day.lanes runs easiest -> trickiest
-          var dIdx = -1; for (var dj = 0; dj < day.lanes.length; dj++) { if (day.lanes[dj].id === cat.id) { dIdx = dj; break; } }
-          var DIFF = ['Easiest', 'Easy', 'Medium', 'Hard', 'Trickiest'];
-          var dTag = dIdx >= 0 ? '<span class="lane-sport" style="color:var(--lc); border-color:color-mix(in srgb, var(--lc) 55%, transparent)">' + DIFF[Math.min(dIdx, DIFF.length - 1)] + '</span>' : '';
-          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
-            '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' + dTag +
-            '<span class="lane-check">✓ Locked</span>';
-        } else if (revLabel) {
-          head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(revLabel.name) + '</span>' +
-            '<span class="lane-pill">' + (day.lanes[0] && revLabel.id === day.lanes[0].id ? 'Free' : 'Revealed') + '</span>' +
-            '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
-        } else {
-          lane.classList.add('lane-hidden');
-          head.innerHTML = ballChip(i) +
-            '<span class="lane-name">Group ' + (i + 1) + '</span>' +
-            '<span class="lane-sport">' + laneFillCount(i) + ' / 4 players</span>';
-        }
+        head.innerHTML = ballChip(i) + '<span class="lane-name">' + escapeHtml(cat.name) + '</span>' +
+          '<span class="lane-sport">' + (cat.sport === 'multi' ? 'Multi-sport' : cat.sport) + '</span>' +
+          (dIdx >= 0 ? '<span class="lane-sport" style="color:var(--lc);border-color:color-mix(in srgb, var(--lc) 55%, transparent)">' + DIFF[Math.min(dIdx, 4)] + '</span>' : '') +
+          '<span class="lane-check">' + (isAuto ? 'Answer' : '✓') + '</span>';
         lane.appendChild(head);
-
-        var slots = document.createElement('div');
-        slots.className = 'slots';
-        var inLane = tilesInLane(i);
-        for (var s = 0; s < GROUP; s++) {
-          var slot = document.createElement('div');
-          slot.className = 'slot';
-          if (inLane[s] != null) {
-            slot.classList.add('filled');
-            slot.appendChild(tileEl(inLane[s], { locked: isLocked, color: color }));
-          } else {
-            slot.setAttribute('aria-label', 'Empty slot in group ' + (i + 1));
-          }
-          slots.appendChild(slot);
-        }
-        lane.appendChild(slots);
-
-        // explicit submit: a full, unlocked group grows a Check button right
-        // in its header block (where the group name sits)
-        if (!isLocked && laneFillCount(i) === GROUP && !done) {
-          var cb = document.createElement('button');
-          cb.className = 'checkbtn';
-          cb.type = 'button';
-          var curIds = tilesInLane(i).filter(Boolean).sort().join(',');
-          var repeat = lastMissIds[i] === curIds;
-          cb.disabled = repeat;
-          cb.textContent = repeat ? 'Change a name to re-check' : 'Check group';
-          cb.setAttribute('aria-label', 'Check group ' + (i + 1));
-          (function (idx) { cb.addEventListener('click', function (e) { e.stopPropagation(); validate(idx); }); })(i);
-          head.appendChild(cb);
-        }
-        // per-rack Clear: dump this rack's names back to the pool in one tap
-        if (!isLocked && laneFillCount(i) > 0 && !done) {
-          var clr = document.createElement('button');
-          clr.className = 'clearbtn';
-          clr.type = 'button';
-          clr.textContent = 'Clear';
-          clr.setAttribute('aria-label', 'Clear group ' + (i + 1));
-          (function (idx) {
-            clr.addEventListener('click', function (e) {
-              e.stopPropagation();
-              day.tiles.forEach(function (t) { if (place[t.id] === idx) place[t.id] = null; });
-              delete lastMissIds[idx]; selected = null; render(); resumeSave();
-            });
-          })(i);
-          head.appendChild(clr);
-        }
-
-        if (!isLocked) {
-          attachDrop(lane, i);
-          lane.setAttribute('tabindex', '0');
-          lane.setAttribute('aria-label', 'Group ' + (i + 1) + ', ' + laneFillCount(i) + ' of 4 filled' + (selected ? '. Press Enter to place selected name' : ''));
-          (function (idx) {
-            lane.addEventListener('keydown', function (e) {
-              if ((e.key === 'Enter' || e.key === ' ') && selected != null) { e.preventDefault(); placeInLane(selected, idx); }
-            });
-          })(i);
-        } else {
-          lane.setAttribute('aria-label', 'Group ' + (i + 1) + (cat ? ', solved: ' + cat.name : ', solved'));
-        }
+        var names = document.createElement('div');
+        names.className = 'lane-names';
+        day.solution[cat.id].forEach(function (tid) {
+          var chip = document.createElement('span'); chip.className = 'lane-tile'; chip.textContent = byId[tid].name; names.appendChild(chip);
+        });
+        lane.appendChild(names);
         boardEl.appendChild(lane);
+      });
+
+      // ---- revealed-but-unsolved category names, as hint chips ----
+      var hintsEl = document.getElementById('hints');
+      if (hintsEl) {
+        hintsEl.innerHTML = '';
+        day.lanes.forEach(function (l) {
+          if (!revealedCats[l.id] || usedCat(l.id)) return;
+          var c = document.createElement('span'); c.className = 'hint-chip'; c.style.setProperty('--lc', l.color);
+          c.innerHTML = '<span class="hint-dot"></span>' + escapeHtml(l.name);
+          hintsEl.appendChild(c);
+        });
       }
 
-      // pool (rendered in poolOrder so a shuffle just reorders the display)
+      // ---- pool: the remaining names, tap to select (rendered in poolOrder) ----
       poolEl.innerHTML = '';
       if (poolOrder.length !== day.tiles.length) poolOrder = day.tiles.map(function (t) { return t.id; });
       var poolTiles = poolOrder.filter(function (id) { return place[id] == null; });
-      poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id, {})); });
+      poolTiles.forEach(function (id) { poolEl.appendChild(tileEl(id)); });
+      poolEl.classList.remove('pool-hold');
       document.getElementById('poolCount').textContent = poolTiles.length;
-      attachPoolDrop();
+      fitPool();
       renderDots();
       updateHintBtn();
       updateProgress();
+      updateSubmit();
+    }
+
+    // Shrink each name until its longest word fits the tile, so names wrap at the
+    // space onto two lines instead of hyphenating or splitting a word mid-letter.
+    function fitPool() {
+      var tns = poolEl.querySelectorAll('.tile .tn');
+      for (var i = 0; i < tns.length; i++) {
+        var tn = tns[i], fs = 13;
+        tn.style.fontSize = fs + 'px';
+        var guard = 0;
+        while (tn.scrollWidth > tn.clientWidth + 0.5 && fs > 8 && guard < 8) { fs -= 1; tn.style.fontSize = fs + 'px'; guard++; }
+      }
+    }
+
+    // Submit / Deselect bar state, driven by the current selection.
+    function updateSubmit() {
+      var go = document.getElementById('btnSubmit'), de = document.getElementById('btnDeselect'), bar = document.getElementById('submitbar');
+      if (!go) return;
+      var full = sel.length === GROUP;
+      var same = full && sel.slice().sort().join(',') === lastMissSet;
+      go.disabled = done || !full || same;
+      go.textContent = same ? 'Change a name' : (full ? 'Submit' : 'Submit (' + sel.length + '/' + GROUP + ')');
+      de.disabled = done || sel.length === 0;
+      if (bar) bar.style.display = done ? 'none' : '';
     }
 
     function tilesInLane(i) {
@@ -941,12 +1097,66 @@
 
     // ---- interaction ----
     function onTileClick(tid) {
-      if (done) return;
-      var laneIdx = place[tid];
-      if (laneIdx != null && locked[laneIdx]) return;         // can't move locked tiles
-      if (laneIdx != null) { place[tid] = null; selected = null; startIfNeeded(); render(); resumeSave(); return; } // tap placed tile -> pool
-      selected = (selected === tid) ? null : tid;             // toggle selection in pool
+      if (done || place[tid] != null) return;                 // solved tiles are locked
+      var i = sel.indexOf(tid);
+      if (i >= 0) { sel.splice(i, 1); }
+      else {
+        if (sel.length >= GROUP) { toast('Pick four, then Submit'); return; }
+        sel.push(tid); startIfNeeded();
+      }
+      if (window.RTGSound) RTGSound.place();
+      feedback('', '');
       render();
+    }
+
+    // The one place a group is checked now: the four selected names.
+    function submit() {
+      if (done || sel.length !== GROUP) return;
+      var ids = sel.slice().sort();
+      if (ids.join(',') === lastMissSet) return;              // don't re-submit the identical four
+      var matchCat = null;
+      for (var cid in day.solution) {
+        if (usedCat(cid)) continue;
+        if (setsEqual(ids, day.solution[cid].slice().sort())) { matchCat = cid; break; }
+      }
+      if (matchCat) {
+        var idx = solveOrder.length;                          // next solved row
+        ids.forEach(function (tid) { place[tid] = idx; });
+        locked[idx] = true; laneCat[idx] = matchCat; solveOrder.push(idx); solveTimes.push(elapsedSec());
+        lastMissSet = ''; sel = [];
+        feedback('', '');
+        render(); resumeSave(); playLockAnim(idx);
+        if (solveOrder.length === CATS - 1) autoSolveLast();
+        else if (solveOrder.length === CATS) finish(true);
+      } else {
+        // FAIRNESS (unchanged): never punish a factually-correct four.
+        var lane = allFitSomeLane(ids);
+        var fact = lane ? null : sharedFactLabel(ids);
+        if (lane) {
+          freeMiss(ids, revealedCats[lane.id]
+            ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
+            : 'Those four do share something real, but this board needs one in a different group. No guess used.');
+        } else if (fact) {
+          freeMiss(ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s four groups. No guess used.');
+        } else {
+          registerMiss(ids);
+        }
+      }
+    }
+
+    function feedback(msg, kind) {
+      var el = document.getElementById('mFeedback'); if (!el) return;
+      el.textContent = msg || '';
+      el.className = 'mfeedback' + (kind ? ' ' + kind : '');
+      el.style.display = msg ? '' : 'none';
+      if (fbT) { clearTimeout(fbT); fbT = null; }
+      if (msg) fbT = setTimeout(function () { el.style.display = 'none'; el.textContent = ''; }, 3600);
+    }
+    function shakeSelected() {
+      sel.forEach(function (tid) {
+        var el = poolEl.querySelector('.tile[data-tid="' + tid + '"]');
+        if (el) { el.classList.add('bad'); setTimeout(function () { el.classList.remove('bad'); }, 420); }
+      });
     }
 
     function placeInLane(tid, laneIdx) {
@@ -995,7 +1205,7 @@
     function startIfNeeded() {
       if (started || done) return;
       // charge one play-token the first time this attempt truly begins (first tile placement/move)
-      if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt('match') : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
+      if (!charged) { if (ARCHIVE) { charged = true; attemptFirst = false; } else { var r = (window.RTGTokens ? RTGTokens.startAttempt(GAME) : { ok: true, first: true }); charged = true; attemptFirst = !!(r && r.first); } }
       started = true; startTs = Date.now();
       tick = setInterval(updateTimer, 250);
       updateTimer();
@@ -1022,7 +1232,7 @@
       }
 
       if (matchCat) {
-        locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx);
+        locked[laneIdx] = true; laneCat[laneIdx] = matchCat; solveOrder.push(laneIdx); solveTimes.push(elapsedSec());
         delete lastMissIds[laneIdx];
         render();
         resumeSave();
@@ -1043,29 +1253,30 @@
             ? ('True: all four fit "' + lane.name + '." But this board needs one of them in a different group. No guess used.')
             : 'Those four do share something real, but this board needs one of them in a different group. No guess used.');
         } else if (fact) {
-          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s five groups. No guess used.');
+          freeMiss(laneIdx, ids, 'True: all four ' + fact + '. But that isn\'t one of today\'s four groups. No guess used.');
         } else {
           registerMiss(laneIdx, ids);
         }
       }
     }
 
-    // four groups locked -> the last is a gimme; auto-place, lock, and win.
+    // four groups locked -> the last is a gimme. Instead of snapping the four
+    // remaining names into place, DEAL them in one at a time, each gliding from
+    // the pool into its slot (solitaire-style), then lock and win.
+    // Four groups down → the fifth is forced. Solve it automatically (no
+    // busywork) into a new top row, then win.
     function autoSolveLast() {
-      var freeIdx = -1;
-      for (var i = 0; i < CATS; i++) { if (!locked[i]) { freeIdx = i; break; } }
       var usedCats = {}; for (var k in laneCat) { if (locked[k]) usedCats[laneCat[k]] = 1; }
       var remId = null; day.lanes.forEach(function (l) { if (!usedCats[l.id]) remId = l.id; });
-      if (freeIdx < 0 || !remId) { finish(true); return; }
-      // clear anything in the free lane, drop in the true four
-      day.tiles.forEach(function (t) { if (place[t.id] === freeIdx) place[t.id] = null; });
-      day.solution[remId].forEach(function (tid) { place[tid] = freeIdx; });
-      locked[freeIdx] = true; laneCat[freeIdx] = remId; solveOrder.push(freeIdx);
-      delete lastMissIds[freeIdx];
+      if (!remId) { finish(true); return; }
+      var idx = solveOrder.length;
+      day.solution[remId].forEach(function (tid) { place[tid] = idx; });
+      locked[idx] = true; laneCat[idx] = remId; solveOrder.push(idx); solveTimes.push(elapsedSec());
+      sel = [];
       render();
-      playLockAnim(freeIdx);
+      playLockAnim(idx);
       popup('Last group\'s yours!', laneById[remId] ? laneById[remId].name : '');
-      setTimeout(function () { finish(true); }, 620);
+      setTimeout(function () { finish(true); }, 640);
     }
 
     // does this exact four fully satisfy some unsolved lane's category per the
@@ -1085,22 +1296,12 @@
       return null;
     }
     // a factually-valid four that isn't this board's split: no guess charged
-    function freeMiss(laneIdx, ids, message) {
-      lastMissIds[laneIdx] = ids.join(',');
+    function freeMiss(ids, message) {
+      lastMissSet = ids.slice().sort().join(',');
       if (window.RTGSound) RTGSound.soft();
-      var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
-      if (laneEl) {
-        laneEl.classList.add('bad');
-        setTimeout(function () { laneEl.classList.remove('bad'); }, 420);
-        var note = document.createElement('div');
-        note.className = 'lane-note close';
-        note.setAttribute('role', 'status');
-        note.textContent = message;
-        laneEl.appendChild(note);
-        setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 3400);
-        var cb = laneEl.querySelector('.checkbtn');
-        if (cb) { cb.disabled = true; cb.textContent = 'Change a name to re-check'; }
-      }
+      feedback(message, 'free');
+      shakeSelected();
+      updateSubmit();
     }
 
     // off-board shared fact across the four, from RAW entity data (window.GRID_ENTITIES)
@@ -1142,43 +1343,29 @@
       return best === GROUP - 1;
     }
 
-    function registerMiss(laneIdx, ids) {
+    function registerMiss(ids) {
       mistakes++; penalty += 5;
       if (window.RTGSound) RTGSound.wrong();
       var close = oneAway(ids);
-      lastMissIds[laneIdx] = ids.join(',');       // block re-checking the identical four
-      var laneEl = boardEl.querySelector('.lane[data-idx="' + laneIdx + '"]');
-      if (laneEl) {
-        laneEl.classList.add('bad');
-        setTimeout(function () { laneEl.classList.remove('bad'); }, 420);
-        // inline feedback directly beneath the group (not just a distant toast)
-        var note = document.createElement('div');
-        note.className = 'lane-note ' + (close ? 'close' : 'miss');
-        note.setAttribute('role', 'status');
-        note.textContent = close
-          ? 'One away: 3 of these 4 belong together.'
-          : 'Not a group. Swap a name and try again. (−1 guess)';
-        laneEl.appendChild(note);
-        setTimeout(function () { if (note.parentNode) note.parentNode.removeChild(note); }, 2800);
-        // disable this lane's check button until the four change
-        var cb = laneEl.querySelector('.checkbtn');
-        if (cb) { cb.disabled = true; cb.textContent = 'Change a name to re-check'; }
-      }
+      lastMissSet = ids.slice().sort().join(',');   // block re-submitting the identical four
+      feedback(close ? 'One away. 3 of these 4 belong together.' : 'Not a group. Swap a name and try again. (−1 guess)', close ? 'close' : 'miss');
+      shakeSelected();
       popDot(mistakes - 1);
       renderDots();
       popDot(mistakes - 1);
       updateTimer();
       updateHintBtn();
+      updateSubmit();
       resumeSave();
       if (mistakes >= MISTAKE_LIMIT) { setTimeout(function () { finish(false); }, 650); }
     }
     function usedCat(cid) { for (var k in laneCat) { if (locked[k] && laneCat[k] === cid) return true; } return false; }
 
     // ---- finish (win or 6th-miss fail) ----
-    function finish(won) {
+    function finish(won) { if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('match', DATE);
       if (done) return;
       done = true; if (tick) { clearInterval(tick); tick = null; }
-      resumeClear();   // attempt is over — nothing left to resume
+      resumeClear();   // attempt is over - nothing left to resume
       var finalTime = elapsedSec();
 
       if (!won) autoSolveReveal();
@@ -1194,15 +1381,15 @@
 
       // streak: completion-based (win or lose), one per calendar day.
       // ARCHIVE plays are practice: never touch streak/stats/coins/result save.
-      var last = LS.getItem('grid_match_lastplayed');
+      var last = LS.getItem('grid_match_lastplayed' + modeSuffix());
       var s = streakGet();
       var freshDay = (!ARCHIVE && last !== DATE);
       if (freshDay) {
         var y = new Date(DATE + 'T00:00:00'); y.setDate(y.getDate() - 1);
         var ystr = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
         s = (last === ystr) ? s + 1 : 1;
-        LS.setItem('grid_match_streak', String(s));
-        LS.setItem('grid_match_lastplayed', DATE);
+        LS.setItem('grid_match_streak' + modeSuffix(), String(s));
+        LS.setItem('grid_match_lastplayed' + modeSuffix(), DATE);
 
         // lifetime stats (once per calendar day, same guard as the streak)
         var st = statsGet();
@@ -1214,47 +1401,39 @@
       }
       var milestone = freshDay && won ? streakMilestone(s) : '';
 
-      var coins = coinsFor(won, finalTime, par, mistakes);
-      if (!ARCHIVE) {
-        walletSet(walletGet() + coins);
-        LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, order: solveOrder.slice() }));
-        renderWallet();
+      // Save the day's result (for the "played today" screen) on the ranked
+      // first attempt only. No coins - the arcade has no currency.
+      if (attemptFirst && !ARCHIVE) {
+        LS.setItem(resultKey(), JSON.stringify({ won: won, time: finalTime, mistakes: mistakes, grade: grade, order: solveOrder.slice() }));
       }
 
       // ---- cloud: post the run on a win (signed-in only; fail-open). Raw solve
       // time only; the server score formula adds its own per-mistake penalty. ----
-      if (won && attemptFirst && !ARCHIVE && window.RTG_BOARD) {
+      if (won && !ARCHIVE && window.RTG_BOARD) {
         var raw = Math.max(0, Math.round(finalTime - penalty));
-        RTG_BOARD.submit('match', DATE, { seconds: raw, mistakes: mistakes, reveals: 0 }).then(function (res) {
+        RTG_BOARD.submit(GAME, DATE, { seconds: raw, mistakes: mistakes, reveals: 0, replay: !attemptFirst }).then(function (res) {
           if (res && res.streak) document.getElementById('streakVal').textContent = res.streak;
           if (typeof renderMatchBoard === 'function') renderMatchBoard();
         });
       }
-      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, coins: coins, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
+      if (ARCHIVE && won && window.RTGArchive && RTGArchive.recordBest) {
+        RTGArchive.recordBest(GAME, Math.round(finalTime), { higherIsBetter:false, label:'sec' });
+      }
+      setTimeout(function () { showResult({ won: won, time: finalTime, mistakes: mistakes, grade: grade, streak: s, celebrate: true, milestone: milestone, practice: !attemptFirst, archive: ARCHIVE }); }, won ? 350 : 1100);
     }
 
     function autoSolveReveal() {
-      // fill every unlocked lane with its correct answer, greyed (draft-grade reveal)
+      // on a loss, reveal the remaining answers as greyed "Answer" rows on top
       var used = {}; for (var k in laneCat) { if (locked[k]) used[laneCat[k]] = true; }
-      var remainingCats = day.lanes.map(function (l) { return l.id; }).filter(function (c) { return !used[c]; });
-      var li = 0;
-      for (var i = 0; i < 5; i++) {
-        if (locked[i]) continue;
-        var cid = remainingCats[li++]; laneCat[i] = cid; locked[i] = 'auto';
-        day.solution[cid].forEach(function (tid) { place[tid] = i; });
-      }
-      renderSolved();
-    }
-    function renderSolved() {
-      // re-render with auto lanes shown greyed
-      render();
-      boardEl.querySelectorAll('.lane').forEach(function (laneEl) {
-        var idx = +laneEl.dataset.idx;
-        if (locked[idx] === 'auto') {
-          laneEl.querySelectorAll('.tile').forEach(function (tl) { tl.classList.remove('locked'); tl.classList.add('solvefill'); });
-          var chk = laneEl.querySelector('.lane-check'); if (chk) chk.textContent = 'Answer';
-        }
+      var remaining = day.lanes.map(function (l) { return l.id; }).filter(function (c) { return !used[c]; });
+      var next = 0;
+      remaining.forEach(function (cid) {
+        while (locked[next]) next++;
+        laneCat[next] = cid; locked[next] = 'auto';
+        day.solution[cid].forEach(function (tid) { place[tid] = next; });
+        next++;
       });
+      render();
     }
 
     // ---- grade & coins (design doc §7, §8) ----
@@ -1266,15 +1445,6 @@
       if (time <= 1.4 * par && m <= 3) return 'C';
       return 'D';
     }
-    function coinsFor(won, time, par, m) {
-      var mult = 1;
-      if (!won) return 10 * mult;
-      var speed = Math.max(0.5, Math.min(2.0, par / Math.max(1, time)));
-      var mfac = 1 - m * 0.10;
-      var c = Math.round(100 * speed * mfac * mult);
-      return Math.max(c, 20 * mult);
-    }
-    var VERDICTS = { 'A+': 'First-round lock.', 'A': 'Franchise pick.', 'B': 'Solid starter.', 'C': 'Made the roster.', 'D': 'Practice squad.', 'F': 'Cut in camp.' };
 
     // ---- result modal ----
     function colorEmoji(hex) {
@@ -1286,16 +1456,26 @@
       if (r.won) {
         head.textContent = 'BOARD CLEARED!';
         head.style.color = lightUI ? '#17A34A' : '#48D17A';
-        document.getElementById('resVerdict').textContent = 'All 5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
+        document.getElementById('resVerdict').textContent = 'All ' + CATS + ' groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es');
       } else {
         head.textContent = 'OUT OF GUESSES';
         head.style.color = lightUI ? '#D8452F' : '#F06A5F';
-        document.getElementById('resVerdict').textContent = solveOrder.length + ' of 5 groups found';
+        document.getElementById('resVerdict').textContent = solveOrder.length + ' of ' + CATS + ' groups found';
       }
       document.getElementById('resTime').textContent = fmt(r.time);
       document.getElementById('resMiss').textContent = r.mistakes;
       document.getElementById('resStreak').textContent = r.streak;
-      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : ('+' + r.coins + ' coins'));
+      /* One line for the shared result row (result.js). Common Ground's own
+         best is its longest streak, and r.streak is this run's, so a new best
+         is simply the run passing what was stored before it. */
+      try {
+        var mBest = 0; try { mBest = parseInt(LS.getItem('grid_best_streak') || '0', 10) || 0; } catch (e) {}
+        window.RTGResultSpec = { key: 'match', date: r.date || DATE, statInt: r.streak || 0,
+          best: Math.max(mBest, r.streak || 0), prevBest: (mBest > 0 ? mBest : null),
+          isBest: !!(!r.archive && !r.tester && !r.practice && (r.streak || 0) > mBest),
+          streak: r.streak || 0 };
+      } catch (e) {}
+      document.getElementById('resCoins').textContent = r.archive ? 'Archive practice, not counted' : (r.tester ? 'Tester, not counted' : (r.practice ? 'Practice, not counted' : ''));
       document.getElementById('resDone').textContent = r.tester ? 'Next board →' : 'Done';
       var strip = document.getElementById('resStrip'); strip.innerHTML = '';
       solveOrder.forEach(function (idx) {
@@ -1304,7 +1484,7 @@
       });
       // flawless ribbon (win with zero misses)
       document.getElementById('resFlawless').classList.toggle('on', !!r.won && r.mistakes === 0);
-      // streak milestone banner (or a "practice — not ranked" note on bonus replays)
+      // streak milestone banner (or a "practice - not ranked" note on bonus replays)
       var ms = document.getElementById('resMilestone');
       if (r.milestone) { ms.textContent = r.milestone; ms.classList.add('on'); }
       else if (r.practice) { ms.textContent = 'Practice, not ranked'; ms.classList.add('on'); }
@@ -1321,122 +1501,31 @@
         if (window.RTGSound) RTGSound.win();
       }
     }
-    function shareText(r) {
-      var strip = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
-      var dstr = new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      var resLine = r.won
-        ? ('5/5 groups · ' + fmt(r.time) + ' · ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
-        : (solveOrder.length + '/5 groups');
-      return 'Run The Arcade Daily Match, ' + dstr + '\n\n' +
-        '   ' + resLine + '\n   STREAK: ' + r.streak + '\n' +
-        (strip ? '   ' + strip + '\n' : '') + '\n   runthe.gg/grid';
-    }
-
-    // ---- visual share card: render the result to a PNG (canvas) -------------
-    var GRADE_COL = { 'A+': '#17A34A', 'A': '#17A34A', 'B': '#1596AC', 'C': '#B8801A', 'D': '#B8801A', 'F': '#E0432A' };
-    function drawMatchCard(r) {
-      var W = 1080, H = 1350, cv = document.createElement('canvas');
-      cv.width = W; cv.height = H; var g = cv.getContext('2d');
-      function rr(x, y, w, h, rad) { g.beginPath(); g.moveTo(x + rad, y); g.arcTo(x + w, y, x + w, y + h, rad); g.arcTo(x + w, y + h, x, y + h, rad); g.arcTo(x, y + h, x, y, rad); g.arcTo(x, y, x + w, y, rad); g.closePath(); }
-      function ls(v) { try { g.letterSpacing = v; } catch (e) {} }
-      // background + corner glows
-      var bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#faf8f5'); bg.addColorStop(1, '#f2f0ec');
-      g.fillStyle = bg; g.fillRect(0, 0, W, H);
-      var gl = g.createRadialGradient(130, 70, 0, 130, 70, 560); gl.addColorStop(0, 'rgba(255,90,60,.13)'); gl.addColorStop(1, 'rgba(255,90,60,0)'); g.fillStyle = gl; g.fillRect(0, 0, W, H);
-      var gl2 = g.createRadialGradient(W - 90, 50, 0, W - 90, 50, 560); gl2.addColorStop(0, 'rgba(124,92,240,.13)'); gl2.addColorStop(1, 'rgba(124,92,240,0)'); g.fillStyle = gl2; g.fillRect(0, 0, W, H);
-
-      g.textBaseline = 'alphabetic';
-      // wordmark: RunThe (ink) + Grid (coral), centered
-      g.font = '900 italic 66px Archivo, sans-serif'; ls('0px');
-      var t1 = 'RunThe', t2 = 'Grid', w1 = g.measureText(t1).width, w2 = g.measureText(t2).width, sx = W / 2 - (w1 + w2) / 2;
-      g.textAlign = 'left';
-      g.fillStyle = '#182430'; g.fillText(t1, sx, 132);
-      g.fillStyle = '#FF5A3C'; g.fillText(t2, sx + w1, 132);
-      g.textAlign = 'center';
-      g.font = '800 30px Archivo, sans-serif'; ls('6px'); g.fillStyle = '#FF5A3C'; g.fillText('DAILY MATCH', W / 2, 184); ls('0px');
-      g.font = '700 34px Archivo, sans-serif'; g.fillStyle = '#5c6b7a'; g.fillText(r.dateStr, W / 2, 248);
-
-      // white card panel
-      g.fillStyle = '#ffffff'; rr(70, 300, W - 140, 770, 44); g.fill();
-      g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(70, 300, W - 140, 770, 44); g.stroke();
-
-      var cy = 384;
-      if (r.won && r.mistakes === 0) {
-        var rw = 460, rh = 66, rx = W / 2 - rw / 2;
-        var rg = g.createLinearGradient(rx, 0, rx + rw, 0); rg.addColorStop(0, '#FF5A3C'); rg.addColorStop(1, '#EBA61F');
-        g.fillStyle = rg; rr(rx, cy, rw, rh, 33); g.fill();
-        g.fillStyle = '#fff'; g.font = '900 27px Archivo, sans-serif'; ls('3px'); g.fillText('FLAWLESS', W / 2, cy + 43); ls('0px');
-        cy += 96;
-      } else { cy += 20; }
-
-      // HERO: you finished. (grade removed — the accomplishment + the solve
-      // order are the story now.)
-      var heroWord = r.won ? 'SOLVED' : 'FINAL';
-      var heroCol = r.won ? '#17A34A' : '#5c6b7a';
-      g.font = '400 172px Anton, Impact, sans-serif'; g.fillStyle = heroCol;
-      g.fillText(heroWord, W / 2, cy + 130);
-
-      // THE STORY: solve-order colour strip, big and centered
-      var sy = cy + 198;
-      if (r.strip && r.strip.length) {
-        g.font = '900 22px Archivo, sans-serif'; ls('4px'); g.fillStyle = '#5c6b7a'; g.fillText('THE ORDER YOU CRACKED THEM', W / 2, sy); ls('0px');
-        var bw = 132, bh = 52, bgap = 18, tw2 = r.strip.length * bw + (r.strip.length - 1) * bgap, bx0 = W / 2 - tw2 / 2, by = sy + 34;
-        r.strip.forEach(function (col, i) {
-          g.fillStyle = col; rr(bx0 + i * (bw + bgap), by, bw, bh, 14); g.fill();
-        });
-      }
-
-      // stat pills: TIME / MISSES / STREAK
-      var pills = [['TIME', r.timeStr], ['MISSES', String(r.mistakes)], ['STREAK', String(r.streak)]];
-      var pw = 252, ph = 146, gap = 28, tot = pw * 3 + gap * 2, px0 = W / 2 - tot / 2, py = sy + 150;
-      pills.forEach(function (p, i) {
-        var px = px0 + i * (pw + gap);
-        g.fillStyle = '#faf8f5'; rr(px, py, pw, ph, 26); g.fill();
-        g.strokeStyle = 'rgba(24,36,48,.10)'; g.lineWidth = 2; rr(px, py, pw, ph, 26); g.stroke();
-        g.fillStyle = '#182430'; g.font = '400 66px Anton, Impact, sans-serif'; g.fillText(p[1], px + pw / 2, py + 84);
-        g.fillStyle = '#5c6b7a'; g.font = '900 22px Archivo, sans-serif'; ls('3px'); g.fillText(p[0], px + pw / 2, py + 122); ls('0px');
-      });
-
-      g.fillStyle = '#FF5A3C'; g.font = '900 36px Archivo, sans-serif'; ls('1px'); g.fillText('runthe.gg/grid', W / 2, H - 72); ls('0px');
-      return cv;
-    }
-    function cvToBlob(cv) { return new Promise(function (res) { cv.toBlob(function (b) { res(b); }, 'image/png'); }); }
-    function shareResultImage() {
+    // Share the invite card every game now shares (RTGShare.send): the solve
+    // order becomes the grid, the result line becomes the stat, and solve time
+    // (lower is better) rides the challenge link. Replaces Match's old bespoke
+    // canvas so every game looks identical.
+    function shareResultImage() { RTGShare.send(cardSpec()); }
+    /* The result screen shows this card too (resultart.js), so the spec is a
+       function both can call. */
+    function cardSpec() {
       var r = window._lastResult || {};
-      var card = {
-        won: r.won, grade: r.grade, verdict: VERDICTS[r.grade] || '', timeStr: fmt(r.time),
-        mistakes: r.mistakes, streak: r.streak,
-        dateStr: new Date(DATE + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
-        strip: solveOrder.map(function (idx) { return laneById[laneCat[idx]].color; })
-      };
-      var txt = shareText(r);
-      function go() {
-        var cv;
-        try { cv = drawMatchCard(card); } catch (e) { cv = null; }
-        if (!cv) { textShareFallback(txt); return; }
-        cvToBlob(cv).then(function (blob) {
-          if (!blob) { textShareFallback(txt); return; }
-          var file = new File([blob], 'runthegrid-match.png', { type: 'image/png' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], text: txt, title: 'Run The Arcade Daily Match' })
-              .catch(function (e) { if (e && e.name === 'AbortError') return; downloadBlob(blob, txt); });
-          } else { downloadBlob(blob, txt); }
-        });
-      }
-      if (document.fonts && document.fonts.ready && document.fonts.ready.then) { document.fonts.ready.then(go, go); } else { go(); }
+      var grid = solveOrder.map(function (idx) { return colorEmoji(laneById[laneCat[idx]].color); }).join('');
+      var stat = r.won
+        ? ('\uD83E\uDDE9 ' + CATS + '/' + CATS + ' \u00B7 ' + fmt(r.time) + ' \u00B7 ' + r.mistakes + ' miss' + (r.mistakes === 1 ? '' : 'es'))
+        : ('\uD83E\uDDE9 ' + solveOrder.length + '/' + CATS + ' groups');
+      if (r.streak) stat += ' \u00B7 streak ' + r.streak;
+      // Solve timeline for the image card: each group as a dot on a time bar at
+      // the second it locked, plus a splits list below. Colors only - no category
+      // names - so the invite never spoils the puzzle. Only when we have a live
+      // time per solve (a resumed board has none -> falls back to the grid card).
+      var timeline = (r.won && solveTimes.length === solveOrder.length && solveOrder.length)
+        ? solveOrder.map(function (idx, i) { return { color: laneById[laneCat[idx]].color, t: solveTimes[i] }; })
+        : null;
+      return { key: 'match', date: DATE, grid: grid || null, stat: stat, statInt: r.won ? Math.round(r.time) : null,
+               timeline: timeline, total: r.won ? r.time : null };
     }
-    function downloadBlob(blob, txt) {
-      var url = URL.createObjectURL(blob), a = document.createElement('a');
-      a.href = url; a.download = 'runthegrid-match.png'; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
-      if (txt && navigator.clipboard) navigator.clipboard.writeText(txt).catch(function () {});
-      toast('Result image saved');
-    }
-    function textShareFallback(txt) {
-      if (navigator.share) { navigator.share({ text: txt }).catch(function () {}); }
-      else if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(function () { toast('Result copied'); }); }
-      else { toast('Copy not supported'); }
-    }
+    window.RTG_CARD_SPEC = cardSpec;
 
     // ---- hint: reveal one group's name for the cost of a guess (with confirm) ----
     var hintBtn = document.getElementById('btnHint');
@@ -1482,10 +1571,16 @@
       if (hintBtn.disabled) disarmHint();
     }
 
-    document.getElementById('btnClear').addEventListener('click', function () {
-      if (done) return;
-      day.tiles.forEach(function (t) { if (place[t.id] != null && !locked[place[t.id]]) place[t.id] = null; });
-      selected = null; render(); resumeSave();
+    function deselectAll() { if (done) return; sel = []; feedback('', ''); render(); }
+    document.getElementById('btnSubmit').addEventListener('click', submit);
+    document.getElementById('btnDeselect').addEventListener('click', deselectAll);
+    document.getElementById('btnClear').addEventListener('click', deselectAll);
+    // Enter submits when four are selected (keyboard players)
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !done && sel.length === GROUP) {
+        var tag = (e.target && e.target.tagName) || '';
+        if (tag !== 'BUTTON' && tag !== 'INPUT' && tag !== 'TEXTAREA') { e.preventDefault(); submit(); }
+      }
     });
 
     // ---- shuffle the unplaced names (display order only; nothing about the puzzle changes) ----
@@ -1525,18 +1620,18 @@
     // ---- play-token economy: main subtitle label + Play again ----
     function updateExplain() {
       var ex = document.querySelector('.explain'); if (!ex) return;
-      var base = 'Sort 20 sports names into five hidden groups of four.';
-      if (ARCHIVE) { ex.textContent = base + ' · Archive practice'; return; }
-      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.label('match') + ' today') : '');
+      var base = 'Tap four names that belong together. Find all four groups before four mistakes.';
+      if (ARCHIVE) { ex.textContent = base + ' · Archive · your personal best'; return; }
+      ex.textContent = base + (window.RTGTokens ? (' · ' + RTGTokens.hint(GAME)) : '');
     }
     function updateAgainBtn() {
       var b = document.getElementById('mAgain'); if (!b) return;
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { b.textContent = 'No plays left today'; b.disabled = true; b.classList.add('spent'); }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { if(window.RTGCard&&RTGCard.wallButton){RTGCard.wallButton(b);}else{b.textContent = RTGTokens.blockMsg(GAME); b.disabled = true; b.classList.add('spent');} }
       else { b.textContent = 'Play again'; b.disabled = false; b.classList.remove('spent'); }
     }
     function beginAttempt() {
       // Ranked first play = the daily board; every replay is a fresh random board.
-      var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf('match') > 0);
+      var isReplay = servedDaily || (!ARCHIVE && window.RTGTokens && RTGTokens.playsOf(GAME) > 0);
       if (isReplay) { resumeClear(); replaySeed = 'match-replay-' + (((Math.random() * 4294967296) >>> 0) || 1); }
       else { replaySeed = null; servedDaily = true; }
       // fresh solve state; no token charged until first interaction. Rebuild the
@@ -1553,7 +1648,7 @@
       updateExplain();
     }
     document.getElementById('mAgain').addEventListener('click', function () {
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) { toast('No plays left today'); updateAgainBtn(); return; }
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) { toast(RTGTokens.blockMsg(GAME)); updateAgainBtn(); if(window.RTGCard) RTGCard.wall(); return; }
       beginAttempt();
     });
 
@@ -1566,7 +1661,7 @@
     streakChip.addEventListener('click', openStats);
     streakChip.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStats(); } });
 
-    // ---- tester: load a fresh board (with confirm — it abandons the current board) ----
+    // ---- tester: load a fresh board (with confirm - it abandons the current board) ----
     var newBtn = document.getElementById('btnNew');
     var newArmed = false, newArmT = null;
     function disarmNew() {
@@ -1627,22 +1722,22 @@
       // refresh landed mid-way through the charged ranked attempt: restore it
       // instead of burning the play (only when today isn't already finished).
       var resume = resumeLoad();
-      if (resume && !saved && window.RTGTokens && RTGTokens.playsOf('match') > 0) {
+      if (resume && !saved && window.RTGTokens && RTGTokens.playsOf(GAME) > 0) {
         if (restoreAttempt(resume)) return;
         resumeClear();   // stale / corrupt snapshot: fall through to the normal flow
       }
       // out of plays for today -> keep the locked / review state.
       // ARCHIVE always starts a fresh playable past-day board (no lock, no restore).
-      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay('match')) {
+      if (!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)) {
         resetState(); render(); updateTimer(); updateExplain();
         if (saved) {
           replaySaved(saved);
-          document.getElementById('resCoins').textContent = 'No plays left. Back tomorrow.';
+          document.getElementById('resCoins').textContent = (window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.');
         } else {
           done = true;
           boardEl.style.pointerEvents = 'none'; boardEl.style.opacity = '.5';
           poolEl.style.pointerEvents = 'none'; poolEl.style.opacity = '.5';
-          var ex = document.querySelector('.explain'); if (ex) ex.textContent = 'No plays left. Back tomorrow.';
+          var ex = document.querySelector('.explain'); if (ex) ex.textContent = (window.RTGTokens?RTGTokens.lockLine(GAME):'Back tomorrow.');
         }
         return;
       }
@@ -1676,7 +1771,7 @@
           var v = pl[t.id];
           place[t.id] = (typeof v === 'number' && v >= 0 && v < CATS) ? v : null;
         });
-        // a solved lane must hold exactly its true four — repair from the solution if not
+        // a solved lane must hold exactly its true four - repair from the solution if not
         for (var li = 0; li < CATS; li++) {
           if (!locked[li]) continue;
           var ids = day.tiles.filter(function (t) { return place[t.id] === li; }).map(function (t) { return t.id; }).sort();
@@ -1764,7 +1859,7 @@
     function startCountdown(elId) {
       if (cdTargets.indexOf(elId) === -1) cdTargets.push(elId);
       function upd() {
-        var html = 'Next board in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
+        var html = 'New boards in <b>' + fmtCountdown(msToTomorrow()) + '</b>';
         cdTargets.forEach(function (id) { var el = document.getElementById(id); if (el && el.offsetParent !== null) el.innerHTML = html; });
       }
       upd(); if (cdTick) clearInterval(cdTick); cdTick = setInterval(upd, 1000);
@@ -1797,14 +1892,76 @@
       if (toastT) clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('on'); }, 1800);
     }
 
+    // ---- sport editions: config, switcher, boot ----
+    function configureMode(mode) {
+      MODE = (window.RTGMode && mode) ? mode : 'all';
+      SPORTFILTER = (window.RTGMode ? RTGMode.sportOf(MODE) : null);
+      GAME = (window.RTGMode ? RTGMode.key(GAME_BASE, MODE) : GAME_BASE);
+      RESUME_KEY = 'rtg:resume:' + GAME;
+    }
+    function renderSwitcher() {
+      var el = document.getElementById('modesw'); if (!el) return;
+      if (ARCHIVE || !(window.RTGMode && RTGMode.eligible())) {
+        // A past day is always the mixed board, the same as every other game's
+        // archive, so the row goes entirely rather than sitting there inert.
+        el.classList.add('hidden'); if (ARCHIVE) el.classList.add('gone'); el.innerHTML = ''; return;
+      }
+      el.classList.remove('hidden'); el.classList.remove('gone');
+      el.innerHTML = RTGMode.MODES.map(function (m) {
+        var lab = m.k === 'all' ? 'All' : m.label;
+        return '<button type="button" role="tab" data-m="' + m.k + '" aria-selected="' + (m.k === MODE) + '"' +
+               ' class="' + (m.k === MODE ? 'on' : '') + '">' + lab + '</button>';
+      }).join('');
+      [].forEach.call(el.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () { switchMode(b.dataset.m); });
+      });
+    }
+    function switchMode(mode) {
+      if (!window.RTGMode || mode === MODE) return;
+      try { LS.setItem('rtg:mode:' + GAME_BASE, mode); } catch (e) {}
+      // keep this edition's half-finished board so switching back resumes it
+      // (resumeSave() is itself a no-op unless this was the ranked attempt)
+      if (started) resumeSave();
+      if (tick) { clearInterval(tick); tick = null; }
+      configureMode(mode);
+      servedDaily = false; replaySeed = null;
+      var rm = document.getElementById('resultModal'); if (rm) rm.hidden = true;
+      var sc = document.getElementById('scrim'); if (sc) sc.classList.add('hidden');
+      renderSwitcher();
+      try { if (window.RTG_LB) RTG_LB.setGame(GAME, RTGMode.label(mode)); } catch (e) {}
+      buildDay(); renderWallet(); boot();
+      renderMatchBoard();
+      toast((mode === 'all' ? 'All Sports' : (RTGMode.sportOf(mode) || mode)) + ' version');
+    }
+    function startWith(mode) {
+      configureMode(mode); renderSwitcher();
+      buildDay(); renderWallet(); boot();
+    }
+    /* Resume beats the picker: if one edition has a charged, unfinished board
+       from earlier today, drop straight back into it rather than asking again
+       and stranding the play that was already spent on it. */
+    function activeResumeMode() {
+      var cands = (window.RTGMode && RTGMode.eligible() && !ARCHIVE) ? ['all', 'nba', 'nfl', 'mlb'] : ['all'];
+      for (var i = 0; i < cands.length; i++) {
+        var m = cands[i], g = (window.RTGMode ? RTGMode.key(GAME_BASE, m) : GAME_BASE);
+        var r; try { r = JSON.parse(LS.getItem('rtg:resume:' + g)); } catch (e) { r = null; }
+        if (!(r && r.d === DATE)) continue;
+        if (!(window.RTGTokens && RTGTokens.playsOf(g) > 0)) continue;
+        return m;
+      }
+      return null;
+    }
+
     // ---- go ----
     if (TESTER) {
       document.getElementById('testerBanner').hidden = false;
       document.getElementById('btnNew').style.display = '';
     }
-    buildDay();
-    renderWallet();
-    boot();
+    var rmode = activeResumeMode();
+    if (rmode) startWith(rmode);
+    else if (window.RTGMode && RTGMode.eligible() && !ARCHIVE) {
+      RTGMode.choose(GAME_BASE, { title: 'Common Ground' }).then(startWith);
+    } else startWith('all');
 
     // ---- cloud board (fail-open: stays on the Sample board + local streak if offline) ----
     (function initYou() {
@@ -1814,7 +1971,7 @@
     })();
     function renderMatchBoard() {
       if (!window.RTG_BOARD) return;
-      RTG_BOARD.leaderboard('match', DATE, 5).then(function (rows) {
+      RTG_BOARD.leaderboard(GAME, DATE, 5).then(function (rows) {
         if (rows === null) return;                       // offline: keep the Sample board
         var pill = document.querySelector('.mlb-pill'); if (pill) pill.textContent = 'Live';
         var samp = document.getElementById('mlbSample');
@@ -1838,7 +1995,7 @@
       RTG_BOARD.boot();
       RTG_BOARD.onChange(function (st) {
         if (st.signedIn) {
-          RTG_BOARD.streakOf('match').then(function (cs) {
+          RTG_BOARD.streakOf(GAME).then(function (cs) {
             if (cs) {
               document.getElementById('streakVal').textContent = cs.streak || 0;
               var ys = document.getElementById('mYourStreak'); if (ys) ys.textContent = cs.streak || 0;
@@ -1850,5 +2007,31 @@
     }
   })();
   </script>
+<script>
+/* Shared leaderboard (arcade/leaderboard.js). Mounted from here rather than
+   inside the game's own IIFE so the game code needs no changes: it takes over
+   the .lb rail and replaces the per-game board that used to live there.
+
+   BASE is spelled out rather than read from the game's GAME_BASE, which is
+   declared inside that IIFE and has never been reachable from here. The
+   resolver threw ReferenceError on every call, leaderboard.js caught it and
+   returned null, and this board spent its whole life asking the server for a
+   game named "null": zero rows, every time, under "Nobody has posted today".
+   Nine other games mount the same block; this was the only one reaching across
+   the scope boundary to do it. */
+(function(){
+  var BASE = 'match';
+  function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function go(){
+    var el=document.querySelector('.lb')||document.querySelector('.mlb')||document.getElementById('lb');
+    if(!el||!window.RTG_LB) return;
+    RTG_LB.mount({ el:el,
+      game:function(){ return window.RTGMode?RTGMode.boardKey(BASE):BASE; },
+      variant:function(){ return window.RTGMode?RTGMode.boardLabel(BASE):null; },
+      date:(window.RTGArchive?RTGArchive.date():todayStr()), kind:'time' });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
+})();
+</script>
 </body>
 </html>
