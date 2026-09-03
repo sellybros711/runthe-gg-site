@@ -20687,35 +20687,55 @@ function csMicSVG(col,h,flag){
       <rect x="4.3" y="24" width="15.4" height="3" rx="1.7" fill="rgba(255,255,255,.18)"/>
       <rect x="4.3" y="24" width="15.4" height="10.6" rx="1.7" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="0.7"/>`:''}</svg>`;
 }
+// a water glass on the desk: the small prop that sells a real press table
+function csGlassSVG(){
+  return `<svg viewBox="0 0 22 30" width="13" height="18" aria-hidden="true" style="display:block">
+    <path d="M4.4 3 h13.2 l-1.5 22 a3.3 3.3 0 0 1 -10.2 0 z" fill="rgba(176,208,224,.20)" stroke="rgba(214,238,247,.55)" stroke-width="0.8"/>
+    <path d="M5.7 15 l10.6 0 -0.95 9.6 a2.7 2.7 0 0 1 -8.1 0 z" fill="rgba(110,176,210,.42)"/>
+    <path d="M6 15.4 l10 0 -0.2 2 -9.6 0 z" fill="rgba(226,245,252,.5)"/>
+    <ellipse cx="8" cy="8" rx="1.1" ry="3.4" fill="rgba(255,255,255,.45)"/>
+  </svg>`;
+}
 /* The desk you sit behind, and what is on it. The FORM comes from the tier, the MATERIAL from the
    venue, so a major at a pine parkland is warm hardwood and a links signature event is driftwood
-   grey. Owner: "your player sitting behind a desk with a mic in front of him." */
+   grey. Depth is faked, not transformed: the top is a trapezoid that recedes, a lit front lip sits
+   over a shaded front face with a modesty panel, and the ends fall into shadow so the desk reads as
+   a solid object rather than a coloured bar. Owner: "more detail or perspective on the desk." */
 function csPressDeskHTML(W,st,name){
   const acc=st.acc, wood=st.wood||'#4a3018';
   const r=mulberry32((st.seed^0x5b0d)>>>0);
-  let top, face, front='';
+  let top, face, lip, panel='', front='';
   if(st.desk==='oak'){
-    top=`linear-gradient(180deg,${csDark(wood,1.55)} 0%,${csDark(wood,1.18)} 55%,${csDark(wood,.8)} 100%)`;
-    face=`linear-gradient(180deg,${csDark(wood,.92)} 0%,${csDark(wood,.62)} 100%)`;
+    top=`linear-gradient(180deg,${csDark(wood,1.62)} 0%,${csDark(wood,1.2)} 52%,${csDark(wood,.86)} 100%)`;
+    face=`linear-gradient(180deg,${csDark(wood,.94)} 0%,${csDark(wood,.6)} 100%)`;
+    lip=`linear-gradient(180deg,${csDark(wood,1.9)},${csDark(wood,1.1)})`;
+    panel=`<div class="cs-dpanel" style="border-color:${csRgba('#000000',.4)};background:linear-gradient(180deg,${csDark(wood,.74)},${csDark(wood,.5)})"></div>`;
     front=`<div class="cs-dedge" style="background:${csRgba(acc,.55)}"></div>
-      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.16)} 0 2px,transparent 2px 46px)"></div>`;
+      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.17)} 0 2px,transparent 2px 46px),repeating-linear-gradient(90deg,${csRgba('#ffffff',.05)} 0 1px,transparent 1px 46px)"></div>`;
   } else if(st.desk==='gloss'){
-    top=`linear-gradient(180deg,#28323a 0%,#151d24 60%,#0b1116 100%)`;
-    face=`linear-gradient(180deg,#131b21 0%,#070c10 100%)`;
+    top=`linear-gradient(180deg,#2b3640 0%,#141d25 58%,#0a1015 100%)`;
+    face=`linear-gradient(180deg,#131b21 0%,#060b0f 100%)`;
+    lip=`linear-gradient(180deg,${csRgba(acc,.5)},#1a242c)`;
+    panel=`<div class="cs-dpanel" style="border-color:${csRgba(acc,.3)};background:linear-gradient(180deg,#0f171d,#05090c);box-shadow:inset 0 0 22px ${csRgba(acc,.14)}"></div>`;
     front=`<div class="cs-dedge" style="background:${acc};box-shadow:0 0 20px ${csRgba(acc,.6)}"></div>
       <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#ffffff',.05)} 0 1px,transparent 1px 58px)"></div>`;
   } else if(st.desk==='skirt'){
     const cloth=csDark(st.wallCol||acc,.5);
-    top=`linear-gradient(180deg,${csDark(cloth,1.7)} 0%,${csDark(cloth,1.2)} 100%)`;
-    face=`linear-gradient(180deg,${cloth} 0%,${csDark(cloth,.6)} 100%)`;
+    top=`linear-gradient(180deg,${csDark(cloth,1.75)} 0%,${csDark(cloth,1.22)} 100%)`;
+    face=`linear-gradient(180deg,${cloth} 0%,${csDark(cloth,.55)} 100%)`;
+    lip=`linear-gradient(180deg,${csDark(cloth,1.95)},${csDark(cloth,1.3)})`;
     front=`<div class="cs-dedge" style="background:${csRgba(acc,.45)}"></div>
-      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.22)} 0 2px,transparent 2px 26px)"></div>
+      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.24)} 0 3px,${csRgba('#ffffff',.03)} 3px 5px,transparent 5px 26px)"></div>
       <div class="cs-dname" style="color:${csRgba('#ffffff',.5)};border-color:${csRgba(acc,.32)}">${esc(String(W.evtName||'').toUpperCase())}</div>`;
   } else {
-    const cloth=csDark(st.wallCol||acc,.42);
-    top=`linear-gradient(180deg,${csDark(cloth,1.5)} 0%,${csDark(cloth,1.05)} 100%)`;
-    face=`linear-gradient(180deg,${csDark(cloth,.85)} 0%,${csDark(cloth,.5)} 100%)`;
-    front=`<div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.18)} 0 1px,transparent 1px 30px)"></div>`;
+    // a folding trestle table: a muted mid tone built from the accent hue so it ALWAYS reads against a dark
+    // room, instead of borrowing the near-black wall colour it used to vanish into on a regular week
+    let cloth; try{ cloth=hvHexShift(acc, 0, .4, .5); }catch(e){ cloth=csDark(acc,.5); }
+    top=`linear-gradient(180deg,${csDark(cloth,1.7)} 0%,${csDark(cloth,1.15)} 100%)`;
+    face=`linear-gradient(180deg,${csDark(cloth,.95)} 0%,${csDark(cloth,.58)} 100%)`;
+    lip=`linear-gradient(180deg,${csDark(cloth,2)},${csDark(cloth,1.3)})`;
+    front=`<div class="cs-dedge" style="background:${csRgba(acc,.4)}"></div>
+      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.22)} 0 2px,${csRgba('#ffffff',.04)} 2px 3px,transparent 3px 30px)"></div>`;
   }
   // the mics, fanned across the table and pointed at whoever is sitting there
   let mics='';
@@ -20726,11 +20746,16 @@ function csPressDeskHTML(W,st,name){
   const plate = (st.desk==='oak'||st.desk==='gloss')
     ? `<div class="cs-dplate" style="border-color:${csRgba(acc,.7)};background:linear-gradient(180deg,${csRgba(acc,.9)},${csDark(acc,.72)});color:#0a1216">${esc(String(name||'').toUpperCase())}</div>`
     : '';
+  // a glass of water on the bigger desks: a small prop that reads as a real table
+  const glass = (st.desk==='oak'||st.desk==='gloss')
+    ? `<span class="cs-dglass" style="${(st.mics||1)>1?'right:15%':'right:22%'}">${csGlassSVG()}</span>` : '';
   return `<div class="cs-desk">
     <div class="cs-microw">${mics}</div>
-    <div class="cs-dtop" style="background:${top}"></div>
-    <div class="cs-dface" style="background:${face}">${front}</div>
-    ${plate}
+    <div class="cs-dtop" style="background:${top}"><span class="cs-dsheen"></span></div>
+    <div class="cs-dlip" style="background:${lip}"></div>
+    <div class="cs-dface" style="background:${face}">${front}${panel}
+      <div class="cs-dside l"></div><div class="cs-dside r"></div></div>
+    ${glass}${plate}
   </div>`;
 }
 function csBulbsHTML(st){
@@ -20747,8 +20772,26 @@ function csBulbsHTML(st){
 // and a function declaration hoists, so the later one wins for everybody: naming this csFeedHTML made the
 // feed ROOM render a fan post reading "[object Object]". Keep room builders on the csRoom* prefix.
 function csRoomFeedHTML(W){
-  return `<div class="cs-r" style="background:radial-gradient(120% 90% at 50% 0%, ${csRgba(W.tier.acc,.16)}, rgba(3,7,9,1) 66%)"></div>
-    <div class="cs-r" style="background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px);opacity:.6"></div>`;
+  const acc=W.tier.acc;
+  // a wall of ghost posts drifting behind the fan reaction: depth, not a flat gradient
+  let cards='';
+  try{
+    const r=mulberry32((((W.seed||1)^0x33af)>>>0));
+    for(let i=0;i<8;i++){
+      const x=(3+r()*84).toFixed(1), y=(4+r()*82).toFixed(1), w=(16+r()*22).toFixed(0), h=(8+r()*8).toFixed(0);
+      const a=(.04+r()*.07), rot=(-4+r()*8).toFixed(1);
+      cards+=`<div style="position:absolute;left:${x}%;top:${y}%;width:${w}%;height:${h}%;border-radius:8px;transform:rotate(${rot}deg);
+        background:${csRgba('#ffffff',a)};border:1px solid ${csRgba(acc,a*2.4)};box-shadow:0 8px 22px rgba(0,0,0,.32)">
+        <div style="position:absolute;left:7%;top:16%;width:22%;height:38%;border-radius:50%;background:${csRgba(acc,a*3)}"></div>
+        <div style="position:absolute;left:34%;top:22%;right:9%;height:14%;border-radius:3px;background:${csRgba('#ffffff',a*2.4)}"></div>
+        <div style="position:absolute;left:34%;top:44%;right:16%;height:11%;border-radius:3px;background:${csRgba('#ffffff',a*1.6)}"></div></div>`;
+    }
+  }catch(e){}
+  return `<div class="cs-r" style="background:radial-gradient(120% 90% at 50% 0%, ${csRgba(acc,.18)}, rgba(3,7,9,1) 66%)"></div>
+    <div class="cs-r" style="background:radial-gradient(78% 58% at 84% 90%, ${csRgba(acc,.10)}, transparent 60%)"></div>
+    ${cards}
+    <div class="cs-r" style="background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 5px);opacity:.5"></div>
+    <div class="cs-r" style="background:radial-gradient(120% 100% at 50% 42%, transparent 50%, rgba(0,0,0,.52) 100%)"></div>`;
 }
 function csRangeHTML(W){
   const B=W.B||CS_B0, K=CS_SKY.dawn;
@@ -20900,9 +20943,23 @@ function csStyleOnce(){
   .cs-stage.press .cs-cast{transform:translateY(var(--csink,0px))}
   .cs-stage.press .cs-plate{display:none}
   .cs-desk{position:absolute;left:-4%;right:-4%;bottom:0;height:var(--dh,150px);z-index:3;pointer-events:none;
-    display:flex;flex-direction:column;align-items:stretch}
-  .cs-dtop{flex:0 0 13%;min-height:8px;border-top-left-radius:4px;border-top-right-radius:4px}
+    display:flex;flex-direction:column;align-items:stretch;filter:drop-shadow(0 -3px 10px rgba(0,0,0,.45))}
+  /* the top recedes: a trapezoid narrower at the back sells the angle without a 3D transform */
+  .cs-dtop{flex:0 0 17%;min-height:11px;position:relative;border-top-left-radius:5px;border-top-right-radius:5px;
+    clip-path:polygon(5% 0,95% 0,100% 100%,0 100%);
+    box-shadow:inset 0 3px 7px rgba(255,255,255,.07),inset 0 -3px 6px rgba(0,0,0,.4)}
+  .cs-dsheen{position:absolute;left:10%;right:10%;top:8%;height:46%;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.16),transparent 72%)}
+  /* the front edge catches the light, a bright band over the shaded face */
+  .cs-dlip{flex:0 0 5px;min-height:3px;box-shadow:0 3px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22)}
   .cs-dface{flex:1 1 auto;position:relative;overflow:hidden}
+  .cs-dside{position:absolute;top:0;bottom:0;width:18%;pointer-events:none}
+  .cs-dside.l{left:0;background:linear-gradient(90deg,rgba(0,0,0,.5),transparent)}
+  .cs-dside.r{right:0;background:linear-gradient(270deg,rgba(0,0,0,.5),transparent)}
+  .cs-dpanel{position:absolute;left:24%;right:24%;top:20%;bottom:16%;border-radius:5px;border:1px solid;
+    box-shadow:inset 0 3px 10px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.05)}
+  .cs-dglass{position:absolute;z-index:4;bottom:calc(var(--dh,150px) - 30px);pointer-events:none;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
   .cs-dedge{position:absolute;left:0;right:0;top:0;height:2px}
   .cs-dgrain{position:absolute;inset:0}
   .cs-dname{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);max-width:70%;
