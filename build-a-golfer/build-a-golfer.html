@@ -1919,7 +1919,7 @@ window.GA_ID='G-L29P5MRWKE';
   .board{background:var(--board); border:1px solid var(--line); border-radius:13px; overflow:hidden}
   .lb{display:grid; grid-template-columns:34px 1fr 56px 62px; gap:8px; align-items:center; padding:9px 12px; font-size:13px; border-top:1px solid rgba(244,227,201,.06)}
   .lb:first-child{border-top:0}
-  .lb .pos{font-family:var(--mono); color:var(--muted); font-weight:700}
+  .lb .pos{font-family:var(--mono); color:var(--muted); font-weight:700; white-space:nowrap; text-align:center; padding-right:2px}
   .lb .pl{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--oncard)}
   .lb .sc{font-family:var(--mono); font-weight:800; text-align:right; color:var(--oncard)}
   .lb .mny{font-family:var(--mono); text-align:right; color:#bfe7df; font-size:12px}
@@ -12321,7 +12321,7 @@ function overlayLeaderboard(screen){
     view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows:[];
   }
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
-  const lbRowHTML=(pos,name,sub,valHTML,you,rep,look,pc,pro)=>`<div class="lb ${you?'you':''}" ${pc!=null?`data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(name)}’s player card"`:''} style="grid-template-columns:26px 32px 1fr auto${pc!=null?';cursor:pointer':''}">
+  const lbRowHTML=(pos,name,sub,valHTML,you,rep,look,pc,pro)=>`<div class="lb ${you?'you':''}" ${pc!=null?`data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(name)}’s player card"`:''} style="grid-template-columns:minmax(26px,max-content) 32px 1fr auto${pc!=null?';cursor:pointer':''}">
       <span class="pos">${pos===1?'🏆':pos}</span>
       ${pxAvatarChip(look||S.look||DEFLOOK,30)}
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pro?`<span class="proname" title="Tour Pass PRO">${esc(name)}</span>`:esc(name)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sub)}</div>`:''}</span>
@@ -12514,7 +12514,7 @@ function overlayLeaderboardDaily(screen, tab){
     ? `${r.golfer_name?esc(r.golfer_name)+' · ':''}${r.days_played} day${r.days_played===1?'':'s'} · best ${dtp(r.best_to_par)}`
     : `${r.golfer_name?esc(r.golfer_name)+' · ':''}OVR ${r.ovr}${r.won?' · <span style="color:var(--gold)">beat the pro</span>':''}`;
   const rowHTML=r=>{ const pc=pcReg(r, r.display_name, 'daily');
-    return `<div class="lb ${you(r)?'you':''}" data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(r.display_name)}’s player card" style="grid-template-columns:26px 32px 1fr auto;cursor:pointer">
+    return `<div class="lb ${you(r)?'you':''}" data-pc="${pc}" role="button" tabindex="0" aria-label="View ${esc(r.display_name)}’s player card" style="grid-template-columns:minmax(26px,max-content) 32px 1fr auto;cursor:pointer">
       <span class="pos">${r.rank===1?'🏆':r.rank}</span>
       ${pxAvatarChip(you(r)?(S.look||DEFLOOK):(r.look||DEFLOOK),30)}
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${proNameHTML(r.display_name,r.user_id)}</div><div class="small muted" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub(r)}</div></span>
@@ -12634,7 +12634,7 @@ function overlayLeaderboardLifetime(screen){
     return bits.join(' · '); };
   const rowFn=r=>{
     const pc=pcReg(r,nameOf(r),'lifetime'), rep=repOf(r);
-    return `<div class="lb ${you(r)?'you':''}" data-pc="${pc}" role="button" tabindex="0" style="grid-template-columns:26px 32px 1fr auto;cursor:pointer" aria-label="View ${esc(nameOf(r))}’s player card">
+    return `<div class="lb ${you(r)?'you':''}" data-pc="${pc}" role="button" tabindex="0" style="grid-template-columns:minmax(26px,max-content) 32px 1fr auto;cursor:pointer" aria-label="View ${esc(nameOf(r))}’s player card">
       <span class="pos">${r.rank===1?'🏆':r.rank}</span>
       ${pxAvatarChip(lookOf(r),30)}
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${proNameHTML(nameOf(r),r.user_id)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>
