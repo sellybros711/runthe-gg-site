@@ -2787,6 +2787,27 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-stat .k{font:800 8.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
   .cb-stat .v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); white-space:nowrap}
   @media(max-width:540px){ .cb-stats{justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
+  /* Owner: compact the whole stack above the live tournament on mobile so the tournament card
+     is visible without scrolling. The Confidence/Respect meters + Season Goals already collapse;
+     this shaves the banner + event rail heights. */
+  @media(max-width:600px){
+    .careerbanner{gap:10px; margin-bottom:8px; padding:9px 11px}
+    .cb-av,.cb-av .avatarfig{width:44px; height:44px}
+    .cb-name{font-size:20px}
+    .cb-sub{font-size:9px; margin-top:2px}
+    .cb-nethero .k{font-size:8px}
+    .cb-nethero .v{font-size:18px; margin-top:3px}
+    .cb-stats{margin-top:7px; padding-top:8px}
+    .cb-stat .k{font-size:8px}
+    .cb-stat .v{font-size:15px; margin-top:3px}
+    .cb-meters{margin-top:5px; padding-top:8px}
+    .seasonrail{gap:6px; padding:1px 0 7px; margin-bottom:7px}
+    .srev{width:82px}
+    .srev .srev-wk{padding:3px 4px 2px}
+    .srev .en{font-size:8px; min-height:2.4em}
+    .srev .er{font-size:12px; margin-top:4px}
+    .sgcard{margin:6px auto 8px; padding:9px 11px 7px}
+  }
   .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
   /* CS498 (owner): Confidence & Respect are collapsed by default, tap the row to expand. */
   .cb-mtoggle{display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; background:none; border:0; padding:2px 0; cursor:pointer; color:var(--oncard); font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; -webkit-tap-highlight-color:transparent}
