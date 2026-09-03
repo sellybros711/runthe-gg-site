@@ -133,9 +133,9 @@ window.RTR_LEGENDS = [
 
   // ================= PURORESU =================
   { id:'l_misawa', name:'Mitsuharu Misawa', era:'puro', rarity:'legendary',
-    attr:{label:'King\'s Road', b:{ps:18,to:12,st:10}}, move:{name:'Emerald Flowsion', kind:'finisher', dmg:86, pop:88, style:'power'} },
+    attr:{label:'King\'s Road', b:{ps:18,to:12,st:10}}, move:{name:'Sit-Out Side Driver', kind:'finisher', dmg:86, pop:88, style:'power'} },
   { id:'l_kobashi', name:'Kenta Kobashi', era:'puro', rarity:'legendary',
-    attr:{label:'Absolute Fighting Spirit', b:{to:18,po:12,st:10}}, move:{name:'Burning Hammer', kind:'finisher', dmg:92, pop:90, style:'power'} },
+    attr:{label:'Absolute Fighting Spirit', b:{to:18,po:12,st:10}}, move:{name:'Inverted Valley Driver', kind:'finisher', dmg:92, pop:90, style:'power'} },
   { id:'l_inoki', name:'Kanji Inoki', era:'puro', rarity:'epic',
     attr:{label:'Strong Style Origin', b:{ps:14,te:12}}, move:{name:'Enzuigiri', kind:'signature', dmg:68, pop:74, style:'strike'} },
   { id:'l_tanahashi', name:'Hiroshi Tanahashi', era:'puro', rarity:'legendary',

@@ -182,5 +182,23 @@
       "v": "20260723m",
       "sha": "a0cc105557f05cbc"
     }
+  },
+  "wrestling/index.html": {
+    "moves.js": {
+      "v": "2",
+      "sha": "4ad230bac6bce8f9"
+    },
+    "legends.js": {
+      "v": "2",
+      "sha": "1901d3930e7ddfbe"
+    },
+    "cosmetics.js": {
+      "v": "2",
+      "sha": "7c549d05a7d923c6"
+    },
+    "world.js": {
+      "v": "2",
+      "sha": "6b79fe462e39db5c"
+    }
   }
 }
