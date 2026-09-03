@@ -60,6 +60,9 @@ const BLOCK = [
   // trademarked move and catchphrase names
   'Rock Bottom','Sweet Chin Music','Tombstone Piledriver','Attitude Adjustment','Austin 3:16','One Winged Angel',
   'Styles Clash','Rainmaker','Batista Bomb','Sharpshooter',
+  // finishers named after the wrestler who owns them, moved off in the move catalogue
+  'Walls of Jericho','Regal Stretch','Anaconda Vice','Con-Chair-To','Hulk-Up','Jackhammer','Perfect-Plex',
+  'Emerald Flowsion','Tiger Driver','Burning Hammer','BAH GAWD',
 ];
 const files = fs.readdirSync(path.join(ROOT,'wrestling')).filter(f=>/\.(js|html)$/.test(f)).map(f=>'wrestling/'+f)
   .concat(['wrestling/booking/index.html']);
@@ -465,6 +468,100 @@ section('every story kind has a way in');
   (r.betrayalScene==='betrayal_open') ? ok('and the turn plays at the curtain') : bad(`betrayal scene: picked ${r.betrayalScene}`);
   (r.anyScene!=='feud_post') ? ok('the hallway afterwards does not play for a dropped feud') : bad('feud_post played for a dropped feud');
   await page.close();
+}
+
+/* ---------- 4h. every stipulation plays out live, and looks like its finish ----------
+   "Won by count-out" over two people standing in the ring. This plays every
+   stipulation on the actual stage at 40x, forces each spot that used to be a
+   caption, and asserts two things: the finish is one the stipulation allows,
+   and the stage did the thing (camera wide for a floor spot, a fourth body for
+   interference, a counted ten, a cheap shot behind the referee). */
+section('every stipulation plays out live, and looks like its finish');
+{
+  const CASES=[
+    {stip:'singles', force:'count',   want:['count'],            beats:['wide','ten']},
+    {stip:'singles', force:'countMe', want:['count'],            beats:['wide','ten'], auto:{tap:false,decide:0}},
+    {stip:'singles', force:'dq',      want:['dq'],               beats:['cheap']},
+    {stip:'singles', force:'runin',   want:['dq'],               beats:['extra'], story:true},
+    {stip:'hardcore',force:'runin',   want:['nc'],               beats:['extra'], story:true},
+    {stip:'grudge',  force:'manager', want:['pin','sub','count','dq'], beats:['extra','cheap'], manager:true},
+    {stip:'singles', force:'loyal',   want:['pin','sub','count','dq'], beats:['extra','cheap'], loyal:true},
+    {stip:'singles', force:'belt',    want:['pin','dq'],         beats:['belt'], heel:true},
+    {stip:'tag',     force:'hottag',  want:['pin','sub','count','dq'], beats:['extra'], team:true},
+    {stip:'singles', force:'screw',   want:['sub'],              beats:[], defense:true},
+    {stip:'lms',     force:null,      want:['ko'],               beats:['ten']},
+    {stip:'sub',     force:null,      want:['sub'],              beats:[]},
+    {stip:'ladder',  force:null,      want:['climb'],            beats:[]},
+    {stip:'cage',    force:null,      want:['pin','sub','climb'],beats:[]},
+    {stip:'iron',    force:null,      want:['pin','sub'],        beats:[]},
+    {stip:'iquit',   force:null,      want:['sub'],              beats:[]},
+    {stip:'rumble',  force:null,      want:['rumble'],           beats:['extra']},
+  ];
+  for(const cs of CASES){
+    const {page, errs} = await fresh(URL+'/wrestling/');
+    await page.evaluate(()=>{ quickStart(); });
+    await page.waitForTimeout(700);
+    let r=null;
+    try{
+      r = await page.evaluate(async (cs)=>{
+        try{ endTour(); closeModal(); }catch(_){}
+        const out={};
+        FIGHT_SPEED=40; G.car.seenFight=true; G.car.decSeen=true; G.car.tourDone=true;
+        G.car.coachSeen=Object.assign(G.car.coachSeen||{},{rumble:true});
+        G.prefs=Object.assign(G.prefs||{},{sound:false});
+        window.RTR_AUTO=Object.assign({tap:true,decide:0},cs.auto||{});
+        window.RTR_FORCE=cs.force||null;
+        const roster=houseRoster(myPromoId());
+        const opp=roster[0], rival=roster[1], mate=roster[2];
+        if(cs.heel) G.w.align='heel';
+        if(cs.story){ G.story=null; G.car.rivalId=null; startStory(rival.id,'test'); }
+        if(cs.manager){ G.car.allies=[]; formAlliance(mate.id); assignManager(mate.id); }
+        if(cs.loyal){ G.car.allies=[]; formAlliance(mate.id); allyOf(mate.id).loyalty=90; }
+        if(cs.team){ G.car.allies=[]; formAlliance(mate.id); formTeam(mate.id,'Test Team'); }
+        const label=(STIP_RULES[cs.stip]||{}).label||'Battle Royal';
+        const o={oppId:opp.id, oppName:opp.name, oppOvr:ovr(G.w)+2, stip:cs.stip, stipLabel:label, mult:1.2, purse:600,
+                 stakes:cs.defense?'defense':'standard', card:'Main Event', tag:cs.stip==='tag'};
+        if(cs.defense){ G.car.title=beltName(); G.car.reigns=(G.car.reigns||[]).concat([{title:G.car.title, year:G.car.year, week:1}]); o.belt=G.car.title; G.car.standing=30; }
+        if(cs.stip==='rumble'){
+          const ent=roster.slice(0,7).map(x=>({id:x.id,name:x.name,ovr:x.over||55})).concat([{id:'you',name:G.w.name,ovr:ovr(G.w),you:true}]);
+          o.stakes='rumble'; o.rumble={entrants:ent};
+        }
+        G.car.booking={type:'match',o};
+        const errsIn=[]; window.onerror=(m)=>{ errsIn.push(String(m)); };
+        const t0=Date.now();
+        startFight(o);
+        // wait for the result screen, tapping away moment cards on the way
+        while(Date.now()-t0<60000){
+          await new Promise(r=>setTimeout(r,250));
+          const mo=document.getElementById('momentBack'); if(mo && mo.classList.contains('open')){ try{ nextMoment(); }catch(_){} }
+          const mb=document.querySelector('#modalBack.open #modalBtns button'); if(mb) mb.click();
+          if(LAST_RESULT && LAST_RESULT.o===o) break;
+        }
+        const res=LAST_RESULT && LAST_RESULT.o===o ? LAST_RESULT.res : null;
+        out.done=!!res; out.ms=Date.now()-t0;
+        out.finish=res && res.finish ? res.finish.type : null;
+        out.trace=(MS && MS.trace)||[];
+        out.wideLeft=document.getElementById('arena').classList.contains('wide');
+        out.extraOn=document.getElementById('fExtra').classList.contains('on');
+        out.errs=errsIn;
+        const rl=STIP_RULES[cs.stip]||{}; out.noCount=!!rl.noCount; out.noDQ=!!rl.noDQ;
+        window.RTR_FORCE=null; window.RTR_AUTO=null; FIGHT_SPEED=1;
+        return out;
+      }, cs);
+    }catch(e){ r={done:false, err:e.message}; }
+    const tag=`${cs.stip}${cs.force?' / '+cs.force:''}`;
+    if(errs.length) bad(`${tag}: page errors: `+errs.slice(0,2).join(' | '));
+    if(!r || !r.done) bad(`${tag}: the match never reached a result (${r&&r.err||'timeout'})`);
+    else {
+      // an unforced match can still end on the referee's call: a count-out or a
+      // DQ is legal wherever the rule table does not forbid it
+      const finOk = cs.want.includes(r.finish) || (!cs.force && ((r.finish==='count'&&!r.noCount)||(r.finish==='dq'&&!r.noDQ)));
+      const missing = (cs.beats||[]).filter(b=>!(r.trace||[]).includes(b));
+      if(finOk && !missing.length && !r.wideLeft && !r.extraOn) ok(`${tag}: ${r.finish} in ${(r.ms/1000).toFixed(1)}s · stage did ${(cs.beats||[]).join('+')||'the finish'}`);
+      else bad(`${tag}: finish=${r.finish} (want ${cs.want.join('|')})${missing.length?' · stage missed '+missing.join(','):''}${r.wideLeft?' · camera left wide':''}${r.extraOn?' · fourth body left on stage':''}`);
+    }
+    await page.close();
+  }
 }
 
 /* ---------- 5. careers play out ---------- */

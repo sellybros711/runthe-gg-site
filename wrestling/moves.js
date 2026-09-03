@@ -63,9 +63,9 @@ window.RTR_MOVES = [
   M('m4a','slam',4,'Powerbomb',            60,56,13,0.08,70),
   M('m4b','slam',4,'Death Valley Driver',  58,52,12,0.07,68),
   M('m4c','slam',4,'Uranage',              57,50,12,0.07,67),
-  M('m5a','slam',5,'Jackhammer',           78,78,16,0.10,80),
+  M('m5a','slam',5,'Suplex Powerslam',           78,78,16,0.10,80),
   M('m5b','slam',5,'Package Piledriver',   84,84,17,0.13,84),
-  M('m5c','slam',5,'Burning Hammer',       90,92,19,0.16,88),
+  M('m5c','slam',5,'Inverted Valley Driver',       90,92,19,0.16,88),
 
   // ================= SUPLEXES (technique) =================
   M('x1a','suplex',1,'Snap Suplex',        20,12, 5,0.02,0),
@@ -80,9 +80,9 @@ window.RTR_MOVES = [
   M('x4a','suplex',4,'Bridging Dragon',    58,54,12,0.07,68),
   M('x4b','suplex',4,'Release German x3',  60,58,14,0.08,70),
   M('x4c','suplex',4,'Blue Thunder Bomb',  57,52,12,0.07,67),
-  M('x5a','suplex',5,'Perfect-Plex',       76,78,15,0.08,79),
-  M('x5b','suplex',5,'Emerald Flowsion',   84,86,17,0.11,84),
-  M('x5c','suplex',5,'Tiger Driver \'91',  88,90,18,0.15,87),
+  M('x5a','suplex',5,'Bridging Fisherman',       76,78,15,0.08,79),
+  M('x5b','suplex',5,'Sit-Out Side Driver',   84,86,17,0.11,84),
+  M('x5c','suplex',5,'Underhook Powerbomb',  88,90,18,0.15,87),
 
   // ================= SUBMISSIONS (technique) =================
   M('u1a','submission',1,'Headlock',       12, 8, 3,0.01,0),
@@ -97,9 +97,9 @@ window.RTR_MOVES = [
   M('u4a','submission',4,'Scorpion Leglock',   54,56,10,0.04,66),
   M('u4b','submission',4,'Texas Cloverleaf',53,50,10,0.04,65),
   M('u4c','submission',4,'Triangle Choke', 52,48, 9,0.04,64),
-  M('u5a','submission',5,'Walls of Jericho',72,74,13,0.05,78),
-  M('u5b','submission',5,'Regal Stretch',  70,70,13,0.05,77),
-  M('u5c','submission',5,'Anaconda Vice',  74,76,14,0.06,80),
+  M('u5a','submission',5,'Elevated Half Crab',72,74,13,0.05,78),
+  M('u5b','submission',5,'Chickenwing Stretch',  70,70,13,0.05,77),
+  M('u5c','submission',5,'Arm-Triangle Squeeze',  74,76,14,0.06,80),
 
   // ================= HIGH-FLYING (aerial) =================
   M('a1a','aerial',1,'Dropkick',           20,16, 5,0.03,0),
@@ -149,7 +149,7 @@ window.RTR_MOVES = [
   M('h4b','hardcore',4,'Dive Through Table',60,68,12,0.18,70),
   M('h4c','hardcore',4,'Chair-Assisted DDT',57,60,11,0.14,67),
   M('h5a','hardcore',5,'Elbow Drop Through Table',76,84,15,0.22,80),
-  M('h5b','hardcore',5,'Con-Chair-To',     78,80,14,0.20,81),
+  M('h5b','hardcore',5,'Chair Sandwich',     78,80,14,0.20,81),
   M('h5c','hardcore',5,'Cage Dive',        82,90,17,0.28,84),
 
   // ================= SHOWMANSHIP (charisma) =================
@@ -159,7 +159,7 @@ window.RTR_MOVES = [
   M('w2a','showman',2,'Signature Pose',     0,26, 2,0.00,38),
   M('w2b','showman',2,'Call for the Finish',4,30, 2,0.00,42),
   M('w2c','showman',2,'Play to the Hard Cam',0,28, 2,0.00,40),
-  M('w3a','showman',3,'Hulk-Up Comeback',  12,46, 4,0.00,54),
+  M('w3a','showman',3,'No-Sell Comeback',  12,46, 4,0.00,54),
   M('w3b','showman',3,'Kip-Up',             8,42, 3,0.00,52),
   M('w3c','showman',3,'Ten Punches in the Corner',20,48,5,0.01,56),
   M('w4a','showman',4,'Fired-Up Rally',    18,62, 5,0.00,66),
@@ -168,6 +168,33 @@ window.RTR_MOVES = [
   M('w5a','showman',5,'Stare Down the House',0,86, 4,0.00,80),
   M('w5b','showman',5,'Championship Pose',  0,88, 4,0.00,82),
   M('w5c','showman',5,'Crowd Sing-Along',   6,92, 5,0.00,84),
+  // ================= THE SECOND SHELF =================
+  // A fourth Signature and two more Finishers per category, so two wrestlers
+  // with the same style do not end every match with the same three moves.
+  M('s4d','strike',4,'Step-Up Enziguri',    54,52,11,0.06,66),
+  M('s5d','strike',5,'Trailing Knee',       79,82,16,0.09,81),
+  M('s5e','strike',5,'Spinning Heel Kick',  76,84,15,0.08,80),
+  M('m4d','slam',4,'Pop-Up Powerbomb',      58,58,12,0.08,68),
+  M('m5d','slam',5,'Fireman Carry Driver',  80,84,16,0.11,82),
+  M('m5e','slam',5,'Crucifix Bomb',         78,82,15,0.10,80),
+  M('u4d','suplex',4,'Deadlift German',     56,56,12,0.07,66),
+  M('u5d','suplex',5,'Dragon Suplex Hold',  78,84,15,0.09,81),
+  M('u5e','suplex',5,'Half-Nelson Driver',  80,80,16,0.11,82),
+  M('b4d','submission',4,'Guillotine Choke', 50,52, 9,0.03,66),
+  M('b5d','submission',5,'Cattle Mutilation',72,84,13,0.04,81),
+  M('b5e','submission',5,'Inverted Cloverleaf',74,82,13,0.04,80),
+  M('a4d','aerial',4,'Springboard Cutter',  57,60,12,0.12,67),
+  M('a5d','aerial',5,'Shooting Star Press', 78,90,16,0.20,82),
+  M('a5e','aerial',5,'Corkscrew Senton',    76,86,15,0.16,80),
+  M('c4d','technical',4,'Rolling Cradle',   48,54, 9,0.03,66),
+  M('c5d','technical',5,'Reverse Rana Counter',72,84,12,0.09,81),
+  M('c5e','technical',5,'Backslide Driver', 74,80,13,0.06,80),
+  M('h4d','hardcore',4,'Trash Can Lid Shot',55,58,10,0.12,66),
+  M('h5d','hardcore',5,'Superplex Through Table',82,90,17,0.26,84),
+  M('h5e','hardcore',5,'Barbed Wire Lariat',80,86,16,0.24,82),
+  M('w4d','showman',4,'Slow Turn to the Hard Cam',6,66,3,0.00,67),
+  M('w5d','showman',5,'The Long Walk Back', 0,90, 4,0.00,82),
+  M('w5e','showman',5,'Belt Held to the Lights',0,92,4,0.00,84),
 ];
 
 // Everyone debuts knowing the fundamentals of the basics.
