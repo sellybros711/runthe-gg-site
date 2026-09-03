@@ -6074,6 +6074,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="lbmode">
       <select id="lb-comp" aria-label="Which leaderboard"></select>
     </div>
+    <!-- THE GAUNTLET'S TWO AXES, in place of the competition select the classic board has:
+         a run is ranked by how far it got or by how many points it scored, and this is where
+         you pick which. Hidden on every classic board, shown only on the Gauntlet one, which
+         hides the select above and the sort bar below and drives these instead. -->
+    <div class="tabwrap" id="lb-dyntabwrap" style="display:none"><div class="tabs" id="lb-dyntabs">
+      <button class="tab on" data-dyn="seasons">Longest runs</button>
+      <button class="tab" data-dyn="score">High score</button>
+    </div></div>
     <div class="tabwrap"><div class="tabs" id="lb-tabs">
       <button class="tab on" data-lb="day">Today</button>
       <button class="tab" data-lb="week">This week</button>
@@ -7032,7 +7040,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=28"></script>
+<script src="board.js?v=29"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -7157,7 +7165,7 @@ function loadDefensePool(){
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=12;
+const BOARD_VERSION=13;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -7177,6 +7185,11 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
     message:'the leaderboard script did not load, usually a blocked request'},
   needsAccountsMigration:false, needsAvatarMigration:false, avatarFnMissing:false,
   modeColumnMissing:false,
+  /* The Gauntlet board's calls, answered the same soft way as the rest of the stub: a
+     version-mismatched board.js must degrade to "not reachable" here, not throw a missing
+     method somewhere inside loadDynastyBoard. */
+  dynastyTag:async()=>false, dynastyTop:async()=>null, dynastyMine:async()=>null,
+  dynastyRank:async()=>null, dynastyTotal:async()=>null,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
@@ -20142,6 +20155,11 @@ let lbFull=false;
    A dynasty run also sets run.full, so this has to be tested BEFORE lbFull or a Gauntlet run
    would open the Full Team board. */
 let lbDynasty=false;
+/* Which axis the Gauntlet board is ranked on: 'seasons' (longest runs, the default this mode
+   opens on) or 'score' (high score). Its own knob rather than lbSort, because the Gauntlet
+   board does not share the classic sort axes and reusing lbSort would tangle the two. The
+   window still comes from lbWin, which both boards share. */
+let lbDynSort='seasons';
 function tradeBoardOff(){
   if(lbTrade&&!canPlayTrade()){ lbTrade=false; fixSort(); return true; }
   return false;
@@ -20577,9 +20595,15 @@ function paintBoard(){
    each of these carries a CSS display that an attribute would not override. */
 function boardChrome(on){
   const mode=document.querySelector('#s-board .lbmode');
-  const tabs=$('lb-tabs')&&$('lb-tabs').closest('.tabwrap');
+  const winTabs=$('lb-tabs')&&$('lb-tabs').closest('.tabwrap');
+  const dynTabs=$('lb-dyntabwrap');
   const sort=document.querySelector('#s-board .sortbar');
-  [mode,tabs,sort].forEach((e)=>{ if(e) e.style.display=on?'':'none'; });
+  /* The competition select and the classic sort bar belong to the classic boards only. */
+  [mode,sort].forEach((e)=>{ if(e) e.style.display=on?'':'none'; });
+  /* The window tabs are shared: Today / This week / All time apply to the Gauntlet board too,
+     so they stay up on both. The AXIS tabs are the Gauntlet's own, standing in for the select. */
+  if(winTabs) winTabs.style.display='';
+  if(dynTabs) dynTabs.style.display=on?'none':'';
   if(on){
     const eye=document.querySelector('#s-board .lbtop .eyebrow');
     const title=document.querySelector('#s-board .lbtop h2');
@@ -20597,21 +20621,29 @@ function isMyDynastyRow(r){
 async function loadDynastyBoard(){
   lbBusy=true;
   boardChrome(false);
+  const byScore=lbDynSort==='score';
   const eye=document.querySelector('#s-board .lbtop .eyebrow');
   const title=document.querySelector('#s-board .lbtop h2');
   if(eye) eye.textContent='The Gauntlet';
-  if(title) title.textContent='Longest runs';
+  if(title) title.textContent=byScore?'High score':'Longest runs';
+  /* Light up the axis tab and the window tab that are showing. The classic path does this for
+     the window tabs in loadBoard; the Gauntlet path returns before that, so it does its own. */
+  [...document.querySelectorAll('#lb-dyntabs .tab')].forEach(t=>
+    t.classList.toggle('on',t.dataset.dyn===lbDynSort));
+  [...document.querySelectorAll('#lb-tabs .tab')].forEach(t=>{
+    t.disabled=false; t.classList.toggle('on',t.dataset.lb===lbWin); });
   $('lb-note').style.display='none';
   $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
   $('lb-rows').innerHTML='<div class="rload"><i></i><i></i><i></i><span>Loading the board</span></div>';
   $('lb-count').textContent=''; hideMyPin();
   /* Your live run's own standing, so the sticky row can say where a run in progress would sit
-     even before its next season is recorded. */
+     even before its next season is recorded. Read on the same axis and in the same window as
+     the board, or the pinned place would not match the list it sits under. */
   const mine=(authState.signedIn&&run&&run.dynasty&&run.dynastyId)
     ?{seasons:R.seasonsSurvived(run),score:run.score||0}:null;
   const [rows,total,place]=await Promise.all([
-    B.dynastyTop(LB_LIMIT), B.dynastyTotal(),
-    mine?B.dynastyRank(mine.seasons,mine.score):Promise.resolve(null),
+    B.dynastyTop(LB_LIMIT,lbDynSort,lbWin), B.dynastyTotal(lbWin),
+    mine?B.dynastyRank(mine.seasons,mine.score,lbDynSort,lbWin):Promise.resolve(null),
   ]);
   lbBusy=false; lbRows=rows; lbMyPlace=place;
   if(rows===null){
@@ -20621,8 +20653,12 @@ async function loadDynastyBoard(){
     $('lb-rows').innerHTML=boardWhy();
     return;
   }
-  $('lb-count').textContent=total?(total+' run'+(total===1?'':'s')+' recorded'):'';
-  $('lb-blurb').textContent='Ranked by seasons survived, then total points. One row a run.';
+  $('lb-count').textContent=total?(total+' run'+(total===1?'':'s')+(lbWin==='day'?' today':lbWin==='week'?' this week':' recorded')):'';
+  const when=lbWin==='day'?' Today resets at midnight Eastern.'
+    :lbWin==='week'?' The week starts Monday.':'';
+  $('lb-blurb').textContent=(byScore
+    ?'Ranked by total points, then seasons survived. One row a run.'
+    :'Ranked by seasons survived, then total points. One row a run.')+when;
   paintDynastyBoard();
 }
 
@@ -20630,13 +20666,25 @@ function paintDynastyBoard(){
   const rows=lbRows||[];
   if(!rows.length){
     $('lb-podium').className='podium'; $('lb-podium').innerHTML='';
-    $('lb-rows').innerHTML='<div class="lbempty">No Gauntlet runs on the board yet. '+
-      'Survive a season and you are first.</div>';
+    const none=lbWin==='day'?'No Gauntlet runs today. Survive a season and you are first.'
+      :lbWin==='week'?'No Gauntlet runs this week. Survive a season and you are first.'
+      :'No Gauntlet runs on the board yet. Survive a season and you are first.';
+    $('lb-rows').innerHTML='<div class="lbempty">'+none+'</div>';
     hideMyPin(); return;
   }
   const above=paintDynastyPodium(rows)?3:0;
   $('lb-rows').innerHTML=rows.slice(above).map((r,j)=>dynastyRow(r,above+j)).join('');
   paintDynastyMine(rows);
+}
+
+/* SEASONS is the big number in seconds; on the score board the two swap so the ranking axis
+   is always the headline, the way SORT_META keeps the sorted quantity in the right column of
+   the classic board. Returned as one small object so the podium, the list and the your-place
+   pin all read the axis the same way. */
+function dynAxisCells(seasons,score){
+  return lbDynSort==='score'
+    ? { big:dynScore(score), unit:'points', sub:seasons+(seasons===1?' season':' seasons') }
+    : { big:String(seasons), unit:(seasons===1?'season':'seasons'), sub:dynScore(score)+' points' };
 }
 
 function paintDynastyPodium(rows){
@@ -20645,28 +20693,28 @@ function paintDynastyPodium(rows){
   const order=[1,0,2];
   el.className='podium on';
   el.innerHTML='<div class="podrow">'+order.map((i)=>{
-    const r=rows[i], place=i+1, mine=isMyDynastyRow(r);
+    const r=rows[i], place=i+1, mine=isMyDynastyRow(r), c=dynAxisCells(r.seasons,r.score);
     const pf=avatarOf(r.display_name,r.display_color,r.display_initials,
       {mark:r.display_mark,rung:r.display_rung,tier:r.display_tier,ring:r.display_ring});
     return '<div class="pod p'+place+(mine?' mine':'')+'">'+
       '<span class="pl">'+place+'</span>'+avatarHTML(pf,'big')+
       '<span class="pn">'+esc(mine?'You':(r.display_name||'Anonymous'))+'</span>'+
-      '<span class="pr">'+r.seasons+'</span>'+
-      '<span class="ps">'+(r.seasons===1?'season':'seasons')+'</span></div>';
+      '<span class="pr">'+c.big+'</span>'+
+      '<span class="ps">'+c.unit+'</span></div>';
   }).join('')+'</div><div class="podbase"></div>';
   return true;
 }
 
 function dynastyRow(r,i){
-  const mine=isMyDynastyRow(r);
+  const mine=isMyDynastyRow(r), c=dynAxisCells(r.seasons,r.score);
   const pf=avatarOf(r.display_name,r.display_color,r.display_initials,
     {mark:r.display_mark,rung:r.display_rung,tier:r.display_tier,ring:r.display_ring});
   return '<div class="lbr'+(mine?' mine':'')+'">'+
     '<span class="rk">'+(i+1)+'</span>'+avatarHTML(pf)+
     '<span class="who"><b>'+esc(mine?'You':(r.display_name||'Anonymous'))+'</b>'+
-      '<span>'+dynScore(r.score)+' points</span></span>'+
-    '<span class="rec"><b class="big">'+r.seasons+'</b>'+
-      '<span>'+(r.seasons===1?'season':'seasons')+'</span></span></div>';
+      '<span>'+c.sub+'</span></span>'+
+    '<span class="rec"><b class="big">'+c.big+'</b>'+
+      '<span>'+c.unit+'</span></span></div>';
 }
 
 /* The sticky "your place" row, reusing the same pin the classic board does. Shown only when
@@ -20675,13 +20723,13 @@ function paintDynastyMine(rows){
   const el=$('lb-mine'); if(!el) return;
   const meOnScreen=(rows||[]).some((r)=>isMyDynastyRow(r));
   if(meOnScreen||!(run&&run.dynasty&&run.dynastyId)||lbMyPlace==null){ hideMyPin(); return; }
-  const seasons=R.seasonsSurvived(run);
+  const seasons=R.seasonsSurvived(run), c=dynAxisCells(seasons,run.score||0);
   el.hidden=false;
   el.innerHTML='<div class="lbr mine"><span class="rk">'+lbMyPlace+'</span>'+
     avatarHTML(avatarOf(authState.name||'You',null,null,null))+
-    '<span class="who"><b>You</b><span>'+dynScore(run.score||0)+' points</span></span>'+
-    '<span class="rec"><b class="big">'+seasons+'</b>'+
-      '<span>'+(seasons===1?'season':'seasons')+'</span></span></div>';
+    '<span class="who"><b>You</b><span>'+c.sub+'</span></span>'+
+    '<span class="rec"><b class="big">'+c.big+'</b>'+
+      '<span>'+c.unit+'</span></span></div>';
 }
 
 /* Tap a row for the lineup behind it. Delegated, so it keeps working through every
@@ -21341,6 +21389,14 @@ $('b-diag').onclick=runDiagnostics;
 $('lb-tabs').addEventListener('click',(e)=>{
   const t=e.target.closest('.tab'); if(!t||t.disabled||t.dataset.lb===lbWin) return;
   lbWin=t.dataset.lb; ga('board_window',{window:lbWin}); loadBoard();
+});
+/* The Gauntlet board's two axes. Only these tabs ever change lbDynSort, and they only reach
+   the DOM on the Gauntlet board, so the guard is the same as the window tabs above: ignore a
+   tap on the axis already showing, otherwise switch and reload. loadBoard routes back to
+   loadDynastyBoard because lbDynasty is still set. */
+$('lb-dyntabs').addEventListener('click',(e)=>{
+  const t=e.target.closest('.tab'); if(!t||t.dataset.dyn===lbDynSort) return;
+  lbDynSort=t.dataset.dyn; ga('board_dyn_axis',{axis:lbDynSort}); loadBoard();
 });
 $('lb-sort').addEventListener('click',(e)=>{
   const t=e.target.closest('button'); if(!t||t.dataset.sort===lbSort) return;

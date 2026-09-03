@@ -1027,11 +1027,33 @@
     return false;
   }
 
-  /* The board, best runs first: seasons survived, then total score, then who got there first. */
-  async function dynastyTop(limit) {
+  /* ---------------- TWO AXES AND THREE WINDOWS ON THE GAUNTLET BOARD ----------------
+     'seasons' ranks by how far a run got, ties behind it broken by total score. 'score'
+     ranks by the run's total points, ties broken by seasons survived. Every other board
+     here offers both a sort and the three windows, and this one now matches: the axis and
+     the window are the two things a player picks, so both are parameters rather than baked
+     into the query.
+
+     THE WINDOW FILTERS THE VIEW, NOT THE SEASONS UNDER IT. ps_dynasty_board is a DISTINCT ON
+     that keeps each run's FURTHEST season, and PostgREST hangs `created_at=gte` above that
+     collapse rather than below it (confirmed on the real planner: the filter sits on the
+     Subquery Scan, over the Unique, not on the Seq Scan). So a run counts for Today when its
+     furthest season landed today, carrying its whole standing, rather than being cut back to
+     the seasons it happened to play today. That is the season-board's own windowing read as
+     runs: a run is "this week's" when its latest season is. */
+  const dynOrder = (sort) => (sort === 'score')
+    ? 'score.desc,seasons.desc,created_at.asc'
+    : 'seasons.desc,score.desc,created_at.asc';
+  const dynWindow = (win) => {
+    const cut = cutoffISO(win || 'all');
+    return cut ? '&created_at=gte.' + encodeURIComponent(cut) : '';
+  };
+
+  /* The board, best runs first on the chosen axis, inside the chosen window. */
+  async function dynastyTop(limit, sort, win) {
     try {
-      const q = base() + 'ps_dynasty_board?select=*' +
-        '&order=seasons.desc,score.desc,created_at.asc&limit=' + (limit || 100);
+      const q = base() + 'ps_dynasty_board?select=*&order=' + dynOrder(sort) +
+        dynWindow(win) + '&limit=' + (limit || 100);
       const res = await timed(q, { headers: headers() });
       if (!res.ok) return await fail('dynastyBoard', res);
       const rows = await res.json().catch(() => null);
@@ -1039,12 +1061,12 @@
     } catch (e) { return failThrown('dynastyBoard', e); }
   }
 
-  /* One player's runs on it, best first. */
-  async function dynastyMine(userId, limit) {
+  /* One player's runs on it, best first on the chosen axis. */
+  async function dynastyMine(userId, limit, sort, win) {
     if (!userId) return null;
     try {
       const q = base() + 'ps_dynasty_board?select=*&user_id=eq.' + encodeURIComponent(userId) +
-        '&order=seasons.desc,score.desc&limit=' + (limit || 20);
+        '&order=' + dynOrder(sort) + dynWindow(win) + '&limit=' + (limit || 20);
       const res = await timed(q, { headers: headers() });
       if (!res.ok) return await fail('dynastyMine', res);
       const rows = await res.json().catch(() => null);
@@ -1052,26 +1074,29 @@
     } catch (e) { return failThrown('dynastyMine', e); }
   }
 
-  /* Where a run of (seasons, score) sits: how many are ahead of it, plus one. Better means more
-     seasons, or the same seasons and more score, which is the ranking order stated as a filter.
-     Equal runs share a place, exactly as they do on the classic board. */
-  async function dynastyRank(seasons, score) {
+  /* Where a run of (seasons, score) sits on the chosen axis, in the chosen window: how many
+     are ahead of it, plus one. On the seasons axis, ahead means more seasons, or the same
+     seasons and more score; on the score axis the two swap. Either way it is the board's
+     ordering stated as a filter, so a tie shares a place exactly as the list shows it. */
+  async function dynastyRank(seasons, score, sort, win) {
     const s = Math.round(seasons), sc = Math.max(0, Math.round(score || 0));
     if (!Number.isFinite(s)) return null;
     try {
-      const q = base() + 'ps_dynasty_board?select=dynasty_id&limit=1' +
-        '&or=(seasons.gt.' + s + ',and(seasons.eq.' + s + ',score.gt.' + sc + '))';
+      const ahead = (sort === 'score')
+        ? 'or=(score.gt.' + sc + ',and(score.eq.' + sc + ',seasons.gt.' + s + '))'
+        : 'or=(seasons.gt.' + s + ',and(seasons.eq.' + s + ',score.gt.' + sc + '))';
+      const q = base() + 'ps_dynasty_board?select=dynasty_id&limit=1&' + ahead + dynWindow(win);
       const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) return await fail('dynastyRank', res);
-      const ahead = countOf(res);
-      return ahead === null ? null : ahead + 1;
+      const n = countOf(res);
+      return n === null ? null : n + 1;
     } catch (e) { return failThrown('dynastyRank', e); }
   }
 
-  /* How many runs are on the board at all, for the count line under the title. */
-  async function dynastyTotal() {
+  /* How many runs are on the board in the window, for the count line under the title. */
+  async function dynastyTotal(win) {
     try {
-      const res = await timed(base() + 'ps_dynasty_board?select=dynasty_id&limit=1',
+      const res = await timed(base() + 'ps_dynasty_board?select=dynasty_id&limit=1' + dynWindow(win),
         { headers: headers({ Prefer: 'count=exact' }) });
       if (!res.ok) return await fail('dynastyTotal', res);
       return countOf(res);
@@ -1079,7 +1104,7 @@
   }
 
   window.PS_BOARD = {
-    API_VERSION: 12,
+    API_VERSION: 13,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
