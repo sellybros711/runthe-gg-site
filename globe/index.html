@@ -251,6 +251,64 @@
     background:linear-gradient(180deg,rgba(20,16,36,0) 55%,rgba(20,16,36,.55) 100%);}
   .destcard .dest{margin-top:0;}
   .destcard .dest .fl{margin-top:-52px;position:relative;z-index:2;}
+
+  /* ---- cutscenes (visual-novel beats: backdrop · speaker · typed line · tap) ---- */
+  .cut{position:fixed;inset:0;z-index:9000;background:#0b0918;display:flex;flex-direction:column;justify-content:flex-end;
+    animation:rtgFade .35s both;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden;}
+  .cut .cutbg{position:absolute;inset:0;}
+  .cut .cutbg svg{width:100%;height:100%;display:block;}
+  .cut .cutbg::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(11,9,24,.35) 0%,rgba(11,9,24,.1) 35%,rgba(11,9,24,.55) 62%,rgba(11,9,24,.96) 100%);}
+  .cut .cutskip{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:3;font-size:12px;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25);
+    border-radius:999px;padding:7px 12px;backdrop-filter:blur(6px);}
+  .cut .cutdots{position:absolute;top:calc(18px + env(safe-area-inset-top));left:16px;z-index:3;display:flex;gap:5px;}
+  .cut .cutdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);}
+  .cut .cutdots i.on{background:var(--goldhi);box-shadow:0 0 8px var(--goldhi);}
+  .cut .cutstage{position:absolute;left:0;right:0;top:34%;text-align:center;z-index:2;padding:0 20px;}
+  .cut .cutstage .kick{font-size:12px;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:#F6D488;opacity:.9;}
+  .cut .cutstage .ttl{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:46px;line-height:1;color:#fff;
+    text-shadow:0 6px 30px rgba(0,0,0,.7);margin-top:6px;animation:rtgPop .5s cubic-bezier(.2,1.4,.4,1) both;}
+  .cut .cutstage .sub{margin-top:10px;font-size:15px;font-weight:700;color:rgba(255,255,255,.85);}
+  .cut .cutbox{position:relative;z-index:2;margin:0 12px calc(16px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(30,24,54,.92),rgba(18,14,36,.96));border:1px solid rgba(255,255,255,.14);
+    border-radius:18px;padding:14px 16px 16px;box-shadow:0 20px 50px -20px rgba(0,0,0,.9);
+    animation:rtgPopIn .32s cubic-bezier(.2,1.2,.4,1) both;min-height:118px;}
+  .cut .cutwho{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .cut .cutav{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;
+    background:linear-gradient(180deg,rgba(236,181,80,.28),rgba(236,181,80,.08));border:1px solid rgba(236,181,80,.4);}
+  .cut .cutnm{font-weight:900;font-size:15px;color:#F6D488;letter-spacing:.01em;}
+  .cut .cutrole{font-size:11px;font-weight:700;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;}
+  .cut .cuttxt{font-size:17px;line-height:1.45;color:#fff;min-height:48px;}
+  .cut .cuttxt b{color:#F6D488;}
+  .cut .cutnext{position:absolute;right:16px;bottom:10px;font-size:11px;font-weight:800;color:var(--mut);letter-spacing:.1em;
+    text-transform:uppercase;animation:pipPulse 1.1s infinite;}
+  /* ---- dopamine feeders: flyups, combo, jolts ---- */
+  .flyup{position:fixed;z-index:9500;pointer-events:none;font-weight:900;font-size:18px;color:#fff;letter-spacing:.02em;
+    text-shadow:0 2px 10px rgba(0,0,0,.6),0 0 18px rgba(236,181,80,.5);transform:translate(-50%,-50%);
+    animation:rtgFly .85s cubic-bezier(.2,.8,.3,1) both;white-space:nowrap;}
+  .flyup.gold{color:#F6D488;} .flyup.bad{color:#ff8d84;text-shadow:0 2px 10px rgba(0,0,0,.6),0 0 18px rgba(238,90,68,.55);}
+  .flyup.big{font-size:26px;} .flyup.combo{font-size:22px;color:#fff;}
+  @keyframes rtgFly{0%{opacity:0;transform:translate(-50%,-30%) scale(.7);}18%{opacity:1;transform:translate(-50%,-55%) scale(1.15);}
+    100%{opacity:0;transform:translate(-50%,-150%) scale(1);}}
+  @keyframes rtgJolt{0%,100%{transform:translate(0,0);}20%{transform:translate(-5px,1px);}40%{transform:translate(5px,-1px);}
+    60%{transform:translate(-3px,0);}80%{transform:translate(3px,0);}}
+  .jolt{animation:rtgJolt .3s both;}
+  .streakchip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:900;color:#ffb86b;
+    background:rgba(255,140,40,.14);border:1px solid rgba(255,140,40,.4);border-radius:999px;padding:2px 8px;margin-left:8px;}
+  .verdict{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;}
+  .verdict span{font-size:11px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;animation:rtgPopIn .35s both;}
+  .verdict span.good{background:rgba(63,206,134,.14);border-color:rgba(63,206,134,.45);color:#8ff0bf;}
+  .verdict span.hot{background:rgba(255,140,40,.14);border-color:rgba(255,140,40,.45);color:#ffb86b;}
+  .verdict span.gold{background:rgba(236,181,80,.16);border-color:rgba(236,181,80,.5);color:#F6D488;}
+  .fieldbar{margin:12px auto 0;max-width:300px;}
+  .fieldbar .lbl{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--mut);margin-bottom:5px;}
+  .fieldbar .lbl b{color:#fff;}
+  .fieldbar .trk{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid rgba(255,255,255,.1);}
+  .fieldbar .fil{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#3FCE86,#F6D488);
+    transition:width .9s cubic-bezier(.2,.9,.3,1);box-shadow:0 0 12px rgba(63,206,134,.5);}
+  .lb .lbrow{animation:rtgPopIn .4s cubic-bezier(.2,1.1,.4,1) both;}
   .dest .cn{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:36px;margin-top:8px;letter-spacing:.01em;
     color:var(--goldhi);text-shadow:0 2px 14px rgba(0,0,0,.5);}
   .dest .rg{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
@@ -744,6 +802,138 @@
       + '</svg>';
     return svg;
   }
+
+  /* =====================================================================
+     CUTSCENES — visual-novel beats between the gameplay (the Lockout 2027
+     format): a full-bleed backdrop, a speaker with a nameplate, a line that
+     types itself out, tap to advance, Skip always one tap away. Beats:
+       { who:'host'|'pilot'|'control', text }        dialogue (text may hold <b>)
+       { title, kick, sub }                           big headline card
+       { fx:'burst'|'celebrate', sfx:'checkpoint'|'win'|'lose' }   optional stingers
+     Enter/Space also advance. Reduced-motion skips the typewriter.
+     ===================================================================== */
+  var CAST = {
+    host:    { n:'Marlowe',       role:'Race Host',    a:'🎙️' },
+    pilot:   { n:'Captain Reyes', role:'Your Pilot',   a:'✈️' },
+    control: { n:'Race Control',  role:'Checkpoint',   a:'📻' }
+  };
+  function cut(beats, done, bg){
+    if(!beats || !beats.length){ if(done) done(); return; }
+    var old=document.getElementById('cut'); if(old && old.parentNode) old.parentNode.removeChild(old);
+    var el=document.createElement('div'); el.id='cut'; el.className='cut';
+    var dots=''; for(var d=0;d<beats.length;d++) dots+='<i'+(d===0?' class="on"':'')+'></i>';
+    el.innerHTML='<div class="cutbg">'+(bg||'')+'</div>'
+      + '<div class="cutdots" id="cutdots">'+dots+'</div>'
+      + '<button class="cutskip" id="cutskip" type="button">Skip ›</button>'
+      + '<div class="cutstage" id="cutstage" hidden></div>'
+      + '<div class="cutbox" id="cutbox" hidden><div class="cutwho" id="cutwho"></div><div class="cuttxt" id="cuttxt"></div>'
+      + '<div class="cutnext" id="cutnext" hidden>tap ▸</div></div>';
+    document.body.appendChild(el);
+    var i=-1, typing=null, finished=false, fast=reduceMotion();
+    function end(){ if(finished) return; finished=true; if(typing){ clearInterval(typing); typing=null; }
+      el.style.transition='opacity .22s'; el.style.opacity='0';
+      setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); document.removeEventListener('keydown',onKey); if(done) done(); },230); }
+    function showBeat(){
+      i++; if(i>=beats.length) return end();
+      var b=beats[i], ds=el.querySelectorAll('#cutdots i'); for(var k=0;k<ds.length;k++) ds[k].className=k<=i?'on':'';
+      if(b.sfx) sfx(b.sfx);
+      if(b.fx==='celebrate') FX.celebrate(); else if(b.fx==='burst') FX.burst(window.innerWidth/2, window.innerHeight*0.4, 60, Math.PI*1.6, 8);
+      var st=$('cutstage'), bx=$('cutbox'), nx=$('cutnext');
+      if(b.title){
+        bx.hidden=true; st.hidden=false;
+        st.innerHTML=(b.kick?'<div class="kick">'+b.kick+'</div>':'')+'<div class="ttl">'+b.title+'</div>'+(b.sub?'<div class="sub">'+b.sub+'</div>':'');
+        vibe(10); return;
+      }
+      st.hidden=true; bx.hidden=false; nx.hidden=true;
+      var who=CAST[b.who]||CAST.host;
+      $('cutwho').innerHTML='<div class="cutav">'+who.a+'</div><div><div class="cutnm">'+esc(who.n)+'</div><div class="cutrole">'+esc(who.role)+'</div></div>';
+      retrig(bx,'pop-in');
+      var full=b.text, tx=$('cuttxt');
+      if(fast){ tx.innerHTML=full; nx.hidden=false; return; }
+      // typewriter over the HTML string: reveal by visible characters, keep tags intact
+      var plain=full.replace(/<[^>]+>/g,''), n=0, len=plain.length;
+      function render(count){ var out='', seen=0, j=0; while(j<full.length){ if(full[j]==='<'){ var e=full.indexOf('>',j); out+=full.slice(j,e+1); j=e+1; continue; } if(seen<count){ out+=full[j]; seen++; } j++; } return out; }
+      tx.innerHTML='';
+      typing=setInterval(function(){ n+=1; tx.innerHTML=render(n); if(n%3===0) beep(880,0.012,'square',0.02);
+        if(n>=len){ clearInterval(typing); typing=null; nx.hidden=false; } }, 17);
+    }
+    function advance(){ if(finished) return;
+      if(typing){ clearInterval(typing); typing=null; $('cuttxt').innerHTML=beats[i].text; $('cutnext').hidden=false; return; }
+      showBeat(); }
+    function onKey(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); advance(); } if(e.key==='Escape') end(); }
+    document.addEventListener('keydown',onKey);
+    $('cutskip').onclick=function(e){ e.stopPropagation(); end(); };
+    fastTap(el, advance);
+    showBeat();
+  }
+  // a country fact for the arrival beat, drawn from the trivia bank (Q + its answer)
+  function countryFact(c){
+    if(!c) return null;
+    var bank=(window.GLOBE_TRIVIA||{})[c.id]||[], t=bank.length?pick(bank):null;
+    if(t && t.options){ var q=t.q.replace(/…\?$/,'…?'); return 'Quick one while you deplane — '+esc(q)+' <b>'+esc(t.options[t.a])+'.</b>'; }
+    return 'Capital here is <b>'+esc(c.capital)+'</b>.';
+  }
+  function introBeats(){
+    var fl=S.finishLine, n=S.teams.length;
+    return [
+      { kick:'RunTheGlobe', title:'The Race', sub:n+' teams · '+ROUNDS+' stages · one finish line', sfx:'checkpoint' },
+      { who:'host', text:'Welcome aboard, <b>'+esc(S.teamName)+'</b>. '+n+' teams, '+ROUNDS+' stages, and one finish line: <b>'+esc(fl.landmark)+'</b> in '+esc(fl.city)+'.' },
+      { who:'host', text:'Every stage, every team lands in the same country and plays the same challenge. The <b>slowest team is Grounded</b>. Simple. Brutal.' },
+      { who:'pilot', text:'Wheels up. Mash the screen in flight if you want to get there faster — I don\'t judge.', fx:'burst' }
+    ];
+  }
+  function arrivalBeats(){
+    var d=S.dest, alive=aliveTeams().length, b=[];
+    if(d.final){
+      b.push({ kick:'The Final', title:esc(d.name), sub:esc(d.landmark||'the finish line'), sfx:'checkpoint' });
+      b.push({ who:'pilot', text:'Final approach into <b>'+esc(d.name)+'</b>. Whatever you\'ve got left — this is where you spend it.' });
+      b.push({ who:'host', text:alive+' teams touch down. <b>First across the line at '+esc(d.landmark||'the finish')+' wins the whole race.</b> No second place.', fx:'burst' });
+      return b;
+    }
+    b.push({ kick:'Stage '+S.round+' of '+ROUNDS, title:esc(d.name), sub:esc(d.region)+' · '+alive+' teams left', sfx:'checkpoint' });
+    if(S.round<=2) b.push({ who:'pilot', text:'Touching down in <b>'+esc(d.name)+'</b>, '+esc(d.region)+'. Local time: whenever you make it to the mat.' });
+    var f=countryFact(d.country); if(f) b.push({ who:'host', text:f+(S.round===1?' Slowest team here goes home — <b>don\'t let it be you</b>.':' '+(alive-1)+' seats at the next stage. '+(S.streak>=2?'You\'re on a <b>'+S.streak+'-stage clean streak</b> — keep it.':'Go.')) });
+    return b;
+  }
+  function verdictBeats(ranked, groundedTeam, final){
+    var you=ranked.findIndex(function(t){ return t.id==='you'; })+1, n=ranked.length, bg=destScene(S.dest);
+    if(final){
+      var won=ranked[0].id==='you';
+      return won
+        ? [{ who:'control', text:'Checking the line at <b>'+esc(S.dest.landmark||S.dest.name)+'</b>… first team across…' },
+           { kick:'Race Winner', title:esc(S.teamName), sub:'You win RunTheGlobe', sfx:'win', fx:'celebrate' }]
+        : [{ who:'control', text:'Checking the line at <b>'+esc(S.dest.landmark||S.dest.name)+'</b>… first team across is <b>'+esc(ranked[0].name)+'</b>.' },
+           { who:'host', text:'You finished <b>#'+you+' of '+n+'</b> in the Final. That\'s a podium race. Run it back.', sfx:'lose' }];
+    }
+    if(groundedTeam.id==='you')
+      return [{ who:'control', text:'All teams checked in at <b>'+esc(S.dest.name)+'</b>… last team to the mat…' },
+              { kick:'Grounded', title:esc(S.teamName), sub:'Slowest at '+esc(S.dest.name)+' · your race ends here', sfx:'lose' }];
+    return [{ who:'control', text:'All teams checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
+            { who:'host', text:'Last team to the mat: <b>'+esc(groundedTeam.name)+'</b>. Grounded. '+(n-1)+' teams fly on — <b>you\'re one of them</b>.', sfx:'checkpoint', fx:'burst' }];
+  }
+
+  /* ---- dopamine feeders: universal hooks fired by every challenge kind ----
+     flyup(): a floating stat/word at the last tap point. hit(): particle burst +
+     combo count on every sfx('correct'). jolt(): shake on a miss. ---- */
+  document.addEventListener('pointerdown', function(e){ S._px=e.clientX; S._py=e.clientY; }, { passive:true });
+  function flyup(text, cls, x, y){
+    if(reduceMotion()) return;
+    var d=document.createElement('div'); d.className='flyup'+(cls?' '+cls:'');
+    d.style.left=(x!=null?x:(S._px||window.innerWidth/2))+'px'; d.style.top=(y!=null?y:(S._py||window.innerHeight*0.45))+'px';
+    d.innerHTML=text; document.body.appendChild(d); setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 900);
+  }
+  function hit(){
+    if(!S.play) return;
+    var x=S._px||window.innerWidth/2, y=S._py||window.innerHeight*0.45;
+    FX.burst(x, y, 16, Math.PI*1.6, 5);
+    S.play.combo=(S.play.combo||0)+1;
+    if(S.play.combo>=2 && !S.play.done) flyup('×'+S.play.combo+' <small>combo</small>', 'combo'+(S.play.combo>=4?' gold':''), x, y-36);
+  }
+  function jolt(){
+    if(S.play) S.play.combo=0;
+    var c=document.querySelector('#mg'); if(c){ c.classList.remove('jolt'); void c.offsetWidth; c.classList.add('jolt'); }
+    if(S.play && S.chosen) flyup('MISS  +'+PENALTY[S.chosen.cat]+'s', 'bad');
+  }
   function rnd(a,b){ return a + Math.random()*(b-a); }
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
   function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -784,6 +974,7 @@
     o.start(t); o.stop(t+dur+0.03); }
   function vibe(p){ try{ if(navigator.vibrate && !_muted) navigator.vibrate(p); }catch(e){} }
   function sfx(kind){
+    if(kind==='correct') hit();   // universal feeder: every kind's success point bursts + counts combo
     if(_muted) return;
     if(kind==='correct'){ beep(660,0.09,'triangle',0.12); beep(990,0.10,'triangle',0.10,0.08); vibe(12); }
     else if(kind==='wrong'){ beep(196,0.18,'sawtooth',0.09); vibe([18,40,18]); }
@@ -1108,8 +1299,11 @@
     S._lastLL = null;   // no origin yet → first Flight Leg departs from HOME_LL (player's area, or US east coast)
     requestHome();      // ask for location so the opening leg departs from near the player
     S.finishLine = pick(FINISH);   // GDD §11: the Final's location, locked at race start
+    S.streak = 0; S._cutLb = 0;
     S.screen='stage';
-    drawStage();
+    // opening cutscene (once per session) — the host sets the stakes, then wheels up
+    if(!S._introSeen){ S._introSeen=true; cut(introBeats(), drawStage, destScene({ name:S.finishLine.city, region:S.finishLine.region, landmark:S.finishLine.landmark })); }
+    else drawStage();
   }
 
   function aliveTeams(){ return S.teams.filter(function(t){ return t.alive; }); }
@@ -1138,7 +1332,8 @@
     // fly the leg to this destination first (skipped on the Final / no-coord dests),
     // then reveal the draw. The reveal is the payoff after the flight's suspense.
     var toLL = (S.dest.country && S.dest.country.ll) || null;
-    flightTo(toLL, function(){ S.phase='draw'; renderStage(); });
+    // touchdown cutscene: stage card + pilot + a fact about where you just landed
+    flightTo(toLL, function(){ cut(S.spectating?[]:arrivalBeats(), function(){ S.phase='draw'; renderStage(); }, destScene(S.dest)); });
   }
 
   function countryById(id){ for(var i=0;i<COUNTRIES.length;i++){ if(COUNTRIES[i].id===id) return COUNTRIES[i]; } return null; }
@@ -1419,7 +1614,8 @@
     }
     var alive = aliveTeams().length;
     return '<div class="hud"><div class="pips">'+pips+'</div>'
-      + '<div class="remain">Stage <b>'+S.round+'</b>/'+ROUNDS+' · <b>'+alive+'</b> left</div></div>';
+      + '<div class="remain">Stage <b>'+S.round+'</b>/'+ROUNDS+' · <b>'+alive+'</b> left'
+      + (S.streak>=2?'<span class="streakchip">🔥 '+S.streak+'</span>':'')+'</div></div>';
   }
 
   /* --- phase: Flight Leg (watch the plane travel to the next country) ----------
@@ -1640,7 +1836,7 @@
   }
   function stopTimer(){ if(S.timerId){ clearInterval(S.timerId); S.timerId=null; } }
   function showMiss(){
-    if(S.play && S.play.misses) sfx('wrong');   // central miss cue for every game
+    if(S.play && S.play.misses){ sfx('wrong'); jolt(); }   // central miss cue for every game: sting + shake + penalty flyup
     var e=$('miss'); if(!e) return;
     e.innerHTML = S.play.misses ? 'Misses: <b>'+S.play.misses+'</b> (+'+(S.play.misses*PENALTY[S.chosen.cat])+'s)' : '';
     if(S.play.misses) swapIn(e);   // pulse so the penalty registers without looking down
@@ -1648,6 +1844,11 @@
   function finishTask(){
     stopTimer();
     var raw = (performance.now()-S.play.start)/1000;
+    // solve stinger — the same payoff on all 31 kinds: word + burst + a clean-solve bonus line
+    var cx=window.innerWidth/2, cy=window.innerHeight*0.38;
+    flyup(S.play.misses? 'SOLVED' : 'CLEAN SOLVE 🎯', 'big'+(S.play.misses?'':' gold'), cx, cy);
+    FX.burst(cx, cy, S.play.misses?40:80, Math.PI*1.7, 8); vibe(S.play.misses?14:[12,30,18]);
+    if((S.play.combo||0)>=3) flyup('×'+S.play.combo+' combo!', 'combo gold', cx, cy+40);
     resolveRound(raw, S.play.misses, false);
   }
 
@@ -3130,6 +3331,7 @@
       if(playerMisses===0) st.perfectStages++;
     }
     saveStats(st);
+    S.streak = (!skipped && playerMisses===0) ? (S.streak||0)+1 : 0;   // clean-stage streak (HUD 🔥)
 
     S.phase='checkpoint';
     renderStage();
@@ -3296,6 +3498,24 @@
   }
 
   /* --- phase: checkpoint (lock the time) --- */
+  // checkpoint feeders: where you landed in the field + earned chips (clean, streak, PB, shield)
+  function checkpointVerdict(r){
+    var field=aliveTeams().filter(function(t){ return t.eff!=null; }).slice().sort(function(a,b){ return a.eff-b.eff; });
+    var you=field.findIndex(function(t){ return t.id==='you'; }), n=field.length;
+    if(you<0 || n<2) return '';   // no comparable field yet (duo pre-combine) — skip the bar
+    var beat=n-1-you;
+    var med=field.length?field[Math.floor(field.length/2)].eff:null, st=statsDefault(), chips='';
+    if(!r.skipped && r.misses===0) chips+='<span class="good">🎯 Clean solve</span>';
+    if(S.streak>=2) chips+='<span class="hot">🔥 '+S.streak+'-stage streak</span>';
+    if(!r.skipped && r.misses===0 && st.fastestStage && Math.abs(st.fastestStage-r.act)<0.001) chips+='<span class="gold">⚡ Personal best</span>';
+    if(S._shieldSaved) chips+='<span class="good">🛡️ Shield save</span>';
+    if(med!=null && r.eff<med) chips+='<span class="good">'+fmtTime(med-r.eff)+'s ahead of median</span>';
+    if(you===0 && n>1) chips+='<span class="gold">🥇 Fastest in the field</span>';
+    var pct=n>1?Math.round(beat/(n-1)*100):100;
+    return (chips?'<div class="verdict">'+chips+'</div>':'')
+      + '<div class="fieldbar"><div class="lbl"><span>Field</span><b>Beat '+beat+' of '+(n-1)+' teams</b></div>'
+      + '<div class="trk"><div class="fil" id="fbfil" data-w="'+pct+'"></div></div></div>';
+  }
   function viewCheckpoint(){
     if(S._cpSfx!==S.round){ S._cpSfx=S.round; sfx('checkpoint'); }   // one sting per stage, not per re-render
     var r=S.lastResult;
@@ -3315,10 +3535,12 @@
         + '<div class="bigtime" id="bigt" style="margin-top:6px">'+fmtTime(r.eff)+'<span class="u">s</span></div>'
         + '<div class="muted" style="font-size:12px;margin-top:4px">your effective time</div>'
         + body
+        + checkpointVerdict(r)
         + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
       + '</div>' + foot();
     // count the time up to the locked value — makes the payoff land
     (function(){
+      var fb=$('fbfil'); if(fb) requestAnimationFrame(function(){ fb.style.width=fb.getAttribute('data-w')+'%'; });
       var el=$('bigt'); if(!el || reduceMotion() || !(r.eff>0)) return;
       var t0=performance.now(), DUR=620;
       (function tick(){
@@ -3341,6 +3563,8 @@
     // determine who is Grounded this stage (slowest), or the winner on the Final
     var groundedTeam = ranked[ranked.length-1];
     var youRank = ranked.findIndex(function(t){ return t.id==='you'; }) + 1;
+    // the verdict plays as a cutscene first (Race Control checks the mat), once per stage
+    if(S._cutLb!==S.round && !S.spectating){ S._cutLb=S.round; return cut(verdictBeats(ranked, groundedTeam, final), viewLeaderboard, destScene(S.dest)); }
 
     var rowsHtml='';
     ranked.forEach(function(t,i){
@@ -3348,7 +3572,7 @@
       var win = (final && i===0);
       var cls='lbrow'+(t.id==='you'?' you':'')+(out?' out':'')+(win?' win':'');
       var place = win?'🏆':(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1));
-      rowsHtml += '<div class="'+cls+'">'
+      rowsHtml += '<div class="'+cls+'" style="animation-delay:'+(i*55)+'ms">'
         + '<span class="p">'+place+'</span>'
         + '<span class="nm">'+esc(t.name)+''+'</span>'
         + '<span class="tm">'+fmtTime(t.eff)+'s'+(out?' · Grounded':'')+'</span></div>';
