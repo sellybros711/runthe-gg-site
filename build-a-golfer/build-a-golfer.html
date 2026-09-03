@@ -21304,6 +21304,107 @@ function csPlay(beats, ctx, done, opts){
   document.body.appendChild(ov);
   paint();
 }
+/* THE GOLFER'S ACTUAL WORDS. A choice's button text is a MENU label ("Credit the team", "Own it, I'm the
+   best"), not a spoken quote, so echoing it verbatim made the golfer read the menu aloud on camera. Instead
+   we expand the label into a real, tone-matched soundbite the way a player would actually answer, keyed to
+   the exact choice so the words match what you picked. Three tiers: a bespoke `ch.say` override wins; a
+   label ALREADY written as a quote is spoken verbatim (it is already words said aloud); otherwise the
+   CS_SAY map gives the line, with a trait-flavored fallback so nothing ever echoes the label again.
+   (owner: "generate actual responses in the style selected... a quote that sounds cocky/arrogant".) */
+const CS_SAY={
+  "credit the team":"This one belongs to my caddie and everyone in my corner. I don't get here alone.",
+  "take the high road":"I'm not going to trade shots in the media. I'll let my golf do the talking.",
+  "credit the rivalry for your best golf":"Honestly, pushing against him has made me a better player. I owe some of this to that.",
+  "downplay it":"It's one week. Head down, back to work, that's all this is.",
+  "downplay it entirely":"He's just another name on the board to me. I don't think about it much.",
+  "donate quietly":"I'd rather just help where I can and keep the cameras out of it.",
+  "thank everyone who built you":"I'm standing on the shoulders of every coach and mentor who believed in me.",
+  "tip your cap to the winner":"He was better than me today, simple as that. Full credit to him.",
+  "soak it all in and learn":"I'm just trying to be a sponge out here and learn from the best.",
+  "reflect and give thanks":"Mostly I feel grateful. It's been a long road and I don't take any of it for granted.",
+  "go out on your terms":"I've made my peace with it. I'm walking away proud of what I gave this game.",
+  "clarify and move on":"It came out wrong, and I want to set the record straight, then move on.",
+  "start the redemption arc":"I know I've got work to do to win people back, and I'm ready to earn it.",
+  "pay your respects publicly":"He's a legend of this game and deserves every ounce of respect. I'm honored to follow him.",
+  "let your actions speak":"I'll let the way I play and carry myself say what needs saying.",
+  "keep golf at the center":"At the end of the day it's about the golf. That's where I keep my focus.",
+  "stay hungry, stay humble":"Nothing out here is given. I'm staying hungry and earning every bit of it.",
+  "use the platform for good":"I've got a platform now, and I want to use it to do some good.",
+  "own it, back to work":"That one's on me. Nothing to do now but grind and be better next week.",
+  "ignore the noise":"I don't hear the outside noise. I just keep my head down and work.",
+  "grind it out":"I'm putting in the extra hours. The only way through this is work.",
+  "prove them wrong":"I hear the doubters. I'll answer them where it counts, on the course.",
+  "blame the conditions":"The course was playing brutal out there today. That wasn't all on me.",
+  "hold out for more":"I know exactly what I'm worth, and I'm betting on myself to get it.",
+  "shrug it off":"Golf is golf. I'm not going to overthink one week.",
+  "trust your own game":"I've always done this my own way. I'm not about to change now.",
+  "gamble on it":"Life's short. I like the upside, so I'm rolling the dice on this one.",
+  "vent your frustration":"I'm not going to sit up here and fake a smile. That was flat-out frustrating.",
+  "delete it":"Yeah, that one's getting deleted. As far as I'm concerned it never happened.",
+  "make a change":"Sometimes you've got to shake things up. It felt like the right moment.",
+  "take the payday":"I've earned this. I'm cashing the check and I won't apologize for it.",
+  "sign the deal":"It's the right partnership and it lets me focus on winning. Easy call.",
+  "guarantee you'll finish ahead":"Put it on record: I'll finish ahead of him. I fully expect to.",
+  "set the bar high":"I didn't come here to make up the numbers. I came to win, plain and simple.",
+  "own it, i'm the best":"I believe I'm the best player out here, and I plan to keep proving it every week.",
+  "fire right back":"If he wants to talk, I'm more than happy to talk. Bring it on.",
+  "double down":"I meant every word, and I'd say it again tomorrow. No regrets.",
+  "clap back on camera":"You want a quote? Check the leaderboard, then check the receipts.",
+  "let the clubs talk":"I'm not much for talking. The clubs will do that for me on Sunday.",
+  "focus on your own game":"I can only control what I do. I'm just worried about my own game.",
+  "quick wave, stay locked in":"I love the crowd, but I've got to stay locked in. Tunnel vision from here.",
+  "take it to heart":"I take every lesson to heart. You learn the most from the best players.",
+  "block it out":"I get in my own little cocoon out there. The noise just doesn't reach me.",
+  "play it cool":"One shot at a time. I'm not getting ahead of myself.",
+  "stay in the moment":"I'm taking it one week at a time and staying right here in the present.",
+  "skip it, stay sharp":"The golf comes first right now. I'm staying sharp and skipping the distractions.",
+  "embrace the spotlight":"This is what you dream about as a kid. I'm soaking up every second.",
+  "feed off the energy":"Those roars fire me up. I feed off that energy all day.",
+  "ride the wave":"I feel unstoppable right now, and I'm just going to ride it as far as it goes.",
+  "embrace the villain":"If they want a villain, I'll play the part. Boos are still noise.",
+  "turn on the charm":"Time to let a little personality out. People want a show, so let's give them one.",
+  "become the face of the game":"I want to take this sport somewhere new. Why shouldn't I be the face of it?",
+  "do one viral trick-shot video":"We're going to film something fun for the fans. Keep an eye out, it'll be a good one.",
+  "let the emotion show":"I'm not going to hide how much this means. You'll see every bit of it.",
+  "make their day":"I've got time for every one of them. Making a fan's day is the easy part.",
+  "stay upbeat":"I'm just keeping a smile on my face. It's still a great game to get to play.",
+  "buy the whole caddie shack a round":"Drinks are on me tonight, every caddie in the shack. They earn it every week.",
+  "stay independent":"I'm happy keeping my independence for now. No strings, my own path.",
+  "host the clinic":"Any chance I get to give back to the kids, I'm taking it.",
+  "stick with what works":"You dance with who brought you. My team's stuck by me and we're not changing a thing.",
+  "dedicate it to your family":"This is for my family. They've sacrificed every bit as much as I have.",
+  "ride with my guy":"My caddie and I are a team. I'm riding with my guy through the good and the bad.",
+  "pledge a chunk to charity":"A big piece of this is going to a good cause. It means more that way.",
+  "go, and donate the fee":"I'll show up and give the entire fee to charity. Best of both worlds.",
+  "fire off a charity donation":"Actions over words. I'm putting real money behind a cause that matters."
+};
+// a defensive tone bank: if a future choice's label is not mapped above, we STILL speak in the chosen
+// tone rather than reading the menu aloud. csPick keeps it stable within a showing (owner never sees the
+// same beat twice in a career, so one line per trait is enough).
+const CS_SB_TRAIT={
+  humble:["I'm just grateful to be in this position. I'm keeping my head down and staying grounded."],
+  confident:["I know what I'm capable of, and I back myself every single week."],
+  brash:["Say what you want, I'll answer it on the leaderboard."],
+  gritty:["Nothing worth having comes easy out here. I'll just keep grinding."],
+  maverick:["I do things my own way, and I'm not going to apologize for it."],
+  clutch:["One shot at a time. I keep it simple and let the golf happen."],
+  showman:["I love this stage. I'm going to give the fans a show."],
+  loyal:["The people who got me here come first, every time."],
+  fanFav:["The fans mean everything to me. I play for them."] };
+function csSoundbite(ch, ctx){
+  const T=(v)=>typeof v==='function'?v(ctx):v;
+  if(ch.say!=null){ const s=csPlain(T(ch.say)); if(s) return s; }   // a bespoke line on the choice wins
+  const raw=csPlain(T(ch.t))||'';
+  if(/^[“"‘']/.test(raw)) return raw;                               // already written as a quote: verbatim
+  const key=raw.toLowerCase().replace(/[’‘`]/g,"'");
+  let line=CS_SAY[key];
+  if(typeof line==='function') line=line(ctx);
+  if(Array.isArray(line)) line=csPick(line, key.length);
+  if(line) return csPlain(line);
+  const bank=CS_SB_TRAIT[ch.tr];                                    // unmapped: speak in tone, never echo
+  if(bank&&bank.length) return csPick(bank, key.length);
+  return raw;
+}
 /* The beat AS a conversation: the scene sets it up, the question is asked in the box, the answers are
    the next line, and the fallout is spoken by the people who were already talking. No modal opens. */
 function csStoryPlay(sb, scene){
@@ -21319,7 +21420,7 @@ function csStoryPlay(sb, scene){
   const onChoice=(ch, push, next)=>{
     const res=applyStoryChoice(beat, ch, ctx);
     // your own golfer, saying the words you picked (the one voice on camera that is ever yours)
-    const said=csPlain(T(ch.t)), q=/^[“"‘']/.test(said)?said:('“'+said+'”');
+    const said=csSoundbite(ch, ctx), q=/^[“"‘']/.test(said)?said:('“'+said+'”');
     const tail=[{who:'me', frame:'presser', pic:'me', tx:q},
       {who:res.backfired?'brant':'vane', frame:'broadcast', pic:'me',
        kick:res.backfired?'It backfired':'The reaction', tx:res.reaction, stats:res}];
