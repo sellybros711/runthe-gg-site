@@ -20586,12 +20586,12 @@ function csPressStyle(W){
   // the bigger the week, the bigger the room: more cameras, a deeper desk, a wall built for it
   // hide/drop are fractions OF THE GOLFER, not of the stage: the desk has to sit at his chest at any
   // viewport, and the stage is far taller than the figure on a phone.
-  if(t==='major')                 Object.assign(st,{wall:'crest', desk:'oak',     mics:3, bulbs:9, hide:.58, drop:.10, glow:.26});
-  else if(t==='playoff')          Object.assign(st,{wall:'led',   desk:'gloss',   mics:3, bulbs:8, hide:.56, drop:.09, glow:.22});
-  else if(t==='cup'||t==='games') Object.assign(st,{wall:'drape', desk:'skirt',   mics:2, bulbs:7, hide:.56, drop:.09, glow:.20});
-  else if(t==='league')           Object.assign(st,{wall:'panel', desk:'gloss',   mics:2, bulbs:6, hide:.54, drop:.08, glow:.18});
-  else if(t==='sig')              Object.assign(st,{wall:(r()<.5?'panel':'repeat'), desk:'skirt', mics:2, bulbs:5, hide:.54, drop:.08, glow:.16});
-  else                            Object.assign(st,{wall:'repeat', desk:'trestle', mics:1, bulbs:4, hide:.50, drop:.06, glow:.13});
+  if(t==='major')                 Object.assign(st,{wall:'crest', desk:'oak',     mics:3, bulbs:9, hide:.50, drop:.10, glow:.26});
+  else if(t==='playoff')          Object.assign(st,{wall:'led',   desk:'gloss',   mics:3, bulbs:8, hide:.48, drop:.09, glow:.22});
+  else if(t==='cup'||t==='games') Object.assign(st,{wall:'drape', desk:'skirt',   mics:2, bulbs:7, hide:.48, drop:.09, glow:.20});
+  else if(t==='league')           Object.assign(st,{wall:'panel', desk:'gloss',   mics:2, bulbs:6, hide:.46, drop:.08, glow:.18});
+  else if(t==='sig')              Object.assign(st,{wall:(r()<.5?'panel':'repeat'), desk:'skirt', mics:2, bulbs:5, hide:.46, drop:.08, glow:.16});
+  else                            Object.assign(st,{wall:'repeat', desk:'trestle', mics:1, bulbs:4, hide:.42, drop:.06, glow:.13});
   // the room's own paint: this week's accent, rotated and desaturated PER TOURNAMENT, so two majors
   // are not the same gold box
   st.hue=Math.round(-28+r()*56); st.tilt=(-3.6+r()*2.4).toFixed(1); st.rows=10+Math.floor(r()*5);
@@ -20658,16 +20658,34 @@ function csRoomPressHTML(W){
 // a microphone with a broadcaster's flag on it. A press table has several, all pointed at you.
 function csMicSVG(col,h,flag){
   const w=Math.round(h*0.44);
+  // a fine wire mesh on the windscreen: horizontal rings + vertical wires, each clipped to the ball
+  const hcx=12, hcy=8, hrx=6, hry=7; let mesh='';
+  for(let i=1;i<=6;i++){                             // grille rings
+    const yy=hcy-hry + i*(hry*2/7), dy=(yy-hcy)/hry, ww=hrx*Math.sqrt(Math.max(0,1-dy*dy));
+    mesh+=`<line x1="${(hcx-ww).toFixed(1)}" y1="${yy.toFixed(1)}" x2="${(hcx+ww).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#8ba3b0" stroke-width="0.5" opacity=".7"/>`;
+  }
+  for(let j=1;j<=5;j++){                             // vertical wires
+    const xx=hcx-hrx + j*(hrx*2/6), dx=(xx-hcx)/hrx, hh=hry*Math.sqrt(Math.max(0,1-dx*dx));
+    mesh+=`<line x1="${xx.toFixed(1)}" y1="${(hcy-hh).toFixed(1)}" x2="${xx.toFixed(1)}" y2="${(hcy+hh).toFixed(1)}" stroke="#8ba3b0" stroke-width="0.5" opacity=".5"/>`;
+  }
   return `<svg viewBox="0 0 24 44" width="${w}" height="${h}" aria-hidden="true" style="display:block">
-    <rect x="9.6" y="20" width="4.8" height="18" rx="2" fill="#2b3a44"/>
-    <rect x="6" y="37" width="12" height="4" rx="2" fill="#1c2830"/>
-    <rect x="8.3" y="2" width="7.4" height="14" rx="3.7" fill="#e3edf3"/>
-    <rect x="9.8" y="4.6" width="4.4" height="1.3" rx="0.65" fill="#9fb8c6"/>
-    <rect x="9.8" y="7.6" width="4.4" height="1.3" rx="0.65" fill="#9fb8c6"/>
-    <rect x="9.8" y="10.6" width="4.4" height="1.3" rx="0.65" fill="#9fb8c6"/>
-    <path d="M5.6 13a6.4 6.4 0 0 0 12.8 0" fill="none" stroke="#7fa8b8" stroke-width="1.6" stroke-linecap="round"/>
-    ${flag?`<rect x="4.5" y="19" width="15" height="11" rx="1.6" fill="${flag}" opacity=".92"/>
-      <rect x="4.5" y="19" width="15" height="11" rx="1.6" fill="none" stroke="rgba(0,0,0,.35)"/>`:''}</svg>`;
+    <ellipse cx="12" cy="41.6" rx="7" ry="1.9" fill="#0c1319"/>
+    <path d="M7.6 40.8 q4.4 1.7 8.8 0 l-1.2 -3.4 q-3.2 1.05 -6.4 0 z" fill="#20303a"/>
+    <rect x="10.6" y="21.5" width="2.8" height="16.5" rx="1.4" fill="#2b3a44"/>
+    <rect x="11.55" y="22" width="0.7" height="15.5" rx="0.35" fill="#54707d" opacity=".85"/>
+    <rect x="8.4" y="18.8" width="7.2" height="3.6" rx="1.5" fill="#1a262e"/>
+    <rect x="8.4" y="19.5" width="7.2" height="0.7" fill="#5a7784" opacity=".7"/>
+    <rect x="8.8" y="12.8" width="6.4" height="7.4" rx="1.7" fill="#2b3a44"/>
+    <rect x="9" y="14.6" width="6" height="0.8" fill="#101c22"/>
+    <rect x="9" y="16.4" width="6" height="0.8" fill="#101c22"/>
+    <rect x="9" y="18.2" width="6" height="0.8" fill="#101c22"/>
+    <ellipse cx="12" cy="8" rx="6" ry="7" fill="${col||'#d6e1e8'}"/>
+    <ellipse cx="12" cy="8" rx="6" ry="7" fill="none" stroke="#9fb8c6" stroke-width="0.8"/>
+    ${mesh}
+    <ellipse cx="9.6" cy="5" rx="1.6" ry="2.2" fill="#f2f7fa" opacity=".5"/>
+    ${flag?`<rect x="4.3" y="24" width="15.4" height="10.6" rx="1.7" fill="${flag}" opacity=".95"/>
+      <rect x="4.3" y="24" width="15.4" height="3" rx="1.7" fill="rgba(255,255,255,.18)"/>
+      <rect x="4.3" y="24" width="15.4" height="10.6" rx="1.7" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="0.7"/>`:''}</svg>`;
 }
 /* The desk you sit behind, and what is on it. The FORM comes from the tier, the MATERIAL from the
    venue, so a major at a pine parkland is warm hardwood and a links signature event is driftwood
