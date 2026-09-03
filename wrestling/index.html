@@ -1228,6 +1228,11 @@
   .tourcard .trow{display:flex;gap:8px;align-items:center;margin-top:13px;}
   .tourcard .trow button{padding:8px 15px;font-size:12px;}
   .tourdots{display:flex;gap:4px;margin-right:auto;}
+  /* the closing card: numbered steps that name real buttons */
+  .tstep{display:flex;gap:10px;align-items:flex-start;margin:7px 0;line-height:1.45;}
+  .tnum{flex:none;width:20px;height:20px;border-radius:50%;background:rgba(214,165,71,.16);border:1px solid var(--gold);
+    color:var(--gold);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+  .tgoal{margin-top:10px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;font-size:12.5px;color:var(--cream);display:flex;gap:6px;align-items:center;}
   .tourdots i{width:6px;height:6px;border-radius:99px;background:rgba(244,232,219,.22);}
   .tourdots i.on{background:var(--gold);}
   .tourgoal{border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:9px;background:rgba(0,0,0,.28);}
@@ -5040,7 +5045,40 @@ function placeTour(el){
 }
 // the closing card: what you are working toward and the single best next move
 function tourGoalsHTML(){
-  return `<div class="tb">That is the whole loop. Everything in depth, with the real numbers behind it, lives in the <b>Rulebook</b> under the <b>Help</b> button up top.</div>`;
+  // Reads the week that is actually on the sheet, so the card names the
+  // opponent, the button and the prep by their real labels. It used to say
+  // "that is the whole loop" and point at the rulebook, which is an answer to
+  // a different question than the one the title asks.
+  const c=G.car||{}, b=c.booking||{};
+  const lbl=(id,fb)=>{ try{ return (prepOptions().find(o=>o.id===id)||{}).l||fb; }catch(_){ return fb; } };
+  let goal=null; try{ const g=currentSeasonGoal(); goal=g?g.label(c):null; }catch(_){}
+  let steps;
+  if(b.type==='match' && b.o){
+    const o=b.o, slot=o.card==='Main Event'?'main-eventing':o.card==='Opener'?'opening the show':'on the mid-card';
+    steps=[
+      `Tonight you are <b>${slot}</b> against <b>${o.oppName}</b>. That is the sheet below.`,
+      `Under <b>Your week</b>, pick <b>${lbl('tape','Study the tape')}</b>. It raises your odds tonight.`,
+      `Hit <b>Head To The Ring</b>. Build to your near-falls, do not go home early, and when the match asks you to call a spot, call it.`,
+      `After the bell, read what moved, then the dirt sheet. That is how you find out what the three rooms thought.`,
+    ];
+  } else if(b.type==='promo'){
+    steps=[
+      `Tonight you have a <b>live microphone</b>.`,
+      `Pick one piece of prep under <b>Your week</b>, then hit <b>Take The Microphone</b>.`,
+      `Talk about what is actually happening: the person, the belt, the story. Lines that could be about anybody score low.`,
+    ];
+  } else {
+    steps=[
+      `No card this week.`,
+      `Pick <b>${lbl('gym','Hit the gym')}</b>. It pays double on a dark week.`,
+      `Then <b>Call It A Week</b>. Something happens on the way out.`,
+    ];
+  }
+  return `<div class="tb">
+    ${steps.map((s,i)=>`<div class="tstep"><b class="tnum">${i+1}</b><span>${s}</span></div>`).join('')}
+    ${goal?`<div class="tgoal">${pico('star',12)}<span style="white-space:nowrap;">This season:</span> <b>${goal}</b></div>`:''}
+    <div class="hint" style="margin-top:8px;">The full rules, with the real numbers, are in the <b>Rulebook</b> under <b>Help</b>.</div>
+  </div>`;
 }
 window.addEventListener('resize',()=>{ if(TOUR_I>=0){ const st=(TOURS[TOURN]||TOURS.hub)[TOUR_I];
   placeTour(st&&st.sel?document.querySelector(st.sel):null); } });
