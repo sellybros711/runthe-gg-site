@@ -17948,3 +17948,55 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - **Guest gating** reverses Caddie Report item 17 (guests had free appearance controls + a name); a guest
   now sees one lock card, and Sign In lands on the sign-in page. `guestgate.mjs` 23/0 on the change,
   19/4 on the previous live build. `guest17.mjs` is RETIRED (prints a notice, exits 0).
+
+### PRESS CONFERENCES: a real press room, per tournament (task #54, NOT deployed)
+- **The owner's ask**, with a phone screenshot of a press-conference cutscene: *"I want it to feel like a
+  true press conference. Cameras flashing, your player sitting behind a desk with a mic in front of him.
+  The background is good, maybe the colors can vary and the style can vary for different tourneys and the
+  bigger tourneys can have their own unique styles. The desk can also change depending on where you are and
+  the microphone. I just want it to feel like you're going into different press conference rooms for these
+  kind of scenes."* Every ask is delivered: cameras flash, the golfer sits behind a desk with mics in front,
+  the media wall varies per tournament, the bigger weeks get their own room, and the desk + mic change with
+  the venue.
+- **It hangs off the cutscene layer that shipped earlier**, not a new system. A `presser` frame used to
+  render the plain media WALL (`csRoomFor` returned `'wall'`); it now returns `'press'`, and `csRoomHTML`'s
+  new `case 'press'` builds the full room. So a press conference that was already a broadcast beat becomes
+  a seated, flashbulb-lit press room with zero change to the storyline/scene machinery around it.
+- **The room is decided by the WEEK's tier, the venue's material, and a per-tournament seed** - three
+  independent knobs so no two rooms match:
+  - **`csPressStyle(W)`** reads `W.tier` for the room's FORM: a **major** gets a crest wall + oak desk + 3
+    mics + 9 cameras + the deepest desk; a **playoff** an LED wall + gloss desk; a **cup/games** a draped
+    wall + skirted desk; a **league** a panel wall; a **signature** week a panel-or-step-and-repeat; an
+    **ordinary** week a step-and-repeat + a trestle desk + 1 mic + 4 cameras. Bigger week -> more cameras,
+    more mics, a deeper desk.
+  - The **venue's biome** decides what the FURNITURE is made of (`B.trunk` -> the desk wood: pine at the
+    Magnolia-analog, driftwood grey on a links, pale sand in the desert).
+  - **`mulberry32(W.seed ^ 0x7a11)`** rotates and desaturates the accent PER TOURNAMENT (hue, tilt, row
+    count), so two majors are not the same gold box. `W.seed` is per (career, week, year, event), so the
+    same week is the same room twice and different weeks differ.
+- **The seated illusion is fractions OF THE GOLFER, not of the stage** - the load-bearing detail. The stage
+  is far taller than the figure on a phone, so a desk sized off the stage would sit at the knees on mobile
+  and the chest on desktop. `--dh` (desk height) and `--csink` (how far the cast drops behind it) are
+  computed from `csFigH(1)` (the figure) via the tier's `hide`/`drop` fractions, so the desk edge sits at
+  the chest at ANY viewport. `.cs-stage.press` drops the cast by `--csink`, the desk is a z-index:3 layer,
+  and the nameplate moves onto the desk (`.cs-stage.press .cs-plate{display:none}`).
+- **The flashes** (`csBulbsHTML` + a `.cs-pop`) are suppressed under reduced motion both ways - the JS
+  guards on `!reduce` before inserting them AND the CSS kills the animation in the media query - so a
+  reduced-motion player still gets seated at the desk with no strobing.
+- Verified: `pressroom.mjs` **33 pass / 0 fail / 0 page errors** - the tier drives the room, a major hangs a
+  crest and drapes the sides, the playoffs light the room, a team week hangs a banner, an ordinary week is a
+  step-and-repeat, the rooms are not all the same wall, the desk changes with the week, a bigger week gets
+  more mics + cameras, a major sits at a different desk depth, the big rooms put your name on the desk, two
+  majors do not dress the same room, the furniture is made of the venue's material, the wall carries THIS
+  tournament and year, the same week is the same room twice, a broadcast frame is NOT a press room, and -
+  the one that matters - **a real press conference through the live `showStoryline` gate opens in the press
+  room**. Plus reduced motion still seats him and does not flash, with no page errors. `cutscene.mjs`
+  (24/0/0) and `csroom.mjs` regress clean. Screenshots of all 8 states (major / playoff / cup / games / sig
+  / reg / reduced / real) reviewed by eye: the desk edge sits at the chest, mics + crest/LED/banner/
+  step-and-repeat walls read distinctly per tier, the nameplate is on the desk, and no text clips.
+  Parse-check as documented (block 0 = the JSON-LD tag, fails identically on baseline; the 5 real script
+  blocks parse).
+- **NOT deployed** - held at the standing explain-before-deploy gate.
+- Tunable: the tier table in `csPressStyle` (wall/desk/mic/camera counts + the `hide`/`drop` desk
+  fractions), `csStepRows` (the media-wall repeat), `csMicSVG` (the microphone), and `csBulbsHTML`/`.cs-pop`
+  (the camera flashes).
