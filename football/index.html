@@ -4390,6 +4390,13 @@ window.GA_ID='G-L29P5MRWKE';
      same sentence. The dot is drawn rather than typed so the markup stays one span. */
   .tile .sn .age{margin-left:6px;padding-left:7px;border-left:1px solid var(--line-2);
     font-variant-numeric:tabular-nums}
+  /* THE ROOKIE MARK, an R in a circle before the name. The Gauntlet only, drawn as a badge
+     rather than typed so it reads at a glance the way the position chip does, and green to
+     tie it to the age colour: a rookie is the youngest a man ever is. */
+  .tile .rook{display:inline-block;width:17px;height:17px;line-height:17px;text-align:center;
+    border-radius:50%;background:#4ade80;color:#08210f;font-family:var(--fn);font-size:11px;
+    font-weight:800;vertical-align:3px;margin-right:6px;
+    box-shadow:0 0 0 1px rgba(74,222,128,.35)}
   .tile .line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     margin-top:5px;font-size:10.5px;line-height:1.3;color:var(--dim)}
   .tile .tf{margin-top:auto;padding-top:7px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
@@ -10550,20 +10557,38 @@ function blockNote(p,block){
 
 const stagger=(i)=>Math.min(220,(i||0)*28);
 
+/* THE AGE, AS A COLOUR, in The Gauntlet only. Age is a plain fact in every mode and the
+   deciding one here: you keep the man, so how many good years are left is the question at the
+   wheel. Green for the youngest, through yellow, to red for the oldest, on a hue that runs
+   120 to 0 so it passes through yellow on its own at the middle. The band is the real spread
+   of the pool (p10 age 23, p90 31), clamped a little wider so the extremes still read. */
+function ageColor(age){
+  const t=Math.max(0,Math.min(1,(age-22)/11));   // 22 youngest .. 33 oldest
+  return 'hsl('+Math.round(120*(1-t))+' 70% 60%)';
+}
+/* A rookie's very first season, which in a keep-them mode is the whole of his career still
+   in front of him. Only true where the data carries a draft year and it matches the season. */
+function isRookieSeason(p){ return !!(p.draft_year&&p.season===p.draft_year); }
+
 /* One player, one tile. A two-column grid rather than full-width rows: the price
    and the points get their own corner instead of competing with the name for one
    line, and twice as many players are on screen at once. */
 function optTile(row){
   const p=row.p, i=row.i;
+  const dyn=!!(run&&run.dynasty);
   const head=posChips(p)+'<span class="pr">'+M(p.price_musd)+'</span>';
   /* HOW OLD HE WAS THAT SEASON, on the line that already carries the year and the club.
      It is a plain fact about the man in front of you in every mode, and in The Gauntlet it
      is the question the mode is built on: you are keeping him, so what you want to know at
      the wheel is how many of these he has left. Rendered from the data rather than derived
-     here, and simply absent on a row that has no birth date. */
-  const who='<span class="nm">'+esc(p.name)+'</span>'+
-    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+
-      (p.age?'<span class="age">'+p.age+' yrs</span>':'')+'</span>';
+     here, and simply absent on a row that has no birth date; coloured only in the mode where
+     it decides something, so the other modes read exactly as they did. */
+  const rk=(dyn&&isRookieSeason(p))?'<span class="rook" aria-label="Rookie season">R</span>':'';
+  const ageSpan=p.age
+    ? '<span class="age"'+(dyn?' style="color:'+ageColor(p.age)+'"':'')+'>'+p.age+' yrs</span>'
+    : '';
+  const who='<span class="nm">'+rk+esc(p.name)+'</span>'+
+    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+ageSpan+'</span>';
   const pts='<span class="pts"><b>'+p.fppg.toFixed(1)+'</b><i>FPPG</i></span>';
 
   if(row.block){
