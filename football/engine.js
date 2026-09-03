@@ -5260,6 +5260,192 @@ function eraCode(franchise, season) {
   return franchise;
 }
 
+/*
+ * ─── THE GAUNTLET'S BOSS SEASONS ─────────────────────────────────────────────────────
+ *
+ * Every fifth season the schedule ends with a marquee game against a real great team, and
+ * that game is the one place in this mode where the player is not a spectator. Two levers,
+ * both genuine reads rather than buttons that always help:
+ *
+ *   THE SCOUT, before the game. The boss's tell is shown and you pick how to attack it. The
+ *   right read against THIS boss is worth BOSS_READ_EDGE on your own score; the wrong read
+ *   is worth nothing and the trap read costs you. It is a read because the tell points at the
+ *   answer without naming it, and because a boss weak to the pass is death to the run.
+ *
+ *   THE CALLS, during the game. A fourth down and a two-point try, each a seeded gamble with
+ *   a real downside. They widen the outcome, which is exactly what a trailing underdog wants
+ *   and exactly what a team in front does not: see the FOURTH axis in the game plan for the
+ *   same idea measured on a whole season. Pressing when you are already ahead of the boss is
+ *   how you hand it back.
+ *
+ * WHY OFFENSE-ONLY MAKES THIS WORK RATHER THAN BREAKING IT. The Gauntlet drafts an offense,
+ * so a wall-of-defense boss (the 2000 Ravens, the 2002 Buccaneers) throttles your score
+ * through the same defenseModifier every Sunday uses, and a juggernaut-offense boss (the
+ * 2007 Patriots, the 2013 Broncos) simply puts up a number you have to chase. The scout is
+ * the read on which of those two problems you are holding.
+ *
+ * BEATING ONE PAYS, LOSING ONE STINGS. The reward alternates: the odd bosses (5, 15, 25)
+ * wipe your dead cap, the even ones (10, 20, 30) let you freeze a man at his current age and
+ * salary for the rest of the run. Lose and the owner wants one more win next season, which
+ * is the existing win bar doing the punishing rather than a new way to die. See
+ * dynastyBossReward and effectiveWinBar in run.js.
+ */
+const DYNASTY_BOSS_EVERY = 5;
+
+/*
+ * WHAT A RIGHT READ IS WORTH, as a multiplier on your own score for the boss game. Measured
+ * rather than chosen: 4000 boss games a boss over forty drafted rosters (boss-measure.mjs),
+ * a right read beat the trap read by 4 to 10 points of win rate on every boss, and the trap
+ * came in BELOW not scouting at all on every one of them. So the tell is worth reading and a
+ * confident wrong answer is worse than a shrug, which is the shape a read should have. The
+ * trap costs half the edge, deliberately less than a right read is worth: a wrong guess
+ * should sting, not swing the game on its own.
+ */
+const BOSS_READ_EDGE = 0.06;
+
+/*
+ * HOW BIG A CALL SWINGS THE GAME, as a fraction of your own score staked on one gamble, and
+ * how often the gamble lands. It is variance, not free points, and the measurement is the
+ * proof: going for it ONLY WHEN TRAILING beat playing safe by 2 to 5 points of win rate, and
+ * playing safe beat going for it ONLY WHEN LEADING by about as much again, on every boss.
+ * Pressing into a lead against the boss is the mistake it should be. ODDS a shade under a
+ * coin flip is what makes the two symmetric enough for that to hold. Both draws are taken
+ * from the seeded rng in a fixed order whatever the player picks, so a boss game replays.
+ */
+const BOSS_CALL_SWING = 0.11;
+const BOSS_CALL_ODDS = 0.47;
+
+/*
+ * THE BOSSES, IN THE ORDER A RUN MEETS THEM. Every team_season_id here exists in
+ * team_seasons.json and was checked against it rather than typed from memory. `tell` is what
+ * the scout shows, written to point at the counter without naming it. `weakTo` is the attack
+ * that works, `trap` the one this team eats alive; the third attack is neutral. `note` is the
+ * one line the reward/relief screen and the scout share.
+ *
+ * ATTACK KEYS are the same three everywhere so the scout screen is a habit rather than a
+ * puzzle re-learned each time: `air` throws it, `ground` runs it, `trick` gets aggressive and
+ * gadgety. Which one beats a given boss is a fact about that boss's real weakness, not a
+ * dice roll: the 2000 Ravens front was run-proof and beatable over the top, the 2013 Broncos
+ * could be outscored but never out-passed.
+ *
+ * The list is walked by index and then cycled, so a run deep enough to see a seventh boss
+ * meets the first one again a season older. Bosses ramp in difficulty across the first lap
+ * by the strength of the real team, which is left to the data rather than a knob.
+ */
+const DYNASTY_BOSSES = [
+  { team_season_id: 'SEA-2013', weakTo: 'air', trap: 'ground',
+    tell: 'A secondary that swallows the run and dares you to throw deep.',
+    note: 'the Legion of Boom' },
+  { team_season_id: 'NE-2007', weakTo: 'ground', trap: 'air',
+    tell: 'An offense that never punts. Keep it on the sideline and shorten the game.',
+    note: 'the 16-0 Patriots' },
+  { team_season_id: 'BAL-2000', weakTo: 'air', trap: 'ground',
+    tell: 'The best run defense ever assembled. Do not try to run on it.',
+    note: 'the 2000 Ravens' },
+  { team_season_id: 'DEN-2013', weakTo: 'ground', trap: 'trick',
+    tell: 'A record-setting passing attack. Out-score it by keeping it off the field.',
+    note: 'the 606-point Broncos' },
+  { team_season_id: 'TB-2002', weakTo: 'trick', trap: 'ground',
+    tell: 'A Cover 2 that reads everything in front of it. You will need something it has not seen.',
+    note: 'the 2002 Buccaneers' },
+  { team_season_id: 'SF-2019', weakTo: 'air', trap: 'trick',
+    tell: 'A four-man rush that gets home on its own. Get the ball out quick and over the top.',
+    note: 'the 2019 49ers front' },
+];
+
+/* Which boss, if any, a season faces. Null in an ordinary season. */
+function dynastyBossFor(seasonNo, every) {
+  const step = every || DYNASTY_BOSS_EVERY;
+  if (!seasonNo || seasonNo < step || seasonNo % step !== 0) return null;
+  const idx = (seasonNo / step - 1) % DYNASTY_BOSSES.length;
+  return { ...DYNASTY_BOSSES[idx], seasonNo, reward: dynastyBossReward(seasonNo, step) };
+}
+
+/*
+ * WHAT BEATING THIS BOSS PAYS. The two rewards alternate down the ladder, and both are aimed
+ * at the mode's one squeeze, the frozen cap closing on an ageing roster:
+ *
+ *   'deadwipe'  seasons 5, 15, 25 ...  every dead-money charge is cleared.
+ *   'freeze'    seasons 10, 20, 30 ...  one man is held at his current age and salary, so a
+ *                                       star stops declining for the rest of the run.
+ *
+ * Odd multiples of five wipe, even ones freeze, which is just the parity of season/5.
+ */
+function dynastyBossReward(seasonNo, every) {
+  const step = every || DYNASTY_BOSS_EVERY;
+  return (seasonNo / step) % 2 === 0 ? 'freeze' : 'deadwipe';
+}
+
+/*
+ * THE BOSS GAME, STARTED. Returns the state the two calls then act on: the football-scale
+ * scores after the scout read is applied, and whether the read was right. The base is the
+ * exact resolveGame math, so a boss defense suppresses your offense and a boss offense scores
+ * what it really scored, converted to a football scoreboard here because the calls that
+ * follow are worth football points and the player has to watch them land.
+ *
+ * `read` is one of the attack keys, or null for a player who never opened the scout (then the
+ * read is simply neither right nor wrong). rng is drawn in a fixed order: the roster samples
+ * first, exactly as resolveGame draws them, then the opponent, then nothing until a call asks.
+ */
+function bossGameStart(roster, chemistryMultiplier, boss, oppRow, leagueAvgAllowed, read,
+  rng, constants = CONSTANTS, advantage = 1, cal = null) {
+  const base = resolveGame(roster, chemistryMultiplier, oppRow, leagueAvgAllowed, rng,
+    constants, advantage);
+  const readRight = read != null && read === boss.weakTo;
+  const readTrap = read != null && read === boss.trap;
+  const mult = readRight ? 1 + BOSS_READ_EDGE : readTrap ? 1 - BOSS_READ_EDGE / 2 : 1;
+  const you = base.yourScore * mult;
+  const them = base.oppScore;
+  /* To a football scoreboard, so the calls move something the player recognises. The fantasy
+     margin is preserved through the same toFootballScore every mode shows, then the calls add
+     real points on top. Without a calibration the two are left in fantasy space and the UI
+     scales them; the win is decided on the final numbers either way. */
+  const shown = cal ? toFootballScore(you, them, you >= them, rng, cal) : null;
+  return {
+    you: shown ? shown.you : Math.round(you),
+    them: shown ? shown.them : Math.round(them),
+    fantasyYou: you, fantasyThem: them,
+    readRight, readTrap, read: read || null,
+    /* The stake for one call, in the same units as the scores above. */
+    swing: Math.max(2, Math.round((shown ? shown.you : you) * BOSS_CALL_SWING)),
+    calls: [],
+  };
+}
+
+/*
+ * ONE CALL, RESOLVED. `choice` is 'go' (take the gamble) or 'safe' (take the sure thing). The
+ * gamble lands BOSS_CALL_ODDS of the time for a full swing your way and costs most of a swing
+ * when it does not; the safe choice takes a small guaranteed piece and no risk. The result is
+ * applied to state.you and logged. rng is consumed only on 'go', but the same draw is taken
+ * regardless so the game stays seed-stable.
+ *
+ * `kind` is 'fourth' or 'two', which changes only the words and the safe fallback: a punt
+ * gives up the down for nothing, a kicked extra point banks one sure point.
+ */
+function bossGameCall(state, kind, choice, rng) {
+  const roll = rng();
+  const swing = state.swing;
+  let delta = 0, ok = null;
+  if (choice === 'go') {
+    ok = roll < BOSS_CALL_ODDS;
+    delta = ok ? swing : -Math.round(swing * 0.85);
+  } else {
+    /* The sure thing. A kicked PAT is one point; a punt is field position, worth a token. */
+    delta = kind === 'two' ? 1 : Math.max(1, Math.round(swing * 0.2));
+  }
+  state.you = Math.max(0, state.you + delta);
+  state.calls.push({ kind, choice, ok, delta });
+  return { kind, choice, ok, delta, you: state.you, them: state.them };
+}
+
+/* The verdict, once the calls are in. Decided on the numbers the player is looking at. */
+function bossGameFinal(state) {
+  const won = state.you > state.them
+    || (state.you === state.them && state.fantasyYou >= state.fantasyThem);
+  return { won, you: state.you, them: state.them,
+    readRight: state.readRight, readTrap: state.readTrap, calls: state.calls };
+}
+
 const publicAPI = {
   API_VERSION: ENGINE_API_VERSION,
   CONSTANTS, ERAS, CHEMISTRY, SLOTS, SLOT_ELIGIBILITY,
@@ -5307,6 +5493,8 @@ const publicAPI = {
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
   DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
   dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
+  DYNASTY_BOSS_EVERY, DYNASTY_BOSSES, BOSS_READ_EDGE, BOSS_CALL_SWING, BOSS_CALL_ODDS,
+  dynastyBossFor, dynastyBossReward, bossGameStart, bossGameCall, bossGameFinal,
   GAUNTLET_POINTS, gauntletSeasonScore, gauntletRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,

@@ -487,6 +487,103 @@ ok('one miss ends a run of any length',
   !E.dynastySurvives([{ wins: 12 }, { wins: 12 }, { wins: 7 }], STEP)
   && E.dynastySurvives([{ wins: 7 }, { wins: 8 }], STEP) === true);
 
+/*
+ * ─── THE BOSS SEASONS ────────────────────────────────────────────────────────────────
+ *
+ * Every fifth season ends with a marquee game against a real great team. This drives a run
+ * all the way to one and asserts the lifecycle around it: that the boss lands on season five
+ * and not before, that a won deadwipe boss clears the books, that a lost boss raises ONLY the
+ * next season's bar by one and that the firing then honours it, and that a won freeze boss
+ * takes a man off the clock so he does not age. The boss GAME's balance is measured in
+ * boss-measure.mjs; this is the lifecycle, the way ideas_test is the lifecycle for the board.
+ */
+{
+  const bestPick = (men, r) => {
+    const share = R.remaining(r) / Math.max(1, r.slots.length - r.roster.length) * 1.5;
+    const within = men.filter((p) => p.price_musd <= share);
+    return (within.length ? within : men).slice()
+      .sort((a, b) => b.ppr_ppg_mean - a.ppr_ppg_mean)[0];
+  };
+  const winter = (r) => { R.beginOffseason(r, byKey, lastSeason); R.finishOffseason(r); draftHoles(r, bestPick); };
+  /* Drive a fresh run to a SURVIVED season `target`, or null if it was fired first. */
+  const toSeason = (target, seed) => {
+    const r = R.createRun({ dynasty: true, seed });
+    draftHoles(r, bestPick);
+    for (;;) {
+      playSeason(r); R.ownerVerdict(r);
+      if (r.fired) return null;
+      if (r.seasonNo === target) return r;
+      winter(r);
+    }
+  };
+
+  let run5 = null;
+  for (let s = 1; s < 200 && !run5; s++) run5 = toSeason(5, 20261000 + s);
+  ok('a drafted run can reach a survived season five', !!run5);
+
+  if (run5) {
+    ok('season five is a boss season', R.bossPending(run5),
+      `boss ${(R.bossFor(run5) || {}).team_season_id}`);
+    ok('no boss waits before season five',
+      !R.bossFor({ dynasty: true, seasonNo: 4, stepSeasons: STEP }));
+    ok('the season-five reward is a dead-cap wipe', R.bossFor(run5).reward === 'deadwipe');
+
+    const clone = () => JSON.parse(JSON.stringify(run5));
+
+    /* WIN: the books are cleared and next year is unchanged. */
+    {
+      const r = clone();
+      r.dead = [{ musd: 12, season: 3 }, { musd: 8, season: 4 }];
+      R.applyBossResult(r, true);
+      ok('a won deadwipe boss clears every dead-money charge', R.deadOf(r) === 0);
+      ok('winning a boss does not touch the next season bar',
+        R.effectiveWinBar(r, 6) === E.dynastyWinBar(6, r.stepSeasons));
+    }
+
+    /* LOSE: exactly next season's bar goes up by one, and the firing honours it. */
+    {
+      const r = clone();
+      const base6 = E.dynastyWinBar(6, r.stepSeasons);
+      R.applyBossResult(r, false);
+      ok('a lost boss raises only the next season bar by one',
+        R.effectiveWinBar(r, 6) === base6 + 1
+        && R.effectiveWinBar(r, 7) === E.dynastyWinBar(7, r.stepSeasons),
+        `s6 ${R.effectiveWinBar(r, 6)} (base ${base6}), s7 ${R.effectiveWinBar(r, 7)}`);
+      winter(r); playSeason(r);
+      const wins = r.outcome.regularWins;
+      R.ownerVerdict(r);
+      ok('the bumped bar is the one the season is scored against',
+        r.history[r.history.length - 1].bar === base6 + 1);
+      ok('and the firing honours the bumped bar', r.fired === (wins < base6 + 1),
+        `won ${wins}, needed ${base6 + 1}, fired ${r.fired}`);
+    }
+  }
+
+  /* FREEZE at season ten: the chosen man stops ageing. */
+  let run10 = null;
+  for (let s = 1; s < 400 && !run10; s++) run10 = toSeason(10, 20262000 + s);
+  ok('a drafted run can reach a survived season ten', !!run10);
+  if (run10) {
+    ok('the season-ten reward is a freeze', R.bossFor(run10).reward === 'freeze');
+    const r = JSON.parse(JSON.stringify(run10));
+    const victim = r.roster[0];
+    const vid = victim.player_id, vseason = victim.season, vsal = r.salaries[0];
+    R.applyBossResult(r, true, vid);
+    ok('the frozen man is recorded on the run', r.frozen.indexOf(vid) >= 0);
+    winter(r);
+    const idx = r.roster.findIndex((p) => p.player_id === vid);
+    ok('a frozen man survives the winter', idx >= 0);
+    ok('a frozen man does not age', idx >= 0 && r.roster[idx].season === vseason,
+      idx >= 0 ? `was ${vseason}, now ${r.roster[idx].season}` : 'gone');
+    ok('a frozen man keeps his salary', idx >= 0 && Math.abs(r.salaries[idx] - vsal) < 0.01);
+  }
+
+  /* The reward parity, stated plainly: odd bosses wipe, even ones freeze. */
+  ok('boss rewards alternate wipe then freeze down the ladder',
+    [5, 15, 25].every((s) => E.dynastyBossReward(s) === 'deadwipe')
+    && [10, 20, 30].every((s) => E.dynastyBossReward(s) === 'freeze'));
+}
+
 /* ─── and the modes that already ship are not a dynasty ──────────────────────────── */
 const plain = R.createRun({ seed: 1 });
 ok('a classic run has no dynasty state', !plain.dynasty && plain.salaries === null);
