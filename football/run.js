@@ -1484,13 +1484,37 @@ function ownerVerdict(run) {
       undefeatedRegular: !!o.undefeatedRegular,
       perfect: !!o.perfect,
     });
+    /* THE TEAM THAT PLAYED THIS SEASON, banked with the row. run.roster is still the season's
+       lineup here (the offseason rebuilds it after this), so the picks, the slots and the
+       season's own numbers are snapshotted now or they are gone by winter. This is what turns
+       the ledger from a list of records into a list of teams you can open and share: `rating`
+       is the team overall the recap shows (liveRating, the mode's own number, no longer the
+       never-set o.teamRating), and picks/slots are the exact shape runDetail reads. One
+       decimal to match every other stored rating; the roster is player_id:season, the same
+       key the board uses. */
+    const r1 = (v) => Math.round(v * 10) / 10;
+    const teamRating = liveRating(run);
+    const slotList = slotsOf(run);
     run.history.push({
       /* `year` is the season number: the ledger lists seasons, and a roster out of six
          decades has no one year to file itself under. */
       year: run.seasonNo, seasonNo: run.seasonNo,
       wins, losses: 17 - wins, bar, cleared: wins >= bar,
       made: !!o.madePlayoffs, title: !!o.titleWon,
-      rating: o.teamRating ?? null,
+      rating: r1(teamRating),
+      /* The six who played it, and the numbers a detail sheet shows for them, so a season
+         opened from the ledger reads exactly like the run that is live. */
+      picks: run.roster.map((p) => p.player_id + ':' + p.season),
+      slots: run.slotIndex.map((si) => slotList[si]),
+      squadFppg: r1(run.roster.reduce((t, p) => t + (p.ppr_ppg_mean || 0), 0)),
+      structureMult: E.rosterStructure(run.roster).multiplier,
+      chemistryPct: r1(run.season ? (run.season.chemistry - 1) * 100 : 0),
+      spendMusd: r1(capOf(run) - remaining(run)),
+      /* The fate fields runFate reads, so the ledger's detail sheet can word "champions" or
+         "lost in the Divisional round" for a past season the same way the results page does. */
+      perfect: !!o.perfect,
+      playoffWins: Math.max(0, (o.wins ?? wins) - wins),
+      seedLabel: o.seedLabel || '',
       /* The score, and the parts it was made of, banked with the season. Kept on the row
          rather than recomputed, so a ledger drawn a decade later still adds up to the total
          that was shown at the time even if the table above it ever moves. */
