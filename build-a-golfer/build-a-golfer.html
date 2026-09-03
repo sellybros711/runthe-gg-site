@@ -21112,6 +21112,9 @@ function csStyleOnce(){
   .cs-opt .cs-cur{position:absolute;left:11px;top:14px;color:#5fd0e0;opacity:0;transition:opacity .15s ease}
   .cs-opt:hover .cs-cur,.cs-opt:focus-visible .cs-cur{opacity:1}
   .cs-opt .cs-sub{display:block;margin-top:3px;font:700 11px/1.3 var(--body);color:#8fb6c6;letter-spacing:.04em}
+  .cs-opt.cs-tone::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:11px 0 0 11px;background:var(--tc,#5fd0e0)}
+  .cs-opt.cs-tone:hover,.cs-opt.cs-tone:focus-visible{border-color:var(--tc,#5fd0e0)}
+  .cs-tonechip{font:900 15px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,#eef4f7)}
   .cs-risk{display:inline-block;margin-left:7px;font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;
     border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase;vertical-align:middle}
   .cs-card.wide{max-height:min(54vh,440px);overflow:auto;-webkit-overflow-scrolling:touch}
@@ -21237,6 +21240,9 @@ function csPlay(beats, ctx, done, opts){
     extra.innerHTML=''; card.classList.remove('wide');
     skipBtn.style.display = b.choice ? 'none' : '';   // a decision can't be skipped, even mid-line
     const raw=csT(b.tx,ctx); full=Array.isArray(raw)?raw.join(' '):csPlain(raw);
+    // a long spoken line (the golfer's tone-matched answer) gets the scroll box + sticky tap-hint so it
+    // can never push the card off a phone. Short lines (a reporter's question) stay compact.
+    if(!b.choice && !b.buzz && fr!=='feed' && full.length>150) card.classList.add('wide');
     nextEl.style.display=''; nextEl.textContent = b.nextLabel || ((i>=list.length-1) ? 'Tap to continue ▸' : 'Tap to continue');
     // the world's own reaction, tone-matched to the answer that was just given
     txEl.style.display='';
@@ -21270,7 +21276,10 @@ function csPlay(beats, ctx, done, opts){
     const box=$(`<div class="cs-choices"></div>`);
     (b.choice||[]).forEach(ch=>{
       const sub=T(ch.s), risk=ch.risk?`<span class="cs-risk">⚡ Risky</span>`:'';
-      const btn=$(`<button class="cs-opt" type="button"><span class="cs-cur">▸</span>${esc(csPlain(T(ch.t)))}${risk}${sub?`<span class="cs-sub">${esc(csPlain(sub))}</span>`:''}</button>`);
+      // the button shows the TONE, not the answer. the words are revealed only after you commit to a vibe.
+      const tone=csToneChip(ch);
+      const head=tone?`<span class="cs-tonechip">${esc(tone.t)}</span>`:esc(csPlain(T(ch.t)));
+      const btn=$(`<button class="cs-opt${tone?' cs-tone':''}" type="button"${tone?` style="--tc:${tone.c}"`:''}><span class="cs-cur">▸</span>${head}${risk}${sub?`<span class="cs-sub">${esc(csPlain(sub))}</span>`:''}</button>`);
       btn.onclick=(e)=>{
         e.stopPropagation();
         choosing=false; skipBtn.style.display='';
@@ -21378,31 +21387,70 @@ const CS_SAY={
   "go, and donate the fee":"I'll show up and give the entire fee to charity. Best of both worlds.",
   "fire off a charity donation":"Actions over words. I'm putting real money behind a cause that matters."
 };
-// a defensive tone bank: if a future choice's label is not mapped above, we STILL speak in the chosen
-// tone rather than reading the menu aloud. csPick keeps it stable within a showing (owner never sees the
-// same beat twice in a career, so one line per trait is enough).
-const CS_SB_TRAIT={
-  humble:["I'm just grateful to be in this position. I'm keeping my head down and staying grounded."],
-  confident:["I know what I'm capable of, and I back myself every single week."],
-  brash:["Say what you want, I'll answer it on the leaderboard."],
-  gritty:["Nothing worth having comes easy out here. I'll just keep grinding."],
-  maverick:["I do things my own way, and I'm not going to apologize for it."],
-  clutch:["One shot at a time. I keep it simple and let the golf happen."],
-  showman:["I love this stage. I'm going to give the fans a show."],
-  loyal:["The people who got me here come first, every time."],
-  fanFav:["The fans mean everything to me. I play for them."] };
+/* THE TONE IS THE CHOICE. (owner: "the choices should tell you the tones of the response, like confident,
+   cocky, humble... then after you choose it should reveal what your golfer said with that tone... the quotes
+   must be a lot longer.") So the buttons no longer show the answer, they show the VIBE. CS_TONE gives the
+   chip its player-facing word + accent; CS_TONE_SAY gives the long, multi-sentence press answer that is
+   REVEALED after you commit. Situation-neutral golf language so a line never clashes with the beat it
+   follows (a win, a missed cut, a rivalry), and several variants per tone so two careers do not answer the
+   same way. csPick keeps it stable within a showing. */
+const CS_TONE={
+  humble:{t:'Humble',c:'#9fd7b0'}, confident:{t:'Confident',c:'#7fc4ff'}, brash:{t:'Cocky',c:'#ff8f6e'},
+  gritty:{t:'Gritty',c:'#e2b06a'}, maverick:{t:'Defiant',c:'#c79bff'}, clutch:{t:'Ice-Cold',c:'#8fe6e6'},
+  showman:{t:'Showman',c:'#ffcf5a'}, loyal:{t:'Loyal',c:'#f4a8c0'}, fanFav:{t:'Warm',c:'#ffb0d0'},
+  fan:{t:'Warm',c:'#ffb0d0'} };
+const CS_TONE_SAY={
+  humble:[
+    "Honestly, I'm just grateful to be standing here. There are a lot of people behind the scenes who made this possible, and I don't forget that for a second. I'm going to keep my head down, keep working, and try to earn the next one the same way.",
+    "I don't think I've done anything to get carried away about. This game humbles you every single week, and the day you think you've got it figured out is the day it bites you. I'm just trying to stay grounded and keep getting a little bit better.",
+    "I owe so much to the people around me. My family, my team, the folks who believed in me when there wasn't a reason to. I'm not going to sit up here and take credit that isn't really mine to take."],
+  confident:[
+    "I've put in the work, and when you do that, you earn the right to believe in yourself. I'm not surprised to be here, and I don't plan on this being the last time. I'll back my game against anybody in the world.",
+    "Look, I know exactly what I'm capable of. I've seen it in practice, I've seen it under pressure, and I trust it completely. When I'm playing my golf, I genuinely believe I'm as good as anyone out here.",
+    "I came into this expecting to compete, and I'll keep expecting that. Confidence isn't arrogance, it's just knowing what you've prepared for. I like where my game is, and I like my chances every time I tee it up."],
+  brash:[
+    "Let's not pretend anybody in that field wanted to see my name at the top. I've been telling people I'm the best out here, and I keep proving it week after week. If that bothers somebody, they know exactly where to find me on Sunday.",
+    "I don't do false modesty. I'm good, I know I'm good, and the scoreboard tends to agree with me. Anybody who's got a problem with the way I say it is welcome to come and try to do something about it.",
+    "You want a quote? Here's your quote. I'm the guy to beat, and everybody in that locker room knows it whether they'll admit it or not. I'll say it into every camera you point at me, and then I'll go back it up."],
+  gritty:[
+    "Nothing out here has ever been handed to me, and I don't expect it to start now. I'll put in the extra hours, I'll grind through the bad days, and I'll be there when it matters. That's the only way I know how to do this.",
+    "I'm not the most talented guy in the room, and I made peace with that a long time ago. What I've got is a motor that doesn't quit. If you want to beat me, you'd better be ready to outwork me, because I'm not going anywhere.",
+    "This game is a fight, and I happen to like a fight. I'll take the lumps, I'll learn from them, and I'll come back sharper for it. Nobody is going to outwork me out here, I can promise you that much."],
+  maverick:[
+    "I've always done things my own way, and I'm not about to start apologizing for it now. People can say whatever they want. I answer to myself, my team, and the leaderboard, in that order, and that's about it.",
+    "I don't play for the approval of the room, I never have. If the way I go about this rubs some people the wrong way, that's honestly their business, not mine. I'm comfortable in my own skin and I like the results it gets me.",
+    "Everybody's got an opinion on how I should act, how I should play, what I should say up here. I stopped listening to most of that a long time ago. I'll keep doing it my way, and we'll all see where it lands."],
+  clutch:[
+    "I try not to make it more than it is. It's one shot at a time, it always has been. I keep the heart rate down, I trust my routine, and I let the golf happen. The noise on the outside doesn't really reach me out there.",
+    "I don't get too high or too low, that's kind of the whole thing for me. The moment gets big, but I try to keep it small in my head. One shot, then the next one. That's why I'm comfortable when it starts to get tight.",
+    "There's not a whole lot to say, really. I stay in my own little bubble, I do my job, and I let the result take care of itself. The pressure is exactly where I want to be. For me that's the fun part of it."],
+  showman:[
+    "This is what you dream about as a kid, standing here with the cameras rolling and the crowd on their feet. I love every second of it. If people want a show out there, I'm more than happy to give them one.",
+    "I play this game for the roar, honestly. The bigger the moment, the bigger the stage, the more I want the ball in my hands. Golf could use a bit more personality, and I'm always glad to bring some of it.",
+    "Why would I hide it? The energy out there is electric and I feed off every bit of it. I want to entertain people. I want them walking out of here saying that was worth the price of the ticket."],
+  loyal:[
+    "None of this happens without the people in my corner. My caddie, my coach, my family, the ones who were there before anybody knew my name. Everything I do out here is for them, first and always.",
+    "I'll dance with who brought me, simple as that. The people who stuck by me when it was hard don't get left behind the second it gets good. That loyalty means more to me than any trophy on a shelf.",
+    "I keep it pretty simple: you take care of the people who take care of you. My team and I are in this thing together, through every good week and every bad one, and that's not going to change on me."],
+  fanFav:[
+    "The fans mean everything to me. I remember being a kid on the other side of the ropes, and I don't take a single one of them for granted. If I can make somebody's day out there, that's the easy part of this job.",
+    "I play for the people who show up. Every autograph, every photo, every kid who wants a fist bump on the walk to the tee, I've got time for all of it. They're the reason any of this matters at all.",
+    "Honestly the crowd is my favorite part of the whole thing. I'll stay out there as long as they want me to. Giving a little back to the people who support this game is the least that I can do."] };
+CS_TONE_SAY.fan=CS_TONE_SAY.fanFav;
+function csToneChip(ch){ return (ch&&ch.tr&&CS_TONE[ch.tr])||null; }
 function csSoundbite(ch, ctx){
   const T=(v)=>typeof v==='function'?v(ctx):v;
   if(ch.say!=null){ const s=csPlain(T(ch.say)); if(s) return s; }   // a bespoke line on the choice wins
+  const bank=ch.tr&&CS_TONE_SAY[ch.tr];                             // the tone you picked, spoken at length
+  if(bank&&bank.length) return csPick(bank, (ch.tr||'').length);
+  // choice carries no known tone: fall back to the old label->line map so it never reads the menu aloud
   const raw=csPlain(T(ch.t))||'';
-  if(/^[“"‘']/.test(raw)) return raw;                               // already written as a quote: verbatim
+  if(/^[“"‘']/.test(raw)) return raw;
   const key=raw.toLowerCase().replace(/[’‘`]/g,"'");
   let line=CS_SAY[key];
   if(typeof line==='function') line=line(ctx);
   if(Array.isArray(line)) line=csPick(line, key.length);
   if(line) return csPlain(line);
-  const bank=CS_SB_TRAIT[ch.tr];                                    // unmapped: speak in tone, never echo
-  if(bank&&bank.length) return csPick(bank, key.length);
   return raw;
 }
 /* The beat AS a conversation: the scene sets it up, the question is asked in the box, the answers are
