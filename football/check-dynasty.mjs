@@ -488,14 +488,15 @@ ok('one miss ends a run of any length',
   && E.dynastySurvives([{ wins: 7 }, { wins: 8 }], STEP) === true);
 
 /*
- * ─── THE BOSS SEASONS ────────────────────────────────────────────────────────────────
+ * ─── THE MILESTONES: MANDATES AND BOSSES ─────────────────────────────────────────────
  *
- * Every fifth season ends with a marquee game against a real great team. This drives a run
- * all the way to one and asserts the lifecycle around it: that the boss lands on season five
- * and not before, that a won deadwipe boss clears the books, that a lost boss raises ONLY the
- * next season's bar by one and that the firing then honours it, and that a won freeze boss
- * takes a man off the clock so he does not age. The boss GAME's balance is measured in
- * boss-measure.mjs; this is the lifecycle, the way ideas_test is the lifecycle for the board.
+ * A milestone every fifth season, alternating: the odd ones (5, 15, 25) are roster mandates
+ * the owner sets and you satisfy in the offseason that follows, the even ones (10, 20, 30) are
+ * boss games. This drives a run to each and asserts the lifecycle: that season five is a
+ * mandate and not a boss, that meeting a mandate clears the books while missing it raises only
+ * the coming season's bar, that season ten is a boss whose freeze takes a man off the clock,
+ * and that a lost boss raises the next bar and the firing honours it. The boss GAME's balance
+ * is measured separately; this is the lifecycle, the way ideas_test is for the board.
  */
 {
   const bestPick = (men, r) => {
@@ -521,50 +522,63 @@ ok('one miss ends a run of any length',
   for (let s = 1; s < 200 && !run5; s++) run5 = toSeason(5, 20261000 + s);
   ok('a drafted run can reach a survived season five', !!run5);
 
+  /* Mutate one man so a mandate's matcher returns `on`. The specs match on age, salary or a
+     rookie season, so this covers all four by id. */
+  const forceMatch = (r, i, spec, on) => {
+    const p = r.roster[i];
+    if (spec.id === 'young') p.age = on ? 23 : 30;
+    else if (spec.id === 'vets') p.age = on ? 33 : 26;
+    else if (spec.id === 'bargains') r.salaries[i] = on ? 5 : 20;
+    else if (spec.id === 'rookie') p.draft_year = on ? p.season : (p.season - 3);
+  };
+
   if (run5) {
-    ok('season five is a boss season', R.bossPending(run5),
-      `boss ${(R.bossFor(run5) || {}).team_season_id}`);
-    ok('no boss waits before season five',
-      !R.bossFor({ dynasty: true, seasonNo: 4, stepSeasons: STEP }));
-    ok('the season-five reward is a dead-cap wipe', R.bossFor(run5).reward === 'deadwipe');
+    ok('season five is a mandate, not a boss',
+      R.challengePending(run5) && !R.bossPending(run5),
+      `mandate ${(R.challengeFor(run5) || {}).id}`);
+    ok('no boss waits at season five', !R.bossFor(run5));
+    ok('the season-five mandate pays a dead-cap wipe',
+      R.challengeFor(run5).reward === 'deadwipe');
 
-    const clone = () => JSON.parse(JSON.stringify(run5));
-
-    /* WIN: the books are cleared and next year is unchanged. */
+    /* MET: the books are cleared and the coming bar is unchanged. */
     {
-      const r = clone();
+      const r = JSON.parse(JSON.stringify(run5));
+      R.beginOffseason(r, byKey, lastSeason);   // sets r.challenge, seasonNo -> 6
+      ok('the offseason after the milestone carries the mandate',
+        !!r.challenge && r.challenge.resolved === false);
+      const spec = R.challengeFor(r);
+      for (let i = 0; i < r.roster.length; i++) forceMatch(r, i, spec, i < spec.need);
       r.dead = [{ musd: 12, season: 3 }, { musd: 8, season: 4 }];
-      R.applyBossResult(r, true);
-      ok('a won deadwipe boss clears every dead-money charge', R.deadOf(r) === 0);
-      ok('winning a boss does not touch the next season bar',
-        R.effectiveWinBar(r, 6) === E.dynastyWinBar(6, r.stepSeasons));
+      R.applyChallengeResult(r);
+      ok('meeting the mandate is recorded met', r.challenge.met === true);
+      ok('meeting the mandate wipes every dead-money charge', R.deadOf(r) === 0);
+      ok('meeting the mandate leaves the coming bar alone',
+        R.effectiveWinBar(r, r.seasonNo) === E.dynastyWinBar(r.seasonNo, r.stepSeasons));
     }
 
-    /* LOSE: exactly next season's bar goes up by one, and the firing honours it. */
+    /* MISSED: the coming season's bar goes up by one, and the firing honours it. */
     {
-      const r = clone();
-      const base6 = E.dynastyWinBar(6, r.stepSeasons);
-      R.applyBossResult(r, false);
-      ok('a lost boss raises only the next season bar by one',
-        R.effectiveWinBar(r, 6) === base6 + 1
-        && R.effectiveWinBar(r, 7) === E.dynastyWinBar(7, r.stepSeasons),
-        `s6 ${R.effectiveWinBar(r, 6)} (base ${base6}), s7 ${R.effectiveWinBar(r, 7)}`);
-      winter(r); playSeason(r);
-      const wins = r.outcome.regularWins;
-      R.ownerVerdict(r);
-      ok('the bumped bar is the one the season is scored against',
-        r.history[r.history.length - 1].bar === base6 + 1);
-      ok('and the firing honours the bumped bar', r.fired === (wins < base6 + 1),
-        `won ${wins}, needed ${base6 + 1}, fired ${r.fired}`);
+      const r = JSON.parse(JSON.stringify(run5));
+      R.beginOffseason(r, byKey, lastSeason);
+      const spec = R.challengeFor(r);
+      for (let i = 0; i < r.roster.length; i++) forceMatch(r, i, spec, false);
+      const base = E.dynastyWinBar(r.seasonNo, r.stepSeasons);
+      R.applyChallengeResult(r);
+      ok('missing the mandate is recorded not met', r.challenge.met === false);
+      ok('missing the mandate raises the coming bar by one',
+        R.effectiveWinBar(r, r.seasonNo) === base + 1,
+        `bar ${R.effectiveWinBar(r, r.seasonNo)} (base ${base})`);
     }
   }
 
-  /* FREEZE at season ten: the chosen man stops ageing. */
+  /* SEASON TEN IS A BOSS, and beating it freezes a man. */
   let run10 = null;
   for (let s = 1; s < 400 && !run10; s++) run10 = toSeason(10, 20262000 + s);
   ok('a drafted run can reach a survived season ten', !!run10);
   if (run10) {
-    ok('the season-ten reward is a freeze', R.bossFor(run10).reward === 'freeze');
+    ok('season ten is a boss, not a mandate',
+      R.bossPending(run10) && !R.challengePending(run10));
+    ok('the season-ten boss pays a freeze', R.bossFor(run10).reward === 'freeze');
     const r = JSON.parse(JSON.stringify(run10));
     const victim = r.roster[0];
     const vid = victim.player_id, vseason = victim.season, vsal = r.salaries[0];
@@ -576,12 +590,26 @@ ok('one miss ends a run of any length',
     ok('a frozen man does not age', idx >= 0 && r.roster[idx].season === vseason,
       idx >= 0 ? `was ${vseason}, now ${r.roster[idx].season}` : 'gone');
     ok('a frozen man keeps his salary', idx >= 0 && Math.abs(r.salaries[idx] - vsal) < 0.01);
+
+    /* LOSE: exactly next season's bar goes up by one. */
+    {
+      const r2 = JSON.parse(JSON.stringify(run10));
+      const base11 = E.dynastyWinBar(11, r2.stepSeasons);
+      R.applyBossResult(r2, false);
+      ok('a lost boss raises only the next season bar by one',
+        R.effectiveWinBar(r2, 11) === base11 + 1
+        && R.effectiveWinBar(r2, 12) === E.dynastyWinBar(12, r2.stepSeasons),
+        `s11 ${R.effectiveWinBar(r2, 11)} (base ${base11}), s12 ${R.effectiveWinBar(r2, 12)}`);
+    }
   }
 
-  /* The reward parity, stated plainly: odd bosses wipe, even ones freeze. */
-  ok('boss rewards alternate wipe then freeze down the ladder',
-    [5, 15, 25].every((s) => E.dynastyBossReward(s) === 'deadwipe')
-    && [10, 20, 30].every((s) => E.dynastyBossReward(s) === 'freeze'));
+  /* The schedule, stated plainly: odd milestones are mandates that wipe, even ones are bosses
+     that freeze, and no season is both. */
+  ok('odd milestones are wiping mandates, even ones freezing bosses',
+    [5, 15, 25].every((s) => E.dynastyBossReward(s) === 'deadwipe'
+      && !!E.dynastyChallengeFor(s) && !E.dynastyBossFor(s))
+    && [10, 20, 30].every((s) => E.dynastyBossReward(s) === 'freeze'
+      && !!E.dynastyBossFor(s) && !E.dynastyChallengeFor(s)));
 }
 
 /* ─── and the modes that already ship are not a dynasty ──────────────────────────── */

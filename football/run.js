@@ -564,6 +564,12 @@ function createRun(opts) {
     bossFailSeason: null,
     /* What the last boss paid, for the screen that announces it. Cleared when spent. */
     bossReward: null,
+    /* THE ROSTER MANDATES, the odd milestones (5, 15, 25). `challenge` holds the mandate a
+       player is currently under: set when the offseason that follows the milestone opens, and
+       carried through it because the roster it judges is the one at the far end. Resolved when
+       the season starts and the final roster is read. Null outside a mandate offseason. See
+       beginOffseason, applyChallengeResult and E.dynastyChallengeFor. */
+    challenge: null,
     fired: false,
     /* The winter's working state: who aged into what, and who is gone. Null outside the
        offseason so a stale one cannot be painted. */
@@ -1315,6 +1321,15 @@ function beginOffseason(run, byKey, lastSeason) {
    * next season rather than anything here.
    */
   run.roster = kept; run.slotIndex = slots; run.salaries = sal; run.draws = draws;
+  /* THE MANDATE OPENS WITH THE OFFSEASON IT GOVERNS. The milestone is the season that just
+     ended (still run.seasonNo here, before the increment below), so this reads it off that,
+     and the offseason that follows is where the roster is reshaped to meet it. Stored as the
+     milestone season plus its verdict, not the spec, so the save carries no function; the
+     spec is rebuilt from the season number. A boss milestone is already resolved on the
+     results screen, so dynastyChallengeFor is null there and no mandate is set. */
+  run.challenge = E.dynastyChallengeFor(run.seasonNo)
+    ? { seasonNo: run.seasonNo, resolved: false, met: null, reward: null }
+    : null;
   run.seasonNo += 1;
   /* THE CAP DOES NOT MOVE. It is $140M in season one and $140M in season thirty. Payroll
      does not move either, now that a contract is locked, so what closes on you is not the
@@ -1550,6 +1565,63 @@ function applyBossResult(run, won, freezeId) {
   }
   run.bossReward = run.boss.reward;
   return run.boss;
+}
+
+/*
+ * IS A MANDATE WAITING. True on the results screen of an odd milestone (5, 15, 25) that the
+ * run survived: the owner is about to name how the team must be built, and the offseason that
+ * follows is where you do it. Mirrors bossPending, and the two are mutually exclusive by the
+ * milestone schedule, so a season is a boss OR a mandate, never both.
+ */
+function challengePending(run) {
+  if (!run || !run.dynasty || run.fired) return false;
+  if (run.phase !== PHASES.OVER) return false;
+  return !!E.dynastyChallengeFor(run.seasonNo);
+}
+
+/* The mandate a run is currently under or about to be handed, whole spec, or null. During the
+   offseason it is the one set at the milestone; on the milestone's own results screen, before
+   the offseason has opened and stored it, it is the mandate for the season just finished. */
+function challengeFor(run) {
+  if (!run || !run.dynasty) return null;
+  if (run.challenge) return E.dynastyChallengeFor(run.challenge.seasonNo);
+  return E.dynastyChallengeFor(run.seasonNo);
+}
+
+/* How far the current roster is toward the mandate, live: the offseason calls this on every
+   cut and signing to show progress, and the season-start check reads the same number. Null
+   when there is no mandate. */
+function challengeProgress(run) {
+  const spec = challengeFor(run);
+  return spec ? E.dynastyChallengeProgress(spec, run.roster, run.salaries) : null;
+}
+
+/*
+ * THE MANDATE, JUDGED. Called once as the next season begins, on the final roster after the
+ * offseason. Met, and the reward is a dead-cap wipe, the same clearing a won deadwipe boss
+ * pays. Missed, and the owner wants one more win this coming season, the same sting a lost
+ * boss carries, applied to run.seasonNo because that is the season now starting. Idempotent:
+ * a resolved mandate is left alone, so a reload cannot bank it twice.
+ */
+function applyChallengeResult(run) {
+  if (!run.dynasty || !run.challenge || run.challenge.resolved) return run.challenge || null;
+  const spec = E.dynastyChallengeFor(run.challenge.seasonNo);
+  if (!spec) { run.challenge = null; return null; }
+  const prog = E.dynastyChallengeProgress(spec, run.roster, run.salaries);
+  run.challenge.resolved = true;
+  run.challenge.met = prog.met;
+  run.challenge.have = prog.have;
+  run.challenge.need = prog.need;
+  if (prog.met) {
+    run.challenge.deadCleared = deadOf(run);
+    run.dead = [];
+    run.challenge.reward = 'deadwipe';
+  } else {
+    run.bossFailSeason = run.seasonNo;
+    run.challenge.reward = 'penalty';
+  }
+  run.bossReward = run.challenge.reward;
+  return run.challenge;
 }
 
 /** Seasons survived, which is the only number this mode is ranked on. */
@@ -3775,7 +3847,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 45;
+const RUN_API_VERSION = 46;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
@@ -3796,8 +3868,9 @@ const api = {
   /* The Gauntlet's winter and its owner. */
   beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived, deadOf,
   takeTheField, wheelIsDry,
-  /* The Gauntlet's boss seasons. */
+  /* The Gauntlet's boss seasons and roster mandates. */
   effectiveWinBar, bossPending, bossFor, applyBossResult,
+  challengePending, challengeFor, challengeProgress, applyChallengeResult,
   /* Exported because the PAGE has to rate the live team with the same chemistry the season
      is playing with, and in Full Team that is two figures rather than one. */
   seasonChem,

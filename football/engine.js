@@ -5231,7 +5231,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 45;
+const ENGINE_API_VERSION = 46;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -5284,13 +5284,27 @@ function eraCode(franchise, season) {
  * 2007 Patriots, the 2013 Broncos) simply puts up a number you have to chase. The scout is
  * the read on which of those two problems you are holding.
  *
- * BEATING ONE PAYS, LOSING ONE STINGS. The reward alternates: the odd bosses (5, 15, 25)
- * wipe your dead cap, the even ones (10, 20, 30) let you freeze a man at his current age and
- * salary for the rest of the run. Lose and the owner wants one more win next season, which
- * is the existing win bar doing the punishing rather than a new way to die. See
- * dynastyBossReward and effectiveWinBar in run.js.
+ * A MILESTONE EVERY FIVE SEASONS, AND THE TWO KINDS ALTERNATE. The odd multiples of five (5,
+ * 15, 25) are ROSTER MANDATES: the owner names a way the team must be built, and you have the
+ * offseason that follows to satisfy it. The even multiples (10, 20, 30) are BOSS GAMES, the
+ * marquee opponent above. Each kind pays its own reward, both aimed at the mode's one squeeze,
+ * the frozen cap closing on an ageing roster:
+ *
+ *   mandate met   (5, 15, 25)   every dead-money charge is cleared.
+ *   boss beaten   (10, 20, 30)  one man is frozen at his current age and salary for good.
+ *
+ * Miss either and the owner wants one more win next season, which is the existing win bar
+ * doing the punishing rather than a new way to die. See effectiveWinBar in run.js.
  */
 const DYNASTY_BOSS_EVERY = 5;
+const DYNASTY_MILESTONE_EVERY = 5;
+/* Which kind of milestone a season is, or null in an ordinary season. Odd multiples of five
+   are mandates, even ones are bosses, which is the parity of (season / 5). */
+function dynastyMilestoneKind(seasonNo, every) {
+  const step = every || DYNASTY_MILESTONE_EVERY;
+  if (!seasonNo || seasonNo < step || seasonNo % step !== 0) return null;
+  return (seasonNo / step) % 2 === 0 ? 'boss' : 'challenge';
+}
 
 /*
  * WHAT A RIGHT READ IS WORTH, as a multiplier on your scoring power for the whole boss game.
@@ -5485,27 +5499,72 @@ const DYNASTY_BOSSES = [
     note: 'the 2019 49ers front' },
 ];
 
-/* Which boss, if any, a season faces. Null in an ordinary season. */
+/* Which boss, if any, a season faces. Only the even milestones (10, 20, 30) are bosses now;
+   the odd ones are mandates, so this is null there and dynastyChallengeFor answers instead. */
 function dynastyBossFor(seasonNo, every) {
-  const step = every || DYNASTY_BOSS_EVERY;
-  if (!seasonNo || seasonNo < step || seasonNo % step !== 0) return null;
-  const idx = (seasonNo / step - 1) % DYNASTY_BOSSES.length;
-  return { ...DYNASTY_BOSSES[idx], seasonNo, reward: dynastyBossReward(seasonNo, step) };
+  const step = every || DYNASTY_MILESTONE_EVERY;
+  if (dynastyMilestoneKind(seasonNo, every) !== 'boss') return null;
+  /* Boss occurrences are 10, 20, 30 ..., so the nth boss (0-based) is (season/5)/2 - 1. */
+  const occ = (seasonNo / step) / 2 - 1;
+  return { ...DYNASTY_BOSSES[occ % DYNASTY_BOSSES.length], seasonNo, reward: 'freeze' };
+}
+
+/* Kept for callers that still ask, and honest about the new schedule: bosses freeze, mandates
+   wipe. Reads the milestone kind rather than the parity so it cannot drift from the schedule. */
+function dynastyBossReward(seasonNo, every) {
+  const kind = dynastyMilestoneKind(seasonNo, every);
+  return kind === 'boss' ? 'freeze' : kind === 'challenge' ? 'deadwipe' : null;
 }
 
 /*
- * WHAT BEATING THIS BOSS PAYS. The two rewards alternate down the ladder, and both are aimed
- * at the mode's one squeeze, the frozen cap closing on an ageing roster:
+ * THE ROSTER MANDATES. Each is a way the owner tells you to build the team, checked on the
+ * roster you take into the next season, after the offseason you have to satisfy it. Reward is
+ * always a dead-cap wipe: you reshape the roster to comply, which usually means cutting men
+ * and taking on dead money, and meeting the mandate clears exactly that.
  *
- *   'deadwipe'  seasons 5, 15, 25 ...  every dead-money charge is cleared.
- *   'freeze'    seasons 10, 20, 30 ...  one man is held at his current age and salary, so a
- *                                       star stops declining for the rest of the run.
- *
- * Odd multiples of five wipe, even ones freeze, which is just the parity of season/5.
+ * TWO SHAPES. A 'count' mandate wants at least `need` players who match; a 'total' wants the
+ * whole payroll under a ceiling. Both are read off the same two facts the mode already tracks:
+ * a man's age, and the contract you drafted him at (run.salaries, not his list price). The
+ * thresholds are set so a mandate asks for real reshaping without being unmeetable off a
+ * typical mid-run roster: see the achievability sweep in check-dynasty.
  */
-function dynastyBossReward(seasonNo, every) {
-  const step = every || DYNASTY_BOSS_EVERY;
-  return (seasonNo / step) % 2 === 0 ? 'freeze' : 'deadwipe';
+const DYNASTY_CHALLENGES = [
+  { id: 'young', name: 'The youth movement', kind: 'count', need: 3, unit: 'players 25 or under',
+    desc: 'Field three players aged 25 or younger.',
+    short: '3 aged 25 or under', match: (p) => !!p.age && p.age <= 25 },
+  { id: 'bargains', name: 'Moneyball', kind: 'count', need: 3, unit: 'contracts under $9M',
+    desc: 'Field three players each on a contract under $9M.',
+    short: '3 under $9M', match: (p, sal) => sal < 9 },
+  { id: 'rookie', name: 'New blood', kind: 'count', need: 1, unit: 'rookie',
+    desc: 'Field a rookie: a player in his very first NFL season.',
+    short: 'a rookie', match: (p) => !!(p.draft_year && p.season === p.draft_year) },
+  { id: 'vets', name: 'Win now', kind: 'count', need: 3, unit: 'players 31 or older',
+    desc: 'Field three players aged 31 or older.',
+    short: '3 aged 31 or older', match: (p) => !!p.age && p.age >= 31 },
+];
+
+/* Which mandate, if any, a season carries. Null unless the season is an odd milestone. */
+function dynastyChallengeFor(seasonNo, every) {
+  const step = every || DYNASTY_MILESTONE_EVERY;
+  if (dynastyMilestoneKind(seasonNo, every) !== 'challenge') return null;
+  /* Mandate occurrences are 5, 15, 25 ..., so the nth (0-based) is ((season/5) - 1) / 2. */
+  const occ = ((seasonNo / step) - 1) / 2;
+  return { ...DYNASTY_CHALLENGES[occ % DYNASTY_CHALLENGES.length], seasonNo, reward: 'deadwipe' };
+}
+
+/* How far a roster is toward a mandate: how many match against how many are needed (or the
+   payroll against its ceiling), and whether it is met. Pure, so the offseason can call it live
+   on every cut and signing and the season-start check can call it once. `salaries` is the
+   contract array that lines up with `roster`. */
+function dynastyChallengeProgress(spec, roster, salaries) {
+  if (!spec) return { have: 0, need: 0, met: false, kind: 'count' };
+  if (spec.kind === 'total') {
+    const total = (salaries || []).reduce((s, x) => s + (x || 0), 0);
+    return { have: Math.round(total * 10) / 10, need: spec.need, met: total <= spec.need, kind: 'total' };
+  }
+  let have = 0;
+  for (let i = 0; i < roster.length; i++) if (spec.match(roster[i], (salaries || [])[i])) have++;
+  return { have, need: spec.need, met: have >= spec.need, kind: 'count' };
 }
 
 /* Absolute field yard (0 your goal, 100 theirs) from a team-relative yard (100 = the drive's
@@ -5731,8 +5790,10 @@ const publicAPI = {
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
   DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
   dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
-  DYNASTY_BOSS_EVERY, DYNASTY_BOSSES, BOSS_READ_EDGE, BOSS_SIM,
-  dynastyBossFor, dynastyBossReward,
+  DYNASTY_BOSS_EVERY, DYNASTY_MILESTONE_EVERY, DYNASTY_BOSSES, DYNASTY_CHALLENGES,
+  BOSS_READ_EDGE, BOSS_SIM,
+  dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
+  dynastyChallengeFor, dynastyChallengeProgress,
   bossExpectedPoints, bossSimCreate, bossSimAdvance, bossSimResolve, bossClock,
   GAUNTLET_POINTS, gauntletSeasonScore, gauntletRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,

@@ -3867,6 +3867,43 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(226,178,90,.34);
     background:linear-gradient(180deg,rgba(40,32,17,.85),rgba(19,17,13,.85))}
   .gdraft[hidden]{display:none}
+  /* ---- THE ROSTER MANDATE, on the offseason screens ----
+     The owner's build order, its running count, and what it pays. Gold like the rest of the
+     mode's furniture, and it flips green the moment the count is met so the reward reads as
+     in hand. */
+  .mandate{margin:0 0 10px;padding:10px 13px 11px;border-radius:11px;
+    border:1.5px solid rgba(226,178,90,.42);
+    background:linear-gradient(180deg,rgba(40,32,17,.9),rgba(19,17,13,.9))}
+  .mandate[hidden]{display:none}
+  .mn-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .mn-tag{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.11em;
+    text-transform:uppercase;color:rgba(243,221,174,.62)}
+  .mn-count{font-family:var(--fd,var(--fn));font-size:15px;color:#F3DDAE;
+    font-variant-numeric:tabular-nums}
+  .mn-desc{margin-top:4px;font-family:var(--fn);font-size:13.5px;font-weight:700;color:#f6ecd4;
+    line-height:1.25}
+  .mn-pips{display:flex;gap:5px;margin-top:8px}
+  .mn-pips i{width:22px;height:7px;border-radius:3px;background:rgba(255,255,255,.1);
+    transition:background .3s ease}
+  .mn-pips i.on{background:linear-gradient(90deg,#e2b25a,#F3DDAE)}
+  .mn-reward{margin-top:8px;font-family:var(--fn);font-size:10.5px;font-weight:700;
+    letter-spacing:.02em;color:rgba(243,221,174,.5)}
+  .mandate.met{border-color:rgba(74,222,128,.55)}
+  .mandate.met .mn-count{color:#86efac}
+  .mandate.met .mn-pips i.on{background:linear-gradient(90deg,#4ade80,#a7f3d0)}
+  .mandate.met .mn-reward{color:#86efac}
+  /* The verdict banner on the squad screen, the season it resolved. */
+  .sq-mandate{display:flex;flex-direction:column;gap:2px;margin:0 0 12px;padding:11px 14px;
+    border-radius:12px;border:1.5px solid}
+  .sq-mandate[hidden]{display:none}
+  .sq-mandate.met{border-color:rgba(74,222,128,.5);
+    background:linear-gradient(180deg,rgba(20,40,25,.7),rgba(13,20,15,.7))}
+  .sq-mandate.missed{border-color:rgba(248,113,113,.5);background:rgba(30,15,15,.6)}
+  .sqm-tag{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase}
+  .sq-mandate.met .sqm-tag{color:#86efac}
+  .sq-mandate.missed .sqm-tag{color:#fca5a5}
+  .sqm-body{font-family:var(--fn);font-size:13.5px;color:var(--ink);line-height:1.3}
   .gd-hd,.gd-vals{display:grid;grid-template-columns:var(--gdc,1fr);gap:10px;
     align-items:baseline}
   .gd-hd .eyebrow{font-size:9px;letter-spacing:.13em;color:rgba(243,221,174,.5)}
@@ -6065,6 +6102,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            block under it, so it reads as part of the same HUD rather than a banner stuck
            on top of one. See paintDynastyDraftBar(). -->
       <div class="gdraft" id="d-gaunt" hidden></div>
+      <!-- The roster mandate, on the fill-draft screen so the goal and its running count are
+           in front of you while you sign the men that meet it. paintMandate fills it. -->
+      <div class="mandate" id="d-mandate" hidden></div>
       <div class="cap-hd">
         <span class="eyebrow">Money left</span>
         <span class="eyebrow">Chemistry</span>
@@ -6207,6 +6247,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            where somebody decides whether to come back, so it is where the run's shape
            belongs. -->
       <div class="wc-step" id="w-goal"></div>
+      <!-- The same mandate banner on the winter screen, where the cuts that reshape the roster
+           happen. Updates live as you release a man. -->
+      <div class="mandate" id="w-mandate" hidden></div>
       <div class="wc-foot">
         <span class="wsum" id="w-summary"></span>
         <button class="wrules" id="b-w-rules">Gauntlet rules</button>
@@ -6228,6 +6271,9 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   </div>
 
   <div class="screen" id="s-squad">
+    <!-- The mandate's verdict, the one season it resolved: met and the dead cap is wiped, or
+         missed and this season wants one more win. paintSquadMandate fills and clears it. -->
+    <div class="sq-mandate" id="sq-mandate" hidden></div>
     <div class="eyebrow" id="q-step">Step 3 of 3</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Your team</h2>
     <p class="dim" style="font-size:13px;margin:0 0 12px">Tap a player for his numbers. The rail under the field arcs between the players who connect, and the number on a shirt is how many he connects to.</p>
@@ -6888,8 +6934,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=83"></script>
-<script src="run.js?v=93"></script>
+<script src="engine.js?v=84"></script>
+<script src="run.js?v=94"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7218,7 +7264,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=45;
+const NEED_VERSION=46;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -8919,7 +8965,7 @@ function dynNewSheet(){
  */
 ['spin','respin','sign','startSeason','advanceWeek','startPlayoffs','hireCoach','setPlan',
  'finishHiring','takeTheField','beginOffseason','releaseMan','finishOffseason','ownerVerdict',
- 'applyBossResult']
+ 'applyBossResult','applyChallengeResult']
   .forEach((fn)=>{
     const orig=R[fn];
     if(typeof orig!=='function') return;
@@ -10139,6 +10185,50 @@ function paintDynastyDraftBar(){
   el.innerHTML='<div class="gd-hd">'
       +cols.map(c=>'<span class="eyebrow">'+esc(c.lab)+'</span>').join('')
     +'</div><div class="gd-vals">'+cols.map(c=>c.val).join('')+'</div>';
+  paintMandate();
+}
+
+/* THE ROSTER MANDATE, ON BOTH OFFSEASON SCREENS. The goal, the running count against it, and
+   what meeting it pays. Repainted on every cut and every signing so the count is always live;
+   hidden when there is no mandate or it is already judged. Both screens carry a banner and
+   this fills whichever is on the page. */
+function paintMandate(){
+  const spec=R.challengeFor(run);
+  const active=!!(spec&&run.challenge&&!run.challenge.resolved);
+  const prog=active?R.challengeProgress(run):null;
+  ['w-mandate','d-mandate'].forEach((id)=>{
+    const el=$(id); if(!el) return;
+    if(!active){ el.hidden=true; el.innerHTML=''; return; }
+    const met=prog.met;
+    let pips='';
+    if(prog.kind!=='total') for(let i=0;i<prog.need;i++) pips+='<i class="'+(i<prog.have?'on':'')+'"></i>';
+    el.hidden=false;
+    el.className='mandate'+(met?' met':'');
+    el.innerHTML=
+      '<div class="mn-top"><span class="mn-tag">Owner’s mandate</span>'
+        +'<span class="mn-count">'+(met?'Met':prog.have+' of '+prog.need)+'</span></div>'
+      +'<div class="mn-desc">'+esc(spec.desc)+'</div>'
+      +(pips?'<div class="mn-pips">'+pips+'</div>':'')
+      +'<div class="mn-reward">'+(met
+          ? 'Take the field like this and your dead cap is wiped.'
+          : 'Meet it before kickoff to wipe your dead cap.')+'</div>';
+  });
+}
+
+/* THE MANDATE'S VERDICT, on the squad screen the season it resolved. `result` is the run.boss-
+   shaped record applyChallengeResult returns, or null on every other paint, which hides it. */
+function paintSquadMandate(result){
+  const el=$('sq-mandate'); if(!el) return;
+  if(!result){ el.hidden=true; el.innerHTML=''; return; }
+  const spec=E.dynastyChallengeFor(result.seasonNo);
+  const met=!!result.met;
+  el.hidden=false;
+  el.className='sq-mandate '+(met?'met':'missed');
+  el.innerHTML='<span class="sqm-tag">'+(met?'Mandate met':'Mandate missed')+'</span>'
+    +'<span class="sqm-body">'+(met
+        ? (spec?esc(spec.name)+'. ':'')+'Your dead cap is wiped clean.'
+        : 'You needed '+(spec?esc(spec.short):'the mandate')+'. This season needs one more win.')
+    +'</span>';
 }
 
 /* ---------- draft ---------- */
@@ -11567,6 +11657,7 @@ function paintWinter(){
   $('w-count').textContent=run.roster.length+' under contract';
   $('w-hint').textContent=run.roster.length?'Tap minus to release a player.':'';
   paintWinterSummary();
+  paintMandate();
   /* THE DESTINATION, REPAINTED EVERY OFFSEASON. `at` is the season about to be played, so
      the bar fills for the ones behind it. */
   {
@@ -11867,6 +11958,9 @@ function wireWinter(){
     toast(E.lastName(man.name)+' released. '+M(back)+' back, '+M(dead)+' dead.');
     row.classList.add('gone');
     paintWinterCap(true);
+    /* A cut can move the mandate's count either way (releasing a matching man loses ground,
+       an old one you were over on gains it), so the banner is repainted with the roster. */
+    paintMandate();
     /* THE INDEXES MOVED. releaseMan splices the roster, so every data-i after this one is
        now pointing at the man behind him. Re-stamped from the roster rather than
        recalculated by hand, because "subtract one from everything after" is the kind of
@@ -11968,6 +12062,14 @@ function paintChemSplit(){
    no season at all and wants one built. */
 function paintSquad(keepSeason){
   if(!(keepSeason&&run.season)) R.startSeason(run,dataNow(),CTX);
+  /* THE MANDATE IS JUDGED HERE, on the roster that just took the field, the first frame of
+     the season it governed. applyChallengeResult is idempotent, so a reload at week zero
+     re-runs it to no effect; the banner only announces the season it actually resolved. */
+  let mandateResult=null;
+  if(run.dynasty&&run.challenge&&!run.challenge.resolved&&run.season&&run.season.week===0){
+    mandateResult=R.applyChallengeResult(run);
+  }
+  paintSquadMandate(mandateResult);
   if(tutorialOn) tutFinish();
   drawField($('field2'),false);
   const rl=$('q-roster-list');
@@ -15222,12 +15324,20 @@ function paintOwner(){
      run survived to see it. The teaser goes on the owner's own bar rather than a panel of its
      own, because it is the same voice: you cleared the bar, now here is the marquee game. */
   const boss=(!v.fired&&R.bossPending(run))?R.bossFor(run):null;
+  /* THE OTHER MILESTONE. An odd season (5, 15, 25) hands you a roster mandate instead of a
+     boss: named here, satisfied in the offseason that follows, judged when the next season
+     starts. Same owner's bar, same voice. */
+  const chal=(!v.fired&&!boss&&R.challengePending(run))?R.challengeFor(run):null;
   if(boss){
     const rw=boss.reward==='freeze'
       ? 'Win it to freeze a player for good.'
       : 'Win it to wipe your dead cap.';
     bar.insertAdjacentHTML('beforeend',
       '<span class="ob-boss">A game against <b>'+esc(boss.note)+'</b> awaits. '+rw+'</span>');
+  }else if(chal){
+    bar.insertAdjacentHTML('beforeend',
+      '<span class="ob-boss">The owner wants a roster built his way: <b>'+esc(chal.desc)+'</b> '
+      +'Do it this offseason to wipe your dead cap.</span>');
   }
 
   const go=$('b-next-season');
@@ -15242,7 +15352,9 @@ function paintOwner(){
       go.textContent='Face '+boss.note;
       go.onclick=bossScout;
     }else{
-      go.textContent='Offseason '+(run.seasonNo+1);
+      /* The mandate lives in the offseason, so the button is the ordinary way in; the banner
+         there carries the goal and the running count. */
+      go.textContent=chal?'Take on the mandate':'Offseason '+(run.seasonNo+1);
       go.onclick=dynToWinter;
     }
   }
