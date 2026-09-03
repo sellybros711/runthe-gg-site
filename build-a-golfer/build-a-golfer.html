@@ -1060,6 +1060,24 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS305: when the bottom nav is shown, lift any bottom-fixed pop-up (scroll cue, toast, selection
      pop-up, sign-in/error pills) above it via this cascading var so nothing hides behind the nav. */
   body.has-botnav{--botnav-space:58px}
+  /* DESKTOP (>=1000px): #32 "Desktop: chrome, hover and keyboard". The bottom tab bar is phone chrome -
+     on a wide screen a full-width fixed strip strands a cluster of icons in the middle. Float it as a
+     centred rounded pill, give the tab buttons a pointer hover cue (they are NOT .btn, so the global
+     .btn:hover never reaches them), and widen the content reserve so nothing slides under the raised pill.
+     TRANSFORM-FREE: the fixed bar must never carry a transform in any state (the recurring iOS-drift bug,
+     see the CS472/CS516 notes above) - centred with left/right:0 + max-width + margin:0 auto, lifted with
+     `bottom`, not translate. Mobile keeps the full-width bar (min-width only). Keyboard/focus is already
+     global (the .btn/button/[tabindex]/input :focus-visible rule + .botnav button:focus-visible). */
+  @media (min-width:1000px){
+    .botnav{ left:0; right:0; max-width:560px; margin:0 auto; bottom:16px;
+      border:1px solid var(--line); border-radius:16px; box-shadow:0 14px 34px -10px rgba(0,0,0,.65) }
+    .botnav-in{ max-width:none }
+    .botnav button{ border-radius:12px }
+    .botnav button:hover{ color:#e9f1ec }          /* hoverable cue, brighter than idle but not the active gold */
+    .botnav button.on:hover{ color:var(--gold) }   /* active tab stays gold on hover */
+    #app.has-botnav{ padding-bottom:96px }
+    body.has-botnav{ --botnav-space:96px }
+  }
 
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
@@ -3043,6 +3061,19 @@ window.GA_ID='G-L29P5MRWKE';
     background-size:280% 100%; animation:foilSweep 4.6s ease-in-out infinite}
   @keyframes foilSweep{ 0%{background-position:120% 0} 55%{background-position:-60% 0} 100%{background-position:-60% 0} }
   @media (prefers-reduced-motion:reduce){ .stile.r-legendary::after,.stile.r-epic::after{animation:none; background:none} }
+  /* DESKTOP (>=1000px): #31 "Desktop: overlays and Pro Shop". List-heavy overlays (leaderboard, course
+     records, passport) get a wider content column so they aren't a narrow 600px strip in the middle of a
+     big screen; the Pro Shop widens too, and its ~10 section tabs flow to fill the wider row (2 rows,
+     not 3) while the category chips wrap instead of scrolling/clipping. Mobile is untouched - min-width
+     only, so the phone keeps the 600px column, the 4-across tab grid and the scrolling chip row. */
+  @media (min-width:1000px){
+    .ov.ov-wide{ padding-left:max(20px, calc((100% - 940px)/2)); padding-right:max(20px, calc((100% - 940px)/2)) }
+    .ov.ov-wide .x{ right:max(16px, calc((100% - 940px)/2)) }
+    .ov.ov-shop{ padding-left:max(20px, calc((100% - 900px)/2)); padding-right:max(20px, calc((100% - 900px)/2)) }
+    .segrow.shopseg{ grid-template-columns:repeat(auto-fit,minmax(118px,1fr)) }
+    .ov-shop .catrow{ flex-wrap:wrap; overflow:visible; row-gap:6px }
+    .ov-shop .sgrid{ grid-template-columns:repeat(auto-fill,minmax(110px,1fr)) }
+  }
   .sthumb{width:48px; height:48px; border-radius:11px; display:flex; align-items:center; justify-content:center;
     background:linear-gradient(180deg,#47614f,#31473a); border:1px solid rgba(255,255,255,.16); overflow:hidden; flex:0 0 auto}
   .sthumb.color{border-width:2px}
@@ -12385,7 +12416,7 @@ function overlayLeaderboard(screen){
   const sortSeg=(k,lab)=>`<button class="btn ${sort===k?'gold':'ghost'} lbsort" data-sort="${k}" style="font-size:11px;padding:6px 11px;width:auto">${lab}</button>`;
   const sortChips=(LB_SORTS[tab]||[]).map(s=>sortSeg(s[0],s[1])).join('');
   const lbl=lbSortLabel(tab,sort);
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
+  const ov=$(`<div class="ov ov-wide" role="dialog" aria-modal="true" aria-label="Leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
@@ -12508,7 +12539,7 @@ function overlayLeaderboardDaily(screen, tab){
   const p18Controls = weekly ? '' : `<div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
     <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${P18_SORTS.map(s=>p18SortSeg(s[0],s[1])).join('')}<button class="btn ghost p18dir" style="width:auto;padding:6px 10px;font-size:11px;white-space:nowrap">${p18worst?'▲ Worst first':'▼ Best first'}</button></div>`;
   const p18Records = weekly ? '' : `<button class="btn ghost p18recs" style="width:auto;margin:0 0 10px;padding:8px 14px;font-size:12px">⛳ Course Records ▸</button>`;
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
+  const ov=$(`<div class="ov ov-wide" role="dialog" aria-modal="true" aria-label="Leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
@@ -12615,7 +12646,7 @@ function overlayLeaderboardLifetime(screen){
     : `<div><b style="color:var(--gold)">Lifetime leaderboard</b><div class="small muted" style="margin-top:2px">Every season a player has ever posted, added up. Sign in to start your own record.</div></div><button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
   const sortSeg=(kk,lab)=>`<button class="btn ${sort===kk?'gold':'ghost'} lbsort" data-sort="${kk}" style="font-size:11px;padding:6px 11px;width:auto">${lab}</button>`;
   const lbl=lbSortLabel('lifetime',sort);
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Lifetime leaderboard">
+  const ov=$(`<div class="ov ov-wide" role="dialog" aria-modal="true" aria-label="Lifetime leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
@@ -12680,7 +12711,7 @@ function overlayStreakBoard(screen){
     ? `<div><b style="color:var(--gold)">🔥 Your streak: ${cur} day${cur===1?'':'s'}</b><div class="small muted" style="margin-top:2px">Play the Daily every day to climb the streak board. Streaks stay active for ~2 days.</div></div>`
     : `<div><b style="color:var(--gold)">Active streak leaderboard</b><div class="small muted" style="margin-top:2px">Guests appear as "Guest". Sign in to claim your name.</div></div><button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
   const seg=(id,lab)=>`<button class="btn ${id==='streaks'?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Streak leaderboard">
+  const ov=$(`<div class="ov ov-wide" role="dialog" aria-modal="true" aria-label="Streak leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
@@ -32980,7 +33011,7 @@ function scrDailyResult(){
 // #5 Course Passport: your best round + best grade at every Daily course, a solo collection to complete
 function overlayPassport(screen){
   const m=courseMastery(), sum=masterySummary(), pct=Math.round(100*sum.played/sum.total);
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Course Passport">
+  const ov=$(`<div class="ov ov-wide" role="dialog" aria-modal="true" aria-label="Course Passport">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Course Passport</h3></div>`);
   ov.appendChild($(`<p class="lede" style="margin-top:-4px">Your best round at every Daily Challenge course. Beat the tour average to conquer a course, and chase an S grade at all ${sum.total}.</p>`));
@@ -35393,7 +35424,7 @@ function overlayCourseRecords(screen){
     // Legend boards are only fetched once the player actually opens that tab (most never will)
     else if(tab==='legend'){ if(boardStale(crCacheLegend)) crLoadLegend(); if(boardStale(dbCacheLegend)||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
   }
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+  const ov=$(`<div class="ov ov-wide" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Course Records</h3></div>`);
   const tabs=$(`<div class="mini" style="margin-bottom:2px;flex-wrap:wrap"></div>`);
