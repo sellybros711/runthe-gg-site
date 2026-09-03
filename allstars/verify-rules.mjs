@@ -15,6 +15,10 @@
      head to head         beating a club ranks you above it on equal wins
      abandoned game       End Game in a season files a loss and moves the league
      finish once          finishGame twice records one result
+     inning board         the board fills the beat between halves, then goes
+     weak pitch           the found weak pitch is announced, marked and logged
+     batting windup       the full windup when you bat, a short one when you pitch
+     cup sim              one click runs the CPU matches to yours, or to the end
 
    Needs Playwright with Chromium. Locally:
      node allstars/verify-rules.mjs
@@ -249,6 +253,123 @@ async function main() {
       ok(r.res && r.res.win === false && r.res.forfeit === true, 'filed as a forfeit loss', JSON.stringify(r.res));
       ok(r.leagueDone === 1 && r.played === 17, 'the league played its round (17 clubs got a decision)', 'done=' + r.leagueDone + ' played=' + r.played);
       ok(r.n === 1, 'finishGame twice records one result', 'results=' + r.n);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the board between halves ---- */
+    {
+      console.log('inning board');
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        g.half = 'top'; g.inning = 2; g.outs = 2;
+        recordOut('ground out', false);
+        /* The plaque has 30% of the beat first, then the board. */
+        await new Promise(r => setTimeout(r, BEAT.betweenHalfInnings * 0.5));
+        const b = document.getElementById('inning-board');
+        const during = b ? { text: b.textContent, sprites: b.querySelectorAll('canvas').length } : null;
+        await new Promise(r => setTimeout(r, BEAT.betweenHalfInnings * 0.7));
+        return { during, after: !!document.getElementById('inning-board'), pitch: !!g.pitch };
+      });
+      ok(r.during && /Bottom 2/.test(r.during.text) && /You pitch/.test(r.during.text), 'the board names the coming half and your side', JSON.stringify(r));
+      ok(r.during && /Due up/.test(r.during.text) && r.during.sprites === 3, 'three batters due, drawn', JSON.stringify(r));
+      ok(r.during && /arm fresh/i.test(r.during.text), 'the arm is named', JSON.stringify(r));
+      ok(!r.after && r.pitch, 'gone once the next at bat starts', JSON.stringify(r));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the weak pitch, told ---- */
+    {
+      console.log('weak pitch');
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        g.half = 'top'; g.inning = 1; g.outs = 0;   /* you at home, so you pitch */
+        startAtBat();
+        await new Promise(r => setTimeout(r, BEAT.intoAtBat + 600));
+        const labels = [...document.querySelectorAll('#pitch-select .zl')].map(z => z.textContent);
+        const rep = pitcherRepertoire(currentPitcher());
+        /* The weak pitch is drawn on the first throw; fix it so the check knows. */
+        g.batterCtx.weakPitch = rep[0];
+        const weakLabel = PITCHES[rep[0]].label;
+        const before = document.getElementById('atbat').textContent;
+        endAtBatCleanup();
+        throwPitch(rep[1], 4);
+        const plaque1 = document.getElementById('callout').textContent;
+        const known1 = !!g.batterCtx.weakKnown;
+        const left = g.pitch.windupUntil - performance.now();
+        endAtBatCleanup();
+        throwPitch(rep[0], 4);
+        const plaque2 = document.getElementById('callout').textContent;
+        const known2 = !!g.batterCtx.weakKnown;
+        refreshHud();
+        const card = document.getElementById('atbat').textContent;
+        offerPitchSelection();
+        const marked = [...document.querySelectorAll('#pitch-select button.weak')].map(b => b.dataset.pt);
+        return { labels, weak: rep[0], weakLabel, plaque1, known1, left, plaque2, known2, before, card, marked,
+                 said: g.log.some(l => /cannot handle/.test(l.text)), windup: BEAT.windup };
+      });
+      ok(r.labels.join(',') === 'High,In,Out,Low', 'the zone grid reads High, In, Out, Low', JSON.stringify(r.labels));
+      ok(!r.known1 && !/WEAK/.test(r.plaque1), 'an ordinary pitch says nothing', JSON.stringify({ k: r.known1, p: r.plaque1 }));
+      ok(r.left > 0 && r.left <= r.windup * 0.5, 'the windup is short when you pitch', `left ${Math.round(r.left)} of ${r.windup}`);
+      ok(r.known2 && r.plaque2 === 'WEAK PITCH · ' + r.weakLabel && r.said, 'the weak pitch is announced and logged', JSON.stringify({ p: r.plaque2, w: r.weakLabel }));
+      ok(!/weak vs/i.test(r.before) && /weak vs/i.test(r.card), 'the at bat card marks it, only after', JSON.stringify({ before: r.before, card: r.card }));
+      ok(r.marked.length === 1 && r.marked[0] === r.weak, 'the button is marked', JSON.stringify(r.marked));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- batting keeps the full windup ---- */
+    {
+      console.log('batting windup');
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, false);
+      const r = await pg.evaluate(() => {
+        const g = State.game; g.half = 'top'; g.inning = 1;
+        throwPitch();
+        return { left: g.pitch.windupUntil - performance.now(), windup: BEAT.windup };
+      });
+      ok(r.left > r.windup * 0.9, 'the full beat when you bat', JSON.stringify(r));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the cup plays itself up to your match, or out ---- */
+    {
+      console.log('cup sim');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.innings = 5; State.difficulty = 'medium'; State.mode = 'cup';
+        startCup();
+        const C = State.cup;
+        /* You in the last quarterfinal, so three CPU matches sit ahead of yours. */
+        const q = C.rounds[0];
+        const youIdx = C.entrants.findIndex(e => e.you);
+        const mine = q.findIndex(m => m.a === youIdx || m.b === youIdx);
+        [q[mine], q[3]] = [q[3], q[mine]];
+        State.screen = 'cup'; render();
+        const find = () => [...document.querySelectorAll('#app .btn')].find(b => /Simulate/.test(b.textContent));
+        const label1 = find().textContent;
+        find().click();
+        const nm = nextCupMatch(C);
+        const played = q.filter(m => m.result).length;
+        const offered = [...document.querySelectorAll('#app .btn')].some(b => b.textContent === 'Play Your Match');
+        /* Now lose it, and one click should finish the cup. */
+        const m = nm.match; const foe = m.a === youIdx ? m.b : m.a;
+        m.result = { aScore: m.a === foe ? 5 : 1, bScore: m.b === foe ? 5 : 1, winner: foe };
+        render();
+        const label2 = find().textContent;
+        find().click();
+        return { label1, played, mine: nm.playerInvolved && nm.r === 0, offered, label2, done: C.done,
+                 banner: document.querySelector('#app .banner').textContent };
+      });
+      ok(r.label1 === 'Simulate to Your Match' && r.played === 3 && r.mine && r.offered, 'one click reaches your quarterfinal', JSON.stringify(r));
+      ok(r.label2 === 'Simulate the Cup' && r.done && /wins the Cup/.test(r.banner), 'out of it, one click finishes the cup', JSON.stringify(r));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

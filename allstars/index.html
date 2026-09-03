@@ -302,6 +302,38 @@
   .zone-grid button.mid{background:#bfe0c4;}
   .zone-grid button.center{background:#8fd0a0;}
   .zone-grid button.selected{background:var(--gold);}
+  /* The grid with its four compass words around it. In and out are from
+     the plate: column 0 is the inside corner, which is what throwPitch
+     reads it as. */
+  .zone-wrap{display:grid;grid-template-columns:auto auto auto;grid-template-rows:auto auto auto;
+    align-items:center;justify-items:center;gap:3px;}
+  .zone-wrap .zone-grid{grid-column:2;grid-row:2;}
+  .zl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:900;color:var(--text-dim);}
+  .zl.top{grid-column:2;grid-row:1;} .zl.bot{grid-column:2;grid-row:3;}
+  .zl.left{grid-column:1;grid-row:2;} .zl.right{grid-column:3;grid-row:2;}
+  /* A found weak pitch is marked on its button for the rest of the at bat. */
+  .pitch-select .btn.weak{border-color:var(--green);color:var(--green);}
+  .weakmark{margin-left:6px;font-size:8px;letter-spacing:.14em;color:var(--green);}
+  .atbat .vs .weak{color:var(--green);}
+  /* Between innings the field is empty for three seconds. The board fills
+     it: who is due, whose arm, and which way the next half goes. It sits
+     low so SIDES CHANGE and EXTRA INNINGS keep their spot above it. */
+  .board{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);
+    width:min(520px,92%);background:var(--panel);border:3px solid var(--line);
+    box-shadow:5px 5px 0 var(--navy);padding:10px 14px;z-index:7;pointer-events:none;
+    color:var(--text);font-size:12px;letter-spacing:.06em;}
+  .board .board-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+    border-bottom:2px solid var(--line);padding-bottom:6px;margin-bottom:8px;}
+  .board .board-head b{color:var(--gold);font-size:15px;letter-spacing:.14em;text-transform:uppercase;}
+  .board .board-due{display:flex;align-items:center;gap:12px;}
+  .board .board-due .lbl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);}
+  .board .due{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;
+    max-width:84px;}
+  .board .due span{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .board .due canvas{image-rendering:pixelated;}
+  .board .board-arm{margin-top:6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);}
+  .board .board-arm b{color:var(--text);}
+  @media (max-width:600px){.board{font-size:10px;padding:8px 10px;bottom:8%;} .board .board-head b{font-size:12px;}}
   .swing-btn{display:none;width:100%;margin-top:10px;padding:16px;font-size:16px;
     background:var(--gold);color:#fff6ea;border:3px solid var(--line);border-radius:0;
     font-weight:900;letter-spacing:.28em;cursor:pointer;font-family:inherit;
@@ -3483,8 +3515,17 @@ function renderCup() {
       b.onclick = () => startCupMatch(C, nm);
       row.appendChild(b);
     } else if (nm) {
-      const b = el('button','btn','Simulate Next Match');
-      b.onclick = () => { simulateCupMatch(C, nm); cupPropagate(C); saveCup(C); render(); };
+      /* One click runs every CPU match up to yours, or to the end once you
+         are out; the bracket comes back with the scores filled in. Three
+         clicks of Simulate Next Match to reach your own semifinal was a chore. */
+      const youOut = C.rounds.flat().some(m => m.result
+        && (C.entrants[m.a].you || C.entrants[m.b].you) && !C.entrants[m.result.winner].you);
+      const b = el('button','btn', youOut ? 'Simulate the Cup' : 'Simulate to Your Match');
+      b.onclick = () => {
+        let m;
+        while ((m = nextCupMatch(C)) && !m.playerInvolved) { simulateCupMatch(C, m); cupPropagate(C); }
+        saveCup(C); render();
+      };
       row.appendChild(b);
     }
   } else {
@@ -4343,6 +4384,7 @@ function startAtBat() {
   /* Belt and braces: nothing starts an at bat after a walk-off, whichever
      path scored the run. */
   if (g.walkoff) { g.over = true; g.winner = 'home'; return finishGame(); }
+  hideInningBoard();
   g.balls = 0; g.strikes = 0;
   /* Open this half inning's bucket on the line score so the board shows a
      zero for an inning in progress and stays blank for ones not reached. */
@@ -4514,8 +4556,12 @@ function offerPitchSelection() {
   const rep = pitcherRepertoire(currentPitcher());
   const typeRow = row.querySelector('.type-row');
   if (typeRow) {
-    typeRow.innerHTML = rep.map(pt =>
-      `<button class="btn ghost" data-pt="${pt}">${PITCHES[pt].label}</button>`).join('');
+    const ctx = g.batterCtx || {};
+    typeRow.innerHTML = rep.map(pt => {
+      const weak = ctx.weakKnown && pt === ctx.weakPitch;
+      return `<button class="btn ghost${weak ? ' weak' : ''}" data-pt="${pt}">${PITCHES[pt].label}`
+        + (weak ? '<span class="weakmark">weak</span>' : '') + `</button>`;
+    }).join('');
   }
   row.style.display = '';
   let chosenPt = null, chosenZone = null;
@@ -4676,6 +4722,14 @@ function throwPitch(chosenPt, chosenZone) {
   if (!g.batterCtx.weakPitch) {
     g.batterCtx.weakPitch = rep[Math.floor(Math.random()*rep.length)];
   }
+  /* Finding it is the reward for calling pitches, so it is said the moment
+     it happens: a plaque, a log line, a mark on the at bat card and on the
+     button, all for the rest of this at bat. The next batter hides a new one. */
+  if (chosenPt && !playerIsBatting() && pt === g.batterCtx.weakPitch && !g.batterCtx.weakKnown) {
+    g.batterCtx.weakKnown = true;
+    addLog(`${batter.n} cannot handle the ${PITCHES[pt].label.toLowerCase()}.`, true);
+    showCallout(`WEAK PITCH · ${PITCHES[pt].label}`, 'hit');
+  }
   let baseSpeed = diff.speed * meterScale()
     * PITCHES[pt].speed
     / (0.85 + pitcher.pow / 400);
@@ -4745,11 +4799,15 @@ function throwPitch(chosenPt, chosenZone) {
   /* Windup: the meter is on screen but does not sweep for a beat. This is
      the player's chance to see the pitcher, the pitch type, the ideal spot,
      and settle. `start` gets set when the sweep actually begins. */
+  /* The windup is the batter's beat to read the pitcher, and when the
+     player is the pitcher there is nothing to read: they chose the pitch
+     and the spot, and waited a full second for it to leave. Half that. */
+  const windup = playerIsBatting() ? BEAT.windup : Math.round(BEAT.windup * 0.45);
   g.pitch = {
     pt, speed: baseSpeed, ideal, isStrike,
     zoneAim,
-    start: performance.now() + BEAT.windup,
-    windupUntil: performance.now() + BEAT.windup,
+    start: performance.now() + windup,
+    windupUntil: performance.now() + windup,
     swung: false,
     hit: false,
   };
@@ -5822,6 +5880,10 @@ function endHalfInning() {
     addLog(`Tied after ${g.innings}. Extra innings.`, true);
     setTimeout(() => { if (State.game === g && !g.over) showCallout('EXTRA INNINGS', 'homer'); }, 1200);
   }
+  /* The plaque has its moment, then the board sits under it for the rest
+     of the beat. startAtBat takes it down. */
+  boardTimer = setTimeout(() => { if (State.game === g && !g.over) showInningBoard(); },
+                          Math.min(900, Math.round(BEAT.betweenHalfInnings * 0.3)));
   setTimeout(startAtBat, BEAT.betweenHalfInnings);
 }
 
@@ -7422,7 +7484,7 @@ function renderGame() {
     + `<button class="btn ghost" data-pt="changeup">Changeup</button>`
     + `</div></div>`
     + `<div class="col"><span class="lbl">Location</span>`
-    + `<div class="zone-grid" id="zone-grid">${zoneHtml}</div></div>`
+    + zoneWrapHtml(`<div class="zone-grid" id="zone-grid">${zoneHtml}</div>`) + `</div>`
     + `<div class="col"><span class="lbl">Deliver</span>`
     + `<button class="btn" id="throw-btn" disabled>Throw It</button>`
     + `<span class="throw-hint" id="throw-hint">Pick a pitch.</span></div>`;
@@ -7511,6 +7573,44 @@ function drainToasts() {
   }, 1700);
 }
 
+/* BETWEEN INNINGS THE FIELD SHOWS SOMETHING. The three seconds between
+   halves were the longest nothing in the game: an empty diamond and a
+   plaque that had already faded. The board names the half and the score,
+   the three batters due, and whose arm it is and how much is left in it. */
+let boardTimer = 0;
+function showInningBoard() {
+  const g = State.game;
+  const arena = document.querySelector('#app .arena');
+  if (!g || g.over || !arena) return;
+  hideInningBoard();
+  const bat = currentBattingTeam();
+  const pitcher = currentPitcher();
+  const due = [0, 1, 2].map(i => bat.batters[(bat.idx + i) % 9]);
+  const fat = pitcherFatigue();
+  const arm = fat.level >= 3 ? 'gassed' : fat.level === 2 ? 'tiring' : fat.level === 1 ? 'warm' : 'fresh';
+  const board = el('div', 'board');
+  board.id = 'inning-board';
+  board.appendChild(el('div', 'board-head',
+    `<b>${g.half === 'top' ? 'Top' : 'Bottom'} ${g.inning}</b>`
+    + `<span>${bat.isYou ? 'You bat' : 'You pitch'} · ${g.away.name} ${g.away.score}, ${g.home.name} ${g.home.score}</span>`));
+  const row = el('div', 'board-due');
+  row.appendChild(el('span', 'lbl', 'Due up'));
+  for (const b of due) {
+    const d = el('div', 'due');
+    d.appendChild(spriteCanvas(b, 32));
+    d.appendChild(el('span', null, b.n));
+    row.appendChild(d);
+  }
+  board.appendChild(row);
+  board.appendChild(el('div', 'board-arm', `On the mound: <b>${pitcher.n}</b> · arm ${arm}`));
+  arena.appendChild(board);
+}
+function hideInningBoard() {
+  clearTimeout(boardTimer);
+  const b = document.getElementById('inning-board');
+  if (b) b.remove();
+}
+
 let calloutTimer = 0;
 function showCallout(text, kind) {
   const node = document.getElementById('callout');
@@ -7525,13 +7625,16 @@ function refreshAtBatCard(node) {
   const g = State.game;
   const b = currentBatter();
   const p = currentPitcher();
+  const ctx = g.batterCtx || {};
+  const weak = !playerIsBatting() && ctx.weakKnown && PITCHES[ctx.weakPitch]
+    ? ` · <b class="weak">weak vs ${PITCHES[ctx.weakPitch].label}</b>` : '';
   node.innerHTML = '';
   const avatar = spriteCanvas(b, 48);
   avatar.className = 'avatar';
   node.appendChild(avatar);
   const info = el('div', null,
     `<div class="who"><b>${b.n}</b> at bat${formChip(b.k)}</div>`
-    + `<div class="vs">vs ${p.n} pitching · POW ${b.pow} · CON ${b.con} · SPD ${b.spd}</div>`
+    + `<div class="vs">vs ${p.n} pitching · POW ${b.pow} · CON ${b.con} · SPD ${b.spd}${weak}</div>`
   );
   node.appendChild(info);
   const count = el('div','count', `${g.balls}-${g.strikes}`);
@@ -7943,12 +8046,17 @@ function howtoThrow() {
     drawThrowBar(ctx, w, h, w / 2, { ideal: 0.55, greenHalf: 0.07, yellowHalf: 0.14 }, 0.41);
   });
 }
+/* The four words around the grid. Every grid on the site goes through
+   here so the picture in How To Play cannot drift from the one in the game. */
+function zoneWrapHtml(grid) {
+  return `<div class="zone-wrap"><span class="zl top">High</span><span class="zl left">In</span>`
+    + grid + `<span class="zl right">Out</span><span class="zl bot">Low</span></div>`;
+}
 function howtoGrid() {
   const wrap = el('div', 'howto-grid');
-  const grid = el('div', 'zone-grid');
   const cells = ['corner','mid','corner','mid','center','mid','corner','mid','corner'];
-  grid.innerHTML = cells.map(c => `<button class="${c}" disabled></button>`).join('');
-  wrap.appendChild(grid);
+  wrap.innerHTML = zoneWrapHtml(`<div class="zone-grid">`
+    + cells.map(c => `<button class="${c}" disabled></button>`).join('') + `</div>`);
   wrap.appendChild(el('p', null,
     '<b>Middle</b> (dark green): always a strike, easiest to hit.<br>'
     + '<b>Edges</b> (light green): harder to hit, sometimes a ball.<br>'
@@ -8000,7 +8108,8 @@ function renderHowTo() {
   add(pitch,
       '<p>Better control (CON) means your pitcher hits the spot more often. Every '
     + 'batter has one pitch they cannot handle: throw it and their timing falls '
-    + 'apart.</p>'
+    + 'apart. The plaque reads WEAK PITCH the first time you find it, and the '
+    + 'button stays marked for the rest of the at bat.</p>'
     + '<p>Pitchers tire. Past the third inning the chip above the mound reads WARM, '
     + 'then TIRING, then GASSED, and a tired arm loses the plate.</p>');
   s.appendChild(pitch);
