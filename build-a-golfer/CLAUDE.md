@@ -18000,3 +18000,36 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: the tier table in `csPressStyle` (wall/desk/mic/camera counts + the `hide`/`drop` desk
   fractions), `csStepRows` (the media-wall repeat), `csMicSVG` (the microphone), and `csBulbsHTML`/`.cs-pop`
   (the camera flashes).
+
+### DESK + CLUBHOUSE BACKDROPS: the other cutscene rooms get depth too (task #55, NOT deployed)
+- **The follow-up to the press room** (#54). Beats that carry a `frame:'presser'` now open in a full seated
+  press room; but the OTHER cutscene backdrops - the analyst DESK (the standing-golfer commentary set, used
+  by ~9 scenes) and the CLUBHOUSE (interior/life beats, ~10 scenes) - were still flat boxes: `csDeskHTML`
+  was a plain dark-blue panel, `csClubHTML` a plain brown wall. They now get the same dimensional treatment
+  the press/course/feed/range/night rooms already have.
+- **`csDeskHTML` is a BROADCAST STUDIO behind a STANDING golfer, not a seated press desk** - the distinction
+  read off `csPlay` (the `.press` stage class + `--dh`/`--csink` + the seated desk furniture only apply when
+  `frame==='presser'`). So it is built as a TV analyst set: a curved video WALL (`left:5% right:5% top:8%
+  height:47% border-radius:16px/26px`) carrying the event name + year, per-TIER inner treatment (major = a
+  gold frame + drapes; playoff/cup/games = 3 LED ribbons; else = a tech grid), LED ribbons on the set for
+  the big weeks, a receding studio floor with the converging-perspective idiom (thin absolute divs rotated
+  `i*16deg`, `transform-origin:50% 0`, bottom-gradient masked), a floor light pool, a foreground anchor
+  console (`bottom:0 height:13%` with a lit accent rim), and a vignette. Seeded by `mulberry32(W.seed^0x5115)`.
+- **`csClubHTML` is a dimensional wood-panelled clubhouse**: venue-material wood via
+  `hvHexShift((B.trunk||'#5a3a1e'), hue, sat, light)`, a panelled wall gradient + plank grain
+  (repeating-linear-gradient at 11.5%/23%), a pendant light pool, a WINDOW onto the venue (a
+  `linear-gradient` from the sky through `csDark(B.fw...)` to `csDark(B.base...)` with cross mullions - day
+  or dusk per seed), two framed prints, a shelf with a gold trophy shape, a wainscot rail at `top:62%`, a
+  receding wood floor with the same converging-perspective lines, a warm floor light pool, and a vignette.
+  Seeded by `mulberry32(W.seed^0x0c1b)`. **NO golf bag in any form** (the standing owner rule).
+- **`csWallHTML` left as-is** - the pre-existing step-and-repeat media wall (1 scene) is already serviceable.
+- Verified: rendered every room x 5 tiers (major/sig/league/reg/playoff) via `scratchpad/room_shot.mjs`
+  (`errs=0`, 0 page errors) and eyeballed the after-shots. The desk reads as a distinct analyst set per tier
+  (major gold-framed "THE MAGNOLIA INVITATIONAL / 2031", playoff LED-ribbon "THE TOUR CHAMPIONSHIP", sig
+  tech-grid "THE BAY CLASSIC") with the standing golfer in the floor light pool; the clubhouse reads as a
+  warm wood room with a window onto a day/dusk course, prints, a trophy and a receding lit floor, at every
+  tier. The desk edge / console / wall never clip the standing figure. Parse-check as documented (block 0 =
+  the JSON-LD tag, fails identically on baseline; the 5 real script blocks parse).
+- **NOT deployed** - held at the standing explain-before-deploy gate.
+- Tunable: the per-tier inner treatment in `csDeskHTML` (frame/ribbon/grid + accent), the window scene +
+  prints/trophy in `csClubHTML`, and the shared converging-floor + light-pool + vignette idiom.
