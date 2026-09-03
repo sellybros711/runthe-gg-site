@@ -20496,7 +20496,7 @@ function csWeek(ctx){
 function csRoomFor(b, room){
   const fr=b&&b.frame;
   if(b&&b.bg) return b.bg;            // a beat can name its own room
-  if(fr==='presser') return 'wall';
+  if(fr==='presser') return 'press';
   if(fr==='feed') return 'feed';
   return room||'course';
 }
@@ -20573,12 +20573,225 @@ function csWallHTML(W){
       background-image:radial-gradient(120% 82% at 50% -12%, ${csRgba(acc,.20)}, transparent 64%)"></div>
     <div class="cs-wall">${rows}</div>`;
 }
+/* ---- the press room ----------------------------------------------------------------------------
+   A press conference is a ROOM, not a backdrop. The TIER decides the room (a major gets a crested
+   wall, hardwood and three mics; a Tuesday regular stop gets a trestle table and one), the VENUE's
+   own biome decides the materials, and the event NAME is folded into W.seed, so two tournaments of
+   the same size never dress the same room. Owner: "make it feel like you're going into different
+   press conference rooms", "the desk can also change depending on where you are". */
+function csPressStyle(W){
+  const t=(W.tier&&W.tier.id)||'reg', acc=(W.tier&&W.tier.acc)||'#5fd0e0';
+  const r=mulberry32((((W.seed||1)^0x7a11)>>>0));
+  const st={tier:t, acc:acc};
+  // the bigger the week, the bigger the room: more cameras, a deeper desk, a wall built for it
+  // hide/drop are fractions OF THE GOLFER, not of the stage: the desk has to sit at his chest at any
+  // viewport, and the stage is far taller than the figure on a phone.
+  if(t==='major')                 Object.assign(st,{wall:'crest', desk:'oak',     mics:3, bulbs:9, hide:.50, drop:.10, glow:.26});
+  else if(t==='playoff')          Object.assign(st,{wall:'led',   desk:'gloss',   mics:3, bulbs:8, hide:.48, drop:.09, glow:.22});
+  else if(t==='cup'||t==='games') Object.assign(st,{wall:'drape', desk:'skirt',   mics:2, bulbs:7, hide:.48, drop:.09, glow:.20});
+  else if(t==='league')           Object.assign(st,{wall:'panel', desk:'gloss',   mics:2, bulbs:6, hide:.46, drop:.08, glow:.18});
+  else if(t==='sig')              Object.assign(st,{wall:(r()<.5?'panel':'repeat'), desk:'skirt', mics:2, bulbs:5, hide:.46, drop:.08, glow:.16});
+  else                            Object.assign(st,{wall:'repeat', desk:'trestle', mics:1, bulbs:4, hide:.42, drop:.06, glow:.13});
+  // the room's own paint: this week's accent, rotated and desaturated PER TOURNAMENT, so two majors
+  // are not the same gold box
+  st.hue=Math.round(-28+r()*56); st.tilt=(-3.6+r()*2.4).toFixed(1); st.rows=10+Math.floor(r()*5);
+  try{ st.wallCol=hvHexShift(csDark(acc,.14), st.hue, .85+r()*.55, .45+r()*.65); }catch(e){ st.wallCol=csDark(acc,.14); }
+  // the furniture is made of whatever the venue is made of: pine at Magnolia, driftwood grey on a links,
+  // pale sand in the desert
+  const B=W.B||CS_B0, wood=(typeof B.trunk==='string'&&B.trunk)||B.outline||'#4a3018';
+  try{ st.wood=hvHexShift(wood, Math.round(-8+r()*16), .92+r()*.3, .8+r()*.5); }catch(e){ st.wood=wood; }
+  st.seed=(W.seed||1)>>>0;
+  return st;
+}
+// the step-and-repeat everybody stands in front of: THIS tournament, THIS year, over and over
+function csStepRows(nm,yr,acc,rows,alpha){
+  let out='';
+  for(let r=0;r<rows;r++){
+    let cells='';
+    for(let c=0;c<5;c++) cells+=`<span class="cs-wnm" style="opacity:${alpha}">${esc(nm)}</span><span class="cs-wyr" style="color:${acc};opacity:${alpha*1.6}">${esc(yr)}</span>`;
+    out+=`<div class="cs-wrow" style="margin-left:${(r%2)?-11:0}%">${cells}</div>`;
+  }
+  return out;
+}
+function csRoomPressHTML(W){
+  const st=csPressStyle(W), acc=st.acc;
+  const nm=String(W.evtName||'The Tour').toUpperCase(), yr=W.year?String(W.year):'';
+  const base=st.wallCol, deep=csDark(base,.58), lite=csDark(base,1.34);
+  let h='';
+  // the room's light: a pool where the lamps are, dark in the corners
+  h+=`<div class="cs-r" style="background:linear-gradient(180deg,${lite} 0%,${base} 44%,${deep} 100%)"></div>`;
+  h+=`<div class="cs-r" style="background:radial-gradient(124% 86% at 50% -14%, ${csRgba(acc,st.glow)}, transparent 62%)"></div>`;
+  if(st.wall==='repeat'){
+    h+=`<div class="cs-wall" style="transform:rotate(${st.tilt}deg)">${csStepRows(nm,yr,acc,st.rows,.40)}</div>`;
+  } else if(st.wall==='crest'){
+    // a major hangs its own crest in the middle of the wall and drapes the sides
+    h+=`<div class="cs-wall" style="transform:rotate(${st.tilt}deg);opacity:.5">${csStepRows(nm,yr,acc,st.rows,.34)}</div>`;
+    h+=`<div class="cs-drape" style="left:-4%;width:24%;background:linear-gradient(90deg,${csDark(base,.5)},${csDark(base,.86)})"></div>`;
+    h+=`<div class="cs-drape" style="right:-4%;width:24%;background:linear-gradient(270deg,${csDark(base,.5)},${csDark(base,.86)})"></div>`;
+    h+=`<div class="cs-crest" style="border-color:${csRgba(acc,.7)};background:radial-gradient(circle at 50% 34%, ${csRgba(acc,.24)}, ${csRgba('#000000',.34)} 74%)">
+          <span class="cs-crestn" style="color:${csLite(acc,.6)}">${esc(nm)}</span>
+          <span class="cs-cresty" style="color:${acc}">${esc(yr)}</span></div>`;
+  } else if(st.wall==='led'){
+    // the playoffs light the room: glowing ribbons and a lit name bar
+    h+=`<div class="cs-panel" style="opacity:.45"></div>`;
+    [18,40,62].forEach((y,k)=>{ h+=`<div class="cs-led" style="top:${y}%;background:linear-gradient(90deg,transparent,${acc},transparent);
+        opacity:${.5-k*.09};box-shadow:0 0 22px ${csRgba(acc,.5)}"></div>`; });
+    h+=`<div class="cs-namebar" style="border-color:${csRgba(acc,.6)};background:${csRgba(acc,.14)};color:${csLite(acc,.5)};
+          box-shadow:0 0 30px ${csRgba(acc,.3)} inset">${esc(nm)}${yr?` · ${esc(yr)}`:''}</div>`;
+  } else if(st.wall==='drape'){
+    // a team week hangs fabric and a banner
+    h+=`<div class="cs-r" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.26)} 0 3px,transparent 3px 34px,${csRgba('#ffffff',.05)} 34px 37px,transparent 37px 68px)"></div>`;
+    h+=`<div class="cs-banner" style="border-color:${csRgba(acc,.55)};background:linear-gradient(180deg,${csRgba(acc,.22)},${csRgba('#000000',.4)});color:${csLite(acc,.55)}">
+          ${esc(nm)}${yr?`<span style="opacity:.7;margin-left:8px">${esc(yr)}</span>`:''}</div>`;
+    h+=`<div class="cs-wall" style="transform:rotate(${st.tilt}deg);opacity:.32">${csStepRows(nm,yr,acc,st.rows,.3)}</div>`;
+  } else {
+    // panelled: the interview room of a tour headquarters
+    h+=`<div class="cs-panel" style="opacity:.6"></div>`;
+    h+=`<div class="cs-r" style="background-image:repeating-linear-gradient(0deg,transparent 0 46px,${csRgba(acc,.10)} 46px 48px)"></div>`;
+    h+=`<div class="cs-wall" style="transform:rotate(${st.tilt}deg);opacity:.55">${csStepRows(nm,yr,acc,st.rows,.36)}</div>`;
+    h+=`<div class="cs-namebar" style="border-color:${csRgba(acc,.45)};background:${csRgba('#000000',.42)};color:${csLite(acc,.4)}">${esc(nm)}</div>`;
+  }
+  // the corners fall away, so the wall reads as a room and not a poster
+  h+=`<div class="cs-r" style="background:radial-gradient(120% 100% at 50% 40%, transparent 44%, rgba(0,0,0,.55) 100%)"></div>`;
+  return h;
+}
+// a microphone with a broadcaster's flag on it. A press table has several, all pointed at you.
+function csMicSVG(col,h,flag){
+  const w=Math.round(h*0.44);
+  // a fine wire mesh on the windscreen: horizontal rings + vertical wires, each clipped to the ball
+  const hcx=12, hcy=8, hrx=6, hry=7; let mesh='';
+  for(let i=1;i<=6;i++){                             // grille rings
+    const yy=hcy-hry + i*(hry*2/7), dy=(yy-hcy)/hry, ww=hrx*Math.sqrt(Math.max(0,1-dy*dy));
+    mesh+=`<line x1="${(hcx-ww).toFixed(1)}" y1="${yy.toFixed(1)}" x2="${(hcx+ww).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="#8ba3b0" stroke-width="0.5" opacity=".7"/>`;
+  }
+  for(let j=1;j<=5;j++){                             // vertical wires
+    const xx=hcx-hrx + j*(hrx*2/6), dx=(xx-hcx)/hrx, hh=hry*Math.sqrt(Math.max(0,1-dx*dx));
+    mesh+=`<line x1="${xx.toFixed(1)}" y1="${(hcy-hh).toFixed(1)}" x2="${xx.toFixed(1)}" y2="${(hcy+hh).toFixed(1)}" stroke="#8ba3b0" stroke-width="0.5" opacity=".5"/>`;
+  }
+  return `<svg viewBox="0 0 24 44" width="${w}" height="${h}" aria-hidden="true" style="display:block">
+    <ellipse cx="12" cy="41.6" rx="7" ry="1.9" fill="#0c1319"/>
+    <path d="M7.6 40.8 q4.4 1.7 8.8 0 l-1.2 -3.4 q-3.2 1.05 -6.4 0 z" fill="#20303a"/>
+    <rect x="10.6" y="21.5" width="2.8" height="16.5" rx="1.4" fill="#2b3a44"/>
+    <rect x="11.55" y="22" width="0.7" height="15.5" rx="0.35" fill="#54707d" opacity=".85"/>
+    <rect x="8.4" y="18.8" width="7.2" height="3.6" rx="1.5" fill="#1a262e"/>
+    <rect x="8.4" y="19.5" width="7.2" height="0.7" fill="#5a7784" opacity=".7"/>
+    <rect x="8.8" y="12.8" width="6.4" height="7.4" rx="1.7" fill="#2b3a44"/>
+    <rect x="9" y="14.6" width="6" height="0.8" fill="#101c22"/>
+    <rect x="9" y="16.4" width="6" height="0.8" fill="#101c22"/>
+    <rect x="9" y="18.2" width="6" height="0.8" fill="#101c22"/>
+    <ellipse cx="12" cy="8" rx="6" ry="7" fill="${col||'#d6e1e8'}"/>
+    <ellipse cx="12" cy="8" rx="6" ry="7" fill="none" stroke="#9fb8c6" stroke-width="0.8"/>
+    ${mesh}
+    <ellipse cx="9.6" cy="5" rx="1.6" ry="2.2" fill="#f2f7fa" opacity=".5"/>
+    ${flag?`<rect x="4.3" y="24" width="15.4" height="10.6" rx="1.7" fill="${flag}" opacity=".95"/>
+      <rect x="4.3" y="24" width="15.4" height="3" rx="1.7" fill="rgba(255,255,255,.18)"/>
+      <rect x="4.3" y="24" width="15.4" height="10.6" rx="1.7" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="0.7"/>`:''}</svg>`;
+}
+// a water glass on the desk: the small prop that sells a real press table
+function csGlassSVG(){
+  return `<svg viewBox="0 0 22 30" width="13" height="18" aria-hidden="true" style="display:block">
+    <path d="M4.4 3 h13.2 l-1.5 22 a3.3 3.3 0 0 1 -10.2 0 z" fill="rgba(176,208,224,.20)" stroke="rgba(214,238,247,.55)" stroke-width="0.8"/>
+    <path d="M5.7 15 l10.6 0 -0.95 9.6 a2.7 2.7 0 0 1 -8.1 0 z" fill="rgba(110,176,210,.42)"/>
+    <path d="M6 15.4 l10 0 -0.2 2 -9.6 0 z" fill="rgba(226,245,252,.5)"/>
+    <ellipse cx="8" cy="8" rx="1.1" ry="3.4" fill="rgba(255,255,255,.45)"/>
+  </svg>`;
+}
+/* The desk you sit behind, and what is on it. The FORM comes from the tier, the MATERIAL from the
+   venue, so a major at a pine parkland is warm hardwood and a links signature event is driftwood
+   grey. Depth is faked, not transformed: the top is a trapezoid that recedes, a lit front lip sits
+   over a shaded front face with a modesty panel, and the ends fall into shadow so the desk reads as
+   a solid object rather than a coloured bar. Owner: "more detail or perspective on the desk." */
+function csPressDeskHTML(W,st,name){
+  const acc=st.acc, wood=st.wood||'#4a3018';
+  const r=mulberry32((st.seed^0x5b0d)>>>0);
+  let top, face, lip, panel='', front='';
+  if(st.desk==='oak'){
+    top=`linear-gradient(180deg,${csDark(wood,1.62)} 0%,${csDark(wood,1.2)} 52%,${csDark(wood,.86)} 100%)`;
+    face=`linear-gradient(180deg,${csDark(wood,.94)} 0%,${csDark(wood,.6)} 100%)`;
+    lip=`linear-gradient(180deg,${csDark(wood,1.9)},${csDark(wood,1.1)})`;
+    panel=`<div class="cs-dpanel" style="border-color:${csRgba('#000000',.4)};background:linear-gradient(180deg,${csDark(wood,.74)},${csDark(wood,.5)})"></div>`;
+    front=`<div class="cs-dedge" style="background:${csRgba(acc,.55)}"></div>
+      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.17)} 0 2px,transparent 2px 46px),repeating-linear-gradient(90deg,${csRgba('#ffffff',.05)} 0 1px,transparent 1px 46px)"></div>`;
+  } else if(st.desk==='gloss'){
+    top=`linear-gradient(180deg,#2b3640 0%,#141d25 58%,#0a1015 100%)`;
+    face=`linear-gradient(180deg,#131b21 0%,#060b0f 100%)`;
+    lip=`linear-gradient(180deg,${csRgba(acc,.5)},#1a242c)`;
+    panel=`<div class="cs-dpanel" style="border-color:${csRgba(acc,.3)};background:linear-gradient(180deg,#0f171d,#05090c);box-shadow:inset 0 0 22px ${csRgba(acc,.14)}"></div>`;
+    front=`<div class="cs-dedge" style="background:${acc};box-shadow:0 0 20px ${csRgba(acc,.6)}"></div>
+      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#ffffff',.05)} 0 1px,transparent 1px 58px)"></div>`;
+  } else if(st.desk==='skirt'){
+    const cloth=csDark(st.wallCol||acc,.5);
+    top=`linear-gradient(180deg,${csDark(cloth,1.75)} 0%,${csDark(cloth,1.22)} 100%)`;
+    face=`linear-gradient(180deg,${cloth} 0%,${csDark(cloth,.55)} 100%)`;
+    lip=`linear-gradient(180deg,${csDark(cloth,1.95)},${csDark(cloth,1.3)})`;
+    front=`<div class="cs-dedge" style="background:${csRgba(acc,.45)}"></div>
+      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.24)} 0 3px,${csRgba('#ffffff',.03)} 3px 5px,transparent 5px 26px)"></div>
+      <div class="cs-dname" style="color:${csRgba('#ffffff',.5)};border-color:${csRgba(acc,.32)}">${esc(String(W.evtName||'').toUpperCase())}</div>`;
+  } else {
+    // a folding trestle table: a muted mid tone built from the accent hue so it ALWAYS reads against a dark
+    // room, instead of borrowing the near-black wall colour it used to vanish into on a regular week
+    let cloth; try{ cloth=hvHexShift(acc, 0, .4, .5); }catch(e){ cloth=csDark(acc,.5); }
+    top=`linear-gradient(180deg,${csDark(cloth,1.7)} 0%,${csDark(cloth,1.15)} 100%)`;
+    face=`linear-gradient(180deg,${csDark(cloth,.95)} 0%,${csDark(cloth,.58)} 100%)`;
+    lip=`linear-gradient(180deg,${csDark(cloth,2)},${csDark(cloth,1.3)})`;
+    front=`<div class="cs-dedge" style="background:${csRgba(acc,.4)}"></div>
+      <div class="cs-dgrain" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.22)} 0 2px,${csRgba('#ffffff',.04)} 2px 3px,transparent 3px 30px)"></div>`;
+  }
+  // the mics, fanned across the table and pointed at whoever is sitting there
+  let mics='';
+  for(let i=0;i<(st.mics||1);i++){
+    const h=Math.round(34+r()*10), fl=(i===0)?acc:(r()<.5?csDark(acc,1.4):'#c9d3da');
+    mics+=`<span style="transform:rotate(${(-7+r()*14).toFixed(1)}deg) translateY(${(r()*3).toFixed(1)}px)">${csMicSVG('#e3edf3',h,fl)}</span>`;
+  }
+  const plate = (st.desk==='oak'||st.desk==='gloss')
+    ? `<div class="cs-dplate" style="border-color:${csRgba(acc,.7)};background:linear-gradient(180deg,${csRgba(acc,.9)},${csDark(acc,.72)});color:#0a1216">${esc(String(name||'').toUpperCase())}</div>`
+    : '';
+  // a glass of water on the bigger desks: a small prop that reads as a real table
+  const glass = (st.desk==='oak'||st.desk==='gloss')
+    ? `<span class="cs-dglass" style="${(st.mics||1)>1?'right:15%':'right:22%'}">${csGlassSVG()}</span>` : '';
+  return `<div class="cs-desk">
+    <div class="cs-microw">${mics}</div>
+    <div class="cs-dtop" style="background:${top}"><span class="cs-dsheen"></span></div>
+    <div class="cs-dlip" style="background:${lip}"></div>
+    <div class="cs-dface" style="background:${face}">${front}${panel}
+      <div class="cs-dside l"></div><div class="cs-dside r"></div></div>
+    ${glass}${plate}
+  </div>`;
+}
+function csBulbsHTML(st){
+  const r=mulberry32((st.seed^0x1f3c)>>>0);
+  let out='';
+  for(let i=0;i<(st.bulbs||4);i++){
+    const l=(3+r()*94).toFixed(1), t=(6+r()*46).toFixed(1), s=(9+r()*13).toFixed(0);
+    const dur=(1.9+r()*2.6).toFixed(2), del=(r()*3.4).toFixed(2);
+    out+=`<span class="cs-bulb" style="left:${l}%;top:${t}%;width:${s}px;height:${s}px;animation-duration:${dur}s;animation-delay:${del}s"></span>`;
+  }
+  return `<div class="cs-bulbs">${out}</div>`;
+}
 // NOTE the name. csFeedHTML is already taken further down by the fan-post builder the FEED FRAME uses,
 // and a function declaration hoists, so the later one wins for everybody: naming this csFeedHTML made the
 // feed ROOM render a fan post reading "[object Object]". Keep room builders on the csRoom* prefix.
 function csRoomFeedHTML(W){
-  return `<div class="cs-r" style="background:radial-gradient(120% 90% at 50% 0%, ${csRgba(W.tier.acc,.16)}, rgba(3,7,9,1) 66%)"></div>
-    <div class="cs-r" style="background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px);opacity:.6"></div>`;
+  const acc=W.tier.acc;
+  // a wall of ghost posts drifting behind the fan reaction: depth, not a flat gradient
+  let cards='';
+  try{
+    const r=mulberry32((((W.seed||1)^0x33af)>>>0));
+    for(let i=0;i<8;i++){
+      const x=(3+r()*84).toFixed(1), y=(4+r()*82).toFixed(1), w=(16+r()*22).toFixed(0), h=(8+r()*8).toFixed(0);
+      const a=(.04+r()*.07), rot=(-4+r()*8).toFixed(1);
+      cards+=`<div style="position:absolute;left:${x}%;top:${y}%;width:${w}%;height:${h}%;border-radius:8px;transform:rotate(${rot}deg);
+        background:${csRgba('#ffffff',a)};border:1px solid ${csRgba(acc,a*2.4)};box-shadow:0 8px 22px rgba(0,0,0,.32)">
+        <div style="position:absolute;left:7%;top:16%;width:22%;height:38%;border-radius:50%;background:${csRgba(acc,a*3)}"></div>
+        <div style="position:absolute;left:34%;top:22%;right:9%;height:14%;border-radius:3px;background:${csRgba('#ffffff',a*2.4)}"></div>
+        <div style="position:absolute;left:34%;top:44%;right:16%;height:11%;border-radius:3px;background:${csRgba('#ffffff',a*1.6)}"></div></div>`;
+    }
+  }catch(e){}
+  return `<div class="cs-r" style="background:radial-gradient(120% 90% at 50% 0%, ${csRgba(acc,.18)}, rgba(3,7,9,1) 66%)"></div>
+    <div class="cs-r" style="background:radial-gradient(78% 58% at 84% 90%, ${csRgba(acc,.10)}, transparent 60%)"></div>
+    ${cards}
+    <div class="cs-r" style="background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 5px);opacity:.5"></div>
+    <div class="cs-r" style="background:radial-gradient(120% 100% at 50% 42%, transparent 50%, rgba(0,0,0,.52) 100%)"></div>`;
 }
 function csRangeHTML(W){
   const B=W.B||CS_B0, K=CS_SKY.dawn;
@@ -20599,27 +20812,99 @@ function csRangeHTML(W){
   h+=`<div class="cs-band" style="bottom:2%;height:5%;background:${csDark(B.outline||'#1e3d16',1.9)};opacity:.7"></div>`;
   return h;
 }
+/* The clubhouse: a warm, wood-panelled room, not a flat brown wall. A window looks out on THIS venue,
+   framed prints and a trophy dress the far wall, a pendant pool of light falls from above, and the wood
+   floor recedes to a vanishing point so the golfer stands IN a room. The wood is the venue's own material
+   (pine at a parkland, driftwood grey on a links). Owner: no golf bag, in any form. */
 function csClubHTML(W){
-  const acc=W.tier.acc, wood='#3a2416';
-  return `<div class="cs-r" style="background:linear-gradient(180deg,${csDark(wood,1.35)} 0%,${wood} 54%,${csDark(wood,.72)} 100%)"></div>
-    <div class="cs-panel"></div>
-    <div class="cs-r" style="background:radial-gradient(70% 46% at 50% 0%, ${csRgba('#ffcf92',.22)}, transparent 66%)"></div>
-    <div style="position:absolute;left:6%;top:16%;width:26%;height:34%;border:2px solid ${csRgba('#f0dcae',.35)};
-      background:linear-gradient(180deg,${csDark(W.sky.mid,.9)} 0%,${csDark((W.B||CS_B0).fw,.8)} 100%);opacity:.85"></div>
-    <div style="position:absolute;right:8%;top:20%;width:22%;height:30%;background:${csRgba(acc,.14)};
-      border:1px solid ${csRgba(acc,.4)};box-shadow:0 0 26px ${csRgba(acc,.28)} inset"></div>
-    <div style="position:absolute;left:0;right:0;bottom:0;height:18%;background:${csDark(wood,.55)}"></div>`;
+  const acc=(W.tier&&W.tier.acc)||'#5fd0e0', B=W.B||CS_B0, K=W.sky||CS_SKY.day;
+  const r=mulberry32((((W.seed||1)^0x0c1b)>>>0));
+  let wood; try{ wood=hvHexShift((typeof B.trunk==='string'&&B.trunk)||'#5a3a1e', Math.round(-6+r()*12), .95+r()*.2, .82+r()*.3); }catch(e){ wood='#5a3a1e'; }
+  const mid=wood, dark=csDark(wood,.6);
+  let h='';
+  // 1. the panelled wall: warm gradient, vertical planks with grain, a pendant pool of light from above
+  h+=`<div class="cs-r" style="background:linear-gradient(180deg,${csDark(wood,1.18)} 0%,${mid} 52%,${dark} 100%)"></div>`;
+  h+=`<div class="cs-r" style="background-image:repeating-linear-gradient(90deg,${csRgba('#000000',.30)} 0 2px,transparent 2px 11.5%,${csRgba('#ffffff',.05)} 11.5% calc(11.5% + 1px),transparent calc(11.5% + 1px) 23%)"></div>`;
+  h+=`<div class="cs-r" style="background:radial-gradient(60% 44% at 63% -8%, ${csRgba('#ffd9a0',.32)}, transparent 60%)"></div>`;
+  // 2. a window out onto the venue this week is at
+  h+=`<div style="position:absolute;left:6%;top:15%;width:30%;height:40%;border-radius:5px;overflow:hidden;
+      border:3px solid ${csDark(wood,.5)};box-shadow:0 8px 22px rgba(0,0,0,.42), inset 0 0 28px ${csRgba('#ffe6b0',.22)}">
+      <div class="cs-r" style="background:linear-gradient(180deg,${K.top} 0%,${K.mid} 46%,${csDark(B.fw||CS_B0.fw,.92)} 58%,${csDark(B.base||CS_B0.base,.82)} 100%)"></div>
+      <div style="position:absolute;left:50%;top:0;bottom:0;width:3px;transform:translateX(-50%);background:${csDark(wood,.5)}"></div>
+      <div style="position:absolute;left:0;right:0;top:52%;height:3px;transform:translateY(-50%);background:${csDark(wood,.5)}"></div></div>`;
+  // 3. framed prints + a shelf with a trophy on the far wall
+  [[71,18,15,19],[89,23,7,13]].forEach(([x,y,w,ph])=>{ h+=`<div style="position:absolute;left:${x}%;top:${y}%;width:${w}%;height:${ph}%;border:2px solid ${csDark(wood,.55)};
+      background:linear-gradient(180deg,${csRgba(acc,.16)},${csRgba('#000000',.32)});box-shadow:0 4px 12px rgba(0,0,0,.4)"></div>`; });
+  h+=`<div style="position:absolute;left:64%;right:5%;top:47%;height:3px;background:${csDark(wood,.5)};box-shadow:0 3px 8px rgba(0,0,0,.35)"></div>`;
+  h+=`<div style="position:absolute;left:73.5%;top:40.5%;width:5%;height:6.5%;background:linear-gradient(180deg,#f0d47a,#b8912f);
+      border-radius:42% 42% 8% 8%/62% 62% 8% 8%;box-shadow:0 0 12px ${csRgba('#ffd66a',.5)}"></div>`;
+  // 4. a wainscot rail, then a wood floor that recedes to a vanishing point
+  h+=`<div style="position:absolute;left:0;right:0;top:62%;height:1.8%;background:linear-gradient(180deg,${csLite(wood,.4)},${csDark(wood,.5)});box-shadow:0 3px 8px rgba(0,0,0,.3)"></div>`;
+  h+=`<div style="position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,${csDark(wood,.7)} 0%,${csDark(wood,.42)} 58%,#120a04 100%)"></div>`;
+  let flr=''; for(let i=-3;i<=3;i++){ flr+=`<div style="position:absolute;left:50%;top:0;width:2px;height:150%;transform-origin:50% 0;transform:rotate(${i*15}deg);background:linear-gradient(180deg,transparent,${csRgba('#000000',.42)})"></div>`; }
+  h+=`<div style="position:absolute;left:0;right:0;bottom:0;height:24%;overflow:hidden;opacity:.5;
+      -webkit-mask-image:linear-gradient(180deg,transparent,#000 50%);mask-image:linear-gradient(180deg,transparent,#000 50%)">${flr}</div>`;
+  // 5. a warm pool of light where the golfer stands, and the corners fall away
+  h+=`<div style="position:absolute;left:50%;bottom:-4%;width:66%;height:24%;transform:translateX(-50%);background:radial-gradient(58% 100% at 50% 100%, ${csRgba('#ffcf92',.24)}, transparent 70%)"></div>`;
+  h+=`<div class="cs-r" style="background:radial-gradient(130% 108% at 50% 44%, transparent 44%, rgba(0,0,0,.55) 100%)"></div>`;
+  return h;
 }
+/* The analyst desk: a broadcast STUDIO, not a flat box. A curved glowing video wall carries this
+   tournament and year, lit LED ribbons cross the set, the studio floor recedes to a vanishing point and a
+   foreground anchor console runs along the bottom with a lit rim. The FORM comes from the tier (a major
+   gets a premium framed wall, the playoffs an LED-lit one) and the accent is rotated PER TOURNAMENT off
+   W.seed, so two studios never dress the same. */
 function csDeskHTML(W){
-  const acc=W.tier.acc, nm=String(W.evtName||'').toUpperCase();
-  return `<div class="cs-r" style="background:linear-gradient(180deg,#071722 0%,#040c12 100%)"></div>
-    <div class="cs-r" style="background-image:repeating-linear-gradient(90deg,${csRgba(acc,.09)} 0 1px,transparent 1px 30px),
-      repeating-linear-gradient(0deg,${csRgba(acc,.07)} 0 1px,transparent 1px 30px)"></div>
-    <div style="position:absolute;left:10%;right:10%;top:12%;height:40%;border:1px solid ${csRgba(acc,.45)};
-      background:linear-gradient(180deg,${csRgba(acc,.20)},${csRgba(acc,.04)});display:flex;align-items:center;justify-content:center;
-      font:900 12px/1 var(--body);letter-spacing:.24em;color:${csRgba(acc,.75)};overflow:hidden;white-space:nowrap">${esc(nm)}</div>
-    <div style="position:absolute;left:0;right:0;bottom:0;height:22%;background:linear-gradient(180deg,#0e2230,#050d14);
-      border-top:2px solid ${csRgba(acc,.5)}"></div>`;
+  const t=(W.tier&&W.tier.id)||'reg', acc=(W.tier&&W.tier.acc)||'#5fd0e0';
+  const nm=String(W.evtName||'The Tour').toUpperCase(), yr=W.year?String(W.year):'';
+  const r=mulberry32((((W.seed||1)^0x5115)>>>0));
+  const hue=Math.round(-30+r()*60);
+  let wall; try{ wall=hvHexShift(csDark(acc,.5), hue, .7+r()*.5, .5+r()*.5); }catch(e){ wall=csDark(acc,.5); }
+  const base=csDark(wall,.42), deep=csDark(wall,.2);
+  const bigWk=(t==='major'||t==='playoff'||t==='cup'||t==='games');
+  const glow=bigWk?.32:(t==='sig'||t==='league')?.24:.18;
+  let h='';
+  // 1. the studio: a lit ceiling falling to a dark floor
+  h+=`<div class="cs-r" style="background:linear-gradient(180deg,${csDark(wall,.72)} 0%,${base} 46%,${deep} 78%,#05090d 100%)"></div>`;
+  h+=`<div class="cs-r" style="background:radial-gradient(120% 62% at 50% -18%, ${csRgba(acc,glow)}, transparent 60%)"></div>`;
+  // 2. the curved video wall, carrying THIS tournament
+  const nameBlk=`<div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;padding:0 6%">
+      <div style="font:900 clamp(13px,4.4vw,26px)/1.05 var(--body);letter-spacing:.1em;color:${csLite(acc,.6)};
+        text-shadow:0 0 18px ${csRgba(acc,.6)};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(nm)}</div>
+      ${yr?`<div style="margin-top:5px;font:900 13px/1 var(--body);letter-spacing:.32em;color:${acc}">${esc(yr)}</div>`:''}</div>`;
+  let inner;
+  if(t==='major'){
+    // a major frames its name in gold and drapes the wall edges
+    inner=`<div class="cs-r" style="background:radial-gradient(88% 120% at 50% 42%, ${csRgba(acc,.34)}, ${csRgba('#000000',.34)} 74%)"></div>
+      <div style="position:absolute;left:6%;right:6%;top:14%;bottom:14%;border:2px solid ${csRgba(acc,.65)};border-radius:6px;
+        box-shadow:0 0 26px ${csRgba(acc,.4)} inset"></div>${nameBlk}`;
+  } else if(t==='playoff'||t==='cup'||t==='games'){
+    // the playoffs light the wall with glowing ribbons
+    let led=''; [26,50,74].forEach((y,k)=>{ led+=`<div style="position:absolute;left:0;right:0;top:${y}%;height:4px;
+      background:linear-gradient(90deg,transparent,${acc},transparent);opacity:${.6-k*.12};box-shadow:0 0 20px ${csRgba(acc,.6)}"></div>`; });
+    inner=`<div class="cs-r" style="background:radial-gradient(90% 120% at 50% 40%, ${csRgba(acc,.3)}, transparent 66%)"></div>${led}${nameBlk}`;
+  } else {
+    // an ordinary studio: a broadcast wall with a faint tech grid
+    inner=`<div class="cs-r" style="background:radial-gradient(90% 120% at 50% 40%, ${csRgba(acc,.26)}, transparent 66%)"></div>
+      <div class="cs-r" style="opacity:.14;background-image:repeating-linear-gradient(90deg,${csRgba('#ffffff',.5)} 0 1px,transparent 1px 34px),repeating-linear-gradient(0deg,${csRgba('#ffffff',.4)} 0 1px,transparent 1px 34px)"></div>${nameBlk}`;
+  }
+  h+=`<div style="position:absolute;left:5%;right:5%;top:8%;height:47%;border-radius:16px/26px;overflow:hidden;
+      border:1px solid ${csRgba(acc,.4)};background:linear-gradient(180deg,${csDark(wall,1.35)} 0%,${wall} 55%,${csDark(wall,.7)} 100%);
+      box-shadow:0 0 40px ${csRgba(acc,.24)}, inset 0 0 60px ${csRgba('#000000',.5)}">${inner}</div>`;
+  // 3. lit LED ribbons on the set, under the wall
+  if(bigWk||t==='league'){ [58,63].forEach((y,k)=>{ h+=`<div class="cs-led" style="top:${y}%;background:linear-gradient(90deg,transparent,${acc},transparent);opacity:${.42-k*.14};box-shadow:0 0 16px ${csRgba(acc,.5)}"></div>`; }); }
+  // 4. the studio floor: recedes to a vanishing point, with a pool of light where the golfer stands
+  h+=`<div style="position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,transparent,${csRgba('#000000',.6)} 58%,#04070a 100%)"></div>`;
+  let flr=''; for(let i=-3;i<=3;i++){ flr+=`<div style="position:absolute;left:50%;top:0;width:1px;height:150%;transform-origin:50% 0;transform:rotate(${i*16}deg);background:linear-gradient(180deg,transparent,${csRgba(acc,.4)})"></div>`; }
+  h+=`<div style="position:absolute;left:0;right:0;bottom:0;height:24%;overflow:hidden;opacity:.5;
+      -webkit-mask-image:linear-gradient(180deg,transparent,#000 55%);mask-image:linear-gradient(180deg,transparent,#000 55%)">${flr}</div>`;
+  h+=`<div style="position:absolute;left:50%;bottom:-6%;width:70%;height:26%;transform:translateX(-50%);background:radial-gradient(60% 100% at 50% 100%, ${csRgba(acc,.3)}, transparent 70%)"></div>`;
+  // 5. the foreground anchor console with a lit rim
+  h+=`<div style="position:absolute;left:-2%;right:-2%;bottom:0;height:13%;background:linear-gradient(180deg,${csDark(wall,.55)},#04080b);
+      border-top:2px solid ${csRgba(acc,.55)};box-shadow:0 -6px 20px rgba(0,0,0,.5), 0 -1px 0 ${csRgba(acc,.3)}"></div>`;
+  h+=`<div style="position:absolute;left:8%;right:8%;bottom:10%;height:3.5%;background:linear-gradient(180deg,${csRgba(acc,.2)},transparent);border-radius:50%"></div>`;
+  h+=`<div class="cs-r" style="background:radial-gradient(130% 110% at 50% 42%, transparent 46%, rgba(0,0,0,.6) 100%)"></div>`;
+  return h;
 }
 function csNightHTML(W){
   return csCourseHTML(W,{sky:CS_SKY.night,hz:58,dim:.42,noCrowd:true});   // the grandstands emptied hours ago
@@ -20627,6 +20912,7 @@ function csNightHTML(W){
 function csRoomHTML(room,W){
   try{
     switch(room){
+      case 'press':     return csRoomPressHTML(W);
       case 'wall':      return csWallHTML(W);
       case 'feed':      return csRoomFeedHTML(W);
       case 'range':     return csRangeHTML(W);
@@ -20706,8 +20992,66 @@ function csStyleOnce(){
     background:rgba(3,12,18,.72);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 9px;
     max-width:44vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cs-slot.lit .cs-plate{color:#06131a;background:#f1d04a;border-color:#f1d04a}
-  .cs-bulbs{position:absolute;inset:0 0 auto 0;height:150px;pointer-events:none}
+  .cs-bulbs{position:absolute;inset:0;pointer-events:none;z-index:1}
   .cs-mic{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);opacity:.85;pointer-events:none}
+  /* ---- the press room ------------------------------------------------------------------------
+     The golfer SITS: the desk is a z-3 layer over the bottom of the stage and the cast is sunk by
+     --csink, so only head, shoulders and chest read above the desk edge. Every colour arrives as
+     inline style from csRoomPressHTML()/csPressDeskHTML(), so the tier and the venue paint the room. */
+  .cs-drape{position:absolute;top:-6%;bottom:0}
+  .cs-crest{position:absolute;left:50%;top:12%;transform:translateX(-50%);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;width:min(210px,46%);padding:12px 10px;
+    border:2px solid;border-radius:50% 50% 46% 46%/58% 58% 42% 42%}
+  .cs-crestn{font:900 11px/1.15 var(--body);letter-spacing:.14em;text-transform:uppercase;text-align:center}
+  .cs-cresty{font:900 15px/1 var(--body);letter-spacing:.2em}
+  .cs-led{position:absolute;left:-6%;right:-6%;height:5px;border-radius:3px}
+  .cs-namebar{position:absolute;left:50%;top:14%;transform:translateX(-50%);max-width:78%;
+    font:900 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;border:1px solid;border-radius:8px;padding:7px 14px}
+  .cs-banner{position:absolute;left:50%;top:11%;transform:translateX(-50%);max-width:80%;
+    font:900 13px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;border:2px solid;border-radius:6px;padding:9px 16px;text-align:center}
+  .cs-stage.press{align-items:flex-end}
+  .cs-stage.press .cs-cast{transform:translateY(var(--csink,0px))}
+  .cs-stage.press .cs-plate{display:none}
+  .cs-desk{position:absolute;left:-4%;right:-4%;bottom:0;height:var(--dh,150px);z-index:3;pointer-events:none;
+    display:flex;flex-direction:column;align-items:stretch;filter:drop-shadow(0 -3px 10px rgba(0,0,0,.45))}
+  /* the top recedes: a trapezoid narrower at the back sells the angle without a 3D transform */
+  .cs-dtop{flex:0 0 17%;min-height:11px;position:relative;border-top-left-radius:5px;border-top-right-radius:5px;
+    clip-path:polygon(5% 0,95% 0,100% 100%,0 100%);
+    box-shadow:inset 0 3px 7px rgba(255,255,255,.07),inset 0 -3px 6px rgba(0,0,0,.4)}
+  .cs-dsheen{position:absolute;left:10%;right:10%;top:8%;height:46%;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.16),transparent 72%)}
+  /* the front edge catches the light, a bright band over the shaded face */
+  .cs-dlip{flex:0 0 5px;min-height:3px;box-shadow:0 3px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22)}
+  .cs-dface{flex:1 1 auto;position:relative;overflow:hidden}
+  .cs-dside{position:absolute;top:0;bottom:0;width:18%;pointer-events:none}
+  .cs-dside.l{left:0;background:linear-gradient(90deg,rgba(0,0,0,.5),transparent)}
+  .cs-dside.r{right:0;background:linear-gradient(270deg,rgba(0,0,0,.5),transparent)}
+  .cs-dpanel{position:absolute;left:24%;right:24%;top:20%;bottom:16%;border-radius:5px;border:1px solid;
+    box-shadow:inset 0 3px 10px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.05)}
+  .cs-dglass{position:absolute;z-index:4;bottom:calc(var(--dh,150px) - 30px);pointer-events:none;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+  .cs-dedge{position:absolute;left:0;right:0;top:0;height:2px}
+  .cs-dgrain{position:absolute;inset:0}
+  .cs-dname{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);max-width:70%;
+    font:900 9px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;border:1px solid;border-radius:4px;padding:4px 10px}
+  .cs-dplate{position:absolute;left:50%;bottom:calc(var(--dh,150px) - 26px);transform:translateX(-50%);z-index:4;
+    font:900 9.5px/1 var(--body);letter-spacing:.13em;text-transform:uppercase;white-space:nowrap;
+    max-width:64%;overflow:hidden;text-overflow:ellipsis;border:1px solid;border-radius:3px;padding:4px 10px;
+    box-shadow:0 4px 10px rgba(0,0,0,.5)}
+  .cs-microw{position:absolute;left:50%;bottom:calc(var(--dh,150px) - 6px);transform:translateX(-50%);z-index:4;
+    display:flex;align-items:flex-end;justify-content:center;gap:5px;pointer-events:none}
+  .cs-microw span{display:block;transform-origin:50% 100%}
+  .cs-bulb{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 0%,rgba(255,255,255,.65) 38%,rgba(255,255,255,0) 72%);
+    opacity:0;animation-name:csBulb;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
+  @keyframes csBulb{0%{opacity:0;transform:scale(.35)}5%{opacity:1;transform:scale(1.15)}
+    16%{opacity:0;transform:scale(1.5)}100%{opacity:0;transform:scale(.35)}}
+  .cs-pop{position:absolute;inset:0;z-index:5;pointer-events:none;background:rgba(255,255,255,.9);opacity:0;
+    animation:csPop 5.2s ease-out infinite}
+  @keyframes csPop{0%{opacity:0}2%{opacity:.34}6%{opacity:0}100%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .cs-bulb,.cs-pop{animation:none!important;display:none} }
   .cs-frame{font:800 9px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
     border:1px solid currentColor}
   .cs-body{flex:0 0 auto;padding:0 14px calc(16px + env(safe-area-inset-bottom,0px))}
@@ -20841,11 +21185,20 @@ function csPlay(beats, ctx, done, opts){
     // the room behind the golfer, painted from the week you are playing, and the dressing on top
     const room=csRoomFor(b, opts.room);
     if(room!==curRoom){ curRoom=room; bg.innerHTML=csRoomHTML(room, wk); }
-    stage.querySelectorAll('.cs-bulbs,.cs-mic').forEach(n=>n.remove());
+    // the press room dresses the stage: the cameras behind the golfer, the desk and its mics in front
+    stage.querySelectorAll('.cs-bulbs,.cs-mic,.cs-desk,.cs-pop').forEach(n=>n.remove());
+    stage.classList.toggle('press', fr==='presser');
     if(fr==='presser'){
-      if(!reduce) stage.insertBefore($(`<div class="cs-bulbs">${[[10,26],[30,14],[56,11],[78,18],[92,30]].map(([l,t],k)=>
-        `<span class="flashbulb" style="left:${l}%;top:${t}px;animation:pressFlash ${2.2+k*0.5}s ease-in-out ${k*0.4}s infinite"></span>`).join('')}</div>`), stage.firstChild);
-      stage.appendChild($(`<div class="cs-mic">${PRESS_MIC}</div>`));
+      const pst=csPressStyle(wk);
+      // the desk is sized off the GOLFER (a fixed % of the stage swallowed him on a tall phone stage)
+      const figH=csFigH(1), dropPx=Math.round(figH*(pst.drop||0));
+      stage.style.setProperty('--dh', Math.max(54, Math.round(figH*(pst.hide||.52)) + 14 - dropPx)+'px');
+      stage.style.setProperty('--csink', dropPx+'px');
+      if(!reduce) stage.insertBefore($(csBulbsHTML(pst)), cast);   // the flashes light the wall, behind him
+      stage.appendChild($(csPressDeskHTML(wk, pst, csMe())));
+      if(!reduce) stage.appendChild($(`<div class="cs-pop"></div>`));
+    }else{
+      stage.style.removeProperty('--dh'); stage.style.removeProperty('--csink');
     }
     cast.innerHTML=csCastHTML(b, ctx);
     const kickTx=csT(b.kick,ctx);
