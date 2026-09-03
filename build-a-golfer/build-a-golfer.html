@@ -20833,11 +20833,91 @@ function csStoryPlay(sb, scene){
    a card when it is not - and a failure anywhere is a passthrough, never a career that cannot move. */
 // "a, b and c" - plain text, because these lines are escaped where they render
 function listTxt(a){ const L=(a||[]).filter(Boolean); return L.length<2?(L[0]||''):L.slice(0,-1).join(', ')+' and '+L[L.length-1]; }
+
+/* An induction has to name WHICH situation it is introducing, not announce that a situation exists.
+   These read the beat that is about to open underneath it, so the line says the actual decision, the
+   actual finish, the actual proposal - and it picks from alternates off _csSeed, so two careers never
+   open the same way. (owner: as specific as possible, and not the same every time) */
+function csTxt(v, c){
+  try{ const t=(typeof v==='function')?v(c):v;
+    return String(t==null?'':t).replace(/<[^>]*>/g,'')
+      .replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim();
+  }catch(e){ return ''; }
+}
+// a setup, then the thing itself. A title that is already a question or a sentence still lands right.
+function csAbout(setup, thing){
+  const t=csTxt(thing), s=String(setup||'').replace(/[:,.\s]+$/,'');
+  if(!t) return s+'.';
+  return s+': '+t+(/[.!?]$/.test(t)?'':'.');
+}
+// the same seed the scenes vary off, so a career's induction lines are stable within a showing
+function csPick(list, n){
+  const L=(list||[]).filter(Boolean); if(!L.length) return null;
+  return L[((_csSeed+((n||0)*0x9e3779b1))>>>0)%L.length];
+}
+/* A career decision is not "something has come up" - it is a body call, a calendar call, a question about
+   what kind of player you are. The setup names the KIND, and the decision's own title finishes the line. */
+var DIL_OPEN={
+  injury:   [ c=>`Not a swing decision, a body one`,
+              c=>`The physio has a view and you have a tee time at ${c._ev}` ],
+  schedule: [ c=>`This one is about the calendar, not the golf`,
+              c=>`Where you tee it up just became a decision` ],
+  gear:     [ c=>`This one is about what goes in your hands`,
+              c=>`Somebody wants to change what you are playing at ${c._ev}` ],
+  life:     [ c=>`This one is off the golf course entirely`,
+              c=>`Nothing to do with a golf ball, and it still lands on you at ${c._ev}` ],
+  integrity:[ c=>`This one is a question about what kind of player you are`,
+              c=>`Nobody outside the room will ever see this one` ],
+  media:    [ c=>`This one is about who is watching`,
+              c=>`There is a camera on this one, which changes the answer` ],
+  nature:   [ c=>`The golf course itself has got involved`,
+              c=>`Only in golf, and only at ${c._ev}` ],
+  rival:    [ c=>`This one has another player's name on it`,
+              c=>`The locker room at ${c._ev} is asking you for something` ],
+  league:   [ c=>`The split in the game has reached you`,
+              c=>`This one is about which side of golf you are on` ],
+  _:        [ c=>`This one is a decision, not a shot`,
+              c=>`It arrived at ${c._ev} and it is not going to answer itself` ]
+};
+/* Why THIS kind of call matters, said by the analyst. Domain-specific, so the second beat is not the
+   same sentence every career either. */
+var DIL_SAID={
+  injury:   [ `Players do not lose careers to one bad swing. They lose them to what they decide about a sore one.`,
+              `Every veteran out here has a body part they made the wrong call on once.` ],
+  schedule: [ `The schedule is the quietest thing that decides a season. Nobody writes about it until it goes wrong.`,
+              `Weeks on, weeks off. That is a career being built, one decision at a time.` ],
+  gear:     [ `Fourteen clubs is a small number. Getting one of them wrong is not a small thing.`,
+              `There is a reason players talk about their equipment the way other people talk about family.` ],
+  life:     [ `The golf is the easy part. The rest of it is what actually shapes a player.`,
+              `Nobody's record shows the weeks their head was somewhere else.` ],
+  integrity:[ `This is the kind of call the locker room finds out about eventually. They always do.`,
+              `Reputation out here is built in the moments nobody is filming.` ],
+  media:    [ `Every player learns what a camera is worth to them. Usually the hard way.`,
+              `Reach is money. It is also a very long memory.` ],
+  nature:   [ `Golf is the only sport where the venue can interrupt you personally.`,
+              `You cannot plan for these. You can only decide what you do about them.` ],
+  rival:    [ `The locker room keeps its own scoreboard, and it is not the one on television.`,
+              `What you do for another player out here comes back to you, one way or the other.` ],
+  league:   [ `Everybody in golf has to answer this one eventually. Some answer it twice.`,
+              `Whatever a player decides about the split follows them for the rest of their career.` ],
+  _:        [ `Careers turn on these as often as they turn on Sundays.`,
+              `Nobody outside the room ever sees the ones that mattered.` ]
+};
 var FIRSTS={
   council:{
     room:'desk', accent:'#5fd0e0', tag:'The Player Advisory Council',
     kick:'A seat at the table',
-    lead:()=>`The tour does not decide anything alone. There is a room where the rule changes get argued over before anybody outside hears about them, and this morning they added a chair to it. Your name is on the back of it.`,
+    lead:(c)=>{
+      // name the PROPOSAL that is waiting underneath, not the idea of a room
+      const p=(c&&c.prop)||null;
+      let t=''; try{ if(p) t=csTxt(tourTxt(p.name, c.arg)); }catch(e){ t=''; }
+      const open=csPick([
+        `They added a chair to the room where the tour's rules get argued over, and there is already something on the table`,
+        `The tour has a room where a rule is fought over before anybody outside hears about it. Your name is on a chair in it, and they are mid-argument`
+      ], 5);
+      if(!t) return open+`.`;
+      return csAbout(open, t);
+    },
     said:()=>`Players get put in that room for one reason. Somebody looked at what ${csMe()} has done out here and decided the tour should be asking, not telling.`,
     earnedLabel:'Why you, and why now',
     earned:()=>{
@@ -20868,7 +20948,23 @@ var FIRSTS={
   press:{
     room:'wall', accent:'#f1d04a', tag:'The press room',
     kick:'They want to hear from you',
-    lead:()=>`There is a room down the corridor with a wall of logos and a lot of chairs in it, and for the first time this week it is full because of you.`,
+    lead:(c)=>{
+      // the finish that filled the room, named
+      const w=(c&&c.lastName)||'';
+      const what = !w ? '' :
+        c.won ? `you have just won ${w}` :
+        c.runnerUp ? `you have just finished second at ${w}` :
+        c.top10 ? `you have just posted a top ten at ${w}` :
+        c.missed ? `you have just missed the cut at ${w}` :
+        `of the week you have just had at ${w}`;
+      const a=csPick([
+        (x)=>x?`A room down the corridor with a wall of logos and a lot of chairs, and it is full tonight because ${x}.`
+              :`A room down the corridor with a wall of logos and a lot of chairs, and tonight it is full because of you.`,
+        (x)=>x?`The chairs are full and the logos are up, and every one of those people is here because ${x}.`
+              :`The chairs are full and the logos are up, and every one of those people is here for you.`
+      ], 3);
+      return a(what);
+    },
     said:()=>`Nobody sets that room up for a player nobody has heard of. This is the sport deciding ${csMe()} is worth quoting.`,
     earnedLabel:'Why they want you',
     earned:(c)=>{
@@ -20900,12 +20996,26 @@ var FIRSTS={
   dilemma:{
     room:'clubhouse', accent:'#e9a23b', tag:'Career decisions',
     kick:'Not every call is a golf shot',
-    lead:()=>`Something has come up that has nothing to do with a golf ball, and it is sitting on your side of the desk.`,
-    said:()=>`Careers turn on these as often as they turn on Sundays. Nobody outside the room ever sees the ones that mattered.`,
+    lead:(c)=>{
+      // name the ACTUAL decision. The domain says what KIND of call it is, the beat's own title finishes it.
+      const d=(c&&c.dil)||null;
+      const ev=(c&&(c.evtName||c.upName))||'this stop';
+      const cc=Object.assign({}, c||{}, {_ev:ev});
+      const setup=csPick(DIL_OPEN[(d&&d.dom)||'_']||DIL_OPEN._, 1);
+      const open=setup?setup(cc):'This one is a decision, not a shot';
+      return csAbout(open, d&&d.title ? csTxt(d.title, c) : '');
+    },
+    said:(c)=>{
+      const d=(c&&c.dil)||null;
+      return csPick(DIL_SAID[(d&&d.dom)||'_']||DIL_SAID._, 2)
+        || `Careers turn on these as often as they turn on Sundays.`;
+    },
     earnedLabel:'Why this reached you',
-    earned:()=>{
+    earned:(c)=>{
       const s=(S.career&&S.career.seasons&&S.career.seasons.length)||0, out=[];
-      out.push('Something has come up away from the golf course');
+      const d=(c&&c.dil)||null, ev=(c&&(c.evtName||c.upName))||'';
+      const t=d&&d.title ? csTxt(d.title, c) : '';
+      out.push(t ? (t + (ev?(', at '+ev):'')) : 'Something has come up away from the golf course');
       out.push(s>0 ? (s+(s===1?' season':' seasons')+' in, your career is big enough to attract them')
                    : 'Your career is big enough now to attract them');
       out.push('A few of these a season, and never in back to back weeks');
@@ -20993,10 +21103,15 @@ function firstBeats(f, ctx, teach){
      facts:firstFactsHTML(firstVal(f,'earnedLabel',ctx)||'What you did', firstVal(f,'earned',ctx), col)}
   ];
   if(teach) beats.push({who:'nair', frame:'broadcast', pic:'me',
-    tx:`Here is how it works, because you have not seen one of these before.`,
+    tx:csPick([
+      `Here is how it works, because you have not seen one of these before.`,
+      `For anyone watching who has not seen one of these, here is the shape of it.`,
+      `Worth walking through, because this is the first one.`
+    ], 7),
     facts:firstFactsHTML('How it works', firstVal(f,'how',ctx), col)});
   beats.push({who:'duck', frame:'broadcast', pic:'me',
-    tx:teach?`And this is what it hands you.`:`You know what this is. You have earned it again.`,
+    tx:teach?csPick([`And this is what it hands you.`,`And here is what it is actually worth.`,`Which leaves the part that matters.`],8)
+            :csPick([`You know what this is. You have earned it again.`,`Nothing to explain here. You have been through one of these.`,`Second time around. You know the drill.`],9),
     facts:firstFactsHTML('What it gives you', firstVal(f,'power',ctx), col),
     nextLabel:(f.cta||'Continue ▸')});
   return beats;
@@ -21037,6 +21152,9 @@ function maybeFirst(id, ctx, next){
   try{ teach=!firstSeenEver(id); }catch(e){}
   try{ careerFirsts()[id]=1; markFirstEver(id); }catch(e){}
   try{ track('first_reveal',{id, teach, year:S.year||1}); }catch(e){}
+  // pin the line-variation seed for this showing: stable while you are reading it, different in the
+  // next career, so the induction is not word for word the same thing every time.
+  try{ _csSeed=dHash(String(S.careerSeed||0)+':'+id+':'+String(S.year||1)+':'+String(S.evtIndex||0)); }catch(e){ _csSeed=0; }
   try{
     if(cutscenesOn()){
       const beats=firstBeats(f, ctx||{}, teach);
@@ -21215,7 +21333,9 @@ function showStorylineModal(sb){
 // ---- CS325: the Career Dilemma overlay, a specific situation, risky choices, then a ROLLED outcome ----
 function showDilemma(sb){
   // the first decision a career hands you that has nothing to do with a golf ball
-  if(firstDue('dilemma')) return maybeFirst('dilemma', sb.ctx, ()=>showDilemma(sb));
+  // the ctx carries the BEAT itself, so the induction can name the actual decision rather than announce
+  // that a decision exists
+  if(firstDue('dilemma')) return maybeFirst('dilemma', Object.assign({}, sb.ctx, {dil:sb.beat}), ()=>showDilemma(sb));
   const {beat, ctx}=sb, story=careerStory();
   if(S.season) S.season.stops=(S.season.stops||0)+1;
   story._lastDom=beat.dom;
@@ -23740,7 +23860,7 @@ function scrCouncilVote(){
   if(!d){ S.pendingTourVote=null; return scrSeason(); }
   // The seat itself is news. The induction plays over the top and the proposal is underneath it when
   // it finishes, so being appointed to the board is an event rather than a screen you walk into.
-  if(firstDue('council')){ maybeFirst('council', {upName:(S.schedule&&S.schedule[0]&&S.schedule[0].name)||''}); }
+  if(firstDue('council')){ maybeFirst('council', {upName:(S.schedule&&S.schedule[0]&&S.schedule[0].name)||'', prop:d, arg:p.arg}); }
   RT.classList.add('major-screen');
   const res=S.tourVoteResult;
   add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:var(--teal);border-color:rgba(47,208,168,.5);background:rgba(47,208,168,.10)">⚖ Player Advisory Council · ${calYear()}</span></div>`));
