@@ -1556,93 +1556,152 @@ def sig_peter(cv, spec, pose, back):
         cv.dot(CX - 1, 26, vein); cv.dot(CX + 1, 25, vein)
 
 
-def sig_casey(cv, spec, pose, back):
-    # THE BAT, up on the shoulder, because that is the pose everyone has
-    # in their head: "Casey standing there, advancing to the bat". It
-    # rides the arm so it does not hang in the air while he runs.
-    o = run_off(pose)[1]
-    wood = (166, 122, 66)
-    dark = (120, 84, 44)
-    for i in range(11):
-        x = CX + 7 + i * 0.30
-        y = 27 - i * 1.05 + o
-        cv.dot(x, y, wood if i > 2 else dark)
-        if i > 4:
-            cv.dot(x + 1, y, wood)
-    if back:
-        return
-    # the club letter on the cap, one glyph wide, in the flannel cream
-    c = (234, 228, 210)
-    for dy in (4, 5, 6):
-        cv.dot(CX - 2, dy, c)
-        cv.dot(CX + 2, dy, c)
-    cv.dot(CX - 1, 5, c)
-    cv.dot(CX + 1, 5, c)
-    cv.dot(CX, 6, c)
 
 
-def sig_nellie(cv, spec, pose, back):
-    # THE CHECK. An ulster in one flat colour is a coat; the check is what
-    # made the outfit famous enough to sell dolls of it in 1890.
-    coat = spec.get('shirt', '#8d7f66')
-    lt = shade(coat, 0.20)
-    dk = shade(coat, -0.22)
-    for y in range(24, 31):
-        for x in range(int(CX) - 6, int(CX) + 7):
-            if (x + y) % 4 == 0:
+
+
+def sig_paulbunyan(cv, spec, pose, back):
+    # BUFFALO PLAID. A lumberjack in a plain red shirt is a man on his way
+    # to a barn dance: the black grid over the red is the entire read, and
+    # it has to sit on the torso on both facings.
+    red = spec.get('shirt', '#a8302c')
+    blk = shade(red, -0.62)
+    lt = shade(red, 0.22)
+    for y in range(23, 31):
+        for x in range(int(CX) - 7, int(CX) + 8):
+            if y % 3 == 0 or x % 3 == 0:
+                cv.dot(x, y, blk if (y % 3 == 0 and x % 3 == 0) else shade(red, -0.34))
+            elif (x + y) % 6 == 1:
                 cv.dot(x, y, lt)
-            elif (x - y) % 4 == 0:
-                cv.dot(x, y, dk)
+    # THE AXE, over the shoulder: a double bit head on a long haft.
+    # The head sits OUT past the shoulder and low, at chest height. Up at
+    # row 15 it landed on his own skull and read as a hat.
+    o = run_off(pose)[1]
+    haft = (146, 100, 52)
+    for i in range(10):
+        cv.dot(CX + 9 + i * 0.22, 34 - i * 1.05 + o,
+               haft if i % 3 else shade(haft, -0.3))
+    steel = Ramp('#9aa2ae')
+    hx, hy = CX + 11, 24 + o
+    cv.sphere(hx, hy, 1.6, 2.8, steel, spec=False)
+    cv.tri([(hx - 2.8, hy - 2.6), (hx - 2.8, hy + 2.6), (hx, hy)], steel, l=0.72)
+    cv.tri([(hx + 2.8, hy - 2.6), (hx + 2.8, hy + 2.6), (hx, hy)], steel, l=0.52)
+
+
+def sig_pinocchio(cv, spec, pose, back):
+    # HE IS MADE OF WOOD, and at this size the only way to say so is the
+    # GRAIN and the JOINTS. No long nose: it was asked for without one, and
+    # it was never the interesting half of him.
+    wood = spec.get('skin', '#d9a860')
+    grain = shade(wood, -0.30)
+    # grain running down the legs, which are bare
+    for side in (-1, 1):
+        for dy in range(31, 38):
+            if dy % 3:
+                cv.dot(CX + side * 4, dy, grain)
+    # the marionette joints: a dark pin at each shoulder, elbow and knee
+    lo, ro = run_off(pose)
+    pin = shade(wood, -0.55)
+    hi = shade(wood, 0.32)
+    for side, off in ((-1, lo), (1, ro)):
+        for jy in (24, 29):
+            cv.dot(CX + side * 9, jy + off, pin)
+            cv.dot(CX + side * 9, jy + 1 + off, pin)
+            cv.dot(CX + side * 8, jy + off, hi)
+        cv.dot(CX + side * 4, 33, pin)
+        cv.dot(CX + side * 4, 34, pin)
     if back:
         return
-    # THE GRIPSACK. She took one bag round the world and was famous for it.
-    o = run_off(pose)[1]
-    bx, by = CX + 11, 31 + o
-    bag = Ramp('#6b4a2a')
-    cv.cyl(bx - 3, by - 3, bx + 3, by + 2, bag, round_bot=1)
-    cv.rect(bx - 3, by - 1, bx + 3, by - 1, Ramp('#3f2a18'), l=0.5)
-    for dx in (-1, 0, 1):
-        cv.dot(bx + dx, by - 5, (58, 42, 26))
+    # a peak on the cap, and the strings knotted at his shoulders
+    cv.tri([(CX + 4, 2), (CX + 9, 5), (CX + 4, 6)], Ramp(spec.get('hatcolor', '#e8c04a')), l=0.55)
+    st = (232, 226, 210)
+    for side in (-1, 1):
+        for dy in (18, 19, 20):
+            cv.dot(CX + side * 8, dy, st)
 
 
-def sig_munchausen(cv, spec, pose, back):
-    # THE MOUSTACHE, out past the face on both sides. The beard routine
-    # draws a normal one; the Baron's is architecture.
-    if not back:
-        w = (240, 236, 228)
-        for side in (-1, 1):
-            for i, dx in enumerate((4, 5, 6, 7, 8)):
-                cv.dot(CX + side * dx, 18, w)
-                if i >= 2:
-                    cv.dot(CX + side * dx, 17, w)
-            cv.dot(CX + side * 8, 16, w)
-    # EPAULETTES, gold, on both shoulders: he is a hussar and never once
-    # appears out of uniform.
-    g = (201, 162, 86)
-    lo, ro = run_off(pose)
-    for side, off in ((-1, lo), (1, ro)):
-        for dx in (7, 8, 9):
-            cv.dot(CX + side * dx, 23 + off, g)
-            cv.dot(CX + side * dx, 24 + off, shade(g, -0.3))
+def sig_golem(cv, spec, pose, back):
+    # WET CLAY, roughly finished. The cracks and the thumb seams are what
+    # separate him from every other big grey monster: he was MADE, badly,
+    # in a hurry, by hand.
+    clay = spec.get('skin', '#8a6a52')
+    crack = shade(clay, -0.48)
+    seam = shade(clay, 0.20)
+    for x, y, n in ((-6, 25, 4), (3, 27, 5), (-2, 32, 3), (5, 21, 3)):
+        for i in range(n):
+            cv.dot(CX + x + i * 0.7, y + i, crack)
+    for y in (24, 28, 33):
+        for x in range(int(CX) - 7, int(CX) + 8, 3):
+            cv.dot(x, y, seam)
+    if back:
+        return
+    # THE WORD OF LIFE, cut into the forehead. Three carved marks: real
+    # letters are illegible at this size and a smear would be worse, so it
+    # is drawn as an inscription rather than as text.
+    ink = shade(clay, -0.66)
+    for dy in (7, 8, 9):
+        cv.dot(CX - 3, dy, ink)
+        cv.dot(CX + 3, dy, ink)
+    cv.dot(CX, 7, ink)
+    cv.dot(CX, 8, ink)
+    cv.dot(CX, 9, ink)
+    cv.dot(CX - 1, 8, ink)
+    cv.dot(CX + 1, 8, ink)
 
 
-def sig_johnhenry(cv, spec, pose, back):
-    # THE NINE POUND HAMMER. Head down by his side, handle up: the whole
-    # ballad is this object against a steam drill.
-    o = run_off(pose)[1]
-    hx = CX + 11
-    handle = (150, 104, 56)
-    for i in range(9):
-        cv.dot(hx, 22 + i + o, handle if i % 3 else shade(handle, -0.25))
-    steel = Ramp('#6e7480')
-    cv.rect(hx - 3, 20 + o, hx + 3, 22 + o, steel, l=0.62)
-    if not back:
-        cv.dot(hx - 3, 20 + o, (168, 176, 188))
-        # the shirt is open at the collar over a plain undershirt
-        v = shade(spec.get('shirt', '#4a6a86'), -0.35)
-        for i in range(3):
-            cv.dot(CX - 1 - i, 24 + i, v)
-            cv.dot(CX + 1 + i, 24 + i, v)
+def sig_ichabod(cv, spec, pose, back):
+    # "HUGE EARS", says Irving, and a neck to match: he is drawn lank or he
+    # is not drawn. The ears stick out past the skull on both facings and
+    # the neck is a full four rows of it.
+    skin = Ramp(spec.get('skin', '#f0d8b8'))
+    for side in (-1, 1):
+        cv.sphere(CX + side * 8, 14.0, 2.2, 3.0, skin, spec=False)
+        cv.dot(CX + side * 8, 14, shade(skin.base, -0.34))
+    cv.cyl(CX - 2, 19, CX + 2, 23, skin)
+    if back:
+        return
+    # the schoolmaster's book, held under one arm
+    o = run_off(pose)[0]
+    bk = Ramp('#6a3a2a')
+    cv.rect(CX - 12, 27 + o, CX - 9, 32 + o, bk, l=0.55)
+    for dy in range(27, 33):
+        cv.dot(CX - 9, dy + o, (228, 222, 206))
+    # a white stock at the throat, which is the one bright thing on him
+    for dx in (-2, -1, 0, 1, 2):
+        cv.dot(CX + dx, 22, (238, 234, 224))
+
+
+def sig_longjohn(cv, spec, pose, back):
+    # ONE LEG. The archetype draws two, so the coat goes over the top of
+    # them: a long tailed sea coat down to the boot tops, one boot showing
+    # under it, and the CRUTCH doing the work on the other side.
+    coat = Ramp(spec.get('shirt', '#2a4a7a'))
+    cv.taper(23, 36, 13, 17, coat, folds=2)
+    o = run_off(pose)[0]
+    # THE CRUTCH, from under the armpit to the ground
+    wood = (150, 104, 56)
+    dk = (104, 70, 36)
+    for dy in range(26, 38):
+        cv.dot(CX - 9, dy, wood if dy % 3 else dk)
+    cv.rect(CX - 11, 24 + o, CX - 7, 25 + o, Ramp('#96683a'), l=0.6)
+    cv.rect(CX - 11, 37, CX - 7, 38, Ramp('#5a3c20'), l=0.5)
+    # the one boot he has left, planted on the other side
+    cv.cyl(CX + 2, 35, CX + 6, 38, Ramp(spec.get('boot', '#241c14')), round_bot=1)
+    if back:
+        return
+    # gold buttons down the coat
+    for dy in (25, 28, 31):
+        cv.dot(CX - 3, dy, (208, 168, 60))
+        cv.dot(CX + 3, dy, (208, 168, 60))
+    # CAPTAIN FLINT on the shoulder. Green body, red head, one white eye:
+    # three colours is all a parrot needs to be a parrot.
+    px, py = CX + 9, 18
+    cv.sphere(px, py, 2.6, 3.0, Ramp('#2f9a4a'), spec=False)
+    cv.sphere(px, py - 3, 1.8, 1.8, Ramp('#c93a2a'), spec=False)
+    cv.dot(px + 1, py - 3, (250, 250, 252))
+    cv.dot(px + 2, py - 2, (232, 178, 48))
+    for i in range(3):
+        cv.dot(px + 1 + i * 0.5, py + 3 + i, (36, 122, 58))
 
 
 def sig_medusa(cv, spec, pose, back):
@@ -2778,10 +2837,11 @@ SIGNATURES = {
     'humpty': {'post': sig_humpty},
     'yeti': {'post': sig_yeti},
     'sasquatch': {'post': sig_sasquatch},
-    'casey': {'post': sig_casey},
-    'nellie': {'post': sig_nellie},
-    'munchausen': {'post': sig_munchausen},
-    'johnhenry': {'post': sig_johnhenry},
+    'paulbunyan': {'post': sig_paulbunyan},
+    'pinocchio': {'post': sig_pinocchio},
+    'golem': {'post': sig_golem},
+    'ichabod': {'post': sig_ichabod},
+    'longjohn': {'post': sig_longjohn},
 }
 
 
@@ -3062,42 +3122,45 @@ SPECS = {
                   extra=[('ears', '#141018')]),
  'humpty': dict(arch='egg', skin='#f2e2c4', shirt='#c93030', boot='#6a6a72',
                 eyes='cartoon', eyecolor='#141018', mouth='grin'),
- # ------------------------------------------------- the four replacements
- # Dick Tracy, Flash Gordon, Tintin and Felix the Cat came off the roster
- # over rights (see docs/roster-ip-2026-09-02.md). These four are their
- # own public domain characters rather than lookalikes, and one of them
- # has wanted to be in a baseball game since 1888.
- #
- # CASEY, of Mudville. Thayer's poem is 1888 and the most famous at bat in
- # the language. An 1880s ball club wore cream flannel head to toe with a
- # bill cap and a dark belt, and Casey has "a smile on Casey's face" until
- # he has not.
- 'casey': dict(arch='human', skin='#f0c99a', shirt='#eae4d2', pants='#eae4d2',
-               hat='cap', hatcolor='#22304e', boot='#2a2018', belt='#22304e',
-               hair='#3a2414', hairstyle='bald', beard='#3a2414',
-               beardsize='moustache', eyes='squint', mouth='none'),
- # NELLIE BLY, who raced round the world in seventy two days in 1889 in one
- # checked ulster coat and a ghillie cap, carrying a single gripsack. She
- # died in 1922 and everything about her is free. She replaces Tintin on
- # the beat, which is a straight upgrade: she did it for real.
- 'nellie': dict(arch='human', skin='#f2ceaa', shirt='#8d7f66', pants='#5f5346',
-                hat='cap', hatcolor='#6f6252', hair='#3a2414', hairstyle='long',
-                boot='#2f2620', eyes='oval', mouth='smirk'),
- # THE BARON. Raspe printed him in 1785, and he is the patron saint of the
- # unreliable report: a hussar's red coat, a cocked hat, a white moustache
- # you could hang a coat on, and at least one cannonball ride.
- 'munchausen': dict(arch='human', skin='#f0c99a', shirt='#a8323a', pants='#eae4d2',
-                    hat='tricorn', hatcolor='#22243a', hattrim='#c9a256',
-                    boot='#241c18', hair='#f0ece4', hairstyle='short',
-                    beard='#f0ece4', beardsize='moustache',
-                    eyes='wide', mouth='none', belt='#c9a256'),
- # JOHN HENRY, the steel driving man of the ballad, which is folk and has
- # never been anybody's property. He beat the steam drill with a hammer in
- # each hand and it killed him, and that is the whole point of him: this
- # is a man, not a monster, so he is built like one.
- 'johnhenry': dict(arch='human', skin='#6b4630', shirt='#4a6a86', pants='#3a3a44',
-                   hair='#141014', hairstyle='short', boot='#2a2018',
-                   eyes='round', mouth='line', belt='#7a5a32'),
+ # ----------------------------------------------------- the folk and the tall
+ # PAUL BUNYAN, printed 1916 and told in the camps long before that. Red and
+ # black buffalo plaid, a black beard, and the axe. The plaid is the whole
+ # character: a lumberjack in a plain red shirt is a man on his way to a
+ # barn dance.
+ 'paulbunyan': dict(arch='human', skin='#e8b888', shirt='#a8302c', pants='#3a568e',
+                    boot='#4a3320', hat='cap', hatcolor='#8a2420',
+                    hair='#141014', hairstyle='short',
+                    beard='#141014', beardsize='full', belt='#5a3a1c',
+                    eyes='round', mouth='none'),
+ # PINOCCHIO as Collodi wrote him in 1883: a wooden marionette with the joints
+ # showing and the grain running through him. NO LONG NOSE, by request, and it
+ # was never the interesting half of him anyway. A peaked cap, a short jacket
+ # and bare wooden legs.
+ 'pinocchio': dict(arch='human', skin='#d9a860', shirt='#c93a3a', pants='#2f7a8a',
+                   hat='cap', hatcolor='#e8c04a', boot='#b8863f',
+                   hair='#8a5a28', hairstyle='bald',
+                   eyes='cartoon', eyecolor='#241810', mouth='grin'),
+ # THE GOLEM OF PRAGUE. Wet clay, roughly finished, with the seams of the
+ # hands that made him still in the surface and the word of life cut into his
+ # forehead. The oldest unstoppable object in the roster.
+ 'golem': dict(arch='hulk', skin='#8a6a52', muzzle='#8a6a52', chest=None,
+               hand='#5f4636', boot='#5f4636',
+               eyes='wide', eyecolor='#3a2a1c', mouth='line'),
+ # ICHABOD CRANE, and Irving is unusually specific: "exceedingly lank", with
+ # "huge ears, large green glassy eyes, and a long snipe nose", and a head
+ # "small, and flat at top". A schoolmaster's black coat over all of it.
+ 'ichabod': dict(arch='human', skin='#f0d8b8', shirt='#464050', pants='#33333f',
+                 hair='#2a2018', hairstyle='short', boot='#1a1a20',
+                 eyes='wide', eyecolor='#3f7a4a', mouth='line'),
+ # LONG JOHN SILVER: "very tall and strong, with a face as big as a ham, plain
+ # and pale, but intelligent and smiling", one leg gone at the hip, the crutch
+ # under his arm and Captain Flint on his shoulder. Nobody has ever drawn him
+ # without the crutch and the parrot, so those are what he is built around.
+ 'longjohn': dict(arch='human', skin='#e8c49a', shirt='#2a4a7a', pants='#3a3020',
+                  hat='tricorn', hatcolor='#181418', boot='#241c14',
+                  hair='#8a8078', hairstyle='bald', beard='#8a8078',
+                  beardsize='moustache', belt='#6a4a28',
+                  eyes='oval', mouth='smirk'),
 }
 
 # The back poses exist because of where the camera stands: the viewer is
@@ -3190,11 +3253,12 @@ FACES = {
     'pirate':       dict(eyes='round',  eyespread=3, brow='angry',   nose='button', mouth='grin'),
     'centaur':      dict(eyes='oval',   eyespread=3, brow='flat',    nose='long',   mouth='line'),
     'lion':         dict(eyes='wide',   eyespread=3, brow='worried', nose='bulb',   mouth='frown'),
-    # the four replacements
-    'casey':        dict(eyes='squint', eyespread=4, brow='angry',   nose='long',   mouth='none'),
-    'nellie':       dict(eyes='oval',   eyespread=4, brow='high',    nose='dot',    mouth='smirk'),
-    'munchausen':   dict(eyes='wide',   eyespread=4, brow='bushy',   nose='bulb',   mouth='none'),
-    'johnhenry':    dict(eyes='round',  eyespread=4, brow='flat',    nose='bulb',   mouth='line'),
+    # the folk and the tall
+    'paulbunyan':   dict(eyes='round',  eyespread=4, brow='bushy',   nose='bulb',   mouth='none'),
+    'pinocchio':    dict(eyes='cartoon',eyespread=3, brow='high',    nose='button', mouth='grin'),
+    'golem':        dict(eyes='wide',   eyespread=4, brow='flat',                   mouth='line'),
+    'ichabod':      dict(eyes='wide',   eyespread=4, brow='worried', nose='long',   mouth='line'),
+    'longjohn':     dict(eyes='oval',   eyespread=4, brow='angry',   nose='bulb',   mouth='smirk'),
 }
 
 for _k, _f in FACES.items():
