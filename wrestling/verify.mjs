@@ -398,6 +398,74 @@ section('each beat of a story has a scene on the walk to the ring');
   await page.close();
 }
 
+/* ---------- 4g. every story kind has a way in ----------
+   Betrayal and underdog were proven reachable by scene id and never fired
+   in fifteen career-years, because nothing in play could assign them. This
+   drives each door directly. */
+section('every story kind has a way in');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={};
+    G.car.rec.w=1;
+    const roster=houseRoster(myPromoId());
+    const top=roster.slice().sort((a,b)=>(b.over||55)-(a.over||55))[0];
+    const reset=()=>{ G.story=null; G.car.rivalId=null; G.car._scenesSeen=[]; G.car._sceneMem={}; G.car.storiesResolved=[]; };
+    // 1. underdog: lose twice to the best in the room, in matches worth watching
+    reset(); const R=rel(top.id); R.wins=0; R.losses=0; R.matches=0; R.heat=0; R.cooldown=0;
+    const offer=(gap)=>({oppId:top.id, oppName:top.name, oppOvr:ovr(G.w)+gap, stip:'singles', stipLabel:'Singles Match', mult:1, purse:400, stakes:'standard', card:'Mid-Card'});
+    const loss=()=>({quality:60, win:false, good:[], bad:[], used:[], nearFalls:2, time:'11:00', finish:{type:'pin', by:false}});
+    applyMatch(offer(2), loss());
+    out.underdogAfterOne = story() ? story().kind : null;
+    if(!story()) applyMatch(offer(2), loss());
+    out.underdogAfterTwo = story() ? story().kind : null;
+    out.underdogReason = story() ? story().reason : null;
+    G.car._scenesSeen=[]; G.car._sceneMem={};
+    out.underdogScene = (pickScene('prematch')||{}).id;
+    // 2. jealousy: a belt they do not share pulls loyalty down
+    reset();
+    const mate=roster.find(x=>x.id!==top.id);
+    G.car.allies=[]; formAlliance(mate.id); const a=allyOf(mate.id);
+    G.car.streak=0;
+    a.loyalty=60; G.car.title=null;      for(let i=0;i<10;i++) weeklyLoyalty(); out.driftNoBelt=Math.round((a.loyalty-60)*10)/10;
+    a.loyalty=60; G.car.title=beltName(); for(let i=0;i<10;i++) weeklyLoyalty(); out.driftBelt=Math.round((a.loyalty-60)*10)/10;
+    G.car.title=null;
+    // 3. the wavering ally stops you at the curtain, and the inbox warned you first
+    a.loyalty=33; a._warned=false; weeklyLoyalty();
+    out.warned=!!a._warned && (G.car.inbox||[]).some(i=>/gone quiet/.test(i.txt));
+    G.car._scenesSeen=[]; G.car._sceneMem={};
+    out.waveringScene=(pickScene('prematch')||{}).id;
+    // 4. a betrayal eclipses a live feud with somebody else
+    const other=roster.find(x=>x.id!==top.id && x.id!==mate.id);
+    startStory(other.id,'test'); story().kind='grudge'; story().stage=2;
+    a.loyalty=5; let turned=null; for(let i=0;i<80 && !turned;i++) turned=checkBetrayal();
+    out.turned=!!turned;
+    out.betrayalKind=story()?story().kind:null; out.betrayalWith=!!story() && story().charId===mate.id;
+    out.betrayalReason=story()?story().reason:null;
+    out.droppedRecorded=((G.car.storiesResolved||[])[0]||{}).resolution;
+    G.car._scenesSeen=[]; G.car._sceneMem={};
+    out.betrayalScene=(pickScene('prematch')||{}).id;
+    out.anyScene=(pickScene('any')||{}).id;
+    reset(); G.car.allies=[];
+    return out;
+  });
+  if(errs.length) bad('story kinds page errors: '+errs.slice(0,2).join(' | '));
+  (r.underdogAfterTwo==='underdog') ? ok(`two losses to the best in the room start an underdog story: "${r.underdogReason}"`) : bad(`underdog did not start: after one=${r.underdogAfterOne}, after two=${r.underdogAfterTwo}`);
+  (r.underdogScene==='underdog_pep') ? ok('and the pep talk plays at the curtain') : bad(`underdog scene: picked ${r.underdogScene}`);
+  (r.driftBelt < r.driftNoBelt - 3) ? ok(`a belt they do not share breeds jealousy: ${r.driftNoBelt} over ten weeks without, ${r.driftBelt} with`) : bad(`no jealousy: drift ${r.driftNoBelt} without a belt, ${r.driftBelt} with`);
+  r.warned ? ok('the inbox warns once when an ally goes under 35') : bad('no warning when an ally goes under 35');
+  (r.waveringScene==='ally_wavering') ? ok('a wavering ally stops you at the curtain') : bad(`wavering scene: picked ${r.waveringScene}`);
+  r.turned ? ok('an ally at 5 loyalty turns') : bad('an ally at 5 loyalty never turned in 80 weeks');
+  (r.betrayalKind==='betrayal' && r.betrayalWith) ? ok(`the turn becomes the story, over the live grudge: "${r.betrayalReason}"`) : bad(`after the turn the story is ${r.betrayalKind}, with the betrayer=${r.betrayalWith}`);
+  (r.droppedRecorded==='dropped') ? ok('the eclipsed feud is recorded as dropped') : bad(`eclipsed feud recorded as ${r.droppedRecorded}`);
+  (r.betrayalScene==='betrayal_open') ? ok('and the turn plays at the curtain') : bad(`betrayal scene: picked ${r.betrayalScene}`);
+  (r.anyScene!=='feud_post') ? ok('the hallway afterwards does not play for a dropped feud') : bad('feud_post played for a dropped feud');
+  await page.close();
+}
+
 /* ---------- 5. careers play out ---------- */
 const KINDS_SEEN={};
 if(!QUICK){
@@ -411,9 +479,23 @@ if(!QUICK){
       const problems=[], log=[];
       const P=(msg,ctx)=>problems.push(Object.assign({msg, y:G.car.year, w:G.car.week}, ctx||{}));
       const startYear=G.car.year; let guard=0;
-      let matches=0, wins=0, titleWins=0, dirty=0, stories=0, promos=0; const kinds={}, scenesPlayed={};
+      let matches=0, wins=0, titleWins=0, dirty=0, stories=0, promos=0, alliesFormed=0, lastSk=null; const kinds={}, scenesPlayed={};
       while(G.car.year < startYear+YEARS && guard++<4000){
         const c=G.car;
+        // a story can start anywhere now (a match, a promo, a partner turning
+        // on you in the weekly tick), so count it by identity, not by branch
+        const sk=story()?`${story().charId}:${story().startYear}:${story().startWeek}`:null;
+        if(sk && sk!==lastSk){ stories++; const k=story().kind||'?'; kinds[k]=(kinds[k]||0)+1;
+          log.push(`Y${c.year}W${c.week} ${(STORY_KINDS[k]||{}).name||k} with ${charById(story().charId).name}: ${story().reason}`); }
+        lastSk=sk;
+        // a player who is winning makes friends: shake on it with the first
+        // person who rates you, a couple of times a year, so a partner can
+        // exist to turn on you
+        if(matches%12===5 && allies().length<2 && !c._shookThisMatch){
+          const f=houseRoster(myPromoId()).find(x=>canAlly(x.id));
+          if(f){ formAlliance(f.id); alliesFormed++; c._shookThisMatch=true; }
+        }
+        if(matches%12!==5) c._shookThisMatch=false;
         if(!(c.cond>=0&&c.cond<=100)) P('condition out of range',{cond:c.cond});
         if(!(c.pop>=0&&c.pop<=100)) P('pop out of range',{pop:c.pop});
         if(!(c.standing>=0&&c.standing<=100)) P('standing out of range',{standing:c.standing});
@@ -459,7 +541,8 @@ if(!QUICK){
                   if(line && (line.indexOf(String.fromCharCode(8212))>=0||line.indexOf(String.fromCharCode(8211))>=0)) P('scene line has a dash',{scene:sc.id});
                   let opts=[]; try{ opts=typeof start.opts==='function'?start.opts(x):(start.opts||[]); }catch(e){ P('scene opts threw: '+e.message,{scene:sc.id}); }
                   if(!opts.length) P('scene offered nothing to say',{scene:sc.id});
-                  const pick=opts[0];
+                  // rotate through the options so every line gets said over a career
+                  const pick=opts[matches%opts.length];
                   if(pick){
                     if(pick.eff) applySceneEffect(pick.eff, x);
                     if(pick.mem) sceneRemember(pick.mem);
@@ -477,7 +560,6 @@ if(!QUICK){
           if(!(res.moved && res.moved.length===7)) P('result has no what-moved rows',{stip:o.stipLabel});
           if(res.retainedDirty){ dirty++; if(c.title!==titleBefore) P('belt moved on a '+res.retainedDirty,{stakes:o.stakes}); }
           if(!titleBefore && c.title){ titleWins++; log.push(`Y${c.year}W${c.week} won the ${c.title} from ${o.oppName} (${res.quality})`); }
-          if(!stBefore && story()) { stories++; kinds[story().kind||'?']=(kinds[story().kind||'?']||0)+1; log.push(`Y${c.year}W${c.week} ${(STORY_KINDS[story().kind]||{}).name||story().kind} with ${charById(story().charId).name}: ${story().reason}`); }
           if(stBefore && !story()){ const r0=(c.storiesResolved||[])[0]||{}; log.push(`Y${c.year}W${c.week} feud settled ${r0.resolution||''} after ${r0.matches||0} matches (avg ${r0.avg||0})${res.storyEnded?' · ceremony':''}`); }
           // applyMatch ends the week itself. Calling advanceWeek here too
           // skipped every other week and halved the match count for months
@@ -488,7 +570,7 @@ if(!QUICK){
       }
       (G.car.storiesResolved||[]).forEach(r=>{ if(!r.kind) P('resolved story without a kind',{name:r.name}); });
       const storyScenes=Object.keys(scenesPlayed).filter(id=>/^(feud_|betrayal_open|veteran_lesson|underdog_pep)/.test(id)).reduce((n,id)=>n+scenesPlayed[id],0);
-      return {problems, log, summary:{years:G.car.year-startYear, matches, wins, titleWins, dirty, stories, kinds, storyScenes, scenesPlayed, promos, ovr:ovr(G.w), pop:Math.round(G.car.pop), rooms:sentiment()}};
+      return {problems, log, summary:{years:G.car.year-startYear, matches, wins, titleWins, dirty, stories, kinds, storyScenes, scenesPlayed, allies:alliesFormed, dropped:(G.car.storiesResolved||[]).filter(r=>r.resolution==='dropped').length, promos, ovr:ovr(G.w), pop:Math.round(G.car.pop), rooms:sentiment()}};
     }, YEARS);
     if(errs.length) bad(`run ${run} page errors: `+errs.slice(0,3).join(' | '));
     if(result.problems.length){ bad(`run ${run}: ${result.problems.length} problems`); result.problems.slice(0,6).forEach(p=>console.log('       '+JSON.stringify(p))); }
