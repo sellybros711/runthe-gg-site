@@ -918,6 +918,11 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--fn);font-size:10px;font-weight:800;
     letter-spacing:.08em;text-transform:uppercase;color:rgba(243,221,174,.82)}
   .wrules:active{background:rgba(226,178,90,.2);color:#F3DDAE}
+  /* The same pill on the draft and season screens, riding under the Gauntlet line: pushed to
+     the right so it reads as a quiet aside to the goal, not a call to action competing with
+     the draft below it. */
+  .gaunt-help{display:block;margin:8px 0 2px auto;width:fit-content}
+  .gaunt-help[hidden]{display:none}
 
   /* WHAT THE OWNER WANTS, on the squad screen, in the panel the coach used to hold. It had
      its own type here and its own sentence in paintOwnerLine, and the offseason card had a
@@ -6150,6 +6155,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            block under it, so it reads as part of the same HUD rather than a banner stuck
            on top of one. See paintDynastyDraftBar(). -->
       <div class="gdraft" id="d-gaunt" hidden></div>
+      <!-- The way to the rules, on the draft screen too. The first draft shows them once; this
+           is how you get back to them after that. Shown with the Gauntlet line, so it is only
+           ever there in this mode. paintDynastyDraftBar toggles it. -->
+      <button class="wrules gaunt-help" id="b-d-rules" hidden>How to play</button>
       <!-- The roster mandate, on the fill-draft screen so the goal and its running count are
            in front of you while you sign the men that meet it. paintMandate fills it. -->
       <div class="mandate" id="d-mandate" hidden></div>
@@ -6325,6 +6334,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
     <div class="eyebrow" id="q-step">Step 3 of 3</div>
     <h2 class="display" style="font-size:27px;margin:5px 0 6px">Your team</h2>
     <p class="dim" style="font-size:13px;margin:0 0 12px">Tap a player for his numbers. The rail under the field arcs between the players who connect, and the number on a shirt is how many he connects to.</p>
+    <!-- The rules, on the squad screen too. This is the pre-season hub, the one screen a player
+         sits on before kickoff, so it is where a first-time Gauntlet player is most likely to
+         go looking for how the mode works. paintSquad toggles it. -->
+    <button class="wrules gaunt-help" id="b-q-rules" hidden>How to play</button>
     <div class="squad-split">
       <div class="squad-left">
         <div class="field" id="field2"></div>
@@ -6410,6 +6423,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          said what the record has to be, so the mode's one rule was invisible for the
          hour a player spends here. See paintGauntletBar(). -->
     <div class="gauntbar" id="v-gaunt" hidden></div>
+    <!-- The rules, one tap away during the season as well. paintGauntletBar toggles it. -->
+    <button class="wrules gaunt-help" id="b-v-rules" hidden>How to play</button>
     <div class="cap-tracker" id="cap-tracker" hidden>
       <div class="cap-bar"><div class="cap-fill" id="cap-fill"></div></div>
       <div class="cap-labels">
@@ -8810,6 +8825,9 @@ function reviewDynastyRules(){
   openSheet();
   $('b-dyni-go').onclick=closeSheet;
 }
+/* The How to play button that rides with the Gauntlet's goal bar on the draft and season
+   screens: shown when the bar is, gone with it, always opening the rules sheet. */
+function gauntHelp(id,on){ const b=$(id); if(!b) return; b.hidden=!on; if(on) b.onclick=reviewDynastyRules; }
 
 /* ───────── THE GAUNTLET IS WRITTEN DOWN ────────────────────────────────────────────
  *
@@ -10218,7 +10236,8 @@ function clubPicker(){
  */
 function paintDynastyDraftBar(){
   const el=$('d-gaunt'); if(!el) return;
-  if(!run||!run.dynasty){ el.hidden=true; return; }
+  if(!run||!run.dynasty){ el.hidden=true; gauntHelp('b-d-rules',false); return; }
+  gauntHelp('b-d-rules',true);
   const bar=R.effectiveWinBar(run);
   const h=run.history||[];
   const last=h.length?h[h.length-1]:null;
@@ -12135,6 +12154,7 @@ function paintChemSplit(){
    no season at all and wants one built. */
 function paintSquad(keepSeason){
   if(!(keepSeason&&run.season)) R.startSeason(run,dataNow(),CTX);
+  gauntHelp('b-q-rules',!!(run&&run.dynasty));
   /* THE MANDATE IS JUDGED HERE, on the roster that just took the field, the first frame of
      the season it governed. applyChallengeResult is idempotent, so a reload at week zero
      re-runs it to no effect; the banner only announces the season it actually resolved. */
@@ -12552,7 +12572,8 @@ function paintCalendar(justPlayed){
  */
 function paintGauntletBar(s){
   const el=$('v-gaunt'); if(!el) return;
-  if(!run||!run.dynasty||!s){ el.hidden=true; return; }
+  if(!run||!run.dynasty||!s){ el.hidden=true; gauntHelp('b-v-rules',false); return; }
+  gauntHelp('b-v-rules',true);
   const bar=R.effectiveWinBar(run);
   const reg=s.results.filter(r=>!r.playoff);
   const wins=reg.filter(r=>r.won).length;
