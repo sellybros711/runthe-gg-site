@@ -21,6 +21,7 @@
      cup sim              one click runs the CPU matches to yours, or to the end
      clinch, elimination  in and out are marked only once the games left make it certain
      season awards        a fixed season hands out the same hardware, archived once
+     phone                at 390 wide the placards stand apart, the ball keeps a size
 
    Needs Playwright with Chromium. Locally:
      node allstars/verify-rules.mjs
@@ -471,6 +472,54 @@ async function main() {
       ok(r.caseText.includes('Trophy case'), 'the menu opens the trophy case', JSON.stringify(r.caseText));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
+    }
+
+    /* ---- the phone: placards apart, the ball a size, the ring pointed at ---- */
+    {
+      console.log('phone');
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      const pg = await ctx.newPage();
+      const errors = [];
+      pg.on('pageerror', e => errors.push(e.message));
+      await pg.goto(URL);
+      await pg.evaluate(() => localStorage.clear());
+      await pg.goto(URL);
+      await pg.evaluate(() => {
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false; window.confirm = () => true;
+        State.gameSpeed = 'fast'; applyGameSpeed();
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });
+      });
+      await wait(pg, 900);
+      const r = await pg.evaluate(async () => {
+        const boxes = [...document.querySelectorAll('.arena .corner')]
+          .filter(c => getComputedStyle(c).display !== 'none')
+          .map(c => { const b = c.getBoundingClientRect(); return { cls: c.className, x: b.x, y: b.y, r: b.right, b: b.bottom }; });
+        let overlap = null;
+        for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i], c = boxes[j];
+          if (a.x < c.r && c.x < a.r && a.y < c.b && c.y < a.b) overlap = [a.cls, c.cls];
+        }
+        const strip = document.querySelector('.park-strip');
+        const field = document.getElementById('field').getBoundingClientRect();
+        /* A fly ball with you in the field: the ring and its line. */
+        endAtBatCleanup(); State.game.pitch = null;
+        scheduleFlyCatchMinigame('fly out', currentBatter());
+        await new Promise(r => setTimeout(r, 1400));
+        const p = State.game.play;
+        return { n: boxes.length, overlap, strip: strip && getComputedStyle(strip).display, stripText: strip && strip.textContent,
+                 park: currentTheme().park, view: FIELD_VIEW, ballCss: ballRadiusMin() * FIELD_VIEW,
+                 fieldW: field.width, noWide: document.documentElement.scrollWidth <= innerWidth,
+                 ring: !!(p && p.catchActive), chaseAt: !!(p && p.chaseAt) };
+      });
+      ok(r.n === 2 && !r.overlap, 'two placards on the field and they do not touch', JSON.stringify({ n: r.n, overlap: r.overlap }));
+      ok(r.strip === 'block' && r.stripText === r.park, 'the park name is a strip above the board', JSON.stringify({ strip: r.strip, text: r.stripText, park: r.park }));
+      ok(r.view < 0.5 && Math.abs(r.ballCss - 4) < 0.01, 'the ball is four CSS pixels on a phone', JSON.stringify({ view: r.view, ballCss: r.ballCss }));
+      ok(r.noWide, 'the page does not scroll sideways');
+      ok(r.ring && r.chaseAt, 'the catch ring has a fielder to point from', JSON.stringify({ ring: r.ring, chaseAt: r.chaseAt }));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await ctx.close();
     }
   } finally {
     await browser.close();

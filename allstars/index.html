@@ -265,12 +265,32 @@
   .form-chip.hot{background:var(--gold);color:#fff6ea;}
   .form-chip.cold{background:#cfe3f2;color:var(--navy);}
 
+  /* The park's name, off the field on a phone: as a placard it sat on
+     top of both score chips at 390 wide. Hidden on a desk, where the
+     placard has room. */
+  .park-strip{display:none;text-align:center;font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;font-weight:900;color:var(--gold);margin:-4px 0 6px;}
   @media (max-width:600px){
     .callout{font-size:18px;padding:10px 18px;}
     .callout.homer{font-size:22px;}
-    .arena .corner{padding:4px 6px;font-size:10px;}
-    .arena .corner .val{font-size:16px;}
-    .arena .corner.br .val{font-size:11px;}
+    /* THREE PLACARDS ON A PHONE FIELD IS TWO TOO MANY. The two score chips
+       go: the line score right above the field already carries both scores
+       and the inning. What stays is the pair that the board does not have,
+       whose turn it is and the count, and the park name moves to a strip
+       above the board. */
+    .arena .corner.park,.arena .corner.tl,.arena .corner.tr{display:none;}
+    .park-strip{display:block;}
+    .arena .corner{padding:3px 6px;font-size:9px;letter-spacing:.08em;}
+    .arena .corner .val{font-size:13px;}
+    .arena .corner.br .val{font-size:10px;}
+    .arena .corner.bl,.arena .corner.br{bottom:6px;}
+    .arena .corner.bl{left:6px;} .arena .corner.br{right:6px;}
+    .brand{padding:6px 0 8px;gap:6px;}
+    .brand h1{font-size:15px;letter-spacing:.1em;}
+    .brand .tag{display:none;}
+    .brand button{font-size:9px;padding:4px 7px;margin-left:4px;white-space:nowrap;}
+    .wrap{padding:8px 8px 40px;}
+    .linescore th,.linescore td{padding:3px 6px;}
   }
 
   .plate-row{
@@ -4487,6 +4507,10 @@ function endAtBatCleanup() {
    here so the diamond stays visible between pitches, half innings, and
    result callouts. */
 let fieldRafId = 0;
+/* CSS pixels per logical field pixel, measured each frame. On a desk it is
+   about one; on a phone a third. Anything that has to stay legible on
+   screen (the ball, the catch ring) reads it and floors its own size. */
+let FIELD_VIEW = 1;
 /* The logical field, the size every coordinate in fieldGeom() is in, and the
    factor the on screen bitmap is larger by. */
 const FIELD_W = 960, FIELD_H = 660, FIELD_K = 1.5;
@@ -4521,6 +4545,7 @@ function startFieldLoop() {
          restores around its own transforms, so this base survives it. */
       ctx.setTransform(FIELD_K, 0, 0, FIELD_K, 0, 0);
       ctx.imageSmoothingEnabled = false;
+      if (fCv.clientWidth) FIELD_VIEW = fCv.clientWidth / FIELD_W;
       drawField(ctx, FIELD_W, FIELD_H, t, p || null, inWindup);
       refreshStealButton();
     }
@@ -6977,6 +7002,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
           : away ? (beatAB ? 'back-run-a' : 'back-run-b')
                  : (beatAB ? 'run-a' : 'run-b');
         drawRunner(ctx, fx, fy, fielder, ch.sc, frame);
+        p.chaseAt = { x: fx, y: fy };
         /* No glove flash fired from here. The play already spawns one at
            ball arrival, on a timer set when the play was built; a second
            one from the draw loop is the same catch celebrated twice. All
@@ -7265,6 +7291,18 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   if (g && g.play && g.play.catchActive && g.play.catchWindow) {
     const cw = g.play.catchWindow;
     const t = clamp((performance.now() - cw.startedAt) / cw.duration, 0, 1);
+    /* A line from the man chasing to the spot, so the ring reads as HIS
+       target and not a shape on the grass. On a phone the fielder and the
+       ring can be a thumb apart. */
+    const at = g.play.chaseAt;
+    if (at) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(15,107,57,.75)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.moveTo(at.x, at.y); ctx.lineTo(cw.landingX, cw.landingY); ctx.stroke();
+      ctx.restore();
+    }
     drawCatchRing(ctx, cw.landingX, cw.landingY, t);
   }
 
@@ -7361,10 +7399,15 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
   ctx.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + 12);
 }
 
+/* The smallest ball worth drawing: four CSS pixels of radius on screen,
+   whatever the field is scaled to. Five logical pixels was two on a
+   phone, which is a fleck on the grass. */
+function ballRadiusMin() { return 4 / (FIELD_VIEW || 1); }
 function drawBaseball(ctx, x, y, groundY) {
   /* Optional ground shadow: pass the y of the ground plane and we drop a
      small shadow there, so a high arc reads as high. */
-  let rad = 5;
+  const floor = ballRadiusMin();
+  let rad = Math.max(5, floor);
   if (typeof groundY === 'number') {
     const drop = Math.max(0, groundY - y);
     const alpha = clamp(0.35 - drop * 0.0015, 0.05, 0.35);
@@ -7376,7 +7419,7 @@ function drawBaseball(ctx, x, y, groundY) {
     /* The ball swells as it climbs toward the camera: a pop fly at its
        peak is nearer the viewer than the grass under it, and the size
        change is what makes the arc read as UP rather than away. */
-    rad = 5 + Math.min(4, drop * 0.022);
+    rad = Math.max(floor, 5 + Math.min(4, drop * 0.022));
   }
   ctx.fillStyle = '#eaeaea';
   ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.fill();
@@ -7540,6 +7583,8 @@ function renderGame() {
   const g = State.game;
   const s = el('div','screen');
 
+  /* The park, above the board on a phone (CSS decides; see .park-strip). */
+  s.appendChild(el('div', 'park-strip', currentTheme().park));
   /* Line score above the field, real ballpark style. */
   const ls = el('div','linescore');
   ls.id = 'linescore';
