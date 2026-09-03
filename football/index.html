@@ -1176,6 +1176,95 @@ window.GA_ID='G-L29P5MRWKE';
   .gauntbar.dead{border-color:rgba(248,113,113,.5)}
   .gauntbar.dead .gb-note{color:#f87171}
 
+  /* ---- THE BOSS SEASONS ----
+     A marquee game reads as an event, not a menu, so it gets the mode's graphite and one
+     hard accent rather than the friendly reds of the front page. See bossScout / bossPlay. */
+  .bossx .bs-name,.bossx .bg-opp{font-family:var(--fd,var(--fn));font-size:28px;
+    line-height:1.02;margin:6px 0 4px;letter-spacing:.01em;color:#f4f7fc;text-wrap:balance}
+  .bs-line{font-family:var(--fn);font-size:13px;color:var(--dim);margin-bottom:13px}
+  .bs-stats{display:flex;gap:9px;margin-bottom:13px}
+  .bs-stat{flex:1;text-align:center;padding:11px 6px;border-radius:11px;
+    border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03)}
+  .bs-stat b{display:block;font-family:var(--fd,var(--fn));font-size:26px;color:#f4f7fc;
+    line-height:1;font-variant-numeric:tabular-nums}
+  .bs-stat span{display:block;margin-top:5px;font-family:var(--fn);font-size:9px;
+    font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim-2)}
+  .bs-tell{position:relative;padding:12px 14px;border-radius:12px;margin-bottom:11px;
+    border:1px solid rgba(226,178,90,.34);background:rgba(40,32,17,.55);
+    font-family:var(--fn);font-size:14px;font-style:italic;line-height:1.4;color:#f3ddae}
+  .bs-tell:before{content:'SCOUT';position:absolute;top:-8px;left:12px;padding:1px 7px;
+    border-radius:5px;background:#e2b25a;color:#141414;font-family:var(--fn);font-size:8px;
+    font-weight:800;letter-spacing:.11em;font-style:normal}
+  .bs-reward{font-family:var(--fn);font-size:12.5px;font-weight:700;color:#4ade80;
+    margin-bottom:18px;letter-spacing:.01em}
+  .bs-reward.penalty{color:#f87171}
+  .bs-ask{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim-2);margin-bottom:9px}
+  .bs-picks{display:grid;gap:8px}
+  .bpick{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;
+    padding:13px 15px;border-radius:12px;cursor:pointer;text-align:left;
+    border:1.5px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);color:#eef2f9;
+    font-family:inherit;transition:border-color .15s,background .15s,transform .05s}
+  .bpick:hover{border-color:rgba(226,178,90,.6);background:rgba(226,178,90,.08)}
+  .bpick:active{transform:translateY(1px)}
+  .bpick b{font-family:var(--fn);font-size:15px;font-weight:800}
+  .bpick span{font-family:var(--fn);font-size:11px;color:var(--dim)}
+  .bpick[disabled]{opacity:.4;pointer-events:none}
+  .bs-foot{font-family:var(--fn);font-size:11px;color:var(--dim-2);margin:15px 0 0;
+    line-height:1.4}
+  /* The teaser on the owner's own bar, under his verdict. A quiet gold line, because the
+     loud version is the game it leads to. */
+  .ob-boss{display:block;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);
+    font-family:var(--fn);font-size:12px;color:rgba(243,221,174,.72);line-height:1.4}
+  .ob-boss b{color:#f3ddae;font-weight:800}
+  .bossbug{margin-top:4px}
+  .bg-narr{min-height:20px;margin:14px 2px 4px;font-family:var(--fn);font-size:13.5px;
+    line-height:1.4;color:var(--dim);text-align:center}
+  .bg-narr b{color:#f4f7fc;font-weight:700}
+  .bg-narr .good{color:#4ade80;font-weight:800}
+  .bg-narr .bad{color:#f87171;font-weight:800}
+  .bg-calls{margin-top:12px;display:grid;gap:9px}
+  .bg-calls[hidden]{display:none}
+  .bcall-q{font-family:var(--fn);font-size:13px;font-weight:700;color:#f4f7fc;
+    text-align:center;margin-bottom:2px}
+  .bcall-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .bcall{padding:14px 10px;border-radius:12px;cursor:pointer;text-align:center;
+    border:1.5px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);color:#eef2f9;
+    font-family:inherit;transition:border-color .15s,background .15s,transform .05s}
+  .bcall:active{transform:translateY(1px)}
+  .bcall b{display:block;font-family:var(--fn);font-size:14px;font-weight:800}
+  .bcall span{display:block;margin-top:2px;font-family:var(--fn);font-size:10px;
+    color:var(--dim)}
+  .bcall.go{border-color:rgba(248,113,113,.45)}
+  .bcall.go:hover{border-color:rgba(248,113,113,.8);background:rgba(248,113,113,.08)}
+  .bcall.safe:hover{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.07)}
+  .bg-done{margin-top:16px}
+  .bg-done[hidden]{display:none}
+  .bg-verdict{text-align:center;padding:16px;border-radius:14px;margin-bottom:14px;
+    border:1.5px solid rgba(255,255,255,.14)}
+  .bg-verdict.won{border-color:rgba(226,178,90,.55);
+    background:linear-gradient(180deg,rgba(40,32,17,.75),rgba(19,17,13,.75))}
+  .bg-verdict.lost{border-color:rgba(248,113,113,.45);background:rgba(30,15,15,.6)}
+  .bg-outcome{font-family:var(--fd,var(--fn));font-size:30px;color:#f4f7fc;line-height:1}
+  .bg-verdict.won .bg-outcome{color:#f3ddae}
+  .bg-note{margin:8px 0 0;font-family:var(--fn);font-size:13px;line-height:1.4;
+    color:var(--dim)}
+  .bf-lede{font-family:var(--fn);font-size:13.5px;line-height:1.45;color:var(--dim);
+    margin:0 0 14px}
+  .bf-roster{display:grid;gap:8px}
+  .bfman{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:12px 14px;border-radius:12px;cursor:pointer;text-align:left;width:100%;
+    border:1.5px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);color:#eef2f9;
+    font-family:inherit;transition:border-color .15s,background .15s,transform .05s}
+  .bfman:hover{border-color:rgba(74,222,128,.6);background:rgba(74,222,128,.07)}
+  .bfman:active{transform:translateY(1px)}
+  .bfman .bfm-l{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .bfman .bfm-name{font-family:var(--fn);font-size:15px;font-weight:800;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .bfman .bfm-sub{font-family:var(--fn);font-size:11px;color:var(--dim)}
+  .bfman .bfm-r{font-family:var(--fd,var(--fn));font-size:18px;color:#f4f7fc;
+    font-variant-numeric:tabular-nums;flex:none}
+
   .pips{display:flex;gap:4px;margin-top:9px}
   .pip{flex:1 1 0;height:6px;border-radius:3px;background:rgba(255,255,255,.08);
     transition:background .4s ease,box-shadow .4s ease}
@@ -6561,6 +6650,67 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <span class="ggad-go">Play &#8599;</span></a>
   </div>
 
+  <!-- ===== THE GAUNTLET'S BOSS SEASONS =====
+       Three screens for the one flow that reaches them, and only in a dynasty: SCOUT the
+       boss and pick how to attack, PLAY the game making two live calls, then a result that
+       either pays a reward or stings next season. See bossScout / bossPlay / bossFinish. The
+       scoreboard is the same bug the playoffs and the Bowl use, so a boss game reads like a
+       game and not like a menu. -->
+  <div class="screen bossx" id="s-bscout">
+    <div class="eyebrow red">Boss game &middot; Season <span id="bs-season">5</span></div>
+    <h2 class="display bs-name" id="bs-name">The Boss</h2>
+    <div class="bs-line" id="bs-rec">13-3, and the best of their era.</div>
+    <div class="bs-stats">
+      <div class="bs-stat"><b id="bs-scored">0</b><span>points they score</span></div>
+      <div class="bs-stat"><b id="bs-allowed">0</b><span>points they allow</span></div>
+    </div>
+    <div class="bs-tell" id="bs-tell"></div>
+    <div class="bs-reward" id="bs-reward"></div>
+    <div class="bs-ask">How do you attack them?</div>
+    <div class="bs-picks">
+      <button class="bpick" data-atk="air"><b>Air it out</b><span>Throw over the top</span></button>
+      <button class="bpick" data-atk="ground"><b>Pound the rock</b><span>Run it, shorten the game</span></button>
+      <button class="bpick" data-atk="trick"><b>Take your shots</b><span>Gadgets and aggression</span></button>
+    </div>
+    <p class="bs-foot">Read the tell. The right answer earns an edge, the wrong one hands
+      them one.</p>
+  </div>
+
+  <div class="screen bossx" id="s-bgame">
+    <div class="eyebrow red" id="bg-eye">Boss game</div>
+    <h2 class="display bg-opp" id="bg-opp">The Boss</h2>
+    <div class="bug big bossbug" id="bg-bug">
+      <div class="btop">
+        <div class="bt you lead" id="bg-you"><span class="cd">YOU</span>
+          <span class="rc"></span><b class="sc" id="bg-syou">0</b></div>
+        <div class="bt them" id="bg-them"><span class="cd">OPP</span>
+          <span class="rc"></span><b class="sc" id="bg-sthem">0</b></div>
+      </div>
+      <div class="bbot"><span class="q name" id="bg-state">SCOUTING</span>
+        <span class="rd">BOSS</span></div>
+    </div>
+    <div class="bg-narr" id="bg-narr">The scout is in. Time to play.</div>
+    <!-- The two live calls, one at a time. Built by bossAsk, cleared as each resolves. -->
+    <div class="bg-calls" id="bg-calls"></div>
+    <!-- The result, revealed once the calls are in. -->
+    <div class="bg-done" id="bg-done" hidden>
+      <div class="bg-verdict" id="bg-verdict">
+        <div class="bg-outcome" id="bg-outcome">You win</div>
+        <p class="bg-note" id="bg-note"></p>
+      </div>
+      <button class="btn dock-go" id="b-boss-continue">Continue</button>
+    </div>
+  </div>
+
+  <!-- Freeze reward (seasons 10, 20, 30). Pick one man to hold off the clock for good. -->
+  <div class="screen bossx" id="s-bfreeze">
+    <div class="eyebrow gold">Boss beaten</div>
+    <h2 class="display" style="font-size:24px;margin:4px 0 6px">Freeze a player</h2>
+    <p class="bf-lede">Pick one man to hold at his current age and salary for the rest of the
+      run. He will never decline, never age out, never sign elsewhere.</p>
+    <div class="bf-roster" id="bf-roster"></div>
+  </div>
+
   <!-- ===== CHALLENGE A FRIEND =====
        Deep-linked from a shared URL (?c=...). The challenger's team rides in the link, so
        this opens with no account and no server. The friend drafts under the same rules, plays
@@ -7052,7 +7202,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=43;
+const NEED_VERSION=44;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -7558,7 +7708,7 @@ let replaceCtx=null;
 
 /* Screens that get no ad strip: the two where a game is played out and the scoreboard sits
    near the bottom edge. Everywhere else keeps it. */
-const NO_ADS=['s-season','s-po'];
+const NO_ADS=['s-season','s-po','s-bscout','s-bgame','s-bfreeze'];
 /* WHERE THE LEADERBOARD WAS OPENED FROM, so closing it goes back there.
    Recorded in show() rather than at each of the five places that open the board, because
    that is the one place every route has to pass through, including whichever route gets
@@ -8749,7 +8899,8 @@ function dynNewSheet(){
  * property read and a comparison in every other mode.
  */
 ['spin','respin','sign','startSeason','advanceWeek','startPlayoffs','hireCoach','setPlan',
- 'finishHiring','takeTheField','beginOffseason','releaseMan','finishOffseason','ownerVerdict']
+ 'finishHiring','takeTheField','beginOffseason','releaseMan','finishOffseason','ownerVerdict',
+ 'applyBossResult']
   .forEach((fn)=>{
     const orig=R[fn];
     if(typeof orig!=='function') return;
@@ -9930,7 +10081,7 @@ function clubPicker(){
 function paintDynastyDraftBar(){
   const el=$('d-gaunt'); if(!el) return;
   if(!run||!run.dynasty){ el.hidden=true; return; }
-  const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
+  const bar=R.effectiveWinBar(run);
   const h=run.history||[];
   const last=h.length?h[h.length-1]:null;
   const cols=[];
@@ -10912,7 +11063,7 @@ function dynastyLap(){
  * squad screen's own heading does.
  */
 function dynastyGoalHTML(withSeason){
-  const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
+  const bar=R.effectiveWinBar(run);
   const L=dynastyLap();
   let pips='';
   for(let i=1;i<=L.lap;i++) pips+='<i class="pip'+(i<L.at?' done':(i===L.at?' now':''))+'"></i>';
@@ -12182,7 +12333,7 @@ function paintCalendar(justPlayed){
 function paintGauntletBar(s){
   const el=$('v-gaunt'); if(!el) return;
   if(!run||!run.dynasty||!s){ el.hidden=true; return; }
-  const bar=E.dynastyWinBar(run.seasonNo,run.stepSeasons);
+  const bar=R.effectiveWinBar(run);
   const reg=s.results.filter(r=>!r.playoff);
   const wins=reg.filter(r=>r.won).length;
   const left=Math.max(0,run.schedule.length-reg.length);
@@ -14978,7 +15129,7 @@ function paintOwner(){
    * "2013 is next" is the thing a player is actually holding on to, and the target is
    * flat inside a lap so it only needs saying when it moves.
    */
-  const next=E.dynastyWinBar(run.seasonNo+1,run.stepSeasons);
+  const next=R.effectiveWinBar(run,run.seasonNo+1);
   const stepped=next>v.bar;
   bar.innerHTML='<span class="ob-tag">'+(v.fired?'Run over':'Through')+'</span>'+
     (v.fired
@@ -15014,29 +15165,231 @@ function paintOwner(){
   if(over) over.classList.toggle('over',!!v.fired);
   paintRunCard(v);
 
+  /* A BOSS GAME STANDS BETWEEN THE SEASON AND THE WINTER, and only when there is one and the
+     run survived to see it. The teaser goes on the owner's own bar rather than a panel of its
+     own, because it is the same voice: you cleared the bar, now here is the marquee game. */
+  const boss=(!v.fired&&R.bossPending(run))?R.bossFor(run):null;
+  if(boss){
+    const rw=boss.reward==='freeze'
+      ? 'Win it to freeze a player for good.'
+      : 'Win it to wipe your dead cap.';
+    bar.insertAdjacentHTML('beforeend',
+      '<span class="ob-boss">A game against <b>'+esc(boss.note)+'</b> awaits. '+rw+'</span>');
+  }
+
   const go=$('b-next-season');
   /* The dock carries it, so the dock is what appears and disappears. A fired run has
      nowhere to go and the screen ends with the ordinary Back to start. */
   paintDock();
   if(go){
     go.hidden=v.fired;
-    go.textContent='Offseason '+(run.seasonNo+1);
-    go.onclick=()=>{
-      /* THE SEASON THAT JUST ENDED IS RECORDED; THE NEXT ONE IS NOT YET.
-         `submitted` and the placings belong to one season, and outside a dynasty a run only
-         ever has one, so nothing has ever cleared them between two. Here a run has many:
-         left alone, recordRun's "already sent" guard would hold for the rest of the dynasty
-         and every season after the first would quietly fail to reach the board.
-         Before beginOffseason rather than after, because the save is written the instant it
-         returns and the cleared value is the one that belongs in it. */
-      submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null;
-      lastPerfectShare=null;
-      try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON); }
-      catch(err){ toast(err.message); return; }
-      ga('dynasty_winter',{season:run.seasonNo});
-      paintWinter();
-    };
+    if(boss){
+      /* The boss comes first. The button opens the scout; the winter waits on the other side
+         of the game, reached from its result screen. */
+      go.textContent='Face '+boss.note;
+      go.onclick=bossScout;
+    }else{
+      go.textContent='Offseason '+(run.seasonNo+1);
+      go.onclick=dynToWinter;
+    }
   }
+}
+
+/*
+ * INTO THE WINTER. The one way from a finished season to the next offseason, shared by the
+ * ordinary Next button and the far side of a boss game.
+ *
+ * THE SEASON THAT JUST ENDED IS RECORDED; THE NEXT ONE IS NOT YET. `submitted` and the
+ * placings belong to one season, and outside a dynasty a run only ever has one, so nothing
+ * has ever cleared them between two. Here a run has many: left alone, recordRun's "already
+ * sent" guard would hold for the rest of the dynasty and every season after the first would
+ * quietly fail to reach the board. Before beginOffseason rather than after, because the save
+ * is written the instant it returns and the cleared value is the one that belongs in it.
+ */
+function dynToWinter(){
+  submitted=null; myRanks=null; myGmRank=null; ranksP=null; gmRankP=null;
+  lastPerfectShare=null;
+  try{ R.beginOffseason(run,BYKEY,DATA_LAST_SEASON); }
+  catch(err){ toast(err.message); return; }
+  ga('dynasty_winter',{season:run.seasonNo});
+  paintWinter();
+}
+
+/*
+ * ─── THE BOSS GAME, ON SCREEN ──────────────────────────────────────────────────────
+ *
+ * Three screens, one flow: SCOUT (pick how to attack), PLAY (make two live calls on the
+ * broadcast bug), RESULT (a reward or a sting, then into the winter). The game itself is
+ * resolved by the engine: bossGameStart applies the scout read, bossGameCall resolves each
+ * gamble, bossGameFinal reads the verdict. This file only drives the screens and animates
+ * the numbers the engine hands back, the way runSim animates a season it did not decide.
+ *
+ * NOT SAVED MID-GAME. run.js autosaves at rest, and a boss game is not rest: a reload lands
+ * on the OVER screen (dynResume routes phase OVER to paintOver), which offers the boss again.
+ * The result is banked only when applyBossResult runs on the far side, and that call IS
+ * wrapped, so once the reward is taken it survives a reload.
+ */
+let bossState=null, bossRng=null, bossSpecNow=null;
+
+/* Two calls, in order. Words only; the swing and the odds are the engine's. */
+const BOSS_CALLS=[
+  { kind:'fourth', q:'Fourth and one, near midfield.',
+    go:{ b:'Go for it', s:'Convert and the drive lives' },
+    safe:{ b:'Punt', s:'Play field position' } },
+  { kind:'two', q:'You score. The chart says two is live.',
+    go:{ b:'Go for two', s:'Swing the margin' },
+    safe:{ b:'Kick the point', s:'Take the sure one' } },
+];
+
+function bossOppRow(){ const b=R.bossFor(run); return b?DATA.byTeamSeasonId[b.team_season_id]:null; }
+function bossThreeLetter(o){
+  return String(E.nickname(o.franchise)||o.franchise).replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'OPP';
+}
+function setLeadBoss(){
+  const y=bossState.you, t=bossState.them;
+  $('bg-you').classList.toggle('lead',y>=t);
+  $('bg-them').classList.toggle('lead',t>=y);
+}
+
+/* THE SCOUT. Shows the boss and its tell and offers the three attacks. */
+function bossScout(){
+  const b=R.bossFor(run), o=bossOppRow();
+  if(!b||!o){ dynToWinter(); return; }        // no boss data: do not strand the run
+  bossSpecNow=b;
+  $('bs-season').textContent=run.seasonNo;
+  $('bs-name').textContent=o.display;
+  $('bs-rec').textContent=o.record+', and one of the best there has ever been.';
+  $('bs-scored').textContent=Math.round(o.pts_scored_mean);
+  $('bs-allowed').textContent=Math.round(o.pts_allowed_mean);
+  $('bs-tell').textContent=b.tell;
+  const rw=$('bs-reward');
+  rw.className='bs-reward';
+  rw.textContent=b.reward==='freeze'
+    ? 'Beat them and you freeze one player at his current age and salary for good.'
+    : 'Beat them and your dead cap is wiped clean.';
+  document.querySelectorAll('#s-bscout .bpick').forEach((btn)=>{
+    btn.onclick=()=>bossPlay(btn.dataset.atk);
+  });
+  ga('boss_scout',{season:run.seasonNo,boss:b.team_season_id});
+  show('s-bscout');
+}
+
+/* THE GAME. Start it with the chosen read, animate the kickoff scores, then ask the calls. */
+function bossPlay(read){
+  const b=bossSpecNow||R.bossFor(run), o=bossOppRow();
+  if(!b||!o){ dynToWinter(); return; }
+  const chem=(run.season&&run.season.chemistry)
+    || E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier;
+  const leagueAvg=(LEAGUE&&LEAGUE[o.season])||21.5;
+  bossRng=E.createSeededRNG(E.hashSeed('boss|'+run.seed+'|'+run.seasonNo+'|'+read));
+  bossState=E.bossGameStart(run.roster,chem,b,o,leagueAvg,read,bossRng,E.CONSTANTS,1,CAL);
+  $('bg-eye').textContent='Boss game · Season '+run.seasonNo;
+  $('bg-opp').textContent=o.display;
+  $('bg-them').querySelector('.cd').textContent=bossThreeLetter(o);
+  $('bg-syou').textContent='0'; $('bg-sthem').textContent='0';
+  $('bg-you').classList.add('lead'); $('bg-them').classList.remove('lead');
+  $('bg-state').textContent='KICKOFF';
+  $('bg-narr').innerHTML=bossState.readRight
+    ? '<b class="good">Good read.</b> Your plan has them on their heels.'
+    : bossState.readTrap
+      ? '<b class="bad">They saw it coming.</b> That is the one thing they eat alive.'
+      : 'The plan is set. Kickoff.';
+  const calls=$('bg-calls'); calls.hidden=false; calls.innerHTML='';
+  $('bg-done').hidden=true;
+  show('s-bgame');
+  afterPaint(()=>{
+    countTo($('bg-syou'),bossState.you,650);
+    countTo($('bg-sthem'),bossState.them,650);
+    setTimeout(()=>{ setLeadBoss(); bossAsk(0); },850);
+  });
+}
+
+/* ONE CALL. Presents the two options, resolves the chosen one through the engine, animates
+   the score, then moves to the next call or the verdict. */
+function bossAsk(i){
+  if(i>=BOSS_CALLS.length){ bossFinish(); return; }
+  const c=BOSS_CALLS[i];
+  $('bg-state').textContent='YOUR CALL';
+  const box=$('bg-calls'); box.hidden=false;
+  box.innerHTML='<div class="bcall-q">'+esc(c.q)+'</div>'+
+    '<div class="bcall-row">'+
+      '<button class="bcall go" data-c="go"><b>'+c.go.b+'</b><span>'+c.go.s+'</span></button>'+
+      '<button class="bcall safe" data-c="safe"><b>'+c.safe.b+'</b><span>'+c.safe.s+'</span></button>'+
+    '</div>';
+  box.querySelectorAll('.bcall').forEach((btn)=>{
+    btn.onclick=()=>{
+      const choice=btn.dataset.c;
+      const res=E.bossGameCall(bossState,c.kind,choice,bossRng);
+      box.innerHTML='';
+      let msg;
+      if(choice==='safe'){
+        msg=c.kind==='two'?'You kick the extra point.':'You punt it away.';
+      }else if(res.ok){
+        msg='<span class="good">Got it.</span> '
+          +(c.kind==='two'?'The two-point try is good.':'Fourth down, converted.');
+      }else{
+        msg='<span class="bad">No good.</span> '
+          +(c.kind==='two'?'The two fails.':'Stuffed. Turnover on downs.');
+      }
+      $('bg-narr').innerHTML=msg;
+      $('bg-state').textContent=(i>=BOSS_CALLS.length-1)?'FINAL':'IN PLAY';
+      countTo($('bg-syou'),bossState.you,480);
+      setTimeout(()=>{ setLeadBoss(); bossAsk(i+1); },1150);
+    };
+  });
+}
+
+/* THE VERDICT, and the door out of it: a reward on a win, a sting on a loss, the winter on
+   the far side of both. */
+function bossFinish(){
+  const fin=E.bossGameFinal(bossState);
+  const b=bossSpecNow||R.bossFor(run), o=bossOppRow();
+  $('bg-state').textContent='FINAL';
+  $('bg-syou').textContent=fin.you; $('bg-sthem').textContent=fin.them; setLeadBoss();
+  $('bg-calls').hidden=true;
+  const vd=$('bg-verdict'); vd.className='bg-verdict '+(fin.won?'won':'lost');
+  $('bg-outcome').textContent=fin.won?'You win':'You lose';
+  const cont=$('b-boss-continue');
+  if(fin.won){
+    if(b.reward==='freeze'){
+      $('bg-note').textContent='You beat '+o.display+'. Now pick a man to keep forever.';
+      cont.textContent='Choose a player';
+      cont.onclick=()=>bossFreeze();
+    }else{
+      $('bg-note').textContent='You beat '+o.display+'. Your dead cap is wiped clean.';
+      cont.textContent='Into the offseason';
+      cont.onclick=()=>{ R.applyBossResult(run,true); dynToWinter(); };
+    }
+    afterPaint(()=>fireConfetti(confettiTheme(false)));
+  }else{
+    $('bg-note').textContent=o.display+' held on. The owner wants one more win next season.';
+    cont.textContent='Into the offseason';
+    cont.onclick=()=>{ R.applyBossResult(run,false); dynToWinter(); };
+  }
+  ga('boss_result',{season:run.seasonNo,boss:b.team_season_id,won:fin.won,
+    read:bossState.read,readRight:bossState.readRight});
+  $('bg-done').hidden=false;
+}
+
+/* THE FREEZE PICKER (seasons 10, 20, 30). One man held off the clock for good. */
+function bossFreeze(){
+  const host=$('bf-roster'); host.innerHTML='';
+  run.roster.forEach((p,i)=>{
+    const sal=run.salaries[i];
+    const btn=document.createElement('button');
+    btn.className='bfman';
+    btn.innerHTML='<span class="bfm-l"><span class="bfm-name">'+esc(p.name)+'</span>'+
+      '<span class="bfm-sub">'+p.season+' '+esc(E.nickname(p.franchise)||p.franchise)
+        +' · $'+sal+'M</span></span>'+
+      '<span class="bfm-r">'+(Math.round(p.ppr_ppg_mean*10)/10)+'</span>';
+    btn.onclick=()=>{
+      R.applyBossResult(run,true,p.player_id);
+      toast(p.name+' is frozen for good.');
+      dynToWinter();
+    };
+    host.appendChild(btn);
+  });
+  show('s-bfreeze');
 }
 
 function paintOver(){
