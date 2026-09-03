@@ -4392,11 +4392,14 @@ window.GA_ID='G-L29P5MRWKE';
     font-variant-numeric:tabular-nums}
   /* THE ROOKIE MARK, an R in a circle before the name. The Gauntlet only, drawn as a badge
      rather than typed so it reads at a glance the way the position chip does, and green to
-     tie it to the age colour: a rookie is the youngest a man ever is. */
-  .tile .rook{display:inline-block;width:17px;height:17px;line-height:17px;text-align:center;
-    border-radius:50%;background:#4ade80;color:#08210f;font-family:var(--fn);font-size:11px;
-    font-weight:800;vertical-align:3px;margin-right:6px;
-    box-shadow:0 0 0 1px rgba(74,222,128,.35)}
+     tie it to the age colour: a rookie is the youngest a man ever is. One base badge, sized up
+     on the big draft-tile name and down on the tighter roster and winter rows. */
+  .rook{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;
+    border-radius:50%;background:#4ade80;color:#08210f;font-family:var(--fn);font-size:10px;
+    font-weight:800;vertical-align:1px;margin-right:5px;box-shadow:0 0 0 1px rgba(74,222,128,.35)}
+  .tile .rook{width:17px;height:17px;line-height:17px;font-size:11px;vertical-align:3px;margin-right:6px}
+  /* The age on a Gauntlet roster row, coloured inline; the chip only needs its numerals to line up. */
+  .rp-age{font-variant-numeric:tabular-nums;font-weight:700}
   .tile .line{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
     margin-top:5px;font-size:10.5px;line-height:1.3;color:var(--dim)}
   .tile .tf{margin-top:auto;padding-top:7px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
@@ -10569,6 +10572,18 @@ function ageColor(age){
 /* A rookie's very first season, which in a keep-them mode is the whole of his career still
    in front of him. Only true where the data carries a draft year and it matches the season. */
 function isRookieSeason(p){ return !!(p.draft_year&&p.season===p.draft_year); }
+/* THE AGE AND THE ROOKIE MARK, in one place so every screen in the mode reads them the same
+   way. Both are Gauntlet-only: `dyn` gates the colour and the badge, so every other mode's
+   rosters look exactly as they did. `cls` lets a caller keep its own age styling (the winter
+   row's .wage, the draft tile's .age) while taking the colour. */
+function dynAgeHtml(p,dyn,cls){
+  if(!p||!p.age) return '';
+  return '<span class="'+(cls||'age')+'"'+(dyn?' style="color:'+ageColor(p.age)+'"':'')+'>'
+    +p.age+' yrs</span>';
+}
+function dynRookieHtml(p,dyn){
+  return (dyn&&isRookieSeason(p))?'<span class="rook" aria-label="Rookie season">R</span>':'';
+}
 
 /* One player, one tile. A two-column grid rather than full-width rows: the price
    and the points get their own corner instead of competing with the name for one
@@ -10583,12 +10598,8 @@ function optTile(row){
      the wheel is how many of these he has left. Rendered from the data rather than derived
      here, and simply absent on a row that has no birth date; coloured only in the mode where
      it decides something, so the other modes read exactly as they did. */
-  const rk=(dyn&&isRookieSeason(p))?'<span class="rook" aria-label="Rookie season">R</span>':'';
-  const ageSpan=p.age
-    ? '<span class="age"'+(dyn?' style="color:'+ageColor(p.age)+'"':'')+'>'+p.age+' yrs</span>'
-    : '';
-  const who='<span class="nm">'+rk+esc(p.name)+'</span>'+
-    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+ageSpan+'</span>';
+  const who='<span class="nm">'+dynRookieHtml(p,dyn)+esc(p.name)+'</span>'+
+    '<span class="sn">'+p.season+' '+esc(E.nickname(p.franchise))+dynAgeHtml(p,dyn)+'</span>';
   const pts='<span class="pts"><b>'+p.fppg.toFixed(1)+'</b><i>FPPG</i></span>';
 
   if(row.block){
@@ -11459,11 +11470,11 @@ function winterRow(a,i){
   const over=winterOverpaid(a);
   return '<div class="wrow '+winterWay(a)+'" data-i="'+i+'">'+
     '<span class="wpos" style="'+posPaint(p.position)+'">'+esc(p.position)+'</span>'+
-    '<span class="wwho"><span class="wnm">'+esc(p.name)+'</span>'+
+    '<span class="wwho"><span class="wnm">'+dynRookieHtml(p,true)+esc(p.name)+'</span>'+
       '<span class="wsub"><span class="wyr" data-from="'+a.was.season+'" data-to="'+p.season+'">'+
         a.was.season+'</span>'+
         '<span>'+esc(E.nickname(p.franchise))+'</span>'+
-        (p.age?'<span class="wage">'+p.age+' yrs</span>':'')+
+        dynAgeHtml(p,true,'wage')+
       '</span></span>'+
     winterSpark(a)+
     '<span class="wmoney"><span class="wsal">'+M(a.wasSalary)+'</span>'+
@@ -12781,10 +12792,12 @@ function rvCardHTML(p,slot,isTop){
   const aw=topAward(p);
   const chip=aw?'<span class="rv-award">'+esc(aw)+'</span>'
     :(isTop?'<span class="rv-star">Top</span>':'');
+  const dyn=!!(run&&run.dynasty);
   const sub=tcPlate(p.franchise,p.season)+' '+esc(E.nickname(p.franchise))+' '+p.season
+    +(dyn&&p.age?' &middot; '+dynAgeHtml(p,true):'')
     +(p.stat_line?' &middot; '+esc(p.stat_line):'');
   return '<span class="rv-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
-    '<div style="min-width:0"><div class="rv-nm-row"><span class="rv-name">'+esc(p.name)+'</span>'+chip+'</div>'+
+    '<div style="min-width:0"><div class="rv-nm-row"><span class="rv-name">'+dynRookieHtml(p,dyn)+esc(p.name)+'</span>'+chip+'</div>'+
       '<div class="rv-team">'+sub+'</div></div>'+
     '<div class="rv-nums"><div class="rv-fppg">0.0</div>'+
       '<div class="rv-money">$'+p.price_musd.toFixed(1)+'M</div></div>';
@@ -13079,10 +13092,16 @@ function paintRosterPanel(bodyId,capId){
       ? '<span class="rp-room over">$'+Math.abs(room).toFixed(1)+'M over cap</span>'
       : '<span class="rp-room">$'+room.toFixed(1)+'M free</span>');
   const order=run.roster.map((p,i)=>({p,i,slot:run.slotIndex[i]})).sort((a,b)=>a.slot-b.slot);
+  /* In The Gauntlet the roster panel carries the age too, coloured the way the draft board is,
+     because the whole roster is ageing under you and this is where you look at it between the
+     wheel and the winter. A plain fact elsewhere, so the other modes' panels are unchanged:
+     no age added, no mark. */
+  const dyn=!!(run&&run.dynasty);
   const row=({p,i,slot})=>'<div class="rp-row" data-i="'+i+'">'+
       '<span class="rp-pos" style="'+posPaint(p.position)+'">'+esc(slotsNow()[slot])+'</span>'+
-      '<div style="min-width:0"><div class="rp-name">'+esc(p.name)+'</div>'+
-        '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M</div></div>'+
+      '<div style="min-width:0"><div class="rp-name">'+dynRookieHtml(p,dyn)+esc(p.name)+'</div>'+
+        '<div class="rp-sub">'+tcPlate(p.franchise,p.season)+' '+p.season+' &middot; $'+p.price_musd.toFixed(1)+'M'+
+          (dyn&&p.age?' &middot; '+dynAgeHtml(p,true,'rp-age'):'')+'</div></div>'+
       '<span class="rp-fppg">'+p.ppr_ppg_mean.toFixed(1)+'<span>FPPG</span></span></div>';
   let h='';
   if(run&&run.full){
@@ -15690,11 +15709,13 @@ function paintOver(){
      FLEX FLEX in the Trade Machine). The flex row is labeled with the position the
      player actually plays rather than the word FLEX, because "FLEX" tells you about the
      slot and you want to know about the player; slotTag still marks which rows are flex. */
+  const dynOver=!!(run&&run.dynasty);
   $('o-rost').innerHTML=slotsNow().map((slot,i)=>{
     const p=bySlot[i]; if(!p) return '';
     const a=topAward(p);
     return '<div class="rrow">'+slotTag(slot,p.position)+
-      '<span class="nm"><b>'+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
+      '<span class="nm"><b>'+dynRookieHtml(p,dynOver)+esc(p.name)+'</b><span>'+p.season+' '+esc(E.nickname(p.franchise))+
+        (dynOver&&p.age?' &middot; '+dynAgeHtml(p,true):'')+
         (p.stat_line?' &middot; '+esc(p.stat_line):'')+'</span></span>'+
       (a?'<span class="awdcol">'+awardChip(a,true)+'</span>':'')+
       '<span class="num"><b>'+p.fppg.toFixed(1)+'</b><span>'+M(p.price_musd)+'</span></span></div>';
