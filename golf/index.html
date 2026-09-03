@@ -7638,22 +7638,27 @@ function bracketCommitGroup(B, st){
   if(B.gRounds.length>=B.GDS.length) bracketSeedKnockout(B);
   return B.gRounds[B.gRounds.length-1];
 }
-/* Week 1 is over: the top two of every group go through, and the sixteen are drawn World-Cup style -
-   the winner of A meets the runner-up of B, and a group's two qualifiers can only meet again in the
-   final. Everyone else is out, marked out:-1 (the group stage), which is its own finishing group. */
+/* Week 1 is over: the top two of every group go through, and the sixteen are RE-SEEDED by the season
+   points race - the best qualifier left is the 1 seed, the worst the 16 - and drawn on the standard tree,
+   so the first seed plays the last seed, the second the second-last, and the best two left can only meet
+   in the final (owner). Everyone else is out, marked out:-1 (the group stage), its own finishing group.
+   NOTE this deliberately supersedes the old World-Cup cross-draw (A1 v B2), whose only virtue was keeping
+   a group's two qualifiers apart: group A holds seeds 1/16/17/32 and group B holds 2/15/18/31, so the 1
+   and the 2 met on day one. A re-seed CAN put two from one group together in the R16; the seeding is what
+   the owner asked for, so that constraint yields to it. */
 function bracketSeedKnockout(B){
-  const win=[], run=[];
+  const through=[];
   B.groups.forEach(g=>{
     const t=groupStats(B, g, null, null);
     t.forEach((r,i)=>{ r.o.gpts=r.pts; r.o.gw=r.w; r.o.gl=r.l; r.o.gh=r.h; r.o.gpos=i+1;
-      if(i>=BRACKET_ADV){ r.o.alive=false; r.o.out=-1; } });
-    win[g.gi]=t[0]&&t[0].o; run[g.gi]=t[1]&&t[1].o;
+      if(i>=BRACKET_ADV){ r.o.alive=false; r.o.out=-1; } else through.push(r.o); });
   });
-  const order=[], push=(a,b)=>{ if(a) order.push(a); if(b) order.push(b); };
-  const G=B.groups.length;
-  for(let k=0;k<G;k+=2) push(win[k], run[k+1]);      // A1-B2, C1-D2, E1-F2, G1-H2  (top half)
-  for(let k=0;k<G;k+=2) push(win[k+1], run[k]);      // B1-A2, D1-C2, F1-E2, H1-G2  (bottom half)
-  B.alive=order.filter(Boolean);
+  // re-rank the qualifiers 1..N by the season seed the screen shows, then run the standard tree
+  through.sort((a,b)=>a.seed-b.seed);
+  through.forEach((o,i)=>{ o.koSeed=i+1; });
+  const byKo={}; through.forEach(o=>{ byKo[o.koSeed]=o; });
+  const n=through.length, pow=Math.max(2, 1<<Math.ceil(Math.log2(Math.max(2,n))));
+  B.alive=bracketSeedOrder(pow).map(s=>byKo[s]).filter(Boolean);
   B.koN=B.alive.length;
   B.phase='ko';
 }
