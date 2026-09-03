@@ -1351,13 +1351,20 @@ window.GA_ID='G-L29P5MRWKE';
     color:#e2b25a}
   .ldg .lsc{font-weight:800;font-variant-numeric:tabular-nums;color:#e2b25a}
 
-  .ldg{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;gap:9px;align-items:center;
+  .ldg{display:grid;grid-template-columns:auto auto auto minmax(0,1fr) auto auto;gap:9px;align-items:center;
     font-family:var(--fn);font-size:11.5px;padding:7px 10px;border-radius:9px;
     background:rgba(0,0,0,.24);opacity:0;transform:translateY(5px);
     transition:opacity .3s ease,transform .3s cubic-bezier(.22,1,.36,1)}
   .ldg.in{opacity:1;transform:none}
+  /* A SEASON YOU CAN OPEN. Rows recorded once the run banks its roster carry the team, so
+     they get a pointer and a press state; older rows that stored only a record do not. */
+  .ldg.tap{cursor:pointer}
+  .ldg.tap:active{background:rgba(255,255,255,.06)}
   .ldg .ly{color:var(--dim-2);font-variant-numeric:tabular-nums}
   .ldg .lr{font-weight:800;font-variant-numeric:tabular-nums}
+  /* The season's team overall, the number the recap and the leaderboard both show, banded
+     the same green/amber/red. Colour is set inline off the value. */
+  .ldg .lo{font-weight:800;font-variant-numeric:tabular-nums;text-align:right;min-width:30px}
   .ldg .lb{color:var(--dim-2)}
   .ldg .lv{font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   .ldg.pass .lv{color:var(--good,#4ade80)}
@@ -5327,6 +5334,10 @@ window.GA_ID='G-L29P5MRWKE';
   /* minmax(0,1fr), not 1fr: a 1fr track's minimum is its content, so on a 320px screen
      the two labels widened the grid past the viewport and the whole page scrolled sideways. */
   .ovr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;margin-top:15px}
+  /* One cell, full width: the Gauntlet recap shows only the team overall, not the draft
+     modes' "best possible" beside it, so there is no second column to make room for. */
+  .ovr.solo{grid-template-columns:1fr}
+  .ovr.solo[hidden]{display:none}
   .ovr>div{min-width:0;padding:10px 8px 11px;border-radius:12px;text-align:center;
     background:rgba(255,255,255,.05);border:1px solid var(--line-2)}
   .ovr .k{font-family:var(--fn);font-size:clamp(7.5px,2.2vw,8.5px);letter-spacing:.08em;
@@ -6681,6 +6692,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          the run: the record is what they did, and you want to see who did it next. -->
     <div class="panel" style="margin-top:12px">
       <div class="eyebrow">Your lineup</div>
+      <!-- THE TEAM OVERALL, on the Gauntlet recap. The offense and defense drafts show it in
+           the record card above, which this mode hides (a dynasty is scored on how long you
+           last, not one season's rating), so it rides here on the lineup it describes instead.
+           paintOver fills it for dynasty and leaves it hidden otherwise. -->
+      <div class="ovr solo" id="o-dyn-ovr" hidden></div>
       <div class="field short" id="field3"></div>
       <div class="rail" id="rail3"></div>
       <p class="railnote"></p>
@@ -7038,7 +7054,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
 <script src="engine.js?v=84"></script>
-<script src="run.js?v=95"></script>
+<script src="run.js?v=96"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -15166,6 +15182,10 @@ const champBadge=(b)=>b?'<span class="champbadge" title="'+(b==='crown'?'Perfect
 /* A whole number with thousands separators, which is the only formatting an arcade score
    needs and the one thing a bare toFixed will not do. */
 const SCORE=(n)=>Math.round(n||0).toLocaleString('en-US');
+/* The team-overall bands, in one place: green means you beat a greedy best-available draft
+   (which lands around 73), amber is respectable, red is thin. The recap card sets the same
+   thresholds inline; the ledger and the season sheet read them from here. */
+const ovrBand=(r)=>r>=75?'#22c55e':(r>=50?'#fbbf24':'#ef4444');
 
 /* Counting, in its own little loop, like countMoney but on integers and over a longer ramp
    because the numbers are bigger and the climb is the point. */
@@ -15420,8 +15440,13 @@ function paintOwner(){
     if(n) n.innerHTML='<span class="scorechip">'+SCORE(v.score||0)+'</span> total';
     led.innerHTML=run.history.map((h,i)=>{
       const cls=h.cleared?'pass':((i===run.history.length-1&&v.fired)?'fired':'miss');
-      return '<div class="ldg '+cls+'"><span class="ly">'+h.year+'</span>'+
-        '<span class="lr">'+h.wins+'-'+h.losses+'</span>'+
+      /* Rows that banked their roster can be opened; the OVR cell is always rendered, empty
+         when a pre-snapshot season has no rating, so every row keeps the same six columns. */
+      const tap=(h.picks&&h.picks.length)?' tap':'';
+      const ov=(h.rating==null)?'<span class="lo"></span>'
+        :'<span class="lo" style="color:'+ovrBand(h.rating)+'">'+Number(h.rating).toFixed(1)+'</span>';
+      return '<div class="ldg '+cls+tap+'" data-i="'+i+'"><span class="ly">'+h.year+'</span>'+
+        '<span class="lr">'+h.wins+'-'+h.losses+'</span>'+ov+
         '<span class="lb">needed '+h.bar+'</span>'+
         '<span class="lv">'+(h.title?'TITLE':(h.cleared?(h.made?'PLAYOFFS':'KEPT'):
           (i===run.history.length-1&&v.fired?'FIRED':'MISSED')))+'</span>'+
@@ -15905,6 +15930,16 @@ function paintOver(){
     bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
     secondCell(()=>bigcell('Best possible','…',0,'#94a3b8'));
   $('o-sides').innerHTML=sideLine();
+  /* THE SAME NUMBER, ON THE GAUNTLET RECAP. The card above is hidden in this mode, so the
+     team overall is drawn once more into the lineup panel, which this mode does show. Same
+     cell, same band, so a Gauntlet season is read the way an offense or defense draft is. */
+  const dynOvr=$('o-dyn-ovr');
+  if(dynOvr){
+    if(run&&run.dynasty){ dynOvr.hidden=false;
+      dynOvr.innerHTML=bigcell('Team overall',rating.toFixed(1),
+        Math.max(2,Math.min(100,rating)),rband); }
+    else dynOvr.hidden=true;
+  }
 
   /* THE STRIP. Top row is what the roster cost you and where it finished; bottom row
      is where the run placed, and each of those three opens the board on that window
@@ -20768,10 +20803,51 @@ $('lb-rows').addEventListener('click',(e)=>{
 /* `back`, when given, is what the sheet's own button should do instead of closing: the
    career panel opens run details from inside the profile sheet, and closing outright there
    would throw away the screen you were reading and make the list a one-way trip. */
+/* A BANKED GAUNTLET SEASON, in the row shape runDetail reads. The team, the record, the
+   fate and the season's own numbers were all snapshotted into the history entry when the
+   season ended (see ownerVerdict in run.js), so this is a straight rename into the column
+   names the sheet expects. The crest is the viewer's own, because these are their seasons.
+   perfect_pct is null: the best-possible search is per season and expensive, and was not
+   worth banking, so the sheet shows "--" there and no perfect caveat. */
+function dynSeasonRow(h){
+  return {
+    picks:h.picks||[], slots:h.slots||[],
+    wins:h.wins, losses:h.losses,
+    team_rating:(h.rating==null?null:Number(h.rating)),
+    squad_fppg:(h.squadFppg==null?null:Number(h.squadFppg)),
+    structure_mult:(h.structureMult==null?null:Number(h.structureMult)),
+    chemistry_pct:(h.chemistryPct==null?0:Number(h.chemistryPct)),
+    spend_musd:(h.spendMusd==null?0:Number(h.spendMusd)),
+    perfect_pct:null,
+    perfect:!!h.perfect, title_won:!!h.title, made_playoffs:!!h.made,
+    playoff_wins:h.playoffWins||0, seed_label:h.seedLabel||'',
+    franchise:null, run_mode:'dynasty',
+    display_name:authState.name||'',
+    display_color:(myAvatar&&myAvatar.color)||null,
+    display_initials:(myAvatar&&myAvatar.initials)||null,
+    display_mark:(myAvatar&&myAvatar.mark)||null,
+    display_rung:(myAvatar&&myAvatar.rung),
+    display_tier:(myAvatar&&myAvatar.tier)||null,
+    display_ring:(myAvatar&&myAvatar.ring)||null,
+  };
+}
+/* Share one banked season: its record, its team overall and the six who played it. Text
+   rather than the run's image card, which is drawn from the live run and describes the whole
+   career; a past season shares as the team it was. */
+function shareSeason(h){
+  const men=(h.picks||[]).map((k)=>fromPickKey(k)).filter(Boolean);
+  const line=men.map((p)=>p.position+' '+p.name).join(' · ');
+  const rate=(h.rating==null)?'':', '+Number(h.rating).toFixed(1)+' team overall';
+  const fate=h.title?'Champions.':(h.made?'Made the playoffs.':(h.cleared?'Kept the job.':'Fired.'));
+  const head='The Gauntlet, Season '+h.year+': '+h.wins+'-'+h.losses+rate+'. '+fate;
+  const text=head+(line?'\n'+line:'')+'\nHow long can you last?\n'+SHARE_URL;
+  ga('dynasty_season_shared',{season:h.year});
+  shareTextFile(text,null,'season.png');
+}
 /* Bumped on every open, so a late arriving defensive pool only redraws the sheet it was
    fetched for. */
 let rdToken=0;
-function runDetail(row,back){
+function runDetail(row,back,onShare){
   const mine=!row;
   const rdMine=++rdToken;
   const picks=mine?runPayload().picks:(row.picks||[]);
@@ -20910,7 +20986,11 @@ function runDetail(row,back){
         'stored a team rating.</p>')+
     (perf!==null?'<p class="caveat" style="margin:6px 0 0">The perfect figure is this roster '+
       'against the strongest one those same six draws allowed under the same cap.</p>':'')+
-    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">'+
+    /* SHARE THIS SEASON, when the caller passed a way to. Only the Gauntlet's ledger does, so
+       a leaderboard or career sheet is unchanged; there the run's own share button lives on
+       the results screen. */
+    (onShare?'<div style="margin-top:14px"><button class="btn" id="sh-share">Share this team</button></div>':'')+
+    '<div style="margin-top:'+(onShare?'8px':'14px')+'"><button class="btn ghost" id="sh-x">'+
       (back?'Back':'Close')+'</button></div>';
   if(cols) $('sheet-in').style.borderTop='3px solid '+cols.primary;
   else $('sheet-in').style.borderTop='';
@@ -20921,6 +21001,7 @@ function runDetail(row,back){
     $('sheet-in').style.borderTop='';
     if(back) back(); else $('sheet').classList.remove('on');
   };
+  if(onShare){ const sb=$('sh-share'); if(sb) sb.onclick=onShare; }
   /* AND IF THE SIX ARE DEFENDERS, GO AND GET THEM. The board fetches the defensive pool with
      its own rows, but this sheet also opens from the career list in the profile, where the
      runs are of every mode and no pool was fetched for any of them. Drawn first and redrawn
@@ -21140,6 +21221,7 @@ function runKindOf(row){
   if(m==='trade') return 'Trade Machine';
   if(m==='defense') return 'Defense';
   if(m==='fullteam') return 'Full Team';
+  if(m==='dynasty') return 'The Gauntlet';
   if(m==='era'&&row.era) return 'Eras Draft, '+row.era;
   if(m==='daily') return 'daily puzzle';
   /* OFFENSE, NOT "FREE RUN". The words were fine while this was the only way to play and
@@ -21380,6 +21462,16 @@ function setOverTab(k){
 $('o-tabs').addEventListener('click',(e)=>{
   const b=e.target.closest('.tab'); if(!b) return;
   setOverTab(b.dataset.ot);
+});
+/* OPEN A SEASON FROM THE LEDGER. Only rows that banked their roster are tappable (given the
+   .tap class in paintOwner), so a click that lands on one reconstructs that season's team in
+   the same detail sheet the leaderboard uses, with a way to share it. Delegated, so it keeps
+   working through the ledger's repaint on every season. */
+$('o-ledger').addEventListener('click',(e)=>{
+  const el=e.target.closest('.ldg.tap'); if(!el) return;
+  const h=(run&&run.history)?run.history[+el.dataset.i]:null;
+  if(!h||!(h.picks&&h.picks.length)) return;
+  runDetail(dynSeasonRow(h),null,()=>shareSeason(h));
 });
 
 $('b-feedback').onclick=()=>feedbackSheet();
