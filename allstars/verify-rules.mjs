@@ -21,6 +21,8 @@
      cup sim              one click runs the CPU matches to yours, or to the end
      clinch, elimination  in and out are marked only once the games left make it certain
      season awards        a fixed season hands out the same hardware, archived once
+     cup identity         the seed is drawn, the card says who hosts, an upset is called one
+     agency               the CPU bunts, swings for it and runs on cue; SEND and HOLD do what they say
      phone                at 390 wide the placards stand apart, the ball keeps a size
 
    Needs Playwright with Chromium. Locally:
@@ -511,6 +513,71 @@ async function main() {
       ok(/6th seed against the 3rd/.test(r.card) && /You travel to/.test(r.card), 'the match card says you travel as the lower seed', r.card);
       ok(r.upsets === 1 && /8\./.test(r.upsetRow), 'the 8th seed over the 1st is called an upset', JSON.stringify({ upsets: r.upsets, row: r.upsetRow }));
       ok(r.upsets2 === 1, 'the favourite winning is not one', 'upsets=' + r.upsets2);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the CPU has a plan, and you send or hold ---- */
+    {
+      console.log('agency');
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        const fast = { k: 'x', n: 'Fast Light', spd: 90, pow: 50, con: 60 };
+        const slug = { k: 'y', n: 'Slugger', spd: 30, pow: 92, con: 50 };
+        const wet = { con: 55 }, ace = { con: 85 };
+        /* The plan, pinned by the roll. */
+        g.bases = [fast, null, null]; g.outs = 0; g.strikes = 0;
+        const bunt = cpuBatPlan(g, fast, 0.1);
+        const noBunt2 = (g.outs = 2, cpuBatPlan(g, fast, 0.1));
+        g.outs = 0; g.strikes = 2;
+        const noBuntK = cpuBatPlan(g, fast, 0.1);
+        g.bases = [null, null, null]; g.outs = 2; g.strikes = 0;
+        const power = cpuBatPlan(g, slug, 0.1);
+        const noPowerOn = (g.bases = [fast, null, null], cpuBatPlan(g, slug, 0.1));
+        const highRoll = (g.bases = [null, null, null], cpuBatPlan(g, slug, 0.9));
+        /* The steal. */
+        g.bases = [fast, null, null];
+        const goes = cpuStealWants(g, fast, wet, 0.1);
+        const stays = cpuStealWants(g, fast, ace, 0.1);
+        const slow = cpuStealWants(g, slug, wet, 0.1);
+        const blocked = (g.bases = [fast, slug, null], cpuStealWants(g, fast, wet, 0.1));
+        /* Send or hold, on a single with a runner on second. You bat: bottom. */
+        g.half = 'bottom'; g.outs = 0; g.home.score = 0;
+        const batter = g.home.batters[0];
+        const runner = Object.assign({}, g.home.batters[1], { spd: 95 });
+        const realRandom = Math.random;
+        const run = (rule, roll) => {
+          g.bases = [null, runner, null]; g.outs = 0; g.home.score = 0; g.sendRule = rule;
+          Math.random = () => roll;
+          applyHitMutation('single', batter);
+          Math.random = realRandom;
+          return { third: g.bases[2] === runner, score: g.home.score, outs: g.outs };
+        };
+        const hold = run('hold', 0.0);
+        const sendIn = run('send', 0.0);
+        const sendOut = run('send', 0.999);
+        const slowSend = (() => { runner.spd = 30; const x = run('send', 0.0); runner.spd = 95; return x; })();
+        /* The button shows while you bat with a runner on, and cycles. */
+        g.bases = [null, runner, null]; g.sendRule = 'auto'; g.play = null;
+        refreshStealButton();
+        const btn = document.getElementById('send-btn');
+        const shown = btn && btn.style.display !== 'none';
+        btn.click(); const label1 = btn.textContent; btn.click(); const label2 = btn.textContent;
+        g.bases = [null, null, null]; refreshStealButton();
+        const hidden = btn.style.display === 'none';
+        return { bunt, noBunt2, noBuntK, power, noPowerOn, highRoll, goes, stays, slow, blocked,
+                 hold, sendIn, sendOut, slowSend, shown, label1, label2, hidden };
+      });
+      ok(r.bunt === 'bunt' && r.noBunt2 === 'normal' && r.noBuntK === 'normal', 'a fast light bat bunts with a man on, not with two out or two strikes', JSON.stringify({ bunt: r.bunt, two: r.noBunt2, k: r.noBuntK }));
+      ok(r.power === 'power' && r.noPowerOn === 'normal' && r.highRoll === 'normal', 'a slugger swings for it with two out and nobody on', JSON.stringify({ power: r.power, on: r.noPowerOn, roll: r.highRoll }));
+      ok(r.goes && !r.stays && !r.slow && !r.blocked, 'a fast runner goes on a weak arm, not on an ace, not slow, not into a runner', JSON.stringify({ goes: r.goes, stays: r.stays, slow: r.slow, blocked: r.blocked }));
+      ok(r.hold.third && r.hold.score === 0 && r.hold.outs === 0, 'HOLD stops the runner at third', JSON.stringify(r.hold));
+      ok(r.sendIn.score === 1 && !r.sendIn.third, 'SEND scores him on a good roll', JSON.stringify(r.sendIn));
+      ok(r.sendOut.outs === 1 && r.sendOut.score === 0 && !r.sendOut.third, 'SEND gets him thrown out on a bad one', JSON.stringify(r.sendOut));
+      ok(r.slowSend.score === 1, 'a slow runner can still be sent', JSON.stringify(r.slowSend));
+      ok(r.shown && /SEND/.test(r.label1) && /HOLD/.test(r.label2) && r.hidden, 'the button shows with a runner on, cycles, and hides', JSON.stringify({ shown: r.shown, l1: r.label1, l2: r.label2, hidden: r.hidden }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

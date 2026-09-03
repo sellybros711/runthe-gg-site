@@ -376,6 +376,7 @@
   .log .line.big{color:var(--gold);font-weight:700;letter-spacing:.05em;}
 
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .controls .btn.selected{background:var(--gold);color:#fff6ea;}
 
   /* Line score: the classic ballpark board, one column per inning plus runs. */
   .linescore{display:flex;justify-content:center;margin-bottom:10px;overflow-x:auto;}
@@ -4620,6 +4621,7 @@ function startAtBat() {
   while (g.lineScore[lsKey].length < g.inning) g.lineScore[lsKey].push(0);
   const b = currentBatter();
   g.swingMode = 'contact';
+  g.sendRule = 'auto';
   syncSwingModeButtons();
   g.batterCtx = batterContext(b);
   for (const note of g.batterCtx.notes) addLog(note, true);
@@ -5041,6 +5043,8 @@ function throwPitch(chosenPt, chosenZone) {
   };
   refreshHud();
   runPitchAnimation();
+  /* Their runner may go on this pitch. Same play as your own steal. */
+  if (!playerIsBatting() && cpuStealWants(g, g.bases[0], pitcher)) attemptSteal();
 }
 
 /* Install the swing click and space listeners for this pitch. The field
@@ -5083,6 +5087,29 @@ function runPitchAnimation() {
    stat, and the current count to decide (a) whether to swing at all,
    and (b) how close to the ideal spot to land. Better contact hitters
    land closer; a batter down 0-2 protects the plate. */
+/* THE CPU HAS A PLAN, not only a swing. It used to swing normal at every
+   pitch: never laid one down, never sold out for the fences, never ran.
+   Decided per pitch from the situation the way a manager would: a fast
+   light bat with a man on and fewer than two out squares to bunt half the
+   time; a slugger with two out and nobody on swings for it. The roll is a
+   parameter so the check can pin the answer. */
+function cpuBatPlan(g, batter, roll) {
+  const r = roll == null ? Math.random() : roll;
+  const on = g.bases.some(Boolean);
+  if (on && g.outs < 2 && g.strikes < 2 && batter.spd >= 78 && batter.pow < 70 && r < 0.5) return 'bunt';
+  if (!on && g.outs === 2 && batter.pow >= 80 && r < 0.6) return 'power';
+  return 'normal';
+}
+/* A CPU runner on first goes when he is fast and the arm is not: SPD 80
+   and up against a pitcher under CON 70, one pitch in five. Second must be
+   open, as for the player's own steal. */
+function cpuStealWants(g, runner, pitcher, roll) {
+  const r = roll == null ? Math.random() : roll;
+  if (!runner || g.bases[1]) return false;
+  if (runner.spd < 80 || (pitcher.con || 50) >= 70) return false;
+  return r < 0.2;
+}
+
 function scheduleCpuSwing() {
   const g = State.game;
   const p = g.pitch;
@@ -5090,8 +5117,12 @@ function scheduleCpuSwing() {
   const diff = DIFF[State.difficulty];
   const durMs = p.speed * 1000;
 
+  g.cpuMode = cpuBatPlan(g, batter);
+  if (g.cpuMode === 'bunt') addLog(`${batter.n} squares to bunt.`);
+
   /* Swing decision: strikes get swung at more often, balls left alone,
-     0-2 counts see the batter foul most anything close. */
+     0-2 counts see the batter foul most anything close. A bunt is a
+     decision already made: he offers at it. */
   const twoStrikes = g.strikes >= 2;
   const isStrike = p.isStrike;
   let swingProb = isStrike ? 0.68 : 0.20;
@@ -5105,7 +5136,7 @@ function scheduleCpuSwing() {
   else          swingProb -= style.patience;
   /* Rabid Dog is frenzied: he swings at nearly everything. */
   if (g.batterCtx && g.batterCtx.flags && g.batterCtx.flags.frenzy) swingProb = 0.95;
-  const willSwing = Math.random() < clamp(swingProb, 0.05, 0.98);
+  const willSwing = g.cpuMode === 'bunt' || Math.random() < clamp(swingProb, 0.05, 0.98);
 
   if (!willSwing) {
     /* Let the pitch pass; the field loop's called-pitch trigger fires. */
@@ -5171,8 +5202,9 @@ function resolveSwing(cursorT) {
   const diff = DIFF[State.difficulty];
   /* Swing selection, Backyard style. Contact widens the zone and trades
      power away; Power narrows it and swings for the fences; Bunt is its
-     own play entirely, resolved below. The CPU always swings normal. */
-  const mode = playerIsBatting() ? (g.swingMode || 'contact') : 'normal';
+     own play entirely, resolved below. The CPU brings the plan it made in
+     scheduleCpuSwing, normal unless the situation said otherwise. */
+  const mode = playerIsBatting() ? (g.swingMode || 'contact') : (g.cpuMode || 'normal');
   let half = diff.sweetWidth / 2;
   if (mode === 'contact') half *= 1.25;
   if (mode === 'power') half *= 0.75;
@@ -5604,6 +5636,14 @@ function applyHitMutation(kind, batter, opts) {
   let scored = 0;
   let thrownOut = 0;
   const newBases = [null,null,null];
+  /* SEND OR HOLD. The speed rule below used to decide every runner's
+     dash for home by itself. When you bat, the button beside Steal sets
+     the rule for the at bat: AUTO is the speed rule, SEND waves anyone
+     round at odds his legs earn, HOLD stops at third. The CPU keeps AUTO. */
+  const rule = currentBattingTeam().isYou ? (g.sendRule || 'auto') : 'auto';
+  const sendOdds = (spd, fastFloor, fastBase, fastSlope) =>
+    spd >= fastFloor ? fastBase + (spd - fastFloor) / fastSlope
+                     : clamp(0.25 + (spd - 40) / 150, 0.15, 0.6);
   for (let i=2;i>=0;i--) {
     const runner = g.bases[i];
     if (!runner) continue;
@@ -5612,14 +5652,19 @@ function applyHitMutation(kind, batter, opts) {
        and heads for home. Speed-based chance to score; otherwise thrown
        out at the plate. On doubles a very fast runner from 1st tries
        the same. Only kicks in for real hits, not errors. */
-    if (!onError && kind === 'single' && i === 1 && runner.spd >= 75) {
-      const scoreChance = 0.35 + (runner.spd - 75) / 100;
+    const goes = (fastFloor) => rule !== 'hold' && (rule === 'send' || runner.spd >= fastFloor);
+    if (!onError && kind === 'single' && i === 1 && goes(75)) {
+      const scoreChance = sendOdds(runner.spd, 75, 0.35, 100);
+      if (rule === 'send') addLog(`${runner.n} is waved round.`);
       if (Math.random() < scoreChance) dest = 3;
       else { thrownOut++; g.outs++; addLog(`${runner.n} thrown out at the plate.`); continue; }
-    } else if (!onError && kind === 'double' && i === 0 && runner.spd >= 85) {
-      const scoreChance = 0.30 + (runner.spd - 85) / 120;
+    } else if (!onError && kind === 'double' && i === 0 && goes(85)) {
+      const scoreChance = sendOdds(runner.spd, 85, 0.30, 120);
+      if (rule === 'send') addLog(`${runner.n} is waved round.`);
       if (Math.random() < scoreChance) dest = 3;
       else { thrownOut++; g.outs++; addLog(`${runner.n} thrown out at the plate.`); continue; }
+    } else if (rule === 'hold' && !onError && ((kind === 'single' && i === 1) || (kind === 'double' && i === 0))) {
+      addLog(`${runner.n} holds at third.`);
     }
     if (dest >= 3) scored++;
     else newBases[dest] = runner;
@@ -7228,7 +7273,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
           ctx.fillRect(bx, by, 6, 2);
           ctx.fillRect(bx - 3, by + 2, 12, 2);
         }
-        ctx.font = 'bold 40px serif';
+        ctx.font = 'bold 40px monospace';
         ctx.fillStyle = `rgba(196,50,50,${alpha})`;
         ctx.textAlign = 'center';
         ctx.fillText('~ NIGHT FALLS ~', cx, cy - 60);
@@ -7258,7 +7303,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         ctx.beginPath(); ctx.moveTo(ax - 40, ay); ctx.lineTo(ax, ay); ctx.stroke();
         ctx.fillStyle = `rgba(90,50,20,${alpha})`;
         ctx.fillRect(ax, ay - 3, 6, 6);
-        ctx.font = 'bold 32px serif';
+        ctx.font = 'bold 32px monospace';
         ctx.fillStyle = `rgba(90,140,80,${alpha})`;
         ctx.fillText('BULLSEYE', cx, cy - 60);
       } else if (sig.kind === 'flies') {
@@ -7315,7 +7360,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         ctx.fillRect(sx, 40, 30, 8);
         ctx.fillStyle = `rgba(240,220,180,${alpha})`;
         ctx.fillRect(sx - 8, 44, 40, 2);
-        ctx.font = 'bold 32px serif';
+        ctx.font = 'bold 32px monospace';
         ctx.fillStyle = `rgba(201,48,48,${alpha})`;
         ctx.textAlign = 'center';
         ctx.fillText('HO HO HO', cx, cy - 40);
@@ -7323,7 +7368,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         /* LADY LIBERTY torch flash */
         ctx.fillStyle = `rgba(244,194,90,${0.25 * alpha})`;
         ctx.fillRect(0, 0, w, h);
-        ctx.font = 'bold 40px serif';
+        ctx.font = 'bold 40px monospace';
         ctx.fillStyle = `rgba(109,184,162,${alpha})`;
         ctx.textAlign = 'center';
         ctx.fillText('LIBERTY LEVELED', cx, cy - 20);
@@ -7399,6 +7444,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
 /* The two fielding reads, as functions, so How To Play can draw the real
    thing instead of describing it. */
 function drawCatchRing(ctx, lx, ly, t) {
+  lx = Math.round(lx); ly = Math.round(ly);
   /* Green target ring: shrinks as t moves through the middle, widens
      past the sweet spot. Radius drives visual read of when to click. */
   const shrink = 1 - 4 * Math.abs(t - 0.5) * (1 - Math.abs(t - 0.5));
@@ -7456,6 +7502,8 @@ function drawBaseball(ctx, x, y, groundY) {
      small shadow there, so a high arc reads as high. */
   const floor = ballRadiusMin();
   let rad = Math.max(5, floor);
+  /* Whole pixels: a ball drawn at a half coordinate blurs on both sides. */
+  x = Math.round(x); y = Math.round(y);
   if (typeof groundY === 'number') {
     const drop = Math.max(0, groundY - y);
     const alpha = clamp(0.35 - drop * 0.0015, 0.05, 0.35);
@@ -7766,6 +7814,20 @@ function renderGame() {
   stealBtn.onclick = attemptSteal;
   stealRow.appendChild(stealBtn);
 
+  /* Send or hold, for the at bat: cycles auto, send, hold. */
+  const sendBtn = el('button','btn ghost','Runner: auto');
+  sendBtn.id = 'send-btn';
+  sendBtn.style.display = 'none';
+  sendBtn.onclick = (e) => {
+    e.stopPropagation();
+    const g2 = State.game;
+    if (!g2) return;
+    const order = ['auto', 'send', 'hold'];
+    g2.sendRule = order[(order.indexOf(g2.sendRule || 'auto') + 1) % order.length];
+    refreshSendButton();
+  };
+  stealRow.appendChild(sendBtn);
+
   const replayBtn = el('button','btn ghost','Replay');
   replayBtn.id = 'replay-btn';
   replayBtn.style.display = 'none';
@@ -8000,7 +8062,21 @@ document.addEventListener('keydown', (e) => {
   syncSwingModeButtons();
 });
 
+/* The send or hold button shows while you bat with a runner who could be
+   sent: on second for a single, on first for a double. */
+function refreshSendButton() {
+  const btn = document.getElementById('send-btn');
+  if (!btn) return;
+  const g = State.game;
+  const can = !!(g && !g.over && !g.play && playerIsBatting() && (g.bases[0] || g.bases[1]));
+  btn.style.display = can ? '' : 'none';
+  if (!can) return;
+  const rule = g.sendRule || 'auto';
+  btn.textContent = rule === 'send' ? 'Runner: SEND home' : rule === 'hold' ? 'Runner: HOLD at third' : 'Runner: auto';
+  btn.classList.toggle('selected', rule !== 'auto');
+}
 function refreshStealButton() {
+  refreshSendButton();
   const btn = document.getElementById('steal-btn');
   if (!btn) return;
   const g = State.game;
