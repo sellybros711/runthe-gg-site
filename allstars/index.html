@@ -229,6 +229,42 @@
   .callout.ball{color:#fff6ea;background:var(--blue);text-shadow:2px 2px 0 var(--navy);}
   .callout.sub{color:var(--text);font-size:18px;background:var(--panel);}
 
+  /* A toast is a milestone: smaller than a plaque, at the top of the field,
+     queued so two never fight, and never on top of a live callout. It says
+     the thing the box score only implies (a first homer, a three hit game,
+     the fifth strikeout) at the moment it happens. */
+  .toast{position:absolute;top:52px;left:50%;transform:translate(-50%,-10px);
+    padding:7px 16px;background:var(--panel-2);border:2px solid var(--line);
+    color:var(--text);font-size:12px;font-weight:900;letter-spacing:.16em;
+    text-transform:uppercase;box-shadow:var(--shadow-sm);opacity:0;
+    transition:opacity .16s, transform .22s cubic-bezier(.2,.9,.2,1.2);
+    pointer-events:none;white-space:nowrap;z-index:5;}
+  .toast.on{opacity:1;transform:translate(-50%,0);}
+  .toast b{color:var(--gold);}
+  /* The verdict and its confetti. */
+  h2.verdict{position:relative;font-size:26px;padding:10px 0 12px;}
+  h2.verdict.win{color:var(--green);}
+  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+  .confetti i{position:absolute;top:-10px;width:7px;height:11px;border:1px solid var(--line);
+    animation:confetti-fall 2s linear forwards;}
+  @keyframes confetti-fall{0%{transform:translateY(-10px) rotate(0);opacity:1}
+    100%{transform:translateY(120px) rotate(540deg);opacity:0}}
+  /* The trophy on a title. */
+  .trophy{display:inline-block;width:56px;height:70px;position:relative;margin:6px 14px 0 0;
+    vertical-align:middle;}
+  .trophy:before{content:'';position:absolute;left:8px;top:0;width:40px;height:34px;
+    background:var(--gold);border:3px solid var(--line);border-radius:0 0 18px 18px;}
+  .trophy:after{content:'';position:absolute;left:14px;bottom:0;width:28px;height:12px;
+    background:var(--navy);border:3px solid var(--line);}
+  .trophy i{position:absolute;left:24px;top:34px;width:8px;height:22px;background:var(--gold);
+    border:3px solid var(--line);}
+  @media (max-width:600px){.toast{font-size:10px;padding:5px 10px;top:44px;}}
+  /* Form chips on the at bat card. */
+  .form-chip{display:inline-block;margin-left:8px;padding:2px 7px;font-size:9px;
+    letter-spacing:.14em;font-weight:900;border:2px solid var(--line);vertical-align:middle;}
+  .form-chip.hot{background:var(--gold);color:#fff6ea;}
+  .form-chip.cold{background:#cfe3f2;color:var(--navy);}
+
   @media (max-width:600px){
     .callout{font-size:18px;padding:10px 18px;}
     .callout.homer{font-size:22px;}
@@ -1758,6 +1794,40 @@ const Sound = {
           this.tone(494, 0.10, { vol: 0.10, delay: 0.11 });
           this.tone(587, 0.16, { vol: 0.10, delay: 0.22 });
           break;
+        /* The result screen had no sound at all: a win and a loss were the
+           same silence with a different heading. Both are original, short,
+           and shaped like what they are: the win climbs and lands, the loss
+           is two notes stepping down. The title is the win played twice. */
+        case 'win': {
+          const seq = [[392, 0.00], [523, 0.12], [659, 0.24], [784, 0.36]];
+          for (const [f, d] of seq) this.tone(f, 0.15, { vol: 0.15, delay: d });
+          this.tone(784, 0.55, { vol: 0.13, delay: 0.50 });
+          this.tone(988, 0.55, { vol: 0.09, delay: 0.50, type: 'triangle' });
+          this.noise(1.6, { filter:'bandpass', freq: 1000, vol: 0.24, swell: true, delay: 0.2 });
+          break;
+        }
+        case 'loss':
+          this.tone(330, 0.30, { type:'triangle', vol: 0.10 });
+          this.tone(262, 0.55, { type:'triangle', vol: 0.10, delay: 0.32 });
+          break;
+        case 'title': {
+          const seq = [[392, 0.00], [523, 0.12], [659, 0.24], [784, 0.36],
+                       [659, 0.62], [784, 0.74], [1047, 0.86]];
+          for (const [f, d] of seq) this.tone(f, 0.15, { vol: 0.15, delay: d });
+          this.tone(1047, 0.9, { vol: 0.13, delay: 1.0 });
+          this.tone(1319, 0.9, { vol: 0.08, delay: 1.0, type: 'triangle' });
+          this.noise(2.4, { filter:'bandpass', freq: 1000, vol: 0.26, swell: true, delay: 0.2 });
+          break;
+        }
+        case 'toast':
+          this.tone(659, 0.07, { type:'sine', vol: 0.10 });
+          this.tone(988, 0.12, { type:'sine', vol: 0.10, delay: 0.08 });
+          break;
+        case 'kay':
+          this.tone(220, 0.08, { vol: 0.14 });
+          this.tone(165, 0.08, { vol: 0.14, delay: 0.09 });
+          this.tone(110, 0.20, { vol: 0.16, delay: 0.18 });
+          break;
       }
     } catch (e) { /* audio unavailable: stay silent */ }
   },
@@ -1901,7 +1971,8 @@ const UNLOCKS = {
   fathertime:{ how:'Play a full 9 inning game.',           check:(p)=> (p.nineInningGames|0) >= 1 },
 };
 const PROGRESS = Object.assign(
-  { seasonHR:0, playoffWins:0, titles:0, comebacks:0, blowouts:0, nineInningGames:0, unlocked:[] },
+  { seasonHR:0, playoffWins:0, titles:0, comebacks:0, blowouts:0, nineInningGames:0,
+    wins:0, games:0, unlocked:[] },
   PREFS.progress || {}
 );
 function saveProgress() {
@@ -3369,8 +3440,9 @@ function renderCup() {
   if (C.done) {
     const champ = C.entrants[C.champion];
     banner.innerHTML = champ.you
-      ? `<b>You win the Cup.</b> Eight teams in, one left standing.`
+      ? `<div class="trophy"><i></i></div><b>You win the Cup.</b> Eight teams in, one left standing.`
       : `<b>${champ.name} wins the Cup.</b> Better luck next draw.`;
+    if (champ.you && !C.fanfared) { C.fanfared = true; Sound.play('title'); }
   } else {
     const nm = nextCupMatch(C);
     banner.innerHTML = nm
@@ -4073,6 +4145,30 @@ function playerIsBatting() {
 function statBump(k, key) {
   const g = State.game;
   g.stats[key][k] = (g.stats[key][k] || 0) + 1;
+}
+/* FORM. A hit or an out, per plate appearance, per character, so the at
+   bat card can say HOT or COLD from the last ten. The box score already
+   holds totals; totals cannot tell you that somebody went 6 for their
+   last 7, which is the thing a manager actually feels. */
+function noteForm(k, hit) {
+  const g = State.game;
+  if (!g) return;
+  (g.form || (g.form = {}))[k] = ((g.form[k] || [])).concat(hit ? 1 : 0).slice(-10);
+}
+function formOf(k) {
+  const season = State.season && State.season.form && State.season.form[k];
+  const game = State.game && State.game.form && State.game.form[k];
+  return ((season || []).concat(game || [])).slice(-10);
+}
+/* HOT is seven of the last ten. COLD is one or none, and only once there
+   are ten to judge from: 0 for 3 is a night, not a slump. */
+function formChip(k) {
+  const f = formOf(k);
+  if (f.length < 6) return '';
+  const hits = f.reduce((a, b) => a + b, 0);
+  if (hits >= 7) return '<span class="form-chip hot">HOT</span>';
+  if (f.length >= 10 && hits <= 1) return '<span class="form-chip cold">COLD</span>';
+  return '';
 }
 
 /* Difficulty tunings.
@@ -5170,6 +5266,7 @@ function scheduleContactPlay(kind, batter) {
 function applyDoublePlayMutation(batter) {
   const g = State.game;
   statBump(batter.k, 'ab');
+  noteForm(batter.k, false);
   const preRunner = g.bases[0];
   g.bases[0] = null;
   g.outs += 2;
@@ -5198,8 +5295,17 @@ function applyHitMutation(kind, batter, opts) {
   const onError = opts && opts.onError;
   statBump(batter.k,'ab');
   if (!onError) statBump(batter.k,'hits');
+  noteForm(batter.k, !onError);
+  /* A THREE HIT GAME is a toast. Nobody reads a box score for it. */
+  if (!onError && g.stats.hits[batter.k] === 3) toast(`3 hit game · <b>${batter.n}</b>`);
   if (kind === 'home run') {
     statBump(batter.k,'hr');
+    /* The first homer of the season for this character, in any game that
+       counts toward one. */
+    if (State.season && (State.mode === 'season' || State.mode === 'playoff')) {
+      const before = ((State.season.perPlayer || {})[batter.k] || {}).hr | 0;
+      if (before + g.stats.hr[batter.k] === 1) toast(`First homer of the season · <b>${batter.n}</b>`);
+    }
     let scored = 1;
     for (let i=0;i<3;i++) if (g.bases[i]) scored++;
     g.bases = [null,null,null];
@@ -5251,6 +5357,7 @@ function applyHitMutation(kind, batter, opts) {
 function applyOutMutation(kind, batter) {
   const g = State.game;
   statBump(batter.k,'ab');
+  noteForm(batter.k, false);
   noteFragileOut(batter);
   if (kind === 'bunt out') {
     /* The sacrifice: the batter is out, everybody else moves up. */
@@ -5361,6 +5468,7 @@ function resolveThrow(outcome, kind, batter) {
   g.play.applied = true;
   if (outcome === 'out') {
     applyOutMutation('ground out', batter);
+    showCallout('OUT AT FIRST', 'hit');
   } else if (outcome === 'single') {
     /* Batter reaches on a slow play; runners advance one. */
     addLog(`${batter.n} beats the throw. Infield single.`);
@@ -5480,6 +5588,11 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
     gloveFlash(g, landingX, landingY);
     Sound.play('catch');
     applyOutMutation('fly out', batter);
+    /* The catch is the best defensive play the player can make and it was
+       filed under the quietest plaque style. It reads as the play it is
+       now, and with runners on the crowd stands up for it. */
+    showCallout(g.bases.some(Boolean) ? 'CAUGHT · RUNNERS STRANDED' : 'CAUGHT', 'hit');
+    if (g.bases.some(Boolean) || g.inning >= g.innings - 1) g.crowdUpUntil = performance.now() + 1600;
   } else if (outcome === 'single') {
     addLog(`${batter.n} bloops it in front of the fielder. Single.`);
     showCallout('DROPS IN', 'hit');
@@ -5506,6 +5619,7 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
 function applyErrorMutation(batter) {
   const g = State.game;
   statBump(batter.k, 'ab');
+  noteForm(batter.k, false);
   /* All runners advance two, batter to first. */
   let scored = 0;
   const newBases = [null, null, null];
@@ -5623,10 +5737,26 @@ function recordOut(reason, isStrikeout) {
   }
   statBump(batter.k,'ab');
   if (isStrikeout) statBump(batter.k,'so');
+  noteForm(batter.k, false);
   noteFragileOut(batter);
   g.outs++;
   addLog(`${batter.n} out (${reason}). ${g.outs} out.`);
-  if (isStrikeout) showCallout('STRIKEOUT', 'strike');
+  if (isStrikeout) {
+    /* When YOU are pitching, a strikeout is your play, and the plaque
+       counts them: the same red STRIKE plaque for a called third strike
+       as for a first pitch ball was the quietest reward in the game. */
+    if (!playerIsBatting()) {
+      g.yourK = (g.yourK | 0) + 1;
+      showCallout(`STRIKEOUT · ${g.yourK} K`, 'strike');
+      Sound.play('kay');
+      if (g.yourK === 5 || g.yourK === 7 || g.yourK === 9) {
+        toast(`<b>${currentPitcher().n}</b> · ${g.yourK} strikeouts`);
+        g.crowdUpUntil = performance.now() + 1800;
+      }
+    } else {
+      showCallout('STRIKEOUT', 'strike');
+    }
+  }
   if (g.outs >= 3) return endHalfInning();
   nextBatter();
   refreshHud();
@@ -5838,6 +5968,18 @@ function finishGame() {
     g.comeback = trailed;   /* the press asks for this a few lines below */
   }
   if (pressActive()) pressBumpRival(foe.name, win);
+  /* Games and wins, across every mode, for the milestone line on the
+     result screen. A forfeit is a game and not a win. */
+  PROGRESS.games = (PROGRESS.games | 0) + 1;
+  if (win) PROGRESS.wins = (PROGRESS.wins | 0) + 1;
+  g.winNo = win ? PROGRESS.wins : 0;
+  /* Form rides with the season: the last ten plate appearances per
+     character, so HOT and COLD mean something on game four. */
+  if (State.season && (State.mode === 'season' || State.mode === 'playoff') && g.form) {
+    const F = State.season.form || (State.season.form = {});
+    for (const [k, arr] of Object.entries(g.form)) F[k] = ((F[k] || []).concat(arr)).slice(-10);
+    saveSeason(State.season);
+  }
   saveProgress();
   g.freshUnlocks = refreshUnlocks();
 
@@ -6213,7 +6355,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      camera shake the whole crowd is on its feet. */
   const crowdCols = theme.crowd;
   const tick = Math.floor(performance.now() / 350);
-  const bigPlay = gShake && gShake.shakeUntil && performance.now() < gShake.shakeUntil + 1600;
+  const bigPlay = gShake && ((gShake.shakeUntil && performance.now() < gShake.shakeUntil + 1600)
+                          || (gShake.crowdUpUntil && performance.now() < gShake.crowdUpUntil));
   ctx.fillStyle = 'rgba(10,14,20,.55)';
   for (let x = 0; x < w; x += 4) ctx.fillRect(x, wallTopAt(x) - crowdH, 4, crowdH);
   /* Batter's eye: the dark hedge block behind dead center that every
@@ -6641,7 +6784,17 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
       /* No play in flight: runners are static on their bases, batter
          stands in the batter's box. */
       const bs = g.bases;
-      if (bs[0]) drawRunner(ctx, bases[0][0], bases[0][1] - 6, bs[0], 2.6);
+      const st = g.steal;
+      const now2 = performance.now();
+      if (st && now2 < st.until && bs[0] === st.runner) {
+        /* Mid steal: along the line from first to second, run frames on. */
+        const u = clamp((now2 - st.start) / (st.until - st.start), 0, 1);
+        const [sx, sy] = pathPointAt(field, [0, 1], u);
+        const beat = Math.floor(now2 / 130) % 2 === 0;
+        drawRunner(ctx, sx, sy - 5, st.runner, 2.55, beat ? 'back-run-a' : 'back-run-b');
+      } else if (bs[0]) {
+        drawRunner(ctx, bases[0][0], bases[0][1] - 6, bs[0], 2.6);
+      }
       if (bs[1]) drawRunner(ctx, bases[1][0], bases[1][1] - 6, bs[1], 2.45);
       if (bs[2]) drawRunner(ctx, bases[2][0], bases[2][1] - 6, bs[2], 2.6);
       const batter = currentBatter();
@@ -7219,6 +7372,8 @@ function renderGame() {
 
   const callout = el('div','callout'); callout.id = 'callout';
   arena.appendChild(callout);
+  const toastNode = el('div','toast'); toastNode.id = 'toast';
+  arena.appendChild(toastNode);
   s.appendChild(arena);
 
   const meter = el('div','meter-wrap');
@@ -7335,6 +7490,27 @@ function renderGame() {
 
 /* One flavor callout at a time. Overlays the field for 1.4s, fades out.
    `kind` picks a color: default gold, plus homer, hit, strike, ball, sub. */
+/* The toast queue. One at a time, 1.7 seconds each, and it waits out the
+   current plaque so a milestone never lands on top of a HOME RUN. */
+const toastQ = [];
+let toastBusy = false;
+function toast(html) {
+  toastQ.push(html);
+  if (!toastBusy) drainToasts();
+}
+function drainToasts() {
+  const node = document.getElementById('toast');
+  if (!node || !toastQ.length) { toastBusy = false; return; }
+  toastBusy = true;
+  node.innerHTML = toastQ.shift();
+  node.classList.add('on');
+  Sound.play('toast');
+  setTimeout(() => {
+    node.classList.remove('on');
+    setTimeout(drainToasts, 260);
+  }, 1700);
+}
+
 let calloutTimer = 0;
 function showCallout(text, kind) {
   const node = document.getElementById('callout');
@@ -7354,7 +7530,7 @@ function refreshAtBatCard(node) {
   avatar.className = 'avatar';
   node.appendChild(avatar);
   const info = el('div', null,
-    `<div class="who"><b>${b.n}</b> at bat</div>`
+    `<div class="who"><b>${b.n}</b> at bat${formChip(b.k)}</div>`
     + `<div class="vs">vs ${p.n} pitching · POW ${b.pow} · CON ${b.con} · SPD ${b.spd}</div>`
   );
   node.appendChild(info);
@@ -7417,7 +7593,7 @@ function refreshHud() {
   const ptName = document.getElementById('pt-name');
   if (ptName && g.pitch) {
     const info = PITCHES[g.pitch.pt];
-    ptName.textContent = (info ? info.label : g.pitch.pt).toUpperCase();
+    ptName.textContent = String(info ? info.label : (g.pitch.pt || 'Pitch')).toUpperCase();
   }
   refreshStealButton();
   /* Show swing controls only when the player is batting; show the
@@ -7492,6 +7668,10 @@ function attemptSteal() {
   const pitcher = currentPitcher();
   g.pitch.swung = true;
   endAtBatCleanup();
+  /* The runner used to appear on second 900ms later with a plaque. He
+     runs there now: the draw loop carries him up the line for the length
+     of the play, so a steal looks like a steal. */
+  g.steal = { runner, start: performance.now(), until: performance.now() + 900 };
   addLog(`${runner.n} breaks for 2nd.`);
   showCallout('STEAL ATTEMPT', 'sub');
   const odds = clamp(0.35 + (runner.spd - 60)/200 - (pitcher.con - 55)/300, 0.15, 0.9);
@@ -7530,7 +7710,58 @@ function renderResult() {
   const win = you.score > foe.score;
 
   const s = el('div','screen');
-  s.appendChild(el('h2', null, g.forfeit ? 'Game abandoned.' : win ? 'You win.' : 'You lose.'));
+  /* THE VERDICT, with a sound and, for a win, confetti in the kit colour.
+     A win and a loss used to be the same silent heading in different
+     words, which is the weakest reward moment a sports game can have. */
+  const h2 = el('h2', null, g.forfeit ? 'Game abandoned.' : win ? 'You win.' : 'You lose.');
+  h2.className = win && !g.forfeit ? 'verdict win' : 'verdict';
+  s.appendChild(h2);
+  if (!g.forfeit) Sound.play(win ? 'win' : 'loss');
+  if (win && !g.forfeit) {
+    const kit = teamKitColor();
+    const burst = el('div','confetti');
+    for (let i = 0; i < 26; i++) {
+      const bit = el('i');
+      bit.style.left = (4 + Math.random() * 92) + '%';
+      bit.style.background = i % 3 === 0 ? kit : i % 3 === 1 ? '#f4c25a' : '#fff6ea';
+      bit.style.animationDelay = (Math.random() * 0.8) + 's';
+      bit.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+      burst.appendChild(bit);
+    }
+    h2.appendChild(burst);
+  }
+  /* Win number, at the round numbers, from PROGRESS. */
+  if (g.winNo && [1, 5, 10, 25, 50, 100, 250].includes(g.winNo)) {
+    const wn = el('div','banner');
+    wn.innerHTML = g.winNo === 1 ? '<b>First win.</b> The first one is the one you remember.'
+                 : `<b>Win number ${g.winNo}.</b> Across every mode, on this browser.`;
+    s.appendChild(wn);
+  }
+
+  /* PLAYER OF THE GAME. The press already picks a star for its own lines;
+     the result screen gives them a card, a stat line and their own voice,
+     so the box score below reads as a story rather than a ledger. */
+  const star = pressStar(g, you);
+  if (star && !g.forfeit) {
+    const c = ROSTER_BY_KEY[star.key];
+    const pc = el('div','card potg');
+    pc.style.borderColor = 'var(--gold)';
+    const h = (g.stats.hits[star.key] || 0), hr = (g.stats.hr[star.key] || 0),
+          ab = (g.stats.ab[star.key] || 0), sb = ((g.stats.sb || {})[star.key] || 0);
+    const line = [`${h} for ${ab}`, hr ? `${hr} HR` : '', sb ? `${sb} SB` : ''].filter(Boolean).join(' · ');
+    const wrap = el('div', null);
+    wrap.style.cssText = 'display:flex;gap:14px;align-items:center;flex-wrap:wrap';
+    const av = spriteCanvas(c, 72); av.className = 'avatar'; av.style.width = '56px';
+    const txt = el('div', null,
+      `<div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim)">`
+      + `${win ? 'Player of the game' : 'Bright spot'}</div>`
+      + `<div style="font-size:18px;font-weight:900;letter-spacing:.06em"><b style="color:var(--gold)">${c.n}</b>`
+      + ` <span style="font-size:13px;color:var(--text-dim);font-weight:700">${line}</span></div>`
+      + (PLAYER_LINES[star.key] ? `<p style="margin:6px 0 0;font-style:italic">"${PLAYER_LINES[star.key]}"</p>` : ''));
+    wrap.append(av, txt);
+    pc.appendChild(wrap);
+    s.appendChild(pc);
+  }
 
   /* Headline: final score, with a note when the ending had a name. */
   const head = el('div','card');
@@ -7865,7 +8096,19 @@ function renderSeasonEnd() {
   const youWon = champ && champ.you;
 
   const s = el('div','screen');
-  s.appendChild(el('h2', null, youWon ? 'Champions.' : 'Season complete.'));
+  const h2 = el('h2', null, youWon ? 'Champions.' : 'Season complete.');
+  h2.className = youWon ? 'verdict win' : 'verdict';
+  s.appendChild(h2);
+  if (youWon) {
+    Sound.play('title');
+    const tcard = el('div','card');
+    tcard.style.borderColor = 'var(--gold)';
+    tcard.innerHTML = `<div class="trophy"><i></i></div>`
+      + `<span style="font-size:18px;font-weight:900;letter-spacing:.08em;vertical-align:middle">`
+      + `${S.teamName}, champions</span>`
+      + `<p style="margin-top:8px">Title number ${PROGRESS.titles | 0} on this browser.</p>`;
+    s.appendChild(tcard);
+  }
   const card = el('div','card');
   card.innerHTML = `<p>${finishLine(S)}</p>`;
   if (champ) card.innerHTML += `<p>Champion: <b style="color:var(--gold)">${champ.name}</b></p>`;
