@@ -6582,7 +6582,9 @@ function inferStoryKind(charId, reason){
   if(rv && (rv.traits||[]).some(t=>/newcomer/i.test(String(t))) && G.car.age>=28) return 'veteran';
   // an underdog story needs you to actually be losing to them. A rookie is
   // under everybody on paper; that alone is not a story.
-  if(theirs>=mine+4 && (R.losses||0)>(R.wins||0)) return 'underdog';
+  // never on a reason that says they lost to you: "Underdog rise: lost to
+  // you again" was the whole story panel for a week
+  if(theirs>=mine+4 && (R.losses||0)>(R.wins||0) && !/lost to you|losing to you|losses to you/.test(r)) return 'underdog';
   return 'grudge';
 }
 /* Better than you, in the sense the crowd would agree with: they hold a belt
