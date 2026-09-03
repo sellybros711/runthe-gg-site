@@ -1730,14 +1730,23 @@ def sig_tom(cv, spec, pose, back):
 
 def sig_huck(cv, spec, pose, back):
     # one strap overalls and a patch: the other strap is long gone
-    den = Ramp('#3a5a6a')
-    cv.rect(CX - 4, 26, CX + 4, 30, den, l=0.5)
-    cv.dot(CX - 4, 25, den.mid)
-    cv.dot(CX - 5, 24, den.mid)
-    cv.dot(CX - 5, 23, den.mid)
+    # ONE brace over the shoulder, in leather, and the trouser cuffs
+    # rolled. He is not in overalls: he is in cut down grown up clothes.
+    br = Ramp('#6a4a28')
+    for dy in range(24, 31):
+        cv.dot(CX - 4, dy, br.mid)
+        cv.dot(CX - 3, dy, br.dark)
+    cv.dot(CX - 5, 23, br.mid)
+    cuff = Ramp(shade(spec.get('pants', '#a8863f'), -0.28))
+    for side in (-1, 1):
+        cv.rect(CX + side * 3 - 2, 34, CX + side * 3 + 1, 35, cuff, l=0.55)
+    # THE RAFT POLE, straight up beside him, taller than he is
+    o = run_off(pose)[1]
+    wood = (150, 104, 56)
+    for dy in range(8, 36):
+        cv.dot(CX + 11, dy + o * 0.5, wood if dy % 4 else (112, 76, 40))
     if not back:
-        cv.dot(CX - 3, 26, (201, 160, 48))
-        cv.rect(CX + 2, 33, CX + 4, 34, Ramp('#7a5a2a'), l=0.5)
+        cv.rect(CX + 2, 32, CX + 4, 33, Ramp('#7a5a2a'), l=0.5)
 
 
 
@@ -2005,16 +2014,22 @@ def sig_humpty(cv, spec, pose, back):
 def sig_lion(cv, spec, pose, back):
     # THE MANE, bright orange around a yellow face, with little ears
     # poking out the top and the tail flicking its orange tuft.
-    mane = Ramp('#e07818')
-    cv.sphere(CX, 12.5, 12.2, 11.2, mane, spec=False)
-    for a in range(12):
-        ang = a * math.pi / 6
-        tx = CX + math.cos(ang) * 12.2
-        ty = 12.5 + math.sin(ang) * 11.2
-        if 0 <= ty <= 24:
-            cv.dot(tx, ty, mane.dark)
+    # DARK BROWN, and shaggy. Orange on a golden face is one colour with
+    # the lights off: the mane has to be several shades darker than the
+    # cat inside it or there is no mane, only a bigger head.
+    mane = Ramp('#6b4020')
+    cv.sphere(CX, 12.5, 12.4, 11.4, mane, spec=False)
+    for a in range(20):
+        ang = a * math.pi / 10
+        tx = CX + math.cos(ang) * (12.4 + (1.6 if a % 2 else 0))
+        ty = 12.5 + math.sin(ang) * (11.4 + (1.2 if a % 3 else 0))
+        if 0 <= ty <= 25:
+            cv.dot(tx, ty, mane.dark if a % 2 else mane.mid)
+    # the ears are the CAT's colour, not the mane's, or they vanish in it
+    ear = Ramp(spec.get('skin', '#eab84a'))
     for side in (-1, 1):
-        cv.sphere(CX + side * 7, 2.0, 1.8, 1.8, mane, spec=False)
+        cv.sphere(CX + side * 7, 2.2, 2.0, 2.0, ear, spec=False)
+        cv.dot(CX + side * 7, 2, shade(ear.base, -0.35))
     # the tail, swung out to his right, tufted
     tail = Ramp(spec.get('skin', '#eab84a'))
     for dx, dy in ((11, 32), (12.5, 30), (13.5, 28), (14, 26)):
@@ -2026,10 +2041,15 @@ def sig_lion_face(cv, spec, pose, back):
     if back:
         return
     # orange nose over the tan muzzle
-    n = (224, 120, 24)
+    n = (92, 56, 30)
     cv.dot(CX - 1, 14, n)
     cv.dot(CX, 14, n)
     cv.dot(CX, 15, shade(n, -0.3))
+    # GREEN eyes, over the face the roster draws, because a lion whose
+    # whole personality is being afraid needs to be looked at.
+    for side in (-1, 1):
+        cv.dot(CX + side * 3, 11, (90, 190, 120))
+        cv.dot(CX + side * 3, 12, (44, 120, 74))
 
 
 def sig_santa(cv, spec, pose, back):
@@ -2213,12 +2233,24 @@ def sig_pirate(cv, spec, pose, back):
 
 
 def sig_krampus(cv, spec, pose, back):
-    # BIG curled ram horns, replacing the little nubs
-    h = Ramp('#c9a256')
+    # TALL BLACK HORNS, rising and then raking back. Gold ram's horns
+    # curled beside his ears made him a moose in a chain.
+    # They rise the FULL height above the skull and rake outward at the
+    # tip. Six rows starting at the ear read as ears, which is what the
+    # first pass drew: the horns have to leave the head behind.
+    h = Ramp('#0d0a10')
     for side in (-1, 1):
-        for dx, dy in ((6, 5), (7, 4), (8, 3), (9, 2), (10, 2), (11, 3), (11, 4)):
+        for dy in range(0, 9):
+            dx = 4.6 + dy * 0.30
+            cv.dot(CX + side * dx, 8 - dy, h.mid)
+            cv.dot(CX + side * (dx + 0.9), 8 - dy, h.dark)
+        for i, (dx, dy) in enumerate(((7.4, 0), (8.4, 0), (9.2, 1))):
             cv.dot(CX + side * dx, dy, h.mid)
             cv.dot(CX + side * dx, dy + 1, h.dark)
+    # THE TAIL, out to one side with a tuft on the end
+    for i, (dx, dy) in enumerate(((10, 32), (12, 31), (13, 29), (13, 27))):
+        cv.sphere(CX + dx, dy, 1.3, 1.3, h, spec=False)
+    cv.sphere(CX + 13, 25.0, 2.0, 2.2, Ramp('#8f2a22'), spec=False)
     if back:
         return
     # the long tongue, hanging out
@@ -2242,6 +2274,21 @@ def sig_krampus(cv, spec, pose, back):
 
 
 def sig_fathertime(cv, spec, pose, back):
+    # THE SCYTHE, across the body, on both facings. He carries an
+    # hourglass and a scythe in every allegory anybody has painted of
+    # him, and the hourglass alone is a small gold smudge at this size
+    # while the scythe is a silhouette you can read across the field.
+    o = run_off(pose)[1]
+    haft = (122, 84, 44)
+    for i in range(26):
+        cv.dot(CX + 9 - i * 0.62, 34 - i * 1.05 + o,
+               haft if i % 4 else (88, 60, 32))
+    blade = Ramp('#c8d0da')
+    for i in range(9):
+        cv.dot(CX - 7 - i * 0.7, 8 + i * 0.55 + o, blade.lit)
+        cv.dot(CX - 7 - i * 0.7, 9 + i * 0.55 + o, blade.mid)
+        if i > 3:
+            cv.dot(CX - 7 - i * 0.7, 10 + i * 0.55 + o, blade.dark)
     if back:
         return
     # the hourglass in his left hand
@@ -2270,6 +2317,17 @@ def sig_mothernature(cv, spec, pose, back):
             cv.dot(x, y - 1, leaf.lit)
             if i % 2 == 0:
                 cv.sphere(x + side * 2, y - 1, 1.8, 1.1, leaf, spec=False)
+    # THE GLOBE, held at her hip: the one prop that says which of the two
+    # robed women on this roster she is.
+    if not back:
+        o = run_off(pose)[1]
+        gx, gy = CX + 10, 28 + o
+        cv.sphere(gx, gy, 4.0, 4.0, Ramp('#3a7ac0'), spec=False)
+        land = Ramp('#3f9a48')
+        for dx, dy in ((-2, -1), (-1, -1), (-1, 0), (1, -2), (2, -1),
+                       (0, 2), (1, 2), (-2, 1)):
+            cv.dot(gx + dx, gy + dy, land.mid)
+        cv.dot(gx - 2, gy - 2, (190, 226, 250))
     # flowers in her hair
     for fx, fy in ((-5, 6), (0, 4), (5, 6)):
         x, y = CX + fx, fy
@@ -2363,7 +2421,9 @@ def sig_yeti(cv, spec, pose, back):
         cv.sphere(CX + dx, dy, r_, r_ * 0.86, fur, spec=False)
     if back:
         return
-    face = Ramp('#93aec6')
+    # SLATE, not pale blue. On white fur a light grey face is the same
+    # value as the head it sits on, so there was no face there at all.
+    face = Ramp('#59636f')
     cv.sphere(CX, 15.2, 6.6, 4.4, face, spec=False)
     # the brow: a shelf of fur over the eyes, which is what keeps the
     # face from reading as a patch stuck on the front of a snowball
@@ -2374,9 +2434,9 @@ def sig_yeti(cv, spec, pose, back):
     for side in (-1, 1):                        # eyes, deep under it
         x = int(CX + side * 3)
         for dy in (13, 14):
-            cv.dot(x, dy, (22, 26, 38))
-            cv.dot(x + side, dy, (22, 26, 38))
-        cv.dot(x, 13, (150, 208, 240))
+            cv.dot(x, dy, (196, 32, 34))
+            cv.dot(x + side, dy, (150, 20, 24))
+        cv.dot(x, 13, (250, 120, 110))
     # THE ROAR
     for dx in range(-4, 5):
         cv.dot(CX + dx, 16, (30, 34, 46))
@@ -2406,7 +2466,35 @@ def sig_sasquatch(cv, spec, pose, back):
         cv.dot(CX + dx, 9, brow)
     for dx in (-6, 6):
         cv.dot(CX + dx, 10, brow)
+    # THE BAND OF EYES, and nothing else. Every photograph anybody has
+    # ever produced of him is a dark shape with a lighter smear across
+    # the face, and giving him a nose and a mouth made him a man in a
+    # suit, which is the one reading the character cannot survive.
+    band = shade(fur.base, 0.62)
+    for dx in range(-5, 6):
+        cv.dot(CX + dx, 13, band)
+        cv.dot(CX + dx, 12, shade(fur.base, 0.40))
+    for side in (-1, 1):
+        cv.dot(CX + side * 3, 13, (26, 16, 12))
+        cv.dot(CX + side * 3, 12, (26, 16, 12))
 
+
+
+def sig_jack_post(cv, spec, pose, back):
+    # THE JERKIN. A sleeveless brown over-tunic on top of the white shirt,
+    # open down the middle, which is how every illustrator since the
+    # chapbooks has dressed a farm boy who is about to steal from a giant.
+    # It runs POST: drawn with the beanstalk, before the archetype, the
+    # shirt goes straight over the top of it and he is in a plain smock.
+    jer = Ramp('#7a5228')
+    cv.rect(CX - 7, 23, CX - 2, 31, jer, l=0.58)
+    cv.rect(CX + 2, 23, CX + 7, 31, jer, l=0.46)
+    if not back:
+        for dy in range(23, 32):
+            cv.dot(CX - 2, dy, jer.dark)
+            cv.dot(CX + 2, dy, jer.dark)
+        for dy in (24, 27, 30):
+            cv.dot(CX - 5, dy, (201, 160, 48))
 
 
 def sig_jack(cv, spec, pose, back):
@@ -2474,18 +2562,23 @@ def sig_lupin(cv, spec, pose, back):
 
 
 def sig_acrobat(cv, spec, pose, back):
-    # A gold sash across the leotard and a star on the chest: circus.
-    g = Ramp('#e8c04a')
-    for i in range(11):
-        cv.dot(CX - 5 + i, 24 + i * 0.45, g.mid)
-        cv.dot(CX - 5 + i, 25 + i * 0.45, g.dark)
+    # THE BALANCE POLE, held level across the body and running off both
+    # edges of the frame. It is the entire silhouette of a wire walker,
+    # and it is what tells you which circus act this is from across a
+    # ball field. A gold sash and a star said only "circus".
+    o = run_off(pose)[1]
+    pole = Ramp('#8a929e')
+    cv.rect(0, 26 + o, 31, 27 + o, pole, l=0.6)
+    for x in (0, 31):
+        cv.dot(x, 25 + o, pole.dark)
+        cv.dot(x, 28 + o, pole.dark)
     if back:
         return
-    st = (250, 244, 210)
-    cv.dot(CX - 2, 28, st)
-    for dx in (-3, -2, -1, 0, 1):
-        cv.dot(CX + dx - 1, 29, st)
-    cv.dot(CX - 3, 30, st); cv.dot(CX - 1, 30, st)
+    # dark braces over the white shirt
+    br = (30, 32, 44)
+    for dy in range(23, 31):
+        cv.dot(CX - 3, dy, br)
+        cv.dot(CX + 3, dy, br)
 
 
 def sig_cyclops(cv, spec, pose, back):
@@ -2523,6 +2616,17 @@ def sig_firebreather(cv, spec, pose, back):
         cv.dot(CX + dx, 19, (196, 76, 52))
     cv.dot(CX - 3, 19, (56, 26, 22))
     cv.dot(CX + 3, 19, (56, 26, 22))
+    # THE PLUME, up and out to one side, three colours deep so it reads
+    # as fire rather than as an orange smear. The old one was a puff.
+    for i in range(11):
+        u = i / 10.0
+        fx = CX + 5 + u * 10
+        fy = 18 - u * 13
+        w = 2.6 - u * 1.4
+        cv.sphere(fx, fy, w + 0.8, w, Ramp('#c93a12'), spec=False)
+        cv.sphere(fx, fy, w * 0.62, w * 0.7, Ramp('#f4922a'), spec=False)
+        if i % 2 == 0:
+            cv.dot(fx, fy, (250, 232, 140))
     # the torch he lit it from, held low on the other side
     o = run_off(pose)[0]
     cv.cyl(CX - 11, 28 + o, CX - 10, 35 + o, Ramp('#6a4a2a'))
@@ -2534,10 +2638,17 @@ def sig_firebreather(cv, spec, pose, back):
 def sig_strongman(cv, spec, pose, back):
     """The singlet, the handlebar and a weight in his hand. Without the
     weight he is a large man in a leotard, which is the acrobat."""
-    red = Ramp('#c02a2a')
-    cv.cyl(CX - 7, 25, CX + 7, 32, red, round_bot=2)
-    for side in (-1, 1):
-        cv.cyl(CX + side * 4 - 1, 22, CX + side * 4 + 1, 25, red)
+    # THE TRUNKS, and nothing above them. He was in a red singlet that
+    # covered the one thing anybody buys a ticket to look at.
+    trunks = Ramp(spec.get('pants', '#22242e'))
+    cv.cyl(CX - 7, 29, CX + 7, 33, trunks, round_bot=1)
+    cv.rect(CX - 7, 29, CX + 7, 29, Ramp('#c9a256'), l=0.6)
+    # a chest that reads as a chest: a pectoral shelf and a centre line
+    pec = shade(spec.get('skin', '#e8b888'), -0.22)
+    for dx in range(-6, 7):
+        cv.dot(CX + dx, 26, pec)
+    for dy in range(23, 29):
+        cv.dot(CX, dy, pec)
     # the dumbbell, held down at his side and riding the arm swing
     o = run_off(pose)[1]
     iron = Ramp('#4a4e58')
@@ -2600,16 +2711,27 @@ def sig_ringmaster(cv, spec, pose, back):
         for dx in (-1, 0, 1):
             cv.dot(x + dx, 32, glove)
             cv.dot(x + dx, 33, glove)
+    # THE WHIP, a long curled lash off his other hand, on both facings.
+    o2 = run_off(pose)[0]
+    lash = (28, 26, 32)
+    for i, (dx, dy) in enumerate(((-11, 30), (-13, 28), (-14, 25), (-14, 22),
+                                  (-13, 20), (-11, 19), (-9, 20), (-8, 22))):
+        cv.dot(CX + dx, dy + o2, lash)
     if back:
         return
-    # lapels, double breasted gold buttons, white shirt V and tie
-    for i in range(3):
-        cv.dot(CX - 2 - i, 23 + i, gold)
-        cv.dot(CX + 2 + i, 23 + i, gold)
-    cv.dot(CX - 2, 26, gold); cv.dot(CX + 2, 26, gold)
-    cv.dot(CX - 2, 28, gold); cv.dot(CX + 2, 28, gold)
-    cv.dot(CX, 23, (245, 245, 247))
-    cv.dot(CX, 24, (26, 26, 32))
+    # THE GOLD WAISTCOAT, filling the V of the coat. Without it the red
+    # coat closes over a red body and he is a man in a red sack.
+    vest = Ramp('#e8c04a')
+    cv.taper(23, 31, 5, 8, vest, folds=0)
+    # lapels over it, double breasted gold buttons, white collar
+    for i in range(4):
+        cv.dot(CX - 3 - i, 23 + i, gold)
+        cv.dot(CX + 3 + i, 23 + i, gold)
+    for dy in (26, 28, 30):
+        cv.dot(CX - 2, dy, gold); cv.dot(CX + 2, dy, gold)
+    for dx in (-1, 0, 1):
+        cv.dot(CX + dx, 22, (245, 245, 247))
+    cv.dot(CX, 23, (58, 96, 168))
 
 
 SIGNATURES = {
@@ -2646,7 +2768,7 @@ SIGNATURES = {
     'firebreather': {'post': sig_firebreather},
     'cyclops': {'post': sig_cyclops},
     'acrobat': {'post': sig_acrobat},
-    'jack': {'pre': sig_jack},
+    'jack': {'pre': sig_jack, 'post': sig_jack_post},
     'lupin': {'post': sig_lupin},
     'phoenix': {'post': sig_phoenix},
     'ringmaster': {'post': sig_ringmaster},
@@ -2755,13 +2877,21 @@ SPECS = {
  'peter': dict(arch='human', skin='#f2ceaa', shirt='#7a9a3a', pants='#5a7a30',
                hat='cap', hatcolor='#6a8a34', hair='#c94b1a', hairstyle='short',
                boot='#f2ceaa', eyes='normal', mouth='grin'),
- 'jack': dict(arch='human', skin='#f0c99a', shirt='#3a7f4a', pants='#5c3a1c',
-              hair='#c9a256', hairstyle='mop', eyes='normal', mouth='grin'),
- 'tom': dict(arch='human', skin='#f0c99a', shirt='#c94b1a', pants='#5a4a2a',
-             hat='straw', hatcolor='#c9a256', hair='#c9a256', hairstyle='bald',
+ # Jack: a white shirt under a brown jerkin, and a brown bowl cut. He was
+ # a boy in a plain green tunic, which made him a smaller Peter Pan.
+ 'jack': dict(arch='human', skin='#f0c99a', shirt='#e8e2d0', pants='#6a4a28',
+              hair='#a8763c', hairstyle='mop', eyes='normal', mouth='oh'),
+ # Tom in a white shirt under blue denim overalls, with the blond mop
+ # showing under the straw brim. He and Huck were one boy in two hats:
+ # Tom is the one who is dressed by somebody, Huck is not.
+ 'tom': dict(arch='human', skin='#f0c99a', shirt='#eee8da', pants='#3a568e',
+             hat='straw', hatcolor='#a8823a', hair='#e6c76a', hairstyle='mop',
              eyes='normal', mouth='grin'),
- 'huck': dict(arch='human', skin='#efc9a0', shirt='#a45b1a', pants='#5a4a2a',
-              hat='straw', hatcolor='#b8933f', hair='#5a3618', hairstyle='bald',
+ # Huck: a loose cream shirt with the sleeves pushed up, ochre trousers
+ # rolled at the calf, ONE suspender, a wide straw brim, and no shoes. He
+ # has no shoes in any illustration anybody has ever drawn of him.
+ 'huck': dict(arch='human', skin='#efc9a0', shirt='#e6e0cc', pants='#a8863f',
+              hat='straw', hatcolor='#c2a05a', hair='#5a3618', hairstyle='short',
               boot='#efc9a0', eyes='normal', mouth='grin'),
  'invisible': dict(arch='human', skin='#f0e4d4', shirt='#4a4a5a', pants='#242430',
                    hat='brim', hatcolor='#12121a', hattrim='#2a2a3a',
@@ -2787,8 +2917,12 @@ SPECS = {
               shirt='#2f2418', pants='#241812', hand='#bda070',
               hair='#141018', hairstyle='wild', eyes='angry',
               eyecolor='#c94b1a', mouth='none'),
- 'scarecrow': dict(arch='human', skin='#eecc78', shirt='#7a3812', pants='#5a3010',
-                   hat='floppy', hatcolor='#c9a256', hattrim='#8b6a3a',
+ # A dark tattered coat with straw bursting out of the collar and the
+ # cuffs, under a wide floppy hat that has seen a winter. The brown coat
+ # and the tan hat put a straw man in straw coloured clothes, so the only
+ # thing you could see was the hat.
+ 'scarecrow': dict(arch='human', skin='#eecc78', shirt='#2f3a56', pants='#28304a',
+                   hat='floppy', hatcolor='#3f4256', hattrim='#2a2c3c',
                    eyes='cartoon', eyecolor='#3a2410', mouth='none'),
  'lion': dict(arch='hulk', skin='#eab84a', muzzle='#ead0a0', chest='#eab84a',
               eyes='normal', eyespread=3, mouth='line'),
@@ -2833,13 +2967,23 @@ SPECS = {
                folds=3),
  'centaur': dict(arch='centaur', skin='#e8b888', pants='#8b6a3a',
                  eyes='normal', mouth='grin'),
- 'krampus': dict(arch='hulk', skin='#5a2812', muzzle='#5a2812', chest=None,
-                 eyes='glow', eyecolor='#c94b1a', mouth='fang'),
- 'fathertime': dict(arch='robed', skin='#e5c8a5', shirt='#5a4020',
-                    hair='#f5efe8', hairstyle='short', beard='#f5efe8',
-                    beardsize='long', eyes='normal', mouth='none', folds=4),
- 'mothernature': dict(arch='robed', skin='#f5d5a8', shirt='#3a8a4a',
-                      hair='#a4642a', hairstyle='long', eyes='normal',
+ # Black shaggy body, a RED face in it, and long black horns that go up
+ # rather than curling into ram's horns. He was a brown ape with gold
+ # antlers, which is a moose.
+ 'krampus': dict(arch='hulk', skin='#1c1620', muzzle='#8f2a22', chest=None,
+                 hand='#0f0c12', boot='#0f0c12',
+                 eyes='glow', eyecolor='#f0b028', mouth='fang'),
+ # A BLUE robe and a scythe. Brown put him in the same sack as every
+ # other bearded man on the roster, and the scythe is the prop that says
+ # which one of them he is.
+ 'fathertime': dict(arch='robed', skin='#e5c8a5', shirt='#39569e',
+                    hair='#f5efe8', hairstyle='bald', beard='#f5efe8',
+                    beardsize='full', eyes='normal', mouth='none', folds=4),
+ # SHE IS GREEN. Not a woman in a green dress: green skin, green hair
+ # with leaves in it. The Witch just gave the colour up and Mother Nature
+ # is who should have had it all along.
+ 'mothernature': dict(arch='robed', skin='#8fbf6a', shirt='#3a8a4a',
+                      hair='#3f7a3a', hairstyle='long', eyes='normal',
                       mouth='grin', folds=3),
  'raboddog': dict(arch='beast', skin='#5a3a20', muzzle='#a88458',
                   eyes='glow', eyecolor='#c94b1a', mouth='fang',
@@ -2861,9 +3005,17 @@ SPECS = {
  'dragon': dict(arch='dragon', skin='#2e8a3a', muzzle='#8fd06a',
                 eyes='normal', eyecolor='#141018', mouth='none',
                 extra=[('horns', '#f4c25a')]),
- 'sasquatch': dict(arch='hulk', skin='#4a2014', muzzle='#b08256', chest='#5e3220',
-                   eyes='normal', mouth='line'),
- 'yeti': dict(arch='hulk', skin='#f0f6fb', muzzle=None, chest='#dce8f2',
+ # A dark red brown SILHOUETTE with nothing in it but a band of eyes.
+ # Every photograph anybody claims to have is exactly this and nothing
+ # more, and the tan muzzle and chest patch were turning him into a bear.
+ 'sasquatch': dict(arch='hulk', skin='#5a2018', muzzle=None, chest=None,
+                   hand='#3f150f', boot='#3f150f',
+                   eyes='hidden', mouth='none'),
+ # White fur, but a SLATE face and red eyes in it. An all white yeti is
+ # a snowman: the dark face is the only thing that gives the silhouette a
+ # front, and the red is what makes him worth being afraid of.
+ 'yeti': dict(arch='hulk', skin='#eef4fa', muzzle=None, chest='#d4e4f2',
+              hand='#4a5666', boot='#4a5666',
               eyes='hidden', mouth='none'),
  'nessie': dict(arch='nessie', skin='#2a7a5a', muzzle='#4aa878',
                 eyes='hidden', mouth='none'),
@@ -2875,22 +3027,36 @@ SPECS = {
  'werewolf': dict(arch='hulk', skin='#4a3524', muzzle=None, chest='#6a4e34',
                   wolfmuzzle='#a88458', eyes='glow', eyecolor='#f4c25a',
                   mouth='none'),
+ # Bare chested in dark trunks. He was wearing a red singlet that covered
+ # the one thing anybody comes to look at.
  'strongman': dict(arch='hulk', skin='#e8b888', muzzle='#e8b888', chest=None,
-                   hair='#2a1c10', hairstyle='bald',
-                   eyes='normal', mouth='none'),
- 'beardedlady': dict(arch='human', skin='#f2ceaa', shirt='#b0447a', pants='#7a2a54',
-                     hair='#3a2414', hairstyle='long', beard='#4a2f1a',
-                     beardsize='long', eyes='normal', mouth='none'),
- 'ringmaster': dict(arch='human', skin='#e8b888', shirt='#c93030', pants='#141014',
+                   pants='#22242e', hair='#2a1c10', hairstyle='bald',
+                   eyes='normal', mouth='grin'),
+ # The banner painting look: a yellow dress and a full dark beard. The
+ # magenta read as a circus costume; the yellow reads as a woman in her
+ # good dress, which is the joke and also the dignity of it.
+ 'beardedlady': dict(arch='human', skin='#f2ceaa', shirt='#e8c84a', pants='#d8b430',
+                     hair='#241810', hairstyle='long', beard='#241810',
+                     beardsize='full', eyes='normal', mouth='none'),
+ # Red coat AND red trousers, over tall black boots, with a gold
+ # waistcoat under the coat. Black trousers cut him in half at the belt.
+ 'ringmaster': dict(arch='human', skin='#e8b888', shirt='#c93030', pants='#a82424',
                     hat='top', hatcolor='#141010', hattrim='#c93030',
-                    beard='#141010', beardsize='moustache',
+                    beard='#141010', beardsize='moustache', boot='#16161c',
                     eyes='normal', mouth='none', belt='#f4c25a'),
- 'acrobat': dict(arch='human', skin='#e8b888', shirt='#c93a6a', pants='#c93a6a',
-                 hair='#5a3a1c', hairstyle='short', eyes='normal', mouth='grin',
-                 boot='#f4c25a'),
- 'firebreather': dict(arch='human', skin='#c8956a', shirt='#3a2418', pants='#3a2418',
+ # THE WIRE WALKER, not a gymnast in a leotard: black top hat with a red
+ # band, white shirt, dark braces, dark trousers, and a balance pole held
+ # across the body. The pole is the whole silhouette.
+ 'acrobat': dict(arch='human', skin='#e8b888', shirt='#eee8dc', pants='#22243a',
+                 hat='top', hatcolor='#16161e', hattrim='#a8202a',
+                 hair='#2a1c10', hairstyle='short', eyes='normal', mouth='grin',
+                 boot='#16161e'),
+ # Crimson and gold, because a fire breather in dark brown is a man
+ # standing in his own smoke. The flame reads off the costume, not in
+ # spite of it.
+ 'firebreather': dict(arch='human', skin='#c8956a', shirt='#a8203a', pants='#7a1830',
                       hair='#141010', hairstyle='short', eyes='angry',
-                      mouth='open', extra=[('breath', '#f4922a')]),
+                      mouth='open', belt='#e8c04a', extra=[('breath', '#f4922a')]),
  'blackcat': dict(arch='cat', skin='#141018', chest='#eaeaea', muzzle='#d8d8dc',
                   eyes='glow', eyecolor='#f4c25a', mouth='none', eyespread=3,
                   extra=[('ears', '#141018')]),
