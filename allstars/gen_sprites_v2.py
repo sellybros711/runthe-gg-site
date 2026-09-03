@@ -968,6 +968,15 @@ ARM_OFF = {
     'windup':  (1, -7),
     'release': (-2, 3),
     'swing':   (-5, -5),
+    # A fielder looking up at a fly with both hands raised for the glove.
+    # Both arms UP is different from the pitcher's windup, which raises
+    # only one and drops the other back. The glove itself is drawn as a
+    # post overlay, so the arms have to reach the sky for it to sit on.
+    'catch':   (-9, -9),
+    # A fielder mid throw to first: front arm out, throwing arm cocked
+    # back and up. This is not the pitcher's release (that follows through
+    # low), because a shortstop throwing across the diamond fires high.
+    'throw':   (2, -6),
 }
 LEG_OFF = {
     'run1':    (-1, 1),
@@ -975,6 +984,8 @@ LEG_OFF = {
     'windup':  (-3, 0),
     'release': (1, -1),
     'swing':   (0, 0),
+    'catch':   (0, 0),
+    'throw':   (-1, 1),
 }
 
 
@@ -1000,6 +1011,30 @@ def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
     # Same reason as the hulk's arms: a sleeve in the shirt's own ramp
     # melts into the shirt. One shade off is all it takes to read.
     cuff = Ramp(shade(sleeve.base, -0.16))
+    # RAISED POSES need arms drawn WIDER than usual and drawn UPWARD, so
+    # they clear the head (9.4 half-width) instead of hiding behind it. A
+    # catch reaches both hands over the head; a throw fires the throwing
+    # arm high while the glove side crosses low.
+    if pose == 'catch':
+        # Both arms straight up: shoulder at y=22, hand at y=5, drawn
+        # OUTSIDE the head at x=CX±12 so they clear its silhouette.
+        for side in (-1, 1):
+            x0 = CX + side * 12 - 1
+            cv.cyl(x0, 6, x0 + 2, 22, cuff, round_bot=1)
+            cv.cyl(x0 - 1, 4, x0 + 3, 7, skin, round_bot=1)
+        return
+    if pose == 'throw':
+        # Right arm cocked back-high (thrower's), left arm forward at chest.
+        # Shoulder to elbow to hand, with the hand at the peak.
+        # Right: from shoulder (CX+8, y=23) up-and-back to (CX+13, y=8).
+        for (x0, y0, x1, y1) in [(CX + 8, 23, CX + 12, 12)]:
+            cv.cyl(int(x0), int(y1), int(x0) + 3, int(y0), cuff, round_bot=1)
+        # A small hand at the peak of the throwing arm.
+        cv.cyl(CX + 10, 6, CX + 14, 10, skin, round_bot=1)
+        # Left arm forward across chest, hand extended.
+        cv.cyl(CX - 12, 22, CX - 9, 25, cuff, round_bot=1)
+        cv.cyl(CX - 14, 24, CX - 10, 27, skin, round_bot=1)
+        return
     for side, off in ((-1, lo), (1, ro)):
         x0 = CX + side * (9 + out) - 1
         cv.cyl(x0, top + off, x0 + 2, top + length + off, cuff, round_bot=1)
@@ -3171,7 +3206,7 @@ SPECS = {
 # been asking for windup and release since the first camera, and the draw
 # routine answered with idle because no such frame existed.
 POSES = ('idle', 'run1', 'run2', 'back', 'backrun1', 'backrun2',
-         'windup', 'release', 'swing')
+         'windup', 'release', 'swing', 'catch', 'throw')
 
 
 # ------------------------------------------------------------------ faces

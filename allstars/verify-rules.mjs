@@ -21,6 +21,8 @@
      cup sim              one click runs the CPU matches to yours, or to the end
      clinch, elimination  in and out are marked only once the games left make it certain
      season awards        a fixed season hands out the same hardware, archived once
+     field frames         every biped carries a distinct catch and throw frame
+     out at home draws    the play carries a plate-out marker for the draw loop
      cup identity         the seed is drawn, the card says who hosts, an upset is called one
      agency               the CPU bunts, swings for it and runs on cue; SEND and HOLD do what they say
      phone                at 390 wide the placards stand apart, the ball keeps a size
@@ -472,6 +474,52 @@ async function main() {
       ok(r.n1 === 1 && r.n2 === 1, 'the season is archived once, not per render', JSON.stringify({ n1: r.n1, n2: r.n2 }));
       ok(r.last && r.last.w === 4 && r.last.l === 3 && r.last.awards.length === 5, 'the archive carries the record and the awards', JSON.stringify(r.last));
       ok(r.caseText.includes('Trophy case'), 'the menu opens the trophy case', JSON.stringify(r.caseText));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- catch, throw and slide sprites ---- */
+    {
+      console.log('field frames');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        /* Every biped carries a distinct catch frame. Quadrupeds have no
+           arms to raise, so they are excluded. */
+        const bipeds = ['kong','franky','popeye','peter','tom','huck','sherlock','lupin','alice','dorothy','robin','sammy','wonderland'].filter(k => V2_SPRITES[k]);
+        const stagnant = bipeds.filter(k =>
+          JSON.stringify(V2_SPRITES[k].f.catch) === JSON.stringify(V2_SPRITES[k].f.idle)
+          || JSON.stringify(V2_SPRITES[k].f.throw) === JSON.stringify(V2_SPRITES[k].f.idle));
+        const missing = Object.keys(V2_SPRITES).filter(k => !V2_SPRITES[k].f.catch || !V2_SPRITES[k].f.throw);
+        return { missing, stagnant };
+      });
+      ok(r.missing.length === 0, 'every character carries catch and throw frames', r.missing.join(','));
+      ok(r.stagnant.length === 0, 'the catch and throw frames differ from idle on every biped', r.stagnant.join(','));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- runner thrown out at the plate is drawn ---- */
+    {
+      console.log('out at home draws');
+      const { pg, errors } = await fresh(browser);
+      await exhibition(pg, true);
+      const r = await pg.evaluate(async () => {
+        const g = State.game;
+        endAtBatCleanup(); g.pitch = null;
+        g.bases = [null, Object.assign({}, g.home.batters[3], { n: 'The Runner', spd: 90 }), null];
+        g.sendRule = 'send';
+        const realRandom = Math.random;
+        Math.random = () => 0.9;
+        g.play = { kind: 'single', preBases: g.bases.slice(), runnerPaths: [null, [1, 2, 3], null], applied: false };
+        applyHitMutation('single', currentBatter());
+        Math.random = realRandom;
+        return { plateOut: !!(g.play && g.play.plateOut),
+                 runner: g.play && g.play.plateOut && g.play.plateOut.runner.n,
+                 outs: g.outs };
+      });
+      ok(r.plateOut, 'the play carries a plate-out marker for the draw loop', JSON.stringify(r));
+      ok(r.runner === 'The Runner', 'and names the runner', r.runner);
+      ok(r.outs === 1, 'and the out is recorded', 'outs=' + r.outs);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
