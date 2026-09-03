@@ -552,6 +552,18 @@ function createRun(opts) {
     /* Every season played, oldest first: what the owner reads and what the run is scored
        on. */
     history: dynasty ? [] : null,
+    /* THE BOSS SEASONS. Every fifth season ends with a marquee game against a real great
+       team: see E.dynastyBossFor. `boss` holds the pending game while it is being played and
+       is cleared once resolved; `frozen` is the list of player ids a won freeze boss has
+       taken off the clock; `bossFailSeason` is the one season whose win bar a lost boss
+       raised by one. All null outside a dynasty, and all self-expiring: a save cannot carry a
+       stale boss because it is written only at rest, never mid-game. See applyBossResult and
+       effectiveWinBar. */
+    boss: null,
+    frozen: dynasty ? [] : null,
+    bossFailSeason: null,
+    /* What the last boss paid, for the screen that announces it. Cleared when spent. */
+    bossReward: null,
     fired: false,
     /* The winter's working state: who aged into what, and who is gone. Null outside the
        offseason so a stale one cannot be painted. */
@@ -1206,6 +1218,22 @@ function beginOffseason(run, byKey, lastSeason) {
   const kept = [], slots = [], sal = [], draws = [], aged = [], gone = [];
   for (let i = 0; i < run.roster.length; i++) {
     const man = run.roster[i];
+    /*
+     * A FROZEN MAN DOES NOT AGE, and that is the freeze-boss reward: he stays the exact
+     * player he was, at the exact salary, for the rest of the run. He cannot decline, cannot
+     * run out of seasons and cannot sign elsewhere, because none of the three ways to lose a
+     * man is a clock he is still on. Same row, same salary, same slot, tenure still counting.
+     */
+    if (run.frozen && run.frozen.indexOf(man.player_id) >= 0) {
+      const wasSal = run.salaries[i];
+      kept.push(man); slots.push(run.slotIndex[i]); sal.push(wasSal);
+      draws.push(run.draws[i] || null);
+      run.tenure[man.player_id] = (run.tenure[man.player_id] || 1) + 1;
+      aged.push({ was: man, now: man, wasSalary: wasSal, salary: wasSal,
+        market: man.price_musd, raise: 0,
+        edge: Math.round((man.price_musd - wasSal) * 10) / 10, drop: 0, frozen: true });
+      continue;
+    }
     const year = seasonYear(man);
     const next = E.dynastyAge(man, byKey, year);
     if (!next) {
@@ -1400,7 +1428,8 @@ function ownerVerdict(run) {
   if (run.phase !== PHASES.OVER) throw new Error('the season is not over');
   const o = run.outcome || {};
   const wins = o.regularWins ?? 0;
-  const bar = E.dynastyWinBar(run.seasonNo, run.stepSeasons);
+  /* THE EFFECTIVE BAR, so a lost boss's extra win is charged here and not just shown. */
+  const bar = effectiveWinBar(run);
   /* PUSHED ONLY ONCE PER SEASON. This is reachable from a screen and from a reload, and a
      history with the same year twice would fire somebody for a season they played one
      time. */
@@ -1433,7 +1462,12 @@ function ownerVerdict(run) {
       scoreParts: scored.parts,
     });
   }
-  run.fired = !E.dynastySurvives(run.history, run.stepSeasons);
+  /* FIRED OFF THE ROW JUST BANKED, not off a recomputed bar. The row's `cleared` was tested
+     against the effective bar above, so a lost boss's extra win counts here; dynastySurvives
+     would silently use the base bar and forgive the penalty. One life either way: only the
+     last season decides. */
+  const last = run.history[run.history.length - 1];
+  run.fired = !last || !last.cleared;
   run.score = E.gauntletRunScore(run.history);
   return {
     bar, wins, cleared: wins >= bar, fired: run.fired,
@@ -1446,6 +1480,76 @@ function ownerVerdict(run) {
        the bar that survives only because last year cleared it is a warning, not a pass. */
     onNotice: !run.fired && wins < bar,
   };
+}
+
+/*
+ * THE WIN BAR THIS SEASON, PENALTY INCLUDED. E.dynastyWinBar is the mode's rule; this adds
+ * the one-season sting a lost boss leaves. Everything that shows or checks the bar for the
+ * CURRENT season goes through here, so the number is the same on the front page, the squad
+ * screen, the season screen and in the verdict, and a lost boss shows up in all of them at
+ * once rather than only in the firing.
+ */
+function effectiveWinBar(run, seasonNo) {
+  const s = seasonNo == null ? run.seasonNo : seasonNo;
+  let bar = E.dynastyWinBar(s, run.stepSeasons);
+  if (run.bossFailSeason && run.bossFailSeason === s) bar += 1;
+  return bar;
+}
+
+/*
+ * IS A BOSS WAITING. True when the regular season is scored, the run survived it, and this is
+ * a boss season whose marquee game has not been played. The boss is a bonus AFTER the bar, so
+ * a fired run never meets one: you do not earn a reward the season you were let go.
+ */
+function bossPending(run) {
+  if (!run || !run.dynasty || run.fired) return false;
+  if (run.phase !== PHASES.OVER) return false;
+  if (run.boss && run.boss.resolved && run.boss.seasonNo === run.seasonNo) return false;
+  return !!E.dynastyBossFor(run.seasonNo);
+}
+
+/* The boss this season faces, spec and reward and all, or null in an ordinary season. */
+function bossFor(run) {
+  return run && run.dynasty ? E.dynastyBossFor(run.seasonNo) : null;
+}
+
+/*
+ * THE BOSS RESULT, BANKED. Called once with whether the marquee game was won, and for a won
+ * freeze boss the id of the man the player chose to freeze. A win pays the season's reward; a
+ * loss raises next season's bar by one, which is the existing win bar doing the punishing
+ * rather than a new way to die. Idempotent per season: a reload cannot bank the same boss
+ * twice, because run.boss.resolved is checked first.
+ */
+function applyBossResult(run, won, freezeId) {
+  if (!run.dynasty) throw new Error('not a dynasty');
+  const spec = E.dynastyBossFor(run.seasonNo);
+  if (!spec) throw new Error('not a boss season');
+  if (run.boss && run.boss.resolved && run.boss.seasonNo === run.seasonNo) return run.boss;
+  run.boss = { seasonNo: run.seasonNo, resolved: true, won: !!won,
+    team_season_id: spec.team_season_id, reward: null };
+  if (won) {
+    if (spec.reward === 'deadwipe') {
+      /* Every charge cleared. Kept as an empty list rather than a flag so remaining() and
+         E.dynastyDead go on reading one thing. */
+      run.boss.deadCleared = deadOf(run);
+      run.dead = [];
+      run.boss.reward = 'deadwipe';
+    } else if (spec.reward === 'freeze') {
+      /* One man off the clock for the rest of the run: beginOffseason keeps a frozen man
+         exactly as he is. The id is the player the screen chose; falling back to the roster's
+         first man only guards a caller that forgot to pass one. */
+      const id = freezeId != null ? freezeId
+        : (run.roster.length ? run.roster[0].player_id : null);
+      if (id != null && run.frozen.indexOf(id) < 0) run.frozen.push(id);
+      run.boss.reward = 'freeze';
+      run.boss.frozenId = id;
+    }
+  } else {
+    run.bossFailSeason = run.seasonNo + 1;
+    run.boss.reward = 'penalty';
+  }
+  run.bossReward = run.boss.reward;
+  return run.boss;
 }
 
 /** Seasons survived, which is the only number this mode is ranked on. */
@@ -3671,7 +3775,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 43;
+const RUN_API_VERSION = 45;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
@@ -3692,6 +3796,8 @@ const api = {
   /* The Gauntlet's winter and its owner. */
   beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived, deadOf,
   takeTheField, wheelIsDry,
+  /* The Gauntlet's boss seasons. */
+  effectiveWinBar, bossPending, bossFor, applyBossResult,
   /* Exported because the PAGE has to rate the live team with the same chemistry the season
      is playing with, and in Full Team that is two figures rather than one. */
   seasonChem,

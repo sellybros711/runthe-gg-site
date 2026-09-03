@@ -5231,7 +5231,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 43;
+const ENGINE_API_VERSION = 45;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -5258,6 +5258,430 @@ function eraCode(franchise, season) {
   if (!rules) return franchise;
   for (const [from, code] of rules) if (season >= from) return code;
   return franchise;
+}
+
+/*
+ * ─── THE GAUNTLET'S BOSS SEASONS ─────────────────────────────────────────────────────
+ *
+ * Every fifth season the schedule ends with a marquee game against a real great team, and
+ * that game is the one place in this mode where the player is not a spectator. Two levers,
+ * both genuine reads rather than buttons that always help:
+ *
+ *   THE SCOUT, before the game. The boss's tell is shown and you pick how to attack it. The
+ *   right read against THIS boss is worth BOSS_READ_EDGE on your own score; the wrong read
+ *   is worth nothing and the trap read costs you. It is a read because the tell points at the
+ *   answer without naming it, and because a boss weak to the pass is death to the run.
+ *
+ *   THE CALLS, during the game. A fourth down and a two-point try, each a seeded gamble with
+ *   a real downside. They widen the outcome, which is exactly what a trailing underdog wants
+ *   and exactly what a team in front does not: see the FOURTH axis in the game plan for the
+ *   same idea measured on a whole season. Pressing when you are already ahead of the boss is
+ *   how you hand it back.
+ *
+ * WHY OFFENSE-ONLY MAKES THIS WORK RATHER THAN BREAKING IT. The Gauntlet drafts an offense,
+ * so a wall-of-defense boss (the 2000 Ravens, the 2002 Buccaneers) throttles your score
+ * through the same defenseModifier every Sunday uses, and a juggernaut-offense boss (the
+ * 2007 Patriots, the 2013 Broncos) simply puts up a number you have to chase. The scout is
+ * the read on which of those two problems you are holding.
+ *
+ * BEATING ONE PAYS, LOSING ONE STINGS. The reward alternates: the odd bosses (5, 15, 25)
+ * wipe your dead cap, the even ones (10, 20, 30) let you freeze a man at his current age and
+ * salary for the rest of the run. Lose and the owner wants one more win next season, which
+ * is the existing win bar doing the punishing rather than a new way to die. See
+ * dynastyBossReward and effectiveWinBar in run.js.
+ */
+const DYNASTY_BOSS_EVERY = 5;
+
+/*
+ * WHAT A RIGHT READ IS WORTH, as a multiplier on your scoring power for the whole boss game.
+ * It shifts how far your offense moves the ball rather than adding points at the end, so a
+ * good read is felt on every drive. Measured with a headless harness that plays the sim over
+ * forty drafted rosters: a right read beats the trap read by five to ten points of win rate
+ * on every boss, and the trap comes in at or below not scouting at all. So the tell is worth
+ * reading and a confident wrong answer is worse than a shrug. The trap costs half the edge: a
+ * wrong guess should sting, not lose the game on its own.
+ */
+const BOSS_READ_EDGE = 0.06;
+
+/*
+ * ─── THE BOSS GAME IS A DRIVE PLAYED FORWARD ─────────────────────────────────────────
+ *
+ * The playoffs decide the result and then draw a plausible broadcast to it (scoringScript
+ * works backwards from a final). The boss game does the opposite: it plays down by down, the
+ * score, clock, field position and down-and-distance are the sim's own state, and when a real
+ * fourth down or two-point spot arrives it stops and asks. Your call then decides where the
+ * ball goes next, because the conversion is resolved here and the drive lives or dies on it.
+ *
+ * GROUNDED IN THE SAME NUMBERS AS EVERY SUNDAY. Each team's expected points come from the
+ * exact resolveGame expectation (your means times chemistry times structure times the boss's
+ * defenseModifier; the boss's own scoring rate), pushed through the same internal-to-football
+ * calibration toFootballScore uses. So a wall-of-defense boss holds your drives short and a
+ * juggernaut scores in bunches, at the rate the data says, and the difficulty matches the
+ * band the old resolver was measured at. Only the PATH is now real, and the two calls sit on
+ * that path instead of adjusting a final number.
+ *
+ * mu (yards per play) is fitted per team at kickoff so the auto-play drive model produces the
+ * team's expected points per drive; the fit runs on its own fixed-seed rng so it neither
+ * perturbs the game seed nor drifts if the drive rules change. See bossFitMu.
+ */
+const BOSS_SIM = {
+  DRIVES_PER_TEAM: 11,     // possessions a side in a 60 minute game, about
+  PLAY_SECS: 26,           // seconds a play burns, blended stopped and running clock
+  GAIN_SD: 6.4,            // yards per play, spread
+  TO_RATE: 0.021,          // per-play chance the drive ends in a giveaway
+  FG_MAX_YARD: 38,         // yards from the goal you will still try a field goal from (55 yd kick)
+  PUNT_NET: 39,            // net punt, gross minus the return
+  START_YARD: 26,          // where a drive starts after a kickoff, about your own 26
+};
+
+/* Expected football points for an internal (fantasy) score, deterministic: the same
+   internal-to-real mapping toFootballScore samples around, read at its centre. Falls back to
+   a plain divisor when a calibration is not supplied (the harness passes one). */
+function bossExpectedPoints(internalScore, cal) {
+  if (cal && cal.real_team_pts_q && cal.internal_offence_q) {
+    return valueAt(cal.real_team_pts_q, percentileIn(cal.internal_offence_q, internalScore));
+  }
+  return internalScore / 3.4;
+}
+
+/* One play's gain, in yards. A gentle floor so a loss is possible but a drive is not made of
+   them; the spread is what turns a strong offense into first downs rather than a fixed march. */
+function bossPlayGain(mu, rng) {
+  const g = mu + BOSS_SIM.GAIN_SD * gaussRand(rng);
+  return Math.max(-6, Math.round(g));
+}
+/* A unit gaussian from the seeded rng, two draws averaged toward the middle. */
+function gaussRand(rng) {
+  let s = 0; for (let i = 0; i < 3; i++) s += rng();
+  return (s - 1.5) / 0.5;   // mean 0, sd ~1
+}
+/* A field goal make, by kick distance. High and near automatic up close, falling with range,
+   floored so a long try is a real gamble rather than a coin flip. */
+function bossFgGood(yardsToGoal, rng) {
+  const kick = yardsToGoal + 17;
+  const p = Math.max(0.32, Math.min(0.99, 1.05 - Math.max(0, kick - 25) * 0.017));
+  return rng() < p;
+}
+
+/*
+ * PLAY ONE DRIVE, AUTO. Used both to fit mu and to run the boss's own possessions. Returns
+ * the points scored and the yard the drive ended on. A team-relative frame: y is 0 at your
+ * own goal and 100 at the opponent's, so 100 is a touchdown whichever side has the ball.
+ */
+function bossAutoDrive(mu, startY, rng, opts) {
+  let y = startY, down = 1, toGo = 10, plays = 0;
+  const desperate = opts && opts.desperate;
+  while (plays++ < 30) {
+    if (rng() < BOSS_SIM.TO_RATE) return { pts: 0, end: y, how: 'turnover' };
+    if (down === 4) {
+      const toGoal = 100 - y;
+      if (toGoal <= BOSS_SIM.FG_MAX_YARD && !desperate) {
+        return bossFgGood(toGoal, rng) ? { pts: 3, end: 100 - toGoal, how: 'fg' }
+          : { pts: 0, end: y, how: 'miss' };
+      }
+      if (toGo > 3 && !desperate) return { pts: 0, end: y, how: 'punt' };
+      // go for it
+    }
+    const gain = bossPlayGain(mu, rng);
+    y += gain;
+    if (y >= 100) return { pts: 6, end: 100, how: 'td' };
+    if (y < 1) y = 1;
+    if (gain >= toGo) { down = 1; toGo = 10; }
+    else {
+      toGo -= gain;
+      if (down === 4) return { pts: 0, end: y, how: 'downs' };
+      down++;
+    }
+  }
+  return { pts: 0, end: y, how: 'end' };
+}
+
+/* Fit mu so the auto drive model scores about `target` points a drive. Monotonic in mu, so a
+   short bisection settles it; a private fixed-seed rng keeps it deterministic and off the
+   game stream. */
+const bossMuCache = new Map();
+function bossFitMu(target) {
+  const key = Math.round(target * 20) / 20;   // 0.05 pts/drive buckets
+  if (bossMuCache.has(key)) return bossMuCache.get(key);
+  const avg = (mu) => {
+    /* A fresh fixed-seed stream per mu so the fit is deterministic and independent of the
+       game rng; the same stream each time keeps the bisection monotone. */
+    const rng = createSeededRNG(hashSeed('boss-mu-fit'));
+    let s = 0; const N = 1000;
+    for (let i = 0; i < N; i++) s += bossAutoDrive(mu, BOSS_SIM.START_YARD, rng, null).pts;
+    return s / N;
+  };
+  let lo = 1.2, hi = 9;
+  for (let i = 0; i < 18; i++) { const mid = (lo + hi) / 2; if (avg(mid) < key) lo = mid; else hi = mid; }
+  const mu = (lo + hi) / 2;
+  bossMuCache.set(key, mu);
+  return mu;
+}
+
+/*
+ * CREATE A BOSS GAME. Computes each team's expected points, applies the scout read to yours,
+ * fits the two mus, and hands back the live state the advance/resolve pair drives.
+ */
+function bossSimCreate(roster, chemistryMultiplier, boss, oppRow, leagueAvgAllowed, read,
+  constants = CONSTANTS, cal = null) {
+  const rawMean = roster.reduce((s, p) => s + (p.ppr_ppg_mean || 0), 0);
+  const structure = rosterStructure(roster).multiplier;
+  const defMod = oppRow.pts_allowed_mean / leagueAvgAllowed;
+  const yourInternal = rawMean * chemistryMultiplier * structure * defMod;
+  const themInternal = oppRow.pts_scored_mean * constants.SCALE;
+  const readRight = read != null && read === boss.weakTo;
+  const readTrap = read != null && read === boss.trap;
+  const readMult = readRight ? 1 + BOSS_READ_EDGE : readTrap ? 1 - BOSS_READ_EDGE / 2 : 1;
+  const youExp = bossExpectedPoints(yourInternal, cal) * readMult;
+  const themExp = bossExpectedPoints(themInternal, cal);
+  const per = BOSS_SIM.DRIVES_PER_TEAM;
+  return {
+    you: 0, them: 0,
+    youExp, themExp,
+    muYou: bossFitMu(Math.max(0.3, youExp / per)),
+    muThem: bossFitMu(Math.max(0.3, themExp / per)),
+    read: read || null, readRight, readTrap,
+    clock: 0, drives: [],
+    pos: null, cur: null, pending: null, over: false, won: null,
+    firstReceiver: null,
+  };
+}
+
+/*
+ * THE BOSSES, IN THE ORDER A RUN MEETS THEM. Every team_season_id here exists in
+ * team_seasons.json and was checked against it rather than typed from memory. `tell` is what
+ * the scout shows, written to point at the counter without naming it. `weakTo` is the attack
+ * that works, `trap` the one this team eats alive; the third attack is neutral. `note` is the
+ * one line the reward/relief screen and the scout share.
+ *
+ * ATTACK KEYS are the same three everywhere so the scout screen is a habit rather than a
+ * puzzle re-learned each time: `air` throws it, `ground` runs it, `trick` gets aggressive and
+ * gadgety. Which one beats a given boss is a fact about that boss's real weakness, not a
+ * dice roll: the 2000 Ravens front was run-proof and beatable over the top, the 2013 Broncos
+ * could be outscored but never out-passed.
+ *
+ * The list is walked by index and then cycled, so a run deep enough to see a seventh boss
+ * meets the first one again a season older. Bosses ramp in difficulty across the first lap
+ * by the strength of the real team, which is left to the data rather than a knob.
+ */
+const DYNASTY_BOSSES = [
+  { team_season_id: 'SEA-2013', weakTo: 'air', trap: 'ground',
+    tell: 'A secondary that swallows the run and dares you to throw deep.',
+    note: 'the Legion of Boom' },
+  { team_season_id: 'NE-2007', weakTo: 'ground', trap: 'air',
+    tell: 'An offense that never punts. Keep it on the sideline and shorten the game.',
+    note: 'the 16-0 Patriots' },
+  { team_season_id: 'BAL-2000', weakTo: 'air', trap: 'ground',
+    tell: 'The best run defense ever assembled. Do not try to run on it.',
+    note: 'the 2000 Ravens' },
+  { team_season_id: 'DEN-2013', weakTo: 'ground', trap: 'trick',
+    tell: 'A record-setting passing attack. Out-score it by keeping it off the field.',
+    note: 'the 606-point Broncos' },
+  { team_season_id: 'TB-2002', weakTo: 'trick', trap: 'ground',
+    tell: 'A Cover 2 that reads everything in front of it. You will need something it has not seen.',
+    note: 'the 2002 Buccaneers' },
+  { team_season_id: 'SF-2019', weakTo: 'air', trap: 'trick',
+    tell: 'A four-man rush that gets home on its own. Get the ball out quick and over the top.',
+    note: 'the 2019 49ers front' },
+];
+
+/* Which boss, if any, a season faces. Null in an ordinary season. */
+function dynastyBossFor(seasonNo, every) {
+  const step = every || DYNASTY_BOSS_EVERY;
+  if (!seasonNo || seasonNo < step || seasonNo % step !== 0) return null;
+  const idx = (seasonNo / step - 1) % DYNASTY_BOSSES.length;
+  return { ...DYNASTY_BOSSES[idx], seasonNo, reward: dynastyBossReward(seasonNo, step) };
+}
+
+/*
+ * WHAT BEATING THIS BOSS PAYS. The two rewards alternate down the ladder, and both are aimed
+ * at the mode's one squeeze, the frozen cap closing on an ageing roster:
+ *
+ *   'deadwipe'  seasons 5, 15, 25 ...  every dead-money charge is cleared.
+ *   'freeze'    seasons 10, 20, 30 ...  one man is held at his current age and salary, so a
+ *                                       star stops declining for the rest of the run.
+ *
+ * Odd multiples of five wipe, even ones freeze, which is just the parity of season/5.
+ */
+function dynastyBossReward(seasonNo, every) {
+  const step = every || DYNASTY_BOSS_EVERY;
+  return (seasonNo / step) % 2 === 0 ? 'freeze' : 'deadwipe';
+}
+
+/* Absolute field yard (0 your goal, 100 theirs) from a team-relative yard (100 = the drive's
+   own score). A 'them' drive runs the other way, so its relative yards mirror. */
+function bossAbsYard(team, y) {
+  const v = team === 'you' ? y : 100 - y;
+  return Math.max(0, Math.min(100, v));
+}
+/* Where the ball sits, as a side of the field and a yard line, for the situation card. */
+function bossBallSpot(y) {
+  return y <= 50 ? { side: 'own', yard: Math.max(1, Math.round(y)) }
+    : { side: 'opp', yard: Math.max(1, Math.round(100 - y)) };
+}
+/* The clock, split into quarters for display. */
+function bossClock(sim) {
+  const q = Math.min(4, Math.floor(sim.clock / 900) + 1);
+  const rem = 900 - (sim.clock - (q - 1) * 900);
+  return { quarter: q, secs: Math.max(0, Math.round(rem)) };
+}
+/* Two-point conversion odds, a shade under a coin flip and better for a strong offense. */
+function bossTwoProb(sim) {
+  return Math.max(0.30, Math.min(0.60, 0.40 + (sim.muYou - 4.5) * 0.05));
+}
+/* Whether a two-point try is a real question here: second half, game within a score or two. */
+function bossTwoLive(sim) {
+  return sim.clock >= 1800 && Math.abs(sim.you - sim.them) <= 10;
+}
+/* Whether the player's fourth down is a genuine go-or-not, worth stopping for. Short yardage
+   in plus territory always is; late and trailing, any fourth down is. Everything else the sim
+   handles itself, so the pauses stay rare and real. */
+function bossGenuineFourth(sim, c) {
+  const short = c.toGo <= 3 && c.y >= 52;
+  const lateTrail = sim.clock >= 2400 && sim.you < sim.them && c.y >= 35;
+  return short || lateTrail;
+}
+
+function bossStartDrive(sim, team, startY) {
+  sim.pos = team;
+  sim.cur = { team, y: startY, down: 1, toGo: Math.min(10, 100 - startY),
+    startAbs: bossAbsYard(team, startY), tStart: sim.clock, plays: 0 };
+}
+
+/* Hand the ball over after a drive ends, and set the next start spot in the new team's own
+   relative frame. */
+function bossHandoff(sim, how, endY, scorer) {
+  const other = scorer === 'you' ? 'them' : 'you';
+  if (how === 'td' || how === 'fg') { sim.pos = other; sim.nextStart = BOSS_SIM.START_YARD; }
+  else if (how === 'punt') {
+    const land = Math.min(96, endY + BOSS_SIM.PUNT_NET);
+    sim.pos = other; sim.nextStart = land >= 100 ? 25 : Math.max(1, 100 - land);
+  } else { // downs, turnover, miss: other team takes the spot
+    sim.pos = other; sim.nextStart = Math.max(1, 100 - endY);
+  }
+}
+
+/*
+ * FINISH A DRIVE. Records it for the field chart, banks the points, and either pauses for a
+ * player's two-point try or hands the ball off. Returns the event the driver renders.
+ */
+function bossEndDrive(sim, how, endY, rng) {
+  const c = sim.cur;
+  const pts = how === 'td' ? 6 : how === 'fg' ? 3 : 0;
+  const endRel = how === 'td' ? 100 : how === 'fg' ? Math.min(97, c.y) : c.y;
+  const drive = { team: c.team, startYard: c.startAbs, endYard: bossAbsYard(c.team, endRel),
+    result: how, tStart: c.tStart, tEnd: sim.clock, plays: c.plays };
+  sim.drives.push(drive);
+  sim[c.team] += pts;
+  if (how === 'td' && c.team === 'you' && bossTwoLive(sim)) {
+    // Pause for the PAT decision; the handoff waits until it is resolved.
+    sim.pending = { kind: 'two', team: 'you', pat: { endY } };
+    sim.cur = null;
+    return { type: 'decision', decision: bossDecisionInfo(sim, drive) };
+  }
+  if (how === 'td') sim[c.team] += 1;   // automatic extra point otherwise
+  bossHandoff(sim, how, endY, c.team);
+  sim.cur = null;
+  return { type: 'drive', drive, you: sim.you, them: sim.them, clock: bossClock(sim) };
+}
+
+/* The situation the card shows: score, clock, and for a fourth down the down, distance, spot
+   and which safe option is on offer (a kick in range, a punt out of it). */
+function bossDecisionInfo(sim, drive) {
+  const p = sim.pending, cl = bossClock(sim);
+  if (p.kind === 'two') {
+    return { kind: 'two', quarter: cl.quarter, secs: cl.secs, you: sim.you, them: sim.them, drive };
+  }
+  const c = sim.cur, toGoal = 100 - c.y;
+  return { kind: 'fourth', quarter: cl.quarter, secs: cl.secs, you: sim.you, them: sim.them,
+    down: 4, toGo: Math.round(c.toGo), ball: bossBallSpot(c.y), toGoal: Math.round(toGoal),
+    inFgRange: toGoal <= BOSS_SIM.FG_MAX_YARD };
+}
+
+/*
+ * PLAY FORWARD until something the driver needs to show: a completed drive, a decision for the
+ * player, or the final whistle. Re-entrant, so it is called again after each drive is drawn
+ * and after each decision is resolved.
+ */
+function bossSimAdvance(sim, rng) {
+  if (sim.over) return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
+  if (!sim.cur) {
+    if (sim.clock >= 3600) {
+      sim.over = true;
+      sim.won = sim.you > sim.them || (sim.you === sim.them && sim.youExp >= sim.themExp);
+      return { type: 'over', won: sim.won, you: sim.you, them: sim.them };
+    }
+    if (sim.pos == null) { sim.firstReceiver = rng() < 0.5 ? 'you' : 'them'; sim.pos = sim.firstReceiver; }
+    bossStartDrive(sim, sim.pos, sim.nextStart != null ? sim.nextStart : BOSS_SIM.START_YARD);
+    sim.nextStart = null;
+  }
+  const c = sim.cur;
+  const mu = c.team === 'you' ? sim.muYou : sim.muThem;
+  while (true) {
+    if (rng() < BOSS_SIM.TO_RATE) return bossEndDrive(sim, 'turnover', c.y, rng);
+    if (c.down === 4 && !c.forcedGo) {
+      const toGoal = 100 - c.y;
+      const trailing = sim[c.team] < sim[c.team === 'you' ? 'them' : 'you'];
+      const desperate = sim.clock >= 3360 && trailing;
+      if (c.team === 'you' && bossGenuineFourth(sim, c)) {
+        sim.pending = { kind: 'fourth', team: 'you' };
+        return { type: 'decision', decision: bossDecisionInfo(sim) };
+      }
+      if (toGoal <= BOSS_SIM.FG_MAX_YARD && !desperate) {
+        return bossFgGood(toGoal, rng) ? bossEndDrive(sim, 'fg', c.y, rng)
+          : bossEndDrive(sim, 'miss', c.y, rng);
+      }
+      if (toGoal > 5 && !desperate) return bossEndDrive(sim, 'punt', c.y, rng);
+      // otherwise go for it
+    }
+    c.forcedGo = false;
+    const gain = bossPlayGain(mu, rng);
+    sim.clock += BOSS_SIM.PLAY_SECS;
+    c.plays++;
+    c.y += gain;
+    if (c.y >= 100) return bossEndDrive(sim, 'td', 100, rng);
+    if (c.y < 1) c.y = 1;
+    if (gain >= c.toGo) { c.down = 1; c.toGo = Math.min(10, 100 - c.y); }
+    else {
+      c.toGo -= gain;
+      if (c.down === 4) return bossEndDrive(sim, 'downs', c.y, rng);
+      c.down++;
+    }
+  }
+}
+
+/*
+ * RESOLVE A PLAYER DECISION and hand back to the driver, which calls advance again to keep
+ * playing. A fourth-down go is a real play against the sticks: convert and the drive lives,
+ * come up short and the ball changes hands where you were stopped. A two-point try adds two
+ * or nothing; a kick adds the sure one.
+ */
+function bossSimResolve(sim, choice, rng) {
+  const p = sim.pending; sim.pending = null;
+  if (!p) return;
+  if (p.kind === 'two') {
+    const ok = choice === 'two' ? rng() < bossTwoProb(sim) : true;
+    if (choice === 'two') sim.you += ok ? 2 : 0; else sim.you += 1;
+    bossHandoff(sim, 'td', p.pat.endY, 'you');
+    return { converted: choice === 'two' ? ok : null, choice };
+  }
+  // fourth down
+  const c = sim.cur;
+  if (choice === 'fg') {
+    const toGoal = 100 - c.y;
+    return { end: bossFgGood(toGoal, rng) ? bossEndDrive(sim, 'fg', c.y, rng)
+      : bossEndDrive(sim, 'miss', c.y, rng), choice };
+  }
+  if (choice === 'punt') return { end: bossEndDrive(sim, 'punt', c.y, rng), choice };
+  // go for it: one play against the sticks
+  const gain = bossPlayGain(sim.muYou, rng);
+  sim.clock += BOSS_SIM.PLAY_SECS; c.plays++;
+  c.y += gain;
+  if (c.y >= 100) return { converted: true, td: true, end: bossEndDrive(sim, 'td', 100, rng), choice };
+  if (c.y < 1) c.y = 1;
+  if (gain >= c.toGo) { c.down = 1; c.toGo = Math.min(10, 100 - c.y); c.forcedGo = false;
+    return { converted: true, choice }; }
+  return { converted: false, end: bossEndDrive(sim, 'downs', c.y, rng), choice };
 }
 
 const publicAPI = {
@@ -5307,6 +5731,9 @@ const publicAPI = {
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
   DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
   dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
+  DYNASTY_BOSS_EVERY, DYNASTY_BOSSES, BOSS_READ_EDGE, BOSS_SIM,
+  dynastyBossFor, dynastyBossReward,
+  bossExpectedPoints, bossSimCreate, bossSimAdvance, bossSimResolve, bossClock,
   GAUNTLET_POINTS, gauntletSeasonScore, gauntletRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
