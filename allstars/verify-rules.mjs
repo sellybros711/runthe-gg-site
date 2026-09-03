@@ -474,6 +474,47 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- the cup: a drawn seed, a host, an upset ---- */
+    {
+      console.log('cup identity');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.innings = 5; State.difficulty = 'medium'; State.mode = 'cup';
+        /* Forty draws: the seed must move. */
+        const seeds = new Set();
+        for (let i = 0; i < 40; i++) { startCup(); seeds.add(State.cup.entrants.findIndex(e => e.you)); }
+        /* Now a fixed draw: you as the 6th seed, so you travel in the first round. */
+        startCup();
+        const C = State.cup;
+        const youAt = C.entrants.findIndex(e => e.you);
+        const you = C.entrants.splice(youAt, 1)[0];
+        C.entrants.splice(5, 0, you);
+        State.screen = 'cup'; render();
+        const banner = document.querySelector('#app .banner').textContent;
+        const card = [...document.querySelectorAll('#app .card')].map(c => c.textContent).find(t => /seed against/.test(t)) || '';
+        /* Let the 8th seed beat the 1st: an upset on the bracket. */
+        const m = C.rounds[0][0];
+        m.result = { aScore: 1, bScore: 4, winner: m.b };
+        render();
+        const upsets = document.querySelectorAll('#app .cupbracket .mark.u').length;
+        const upsetRow = document.querySelector('#app .cupbracket .mark.u').closest('.row').textContent;
+        /* And the opposite is not one. */
+        const m2 = C.rounds[0][1];
+        m2.result = { aScore: 4, bScore: 1, winner: m2.a };
+        render();
+        const upsets2 = document.querySelectorAll('#app .cupbracket .mark.u').length;
+        return { seeds: [...seeds].sort(), banner, card, upsets, upsetRow, upsets2, foeSeed: 8 - 5 };
+      });
+      ok(r.seeds.length >= 4, 'the seed is drawn, not always first', 'seeds seen: ' + r.seeds.join(','));
+      ok(/6th seed of 8/.test(r.banner) && /higher seed hosts/.test(r.banner), 'the banner names your seed and who hosts', r.banner);
+      ok(/6th seed against the 3rd/.test(r.card) && /You travel to/.test(r.card), 'the match card says you travel as the lower seed', r.card);
+      ok(r.upsets === 1 && /8\./.test(r.upsetRow), 'the 8th seed over the 1st is called an upset', JSON.stringify({ upsets: r.upsets, row: r.upsetRow }));
+      ok(r.upsets2 === 1, 'the favourite winning is not one', 'upsets=' + r.upsets2);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- the phone: placards apart, the ball a size, the ring pointed at ---- */
     {
       console.log('phone');

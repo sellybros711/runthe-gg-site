@@ -400,7 +400,7 @@
   .table tr.cut td{border-top:2px solid var(--gold);}
   .mark{display:inline-block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
     font-weight:900;padding:1px 5px;border:2px solid var(--line);margin-left:6px;vertical-align:middle;}
-  .mark.x{color:var(--green);} .mark.e{color:var(--text-dim);}
+  .mark.x{color:var(--green);} .mark.e{color:var(--text-dim);} .mark.u{color:var(--red);}
   .table.sched tr.next td{background:rgba(227,176,76,.18);}
   /* Season awards: one plaque per winner. */
   .awards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
@@ -3442,9 +3442,14 @@ function opponentByName(name) {
    ============================================================================ */
 function startCup() {
   const field = [...OPPONENTS].sort(() => Math.random() - 0.5).slice(0, 7);
-  /* Seed the player first, then the seven drawn opponents. */
-  const entrants = [{ name: State.teamName, roster: State.team, you: true }]
-    .concat(field.map(o => ({ name: o.name, roster: o.roster })));
+  /* THE SEED IS DRAWN. The player used to be entrant 0, the top seed in
+     every cup, which hosted every match and never once played away: the
+     draw is the cup's whole identity and it was fixed. A number from the
+     hat now; the higher seed (the lower index) hosts, so a bad draw means
+     a trip. */
+  const seed = Math.floor(Math.random() * 8);
+  const entrants = field.map(o => ({ name: o.name, roster: o.roster }));
+  entrants.splice(seed, 0, { name: State.teamName, roster: State.team, you: true });
   State.cup = {
     team: State.team,
     teamName: State.teamName,
@@ -3489,6 +3494,19 @@ function nextCupMatch(C) {
       if (m.a == null || m.b == null) continue;   /* waiting on a feeder */
       const you = C.entrants[m.a].you || C.entrants[m.b].you;
       return { r, i, match: m, playerInvolved: you };
+    }
+  }
+  return null;
+}
+
+/* The player's own next match, whether or not CPU matches sit ahead of it
+   in the order of play. Null while it waits on a feeder, or once you are out. */
+function playerCupMatch(C) {
+  for (let r = 0; r < C.rounds.length; r++) {
+    for (let i = 0; i < C.rounds[r].length; i++) {
+      const m = C.rounds[r][i];
+      if (m.result || m.a == null || m.b == null) continue;
+      if (C.entrants[m.a].you || C.entrants[m.b].you) return { r, i, match: m, playerInvolved: true };
     }
   }
   return null;
@@ -3542,11 +3560,37 @@ function renderCup() {
     if (champ.you && !C.fanfared) { C.fanfared = true; Sound.play('title'); }
   } else {
     const nm = nextCupMatch(C);
-    banner.innerHTML = nm
+    const seed = C.entrants.findIndex(e => e.you);
+    banner.innerHTML = (nm
       ? `<b>${CUP_ROUND_NAMES[nm.r]}.</b> Single elimination: lose and you are out.`
-      : '<b>Cup in progress.</b>';
+      : '<b>Cup in progress.</b>')
+      + (seed >= 0 ? ` You drew the ${ordinal(seed + 1)} seed of 8; the higher seed hosts.` : '');
   }
   s.appendChild(banner);
+
+  /* Your match, the way the season hub shows one: who they are, how they
+     hit, how sharp they will be by this round, and whose park it is. The
+     cup used to say Play Your Match and nothing else. */
+  const next = C.done ? null : playerCupMatch(C);
+  if (next) {
+    const m = next.match;
+    const youIdx = C.entrants[m.a].you ? m.a : m.b;
+    const foeIdx = youIdx === m.a ? m.b : m.a;
+    const foe = C.entrants[foeIdx];
+    const style = TEAM_STYLE[foe.name] || DEFAULT_STYLE;
+    const sharp = clamp(0.55 + next.r * 0.225, 0, 1);
+    const host = youIdx < foeIdx;
+    const yourPark = (State.franchise && PARKS[State.franchise.park]) || null;
+    const theirPark = (STADIUM_THEMES[foe.name] || DEFAULT_THEME).park;
+    const card = el('div','card');
+    card.appendChild(el('h3', null, `${CUP_ROUND_NAMES[next.r]}: ${host ? 'vs' : 'at'} ${foe.name}`));
+    card.appendChild(el('p', null,
+      `${ordinal(youIdx + 1)} seed against the ${ordinal(foeIdx + 1)} · ${style.label} · ${sharpnessLabel(sharp)}`
+      + `<br><b>${host ? `You host${yourPark ? ' at ' + yourPark.name : ''}` : `You travel to ${theirPark}`}</b>`));
+    const riv = pressRival(foe.name);
+    if (riv) card.appendChild(el('p', null, `<i>${riv.charAt(0).toUpperCase() + riv.slice(1)}.</i>`));
+    s.appendChild(card);
+  }
 
   /* Bracket: one column per round. */
   const brac = el('div','card');
@@ -3556,12 +3600,16 @@ function renderCup() {
     col.appendChild(el('div','roundlbl', CUP_ROUND_NAMES[r]));
     round.forEach((m) => {
       const box = el('div','match');
+      const res = m.result;
+      /* The lower seed winning is an upset, and the bracket says so. */
+      const upset = res && res.winner === Math.max(m.a, m.b);
       const side = (idx, score, isWinner) => {
         const e = idx == null ? null : C.entrants[idx];
         const cls = 'row' + (e && e.you ? ' you' : '') + (isWinner ? ' win' : '');
-        return `<div class="${cls}"><span>${e ? e.name : 'TBD'}</span><span>${score == null ? '' : score}</span></div>`;
+        const tag = isWinner && upset ? ' <span class="mark u">upset</span>' : '';
+        return `<div class="${cls}"><span>${idx == null ? '' : (idx + 1) + '. '}${e ? e.name : 'TBD'}${tag}</span>`
+          + `<span>${score == null ? '' : score}</span></div>`;
       };
-      const res = m.result;
       box.innerHTML =
           side(m.a, res ? res.aScore : null, res && res.winner === m.a)
         + side(m.b, res ? res.bScore : null, res && res.winner === m.b);
