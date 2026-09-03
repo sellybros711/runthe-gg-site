@@ -17925,3 +17925,26 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
   together with the Moments change above.
 - Tunable: `DIL_OPEN` / `DIL_SAID` (what each domain sounds like - adding a domain is one key in each), the
   alternates inside `FIRSTS.press.lead` / `FIRSTS.council.lead`, and the generic pair in `firstBeats`.
+
+### DEPLOYED: the load fix, guest gating, desktop type, and the two held Moments/induction commits
+- **`main` commit `62833ba0`** (owner: *"deploy"*), regenerated from `build-a-golfer.html` AND
+  `build-a-golfer/sw.js` - **two files this time** (`golf/index.html` + `golf/sw.js`), both verified
+  byte-identical to source afterward. The parallel-edit check was clean: the live index was byte-identical
+  to branch commit `25a843b6` and the live SW to the pre-fix source, so nothing to adopt. Five branch
+  commits went live: the desktop HUD type scale (`81f47346`), the service-worker fallback fix
+  (`da92f0df`), guest gating (`5daa3199`), the situation-naming inductions (`0d5a1489`) and the Moments
+  cutscene trim (`08437d7b`) - the last two had been held at the explain-before-deploy gate and ride
+  along because the deploy regenerates the whole file.
+- **The load question, answered**: desktop playable ~0.5s; a mid-tier phone (4 Mbps / 60ms RTT / 4x CPU)
+  playable ~4.0s, ~2s of it download, ~1.4s compile+run - structural (one 3.82 MB / ~1.02 MB gzipped
+  file). The one real bug was the SW's slow-network fallback never firing (`fetch()` resolves on
+  HEADERS); `scratchpad/swrace.mjs` is 9/0 on the fix, 5/4 on the previous live SW. `CACHE` deliberately
+  NOT bumped. STILL OPEN, owner's call: stale-while-revalidate for the HTML, and confirming Cloudflare
+  gzips `/golf/` (`_headers` has no `/golf/` rule; unreachable from the sandbox).
+- **Desktop type** (`scratchpad/bigtype.mjs`, 39/0 at 430/1280/1512/1920): the HUD chips inside the
+  tracer window scale in two tiers (`@media (min-width:1000px)` / `1400px`), scoped to
+  `.screen.scr-dailyround` - the only screen whose window is widened. Phone byte-for-byte unchanged (the
+  fixture reads the signature blurb at 10px because a PRE-EXISTING `max-width:430px` rule shrinks it).
+- **Guest gating** reverses Caddie Report item 17 (guests had free appearance controls + a name); a guest
+  now sees one lock card, and Sign In lands on the sign-in page. `guestgate.mjs` 23/0 on the change,
+  19/4 on the previous live build. `guest17.mjs` is RETIRED (prints a notice, exits 0).
