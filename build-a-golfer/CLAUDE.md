@@ -17856,3 +17856,72 @@ blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hostin
 - Tunable: `COUNCIL_RANK` (the ranking route), `COUNCIL_YEAR` (when the room opens), `COUNCIL_SWING` (what a
   seat is worth in the room). The wins/majors routes are still hardcoded in `councilSeat`/`councilWhy`; if
   either ever moves, give it the same treatment.
+
+### MOMENTS: no cutscene unless it is a rival, and far less text (NOT deployed)
+- **The owner's ask**: *"I don't want the cutscenes to come up for moments unless it's a rival moment. Then
+  in those cases we can make it really funny. There's also too much text in these textboxes. We need to keep
+  it simple but realistic and real golf tone."*
+- **An ordinary Sunday Moment opens cold on the offer again.** The first-time induction that used to run
+  before it is unwired - `FIRSTS.moment` is left DEFINED and its suite still checks it builds, so restoring
+  it is one line, but nothing calls it. A Moment is a decision you are already inside; a tutorial in front of
+  it was the thing being complained about.
+- **A GRUDGE Moment keeps a scene, and it is the only one that does.** The gate is `grudgeRival(ce)` - the
+  same call `startMomentRound` already uses to bill the week - so the cutscene fires on exactly the weeks the
+  game already considers a grudge, and can never disagree with the header the round then renders.
+- **Every line was cut to broadcast length.** The house rule now written into the suite: a line is **under
+  ~120 characters** and the golfer never speaks. The tone is what a booth actually says on a Sunday, not a
+  narrator explaining the format.
+- Verified: `momentcs.mjs` **28 pass / 0 fail / 0 page errors** - an ordinary Moment builds NO scene, a
+  grudge Moment does, the lines stay short, the golfer never speaks, and `FIRSTS.moment` still builds while
+  nothing calls it.
+- **Committed (`08437d7b`) and pushed, NOT deployed** - held at the standing explain-before-deploy gate.
+
+### INDUCTIONS NAME THE REAL SITUATION, AND VARY (NOT deployed)
+- **The owner's ask**, with a phone screenshot of a dilemma induction reading *"Something has come up that has
+  nothing to do with a golf ball, and it is sitting on your side of the desk"*: **"Text like this is wayyyy
+  too vague. I want it to always be as specific as possible with the situations and have it generate new ones
+  so it's not the same every time."** Two halves - NAME the situation, and do not open the same way twice.
+- **The baseline probe is the proof it was worth doing.** Run against `HEAD` before writing a line of the fix:
+  injury / schedule / life dilemmas titled *A twinge in your wrist*, *A seven-figure appearance fee* and
+  *A baby on the way* ALL opened with that identical sentence and the identical follow-up, and the press and
+  council inductions were generic in the same way. Nothing was crashing - it was purely a copy problem, which
+  is why no suite had caught it.
+- **The dilemma bodies were ALREADY specific** (*"On the range before The Quad Cities Classic, a shot stings
+  your lead wrist..."*), and a dilemma gets no `CS_SCENES` wrapper, so the induction was the ONE vague surface
+  on that beat. `showDilemma` had `sb.beat` in scope and passed only `sb.ctx`, which is why the induction
+  could not name the decision; the beat is now merged into the ctx it hands to `maybeFirst`.
+- **The line now reads DOMAIN-first, title-LAST.** `DIL_OPEN` gives each of the ten domains two openers (a
+  body call reads differently from a calendar one), and `csAbout(setup, title)` appends the decision's own
+  title after a colon - so a title that is already a question (*"Red-eye or charter?"*) or a full sentence
+  keeps its own punctuation instead of being wrapped in a sentence that fights it.
+- **`csTxt` is the guard between the data and the screen.** A dilemma title is `esc()`-ed and may be a
+  function of the ctx; a cutscene `tx` renders as **textContent**, so an escaped apostrophe would have shown
+  as `&#39;` on camera. It resolves a function, strips markup and unescapes entities before the line is built.
+- **The variation is SEEDED, not random.** `_csSeed` is pinned once per showing in `maybeFirst` off
+  `(careerSeed, first id, year, event)`, and `csPick(list, n)` walks it - so a line does not change while you
+  are reading it, a re-render cannot reshuffle it, and two careers do not open the same way. Verified stable
+  per seed, different across seeds, and reaching every alternate across 200 seeds.
+- **The press and council inductions were given the same treatment**: the press names the FINISH that put you
+  in front of the cameras (won / second / top ten / missed the cut, with the tournament), the council names
+  the PROPOSAL already on the table (*"...and there is already something on the table: The Ball Rollback."*).
+- **A shape trap worth knowing**: the council alternates are template-literal STRINGS while the press
+  alternates are FUNCTIONS of the finish phrase, so `csPick(...)` is used directly in one and called in the
+  other. The first draft called the string as a function.
+- **`csAbout` doubled its colon** when the setup already ended in one - caught by the suite's own eighth check
+  (`'The physio has a view:: A twinge...'`), because the trailing-punctuation strip lived only in the
+  no-title branch.
+- Verified: `firstspec.mjs` **35 pass / 0 fail / 0 page errors** - the helpers (tag strip, entity unescape,
+  function resolution, question / sentence / no-title / doubled-punctuation), the seeding (stable, varied,
+  full spread), seven dilemma domains each naming their own title with no *"Something has come up"* left
+  anywhere, an escaped-apostrophe title, a missing beat degrading cleanly, the five press finishes, the
+  council proposal, variation across eight career seeds, and BOTH the live cutscene and the card fallback
+  naming the decision plus skip landing on it with no error card.
+- **Screenshotted every beat of all three inductions plus the card fallback** (`scratchpad/firstshot.mjs`
+  writes them to `scratchpad/shots/first/`) - this file's history is that copy bugs are caught by looking,
+  not by assertions, and the suite was green the whole time.
+- Regressions green: firsts 38, firstwhy 32, cutscene 24, csdec 21, cslive 20, csroom 32, momentcs 28,
+  nobag 10, sig01 19, dec16 23 - 0 fail, 0 page errors across all ten.
+- **Committed (`0d5a1489`) and pushed, NOT deployed** - held at the standing explain-before-deploy gate,
+  together with the Moments change above.
+- Tunable: `DIL_OPEN` / `DIL_SAID` (what each domain sounds like - adding a domain is one key in each), the
+  alternates inside `FIRSTS.press.lead` / `FIRSTS.council.lead`, and the generic pair in `firstBeats`.
