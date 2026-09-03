@@ -2461,6 +2461,105 @@ window.GA_ID='G-L29P5MRWKE';
   .dccard.agg::before{background:#ff6b4a} .dccard.agg .dcl{color:#ff9576}
   .dccard.safe{border-color:rgba(63,202,168,.55);background:linear-gradient(180deg,rgba(63,202,168,.16),rgba(63,202,168,.04));box-shadow:0 8px 22px -12px rgba(63,202,168,.5)}
   .dccard.safe::before{background:#3fcaa8} .dccard.safe .dcl{color:#5fe0c0}
+  /* ------------------------------------------------------------------------------------------------
+     DESKTOP TYPE (owner: "the wording on golf should also be bigger"). The round screen's HUD is
+     absolutely positioned INSIDE the tracer window at fixed pixel sizes, sized for a phone where the
+     window is full-bleed (~390px). The desktop revamp widened that window to ~1100px, so every chip -
+     the hole card, the wind, the scoreboard, the shot ticker, the holed result - kept phone type on a
+     screen three times the size and read tiny. Scaled in TWO steps rather than one, because a 1000px
+     window is genuinely narrower than a 1600px one and a single jump overshoots the smaller of the two.
+     Scoped to .scr-dailyround: only that screen's window is widened (every other hole view is still
+     capped at 470px, where phone type is correct). Percentages, not px, everywhere the layout depends
+     on them - dPlaceTargets clamps the tap-targets to HV_DEC_TOP% of the window, so the docked decision
+     panel may grow without pushing a target under it. */
+  @media (min-width:1000px){
+    .screen.scr-dailyround .bcasthd .bc-name{font-size:24px}
+    .screen.scr-dailyround .bcasthd .bc-meta{font-size:13px}
+    .screen.scr-dailyround .hvhole{font-size:15px; padding:7px 12px; border-radius:11px}
+    .screen.scr-dailyround .hvhole.sig{max-width:min(50%,320px); padding:8px 13px 9px}
+    .screen.scr-dailyround .hvhole.sig .hvsigstar{font-size:13.5px}
+    .screen.scr-dailyround .hvhole.sig .hvsigname{font-size:17px}
+    .screen.scr-dailyround .hvhole.sig .hvsigmeta{font-size:13.5px}
+    .screen.scr-dailyround .hvhole.sig .hvsigblurb{font-size:13.5px; line-height:1.35}
+    .screen.scr-dailyround .hvwind{font-size:13px; padding:7px 11px; gap:8px; border-radius:11px; bottom:62px}
+    .screen.scr-dailyround .hvwind.nodesc{bottom:12px}
+    .screen.scr-dailyround .hvwind svg{width:19px; height:19px}
+    .screen.scr-dailyround .hvboard{width:228px; padding:9px 10px; border-radius:16px; bottom:62px}
+    .screen.scr-dailyround .hvboard.nodesc{bottom:12px}
+    .screen.scr-dailyround .hvbcap{font-size:11px}
+    .screen.scr-dailyround .hvbtarget{font-size:14px}
+    .screen.scr-dailyround .hvbrow{font-size:13.5px; padding:4px 7px; gap:8px}
+    .screen.scr-dailyround .hvbrow .cdot{width:9px; height:9px}
+    .screen.scr-dailyround .hvbrow .rk{font-size:12px; min-width:12px}
+    .screen.scr-dailyround .hvbrow .nm{max-width:148px}
+    .screen.scr-dailyround .hvbfoot{font-size:11px}
+    .screen.scr-dailyround .mph{min-width:30px}
+    .screen.scr-dailyround .mph .mphn{font-size:9.5px}
+    .screen.scr-dailyround .mph .mphs{font-size:11.5px}
+    .screen.scr-dailyround .mph .mphw{font-size:11px}
+    .screen.scr-dailyround .hvdesc{font-size:15px; line-height:1.4; padding:10px 15px; border-radius:12px; left:10px; right:10px; bottom:10px}
+    .screen.scr-dailyround .hvresult{padding:11px 24px; border-radius:17px}
+    .screen.scr-dailyround .hvresult .rn{font-size:25px}
+    .screen.scr-dailyround .hvresult .rs{font-size:17px}
+    .screen.scr-dailyround .hvresult .rsub{font-size:14px}
+    .screen.scr-dailyround .hvdec{padding:9px 12px 11px; border-radius:16px}
+    .screen.scr-dailyround .hvdec .dkh{min-height:19px}
+    .screen.scr-dailyround .hvdec .dkl{font-size:11px}
+    .screen.scr-dailyround .hvdec .dkst{font-size:11px; padding:4px 9px}
+    .screen.scr-dailyround .hvdec .dkw{font-size:11.5px}
+    .screen.scr-dailyround .hvdec .dkw svg{width:15px; height:15px}
+    .screen.scr-dailyround .hvdec .dks{font-size:12px}
+    .screen.scr-dailyround .hvdec .dkp{font-size:13.5px; line-height:1.35}
+    .screen.scr-dailyround .hvdec .dkc{padding:9px 10px 10px 14px; border-radius:13px}
+    .screen.scr-dailyround .hvdec .dkc .l{font-size:15.5px}
+    .screen.scr-dailyround .hvdec .dkc .o b{font-size:16.5px}
+    .screen.scr-dailyround .hvdec .dkc .o i{font-size:10px}
+    .screen.scr-dailyround .dctarget .dtl{font-size:14.5px; padding:6px 12px 6px 11px; border-radius:13px}
+    .screen.scr-dailyround .dctarget .dtl::before{width:8px; height:8px}
+    .screen.scr-dailyround .rsc-c{font-size:14px}
+    .screen.scr-dailyround .rsc-lab{font-size:11px}
+    .screen.scr-dailyround .rsc-pl.rsc-lab{font-size:13px}
+    .screen.scr-dailyround .rsc-legi{font-size:13px}
+  }
+  @media (min-width:1400px){
+    .screen.scr-dailyround .bcasthd .bc-name{font-size:28px}
+    .screen.scr-dailyround .bcasthd .bc-meta{font-size:15px}
+    .screen.scr-dailyround .hvhole{font-size:17.5px; padding:9px 15px; border-radius:13px}
+    .screen.scr-dailyround .hvhole.sig{max-width:min(46%,380px)}
+    .screen.scr-dailyround .hvhole.sig .hvsigstar{font-size:15px}
+    .screen.scr-dailyround .hvhole.sig .hvsigname{font-size:20px}
+    .screen.scr-dailyround .hvhole.sig .hvsigmeta{font-size:15px}
+    .screen.scr-dailyround .hvhole.sig .hvsigblurb{font-size:15px}
+    .screen.scr-dailyround .hvwind{font-size:15px; padding:9px 13px; bottom:72px}
+    .screen.scr-dailyround .hvwind.nodesc{bottom:12px}
+    .screen.scr-dailyround .hvwind svg{width:22px; height:22px}
+    .screen.scr-dailyround .hvboard{width:264px; padding:11px 12px; bottom:72px}
+    .screen.scr-dailyround .hvboard.nodesc{bottom:12px}
+    .screen.scr-dailyround .hvbcap{font-size:12.5px}
+    .screen.scr-dailyround .hvbtarget{font-size:16px}
+    .screen.scr-dailyround .hvbrow{font-size:15.5px; padding:5px 8px}
+    .screen.scr-dailyround .hvbrow .cdot{width:10px; height:10px}
+    .screen.scr-dailyround .hvbrow .rk{font-size:13.5px; min-width:14px}
+    .screen.scr-dailyround .hvbrow .nm{max-width:176px}
+    .screen.scr-dailyround .hvbfoot{font-size:12.5px}
+    .screen.scr-dailyround .hvdesc{font-size:17.5px; padding:12px 18px; left:12px; right:12px; bottom:12px}
+    .screen.scr-dailyround .hvresult{padding:13px 28px}
+    .screen.scr-dailyround .hvresult .rn{font-size:29px}
+    .screen.scr-dailyround .hvresult .rs{font-size:19px}
+    .screen.scr-dailyround .hvresult .rsub{font-size:16px}
+    .screen.scr-dailyround .hvdec .dkl{font-size:12.5px}
+    .screen.scr-dailyround .hvdec .dkst{font-size:12.5px}
+    .screen.scr-dailyround .hvdec .dks{font-size:13.5px}
+    .screen.scr-dailyround .hvdec .dkp{font-size:15px}
+    .screen.scr-dailyround .hvdec .dkc .l{font-size:17.5px}
+    .screen.scr-dailyround .hvdec .dkc .o b{font-size:19px}
+    .screen.scr-dailyround .hvdec .dkc .o i{font-size:11px}
+    .screen.scr-dailyround .dctarget .dtl{font-size:16.5px; padding:7px 14px 7px 12px}
+    .screen.scr-dailyround .rsc-c{font-size:15.5px}
+    .screen.scr-dailyround .rsc-lab{font-size:12px}
+    .screen.scr-dailyround .rsc-pl.rsc-lab{font-size:14.5px}
+    .screen.scr-dailyround .rsc-legi{font-size:14px}
+  }
   /* crisp FLIP glide when scoreboard rows swap order (positions animate, not teleport) */
   .hvbrow{transition:none}
   @media (prefers-reduced-motion:reduce){ .hvbrow{transition:none!important} }
