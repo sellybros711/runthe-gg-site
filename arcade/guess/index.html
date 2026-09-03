@@ -437,7 +437,8 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/awards.js?v=2"></script>
 <script src="/arcade/supplement.js?v=4"></script>
 <script src="/arcade/cluebank.js?v=2"></script>
-<script src="/arcade/data.js?v=2"></script>
+<script src="/arcade/primary.js?v=1"></script>
+<script src="/arcade/data.js?v=3"></script>
 <script src="/arcade/rosters.js?v=2"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
@@ -508,7 +509,11 @@ window.GA_ID='G-L29P5MRWKE';
   function rosterOf(e){ return ROSTERS ? (rosterByKey[e.name+'|'+e.sport]||null) : null; }
   // ONE current team per player: the roster's team when known, else the last
   // (most recent) team in the corpus career list.
-  function curTeamOf(e){ var r=rosterOf(e); if(r && r.t) return r.t; return (e.t&&e.t.length)?e.t[e.t.length-1]:null; }
+  /* The current club if they are on a roster, else the club they spent
+     longest at (e.pt, from primary.js), else the one they came up with. The
+     last entry of e.t used to stand in for all three and is right 15% of the
+     time: it made Brett Favre a Falcon. */
+  function curTeamOf(e){ var r=rosterOf(e); if(r && r.t) return r.t; return e.pt || ((e.t&&e.t.length)?e.t[0]:null); }
   function jerseyOf(e){ var r=rosterOf(e); if(r && r.j!=null) return r.j; return (e.j&&e.j.length)?e.j[0]:null; }
   function divisionOf(e){ var tm=curTeamOf(e); return (tm && ROSTERS && ROSTERS.divisions) ? (ROSTERS.divisions[tm]||null) : null; }
 

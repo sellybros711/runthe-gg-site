@@ -62,9 +62,18 @@ jobs:
       - name: Rebuild the teammate decks on the refreshed stints
         if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
         run: node scripts/build-teammates.mjs
-      - name: The rebuilt decks must still be playable
+      # arcade/primary.js is derived from these stints too: the club each
+      # player spent longest at, which is the caption under his name in Alma
+      # Mater and Guess the Player. Same rule as the decks above, for the same
+      # reason: a derived file with no rebuild step does not stay right.
+      - name: Rebuild the primary-club map on the refreshed stints
         if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
-        run: node scripts/check-teammates.mjs
+        run: node scripts/build-primary.mjs
+      - name: The rebuilt decks and captions must still be right
+        if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
+        run: |
+          node scripts/check-teammates.mjs
+          node scripts/check-primary.mjs
       # Scheduled runs always commit (guarded above); manual runs commit only when asked.
       - name: Commit if requested
         if: ${{ (github.event_name == 'schedule' || github.event.inputs.commit == 'true') && github.event.inputs.only == '' }}
@@ -78,16 +87,17 @@ jobs:
           # the file.
           git diff --quiet -- arcade/jerseys.js || node scripts/bump-cachebust.mjs arcade/jerseys.js
           git diff --quiet -- arcade/teammates.js || node scripts/bump-cachebust.mjs arcade/teammates.js
+          git diff --quiet -- arcade/primary.js || node scripts/bump-cachebust.mjs arcade/primary.js
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"
           # arcade/rosters/*.js rides along: the same scrape produces both, and a
           # jerseys.js that moved without its roster shards would leave Roll
           # Call judging one day's squad against another day's answer key.
-          git add -A arcade/jerseys.js arcade/rosters arcade/teammates.js
+          git add -A arcade/jerseys.js arcade/rosters arcade/teammates.js arcade/primary.js
           # -u picks up the pages the bump rewrote and scripts/cachebust.json.
           git add -u
           git diff --cached --quiet && echo "no changes" || {
-            git commit -m "Refresh jersey stints, Roll Call rosters and the teammate decks"
+            git commit -m "Refresh jersey stints, Roll Call rosters, teammate decks and club captions"
             for i in 1 2 3 4 5; do
               git push && break
               echo "push rejected, rebasing (attempt $i)"

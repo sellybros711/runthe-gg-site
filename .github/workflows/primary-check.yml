@@ -1,0 +1,62 @@
+name: Club caption check
+
+# The club printed under a player's name in Alma Mater and Guess the Player.
+# A player wrote in: Alma Mater captioned Tom Seaver "MLB . BOSTON RED SOX",
+# where he pitched sixteen games in 1986 at the end of twenty years, eleven of
+# them with the Mets. Both games were reading the LAST entry of the entity's
+# team list, which is not a career order and is right 15% of the time.
+#
+# The failure is invisible from inside the code: a wrong club renders, reads
+# plausibly, and is only wrong to somebody who knows the sport. So it is
+# checked against basketball's own season record, which a different pipeline
+# builds for a different game.
+#
+# The daily jerseys job runs this too, after rebuilding the map. This is the
+# other path: a hand edit to a game, the builder, or the corpus.
+#
+# Runnable locally with the exact same command:
+#   node scripts/check-primary.mjs
+#
+# No secrets, no network, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'arcade/primary.js'
+      - 'arcade/data.js'
+      - 'arcade/former.js'
+      - 'arcade/jerseys.js'
+      - 'arcade/almamater/index.html'
+      - 'arcade/guess/index.html'
+      - 'hoops/data/players.json'
+      - 'scripts/build-primary.mjs'
+      - 'scripts/check-primary.mjs'
+      - '.github/workflows/primary-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'arcade/primary.js'
+      - 'arcade/data.js'
+      - 'arcade/former.js'
+      - 'arcade/jerseys.js'
+      - 'arcade/almamater/index.html'
+      - 'arcade/guess/index.html'
+      - 'hoops/data/players.json'
+      - 'scripts/build-primary.mjs'
+      - 'scripts/check-primary.mjs'
+      - '.github/workflows/primary-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: primary-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/check-primary.mjs

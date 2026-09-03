@@ -389,7 +389,8 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/stars.js?v=4"></script>
 <script src="/arcade/awards.js?v=2"></script>
 <script src="/arcade/supplement.js?v=4"></script>
-<script src="/arcade/data.js?v=2"></script>
+<script src="/arcade/primary.js?v=1"></script>
+<script src="/arcade/data.js?v=3"></script>
 <script src="/arcade/rosters.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
 <script src="/arcade/result.js?v=1"></script>
@@ -495,7 +496,12 @@ window.GA_ID='G-L29P5MRWKE';
     colFreq[cc]=(colFreq[cc]||0)+1;
     var n=normCol(cc); if(!sportSeen[sport][n]){ sportSeen[sport][n]=1; collegesBySport[sport].push(cc); }
   }
-  ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.t&&e.t.length?e.t[e.t.length-1]:null), e.f||0); });
+  /* THE CLUB UNDER THE NAME. e.pt is the club they spent longest at
+     (primary.js, folded on by data.js); e.t[0] is the club they came up with.
+     This used to take e.t LAST, which captioned Tom Seaver as a Red Sock for
+     sixteen games in 1986 after eleven years with the Mets, and is right 15%
+     of the time. A player wrote in about it. */
+  ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.pt || (e.t&&e.t.length?e.t[0]:null)), e.f||0); });
   var ROS=(window.RTG_ROSTERS && Array.isArray(window.RTG_ROSTERS.players)) ? window.RTG_ROSTERS.players : null;
   if(ROS){ ROS.forEach(function(p){ if(p) addPlayer(p.n, p.s, p.col, p.t, 0, 1); }); }
   // distractor sampling leans on well-known (frequently attended) programs
