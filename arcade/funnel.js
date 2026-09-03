@@ -156,6 +156,7 @@
       link.setAttribute('href', '/arcade/' + next[0] + '/');
       link.innerHTML = '<small>Next</small><span>' + next[1] + ' <span aria-hidden="true">→</span></span>';
       if (home) home.style.display = '';
+      warmNext(next[0]);
     } else {
       if (pt) pt.textContent = allDone ? ('All ' + total + ' played') : (played + ' of ' + total + ' today');
       /* The last game's button opens the Day Card rather than the hub: the
@@ -271,6 +272,79 @@
     });
     box.appendChild(msg); box.appendChild(btn);
     rowEl.parentNode.insertBefore(box, rowEl.nextSibling);
+  }
+
+  /* ---- warm the next game while the result screen is being read -----------
+   *
+   * The NEXT button is the primary action on this screen, and the page behind
+   * it is the heaviest thing the arcade serves: about 24 KB of HTML naming
+   * thirty-odd scripts, the largest of which is 130 KB of player corpus. On a
+   * phone that is a second or two of blank page after a tap that felt like it
+   * should be instant, at the exact moment a player has decided to keep going.
+   *
+   * So it is fetched now, while they are looking at their score. By the time
+   * they tap, the page and its data are in the browser cache and the tap
+   * renders.
+   *
+   * NOTHING IS LISTED. Which files the next game needs is a question only the
+   * next game's HTML can answer, and a hardcoded map here would be a fifth
+   * copy of the arcade's dependency graph and the one nobody would remember to
+   * update. The HTML is fetched, its script and stylesheet URLs are read out
+   * of it, and the ones this page has not already loaded are warmed. Versioned
+   * URLs mean a warmed file is the same file the next page will ask for.
+   *
+   * WHEN IT DOES NOT RUN, because a prefetch nobody uses is somebody's data:
+   *   - Save Data on, or a 2g connection: never.
+   *   - No next game: there is nothing to warm.
+   *   - Already warmed this game: once per result screen, not once per repaint.
+   * It also waits for the browser to be idle, so it can never compete with the
+   * result screen it is sitting behind, and every request is rel=prefetch,
+   * which browsers schedule at the lowest priority and are free to drop.
+   */
+  var warmed = {};
+  function warmNext(key) {
+    if (!key || warmed[key]) return;
+    warmed[key] = 1;
+    try {
+      var c = navigator.connection;
+      if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
+    } catch (e) {}
+    var idle = window.requestIdleCallback || function (fn) { return setTimeout(fn, 1200); };
+    idle(function () {
+      var page = '/arcade/' + key + '/';
+      hint(page);
+      try {
+        fetch(page, { credentials: 'same-origin' }).then(function (r) {
+          return r.ok ? r.text() : null;
+        }).then(function (html) {
+          if (!html) return;
+          /* Everything this page already has is in the browser's cache under
+             the same versioned URL, so warming it again would be a wasted
+             request rather than a wrong one. Skipped anyway: on a game page
+             most of the thirty are shared, and the handful that differ are
+             the ones worth the bandwidth. */
+          var have = {};
+          var own = document.querySelectorAll('script[src], link[rel="stylesheet"][href]');
+          for (var i = 0; i < own.length; i++) {
+            have[abs(own[i].getAttribute('src') || own[i].getAttribute('href'))] = 1;
+          }
+          var re = /(?:src|href)="(\/[^"]+\.(?:js|css)\?v=[^"]+)"/g, m;
+          while ((m = re.exec(html))) {
+            var u = abs(m[1]);
+            if (!have[u]) { have[u] = 1; hint(u); }
+          }
+        }).catch(function () {});
+      } catch (e) {}
+    });
+  }
+  function abs(u) { try { return new URL(u, location.href).href; } catch (e) { return u; } }
+  function hint(url) {
+    try {
+      var l = document.createElement('link');
+      l.rel = 'prefetch';
+      l.href = url;
+      document.head.appendChild(l);
+    } catch (e) {}
   }
 
   // close the result overlay and reveal today's leaderboard rail

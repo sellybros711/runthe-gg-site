@@ -68,6 +68,10 @@
   .ticket{display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.1em;
     text-transform:uppercase; color:var(--brandT); background:color-mix(in srgb, var(--brand) 15%, transparent);
     border:1px solid color-mix(in srgb, var(--brand) 40%, transparent); border-radius:999px; padding:6px 12px;}
+  /* 4.41:1 on its own 15% orange tint, against 4.5. A miss by a tenth is still
+     a miss, and this is 11px uppercase, which is the hardest thing on the page
+     to read. */
+  :root[data-theme="light"] .ticket{color:#AF510A;}
   .cap{width:74px; height:74px; margin:14px auto 12px; border-radius:16px; display:grid; place-items:center;
     background:var(--card2); border:1px solid var(--line2);}
   .cap img{width:52px; height:52px;}
@@ -82,6 +86,13 @@
   .perk:first-child{border-top:0;}
   .perk .n{flex:0 0 auto; width:26px; height:26px; border-radius:8px; display:grid; place-items:center;
     background:color-mix(in srgb, var(--green) 18%, var(--card2)); color:var(--greenT); font-weight:900; font-size:14px;}
+  /* A TINT UNDER A TINT NEEDS ITS OWN INK. --greenT is set for text on the
+     card, and these numbers sit on the card with 18% green on top of it, which
+     lifts the ground and drops the ratio to 2.7:1 in light mode. Darkened here
+     rather than in the token, because the token is right everywhere else and
+     moving it would repaint eleven other pages to fix one chip. Same reason
+     the ticket below carries its own. */
+  :root[data-theme="light"] .perk .n{color:#117736;}
   .perk .t{font-size:13.5px; line-height:1.5; color:var(--mut);}
   .perk .t b{color:var(--ink);}
 

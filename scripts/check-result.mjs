@@ -88,14 +88,16 @@ console.log('\n2) ordinals, including the ones people get wrong');
    setting one degrades silently to the row it always had. So the wiring is
    asserted in the page source: the module is loaded, and the spec is built
    with the fields the row reads. */
-console.log('\n3) every wired game loads result.js and sets a spec');
+console.log('\n3) every game loads result.js and sets a spec');
 {
-  /* Wired = the free four plus the two that were free before the swap, whose
-     players still land on these screens every day. Read from tokens.js rather
-     than listed, so the day the free set moves again this follows it. */
+  /* EVERY game, not a list. This used to be the free four plus two, because
+     that was as far as the rollout had got, and a list like that stops being
+     a check the moment it stops being the truth: a game left off it can quietly
+     lose its spec and nothing says so. The arcade's twelve keys are in
+     tokens.js, so they are read from there. */
   const tk = readFileSync('arcade/tokens.js', 'utf8');
-  const free = new Function('return ' + /var FREE_LIST\s*=\s*(\[[^\]]*\])/.exec(tk)[1])();
-  const WIRED = [...new Set([...free, 'almamater', 'crossword'])];
+  const WIRED = new Function('return ' + /var GAMES\s*=\s*(\[[\s\S]*?\])/.exec(tk)[1])();
+  if (WIRED.length !== 12) fail('expected twelve games in tokens.js, found ' + WIRED.length);
   const NEED = ['key:', 'date:', 'isBest:'];
   for (const g of WIRED) {
     const src = readFileSync('arcade/' + g + '/index.html', 'utf8');
@@ -122,7 +124,17 @@ console.log('\n4) isBest is computed against a previous best, not a stored one')
     almamater: /run>PREVBEST/,
     crossword: /newBestT/,
     guess: />PREVBEST/,
-    match: />\s*mBest/
+    match: />\s*mBest/,
+    oddone: /run>PREVBEST/,
+    table: /score>PREVBEST/,
+    /* The three where LOWER is better. Each has to allow a first best, or a
+       player's very first solve is never celebrated: `!PREVBEST ||` is the
+       part that is easy to leave out and impossible to notice, because the
+       row still renders, just never gold. */
+    rankit: /!PREVBEST \|\| t<PREVBEST/,
+    chain: /!prevBest \|\| elapsed<prevBest/,
+    highlow: /run>prevBest/,
+    rollcall: /foundN>prevBest/
   };
   for (const [g, re] of Object.entries(EXPECT)) {
     const src = readFileSync('arcade/' + g + '/index.html', 'utf8');

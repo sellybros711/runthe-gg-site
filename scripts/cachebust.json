@@ -41,8 +41,8 @@
       "sha": "7f733646c77d65f7"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
@@ -265,8 +265,8 @@
       "sha": "7f733646c77d65f7"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
@@ -439,12 +439,16 @@
       "sha": "f77819462f603eb5"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
       "sha": "7cf694dc920c5c91"
+    },
+    "/arcade/result.js": {
+      "v": "1",
+      "sha": "7f733646c77d65f7"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -459,8 +463,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "2",
-      "sha": "18e86107a6a64eec"
+      "v": "3",
+      "sha": "d9c7c3b15f430a26"
     },
     "/arcade/livecheck.js": {
       "v": "7",
@@ -529,8 +533,8 @@
       "sha": "7f733646c77d65f7"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
@@ -679,8 +683,8 @@
       "sha": "7f733646c77d65f7"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
@@ -880,6 +884,10 @@
       "v": "8",
       "sha": "7cf694dc920c5c91"
     },
+    "/arcade/result.js": {
+      "v": "1",
+      "sha": "7f733646c77d65f7"
+    },
     "/arcade/resultart.js": {
       "v": "2",
       "sha": "c49475bf3f7d39c2"
@@ -1051,8 +1059,8 @@
       "sha": "7f733646c77d65f7"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
@@ -1189,12 +1197,16 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
       "sha": "7cf694dc920c5c91"
+    },
+    "/arcade/result.js": {
+      "v": "1",
+      "sha": "7f733646c77d65f7"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -1335,12 +1347,16 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
       "sha": "7cf694dc920c5c91"
+    },
+    "/arcade/result.js": {
+      "v": "1",
+      "sha": "7f733646c77d65f7"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -1501,12 +1517,16 @@
       "sha": "f77819462f603eb5"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
       "sha": "7cf694dc920c5c91"
+    },
+    "/arcade/result.js": {
+      "v": "1",
+      "sha": "7f733646c77d65f7"
     },
     "/arcade/resultart.js": {
       "v": "2",
@@ -1521,8 +1541,8 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/teammates.js": {
-      "v": "2",
-      "sha": "18e86107a6a64eec"
+      "v": "3",
+      "sha": "d9c7c3b15f430a26"
     },
     "/arcade/livecheck.js": {
       "v": "7",
@@ -1603,8 +1623,8 @@
       "sha": "7f733646c77d65f7"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
@@ -1685,12 +1705,16 @@
       "sha": "49a1b9fc353c148e"
     },
     "/arcade/funnel.js": {
-      "v": "10",
-      "sha": "2d166c53604bb579"
+      "v": "11",
+      "sha": "bbad3b9c05c5656e"
     },
     "/arcade/share.js": {
       "v": "8",
       "sha": "7cf694dc920c5c91"
+    },
+    "/arcade/result.js": {
+      "v": "1",
+      "sha": "7f733646c77d65f7"
     },
     "/arcade/resultart.js": {
       "v": "2",

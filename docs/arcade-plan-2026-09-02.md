@@ -9,13 +9,13 @@ day one and come back on day two?** Passes that need your approval before
 they start are marked **ASK**. Nothing below changes ads, pricing, or the
 server schema without one.
 
-Pass 1 is built and on the branch. The rest wait.
+Passes 1 to 4 are built and on `main`. Pass 5 is half built. The rest wait.
 
 | # | Pass | Hours | Day-one | Day-two | Needs |
 |---|---|---|---|---|---|
 | **1** | **The Day spine**: `day.js`, the ring on the hub and on every result screen, the Day Card when the ring is full, share-the-day, "Next" pulled up to the primary action | 3 | high | high | built |
-| 2 | **Shared result screen** (`result.js`): one layout for every game, percentile line from the rank RPC, personal-best-as-event, streak line. Applied to the four free games first | 3 | high | high | |
-| 3 | Shared result screen applied to the eight card games | 2 | med | med | Pass 2 |
+| **2** | **Shared result screen** (`result.js`): one layout for every game, percentile line from the rank RPC, personal-best-as-event, streak line. Built and applied to the free four plus Guess and Common Ground. | 3 | high | high | **built** |
+| **3** | Shared result screen on the rest. Built 3 Sep: Odd One Out, Number Game, Rank It, High Low, Roll Call and Chain. All twelve now set a spec, and `check-result.mjs` reads the game list out of `tokens.js` rather than carrying its own, so a game cannot be added and left off. Two of the six score LOWER is better: Rank It on tries, Chain on time. The check pins the `!prev \|\|` clause on both, because without it a player's very first solve is never gold and nothing looks broken. | 2 | med | med | **built** |
 | **4** | **Cut the payload.** Built 2 Sep, and the target was written against the wrong number: `ls` says a game ships 2.5 MB, but Cloudflare compresses it to about 600 KB, so "under 150 KB" was chasing seven eighths that were never on the wire. What it cost instead was PARSING, which compression does not touch. The four generated datasets are packed (field names once, repeated strings once) and a 512px illustration serving as a 30px crest was re-encoded. Mean per page: **wire 607 to 440 KB, parsed bytes 2268 to 1424 KB**. `node scripts/measure-payload.mjs` prints the table. Per-day slices are NOT done and are now a smaller prize than they looked: several games reseed at random on replay, so a day slice would have to keep the pool anyway. | 3 | high | med | **built** |
 | 5 | **The Arcade streak**: `arcade_day_streak` RPC, hub shows one streak. Migration applied 2 Sep; milestones at 3/7/14/30/100 and the streak-at-risk sentence are still to build | 2 | low | **high** | **part done** |
 | 6 | **Grid shares for every game**: Sportegories 8 squares, Career Path reveal position, Chain as the chain, Crossword shape and time, Starting Five row | 2 | med | med | |

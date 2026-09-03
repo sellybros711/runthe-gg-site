@@ -306,12 +306,13 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/referral.js?v=9"></script>
 <script src="/arcade/demo.js?v=3"></script>
 <script src="/arcade/pregame.js?v=24"></script>
-<script src="/arcade/funnel.js?v=10"></script>
+<script src="/arcade/funnel.js?v=11"></script>
 <script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/teammates.js?v=2"></script>
+<script src="/arcade/teammates.js?v=3"></script>
 <script src="/arcade/livecheck.js?v=7"></script>
 <script src="/arcade/teamcheck.js?v=2"></script>
 <script src="/arcade/type.js?v=5"></script>
@@ -739,6 +740,13 @@ window.GA_ID='G-L29P5MRWKE';
     $('mOf').textContent = total;
     $('mPct').textContent = Math.min(100, Math.round(Math.min(foundN, total)/total*100))+'%';
     $('mBest').textContent = best;
+      /* One line for the shared result row (result.js): the rank, the best
+         as an event, and the streak, in the same order on every game.
+         isBest is the only part this file has to supply, because by the
+         time the modal is open the new best is already in storage. */
+    try{ window.RTGResultSpec = { key:GAME, date:today(), statInt:foundN, best:best,
+      prevBest:(prevBest>0?prevBest:null), isBest:(isDaily && !ARCHIVE && foundN>0 && foundN>prevBest),
+      streak:(st.streak||0) }; }catch(e){}
     var perfect = foundN===total;
     $('mSub').textContent = perfect ? 'Full roster' : (foundN>prevBest && foundN>0 ? 'New personal best' : (cleared ? 'Board cleared' : 'Time’s up'));
     $('scrim').classList.remove('hidden');

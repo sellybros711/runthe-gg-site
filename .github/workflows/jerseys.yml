@@ -46,6 +46,25 @@ jobs:
       - name: Guard against a throttled / truncated scrape
         if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
         run: node scripts/guard-jerseys.mjs
+      # REBUILD WHAT THESE FILES FEED, IN THE SAME JOB.
+      #
+      # arcade/teammates.js is derived from jerseys.js and the roster shards,
+      # and nothing rebuilt it. This job has refreshed the stints on a schedule
+      # since Roll Call and Chain shipped; the teammate file was built once, by
+      # hand, and never again. By the time anyone looked it had Zach Thomas at
+      # the 49ers and JuJu Smith-Schuster at the Giants, both of which the
+      # stints underneath had already moved on from, and Roll Call was printing
+      # a slot its own answer key would deny.
+      #
+      # A derived file with no rebuild step does not stay right, it stays
+      # still. So it is rebuilt here, from the bytes this job just wrote, and
+      # gated on its own check before the commit.
+      - name: Rebuild the teammate decks on the refreshed stints
+        if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
+        run: node scripts/build-teammates.mjs
+      - name: The rebuilt decks must still be playable
+        if: ${{ github.event_name == 'schedule' || (github.event.inputs.commit == 'true' && github.event.inputs.only == '') }}
+        run: node scripts/check-teammates.mjs
       # Scheduled runs always commit (guarded above); manual runs commit only when asked.
       - name: Commit if requested
         if: ${{ (github.event_name == 'schedule' || github.event.inputs.commit == 'true') && github.event.inputs.only == '' }}
@@ -58,16 +77,17 @@ jobs:
           # bump with no change is a re-download for everybody who already has
           # the file.
           git diff --quiet -- arcade/jerseys.js || node scripts/bump-cachebust.mjs arcade/jerseys.js
+          git diff --quiet -- arcade/teammates.js || node scripts/bump-cachebust.mjs arcade/teammates.js
           git config user.name "roster-bot"
           git config user.email "noreply@anthropic.com"
           # arcade/rosters/*.js rides along: the same scrape produces both, and a
           # jerseys.js that moved without its roster shards would leave Roll
           # Call judging one day's squad against another day's answer key.
-          git add -A arcade/jerseys.js arcade/rosters
+          git add -A arcade/jerseys.js arcade/rosters arcade/teammates.js
           # -u picks up the pages the bump rewrote and scripts/cachebust.json.
           git add -u
           git diff --cached --quiet && echo "no changes" || {
-            git commit -m "Refresh jersey stints and Roll Call rosters"
+            git commit -m "Refresh jersey stints, Roll Call rosters and the teammate decks"
             for i in 1 2 3 4 5; do
               git push && break
               echo "push rejected, rebasing (attempt $i)"

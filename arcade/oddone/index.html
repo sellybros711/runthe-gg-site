@@ -318,8 +318,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/supplement.js?v=4"></script>
 <script src="/arcade/data.js?v=2"></script>
 <script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/funnel.js?v=10"></script>
+<script src="/arcade/funnel.js?v=11"></script>
 <script src="/arcade/share.js?v=8"></script>
+<script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=2"></script>
 <script src="/arcade/resultstats.js?v=2"></script>
 <script src="/arcade/challenge.js?v=3"></script>
@@ -777,6 +778,12 @@ window.GA_ID='G-L29P5MRWKE';
     document.getElementById('mRun').textContent=run;
     document.getElementById('mBest').textContent=s.bestRun||0;
     document.getElementById('mStreak').textContent=s.streak||0;
+      /* One line for the shared result row (result.js): the rank, the best
+         as an event, and the streak, in the same order on every game.
+         isBest is the only part this file has to supply, because by the
+         time the modal is open the new best is already in storage. */
+    try{ window.RTGResultSpec = { key:GAME, date:DATE, statInt:run, best:s.bestRun||0,
+      prevBest:(PREVBEST>0?PREVBEST:null), isBest:(!locked && attemptFirst && run>PREVBEST), streak:s.streak||0 }; }catch(e){}
     // Emotional copy ladder: new best > tied best > near miss > generic.
     var sub;
     if(locked) sub='Your run today';
