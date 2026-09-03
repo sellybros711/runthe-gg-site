@@ -2220,6 +2220,31 @@ window.GA_ID='G-L29P5MRWKE';
     border:1.5px solid rgba(226,178,90,.42);
     background:linear-gradient(180deg,rgba(40,32,17,.92),rgba(19,17,13,.92))}
   .dynrule p{margin:7px 0 0;font-size:12.5px;line-height:1.42;color:rgba(243,221,174,.68)}
+  /* ---- THE MONEY, PLAINLY. The one part of this mode that trips people up, so it gets its
+     own block, one rule a line, and a drawn bar for the only number that is not obvious: what
+     a cut gives back and what it keeps. ---- */
+  .dynmoney{border:1.5px solid var(--line-2);border-radius:12px;padding:12px 14px;
+    background:rgba(255,255,255,.02)}
+  .dm-cap{display:flex;align-items:baseline;gap:8px;padding-bottom:10px;margin-bottom:10px;
+    border-bottom:1px solid var(--line)}
+  .dm-cap span{font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim-2)}
+  .dm-cap b{font-family:var(--fd,var(--fn));font-size:24px;color:#f4f7fc;line-height:1}
+  .dm-cap i{font-style:normal;font-family:var(--fn);font-size:12px;color:var(--dim)}
+  .dm-list{list-style:none;margin:0;padding:0;display:grid;gap:11px}
+  .dm-list li{font-size:12.5px;line-height:1.42;color:var(--dim-2);padding-left:14px;
+    position:relative}
+  .dm-list li:before{content:'';position:absolute;left:0;top:6px;width:5px;height:5px;
+    border-radius:50%;background:var(--dim-2)}
+  .dm-list li.in:before{background:#4ade80}
+  .dm-list li.out:before{background:#f87171}
+  .dm-list b{color:var(--ink);font-weight:700}
+  .dm-bar{display:flex;height:22px;margin-top:8px;border-radius:6px;overflow:hidden;
+    font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.02em}
+  .dm-bar i{display:flex;align-items:center;justify-content:center;font-style:normal;
+    color:#08210f;white-space:nowrap}
+  .dm-bar .back{background:linear-gradient(90deg,#4ade80,#86efac)}
+  .dm-bar .dead{background:linear-gradient(90deg,#f87171,#fca5a5);color:#3a0d0d}
   /* NUMBERED BECAUSE A SEASON IS ACTUALLY A SEQUENCE. Draft, play, offseason, again. The
      bullets under it are not a sequence and stay dots. */
   .modesteps{list-style:none;margin:0;padding:0;display:grid;gap:7px;counter-reset:ms}
@@ -8707,58 +8732,59 @@ function beginDynastyDraft(){
  * and reachable again from the screen where the rules actually bite.
  */
 function dynastyRulesHTML(go){
-  const step=E.DYNASTY_STEP_SEASONS;
-  const base=E.DYNASTY_BASE_WINS;
+  const step=E.DYNASTY_STEP_SEASONS;   // seasons between steps up in the target
+  const base=E.DYNASTY_BASE_WINS;      // the opening win bar
   return '<div class="eyebrow red">The Gauntlet</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 2px">One team. One life. '+
       'How long can you last?</h2>'+
-    /* THE RULE FIRST AND ON ITS OWN. Everything under this is detail. Somebody who reads
-       only the panel knows what the mode is and how it ends, which was not true of any
-       version of this sheet before it. */
+    /* THE RULE FIRST AND ON ITS OWN. Everything under this is detail. */
     '<div class="dynrule">'+
       '<span class="ul-line"><b>'+base+' wins</b><i>or you are fired</i></span>'+
-      '<p>That is the whole mode. Win '+base+' games and you play another season. '+
-        'Miss once and the run is over.</p>'+
+      '<p>Win '+base+' games and you play another season. Miss once and the run is over.</p>'+
     '</div>'+
-    '<div class="eyebrow" style="margin:14px 0 7px">How a season goes</div>'+
+    /* A SEASON, AS FOUR STEPS. Numbered because it is a loop you repeat. */
+    '<div class="eyebrow" style="margin:15px 0 7px">A season, start to finish</div>'+
     '<ul class="modesteps">'+
-      '<li><b>Draft six players off the wheel.</b> Any year, any club, one $140M cap. '+
-        'The same six spots as a normal run.</li>'+
+      '<li><b>Draft six players off the wheel.</b> Any year, any club, under one $140M cap.</li>'+
       '<li><b>Play the season.</b> Win '+base+' and you keep your job.</li>'+
-      '<li><b>Every man ages one year.</b> Draft 2023 Burrow and 2019 Ochocinco. Next '+
-        'season they are 2024 Burrow and 2020 Ochocinco.</li>'+
-      '<li><b>His price does not.</b> You signed him at the draft and you pay that every '+
-        'season until he leaves. Better or worse, it is the same number.</li>'+
-      '<li><b>Fill the holes and go again.</b> Then again. It does not end.</li>'+
+      '<li><b>Everyone ages a year.</b> Some improve, most decline, a few are gone.</li>'+
+      '<li><b>Fill the holes and go again.</b> It never ends. You just try to last.</li>'+
     '</ul>'+
-    /* THE CONTRACT IS THE ONE RULE THAT PAYS YOU, so it gets said twice: once as a step of
-       the season above, and once here as the thing to do something about. Every other line
-       on this sheet is a way to lose. */
-    '<div class="eyebrow" style="margin:14px 0 7px">Where the edge is</div>'+
+    /* THE MONEY, its own block, because it is the one thing that trips people up. Each line is
+       one rule; the cut gets a drawn bar because 75 back and 25 dead is the only number here
+       that is not obvious from the words. */
+    '<div class="eyebrow" style="margin:16px 0 8px">The money, plainly</div>'+
+    '<div class="dynmoney">'+
+      '<div class="dm-cap"><span>Your cap</span><b>$140M</b><i>and it never changes</i></div>'+
+      '<ul class="dm-list">'+
+        '<li><b>You pay what you drafted him at.</b> Sign a 24 year old at $9M and he is $9M '+
+          'at 34 too, even when he plays like $40M. That gap is cap you never spend, and it '+
+          'is the whole game.</li>'+
+        '<li class="in"><b>A man who leaves gives it all back.</b> Retire, run out of seasons, '+
+          'or sign elsewhere: every dollar of his deal is yours to spend again.</li>'+
+        '<li class="out"><b>Cutting a man keeps a quarter on your books.</b> You get three '+
+          'quarters back to spend now. The last quarter is dead money: cap you pay for a '+
+          'player who is gone, for the rest of the run.'+
+          '<span class="dm-bar"><i class="back" style="width:75%">75% back</i>'+
+            '<i class="dead" style="width:25%">25% dead</i></span></li>'+
+        '<li><b>Over the cap? Keep everyone.</b> You are never forced to cut. You just cannot '+
+          'sign anyone new until you free up room.</li>'+
+      '</ul>'+
+    '</div>'+
+    /* THE FIVE-SEASON BEATS, said once so the mandate and the boss are not a surprise. */
+    '<div class="eyebrow" style="margin:16px 0 8px">Every five seasons</div>'+
     '<ul class="modenotes">'+
-      '<li><b>A cheap young player is the whole game.</b> Draft a 24 year old at $9M and '+
-        'he is $9M at 27 too, when he is worth $40M. That gap is cap you never spent.</li>'+
-      '<li><b>An old star is the other side of it.</b> He costs what he was worth on the '+
-        'day you signed him, he will not be worth it for long, and cutting him leaves a '+
-        'quarter of that number on your books.</li>'+
+      '<li><b>5, 15, 25: a roster mandate.</b> The owner names a way to build your team. Do it '+
+        'that offseason and your dead cap is wiped clean. Miss it and next season wants one '+
+        'more win. Either way the run goes on.</li>'+
+      '<li><b>10, 20, 30: a boss game.</b> Beat a real all-time team and you freeze one player '+
+        'at his age and salary for good.</li>'+
+      '<li><b>The target creeps up.</b> '+base+' wins, then '+(base+1)+' after season '+step+
+        ', then '+(base+2)+' after '+(step*2)+'.</li>'+
     '</ul>'+
-    '<div class="eyebrow" style="margin:14px 0 7px">Why it gets harder</div>'+
-    '<ul class="modenotes">'+
-      '<li><b>Your men age.</b> Some improve. Most decline. A rookie has a decade in him. '+
-        'A man at his last season is gone in the spring.</li>'+
-      '<li><b>You lose men three ways.</b> They retire, they run out of seasons, or they '+
-        'sign somewhere else. A man who changes club leaves your roster.</li>'+
-      '<li><b>The cap never moves.</b> It is $140M every season, forever. Over it you keep '+
-        'everyone, you just cannot sign anyone.</li>'+
-      '<li><b>Cutting a man costs you a quarter of him.</b> Releasing is the only way to '+
-        'make room, and you get three quarters of his deal back. The last quarter is dead '+
-        'money for the rest of the run. A man who leaves on his own costs you nothing.</li>'+
-      '<li><b>Every '+step+' seasons the target goes up a win.</b> '+base+', then '+
-        (base+1)+', then '+(base+2)+'.</li>'+
-    '</ul>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:12px 0 0">'+
-      'You score <b>1,000 a win</b>. More for the playoffs and a title. '+
-      '<b>Season 4 pays quadruple.</b> Lasting is the whole game.</p>'+
+    '<p class="dim" style="font-size:13px;line-height:1.45;margin:13px 0 0">'+
+      'You score points every season, more for the playoffs and a title, and later seasons '+
+      'pay multiples. Lasting is the whole game.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dyni-go">'+esc(go)+'</button></div>';
 }
 
