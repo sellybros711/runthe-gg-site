@@ -1001,10 +1001,88 @@
     return wins * 10000 + diff;
   }
 
+  /* ---------------- the Gauntlet's leaderboard ----------------
+     The Gauntlet ranks RUNS, not seasons. Every season is a validated ps_runs row exactly like
+     a classic season; ps_dynasty_board (98) reads the furthest row per run, so the axis here is
+     seasons survived with the run's total score behind it. These read or write that view and
+     its tag, and none of them touches the classic path. All fail soft: a leaderboard that does
+     not draw costs nothing, and the season it is reading was already recorded. */
+
+  /* Stamp the row ps_submit_run just returned with its run and its standing. Retried like
+     submit, because a lost tag leaves a played season off the run's board; the next season's
+     tag carries the whole run forward regardless, so one miss is not one lost run. */
+  async function dynastyTag(rowId, dynastyId, seasons, score) {
+    if (rowId == null || !dynastyId) return false;
+    const body = JSON.stringify({ p_row: rowId, p_dynasty_id: dynastyId,
+      p_season: Math.round(seasons), p_score: Math.max(0, Math.round(score || 0)) });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await timed(base() + 'rpc/ps_dynasty_tag', { method: 'POST', headers: headers(), body });
+        if (res.ok) { lastError = null; return true; }
+        if (res.status < 500) { await fail('dynastyTag', res); return false; }
+        await fail('dynastyTag', res);
+      } catch (e) { failThrown('dynastyTag', e); }
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)));
+    }
+    return false;
+  }
+
+  /* The board, best runs first: seasons survived, then total score, then who got there first. */
+  async function dynastyTop(limit) {
+    try {
+      const q = base() + 'ps_dynasty_board?select=*' +
+        '&order=seasons.desc,score.desc,created_at.asc&limit=' + (limit || 100);
+      const res = await timed(q, { headers: headers() });
+      if (!res.ok) return await fail('dynastyBoard', res);
+      const rows = await res.json().catch(() => null);
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('dynastyBoard', e); }
+  }
+
+  /* One player's runs on it, best first. */
+  async function dynastyMine(userId, limit) {
+    if (!userId) return null;
+    try {
+      const q = base() + 'ps_dynasty_board?select=*&user_id=eq.' + encodeURIComponent(userId) +
+        '&order=seasons.desc,score.desc&limit=' + (limit || 20);
+      const res = await timed(q, { headers: headers() });
+      if (!res.ok) return await fail('dynastyMine', res);
+      const rows = await res.json().catch(() => null);
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('dynastyMine', e); }
+  }
+
+  /* Where a run of (seasons, score) sits: how many are ahead of it, plus one. Better means more
+     seasons, or the same seasons and more score, which is the ranking order stated as a filter.
+     Equal runs share a place, exactly as they do on the classic board. */
+  async function dynastyRank(seasons, score) {
+    const s = Math.round(seasons), sc = Math.max(0, Math.round(score || 0));
+    if (!Number.isFinite(s)) return null;
+    try {
+      const q = base() + 'ps_dynasty_board?select=dynasty_id&limit=1' +
+        '&or=(seasons.gt.' + s + ',and(seasons.eq.' + s + ',score.gt.' + sc + '))';
+      const res = await timed(q, { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('dynastyRank', res);
+      const ahead = countOf(res);
+      return ahead === null ? null : ahead + 1;
+    } catch (e) { return failThrown('dynastyRank', e); }
+  }
+
+  /* How many runs are on the board at all, for the count line under the title. */
+  async function dynastyTotal() {
+    try {
+      const res = await timed(base() + 'ps_dynasty_board?select=dynasty_id&limit=1',
+        { headers: headers({ Prefer: 'count=exact' }) });
+      if (!res.ok) return await fail('dynastyTotal', res);
+      return countOf(res);
+    } catch (e) { return failThrown('dynastyTotal', e); }
+  }
+
   window.PS_BOARD = {
-    API_VERSION: 11,
+    API_VERSION: 12,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
+    dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },

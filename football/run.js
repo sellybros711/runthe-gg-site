@@ -468,6 +468,22 @@ function previewSigning(run, player, ctx) {
   };
 }
 
+/* A run id, minted once per dynasty. crypto.randomUUID on any browser this game runs in and
+   on Node 19 and up; the fallback is only ever reached in a context that has neither, and it
+   is still a well-formed v4 string, which is all the tag on the far end asks for. */
+function newDynastyId() {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.randomUUID) {
+      return globalThis.crypto.randomUUID();
+    }
+  } catch (_) { /* fall through */ }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function createRun(opts) {
   /* ONE FRANCHISE MODE IS ONE FIELD.
      A club code here locks every wheel in the draft to that club, so only the year moves
@@ -552,6 +568,11 @@ function createRun(opts) {
     /* Every season played, oldest first: what the owner reads and what the run is scored
        on. */
     history: dynasty ? [] : null,
+    /* THE RUN'S OWN ID, minted once and carried for its whole life. The Gauntlet writes one
+       validated ps_runs row a season, and this is what ties those rows back into a run so the
+       leaderboard can rank runs by how many seasons they survived rather than ranking loose
+       seasons. Null outside a dynasty. See ps_dynasty_tag and the recordRun tag in the page. */
+    dynastyId: dynasty ? newDynastyId() : null,
     /* THE BOSS SEASONS. Every fifth season ends with a marquee game against a real great
        team: see E.dynastyBossFor. `boss` holds the pending game while it is being played and
        is cleared once resolved; `frozen` is the list of player ids a won freeze boss has
