@@ -17150,9 +17150,51 @@ function momentPosTxt(info){
   if(info.gap===0) return 'You are tied for the lead';
   return `You sit ${info.pos<=1?'':'T'}${info.pos}, ${info.gap} back of ${esc(info.leaderName)}`;
 }
+/* A GRUDGE Sunday is the ONE Moment worth building up, so it is the only one that gets a scene: the
+   booth needles it, the feed enjoys it, and it hands straight on to the offer. An ordinary Moment now
+   opens cold on the popup, which says everything it needs to in four lines. FIRSTS.moment is left
+   defined but UNWIRED (one line to restore) so the table stays whole.
+   Anything throwing in here is a passthrough: the offer must never be lost to a broken build-up. */
+function momentGrudgeScene(ce, info, done){
+  try{
+    if(!cutscenesOn()) return false;
+    const evt=(ce&&ce.evt)||{}, g=info&&info.grudge;
+    if(!g || typeof csPlay!=='function') return false;
+    const rv=dShort(g.name), me=csMe();
+    const ctx={upName:evt.name||'', evt, info, rivalName:g.name};
+    const where = g.gap>0 ? (g.gap+' behind you') : g.gap<0 ? ((-g.gap)+' ahead of you') : 'dead level with you';
+    const open=csVary([
+      `${rv} is ${where}, and neither of them has looked at a leaderboard all week. They have looked at each other.`,
+      `Of all the names that could be ${where} going into Sunday, the tour got the one everybody wanted.`,
+      `${rv}, ${where}, last group. You could not have drawn it better.`
+    ]);
+    const jab=csVary([
+      `They were paired in the pro-am on Wednesday. Nine holes, two words, and one of them was "yours".`,
+      `I asked ${rv} about ${me} this morning and got a very warm answer about the golf course.`,
+      `One of them is going to be extremely complimentary in the press room tonight and mean none of it.`,
+      `${rv} has been on the range since seven. Nobody else on that end of the range. Nobody wanted to be.`
+    ]);
+    const buzz=csVary([
+      [`putting these two in the last group is the only correct decision`, `cancelled everything, do not call me`],
+      [`someone check whether the handshake on 18 counts as contact`, `this is the only pairing that mattered all year`],
+      [`no notes. perfect Sunday.`, `whoever made this draw deserves a raise`]
+    ]);
+    const beats=[
+      {who:'okoye', frame:'broadcast', pic:'rival', kick:'Grudge match', tx:open},
+      {who:'duck',  frame:'broadcast', pic:'rival', tx:jab},
+      {who:'feed',  frame:'feed',      pic:'me',    tx:buzz, nextLabel:'See the situation ▸'}
+    ];
+    track('moment_grudge_scene',{evt:evt.name||''});
+    csPlay(beats, ctx, ()=>{ try{ done&&done(); }catch(e){ console.error('grudge scene handoff failed', e); } }, {room:'course'});
+    return true;
+  }catch(e){ console.error('grudge cutscene failed', e); return false; }
+}
 function momentPopup(ce, info){
-  // the first Sunday a career is close enough to be offered the round
-  if(firstDue('moment')) return maybeFirst('moment', {upName:(ce.evt&&ce.evt.name)||'', evt:ce.evt, info}, ()=>momentPopup(ce, info));
+  // a rival Sunday gets the build-up, once. Everything else opens straight on the offer.
+  if(info && info.grudge && !info._csShown){
+    info._csShown = true;
+    if(momentGrudgeScene(ce, info, ()=>momentPopup(ce, info))) return;
+  }
   const evt=ce.evt;
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -17163,12 +17205,12 @@ function momentPopup(ce, info){
   const accent=g?'#ff5a4d':(games?'#ffd45e':(evt.major?'#ffd45e':'#ff8a5b'));
   const iconHtml=g?`<div style="font-size:52px;line-height:1;margin-bottom:4px">⚔️</div>`:games?`<div style="font-size:52px;line-height:1;margin-bottom:6px">🥇</div>`:th?`<div style="width:92px;height:104px;margin:0 auto 8px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.5))${reduce?'':';animation:momRise .7s cubic-bezier(.2,1.3,.4,1) both'}">${th.svg()}</div>`:`<div style="font-size:52px;line-height:1;margin-bottom:4px">🔥</div>`;
   const sub2=g?esc(evt.name):(games?'🥇 Play for a medal':'🔥 The Moment');
+  // Four lines, no speech. Where you stand, and the choice. (owner: keep it simple, real golf tone)
   const ledeBody=g
-    ? `Sunday${evt.major?' at a major':''}, and your nemesis <b style="color:${accent}">${esc(g.name)}</b> is right there, ${g.gap>0?`${g.gap} behind you`:g.gap<0?`${-g.gap} ahead of you`:'dead level with you'}. <b style="color:${accent}">${momentPosTxt(info)}</b> with 18 holes to play. Settle it head-to-head.`
+    ? `<b style="color:${accent}">${momentPosTxt(info)}</b> with 18 to play. <b style="color:${accent}">${esc(g.name)}</b> is ${g.gap>0?`${g.gap} behind`:g.gap<0?`${-g.gap} ahead`:'level'}.`
     : marquee
-      ? `${firstAsk?`<b style="color:${accent}">New</b> · you can play the final round of every major and the Summer Games yourself, hole by hole. `:''}Step inside the final round${games?' at the Summer Games':''}. <b style="color:${accent}">${momentPosTxt(info)}</b> with 18 holes to play.`
+      ? `${firstAsk?`<b style="color:${accent}">New</b> · you can play the final round of every major and the Summer Games yourself. `:''}<b style="color:${accent}">${momentPosTxt(info)}</b> with 18 holes to play.`
       : `<b style="color:${accent}">${momentPosTxt(info)}</b> with 18 holes to play.`;
-  const smallLine=g?'Beat your rival today and the whole tour will know it.':(games?'A medal on the line and the whole world watching.':(marquee?'Every shot is yours, the big calls on the signature holes are yours.':'This is what a career is made of.'));
   // GRANDER, cinematic (owner: fewer + more grand). Full-screen spotlight, the major's own trophy, big type.
   const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
       background:radial-gradient(120% 90% at 50% 18%, rgba(30,18,4,.78), rgba(2,7,5,.97) 70%)">
@@ -17179,14 +17221,14 @@ function momentPopup(ce, info){
       <h1 style="margin:8px 0 2px;font-size:30px;line-height:1.05;color:#fff">${g?'You vs '+esc(g.name):esc(evt.name)}</h1>
       <div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ff6b5e;text-transform:uppercase;margin-bottom:12px">${sub2}</div>
       <p class="lede" style="margin:4px 0 6px;color:#e8f0e8">${ledeBody}</p>
-      <p class="small" style="margin:0 0 18px;color:#9fb3a8">${smallLine} Take the sticks and play every shot yourself, or let the sim decide.</p>
+      <p class="small" style="margin:0 0 18px;color:#9fb3a8">Play every shot yourself, or let the sim decide.</p>
       <div class="mbtns" style="display:grid;gap:10px"></div>
     </div></div>`);
   const btns=ov.querySelector('.mbtns');
   const playCoins=sbSignedIn()?momentPlayCoins(evt):0;   // CS288: playing earns bonus coins; simming forfeits them
-  const play=$(`<button class="btn goldfill" style="font-size:16px;padding:15px">⛳ Play the final round<span class="sub">Hole by hole, make the crucial decisions${playCoins?` · <b style="color:#7a4a00">+${playCoins} coins</b>`:''}</span></button>`);
+  const play=$(`<button class="btn goldfill" style="font-size:16px;padding:15px">⛳ Play the final round<span class="sub">Hole by hole${playCoins?` · <b style="color:#7a4a00">+${playCoins} coins</b>`:''}</span></button>`);
   play.onclick=()=>{ ov.remove(); if(firstAsk) setMarqueeFinals(true); track('moment_play',{evt:evt.name,major:!!evt.major,marquee}); startMomentRound(ce, info); };
-  const sim=$(`<button class="btn ghost">Continue simulation ▸${playCoins?`<span class="sub">Skip playing, you'll forfeit the +${playCoins} bonus coins</span>`:''}</button>`);
+  const sim=$(`<button class="btn ghost">Continue simulation ▸${playCoins?`<span class="sub">Forfeit the +${playCoins} coins</span>`:''}</button>`);
   sim.onclick=()=>{ ov.remove(); if(firstAsk) setMarqueeFinals(false); track('moment_sim',{evt:evt.name,marquee}); render(); };
   btns.appendChild(play); btns.appendChild(sim);
   if(firstAsk) btns.appendChild($(`<div class="small muted" style="margin-top:2px;font-size:11px">You can turn playing major &amp; Games finals on or off anytime in the ≡ menu → Settings.</div>`));
