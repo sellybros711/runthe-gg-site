@@ -79,7 +79,8 @@ if (!rosterMatch) {
      on the card lies about them. */
   const allowedQuirks = new Set(['transform','confuse','skittish','monument',
                                   'hex','naughty','stall','frenzy','drain',
-                                  'petrify','rebirth','moonrise','unlucky','fragile']);
+                                  'petrify','rebirth','moonrise','unlucky','fragile',
+                                  'mudville']);
   const quirks = [...rosterMatch[1].matchAll(/quirk:'([^']+)'/g)].map(m => m[1]);
   const unknown = quirks.filter(q => !allowedQuirks.has(q));
   if (unknown.length) {

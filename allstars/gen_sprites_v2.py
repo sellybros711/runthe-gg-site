@@ -1364,16 +1364,12 @@ def sig_kong(cv, spec, pose, back):
 
 
 def sig_franky(cv, spec, pose, back):
-    skin = Ramp(spec.get('skin', '#7ea86a'))
-    # The neck: he is famously a head bolted onto a body, so give him
-    # one, with the bolts THROUGH IT rather than stuck to his skull.
+    skin = Ramp(spec.get('skin', '#c9b46e'))
+    # A long neck, because he is stitched together, but NO BOLTS: the
+    # electrodes are Universal's 1931 makeup, not Shelley's. The novel
+    # gives the seams and the yellow skin, and those are what he gets.
     cv.cyl(CX - 4, 20, CX + 4, 23, skin)
     if not back:
-        bolt = (196, 168, 92)
-        for side in (-1, 1):
-            cv.dot(CX + side * 5, 21, bolt)
-            cv.dot(CX + side * 6, 21, shade(bolt, -0.25))
-            cv.dot(CX + side * 5, 22, shade(bolt, -0.35))
         # the stitch scar across one cheek
         st = shade(skin.base, -0.5)
         for dy in (14, 15, 16, 17):
@@ -1393,17 +1389,19 @@ def sig_franky(cv, spec, pose, back):
             cv.dot(CX, dy, (232, 232, 234))
         cv.dot(CX, 27, (40, 40, 48))
     ink = Ramp('#181418')
-    # flat topped black hair, squared past the skull's curve
-    cv.rect(CX - 9, 3, CX + 9, 8, ink, l=0.5)
-    cv.sphere(CX, HEAD_CY - 1.0, HEAD_RX, HEAD_RY * 0.98, ink, spec=False, ymax=8)
-    # jagged fringe
-    # The fringe is jagged but SHORT: hair that hangs into the eyes
-    # turns a friendly monster into a menacing one.
-    drops = (0, 1, 0, 1, 0, 0, 1, 0, 1, 0)
-    for i, x in enumerate(range(int(CX) - 9, int(CX) + 10, 2)):
-        for k in range(drops[i % 10] + 1):
-            cv.dot(x, 9 + k, ink.mid)
-            cv.dot(x + 1, 9 + k, ink.mid)
+    # "His hair was of a lustrous black, and flowing." Not a flat top:
+    # a rounded skull under long black hair that falls past the jaw on
+    # both sides, which is the one line of description everybody who has
+    # only seen the film gets wrong.
+    cv.sphere(CX, HEAD_CY - 1.4, HEAD_RX * 1.02, HEAD_RY, ink, spec=False, ymax=9)
+    # The locks stop at the jaw and stay narrow. Run past it and the hair
+    # closes over the face: he had one drawn to the collar and there was
+    # no monster in there, just a black oval with a chin.
+    for side in (-1, 1):
+        sidelock(cv, ink, side, 8, 16, 1.8)
+    # a centre parting, so the black mass reads as hair and not a hood
+    for dy in range(3, 8):
+        cv.dot(CX, dy, shade(ink.base, 0.35))
     if back:
         cv.sphere(CX, HEAD_CY, HEAD_RX * 0.99, HEAD_RY * 0.96, ink,
                   spec=False, ymax=HEAD_CY + 4)
@@ -1558,6 +1556,95 @@ def sig_peter(cv, spec, pose, back):
         cv.dot(CX - 1, 26, vein); cv.dot(CX + 1, 25, vein)
 
 
+def sig_casey(cv, spec, pose, back):
+    # THE BAT, up on the shoulder, because that is the pose everyone has
+    # in their head: "Casey standing there, advancing to the bat". It
+    # rides the arm so it does not hang in the air while he runs.
+    o = run_off(pose)[1]
+    wood = (166, 122, 66)
+    dark = (120, 84, 44)
+    for i in range(11):
+        x = CX + 7 + i * 0.30
+        y = 27 - i * 1.05 + o
+        cv.dot(x, y, wood if i > 2 else dark)
+        if i > 4:
+            cv.dot(x + 1, y, wood)
+    if back:
+        return
+    # the club letter on the cap, one glyph wide, in the flannel cream
+    c = (234, 228, 210)
+    for dy in (4, 5, 6):
+        cv.dot(CX - 2, dy, c)
+        cv.dot(CX + 2, dy, c)
+    cv.dot(CX - 1, 5, c)
+    cv.dot(CX + 1, 5, c)
+    cv.dot(CX, 6, c)
+
+
+def sig_nellie(cv, spec, pose, back):
+    # THE CHECK. An ulster in one flat colour is a coat; the check is what
+    # made the outfit famous enough to sell dolls of it in 1890.
+    coat = spec.get('shirt', '#8d7f66')
+    lt = shade(coat, 0.20)
+    dk = shade(coat, -0.22)
+    for y in range(24, 31):
+        for x in range(int(CX) - 6, int(CX) + 7):
+            if (x + y) % 4 == 0:
+                cv.dot(x, y, lt)
+            elif (x - y) % 4 == 0:
+                cv.dot(x, y, dk)
+    if back:
+        return
+    # THE GRIPSACK. She took one bag round the world and was famous for it.
+    o = run_off(pose)[1]
+    bx, by = CX + 11, 31 + o
+    bag = Ramp('#6b4a2a')
+    cv.cyl(bx - 3, by - 3, bx + 3, by + 2, bag, round_bot=1)
+    cv.rect(bx - 3, by - 1, bx + 3, by - 1, Ramp('#3f2a18'), l=0.5)
+    for dx in (-1, 0, 1):
+        cv.dot(bx + dx, by - 5, (58, 42, 26))
+
+
+def sig_munchausen(cv, spec, pose, back):
+    # THE MOUSTACHE, out past the face on both sides. The beard routine
+    # draws a normal one; the Baron's is architecture.
+    if not back:
+        w = (240, 236, 228)
+        for side in (-1, 1):
+            for i, dx in enumerate((4, 5, 6, 7, 8)):
+                cv.dot(CX + side * dx, 18, w)
+                if i >= 2:
+                    cv.dot(CX + side * dx, 17, w)
+            cv.dot(CX + side * 8, 16, w)
+    # EPAULETTES, gold, on both shoulders: he is a hussar and never once
+    # appears out of uniform.
+    g = (201, 162, 86)
+    lo, ro = run_off(pose)
+    for side, off in ((-1, lo), (1, ro)):
+        for dx in (7, 8, 9):
+            cv.dot(CX + side * dx, 23 + off, g)
+            cv.dot(CX + side * dx, 24 + off, shade(g, -0.3))
+
+
+def sig_johnhenry(cv, spec, pose, back):
+    # THE NINE POUND HAMMER. Head down by his side, handle up: the whole
+    # ballad is this object against a steam drill.
+    o = run_off(pose)[1]
+    hx = CX + 11
+    handle = (150, 104, 56)
+    for i in range(9):
+        cv.dot(hx, 22 + i + o, handle if i % 3 else shade(handle, -0.25))
+    steel = Ramp('#6e7480')
+    cv.rect(hx - 3, 20 + o, hx + 3, 22 + o, steel, l=0.62)
+    if not back:
+        cv.dot(hx - 3, 20 + o, (168, 176, 188))
+        # the shirt is open at the collar over a plain undershirt
+        v = shade(spec.get('shirt', '#4a6a86'), -0.35)
+        for i in range(3):
+            cv.dot(CX - 1 - i, 24 + i, v)
+            cv.dot(CX + 1 + i, 24 + i, v)
+
+
 def sig_medusa(cv, spec, pose, back):
     # the hair is SNAKES: heads and flicked tongues on the wild locks
     head = Ramp('#3f8f4f')
@@ -1653,15 +1740,6 @@ def sig_huck(cv, spec, pose, back):
         cv.rect(CX + 2, 33, CX + 4, 34, Ramp('#7a5a2a'), l=0.5)
 
 
-def sig_flash(cv, spec, pose, back):
-    if back:
-        return
-    # the lightning bolt on his chest
-    g = (248, 216, 74)
-    cv.dot(CX, 24, g); cv.dot(CX - 1, 25, g)
-    cv.dot(CX, 26, g); cv.dot(CX - 1, 27, g)
-    cv.dot(CX, 25, g); cv.dot(CX - 1, 26, g)
-
 
 def sig_hyde(cv, spec, pose, back):
     """Hyde is not Jekyll in a bad mood. He is SHORTER, WIDER and lower to
@@ -1740,24 +1818,6 @@ def sig_sherlock(cv, spec, pose, back):
     for i in range(4):
         cv.dot(gx - 3 - i, gy + 3 + i, shade(rim, -0.3))
 
-
-def sig_tracy(cv, spec, pose, back):
-    coat = Ramp(shade(spec.get('shirt', '#f4c25a'), -0.22))
-    cv.taper(22, 26, 17, 19, coat)      # the trench coat's collar
-    if back:
-        return
-    # A white shirt V under the tie. The bare tie on the coat read as a
-    # black hole punched in his chest.
-    sh = Ramp('#eceff2')
-    for i in range(4):
-        cv.rect(CX - 3 + i * 0.4, 24 + i, CX + 3 - i * 0.4, 24 + i, sh, l=0.7)
-    tie = Ramp('#1a1a20')
-    cv.rect(CX - 1, 25, CX + 1, 29, tie, l=0.5)
-    cv.dot(CX, 24, tie.mid)
-    # lapels
-    for i in range(4):
-        cv.dot(CX - 4 - i * 0.5, 24 + i, coat.dark)
-        cv.dot(CX + 4 + i * 0.5, 24 + i, coat.dark)
 
 
 def sig_alice(cv, spec, pose, back):
@@ -2348,36 +2408,6 @@ def sig_sasquatch(cv, spec, pose, back):
         cv.dot(CX + dx, 10, brow)
 
 
-def sig_felix(cv, spec, pose, back):
-    if back:
-        return
-    # Felix IS the white face: a big white mask over the black head,
-    # eyes at its top edge, the wide grin across it, white gloves and
-    # big glossy shoe feet.
-    white = Ramp('#f7f7f9')
-    ink = (20, 16, 24)
-    cv.sphere(CX, 15.0, 6.8, 5.8, white)
-    for sx in (-3, 3):
-        x = CX + sx
-        for dx in (-1, 0):
-            for dy in (-1, 0, 1):
-                cv.dot(x + dx, 10 + dy, (250, 250, 252))
-        cv.dot(x - (1 if sx > 0 else 0), 11, ink)
-    cv.dot(CX - 1, 13, ink)
-    cv.dot(CX, 13, ink)
-    for dx in range(-4, 5):
-        cv.dot(CX + dx, 17, ink)
-    cv.dot(CX - 5, 16, ink)
-    cv.dot(CX + 5, 16, ink)
-    # the gloves sit ON the body's edge. Hung at the row the arms used to
-    # end at, they float clear of it now the torso is longer than it is
-    # wide there.
-    for side in (-1, 1):
-        cv.ball(CX + side * 7.6, 28.5, 2.6, 2.8, white, spec=False)
-    shoe = Ramp('#181420')
-    for side in (-1, 1):
-        cv.sphere(CX + side * 4, 37.2, 3.2, 1.8, shoe, spec=True)
-
 
 def sig_jack(cv, spec, pose, back):
     # THE BEANSTALK, climbing past his shoulder. A line of single dots
@@ -2429,29 +2459,6 @@ def sig_robin(cv, spec, pose, back):
     for dy in range(22, 31):
         cv.dot(CX - 10, dy + o, (226, 226, 230))
 
-
-def sig_tintin(cv, spec, pose, back):
-    """The quiff and the PLUS FOURS. Long trousers on a blue jumper is a
-    boy in a blue jumper; the breeches ending at the knee over pale socks
-    are half of why he is recognisable from behind."""
-    r = Ramp(spec.get('hair', '#c9a256'))
-    # THE QUIFF, swept up and forward off the brow in one curl
-    cv.tri([(CX - 3, 7), (CX + 2, -1), (CX + 6, 4)], r, l=0.70)
-    cv.tri([(CX - 1, 6), (CX + 2, 1), (CX + 4, 4)], r, l=0.88)
-    cv.tri([(CX + 2, 0), (CX + 7, 2), (CX + 3, 5)], r, l=0.60)
-    # the breeches stop at the knee and BLOUSE out over the sock
-    br = Ramp(spec.get('pants', '#6a4a2a'))
-    if pose == 'run1':
-        la, ra = -1, 1
-    elif pose == 'run2':
-        la, ra = 1, -1
-    else:
-        la, ra = 0, 0
-    sock = Ramp('#e4e0d4')
-    for side, a in ((-1, la), (1, ra)):
-        x0 = CX + side * 3 - (2 if side < 0 else 0)
-        cv.cyl(x0 - 1, 31 + max(0, a), x0 + 3, 34 + a, br, round_bot=1)
-        cv.cyl(x0, 34 + a, x0 + 2, 36 + a, sock)
 
 
 def sig_lupin(cv, spec, pose, back):
@@ -2617,10 +2624,8 @@ SIGNATURES = {
     'pooh': {'post': sig_pooh},
     'tom': {'post': sig_tom},
     'huck': {'post': sig_huck},
-    'flash': {'post': sig_flash},
     'sherlock': {'post': sig_sherlock},
     'hyde': {'post': sig_hyde},
-    'tracy': {'post': sig_tracy},
     'alice': {'post': sig_alice},
     'dorothy': {'post': sig_dorothy},
     'scarecrow': {'post': sig_scarecrow},
@@ -2642,7 +2647,6 @@ SIGNATURES = {
     'cyclops': {'post': sig_cyclops},
     'acrobat': {'post': sig_acrobat},
     'jack': {'pre': sig_jack},
-    'tintin': {'post': sig_tintin},
     'lupin': {'post': sig_lupin},
     'phoenix': {'post': sig_phoenix},
     'ringmaster': {'post': sig_ringmaster},
@@ -2650,9 +2654,12 @@ SIGNATURES = {
     'zombie': {'post': sig_zombie},
     'werewolf': {'post': sig_werewolf},
     'humpty': {'post': sig_humpty},
-    'felix': {'post': sig_felix},
     'yeti': {'post': sig_yeti},
     'sasquatch': {'post': sig_sasquatch},
+    'casey': {'post': sig_casey},
+    'nellie': {'post': sig_nellie},
+    'munchausen': {'post': sig_munchausen},
+    'johnhenry': {'post': sig_johnhenry},
 }
 
 
@@ -2722,8 +2729,14 @@ SPECS = {
  'kong': dict(arch='hulk', skin='#4a2f1a', muzzle='#c29a6a', chest='#9c7448',
               hand='#33200f', boot='#33200f',
               eyes='normal', eyespread=3, mouth='none'),
- 'franky': dict(arch='hulk', skin='#7ea86a', muzzle=None, shirt='#3f2a1c',
-                hand='#7ea86a', pants='#22283a', chest=None,
+ # SHELLEY'S CREATURE, not Universal's. The flat top, the neck bolts and
+ # the green skin are Jack Pierce's 1931 makeup design for Universal, who
+ # still assert rights in it; the novel is 1818 and free. Shelley gives
+ # him "yellow skin", "lustrous black hair" that is "flowing", "watery
+ # eyes", and "straight black lips", and he is eight feet tall, which the
+ # hulk archetype already covers.
+ 'franky': dict(arch='hulk', skin='#c9b46e', muzzle=None, shirt='#3f2a1c',
+                hand='#c9b46e', pants='#22283a', chest=None,
                 eyes='normal', mouth='open'),
  'popeye': dict(arch='human', skin='#f0c088', shirt='#e9e9ea', pants='#1c4f96',
                 hat='sailor', hatcolor='#f2f2f3', hair='#c25c1a', hairstyle='bald',
@@ -2742,9 +2755,6 @@ SPECS = {
  'peter': dict(arch='human', skin='#f2ceaa', shirt='#7a9a3a', pants='#5a7a30',
                hat='cap', hatcolor='#6a8a34', hair='#c94b1a', hairstyle='short',
                boot='#f2ceaa', eyes='normal', mouth='grin'),
- 'felix': dict(arch='cat', skin='#141018', chest='#f0f0f2', muzzle=None,
-               eyes='hidden', mouth='none',
-               extra=[('ears', '#141018')]),
  'jack': dict(arch='human', skin='#f0c99a', shirt='#3a7f4a', pants='#5c3a1c',
               hair='#c9a256', hairstyle='mop', eyes='normal', mouth='grin'),
  'tom': dict(arch='human', skin='#f0c99a', shirt='#c94b1a', pants='#5a4a2a',
@@ -2753,9 +2763,6 @@ SPECS = {
  'huck': dict(arch='human', skin='#efc9a0', shirt='#a45b1a', pants='#5a4a2a',
               hat='straw', hatcolor='#b8933f', hair='#5a3618', hairstyle='bald',
               boot='#efc9a0', eyes='normal', mouth='grin'),
- 'flash': dict(arch='human', skin='#f5d2a3', shirt='#c94b1a', pants='#3a2a1a',
-               hair='#e9c76a', hairstyle='short', eyes='normal', mouth='line',
-               belt='#f4c25a'),
  'invisible': dict(arch='human', skin='#f0e4d4', shirt='#4a4a5a', pants='#242430',
                    hat='brim', hatcolor='#12121a', hattrim='#2a2a3a',
                    eyes='goggles', eyecolor='#15151f', mouth='none',
@@ -2764,9 +2771,6 @@ SPECS = {
                   hat='deerstalker', hatcolor='#8b6a3a', hattrim='#5a4020',
                   hair='#3a1e08', hairstyle='bald', eyes='normal', mouth='line',
                   extra=[('pipe',)]),
- 'tracy': dict(arch='human', skin='#efc9a0', shirt='#f4c25a', pants='#0e1a3a',
-               hat='brim', hatcolor='#f4c25a', hattrim='#c9a030',
-               eyes='angry', mouth='line'),
  'alice': dict(arch='human', skin='#f5d5a8', shirt='#5cb6e5', pants='#eaeaea',
                hair='#e9c76a', hairstyle='long', eyes='normal', mouth='grin',
                belt='#eaeaea'),
@@ -2801,9 +2805,6 @@ SPECS = {
  # reports from the Soviet Union in a tan trench coat over plus-fours; the
  # pale blue sweater is a later look and stays under copyright into the
  # 2030s. The quiff is his in every year.
- 'tintin': dict(arch='human', skin='#f5d5a8', shirt='#c9a97a', pants='#6a4a2a',
-                hair='#d98a3a', hairstyle='quiff', eyes='normal', mouth='line',
-                belt='#a88a5a'),
  'santa': dict(arch='round', skin='#f5d2a3', shirt='#c93030', hat='santa',
                hatcolor='#c93030', hattrim='#f5efe8', beard='#f5efe8',
                beardsize='full', eyes='normal', mouth='none'),
@@ -2822,7 +2823,11 @@ SPECS = {
                 hat='tricorn', hatcolor='#141010', hair='#141010', hairstyle='bald',
                 beard='#241c1c', beardsize='full',
                 eyes='normal', mouth='grin', extra=[('patch',)]),
- 'witch': dict(arch='robed', skin='#7ea86a', shirt='#1a2a30', hat='point',
+ # NOT GREEN. A green witch is Margaret Hamilton's 1939 makeup; before
+ # that film every witch in the folklore and in Baum is an old woman with
+ # a bad complexion, and Baum's Wicked Witch is not green anywhere in the
+ # 1900 text. She gets the older look: ashen, drawn, and alive.
+ 'witch': dict(arch='robed', skin='#b9a8ac', shirt='#1a2a30', hat='point',
                hatcolor='#141020', hattrim='#3a5a4a', hair='#141018',
                hairstyle='long', eyes='glow', eyecolor='#5bb083', mouth='none',
                folds=3),
@@ -2891,6 +2896,42 @@ SPECS = {
                   extra=[('ears', '#141018')]),
  'humpty': dict(arch='egg', skin='#f2e2c4', shirt='#c93030', boot='#6a6a72',
                 eyes='cartoon', eyecolor='#141018', mouth='grin'),
+ # ------------------------------------------------- the four replacements
+ # Dick Tracy, Flash Gordon, Tintin and Felix the Cat came off the roster
+ # over rights (see docs/roster-ip-2026-09-02.md). These four are their
+ # own public domain characters rather than lookalikes, and one of them
+ # has wanted to be in a baseball game since 1888.
+ #
+ # CASEY, of Mudville. Thayer's poem is 1888 and the most famous at bat in
+ # the language. An 1880s ball club wore cream flannel head to toe with a
+ # bill cap and a dark belt, and Casey has "a smile on Casey's face" until
+ # he has not.
+ 'casey': dict(arch='human', skin='#f0c99a', shirt='#eae4d2', pants='#eae4d2',
+               hat='cap', hatcolor='#22304e', boot='#2a2018', belt='#22304e',
+               hair='#3a2414', hairstyle='bald', beard='#3a2414',
+               beardsize='moustache', eyes='squint', mouth='none'),
+ # NELLIE BLY, who raced round the world in seventy two days in 1889 in one
+ # checked ulster coat and a ghillie cap, carrying a single gripsack. She
+ # died in 1922 and everything about her is free. She replaces Tintin on
+ # the beat, which is a straight upgrade: she did it for real.
+ 'nellie': dict(arch='human', skin='#f2ceaa', shirt='#8d7f66', pants='#5f5346',
+                hat='cap', hatcolor='#6f6252', hair='#3a2414', hairstyle='long',
+                boot='#2f2620', eyes='oval', mouth='smirk'),
+ # THE BARON. Raspe printed him in 1785, and he is the patron saint of the
+ # unreliable report: a hussar's red coat, a cocked hat, a white moustache
+ # you could hang a coat on, and at least one cannonball ride.
+ 'munchausen': dict(arch='human', skin='#f0c99a', shirt='#a8323a', pants='#eae4d2',
+                    hat='tricorn', hatcolor='#22243a', hattrim='#c9a256',
+                    boot='#241c18', hair='#f0ece4', hairstyle='short',
+                    beard='#f0ece4', beardsize='moustache',
+                    eyes='wide', mouth='none', belt='#c9a256'),
+ # JOHN HENRY, the steel driving man of the ballad, which is folk and has
+ # never been anybody's property. He beat the steam drill with a hammer in
+ # each hand and it killed him, and that is the whole point of him: this
+ # is a man, not a monster, so he is built like one.
+ 'johnhenry': dict(arch='human', skin='#6b4630', shirt='#4a6a86', pants='#3a3a44',
+                   hair='#141014', hairstyle='short', boot='#2a2018',
+                   eyes='round', mouth='line', belt='#7a5a32'),
 }
 
 # The back poses exist because of where the camera stands: the viewer is
@@ -2939,13 +2980,10 @@ FACES = {
     'jack':         dict(eyes='round',  eyespread=4, brow='worried', nose='button', mouth='oh',    freckles=True),
     'tom':          dict(eyes='round',  eyespread=3, brow='flat',    nose='button', mouth='smirk'),
     'huck':         dict(eyes='sleepy', eyespread=5, brow='flat',    nose='button', mouth='grin',  freckles=True),
-    'flash':        dict(eyes='round',  eyespread=5, brow='flat',    nose='long',   mouth='open'),
-    'tintin':       dict(eyes='bead',   eyespread=4,                 nose='dot',    mouth='line'),
     'robin':        dict(eyes='round',  eyespread=4, brow='flat',    nose='button', mouth='grin'),
     # the detectives. Both wear a brim that owns the brow row, so neither
     # gets one: drawn anyway it sits ON the hat.
     'sherlock':     dict(eyes='oval',   eyespread=4,                 nose='long',   mouth='line'),
-    'tracy':        dict(eyes='angry',  eyespread=4,                 nose='long',   mouth='frown'),
     'lupin':        dict(eyes='oval',   eyespread=5, brow='flat',    nose='long',   mouth='smirk'),
     # the girls
     'alice':        dict(eyes='lash',   eyespread=4, brow='high',    nose='dot',    mouth='line',  blush=True),
@@ -2986,6 +3024,11 @@ FACES = {
     'pirate':       dict(eyes='round',  eyespread=3, brow='angry',   nose='button', mouth='grin'),
     'centaur':      dict(eyes='oval',   eyespread=3, brow='flat',    nose='long',   mouth='line'),
     'lion':         dict(eyes='wide',   eyespread=3, brow='worried', nose='bulb',   mouth='frown'),
+    # the four replacements
+    'casey':        dict(eyes='squint', eyespread=4, brow='angry',   nose='long',   mouth='none'),
+    'nellie':       dict(eyes='oval',   eyespread=4, brow='high',    nose='dot',    mouth='smirk'),
+    'munchausen':   dict(eyes='wide',   eyespread=4, brow='bushy',   nose='bulb',   mouth='none'),
+    'johnhenry':    dict(eyes='round',  eyespread=4, brow='flat',    nose='bulb',   mouth='line'),
 }
 
 for _k, _f in FACES.items():
