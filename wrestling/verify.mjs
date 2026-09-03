@@ -427,7 +427,8 @@ section('every story kind has a way in');
     out.underdogScene = (pickScene('prematch')||{}).id;
     // 2. jealousy: a belt they do not share pulls loyalty down
     reset();
-    const mate=roster.find(x=>x.id!==top.id);
+    // a partner with no belt of their own, or there is nothing to be jealous of
+    const mate=roster.find(x=>x.id!==top.id && !titlesHeldBy(x.id).length) || roster.find(x=>x.id!==top.id);
     G.car.allies=[]; formAlliance(mate.id); const a=allyOf(mate.id);
     G.car.streak=0;
     a.loyalty=60; G.car.title=null;      for(let i=0;i<10;i++) weeklyLoyalty(); out.driftNoBelt=Math.round((a.loyalty-60)*10)/10;
