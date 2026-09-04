@@ -521,6 +521,14 @@ console.log('\n=== the office is a commissioner\'s desk in November ===');
   ok('  and the leader is marked',
     (await p.$$eval('#off-leagues .lgr.top',(e)=>e.length))===lgs);
 
+  /* THE SATURDAY, AND WHAT IS NOT ON IT. Five of sixty games is a highlights package, and
+     sorting by audience is exactly the sort that hides the one result that changed what the
+     rest of the season is about. */
+  const gms=await p.$$eval('#off-week .gm2',(e)=>e.length);
+  ok('the Saturday is a scoreboard rather than a highlights package', gms>=6, gms+' games');
+  const rest=await txt(p,'#off-week .wkrest');
+  ok('  and it says what is not on it', /more games played/.test(rest), rest.slice(0,70));
+
   ok('and the trophy race is on it too',
     await p.$eval('#off-heiscard',(e)=>e.hidden)===false);
   const heis=await p.$$eval('#off-heis .hsr .hn b',(e)=>e.map((x)=>x.textContent.trim()));

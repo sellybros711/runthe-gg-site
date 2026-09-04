@@ -1404,6 +1404,7 @@
   /* A GAME, AS A SCORE AND AN AUDIENCE. The viewers number is what makes this more than a
      scoreboard: the biggest game of the week is the biggest game BECAUSE of who watched. */
   .gms{display:grid;gap:5px}
+  .wkrest{margin-top:8px;font-size:11.5px;line-height:1.45;color:var(--dim-2)}
   /* ── the trophy ────────────────────────────────────────────────────────────────
      A STRAW POLL RATHER THAN A LIST, because the content of a race is how close it is, and a
      ranked list of five names says nothing about that. The bar is the share and the share is
@@ -4931,8 +4932,21 @@ function paintWeek(el,sim){
      shown out of sixty, chosen by audience, and the whole point of The Game is that it is The
      Game on a Saturday when Ohio State are 6-5. Sorting purely by viewers would hide it in
      exactly the year a fan most wants to see it. */
+  /* EIGHT RATHER THAN FIVE. A Saturday in this sport is sixty games and the office showed
+     five of them, which is a highlights package rather than a scoreboard: a commissioner
+     asking what happened on Saturday was being handed the four biggest television windows
+     and nothing else. Eight is about where a phone stops being a list and starts being a
+     wall, and the line under it says how much is not on here. */
   const shown=wk.games.slice().sort((a,b)=>
-    (b.rivalry?1:0)-(a.rivalry?1:0)||b.viewers-a.viewers).slice(0,5);
+    (b.rivalry?1:0)-(a.rivalry?1:0)||b.viewers-a.viewers).slice(0,8);
+  /* AND THE ONE NOBODY SAW COMING. An upset is the only thing on a Saturday that changes
+     what the rest of the season is about, and sorting by audience is precisely the sort that
+     hides one: the game where a nine win team lost to a four win team was on nobody's
+     network. Counted off the same z the simulation played it with. */
+  const upsets=wk.games.filter((g)=>(g.winner.z||0)+0.85<(g.loser.z||0));
+  const big=upsets.slice().sort((a,b)=>((b.loser.z||0)-(b.winner.z||0))
+    -((a.loser.z||0)-(a.winner.z||0)))[0];
+  const missed=big&&!shown.some((g)=>g===big);
   el.innerHTML='<div class="swk"><b>Week '+wk.week+'</b>'
       +'<span>'+wk.games.length+' games &middot; '+MT(wk.viewers)+' watched</span></div>'
     /* `named` COMES OFF THE NAME, not off `riv`. They are two different fields and a game can
@@ -4946,7 +4960,21 @@ function paintWeek(el,sim){
         +(nm?'<em class="rivn">'+nm+'</em>':'')
         +side2(g,0)+side2(g,1)
         +'<span class="v">'+MU(g.viewers)+'</span></div>';
-    }).join('')+'</div>';
+    }).join('')+'</div>'
+    /* WHAT IS NOT ON THE CARD, said rather than left out, plus the upset if the audience
+       sort buried it. Eight of sixty with nothing acknowledging the other fifty-two reads
+       as a Saturday with eight games on it. */
+    +(wk.games.length>shown.length||upsets.length
+      ? '<p class="wkrest">'
+        +(wk.games.length>shown.length
+          ? (wk.games.length-shown.length)+' more games played. ' : '')
+        +(upsets.length
+          ? upsets.length+(upsets.length===1?' upset' : ' upsets')
+            +(missed?', the biggest of them '+esc(big.winner.school)+' over '
+              +esc(big.loser.school)+'.' : '.')
+          : '')
+        +'</p>'
+      : '');
   reveal(el.querySelector('.gms'));
 }
 
