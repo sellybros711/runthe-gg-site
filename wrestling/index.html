@@ -38,58 +38,91 @@
   a{color:var(--brandred-bright);}
 
   /* top bar */
-  .topbar{background:linear-gradient(180deg, rgba(244,232,219,.97), rgba(240,224,200,.93)); border-bottom:3px solid var(--brandred); padding:10px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; position:sticky; top:46px; z-index:30; flex-wrap:wrap;}   /* sits UNDER the fixed site bar, never on top of it */
+  .topbar{background:linear-gradient(180deg, rgba(244,232,219,.97), rgba(240,224,200,.93)); border-bottom:3px solid var(--brandred); padding:5px 14px; display:flex; justify-content:center; align-items:center; gap:12px; position:sticky; top:calc(env(safe-area-inset-top,0px) + 48px); z-index:30;}   /* one slim row, under the fixed banner */
   .topbar h1{font-family:var(--display); font-size:22px; margin:0; color:#17130c; text-transform:uppercase; letter-spacing:.02em; line-height:1;}
   .topbar .sub{font-size:10px; letter-spacing:.24em; color:#8a6a1e; text-transform:uppercase; font-weight:800; margin-top:2px;}
-  .hud{display:flex; gap:14px; font-family:var(--mono); align-items:center; flex-wrap:wrap;}
-  .hud .cell{text-align:right;}
+  .hud{display:flex; gap:18px; font-family:var(--mono); align-items:center; justify-content:center;}
+  .hud .cell{text-align:center;}
   .hud .label{color:#94764a; font-size:9px; letter-spacing:.12em; text-transform:uppercase; font-weight:700;}
   .hud .value{color:#17130c; font-size:16px; font-weight:800;}
 
   main{padding:20px 18px 90px; max-width:1120px; margin:0 auto;}
   /* ---- THE APP SHELL ----
-     A site bar pinned to the top on every screen (the way back to RunThe.GG,
-     the wordmark, and who you are), and a tab bar pinned to the bottom where a
-     thumb actually is. Both respect the iPhone safe areas, and the page is
-     padded so neither ever sits on top of content. */
-  body{padding-top:46px;}
-  body.hasnav main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));}
-  .sitebar{position:fixed;top:0;left:0;right:0;height:46px;z-index:45;display:flex;align-items:center;
-    gap:10px;padding:0 12px;background:rgba(12,10,10,.94);backdrop-filter:blur(8px);
-    border-bottom:1px solid var(--line);}
-  .sb-home{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--text-faint);text-decoration:none;padding:5px 8px;border:1px solid var(--line);border-radius:8px;white-space:nowrap;}
-  .sb-home span{color:var(--brandred);}
-  .sb-home:hover{color:var(--cream);border-color:var(--brandred);}
-  .sb-mark{flex:1;text-align:center;font-family:var(--display);font-size:15px;letter-spacing:.1em;
-    color:var(--cream);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .sb-prof{flex:none;display:flex;align-items:center;gap:7px;padding:3px 9px 3px 3px;background:var(--panel);
-    border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--cream);font-family:var(--body);
-    font-size:11.5px;font-weight:700;max-width:44vw;overflow:hidden;}
-  .sb-prof:hover{border-color:var(--gold);}
-  .sb-prof .pf-av{flex:none;width:26px;height:26px;border-radius:50%;overflow:hidden;background:#1a1416;display:block;}
-  .sb-prof .pf-av svg{width:100%;height:auto;display:block;transform:scale(2.1) translateY(14%);transform-origin:50% 12%;}
-  .sb-prof .pf-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:104px;}
-  /* On a phone the three pieces have to share 430px, so the name gives way
-     first: the wordmark is the thing that says which game you are in. */
-  @media(max-width:520px){
-    .sb-mark{font-size:13px;letter-spacing:.06em;}
-    .sb-prof .pf-n{max-width:62px;}
-    .sb-home{font-size:10px;padding:5px 6px;}
-  }
-  .sb-prof .pf-o{flex:none;font-family:var(--mono);font-size:10.5px;color:var(--gold);}
-  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;
-    background:rgba(12,10,10,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
-    padding-bottom:env(safe-area-inset-bottom,0px);}
-  .botnav button{flex:1;background:none;border:0;border-radius:0;padding:8px 2px 9px;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-faint);
-    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;min-width:0;}
-  .botnav button svg{width:19px;height:19px;opacity:.7;}
+     Modelled on the golf game's, because that one is the house style: a banner
+     that is always there and a tab bar at the thumb, both inside the safe areas.
+     THE SAFE AREA IS NOT OPTIONAL. A fixed 46px top offset puts the banner
+     under the notch on any modern iPhone, which is exactly how the first pass
+     shipped. env() is the only thing that knows how tall the status bar is. */
+  body{padding-top:calc(env(safe-area-inset-top,0px) + 48px);}
+  body.hasnav main{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px));}
+  .sitebar{position:fixed;top:0;left:0;right:0;z-index:45;display:flex;align-items:center;gap:9px;
+    padding:calc(env(safe-area-inset-top,0px) + 7px) 12px 7px;
+    background:rgba(14,11,11,.9);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+    border-bottom:1px solid rgba(244,232,219,.10);}
+  .sb-home{flex:0 0 auto;display:inline-flex;align-items:center;height:34px;padding:0 11px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);text-decoration:none;background:rgba(244,232,219,.05);
+    border:1px solid var(--line);border-radius:11px;white-space:nowrap;
+    box-shadow:0 4px 12px -6px rgba(0,0,0,.5);}
+  .sb-home span{color:var(--brandred);font-weight:800;}
+  .sb-home:active{transform:translateY(1px);}
+  .sb-mark{flex:1;text-align:center;font-family:var(--display);font-size:16px;letter-spacing:.09em;
+    color:var(--cream);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;}
+  .sb-mark b{color:var(--brandred);font-weight:inherit;}
+  .sb-right{flex:0 0 auto;display:flex;align-items:center;gap:7px;}
+  /* the wallet, always visible, the way golf keeps coins on screen everywhere */
+  .sb-coin{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 8px;
+    background:rgba(224,179,65,.11);border:1px solid rgba(224,179,65,.4);border-radius:999px;
+    font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold);cursor:pointer;
+    box-shadow:0 4px 12px -6px rgba(0,0,0,.5);}
+  .sb-coin svg{width:15px;height:15px;display:block;}
+  .sb-coin:active{transform:translateY(1px);}
+  .sb-prof{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 11px 0 3px;
+    background:rgba(244,232,219,.05);border:1px solid var(--line);border-radius:999px;cursor:pointer;
+    color:var(--cream);font-family:var(--body);font-size:12px;font-weight:700;max-width:40vw;overflow:hidden;
+    box-shadow:0 4px 12px -6px rgba(0,0,0,.5);}
+  .sb-prof:active{transform:translateY(1px);}
+  .sb-prof .pf-av{flex:none;width:28px;height:28px;border-radius:50%;overflow:hidden;background:#1a1416;display:block;}
+  /* frame:'head' already crops to the head through the viewBox, so scaling it
+     again just pushed the face out of the circle and left an empty disc. */
+  .sb-prof .pf-av{display:flex;align-items:center;justify-content:center;border:1px solid rgba(224,179,65,.25);}
+  .sb-prof .pf-av svg{width:28px;height:28px;display:block;}
+  .sb-prof .pf-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;}
+  .sb-prof .pf-o{flex:none;font-family:var(--mono);font-size:11px;color:var(--gold);}
+
+  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:44;overflow:visible;
+    background:linear-gradient(180deg,#171112,#0b0909);border-top:1px solid var(--line);
+    box-shadow:0 -8px 22px -10px rgba(0,0,0,.75);padding-bottom:env(safe-area-inset-bottom,0px);}
+  .botnav-in{display:flex;width:100%;max-width:600px;margin:0 auto;}
+  .botnav button{flex:1;min-width:0;background:none;border:0;border-radius:0;cursor:pointer;
+    color:var(--text-faint);display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:7px 2px 6px;font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.06em;
+    text-transform:uppercase;position:relative;white-space:nowrap;}
+  .botnav button svg{width:21px;height:21px;display:block;}
+  .botnav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
   .botnav button.on{color:var(--gold);}
-  .botnav button.on svg{opacity:1;}
-  .botnav button.on::before{content:"";position:absolute;margin-top:-8px;width:26px;height:2px;background:var(--gold);border-radius:2px;}
-  .botnav button:active{background:rgba(255,255,255,.05);}
-  @media(min-width:860px){ .botnav button{font-size:10.5px;} }
+  .botnav button:active{opacity:.58;}
+  /* something waiting for you: an unclaimed tier, an unfinished objective */
+  .botnav .navdot{position:absolute;top:4px;left:calc(50% + 7px);min-width:16px;height:16px;
+    border-radius:9px;padding:0 4px;background:var(--brandred);border:1.5px solid #0b0909;
+    font-family:var(--mono);font-size:9.5px;font-weight:900;line-height:13px;color:#fff;letter-spacing:0;}
+  /* the centre seat belongs to the pass, the way it does in the golf game */
+  .navfab{flex:0 0 auto!important;width:66px;padding:0!important;gap:2px!important;position:relative;top:-13px;
+    color:#cbb46a!important;}
+  .navfab .nf-disc{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#f2d27a,#c69a2c);color:#241706;border:2.5px solid #0b0909;
+    box-shadow:0 6px 16px -4px rgba(0,0,0,.75), 0 0 0 1px rgba(224,179,65,.5), 0 0 16px -2px rgba(224,179,65,.45);}
+  .navfab .nf-disc svg{width:25px;height:25px;}
+  .navfab .nf-lab{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1;}
+  .navfab.on{color:var(--gold)!important;}
+  .navfab.on .nf-disc{box-shadow:0 6px 16px -4px rgba(0,0,0,.75), 0 0 0 2px var(--gold), 0 0 22px -1px rgba(224,179,65,.75);}
+  .navfab .navdot{top:-2px!important;left:auto!important;right:4px;}
+  @media(max-width:520px){
+    .sb-mark{font-size:13px;letter-spacing:.05em;}
+    .sb-prof .pf-n{display:none;}
+    .sb-prof{padding:0 4px 0 3px;}
+    .sb-home{padding:0 8px;font-size:10px;}
+  }
   h2{font-family:var(--display); letter-spacing:.02em; text-transform:uppercase; color:var(--cream); font-size:24px; border-bottom:1px solid var(--line); padding-bottom:8px; margin:0 0 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
   h2 .sub2{font-family:var(--body); font-size:12px; letter-spacing:0; text-transform:none; color:var(--text-faint); font-weight:600;}
   h3{font-family:var(--display); font-size:17px; letter-spacing:.03em; text-transform:uppercase; color:var(--cream); margin:20px 0 10px;}
@@ -1244,8 +1277,11 @@
   .modalback.open{display:flex;}
   .modal{background:#171313;border:1px solid var(--brandred);border-radius:16px;padding:22px;max-width:520px;width:100%;max-height:88vh;overflow:auto;}
   .modal h3{margin-top:0;}
-  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#171313;border:1px solid var(--brandred);color:var(--cream);padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:200;opacity:0;transition:.25s;pointer-events:none;}
+  /* Toasts clear the tab bar. Landing on top of it buried the pass button
+     behind every "+coins" message on a phone. */
+  .toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#171313;border:1px solid var(--brandred);color:var(--cream);padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700;z-index:200;opacity:0;transition:.25s;pointer-events:none;}
   .toast.show{opacity:1;}
+  body.hasnav .toast{bottom:calc(80px + env(safe-area-inset-bottom,0px));}
   .navrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
   .navrow button{padding:7px 13px;font-size:12px;}
   /* on a phone the nav scrolls sideways rather than eating three rows of screen */
@@ -1255,7 +1291,11 @@
     .navrow button{flex:none;}
   }
   /* ---- five groups up top, siblings underneath ---- */
-  .subnav{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 16px;}
+  /* One scrolling row on a phone, so a fourth tab is reachable rather than
+     wrapped off the edge. */
+  .subnav{display:flex;gap:6px;margin:-6px 0 16px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+  .subnav::-webkit-scrollbar{display:none;}
+  .subnav button{flex:0 0 auto;white-space:nowrap;}
   .subnav button{padding:5px 12px;font-size:11px;border-color:transparent;background:transparent;color:var(--text-faint);
     border-radius:8px;letter-spacing:.08em;}
   .subnav button:hover{background:rgba(244,232,219,.07);color:var(--cream);}
@@ -1264,7 +1304,7 @@
     .subnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
     .subnav::-webkit-scrollbar{display:none;} .subnav button{flex:none;}
   }
-  .navhelp{margin-left:auto;border-color:rgba(224,179,65,.45)!important;color:var(--gold)!important;
+  .navhelp{margin-left:auto;flex:0 0 auto;border-color:rgba(224,179,65,.45)!important;color:var(--gold)!important;
     padding:7px 12px!important;font-size:12px!important;}
   @media(max-width:860px){ .navhelp{margin-left:0;} }
 
@@ -1342,6 +1382,26 @@
   .dp-box{flex:none;width:15px;height:15px;border-radius:4px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:10px;}
   .dp-row.done .dp-box{background:var(--green);border-color:var(--green);color:#0d1a12;}
   .dp-c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gold);}
+  /* home hub cards: the two things worth opening today, next to the career */
+  .homecards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+  .hcard{display:block;width:100%;text-align:left;padding:12px 13px;border-radius:14px;cursor:pointer;
+    background:linear-gradient(180deg,rgba(244,232,219,.05),rgba(0,0,0,.22));border:1px solid var(--line);
+    box-shadow:0 6px 18px -12px rgba(0,0,0,.8);color:var(--text);}
+  .hcard:active{transform:translateY(1px);}
+  .hc-daily{border-color:rgba(53,214,160,.28);}
+  .hc-pass{border-color:rgba(224,179,65,.3);}
+  .hc-h{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:7px;}
+  .hc-k{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-faint);}
+  .hc-b{font-family:var(--mono);font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:999px;
+    background:rgba(244,232,219,.07);border:1px solid var(--line);color:var(--text-dim);white-space:nowrap;}
+  .hc-b.done{color:var(--green);border-color:rgba(53,214,160,.45);}
+  .hc-b.hot{color:#231a08;background:var(--gold);border-color:var(--gold);}
+  .hc-t{font-family:var(--display);font-size:16px;line-height:1.15;color:var(--cream);text-transform:uppercase;letter-spacing:.02em;}
+  .hc-of{color:var(--text-faint);font-size:12px;}
+  .hc-s{font-size:11.5px;color:var(--text-dim);margin-top:5px;line-height:1.45;}
+  .hc-bar{height:6px;background:rgba(0,0,0,.5);border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:7px;}
+  .hc-bar i{display:block;height:100%;background:linear-gradient(90deg,#8a6a1e,var(--gold));}
+  @media(max-width:430px){ .homecards{grid-template-columns:1fr;} }
   .tourdots{display:flex;gap:4px;margin-right:auto;}
   /* the closing card: numbered steps that name real buttons */
   .tstep{display:flex;gap:10px;align-items:flex-start;margin:7px 0;line-height:1.45;}
@@ -1392,22 +1452,25 @@
      where you were. -->
 <div class="sitebar" id="sitebar">
   <a class="sb-home" href="https://runthe.gg" title="RunThe.GG">RunThe<span>.GG</span></a>
-  <div class="sb-mark" onclick="go('home')">RUN THE ROPES</div>
-  <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
+  <div class="sb-mark" onclick="go('home')">RUN <b>THE</b> ROPES</div>
+  <div class="sb-right">
+    <button class="sb-coin" id="sbCoin" onclick="go('shop')" title="Coins"></button>
+    <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
+  </div>
 </div>
 
+<!-- The name, the promotion and the wallet all live in the banner now, so this
+     strip is just the four numbers that change as you play. Two stacked headers
+     saying the same things was eating a third of a phone screen. -->
 <div class="topbar" id="topbar" style="display:none;">
-  <div>
-    <h1 id="tbName">-</h1>
-    <div class="sub" id="tbSub">RunTheRopes · Career</div>
-  </div>
   <div class="hud">
     <div class="cell"><div class="label">Yr · Wk</div><div class="value" id="hYW">1·1</div></div>
     <div class="cell"><div class="label">Age</div><div class="value" id="hAge">21</div></div>
     <div class="cell" style="cursor:pointer;" onclick="explainHud('ovr')" title="Overall rating. Tap for the scale."><div class="label">OVR</div><div class="value" id="hOvr">40</div></div>
     <div class="cell" style="cursor:pointer;" onclick="explainHud('pop')" title="Popularity. Tap for the scale."><div class="label">Pop</div><div class="value" id="hPop">5</div></div>
-    <div class="cell"><div class="label">Coins</div><div class="value" id="hCoins">0</div></div>
+    <div class="cell" id="hTbSub"><div class="label">Where</div><div class="value" style="font-size:12px;" id="tbSub">-</div></div>
   </div>
+  <h1 id="tbName" style="display:none;"></h1>
 </div>
 
 <main>
@@ -5334,21 +5397,47 @@ function navHTML(scr){
 /* The tab bar. One icon per group, the current one lit. It is the primary way
    around the game on a phone, so it is painted on every screen change. */
 const NAV_ICON={hub:'star', skills:'dumbbell', gear:'mask', roster:'swords', legacy:'trophy'};
+/* The tab bar, laid out the way the golf game lays its one out: the everyday
+   destinations either side, and the PASS in a raised seat in the middle because
+   it is the thing you want a player to open. A red badge means something is
+   waiting: an unclaimed tier, an objective still open. */
+function passBadge(){ try{
+  const n=passClaimable('free').length + (passProActive()?passClaimable('pro').length:0);
+  return n>9?'9+':(n||0);
+}catch(_){ return 0; } }
+function hubBadge(){ try{
+  const d=dailyState(); return dailyList().filter(o=>!d.done[o.id]).length;
+}catch(_){ return 0; } }
 function paintBotNav(scr){
   const bar=$('botnav'); if(!bar) return;
-  const playing = !!G && scr!=='home' && scr!=='create' && scr!=='start';
-  bar.style.display = playing ? 'flex' : 'none';
+  const playing = !!G && scr!=='create' && scr!=='start';
+  bar.style.display = playing ? 'block' : 'none';
   document.body.classList.toggle('hasnav', playing);
   if(!playing) return;
   const g=groupOf(scr)||NAVG[0];
-  bar.innerHTML=NAVG.map(x=>
-    `<button class="${x.id===g.id?'on':''}" onclick="goGroup('${x.id}')">${pico(NAV_ICON[x.id]||'star',19)}<span>${x.label}</span></button>`).join('');
+  const cur = (scr==='pass') ? 'pass' : g.id;
+  const dot=(n)=>n?`<i class="navdot">${n}</i>`:'';
+  const tab=(x)=>`<button class="${x.id===cur&&scr!=='pass'?'on':''}" onclick="goGroup('${x.id}')">
+      ${pico(NAV_ICON[x.id]||'star',21)}<span>${x.label}</span>${x.id==='hub'?dot(hubBadge()):''}</button>`;
+  const half=Math.ceil(NAVG.length/2);
+  bar.innerHTML=`<div class="botnav-in">`
+    + NAVG.slice(0,half).map(tab).join('')
+    + `<button class="navfab ${scr==='pass'?'on':''}" onclick="go('pass')">
+         <span class="nf-disc">${pico('ticket',25)}</span><span class="nf-lab">Pass</span>${dot(passBadge())}</button>`
+    + NAVG.slice(half).map(tab).join('')
+    + `</div>`;
 }
 /* Who you are, top right. Tapping it opens your card; with no career it is the
    way back to the front page. */
 function paintProfile(){
-  const el=$('sbProf'); if(!el) return;
-  if(!G||!G.w){ el.innerHTML=`<span class="pf-n" style="padding-left:6px;">Guest</span>`; return; }
+  const el=$('sbProf'), cn=$('sbCoin');
+  if(cn){
+    const on=!!(G&&G.bag);
+    cn.style.display=on?'inline-flex':'none';
+    if(on) cn.innerHTML=`${pico('money',15)}<span>${(G.bag.coins||0).toLocaleString()}</span>`;
+  }
+  if(!el) return;
+  if(!G||!G.w){ el.innerHTML=`<span class="pf-n" style="padding-left:8px;">Guest</span>`; return; }
   el.innerHTML=`<span class="pf-av">${wrestlerSVG(G.w.look,{frame:'head'})}</span>
     <span class="pf-n">${G.w.name}</span><span class="pf-o">${ovr(G.w)}</span>`;
 }
@@ -5677,8 +5766,9 @@ function go(s){
   if(s==='home') renderHome();
 }
 function refreshHud(){ if(!G) return;
+  try{ paintProfile(); }catch(_){}    // the banner wallet follows every spend
   $('tbName').textContent=G.w.name;
-  $('tbSub').textContent=(G.w.nick? '"'+G.w.nick+'" · ':'')+tierOf(G.car.rep).name;
+  $('tbSub').textContent=(myPromo().short||'')||tierOf(G.car.rep).name;   // the strip says WHERE; the banner says who
   $('hYW').textContent=G.car.year+'·'+G.car.week;
   $('hAge').textContent=G.car.age;
   // getting better is worth a beat of celebration
@@ -5692,7 +5782,7 @@ function refreshHud(){ if(!G) return;
   } else if(o<c._seenOvr) c._seenOvr=o;     // decline passes without comment
   $('hOvr').textContent=o;
   $('hPop').textContent=Math.round(G.car.pop);
-  $('hCoins').textContent=G.bag.coins.toLocaleString();
+  const _hc=$('hCoins'); if(_hc) _hc.textContent=G.bag.coins.toLocaleString();   // the banner pill carries this now
 }
 /* ============================================================
    THE RING
@@ -6032,10 +6122,50 @@ function renderHome(){
       </div>
       ${s.savedAt?`<div class="rc-saved">Last saved ${savedAgo(s.savedAt)}</div>`:''}
     </button>
+    ${homeHubCards(s)}
     ${slotPickerHTML()}
     <div class="row" style="margin-top:12px;justify-content:center;">
       <button class="ghost" style="padding:7px 14px;font-size:12px;" onclick="go('start')">Start a new career</button>
     </div>`;
+}
+/* The front page is a HUB, not a splash. The golf game leads with the thing it
+   wants opened today (the daily) and puts the season track next to it; this is
+   the same idea in wrestling's furniture. Both cards read from the SAVE, not
+   from G, because none of this is loaded yet. */
+function homeHubCards(s){
+  const bag=s.bag||{};
+  // today's objectives, straight off the save
+  const today=dayKey();
+  const d=(bag.daily&&bag.daily.key===today)?bag.daily:null;
+  const ids=d?d.ids:[];
+  const objs=ids.map(id=>DAILY_OBJ.find(o=>o.id===id)).filter(Boolean);
+  const doneN=d?objs.filter(o=>d.done[o.id]).length:0;
+  const worth=objs.reduce((n,o)=>n+o.c,0)+DAILY_ALL_BONUS;
+  // the pass, straight off the save
+  const cur=passSeason();
+  const pst=(bag.pass&&bag.pass.season===cur.n)?bag.pass:{xp:0,pro:false,claimed:{free:[],pro:[]}};
+  const tier=passTierAt(pst.xp||0);
+  const into=(pst.xp||0)-passXpForTier(tier), need=tier<PASS_TIERS?passTierCost(tier+1):1;
+  const pct=tier>=PASS_TIERS?100:Math.min(100,Math.round(into/need*100));
+  const ready=(()=>{ let n=0; const got=(pst.claimed&&pst.claimed.free)||[];
+    for(let t=1;t<=tier;t++) if(got.indexOf(t)<0) n++;
+    if(pst.pro){ const gp=(pst.claimed&&pst.claimed.pro)||[]; for(let t=1;t<=tier;t++) if(gp.indexOf(t)<0) n++; }
+    return n; })();
+  return `<div class="homecards">
+    <button class="hcard hc-daily" onclick="continueCareer()">
+      <div class="hc-h"><span class="hc-k">Today</span>
+        <span class="hc-b ${doneN>=objs.length&&objs.length?'done':''}">${objs.length?doneN+'/'+objs.length:'3 waiting'}</span></div>
+      <div class="hc-t">${!objs.length?'Three objectives, waiting':doneN>=objs.length?'All three done':objs.filter(o=>!d.done[o.id])[0].t}</div>
+      <div class="hc-s">${objs.length&&doneN>=objs.length?'Come back tomorrow for three more.':`Worth ${worth.toLocaleString()} coins today. They tick off as you play.`}</div>
+    </button>
+    <button class="hcard hc-pass" onclick="continueCareer('pass')">
+      <div class="hc-h"><span class="hc-k">Ropes Pass</span>
+        ${ready?`<span class="hc-b hot">${ready} to claim</span>`:`<span class="hc-b">Season ${cur.n}</span>`}</div>
+      <div class="hc-t">Tier ${tier}<span class="hc-of"> / ${PASS_TIERS}</span></div>
+      <div class="hc-bar"><i style="width:${pct}%"></i></div>
+      <div class="hc-s">${cur.daysLeft} day${cur.daysLeft===1?'':'s'} left in the season.</div>
+    </button>
+  </div>`;
 }
 /* Save-slot picker on the home screen. Four slots. Empty slots read
    "New career here"; occupied slots read a short summary and are
@@ -6074,14 +6204,14 @@ function pickSlot(i, isEmpty){
 }
 // mentor-taught moves live on the save; fold them back into the catalogue on load
 function mergeCustomMoves(){ (G.w.custom||[]).forEach(mv=>{ if(!MOVES.find(x=>x.id===mv.id)) MOVES.push(mv); }); }
-function continueCareer(){ G=load(); if(!G){ renderHome(); return; }
+function continueCareer(dest){ G=load(); if(!G){ renderHome(); return; }
   if(!G.car.plan) G.car.plan={a:'strike',b:'technical'};
   G.w.custom=G.w.custom||[]; mergeCustomMoves();
   if(!G.world) initWorld();               // living world state for older saves
   migrateChampions();                     // upgrade champion shape for older saves
   rehydrateCharOverrides();               // re-apply world event mutations after load
   RNG=(G.car.year*104729+G.car.week*7919+1)>>>0;
-  go(G.car.retired?'hof':'career'); }
+  go(G.car.retired?'hof':(dest||'career')); }   // a home card can open straight onto its own screen
 
 /* ============================================================
    CAREER HUB
