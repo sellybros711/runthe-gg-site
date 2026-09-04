@@ -139,6 +139,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
     docket:!!window.PS_CFB_DOCKET, season:!!window.PS_CFB_SEASON, council:!!window.PS_CFB_COUNCIL,
     feed:!!window.PS_CFB_FEED, calendar:!!window.PS_CFB_CALENDAR,
     situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
+    recruiting:!!window.PS_CFB_RECRUITING,
     churn:!!window.PS_CFB_CHURN, rivals:!!window.PS_CFB_RIVALS, report:!!window.PS_CFB_REPORT,
   }));
   const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
@@ -483,6 +484,53 @@ console.log('\n=== a season, and it survives the browser closing ===');
         back.year+', '+back.history.length+' rulings');
     }
   }
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the board, on the beats when there is no football ===');
+{
+  /* FEBRUARY IS THE SPORT'S SECOND SEASON and the office had a map on it and nothing else.
+     Both halves are asserted, because a card that is right on one beat and wrong on eight is
+     worse than no card: in October the office has a poll, a table and a slate to draw and
+     nobody is looking at signing day. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(1));
+  await p.waitForTimeout(1500);
+  await pastScene(p);
+  await p.waitForTimeout(600);
+  ok('signing day puts the board on the office',
+    await p.$eval('#off-recruitcard',(e)=>e.hidden)===false);
+  ok('  headed as the day it is', /signing day/i.test(await txt(p,'#off-recruithead')),
+    await txt(p,'#off-recruithead'));
+  const rows=await p.$$eval('#off-recruit .rcr',(e)=>e.map((x)=>({
+    rank:x.querySelector('i').textContent.trim(),
+    school:x.querySelector('.rn b').textContent.trim(),
+    conf:x.querySelector('.rn s').textContent.trim(),
+    rating:x.querySelector('u').textContent.trim(),
+  })));
+  ok('  with ten classes on it', rows.length===10, rows.length+' rows');
+  ok('  ranked one to ten', rows.every((r,i)=>Number(r.rank)===i+1),
+    rows.map((r)=>r.rank).join(' '));
+  ok('  each a school, a league and a rating',
+    rows.every((r)=>r.school.length>2 && r.conf.length>2 && Number(r.rating)>0),
+    (rows[0]||{}).school+' '+(rows[0]||{}).conf+' '+(rows[0]||{}).rating);
+  ok('  and the ratings fall down the board',
+    rows.every((r,i)=>i===0||Number(r.rating)<=Number(rows[i-1].rating)),
+    rows.map((r)=>r.rating).join(' '));
+  /* NOBODY IN IT IS A PERSON. The rule the docket and the cutscenes hold, on the one screen
+     in the mode where a real board would be a list of seventeen year olds. */
+  ok('  and nobody on it is a child', rows.every((r)=>!/[a-z]+ [A-Z][a-z]+ (Jr|III|II)\b/.test(r.school)));
+
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(5));
+  await p.waitForTimeout(1500);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+  ok('in October the office is about football instead',
+    await p.$eval('#off-recruitcard',(e)=>e.hidden)===true);
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();

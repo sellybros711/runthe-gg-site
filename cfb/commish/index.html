@@ -1404,6 +1404,33 @@
   /* A GAME, AS A SCORE AND AN AUDIENCE. The viewers number is what makes this more than a
      scoreboard: the biggest game of the week is the biggest game BECAUSE of who watched. */
   .gms{display:grid;gap:5px}
+  /* ── the recruiting board ──────────────────────────────────────────────────────
+     A RANK, A SCHOOL AND A NUMBER, which is every recruiting board anybody has ever read.
+     The one column that is not on a real one is how far the class sits from what the program
+     itself is worth, which is the only thing on here a power ranking does not already say:
+     who is signing above their weight and who is living off a name. */
+  .rcb{display:grid;gap:4px}
+  .rcr{display:grid;grid-template-columns:26px 1fr auto auto;gap:9px;align-items:center;
+    padding:6px 9px;border-radius:9px;background:var(--panel);
+    border-left:2px solid var(--rc,var(--line))}
+  .rcr i{font-style:normal;font-family:var(--fd);font-size:15px;line-height:1;
+    color:var(--dim-2);text-align:right}
+  .rcr .rn{min-width:0;display:flex;flex-direction:column;gap:1px}
+  .rcr .rn b{font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rcr .rn s{text-decoration:none;font-size:10.5px;color:var(--dim-2);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rcr u{text-decoration:none;font-family:var(--fd);font-size:17px;line-height:1;
+    color:var(--ink)}
+  /* THE MOVE, AND ONLY WHEN IT IS ONE. A class within two places of its own program is
+     nobody's story, and printing +1 beside a hundred and thirty-six of them turns the one
+     column with something to say into noise. */
+  .rcr em{font-style:normal;font-family:var(--fn);font-size:10.5px;font-weight:700;
+    min-width:30px;text-align:right}
+  .rcr em.up{color:var(--green)}
+  .rcr em.dn{color:var(--red)}
+  .rcr em.flat{color:transparent}
+  .rcnote{margin-top:10px;font-size:11.5px;line-height:1.5;color:var(--gold)}
   /* ── the field, before it is played ────────────────────────────────────────────
      ONE WEEK A YEAR THE BRACKET IS THE SPORT and the office said nothing about it. By the
      time you are standing on the playoff, championship weekend has happened and the seats
@@ -2039,6 +2066,15 @@
       <p class="dcsub" style="margin-bottom:9px" id="off-yearsub"></p>
       <div id="off-year"></div>
     </div>
+    <!-- WHERE THE NEXT GENERATION SIGNED, on the beats when there is no football to look at.
+         Every number on it comes off the same three forces season.js is about to apply, so it
+         is a leading indicator rather than a decoration. See recruiting.js and paintBoard(). -->
+    <div class="card flat" id="off-recruitcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px" id="off-recruithead">The board</div>
+      <p class="dcsub" style="margin-bottom:10px" id="off-recruitsub"></p>
+      <div id="off-recruit"></div>
+      <p class="rcnote" id="off-recruitnote" hidden></p>
+    </div>
     <!-- The map. Realignment is the one thing a list cannot show. -->
     <div class="card flat" id="off-mapcard">
       <div class="eyebrow" style="margin-bottom:9px">The sport, by where it is played</div>
@@ -2438,6 +2474,8 @@
 <script src="rivals.js?v=2"></script>
 <script src="churn.js?v=3"></script>
 <script src="season.js?v=18"></script>
+<!-- The board. Captures churn.js and season.js at load time, so after both of them. -->
+<script src="recruiting.js?v=1"></script>
 <script src="council.js?v=3"></script>
 <script src="feed.js?v=4"></script>
 <script src="calendar.js?v=5"></script>
@@ -3813,6 +3851,10 @@ function office(){
   paintSaid($('off-said'),$('off-saidcard'));
   paintYear($('off-year'),$('off-yearcard'));
   $('off-mapcard').hidden=inSeason;
+  /* OUT OF SEASON ONLY, which is when it is the news. In October nobody is looking at
+     February and the office has a poll, a table and a slate to draw instead. */
+  if(inSeason){ $('off-recruitcard').hidden=true; }
+  else paintBoard($('off-recruit'),$('off-recruitcard'));
   if(inSeason){
     paintTv($('off-tv'),sim);
     paintWeek($('off-week'),sim);
@@ -4875,6 +4917,51 @@ function paintTitles(el,sim){
       +'<span class="t w"><u>'+esc(t.team.school)+'</u><s>'+esc(t.conference)+'</s></span>'
       +'<span class="t"><u>no title game played</u><s></s></span></div>').join('')+'</div>';
   reveal(el.querySelector('.gms'));
+}
+
+/* ── the recruiting board ──────────────────────────────────────────────────────────
+   THE SPORT'S SECOND SEASON HAPPENS IN FEBRUARY and the office had nothing to show for it:
+   a beat called "Portal and signing day" with one item on it and a map underneath.
+
+   IT IS NOT A LIST OF NAMES AND IT NEVER WILL BE. Every recruit in this sport is seventeen
+   and real, and the rule that keeps invented people out of the docket keeps them out of
+   here. A class is a school, a rating and a rank.
+
+   AND IT IS NOT DECORATION. See recruiting.js: every number on it is built from the program
+   level churn.js regresses toward, the strength the team is actually carrying, and the money
+   drift season.js is already adding for every year a conference's share has been different
+   from the one it started with. Move the pot in November and the board moves in February and
+   the football moves the September after that. */
+function paintBoard(el,card){
+  if(!el||!card) return;
+  const RC=window.PS_CFB_RECRUITING;
+  if(!RC||!S||!TEAMS.length){ card.hidden=true; el.innerHTML=''; return; }
+  let bd=null;
+  try{ bd=RC.board(world,S.league(seasonBase(),TEAMS),TEAMS); }catch(e){ bd=null; }
+  if(!bd||!bd.rows.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const signing=world.beat===1;
+  $('off-recruithead').textContent=signing?'Signing day':'The recruiting board';
+  $('off-recruitsub').textContent=signing
+    ? 'The classes that just signed, ranked. Nobody here has played a down.'
+    : 'Where the next generation is going, and what this office has done to that.';
+  el.innerHTML='<div class="rcb">'+RC.top(bd,10).map((r)=>{
+    const big=Math.abs(r.over)>=3;
+    return '<div class="rcr" style="--rc:'+esc(r.color||'#334155')+'">'
+      +'<i>'+r.rank+'</i>'
+      +'<span class="rn"><b>'+esc(r.school)+'</b><s>'+esc(r.conference||'')+'</s></span>'
+      +'<u>'+r.rating+'</u>'
+      /* WHERE THE PROGRAM ITSELF RANKS, so the column reads as "signing above what they
+         are" rather than as a second copy of the rating beside it. */
+      +'<em class="'+(big?(r.over>0?'up':'dn'):'flat')+'" title="'+esc(r.school
+        +' ranks '+r.was+' on its own history')+'">'
+      +(r.over>0?'+'+r.over:r.over)+'</em>'
+      +'</div>';
+  }).join('')+'</div>';
+  const note=$('off-recruitnote');
+  note.hidden=!bd.note;
+  note.textContent=bd.note||'';
+  reveal(el.querySelector('.rcb'));
 }
 
 /* THE FIELD, ON THE BEAT IT IS ABOUT TO BE PLAYED. Standing in the office on the playoff,
