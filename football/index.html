@@ -6922,8 +6922,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
   <div class="screen bossx" id="s-bfreeze">
     <div class="eyebrow gold">Boss beaten</div>
     <h2 class="display" style="font-size:24px;margin:4px 0 6px">Freeze a player</h2>
-    <p class="bf-lede">Pick one man to hold at his current age and salary for the rest of the
-      run. He will never decline, never age out, never sign elsewhere.</p>
+    <p class="bf-lede">Pick one player to hold at his current age and salary for the rest of
+      the run. He will never decline, never age out, never sign elsewhere.</p>
     <div class="bf-roster" id="bf-roster"></div>
   </div>
 
@@ -8852,9 +8852,9 @@ function dynastyRulesHTML(go){
         '<li><b>You pay what you drafted him at.</b> Sign a 24 year old at $9M and he is $9M '+
           'at 34 too, even when he plays like $40M. That gap is cap you never spend, and it '+
           'is the whole game.</li>'+
-        '<li class="in"><b>A man who leaves gives it all back.</b> Retire, run out of seasons, '+
+        '<li class="in"><b>A player who leaves gives it all back.</b> Retire, run out of seasons, '+
           'or sign elsewhere: every dollar of his deal is yours to spend again.</li>'+
-        '<li class="out"><b>Cutting a man keeps a quarter on your books.</b> You get three '+
+        '<li class="out"><b>Cutting a player keeps a quarter on your books.</b> You get three '+
           'quarters back to spend now. The last quarter is dead cap: cap you pay for a '+
           'player who is gone, for the rest of the run.'+
           '<span class="dm-bar"><i class="back" style="width:75%">75% back</i>'+
@@ -11468,8 +11468,8 @@ function paintDryWheel(){
     '<div class="dw-h">Nobody left you can sign</div>'+
     '<p class="dw-p">'+(over>0.05
       ? M(over)+' over the cap. No club can offer you a player. Release somebody next '+
-        'offseason. For now, play a man short.'
-      : 'Nothing left fits your open spots and your money. Play a man short.')+'</p>'+
+        'offseason. For now, play a player short.'
+      : 'Nothing left fits your open spots and your money. Play a player short.')+'</p>'+
     /* NOT A BUTTON THAT CANNOT WORK. takeTheField refuses an empty roster, so offering
        "take the field with 0" strands the run on this screen behind a toast. The ceiling on
        dead money is what makes that unreachable (see E.DYNASTY_DEAD_CEILING); this is the
@@ -11835,7 +11835,7 @@ function paintWinter(){
      can happen in this mode and it deserves its own sentence. */
   const wiped=!w.aged.length&&w.gone.length>0;
   $('w-sub').innerHTML=wiped
-    ? 'Every man you had is gone. <b>The whole roster came off the books.</b> '+
+    ? 'Every player you had is gone. <b>The whole roster came off the books.</b> '+
       'Draft a new one.'
     : 'Every player moves to his next real NFL season. '+
       '<b>You keep paying what you drafted him for.</b> That never changes, and neither does '+
@@ -11857,7 +11857,7 @@ function paintWinter(){
   gw.hidden=!w.gone.length;
   if(w.gone.length){
     $('w-gone').innerHTML=w.gone.map(winterGoneRow).join('');
-    $('w-gonen').textContent=w.gone.length===1?'1 man':w.gone.length+' men';
+    $('w-gonen').textContent=w.gone.length===1?'1 player':w.gone.length+' players';
   }
   $('b-winter-go').hidden=true;
   wireWinter();
@@ -15836,7 +15836,7 @@ function bossFinish(ev){
   const cont=$('b-boss-continue');
   if(ev.won){
     if(b.reward==='freeze'){
-      $('bg-note').textContent='You beat '+o.display+'. Now pick a man to keep forever.';
+      $('bg-note').textContent='You beat '+o.display+'. Now pick a player to keep forever.';
       cont.textContent='Choose a player';
       cont.onclick=()=>bossFreeze();
     }else{
