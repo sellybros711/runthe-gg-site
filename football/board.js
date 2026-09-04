@@ -1104,9 +1104,9 @@
   }
 
   /* ---------------- the daily allowance ----------------
-     One start a day per mode, counted server side by 99_daily_attempts.sql. See that file
-     for why it cannot live in this browser. Three calls: read the day, spend one, and grant
-     the mercy for a run that died in its first season.
+     One start a day per mode, counted server side by 99_daily_attempts.sql and
+     100_daily_grace_reasons.sql. See those files for why it cannot live in this browser.
+     Three calls: read the day, spend one, and claim an extra one the run has earned.
 
      EVERY ONE FAILS OPEN, which is the opposite of how the rest of this file fails and is
      deliberate. A board that cannot be reached costs somebody a rank; a LIMIT that cannot be
@@ -1123,10 +1123,11 @@
     return { ok: row.ok !== false, used: n(row.used), allowance: n(row.allowance),
       resetsAt: row.resets_at || null };
   };
-  async function attemptsCall(fn, mode) {
+  async function attemptsCall(fn, mode, extra) {
     try {
+      const body = Object.assign({ p_mode: mode }, extra || {});
       const res = await timed(base() + 'rpc/' + fn, {
-        method: 'POST', headers: headers(), body: JSON.stringify({ p_mode: mode }) });
+        method: 'POST', headers: headers(), body: JSON.stringify(body) });
       if (!res.ok) return await fail(fn, res);
       return attemptRow(await res.json().catch(() => null));
     } catch (e) { return failThrown(fn, e); }
@@ -1135,11 +1136,17 @@
   const attemptsState = (mode) => attemptsCall('ps_attempts_state', mode);
   /* Spend one, at kickoff. Answers ok:false when the day is done. */
   const attemptSpend = (mode) => attemptsCall('ps_attempt_spend', mode);
-  /* One more chance today, after a run that ended in its first season. */
-  const attemptGrace = (mode) => attemptsCall('ps_attempt_grace', mode);
+  /* One more chance today. Two things earn one: 'fired', a run that died in its first
+     season, and 'boss', a boss game won. Each is worth one extra start per day and no
+     more, so the reason has to travel. Sending the same one twice is not an error and
+     is not a second attempt: the server holds a flag per reason, not a count. A reason
+     the server does not know is refused outright, so a typo here fails loudly rather
+     than quietly handing out a run. */
+  const attemptGrace = (mode, reason) =>
+    attemptsCall('ps_attempt_grace', mode, { p_reason: reason });
 
   window.PS_BOARD = {
-    API_VERSION: 14,
+    API_VERSION: 15,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,

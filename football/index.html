@@ -7176,7 +7176,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=30"></script>
+<script src="board.js?v=31"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -7301,7 +7301,7 @@ function loadDefensePool(){
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=14;
+const BOARD_VERSION=15;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -8757,12 +8757,18 @@ async function dailySpend(mode){
   if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
   return !r||r.ok!==false;
 }
-/* One more chance today, after a run that ended in its first season. The server caps this at
-   one a day, so calling it twice costs nothing and grants nothing. */
-async function dailyGrace(mode){
+/* One more chance today. Two things earn one and the reason has to travel, because the
+   server holds a flag per reason rather than a count:
+
+     'fired'  a run that ended in its first season
+     'boss'   a boss game won
+
+   So a player can earn both in one day and get three starts. Calling the same reason twice
+   costs nothing and grants nothing. */
+async function dailyGrace(mode,reason){
   if(!dailyOn()) return;
   let r=null;
-  try{ r=await B.attemptGrace(mode); }catch(_){ r=null; }
+  try{ r=await B.attemptGrace(mode,reason); }catch(_){ r=null; }
   if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
   paintHomeStart();
 }
@@ -15963,7 +15969,7 @@ function paintOwner(){
      nobody anything: the economy takes several seasons to make sense, and being shut out for
      a day fifteen minutes after arriving is the worst first impression this mode can make.
      The server caps it at one a day, so a reload of this screen re-asks and changes nothing. */
-  if(v.fired&&seasons<=1) dailyGrace('dynasty');
+  if(v.fired&&seasons<=1) dailyGrace('dynasty','fired');
   /* Which unlocks the exits: see the .gaunt.over rule. */
   if(over) over.classList.toggle('over',!!v.fired);
   paintRunCard(v);
@@ -16275,6 +16281,13 @@ function bossFinish(ev){
   $('bg-outcome').textContent=ev.won?'You win':'You lose';
   const cont=$('b-boss-continue');
   if(ev.won){
+    /* A BOSS WON BUYS ANOTHER RUN TODAY. Getting here at all means ten seasons cleared, so
+       it is not a consolation the way the first-season mercy is: it is the reward for the
+       one thing in this mode that is genuinely hard. Fired on every boss win rather than
+       only the first, because the server holds one flag for the reason and a second win in
+       the same day changes nothing. The run this player is in continues either way. What
+       they get is the freedom to start a NEW one without waiting for midnight. */
+    if(run&&run.dynasty) dailyGrace('dynasty','boss');
     if(b.reward==='freeze'){
       $('bg-note').textContent='You beat '+o.display+'. Now pick a player to keep forever.';
       cont.textContent='Choose a player';
