@@ -7381,6 +7381,18 @@ const canPlayDynasty=()=>{
   if(!authState.signedIn) return false;
   return A.allowed({name:authState.name,userId:authState.userId});
 };
+/* ONE FRANCHISE DYNASTY IS A PREMIUM MODE, and there is no premium yet, so for now this is
+   the tester list and nothing else.
+   IT IS DELIBERATELY NOT canPlayDynasty(). That one answers true for everybody the moment
+   DYNASTY_LIVE flips, which is the point of that flag and exactly the wrong behaviour here:
+   opening the base mode to the site must not hand this one out with it. When the paid tier
+   exists, this is the single function that learns about it. */
+const canPlayClubDynasty=()=>{
+  const A=window.PS_DYNASTY_ACCESS;
+  if(!A||typeof A.isTester!=='function') return false;
+  if(!authState.signedIn) return false;
+  return !!(A.isTester(authState.name)||A.isTesterId(authState.userId));
+};
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
   if(!authState.signedIn) return false;
@@ -9014,6 +9026,10 @@ function ensureDynastyButton(){
    once, here, rather than once per way in. */
 function beginDynastyDraft(opts){
   if(!canPlayDynasty()) return;
+  /* Checked again rather than trusted. The only thing that passes a franchise is the door in
+     the modes sheet, which is already drawn only for somebody entitled to it, but the option
+     arrives from a caller and a caller is not the authority on who may use it. */
+  if(opts&&opts.franchise&&!canPlayClubDynasty()) return;
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
   }
@@ -9662,35 +9678,45 @@ function modeMenu(){
      sign-in button sits below; the Trade Machine is disabled and marked Coming Soon for
      anyone off the early-access list. */
   const arrow='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
+  /* A shield with the star cut out of it rather than drawn inside it, so the mark is one
+     shape and the detail is the gradient showing through. Named because the One Franchise
+     card is now drawn two ways and the icon is the half they share. */
+  const MC_SHIELD='<svg viewBox="0 0 24 24">'+
+    '<path fill-rule="evenodd" d="M12 1.6 2.4 6.6v6.6c0 5.7 4.1 11 9.6 12.3 5.5-1.3 '+
+      '9.6-6.6 9.6-12.3V6.6L12 1.6Zm0 5.2 1.6 3.5 3.8.4-2.8 2.6.8 3.8L12 15.2l-3.4 '+
+      '1.9.8-3.8-2.8-2.6 3.8-.4L12 6.8Z"/></svg>';
   const ct=canPlayTrade();
-  const cd=canPlayDynasty();
+  const cd=canPlayClubDynasty();
   const tradeLocked=locked||!ct;
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
     '<div class="modecards">'+
-      /* ONE FRANCHISE IS TWO GAMES NOW, so the card is a panel with two doors rather than a
-         button with one. It cannot stay a <button>: a button inside a button is invalid and
-         the inner one stops being clickable, so the container is a div and the two ways in
-         are the buttons. The chevron goes with it, because a chevron promises one
-         destination and there are two. */
-      '<div class="modecard mc-club mc-split'+(locked?' mc-off':'')+'">'+
-        '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
-          /* A shield with the star cut out of it rather than drawn inside it, so the
-             mark is one shape and the detail is the gradient showing through. */
-          '<path fill-rule="evenodd" d="M12 1.6 2.4 6.6v6.6c0 5.7 4.1 11 9.6 12.3 5.5-1.3 '+
-            '9.6-6.6 9.6-12.3V6.6L12 1.6Zm0 5.2 1.6 3.5 3.8.4-2.8 2.6.8 3.8L12 15.2l-3.4 '+
-            '1.9.8-3.8-2.8-2.6 3.8-.4L12 6.8Z"/>'+
-          '</svg></div><div class="mc-title">One Franchise</div></div>'+
-        '<p>Select one of 32 franchises and build an offense exclusively from that team\'s history.</p>'+
-        '<div class="mc-ways">'+
-          '<button class="mc-go" id="b-mc-club"'+(locked?' disabled':'')+'>'+
-            '<b>Quick draft</b><span>One season</span></button>'+
-          '<button class="mc-go mc-go-dyn'+(cd?'':' mc-soon')+'" id="b-mc-clubdyn"'+
-            ((locked||!cd)?' disabled':'')+'>'+
-            '<b>Dynasty</b><span>'+(cd?'Season after season':'Coming soon')+'</span></button>'+
-        '</div>'+
-      '</div>'+
+      /* TWO SHAPES FOR ONE CARD, and which one you get is whether the Dynasty half exists
+         for you. It is a premium mode with no premium behind it yet, so to everybody except
+         a tester this card is exactly the button it has always been: one destination, one
+         chevron, nothing advertised that cannot be pressed.
+         For a tester it becomes a panel with two doors. It cannot stay a <button> then,
+         because a button inside a button is invalid and the inner one stops being
+         clickable, so the container turns into a div and the two ways in are the buttons.
+         The chevron goes with it: a chevron promises one destination and there are two. */
+      (cd
+        ? '<div class="modecard mc-club mc-split'+(locked?' mc-off':'')+'">'+
+            '<div class="mc-head"><div class="mc-icon">'+MC_SHIELD+
+              '</div><div class="mc-title">One Franchise</div></div>'+
+            '<p>Select one of 32 franchises and build an offense exclusively from that team\'s history.</p>'+
+            '<div class="mc-ways">'+
+              '<button class="mc-go" id="b-mc-club"'+(locked?' disabled':'')+'>'+
+                '<b>Quick draft</b><span>One season</span></button>'+
+              '<button class="mc-go mc-go-dyn" id="b-mc-clubdyn"'+(locked?' disabled':'')+'>'+
+                '<b>Dynasty</b><span>Season after season</span></button>'+
+            '</div>'+
+          '</div>'
+        : '<button class="modecard mc-club" id="b-mc-club"'+(locked?' disabled':'')+'>'+
+            '<div class="mc-head"><div class="mc-icon">'+MC_SHIELD+
+              '</div><div class="mc-title">One Franchise</div>'+arrow+'</div>'+
+            '<p>Select one of 32 franchises and build an offense exclusively from that team\'s history.</p>'+
+          '</button>')+
       '<button class="modecard mc-era" id="b-mc-era"'+(locked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           /* A filled clock face with the hands cut out. The outlined version was a ring
@@ -21090,6 +21116,18 @@ function isMyDynastyRow(r){
   return !!(me&&r&&r.display_name&&String(r.display_name).trim().toLowerCase()===me);
 }
 
+/* ONE FRANCHISE DYNASTY IS NOT ON THIS BOARD YET, AND WILL NOT SHARE IT.
+   A club dynasty drafts out of one team's twenty-odd seasons and an open one drafts out of
+   all of history, so ranking them together would do to this board exactly what 50's own
+   comment says mixing free and club runs would do to the classic one: the open runs take it
+   over and the club runs are ranked against a game they were not playing.
+   THE DECIDED SHAPE IS ONE ALL-TIME BOARD PER TEAM, which is the same answer the classic
+   board reached for the same reason. Nothing here reads it yet because the mode is behind
+   canPlayClubDynasty and there is no premium tier for it to be sold with.
+   ps_runs already stores `franchise` on every row, so the runs being played now are
+   distinguishable when that board is built: what is missing is only the column on
+   ps_dynasty_board and a filter on the read, not the data. Until then a tester's club run
+   does land here, which is the one known wart and is a handful of rows. */
 async function loadDynastyBoard(){
   lbBusy=true;
   boardChrome(false);
