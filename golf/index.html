@@ -4840,16 +4840,28 @@ function dailyMaxAttempts(){ return sbSignedIn()?DAILY_MAX_ATTEMPTS:GUEST_DAILY_
 function dailyState(){return LS.get(acctKey('bag_daily'),null);}
 function dailyToday(){const dd=dailyState();return (dd&&dd.date===todayKey())?dd:null;}
 function dailyAttempts(){const dd=dailyToday(); if(!dd)return 0; return dd.attempts!=null?dd.attempts:(dd.done?1:0);}
-function dailyAttemptsLeft(){ if(dailyUnlimited()) return 99; return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
+function dailyAttemptsLeft(){ if(dailyUncapped()) return 99; return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
 function dailyBest(){const dd=dailyToday(); return dd?(dd.best||dd.result||null):null;}
 // Dev accounts (RunnyJ, CSel8 — see devMode) get UNLIMITED Play 18 attempts so we can check the live game any
 // time; only the FIRST 3 attempts of the day count toward records (course records + the daily board), so our
 // testing never pollutes the leaderboards. Everyone else keeps the normal 3-a-day cap unchanged.
 function dailyUnlimited(){ return devMode(); }
+/* THE TOUR PASS BUYS UNLIMITED DAILY PLAYS, and it was honoured in exactly two places: the guard inside
+   beginDailyAttempt and one branch of startDailyChallenge. Everything ELSE that decides whether you may
+   play reads dailyAttemptsLeft() or dailyDoneToday(), and neither of those knew the pass existed. So a
+   paying player was told DONE on the home card, could not press Draft, and, worst of the lot, had a
+   fourth round REFUSED at submission ("Out of attempts today, score not submitted") after playing it.
+   One function now answers "does this account have a daily cap at all", and every gate reads it. */
+function dailyUncapped(){ return dailyUnlimited() || (sbSignedIn() && dailyPassActive()); }
+/* The wallet that says whether the pass is active is fetched after sign-in, so for the first moment of a
+   cold load a real pass holder looks capped. The doors below stay shut while that is unknown (opening
+   them would hand a free extra round to everyone on a slow connection), but they ask for the wallet on
+   the way out, so the screen corrects itself a moment later instead of lying until a reload. */
+function dailyGateRefresh(){ try{ if(sbSignedIn() && _walletCache===null) loadWallet(); }catch(e){} }
 function dailyAttemptRecords(){ return !(devMode() && (S.dailyAttempt||0) >= DAILY_MAX_ATTEMPTS); }
-function dailyDoneToday(){return !dailyUnlimited() && dailyAttemptsLeft()<=0;}   // "done" = all attempts used (never for dev accounts)
+function dailyDoneToday(){return !dailyUncapped() && dailyAttemptsLeft()<=0;}   // "done" = all attempts used (never for dev or Tour Pass accounts)
 function startDaily(){
-  if(dailyDoneToday()){S.overlay='dailydone';render();return;}
+  if(dailyDoneToday()){dailyGateRefresh();S.overlay='dailydone';render();return;}
   const seed=todayKey(); reset();
   S.daily=true; S.dailySeed=seed; S.mode='daily';
   S.drawRng=mulberry32((seed^0x2545f491)>>>0);   // seeded draw → same rarity sequence for everyone today
@@ -13446,6 +13458,7 @@ function dailyHeroCard(){
   let badge,mid;
   if(PRACTICE){ badge='PRACTICE'; mid='Unlimited rounds · nothing recorded'; }
   else if(dailyUnlimited()){ badge='DEV ∞'; mid=`${bestTxt?bestTxt+' · ':''}Unlimited attempts · first ${DAILY_MAX_ATTEMPTS} count for records`; }   // dev accounts
+  else if(dailyPassActive()){ badge='PRO ∞'; mid=`${bestTxt?bestTxt+' · ':''}Unlimited plays with your Tour Pass`; }   // the pass says unlimited, so the card has to say it too
   else if(datt===0){ badge=`${dleft} ${dleft===1?'TRY':'TRIES'}`; mid=beat?`Shoot better than <b>${beat}</b> to beat the pro`:'Beat the tour average to win the day'; }
   else if(dleft<=0){ badge=dwon?'BEATEN ✓':'DONE'; mid=`${bestTxt||'Played today'}${dwon?' · you beat the pro':` · ${beat} was the number`}`; }
   else { badge=`${dleft} LEFT`; mid=`${bestTxt?bestTxt+' · ':''}${dwon?'beaten ✓ · go lower':(beat?`beat <b>${beat}</b>`:'beat the tour average')}`; }
@@ -31022,8 +31035,8 @@ function startDailyChallenge(){
   // No showable result (e.g. the account's server attempt count was reconciled in without a stored round):
   // if attempts remain (or you own a Legend, which plays free), go to the preview; otherwise a graceful
   // "done for today" overlay - never a blank bounce.
-  if(dailyAttemptsLeft()>0 || hasFreeLegends() || dailyPassActive()){ beginDailyAttempt(); return; }
-  S.daily=false; S.overlay='dailydone'; render();
+  if(dailyAttemptsLeft()>0 || hasFreeLegends()){ beginDailyAttempt(); return; }
+  dailyGateRefresh(); S.daily=false; S.overlay='dailydone'; render();
 }
 // UI-FIRST: tapping Daily Challenge must ALWAYS change the screen immediately, on every browser/network.
 // The earlier version `await`ed the server attempt-check BEFORE switching screens, so on a browser/network
@@ -31034,7 +31047,7 @@ function startDailyChallenge(){
 function beginDailyAttempt(extra){
   S.dailyExtra=extra||null;   // 'token' = a bought extra play beyond the free cap (consumed at first spin)
   // Tour Pass = unlimited plays; a token play carries its own allowance; a free Legend plays free.
-  if(!PRACTICE && !S.dailyExtra && dailyAttemptsLeft()<=0 && !hasFreeLegends() && !dailyPassActive()){ S.overlay='dailydone'; render(); return; }   // out of attempts + nothing to play → done
+  if(!PRACTICE && !S.dailyExtra && dailyAttemptsLeft()<=0 && !hasFreeLegends()){ dailyGateRefresh(); S.overlay='dailydone'; render(); return; }   // out of attempts + nothing to play → done
   const seed=todayKey();
   // practice: a random attempt salt so every practice round offers a fresh draft wheel + fresh
   // per-hole luck (a fixed number would replay near-identical rounds); determinism doesn't matter
@@ -33264,6 +33277,9 @@ function scrDailyResult(){
   // an idempotent keep-the-lower upsert, so re-submitting a good score is safe.
   if(!practice && sbSignedIn() && !r.isLegend && !S._dailyResub && r.day && r.course){ S._dailyResub=true; sbSubmitDaily(r); }
   const attempts=dailyAttempts(), left=dailyAttemptsLeft();
+  // 99 is the sentinel dailyAttemptsLeft() returns for an account with no cap. It is a fine number to
+  // compare against and a terrible one to print, so the copy below says what it means instead.
+  const unlim=dailyUncapped(), leftTxt=unlim?'unlimited':String(left);
   // headline: did you beat the tour average? (the main objective). best-of-day decides the day.
   // (The old "Round Rating" grade card was removed per owner: the score + beat-the-pro + your stats are
   // the main attraction; the grade added noise and buried the important info.)
@@ -33292,7 +33308,7 @@ function scrDailyResult(){
     <div class="dh-bv-title">${wonRound?'You beat the pro!':'Short of the tour average'}</div>
     <div class="dh-bv-fig">${pxFigureHTML(S.look, 78)}</div>
     <div class="dh-bv-sub">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
-    ${(wonRound&&left>0&&!practice&&!r.isLegend)?`<div class="dh-bv-cta">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:(wonDay&&!wonRound&&justPlayed?`<div class="dh-bv-cta">You already cleared the pro today with your best of <b>${dTot(bestT, c.par)}</b> — only your best round counts.</div>`:'')}
+    ${(wonRound&&left>0&&!practice&&!r.isLegend)?`<div class="dh-bv-cta">Challenge cleared. ${unlim?'Play as many more as you like':`Use your ${left} remaining attempt${left>1?'s':''}`} to go even lower and chase the course record.</div>`:(wonDay&&!wonRound&&justPlayed?`<div class="dh-bv-cta">You already cleared the pro today with your best of <b>${dTot(bestT, c.par)}</b>. Only your best round counts.</div>`:'')}
   </div>`));
   // CS237: a FREE Legend (created-golfer) play - focused result (no draft attempts / streak / weekly / claim
   // sections apply), then back into the Daily. Scores live on the separate Career Golfers board.
@@ -33399,7 +33415,7 @@ function scrDailyResult(){
         <div><div style="font-weight:800;font-size:20px;color:var(--gold)">${pct}%</div><div class="small muted" style="font-size:10px">Win rate</div></div>
         <div><div style="font-weight:800;font-size:20px;color:var(--gold)">${best}</div><div class="small muted" style="font-size:10px">Best streak</div></div>
       </div>
-      ${(justPlayed&&!wonDay&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">Beat the pro in one of your ${left} remaining attempt${left>1?'s':''} to add a win to your record.</div>`:''}</div>`)); } }
+      ${(justPlayed&&!wonDay&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">Beat the pro ${unlim?'in another round':`in one of your ${left} remaining attempt${left>1?'s':''}`} to add a win to your record.</div>`:''}</div>`)); } }
   }; // end renderMeta
   // CS302: quests/weekly/rep panel removed from the Beat-the-Pro result too, it lives in the ≡ Challenges
   // overlay. (Quests/challenges are still CREDITED on finish; only their on-page display was removed here.)
@@ -33449,7 +33465,7 @@ function scrDailyResult(){
     primary.onclick=()=>{ S._dailyClaimFlow=true; S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else if(left>0){
-    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Chase lower (${left} left)`:`${left} left · beat the avg`}</span></button>`);
+    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Chase lower (${leftTxt})`:`${leftTxt} · beat the avg`}</span></button>`);
     primary.onclick=beginDailyAttempt;
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else {
@@ -33505,7 +33521,7 @@ function scrDailyResult(){
   }
   // Exit — the most de-emphasized action (small, muted).
   const home=$(`<button class="btn ghost" style="max-width:300px;margin:12px auto 0;opacity:.6;font-size:14px;padding:11px">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
-  add($(`<p class="small muted center" style="margin-top:12px">${practice?'Practice mode · unlimited rounds, nothing is recorded · ':(left>0?`${left} attempt${left>1?'s':''} left today · `:'')}A new course drops at midnight ET${practice?'':' · streak '+streakDisplay()+' 🔥'}</p>`));
+  add($(`<p class="small muted center" style="margin-top:12px">${practice?'Practice mode · unlimited rounds, nothing is recorded · ':unlim?'Unlimited plays today · ':(left>0?`${left} attempt${left>1?'s':''} left today · `:'')}A new course drops at midnight ET${practice?'':' · streak '+streakDisplay()+' 🔥'}</p>`));
 }
 // #5 Course Passport: your best round + best grade at every Daily course, a solo collection to complete
 function overlayPassport(screen){
