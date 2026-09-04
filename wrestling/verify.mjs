@@ -115,6 +115,34 @@ section('pages load');
   if(errs.length) bad('career game: '+errs.slice(0,3).join(' | ')); else ok('career game loads clean');
   await page.close();
 }
+/* THE HOME PAGE WITH A CAREER ON IT. This is not the same test as the one above:
+   an empty browser takes the "start your journey" branch, and a returning player
+   takes the "continue career" branch, which renders a saved wrestler's OVR from
+   the SAVE OBJECT before that save is ever loaded into G. That path shipped
+   broken (ovr() reached for G.w, which is null on the home screen), the page
+   rendered as a logo above an empty space, and every check in this suite passed
+   because every check started from a cleared browser. */
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  await page.evaluate(()=>{ try{ endTour(); closeModal(); }catch(_){}
+    for(let i=0;i<4;i++){ bookWeek(); const b=G.car.booking;
+      if(b&&b.type==='match'){ const r=simMatch(b.o); applyMatch(b.o,r); } else advanceWeek(); }
+    save(); });
+  const errs2=[];
+  page.on('pageerror', e=>errs2.push(String(e)));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForTimeout(1100);
+  const r = await page.evaluate(()=>{
+    const el=document.getElementById('homeCont');
+    return {filled:!!(el&&el.innerHTML.trim().length>50), text:(el?el.innerText:'').slice(0,60)};
+  });
+  if(errs2.length) bad('the home page threw with a save on it: '+errs2.slice(0,2).join(' | '));
+  else if(!r.filled) bad('the home page rendered empty for a returning player');
+  else ok(`the home page carries a saved career: "${r.text.split('\n').slice(0,2).join(' / ')}"`);
+  await page.close();
+}
 {
   const {page, errs} = await fresh(URL+'/wrestling/booking/');
   let r = null;
