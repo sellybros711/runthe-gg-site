@@ -531,6 +531,13 @@ window.GA_ID='G-L29P5MRWKE';
      the thing your eye lands on first on a page of dark buttons, and every other tag here is
      a label rather than an announcement. Gold is already the mode's own colour, so it
      announces Dynasty rather than just announcing itself. */
+  /* A DAY ALREADY SPENT. Quiet and unfilled, the opposite of the NEW badge below it: this
+     one is a state rather than an invitation, and a bright tag on a door that will not open
+     yet is the page being loud about a disappointment. The headline dims with it, so the
+     whole card reads as waiting rather than as broken. */
+  .hp-dyn .hp-tag-spent{background:rgba(255,255,255,.06);
+    border-color:rgba(255,255,255,.18);color:rgba(238,242,249,.5)}
+  .hp-dyn:has(.hp-tag-spent) .hp-full-name{color:rgba(244,247,252,.58)}
   .hp-dyn .hp-tag-new{background:linear-gradient(180deg,#f0c674,#e2b25a);
     border-color:rgba(243,221,174,.9);color:#241a08;font-weight:800;letter-spacing:.1em;
     box-shadow:0 0 0 3px rgba(226,178,90,.16)}
@@ -7136,7 +7143,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=29"></script>
+<script src="board.js?v=30"></script>
 <script src="achievements.js?v=10"></script>
 <!-- The profile crest. Optional in the same way the two above are: it reads the catalog
      achievements.js installs, and if either fails to load the game falls back to the flat
@@ -7261,7 +7268,7 @@ function loadDefensePool(){
    cached board.js older than this page, and they only catch it while they agree: a page
    that says 1 against a module that says 2 rejects a module that is newer than itself
    and quietly runs the stub, which is a dead leaderboard with no error anywhere. */
-const BOARD_VERSION=13;
+const BOARD_VERSION=14;
 const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS_BOARD:{
   API_VERSION:BOARD_VERSION, offline:true,
   submit:async()=>null, ranks:async()=>({day:null,week:null,all:null}),
@@ -7286,6 +7293,10 @@ const B=(window.PS_BOARD&&window.PS_BOARD.API_VERSION===BOARD_VERSION)?window.PS
      method somewhere inside loadDynastyBoard. */
   dynastyTag:async()=>false, dynastyTop:async()=>null, dynastyMine:async()=>null,
   dynastyRank:async()=>null, dynastyTotal:async()=>null,
+  /* The allowance calls fail OPEN, here as in the real module: null means no opinion, and
+     the page reads no opinion as permission. A blocked board.js must not lock anybody out
+     of a mode. */
+  attemptsState:async()=>null, attemptSpend:async()=>null, attemptGrace:async()=>null,
 };
 const $=(id)=>document.getElementById(id);
 function ga(ev,p){try{if(typeof gtag==='function')gtag('event',ev,p||{});}catch(e){}}
@@ -8632,6 +8643,110 @@ $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
  *
  * `hidden` on both rather than a class on a parent, so the one that is not showing is out of
  * the layout, out of the tab order and invisible to a screen reader in one attribute. */
+/* ── THE DAILY ALLOWANCE, ON THE PAGE ────────────────────────────────────────────────
+ *
+ * One start a day for Dynasty and one for the Trade Machine. The count itself is the
+ * server's and lives in 99_daily_attempts.sql, which explains why it cannot live here. This
+ * is the half that reads it, spends it at the right moment, and says so on the button.
+ *
+ * AN ATTEMPT IS A START. Continuing a run costs nothing on any day, so resuming never asks
+ * the server anything: there is nothing to check. A run already under way is already paid for.
+ *
+ * NO OPINION IS PERMISSION. Every call here fails OPEN, which is the opposite of how the
+ * rest of the board fails. A board that cannot be reached costs somebody a rank. A LIMIT
+ * that cannot be reached would cost them the game, and the person it would lock out is the
+ * one who has paid to never be locked out. So a null answer means the page does not know,
+ * and not knowing lets you play.
+ */
+/* OFF UNTIL THERE IS SOMETHING TO BUY. A limit shipped before the subscription exists makes
+   the free game worse and earns nothing, so this stays false until the paid tier is live.
+   It is in the page rather than in a sibling script on purpose: index.html revalidates on
+   every visit, so flipping it needs no cache bump and takes effect immediately. */
+const DAILY_LIMIT_LIVE=false;
+let dailyState={dynasty:null,trade:null};
+let dailyAsked={dynasty:false,trade:false};
+let dailyTick=0;
+
+const dailyOn=()=>DAILY_LIMIT_LIVE&&!!authState.signedIn;
+/* How many starts are left today, and 1 whenever the page has no answer. */
+function dailyLeft(mode){
+  if(!dailyOn()) return 1;
+  const s=dailyState[mode];
+  if(!s||s.used==null||s.allowance==null) return 1;
+  return Math.max(0,s.allowance-s.used);
+}
+const dailyResetsAt=(mode)=>{
+  const s=dailyState[mode];
+  const t=s&&s.resetsAt?Date.parse(s.resetsAt):NaN;
+  return Number.isFinite(t)?t:null;
+};
+/* Asked once per mode per sign-in rather than on every paint, because the front page
+   repaints on every return to it and this is a round trip. */
+function dailyEnsure(mode){
+  if(!dailyOn()||dailyAsked[mode]) return;
+  dailyAsked[mode]=true;
+  B.attemptsState(mode).then((s)=>{ dailyState[mode]=s; paintHomeStart(); }).catch(()=>{});
+}
+/* Called from the auth change, because the answer belongs to an account. */
+function dailyForget(){
+  dailyState={dynasty:null,trade:null};
+  dailyAsked={dynasty:false,trade:false};
+}
+/* "4h 12m", "12m", "40s". Coarse above an hour on purpose: a counter ticking every second
+   for four hours is a distraction rather than information. */
+function dailyCountdown(at){
+  const ms=at-Date.now();
+  if(ms<=0) return null;
+  const m=Math.floor(ms/60000), h=Math.floor(m/60);
+  if(h>0) return h+'h '+(m%60)+'m';
+  if(m>0) return m+'m';
+  return Math.max(1,Math.round(ms/1000))+'s';
+}
+/* SPENT AT KICKOFF, NOT AT THE WHEEL, so a draft somebody backs out of costs nothing.
+   Answers true when the run may go ahead, which includes every case where the server could
+   not be asked. */
+async function dailySpend(mode){
+  if(!dailyOn()) return true;
+  let r=null;
+  try{ r=await B.attemptSpend(mode); }catch(_){ r=null; }
+  if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
+  return !r||r.ok!==false;
+}
+/* One more chance today, after a run that ended in its first season. The server caps this at
+   one a day, so calling it twice costs nothing and grants nothing. */
+async function dailyGrace(mode){
+  if(!dailyOn()) return;
+  let r=null;
+  try{ r=await B.attemptGrace(mode); }catch(_){ r=null; }
+  if(r&&r.used!=null){ dailyState[mode]={used:r.used,allowance:r.allowance,resetsAt:r.resetsAt}; }
+  paintHomeStart();
+}
+/* The countdown only moves while it is on screen. Started by the painter that draws it and
+   stopped by the one that does not, so the page is not running a timer all day. */
+function dailyClock(on){
+  if(on&&!dailyTick){ dailyTick=setInterval(()=>paintHomeStart(),20000); }
+  else if(!on&&dailyTick){ clearInterval(dailyTick); dailyTick=0; }
+}
+/* What a spent day says when the door is tapped. The place the upgrade goes when there is
+   one to offer. */
+function dailySpentSheet(mode){
+  const at=dailyResetsAt(mode), cd=at?dailyCountdown(at):null;
+  const name=mode==='trade'?'Trade Machine':'Dynasty';
+  $('sheet-in').innerHTML='<div class="eyebrow gold">'+esc(name)+'</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">That is today’s run</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">'+
+      'You get one '+esc(name)+' run a day. '+
+      (cd?'The next one unlocks in <b>'+esc(cd)+'</b>.':'The next one unlocks at midnight Eastern.')+
+    '</p>'+
+    '<p class="dim" style="font-size:13px;line-height:1.45;margin:0">'+
+      'A run you have already started is never affected. You can carry it on any day, for as '+
+      'many days as it lasts.</p>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  $('sheet-in').dataset.kind='daily';
+  openSheet();
+  $('sh-x').onclick=closeSheet;
+}
+
 function paintHomeStart(){
   const split=$('hp-split'), one=$('b-start');
   if(!split||!one) return;
@@ -8794,6 +8909,9 @@ function ensureDynastyButton(){
        does two jobs on this page: it is the boss game's advance button and it is the verb on
        "Continue with Google". A third use dulls all three. Resume is also what the code has
        always called this: see dynResume() below. */
+    /* A run in progress is never gated, so nothing here reads the allowance, and the
+       countdown's timer stops because there is no countdown on this branch to move. */
+    dailyClock(false);
     el.innerHTML=road+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
       '<span class="hp-full-name">Resume Dynasty</span>'+
       /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
@@ -8813,6 +8931,21 @@ function ensureDynastyButton(){
        and no stake, so it read as a harder version of a season somebody has already played.
        The line the rules sheet opens with is the actual pitch, and it is the one that says
        there is a career here and one life to spend on it. */
+    dailyEnsure('dynasty');
+    /* THE DAY IS SPENT, and the door says when the next one lands rather than going grey.
+       Only ever reached with no save: a run in progress is the branch above, and that one is
+       never gated. Tapping opens the explainer rather than doing nothing, because a button
+       that ignores you reads as broken. */
+    if(dailyLeft('dynasty')<=0){
+      const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
+      dailyClock(true);
+      el.innerHTML=road+'<span class="hp-tag hp-tag-spent">Used today</span>'+
+        '<span class="hp-full-name">Dynasty</span>'+
+        '<span class="hp-full-sub">'+
+          (cd?'Next run in '+esc(cd):'Next run at midnight Eastern')+'</span>';
+      el.onclick=()=>{ dailySpentSheet('dynasty'); };
+    }else{
+    dailyClock(false);
     /* THE NEW BADGE, AND IT RETIRES ITSELF. The corner tag is the only thing on the front
        page that can say a mode has arrived, so it says NEW rather than Preview. It is shown
        to somebody who has never opened the rules sheet and to nobody else: ps_dynintro is set
@@ -8825,6 +8958,7 @@ function ensureDynastyButton(){
       '<span class="hp-full-name">Start a Dynasty</span>'+
       '<span class="hp-full-sub">One team. One life. How long can you last?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
+    }
   }
   el.hidden=false;
   el.disabled=false;
@@ -8853,6 +8987,10 @@ function beginDynastyDraft(){
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
   }
+  /* CHECKED HERE, SPENT AT KICKOFF. The two happen at different moments on purpose: reading
+     is free, so it can guard the door and save somebody a draft they would not be allowed to
+     play, while the write waits until they have actually committed to the run. */
+  if(dailyLeft('dynasty')<=0) return dailySpentSheet('dynasty');
   /* Whatever was saved is gone the moment a new one is drafted. The sheet in front of this
      is where somebody agrees to that; by here it has been agreed. */
   dynClear();
@@ -12924,6 +13062,17 @@ function paintCapTracker(inf){
   }
 }
 function startSeason(){
+  /* KICKOFF IS WHERE THE DAY IS SPENT, and only the FIRST kickoff of a run. Every season
+     after it belongs to a run that is already paid for, which is the whole rule: an attempt
+     is a start, not a sitting. Marked on the run rather than counted here, so a reload in
+     the middle of season one cannot charge somebody twice.
+     Not awaited. The server is the authority on the count and the draft screen has already
+     asked it whether there was one to spend; making the player watch a round trip before
+     their season begins would be paying for that authority twice. */
+  if(run&&!run.attemptPaid&&(run.dynasty||run.tradeMachine)&&(run.seasonNo==null||run.seasonNo<=1)){
+    run.attemptPaid=true;
+    dailySpend(run.dynasty?'dynasty':'trade');
+  }
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   const sp=$('season-roster'); if(sp) sp.style.display='none';
   paintNext(); paintUpcomingBug(); paintCalendar();
@@ -15619,6 +15768,11 @@ function paintOwner(){
      that is still going, and this one is over: leaving it on disk would put "Continue" on
      the front page over a run whose only remaining move is Draft again. */
   if(v.fired) dynClear();
+  /* THE MERCY, ON A RUN THAT DIED IN ITS FIRST SEASON. That is the one firing that teaches
+     nobody anything: the economy takes several seasons to make sense, and being shut out for
+     a day fifteen minutes after arriving is the worst first impression this mode can make.
+     The server caps it at one a day, so a reload of this screen re-asks and changes nothing. */
+  if(v.fired&&seasons<=1) dailyGrace('dynasty');
   /* Which unlocks the exits: see the .gaunt.over rule. */
   if(over) over.classList.toggle('over',!!v.fired);
   paintRunCard(v);
@@ -17599,6 +17753,9 @@ function authBoot(){
        request lands. */
     if(!st.signedIn||st.userId!==authState.userId) careerClear();
     const newAccount=st.userId!==authState.userId;
+    /* The day's allowance belongs to an account, so a different one (or none) has a
+       different day. Cleared before authState moves so the next paint re-asks. */
+    if(!st.signedIn||st.userId!==authState.userId) dailyForget();
     authState=st;
     paintAvatar();
     /* THE FRONT PAGE FOLLOWS ELIGIBILITY, and it has to be re-asked on every change rather
@@ -21814,8 +21971,15 @@ function resetQuit(){
 $('b-quit').onclick=()=>{
   const b=$('b-quit');
   if(quitArmed){ resetQuit(); toIntro(); return; }
-  quitArmed=setTimeout(resetQuit,4000);
-  b.textContent='Tap again to quit';
+  quitArmed=setTimeout(resetQuit,6000);
+  /* WHAT QUITTING COSTS, ON THE BUTTON THAT DOES IT. Abandoning is a finished run as far as
+     the allowance is concerned, or "quit and restart" would be an unlimited reroll and the
+     limit would mean nothing. That is a fair rule and an unfair surprise, so the armed state
+     says it outright rather than leaving somebody to discover it on the front page.
+     Only when the day is actually being spent: outside that it is the plain confirmation it
+     has always been. */
+  const costs=dailyOn()&&run&&(run.dynasty||run.tradeMachine)&&run.attemptPaid;
+  b.textContent=costs?'Tap again. This uses today’s run':'Tap again to quit';
   b.classList.add('armed');
 };
 

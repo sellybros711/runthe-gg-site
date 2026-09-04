@@ -1103,11 +1103,47 @@
     } catch (e) { return failThrown('dynastyTotal', e); }
   }
 
+  /* ---------------- the daily allowance ----------------
+     One start a day per mode, counted server side by 99_daily_attempts.sql. See that file
+     for why it cannot live in this browser. Three calls: read the day, spend one, and grant
+     the mercy for a run that died in its first season.
+
+     EVERY ONE FAILS OPEN, which is the opposite of how the rest of this file fails and is
+     deliberate. A board that cannot be reached costs somebody a rank; a LIMIT that cannot be
+     reached would cost them the game. So a null answer here means "no opinion", and the page
+     treats no opinion as permission. The alternative is a network blip locking a paying
+     player out of a mode they have already paid for.
+
+     PostgREST returns a `returns table` function as an array of rows, so each of these takes
+     the first row and normalises the column names the page reads. */
+  const attemptRow = (r) => {
+    const row = Array.isArray(r) ? r[0] : r;
+    if (!row) return null;
+    const n = (v) => (v === null || v === undefined ? null : Number(v));
+    return { ok: row.ok !== false, used: n(row.used), allowance: n(row.allowance),
+      resetsAt: row.resets_at || null };
+  };
+  async function attemptsCall(fn, mode) {
+    try {
+      const res = await timed(base() + 'rpc/' + fn, {
+        method: 'POST', headers: headers(), body: JSON.stringify({ p_mode: mode }) });
+      if (!res.ok) return await fail(fn, res);
+      return attemptRow(await res.json().catch(() => null));
+    } catch (e) { return failThrown(fn, e); }
+  }
+  /* What the day looks like, without spending any of it. Safe to call on every paint. */
+  const attemptsState = (mode) => attemptsCall('ps_attempts_state', mode);
+  /* Spend one, at kickoff. Answers ok:false when the day is done. */
+  const attemptSpend = (mode) => attemptsCall('ps_attempt_spend', mode);
+  /* One more chance today, after a run that ended in its first season. */
+  const attemptGrace = (mode) => attemptsCall('ps_attempt_grace', mode);
+
   window.PS_BOARD = {
-    API_VERSION: 13,
+    API_VERSION: 14,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,
+    attemptsState, attemptSpend, attemptGrace,
     get offline() { return offline; },
     get lastError() { return lastError; },
     get needsAccountsMigration() { return needsAccountsMigration; },
