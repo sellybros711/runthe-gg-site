@@ -514,11 +514,13 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-dyn .hp-tag{z-index:1}
   /* Set in the display face, which nothing else on the front page is, and uppercased here
      rather than in the string so the accessible name stays a name. */
-  /* BALANCED, because this line is two words on a new run and four on a saved one:
-     "Continue your Dynasty" does not fit one line on a phone, and left to itself it breaks
-     wherever the width happens to run out. Balance keeps it CONTINUE YOUR / DYNASTY at every
-     size instead of CONTINUE / YOUR DYNASTY at some of them. Ignored by engines that do not
-     have it, which get the ordinary greedy wrap this replaces. */
+  /* BOTH LABELS FIT ONE LINE, and the widths were measured rather than guessed: at 330px of
+     room, START A DYNASTY is 279 and RESUME DYNASTY is 287, so the two states of this button
+     are the same shape. "Resume your Dynasty" is 384 and "Continue your Dynasty" is 414, and
+     that possessive is what was wrapping the headline, not the verb.
+     Balance stays as insurance for the narrowest phones, where 26px type can still run out
+     of room: it breaks the line evenly rather than wherever the width happens to end.
+     Ignored by engines that do not have it, which get the ordinary greedy wrap. */
   .hp-dyn .hp-full-name{font-family:var(--fd);font-size:30px;font-weight:400;
     letter-spacing:.02em;text-transform:uppercase;color:#f4f7fc;text-wrap:balance}
   .hp-dyn .hp-full-sub{font-size:9.5px;font-weight:800;letter-spacing:.15em;
@@ -8771,9 +8773,13 @@ function ensureDynastyButton(){
     /* THE DOOR NAMES THE ACTION, not the mode. "Dynasty" over a caption beginning "Continue"
        made the button's own headline the one part of it that did not say what pressing it
        does. The verb moves up into the headline and comes out of the caption, which is a
-       line shorter for it. */
+       field shorter for it.
+       RESUME RATHER THAN CONTINUE, and not only because it is shorter. "Continue" already
+       does two jobs on this page: it is the boss game's advance button and it is the verb on
+       "Continue with Google". A third use dulls all three. Resume is also what the code has
+       always called this: see dynResume() below. */
     el.innerHTML=road+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
-      '<span class="hp-full-name">Continue your Dynasty</span>'+
+      '<span class="hp-full-name">Resume Dynasty</span>'+
       /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
          the card offering it back reads like a run that went badly rather than one that has
          not started: before the first season it says what is signed instead. */
