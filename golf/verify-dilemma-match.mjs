@@ -132,7 +132,9 @@ window.__DM = {
   speed(v){ setDailySpeed(v); return dailySpeed(); },
   /* The broadcast bar the round is played under. */
   bar(){ const n=document.querySelector('.bcasthd'); return n?n.innerText.replace(/\\s+/g,' ').trim():''; },
-  card(){ const n=document.querySelector('.rsc'); return n?(n.querySelectorAll('.rsc-c.rsc-hd:not(.rsc-sub)').length):-1; },
+  /* how many HOLE columns the scorecard drew. The spacers a short second block pads with carry the
+     same classes and must not be counted, or a 12-hole card reads as an 18-hole one. */
+  card(){ const n=document.querySelector('.rsc'); return n?(n.querySelectorAll('.rsc-c.rsc-hd:not(.rsc-sub):not(.rsc-fill)').length):-1; },
   /* matchOppSkills on its own, both branches. */
   oppSkills(name, ovr){ return matchOppSkills(name, ovr); },
   extraHoles(n){ S.matchPlay=S.matchPlay||{}; const keep=S.matchPlay.holes; S.matchPlay.holes=n;
@@ -181,7 +183,7 @@ const CASES = [
     ctxOver: { starName: 'REAL_TOP', lgOn: true, lgHeat: 60 },
     accept: 0,
     want: { holes: 12, course: 'Gulf Dunes Club', cond: 'breezy', group: true,
-      day: 'PRIME TIME', roundName: 'Exhibition · 12 holes under lights' },
+      day: 'PRIME TIME', roundName: 'Exhibition · 12 holes' },
     win:  { money: 3500000, conf: 5, feed: /prime-time exhibition/i },
     lose: { money: 1800000, conf: -5, feed: /Lost a prime-time exhibition/i },
     half: { money: 2400000, conf: 1, feed: /Halved a prime-time exhibition/i } },

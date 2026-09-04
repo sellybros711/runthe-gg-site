@@ -1834,6 +1834,9 @@ window.GA_ID='G-L29P5MRWKE';
   .rsc-c.tapc{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .rsc-c.tapc:hover{background:rgba(79,224,193,.13)}
   .rsc-dot0{color:var(--muted); opacity:.55}
+  /* the spacer that keeps a short second block's cells the width of a front-nine cell (a 12-hole match
+     splits 9 and 3). It holds a column open and must not read as a hole, so it carries no divider. */
+  .rsc-c.rsc-fill{border-left-color:transparent; background:transparent}
   .dcell{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.24)); border:1px solid var(--panelb); border-radius:8px; padding:6px 0 5px; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 12px -4px var(--gold)}
   .dcell.sel{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset}
@@ -8121,14 +8124,17 @@ function startExhibitionMatch(beat, ctx, ch){
   track('dilemma_match_start',{id:beat.id, opp:oppName, holes:N});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
-// how the match finished, in the language a golfer would use
+// How the match finished, in the language a golfer would use. matchState's own label has no direction
+// in it (it is read next to a bracket slot that already says who won), so a match that went the full
+// distance and was LOST came out of here headlined "18 up". Said from your side, that is 18 down.
 function matchResultTxt(st){
   if(!st) return 'All square';
   if(st.half || (!st.decided && st.up===0)) return 'All square';
   const lab=st.label||'';
   if(/^at the /.test(lab)) return 'Decided '+lab;               // sudden death: "Decided at the 19th"
-  if(lab.indexOf('&')>=0) return lab.replace('&',' & ');        // "3&2" is written "3 & 2"
-  return lab||(Math.abs(st.up)+' up');
+  if(lab.indexOf('&')>=0) return lab.replace('&',' & ');        // "3 & 2" reads the same won or lost
+  const n=Math.abs(st.up);
+  return n+(st.won?' up':' down');
 }
 // The last putt has dropped. Apply the outcome the result earned, then say so on a card that reads like
 // the decision card it replaced - same chips, same continue button, so the two ways a decision can resolve
@@ -20021,7 +20027,7 @@ const LEAGUE_DILEMMAS=[
    // are at stake. Their headliner is up for it (+1).
    {t:'Take the match', s:'Prime time', sub:'You play it, hole by hole', risk:true,
     match:{course:'Gulf Dunes Club', cond:'breezy', holes:12, edge:1,
-     day:'PRIME TIME', roundName:'Exhibition · 12 holes under lights',
+     day:'PRIME TIME', roundName:'Exhibition · 12 holes',
      opp:c=>c.starName, ovr:c=>88,
      win:{tone:'good', text:'You win it under lights in front of the biggest audience golf has had in years.', money:3500000, fans:9, fol:0.14, conf:5, head:c=>`Beat ${c.starName} in a prime-time exhibition`},
      lose:{tone:'bad', text:'You get taken apart on national television. The highlights are not yours.', money:1800000, fans:-4, conf:-5, head:'Lost a prime-time exhibition badly'},
@@ -22220,7 +22226,7 @@ function showStorylineModal(sb){
 // chips drifting apart would mean the same +20k reading two different ways depending on how it was won.
 function dilemmaChipsHTML(o, dFol){
   const chips=[];
-  if(o.skill){ const inj=Object.values(o.skill).some(v=>v<0); chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid ${inj?'rgba(225,74,51,.5)':'rgba(53,214,160,.5)'};background:${inj?'rgba(225,74,51,.12)':'rgba(53,214,160,.12)'};color:${inj?'#ff8f7e':'#35d6a0'}">${inj?'🩹':'▲'} ${esc(fxSkillLine(o))} · ${o.ev||3} events</span>`); }
+  if(o.skill){ const inj=Object.values(o.skill).some(v=>v<0); chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid ${inj?'rgba(225,74,51,.5)':'rgba(53,214,160,.5)'};background:${inj?'rgba(225,74,51,.12)':'rgba(53,214,160,.12)'};color:${inj?'#ff8f7e':'#35d6a0'}">${inj?'🩹':'▲'} ${esc(fxSkillLine(o))} · ${o.ev||3} event${(o.ev||3)===1?'':'s'}</span>`); }
   const stat=(lab,v,col)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${v>=0?col:'#E14A33'}">${v>=0?'▲':'▼'} ${lab} ${v>=0?'+':''}${v}</span>`;
   if(o.conf) chips.push(stat('Confidence',o.conf,'#35d6a0'));
   if(o.fans) chips.push(stat('Popularity',o.fans,'#ff9d3a'));
@@ -28472,15 +28478,22 @@ function scoreCardEl(opts){
     root.appendChild(leg);
   }
   blocks.forEach(bl=>{
-    const n=bl.b-bl.a, cols=`27px repeat(${n},1fr) 30px${bl.tot?' 32px':''}`;   // thin dot-only gutter
+    // A match can be 12 holes, which splits 9 and 3. Without padding, three cells share the same 1fr
+    // track the first block gives to nine, so the second row's boxes come out three times as wide and
+    // the two blocks stop reading as one card. The filler keeps every cell the width of a front-nine
+    // cell. An 18-hole card pads by zero and is untouched.
+    const n=bl.b-bl.a, pad=(H>9?9-n:0), cols=`27px repeat(${n+pad},1fr) 30px${bl.tot?' 32px':''}`;   // thin dot-only gutter
     const g=$(`<div class="rsc-block" style="grid-template-columns:${cols}"></div>`);
     const cell=(cls,html,attr)=>g.appendChild($(`<div class="${cls}" ${attr||''}>${html}</div>`));
+    const filler=cls=>{ for(let f=0;f<pad;f++) cell(cls+' rsc-fill',''); };
     cell('rsc-lab rsc-hd rsc-gut','#');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-hd', (k+1));
+    filler('rsc-c rsc-hd');
     cell('rsc-c rsc-hd rsc-sub', bl.sub);
     if(bl.tot) cell('rsc-c rsc-hd rsc-sub rsc-tot','TOT');
     cell('rsc-lab rsc-par rsc-gut','PAR');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-par', pars[k]!=null?pars[k]:'-');
+    filler('rsc-c rsc-par');
     cell('rsc-c rsc-par rsc-sub', sum(pars,bl.a,bl.b));
     if(bl.tot) cell('rsc-c rsc-par rsc-sub rsc-tot', sum(pars,0,H));
     rows.forEach(r=>{
@@ -28493,6 +28506,7 @@ function scoreCardEl(opts){
         const inner=played?`<span style="color:${dScoreCol(tp)}">${scMark(s,tp)}</span>`:`<span class="rsc-dot0">·</span>`;
         cell(`rsc-c rsc-pl ${k===cur?'cur':''} ${k===sel?'sel':''} ${(tap&&played)?'tapc':''} ${rc}`, inner, (tap?`data-hole="${k}"`:''));
       }
+      filler(`rsc-c rsc-pl ${rc}`);
       cell(`rsc-c rsc-pl rsc-sub ${rc}`, sum(r.strokes,bl.a,bl.b));
       if(bl.tot) cell(`rsc-c rsc-pl rsc-sub rsc-tot ${rc}`, sum(r.strokes,0,H));
     });
