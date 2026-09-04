@@ -1819,12 +1819,19 @@
      so the sentences are here rather than in a rulebook nobody opens. */
   .whip .lede{margin:-2px 0 10px;font-size:11.5px;line-height:1.5;color:var(--dim)}
   .whip .lede b{color:var(--ink);font-weight:600}
-  /* NO GAP BETWEEN SEGMENTS, which is the difference between six boxes and two blocks. The
-     first version put 2px between them and outlined the hostile ones in red, and the left
-     hand side read as four separate angry conferences rather than as one mass of vote weight
-     approaching a line. A hairline divider keeps them countable. */
-  .whip .track{position:relative;display:flex;height:36px;border-radius:9px;
-    background:var(--line);overflow:visible}
+  /* IT IS A GAUGE THAT FILLS, NOT SIX BOXES IN A ROW.
+     The first version drew all six groups as segments, green when they were with you, and a
+     gold line at half. Nobody could read it, twice. The reason is that a bar which is already
+     full of color has nothing to fill: on a term where the whole room is behind you it was
+     six green boxes in a row with a gold line sitting between two of them, which reads as a
+     divider in a list rather than as a threshold nothing has reached.
+
+     So only the groups that have TURNED get a segment. Everything else is empty track. Safe
+     is an empty bar. Trouble is red creeping in from the left. Removed is red past the line.
+     One thing to look at, and its meaning is the same whether or not you read the sentence
+     above it. */
+  .whip .track{position:relative;display:flex;height:34px;border-radius:9px;
+    background:rgba(255,255,255,.045);box-shadow:inset 0 0 0 1px var(--line);overflow:visible}
   /* PADDING AND BORDER ARE BOTH A FLOOR ON A FLEX ITEM WITH A ZERO BASIS, and this segment
      inherited two pixels of one and one of the other. The Group of Five's half a vote came
      out 26.4px wide against the SEC's 87.5 where the weights say four to one, because every
@@ -1833,34 +1840,29 @@
      test_whip, not eyeballed: at these sizes the error is a pixel and a half. */
   .whip .seg{position:relative;display:flex;align-items:center;justify-content:center;
     min-width:0;padding:0;border:0;overflow:hidden;border-radius:0;
-    box-shadow:inset -1px 0 0 rgba(0,0,0,.45)}
-  .whip .seg:last-child{box-shadow:none}
+    background:rgba(239,68,68,.42);box-shadow:inset -1px 0 0 rgba(0,0,0,.45)}
   .whip .seg:first-child{border-radius:9px 0 0 9px}
-  .whip .seg:last-child{border-radius:0 9px 9px 0}
   .whip .seg b{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.04em;
-    white-space:nowrap;color:rgba(255,255,255,.86)}
-  /* ONE QUESTION, ONE COLOR CHANNEL. The first version tinted each segment with the bloc's
-     own brand hue and washed the hostile ones red on top of it, and the SEC's brand hue IS
-     red: a supportive SEC came out looking exactly like a conference that had turned, on the
-     strip whose entire job is telling those two apart. The bloc is named on the segment and
-     keeps a hairline of its own color on top; the fill says with or against and nothing
-     else. */
-  .whip .seg.with{background:rgba(16,185,129,.30);
-    box-shadow:inset -1px 0 0 rgba(0,0,0,.45),inset 0 3px 0 var(--bc)}
-  .whip .seg.against{background:rgba(239,68,68,.34);
-    box-shadow:inset -1px 0 0 rgba(0,0,0,.45),inset 0 3px 0 var(--bc)}
-  .whip .seg.with:last-child,.whip .seg.against:last-child{
-    box-shadow:inset 0 3px 0 var(--bc)}
-  .whip .seg.against b{color:rgba(255,255,255,.72)}
+    white-space:nowrap;color:rgba(255,255,255,.92)}
   /* THE TWO THAT CAN END YOU ON THEIR OWN. A second failure condition needs a second mark,
-     or the strip is telling a player they are safe at 3 of 7.5 while both of them are red. */
+     or the strip is telling a player they are safe at 3 of 7.5 while both of them are red.
+     The dot was unexplained decoration on a full bar; on an empty one it only ever appears
+     on a group that has turned, and the line under the bar says what the pair of them can
+     do. */
   .whip .seg.big:after{content:'';position:absolute;top:4px;right:4px;width:5px;height:5px;
-    border-radius:50%;background:var(--gold);opacity:.9}
+    border-radius:50%;background:var(--gold);opacity:.95}
+  /* THE EMPTY REMAINDER, which is the vote still with you, and it says so rather than being
+     a gap. This is the whole difference between a gauge and a bar chart. */
+  .whip .rest{flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;
+    padding:0 8px;overflow:hidden}
+  .whip .rest span{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
   /* THE LINE DOES NOT MOVE, which is the point of it. */
   .whip .cut{position:absolute;left:50%;top:-5px;bottom:-5px;width:2px;margin-left:-1px;
     background:var(--gold);border-radius:2px;pointer-events:none}
   /* AND IT SAYS WHAT IT IS, under the track rather than over it: above the bar it would sit
-     on the gloss, and inside the bar it would sit on a segment's name. Its own row, so the
+     on the gloss, and inside the bar it would sit on a group's name. Its own row, so the
      label can be centered on the line and nothing has to be moved out of its way. */
   .whip .marks{position:relative;height:12px;margin-top:6px}
   .whip .marks span{position:absolute;left:50%;transform:translateX(-50%);
@@ -1870,6 +1872,10 @@
     color:var(--dim);line-height:1.4}
   .whip .foot b{color:var(--ink);font-weight:600}
   .whip .foot .r{margin-left:auto;color:var(--dim-2);white-space:nowrap}
+  /* THE SECOND RULE, IN WORDS, because it is not a length and drawing it as one is what put
+     an unexplained gold dot on the bar. */
+  .whip .pair{margin-top:8px;font-size:11.5px;line-height:1.45;color:var(--dim-2)}
+  .whip.gone .pair,.whip.thin .pair{color:var(--gold)}
   .whip .moved{margin-top:8px;font-size:12px;line-height:1.45;color:var(--gold)}
   @media(max-width:400px){ .whip .seg b{font-size:9px} }
 
@@ -3091,33 +3097,52 @@ function paintWhip(el,w,before){
   if(!el) return;
   const st=whipState(w);
   const VW=L.VOTE_WEIGHT;
-  /* Against you first and biggest first inside each half, so the red block is contiguous and
-     the eye only ever has to compare one edge against one line. */
-  const seats=Object.keys(VW)
-    .filter((b)=>w.blocs[b]!=null)
-    .map((b)=>({ id:b, weight:VW[b], v:w.blocs[b], against:w.blocs[b]<L.HOSTILE }))
-    .sort((a,b)=>(a.against===b.against?b.weight-a.weight:(a.against?-1:1)));
-  const totalW=seats.reduce((t,x)=>t+x.weight,0)||1;
+  /* ONLY THE ONES THAT HAVE TURNED GET A SEGMENT. See the CSS: a bar already full of color
+     has nothing left to fill, which is why two players in a row could not read this. Biggest
+     first, so the red is one contiguous mass growing from the left toward a line that never
+     moves. */
+  const turned=Object.keys(VW)
+    .filter((b)=>w.blocs[b]!=null&&w.blocs[b]<L.HOSTILE)
+    .map((b)=>({ id:b, weight:VW[b], v:w.blocs[b] }))
+    .sort((a,b)=>b.weight-a.weight);
   const label=st.gone?'Removed':st.thin?'On the edge':'Holding';
   el.className='whip '+(st.gone?'gone':st.thin?'thin':'safe');
+  /* THE PAIR RULE IS A SENTENCE, NOT A LENGTH. The SEC and the Big Ten together end a term
+     whatever the other four do, which is not a distance along a bar and cannot be drawn as
+     one: drawn, it was a gold dot nobody could explain. */
+  const bigLeft=['SEC','Big Ten'].filter((b)=>w.blocs[b]!=null&&w.blocs[b]<L.HOSTILE);
+  const pair=st.bigTwo
+    ? 'The SEC and the Big Ten have both turned. That alone ends the term.'
+    : bigLeft.length
+      ? 'The SEC and the Big Ten can end the term together whatever the rest do. The '
+        +bigLeft[0]+' has already turned.'
+      : 'The SEC and the Big Ten can end the term together whatever the rest do. Both are '
+        +'still with you.';
   /* SHORT ENOUGH TO SHARE A LINE WITH THE PILL. "The vote that can remove you" wrapped onto
      two lines at 390px and the pill sat on top of the second one. "Your job" fitted and said
      nothing: it named the stake and left the diagram under it unexplained, which is how the
-     strip came back as "what does the bar mean". The header now names what the picture IS and
-     the gloss under it says how to read the picture. */
+     bar came back twice as "what does this mean". The header names what the picture is about
+     and the sentence under it states the rule the picture draws. */
   el.innerHTML='<div class="wh"><b>Who can remove you</b>'
     +'<span class="state">'+esc(label)+'</span></div>'
-    +'<p class="lede">Each bar is a group, as wide as its vote. Red is against you. '
-    +'Past the gold line your term ends. So does both dots going red.</p>'
+    +'<p class="lede">Six groups vote on your job, weighted by size. Turn more than half of '
+    +'that vote against you and the term ends.</p>'
     +'<div class="track">'
-    +seats.map((x)=>{
+    +turned.map((x)=>{
       const ui=BLOC_UI[x.id]||{};
       const big=x.id==='SEC'||x.id==='Big Ten';
-      return '<span class="seg '+(x.against?'against':'with')+(big?' big':'')+'" '
-        +'style="flex:'+x.weight+' 0 0;--bc:'+(ui.c||'#8b98ad')+'" '
-        +'title="'+esc(x.id+', '+x.weight+(x.weight===1?' vote':' votes'))+'">'
+      return '<span class="seg against'+(big?' big':'')+'" '
+        +'style="flex:'+x.weight+' 0 0" '
+        +'title="'+esc(x.id+', '+x.weight+(x.weight===1?' vote':' votes')+', against you')+'">'
         +'<b>'+esc(ui.tag||ui.short||x.id)+'</b></span>';
     }).join('')
+    /* THE EMPTY REMAINDER SAYS WHAT IT IS. A gap reads as a bar that failed to render. */
+    /* SHORT, BECAUSE THE REMAINDER SHRINKS AS THE RED GROWS. "1 group still with you" is
+       twenty-two characters in a box that is one eighth of the bar by the time it is true,
+       so it ellipsised at exactly the moment it mattered most. Votes, in the same unit as
+       the count under the bar. */
+    +'<span class="rest" style="flex:'+Math.max(0.0001,st.total-st.hostile)+' 1 0"><span>'
+    +esc(turned.length?st.with.toFixed(1)+' with you':'Nobody has turned')+'</span></span>'
     +'<i class="cut"></i></div>'
     +'<div class="marks"><span>half: '+st.limit.toFixed(1)+' votes</span></div>'
     /* AT EXACTLY HALF YOU SURVIVE, and the first version said "4 against you, you go at 4",
@@ -3128,7 +3153,8 @@ function paintWhip(el,w,before){
     +'<span class="r">'+(st.gone
       ? (st.bigTwo?'both of the two are gone':'over the line')
       : 'out above '+st.limit.toFixed(1))+'</span></div>'
-    /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A bloc going under twenty-five is the whole
+    +'<div class="pair">'+esc(pair)+'</div>'
+    /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A group going under twenty-five is the whole
        failure condition arriving one step closer and it used to be a number changing color
        in a list of nine. */
     +(function(){
@@ -3141,9 +3167,6 @@ function paintWhip(el,w,before){
       return '<div class="moved">'+esc(names)+(moved.length===1?' has ':' have ')
         +(out?'crossed the line against you.':'come back over the line.')+'</div>';
     })();
-  /* The segments are laid out by flex, so nothing here has to be grown: what would animate
-     is the reorder, and a bar that shuffles while you read it is worse than one that does
-     not. */
 }
 
 
