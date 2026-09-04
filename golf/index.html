@@ -33890,6 +33890,10 @@ function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return;
   else if(p.kind==='bag'){ r=bagBuy(p.club,p.tier); okMsg='Club upgraded!'; }
   else { r=accBuy(p.id); }   // accBuy auto-equips
   S.shopPreview=null;
+  // The balance is re-checked inside each buy, so it can still come up short here even though the card
+  // said it would not (a pack opened in another tab, a cross-device merge). That is the same moment as
+  // any other, so it gets the same dialog rather than a toast the player cannot act on.
+  if(r && !r.ok && r.msg==='Not enough coins'){ render(); coinShortfall({name:p.name, price:p.price, from:'confirm:'+p.kind}); return; }
   try{ toast(r&&r.ok?okMsg:((r&&r.msg)||'Could not buy')); }catch(e){}
   render(); }
 // a shop card for a cosmetic (shirt/hat/pants/shoes color or a pattern)
@@ -33994,17 +33998,24 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
     ${lore?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore)}”</div>`:''}
     ${boostTxt?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt}</div>`:''}
     <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
-    <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
+    <div class="small muted" style="margin-top:5px">${afford
+      ? `Balance ${coinFmt(bal)} &rarr; <b style="color:#35d6a0">${coinFmt(after)}</b> after`
+      : `Balance ${coinFmt(bal)} · short by <b style="color:#e2554e">${coinFmt(pv.price-bal)}</b>`}</div>
     <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
     <div style="display:flex;gap:10px;margin-top:14px">
       <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
-      <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
+      <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0">${afford?'Buy':'🪙 Get coins'}</button>
     </div>
-    ${(!afford&&BUCKETS_ENABLED&&sbSignedIn())?`<button class="btn" id="pv-getcoins" style="margin-top:10px;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Get more coins ▸<span class="sub">Coin buckets in the store · your first buy of each size is 2×</span></button>`:''}
     </div>`);
   card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
-  const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
-  const gcb=card.querySelector('#pv-getcoins'); if(gcb) gcb.onclick=()=>{ try{ track('nudge_getcoins',{from:'preview'}); }catch(e){} S.shopPreview=null; S.overlay='shop'; S.shopSec='buckets'; render(); };
+  // Short of coins, the action is not a dead button: it opens the one dialog that says how far short
+  // you are and what the first-time bonus is worth. (It used to be disabled, with a second button
+  // underneath that dropped you at the top of a store tab to work the rest out yourself.)
+  const buyb=card.querySelector('#pv-buy');
+  if(buyb) buyb.onclick=afford ? shopConfirmBuy : (()=>{
+    const rc=rar?ACC_RARITY[rar].c:null;
+    coinShortfall({name:pv.name, price:pv.price, accent:rc||'var(--gold)', from:'preview:'+pv.kind});
+  });
   return card;
 }
 // CS356g: crop a pixel-golfer data-URL to a band (24 sprite rows, starting at startRow) filling a box.
@@ -34953,10 +34964,12 @@ function packArtHTML(tier){ return '<img src="'+pxPackURL(tier)+'" alt="" class=
 // preview+Buy card. Appended to <body> (not #app) so a background re-render can't strand it, and
 // cancelling is the safe default: backdrop tap, Escape and Cancel all just close it. ----
 let _cspStyle=false, _cspOpen=null;
-function confirmSpend(o){
-  o=o||{}; if(typeof o.onYes!=='function') return;
-  if(_cspOpen){ try{_cspOpen.remove();}catch(e){} _cspOpen=null; }
-  if(!_cspStyle){ _cspStyle=true; const st=document.createElement('style'); st.textContent=`
+// The spend-dialog stylesheet, injected once. Shared by the confirm dialog below and by the
+// not-enough-coins dialog that stands in for it when the balance will not cover the price, because the
+// two are the same moment from opposite sides and a player should not be able to tell they are two
+// pieces of code.
+function cspStyleOnce(){
+  if(_cspStyle) return; _cspStyle=true; const st=document.createElement('style'); st.textContent=`
     .cspov{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:20px;
       background:rgba(3,12,7,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:cspFade .16s ease-out}
     @keyframes cspFade{from{opacity:0}to{opacity:1}}
@@ -34974,7 +34987,42 @@ function confirmSpend(o){
     .csp-row span:first-child{color:rgba(255,255,255,.5);font-weight:700}
     .csp-cost{display:inline-flex;align-items:center;gap:5px;color:var(--gold)}
     .csp-note{font:700 10.5px/1.4 var(--body);color:rgba(255,255,255,.45);margin:10px 0 0}
-    .cspcard .btn{margin-top:11px}`; document.head.appendChild(st); }
+    .cspcard .btn{margin-top:11px}
+    /* ---- not enough coins ---- */
+    .cspcard.short{max-width:370px;border-color:rgba(241,208,74,.45)}
+    .csp-kick.short{color:#ff8f7e}
+    .csp-row.gap span:last-child{color:#ff8f7e}
+    .csp-row.gap{border-top:1px solid rgba(255,255,255,.1);padding-top:9px;margin-top:9px;font-size:13.5px}
+    /* the first-time banner. It is the reason this dialog exists rather than a toast, so it gets the
+       one animated element on the card and nothing else competes with it. */
+    .csp-first{margin:13px 0 0;padding:9px 10px;border-radius:12px;text-align:center;
+      border:1px solid rgba(241,208,74,.5);background:linear-gradient(180deg,rgba(241,208,74,.18),rgba(241,208,74,.05));
+      font:800 11.5px/1.35 var(--body);color:#ffd45e;position:relative;overflow:hidden}
+    .csp-first .fh{display:block;font:900 13.5px/1.25 var(--body);color:#fff;margin-bottom:3px}
+    .csp-first::after{content:'';position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.26) 50%,transparent 62%);
+      transform:translateX(-120%);animation:cspShine 2.6s ease-in-out .35s infinite}
+    @keyframes cspShine{0%{transform:translateX(-120%)}55%,100%{transform:translateX(120%)}}
+    @media (prefers-reduced-motion:reduce){ .csp-first::after{animation:none;opacity:0} }
+    .csp-pick{display:flex;align-items:center;gap:11px;margin:11px 0 0;padding:11px 12px;border-radius:14px;
+      background:rgba(255,255,255,.04);border:1.5px solid var(--pk,#F1D04A);text-align:left}
+    .csp-pick .pkn{font-family:var(--display);font-size:16px;color:var(--pk,#F1D04A);line-height:1.1}
+    .csp-pick .pkc{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font:900 17px/1 var(--body);color:#ffd45e;margin-top:3px}
+    .csp-pick .pkwas{text-decoration:line-through;color:#8fa898;font-weight:700;font-size:12.5px}
+    .csp-pick .pk2x{font:800 8px/1 var(--body);letter-spacing:.06em;background:var(--gold);color:#0c1f16;border-radius:20px;padding:2px 6px}
+    .csp-pick .pkx{font:800 10px/1.3 var(--body);color:#cfe6d8;margin-top:4px}
+    .cspcard .btn.cspbuy{background:var(--pk,#F1D04A);color:#0c1f16;font-weight:900}
+    .csp-earn{font:700 10.5px/1.45 var(--body);color:rgba(255,255,255,.5);margin:12px 0 0}
+    .csp-more{font:800 10.5px/1.4 var(--body);color:#ffd45e;opacity:.85;margin:8px 0 0}
+    /* walking away is always available and never the loudest thing on the card */
+    .cspcard.short .btn.no{margin-top:9px;padding:8px;font-size:12px;border-color:transparent;
+      background:transparent;color:rgba(255,255,255,.5)}`;
+  document.head.appendChild(st);
+}
+function confirmSpend(o){
+  o=o||{}; if(typeof o.onYes!=='function') return;
+  if(_cspOpen){ try{_cspOpen.remove();}catch(e){} _cspOpen=null; }
+  cspStyleOnce();
   const bal=coinBalance();
   const costHTML=o.costHTML||('<span class="csp-cost">'+ic('coin',{size:'14px'})+coinFmt(o.cost||0)+'</span>');
   const balHTML=o.balHTML||(coinFmt(bal)+' → <b style="color:var(--oncard)">'+coinFmt(Math.max(0,bal-(o.cost||0)))+'</b>');
@@ -34998,6 +35046,102 @@ function confirmSpend(o){
   document.addEventListener('keydown',key,true);
   document.body.appendChild(ov); _cspOpen=ov;
 }
+/* ===== NOT ENOUGH COINS =====
+   Every coin purchase in the game runs out of coins the same way, and it used to end three different
+   ways: a greyed-out button on the gear card, a one-line toast on a pack, and a second toast on a
+   bundle. None of them said how far short the player was, and none of them mentioned that the first
+   time you buy each bucket the coins are DOUBLED, which is the single most useful thing anybody in
+   that moment could be told. This is the one dialog all three now open.
+   It is the confirm dialog's opposite number and shares its shell, so running out of coins reads as
+   part of buying rather than as an error. */
+// The smallest bucket that would actually cover the gap, counting the 2× where it is still available.
+// Recommending one is the whole job: five prices and a mental arithmetic problem is how a player
+// decides not to bother.
+function coinBucketFor(short){
+  var buys=bucketBuys();
+  for(var i=0;i<BUCKETS.length;i++){ var b=BUCKETS[i];
+    if((buys.has(b.id)?b.coins:b.coins*2) >= short) return b; }
+  return BUCKETS[BUCKETS.length-1];
+}
+/* o = {name, price, art?, accent?, from?}  `from` is for analytics only. */
+function coinShortfall(o){
+  o=o||{};
+  const price=Math.max(0,Math.round(o.price||0)), bal=coinBalance(), gap=Math.max(1,price-bal);
+  const signed=sbSignedIn();
+  if(_cspOpen){ try{_cspOpen.remove();}catch(e){} _cspOpen=null; }
+  cspStyleOnce();
+  if(signed){ try{ loadWallet(); }catch(e){} }
+  try{ track('coinshort_shown',{from:o.from||'', price, gap}); }catch(e){}
+  const ov=$(`<div class="cspov" role="dialog" aria-modal="true" aria-label="Not enough coins"><div class="cspcard short"></div></div>`);
+  const card=ov.querySelector('.cspcard');
+  const close=()=>{ if(_cspOpen===ov){ _cspOpen=null; } try{ov.remove();}catch(e){} document.removeEventListener('keydown',key,true); };
+  const key=e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
+  const goStore=()=>{ close(); try{ track('coinshort_store',{from:o.from||''}); }catch(e){}
+    S.shopPreview=null; S.overlay='shop'; S.shopSec='buckets'; render(); };
+  // Built as a function because the per-size bonus is read from the account's own purchase rows, which
+  // may still be in flight when this opens (bucketBuys() is optimistic until they land). When they do,
+  // the card is rebuilt in place rather than left showing a 2× the server will not honour.
+  const build=()=>{
+    const buys=bucketBuys(), anyFirst=BUCKETS.some(function(b){ return !buys.has(b.id); });
+    let firstEver=false;
+    try{ firstEver = signed && buys.size===0 && wheelEnabled() && !wheelState().firstBuy; }catch(e){}
+    const coinIc=s=>`<span style="width:${s}px;height:${s}px;display:inline-block;vertical-align:-2px">${ic('coin',{size:s+'px'})}</span>`;
+    let h=`<div class="csp-kick short">NOT ENOUGH COINS</div>
+      ${o.art?`<div class="csp-art">${o.art}</div>`:''}
+      <h3 class="csp-name" style="color:${o.accent||'var(--gold)'}">${esc(o.name||'This item')}</h3>
+      <div class="csp-rows">
+        <div class="csp-row"><span>Cost</span><span class="csp-cost">${coinIc(14)}${coinFmt(price)}</span></div>
+        <div class="csp-row"><span>You have</span><span>${coinIc(14)}${coinFmt(bal)}</span></div>
+        <div class="csp-row gap"><span>Short by</span><span>${coinIc(14)}${coinFmt(gap)}</span></div>
+      </div>`;
+    if(!signed){
+      h+=`<p class="csp-note">Coins live with your account. Create a free one to earn and spend them.</p>
+        <button class="btn goldfill acct">Create a free account ▸</button>
+        <button class="btn ghost no">Not now</button>`;
+      card.innerHTML=h;
+      card.querySelector('.acct').onclick=()=>{ close(); S.shopPreview=null; S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
+    } else if(!BUCKETS_ENABLED){
+      h+=`<p class="csp-earn">Coins come from playing. Finish a season, clear achievements, and claim your daily login bonus.</p>
+        <button class="btn ghost no">Close</button>`;
+      card.innerHTML=h;
+    } else {
+      const b=coinBucketFor(gap), fb=!buys.has(b.id), got=fb?b.coins*2:b.coins;
+      // The banner is only shown when the bucket being OFFERED still carries its 2x. A general "first
+      // time you buy each size" over a recommendation that has already had its double is a promise the
+      // card immediately breaks one row further down. When the offer is spent but other sizes are not,
+      // that is worth one quiet line, not a banner.
+      if(fb) h+=`<div class="csp-first">
+        <span class="fh">🎉 ${firstEver?'Your first purchase pays double':'First-time bonus'}</span>
+        ${firstEver?'Twice the coins, plus a free Prize Wheel spin.':'Twice the coins, the first time you buy each size.'}</div>`;
+      h+=`<div class="csp-pick" style="--pk:${b.col}">
+        <span style="flex:0 0 auto">${coinBucketSVG(BUCKETS.indexOf(b)+1,b.col,52)}</span>
+        <span style="flex:1;min-width:0">
+          <span class="pkn">${esc(b.name)}</span>
+          <span class="pkc">${coinIc(15)}${fb?`<span class="pkwas">${coinFmt(b.coins)}</span>`:''}<span>${coinFmt(got)}</span>${fb?'<span class="pk2x">2×</span>':''}</span>
+          <span class="pkx">Covers this and leaves you ${coinFmt(Math.max(0,bal+got-price))} over.</span>
+        </span></div>
+      ${(!fb&&anyFirst)?`<p class="csp-more">Other sizes still pay double the first time you buy them.</p>`:''}
+      <button class="btn cspbuy buy" style="--pk:${b.col}">Buy ${esc(b.name)} · $${b.usd.toFixed(2)}</button>
+      <button class="btn ghost store">See all coin buckets ▸</button>
+      <p class="csp-earn">Coins come from playing too. Finish a season, clear achievements, and claim your daily login bonus.</p>
+      <button class="btn ghost no">Not now</button>`;
+      card.innerHTML=h;
+      card.querySelector('.buy').onclick=()=>{ close(); try{ track('coinshort_buy',{bucket:b.id, from:o.from||''}); }catch(e){}
+        try{ beginBucketPurchase(b.id); }catch(e){} };
+      card.querySelector('.store').onclick=goStore;
+    }
+    const nb=card.querySelector('.no'); if(nb) nb.onclick=()=>{ try{ track('coinshort_dismiss',{from:o.from||''}); }catch(e){} close(); };
+  };
+  build();
+  // one rebuild if the purchase rows arrive after the dialog did
+  if(signed && BUCKETS_ENABLED && !_bucketBuysCache){
+    let tries=0;
+    const t=setInterval(()=>{ if(!ov.isConnected || _bucketBuysCache || ++tries>12){ clearInterval(t); if(ov.isConnected && _bucketBuysCache) build(); } }, 400);
+  }
+  ov.onclick=e=>{ if(e.target===ov) close(); };            // tapping outside cancels
+  document.addEventListener('keydown',key,true);
+  document.body.appendChild(ov); _cspOpen=ov;
+}
 function startPackDeal(opts){ opts=opts||{};
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
@@ -35012,7 +35156,7 @@ function startPackDeal(opts){ opts=opts||{};
     var freeCredit=!freeFirst && packCredits(tier)>0;
     free=freeFirst||freeCredit;
     if(!free){
-      if(coinBalance()<pt.price){ toast(packErr('coins')); return; }
+      if(coinBalance()<pt.price){ coinShortfall({name:pt.name, art:packArtHTML(tier), price:pt.price, accent:pt.col, from:'pack'}); return; }
       // Nothing spends coins on a single tap: confirm first. (A free pack or a prepaid bundle
       // open costs nothing, so those go straight through.)
       if(!opts.confirmed){ confirmSpend({name:pt.name, art:packArtHTML(tier), cost:pt.price, accent:pt.col,
@@ -35035,7 +35179,7 @@ function startPackBundle(tier,confirmed){
   tier=tier||'base'; var pt=packType(tier), bprice=packBundlePriceFor(tier);
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
-  if(coinBalance()<bprice){ toast(packErr('coins')); return; }
+  if(coinBalance()<bprice){ coinShortfall({name:PACK_BUNDLE_N+'× '+pt.name, art:packArtHTML(tier), price:bprice, accent:pt.col, from:'bundle'}); return; }
   if(!confirmed){ confirmSpend({name:PACK_BUNDLE_N+'× '+pt.name, art:packArtHTML(tier), cost:bprice, accent:pt.col,
     note:PACK_BUNDLE_N+' packs for the price of '+PACK_BUNDLE_PAY+', opened one at a time.', label:'Buy '+PACK_BUNDLE_N+' packs ▸',
     onYes:function(){ startPackBundle(tier,true); }}); return; }
