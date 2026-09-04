@@ -15,8 +15,8 @@
  *
  * The bar it has to clear:
  *   a GOOD career (a fine tour pro) never reaches the top rung at all
- *   a GREAT career reaches it late, not mid-career
- *   an ALL-TIME career reaches it, and still not before year 15
+ *   a GREAT career reaches it in the year 20 to 25 window
+ *   an ALL-TIME career reaches it in that same window, not a decade earlier
  *   every career still gets a real deal early, so year one is not a wasteland
  */
 import { chromium } from 'playwright';
@@ -36,7 +36,7 @@ const head = (t) => console.log('\n' + t + '\n' + '-'.repeat(t.length));
 const HOOK = `
 window.__SP = {
   tiers(){ return {names:SPONSOR_TIERS.map(function(t){return t.name;}), req:SPONSOR_TIER_REQ.slice(),
-    relMax:SPONSOR_REL_MAX, relAmb:SPONSOR_REL_AMB}; },
+    minYr:SPONSOR_TIER_MINYR.slice(), relMax:SPONSOR_REL_MAX, relAmb:SPONSOR_REL_AMB}; },
   /* State one season of a career and ask the page what tier it attracts. Only the five inputs the value
      is a function of are set; everything else is the shipped code. */
   at(y){
@@ -115,7 +115,7 @@ const run = async () => {
 
   const T = await page.evaluate(() => window.__SP.tiers());
   head('the ladder');
-  console.log('   ', T.names.map((n, i) => `${n} @ ${T.req[i]}`).join('  ·  '));
+  console.log('   ', T.names.map((n, i) => `${n} @ ${T.req[i]}${T.minYr[i] ? ' & yr' + T.minYr[i] : ''}`).join('  ·  '));
   console.log('    loyalty 1..' + T.relMax + ', ambassador at ' + T.relAmb);
   ok('six rungs, each named after its brand pool', T.names.length === 6 && T.names[5] === 'Icon', T.names);
   ok('the thresholds climb', T.req.every((v, i) => i === 0 || v > T.req[i - 1]), T.req);
@@ -139,10 +139,13 @@ const run = async () => {
   ok('everybody has a real deal from year one', good[0] === 1 && great[0] === 1 && allt[0] === 1, { good: good[0], great: great[0], allt: allt[0] });
   ok('a solid pro never reaches Icon', good[5] == null, good);
   ok('...and does still climb, to Global or better', (good[3] != null), good);
-  ok('a great career reaches Icon LATE, not mid-career', great[5] != null && great[5] >= 20, { icon: great[5] });
-  ok('an all-timer reaches Icon, and not before year 15', allt[5] != null && allt[5] >= 15, { icon: allt[5] });
+  // the owner's target: the final rung lands in the back half of a career, not the middle of it
+  ok('a great career reaches Icon in the year 20 to 25 window', great[5] >= 20 && great[5] <= 25, { icon: great[5] });
+  ok('an all-timer reaches Icon in the year 20 to 25 window', allt[5] >= 20 && allt[5] <= 25, { icon: allt[5] });
   ok('no career is at the top rung by year 13, which is the bug',
     (good[5] == null || good[5] > 13) && great[5] > 13 && allt[5] > 13, { good: good[5], great: great[5], allt: allt[5] });
+  ok('and none of them is at Elite before year 12 either',
+    [good[4], great[4], allt[4]].every(y => y == null || y >= 12), { good: good[4], great: great[4], allt: allt[4] });
   ok('the middle of the ladder still moves through the middle years',
     great[2] != null && great[2] <= 12 && great[3] != null && great[3] <= 20, { premium: great[2], global: great[3] });
 

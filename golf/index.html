@@ -22390,7 +22390,14 @@ const SPONSOR_TIERS=[   // CS242: reward ladder compressed so the top tier can't
    deal by about year 13 and then had seventeen seasons with nothing left to climb (owner). The value
    below runs to ~150 and keeps moving all career, and the top two rungs are priced for a CV that takes
    twenty-odd seasons to build. Icon is meant to be the last few years of a legendary career, or never. */
-const SPONSOR_TIER_REQ=[0, 26, 52, 80, 106, 130];
+const SPONSOR_TIER_REQ=[0, 26, 52, 80, 106, 124];
+/* And a YEARS-SERVED gate on the top two rungs, because a value curve alone cannot put them where they
+   belong (owner: the final tier should land around year 20 to 25). An all-timer's following, rating and
+   CV are all near their ceilings by their mid thirties, so on value alone they reach the top rung around
+   year 17 however the numbers are weighted, while a merely great career gets there ten years later. The
+   gate closes that spread from the early end: nobody is the face of the sport in year 13, whatever they
+   have won. Value still decides whether you EVER get there. */
+const SPONSOR_TIER_MINYR=[0, 0, 0, 0, 12, 20];
 /* Loyalty runs past the ambassador milestone now, so a partnership is still deepening in year 25. Levels
    above AMB take TWO delivered seasons each and pay half a step, so the last three rungs are roughly six
    seasons of work for a modest raise: a reason to stay, not a second income. */
@@ -22619,7 +22626,8 @@ function sponsorMarketValue(){ const st=careerStory(), c=S.career||{};
   return fv+ov+av+sv; }
 // Legacy perks (Number One, Money Machine, The Immortal) are LEVERAGE: brands court a golfer with that
 // résumé above what their following alone would earn.
-function eligibleSponsorTier(){ const v=sponsorMarketValue(); let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i]) t=i;
+function eligibleSponsorTier(){ const v=sponsorMarketValue(), yr=S.year||1;
+  let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i] && yr>=(SPONSOR_TIER_MINYR[i]||0)) t=i;
   try{ if(typeof legacyAdd==='function') t+=legacyAdd('sponsorTier'); }catch(e){}
   try{ const ep=(typeof entryPath==='function')?entryPath():null; if(ep&&ep.sponsorTierAdj) t+=ep.sponsorTierAdj; }catch(e){}
   return Math.max(0, Math.min(SPONSOR_TIERS.length-1, t)); }
