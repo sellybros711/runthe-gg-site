@@ -1250,6 +1250,55 @@
   .tourcard .tb b{color:var(--cream);}
   .tourcard .trow{display:flex;gap:8px;align-items:center;margin-top:13px;}
   .tourcard .trow button{padding:8px 15px;font-size:12px;}
+  /* ---- the Ropes Pass ---- */
+  .passhead{display:flex;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+  .passhead .ph-l{flex:1;min-width:0;} .passhead .ph-r{flex:none;text-align:right;}
+  .ph-tier{font-family:var(--display);font-size:15px;color:var(--text-dim);letter-spacing:.06em;}
+  .ph-tier b{font-size:30px;color:var(--gold);} .ph-tier span{color:var(--text-faint);}
+  .ph-bar{height:10px;background:rgba(0,0,0,.5);border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:6px 0 5px;}
+  .ph-bar i{display:block;height:100%;background:linear-gradient(90deg,#8a6a1e,var(--gold));}
+  .ph-days{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--cream);}
+  .passnote{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:12.5px;line-height:1.6;color:var(--text-dim);margin-bottom:10px;}
+  .passnote b{color:var(--cream);} .passnote .bad{color:#f0907f;}
+  .passpro{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    background:linear-gradient(180deg,rgba(176,138,198,.16),rgba(0,0,0,.2));border:1.5px solid rgba(176,138,198,.5);border-radius:14px;padding:13px 16px;margin-bottom:12px;}
+  .passpro .pp-t{font-family:var(--display);font-size:18px;color:#cbaade;text-transform:uppercase;letter-spacing:.04em;}
+  .passpro button{flex:none;}
+  .prow{display:grid;grid-template-columns:44px 1fr 1fr;gap:8px;align-items:stretch;margin-bottom:7px;opacity:.55;}
+  .prow.on{opacity:1;}
+  .pr-t{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:15px;font-weight:800;
+    color:var(--text-faint);background:var(--panel);border:1px solid var(--line);border-radius:10px;}
+  .prow.on .pr-t{color:var(--cream);}
+  .prow.ready .pr-t{color:var(--gold);border-color:var(--gold);}
+  .pr-lane{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 11px;display:flex;flex-direction:column;gap:3px;}
+  .pr-lane.pro{border-color:rgba(176,138,198,.35);}
+  .pr-lane.locked{opacity:.5;}
+  .pr-lane.can{border-color:var(--gold);background:rgba(224,179,65,.10);}
+  .pr-lane.got{opacity:.6;}
+  .pr-lab{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--text-faint);}
+  .pr-lane.pro .pr-lab{color:#cbaade;}
+  .pr-rw{font-size:12.5px;color:var(--cream);font-weight:600;}
+  .pr-lane button{padding:5px 10px;font-size:11px;margin-top:3px;align-self:flex-start;}
+  .pr-tick{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:.08em;}
+  @media(max-width:640px){ .prow{grid-template-columns:34px 1fr 1fr;gap:5px;} .pr-rw{font-size:11.5px;} }
+  /* ---- the daily loop ---- */
+  .streakcard{text-align:center;padding:6px 0 2px;}
+  .sk-dots{display:flex;gap:7px;justify-content:center;margin-bottom:14px;}
+  .sk-d{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;font-weight:800;background:var(--panel);border:1px solid var(--line);color:var(--text-faint);}
+  .sk-d.past{color:var(--cream);border-color:rgba(224,179,65,.4);}
+  .sk-d.on{background:var(--gold);color:#231a08;border-color:var(--gold);transform:scale(1.15);}
+  .sk-got{font-family:var(--display);font-size:30px;color:var(--gold);letter-spacing:.02em;}
+  .sk-next{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-dim);}
+  .sk-next b{color:var(--cream);}
+  .dailypanel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:10px;}
+  .dp-h{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;}
+  .dp-row{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:12.5px;color:var(--text-dim);}
+  .dp-row.done{color:var(--green);}
+  .dp-box{flex:none;width:15px;height:15px;border-radius:4px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:10px;}
+  .dp-row.done .dp-box{background:var(--green);border-color:var(--green);color:#0d1a12;}
+  .dp-c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gold);}
   .tourdots{display:flex;gap:4px;margin-right:auto;}
   /* the closing card: numbered steps that name real buttons */
   .tstep{display:flex;gap:10px;align-items:flex-start;margin:7px 0;line-height:1.45;}
@@ -1652,6 +1701,13 @@
   <div id="shopBody"></div>
 </div>
 
+<!-- ============ THE ROPES PASS ============ -->
+<div class="screen" id="s-pass">
+  <div class="gnav" data-scr="pass"></div>
+  <h2>The Ropes Pass <span class="sub2" id="passSub"></span></h2>
+  <div id="passBody"></div>
+</div>
+
 <!-- ============ LOCKER ROOM ============ -->
 <div class="screen" id="s-crew">
   <div class="gnav" data-scr="crew"></div>
@@ -1752,7 +1808,7 @@
 
 <script src="moves.js?v=2"></script>
 <script src="legends.js?v=2"></script>
-<script src="cosmetics.js?v=2"></script>
+<script src="cosmetics.js?v=3"></script>
 <script src="world.js?v=2"></script>
 <script>
 "use strict";
@@ -2377,8 +2433,8 @@ function applySeasonPayout(rep){
   const c=G.car;
   if(rep._applied) return;
   rep._applied = true;
-  G.bag.coins += (rep.payout.coins||0);
-  c.earnings += (rep.payout.coins||0);
+  c.earnings += (rep.payout.coins||0);      // the office bonus is MONEY
+  if(rep.payout.coins) awardCoins(COIN_SEASON_GOAL, 'season goal met', true);
   c.standing = clamp((c.standing||50) + (rep.payout.standing||0));
 }
 function showSeasonReportModal(rep){
@@ -3035,6 +3091,250 @@ function houseRoster(promoId){
 // stables / rivals code. Callers here reuse it.
 const MOVES=window.RTR_MOVES||[], MCATS=window.RTR_MOVE_CATS||[], MTIERS=window.RTR_TIERS||[];
 const COSM=window.RTR_COSMETICS||[], RAR=window.RTR_RARITY||{}, PACKS=window.RTR_PACKS||[], PAL=window.RTR_PALETTE||{};
+/* ============================================================
+   THE COIN ECONOMY
+   ------------------------------------------------------------
+   TWO CURRENCIES, AND THEY ARE NOT THE SAME THING. This is the
+   whole design, and getting it wrong is what broke the old one.
+
+     MONEY ($)  is kayfabe. The purse, the downside, the merch cut.
+                It pays for the life: it is what a contract is worth
+                and what a career adds up to. It is CAREER-SCALED,
+                so a main-eventer clears six figures a night.
+     COINS (a)  are the meta currency. They buy gear across every
+                career you will ever run, so they must be SLOW and
+                they must not scale with the purse.
+
+   The old economy paid the purse straight into coins. A measured
+   12-year career earned 2,881,039 coins against a catalogue that
+   costs 1,650,300 to buy outright: one career bought the entire
+   game twice over, with 1.2 million left on the table. There was
+   nothing to grind for, because the grind was already finished
+   before the player ever opened the store.
+
+   So coins now come from their own faucet, awardCoins(), and every
+   term in it is hand-sized. A career YEAR pays roughly 700 coins
+   as a rookie and 2,300 at the top; a full fifteen-year career
+   lands near 20,000. Against the price ladder below that is about
+   one legendary item, which is the point: the store is a chase
+   that outlives any one wrestler, the way Run The Tour's does.
+
+   The day-to-day faucet is deliberately bigger than the career
+   one (the streak, the objectives, the pass), because the thing
+   worth rewarding is coming back tomorrow, not simming ten years
+   tonight. Everything funnels through awardCoins, so the pass, the
+   daily cap and the multipliers all have exactly one chokepoint.
+   ============================================================ */
+const COIN_EPOCH=2;               // bump to re-baseline every save's wallet at a new rate
+// per match, by where you were on the card. A main event is worth three openers.
+const COIN_CARD={'Opener':22, 'Mid-Card':38, 'Main Event':65};
+const COIN_PPV_MULT=1.6;          // a supercard pays more
+const COIN_Q=[[88,140],[80,70],[72,35],[64,15]];   // match-quality bonus ladder, best first
+const COIN_TITLE_WIN=350, COIN_TITLE_DEF=90;
+const COIN_FEUD_END=200, COIN_PROMO=20, COIN_PROMO_GOOD=45;
+const COIN_SEASON_GOAL=400, COIN_CAREER_DONE=2000, COIN_RUMBLE_WIN=300;
+const COIN_START=1500;            // what a new wrestler walks in with
+/* The one faucet. Every coin in the game comes through here, so the pass, the
+   daily cap and any future multiplier have a single place to hook. Returns the
+   amount actually paid. `quiet` suppresses the toast for bulk/offscreen awards. */
+function awardCoins(n, label, quiet){
+  if(!G||!G.bag||!(n>0)) return 0;
+  const amt=Math.round(n*coinMult());
+  G.bag.coins=(G.bag.coins||0)+amt;
+  G.bag.lifetime=(G.bag.lifetime||0)+amt;
+  passAddXp(amt);                                   // the pass climbs on what you earn
+  dailyProgress('coins', amt);
+  if(!quiet && label) toast(`<b>+${amt.toLocaleString()} coins</b> <span class="hint">${label}</span>`);
+  return amt;
+}
+function coinMult(){ return passProActive() ? PASS_PRO_MULT : 1; }
+// Coins are never written with a dollar sign. MONEY is dollars, coins are coins,
+// and rendering one as the other is the confusion this design exists to remove.
+function coinFmt(n){ return Math.round(n||0).toLocaleString()+' coins'; }
+function coinQualityBonus(q){ for(const [thr,amt] of COIN_Q){ if(q>=thr) return amt; } return 0; }
+
+/* ---------- THE DAILY LOOP ----------
+   No account layer here (the career game is localStorage only, unlike the golf
+   game's Supabase wallet), so the streak is date-keyed locally and lives on the
+   save. A missed day does not wipe the streak, it steps it back one: the point
+   is to reward coming back, not to punish a life. */
+const STREAK_TRACK={1:{coins:120},2:{coins:160},3:{coins:200},4:{pack:'p_base'},5:{coins:260},6:{coins:320},7:{pack:'p_elite'}};
+function dayKey(d){ const t=d||new Date(); return t.getFullYear()*10000+(t.getMonth()+1)*100+t.getDate(); }
+function daysBetween(a,b){
+  const p=k=>Date.UTC(Math.floor(k/10000), Math.floor(k/100)%100-1, k%100);
+  return Math.round((p(b)-p(a))/86400000);
+}
+function streakState(){ const b=G.bag; b.streak=b.streak||{day:0, last:0}; return b.streak; }
+// returns the reward to show, or null when today is already claimed
+function streakDue(){
+  const s=streakState(), today=dayKey();
+  if(s.last===today) return null;
+  const gap=s.last? daysBetween(s.last,today) : 999;
+  let day = (gap===1) ? Math.min(7,(s.day||0)+1) : (gap>=2 && gap<=3) ? Math.max(1,(s.day||1)) : 1;
+  return {day, reward:STREAK_TRACK[day]||{coins:120}, broke:gap>3&&s.last>0};
+}
+function claimStreak(){
+  const due=streakDue(); if(!due) return null;
+  const s=streakState(); s.day=due.day; s.last=dayKey(); s.best=Math.max(s.best||0,due.day);
+  const r=due.reward;
+  if(r.coins) awardCoins(r.coins, 'day '+due.day+' of your streak', true);
+  if(r.pack){ G.bag.packs=G.bag.packs||{}; G.bag.packs[r.pack]=(G.bag.packs[r.pack]||0)+1; }
+  save(); return due;
+}
+/* Daily objectives. Three a day, drawn deterministically from the date so every
+   player on a given day gets the same three, and they tick off during ordinary
+   career play rather than sending you to a separate mode. */
+const DAILY_OBJ=[
+  {id:'d_match', t:'Work a match', n:1, k:'match', c:150},
+  {id:'d_win',   t:'Win a match', n:1, k:'win', c:150},
+  {id:'d_two',   t:'Work two matches', n:2, k:'match', c:200},
+  {id:'d_good',  t:'Have a match rated 64 or better', n:1, k:'good', c:200},
+  {id:'d_great', t:'Have a match rated 75 or better', n:1, k:'great', c:280},
+  {id:'d_promo', t:'Cut a promo', n:1, k:'promo', c:150},
+  {id:'d_scene', t:'Play a backstage scene', n:1, k:'scene', c:150},
+  {id:'d_week',  t:'Get through three weeks', n:3, k:'week', c:150},
+  {id:'d_coins', t:'Earn 500 coins', n:500, k:'coins', c:180},
+  {id:'d_feud',  t:'Advance a feud', n:1, k:'feud', c:220},
+];
+const DAILY_N=3, DAILY_ALL_BONUS=250;
+function dailyState(){
+  const b=G.bag; const today=dayKey();
+  if(!b.daily || b.daily.key!==today){
+    let h=today>>>0; const pick=[], pool=DAILY_OBJ.slice();
+    for(let i=0;i<DAILY_N && pool.length;i++){
+      h=(Math.imul(h,1664525)+1013904223)>>>0;
+      pick.push(pool.splice(h%pool.length,1)[0].id);
+    }
+    b.daily={key:today, ids:pick, prog:{}, done:{}, bonus:false};
+  }
+  return b.daily;
+}
+function dailyList(){ const d=dailyState(); return d.ids.map(id=>DAILY_OBJ.find(o=>o.id===id)).filter(Boolean); }
+function dailyProgress(kind, n){
+  if(!G||!G.bag) return;
+  const d=dailyState(); let moved=false;
+  dailyList().forEach(o=>{
+    if(o.k!==kind || d.done[o.id]) return;
+    d.prog[o.id]=(d.prog[o.id]||0)+(n||1);
+    if(d.prog[o.id]>=o.n){
+      d.done[o.id]=true; moved=true;
+      // paid quiet and announced together, so three objectives do not stack three toasts
+      G.bag.coins=(G.bag.coins||0)+o.c; G.bag.lifetime=(G.bag.lifetime||0)+o.c;
+      passAddXp(o.c);
+      toast(`<b>Daily done:</b> ${o.t} <span class="hint">+${o.c} coins</span>`);
+    }
+  });
+  if(moved && !d.bonus && dailyList().every(o=>d.done[o.id])){
+    d.bonus=true;
+    G.bag.coins=(G.bag.coins||0)+DAILY_ALL_BONUS; G.bag.lifetime=(G.bag.lifetime||0)+DAILY_ALL_BONUS;
+    G.bag.shards=(G.bag.shards||0)+2;
+    passAddXp(DAILY_ALL_BONUS);
+    toast(`<b>All three done.</b> <span class="hint">+${DAILY_ALL_BONUS} coins and 2 shards</span>`);
+  }
+  if(moved) save();
+}
+
+/* ---------- THE ROPES PASS ----------
+   A 60-day season with a 50-tier track and two lanes. Pass XP comes off the coin
+   faucet, so everything that pays coins climbs it: matches, feuds, the daily, the
+   streak. Season-scoped state resets when the season rolls, so last season's
+   rewards lock out and the track is a genuine limited-time chase.
+
+   THE DAILY CAP IS THE WHOLE BALANCE. A career year can be simmed in a couple of
+   minutes, so without a cap the fastest route up the track is farming ten careers
+   in an evening, which is exactly the failure the golf game hit and had to fix.
+   PASS_XP_DAY caps what any one day can contribute, so the track is paced in DAYS
+   and the only way to finish it is to keep coming back.
+
+   PRO: the golf game gates its premium lane behind a real-money seasonal pass and
+   a server entitlement. This game has no account layer and no payment layer, so
+   PRO unlocks with coins. When the shared account arrives this constant is the one
+   thing to revisit. */
+const PASS_LEN=60, PASS_TIERS=50;
+const PASS_EPOCH=Math.floor(Date.UTC(2026,8,1)/86400000);   // season 1 opens 1 Sep 2026
+const PASS_XP_RATE=0.5;           // pass XP per coin earned
+const PASS_XP_DAY=1000;           // the anti-farm cap: most XP any single day can add
+const PASS_PRO_MULT=1.25;         // PRO holders earn 1.25x coins from everything
+const PASS_PRO_PRICE=25000;       // coins to unlock PRO for the season
+const PASS_C0=110, PASS_C1=3, PASS_C2=0.55;   // cost(t)=C0+C1*k+C2*k^2, k=t-1
+function passDayNum(){ const k=dayKey(); return Math.floor(Date.UTC(Math.floor(k/10000), Math.floor(k/100)%100-1, k%100)/86400000); }
+function passSeason(){ let el=passDayNum()-PASS_EPOCH; if(el<0) el=0;
+  return {n:Math.floor(el/PASS_LEN)+1, day:(el%PASS_LEN)+1, len:PASS_LEN, daysLeft:PASS_LEN-(el%PASS_LEN)}; }
+function passState(){
+  const b=G.bag; const cur=passSeason().n;
+  if(!b.pass || b.pass.season!==cur) b.pass={season:cur, xp:0, pro:false, claimed:{free:[],pro:[]}, dayKey:0, dayXp:0};
+  const p=b.pass;
+  p.claimed=p.claimed||{free:[],pro:[]};
+  if(!Array.isArray(p.claimed.free)) p.claimed.free=[];
+  if(!Array.isArray(p.claimed.pro)) p.claimed.pro=[];
+  p.xp=Math.max(0,+p.xp||0);
+  return p;
+}
+function passProActive(){ return !!(G&&G.bag&&G.bag.pass&&G.bag.pass.pro); }
+function passTierCost(t){ const k=t-1; return Math.round(PASS_C0 + PASS_C1*k + PASS_C2*k*k); }
+let _passCum=null;
+function passXpForTier(t){
+  if(!_passCum){ _passCum=[0]; let x=0; for(let i=1;i<=PASS_TIERS;i++){ x+=passTierCost(i); _passCum.push(x); } }
+  return _passCum[Math.max(0,Math.min(PASS_TIERS,t|0))];
+}
+function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
+function passTier(){ return passTierAt(passState().xp); }
+function passAddXp(coins){
+  if(!G||!G.bag||!(coins>0)) return;
+  const p=passState(), today=dayKey();
+  if(p.dayKey!==today){ p.dayKey=today; p.dayXp=0; }
+  const room=Math.max(0, PASS_XP_DAY-(p.dayXp||0));
+  if(!room) return;                                  // capped out for today
+  const add=Math.min(room, Math.round(coins*PASS_XP_RATE));
+  if(!add) return;
+  const before=passTierAt(p.xp);
+  p.xp+=add; p.dayXp=(p.dayXp||0)+add;
+  const after=passTierAt(p.xp);
+  if(after>before) G.bag._passPop={from:before,to:after};
+}
+/* Reward tables. Milestone tiers hand out packs, shards and cosmetics; every other
+   tier pays coins on a rising curve. The FREE lane is real (packs at 5/15/30/45,
+   a legendary-forging shard run, a cosmetic at 25) so a player who never unlocks
+   PRO still has a track worth climbing. */
+const PASS_FREE={ 5:{pack:'p_base'}, 10:{shard:3}, 15:{pack:'p_base'}, 20:{shard:4},
+  25:{cos:'a_jacket'}, 30:{pack:'p_base'}, 35:{shard:5}, 40:{coins:1200},
+  45:{pack:'p_elite'}, 50:{coins:2500, shard:8} };
+const PASS_PRO={ 3:{pack:'p_base'}, 5:{pack:'p_elite'}, 8:{shard:4}, 10:{pack:'p_base'},
+  13:{shard:5}, 15:{pack:'p_elite'}, 18:{coins:1500}, 20:{cos:'m_demon'},
+  23:{shard:6}, 25:{pack:'p_legend'}, 28:{coins:2000}, 30:{pack:'p_elite'},
+  33:{shard:8}, 35:{pack:'p_legend'}, 38:{coins:2500}, 40:{shard:10},
+  43:{pack:'p_elite'}, 45:{pack:'p_legend'}, 48:{coins:3000}, 50:{cos:'h_flames', coins:5000} };
+function passReward(t, lane){
+  const mile=(lane==='pro'?PASS_PRO:PASS_FREE)[t];
+  if(mile) return mile;
+  if(lane==='pro') return {coins: 220+t*22};
+  return (t%5===0) ? {shard:1, coins:90+t*8} : {coins:110+t*10};
+}
+function passClaimable(lane){
+  const p=passState(), tier=passTierAt(p.xp), got=p.claimed[lane]||[];
+  const out=[]; for(let t=1;t<=tier;t++) if(got.indexOf(t)<0) out.push(t);
+  return out;
+}
+function passClaim(t, lane){
+  const p=passState();
+  if(lane==='pro' && !passProActive()) return false;
+  if(t>passTierAt(p.xp) || (p.claimed[lane]||[]).indexOf(t)>=0) return false;
+  const r=passReward(t, lane);
+  p.claimed[lane].push(t);
+  if(r.coins){ G.bag.coins=(G.bag.coins||0)+r.coins; G.bag.lifetime=(G.bag.lifetime||0)+r.coins; }
+  if(r.shard) G.bag.shards=(G.bag.shards||0)+r.shard;
+  if(r.pack){ G.bag.packs=G.bag.packs||{}; G.bag.packs[r.pack]=(G.bag.packs[r.pack]||0)+1; }
+  if(r.cos) G.bag.owned[r.cos]=true;
+  save(); return true;
+}
+function passRewardText(r){
+  const bits=[];
+  if(r.coins) bits.push(r.coins.toLocaleString()+' coins');
+  if(r.shard) bits.push(r.shard+' shard'+(r.shard>1?'s':''));
+  if(r.pack){ const p=PACKS.find(x=>x.id===r.pack); bits.push(p?p.name:'a pack'); }
+  if(r.cos){ const c=COSM.find(x=>x.id===r.cos); bits.push(c?c.name:'a cosmetic'); }
+  return bits.join(' · ');
+}
 const ERAS=window.RTR_ERAS||[], MENTORS=window.RTR_LEGENDS||[];
 const PROMOS=window.RTR_PROMOS||[], CHARS=window.RTR_CHARS||[], FACTIONS=window.RTR_FACTIONS||[];
 /* World event mutations on CHARS (defections, alignment turns, gimmick
@@ -3386,6 +3686,20 @@ function migrate(o){
   c.chronic=c.chronic||[]; if(c.turns==null) c.turns=0;
   if(!w.gimmick){ const fits=GIMMICKS.filter(g=>g.align===w.align);
     const g=(fits[0]||GIMMICKS[0]); w.gimmick={id:g.id,name:g.n,heat:70,since:c.year||1}; }
+  /* WALLET RE-BASELINE. Coins used to be the purse paid straight into the bag, so
+     an existing save can be carrying millions against a catalogue that now costs
+     thousands. Re-baselining to the new starting wallet is the only honest move:
+     leaving it would mean a returning player owns the entire store on their first
+     visit and has nothing left to play for. OWNED GEAR AND SHARDS ARE KEPT, so
+     nobody loses a thing they actually unlocked. */
+  o.bag=o.bag||{};
+  if(o.bag.epoch!==COIN_EPOCH){
+    o.bag.epoch=COIN_EPOCH;
+    o.bag.coins=COIN_START;
+    o.bag.lifetime=0;
+    o.bag._rebased=true;         // the store says so, once, rather than silently
+  }
+  o.bag.owned=o.bag.owned||{}; o.bag.packs=o.bag.packs||{}; o.bag.shards=o.bag.shards||0;
   return o;
 }
 function tierOfRep(rep){ let id='indie'; TIERS.forEach(t=>{ if((rep||0)>=t.rep) id=t.id; }); return id; }
@@ -3947,8 +4261,12 @@ function wrestlerSVG(L,opt){
 /* ============================================================
    WRESTLER MATH
    ============================================================ */
-function ovr(w){ const a=w.attrs;
-  return Math.round(a.po*0.16+a.te*0.19+a.ae*0.11+a.ch*0.16+a.ps*0.19+a.to*0.10+a.st*0.09); }
+/* OVR reads the temporary effects too, so a knock from a dilemma actually shows
+   up on the card and in every odds calculation that reads ovr(). It is clamped so
+   a stack of bad nights cannot drive an attribute negative. */
+function attrOf(w,k){ const base=(w.attrs||{})[k]||0; return clamp(base + (w===G.w?fxFor(k):0), 0, 100); }
+function ovr(w){ const a=w.attrs; const f=(k)=>attrOf(w,k);
+  return Math.round(f('po')*0.16+f('te')*0.19+f('ae')*0.11+f('ch')*0.16+f('ps')*0.19+f('to')*0.10+f('st')*0.09); }
 function tierOf(rep,o){ const lvl=(o!=null?o:(G?ovr(G.w):0));
   let t=TIERS[0]; TIERS.forEach(x=>{ if(rep>=x.rep && lvl>=x.minOvr) t=x; }); return t; }
 function tierIdx(){ return Math.max(0,TIERS.findIndex(t=>t.id===workTier().id)); }
@@ -4250,7 +4568,7 @@ function finishCreate(){
           deal:{ promo:startingPromotion(CREATE.style), years:1, weeksLeft:WEEKS_PER_YEAR, weekly:0, sched:'regular', creative:false, merch:0.06, signedY:1 },
           standing:50, wear:0, injuries:[], hurt:null, accolades:[], yearLog:[], turns:0,
           reaction:5, lean:($('cAlign').value==='heel'?-14:$('cAlign').value==='face'?14:0), promos:[] },
-    bag:{ coins:1500, owned:{}, shards:0 },
+    bag:{ coins:COIN_START, lifetime:0, owned:{}, shards:0, packs:{}, epoch:COIN_EPOCH },
     log:[], hist:[]
   };
   RNG=(name.length*7919+Date.now())>>>0;
@@ -4932,7 +5250,7 @@ function pagerBar(id,labels,fn){
 const NAVG=[
   {id:'hub',    label:'Hub',    subs:[['career','Hub']]},
   {id:'skills', label:'Skills', subs:[['moves','Arsenal'],['train','Training'],['mentors','Mentors']]},
-  {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Merch Stand'],['card','My Card']]},
+  {id:'gear',   label:'Gear',   subs:[['locker','Locker'],['shop','Merch Stand'],['pass','Ropes Pass'],['card','My Card']]},
   {id:'roster', label:'Roster', subs:[['crew','Locker Room'],['backstage','Backstage'],['world','The World']]},
   {id:'legacy', label:'Career', subs:[['deal','Business'],['record','Record']]},
 ];
@@ -5259,6 +5577,7 @@ function go(s){
     if(s==='mentors') renderMentors();
     if(s==='locker'){ if(LOOKTAB==='colour') LOOKTAB='hairStyle'; renderLookEditor('lockBody','lockAv',G.w.look,false); }
     if(s==='shop') renderShop();
+    if(s==='pass') renderPass();
     if(s==='world') renderWorld();
     if(s==='backstage') renderBackstage();
     if(s==='deal') renderDeal();
@@ -5770,7 +6089,7 @@ function renderCareer(){
     setTimeout(()=>{ if(G && !G.car.tourDone && TOUR_I<0 && G.screen==='career') startTour('hub'); },420);
     return;
   }
-  setTimeout(()=>{ if(!showCeremony()) showMoments(); },400);   // podium first, then moments
+  setTimeout(()=>{ if(showStreakCard()) return; if(!showCeremony()) showMoments(); },400);   // streak, then podium, then moments
 }
 function renderAttrs(){
   return ATTRS.map(([k,label])=>{
@@ -5981,6 +6300,26 @@ function seasonChip(){
     <div class="arc-goal-b"><i style="width:${p}%"></i></div>
   </div>`;
 }
+/* Three objectives, drawn from the date so everybody gets the same three today,
+   ticked off by ordinary career play. It sits above the booking sheet because it
+   is a reason to play THIS week, not a menu to go and find. */
+function dailyPanel(){
+  const d=dailyState(), list=dailyList();
+  const done=list.filter(o=>d.done[o.id]).length;
+  const p=passState(), tier=passTierAt(p.xp);
+  return `<div class="dailypanel">
+    <div class="dp-h"><span>Today &middot; ${done}/${list.length} done</span>
+      <span>Ropes Pass tier ${tier}${d.bonus?' &middot; all clear':''}</span></div>
+    ${list.map(o=>{
+      const got=!!d.done[o.id], prog=Math.min(o.n, d.prog[o.id]||0);
+      return `<div class="dp-row ${got?'done':''}">
+        <span class="dp-box">${got?'&#10003;':''}</span>
+        <span>${o.t}${o.n>1&&!got?` <span class="hint">(${prog}/${o.n})</span>`:''}</span>
+        <span class="dp-c">${got?'paid':'+'+o.c}</span></div>`;
+    }).join('')}
+    ${done===list.length&&d.bonus?`<div class="hint" style="margin-top:6px;">All three done. Come back tomorrow for three more.</div>`:''}
+  </div>`;
+}
 function weekArcHeader(){
   const c=G.car;
   if(c.freeAgent) return `<div class="arc arc-fa"><div class="arc-k">Free Agent</div><div class="arc-t">Your deal is up. No one is booking you until you sign.</div></div>`;
@@ -6025,7 +6364,7 @@ function renderWeek(){
   // so on every fresh week the header read "Off Week · Nothing on the card"
   // directly above a booking sheet that said "Singles Match · Your Debut".
   bookWeek();
-  const arc = weekArcHeader() + seasonChip();
+  const arc = dailyPanel() + fxStrip() + weekArcHeader() + seasonChip();
   if(c.freeAgent){
     el.innerHTML=`${arc}<p class="log">Your deal with <b>${myPromo().name}</b> has expired. You are a <b style="color:var(--gold)">free agent</b>.</p>
       <button class="big" onclick="go('deal')">See Who Wants You →</button>`; return;
@@ -9398,8 +9737,23 @@ function applyMatch(o,res){
   else { c.rec.l++; c.streak=c.streak<=0?c.streak-1:-1; }
   // rewards
   const qf=res.quality/70;
-  const coins=Math.round(o.purse*(draw?1:res.win?1.15:0.85)*clamp(qf,0.4,1.4)*sc.pay);
-  G.bag.coins+=coins; c.earnings+=coins;
+  // MONEY is the purse: kayfabe, career-scaled, and what the contract is worth.
+  const purse=Math.round(o.purse*(draw?1:res.win?1.15:0.85)*clamp(qf,0.4,1.4)*sc.pay);
+  c.earnings+=purse;
+  // COINS are the meta currency and do NOT scale with the purse (see THE COIN
+  // ECONOMY above: paying the purse into coins is what made one career worth
+  // the whole catalogue twice over).
+  const coins=awardCoins(
+      Math.round((COIN_CARD[o.card]||38) * (o.ppv?COIN_PPV_MULT:1))
+      + coinQualityBonus(res.quality)
+      + (res.win && (o.stakes==='title'||o.stakes==='secondary'||o.stakes==='tag_title') ? COIN_TITLE_WIN : 0)
+      + (res.win && (o.stakes==='defense'||o.stakes==='tag_defense') ? COIN_TITLE_DEF : 0)
+      + (o.stakes==='rumble' && res.win ? COIN_RUMBLE_WIN : 0),
+      'for the match', true);
+  dailyProgress('match',1);
+  if(res.win) dailyProgress('win',1);
+  if(res.quality>=64) dailyProgress('good',1);
+  if(res.quality>=75) dailyProgress('great',1);
   // ---- standing with the office: they care about the show you put on ----
   const standDelta=(res.quality-58)*0.16 + (draw?0.2:res.win?0.6:-0.2)
     + (o.stakes==='title'||o.stakes==='defense'?1.4:0) + (c.workedHurt?-1.6:0);
@@ -9649,7 +10003,7 @@ function applyMatch(o,res){
                      : _k==='underdog' ? (res.win || res.quality>=72)
                      : (res.quality>=72 || (res.win && rel(o.oppId).respect>=40));
       endStory(_respect?'respect':'blood');
-      c.rep+=260; G.bag.coins+=Math.round(o.purse*1.5);
+      c.rep+=260; c.earnings+=Math.round(o.purse*1.5); awardCoins(COIN_FEUD_END,'the feud is settled',true); dailyProgress('feud',1);
       /* THE BLOW-OFF CEREMONY. A feud is the spine of a career and its
          ending used to be an inbox row. It gets what a title change gets:
          a banner on the result, a moment card, and the press. */
@@ -9781,7 +10135,7 @@ function applyMatch(o,res){
     c.careerBest = {y:c.year,w:c.week,opp:o.oppName,q:res.quality,stip:o.stipLabel};
     queueMoment(pico('starBig',36), `A new career-best against ${o.oppName}.`, {kick:'Better Than The Last One'});
   }
-  res.coins=coins; res.repGain=repGain; res.popGain=popGain; res.xp=xp; res.unlocked=unlocked; res.titleMsg=titleMsg; res.injMsg=injMsg;
+  res.purse=purse; res.coins=coins; res.repGain=repGain; res.popGain=popGain; res.xp=xp; res.unlocked=unlocked; res.titleMsg=titleMsg; res.injMsg=injMsg;
   try{
     const _R1=rel(o.oppId);
     const _after={standing:c.standing||50, fresh:gimHeat(), mom:c.mom, cond:c.cond, reaction:reactionOf(), respect:_R1.respect||0, heat:_R1.heat||0};
@@ -9969,11 +10323,11 @@ function renderMatch(o,res){
   // round to a tenth FIRST, so a -0.04 does not print as "-0.0" in red on the
   // very first result screen a player sees
   const pg=(Math.round((+res.popGain||0)*10)/10)||0;
-  $('mTiles').innerHTML=tileOf('Purse','mtPurse',null,purseBand(res.coins||0))
+  $('mTiles').innerHTML=tileOf('Purse','mtPurse',null,purseBand(res.purse||0))
     +tileOf('Reputation','mtRep','var(--green)',repBand(c.rep))
     +tileOf('Popularity','mtPop',pg>0?'var(--green)':pg<0?'#f0907f':'var(--text-dim)',`now ${Math.round(c.pop)}: ${bandOf('pop',c.pop).toLowerCase()}`)
     +tileOf('XP','mtXp',null,`${G.w.xp} of 100 to a training point`);
-  countUp($('mtPurse'),res.coins||0,{fmt:v=>'$'+Math.round(v).toLocaleString()});
+  countUp($('mtPurse'),res.purse||0,{fmt:v=>'$'+Math.round(v).toLocaleString()});
   countUp($('mtRep'),res.repGain||0,{fmt:v=>'+'+Math.round(v)});
   countUp($('mtPop'),pg,{fmt:v=>{ const r=(Math.round(v*10)/10)||0; return (r>0?'+':'')+r.toFixed(1); }});
   countUp($('mtXp'),res.xp||0,{fmt:v=>'+'+Math.round(v)});
@@ -10251,6 +10605,8 @@ function matchStory(o,res){
    WEEK ACTIONS
    ============================================================ */
 function advanceWeek(){
+  dailyProgress('week',1);
+  tickFx(); tickArcs();      // temporary effects expire and follow-ups come due in WEEKS
   const c=G.car, sc=schedOf(c.deal&&c.deal.sched);
   c.week++; c.offers=null; c.booking=null; c.prep=null;   // the office starts the week fresh
   c._pendingNext=null;                                      // "who's next" only counts for the week you called it
@@ -10286,7 +10642,7 @@ function advanceWeek(){
   // ---- payday: the downside guarantee lands whether you wrestled or not ----
   if(c.deal){
     const dw=Math.round(c.deal.weekly*sc.pay), mr=merchWeekly();
-    G.bag.coins+=dw+mr; c.earnings+=dw+mr;
+    c.earnings+=dw+mr;                      // the downside and the merch cut are MONEY, not coins
     c.weekPay={down:dw,merch:mr};
     c.deal.weeksLeft--;
   }
@@ -11048,7 +11404,9 @@ function yearEnd(){
                     + mileage*0.030 + ((c.chronic||[]).length)*0.05;
   if(c.age>=36 && rnd()<retireOdds){ retire('Your body finally called it. Too many miles, too many landings.'); }
 }
+function _retireCoinBonus(){ try{ awardCoins(COIN_CAREER_DONE,'a career, start to finish',true); }catch(_){} }
 function retire(reason){ G.car.retired=true; G.car.retireReason=reason||'You walked away on your own terms.';
+  _retireCoinBonus();     // a finished career is the biggest single coin award in the game
   archiveToLegends();     // record this career to the cross-save Hall of Legends
   save(); go('hof'); }
 // Announce a retirement date. Every match between now and that week gets a
@@ -11285,25 +11643,39 @@ function renderShop(){
   const locked=COSM.filter(c=>!c.owned&&!G.bag.owned[c.id]);
   const slots=[...new Set(locked.map(c=>c.slot))];
   const chips=['Packs'].concat(slots.map(s=>({t:`${cap(s)} ${'<span class="pgr-x">'+locked.filter(c=>c.slot===s).length+'</span>'}`}))).concat([{t:'Unlocked'}]);
-  let h=`<div class="row" style="margin-bottom:12px;">
-    <div class="tile"><div class="lab">Coins</div><div class="val">${G.bag.coins.toLocaleString()}</div></div>
+  let h='';
+  // Said once, plainly, rather than a returning player quietly finding themselves broke.
+  if(G.bag._rebased){
+    h+=`<div class="passnote"><b>The wallet was reset, and your gear was not.</b>
+      Coins used to be the purse paid straight into the bag, which meant one career bought this entire store twice over.
+      They are their own currency now and they come in slowly, so everything in here is worth owning.
+      Every item and shard you had unlocked is still yours.</div>`;
+  }
+  h+=`<div class="row" style="margin-bottom:12px;">
+    <div class="tile"><div class="lab">Coins</div><div class="val">${G.bag.coins.toLocaleString()}</div>
+      <div class="hint">${(G.bag.lifetime||0).toLocaleString()} earned all-time</div></div>
     <div class="tile"><div class="lab">Shards</div><div class="val" style="color:#b08ac6">${G.bag.shards||0}</div>
       <div class="hint">forge any item, no luck involved</div></div>
   </div>`;
   h+=pagerBar('shop',chips,renderShop);
   const i=pagerIdx('shop',chips.length);
   if(i===0){
-    h+=`<div class="grid g3">`+PACKS.map(p=>`<div class="card">
+    h+=`<div class="grid g3">`+PACKS.map(p=>{
+      const free=packsOwned(p.id);
+      return `<div class="card">
       <div style="font-family:var(--display);font-size:19px;color:var(--cream);text-transform:uppercase;">${p.name}</div>
-      <div class="hint" style="margin:4px 0 10px;">${p.blurb}</div>
-      <button ${G.bag.coins<p.price?'disabled':''} onclick="openPack('${p.id}')">${money(p.price)}</button></div>`).join('')+`</div>`;
+      <div class="hint" style="margin:4px 0 10px;">${p.blurb} Guaranteed Epic or better every ${p.pity||5} packs.</div>
+      ${free?`<div class="hint" style="color:var(--gold);margin-bottom:6px;">${free} free ${free===1?'copy':'copies'} waiting</div>`:''}
+      <button ${(free||G.bag.coins>=p.price)?'':'disabled'} onclick="openPack('${p.id}')">${free?'Open a free one':coinFmt(p.price)}</button></div>`;
+    }).join('')+`</div>`;
     // luck insurance: the counter that makes a cold streak bearable
-    const pity=G.bag.pity||0, hot=pity>=4;
+    const basePity=(PACKS[0]&&PACKS[0].pity)||5;
+    const pity=G.bag.pity||0, hot=pity>=basePity-1;
     h+=`<div class="pitycard${hot?' hot':''}">
       <div class="pl">Pack luck insurance</div>
       <div class="pt">${hot?'Your next pack carries a guaranteed Epic or better.'
-        :`An Epic or better is guaranteed within ${5-pity} pack${5-pity===1?'':'s'}. Every pack also drops +2 shards.`}</div>
-      <div class="pitybar"><i style="width:${Math.min(100,pity/5*100)}%"></i></div></div>`;
+        :`An Epic or better is guaranteed within ${Math.max(1,basePity-pity)} pack${Math.max(1,basePity-pity)===1?'':'s'}. Every pack also drops +2 shards.`}</div>
+      <div class="pitybar"><i style="width:${Math.min(100,pity/basePity*100)}%"></i></div></div>`;
   } else if(i<=slots.length){
     const slot=slots[i-1];
     h+=`<div class="grid g3">`+locked.filter(c=>c.slot===slot).map(c=>{
@@ -11314,7 +11686,7 @@ function renderShop(){
         <span class="badge b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':c.rarity==='rare'?'rare':'com'}">${c.rarity}</span></div>
         <div class="hint" style="margin:4px 0 10px;">${cap(c.slot)}</div>
         <div class="row" style="gap:6px;">
-          <button ${G.bag.coins<r.price?'disabled':''} onclick="buyItem('${c.id}')">${money(r.price)}</button>
+          <button ${G.bag.coins<r.price?'disabled':''} onclick="buyItem('${c.id}')">${coinFmt(r.price)}</button>
           <button class="ghost" ${canForge?'':'disabled'} onclick="craftItem('${c.id}')" title="Forge with shards" style="${canForge?'border-color:rgba(176,138,198,.6);color:#cbaade;':''}">${sc} shards</button>
         </div></div>`;
     }).join('')+`</div>`;
@@ -11324,6 +11696,107 @@ function renderShop(){
       : `<p class="hint">Nothing unlocked yet. Open a pack.</p>`;
   }
   $('shopBody').innerHTML=h;
+}
+/* ---------- THE ROPES PASS SCREEN ----------
+   The track reads as a track: a row per tier, the FREE lane and the PRO lane side
+   by side, claimed / claimable / locked all visibly different. The rows you can
+   claim right now float to the top, because a player who has earned six tiers
+   should not have to hunt down six buttons. */
+function renderPass(){
+  const p=passState(), ssn=passSeason(), tier=passTierAt(p.xp), pro=passProActive();
+  const into=p.xp-passXpForTier(tier), need=tier<PASS_TIERS?passTierCost(tier+1):0;
+  const pct=need?Math.min(100,Math.round(into/need*100)):100;
+  $('passSub').textContent=`season ${ssn.n} · day ${ssn.day} of ${ssn.len}`;
+  const freeReady=passClaimable('free').length, proReady=pro?passClaimable('pro').length:0;
+  let h=`<div class="passhead">
+    <div class="ph-l">
+      <div class="ph-tier">TIER <b>${tier}</b><span> / ${PASS_TIERS}</span></div>
+      <div class="ph-bar"><i style="width:${pct}%"></i></div>
+      <div class="hint">${tier>=PASS_TIERS?'Track complete. Every tier is yours.':`${into.toLocaleString()} / ${need.toLocaleString()} XP to tier ${tier+1}`}</div>
+    </div>
+    <div class="ph-r">
+      <div class="ph-days">${ssn.daysLeft}</div>
+      <div class="hint">day${ssn.daysLeft===1?'':'s'} left, then the track resets</div>
+    </div>
+  </div>`;
+  // what feeds the track, said plainly, and what today has left in it
+  const left=Math.max(0, PASS_XP_DAY-(p.dayKey===dayKey()?(p.dayXp||0):0));
+  h+=`<div class="passnote">
+    <b>Everything that pays coins climbs this track.</b> Matches, feuds, promos, the daily objectives and the streak.
+    A day can add at most ${PASS_XP_DAY.toLocaleString()} XP, so the track is paced in days: you cannot sim ten careers tonight and finish it.
+    <span class="${left?'':'bad'}">${left?`${left.toLocaleString()} XP left in today.`:'Today is capped out. It resets at midnight.'}</span>
+  </div>`;
+  if(!pro){
+    const can=G.bag.coins>=PASS_PRO_PRICE;
+    h+=`<div class="passpro">
+      <div>
+        <div class="pp-t">Unlock the PRO lane</div>
+        <div class="hint">Every tier pays twice. ${PASS_PRO_MULT}x coins from everything you do, all season. Both lanes stay claimable to tier ${PASS_TIERS}.</div>
+      </div>
+      <button ${can?'':'disabled'} onclick="buyPassPro()">${coinFmt(PASS_PRO_PRICE)}</button>
+    </div>`;
+  }
+  const rows=[];
+  for(let t=1;t<=PASS_TIERS;t++){
+    const fr=passReward(t,'free'), pr=passReward(t,'pro');
+    const fGot=(p.claimed.free||[]).indexOf(t)>=0, pGot=(p.claimed.pro||[]).indexOf(t)>=0;
+    const reached=t<=tier;
+    const fCan=reached&&!fGot, pCan=reached&&!pGot&&pro;
+    rows.push({t, ready:(fCan||pCan), html:`<div class="prow ${reached?'on':''} ${(fCan||pCan)?'ready':''}">
+      <div class="pr-t">${t}</div>
+      <div class="pr-lane ${fGot?'got':''} ${fCan?'can':''}">
+        <div class="pr-lab">FREE</div>
+        <div class="pr-rw">${passRewardText(fr)}</div>
+        ${fCan?`<button onclick="doPassClaim(${t},'free')">Claim</button>`:fGot?`<span class="pr-tick">claimed</span>`:''}
+      </div>
+      <div class="pr-lane pro ${pGot?'got':''} ${pCan?'can':''} ${pro?'':'locked'}">
+        <div class="pr-lab">PRO</div>
+        <div class="pr-rw">${passRewardText(pr)}</div>
+        ${pCan?`<button onclick="doPassClaim(${t},'pro')">Claim</button>`:pGot?`<span class="pr-tick">claimed</span>`:(!pro&&reached)?`<span class="pr-tick">locked</span>`:''}
+      </div>
+    </div>`});
+  }
+  const ready=rows.filter(r=>r.ready), rest=rows.filter(r=>!r.ready);
+  if(ready.length) h+=`<div class="flab">Ready to claim <span class="hint">${freeReady+proReady} waiting</span></div>`+ready.map(r=>r.html).join('');
+  h+=`<div class="flab">The track</div>`+rest.map(r=>r.html).join('');
+  $('passBody').innerHTML=h;
+}
+function doPassClaim(t,lane){
+  const r=passReward(t,lane);
+  if(passClaim(t,lane)){ toast(`<b>Tier ${t} ${lane==='pro'?'PRO':'FREE'}:</b> ${passRewardText(r)}`); renderPass(); refreshHud(); }
+}
+function buyPassPro(){
+  if(passProActive()||G.bag.coins<PASS_PRO_PRICE) return;
+  const ssn=passSeason();
+  modal('Unlock the PRO lane?',
+    `<p class="log">${coinFmt(PASS_PRO_PRICE)} unlocks the PRO lane for the rest of season ${ssn.n}: every tier you have already climbed becomes claimable on both lanes, and everything you earn pays ${PASS_PRO_MULT}x from here.</p>
+     <p class="hint">The season has ${ssn.daysLeft} day${ssn.daysLeft===1?'':'s'} left. When it rolls over, the track resets and PRO has to be unlocked again.</p>`,
+    [{label:'Not now',cls:'ghost',fn:closeModal},
+     {label:'Unlock PRO',cls:'primary',fn:()=>{
+       G.bag.coins-=PASS_PRO_PRICE; passState().pro=true; save(); closeModal(); renderPass(); refreshHud();
+       toast('<b>PRO unlocked.</b> Both lanes, all season.');
+     }}]);
+}
+/* The streak card. Fires once a day on the hub, pays out, and says what tomorrow
+   is worth so there is a reason to come back rather than a reason to feel bad. */
+function showStreakCard(){
+  const due=streakDue(); if(!due) return false;
+  const claimed=claimStreak(); if(!claimed) return false;
+  const r=claimed.reward, nextDay=Math.min(7,claimed.day+1), nx=STREAK_TRACK[nextDay]||{};
+  const what = r.coins ? `${r.coins.toLocaleString()} coins`
+             : r.pack ? (PACKS.find(x=>x.id===r.pack)||{name:'a pack'}).name : 'a reward';
+  const nextWhat = nx.coins ? `${nx.coins.toLocaleString()} coins`
+             : nx.pack ? (PACKS.find(x=>x.id===nx.pack)||{name:'a pack'}).name : 'a reward';
+  const dots=[1,2,3,4,5,6,7].map(d=>`<span class="sk-d ${d<claimed.day?'past':''} ${d===claimed.day?'on':''}">${STREAK_TRACK[d].pack?'&#9733;':d}</span>`).join('');
+  modal(claimed.broke?'Welcome back':'Day '+claimed.day,
+    `<div class="streakcard">
+      <div class="sk-dots">${dots}</div>
+      <div class="sk-got">+${what}</div>
+      <div class="hint">${claimed.broke?'The streak reset, but you are back and that is the part that counts.':'Signed in '+claimed.day+' day'+(claimed.day>1?'s':'')+' running.'}</div>
+      <div class="sk-next">Tomorrow: <b>${nextWhat}</b></div>
+    </div>`, [{label:'Thanks',cls:'primary',fn:closeModal}]);
+  refreshHud();
+  return true;
 }
 function buyItem(id){ const c=cosmById(id), r=RAR[c.rarity]; if(G.bag.coins<r.price) return;
   G.bag.coins-=r.price; G.bag.owned[id]=true; save(); renderShop(); refreshHud(); toast('Unlocked '+c.name); }
@@ -11356,16 +11829,23 @@ async function revealPack(pack,got){
 function slotKey(slot){ return ({hair:'hairStyle',face:'face',mask:'mask',attire:'attire',boots:'boots',acc:'acc',pattern:'pattern',tattoo:'tattoo',aura:'aura'})[slot]||slot; }
 function frameFor(slot){ return (slot==='hair'||slot==='face'||slot==='mask')?'head':(slot==='boots'?'legs':'full'); }
 
+/* Opening a pack spends a FREE one first when you have it (the pass and the
+   streak both hand them out), then coins. The pity counter is shared but each
+   tier reads its OWN floor, so a better pack reaches its guarantee sooner. */
+function packsOwned(pid){ return (G.bag.packs||{})[pid]||0; }
 function openPack(pid){
-  const p=PACKS.find(x=>x.id===pid); if(!p||G.bag.coins<p.price) return;
-  G.bag.coins-=p.price;
+  const p=PACKS.find(x=>x.id===pid); if(!p) return;
+  const free=packsOwned(pid);
+  if(!free && G.bag.coins<p.price) return;
+  if(free){ G.bag.packs[pid]=free-1; } else { G.bag.coins-=p.price; }
   const pool=COSM.filter(c=>!c.owned&&!G.bag.owned[c.id]);
   const got=[], order=['common','rare','epic','legendary'];
-  const pity=G.bag.pity||0;                 // 5th dry pack is guaranteed epic or better
+  const pity=G.bag.pity||0;
+  const pityAt=(p.pity||5)-1;               // a dry run of this many guarantees an epic+
   for(let i=0;i<p.n;i++){
     let r=rnd()-p.boost; let rar = r<0.02?'legendary': r<0.12?'epic': r<0.38?'rare':'common';
     if(i===0&&p.floor){ if(order.indexOf(rar)<order.indexOf(p.floor)) rar=p.floor; }
-    if(i===0&&pity>=4&&order.indexOf(rar)<2) rar='epic';
+    if(i===0&&pity>=pityAt&&order.indexOf(rar)<2) rar='epic';
     const cands=pool.filter(c=>c.rarity===rar&&!got.includes(c));
     const item=cands.length?cands[Math.floor(rnd()*cands.length)]:(pool.filter(c=>!got.includes(c))[0]);
     if(item){ got.push(item); G.bag.owned[item.id]=true; }
@@ -13285,6 +13765,7 @@ async function pmFinish(suppressPop){
   if(PM.mode==='title'){ c.titleCall=c.year*100+c.week; pmLog(`<span class="hi">The office heard you. A title shot is more likely while that is fresh.</span>`); }
   pushInboxItem({ico:pico('microphone',18),sev:q>=60?'good':'info',txt:`<b>Promo segment.</b> Rated ${Math.round(q)} · ${cl.t.toLowerCase()}.`});
   c.promos=c.promos||[]; c.promos.unshift({y:c.year,w:c.week,q:Math.round(q),t:t?t.name:'the crowd'});
+  awardCoins(COIN_PROMO + (q>=70?COIN_PROMO_GOOD:0), 'for the promo', true); dailyProgress('promo',1);
   if(c.promos.length>20) c.promos.pop();
   checkUnlocks();
   // Hot-mic interruption: if you have a live rival who is not who you were
@@ -14296,6 +14777,86 @@ function sceneCtx(){
            v:(ch,map)=>voiced(ch,map),
            t:(id,map)=>toned(id,map) };
 }
+/* ============================================================
+   DILEMMAS: the scene engine grows three things
+   ------------------------------------------------------------
+   The golf game's career mode does something these scenes did not: a choice
+   there is a BET, not a purchase. Three parts make that work, and all three
+   are now here.
+
+     1. WEIGHTED OUTCOMES. An option can carry `outcomes:[{p,tone,text,...}]`
+        and the game rolls. The same choice can go well, badly, or somewhere
+        in between, so a player learns a shape rather than a lookup table.
+        `p` can be a function of the context, so being good at something
+        genuinely improves the odds instead of skipping the roll.
+     2. TEMPORARY EFFECTS. An outcome can hand you a knock or an edge that
+        lasts a few matches: `fx:{attr:'ps', amt:-4, weeks:3, label:'Sore'}`.
+        These move the ACTUAL numbers the sim reads, and they expire, so a
+        bad night is a bad month rather than a ruined career.
+     3. ARCS. An outcome can seed a follow-up that fires weeks later
+        (`arc:{id, in:[3,6]}`), so a decision becomes a story with a middle
+        and an end instead of a single beat that resolves itself.
+
+   Everything is opt-in: an option with a plain `eff` behaves exactly as it
+   did, so nothing that already worked had to be rewritten.
+   ============================================================ */
+function careerFx(){ const c=G.car; if(!Array.isArray(c.fx)) c.fx=[]; return c.fx; }
+function addFx(f){ if(f&&f.attr) careerFx().push({attr:f.attr, amt:f.amt||0, weeks:(f.weeks==null?3:f.weeks), label:f.label||''}); }
+// the live total for one attribute, read by ovr() and the match sim
+function fxFor(attr){ let d=0; for(const f of careerFx()){ if(f.attr===attr && f.weeks>0) d+=f.amt; } return d; }
+function tickFx(){ const fx=careerFx();
+  for(const f of fx) if(f.weeks!=null) f.weeks--;
+  for(let i=fx.length-1;i>=0;i--) if(fx[i].weeks<=0){
+    const f=fx[i];
+    pushInboxItem({ico:pico(f.amt<0?'check':'impact',18), sev:f.amt<0?'good':'info',
+      txt:f.amt<0?`<b>${f.label||'That knock'}</b> has cleared up.`:`<b>${f.label||'That edge'}</b> has worn off.`});
+    fx.splice(i,1);
+  }
+}
+function activeFx(){ return careerFx().filter(f=>f.weeks>0); }
+// the strip on the hub: what is currently helping or hurting, and for how long
+function fxStrip(){
+  const fx=activeFx(); if(!fx.length) return '';
+  return `<div class="row" style="gap:6px;margin-bottom:8px;">`+fx.map(f=>{
+    const bad=f.amt<0;
+    return `<span class="pchip ${bad?'red':'gold'}" style="animation:none;opacity:1;">${bad?'&#9660;':'&#9650;'} ${f.label||ATTR_NAME[f.attr]||f.attr} ${f.amt>0?'+':''}${f.amt} ${ATTR_NAME[f.attr]||f.attr}, ${f.weeks} wk${f.weeks===1?'':'s'} left</span>`;
+  }).join('')+`</div>`;
+}
+const ATTR_NAME={po:'Power', te:'Technique', ae:'Aerial', ch:'Charisma', ps:'Psychology', to:'Toughness', st:'Stamina'};
+/* Weighted pick over an option's outcomes. `p` may be a number or a function of
+   the scene context, so a high-Psychology wrestler really does get away with more. */
+function rollOutcome(opt, x){
+  const outs=opt.outcomes; if(!outs||!outs.length) return null;
+  let tot=0; const w=outs.map(o=>{ let v=(typeof o.p==='function')?o.p(x):(o.p==null?1:o.p); v=Math.max(0,v||0); tot+=v; return v; });
+  if(tot<=0) return outs[0];
+  let r=rnd()*tot;
+  for(let i=0;i<outs.length;i++){ if((r-=w[i])<0) return outs[i]; }
+  return outs[outs.length-1];
+}
+/* Arcs: a choice seeds a follow-up scene that comes due weeks later. The wait is
+   in WEEKS, ticked by the week roll, and an arc that could never fire is pruned. */
+function careerArcs(){ const c=G.car; if(!Array.isArray(c.arcs)) c.arcs=[]; return c.arcs; }
+function seedArc(id, range, data){
+  const r=range||[3,6];
+  careerArcs().push({id, wait:r[0]+Math.floor(rnd()*Math.max(1,(r[1]-r[0]+1))), data:data||{}});
+}
+function tickArcs(){ const a=careerArcs();
+  for(const x of a) if(x.wait!=null) x.wait--;
+  for(let i=a.length-1;i>=0;i--) if(a[i].wait<-40) a.splice(i,1);
+}
+// the arc that is due, if any. Arcs outrank ordinary scenes: they are owed.
+function dueArc(){
+  const arcs=careerArcs();
+  for(const x of arcs){
+    if(x.wait>0) continue;
+    const sc=SCENES.find(s=>s.id===x.id); if(!sc) continue;
+    const ctx=sceneCtx(); ctx.arc=x.data||{};
+    let ok=true; if(sc.when){ try{ ok=!!sc.when(ctx); }catch(_){ ok=false; } }
+    if(ok) return x;
+  }
+  return null;
+}
+function clearArc(id){ const a=careerArcs(); const i=a.findIndex(x=>x.id===id); if(i>=0) a.splice(i,1); }
 /* Cast helpers scenes use to find people worth talking to. */
 function castRival(){ const s=story(); return s?charById(s.charId):(G.car.rivalId?charById(G.car.rivalId):null); }
 function castChamp(){ const h=champOf(); return (h&&!h.you)?h:null; }
@@ -14337,6 +14898,110 @@ const SCENES = [
      the ring, it happens in the hallway on the way to it. One scene per
      stage per story, in the rival's voice, shaped by the kind of story it
      is. Each remembers itself so it plays once per feud. */
+  /* ---------- DILEMMAS ----------
+     Every option here is a BET. The outcome is rolled, the odds bend with who
+     you are, and what you win or lose lasts weeks rather than a line of text.
+     These are the scenes that make a career feel like it happened TO somebody. */
+  { id:'dil_shoulder', tag:'THE TRAINER\'S ROOM', trig:'prematch', weight:7,
+    when:x=>((x.c.rec.w||0)+(x.c.rec.l||0))>=4 && !sceneRecalls('dil_shoulder_'+x.c.year),
+    beats:{ start:{ who:null, tag:'THE TRAINER',
+      line:x=>`The trainer works a thumb into your shoulder and you come off the table. "That is not tightness. You have been protecting it for a month and I can feel where. I can strap it and you go out, or you tell the office no and they find somebody else tonight."`,
+      opts:x=>[
+        { t:'"Strap it. I am going out."', outcomes:[
+          { p:x=>1.1+(attrOf(G.w,'to')/50), tone:'good', mem:'dil_shoulder_'+x.c.year,
+            text:'It holds. You work around it all night and nobody watching would have known.',
+            head:'Worked hurt and nobody could tell.', eff:{standing:+2} },
+          { p:1.3, tone:'mixed', mem:'dil_shoulder_'+x.c.year,
+            text:'It holds, but you feel it on every lock-up, and you are still feeling it in a fortnight.',
+            fx:{attr:'po', amt:-4, weeks:3, label:'Bad shoulder'} },
+          { p:0.8, tone:'bad', mem:'dil_shoulder_'+x.c.year,
+            text:'It goes in the first minute. You finish the match on one arm and the trainer does not say a word to you afterwards.',
+            fx:[{attr:'po', amt:-7, weeks:5, label:'Torn shoulder'},{attr:'te', amt:-4, weeks:5, label:'Torn shoulder'}],
+            head:'Tore a shoulder refusing to sit out.', arc:{id:'arc_comeback', in:[4,6]} } ]},
+        { t:'"Tell them I cannot go."', outcomes:[
+          { p:1.5, tone:'good', mem:'dil_shoulder_'+x.c.year,
+            text:'You sit it out. It costs you the night and the office notices, but the shoulder is right again inside a fortnight.',
+            eff:{standing:-4}, head:'Sat out a night to protect a shoulder.' },
+          { p:1, tone:'mixed', mem:'dil_shoulder_'+x.c.year,
+            text:'You sit it out. The booker says all the right things and books somebody else in your spot for a month.',
+            eff:{standing:-7} } ]},
+      ]}}},
+  { id:'dil_offer', tag:'THE CAR PARK', trig:'any', weight:6,
+    when:x=>x.c.year>=2 && (x.c.standing||50)>=45 && !sceneRecalls('dil_offer_'+x.c.year),
+    beats:{ start:{ who:null, tag:'A NUMBER ON A CARD',
+      line:x=>`Somebody who does not work here is leaning on your car. They do not give a name. "Different company. Better money. You would be on television in six weeks." They hold out a card with a number written on it, and it is a real number.`,
+      opts:x=>[
+        { t:'Take the card.', outcomes:[
+          { p:1.2, tone:'good', text:'You put it in your bag. Nothing happens for a month, and then your own office suddenly wants to talk about your deal.',
+            coins:400, eff:{standing:+3}, head:'A rival company came calling.', arc:{id:'arc_offer_back', in:[4,8]} },
+          { p:1, tone:'bad', text:'Somebody saw you take it. By Tuesday the booker has heard, and he is not asking whether it is true.',
+            eff:{standing:-8, heatAll:+6}, head:'Got caught talking to another company.' } ]},
+        { t:'"I am under contract."', outcomes:[
+          { p:1.6, tone:'good', text:'You hand it back without reading it. It gets back to the office, the way these things do, and it does you nothing but good.',
+            eff:{standing:+6}, head:'Turned down an outside offer, and it got back to the office.' } ]},
+        { t:'"Tell me the number out loud."', outcomes:[
+          { p:1, tone:'good', text:'They say it. You say no. But now you know what you are worth, and so do they.',
+            money:0, eff:{standing:+2}, fx:{attr:'ch', amt:+3, weeks:4, label:'Knows his worth'} },
+          { p:1.1, tone:'mixed', text:'They say it, and it is enough that you think about it the whole drive home. You are somewhere else all week.',
+            fx:{attr:'ps', amt:-4, weeks:2, label:'Distracted'} } ]},
+      ]}}},
+  { id:'dil_tape', tag:'THE HOTEL ROOM', trig:'any', weight:6,
+    when:x=>!sceneRecalls('dil_tape_'+x.c.year) && x.c.week>6,
+    beats:{ start:{ who:null, tag:'THREE IN THE MORNING',
+      line:x=>`It is three in the morning and you are still awake with your own match on the laptop, the same forty seconds over and over. You know exactly what is wrong with it. You also have to drive four hours in the morning.`,
+      opts:x=>[
+        { t:'Watch it again. And again.', outcomes:[
+          { p:x=>1+(attrOf(G.w,'ps')/60), tone:'good', mem:'dil_tape_'+x.c.year,
+            text:'You find it at half four: you are calling the finish two beats early, every time. You will never do it again.',
+            fx:{attr:'ps', amt:+5, weeks:6, label:'Saw it on tape'}, head:'Found a hole in his own game on tape.' },
+          { p:1.2, tone:'bad', mem:'dil_tape_'+x.c.year,
+            text:'You watch it eleven times and all you learn is how to hate the way you move. You drive on three hours of sleep.',
+            fx:{attr:'st', amt:-5, weeks:2, label:'No sleep'}, eff:{cond:-8} } ]},
+        { t:'Shut the laptop. Sleep.', outcomes:[
+          { p:1.5, tone:'good', mem:'dil_tape_'+x.c.year, text:'You sleep eight hours and drive fresh. The match will still be wrong tomorrow, and you will still be able to fix it.',
+            eff:{cond:+6} } ]},
+        { t:'Send it to somebody who will be honest.', outcomes:[
+          { p:1.4, tone:'good', mem:'dil_tape_'+x.c.year,
+            text:'They ring you back at nine and talk for an hour. Half of it stings. All of it is right.',
+            fx:{attr:'ps', amt:+4, weeks:5, label:'Took the notes'}, eff:{respectA:+8} },
+          { p:0.9, tone:'mixed', mem:'dil_tape_'+x.c.year, text:'They say it was great, brother. They did not watch it.', eff:{respectA:+2} } ]},
+      ]}}},
+  /* ---------- ARC PAYOFFS ----------
+     These never come up on their own: they are seeded by a decision above and
+     fire weeks later, which is what turns a choice into a story. */
+  { id:'arc_comeback', tag:'CLEARED TO RETURN', trig:'prematch', weight:1, priority:4, arc:true,
+    when:x=>!!(x.c.arcs||[]).some(a=>a.id==='arc_comeback'&&a.wait<=0),
+    beats:{ start:{ who:null, tag:'THE FIRST NIGHT BACK',
+      line:x=>`The doctor signed you off this morning. The shoulder is a shoulder again. What nobody can tell you is whether the thing you had before it went is still in there.`,
+      opts:x=>[
+        { t:'Go out and find out. Hard.', outcomes:[
+          { p:x=>1.2+(attrOf(G.w,'to')/60), tone:'good', text:'It is all there. More than there. You go harder than you have in a year and the shoulder never says a word.',
+            fx:{attr:'po', amt:+5, weeks:8, label:'Back to full'}, eff:{standing:+4, reactionBoost:true}, head:'Came back from injury better than before.' },
+          { p:1, tone:'bad', text:'You rush it. Nothing tears, but you spend the whole night waiting for it to, and it shows.',
+            fx:{attr:'ps', amt:-4, weeks:3, label:'Gun-shy'} } ]},
+        { t:'Ease into it. Nothing to prove.', outcomes:[
+          { p:1.6, tone:'good', text:'You work within yourself for a month and come out the other side whole.',
+            fx:{attr:'to', amt:+3, weeks:6, label:'Rebuilt'} } ]},
+      ]}}},
+  { id:'arc_offer_back', tag:'THE OFFICE', trig:'any', weight:1, priority:4, arc:true,
+    when:x=>!!(x.c.arcs||[]).some(a=>a.id==='arc_offer_back'&&a.wait<=0),
+    beats:{ start:{ who:null, tag:'THEY WANT TO TALK',
+      line:x=>`The booker shuts the door, which he never does. "I hear you have been talking to people. I am not asking. I am telling you we would rather you did not, and I am asking what it would take."`,
+      opts:x=>[
+        { t:'Name a number.', outcomes:[
+          { p:1.2, tone:'good', text:'You say it out loud. He does not blink, which means you asked for too little, and you both know it.',
+            money:30000, coins:300, eff:{standing:+3} },
+          { p:1, tone:'mixed', text:'You say it out loud and he laughs. You settle somewhere in the middle and nobody enjoys it.',
+            money:12000, eff:{standing:-2} } ]},
+        { t:'"Put me in the main event."', outcomes:[
+          { p:1.3, tone:'good', text:'Money he can argue about. A spot on the card he cannot, not after this conversation.',
+            eff:{standing:+9}, head:'Talked his way onto the top of the card.' },
+          { p:1, tone:'bad', text:'"That is not how this works." The door opens again and you have spent something for nothing.',
+            eff:{standing:-4} } ]},
+        { t:'"I am not going anywhere."', outcomes:[
+          { p:1.5, tone:'good', text:'You mean it, and he can tell. It buys you something you cannot spend, which is the good kind.',
+            eff:{standing:+5}, fx:{attr:'ch', amt:+3, weeks:6, label:'Trusted'} } ]},
+      ]}}},
   { id:'feud_s1', tag:'THE HALLWAY', trig:'prematch', weight:6, priority:2,
     // stage 0 as well as 1: the first walk to the ring after a feud sparks
     // should be the hallway, not a hot dog argument
@@ -15311,6 +15976,10 @@ function pickScene(trigger){
     });
     return null;
   }
+  // AN ARC THAT IS DUE OUTRANKS EVERYTHING. It was seeded by a decision the
+  // player made weeks ago and the game owes them the other half of it.
+  const arc=dueArc();
+  if(arc){ const sc=pool.find(s=>s.id===arc.id); if(sc) return sc; }
   // a scene that declares priority is the one that plays (night one, a
   // story beat that is due); the highest priority wins when two are due
   const pris=pool.filter(s=>s.priority).sort((a,b)=>(+b.priority)-(+a.priority)); if(pris.length) return pris[0];
@@ -15341,6 +16010,8 @@ function playScene(scene, onDone){
 
   const c=G.car;
   c._scenesSeen = (c._scenesSeen||[]).concat([scene.id]).slice(-40);
+  dailyProgress('scene',1);
+  if(scene.arc) clearArc(scene.id);       // a follow-up fires once, then it is spent
 
   // a backstage conversation is not the week's segment: it must not use up
   // the walk to gorilla
@@ -15352,9 +16023,9 @@ function playScene(scene, onDone){
       : `<div class="scene-av scene-av-narr">${pico(who&&who._gm?'clipboard':'microphone',36)}</div>`;
   // With no on-screen speaker the header would otherwise repeat the scene tag
   // directly under itself. Narrated beats get the promotion's name instead.
-  const nameFor = (who)=> who
+  const nameFor = (who, beat) => who
       ? `${who.name}${who.nick?` <span style="opacity:.6">"${who.nick}"</span>`:''}`
-      : (x.promo && x.promo.name) || 'Backstage';
+      : (beat && beat.tag) || (x.promo && x.promo.name) || 'Backstage';
 
   let beatCount = 0;
   const renderBeat = (key)=>{
@@ -15369,7 +16040,7 @@ function playScene(scene, onDone){
     // ahead to the answers.
     body.innerHTML = `<div class="scene-tag">${scene.tag}${beatCount>1?' <span style="opacity:.55">continued</span>':''}</div>
       <div class="scene-head">${avatarFor(who)}<div>
-        <div class="scene-who">${nameFor(who)}</div>
+        <div class="scene-who">${nameFor(who,beat)}</div>
         <div class="scene-line" id="sceneLine"></div></div></div>
       <div class="scene-optlist pending" id="sceneOpts">${opts.map((o,i)=>`
         <div class="scene-opt" data-i="${i}"><div class="scene-opt-t">${o.t}</div></div>`).join('')}</div>
@@ -15384,7 +16055,18 @@ function playScene(scene, onDone){
       document.querySelectorAll('#sceneBody .scene-opt').forEach(el=>{
         el.onclick=()=>{
           const o=opts[+el.dataset.i]; if(!o) return;
+          // A dilemma option rolls its outcome; a plain option just applies.
+          const out = o.outcomes ? rollOutcome(o, x) : null;
           applySceneEffect(o.eff||{}, x);
+          if(out){
+            applySceneEffect(out.eff||{}, x);
+            if(out.fx) [].concat(out.fx).forEach(f=>addFx(f));
+            if(out.money){ G.car.earnings=(G.car.earnings||0)+out.money; }
+            if(out.coins) awardCoins(out.coins, 'from that call', true);
+            if(out.arc) seedArc(out.arc.id, out.arc.in, typeof out.arc.data==='function'?out.arc.data(x):out.arc.data);
+            if(out.head) pushLog(typeof out.head==='function'?out.head(x):out.head);
+            if(out.mem) sceneRemember(out.mem);
+          }
           // an option can run game code and hand back the line to type
           let fnNote=null;
           if(typeof o.fn==='function'){ try{ const r=o.fn(x); if(r&&r.msg) fnNote=String(r.msg).replace(/<[^>]+>/g,''); }catch(_){} }
@@ -15393,14 +16075,15 @@ function playScene(scene, onDone){
           // resolve
           body.innerHTML = `<div class="scene-tag">${scene.tag} <span style="opacity:.55">you chose</span></div>
             <div class="scene-head">${avatarFor(who)}<div>
-              <div class="scene-who">${nameFor(who)}</div>
+              <div class="scene-who">${nameFor(who,beat)}</div>
               <div class="scene-line">"${o.t}"</div></div></div>
             <div class="scene-outcome">
               <div class="scene-outcome-line" id="sceneOutLine"></div>
-              <div id="sceneChips" class="pending">${summarizeEffect(o.eff||{})}</div>
+              <div id="sceneChips" class="pending">${summarizeEffect(Object.assign({}, o.eff||{}, (out&&out.eff)||{}))}${out?outcomeChips(out):''}</div>
             </div>
             <div class="scene-continue pending" id="sceneContWrap"><button id="sceneCont">Continue →</button></div>`;
-          typeInto(document.getElementById('sceneOutLine'), o.note||fnNote||'The moment passes.').then(()=>{
+          const outText = out ? (typeof out.text==='function'?out.text(x):out.text) : null;
+          typeInto(document.getElementById('sceneOutLine'), outText||o.note||fnNote||'The moment passes.').then(()=>{
             const ch=document.getElementById('sceneChips'); if(ch) ch.classList.remove('pending');
             const cw=document.getElementById('sceneContWrap'); if(cw) cw.classList.remove('pending');
           });
@@ -15414,6 +16097,16 @@ function playScene(scene, onDone){
 /* Scene effects. Superset of the legacy segment effects, with per-cast
    targeting (heatA / respectA / loyaltyA) so a scene can act on whoever
    it actually cast rather than a single implicit "who". */
+// what a rolled outcome did, as chips, on top of whatever the option itself did
+function outcomeChips(out){
+  const bits=[];
+  const chip=(cls,txt)=>`<span class="pchip ${cls}" style="animation:none;opacity:1;">${txt}</span>`;
+  [].concat(out.fx||[]).forEach(f=>{ if(f&&f.attr) bits.push(chip(f.amt<0?'red':'gold', `${f.amt>0?'+':''}${f.amt} ${ATTR_NAME[f.attr]||f.attr} for ${f.weeks==null?3:f.weeks} wk`)); });
+  if(out.money) bits.push(chip(out.money<0?'red':'gold', (out.money<0?'-':'+')+money(Math.abs(out.money))));
+  if(out.coins) bits.push(chip('gold', '+'+out.coins.toLocaleString()+' coins'));
+  if(out.arc) bits.push(chip('', 'this is not over'));
+  return bits.join('');
+}
 function applySceneEffect(eff, x){
   const c=G.car, w=G.w;
   if(eff.standing) c.standing=clamp((c.standing||50)+eff.standing);
