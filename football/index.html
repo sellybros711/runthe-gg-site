@@ -4017,8 +4017,20 @@ window.GA_ID='G-L29P5MRWKE';
   /* Thinner than it was. It starts full and drains, so at the first spin it was a solid
      slab of blue and the largest thing in the HUD, carrying no information at all: you
      always begin with the whole budget. A gauge, not a headline. */
-  .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px}
-  .bar i{display:block;height:100%;border-radius:99px;background:var(--grad-blue);transition:width .4s ease}
+  .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px;
+    display:flex}
+  /* The radius comes off the fill and stays on the track, which clips it to the same shape:
+     identical on its own, and no notch where the dead stripe butts against it. */
+  .bar i{display:block;height:100%;background:var(--grad-blue);transition:width .4s ease;
+    flex:0 0 auto}
+  /* DEAD CAP, ON THE DRAFT SCREEN'S MONEY BAR. The blue is what is left to spend and this
+     sits directly after it, so the red reads as room you would have but do not. Striped
+     rather than solid, the same way the offseason bar draws its own dead stripe, so it says
+     absence rather than a third kind of spending. Zero width outside the Gauntlet. */
+  .bar u{display:block;height:100%;text-decoration:none;flex:0 0 auto;
+    background:repeating-linear-gradient(115deg,rgba(248,113,113,.72) 0 3px,
+      rgba(248,113,113,.22) 3px 7px);
+    transition:width .4s ease}
   .bar i.low{background:var(--grad-red)}
   .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5}
 
@@ -6203,7 +6215,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <div class="amt num" id="c-amt"></div>
         <div class="chemval num zero" id="c-chem">0.0%</div>
       </div>
-      <div class="bar"><i id="c-bar" style="width:100%"></i></div>
+      <!-- Money left in blue, and immediately after it the dead cap in red: the room you
+           would also have if it were not owed to players who are gone. paintTop sizes both,
+           and the red takes no width outside the Gauntlet. -->
+      <div class="bar"><i id="c-bar" style="width:100%"></i><u id="c-dead" style="width:0%"></u></div>
       <div class="capfoot">
         <div class="perslot num" id="c-per"></div>
         <span class="eyebrow spinc" id="d-count">Spin 1 of 6</span>
@@ -10418,8 +10433,18 @@ function paintTop(){
   else if(left===1) per.textContent=M(rem)+' for the last spot';
   else per.textContent=M(rem/left)+' per open spot, '+left+' left';
   per.classList.toggle('low',left>0&&rem/Math.max(1,left)<E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD*2);
-  const b=$('c-bar'); b.style.width=Math.max(0,Math.min(100,rem/CAP()*100))+'%';
+  const b=$('c-bar'), remPct=Math.max(0,Math.min(100,rem/CAP()*100));
+  b.style.width=remPct+'%';
   b.classList.toggle('low',low);
+  /* THE DEAD CAP, ALWAYS DRAWN WHERE THE MONEY IS. It is the one figure on this screen that
+     is spent and buys nobody, and it was a number in the banner with nothing on the bar. It
+     takes the width it actually owns, clamped to what is left of the track, and collapses to
+     nothing in the modes that have no such thing. */
+  const dEl=$('c-dead');
+  if(dEl){
+    const dead=(run&&run.dynasty)?R.deadOf(run):0;
+    dEl.style.width=Math.max(0,Math.min(100-remPct,(dead/CAP())*100))+'%';
+  }
   const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier:1;
   /* Signed when there is something to sign, because a bare "2.7%" does not say which way
      it went. Nothing is "None" rather than "+0.0%": a signed zero reads as a measurement
