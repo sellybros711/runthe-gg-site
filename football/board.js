@@ -394,7 +394,7 @@
      THE FOURTH ONE WAS THE WORST AND IT IS WORTH SAYING WHY. The fallback above is a
      kindness for a typo: an unknown mode records as free play rather than being refused,
      because a misfiled run loses less than a rejected one. That reasoning does not hold
-     for a whole MODE. With 'dynasty' missing, every Gauntlet season was being submitted as
+     for a whole MODE. With 'dynasty' missing, every Dynasty season was being submitted as
      free play, so a nine season run would have put nine rows on the classic leaderboard,
      each a roster built over several seasons under an economy classic play does not have,
      ranked against people who drafted once with $140M. Caught before the mode went live
@@ -1001,8 +1001,8 @@
     return wins * 10000 + diff;
   }
 
-  /* ---------------- the Gauntlet's leaderboard ----------------
-     The Gauntlet ranks RUNS, not seasons. Every season is a validated ps_runs row exactly like
+  /* ---------------- Dynasty's leaderboard ----------------
+     Dynasty ranks RUNS, not seasons. Every season is a validated ps_runs row exactly like
      a classic season; ps_dynasty_board (98) reads the furthest row per run, so the axis here is
      seasons survived with the run's total score behind it. These read or write that view and
      its tag, and none of them touches the classic path. All fail soft: a leaderboard that does
@@ -1027,7 +1027,7 @@
     return false;
   }
 
-  /* ---------------- TWO AXES AND THREE WINDOWS ON THE GAUNTLET BOARD ----------------
+  /* ---------------- TWO AXES AND THREE WINDOWS ON DYNASTY BOARD ----------------
      'seasons' ranks by how far a run got, ties behind it broken by total score. 'score'
      ranks by the run's total points, ties broken by seasons survived. Every other board
      here offers both a sort and the three windows, and this one now matches: the axis and

@@ -1461,7 +1461,7 @@ const DYN_START = (rng, y, history) => (history.length
 
 function dynastyReport(n) {
   const coaches = E.coachTable(ctx) || [];
-  console.log('THE GAUNTLET: how many seasons does the owner give you?');
+  console.log('DYNASTY: how many seasons does the owner give you?');
   console.log(`N=${n} dynasties per cell, twelve men and a coach at $${E.FULL_CAP_MUSD}M, `
     + `starting years ${DYN_FIRST_SEASON} to ${DYN_LAST_SEASON - 10}.\n`);
 

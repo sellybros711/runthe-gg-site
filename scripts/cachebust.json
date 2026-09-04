@@ -1995,12 +1995,12 @@
   },
   "football/index.html": {
     "engine.js": {
-      "v": "84",
-      "sha": "17fcb88cde6917a7"
+      "v": "85",
+      "sha": "62ad66910588925f"
     },
     "run.js": {
-      "v": "96",
-      "sha": "d61d5753079490b0"
+      "v": "97",
+      "sha": "f1bdb2f9137d6fc6"
     },
     "fullteam-access.js": {
       "v": "1",
@@ -2008,11 +2008,11 @@
     },
     "dynasty-access.js": {
       "v": "2",
-      "sha": "a0eee8bcb0578261"
+      "sha": "0c18aed4f295af18"
     },
     "board.js": {
       "v": "29",
-      "sha": "aaf6c8af24c7015a"
+      "sha": "e905df69108b0d16"
     },
     "achievements.js": {
       "v": "10",

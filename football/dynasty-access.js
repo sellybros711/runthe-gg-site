@@ -1,6 +1,6 @@
-/* WHO CAN SEE THE GAUNTLET, in one file, because more than one thing asks.
+/* WHO CAN SEE DYNASTY, in one file, because more than one thing asks.
  *
- * The Gauntlet is one roster carried through as many real NFL seasons as you can survive:
+ * Dynasty is one roster carried through as many real NFL seasons as you can survive:
  * the men you keep age into their own next year, at whatever those years actually were,
  * you pay for them at whatever they turn out to be worth, and the owner wants more wins
  * every autumn than he wanted last one. Miss his bar twice and the run is over. Today it

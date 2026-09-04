@@ -3945,7 +3945,7 @@ const DYNASTY_MAX_SEASONS = 25;
  * ─── THE SCORE ─────────────────────────────────────────────────────────────────────
  *
  * Every other mode on this site is ranked on a rating, a number between 0 and 100 that says
- * how good the roster was. The Gauntlet is not that shape. It is a run, it ends when you are
+ * how good the roster was. Dynasty is not that shape. It is a run, it ends when you are
  * fired, and the thing worth bragging about is how far you got and what you did on the way,
  * so it is scored the way an arcade cabinet scores: points, named bonuses, and a multiplier
  * that grows the longer you stay alive.
@@ -3963,7 +3963,7 @@ const DYNASTY_MAX_SEASONS = 25;
  * paying 1,000 for a divisional round win and then 2,500 again for the same game is the kind
  * of double count nobody notices until the leaderboard looks wrong.
  */
-const GAUNTLET_POINTS = {
+const DYNASTY_POINTS = {
   WIN: 1000,          // per regular-season win
   OVER_BAR: 500,      // per win clear of what the owner asked for
   PLAYOFF_WIN: 2500,  // per playoff game won
@@ -3978,8 +3978,8 @@ const GAUNTLET_POINTS = {
  *
  * `seasonNo` counts from 1 and is the multiplier.
  */
-function gauntletSeasonScore(s) {
-  const P = GAUNTLET_POINTS;
+function dynastySeasonScore(s) {
+  const P = DYNASTY_POINTS;
   const wins = Math.max(0, s.wins || 0);
   const parts = [];
   if (wins) parts.push({ key: 'wins', label: `${wins} win${wins === 1 ? '' : 's'}`, points: wins * P.WIN });
@@ -4000,14 +4000,14 @@ function gauntletSeasonScore(s) {
 }
 
 /** Every season added up, which is what the run is ranked on. */
-function gauntletRunScore(history) {
+function dynastyRunScore(history) {
   return (history || []).reduce((t, h) => t + (h.score || 0), 0);
 }
 
 /*
  * ─── WHAT THE OWNER WANTS, AND WHY IT SITS STILL FOR A WHILE ────────────────────────
  *
- * The Gauntlet is six careers running at once. Every man ages into his own next real
+ * Dynasty is six careers running at once. Every man ages into his own next real
  * season, a man drafted at his last one is gone in the spring, and the run ends the first
  * time you miss. What it needed was a target that a player could hold in his head, and
  * that means one that does not move every year.
@@ -5231,7 +5231,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 46;
+const ENGINE_API_VERSION = 47;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -5261,7 +5261,7 @@ function eraCode(franchise, season) {
 }
 
 /*
- * ─── THE GAUNTLET'S BOSS SEASONS ─────────────────────────────────────────────────────
+ * ─── DYNASTY'S BOSS SEASONS ─────────────────────────────────────────────────────
  *
  * Every fifth season the schedule ends with a marquee game against a real great team, and
  * that game is the one place in this mode where the player is not a spectator. Two levers,
@@ -5278,7 +5278,7 @@ function eraCode(franchise, season) {
  *   same idea measured on a whole season. Pressing when you are already ahead of the boss is
  *   how you hand it back.
  *
- * WHY OFFENSE-ONLY MAKES THIS WORK RATHER THAN BREAKING IT. The Gauntlet drafts an offense,
+ * WHY OFFENSE-ONLY MAKES THIS WORK RATHER THAN BREAKING IT. Dynasty drafts an offense,
  * so a wall-of-defense boss (the 2000 Ravens, the 2002 Buccaneers) throttles your score
  * through the same defenseModifier every Sunday uses, and a juggernaut-offense boss (the
  * 2007 Patriots, the 2013 Broncos) simply puts up a number you have to chase. The scout is
@@ -5795,7 +5795,7 @@ const publicAPI = {
   dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
   dynastyChallengeFor, dynastyChallengeProgress,
   bossExpectedPoints, bossSimCreate, bossSimAdvance, bossSimResolve, bossClock,
-  GAUNTLET_POINTS, gauntletSeasonScore, gauntletRunScore,
+  DYNASTY_POINTS, dynastySeasonScore, dynastyRunScore,
   dynastySalary, dynastyAge, dynastyGoneFor, dynastyContinuity,
   DYNASTY_DEAD_SHARE, DYNASTY_DEAD_SEASONS, DYNASTY_DEAD_CEILING, dynastyDead,
   /* Measured, not chosen. See the sweep in simulator.js --fullteam. */
