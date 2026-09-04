@@ -2011,16 +2011,16 @@
       "sha": "0c18aed4f295af18"
     },
     "board.js": {
-      "v": "31",
-      "sha": "4dea5e85eecefab3"
+      "v": "32",
+      "sha": "dc921cfe461f1897"
     },
     "achievements.js": {
-      "v": "10",
-      "sha": "4217a68cfdd14e74"
+      "v": "11",
+      "sha": "630aefa9cbf5c2e6"
     },
     "crest.js": {
-      "v": "9",
-      "sha": "fcdc923d83e529a6"
+      "v": "10",
+      "sha": "39ae7ad9335c19bc"
     },
     "/assets/arcade-ad.js": {
       "v": "3",

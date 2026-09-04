@@ -91,6 +91,70 @@ It runs in CI on any push or pull request touching an `.html` or `.js` file
 (`.github/workflows/cachebust-check.yml`), and it covers every page on the site that
 versions a script beside it, found rather than listed.
 
+## The football game's badge cabinet
+
+`football/achievements.js` is the badge catalog for The Perfect Season, and every badge in
+it is DERIVED from the run rows the leaderboard already keeps rather than stored anywhere.
+That is what makes a cabinet retroactive, account-shaped rather than browser-shaped, and
+impossible to lose by clearing site data. It is also the constraint: a badge can only ask
+about something that actually reaches `ps_runs`. A dynasty knows whether its boss game was
+won and never writes it down, so no badge asks. Reaching season 11 is the honest version of
+the same claim.
+
+Two shelves are gated on their mode's own launch flag:
+
+| shelf | appears when |
+|---|---|
+| Dynasty | `dynasty-access.js` sets `DYNASTY_LIVE = true` |
+| Full Team | `fullteam-access.js` sets `FULLTEAM_LIVE = true` |
+
+**On the LIVE flag and not on the tester list, deliberately.** `CATALOG.length` is the
+denominator `crest.js` divides by and it is the definition of GOAT, so a catalog whose size
+depended on who was looking would give two players with identical cabinets two different
+ranks. One number for everybody, and it steps up on the day a mode launches. Nobody replays
+anything: ranks are derived, so seasons a tester already played are counted the moment the
+shelf appears.
+
+### A badge you add has to be proved reachable
+
+```
+node football/check-badges.mjs           # the full sweep, a few minutes
+node football/check-badges.mjs --quick   # fewer runs, for a fast loop
+```
+
+It plays Dynasty and Full Team for real through `run.js`, in the order the screens drive it,
+turns each finished season into the board row the page would file, and names any badge that
+nothing lit. The basketball game is why it exists: its first catalog asked for three things
+that game could not produce and **nothing failed**, because a badge that cannot be earned
+throws no error and breaks no test.
+
+It has already caught the same class of thing twice here:
+
+- "Field a full squad rated 90 or better" was impossible. A Full Team rating is clamped to
+  100 and averaged across two units, while a six man offense is unclamped and a good one is
+  already past 110, so the threshold had been read off the wrong ladder. 350 simulated
+  squads peaked at 54.9.
+- The dynasty score ladder went to two million against a measured best of 198,000.
+
+A badge reported UNREACHED is a question, not a number to move: it means either the mode
+cannot do it or no strategy in the checker was trying. Two lists excuse one, `GRIND` for a
+bigger count of a proved thing and `SKILL` for a feat the bots are not good enough for, and
+neither is a free pass. Each entry names another badge that must actually light on that run,
+chains resolve to the end, and only the end counts.
+
+### What the mode can actually produce
+
+Measured, and worth knowing before writing a badge that names any of it:
+
+- A dynasty is built to run **25 seasons** (`E.DYNASTY_MAX_SEASONS`). Nothing enforces that
+  number, but it is what the balance was tuned for.
+- Bosses come at seasons 10, 20, 30 and so on out of a list of **six**, and mandates at 5,
+  15, 25 and so on out of a list of **four**. So inside 25 seasons a player meets exactly
+  TWO bosses (SEA-2013 and NE-2007) and THREE mandates. The other four bosses and the `vets`
+  mandate sit past the end of the design, and no badge should name them.
+- A Full Team squad reaches the Super Bowl in about one season in twenty and wins it in
+  about one in a hundred, and never takes the top seed.
+
 ## The wrestling game
 
 `wrestling/index.html` is the whole career game in one self-contained file, by
