@@ -2337,6 +2337,13 @@ window.GA_ID='G-L29P5MRWKE';
   .mc-go:not(:disabled):active{transform:scale(.97)}
   .mc-go:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
   .mc-go:disabled{cursor:default;opacity:.55}
+  /* The quiet way past a Resume door, sized like a footnote because it is one. */
+  .mc-alt{display:block;margin:9px auto 0;padding:6px 10px;border:0;background:none;
+    font-family:var(--fn);font-size:11px;font-weight:700;letter-spacing:.02em;
+    color:var(--dim-2);text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .mc-alt:hover{color:var(--ink)}
+  .mc-alt:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
   /* The dynasty door wears the mode's gold, so the two ways in are told apart by colour as
      well as by their names. */
   .mc-go-dyn:not(:disabled){border-color:rgba(226,178,90,.5);background:rgba(226,178,90,.1)}
@@ -8929,7 +8936,9 @@ function ensureDynastyButton(){
      runs on every return to the front page, and between two of them a dynasty can have been
      started, survived a winter or been ended: a button written once would still be offering
      a new run over one that is sitting there waiting. */
-  const save=dynRead();
+  /* THE FRONT-PAGE DOOR IS THE OPEN DYNASTY. The One Franchise run has its own door inside
+     the modes sheet, and its own slot, so this one names which it means. */
+  const save=dynRead('open');
   /* THE ROAD IS PART OF THE REBUILD. Both layers are children of the button and the two
      branches below replace its innerHTML, so drawing them once at creation would put the
      picture on the front page until the first auth change wiped it. First in the string, so
@@ -8958,7 +8967,7 @@ function ensureDynastyButton(){
       '<span class="hp-full-sub">'+
         (r.score>0?SCORE(r.score)+' points':r.roster.length+' signed')+
         ' &middot; '+dynWhere(r)+'</span>';
-    el.onclick=()=>{ dynResume(); };
+    el.onclick=()=>{ dynResume('open'); };
   }else{
     /* THE NUMBER, AND THAT IT MOVES. The old caption ran three fields wide and carried the
        ageing and the endlessness as well, which is the rules sheet on the first tap doing
@@ -9037,13 +9046,16 @@ function beginDynastyDraft(opts){
      is free, so it can guard the door and save somebody a draft they would not be allowed to
      play, while the write waits until they have actually committed to the run. */
   if(dailyLeft('dynasty')<=0) return dailySpentSheet('dynasty');
-  /* AND A RUN IN PROGRESS IS NOT SOMETHING TO OVERWRITE QUIETLY. The front page cannot reach
-     this with a save on disk, because that button says Resume instead. The modes sheet can,
-     and dynClear() below would throw the run away without a word. */
-  if(dynRead()) return dynastyReplaceSheet(opts);
-  /* Whatever was saved is gone the moment a new one is drafted. The sheet in front of this
-     is where somebody agrees to that; by here it has been agreed. */
-  dynClear();
+  /* AND A RUN IN PROGRESS IS NOT SOMETHING TO OVERWRITE QUIETLY. Asked of the slot being
+     STARTED, not of dynasties in general: an open run and a club run live in their own slots
+     now, so starting one has nothing to say about the other. Only a second run of the same
+     kind is a replacement, and that one still asks. */
+  const startSlot=(opts&&opts.franchise)?'club':'open';
+  if(dynRead(startSlot)) return dynastyReplaceSheet(opts);
+  /* Whatever was saved IN THIS SLOT is gone the moment a new one is drafted. The sheet in
+     front of this is where somebody agrees to that; by here it has been agreed. The other
+     slot is untouched, which is the point of there being two. */
+  dynClear(startSlot);
   /* NO DOWNLOAD IN FRONT OF THIS ANY MORE. It used to fetch the defensive pool and spin the
      button for a second first, because the mode drafted six defenders. It drafts an offense
      now, and an offense is in the boot bundle, so the wheel opens on the tap. */
@@ -9055,21 +9067,26 @@ function beginDynastyDraft(opts){
    Only reachable from the modes sheet: the front-page door offers Resume while a run exists,
    so it never lands here. */
 function dynastyReplaceSheet(opts){
-  const save=dynRead(), r=save&&save.run;
+  const slot=(opts&&opts.franchise)?'club':'open';
+  const save=dynRead(slot), r=save&&save.run;
   const where=r?(r.seasonNo>1?'Season '+r.seasonNo:'Season 1'):'';
+  /* NAMES THE RUN IT WOULD END, because with two slots "you have a run going" is no longer
+     enough to tell somebody which one is at stake. */
+  const whose=(r&&r.franchise)?esc(E.nickname(r.franchise))+' dynasty':'open dynasty';
   $('sheet-in').innerHTML='<div class="eyebrow gold">Dynasty</div>'+
-    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">You have a run going</h2>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">You have a '+whose+' going</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 12px">'+
       (where?'<b>'+esc(where)+'</b>, ':'')+
       (r&&r.score>0?SCORE(r.score)+' points. ':'')+
-      'Starting a new one ends it. There is no way back to it.</p>'+
+      'Starting another '+(slot==='club'?'One Franchise ':'')+'run ends it. There is no way '+
+      'back to it.</p>'+
     '<div style="margin-top:14px"><button class="btn" id="b-dr-keep">Keep playing it</button></div>'+
     '<div style="margin-top:8px"><button class="btn ghost sm" id="b-dr-new">Start a new one anyway</button></div>';
   $('sheet-in').dataset.kind='dynreplace';
   openSheet();
-  $('b-dr-keep').onclick=()=>{ closeSheet(); dynResume(); };
+  $('b-dr-keep').onclick=()=>{ closeSheet(); dynResume(slot); };
   $('b-dr-new').onclick=()=>{
-    dynClear();
+    dynClear(slot);
     closeSheet();
     dynastyIntro(()=>beginDraft(Object.assign({dynasty:true},opts||{})));
   };
@@ -9211,7 +9228,20 @@ function bindGdHelp(el){ const b=el&&el.querySelector('.gd-help'); if(b) b.oncli
  * brace is that restoring is wrapped, and anything that throws clears the save and lands on
  * the front page with a sentence rather than on a half-built screen.
  */
+/* TWO RUNS AT ONCE, IN TWO SLOTS, because they are two different games and having one should
+   not cost you the other. An open dynasty drafts out of all of history; a One Franchise one
+   drafts out of a single club. Somebody carrying a nine season open run should be able to try
+   a Chiefs career without being asked to throw the first one away, which is what a single
+   save key made them do.
+   THE OPEN SLOT KEEPS THE ORIGINAL KEY, so every run saved before this change is still where
+   the game looks for it. Only the club slot is new.
+   ONE SLOT PER KIND, not one per club: starting a Bills dynasty over an active Chiefs one is
+   still a replacement, and still asks first. */
 const DYN_SAVE_KEY='ps_dynasty_save';
+const DYN_SAVE_KEY_CLUB='ps_dynasty_save_club';
+/* Which slot a run belongs in, asked of the run rather than tracked, so it cannot drift. */
+const dynSlotOf=(r)=>(r&&r.franchise)?'club':'open';
+const dynKeyFor=(slot)=>(slot==='club'?DYN_SAVE_KEY_CLUB:DYN_SAVE_KEY);
 /* 2: the mode became a six man offense and the run gained a score, so a saved twelve man
    roster is not a run this build can open. Bumped rather than migrated: it is a preview,
    and a wrong resume is worse than a fresh start.
@@ -9273,20 +9303,29 @@ function dynPack(){
    quiet. */
 function dynSave(){
   if(!dynAtRest()) return;
-  try{ localStorage.setItem(DYN_SAVE_KEY,JSON.stringify(dynPack())); }catch(_){}
+  try{ localStorage.setItem(dynKeyFor(dynSlotOf(run)),JSON.stringify(dynPack())); }catch(_){}
 }
-function dynClear(){ try{ localStorage.removeItem(DYN_SAVE_KEY); }catch(_){} }
+/* Clears one slot, and by default the one the live run belongs to, so a firing or a quit
+   takes away the run that ended rather than whichever was written first. */
+function dynClear(slot){
+  try{ localStorage.removeItem(dynKeyFor(slot||dynSlotOf(run))); }catch(_){}
+}
 
 /* The header only. Cheap enough to call from every repaint of the front page, and it never
    touches the player pool, so it answers "is there one waiting" before the defensive
    download that resuming needs. */
-function dynRead(){
+function dynRead(slot){
+  const want=slot==='club'?'club':'open';
   let raw=null;
-  try{ raw=localStorage.getItem(DYN_SAVE_KEY); }catch(_){ return null; }
+  try{ raw=localStorage.getItem(dynKeyFor(want)); }catch(_){ return null; }
   if(!raw) return null;
   let s=null;
   try{ s=JSON.parse(raw); }catch(_){ return null; }
   if(!s||s.v!==DYN_SAVE_VERSION||!s.run||!s.run.dynasty||!Array.isArray(s.run.roster)) return null;
+  /* AND IT HAS TO BELONG IN THE SLOT IT WAS FOUND IN. Cheap, and it is the one check that
+     stops a club run resumed from the open door (or the reverse) from opening a game the
+     screen it came from was not describing. */
+  if(dynSlotOf(s.run)!==want) return null;
   /* Whoever saved it and nobody else. Both sides normalised to null so a signed-out run,
      which is only reachable once the mode goes live to everybody, still finds its own. */
   if((s.user||null)!==(authState.userId||null)) return null;
@@ -9352,15 +9391,17 @@ function dynRestore(s){
 
 /* Same shape as beginDynastyDraft, and for the same reason: the defensive pool is not in
    the boot bundle, and half the roster is in it. */
-function dynResume(){
-  const s=dynRead();
+function dynResume(slot){
+  const want=slot==='club'?'club':'open';
+  const s=dynRead(want);
   if(!s) return ensureDynastyButton();
   let ok=false;
   try{ ok=dynRestore(s); }catch(err){ console.error(err); ok=false; }
   if(ok) return;
   /* The save is unopenable, so it goes, and it is said out loud. A silent clear looks
-     exactly like the bug this whole block exists to fix. */
-  dynClear();
+     exactly like the bug this whole block exists to fix. Named rather than derived: the run
+     that failed to restore is not the live one, so dynSlotOf(run) would clear the wrong slot. */
+  dynClear(want);
   endRun();
   show('s-intro');
   ensureDynastyButton();
@@ -9687,6 +9728,9 @@ function modeMenu(){
       '1.9.8-3.8-2.8-2.6 3.8-.4L12 6.8Z"/></svg>';
   const ct=canPlayTrade();
   const cd=canPlayClubDynasty();
+  /* Read once, because the card's copy and its handler both need the same answer and a
+     second read between them could disagree. */
+  const clubSave=cd?dynRead('club'):null;
   const tradeLocked=locked||!ct;
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
@@ -9708,9 +9752,27 @@ function modeMenu(){
             '<div class="mc-ways">'+
               '<button class="mc-go" id="b-mc-club"'+(locked?' disabled':'')+'>'+
                 '<b>Quick draft</b><span>One season</span></button>'+
+              /* THE DOOR CHANGES ITS MIND WHEN THERE IS A RUN BEHIND IT, the same way the
+                 front page does: a club dynasty lives in its own slot, so having one is a
+                 reason to offer it back rather than a reason to be warned. It names the club
+                 and the season, because the whole point of the second slot is that this run
+                 and the open one are two different things. */
               '<button class="mc-go mc-go-dyn" id="b-mc-clubdyn"'+(locked?' disabled':'')+'>'+
-                '<b>Dynasty</b><span>Season after season</span></button>'+
+                (clubSave
+                  ? '<b>Resume</b><span>'+esc(E.nickname(clubSave.run.franchise)||clubSave.run.franchise)+
+                    ' &middot; Season '+clubSave.run.seasonNo+'</span>'
+                  : '<b>Dynasty</b><span>Season after season</span>')+
+              '</button>'+
             '</div>'+
+            /* THE WAY TO A DIFFERENT CLUB, and it only exists while there is a run in the
+               way of one. Without it the Resume door above is a dead end: a Chiefs career in
+               progress would leave no route to a Bills one. Small and quiet, the same shape
+               as the front page's own "Start a new run" under a saved dynasty, because
+               carrying on is the thing somebody came back for.
+               It goes through the ordinary picker, so the warning about ending the run it
+               replaces is the one beginDynastyDraft already raises rather than a second copy
+               of it living here. */
+            (clubSave?'<button class="mc-alt" id="b-mc-clubnew">Start a different club</button>':'')+
           '</div>'
         : '<button class="modecard mc-club" id="b-mc-club"'+(locked?' disabled':'')+'>'+
             '<div class="mc-head"><div class="mc-icon">'+MC_SHIELD+
@@ -9808,7 +9870,13 @@ function modeMenu(){
   const club=$('b-mc-club');
   if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(false); };
   const clubDyn=$('b-mc-clubdyn');
-  if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{ closeSheet(); clubPicker(true); };
+  if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{
+    closeSheet();
+    /* Resume goes straight back into the run. Only a fresh one asks which club. */
+    if(clubSave) dynResume('club'); else clubPicker(true);
+  };
+  const clubNew=$('b-mc-clubnew');
+  if(clubNew&&!locked&&cd) clubNew.onclick=()=>{ closeSheet(); clubPicker(true); };
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
   const trade=$('b-mc-trade');
