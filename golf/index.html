@@ -1834,6 +1834,9 @@ window.GA_ID='G-L29P5MRWKE';
   .rsc-c.tapc{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .rsc-c.tapc:hover{background:rgba(79,224,193,.13)}
   .rsc-dot0{color:var(--muted); opacity:.55}
+  /* the spacer that keeps a short second block's cells the width of a front-nine cell (a 12-hole match
+     splits 9 and 3). It holds a column open and must not read as a hole, so it carries no divider. */
+  .rsc-c.rsc-fill{border-left-color:transparent; background:transparent}
   .dcell{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.24)); border:1px solid var(--panelb); border-radius:8px; padding:6px 0 5px; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 12px -4px var(--gold)}
   .dcell.sel{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset}
@@ -7858,6 +7861,17 @@ function bracketFinishNow(B){ B=(B&&!B._final)?B:bracketInit(); bracketRunOut(B)
    watch is honestly your golfer.                                                                        */
 const MATCH_SKILL_K=1.9;
 const MATCH_EXTRA_HOLES=[17,0,9,17,0,9,17,0];   // sudden death rotates the closing holes (18 / 1 / 10)
+/* How long THIS match is. A knockout round is always 18, but a career decision played as a 1v1 is not:
+   a Tuesday money match is nine and a made-for-television exhibition is twelve. Every place that used to
+   say 18 asks here instead, because the number appears in five separate places (the state, the board, the
+   advance, the skip and the scorecard) and a match that ends at 9 on one of them and 18 on the others is
+   a board that disagrees with the card. Bounded to the course, which only ever has eighteen holes. */
+function matchRegHoles(){ const n=(S.matchPlay&&S.matchPlay.holes)|0; return (n>=1&&n<=18)?n:18; }
+// which course hole a sudden-death extra plays. A short match rotates its own closing holes rather than
+// walking the field back out to the 18th it never reached.
+function matchExtraHole(k){ const n=matchRegHoles();
+  const seq = n>=18 ? MATCH_EXTRA_HOLES : [n-1, 0, Math.max(1,Math.floor(n/2))];
+  return seq[((k|0)%seq.length+seq.length)%seq.length]; }
 function matchOppRng(ci, salt){ return dHoleRng(((S.dailySeed^0x9e3779b1)>>>0), S.dailyCourse, ci, (salt||0)+0x4d10); }
 function matchOppHole(ci, salt){
   const mp=S.matchPlay, c=DAILY_COURSES[S.dailyCourse]; if(!mp||!c) return 0;
@@ -7913,21 +7927,23 @@ function matchState(){
     if(rev) hs=hs.slice(0,-1);
   }
   let up=0;
-  const reg=Math.min(hs.length,18);
+  const N=matchRegHoles();
+  const reg=Math.min(hs.length,N);
   for(let i=0;i<reg;i++){ const a=hs[i].toPar, b=mp.oppHoles[i]; if(a<b)up++; else if(b<a)up--; }
-  const left=18-reg;
+  const left=N-reg;
   let decided=reg>0 && Math.abs(up)>left, won=up>0, label='';
   if(decided) label = left>0 ? (Math.abs(up)+'&'+left) : (Math.abs(up)+' up');
-  let extras=Math.max(0,hs.length-18);
-  if(!decided && reg>=18){
+  let extras=Math.max(0,hs.length-N);
+  if(!decided && reg>=N){
     for(let k=0;k<extras;k++){
-      const a=hs[18+k].toPar, b=mp.oppExtra[k];
-      if(b!=null && a!==b){ decided=true; won=a<b; label='at the '+ord(19+k); break; }
+      const a=hs[N+k].toPar, b=mp.oppExtra[k];
+      if(b!=null && a!==b){ decided=true; won=a<b; label='at the '+ord(N+1+k); break; }
     }
   }
-  // A GROUP match is not a knockout: all square through 18 is a HALF worth half a point to each of them,
-  // which is exactly what the day's own header promises. Only week 2 goes to sudden death.
-  const allSquare=reg>=18 && !decided;
+  // A GROUP match is not a knockout: all square through the last hole is a HALF worth half a point to each
+  // of them, which is exactly what the day's own header promises. Only week 2 goes to sudden death. A
+  // career decision borrows the same flag: a money round can be halved, a doubled-stakes grudge cannot.
+  const allSquare=reg>=N && !decided;
   if(mp.group && allSquare) return {up, reg, left, decided:true, won:false, half:true, label:'AS',
     extras:0, allSquare:true};
   return {up, reg, left, decided, won, label, extras, allSquare};
@@ -7945,10 +7961,11 @@ function matchOppShotsFor(holeIdx){
   const c=DAILY_COURSES[S.dailyCourse]; if(!c) return null;
   if(!mp._oppShots) mp._oppShots={};
   if(mp._oppShots[holeIdx]) return mp._oppShots[holeIdx];
-  const inReg=holeIdx<18, tp = inReg?mp.oppHoles[holeIdx]:mp.oppExtra[holeIdx-18];
+  const N=matchRegHoles();
+  const inReg=holeIdx<N, tp = inReg?mp.oppHoles[holeIdx]:mp.oppExtra[holeIdx-N];
   if(tp==null) return null;
-  const ci=inReg?holeIdx:MATCH_EXTRA_HOLES[(holeIdx-18)%MATCH_EXTRA_HOLES.length], h=c.holes[ci];
-  const salt=inReg?0x7c11:(0xE00+(holeIdx-18));
+  const ci=inReg?holeIdx:matchExtraHole(holeIdx-N), h=c.holes[ci];
+  const salt=inReg?0x7c11:(0xE00+(holeIdx-N));
   try{ mp._oppShots[holeIdx]=dShotSeq(h[0],h[1],h[0]+tp,matchOppRng(ci,salt),mp.oppSk,{clubTag:clubSetTag(null)}); }
   catch(e){ mp._oppShots[holeIdx]=null; }
   return mp._oppShots[holeIdx];
@@ -7977,6 +7994,10 @@ function matchOppOverlaySVG(hole, holeIdx, courseKey){
 function finishMatchRound(){
   clearDailyTimer();
   const mp=S.matchPlay, B=S.curBracket, st=matchState();
+  // A career decision played out as a 1v1 has no bracket behind it: the result lands as a dilemma
+  // outcome instead of a slot in a draw. Checked BEFORE the bail below, which exists for a match with
+  // no bracket and would otherwise throw the whole thing away without applying anything.
+  if(mp && mp.exh) return finishExhibitionMatch(mp, st);
   if(!mp || !B || !st){ S.matchPlay=null; S.mpHoleIdx=null; S.screen='season'; render(); return; }
   const holes=S.dailyHoles.slice(), evt=B.evt;
   track('bracket_match_done',{round:mp.ri, won:st.won, label:st.label});
@@ -8006,22 +8027,179 @@ function finishMatchRound(){
 function matchSkipToEnd(){
   clearDailyTimer(); S.dailyAuto=false; S.dailyHolePause=false; S.dailyProv=null;
   const mp=S.matchPlay, c=DAILY_COURSES[S.dailyCourse]; if(!mp||!c) return;
-  let guard=0;
+  let guard=0; const N=matchRegHoles();
   while(guard++<40){
     const st=matchState(); if(st.decided) break;
     const n=S.dailyHoles.length;
-    if(n<18){
+    if(n<N){
       const h=c.holes[n];
       const toPar=dSimHole(h[0],h[1],S.dailyDiffs[n],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,n,dAttSalt(0)));
       S.dailyHoles.push({i:n,n:n+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,n,dAttSalt(0x5407)),S.dailySkills,{clubTag:clubSetTag(S.look)})});
     } else {
-      const k=n-18, ci=MATCH_EXTRA_HOLES[k%MATCH_EXTRA_HOLES.length], h=c.holes[ci];
+      const k=n-N, ci=matchExtraHole(k), h=c.holes[ci];
       if(mp.oppExtra[k]==null) mp.oppExtra[k]=matchOppHole(ci,0x900+k);
       const toPar=dSimHole(h[0],h[1],S.dailyDiffs[ci],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(0xC00+k)));
       S.dailyHoles.push({i:n,n:ci+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(0xD00+k)),S.dailySkills,{clubTag:clubSetTag(S.look)})});
     }
   }
   finishMatchRound();
+}
+
+/* ===== A CAREER DECISION PLAYED AS A MATCH =====
+   Three off-course decisions used to resolve with a weighted roll and a paragraph: a money round with
+   your rival, their doubled-stakes rematch, and a prime-time exhibition against a breakaway-league star.
+   Each of those is a 1v1 golf match described in words, so each of them now IS one, hole by hole on the
+   TourTracer against a real opponent, through the same engine the Tour Championship knockout uses.
+   Nothing here is a second match engine: bracketStartMatch's state shape is the contract, and the only
+   addition is `exh` on S.matchPlay, which says what the result MEANS instead of pointing at a draw.     */
+
+// The opponent's actual ratings. A named pro the career already knows about is looked up in the living
+// world and aged to this season, so the rival you have been chasing for four years is the golfer you play
+// - not a number invented at the tee. Only when the name is not in the world (a beat can name somebody
+// who has since retired out of it) is a profile synthesized, deterministically off the name so the same
+// opponent is the same golfer every time, and scaled so its weighted overall is the one that was asked for.
+function matchOppSkills(name, targetOvr){
+  const nm=String(name||'').trim();
+  let g=null, sy=CAREER_START_YEAR;
+  try{
+    const w=(S.world&&Array.isArray(S.world.active))?S.world:null;
+    if(w){ sy=w.simYear||CAREER_START_YEAR;
+      g=w.active.find(a=>a&&a.name===nm&&!a.retiredYear) || w.active.find(a=>a&&a.name===nm) || null; }
+  }catch(e){}
+  if(g){ try{
+    const L=livingOf(g,sy), sk={name:g.name};
+    SKK.forEach(k=>sk[k]=L.ls[k]);
+    return {sk, ovr:L.ov, age:L.age, real:true};
+  }catch(e){} }
+  const ov=clamp(Math.round(targetOvr||78),55,96);
+  const rng=mulberry32((dHash(nm||'opponent')^0x5f3a7b1d)>>>0);
+  const sk={name:nm||'Your opponent'};
+  SKK.forEach(k=>sk[k]=clamp(Math.round(ov+(rng()*2-1)*6),45,99));
+  // a shaped profile that comes out three points light is a different opponent from the one asked for,
+  // so shift the whole profile onto the target overall rather than trusting the jitter to average out
+  const d=ov-SKK.reduce((a,k)=>a+sk[k]*CW[k],0);
+  SKK.forEach(k=>sk[k]=clamp(Math.round(sk[k]+d),45,99));
+  return {sk, ovr:Math.round(SKK.reduce((a,k)=>a+sk[k]*CW[k],0)), age:30, real:false};
+}
+/* Start one. `ch.match` is the config (see the three decisions in DILEMMAS / STORY_ARCS):
+     course cond holes   where it is played, in what weather, over how many holes
+     day roundName       the two halves of the broadcast bar, which is where the STAKES are stated
+     opp ovr             who, and what they are worth if the world has never heard of them
+     edge                how up for it they are, in OVR points, on top of the calibration below
+     half                false = a knockout that cannot be halved (it goes to sudden death)
+     win lose half       the outcome objects applyDilemmaOutcome will be handed when it is over        */
+function startExhibitionMatch(beat, ctx, ch){
+  const cfg=ch.match||{}, T=v=>(typeof v==='function'?v(ctx):v);
+  const key=DAILY_COURSES[cfg.course]?cfg.course:'Sedgefield Country Club';
+  const c=DAILY_COURSES[key];
+  const N=Math.max(3,Math.min(18,(cfg.holes|0)||18));
+  const oppName=String(T(cfg.opp)||'').trim()||'Your rival';
+  const p=buildPlayer(), sk={}; CATS.forEach(cc=>sk[cc.k]=p[cc.k]);
+  const prof=matchOppSkills(oppName, T(cfg.ovr));
+  // The SAME calibration the knockout uses (see MATCH_SKILL_K): the daily per-hole engine separates skill
+  // about half as much as the sim does, so an opponent left at their own ratings quietly halves whichever
+  // of you is the favourite. `edge` is added AFTER the stretch, so it reads as what it is - a man who has
+  // been on the range for a fortnight, not a thumb on the calibration.
+  const meEo=eventOverall(p,CATS)+(function(){ try{ return confEo(); }catch(e){ return 0; } })();
+  const gapEo=meEo-eventOverall(prof.sk,CATS);
+  const shift=-(MATCH_SKILL_K-1)*gapEo+(+cfg.edge||0);
+  const oppSk={}; CATS.forEach(cc=>{ oppSk[cc.k]=clamp((prof.sk[cc.k]!=null?prof.sk[cc.k]:70)+shift,45,99); });
+  S.dailyCourse=key; S.dailyCond=cfg.cond||'calm'; S.dailyPlan='balanced';
+  S.dailySeed=(Math.random()*2147483647)>>>0; S.dailyAttempt=0;
+  S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
+  S.dailyDiffs=dBaseDiffs(c);   // the course plays as itself; the calibration lives in the opponent's ratings
+  S.matchPlay={ri:0, evtName:ctx.evtName||'', roundName:String(T(cfg.roundName)||'The match'),
+    day:String(T(cfg.day)||''), holes:N, group:cfg.half!==false,
+    oppName, oppSeed:null, mySeed:null, oppSk, oppHoles:[], oppExtra:[], extra:false,
+    exh:{id:beat.id, tag:String(T(beat.tag)||'Career decision'), title:String(T(beat.title)||''),
+      oppName, holes:N, courseKey:key, oppOvr:prof.ovr,
+      win:cfg.win, lose:cfg.lose, half:(cfg.half&&cfg.half!==true)?cfg.half:cfg.lose, ctx}};
+  for(let i=0;i<N;i++) S.matchPlay.oppHoles.push(matchOppHole(i,0));
+  S.moment=null; S.momentPO=null; S.momentPOHoleIdx=null; S.mpHoleIdx=null;
+  S.daily=false; S.special=false; S.dailyLegend=null;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=true; S.dailyMullAvail=false; S.dailyResult=null;
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null;
+  clearDailyTimer(); _hvbRects=null;
+  S.dailyClaimed=true;   // borrowed Daily plumbing must never touch Daily Challenge attempts/records
+  track('dilemma_match_start',{id:beat.id, opp:oppName, holes:N});
+  S.screen='dailyround'; render(); scheduleDailyAdvance();
+}
+// How the match finished, in the language a golfer would use. matchState's own label has no direction
+// in it (it is read next to a bracket slot that already says who won), so a match that went the full
+// distance and was LOST came out of here headlined "18 up". Said from your side, that is 18 down.
+function matchResultTxt(st){
+  if(!st) return 'All square';
+  if(st.half || (!st.decided && st.up===0)) return 'All square';
+  const lab=st.label||'';
+  if(/^at the /.test(lab)) return 'Decided '+lab;               // sudden death: "Decided at the 19th"
+  if(lab.indexOf('&')>=0) return lab.replace('&',' & ');        // "3 & 2" reads the same won or lost
+  const n=Math.abs(st.up);
+  return n+(st.won?' up':' down');
+}
+// The last putt has dropped. Apply the outcome the result earned, then say so on a card that reads like
+// the decision card it replaced - same chips, same continue button, so the two ways a decision can resolve
+// report themselves identically.
+function finishExhibitionMatch(mp, st){
+  const ex=mp.exh||{}, ctx=ex.ctx||{}, N=mp.holes||18;
+  const half=!!(st&&st.half), won=!!(st&&st.won&&!half);
+  const o=(half?(ex.half||ex.lose):(won?ex.win:ex.lose))||{p:1, tone:'neutral', text:'The match is over.'};
+  const winN=Math.min((st&&st.reg)||0,N);
+  const res={won, half, N,
+    txt:matchResultTxt(st),
+    me:S.dailyHoles.slice(0,winN).reduce((s,h)=>s+h.toPar,0),
+    opp:(mp.oppHoles||[]).slice(0,winN).reduce((s,v)=>s+v,0),
+    thru:winN+Math.max(0,(st&&st.extras)||0)};
+  track('dilemma_match_done',{id:ex.id, won, half, thru:res.thru});
+  const story=careerStory(), fol0=story.followers||0;
+  applyDilemmaOutcome(o, ctx);
+  const dFol=Math.round((story.followers||0)-fol0);
+  S.matchPlay=null; S.mpHoleIdx=null;
+  S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={}; S.dailyProv=null;
+  S.screen='season'; render();
+  // The season screen resumes its own scheduler on that render, and the rest of the week would then
+  // sim on behind the card the player is still reading. A decision card never has that problem: it is
+  // opened from inside the scheduler, which has already stopped itself. So stop it here too, and let
+  // the continue button's render() start it again, which is exactly what the decision card does.
+  try{ clearTimeout(seasonTimer); }catch(e){}
+  try{ showExhResult(ex, o, ctx, res, dFol); }catch(e){ render(); }
+}
+function showExhResult(ex, o, ctx, res, dFol){
+  const T=v=>(typeof v==='function'?v(ctx):v);
+  const toneCol = o.tone==='good'?'#35d6a0' : o.tone==='bad'?'#E14A33' : o.tone==='mixed'?'#e9a23b' : '#8ea9bb';
+  const headCol = res.won?'#35d6a0' : res.half?'#e9a23b' : '#E14A33';
+  const headLab = res.won?'You won the match' : res.half?'Halved' : 'You lost the match';
+  const chips=dilemmaChipsHTML(o, dFol);
+  const line=(nm,v,mine)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0">
+    <span style="width:8px;height:8px;border-radius:50%;background:${mine?'#3b82f6':'#ef4444'};flex:0 0 auto"></span>
+    <span style="flex:1;font:800 13px var(--body);color:${mine?'#fff':'#dbe7ee'}">${esc(nm)}</span>
+    <span class="mono" style="font-weight:800;color:${v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9'}">${dtp(v)}</span></div>`;
+  document.querySelectorAll('.momentov,.storyov,.dilemmaov').forEach(n=>n.remove());
+  const ov=$(`<div class="dilemmaov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
+      background:radial-gradient(120% 90% at 50% 6%, rgba(40,30,8,.82), rgba(3,7,5,.98) 72%)">
+    <div style="max-width:452px;width:100%;position:relative;background:linear-gradient(180deg,#12251a,#070f0a);border:1px solid #6b5a2a;border-radius:18px;padding:20px 20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+      <div style="text-align:center">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border:1px solid ${headCol};border-radius:999px;background:rgba(255,255,255,.05);margin-bottom:8px">
+          <span style="font:800 10px/1 var(--body);letter-spacing:.24em;color:${headCol};text-transform:uppercase">⛳ ${esc(headLab)}</span></div>
+        <div style="font:800 10px/1 var(--body);letter-spacing:.22em;color:#e0b45a;text-transform:uppercase;margin-top:2px">${esc(ex.tag||'')}</div>
+        <h2 style="margin:6px 0 10px;font-size:21px;color:#fff;line-height:1.15">${esc(res.txt)}</h2>
+        <div class="scout" style="text-align:left;border-color:rgba(255,255,255,.14);margin:0 0 12px;padding:11px 14px">
+          ${line(S.name||'You', res.me, true)}
+          ${line(ex.oppName||'Opponent', res.opp, false)}
+          <div class="small" style="color:#9fb3a8;margin-top:6px">${res.thru} hole${res.thru===1?'':'s'} · ${esc((DAILY_COURSES[ex.courseKey]||{}).v||'')}</div>
+        </div>
+        <div class="dreply"></div>
+      </div>
+    </div></div>`);
+  const replyBox=ov.querySelector('.dreply');
+  replyBox.appendChild($(`<div class="scout" style="border-color:${toneCol};text-align:left;margin:2px 0 10px;padding:13px 14px">
+    <div style="color:#eef4f7;font-size:14.5px;line-height:1.45">${esc(T(o.text)||'')}</div>
+    ${chips.length?`<div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">${chips.join('')}</div>`:''}</div>`));
+  const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
+  cont.onclick=()=>{ ov.remove(); render(); };
+  replyBox.appendChild(cont);
+  staggerReveal(ov.querySelector('div[style*="text-align:center"]'));
+  document.body.appendChild(ov);
+  track('dilemma_match_result',{id:ex.id, won:res.won, half:res.half});
 }
 
 function simBracket(){ return bracketRunOut(bracketInit()); }
@@ -19483,9 +19661,15 @@ const STORY_ARCS={
    title:c=>`${esc(c.rivalName)} wants a rematch`,
    body:c=>`${esc(c.rivalName)} hasn’t forgotten your last money match. They’ve doubled the stakes and told the whole locker room about it.`,
    choices:[
-    {t:'Accept, bury them again', s:'Twist the knife', risk:true, outcomes:[
-      {p:c=>0.9+(c.ovr-78)/12, tone:'good', text:'You take their money AND their pride. The whole tour’s talking about it.', money:40000, conf:5, fans:4, head:c=>`Beat ${c.rivalName} again head-to-head`},
-      {p:1.2, tone:'bad', text:'They get you back this time, and you won’t hear the end of it.', conf:-4, skill:{clu:-2}, ev:1, label:'Stewing'}]},
+    // The rematch is the money round's opposite number in every way. Full eighteen, they picked the course
+    // and it is the meanest in the game, the wind is up, and there are no halves: double or nothing goes to
+    // sudden death. They have been on the range for a fortnight, which is the +2.
+    {t:'Accept, bury them again', s:'Twist the knife', sub:'You play it, hole by hole', risk:true,
+     match:{course:'Oakmont', cond:'windy', holes:18, edge:2, half:false,
+      day:'THE REMATCH', roundName:'Double or nothing · $40,000',
+      opp:c=>c.rivalName, ovr:c=>(c.rival&&c.rival.ovr)||c.ovr,
+      win:{tone:'good', text:'You take their money AND their pride. The whole tour’s talking about it.', money:40000, conf:5, fans:4, head:c=>`Beat ${c.rivalName} again head-to-head`},
+      lose:{tone:'bad', text:'They get you back this time, and you won’t hear the end of it.', money:-40000, conf:-4, skill:{clu:-2}, ev:1, label:'Stewing'}}},
     {t:'Decline, nothing to prove', s:'Above it now', outcomes:[
       {p:1.4, tone:'neutral', text:'You wave it off. Let them stew on the last one.', respect:2}]}]},
  arc_comeback:{ tag:'THE COMEBACK', dom:'injury',
@@ -19716,9 +19900,16 @@ const DILEMMAS=[
  {id:'dil_practice_rival', tag:'THE LOCKER ROOM', dom:'rival', when:c=>!!c.rivalName, title:c=>`A money round with ${esc(c.rivalName)}`,
   body:c=>`${esc(c.rivalName)} invites you to play a money practice round Tuesday, friendly on the surface, but everyone knows nothing between you two is friendly.`,
   choices:[
-   {t:'Accept and bury them', s:'Send a message', risk:true, outcomes:[
-     {p:c=>0.9+(c.ovr-78)/12, tone:'good', text:'You take their cash and their pride. You walk to Thursday nine feet tall.', conf:5, fans:3, money:20000, head:c=>`Beat ${c.rivalName} in a money practice round`, arc:{fid:'arc_rival_rematch',in:[5,9]}},
-     {p:1.2, tone:'bad', text:'They edge you on the last and won’t let you forget it. Into your head early.', skill:{clu:-3}, ev:1, label:'Needled', conf:-4}]},
+   // PLAYED, not rolled. A money match is a golf match, so it is one: nine holes on a quiet members' course
+   // on the Tuesday, no gallery, no leaderboard. The rival plays it loose (edge -1), it is a practice round
+   // to them, and nine holes all square is a half, because nobody plays extras on a Tuesday.
+   {t:'Accept and bury them', s:'Send a message', sub:'You play it, hole by hole', risk:true,
+    match:{course:'Sedgefield Country Club', cond:'calm', holes:9, edge:-1,
+     day:'TUESDAY', roundName:'Money round · $20,000 a side',
+     opp:c=>c.rivalName, ovr:c=>(c.rival&&c.rival.ovr)||c.ovr,
+     win:{tone:'good', text:'You take their cash and their pride. You walk to Thursday nine feet tall.', conf:5, fans:3, money:20000, head:c=>`Beat ${c.rivalName} in a money practice round`, arc:{fid:'arc_rival_rematch',in:[5,9]}},
+     lose:{tone:'bad', text:'They edge you and won’t let you forget it. Into your head early.', skill:{clu:-3}, ev:1, label:'Needled', conf:-4},
+     half:{tone:'mixed', text:'Nine holes, nobody a nickel richer. Nothing is settled and you both know it.', conf:1, respect:1, arc:{fid:'arc_rival_rematch',in:[4,8]}}}},
    {t:'Politely decline', s:'Keep them guessing', outcomes:[
      {p:1.8, tone:'neutral', text:'You keep your cards close. Let them wonder.', conf:1, respect:1}]}]},
  {id:'dil_rookie_help', tag:'THE LOCKER ROOM', dom:'rival', when:c=>c.seasons>=3&&!!c.rookieName, title:c=>`${esc(c.rookieName)} asks for help`,
@@ -19830,9 +20021,17 @@ const LEAGUE_DILEMMAS=[
   title:c=>'A prime-time exhibition',
   body:c=>`A network wants one night, one match: you against ${esc(c.starName)} from the other side of the split. Enormous money, enormous audience, and no way to hide if it goes badly.`,
   choices:[
-   {t:'Take the match', s:'Prime time', sub:'Win or wear it', risk:true, outcomes:[
-     {p:c=>1+(c.ovr-80)/14, tone:'good', text:'You win it under lights in front of the biggest audience golf has had in years.', money:3500000, fans:9, fol:0.14, conf:5, head:c=>`Beat ${c.starName} in a prime-time exhibition`},
-     {p:1.1, tone:'bad', text:'You get taken apart on national television. The highlights are not yours.', money:1800000, fans:-4, conf:-5, head:'Lost a prime-time exhibition badly'}]},
+   // One night, so it is twelve holes under lights on the breakaway league's own desert course, and the
+   // network takes a draw rather than keep a live audience out there past midnight. The appearance fee is
+   // paid either way, which is the whole reason a player says yes: only the ninety seconds of highlights
+   // are at stake. Their headliner is up for it (+1).
+   {t:'Take the match', s:'Prime time', sub:'You play it, hole by hole', risk:true,
+    match:{course:'Gulf Dunes Club', cond:'breezy', holes:12, edge:1,
+     day:'PRIME TIME', roundName:'Exhibition · 12 holes',
+     opp:c=>c.starName, ovr:c=>88,
+     win:{tone:'good', text:'You win it under lights in front of the biggest audience golf has had in years.', money:3500000, fans:9, fol:0.14, conf:5, head:c=>`Beat ${c.starName} in a prime-time exhibition`},
+     lose:{tone:'bad', text:'You get taken apart on national television. The highlights are not yours.', money:1800000, fans:-4, conf:-5, head:'Lost a prime-time exhibition badly'},
+     half:{tone:'mixed', text:'Twelve holes, all square, and the network gets its finish anyway. Nobody settled anything.', money:2400000, fans:3, fol:0.06, conf:1, head:c=>`Halved a prime-time exhibition with ${c.starName}`}}},
    {t:'Decline politely', s:'Not a circus act', outcomes:[
      {p:2, tone:'good', text:'You tell them your golf is not a wrestling promotion. Respect where it counts.', respect:5}]}]},
  {id:'dil_lg_boycott', tag:'THE PRESS', dom:'league', when:c=>c.lgOn&&c.lgHeat>=45,
@@ -22022,6 +22221,20 @@ function showStorylineModal(sb){
   document.body.appendChild(ov);
   track('storyline_shown',{id:beat.id});
 }
+// The effect chips for an applied outcome: skills, confidence, popularity, respect, money, fans. Shared,
+// because a decision that PLAYS OUT as a match reports its result on its own card and the two lists of
+// chips drifting apart would mean the same +20k reading two different ways depending on how it was won.
+function dilemmaChipsHTML(o, dFol){
+  const chips=[];
+  if(o.skill){ const inj=Object.values(o.skill).some(v=>v<0); chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid ${inj?'rgba(225,74,51,.5)':'rgba(53,214,160,.5)'};background:${inj?'rgba(225,74,51,.12)':'rgba(53,214,160,.12)'};color:${inj?'#ff8f7e':'#35d6a0'}">${inj?'🩹':'▲'} ${esc(fxSkillLine(o))} · ${o.ev||3} event${(o.ev||3)===1?'':'s'}</span>`); }
+  const stat=(lab,v,col)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${v>=0?col:'#E14A33'}">${v>=0?'▲':'▼'} ${lab} ${v>=0?'+':''}${v}</span>`;
+  if(o.conf) chips.push(stat('Confidence',o.conf,'#35d6a0'));
+  if(o.fans) chips.push(stat('Popularity',o.fans,'#ff9d3a'));
+  if(o.respect) chips.push(stat('Respect',o.respect,'#5fd0e0'));
+  if(o.money) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${o.money>=0?'#ffd45e':'#E14A33'}">${o.money>=0?'+':'−'}${fmtShort(Math.abs(o.money)).replace('$','$')}</span>`);
+  if(dFol) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${dFol>0?'#35d6a0':'#c98'}">${dFol>0?'▲':'▼'} Fans ${fmtFollowers(Math.abs(dFol))}</span>`);
+  return chips;
+}
 // ---- CS325: the Career Dilemma overlay, a specific situation, risky choices, then a ROLLED outcome ----
 function showDilemma(sb){
   // the first decision a career hands you that has nothing to do with a golf ball
@@ -22056,6 +22269,15 @@ function showDilemma(sb){
     const b=$(`<button class="btn ghost" style="text-align:left;padding-left:14px;padding-right:${ch.risk?'78px':'14px'};position:relative">
       ${esc(T(ch.t))}${ch.s?`<span class="sub">${esc(T(ch.s))}${ch.sub?` · ${esc(T(ch.sub))}`:''}</span>`:''}${riskTag}</button>`);
     b.onclick=()=>{
+      // A decision that IS a golf match is not rolled, it is played. The card steps aside, the TourTracer
+      // takes over, and the outcome lands when the last putt drops (finishExhibitionMatch applies it).
+      // The beat has already been consumed above (seen-set / arc spliced), so there is nothing to undo.
+      if(ch.match){
+        track('dilemma_choice',{id:beat.id, choice:String(T(ch.t)), tone:'played'});
+        ov.remove();
+        startExhibitionMatch(beat, ctx, ch);
+        return;
+      }
       const fol0=story.followers||0;
       const o=rollOutcome(ch, ctx);
       const eff=applyDilemmaOutcome(o, ctx);
@@ -22068,14 +22290,7 @@ function showDilemma(sb){
       const toneCol = o.tone==='good'?'#35d6a0' : o.tone==='bad'?'#E14A33' : o.tone==='mixed'?'#e9a23b' : '#8ea9bb';
       const toneLab = o.tone==='good'?'It pays off' : o.tone==='bad'?'It backfires' : o.tone==='mixed'?'Mixed result' : 'The outcome';
       // effect chips from the applied outcome
-      const chips=[];
-      if(o.skill){ const inj=Object.values(o.skill).some(v=>v<0); chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid ${inj?'rgba(225,74,51,.5)':'rgba(53,214,160,.5)'};background:${inj?'rgba(225,74,51,.12)':'rgba(53,214,160,.12)'};color:${inj?'#ff8f7e':'#35d6a0'}">${inj?'🩹':'▲'} ${esc(fxSkillLine(o))} · ${o.ev||3} events</span>`); }
-      const stat=(lab,v,col)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${v>=0?col:'#E14A33'}">${v>=0?'▲':'▼'} ${lab} ${v>=0?'+':''}${v}</span>`;
-      if(o.conf) chips.push(stat('Confidence',o.conf,'#35d6a0'));
-      if(o.fans) chips.push(stat('Popularity',o.fans,'#ff9d3a'));
-      if(o.respect) chips.push(stat('Respect',o.respect,'#5fd0e0'));
-      if(o.money) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${o.money>=0?'#ffd45e':'#E14A33'}">${o.money>=0?'+':'−'}${fmtShort(Math.abs(o.money)).replace('$','$')}</span>`);
-      if(dFol) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${dFol>0?'#35d6a0':'#c98'}">${dFol>0?'▲':'▼'} Fans ${fmtFollowers(Math.abs(dFol))}</span>`);
+      const chips=dilemmaChipsHTML(o, dFol);
       replyBox.innerHTML='';
       replyBox.appendChild($(`<div class="scout" style="border-color:${toneCol};text-align:left;margin:2px 0 10px;padding:13px 14px">
         <div class="small" style="color:${toneCol};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px">${toneLab}</div>
@@ -28263,15 +28478,22 @@ function scoreCardEl(opts){
     root.appendChild(leg);
   }
   blocks.forEach(bl=>{
-    const n=bl.b-bl.a, cols=`27px repeat(${n},1fr) 30px${bl.tot?' 32px':''}`;   // thin dot-only gutter
+    // A match can be 12 holes, which splits 9 and 3. Without padding, three cells share the same 1fr
+    // track the first block gives to nine, so the second row's boxes come out three times as wide and
+    // the two blocks stop reading as one card. The filler keeps every cell the width of a front-nine
+    // cell. An 18-hole card pads by zero and is untouched.
+    const n=bl.b-bl.a, pad=(H>9?9-n:0), cols=`27px repeat(${n+pad},1fr) 30px${bl.tot?' 32px':''}`;   // thin dot-only gutter
     const g=$(`<div class="rsc-block" style="grid-template-columns:${cols}"></div>`);
     const cell=(cls,html,attr)=>g.appendChild($(`<div class="${cls}" ${attr||''}>${html}</div>`));
+    const filler=cls=>{ for(let f=0;f<pad;f++) cell(cls+' rsc-fill',''); };
     cell('rsc-lab rsc-hd rsc-gut','#');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-hd', (k+1));
+    filler('rsc-c rsc-hd');
     cell('rsc-c rsc-hd rsc-sub', bl.sub);
     if(bl.tot) cell('rsc-c rsc-hd rsc-sub rsc-tot','TOT');
     cell('rsc-lab rsc-par rsc-gut','PAR');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-par', pars[k]!=null?pars[k]:'-');
+    filler('rsc-c rsc-par');
     cell('rsc-c rsc-par rsc-sub', sum(pars,bl.a,bl.b));
     if(bl.tot) cell('rsc-c rsc-par rsc-sub rsc-tot', sum(pars,0,H));
     rows.forEach(r=>{
@@ -28284,6 +28506,7 @@ function scoreCardEl(opts){
         const inner=played?`<span style="color:${dScoreCol(tp)}">${scMark(s,tp)}</span>`:`<span class="rsc-dot0">·</span>`;
         cell(`rsc-c rsc-pl ${k===cur?'cur':''} ${k===sel?'sel':''} ${(tap&&played)?'tapc':''} ${rc}`, inner, (tap?`data-hole="${k}"`:''));
       }
+      filler(`rsc-c rsc-pl ${rc}`);
       cell(`rsc-c rsc-pl rsc-sub ${rc}`, sum(r.strokes,bl.a,bl.b));
       if(bl.tot) cell(`rsc-c rsc-pl rsc-sub rsc-tot ${rc}`, sum(r.strokes,0,H));
     });
@@ -31042,8 +31265,8 @@ function scheduleDailyAdvance(){
     const st=matchState(), mp=S.matchPlay;
     if(st && st.decided){ S.dailyHolePause=true; render();
       _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishMatchRound(); }, dspd(dailyDwell(),400)); return; }
-    if(S.dailyHoles.length>=18){
-      const k=S.dailyHoles.length-18, ci=MATCH_EXTRA_HOLES[k%MATCH_EXTRA_HOLES.length];
+    if(S.dailyHoles.length>=matchRegHoles()){
+      const k=S.dailyHoles.length-matchRegHoles(), ci=matchExtraHole(k);
       if(mp.oppExtra[k]==null) mp.oppExtra[k]=matchOppHole(ci,0x900+k);
       mp.extra=true; S.mpHoleIdx=ci;
       S.dailyHolePause=true; render();
@@ -31283,8 +31506,9 @@ function dAttSalt(base){ return (((base||0) ^ Math.imul((S.dailyAttempt||0)+1, 0
 function playDailyHole(attack, phase){
   S.dailyProv=null;
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length;
-  const mpx=(S.matchPlay&&S.matchPlay.extra&&S.mpHoleIdx!=null)?(i-18):-1;   // sudden-death hole # of a played match
-  if(i>=18 && mpx<0)return;
+  const mpN=S.matchPlay?matchRegHoles():18;                                   // a match can be shorter than a round
+  const mpx=(S.matchPlay&&S.matchPlay.extra&&S.mpHoleIdx!=null)?(i-mpN):-1;   // sudden-death hole # of a played match
+  if(i>=mpN && mpx<0)return;
   // a Moment playoff plays a specific closing hole (S.momentPOHoleIdx), not the i-th; a played knockout
   // match's sudden death does the same (S.mpHoleIdx); salt the seed by the extra-hole number so each
   // sudden-death hole plays differently.
@@ -32744,11 +32968,11 @@ function scrDailyRound(){
         // match state (owner: "you should see both balls and both box scores").
         // The window is stB.reg (matchState already excludes the currently-revealing hole), so the
         // board can never disagree with the scorecard's THRU count.
-        const mpB=S.matchPlay, stB=matchState()||{up:0,reg:0,left:18,extras:0};
-        const winN=Math.min(stB.reg,18);
+        const mpB=S.matchPlay, mpN=matchRegHoles(), stB=matchState()||{up:0,reg:0,left:mpN,extras:0};
+        const winN=Math.min(stB.reg,mpN);
         const meTot=S.dailyHoles.slice(0,winN).reduce((s2,h)=>s2+h.toPar,0);
         const opTot=mpB.oppHoles.slice(0,winN).reduce((s2,v)=>s2+v,0);
-        bd.appendChild($(`<div class="hvbcap">${stB.extras>0?('SUDDEN DEATH · HOLE '+(18+stB.extras)):('MATCH · THRU '+stB.reg)}</div>`));
+        bd.appendChild($(`<div class="hvbcap">${stB.extras>0?('SUDDEN DEATH · HOLE '+(mpN+stB.extras)):('MATCH · THRU '+stB.reg)}</div>`));
         const upCol=stB.up>0?'#4be3a8':stB.up<0?'#ff9d8f':'#ffd76a';
         bd.appendChild($(`<div class="hvbtarget" style="color:${upCol}">${matchStatusTxt(stB)}</div>`));
         const rowsM=[{nm:'YOU', v:meTot, mine:true, col:'#3b82f6'},
@@ -32852,10 +33076,13 @@ function scrDailyRound(){
     const wrap=$(`<div class="dcardwrap"></div>`);
     wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · thru ${through}</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
     // CS502: realistic scorecard (Hole / Par / You rows + OUT-IN-TOT totals; TOT = total strokes).
+    // a played match can be shorter than a round (a nine-hole money match, a twelve-hole exhibition), and
+    // an eighteen-cell card under a nine-hole match is nine empty cells the player is left to interpret
+    const scN=S.matchPlay?matchRegHoles():18;
     const scPars=c.holes.map(h=>h[0]), scStk=[], scTp=[];
-    for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), show=pl&&!isReveal;
+    for(let k=0;k<scN;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), show=pl&&!isReveal;
       scStk[k]=show?(pl.par+pl.toPar):null; scTp[k]=show?pl.toPar:null; }
-    wrap.appendChild(scoreCardEl({holes:18, pars:scPars,
+    wrap.appendChild(scoreCardEl({holes:scN, pars:scPars,
       rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:scStk, tp:scTp}],
       cur:(done||revealing)?-1:i, sel:(played.length>1)?vh:-1,
       tap:(k)=>{ if(played[k]){ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); } }}));
