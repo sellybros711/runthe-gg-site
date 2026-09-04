@@ -86,7 +86,7 @@
   const SIGNS = [
     { say: 'THE COMMISSIONER OWES MY ROOMMATE FOUR DOLLARS',
       then: 'The roommate has been interviewed twice and has changed the amount both times.' },
-    { say: 'MY TUITION IS FIFTY EIGHT THOUSAND AND KICKOFF IS AT ELEVEN PM',
+    { say: 'MY TUITION IS FIFTY-EIGHT THOUSAND AND KICKOFF IS AT ELEVEN PM',
       then: 'It was fact checked by a newspaper, which found the tuition figure was low.' },
     { say: 'THE PORTAL TOOK MY BOYFRIEND',
       then: 'He has since transferred a second time and the sign is now treated as journalism.' },
@@ -146,7 +146,7 @@
         say: 'Every decision in this office looks like this one.',
         steps: [
           'Read what landed. One case a screen, and this is the whole of it.',
-          'The room argues first. Nine blocs, and six of them hold a vote on your job.',
+          'The room argues first. Nine groups, and six of them hold a vote on your job.',
           'Pick a ruling. The chips under it say what it moves and who it upsets.',
           'Press Rule. The room answers, and the record keeps it for five years.',
         ],
@@ -154,8 +154,8 @@
       eyebrow: 'Your first call',
       title: 'The lawsuit was already on the desk',
       brief: 'It was filed at 8:51 this morning, nine minutes before you were sworn in, which '
-        + 'counsel calls either a coincidence or the most organised thing anybody has done all '
-        + 'year. Sixty two athletes are suing over an eligibility rule your predecessor wrote '
+        + 'counsel calls either a coincidence or the most organized thing anybody has done all '
+        + 'year. Sixty-two athletes are suing over an eligibility rule your predecessor wrote '
         + 'and then declined to explain. The rule is four sentences long. One of them '
         + 'contradicts another one. Their lawyer is booked on a morning show at seven.',
       voices: [
@@ -166,7 +166,7 @@
       options: [
         { id: 'rewrite', label: 'Rewrite the rule this week',
           body: 'Four sentences, one contradiction, gone by Friday. The suit loses its subject '
-            + 'and sixty two athletes get the thing they were asking for.',
+            + 'and sixty-two athletes get the thing they were asking for.',
           edit: { effects: { labour: 2.4, exposure: -1.8, autonomy: -0.8, tradition: -1 },
             aimed: { Players: { labour: 2.8 }, Presidents: { exposure: -1.6 } } } },
         { id: 'defend', label: 'Defend the rule you did not write',
@@ -179,8 +179,8 @@
           /* A trial has a verdict at the end of it, and this office chose to find out. */
           plant: { id: 'fought-it', wait: [14, 24], note: 'A lawsuit this office chose to fight' } },
         { id: 'settle', label: 'Settle it before the seven o\'clock',
-          body: 'A cheque this afternoon, no finding, no admission. The interview becomes an '
-            + 'eleven second mention and the sixty two sign something.',
+          body: 'A check this afternoon, no finding, no admission. The interview becomes an '
+            + 'eleven second mention and the sixty-two sign something.',
           edit: { effects: { cost: 2.2, money: -1.6, labour: 1.2, exposure: -2.4 },
             aimed: { Presidents: { cost: -2 }, Players: { labour: 1.4 },
               SEC: { money: -1.4 } } } },
@@ -388,7 +388,7 @@
       eyebrow: 'The roster',
       title: 'How big a roster is',
       brief: 'The number has never been written down properly. Some programs carry a '
-        + 'hundred and twenty and some carry eighty five, the difference is mostly walk-ons, '
+        + 'hundred and twenty and some carry eighty-five, the difference is mostly walk-ons, '
         + 'and every version of a cap ends somebody\'s career on a Tuesday in February.',
       voices: [
         { id: 'Players', say: 'A cap is a cut list. Say that part out loud.' },
@@ -591,14 +591,14 @@
             + 'angle, and the clock running out on them while a network cut to a graphic. Nobody '
             + 'was asleep and nobody was corrupt. They were ninety seconds short.' },
         { id: 'crew', q: 'Who assigns that crew?',
-          a: 'The home conference, and they assigned the same crew to that programme three times '
+          a: 'The home conference, and they assigned the same crew to that program three times '
             + 'this season. It is legal, it is normal, and there is no version of it that looks '
             + 'right on a Monday.' },
         { id: 'cost', q: 'What did it actually cost them?',
           a: 'Two spots in the poll and, on the committee\'s own published criteria, a first '
             + 'round home game. It is the difference between a bye and a flight in December.' },
         { id: 'saw', q: 'How many people have watched it?',
-          a: 'Forty one million on the clip alone, and it has been on a morning news programme '
+          a: 'Forty-one million on the clip alone, and it has been on a morning news program '
             + 'that has never mentioned this sport before. Two senators have posted about it.' },
       ],
       options: [
@@ -1016,7 +1016,7 @@
           base: 0.2, free: [0.15, 0.2], pro: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35],
           step: 0.05, per: { labour: 1.4, cost: 1.2, money: -0.6 },
           /* A PERCENTAGE OF A NUMBER NOBODY NAMED. "20%" is not a decision until it is
-             twenty per cent of something, and the something is on the same screen. */
+             twenty percent of something, and the something is on the same screen. */
           reads: (v, ctx) => {
             const pool = (ctx.world.money && ctx.world.money.pool) || 1.3;
             return Math.round(v * 100) + '% of a ' + money(pool) + ' pool is ' + money(pool * v)
@@ -1433,7 +1433,7 @@
             + 'cleanest antitrust case anybody could bring against this association, and that '
             + 'somebody would bring it before Christmas.' },
         { id: 'sports', q: 'What does it cost the rest of the department?',
-          a: 'Across the three, four programmes cut and two more on notice, all of them sports '
+          a: 'Across the three, four programs cut and two more on notice, all of them sports '
             + 'that lose money and none of them football.' },
       ],
       options: [
@@ -1538,7 +1538,7 @@
             + 'reporter went to her workplace on Tuesday.' },
         { id: 'how-many', q: 'How many of these are there?',
           a: 'Four hundred and ten televised commitments last cycle, up from ninety in five '
-            + 'years, and eleven of them were reversed inside a fortnight.' },
+            + 'years, and eleven of them were reversed inside a two weeks.' },
       ],
       options: [
         { id: 'embrace', label: 'Make it an event',
@@ -1623,7 +1623,7 @@
             + 'years of filings, and the operating rights run twenty years. Nobody has ever '
             + 'valued a college athlete\'s deal in decades before.' },
         { id: 'strings', q: 'What does he have to do for it?',
-          a: 'Attend two openings a year and enroll in the franchise operator programme. There '
+          a: 'Attend two openings a year and enroll in the franchise operator program. There '
             + 'is no performance clause, no transfer clause and no morals clause, which is why '
             + 'the lawyers who wrote it are pleased with themselves.' },
         { id: 'who', q: 'Who is behind the collective?',
@@ -1718,13 +1718,13 @@
       asks: [
         { id: 'who', q: 'Who registered the drone?',
           a: 'A shell company in Nevada with one director, and the director is a name that turns '
-            + 'up in two offshore betting filings. It is not a rival programme and it never was.',
+            + 'up in two offshore betting filings. It is not a rival program and it never was.',
           opens: 'book' },
         { id: 'footage', q: 'What is actually on the memory card?',
           a: 'Forty minutes of installation periods, one full script of a red zone package, and '
             + 'ninety seconds of a coordinator holding up a laminated call sheet to the wind.' },
         { id: 'again', q: 'Has this happened before?',
-          a: 'Four times this season that anybody reported, at four programmes, and this is the '
+          a: 'Four times this season that anybody reported, at four programs, and this is the '
             + 'first one anybody managed to bring down. Nobody had filed any of the other three '
             + 'with this office.' },
         { id: 'law', q: 'Is it even illegal?',
@@ -1754,7 +1754,7 @@
           edit: { effects: { inventory: 2.6, tradition: -2, autonomy: -2.2, exposure: 1.6 },
             aimed: { Networks: { inventory: 3 }, SEC: { autonomy: -2.6 },
               'Big Ten': { autonomy: -2.4 }, Fans: { inventory: 1.4 } } } },
-        /* BEHIND THE REGISTRATION QUESTION. It was never a rival programme, which turns a
+        /* BEHIND THE REGISTRATION QUESTION. It was never a rival program, which turns a
            story about cheating into a story about the sport's own partners. */
         { id: 'book', hidden: true, label: 'It is not a spying case, it is a betting case',
           body: 'A shell company that turns up in two offshore filings put a camera over a '
@@ -1970,10 +1970,10 @@
             + 'nobody in particular.',
           opens: 'doctor' },
         { id: 'cost', q: 'Who was paying for the charter?',
-          a: 'They were. It is a Group of Five budget and a charter is eleven per cent of it, '
+          a: 'They were. It is a Group of Five budget and a charter is eleven percent of it, '
             + 'which is why it was a broker and a spare aircraft in the first place.' },
         { id: 'result', q: 'What happened in the game?',
-          a: 'They lost by thirty one and two starters left it. The home programme has offered, '
+          a: 'They lost by thirty-one and two starters left it. The home program has offered, '
             + 'in public, to play it again, and their conference has told them they cannot.' },
       ],
       options: [
@@ -2519,7 +2519,7 @@
         ? c.a + ' beat ' + c.b + ' by twenty-eight in October and they meet again on Saturday '
           + 'for the conference title. Both are already in the field whatever happens. The '
           + 'winner gains a trophy and the loser loses nothing, and the injury risk is real '
-          + 'for both of them a fortnight before the playoff.'
+          + 'for both of them a two weeks before the playoff.'
         : 'A championship game between two teams already in the field, three weeks after one '
           + 'beat the other by twenty-eight.'),
       voices: [
@@ -2700,17 +2700,17 @@
           a: 'He has not been to class since Sunday, his family have taken his phone off him, '
             + 'and his coach has asked this office not to say his name in anything it publishes.' },
         { id: 'block', q: 'Did the penalty cause the block?',
-          a: 'The kick was from thirty three rather than eighteen and it was blocked by a man '
+          a: 'The kick was from thirty-three rather than eighteen and it was blocked by a man '
             + 'coming free off the edge, which had nothing to do with the distance. Nobody wants '
             + 'to say that out loud because it does not help anybody.' },
         { id: 'other', q: 'What do the other coaches want?',
-          a: 'Sixty one of a hundred and thirty six have signed a letter asking for it to be a '
-            + 'dead ball foul assessed on the kickoff. Not one of the sixty one is at a '
-            + 'programme that scores a lot of long touchdowns.' },
+          a: 'Sixty-one of a hundred and thirty-six have signed a letter asking for it to be a '
+            + 'dead ball foul assessed on the kickoff. Not one of the sixty-one is at a '
+            + 'program that scores a lot of long touchdowns.' },
       ],
       options: [
         { id: 'dead', label: 'Make it a dead ball foul',
-          body: 'Penalise the kickoff, not the touchdown. The score stands, the celebration '
+          body: 'Penalize the kickoff, not the touchdown. The score stands, the celebration '
             + 'costs field position, and no nineteen year old ever loses a playoff game for '
             + 'being pleased again.',
           edit: { effects: { labour: 2, tradition: -1.2, inventory: 1.4, access: 1 },
@@ -2817,7 +2817,7 @@
        the football reads them back through reentryDrift(): an open door stretches the league
        away from its middle, because the men coming back go to the twenty programs that can
        pay them and start them. Measured across seventy played seasons, that is the difference
-       between 21.8 per cent of games decided by four touchdowns and 26.6 per cent.
+       between 21.8 percent of games decided by four touchdowns and 26.6 percent.
 
        THE GOVERNANCE HALF IS THE INTERESTING HALF. Whether you decide this at all, or a
        conference decides it for you, is a different question from what the answer is, and it
@@ -2924,7 +2924,7 @@
       voices: [
         { id: 'Players', say: 'He got bad advice from adults and you want him to pay for it with a year.' },
         { id: 'Fans', say: 'He said goodbye. There was a graphic. There was a video.' },
-        { id: 'Networks', say: 'He is the best player who will be on a field this autumn if you let him be.' },
+        { id: 'Networks', say: 'He is the best player who will be on a field this fall if you let him be.' },
       ],
       /* THE ITEM A PLAYER WAS LOOKING AT WHEN HE ASKED FOR THIS. "Should you be able to ask
          questions about the case? Like did he attend minicamp." He should, the answer to that
@@ -2932,7 +2932,7 @@
       asks: [
         { id: 'camp', q: 'Did he go to a minicamp?',
           a: 'Three days in May, in a helmet, on a grass field, with a playbook they took back '
-            + 'off him at the end of it. He signed for eighty one dollars a day in per diem and '
+            + 'off him at the end of it. He signed for eighty-one dollars a day in per diem and '
             + 'there is a form with his name on it.',
           opens: 'paid' },
         { id: 'advice', q: 'Who told him not to withdraw?',
@@ -3101,7 +3101,7 @@
             + 'professional agency paper that has a clause about league discipline in it. The '
             + 'league in that clause is not this one.' },
         { id: 'cut', q: 'What is he taking?',
-          a: 'Twenty per cent of the marketing and three of any future contract. Twenty is '
+          a: 'Twenty percent of the marketing and three of any future contract. Twenty is '
             + 'double what the professional league permits its own certified agents to take.' },
         { id: 'how-many', q: 'How many players have one?',
           a: 'Somewhere between four hundred and two thousand, and the honest answer is that '
@@ -3258,7 +3258,7 @@
             + 'sentence nobody in this building has had to think about before.',
           opens: 'waiver' },
         { id: 'others', q: 'Is anybody else in this position?',
-          a: 'Six men this autumn, four of whom nobody would take back anyway. The rule written '
+          a: 'Six men this fall, four of whom nobody would take back anyway. The rule written '
             + 'for him is the rule for all six and for however many there are next year, which '
             + 'everybody expects to be more.' },
       ],
@@ -3399,7 +3399,7 @@
       voices: [
         { id: 'Networks', say: 'A developmental league that outdraws them on eleven Saturdays a year.' },
         { id: 'Players', say: 'Fewer camp invitations is fewer men who ever get a look. That is the actual cost.' },
-        { id: 'Presidents', say: 'We are subsidising the talent identification of a trillion dollar industry.' },
+        { id: 'Presidents', say: 'We are subsidizing the talent identification of a trillion dollar industry.' },
       ],
       options: [
         { id: 'bill', label: 'Send them a bill',
@@ -3601,7 +3601,7 @@
         ? 'Two programs who would never schedule each other have agreed to, on the first '
           + 'Saturday, at a neutral site, for a check. Three cities want it. It is the only '
           + 'game on that night and it will set the tone of the entire season, which is a lot '
-          + 'to hang on a decision about a car park.'
+          + 'to hang on a decision about a parking lot.'
         : 'Two programs have agreed to open the season at a neutral site and three cities '
           + 'want it.'),
       voices: [
@@ -3798,7 +3798,7 @@
                 + 'people who own it.'
               : c.bowl.named.kind === 'free'
                 ? 'You can insist on this. You will be insisting on it about the one name on '
-                  + 'the board that would have travelled perfectly well, and everybody in the '
+                  + 'the board that would have traveled perfectly well, and everybody in the '
                   + 'room will notice.'
                 : 'The name is after ' + c.bowl.named.of + '. Move and you are a new bowl with '
                   + 'a new name and none of the history, which is most of what the city was '
@@ -3878,10 +3878,10 @@
       eyebrow: 'The venues',
       title: (c) => (c ? VEN.label(c.cur) + ' cannot deliver' : 'The host city cannot deliver'),
       brief: (c) => (c
-        ? 'The hotel block is forty per cent of what was in the bid, the transit project that '
+        ? 'The hotel block is forty percent of what was in the bid, the transit project that '
           + 'was going to be finished is not going to be finished, and the local organizing '
           + 'committee has lost its executive director and its chief financial officer in the '
-          + 'same fortnight. ' + (c.cur ? c.cur.name : 'The stadium') + ' is fine. Everything '
+          + 'same two weeks. ' + (c.cur ? c.cur.name : 'The stadium') + ' is fine. Everything '
           + 'around it is not, and the game is in four months.'
         : 'The host city cannot deliver what was in its bid and the game is in four months.'),
       voices: [
@@ -4068,7 +4068,7 @@
         { id: 'public', label: 'Announce it yourselves',
           body: 'Say it out loud, name the game, and run the investigation in front of '
             + 'everybody. Nobody gets to break it, and the sport owns the worst version of '
-            + 'the story for a fortnight.',
+            + 'the story for a two weeks.',
           edit: { set: { 'pressure.legal': 22 },
             effects: { exposure: 2.6, tradition: 1.6, cost: 1.4, autonomy: -1.2 },
             aimed: { Fans: { tradition: 2 }, Presidents: { exposure: 2.2 },
@@ -4374,7 +4374,7 @@
             effects: { tradition: 3, money: -2.8, cost: 2, autonomy: 1.6 },
             aimed: { Fans: { tradition: 3.4 }, Networks: { inventory: -2.6 },
               Presidents: { money: -2 } } } },
-        { id: 'subsidise', label: 'Make the tickets free',
+        { id: 'subsidize', label: 'Make the tickets free',
           body: 'The sport pays for the student sections out of the pool. It is buying back '
             + 'an atmosphere it sold, which everybody can see, and it works.',
           edit: { effects: { cost: 2.6, tradition: 2, money: -1.6, exposure: 0.8 },
@@ -4530,7 +4530,7 @@
             aimed: { 'Group of Five': { money: 3 }, SEC: { money: -2.2 },
               'Big Ten': { money: -2 } } } },
         { id: 'tier', label: 'Let the division split in two',
-          body: 'Formalise it. A tier that plays for the title and a tier that plays football, '
+          body: 'Formalize it. A tier that plays for the title and a tier that plays football, '
             + 'each with its own economics, and nobody pretending any more.',
           edit: { set: { 'playoff.autobids': 4 },
             effects: { access: -3, tradition: -2.4, money: 1.8, cost: -2 },
@@ -4597,7 +4597,7 @@
 
        THE QUOTE IS THE POINT. A payoff a player cannot connect to its cause is a random
        item with extra steps, so each brief opens by reading the promise back. And the
-       ruling is a real one: honouring what you said costs money, votes or both, and walking
+       ruling is a real one: honoring what you said costs money, votes or both, and walking
        it back is always available and always visible.
        ================================================================ */
     {
@@ -4693,7 +4693,7 @@
       eyebrow: 'On the record',
       title: 'They took you at your word',
       brief: 'You said this office would sit across from a players association if one existed. '
-        + 'One exists. Cards signed at sixty one schools, counsel retained, and a letter that '
+        + 'One exists. Cards signed at sixty-one schools, counsel retained, and a letter that '
         + 'quotes you back to yourself in the second paragraph. They have asked for a date and '
         + 'a room, and they have copied the letter to three committees.',
       voices: [
@@ -4712,7 +4712,7 @@
               SEC: { autonomy: -3 }, 'Big Ten': { autonomy: -2.6 } } },
           plant: { id: 'the-table', wait: [8, 16],
             note: 'A bargaining table this office agreed to sit at' } },
-        { id: 'talk', label: 'Meet them without recognising them',
+        { id: 'talk', label: 'Meet them without recognizing them',
           body: 'A conversation, on the record, that is explicitly not negotiation. Everybody '
             + 'knows what it is and nobody has to say so, which is how most of this sport works.',
           edit: { set: { 'pressure.union': 30 },
@@ -4720,7 +4720,7 @@
             aimed: { Players: { labour: 0.8 }, Presidents: { exposure: -1 },
               SEC: { autonomy: -0.8 } } } },
         { id: 'refuse', label: 'Say the condition was never met',
-          body: 'Sixty one schools is not the sport. Argue the number, decline the meeting, and '
+          body: 'Sixty-one schools is not the sport. Argue the number, decline the meeting, and '
             + 'be the man who set a bar and moved it when somebody cleared it.',
           edit: { set: { 'pressure.union': 62 },
             effects: { labour: -3, exposure: 2.4, autonomy: 1.6, tradition: -1.6 },
@@ -4789,9 +4789,9 @@
         + ((c && c.bids) || 'this many') + ' automatic bids in the field, you said out loud that '
         + 'an unbeaten season is not enough on its own and that everybody knows it. That is the '
         + 'most honest thing anybody in this job has said about selection, and it has been read '
-        + 'everywhere as a commitment to fix it. Twenty two athletic directors have written in.',
+        + 'everywhere as a commitment to fix it. Twenty-two athletic directors have written in.',
       voices: [
-        { id: 'Group of Five', say: 'You said the maths does not work. So change the maths.' },
+        { id: 'Group of Five', say: 'You said the math does not work. So change the math.' },
         { id: 'SEC', say: 'Every seat you guarantee is a seat taken off a better team.' },
         { id: 'Networks', say: 'A first round nobody wants to watch is still a first round we paid for.' },
       ],
@@ -4888,16 +4888,24 @@
       voices: [
         { id: 'ACC', say: 'You offered. We did not ask. We are asking now.' },
         { id: 'SEC', say: 'Propping up a league nobody watches is a transfer from the leagues they do.' },
-        { id: 'Fans', say: 'Those are hundred year old programmes. Somebody should do something.' },
+        { id: 'Fans', say: 'Those are hundred year old programs. Somebody should do something.' },
       ],
       options: [
         { id: 'fund', label: 'Fund them out of the pool',
           body: (c) => 'A guaranteed distribution that keeps the ' + confOf(c) + ' solvent for '
             + 'five years, paid for by the leagues that would otherwise be picking over it.',
-          edit: (c) => ({ set: { ['money.share.' + c.pot]: 0.2 },
-            effects: { access: 2.6, cost: 2, money: -1.4, tradition: 2 },
-            aimed: { ACC: { access: 2.4 }, 'Big 12': { access: 2 },
-              Fans: { tradition: 2.4 }, SEC: { money: -2.4 }, 'Big Ten': { money: -2.2 } } }) },
+          /* THE SHARE GOES TO A NAMED LEAGUE OR NOWHERE. This read `c.pot` straight, and it is
+             the only line in the file that reads its cast without a guard, so resolving the
+             option against no cast threw and took the whole desk down with it: a blank screen
+             rather than a bad sentence. Every other line here is written defensively for
+             exactly this reason. */
+          edit: (c) => {
+            const e = { effects: { access: 2.6, cost: 2, money: -1.4, tradition: 2 },
+              aimed: { ACC: { access: 2.4 }, 'Big 12': { access: 2 },
+                Fans: { tradition: 2.4 }, SEC: { money: -2.4 }, 'Big Ten': { money: -2.2 } } };
+            if (c && c.pot) e.set = { ['money.share.' + c.pot]: 0.2 };
+            return e;
+          } },
         { id: 'schedule', label: 'Give them games instead of money',
           body: (c) => 'A scheduling agreement that puts the ' + confOf(c) + ' on television against '
             + 'the leagues that are leaving them behind. It costs nothing and it is worth '

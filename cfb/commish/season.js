@@ -108,7 +108,7 @@
      seventy schools of which sixty-seven WERE the four powers, so the Group of Five was a bloc
      and a line in the money table rather than teams. Lifting sixty-seven of seventy is a level
      shift by another name, and it showed: an open door drew 2.50 a game at year five against
-     1.29 for a shut one, a ninety per cent swing off one setting, which would have swamped the
+     1.29 for a shut one, a ninety percent swing off one setting, which would have swamped the
      pool settlement the audience is priced through, while the number it was supposed to move,
      who reached the bracket, did not move at all.
 
@@ -189,7 +189,7 @@
     }
 
     /* AND THEN RECENTERED, BECAUSE A Z IS A Z. This is not a tidying step, it is the
-       definition of the quantity: strength_z is standardised within its season, so the mean
+       definition of the quantity: strength_z is standardized within its season, so the mean
        of a real season is zero by construction and an invented one has to be as well.
 
        Without it the whole sport quietly got better every year. The carousel only fires on
@@ -827,7 +827,7 @@
 
   /* AND A PRESEASON POLL IS A GUESS, WHICH IS THE POINT OF IT. Ranking August by each team's
      strength makes the poll an oracle: it is sorted by the exact number that then decides
-     every game, so seventy-two per cent of the preseason top ten was still in the top ten in
+     every game, so seventy-two percent of the preseason top ten was still in the top ten in
      December against a real rate near a half. Nobody would ever be wrong about August, and
      being wrong about August is most of why anybody argues about this list at all.
 
@@ -838,7 +838,7 @@
      reshuffle the bracket.
 
      FITTED AGAINST HOW WRONG AUGUST REALLY IS: about half a real preseason top ten is still in
-     the top ten in December. At 0.6 this gives fifty per cent. At 0.85 it gives forty, which
+     the top ten in December. At 0.6 this gives fifty percent. At 0.85 it gives forty, which
      is a sport where the preseason poll tells you nothing, and at zero it gives seventy-two,
      which is a sport where it tells you everything. */
   var PRESEASON_ERROR = 0.6;

@@ -124,16 +124,18 @@ console.log('\n=== the desk is shorter than it was ===');
 {
   ok('an item is on the desk', await on('s-desk'));
 
-  /* THE SETUP IS FOLDED, NOT GONE, and the check for that cannot depend on which item the
-     seed happened to deal. Plenty of briefs are three lines and are correctly left whole, so
-     asserting on whichever one turned up first would pass without opening anything. This
-     rules through beats until a clamped one appears and tests THAT.
+  /* THE SETUP IS THE CASE, SO IT IS NOT FOLDED. It used to be clamped to three lines under a
+     "Read the rest" button, and that was the wrong thing to fold: every other control on this
+     screen asks you to decide something, and the paragraph they are all about was the one
+     piece of it behind a tap.
 
-     The two states are one invariant: the class is on exactly when the button is there. A
-     clamp with no way past it is text nobody can read, and a button over a whole paragraph
-     promises something that is not behind it. */
-  let opened = null, looked = 0;
-  for (let i = 0; i < 14 && opened === null; i++) {
+     Walked across several items rather than asserted on whichever one the seed dealt first,
+     because the failure this replaces only showed on a LONG brief: a short one is whole
+     either way, so a check that stops at the first desk would pass with the clamp still on.
+     Ruling on each item is how the walk reaches the next one, so the item count is also what
+     keeps this cheap. */
+  let looked = 0, folded = [], longest = 0;
+  for (let i = 0; i < 8; i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
     if (await on('s-room')) { await tap('#b-next'); await p.waitForTimeout(450); continue; }
     if (await on('s-press')) { await podium(p); continue; }
@@ -141,30 +143,28 @@ console.log('\n=== the desk is shorter than it was ===');
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(450); continue; }
     if (!(await on('s-desk'))) break;
     looked++;
-    const clamped = await p.$eval('#d-brief', (e) => e.classList.contains('clamp'));
-    const more = await p.$('#d-brief button');
-    if (clamped !== !!more) { opened = { agree: false }; break; }
-    if (more) {
-      const before = await p.$eval('#d-brief p', (e) => e.clientHeight);
-      await more.click(); await p.waitForTimeout(250);
-      opened = { agree: true,
-        before, after: await p.$eval('#d-brief p', (e) => e.clientHeight),
-        gone: !(await p.$('#d-brief button')) };
-      break;
-    }
-    /* Short brief, nothing folded. Rule on anything and look at the next item. */
-    const o = await p.$('#d-options .opt'); if (o) { await o.click(); await p.waitForTimeout(250); }
+    const st = await p.evaluate(() => {
+      const el = document.getElementById('d-brief');
+      const par = el.querySelector('p');
+      return { clamp: el.classList.contains('clamp'),
+        button: !!el.querySelector('button'),
+        /* Nothing cut off: the paragraph's own scroll height is its drawn height. */
+        cut: par ? par.scrollHeight - par.clientHeight : 0,
+        chars: par ? par.textContent.length : 0 };
+    });
+    longest = Math.max(longest, st.chars);
+    if (st.clamp || st.button || st.cut > 2) folded.push(st.chars + ' chars');
+    const o = await p.$('#d-options .opt');
+    if (o) { await p.evaluate(() => document.querySelector('#d-options .opt').click());
+      await p.waitForTimeout(220); }
     if (!(await tap('#b-rule'))) break;
     await p.waitForTimeout(200); await pastScene(p);
-    await p.waitForTimeout(700);
+    await p.waitForTimeout(650);
   }
-  ok('a setup long enough to be folded turns up', !!opened && opened.agree !== false,
-    opened ? 'after ' + looked + ' items' : 'none in ' + looked + ' items');
-  if (opened && opened.agree) {
-    ok('  and opening it really shows more', opened.after > opened.before,
-      opened.before + 'px to ' + opened.after + 'px');
-    ok('  with nothing left to press', opened.gone);
-  }
+  ok('several cases were read', looked >= 3, looked + ' items');
+  ok('  and a long setup turned up among them', longest > 260, longest + ' characters');
+  ok('  none of them folded the case away', !folded.length, folded.join(', '));
+
   /* Back to a desk for the rest of this block, wherever ruling left us. */
   for (let i = 0; i < 8 && !(await on('s-desk')); i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
@@ -999,6 +999,68 @@ console.log('\n=== nothing the desk writes reaches the screen as a database key 
     'header ' + box.badge.hd + 'px, gap ' + box.badge.gap + 'px');
 
   await pg.close();
+}
+
+console.log('\n=== every case, on the real desk, saying it in English ===');
+{
+  /* AND THE SAME QUESTION ASKED OF THE SCREEN RATHER THAN OF THE TABLE.
+     The check above reads every (path, value) it can find on `option.edit.set` and runs it
+     through pathName and pathValue. It shipped a raw database key at a player anyway, twice,
+     because an edit is allowed to be a FUNCTION of the case's cast: resolving one with no
+     cast returns an empty object, so the sweep saw nothing at all for the sponsor items and
+     the title game bid. "venues.title / atl / was nobody" rendered under a heading that
+     promises plain English and no assertion here could see it.
+
+     So this one opens every case in the docket on the real desk, clicks every ruling, and
+     reads the rows the panel actually drew. It is slower and it is the only version of this
+     check that cannot be fooled by how an item chooses to build its edit. A label with a dot
+     in it is a ledger path. An empty value or a bare "was" is a lookup that found nothing. */
+  {
+    const D2 = require(ROOT + '/cfb/commish/docket.js');
+    const sw = await b.newPage({ viewport: { width: 900, height: 900 } });
+    const swErrs = []; sw.on('pageerror', (e) => swErrs.push(e.message));
+    await sw.addInitScript(arm + stub);
+    await sw.goto(URL, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    await sw.waitForTimeout(2200);
+    await sw.click('#g-start').catch(() => {});
+    await sw.waitForTimeout(900);
+    await pastScene(sw);
+    const raw = [], shut = [];
+    let rows = 0;
+    for (const it of D2.ITEMS) {
+      const open = await sw.evaluate((id) => {
+        try { return window.PS_CFB_COMMISH_TEST.deskItem(id); } catch (e) { return false; }
+      }, it.id).catch(() => false);
+      if (!open) { shut.push(it.id); continue; }
+      await sw.waitForTimeout(60);
+      const opts = await sw.$$eval('#d-options .opt', (e) => e.map((x) => x.dataset.o)).catch(() => []);
+      for (const o of opts) {
+        await sw.evaluate((x) => {
+          const el = document.querySelector('#d-options .opt[data-o="' + x + '"]');
+          if (el) el.click();
+        }, o);
+        await sw.waitForTimeout(55);
+        const drawn = await sw.$$eval('#d-effect .also span', (e) => e.map((x) => ({
+          n: (x.querySelector('b') || {}).textContent || '',
+          v: (x.querySelector('u') || {}).textContent || '',
+          w: x.querySelector('em') ? x.querySelector('em').textContent : '',
+        }))).catch(() => []);
+        drawn.forEach((r) => {
+          rows++;
+          if (/\./.test(r.n) || !r.v.trim() || r.w.trim() === 'was') {
+            raw.push(it.id + '/' + o + ' [' + r.n + '] [' + r.v + '] [' + r.w + ']');
+          }
+        });
+      }
+    }
+    ok('every case in the docket opens on the desk', !shut.length, shut.slice(0, 5).join(', ')
+      || D2.ITEMS.length + ' items');
+    ok('  and nothing threw while they were opened', !swErrs.length,
+      swErrs.slice(0, 2).join(' | ') || 'none');
+    await sw.close();
+    ok('  and what this changes says it in English', !raw.length,
+      raw.slice(0, 4).join('   |   ') || rows + ' rows drawn, none of them a ledger key');
+  }
 }
 
 await b.close();

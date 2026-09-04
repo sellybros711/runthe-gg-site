@@ -5,7 +5,7 @@
  * Team strength was taken from the season the term began and then frozen: the top five in
  * 2025 were the top five in 2029, in the same order, and further apart. Across a hundred and
  * fifty simulated seasons only six schools ever won a national title and two of them took
- * seventy-six per cent of them.
+ * seventy-six percent of them.
  *
  * Worse, WHICH two. Texas Tech's program level across twenty-one seasons of real data is
  * 0.57 and its 2025 was 2.32. Indiana's is MINUS 0.03 against a 2025 of 2.13. The two teams

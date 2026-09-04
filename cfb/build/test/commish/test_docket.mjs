@@ -705,7 +705,7 @@ console.log('\n=== what the sign said ===');
   /* A BEDSHEET AT SEVEN IN THE MORNING. Block capitals, one breath, and short enough to be
      read off a television in eleven seconds. */
   const shape = SIGNS.filter((s) => s.say !== s.say.toUpperCase() || s.say.length > 66
-    || !/^[A-Z ,.]+$/.test(s.say));
+    || !/^[A-Z ,.-]+$/.test(s.say));
   ok('every one of them is a sign rather than a sentence',
     !shape.length, shape.map((s) => s.say).join(' | ').slice(0, 90));
   ok('  and every one says what happened next',

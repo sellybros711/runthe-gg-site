@@ -16,7 +16,7 @@
  *
  * NO REAL PERSON EVER SAYS ANYTHING HERE, and that is a harder line than it looks, because
  * the obvious way to build this is the way the sports-simulator next door builds it: a
- * photograph of a broadcaster everybody knows, their name in their network's colour, and a
+ * photograph of a broadcaster everybody knows, their name in their network's color, and a
  * sentence they never said. It is extremely effective and it is putting words in a living
  * person's mouth. This file does not do it and never will.
  *
@@ -52,11 +52,11 @@
   var SETS = ['studio', 'radio', 'paper', 'office', 'ballroom', 'stadium', 'court'];
 
   /* ---- THE CAST ----
-     `name` is what goes on the chyron and `role` is the small grey line under it. A speaker
+     `name` is what goes on the chyron and `role` is the small gray line under it. A speaker
      also carries the set it is usually found in, so a scene that does not say otherwise still
      has somewhere to be.
 
-     THE BLOCS ARE NOT LISTED HERE. They already exist with names and colours in blocs.js, and
+     THE BLOCS ARE NOT LISTED HERE. They already exist with names and colors in blocs.js, and
      a second list of them is a second list to keep in step. `speaker()` resolves a bloc id
      through that file and a cast id through this one. */
   var CAST = {
@@ -175,7 +175,7 @@
       },
       lines: [
         { who: 'wire', set: 'paper',
-          say: 'Forty one pages were filed this morning in a district none of us could find on '
+          say: 'Forty-one pages were filed this morning in a district none of us could find on '
             + 'a map.' },
         { who: 'counsel', set: 'office',
           say: 'I have read it twice. The first sixteen pages are quotes from our own memos.' },
@@ -397,7 +397,7 @@
         { who: 'anchor',
           say: function (c) {
             return 'The ' + ((c && c.to) || 'other league') + ' is now the largest thing in '
-              + 'American sport that is not a professional league.';
+              + 'American sports that is not a professional league.';
           } },
       ],
     },
@@ -405,8 +405,8 @@
       id: 'r-union', manual: true, when: function () { return false; },
       lines: [
         { who: 'wire', set: 'paper',
-          say: 'College football has recognised a players association. The vote was taken at '
-            + 'sixty one schools and it was not close.' },
+          say: 'College football has recognized a players association. The vote was taken at '
+            + 'sixty-one schools and it was not close.' },
         { who: 'Players', set: 'ballroom',
           say: 'We are not asking any more. We are across the table and there is a table.' },
         { who: 'counsel', set: 'office',
@@ -493,7 +493,7 @@
           say: 'The game finished at 2:11 in the morning on the east coast. It kicked off at '
             + 'eight.' },
         { who: 'crowd', set: 'stadium',
-          say: 'There were maybe four hundred of us left. I have work. I am forty one years '
+          say: 'There were maybe four hundred of us left. I have work. I am forty-one years '
             + 'old.' },
         { who: 'radio',
           say: 'Best football anybody has seen all year and nobody east of Denver watched the '

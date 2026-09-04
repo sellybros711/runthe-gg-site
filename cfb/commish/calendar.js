@@ -328,8 +328,12 @@
   }
 
   function label(date) { return SHORT[date.getMonth()] + ' ' + date.getDate(); }
+  /* MONTH BEFORE DAY. This read "Mon 13 January 2025" on the desk, which is the order the
+     rest of the world writes a date in and not the order the sport this mode is about writes
+     it in. Every other string in the mode is American English and the date at the top of a
+     case was the loudest thing on the screen that was not. */
   function longLabel(date) {
-    return DOW[date.getDay()] + ' ' + date.getDate() + ' ' + MONTHS[date.getMonth()];
+    return DOW[date.getDay()] + ' ' + MONTHS[date.getMonth()] + ' ' + date.getDate();
   }
 
   var api = {

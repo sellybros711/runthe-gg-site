@@ -219,7 +219,7 @@
       angry: [
         { who: 'tobacco', say: 'every one of these gives two of our schools another reason to call a lawyer' },
         { who: 'tobacco', say: 'the grant of rights is holding this league together with tape and they keep pulling at the tape' },
-        { who: 'wire', say: 'Two ACC schools took meetings about this before the vote. That is not a rumour any more.' },
+        { who: 'wire', say: 'Two ACC schools took meetings about this before the vote. That is not a rumor any more.' },
       ],
     },
     'Big 12': {
@@ -289,7 +289,7 @@
       angry: [
         { who: 'porch', say: 'every year they take one thing that was free and put a price on it' },
         { who: 'porch', say: 'ninety dollars to park and they are still finding new ways to make it worse' },
-        { who: 'porch', say: 'I have had these seats for thirty one years and I am one more of these away from a Friday night high school game' },
+        { who: 'porch', say: 'I have had these seats for thirty-one years and I am one more of these away from a Friday night high school game' },
         { who: 'column', say: 'Nobody in that room has to sit in the traffic, buy the parking or explain the kickoff time to a nine year old.' },
       ],
     },

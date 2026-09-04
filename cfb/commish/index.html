@@ -196,7 +196,7 @@
   .meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
   /* A COLUMN SO THE THREE TRACKS LINE UP WHATEVER THE LABELS DO. "The state of the game"
      is twice the length of "Revenue" and wraps to two lines at most widths, which pushed
-     the middle meter's bar seventeen pixels below its neighbours: three bars meant to be
+     the middle meter's bar seventeen pixels below its neighbors: three bars meant to be
      read as one row, at three different heights. The bar is pushed to the bottom of the
      card instead, so the labels can wrap or not and the row still reads straight. */
   .meter{background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -362,15 +362,12 @@
     text-transform:uppercase;color:var(--dim-2)}
   .dsec span{margin-left:auto;font-size:11px;color:var(--dim-2)}
 
-  /* THE SETUP, WHICH IS BACKGROUND AND SHOULD LOOK LIKE IT. Three lines is enough to know
-     what the item is about; the rest is there for whoever wants it. */
+  /* THE SETUP, WHICH IS THE CASE AND IS SHOWN WHOLE. It was clamped to three lines with a
+     "Read the rest" under it, on the theory that a brief is background. It is not background:
+     every other control on this screen asks you to decide something, and this paragraph is
+     the reason there is a decision. Six lines is not a wall of text. */
   .brief{position:relative}
   .brief p{color:var(--dim);font-size:14px;line-height:1.5;margin:0}
-  .brief.clamp p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
-    overflow:hidden}
-  .brief button{margin-top:5px;background:none;border:0;padding:0;cursor:pointer;
-    font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.13em;
-    text-transform:uppercase;color:var(--green)}
 
   .voices{display:grid;gap:7px;margin:0 0 4px}
   /* THE QUOTE IS TIED TO THE ROOM BY COLOR, so an argument on the desk and the number it
@@ -1340,7 +1337,7 @@
   .cd.game:not(.past):not(.now) svg{stroke:var(--gold);opacity:.5}
   /* OUTSIDE THE WINDOW, GRAY, whatever it was. A month carries the Saturdays either side of
      the beat it is showing, and in gold those read as games still to come when they were
-     played a fortnight ago. */
+     played a two weeks ago. */
   .cd.out svg{stroke:currentColor;opacity:.4}
   .cd.now{background:var(--gold);color:#2a1a00;z-index:2}
   .cd.now svg{stroke:#2a1a00;opacity:1}
@@ -1815,7 +1812,7 @@
   .whip.thin .state{color:var(--gold)}
   .whip.gone .state{color:var(--red)}
   /* A DIAGRAM NOBODY EXPLAINED IS A DIAGRAM NOBODY READS. The strip shipped with a header,
-     six coloured segments, a gold line and a count, and the first thing a player asked about
+     six colored segments, a gold line and a count, and the first thing a player asked about
      it was "what does the bar mean". Every part of that is a convention this mode invented:
      that width is vote weight, that red is against, that the line is half, that a dot is the
      second removal rule. None of it is guessable and all of it fits in four short sentences,
@@ -1842,11 +1839,11 @@
   .whip .seg:last-child{border-radius:0 9px 9px 0}
   .whip .seg b{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.04em;
     white-space:nowrap;color:rgba(255,255,255,.86)}
-  /* ONE QUESTION, ONE COLOUR CHANNEL. The first version tinted each segment with the bloc's
+  /* ONE QUESTION, ONE COLOR CHANNEL. The first version tinted each segment with the bloc's
      own brand hue and washed the hostile ones red on top of it, and the SEC's brand hue IS
      red: a supportive SEC came out looking exactly like a conference that had turned, on the
      strip whose entire job is telling those two apart. The bloc is named on the segment and
-     keeps a hairline of its own colour on top; the fill says with or against and nothing
+     keeps a hairline of its own color on top; the fill says with or against and nothing
      else. */
   .whip .seg.with{background:rgba(16,185,129,.30);
     box-shadow:inset -1px 0 0 rgba(0,0,0,.45),inset 0 3px 0 var(--bc)}
@@ -1864,7 +1861,7 @@
     background:var(--gold);border-radius:2px;pointer-events:none}
   /* AND IT SAYS WHAT IT IS, under the track rather than over it: above the bar it would sit
      on the gloss, and inside the bar it would sit on a segment's name. Its own row, so the
-     label can be centred on the line and nothing has to be moved out of its way. */
+     label can be centered on the line and nothing has to be moved out of its way. */
   .whip .marks{position:relative;height:12px;margin-top:6px}
   .whip .marks span{position:absolute;left:50%;transform:translateX(-50%);
     font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
@@ -2246,7 +2243,7 @@
 
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:4px">The room, nine at once</div>
-      <p class="dcsub">How each bloc feels about you, out of a hundred. Fifty is
+      <p class="dcsub">How each group feels about you, out of a hundred. Fifty is
         indifferent and under thirty they start counting votes. Tap one to open it in the
         chart above.</p>
       <div class="dcroom" id="dc-room"></div>
@@ -2380,13 +2377,13 @@
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=4"></script>
 <script src="ledger.js?v=9"></script>
-<script src="blocs.js?v=8"></script>
+<script src="blocs.js?v=9"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
-<script src="venues.js?v=6"></script>
-<script src="docket.js?v=24"></script>
+<script src="venues.js?v=7"></script>
+<script src="docket.js?v=26"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2396,23 +2393,23 @@
      Loaded after it, the schedule is filled by conference and then bought at random, Ohio
      State plays Michigan about one year in five, and nothing throws. -->
 <script src="rivals.js?v=2"></script>
-<script src="churn.js?v=2"></script>
-<script src="season.js?v=16"></script>
-<script src="council.js?v=2"></script>
-<script src="feed.js?v=3"></script>
-<script src="calendar.js?v=4"></script>
+<script src="churn.js?v=3"></script>
+<script src="season.js?v=17"></script>
+<script src="council.js?v=3"></script>
+<script src="feed.js?v=4"></script>
+<script src="calendar.js?v=5"></script>
 <script src="situation.js?v=8"></script>
-<script src="fallout.js?v=5"></script>
+<script src="fallout.js?v=6"></script>
 <!-- The podium. Reads nothing at load time; see media.js. -->
-<script src="media.js?v=2"></script>
+<script src="media.js?v=3"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=7"></script>
+<script src="scene.js?v=8"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
-<script src="report.js?v=2"></script>
+<script src="report.js?v=3"></script>
 <!-- Captures nothing off window at load time: it is handed the world by the page and the
      beat names by the caller, so its position here is free. -->
-<script src="metrics.js?v=2"></script>
+<script src="metrics.js?v=3"></script>
 <!-- Reads nothing off window at load time: it is handed a world and returns a profile, so
      its position here is free. -->
 <script src="doctrine.js?v=3"></script>
@@ -2831,7 +2828,7 @@ function paintMeters(el,w,before,lock,since){
    television" without saying "this specific man", which is exactly the register the docket
    and the podium already write in.
 
-   EACH ROOM TAKES THE SPEAKER'S COLOUR, so the wire's grey newsroom and the panel's pink
+   EACH ROOM TAKES THE SPEAKER'S COLOR, so the wire's gray newsroom and the panel's pink
    studio are the same drawing logic and never the same picture. `currentColor` does the
    work; the set only has to say where the light is.
 
@@ -2943,13 +2940,13 @@ const SET_ART={
 /* WHERE A SCENE IS, DRAWN. Swapped in rather than replaced, so a change of room between two
    speakers crossfades instead of blinking. */
 let setNow=null;
-function paintSet(el,kind,colour){
+function paintSet(el,kind,color){
   if(!el) return;
   const k=SET_ART[kind]?kind:'office';
-  if(setNow===k+'|'+colour) return;
-  setNow=k+'|'+colour;
+  if(setNow===k+'|'+color) return;
+  setNow=k+'|'+color;
   const svg='<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid slice" '
-    +'style="color:'+esc(colour||'#8b98ad')+'" aria-hidden="true" class="'
+    +'style="color:'+esc(color||'#8b98ad')+'" aria-hidden="true" class="'
     +(REDUCED?'here':'gone')+'">'+SET_ART[k]+'</svg>';
   const old=el.querySelector('svg');
   el.insertAdjacentHTML('beforeend',svg);
@@ -3110,7 +3107,7 @@ function paintWhip(el,w,before){
      the gloss under it says how to read the picture. */
   el.innerHTML='<div class="wh"><b>Who can remove you</b>'
     +'<span class="state">'+esc(label)+'</span></div>'
-    +'<p class="lede">Each bar is a bloc, as wide as its vote. Red is against you. '
+    +'<p class="lede">Each bar is a group, as wide as its vote. Red is against you. '
     +'Past the gold line your term ends. So does both dots going red.</p>'
     +'<div class="track">'
     +seats.map((x)=>{
@@ -3131,8 +3128,8 @@ function paintWhip(el,w,before){
     +'<span class="r">'+(st.gone
       ? (st.bigTwo?'both of the two are gone':'over the line')
       : 'out above '+st.limit.toFixed(1))+'</span></div>'
-    /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A bloc going under twenty five is the whole
-       failure condition arriving one step closer and it used to be a number changing colour
+    /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A bloc going under twenty-five is the whole
+       failure condition arriving one step closer and it used to be a number changing color
        in a list of nine. */
     +(function(){
       if(!before) return '';
@@ -3184,7 +3181,7 @@ function paintRoom(el,w,rows,blind,mode){
   const brief=mode==='brief'&&!react;
   if(el) el.className='room'+(brief?' brief':'');
   if(brief){
-    el.innerHTML='<div class="rkey"><span>How each bloc feels about you: 0 is at war, 100 is '
+    el.innerHTML='<div class="rkey"><span>How each group feels about you: 0 is at war, 100 is '
       +'an ally. The six that can remove you are on the strip above.</span>'
       +'<b>Standing, 0 to 100</b></div>'
       +B.BLOCS.map((b)=>{
@@ -3217,8 +3214,8 @@ function paintRoom(el,w,rows,blind,mode){
       /* NEUTRAL ON TENSE, because this same branch draws the forecast ("if you ruled that
          way") and the ruling itself, and a caption that says "moved" is a lie on one of
          them. */
-      ? 'How far each bloc moves, and where that leaves them.'
-      : 'How each bloc feels about you: 0 is at war, 100 is an ally.')
+      ? 'How far each group moves, and where that leaves them.'
+      : 'How each group feels about you: 0 is at war, 100 is an ally.')
     +'</span><b>'+(react?'Standing, and the move':'Standing, 0 to 100')+'</b></div>';
   el.innerHTML=key+B.BLOCS.map((b)=>{
     const v=w.blocs[b.id], r=byId[b.id];
@@ -4047,6 +4044,13 @@ function dcSeg(id,attr,val){
 }
 
 $('b-desk').onclick=()=>{
+  /* WHILE THE MONTH IS WALKING, THIS BUTTON SAYS "Tap to skip" AND HAS TO MEAN IT. It kept
+     its ordinary handler underneath the new label, so pressing it picked a fresh item and
+     started a SECOND walk from the first day of the window on top of the one already
+     running: the calendar visibly jumped backwards to an earlier date, which is exactly
+     what a player reported. The card underneath already skipped correctly, so the bug was
+     only ever on the one control that invites the tap. */
+  if(simRunning){ if(simSkip) simSkip(); return; }
   /* MEDIA DAYS FIRST, and only once. See pressDue(). */
   if(pressDue()){ podium(); return; }
   /* THE WINDOW DECIDES WHICH ITEM, because the item decides the day. See situationOn(). */
@@ -4310,7 +4314,7 @@ function wantsOf(bloc,axes){
 /* AND WHICH OPTION THAT MAKES THEM WANT. Computed the same way the room computes its answer,
    so it cannot disagree with what actually happens: it is B.react on a thrown away world. The
    NUMBER is withheld, the direction is not. */
-function favourOf(bloc){
+function favorOf(bloc){
   let best=null,bestV=-Infinity,worst=null,worstV=Infinity;
   (item.options||[]).forEach((o)=>{
     let e; try{ e=D.resolve(item,o.id,dials,cast); }catch(x){ return; }
@@ -4319,7 +4323,7 @@ function favourOf(bloc){
     if(row.delta>bestV){ bestV=row.delta; best=o; }
     if(row.delta<worstV){ worstV=row.delta; worst=o; }
   });
-  /* A ROOM THAT IS INDIFFERENT SAYS SO. Naming a favourite when every option moves them by a
+  /* A ROOM THAT IS INDIFFERENT SAYS SO. Naming a favorite when every option moves them by a
      tenth of a point is inventing a preference nobody in the fiction has. */
   if(!best||bestV-worstV<0.6) return null;
   return { best:String(D.text(best.label,cast,item,sit)),
@@ -4331,7 +4335,7 @@ function paintLearn(){
   if(!el||!item) return;
   const axes=axesInPlay();
   const rows=B.BLOCS.map((b)=>{
-    const f=favourOf(b);
+    const f=favorOf(b);
     return '<div class="lrow" style="--bc:'+bcOf(b.id)+'">'
       +blocChip(b.id)
       +'<div><b>'+esc((BLOC_UI[b.id]||{}).short||b.name)+'</b>'
@@ -4389,7 +4393,7 @@ function optionSignature(o){
    season the page has already simulated, so the game the ticker reads out on a Saturday is
    the game that was played on that Saturday.
 
-   ONE TIMER, CANCELLED FROM ONE PLACE. A run that is skipped, or interrupted by somebody
+   ONE TIMER, CANCELED FROM ONE PLACE. A run that is skipped, or interrupted by somebody
    pressing back, has to stop dead: two of these alive at once would deal two items. */
 let simTimer=null, simSkip=null, deskDay=null, simRunning=false;
 function stopSim(){
@@ -4610,7 +4614,11 @@ function runSim(stopOn,headline,done){
     const c=$('off-monthcard'); if(c) c.classList.remove('running');
     done();
   };
-  simSkip=finish;
+  /* SKIPPING LANDS ON THE DAY THE WALK WAS HEADING FOR, rather than freezing on whichever
+     square the timer had reached. `upto` ends on the decision day, so this paints the stop
+     square and its headline before handing over: skip means "I have seen enough, get me
+     there", not "stop the clock here". */
+  simSkip=()=>{ if(upto.length) paintAt(upto.length-1); finish(); };
   /* SOMEBODY WHO HAS ASKED THEIR DEVICE TO STOP MOVING THINGS gets the last day and the
      headline, with no month walked in front of them. */
   if(REDUCED||!upto.length){ if(upto.length) paintAt(upto.length-1); setTimeout(finish,upto.length?600:0); return; }
@@ -5017,7 +5025,7 @@ function dcSize() {
   const w = el ? el.clientWidth : 0;
   /* Below this the phone geometry is used unchanged, so nothing about the small screen
      moves. Above it the viewBox grows with the container, capped so a very wide window
-     does not stretch four points across a metre of axis. */
+     does not stretch four points across a meter of axis. */
   const view = w > 470 ? Math.max(348, Math.min(760, Math.round(w * 0.62))) : 348;
   DCVIEW = { w: view, h: 178 };
   DCBOX = { x: 34, y: 12, w: view - 46, h: 132 };
@@ -5739,7 +5747,7 @@ function paintCouncilNote(el,seats){
     el.className='council full';
     el.innerHTML='<span class="ch">'+LOCK.replace('<svg ','<svg class="ci" ')
       +'<b>Your council: all nine</b></span>'
-      +'<span class="cn">A forecast only reads the blocs who talk to you, and you have earned '
+      +'<span class="cn">A forecast only reads the groups who talk to you, and you have earned '
       +'every seat. All nine numbers above are real ones. Nothing in this room is a surprise '
       +'to you any more.</span>';
     return;
@@ -5751,7 +5759,7 @@ function paintCouncilNote(el,seats){
     /* AND WHAT THE OTHER SIX ARE, on the version that is not finished. "The rest of the room
        you cannot read yet" is only meaningful if you know a forecast is a thing that reads
        people. */
-    +'<span class="cn">A forecast only reads the blocs who talk to you. So far that is '
+    +'<span class="cn">A forecast only reads the groups who talk to you. So far that is '
     +esc(councilNames().join(', '))+'. The rest of the room shows where it stands and not what '
     +'this ruling would do to it.</span>'
     +(next?'<span class="cnx">Your '+C.ORDINAL[next.seat]+' seat is '
@@ -5778,24 +5786,18 @@ function foldWorthIt(el){
   return hidden>=line*1.8;
 }
 
-/* THE SETUP, CLAMPED. Some briefs are two lines and some are six, and a control that says
-   "more" under a paragraph that is already whole is worse than no control: it promises
-   something that is not there. So the clamp goes on, the page is measured, and the button
-   appears only where there is genuinely something folded away. */
+/* THE SETUP, WHOLE. It used to be clamped to three lines under a "Read the rest" button, and
+   that was the wrong thing to fold: the brief IS the case. Every other control on this screen
+   asks you to decide something, and the paragraph they are all about was the one piece of it
+   behind a tap. Six lines is not a wall of text, it is the whole reason there is a decision.
+
+   The clamp stays on an OPTION'S reasoning, which is three paragraphs you are choosing
+   between and where folding the two you are not reading is the point. See `.opt .why` and
+   foldWorthIt(), which that still uses. */
 function paintBrief(text){
   const el=$('d-brief');
-  el.className='brief clamp';
+  el.className='brief';
   el.innerHTML='<p>'+esc(text)+'</p>';
-  /* MEASURED ON THE NEXT FRAME, because at this point the desk is still display:none. Every
-     box inside a hidden subtree reports a height of zero, so a paragraph of any length reads
-     as fitting in three lines and the clamp took itself straight back off. One frame later
-     the screen has been shown and the numbers are real. */
-  requestAnimationFrame(()=>{
-    const p=el.firstChild;
-    if(!foldWorthIt(p)){ el.className='brief'; return; }
-    el.insertAdjacentHTML('beforeend','<button type="button">Read the rest</button>');
-    el.querySelector('button').onclick=(e)=>{ el.className='brief'; e.target.remove(); };
-  });
 }
 
 /* `first` IS THE ARRIVAL AND NOTHING ELSE. This repaints on every tap, because choosing an
@@ -6024,6 +6026,16 @@ const PATH_NAME={
   'brand.playoff':'The playoff sponsor',
   'brand.trophy':'The trophy sponsor',
   'brand.patch':'The jersey patch',
+  /* AND THE SAME CLASS OF MISS AGAIN, a year after the note above was written, on the two
+     fields a title game bid writes. "venues.title / atl / was nobody" on a panel headed What
+     This Changes, which is a database key, a three letter code and a blank, all in one row.
+
+     The reason the guard did not catch it is worth more than the fix: it collected paths off
+     `option.edit.set`, and these two are written by an edit that is a FUNCTION of the cast, so
+     resolving it with no cast returned an empty object and the sweep saw nothing. It resolves
+     against a real cast now, and a second guard walks the rendered rows in a browser. */
+  'venues.title':'Where the title game is played',
+  'venues.lastTitle':'Where it was played last',
 };
 /* WHAT A CODE WORD MEANS. Half of these fields hold a short string that is a key rather than
    a sentence, and printing it raw put "window", "twopoint" and "phone" under a heading that
@@ -6090,6 +6102,12 @@ function pathValue(p,v){
   if(p==='brand.playoff'||p==='brand.trophy'||p==='brand.patch'||p.indexOf('brand.bowls.')===0){
     const s=VEN&&VEN.sponsor?VEN.sponsor(String(v)):null;
     return s?s.name:String(v);
+  }
+  /* A SITE IS A STADIUM WITH A CITY. The ledger holds a three letter id, so a title game bid
+     printed "atl" at somebody under a heading that promises plain English. */
+  if(p==='venues.title'||p==='venues.lastTitle'){
+    const site=VEN&&VEN.venue?VEN.venue(String(v)):null;
+    return site?site.name+', '+site.city:String(v);
   }
   if(PATH_WORD[p]&&PATH_WORD[p][v]) return PATH_WORD[p][v];
   return String(v);
@@ -6592,7 +6610,7 @@ window.PS_CFB_COMMISH_TEST={
   /* A scene by name, so a guard can walk one to its last line without having to reach the
      beat that fires it. */
   play:(id)=>playScene(id,()=>office()),
-  /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety nine
+  /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety-nine
      turns up takes several terms and lands on whichever it lands on, and an assertion about
      a specific door has to be made against that door. Same body as b-desk from the pick
      onwards, so the desk this produces is the desk the game produces. */

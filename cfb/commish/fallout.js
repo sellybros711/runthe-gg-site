@@ -220,7 +220,7 @@
       head: 'Two states passed conflicting laws about it',
       body: function (ctx) {
         return 'One legislature has made your ruling mandatory within its borders. Another has '
-          + 'made it illegal. Both bills were written in a fortnight, both passed nearly '
+          + 'made it illegal. Both bills were written in a two weeks, both passed nearly '
           + 'unanimously, and ' + conf(ctx) + ' has member institutions in both states. The '
           + 'lawyers have asked for a meeting and used the word "unprecedented" twice in one '
           + 'email.';
@@ -238,7 +238,7 @@
       body: function (ctx) {
         return 'Not dramatically. They collected their things, said thank you, and left before '
           + 'the vote, which under the bylaws does not affect anything and under every other '
-          + 'consideration affects everything. One of them was photographed in the car park on '
+          + 'consideration affects everything. One of them was photographed in the parking lot on '
           + 'the telephone, and the photograph is on the front of two newspapers.';
       },
       effects: { autonomy: -1, exposure: -1 },
@@ -308,7 +308,7 @@
       when: function (w, sit, ctx) { return fx(ctx, 'inventory') > 0 || fx(ctx, 'access') > 1; },
       head: 'The secondary market went sideways',
       body: function (ctx) {
-        return 'Resale prices for one November game went up eleven hundred per cent in an '
+        return 'Resale prices for one November game went up eleven hundred percent in an '
           + 'afternoon. A ticket that was ninety dollars on Monday is now more than a flight to '
           + 'get to it. Somebody who bought four in July has paid for a car. Everybody who '
           + 'actually wanted to go is now watching it on television.';
@@ -510,7 +510,7 @@
       when: function () { return true; },
       head: 'A professional league copied it',
       body: function (ctx) {
-        return 'Within a month, nearly word for word, with an acknowledgement in a footnote '
+        return 'Within a month, nearly word for word, with an acknowledgment in a footnote '
           + 'nobody was supposed to read and a press release that does not mention this sport '
           + 'at all. It is the first time in living memory that anything has traveled in that '
           + 'direction and every president in the room has now mentioned it to you.';

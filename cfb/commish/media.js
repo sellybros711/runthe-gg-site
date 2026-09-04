@@ -280,11 +280,11 @@
       desk: () => 'and has read every filing in the sport',
       ask: (c) => 'Under your own rules these are '
         + (c.kind === 'employee' ? 'employees' : 'people under contract')
-        + '. Employees have hours. They have workplace safety law. They can organise. Have you '
+        + '. Employees have hours. They have workplace safety law. They can organize. Have you '
         + 'read what you signed, or did somebody hand it to you?',
       answers: [
         { id: 'read', label: 'Say you read it',
-          body: 'All of it, including the part about organising, and you did it anyway. It is '
+          body: 'All of it, including the part about organizing, and you did it anyway. It is '
             + 'the answer that makes you look like you meant it.',
           wrote: 'The commissioner said the employment consequences were understood and intended.',
           effects: { labour: 1.6, exposure: 1, autonomy: 0.8 },
@@ -319,7 +319,7 @@
         window: (w.labour.reentry || 'open') === 'window' }),
       desk: () => 'and has covered the same locker room since before any of them were born',
       ask: (c) => 'There is a man on a roster this August who spent last August in a '
-        + 'professional camp. He is ' + (c.years >= 2 ? 'twenty five' : 'twenty four') + '. He is '
+        + 'professional camp. He is ' + (c.years >= 2 ? 'twenty-five' : 'twenty-four') + '. He is '
         + 'going to line up opposite an eighteen year old who graduated in May. Is that the sport '
         + 'you wanted?',
       answers: [
@@ -331,13 +331,13 @@
           aimed: { Players: { labour: 2.4 }, Fans: { tradition: -1.6 },
             SEC: { labour: -0.6 } } },
         { id: 'age', label: 'Say the age is the problem',
-          body: 'Not the door, the calendar. Concede that a twenty five year old against a '
+          body: 'Not the door, the calendar. Concede that a twenty-five year old against a '
             + 'freshman is a different sport, and say you will look at the limit.',
           wrote: 'The commissioner said the age gap, not the door, is what needs looking at.',
           effects: { tradition: 1.2, labour: -0.4, cost: 0.4 },
           aimed: { Fans: { tradition: 1.6 }, Players: { labour: -0.8 } } },
         { id: 'roster', label: 'Turn it into a roster question',
-          body: 'There are eighty five places and every one taken by a returning professional '
+          body: 'There are eighty-five places and every one taken by a returning professional '
             + 'is one not offered to a seventeen year old. It is the answer that moves the '
             + 'argument to a room the coaches are in.',
           wrote: 'The commissioner reframed the return rule as a question about roster limits.',
@@ -475,7 +475,7 @@
           effects: { access: -1, tradition: 0.4 },
           aimed: { 'Group of Five': { access: -2 }, SEC: { access: 0.8 },
             'Big 12': { access: -0.6 } } },
-        { id: 'admit', label: 'Admit the maths',
+        { id: 'admit', label: 'Admit the math',
           body: 'Say the true thing: with this many bids, an unbeaten season outside the four '
             + 'is not enough on its own and everybody in the sport knows it.',
           wrote: 'The commissioner conceded that an unbeaten outsider is not guaranteed a place.',
@@ -688,7 +688,7 @@
       when: (w) => w.posture.nonRevGuarantee === false,
       desk: () => 'and has the sponsorship numbers from every athletic department',
       ask: () => 'The guarantee for the sports that do not make money is gone. Somewhere this '
-        + 'autumn a swimming programme gets a letter. Does this office count that as a cost of '
+        + 'fall a swimming program gets a letter. Does this office count that as a cost of '
         + 'the decision or as somebody else\'s decision entirely?',
       answers: [
         { id: 'ours', label: 'Call it ours',
@@ -701,7 +701,7 @@
         { id: 'theirs', label: 'Call it theirs',
           body: 'Every school chooses its own sports and always has. Accurate, and it is a man '
             + 'describing a hole he dug as weather.',
-          wrote: 'The commissioner said programme cuts are decisions made on campus.',
+          wrote: 'The commissioner said program cuts are decisions made on campus.',
           effects: { cost: -1, autonomy: 0.8, tradition: -1.2 },
           aimed: { Presidents: { cost: 1.4 }, Fans: { tradition: -1.4 },
             Players: { labour: -0.8 } } },
@@ -993,7 +993,7 @@
       who: 'student',
       when: () => true,
       desk: () => 'and looked up the salaries before coming in',
-      ask: () => 'The highest paid public employee in thirty nine states is a football coach. '
+      ask: () => 'The highest paid public employee in thirty-nine states is a football coach. '
         + 'Some of them are in this hotel. They are paid by the same institutions that spent a '
         + 'decade arguing the people they coach cannot be paid anything at all. How do you '
         + 'hold both of those?',
@@ -1014,9 +1014,9 @@
           aimed: { Players: { labour: -1.8 }, Presidents: { cost: 0.8 },
             SEC: { autonomy: 1 } } },
         { id: 'cap', label: 'Float a cap on the staff',
-          body: 'A limit on what a programme can spend on people who are not playing. It has '
+          body: 'A limit on what a program can spend on people who are not playing. It has '
             + 'never survived a court and saying it here starts the argument.',
-          wrote: 'The commissioner floated a limit on what programmes spend on coaching staff.',
+          wrote: 'The commissioner floated a limit on what programs spend on coaching staff.',
           effects: { cost: -1.6, exposure: 1.8, access: 1.4, labour: 0.6 },
           aimed: { 'Group of Five': { access: 2 }, Presidents: { cost: 1.6, exposure: -1.8 },
             SEC: { autonomy: -1.6 }, Fans: { tradition: 1 } } },
@@ -1034,7 +1034,7 @@
         + 'nobody games every September for twenty years. When does somebody fix that?',
       answers: [
         { id: 'more', label: 'Say the answer is more league games',
-          body: 'Fewer bought Saturdays, harder schedules, and every small programme that lives '
+          body: 'Fewer bought Saturdays, harder schedules, and every small program that lives '
             + 'off those checks finds out in the same press conference.',
           wrote: 'The commissioner said the fix is more conference games and fewer bought ones.',
           effects: { tradition: 1.8, inventory: 1.2, access: -1.4, money: -0.8 },
@@ -1044,14 +1044,14 @@
           body: 'Those games fund entire athletic departments, and one of them is why a school '
             + 'in his own market still has a team. It is the answer that wins the argument and '
             + 'loses the room.',
-          wrote: 'The commissioner defended guarantee games as the funding model for smaller programmes.',
+          wrote: 'The commissioner defended guarantee games as the funding model for smaller programs.',
           effects: { access: 1.6, money: 0.6, tradition: -1.4 },
           aimed: { 'Group of Five': { access: 2.2 }, Fans: { tradition: -1.6 },
             Networks: { inventory: -0.8 } } },
         { id: 'mandate', label: 'Promise a non-conference standard',
           body: 'Everybody plays one real opponent outside the league or the committee counts '
             + 'it against them. It is a rule and you have just announced it on the radio.',
-          wrote: 'The commissioner said a non-conference standard is coming for every programme.',
+          wrote: 'The commissioner said a non-conference standard is coming for every program.',
           effects: { tradition: 1.6, access: 0.8, autonomy: -1, inventory: 1 },
           aimed: { Fans: { tradition: 2 }, Networks: { inventory: 1.2 },
             SEC: { autonomy: -1.2 }, 'Group of Five': { access: 0.8 } } },

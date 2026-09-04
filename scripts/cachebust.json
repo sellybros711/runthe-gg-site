@@ -1895,64 +1895,64 @@
       "sha": "f24063556c3f697c"
     },
     "blocs.js": {
-      "v": "8",
-      "sha": "c0b4b3b5736f4d7a"
+      "v": "9",
+      "sha": "212436228959cc04"
     },
     "venues.js": {
-      "v": "6",
-      "sha": "ac4f60ec7f604ea0"
+      "v": "7",
+      "sha": "dc6b2a9200c5d50b"
     },
     "docket.js": {
-      "v": "24",
-      "sha": "a0cb56411f74bb82"
+      "v": "26",
+      "sha": "46601f29c4cb082c"
     },
     "rivals.js": {
       "v": "2",
       "sha": "786d8fd6c8de497a"
     },
     "churn.js": {
-      "v": "2",
-      "sha": "ddec70726d2ba43d"
+      "v": "3",
+      "sha": "823cd3734f7618b3"
     },
     "season.js": {
-      "v": "16",
-      "sha": "61ec3239197b9636"
+      "v": "17",
+      "sha": "2ff7282f190b3f91"
     },
     "council.js": {
-      "v": "2",
-      "sha": "2ce5a3c156d926ca"
+      "v": "3",
+      "sha": "1ce94b7007d24d0a"
     },
     "feed.js": {
-      "v": "3",
-      "sha": "80f79fe7cb6c8282"
+      "v": "4",
+      "sha": "63c6c00c74ac965c"
     },
     "calendar.js": {
-      "v": "4",
-      "sha": "ed1a8ac942ccb79a"
+      "v": "5",
+      "sha": "cb4ebc747e9ec730"
     },
     "situation.js": {
       "v": "8",
       "sha": "733bdd0156446e4e"
     },
     "fallout.js": {
-      "v": "5",
-      "sha": "d8ba3296d1695191"
+      "v": "6",
+      "sha": "9e362c536c8ad8d4"
     },
     "media.js": {
-      "v": "2",
-      "sha": "779bc0a6cf81d3cb"
+      "v": "3",
+      "sha": "ed71bbf2bf7646d3"
     },
     "scene.js": {
-      "v": "7",
-      "sha": "02bcec603e90dd13"
+      "v": "8",
+      "sha": "4bc8a8ea024ab8bd"
     },
     "report.js": {
-      "v": "2",
-      "sha": "91cc3d7cec1ece60"
+      "v": "3",
+      "sha": "6bac4998d7423639"
     },
     "metrics.js": {
-      "v": "2",
-      "sha": "aa65739bc39a6d29"
+      "v": "3",
+      "sha": "5804dd08136312ee"
     },
     "doctrine.js": {
       "v": "3",
