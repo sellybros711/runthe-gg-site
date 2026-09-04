@@ -3927,6 +3927,11 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(226,178,90,.34);
     background:linear-gradient(180deg,rgba(40,32,17,.85),rgba(19,17,13,.85))}
   .gdraft[hidden]{display:none}
+  /* The locked-salary rule, under the money it is about, on the Gauntlet's draft screen. */
+  .dlock{margin-top:7px;font-family:var(--fn);font-size:10.5px;font-weight:600;
+    line-height:1.4;color:rgba(243,221,174,.58)}
+  .dlock[hidden]{display:none}
+  .dlock b{color:#F3DDAE;font-weight:800}
   /* THE WAY BACK TO THE RULES, RIDING IN THE BANNER ITSELF rather than as a pill under it.
      A small mark in the top-right corner of the ultimatum, where the extra right padding on
      both banners above keeps a gutter clear for it so it never sits on a season's numbers.
@@ -6204,6 +6209,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <span class="eyebrow spinc" id="d-count">Spin 1 of 6</span>
       </div>
       <div class="note" id="c-note" style="display:none"></div>
+      <!-- THE ONE RULE THAT DECIDES THIS SCREEN, said where the decision is actually made.
+           The rules sheet explains the locked salary before the first draft and then the
+           player meets a $48M running back with nothing on the page to say that $48M is
+           forever. paintDynastyDraftBar fills it in this mode and hides it in every other. -->
+      <div class="dlock" id="d-lock" hidden></div>
       <!-- THE LINEUP, once the field has scrolled off. Height is reserved at every scroll
            position and only the opacity changes, because growing a sticky block when they
            appear would shift the page under the finger. -->
@@ -6656,7 +6666,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="ar-sum"><span>Points this season</span><b id="ar-base">0</b></div>
       <div class="ar-x" id="ar-x"><span id="ar-xwhy">Season 1 pays once</span><b id="ar-mult">&times;1</b></div>
       <div class="ar-total" id="ar-season">0</div>
-      <div class="ar-run"><span>Run total</span><b id="ar-run">0</b></div>
+      <div class="ar-run"><span>Gauntlet score</span><b id="ar-run">0</b></div>
       <!-- The owner's verdict, as the card's foot rather than a bar of its own. Its state is
            the only place red or green appears on this card. -->
       <div class="ownerbar" id="o-owner" hidden></div>
@@ -6816,7 +6826,17 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="bs-stat"><b id="bs-allowed">0</b><span>points they allow</span></div>
     </div>
     <div class="bs-tell" id="bs-tell"></div>
-    <div class="bs-reward" id="bs-reward"></div>
+    <!-- WHAT IT PAYS AND WHAT IT COSTS, in the same two columns the mandate briefing uses.
+         The scout used to show the reward on its own, so the one thing a first-time player
+         needs to know here, whether losing ends the run, was answered only by losing. It
+         does not: a lost boss costs one extra win next season, exactly like a missed
+         mandate. See bossScout(). -->
+    <div class="mb-cols">
+      <div class="mb-col win"><span class="mb-h">If you win</span><b id="bs-reward"></b></div>
+      <div class="mb-col lose"><span class="mb-h">If you lose</span><b id="bs-pen"></b></div>
+    </div>
+    <p class="mb-safe">Either way the run goes on. The boss is a bonus on top of the season,
+      not another way to be fired.</p>
     <div class="bs-ask">How do you attack them?</div>
     <div class="bs-picks">
       <button class="bpick" data-atk="air"><b>Air it out</b><span>Throw over the top</span></button>
@@ -8729,9 +8749,13 @@ function ensureDynastyButton(){
        its job on a button. What a door has to say is what the game asks of you and that the
        ask grows: the road behind this line draws the second half, the line names the first.
        Read from the constant, so a rebalance cannot leave the front page lying. */
+    /* THE DOOR SELLS THE RUN, NOT THE FIRST TARGET. "8 wins, and it goes up" names a number
+       and no stake, so it read as a harder version of a season somebody has already played.
+       The line the rules sheet opens with is the actual pitch, and it is the one that says
+       there is a career here and one life to spend on it. */
     el.innerHTML=road+'<span class="hp-tag hp-tag-pro">Preview</span>'+
       '<span class="hp-full-name">The Gauntlet</span>'+
-      '<span class="hp-full-sub">'+E.DYNASTY_BASE_WINS+' wins, and it goes up</span>';
+      '<span class="hp-full-sub">One team. One life. How long can you last?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
   }
   el.hidden=false;
@@ -8800,7 +8824,8 @@ function dynastyRulesHTML(go){
       '<li><b>Draft six players off the wheel.</b> Any year, any club, under one $140M cap.</li>'+
       '<li><b>Play the season.</b> Win '+base+' and you keep your job.</li>'+
       '<li><b>Everyone ages a year.</b> Some improve, most decline, a few are gone.</li>'+
-      '<li><b>Fill the holes and go again.</b> It never ends. You just try to last.</li>'+
+      '<li><b>Fill the holes and go again.</b> Every season is one more than the last. How '+
+        'far can you get?</li>'+
     '</ul>'+
     /* THE MONEY, its own block, because it is the one thing that trips people up. Each line is
        one rule; the cut gets a drawn bar because 75 back and 25 dead is the only number here
@@ -8815,7 +8840,7 @@ function dynastyRulesHTML(go){
         '<li class="in"><b>A man who leaves gives it all back.</b> Retire, run out of seasons, '+
           'or sign elsewhere: every dollar of his deal is yours to spend again.</li>'+
         '<li class="out"><b>Cutting a man keeps a quarter on your books.</b> You get three '+
-          'quarters back to spend now. The last quarter is dead money: cap you pay for a '+
+          'quarters back to spend now. The last quarter is dead cap: cap you pay for a '+
           'player who is gone, for the rest of the run.'+
           '<span class="dm-bar"><i class="back" style="width:75%">75% back</i>'+
             '<i class="dead" style="width:25%">25% dead</i></span></li>'+
@@ -10277,8 +10302,14 @@ function clubPicker(){
  * wording of it.
  */
 function paintDynastyDraftBar(){
-  const el=$('d-gaunt'); if(!el) return;
-  if(!run||!run.dynasty){ el.hidden=true; return; }
+  const el=$('d-gaunt'), lock=$('d-lock');
+  if(!el) return;
+  if(!run||!run.dynasty){ el.hidden=true; if(lock) lock.hidden=true; return; }
+  if(lock){
+    lock.hidden=false;
+    lock.innerHTML='<b>Whatever you pay now, you pay every season he stays.</b> '+
+      'A cheap young man who grows into a star is how a run lasts.';
+  }
   const bar=R.effectiveWinBar(run);
   const h=run.history||[];
   const last=h.length?h[h.length-1]:null;
@@ -11524,7 +11555,7 @@ function paintWinterCap(animate){
      the dead money after the offer and pointed the word "that" at the room, which is the
      one number it is not part of. */
   const deadNote=dead>0.05?' '+M(dead)+' is dead.':'';
-  const cutNote=run.roster.length?' A cut returns three quarters.':'';
+  const cutNote=run.roster.length?' A cut returns three quarters of his salary.':'';
   $('w-note').textContent=over>0.05
     ? M(over)+' over. You cannot sign anyone until you are under.'+deadNote+cutNote
     : M(cap-committed)+' of room.'+deadNote+cutNote;
@@ -11781,7 +11812,7 @@ function paintWinter(){
   $('w-sub').innerHTML=wiped
     ? 'Every man you had is gone. <b>The whole roster came off the books.</b> '+
       'Draft a new one.'
-    : 'Everyone becomes his next real season. '+
+    : 'Every player moves to his next real NFL season. '+
       '<b>You keep paying what you drafted him for.</b> That never changes, and neither does '+
       'your '+M0(R.capOf(run))+' cap.';
   $('w-list').innerHTML=run.roster.map((p,i)=>{
@@ -12052,9 +12083,12 @@ function paintWinterSummary(){
   const gone=w.gone.length;
   const cell=(n,label,act)=>'<span class="wsumc'+(n?' on':'')+(n&&act?' act':'')+'">'
     +'<b>'+n+'</b><i>'+label+'</i></span>';
+  /* DEPARTED, NOT "LEFT". Sitting next to "1 SPOT TO FILL", the word "left" reads as
+     "remaining": two adjacent chips carrying the same numeral and opposite meanings. This
+     one counts the men who are no longer here. */
   el.innerHTML=cell(holes,holes===1?'SPOT TO FILL':'SPOTS TO FILL',true)
     +cell(over,'OVERPAID',holes===0)
-    +cell(gone,'LEFT',false);
+    +cell(gone,'DEPARTED',false);
 }
 
 
@@ -12387,8 +12421,12 @@ function paintSquad(keepSeason){
   if(playBtn) playBtn.textContent=pendingChallenge?'Play the Challenge Bowl':'Play the season';
   /* Full Team has a step the others do not, so the counter has to say so or it lies on
      every screen after the draft. */
+  /* THE GAUNTLET COUNTS SEASONS, NOT STEPS. "Step 3 of 3" belongs to a mode that drafts
+     once and stops; here there is always another season, so the eyebrow names the one you
+     are about to play instead of counting to an end that does not come. */
   const step=$('q-step');
-  if(step) step.textContent=(run&&run.full)?'Step 4 of 4':'Step 3 of 3';
+  if(step) step.textContent=(run&&run.dynasty)?('Season '+run.seasonNo)
+    :((run&&run.full)?'Step 4 of 4':'Step 3 of 3');
   paintCoachLine('q-coach');
   show('s-squad');
 }
@@ -15437,7 +15475,7 @@ function paintOwner(){
   if(wrap&&led){
     wrap.hidden=false;
     const n=$('o-ledn');
-    if(n) n.innerHTML='<span class="scorechip">'+SCORE(v.score||0)+'</span> total';
+    if(n) n.innerHTML='Gauntlet score: <span class="scorechip">'+SCORE(v.score||0)+'</span>';
     led.innerHTML=run.history.map((h,i)=>{
       const cls=h.cleared?'pass':((i===run.history.length-1&&v.fired)?'fired':'miss');
       /* Rows that banked their roster can be opened; the OVR cell is always rendered, empty
@@ -15537,8 +15575,15 @@ function mandateBriefing(){
   $('mb-season').textContent=run.seasonNo;
   $('mb-name').textContent=spec.name;
   $('mb-ask').textContent=spec.desc;
+  /* THE REWARD IN REAL MONEY, because "your dead cap is wiped clean" is an empty prize to a
+     run carrying none, and the player has no way to tell which they are. The wipe is applied
+     when the next season kicks off, so it also covers dead cap taken on DURING this
+     offseason: that is the whole trick of the mandate, and it was never said out loud. */
+  const deadNow=R.deadOf(run);
   $('mb-reward').textContent=spec.reward==='deadwipe'
-    ? 'Your dead cap is wiped clean.'
+    ? (deadNow>0.05
+        ? 'Your '+M0(deadNow)+' of dead cap is wiped, plus anything you take on this offseason.'
+        : 'Any dead cap you take on this offseason is wiped. Cut freely.')
     : 'The owner pays out.';
   /* The sting in real numbers, off the same win-bar the rest of the mode reads, so "one more
      win" is not a figure of speech: it is the exact target next season carries on a miss. */
@@ -15613,11 +15658,16 @@ function bossScout(){
   $('bs-scored').textContent=Math.round(o.pts_scored_mean);
   $('bs-allowed').textContent=Math.round(o.pts_allowed_mean);
   $('bs-tell').textContent=b.tell;
+  /* The column heads say "if you win" and "if you lose", so the sentences no longer open
+     with "beat them and". The sting is the same one the mandate quotes, off the same win
+     bar, so "one more win" is the exact target and not a figure of speech. */
   const rw=$('bs-reward');
-  rw.className='bs-reward';
   rw.textContent=b.reward==='freeze'
-    ? 'Beat them and you freeze one player at his current age and salary for good.'
-    : 'Beat them and your dead cap is wiped clean.';
+    ? 'You freeze one player at his current age and salary for good.'
+    : 'Your dead cap is wiped clean.';
+  const bnext=run.seasonNo+1, bbase=E.dynastyWinBar(bnext,run.stepSeasons);
+  const pen=$('bs-pen');
+  if(pen) pen.textContent='Season '+bnext+' needs '+(bbase+1)+' wins, not '+bbase+'.';
   document.querySelectorAll('#s-bscout .bpick').forEach((btn)=>{
     btn.onclick=()=>bossPlay(btn.dataset.atk);
   });
