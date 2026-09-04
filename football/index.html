@@ -527,6 +527,22 @@ window.GA_ID='G-L29P5MRWKE';
     color:rgba(226,233,245,.56)}
   .hp-dyn .hp-tag-pro{background:rgba(255,255,255,.10);
     border-color:rgba(255,255,255,.28);color:rgba(238,242,249,.86)}
+  /* THE NEW BADGE. Filled gold rather than outlined white, because its whole job is to be
+     the thing your eye lands on first on a page of dark buttons, and every other tag here is
+     a label rather than an announcement. Gold is already the mode's own colour, so it
+     announces Dynasty rather than just announcing itself. */
+  .hp-dyn .hp-tag-new{background:linear-gradient(180deg,#f0c674,#e2b25a);
+    border-color:rgba(243,221,174,.9);color:#241a08;font-weight:800;letter-spacing:.1em;
+    box-shadow:0 0 0 3px rgba(226,178,90,.16)}
+  @media (prefers-reduced-motion:no-preference){
+    .hp-dyn .hp-tag-new{animation:hpnew 2.6s ease-in-out infinite}
+  }
+  /* A slow breath, not a blink: enough to catch the eye on arrival, not enough to nag while
+     somebody is reading the button underneath it. */
+  @keyframes hpnew{
+    0%,100%{box-shadow:0 0 0 3px rgba(226,178,90,.16)}
+    50%{box-shadow:0 0 0 6px rgba(226,178,90,.04)}
+  }
   @media (max-width:340px){
     .hp-dyn .hp-full-name{font-size:26px}
     .hp-dyn .hp-full-sub{letter-spacing:.11em}
@@ -7109,8 +7125,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
 <div class="sheet" id="sheet"><div class="inner" id="sheet-in"></div></div>
 
-<script src="engine.js?v=84"></script>
-<script src="run.js?v=96"></script>
+<script src="engine.js?v=85"></script>
+<script src="run.js?v=97"></script>
 <!-- WHO CAN SEE FULL TEAM. Its own file rather than an array in this one, because three
      separate things ask and a list written three times drifts. Not optional in the way the
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
@@ -7444,7 +7460,7 @@ function watchTabs(){
    Reload once with a fresh query to shake the cache. If it still disagrees after
    that, say so plainly instead of dying quietly. One retry, so this can never
    become a reload loop. */
-const NEED_VERSION=46;
+const NEED_VERSION=47;
 (function bootCheck(){
   const ok=E&&R&&E.API_VERSION===NEED_VERSION&&R.API_VERSION===NEED_VERSION;
   if(ok) return;
@@ -8797,7 +8813,15 @@ function ensureDynastyButton(){
        and no stake, so it read as a harder version of a season somebody has already played.
        The line the rules sheet opens with is the actual pitch, and it is the one that says
        there is a career here and one life to spend on it. */
-    el.innerHTML=road+'<span class="hp-tag hp-tag-pro">Preview</span>'+
+    /* THE NEW BADGE, AND IT RETIRES ITSELF. The corner tag is the only thing on the front
+       page that can say a mode has arrived, so it says NEW rather than Preview. It is shown
+       to somebody who has never opened the rules sheet and to nobody else: ps_dynintro is set
+       the first time that sheet is drawn, so the badge comes off the moment the mode stops
+       being new TO THIS PLAYER rather than on a date somebody has to remember. A player with
+       a run in progress never sees it either, because that branch carries the season instead. */
+    let dynSeen=false;
+    try{ dynSeen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ dynSeen=!!window.__dynIntro; }
+    el.innerHTML=road+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
       '<span class="hp-full-name">Start a Dynasty</span>'+
       '<span class="hp-full-sub">One team. One life. How long can you last?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };

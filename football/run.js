@@ -37,7 +37,7 @@ const PHASES = {
   /* FULL TEAM ONLY: the hire and the game plan, between the last signing and the schedule.
      A phase rather than a screen flag, so it survives a reload the way the draft does. */
   COACH: 'coach',
-  /* THE GAUNTLET ONLY: the winter between two seasons. Everybody ages here, salaries
+  /* DYNASTY ONLY: the winter between two seasons. Everybody ages here, salaries
      ratchet, and you release whoever you are not paying for any more. A phase rather than a
      screen flag for the same reason COACH is one: a reload mid-decision has to come back to
      the decision. */
@@ -511,7 +511,7 @@ function createRun(opts) {
   const full = !!opts.full;
   if (full && defense) throw new Error('a run is full team or defense, not both');
   /*
-   * THE GAUNTLET IS THE OFFENSE DRAFT THAT KEEPS GOING. Six men, one pool, the same cap
+   * DYNASTY IS THE OFFENSE DRAFT THAT KEEPS GOING. Six men, one pool, the same cap
    * everybody starts with. What it adds is a calendar, a salary per man that never falls,
    * an owner who wants more every autumn, and a score.
    *
@@ -568,7 +568,7 @@ function createRun(opts) {
     /* Every season played, oldest first: what the owner reads and what the run is scored
        on. */
     history: dynasty ? [] : null,
-    /* THE RUN'S OWN ID, minted once and carried for its whole life. The Gauntlet writes one
+    /* THE RUN'S OWN ID, minted once and carried for its whole life. Dynasty writes one
        validated ps_runs row a season, and this is what ties those rows back into a run so the
        leaderboard can rank runs by how many seasons they survived rather than ranking loose
        seasons. Null outside a dynasty. See ps_dynasty_tag and the recordRun tag in the page. */
@@ -711,7 +711,7 @@ function openSlots(run) {
  * solver only reaches for a rearrangement when standing pat has no answer, and the shuffle
  * you get is the smallest one that works.
  *
- * THE GAUNTLET ONLY, and that is a deliberate limit rather than an oversight. Offense,
+ * DYNASTY ONLY, and that is a deliberate limit rather than an oversight. Offense,
  * defense and Full Team have leaderboards with a hundred thousand runs on them, and widening
  * what is signable makes every future draft easier than every past one. That is a fairness
  * problem, not an improvement, and it is not mine to introduce quietly. The mode with no
@@ -786,7 +786,7 @@ function slotForPlayer(run, player) {
   const flex = open.find(fitsFlex);
   if (flex !== undefined) return flex;
   /* NOTHING OPEN FITS HIM AS THE ROSTER STANDS. See assignWith: a shuffle may still have a
-     spot for him, and in The Gauntlet it is allowed to find one. */
+     spot for him, and in Dynasty it is allowed to find one. */
   if (run.dynasty) {
     const plan = assignWith(run, player);
     if (plan) return plan[plan.length - 1];
@@ -922,7 +922,7 @@ function drawable(run, data, limit) {
     .filter((t) => !run.franchise || t.franchise === run.franchise)
     .filter((t) => { if (!run.era) return true; const r = E.ERAS[run.era]; return t.season >= r[0] && t.season <= r[1]; })
     /*
-     * THE GAUNTLET DRAFTS OFF THE SAME WHEEL AS EVERYTHING ELSE, and it took a detour to
+     * DYNASTY DRAFTS OFF THE SAME WHEEL AS EVERYTHING ELSE, and it took a detour to
      * get back here. There was a filter on this line locking the wheel to the run's league
      * year, so a dynasty drafted out of one autumn and walked the whole roster forward
      * together. That made the mode a tour of one season at a time and it cost the game its
@@ -966,7 +966,7 @@ function spin(run, data, constraint) {
      Merged rather than replaced, so each pool contributes the positions it knows and
      neither overwrites the other.
 
-     THE GAUNTLET USED TO NEED ITS OWN BRANCH HERE, rebuilt every winter off the run's
+     DYNASTY USED TO NEED ITS OWN BRANCH HERE, rebuilt every winter off the run's
      league year, because its wheel was locked to one autumn and 32 clubs is few enough to
      strand a draft inside twelve picks. The clock is per player now and the wheel is the
      ordinary one, so it reaches the same 800 team-seasons as everything else and wants the
@@ -1121,7 +1121,7 @@ function sign(run, player, want) {
      they are a phase rather than a screen so a reload mid-decision comes back to the same
      place a reload mid-draft does. */
   if (run.roster.length === slotsOf(run).length) {
-    /* THE GAUNTLET HIRES NOBODY, and that is measured rather than assumed. Over 300 runs
+    /* DYNASTY HIRES NOBODY, and that is measured rather than assumed. Over 300 runs
        drafted the same way with and without one, the best coach the cap could reach was
        worth 0.11 wins in season one (10.01 against 9.90), the same 82% clearing the bar,
        and 3.27 seasons survived against 3.22. His fee buys back what he gives. That is a
@@ -1191,7 +1191,7 @@ function finishHiring(run) {
 }
 
 /*
- * ─── THE GAUNTLET: THE WINTER, AND THE OWNER ───────────────────────────────────────
+ * ─── DYNASTY: THE WINTER, AND THE OWNER ───────────────────────────────────────
  *
  * Everything below runs between two seasons and nothing else in the game calls any of it.
  * The order is fixed and each step is its own function so the screen can animate between
@@ -1425,12 +1425,12 @@ function takeTheField(run) {
   if (!run.dynasty) throw new Error('only a dynasty may field a short roster');
   if (run.phase !== PHASES.DRAFT) throw new Error('not drafting');
   /* ONE MAN IS A TEAM'S WORTH OF MINIMUM. This asked for somebody on both sides of the
-     ball, which was right while The Gauntlet drafted twelve out of two pools and is now a
+     ball, which was right while Dynasty drafted twelve out of two pools and is now a
      rule about a shape the mode does not have. */
   if (!run.roster.length) throw new Error('a team needs somebody in it');
   run.currentDraw = null;
   /* Straight to the schedule. This read `run.coach ? SEASON : COACH`, which was right while
-     The Gauntlet had a coach step and would now send a short-handed team to a screen the
+     Dynasty had a coach step and would now send a short-handed team to a screen the
      mode no longer has. */
   run.phase = PHASES.SEASON;
   return run;
@@ -1477,7 +1477,7 @@ function ownerVerdict(run) {
     /* PLAYOFF WINS ARE THE DIFFERENCE, not a count kept anywhere. outcome.wins runs through
        January and regularWins is the snapshot taken at the end of week seventeen, so the gap
        between them is exactly the games won after it. */
-    const scored = E.gauntletSeasonScore({
+    const scored = E.dynastySeasonScore({
       seasonNo: run.seasonNo, wins, bar,
       playoffWins: Math.max(0, (o.wins ?? wins) - wins),
       titleWon: !!o.titleWon,
@@ -1528,7 +1528,7 @@ function ownerVerdict(run) {
      last season decides. */
   const last = run.history[run.history.length - 1];
   run.fired = !last || !last.cleared;
-  run.score = E.gauntletRunScore(run.history);
+  run.score = E.dynastyRunScore(run.history);
   return {
     bar, wins, cleared: wins >= bar, fired: run.fired,
     seasons: run.history.length,
@@ -3892,7 +3892,7 @@ function projectSeason(roster, chemistry, run, data, leagueContext, trials = 400
  * "draw.board is not iterable" after the wheels landed, and the game sat there
  * with no players and no way forward.
  */
-const RUN_API_VERSION = 46;
+const RUN_API_VERSION = 47;
 
 const api = {
   API_VERSION: RUN_API_VERSION,
@@ -3910,10 +3910,10 @@ const api = {
   cutOptions, cutSets, legalCutSet, MAX_OFFERS, capOf,
   /* Full Team's coach step. */
   coachMarket, hireCoach, setPlan, finishHiring,
-  /* The Gauntlet's winter and its owner. */
+  /* Dynasty's winter and its owner. */
   beginOffseason, releaseMan, finishOffseason, ownerVerdict, seasonsSurvived, deadOf,
   takeTheField, wheelIsDry,
-  /* The Gauntlet's boss seasons and roster mandates. */
+  /* Dynasty's boss seasons and roster mandates. */
   effectiveWinBar, bossPending, bossFor, applyBossResult,
   challengePending, challengeFor, challengeProgress, applyChallengeResult,
   /* Exported because the PAGE has to rate the live team with the same chemistry the season

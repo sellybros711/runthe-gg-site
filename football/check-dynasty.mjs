@@ -1,5 +1,5 @@
 /*
- * The Gauntlet, played through run.js exactly as the page will drive it.
+ * Dynasty, played through run.js exactly as the page will drive it.
  *
  *   node football/check-dynasty.mjs
  *
@@ -36,7 +36,7 @@ const ctx = {
   coachColleges: (() => { try { return load('coach_colleges.json'); } catch (_) { return {}; } })(),
 };
 const DATA = R.indexData(players, teamSeasons);
-/* One pool now: The Gauntlet drafts an offense, so the index beginOffseason ages against is
+/* One pool now: Dynasty drafts an offense, so the index beginOffseason ages against is
    the same one the wheel draws from, and the page's BYKEY is the same map. */
 const byKey = new Map();
 for (const p of players) byKey.set(`${p.player_id}|${p.season}`, p);
@@ -130,7 +130,7 @@ function playSeason(run) {
   if (run.phase !== R.PHASES.OVER) throw new Error('season did not finish: ' + run.phase);
 }
 
-console.log('THE GAUNTLET, driven through run.js the way the screens will\n');
+console.log('DYNASTY, driven through run.js the way the screens will\n');
 
 /* ─── one dynasty, all the way to the firing ─────────────────────────────────────── */
 const START = 2004;
@@ -165,7 +165,7 @@ ok('salaries were recorded, one per man', run.salaries.length === 6);
 ok('a salary starts at his list price',
   run.roster.every((p, i) => run.salaries[i] === p.price_musd));
 /* NO COACH STEP, WHICH IS THE POINT OF ASSERTING IT. Full Team stops at a hire between the
-   last signing and the schedule; The Gauntlet does not, and the twelfth signing must land
+   last signing and the schedule; Dynasty does not, and the twelfth signing must land
    on the schedule itself. Measured before it was cut: the best coach the cap could reach
    was worth 0.11 wins a season, for a screen of fifty tiles. See sign() in run.js. */
 ok('the sixth signing goes straight to the schedule', run.phase === R.PHASES.SEASON,
@@ -202,7 +202,7 @@ for (let s = 0; s < 30; s++) {
     h.scoreParts.reduce((t, x) => t + x.points, 0) === h.scoreBase);
   ok('wins are paid at the stated rate',
     (h.scoreParts.find((x) => x.key === 'wins') || { points: 0 }).points
-      === h.wins * E.GAUNTLET_POINTS.WIN);
+      === h.wins * E.DYNASTY_POINTS.WIN);
   /* THE WINS LINE IS REGULAR SEASON ONLY. outcome.wins runs through January, so paying the
      wins rate on it and the playoff rate again on the same games is the double count this
      asserts against. */
@@ -358,16 +358,16 @@ console.log('');
 ok('the run ended because the owner ended it', run.fired || seasons >= 30);
 ok('seasons survived is the length of the history',
   R.seasonsSurvived(run) === run.history.length, `${R.seasonsSurvived(run)}`);
-ok('the run carries its own score', run.score === E.gauntletRunScore(run.history),
+ok('the run carries its own score', run.score === E.dynastyRunScore(run.history),
   `${run.score}`);
 /* A LATER SEASON IS WORTH MORE THAN AN EARLIER ONE AT THE SAME RECORD, which is the whole
    arcade shape and the thing a leaderboard on this score depends on. */
 {
-  const a = E.gauntletSeasonScore({ seasonNo: 1, wins: 10, bar: 8 });
-  const b = E.gauntletSeasonScore({ seasonNo: 5, wins: 10, bar: 8 });
+  const a = E.dynastySeasonScore({ seasonNo: 1, wins: 10, bar: 8 });
+  const b = E.dynastySeasonScore({ seasonNo: 5, wins: 10, bar: 8 });
   ok('the same season is worth five times as much in year five',
     b.total === a.total * 5, `${a.total} -> ${b.total}`);
-  const perfect = E.gauntletSeasonScore({ seasonNo: 1, wins: 17, bar: 8, playoffWins: 3,
+  const perfect = E.dynastySeasonScore({ seasonNo: 1, wins: 17, bar: 8, playoffWins: 3,
     titleWon: true, undefeatedRegular: true, perfect: true });
   ok('a perfect season is far the biggest single year',
     perfect.total > a.total * 5, `${a.total} ordinary -> ${perfect.total} perfect`);
@@ -376,7 +376,7 @@ ok('the run carries its own score', run.score === E.gauntletRunScore(run.history
      ordinary ones score more, so the mode is about lasting and the bonuses are texture.
      If this ever inverts, the leaderboard stops being about the thing the mode is. */
   const six = [1, 2, 3, 4, 5, 6]
-    .reduce((t, n) => t + E.gauntletSeasonScore({ seasonNo: n, wins: 10, bar: 8 }).total, 0);
+    .reduce((t, n) => t + E.dynastySeasonScore({ seasonNo: n, wins: 10, bar: 8 }).total, 0);
   ok('six ordinary seasons beat one perfect one', six > perfect.total,
     `${six} against ${perfect.total}`);
 }
