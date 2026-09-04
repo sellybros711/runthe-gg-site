@@ -523,7 +523,18 @@ section('every stipulation plays out live, and looks like its finish');
     {stip:'cage',    force:null,      want:['pin','sub','climb'],beats:[]},
     {stip:'iron',    force:null,      want:['pin','sub'],        beats:[]},
     {stip:'iquit',   force:null,      want:['sub'],              beats:[]},
-    {stip:'rumble',  force:null,      want:['rumble'],           beats:['extra']},
+    {stip:'rumble',  force:null,      want:['rumble'],           beats:['extra','ten']},
+    // the seven from the ranked backlog, each forced so it is tested on purpose
+    // rather than waited for behind a 7% roll
+    {stip:'singles', force:'bump',     want:['pin','sub','count','dq','nc'], beats:['refdown']},
+    {stip:'hardcore',force:'blood',    want:['pin','sub','ko','count'],      beats:['blood']},
+    {stip:'singles', force:'handshake',want:['pin','sub'],        beats:['handshake'], respect:true},
+    {stip:'singles', force:'beatdown', want:['pin','sub'],        beats:['extra'], story:true, mustWin:true},
+    // the tell only exists on a finisher the PLAYER lands, and a tier-5 move is
+    // only in the pool during the finish stretch, so the win is pinned to be
+    // sure the player gets a turn there
+    {stip:'singles', force:'tell',     want:['pin','sub'],        beats:['tell'], known:true, mustWin:true},
+    {stip:'tag',     force:'tagturn',  want:['pin'],              beats:['extra'], team:true, disloyal:true},
   ];
   for(const cs of CASES){
     const {page, errs} = await fresh(URL+'/wrestling/');
@@ -545,9 +556,16 @@ section('every stipulation plays out live, and looks like its finish');
         if(cs.story){ G.story=null; G.car.rivalId=null; startStory(rival.id,'test'); }
         if(cs.manager){ G.car.allies=[]; formAlliance(mate.id); assignManager(mate.id); }
         if(cs.loyal){ G.car.allies=[]; formAlliance(mate.id); allyOf(mate.id).loyalty=90; }
-        if(cs.team){ G.car.allies=[]; formAlliance(mate.id); formTeam(mate.id,'Test Team'); }
+        if(cs.team){ G.car.allies=[]; formAlliance(mate.id); formTeam(mate.id,'Test Team');
+          if(cs.disloyal) allyOf(mate.id).loyalty=5; }        // a partner with nothing left to lose
+        if(cs.respect){ const R=rel(opp.id); R.respect=70; R.heat=5; }
+        if(cs.known){ G.car.finHits=9;                         // the finisher is known, so it gets a tell
+          if(!G.w.moves.includes('s5a')) G.w.moves.push('s5a');
+          G.w.finisher='s5a';                                  // a rookie has no tier-5 move to hit
+          G.car.plan={a:'strike',b:'strike'}; }
+        if(cs.mustWin) window.RTR_WIN=true;                    // the beatdown only follows a win
         const label=(STIP_RULES[cs.stip]||{}).label||'Battle Royal';
-        const o={oppId:opp.id, oppName:opp.name, oppOvr:ovr(G.w)+2, stip:cs.stip, stipLabel:label, mult:1.2, purse:600,
+        const o={oppId:opp.id, oppName:opp.name, oppOvr:ovr(G.w)+(cs.mustWin?-25:2), stip:cs.stip, stipLabel:label, mult:1.2, purse:600,
                  stakes:cs.defense?'defense':'standard', card:'Main Event', tag:cs.stip==='tag'};
         if(cs.defense){ G.car.title=beltName(); G.car.reigns=(G.car.reigns||[]).concat([{title:G.car.title, year:G.car.year, week:1}]); o.belt=G.car.title; G.car.standing=30; }
         if(cs.stip==='rumble'){
@@ -573,7 +591,7 @@ section('every stipulation plays out live, and looks like its finish');
         out.extraOn=document.getElementById('fExtra').classList.contains('on');
         out.errs=errsIn;
         const rl=STIP_RULES[cs.stip]||{}; out.noCount=!!rl.noCount; out.noDQ=!!rl.noDQ;
-        window.RTR_FORCE=null; window.RTR_AUTO=null; FIGHT_SPEED=1;
+        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; FIGHT_SPEED=1;
         return out;
       }, cs);
     }catch(e){ r={done:false, err:e.message}; }

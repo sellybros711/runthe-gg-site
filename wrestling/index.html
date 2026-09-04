@@ -3680,37 +3680,44 @@ function betray(id){
   allies().forEach(x=>x.loyalty=clamp(x.loyalty-22,0,100));
 }
 // and it can happen to you
+/* One betrayal path, two callers: the weekly loyalty check below, and the hot
+   tag that turns into an ambush in the middle of a match. Extracted so the
+   in-ring turn produces exactly the same fallout as the backstage one rather
+   than a second, slightly different version of it. */
+function betrayedBy(id, why){
+  const c=charById(id); if(!c) return null;
+  G.car.allies=allies().filter(x=>x.id!==id);
+  const s=myStable(); if(s){ s.members=s.members.filter(x=>x!==id); if(!s.members.length) G.car.stable=null; }
+  vacateTagIfNoPartner(`${c.name} walked out on the team.`);
+  const R=rel(id); R.heat=clamp(R.heat+55,0,100); R.respect=clamp(R.respect-25,0,100); R.betrayedMe=true;
+  G.car.reaction=clamp(reactionOf()+7,0,100);
+  G.car.mom=clamp(G.car.mom-14);
+  // A betrayal is the biggest thing that can happen to you this year. It used
+  // to be swallowed whenever any other feud was live, which is most of the
+  // time, so the story with the person who actually turned on you never
+  // started. Now it takes the screen: whatever else was running goes cold.
+  const st0=story();
+  if(st0 && st0.charId!==id) dropStory(`${c.name} turned on you. Nothing else mattered after that.`);
+  if(!story()){
+    const voiced=({brash:'sold you out on live television and smiled doing it.',
+                cold:'turned on you without changing expression.',
+                unhinged:'turned on you. They had been planning it for weeks. There were notes.',
+                warm:'turned on you, and cried about it after. That does not help.',
+                bitter:'walked out on you. They say you never once looked back at them.',
+                pro:'turned on you. Business, they called it. It was not business.'})[voiceOf(c)] || 'was never really with you.';
+    startStory(id, why || voiced);
+  }
+  pushInboxItem({ico:pico('knife',18),sev:'bad',txt:`<b>Betrayed.</b> ${c.name} turned on you. You never saw it coming.`});
+  pushLog(`<b>${c.name} turned on you.</b> Every camera in the building caught it.`);
+  return c;
+}
 function checkBetrayal(){
   const list=allies(); if(!list.length) return null;
   for(const a of list){
     if(a.loyalty>=18) continue;
     if(rnd()>0.30) continue;
-    const c=charById(a.id); if(!c) continue;
-    G.car.allies=list.filter(x=>x.id!==a.id);
-    const s=myStable(); if(s){ s.members=s.members.filter(x=>x!==a.id); if(!s.members.length) G.car.stable=null; }
-    vacateTagIfNoPartner(`${c.name} walked out on the team.`);
-    const R=rel(a.id); R.heat=clamp(R.heat+55,0,100); R.respect=clamp(R.respect-25,0,100); R.betrayedMe=true;
-    G.car.reaction=clamp(reactionOf()+7,0,100);
-    G.car.mom=clamp(G.car.mom-14);
-    // A betrayal is the biggest thing that can happen to you this year. It
-    // used to be swallowed whenever any other feud was live, which is most
-    // of the time, so the story with the person who actually turned on you
-    // never started. Now it takes the screen: whatever else was running goes
-    // cold, and the turn is the story.
-    const st0=story();
-    if(st0 && st0.charId!==a.id) dropStory(`${c.name} turned on you. Nothing else mattered after that.`);
-    if(!story()){
-      const why=({brash:'sold you out on live television and smiled doing it.',
-                  cold:'turned on you without changing expression.',
-                  unhinged:'turned on you. They had been planning it for weeks. There were notes.',
-                  warm:'turned on you, and cried about it after. That does not help.',
-                  bitter:'walked out on you. They say you never once looked back at them.',
-                  pro:'turned on you. Business, they called it. It was not business.'})[voiceOf(c)] || 'was never really with you.';
-      startStory(a.id, why);
-    }
-    pushInboxItem({ico:pico('knife',18),sev:'bad',txt:`<b>Betrayed.</b> ${c.name} turned on you. You never saw it coming.`});
-    pushLog(`<b>${c.name} turned on you.</b> Every camera in the building caught it.`);
-    return c;
+    const c=betrayedBy(a.id);
+    if(c) return c;
   }
   return null;
 }
@@ -7974,6 +7981,11 @@ async function spotTaunt(byMe,big){       // work the crowd
 window.RTR_AUTO  = window.RTR_AUTO  || null;
 window.RTR_FORCE = window.RTR_FORCE || null;
 function forced(k){ if(window.RTR_FORCE===k){ window.RTR_FORCE=null; if(MS) MS.forcedLast=k; return true; } return false; }
+// Peek without consuming, for a gate that has to open BEFORE the beat it guards.
+function pinnedIs(k){ return (window.RTR_FORCE===k) || (MS && MS.pinned===k); }
+// When the harness pins one beat, the other random beats stay out of its way, so
+// a forced case tests exactly the thing it names and not whatever else rolled.
+function randomBeatsOff(){ return !!(MS && MS.pinned); }
 // what the stage actually did, for the suite: 'wide','extra','ten','cheap','belt'
 function trace(k){ if(MS){ (MS.trace=MS.trace||[]).push(k); } }
 const nmOf=k=>k==='me'?MS.me.name:k==='opp'?MS.opp.name:(FIG.extra&&FIG.extra.name)||'somebody';
@@ -8192,7 +8204,8 @@ async function standingTenCount(byMe, mvName){
 }
 
 /* ---- the hot tag: your partner on the apron, the slap, the house cleaned ---- */
-async function chHotTag(mateLook, mateName){
+async function chHotTag(mateLook, mateName, opts){
+  opts=opts||{};
   const side = FIG.me.home<0?-1:1;
   busy(true);
   extraShow(mateLook, side, 'ropes', mateName);
@@ -8201,6 +8214,17 @@ async function chHotTag(mateLook, mateName){
   fxEl('slap',Math.round(side*ST.W*0.37),52,340); burst(Math.round(side*ST.W*0.36),'TAG!'); sfx('pop');
   fmv('me',{pose:'kneel',x:Math.round(side*ST.W*0.40)},200);
   FIG.extra.el.classList.add('up');
+  // the turn: the same tag, and then the partner comes for YOU
+  if(opts.turn){
+    fmv('extra',{pose:'run',x:atX('me')+side*Math.round(ST.close*0.9),sc:1},340); speedLines('extra'); await sleep(350);
+    fmv('extra',{pose:'clothes'},70); await sleep(70);
+    impact(atX('me'),34,2); shake(); hitFlash('me',240); sfx('impact');
+    fmv('me',{pose:'reel',up:14,rot:-side*22},130); await sleep(140);
+    fmv('me',{pose:'prone',up:0,rot:0},170); dustAt('me'); await sleep(420);
+    fmv('extra',{pose:'taunt'},220); await sleep(500);
+    FIG.extra.el.classList.remove('up');
+    return;
+  }
   fmv('extra',{pose:'run',x:atX('opp')+side*Math.round(ST.close*0.9),sc:1},380); speedLines('extra'); await sleep(390);
   fmv('extra',{pose:'clothes'},70); await sleep(70);
   impact(atX('opp'),34,2); shake(); hitFlash('opp',220); sfx('impact');
@@ -8212,6 +8236,73 @@ async function chHotTag(mateLook, mateName){
   fmv('me',{pose:'ready',fwd:0,rot:0},300); fmv('opp',{pose:'proneUp'},300); await sleep(300);
 }
 /* ---- the referee waves it off ---- */
+/* ---- THE REFEREE BUMP ----
+   The most-used tool in televised wrestling and the one this game did not have.
+   The official goes down, and for a spell there are no rules: a pin nobody can
+   count, a run-in nobody will disqualify, a belt shot nobody sees. The drama is
+   not the bump, it is the referee crawling back to count a two and nine that
+   would have been three. */
+async function chRefBump(byMe){
+  if(!FIG.ref) return;
+  const A=byMe?'me':'opp';
+  busy(true);
+  // the collision: the attacker whips their man and the official is in the way
+  const rx=Math.round((atX('me')+atX('opp'))/2);
+  refTo(rx,'refWatch',260,(MS&&MS.wide)?0.86*0.74:0.86);
+  await sleep(280);
+  fmv(A,{pose:'run',fwd:ST.close*0.8},170); speedLines(A); await sleep(170);
+  shake(); impact(rx,44,2); sfx('impact');
+  poseSet('ref','refNo'); await sleep(90);
+  fmv('ref',{x:rx+(rx<0?-1:1)*30,up:0,rot:rx<0?-70:70,sc:((MS&&MS.wide)?0.86*0.74:0.86)},260);
+  await sleep(280);
+  burst(rx,'REF IS DOWN!');
+  MS.refDown = 3 + Math.floor(rnd()*3);      // beats until he is back on his feet
+  trace('refdown');
+  MS.refBumped = true;
+  fLog(`<span class="bad">The referee is flattened in the corner. Nobody is counting anything.</span>`);
+  await sleep(360);
+}
+// he comes round, gets to his knees, and the match has rules again
+async function chRefUp(){
+  if(!FIG.ref) return;
+  fmv('ref',{rot:0,pose:'refUp'},300); await sleep(320);
+  refDrift();
+  MS.refDown=0;
+  fLog(`<span class="hi">The referee is back on his feet.</span>`);
+  await sleep(200);
+}
+/* ---- BUSTED OPEN ----
+   A wrestler bleeding changes a match: the crowd decides it is real. A state, a
+   red cast on the figure, and a quality bonus for finishing while wearing it. */
+function bustOpen(who){
+  const k=who==='me'?'me':'opp';
+  if(MS['blood_'+k]) return;
+  MS['blood_'+k]=true;
+  trace('blood');
+  if(FIG[k]) FIG[k].el.classList.add('red');
+  const nm=k==='me'?MS.me.name:MS.opp.name;
+  burst(atX(k),'BUSTED OPEN'); shake(); sfx('impact');
+  fLog(`<span class="bad">${nm} is busted open. There is colour now, and the front row can see it.</span>`);
+  MS.quality+=6;
+  commLine('hardcore',null);
+}
+/* ---- THE FINISHER TELL ----
+   Once a finisher has landed enough times to be known, the wrestler does a thing
+   before it and the building sees it coming. The pop is for being in on it. */
+async function finisherTell(){
+  if(MS.toldFin) return; MS.toldFin=true;
+  trace('tell');
+  const cp=(G.w.catch||'').trim();   // the field is w.catch (see promptCatchphrase)
+  fmv('me',{pose:'point',fwd:ST.close*0.35},220);
+  FIG.me.el.classList.add('glow');
+  burst(atX('me'), cp ? cp.toUpperCase().slice(0,22) : 'THIS IS IT');
+  sfx('pop');
+  fLog(`<span class="hi">${cp?`"${cp}"`:'The signal.'} Every person in the building knows what is coming.</span>`);
+  G.car.reaction=clamp((G.car.reaction||G.car.pop)+3,0,100);
+  MS.quality+=4;
+  await sleep(430);
+  FIG.me.el.classList.remove('glow');
+}
 async function refWaveOff(){
   if(FIG.ref){ refTo(0,'refNo',300,(MS&&MS.wide)?0.86*0.74:0.86); }
   fmv('me',{pose:'stagger',fwd:ST.close*0.2},300); fmv('opp',{pose:'stagger',fwd:ST.close*0.2},300);
@@ -8257,6 +8348,10 @@ function clockStr(){ const m=Math.floor(MS.clock/60), s=MS.clock%60; return `${m
 // pick a move: escalating through the match, never the same one twice running
 function myMove(){
   const ph=phaseNow(), plan=[G.car.plan.a,G.car.plan.b];
+  // Harness: a match pinned to the finisher tell has to actually reach the
+  // finisher, or the case passes or fails on which move the sim happened to
+  // pick. RTR_FORCE means "this beat happens", so here it means it too.
+  if(pinnedIs('tell') && ph.id==='stretch'){ const f=moveById(G.w.finisher); if(f) return f; }
   const all=G.w.moves.map(moveById).filter(Boolean);
   if(!all.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
   const planned=all.filter(m=>plan.includes(m.cat));
@@ -8495,12 +8590,13 @@ async function startFight(o){
        opp:{hp:100,name:o.oppName,ovr:o.oppOvr,limb:newLimbs(),target:null},
        usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null,
        phase:0, phaseBeat:0, stretch:0, covers:0, nearFalls:0, finisherHit:0,
-       clock:0, ally:false, mgrHit:false, hotTag:false, runIn:false,
+       clock:0, ally:false, mgrHit:false, hotTag:false, runIn:false, refDown:0, refBumped:false, toldFin:false,
        // Referee for the night. Deterministic by week so the crowd sees the
        // same official for the whole show; rotates over the season.
        ref: refFor(G.car.week),
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
+  MS.pinned = window.RTR_FORCE || null;    // the one beat this match is meant to prove
   chooseTarget(MS.me); chooseTarget(MS.opp);
   // tape study walks to the ring with you: an early edge and a better story
   if(G.car.booking&&G.car.booking.o===o&&G.car.booking.studied){ MS.mom=8; MS.quality+=4; MS.studied=true; }
@@ -8624,6 +8720,8 @@ async function runFight(){
       const dmg=clamp((mv.dmg*0.30 + skill*0.10 + rnd()*6)*(styleOf().out||1), 4, 40);
       isFin = mv.id===G.w.finisher || mv.tier>=5;
       const moveNameForLog = (isFin && G.w.finisherName) ? G.w.finisherName : mv.name;
+      // Once the finisher is KNOWN (five career hits) the building sees it coming.
+      if(isFin && (G.car.finHits||0)>=5) await finisherTell();
       await exchange(true, moveNameForLog, dmg, 7+mv.pop*0.06, isFin?'FINISHER!':mv.tier>=4?'BIG MOVE!':'POW!', mv.cat);
       hurtLimb(MS.opp, limbFor(mv.cat, MS.me), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       MS.quality+=mv.pop*0.14+mv.dmg*0.06;
@@ -8632,7 +8730,7 @@ async function runFight(){
       if(MS.quality>=85&&MS._crowdStage<3){ MS._crowdStage=3; fLog(`<span class="say">Nobody in the building is sitting down.</span>`); }
       else if(MS.quality>=70&&MS._crowdStage<2){ MS._crowdStage=2; fLog(`<span class="say">They are on their feet now.</span>`); }
       else if(MS.quality>=55&&MS._crowdStage<1){ MS._crowdStage=1; fLog(`<span class="say">The room is coming alive.</span>`); }
-      lastMove=mv.name; lastCat=mv.cat; if(isFin) MS.finisherHit++;
+      lastMove=mv.name; lastCat=mv.cat; if(isFin){ MS.finisherHit++; G.car.finHits=(G.car.finHits||0)+1; }
       if(isFin || rnd()<0.18) commLine(mv.cat, null);
     } else {
       const mv=oppMove();
@@ -8648,7 +8746,56 @@ async function runFight(){
       lastMove=name; lastCat=isFin?'slam':mv.cat;
     }
     renderLimbs();
-    if(MS.beat%3===0) refDrift();
+    if(MS.beat%3===0 && !MS.refDown) refDrift();
+    // ---- colour ----
+    // Head damage plus a stipulation that allows it. Hardcore matches get there
+    // fastest, which is the whole point of a hardcore match.
+    if(!MS.ended){
+      const rl=stipRules(o), bloodOk=rl.noDQ||rl.lenient||o.stip==='hardcore'||o.stip==='cage'||o.stip==='tlc';
+      const hard=(lastCat==='hardcore'||lastCat==='runner'||lastCat==='slam');
+      // A pinned beat skips the mood conditions (which move family, how much
+      // head damage, the roll) but never the stipulation: nobody gets colour in
+      // a match where the referee would stop it.
+      const wantBlood=pinnedIs('blood');
+      if(bloodOk && (wantBlood || (hard && MS.phase>=2))){
+        if(!MS.blood_opp && (wantBlood || (MS.opp.limb.head>=52 && rnd()<0.30))) bustOpen('opp');
+        else if(!MS.blood_me && MS.me.limb.head>=52 && rnd()<0.22) bustOpen('me');
+      }
+    }
+    // ---- the referee comes round ----
+    if(MS.refDown>0){ MS.refDown--; if(MS.refDown<=0) await chRefUp(); }
+    // ---- the referee bump ----
+    // Late, in a match with a referee, once. Everything that follows for the
+    // next few beats happens with nobody official watching.
+    if(!MS.ended && !MS.refBumped && !MS.refDown && MS.phase>=3
+       && (forced('bump') || (!randomBeatsOff() && MS.stretch>=1 && rnd()<0.07))){
+      await chRefBump(rnd()<0.5);
+      // with no official, the obvious thing happens: somebody reaches for
+      // whatever is to hand, and there is nobody to call for the bell
+      if(!stipRules(o).noDQ && rnd()<0.55){
+        const heel = G.w.align==='heel';
+        if(heel){
+          const pick=await decide('NOBODY IS COUNTING.','The referee is out cold. This is the window.',[
+            {name:'Use the belt', desc:'They will never know. You will.', p:0.88, kind:'belt'},
+            {name:'Wait for him to come round', desc:'Win it in front of a witness.', p:1, kind:'wait'},
+          ]);
+          if(pick.kind==='belt'){
+            await chBeltShot('me','opp');
+            MS.opp.hp=clamp(MS.opp.hp-26); setBar('hpOpp',MS.opp.hp); MS.mom=clamp(MS.mom+40,-100,100); setMom();
+            G.car.pop=clamp(G.car.pop-2,1,100);
+            G.car.reaction=clamp((G.car.reaction||G.car.pop)+7,0,100);
+            MS.quality-=3;
+            fLog(`<span class="bad">You took the belt to them with the official face down. Nobody in stripes saw a thing.</span>`);
+          } else { fLog(`<span class="hi">You wave off the shortcut and wait. The crowd noticed that too.</span>`); MS.quality+=4; }
+        } else {
+          // the opponent takes the window instead
+          await chCheapShot('opp','me','low');
+          MS.me.hp=clamp(MS.me.hp-18); setBar('hpMe',MS.me.hp); MS.mom=clamp(MS.mom-34,-100,100); setMom();
+          fLog(`<span class="bad">${MS.opp.name} goes low with the official down. There is nobody to call it.</span>`);
+        }
+        await sleep(300);
+      }
+    }
 
     // ---- heels get a cheap-heat spot; faces get a crowd-rally spot ----
     // Alignment-specific mid-match beat, once per match. The heel spot
@@ -8681,11 +8828,34 @@ async function runFight(){
     // ---- hot tag: in a tag match, your partner tags in and cleans house ----
     // Chemistry between you two tightens the timing; the more matches you've
     // worked together, the more reliable the hot tag lands and the bigger the pop.
-    if(!MS.ended && !MS.hotTag && o.tag && myTeam() && (forced('hottag') || (ph.id==='heat' && MS.mom<-15 && MS.phaseBeat>=1))){
+    if(!MS.ended && !MS.hotTag && o.tag && myTeam() && (forced('hottag') || pinnedIs('tagturn') || (ph.id==='heat' && MS.mom<-15 && MS.phaseBeat>=1))){
       MS.hotTag=true;
       const mate=myTeam().mate;
       const chem = (myTeam().ally && myTeam().ally.chem) || 0;
       const boost = 20 + Math.round(((mate&&mate.over)||55)*0.12) + Math.round(chem*0.20);
+      /* THE HOT TAG THAT IS A TURN. You crawl to the corner, you make the tag,
+         and your partner comes in and hits YOU. It runs off the same loyalty
+         floor as the backstage turn, so a partner you have been ignoring is the
+         one who does it, and it is the loudest way a betrayal can start. */
+      const _a = mate ? allyOf(mate.id) : null;
+      const _turn = mate && _a && (_a.loyalty<28) && (forced('tagturn') || (!randomBeatsOff() && rnd()<0.45));
+      if(_turn){
+        await chHotTag(extraLookFor(mate.id,mate.name), mate.name, {turn:true});
+        shake(); sfx('boo'); burst(0,'FROM YOUR OWN CORNER');
+        await callout(mate.name.toUpperCase()+' TURNS');
+        fLog(`<span class="bad">${mate.name} took the tag, stepped through the ropes, and hit YOU. The whole thing was for this.</span>`);
+        MS.me.hp=clamp(MS.me.hp-24); setBar('hpMe',MS.me.hp);
+        MS.mom=clamp(MS.mom-45,-100,100); setMom();
+        MS.quality+=5;
+        try{ betrayedBy(mate.id, 'turned on you in the middle of a tag match.'); }catch(_){}
+        MS.tagTurn=true;
+        await sleep(500);
+        // laid out by your own corner, and the other man only has to cover you
+        MS.me.hp=0; setBar('hpMe',0);
+        await pinSequence(false, true, 100, 'the tag that was never a tag', false);
+        if(!MS.ended){ commitFinish({type:'pin',by:false,move:'the tag that was never a tag',fin:false}); MS.ended=true; await endFight(false); }
+        return;
+      }
       // the partner on the apron, the slap, the house cleaned
       await chHotTag(mate?extraLookFor(mate.id,mate.name):oppLook('mate','partner'), mate?mate.name:'Your partner');
       shake(); burst(0,'HOT TAG!'); sfx('pop'); await callout(mate?(mate.name.toUpperCase()+' IN!'):'HOT TAG!');
@@ -8730,7 +8900,7 @@ async function runFight(){
     const buildWeek = _npvForRunin && !o.ppv && _npvForRunin.weeksUntil>=1 && _npvForRunin.weeksUntil<=3;
     const storyHot = story() && (story().stage||0) >= 2;
     const runInP = 0.08 + (buildWeek?0.06:0) + (storyHot?0.04:0);
-    if(!MS.ended && !MS.runIn && story() && story().charId!==o.oppId && (forced('runin') || (MS.phase>=2 && rnd()<runInP))){
+    if(!MS.ended && !MS.runIn && story() && story().charId!==o.oppId && (forced('runin') || (!randomBeatsOff() && MS.phase>=2 && rnd()<runInP))){
       const rid=story().charId, rc=charById(rid);
       if(rc){
         MS.runIn=true;
@@ -8757,11 +8927,11 @@ async function runFight(){
     // the camera pulls back, the referee counts through them. When it is YOU
     // on the floor a tap window opens at eight, and rolling in at nine is a
     // near-fall the crowd remembers.
-    if(!MS.ended && !stipRules(o).noCount && !MS.countSpot && (forced('count') || (MS.phase>=2 && MS.mom>60 && MS.opp.hp<25 && rnd()<0.06))){
+    if(!MS.ended && !stipRules(o).noCount && !MS.countSpot && (forced('count') || (!randomBeatsOff() && MS.phase>=2 && MS.mom>60 && MS.opp.hp<25 && rnd()<0.06))){
       MS.countSpot=true;
       const r=await countOutSpot(true); if(r===undefined || MS.ended) return;
     }
-    if(!MS.ended && !stipRules(o).noCount && !MS.countSpot && (forced('countMe') || (MS.phase>=2 && MS.mom<-55 && MS.me.hp<28 && rnd()<0.05))){
+    if(!MS.ended && !stipRules(o).noCount && !MS.countSpot && (forced('countMe') || (!randomBeatsOff() && MS.phase>=2 && MS.mom<-55 && MS.me.hp<28 && rnd()<0.05))){
       MS.countSpot=true;
       const r=await countOutSpot(false); if(r===undefined || MS.ended) return;
     }
@@ -9052,6 +9222,7 @@ function renderLimbs(){
    win by covering them at the right moment, and the whole drama is in
    whether the shoulder comes up at one, two, or two and a half. */
 function coverChance(byMe,isFin){
+  if(window.RTR_WIN && !byMe) return 0;      // harness: the player is winning this one
   const D=byMe?MS.opp:MS.me;
   if(isFin) return 0.96;                       // you always cover after a finisher
   let p=((100-D.hp)-34)/150;
@@ -9220,9 +9391,13 @@ async function finishDecision(){
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='fin'){
+    // THE TELL BELONGS HERE TOO. This decision is where the finisher lands most
+    // often, and it was the one path that skipped the signal, so a known
+    // finisher arrived with no build on the biggest beat in the match.
+    if((G.car.finHits||0)>=5) await finisherTell();
     if(ok){ const fc=fin&&fin.cat==='strike'?'runner':(fin?fin.cat:'slam');
       await flashScreen(); await spot(fc,true,'FINISH!',2);
-      await callout('FINISHER!'); MS.quality+=22; MS.decWon++; MS.finisherHit++;
+      await callout('FINISHER!'); MS.quality+=22; MS.decWon++; MS.finisherHit++; G.car.finHits=(G.car.finHits||0)+1;
       fLog(`<span class="hi">${pick.name} connects flush!</span>`);
       hurtLimb(MS.opp,'head',26); renderLimbs();
       // even the finisher does not guarantee three. It just makes it likely
@@ -9322,6 +9497,21 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
   const stale=()=>!MS||MS.gen!==gen;
   const A=iAmPinning?'me':'opp', D=iAmPinning?'opp':'me';
   busy(true);
+  /* WITH THE OFFICIAL DOWN THERE IS NO COUNT. The cover goes on, the crowd
+     counts it themselves, and the fall that would have ended the match is worth
+     nothing. This is the reason to bump the referee at all. */
+  if(MS.refDown>0){
+    const px=Math.round(atX(D)*0.30);
+    fmv(D,{pose:'prone',x:px,up:0,rot:0,sc:1},260); await sleep(240);
+    fmv(A,{pose:'pin',x:px-FIG[A].dir*22,up:0,rot:0,sc:1},260); await sleep(320);
+    burst(px,'NO COUNT!');
+    fLog(`<span class="bad">The cover is on and there is nobody to count it. ${iAmPinning?'That was three anywhere else.':`${MS.opp.name} is screaming at an empty corner.`}</span>`);
+    if(iAmPinning) MS.quality+=5;                 // a robbed three is a story beat
+    MS.nearFalls++;
+    await sleep(420);
+    await settle(300);
+    return false;
+  }
   const arena=$('arena');
   // ---- the cover, staged toward the middle of the ring so it reads ----
   const px=Math.round(atX(D)*0.30);
@@ -9543,9 +9733,78 @@ async function endFight(iWon){
     const say = Array.isArray(pool)? pool[Math.floor(rnd()*pool.length)] : pool;
     fLog(`<b>${pc.name}</b>: <span class="say">"${say}"</span>`);
   }
-  await sleep(900);
+  await sleep(700);
+  // ---- after the bell ----
+  // Two things that only happen once the match is over, and both of them are
+  // how a feud moves on television rather than in a hallway.
+  try{ await postBellBeats(iWon); }catch(_){}
+  await sleep(300);
   stopCrowdAmbient();
   finalizeFight(iWon);
+}
+/* THE POST-MATCH BEATDOWN and THE HANDSHAKE.
+   The run-in without the disqualification: the bell has gone, so there is
+   nothing to disqualify, and the rival gets to make the point anyway. The
+   handshake is the other side of it: after a match with real respect in it, the
+   loser puts a hand out, and taking it or walking is the clearest face-or-heel
+   decision the game can offer. */
+async function postBellBeats(iWon){
+  const o=MS.o, st=story();
+  // 1. the beatdown: your rival, not tonight's opponent, after you have won
+  const beat = st && st.charId!==o.oppId && iWon===true && !MS.runIn && (MS.o.stakes!=='rumble');
+  if(beat && (pinnedIs('beatdown') || (!randomBeatsOff() && rnd()<0.22))){
+    const rc=charById(st.charId);
+    if(rc){
+      MS.postBeat=true;
+      FIG.me.el.classList.remove('glow');
+      await chRunIn(extraLookFor(rc.id,rc.name), rc.name, 'me', {tag:'FROM BEHIND!', stay:true});
+      await callout(rc.name.toUpperCase()+' IS NOT DONE');
+      fLog(`<span class="bad">The bell had already gone. ${rc.name} came anyway, and left you laid out in your own celebration.</span>`);
+      const R=rel(rc.id); R.heat=clamp(R.heat+18,0,100);
+      if(story()) advanceStory();
+      G.car.reaction=clamp((G.car.reaction||G.car.pop)+4,0,100);
+      G.car._momToast=`<b>${rc.name}</b> jumped you after the bell. That is not finished.`;
+      await sleep(700);
+      extraHide();
+      return;
+    }
+  }
+  // 2. the handshake: only after a competitive match against somebody with respect
+  const R=rel(o.oppId), opp=charById(o.oppId);
+  const clean = MS.finish && (MS.finish.type==='pin'||MS.finish.type==='sub') && !MS.refBumped && !MS.dirty;
+  // A pinned beat skips the mood conditions (match quality, respect, the roll)
+  // but never the ones that would make it nonsense: there is no handshake
+  // without an opponent and a decision.
+  const wantShake = pinnedIs('handshake');
+  if(opp && iWon!=null
+     && (wantShake || (clean && MS.quality>=64 && (R.respect||0)>=38 && !randomBeatsOff() && rnd()<0.30))){
+    const loser = iWon ? opp.name : G.w.name;
+    fLog(`<span class="say">${iWon?opp.name:'You'} get${iWon?'s':''} to ${iWon?'his':'your'} feet, and puts a hand out.</span>`);
+    fmv(iWon?'opp':'me',{pose:'point',fwd:ST.close*0.4},300); await sleep(340);
+    trace('handshake');
+    const pick=await decide('A HAND, IN THE MIDDLE OF THE RING.',
+      `${iWon?opp.name+' wants to shake on it':'You could shake on it'}. The whole building is watching what you do next.`,[
+      {name:'Take it', desc:'Two professionals, in front of everybody.', p:1, kind:'shake'},
+      {name:'Walk away', desc:'Leave the hand there.', p:1, kind:'walk'},
+    ]);
+    if(pick.kind==='shake'){
+      fmv('me',{pose:'ready',fwd:ST.close*0.5},260); fmv('opp',{pose:'ready',fwd:ST.close*0.5},260);
+      await sleep(300); sfx('pop'); burst(0,'RESPECT');
+      fLog(`<span class="hi">You shake. The place comes up for it, and ${opp.name} will remember it.</span>`);
+      R.respect=clamp((R.respect||0)+14,0,100); R.heat=clamp((R.heat||0)-10,0,100);
+      G.car.lean=clamp((G.car.lean||0)+12,-100,100);
+      MS.quality+=4;
+    } else {
+      fmv('me',{pose:'taunt',fwd:0},260); await sleep(260); sfx('boo');
+      burst(0,'NOTHING DOING');
+      fLog(`<span class="bad">You leave the hand hanging and walk. Half the building boos. The other half loves you for it.</span>`);
+      R.heat=clamp((R.heat||0)+16,0,100); R.respect=clamp((R.respect||0)-8,0,100);
+      G.car.lean=clamp((G.car.lean||0)-14,-100,100);
+      G.car.reaction=clamp((G.car.reaction||G.car.pop)+5,0,100);
+      if(G.w.gimmick) G.w.gimmick.heat=clamp(G.w.gimmick.heat+4,0,100);
+    }
+    await sleep(500);
+  }
 }
 
 function finalizeFight(iWon){
@@ -9590,6 +9849,8 @@ function finalizeFight(iWon){
   if(a.st<stamNeed){ const p=(stamNeed-a.st)*0.30; quality-=p; bad.push(`gassed late (stamina ${a.st} vs ${Math.round(stamNeed)} needed)`); }
   if(G.car.cond<70){ const p=(70-G.car.cond)*0.20; quality-=p; bad.push(`working banged up (condition ${Math.round(G.car.cond)})`); }
   if(o.stakes==='title'||o.stakes==='defense'){ quality+=5; good.push('championship stakes'); }
+  if(MS.blood_me||MS.blood_opp){ quality+=6; good.push(MS.blood_me?'you bled and kept going':`${MS.opp.name} was busted open`); }
+  if(MS.refBumped){ quality-=2; bad.push('the referee went down and the finish got murky'); }
   const res={ quality:Math.round(clamp(quality)), win:iWon, good, bad, used,
     decWon:MS.decWon, decisions:MS.decisions, finish:MS.finish||{type:'pin',by:iWon},
     time:clockStr(), nearFalls:nf, limb:lm, draw:iWon===null };
@@ -11140,8 +11401,32 @@ async function runRumble(o){
   await playEntrance('me', THEME_LINE[themeFor(G.w)], G.w.name, G.w.nick||'');
   sfx('bell');
   await callout('BATTLE ROYAL');
+  /* THE COUNTDOWN. A surprise entrant has a clock, and the clock is the point:
+     the crowd counts it down and the pop lands on zero, before anybody has
+     touched anybody. The old rumble simply had eight people already in the ring,
+     which threw away the best thing the match format owns. */
+  const early=ent.slice(0,3), late=ent.slice(3);
+  fLog(`<b>${early.length}</b> start it. <b>${late.length}</b> more are coming, one at a time.`);
+  await sleep(420);
+  for(let i=0;i<late.length;i++){
+    const e=late[i];
+    if(e.you){ /* your own music hits, and it is a different feeling */ }
+    for(let n=3;n>=1;n--){ showCount(n,false,true); sfx('impact'); await sleep(430); }
+    showCount('0',true,true); sfx('bell');
+    const ch=e.you?null:charById(e.id);
+    figLook('opp', e.you?G.w.look:extraLookFor(e.id,e.name));
+    fmv('opp',{pose:'run',x:Math.round(ST.W*0.62),up:0,rot:0,sc:1},0);
+    await playEntrance('opp', THEME_LINE[themeFor(ch||{id:e.id,name:e.name})], e.name, (ch&&ch.nick)||'');
+    fmv('opp',{pose:'ready',fwd:0},420);
+    // a name nobody expected: a mentor, or somebody who has no business being here
+    const surprise = !e.you && ch && ((ch.over||55)>=70 || (story()&&story().charId===ch.id));
+    if(surprise){ sfx('pop'); burst(0,'OH, COME ON'); MS.quality+=3;
+      fLog(`<span class="hi">Number ${i+early.length+1} is <b>${e.name}</b>. The building did not see that coming.</span>`); }
+    else fLog(`Number <b>${i+early.length+1}</b>: ${e.name}.`);
+    await sleep(360);
+  }
   fLog(`<b>${ent.length}</b> in the ring. Last one standing wins.`);
-  await sleep(500);
+  await sleep(400);
   // eliminate one per beat until you or one other is left. Each one is a
   // body: the victim wears the opp figure, the eliminator is you or the
   // fourth body, and they go OVER THE TOP ROPE on the stage, not in a caption.

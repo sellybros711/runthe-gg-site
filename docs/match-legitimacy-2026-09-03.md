@@ -230,3 +230,65 @@ By reflex delivered per hour, with the reflex named:
 
 The first seven are a day's work and would change what a match feels like more than
 anything since the pin count got its rhythm.
+
+---
+
+## Update, 2026-09-04: the first seven shipped
+
+All seven are in, each with a forced case in the regression suite so it is
+tested on purpose rather than waited for behind a low roll.
+
+1. **Referee bump.** Late in a match with an official, once. He is flattened in
+   a collision and stays down for three to five beats, and while he is down
+   THERE IS NO COUNT: the cover goes on, the crowd counts it themselves, and a
+   fall that would have ended the match is worth nothing. That is the whole
+   reason to bump a referee. A heel gets a decision card while the window is
+   open (the belt, or wait for a witness); a face has it done to them instead.
+   The result screen docks two points and says the finish got murky.
+2. **Post-match beatdown.** After the bell, so there is nothing to disqualify.
+   Your rival, not tonight's opponent, and only after you have won: they come
+   from behind, leave you laid out in your own celebration, and the feud
+   advances. It is how a story moves on television rather than in a hallway.
+3. **Busted open.** Head damage past 52 in a stipulation that allows it, most
+   often hardcore. A red cast on the figure, a line, six points of quality on
+   the spot and six more at the bell for finishing while wearing it.
+4. **Rumble entrances with a countdown clock.** Three start it and the rest come
+   one at a time behind a 3-2-1 that the crowd counts down, each with their own
+   theme cue and name reveal on zero. A late entrant who is one of the best in
+   the room, or the wrestler you are feuding with, gets a surprise pop. The old
+   version simply had eight people already standing in the ring, which threw
+   away the best thing the format owns.
+5. **The hot tag that is a turn.** Same crawl, same corner, same slap, and then
+   your partner steps through the ropes and hits YOU. It runs off the same
+   loyalty floor as the backstage turn, so the partner you have been ignoring is
+   the one who does it. The fallout goes through one shared `betrayedBy()` path,
+   extracted so an in-ring turn produces exactly the same consequences as a
+   backstage one rather than a second, slightly different version.
+6. **Finisher tell.** After five career finisher hits the move is KNOWN, so
+   before it lands the wrestler points, glows, and the catchphrase bursts on
+   screen. The pop is for being in on it.
+7. **Handshake refused.** After a clean, competitive match against somebody who
+   respects you, the loser puts a hand out and you choose. Taking it moves
+   respect and your alignment toward face; walking moves heat, reaction and
+   gimmick heat the other way. It is the clearest face-or-heel decision the game
+   offers, and it was previously a number nobody could see.
+
+Two bugs found while building, both of the same kind: a beat that would have
+looked implemented and never fired.
+
+- The finisher tell read `G.w.catchphrase`, which does not exist. The field is
+  `w.catch`.
+- The tell was wired to the move loop only, but the finisher lands most often
+  through the "call it" decision card, and that path skipped the signal. So the
+  biggest beat in the match was the one arriving with no build. That path now
+  fires the tell and counts toward the career total as well.
+
+The suite can pin one beat per match: while `RTR_FORCE` names a beat the other
+random beats stand down, and the pinned beat skips the mood conditions (match
+quality, which move family, how much damage, the roll) while still honouring
+the ones that would make it nonsense, like the stipulation that forbids blood.
+Without that, three of these cases passed or failed on whatever the sim happened
+to roll. Proven with four consecutive clean runs rather than one.
+
+That leaves items 8 to 12 (rope break at two and nine, submission arm drop,
+double count-out brawl, limb gives out, triple threat).
