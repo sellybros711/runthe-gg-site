@@ -763,6 +763,22 @@
 
   /* ---------------- the bracket ---------------- */
 
+  /* WHO PLAYS WHOM, WITHOUT PLAYING IT.
+     The office draws the field on the beat it is about to be played on, so it needs the first
+     round as a fixture list rather than as a result. A second copy of the pairing rule in the
+     page would be a second chance to disagree with the bracket it is previewing, so the rule
+     lives here once and bracket() opens with the same call. test_season asserts the two agree
+     on the field of every size this mode can produce. */
+  function firstRound(seats, world) {
+    var byes = Math.max(0, Math.min(seats.length - 1, (world.playoff || {}).byes || 0));
+    var waiting = seats.slice(0, byes);
+    var playing = seats.slice(byes);
+    var ties = [];
+    var lo = 0, hi = playing.length - 1;
+    while (lo < hi) { ties.push([playing[lo], playing[hi]]); lo++; hi--; }
+    return { byes: waiting, games: ties, odd: lo === hi ? playing[lo] : null };
+  }
+
   function bracket(seats, world, rng) {
     var byes = Math.max(0, Math.min(seats.length - 1, world.playoff.byes || 0));
     var alive = seats.slice();
@@ -1356,6 +1372,13 @@
     sim.titles = titleGames(teams, world, rng);
     sim.viewers = Math.round((sim.viewers
       + sim.titles.reduce(function (t, x) { return t + (x.game ? x.game.viewers : 0); }, 0)) * 10) / 10;
+    /* THE FIELD IS SET BEFORE THE BRACKET IS PLAYED, and that gap is a whole beat of the
+       calendar. Standing in the office on the playoff, championship weekend has happened and
+       the twelve are known; the games have not been played. So the field is computed with the
+       titles rather than with the bracket, and the office can draw who is in, who is seeded
+       where, who has a bye and who is the first team out, on the beat where all of that is
+       the only thing anybody in the sport is talking about. */
+    sim.field = field(teams, o.fieldWorld || world, sim.titles);
     if (!wantBracket) return sim;
 
     /* THE SCHEDULE WAS SET IN AUGUST AND THE FIELD IS PICKED IN DECEMBER, so they read two
@@ -1368,7 +1391,7 @@
        already watched. With it, a ruling in November changes the bracket and not the
        football, which is what happens in life. */
     var fw = o.fieldWorld || world;
-    var f = field(teams, fw, sim.titles);
+    var f = sim.field;
     var br = bracket(f.seats, fw, rng);
     br.rounds.forEach(function (round, ri) {
       round.forEach(function (g) {
@@ -1377,7 +1400,6 @@
           round: ri, finalRound: ri === br.rounds.length - 1 }, world);
       });
     });
-    sim.field = f;
     sim.bracket = br;
     /* THE REST OF DECEMBER. Named first so the bracket's own games claim the bowls that host
        them, then everybody else who won six. */
@@ -1395,7 +1417,8 @@
 
   var api = {
     play: play, league: league, schedule: schedule, field: field,
-    bracket: bracket, champions: champions, resume: resume, titleGames: titleGames,
+    bracket: bracket, firstRound: firstRound, champions: champions, resume: resume,
+    titleGames: titleGames,
     bowlSeason: bowlSeason, nameBracketBowls: nameBracketBowls, BOWL_MIN_WINS: BOWL_MIN_WINS,
     pollSeason: pollSeason, POLL_INERTIA: POLL_INERTIA, POLL_SIZE: POLL_SIZE,
     playGame: playGame, plausible: plausible, moneyDrift: moneyDrift,

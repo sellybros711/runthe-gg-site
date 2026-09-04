@@ -488,6 +488,49 @@ console.log('\n=== a season, and it survives the browser closing ===');
   await p.close();
 }
 
+console.log('\n=== the bracket, on the week it is the sport ===');
+{
+  /* ONE BEAT A YEAR THE FIELD IS SET AND NOTHING HAS BEEN PLAYED, and the office said nothing
+     about it: you pressed on from a standings table and a champion came out the other end.
+     The card is only correct on that beat, so both halves are asserted. On the playoff it is
+     up with a seeded field on it; before championship weekend has happened there is no field
+     to draw and it must stay down rather than draw an empty box. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(8));
+  await p.waitForTimeout(1800);
+  await pastScene(p);
+  await p.waitForTimeout(600);
+  ok('on the playoff the field is on the office',
+    await p.$eval('#off-fieldcard',(e)=>e.hidden)===false);
+  const seats=await p.$$eval('#off-field .fldt',(e)=>e.map((x)=>x.textContent.trim()));
+  ok('  with every seat on it', seats.length>=12, seats.length+' seats');
+  ok('  seeded, named, and with a record each',
+    seats.every((t)=>/^\d+/.test(t) && /\d+-\d+/.test(t)), (seats[0]||'').slice(0,50));
+  const rounds=await p.$$eval('#off-field .rn',(e)=>e.map((x)=>x.textContent.trim()));
+  ok('  and it says which are byes and which are games',
+    rounds.some((r)=>/bye/i.test(r)) && rounds.some((r)=>/first round/i.test(r)),
+    [...new Set(rounds)].join(', '));
+  /* NOTHING HAS BEEN PLAYED, which is the whole difference between this and the year in
+     review. A score on here would mean the office is showing a week that has not happened. */
+  const anyScore=await p.$$eval('#off-field .fldt s',(e)=>e.map((x)=>x.textContent));
+  ok('  and none of it carries a result',
+    anyScore.every((t)=>/champion|at large/.test(t)), (anyScore[0]||'').slice(0,40));
+  ok('  the first team out is named', /first team out/i.test(await txt(p,'#off-field')),
+    (await txt(p,'#off-field')).slice(-90));
+
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(5));
+  await p.waitForTimeout(1500);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+  ok('in October there is no field yet, so the card is down',
+    await p.$eval('#off-fieldcard',(e)=>e.hidden)===true);
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
 await b.close();
 console.log(bad?'\nFAILURES: '+bad:'\nall clear');
 process.exit(bad?1:0);

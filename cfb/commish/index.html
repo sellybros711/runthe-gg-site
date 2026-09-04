@@ -1404,6 +1404,34 @@
   /* A GAME, AS A SCORE AND AN AUDIENCE. The viewers number is what makes this more than a
      scoreboard: the biggest game of the week is the biggest game BECAUSE of who watched. */
   .gms{display:grid;gap:5px}
+  /* ── the field, before it is played ────────────────────────────────────────────
+     ONE WEEK A YEAR THE BRACKET IS THE SPORT and the office said nothing about it. By the
+     time you are standing on the playoff, championship weekend has happened and the seats
+     are filled; the games have not been played. So this is a fixture list with seeds on it,
+     not a result: who is in, who is seeded where, who sits out the first round, and the one
+     name every expansion argument is actually about, which is the team that missed.
+
+     PAIRED BY season.firstRound(), never by a rule written again here. */
+  .fld{display:grid;gap:5px}
+  .fldg{display:grid;grid-template-columns:auto 1fr;gap:2px 9px;padding:7px 9px;
+    border-radius:9px;background:var(--panel);border-left:2px solid var(--line)}
+  .fldg .rn{grid-column:1 / -1;font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-bottom:2px}
+  .fldt{display:flex;align-items:baseline;gap:7px;min-width:0;grid-column:1 / -1;
+    font-size:12.5px;color:var(--ink)}
+  .fldt i{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:800;
+    min-width:19px;height:19px;line-height:19px;text-align:center;border-radius:5px;
+    background:var(--sc,#334155);color:#06121f;flex:0 0 auto}
+  .fldt u{text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;font-weight:600}
+  .fldt s{text-decoration:none;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--dim-2);white-space:nowrap}
+  .fldg .vs{grid-column:1 / -1;font-family:var(--fn);font-size:8.5px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);padding-left:26px}
+  /* A BYE IS A ROW THAT IS NOT PLAYING, so it is quieter than one that is. */
+  .fldg.bye{background:transparent;border-left-color:var(--gold);opacity:.9}
+  .fldsnub{margin-top:9px;font-size:11.5px;line-height:1.45;color:var(--dim-2)}
+  .fldsnub b{color:var(--ink);font-weight:600}
   .gm2{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:7px 9px;
     border-radius:9px;background:var(--panel);border-left:2px solid var(--gc,var(--line))}
   .gm2 .t{display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--dim);
@@ -2041,6 +2069,15 @@
       <div class="eyebrow gold" style="margin-bottom:9px">Championship weekend</div>
       <div id="off-titles"></div>
     </div>
+    <!-- THE FIELD, ON THE BEAT IT IS ABOUT TO BE PLAYED. Championship weekend has happened
+         by the time you are standing on the playoff, so the twelve are known and the games
+         are not: this is the one week of the year when the bracket IS the sport, and the
+         office said nothing about it. See paintField(). -->
+    <div class="card flat" id="off-fieldcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px" id="off-fieldhead">The bracket</div>
+      <p class="dcsub" style="margin-bottom:10px" id="off-fieldsub"></p>
+      <div id="off-field"></div>
+    </div>
     <div class="card flat" id="off-tablecard" hidden>
       <div class="eyebrow" style="margin-bottom:4px" id="off-tablehead">The top of the sport</div>
       <!-- WHICH OF THE TWO LISTS THIS IS. The card below is a different ranking of the same
@@ -2400,7 +2437,7 @@
      State plays Michigan about one year in five, and nothing throws. -->
 <script src="rivals.js?v=2"></script>
 <script src="churn.js?v=3"></script>
-<script src="season.js?v=17"></script>
+<script src="season.js?v=18"></script>
 <script src="council.js?v=3"></script>
 <script src="feed.js?v=4"></script>
 <script src="calendar.js?v=5"></script>
@@ -3766,6 +3803,9 @@ function office(){
   $('off-tvcard').hidden=!inSeason;
   $('off-weekcard').hidden=!inSeason;
   $('off-titlecard').hidden=!inSeason||!done.titles;
+  /* THE FIELD IS SET AND THE GAMES ARE NOT PLAYED, which is true on exactly one beat of the
+     year and is the only week the whole sport is talking about one thing. See paintField(). */
+  paintField($('off-field'),$('off-fieldcard'),inSeason?sim:null);
   $('off-tablecard').hidden=!inSeason;
   $('off-pollcard').hidden=!inSeason;
   paintMotion($('off-motion'),$('off-motioncard'),world);
@@ -4835,6 +4875,51 @@ function paintTitles(el,sim){
       +'<span class="t w"><u>'+esc(t.team.school)+'</u><s>'+esc(t.conference)+'</s></span>'
       +'<span class="t"><u>no title game played</u><s></s></span></div>').join('')+'</div>';
   reveal(el.querySelector('.gms'));
+}
+
+/* THE FIELD, ON THE BEAT IT IS ABOUT TO BE PLAYED. Standing in the office on the playoff,
+   the twelve are known and none of the games have happened, so this draws a fixture list
+   rather than a result. The bracket as PLAYED is on the year in review, which is the screen
+   about a season that is over.
+
+   THE PAIRINGS COME FROM season.firstRound() and the seeds from the same field() the bracket
+   itself is built on, so this cannot disagree with the games that follow it. */
+function paintField(el,card,sim){
+  if(!el||!card) return;
+  const f=sim&&sim.field;
+  if(!f||!f.seats||!f.seats.length||!S||!S.firstRound){
+    card.hidden=true; el.innerHTML=''; return;
+  }
+  let r=null;
+  try{ r=S.firstRound(f.seats,world); }catch(e){ r=null; }
+  if(!r){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const line=(s)=>'<span class="fldt" style="--sc:'+esc(s.team.color||'#334155')+'">'
+    +'<i>'+s.seed+'</i><u>'+esc(s.team.school)+'</u>'
+    +'<s>'+s.team.wins+'-'+s.team.losses+' &middot; '
+    +esc(s.how==='auto'?'champion':'at large')+'</s></span>';
+  $('off-fieldhead').textContent='The field is set';
+  $('off-fieldsub').textContent=f.seats.length+' teams, seeded off championship weekend. '
+    +'None of it has been played. Press on and this is the week you get.';
+  el.innerHTML='<div class="fld">'
+    +r.byes.map((s)=>'<div class="fldg bye"><span class="rn">Bye to the quarter-final</span>'
+      +line(s)+'</div>').join('')
+    +r.games.map((g)=>'<div class="fldg" style="border-left-color:'
+      +esc(g[0].team.color||'#334155')+'">'
+      +'<span class="rn">First round</span>'+line(g[0])
+      +'<span class="vs">hosts</span>'+line(g[1])+'</div>').join('')
+    +(r.odd?'<div class="fldg bye"><span class="rn">Through without a game</span>'
+      +line(r.odd)+'</div>':'')
+    +'</div>'
+    /* THE BEST TEAM LEFT OUT is what every expansion argument in this sport is really
+       about, and it is one line. */
+    +(f.snub?'<p class="fldsnub">First team out: <b>'+esc(f.snub.school)+'</b> at '
+      +f.snub.wins+'-'+f.snub.losses+'. Every argument about the size of this thing is an '
+      +'argument about that name.</p>':'')
+    +(f.autobidsUnmet?'<p class="fldsnub"><b>'+f.autobidsUnmet
+      +(f.autobidsUnmet===1?' automatic bid':' automatic bids')+'</b> had no champion to go '
+      +'to, so the seats went at large. A guarantee is worth what the map leaves of it.</p>':'');
+  reveal(el.querySelector('.fld'));
 }
 
 /* ── the feed ──────────────────────────────────────────────────────────────────────
