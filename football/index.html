@@ -2316,6 +2316,32 @@ window.GA_ID='G-L29P5MRWKE';
   /* The One Franchise card themes to the player's own profile team color (--mc-a / --mc-a2
      / --mc-bd set in modeMenu). The red here is the fallback for signed-out players and
      anyone who has not chosen a club. */
+  /* A CARD THAT HOLDS ITS OWN BUTTONS IS NOT ONE. The container keeps the panel's look and
+     gives up every affordance of a control: no pointer, no lift, no press. Those belong to
+     the two doors inside it now, and a panel that reacts to being touched while its buttons
+     do too reads as two things happening at once. */
+  .modecard.mc-split{cursor:default}
+  .modecard.mc-split:hover{box-shadow:none}
+  .modecard.mc-split:active{transform:none}
+  .modecard.mc-split.mc-off{opacity:.5}
+  .mc-ways{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+  .mc-go{display:flex;flex-direction:column;gap:2px;align-items:flex-start;
+    padding:10px 12px;border-radius:11px;font-family:inherit;text-align:left;
+    border:1.5px solid var(--line-2);background:rgba(255,255,255,.05);color:var(--ink);
+    cursor:pointer;-webkit-appearance:none;appearance:none;
+    -webkit-tap-highlight-color:transparent;transition:transform .1s ease,background .15s ease}
+  .mc-go b{font-family:var(--fn);font-size:13px;font-weight:800;letter-spacing:.01em}
+  .mc-go span{font-family:var(--fn);font-size:10.5px;font-weight:600;color:var(--dim-2);
+    line-height:1.25}
+  .mc-go:not(:disabled):hover{background:rgba(255,255,255,.09)}
+  .mc-go:not(:disabled):active{transform:scale(.97)}
+  .mc-go:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .mc-go:disabled{cursor:default;opacity:.55}
+  /* The dynasty door wears the mode's gold, so the two ways in are told apart by colour as
+     well as by their names. */
+  .mc-go-dyn:not(:disabled){border-color:rgba(226,178,90,.5);background:rgba(226,178,90,.1)}
+  .mc-go-dyn:not(:disabled) b{color:#F3DDAE}
+  .mc-go-dyn:not(:disabled):hover{background:rgba(226,178,90,.16)}
   .modecard.mc-club{border-color:var(--mc-bd,rgba(239,68,68,.35))}
   .modecard.mc-era{border-color:rgba(59,130,246,.35)}
   .modecard .mc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
@@ -8982,7 +9008,11 @@ function ensureDynastyButton(){
 
 /* Same order of checks as the other two doors, and that order is the lesson written up over
    beginFullDraft: the account wall comes BEFORE the download. */
-function beginDynastyDraft(){
+/* `opts` rides through to beginDraft, so the same guarded door opens an open-draft dynasty
+   and a one-franchise one. Everything a dynasty has to check before it starts (eligibility,
+   an account with a name on it, the day's allowance, the run it would overwrite) is checked
+   once, here, rather than once per way in. */
+function beginDynastyDraft(opts){
   if(!canPlayDynasty()) return;
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
@@ -8991,6 +9021,10 @@ function beginDynastyDraft(){
      is free, so it can guard the door and save somebody a draft they would not be allowed to
      play, while the write waits until they have actually committed to the run. */
   if(dailyLeft('dynasty')<=0) return dailySpentSheet('dynasty');
+  /* AND A RUN IN PROGRESS IS NOT SOMETHING TO OVERWRITE QUIETLY. The front page cannot reach
+     this with a save on disk, because that button says Resume instead. The modes sheet can,
+     and dynClear() below would throw the run away without a word. */
+  if(dynRead()) return dynastyReplaceSheet(opts);
   /* Whatever was saved is gone the moment a new one is drafted. The sheet in front of this
      is where somebody agrees to that; by here it has been agreed. */
   dynClear();
@@ -8998,7 +9032,31 @@ function beginDynastyDraft(){
      button for a second first, because the mode drafted six defenders. It drafts an offense
      now, and an offense is in the boot bundle, so the wheel opens on the tap. */
   closeSheet();
-  dynastyIntro(()=>beginDraft({dynasty:true}));
+  dynastyIntro(()=>beginDraft(Object.assign({dynasty:true},opts||{})));
+}
+
+/* WHAT STARTING A SECOND DYNASTY COSTS THE FIRST, said before it happens rather than after.
+   Only reachable from the modes sheet: the front-page door offers Resume while a run exists,
+   so it never lands here. */
+function dynastyReplaceSheet(opts){
+  const save=dynRead(), r=save&&save.run;
+  const where=r?(r.seasonNo>1?'Season '+r.seasonNo:'Season 1'):'';
+  $('sheet-in').innerHTML='<div class="eyebrow gold">Dynasty</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">You have a run going</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 12px">'+
+      (where?'<b>'+esc(where)+'</b>, ':'')+
+      (r&&r.score>0?SCORE(r.score)+' points. ':'')+
+      'Starting a new one ends it. There is no way back to it.</p>'+
+    '<div style="margin-top:14px"><button class="btn" id="b-dr-keep">Keep playing it</button></div>'+
+    '<div style="margin-top:8px"><button class="btn ghost sm" id="b-dr-new">Start a new one anyway</button></div>';
+  $('sheet-in').dataset.kind='dynreplace';
+  openSheet();
+  $('b-dr-keep').onclick=()=>{ closeSheet(); dynResume(); };
+  $('b-dr-new').onclick=()=>{
+    dynClear();
+    closeSheet();
+    dynastyIntro(()=>beginDraft(Object.assign({dynasty:true},opts||{})));
+  };
 }
 
 /*
@@ -9605,21 +9663,34 @@ function modeMenu(){
      anyone off the early-access list. */
   const arrow='<svg class="mc-arrow" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
   const ct=canPlayTrade();
+  const cd=canPlayDynasty();
   const tradeLocked=locked||!ct;
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
     '<div class="modecards">'+
-      '<button class="modecard mc-club" id="b-mc-club"'+(locked?' disabled':'')+'>'+
+      /* ONE FRANCHISE IS TWO GAMES NOW, so the card is a panel with two doors rather than a
+         button with one. It cannot stay a <button>: a button inside a button is invalid and
+         the inner one stops being clickable, so the container is a div and the two ways in
+         are the buttons. The chevron goes with it, because a chevron promises one
+         destination and there are two. */
+      '<div class="modecard mc-club mc-split'+(locked?' mc-off':'')+'">'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           /* A shield with the star cut out of it rather than drawn inside it, so the
              mark is one shape and the detail is the gradient showing through. */
           '<path fill-rule="evenodd" d="M12 1.6 2.4 6.6v6.6c0 5.7 4.1 11 9.6 12.3 5.5-1.3 '+
             '9.6-6.6 9.6-12.3V6.6L12 1.6Zm0 5.2 1.6 3.5 3.8.4-2.8 2.6.8 3.8L12 15.2l-3.4 '+
             '1.9.8-3.8-2.8-2.6 3.8-.4L12 6.8Z"/>'+
-          '</svg></div><div class="mc-title">One Franchise</div>'+arrow+'</div>'+
+          '</svg></div><div class="mc-title">One Franchise</div></div>'+
         '<p>Select one of 32 franchises and build an offense exclusively from that team\'s history.</p>'+
-      '</button>'+
+        '<div class="mc-ways">'+
+          '<button class="mc-go" id="b-mc-club"'+(locked?' disabled':'')+'>'+
+            '<b>Quick draft</b><span>One season</span></button>'+
+          '<button class="mc-go mc-go-dyn'+(cd?'':' mc-soon')+'" id="b-mc-clubdyn"'+
+            ((locked||!cd)?' disabled':'')+'>'+
+            '<b>Dynasty</b><span>'+(cd?'Season after season':'Coming soon')+'</span></button>'+
+        '</div>'+
+      '</div>'+
       '<button class="modecard mc-era" id="b-mc-era"'+(locked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           /* A filled clock face with the hands cut out. The outlined version was a ring
@@ -9709,7 +9780,9 @@ function modeMenu(){
   const si=$('b-mc-signin');
   if(si) si.onclick=()=>{ wantModes=true; profileSheet(); };
   const club=$('b-mc-club');
-  if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(); };
+  if(club&&!locked) club.onclick=()=>{ closeSheet(); clubPicker(false); };
+  const clubDyn=$('b-mc-clubdyn');
+  if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{ closeSheet(); clubPicker(true); };
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
   const trade=$('b-mc-trade');
@@ -10449,7 +10522,15 @@ function myClubCode(){
   return (c&&E.TEAM_COLORS[c])?c:null;
 }
 
-function clubPicker(){
+/* `forDynasty` picks which game the chosen club is played as: one season, or a career out of
+   that club's history alone. The grid and the picking are identical, so the only thing that
+   changes is the copy above it and where a tile sends you. */
+function clubPicker(forDynasty){
+  const goClub=(code)=>{
+    closeSheet();
+    if(forDynasty) beginDynastyDraft({franchise:code});
+    else beginDraft({franchise:code});
+  };
   const mine=myClubCode();
   const cell=(code)=>{
     const tc=E.teamColors(code);
@@ -10465,17 +10546,33 @@ function clubPicker(){
      the mechanic and not the point: what a player is doing here is picking a team and trying
      to beat everyone else's attempt at that team's best-ever roster. That is the sentence,
      and the two facts under it are the two things they will want back later. */
-  $('sheet-in').innerHTML='<div class="eyebrow red">One Franchise</div>'+
+  $('sheet-in').innerHTML='<div class="eyebrow '+(forDynasty?'gold':'red')+'">One Franchise'+
+      (forDynasty?' Dynasty':'')+'</div>'+
     '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Pick a franchise</h2>'+
-    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">Draft the '+
-      'greatest team in its history. Every spin gives you that franchise in a different '+
-      'year, and you sign one player from each.</p>'+
-    '<ul class="modenotes">'+
-      '<li><b>Every franchise has its own leaderboard.</b> You are only up against people '+
-        'who picked the same one.</li>'+
-      '<li><b>Sign in to get on it.</b> Guest runs are played and counted, but not '+
-        'recorded.</li>'+
-    '</ul>'+
+    (forDynasty
+      /* THE PITCH IS THE SCARCITY. An open dynasty draws on every club in history and never
+         runs dry; one club has twenty-odd seasons in it, so the locked salary and the ageing
+         bite years earlier. That is the whole reason to play this rather than the open one,
+         so it is what the screen says. */
+      ? '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">One club, '+
+          'season after season, for as long as you can keep the job. You are drafting out of '+
+          'one team\'s whole history and nobody else\'s, so it runs thin far sooner than the '+
+          'open wheel does.</p>'+
+        '<ul class="modenotes">'+
+          '<li><b>Same rules as a Dynasty.</b> The cap never moves, salaries never fall, and '+
+            'one miss ends the run.</li>'+
+          '<li><b>A shallower pool.</b> Every spin is that franchise in a different year, so '+
+            'the players you can still afford run out faster.</li>'+
+        '</ul>'
+      : '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 10px">Draft the '+
+          'greatest team in its history. Every spin gives you that franchise in a different '+
+          'year, and you sign one player from each.</p>'+
+        '<ul class="modenotes">'+
+          '<li><b>Every franchise has its own leaderboard.</b> You are only up against people '+
+            'who picked the same one.</li>'+
+          '<li><b>Sign in to get on it.</b> Guest runs are played and counted, but not '+
+            'recorded.</li>'+
+        '</ul>')+
     '<div class="clubgrid">'+order.map(cell).join('')+'</div>'+
     '<div style="margin-top:14px;display:flex;gap:10px;justify-content:center">'+
     (mine?'<button class="btn sm" id="b-club-play">Play</button>':'')+
@@ -10483,9 +10580,9 @@ function clubPicker(){
   $('sheet-in').dataset.kind='teams';
   openSheet();
   $('b-club-no').onclick=closeSheet;
-  if(mine){const playBtn=$('b-club-play');if(playBtn) playBtn.onclick=()=>{closeSheet();beginDraft({franchise:mine});};}
+  if(mine){const playBtn=$('b-club-play');if(playBtn) playBtn.onclick=()=>goClub(mine);}
   $('sheet-in').querySelectorAll('.clubtile').forEach(b=>{
-    b.onclick=()=>{ closeSheet(); beginDraft({franchise:b.dataset.club}); };
+    b.onclick=()=>goClub(b.dataset.club);
   });
 }
 
