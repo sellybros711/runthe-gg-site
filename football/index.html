@@ -4017,21 +4017,32 @@ window.GA_ID='G-L29P5MRWKE';
   /* Thinner than it was. It starts full and drains, so at the first spin it was a solid
      slab of blue and the largest thing in the HUD, carrying no information at all: you
      always begin with the whole budget. A gauge, not a headline. */
-  .bar{height:5px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px;
+  /* Slightly taller than the 5px countdown it replaces: it now carries up to twelve slices
+     and a 5px bar cannot show a hairline between two of them. The radius lives on the track
+     and clips every slice to it, so the ends stay round with no notch where two meet. */
+  .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:9px;
     display:flex}
-  /* The radius comes off the fill and stays on the track, which clips it to the same shape:
-     identical on its own, and no notch where the dead stripe butts against it. */
-  .bar i{display:block;height:100%;background:var(--grad-blue);transition:width .4s ease;
-    flex:0 0 auto}
-  /* DEAD CAP, ON THE DRAFT SCREEN'S MONEY BAR. The blue is what is left to spend and this
-     sits directly after it, so the red reads as room you would have but do not. Striped
-     rather than solid, the same way the offseason bar draws its own dead stripe, so it says
-     absence rather than a third kind of spending. Zero width outside the Gauntlet. */
-  .bar u{display:block;height:100%;text-decoration:none;flex:0 0 auto;
-    background:repeating-linear-gradient(115deg,rgba(248,113,113,.72) 0 3px,
-      rgba(248,113,113,.22) 3px 7px);
-    transition:width .4s ease}
-  .bar i.low{background:var(--grad-red)}
+  /* ONE SLICE PER SIGNING, the width of his salary against the cap and the colour of the
+     position he plays, set inline. The transition is the whole animation: a signing grows
+     into its share instead of appearing at it.
+
+     NOT `.seg`, WHICH IS ALREADY TAKEN. That is the segmented control the sort bar and the
+     mode pickers are built from, and it carries border-radius:10px and overflow:hidden. A
+     slice wearing it came out as a rounded pill with a gap either side rather than as part
+     of one continuous bar, and nothing failed: it just quietly looked like a different
+     component. The radius on this bar belongs to the track, which clips the slices to it. */
+  .bar .capseg{display:block;height:100%;flex:0 0 auto;min-width:0;
+    transition:width .5s cubic-bezier(.22,1,.36,1)}
+  /* Cap that bought nobody you can point at: respin fees and, in Full Team, the coach.
+     Neutral, because it is not a position. */
+  .bar .capseg.other{background:rgba(255,255,255,.3)}
+  /* DEAD CAP, striped exactly the way the offseason bar draws the same quantity, so it reads
+     as absence rather than as a third kind of spending. */
+  .bar .capseg.dead{background:repeating-linear-gradient(115deg,rgba(248,113,113,.72) 0 3px,
+    rgba(248,113,113,.22) 3px 7px)}
+  /* A hairline against the ground between slices, so two players in similar colours still
+     read as two players. */
+  .bar .capseg+.capseg{box-shadow:inset 1px 0 0 rgba(7,11,19,.6)}
   .note{margin-top:8px;font-size:12.5px;font-weight:700;color:#fca5a5}
 
   /* ---------- ONE FRANCHISE WEARS THE TEAM'S COLORS ----------
@@ -4047,10 +4058,11 @@ window.GA_ID='G-L29P5MRWKE';
      everything that was arbitrary blue: the budget gauge, the field, the eyebrows, the
      forward button, your side of the score bug. */
 
-  /* The budget gauge, which was the largest arbitrary blue on the draft screen. */
-  body.oneteam .bar i{background:linear-gradient(135deg,var(--tw1) 0%,var(--tw2) 100%)}
-  /* Except when it is nearly empty, which is a warning and stays red. */
-  body.oneteam .bar i.low{background:var(--grad-red)}
+  /* THE BUDGET GAUGE IS NO LONGER IN HERE, and by the rule three paragraphs up rather than
+     by omission. It was the largest arbitrary blue on the draft screen and it is not
+     arbitrary any more: every slice of it is a position colour now, which is the one legend
+     the game has, so a club's colours cannot be allowed to say it. Dead cap on it is a
+     meaning too, and stays red for the same reason. */
 
   /* Eyebrows, which label every block on every screen of a run. --tink and not --t1: half
      the league's primary is unreadable on this page, and this is text. */
@@ -6215,10 +6227,12 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
         <div class="amt num" id="c-amt"></div>
         <div class="chemval num zero" id="c-chem">0.0%</div>
       </div>
-      <!-- Money left in blue, and immediately after it the dead cap in red: the room you
-           would also have if it were not owed to players who are gone. paintTop sizes both,
-           and the red takes no width outside the Gauntlet. -->
-      <div class="bar"><i id="c-bar" style="width:100%"></i><u id="c-dead" style="width:0%"></u></div>
+      <!-- THE CAP AS ALLOCATION, NOT AS A COUNTDOWN. Every player signed takes a slice the
+           width of his salary, in the colour of the position he plays, so where the money
+           went is a picture rather than a number you have to reconstruct. The cap that
+           bought nobody follows (respin fees, the coach), then dead cap in red stripes, and
+           whatever is left is the empty track. Built by paintCapBar(). -->
+      <div class="bar" id="c-bar"></div>
       <div class="capfoot">
         <div class="perslot num" id="c-per"></div>
         <span class="eyebrow spinc" id="d-count">Spin 1 of 6</span>
@@ -10411,6 +10425,59 @@ function paintSquadMandate(result){
     +'</span>';
 }
 
+/*
+ * ─── THE CAP BAR, AS ALLOCATION ────────────────────────────────────────────────────────
+ *
+ * The bar used to be one blue fill counting down what was left, which is the same fact the
+ * figure above it already states and says nothing about where the money went. It is now the
+ * cap itself, divided: a slice per player the width of his salary and the colour of his
+ * position, then the cap that bought nobody, then dead cap, then empty. The colours are the
+ * ones the field discs above already wear, so the bar and the formation name the same six
+ * players the same way.
+ *
+ * SALARY, NOT LIST PRICE. In the Gauntlet a player is paid what he was signed for and is
+ * worth something else entirely; everywhere else the two are the same number and this reads
+ * as it always did. Same rule as remaining(), so the slices and the empty space add to the
+ * cap exactly.
+ *
+ * SLICES ARE PATCHED, NOT REBUILT, and that is the whole animation. A width set on an
+ * element already in the document transitions; a width set on one created in the same frame
+ * does not, because it has no previous value to move from. So each paint reuses the children
+ * it has, appends only what is new at zero width, and gives it its share on the next frame.
+ * Rebuilding innerHTML here would make every signing appear rather than land.
+ */
+function paintCapBar(){
+  const track=$('c-bar'); if(!track||!run) return;
+  const cap=CAP()||1;
+  const segs=[];
+  (run.roster||[]).forEach((p,i)=>{
+    const sal=(run.dynasty&&run.salaries&&run.salaries[i]!=null)?run.salaries[i]:p.price_musd;
+    segs.push({cls:'capseg pos',bg:'var('+(COL[p.position]||'--flex')+')',v:sal||0});
+  });
+  const other=E.respinFees(run.respinsUsed||0)+((run.coach&&run.coach.price_musd)||0);
+  if(other>0.005) segs.push({cls:'capseg other',bg:'',v:other});
+  const dead=run.dynasty?R.deadOf(run):0;
+  if(dead>0.005) segs.push({cls:'capseg dead',bg:'',v:dead});
+  /* OVER THE CAP, EVERYTHING STILL SHOWS. A dynasty can walk into a draft already over, and
+     clipping the tail would drop the dead cap off the end, which is the slice most worth
+     seeing. The slices are scaled to the track instead: the ratios between them stay true,
+     the empty space is gone, and no empty space is what being over looks like. */
+  const total=segs.reduce((t,s)=>t+s.v,0);
+  const scale=total>cap?cap/total:1;
+  const had=track.children.length;
+  segs.forEach((s,i)=>{
+    let el=track.children[i];
+    const isNew=i>=had;
+    if(!el){ el=document.createElement('i'); el.style.width='0%'; track.appendChild(el); }
+    el.className=s.cls;
+    el.style.background=s.bg||'';
+    const w=Math.max(0,(s.v*scale/cap)*100);
+    if(isNew) requestAnimationFrame(()=>{ el.style.width=w+'%'; });
+    else el.style.width=w+'%';
+  });
+  for(let i=track.children.length-1;i>=segs.length;i--) track.children[i].remove();
+}
+
 /* ---------- draft ---------- */
 function paintTop(){
   paintDynastyDraftBar();
@@ -10433,18 +10500,7 @@ function paintTop(){
   else if(left===1) per.textContent=M(rem)+' for the last spot';
   else per.textContent=M(rem/left)+' per open spot, '+left+' left';
   per.classList.toggle('low',left>0&&rem/Math.max(1,left)<E.CONSTANTS.MIN_RESERVE_PER_SLOT_MUSD*2);
-  const b=$('c-bar'), remPct=Math.max(0,Math.min(100,rem/CAP()*100));
-  b.style.width=remPct+'%';
-  b.classList.toggle('low',low);
-  /* THE DEAD CAP, ALWAYS DRAWN WHERE THE MONEY IS. It is the one figure on this screen that
-     is spent and buys nobody, and it was a number in the banner with nothing on the bar. It
-     takes the width it actually owns, clamped to what is left of the track, and collapses to
-     nothing in the modes that have no such thing. */
-  const dEl=$('c-dead');
-  if(dEl){
-    const dead=(run&&run.dynasty)?R.deadOf(run):0;
-    dEl.style.width=Math.max(0,Math.min(100-remPct,(dead/CAP())*100))+'%';
-  }
+  paintCapBar();
   const chem=run.roster.length>1?E.resolveChemistry(run.roster,CTX,chemOpts()).multiplier:1;
   /* Signed when there is something to sign, because a bare "2.7%" does not say which way
      it went. Nothing is "None" rather than "+0.0%": a signed zero reads as a measurement
