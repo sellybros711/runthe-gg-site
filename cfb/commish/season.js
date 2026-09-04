@@ -821,6 +821,88 @@
     return { rounds: rounds, champion: playing[0] || alive[0] || null };
   }
 
+  /* ---------------- the trophy ----------------
+     THE ONE INDIVIDUAL AWARD EVERY FAN IN THIS SPORT FOLLOWS, and a mode about running the
+     sport had no idea it existed. A commissioner is not voting, which is exactly why it
+     belongs on their screen: it is the clearest single measure of what the season is ABOUT,
+     it moves every week, and it is the thing a stadium chants.
+
+     NOBODY IN IT IS NAMED, and that is not a limitation, it is the same rule the docket, the
+     cutscenes and the recruiting board hold. Every player in this sport is real and about
+     twenty years old. A race between "the quarterback at Oregon" and "the running back at
+     Georgia" names nobody, invents nobody, and is exactly how the argument sounds in October
+     anyway: the position and the program are what anybody actually says out loud.
+
+     WHAT PUTS SOMEBODY IN IT is what puts somebody in it in life: play for a team that is
+     winning, on an offense that scores, and be lucky. The first two are read off the season
+     the player is watching, so the race moves when the football does. */
+  var HEISMAN_POS = [
+    { id: 'qb', name: 'The quarterback', w: 0.56 },
+    { id: 'rb', name: 'The running back', w: 0.17 },
+    { id: 'wr', name: 'The receiver', w: 0.13 },
+    { id: 'edge', name: 'The edge rusher', w: 0.08 },
+    { id: 'db', name: 'The cornerback', w: 0.06 },
+  ];
+  /* Deterministic per school per year, so a term replays the same race. */
+  function shash(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return (h >>> 0) / 4294967295;
+  }
+  function positionFor(seed, school, year) {
+    var r = shash(seed + '|' + school + '|' + year + '|pos');
+    for (var i = 0; i < HEISMAN_POS.length; i++) {
+      r -= HEISMAN_POS[i].w;
+      if (r <= 0) return HEISMAN_POS[i];
+    }
+    return HEISMAN_POS[0];
+  }
+
+  /* The race as it stands, longest odds first out of the list. `n` is how many to return. */
+  function heisman(teams, world, n) {
+    if (!teams || teams.length < 4) return [];
+    var seed = String((world && world.seed) || 0);
+    var year = (world && world.year) || 0;
+    /* HOW MUCH THIS TEAM IS SCORING, standardized across the sport, because forty a game in a
+       league where everybody scores forty is not a campaign. */
+    var rates = teams.map(function (t) {
+      var g = Math.max(1, t.wins + t.losses);
+      return t.pf ? t.pf / g : (t.off || 24);
+    });
+    var mu = rates.reduce(function (a, b) { return a + b; }, 0) / rates.length;
+    var sd = Math.sqrt(rates.reduce(function (a, b) {
+      return a + (b - mu) * (b - mu); }, 0) / rates.length) || 1;
+
+    var pool = teams.map(function (t, i) {
+      var g = Math.max(1, t.wins + t.losses);
+      var winPct = t.wins / g;
+      return {
+        school: t.school, conference: t.conference, color: t.color,
+        wins: t.wins, losses: t.losses,
+        pos: positionFor(seed, t.school, year),
+        /* WINNING IS MOST OF IT, which is the complaint everybody has about this award and
+           is also true of it. Scoring is the rest, and the noise is the campaign. */
+        /* MEASURED: at a win weight of 1.6 the noise term was worth more than a whole extra
+           win in November, and the race led with a two loss team over an unbeaten one, which
+           is the one thing this award never does. */
+        score: 1.00 * (t.z || 0) + 2.40 * (winPct - 0.5)
+          + 0.60 * ((rates[i] - mu) / sd)
+          + 0.35 * (shash(seed + '|' + t.school + '|' + year + '|heis') - 0.5) * 2,
+      };
+    }).sort(function (a, b) { return b.score - a.score; }).slice(0, Math.max(3, n || 5));
+
+    /* A STRAW POLL RATHER THAN A SCORE. Nobody has ever read a Heisman number; everybody has
+       read "he is at forty-one percent and pulling away", and a share is also the only form
+       that says how CLOSE it is, which is the whole content of a race. */
+    var ex = pool.map(function (r) { return Math.exp(r.score * 2.2); });
+    var tot = ex.reduce(function (a, b) { return a + b; }, 0) || 1;
+    pool.forEach(function (r, i) {
+      r.rank = i + 1;
+      r.share = Math.round((ex[i] / tot) * 1000) / 10;
+    });
+    return pool;
+  }
+
   /* ---------------- the poll ----------------
      COLLEGE FOOTBALL ARGUES ABOUT A LIST OF TWENTY-FIVE NAMES FOR FOUR MONTHS and the mode
      did not have one. Every other sport's regular season is a table; this one's is a weekly
@@ -1418,7 +1500,7 @@
   var api = {
     play: play, league: league, schedule: schedule, field: field,
     bracket: bracket, firstRound: firstRound, champions: champions, resume: resume,
-    titleGames: titleGames,
+    titleGames: titleGames, heisman: heisman, HEISMAN_POS: HEISMAN_POS,
     bowlSeason: bowlSeason, nameBracketBowls: nameBracketBowls, BOWL_MIN_WINS: BOWL_MIN_WINS,
     pollSeason: pollSeason, POLL_INERTIA: POLL_INERTIA, POLL_SIZE: POLL_SIZE,
     playGame: playGame, plausible: plausible, moneyDrift: moneyDrift,

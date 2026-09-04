@@ -489,6 +489,69 @@ console.log('\n=== a season, and it survives the browser closing ===');
   await p.close();
 }
 
+console.log('\n=== the office is a commissioner\'s desk in November ===');
+{
+  /* WHAT A COMMISSIONER WOULD ACTUALLY HAVE IN FRONT OF THEM. The office used to carry the
+     national table, a poll and five scores, and everything else the sport is doing that week
+     happened off screen: the eleven league races that decide who takes the automatic bids
+     this office sets, the award every stadium chants about, and a coaching carousel the
+     engine had been running behind the player's back since the league started churning.
+
+     ALL THREE ARE ASSERTED ON AND OFF, because a card that is right on one beat and wrong on
+     eight is worse than no card. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(6,2028));
+  await p.waitForTimeout(2200);
+  await pastScene(p);
+  await p.waitForTimeout(900);
+
+  ok('November puts every league on the office',
+    await p.$eval('#off-leaguecard',(e)=>e.hidden)===false);
+  const lgs=await p.$$eval('#off-leagues .lg',(e)=>e.length);
+  ok('  one table each', lgs>=8, lgs+' leagues');
+  const rows=await p.$$eval('#off-leagues .lgr',(e)=>e.map((x)=>({
+    rank:x.querySelector('i').textContent.trim(),
+    conf:x.querySelector('u').textContent.trim(),
+    all:x.querySelector('s').textContent.trim()})));
+  ok('  with a conference record and an overall one',
+    rows.length>=20 && rows.every((r)=>/^\d+-\d+$/.test(r.conf) && /^\d+-\d+$/.test(r.all)),
+    (rows[0]||{}).conf+' of '+(rows[0]||{}).all);
+  ok('  and the leader is marked',
+    (await p.$$eval('#off-leagues .lgr.top',(e)=>e.length))===lgs);
+
+  ok('and the trophy race is on it too',
+    await p.$eval('#off-heiscard',(e)=>e.hidden)===false);
+  const heis=await p.$$eval('#off-heis .hsr .hn b',(e)=>e.map((x)=>x.textContent.trim()));
+  ok('  five of them', heis.length===5, heis.length+' in the race');
+  /* NOBODY IN IT IS A PERSON, which is the rule the whole mode is built on and the one place
+     a real board would be a list of twenty year olds. */
+  ok('  and every one of them is a position at a school rather than a name',
+    heis.every((t)=>/^The (quarterback|running back|receiver|edge rusher|cornerback) at /.test(t)),
+    (heis[0]||''));
+  const shares=await p.$$eval('#off-heis .hb u',(e)=>e.map((x)=>parseFloat(x.textContent)));
+  ok('  with a share of the poll each, adding up',
+    Math.abs(shares.reduce((t,x)=>t+x,0)-100)<1, shares.join(' + '));
+
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(0,2028));
+  await p.waitForTimeout(2000);
+  await pastScene(p);
+  await p.waitForTimeout(900);
+  ok('in the winter the leagues card goes down',
+    await p.$eval('#off-leaguecard',(e)=>e.hidden)===true);
+  ok('  and the trophy with it', await p.$eval('#off-heiscard',(e)=>e.hidden)===true);
+  ok('and the carousel comes up instead',
+    await p.$eval('#off-wheelcard',(e)=>e.hidden)===false);
+  const jobs=await p.$$eval('#off-wheel .whc',(e)=>e.length);
+  ok('  with the jobs that changed hands on it', jobs>0, jobs+' chips');
+  ok('  counted in the heading', /\d+ jobs? changed hands/.test(await txt(p,'#off-wheelhead')),
+    await txt(p,'#off-wheelhead'));
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
 console.log('\n=== the board, on the beats when there is no football ===');
 {
   /* FEBRUARY IS THE SPORT'S SECOND SEASON and the office had a map on it and nothing else.

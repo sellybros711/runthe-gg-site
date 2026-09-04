@@ -1404,6 +1404,63 @@
   /* A GAME, AS A SCORE AND AN AUDIENCE. The viewers number is what makes this more than a
      scoreboard: the biggest game of the week is the biggest game BECAUSE of who watched. */
   .gms{display:grid;gap:5px}
+  /* ── the trophy ────────────────────────────────────────────────────────────────
+     A STRAW POLL RATHER THAN A LIST, because the content of a race is how close it is, and a
+     ranked list of five names says nothing about that. The bar is the share and the share is
+     the story: forty-one and pulling away is a different November from four of them inside
+     six points. */
+  .heis{display:grid;gap:5px}
+  .hsr{display:grid;grid-template-columns:20px 1fr auto;gap:9px;align-items:center;
+    padding:6px 9px;border-radius:9px;background:var(--panel);
+    border-left:2px solid var(--hc,var(--line))}
+  .hsr i{font-style:normal;font-family:var(--fd);font-size:15px;line-height:1;
+    color:var(--dim-2);text-align:right}
+  .hsr .hn{min-width:0}
+  .hsr .hn b{display:block;font-family:var(--fn);font-size:12.5px;font-weight:700;
+    color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hsr .hn s{display:block;text-decoration:none;font-size:10.5px;color:var(--dim-2)}
+  .hsr .hb{width:74px;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+  .hsr .hb u{text-decoration:none;font-family:var(--fn);font-size:12px;font-weight:800;
+    color:var(--ink)}
+  .hsr .hb span{display:block;width:100%;height:4px;border-radius:2px;
+    background:rgba(255,255,255,.09);overflow:hidden}
+  .hsr .hb span em{display:block;height:100%;background:var(--hc,var(--gold));
+    transition:width .55s var(--ez)}
+  /* ── every league's own race ───────────────────────────────────────────────────
+     THE NATIONAL TABLE IS ONE OF THE TWO THINGS A COMMISSIONER READS IN NOVEMBER and the
+     office only had that one. The other is who wins each conference, because those are the
+     teams that take the automatic bids this office sets the number of, and a player who has
+     just moved that number from five to eight had no way to see what they had done.
+
+     THE LEADER IS THE ROW THAT MATTERS and the two behind it are why it is still a race, so
+     three rows a league and no more: eleven leagues at full length is a spreadsheet. */
+  .lgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(224px,1fr));gap:9px}
+  .lg{min-width:0}
+  .lg>b{display:flex;align-items:baseline;gap:6px;font-family:var(--fn);font-size:9px;
+    font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);
+    padding-bottom:4px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .lg>b s{text-decoration:none;margin-left:auto;color:var(--dim-2);letter-spacing:.04em}
+  .lgr{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:baseline;
+    padding:3px 0;font-size:12px;color:var(--dim)}
+  .lgr i{font-style:normal;font-family:var(--fn);font-size:9.5px;font-weight:800;width:9px;
+    color:var(--dim-2)}
+  .lgr b{font-weight:600;color:var(--dim);min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .lgr u{text-decoration:none;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--ink)}
+  .lgr s{text-decoration:none;font-size:11px;color:var(--dim-2);min-width:34px;text-align:right}
+  /* THE ONE ON TOP, in its own color, because the whole card is read for that row. */
+  .lgr.top b{color:var(--ink);font-weight:700}
+  .lgr.top i{color:var(--tc,var(--gold))}
+
+  /* ── the carousel ──────────────────────────────────────────────────────────────
+     Same chips the year in review uses, on the beats where December has just happened and
+     the player is standing in the office wondering what changed. */
+  .whl{display:flex;flex-wrap:wrap;gap:6px}
+  .whc{display:flex;flex-direction:column;gap:1px;padding:6px 9px;border-radius:9px;
+    background:var(--panel);border-left:2px solid var(--tc,var(--line))}
+  .whc b{font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--ink)}
+  .whc em{font-style:normal;font-size:10.5px;color:var(--dim-2)}
   /* ── the recruiting board ──────────────────────────────────────────────────────
      A RANK, A SCHOOL AND A NUMBER, which is every recruiting board anybody has ever read.
      The one column that is not on a real one is how far the class sits from what the program
@@ -2125,6 +2182,32 @@
         above an unbeaten one.</p>
       <div id="off-table"></div>
     </div>
+    <!-- THE ONE INDIVIDUAL AWARD EVERY FAN IN THIS SPORT FOLLOWS, and it names nobody: the
+         race is between the quarterback at Oregon and the running back at Georgia, which is
+         how the argument sounds out loud anyway. See heisman() in season.js. -->
+    <div class="card flat" id="off-heiscard" hidden>
+      <div class="eyebrow" style="margin-bottom:4px">The trophy</div>
+      <p class="dcsub" style="margin-bottom:9px">Where the straw poll is this week. You do not
+        get a vote, which has never stopped anybody asking what you think.</p>
+      <div id="off-heis"></div>
+    </div>
+    <!-- EVERY LEAGUE'S OWN RACE. The table above is the national field as this office would
+         seed it, which is one of the two things a commissioner reads in November. The other is
+         who is going to win each conference, because that is who takes the automatic bids
+         this office decides the number of. See paintLeagues(). -->
+    <div class="card flat" id="off-leaguecard" hidden>
+      <div class="eyebrow" style="margin-bottom:4px">The leagues</div>
+      <p class="dcsub" style="margin-bottom:9px" id="off-leaguesub"></p>
+      <div id="off-leagues"></div>
+    </div>
+    <!-- WHO IS OUT OF A JOB. The engine has worked this out since the league started churning
+         and it only ever appeared on the year in review, which is a screen you see once. A
+         carousel nobody is told about is the same as no carousel. See paintWheel(). -->
+    <div class="card flat" id="off-wheelcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px" id="off-wheelhead">The carousel</div>
+      <p class="dcsub" style="margin-bottom:9px" id="off-wheelsub"></p>
+      <div id="off-wheel"></div>
+    </div>
     <!-- THE POLL, WHICH IS NOT THE TABLE ABOVE IT AND THAT IS THE POINT. The table is the
          field as this office's own rules would seed it; this is what the voters think, which
          is slower, stickier and frequently wrong, and the gap between the two is the argument
@@ -2473,7 +2556,7 @@
      State plays Michigan about one year in five, and nothing throws. -->
 <script src="rivals.js?v=2"></script>
 <script src="churn.js?v=3"></script>
-<script src="season.js?v=18"></script>
+<script src="season.js?v=19"></script>
 <!-- The board. Captures churn.js and season.js at load time, so after both of them. -->
 <script src="recruiting.js?v=1"></script>
 <script src="council.js?v=3"></script>
@@ -3851,10 +3934,18 @@ function office(){
   paintSaid($('off-said'),$('off-saidcard'));
   paintYear($('off-year'),$('off-yearcard'));
   $('off-mapcard').hidden=inSeason;
-  /* OUT OF SEASON ONLY, which is when it is the news. In October nobody is looking at
-     February and the office has a poll, a table and a slate to draw instead. */
-  if(inSeason){ $('off-recruitcard').hidden=true; }
-  else paintBoard($('off-recruit'),$('off-recruitcard'));
+  /* OUT OF SEASON ONLY, which is when they are the news. In October nobody is looking at
+     February and the office has a poll, a table, eleven league races and a slate to draw
+     instead. */
+  if(inSeason){
+    $('off-recruitcard').hidden=true;
+    $('off-wheelcard').hidden=true;
+  }else{
+    paintBoard($('off-recruit'),$('off-recruitcard'));
+    paintWheel($('off-wheel'),$('off-wheelcard'));
+  }
+  paintLeagues($('off-leagues'),$('off-leaguecard'),inSeason?sim:null);
+  paintHeisman($('off-heis'),$('off-heiscard'),inSeason?sim:null);
   if(inSeason){
     paintTv($('off-tv'),sim);
     paintWeek($('off-week'),sim);
@@ -4917,6 +5008,96 @@ function paintTitles(el,sim){
       +'<span class="t w"><u>'+esc(t.team.school)+'</u><s>'+esc(t.conference)+'</s></span>'
       +'<span class="t"><u>no title game played</u><s></s></span></div>').join('')+'</div>';
   reveal(el.querySelector('.gms'));
+}
+
+/* ── the trophy ────────────────────────────────────────────────────────────────────
+   NOBODY IN IT IS NAMED. Every player in this sport is real and about twenty years old, so
+   the race is between the quarterback at Oregon and the running back at Georgia, which is
+   the same rule the docket, the cutscenes and the recruiting board hold and is also how the
+   argument actually sounds in October. See heisman() in season.js for what puts somebody in
+   it, which is what puts somebody in it in life: win, score, and be lucky. */
+function paintHeisman(el,card,sim){
+  if(!el||!card) return;
+  if(!sim||!S||!S.heisman||!sim.teams){ card.hidden=true; el.innerHTML=''; return; }
+  let race=[];
+  try{ race=S.heisman(sim.teams,world,5)||[]; }catch(e){ race=[]; }
+  if(!race.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const lead=race[0].share||1;
+  el.innerHTML='<div class="heis">'+race.map((r)=>
+    '<div class="hsr" style="--hc:'+esc(r.color||'#334155')+'">'
+    +'<i>'+r.rank+'</i>'
+    +'<span class="hn"><b>'+esc(r.pos.name+' at '+r.school)+'</b>'
+    +'<s>'+esc(r.conference||'')+' &middot; '+r.wins+'-'+r.losses+'</s></span>'
+    +'<span class="hb"><u>'+r.share.toFixed(1)+'%</u>'
+    +'<span><em data-w="'+Math.round((r.share/lead)*100)+'%" style="width:0"></em></span>'
+    +'</span></div>').join('')+'</div>';
+  grow(el); reveal(el.querySelector('.heis'));
+}
+
+/* ── every league's own race ───────────────────────────────────────────────────────
+   The national table beside this one is the field as this office would seed it. This is the
+   other half of a November: eleven conference races, whose winners take the automatic bids
+   whose NUMBER this office sets. A player who moves that number from five to eight was
+   changing the value of something the office never showed them. */
+function paintLeagues(el,card,sim){
+  if(!el||!card) return;
+  if(!sim||!sim.teams||!sim.teams.length){ card.hidden=true; el.innerHTML=''; return; }
+  const by={};
+  sim.teams.forEach((t)=>{ (by[t.conference]=by[t.conference]||[]).push(t); });
+  const names=Object.keys(by).filter((c)=>by[c].length>=2).sort((a,b)=>
+    /* Biggest league first, which on this map is also the order a fan would put them in. */
+    by[b].length-by[a].length||a.localeCompare(b));
+  if(!names.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  $('off-leaguesub').textContent='Who wins each one, because those are the teams taking the '
+    +(world.playoff.autobids||0)+' automatic bids you set.';
+  el.innerHTML='<div class="lgs">'+names.map((c)=>{
+    /* CONFERENCE RECORD FIRST, which is how a league is actually won, then the overall
+       record, then how good they are. A tie broken on nothing at all would reorder itself
+       every time the office repainted. */
+    const rows=by[c].slice().sort((a,b)=>
+      (b.confWins-b.confLosses)-(a.confWins-a.confLosses)
+      ||(b.wins-b.losses)-(a.wins-a.losses)||b.z-a.z).slice(0,3);
+    return '<div class="lg"><b>'+esc(c)+'<s>'+by[c].length+'</s></b>'
+      +rows.map((t,i)=>'<div class="lgr'+(i?'':' top')+'" style="--tc:'+esc(t.color)+'">'
+        +'<i>'+(i+1)+'</i><b>'+esc(t.school)+'</b>'
+        +'<u>'+t.confWins+'-'+t.confLosses+'</u>'
+        +'<s>'+t.wins+'-'+t.losses+'</s></div>').join('')
+      +'</div>';
+  }).join('')+'</div>';
+  reveal(el.querySelector('.lgs'));
+}
+
+/* ── the carousel, in the month it happens ─────────────────────────────────────────
+   churn.js has fired coaches every December since the league started churning and the only
+   place it appeared was the year in review, which is a screen you see once a year and then
+   press past. So the office carries it through the winter, which is when a commissioner
+   would actually be hearing about it. */
+function paintWheel(el,card){
+  if(!el||!card) return;
+  const CH=window.PS_CFB_CHURN;
+  const years=Math.max(0,world.year-world.startYear);
+  if(!CH||!CH.carouselFor||!S||!TEAMS.length||!years){
+    card.hidden=true; el.innerHTML=''; return;
+  }
+  let wheel=[];
+  try{ wheel=CH.carouselFor(S.league(seasonBase(),TEAMS),TEAMS,world.seed,years)||[]; }
+  catch(e){ wheel=[]; }
+  if(!wheel.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  /* THE NUMBER FIRST, because a carousel is a scale before it is a list: fourteen jobs is a
+     bloodbath and three is a quiet winter, and that is the thing anybody reacts to. */
+  $('off-wheelhead').textContent=wheel.length
+    +(wheel.length===1?' job changed hands':' jobs changed hands');
+  $('off-wheelsub').textContent='Nobody in this office hired any of them. It is still the '
+    +'reason half the sport will look different in September.';
+  el.innerHTML='<div class="whl">'+wheel.slice(0,12).map((c)=>
+    '<span class="whc" style="--tc:'+esc(c.color||'#334155')+'">'
+    +'<b>'+esc(c.school)+'</b><em>'+esc(c.conference||'')+'</em></span>').join('')
+    +(wheel.length>12?'<span class="whc"><b>+'+(wheel.length-12)+'</b><em>more</em></span>':'')
+    +'</div>';
+  reveal(el.querySelector('.whl'));
 }
 
 /* ── the recruiting board ──────────────────────────────────────────────────────────
