@@ -2432,9 +2432,21 @@ window.GA_ID='G-L29P5MRWKE';
      the other chip's visible ring and stole the tap ("it picked the option I didn't choose"). Only the
      parts you can actually SEE take taps. touch-action:manipulation kills the iOS double-tap-zoom delay,
      which otherwise swallows or mis-targets a tap on iOS Chrome. */
-  .dctarget{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;
-    background:none;border:none;padding:0;cursor:pointer;z-index:6;pointer-events:none;
+  /* The RING is the aim point, so the ring is what the element is anchored by: it sits exactly on the
+     spot the ball is being sent to, and the label hangs off it. It used to be the other way round (the
+     whole chip was anchored by its BOTTOM and the ring rode along underneath), which meant every nudge
+     that moved a label to stop two chips overlapping also moved the ring, and the safe target ended up
+     drawn a few yards in front of the ball instead of on the middle of the green (owner: "each circle
+     should actually be where you are trying to hit it"). Nothing below may move .dtr. */
+  .dctarget{position:absolute;transform:translate(-50%,-50%);width:var(--dtw,26px);height:var(--dth,14px);
+    display:block;background:none;border:none;padding:0;cursor:pointer;z-index:6;pointer-events:auto;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.55))}
+  .dctarget .dtw{position:absolute;left:50%;bottom:calc(100% + var(--dtgap,9px));transform:translateX(calc(-50% + var(--dtx,0px)));
+    display:flex;flex-direction:column;align-items:center;white-space:nowrap}
+  /* near the top of the frame there is no room above the ring, so the label drops underneath it and the
+     pointer turns over to keep pointing AT the ring */
+  .dctarget.lo .dtw{bottom:auto;top:calc(100% + var(--dtgap,9px));flex-direction:column-reverse}
+  .dctarget.lo .dtp{transform:rotate(180deg);margin-top:0;margin-bottom:-1px}
   .dctarget .dtl,.dctarget .dtr{pointer-events:auto}
   /* the chip carries a colour-coded DOT, not an inline icon: an emoji-derived <svg class="ic"> inside a
      chip is what iOS was drawing as a full-width bar with the text pushed under it. */
@@ -2444,7 +2456,8 @@ window.GA_ID='G-L29P5MRWKE';
   .dctarget .dtl::before{content:'';width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:currentColor}
   .dctarget.safe .dtl::before{background:transparent;box-shadow:inset 0 0 0 2px currentColor}
   .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
-  .dctarget .dtr{width:26px;height:14px;border:2.5px solid;border-radius:50%;margin-top:2px;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
+  .dctarget .dtr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:14px;
+    border:2.5px solid;border-radius:50%;margin:0;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
   .dctarget.agg .dtl{background:rgba(180,26,26,.94);border-color:#ff5a4d}
   .dctarget.agg .dtp{border-top-color:#ff5a4d}
   /* RISKY: big, dashed, wide landing spread */
@@ -2453,8 +2466,9 @@ window.GA_ID='G-L29P5MRWKE';
   .dctarget.safe .dtp{border-top-color:#22c7a6}
   /* SAFE: small, tight, solid landing spread */
   .dctarget.safe .dtr{width:19px;height:11px;border-color:#22c7a6}
-  .dctarget:active{transform:translate(-50%,calc(-100% + 2px))}
-  @keyframes dtRing{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.28);opacity:.45}}
+  .dctarget:active .dtw{transform:translateX(calc(-50% + var(--dtx,0px))) translateY(2px)}
+  @keyframes dtRing{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.9}
+    50%{transform:translate(-50%,-50%) scale(1.28);opacity:.45}}
   @media (prefers-reduced-motion:reduce){ .dctarget .dtr{animation:none} }
   /* CS378: clearer, more legible on-course decision cards - bigger type, tinted card backgrounds,
      bright colour-coded odds so the stat + percentages read at a glance */
@@ -2491,8 +2505,10 @@ window.GA_ID='G-L29P5MRWKE';
      window is genuinely narrower than a 1600px one and a single jump overshoots the smaller of the two.
      Scoped to .scr-dailyround: only that screen's window is widened (every other hole view is still
      capped at 470px, where phone type is correct). Percentages, not px, everywhere the layout depends
-     on them - dPlaceTargets clamps the tap-targets to HV_DEC_TOP% of the window, so the docked decision
-     panel may grow without pushing a target under it. */
+     on them, so the docked decision panel may grow without the tap-targets moving with it. A target is
+     drawn at the spot it aims at and nowhere else (see dPlaceTargets), so one CAN sit behind the panel
+     on a short layup; the panel's own cards are the primary control, and a ring that lies about where
+     the ball is going is worse than a ring that is partly covered. */
   @media (min-width:1000px){
     .screen.scr-dailyround .bcasthd .bc-name{font-size:24px}
     .screen.scr-dailyround .bcasthd .bc-meta{font-size:13px}
@@ -21181,17 +21197,24 @@ var _csStyled=false;
 function csStyleOnce(){
   if(_csStyled) return; _csStyled=true;
   document.head.appendChild($(`<style>
+  /* ONE type scale for the whole broadcast, because a cutscene is a full-screen picture and its words
+     were sized in fixed pixels: 15px of dialogue read fine on a phone and was lost on a desktop, where
+     the same 15px sat under a stage ten times the area. Every readable string below is a multiple of
+     --csu, so the caption keeps its proportion to the screen at any size. vmin, not vw: on a desktop the
+     stage is bounded by HEIGHT, and vw would blow the caption up on a wide short window. The floor is
+     exactly today's phone size, so mobile is unchanged and only the desktop end grows. */
   .csov{position:fixed;inset:0;z-index:62;display:flex;flex-direction:column;overflow:hidden;cursor:pointer;
+    --csu:clamp(15px,2.4vmin,26px);
     background:#030709;background-image:radial-gradient(130% 90% at 50% 0%, rgba(12,44,62,.95), rgba(3,7,9,1) 66%)}
   .cs-hud{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px;
     border-bottom:1px solid rgba(255,255,255,.08)}
-  .cs-out{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:999px;
-    border:1px solid currentColor;font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase}
+  .cs-out{display:inline-flex;align-items:center;gap:calc(var(--csu)*.47);padding:calc(var(--csu)*.27) calc(var(--csu)*.67);border-radius:999px;
+    border:1px solid currentColor;font:800 calc(var(--csu)*.667)/1 var(--body);letter-spacing:.18em;text-transform:uppercase}
   .cs-live{width:7px;height:7px;border-radius:50%;background:#ff5b52;box-shadow:0 0 8px #ff5b52;animation:csPulse 1.5s ease-in-out infinite}
-  .cs-where{flex:1;min-width:0;text-align:right;font:700 10.5px/1.35 var(--body);letter-spacing:.05em;color:#7fa8b8;
+  .cs-where{flex:1;min-width:0;text-align:right;font:700 calc(var(--csu)*.70)/1.35 var(--body);letter-spacing:.05em;color:#7fa8b8;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cs-skip{flex:0 0 auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#cfe0e8;
-    border-radius:999px;padding:5px 11px;font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+    border-radius:999px;padding:calc(var(--csu)*.33) calc(var(--csu)*.73);font:800 calc(var(--csu)*.667)/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
   .cs-stage{flex:1 1 auto;position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:10px 10px 14px;overflow:hidden}
   .cs-stage::before{content:'';position:absolute;left:50%;bottom:0;width:min(420px,86%);height:70%;transform:translateX(-50%);
     background:radial-gradient(60% 70% at 50% 100%, var(--csglow,rgba(95,208,224,.20)), transparent 72%);pointer-events:none;z-index:1}
@@ -21303,39 +21326,39 @@ function csStyleOnce(){
     animation:csPop 5.2s ease-out infinite}
   @keyframes csPop{0%{opacity:0}2%{opacity:.34}6%{opacity:0}100%{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .cs-bulb,.cs-pop{animation:none!important;display:none} }
-  .cs-frame{font:800 9px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
+  .cs-frame{font:800 calc(var(--csu)*.60)/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:calc(var(--csu)*.2) calc(var(--csu)*.47);border-radius:999px;
     border:1px solid currentColor}
   .cs-body{flex:0 0 auto;padding:0 14px calc(16px + env(safe-area-inset-bottom,0px))}
-  .cs-card{max-width:520px;margin:0 auto;background:linear-gradient(180deg,rgba(13,35,52,.96),rgba(6,15,22,.98));
-    border:1px solid #2f6f86;border-left-width:4px;border-radius:14px;padding:13px 15px 15px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+  .cs-card{max-width:calc(var(--csu)*34.7);margin:0 auto;background:linear-gradient(180deg,rgba(13,35,52,.96),rgba(6,15,22,.98));
+    border:1px solid #2f6f86;border-left-width:4px;border-radius:14px;padding:calc(var(--csu)*.87) var(--csu) var(--csu);box-shadow:0 18px 50px rgba(0,0,0,.55)}
   .cs-who{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-  .cs-nm{font:800 14px/1.1 var(--body);color:#fff}
-  .cs-role{font:700 10px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#7fa8b8}
-  .cs-tx{color:#eef4f7;font-size:15px;line-height:1.45;min-height:2.9em}
+  .cs-nm{font:800 calc(var(--csu)*.933)/1.1 var(--body);color:#fff}
+  .cs-role{font:700 calc(var(--csu)*.667)/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#7fa8b8}
+  .cs-tx{color:#eef4f7;font-size:var(--csu);line-height:1.45;min-height:2.9em}
   .cs-caret{display:inline-block;width:7px;color:#5fd0e0;animation:csPulse 1s steps(2) infinite}
-  .cs-next{margin-top:9px;font:700 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#5f8ea0}
+  .cs-next{margin-top:calc(var(--csu)*.6);font:700 calc(var(--csu)*.667)/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#5f8ea0}
   .cs-feed{display:flex;flex-direction:column;gap:7px;margin-top:2px}
   .cs-post{display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
     border-radius:10px;padding:8px 10px}
-  .cs-av{flex:0 0 auto;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font:800 11px/1 var(--body);color:#06131a}
-  .cs-ph{font:800 11px/1.2 var(--body);color:#9fc4d2}
-  .cs-pt{color:#dbe7ee;font-size:13px;line-height:1.35;margin-top:2px}
+  .cs-av{flex:0 0 auto;width:calc(var(--csu)*1.6);height:calc(var(--csu)*1.6);border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font:800 calc(var(--csu)*.733)/1 var(--body);color:#06131a}
+  .cs-ph{font:800 calc(var(--csu)*.733)/1.2 var(--body);color:#9fc4d2}
+  .cs-pt{color:#dbe7ee;font-size:calc(var(--csu)*.867);line-height:1.35;margin-top:2px}
   /* the decision, inside the conversation: the question is a line, the answers are the next line */
-  .cs-kick{font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#5fd0e0;margin-bottom:7px}
+  .cs-kick{font:800 calc(var(--csu)*.633)/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#5fd0e0;margin-bottom:calc(var(--csu)*.47)}
   .cs-choices{display:grid;gap:8px;margin-top:11px}
-  .cs-opt{display:block;width:100%;text-align:left;position:relative;padding:11px 13px 11px 30px;border-radius:11px;
-    border:1px solid #2f6f86;background:rgba(9,32,46,.72);color:#eef4f7;font:800 14px/1.3 var(--body);cursor:pointer;
+  .cs-opt{display:block;width:100%;text-align:left;position:relative;padding:calc(var(--csu)*.73) calc(var(--csu)*.87) calc(var(--csu)*.73) calc(var(--csu)*2);border-radius:11px;
+    border:1px solid #2f6f86;background:rgba(9,32,46,.72);color:#eef4f7;font:800 calc(var(--csu)*.933)/1.3 var(--body);cursor:pointer;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;
     transition:border-color .15s ease,background .15s ease,transform .12s ease}
   .cs-opt:hover,.cs-opt:focus-visible{border-color:#5fd0e0;background:rgba(14,52,72,.92);outline:none;transform:translateX(2px)}
-  .cs-opt .cs-cur{position:absolute;left:11px;top:14px;color:#5fd0e0;opacity:0;transition:opacity .15s ease}
+  .cs-opt .cs-cur{position:absolute;left:calc(var(--csu)*.73);top:calc(var(--csu)*.93);color:#5fd0e0;opacity:0;transition:opacity .15s ease}
   .cs-opt:hover .cs-cur,.cs-opt:focus-visible .cs-cur{opacity:1}
-  .cs-opt .cs-sub{display:block;margin-top:3px;font:700 11px/1.3 var(--body);color:#8fb6c6;letter-spacing:.04em}
+  .cs-opt .cs-sub{display:block;margin-top:3px;font:700 calc(var(--csu)*.733)/1.3 var(--body);color:#8fb6c6;letter-spacing:.04em}
   .cs-opt.cs-tone::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:11px 0 0 11px;background:var(--tc,#5fd0e0)}
   .cs-opt.cs-tone:hover,.cs-opt.cs-tone:focus-visible{border-color:var(--tc,#5fd0e0)}
-  .cs-tonechip{font:900 15px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,#eef4f7)}
-  .cs-risk{display:inline-block;margin-left:7px;font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;
+  .cs-tonechip{font:900 var(--csu)/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,#eef4f7)}
+  .cs-risk{display:inline-block;margin-left:7px;font:800 calc(var(--csu)*.60)/1 var(--body);letter-spacing:.08em;color:#ff8f7e;
     border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase;vertical-align:middle}
   .cs-card.wide{max-height:min(54vh,440px);overflow:auto;-webkit-overflow-scrolling:touch}
   /* the tap hint stays in view while a long reaction scrolls under it */
@@ -22612,8 +22635,13 @@ function computeSponsorOffers(){ if(S.daily||S.circuitMode||!S.career) return []
   const have=new Set(SPONSOR_SLOTS.map(k=>s[k]&&s[k].brand).filter(Boolean));
   const seed=(((S.careerSeed||1)>>>0)^(((S.year||1)*0x9E3779B1)>>>0))>>>0, rng=mulberry32((seed^0x0FFE5)>>>0);
   const offers=[];
-  const emptySlot=SPONSOR_SLOTS.find(k=>!s[k]);
-  if(emptySlot){ const pool=brandsOfTier(elig).filter(b=>!have.has(b)); if(pool.length){ const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:elig}); have.add(b); } }
+  // ONE brand per OPEN slot, so two open slots can be filled in the same off-season rather than one of
+  // them waiting a year for its own offer. The exception is your FIRST-EVER deal, which is its own
+  // set-piece: a career that starts with nobody interested should be signed by one brand, not auctioned.
+  const emptySlots=SPONSOR_SLOTS.filter(k=>!s[k]);
+  const nFill = (emptySlots.length>1 && firstEverSponsor()) ? 1 : emptySlots.length;
+  for(let i=0;i<nFill;i++){ const pool=brandsOfTier(elig).filter(b=>!have.has(b)); if(!pool.length) break;
+    const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:elig}); have.add(b); }
   const filled=SPONSOR_SLOTS.filter(k=>s[k]).map(k=>s[k]).sort((a,b)=>a.tier-b.tier);
   if(filled.length){ const low=filled[0], target=Math.min(elig,maxT);
     if(target>low.tier){
@@ -22690,39 +22718,68 @@ function sponsorOfferPopup(offers){
       <div style="font:800 12px/1 var(--body);letter-spacing:.26em;color:${accent};text-transform:uppercase">${kicker}</div>
       <h1 style="margin:8px 0 2px;font-size:27px;line-height:1.08;color:#fff">${headline}</h1>
       <p class="lede" style="margin:8px 0 4px;color:#e8f0e8">${sub}</p>
-      <p class="small" style="margin:0 0 14px;color:#9fb3a8">Choose which slot to wear their logo, or decide later.</p>
+      <p class="small sohint" style="margin:0 0 14px;color:#9fb3a8"></p>
       <div style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#8fa7b3;text-transform:uppercase;text-align:left;margin:0 0 7px">What you have now</div>
-      <div style="display:flex;gap:9px;flex-wrap:wrap;text-align:left;margin-bottom:13px">${SPONSOR_SLOTS.map(s=>slotStatusCardHTML(s)).join('')}</div>
-      <div style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase;text-align:left;margin:0 0 7px">The offer</div>
+      <div class="soslots" style="display:flex;gap:9px;flex-wrap:wrap;text-align:left;margin-bottom:13px"></div>
+      <div class="sohd" style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase;text-align:left;margin:0 0 7px"></div>
       <div class="soffers" style="display:grid;gap:11px;text-align:left"></div>
-      <button class="btn ghost solater" style="margin-top:12px">Decide later ▸<span class="sub">The offer stays on the alert banner until you choose</span></button>
+      <button class="btn ghost solater" style="margin-top:12px"></button>
     </div></div>`);
-  const box=ov.querySelector('.soffers');
-  offers.forEach(offer=>{
-    const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
-    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(241,208,74,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ Step up to ${esc(nti.name)}</div>`
-      : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand</div>` : '';
-    const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
-      ${badge}
-      <div style="display:flex;align-items:center;gap:11px">${brandLogoSVG(offer.brand,44)}
-        <span style="flex:1;min-width:0">
-          <span style="display:block;font-weight:800;font-size:17px;color:var(--oncard);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(offer.brand)}</span>
-          <span class="small" style="display:block;color:#9fb3a8">${esc(nti.name)} · ${esc(ntr.label)}</span></span>
-        <span class="mono small" style="flex:0 0 auto;color:#ffd45e;font-weight:800;text-align:right;line-height:1.2">+${fmtShort(signing)}<span style="display:block;color:#8fa7b3;font-weight:600">signing</span></span></div>
-      ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
-      ${sponsorProConHTML(offer)}
-      <div style="display:flex;gap:8px;margin-top:11px" class="offer-actions"></div></div>`);
-    const acts=card.querySelector('.offer-actions');
-    SPONSOR_SLOTS.forEach(slot=>{
-      const cur=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
-      const btn=$(`<button class="btn goldfill" style="flex:1;padding:9px 8px;font-size:12px;text-transform:none;line-height:1.25">
-        <b>${cur?'Replace on '+lab:'Sign as '+lab}</b><span style="display:block;font-weight:600;font-size:10px;opacity:.85">${cur?esc(cur.brand)+' · loyalty resets':'fills the open slot'}</span></button>`);
-      btn.onclick=()=>{ ov.remove(); signSponsor(offer, slot); };
-      acts.appendChild(btn);
+  /* The offers on the table, and how many have been signed off this card. Signing used to close the whole
+     thing, so a year that brought two brands only ever produced one deal: taking the shirt offer dismissed
+     the hat offer with it (owner: "it should have left the other company up with only the hat deal
+     remaining"). The card now stays up and REPAINTS, because everything on it moves when a deal is signed:
+     the slot you filled, the buttons on the other brand (an open slot becomes a replace), and the pro/con,
+     which reads differently once you are carrying a deal. It closes itself when nothing is left to decide. */
+  let list=offers.slice(), signed=0;
+  const slotsBox=ov.querySelector('.soslots'), box=ov.querySelector('.soffers');
+  const hint=ov.querySelector('.sohint'), hd=ov.querySelector('.sohd'), later=ov.querySelector('.solater');
+  const paint=()=>{
+    slotsBox.innerHTML=SPONSOR_SLOTS.map(s=>slotStatusCardHTML(s)).join('');
+    const open=SPONSOR_SLOTS.filter(sl=>!sponsorOf(sl)).length;
+    hint.textContent = signed
+      ? (list.length>1?'Signed. The other brands are still on the table.':'Signed. The other brand is still on the table.')
+      : (list.length>1 && open>0 ? 'Choose a slot for each. You can sign one for your hat and one for your shirt.'
+                                 : 'Choose which slot to wear their logo, or decide later.');
+    hd.textContent = list.length>1 ? 'The offers' : 'The offer';
+    later.innerHTML = signed
+      ? `Done ▸<span class="sub">Any offer you leave stays on the alert banner</span>`
+      : `Decide later ▸<span class="sub">The offer${list.length>1?'s stay':' stays'} on the alert banner until you choose</span>`;
+    box.innerHTML='';
+    list.forEach(offer=>{
+      const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
+      const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(241,208,74,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ Step up to ${esc(nti.name)}</div>`
+        : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand</div>` : '';
+      const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
+        ${badge}
+        <div style="display:flex;align-items:center;gap:11px">${brandLogoSVG(offer.brand,44)}
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font-weight:800;font-size:17px;color:var(--oncard);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(offer.brand)}</span>
+            <span class="small" style="display:block;color:#9fb3a8">${esc(nti.name)} · ${esc(ntr.label)}</span></span>
+          <span class="mono small" style="flex:0 0 auto;color:#ffd45e;font-weight:800;text-align:right;line-height:1.2">+${fmtShort(signing)}<span style="display:block;color:#8fa7b3;font-weight:600">signing</span></span></div>
+        ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
+        ${sponsorProConHTML(offer)}
+        <div style="display:flex;gap:8px;margin-top:11px" class="offer-actions"></div></div>`);
+      const acts=card.querySelector('.offer-actions');
+      SPONSOR_SLOTS.forEach(slot=>{
+        const cur=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
+        // an OPEN slot is the offer being made; replacing a deal you already hold is a real choice but a
+        // different one, so it stops looking like the headline action once a slot is filled
+        const btn=$(`<button class="btn ${cur?'ghost':'goldfill'}" style="flex:1;padding:9px 8px;font-size:12px;text-transform:none;line-height:1.25">
+          <b>${cur?'Replace on '+lab:'Sign as '+lab}</b><span style="display:block;font-weight:600;font-size:10px;opacity:.85">${cur?esc(cur.brand)+' · loyalty resets':'fills the open slot'}</span></button>`);
+        btn.onclick=()=>{
+          signSponsor(offer, slot);
+          list=list.filter(o=>o.brand!==offer.brand); signed++;
+          if(!list.length){ ov.remove(); render(); return; }   // nothing left to decide: get out of the way
+          paint();
+        };
+        acts.appendChild(btn);
+      });
+      box.appendChild(card);
     });
-    box.appendChild(card);
-  });
-  ov.querySelector('.solater').onclick=()=>{ ov.remove(); track('sponsor_moment_later',{n:offers.length}); render(); };
+  };
+  paint();
+  later.onclick=()=>{ ov.remove(); track('sponsor_moment_later',{n:list.length, signed}); render(); };
   if(first && !reduce && typeof confettiRun==='function') try{ confettiRun(ov, [accent,'#ffffff'], 1100); }catch(e){}
   document.body.appendChild(ov);
   buzz(30);
@@ -24822,7 +24879,7 @@ function scrFormatNews(){
   add($(`<div class="tnews">
     <div class="tn-kick">🏆 Format · the tour announces</div>
     <h2 class="tn-h">${esc(BRACKET_NAME)}</h2>
-    <p class="tn-p"><b>From this season the Tour Championship is match play.</b> The year no longer ends
+    <p class="tn-p"><b>Starting this season, the Tour Championship is match play.</b> The year no longer ends
       with four rounds of stroke play. The top 32 on the season points list go to a fortnight: a week of
       group matches, then a week of knockout, and the last one standing lifts the Tour Cup.</p>
     <div class="tn-facts">
@@ -32651,9 +32708,6 @@ function dDecTargets(g, sc){
   const off=Math.max(3,(g.greenR?g.greenR[0]:12)*0.6)*(pin[0]>gcx?-1:1);     // pin-hunt vs middle of the green
   return {agg:[pin[0],pin[1]], safe:[gcx+off,L], al:'At the pin', sl:'Middle'};
 }
-// the lowest a tap-target may sit, as a % of the window height: the docked decision panel (item 07)
-// owns the bottom strip. `var` (not `let`) - dPlaceTargets is reachable before this line executes.
-var HV_DEC_TOP=44;
 // place the two tappable targets on the window shell (called from drawWindow when a decision is pending)
 function dPlaceTargets(shell, g, sc, pick){
   const tg=dDecTargets(g,sc);
@@ -32664,36 +32718,37 @@ function dPlaceTargets(shell, g, sc, pick){
   const pos=[];
   const place=(pt,cls,lab,agg,rw)=>{
     const p=hvProj(g,pt[0],pt[1]);
-    // ITEM 07: the decision panel now docks along the BOTTOM of the window, so a target can no longer
-    // sit in the lower third - it would land under the panel. The green (and so the aggressive target)
-    // is near the top of the frame anyway; only a deep layup target is pulled up by this.
-    let lf=Math.max(11,Math.min(89,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100)), tp=Math.max(9,Math.min(HV_DEC_TOP,p[1]/HV_H*100));
-    // nudge apart if the two chips would collide (close in screen space)
-    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(HV_DEC_TOP, q.tp+11); } }
-    // and out from under the fixed top-left hole chip - on a short hole the green (and so a target)
-    // sits high enough to land on it, which reads as the two overlapping.
-    if(lf<52 && tp<15) tp=15;
-    pos.push({lf,tp});
+    // The ring goes where the shot is going. The only clamp left is enough to keep it from being drawn
+    // off the edge of the window entirely; it is never moved to make room for anything.
+    const lf=Math.max(4,Math.min(96,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100));
+    const tp=Math.max(3,Math.min(97,p[1]/HV_H*100));
     const rh=Math.round(rw*0.53);
-    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
+    // no room above: hang the label under the ring instead of off the top of the frame
+    const lo=(tp<16);
+    // two labels close together get pushed APART sideways. Sideways, because the vertical position is
+    // the one thing on this overlay that carries meaning: how far down the hole the ball is going.
+    let dtx=0;
+    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<10){ dtx=(lf<=q.lf?-1:1)*58; } }
+    pos.push({lf,tp});
+    const chip=$(`<button class="dctarget ${cls}${lo?' lo':''}" style="left:${lf}%;top:${tp}%;--dtw:${rw}px;--dth:${rh}px;--dtx:${dtx}px" aria-label="${esc(lab)}"><span class="dtw"><span class="dtl">${esc(lab)}</span><span class="dtp"></span></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
     chip.onclick=(e)=>{ e.stopPropagation(); pick(agg); };
     shell.appendChild(chip);
   };
   place(tg.agg,'agg',tg.al||'Attack',true,aggW);
   place(tg.safe,'safe',tg.sl||'Safe',false,safeW);
-  // A chip is anchored by its BOTTOM (translate -100%), so a percentage clamp cannot know how tall it
-  // is - and on a short hole a target was landing ON the fixed hole-info chip. Measure once the browser
-  // has laid them out and push any chip that genuinely overlaps it clear.
+  // The fixed hole-info chip sits top-left, and a target near the top of the frame can put its LABEL
+  // under it. Measured once laid out, and answered by moving the label (sideways, or under its own ring)
+  // - never the ring, which is the one thing on here that has to stay where it is.
   requestAnimationFrame(()=>{
     if(!shell.isConnected) return;
     const hole=shell.querySelector('.hvhole'); if(!hole) return;
-    const hr=hole.getBoundingClientRect(), sr=shell.getBoundingClientRect();
-    if(!sr.height) return;
+    const hr=hole.getBoundingClientRect();
     shell.querySelectorAll('.dctarget').forEach(c=>{
-      const r=c.getBoundingClientRect();
+      const w=c.querySelector('.dtw'); if(!w) return;
+      const r=w.getBoundingClientRect();
       if(r.right<hr.left-4||r.left>hr.right+4||r.bottom<hr.top-4||r.top>hr.bottom+4) return;
-      const push=(hr.bottom+6-r.top)/sr.height*100;
-      if(push>0) c.style.top=Math.min(HV_DEC_TOP, (parseFloat(c.style.top)||0)+push)+'%';
+      if(c.classList.contains('lo')) c.style.setProperty('--dtx',((parseFloat(c.style.getPropertyValue('--dtx'))||0)+(hr.right-r.left+8))+'px');
+      else c.classList.add('lo');
     });
   });
 }
@@ -33031,11 +33086,16 @@ function scrDailyRound(){
         const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
         const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
                     {nm:'TOUR AVG', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}];
-        // CS255: today's best - the day's global leader if the board is loaded, else your own best of the day
-        let bestVal=null;
-        if(dbCache && dbCache.ok && dbCache.rows && dbCache.rows.length) bestVal=Math.min.apply(null, dbCache.rows.map(r=>r.to_par));
-        else { const _db=dailyBest(); if(_db && _db.total!=null) bestVal=_db.total; }
-        if(bestVal!=null) rows.push({nm:"TODAY'S BEST", v:bestVal, txt:dtp(bestVal), mine:false, col:'#f4cf5b'});
+        // CS255: the day's global leader if the board is loaded, else your own best of the day. The two
+        // are NOT the same number and this row used to call both of them "TODAY'S BEST": the board loads
+        // asynchronously (and never at all signed out, offline, or on an RPC error), so a player was told
+        // the score of the day was their own earlier -2, beat it with a -3, and then found the real board
+        // led by -8. Say which one it is. A round that has neither shows the row at all.
+        let bestVal=null, bestNm=null;
+        if(dbCache && dbCache.ok && dbCache.rows && dbCache.rows.length){
+          bestVal=Math.min.apply(null, dbCache.rows.map(r=>r.to_par)); bestNm="TODAY'S BEST";
+        } else { const _db=dailyBest(); if(_db && _db.total!=null){ bestVal=_db.total; bestNm='YOUR BEST'; } }
+        if(bestVal!=null) rows.push({nm:bestNm, v:bestVal, txt:dtp(bestVal), mine:false, col:'#f4cf5b'});
         rows.sort((a,b)=>a.v-b.v);
         rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}" data-nm="${r.nm}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
       }
