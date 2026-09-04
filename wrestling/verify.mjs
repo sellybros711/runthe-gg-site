@@ -115,6 +115,34 @@ section('pages load');
   if(errs.length) bad('career game: '+errs.slice(0,3).join(' | ')); else ok('career game loads clean');
   await page.close();
 }
+/* THE HOME PAGE WITH A CAREER ON IT. This is not the same test as the one above:
+   an empty browser takes the "start your journey" branch, and a returning player
+   takes the "continue career" branch, which renders a saved wrestler's OVR from
+   the SAVE OBJECT before that save is ever loaded into G. That path shipped
+   broken (ovr() reached for G.w, which is null on the home screen), the page
+   rendered as a logo above an empty space, and every check in this suite passed
+   because every check started from a cleared browser. */
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  await page.evaluate(()=>{ try{ endTour(); closeModal(); }catch(_){}
+    for(let i=0;i<4;i++){ bookWeek(); const b=G.car.booking;
+      if(b&&b.type==='match'){ const r=simMatch(b.o); applyMatch(b.o,r); } else advanceWeek(); }
+    save(); });
+  const errs2=[];
+  page.on('pageerror', e=>errs2.push(String(e)));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForTimeout(1100);
+  const r = await page.evaluate(()=>{
+    const el=document.getElementById('homeCont');
+    return {filled:!!(el&&el.innerHTML.trim().length>50), text:(el?el.innerText:'').slice(0,60)};
+  });
+  if(errs2.length) bad('the home page threw with a save on it: '+errs2.slice(0,2).join(' | '));
+  else if(!r.filled) bad('the home page rendered empty for a returning player');
+  else ok(`the home page carries a saved career: "${r.text.split('\n').slice(0,2).join(' / ')}"`);
+  await page.close();
+}
 {
   const {page, errs} = await fresh(URL+'/wrestling/booking/');
   let r = null;
@@ -562,6 +590,174 @@ section('every stipulation plays out live, and looks like its finish');
     }
     await page.close();
   }
+}
+
+/* ---------- 4i. the coin economy, the pass and the daily loop ----------
+   The old economy paid the purse straight into coins: a measured 12-year career
+   earned 2,881,039 against a catalogue costing 1,650,300, so one career bought
+   the whole store twice over. These checks are the ones that would have caught
+   that, so they are written as RATIOS against the catalogue rather than as magic
+   numbers that drift out of date the moment a price changes. */
+section('the coin economy is a grind, not a giveaway');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(async ()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={};
+    // a career's worth of coins, measured the way a player would earn them
+    const start=G.bag.coins, startY=G.car.year; let guard=0, matches=0;
+    while(G.car.year<startY+10 && guard++<6000){
+      const c=G.car;
+      if(c.retired) break;
+      if(c.freeAgent){ try{ signDeal(0); }catch(_){ c.freeAgent=false; } continue; }
+      if(c.injWeeks>0){ doRest(); continue; }
+      if(c.mentorWeeks>0){ doMentorWeek(); continue; }
+      while(G.w.tp>0){ const b=G.w.tp; try{ spendTP((catById(c.plan.a)||{}).attr||'po'); }catch(_){ G.w.tp--; } if(G.w.tp>=b) G.w.tp--; }
+      try{ bookWeek(); }catch(e){ break; }
+      const bk=c.booking; if(!bk){ advanceWeek(); continue; }
+      if(bk.type==='match'){ const res=simMatch(bk.o); applyMatch(bk.o,res); matches++; }
+      else advanceWeek();
+    }
+    out.years=G.car.year-startY; out.matches=matches;
+    out.careerCoins=G.bag.coins-start;
+    out.earnings=G.car.earnings;                  // MONEY, which should still be career-scaled
+    out.catalogue=COSM.filter(c=>!c.owned).reduce((s,c)=>s+((RAR[c.rarity]||{}).price||0),0);
+    out.legendary=(RAR.legendary||{}).price||0;
+    out.basePack=(PACKS[0]||{}).price||0;
+    out.commonPrice=(RAR.common||{}).price||0;
+    // packs must be the cheap route per item, or nobody would ever open one
+    out.perItemPack=out.basePack/((PACKS[0]||{n:3}).n);
+    return out;
+  });
+  if(errs.length) bad('economy page errors: '+errs.slice(0,2).join(' | '));
+  const perYear=Math.round(r.careerCoins/Math.max(1,r.years));
+  const careersForAll=r.catalogue/Math.max(1,r.careerCoins);
+  ok(`a ${r.years}-year career over ${r.matches} matches earns ${r.careerCoins.toLocaleString()} coins (${perYear.toLocaleString()}/year) and ${'$'+Math.round(r.earnings).toLocaleString()} in kayfabe money`);
+  (careersForAll>=8) ? ok(`the locked catalogue costs ${r.catalogue.toLocaleString()}: ${careersForAll.toFixed(1)} careers to own everything`)
+    : bad(`the catalogue is ${careersForAll.toFixed(1)} careers of coins, which is not a grind (want 8+)`);
+  (r.careerCoins < r.catalogue) ? ok('one career does not buy the whole store') : bad(`one career earns ${r.careerCoins} against a ${r.catalogue} catalogue`);
+  (r.careerCoins >= r.legendary*0.25 && r.careerCoins <= r.legendary*4)
+    ? ok(`a career is worth ${(r.careerCoins/r.legendary).toFixed(2)} legendary items, so the top of the ladder is reachable and not free`)
+    : bad(`a career is worth ${(r.careerCoins/r.legendary).toFixed(2)} legendaries (want 0.25 to 4)`);
+  (r.perItemPack < r.commonPrice) ? ok(`packs are the cheap route: ${Math.round(r.perItemPack).toLocaleString()} a pull against ${r.commonPrice.toLocaleString()} to buy a common outright`)
+    : bad('packs cost more per item than buying outright, so nobody would open one');
+  (r.earnings > r.careerCoins*20) ? ok('kayfabe money and coins are genuinely separate currencies') : bad(`money (${Math.round(r.earnings)}) is not clearly bigger than coins (${r.careerCoins}), so they are still the same number`);
+  await page.close();
+}
+section('the pass, the streak and the daily objectives');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={};
+    // the daily cap is the anti-farm lever: no amount of simming beats it
+    const p=passState(); p.xp=0; p.dayKey=dayKey(); p.dayXp=0;
+    for(let i=0;i<400;i++) awardCoins(500,'test',true);
+    out.dayXp=p.dayXp; out.cap=PASS_XP_DAY; out.tierAfterFarm=passTierAt(p.xp);
+    // the whole track, against what a capped day can add
+    out.total=passXpForTier(PASS_TIERS); out.tiers=PASS_TIERS; out.len=PASS_LEN;
+    out.daysToFinish=Math.ceil(out.total/PASS_XP_DAY);
+    // claiming pays, and pays once
+    p.xp=passXpForTier(6);
+    const c0=G.bag.coins; const first=passClaim(3,'free'); const again=passClaim(3,'free');
+    out.claimPaid=G.bag.coins>c0; out.claimOnce=(first===true&&again===false);
+    // the PRO lane refuses to pay until it is unlocked
+    out.proBlocked=(passClaim(4,'pro')===false);
+    passState().pro=true; out.proWorks=(passClaim(4,'pro')===true);
+    passState().pro=false;
+    // the streak pays once a day and steps up
+    G.bag.streak={day:0,last:0};
+    const s1=claimStreak(); const s2=claimStreak();
+    out.streakDay=s1&&s1.day; out.streakOnce=(s2===null);
+    // objectives tick from ordinary play
+    G.bag.daily=null; const d=dailyState(); const ids=d.ids.slice();
+    out.dailyN=ids.length;
+    out.dailyUnique=new Set(ids).size===ids.length;
+    const before=G.bag.coins;
+    dailyList().forEach(o=>dailyProgress(o.k, o.n));
+    out.dailyAllDone=dailyList().every(o=>G.bag.daily.done[o.id]);
+    out.dailyPaid=G.bag.coins-before;
+    out.dailyBonus=!!G.bag.daily.bonus;
+    return out;
+  });
+  if(errs.length) bad('pass page errors: '+errs.slice(0,2).join(' | '));
+  (r.dayXp<=r.cap) ? ok(`a day is capped at ${r.cap.toLocaleString()} pass XP: 200,000 coins of farming in one day still only moved the track to tier ${r.tierAfterFarm}`)
+    : bad(`the daily cap leaked: ${r.dayXp} XP in a day against a ${r.cap} cap`);
+  (r.daysToFinish>=Math.round(r.len*0.4) && r.daysToFinish<=r.len)
+    ? ok(`the ${r.tiers}-tier track is ${r.total.toLocaleString()} XP: ${r.daysToFinish} capped days inside a ${r.len}-day season`)
+    : bad(`the track needs ${r.daysToFinish} capped days in a ${r.len}-day season, which is ${r.daysToFinish>r.len?'impossible':'too fast'}`);
+  (r.claimPaid&&r.claimOnce) ? ok('claiming a tier pays, and pays exactly once') : bad('tier claim is wrong: '+JSON.stringify({paid:r.claimPaid,once:r.claimOnce}));
+  (r.proBlocked&&r.proWorks) ? ok('the PRO lane pays nothing until it is unlocked') : bad('PRO gating is wrong: '+JSON.stringify({blocked:r.proBlocked,works:r.proWorks}));
+  (r.streakDay===1&&r.streakOnce) ? ok('the streak pays once a day and starts at day one') : bad('streak is wrong: '+JSON.stringify({day:r.streakDay,once:r.streakOnce}));
+  (r.dailyN===3&&r.dailyUnique) ? ok('three distinct daily objectives a day') : bad(`daily objectives: ${r.dailyN}, unique=${r.dailyUnique}`);
+  (r.dailyAllDone&&r.dailyPaid>0&&r.dailyBonus) ? ok(`ordinary play ticks the objectives off and pays ${r.dailyPaid.toLocaleString()} coins including the all-clear bonus`)
+    : bad('daily objectives did not pay out: '+JSON.stringify({done:r.dailyAllDone,paid:r.dailyPaid,bonus:r.dailyBonus}));
+  await page.close();
+}
+section('dilemmas roll, bite, and come back later');
+{
+  const {page, errs} = await fresh(URL+'/wrestling/');
+  await page.evaluate(()=>{ quickStart(); });
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(()=>{
+    try{ endTour(); closeModal(); }catch(_){}
+    const out={};
+    const dils=SCENES.filter(s=>/^dil_/.test(s.id)), arcs=SCENES.filter(s=>s.arc);
+    out.dilemmas=dils.length; out.arcs=arcs.length;
+    // every dilemma option has weighted outcomes, and every outcome says something
+    out.badOpt=[]; out.emptyText=[];
+    const x=sceneCtx();
+    dils.concat(arcs).forEach(s=>{
+      const b=s.beats.start; const opts=(typeof b.opts==='function'?b.opts(x):b.opts)||[];
+      opts.forEach(o=>{
+        if(!o.outcomes||!o.outcomes.length){ out.badOpt.push(s.id+': '+o.t); return; }
+        o.outcomes.forEach(oc=>{
+          const t=(typeof oc.text==='function')?oc.text(x):oc.text;
+          if(!t) out.emptyText.push(s.id);
+          const p=(typeof oc.p==='function')?oc.p(x):oc.p;
+          if(!(p>0)) out.emptyText.push(s.id+' (p<=0)');
+        });
+      });
+    });
+    // the roll actually spreads: 400 rolls of a 3-outcome option hit more than one
+    const sc=dils.find(s=>s.id==='dil_shoulder');
+    const opt=(sc.beats.start.opts(x))[0];
+    const seen={}; for(let i=0;i<400;i++){ const o=rollOutcome(opt,x); seen[o.tone]=(seen[o.tone]||0)+1; }
+    out.spread=Object.keys(seen).length; out.seen=seen;
+    // a temporary effect moves the real OVR and then expires
+    G.car.fx=[]; const o0=ovr(G.w);
+    addFx({attr:'po', amt:-8, weeks:2, label:'Test knock'});
+    const o1=ovr(G.w);
+    tickFx(); tickFx();
+    const o2=ovr(G.w);
+    out.fxBites=(o1<o0); out.fxExpires=(o2===o0); out.fxGone=activeFx().length===0;
+    // an arc seeded now comes due later and outranks an ordinary scene
+    G.car.arcs=[]; seedArc('arc_comeback',[2,2],{});
+    out.arcPending=(dueArc()===null);
+    tickArcs(); tickArcs();
+    const due=dueArc();
+    out.arcDue=!!due && due.id==='arc_comeback';
+    G.car._scenesSeen=[]; G.car._sceneMem={}; G.car.rec.w=1;
+    const pick=pickScene('prematch');
+    out.arcWins=!!pick && pick.id==='arc_comeback';
+    // and it is spent once it plays
+    G.car.arcs=[{id:'arc_comeback',wait:0,data:{}}]; clearArc('arc_comeback');
+    out.arcSpent=(G.car.arcs.length===0);
+    return out;
+  });
+  if(errs.length) bad('dilemma page errors: '+errs.slice(0,2).join(' | '));
+  (r.dilemmas>=3) ? ok(`${r.dilemmas} dilemmas and ${r.arcs} arc payoffs in the deck`) : bad(`only ${r.dilemmas} dilemmas`);
+  (!r.badOpt.length) ? ok('every dilemma option carries weighted outcomes') : bad('options with no outcomes: '+r.badOpt.slice(0,3).join(' | '));
+  (!r.emptyText.length) ? ok('every outcome has text and a positive weight') : bad('bad outcomes: '+r.emptyText.slice(0,3).join(' | '));
+  (r.spread>=2) ? ok(`the same choice resolves several ways: ${JSON.stringify(r.seen)} over 400 rolls`) : bad('a 3-outcome option only ever produced one result');
+  (r.fxBites&&r.fxExpires&&r.fxGone) ? ok('a temporary effect moves the real OVR and expires on schedule') : bad('fx wrong: '+JSON.stringify({bites:r.fxBites,expires:r.fxExpires,gone:r.fxGone}));
+  (r.arcPending&&r.arcDue&&r.arcWins&&r.arcSpent) ? ok('a seeded arc comes due weeks later, outranks the ordinary deck, and is spent once played')
+    : bad('arc wrong: '+JSON.stringify({pending:r.arcPending,due:r.arcDue,wins:r.arcWins,spent:r.arcSpent}));
+  await page.close();
 }
 
 /* ---------- 5. careers play out ---------- */

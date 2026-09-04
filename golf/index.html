@@ -1834,6 +1834,9 @@ window.GA_ID='G-L29P5MRWKE';
   .rsc-c.tapc{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .rsc-c.tapc:hover{background:rgba(79,224,193,.13)}
   .rsc-dot0{color:var(--muted); opacity:.55}
+  /* the spacer that keeps a short second block's cells the width of a front-nine cell (a 12-hole match
+     splits 9 and 3). It holds a column open and must not read as a hole, so it carries no divider. */
+  .rsc-c.rsc-fill{border-left-color:transparent; background:transparent}
   .dcell{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.24)); border:1px solid var(--panelb); border-radius:8px; padding:6px 0 5px; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
   .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 12px -4px var(--gold)}
   .dcell.sel{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset}
@@ -2429,9 +2432,21 @@ window.GA_ID='G-L29P5MRWKE';
      the other chip's visible ring and stole the tap ("it picked the option I didn't choose"). Only the
      parts you can actually SEE take taps. touch-action:manipulation kills the iOS double-tap-zoom delay,
      which otherwise swallows or mis-targets a tap on iOS Chrome. */
-  .dctarget{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;
-    background:none;border:none;padding:0;cursor:pointer;z-index:6;pointer-events:none;
+  /* The RING is the aim point, so the ring is what the element is anchored by: it sits exactly on the
+     spot the ball is being sent to, and the label hangs off it. It used to be the other way round (the
+     whole chip was anchored by its BOTTOM and the ring rode along underneath), which meant every nudge
+     that moved a label to stop two chips overlapping also moved the ring, and the safe target ended up
+     drawn a few yards in front of the ball instead of on the middle of the green (owner: "each circle
+     should actually be where you are trying to hit it"). Nothing below may move .dtr. */
+  .dctarget{position:absolute;transform:translate(-50%,-50%);width:var(--dtw,26px);height:var(--dth,14px);
+    display:block;background:none;border:none;padding:0;cursor:pointer;z-index:6;pointer-events:auto;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 3px 8px rgba(0,0,0,.55))}
+  .dctarget .dtw{position:absolute;left:50%;bottom:calc(100% + var(--dtgap,9px));transform:translateX(calc(-50% + var(--dtx,0px)));
+    display:flex;flex-direction:column;align-items:center;white-space:nowrap}
+  /* near the top of the frame there is no room above the ring, so the label drops underneath it and the
+     pointer turns over to keep pointing AT the ring */
+  .dctarget.lo .dtw{bottom:auto;top:calc(100% + var(--dtgap,9px));flex-direction:column-reverse}
+  .dctarget.lo .dtp{transform:rotate(180deg);margin-top:0;margin-bottom:-1px}
   .dctarget .dtl,.dctarget .dtr{pointer-events:auto}
   /* the chip carries a colour-coded DOT, not an inline icon: an emoji-derived <svg class="ic"> inside a
      chip is what iOS was drawing as a full-width bar with the text pushed under it. */
@@ -2441,7 +2456,8 @@ window.GA_ID='G-L29P5MRWKE';
   .dctarget .dtl::before{content:'';width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:currentColor}
   .dctarget.safe .dtl::before{background:transparent;box-shadow:inset 0 0 0 2px currentColor}
   .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
-  .dctarget .dtr{width:26px;height:14px;border:2.5px solid;border-radius:50%;margin-top:2px;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
+  .dctarget .dtr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:14px;
+    border:2.5px solid;border-radius:50%;margin:0;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
   .dctarget.agg .dtl{background:rgba(180,26,26,.94);border-color:#ff5a4d}
   .dctarget.agg .dtp{border-top-color:#ff5a4d}
   /* RISKY: big, dashed, wide landing spread */
@@ -2450,8 +2466,9 @@ window.GA_ID='G-L29P5MRWKE';
   .dctarget.safe .dtp{border-top-color:#22c7a6}
   /* SAFE: small, tight, solid landing spread */
   .dctarget.safe .dtr{width:19px;height:11px;border-color:#22c7a6}
-  .dctarget:active{transform:translate(-50%,calc(-100% + 2px))}
-  @keyframes dtRing{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.28);opacity:.45}}
+  .dctarget:active .dtw{transform:translateX(calc(-50% + var(--dtx,0px))) translateY(2px)}
+  @keyframes dtRing{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.9}
+    50%{transform:translate(-50%,-50%) scale(1.28);opacity:.45}}
   @media (prefers-reduced-motion:reduce){ .dctarget .dtr{animation:none} }
   /* CS378: clearer, more legible on-course decision cards - bigger type, tinted card backgrounds,
      bright colour-coded odds so the stat + percentages read at a glance */
@@ -2488,8 +2505,10 @@ window.GA_ID='G-L29P5MRWKE';
      window is genuinely narrower than a 1600px one and a single jump overshoots the smaller of the two.
      Scoped to .scr-dailyround: only that screen's window is widened (every other hole view is still
      capped at 470px, where phone type is correct). Percentages, not px, everywhere the layout depends
-     on them - dPlaceTargets clamps the tap-targets to HV_DEC_TOP% of the window, so the docked decision
-     panel may grow without pushing a target under it. */
+     on them, so the docked decision panel may grow without the tap-targets moving with it. A target is
+     drawn at the spot it aims at and nowhere else (see dPlaceTargets), so one CAN sit behind the panel
+     on a short layup; the panel's own cards are the primary control, and a ring that lies about where
+     the ball is going is worse than a ring that is partly covered. */
   @media (min-width:1000px){
     .screen.scr-dailyround .bcasthd .bc-name{font-size:24px}
     .screen.scr-dailyround .bcasthd .bc-meta{font-size:13px}
@@ -2787,6 +2806,27 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-stat .k{font:800 8.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
   .cb-stat .v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); white-space:nowrap}
   @media(max-width:540px){ .cb-stats{justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
+  /* Owner: compact the whole stack above the live tournament on mobile so the tournament card
+     is visible without scrolling. The Confidence/Respect meters + Season Goals already collapse;
+     this shaves the banner + event rail heights. */
+  @media(max-width:600px){
+    .careerbanner{gap:10px; margin-bottom:8px; padding:9px 11px}
+    .cb-av,.cb-av .avatarfig{width:44px; height:44px}
+    .cb-name{font-size:20px}
+    .cb-sub{font-size:9px; margin-top:2px}
+    .cb-nethero .k{font-size:8px}
+    .cb-nethero .v{font-size:18px; margin-top:3px}
+    .cb-stats{margin-top:7px; padding-top:8px}
+    .cb-stat .k{font-size:8px}
+    .cb-stat .v{font-size:15px; margin-top:3px}
+    .cb-meters{margin-top:5px; padding-top:8px}
+    .seasonrail{gap:6px; padding:1px 0 7px; margin-bottom:7px}
+    .srev{width:82px}
+    .srev .srev-wk{padding:3px 4px 2px}
+    .srev .en{font-size:8px; min-height:2.4em}
+    .srev .er{font-size:12px; margin-top:4px}
+    .sgcard{margin:6px auto 8px; padding:9px 11px 7px}
+  }
   .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
   /* CS498 (owner): Confidence & Respect are collapsed by default, tap the row to expand. */
   .cb-mtoggle{display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; background:none; border:0; padding:2px 0; cursor:pointer; color:var(--oncard); font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; -webkit-tap-highlight-color:transparent}
@@ -4800,16 +4840,28 @@ function dailyMaxAttempts(){ return sbSignedIn()?DAILY_MAX_ATTEMPTS:GUEST_DAILY_
 function dailyState(){return LS.get(acctKey('bag_daily'),null);}
 function dailyToday(){const dd=dailyState();return (dd&&dd.date===todayKey())?dd:null;}
 function dailyAttempts(){const dd=dailyToday(); if(!dd)return 0; return dd.attempts!=null?dd.attempts:(dd.done?1:0);}
-function dailyAttemptsLeft(){ if(dailyUnlimited()) return 99; return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
+function dailyAttemptsLeft(){ if(dailyUncapped()) return 99; return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
 function dailyBest(){const dd=dailyToday(); return dd?(dd.best||dd.result||null):null;}
 // Dev accounts (RunnyJ, CSel8 — see devMode) get UNLIMITED Play 18 attempts so we can check the live game any
 // time; only the FIRST 3 attempts of the day count toward records (course records + the daily board), so our
 // testing never pollutes the leaderboards. Everyone else keeps the normal 3-a-day cap unchanged.
 function dailyUnlimited(){ return devMode(); }
+/* THE TOUR PASS BUYS UNLIMITED DAILY PLAYS, and it was honoured in exactly two places: the guard inside
+   beginDailyAttempt and one branch of startDailyChallenge. Everything ELSE that decides whether you may
+   play reads dailyAttemptsLeft() or dailyDoneToday(), and neither of those knew the pass existed. So a
+   paying player was told DONE on the home card, could not press Draft, and, worst of the lot, had a
+   fourth round REFUSED at submission ("Out of attempts today, score not submitted") after playing it.
+   One function now answers "does this account have a daily cap at all", and every gate reads it. */
+function dailyUncapped(){ return dailyUnlimited() || (sbSignedIn() && dailyPassActive()); }
+/* The wallet that says whether the pass is active is fetched after sign-in, so for the first moment of a
+   cold load a real pass holder looks capped. The doors below stay shut while that is unknown (opening
+   them would hand a free extra round to everyone on a slow connection), but they ask for the wallet on
+   the way out, so the screen corrects itself a moment later instead of lying until a reload. */
+function dailyGateRefresh(){ try{ if(sbSignedIn() && _walletCache===null) loadWallet(); }catch(e){} }
 function dailyAttemptRecords(){ return !(devMode() && (S.dailyAttempt||0) >= DAILY_MAX_ATTEMPTS); }
-function dailyDoneToday(){return !dailyUnlimited() && dailyAttemptsLeft()<=0;}   // "done" = all attempts used (never for dev accounts)
+function dailyDoneToday(){return !dailyUncapped() && dailyAttemptsLeft()<=0;}   // "done" = all attempts used (never for dev or Tour Pass accounts)
 function startDaily(){
-  if(dailyDoneToday()){S.overlay='dailydone';render();return;}
+  if(dailyDoneToday()){dailyGateRefresh();S.overlay='dailydone';render();return;}
   const seed=todayKey(); reset();
   S.daily=true; S.dailySeed=seed; S.mode='daily';
   S.drawRng=mulberry32((seed^0x2545f491)>>>0);   // seeded draw → same rarity sequence for everyone today
@@ -7837,6 +7889,17 @@ function bracketFinishNow(B){ B=(B&&!B._final)?B:bracketInit(); bracketRunOut(B)
    watch is honestly your golfer.                                                                        */
 const MATCH_SKILL_K=1.9;
 const MATCH_EXTRA_HOLES=[17,0,9,17,0,9,17,0];   // sudden death rotates the closing holes (18 / 1 / 10)
+/* How long THIS match is. A knockout round is always 18, but a career decision played as a 1v1 is not:
+   a Tuesday money match is nine and a made-for-television exhibition is twelve. Every place that used to
+   say 18 asks here instead, because the number appears in five separate places (the state, the board, the
+   advance, the skip and the scorecard) and a match that ends at 9 on one of them and 18 on the others is
+   a board that disagrees with the card. Bounded to the course, which only ever has eighteen holes. */
+function matchRegHoles(){ const n=(S.matchPlay&&S.matchPlay.holes)|0; return (n>=1&&n<=18)?n:18; }
+// which course hole a sudden-death extra plays. A short match rotates its own closing holes rather than
+// walking the field back out to the 18th it never reached.
+function matchExtraHole(k){ const n=matchRegHoles();
+  const seq = n>=18 ? MATCH_EXTRA_HOLES : [n-1, 0, Math.max(1,Math.floor(n/2))];
+  return seq[((k|0)%seq.length+seq.length)%seq.length]; }
 function matchOppRng(ci, salt){ return dHoleRng(((S.dailySeed^0x9e3779b1)>>>0), S.dailyCourse, ci, (salt||0)+0x4d10); }
 function matchOppHole(ci, salt){
   const mp=S.matchPlay, c=DAILY_COURSES[S.dailyCourse]; if(!mp||!c) return 0;
@@ -7892,21 +7955,23 @@ function matchState(){
     if(rev) hs=hs.slice(0,-1);
   }
   let up=0;
-  const reg=Math.min(hs.length,18);
+  const N=matchRegHoles();
+  const reg=Math.min(hs.length,N);
   for(let i=0;i<reg;i++){ const a=hs[i].toPar, b=mp.oppHoles[i]; if(a<b)up++; else if(b<a)up--; }
-  const left=18-reg;
+  const left=N-reg;
   let decided=reg>0 && Math.abs(up)>left, won=up>0, label='';
   if(decided) label = left>0 ? (Math.abs(up)+'&'+left) : (Math.abs(up)+' up');
-  let extras=Math.max(0,hs.length-18);
-  if(!decided && reg>=18){
+  let extras=Math.max(0,hs.length-N);
+  if(!decided && reg>=N){
     for(let k=0;k<extras;k++){
-      const a=hs[18+k].toPar, b=mp.oppExtra[k];
-      if(b!=null && a!==b){ decided=true; won=a<b; label='at the '+ord(19+k); break; }
+      const a=hs[N+k].toPar, b=mp.oppExtra[k];
+      if(b!=null && a!==b){ decided=true; won=a<b; label='at the '+ord(N+1+k); break; }
     }
   }
-  // A GROUP match is not a knockout: all square through 18 is a HALF worth half a point to each of them,
-  // which is exactly what the day's own header promises. Only week 2 goes to sudden death.
-  const allSquare=reg>=18 && !decided;
+  // A GROUP match is not a knockout: all square through the last hole is a HALF worth half a point to each
+  // of them, which is exactly what the day's own header promises. Only week 2 goes to sudden death. A
+  // career decision borrows the same flag: a money round can be halved, a doubled-stakes grudge cannot.
+  const allSquare=reg>=N && !decided;
   if(mp.group && allSquare) return {up, reg, left, decided:true, won:false, half:true, label:'AS',
     extras:0, allSquare:true};
   return {up, reg, left, decided, won, label, extras, allSquare};
@@ -7924,10 +7989,11 @@ function matchOppShotsFor(holeIdx){
   const c=DAILY_COURSES[S.dailyCourse]; if(!c) return null;
   if(!mp._oppShots) mp._oppShots={};
   if(mp._oppShots[holeIdx]) return mp._oppShots[holeIdx];
-  const inReg=holeIdx<18, tp = inReg?mp.oppHoles[holeIdx]:mp.oppExtra[holeIdx-18];
+  const N=matchRegHoles();
+  const inReg=holeIdx<N, tp = inReg?mp.oppHoles[holeIdx]:mp.oppExtra[holeIdx-N];
   if(tp==null) return null;
-  const ci=inReg?holeIdx:MATCH_EXTRA_HOLES[(holeIdx-18)%MATCH_EXTRA_HOLES.length], h=c.holes[ci];
-  const salt=inReg?0x7c11:(0xE00+(holeIdx-18));
+  const ci=inReg?holeIdx:matchExtraHole(holeIdx-N), h=c.holes[ci];
+  const salt=inReg?0x7c11:(0xE00+(holeIdx-N));
   try{ mp._oppShots[holeIdx]=dShotSeq(h[0],h[1],h[0]+tp,matchOppRng(ci,salt),mp.oppSk,{clubTag:clubSetTag(null)}); }
   catch(e){ mp._oppShots[holeIdx]=null; }
   return mp._oppShots[holeIdx];
@@ -7956,6 +8022,10 @@ function matchOppOverlaySVG(hole, holeIdx, courseKey){
 function finishMatchRound(){
   clearDailyTimer();
   const mp=S.matchPlay, B=S.curBracket, st=matchState();
+  // A career decision played out as a 1v1 has no bracket behind it: the result lands as a dilemma
+  // outcome instead of a slot in a draw. Checked BEFORE the bail below, which exists for a match with
+  // no bracket and would otherwise throw the whole thing away without applying anything.
+  if(mp && mp.exh) return finishExhibitionMatch(mp, st);
   if(!mp || !B || !st){ S.matchPlay=null; S.mpHoleIdx=null; S.screen='season'; render(); return; }
   const holes=S.dailyHoles.slice(), evt=B.evt;
   track('bracket_match_done',{round:mp.ri, won:st.won, label:st.label});
@@ -7985,22 +8055,179 @@ function finishMatchRound(){
 function matchSkipToEnd(){
   clearDailyTimer(); S.dailyAuto=false; S.dailyHolePause=false; S.dailyProv=null;
   const mp=S.matchPlay, c=DAILY_COURSES[S.dailyCourse]; if(!mp||!c) return;
-  let guard=0;
+  let guard=0; const N=matchRegHoles();
   while(guard++<40){
     const st=matchState(); if(st.decided) break;
     const n=S.dailyHoles.length;
-    if(n<18){
+    if(n<N){
       const h=c.holes[n];
       const toPar=dSimHole(h[0],h[1],S.dailyDiffs[n],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,n,dAttSalt(0)));
       S.dailyHoles.push({i:n,n:n+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,n,dAttSalt(0x5407)),S.dailySkills,{clubTag:clubSetTag(S.look)})});
     } else {
-      const k=n-18, ci=MATCH_EXTRA_HOLES[k%MATCH_EXTRA_HOLES.length], h=c.holes[ci];
+      const k=n-N, ci=matchExtraHole(k), h=c.holes[ci];
       if(mp.oppExtra[k]==null) mp.oppExtra[k]=matchOppHole(ci,0x900+k);
       const toPar=dSimHole(h[0],h[1],S.dailyDiffs[ci],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(0xC00+k)));
       S.dailyHoles.push({i:n,n:ci+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(0xD00+k)),S.dailySkills,{clubTag:clubSetTag(S.look)})});
     }
   }
   finishMatchRound();
+}
+
+/* ===== A CAREER DECISION PLAYED AS A MATCH =====
+   Three off-course decisions used to resolve with a weighted roll and a paragraph: a money round with
+   your rival, their doubled-stakes rematch, and a prime-time exhibition against a breakaway-league star.
+   Each of those is a 1v1 golf match described in words, so each of them now IS one, hole by hole on the
+   TourTracer against a real opponent, through the same engine the Tour Championship knockout uses.
+   Nothing here is a second match engine: bracketStartMatch's state shape is the contract, and the only
+   addition is `exh` on S.matchPlay, which says what the result MEANS instead of pointing at a draw.     */
+
+// The opponent's actual ratings. A named pro the career already knows about is looked up in the living
+// world and aged to this season, so the rival you have been chasing for four years is the golfer you play
+// - not a number invented at the tee. Only when the name is not in the world (a beat can name somebody
+// who has since retired out of it) is a profile synthesized, deterministically off the name so the same
+// opponent is the same golfer every time, and scaled so its weighted overall is the one that was asked for.
+function matchOppSkills(name, targetOvr){
+  const nm=String(name||'').trim();
+  let g=null, sy=CAREER_START_YEAR;
+  try{
+    const w=(S.world&&Array.isArray(S.world.active))?S.world:null;
+    if(w){ sy=w.simYear||CAREER_START_YEAR;
+      g=w.active.find(a=>a&&a.name===nm&&!a.retiredYear) || w.active.find(a=>a&&a.name===nm) || null; }
+  }catch(e){}
+  if(g){ try{
+    const L=livingOf(g,sy), sk={name:g.name};
+    SKK.forEach(k=>sk[k]=L.ls[k]);
+    return {sk, ovr:L.ov, age:L.age, real:true};
+  }catch(e){} }
+  const ov=clamp(Math.round(targetOvr||78),55,96);
+  const rng=mulberry32((dHash(nm||'opponent')^0x5f3a7b1d)>>>0);
+  const sk={name:nm||'Your opponent'};
+  SKK.forEach(k=>sk[k]=clamp(Math.round(ov+(rng()*2-1)*6),45,99));
+  // a shaped profile that comes out three points light is a different opponent from the one asked for,
+  // so shift the whole profile onto the target overall rather than trusting the jitter to average out
+  const d=ov-SKK.reduce((a,k)=>a+sk[k]*CW[k],0);
+  SKK.forEach(k=>sk[k]=clamp(Math.round(sk[k]+d),45,99));
+  return {sk, ovr:Math.round(SKK.reduce((a,k)=>a+sk[k]*CW[k],0)), age:30, real:false};
+}
+/* Start one. `ch.match` is the config (see the three decisions in DILEMMAS / STORY_ARCS):
+     course cond holes   where it is played, in what weather, over how many holes
+     day roundName       the two halves of the broadcast bar, which is where the STAKES are stated
+     opp ovr             who, and what they are worth if the world has never heard of them
+     edge                how up for it they are, in OVR points, on top of the calibration below
+     half                false = a knockout that cannot be halved (it goes to sudden death)
+     win lose half       the outcome objects applyDilemmaOutcome will be handed when it is over        */
+function startExhibitionMatch(beat, ctx, ch){
+  const cfg=ch.match||{}, T=v=>(typeof v==='function'?v(ctx):v);
+  const key=DAILY_COURSES[cfg.course]?cfg.course:'Sedgefield Country Club';
+  const c=DAILY_COURSES[key];
+  const N=Math.max(3,Math.min(18,(cfg.holes|0)||18));
+  const oppName=String(T(cfg.opp)||'').trim()||'Your rival';
+  const p=buildPlayer(), sk={}; CATS.forEach(cc=>sk[cc.k]=p[cc.k]);
+  const prof=matchOppSkills(oppName, T(cfg.ovr));
+  // The SAME calibration the knockout uses (see MATCH_SKILL_K): the daily per-hole engine separates skill
+  // about half as much as the sim does, so an opponent left at their own ratings quietly halves whichever
+  // of you is the favourite. `edge` is added AFTER the stretch, so it reads as what it is - a man who has
+  // been on the range for a fortnight, not a thumb on the calibration.
+  const meEo=eventOverall(p,CATS)+(function(){ try{ return confEo(); }catch(e){ return 0; } })();
+  const gapEo=meEo-eventOverall(prof.sk,CATS);
+  const shift=-(MATCH_SKILL_K-1)*gapEo+(+cfg.edge||0);
+  const oppSk={}; CATS.forEach(cc=>{ oppSk[cc.k]=clamp((prof.sk[cc.k]!=null?prof.sk[cc.k]:70)+shift,45,99); });
+  S.dailyCourse=key; S.dailyCond=cfg.cond||'calm'; S.dailyPlan='balanced';
+  S.dailySeed=(Math.random()*2147483647)>>>0; S.dailyAttempt=0;
+  S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
+  S.dailyDiffs=dBaseDiffs(c);   // the course plays as itself; the calibration lives in the opponent's ratings
+  S.matchPlay={ri:0, evtName:ctx.evtName||'', roundName:String(T(cfg.roundName)||'The match'),
+    day:String(T(cfg.day)||''), holes:N, group:cfg.half!==false,
+    oppName, oppSeed:null, mySeed:null, oppSk, oppHoles:[], oppExtra:[], extra:false,
+    exh:{id:beat.id, tag:String(T(beat.tag)||'Career decision'), title:String(T(beat.title)||''),
+      oppName, holes:N, courseKey:key, oppOvr:prof.ovr,
+      win:cfg.win, lose:cfg.lose, half:(cfg.half&&cfg.half!==true)?cfg.half:cfg.lose, ctx}};
+  for(let i=0;i<N;i++) S.matchPlay.oppHoles.push(matchOppHole(i,0));
+  S.moment=null; S.momentPO=null; S.momentPOHoleIdx=null; S.mpHoleIdx=null;
+  S.daily=false; S.special=false; S.dailyLegend=null;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=true; S.dailyMullAvail=false; S.dailyResult=null;
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null;
+  clearDailyTimer(); _hvbRects=null;
+  S.dailyClaimed=true;   // borrowed Daily plumbing must never touch Daily Challenge attempts/records
+  track('dilemma_match_start',{id:beat.id, opp:oppName, holes:N});
+  S.screen='dailyround'; render(); scheduleDailyAdvance();
+}
+// How the match finished, in the language a golfer would use. matchState's own label has no direction
+// in it (it is read next to a bracket slot that already says who won), so a match that went the full
+// distance and was LOST came out of here headlined "18 up". Said from your side, that is 18 down.
+function matchResultTxt(st){
+  if(!st) return 'All square';
+  if(st.half || (!st.decided && st.up===0)) return 'All square';
+  const lab=st.label||'';
+  if(/^at the /.test(lab)) return 'Decided '+lab;               // sudden death: "Decided at the 19th"
+  if(lab.indexOf('&')>=0) return lab.replace('&',' & ');        // "3 & 2" reads the same won or lost
+  const n=Math.abs(st.up);
+  return n+(st.won?' up':' down');
+}
+// The last putt has dropped. Apply the outcome the result earned, then say so on a card that reads like
+// the decision card it replaced - same chips, same continue button, so the two ways a decision can resolve
+// report themselves identically.
+function finishExhibitionMatch(mp, st){
+  const ex=mp.exh||{}, ctx=ex.ctx||{}, N=mp.holes||18;
+  const half=!!(st&&st.half), won=!!(st&&st.won&&!half);
+  const o=(half?(ex.half||ex.lose):(won?ex.win:ex.lose))||{p:1, tone:'neutral', text:'The match is over.'};
+  const winN=Math.min((st&&st.reg)||0,N);
+  const res={won, half, N,
+    txt:matchResultTxt(st),
+    me:S.dailyHoles.slice(0,winN).reduce((s,h)=>s+h.toPar,0),
+    opp:(mp.oppHoles||[]).slice(0,winN).reduce((s,v)=>s+v,0),
+    thru:winN+Math.max(0,(st&&st.extras)||0)};
+  track('dilemma_match_done',{id:ex.id, won, half, thru:res.thru});
+  const story=careerStory(), fol0=story.followers||0;
+  applyDilemmaOutcome(o, ctx);
+  const dFol=Math.round((story.followers||0)-fol0);
+  S.matchPlay=null; S.mpHoleIdx=null;
+  S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={}; S.dailyProv=null;
+  S.screen='season'; render();
+  // The season screen resumes its own scheduler on that render, and the rest of the week would then
+  // sim on behind the card the player is still reading. A decision card never has that problem: it is
+  // opened from inside the scheduler, which has already stopped itself. So stop it here too, and let
+  // the continue button's render() start it again, which is exactly what the decision card does.
+  try{ clearTimeout(seasonTimer); }catch(e){}
+  try{ showExhResult(ex, o, ctx, res, dFol); }catch(e){ render(); }
+}
+function showExhResult(ex, o, ctx, res, dFol){
+  const T=v=>(typeof v==='function'?v(ctx):v);
+  const toneCol = o.tone==='good'?'#35d6a0' : o.tone==='bad'?'#E14A33' : o.tone==='mixed'?'#e9a23b' : '#8ea9bb';
+  const headCol = res.won?'#35d6a0' : res.half?'#e9a23b' : '#E14A33';
+  const headLab = res.won?'You won the match' : res.half?'Halved' : 'You lost the match';
+  const chips=dilemmaChipsHTML(o, dFol);
+  const line=(nm,v,mine)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0">
+    <span style="width:8px;height:8px;border-radius:50%;background:${mine?'#3b82f6':'#ef4444'};flex:0 0 auto"></span>
+    <span style="flex:1;font:800 13px var(--body);color:${mine?'#fff':'#dbe7ee'}">${esc(nm)}</span>
+    <span class="mono" style="font-weight:800;color:${v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9'}">${dtp(v)}</span></div>`;
+  document.querySelectorAll('.momentov,.storyov,.dilemmaov').forEach(n=>n.remove());
+  const ov=$(`<div class="dilemmaov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
+      background:radial-gradient(120% 90% at 50% 6%, rgba(40,30,8,.82), rgba(3,7,5,.98) 72%)">
+    <div style="max-width:452px;width:100%;position:relative;background:linear-gradient(180deg,#12251a,#070f0a);border:1px solid #6b5a2a;border-radius:18px;padding:20px 20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+      <div style="text-align:center">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border:1px solid ${headCol};border-radius:999px;background:rgba(255,255,255,.05);margin-bottom:8px">
+          <span style="font:800 10px/1 var(--body);letter-spacing:.24em;color:${headCol};text-transform:uppercase">⛳ ${esc(headLab)}</span></div>
+        <div style="font:800 10px/1 var(--body);letter-spacing:.22em;color:#e0b45a;text-transform:uppercase;margin-top:2px">${esc(ex.tag||'')}</div>
+        <h2 style="margin:6px 0 10px;font-size:21px;color:#fff;line-height:1.15">${esc(res.txt)}</h2>
+        <div class="scout" style="text-align:left;border-color:rgba(255,255,255,.14);margin:0 0 12px;padding:11px 14px">
+          ${line(S.name||'You', res.me, true)}
+          ${line(ex.oppName||'Opponent', res.opp, false)}
+          <div class="small" style="color:#9fb3a8;margin-top:6px">${res.thru} hole${res.thru===1?'':'s'} · ${esc((DAILY_COURSES[ex.courseKey]||{}).v||'')}</div>
+        </div>
+        <div class="dreply"></div>
+      </div>
+    </div></div>`);
+  const replyBox=ov.querySelector('.dreply');
+  replyBox.appendChild($(`<div class="scout" style="border-color:${toneCol};text-align:left;margin:2px 0 10px;padding:13px 14px">
+    <div style="color:#eef4f7;font-size:14.5px;line-height:1.45">${esc(T(o.text)||'')}</div>
+    ${chips.length?`<div style="display:flex;gap:6px;margin-top:11px;flex-wrap:wrap">${chips.join('')}</div>`:''}</div>`));
+  const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
+  cont.onclick=()=>{ ov.remove(); render(); };
+  replyBox.appendChild(cont);
+  staggerReveal(ov.querySelector('div[style*="text-align:center"]'));
+  document.body.appendChild(ov);
+  track('dilemma_match_result',{id:ex.id, won:res.won, half:res.half});
 }
 
 function simBracket(){ return bracketRunOut(bracketInit()); }
@@ -13231,6 +13458,7 @@ function dailyHeroCard(){
   let badge,mid;
   if(PRACTICE){ badge='PRACTICE'; mid='Unlimited rounds · nothing recorded'; }
   else if(dailyUnlimited()){ badge='DEV ∞'; mid=`${bestTxt?bestTxt+' · ':''}Unlimited attempts · first ${DAILY_MAX_ATTEMPTS} count for records`; }   // dev accounts
+  else if(dailyPassActive()){ badge='PRO ∞'; mid=`${bestTxt?bestTxt+' · ':''}Unlimited plays with your Tour Pass`; }   // the pass says unlimited, so the card has to say it too
   else if(datt===0){ badge=`${dleft} ${dleft===1?'TRY':'TRIES'}`; mid=beat?`Shoot better than <b>${beat}</b> to beat the pro`:'Beat the tour average to win the day'; }
   else if(dleft<=0){ badge=dwon?'BEATEN ✓':'DONE'; mid=`${bestTxt||'Played today'}${dwon?' · you beat the pro':` · ${beat} was the number`}`; }
   else { badge=`${dleft} LEFT`; mid=`${bestTxt?bestTxt+' · ':''}${dwon?'beaten ✓ · go lower':(beat?`beat <b>${beat}</b>`:'beat the tour average')}`; }
@@ -19462,9 +19690,15 @@ const STORY_ARCS={
    title:c=>`${esc(c.rivalName)} wants a rematch`,
    body:c=>`${esc(c.rivalName)} hasn’t forgotten your last money match. They’ve doubled the stakes and told the whole locker room about it.`,
    choices:[
-    {t:'Accept, bury them again', s:'Twist the knife', risk:true, outcomes:[
-      {p:c=>0.9+(c.ovr-78)/12, tone:'good', text:'You take their money AND their pride. The whole tour’s talking about it.', money:40000, conf:5, fans:4, head:c=>`Beat ${c.rivalName} again head-to-head`},
-      {p:1.2, tone:'bad', text:'They get you back this time, and you won’t hear the end of it.', conf:-4, skill:{clu:-2}, ev:1, label:'Stewing'}]},
+    // The rematch is the money round's opposite number in every way. Full eighteen, they picked the course
+    // and it is the meanest in the game, the wind is up, and there are no halves: double or nothing goes to
+    // sudden death. They have been on the range for a fortnight, which is the +2.
+    {t:'Accept, bury them again', s:'Twist the knife', sub:'You play it, hole by hole', risk:true,
+     match:{course:'Oakmont', cond:'windy', holes:18, edge:2, half:false,
+      day:'THE REMATCH', roundName:'Double or nothing · $40,000',
+      opp:c=>c.rivalName, ovr:c=>(c.rival&&c.rival.ovr)||c.ovr,
+      win:{tone:'good', text:'You take their money AND their pride. The whole tour’s talking about it.', money:40000, conf:5, fans:4, head:c=>`Beat ${c.rivalName} again head-to-head`},
+      lose:{tone:'bad', text:'They get you back this time, and you won’t hear the end of it.', money:-40000, conf:-4, skill:{clu:-2}, ev:1, label:'Stewing'}}},
     {t:'Decline, nothing to prove', s:'Above it now', outcomes:[
       {p:1.4, tone:'neutral', text:'You wave it off. Let them stew on the last one.', respect:2}]}]},
  arc_comeback:{ tag:'THE COMEBACK', dom:'injury',
@@ -19695,9 +19929,16 @@ const DILEMMAS=[
  {id:'dil_practice_rival', tag:'THE LOCKER ROOM', dom:'rival', when:c=>!!c.rivalName, title:c=>`A money round with ${esc(c.rivalName)}`,
   body:c=>`${esc(c.rivalName)} invites you to play a money practice round Tuesday, friendly on the surface, but everyone knows nothing between you two is friendly.`,
   choices:[
-   {t:'Accept and bury them', s:'Send a message', risk:true, outcomes:[
-     {p:c=>0.9+(c.ovr-78)/12, tone:'good', text:'You take their cash and their pride. You walk to Thursday nine feet tall.', conf:5, fans:3, money:20000, head:c=>`Beat ${c.rivalName} in a money practice round`, arc:{fid:'arc_rival_rematch',in:[5,9]}},
-     {p:1.2, tone:'bad', text:'They edge you on the last and won’t let you forget it. Into your head early.', skill:{clu:-3}, ev:1, label:'Needled', conf:-4}]},
+   // PLAYED, not rolled. A money match is a golf match, so it is one: nine holes on a quiet members' course
+   // on the Tuesday, no gallery, no leaderboard. The rival plays it loose (edge -1), it is a practice round
+   // to them, and nine holes all square is a half, because nobody plays extras on a Tuesday.
+   {t:'Accept and bury them', s:'Send a message', sub:'You play it, hole by hole', risk:true,
+    match:{course:'Sedgefield Country Club', cond:'calm', holes:9, edge:-1,
+     day:'TUESDAY', roundName:'Money round · $20,000 a side',
+     opp:c=>c.rivalName, ovr:c=>(c.rival&&c.rival.ovr)||c.ovr,
+     win:{tone:'good', text:'You take their cash and their pride. You walk to Thursday nine feet tall.', conf:5, fans:3, money:20000, head:c=>`Beat ${c.rivalName} in a money practice round`, arc:{fid:'arc_rival_rematch',in:[5,9]}},
+     lose:{tone:'bad', text:'They edge you and won’t let you forget it. Into your head early.', skill:{clu:-3}, ev:1, label:'Needled', conf:-4},
+     half:{tone:'mixed', text:'Nine holes, nobody a nickel richer. Nothing is settled and you both know it.', conf:1, respect:1, arc:{fid:'arc_rival_rematch',in:[4,8]}}}},
    {t:'Politely decline', s:'Keep them guessing', outcomes:[
      {p:1.8, tone:'neutral', text:'You keep your cards close. Let them wonder.', conf:1, respect:1}]}]},
  {id:'dil_rookie_help', tag:'THE LOCKER ROOM', dom:'rival', when:c=>c.seasons>=3&&!!c.rookieName, title:c=>`${esc(c.rookieName)} asks for help`,
@@ -19809,9 +20050,17 @@ const LEAGUE_DILEMMAS=[
   title:c=>'A prime-time exhibition',
   body:c=>`A network wants one night, one match: you against ${esc(c.starName)} from the other side of the split. Enormous money, enormous audience, and no way to hide if it goes badly.`,
   choices:[
-   {t:'Take the match', s:'Prime time', sub:'Win or wear it', risk:true, outcomes:[
-     {p:c=>1+(c.ovr-80)/14, tone:'good', text:'You win it under lights in front of the biggest audience golf has had in years.', money:3500000, fans:9, fol:0.14, conf:5, head:c=>`Beat ${c.starName} in a prime-time exhibition`},
-     {p:1.1, tone:'bad', text:'You get taken apart on national television. The highlights are not yours.', money:1800000, fans:-4, conf:-5, head:'Lost a prime-time exhibition badly'}]},
+   // One night, so it is twelve holes under lights on the breakaway league's own desert course, and the
+   // network takes a draw rather than keep a live audience out there past midnight. The appearance fee is
+   // paid either way, which is the whole reason a player says yes: only the ninety seconds of highlights
+   // are at stake. Their headliner is up for it (+1).
+   {t:'Take the match', s:'Prime time', sub:'You play it, hole by hole', risk:true,
+    match:{course:'Gulf Dunes Club', cond:'breezy', holes:12, edge:1,
+     day:'PRIME TIME', roundName:'Exhibition · 12 holes',
+     opp:c=>c.starName, ovr:c=>88,
+     win:{tone:'good', text:'You win it under lights in front of the biggest audience golf has had in years.', money:3500000, fans:9, fol:0.14, conf:5, head:c=>`Beat ${c.starName} in a prime-time exhibition`},
+     lose:{tone:'bad', text:'You get taken apart on national television. The highlights are not yours.', money:1800000, fans:-4, conf:-5, head:'Lost a prime-time exhibition badly'},
+     half:{tone:'mixed', text:'Twelve holes, all square, and the network gets its finish anyway. Nobody settled anything.', money:2400000, fans:3, fol:0.06, conf:1, head:c=>`Halved a prime-time exhibition with ${c.starName}`}}},
    {t:'Decline politely', s:'Not a circus act', outcomes:[
      {p:2, tone:'good', text:'You tell them your golf is not a wrestling promotion. Respect where it counts.', respect:5}]}]},
  {id:'dil_lg_boycott', tag:'THE PRESS', dom:'league', when:c=>c.lgOn&&c.lgHeat>=45,
@@ -20961,17 +21210,24 @@ var _csStyled=false;
 function csStyleOnce(){
   if(_csStyled) return; _csStyled=true;
   document.head.appendChild($(`<style>
+  /* ONE type scale for the whole broadcast, because a cutscene is a full-screen picture and its words
+     were sized in fixed pixels: 15px of dialogue read fine on a phone and was lost on a desktop, where
+     the same 15px sat under a stage ten times the area. Every readable string below is a multiple of
+     --csu, so the caption keeps its proportion to the screen at any size. vmin, not vw: on a desktop the
+     stage is bounded by HEIGHT, and vw would blow the caption up on a wide short window. The floor is
+     exactly today's phone size, so mobile is unchanged and only the desktop end grows. */
   .csov{position:fixed;inset:0;z-index:62;display:flex;flex-direction:column;overflow:hidden;cursor:pointer;
+    --csu:clamp(15px,2.4vmin,26px);
     background:#030709;background-image:radial-gradient(130% 90% at 50% 0%, rgba(12,44,62,.95), rgba(3,7,9,1) 66%)}
   .cs-hud{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px;
     border-bottom:1px solid rgba(255,255,255,.08)}
-  .cs-out{display:inline-flex;align-items:center;gap:7px;padding:4px 10px;border-radius:999px;
-    border:1px solid currentColor;font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase}
+  .cs-out{display:inline-flex;align-items:center;gap:calc(var(--csu)*.47);padding:calc(var(--csu)*.27) calc(var(--csu)*.67);border-radius:999px;
+    border:1px solid currentColor;font:800 calc(var(--csu)*.667)/1 var(--body);letter-spacing:.18em;text-transform:uppercase}
   .cs-live{width:7px;height:7px;border-radius:50%;background:#ff5b52;box-shadow:0 0 8px #ff5b52;animation:csPulse 1.5s ease-in-out infinite}
-  .cs-where{flex:1;min-width:0;text-align:right;font:700 10.5px/1.35 var(--body);letter-spacing:.05em;color:#7fa8b8;
+  .cs-where{flex:1;min-width:0;text-align:right;font:700 calc(var(--csu)*.70)/1.35 var(--body);letter-spacing:.05em;color:#7fa8b8;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cs-skip{flex:0 0 auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#cfe0e8;
-    border-radius:999px;padding:5px 11px;font:800 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+    border-radius:999px;padding:calc(var(--csu)*.33) calc(var(--csu)*.73);font:800 calc(var(--csu)*.667)/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
   .cs-stage{flex:1 1 auto;position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:10px 10px 14px;overflow:hidden}
   .cs-stage::before{content:'';position:absolute;left:50%;bottom:0;width:min(420px,86%);height:70%;transform:translateX(-50%);
     background:radial-gradient(60% 70% at 50% 100%, var(--csglow,rgba(95,208,224,.20)), transparent 72%);pointer-events:none;z-index:1}
@@ -21083,39 +21339,39 @@ function csStyleOnce(){
     animation:csPop 5.2s ease-out infinite}
   @keyframes csPop{0%{opacity:0}2%{opacity:.34}6%{opacity:0}100%{opacity:0}}
   @media (prefers-reduced-motion:reduce){ .cs-bulb,.cs-pop{animation:none!important;display:none} }
-  .cs-frame{font:800 9px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
+  .cs-frame{font:800 calc(var(--csu)*.60)/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:calc(var(--csu)*.2) calc(var(--csu)*.47);border-radius:999px;
     border:1px solid currentColor}
   .cs-body{flex:0 0 auto;padding:0 14px calc(16px + env(safe-area-inset-bottom,0px))}
-  .cs-card{max-width:520px;margin:0 auto;background:linear-gradient(180deg,rgba(13,35,52,.96),rgba(6,15,22,.98));
-    border:1px solid #2f6f86;border-left-width:4px;border-radius:14px;padding:13px 15px 15px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+  .cs-card{max-width:calc(var(--csu)*34.7);margin:0 auto;background:linear-gradient(180deg,rgba(13,35,52,.96),rgba(6,15,22,.98));
+    border:1px solid #2f6f86;border-left-width:4px;border-radius:14px;padding:calc(var(--csu)*.87) var(--csu) var(--csu);box-shadow:0 18px 50px rgba(0,0,0,.55)}
   .cs-who{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-  .cs-nm{font:800 14px/1.1 var(--body);color:#fff}
-  .cs-role{font:700 10px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#7fa8b8}
-  .cs-tx{color:#eef4f7;font-size:15px;line-height:1.45;min-height:2.9em}
+  .cs-nm{font:800 calc(var(--csu)*.933)/1.1 var(--body);color:#fff}
+  .cs-role{font:700 calc(var(--csu)*.667)/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#7fa8b8}
+  .cs-tx{color:#eef4f7;font-size:var(--csu);line-height:1.45;min-height:2.9em}
   .cs-caret{display:inline-block;width:7px;color:#5fd0e0;animation:csPulse 1s steps(2) infinite}
-  .cs-next{margin-top:9px;font:700 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#5f8ea0}
+  .cs-next{margin-top:calc(var(--csu)*.6);font:700 calc(var(--csu)*.667)/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#5f8ea0}
   .cs-feed{display:flex;flex-direction:column;gap:7px;margin-top:2px}
   .cs-post{display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
     border-radius:10px;padding:8px 10px}
-  .cs-av{flex:0 0 auto;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font:800 11px/1 var(--body);color:#06131a}
-  .cs-ph{font:800 11px/1.2 var(--body);color:#9fc4d2}
-  .cs-pt{color:#dbe7ee;font-size:13px;line-height:1.35;margin-top:2px}
+  .cs-av{flex:0 0 auto;width:calc(var(--csu)*1.6);height:calc(var(--csu)*1.6);border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font:800 calc(var(--csu)*.733)/1 var(--body);color:#06131a}
+  .cs-ph{font:800 calc(var(--csu)*.733)/1.2 var(--body);color:#9fc4d2}
+  .cs-pt{color:#dbe7ee;font-size:calc(var(--csu)*.867);line-height:1.35;margin-top:2px}
   /* the decision, inside the conversation: the question is a line, the answers are the next line */
-  .cs-kick{font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#5fd0e0;margin-bottom:7px}
+  .cs-kick{font:800 calc(var(--csu)*.633)/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#5fd0e0;margin-bottom:calc(var(--csu)*.47)}
   .cs-choices{display:grid;gap:8px;margin-top:11px}
-  .cs-opt{display:block;width:100%;text-align:left;position:relative;padding:11px 13px 11px 30px;border-radius:11px;
-    border:1px solid #2f6f86;background:rgba(9,32,46,.72);color:#eef4f7;font:800 14px/1.3 var(--body);cursor:pointer;
+  .cs-opt{display:block;width:100%;text-align:left;position:relative;padding:calc(var(--csu)*.73) calc(var(--csu)*.87) calc(var(--csu)*.73) calc(var(--csu)*2);border-radius:11px;
+    border:1px solid #2f6f86;background:rgba(9,32,46,.72);color:#eef4f7;font:800 calc(var(--csu)*.933)/1.3 var(--body);cursor:pointer;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;
     transition:border-color .15s ease,background .15s ease,transform .12s ease}
   .cs-opt:hover,.cs-opt:focus-visible{border-color:#5fd0e0;background:rgba(14,52,72,.92);outline:none;transform:translateX(2px)}
-  .cs-opt .cs-cur{position:absolute;left:11px;top:14px;color:#5fd0e0;opacity:0;transition:opacity .15s ease}
+  .cs-opt .cs-cur{position:absolute;left:calc(var(--csu)*.73);top:calc(var(--csu)*.93);color:#5fd0e0;opacity:0;transition:opacity .15s ease}
   .cs-opt:hover .cs-cur,.cs-opt:focus-visible .cs-cur{opacity:1}
-  .cs-opt .cs-sub{display:block;margin-top:3px;font:700 11px/1.3 var(--body);color:#8fb6c6;letter-spacing:.04em}
+  .cs-opt .cs-sub{display:block;margin-top:3px;font:700 calc(var(--csu)*.733)/1.3 var(--body);color:#8fb6c6;letter-spacing:.04em}
   .cs-opt.cs-tone::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:11px 0 0 11px;background:var(--tc,#5fd0e0)}
   .cs-opt.cs-tone:hover,.cs-opt.cs-tone:focus-visible{border-color:var(--tc,#5fd0e0)}
-  .cs-tonechip{font:900 15px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,#eef4f7)}
-  .cs-risk{display:inline-block;margin-left:7px;font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;
+  .cs-tonechip{font:900 var(--csu)/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--tc,#eef4f7)}
+  .cs-risk{display:inline-block;margin-left:7px;font:800 calc(var(--csu)*.60)/1 var(--body);letter-spacing:.08em;color:#ff8f7e;
     border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase;vertical-align:middle}
   .cs-card.wide{max-height:min(54vh,440px);overflow:auto;-webkit-overflow-scrolling:touch}
   /* the tap hint stays in view while a long reaction scrolls under it */
@@ -22001,6 +22257,20 @@ function showStorylineModal(sb){
   document.body.appendChild(ov);
   track('storyline_shown',{id:beat.id});
 }
+// The effect chips for an applied outcome: skills, confidence, popularity, respect, money, fans. Shared,
+// because a decision that PLAYS OUT as a match reports its result on its own card and the two lists of
+// chips drifting apart would mean the same +20k reading two different ways depending on how it was won.
+function dilemmaChipsHTML(o, dFol){
+  const chips=[];
+  if(o.skill){ const inj=Object.values(o.skill).some(v=>v<0); chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid ${inj?'rgba(225,74,51,.5)':'rgba(53,214,160,.5)'};background:${inj?'rgba(225,74,51,.12)':'rgba(53,214,160,.12)'};color:${inj?'#ff8f7e':'#35d6a0'}">${inj?'🩹':'▲'} ${esc(fxSkillLine(o))} · ${o.ev||3} event${(o.ev||3)===1?'':'s'}</span>`); }
+  const stat=(lab,v,col)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${v>=0?col:'#E14A33'}">${v>=0?'▲':'▼'} ${lab} ${v>=0?'+':''}${v}</span>`;
+  if(o.conf) chips.push(stat('Confidence',o.conf,'#35d6a0'));
+  if(o.fans) chips.push(stat('Popularity',o.fans,'#ff9d3a'));
+  if(o.respect) chips.push(stat('Respect',o.respect,'#5fd0e0'));
+  if(o.money) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${o.money>=0?'#ffd45e':'#E14A33'}">${o.money>=0?'+':'−'}${fmtShort(Math.abs(o.money)).replace('$','$')}</span>`);
+  if(dFol) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${dFol>0?'#35d6a0':'#c98'}">${dFol>0?'▲':'▼'} Fans ${fmtFollowers(Math.abs(dFol))}</span>`);
+  return chips;
+}
 // ---- CS325: the Career Dilemma overlay, a specific situation, risky choices, then a ROLLED outcome ----
 function showDilemma(sb){
   // the first decision a career hands you that has nothing to do with a golf ball
@@ -22035,6 +22305,15 @@ function showDilemma(sb){
     const b=$(`<button class="btn ghost" style="text-align:left;padding-left:14px;padding-right:${ch.risk?'78px':'14px'};position:relative">
       ${esc(T(ch.t))}${ch.s?`<span class="sub">${esc(T(ch.s))}${ch.sub?` · ${esc(T(ch.sub))}`:''}</span>`:''}${riskTag}</button>`);
     b.onclick=()=>{
+      // A decision that IS a golf match is not rolled, it is played. The card steps aside, the TourTracer
+      // takes over, and the outcome lands when the last putt drops (finishExhibitionMatch applies it).
+      // The beat has already been consumed above (seen-set / arc spliced), so there is nothing to undo.
+      if(ch.match){
+        track('dilemma_choice',{id:beat.id, choice:String(T(ch.t)), tone:'played'});
+        ov.remove();
+        startExhibitionMatch(beat, ctx, ch);
+        return;
+      }
       const fol0=story.followers||0;
       const o=rollOutcome(ch, ctx);
       const eff=applyDilemmaOutcome(o, ctx);
@@ -22047,14 +22326,7 @@ function showDilemma(sb){
       const toneCol = o.tone==='good'?'#35d6a0' : o.tone==='bad'?'#E14A33' : o.tone==='mixed'?'#e9a23b' : '#8ea9bb';
       const toneLab = o.tone==='good'?'It pays off' : o.tone==='bad'?'It backfires' : o.tone==='mixed'?'Mixed result' : 'The outcome';
       // effect chips from the applied outcome
-      const chips=[];
-      if(o.skill){ const inj=Object.values(o.skill).some(v=>v<0); chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid ${inj?'rgba(225,74,51,.5)':'rgba(53,214,160,.5)'};background:${inj?'rgba(225,74,51,.12)':'rgba(53,214,160,.12)'};color:${inj?'#ff8f7e':'#35d6a0'}">${inj?'🩹':'▲'} ${esc(fxSkillLine(o))} · ${o.ev||3} events</span>`); }
-      const stat=(lab,v,col)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${v>=0?col:'#E14A33'}">${v>=0?'▲':'▼'} ${lab} ${v>=0?'+':''}${v}</span>`;
-      if(o.conf) chips.push(stat('Confidence',o.conf,'#35d6a0'));
-      if(o.fans) chips.push(stat('Popularity',o.fans,'#ff9d3a'));
-      if(o.respect) chips.push(stat('Respect',o.respect,'#5fd0e0'));
-      if(o.money) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${o.money>=0?'#ffd45e':'#E14A33'}">${o.money>=0?'+':'−'}${fmtShort(Math.abs(o.money)).replace('$','$')}</span>`);
-      if(dFol) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${dFol>0?'#35d6a0':'#c98'}">${dFol>0?'▲':'▼'} Fans ${fmtFollowers(Math.abs(dFol))}</span>`);
+      const chips=dilemmaChipsHTML(o, dFol);
       replyBox.innerHTML='';
       replyBox.appendChild($(`<div class="scout" style="border-color:${toneCol};text-align:left;margin:2px 0 10px;padding:13px 14px">
         <div class="small" style="color:${toneCol};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px">${toneLab}</div>
@@ -22116,17 +22388,34 @@ function storyFeedHTML(){
 // Rewards also scale with your FOLLOWING (popularity sells). Each off-season, if your standing has grown
 // enough to attract a bigger brand, you're offered the choice: stay and keep compounding loyalty, or upgrade.
 const SPONSOR_TIERS=[   // CS242: reward ladder compressed so the top tier can't compound to a windfall. CS330: +Elite/Icon so the climb lasts a whole career.
-  {name:'Tier 1', reward:1.00, diff:1.00},
-  {name:'Tier 2', reward:1.28, diff:1.24},
-  {name:'Tier 3', reward:1.50, diff:1.50},
-  {name:'Tier 4', reward:2.05, diff:1.80},
-  {name:'Tier 5', reward:2.40, diff:2.05},
-  {name:'Tier 6', reward:2.80, diff:2.30}
+  // Named after the brand pools they draw from (see BRANDS below, which has been grouped Regional →
+  // Icon all along). "Tier 6" told a player nothing; "Icon" says what reaching it means.
+  {name:'Regional', reward:1.00, diff:1.00},
+  {name:'National', reward:1.28, diff:1.24},
+  {name:'Premium',  reward:1.50, diff:1.50},
+  {name:'Global',   reward:2.05, diff:1.80},
+  {name:'Elite',    reward:2.40, diff:2.05},
+  {name:'Icon',     reward:2.80, diff:2.30}
 ];
-// CS330: market value needed to attract each tier, Global comes mid-career, Elite/Icon are the long game
-// (Icon needs a legendary CV: huge following + peak OVR + many wins/majors, so it's a late-career pinnacle).
-const SPONSOR_TIER_REQ=[0, 24, 48, 70, 94, 114];
-const SPONSOR_REL_MAX=5;
+/* Market value needed to attract each tier. These were [0,24,48,70,94,114] against a value that topped
+   out around 120, and every one of its three inputs SATURATED early: followers capped at 3.2M, OVR at
+   94, and the wins/majors term at ten wins and four majors. A good player therefore held a maxed top-tier
+   deal by about year 13 and then had seventeen seasons with nothing left to climb (owner). The value
+   below runs to ~150 and keeps moving all career, and the top two rungs are priced for a CV that takes
+   twenty-odd seasons to build. Icon is meant to be the last few years of a legendary career, or never. */
+const SPONSOR_TIER_REQ=[0, 26, 52, 80, 106, 124];
+/* And a YEARS-SERVED gate on the top two rungs, because a value curve alone cannot put them where they
+   belong (owner: the final tier should land around year 20 to 25). An all-timer's following, rating and
+   CV are all near their ceilings by their mid thirties, so on value alone they reach the top rung around
+   year 17 however the numbers are weighted, while a merely great career gets there ten years later. The
+   gate closes that spread from the early end: nobody is the face of the sport in year 13, whatever they
+   have won. Value still decides whether you EVER get there. */
+const SPONSOR_TIER_MINYR=[0, 0, 0, 0, 12, 20];
+/* Loyalty runs past the ambassador milestone now, so a partnership is still deepening in year 25. Levels
+   above AMB take TWO delivered seasons each and pay half a step, so the last three rungs are roughly six
+   seasons of work for a modest raise: a reason to stay, not a second income. */
+const SPONSOR_REL_MAX=8;
+const SPONSOR_REL_AMB=5;
 // CS229: every sponsor is a FAKE BRAND with its own identity, category, color, tagline, and a
 // PERSONALITY trait that changes the deal. So two offers at the same tier can feel very different, and
 // choosing is about more than money. (All brands are fictional, see the not-affiliated disclaimer.)
@@ -22322,23 +22611,36 @@ function brandBadge(name, opts){ opts=opts||{}; const b=brandInfo(name), sz=opts
     <span style="min-width:0"><span style="font-weight:800;color:${opts.on||'var(--oncard)'};white-space:nowrap">${esc(name)}</span>${opts.cat?`<span class="small" style="display:block;color:#8fa7b3;letter-spacing:.04em">${BRAND_CATS[b.cat]||''}${opts.trait?' · '+esc(brandTrait(name).label):''}</span>`:''}</span></span>`; }
 function sponsorTierInfo(t){ return SPONSOR_TIERS[Math.max(0,Math.min(SPONSOR_TIERS.length-1,t|0))]; }
 function sponsorRelMult(rel, brand){ const step=(brandTrait(brand).relStep)||0.06;   // loyal brands grow faster (+10%/lvl vs +6%)
-  return 1 + step*(Math.max(1,Math.min(SPONSOR_REL_MAX,rel||1))-1); }
+  const r=Math.max(1,Math.min(SPONSOR_REL_MAX,rel||1));
+  // levels 1..AMB pay the full step (unchanged); the rungs past it pay half, so a decade of loyalty is
+  // still climbing without turning the sponsor line into a second prize purse
+  return 1 + step*(Math.min(r,SPONSOR_REL_AMB)-1) + step*0.5*Math.max(0,r-SPONSOR_REL_AMB); }
 function sponsorFolMult(brand){ const f=(careerStory().followers)||FOLLOWERS_START;
   const base=Math.max(0, Math.min(0.35, (Math.log10(Math.max(10000,f))-4)*0.117));   // CS242: softened, 10k→+0, 100k→+.12, 1M→+.23, 10M+→+.35 (was up to +.6)
   // CS280: your FANS axis is your marketability, a popular star commands richer sponsor money (±~18%)
   return (1 + base*((brandTrait(brand).folBoost)||1)) * repMarketMult(); }   // image-driven brands amplify the follower effect
 function sponsorPick(tier, avoid, rng){ const all=brandsOfTier(tier), pool=all.filter(b=>b!==avoid), p=pool.length?pool:all;
   return p[Math.floor((rng?rng():Math.random())*p.length)]; }
-// your "market value" to sponsors: following + current OVR + career achievement (roughly 0-120)
+/* Your "market value" to sponsors: following + OVR + career achievement + time served (roughly 0-150).
+   The weights are chosen so that the term which dominates CHANGES as a career goes on. Early it is your
+   OVR and your following, both of which are largely settled by your early thirties. Late it can only be
+   the CV and the years, which is what makes the top of the ladder a grind rather than a checkpoint. */
 function sponsorMarketValue(){ const st=careerStory(), c=S.career||{};
   let ovr; try{ ovr=(S.season&&S.season.me)?Math.round(S.season.me.skill):(c.peakOvr||Math.round(buildPlayer().skill)); }catch(e){ ovr=c.peakOvr||82; }
-  const fv=Math.max(0,Math.min(55,(Math.log10(Math.max(10000,st.followers||FOLLOWERS_START))-4)*22));
-  const ov=Math.max(0,Math.min(35,(ovr-78)*2.2));
-  const av=Math.min(30,(c.wins||0)*1.4+(c.majors||0)*4);
-  return fv+ov+av; }
+  ovr=Math.max(ovr, c.peakOvr||0);   // a declining legend keeps the marketability they earned
+  // followers: reaches its ceiling at 10M rather than 3.2M, so the fan base is worth chasing for longer
+  const fv=Math.max(0,Math.min(45,(Math.log10(Math.max(10000,st.followers||FOLLOWERS_START))-4)*15));
+  const ov=Math.max(0,Math.min(36,(ovr-76)*1.6));
+  // the CV is the long pole: a win is worth less than it was and the ceiling is nearly twice as far away,
+  // so this keeps climbing through a whole career instead of maxing at ten wins and four majors
+  const av=Math.min(55,(c.wins||0)*1.0+(c.majors||0)*3.5);
+  // and time served, which no amount of early dominance can buy
+  const sv=Math.min(14,(((c.seasons&&c.seasons.length)||0))*0.6);
+  return fv+ov+av+sv; }
 // Legacy perks (Number One, Money Machine, The Immortal) are LEVERAGE: brands court a golfer with that
 // résumé above what their following alone would earn.
-function eligibleSponsorTier(){ const v=sponsorMarketValue(); let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i]) t=i;
+function eligibleSponsorTier(){ const v=sponsorMarketValue(), yr=S.year||1;
+  let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i] && yr>=(SPONSOR_TIER_MINYR[i]||0)) t=i;
   try{ if(typeof legacyAdd==='function') t+=legacyAdd('sponsorTier'); }catch(e){}
   try{ const ep=(typeof entryPath==='function')?entryPath():null; if(ep&&ep.sponsorTierAdj) t+=ep.sponsorTierAdj; }catch(e){}
   return Math.max(0, Math.min(SPONSOR_TIERS.length-1, t)); }
@@ -22376,8 +22678,13 @@ function computeSponsorOffers(){ if(S.daily||S.circuitMode||!S.career) return []
   const have=new Set(SPONSOR_SLOTS.map(k=>s[k]&&s[k].brand).filter(Boolean));
   const seed=(((S.careerSeed||1)>>>0)^(((S.year||1)*0x9E3779B1)>>>0))>>>0, rng=mulberry32((seed^0x0FFE5)>>>0);
   const offers=[];
-  const emptySlot=SPONSOR_SLOTS.find(k=>!s[k]);
-  if(emptySlot){ const pool=brandsOfTier(elig).filter(b=>!have.has(b)); if(pool.length){ const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:elig}); have.add(b); } }
+  // ONE brand per OPEN slot, so two open slots can be filled in the same off-season rather than one of
+  // them waiting a year for its own offer. The exception is your FIRST-EVER deal, which is its own
+  // set-piece: a career that starts with nobody interested should be signed by one brand, not auctioned.
+  const emptySlots=SPONSOR_SLOTS.filter(k=>!s[k]);
+  const nFill = (emptySlots.length>1 && firstEverSponsor()) ? 1 : emptySlots.length;
+  for(let i=0;i<nFill;i++){ const pool=brandsOfTier(elig).filter(b=>!have.has(b)); if(!pool.length) break;
+    const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:elig}); have.add(b); }
   const filled=SPONSOR_SLOTS.filter(k=>s[k]).map(k=>s[k]).sort((a,b)=>a.tier-b.tier);
   if(filled.length){ const low=filled[0], target=Math.min(elig,maxT);
     if(target>low.tier){
@@ -22454,39 +22761,68 @@ function sponsorOfferPopup(offers){
       <div style="font:800 12px/1 var(--body);letter-spacing:.26em;color:${accent};text-transform:uppercase">${kicker}</div>
       <h1 style="margin:8px 0 2px;font-size:27px;line-height:1.08;color:#fff">${headline}</h1>
       <p class="lede" style="margin:8px 0 4px;color:#e8f0e8">${sub}</p>
-      <p class="small" style="margin:0 0 14px;color:#9fb3a8">Choose which slot to wear their logo, or decide later.</p>
+      <p class="small sohint" style="margin:0 0 14px;color:#9fb3a8"></p>
       <div style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#8fa7b3;text-transform:uppercase;text-align:left;margin:0 0 7px">What you have now</div>
-      <div style="display:flex;gap:9px;flex-wrap:wrap;text-align:left;margin-bottom:13px">${SPONSOR_SLOTS.map(s=>slotStatusCardHTML(s)).join('')}</div>
-      <div style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase;text-align:left;margin:0 0 7px">The offer</div>
+      <div class="soslots" style="display:flex;gap:9px;flex-wrap:wrap;text-align:left;margin-bottom:13px"></div>
+      <div class="sohd" style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase;text-align:left;margin:0 0 7px"></div>
       <div class="soffers" style="display:grid;gap:11px;text-align:left"></div>
-      <button class="btn ghost solater" style="margin-top:12px">Decide later ▸<span class="sub">The offer stays on the alert banner until you choose</span></button>
+      <button class="btn ghost solater" style="margin-top:12px"></button>
     </div></div>`);
-  const box=ov.querySelector('.soffers');
-  offers.forEach(offer=>{
-    const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
-    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(241,208,74,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ Step up to ${esc(nti.name)}</div>`
-      : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand</div>` : '';
-    const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
-      ${badge}
-      <div style="display:flex;align-items:center;gap:11px">${brandLogoSVG(offer.brand,44)}
-        <span style="flex:1;min-width:0">
-          <span style="display:block;font-weight:800;font-size:17px;color:var(--oncard);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(offer.brand)}</span>
-          <span class="small" style="display:block;color:#9fb3a8">${esc(nti.name)} · ${esc(ntr.label)}</span></span>
-        <span class="mono small" style="flex:0 0 auto;color:#ffd45e;font-weight:800;text-align:right;line-height:1.2">+${fmtShort(signing)}<span style="display:block;color:#8fa7b3;font-weight:600">signing</span></span></div>
-      ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
-      ${sponsorProConHTML(offer)}
-      <div style="display:flex;gap:8px;margin-top:11px" class="offer-actions"></div></div>`);
-    const acts=card.querySelector('.offer-actions');
-    SPONSOR_SLOTS.forEach(slot=>{
-      const cur=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
-      const btn=$(`<button class="btn goldfill" style="flex:1;padding:9px 8px;font-size:12px;text-transform:none;line-height:1.25">
-        <b>${cur?'Replace on '+lab:'Sign as '+lab}</b><span style="display:block;font-weight:600;font-size:10px;opacity:.85">${cur?esc(cur.brand)+' · loyalty resets':'fills the open slot'}</span></button>`);
-      btn.onclick=()=>{ ov.remove(); signSponsor(offer, slot); };
-      acts.appendChild(btn);
+  /* The offers on the table, and how many have been signed off this card. Signing used to close the whole
+     thing, so a year that brought two brands only ever produced one deal: taking the shirt offer dismissed
+     the hat offer with it (owner: "it should have left the other company up with only the hat deal
+     remaining"). The card now stays up and REPAINTS, because everything on it moves when a deal is signed:
+     the slot you filled, the buttons on the other brand (an open slot becomes a replace), and the pro/con,
+     which reads differently once you are carrying a deal. It closes itself when nothing is left to decide. */
+  let list=offers.slice(), signed=0;
+  const slotsBox=ov.querySelector('.soslots'), box=ov.querySelector('.soffers');
+  const hint=ov.querySelector('.sohint'), hd=ov.querySelector('.sohd'), later=ov.querySelector('.solater');
+  const paint=()=>{
+    slotsBox.innerHTML=SPONSOR_SLOTS.map(s=>slotStatusCardHTML(s)).join('');
+    const open=SPONSOR_SLOTS.filter(sl=>!sponsorOf(sl)).length;
+    hint.textContent = signed
+      ? (list.length>1?'Signed. The other brands are still on the table.':'Signed. The other brand is still on the table.')
+      : (list.length>1 && open>0 ? 'Choose a slot for each. You can sign one for your hat and one for your shirt.'
+                                 : 'Choose which slot to wear their logo, or decide later.');
+    hd.textContent = list.length>1 ? 'The offers' : 'The offer';
+    later.innerHTML = signed
+      ? `Done ▸<span class="sub">Any offer you leave stays on the alert banner</span>`
+      : `Decide later ▸<span class="sub">The offer${list.length>1?'s stay':' stays'} on the alert banner until you choose</span>`;
+    box.innerHTML='';
+    list.forEach(offer=>{
+      const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
+      const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(241,208,74,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ Step up to ${esc(nti.name)}</div>`
+        : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand</div>` : '';
+      const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
+        ${badge}
+        <div style="display:flex;align-items:center;gap:11px">${brandLogoSVG(offer.brand,44)}
+          <span style="flex:1;min-width:0">
+            <span style="display:block;font-weight:800;font-size:17px;color:var(--oncard);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(offer.brand)}</span>
+            <span class="small" style="display:block;color:#9fb3a8">${esc(nti.name)} · ${esc(ntr.label)}</span></span>
+          <span class="mono small" style="flex:0 0 auto;color:#ffd45e;font-weight:800;text-align:right;line-height:1.2">+${fmtShort(signing)}<span style="display:block;color:#8fa7b3;font-weight:600">signing</span></span></div>
+        ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
+        ${sponsorProConHTML(offer)}
+        <div style="display:flex;gap:8px;margin-top:11px" class="offer-actions"></div></div>`);
+      const acts=card.querySelector('.offer-actions');
+      SPONSOR_SLOTS.forEach(slot=>{
+        const cur=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
+        // an OPEN slot is the offer being made; replacing a deal you already hold is a real choice but a
+        // different one, so it stops looking like the headline action once a slot is filled
+        const btn=$(`<button class="btn ${cur?'ghost':'goldfill'}" style="flex:1;padding:9px 8px;font-size:12px;text-transform:none;line-height:1.25">
+          <b>${cur?'Replace on '+lab:'Sign as '+lab}</b><span style="display:block;font-weight:600;font-size:10px;opacity:.85">${cur?esc(cur.brand)+' · loyalty resets':'fills the open slot'}</span></button>`);
+        btn.onclick=()=>{
+          signSponsor(offer, slot);
+          list=list.filter(o=>o.brand!==offer.brand); signed++;
+          if(!list.length){ ov.remove(); render(); return; }   // nothing left to decide: get out of the way
+          paint();
+        };
+        acts.appendChild(btn);
+      });
+      box.appendChild(card);
     });
-    box.appendChild(card);
-  });
-  ov.querySelector('.solater').onclick=()=>{ ov.remove(); track('sponsor_moment_later',{n:offers.length}); render(); };
+  };
+  paint();
+  later.onclick=()=>{ ov.remove(); track('sponsor_moment_later',{n:list.length, signed}); render(); };
   if(first && !reduce && typeof confettiRun==='function') try{ confettiRun(ov, [accent,'#ffffff'], 1100); }catch(e){}
   document.body.appendChild(ov);
   buzz(30);
@@ -22628,13 +22964,16 @@ function makeContracts(){ if(S.daily||S.circuitMode||!S.career||!S.season) retur
 function contractsList(){ const cs=S.season&&S.season.contracts; if(!cs) return []; return SPONSOR_SLOTS.filter(k=>cs[k]).map(k=>({slot:k, contract:cs[k]})); }
 // relationship meter chip (rel level + loyalty %); used in the off-season card, season deal, report card
 function sponsorRelMeterHTML(sp){ const rel=Math.max(1,Math.min(SPONSOR_REL_MAX,sp.rel||1));
-  const amb=!!sp.ambassador||rel>=SPONSOR_REL_MAX;
-  const pct=Math.round((sponsorRelMult(rel, sp.brand)-1)*100), pips=Array.from({length:SPONSOR_REL_MAX},(_,i)=>
-    `<span style="width:16px;height:6px;border-radius:3px;background:${i<rel?'#ffd45e':'rgba(255,255,255,.14)'}"></span>`).join('');
+  const amb=!!sp.ambassador||rel>=SPONSOR_REL_AMB;
+  const pct=Math.round((sponsorRelMult(rel, sp.brand)-1)*100);
+  const pw=SPONSOR_REL_MAX>6?11:16;   // the pips still have to fit the slot card at eight of them
+  // Becoming an ambassador used to REPLACE the level, which was fine when it was the last rung. It is
+  // not any more, so the star sits alongside a level that still has somewhere to go.
+  const pips=Array.from({length:SPONSOR_REL_MAX},(_,i)=>
+    `<span style="width:${pw}px;height:6px;border-radius:3px;background:${i<rel?(i>=SPONSOR_REL_AMB?'#ffe9a8':'#ffd45e'):'rgba(255,255,255,.14)'}"></span>`).join('');
   return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span style="display:flex;gap:3px">${pips}</span>
-    ${amb?`<span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">★ Brand Ambassador${pct>0?' · +'+pct+'% rewards':''}</span>`
-        :`<span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">Loyalty Lv ${rel}${pct>0?' · +'+pct+'% rewards':''}</span>`}</div>`; }
+    <span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">${amb?'★ ':''}Loyalty Lv ${rel}${rel<SPONSOR_REL_MAX?'/'+SPONSOR_REL_MAX:''}${pct>0?' · +'+pct+'% rewards':''}</span></div>`; }
 // signing bonus paid when you switch brands - a one-time cash sweetener that offsets losing your loyalty
 function sponsorSigningBonus(brand){ const ti=sponsorTierInfo(brandInfo(brand).tier);
   return Math.round(2.4e6*ti.reward*sponsorFolMult(brand)*purseMult(S.year||1)/1e5)*1e5; }
@@ -22964,7 +23303,7 @@ function sponsorStripNode(){
   ensureSponsors();
   const chip=slot=>{ const sp=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
     if(!sp) return `<span class="small muted" style="opacity:.75">${lab}: open</span>`;
-    const amb=!!sp.ambassador||(sp.rel||1)>=SPONSOR_REL_MAX;
+    const amb=!!sp.ambassador||(sp.rel||1)>=SPONSOR_REL_AMB;
     return `<span style="display:inline-flex;align-items:center;gap:5px;min-width:0">${brandLogoSVG(sp.brand,18)}<b style="color:var(--oncard);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8.5em">${esc(sp.brand)}</b>${amb?'<span style="color:var(--gold)">★</span>':`<span class="small muted">Lv${sp.rel||1}</span>`}</span>`; };
   const det=$(`<details class="acc" ${S.sponsorsOffOpen?'open':''} style="max-width:520px;margin:0 auto 8px">
     <summary class="accsum"><span class="chev">›</span>
@@ -22986,7 +23325,9 @@ function contractReportCardHTML(x){
   const sp=sponsorOf(slot);
   const ambNew=(S.season&&S.season._ambNew&&S.season._ambNew[slot])||null;
   // reward growth headline: loyalty climbing (+2 goals met) grows next year's bonuses by the brand's relationship step
-  const relGrow = (!dropped && met>=2 && sp) ? Math.round((sponsorRelMult(Math.min(SPONSOR_REL_MAX,(sp.rel||1)),sp.brand)-sponsorRelMult(Math.max(1,(sp.rel||1)-1),sp.brand))*100) : 0;
+  // only when a level actually MOVED: past the ambassador rung a delivered season may be the first of
+  // the two a level costs, and promising a raise that is not coming is worse than saying nothing
+  const relGrow = (!dropped && met>=2 && sp && sp._relUp) ? Math.round((sponsorRelMult(Math.min(SPONSOR_REL_MAX,(sp.rel||1)),sp.brand)-sponsorRelMult(Math.max(1,(sp.rel||1)-1),sp.brand))*100) : 0;
   const outlook = dropped ? `${esc(contract.sponsor)} has walked away. A fresh, smaller deal awaits, prove yourself and climb again.`
     : all ? `Every goal delivered. ${esc(contract.sponsor)} is thrilled${relGrow>0?`, next year’s bonuses grow +${relGrow}%`:''}.`
     : met===0 ? 'A tough year. The relationship took a hit.'
@@ -24586,7 +24927,7 @@ function scrFormatNews(){
   add($(`<div class="tnews">
     <div class="tn-kick">🏆 Format · the tour announces</div>
     <h2 class="tn-h">${esc(BRACKET_NAME)}</h2>
-    <p class="tn-p"><b>From this season the Tour Championship is match play.</b> The year no longer ends
+    <p class="tn-p"><b>Starting this season, the Tour Championship is match play.</b> The year no longer ends
       with four rounds of stroke play. The top 32 on the season points list go to a fortnight: a week of
       group matches, then a week of knockout, and the last one standing lifts the Tour Cup.</p>
     <div class="tn-facts">
@@ -26818,13 +27159,20 @@ function scrSummary(){
         // brand reads the year as a partnership even if the headline goals fell short.
         const bDone=((S.season.briefsDone||{})[slot])||0;
         const met=x.met+(bDone>=2?1:0);
-        if(met>=2){ sp.rel=Math.min(SPONSOR_REL_MAX,(sp.rel||1)+1); sp.strikes=0; }
-        else if(met===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.strikes=(sp.strikes||0)+1; }
-        else sp.strikes=0;   // met exactly 1 → hold steady
+        if(met>=2){
+          // up to the ambassador rung, one delivered season is one level. Past it, two: the tail of the
+          // ladder is meant to take the back half of a career, not four more good years.
+          const r0=sp.rel||1;
+          if(r0<SPONSOR_REL_AMB){ sp.rel=r0+1; sp.relPend=0; }
+          else { sp.relPend=(sp.relPend||0)+1;
+            if(sp.relPend>=2){ sp.relPend=0; sp.rel=Math.min(SPONSOR_REL_MAX,r0+1); } }
+          sp._relUp=(sp.rel>r0)?1:0; sp.strikes=0; }
+        else if(met===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.relPend=0; sp._relUp=0; sp.strikes=(sp.strikes||0)+1; }
+        else { sp.strikes=0; sp._relUp=0; }   // met exactly 1 → hold steady
         sp.seasons=(sp.seasons||0)+1;
         // CS277 - BRAND AMBASSADOR: hit max loyalty (Lv 5) and the brand names you the face of the company.
         // Recognition + a one-time following bump (fans notice the partnership) - no cash, so the economy is untouched.
-        if(sp.rel>=SPONSOR_REL_MAX && !sp.ambassador){ sp.ambassador=true;
+        if(sp.rel>=SPONSOR_REL_AMB && !sp.ambassador){ sp.ambassador=true;
           const fol=gainFollowers(0.07, 4000);
           S.season._ambNew=S.season._ambNew||{}; S.season._ambNew[slot]={brand:c.sponsor, fol};   // persist so the summary re-renders keep the celebration
           try{ recordAchEvent({inc:{brandAmbassadors:1}}); }catch(e){}   // CS290
@@ -28242,15 +28590,22 @@ function scoreCardEl(opts){
     root.appendChild(leg);
   }
   blocks.forEach(bl=>{
-    const n=bl.b-bl.a, cols=`27px repeat(${n},1fr) 30px${bl.tot?' 32px':''}`;   // thin dot-only gutter
+    // A match can be 12 holes, which splits 9 and 3. Without padding, three cells share the same 1fr
+    // track the first block gives to nine, so the second row's boxes come out three times as wide and
+    // the two blocks stop reading as one card. The filler keeps every cell the width of a front-nine
+    // cell. An 18-hole card pads by zero and is untouched.
+    const n=bl.b-bl.a, pad=(H>9?9-n:0), cols=`27px repeat(${n+pad},1fr) 30px${bl.tot?' 32px':''}`;   // thin dot-only gutter
     const g=$(`<div class="rsc-block" style="grid-template-columns:${cols}"></div>`);
     const cell=(cls,html,attr)=>g.appendChild($(`<div class="${cls}" ${attr||''}>${html}</div>`));
+    const filler=cls=>{ for(let f=0;f<pad;f++) cell(cls+' rsc-fill',''); };
     cell('rsc-lab rsc-hd rsc-gut','#');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-hd', (k+1));
+    filler('rsc-c rsc-hd');
     cell('rsc-c rsc-hd rsc-sub', bl.sub);
     if(bl.tot) cell('rsc-c rsc-hd rsc-sub rsc-tot','TOT');
     cell('rsc-lab rsc-par rsc-gut','PAR');
     for(let k=bl.a;k<bl.b;k++) cell('rsc-c rsc-par', pars[k]!=null?pars[k]:'-');
+    filler('rsc-c rsc-par');
     cell('rsc-c rsc-par rsc-sub', sum(pars,bl.a,bl.b));
     if(bl.tot) cell('rsc-c rsc-par rsc-sub rsc-tot', sum(pars,0,H));
     rows.forEach(r=>{
@@ -28263,6 +28618,7 @@ function scoreCardEl(opts){
         const inner=played?`<span style="color:${dScoreCol(tp)}">${scMark(s,tp)}</span>`:`<span class="rsc-dot0">·</span>`;
         cell(`rsc-c rsc-pl ${k===cur?'cur':''} ${k===sel?'sel':''} ${(tap&&played)?'tapc':''} ${rc}`, inner, (tap?`data-hole="${k}"`:''));
       }
+      filler(`rsc-c rsc-pl ${rc}`);
       cell(`rsc-c rsc-pl rsc-sub ${rc}`, sum(r.strokes,bl.a,bl.b));
       if(bl.tot) cell(`rsc-c rsc-pl rsc-sub rsc-tot ${rc}`, sum(r.strokes,0,H));
     });
@@ -30679,8 +31035,8 @@ function startDailyChallenge(){
   // No showable result (e.g. the account's server attempt count was reconciled in without a stored round):
   // if attempts remain (or you own a Legend, which plays free), go to the preview; otherwise a graceful
   // "done for today" overlay - never a blank bounce.
-  if(dailyAttemptsLeft()>0 || hasFreeLegends() || dailyPassActive()){ beginDailyAttempt(); return; }
-  S.daily=false; S.overlay='dailydone'; render();
+  if(dailyAttemptsLeft()>0 || hasFreeLegends()){ beginDailyAttempt(); return; }
+  dailyGateRefresh(); S.daily=false; S.overlay='dailydone'; render();
 }
 // UI-FIRST: tapping Daily Challenge must ALWAYS change the screen immediately, on every browser/network.
 // The earlier version `await`ed the server attempt-check BEFORE switching screens, so on a browser/network
@@ -30691,7 +31047,7 @@ function startDailyChallenge(){
 function beginDailyAttempt(extra){
   S.dailyExtra=extra||null;   // 'token' = a bought extra play beyond the free cap (consumed at first spin)
   // Tour Pass = unlimited plays; a token play carries its own allowance; a free Legend plays free.
-  if(!PRACTICE && !S.dailyExtra && dailyAttemptsLeft()<=0 && !hasFreeLegends() && !dailyPassActive()){ S.overlay='dailydone'; render(); return; }   // out of attempts + nothing to play → done
+  if(!PRACTICE && !S.dailyExtra && dailyAttemptsLeft()<=0 && !hasFreeLegends()){ dailyGateRefresh(); S.overlay='dailydone'; render(); return; }   // out of attempts + nothing to play → done
   const seed=todayKey();
   // practice: a random attempt salt so every practice round offers a fresh draft wheel + fresh
   // per-hole luck (a fixed number would replay near-identical rounds); determinism doesn't matter
@@ -31021,8 +31377,8 @@ function scheduleDailyAdvance(){
     const st=matchState(), mp=S.matchPlay;
     if(st && st.decided){ S.dailyHolePause=true; render();
       _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishMatchRound(); }, dspd(dailyDwell(),400)); return; }
-    if(S.dailyHoles.length>=18){
-      const k=S.dailyHoles.length-18, ci=MATCH_EXTRA_HOLES[k%MATCH_EXTRA_HOLES.length];
+    if(S.dailyHoles.length>=matchRegHoles()){
+      const k=S.dailyHoles.length-matchRegHoles(), ci=matchExtraHole(k);
       if(mp.oppExtra[k]==null) mp.oppExtra[k]=matchOppHole(ci,0x900+k);
       mp.extra=true; S.mpHoleIdx=ci;
       S.dailyHolePause=true; render();
@@ -31262,8 +31618,9 @@ function dAttSalt(base){ return (((base||0) ^ Math.imul((S.dailyAttempt||0)+1, 0
 function playDailyHole(attack, phase){
   S.dailyProv=null;
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length;
-  const mpx=(S.matchPlay&&S.matchPlay.extra&&S.mpHoleIdx!=null)?(i-18):-1;   // sudden-death hole # of a played match
-  if(i>=18 && mpx<0)return;
+  const mpN=S.matchPlay?matchRegHoles():18;                                   // a match can be shorter than a round
+  const mpx=(S.matchPlay&&S.matchPlay.extra&&S.mpHoleIdx!=null)?(i-mpN):-1;   // sudden-death hole # of a played match
+  if(i>=mpN && mpx<0)return;
   // a Moment playoff plays a specific closing hole (S.momentPOHoleIdx), not the i-th; a played knockout
   // match's sudden death does the same (S.mpHoleIdx); salt the seed by the extra-hole number so each
   // sudden-death hole plays differently.
@@ -32406,9 +32763,6 @@ function dDecTargets(g, sc){
   const off=Math.max(3,(g.greenR?g.greenR[0]:12)*0.6)*(pin[0]>gcx?-1:1);     // pin-hunt vs middle of the green
   return {agg:[pin[0],pin[1]], safe:[gcx+off,L], al:'At the pin', sl:'Middle'};
 }
-// the lowest a tap-target may sit, as a % of the window height: the docked decision panel (item 07)
-// owns the bottom strip. `var` (not `let`) - dPlaceTargets is reachable before this line executes.
-var HV_DEC_TOP=44;
 // place the two tappable targets on the window shell (called from drawWindow when a decision is pending)
 function dPlaceTargets(shell, g, sc, pick){
   const tg=dDecTargets(g,sc);
@@ -32419,36 +32773,37 @@ function dPlaceTargets(shell, g, sc, pick){
   const pos=[];
   const place=(pt,cls,lab,agg,rw)=>{
     const p=hvProj(g,pt[0],pt[1]);
-    // ITEM 07: the decision panel now docks along the BOTTOM of the window, so a target can no longer
-    // sit in the lower third - it would land under the panel. The green (and so the aggressive target)
-    // is near the top of the frame anyway; only a deep layup target is pulled up by this.
-    let lf=Math.max(11,Math.min(89,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100)), tp=Math.max(9,Math.min(HV_DEC_TOP,p[1]/HV_H*100));
-    // nudge apart if the two chips would collide (close in screen space)
-    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(HV_DEC_TOP, q.tp+11); } }
-    // and out from under the fixed top-left hole chip - on a short hole the green (and so a target)
-    // sits high enough to land on it, which reads as the two overlapping.
-    if(lf<52 && tp<15) tp=15;
-    pos.push({lf,tp});
+    // The ring goes where the shot is going. The only clamp left is enough to keep it from being drawn
+    // off the edge of the window entirely; it is never moved to make room for anything.
+    const lf=Math.max(4,Math.min(96,(p[0]+HV_EXL)/(HV_W+2*HV_EXL)*100));
+    const tp=Math.max(3,Math.min(97,p[1]/HV_H*100));
     const rh=Math.round(rw*0.53);
-    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
+    // no room above: hang the label under the ring instead of off the top of the frame
+    const lo=(tp<16);
+    // two labels close together get pushed APART sideways. Sideways, because the vertical position is
+    // the one thing on this overlay that carries meaning: how far down the hole the ball is going.
+    let dtx=0;
+    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<10){ dtx=(lf<=q.lf?-1:1)*58; } }
+    pos.push({lf,tp});
+    const chip=$(`<button class="dctarget ${cls}${lo?' lo':''}" style="left:${lf}%;top:${tp}%;--dtw:${rw}px;--dth:${rh}px;--dtx:${dtx}px" aria-label="${esc(lab)}"><span class="dtw"><span class="dtl">${esc(lab)}</span><span class="dtp"></span></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
     chip.onclick=(e)=>{ e.stopPropagation(); pick(agg); };
     shell.appendChild(chip);
   };
   place(tg.agg,'agg',tg.al||'Attack',true,aggW);
   place(tg.safe,'safe',tg.sl||'Safe',false,safeW);
-  // A chip is anchored by its BOTTOM (translate -100%), so a percentage clamp cannot know how tall it
-  // is - and on a short hole a target was landing ON the fixed hole-info chip. Measure once the browser
-  // has laid them out and push any chip that genuinely overlaps it clear.
+  // The fixed hole-info chip sits top-left, and a target near the top of the frame can put its LABEL
+  // under it. Measured once laid out, and answered by moving the label (sideways, or under its own ring)
+  // - never the ring, which is the one thing on here that has to stay where it is.
   requestAnimationFrame(()=>{
     if(!shell.isConnected) return;
     const hole=shell.querySelector('.hvhole'); if(!hole) return;
-    const hr=hole.getBoundingClientRect(), sr=shell.getBoundingClientRect();
-    if(!sr.height) return;
+    const hr=hole.getBoundingClientRect();
     shell.querySelectorAll('.dctarget').forEach(c=>{
-      const r=c.getBoundingClientRect();
+      const w=c.querySelector('.dtw'); if(!w) return;
+      const r=w.getBoundingClientRect();
       if(r.right<hr.left-4||r.left>hr.right+4||r.bottom<hr.top-4||r.top>hr.bottom+4) return;
-      const push=(hr.bottom+6-r.top)/sr.height*100;
-      if(push>0) c.style.top=Math.min(HV_DEC_TOP, (parseFloat(c.style.top)||0)+push)+'%';
+      if(c.classList.contains('lo')) c.style.setProperty('--dtx',((parseFloat(c.style.getPropertyValue('--dtx'))||0)+(hr.right-r.left+8))+'px');
+      else c.classList.add('lo');
     });
   });
 }
@@ -32723,11 +33078,11 @@ function scrDailyRound(){
         // match state (owner: "you should see both balls and both box scores").
         // The window is stB.reg (matchState already excludes the currently-revealing hole), so the
         // board can never disagree with the scorecard's THRU count.
-        const mpB=S.matchPlay, stB=matchState()||{up:0,reg:0,left:18,extras:0};
-        const winN=Math.min(stB.reg,18);
+        const mpB=S.matchPlay, mpN=matchRegHoles(), stB=matchState()||{up:0,reg:0,left:mpN,extras:0};
+        const winN=Math.min(stB.reg,mpN);
         const meTot=S.dailyHoles.slice(0,winN).reduce((s2,h)=>s2+h.toPar,0);
         const opTot=mpB.oppHoles.slice(0,winN).reduce((s2,v)=>s2+v,0);
-        bd.appendChild($(`<div class="hvbcap">${stB.extras>0?('SUDDEN DEATH · HOLE '+(18+stB.extras)):('MATCH · THRU '+stB.reg)}</div>`));
+        bd.appendChild($(`<div class="hvbcap">${stB.extras>0?('SUDDEN DEATH · HOLE '+(mpN+stB.extras)):('MATCH · THRU '+stB.reg)}</div>`));
         const upCol=stB.up>0?'#4be3a8':stB.up<0?'#ff9d8f':'#ffd76a';
         bd.appendChild($(`<div class="hvbtarget" style="color:${upCol}">${matchStatusTxt(stB)}</div>`));
         const rowsM=[{nm:'YOU', v:meTot, mine:true, col:'#3b82f6'},
@@ -32786,11 +33141,16 @@ function scrDailyRound(){
         const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
         const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
                     {nm:'TOUR AVG', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}];
-        // CS255: today's best - the day's global leader if the board is loaded, else your own best of the day
-        let bestVal=null;
-        if(dbCache && dbCache.ok && dbCache.rows && dbCache.rows.length) bestVal=Math.min.apply(null, dbCache.rows.map(r=>r.to_par));
-        else { const _db=dailyBest(); if(_db && _db.total!=null) bestVal=_db.total; }
-        if(bestVal!=null) rows.push({nm:"TODAY'S BEST", v:bestVal, txt:dtp(bestVal), mine:false, col:'#f4cf5b'});
+        // CS255: the day's global leader if the board is loaded, else your own best of the day. The two
+        // are NOT the same number and this row used to call both of them "TODAY'S BEST": the board loads
+        // asynchronously (and never at all signed out, offline, or on an RPC error), so a player was told
+        // the score of the day was their own earlier -2, beat it with a -3, and then found the real board
+        // led by -8. Say which one it is. A round that has neither shows the row at all.
+        let bestVal=null, bestNm=null;
+        if(dbCache && dbCache.ok && dbCache.rows && dbCache.rows.length){
+          bestVal=Math.min.apply(null, dbCache.rows.map(r=>r.to_par)); bestNm="TODAY'S BEST";
+        } else { const _db=dailyBest(); if(_db && _db.total!=null){ bestVal=_db.total; bestNm='YOUR BEST'; } }
+        if(bestVal!=null) rows.push({nm:bestNm, v:bestVal, txt:dtp(bestVal), mine:false, col:'#f4cf5b'});
         rows.sort((a,b)=>a.v-b.v);
         rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}" data-nm="${r.nm}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
       }
@@ -32831,10 +33191,13 @@ function scrDailyRound(){
     const wrap=$(`<div class="dcardwrap"></div>`);
     wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · thru ${through}</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
     // CS502: realistic scorecard (Hole / Par / You rows + OUT-IN-TOT totals; TOT = total strokes).
+    // a played match can be shorter than a round (a nine-hole money match, a twelve-hole exhibition), and
+    // an eighteen-cell card under a nine-hole match is nine empty cells the player is left to interpret
+    const scN=S.matchPlay?matchRegHoles():18;
     const scPars=c.holes.map(h=>h[0]), scStk=[], scTp=[];
-    for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), show=pl&&!isReveal;
+    for(let k=0;k<scN;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), show=pl&&!isReveal;
       scStk[k]=show?(pl.par+pl.toPar):null; scTp[k]=show?pl.toPar:null; }
-    wrap.appendChild(scoreCardEl({holes:18, pars:scPars,
+    wrap.appendChild(scoreCardEl({holes:scN, pars:scPars,
       rows:[{label:(S.name||'You'), color:'#4f9df0', mine:true, strokes:scStk, tp:scTp}],
       cur:(done||revealing)?-1:i, sel:(played.length>1)?vh:-1,
       tap:(k)=>{ if(played[k]){ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); } }}));
@@ -32914,6 +33277,9 @@ function scrDailyResult(){
   // an idempotent keep-the-lower upsert, so re-submitting a good score is safe.
   if(!practice && sbSignedIn() && !r.isLegend && !S._dailyResub && r.day && r.course){ S._dailyResub=true; sbSubmitDaily(r); }
   const attempts=dailyAttempts(), left=dailyAttemptsLeft();
+  // 99 is the sentinel dailyAttemptsLeft() returns for an account with no cap. It is a fine number to
+  // compare against and a terrible one to print, so the copy below says what it means instead.
+  const unlim=dailyUncapped(), leftTxt=unlim?'unlimited':String(left);
   // headline: did you beat the tour average? (the main objective). best-of-day decides the day.
   // (The old "Round Rating" grade card was removed per owner: the score + beat-the-pro + your stats are
   // the main attraction; the grade added noise and buried the important info.)
@@ -32942,7 +33308,7 @@ function scrDailyResult(){
     <div class="dh-bv-title">${wonRound?'You beat the pro!':'Short of the tour average'}</div>
     <div class="dh-bv-fig">${pxFigureHTML(S.look, 78)}</div>
     <div class="dh-bv-sub">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}</div>
-    ${(wonRound&&left>0&&!practice&&!r.isLegend)?`<div class="dh-bv-cta">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:(wonDay&&!wonRound&&justPlayed?`<div class="dh-bv-cta">You already cleared the pro today with your best of <b>${dTot(bestT, c.par)}</b> — only your best round counts.</div>`:'')}
+    ${(wonRound&&left>0&&!practice&&!r.isLegend)?`<div class="dh-bv-cta">Challenge cleared. ${unlim?'Play as many more as you like':`Use your ${left} remaining attempt${left>1?'s':''}`} to go even lower and chase the course record.</div>`:(wonDay&&!wonRound&&justPlayed?`<div class="dh-bv-cta">You already cleared the pro today with your best of <b>${dTot(bestT, c.par)}</b>. Only your best round counts.</div>`:'')}
   </div>`));
   // CS237: a FREE Legend (created-golfer) play - focused result (no draft attempts / streak / weekly / claim
   // sections apply), then back into the Daily. Scores live on the separate Career Golfers board.
@@ -33049,7 +33415,7 @@ function scrDailyResult(){
         <div><div style="font-weight:800;font-size:20px;color:var(--gold)">${pct}%</div><div class="small muted" style="font-size:10px">Win rate</div></div>
         <div><div style="font-weight:800;font-size:20px;color:var(--gold)">${best}</div><div class="small muted" style="font-size:10px">Best streak</div></div>
       </div>
-      ${(justPlayed&&!wonDay&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">Beat the pro in one of your ${left} remaining attempt${left>1?'s':''} to add a win to your record.</div>`:''}</div>`)); } }
+      ${(justPlayed&&!wonDay&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">Beat the pro ${unlim?'in another round':`in one of your ${left} remaining attempt${left>1?'s':''}`} to add a win to your record.</div>`:''}</div>`)); } }
   }; // end renderMeta
   // CS302: quests/weekly/rep panel removed from the Beat-the-Pro result too, it lives in the ≡ Challenges
   // overlay. (Quests/challenges are still CREDITED on finish; only their on-page display was removed here.)
@@ -33099,7 +33465,7 @@ function scrDailyResult(){
     primary.onclick=()=>{ S._dailyClaimFlow=true; S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else if(left>0){
-    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Chase lower (${left} left)`:`${left} left · beat the avg`}</span></button>`);
+    primary=$(`<button class="btn goldfill" style="flex:1;margin:0">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Chase lower (${leftTxt})`:`${leftTxt} · beat the avg`}</span></button>`);
     primary.onclick=beginDailyAttempt;
     cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();};
   } else {
@@ -33155,7 +33521,7 @@ function scrDailyResult(){
   }
   // Exit — the most de-emphasized action (small, muted).
   const home=$(`<button class="btn ghost" style="max-width:300px;margin:12px auto 0;opacity:.6;font-size:14px;padding:11px">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
-  add($(`<p class="small muted center" style="margin-top:12px">${practice?'Practice mode · unlimited rounds, nothing is recorded · ':(left>0?`${left} attempt${left>1?'s':''} left today · `:'')}A new course drops at midnight ET${practice?'':' · streak '+streakDisplay()+' 🔥'}</p>`));
+  add($(`<p class="small muted center" style="margin-top:12px">${practice?'Practice mode · unlimited rounds, nothing is recorded · ':unlim?'Unlimited plays today · ':(left>0?`${left} attempt${left>1?'s':''} left today · `:'')}A new course drops at midnight ET${practice?'':' · streak '+streakDisplay()+' 🔥'}</p>`));
 }
 // #5 Course Passport: your best round + best grade at every Daily course, a solo collection to complete
 function overlayPassport(screen){
@@ -33642,6 +34008,10 @@ function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return;
   else if(p.kind==='bag'){ r=bagBuy(p.club,p.tier); okMsg='Club upgraded!'; }
   else { r=accBuy(p.id); }   // accBuy auto-equips
   S.shopPreview=null;
+  // The balance is re-checked inside each buy, so it can still come up short here even though the card
+  // said it would not (a pack opened in another tab, a cross-device merge). That is the same moment as
+  // any other, so it gets the same dialog rather than a toast the player cannot act on.
+  if(r && !r.ok && r.msg==='Not enough coins'){ render(); coinShortfall({name:p.name, price:p.price, from:'confirm:'+p.kind}); return; }
   try{ toast(r&&r.ok?okMsg:((r&&r.msg)||'Could not buy')); }catch(e){}
   render(); }
 // a shop card for a cosmetic (shirt/hat/pants/shoes color or a pattern)
@@ -33746,17 +34116,24 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
     ${lore?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore)}”</div>`:''}
     ${boostTxt?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt}</div>`:''}
     <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
-    <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
+    <div class="small muted" style="margin-top:5px">${afford
+      ? `Balance ${coinFmt(bal)} &rarr; <b style="color:#35d6a0">${coinFmt(after)}</b> after`
+      : `Balance ${coinFmt(bal)} · short by <b style="color:#e2554e">${coinFmt(pv.price-bal)}</b>`}</div>
     <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
     <div style="display:flex;gap:10px;margin-top:14px">
       <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
-      <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
+      <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0">${afford?'Buy':'🪙 Get coins'}</button>
     </div>
-    ${(!afford&&BUCKETS_ENABLED&&sbSignedIn())?`<button class="btn" id="pv-getcoins" style="margin-top:10px;background:var(--gold);color:#0c1f16;font-weight:900">🪙 Get more coins ▸<span class="sub">Coin buckets in the store · your first buy of each size is 2×</span></button>`:''}
     </div>`);
   card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
-  const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
-  const gcb=card.querySelector('#pv-getcoins'); if(gcb) gcb.onclick=()=>{ try{ track('nudge_getcoins',{from:'preview'}); }catch(e){} S.shopPreview=null; S.overlay='shop'; S.shopSec='buckets'; render(); };
+  // Short of coins, the action is not a dead button: it opens the one dialog that says how far short
+  // you are and what the first-time bonus is worth. (It used to be disabled, with a second button
+  // underneath that dropped you at the top of a store tab to work the rest out yourself.)
+  const buyb=card.querySelector('#pv-buy');
+  if(buyb) buyb.onclick=afford ? shopConfirmBuy : (()=>{
+    const rc=rar?ACC_RARITY[rar].c:null;
+    coinShortfall({name:pv.name, price:pv.price, accent:rc||'var(--gold)', from:'preview:'+pv.kind});
+  });
   return card;
 }
 // CS356g: crop a pixel-golfer data-URL to a band (24 sprite rows, starting at startRow) filling a box.
@@ -34705,10 +35082,12 @@ function packArtHTML(tier){ return '<img src="'+pxPackURL(tier)+'" alt="" class=
 // preview+Buy card. Appended to <body> (not #app) so a background re-render can't strand it, and
 // cancelling is the safe default: backdrop tap, Escape and Cancel all just close it. ----
 let _cspStyle=false, _cspOpen=null;
-function confirmSpend(o){
-  o=o||{}; if(typeof o.onYes!=='function') return;
-  if(_cspOpen){ try{_cspOpen.remove();}catch(e){} _cspOpen=null; }
-  if(!_cspStyle){ _cspStyle=true; const st=document.createElement('style'); st.textContent=`
+// The spend-dialog stylesheet, injected once. Shared by the confirm dialog below and by the
+// not-enough-coins dialog that stands in for it when the balance will not cover the price, because the
+// two are the same moment from opposite sides and a player should not be able to tell they are two
+// pieces of code.
+function cspStyleOnce(){
+  if(_cspStyle) return; _cspStyle=true; const st=document.createElement('style'); st.textContent=`
     .cspov{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:20px;
       background:rgba(3,12,7,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:cspFade .16s ease-out}
     @keyframes cspFade{from{opacity:0}to{opacity:1}}
@@ -34726,7 +35105,42 @@ function confirmSpend(o){
     .csp-row span:first-child{color:rgba(255,255,255,.5);font-weight:700}
     .csp-cost{display:inline-flex;align-items:center;gap:5px;color:var(--gold)}
     .csp-note{font:700 10.5px/1.4 var(--body);color:rgba(255,255,255,.45);margin:10px 0 0}
-    .cspcard .btn{margin-top:11px}`; document.head.appendChild(st); }
+    .cspcard .btn{margin-top:11px}
+    /* ---- not enough coins ---- */
+    .cspcard.short{max-width:370px;border-color:rgba(241,208,74,.45)}
+    .csp-kick.short{color:#ff8f7e}
+    .csp-row.gap span:last-child{color:#ff8f7e}
+    .csp-row.gap{border-top:1px solid rgba(255,255,255,.1);padding-top:9px;margin-top:9px;font-size:13.5px}
+    /* the first-time banner. It is the reason this dialog exists rather than a toast, so it gets the
+       one animated element on the card and nothing else competes with it. */
+    .csp-first{margin:13px 0 0;padding:9px 10px;border-radius:12px;text-align:center;
+      border:1px solid rgba(241,208,74,.5);background:linear-gradient(180deg,rgba(241,208,74,.18),rgba(241,208,74,.05));
+      font:800 11.5px/1.35 var(--body);color:#ffd45e;position:relative;overflow:hidden}
+    .csp-first .fh{display:block;font:900 13.5px/1.25 var(--body);color:#fff;margin-bottom:3px}
+    .csp-first::after{content:'';position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.26) 50%,transparent 62%);
+      transform:translateX(-120%);animation:cspShine 2.6s ease-in-out .35s infinite}
+    @keyframes cspShine{0%{transform:translateX(-120%)}55%,100%{transform:translateX(120%)}}
+    @media (prefers-reduced-motion:reduce){ .csp-first::after{animation:none;opacity:0} }
+    .csp-pick{display:flex;align-items:center;gap:11px;margin:11px 0 0;padding:11px 12px;border-radius:14px;
+      background:rgba(255,255,255,.04);border:1.5px solid var(--pk,#F1D04A);text-align:left}
+    .csp-pick .pkn{font-family:var(--display);font-size:16px;color:var(--pk,#F1D04A);line-height:1.1}
+    .csp-pick .pkc{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font:900 17px/1 var(--body);color:#ffd45e;margin-top:3px}
+    .csp-pick .pkwas{text-decoration:line-through;color:#8fa898;font-weight:700;font-size:12.5px}
+    .csp-pick .pk2x{font:800 8px/1 var(--body);letter-spacing:.06em;background:var(--gold);color:#0c1f16;border-radius:20px;padding:2px 6px}
+    .csp-pick .pkx{font:800 10px/1.3 var(--body);color:#cfe6d8;margin-top:4px}
+    .cspcard .btn.cspbuy{background:var(--pk,#F1D04A);color:#0c1f16;font-weight:900}
+    .csp-earn{font:700 10.5px/1.45 var(--body);color:rgba(255,255,255,.5);margin:12px 0 0}
+    .csp-more{font:800 10.5px/1.4 var(--body);color:#ffd45e;opacity:.85;margin:8px 0 0}
+    /* walking away is always available and never the loudest thing on the card */
+    .cspcard.short .btn.no{margin-top:9px;padding:8px;font-size:12px;border-color:transparent;
+      background:transparent;color:rgba(255,255,255,.5)}`;
+  document.head.appendChild(st);
+}
+function confirmSpend(o){
+  o=o||{}; if(typeof o.onYes!=='function') return;
+  if(_cspOpen){ try{_cspOpen.remove();}catch(e){} _cspOpen=null; }
+  cspStyleOnce();
   const bal=coinBalance();
   const costHTML=o.costHTML||('<span class="csp-cost">'+ic('coin',{size:'14px'})+coinFmt(o.cost||0)+'</span>');
   const balHTML=o.balHTML||(coinFmt(bal)+' → <b style="color:var(--oncard)">'+coinFmt(Math.max(0,bal-(o.cost||0)))+'</b>');
@@ -34750,6 +35164,102 @@ function confirmSpend(o){
   document.addEventListener('keydown',key,true);
   document.body.appendChild(ov); _cspOpen=ov;
 }
+/* ===== NOT ENOUGH COINS =====
+   Every coin purchase in the game runs out of coins the same way, and it used to end three different
+   ways: a greyed-out button on the gear card, a one-line toast on a pack, and a second toast on a
+   bundle. None of them said how far short the player was, and none of them mentioned that the first
+   time you buy each bucket the coins are DOUBLED, which is the single most useful thing anybody in
+   that moment could be told. This is the one dialog all three now open.
+   It is the confirm dialog's opposite number and shares its shell, so running out of coins reads as
+   part of buying rather than as an error. */
+// The smallest bucket that would actually cover the gap, counting the 2× where it is still available.
+// Recommending one is the whole job: five prices and a mental arithmetic problem is how a player
+// decides not to bother.
+function coinBucketFor(short){
+  var buys=bucketBuys();
+  for(var i=0;i<BUCKETS.length;i++){ var b=BUCKETS[i];
+    if((buys.has(b.id)?b.coins:b.coins*2) >= short) return b; }
+  return BUCKETS[BUCKETS.length-1];
+}
+/* o = {name, price, art?, accent?, from?}  `from` is for analytics only. */
+function coinShortfall(o){
+  o=o||{};
+  const price=Math.max(0,Math.round(o.price||0)), bal=coinBalance(), gap=Math.max(1,price-bal);
+  const signed=sbSignedIn();
+  if(_cspOpen){ try{_cspOpen.remove();}catch(e){} _cspOpen=null; }
+  cspStyleOnce();
+  if(signed){ try{ loadWallet(); }catch(e){} }
+  try{ track('coinshort_shown',{from:o.from||'', price, gap}); }catch(e){}
+  const ov=$(`<div class="cspov" role="dialog" aria-modal="true" aria-label="Not enough coins"><div class="cspcard short"></div></div>`);
+  const card=ov.querySelector('.cspcard');
+  const close=()=>{ if(_cspOpen===ov){ _cspOpen=null; } try{ov.remove();}catch(e){} document.removeEventListener('keydown',key,true); };
+  const key=e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
+  const goStore=()=>{ close(); try{ track('coinshort_store',{from:o.from||''}); }catch(e){}
+    S.shopPreview=null; S.overlay='shop'; S.shopSec='buckets'; render(); };
+  // Built as a function because the per-size bonus is read from the account's own purchase rows, which
+  // may still be in flight when this opens (bucketBuys() is optimistic until they land). When they do,
+  // the card is rebuilt in place rather than left showing a 2× the server will not honour.
+  const build=()=>{
+    const buys=bucketBuys(), anyFirst=BUCKETS.some(function(b){ return !buys.has(b.id); });
+    let firstEver=false;
+    try{ firstEver = signed && buys.size===0 && wheelEnabled() && !wheelState().firstBuy; }catch(e){}
+    const coinIc=s=>`<span style="width:${s}px;height:${s}px;display:inline-block;vertical-align:-2px">${ic('coin',{size:s+'px'})}</span>`;
+    let h=`<div class="csp-kick short">NOT ENOUGH COINS</div>
+      ${o.art?`<div class="csp-art">${o.art}</div>`:''}
+      <h3 class="csp-name" style="color:${o.accent||'var(--gold)'}">${esc(o.name||'This item')}</h3>
+      <div class="csp-rows">
+        <div class="csp-row"><span>Cost</span><span class="csp-cost">${coinIc(14)}${coinFmt(price)}</span></div>
+        <div class="csp-row"><span>You have</span><span>${coinIc(14)}${coinFmt(bal)}</span></div>
+        <div class="csp-row gap"><span>Short by</span><span>${coinIc(14)}${coinFmt(gap)}</span></div>
+      </div>`;
+    if(!signed){
+      h+=`<p class="csp-note">Coins live with your account. Create a free one to earn and spend them.</p>
+        <button class="btn goldfill acct">Create a free account ▸</button>
+        <button class="btn ghost no">Not now</button>`;
+      card.innerHTML=h;
+      card.querySelector('.acct').onclick=()=>{ close(); S.shopPreview=null; S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
+    } else if(!BUCKETS_ENABLED){
+      h+=`<p class="csp-earn">Coins come from playing. Finish a season, clear achievements, and claim your daily login bonus.</p>
+        <button class="btn ghost no">Close</button>`;
+      card.innerHTML=h;
+    } else {
+      const b=coinBucketFor(gap), fb=!buys.has(b.id), got=fb?b.coins*2:b.coins;
+      // The banner is only shown when the bucket being OFFERED still carries its 2x. A general "first
+      // time you buy each size" over a recommendation that has already had its double is a promise the
+      // card immediately breaks one row further down. When the offer is spent but other sizes are not,
+      // that is worth one quiet line, not a banner.
+      if(fb) h+=`<div class="csp-first">
+        <span class="fh">🎉 ${firstEver?'Your first purchase pays double':'First-time bonus'}</span>
+        ${firstEver?'Twice the coins, plus a free Prize Wheel spin.':'Twice the coins, the first time you buy each size.'}</div>`;
+      h+=`<div class="csp-pick" style="--pk:${b.col}">
+        <span style="flex:0 0 auto">${coinBucketSVG(BUCKETS.indexOf(b)+1,b.col,52)}</span>
+        <span style="flex:1;min-width:0">
+          <span class="pkn">${esc(b.name)}</span>
+          <span class="pkc">${coinIc(15)}${fb?`<span class="pkwas">${coinFmt(b.coins)}</span>`:''}<span>${coinFmt(got)}</span>${fb?'<span class="pk2x">2×</span>':''}</span>
+          <span class="pkx">Covers this and leaves you ${coinFmt(Math.max(0,bal+got-price))} over.</span>
+        </span></div>
+      ${(!fb&&anyFirst)?`<p class="csp-more">Other sizes still pay double the first time you buy them.</p>`:''}
+      <button class="btn cspbuy buy" style="--pk:${b.col}">Buy ${esc(b.name)} · $${b.usd.toFixed(2)}</button>
+      <button class="btn ghost store">See all coin buckets ▸</button>
+      <p class="csp-earn">Coins come from playing too. Finish a season, clear achievements, and claim your daily login bonus.</p>
+      <button class="btn ghost no">Not now</button>`;
+      card.innerHTML=h;
+      card.querySelector('.buy').onclick=()=>{ close(); try{ track('coinshort_buy',{bucket:b.id, from:o.from||''}); }catch(e){}
+        try{ beginBucketPurchase(b.id); }catch(e){} };
+      card.querySelector('.store').onclick=goStore;
+    }
+    const nb=card.querySelector('.no'); if(nb) nb.onclick=()=>{ try{ track('coinshort_dismiss',{from:o.from||''}); }catch(e){} close(); };
+  };
+  build();
+  // one rebuild if the purchase rows arrive after the dialog did
+  if(signed && BUCKETS_ENABLED && !_bucketBuysCache){
+    let tries=0;
+    const t=setInterval(()=>{ if(!ov.isConnected || _bucketBuysCache || ++tries>12){ clearInterval(t); if(ov.isConnected && _bucketBuysCache) build(); } }, 400);
+  }
+  ov.onclick=e=>{ if(e.target===ov) close(); };            // tapping outside cancels
+  document.addEventListener('keydown',key,true);
+  document.body.appendChild(ov); _cspOpen=ov;
+}
 function startPackDeal(opts){ opts=opts||{};
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
@@ -34764,7 +35274,7 @@ function startPackDeal(opts){ opts=opts||{};
     var freeCredit=!freeFirst && packCredits(tier)>0;
     free=freeFirst||freeCredit;
     if(!free){
-      if(coinBalance()<pt.price){ toast(packErr('coins')); return; }
+      if(coinBalance()<pt.price){ coinShortfall({name:pt.name, art:packArtHTML(tier), price:pt.price, accent:pt.col, from:'pack'}); return; }
       // Nothing spends coins on a single tap: confirm first. (A free pack or a prepaid bundle
       // open costs nothing, so those go straight through.)
       if(!opts.confirmed){ confirmSpend({name:pt.name, art:packArtHTML(tier), cost:pt.price, accent:pt.col,
@@ -34787,7 +35297,7 @@ function startPackBundle(tier,confirmed){
   tier=tier||'base'; var pt=packType(tier), bprice=packBundlePriceFor(tier);
   if(!packsOn()){ toast(packErr('off')); return; }
   if(!sbSignedIn()){ toast(packErr('signin')); return; }
-  if(coinBalance()<bprice){ toast(packErr('coins')); return; }
+  if(coinBalance()<bprice){ coinShortfall({name:PACK_BUNDLE_N+'× '+pt.name, art:packArtHTML(tier), price:bprice, accent:pt.col, from:'bundle'}); return; }
   if(!confirmed){ confirmSpend({name:PACK_BUNDLE_N+'× '+pt.name, art:packArtHTML(tier), cost:bprice, accent:pt.col,
     note:PACK_BUNDLE_N+' packs for the price of '+PACK_BUNDLE_PAY+', opened one at a time.', label:'Buy '+PACK_BUNDLE_N+' packs ▸',
     onYes:function(){ startPackBundle(tier,true); }}); return; }
