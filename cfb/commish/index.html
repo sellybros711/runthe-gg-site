@@ -474,7 +474,11 @@
      scanning down the values, and the ones you moved carry what they were. */
   .yshape{display:grid;gap:5px}
   .yr{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline;
-    padding:7px 9px;border-radius:9px;background:var(--panel);border:1px solid var(--line)}
+    width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;
+    padding:7px 9px;border-radius:9px;background:var(--panel);border:1px solid var(--line);
+    transition:border-color .12s var(--ez)}
+  .yr:hover,.yr:focus-visible{border-color:var(--line-2);outline:none}
+  .yr:focus-visible{box-shadow:0 0 0 2px var(--green)}
   .yr b{font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim)}
   .yr u{text-decoration:none;font-family:var(--fn);font-size:12.5px;font-weight:800;
     color:var(--ink);text-align:right}
@@ -482,6 +486,12 @@
   /* MOVED BY YOU, MARKED. The whole point of the card is telling the two apart. */
   .yr.moved{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
   .yr.moved b{color:var(--ink)}
+  /* A CASE YOU CAN ACTUALLY TAKE reads as a control, and the ones you cannot stay a list.
+     See openPath(): the difference is real, so it has to be visible. */
+  .nxt.take{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;
+    border-color:var(--green)}
+  .nxt.take:hover{background:rgba(16,185,129,.08)}
+  .nxt.take span{color:var(--green);font-weight:700}
 
   /* THE REBUTTAL. Three replies, sized as decisions rather than as buttons, because that is
      what they are: every one of them costs something with somebody. */
@@ -6084,12 +6094,94 @@ function paintYear(el,card){
       +nmoved+(nmoved===1?' of these has moved':' of these have moved')+' since you took the job.'
     : 'The shape of a season is a thing you rule on, one piece at a time. Nothing here has '
       +'moved yet. What you change will show up as a was line.';
+  /* EVERY ROW OPENS. A player looked at these nine and asked to change them, which is the
+     right instinct and the wrong control: you do not set the shape of a season, you rule on
+     it. So a row is a button onto the sheet that says what this setting is, what you have
+     already done to it, and which cases can move it, and in the off-season it offers to put
+     one of them on your desk. See openPath(). */
   el.innerHTML='<div class="yshape">'+rows.map((r)=>
-    '<div class="yr'+(r.moved?' moved':'')+'">'
+    '<button type="button" class="yr'+(r.moved?' moved':'')+'" data-p="'+esc(r.p)+'">'
     +'<b>'+esc(pathName(r.p))+'</b><u>'+esc(r.now)+'</u>'
     +(r.moved?'<em>was '+esc(r.was)+'</em>':'')
-    +'</div>').join('')+'</div>';
+    +'</button>').join('')+'</div>';
+  el.querySelectorAll('[data-p]').forEach((btn)=>{
+    btn.onclick=()=>openPath(btn.dataset.p);
+  });
   reveal(el.querySelector('.yshape'));
+}
+
+/* ── ONE SETTING, AND HOW TO MOVE IT ───────────────────────────────────────────────
+   THE SAME SHEET THE FOUR HEADLINE TILES OPEN, pointed at any ledger path. A player looking
+   at the nine rows of the year card asked to change them directly, and directly is the one
+   way this mode must never let anybody change anything: the whole game is that the sport
+   moves when you rule on a case and live with the room afterwards. A card of nine dropdowns
+   would be a settings screen with a college football theme on it.
+
+   WHAT IT DOES INSTEAD IS AGENDA SETTING. In the off-season, if a case that writes this
+   setting is ALREADY eligible on this beat, the sheet will take you to it. That is a real
+   power and a real cost: you spend the beat on the thing you chose rather than on whatever
+   the docket would have dealt you, and the room answers exactly the same way. Nothing is
+   conjured. The gate that decides what could come up is untouched, and this only picks
+   among what could. */
+function openPath(path){
+  if(!path) return;
+  const now=L.getPath(world,path);
+  let base=null;
+  try{ base=L.createWorld({year:world.startYear||world.year,membership:world.membership,seed:1}); }
+  catch(e){ base=null; }
+  const was=base?L.getPath(base,path):null;
+  $('fact-eyebrow').textContent='The year, one piece of it';
+  $('fact-title').textContent=pathName(path);
+
+  const ids=pathItems()[path]||[];
+  const items=ids.map((id)=>D.BY_ID[id]).filter(Boolean);
+  const mine=(world.history||[]).filter((h)=>h.id
+    &&ids.indexOf(String(h.id).split(':')[0])>=0);
+  const live=D.eligible(world,L,situationNow()).map((it)=>it.id);
+  /* OFF-SEASON ONLY. Choosing your own case in the middle of November would be choosing it
+     instead of whatever the season was about to hand you, and the three winter beats are
+     the ones a governing body actually sets an agenda in. */
+  const canPut=world.beat<=2&&!pressDue();
+
+  let html='<div class="now"><b>'+esc(pathValue(path,now))+'</b>'
+    +'<u>'+esc(pathName(path))+'</u>'
+    +(was!=null&&String(was)!==String(now)
+      ? '<em>was '+esc(pathValue(path,was))+' when you took the job</em>' : '')
+    +'</div>';
+
+  html+='<div class="sec"><div class="eyebrow">What you have ruled on it</div>';
+  html+=mine.length
+    ? mine.map((h)=>'<div class="rul"><i>'+esc(String(h.year).slice(2))+'</i>'
+      +'<b>'+esc(ruledWhat({label:h.label||'',option:String(h.id).split(':')[1]||''}))+'</b>'
+      +'<span>'+esc(L.BEATS[h.beat]||'')+' '+h.year+'</span></div>').join('')
+    : '<p style="margin-top:0">Nothing yet. This is where you found it.</p>';
+  html+='</div>';
+
+  html+='<div class="sec"><div class="eyebrow">What moves it</div>'
+    +'<p style="margin-top:0;margin-bottom:10px">You do not set this directly. It moves when '
+    +'one of these reaches your desk and you rule on it.'
+    +(canPut?' In the off-season you can decide which one that is.':'')+'</p>';
+  html+=items.length
+    ? items.map((it)=>{
+      const on=live.indexOf(it.id)>=0;
+      const when=(it.beats||[]).map((b)=>L.BEATS[b]).filter(Boolean);
+      const take=on&&canPut;
+      return '<'+(take?'button type="button" data-take="'+esc(it.id)+'"':'div')
+        +' class="nxt'+(on?' live':'')+(take?' take':'')+'">'
+        +'<b>'+esc(D.text(it.title,null,it,sit))+'</b>'
+        +'<span>'+esc(take?'Put it on your desk now'
+          :on?'On the desk this beat':when.slice(0,3).join(' \u00b7 ')||'')+'</span>'
+        +'</'+(take?'button':'div')+'>';
+    }).join('')
+    : '<p style="margin-top:0">Nothing on the docket writes this one.</p>';
+  html+='</div>';
+
+  $('fact-body').innerHTML=html;
+  $('fact-body').querySelectorAll('[data-take]').forEach((btn)=>{
+    btn.onclick=()=>{ closeFact(); openCase(btn.dataset.take); };
+  });
+  const sh=$('s-fact');
+  sh.classList.add('on'); sh.setAttribute('aria-hidden','false');
 }
 
 function paintSettled(el,card){

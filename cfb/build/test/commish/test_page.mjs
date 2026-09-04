@@ -489,6 +489,62 @@ console.log('\n=== a season, and it survives the browser closing ===');
   await p.close();
 }
 
+console.log('\n=== nine settings you cannot set, and can put on the agenda ===');
+{
+  /* A PLAYER LOOKED AT THE YEAR CARD AND ASKED TO CHANGE THE NINE ROWS ON IT, which is the
+     right instinct and the wrong control. Setting them directly is the one thing this mode
+     must never allow: the whole game is that the sport moves when you rule on a case and
+     live with the room afterwards, and a card of nine dropdowns is a settings screen with a
+     college football theme on it.
+
+     So a row opens a sheet, and in the OFF-SEASON the sheet hands you the case. Nothing is
+     conjured: the only cases it offers are ones already eligible on this beat, so the gate
+     that decides what could come up is untouched and this picks among what could. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+
+  const paths=await p.$$eval('#off-year .yr',(e)=>e.map((x)=>x.dataset.p));
+  ok('every row on the year card opens', paths.length>=8 && paths.every((x)=>!!x),
+    paths.length+' rows');
+  await p.evaluate(()=>document.querySelector('#off-year .yr[data-p="playoff.teams"]').click());
+  await p.waitForTimeout(400);
+  ok('  onto a sheet about that one setting',
+    await p.$eval('#s-fact',(e)=>e.classList.contains('on')));
+  ok('  named in words rather than as a ledger path',
+    /playoff/i.test(await txt(p,'#fact-title')) && !/\./.test(await txt(p,'#fact-title')),
+    await txt(p,'#fact-title'));
+  ok('  saying you do not set it directly',
+    /do not set this directly/i.test(await txt(p,'#fact-body')));
+  const take=await p.$$eval('#fact-body [data-take]',(e)=>e.map((x)=>x.dataset.take));
+  ok('  and offering the case that would move it', take.length>0, take.join(', '));
+  await p.click('#fact-body [data-take]');
+  await p.waitForTimeout(900);
+  ok('taking it opens that case on the desk', await on(p,'s-desk'));
+  ok('  and it is the case you asked for',
+    (await txt(p,'#d-title')).length>8, await txt(p,'#d-title'));
+  /* THE OFFER IS THE OFF-SEASON'S. Choosing your own case in the middle of November would be
+     choosing it instead of whatever the season was about to hand you. */
+  await p.click('#b-desk').catch(()=>{});
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(6,2027));
+  await p.waitForTimeout(2000);
+  await pastScene(p);
+  await p.waitForTimeout(700);
+  await p.evaluate(()=>{
+    const el=document.querySelector('#off-year .yr[data-p="playoff.teams"]');
+    if(el) el.click();
+  });
+  await p.waitForTimeout(400);
+  ok('in November the sheet still opens',
+    await p.$eval('#s-fact',(e)=>e.classList.contains('on')));
+  ok('  and hands you nothing',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))===0);
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
 console.log('\n=== the office is a commissioner\'s desk in November ===');
 {
   /* WHAT A COMMISSIONER WOULD ACTUALLY HAVE IN FRONT OF THEM. The office used to carry the
