@@ -38,7 +38,7 @@
   a{color:var(--brandred-bright);}
 
   /* top bar */
-  .topbar{background:linear-gradient(180deg, rgba(244,232,219,.97), rgba(240,224,200,.93)); border-bottom:3px solid var(--brandred); padding:10px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; position:sticky; top:0; z-index:40; flex-wrap:wrap;}
+  .topbar{background:linear-gradient(180deg, rgba(244,232,219,.97), rgba(240,224,200,.93)); border-bottom:3px solid var(--brandred); padding:10px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; position:sticky; top:46px; z-index:30; flex-wrap:wrap;}   /* sits UNDER the fixed site bar, never on top of it */
   .topbar h1{font-family:var(--display); font-size:22px; margin:0; color:#17130c; text-transform:uppercase; letter-spacing:.02em; line-height:1;}
   .topbar .sub{font-size:10px; letter-spacing:.24em; color:#8a6a1e; text-transform:uppercase; font-weight:800; margin-top:2px;}
   .hud{display:flex; gap:14px; font-family:var(--mono); align-items:center; flex-wrap:wrap;}
@@ -47,6 +47,49 @@
   .hud .value{color:#17130c; font-size:16px; font-weight:800;}
 
   main{padding:20px 18px 90px; max-width:1120px; margin:0 auto;}
+  /* ---- THE APP SHELL ----
+     A site bar pinned to the top on every screen (the way back to RunThe.GG,
+     the wordmark, and who you are), and a tab bar pinned to the bottom where a
+     thumb actually is. Both respect the iPhone safe areas, and the page is
+     padded so neither ever sits on top of content. */
+  body{padding-top:46px;}
+  body.hasnav main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+  .sitebar{position:fixed;top:0;left:0;right:0;height:46px;z-index:45;display:flex;align-items:center;
+    gap:10px;padding:0 12px;background:rgba(12,10,10,.94);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);}
+  .sb-home{flex:none;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-faint);text-decoration:none;padding:5px 8px;border:1px solid var(--line);border-radius:8px;white-space:nowrap;}
+  .sb-home span{color:var(--brandred);}
+  .sb-home:hover{color:var(--cream);border-color:var(--brandred);}
+  .sb-mark{flex:1;text-align:center;font-family:var(--display);font-size:15px;letter-spacing:.1em;
+    color:var(--cream);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sb-prof{flex:none;display:flex;align-items:center;gap:7px;padding:3px 9px 3px 3px;background:var(--panel);
+    border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--cream);font-family:var(--body);
+    font-size:11.5px;font-weight:700;max-width:44vw;overflow:hidden;}
+  .sb-prof:hover{border-color:var(--gold);}
+  .sb-prof .pf-av{flex:none;width:26px;height:26px;border-radius:50%;overflow:hidden;background:#1a1416;display:block;}
+  .sb-prof .pf-av svg{width:100%;height:auto;display:block;transform:scale(2.1) translateY(14%);transform-origin:50% 12%;}
+  .sb-prof .pf-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:104px;}
+  /* On a phone the three pieces have to share 430px, so the name gives way
+     first: the wordmark is the thing that says which game you are in. */
+  @media(max-width:520px){
+    .sb-mark{font-size:13px;letter-spacing:.06em;}
+    .sb-prof .pf-n{max-width:62px;}
+    .sb-home{font-size:10px;padding:5px 6px;}
+  }
+  .sb-prof .pf-o{flex:none;font-family:var(--mono);font-size:10.5px;color:var(--gold);}
+  .botnav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;
+    background:rgba(12,10,10,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom,0px);}
+  .botnav button{flex:1;background:none;border:0;border-radius:0;padding:8px 2px 9px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-faint);
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;min-width:0;}
+  .botnav button svg{width:19px;height:19px;opacity:.7;}
+  .botnav button.on{color:var(--gold);}
+  .botnav button.on svg{opacity:1;}
+  .botnav button.on::before{content:"";position:absolute;margin-top:-8px;width:26px;height:2px;background:var(--gold);border-radius:2px;}
+  .botnav button:active{background:rgba(255,255,255,.05);}
+  @media(min-width:860px){ .botnav button{font-size:10.5px;} }
   h2{font-family:var(--display); letter-spacing:.02em; text-transform:uppercase; color:var(--cream); font-size:24px; border-bottom:1px solid var(--line); padding-bottom:8px; margin:0 0 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
   h2 .sub2{font-family:var(--body); font-size:12px; letter-spacing:0; text-transform:none; color:var(--text-faint); font-weight:600;}
   h3{font-family:var(--display); font-size:17px; letter-spacing:.03em; text-transform:uppercase; color:var(--cream); margin:20px 0 10px;}
@@ -1343,6 +1386,16 @@
 <body>
 
 <!-- ============ TOP BAR ============ -->
+<!-- The app shell: a site bar that is always there, and a tab bar at the thumb.
+     The game used to open on a logo with the navigation buried inside each
+     screen, so on a phone there was no way back to RunThe.gg and no way to see
+     where you were. -->
+<div class="sitebar" id="sitebar">
+  <a class="sb-home" href="https://runthe.gg" title="RunThe.GG">RunThe<span>.GG</span></a>
+  <div class="sb-mark" onclick="go('home')">RUN THE ROPES</div>
+  <button class="sb-prof" id="sbProf" onclick="openProfile()" title="Your wrestler"></button>
+</div>
+
 <div class="topbar" id="topbar" style="display:none;">
   <div>
     <h1 id="tbName">-</h1>
@@ -1780,6 +1833,10 @@
   </div>
 </div>
 </main>
+
+<!-- The vital tabs, at the bottom where a thumb is. Hidden until there is a
+     career to navigate. -->
+<nav class="botnav" id="botnav" style="display:none;"></nav>
 
 <div class="pcov" id="cardOv"><button class="pcx" onclick="closeCard()" aria-label="Close">✕</button>
   <div class="pcwrap"><div id="cardHost"></div><div class="pchint">TAP TO FLIP</div></div></div>
@@ -4264,7 +4321,13 @@ function wrestlerSVG(L,opt){
 /* OVR reads the temporary effects too, so a knock from a dilemma actually shows
    up on the card and in every odds calculation that reads ovr(). It is clamped so
    a stack of bad nights cannot drive an attribute negative. */
-function attrOf(w,k){ const base=(w.attrs||{})[k]||0; return clamp(base + (w===G.w?fxFor(k):0), 0, 100); }
+/* G IS NULL ON THE HOME SCREEN. The home page renders a saved career's OVR
+   straight off the save object, before that save is ever loaded into G, so
+   touching G.w here threw and left the whole page blank with a career on it.
+   Temporary effects only ever apply to the wrestler currently being played. */
+function attrOf(w,k){ const base=(w&&w.attrs||{})[k]||0;
+  const live=(G&&G.w===w)?fxFor(k):0;
+  return clamp(base+live, 0, 100); }
 function ovr(w){ const a=w.attrs; const f=(k)=>attrOf(w,k);
   return Math.round(f('po')*0.16+f('te')*0.19+f('ae')*0.11+f('ch')*0.16+f('ps')*0.19+f('to')*0.10+f('st')*0.09); }
 function tierOf(rep,o){ const lvl=(o!=null?o:(G?ovr(G.w):0));
@@ -5256,17 +5319,42 @@ const NAVG=[
 ];
 function groupOf(scr){ return NAVG.find(g=>g.subs.some(s=>s[0]===scr)); }
 function goGroup(id){ const g=NAVG.find(x=>x.id===id); if(g) go(g.subs[0][0]); }
+/* The group row moved to the tab bar at the bottom, so the in-screen nav is now
+   just the sub-tabs for the group you are in, plus Help. Two rows of identical
+   buttons in two places was the thing making every screen feel like a menu. */
 function navHTML(scr){
   const g=groupOf(scr)||NAVG[0];
-  let h=`<div class="navrow">`+NAVG.map(x=>
-    `<button class="${x.id===g.id?'':'ghost'}" data-nav="${x.id}" onclick="goGroup('${x.id}')">${x.label}</button>`).join('')
-    +`<button class="ghost navhelp" onclick="openHelp()" title="How to play">? Help</button></div>`;
+  let h='';
   if(g.subs.length>1) h+=`<div class="subnav">`+g.subs.map(s=>
-    `<button class="${s[0]===scr?'on':''}" onclick="${s[0]==='card'?'openCard()':`go('${s[0]}')`}">${s[1]}</button>`).join('')+`</div>`;
+    `<button class="${s[0]===scr?'on':''}" onclick="${s[0]==='card'?'openCard()':`go('${s[0]}')`}">${s[1]}</button>`).join('')
+    +`<button class="navhelp" onclick="openHelp()" title="How to play">? Help</button></div>`;
+  else h+=`<div class="subnav"><button class="on">${g.label}</button><button class="navhelp" onclick="openHelp()" title="How to play">? Help</button></div>`;
   return h;
 }
-function paintNav(s){ const sc=$('s-'+s); if(!sc) return;
-  const el=sc.querySelector('.gnav'); if(el) el.innerHTML=navHTML(s); }
+/* The tab bar. One icon per group, the current one lit. It is the primary way
+   around the game on a phone, so it is painted on every screen change. */
+const NAV_ICON={hub:'star', skills:'dumbbell', gear:'mask', roster:'swords', legacy:'trophy'};
+function paintBotNav(scr){
+  const bar=$('botnav'); if(!bar) return;
+  const playing = !!G && scr!=='home' && scr!=='create' && scr!=='start';
+  bar.style.display = playing ? 'flex' : 'none';
+  document.body.classList.toggle('hasnav', playing);
+  if(!playing) return;
+  const g=groupOf(scr)||NAVG[0];
+  bar.innerHTML=NAVG.map(x=>
+    `<button class="${x.id===g.id?'on':''}" onclick="goGroup('${x.id}')">${pico(NAV_ICON[x.id]||'star',19)}<span>${x.label}</span></button>`).join('');
+}
+/* Who you are, top right. Tapping it opens your card; with no career it is the
+   way back to the front page. */
+function paintProfile(){
+  const el=$('sbProf'); if(!el) return;
+  if(!G||!G.w){ el.innerHTML=`<span class="pf-n" style="padding-left:6px;">Guest</span>`; return; }
+  el.innerHTML=`<span class="pf-av">${wrestlerSVG(G.w.look,{frame:'head'})}</span>
+    <span class="pf-n">${G.w.name}</span><span class="pf-o">${ovr(G.w)}</span>`;
+}
+function openProfile(){ if(G&&G.w){ try{ openCard(); }catch(_){ go('career'); } } else go('home'); }
+function paintNav(s){ const sc=$('s-'+s); if(sc){ const el=sc.querySelector('.gnav'); if(el) el.innerHTML=navHTML(s); }
+  paintBotNav(s); paintProfile(); }
 
 /* ============================================================
    THE GUIDED TOUR
@@ -5899,6 +5987,7 @@ function homeRing(){
 function renderHome(){
   homeRing();
   const s=load(); const el=$('homeCont');
+  try{ paintProfile(); paintBotNav('home'); }catch(_){}
   if(!s){
     const hasBackup = (()=>{ try{ return !!localStorage.getItem(SAVE+'_prev'); }catch(_e){ return false; } })();
     // If ANY slot has a save, show the picker even without an active one.
@@ -14800,7 +14889,7 @@ function sceneCtx(){
    Everything is opt-in: an option with a plain `eff` behaves exactly as it
    did, so nothing that already worked had to be rewritten.
    ============================================================ */
-function careerFx(){ const c=G.car; if(!Array.isArray(c.fx)) c.fx=[]; return c.fx; }
+function careerFx(){ if(!G||!G.car) return []; const c=G.car; if(!Array.isArray(c.fx)) c.fx=[]; return c.fx; }
 function addFx(f){ if(f&&f.attr) careerFx().push({attr:f.attr, amt:f.amt||0, weeks:(f.weeks==null?3:f.weeks), label:f.label||''}); }
 // the live total for one attribute, read by ovr() and the match sim
 function fxFor(attr){ let d=0; for(const f of careerFx()){ if(f.attr===attr && f.weeks>0) d+=f.amt; } return d; }
@@ -14835,7 +14924,7 @@ function rollOutcome(opt, x){
 }
 /* Arcs: a choice seeds a follow-up scene that comes due weeks later. The wait is
    in WEEKS, ticked by the week roll, and an arc that could never fire is pruned. */
-function careerArcs(){ const c=G.car; if(!Array.isArray(c.arcs)) c.arcs=[]; return c.arcs; }
+function careerArcs(){ if(!G||!G.car) return []; const c=G.car; if(!Array.isArray(c.arcs)) c.arcs=[]; return c.arcs; }
 function seedArc(id, range, data){
   const r=range||[3,6];
   careerArcs().push({id, wait:r[0]+Math.floor(rnd()*Math.max(1,(r[1]-r[0]+1))), data:data||{}});
