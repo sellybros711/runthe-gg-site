@@ -22375,17 +22375,34 @@ function storyFeedHTML(){
 // Rewards also scale with your FOLLOWING (popularity sells). Each off-season, if your standing has grown
 // enough to attract a bigger brand, you're offered the choice: stay and keep compounding loyalty, or upgrade.
 const SPONSOR_TIERS=[   // CS242: reward ladder compressed so the top tier can't compound to a windfall. CS330: +Elite/Icon so the climb lasts a whole career.
-  {name:'Tier 1', reward:1.00, diff:1.00},
-  {name:'Tier 2', reward:1.28, diff:1.24},
-  {name:'Tier 3', reward:1.50, diff:1.50},
-  {name:'Tier 4', reward:2.05, diff:1.80},
-  {name:'Tier 5', reward:2.40, diff:2.05},
-  {name:'Tier 6', reward:2.80, diff:2.30}
+  // Named after the brand pools they draw from (see BRANDS below, which has been grouped Regional →
+  // Icon all along). "Tier 6" told a player nothing; "Icon" says what reaching it means.
+  {name:'Regional', reward:1.00, diff:1.00},
+  {name:'National', reward:1.28, diff:1.24},
+  {name:'Premium',  reward:1.50, diff:1.50},
+  {name:'Global',   reward:2.05, diff:1.80},
+  {name:'Elite',    reward:2.40, diff:2.05},
+  {name:'Icon',     reward:2.80, diff:2.30}
 ];
-// CS330: market value needed to attract each tier, Global comes mid-career, Elite/Icon are the long game
-// (Icon needs a legendary CV: huge following + peak OVR + many wins/majors, so it's a late-career pinnacle).
-const SPONSOR_TIER_REQ=[0, 24, 48, 70, 94, 114];
-const SPONSOR_REL_MAX=5;
+/* Market value needed to attract each tier. These were [0,24,48,70,94,114] against a value that topped
+   out around 120, and every one of its three inputs SATURATED early: followers capped at 3.2M, OVR at
+   94, and the wins/majors term at ten wins and four majors. A good player therefore held a maxed top-tier
+   deal by about year 13 and then had seventeen seasons with nothing left to climb (owner). The value
+   below runs to ~150 and keeps moving all career, and the top two rungs are priced for a CV that takes
+   twenty-odd seasons to build. Icon is meant to be the last few years of a legendary career, or never. */
+const SPONSOR_TIER_REQ=[0, 26, 52, 80, 106, 124];
+/* And a YEARS-SERVED gate on the top two rungs, because a value curve alone cannot put them where they
+   belong (owner: the final tier should land around year 20 to 25). An all-timer's following, rating and
+   CV are all near their ceilings by their mid thirties, so on value alone they reach the top rung around
+   year 17 however the numbers are weighted, while a merely great career gets there ten years later. The
+   gate closes that spread from the early end: nobody is the face of the sport in year 13, whatever they
+   have won. Value still decides whether you EVER get there. */
+const SPONSOR_TIER_MINYR=[0, 0, 0, 0, 12, 20];
+/* Loyalty runs past the ambassador milestone now, so a partnership is still deepening in year 25. Levels
+   above AMB take TWO delivered seasons each and pay half a step, so the last three rungs are roughly six
+   seasons of work for a modest raise: a reason to stay, not a second income. */
+const SPONSOR_REL_MAX=8;
+const SPONSOR_REL_AMB=5;
 // CS229: every sponsor is a FAKE BRAND with its own identity, category, color, tagline, and a
 // PERSONALITY trait that changes the deal. So two offers at the same tier can feel very different, and
 // choosing is about more than money. (All brands are fictional, see the not-affiliated disclaimer.)
@@ -22581,23 +22598,36 @@ function brandBadge(name, opts){ opts=opts||{}; const b=brandInfo(name), sz=opts
     <span style="min-width:0"><span style="font-weight:800;color:${opts.on||'var(--oncard)'};white-space:nowrap">${esc(name)}</span>${opts.cat?`<span class="small" style="display:block;color:#8fa7b3;letter-spacing:.04em">${BRAND_CATS[b.cat]||''}${opts.trait?' · '+esc(brandTrait(name).label):''}</span>`:''}</span></span>`; }
 function sponsorTierInfo(t){ return SPONSOR_TIERS[Math.max(0,Math.min(SPONSOR_TIERS.length-1,t|0))]; }
 function sponsorRelMult(rel, brand){ const step=(brandTrait(brand).relStep)||0.06;   // loyal brands grow faster (+10%/lvl vs +6%)
-  return 1 + step*(Math.max(1,Math.min(SPONSOR_REL_MAX,rel||1))-1); }
+  const r=Math.max(1,Math.min(SPONSOR_REL_MAX,rel||1));
+  // levels 1..AMB pay the full step (unchanged); the rungs past it pay half, so a decade of loyalty is
+  // still climbing without turning the sponsor line into a second prize purse
+  return 1 + step*(Math.min(r,SPONSOR_REL_AMB)-1) + step*0.5*Math.max(0,r-SPONSOR_REL_AMB); }
 function sponsorFolMult(brand){ const f=(careerStory().followers)||FOLLOWERS_START;
   const base=Math.max(0, Math.min(0.35, (Math.log10(Math.max(10000,f))-4)*0.117));   // CS242: softened, 10k→+0, 100k→+.12, 1M→+.23, 10M+→+.35 (was up to +.6)
   // CS280: your FANS axis is your marketability, a popular star commands richer sponsor money (±~18%)
   return (1 + base*((brandTrait(brand).folBoost)||1)) * repMarketMult(); }   // image-driven brands amplify the follower effect
 function sponsorPick(tier, avoid, rng){ const all=brandsOfTier(tier), pool=all.filter(b=>b!==avoid), p=pool.length?pool:all;
   return p[Math.floor((rng?rng():Math.random())*p.length)]; }
-// your "market value" to sponsors: following + current OVR + career achievement (roughly 0-120)
+/* Your "market value" to sponsors: following + OVR + career achievement + time served (roughly 0-150).
+   The weights are chosen so that the term which dominates CHANGES as a career goes on. Early it is your
+   OVR and your following, both of which are largely settled by your early thirties. Late it can only be
+   the CV and the years, which is what makes the top of the ladder a grind rather than a checkpoint. */
 function sponsorMarketValue(){ const st=careerStory(), c=S.career||{};
   let ovr; try{ ovr=(S.season&&S.season.me)?Math.round(S.season.me.skill):(c.peakOvr||Math.round(buildPlayer().skill)); }catch(e){ ovr=c.peakOvr||82; }
-  const fv=Math.max(0,Math.min(55,(Math.log10(Math.max(10000,st.followers||FOLLOWERS_START))-4)*22));
-  const ov=Math.max(0,Math.min(35,(ovr-78)*2.2));
-  const av=Math.min(30,(c.wins||0)*1.4+(c.majors||0)*4);
-  return fv+ov+av; }
+  ovr=Math.max(ovr, c.peakOvr||0);   // a declining legend keeps the marketability they earned
+  // followers: reaches its ceiling at 10M rather than 3.2M, so the fan base is worth chasing for longer
+  const fv=Math.max(0,Math.min(45,(Math.log10(Math.max(10000,st.followers||FOLLOWERS_START))-4)*15));
+  const ov=Math.max(0,Math.min(36,(ovr-76)*1.6));
+  // the CV is the long pole: a win is worth less than it was and the ceiling is nearly twice as far away,
+  // so this keeps climbing through a whole career instead of maxing at ten wins and four majors
+  const av=Math.min(55,(c.wins||0)*1.0+(c.majors||0)*3.5);
+  // and time served, which no amount of early dominance can buy
+  const sv=Math.min(14,(((c.seasons&&c.seasons.length)||0))*0.6);
+  return fv+ov+av+sv; }
 // Legacy perks (Number One, Money Machine, The Immortal) are LEVERAGE: brands court a golfer with that
 // résumé above what their following alone would earn.
-function eligibleSponsorTier(){ const v=sponsorMarketValue(); let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i]) t=i;
+function eligibleSponsorTier(){ const v=sponsorMarketValue(), yr=S.year||1;
+  let t=0; for(let i=0;i<SPONSOR_TIER_REQ.length;i++) if(v>=SPONSOR_TIER_REQ[i] && yr>=(SPONSOR_TIER_MINYR[i]||0)) t=i;
   try{ if(typeof legacyAdd==='function') t+=legacyAdd('sponsorTier'); }catch(e){}
   try{ const ep=(typeof entryPath==='function')?entryPath():null; if(ep&&ep.sponsorTierAdj) t+=ep.sponsorTierAdj; }catch(e){}
   return Math.max(0, Math.min(SPONSOR_TIERS.length-1, t)); }
@@ -22921,13 +22951,16 @@ function makeContracts(){ if(S.daily||S.circuitMode||!S.career||!S.season) retur
 function contractsList(){ const cs=S.season&&S.season.contracts; if(!cs) return []; return SPONSOR_SLOTS.filter(k=>cs[k]).map(k=>({slot:k, contract:cs[k]})); }
 // relationship meter chip (rel level + loyalty %); used in the off-season card, season deal, report card
 function sponsorRelMeterHTML(sp){ const rel=Math.max(1,Math.min(SPONSOR_REL_MAX,sp.rel||1));
-  const amb=!!sp.ambassador||rel>=SPONSOR_REL_MAX;
-  const pct=Math.round((sponsorRelMult(rel, sp.brand)-1)*100), pips=Array.from({length:SPONSOR_REL_MAX},(_,i)=>
-    `<span style="width:16px;height:6px;border-radius:3px;background:${i<rel?'#ffd45e':'rgba(255,255,255,.14)'}"></span>`).join('');
+  const amb=!!sp.ambassador||rel>=SPONSOR_REL_AMB;
+  const pct=Math.round((sponsorRelMult(rel, sp.brand)-1)*100);
+  const pw=SPONSOR_REL_MAX>6?11:16;   // the pips still have to fit the slot card at eight of them
+  // Becoming an ambassador used to REPLACE the level, which was fine when it was the last rung. It is
+  // not any more, so the star sits alongside a level that still has somewhere to go.
+  const pips=Array.from({length:SPONSOR_REL_MAX},(_,i)=>
+    `<span style="width:${pw}px;height:6px;border-radius:3px;background:${i<rel?(i>=SPONSOR_REL_AMB?'#ffe9a8':'#ffd45e'):'rgba(255,255,255,.14)'}"></span>`).join('');
   return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span style="display:flex;gap:3px">${pips}</span>
-    ${amb?`<span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">★ Brand Ambassador${pct>0?' · +'+pct+'% rewards':''}</span>`
-        :`<span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">Loyalty Lv ${rel}${pct>0?' · +'+pct+'% rewards':''}</span>`}</div>`; }
+    <span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">${amb?'★ ':''}Loyalty Lv ${rel}${rel<SPONSOR_REL_MAX?'/'+SPONSOR_REL_MAX:''}${pct>0?' · +'+pct+'% rewards':''}</span></div>`; }
 // signing bonus paid when you switch brands - a one-time cash sweetener that offsets losing your loyalty
 function sponsorSigningBonus(brand){ const ti=sponsorTierInfo(brandInfo(brand).tier);
   return Math.round(2.4e6*ti.reward*sponsorFolMult(brand)*purseMult(S.year||1)/1e5)*1e5; }
@@ -23257,7 +23290,7 @@ function sponsorStripNode(){
   ensureSponsors();
   const chip=slot=>{ const sp=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
     if(!sp) return `<span class="small muted" style="opacity:.75">${lab}: open</span>`;
-    const amb=!!sp.ambassador||(sp.rel||1)>=SPONSOR_REL_MAX;
+    const amb=!!sp.ambassador||(sp.rel||1)>=SPONSOR_REL_AMB;
     return `<span style="display:inline-flex;align-items:center;gap:5px;min-width:0">${brandLogoSVG(sp.brand,18)}<b style="color:var(--oncard);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8.5em">${esc(sp.brand)}</b>${amb?'<span style="color:var(--gold)">★</span>':`<span class="small muted">Lv${sp.rel||1}</span>`}</span>`; };
   const det=$(`<details class="acc" ${S.sponsorsOffOpen?'open':''} style="max-width:520px;margin:0 auto 8px">
     <summary class="accsum"><span class="chev">›</span>
@@ -23279,7 +23312,9 @@ function contractReportCardHTML(x){
   const sp=sponsorOf(slot);
   const ambNew=(S.season&&S.season._ambNew&&S.season._ambNew[slot])||null;
   // reward growth headline: loyalty climbing (+2 goals met) grows next year's bonuses by the brand's relationship step
-  const relGrow = (!dropped && met>=2 && sp) ? Math.round((sponsorRelMult(Math.min(SPONSOR_REL_MAX,(sp.rel||1)),sp.brand)-sponsorRelMult(Math.max(1,(sp.rel||1)-1),sp.brand))*100) : 0;
+  // only when a level actually MOVED: past the ambassador rung a delivered season may be the first of
+  // the two a level costs, and promising a raise that is not coming is worse than saying nothing
+  const relGrow = (!dropped && met>=2 && sp && sp._relUp) ? Math.round((sponsorRelMult(Math.min(SPONSOR_REL_MAX,(sp.rel||1)),sp.brand)-sponsorRelMult(Math.max(1,(sp.rel||1)-1),sp.brand))*100) : 0;
   const outlook = dropped ? `${esc(contract.sponsor)} has walked away. A fresh, smaller deal awaits, prove yourself and climb again.`
     : all ? `Every goal delivered. ${esc(contract.sponsor)} is thrilled${relGrow>0?`, next year’s bonuses grow +${relGrow}%`:''}.`
     : met===0 ? 'A tough year. The relationship took a hit.'
@@ -27111,13 +27146,20 @@ function scrSummary(){
         // brand reads the year as a partnership even if the headline goals fell short.
         const bDone=((S.season.briefsDone||{})[slot])||0;
         const met=x.met+(bDone>=2?1:0);
-        if(met>=2){ sp.rel=Math.min(SPONSOR_REL_MAX,(sp.rel||1)+1); sp.strikes=0; }
-        else if(met===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.strikes=(sp.strikes||0)+1; }
-        else sp.strikes=0;   // met exactly 1 → hold steady
+        if(met>=2){
+          // up to the ambassador rung, one delivered season is one level. Past it, two: the tail of the
+          // ladder is meant to take the back half of a career, not four more good years.
+          const r0=sp.rel||1;
+          if(r0<SPONSOR_REL_AMB){ sp.rel=r0+1; sp.relPend=0; }
+          else { sp.relPend=(sp.relPend||0)+1;
+            if(sp.relPend>=2){ sp.relPend=0; sp.rel=Math.min(SPONSOR_REL_MAX,r0+1); } }
+          sp._relUp=(sp.rel>r0)?1:0; sp.strikes=0; }
+        else if(met===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.relPend=0; sp._relUp=0; sp.strikes=(sp.strikes||0)+1; }
+        else { sp.strikes=0; sp._relUp=0; }   // met exactly 1 → hold steady
         sp.seasons=(sp.seasons||0)+1;
         // CS277 - BRAND AMBASSADOR: hit max loyalty (Lv 5) and the brand names you the face of the company.
         // Recognition + a one-time following bump (fans notice the partnership) - no cash, so the economy is untouched.
-        if(sp.rel>=SPONSOR_REL_MAX && !sp.ambassador){ sp.ambassador=true;
+        if(sp.rel>=SPONSOR_REL_AMB && !sp.ambassador){ sp.ambassador=true;
           const fol=gainFollowers(0.07, 4000);
           S.season._ambNew=S.season._ambNew||{}; S.season._ambNew[slot]={brand:c.sponsor, fol};   // persist so the summary re-renders keep the celebration
           try{ recordAchEvent({inc:{brandAmbassadors:1}}); }catch(e){}   // CS290
