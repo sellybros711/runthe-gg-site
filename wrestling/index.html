@@ -8348,6 +8348,10 @@ function clockStr(){ const m=Math.floor(MS.clock/60), s=MS.clock%60; return `${m
 // pick a move: escalating through the match, never the same one twice running
 function myMove(){
   const ph=phaseNow(), plan=[G.car.plan.a,G.car.plan.b];
+  // Harness: a match pinned to the finisher tell has to actually reach the
+  // finisher, or the case passes or fails on which move the sim happened to
+  // pick. RTR_FORCE means "this beat happens", so here it means it too.
+  if(pinnedIs('tell') && ph.id==='stretch'){ const f=moveById(G.w.finisher); if(f) return f; }
   const all=G.w.moves.map(moveById).filter(Boolean);
   if(!all.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
   const planned=all.filter(m=>plan.includes(m.cat));
@@ -8747,11 +8751,14 @@ async function runFight(){
     // Head damage plus a stipulation that allows it. Hardcore matches get there
     // fastest, which is the whole point of a hardcore match.
     if(!MS.ended){
-      if(window.RTR_HEAD){ MS.opp.limb.head=Math.max(MS.opp.limb.head,70); }   // harness: somebody is cut open tonight
       const rl=stipRules(o), bloodOk=rl.noDQ||rl.lenient||o.stip==='hardcore'||o.stip==='cage'||o.stip==='tlc';
       const hard=(lastCat==='hardcore'||lastCat==='runner'||lastCat==='slam');
-      if(bloodOk && hard && MS.phase>=2){
-        if(!MS.blood_opp && MS.opp.limb.head>=52 && (rnd()<0.30 || forced('blood'))) bustOpen('opp');
+      // A pinned beat skips the mood conditions (which move family, how much
+      // head damage, the roll) but never the stipulation: nobody gets colour in
+      // a match where the referee would stop it.
+      const wantBlood=pinnedIs('blood');
+      if(bloodOk && (wantBlood || (hard && MS.phase>=2))){
+        if(!MS.blood_opp && (wantBlood || (MS.opp.limb.head>=52 && rnd()<0.30))) bustOpen('opp');
         else if(!MS.blood_me && MS.me.limb.head>=52 && rnd()<0.22) bustOpen('me');
       }
     }
@@ -9384,9 +9391,13 @@ async function finishDecision(){
   ]);
   const ok=rnd()<pick.p;
   if(pick.kind==='fin'){
+    // THE TELL BELONGS HERE TOO. This decision is where the finisher lands most
+    // often, and it was the one path that skipped the signal, so a known
+    // finisher arrived with no build on the biggest beat in the match.
+    if((G.car.finHits||0)>=5) await finisherTell();
     if(ok){ const fc=fin&&fin.cat==='strike'?'runner':(fin?fin.cat:'slam');
       await flashScreen(); await spot(fc,true,'FINISH!',2);
-      await callout('FINISHER!'); MS.quality+=22; MS.decWon++; MS.finisherHit++;
+      await callout('FINISHER!'); MS.quality+=22; MS.decWon++; MS.finisherHit++; G.car.finHits=(G.car.finHits||0)+1;
       fLog(`<span class="hi">${pick.name} connects flush!</span>`);
       hurtLimb(MS.opp,'head',26); renderLimbs();
       // even the finisher does not guarantee three. It just makes it likely
@@ -9741,7 +9752,7 @@ async function postBellBeats(iWon){
   const o=MS.o, st=story();
   // 1. the beatdown: your rival, not tonight's opponent, after you have won
   const beat = st && st.charId!==o.oppId && iWon===true && !MS.runIn && (MS.o.stakes!=='rumble');
-  if(beat && (forced('beatdown') || (!randomBeatsOff() && rnd()<0.22))){
+  if(beat && (pinnedIs('beatdown') || (!randomBeatsOff() && rnd()<0.22))){
     const rc=charById(st.charId);
     if(rc){
       MS.postBeat=true;
@@ -9761,8 +9772,12 @@ async function postBellBeats(iWon){
   // 2. the handshake: only after a competitive match against somebody with respect
   const R=rel(o.oppId), opp=charById(o.oppId);
   const clean = MS.finish && (MS.finish.type==='pin'||MS.finish.type==='sub') && !MS.refBumped && !MS.dirty;
-  if(opp && clean && MS.quality>=64 && (R.respect||0)>=38 && iWon!=null
-     && (forced('handshake') || pinnedIs('handshake') || (!randomBeatsOff() && rnd()<0.30))){
+  // A pinned beat skips the mood conditions (match quality, respect, the roll)
+  // but never the ones that would make it nonsense: there is no handshake
+  // without an opponent and a decision.
+  const wantShake = pinnedIs('handshake');
+  if(opp && iWon!=null
+     && (wantShake || (clean && MS.quality>=64 && (R.respect||0)>=38 && !randomBeatsOff() && rnd()<0.30))){
     const loser = iWon ? opp.name : G.w.name;
     fLog(`<span class="say">${iWon?opp.name:'You'} get${iWon?'s':''} to ${iWon?'his':'your'} feet, and puts a hand out.</span>`);
     fmv(iWon?'opp':'me',{pose:'point',fwd:ST.close*0.4},300); await sleep(340);

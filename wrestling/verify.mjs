@@ -527,7 +527,7 @@ section('every stipulation plays out live, and looks like its finish');
     // the seven from the ranked backlog, each forced so it is tested on purpose
     // rather than waited for behind a 7% roll
     {stip:'singles', force:'bump',     want:['pin','sub','count','dq','nc'], beats:['refdown']},
-    {stip:'hardcore',force:'blood',    want:['pin','sub','ko','count'],      beats:['blood'], head:true},
+    {stip:'hardcore',force:'blood',    want:['pin','sub','ko','count'],      beats:['blood']},
     {stip:'singles', force:'handshake',want:['pin','sub'],        beats:['handshake'], respect:true},
     {stip:'singles', force:'beatdown', want:['pin','sub'],        beats:['extra'], story:true, mustWin:true},
     // the tell only exists on a finisher the PLAYER lands, and a tier-5 move is
@@ -564,7 +564,6 @@ section('every stipulation plays out live, and looks like its finish');
           G.w.finisher='s5a';                                  // a rookie has no tier-5 move to hit
           G.car.plan={a:'strike',b:'strike'}; }
         if(cs.mustWin) window.RTR_WIN=true;                    // the beatdown only follows a win
-        if(cs.head) window.RTR_HEAD=true;                      // somebody is getting cut open
         const label=(STIP_RULES[cs.stip]||{}).label||'Battle Royal';
         const o={oppId:opp.id, oppName:opp.name, oppOvr:ovr(G.w)+(cs.mustWin?-25:2), stip:cs.stip, stipLabel:label, mult:1.2, purse:600,
                  stakes:cs.defense?'defense':'standard', card:'Main Event', tag:cs.stip==='tag'};
@@ -592,7 +591,7 @@ section('every stipulation plays out live, and looks like its finish');
         out.extraOn=document.getElementById('fExtra').classList.contains('on');
         out.errs=errsIn;
         const rl=STIP_RULES[cs.stip]||{}; out.noCount=!!rl.noCount; out.noDQ=!!rl.noDQ;
-        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; window.RTR_HEAD=null; FIGHT_SPEED=1;
+        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; FIGHT_SPEED=1;
         return out;
       }, cs);
     }catch(e){ r={done:false, err:e.message}; }

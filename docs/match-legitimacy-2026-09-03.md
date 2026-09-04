@@ -273,8 +273,22 @@ tested on purpose rather than waited for behind a low roll.
    gimmick heat the other way. It is the clearest face-or-heel decision the game
    offers, and it was previously a number nobody could see.
 
-One bug found while building: the finisher tell read `G.w.catchphrase`, which
-does not exist. The field is `w.catch`. It would have silently never fired.
+Two bugs found while building, both of the same kind: a beat that would have
+looked implemented and never fired.
+
+- The finisher tell read `G.w.catchphrase`, which does not exist. The field is
+  `w.catch`.
+- The tell was wired to the move loop only, but the finisher lands most often
+  through the "call it" decision card, and that path skipped the signal. So the
+  biggest beat in the match was the one arriving with no build. That path now
+  fires the tell and counts toward the career total as well.
+
+The suite can pin one beat per match: while `RTR_FORCE` names a beat the other
+random beats stand down, and the pinned beat skips the mood conditions (match
+quality, which move family, how much damage, the roll) while still honouring
+the ones that would make it nonsense, like the stipulation that forbids blood.
+Without that, three of these cases passed or failed on whatever the sim happened
+to roll. Proven with four consecutive clean runs rather than one.
 
 That leaves items 8 to 12 (rope break at two and nine, submission arm drop,
 double count-out brawl, limb gives out, triple threat).
