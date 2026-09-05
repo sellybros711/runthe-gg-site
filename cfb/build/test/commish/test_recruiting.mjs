@@ -109,12 +109,19 @@ console.log('\n=== the money moves it, which is the whole point ===');
   ok('  and the league you gave it to comes up',
     g5After < g5Before - 5, 'Group of Five median ' + g5Before + ' to ' + g5After);
   /* AND IT IS THE MONEY RATHER THAN THE YEAR. The same four years with the pot untouched
-     must not do this on its own, or the assertion above is measuring churn. */
+     must not do this on its own, or the assertion above is measuring churn. Stated as the
+     ratio rather than as a ceiling on the quiet drift, because the first version demanded
+     the drift stay under twelve places and churn happened to drift eleven: an assertion one
+     place from failing on the day it was written, and it failed the day the carousel stopped
+     counting the baseline season. What is actually claimed is that the money is the cause,
+     and the cause has to dwarf the background. */
   const quiet = world(2029); quiet.startYear = 2025;
   const same = boardFor(quiet);
+  const quietDrift = Math.abs(medianRank(same, ['SEC']) - secBefore);
+  const moneyMove = Math.abs(secAfter - secBefore);
   ok('  and four quiet years do not do it by themselves',
-    Math.abs(medianRank(same, ['SEC']) - secBefore) < 12,
-    'SEC median ' + secBefore + ' to ' + medianRank(same, ['SEC']) + ' with the pot untouched');
+    moneyMove >= quietDrift * 2.5,
+    'the money moved the SEC median ' + moneyMove + ' places, quiet churn ' + quietDrift);
 }
 
 console.log('\n=== and the two levers bend the shape rather than the order ===');

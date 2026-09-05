@@ -346,8 +346,12 @@ console.log('\n=== you get to answer the room ===');
      screen back into the standings screen, which is exactly what the first version did: it
      dropped all nine quotes and the delta column off the one screen the mode is remembered
      for, and nothing failed. */
+  /* THE OFFER IS RARE NOW, ON PURPOSE: the trigger fires when a ruling singles somebody
+     out, which is about three rulings in ten (measured; see REBUT_FLOOR in the page). At the
+     old 80% a budget of eight rulings was plenty; at 30% it is a one-in-twenty flake, so the
+     walk sees about eighteen rulings before it concludes the mechanic is missing. */
   let offered = 0, onForecast = 0, answered = null;
-  for (let i = 0; i < 26 && !answered; i++) {
+  for (let i = 0; i < 60 && !answered; i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(340); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(400); continue; }
     if (await on('s-room')) {

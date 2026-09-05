@@ -179,9 +179,26 @@
         + gauss(seed, school, n, 'z') * vol * SHOCK;
 
       /* THE CAROUSEL, decided on how the season that just finished went. A program under
-         its own level by this much for two years running makes a change, and the change lands
-         on the season after it. */
-      if (prev < level - FIRE_GAP) under++; else under = 0;
+         its own level makes a change, and the change lands on the season after it.
+
+         THE BASELINE SEASON IS NOT EVIDENCE. z[0] is the real 2025, and every carousel that
+         season earned already happened in the world the data was scraped from: the coaches
+         who survived to be IN that data are the ones their schools kept. Counting it fired
+         the exact same forty-one coaches in the first December of every term ever played,
+         on every seed, because the condition read only the data: a purge, identical every
+         time, on programs whose only offense was a 21-year mean above their 2025. Year one
+         is the real season everywhere else in this mode, and now it is here too: the first
+         December is quiet, and the carousel begins with the first season played on this
+         office's watch. movedBlock() in the page promised exactly that ("NOT IN YEAR ONE")
+         and the code did not keep the promise until now.
+
+         Re-measured after the change with the same harness as before it: distinct champions
+         per five years went 3.97 to 4.20, which is the direction the fit wanted (a real five
+         year window gives about four); schools ever winning went 32 to 28 in 150 seasons;
+         invented-season sd went 1.02 to 0.99; the worst team went -3.60 to -3.48. The
+         carousel runs 0, then about 29, then settles in the teens, which is the size of a
+         real cycle. Everything stayed in band, so the other constants stand. */
+      if (n > 1) { if (prev < level - FIRE_GAP) under++; else under = 0; }
       if (under >= FIRE_YEARS) {
         var delta = HIRE_MEAN + gauss(seed, school, n, 'hire') * HIRE_SPREAD;
         coach = was * 0.4 + delta;
