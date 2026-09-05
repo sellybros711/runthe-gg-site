@@ -330,6 +330,8 @@
   .ordslot.on{background:linear-gradient(180deg,#ECB550,#d79b34);border-color:#F6D488;color:#2a1c00;}
   .ordval{margin-left:auto;font-size:12.5px;font-weight:800;color:#F6D488;opacity:0;transition:opacity .25s;}
   .ordval.show{opacity:1;}
+  /* the number that decided a two-way call, shown on both options once you commit */
+  .revval{display:block;font-size:12.5px;font-weight:800;color:#F6D488;margin-top:3px;animation:rtgPopIn .2s both;}
   .dest .cn{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:36px;margin-top:8px;letter-spacing:.01em;
     color:var(--goldhi);text-shadow:0 2px 14px rgba(0,0,0,.5);}
   .dest .rg{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
@@ -1143,15 +1145,15 @@
         + '<div class="hero-imgwrap"><img class="hero-wm" src="/globe/brand/wordmark.jpg" alt="Run The Globe" width="1200" height="434" /></div>'
         + '<div class="hero-cap">'
           + '<div class="herohook">Outrun 10 rival teams around the world.</div>'
-          + '<p class="lede" style="margin-top:7px">Every Stage jets the field to a new country. Beat the clock at 30+ challenges, then <b>sprint the city to the Checkpoint mat</b> — the slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. Survive all '
+          + '<p class="lede" style="margin-top:7px">Every Stage jets the field to a new country. Beat the clock at 30+ challenges. Then <b>sprint the city to the Checkpoint mat</b>. The slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. Survive all '
           + ROUNDS + ' Stages to win the Final.</p>'
           + '<button class="btn ghost sm" id="howto" style="margin-top:12px">📖 How to play</button>'
         + '</div>'
       + '</div>'
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:4px">How do you want to play?</h3>'
-        + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race a field of 11 teams either way — pick who\'s on <b>your</b> team.</p>'
-        + modeRow('solo',MODE_ICON.solo,'Solo Race','Race the field on your own — you take every challenge.','','gold')
+        + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race a field of 11 teams either way. Pick who\'s on <b>your</b> team.</p>'
+        + modeRow('solo',MODE_ICON.solo,'Solo Race','Race the field on your own. You take every challenge.','','gold')
         + modeRow('duo_same',MODE_ICON.duo,'Team Race · Same Screen','You and a partner, one device, one team. Take turns each Stage.','','green')
         + modeRow('duo_two',MODE_ICON.two,'Team Race · Two Devices','You and a partner on separate devices, same team.','Beta','coral')
       + '</div>'
@@ -1162,7 +1164,7 @@
           + statTile(st.wins,'Wins')
           + statTile(st.top3,'Top 3')
           + statTile(visitedCount(),'Countries')
-          + statTile(st.bestPlace?('#'+st.bestPlace):'—','Best finish')
+          + statTile(st.bestPlace?('#'+st.bestPlace):'-','Best finish')
           + statTile(totalBadges(st),'Badges')
         + '</div>'
         + '<button class="btn ghost" id="trophies" style="margin-top:12px">🏆 Trophy Room</button>'
@@ -1175,7 +1177,7 @@
     var ht=$('howto'); if(ht) ht.onclick=function(){ S.screen='howto'; render(); };
     renderAcct();
   }
-  function step(n,t,d){ return '<div class="step"><span class="n">'+n+'</span><span class="tx"><b>'+esc(t)+'</b> — '+esc(d)+'</span></div>'; }
+  function step(n,t,d){ return '<div class="step"><span class="n">'+n+'</span><span class="tx"><b>'+esc(t)+'</b>: '+esc(d)+'</span></div>'; }
 
   /* ------------------------------------------------------- how to play (detailed) */
   function howPanel(accent, illo, title, body){
@@ -1192,15 +1194,15 @@
     var illoFinal= '<div class="ill-flag">🏁</div><div class="ill-t" style="color:var(--acc)">THE FINAL</div>';
     app.innerHTML = topbar()
       + '<div class="card"><h1 style="font-size:26px">How to Play</h1>'
-        + '<p class="lede">RunTheGlobe is a survival race around the world against a field of '+FIELD_SIZE+' teams. Here\'s one Stage of the loop — you\'ll run '+ROUNDS+' of them.</p></div>'
-      + howPanel('gold', illoDraw, '1 · Draw a destination', 'Every Stage jets the whole field to the same random country — you fly the leg on the map, then the destination is revealed. A race criss-crosses '+ROUNDS+' of them.')
-      + howPanel('green', illoGames, '2 · Beat the clock', 'Play a lightning challenge from <b>30+ game types</b> — trivia, maps, memory, word, reflex and audio. A timer runs the whole time, and every slip adds penalty seconds.')
-      + howPanel('coral', illoSplit, '3 · Split Path or Solo Call', 'Most Stages are a <b>Split Path</b>: pick one of two challenges — usually a brain game vs a reflex game — and play to your strength. A <b>Solo Call</b> hands everyone the same single task.')
-      + howPanel('gold', illoRun, '4 · Sprint to the Checkpoint', 'Touch down in a <b>cartoon version of the city</b> and sprint through the streets, Amazing-Race style. Find the Checkpoint mat flying <b>your destination\'s flag</b> and tap it — the clock runs the whole way.')
-      + howPanel('coral', illoGround, '5 · Don\'t finish last', 'Your <b>effective time</b> = challenge + City Run + penalties. The slowest team each Stage is <b style="color:var(--coral)">Grounded</b> — eliminated.')
-      + howPanel('green', illoFinal, '6 · Win the Final', 'Outlast everyone to Stage '+ROUNDS+' — the Final. The last 3 teams sprint to a world landmark; the fastest wins the whole race.')
+        + '<p class="lede">RunTheGlobe is a survival race around the world against a field of '+FIELD_SIZE+' teams. Here\'s one Stage of the loop. You\'ll run '+ROUNDS+' of them.</p></div>'
+      + howPanel('gold', illoDraw, '1 · Draw a destination', 'Every Stage jets the whole field to the same random country. You fly the leg on the map, then the destination is revealed. A race criss-crosses '+ROUNDS+' of them.')
+      + howPanel('green', illoGames, '2 · Beat the clock', 'Play a lightning challenge from <b>30+ game types</b>: trivia, maps, memory, word, reflex and audio. A timer runs the whole time, and every slip adds penalty seconds.')
+      + howPanel('coral', illoSplit, '3 · Split Path or Solo Call', 'Most Stages are a <b>Split Path</b>: pick one of two challenges, usually a brain game against a reflex game, and play to your strength. A <b>Solo Call</b> hands everyone the same single task.')
+      + howPanel('gold', illoRun, '4 · Sprint to the Checkpoint', 'Touch down in a <b>cartoon version of the city</b> and sprint through the streets, Amazing-Race style. Find the Checkpoint mat flying <b>your destination\'s flag</b> and tap it. The clock runs the whole way.')
+      + howPanel('coral', illoGround, '5 · Don\'t finish last', 'Your <b>effective time</b> = challenge + City Run + penalties. The slowest team each Stage is <b style="color:var(--coral)">Grounded</b>, and eliminated.')
+      + howPanel('green', illoFinal, '6 · Win the Final', 'Outlast everyone to Stage '+ROUNDS+', the Final. The last 3 teams sprint to a world landmark. The fastest wins the whole race.')
       + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🤝 Solo or team up</h3>'
-        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Race <b>Solo</b>, or as a team — <b>Same Screen</b> (two of you on one device, taking turns) or <b>Two Devices</b> (you and a partner on separate phones, times combined). Either way you face a full field, so it feels the same whether the rivals are friends or the house.</p></div>'
+        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Race <b>Solo</b>, or as a team. <b>Same Screen</b> puts two of you on one device, taking turns. <b>Two Devices</b> puts you and a partner on separate phones, times combined. Either way you face a full field, so it feels the same whether the rivals are friends or the house.</p></div>'
       + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start the race 🌍</button></div>'
       + foot();
     $('htback').onclick=function(){ S.screen='home'; render(); };
@@ -1237,7 +1239,7 @@
     $('tback').onclick=function(){ S.screen='home'; render(); };
     renderAcct();
   }
-  // crisp inline icons (inherit the mode's accent colour) — cleaner than emoji
+  // crisp inline icons (inherit the mode's accent colour), cleaner than emoji
   var MODE_ICON = {
     solo: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6.5" r="3.6"/><path d="M5 21a7 7 0 0 1 14 0 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z"/></svg>',
     duo:  '<svg viewBox="0 0 30 24" fill="currentColor"><circle cx="9.5" cy="6.4" r="3.3"/><circle cx="20.5" cy="6.4" r="3.3"/><path d="M2.5 20.5a7 7 0 0 1 14 0 .8.8 0 0 1-.8.8H3.3a.8.8 0 0 1-.8-.8Z"/><path d="M13.5 20.5a7 7 0 0 1 14 0 .8.8 0 0 1-.8.8H14.3a.8.8 0 0 1-.8-.8Z" opacity=".7"/></svg>',
@@ -2115,10 +2117,13 @@
   }
   // the number behind the ranking, revealed as each row locks in: you find out
   // Sapporo really is at 43 degrees north, so a guess turns into something learned.
+  function coordLabel(v,dir){
+    if(dir==='east'||dir==='west') return Math.abs(v).toFixed(0)+'°'+(v>=0?'E':'W');
+    return Math.abs(v).toFixed(0)+'°'+(v>=0?'N':'S');
+  }
   function ordVal(v,t){
     var d=t.dir;
-    if(d==='north'||d==='south') return Math.abs(v).toFixed(0)+'°'+(v>=0?'N':'S');
-    if(d==='east'||d==='west')   return Math.abs(v).toFixed(0)+'°'+(v>=0?'E':'W');
+    if(d==='north'||d==='south'||d==='east'||d==='west') return coordLabel(v,d);
     if(d==='near') return Math.round(v).toLocaleString()+' km';
     var s=(Math.abs(v)>=1000)?Math.round(v).toLocaleString():String(v);
     return s+(t.unit?' '+t.unit:'');
@@ -2265,10 +2270,16 @@
     var p=S.hl.pair, mine=p[i].value, other=p[1-i].value;
     var ok = (mine===other) || (lowerWins ? mine<=other : mine>=other);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
-    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    // show the latitude that settled it on BOTH options, and green the right one,
+    // so the call teaches wherever you tapped. hlPaint() clears this next round.
+    each('.hlo', function(b){
+      var j=+b.getAttribute('data-i'), win=(lowerWins ? p[j].value<=p[1-j].value : p[j].value>=p[1-j].value);
+      b.innerHTML=esc(p[j].label)+'<span class="revval">'+coordLabel(p[j].value,t.dir)+'</span>';
+      b.style.borderColor = win?'var(--ok)':'var(--bad)';
+    });
     S.hl.lock=true;
     setTimeout(function(){
-      S.hl.lock=false; if(btn) btn.style.borderColor='';
+      S.hl.lock=false; each('.hlo', function(b){ b.style.borderColor=''; });
       S.hl.round++;
       if(S.hl.round>=S.hl.rounds){ S.play.done=true; finishTask(); } else hlPaint();
     },240);
@@ -2742,12 +2753,17 @@
   function cfAns(t,i,btn){
     if(S.play.done || S.cf.lock) return;
     var p=t.pairs[S.cf.i];
-    var ok = (i === ((p.a.d<=p.b.d)?0:1));
+    var win = (p.a.d<=p.b.d)?0:1, ok = (i === win);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
-    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    // reveal the real distances so a coin-flip becomes a fact you keep
+    each('.hlo', function(b){
+      var j=+b.getAttribute('data-i'), it=(j===0?p.a:p.b);
+      b.innerHTML=esc(it.label)+'<span class="revval">'+Math.round(it.d).toLocaleString()+' km</span>';
+      b.style.borderColor = (j===win)?'var(--ok)':'var(--bad)';
+    });
     S.cf.lock=true;
     setTimeout(function(){
-      S.cf.lock=false; if(btn) btn.style.borderColor='';
+      S.cf.lock=false; each('.hlo', function(b){ b.style.borderColor=''; });
       S.cf.i++;
       if(S.cf.i>=S.cf.rounds){ S.play.done=true; finishTask(); } else cfPaint(t);
     },240);
