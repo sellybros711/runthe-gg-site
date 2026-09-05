@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>RunTheGlobe — Globe-Trotting Race (Preview Build)</title>
+<title>RunTheGlobe: Globe-Trotting Race (Preview Build)</title>
 
 <!-- PREVIEW / BACKGROUND BUILD: this game is not released yet. Keep it out of
      search until it ships, and it is intentionally NOT linked from the homepage
      or listed in sitemap.xml. -->
 <meta name="robots" content="noindex,nofollow" />
-<meta name="description" content="RunTheGlobe: a globe-trotting drafting and trivia race. Draw a country each stage, beat the clock, check in, and don't finish last — or you're Grounded. Part of RunThe.GG." />
+<meta name="description" content="RunTheGlobe: a globe-trotting drafting and trivia race. Draw a country each stage, beat the clock, check in, and don't finish last, or you're Grounded. Part of RunThe.GG." />
 <meta name="theme-color" content="#0e0b20" />
 
 <link rel="icon" href="/globe/brand/icon_48.png?v=4" sizes="any" />
@@ -23,8 +23,8 @@
 
 <!-- social card (the wordmark on its own dark map) -->
 <meta property="og:type" content="website" />
-<meta property="og:title" content="RunTheGlobe — The Race Around The World" />
-<meta property="og:description" content="Draw a country, beat the clock, don't finish last. A globe-trotting race — part of RunThe.GG." />
+<meta property="og:title" content="RunTheGlobe: The Race Around The World" />
+<meta property="og:description" content="Draw a country, beat the clock, don't finish last. A globe-trotting race, part of RunThe.GG." />
 <meta property="og:image" content="/globe/brand/og.jpg?v=4" />
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -82,7 +82,7 @@
   @keyframes bgDrift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-5%,4%) scale(1.06)}}
   @keyframes gridPan{0%{background-position:0 0}100%{background-position:34px 68px}}
   @media (prefers-reduced-motion:reduce){body::before,body::after{animation:none;}}
-  /* faint lat/long grid — echoes the wordmark map, kills the flat "empty dark" look */
+  /* faint lat/long grid: echoes the wordmark map, kills the flat "empty dark" look */
   body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
     background-image:
       linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
@@ -128,7 +128,7 @@
   .lede{color:var(--mut);font-size:14px;line-height:1.6;margin:8px 0 0;}
   .muted{color:var(--mut);}
 
-  /* home hero — the gold wordmark on its own map, framed to bleed then fade into the page */
+  /* home hero: the gold wordmark on its own map, framed to bleed then fade into the page */
   .hero{position:relative;border-radius:20px;overflow:hidden;margin-bottom:14px;border:1px solid var(--cardb);
     background:var(--card);box-shadow:0 22px 50px -26px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.05);}
   .hero-imgwrap{position:relative;}
@@ -192,13 +192,13 @@
   .btn.ghost:hover:not([disabled]){border-color:var(--globe);background:linear-gradient(180deg,rgba(236,181,80,.12),rgba(236,181,80,.03));box-shadow:0 8px 22px -14px rgba(236,181,80,.55);}
   .btn.sm{width:auto;padding:12px 16px;font-size:13px;min-height:44px;}
   .btn[disabled]{opacity:.45;cursor:default;filter:grayscale(.3);}
-  /* two-button contest rows (Higher/Lower, Compass, Region Sort, Closer/Farther) — bigger, punchier */
+  /* two-button contest rows (Higher/Lower, Compass, Region Sort, Closer/Farther): bigger, punchier */
   .hlo{min-height:62px;font-size:16px;border-radius:14px;}
   .hlo:active{transform:scale(.98);}
   .btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
   .btnrow .btn{flex:1 1 auto;}
 
-  /* mode list — each mode is a designed card with its own accent identity */
+  /* mode list: each mode is a designed card with its own accent identity */
   .mode{--acc:var(--globe);--accl:rgba(236,181,80,.26);--accb:rgba(236,181,80,.42);--accs:rgba(236,181,80,.5);
     display:flex;align-items:center;gap:15px;width:100%;text-align:left;margin-bottom:12px;position:relative;overflow:hidden;
     background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
@@ -395,7 +395,7 @@
   .opt.wrong::after{content:"✗";color:var(--bad);}
 
 
-  /* juice: gentle, cushioned motion — no hard cuts, no re-render jumps */
+  /* juice: gentle, cushioned motion. No hard cuts, no re-render jumps */
   @keyframes rtgFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   @keyframes rtgPop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
   @keyframes rtgSwap{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
@@ -466,8 +466,8 @@
   .reactbox{height:190px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     cursor:pointer;user-select:none;text-align:center;transition:background .05s;border:1px solid var(--cardb);}
   .reactbox.wait{background:linear-gradient(180deg,#221c46,#161130);}
-  .reactbox.go{background:linear-gradient(180deg,#54b878,#2c7d4c);}      /* map-green GO — on theme */
-  .reactbox.stop{background:linear-gradient(180deg,#F26D6E,#c1332f);}    /* coral STOP — on theme */
+  .reactbox.go{background:linear-gradient(180deg,#54b878,#2c7d4c);}      /* map-green GO, on theme */
+  .reactbox.stop{background:linear-gradient(180deg,#F26D6E,#c1332f);}    /* coral STOP, on theme */
   .reactbox.idle{background:rgba(255,255,255,.04);}
   .reactbox.fb{background:linear-gradient(180deg,#231d47,#15112e);}
   .reactbox .big{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:28px;}
@@ -476,7 +476,7 @@
   .rep{width:26px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);}
   .rep.done{background:var(--ok);}
 
-  /* Stamp It — a real passport page you press ink stamps onto */
+  /* Stamp It: a real passport page you press ink stamps onto */
   .passport{position:relative;height:180px;border-radius:12px;overflow:hidden;cursor:pointer;touch-action:manipulation;
     background:linear-gradient(160deg,#efe4c6,#dcc99e 60%,#cdb888);border:1px solid #a98f5f;
     box-shadow:inset 0 2px 10px rgba(120,90,40,.35), inset 0 0 40px rgba(150,120,70,.25);}
@@ -505,7 +505,7 @@
   .oitem .num.on{background:var(--globe);color:#fff;}
   .ohint{font-size:12.5px;color:var(--mut);text-align:center;margin-bottom:12px;}
 
-  /* checkpoint / result — punchy time reveal with a gold gradient + glow */
+  /* checkpoint / result: punchy time reveal with a gold gradient + glow */
   .bigtime{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:56px;text-align:center;letter-spacing:.01em;line-height:1;
     background:linear-gradient(180deg,var(--goldhi),var(--globe) 70%,var(--golddk));-webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 6px 22px rgba(236,181,80,.35));}
@@ -592,7 +592,7 @@
 "use strict";
 (function(){
 /* ==========================================================================
-   RunTheGlobe — Offline Solo engine (GDD v1)
+   RunTheGlobe: Offline Solo engine (GDD v1)
    Playable MVP: the full per-round race loop for one human vs a ghost field.
    No backend dependency (GDD §7 "fastest to ship"). Online / duo modes are
    scaffolded on the home screen but not yet wired.
@@ -623,17 +623,17 @@
   // Miss penalty by scoring category (GDD §4). word/dragdrop/audio are not in
   // the §4 table (which lists the 5 scoring categories); mapped to sensible
   // defaults here and flagged in README as pending design sign-off.
-  // --- Street Scout (Mapillary street imagery) — GDD §13, virtual/immersive ---
+  // --- Street Scout (Mapillary street imagery) · GDD §13, virtual/immersive ---
   // Leave BLANK to keep the street game DISABLED (default, ships dormant). To
   // enable: create a free Mapillary client token (mapillary.com → your account →
   // Developers → register an application) and paste it here. The game lazy-loads
   // the Mapillary viewer only when chosen and fails open (falls back to the map
-  // pin-drop) if the token/SDK/imagery are unavailable — it can never break a race.
+  // pin-drop) if the token/SDK/imagery are unavailable. It can never break a race.
   // NOTE: needs live testing with a real token; untested against Mapillary so far.
-  var MAPILLARY_TOKEN = '';   // redacted — set a real Mapillary client token here to re-enable Street Scout
+  var MAPILLARY_TOKEN = '';   // redacted: set a real Mapillary client token here to re-enable Street Scout
   // Street Scout is PARKED until it can be tested end-to-end where Mapillary is
   // reachable (the build sandbox blocks Mapillary, so it can't be debugged here).
-  // Flip STREET_LIVE = true to re-enable the game type — token + integration are
+  // Flip STREET_LIVE = true to re-enable the game type. Token + integration are
   // preserved. FORCE_STREET_FIRST forces stage 1 to Street Scout (testing only).
   var STREET_LIVE = false;
   var FORCE_STREET_FIRST = false;
@@ -659,7 +659,7 @@
     regionsort:'Region Sort', flightplan:'Flight Plan', globehunt:'Globe Hunt', detective:'The Dossier',
     runway:'Pilot The Landing', photosnap:'Photo Snap', stampit:'Stamp It'
   };
-  // expected completion (seconds) for an average player per kind — used ONLY to
+  // expected completion (seconds) for an average player per kind. Used ONLY to
   // pace the AI ghost field. The human always competes on real time, so these are
   // tuned so a competent human is ~even with the MEDIAN ghost on every kind (no
   // kind is an auto-win or an auto-loss). Retuned after playtest audit:
@@ -694,7 +694,7 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   /* ---- real flag images: derive ISO-3166 alpha-2 from the emoji flag's two
      regional-indicator codepoints, then serve the crisp SVG bundled locally
-     under /globe/flags (from the MIT-licensed flag-icons set — self-contained,
+     under /globe/flags (from the MIT-licensed flag-icons set: self-contained,
      no external CDN). Any non-country emoji (team animals, subdivisions) fails
      the map and falls back to the emoji; so does a load error, via flagFB(). ---- */
   function flagISO(f){
@@ -1033,12 +1033,12 @@
   function kindsCount(){ var s=statsDefault(); return Object.keys(s.kinds||{}).length; }
   /* Records hook (GDD §14): badges/progression are local-first here. They're
      shaped to map onto the shared RunThe.GG profiles/badges schema (server-
-     computed tiers, see supabase/*.sql) — wire them in when the account/online
+     computed tiers, see supabase/*.sql). Wire them in when the account/online
      layer goes live rather than inventing a parallel server system. */
 
   /* ------------------------------------------------------- badges (GDD §14) */
   // Each achievement has ordered tiers (threshold, label). Total "badges" = sum
-  // of tiers reached across all achievements — same shape as RunThePitch.
+  // of tiers reached across all achievements, same shape as RunThePitch.
   var BADGES = [
     { id:'globetrotter', name:'Globetrotter', icon:'🌍', metric:function(s){return visitedCount();}, unit:'countries',
       tiers:[{n:5,l:'Bronze'},{n:15,l:'Silver'},{n:30,l:'Gold'},{n:46,l:'Platinum'}] },
@@ -1072,7 +1072,7 @@
     s.badgeSeen=totalBadges(s); saveStats(s);
     if(earned.length){
       var msg = earned.length===1
-        ? ('🎉 New badge: '+earned[0].icon+' '+earned[0].name+' — '+earned[0].tier)
+        ? ('🎉 New badge: '+earned[0].icon+' '+earned[0].name+' · '+earned[0].tier)
         : ('🎉 '+earned.length+' new badges unlocked! See the Trophy Room.');
       if(typeof toast==='function') toast(msg);
     }
@@ -1278,8 +1278,8 @@
       + '<div class="card">'
         + '<h1 style="font-size:24px">'+(duo?'Name your duo':'Name your team')+'</h1>'
         + '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs a field of '+FIELD_SIZE+' teams through '+ROUNDS+' Stages. '
-          + 'The slowest team is Grounded each Stage until the 3-team Final — don\'t be last.'
-          + (duo?' You\'ll take turns — the game says who\'s up each Stage.':'')+'</p>'
+          + 'The slowest team is Grounded each Stage until the 3-team Final. Don\'t be last.'
+          + (duo?' You\'ll take turns. The game says who\'s up each Stage.':'')+'</p>'
         + '<div style="margin-top:16px"><label class="fld" for="tn">Team name</label>'
         + '<input type="text" id="tn" maxlength="18" placeholder="'+(duo?'Our Team':'Your Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
         + duoFields
@@ -1324,7 +1324,7 @@
     S.finishLine = pick(FINISH);   // GDD §11: the Final's location, locked at race start
     S.streak = 0; S._cutLb = 0;
     S.screen='stage';
-    // opening cutscene (once per session) — the host sets the stakes, then wheels up
+    // opening cutscene (once per session): the host sets the stakes, then wheels up
     if(!S._introSeen){ S._introSeen=true; cut(introBeats(), drawStage, destScene({ name:S.finishLine.city, region:S.finishLine.region, landmark:S.finishLine.landmark })); }
     else drawStage();
   }
@@ -1371,7 +1371,7 @@
       if(!KIND[cat]) return;
       (c.tasks[cat]||[]).forEach(function(t){
         // never serve a trivia/math question whose answer IS the destination's
-        // own name — you already know where you are, so it's a giveaway.
+        // own name. You already know where you are, so it's a giveaway.
         if(t.options && t.options[t.a]===c.name) return;
         out.push(t);
       });
@@ -1391,7 +1391,7 @@
   }
   function genTasks(c){
     var g=[], i;
-    // Guess The Flag — show a flag, pick the country. The subject is a RANDOM
+    // Guess The Flag: show a flag, pick the country. The subject is a RANDOM
     // country, NOT the one you're currently visiting (showing your own flag was a
     // giveaway, not a game).
     var fq = otherCountries(c,1)[0] || c;
@@ -1399,18 +1399,18 @@
     var opts = shuffle([fq.name].concat(wrong.map(function(x){return x.name;})));
     g.push({ kind:'flagid', cat:'trivia', type:'brain', q:'Which country flies this flag?', flag:fq.flag,
              options:opts, a:opts.indexOf(fq.name) });
-    // Flag Reveal — Flagle-style: name the flag as pieces are uncovered (random subject)
+    // Flag Reveal (Flagle-style): name the flag as pieces are uncovered (random subject)
     var zq = otherCountries(c,1)[0] || c;
     var zw = otherCountries(zq,3);
     var zopts = shuffle([zq.name].concat(zw.map(function(x){return x.name;})));
     g.push({ kind:'zoomreveal', cat:'trivia', type:'brain', q:'Which country flies this flag? Guess from the revealed pieces.', flag:zq.flag,
              options:zopts, a:zopts.indexOf(zq.name) });
-    // Name The Capital — pick the capital from four
+    // Name The Capital: pick the capital from four
     var wc = otherCountries(c,3);
     var capOpts = shuffle([c.capital].concat(wc.map(function(x){return x.capital;})));
     g.push({ kind:'capital', cat:'trivia', type:'brain', q:'What is the capital of '+c.name+'?',
              options:capOpts, a:capOpts.indexOf(c.capital) });
-    // Odd One Out — three from one region + one outlier. Match against the SINGLE
+    // Odd One Out: three from one region + one outlier. Match against the SINGLE
     // displayed region (cReg), not c's full region string: otherwise a country that
     // shares only c's *secondary* region (e.g. an Asian country when the label says
     // "Europe" for transcontinental Turkey) would be a second valid odd-one-out.
@@ -1423,7 +1423,7 @@
       g.push({ kind:'oddoneout', cat:'math', type:'brain', q:'Three of these are in '+cReg+'. Tap the one that is NOT.',
                options:four.map(function(x){return x.n;}), a:four.map(function(x){return x.bad;}).indexOf(true) });
     }
-    // True or False rapid-fire — capital statements drawn from the world
+    // True or False rapid-fire: capital statements drawn from the world
     // (count ramps 4→7 across the race so later Stages are longer/harder)
     var tf=[]; var picks=shuffle(COUNTRIES).slice(0, 4+Math.round(3*ramp()));
     picks.forEach(function(x){
@@ -1431,8 +1431,8 @@
       if(lie){ var o=pick(otherCountries(x,1)); cap=o.capital; }
       tf.push({ s:'The capital of '+x.name+' is '+cap+'.', t:!lie });
     });
-    g.push({ kind:'truefalse', cat:'trivia', type:'brain', q:'True or false — tap fast!', items:tf });
-    // Higher or Lower — compare two cities. ONLY from a DIRECTIONAL spatial task
+    g.push({ kind:'truefalse', cat:'trivia', type:'brain', q:'True or false. Tap fast!', items:tf });
+    // Higher or Lower: compare two cities. ONLY from a DIRECTIONAL spatial task
     // (lat/long), where the question and scoring are unambiguous. Stat-ordered
     // tasks (population/size/etc.) are skipped so we never ask "farther north"
     // about a non-latitude value.
@@ -1443,38 +1443,38 @@
       g.push({ kind:'higherlower', cat:'math', type:'brain', q:HLQ[sp.dir], dir:sp.dir,
                items:sp.items.slice(), rounds:Math.min(3, sp.items.length-1) });
     }
-    // Memory Match — pairs from the country's memory tiles
+    // Memory Match: pairs from the country's memory tiles
     var tiles=(c.tasks.memory&&c.tasks.memory[0]&&c.tasks.memory[0].tiles)||['🌍','🧭','✈️','🗺️'];
     g.push({ kind:'memorymatch', cat:'memory', type:'brain', q:'Match all the pairs', tiles:tiles.slice(0,4) });
-    // Whack-A-Landmark — tap the country's flag, dodge the decoys
-    g.push({ kind:'whack', cat:'reflex', type:'reflex', q:'Tap '+c.flag+' as it pops up — ignore the rest!',
+    // Whack-A-Landmark: tap the country's flag, dodge the decoys
+    g.push({ kind:'whack', cat:'reflex', type:'reflex', q:'Tap '+c.flag+' as it pops up. Ignore the rest!',
              target:c.flag, decoys:shuffle(otherCountries(c,4).map(function(x){return x.flag;})) });
-    // Quick Tap — hit the moving target
-    g.push({ kind:'targettap', cat:'reflex', type:'reflex', q:'Hail your ride — flag the taxi down at the curb.' });
-    // Find It On The Map — pin-drop, scored by distance (needs coords)
+    // Quick Tap: hit the moving target
+    g.push({ kind:'targettap', cat:'reflex', type:'reflex', q:'Hail your ride. Flag the taxi down at the curb.' });
+    // Find It On The Map: pin-drop, scored by distance (needs coords)
     if(c.ll && c.ll.length===2){
       g.push({ kind:'mapfind', cat:'spatial', type:'brain', q:'Where in the world is '+c.name+'? Tap the map.', ll:c.ll, name:c.name });
-      // Street Scout — real street imagery; only offered when a Mapillary token is set
+      // Street Scout: real street imagery; only offered when a Mapillary token is set
       if(streetEnabled()){
         g.push({ kind:'streetscout', cat:'spatial', type:'brain', q:'Street Scout: explore a real street near '+c.name, ll:c.ll, name:c.name });
       }
     }
     // ---- knowledge-free skill games: the country only SKINS these (its flags,
-    // its city names) — the contest is timing, aim, memory and dexterity, so a
+    // its city names). The contest is timing, aim, memory and dexterity, so a
     // player who knows nothing about the destination competes evenly. ----
-    // Swing Meter — land taps in a shrinking green zone (timing)
-    g.push({ kind:'swingmeter', cat:'reflex', type:'reflex', q:'Time your takeoff — rotate when speed hits the green.' });
-    // Eagle Eye — one flag in the wall doesn't belong (visual hunt)
-    g.push({ kind:'eagleeye', cat:'reflex', type:'reflex', q:'One of these is NOT '+c.name+'’s flag — spot it!',
+    // Swing Meter: land taps in a shrinking green zone (timing)
+    g.push({ kind:'swingmeter', cat:'reflex', type:'reflex', q:'Time your takeoff. Rotate when speed hits the green.' });
+    // Eagle Eye: one flag in the wall doesn't belong (visual hunt)
+    g.push({ kind:'eagleeye', cat:'reflex', type:'reflex', q:'One of these is NOT '+c.name+'’s flag. Spot it!',
              target:c.flag, imposters:shuffle(otherCountries(c,3).map(function(x){return x.flag;})) });
-    // Memory Lineup — flags flash, find the one that WASN'T shown (observation)
-    g.push({ kind:'kimsgame', cat:'memory', type:'brain', q:'Memorize the lineup — then spot the flag that wasn’t there' });
-    // Type The Ticket — retype the destination shown on your boarding pass (dexterity)
+    // Memory Lineup: flags flash, find the one that WASN'T shown (observation)
+    g.push({ kind:'kimsgame', cat:'memory', type:'brain', q:'Memorize the lineup, then spot the flag that wasn’t there' });
+    // Type The Ticket: retype the destination shown on your boarding pass (dexterity)
     var tw=ticketWord(c);
     if(tw) g.push({ kind:'typeticket', cat:'word', type:'brain', q:'Type your destination, fast', word:tw });
-    // Baggage Claim — grab YOUR bag off the belt, ignore lookalikes (visual match)
+    // Baggage Claim: grab YOUR bag off the belt, ignore lookalikes (visual match)
     g.push({ kind:'baggage', cat:'reflex', type:'reflex', q:'Grab your bag off the carousel as it comes around.' });
-    // Rhythm Echo — hear a rhythm, tap it back (timing memory; opens the audio category)
+    // Rhythm Echo: hear a rhythm, tap it back (timing memory; opens the audio category)
     g.push({ kind:'rhythmecho', cat:'audio', type:'brain', q:'Listen to the rhythm, then tap it back' });
     // ---- distance/direction games generated from coordinates (objective, no
     // authoring): each is only offered when a clearly-fair instance exists ----
@@ -1483,14 +1483,14 @@
         .map(function(x){ return { x:x, d:haversine(c.ll[0],c.ll[1],x.ll[0],x.ll[1]) }; })
         .sort(function(p,q2){ return p.d-q2.d; });
       if(byd.length>=12){
-        // Closest Neighbor — one option is clearly nearest (others ≥1.7× farther)
+        // Closest Neighbor: one option is clearly nearest (others ≥1.7× farther)
         var near=byd[0], far=shuffle(byd.filter(function(p){ return p.d>near.d*1.7; })).slice(0,3);
         if(far.length===3){
           var copts=shuffle([near.x.name].concat(far.map(function(p){ return p.x.name; })));
           g.push({ kind:'closest', cat:'spatial', type:'brain', q:'Which of these is CLOSEST to '+c.name+'?',
                    options:copts, a:copts.indexOf(near.x.name) });
         }
-        // Closer or Farther — 3 rounds; pairs differ by ≥1.5× so they're never a coin flip
+        // Closer or Farther: 3 rounds; pairs differ by ≥1.5× so they're never a coin flip
         var pairs=[], tries=0;
         while(pairs.length<3 && tries<40){
           tries++;
@@ -1500,7 +1500,7 @@
         }
         if(pairs.length>=2) g.push({ kind:'closerfar', cat:'spatial', type:'brain',
                                      q:'Which capital is CLOSER to '+(c.capital||c.name)+'?', pairs:pairs });
-        // Compass Chase — only targets whose direction is DOMINANT (no ambiguity)
+        // Compass Chase: only targets whose direction is DOMINANT (no ambiguity)
         var dirs=[], shuf=shuffle(byd), k2;
         for(k2=0;k2<shuf.length && dirs.length<3;k2++){
           var o2=shuf[k2].x;
@@ -1511,7 +1511,7 @@
         }
         if(dirs.length>=2) g.push({ kind:'compass', cat:'spatial', type:'brain',
                                     q:'You\'re in '+c.name+'. Which way to each country?', rounds:dirs });
-        // Flight Plan — plot a route on the map: tap the 4 stops nearest → farthest
+        // Flight Plan: plot a route on the map, tap the 4 stops nearest → farthest
         // (gaps ≥1.25× keep the order unambiguous). Distinct from Rank The Order:
         // it's a real map route-draw, not a list sort.
         var idxs=[Math.floor(byd.length*0.05), Math.floor(byd.length*0.3), Math.floor(byd.length*0.6), byd.length-2];
@@ -1519,10 +1519,10 @@
         var okgap=true, s2;
         for(s2=1;s2<stops.length;s2++){ if(stops[s2].d < stops[s2-1].d*1.25) okgap=false; }
         if(okgap) g.push({ kind:'flightplan', cat:'dragdrop', type:'brain',
-                           q:'Plot your route from '+c.name+' — tap the stops nearest → farthest.',
+                           q:'Plot your route from '+c.name+'. Tap the stops nearest → farthest.',
                            origin:{ name:c.name, ll:c.ll },
                            stops:shuffle(stops).map(function(p){ return { name:p.x.name, flag:p.x.flag, ll:p.x.ll, d:Math.round(p.d) }; }) });
-        // Globe Hunt — a hidden country; tap dots and follow the heat to find it
+        // Globe Hunt: a hidden country; tap dots and follow the heat to find it
         // (the "warmer / colder" hunt). Spread ~15 decoy pins across the world so
         // the heat readings actually triangulate.
         var decoys=shuffle(byd.slice(3)).slice(0,15).map(function(p){ return p.x; });
@@ -1532,7 +1532,7 @@
                                     target:{ name:c.name, flag:c.flag, ll:c.ll }, pins:pins });
       }
     }
-    // Region Sort — two buckets, six countries (opens the dragdrop category)
+    // Region Sort: two buckets, six countries (opens the dragdrop category)
     var regs={}; COUNTRIES.forEach(function(x){ if(x.region!==c.region) regs[x.region]=(regs[x.region]||0)+1; });
     var regB=shuffle(Object.keys(regs).filter(function(r2){ return regs[r2]>=3; }))[0];
     var sameR=COUNTRIES.filter(function(x){ return x.region===c.region; });
@@ -1542,7 +1542,7 @@
                regA:c.region, regB:regB,
                queue:shuffle(qA.concat(qB)).map(function(x){ return { name:x.name, flag:x.flag, region:x.region }; }) });
     }
-    // The Dossier — Countryle-style deduction: crack a hidden country from a
+    // The Dossier (Countryle-style deduction): crack a hidden country from a
     // ladder of clues (region → hemisphere → capital initial → capital). Decoys
     // are chosen so every clue actually rules one suspect out.
     if(c.ll && c.capital){
@@ -1562,10 +1562,10 @@
                          'Capital city: '+c.capital ] });
       }
     }
-    // ---- pure-skill set 2 (timing/aim/ears — zero knowledge) ----
-    g.push({ kind:'runway', cat:'reflex', type:'reflex', q:'Land on the runway — 3 clean landings' });
-    g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Frame '+c.flag+' in the viewfinder — 3 clean shots' });
-    g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport — press when the stamp lines up over the box' });
+    // ---- pure-skill set 2 (timing/aim/ears, zero knowledge) ----
+    g.push({ kind:'runway', cat:'reflex', type:'reflex', q:'Land on the runway. 3 clean landings' });
+    g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Frame '+c.flag+' in the viewfinder. 3 clean shots' });
+    g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport. Press when the stamp lines up over the box' });
     return g;
   }
   // boarding-pass word for Type The Ticket: capital (fallback: country name),
@@ -1601,7 +1601,7 @@
     var reflex = pool.filter(function(t){ return REFLEX_KINDS[taskKind(t)]; });
     // Split Path most stages (always on the Final): one brain + one reflex when
     // possible (GDD §5), and never two of the same game type.
-    var wantSplit = isFinal() || onlineActive() || Math.random() < 0.6;   // duo (two-devices) is always Split Path — each partner takes a different one
+    var wantSplit = isFinal() || onlineActive() || Math.random() < 0.6;   // duo (two-devices) is always Split Path: each partner takes a different one
     if(wantSplit && pool.length>=2){
       var a,b;
       if(brain.length && reflex.length){ a=pick(fresh(brain)); b=pick(fresh(reflex)); }
@@ -1643,13 +1643,13 @@
 
   /* --- phase: Flight Leg (watch the plane travel to the next country) ----------
      Between Stages a plane traces a dashed airline-style arc across the world map
-     from the last country to the next — echoing the app icon's coral route line.
+     from the last country to the next, echoing the app icon's coral route line.
      Fast (~1.3s), tap-to-skip, and skipped entirely under reduced-motion. The
      destination name stays hidden until the draw, so the flight builds suspense
      and the draw is the payoff (the golf "ball lands last" beat). */
   function reduceMotion(){ try{ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }catch(e){ return false; } }
   // where the very first Flight Leg departs from. Defaults to the US east coast
-  // (New Jersey / New York coastline — clearly on land, not mid-ocean) and is
+  // (New Jersey / New York coastline, clearly on land, not mid-ocean) and is
   // upgraded to the player's real location if they allow it.
   var HOME_LL=[39.8,-74.1];
   var _homeAsked=false;
@@ -1679,7 +1679,7 @@
     function bez(t){ var u=1-t; return [u*u*P0[0]+2*u*t*C[0]+t*t*P1[0], u*u*P0[1]+2*u*t*C[1]+t*t*P1[1]]; }
     app.innerHTML = topbar() + hud()
       + '<div class="card" id="flycard" style="cursor:pointer">'
-        + '<div class="stagetype">✈️ In transit — Stage '+S.round+'</div>'
+        + '<div class="stagetype">✈️ In transit · Stage '+S.round+'</div>'
         + '<svg id="flysvg" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;'
           + 'background:radial-gradient(120% 120% at 50% 35%,rgba(26,74,134,.55),rgba(10,8,26,.95));border:1px solid var(--cardb);border-radius:12px">'
           + worldSVGInner()
@@ -1688,7 +1688,7 @@
           + '<circle id="flydest" cx="'+P1[0]+'" cy="'+P1[1]+'" r="0" fill="none" stroke="#EE5A44" stroke-width="1.4"/>'
           + '<text id="flyplane" x="'+P0[0]+'" y="'+P0[1]+'" font-size="15" text-anchor="middle" dominant-baseline="central">✈️</text>'
         + '</svg>'
-        + '<div class="ohint" id="flyhint" style="margin-top:10px">✈️ <b>Tap to boost</b> your flight — mash to get there faster.</div>'
+        + '<div class="ohint" id="flyhint" style="margin-top:10px">✈️ <b>Tap to boost</b> your flight. Mash to get there faster.</div>'
       + '</div>' + foot();
     var arc=$('flyarc'), plane=$('flyplane'), dest=$('flydest'), card=$('flycard');
     var prog=0, boost=0, last=performance.now();
@@ -1729,7 +1729,7 @@
           + (d.final ? 'The last '+aliveTeams().length+' teams race to the finish. Fastest effective time wins the whole race.'
                      : 'All '+aliveTeams().length+' remaining teams draw the same destination.')
         + '</p>'
-        + (coopTurn() ? '<div class="coopturn">👤 <b>'+esc(coopTurn())+'</b>, you\'re up this Stage — hand over the device</div>' : '')
+        + (coopTurn() ? '<div class="coopturn">👤 <b>'+esc(coopTurn())+'</b>, you\'re up this Stage. Hand over the device</div>' : '')
         + '<button class="btn globe" id="rev" style="margin-top:6px">Reveal the challenge ›</button>'
       + '</div>' + foot();
     $('rev').onclick=function(){ S.phase='choice'; renderStage(); };
@@ -1739,7 +1739,7 @@
   /* --- phase: challenge choice (Split Path / Solo Call) --- */
   function viewChoice(){
     var html = topbar() + hud() + '<div class="card">'
-      + '<div class="stagetype">'+(S.stageType==='split'?'🍴 Split Path — choose your task':'📢 Solo Call — one task, no choice')+'</div>'
+      + '<div class="stagetype">'+(S.stageType==='split'?'🍴 Split Path · choose your task':'📢 Solo Call · one task, no choice')+'</div>'
       + '<div class="choice">';
     S.offered.forEach(function(t,i){
       var refl = !!REFLEX_KINDS[taskKind(t)];
@@ -1749,10 +1749,10 @@
         + '<div class="pr">'+esc(taskBlurb(t))+'</div></button>';
     });
     html += '</div>';
-    // Skip Pass (GDD §2 — Fast Forward analog): once per race, take the field median
-    // time. Offline only — online timing is server-authoritative.
+    // Skip Pass (GDD §2, Fast Forward analog): once per race, take the field median
+    // time. Offline only: online timing is server-authoritative.
     if(!S.skipUsed && !isFinal() && !onlineActive()){
-      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b> — skip this task once per race and check in at the field\'s median time. Safe, but you won\'t gain ground.</div>'
+      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b>: skip this task once per race and check in at the field\'s median time. Safe, but you won\'t gain ground.</div>'
         + '<button class="btn ghost sm" id="skip" style="flex:0 0 auto">Use</button></div>';
     }
     html += '</div>' + foot();
@@ -1769,9 +1769,9 @@
   function taskBlurb(t){
     switch(taskKind(t)){
       case 'mcq':      return t.q;
-      case 'scramble': return 'Unscramble the word — '+t.hint;
-      case 'sequence': return t.prompt+' — repeat it back';
-      case 'reaction': return 'Signal Sprint — tap on GO, hold on STOP';
+      case 'scramble': return 'Unscramble the word: '+t.hint;
+      case 'sequence': return t.prompt+'. Repeat it back';
+      case 'reaction': return 'Signal Sprint: tap on GO, hold on STOP';
       case 'order':    return t.q;
       default:         return t.q || t.prompt || 'Complete the task';
     }
@@ -1867,7 +1867,7 @@
   function finishTask(){
     stopTimer();
     var raw = (performance.now()-S.play.start)/1000;
-    // solve stinger — the same payoff on all 31 kinds: word + burst + a clean-solve bonus line
+    // solve stinger, the same payoff on all 31 kinds: word + burst + a clean-solve bonus line
     var cx=window.innerWidth/2, cy=window.innerHeight*0.38;
     flyup(S.play.misses? 'SOLVED' : 'CLEAN SOLVE 🎯', 'big'+(S.play.misses?'':' gold'), cx, cy);
     FX.burst(cx, cy, S.play.misses?40:80, Math.PI*1.7, 8); vibe(S.play.misses?14:[12,30,18]);
@@ -1910,7 +1910,7 @@
         + flagImg(t.flag,{fill:true,fit:'cover'})
         + tiles
       + '</div>'
-      + '<div class="ohint" id="frhint" style="margin-bottom:10px">Name the flag — each wrong guess reveals another piece.</div>'
+      + '<div class="ohint" id="frhint" style="margin-bottom:10px">Name the flag. Each wrong guess reveals another piece.</div>'
       + '<div class="opts">'+opts+'</div>';
     frReveal();   // one piece free
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
@@ -1981,7 +1981,7 @@
   /* ---------- minigame: memory sequence (repeat it back) ----------
      The grid is built ONCE and tile elements stay put; taps only toggle classes
      and update the counter. (Rebuilding the grid on every tap dropped taps that
-     landed mid-render — the "button won't click" bug.) */
+     landed mid-render, the "button won't click" bug.) */
   function mgSequence(t){
     var pal=t.tiles.slice();
     var len = Math.min(pal.length, 3 + Math.floor(S.round/3));   // grows slightly with stage
@@ -2028,29 +2028,29 @@
   }
 
   /* ---------- minigame: reaction window (reflex) ---------- */
-  /* Signal Sprint — a Go/No-Go reflex test (deeper than plain "tap green" and on
+  /* Signal Sprint: a Go/No-Go reflex test (deeper than plain "tap green" and on
      theme): tap on the TEAL "GO" signal, but HOLD on the CORAL "STOP". Measures
      reaction time on GO; misses for false starts, tapping STOP, or being too slow. */
   function mgReaction(t){
     // completion requires a fixed number of GO reps; STOP signals are traps that
-    // do NOT advance completion — so the score always reflects real reaction time
+    // do NOT advance completion, so the score always reflects real reaction time
     // (no "all-STOP draw = ~1s" exploit).
     S.rx={ go:0, need:5, sum:0, state:'idle', armAt:0, msg:'', sub:'', to:null };
     stopTimer();   // reaction measures its own summed reaction time, not wall clock
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint — tap on GO, hold on STOP</div>'
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint: tap on GO, hold on STOP</div>'
       + '<div class="reps" id="rxreps"></div>'
       + '<div class="reactbox idle" id="rbox"><div class="big" id="rxbig"></div><div class="sm" id="rxsm"></div></div>';
     fastTap($('rbox'), function(){ reactTap(t); });
     renderReaction(t);
   }
-  // paint the persistent box in place — state flips are class/text swaps, not re-renders
+  // paint the persistent box in place: state flips are class/text swaps, not re-renders
   function renderReaction(t){
     var e=$('rxreps');
     if(e){ var reps=''; for(var i=0;i<S.rx.need;i++){ reps+='<div class="rep'+(i<S.rx.go?' done':'')+'"></div>'; } e.innerHTML=reps; }
     var st=S.rx.state, cls, big, sm;
-    if(st==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start — then tap on 🟢 GO, but never on 🛑 STOP.'; }
+    if(st==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start. Then tap on 🟢 GO, but never on 🛑 STOP.'; }
     else if(st==='wait'){ cls='wait'; big='Wait…'; sm='Watch for the signal.'; }
-    else if(st==='go'){ cls='go'; big='GO — TAP!'; sm='Now!'; }
+    else if(st==='go'){ cls='go'; big='GO! TAP!'; sm='Now!'; }
     else if(st==='stop'){ cls='stop'; big='🛑 STOP'; sm="Don't tap!"; }
     else { cls='fb'; big=S.rx.msg; sm=S.rx.sub; }
     var box=$('rbox'); if(box) box.className='reactbox '+cls;
@@ -2085,7 +2085,7 @@
     else if(kind==='slow'){ S.rx.sum+=1300; S.rx.go++; S.play.misses++; showMiss(); S.rx.msg='Too slow!'; S.rx.sub='+1 miss'; }
     else if(kind==='held'){ S.rx.msg='Held ✓'; S.rx.sub='Good hold.'; }
     else if(kind==='stopTap'){ S.play.misses++; showMiss(); S.rx.msg='That was STOP!'; S.rx.sub='+1 miss'; }
-    else /* early */{ S.play.misses++; showMiss(); S.rx.msg='Too soon!'; S.rx.sub='+1 miss — wait for it'; }
+    else /* early */{ S.play.misses++; showMiss(); S.rx.msg='Too soon!'; S.rx.sub='+1 miss · wait for it'; }
     S.rx.state='fb'; renderReaction(t);
     if(S.rx.go>=S.rx.need){
       S.play.done=true;
@@ -2167,7 +2167,7 @@
   /* ---------- minigame: Flight Plan (draw the route on the map) ----------
      Tap the stops in order nearest → farthest from your origin; each correct tap
      extends a dashed flight arc across the world map. A wrong-next stop is a miss.
-     Spatial and visual — a real route-draw, not a list sort. */
+     Spatial and visual: a real route-draw, not a list sort. */
   function mgFlightPlan(t){
     var order=t.stops.slice().sort(function(a,b){ return a.d-b.d; }).map(function(s){ return s.name; });
     S.fp={ order:order, placed:0, lastXY:llToXY(t.origin.ll) };
@@ -2211,7 +2211,7 @@
 
   /* ---------- minigame: True or False rapid-fire (trivia) ----------
      Shell built ONCE; each statement glides in (swapIn) instead of the whole
-     game re-rendering per answer — buttons stay put under your thumbs. */
+     game re-rendering per answer, so buttons stay put under your thumbs. */
   function mgTrueFalse(t){
     S.tf={ i:0, items:t.items };
     $('mg').innerHTML='<div class="seqstatus" id="tfst"></div>'
@@ -2230,7 +2230,7 @@
     var ok = (ans===S.tf.items[S.tf.i].t);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
     if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
-    S.tf.lock=true;   // feedback beat — same pacing as the MCQ games' 220ms
+    S.tf.lock=true;   // feedback beat, same pacing as the MCQ games' 220ms
     setTimeout(function(){
       S.tf.lock=false; if(btn) btn.style.borderColor='';
       S.tf.i++;
@@ -2361,7 +2361,7 @@
   /* ---------- minigame: Hail A Ride (street scene, timing + recognition) ----------
      Traffic streams down the road; flag YOUR taxi (🚕) as it reaches the curb
      pick-up zone. Tapping other traffic, or the taxi outside the zone, is a miss.
-     Let a taxi pass and you just wait for the next — but the clock is running. */
+     Let a taxi pass and you just wait for the next, but the clock is running. */
   var HR_TRAFFIC=['🚗','🚙','🚌','🚐','🏍️'];
   function mgTargetTap(t){
     var d=ramp();
@@ -2379,7 +2379,7 @@
         + '<div style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:24px;pointer-events:none">🧍</div>'
         + '<div id="hrcue" style="position:absolute;bottom:96px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:900;color:var(--ok);opacity:0;transition:opacity .1s;pointer-events:none">🖐️ NOW!</div>'
       + '</div>'
-      + '<div class="ohint">Tap <b>anywhere</b> the moment your <b>🚕 taxi</b> reaches the curb — not the traffic.</div>';
+      + '<div class="ohint">Tap <b>anywhere</b> the moment your <b>🚕 taxi</b> reaches the curb, not the traffic.</div>';
     hrStatus(); hrSpawn();
     fastTap($('hrfield'), hrTap);
     S.hr.last=performance.now();
@@ -2426,14 +2426,14 @@
   }
 
   /* ================================================================
-     KNOWLEDGE-FREE SKILL GAMES — the country skins the screen, but the
+     KNOWLEDGE-FREE SKILL GAMES: the country skins the screen, but the
      contest is timing / aim / memory / dexterity, so a player who knows
      nothing about the destination competes evenly. All six read ramp()
      so late Stages get faster, tighter, longer. Build-once DOM rule
      applies everywhere (taps must never land mid-render).
      ================================================================ */
 
-  /* ---------- minigame: Time The Takeoff (timing) — the takeoff to Pilot The
+  /* ---------- minigame: Time The Takeoff (timing): the takeoff to Pilot The
      Landing's landing. The plane accelerates down the runway and the speed gauge
      fills; tap ROTATE when speed is in the green V-speed band. Too early = it
      won't fly (small miss, keep rolling); leave it too long and you overrun. */
@@ -2456,7 +2456,7 @@
         + '<div style="position:absolute;left:7px;top:5px;font-size:10px;font-weight:800;color:var(--ink);mix-blend-mode:difference">SPEED</div>'
       + '</div>'
       + '<div id="tomsg" style="text-align:center;margin:8px 0;min-height:18px;font-weight:700;color:var(--mut)">Throttle up…</div>'
-      + '<button class="btn globe" id="tobtn" style="width:100%">🛫 Rotate — pull up!</button>';
+      + '<button class="btn globe" id="tobtn" style="width:100%">🛫 Rotate. Pull up!</button>';
     var bd=$('toband'); if(bd){ bd.style.left=((S.to.bandC-S.to.bandW/2)*100)+'%'; bd.style.width=(S.to.bandW*100)+'%'; }
     fastTap($('tobtn'), toRotate);
     S.to.last=performance.now();
@@ -2477,24 +2477,24 @@
     if(s>=lo && s<=hi){
       S.to.done2=true; sfx('correct'); vibe([12,26,12]);
       var pl=$('toplane'); if(pl){ pl.style.transition='left .55s ease-in,bottom .55s ease-in,transform .55s'; pl.style.left='88%'; pl.style.bottom='78%'; pl.style.transform='translate(-50%,0) rotate(-20deg)'; }
-      var m=$('tomsg'); if(m){ m.textContent='🛫 Clean rotation — wheels up!'; m.style.color='var(--ok)'; }
+      var m=$('tomsg'); if(m){ m.textContent='🛫 Clean rotation. Wheels up!'; m.style.color='var(--ok)'; }
       var f=$('tofield'); if(f) flash(f);
       S.play.done=true; setTimeout(finishTask,760);
     } else {
       S.play.misses++; showMiss();
-      var m2=$('tomsg'); if(m2) m2.textContent = s<lo ? 'Not enough speed — hold the runway!' : 'Rotating late — pull up!';
+      var m2=$('tomsg'); if(m2) m2.textContent = s<lo ? 'Not enough speed. Hold the runway!' : 'Rotating late. Pull up!';
       var f2=$('tofield'); if(f2) retrig(f2,'hitflash');
     }
   }
   function toOverrun(){
     if(S.to.done2) return; S.to.done2=true;
     S.play.misses++; S.play.misses++; showMiss();
-    var m=$('tomsg'); if(m){ m.textContent='💥 Overran the runway — takeoff aborted!'; m.style.color='var(--bad)'; }
+    var m=$('tomsg'); if(m){ m.textContent='💥 Overran the runway. Takeoff aborted!'; m.style.color='var(--bad)'; }
     var f=$('tofield'); if(f) retrig(f,'hitflash');
     S.play.done=true; setTimeout(finishTask,820);
   }
 
-  /* ---------- minigame: Eagle Eye (visual hunt — spot the imposter flag) ---------- */
+  /* ---------- minigame: Eagle Eye (visual hunt: spot the imposter flag) ---------- */
   function mgEagleEye(t){
     S.ee={ round:0, rounds:3, n:12+Math.round(6*ramp()) };
     renderEagle(t);
@@ -2519,7 +2519,7 @@
     } else { S.play.misses++; showMiss(); el.style.opacity=.35; el.style.pointerEvents='none'; }
   }
 
-  /* ---------- minigame: Memory Lineup (flags flash — spot the one NOT shown) ---------- */
+  /* ---------- minigame: Memory Lineup (flags flash, spot the one NOT shown) ---------- */
   function mgKimsGame(t){
     var d=ramp();
     S.km={ round:0, rounds:3, k:4+Math.round(2*d), flashMs:2200-900*d };
@@ -2553,7 +2553,7 @@
     } else { S.play.misses++; showMiss(); el.style.opacity=.35; el.style.pointerEvents='none'; }
   }
 
-  /* ---------- minigame: Type The Ticket (typing sprint — the word is SHOWN) ---------- */
+  /* ---------- minigame: Type The Ticket (typing sprint: the word is SHOWN) ---------- */
   function mgTypeTicket(t){
     var word=t.word;
     var letters=shuffle(word.replace(/ /g,'').split(''));
@@ -2565,7 +2565,7 @@
       + '</div>'
       + '<div class="slot" id="tkslots">'+tkSlots()+'</div>'
       + '<div class="bank">'+letters.map(function(l,i){ return '<div class="ltile tkt" data-i="'+i+'">'+esc(l)+'</div>'; }).join('')+'</div>'
-      + (S.tk.fade?'<div class="ohint">The ink fades fast — read it while you can!</div>':'');
+      + (S.tk.fade?'<div class="ohint">The ink fades fast. Read it while you can!</div>':'');
     each('.tkt', function(b){ b.onclick=function(){ tkTap(+b.getAttribute('data-i'), b); }; });
     if(S.tk.fade) setTimeout(function(){ var w=$('tkword'); if(w && !S.play.done) w.style.opacity='0.05'; }, 1500);
   }
@@ -2585,7 +2585,7 @@
       S.tk.used[i]=1; el.classList.add('used'); sfx('tap');
       S.tk.idx++;
       while(S.tk.word[S.tk.idx]===' ') S.tk.idx++;   // spaces fill themselves
-      var s=$('tkslots'); if(s) s.innerHTML=tkSlots();   // slots aren't tappable — safe to rebuild
+      var s=$('tkslots'); if(s) s.innerHTML=tkSlots();   // slots aren't tappable, safe to rebuild
       if(S.tk.idx>=S.tk.word.length){ S.play.done=true; setTimeout(finishTask,200); }
     } else {
       S.play.misses++; showMiss();
@@ -2595,7 +2595,7 @@
 
   /* ---------- minigame: Baggage Claim (luggage carousel) ----------
      Colored suitcases ride the belt; spot YOURS (matching colour + sticker) and
-     tap ANYWHERE the moment it reaches the middle grab zone — a timing tap, not a
+     tap ANYWHERE the moment it reaches the middle grab zone: a timing tap, not a
      precision grab on a moving sprite. Wrong bag in the zone = miss. */
   var BAG_COLORS=['#e0524a','#3b74c4','#3fa564','#e3b74a','#8a5cc0','#e07b3a'];
   var BAG_STICK=['⭐','🌙','⚡','🍀','🎀','🔔'];
@@ -2613,7 +2613,7 @@
         + '<div id="bgcue" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:900;color:var(--ok);opacity:0;transition:opacity .1s">🖐️ GRAB!</div>'
         + '<div style="position:absolute;left:0;right:0;bottom:14px;height:14px;background:repeating-linear-gradient(90deg,#3a3f52 0 14px,#2c3040 14px 28px)"></div>'
       + '</div>'
-      + '<div class="ohint">Tap <b>anywhere</b> when YOUR bag reaches the middle — ignore the rest.</div>';
+      + '<div class="ohint">Tap <b>anywhere</b> when YOUR bag reaches the middle. Ignore the rest.</div>';
     var f=$('bgfield'), NB=5, i;
     for(i=0;i<NB;i++){
       var el=document.createElement('div'); el.className='bag';
@@ -2663,7 +2663,7 @@
     }
   }
 
-  /* ---------- minigame: Rhythm Echo (audio — hear a rhythm, tap it back) ----------
+  /* ---------- minigame: Rhythm Echo (audio: hear a rhythm, tap it back) ----------
      Beats are separated by SHORT (~330ms) or LONG (~950ms) gaps; the player's echo
      is judged on gap pattern, not exact timing. The pad pulses in sync with every
      beat, so the game is fully playable muted (visual rhythm). */
@@ -2687,7 +2687,7 @@
     if(S.re.pat.indexOf('S')<0) S.re.pat[0]='S';                       // always a mix
     if(S.re.pat.indexOf('L')<0) S.re.pat[S.re.pat.length-1]='L';
     var pad=$('repad'); if(pad) pad.setAttribute('data-pat', S.re.pat.join(''));
-    var st=$('rest'); if(st) st.innerHTML='🎧 Round <b>'+(S.re.round+1)+'</b>/'+S.re.rounds+' — listen…';
+    var st=$('rest'); if(st) st.innerHTML='🎧 Round <b>'+(S.re.round+1)+'</b>/'+S.re.rounds+' · listen…';
     var sm=$('resm'); if(sm) sm.textContent='Listen to the beat…';
     reDots(0);
     var when=420;
@@ -2696,7 +2696,7 @@
     setTimeout(function(){
       if(S.play.done || !$('repad')) return;
       S.re.state='echo';
-      var s2=$('rest'); if(s2) s2.innerHTML='🫵 Your turn — tap the same rhythm ('+S.re.n+' taps)';
+      var s2=$('rest'); if(s2) s2.innerHTML='🫵 Your turn. Tap the same rhythm ('+S.re.n+' taps)';
       var m2=$('resm'); if(m2) m2.textContent='Tap it back!';
       reDots(0);
     }, when+520);
@@ -2729,7 +2729,7 @@
       S.re.state='play'; setTimeout(function(){ if(!S.play.done && $('repad')) reBegin(); },600);
     } else {
       S.play.misses++; showMiss();
-      var st=$('rest'); if(st) st.innerHTML='❌ Not quite — listen again…';
+      var st=$('rest'); if(st) st.innerHTML='❌ Not quite. Listen again…';
       S.re.state='play'; setTimeout(function(){ if(!S.play.done && $('repad')) reBegin(); },800);
     }
   }
@@ -2872,7 +2872,7 @@
            cruise:0.9, cspeed:0.155+0.05*d, drate:0.42+0.12*d,
            z0:0.54, z1:0.86, flareAlt:0, slam:false, done2:false, last:performance.now() };
     $('mg').innerHTML='<div class="seqstatus" id="rwst">✈️ Cleared to land</div>'
-      + '<div class="prompt" style="text-align:center;margin-bottom:8px">Bring her down smooth — <b>descend</b>, then <b>flare</b> to touch down gently.</div>'
+      + '<div class="prompt" style="text-align:center;margin-bottom:8px">Bring her down smooth. <b>Descend</b>, then <b>flare</b> to touch down gently.</div>'
       + '<div id="rwfield" style="position:relative;height:'+RW.H+'px;border-radius:14px;border:1px solid var(--cardb);overflow:hidden;touch-action:manipulation;'
           + 'background:linear-gradient(180deg,#20386e 0%,#3f63ad 34%,#89a7cf 60%,#b9cfe0 66%)">'
         + '<svg viewBox="0 0 360 210" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">'
@@ -2926,15 +2926,15 @@
     if(S.play.done || S.rw.done2) return;
     var r=S.rw, b=$('rwbtn');
     if(r.phase==='cruise'){ r.phase='descent'; sfx('tap'); if(b) b.textContent='🛬 Flare / Touchdown';
-      var m=$('rwmsg'); if(m){ m.textContent='Descending — ease her onto the numbers.'; } }
+      var m=$('rwmsg'); if(m){ m.textContent='Descending. Ease her onto the numbers.'; } }
     else if(r.phase==='descent'){ r.phase='flare'; r.flareAlt=r.alt; sfx('tap'); if(b){ b.disabled=true; b.style.opacity='.5'; } }
   }
-  function rwOvershoot(){ if(S.rw.done2) return; S.rw.done2=true; rwResult(false,'✈️ Overshot the runway — go around!',2); }
+  function rwOvershoot(){ if(S.rw.done2) return; S.rw.done2=true; rwResult(false,'✈️ Overshot the runway. Go around!',2); }
   function rwTouchdown(){
     if(S.rw.done2) return; S.rw.done2=true;
     var r=S.rw, xc=r.x, inZone = xc>=r.z0-0.03 && xc<=r.z1+0.03;
     rwPlace();
-    if(r.slam || r.flareAlt>0.34){ rwResult(false, r.slam?'💥 Slammed it — you never flared!':'💥 Hard landing — came in too fast!', inZone?2:3); }
+    if(r.slam || r.flareAlt>0.34){ rwResult(false, r.slam?'💥 Slammed it. You never flared!':'💥 Hard landing. Came in too fast!', inZone?2:3); }
     else if(!inZone){ rwResult(false, xc<r.z0?'⬇️ Landed short of the runway':'➡️ Floated past the zone', 2); }
     else if(r.flareAlt<=0.17){ rwResult(true,'🛬 Greased it! Textbook landing.',0,true); }
     else { rwResult(true,'🛬 Smooth landing.',0); }
@@ -2985,7 +2985,7 @@
   function psFrame(){ var f=$('psframe'); if(f){ f.style.width=(S.ps.fw*100)+'%'; f.style.height=(S.ps.fw*200*0.9)+'px'; } }
   // subject centre inside the reticle: half-width = fw/2, half-height = fw*0.45
   // (frame height is fw*0.9 of the box; the old check used fw*0.9 as the HALF,
-  // so a subject well outside the frame still counted — that was the bug).
+  // so a subject well outside the frame still counted, that was the bug).
   function psInFrame(){ return Math.abs(S.ps.x-0.5)<S.ps.fw/2 && Math.abs(S.ps.y-0.5)<S.ps.fw*0.45; }
   function psSnap(){
     if(S.play.done) return;
@@ -3003,7 +3003,7 @@
 
   /* ---------- minigame: Stamp It (align + pressure) ----------
      A two-part skill, not a single tap. First LINE UP the sliding stamp over the
-     empty slot (tap to lock its position); then PRESS with the right force — a
+     empty slot (tap to lock its position); then PRESS with the right force: a
      pressure needle sweeps up and down, tap to set it. Too light = a faint
      half-stamp; too hard = an over-inked smudge; aligned + firm-but-not-too-hard
      = a crisp passport stamp. Themed on the drawn destination. */
@@ -3014,7 +3014,7 @@
             press:0, pdir:1, pspeed:0.85+0.4*d, lockX:0.5, alignErr:1, done2:false, t0:performance.now(),
             city:((S.dest&&S.dest.name)||'GLOBE'), flag:((S.dest&&S.dest.flag)||'✈') };
     var m=S.st2.tol+0.05; S.st2.tx=rnd(m,1-m);
-    $('mg').innerHTML='<div class="seqstatus" id="stst">Step 1 — line up the stamp</div>'
+    $('mg').innerHTML='<div class="seqstatus" id="stst">Step 1 · line up the stamp</div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="stfield" class="passport">'
         + '<div class="gutter"></div>'
@@ -3050,12 +3050,12 @@
       r.lockX=r.pos; r.alignErr=Math.abs(r.pos-r.tx); r.phase='press';
       var st=$('ststamp'); if(st){ st.style.left=(r.lockX*100)+'%'; retrig(st,'press'); }
       var gg=$('stgauge'); if(gg) gg.style.display='block';
-      var stt=$('stst'); if(stt) stt.innerHTML='Step 2 — press with the right force';
+      var stt=$('stst'); if(stt) stt.innerHTML='Step 2 · press with the right force';
       var h=$('sthint'); if(h) h.textContent='Tap when the needle is in the green band.';
       sfx('tap');
       return;
     }
-    // press phase — commit the stamp
+    // press phase: commit the stamp
     r.done2=true;
     var head=$('ststamp'); if(head) retrig(head,'press');
     var aligned = r.alignErr<=r.tol;
@@ -3075,7 +3075,7 @@
     var stt=$('stst'), h=$('sthint');
     if(crisp){ sfx('correct'); vibe([12,24,12]); if(stt) stt.innerHTML='🛂 Crisp stamp!'; if(h){ h.textContent='Perfectly aligned and inked.'; h.style.color='var(--ok)'; } }
     else {
-      var why = !aligned ? 'Off the box — smudged.' : (r.press<0.6 ? 'Too light — a faint half-stamp.' : 'Too hard — over-inked blot.');
+      var why = !aligned ? 'Off the box. Smudged.' : (r.press<0.6 ? 'Too light. A faint half-stamp.' : 'Too hard. An over-inked blot.');
       S.play.misses++; if(!aligned && !pressGood) S.play.misses++;   // both wrong = 2
       showMiss(); if(stt) stt.innerHTML='Smudged'; if(h){ h.textContent=why; h.style.color='var(--bad)'; }
     }
@@ -3088,7 +3088,7 @@
     var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)*Math.sin(dLo/2);
     return 2*R*Math.asin(Math.min(1,Math.sqrt(a)));
   }
-  // rough continent outlines ([lng,lat] vertices) — schematic, just to orient the
+  // rough continent outlines ([lng,lat] vertices): schematic, just to orient the
   // player; scoring uses real coordinates so map crudeness doesn't affect fairness.
   var CONTINENTS=[
     // North America (Alaska→Canada→US→Mexico→Central America)
@@ -3126,7 +3126,7 @@
   // shared by Find-It, Street Scout and the between-Stage Flight Leg.
   var LAND = (window.GLOBE_LAND && window.GLOBE_LAND.length) ? window.GLOBE_LAND : null;
   // The world map is static, so build its ~16KB SVG string once and reuse it
-  // (it's drawn on every Flight Leg, Find-It, and Globe Hunt — no need to rebuild).
+  // (it's drawn on every Flight Leg, Find-It, and Globe Hunt, no need to rebuild).
   var _worldSVG=null;
   function worldSVGInner(){
     if(_worldSVG!=null) return _worldSVG;
@@ -3136,7 +3136,7 @@
     grid+='<line x1="0" y1="90" x2="360" y2="90" stroke="rgba(255,255,255,.12)" stroke-width="0.6"/>';
     var paths;
     if(LAND){
-      // real coastlines (Natural Earth, projected to svg coords) — one filled path
+      // real coastlines (Natural Earth, projected to svg coords): one filled path
       var d=LAND.map(function(r){ return 'M'+r.map(function(p){ return p[0]+' '+p[1]; }).join('L')+'Z'; }).join('');
       paths='<path d="'+d+'" fill="rgba(70,165,108,.32)" stroke="rgba(93,196,132,.55)" stroke-width="0.4" stroke-linejoin="round" fill-rule="evenodd"/>';
     } else {
@@ -3170,7 +3170,7 @@
       '<line x1="'+vx+'" y1="'+vy+'" x2="'+cx+'" y2="'+cy+'" stroke="rgba(255,255,255,.5)" stroke-width="0.7" stroke-dasharray="2 2"/>'
       + '<circle cx="'+vx+'" cy="'+vy+'" r="3" fill="#EE5A44"/>'
       + '<circle cx="'+cx+'" cy="'+cy+'" r="3.2" fill="#35d6a0" stroke="#fff" stroke-width="0.5"/>');
-    var h=$('maphint'); if(h) h.innerHTML='You were <b>'+Math.round(d).toLocaleString()+' km</b> away — '+(miss===0?'bullseye! 🎯':('+'+miss+' miss'+(miss>1?'es':'')));
+    var h=$('maphint'); if(h) h.innerHTML='You were <b>'+Math.round(d).toLocaleString()+' km</b> away · '+(miss===0?'bullseye! 🎯':('+'+miss+' miss'+(miss>1?'es':'')));
     setTimeout(function(){ resolveRound(raw, miss, false); }, 1500);
   }
 
@@ -3215,12 +3215,12 @@
         + '<animate attributeName="r" from="3" to="18" dur="0.7s"/><animate attributeName="opacity" from="1" to="0" dur="0.7s"/></circle>');
       var extra=Math.max(0, S.gh.guesses - S.gh.par);
       S.play.misses=Math.min(4, extra);
-      var r=$('ghread'); if(r) r.innerHTML='<b>'+p.flag+' '+esc(p.name)+'</b> — found it in '+S.gh.guesses+' reading'+(S.gh.guesses>1?'s':'')+(S.play.misses?' · +'+S.play.misses+' miss'+(S.play.misses>1?'es':''):' · clean 🎯');
+      var r=$('ghread'); if(r) r.innerHTML='<b>'+p.flag+' '+esc(p.name)+'</b> · found it in '+S.gh.guesses+' reading'+(S.gh.guesses>1?'s':'')+(S.play.misses?' · +'+S.play.misses+' miss'+(S.play.misses>1?'es':''):' · clean 🎯');
       showMiss();
       setTimeout(function(){ finishTask(); }, 950);
       return;
     }
-    var h=ghHeat(d), trend=(d<S.gh.best-50)?'warmer ↑':(d>S.gh.best+50?'colder ↓':'—');
+    var h=ghHeat(d), trend=(d<S.gh.best-50)?'warmer ↑':(d>S.gh.best+50?'colder ↓':'steady');
     if(d<S.gh.best) S.gh.best=d;
     el.setAttribute('fill', h.c); el.setAttribute('r','4.2');
     sfx('tap');
@@ -3240,7 +3240,7 @@
     }).join('');
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="dtfile" style="background:var(--card);border:1px dashed var(--cardb);border-radius:12px;padding:12px 14px;margin-bottom:12px">'
-        + '<div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:8px">🕵 Dossier — Case File</div>'
+        + '<div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:8px">🕵 Dossier · Case File</div>'
         + '<div id="dtclues"></div></div>'
       + '<button class="btn ghost" id="dtmore" style="width:100%;margin-bottom:12px">Reveal another clue 🔍</button>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+sus+'</div>';
@@ -3330,7 +3330,7 @@
       mapillaryNearby(t.ll, function(loc,err){
         if(!loc) return fail(err||'no imagery');
         log('   ✓ found image '+String(loc.id).slice(0,10)+'…');
-        $('mg').innerHTML='<div class="prompt" style="text-align:center;font-size:15px">Look around this street — then pin where in the world you are.</div>'
+        $('mg').innerHTML='<div class="prompt" style="text-align:center;font-size:15px">Look around this street. Then pin where in the world you are.</div>'
           + '<div id="pano" style="width:100%;height:250px;border-radius:12px;overflow:hidden;border:1px solid var(--cardb);background:#000"></div>'
           + '<div style="text-align:center;font-size:10.5px;color:var(--mut);margin-top:5px">Street imagery © <a href="https://www.mapillary.com" target="_blank" rel="noopener" style="color:var(--mut)">Mapillary</a> contributors, CC BY-SA</div>'
           + '<button class="btn globe" id="ssguess" style="margin-top:10px">📍 Make my guess ›</button>';
@@ -3354,7 +3354,7 @@
   /* --------------------------------------------------------- round resolve */
   // GDD §4/§8: player's effective time is real; the AI ghost field is paced by
   // per-team skill and this stage's task kind, with fresh per-stage noise. As
-  // weaker ghosts are Grounded, the surviving field is naturally faster — the
+  // weaker ghosts are Grounded, the surviving field is naturally faster. The
   // difficulty ramps without a hand-tuned curve.
   function simulateGhosts(){
     var kind = (S.chosen&&taskKind(S.chosen)) || 'mcq';
@@ -3399,7 +3399,7 @@
     if(!skipped){
       // fastest-stage only counts FLAWLESS real wall-clock games; reaction/sequence
       // report synthetic time, and mapfind is distance-scored (a deliberately wrong
-      // pin is fast) — requiring 0 misses closes that Speed-Demon badge exploit.
+      // pin is fast): requiring 0 misses closes that Speed-Demon badge exploit.
       // Uses the CHALLENGE time only (the City Run is a separate skill).
       var k=taskKind(S.chosen||{});
       if(playerMisses===0 && k!=='reaction' && k!=='sequence' && k!=='mapfind'
@@ -3414,12 +3414,12 @@
   }
 
   /* =====================================================================
-     CITY RUN — the Amazing-Race finish. After the challenge you touch down
+     CITY RUN: the Amazing-Race finish. After the challenge you touch down
      in a CARTOON VERSION OF THE CITY (procedurally drawn + seeded per
      country, so every city always has its own skyline, in its region's
      palette) and sprint to the Checkpoint. Mash-tap to run; at the plaza,
      FIND the mat flying the destination's flag among three landmark gates
-     and tap it — wrong mat costs +2.5s. The whole run counts toward your
+     and tap it. Wrong mat costs +2.5s. The whole run counts toward your
      effective time; the ghost field runs it too (RUN_BASE pacing).
      ===================================================================== */
   var RUN_BASE = 6;   // expected seconds for an average team's City Run
@@ -3488,14 +3488,14 @@
     var cap=(cc&&cc.capital)||(S.dest&&S.dest.name)||'';
     app.innerHTML = topbar() + hud()
       + '<div class="card">'
-        + '<div class="stagetype">🏁 Run to the Checkpoint — '+esc(S.dest?S.dest.name:'')+'</div>'
+        + '<div class="stagetype">🏁 Run to the Checkpoint · '+esc(S.dest?S.dest.name:'')+'</div>'
         + '<div id="runscene" data-state="intro">'
           + '<svg id="citysvg" viewBox="360 0 440 '+H+'" preserveAspectRatio="xMidYMid slice" style="display:block;width:100%;height:auto;aspect-ratio:440/230">'+sb.join('')+'</svg>'
           + '<div class="runbanner">📍 '+esc(String(cap).toUpperCase())+'</div>'
           + '<div class="runtmr" id="rtmr"></div>'
           + '<div class="runhint" id="rhint">Touching down…</div>'
         + '</div>'
-        + '<div class="ohint" style="margin-top:10px">Tap fast to sprint, then hit the mat flying <b>your destination\'s flag</b> — from memory. Wrong mat +2.5s.</div>'
+        + '<div class="ohint" style="margin-top:10px">Tap fast to sprint, then hit the mat flying <b>your destination\'s flag</b>, from memory. Wrong mat +2.5s.</div>'
       + '</div>' + foot();
 
     // ---- run loop ----
@@ -3521,7 +3521,7 @@
     if(reduceMotion()) beginRun();
     else{
       // establishing shot: start on the checkpoint plaza (see the mats!), then a
-      // quick cinematic pan back to your runner — and go.
+      // quick cinematic pan back to your runner, and go.
       var it0=performance.now(), IDUR=950;
       (function introPan(){
         if(st.state!=='intro'||!$('citysvg')) return;
@@ -3547,7 +3547,7 @@
         setTimeout(function(){ finishRunPhase(runT); }, 430);
       } else {
         st.pen+=2.5; sfx('wrong'); vibe([16,40,16]); retrig(scene,'runshake');
-        var h=$('rhint'); if(h) h.innerHTML='Wrong mat! +2.5s — which flag was your destination?';
+        var h=$('rhint'); if(h) h.innerHTML='Wrong mat! +2.5s. Which flag was your destination?';
       }
     }
     (function loop(){
@@ -3578,7 +3578,7 @@
   function checkpointVerdict(r){
     var field=aliveTeams().filter(function(t){ return t.eff!=null; }).slice().sort(function(a,b){ return a.eff-b.eff; });
     var you=field.findIndex(function(t){ return t.id==='you'; }), n=field.length;
-    if(you<0 || n<2) return '';   // no comparable field yet (duo pre-combine) — skip the bar
+    if(you<0 || n<2) return '';   // no comparable field yet (duo pre-combine), skip the bar
     var beat=n-1-you;
     var med=field.length?field[Math.floor(field.length/2)].eff:null, st=statsDefault(), chips='';
     if(!r.skipped && r.misses===0) chips+='<span class="good">🎯 Clean solve</span>';
@@ -3614,7 +3614,7 @@
         + checkpointVerdict(r)
         + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
       + '</div>' + foot();
-    // count the time up to the locked value — makes the payoff land
+    // count the time up to the locked value, which makes the payoff land
     (function(){
       var fb=$('fbfil'); if(fb) requestAnimationFrame(function(){ fb.style.width=fb.getAttribute('data-w')+'%'; });
       var el=$('bigt'); if(!el || reduceMotion() || !(r.eff>0)) return;
@@ -3684,13 +3684,13 @@
       $('again').onclick=function(){ S.screen='setup'; render(); };
       $('share').onclick=function(){
         shareResult(youWon2
-          ? ('🌍 I just WON RunTheGlobe — first across the finish at '+(S.dest.landmark||S.dest.name)+', beating '+(FIELD_SIZE-1)+' teams! Play at runthe.gg/globe')
+          ? ('🌍 I just WON RunTheGlobe! First across the finish at '+(S.dest.landmark||S.dest.name)+', beating '+(FIELD_SIZE-1)+' teams! Play at runthe.gg/globe')
           : ('🌍 I finished #'+youRank+' of '+FIELD_SIZE+' in RunTheGlobe\'s Final at '+S.dest.name+'. Can you do better? runthe.gg/globe'));
       };
     } else if(groundedTeam.id==='you'){
       sfx('lose');
       recordRaceEnd(ranked);   // record now (idempotent) so an abandon still counts
-      // GDD §10: binary Grounded choice — watch live, or return home. No reward for watching.
+      // GDD §10: binary Grounded choice: watch live, or return home. No reward for watching.
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
       $('home').onclick=function(){ S.screen='home'; render(); };
       $('watch').onclick=function(){ S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
@@ -3768,12 +3768,12 @@
   startRace = function(){ S._recorded=false; _startRace(); };
 
   /* ======================================================================
-     TWO-DEVICES DUO (Beta) — host-less, deterministic — GDD §3/§6-9
+     TWO-DEVICES DUO (Beta) · host-less, deterministic · GDD §3/§6-9
      Two players pair into ONE team via a short code. The duo shares a SEED, so
      BOTH devices run the exact same race locally: identical country order,
      finish line, AI opponent field and eliminations. There is no "host of the
      game" and the field always finishes, because every device computes the same
-     outcome. Each Stage BOTH partners play — and they're forced onto DIFFERENT
+     outcome. Each Stage BOTH partners play, and they're forced onto DIFFERENT
      challenges (one each of the two Split-Path options), so they can't both grab
      the fast one. The team's Stage time is the two partners' effective times
      ADDED together. Each device posts its own time; realtime pushes the
@@ -3811,12 +3811,12 @@
     }
     var sess=duoLoadSess();
     var resume = sess ? '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">Resume your race</h3>'
-        + '<p class="muted" style="font-size:12.5px;margin:0 0 10px">You have a team race in progress — code <b style="color:var(--globe)">'+esc(sess.code)+'</b>.</p>'
+        + '<p class="muted" style="font-size:12.5px;margin:0 0 10px">You have a team race in progress. Code <b style="color:var(--globe)">'+esc(sess.code)+'</b>.</p>'
         + '<button class="btn globe" id="oresume">Rejoin race ›</button>'
         + '<button class="btn ghost sm" id="odrop" style="margin-top:8px">Forget it</button></div>' : '';
     app.innerHTML = topbar()
       + '<div class="card"><h2 style="font-size:22px">Team Race · Two Devices <span style="font-size:12px;color:var(--globe)">Beta</span></h2>'
-        + '<p class="lede">You and a partner race the field <b>as one team</b> from separate devices. Every Stage you both play — and your times add together. Start a team and share the code, or join your partner\'s.</p>'
+        + '<p class="lede">You and a partner race the field <b>as one team</b> from separate devices. Every Stage you both play, and your times add together. Start a team and share the code, or join your partner\'s.</p>'
         + '<div style="margin-top:14px"><label class="fld" for="otn">Team name</label>'
         + '<input type="text" id="otn" maxlength="18" placeholder="'+esc(acct.username?acct.username+' & co':'Our Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
         + '<button class="btn globe" id="ocreate" style="margin-top:12px">Start a team</button>'
@@ -3937,7 +3937,7 @@
           : '<div class="lbrow"><span class="p">⏳</span><span class="nm" style="color:var(--mut)">Waiting for your partner…</span><span class="tm"></span></div>');
     var ctrl = two
       ? '<button class="btn globe" id="ostart" style="margin-top:14px">Start the race 🌍</button>'
-        + '<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">You face a field of '+FIELD_SIZE+' teams. Each Stage you both play a different challenge — your times add up.</p>'
+        + '<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">You face a field of '+FIELD_SIZE+' teams. Each Stage you both play a different challenge. Your times add up.</p>'
       : '<p class="muted" style="text-align:center;margin-top:14px">Send your partner the code above. When they join, you can start.</p>';
     app.innerHTML = topbar()
       + '<div class="card center"><div class="muted" style="font-size:12px;letter-spacing:.1em;text-transform:uppercase">Your team code</div>'
@@ -3976,7 +3976,7 @@
   // which of the two challenges is MINE this Stage (partner always gets the other)
   function duoMyTaskIndex(){ return (S.round + S.online.slot) % 2; }
   // a ghost TEAM plays both Split-Path challenges and its Stage time is the sum,
-  // exactly like the human team — so the fields are directly comparable.
+  // exactly like the human team, so the fields are directly comparable.
   function duoGhostTimes(round, offered, aliveGhosts){
     return withRng(duoRng(round,9), function(){
       return aliveGhosts.map(function(t){
@@ -4012,21 +4012,21 @@
   function duoViewChoice(){
     var mine=duoMyTaskIndex();
     var html=topbar()+hud()+'<div class="card">'
-      + '<div class="stagetype">🍴 Split Path — you and your partner each take one</div>'
+      + '<div class="stagetype">🍴 Split Path · you and your partner each take one</div>'
       + '<div class="choice">';
     S.offered.forEach(function(t,i){
       var refl=!!REFLEX_KINDS[taskKind(t)];
       if(i===mine){
         html+='<button class="taskcard" data-i="'+i+'"><div class="ct"><span class="catchip '+(refl?'reflex':'')+'">'+esc(taskLabel(t))+'</span><span class="pen">miss +'+PENALTY[t.cat]+'s</span></div>'
           +'<div class="pr">'+esc(taskBlurb(t))+'</div>'
-          +'<div style="color:var(--globe);font-weight:800;font-size:12px;margin-top:8px">▶ Your challenge — tap to play</div></button>';
+          +'<div style="color:var(--globe);font-weight:800;font-size:12px;margin-top:8px">▶ Your challenge · tap to play</div></button>';
       } else {
         html+='<div class="taskcard" style="opacity:.55;cursor:default"><div class="ct"><span class="catchip '+(refl?'reflex':'')+'">'+esc(taskLabel(t))+'</span><span class="pen">miss +'+PENALTY[t.cat]+'s</span></div>'
           +'<div class="pr">'+esc(taskBlurb(t))+'</div>'
           +'<div style="color:var(--mut);font-weight:800;font-size:12px;margin-top:8px">🔒 '+esc(S.online.partnerName||'Your partner')+'\'s challenge</div></div>';
       }
     });
-    html+='</div><p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Your team\'s Stage time is <b>both challenges added together</b> — so you can\'t both grab the quick one.</p></div>'+foot();
+    html+='</div><p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Your team\'s Stage time is <b>both challenges added together</b>, so you can\'t both grab the quick one.</p></div>'+foot();
     app.innerHTML=html;
     var mb=document.querySelector('.taskcard[data-i="'+mine+'"]');
     if(mb) mb.onclick=function(){ S.chosen=S.offered[mine]; S.phase='play'; renderStage(); };
@@ -4111,7 +4111,7 @@
   }
 
   function duoSpectate(){
-    // team Grounded — deterministically finish the field for a quick summary
+    // team Grounded: deterministically finish the field for a quick summary
     while(S.round<ROUNDS && S.teams.filter(function(t){return t.alive;}).length>3){
       S.round++;
       var ag=S.teams.filter(function(t){return t.alive&&t.isGhost;});

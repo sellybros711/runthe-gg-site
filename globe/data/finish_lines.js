@@ -1,5 +1,5 @@
 /* ============================================================================
-   RunTheGlobe — Finish Line Pool (Round 9 / the Final)  — GDD v1 §11
+   RunTheGlobe: Finish Line Pool (Round 9 / the Final) · GDD v1 §11
    ----------------------------------------------------------------------------
    Data-only. Loaded before the engine as window.GLOBE_FINISH_LINES.
 
@@ -13,7 +13,7 @@
    `country` links an entry to a country id in countries.js when one of the
    seed-pool countries hosts it, so the Final can reuse that country's task bank.
    When null, the engine falls back to a task drawn from the global pool. As the
-   country pool grows (GDD §12), backfill more of these links — safe either way
+   country pool grows (GDD §12), backfill more of these links. Safe either way
    (an unknown id just falls back).
 
    Inspired by (not reproducing) the kinds of places long-running race finales
