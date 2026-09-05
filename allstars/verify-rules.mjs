@@ -22,6 +22,8 @@
      clinch, elimination  in and out are marked only once the games left make it certain
      season awards        a fixed season hands out the same hardware, archived once
      field frames         every biped carries a distinct catch and throw frame
+     bullpen              fatigue counts per arm, a change is one way, the order holds
+     cpu bullpen          the CPU goes to its best rested arm, and only when it helps
      out at home draws    the play carries a plate-out marker for the draw loop
      cup identity         the seed is drawn, the card says who hosts, an upset is called one
      agency               the CPU bunts, swings for it and runs on cue; SEND and HOLD do what they say
@@ -520,6 +522,95 @@ async function main() {
       ok(r.plateOut, 'the play carries a plate-out marker for the draw loop', JSON.stringify(r));
       ok(r.runner === 'The Runner', 'and names the runner', r.runner);
       ok(r.outs === 1, 'and the out is recorded', 'outs=' + r.outs);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the bullpen ---- */
+    {
+      console.log('bullpen');
+      const { pg, errors } = await fresh(browser);
+      await pg.evaluate(() => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 9; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });
+      });
+      await wait(pg, 700);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        endAtBatCleanup(); g.pitch = null;
+        g.half = 'top';                    /* you are home, so you field */
+        const t = currentFieldingTeam();
+        /* A starter's curve must be exactly what it was before the pen
+           existed: flat through the third, then one level an inning. */
+        const starter = [];
+        for (let i = 1; i <= 9; i++) { g.inning = i; starter.push(pitcherFatigue(t).level); }
+        g.inning = 6;
+        const orderBefore = t.batters.map(b => b.k);
+        const penBefore = bullpenFor(t).map(x => x.i);
+        const cons = bullpenFor(t).map(x => x.b.con);
+        const changed = goToPen(t, 4);
+        const reliever = [];
+        for (let i = 6; i <= 9; i++) { g.inning = i; reliever.push(pitcherFatigue(t).level); }
+        const backAgain = goToPen(t, 0);   /* a spent arm cannot return */
+        const orderAfter = t.batters.map(b => b.k);
+        /* The offer is gated: fielding, between pitches, arm going. The
+           man out there came in in the SIXTH, so he is still fresh in the
+           eighth and only starts to go in the tenth. */
+        g.inning = 2; g.play = null; refreshStealButton();
+        const btn = document.getElementById('pen-btn');
+        const shownFresh = btn.style.display !== 'none';
+        g.inning = 10; refreshStealButton();
+        const shownTired = btn.style.display !== 'none';
+        g.half = 'bottom'; refreshStealButton();
+        const shownBatting = btn.style.display !== 'none';
+        return { starter, changed, reliever, backAgain, penBefore, cons,
+                 idx: t.pitcherIdx, from: t.pitcherFrom,
+                 orderSame: JSON.stringify(orderBefore) === JSON.stringify(orderAfter),
+                 shownFresh, shownTired, shownBatting };
+      });
+      ok(JSON.stringify(r.starter) === JSON.stringify([0,0,0,1,2,3,4,5,6]),
+         'a starter tires exactly as he did before the pen existed', JSON.stringify(r.starter));
+      ok(r.changed && r.idx === 4 && r.from === 6, 'a change takes and records the inning', JSON.stringify(r));
+      ok(JSON.stringify(r.reliever) === JSON.stringify([0,0,0,1]),
+         'a reliever brought in the sixth is fresh until the ninth', JSON.stringify(r.reliever));
+      ok(r.backAgain === false, 'a spent arm cannot come back');
+      ok(r.orderSame, 'the batting order is untouched by a change');
+      ok(r.penBefore.length === 8 && !r.penBefore.includes(0), 'eight arms on the bench, not the man pitching', JSON.stringify(r.penBefore));
+      ok(JSON.stringify(r.cons) === JSON.stringify([...r.cons].sort((a, b) => b - a)), 'the pen ranks by CON', JSON.stringify(r.cons));
+      ok(!r.shownFresh && r.shownTired && !r.shownBatting, 'offered only while fielding a tiring arm', JSON.stringify({ fresh: r.shownFresh, tired: r.shownTired, batting: r.shownBatting }));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the CPU manages its own staff ---- */
+    {
+      console.log('cpu bullpen');
+      const { pg, errors } = await fresh(browser);
+      await pg.evaluate(() => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 9; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });
+      });
+      await wait(pg, 700);
+      const r = await pg.evaluate(() => {
+        const g = State.game;
+        const cpu = g.away;
+        cpu.batters[0] = Object.assign({}, cpu.batters[0], { con: 40, n: 'Tired Sam' });
+        cpu.batters[5] = Object.assign({}, cpu.batters[5], { con: 90, n: 'The Closer' });
+        g.inning = 2; cpuPenCheck(cpu);
+        const early = cpu.pitcherIdx;
+        g.inning = 5; cpuPenCheck(cpu);
+        const late = cpu.pitcherIdx, lateName = cpu.batters[cpu.pitcherIdx].n;
+        /* Nobody better on the bench: it stays put. */
+        const mine = g.home;
+        mine.batters = mine.batters.map((b, i) => Object.assign({}, b, { con: i === 0 ? 95 : 50 }));
+        g.inning = 8; cpuPenCheck(mine);
+        return { early, late, lateName, stayed: mine.pitcherIdx };
+      });
+      ok(r.early === 0, 'the CPU leaves a fresh arm alone', 'idx=' + r.early);
+      ok(r.late === 5 && r.lateName === 'The Closer', 'and goes to its best rested arm once its man tires', JSON.stringify(r));
+      ok(r.stayed === 0, 'and stays put when nobody on the bench is better', 'idx=' + r.stayed);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

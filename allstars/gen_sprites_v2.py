@@ -1006,34 +1006,69 @@ def run_off(pose):
     return arm_off(pose, 2)
 
 
+# THE FOUR RAISED POSES, drawn rather than offset.
+#
+# ARM_OFF cannot express any of these, and the reason is geometry rather
+# than tuning. Every archetype hangs its arms at about CX plus or minus 9
+# and every head is drawn AFTER them at a half width of 9.4 or more, so an
+# arm lifted by any amount travels straight up BEHIND the skull and out of
+# the picture. The pitcher's windup and release shipped like that: both
+# were authored as offsets, both drew inside the head, and the frame a
+# player watches more than any other read as the idle with a leg out.
+#
+# So a raised pose gets real coordinates, out at CX plus or minus 11 to 14
+# where nothing covers it. `wide` scales that reach for the archetypes with
+# a bigger head (the hulk's is 9.8) and `sy` moves the shoulder for the
+# ones whose torso sits high or low. Quadrupeds have no arms to raise and
+# do not call this at all: a dragon pitching is a dragon pitching.
+def raised_arms(cv, limb, skin, pose, wide=0, sy=0):
+    w = 12 + wide
+    if pose == 'catch':
+        # Both arms straight up, hands over the cap: a fielder under a fly.
+        for side in (-1, 1):
+            x0 = CX + side * w - 1
+            cv.cyl(x0, 6 + sy, x0 + 2, 22 + sy, limb, round_bot=1)
+            cv.cyl(x0 - 1, 4 + sy, x0 + 3, 7 + sy, skin, round_bot=1)
+        return True
+    if pose == 'throw':
+        # A fielder firing across the diamond: throwing arm cocked high and
+        # back, glove side crossed low at the chest.
+        cv.cyl(CX + w - 4, 12 + sy, CX + w - 1, 23 + sy, limb, round_bot=1)
+        cv.cyl(CX + w - 2, 6 + sy, CX + w + 2, 10 + sy, skin, round_bot=1)
+        cv.cyl(CX - w, 22 + sy, CX - w + 3, 25 + sy, limb, round_bot=1)
+        cv.cyl(CX - w - 2, 24 + sy, CX - w + 2, 27 + sy, skin, round_bot=1)
+        return True
+    if pose == 'windup':
+        # Coiled: ball hand high and BACK over the throwing shoulder, glove
+        # hand tucked tight across the chest. The hand is the highest thing
+        # on the figure, above the cap, which is the whole read at 40px.
+        cv.cyl(CX + w - 2, 10 + sy, CX + w + 1, 23 + sy, limb, round_bot=1)
+        cv.cyl(CX + w - 3, 5 + sy, CX + w + 1, 11 + sy, skin, round_bot=1)
+        cv.cyl(CX - w + 1, 21 + sy, CX - w + 4, 27 + sy, limb, round_bot=1)
+        cv.cyl(CX - w + 2, 26 + sy, CX - w + 6, 29 + sy, skin, round_bot=1)
+        return True
+    if pose == 'release':
+        # Over the top and through: throwing arm driven DOWN and across to
+        # the glove side, hand below the waist, glove arm flung back high.
+        # The silhouette is the MIRROR of the windup, which is what makes
+        # the two frames read as one motion rather than as two poses.
+        cv.cyl(CX - w - 1, 22 + sy, CX - w + 2, 33 + sy, limb, round_bot=1)
+        cv.cyl(CX - w - 2, 32 + sy, CX - w + 2, 36 + sy, skin, round_bot=1)
+        cv.cyl(CX + w - 1, 14 + sy, CX + w + 2, 24 + sy, limb, round_bot=1)
+        cv.cyl(CX + w - 2, 11 + sy, CX + w + 2, 15 + sy, skin, round_bot=1)
+        return True
+    return False
+
+
+RAISED_POSES = ('catch', 'throw', 'windup', 'release')
+
+
 def arms(cv, sleeve, skin, pose, top=24, length=7, out=0):
     lo, ro = run_off(pose)
     # Same reason as the hulk's arms: a sleeve in the shirt's own ramp
     # melts into the shirt. One shade off is all it takes to read.
     cuff = Ramp(shade(sleeve.base, -0.16))
-    # RAISED POSES need arms drawn WIDER than usual and drawn UPWARD, so
-    # they clear the head (9.4 half-width) instead of hiding behind it. A
-    # catch reaches both hands over the head; a throw fires the throwing
-    # arm high while the glove side crosses low.
-    if pose == 'catch':
-        # Both arms straight up: shoulder at y=22, hand at y=5, drawn
-        # OUTSIDE the head at x=CX±12 so they clear its silhouette.
-        for side in (-1, 1):
-            x0 = CX + side * 12 - 1
-            cv.cyl(x0, 6, x0 + 2, 22, cuff, round_bot=1)
-            cv.cyl(x0 - 1, 4, x0 + 3, 7, skin, round_bot=1)
-        return
-    if pose == 'throw':
-        # Right arm cocked back-high (thrower's), left arm forward at chest.
-        # Shoulder to elbow to hand, with the hand at the peak.
-        # Right: from shoulder (CX+8, y=23) up-and-back to (CX+13, y=8).
-        for (x0, y0, x1, y1) in [(CX + 8, 23, CX + 12, 12)]:
-            cv.cyl(int(x0), int(y1), int(x0) + 3, int(y0), cuff, round_bot=1)
-        # A small hand at the peak of the throwing arm.
-        cv.cyl(CX + 10, 6, CX + 14, 10, skin, round_bot=1)
-        # Left arm forward across chest, hand extended.
-        cv.cyl(CX - 12, 22, CX - 9, 25, cuff, round_bot=1)
-        cv.cyl(CX - 14, 24, CX - 10, 27, skin, round_bot=1)
+    if raised_arms(cv, cuff, skin, pose):
         return
     for side, off in ((-1, lo), (1, ro)):
         x0 = CX + side * (9 + out) - 1
@@ -1069,11 +1104,14 @@ def arch_hulk(cv, spec, pose):
     # body's ramp they share an owner, outline() skips the seam, and the
     # whole figure reads as one blob with no limbs in it.
     arm = Ramp(shade(body.base, -0.20))
-    for side, off in ((-1, lo), (1, ro)):
-        sx = CX + side * 8
-        cv.ball(sx, 23.0 + off, 4.6, 4.2, arm, spec=False)
-        cv.cyl(sx - 2, 23 + off, sx + 2, 33 + off, arm, round_bot=2)
-        cv.ball(sx, 33.5 + off, 3.0, 2.8, hand, spec=False)
+    # A wider head (9.8 here against the human's 9.4) needs the raised arm
+    # pushed a pixel further out to clear it.
+    if not raised_arms(cv, arm, hand, pose, wide=1):
+        for side, off in ((-1, lo), (1, ro)):
+            sx = CX + side * 8
+            cv.ball(sx, 23.0 + off, 4.6, 4.2, arm, spec=False)
+            cv.cyl(sx - 2, 23 + off, sx + 2, 33 + off, arm, round_bot=2)
+            cv.ball(sx, 33.5 + off, 3.0, 2.8, hand, spec=False)
     if spec.get('chest'):
         cv.sphere(CX, 27.5, 5.4, 4.2, Ramp(spec['chest']), spec=False)
     # The head is SKIN, not body: for every ape and monster so far the two
@@ -1092,8 +1130,10 @@ def arch_round(cv, spec, pose):
     cv.ball(CX, 28.0, 9.6, 8.6, body)
     legs(cv, body, boot, pose, top=33, bot=38, spread=3)
     lo, ro = arm_off(pose, 1)
-    for side, off in ((-1, lo), (1, ro)):
-        cv.cyl(CX + side * 10 - 1, 24 + off, CX + side * 10 + 1, 31 + off, body, round_bot=1)
+    limb = Ramp(shade(body.base, -0.18))
+    if not raised_arms(cv, limb, skin, pose, sy=1):
+        for side, off in ((-1, lo), (1, ro)):
+            cv.cyl(CX + side * 10 - 1, 24 + off, CX + side * 10 + 1, 31 + off, body, round_bot=1)
     cv.sphere(CX, HEAD_CY + 1, HEAD_RX * 0.94, HEAD_RY * 0.94, skin)
 
 
@@ -1106,9 +1146,12 @@ def arch_egg(cv, spec, pose):
     if band:
         cv.rect(CX - 9, 22, CX + 9, 24, Ramp(band), l=0.5)
     lo, ro = arm_off(pose, 1)
-    for side, off in ((-1, lo), (1, ro)):
-        cv.cyl(CX + side * 4 - 1, 29 + off, CX + side * 4 + 1, 37 + off, body)
-        cv.cyl(CX + side * 4 - 1, 37 + off, CX + side * 4 + 1, 38 + off, boot)
+    # The egg has no shoulders, so its raised arms come off the shell low
+    # and stay narrow: out at CX plus or minus 9 rather than 12.
+    if not raised_arms(cv, Ramp(shade(body.base, -0.22)), body, pose, wide=-3, sy=4):
+        for side, off in ((-1, lo), (1, ro)):
+            cv.cyl(CX + side * 4 - 1, 29 + off, CX + side * 4 + 1, 37 + off, body)
+            cv.cyl(CX + side * 4 - 1, 37 + off, CX + side * 4 + 1, 38 + off, boot)
 
 
 def arch_robed(cv, spec, pose):
@@ -1117,9 +1160,10 @@ def arch_robed(cv, spec, pose):
     skin = Ramp(spec.get('skin', '#f0c088'))
     cv.taper(21, 38, 12, 24, robe, folds=spec.get('folds', 3))
     lo, ro = arm_off(pose, 1)
-    for side, off in ((-1, lo), (1, ro)):
-        cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 30 + off, robe, round_bot=1)
-        cv.cyl(CX + side * 8 - 1, 30 + off, CX + side * 8 + 1, 32 + off, skin, round_bot=1)
+    if not raised_arms(cv, Ramp(shade(robe.base, -0.18)), skin, pose):
+        for side, off in ((-1, lo), (1, ro)):
+            cv.cyl(CX + side * 8 - 1, 23 + off, CX + side * 8 + 1, 30 + off, robe, round_bot=1)
+            cv.cyl(CX + side * 8 - 1, 30 + off, CX + side * 8 + 1, 32 + off, skin, round_bot=1)
     cv.sphere(CX, HEAD_CY, HEAD_RX * 0.94, HEAD_RY * 0.94, skin)
 
 
