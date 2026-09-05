@@ -309,6 +309,27 @@
   .fieldbar .fil{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#3FCE86,#F6D488);
     transition:width .9s cubic-bezier(.2,.9,.3,1);box-shadow:0 0 12px rgba(63,206,134,.5);}
   .lb .lbrow{animation:rtgPopIn .4s cubic-bezier(.2,1.1,.4,1) both;}
+  /* ---- Compass Chase: a real rose you steer, not four words ---- */
+  .cprose{position:relative;width:100%;max-width:252px;margin:8px auto 0;}
+  .cprose svg{display:block;width:100%;height:auto;}
+  /* centred by flexbox, never by transform: popIn() animates transform and would
+     otherwise wipe a translate(-50%,-50%) and knock the flag off the hub. */
+  .cphub{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  .cpw{fill:rgba(255,255,255,.05);stroke:rgba(255,255,255,.13);stroke-width:1;cursor:pointer;transition:fill .15s;}
+  .cpw:hover{fill:rgba(236,181,80,.15);}
+  .cpw.ok{fill:rgba(63,206,134,.38);}
+  .cpw.no{fill:rgba(238,90,68,.38);}
+  #cpneedle{transition:transform .22s cubic-bezier(.3,1.5,.5,1);}
+  /* ---- Region Sort: two buckets that look like two different places ---- */
+  .rsbtn{flex:1;position:relative;}
+  .rsbtn.a{border-color:rgba(236,181,80,.45);background:linear-gradient(180deg,rgba(236,181,80,.14),rgba(236,181,80,.04));color:#F6D488;}
+  .rsbtn.b{border-color:rgba(106,169,255,.45);background:linear-gradient(180deg,rgba(106,169,255,.14),rgba(106,169,255,.04));color:#bcd8ff;}
+  /* ---- Rank The Order: slots that fill and teach the number ---- */
+  .ordslot{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);font-weight:900;font-size:14px;color:var(--mut);flex:none;}
+  .ordslot.on{background:linear-gradient(180deg,#ECB550,#d79b34);border-color:#F6D488;color:#2a1c00;}
+  .ordval{margin-left:auto;font-size:12.5px;font-weight:800;color:#F6D488;opacity:0;transition:opacity .25s;}
+  .ordval.show{opacity:1;}
   .dest .cn{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:36px;margin-top:8px;letter-spacing:.01em;
     color:var(--goldhi);text-shadow:0 2px 14px rgba(0,0,0,.5);}
   .dest .rg{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
@@ -804,7 +825,7 @@
   }
 
   /* =====================================================================
-     CUTSCENES — visual-novel beats between the gameplay (the Lockout 2027
+     CUTSCENES: visual-novel beats between the gameplay (the Lockout 2027
      format): a full-bleed backdrop, a speaker with a nameplate, a line that
      types itself out, tap to advance, Skip always one tap away. Beats:
        { who:'host'|'pilot'|'control', text }        dialogue (text may hold <b>)
@@ -870,7 +891,7 @@
   function countryFact(c){
     if(!c) return null;
     var bank=(window.GLOBE_TRIVIA||{})[c.id]||[], t=bank.length?pick(bank):null;
-    if(t && t.options){ var q=t.q.replace(/…\?$/,'…?'); return 'Quick one while you deplane — '+esc(q)+' <b>'+esc(t.options[t.a])+'.</b>'; }
+    if(t && t.options){ var q=t.q.replace(/…\?$/,'…?'); return 'Quick one while you deplane. '+esc(q)+' <b>'+esc(t.options[t.a])+'.</b>'; }
     return 'Capital here is <b>'+esc(c.capital)+'</b>.';
   }
   function introBeats(){
@@ -879,20 +900,20 @@
       { kick:'RunTheGlobe', title:'The Race', sub:n+' teams · '+ROUNDS+' stages · one finish line', sfx:'checkpoint' },
       { who:'host', text:'Welcome aboard, <b>'+esc(S.teamName)+'</b>. '+n+' teams, '+ROUNDS+' stages, and one finish line: <b>'+esc(fl.landmark)+'</b> in '+esc(fl.city)+'.' },
       { who:'host', text:'Every stage, every team lands in the same country and plays the same challenge. The <b>slowest team is Grounded</b>. Simple. Brutal.' },
-      { who:'pilot', text:'Wheels up. Mash the screen in flight if you want to get there faster — I don\'t judge.', fx:'burst' }
+      { who:'pilot', text:'Wheels up. Mash the screen in flight to get there faster. I don\'t judge.', fx:'burst' }
     ];
   }
   function arrivalBeats(){
     var d=S.dest, alive=aliveTeams().length, b=[];
     if(d.final){
       b.push({ kick:'The Final', title:esc(d.name), sub:esc(d.landmark||'the finish line'), sfx:'checkpoint' });
-      b.push({ who:'pilot', text:'Final approach into <b>'+esc(d.name)+'</b>. Whatever you\'ve got left — this is where you spend it.' });
+      b.push({ who:'pilot', text:'Final approach into <b>'+esc(d.name)+'</b>. Whatever you have left, spend it here.' });
       b.push({ who:'host', text:alive+' teams touch down. <b>First across the line at '+esc(d.landmark||'the finish')+' wins the whole race.</b> No second place.', fx:'burst' });
       return b;
     }
     b.push({ kick:'Stage '+S.round+' of '+ROUNDS, title:esc(d.name), sub:esc(d.region)+' · '+alive+' teams left', sfx:'checkpoint' });
     if(S.round<=2) b.push({ who:'pilot', text:'Touching down in <b>'+esc(d.name)+'</b>, '+esc(d.region)+'. Local time: whenever you make it to the mat.' });
-    var f=countryFact(d.country); if(f) b.push({ who:'host', text:f+(S.round===1?' Slowest team here goes home — <b>don\'t let it be you</b>.':' '+(alive-1)+' seats at the next stage. '+(S.streak>=2?'You\'re on a <b>'+S.streak+'-stage clean streak</b> — keep it.':'Go.')) });
+    var f=countryFact(d.country); if(f) b.push({ who:'host', text:f+(S.round===1?' Slowest team here goes home. <b>Don\'t let it be you.</b>':' '+(alive-1)+' seats at the next stage. '+(S.streak>=2?'You\'re on a <b>'+S.streak+'-stage clean streak</b>. Keep it.':'Go.')) });
     return b;
   }
   function verdictBeats(ranked, groundedTeam, final){
@@ -909,7 +930,7 @@
       return [{ who:'control', text:'All teams checked in at <b>'+esc(S.dest.name)+'</b>… last team to the mat…' },
               { kick:'Grounded', title:esc(S.teamName), sub:'Slowest at '+esc(S.dest.name)+' · your race ends here', sfx:'lose' }];
     return [{ who:'control', text:'All teams checked in at <b>'+esc(S.dest.name)+'</b>. You came in <b>#'+you+' of '+n+'</b>.' },
-            { who:'host', text:'Last team to the mat: <b>'+esc(groundedTeam.name)+'</b>. Grounded. '+(n-1)+' teams fly on — <b>you\'re one of them</b>.', sfx:'checkpoint', fx:'burst' }];
+            { who:'host', text:'Last team to the mat: <b>'+esc(groundedTeam.name)+'</b>. Grounded. '+(n-1)+' teams fly on. <b>You\'re one of them.</b>', sfx:'checkpoint', fx:'burst' }];
   }
 
   /* ---- dopamine feeders: universal hooks fired by every challenge kind ----
@@ -1487,7 +1508,7 @@
           else if(Math.abs(dlng)>=Math.abs(dlat)*2 && Math.abs(dlng)>10) dirs.push({ name:o2.name, flag:o2.flag, dir:dlng>0?'E':'W' });
         }
         if(dirs.length>=2) g.push({ kind:'compass', cat:'spatial', type:'brain',
-                                    q:'You\'re in '+c.name+' — which way to each country?', rounds:dirs });
+                                    q:'You\'re in '+c.name+'. Which way to each country?', rounds:dirs });
         // Flight Plan — plot a route on the map: tap the 4 stops nearest → farthest
         // (gaps ≥1.25× keep the order unambiguous). Distinct from Rank The Order:
         // it's a real map route-draw, not a list sort.
@@ -2092,13 +2113,24 @@
       asc:'smallest → largest', desc:'largest → smallest', near:'nearest → farthest' };
     return map[t.dir] || 'in order';
   }
+  // the number behind the ranking, revealed as each row locks in: you find out
+  // Sapporo really is at 43 degrees north, so a guess turns into something learned.
+  function ordVal(v,t){
+    var d=t.dir;
+    if(d==='north'||d==='south') return Math.abs(v).toFixed(0)+'°'+(v>=0?'N':'S');
+    if(d==='east'||d==='west')   return Math.abs(v).toFixed(0)+'°'+(v>=0?'E':'W');
+    if(d==='near') return Math.round(v).toLocaleString()+' km';
+    var s=(Math.abs(v)>=1000)?Math.round(v).toLocaleString():String(v);
+    return s+(t.unit?' '+t.unit:'');
+  }
   function renderOrder(t){
     var rows='';
     shuffleStable(t.items).forEach(function(it){
       var pos=S.ord.placed.indexOf(it.label);
       rows += '<div class="oitem'+(pos>=0?' placed':'')+'" data-l="'+esc(it.label)+'">'
         + '<span class="num'+(pos>=0?' on':'')+'">'+(pos>=0?(pos+1):'')+'</span>'
-        + '<span>'+esc(it.label)+'</span></div>';
+        + '<span>'+esc(it.label)+'</span>'
+        + '<span class="ordval'+(pos>=0?' show':'')+'">'+esc(ordVal(it.value,t))+'</span></div>';
     });
     $('mg').innerHTML='<div class="prompt">'+esc(t.q)+'</div>'
       + '<div class="ohint">Tap in order: <b style="color:var(--globe)">'+dirHint(t)+'</b></div>'
@@ -2116,7 +2148,8 @@
     if(label===nextCorrect || S.ord.val[label]===S.ord.val[nextCorrect]){
       S.ord.placed.push(label);
       // update the tapped row IN PLACE (no full re-render → no dropped taps)
-      if(el){ el.classList.add('placed'); var num=el.querySelector('.num'); if(num){ num.textContent=S.ord.placed.length; num.classList.add('on'); } }
+      if(el){ el.classList.add('placed'); var num=el.querySelector('.num'); if(num){ num.textContent=S.ord.placed.length; num.classList.add('on'); }
+        var vv=el.querySelector('.ordval'); if(vv) vv.classList.add('show'); }
       if(S.ord.placed.length===S.ord.target.length){ sfx('correct'); vibe(14); S.play.done=true; setTimeout(finishTask,220); }
     } else {
       S.play.misses++; showMiss();
@@ -2721,30 +2754,57 @@
   }
 
   /* ---------- minigame: Compass Chase (tap the direction, 2-3 rounds) ---------- */
+  // The rose is the game: four tappable bearings around a hub that flies the
+  // country you are steering toward. A needle swings to the TRUE bearing after
+  // every answer, so a wrong guess still teaches you where the place actually is.
+  var CP_ROT={ N:0, E:90, S:180, W:270 };
+  function compassRose(){
+    function pol(r,deg){ var a=deg*Math.PI/180; return [(100+r*Math.cos(a)).toFixed(1), (100+r*Math.sin(a)).toFixed(1)]; }
+    function wedge(a0,a1,ri,ro){
+      return 'M'+pol(ri,a0)+'L'+pol(ro,a0)+'A'+ro+','+ro+' 0 0 1 '+pol(ro,a1)+'L'+pol(ri,a1)+'A'+ri+','+ri+' 0 0 0 '+pol(ri,a0)+'Z';
+    }
+    var DIRS=[['N',-90],['E',0],['S',90],['W',180]], out='', i;
+    out+='<svg viewBox="0 0 200 200" aria-hidden="true">';
+    out+='<circle cx="100" cy="100" r="97" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.1)"/>';
+    for(i=0;i<24;i++){ var a=i*15, major=(i%6===0);
+      out+='<line x1="'+pol(94,a)[0]+'" y1="'+pol(94,a)[1]+'" x2="'+pol(major?84:89,a)[0]+'" y2="'+pol(major?84:89,a)[1]
+        +'" stroke="rgba(255,255,255,'+(major?'.5':'.2')+')" stroke-width="'+(major?1.6:1)+'"/>'; }
+    DIRS.forEach(function(d){ out+='<path class="cpw" data-d="'+d[0]+'" d="'+wedge(d[1]-42,d[1]+42,45,80)+'"/>'; });
+    DIRS.forEach(function(d){ var p=pol(62,d[1]);
+      out+='<text x="'+p[0]+'" y="'+p[1]+'" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="800" fill="#fff" style="pointer-events:none">'+d[0]+'</text>'; });
+    out+='<circle cx="100" cy="100" r="41" fill="#12102a" stroke="rgba(255,255,255,.16)"/>';
+    // the bearing marker rides the OUTER rim, clear of the N/E/S/W letters, and
+    // stays hidden until an answer so it never gives the next one away
+    out+='<g id="cpneedle" transform="rotate(0 100 100)" style="pointer-events:none;opacity:0">'
+      + '<path d="M100 3 L107 22 L93 22 Z" fill="#EE5A44"/></g>';
+    return out+'</svg>';
+  }
   function mgCompass(t){
     S.cp={ i:0, rounds:t.rounds };
-    var DIRS=[['N','⬆️ North'],['S','⬇️ South'],['E','➡️ East'],['W','⬅️ West']];
     $('mg').innerHTML='<div class="seqstatus" id="cpst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div id="cptgt" style="text-align:center;font-size:17px;font-weight:800;margin-bottom:12px"></div>'
-      + '<div class="btnrow">'+DIRS.slice(0,2).map(function(d2){ return '<button class="btn ghost hlo" data-d="'+d2[0]+'" style="flex:1">'+d2[1]+'</button>'; }).join('')+'</div>'
-      + '<div class="btnrow">'+DIRS.slice(2).map(function(d2){ return '<button class="btn ghost hlo" data-d="'+d2[0]+'" style="flex:1">'+d2[1]+'</button>'; }).join('')+'</div>';
-    each('.hlo', function(b){ b.onclick=function(){ cpAns(t, b.getAttribute('data-d'), b); }; });
+      + '<div class="cprose">'+compassRose()+'<div class="cphub" id="cphub"></div></div>'
+      + '<div id="cptgt" style="text-align:center;font-size:18px;font-weight:800;margin-top:10px"></div>'
+      + '<div class="ohint" style="margin-top:4px">Tap the bearing you would fly.</div>';
+    each('.cpw', function(p){ p.onclick=function(){ cpAns(t, p.getAttribute('data-d'), p); }; });
     cpPaint(t);
   }
   function cpPaint(t){
     var r=S.cp.rounds[S.cp.i];
     var st=$('cpst'); if(st) st.innerHTML='Target <b>'+(S.cp.i+1)+'</b>/'+S.cp.rounds.length;
-    var tg=$('cptgt'); if(tg){ tg.innerHTML=flagImg(r.flag,{w:30,h:20,rad:4})+' '+esc(r.name); swapIn(tg); }
+    var h=$('cphub'); if(h){ h.innerHTML=flagImg(r.flag,{w:58,h:39,rad:7}); popIn(h); }
+    var n0=$('cpneedle'); if(n0) n0.style.opacity='0';
+    var tg=$('cptgt'); if(tg){ tg.textContent=r.name; swapIn(tg); }
   }
-  function cpAns(t,d,btn){
+  function cpAns(t,d,el){
     if(S.play.done || S.cp.lock) return;
-    var ok = (d===S.cp.rounds[S.cp.i].dir);
+    var r=S.cp.rounds[S.cp.i], ok=(d===r.dir);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
-    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    if(el) el.classList.add(ok?'ok':'no');
+    var nd=$('cpneedle'); if(nd){ nd.style.opacity='1'; nd.setAttribute('transform','rotate('+(CP_ROT[r.dir]||0)+' 100 100)'); }
     S.cp.lock=true;
     setTimeout(function(){
-      S.cp.lock=false; if(btn) btn.style.borderColor='';
+      S.cp.lock=false; if(el) el.classList.remove('ok','no');
       S.cp.i++;
       if(S.cp.i>=S.cp.rounds.length){ S.play.done=true; finishTask(); } else cpPaint(t);
     },240);
@@ -2755,10 +2815,10 @@
     S.rs={ i:0, queue:t.queue };
     $('mg').innerHTML='<div class="seqstatus" id="rsst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div id="rscard" style="text-align:center;margin-bottom:14px"><span style="font-size:44px;display:block" id="rsflag"></span><b id="rsname" style="font-size:18px"></b></div>'
+      + '<div id="rscard" style="text-align:center;margin-bottom:14px"><div id="rsflag" style="line-height:0;margin-bottom:8px"></div><b id="rsname" style="font-size:19px"></b></div>'
       + '<div class="btnrow">'
-        + '<button class="btn ghost hlo" data-r="'+esc(t.regA)+'" style="flex:1">'+esc(t.regA)+'</button>'
-        + '<button class="btn ghost hlo" data-r="'+esc(t.regB)+'" style="flex:1">'+esc(t.regB)+'</button>'
+        + '<button class="btn ghost hlo rsbtn a" data-r="'+esc(t.regA)+'">'+esc(t.regA)+'</button>'
+        + '<button class="btn ghost hlo rsbtn b" data-r="'+esc(t.regB)+'">'+esc(t.regB)+'</button>'
       + '</div>';
     each('.hlo', function(b){ b.onclick=function(){ rsAns(t, b.getAttribute('data-r'), b); }; });
     rsPaint();
@@ -2766,7 +2826,7 @@
   function rsPaint(){
     var q=S.rs.queue[S.rs.i];
     var st=$('rsst'); if(st) st.innerHTML='Sorted <b>'+S.rs.i+'</b>/'+S.rs.queue.length;
-    var f=$('rsflag'); if(f) f.textContent=q.flag;
+    var f=$('rsflag'); if(f) f.innerHTML=flagImg(q.flag,{w:104,h:70,rad:11,cls:'hero'});
     var n=$('rsname'); if(n) n.textContent=q.name;
     swapIn($('rscard'));
   }
