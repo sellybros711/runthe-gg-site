@@ -1891,8 +1891,8 @@
       "sha": "66210cbb22945863"
     },
     "ledger.js": {
-      "v": "9",
-      "sha": "f24063556c3f697c"
+      "v": "10",
+      "sha": "5ada64b05397c124"
     },
     "blocs.js": {
       "v": "10",
@@ -1903,8 +1903,8 @@
       "sha": "dc6b2a9200c5d50b"
     },
     "docket.js": {
-      "v": "27",
-      "sha": "fc08594811650148"
+      "v": "28",
+      "sha": "ca30b8d76746faf8"
     },
     "rivals.js": {
       "v": "2",
@@ -1947,8 +1947,8 @@
       "sha": "b12449b11cf2e6c7"
     },
     "scene.js": {
-      "v": "8",
-      "sha": "4bc8a8ea024ab8bd"
+      "v": "9",
+      "sha": "d48c3fcd8a1a5eee"
     },
     "report.js": {
       "v": "3",

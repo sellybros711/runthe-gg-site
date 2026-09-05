@@ -163,6 +163,14 @@
   .whoami code{display:block;font-size:12px;line-height:1.5;color:var(--ink);
     word-break:break-all;-webkit-user-select:all;user-select:all}
   .whoami .btn{margin-top:9px;width:100%}
+  /* The inheritances: three harder ways of taking the job, paid tier only. Cards rather
+     than a select, because each one starts its own term. */
+  .inh{display:block;width:100%;text-align:left;appearance:none;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:11px 13px;margin-bottom:8px;font-family:var(--fn);color:var(--ink)}
+  .inh b{display:block;font-size:13.5px;font-weight:700;margin-bottom:3px}
+  .inh span{display:block;font-size:12px;line-height:1.45;color:var(--dim)}
+  .inh:active{border-color:var(--line-2)}
 
   .card{background:var(--grad-panel);border:1px solid var(--line);border-radius:15px;
     padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
@@ -595,6 +603,7 @@
     text-transform:uppercase;color:var(--dim-2)}
   .prec span{font-size:12px;color:var(--dim);line-height:1.4}
   .prec span i{font-style:normal;font-family:var(--fn);font-weight:700;color:var(--ink)}
+  .prec .note{color:var(--ink);font-style:italic}
   /* A REVERSAL IS THE ONE THAT MATTERS. Doing a thing twice is consistency; undoing your own
      ruling is the thing the room will bring up, so it is the line that gets a color. */
   .prec.flip{background:rgba(245,158,11,.08);border-left-color:var(--gold)}
@@ -700,6 +709,22 @@
   .docsplit b{font-family:var(--fd);font-size:22px;line-height:1;color:var(--gold)}
   .docsplit span{font-size:12.5px;color:var(--dim)}
   .docsplit em{font-style:normal;color:var(--ink);font-weight:700}
+
+  /* The career shelf on the ending screen. One row per finished term, newest on top, the
+     one just played marked. See paintCareer(). */
+  .career .csum{font-size:13px;line-height:1.5;color:var(--dim);margin:7px 0 4px}
+  .career .csum b{color:var(--ink)}
+  .career .cjudge{font-size:13px;line-height:1.5;color:var(--ink);font-weight:600;
+    margin:0 0 10px}
+  .cterm{display:flex;flex-wrap:wrap;gap:3px 10px;align-items:baseline;padding:7px 0 7px 11px;
+    border-left:2px solid var(--line-2);font-size:12.5px;color:var(--dim)}
+  .cterm+.cterm{margin-top:2px}
+  .cterm b{color:var(--ink);font-weight:700}
+  .cterm i{font-style:normal;font-family:var(--fd);color:var(--gold)}
+  .cterm em{font-style:normal}
+  .cterm.now{border-left-color:var(--gold)}
+  .cterm.out em{color:var(--red)}
+  .cmore{font-size:11.5px;color:var(--dim-2);margin-top:8px}
 
   /* ── THE DATA CENTER ──────────────────────────────────────────────────────────────
      Chart chrome recedes and the data does not. Every rule here has a reason written next
@@ -2505,6 +2530,11 @@
     <!-- THE REPORT CARD, on the screen that ends a term and nowhere else. Empty and hidden
          for a year in review, which is a progress report rather than a verdict. -->
     <div class="card flat" id="y-report" hidden></div>
+    <!-- THE CAREER, under the term it grades. Every finished term in this browser, oldest
+         at the bottom, with the one just played compared against the rest. Premium reads it
+         back; every tier writes to it, so nothing is lost to a player who upgrades later.
+         See paintCareer(). -->
+    <div class="card flat" id="y-career" hidden></div>
     <!-- The football that was actually played this year. -->
     <div class="card flat" id="y-season" hidden></div>
     <!-- What the sport promised the schools against what the football earned. -->
@@ -2549,14 +2579,14 @@
 
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=4"></script>
-<script src="ledger.js?v=9"></script>
+<script src="ledger.js?v=10"></script>
 <script src="blocs.js?v=10"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=7"></script>
-<script src="docket.js?v=27"></script>
+<script src="docket.js?v=28"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2578,7 +2608,7 @@
 <!-- The podium. Reads nothing at load time; see media.js. -->
 <script src="media.js?v=4"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=8"></script>
+<script src="scene.js?v=9"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
 <script src="report.js?v=3"></script>
@@ -2663,17 +2693,32 @@ try{
   const q=new URLSearchParams(location.search).get('rulings');
   if(q!==null&&q!=='') careerOverride=Math.max(0,Math.floor(Number(q))||0);
 }catch(e){}
-function careerRulings(){
-  if(careerOverride!=null) return careerOverride;
+/* ONE RECORD, TWO THINGS IN IT. `rulings` is the council ladder's count, above. `terms` is
+   the career: one row per finished term, appended at the end and never edited, because the
+   ending screen's whole claim is that a term you played in March is still on the books in
+   September. Read and written through one pair of helpers so neither field can clobber the
+   other, which is exactly what the first version of bumpCareer would have done to a term
+   list it did not know about. */
+const CAREER_TERMS_MAX=60;
+function careerData(){
   try{
     const raw=localStorage.getItem(CAREER_KEY);
-    if(raw) return Math.max(0,Math.floor(Number(JSON.parse(raw).rulings)||0));
+    const o=raw?JSON.parse(raw):null;
+    if(o&&typeof o==='object') return {v:1,
+      rulings:Math.max(0,Math.floor(Number(o.rulings)||0)),
+      terms:Array.isArray(o.terms)?o.terms:[]};
   }catch(e){}
-  return 0;
+  return {v:1,rulings:0,terms:[]};
 }
+function careerPut(c){ try{ localStorage.setItem(CAREER_KEY,JSON.stringify(c)); }catch(e){} }
+function careerRulings(){
+  if(careerOverride!=null) return careerOverride;
+  return careerData().rulings;
+}
+function careerTerms(){ return careerData().terms; }
 function bumpCareer(){
   if(careerOverride!=null) return;
-  try{ localStorage.setItem(CAREER_KEY,JSON.stringify({v:1,rulings:careerRulings()+1})); }catch(e){}
+  const c=careerData(); c.rulings++; careerPut(c);
 }
 /* A TERM ALREADY IN PROGRESS IS NOT WASTED. The career count is new, so somebody mid-term
    would otherwise be at zero with a record of thirty rulings sitting in their own save.
@@ -2682,9 +2727,33 @@ function bumpCareer(){
 function seedCareer(w){
   if(careerOverride!=null||!w||!w.history) return;
   const ruled=w.history.filter((h)=>L.isRuling(h)).length;
-  if(ruled>careerRulings()){
-    try{ localStorage.setItem(CAREER_KEY,JSON.stringify({v:1,rulings:ruled})); }catch(e){}
-  }
+  const c=careerData();
+  if(ruled>c.rulings){ c.rulings=ruled; careerPut(c); }
+}
+/* THE TERM GOES ON THE BOOKS THE MOMENT IT ENDS, whatever tier is looking, so nothing a
+   free player does is lost to them. What is gated is the SCREEN that reads this back, which
+   is paintCareer below. Guarded by a flag on the world because ending() is reachable twice
+   for one term (quit, reload, quit again), and a career with the same term on it twice is a
+   record that lies. */
+function logTerm(w,p,rep){
+  if(!w||w.careerLogged) return;
+  w.careerLogged=1; save();
+  const c=careerData();
+  const over=!!(w.outcome&&(w.outcome.removed||w.outcome.reason==='quit'));
+  c.terms.push({
+    from:w.startYear,
+    to:Math.max(w.startYear,over?w.year:w.year-1),
+    removed:!!(w.outcome&&w.outcome.removed),
+    reason:(w.outcome&&w.outcome.reason)||'served',
+    doctrine:p?String(p.name):null,
+    scenario:w.scenario||null,
+    grade:rep?rep.grade:null,
+    score:rep&&isFinite(rep.score)?rep.score:null,
+    rulings:w.history.filter((h)=>L.isRuling(h)).length,
+    champions:Object.keys(w.champions||{}).length,
+  });
+  if(c.terms.length>CAREER_TERMS_MAX) c.terms=c.terms.slice(-CAREER_TERMS_MAX);
+  careerPut(c);
 }
 
 /* ── the term ─────────────────────────────────────────────────────────────────── */
@@ -2698,11 +2767,64 @@ let world=null, rng=null, item=null, cast=null, choice=null, dials={}, written='
 let optOpen={}, optLong={};
 let lastRoom=null, lastBefore=null;
 
-function newTerm(year){
+/* ── the inheritances ─────────────────────────────────────────────────────────────
+   WHAT PREMIUM PICKS ON THE WAY IN. The default term opens on 2025 as it stands. These
+   open on a sport somebody else already broke, which changes the game the way a real
+   appointment does: you are hired INTO something, and the first year is spent on their
+   mess rather than your ideas.
+
+   APPLIED BEFORE THE OPENING SNAPSHOT, which is the load-bearing line. Every screen that
+   says "was" measures from world.start, so a scenario applied first is the sport as you
+   found it: the ending grades what you did with the inheritance rather than blaming you
+   for it.
+
+   NOTHING HERE IS A NEW MECHANIC. Every path written exists on the ledger and every value
+   is one the docket can produce; a scenario is a term that starts in the middle. Bloc
+   numbers stay clear of the removal math on day one: HOSTILE is 25 and nothing opens
+   below 34, so an inherited room is angry rather than already voting. */
+const SCENARIOS=[
+  { id:'paid', name:'The first payroll',
+    line:'The last commissioner made the players employees on the way out the door. The '
+      +'first checks clear in March. Nobody wrote down where from.',
+    set:{ 'labour.employment':'employee', 'labour.revShare':0.25, 'labour.nil':'school-paid',
+      'pressure.legal':24, 'pressure.union':10 },
+    meters:{ revenue:46 },
+    blocs:{ Presidents:42, SEC:44, 'Big 12':44, Players:64, Fans:46 } },
+  { id:'four', name:'Four teams again',
+    line:'The courts unwound the bracket in June. Four teams, no automatic bids, and a '
+      +'hundred and twenty schools with no path in. The phones have not stopped.',
+    set:{ 'playoff.teams':4, 'playoff.byes':0, 'playoff.autobids':0 },
+    meters:{ standing:52 },
+    blocs:{ 'Group of Five':34, ACC:40, 'Big 12':40, Fans:44, Networks:58, SEC:58 } },
+  { id:'hole', name:'The hole',
+    line:'The deal expires in two years and the last office already spent part of the next '
+      +'one. You inherit the books, the bill, and a network that has read them.',
+    set:{ 'money.pool':1.05, 'money.dealYears':2, 'pressure.legal':12 },
+    meters:{ revenue:40 },
+    blocs:{ Networks:44, Presidents:44, 'Group of Five':36 } },
+];
+/* The same guard applyEdit carries, because a scenario writing a path the ledger does not
+   have is a start that silently is not one. Throwing here fails the guards, not a player:
+   nothing player-facing calls this with anything but the table above. */
+function scenApply(w,scen){
+  for(const path in scen.set||{}){
+    if(L.getPath(w,path)===undefined) throw new Error('scenario: no such field "'+path+'"');
+    const parts=String(path).split('.');
+    let cur=w;
+    for(let i=0;i<parts.length-1;i++) cur=cur[parts[i]];
+    cur[parts[parts.length-1]]=scen.set[path];
+  }
+  Object.assign(w.meters,scen.meters||{});
+  Object.assign(w.blocs,scen.blocs||{});
+  w.scenario=scen.id;
+}
+
+function newTerm(year,scen){
   const seed=E.hashSeed(String(Date.now())+Math.random());
   world=L.createWorld({year:year||2025,membership:MEMBERSHIP[year||2025]||{},seed});
   rng=E.createSeededRNG(seed);
   world.rngCalls=0;
+  if(scen) scenApply(world,scen);
   /* THE SPORT AS YOU FOUND IT, kept so every screen can show what you changed rather than
      only what is true now. A commissioner is judged on the difference and the screens could
      not draw it: a term that moved the playoff from twelve to sixteen and one that was
@@ -5991,7 +6113,8 @@ function precedent(w,itemId){
   const out=[];
   (w.history||[]).forEach((h)=>{
     if(!h.id||String(h.id).split(':')[0]!==itemId) return;
-    out.push({year:h.year,beat:h.beat,option:String(h.id).split(':')[1]||'',label:h.label||''});
+    out.push({year:h.year,beat:h.beat,option:String(h.id).split(':')[1]||'',label:h.label||'',
+      note:h.note||''});
   });
   return out;
 }
@@ -6140,6 +6263,17 @@ function paintYear(el,card){
    the docket would have dealt you, and the room answers exactly the same way. Nothing is
    conjured. The gate that decides what could come up is untouched, and this only picks
    among what could. */
+/* How many cases this office has put on its own desk this year. Plain data on the world, so
+   it replays and survives a reload like everything else. */
+function agendaUsed(){
+  const a=world&&world.agenda;
+  return a&&a.year===world.year?a.used||0:0;
+}
+function chargeAgenda(){
+  world.agenda={year:world.year,used:agendaUsed()+1};
+  save();
+}
+
 function openPath(path){
   if(!path) return;
   const now=L.getPath(world,path);
@@ -6157,8 +6291,15 @@ function openPath(path){
   const live=D.eligible(world,L,situationNow()).map((it)=>it.id);
   /* OFF-SEASON ONLY. Choosing your own case in the middle of November would be choosing it
      instead of whatever the season was about to hand you, and the three winter beats are
-     the ones a governing body actually sets an agenda in. */
-  const canPut=world.beat<=2&&!pressDue();
+     the ones a governing body actually sets an agenda in.
+
+     AND TIERED. Premium sets the agenda all winter; free picks one case a year. The charge
+     is taken when a case is taken, not when the sheet is opened, and there is no way off
+     the desk without ruling, so a charge is always a ruling. Premium is charged too so the
+     record is uniform; only the free gate reads the count. */
+  const winter=world.beat<=2&&!pressDue();
+  const spent=!isPro()&&agendaUsed()>=1;
+  const canPut=winter&&!spent;
 
   let html='<div class="now"><b>'+esc(pathValue(path,now))+'</b>'
     +'<u>'+esc(pathName(path))+'</u>'
@@ -6170,14 +6311,18 @@ function openPath(path){
   html+=mine.length
     ? mine.map((h)=>'<div class="rul"><i>'+esc(String(h.year).slice(2))+'</i>'
       +'<b>'+esc(ruledWhat({label:h.label||'',option:String(h.id).split(':')[1]||''}))+'</b>'
-      +'<span>'+esc(L.BEATS[h.beat]||'')+' '+h.year+'</span></div>').join('')
+      +'<span>'+esc(L.BEATS[h.beat]||'')+' '+h.year
+      +(h.note?' &middot; &ldquo;'+esc(String(h.note).slice(0,120))+'&rdquo;':'')+'</span>'
+      +'</div>').join('')
     : '<p style="margin-top:0">Nothing yet. This is where you found it.</p>';
   html+='</div>';
 
   html+='<div class="sec"><div class="eyebrow">What moves it</div>'
     +'<p style="margin-top:0;margin-bottom:10px">You do not set this directly. It moves when '
     +'one of these reaches your desk and you rule on it.'
-    +(canPut?' In the off-season you can decide which one that is.':'')+'</p>';
+    +(canPut?(isPro()?' In the off-season you can decide which one that is.'
+        :' In the off-season you can put one of these on your desk. One a year.')
+      :winter&&spent?' Your pick of the year is spent. The desk deals the rest.':'')+'</p>';
   html+=items.length
     ? items.map((it)=>{
       const on=live.indexOf(it.id)>=0;
@@ -6195,7 +6340,7 @@ function openPath(path){
 
   $('fact-body').innerHTML=html;
   $('fact-body').querySelectorAll('[data-take]').forEach((btn)=>{
-    btn.onclick=()=>{ closeFact(); openCase(btn.dataset.take); };
+    btn.onclick=()=>{ closeFact(); if(openCase(btn.dataset.take)) chargeAgenda(); };
   });
   const sh=$('s-fact');
   sh.classList.add('on'); sh.setAttribute('aria-hidden','false');
@@ -6229,10 +6374,17 @@ function paintPrecedent(el,w,item){
      what is on the record. */
   const opts=(item.options||[]).map((o)=>o.id);
   const canFlip=opts.length>1&&opts.indexOf(last.option)>=0;
+  /* YOUR OWN WORDS COME BACK FIRST. The whole point of attaching a note to a ruling is this
+     moment: the same argument returns two seasons later and the desk hands you what you told
+     yourself at the time. The generated label says what you did; the note says why, and only
+     one of those is worth quoting. */
+  const said=past.slice().reverse().find((p)=>p.note);
   el.innerHTML='<div class="prec'+(past.length>1&&canFlip?' flip':'')+'">'
     +'<b>'+(past.length===1?'You have ruled on this before'
       :'You have ruled on this '+(past.length===2?'twice':past.length+' times'))+'</b>'
     +past.slice(-2).map((p)=>'<span><i>'+p.year+'</i> &middot; '+esc(ruledWhat(p))+'</span>').join('')
+    +(said?'<span class="note"><i>Your note, '+said.year+'</i> &middot; &ldquo;'
+      +esc(said.note)+'&rdquo;</span>':'')
     +'</div>';
   reveal(el.querySelector('.prec'));
 }
@@ -7119,6 +7271,15 @@ window.PS_CFB_COMMISH_TEST={
   repaint:()=>{ sceneOff=true; office(); sceneOff=false; },
   /* The ending, and the card it produces, without playing five seasons to reach them. */
   ending:()=>ending(),
+  /* The career shelf, from storage and back, so a guard can put three terms on the books
+     and read what the ending would say about the fourth. */
+  career:()=>careerData(),
+  logTerm:(w,p,rep)=>logTerm(w,p,rep),
+  paintCareer:(el)=>paintCareer(el),
+  /* The inheritances, and a way to take one, so a guard can open on a broken sport without
+     driving the gate screen. */
+  scenarios:()=>SCENARIOS,
+  takeJob:(id)=>{ newTerm(2025,SCENARIOS.find((s)=>s.id===id)||null); office(); },
   termCard:()=>drawTermCard(),
   termText:()=>termShareText(),
   termData:()=>termCardData(),
@@ -7868,6 +8029,11 @@ function yearEnd(year){
   const angry=L.removal(world).angry||[];
   $('y-say').textContent=yearVerdict(angry,world);
   $('y-report').hidden=true;
+  /* The doctrine and the career shelf belong to an ENDING. A year in review shares this
+     screen, and a term started after a finished one otherwise reviews its first year under
+     the LAST term's doctrine card, which nothing else ever takes down. */
+  $('y-doctrine').hidden=true;
+  $('y-career').hidden=true;
   paintSeason($('y-season'),lastSeason);
   paintBooks($('y-books'),lastSeason);
   $('y-term').hidden=true;
@@ -7902,6 +8068,79 @@ $('b-quit').onclick=()=>{ if(confirm('Leave the office? The term ends here.')){
   if(world.beat!==0||!lastSeason) paintSeason($('y-season'),null);
   ending(); } };
 
+/* ── the career shelf ───────────────────────────────────────────────────────────
+   WHAT TAKING THE JOB AGAIN IS FOR. The ending screen grades one term and then offers the
+   job again, and until this panel existed the offer had no memory attached: the next term
+   opened on a sport that had never heard of you. The shelf is every term this browser has
+   finished, newest on top, with the one just played held against the rest. It reads from
+   storage rather than from the world, because the world is one term and the panel's whole
+   claim is the other ones.
+
+   PREMIUM READS IT, EVERY TIER WRITES IT. logTerm runs unconditionally in ending(), so a
+   free player's terms are on the books the day they pay. The gate here is the same silent
+   one paintWrite uses: the free ending simply does not have the card, rather than having a
+   locked version of it. */
+function fmtTermYears(t){
+  return t.from===t.to?String(t.from):t.from+'-'+String(t.to).slice(2);
+}
+function paintCareer(el){
+  if(!el) return;
+  el.hidden=true; el.innerHTML='';
+  if(!isPro()) return;
+  const terms=careerTerms();
+  if(!terms.length) return;
+  const n=terms.length;
+  const last=terms[n-1];
+  const served=terms.filter((t)=>t.reason==='served').length;
+  const removed=terms.filter((t)=>t.removed).length;
+  const rings=terms.reduce((t,x)=>t+(x.champions||0),0);
+
+  /* The judgment line: this term against every term before it. Scored terms only, because
+     a term walked away from in year one has no report card to rank. */
+  let judge='';
+  if(n===1){
+    judge='Term one is on the books. It stays there when the next one starts.';
+  }else if(last.score!=null){
+    const prior=terms.slice(0,-1).filter((t)=>t.score!=null);
+    const best=prior.length?prior.reduce((a,b)=>b.score>=a.score?b:a,prior[0]):null;
+    if(!best||last.score>best.score) judge='Your best term yet.';
+    else if(last.score===best.score) judge='Level with your best, the '+fmtTermYears(best)+' term.';
+    else judge='Your best is still '+fmtTermYears(best)+': '+(best.grade||'ungraded')
+      +(best.doctrine?', as '+best.doctrine:'')+'.';
+  }else{
+    judge=n===2?'This one goes down unfinished. The one before it is still here.'
+      :'This one goes down unfinished. The '+(n-1)+' before it are still here.';
+  }
+
+  const sum='<b>'+n+(n===1?' term':' terms')+'</b> in this chair. '
+    +(served?served+' served in full. ':'')
+    +(removed?removed+(removed===1?' removal. ':' removals. '):'')
+    +(rings?rings+(rings===1?' champion crowned.':' champions crowned.'):'');
+
+  const SHOW=8;
+  const rows=terms.slice().reverse().slice(0,SHOW).map((t,i)=>{
+    const how=t.removed?'removed':t.reason==='quit'?'walked away':'served in full';
+    const inh=t.scenario?(SCENARIOS.find((s)=>s.id===t.scenario)||{}).name:null;
+    return '<div class="cterm'+(i===0?' now':'')+(t.removed?' out':'')+'">'
+      +'<b>'+esc(fmtTermYears(t))+'</b>'
+      +(inh?'<span>'+esc(inh)+'</span>':'')
+      +(t.doctrine?'<span>'+esc(t.doctrine)+'</span>':'')
+      +(t.grade?'<i>'+esc(t.grade)+'</i>':'')
+      +'<em>'+how+'</em>'
+      +(i===0?'<span style="color:var(--gold);font-weight:700">this term</span>':'')
+      +'</div>';
+  }).join('');
+
+  el.innerHTML='<div class="eyebrow gold">Your career</div>'
+    +'<div class="career"><div class="csum">'+sum+'</div>'
+    +'<div class="cjudge">'+esc(judge)+'</div>'+rows
+    +(n>SHOW?'<div class="cmore">'+(n-SHOW)+' earlier '
+      +(n-SHOW===1?'term':'terms')+' further down the books.</div>':'')
+    +'</div>';
+  el.hidden=false;
+  reveal(el);
+}
+
 function ending(){
   const o=world.outcome||{removed:false,reason:'served',
     say:'You served the whole term, which in this job is a result on its own.'};
@@ -7927,7 +8166,12 @@ function ending(){
   const doc=paintDoctrine($('y-doctrine'),world);
   /* AND THEN THE THING THE SENTENCE ABOVE CANNOT DO, which is say whether any of it worked.
      See report.js: six grades, each read off something the player did. */
-  paintReport($('y-report'),REPORT?REPORT.report(world):null);
+  const rep=REPORT?REPORT.report(world):null;
+  paintReport($('y-report'),rep);
+  /* ON THE BOOKS BEFORE IT IS READ BACK. logTerm is guarded against running twice for one
+     term, so reaching this ending again (a reload, a second quit) cannot double a row. */
+  logTerm(world,doc,rep);
+  paintCareer($('y-career'));
   /* THE BRACKET COMES DOWN. The player has just scrolled through it on the year in review
      and the ending is about the term, not about January: leaving it up made the last screen
      of the mode three and a half thousand pixels of a game already watched. */
@@ -8241,12 +8485,26 @@ function gate(){
       :'')
     +'<button class="btn'+(resumable?' ghost':'')+'" id="g-start">'
       +(resumable?'Start a new term':'Take the job')+'</button>'
+    /* THE INHERITANCES, and only for the paid tier, on the same silent gate the ruling
+       note and the career shelf use. Each one is its own way of taking the job, so each
+       is a button that starts THAT term rather than a setting to remember. */
+    +(isPro()?'<div class="inherit"><div class="eyebrow" style="margin:16px 0 8px">'
+      +'Or take over a mess</div>'
+      +SCENARIOS.map((s)=>'<button type="button" class="inh" data-sc="'+esc(s.id)+'">'
+        +'<b>'+esc(s.name)+'</b><span>'+esc(s.line)+'</span></button>').join('')
+      +'</div>':'')
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:11px;text-align:center">'
       +'Your term is kept in this browser while the mode is in testing.<br>'
       +(forceFree
         ?'You are looking at the free version. <a href="?">Switch back</a>.'
         :'<a href="?tier=free">See what a free player sees</a>.')+'</p>';
   const r=$('g-resume'); if(r) r.onclick=()=>office();
+  act.querySelectorAll('[data-sc]').forEach((btn)=>{
+    btn.onclick=()=>{
+      const scen=SCENARIOS.find((s)=>s.id===btn.dataset.sc);
+      if(scen){ newTerm(2025,scen); office(); }
+    };
+  });
   /* THE JOB OFFER IS ACCEPTED AND THEN SOMETHING HAPPENS. The intro screen states the
      rubric, which belongs in writing; this is the forty seconds after you say yes, which the
      mode had no form for at all. office() would find the same scene on its own, and going

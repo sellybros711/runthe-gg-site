@@ -1001,7 +1001,7 @@
           edit: { set: { 'labour.revShare': 0.2, 'labour.employment': 'contracted' },
             effects: { labour: 3, cost: 3, exposure: -3, money: -1 },
             aimed: { Players: { labour: 2 }, Presidents: { cost: -1 } } } },
-        { id: 'employ', label: 'Make them employees',
+        { id: 'employ', scene: 'r-employee', label: 'Make them employees',
           body: 'Say the quiet part. It is cleaner, it is more expensive, and it cannot be '
             + 'walked back.',
           edit: { set: { 'labour.employment': 'employee', 'labour.revShare': 0.25 },
@@ -3123,7 +3123,7 @@
             + 'that, and hear it read back to you in a deposition in about two years.',
           edit: { effects: { autonomy: 1.8, exposure: -2.4, labour: 1 },
             aimed: { Players: { labour: 1.2 }, Presidents: { exposure: -2.6 } } } },
-        { id: 'employee', label: 'Say the word',
+        { id: 'employee', scene: 'r-employee', label: 'Say the word',
           body: 'Agents, salaries, contracts, a return from a professional league. Stop '
             + 'looking for a word that is not employee and write the one that is.',
           edit: { set: { 'labour.employment': 'employee', 'labour.revShare': 0.25 },
@@ -4367,7 +4367,7 @@
         { id: 'Presidents', say: 'These are the people who become donors. That is the actual cost.' },
       ],
       options: [
-        { id: 'daylight', label: 'Take the windows back',
+        { id: 'daylight', scene: 'r-daylight', label: 'Take the windows back',
           body: 'Break the schedule agreement, pay whatever breaking it costs, and put the '
             + 'games back where people can attend them.',
           edit: { set: { 'money.pool': 1.3 },

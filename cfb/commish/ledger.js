@@ -338,6 +338,12 @@
     next.history.push({
       year: next.year, beat: next.beat,
       id: e.id || null, label: e.label || null,
+      /* THE NOTE, KEPT. The desk has said for a while that a note you attach "is kept on
+         the record with it", and it was not: the note rode the edit to this line and was
+         dropped here, so the one thing the paid tier wrote in its own words evaporated on
+         the next repaint. Clamped, because the record is a save file and a save file is not
+         a diary. */
+      note: e.written ? String(e.written).slice(0, 280) : null,
       effects: Object.assign({}, e.effects || {}),
     });
     return next;

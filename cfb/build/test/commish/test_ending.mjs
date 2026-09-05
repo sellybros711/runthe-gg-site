@@ -221,7 +221,80 @@ console.log('\n=== the term is recorded, once, with what the card shows ===');
     /\d+ of \d+ among [A-Z]/.test(split.text) && !/among The /.test(split.text), split.text);
   ok('no page errors', !up.errs.length, up.errs.join(' | ') || 'none');
 }
+
+console.log('\n=== the career: a finished term goes on the books and comes back ===');
+{
+  /* THE PREMIUM SPINE. "Take the job again" had no memory attached: the next term opened on
+     a sport that had never heard of you. Now a finished term is written to storage the
+     moment the ending runs, and the shelf reads the whole record back. */
+  const kept = await up.p.evaluate(() => window.PS_CFB_COMMISH_TEST.career());
+  ok('the term just played is on the books', kept.terms.length === 1,
+    kept.terms.length + ' terms');
+  const t0 = kept.terms[0] || {};
+  ok('  with the year it began', t0.from === 2025, String(t0.from));
+  ok('  how it ended', typeof t0.reason === 'string' && t0.reason.length > 0, t0.reason);
+  ok('  what it believed', typeof t0.doctrine === 'string' && /^The /.test(t0.doctrine), t0.doctrine);
+  ok('  and what it graded', typeof t0.grade === 'string' && t0.grade.length >= 1, t0.grade);
+  const shelf = await up.p.evaluate(() => {
+    const e = document.getElementById('y-career');
+    return { hidden: e.hidden, text: e.textContent,
+      now: !!e.querySelector('.cterm.now'), rows: e.querySelectorAll('.cterm').length };
+  });
+  ok('the shelf is drawn on the ending', !shelf.hidden);
+  ok('  with this term marked on it', shelf.now && shelf.rows === 1, shelf.rows + ' rows');
+  ok('  and it says the record persists', /on the books/i.test(shelf.text),
+    shelf.text.slice(0, 90));
+
+  /* ENDING TWICE IS ONE TERM. The ending is reachable again for the same term (a reload, a
+     second quit), and a career with the same term on it twice is a record that lies. */
+  await up.p.evaluate(() => { try { window.PS_CFB_COMMISH_TEST.ending(); } catch (e) {} });
+  await up.p.waitForTimeout(400);
+  const twice = await up.p.evaluate(() => window.PS_CFB_COMMISH_TEST.career());
+  ok('running the ending again does not double the row', twice.terms.length === 1,
+    twice.terms.length + ' terms');
+
+  /* THE COMPARISON LINE, against a career written by hand, because playing four more full
+     terms here would cost minutes to prove one sentence. The shelf reads storage, so
+     storage is the honest place to fake. */
+  const judged = await up.p.evaluate(() => {
+    const mine = JSON.parse(localStorage.getItem('cfb_commish_career'));
+    const worse = Object.assign({}, mine.terms[0], { score: 5, grade: 'D' });
+    const best = Object.assign({}, mine.terms[0],
+      { score: 95, grade: 'A', doctrine: 'The Reformer', from: 2030, to: 2034 });
+    localStorage.setItem('cfb_commish_career', JSON.stringify(
+      { v: 1, rulings: mine.rulings, terms: [best, worse] }));
+    const el = document.getElementById('y-career');
+    window.PS_CFB_COMMISH_TEST.paintCareer(el);
+    const after = el.textContent;
+    localStorage.setItem('cfb_commish_career', JSON.stringify(mine));
+    return after;
+  });
+  ok('a worse term is told what the best one was',
+    /best is still 2030-34: A, as The Reformer/.test(judged), judged.slice(0, 140));
+}
 await up.p.close();
+
+console.log('\n=== and the free tier writes the record without being shown it ===');
+{
+  /* Every tier logs terms, so nothing a free player does is lost to them on the day they
+     pay. What free does not get is the shelf: absent, not locked, the same silent gate the
+     ruling note uses. */
+  const p = await b.newPage({ viewport: { width: 390, height: 900 } });
+  await p.addInitScript(arm + stub);
+  await p.addInitScript(`try{ localStorage.setItem('cfb_commish_career', JSON.stringify(
+    { v:1, rulings:12, terms:[{ from:2025, to:2029, removed:false, reason:'served',
+      doctrine:'The Reformer', grade:'B', score:70, rulings:40, champions:5 }] })); }catch(e){}`);
+  await p.goto(URL + '?tier=free', { waitUntil: 'domcontentloaded', timeout: 40000 });
+  await p.waitForTimeout(2400);
+  const free = await p.evaluate(() => {
+    const el = document.getElementById('y-career');
+    window.PS_CFB_COMMISH_TEST.paintCareer(el);
+    return { hidden: el.hidden, kept: window.PS_CFB_COMMISH_TEST.career().terms.length };
+  });
+  ok('the record is there', free.kept === 1, free.kept + ' terms');
+  ok('  and the shelf is not', free.hidden === true);
+  await p.close();
+}
 
 console.log('\n=== a thin sample says so instead of inventing a percentage ===');
 {

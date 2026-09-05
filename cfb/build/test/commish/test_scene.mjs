@@ -140,6 +140,12 @@ console.log('\n=== every scene can actually fire ===');
     'two-am': (w) => { w.beat = 5; w.rules.overtime = 'sudden'; },
     'left-out': (w) => { w.beat = 6; },
     'sold-it': (w) => { w.brand.playoff = 'bank'; w.brand.patch = 'phone'; w.brand.trophy = 'airline'; },
+    /* The strike and the verdict fire off a ripened thread, the same gate their payoff items
+       read, so the setup is the mechanic: plant the thread due now. */
+    'strike-morning': (w) => { w.threads = L.plant(w, 'the-stoppage', { wait: 0 }).threads; },
+    'verdict-day': (w) => { w.threads = L.plant(w, 'fought-it', { wait: 0 }).threads; },
+    /* February, and not the first one: year one already opens on take-office. */
+    'signing-day': (w) => { w.beat = 1; w.year = 2026; },
   };
   /* `left-out` needs an unbeaten team from outside the four, which is a fact about a season
      rather than about the ledger, so the situation is handed one rather than the world being

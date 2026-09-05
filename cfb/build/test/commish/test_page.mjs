@@ -545,6 +545,95 @@ console.log('\n=== nine settings you cannot set, and can put on the agenda ===')
   await p.close();
 }
 
+console.log('\n=== the agenda is tiered: free picks one case a year ===');
+{
+  /* Premium set the agenda all winter in the section above. Free gets ONE
+     put-it-on-your-desk a year, and the charge lands when the case is taken, because there
+     is no way off the desk without ruling: a charge is always a ruling. */
+  const p=await b.newPage({viewport:{width:390,height:900}});
+  const errs=[]; p.on('pageerror',(e)=>errs.push(e.message));
+  await p.addInitScript(tester());
+  await p.goto(URL+'?tier=free',{waitUntil:'domcontentloaded',timeout:40000});
+  await p.waitForTimeout(2600);
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+  const sheet=async()=>{
+    await p.evaluate(()=>{
+      const el=document.querySelector('#off-year .yr[data-p="playoff.teams"]');
+      if(el) el.click();
+    });
+    await p.waitForTimeout(400);
+  };
+  await sheet();
+  ok('a free winter still offers the pick',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))>0);
+  ok('  and says what the allowance is', /One a year\./.test(await txt(p,'#fact-body')));
+  await p.click('#fact-body [data-take]');
+  await p.waitForTimeout(900);
+  ok('taking it opens the case', await on(p,'s-desk'));
+  const used=await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.world().agenda);
+  ok('  and the year\'s pick is charged', used&&used.used===1, JSON.stringify(used));
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.repaint());
+  await p.waitForTimeout(400);
+  await sheet();
+  ok('the same winter offers no second pick',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))===0);
+  ok('  and says why', /pick of the year is spent/i.test(await txt(p,'#fact-body')),
+    (await txt(p,'#fact-body')).slice(0,200));
+  /* A NEW YEAR IS A NEW PICK. The count is keyed to the year on the world, not to the term. */
+  await p.evaluate(()=>{ const T=window.PS_CFB_COMMISH_TEST;
+    T.world().year=2026; T.world().beat=0; T.repaint(); });
+  await p.waitForTimeout(400);
+  await sheet();
+  ok('next winter the pick is back',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))>0);
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the inheritances: premium can start in the middle of a mess ===');
+{
+  /* A scenario is a term that starts in the middle: the paths are written BEFORE the
+     opening snapshot, so every "was" line and the ending's grade measure from the sport as
+     you found it rather than blaming you for the inheritance. That ordering is the whole
+     feature and it is what this section pins. */
+  const {p,errs}=await open(tester());
+  const names=await p.$$eval('.inh b',(e)=>e.map((x)=>x.textContent));
+  ok('the gate offers the inherited jobs', names.length===3, names.join(' | '));
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.takeJob('paid'));
+  await p.waitForTimeout(900);
+  await pastScene(p);
+  const w=await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.world());
+  ok('the pay era is already in force on day one',
+    w.labour.employment==='employee'&&w.labour.revShare===0.25,
+    w.labour.employment+', '+w.labour.revShare);
+  ok('  and the save knows which job was taken', w.scenario==='paid', String(w.scenario));
+  ok('  and the opening snapshot IS the inheritance',
+    Array.isArray(w.start&&w.start.facts)&&w.start.facts.indexOf('25%')>=0,
+    (w.start&&w.start.facts||[]).join(' | '));
+  ok('  with no rulings on a record you have not touched', w.history.length===0,
+    w.history.length+' rulings');
+  await p.reload({waitUntil:'domcontentloaded'});
+  await p.waitForTimeout(2600);
+  const back=await p.evaluate(()=>JSON.parse(localStorage.getItem('cfb_commish_term')).world);
+  ok('the inheritance survives the browser closing', back.scenario==='paid'
+    &&back.labour.employment==='employee', String(back.scenario));
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+
+  /* And the free gate simply does not have them, on the same silent gate as the note. */
+  const f=await b.newPage({viewport:{width:390,height:900}});
+  await f.addInitScript(tester());
+  await f.goto(URL+'?tier=free',{waitUntil:'domcontentloaded',timeout:40000});
+  await f.waitForTimeout(2600);
+  ok('the free gate has no inherited jobs on it',
+    (await f.$$eval('.inh',(e)=>e.length))===0);
+  await f.close();
+}
+
 console.log('\n=== the office is a commissioner\'s desk in November ===');
 {
   /* WHAT A COMMISSIONER WOULD ACTUALLY HAVE IN FRONT OF THEM. The office used to carry the
