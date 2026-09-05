@@ -4051,7 +4051,7 @@
       var mineIn=tt[S.online.slot]!=null;
       app.innerHTML = topbar() + hud()
         + '<div class="card center"><h3 style="font-size:15px;letter-spacing:.1em;color:var(--teal)">✅ Checkpoint · Stage '+S.round+'</h3>'
-        + '<div class="bigtime" style="margin-top:8px">'+(mineIn?fmtTime(tt[S.online.slot]/1000):'—')+'<span class="u">s</span></div>'
+        + '<div class="bigtime" style="margin-top:8px">'+(mineIn?fmtTime(tt[S.online.slot]/1000):'0.0')+'<span class="u">s</span></div>'
         + '<div class="muted" style="font-size:12px;margin-top:4px">'+(mineIn?'your time is in':'')+'</div>'
         + '<p class="lede" style="text-align:center;margin-top:14px">⏳ Waiting for <b>'+esc(S.online.partnerName||'your partner')+'</b> to finish their challenge…</p>'
         + '</div>' + foot();
@@ -4063,6 +4063,9 @@
     var final=(S.round>=ROUNDS);
     var groundedTeam=ranked[ranked.length-1];
     var youRank=ranked.findIndex(function(t){ return t.id==='you'; })+1;
+    // same verdict cutscene the solo race gets. duoStampRound() recomputes rather
+    // than accumulates, so coming back through here after the beats is safe.
+    if(S._cutLb!==S.round && !S.spectating){ S._cutLb=S.round; return cut(verdictBeats(ranked, groundedTeam, final), duoViewLeaderboard, destScene(S.dest)); }
     var rowsHtml='';
     ranked.forEach(function(t,i){
       var out=(!final && t===groundedTeam), win=(final && i===0), you=(t.id==='you');
