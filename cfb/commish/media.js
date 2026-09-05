@@ -320,7 +320,7 @@
       desk: () => 'and has covered the same locker room since before any of them were born',
       ask: (c) => 'There is a man on a roster this August who spent last August in a '
         + 'professional camp. He is ' + (c.years >= 2 ? 'twenty-five' : 'twenty-four') + '. He is '
-        + 'going to line up opposite an eighteen year old who graduated in May. Is that the sport '
+        + 'going to line up opposite an eighteen-year-old who graduated in May. Is that the sport '
         + 'you wanted?',
       answers: [
         { id: 'yes', label: 'Say yes, plainly',
@@ -331,14 +331,14 @@
           aimed: { Players: { labour: 2.4 }, Fans: { tradition: -1.6 },
             SEC: { labour: -0.6 } } },
         { id: 'age', label: 'Say the age is the problem',
-          body: 'Not the door, the calendar. Concede that a twenty-five year old against a '
+          body: 'Not the door, the calendar. Concede that a twenty-five-year-old against a '
             + 'freshman is a different sport, and say you will look at the limit.',
           wrote: 'The commissioner said the age gap, not the door, is what needs looking at.',
           effects: { tradition: 1.2, labour: -0.4, cost: 0.4 },
           aimed: { Fans: { tradition: 1.6 }, Players: { labour: -0.8 } } },
         { id: 'roster', label: 'Turn it into a roster question',
           body: 'There are eighty-five places and every one taken by a returning professional '
-            + 'is one not offered to a seventeen year old. It is the answer that moves the '
+            + 'is one not offered to a seventeen-year-old. It is the answer that moves the '
             + 'argument to a room the coaches are in.',
           wrote: 'The commissioner reframed the return rule as a question about roster limits.',
           effects: { access: 1.2, labour: -1, tradition: 0.6 },
@@ -541,7 +541,7 @@
       when: (w) => w.posture.gambling === 'partnered',
       desk: () => 'and has the integrity filings from two other sports on the table',
       ask: () => 'This sport has an official betting partner and its logo is on a field that '
-        + 'nineteen year olds play on for no salary. Every league that has done this has had an '
+        + 'nineteen-year-olds play on for no salary. Every league that has done this has had an '
         + 'integrity case within four years. Which one of those two facts is the one you thought '
         + 'about?',
       answers: [
@@ -553,7 +553,7 @@
           aimed: { Networks: { money: 0.8 }, Presidents: { exposure: -1.4 },
             Fans: { tradition: -1 } } },
         { id: 'players', label: 'Talk about the players',
-          body: 'Say the part nobody in this job says: the abuse a nineteen year old gets from '
+          body: 'Say the part nobody in this job says: the abuse a nineteen-year-old gets from '
             + 'people who lost money on him is now this office\'s problem.',
           wrote: 'The commissioner said player harassment from bettors is the office\'s responsibility.',
           effects: { labour: 1.8, exposure: 1, money: -0.6 },

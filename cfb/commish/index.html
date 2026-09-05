@@ -2550,13 +2550,13 @@
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=4"></script>
 <script src="ledger.js?v=9"></script>
-<script src="blocs.js?v=9"></script>
+<script src="blocs.js?v=10"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
 <script src="venues.js?v=7"></script>
-<script src="docket.js?v=26"></script>
+<script src="docket.js?v=27"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2571,12 +2571,12 @@
 <!-- The board. Captures churn.js and season.js at load time, so after both of them. -->
 <script src="recruiting.js?v=1"></script>
 <script src="council.js?v=3"></script>
-<script src="feed.js?v=4"></script>
+<script src="feed.js?v=5"></script>
 <script src="calendar.js?v=5"></script>
 <script src="situation.js?v=8"></script>
 <script src="fallout.js?v=6"></script>
 <!-- The podium. Reads nothing at load time; see media.js. -->
-<script src="media.js?v=3"></script>
+<script src="media.js?v=4"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
 <script src="scene.js?v=8"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
@@ -6948,7 +6948,12 @@ function paintAsk(){
      the archetype's line is what a question with nothing particular to say falls back on.
      The leading "and" goes with the clause it was joined to. */
   const line=desk?desk.replace(/^and /,''):A.tone;
-  $('p-who').innerHTML='<b>'+esc(A.name)+'</b><span>&middot; '+esc(line)+'</span>';
+  /* NO SEPARATOR GLYPH. The name and the line share a row on a wide screen and wrap onto
+     two at 390px, and a middot written into the span led the wrapped line: "A beat writer"
+     over "&middot; has covered one locker room...", which reads as a stray dot. The gap
+     between flex items already separates them on one row, and a wrapped line separates
+     itself. */
+  $('p-who').innerHTML='<b>'+esc(A.name)+'</b><span>'+esc(line)+'</span>';
   $('p-ask').textContent=MED.askText(q,c,s2,world);
   $('p-hint').textContent='No forecast. You are on your feet.';
   paintAnswers();

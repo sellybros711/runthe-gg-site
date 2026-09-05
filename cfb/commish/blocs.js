@@ -1011,7 +1011,7 @@
         labour: {
           good: ['Pay them. They are why we are there.',
             'Good. Anybody who watched a kid play through a torn labrum knew this was coming.'],
-          bad: ['These are twenty year olds and the adults in the room are the problem.',
+          bad: ['These are twenty-year-olds and the adults in the room are the problem.',
             'Nobody is buying a jersey to support a conference office.'],
         },
         inventory: {

@@ -456,7 +456,7 @@
       title: 'Everybody wants the injury report',
       brief: 'Legal books are taking money on these games and they are pricing them off '
         + 'information that reaches the public through a message board on a Thursday. There '
-        + 'is a version of this that ends with a twenty year old being followed to class.',
+        + 'is a version of this that ends with a twenty-year-old being followed to class.',
       voices: [
         { id: 'Presidents', say: 'These are student medical records. Somebody needs to say that.' },
         { id: 'Networks', say: 'The wagering audience is the reason weeknight ratings hold up.' },
@@ -1398,7 +1398,7 @@
             aimed: { Networks: { inventory: 1.6 }, Fans: { tradition: -2.4 } } } },
         { id: 'sponsor', label: 'Sell the naming rights to it',
           body: 'Somebody will pay a great deal of money to have their logo on the thing '
-            + 'eighteen year olds cry on. That sentence is the entire argument, both ways.',
+            + 'eighteen-year-olds cry on. That sentence is the entire argument, both ways.',
           edit: { effects: { money: 3, tradition: -3.4, exposure: 1.2 },
             aimed: { Fans: { tradition: -3.6 }, Networks: { money: 1.4 },
               Presidents: { exposure: -1.4 } } } },
@@ -1522,7 +1522,7 @@
       voices: [
         { id: 'Networks', say: 'Forty minutes of live television for the cost of a satellite truck.' },
         { id: 'Players', say: 'It is his day. He gets to have it however he wants it.' },
-        { id: 'Presidents', say: 'A seventeen year old just held a press conference and we sent a camera.' },
+        { id: 'Presidents', say: 'A seventeen-year-old just held a press conference and we sent a camera.' },
       ],
       asks: [
         { id: 'fourth', q: 'Where did the fourth hat come from?',
@@ -1531,7 +1531,7 @@
             + 'television at the same time as everybody else.' },
         { id: 'network', q: 'Who paid for the broadcast?',
           a: 'The network paid the high school four thousand dollars for the facility and the '
-            + 'exclusive. Nobody paid the seventeen year old anything, which is the only part of '
+            + 'exclusive. Nobody paid the seventeen-year-old anything, which is the only part of '
             + 'this nobody is arguing about.' },
         { id: 'mother', q: 'What did his mother mean by it?',
           a: 'She has not said and she has been asked about two hundred times in four days. A '
@@ -1553,7 +1553,7 @@
             aimed: { Networks: { inventory: -2.6 }, Presidents: { exposure: 2 },
               Players: { labour: -1.2 } } } },
         { id: 'agent', label: 'Let them have representation',
-          body: 'If a seventeen year old is going to be on television negotiating a seven '
+          body: 'If a seventeen-year-old is going to be on television negotiating a seven '
             + 'figure deal, he should be allowed somebody in the room whose job is him.',
           edit: { set: { 'labour.nil': 'school-paid' },
             effects: { labour: 3, exposure: -2.4, cost: 1.4, autonomy: -1 },
@@ -1641,7 +1641,7 @@
             aimed: { Players: { labour: 3 }, Presidents: { exposure: -2 } } } },
         { id: 'cash', label: 'Cash and services only',
           body: 'Money, endorsements, appearances. Not equity, not property, not a business '
-            + 'a nineteen year old now has to run in the spring.',
+            + 'a nineteen-year-old now has to run in the spring.',
           edit: { effects: { labour: -1.6, exposure: 1.6, cost: -0.6, tradition: 0.8 },
             aimed: { Players: { labour: -2 }, Presidents: { exposure: 1.8 } } } },
         { id: 'school', label: 'Take it in house',
@@ -2257,7 +2257,7 @@
             aimed: { SEC: { autonomy: 1.8 }, Networks: { inventory: -2 } } } },
         /* BEHIND THE STAFF QUESTION. Somebody laminated the word. It is not the players. */
         { id: 'staff', hidden: true, label: 'It is the staff, so punish the staff',
-          body: 'A quality control assistant with a laminated card is not a nineteen year old '
+          body: 'A quality control assistant with a laminated card is not a nineteen-year-old '
             + 'with a hamstring. Suspend the people who coached it, name them, and write nothing '
             + 'at all that puts a doctor in the middle of it.',
           edit: { effects: { labour: 2.2, tradition: 1.6, exposure: 0.8, cost: -0.6 },
@@ -2377,7 +2377,7 @@
         + 'have called. Neither of them sounded that upset.',
       voices: [
         { id: 'Fans', say: 'This has happened four times. It has come back four times. It is part of it.' },
-        { id: 'Presidents', say: 'It is a hundred year old object and a felony.' },
+        { id: 'Presidents', say: 'It is a hundred-year-old object and a felony.' },
         { id: 'Networks', say: 'We would like to do a documentary about it either way.' },
       ],
       asks: [
@@ -2711,7 +2711,7 @@
       options: [
         { id: 'dead', label: 'Make it a dead ball foul',
           body: 'Penalize the kickoff, not the touchdown. The score stands, the celebration '
-            + 'costs field position, and no nineteen year old ever loses a playoff game for '
+            + 'costs field position, and no nineteen-year-old ever loses a playoff game for '
             + 'being pleased again.',
           edit: { effects: { labour: 2, tradition: -1.2, inventory: 1.4, access: 1 },
             aimed: { Players: { labour: 2.4 }, Fans: { tradition: 1.6 } } } },
@@ -3069,7 +3069,7 @@
           edit: { effects: { labour: 0.8, tradition: 1.6, access: 1.2, cost: -0.6 },
             aimed: { Players: { labour: 1.2 }, Fans: { tradition: 1.4 } } } },
         { id: 'shut', label: 'This is why the door has to shut',
-          body: 'Every returner is a nineteen year old being told to find another school in '
+          body: 'Every returner is a nineteen-year-old being told to find another school in '
             + 'August. Close it, and the roster a school builds in February is the roster it '
             + 'has in September.',
           edit: { set: { 'labour.reentry': 'closed' },
@@ -3142,12 +3142,12 @@
         return { school: t ? t.school : null, age: 22 + 2 + (sit.proYears || 1) };
       },
       eyebrow: 'The rules',
-      title: (c) => (c ? 'There is a ' + c.age + ' year old at media days'
-        : 'There is a twenty-five year old at media days'),
+      title: (c) => (c ? 'There is a ' + c.age + '-year-old at media days'
+        : 'There is a twenty-five-year-old at media days'),
       brief: (c) => 'He is ' + ((c && c.age) || 25) + '. He has a professional season, a wife, '
         + 'a mortgage and a very good year of college football ahead of him, and he was asked '
         + 'about all four of those things in the same eleven minutes. He answered them well. '
-        + 'The photograph of him beside a genuine eighteen year old freshman has been on every '
+        + 'The photograph of him beside a genuine eighteen-year-old freshman has been on every '
         + 'screen in the country since Tuesday and nobody can decide whether it is heartwarming '
         + 'or an indictment.',
       voices: [
@@ -3859,7 +3859,7 @@
             aimed: { Players: { labour: 2.8 }, Presidents: { cost: -1.4 } } } : {}) },
         { id: 'no', label: 'Not on the jersey',
           body: 'There is a line and this office has decided it is on the shoulder of an '
-            + 'unpaid nineteen year old. Say so, and know it moves the year after you leave.',
+            + 'unpaid nineteen-year-old. Say so, and know it moves the year after you leave.',
           edit: { effects: { tradition: 3, money: -3.2, labour: 0.8 },
             aimed: { Fans: { tradition: 3.4 }, Presidents: { money: -2.8 } } } },
       ],
@@ -4061,7 +4061,7 @@
         + 'exactly what the contract said they would do and is somehow worse.',
       voices: [
         { id: 'Networks', say: 'Whatever this is, it is the only story next week.' },
-        { id: 'Players', say: 'Twenty year olds are about to have their phones taken.' },
+        { id: 'Players', say: 'Twenty-year-olds are about to have their phones taken.' },
         { id: 'Presidents', say: 'We took the money. That will be the first sentence.' },
       ],
       options: [
@@ -4142,7 +4142,7 @@
             aimed: { Players: { labour: 3 }, Fans: { tradition: -2 },
               Presidents: { cost: -1.4 } } } },
         /* BEHIND THE MONEY QUESTION. Neither of them ever held a dollar of it, which is the
-           difference between a scandal and two twenty year olds in a group chat. */
+           difference between a scandal and two twenty-year-olds in a group chat. */
         { id: 'clear', hidden: true, label: 'Clear them, and publish why',
           body: 'The money went to a cousin\'s debt and out to a book in a third man\'s name. '
             + 'They knew and they did nothing, which is worth a conversation and not a career. '
@@ -4888,7 +4888,7 @@
       voices: [
         { id: 'ACC', say: 'You offered. We did not ask. We are asking now.' },
         { id: 'SEC', say: 'Propping up a league nobody watches is a transfer from the leagues they do.' },
-        { id: 'Fans', say: 'Those are hundred year old programs. Somebody should do something.' },
+        { id: 'Fans', say: 'Those are hundred-year-old programs. Somebody should do something.' },
       ],
       options: [
         { id: 'fund', label: 'Fund them out of the pool',

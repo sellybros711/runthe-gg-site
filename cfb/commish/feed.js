@@ -290,7 +290,7 @@
         { who: 'porch', say: 'every year they take one thing that was free and put a price on it' },
         { who: 'porch', say: 'ninety dollars to park and they are still finding new ways to make it worse' },
         { who: 'porch', say: 'I have had these seats for thirty-one years and I am one more of these away from a Friday night high school game' },
-        { who: 'column', say: 'Nobody in that room has to sit in the traffic, buy the parking or explain the kickoff time to a nine year old.' },
+        { who: 'column', say: 'Nobody in that room has to sit in the traffic, buy the parking or explain the kickoff time to a nine-year-old.' },
       ],
     },
   };
