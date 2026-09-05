@@ -539,6 +539,13 @@ section('every stipulation plays out live, and looks like its finish');
     {stip:'singles', force:'limb',     want:['pin','sub','count'],beats:['limb'], hurtLimb:true},
     {stip:'singles', force:'double',   want:['nc'],               beats:['double','wide','ten'], badBlood:true},
     {stip:'tag',     force:'tagturn',  want:['pin'],              beats:['extra'], team:true, disloyal:true},
+    // item 12: the third body. Four separate things have to work, so there are
+    // four cases: he swaps in, he kills a count, he steals your finish, and he
+    // beats somebody else while you are on the floor watching.
+    {stip:'triple',  force:'swap',      want:['pin','sub'],        beats:['extra','swap'],       triple:true},
+    {stip:'triple',  force:'breakup',   want:['pin','sub'],        beats:['breakup'],            triple:true, mustWin:true},
+    {stip:'triple',  force:'steal',     want:['pin'],              beats:['steal'],              triple:true, mustWin:true},
+    {stip:'triple',  force:'stealchance',want:['pin'],             beats:['stealchance'],        triple:true},
   ];
   for(const cs of CASES){
     const {page, errs} = await fresh(URL+'/wrestling/');
@@ -574,6 +581,8 @@ section('every stipulation plays out live, and looks like its finish');
         const o={oppId:opp.id, oppName:opp.name, oppOvr:ovr(G.w)+(cs.mustWin?-25:2), stip:cs.stip, stipLabel:label, mult:1.2, purse:600,
                  stakes:cs.defense?'defense':'standard', card:'Main Event', tag:cs.stip==='tag'};
         if(cs.defense){ G.car.title=beltName(); G.car.reigns=(G.car.reigns||[]).concat([{title:G.car.title, year:G.car.year, week:1}]); o.belt=G.car.title; G.car.standing=30; }
+        if(cs.triple){ const t3=roster[3]||rival;                 // a third body, not the opponent
+          o.third={id:t3.id, name:t3.name, nick:t3.nick, ovr:(ovr(G.w)+2)}; }
         if(cs.stip==='rumble'){
           const ent=roster.slice(0,7).map(x=>({id:x.id,name:x.name,ovr:x.over||55})).concat([{id:'you',name:G.w.name,ovr:ovr(G.w),you:true}]);
           o.stakes='rumble'; o.rumble={entrants:ent};

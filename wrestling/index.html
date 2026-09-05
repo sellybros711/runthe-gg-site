@@ -6397,6 +6397,8 @@ function offerOdds(o){
   const me=ovr(w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-me)/16));
   if(o.stakes==='title') p*=0.82;
+  // a third body means two people can beat you and only one of them has to
+  if(o.stip==='triple' && o.third) p*=0.74;
   if(c.booking&&c.booking.o===o&&c.booking.studied) p+=0.06;   // you did the homework
   return clamp(p,0.05,0.95);
 }
@@ -6691,7 +6693,8 @@ function renderWeek(){
         <div class="bs-stip">${o.stipLabel}</div>
         <div class="bs-tag tap ${o.card==='Main Event'?'me':o.card==='Opener'?'op':''}" onclick="explainCard('${o.card}')">${stakesTag}</div>
       </div>
-      <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}</div>
+      <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}${
+        o.stip==='triple'&&o.third?` <span class="hint">and</span> <b onclick="openDossier('${o.third.id}')">${o.third.name}</b>`:''}</div>
       ${bookDetailsOpen?'':`<div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>`}
       ${o.nonTitleVsChamp?`<div class="bs-nontitle">${pico('star',12)} A clean pin over the champion earns the shot.</div>`:''}
       ${(!segmentsPlayedThisWeek() && pickSegment())?`<div class="bs-scene-tease">${pico('microphone',12)} A backstage scene plays on the walk to gorilla.</div>`:''}
@@ -6960,12 +6963,26 @@ function makeOffers(){
     const _tm=myTeam();
     if(_tm && !((STIP_RULES[st[1]]||{}).marquee) && rnd()<0.55) st=['Tag Team Match','tag',0.9];
     else if(!_tm && st[1]==='tag') st=stips[0];
+    /* THE TRIPLE THREAT. The office throws a third body in when it does not
+       want to pick a challenger. It is the only format where you can win
+       without beating the champion and lose without being beaten, so it is
+       earned the same way the other gimmicks are. */
+    let third=null;
+    if(earnedGimmicks && !((STIP_RULES[st[1]]||{}).marquee) && st[1]!=='tag' && rnd()<0.14){
+      const tcand=pickPool.filter(x=>x.id!==opp.id && !taken.includes(x.id));
+      if(tcand.length){
+        const t3=tcand[Math.floor(rnd()*tcand.length)];
+        third={id:t3.id, name:t3.name, nick:t3.nick, over:t3.over||55};
+        st=['Triple Threat','triple',1.35];
+      }
+    }
     // Opponent level is anchored to the TIER, then rises toward you as you outgrow
     // it: promoters book you tougher as you get better, so matches stay competitive
     // without ever throwing a rookie to a main-eventer.
     const mid=55, myOvr=ovr(G.w);
     const anchor=t.base+Math.max(0,myOvr-t.base)*0.72;
     const oppOvr=Math.round(clamp((anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5))*diffOppMult(),12,99));
+    if(third) third.ovr=Math.round(clamp((anchor+(third.over-mid)*0.32+(rnd()*7-3.5))*diffOppMult(),12,99));
     let stakes='standard';
     const belt=beltName(t), holds = G.car.title===belt;
     const secBelt=beltName(t,'secondary'), holdsSec = G.car.secondary===secBelt;
@@ -7036,6 +7053,9 @@ function makeOffers(){
       && stakes!=='secondary' && stakes!=='secondary_defense';
     offs.push({ oppId:opp.id, oppName:opp.name, oppNick:opp.nick, oppPromo:opp.promo, oppOvr, stip:st[1], stipLabel:st[0], mult:st[2], purse, stakes, card,
       tag: st[1]==='tag' && !!myTeam(),
+      // a live feud rewrites the stipulation further down, and a blow-off is one
+      // on one. If that happened, the third body is off the card with it.
+      third: st[1]==='triple' ? third : null,
       ppv: ppvName,
       belt: beltForOffer,
       oppTitles, nonTitleVsChamp:isNonTitleVsChamp,
@@ -7056,6 +7076,9 @@ function makeOffers(){
             : stakes==='rivalry'?(story()&&story().stage>=3?`This is the blow-off. Settle it with ${opp.name}.`:`Your feud with ${opp.name} escalates.`)
             : stakes==='rival'?`Your rivalry with ${opp.name} boils over.`
             : `${card}: a ${st[0].toLowerCase()} against ${opp.name}.` });
+    // the third body changes what winning means, so the sheet says so
+    if(third && st[1]==='triple'){ const _o=offs[offs.length-1];
+      _o.blurb += ` ${third.name} is in it too. Pin either one and it is yours.`; }
   }
   // PPV rumble: replace the third slot with a Battle Royal on a chance,
   // but never bump a promised title shot off the card
@@ -7093,6 +7116,8 @@ const STIP_RULES = {
              ends:['ko'],                  danger:1, mod:3, noDQ:true, noCount:true },
   grudge:  { label:'Grudge Match',       desc:'Personal issue. The referee will let a lot go before calling for the bell.',
              ends:['pin','sub'],           danger:.6, mod:2, lenient:true },
+  triple:  { label:'Triple Threat',      desc:'Three in the ring, no tags, no disqualification. Pin or submit either one and you win. Get pinned by either one and you lose.',
+             ends:['pin','sub'],           danger:.7, mod:3, noDQ:true, noCount:true, third:true },
   iquit:   { label:'I Quit Match',       desc:'No pinfalls, no submissions. The only way to win is to make them say the words into the microphone.',
              ends:['sub'],                 danger:.8, mod:4, noDQ:true, noCount:true, lenient:true },
   iron:    { label:'Iron Man Match',      desc:'Twenty-minute time limit. Every pin or submission is a fall on the scoreboard. No count-outs, no disqualifications. Most falls at the bell wins; a tie goes to sudden death.',
@@ -8034,6 +8059,188 @@ function extraHide(){
 }
 function extraLookFor(id,name){ const ch=id?charById(id):null; return (ch&&ch.look)||oppLook(id,name); }
 
+/* ============================================================
+   THE TRIPLE THREAT
+   ------------------------------------------------------------
+   Three in the ring, no tags. It is the only format in wrestling
+   where you can lose a match without being beaten and win one
+   without beating the champion, and that is the entire reason it
+   exists.
+
+   Underneath it is still two bodies trading, because that is what
+   a triple threat actually looks like: at any moment two are
+   working and the third is on the floor recovering. So MS.opp is
+   whoever is in the ring with you RIGHT NOW, MS.third is the
+   other one, and tripleSwap() trades them. Everything downstream
+   (the move pool, limbs, pins, quality) carries on unchanged.
+
+   The third body always sits at the same ringside spot, so the
+   swap can hand each figure the position the other one already
+   occupies and nothing on screen jumps.
+   ============================================================ */
+const TRIPLE_SIDE = 1;                       // ringside, on the opponent's side
+function isTriple(){ return !!(MS && MS.third); }
+function tripleReady(){ return isTriple() && !MS.thirdBusy && !MS.ended && !MS.wide; }
+// park the third body at ringside, selling, where the crowd can see them
+function tripleFloor(pose){
+  if(!isTriple() || MS.thirdBusy || MS.wide) return;
+  const f=FIG.extra; if(!f) return;
+  if(!f.el.classList.contains('on') || f.name!==MS.third.name)
+    extraShow(MS.third.look, TRIPLE_SIDE, pose||'prone', MS.third.name);
+  else poseSet('extra', pose||'prone');
+  fmv('extra',{x:floorX(TRIPLE_SIDE), up:-14, rot:0, sc:0.74}, 260);
+}
+/* The trade. The one at ringside comes back in, puts the one in the ring out,
+   and the match carries on with a different opponent in front of you. */
+async function tripleSwap(){
+  if(!tripleReady()) return;
+  MS.thirdBusy=true; busy(true); trace('swap');
+  const inName=MS.third.name;
+  poseSet('extra','run');
+  fmv('extra',{x:atX('opp')+Math.round(ST.close*0.9), up:0, rot:0, sc:1},340);
+  speedLines('extra'); await sleep(360);
+  fmv('extra',{pose:'clothes'},70); await sleep(80);
+  impact(atX('opp'),36,2); shake(); hitFlash('opp',220); sfx('impact');
+  burst(atX('opp'), inName.toUpperCase()+' IS BACK IN');
+  fLog(`<span class="hi">${inName} comes back in and takes ${MS.opp.name}'s head off. In a triple threat nobody stays out long.</span>`);
+  // and the one who was working goes over the ropes
+  fmv('opp',{pose:'reel', x:atX('opp')+30, up:14, rot:20},150); await sleep(160);
+  fmv('opp',{pose:'prone', x:floorX(TRIPLE_SIDE), up:-14, rot:0, sc:0.74},280);
+  dustAt('opp');
+  fmv('extra',{pose:'taunt', x:FIG.opp.home, up:0, rot:0, sc:1},280);
+  await sleep(320);
+  // the identity swap, done where both bodies already stand so nothing jumps
+  const wasOpp=MS.opp; MS.opp=MS.third; MS.third=wasOpp;
+  figLook('opp', MS.opp.look);
+  fmv('opp',{pose:'taunt', x:FIG.opp.home, up:0, rot:0, sc:1},0);
+  extraShow(MS.third.look, TRIPLE_SIDE, 'prone', MS.third.name);
+  fmv('extra',{x:floorX(TRIPLE_SIDE), up:-14, rot:0, sc:0.74},0);
+  tripleHud();
+  await sleep(260);
+  fmv('opp',{pose:'ready'},220);
+  MS.thirdBusy=false;
+  await settle(280);
+}
+/* The header names whoever is actually in front of you, and the stipulation
+   line says who is waiting on the floor. It cannot go in the sub-line under the
+   bar: renderLimbs() rewrites that every beat with the limb damage. */
+function tripleHud(){
+  if(!isTriple()) return;
+  $('fOppName').textContent=MS.opp.name;
+  $('fStip').innerHTML=(MS.stipHud||'TRIPLE THREAT')
+    +` <span class="lm">· ${MS.third.name.toUpperCase()} AT RINGSIDE</span>`;
+  setBar('hpOpp', MS.opp.hp);
+  renderLimbs();
+}
+/* The break-up. The count is at two and the third body is in off the floor to
+   kill it. This is the reflex the format is built on: a fall that would have
+   ended any other match is worth nothing here. */
+async function tripleBreakUp(px, A){
+  MS.thirdBusy=true; trace('breakup');
+  const who=MS.third.name;
+  poseSet('extra','run');
+  fmv('extra',{x:px+Math.round(ST.close*0.9), up:0, rot:0, sc:1},300);
+  speedLines('extra'); await sleep(320);
+  fmv('extra',{pose:'strike'},70); await sleep(80);
+  impact(px,34,2); shake(); hitFlash(A,220); sfx('crowdBig');
+  burst(px,'BROKEN UP!');
+  fmv(A,{pose:'reel', x:px+30, up:10, rot:16},140); await sleep(150);
+  if(FIG.ref) poseSet('ref','refNo');
+  await callout('NO! HE BREAKS IT UP!');
+  fLog(`<span class="hi">${who} comes in off the floor and kills the count. In a triple threat there is always somebody left to do that.</span>`);
+  MS.nearFalls++; MS.quality+=9; MS.big++;
+  // back out to ringside, because a triple threat is a queue
+  fmv('extra',{pose:'runBack', x:floorX(TRIPLE_SIDE), sc:0.74},380); await sleep(390);
+  fmv('extra',{pose:'prone', up:-14},200); await sleep(210);
+  MS.thirdBusy=false;
+}
+/* The stolen pin. You hit it, you covered, and the third body throws you off
+   and takes the fall for himself. You did the work and lost the match. There
+   is nothing else in wrestling that does this. */
+async function tripleSteal(px){
+  MS.thirdBusy=true; trace('steal');
+  const who=MS.third.name;
+  poseSet('extra','run');
+  fmv('extra',{x:px+Math.round(ST.close*0.9), up:0, rot:0, sc:1},280);
+  speedLines('extra'); await sleep(300);
+  fmv('extra',{pose:'strike'},70); await sleep(80);
+  impact(px,34,2); shake(); hitFlash('me',220); sfx('boo');
+  burst(px,'THROWN OFF THE COVER');
+  fmv('me',{pose:'prone', x:px+52, up:0, rot:0},180); await sleep(190);
+  fmv('extra',{pose:'pin', x:px+22, up:0, rot:0},220);
+  fLog(`<span class="bad">${who} throws you off the cover and hooks the leg himself.</span>`);
+  await sleep(260);
+  for(let n=1;n<=3;n++){ await refSlap(); showCount(n, n>=2); await sleep(n===1?460:620); }
+  sfx('crowdBig'); await flashScreen();
+  await callout('HE STOLE IT!');
+  fLog(`<span class="bad">Three. ${who} pins ${MS.opp.name} off your finish. You did every bit of the work and you are not the winner.</span>`);
+  const R=rel(MS.third.id); R.heat=clamp((R.heat||0)+20,0,100);
+  MS.quality+=8;
+  commitFinish({type:'pin', by:false, who, stolen:true});
+  MS.thirdBusy=false;
+  await sleep(420);
+  await endFight(false);
+}
+/* And the other way round. You are the one on the floor, the other two are
+   trading, and one of them covers. Get in there and it is yours. Miss it and
+   you lose a match you were never even in. One tap, the whole night. */
+async function tripleStealChance(){
+  if(!tripleReady()) return false;
+  MS.thirdBusy=true; MS.floorSteal=true; trace('stealchance');
+  busy(true);
+  const who=MS.third.name;
+  // you go over the ropes
+  fmv('me',{pose:'reel', x:atX('me')-30, up:14, rot:-20},160); await sleep(170);
+  fmv('me',{pose:'prone', x:floorX(-TRIPLE_SIDE), up:-14, rot:0, sc:0.74},280);
+  dustAt('me'); await sleep(300);
+  fLog(`<span class="bad">You are dumped to the floor, and the other two are left in there together.</span>`);
+  // the other two go at it, and one of them covers
+  poseSet('extra','run');
+  fmv('extra',{x:atX('opp')+Math.round(ST.close*0.9), up:0, rot:0, sc:1},320);
+  speedLines('extra'); await sleep(340);
+  fmv('extra',{pose:'clothes'},70); await sleep(80);
+  impact(atX('opp'),36,2); shake(); hitFlash('opp',200); sfx('impact');
+  const px=Math.round(atX('opp')*0.30);
+  fmv('opp',{pose:'prone', x:px, up:0, rot:0},220); await sleep(240);
+  fmv('extra',{pose:'pin', x:px+22, up:0, rot:0},220);
+  if(FIG.ref){ FIG.ref.el.classList.add('up'); refTo(px-Math.round(ST.W*0.14),'refUp',320,0.9); }
+  fLog(`<span class="hi">${who} covers ${MS.opp.name}, and you are watching it from the floor.</span>`);
+  await refSlap(); showCount(1,false); await sleep(420);
+  await refSlap(); showCount(2,true);
+  const got = await tapWindow(900, 'STEAL IT');
+  if(MS.ended){ MS.thirdBusy=false; return true; }
+  if(got){
+    fmv('me',{pose:'run', x:px+70, up:0, rot:0, sc:1},220); speedLines('me'); await sleep(240);
+    impact(px,34,2); shake(); hitFlash('extra',200); sfx('pop');
+    burst(px,'IN AT TWO!');
+    fmv('extra',{pose:'prone', x:px+64, up:0, rot:0},180); await sleep(190);
+    fmv('me',{pose:'pin', x:px-22, up:0, rot:0},220); await sleep(240);
+    fLog(`<span class="hi">You get in at two, throw ${who} off and cover ${MS.opp.name} yourself.</span>`);
+    for(let n=1;n<=3;n++){ await refSlap(); showCount(n, n>=2); await sleep(n===1?440:600); }
+    sfx('crowdBig'); await flashScreen();
+    await callout('YOU STOLE IT!');
+    fLog(`<span class="good">Three. You did not beat anybody tonight and the win is still yours. That is a triple threat.</span>`);
+    MS.nearFalls++; MS.quality+=12; MS.big++; MS.decWon++; MS.decisions++;
+    const R=rel(MS.third.id); R.heat=clamp((R.heat||0)+12,0,100);
+    commitFinish({type:'pin', by:true, who:'You', stolen:true});
+    MS.thirdBusy=false;
+    await sleep(420);
+    await endFight(true);
+  } else {
+    MS.decisions++;
+    await refSlap(); showCount(3,true);
+    sfx('crowdBig'); await flashScreen();
+    await callout('AND YOU NEVER GOT THERE');
+    fLog(`<span class="bad">Three, and you were still climbing the apron. Nobody beat you. You lost anyway.</span>`);
+    MS.quality+=6;
+    commitFinish({type:'pin', by:false, who, stolen:true});
+    MS.thirdBusy=false;
+    await sleep(420);
+    await endFight(false);
+  }
+  return true;
+}
+
 /* ---- the run-in: somebody comes down the aisle and lays a body out ---- */
 async function chRunIn(look, name, targetKey, opts){
   opts=opts||{};
@@ -8481,7 +8688,9 @@ function oppMove(){
   // Every opponent draws from their style kit first, base kit as fallback.
   // That is why a Foul-Mouthed Scrapper throws forearms and chair shots and
   // a Submission Specialist works the arm all night.
-  const oppChar = charById(MS.o.oppId);
+  // in a triple threat this is whoever is in the ring right now, not the name
+  // on the booking sheet: a swap changes the moves you are seeing
+  const oppChar = charById((MS.opp && MS.opp.id) || MS.o.oppId);
   const style = (oppChar && oppChar.style) || 'brawler';
   const styleKit = OPP_MOVES_BY_STYLE[style] || OPP_MOVES_BY_STYLE.brawler;
   // 3:1 style-to-base in general; 4:1 in the stretch, so signatures show
@@ -8644,6 +8853,14 @@ async function startFight(o){
        // in a face-vs-heel match the babyface shines and the heel cuts him off
        shineMe: (meFace&&!oppFace) ? true : (!meFace&&oppFace) ? false : rnd()<0.5 };
   MS.pinned = window.RTR_FORCE || null;    // the one beat this match is meant to prove
+  MS.opp.id = o.oppId;
+  MS.opp.look = oc0 ? oc0.look : oppLook(o.oppId, o.oppName);
+  // THE THIRD BODY. MS.opp is whoever is in the ring with you right now and
+  // MS.third is the other one. See THE TRIPLE THREAT above.
+  MS.third = (o.stip==='triple' && o.third) ? {
+      hp:100, id:o.third.id, name:o.third.name, ovr:o.third.ovr||o.oppOvr,
+      limb:newLimbs(), target:null, look:extraLookFor(o.third.id, o.third.name) } : null;
+  if(MS.third) chooseTarget(MS.third);
   chooseTarget(MS.me); chooseTarget(MS.opp);
   // tape study walks to the ring with you: an early edge and a better story
   if(G.car.booking&&G.car.booking.o===o&&G.car.booking.studied){ MS.mom=8; MS.quality+=4; MS.studied=true; }
@@ -8662,6 +8879,8 @@ async function startFight(o){
   const _tmTag = _tm ? ` · ${_tm.name.toUpperCase()}` : '';
   $('fStip').innerHTML=(o.stakes==='title'?beltIco+' TITLE MATCH · ':o.stakes==='defense'?beltIco+' TITLE DEFENCE · ':'')+o.stipLabel.toUpperCase()+_tmTag;
   $('fRules').textContent=stipRules(o).desc + (MS.ref?` · ${MS.ref.name} (${MS.ref.trait})`:'');
+  MS.stipHud=$('fStip').innerHTML;             // the line tripleHud() builds on
+  if(MS.third) tripleHud();
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
   const startGen=MS.gen;
@@ -8681,6 +8900,16 @@ async function startFight(o){
   await playVideoPackage(o);
   if(stale()) return;
   // opponent enters first, then you. Each entrance shows a theme cue banner.
+  // in a triple threat the third man walks first, the way the office books it
+  if(MS.third){
+    const _t3=charById(MS.third.id);
+    extraShow(MS.third.look, TRIPLE_SIDE, 'run', MS.third.name);
+    fmv('extra',{x:Math.round(ST.W*0.62)},0); await sleep(40);
+    fmv('extra',{x:Math.round(ST.W*0.34), up:0, rot:0, sc:1},700);
+    await playEntrance('extra', THEME_LINE[themeFor(_t3||{id:MS.third.id,name:MS.third.name})], MS.third.name, _t3&&_t3.nick||'');
+    if(stale()) return;
+    fmv('extra',{pose:'taunt'},220);
+  }
   const _opc=charById(o.oppId);
   fmv('opp',{pose:'run',fwd:-ST.W*0.62},0);
   await sleep(40);
@@ -8721,8 +8950,23 @@ async function startFight(o){
   if(stale()) return;
   await settle(260);
   if(stale()) return;
-  fLog(`The bell rings. <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
+  fLog(MS.third
+    ? `The bell rings. <b>${G.w.name}</b> vs <b>${o.oppName}</b> vs <b>${MS.third.name}</b>. No tags. No disqualification.`
+    : `The bell rings. <b>${G.w.name}</b> vs <b>${o.oppName}</b>.`);
   if(MS.studied) fLog(`<span class="hi">You studied the tape all week. You know what is coming.</span>`);
+  // the opening scramble: two of the three gang up and the third goes out first
+  if(MS.third){
+    busy(true);
+    fmv('me',{pose:'strike', x:atX('extra')-Math.round(ST.close*0.9)},200);
+    fmv('opp',{pose:'strike', x:atX('extra')+Math.round(ST.close*0.6)},200);
+    await sleep(220);
+    impact(atX('extra'),36,2); shake(); hitFlash('extra',200); sfx('impact');
+    fLog(`<span class="hint">You and ${o.oppName} put ${MS.third.name} out first. That agreement lasts about four seconds.</span>`);
+    fmv('extra',{pose:'reel', up:14, rot:20},150); await sleep(160);
+    tripleFloor(); await sleep(280);
+    await settle(280);
+    if(stale()) return;
+  }
   runFight();
 }
 
@@ -8783,9 +9027,11 @@ async function runFight(){
       const mv=oppMove();
       // they have a finisher too, and they save it for the stretch
       isFin = ph.id==='stretch' && !MS.oppFinUsed && rnd()<0.38;
-      const name = isFin ? (charById(o.oppId)||{}).finisher || 'their finisher' : mv.name;
+      const name = isFin ? (charById(MS.opp.id||o.oppId)||{}).finisher || 'their finisher' : mv.name;
       if(isFin) MS.oppFinUsed=true;
-      const dmg=clamp((o.oppOvr*0.30 + rnd()*7 - G.w.attrs.to*0.05)*(isFin?1.9:1)*(styleOf().in||1)*facBonus('tough'), 3, 46);
+      // whoever is in the ring right now, which in a triple threat changes
+      const inRingOvr = MS.opp.ovr || o.oppOvr;
+      const dmg=clamp((inRingOvr*0.30 + rnd()*7 - G.w.attrs.to*0.05)*(isFin?1.9:1)*(styleOf().in||1)*facBonus('tough'), 3, 46);
       await exchange(false, name, dmg, -(6+rnd()*5), isFin?'FINISHER!':null, isFin?'slam':mv.cat);
       hurtLimb(MS.me, isFin?'head':limbFor(mv.cat, MS.opp), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       if(isFin) MS.oppFinHit=(MS.oppFinHit||0)+1;
@@ -8794,6 +9040,22 @@ async function runFight(){
     }
     renderLimbs();
     if(MS.beat%3===0 && !MS.refDown) refDrift();
+    /* THE THIRD BODY, between beats. He is parked at ringside selling, he
+       comes back in every few beats and trades places with whoever you are
+       working, and once a match he leaves you on the floor watching somebody
+       else cover for the win you wanted. */
+    if(isTriple() && !MS.ended){
+      tripleFloor();
+      if(tripleReady() && MS.beat>=3 && MS.beat-(MS.lastSwap||0)>=3
+         && (pinnedIs('swap') || (!randomBeatsOff() && rnd()<0.30))){
+        MS.lastSwap=MS.beat;
+        await tripleSwap();
+      }
+      if(tripleReady() && !MS.floorSteal && MS.phase>=3
+         && (pinnedIs('stealchance') || (!randomBeatsOff() && rnd()<0.10))){
+        if(await tripleStealChance()) return;
+      }
+    }
     /* THE LIMB GIVES OUT. All that work on a knee has been a number on a bar.
        Past 80 it stops being a number: you go for something and the leg simply
        will not hold you. The crowd groans, and the limb work becomes a thing
@@ -9697,6 +9959,34 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     refDrift(); await settle(300); return false;
   }
 
+  /* THE THIRD BODY AT TWO. In a triple threat a fall that would have ended any
+     other match is worth nothing, because there is somebody at ringside whose
+     whole job is to make sure it does not count. He breaks it up, or, if it was
+     YOUR finish, he throws you off and takes the cover himself. */
+  if(three && isTriple() && !MS.thirdBusy && !MS.ended){
+    const stole = iAmPinning && !MS.thirdStole && MS.phase>=4
+      && (pinnedIs('steal') || (!randomBeatsOff() && rnd()<0.30));
+    // he saves the first fall and then has one more in him. Any more than that
+    // and no triple threat could ever end.
+    const breaks = (MS.thirdBreaks||0)<2
+      && (pinnedIs('breakup') || !MS.thirdBreaks || rnd()<0.45);
+    if(stole){
+      MS.thirdStole=true;
+      await tripleSteal(px);
+      return true;
+    }
+    if(breaks){
+      MS.thirdBreaks=(MS.thirdBreaks||0)+1;
+      await tripleBreakUp(px, A);
+      if(stale()) return false;
+      arena.classList.remove('tense');
+      await sleep(300);
+      FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
+      MS.mom=clamp(MS.mom+(iAmPinning?-10:10),-100,100); setMom();
+      refDrift(); await settle(300);
+      return false;
+    }
+  }
   /* THE ROPE BREAK. The hand comes down for three and the foot was on the bottom
      rope the whole time. The referee spots it AFTER the count, waves it off, and
      the building goes from a decision to an argument. A different reflex from a
@@ -9795,6 +10085,10 @@ async function endFight(iWon){
   busy(true);
   $('arena').classList.remove('tense');
   const f=MS.finish||{type:'pin',by:iWon};
+  // A stolen fall means the body that should be celebrating is the one who was
+  // standing at ringside a minute ago. Put his gear in the winner's spot, or
+  // the wrong wrestler gets his hand raised.
+  if(MS.third && f.stolen && !iWon) figLook('opp', MS.third.look);
   // The ending pose has to match the ending. A count-out leaves the loser on
   // the floor with the camera still wide. A DQ leaves the offender STANDING,
   // arguing with the official. A no-contest is two people who did not finish.
@@ -10013,13 +10307,16 @@ function groupMoves(used){
 }
 function finishLine(res){
   const f=res.finish||{};
-  const who=f.by?'You':(MS&&MS.opp?MS.opp.name:'They');
+  // in a triple threat the winner is not always one of the two in the pin, so
+  // the finish carries the name and it takes priority over the guess
+  const who=f.who || (f.by?'You':(MS&&MS.opp?MS.opp.name:'They'));
   if(f.type==='sub')   return `${who} won by submission at ${res.time}${f.move?` with the ${bare(f.move)}`:''}`;
   if(f.type==='ko')    return `${who} won by ten-count knockout at ${res.time}`;
   if(f.type==='climb') return `${who} won by escape at ${res.time}`;
   if(f.type==='count') return `${who} won by count-out at ${res.time}`;
   if(f.type==='dq')    return `${who} won by disqualification at ${res.time}${f.reason?` (${f.reason})`:''}`;
   if(f.type==='nc')    return `No contest at ${res.time}${f.reason?` (${f.reason})`:''}`;
+  if(f.stolen)         return `${who} won by pinfall at ${res.time}, stealing the cover`;
   return `${who} won by pinfall at ${res.time}${f.move?`, after the ${bare(f.move)}`:''}`;
 }
 
@@ -10262,7 +10559,8 @@ function doAsk(id){
     if(id==='time'){ b.o.mult=Math.round((b.o.mult+0.25)*100)/100; b.moreTime=true; }
     if(id==='opp'){ const alt=makeOffers().find(x=>x.oppId!==b.o.oppId); if(alt){ alt.card=b.o.card; b.o=alt; } }
     if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1],['Last Man Standing','lms',1.35]][Math.floor(rnd()*5)];
-      b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2]; }
+      b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2];
+      b.o.third=null; }                      // none of these five hold three people
     if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
     if(id==='shot'){
       const me=myPromo();

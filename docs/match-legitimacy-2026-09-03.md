@@ -322,3 +322,64 @@ double count-out brawl, limb gives out, triple threat).
 Item 12, the triple threat, is the one left. It is the only one on this list that
 is not a beat inside an existing match: it needs a second opponent in the booking,
 in the result screen and in the record, so it is a feature rather than a spot.
+
+---
+
+## Update, 2026-09-05: item 12, the triple threat
+
+The list is finished. The last one was a format rather than a spot, and it is the
+only match in wrestling where you can lose without being beaten and win without
+beating the champion. That sentence is the whole feature.
+
+### How it works underneath
+
+A triple threat on television is two people working and a third on the floor
+recovering. So the sim is still two bodies trading, and the state says so:
+
+- `MS.opp` is whoever is in the ring with you **right now**.
+- `MS.third` is the other one, parked at ringside selling.
+- `tripleSwap()` trades them.
+
+Everything downstream carries on unchanged: the move pool, limb damage, the pin
+count, quality. What changed is that the move pool, the finisher and the damage
+now read `MS.opp.id` and `MS.opp.ovr` rather than the booking sheet, so a swap
+genuinely changes who you are wrestling instead of redressing the same person.
+
+The third body always sits at one ringside spot, which is what makes the swap
+cheap: the animation hands each figure the position the other one already
+occupies, so the identity change happens on a frame where nothing moves.
+
+### The four beats
+
+1. **The swap.** He comes back in, takes the head off whoever you are working,
+   and that man goes over the ropes. Every few beats. It is the thing that makes
+   the match read as a triple threat rather than a singles match with a
+   spectator.
+2. **The break-up.** The count is at two and he is in off the floor to kill it. A
+   fall that would have ended any other match is worth nothing here. He saves the
+   first one and has one more in him, because any more than that and no triple
+   threat could ever end.
+3. **The stolen pin, on you.** You hit your finisher, you covered, and he throws
+   you off and takes the fall himself. You did every bit of the work and you are
+   not the winner. Nothing else in wrestling does this.
+4. **The steal, for you.** You are dumped to the floor and the other two are left
+   in there. One of them covers. One tap gets you in at two to throw him off and
+   cover yourself. Miss it and you lose a match nobody beat you in. It is the
+   single highest-stakes tap in the game and it is the format stated out loud.
+
+### What it touches outside the match
+
+- `STIP_RULES.triple`: no disqualification, no count-outs, pin or submit either
+  one.
+- The office books it at 14% of eligible nights once gimmicks are earned, and
+  never as a marquee or over a tag booking. The sheet names the third man and
+  says what winning means.
+- `finishLine` reads `finish.who`, because in this format the winner is not
+  always one of the two people in the pin. A stolen fall also re-dresses the
+  winner's figure before the pose-down, or the wrong wrestler gets his hand
+  raised.
+- Stealing a match, or having one stolen, puts real heat on the third man. That
+  is a feud starting inside a match rather than in a hallway.
+
+Four forced cases in the suite, one per beat, because three of the four are
+match-enders and waiting for them behind a roll is not testing them.
