@@ -100,6 +100,40 @@ console.log('\n=== the null cases are real answers ===');
     missing.join(', ') || Object.keys(D.NOSIT).length + ' fields');
 }
 
+console.log('\n=== last year\'s champion, read off the field the page actually writes ===');
+{
+  /* THE FIELD NAME IS THE CONTRACT AND IT WAS BROKEN FOR THE LIFE OF THE MODE. This module
+     read `world.champs`; index.html has always written `world.champions`, so `sit.previous`
+     was null in every real term ever played. Six things read it and all six were quietly
+     off: the confetti cutscene the morning after a title, a media day question about the
+     reigning champion, two docket briefs that name them, and the champion line on the desk
+     strip. Nothing failed, because the only code that ever wrote `champs` was the four test
+     files that set it up by hand. The guards encoded the typo and then proved it worked.
+
+     So this asserts the SHAPE THE PAGE WRITES, quoted from playSeason(), rather than a
+     shape a test invented. If somebody renames the field on either side, this goes red. */
+  const w = world({ beat: 0 });
+  w.year = w.startYear + 1;
+  w.champions = { [w.startYear]: { school: 'Ohio State', color: '#bb0000', conference: 'Big Ten' } };
+  const s = SIT.build(w, L, { calendar: CAL });
+  ok('the situation names last year\'s champion', s.previous && s.previous.champion === 'Ohio State',
+    s.previous ? String(s.previous.champion) : 'sit.previous is null');
+  ok('  and the year they won it', s.previous && s.previous.year === w.startYear,
+    s.previous ? String(s.previous.year) : 'null');
+  /* And the field the page does NOT write must not be the one that works, or the bug is
+     simply reintroduced the other way round. */
+  const wrong = world({ beat: 0 });
+  wrong.year = wrong.startYear + 1;
+  wrong.champs = { [wrong.startYear]: { school: 'Ohio State' } };
+  ok('  and the old misspelling is not a second way in',
+    !SIT.build(wrong, L, { calendar: CAL }).previous);
+  /* Year one has no last year, which is the null case that has to keep working. */
+  const first = world({ beat: 0 });
+  first.champions = {};
+  ok('  while the first winter has no champion to name',
+    !SIT.build(first, L, { calendar: CAL }).previous);
+}
+
 console.log('\n=== a gated item is an item somebody can be dealt ===');
 {
   /* THE FAILURE THIS CATCHES IS SILENT. An item whose `when` throws is dropped by `eligible`
@@ -266,7 +300,7 @@ console.log('\n=== both ends of the range reach the whole thing ===');
   function playTerm(seed, mode) {
     let w = L.createWorld({ year: 2025, membership: L.membershipFrom(teams, 2025), seed: 'q' + seed });
     const rng = E.createSeededRNG(E.hashSeed('q|' + mode + '|' + seed));
-    w.ratings = {}; w.champs = {}; w.tails = [];
+    w.ratings = {}; w.champions = {}; w.tails = [];
     const items = new Set(), tails = new Set();
     for (let y = 0; y < 5; y++) {
       for (let b = 0; b < 9; b++) {
@@ -304,7 +338,7 @@ console.log('\n=== both ends of the range reach the whole thing ===');
               { through: S.WEEKS, titles: true, bracket: true });
             w.ratings[w.year] = { total: Math.round(full.viewers), perGame: full.perGame, title: 20 };
             const ch = full.bracket && full.bracket.champion;
-            if (ch) w.champs[w.year] = { school: ch.team.school, color: ch.team.color };
+            if (ch) w.champions[w.year] = { school: ch.team.school, color: ch.team.color };
           } catch (e) { /* no season to record */ }
         }
         w = L.advance(w);

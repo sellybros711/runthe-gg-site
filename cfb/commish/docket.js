@@ -363,7 +363,7 @@
       options: [
         { id: 'onto-books', label: 'Put it on the athletic department books',
           body: 'One employer, one number, one place to audit. It ends the pretense and it '
-            + 'starts an argument with every labour lawyer in the country.',
+            + 'starts an argument with every labor lawyer in the country.',
           edit: { set: { 'labour.nil': 'school-paid' },
             effects: { labour: 2, exposure: 1.8, cost: 2.2, autonomy: -1.4 },
             aimed: { Players: { labour: 2.4 }, Presidents: { cost: -2, exposure: -2.4 } } } },
@@ -646,7 +646,7 @@
       title: (c) => (c ? c.a + ' and ' + c.b + ' want their kickoff back'
         : 'A network wants to move a rivalry'),
       brief: (c) => (c
-        ? 'A rights holder wants ' + c.a + ' and ' + c.b + ' at nine o clock eastern, in '
+        ? 'A rights holder wants ' + c.a + ' and ' + c.b + ' at nine o\'clock eastern, in '
           + 'November, because it is the only thing on. Both athletic directors have written '
           + 'to this office. So have about eleven thousand season ticket holders.'
         : 'A rights holder wants the biggest game left on the board moved into a late window '
@@ -1195,7 +1195,7 @@
           body: 'Nobody is happy and nobody is furious.',
           edit: { effects: {} } },
         { id: 'open', label: 'Open it up',
-          body: 'Move when you like, sign where you like. It is a labour market and it '
+          body: 'Move when you like, sign where you like. It is a labor market and it '
             + 'will behave like one.',
           edit: { set: { 'labour.portalWindows': 4 },
             effects: { labour: 3, tradition: -2, exposure: -2, cost: 1 },
@@ -1538,7 +1538,7 @@
             + 'reporter went to her workplace on Tuesday.' },
         { id: 'how-many', q: 'How many of these are there?',
           a: 'Four hundred and ten televised commitments last cycle, up from ninety in five '
-            + 'years, and eleven of them were reversed inside a two weeks.' },
+            + 'years, and eleven of them were reversed inside two weeks.' },
       ],
       options: [
         { id: 'embrace', label: 'Make it an event',
@@ -1952,7 +1952,7 @@
       brief: (c) => ((c && c.school) || 'A member school') + '\'s charter went technical on a '
         + 'runway in the dark, sat there for five hours, and put a hundred and twenty people '
         + 'on two commercial flights and a bus. They walked into the stadium at ten past one '
-        + 'for a two o clock kickoff, in the clothes they had slept in, and lost by thirty-one. '
+        + 'for a two o\'clock kickoff, in the clothes they had slept in, and lost by thirty-one. '
         + 'Nobody stopped the game because there is no rule that says you can.',
       voices: [
         { id: 'Players', say: 'We ate at a gas station and played a conference game.' },
@@ -2519,7 +2519,7 @@
         ? c.a + ' beat ' + c.b + ' by twenty-eight in October and they meet again on Saturday '
           + 'for the conference title. Both are already in the field whatever happens. The '
           + 'winner gains a trophy and the loser loses nothing, and the injury risk is real '
-          + 'for both of them a two weeks before the playoff.'
+          + 'for both of them two weeks before the playoff.'
         : 'A championship game between two teams already in the field, three weeks after one '
           + 'beat the other by twenty-eight.'),
       voices: [
@@ -2659,7 +2659,7 @@
             effects: { tradition: 2.8, inventory: 2.6, labour: -2.6 },
             aimed: { Fans: { tradition: 3.2 }, Networks: { inventory: 2.8 },
               Players: { labour: -3 } } } },
-        { id: 'cap', label: 'Cap it at four and go to a kick off',
+        { id: 'cap', label: 'Cap it at four and go to a kickoff',
           body: 'Past four overtimes it is decided by something short. Safer, sillier, and it '
             + 'will decide a national title one day in a way nobody accepts.',
           edit: { set: { 'rules.overtime': 'kick' },
@@ -2697,7 +2697,7 @@
             + 'and gets called about nine. The crew that called this one leads the country in '
             + 'calling it.' },
         { id: 'kid', q: 'How is he?',
-          a: 'He has not been to class since Sunday, his family have taken his phone off him, '
+          a: 'He has not been to class since Sunday, his family has taken his phone off him, '
             + 'and his coach has asked this office not to say his name in anything it publishes.' },
         { id: 'block', q: 'Did the penalty cause the block?',
           a: 'The kick was from thirty-three rather than eighteen and it was blocked by a man '
@@ -3045,7 +3045,7 @@
       },
       eyebrow: 'The roster',
       title: 'Somebody has to lose the spot',
-      brief: (c) => 'When he left for the draft they gave his scholarship to a nineteen year '
+      brief: (c) => 'When he left for the draft they gave his scholarship to a nineteen-year-'
         + 'old who has been in the building for eight months, learned the offense, and told '
         + 'his family. Now he is coming back and the roster is capped. '
         + ((c && c.school) || 'The school') + ' has asked this office, in writing and slightly '
@@ -4068,7 +4068,7 @@
         { id: 'public', label: 'Announce it yourselves',
           body: 'Say it out loud, name the game, and run the investigation in front of '
             + 'everybody. Nobody gets to break it, and the sport owns the worst version of '
-            + 'the story for a two weeks.',
+            + 'the story for two weeks.',
           edit: { set: { 'pressure.legal': 22 },
             effects: { exposure: 2.6, tradition: 1.6, cost: 1.4, autonomy: -1.2 },
             aimed: { Fans: { tradition: 2 }, Presidents: { exposure: 2.2 },

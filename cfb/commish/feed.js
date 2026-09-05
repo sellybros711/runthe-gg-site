@@ -119,12 +119,12 @@
       down: [
         { who: 'wire', say: 'The office takes this one off the conferences. Two of them found out when we did.' },
         { who: 'south', say: 'nobody elected this person. we were winning national titles when that job was a filing cabinet' },
-        { who: 'column', say: 'Centralisation arrives in college football roughly once a decade and leaves within two.' },
+        { who: 'column', say: 'Centralization arrives in college football roughly once a decade and leaves within two.' },
       ],
     },
     cost: {
       up: [
-        { who: 'wire', say: 'The bill for this lands on the athletic departments, which is a sentence that has ended three olympic sports this year already.' },
+        { who: 'wire', say: 'The bill for this lands on the athletic departments, which is a sentence that has ended three Olympic sports this year already.' },
         { who: 'numbers', say: 'Athletic departments running a deficit last year: 96 of 134. That number is about to get worse.' },
         { who: 'tobacco', say: 'we are one bad TV cycle from losing our swim program and they keep writing rules like this' },
       ],
@@ -141,7 +141,7 @@
       ],
       down: [
         { who: 'porch', say: 'they moved it to a Friday. a FRIDAY. my grandfather has had that Saturday circled since 1974' },
-        { who: 'column', say: 'Another century old rivalry has been optimised. The spreadsheet is delighted.' },
+        { who: 'column', say: 'Another century old rivalry has been optimized. The spreadsheet is delighted.' },
         { who: 'tv', say: 'You cannot buy a rivalry. You can only cancel one. Ask anybody who used to be in the Big Eight.' },
         { who: 'bagman', say: 'sad day. anyway.' },
       ],

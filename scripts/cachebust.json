@@ -1895,20 +1895,20 @@
       "sha": "5ada64b05397c124"
     },
     "blocs.js": {
-      "v": "11",
-      "sha": "ca12522421a0a057"
+      "v": "12",
+      "sha": "7b687682ee20dc2e"
     },
     "note.js": {
       "v": "1",
       "sha": "3dea49936ace93ea"
     },
     "venues.js": {
-      "v": "7",
-      "sha": "dc6b2a9200c5d50b"
+      "v": "8",
+      "sha": "e6a6a4d98cd2ff95"
     },
     "docket.js": {
-      "v": "28",
-      "sha": "ca30b8d76746faf8"
+      "v": "29",
+      "sha": "b266a8a3d52ba3b2"
     },
     "rivals.js": {
       "v": "2",
@@ -1931,24 +1931,24 @@
       "sha": "1ce94b7007d24d0a"
     },
     "feed.js": {
-      "v": "5",
-      "sha": "c21bd112d53346a5"
+      "v": "6",
+      "sha": "fef4ec5f8f8dfebd"
     },
     "calendar.js": {
       "v": "5",
       "sha": "cb4ebc747e9ec730"
     },
     "situation.js": {
-      "v": "8",
-      "sha": "733bdd0156446e4e"
+      "v": "9",
+      "sha": "bdc6866b2a1ec21e"
     },
     "fallout.js": {
-      "v": "6",
-      "sha": "9e362c536c8ad8d4"
+      "v": "7",
+      "sha": "9f8947730cfc179d"
     },
     "media.js": {
-      "v": "4",
-      "sha": "b12449b11cf2e6c7"
+      "v": "5",
+      "sha": "42360ad4fc7d23c5"
     },
     "scene.js": {
       "v": "9",

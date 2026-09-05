@@ -135,7 +135,7 @@ console.log('\n=== every scene can actually fire ===');
       w.membership.Duke = 'ACC';
     },
     'they-turned': (w) => { w.blocs.ACC = 10; w.blocs['Big 12'] = 12; },
-    champion: (w) => { w.year = 2026; w.champs = { 2025: { school: 'Texas' } }; },
+    champion: (w) => { w.year = 2026; w.champions = { 2025: { school: 'Texas' } }; },
     'first-share': (w) => { w.labour.revShare = 0.15; },
     'two-am': (w) => { w.beat = 5; w.rules.overtime = 'sudden'; },
     'left-out': (w) => { w.beat = 6; },

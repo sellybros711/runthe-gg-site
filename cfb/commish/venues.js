@@ -46,7 +46,7 @@
         + 'sport knows it.' },
     { id: 'pas', name: 'Rose Bowl', city: 'Pasadena', state: 'CA',
       dome: false, cap: 89000, draw: 1.05, fee: 0.5, heritage: 1, risk: 0.1, reach: 0,
-      note: 'The mountains, the light at five o clock, and a hundred and ten years of it.' },
+      note: 'The mountains, the light at five o\'clock, and a hundred and ten years of it.' },
     { id: 'mia', name: 'Hard Rock Stadium', city: 'Miami Gardens', state: 'FL',
       dome: false, cap: 65000, draw: 1.04, fee: 0.9, heritage: 0.6, risk: 0.12, reach: 0.05,
       note: 'South Florida, which sells itself to everybody except the people who have to sit '

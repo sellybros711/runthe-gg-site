@@ -220,7 +220,7 @@
       head: 'Two states passed conflicting laws about it',
       body: function (ctx) {
         return 'One legislature has made your ruling mandatory within its borders. Another has '
-          + 'made it illegal. Both bills were written in a two weeks, both passed nearly '
+          + 'made it illegal. Both bills were written in two weeks, both passed nearly '
           + 'unanimously, and ' + conf(ctx) + ' has member institutions in both states. The '
           + 'lawyers have asked for a meeting and used the word "unprecedented" twice in one '
           + 'email.';
