@@ -23,6 +23,7 @@
      season awards        a fixed season hands out the same hardware, archived once
      field frames         every biped carries a distinct catch and throw frame
      bullpen              fatigue counts per arm, a change is one way, the order holds
+     strikeouts per arm   a K is credited to the man who threw it, not to the starter
      box score pitchers   every arm that took the mound is named on the result screen
      cpu bullpen          the CPU goes to its best rested arm, and only when it helps
      out at home draws    the play carries a plate-out marker for the draw loop
@@ -580,6 +581,48 @@ async function main() {
       ok(r.penBefore.length === 8 && !r.penBefore.includes(0), 'eight arms on the bench, not the man pitching', JSON.stringify(r.penBefore));
       ok(JSON.stringify(r.cons) === JSON.stringify([...r.cons].sort((a, b) => b - a)), 'the pen ranks by CON', JSON.stringify(r.cons));
       ok(!r.shownFresh && r.shownTired && !r.shownBatting, 'offered only while fielding a tiring arm', JSON.stringify({ fresh: r.shownFresh, tired: r.shownTired, batting: r.shownBatting }));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- strikeouts are credited to the arm that threw them ---- */
+    {
+      console.log('strikeouts per arm');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(async () => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.innings = 9; State.difficulty = 'medium'; State.mode = 'season';
+        State.franchise = randomFranchise();
+        startSeason();
+        const S = State.season;
+        State.opponent = opponentByName(S.schedule[0]);
+        startGame({ mode: 'season', youHome: true });
+        await new Promise(r => setTimeout(r, 600));
+        const g = State.game;
+        endAtBatCleanup(); g.pitch = null;
+        g.half = 'top';                     /* you are home, so you pitch */
+        const you = g.home;
+        const starter = you.batters[0], relief = you.batters[6];
+        /* Three strikeouts from the starter. */
+        g.inning = 2;
+        for (let i = 0; i < 3; i++) { g.outs = 0; recordOut('swinging strikeout', true); }
+        /* Then a change, and four from the reliever. */
+        g.inning = 6;
+        goToPen(you, 6);
+        for (let i = 0; i < 4; i++) { g.outs = 0; recordOut('swinging strikeout', true); }
+        const kBy = Object.assign({}, g.kBy);
+        g.inning = 9; g.half = 'bottom'; g.home.score = 9; g.away.score = 1;
+        finishGame();
+        await new Promise(r => setTimeout(r, 400));
+        const per = State.season.perPlayer || {};
+        return { kBy, starter: starter.k, relief: relief.k,
+                 starterKp: (per[starter.k] || {}).kp | 0, reliefKp: (per[relief.k] || {}).kp | 0,
+                 total: g.yourK };
+      });
+      ok(r.kBy[r.starter] === 3 && r.kBy[r.relief] === 4, 'the game splits strikeouts between the two arms', JSON.stringify(r.kBy));
+      ok(r.total === 7, 'and the running count is still the game total', 'yourK=' + r.total);
+      ok(r.starterKp === 3 && r.reliefKp === 4, 'the season credits each arm its own, not all to the starter',
+         JSON.stringify({ starter: r.starterKp, relief: r.reliefKp }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

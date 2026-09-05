@@ -3305,9 +3305,10 @@ function renderRoster() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, State.mode === 'season' ? 'Build your season team' : 'Pick your lineup'));
   s.appendChild(el('p', null,
-    'Choose nine. <b>Your first pick pitches every inning</b> and bats first, so '
-    + 'start with someone whose CON you trust on the mound. Randomize builds a '
-    + 'lineup and moves on.'));
+    'Choose nine. <b>Your first pick starts on the mound</b> and bats first, so '
+    + 'start with someone whose CON you trust. When his arm tires you can go to '
+    + 'the bullpen for any of the other eight, so a second good CON is worth '
+    + 'having. Randomize builds a lineup and moves on.'));
   s.appendChild(el('p', null, STAT_LEGEND));
 
   const card = el('div','card');
@@ -6226,6 +6227,13 @@ function recordOut(reason, isStrikeout) {
        as for a first pitch ball was the quietest reward in the game. */
     if (!playerIsBatting()) {
       g.yourK = (g.yourK | 0) + 1;
+      /* Whose strikeout it is, kept per arm. The Golden Arm award used to
+         hand the game's whole count to batters[0], which was the same man
+         all game until the bullpen existed and is the wrong man the moment
+         a reliever throws one. */
+      const arm = currentPitcher();
+      g.kBy = g.kBy || {};
+      g.kBy[arm.k] = (g.kBy[arm.k] | 0) + 1;
       showCallout(`STRIKEOUT · ${g.yourK} K`, 'strike');
       Sound.play('kay');
       if (g.yourK === 5 || g.yourK === 7 || g.yourK === 9) {
@@ -6396,8 +6404,9 @@ function finishGame() {
     for (const [k, v] of Object.entries(g.stats.sb || {})) bumpPer(k, 'sb', v);
     for (const [k, v] of Object.entries(g.stats.hits || {})) bumpPer(k, 'hits', v);
     for (const [k, v] of Object.entries(g.stats.ab || {})) bumpPer(k, 'ab', v);
-    /* Your pitcher's strikeouts, for the Golden Arm. */
-    if (g.yourK) bumpPer(you.batters[0].k, 'kp', g.yourK | 0);
+    /* Your pitchers' strikeouts, for the Golden Arm, credited to whoever
+       was actually on the mound for each one. */
+    for (const [k, v] of Object.entries(g.kBy || {})) bumpPer(k, 'kp', v);
     /* The rest of the league played today too. */
     advanceLeague(State.season, State.season.results.length - 1, foe.name, win, you.score, foe.score);
     saveSeason(State.season);
@@ -8784,7 +8793,7 @@ function renderHowTo() {
   add(pitch,
       '<h3>Pitching</h3>'
     + '<p>When the other team bats you are on the mound, and <b>your first pick '
-    + 'pitches every inning</b>. Nothing is thrown until you throw it. Each windup '
+    + 'starts there</b>. Nothing is thrown until you throw it. Each windup '
     + 'you make two picks, the <b>pitch</b> and the <b>spot</b>, then press '
     + '<b>Throw It</b>. Every pitcher owns three pitches, so the buttons change with '
     + 'whoever you put on the mound.</p>');
