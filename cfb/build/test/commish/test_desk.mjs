@@ -354,6 +354,11 @@ console.log('\n=== you get to answer the room ===');
   for (let i = 0; i < 60 && !answered; i++) {
     if (await on('s-office')) { await tap('#b-desk'); await skipSim(p); await p.waitForTimeout(340); continue; }
     if (await on('s-year')) { await tap('#b-year-next'); await p.waitForTimeout(400); continue; }
+    /* A CUTSCENE AT AN OFFICE ARRIVAL LEFT NO SCREEN THIS LOOP KNEW, so it broke out with
+       zero rebuttals seen and the assertion below read as the mechanic missing. The gap was
+       always here; the signing day scene (February, every second year) made it a certainty
+       inside a twenty ruling walk. */
+    if (await on('s-scene')) { await pastScene(p); continue; }
     if (await on('s-room')) {
       const st = await p.evaluate(() => {
         const c = document.getElementById('r-rebutcard');
