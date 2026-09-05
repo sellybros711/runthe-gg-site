@@ -141,6 +141,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
     situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
     recruiting:!!window.PS_CFB_RECRUITING,
     churn:!!window.PS_CFB_CHURN, rivals:!!window.PS_CFB_RIVALS, report:!!window.PS_CFB_REPORT,
+    note:!!window.PS_CFB_NOTE,
   }));
   const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
   ok('every module is on the page',!dead.length,dead.join(', ')||Object.keys(mods).length+' modules');

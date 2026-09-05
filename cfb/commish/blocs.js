@@ -125,7 +125,13 @@
      `edit.aimed` is the part that only one bloc feels. Money moving is not money moving in
      general, it is money moving TO somebody, and a rule that guarantees the Group of Five a
      bid is not the same push for the SEC. Without it every ruling reads as weather. */
-  function react(world, edit) {
+  /* `soften` is the note being read: a map of bloc id to a positive amount, built by
+     note.js from the words a paid ruling rode in with. Applied after memory and before the
+     quote is chosen, so the mood, the number and the line all describe the softened
+     reaction rather than the one the note talked them down from. One-directional by
+     construction here as well as there: it can only shrink a negative delta toward zero,
+     never past it, so a memo cannot turn a loss into applause. */
+  function react(world, edit, soften) {
     const fx = (edit && edit.effects) || {};
     const aimed = (edit && edit.aimed) || {};
     return BLOCS.map((b) => {
@@ -135,7 +141,12 @@
       /* Memory amplifies rather than shifts: it never turns a win into a loss, it only
          changes how much the bloc cares that it happened. */
       const g = grudge(world, b.id);
-      const delta = raw * GAIN * (1 + Math.abs(g) * MEMORY * (g > 0 === raw < 0 ? 1 : 0.5));
+      let delta = raw * GAIN * (1 + Math.abs(g) * MEMORY * (g > 0 === raw < 0 ? 1 : 0.5));
+      let read = false;
+      if (soften && soften[b.id] > 0 && delta < 0) {
+        delta = Math.min(0, delta + soften[b.id]);
+        read = true;
+      }
       const was = world.blocs[b.id] == null ? 50 : world.blocs[b.id];
       const now = clamp(was + delta, 0, 100);
       return {
@@ -143,6 +154,7 @@
         delta: Math.round(delta * 10) / 10,
         was: Math.round(was), now: Math.round(now),
         mood: moodOf(now),
+        read: read,
         /* `own` is this bloc's own push, aimed effects included, which is what lets the line
            be about the thing that moved rather than only about how much. The seed is the
            world's clock plus the bloc, so a beat replays word for word and two blocs never

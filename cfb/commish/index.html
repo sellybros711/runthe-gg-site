@@ -314,6 +314,9 @@
   .bl.hostile{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.06)}
   .bl .say{grid-column:2/-1;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35;
     font-style:italic;opacity:.9}
+  /* This group read the note that rode in with the ruling and softened for it. */
+  .bl .noted{grid-column:2/-1;font-size:10px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--gold);margin-top:3px}
   .bl .dl{font-family:var(--fn);font-size:12px;font-weight:800;min-width:34px;text-align:right}
   .bl .lv{font-family:var(--fn);font-size:12px;font-weight:800;min-width:26px;text-align:right;
     color:var(--dim-2)}
@@ -2580,7 +2583,8 @@
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=4"></script>
 <script src="ledger.js?v=10"></script>
-<script src="blocs.js?v=10"></script>
+<script src="blocs.js?v=11"></script>
+<script src="note.js?v=1"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
@@ -2654,6 +2658,8 @@ const FALL=window.PS_CFB_FALLOUT;
 const MED=window.PS_CFB_MEDIA;
 const SCN=window.PS_CFB_SCENE;
 const REPORT=window.PS_CFB_REPORT;
+/* The room reading the paid tier's written note. See note.js and roomAnswer(). */
+const NOTE=window.PS_CFB_NOTE;
 /* The catalog, for turning a sponsor id and a bowl id back into the names the rest of the
    mode uses. See pathName and pathValue. */
 const VEN=window.PS_CFB_VENUES;
@@ -3572,6 +3578,10 @@ function paintRoom(el,w,rows,blind,mode){
           +'<span class="dl" style="color:'+moodCol(v)+'">'+Math.round(v)+'</span>')
       +(off?'':mv)
       +(r&&!off?'<span class="say">'+esc(r.say)+'</span>':'')
+      /* The note being read is part of this group's reaction, so it is marked on the row
+         rather than only summarized above the room. Withheld with the rest when the row is
+         off your council. */
+      +(r&&!off&&r.read?'<span class="noted">Read your note</span>':'')
       +'</div>';
   }).join('');
   grow(el); reveal(el);
@@ -6911,9 +6921,9 @@ function paintWrite(){
     +'</div><textarea class="write" id="d-text" placeholder="'+esc(writeHint())+'"></textarea>'
     +'<p style="font-size:11.5px;color:var(--dim-2);margin-top:7px">This rides along with '
     +'whichever ruling you pick, and it is kept on the record with it. '
-    +'<b style="color:var(--dim)">The room cannot read it yet.</b> Reasoning in your own words '
-    +'and having the nine of them answer it is the next piece of work, and until it is built '
-    +'this screen will not pretend otherwise.</p></div>';
+    +'<b style="color:var(--dim)">The room reads it.</b> A group whose grievance you answer '
+    +'takes the ruling better: softened, never delighted. One concern or two, in plain '
+    +'words. A note about everything is a note about nothing.</p></div>';
   const t=$('d-text');
   if(t){ t.value=written; t.oninput=()=>{ written=t.value; paintTestBtn(); }; }
   paintTestBtn();
@@ -6955,8 +6965,63 @@ function paintTestBtn(){
   if(!b||b.hidden) return;
   b.disabled=!choice;
   b.textContent=!choice ? 'Pick a ruling to test it'
-    : written.trim() ? 'Test the selected ruling on the room'
+    : written.trim() ? 'Test the ruling and your note on the room'
       : 'Test it on the room';
+}
+
+/* THE ROOM'S ONE ANSWER, for the forecast and the ruling both. The note is read here and
+   only here, so the two screens cannot disagree by a tenth of a point: react once to find
+   who is angry and about what, hand that to note.js, and if the note answered anybody,
+   react again with the soften map so the number, the mood and the quote all describe the
+   softened reaction. The deltas the ledger applies come off the SAME rows the screen
+   draws, which is the whole promise. */
+function roomAnswer(edit){
+  let rows=B.react(world,edit);
+  let read=null;
+  if(NOTE&&isPro()&&written.trim()){
+    read=NOTE.temper(written,rows,edit);
+    if(read.any) rows=B.react(world,edit,read.soften);
+  }
+  const d={};
+  rows.forEach((r)=>{ d[r.id]=r.delta; });
+  return {rows:rows,deltas:d,read:read};
+}
+
+/* WHAT THE ROOM DID WITH THE WORDS, said on the reaction screen in one line. Silent when
+   there is no note or it was too short to read; the other three states are worth a
+   sentence each. On a forecast the names are filtered through the council, because "the
+   fans would take it better" is a read on a group the blind set may be withholding. */
+function paintNoteAnswer(el,read,forecast,blind){
+  if(!el) return;
+  el.hidden=true; el.innerHTML='';
+  if(!read||read.short) return;
+  const dark=blind||{};
+  const the=(id)=>{
+    const n=(B.BY_ID[id]||{}).name||id;
+    return /^(SEC|Big Ten|ACC|Big 12|Group of Five)$/.test(n)?'the '+n:n.toLowerCase();
+  };
+  const join=(xs)=>xs.length<=1?xs.join(''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1];
+  let h='';
+  if(read.any){
+    const shown=read.read.filter((id)=>!dark[id]).map(the);
+    if(shown.length){
+      const names=join(shown);
+      const cap=names.charAt(0).toUpperCase()+names.slice(1);
+      h=forecast
+        ?'<b>They would read your note.</b> '+esc(cap)+' would take it better for being answered.'
+        :'<b>They read your note.</b> '+esc(cap)+' took it better for being answered.';
+    }else{
+      h='<b>They would read your note.</b> Somebody would take it better for being '
+        +'answered. Your council cannot say who.';
+    }
+  }else if(read.diffuse){
+    h='<b>A note about everything is a note about nothing.</b> You raised '
+      +read.forces.length+' concerns at once. Nobody felt answered.';
+  }else{
+    h='<b>The note is on the record.</b> It answers nobody who is angry about this one.';
+  }
+  el.innerHTML=h;
+  el.hidden=false;
 }
 
 /* TEST IT ON THE ROOM, which is Football President's best idea and is a POWER rather than a
@@ -6965,9 +7030,10 @@ function paintTestBtn(){
 $('b-test').onclick=()=>{
   if(!choice) return;
   const edit=D.resolve(item,choice,dials,cast);
-  lastRoom=B.react(world,edit);
+  const ans=roomAnswer(edit);
+  lastRoom=ans.rows;
   lastBefore=world;
-  const after=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
+  const after=L.applyOutcome(L.applyEdit(world,edit),edit,ans.deltas);
   /* THE FORECAST IS AS GOOD AS YOUR COUNCIL AND NO BETTER. Nine of nine was the answer key:
      press it, read the numbers, take the best ones, and there is no decision left in a mode
      that is nothing but decisions. */
@@ -6984,18 +7050,11 @@ $('b-test').onclick=()=>{
   $('r-head').textContent=seats>=C.SEATS.length
     ? 'How the room would take it'
     : 'How your council says the room would take it';
-  /* AND THE NOTE IS NOT WHAT WAS TESTED. Somebody wrote two careful paragraphs about a bowl's
-     name, pressed this, and got nine reactions to the option they had highlighted. Nothing
-     lied to them in words, which is exactly the problem: the screen said nothing at all. */
-  const rnote=$('r-note');
-  if(rnote){
-    rnote.hidden=!written.trim();
-    if(written.trim()){
-      rnote.innerHTML='<b>Your note is not what was forecast.</b> The nine of them are '
-        +'answering the ruling you selected. Your own wording is kept on the record with it, '
-        +'and having the room read and answer it is the next piece of work.';
-    }
-  }
+  /* WHAT THE ROOM WOULD DO WITH THE WORDS. The forecast used to disclaim that the note was
+     not read; now it is, by the same call the ruling makes, and this line says what came of
+     it. Filtered through the council: naming a withheld group's softened reaction would
+     hand over the read the blind set exists to withhold. */
+  paintNoteAnswer($('r-note'),ans.read,true,blind);
   /* THE STANDING METER IS LOCKED WHILE ANY VOTE HOLDER IS DARK, because standing is exactly
      the vote-weighted average of those blocs and the number would give them straight back. */
   const voteDark=B.BLOCS.some((b)=>b.vote>0&&blind[b.id]);
@@ -7280,6 +7339,12 @@ window.PS_CFB_COMMISH_TEST={
      driving the gate screen. */
   scenarios:()=>SCENARIOS,
   takeJob:(id)=>{ newTerm(2025,SCENARIOS.find((s)=>s.id===id)||null); office(); },
+  /* The written note, set the way the textarea sets it, so a guard can rule with words
+     without simulating keystrokes. */
+  setNote:(t)=>{ written=String(t||''); },
+  /* The one path both the forecast and the ruling go through, so a guard can assert on the
+     exact rows a player would be shown, note reading included. */
+  roomAnswer:(edit)=>roomAnswer(edit),
   termCard:()=>drawTermCard(),
   termText:()=>termShareText(),
   termData:()=>termCardData(),
@@ -7330,8 +7395,11 @@ $('b-rule').onclick=()=>{
     const t=String(D.text(o.label,cast,item,sit));
     return typeof o.label==='function'?t:t.toLowerCase();
   })());
-  lastRoom=B.react(world,edit);
-  world=L.applyOutcome(L.applyEdit(world,edit),edit,B.deltas(world,edit));
+  /* THE NOTE IS READ HERE TOO, through the same roomAnswer the forecast used, so what was
+     tested is what happens. The deltas the ledger takes are the rows the screen shows. */
+  const ans=roomAnswer(edit);
+  lastRoom=ans.rows;
+  world=L.applyOutcome(L.applyEdit(world,edit),edit,ans.deltas);
   /* ---- what this ruling set in motion ----
      AFTER THE EDIT, BEFORE THE SAVE, and in that order for a reason: a thread is a fact about
      the world the ruling just made, so planting it against the world the ruling was made FROM
@@ -7362,9 +7430,9 @@ $('b-rule').onclick=()=>{
       return typeof o.label==='function'?t:t.toLowerCase();
     })();
   $('r-head').textContent='The room';
-  /* NO CORRECTION ON A REAL RULING. The note is on the record with it, which is exactly what
-     the desk said would happen, so there is nothing here to put right. */
-  if($('r-note')) $('r-note').hidden=true;
+  /* WHAT THE ROOM DID WITH THE WORDS. On a real ruling nothing is withheld, so no blind
+     set: if the note answered somebody, this names them. */
+  paintNoteAnswer($('r-note'),ans.read,false);
   paintMeters($('r-meters'),world,before);
   /* NO COUNCIL HERE, ON PURPOSE. This is what happened, and the whole room answers whether
      you had people inside it or not. Gating a forecast is difficulty; gating a consequence

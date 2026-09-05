@@ -566,17 +566,21 @@ console.log('\n=== reading an option is not choosing it, and the note survives e
       (await p.$eval('#d-text', (e) => e.value)) === NOTE);
     ok('  and marks that option as the ruling', after.opts[after.opts.length - 1].on);
     ok('  and lets you rule', after.rule === false);
-    /* THE BUTTON NAMES WHICH OF THE TWO THINGS IT IS ABOUT TO FORECAST. */
+    /* THE BUTTON NAMES BOTH THINGS IT IS ABOUT TO FORECAST, because the note is read now. */
     ok('  with the test button saying what it will test',
-      /selected ruling/i.test(after.test.txt), after.test.txt);
+      /ruling and your note/i.test(after.test.txt), after.test.txt);
     await tap('#b-test');
     await p.waitForTimeout(900);
     const fc = await p.evaluate(() => ({
       title: document.getElementById('r-title').textContent,
       hidden: document.getElementById('r-note').hidden,
+      note: document.getElementById('r-note').textContent,
     }));
     ok('  and the forecast names the ruling it forecast', /^If you ruled: /.test(fc.title), fc.title);
-    ok('  and says the note is not what the room answered', fc.hidden === false);
+    /* The note is substantial, so whichever of the three states applies, the screen says
+       what the room did with the words rather than nothing. */
+    ok('  and says what the room did with the note', fc.hidden === false
+      && /note/i.test(fc.note), fc.note.slice(0, 80));
     await tap('#b-next');
     await p.waitForTimeout(500);
   } else {
