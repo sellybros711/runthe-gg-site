@@ -534,7 +534,18 @@ section('every stipulation plays out live, and looks like its finish');
     // only in the pool during the finish stretch, so the win is pinned to be
     // sure the player gets a turn there
     {stip:'singles', force:'tell',     want:['pin','sub'],        beats:['tell'], known:true, mustWin:true},
+    // items 8 to 11 of the ranked backlog
+    {stip:'singles', force:'ropebreak',want:['pin','sub','count'],beats:['ropebreak'], mustWin:true},
+    {stip:'singles', force:'limb',     want:['pin','sub','count'],beats:['limb'], hurtLimb:true},
+    {stip:'singles', force:'double',   want:['nc'],               beats:['double','wide','ten'], badBlood:true},
     {stip:'tag',     force:'tagturn',  want:['pin'],              beats:['extra'], team:true, disloyal:true},
+    // item 12: the third body. Four separate things have to work, so there are
+    // four cases: he swaps in, he kills a count, he steals your finish, and he
+    // beats somebody else while you are on the floor watching.
+    {stip:'triple',  force:'swap',      want:['pin','sub'],        beats:['extra','swap'],       triple:true},
+    {stip:'triple',  force:'breakup',   want:['pin','sub'],        beats:['breakup'],            triple:true, mustWin:true},
+    {stip:'triple',  force:'steal',     want:['pin'],              beats:['steal'],              triple:true, mustWin:true},
+    {stip:'triple',  force:'stealchance',want:['pin'],             beats:['stealchance'],        triple:true},
   ];
   for(const cs of CASES){
     const {page, errs} = await fresh(URL+'/wrestling/');
@@ -559,6 +570,8 @@ section('every stipulation plays out live, and looks like its finish');
         if(cs.team){ G.car.allies=[]; formAlliance(mate.id); formTeam(mate.id,'Test Team');
           if(cs.disloyal) allyOf(mate.id).loyalty=5; }        // a partner with nothing left to lose
         if(cs.respect){ const R=rel(opp.id); R.respect=70; R.heat=5; }
+        if(cs.badBlood){ const R=rel(opp.id); R.heat=80; }        // a double count-out needs a reason
+        if(cs.hurtLimb) window.RTR_LIMB=true;                     // a knee already past the point of holding
         if(cs.known){ G.car.finHits=9;                         // the finisher is known, so it gets a tell
           if(!G.w.moves.includes('s5a')) G.w.moves.push('s5a');
           G.w.finisher='s5a';                                  // a rookie has no tier-5 move to hit
@@ -568,6 +581,8 @@ section('every stipulation plays out live, and looks like its finish');
         const o={oppId:opp.id, oppName:opp.name, oppOvr:ovr(G.w)+(cs.mustWin?-25:2), stip:cs.stip, stipLabel:label, mult:1.2, purse:600,
                  stakes:cs.defense?'defense':'standard', card:'Main Event', tag:cs.stip==='tag'};
         if(cs.defense){ G.car.title=beltName(); G.car.reigns=(G.car.reigns||[]).concat([{title:G.car.title, year:G.car.year, week:1}]); o.belt=G.car.title; G.car.standing=30; }
+        if(cs.triple){ const t3=roster[3]||rival;                 // a third body, not the opponent
+          o.third={id:t3.id, name:t3.name, nick:t3.nick, ovr:(ovr(G.w)+2)}; }
         if(cs.stip==='rumble'){
           const ent=roster.slice(0,7).map(x=>({id:x.id,name:x.name,ovr:x.over||55})).concat([{id:'you',name:G.w.name,ovr:ovr(G.w),you:true}]);
           o.stakes='rumble'; o.rumble={entrants:ent};
@@ -591,7 +606,7 @@ section('every stipulation plays out live, and looks like its finish');
         out.extraOn=document.getElementById('fExtra').classList.contains('on');
         out.errs=errsIn;
         const rl=STIP_RULES[cs.stip]||{}; out.noCount=!!rl.noCount; out.noDQ=!!rl.noDQ;
-        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; FIGHT_SPEED=1;
+        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; window.RTR_LIMB=null; FIGHT_SPEED=1;
         return out;
       }, cs);
     }catch(e){ r={done:false, err:e.message}; }
