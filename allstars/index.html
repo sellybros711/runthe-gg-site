@@ -4006,10 +4006,11 @@ function lineLine(S) {
 }
 /* SEASON AWARDS, from the numbers the season already keeps. Each carries a
    floor, so a lineup that did nothing wins nothing: an award for one stolen
-   base is not an award. Golden Arm is your pitcher's own strikeouts, kept
-   per character. There is no fielding award, because no play records which
-   fielder made it, and an award drawn from a number the game does not have
-   would be a lie. Ties go to hits, then the roster key, so a fixed season
+   base is not an award. Golden Arm counts strikeouts thrown, credited to
+   whoever was on the mound for each one, so a starter pulled in the fourth
+   cannot win it on a reliever's night. There is no fielding award, because
+   no play records which fielder made it, and an award drawn from a number
+   the game does not have would be a lie. Ties go to hits, then the roster key, so a fixed season
    always hands out the same hardware. */
 function seasonAwards(S) {
   const per = S.perPlayer || {};
@@ -4627,7 +4628,7 @@ const DIFF = {
   hard:   { speed: 1.9, sweetWidth: 0.16, pitcherSkill: 1.12 },
 };
 
-/* Pitcher fatigue: each inning past the third, the pitcher tires. The
+/* Pitcher fatigue: from his third inning of work on, an arm tires. The
    effect grows the wobble on the ideal spot and drops the strike rate.
    Returns a scaling context resolveSwing and throwPitch consult per pitch. */
 function pitcherFatigue(team) {
