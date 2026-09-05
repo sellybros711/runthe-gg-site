@@ -534,6 +534,10 @@ section('every stipulation plays out live, and looks like its finish');
     // only in the pool during the finish stretch, so the win is pinned to be
     // sure the player gets a turn there
     {stip:'singles', force:'tell',     want:['pin','sub'],        beats:['tell'], known:true, mustWin:true},
+    // items 8 to 11 of the ranked backlog
+    {stip:'singles', force:'ropebreak',want:['pin','sub','count'],beats:['ropebreak'], mustWin:true},
+    {stip:'singles', force:'limb',     want:['pin','sub','count'],beats:['limb'], hurtLimb:true},
+    {stip:'singles', force:'double',   want:['nc'],               beats:['double','wide','ten'], badBlood:true},
     {stip:'tag',     force:'tagturn',  want:['pin'],              beats:['extra'], team:true, disloyal:true},
   ];
   for(const cs of CASES){
@@ -559,6 +563,8 @@ section('every stipulation plays out live, and looks like its finish');
         if(cs.team){ G.car.allies=[]; formAlliance(mate.id); formTeam(mate.id,'Test Team');
           if(cs.disloyal) allyOf(mate.id).loyalty=5; }        // a partner with nothing left to lose
         if(cs.respect){ const R=rel(opp.id); R.respect=70; R.heat=5; }
+        if(cs.badBlood){ const R=rel(opp.id); R.heat=80; }        // a double count-out needs a reason
+        if(cs.hurtLimb) window.RTR_LIMB=true;                     // a knee already past the point of holding
         if(cs.known){ G.car.finHits=9;                         // the finisher is known, so it gets a tell
           if(!G.w.moves.includes('s5a')) G.w.moves.push('s5a');
           G.w.finisher='s5a';                                  // a rookie has no tier-5 move to hit
@@ -591,7 +597,7 @@ section('every stipulation plays out live, and looks like its finish');
         out.extraOn=document.getElementById('fExtra').classList.contains('on');
         out.errs=errsIn;
         const rl=STIP_RULES[cs.stip]||{}; out.noCount=!!rl.noCount; out.noDQ=!!rl.noDQ;
-        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; FIGHT_SPEED=1;
+        window.RTR_FORCE=null; window.RTR_AUTO=null; window.RTR_WIN=null; window.RTR_LIMB=null; FIGHT_SPEED=1;
         return out;
       }, cs);
     }catch(e){ r={done:false, err:e.message}; }

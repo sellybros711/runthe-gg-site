@@ -292,3 +292,33 @@ to roll. Proven with four consecutive clean runs rather than one.
 
 That leaves items 8 to 12 (rope break at two and nine, submission arm drop,
 double count-out brawl, limb gives out, triple threat).
+
+---
+
+## Update, 2026-09-05: items 8 to 11
+
+8. **Rope break.** The hand comes down for three and the foot was on the bottom
+   rope the whole time. The referee spots it AFTER the count and waves it off.
+   This is a different reflex from a kickout: the crowd is not relieved, it is
+   furious. A heel gets it about twice as often as a face, because a heel is the
+   one with a foot where it should not be.
+9. **Submission arm drop.** The referee lifts the arm and lets it fall. Once.
+   Twice. On the third the building is silent, and it either drops or it stops
+   halfway and the fist closes. It is the pin count of submissions, and this hold
+   had no equivalent: it either ended or it did not. It only plays when the tap
+   is genuinely live, or the drama is free and means nothing.
+10. **Double count-out.** Both of you over the ropes on opposite sides, and
+    neither one listening to the count because you are still swinging at each
+    other on the floor. Needs real bad blood (55+ heat) and a match nobody is
+    winning, because that is the only time a finish where nobody wins is the
+    finish the crowd wants. It advances the feud and spikes the heat: the point
+    of a double count-out is the rematch.
+11. **The limb gives out.** All that work on a knee has been a number on a bar.
+    Past 80 it stops being a number: you plant on it and it folds. The limb work
+    becomes a thing the crowd SAW rather than a thing the game tracked. It can
+    happen to either wrestler, which means the body part you have been protecting
+    is now a thing you can lose a match to.
+
+Item 12, the triple threat, is the one left. It is the only one on this list that
+is not a beat inside an existing match: it needs a second opponent in the booking,
+in the result screen and in the record, so it is a feature rather than a spot.

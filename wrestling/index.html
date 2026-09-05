@@ -8140,6 +8140,53 @@ async function tenCountFloor(D, upAt, opts){
   }
   return back;
 }
+/* ---- BOTH OF YOU, ON THE FLOOR, AND NEITHER ONE COMING BACK ----
+   A double count-out is the only finish where the crowd wants the rematch more
+   than they wanted the match. Nobody wins, the referee waves it off, and the two
+   of them are still swinging on the floor while he does it. It needs real bad
+   blood to fire, because that is the only time it means anything. */
+async function doubleCountOut(){
+  const meSide = FIG.me.home<0?-1:1, oppSide = -meSide;
+  busy(true);
+  // both over the ropes, on opposite sides
+  fmv('me',{pose:'reel',x:Math.round(meSide*ST.W*0.30),up:22,rot:-meSide*20},220);
+  fmv('opp',{pose:'reel',x:Math.round(oppSide*ST.W*0.30),up:22,rot:-oppSide*20},220);
+  await sleep(240);
+  await cameraPullBack();
+  fmv('me',{pose:'stagger',x:floorX(meSide),up:-12,rot:0,sc:0.74},300);
+  fmv('opp',{pose:'stagger',x:floorX(oppSide),up:-12,rot:0,sc:0.74},300);
+  await sleep(320);
+  shake(); dustAt('me'); dustAt('opp'); sfx('impact');
+  fLog(`<span class="bad">Both of you spill to the floor, and neither one is thinking about the ring.</span>`);
+  if(FIG.ref) refTo(0,'refWatch',360,0.86*0.74);
+  $('arena').classList.add('tense');
+  const gap=Math.round(300*(1+((MS.ref&&MS.ref.count)||0)));
+  for(let n=1;n<=10;n++){
+    if(FIG.ref) poseSet('ref', n%2?'refRaise':'refIdle');
+    showCount(n,false,true);
+    // they are not listening. They are still going at it on the outside.
+    if(n===4||n===7){
+      const k=n===4?'me':'opp', t=n===4?'opp':'me';
+      fmv(k,{pose:'strike',x:atX(t)+(atX(k)<atX(t)?-1:1)*40},150); await sleep(160);
+      impact(atX(t),40,1); hitFlash(t,160); sfx('impact');
+      fmv(k,{pose:'stagger',x:floorX(k==='me'?meSide:oppSide)},200);
+      fLog(`<span class="say">${n===4?MS.me.name:MS.opp.name} is still throwing hands out there. The count means nothing to either of them.</span>`);
+    }
+    await sleep(gap + (n>=8?170:0));
+  }
+  $('arena').classList.remove('tense');
+  await callout('TEN! BOTH OF THEM!');
+  shake(); sfx('bell');
+  fLog(`<span class="bad">Ten, and neither one made it back. Nobody wins this. Nobody is finished with it either.</span>`);
+  commitFinish({type:'nc', by:null, reason:'a double count-out'});
+  MS.ended=true;
+  MS.quality+=8;                            // the crowd wants the rematch, which is the point
+  const R=rel(MS.o.oppId); R.heat=clamp((R.heat||0)+22,0,100);
+  if(story() && story().charId===MS.o.oppId) advanceStory();
+  G.car._momToast=`You and ${MS.o.oppName} were both counted out. That settles nothing.`;
+  await sleep(400);
+  return endFight(null);
+}
 /* ---- the count-out spot, either direction ---- */
 async function countOutSpot(byMe){
   const A=byMe?'me':'opp', D=byMe?'opp':'me';
@@ -8747,6 +8794,38 @@ async function runFight(){
     }
     renderLimbs();
     if(MS.beat%3===0 && !MS.refDown) refDrift();
+    /* THE LIMB GIVES OUT. All that work on a knee has been a number on a bar.
+       Past 80 it stops being a number: you go for something and the leg simply
+       will not hold you. The crowd groans, and the limb work becomes a thing
+       they SAW rather than a thing the game tracked. */
+    if(!MS.ended && MS.phase>=2){
+      // harness: a limb already past the point where it would hold
+      if(window.RTR_LIMB && !MS.gaveOut_me) MS.me.limb[MS.me.target||'leg']=90;
+      const mine=worstLimb(MS.me), theirs=worstLimb(MS.opp);
+      if(mine && MS.me.limb[mine]>=80 && !MS.gaveOut_me && (pinnedIs('limb') || rnd()<0.16)){
+        MS.gaveOut_me=true; trace('limb');
+        busy(true);
+        fmv('me',{pose:'stagger',rot:6},170); await sleep(180);
+        fmv('me',{pose:'kneel',rot:0},220); dustAt('me'); sfx('boo');
+        burst(atX('me'), (LIMB_NAME[mine]||'the leg').toUpperCase()+' GAVE OUT');
+        fLog(`<span class="bad">You go to plant on it and the ${LIMB_NAME[mine]} folds under you. All that punishment, in one moment.</span>`);
+        MS.mom=clamp(MS.mom-22,-100,100); setMom();
+        MS.me.hp=clamp(MS.me.hp-7); setBar('hpMe',MS.me.hp);
+        MS.quality+=5;
+        await sleep(420); await settle(280);
+      } else if(theirs && MS.opp.limb[theirs]>=80 && !MS.gaveOut_opp && rnd()<0.16){
+        MS.gaveOut_opp=true; trace('limb');
+        busy(true);
+        fmv('opp',{pose:'stagger',rot:-6},170); await sleep(180);
+        fmv('opp',{pose:'kneel',rot:0},220); dustAt('opp'); sfx('pop');
+        burst(atX('opp'), (LIMB_NAME[theirs]||'the leg').toUpperCase()+' GAVE OUT');
+        fLog(`<span class="hi">${MS.opp.name} plants on it and the ${LIMB_NAME[theirs]} folds. Every minute you spent on it just paid.</span>`);
+        MS.mom=clamp(MS.mom+22,-100,100); setMom();
+        MS.opp.hp=clamp(MS.opp.hp-7); setBar('hpOpp',MS.opp.hp);
+        MS.quality+=6;
+        await sleep(420); await settle(280);
+      }
+    }
     // ---- colour ----
     // Head damage plus a stipulation that allows it. Hardcore matches get there
     // fastest, which is the whole point of a hardcore match.
@@ -8927,6 +9006,12 @@ async function runFight(){
     // the camera pulls back, the referee counts through them. When it is YOU
     // on the floor a tap window opens at eight, and rolling in at nine is a
     // near-fall the crowd remembers.
+    // both of them, when there is genuine bad blood and neither is on top
+    if(!MS.ended && !stipRules(o).noCount && !MS.countSpot && (pinnedIs('double')
+       || (!randomBeatsOff() && MS.phase>=3 && Math.abs(MS.mom)<20 && (rel(o.oppId).heat||0)>=55 && rnd()<0.05))){
+      MS.countSpot=true; trace('double');
+      const r=await doubleCountOut(); if(r===undefined || MS.ended) return;
+    }
     if(!MS.ended && !stipRules(o).noCount && !MS.countSpot && (forced('count') || (!randomBeatsOff() && MS.phase>=2 && MS.mom>60 && MS.opp.hp<25 && rnd()<0.06))){
       MS.countSpot=true;
       const r=await countOutSpot(true); if(r===undefined || MS.ended) return;
@@ -9290,7 +9375,37 @@ async function submissionAttempt(byMe, mvName){
     }
   }
   const rulesAllowSub = stipRules(MS.o).ends.includes('sub');
-  if(rulesAllowSub && MS.phase>=3 && rnd()<pTap){
+  /* THE ARM DROP. The referee lifts the arm and lets it fall. Once. Twice. On
+     the third the building is silent, and it either drops or it stops halfway
+     and the fist closes. It is the pin count of submissions, and this hold had
+     no equivalent: it either ended or it did not. Only when the finish is
+     genuinely live, or the drama is free and means nothing. */
+  const willTap = rulesAllowSub && MS.phase>=3 && rnd()<pTap;
+  if(rulesAllowSub && MS.phase>=3 && (pTap>0.25 || willTap)){
+    $('arena').classList.add('tense');
+    for(let n=1;n<=3;n++){
+      const last = (n===3);
+      // the arm goes up
+      fmv(D,{rot:byMe?10:-10},150); poseSet('ref','refRaise'); await sleep(230);
+      showCount(n===1?'ONE':n===2?'TWO':'THREE', false, true);
+      // and falls
+      if(last && !willTap){
+        // it stops. The fist closes. That is the whole spot.
+        fmv(D,{rot:0},120); await sleep(180);
+        poseSet('ref','refNo'); shake(); sfx('crowdRise'); crowdIntensify(0.01);
+        burst(atX(D),'THE ARM STAYS UP!');
+        fLog(`<span class="hi">The arm goes up a third time, and it stops dead. ${byMe?MS.opp.name+' is not done.':'You are not done.'}</span>`);
+        MS.nearFalls++; MS.quality+=9; MS.big++;
+        await sleep(430);
+      } else {
+        fmv(D,{rot:byMe?16:-16},110); poseSet('ref','refDown'); await sleep(260);
+        if(!last) fLog(`<span class="hint">The arm drops. ${n===1?'That is one.':'That is two.'}</span>`);
+      }
+    }
+    $('arena').classList.remove('tense');
+    refDrift();
+  }
+  if(willTap){
     await callout('TAP! TAP! TAP!');
     fLog(byMe?`<span class="hi">${MS.opp.name} taps out!</span>`:`<span class="bad">You had to tap.</span>`);
     commitFinish({type:'sub',by:byMe,move:mvName,part});
@@ -9582,6 +9697,36 @@ async function pinSequence(iAmPinning, three, power, mvName, isFin){
     refDrift(); await settle(300); return false;
   }
 
+  /* THE ROPE BREAK. The hand comes down for three and the foot was on the bottom
+     rope the whole time. The referee spots it AFTER the count, waves it off, and
+     the building goes from a decision to an argument. A different reflex from a
+     kickout: the crowd is not relieved, it is furious. A heel gets it more than
+     a face, because a heel is the one with a foot where it should not be. */
+  if(three && !MS.ropeBreak && MS.phase>=4 && !stipRules(MS.o).noDQ
+     && (pinnedIs('ropebreak') || (rnd() < (iAmPinning ? 0.05 : (G.w.align==='heel'?0.16:0.09))))){
+    MS.ropeBreak=true;
+    trace('ropebreak');
+    await refSlap();
+    if(stale()) return false;
+    showCount(3, true);
+    await sleep(300);
+    // the official sees the foot, and the arms go out
+    poseSet('ref','refNo'); shake(); sfx('boo');
+    fmv(D,{pose:'proneUp',rot:-8},140);
+    burst(px,'FOOT ON THE ROPE');
+    await callout('WAVE IT OFF');
+    fLog(iAmPinning
+      ? `<span class="bad">Three, and the referee waves it off. ${MS.opp.name} had a foot on the bottom rope the whole time. It does not count.</span>`
+      : `<span class="hi">The hand came down for three, and your foot was on the rope. It does not count. You are still in this.</span>`);
+    MS.nearFalls++; MS.quality+=8; MS.big++;
+    if(!iAmPinning) G.car.reaction=clamp((G.car.reaction||G.car.pop)+3,0,100);
+    arena.classList.remove('tense');
+    await sleep(460);
+    FIG[A].el.classList.remove('up'); FIG.ref.el.classList.remove('up');
+    MS.mom=clamp(MS.mom+(iAmPinning?-14:14),-100,100); setMom();
+    refDrift(); await settle(320);
+    return false;
+  }
   if(three){
     await refSlap();
     if(stale()) return false;
