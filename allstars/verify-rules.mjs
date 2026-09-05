@@ -23,6 +23,7 @@
      season awards        a fixed season hands out the same hardware, archived once
      field frames         every biped carries a distinct catch and throw frame
      bullpen              fatigue counts per arm, a change is one way, the order holds
+     box score pitchers   every arm that took the mound is named on the result screen
      cpu bullpen          the CPU goes to its best rested arm, and only when it helps
      out at home draws    the play carries a plate-out marker for the draw loop
      cup identity         the seed is drawn, the card says who hosts, an upset is called one
@@ -579,6 +580,38 @@ async function main() {
       ok(r.penBefore.length === 8 && !r.penBefore.includes(0), 'eight arms on the bench, not the man pitching', JSON.stringify(r.penBefore));
       ok(JSON.stringify(r.cons) === JSON.stringify([...r.cons].sort((a, b) => b - a)), 'the pen ranks by CON', JSON.stringify(r.cons));
       ok(!r.shownFresh && r.shownTired && !r.shownBatting, 'offered only while fielding a tiring arm', JSON.stringify({ fresh: r.shownFresh, tired: r.shownTired, batting: r.shownBatting }));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the box score names everyone who pitched ---- */
+    {
+      console.log('box score pitchers');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(async () => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = randomOpponent(null); State.innings = 9; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });
+        await new Promise(r => setTimeout(r, 600));
+        const g = State.game;
+        endAtBatCleanup(); g.pitch = null;
+        g.inning = 9; g.half = 'bottom'; g.home.score = 5; g.away.score = 2;
+        for (const b of g.home.batters.concat(g.away.batters)) { g.stats.ab[b.k] = 4; g.stats.hits[b.k] = 1; }
+        /* Your side went to the pen once; the CPU rode one arm. */
+        g.home.used = [0, 4]; g.home.pitcherIdx = 4;
+        g.away.used = [0];
+        finishGame();
+        await new Promise(r => setTimeout(r, 400));
+        const lines = [...document.querySelectorAll('#app .card p')].map(p => p.textContent).filter(t => /pitch/.test(t));
+        return { lines, starter: g.home.batters[0].n, relief: g.home.batters[4].n, theirs: g.away.batters[0].n };
+      });
+      const two = r.lines.find(l => /between them/.test(l)) || '';
+      const one = r.lines.find(l => !/between them/.test(l)) || '';
+      ok(r.lines.length === 2, 'a pitching line per side', JSON.stringify(r.lines));
+      ok(two.includes(r.starter) && two.includes(r.relief) && /pitched:/.test(two),
+         'the side that used two arms names both and shares the line', two);
+      ok(one.includes(r.theirs) && /pitching:/.test(one) && !/ and /.test(one),
+         'the side that used one arm names one', one);
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

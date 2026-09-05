@@ -8635,13 +8635,24 @@ function renderResult() {
     const c = el('div','card');
     c.appendChild(el('h3', null, `${team.name} batting`));
     c.appendChild(batTable(team));
-    /* Pitching line: the first pick on each roster takes the mound. */
+    /* Pitching line: EVERYONE who took the mound, in the order they came
+       in. This named batters[0] flat until the bullpen existed, which was
+       right when the first pick pitched every inning and wrong the moment
+       he could be taken out: a game with a change credited the whole line
+       to a man who had been on the bench for three innings. The runs, hits
+       and strikeouts are team totals, so with more than one arm they are
+       said to be shared rather than pinned on the last man standing. */
     const opp = team === you ? foe : you;
-    const p = team.batters[0];
+    const arms = (team.used && team.used.length ? team.used : [0])
+      .map(i => team.batters[i]).filter(Boolean);
     const oppK = opp.batters.reduce((a,b) => a + (g.stats.so[b.k] || 0), 0);
     const oppH = opp.batters.reduce((a,b) => a + (g.stats.hits[b.k] || 0), 0);
+    const gold = (x) => `<b style="color:var(--gold)">${x.n}</b>`;
+    const names = arms.length === 1 ? gold(arms[0])
+      : arms.slice(0, -1).map(gold).join(', ') + ' and ' + gold(arms[arms.length - 1]);
     c.appendChild(el('p', null,
-      `<b style="color:var(--gold)">${p.n}</b> pitching: ${opp.score} runs, ${oppH} hits, ${oppK} strikeouts.`));
+      `${names} ${arms.length === 1 ? 'pitching' : 'pitched'}: ${opp.score} runs, ${oppH} hits, `
+      + `${oppK} strikeout${oppK === 1 ? '' : 's'}${arms.length === 1 ? '' : ' between them'}.`));
     s.appendChild(c);
   }
 
