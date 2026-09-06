@@ -6311,11 +6311,17 @@ function openPath(path){
   const spent=!isPro()&&agendaUsed()>=1;
   const canPut=winter&&!spent;
 
+  /* NO SECOND LABEL UNDER THE VALUE. openFact fills that slot with a genuinely different
+     fact (a twelve team field, five automatic bids), and this sheet was filling it with
+     pathName, which is what the heading two lines above it already says: the same phrase,
+     twice, stacked. What belongs here is what the setting IS, which the tiles have always
+     had and this sheet never did. */
   let html='<div class="now"><b>'+esc(pathValue(path,now))+'</b>'
-    +'<u>'+esc(pathName(path))+'</u>'
     +(was!=null&&String(was)!==String(now)
       ? '<em>was '+esc(pathValue(path,was))+' when you took the job</em>' : '')
     +'</div>';
+  const about=pathAbout(path);
+  if(about) html+='<p>'+esc(about)+'</p>';
 
   html+='<div class="sec"><div class="eyebrow">What you have ruled on it</div>';
   html+=mine.length
@@ -6712,6 +6718,38 @@ const PATH_NAME={
   'venues.title':'Where the title game is played',
   'venues.lastTitle':'Where it was played last',
 };
+/* WHAT THE SETTING ACTUALLY IS, for the sheet a row of the year card opens.
+   The four headline tiles have had FACT_ABOUT since they were built, so tapping one told you
+   what the number meant. The nine rows of the year card opened the same sheet with no such
+   line: a heading, a value, and then straight into which cases can move it, which explains
+   how to change a rule the screen never explained. Written for the six that are only ever
+   reached this way; the three that are also tiles read the tile's own paragraph through
+   pathAbout(), so a setting with two doors does not get two different explanations. */
+const PATH_ABOUT={
+  'labour.portalWindows':'How many times a year a player can move to another school. Fewer '
+    +'windows and a signed class is a class. More and a roster is never finished.',
+  'labour.reentry':'Whether a player who declares for the draft and goes undrafted can come '
+    +'back. Somebody falls through the middle of this rule every spring, and this is what '
+    +'happens to him.',
+  'labour.proYears':'How long a player can be paid to play somewhere else and still return '
+    +'to college. It is the line between a college sport and a waiting room.',
+  'labour.rulesBy':'Whether this office writes the rules that govern players or each '
+    +'conference writes its own. One is hard to pass. The other is hard to enforce.',
+  'posture.tvWindows':'How many separate slots a Saturday is cut into for television. Every '
+    +'extra window is money, and one more team kicking off after most of the country is '
+    +'asleep.',
+  'playoff.sites':'Where playoff games are played. Campus is the best atmosphere this sport '
+    +'has, and a neutral site is the one a host city pays for.',
+};
+function pathAbout(p){
+  if(PATH_ABOUT[p]) return PATH_ABOUT[p];
+  /* A path that is one of the four tiles borrows the tile's paragraph rather than carrying a
+     second copy of it, so the playoff means the same thing whichever door you came through. */
+  for(let i=0;i<FACT_PATHS.length;i++){
+    if(FACT_PATHS[i].some((x)=>x===p||(x.slice(-1)==='.'&&p.indexOf(x)===0))) return FACT_ABOUT[i];
+  }
+  return '';
+}
 /* WHAT A CODE WORD MEANS. Half of these fields hold a short string that is a key rather than
    a sentence, and printing it raw put "window", "twopoint" and "phone" under a heading that
    promises plain English. */
