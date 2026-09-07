@@ -23,6 +23,10 @@
  *    sends allow_promotion_codes, and a 100% off code produces the former: on
  *    'paid' alone the comp'd buyer gets a receipt and no bundle, with nothing
  *    logging an error anywhere.
+ * 7. A stored customer id Stripe refuses (a test-mode leftover, a deleted
+ *    customer) is dropped and the session retried, rather than failing a
+ *    purchase over an optimisation. This is not hypothetical: it blocked the
+ *    first live test, with a test-mode customer against a live key.
  */
 import { readFileSync } from 'node:fs';
 import { BUNDLES } from '../../functions/api/stripe/_bundles.js';
@@ -91,6 +95,15 @@ if (checkout.includes('allow_promotion_codes') && !webhook.includes('no_payment_
   bad('checkout allows promotion codes but the webhook only grants on payment_status paid, so a 100% off code takes the order and grants nothing');
 } else {
   ok('a fully discounted session (no_payment_required) still grants');
+}
+
+// 7. a stored customer id that Stripe refuses does not kill the sale
+if (checkout.includes("form.set('customer'")) {
+  if (!checkout.includes('isMissingCustomer')) {
+    bad('checkout reuses a stored stripe_customer_id but never retries without it, so a test-mode or deleted customer blocks the purchase outright');
+  } else {
+    ok('a stored customer id Stripe refuses is dropped and the session retried');
+  }
 }
 
 if (failed) {

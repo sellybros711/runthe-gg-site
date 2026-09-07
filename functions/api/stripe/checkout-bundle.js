@@ -108,6 +108,45 @@ async function handle(context) {
     form.set('customer_email', String(body.email));
   }
 
+  let attempt = await createSession(env, form);
+
+  /* A STORED CUSTOMER ID CAN BE UNUSABLE, AND THE SALE MUST NOT DIE WITH IT.
+   *
+   * `subscriptions.stripe_customer_id` is written by whichever Stripe mode was
+   * live when that row was last touched, and this endpoint runs against
+   * whatever STRIPE_SECRET_KEY says today. Those are not the same question. An
+   * account whose row was recorded while the Arcade Card was being tested
+   * carries a TEST customer, and a test customer against a live key is refused
+   * outright: "No such customer: 'cus_...'; a similar object exists in test
+   * mode, but a live mode key was used to make this request." The buyer did
+   * nothing wrong, the price is fine, and checkout simply never opens.
+   *
+   * The same shape covers a customer deleted in the dashboard and a row left
+   * behind by a different Stripe account. In every case the stored id is the
+   * only bad part of an otherwise valid request, so drop it and let Stripe
+   * make a fresh customer. Reuse is an optimisation against duplicate
+   * customers; it is not worth failing a purchase over.
+   *
+   * Retried ONCE and only for this error, so a genuine Stripe outage still
+   * surfaces as itself rather than as two identical failures. */
+  if (!attempt.res.ok && customer && isMissingCustomer(attempt.data)) {
+    form.delete('customer');
+    form.set('customer_creation', 'always');
+    if (body.email) form.set('customer_email', String(body.email));
+    attempt = await createSession(env, form);
+  }
+
+  // 400 rather than 502 for the same reason as the catch above: Stripe's
+  // message is the whole value of this branch, and a 5xx would replace it
+  // with Cloudflare's error page. The `error` field is what callers switch on,
+  // never the status.
+  if (!attempt.res.ok) {
+    return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
+  }
+  return json({ url: attempt.data.url });
+}
+
+async function createSession(env, form) {
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
     headers: {
@@ -116,13 +155,19 @@ async function handle(context) {
     },
     body: form
   });
-  const data = await res.json();
-  // 400 rather than 502 for the same reason as the catch above: Stripe's
-  // message is the whole value of this branch, and a 5xx would replace it
-  // with Cloudflare's error page. The `error` field is what callers switch on,
-  // never the status.
-  if (!res.ok) return json({ error: 'stripe_error', detail: data.error && data.error.message }, 400);
-  return json({ url: data.url });
+  // A non-JSON body from Stripe would otherwise throw here and lose the status
+  // along with it, which is the failure the wrapper above exists to prevent.
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  return { res: res, data: data };
+}
+
+/* Stripe says this two ways depending on the endpoint, so match both: the
+ * structured code plus the message, rather than trusting either alone. */
+function isMissingCustomer(data) {
+  const err = (data && data.error) || {};
+  if (err.code === 'resource_missing' && err.param === 'customer') return true;
+  return typeof err.message === 'string' && err.message.indexOf('No such customer') === 0;
 }
 
 /* This user's existing unlock products. Returns an array, or null when the read
