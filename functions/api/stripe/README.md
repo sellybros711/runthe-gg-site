@@ -106,9 +106,26 @@ reasoning, so the numbers can be argued with rather than rediscovered:
    Or create them by hand in the Dashboard; either way the endpoint only needs
    the two `price_...` ids. Add `checkout.session.async_payment_succeeded` to
    the existing webhook endpoint's event list.
-3. **Cloudflare Pages env vars** (only when ready to sell):
-   - `STRIPE_PRICE_PS_PREMIUM_BUNDLE` = price_...
-   - `STRIPE_PRICE_RUN_THE_BUNDLE`    = price_...
+3. **Cloudflare Pages env vars.** THE PRICE VARS ARE THE LAST STEP OF LAUNCH,
+   NOT AN EARLY ONE, and the reason is that THIS REPOSITORY IS PUBLIC. The
+   endpoint path is readable by anybody at
+   `functions/api/stripe/checkout-bundle.js`, so there is no such thing as a
+   quietly configured endpoint that only we know about: the moment these two
+   vars exist, a signed-in stranger who read the repo can complete a real
+   purchase. That is survivable only if the modes actually open on payment.
+   Until `premium_products()` is what gates dynasty, Full Team and Commish
+   (see the open decisions below), a buyer is charged in full and sees
+   NOTHING, because the tester lists still decide. Set these when the gating
+   ships, not before, and if you set them temporarily to test, remove them
+   again in the same sitting.
+   - `STRIPE_PRICE_PS_PREMIUM_BUNDLE` = `price_1UCublHiw1zsFcnXxntEyM1s` (live, $19.99)
+   - `STRIPE_PRICE_RUN_THE_BUNDLE`    = `price_1UCue1Hiw1zsFcnXoTW2Cdyj` (live, $34.99)
+
+   Both live Products exist in Stripe already, created 2026-09-06. Price ids
+   are not secrets (they identify a price, they cannot charge anybody, and
+   they ship in client-side Stripe integrations routinely), so they are
+   recorded here rather than rediscovered. The SECRET key is what must never
+   appear in this repository.
 4. **Checks**: `node scripts/stripe/verify-bundles.mjs` (no network; catches
    the catalog, the SQL constraint, the setup script and the webhook drifting
    apart).
@@ -120,6 +137,20 @@ The webhook grants on `checkout.session.completed` with `payment_status: paid`
 per product. Game pages ask `premium_products()`; the Arcade asks
 `arcade_card_active()` as it always has. One bundle per account: checkout
 answers 409 `already_owned` to anyone holding any of the bundle's products.
+
+**Testing an end-to-end purchase without charging anybody.** The site's
+`STRIPE_SECRET_KEY` is a live key, so test cards and test price ids are not
+available: a test id against a live key fails with "No such price". The free
+route is a 100% off promotion code, which checkout already allows. Restrict
+the coupon to these two products and cap it at one redemption, buy through it,
+and Stripe reports the session as `no_payment_required`, which the webhook
+grants on (that is not incidental: it was fixed for exactly this, and
+`verify-bundles.mjs` now guards it).
+
+Do the whole thing in one sitting, because of the public-repo point in step 3:
+set the vars, buy, check `premium_unlocks`, then delete the test rows, expire
+the coupon and REMOVE the vars again. A window measured in minutes is a
+different risk from a window measured in weeks.
 
 **Open decisions, on purpose, before go-live:**
 
