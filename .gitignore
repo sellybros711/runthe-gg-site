@@ -23,3 +23,8 @@ ps_runs_export.csv
 # being listed by hand.
 __*.html
 __authstub.js
+
+# Screenshots a browser suite takes on its way past (golf/verify-s1end-promo.mjs writes
+# golf/__shots/). They are there to be looked at once and thrown away, and they are
+# rewritten on every run.
+__shots/
