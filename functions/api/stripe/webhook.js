@@ -2,6 +2,7 @@
  *
  * POST /api/stripe/webhook — point a Stripe webhook endpoint here with events:
  *   checkout.session.completed
+ *   checkout.session.async_payment_succeeded
  *   customer.subscription.updated
  *   customer.subscription.deleted
  *
@@ -14,7 +15,16 @@
  * Grants/updates the `subscriptions` row for the Supabase user carried in
  * client_reference_id / metadata.supabase_user_id. board.js mirrors that row
  * into the client's Pro flag.
+ *
+ * Also grants the one-time premium bundles (see _bundles.js): a checkout
+ * session in payment mode carrying metadata.bundle upserts one premium_unlocks
+ * row per product in the bundle (supabase/101_premium_bundles.sql). Grants
+ * happen only once payment_status is 'paid'; a delayed payment method fires
+ * completed unpaid first and async_payment_succeeded later, which is why that
+ * event is on the list above.
  */
+import { bundleByKey } from './_bundles.js';
+
 export async function onRequestPost(context) {
   const { env, request } = context;
   if (!env.STRIPE_WEBHOOK_SECRET || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) {
@@ -38,9 +48,17 @@ export async function onRequestPost(context) {
   if (claim === 'dup') return new Response('ok (dup)');
 
   try {
-    if (type === 'checkout.session.completed') {
+    if (type === 'checkout.session.completed' || type === 'checkout.session.async_payment_succeeded') {
       const userId = obj.client_reference_id || (obj.metadata && obj.metadata.supabase_user_id);
-      if (userId && obj.subscription) {
+      const bundleKey = obj.metadata && obj.metadata.bundle;
+      if (userId && obj.mode === 'payment' && bundleKey) {
+        // one-time premium bundle: grant only once the money is actually in.
+        // A completed-but-unpaid session (delayed payment method) grants
+        // nothing here; async_payment_succeeded brings it back paid.
+        if (obj.payment_status === 'paid') {
+          await grantBundle(env, userId, bundleKey, obj);
+        }
+      } else if (userId && obj.subscription) {
         // fetch the subscription for status + period end
         const sub = await stripeGet(env, '/v1/subscriptions/' + obj.subscription);
         await upsertSub(env, userId, obj.customer, sub);
@@ -86,6 +104,58 @@ async function unclaimEvent(env, id) {
       headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE }
     });
   } catch (e) {}
+}
+
+/* One paid bundle -> one premium_unlocks row per product, in a single upsert.
+ *
+ * Idempotent two ways at once: the stripe_events claim stops a redelivered
+ * event, and merge-duplicates on (user_id, product) makes a replayed grant a
+ * refresh rather than a double. The double-sell risk (a second Run The Bundle
+ * whose coins would merge away) is closed upstream, where checkout-bundle.js
+ * refuses a buyer who owns any of the products.
+ *
+ * fulfilled_at: stamped now for products the database itself honors from here
+ * on (the game pages read premium_products(), arcade_card_active() reads the
+ * arcade year). Left null for runtour_pack, whose coins live in the golf
+ * backend's wallet: the null is the golf side's work queue, and the README's
+ * go-live checklist says that redemption must exist before this bundle sells.
+ *
+ * An unknown bundle key throws rather than acks: metadata.bundle is written by
+ * our own checkout endpoint, so a key we don't recognize means the catalog and
+ * a live session disagree, and a Stripe retry loop in the delivery log is the
+ * alarm that says so. */
+async function grantBundle(env, userId, bundleKey, session) {
+  const bundle = bundleByKey(bundleKey);
+  if (!bundle) throw new Error('unknown bundle ' + bundleKey);
+
+  const now = new Date();
+  const rows = bundle.grants.map(function (g) {
+    return {
+      user_id: userId,
+      product: g.product,
+      source: 'bundle:' + bundleKey,
+      payload: Object.assign({ checkout_session: session.id }, g.payload || {}),
+      expires_at: g.months ? new Date(now.getTime() + g.months * 30.44 * 86400000).toISOString() : null,
+      fulfilled_at: g.product === 'runtour_pack' ? null : now.toISOString(),
+      granted_at: now.toISOString()
+    };
+  });
+
+  const res = await fetch(env.SUPABASE_URL + '/rest/v1/premium_unlocks?on_conflict=user_id,product', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(rows)
+  });
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('supabase bundle upsert ' + res.status + ' ' + detail);
+  }
 }
 
 async function upsertSub(env, userId, customerId, sub) {
