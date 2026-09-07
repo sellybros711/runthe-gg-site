@@ -113,9 +113,9 @@ reasoning, so the numbers can be argued with rather than rediscovered:
    quietly configured endpoint that only we know about: the moment these two
    vars exist, a signed-in stranger who read the repo can complete a real
    purchase. That is survivable only if the modes actually open on payment.
-   Until `premium_products()` is what gates dynasty, Full Team and Commish
-   (see the open decisions below), a buyer is charged in full and sees
-   NOTHING, because the tester lists still decide. Set these when the gating
+   Until `premium_products()` is what gates the paid modes (which modes those
+   are is itself undecided, see the open decisions below), a buyer is charged
+   in full and sees NOTHING, because the tester lists still decide. Set these when the gating
    ships, not before, and if you set them temporarily to test, remove them
    again in the same sitting.
    - `STRIPE_PRICE_PS_PREMIUM_BUNDLE` = `price_1UCublHiw1zsFcnXxntEyM1s` (live, $19.99)
@@ -185,11 +185,34 @@ about the modes opening, since nothing reads `premium_products()` yet.
   hits the 409. Options when it matters: a personal promotion code for the
   difference, or a dedicated upgrade Price. Decide before launch, not in code
   first.
-- **Gating the modes themselves.** dynasty-access.js and cfb/commish/access.js
-  are still tester-list feature flags. When the modes go paid, the pages gate
-  on `premium_products()` and (per the dynasty-access.js header) the submit
-  RPCs must check the table server-side too. That wiring belongs with each
-  game's launch, not here.
+- **WHAT `ps_premium` AND `cfb_premium` ACTUALLY UNLOCK IS NOT DECIDED, and
+  that is the owner's call, deliberately deferred (2026-09-06) until the whole
+  thing can be seen working together.** Open Dynasty, One Franchise Dynasty
+  and Full Team all stay tester-gated previews until then. Nothing reads
+  `premium_products()` and nothing should start to.
+
+  The product keys are opaque on purpose, so this decision costs nothing to
+  postpone: the bundles, the webhook and the table are all finished and none
+  of them names a mode. Only the gating does, and it has not been written.
+
+  Three questions have to be answered together, and the code currently
+  disagrees with the pricing conversation on two of them:
+
+  1. **Open Dynasty.** `canPlayClubDynasty` in football/index.html says in its
+     own comment that One Franchise Dynasty is the premium one and that
+     flipping `DYNASTY_LIVE` "must not hand this one out with it", i.e. open
+     dynasty was built to become FREE at launch. The bundle was described as
+     containing both. Those are different products.
+  2. **Full Team.** fullteam-access.js calls itself "the first paid mode in
+     this game" but was not named in the bundle. In, or sold separately?
+  3. **Commish.** docket.js already splits `free` and `pro` dials per ruling,
+     so the mode may be free with the range paid, rather than paid outright.
+
+- **Gating the modes themselves.** Once the above is settled: the pages gate on
+  `premium_products()` and (per the dynasty-access.js header) the submit RPCs
+  must check the table server-side too, because a list shipped in the page is a
+  feature flag and never a permission. That wiring belongs with each game's
+  launch, not here.
 
 ## Before public launch
 
