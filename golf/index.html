@@ -5175,9 +5175,7 @@ function overlayS1End(screen){
       <div class="small" style="color:#e3c4ff;letter-spacing:.14em;text-transform:uppercase;font-weight:900">Buy now and jump to</div>
       <div class="s1bn">Tier ${PASS_S1_BOOST_TIERS}</div>
       <div class="small" style="color:#efe6fb;line-height:1.55;margin-top:6px">You are on tier ${tier}. Buying the pass now carries you straight to tier ${PASS_S1_BOOST_TIERS}, so ${gain} tier${gain===1?'':'s'} of rewards unlock the moment it lands. Claim them, then climb the rest.</div>
-    </div>`:`<div class="s1boost">
-      <div class="small" style="color:#efe6fb;line-height:1.55">You are already past tier ${PASS_S1_BOOST_TIERS} on the free lane. The pass unlocks the PRO reward on every one of those tiers, and on every tier you climb before ${esc(endTxt)}.</div>
-    </div>`}
+    </div>`:''}
     <p class="small" style="max-width:430px;margin:0 auto 16px;color:#c9b8dd;line-height:1.6">The pass is $${TOURPASS.usd.toFixed(2)} for the season. It also carries ${coinFmt(TOURPASS.coins)} coins, ${TOURPASS.packs} packs, unlimited daily plays and ${PASS_REWARD_MULT}× rewards.</p>
     <button class="btn s1btn s1buy buy" style="max-width:360px;margin:0 auto 8px">Get the Season 1 Pass ▸</button>
     <button class="btn ghost look s1btn" style="max-width:360px;margin:0 auto 8px">See the track first</button>

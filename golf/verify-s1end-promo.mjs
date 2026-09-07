@@ -231,7 +231,11 @@ const run = async () => {
   await rig({ kind: 'plain', tier: 26 });
   const p2 = await page.evaluate(() => window.__S1.paint());
   ok('it does not offer to move them backwards', !/jump to/i.test(p2.txt), (p2.txt.match(/.{0,40}jump to.{0,40}/i) || ['(no jump offer, correct)'])[0]);
-  ok('it sells them what they would actually get', /PRO reward on every/.test(p2.txt), p2.txt.slice(80, 300));
+  // owner: the boost card is for people the boost is worth something to, and nobody else
+  ok('the boost card is gone entirely rather than reworded', !/tier 20/i.test(p2.txt), (p2.txt.match(/.{0,40}tier 20.{0,40}/i) || ['(no boost card, correct)'])[0]);
+  ok('no empty box is left where it was', (await page.evaluate(() => document.querySelectorAll('.ov.s1eov .s1boost').length)) === 0);
+  ok('the deadline, the clock and the offer are still there',
+    p2.txt.toLowerCase().includes(D.txt.toLowerCase()) && /SEC/i.test(p2.txt) && /\$14\.99/.test(p2.txt), p2.txt.slice(0, 140));
 
   head('the buttons do what they say');
   await rig({ kind: 'plain', tier: 6 });
