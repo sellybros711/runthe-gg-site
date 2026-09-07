@@ -16,10 +16,10 @@
  * line's lookup key in the Dashboard (or archive the old price), re-run, and
  * swap the env var to the new price id.
  *
- * THE AMOUNTS BELOW ARE THE RECOMMENDATION, not a decision Stripe has heard
- * yet. The reasoning lives in functions/api/stripe/README.md next to the rest
- * of the rollout runbook. Edit them here before the first run if the decision
- * changes; after the first run, see the paragraph above.
+ * THE AMOUNTS BELOW ARE THE OWNER'S DECISION (2026-09): $19.99 and $29.99,
+ * both one-time. The reasoning lives in functions/api/stripe/README.md next to
+ * the rest of the rollout runbook. If the decision changes before the first
+ * run, edit here; after the first run, see the paragraph above.
  */
 
 const CATALOG = [
@@ -36,7 +36,7 @@ const CATALOG = [
   {
     lookupKey: 'run_the_bundle_once',
     envVar: 'STRIPE_PRICE_RUN_THE_BUNDLE',
-    amountCents: 4999,
+    amountCents: 2999,
     product: {
       name: 'Run The Bundle',
       description: 'The Perfect Season Premium Bundle, 12 months of the Run The Arcade Card, and 102,000 coins plus a Tour pack in Run The Tour.',

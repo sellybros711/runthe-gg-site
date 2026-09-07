@@ -60,24 +60,25 @@ backend setup that can sit finished and inert.
 - **Run The Bundle**: everything above, plus 12 months of the Arcade Card and
   102,000 Run The Tour coins + 1 Tour pack (the Large Bucket, $9.99 on its own).
 
-**Pricing: one-time, $19.99 and $49.99.** The reasoning, so the numbers can be
-argued with rather than rediscovered:
+**Pricing: one-time, $19.99 and $29.99. Decided by the owner (2026-09).** The
+reasoning, so the numbers can be argued with rather than rediscovered:
 
 - One-time, not subscription. These are feature unlocks in single-player games
   with no per-user running cost; nothing renews monthly for the player, and a
   sub that delivers nothing new each month churns and generates refund mail.
   The site already splits exactly this way: the Arcade Card is a subscription
   because unlimited daily plays are an ongoing service, while the Tour Pass
-  ($14.99 per 60-day season) and every coin bucket are one-time. If recurring
-  revenue matters later, the proven shape here is the seasonal reissue (a new
-  season's pass), not a monthly sub.
+  ($14.99 per 60-day season) and every coin bucket are one-time.
 - $19.99 for the football bundle: three substantial modes across two games,
-  priced above the $14.99 Tour Pass (one game, one season) and below the
-  $49.99 ceiling. Room to run a launch promotion code down to $14.99.
-- $49.99 for Run The Bundle: roughly $80 of parts ($19.99 + a $49.99 Arcade
-  year + $9.99 of coins), a visible ~38% discount, and it lands exactly on the
-  site's existing top price (Mega Bucket, Arcade annual). Nothing on the site
-  costs more than $49.99 and this keeps it that way.
+  priced above the $14.99 Tour Pass (one game, one season). Room to run a
+  launch promotion code down to $14.99.
+- $29.99 for Run The Bundle, a $10 step up from the football bundle. The
+  Arcade year and the Run The Tour coins + pack are throw-ins, not the value
+  story: Arcade Cards are not selling in volume, so the bundle prices the
+  football content and treats the rest as sweetener rather than charging for
+  parts nobody is buying at list. The $80-of-parts math is real ($19.99 + a
+  $49.99 Arcade year + $9.99 of coins) and makes good marketing copy, but it
+  is not what the price defends.
 - The amounts live in `scripts/stripe/setup-premium-bundles.mjs` and nowhere
   else in code; the endpoints only ever see `price_...` ids from env.
 
