@@ -37,6 +37,21 @@ import { verifyUser } from './_verify.js';
 import { bundleByKey } from './_bundles.js';
 
 export async function onRequestPost(context) {
+  try {
+    return await handle(context);
+  } catch (e) {
+    // NEVER LET AN EXCEPTION ESCAPE AS A 5xx, and this is not tidiness. A 5xx
+    // leaving a Pages Function reaches the browser as Cloudflare's own HTML
+    // error page: the body we wrote is discarded, so the caller gets
+    // "<!DOCTYPE html>" where the reason should be and every failure looks
+    // identical. That is exactly how this endpoint's first real failure
+    // presented, and the reason took a round of guessing that the message
+    // itself would have answered.
+    return json({ error: 'server_error', detail: (e && e.message) ? e.message : String(e) }, 400);
+  }
+}
+
+async function handle(context) {
   const { env, request } = context;
 
   // bundle -> price (allow-list; the client can never inject an arbitrary price id)
@@ -102,7 +117,11 @@ export async function onRequestPost(context) {
     body: form
   });
   const data = await res.json();
-  if (!res.ok) return json({ error: 'stripe_error', detail: data.error && data.error.message }, 502);
+  // 400 rather than 502 for the same reason as the catch above: Stripe's
+  // message is the whole value of this branch, and a 5xx would replace it
+  // with Cloudflare's error page. The `error` field is what callers switch on,
+  // never the status.
+  if (!res.ok) return json({ error: 'stripe_error', detail: data.error && data.error.message }, 400);
   return json({ url: data.url });
 }
 
