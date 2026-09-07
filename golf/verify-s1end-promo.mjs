@@ -74,11 +74,32 @@ window.__S1 = {
   /* which gate is holding it, when one is. worth having: every one of these is a silent return. */
   why(){ return {pending:s1EndPending(), overlay:S.overlay||null, screen:S.screen,
     tour:(typeof tourRunning==='function'&&tourRunning()), welcome:welcomePackPending(),
-    launch:s1LaunchPending(), login:!!S._loginPending}; },
+    launch:s1LaunchPending(), login:!!S._loginPending,
+    wallet:(_walletCache===null?'LOADING':'loaded'), holder:dailyPassActive(),
+    signedIn:sbSignedIn(), season:passSeason().n, beat:s1EndBeat().id, seen:s1EndSeen()}; },
   /* run the real launch-time queue entry and report where it left the game */
   fire(){ S.overlay=null; S.screen='title'; maybeS1EndPopup();
     return {overlay:S.overlay||null, flag:!!(LS.get(acctKey('bag_pass'),null)||{}).s1end,
       seen:s1EndSeen()}; },
+  /* One visit, one launch, however many times the queue is pumped. Every popup the game shows goes
+     through this same call at startup, so calling it in a loop is what "they opened the app once" looks
+     like from the inside: whatever it opens the first time is what the player gets, and anything it opens
+     after that would be a second popup stacked on the first. */
+  /* Rig and visit in ONE tick. The title screen schedules its real 420ms popup queue on every render, so
+     a stray one of those can fire in the gap between two page.evaluate calls, show the beat itself and
+     leave the next visit() with nothing to find. That is the game behaving correctly and the harness
+     losing the race about who fired it. */
+  rigVisit(o){ this.rig(o); return this.visit(); },
+  rigPending(o){ this.rig(o); return s1EndPending(); },
+  rigFire(o){ this.rig(o); return this.fire(); },
+  visit(){ var out=[];
+    for(var i=0;i<6;i++){
+      S.overlay=null; S.screen='title'; maybeS1EndPopup();
+      if(S.overlay!=='s1end'){ if(!out.length) out.blocked=window.__S1.why(); break; }
+      out.push(s1EndBeat().id);
+    }
+    S.overlay=null;
+    return {beats:out, blocked:out.blocked||null}; },
   /* walk a whole season a day at a time and collect every beat that actually fires */
   season(){ var out=[];
     for(var left=TOURPASS_LEN; left>=1; left--){
@@ -164,6 +185,11 @@ const run = async () => {
 
   const rig = (o) => page.evaluate(a => window.__S1.rig(a), o);
   const pending = () => page.evaluate(() => window.__S1.pending());
+  /* rig and ask in ONE tick. The title screen schedules its real popup queue 420ms after every render,
+     so a stray one of those can fire in the gap between two page.evaluate calls and consume the very
+     beat the next line is about to check for. */
+  const rigPending = (o) => page.evaluate(a => window.__S1.rigPending(a), o);
+  const rigFire = (o) => page.evaluate(a => window.__S1.rigFire(a), o);
 
   head('the deadline the copy quotes');
   const D = await page.evaluate(() => window.__S1.dates());
@@ -219,32 +245,49 @@ const run = async () => {
   const late = await page.evaluate(() => { window.__S1._left = 1; return window.__S1.fire(); });
   ok('the last day still reaches them', late.overlay === 's1end' && late.seen.join(',') === 's7,s1', late.seen);
 
+  // ── the one that would look worst: a stack of them ─────────────────────────
+  head('a player who misses beats and comes back');
+  const visit = (o) => page.evaluate(a => window.__S1.rigVisit(a), o);
+  const v0 = await visit({ kind: 'plain', tier: 6, left: 27 });
+  ok('sees the intro on the day they were there', v0.beats.join(',') === 's0', v0);
+  const v1 = await page.evaluate(() => { window.__S1._left = 3; return window.__S1.visit(); });
+  ok('and after three weeks away, ONE popup, the current one', v1.beats.join(',') === 's3', v1);
+  ok('the two they missed do not turn up behind it',
+    !v1.beats.includes('s14') && !v1.beats.includes('s7'), v1);
+  ok('and their record shows only what they were actually shown',
+    (await page.evaluate(() => window.__S1.seen())).join(',') === 's0,s3', await page.evaluate(() => window.__S1.seen()));
+
+  const v2 = await visit({ kind: 'plain', tier: 6, left: 1 });
+  ok('somebody who has never seen one and turns up on the last day gets exactly one',
+    v2.beats.join(',') === 's1', v2);
+
+  const v3 = await visit({ kind: 'plain', tier: 6, left: 14 });
+  ok('and skipping the intro does not mean seeing two on the same day', v3.beats.join(',') === 's14', v3);
+
+  const v4 = await visit({ kind: 'plain', tier: 6, left: 7 });
+  const v5 = await page.evaluate(() => window.__S1.visit());
+  ok('reopening the game the same day shows nothing again', v4.beats.join(',') === 's7' && v5.beats.length === 0, { first: v4, again: v5 });
+
   head('an account that saw a beat on another device');
-  await rig({ kind: 'plain', seen: ['s0'] });
-  ok('does not see that one here', (await pending()) === false);
-  await rig({ kind: 'plain', seen: ['s0'], left: 7 });
-  ok('but a beat it has NOT seen still fires', (await pending()) === true);
+  ok('does not see that one here', (await rigPending({ kind: 'plain', seen: ['s0'] })) === false);
+  ok('but a beat it has NOT seen still fires', (await rigPending({ kind: 'plain', seen: ['s0'], left: 7 })) === true);
   const merged = await page.evaluate(() => mergePass({ s1seen: ['s0', 's14'] }, { s1seen: ['s0', 's7'] }));
   ok('because a merge unions the beats from both sides',
     merged.s1seen.slice().sort().join(',') === 's0,s14,s7', merged.s1seen);
   const merged2 = await page.evaluate(() => mergePass({ s1end: 1 }, { claimed: 'S1' }));
   ok('the flag the first version wrote still counts as the intro',
     merged2.s1seen.join(',') === 's0' && merged2.s1end === true, merged2);
-  await rig({ kind: 'plain', seen: true });
-  ok('...so an account upgraded from that build does not replay it', (await pending()) === false);
+  ok('...so an account upgraded from that build does not replay it',
+    (await rigPending({ kind: 'plain', seen: true })) === false);
   const merged3 = await page.evaluate(() => mergePass({ claimed: 'S1' }, { claimed: 'S1' }));
   ok('and an account that has seen nothing is not marked as having seen anything',
     !merged3.s1end && merged3.s1seen.length === 0, merged3);
 
   head('the people it must never sell to');
-  await rig({ kind: 'holder' });
-  ok('a pass holder is not asked to buy the pass', (await pending()) === false);
-  await rig({ kind: 'loading' });
-  ok('a wallet still in flight waits rather than guessing', (await pending()) === false);
-  await rig({ kind: 'guest' });
-  ok('a signed-out visitor is not a unique user, so no popup', (await pending()) === false);
-  await rig({ kind: 'plain', season: 2 });
-  ok('and it is a SEASON 1 promotion, gone in season 2', (await pending()) === false);
+  ok('a pass holder is not asked to buy the pass', (await rigPending({ kind: 'holder' })) === false);
+  ok('a wallet still in flight waits rather than guessing', (await rigPending({ kind: 'loading' })) === false);
+  ok('a signed-out visitor is not a unique user, so no popup', (await rigPending({ kind: 'guest' })) === false);
+  ok('and it is a SEASON 1 promotion, gone in season 2', (await rigPending({ kind: 'plain', season: 2 })) === false);
 
   head('it waits its turn in the launch queue');
   await rig({ kind: 'plain' });
@@ -256,8 +299,7 @@ const run = async () => {
   ok('it never lands on top of an open overlay', q2 === 'shop', q2);
   const q3 = await page.evaluate(() => { S.overlay = null; S.screen = 'play'; maybeS1EndPopup(); return { s: S.screen, o: S.overlay || null }; });
   ok('or in the middle of a round', q3.o === null, q3);
-  await rig({ kind: 'plain', launchUnseen: true });
-  const q4 = await page.evaluate(() => window.__S1.fire());
+  const q4 = await rigFire({ kind: 'plain', launchUnseen: true });
   ok('and a player who never saw the SEASON LAUNCH popup gets that one first', q4.overlay === null, q4);
   ok('with the closing popup still owed to them', (await pending()) === true);
 
