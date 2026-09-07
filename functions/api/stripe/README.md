@@ -152,6 +152,28 @@ set the vars, buy, check `premium_unlocks`, then delete the test rows, expire
 the coupon and REMOVE the vars again. A window measured in minutes is a
 different risk from a window measured in weeks.
 
+**VERIFIED END TO END ON 2026-09-06, in live mode, for $0.00.** Run The Bundle
+bought through a 100% off promotion code: checkout opened, the webhook fired,
+and all four `premium_unlocks` rows landed correctly (both premiums permanent,
+the Arcade year dated twelve months out, `runtour_pack` left unfulfilled for
+the golf side). A second attempt returned 409 `already_owned`. So the payment
+path, the webhook, the `no_payment_required` grant and the double-purchase
+guard are all known good, and the env vars were removed again afterwards.
+
+Two things cost an hour and are worth knowing before the next test:
+
+- **A promotion code carries its own Customer restriction, separate from the
+  coupon.** One created against a specific customer reads as "This code is
+  invalid" at checkout for everybody else, with nothing saying why. Check the
+  promotion code, not just the coupon.
+- **A stale `stripe_customer_id` used to block checkout entirely.** Fixed in
+  code (the endpoint drops the stored id and retries), but the underlying
+  split is permanent: that column does not record which Stripe mode wrote it.
+
+What this did NOT prove: the ordinary `paid` path with a real card, the
+perfect-season bundle (only run-the-bundle was bought), and anything at all
+about the modes opening, since nothing reads `premium_products()` yet.
+
 **Open decisions, on purpose, before go-live:**
 
 - **Run The Tour fulfillment is recorded, not delivered.** The webhook writes
