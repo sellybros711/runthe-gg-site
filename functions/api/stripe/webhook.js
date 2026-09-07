@@ -19,9 +19,10 @@
  * Also grants the one-time premium bundles (see _bundles.js): a checkout
  * session in payment mode carrying metadata.bundle upserts one premium_unlocks
  * row per product in the bundle (supabase/101_premium_bundles.sql). Grants
- * happen only once payment_status is 'paid'; a delayed payment method fires
- * completed unpaid first and async_payment_succeeded later, which is why that
- * event is on the list above.
+ * happen once the session owes nothing, which is payment_status 'paid' OR
+ * 'no_payment_required' (a 100% off promotion code); a delayed payment method
+ * fires completed unpaid first and async_payment_succeeded later, which is why
+ * that event is on the list above.
  */
 import { bundleByKey } from './_bundles.js';
 
@@ -52,10 +53,21 @@ export async function onRequestPost(context) {
       const userId = obj.client_reference_id || (obj.metadata && obj.metadata.supabase_user_id);
       const bundleKey = obj.metadata && obj.metadata.bundle;
       if (userId && obj.mode === 'payment' && bundleKey) {
-        // one-time premium bundle: grant only once the money is actually in.
-        // A completed-but-unpaid session (delayed payment method) grants
-        // nothing here; async_payment_succeeded brings it back paid.
-        if (obj.payment_status === 'paid') {
+        // one-time premium bundle: grant once nothing is owed on the session.
+        //
+        // TWO STATUSES MEAN THAT, not one. 'paid' is the ordinary sale.
+        // 'no_payment_required' is a session with nothing left to charge,
+        // which is what a 100% off promotion code produces, and checkout
+        // sends allow_promotion_codes. Gating on 'paid' alone takes the order
+        // and grants nothing: the comp'd buyer gets a receipt for a bundle
+        // they do not own, and no error is raised anywhere, because from
+        // Stripe's side the session completed exactly as asked.
+        //
+        // Neither status can be reached without Stripe saying so, and a free
+        // session still needs a promotion code we created, so this is not a
+        // way in. A completed-but-UNPAID session (a delayed payment method) is
+        // still refused here; async_payment_succeeded brings it back paid.
+        if (obj.payment_status === 'paid' || obj.payment_status === 'no_payment_required') {
           await grantBundle(env, userId, bundleKey, obj);
         }
       } else if (userId && obj.subscription) {

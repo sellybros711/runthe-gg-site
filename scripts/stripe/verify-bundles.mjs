@@ -19,6 +19,10 @@
  *    edit would quietly sell less than the copy says.
  * 5. The webhook subscribes to async_payment_succeeded, without which a
  *    delayed-payment buyer pays and receives nothing.
+ * 6. The webhook grants on 'no_payment_required' as well as 'paid'. Checkout
+ *    sends allow_promotion_codes, and a 100% off code produces the former: on
+ *    'paid' alone the comp'd buyer gets a receipt and no bundle, with nothing
+ *    logging an error anywhere.
  */
 import { readFileSync } from 'node:fs';
 import { BUNDLES } from '../../functions/api/stripe/_bundles.js';
@@ -79,6 +83,14 @@ if (!webhook.includes('checkout.session.async_payment_succeeded')) {
   bad('webhook.js does not handle checkout.session.async_payment_succeeded');
 } else {
   ok('webhook handles async_payment_succeeded');
+}
+
+// 6. a fully discounted session still grants
+const checkout = read('functions/api/stripe/checkout-bundle.js');
+if (checkout.includes('allow_promotion_codes') && !webhook.includes('no_payment_required')) {
+  bad('checkout allows promotion codes but the webhook only grants on payment_status paid, so a 100% off code takes the order and grants nothing');
+} else {
+  ok('a fully discounted session (no_payment_required) still grants');
 }
 
 if (failed) {
