@@ -60,7 +60,18 @@ backend setup that can sit finished and inert.
 - **Run The Bundle**: everything above, plus 12 months of the Arcade Card and
   102,000 Run The Tour coins + 1 Tour pack (the Large Bucket, $9.99 on its own).
 
-**Pricing: one-time, $19.99 and $29.99. Decided by the owner (2026-09).** The
+**THE "$80 OF VALUE" CLAIM IS LOAD-BEARING AND HAS TO STAY TRUE.** Run The
+Bundle is marketed as $80 of value for $34.99, and that is not a slogan: it is
+the sum of the parts at prices this site actually charges. $19.99 for the
+Perfect Season bundle, $49.99 for a year of the Arcade Card
+(`STRIPE_PRICE_ARCADE_ANNUAL`), and $9.99 for the Large Bucket in Run The Tour,
+whose 102,000 coins and one Tour pack are exactly what the bundle grants. That
+is $79.97, so 56% off. Move any of those three prices, or change what the
+bundle grants, and the claim moves with it. Re-check it before repeating it in
+any copy, because a stale comparison price is the kind of thing a consumer
+regulator treats as a real problem rather than a typo.
+
+**Pricing: one-time, $19.99 and $34.99. Decided by the owner (2026-09).** The
 reasoning, so the numbers can be argued with rather than rediscovered:
 
 - One-time, not subscription. These are feature unlocks in single-player games
@@ -72,13 +83,14 @@ reasoning, so the numbers can be argued with rather than rediscovered:
 - $19.99 for the football bundle: three substantial modes across two games,
   priced above the $14.99 Tour Pass (one game, one season). Room to run a
   launch promotion code down to $14.99.
-- $29.99 for Run The Bundle, a $10 step up from the football bundle. The
-  Arcade year and the Run The Tour coins + pack are throw-ins, not the value
-  story: Arcade Cards are not selling in volume, so the bundle prices the
-  football content and treats the rest as sweetener rather than charging for
-  parts nobody is buying at list. The $80-of-parts math is real ($19.99 + a
-  $49.99 Arcade year + $9.99 of coins) and makes good marketing copy, but it
-  is not what the price defends.
+- $34.99 for Run The Bundle, a $15 step up from the football bundle, sold on
+  the $80-of-parts comparison above. Two things are true at once and both
+  matter. The comparison is real and worth leading with, since every one of
+  those three prices is charged somewhere on this site today. But the Arcade
+  year and the Run The Tour coins are still throw-ins rather than the thing
+  being paid for: Arcade Cards are not selling in volume, so the bundle
+  prices the football content and lets the rest do the persuading. That is
+  why the step up is $15 and not the $60 the parts would suggest.
 - The amounts live in `scripts/stripe/setup-premium-bundles.mjs` and nowhere
   else in code; the endpoints only ever see `price_...` ids from env.
 

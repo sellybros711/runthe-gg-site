@@ -16,10 +16,19 @@
  * line's lookup key in the Dashboard (or archive the old price), re-run, and
  * swap the env var to the new price id.
  *
- * THE AMOUNTS BELOW ARE THE OWNER'S DECISION (2026-09): $19.99 and $29.99,
+ * THE AMOUNTS BELOW ARE THE OWNER'S DECISION (2026-09): $19.99 and $34.99,
  * both one-time. The reasoning lives in functions/api/stripe/README.md next to
  * the rest of the rollout runbook. If the decision changes before the first
  * run, edit here; after the first run, see the paragraph above.
+ *
+ * $34.99 IS MARKETED AS "$80 of value", and that number has to keep being
+ * true, because it is a claim about prices we charge rather than a slogan.
+ * It is the sum of the parts at their own list prices: $19.99 for the
+ * Perfect Season bundle below, $49.99 for a year of the Arcade Card
+ * (STRIPE_PRICE_ARCADE_ANNUAL) and $9.99 for the Large Bucket in Run The
+ * Tour, whose 102,000 coins and one Tour pack are exactly what the bundle
+ * grants. That is $79.97. Change any of those three and the claim moves, so
+ * re-check it here before repeating it in any copy.
  */
 
 const CATALOG = [
@@ -36,7 +45,7 @@ const CATALOG = [
   {
     lookupKey: 'run_the_bundle_once',
     envVar: 'STRIPE_PRICE_RUN_THE_BUNDLE',
-    amountCents: 2999,
+    amountCents: 3499,
     product: {
       name: 'Run The Bundle',
       description: 'The Perfect Season Premium Bundle, 12 months of the Run The Arcade Card, and 102,000 coins plus a Tour pack in Run The Tour.',
