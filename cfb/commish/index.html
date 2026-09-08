@@ -2630,14 +2630,18 @@ const VEN=window.PS_CFB_VENUES;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
-/* THE TESTER LIST IS THE DOOR AND THE PREMIUM ROW IS THE TIER. Testers used to be
-   treated as paying outright; now the premium model is real enough to rehearse, so a
-   tester holds whatever premium_unlocks says they hold (fetched below through
-   PS_CFB_AUTH.premiumProducts, granted by supabase/102_premium_comp.sql). A tester
-   with the cfb_premium row is pro. A tester without it plays the same free tier a
-   visitor who has not bought will play at launch, which is the half of the design the
-   free-view tester exists to judge. null means not answered yet, and the gate waits
-   for the answer rather than opening free and flipping pro a beat later. */
+/* THE TESTER LIST IS THE DOOR'S DOOR AND THE PREMIUM ROW IS THE KEY. Owner decision
+   (2026-09-08): Commish is FULLY premium. A visitor who has not bought does not play a
+   free tier; they reach the gate, see what the mode is part of and what it costs, and
+   stop there. So: the tester list decides who can find this page at all (unchanged,
+   nothing here reaches the public), and the cfb_premium row (fetched below through
+   PS_CFB_AUTH.premiumProducts, granted by supabase/102_premium_comp.sql) decides
+   whether the gate opens or pitches.
+
+   The free/pro dial split in docket.js stays in the data, unused by the public model:
+   ?tier=free remains a switch for a PREMIUM tester to inspect the reduced dials, and
+   the data costs nothing to keep against a future free tier. null premiumSet means not
+   answered yet, and the gate waits for the answer rather than guessing. */
 let authState={ready:false,waiting:true,signedIn:false};
 let premiumSet=null;
 const allowed=()=>ACCESS.allowed(authState);
@@ -2648,7 +2652,8 @@ const allowed=()=>ACCESS.allowed(authState);
    because nobody else can reach this page at all. */
 let forceFree=false;
 try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
-const isPro=()=>allowed()&&!forceFree&&!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+const isPro=()=>allowed()&&!forceFree&&ownsCfb();
 
 /* ── the career ───────────────────────────────────────────────────────────────────
    HOW LONG YOU HAVE BEEN DOING THIS JOB, counted in rulings and kept OUTSIDE the term.
@@ -8163,11 +8168,34 @@ $('b-term-share').onclick=async()=>{
 };
 
 /* ── the door ─────────────────────────────────────────────────────────────────── */
+/* One POST, verdict by the `error` field and never the status, the contract
+   functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
+   button that was pressed, because the gate has no toast to speak through. */
+async function buyBundle(kind,btn){
+  const A=window.PS_CFB_AUTH;
+  const t=A&&typeof A.token==='function'?A.token():null;
+  if(!t){ if(btn) btn.textContent='Sign in on the game first'; return; }
+  try{
+    const r=await fetch('/api/stripe/checkout-bundle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/commish/'})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(d&&d.url){ location.href=d.url; return; }
+    if(btn) btn.textContent=
+      d&&d.error==='stripe_not_configured'?'Not on sale yet'
+      :d&&d.error==='already_owned'?'This account already owns it'
+      :'Checkout could not start. Try again';
+  }catch(e){ if(btn) btn.textContent='Checkout could not start. Try again'; }
+}
 /* The corner tag tells a tester which tier they are looking at, which matters exactly
    when it is not the one they expected. */
 function paintTag(){
   const t=$('tag'); if(!t) return;
-  t.textContent=!allowed()?'In testing':isPro()?'Tester':'Tester, free view';
+  t.textContent=!allowed()?'In testing'
+    :!ownsCfb()?'Premium'
+    :forceFree?'Tester, free view':'Tester';
 }
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
@@ -8217,6 +8245,22 @@ function gate(){
      view and watch it flip a second later. The fetch below always settles premiumSet,
      to [] on any failure, so this cannot hold the door forever. */
   if(premiumSet===null){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
+  /* THE PAYWALL. A tester without the row is exactly a visitor who has not bought: they
+     know the mode is here, they see what it is part of and what it costs, and the door
+     does not open. The Buy buttons are real; while nothing is on sale the endpoint
+     answers 503 and the button says so, truthfully. */
+  if(!ownsCfb()){
+    say.textContent='Commish Simulator is part of the Premium Bundle, with the two '
+      +'dynasty modes in Perfect Season. One purchase. Yours for good.';
+    act.innerHTML=
+      '<button class="btn" id="b-buy-ps">Premium Bundle &middot; $19.99</button>'
+      +'<button class="btn ghost" id="b-buy-rtb">Run The Bundle &middot; $34.99</button>'
+      +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center">Back to the game</a>';
+    const ps=$('b-buy-ps'), rtb=$('b-buy-rtb');
+    if(ps) ps.onclick=()=>buyBundle('perfect-season',ps);
+    if(rtb) rtb.onclick=()=>buyBundle('run-the-bundle',rtb);
+    return;
+  }
   /* THE FIRST LINE IS THE JOB OFFER, not a description of the mode. "You run college
      football" states a premise; being NAMED to the post is a thing that just happened to
      you, and the whole mode is written in that tense. It is also the sentence a player
