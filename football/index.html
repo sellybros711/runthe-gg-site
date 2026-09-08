@@ -5660,8 +5660,11 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0 4px}
   .pw-tile{border:1px solid var(--line);border-radius:12px;padding:11px 7px 10px;text-align:center;
     background:linear-gradient(180deg,rgba(251,191,36,.09),rgba(255,255,255,.02))}
-  .pw-tile svg{width:28px;height:28px;fill:none;stroke:#fbbf24;stroke-width:1.6;
-    stroke-linecap:round;stroke-linejoin:round}
+  /* BIGGER, BECAUSE THE ART IS NOW WORTH THE ROOM. 28px was sized for line icons and it is
+     the size a favicon is: solid shapes with an inset detail need the space or the detail
+     closes up. */
+  .pw-tile svg{width:40px;height:40px;display:block;margin:0 auto;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}
   .pw-tile b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.07em;
     text-transform:uppercase;margin-top:7px;line-height:1.15;color:var(--ink)}
   .pw-tile i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);
@@ -5702,8 +5705,8 @@ window.GA_ID='G-L29P5MRWKE';
      badge, the border and the button are now one thing. */
   .pw-tier.best .btn{background:linear-gradient(135deg,#fbbf24 0%,#e08c07 100%);color:#3b2600}
   .pw-tier.best .btn:before{background:linear-gradient(180deg,rgba(255,255,255,.34),transparent)}
-  .pw-list svg{flex:0 0 14px;width:14px;height:14px;margin-top:2px;fill:none;stroke:#4ade80;
-    stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .pw-tick{flex:0 0 14px;width:14px;height:14px;margin-top:2px;fill:none;stroke:#4ade80;
+    stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
   .pw-foot{font-size:12px;color:var(--dim-2);text-align:center;margin:13px 0 0;line-height:1.4}
   @media (max-width:360px){
     .pw-hero{grid-template-columns:1fr 1fr}
@@ -5719,8 +5722,7 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-card:hover{border-color:rgba(251,191,36,.55)}
   .pw-card .pwc-ic{flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;
     background:rgba(251,191,36,.14)}
-  .pw-card .pwc-ic svg{width:19px;height:19px;fill:none;stroke:#fbbf24;stroke-width:1.7;
-    stroke-linecap:round;stroke-linejoin:round}
+  .pw-card .pwc-ic svg{width:22px;height:22px;display:block}
   .pw-card .pwc-t{flex:1;min-width:0}
   .pw-card .pwc-t b{display:block;font-size:14px;line-height:1.2}
   .pw-card .pwc-t span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:2px;
@@ -8938,27 +8940,75 @@ function dailySpentSheet(mode){
    503 and the button says so, truthfully, without pretending the sheet is a mock. */
 /* The icons the store draws with. Stroke paths at 24, the same shape the profile's own set
    uses, so the store looks like part of this game rather than a panel bought in. */
-const PW_ICON={
-  /* A run of seasons climbing, which is the mode: it goes up until it stops. */
-  dyn:'M3 20h18M6 20v-5M11 20v-9M16 20v-13M21 20v-6',
-  shield:'M12 3l7 2.6v5.9c0 4.1-2.9 7.3-7 8.5-4.1-1.2-7-4.4-7-8.5V5.6z',
-  /* A bracket, for the college game's Commish: two arms merging into a stem. Drawn as a
-     ladder of boxes first, which at 28px was an unreadable smudge. */
-  brk:'M4 4v6h5M4 20v-6h5M9 10v4M9 12h11',
-  card:'M3 6h18v12H3zM3 10h18M6.5 14.5h4',
-  coin:'M12 6c4 0 7 1.1 7 2.5S16 11 12 11 5 9.9 5 8.5 8 6 12 6zM5 8.5v7c0 1.4 3 2.5 7 2.5s7-1.1 7-2.5v-7',
-  tick:'M4 12.5l5 5L20 6.5',
-  star:'M12 3.5l2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.9l6-.8z'
+/*
+ * THE STORE'S ARTWORK.
+ *
+ * DRAWN HERE RATHER THAN FETCHED. Clip art was the obvious answer and it brings two things
+ * this site does not otherwise have: a licence to keep track of, and a request to somewhere
+ * that is not us on the one screen where a payment is about to happen. Everything below is
+ * a few hundred bytes of path data in the page, which also means it inherits the theme and
+ * cannot 404.
+ *
+ * FILLED, NOT DRAWN WITH A PEN. The first set was 1.6px stroke line art at 28px, which is
+ * the size a favicon is: at that weight a bracket, a shield and a bar chart are three grey
+ * scratches, and the bracket in particular was unreadable. These are solid shapes on a 48
+ * grid with a gradient down the body and a darker inset for the detail, which is what makes
+ * an icon read as an object rather than as a diagram of one.
+ *
+ * SILHOUETTES THAT CANNOT BE CONFUSED. A trophy is tall, a shield is pointed and a clipboard
+ * is a square with a clip on it, so the three tiles are told apart at a glance and before any
+ * of the labels are read. That test is the whole reason the third one is not a whistle: see
+ * the note above it.
+ */
+let pwUid=0;
+const PW_ART={
+  /* DYNASTY: a trophy, because the mode is measured in what you won over years. */
+  trophy:'<path fill="{g}" d="M15 7h18v9.5a9 9 0 0 1-18 0Z"/>'+
+    '<path fill="{g}" opacity=".5" d="M15 10.5h-4.5A6.5 6.5 0 0 0 17 17v-3.2a3.3 3.3 0 0 1-2-3.3Z"/>'+
+    '<path fill="{g}" opacity=".5" d="M33 10.5h4.5A6.5 6.5 0 0 1 31 17v-3.2a3.3 3.3 0 0 0 2-3.3Z"/>'+
+    '<path fill="{g}" d="M21.8 25.5h4.4V31h-4.4Z"/>'+
+    '<path fill="{g}" d="M15.5 31h17a2 2 0 0 1 2 2v3.5h-21V33a2 2 0 0 1 2-2Z"/>'+
+    '<path fill="#2a1a02" opacity=".34" d="M24 10.5l1.7 3.5 3.8.5-2.8 2.7.7 3.8-3.4-1.8-3.4 1.8.7-3.8-2.8-2.7 3.8-.5Z"/>',
+  /* FRANCHISE: a club crest, with the chevron the game's own crests use. */
+  shield:'<path fill="{g}" d="M24 5.5l15 5.3v10.9c0 8.7-6.1 15.4-15 17.8-8.9-2.4-15-9.1-15-17.8V10.8Z"/>'+
+    '<path fill="#2a1a02" opacity=".3" d="M24 13.5l8.5 5v6.2L24 30l-8.5-5.3v-6.2Z"/>'+
+    '<path fill="{g}" opacity=".85" d="M24 17.6l4.6 2.7v3.4L24 26.4l-4.6-2.7v-3.4Z"/>',
+  /* COMMISSIONER: a clipboard.
+     THIS IS THE THIRD ATTEMPT AND THE OTHER TWO ARE WORTH RECORDING. A stroked bracket was
+     unreadable at this size, twice. A whistle was drawn next and rendered, at 40px and at
+     3x, as an unmistakable PADLOCK: a round body with an arch over the top is a shackle, and
+     no amount of tuning the spout changes what the silhouette says first. A clipboard has no
+     such twin, and "run a league" is an admin job rather than a tournament. */
+  clipboard:'<rect x="9" y="8" width="30" height="34" rx="4.5" fill="{g}"/>'+
+    '<rect x="18" y="4" width="12" height="8" rx="3.2" fill="{g}"/>'+
+    '<rect x="20.4" y="6.4" width="7.2" height="3.2" rx="1.6" fill="#2a1a02" opacity=".4"/>'+
+    '<rect x="14" y="18" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
+    '<rect x="14" y="25" width="20" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>'+
+    '<rect x="14" y="32" width="12" height="3.4" rx="1.7" fill="#2a1a02" opacity=".38"/>',
+  /* The little mark on the three prompt cards. */
+  star:'<path fill="{g}" d="M24 6.5l5.3 10.8 11.9 1.7-8.6 8.4 2 11.8L24 33.6l-10.6 5.6 2-11.8-8.6-8.4 11.9-1.7Z"/>'
 };
-const pwSvg=(k,cls)=>'<svg viewBox="0 0 24 24" aria-hidden="true"'+(cls?' class="'+cls+'"':'')+
-  '><path d="'+PW_ICON[k]+'"/></svg>';
-const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwSvg(k)+'<b>'+esc(name)+'</b>'+
+/* ONE GRADIENT PER DRAWING, because an id is a document-wide name and the star is on screen
+   three times at once: a shared id makes every copy after the first point at the same def,
+   which works until the first one is removed from the DOM and the rest go black. */
+function pwArt(k){
+  const id='pwg'+(++pwUid);
+  return '<svg viewBox="0 0 48 48" aria-hidden="true">'+
+    '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0.35" y2="1">'+
+      '<stop offset="0" stop-color="#fde68a"/><stop offset="0.55" stop-color="#f5b022"/>'+
+      '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
+    PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
+}
+/* The green check stays a pen stroke: a tick IS a stroke, and filling one makes a blob. */
+const pwTick=()=>'<svg class="pw-tick" viewBox="0 0 24 24" aria-hidden="true">'+
+  '<path d="M4 12.5l5 5L20 6.5"/></svg>';
+const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
   '<i>'+esc(line)+'</i></div>';
-const pwItem=(html)=>'<li>'+pwSvg('tick')+'<span>'+html+'</span></li>';
+const pwItem=(html)=>'<li>'+pwTick()+'<span>'+html+'</span></li>';
 /* THE PROMPT, IN ONE PLACE. Three screens carry it and three copies of a price is three
    chances for one of them to go stale after a price change. `value` is what the money buys
    and it is never omitted: see the note on .pwc-go. */
-const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+pwSvg('star')+'</span>'+
+const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+pwArt('star')+'</span>'+
   '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
   '<span class="pwc-go"><b>'+esc(value)+'</b><span>From $19.99</span></span>';
 /* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
@@ -8982,9 +9032,9 @@ function premiumSheet(){
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:7px 0 0">'+
       'Unlimited dynasty runs. No daily limit. One payment, lifetime access.</p>'+
     '<div class="pw-hero">'+
-      pwTile('dyn','Dynasty Mode','Build a 25 season dynasty')+
+      pwTile('trophy','Dynasty Mode','Build a 25 season dynasty')+
       pwTile('shield','Franchise Mode','Pick one NFL club and stay')+
-      pwTile('brk','Commissioner','Run a college football league')+
+      pwTile('clipboard','Commissioner','Run a college football league')+
     '</div>'+
 
     '<div class="pw-tier">'+
