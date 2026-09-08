@@ -5682,45 +5682,31 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-tag{margin-left:auto;font-family:var(--fn);font-size:9px;letter-spacing:.1em;
     text-transform:uppercase;font-weight:800;padding:3px 8px;border-radius:999px;
     background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
-  .pw-cost{display:flex;align-items:baseline;gap:9px;margin:5px 0 0;flex-wrap:wrap}
-  .pw-cost b{font-family:var(--fd);font-size:29px;line-height:1;font-weight:400;color:var(--ink)}
+  /* THE PRICE SITS IN THE HEADER ROW NOW, beside the product name rather than on a line of
+     its own under it. Two cards each spending a 29px line on a number they had already made
+     the loudest thing on the card was most of why the sheet read as long. */
+  .pw-th .pw-cost{margin-left:auto}
+  .pw-cost{display:flex;align-items:baseline;gap:8px;margin:5px 0 0;flex-wrap:wrap}
+  .pw-cost b{font-family:var(--fd);font-size:24px;line-height:1;font-weight:400;color:var(--ink)}
+  /* WHAT THIS ACCOUNT IS, in two letters more than it needs. Drawn only when there is a true
+     answer: see acctTier(), which returns nothing at all for a signed out visitor and for one
+     whose ownership has not come back yet. */
+  .pw-pill{display:inline-block;font-style:normal;margin-left:8px;vertical-align:3px;
+    font-family:var(--fn);
+    font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 7px;border-radius:999px}
+  .pw-pill.free{background:rgba(255,255,255,.08);color:var(--dim);
+    box-shadow:inset 0 0 0 1px var(--line)}
+  .pw-pill.pro{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
   .pw-was{font-size:13px;color:var(--dim-2);text-decoration:line-through}
   .pw-save{font-size:11.5px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.04em}
-  /* WORTH AGAINST PRICE, drawn. The number people are being asked to believe is that this
-     is eighty dollars of game, and a bar says the shape of that faster than the sentence
-     it replaces. */
-  .pw-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.09);margin:9px 0 0;
-    overflow:hidden}
-  .pw-bar i{display:block;height:100%;border-radius:999px;
-    background:linear-gradient(90deg,#fde047,#f59e0b)}
-  .pw-barc{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim-2);
-    margin-top:4px;font-family:var(--fn);letter-spacing:.05em}
-  /* ONE GAME, ONE BLOCK. The rail down the left is the colour code doing the work: it runs
-     the height of everything that game gives you, so the grouping is visible before a word
-     is read. The heading takes the same colour, which is what ties the two together without
-     needing a legend anywhere. */
-  .pw-src{border-left:3px solid var(--gc);padding-left:11px;margin-top:12px}
-  .pw-src:first-of-type{margin-top:13px}
-  .pw-srch{font-family:var(--fn);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
-    font-weight:800;color:var(--gc)}
-  .pw-src .pw-list{margin:7px 0 0}
-  /* THE TICK TAKES THE GAME'S COLOUR TOO, and it is the reason the ticks are not all green
-     any more: four blocks of green ticks beside four different coloured rails is the colour
-     code arguing with itself. */
-  .pw-src .pw-tick{stroke:var(--gc)}
   .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}
-  .pw-list{list-style:none;margin:11px 0 12px;padding:0;display:grid;gap:7px}
-  .pw-list li{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.35;
-    color:var(--dim)}
-  .pw-list li b{color:var(--ink);font-weight:700}
   /* THE BEST VALUE CARD GETS THE GOLD BUTTON. Both tiers shipped with the same red one,
      which is the house colour for the primary action and cannot be the primary action
      twice: two identical buttons a thumb apart is a choice presented as a coin toss. The
      badge, the border and the button are now one thing. */
   .pw-tier.best .btn{background:linear-gradient(135deg,#fbbf24 0%,#e08c07 100%);color:#3b2600}
   .pw-tier.best .btn:before{background:linear-gradient(180deg,rgba(255,255,255,.34),transparent)}
-  .pw-tick{flex:0 0 14px;width:14px;height:14px;margin-top:2px;fill:none;stroke:#4ade80;
-    stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
   .pw-foot{font-size:12px;color:var(--dim-2);text-align:center;margin:13px 0 0;line-height:1.4}
   @media (max-width:360px){
     .pw-hero{grid-template-columns:1fr 1fr}
@@ -9013,12 +8999,8 @@ function pwArt(k){
       '<stop offset="1" stop-color="#d97706"/></linearGradient></defs>'+
     PW_ART[k].replace(/\{g\}/g,'url(#'+id+')')+'</svg>';
 }
-/* The green check stays a pen stroke: a tick IS a stroke, and filling one makes a blob. */
-const pwTick=()=>'<svg class="pw-tick" viewBox="0 0 24 24" aria-hidden="true">'+
-  '<path d="M4 12.5l5 5L20 6.5"/></svg>';
 const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
   '<i>'+esc(line)+'</i></div>';
-const pwItem=(html)=>'<li>'+pwTick()+'<span>'+html+'</span></li>';
 /*
  * WHICH GAME EACH THING COMES FROM.
  *
@@ -9047,18 +9029,25 @@ const PW_GAME={
   arcade:{name:'Run The Arcade',c:'#FF8A3D'},
   tour:{name:'Run The Tour',c:'#22b8cf'}
 };
-const pwGroup=(key,items)=>{
+/* THE COMPACT GROUP. The tiles at the top of the sheet already say what each mode IS, so a
+   tick list underneath repeating "Dynasty Mode. Unlimited runs" is the same sentence twice
+   in one screen. This keeps the thing the tiles cannot say, which is WHICH GAME each one
+   comes out of, and says it in one line. */
+const pwGroupText=(key,text)=>{
   const g=PW_GAME[key];
-  return '<div class="pw-src" style="--gc:'+g.c+'">'+
-    '<div class="pw-srch">'+esc(g.name)+'</div>'+
-    '<ul class="pw-list">'+items.map(pwItem).join('')+'</ul></div>';
+  return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
+    '<span>'+esc(text)+'</span></div>';
 };
 /* THE PROMPT, IN ONE PLACE. Three screens carry it and three copies of a price is three
    chances for one of them to go stale after a price change. `value` is what the money buys
    and it is never omitted: see the note on .pwc-go. */
+/* NO PRICE OUT HERE. A number on the front page is a cost being quoted before anything has
+   been offered, and the reader has to decide against it with nothing on the other side of
+   the scale. The card's job is to be worth opening; the price belongs on the screen that can
+   also show what it buys. What stays is the value, which is what makes it worth opening. */
 const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+pwArt('star')+'</span>'+
   '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
-  '<span class="pwc-go"><b>'+esc(value)+'</b><span>From $19.99</span></span>';
+  '<span class="pwc-go"><b>'+esc(value)+'</b></span>';
 /* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
    sheets write theirs into a string of markup. Same insides either way. */
 const pwCard=(id,title,sub,value)=>'<button class="pw-card" id="'+id+'">'+
@@ -9070,29 +9059,50 @@ let premiumFrom=null;
 const openPremium=(from)=>{ premiumFrom=from||null; premiumSheet(); };
 
 function premiumSheet(){
-  /* WORTH AND PRICE, WRITTEN ONCE. The bar, the strike-through and the saving are three
-     drawings of the same two numbers, and three copies of a number is three chances for
-     them to stop agreeing. */
+  const box=$('sheet-in');
+  box.dataset.kind='premium';
+
+  /* ALREADY PRO. Reachable: a second tab, a stale card that painted before the products call
+     came back, the profile row tapped as the purchase lands. Selling somebody the thing they
+     have just bought is the worst screen in the whole flow, so it is answered rather than
+     left to chance. */
+  if(dynastyOwned()){
+    box.innerHTML='<div class="eyebrow gold">Your account</div>'+
+      '<h2 class="display" style="font-size:26px;margin:4px 0 8px">You are Pro</h2>'+
+      '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+        'Every Pro mode is unlocked, on every device you sign in on. There is nothing to '+
+        'renew.</p>'+
+      '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
+    openSheet();
+    $('sh-x').onclick=closeSheet;
+    ga('premium_sheet_shown',{from:premiumFrom||'mode',tier:'pro'});
+    premiumFrom=null;
+    return;
+  }
+
+  /* SIGNED OUT. The purchase is tied to an account, so there is a step before the money and
+     the buttons say which one it is. A toast reading "Sign in first" over a dead button was
+     the version before this: correct, and a dead end. */
+  const out=!authState.signedIn;
   const WORTH=80, RTB=34.99;
-  const save=Math.round(WORTH-RTB);
-  $('sheet-in').innerHTML='<div class="eyebrow gold">Premium</div>'+
-    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Unlock Dynasty Mode</h2>'+
+  box.innerHTML='<div class="eyebrow gold">Pro</div>'+
+    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Go Pro</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:7px 0 0">'+
-      'Unlimited dynasty runs. No daily limit. One payment, lifetime access.</p>'+
+      'Unlimited dynasty runs, no daily limit, and every Pro mode. '+
+      'One payment, lifetime access.</p>'+
     '<div class="pw-hero">'+
-      pwTile('trophy','Dynasty Mode','Build a 25 season dynasty')+
-      pwTile('shield','Franchise Mode','Pick one NFL club and stay')+
-      pwTile('clipboard','Commissioner','Run a college football league')+
+      pwTile('trophy','Dynasty','25 seasons, one job')+
+      pwTile('shield','Franchise','One club, for good')+
+      pwTile('clipboard','Commissioner','Run a league')+
     '</div>'+
 
     '<div class="pw-tier">'+
-      '<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'+
-      '<div class="pw-cost"><b>$19.99</b></div>'+
-      pwGroup('ps',['<b>Dynasty Mode.</b> Unlimited runs, no daily limit.',
-        '<b>Franchise Mode.</b> One NFL club, every season.'])+
-      pwGroup('cfb',['<b>Commissioner Mode.</b> Run your own league.'])+
-      '<p class="pw-note">Lifetime access. One payment, no subscription.</p>'+
-      '<button class="btn" id="b-buy-ps" style="width:100%">Unlock Premium</button>'+
+      '<div class="pw-th"><span class="pw-name">Premium Bundle</span>'+
+        '<span class="pw-cost"><b>$19.99</b></span></div>'+
+      pwGroupText('ps','Dynasty Mode and Franchise Mode')+
+      pwGroupText('cfb','Commissioner Mode')+
+      '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
+        (out?'Sign in to go Pro':'Go Pro')+'</button>'+
     '</div>'+
 
     '<div class="pw-tier best">'+
@@ -9100,28 +9110,22 @@ function premiumSheet(){
         '<span class="pw-tag">Best value</span></div>'+
       '<div class="pw-cost"><b>$'+RTB.toFixed(2)+'</b>'+
         '<span class="pw-was">$'+WORTH+'</span>'+
-        '<span class="pw-save">Save $'+save+'</span></div>'+
-      '<div class="pw-bar"><i style="width:'+Math.round(RTB/WORTH*100)+'%"></i></div>'+
-      '<div class="pw-barc"><span>You pay $'+RTB.toFixed(2)+'</span><span>Worth $'+WORTH+'</span></div>'+
-      pwGroup('ps',['<b>Dynasty Mode.</b> Unlimited runs, no daily limit.',
-        '<b>Franchise Mode.</b> One NFL club, every season.'])+
-      pwGroup('cfb',['<b>Commissioner Mode.</b> Run your own league.'])+
-      pwGroup('arcade',['<b>1 year of the Arcade Card.</b> Every daily puzzle.'])+
-      pwGroup('tour',['<b>102,000 coins</b> to spend',
-        '<b>Bonus Tour pack</b>'])+
-      '<p class="pw-note">Four games. Lifetime access on the modes, one payment.</p>'+
-      '<button class="btn" id="b-buy-rtb" style="width:100%">Get Run The Bundle</button>'+
+        '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'+
+      '<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'+
+      pwGroupText('arcade','1 year of the Arcade Card')+
+      pwGroupText('tour','102,000 coins and a bonus Tour pack')+
+      '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
+        (out?'Sign in to get it':'Get Run The Bundle')+'</button>'+
     '</div>'+
 
-    '<p class="pw-foot">Instant access on every device you sign in on. '+
+    '<p class="pw-foot">Either one makes your account Pro. '+
       'Secure checkout by Stripe.</p>'+
     '<div style="margin-top:12px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>';
-  $('sheet-in').dataset.kind='premium';
   openSheet();
   $('b-buy-ps').onclick=()=>beginBundleCheckout('perfect-season');
   $('b-buy-rtb').onclick=()=>beginBundleCheckout('run-the-bundle');
   $('sh-x').onclick=closeSheet;
-  ga('premium_sheet_shown',{from:premiumFrom||'mode'});
+  ga('premium_sheet_shown',{from:premiumFrom||'mode',tier:acctTier()||'out'});
   premiumFrom=null;
 }
 
@@ -9130,7 +9134,10 @@ function premiumSheet(){
 async function beginBundleCheckout(kind){
   const a=A();
   const t=a&&typeof a.token==='function'?a.token():null;
-  if(!t){ toast('Sign in first'); return; }
+  /* THE PURCHASE NEEDS AN ACCOUNT, so send them to make one rather than telling them off.
+     This was a toast reading "Sign in first" over a button that then did nothing, which is a
+     dead end at the exact moment somebody had decided to pay. */
+  if(!t){ closeSheet(); setTimeout(()=>profileSheet(),260); return; }
   try{
     const r=await fetch('/api/stripe/checkout-bundle',{
       method:'POST',
@@ -9191,6 +9198,34 @@ function paintHomeStart(){
  * owner would be advertised the thing they own for as long as the round trip takes, on the
  * screen they see most. A signed-out visitor has nothing in flight and is offered it.
  */
+/*
+ * THE ACCOUNT'S TIER, AND THERE ARE THREE ANSWERS RATHER THAN TWO.
+ *
+ * Signed out is not "Free". A free account is a thing somebody HAS, and a visitor with no
+ * account has nothing to show a status for; a pill reading Free over a signed out page is
+ * telling them about an account that does not exist.
+ *
+ * NOT KNOWN YET IS ALSO NOT "FREE". premiumSet is null until premium_products() answers, and
+ * a pill that says Free for the length of that round trip says it to the paying customer as
+ * well. Null both ways, and the pill simply is not drawn until there is something true to
+ * draw. This is the same rule premiumPitch() follows below and for the same reason.
+ */
+function acctTier(){
+  if(!authState.signedIn) return null;
+  if(premiumSet===null) return null;
+  return dynastyOwned()?'pro':'free';
+}
+const pwPill=()=>{
+  const t=acctTier();
+  if(!t) return '';
+  /* AN <i> AND NOT A <span>, which is not a style preference. The profile writes
+     `.pfid .pfn span{display:block}` for the line under the name, and that selector outranks
+     a single class: as a span the pill inherited display:block and rendered as a full width
+     gold bar on its own row. An element the rule cannot match is a smaller fix than a
+     specificity war, and this file already uses <i> for non-semantic bits. */
+  return '<i class="pw-pill '+t+'">'+(t==='pro'?'Pro':'Free')+'</i>';
+};
+
 function premiumPitch(){
   if(!canPlayDynasty()) return false;
   if(authState.signedIn&&premiumSet===null) return false;
@@ -19716,7 +19751,8 @@ function pfHub(msg,ok){
   const st=authState, nm=st.name;
   box.innerHTML='<div class="eyebrow">Your profile</div>'+
     '<div class="pfid"><span class="pfav" id="pf-av"></span>'+
-      '<span class="pfn"><b>'+esc(nm)+'</b><span id="pf-sub">Your RunThe.GG account</span></span></div>'+
+      '<span class="pfn"><b>'+esc(nm)+pwPill()+'</b>'+
+        '<span id="pf-sub">Your RunThe.GG account</span></span></div>'+
     (msg?authMsg(msg,ok):'')+
     '<div class="pfstats">'+
       '<div class="pfstat"><b id="pf-runs">&mdash;</b><span>Runs played</span></div>'+
