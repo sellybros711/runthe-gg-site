@@ -146,7 +146,15 @@ async function grantBundle(env, userId, bundleKey, session) {
       user_id: userId,
       product: g.product,
       source: 'bundle:' + bundleKey,
-      payload: Object.assign({ checkout_session: session.id }, g.payload || {}),
+      /* THE CUSTOMER ID TRAVELS WITH THE GRANT, because nothing else records it
+       * for a bundle: a one-time payment writes no subscriptions row, so without
+       * this the buyer's own receipts are unreachable and /api/stripe/portal has
+       * to go back to Stripe with the session id to find them. Written from the
+       * session, which is the object that created the customer. */
+      payload: Object.assign(
+        { checkout_session: session.id, stripe_customer: session.customer || null },
+        g.payload || {}
+      ),
       expires_at: g.months ? new Date(now.getTime() + g.months * 30.44 * 86400000).toISOString() : null,
       fulfilled_at: g.product === 'runtour_pack' ? null : now.toISOString(),
       granted_at: now.toISOString()
