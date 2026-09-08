@@ -466,7 +466,15 @@
       p_playoff_wins: payload.playoffWins,
       p_point_diff: round1(payload.pointDiff),
       p_chemistry_pct: payload.chemistryPct,
-      p_spend_musd: payload.spendMusd,
+      /* ROUNDED, BECAUSE THIS IS A SUM OF FLOATS AND THE SERVER COMPARES IT TO THE CAP.
+         Every price in the pool has at most one decimal and a dynasty's dead cap is a
+         quarter of one, so two places hold every real number this can produce. What they do
+         not hold is the tail a float sum grows: 3 + 3 + 11.1 + 47.2 + 47.9 + 27.8 is exactly
+         the $140M cap and adds up to 140.00000000000002842, which ps_submit_run read as over
+         budget and refused outright. Real prices out of the shipped pool.
+         TWO PLACES AND NOT ONE. One would also round a genuinely over-cap payroll back under
+         the line, which is the one thing this number is checked for. */
+      p_spend_musd: round2(payload.spendMusd),
       p_respins: payload.respins || 0,
       p_franchise: payload.franchise || null,
       p_era: payload.era || null,
