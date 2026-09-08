@@ -5646,6 +5646,19 @@ window.GA_ID='G-L29P5MRWKE';
   .confetti-cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:58}
   .sheet{position:fixed;inset:0;background:rgba(0,0,0,0);display:flex;z-index:60;
     align-items:flex-end;justify-content:center;padding:14px;
+    /* ROOM AT THE TOP FOR CHROME THAT IS NOT OURS.
+       An in-app browser (a link opened inside Instagram, X, Messages and most other apps)
+       floats its own close and share buttons over the page. They are drawn on top of us, we
+       are never told they are there, and there is no media query that describes them. On a
+       tall sheet the first thing under them is the heading: a store sheet reached from a
+       shared link had GO PRO with a circular X sitting on the G.
+       So the sheet reserves the band those controls live in and simply never starts inside
+       it. The cost is that every sheet begins a few dozen pixels lower on a screen with no
+       such chrome, which a bottom anchored panel can afford: it grows upward, so the room
+       comes off the top of the tallest sheets and off nothing else.
+       env() carries the notch on top of that, and defaults to 0 where there is none. */
+    padding-top:calc(env(safe-area-inset-top, 0px) + 62px);
+    padding-bottom:max(14px, env(safe-area-inset-bottom, 0px));
     visibility:hidden;pointer-events:none;transition:background .3s ease,visibility 0s .3s}
   .sheet.on{visibility:visible;pointer-events:auto;background:rgba(0,0,0,.72);
     transition:background .3s ease,visibility 0s}
@@ -5656,6 +5669,15 @@ window.GA_ID='G-L29P5MRWKE';
      under a finger and iOS does not give it that by default. */
   .sheet .inner{width:100%;max-width:560px;background:var(--grad-panel);border:1px solid var(--line-2);
     border-radius:16px;padding:16px;max-height:86vh;overflow-y:auto;
+    /* TWO REASONS THIS SECOND LINE EXISTS, and the first is the one that bit.
+       86vh was measured against the LARGEST viewport, the one with the browser's own bars
+       retracted, so on a phone whose chrome is showing the sheet was taller than the screen
+       it was on and its top ran off under that chrome. dvh is the same measure taken against
+       what is actually visible right now.
+       100% is what makes the padding above load bearing: without it the panel sizes itself
+       from the viewport and walks straight through the band that padding reserved.
+       Older browsers ignore the whole declaration and keep the line above. */
+    max-height:min(86dvh, 100%);
     -webkit-overflow-scrolling:touch;overscroll-behavior:contain;will-change:transform;
     transform:translateY(100%);opacity:0;
     transition:transform .26s cubic-bezier(.4,0,.7,.3),opacity .18s ease}
@@ -8990,11 +9012,27 @@ $('b-start-def').onclick=()=>{ beginDefenseDraft(); };
  * one who has paid to never be locked out. So a null answer means the page does not know,
  * and not knowing lets you play.
  */
-/* OFF UNTIL THERE IS SOMETHING TO BUY. A limit shipped before the subscription exists makes
-   the free game worse and earns nothing, so this stays false until the paid tier is live.
-   It is in the page rather than in a sibling script on purpose: index.html revalidates on
-   every visit, so flipping it needs no cache bump and takes effect immediately. */
-const DAILY_LIMIT_LIVE=false;
+/* ── WHO IS METERED ───────────────────────────────────────────────────────────────────
+ *
+ * ON FOR TESTERS, OFF FOR EVERYBODY ELSE, and that split is the point rather than caution.
+ *
+ * THE TRADE MACHINE IS LIVE TO EVERY SIGNED IN PLAYER. So a limit switched on for everybody
+ * today would meter the whole player base on a mode they already play, and the upgrade it
+ * offers in exchange answers "Not on sale yet", because no Stripe price is configured. That
+ * is exactly the trade the old comment here warned about: the free game gets worse and
+ * nothing is earned. Dynasty is not the exposure, because nobody outside the list can reach
+ * it at all; the Trade Machine is.
+ *
+ * The people who need to watch the meter work are the ones already looking at the paywall,
+ * which is the dynasty tester list. So it follows that list until there is something to buy.
+ *
+ * TO LAUNCH IT FOR EVERYBODY, set DAILY_LIMIT_ALL to true. That is the whole change, and it
+ * belongs in the same sitting as the Stripe price env vars rather than in front of them.
+ *
+ * Both live in the page rather than in a sibling script on purpose: index.html revalidates
+ * on every visit, so flipping either needs no cache bump and takes effect immediately. */
+const DAILY_LIMIT_ALL=false;
+const dailyLimited=()=>DAILY_LIMIT_ALL||canPlayDynasty();
 let dailyState={dynasty:null,trade:null};
 let dailyAsked={dynasty:false,trade:false};
 let dailyTick=0;
@@ -9009,7 +9047,7 @@ let dailyTick=0;
    single worst moment in the game to be wrong about this. Failing open here is the same rule
    the rest of this block already follows: a limit that cannot be checked must not cost
    somebody a run. */
-const dailyOn=()=>DAILY_LIMIT_LIVE&&!!authState.signedIn
+const dailyOn=()=>dailyLimited()&&!!authState.signedIn
   &&premiumSet!==null&&!dynastyOwned();
 /* How many starts are left today, and 1 whenever the page has no answer. */
 function dailyLeft(mode){
@@ -9118,7 +9156,7 @@ function dailySpentSheet(mode){
  * was missing. Nothing asked the server how many trade runs were left, nothing checked
  * before a launch, and the mode card said the same thing on a spent day as on a fresh one.
  *
- * WHAT THAT WOULD HAVE DONE the day DAILY_LIMIT_LIVE flips: a second run starts, plays a
+ * WHAT THAT WOULD HAVE DONE the day the meter reaches somebody: a second run starts, plays a
  * whole season, and the spend behind it is refused by a server nobody is listening to. The
  * player is never told there is a limit, never told they have hit it, and never offered the
  * thing that lifts it. That is the one shape of paywall that produces a complaint rather
