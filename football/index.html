@@ -5732,20 +5732,40 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-pill.pro{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
   .pw-was{font-size:13px;color:var(--dim-2);text-decoration:line-through}
   .pw-save{font-size:11.5px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.04em}
-  /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME'S OWN COLOUR. The rail down the
-     side plus the name in the same hue is the whole colour code, and it is what
-     makes Run The Bundle read as buying things in four places rather than as one
-     long list of nouns.
+  /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME'S OWN COLOUR. The colour code is
+     the dot plus the name in the same hue, and it is what makes Run The Bundle read
+     as buying things in four places rather than as one long list of nouns.
 
-     THIS SHIPPED WITHOUT ITS RULE, which is the failure mode a class rename has.
-     The trim that shortened this sheet replaced .pw-src with .pw-line and took the
-     old block of CSS out along with the markup it was written for, so every line
-     went on setting --gc and nothing read it: four identical grey paragraphs, no
-     rail, no colour, and no error anywhere. The colours below are measured, and
-     the note on PW_GAME says what against. */
-  .pw-line{border-left:2px solid var(--gc);padding-left:10px;margin-top:10px}
+     A BULLET RATHER THAN A RAIL DOWN THE SIDE. Owner's call, and the rail had a
+     real problem behind the preference: a 2px line the full height of a three line
+     block is a lot of coloured ink for a label, and four of them stacked read as a
+     table with borders rather than as a list of things you get. A dot is the same
+     information at a fraction of the weight.
+
+     THE DOT IS DRAWN, NOT A BULLET CHARACTER, because a real bullet inherits the
+     font's own size and baseline and lands in a different place in every one of the
+     four rows depending on what follows it.
+
+     LAID OUT AS A GRID so the name, the item and the term all hang off the same
+     left edge in column two, which is what makes it a bullet list rather than a dot
+     with three lines drifting under it. Two columns, and every child is pinned to
+     the second: the dot is the only thing in the first.
+
+     THIS BLOCK SHIPPED ONCE WITH NO RULE AT ALL, which is the failure mode a class
+     rename has. The trim that shortened this sheet replaced .pw-src with .pw-line
+     and took the old CSS with it, so every line went on setting --gc and nothing
+     read it: four identical grey paragraphs and no error anywhere. The colours are
+     measured, and the note on PW_GAME says what against. */
+  .pw-line{display:grid;grid-template-columns:7px 1fr;column-gap:10px;margin-top:11px}
+  .pw-line:before{content:"";grid-column:1;grid-row:1;width:7px;height:7px;
+    border-radius:999px;background:var(--gc);
+    /* Centred on the cap height of the 10px uppercase name above it, whose line box
+       is 12px, rather than on the line box itself: uppercase type sits high in its
+       own leading and a dot centred on the box reads low against it. */
+    margin-top:2px}
   .pw-line b{display:block;font-family:var(--fn);font-size:10px;letter-spacing:.09em;
     text-transform:uppercase;font-weight:800;color:var(--gc);line-height:1.2}
+  .pw-line b,.pw-line span,.pw-line i{grid-column:2}
   .pw-line span{display:block;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35}
   /* THE DATE LINE, on the receipt and never in the store. The same block does both jobs, so
      the third line is simply absent where there is nothing bought yet to date. */
