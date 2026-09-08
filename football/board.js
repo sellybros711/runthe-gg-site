@@ -100,6 +100,20 @@
      migration's columns get their own flag or running N and not N+1 costs the board
      everything the earlier files added. */
   let ringColumn = true;
+  /* 98's three and 94's pair. Optional in the same way as the sets above, and unlike ALL of
+     them these are asked for by mine() ALONE and are deliberately not in rowCols() below.
+     Only the badge cabinet reads them: 98's three say which seasons belong to the same
+     dynasty, without which a run is a pile of unrelated rows, and 94's pair say who coached a
+     Full Team season.
+
+     KEPT OUT OF THE BOARD LIST ON PURPOSE. Every optional set in rowCols() has to be handled
+     by a matching branch in the retry loop of every function that uses it, and there are
+     several. A set added to the list and not to those loops does not cost a column on a
+     database one migration behind, it 400s and BREAKS THE WHOLE LEADERBOARD, because the loop
+     reaches a body it has no branch for and stops. The board has no use for either set, so
+     the safe place for them is the one call that does. */
+  let dynastyColumns = true;
+  let coachColumns = true;
   const rowCols = () => BASE_COLS + (namesColumn ? ',display_name' : '') +
     (avatarColumns ? ',display_color,display_initials' : '') +
     (tradeColumns ? ',gm_rating,trade_moves' : '') +
@@ -115,6 +129,8 @@
   const missingNameColumn = (body) => missingCol(body, /display_name/);
   const missingTradeColumn = (body) => missingCol(body, /gm_rating|trade_moves/);
   const missingDefColumn = (body) => missingCol(body, /def_takeaways|def_tds|points_allowed/);
+  const missingDynastyColumn = (body) => missingCol(body, /dynasty_id|dynasty_season|dynasty_score/);
+  const missingCoachColumn = (body) => missingCol(body, /\bcoach\b|\bplan\b/);
   const missingCrestColumn = (body) => missingCol(body, /display_mark|display_rung/);
   const missingTierColumn = (body) => missingCol(body, /display_tier/);
   const missingRingColumn = (body) => missingCol(body, /display_ring/);
@@ -773,23 +789,32 @@
      BASE_COLS, without display_name: these are your own runs and the panel never prints a
      name on them.
 
-     ONE RETRY, and only for the trade pair. It used to need none, and that is no longer
-     true: these are the rows the badge cabinet is derived from, so gm_rating and
-     trade_moves have to come back here or every Trade Machine badge reads as unearned on a
-     database that has them. Nothing else in this call is optional, so a 400 that is not
-     about those two columns is still a plain failure. */
+     RETRIES, FOR EVERY OPTIONAL SET THE CABINET READS. It used to need none, and then one:
+     these are the rows the badge cabinet is derived from, so a column that is here and not
+     asked for costs badges rather than rows. gm_rating and trade_moves carry the Trade
+     Machine, 98's three carry which seasons belong to the same dynasty, and 94's pair carry
+     who coached a Full Team season. Each drops on its own, because a project that has run
+     one migration and not the next should lose that file's badges and no others. Nothing
+     else in this call is optional, so a 400 naming none of them is still a plain failure.
+
+     FOUR PASSES, one per droppable set. Three would stop one short of the last one and leave
+     a database missing all four answering nothing at all. */
   async function mine(userId, limit) {
     if (!userId) return null;
     try {
-      const cols = () => BASE_COLS + (tradeColumns ? ',gm_rating,trade_moves' : '');
+      const cols = () => BASE_COLS + (tradeColumns ? ',gm_rating,trade_moves' : '') +
+        (dynastyColumns ? ',dynasty_id,dynasty_season,dynasty_score' : '') +
+        (coachColumns ? ',coach,plan' : '');
       const q = () => base() + TABLE + '?select=' + cols() +
         '&user_id=eq.' + encodeURIComponent(userId) +
         '&order=created_at.desc&limit=' + (limit || 500);
       let res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
-      for (let pass = 0; pass < 2 && !res.ok && res.status === 400; pass++) {
+      for (let pass = 0; pass < 4 && !res.ok && res.status === 400; pass++) {
         const body = await res.json().catch(() => null);
         if (defColumns && missingDefColumn(body)) defColumns = false;
         else if (tradeColumns && missingTradeColumn(body)) tradeColumns = false;
+        else if (dynastyColumns && missingDynastyColumn(body)) dynastyColumns = false;
+        else if (coachColumns && missingCoachColumn(body)) coachColumns = false;
         else break;
         res = await timed(q(), { headers: headers({ Prefer: 'count=exact' }) });
       }
@@ -1146,7 +1171,7 @@
     attemptsCall('ps_attempt_grace', mode, { p_reason: reason });
 
   window.PS_BOARD = {
-    API_VERSION: 15,
+    API_VERSION: 16,
     submit, ranks, rankIn, placeIn, total, perfectCount, top, mine, byId, scoreOf, cutoffISO,
     SORTS, probe, myAvatar, setAvatar, setCrest,
     dynastyTag, dynastyTop, dynastyMine, dynastyRank, dynastyTotal,

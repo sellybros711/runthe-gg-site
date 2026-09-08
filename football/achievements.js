@@ -41,6 +41,35 @@
   const CAP = (ENG && ENG.CONSTANTS && ENG.CONSTANTS.CAP_MUSD) || 140;
   const nick = (id) => (ENG && ENG.NICKNAMES && ENG.NICKNAMES[id]) || id;
 
+  /* ---------------- badges for a mode that has not launched ----------------
+   *
+   * Dynasty and Full Team are both finished and both hidden: dynasty-access.js and
+   * fullteam-access.js each carry a LIVE flag, false today, and a tester list that opens the
+   * mode to a handful of accounts. Their badges are in the catalog only when the MODE'S OWN
+   * FLAG says the mode is live, and the two access files load before this one, so flipping
+   * either flag brings its shelf with it in the same edit.
+   *
+   * ON THE FLAG AND NOT ON THE TESTER LIST, which is the part worth being deliberate about.
+   * A tester can play Dynasty today and will not see its badges until launch, and that is the
+   * cheaper of the two mistakes available here. CATALOG.length is what crest.js divides by:
+   * it is the "of 387" in "212 of 387 badges", and it is what GOAT means. A catalog whose
+   * size depended on who was looking would give two players with identical cabinets two
+   * different ranks, and would hand a tester a GOAT nobody else could reach. One number for
+   * everybody, and it changes on the day the mode does.
+   *
+   * A rank is derived from the catalog rather than stored, so the day the flag flips every
+   * cabinet is recomputed against the bigger total and the seasons a tester already played
+   * are already in it. Nobody has to replay anything.
+   */
+  const ROOT = (typeof globalThis !== 'undefined' && globalThis)
+    || (typeof window !== 'undefined' && window) || {};
+  const liveFlag = (name) => {
+    const m = ROOT[name];
+    return !!(m && m.LIVE);
+  };
+  const DYNASTY_LIVE = liveFlag('PS_DYNASTY_ACCESS');
+  const FULLTEAM_LIVE = liveFlag('PS_FULLTEAM_ACCESS');
+
   /* ---------------- small helpers ---------------- */
 
   const has = (v) => v !== null && v !== undefined;
@@ -61,6 +90,14 @@
     return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
   };
   const decadeOf = (season) => Math.floor(Number(season) / 10) * 10;
+  /* The player ids on a row, with each man's season stripped off. His season is exactly what
+     moves when he ages, so anything comparing one winter's roster to the next has to match on
+     the id or it reports six strangers every year. */
+  const idsOfRow = (r) => (Array.isArray(r.picks) ? r.picks : [])
+    .map((k) => String(k).slice(0, String(k).lastIndexOf(':'))).filter(Boolean);
+  /* The win the job starts out needing, read off the engine so this file and the mode cannot
+     disagree about it. Falls back for the headless case with no engine loaded. */
+  const DYN_BASE_WINS = (ENG && ENG.DYNASTY_BASE_WINS) || 8;
 
   /* ---------------- streaks ---------------- */
 
@@ -222,6 +259,11 @@
       return { row: r, roster, slots: Array.isArray(r.slots) ? r.slots : [], links, stack };
     });
 
+    /* Row to its resolved roster, so a later pass can ask about the six men of one season
+       without paying for the resolve a second time. */
+    const byRow = new Map(runs.map((x) => [x.row, x]));
+    const EMPTY = { roster: [] };
+
     /* COLLECTION SETS: everything a family badge asks about, gathered in one pass. */
     const seasonsDrafted = new Set(), clubsDrafted = new Set(), collegesDrafted = new Set();
     const awardsDrafted = new Set(), linkTypesEver = new Set();
@@ -304,6 +346,101 @@
         inPlayers: moves.reduce((a, m) => a.concat(m.inPlayers), []) });
     }
 
+    /* ---- DYNASTY, WHICH IS THE ONE MODE WHERE A ROW IS NOT A RUN ----
+       Every other mode on this site plays one season and files one row, so "a run" and "a
+       row" are the same thing and every test above can be written against the flat list.
+       Dynasty files a row PER SEASON, tagged with the id of the run it belongs to, and
+       almost everything worth asking about it is a question about the run rather than the
+       season: how far it got, how many rings it collected on the way, whether the same man
+       was still there five winters later. So the seasons are gathered back into runs once,
+       here, and the badges below ask about these rather than about rows.
+
+       A row with no dynasty_id contributes nothing. That covers three real cases and they
+       all want the same answer: a season from another mode, a dynasty season played before
+       98 added the columns, and a database that has 98 but whose client could not ask for
+       them. None of those is "a dynasty of length zero", so none of them makes one. */
+    const dynMap = new Map();
+    for (const r of asc) {
+      if (r.run_mode !== 'dynasty' || !r.dynasty_id) continue;
+      let d = dynMap.get(r.dynasty_id);
+      if (!d) { d = { id: r.dynasty_id, seasons: [] }; dynMap.set(r.dynasty_id, d); }
+      d.seasons.push(r);
+    }
+    const dynasties = [];
+    for (const d of dynMap.values()) {
+      /* BY THE SEASON NUMBER THE RUN ITSELF KEPT, not by when the row was written. They
+         usually agree and they are not the same thing: a run picked up again the next
+         morning writes season 7 a day after season 6, and a resumed save can write two
+         seasons out of clock order if a submit was retried. The run's own count is the only
+         ordering that is true by construction. */
+      const seasons = d.seasons.slice().sort((a, b) => Number(a.dynasty_season) - Number(b.dynasty_season));
+      const reached = seasons.reduce((m, r) => Math.max(m, Number(r.dynasty_season) || 0), 0);
+      const score = seasons.reduce((m, r) => Math.max(m, Number(r.dynasty_score) || 0), 0);
+      const wins = seasons.map((r) => num(r.wins)).filter((v) => v !== null);
+      /* Rings in a row INSIDE ONE RUN, which is a different question from the career streak
+         above: that one counts across every mode and every run, this one is a story about
+         one team. Counted over consecutive seasons of this dynasty only. */
+      let ringRun = 0, bestRing = 0, poRun = 0, bestPo = 0;
+      for (const r of seasons) {
+        if (isTrue(r.title_won)) { ringRun++; if (ringRun > bestRing) bestRing = ringRun; } else ringRun = 0;
+        if (isTrue(r.made_playoffs)) { poRun++; if (poRun > bestPo) bestPo = poRun; } else poRun = 0;
+      }
+      /* THE CAST OF THE WHOLE RUN, and the continuity inside it. A dynasty's picks are the
+         same six men walking forward a year at a time, so the interesting question is not
+         who was drafted but who was KEPT: the same player_id turning up in consecutive
+         seasons is a man who survived a winter. `held` is the longest anybody lasted.
+
+         Keyed on player_id and NOT on the pick key, because the key carries his season and
+         his season is exactly what changes when he ages. Matching on the key would report
+         every roster as six strangers every year, which is the opposite of the truth. */
+      const idsOf = idsOfRow;
+      const cast = new Set();
+      const tenure = Object.create(null);
+      let held = 0, prev = null, prevN = null;
+      for (const r of seasons) {
+        const ids = idsOf(r);
+        const n = Number(r.dynasty_season);
+        for (const id of ids) cast.add(id);
+        /* Only a season that directly follows the one before it can extend a tenure. A gap
+           in the numbering means a season nobody has a row for, and a man on both sides of
+           it was not necessarily there through it. */
+        const consecutive = prev && prevN != null && n === prevN + 1;
+        for (const id of ids) {
+          tenure[id] = (consecutive && prev.has(id)) ? tenure[id] + 1 : 1;
+          if (tenure[id] > held) held = tenure[id];
+        }
+        prev = new Set(ids); prevN = n;
+      }
+      dynasties.push({
+        id: d.id, seasons, reached, score, cast, held,
+        club: seasons[0] ? (seasons[0].franchise || null) : null,
+        titles: seasons.filter((r) => isTrue(r.title_won)).length,
+        playoffs: seasons.filter((r) => isTrue(r.made_playoffs)).length,
+        perfect: seasons.filter((r) => isTrue(r.perfect)).length,
+        ringStreak: bestRing, poStreak: bestPo,
+        bestWins: wins.length ? Math.max.apply(null, wins) : null,
+        worstWins: wins.length ? Math.min.apply(null, wins) : null,
+        /* The last season anybody has a row for. Whether it ENDED there is not knowable: a
+           firing is not written down, and a run still going looks exactly the same. So no
+           badge below says "your dynasty ended", only how far it got. */
+        last: seasons[seasons.length - 1] || null,
+      });
+    }
+    const clubDynasties = new Set(dynasties.filter((d) => d.club).map((d) => d.club));
+    const bestDynasty = dynasties.reduce((m, d) => Math.max(m, d.reached), 0);
+    const bestDynastyScore = dynasties.reduce((m, d) => Math.max(m, d.score), 0);
+
+    /* ---- FULL TEAM's coach and plan, from 94 ---- */
+    const fullRuns = asc.filter((r) => r.run_mode === 'fullteam');
+    const coaches = new Set(fullRuns.map((r) => r.coach).filter(Boolean));
+    const coachRings = new Set(fullRuns.filter((r) => isTrue(r.title_won)).map((r) => r.coach).filter(Boolean));
+    /* Every plan actually played, as "tempo,fourth,pressure". A plan is three axes at -1, 0
+       or 1, so there are 27 of them and the set is what "tried them all" counts. */
+    const planKey = (p) => (p && typeof p === 'object'
+      ? [p.tempo, p.fourth, p.pressure].map((v) => (v == null ? 0 : Number(v))).join(',')
+      : null);
+    const plans = new Set(fullRuns.map((r) => planKey(r.plan)).filter(Boolean));
+
     const titles = asc.filter((r) => isTrue(r.title_won));
     const modeOf = (r) => r.run_mode || null;
     const clubsPlayed = new Set(asc.map((r) => r.franchise).filter(Boolean));
@@ -321,6 +458,17 @@
       play: playStreak(dayKeys, todayKey),
       title: titleStreak(asc),
       clubsPlayed, clubTitles, clubBanners, modesPlayed, modeTitles,
+      dynasties, clubDynasties, bestDynasty, bestDynastyScore,
+      anyDynasty: (fn) => dynasties.some(fn),
+      countDynasty: (fn) => dynasties.filter(fn).length,
+      /* THE SIX MEN OF A GIVEN SEASON, ALREADY RESOLVED. `runs` above resolves every row's
+         picks exactly once, so a dynasty badge asking who was on the roster reads that work
+         rather than resolving the same keys again per badge: there are two dozen of them and
+         a long career is five hundred rows. Empty for a row whose picks could not all be
+         resolved, which is the same "absent is not zero" rule the rest of this file follows,
+         so a roster test on an unresolvable row is false rather than a guess. */
+      rosterOf: (row) => (byRow.get(row) || EMPTY).roster,
+      fullRuns, coaches, coachRings, plans,
       seasonsDrafted, clubsDrafted, collegesDrafted, awardsDrafted, linkTypesEver,
       months, weekdays, monthDays, hours,
       moveRuns, moveTypes, dealtOut, dealtIn, cutPlayers, askedPlayers, bestGm, totalTrades,
@@ -1187,10 +1335,396 @@
       return false;
     }));
 
+  /* ===================== DYNASTY =====================
+   *
+   * ONLY WHEN THE MODE IS LIVE. See the note on DYNASTY_LIVE at the top of this file.
+   *
+   * WHAT THIS SHELF CAN AND CANNOT ASK, because the difference decides every badge on it.
+   * A dynasty season files an ordinary run row plus the three columns 98 adds, so what
+   * survives to be asked about is: how far the run got, what it scored, and the twenty-odd
+   * facts every other mode records about each season along the way. What does NOT survive is
+   * everything the run knew and did not write down: whether a boss game was won, whether a
+   * mandate was met, how much dead cap was being carried, who was frozen. Those live in the
+   * save file and die with it.
+   *
+   * So nothing here says "beat the Legion of Boom", which would be a badge that never fires.
+   * The nearest honest question is how far the run got, and reaching season 11 at all means
+   * the season 10 game was played and survived. That is a weaker claim and it is a true one.
+   *
+   * AND NOTHING NAMES A BOSS OR A MANDATE PAST THE SECOND. Bosses come every ten seasons and
+   * mandates every ten offset by five, out of lists of six and four, and the mode is built to
+   * run 25 seasons (E.DYNASTY_MAX_SEASONS). Inside 25 that is exactly two bosses and three
+   * mandates: seasons 30 and up, where the other four bosses and the fourth mandate live, are
+   * past the end of the design. A badge asking for the third boss would sit dark forever and
+   * nothing would fail, which is the way this class of mistake always arrives.
+   */
+  if (DYNASTY_LIVE) {
+    /* ---- how far you got, which is the number the mode is ranked on ---- */
+    [[1, 'Hired', 'Finish your first Dynasty season.', 'bronze'],
+     [3, 'Three winters', 'Reach season 3 of a dynasty.', 'bronze'],
+     [5, 'Still in the building', 'Reach season 5 of a dynasty.', 'bronze'],
+     [6, 'Mandate survivor', 'Reach season 6, the far side of the owner\'s first demand.', 'silver'],
+     [8, 'Long haul', 'Reach season 8 of a dynasty.', 'silver'],
+     [10, 'A decade in charge', 'Reach season 10 of a dynasty.', 'silver'],
+     [11, 'Past the Legion', 'Reach season 11, the far side of the first marquee game.', 'gold'],
+     [13, 'Thirteen winters', 'Reach season 13 of a dynasty.', 'gold'],
+     [15, 'Institution', 'Reach season 15 of a dynasty.', 'gold'],
+     [18, 'Eighteen deep', 'Reach season 18 of a dynasty.', 'legend'],
+     [20, 'Two decades', 'Reach season 20 of a dynasty.', 'legend'],
+     [21, 'Past them both', 'Reach season 21, having survived both marquee games.', 'legend'],
+     [25, 'A quarter of a century', 'Reach season 25 of a dynasty.', 'legend']]
+      .forEach(([n, name, desc, tier]) => {
+        add(A('dyn_reach_' + n, name, desc, tier, 'Dynasty', (c) => c.bestDynasty >= n));
+      });
+
+    /* ---- the score ----
+       Cumulative, and every season is multiplied by its own number, so the ladder climbs
+       much faster than the seasons do.
+
+       WHERE THE TOP OF IT COMES FROM, because the first draft of this ladder went to two
+       million and five hundred simulated dynasties peaked at 198,000. That is not the ceiling
+       though, and the reason is worth writing down: those runs almost never won anything, and
+       a title is 10,000 points times the season number. One ring in season 20 is 200,000 on
+       its own, more than the entire best run the bots managed. So the ladder is anchored at
+       the quarter million a grinder reaches without a trophy, and the rungs above it are
+       priced as one and two good Januaries on top of that. Anything past a million was
+       guesswork and is gone. */
+    [[25000, 'On the board', 'bronze'], [100000, 'Six figures', 'bronze'],
+     [250000, 'Quarter of a million', 'silver'], [500000, 'Half a million', 'gold'],
+     [1000000, 'The million', 'legend']]
+      .forEach(([n, name, tier]) => {
+        add(A('dyn_score_' + n, name, 'Score ' + n.toLocaleString() + ' in a single dynasty.',
+          tier, 'Dynasty', (c) => c.bestDynastyScore >= n));
+      });
+
+    /* ---- rings, counted inside ONE run ----
+       Different from the career title badges above, which count every ring in every mode.
+       These are a story about one team over one stretch of years. */
+    [[1, 'Banner year', 'Win a title inside a dynasty.', 'silver'],
+     [2, 'Two for the wall', 'Win 2 titles inside one dynasty.', 'gold'],
+     [3, 'Era defining', 'Win 3 titles inside one dynasty.', 'legend']]
+      .forEach(([n, name, desc, tier]) => {
+        add(A('dyn_titles_' + n, name, desc, tier, 'Dynasty', (c) => c.anyDynasty((d) => d.titles >= n)));
+      });
+    add(A('dyn_ring_streak_2', 'Back to back, same job',
+      'Win titles in two straight seasons of one dynasty.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.ringStreak >= 2)));
+    add(A('dyn_ring_streak_3', 'Three-peat in the chair',
+      'Win titles in three straight seasons of one dynasty.', 'legend', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.ringStreak >= 3)));
+
+    /* ---- January, every year ---- */
+    add(A('dyn_po_streak_5', 'Regulars', 'Reach the playoffs in 5 straight seasons of one dynasty.',
+      'silver', 'Dynasty', (c) => c.anyDynasty((d) => d.poStreak >= 5)));
+    add(A('dyn_po_streak_10', 'Nobody has a bad year here',
+      'Reach the playoffs in 10 straight seasons of one dynasty.', 'legend', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.poStreak >= 10)));
+    add(A('dyn_never_missed_8', 'Not one lean year',
+      'Run a dynasty 8 seasons deep without missing the playoffs once.', 'legend', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.reached >= 8 && d.playoffs === d.seasons.length
+        && d.seasons.length >= 8)));
+
+    /* ---- CONTINUITY, which is the whole point of the mode ----
+       Everybody ages a year every winter and his deal never gets cheaper, so a man who is
+       still on the roster five seasons later has been paid for five times over. Nothing else
+       on this site can ask this, because nothing else keeps a player past a single season.
+
+       Read off the picks: the same player_id in consecutive seasons of the same run. His
+       season number moves every winter, which is why the id is what is matched. */
+    [[3, 'Three years of him', 'bronze'], [5, 'Franchise cornerstone', 'silver'],
+     [8, 'One club man', 'gold'], [12, 'His whole career, yours', 'legend']]
+      .forEach(([n, name, tier]) => {
+        add(A('dyn_held_' + n, name,
+          'Keep the same player on your roster for ' + n + ' straight seasons.', tier, 'Dynasty',
+          (c) => c.anyDynasty((d) => d.held >= n)));
+      });
+    add(A('dyn_loyal', 'The band stayed together',
+      'Run a dynasty 8 seasons deep having used 12 or fewer different players.',
+      'legend', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.seasons.length >= 8 && d.cast.size > 0 && d.cast.size <= 12)));
+    add(A('dyn_churn', 'Revolving door',
+      'Use 30 or more different players inside one dynasty.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.cast.size >= 30)));
+
+    /* ---- seasons inside a dynasty, which the ordinary win badges do not single out ---- */
+    const dynSeason = (fn) => (c) => c.dynasties.some((d) => d.seasons.some(fn));
+    add(A('dyn_win_14', 'Fourteen and three', 'Win 14 games in a dynasty season.',
+      'silver', 'Dynasty', dynSeason((r) => has(r.wins) && Number(r.wins) >= 14)));
+    add(A('dyn_win_17', 'Perfect regular season, one club',
+      'Win all 17 in a dynasty season.', 'legend', 'Dynasty',
+      dynSeason((r) => has(r.wins) && Number(r.wins) >= 17)));
+    add(A('dyn_perfect', 'Untouchable, and staying',
+      'Go unbeaten and win it all in a dynasty season.', 'legend', 'Dynasty',
+      dynSeason((r) => isTrue(r.perfect))));
+    add(A('dyn_rating_100', 'Loaded', 'Field a dynasty roster rated 100 or better.',
+      'gold', 'Dynasty', dynSeason((r) => has(r.team_rating) && Number(r.team_rating) >= 100)));
+    add(A('dyn_first_ring', 'Hit the ground running',
+      'Win the title in the first season of a dynasty.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.seasons.some((r) => Number(r.dynasty_season) === 1
+        && isTrue(r.title_won)))));
+    add(A('dyn_late_ring', 'Worth waiting a decade for',
+      'Win the title in season 10 or later of a dynasty.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.seasons.some((r) => Number(r.dynasty_season) >= 10
+        && isTrue(r.title_won)))));
+    /* THE REBUILD, and it has to be read off two consecutive rows rather than one. A miss
+       followed by a ring the very next winter is the shape of a team that fixed itself. */
+    add(A('dyn_bounce_back', 'Fixed it in one winter',
+      'Miss the playoffs and win the title the very next season of the same dynasty.',
+      'legend', 'Dynasty', (c) => c.anyDynasty((d) => d.seasons.some((r, i) => i > 0
+        && isTrue(r.title_won) && !isTrue(d.seasons[i - 1].made_playoffs)
+        && Number(r.dynasty_season) === Number(d.seasons[i - 1].dynasty_season) + 1))));
+    /* THE OTHER WAY ROUND, which is the season that actually gets people fired. */
+    add(A('dyn_hangover', 'Champagne to cardboard',
+      'Win the title and miss the playoffs the very next season of the same dynasty.',
+      'silver', 'Dynasty', (c) => c.anyDynasty((d) => d.seasons.some((r, i) => i > 0
+        && !isTrue(r.made_playoffs) && isTrue(d.seasons[i - 1].title_won)
+        && Number(r.dynasty_season) === Number(d.seasons[i - 1].dynasty_season) + 1))));
+
+    /* ---- the cap, which is the pressure the mode runs on ----
+       spend_musd on a dynasty row is the cap LESS what was left, so it counts salaries,
+       re-spin fees and dead money together: what the season actually committed. */
+    add(A('dyn_thrifty', 'Doing it on the cheap',
+      'Play a dynasty season having committed under $100M.', 'silver', 'Dynasty',
+      dynSeason((r) => has(r.spend_musd) && Number(r.spend_musd) < 100)));
+    add(A('dyn_shoestring', 'Half a payroll',
+      'Play a dynasty season having committed under $75M.', 'gold', 'Dynasty',
+      dynSeason((r) => has(r.spend_musd) && Number(r.spend_musd) < 75)));
+    add(A('dyn_thrifty_ring', 'Value in the front office',
+      'Win a dynasty title with under $110M committed.', 'legend', 'Dynasty',
+      dynSeason((r) => isTrue(r.title_won) && has(r.spend_musd) && Number(r.spend_musd) < 110)));
+    add(A('dyn_all_in', 'Every penny',
+      'Commit $138M or more in a dynasty season.', 'silver', 'Dynasty',
+      dynSeason((r) => has(r.spend_musd) && Number(r.spend_musd) >= 138)));
+
+    /* ---- chemistry, and the cast a long run assembles ---- */
+    add(A('dyn_chem_8', 'They know each other',
+      'Field a dynasty roster with 8% chemistry or better.', 'gold', 'Dynasty',
+      dynSeason((r) => has(r.chemistry_pct) && Number(r.chemistry_pct) >= 8)));
+    add(A('dyn_decades', 'Four decades on one payroll',
+      'Use players from four different decades inside one dynasty.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => {
+        const dec = new Set();
+        for (const r of d.seasons) {
+          for (const k of (Array.isArray(r.picks) ? r.picks : [])) {
+            const s = Number(String(k).slice(String(k).lastIndexOf(':') + 1));
+            if (s) dec.add(decadeOf(s));
+          }
+        }
+        return dec.size >= 4;
+      })));
+
+    /* ---- THE NICHE SHELF ----
+       The rosters are on the rows, so a dynasty season can be asked the same questions a
+       single draft can, plus the one nothing else on this site can ask: what changed between
+       this winter and the last one. */
+    const dynRoster = (fn) => (c) => c.dynasties.some((d) => d.seasons.some((r) => {
+      const men = c.rosterOf(r);
+      return men.length > 0 && fn(men, r);
+    }));
+    add(A('dyn_same_six', 'If it is not broken',
+      'Field the exact same six men two seasons running.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => d.seasons.some((r, i) => {
+        if (!i) return false;
+        const prev = d.seasons[i - 1];
+        if (Number(r.dynasty_season) !== Number(prev.dynasty_season) + 1) return false;
+        const a = idsOfRow(r), b = idsOfRow(prev);
+        return a.length === 6 && b.length === 6 && a.every((x) => b.indexOf(x) >= 0);
+      }))));
+    add(A('dyn_six_clubs', 'Six badges, six cities',
+      'Field a dynasty roster of six men from six different clubs.', 'silver', 'Dynasty',
+      dynRoster((men) => men.length === 6 && new Set(men.map((p) => p.franchise)).size === 6)));
+    add(A('dyn_one_decade', 'All out of one decade',
+      'Field a dynasty roster whose six men all come from the same decade.', 'gold', 'Dynasty',
+      dynRoster((men) => men.length === 6
+        && new Set(men.map((p) => decadeOf(p.season))).size === 1)));
+    add(A('dyn_four_decades', 'Four decades in one huddle',
+      'Field a dynasty roster spanning four different decades.', 'legend', 'Dynasty',
+      dynRoster((men) => new Set(men.map((p) => decadeOf(p.season))).size >= 4)));
+    add(A('dyn_alumni', 'Old school ties',
+      'Field a dynasty roster with three men out of the same college.', 'gold', 'Dynasty',
+      dynRoster((men) => {
+        const by = Object.create(null);
+        for (const p of men) if (p.college) by[p.college] = (by[p.college] || 0) + 1;
+        return Object.values(by).some((n) => n >= 3);
+      })));
+    add(A('dyn_mvp', 'An MVP in the building',
+      'Field a dynasty roster with a league MVP on it.', 'gold', 'Dynasty',
+      dynRoster((men) => men.some((p) => (p.awards || []).some((a) => /^MVP$/i.test(a))))));
+    add(A('dyn_hardware_5', 'A trophy cabinet of a roster',
+      'Collect five different awards across the men of one dynasty.', 'legend', 'Dynasty',
+      (c) => c.anyDynasty((d) => {
+        const aw = new Set();
+        for (const r of d.seasons) {
+          for (const p of c.rosterOf(r)) for (const a of (p.awards || [])) aw.add(a);
+        }
+        return aw.size >= 5;
+      })));
+    add(A('dyn_improving', 'Better every year',
+      'Win more games than the season before, four seasons running.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => {
+        let run = 1;
+        for (let i = 1; i < d.seasons.length; i++) {
+          const a = d.seasons[i], b = d.seasons[i - 1];
+          const step = Number(a.dynasty_season) === Number(b.dynasty_season) + 1
+            && has(a.wins) && has(b.wins) && Number(a.wins) > Number(b.wins);
+          run = step ? run + 1 : 1;
+          if (run >= 4) return true;
+        }
+        return false;
+      })));
+    add(A('dyn_on_the_brink', 'One game from the sack',
+      'Finish a dynasty season on exactly the eight wins the job starts out needing.',
+      'silver', 'Dynasty',
+      dynSeason((r) => has(r.wins) && Number(r.wins) === DYN_BASE_WINS)));
+    /* JANUARY, NOT THE TROPHY, and for the same reason full_plan_ring gives up the trophy:
+       a title is rare on its own and a title with a WEAK roster stacks a second rare thing on
+       it. Six hundred simulated dynasties won titles and every one of them was carrying a
+       roster over 90, which is what you would expect and is not evidence that the other thing
+       is possible. Reaching the playoffs underrated is the same story and it happens. */
+    add(A('dyn_underdog', 'Not on paper',
+      'Reach the playoffs in a dynasty season with a roster rated under 90.',
+      'silver', 'Dynasty',
+      dynSeason((r) => isTrue(r.made_playoffs) && has(r.team_rating)
+        && Number(r.team_rating) < 90)));
+
+    /* ---- how many you have started, which is its own kind of stubbornness ---- */
+    [[3, 'Three goes at it', 'bronze'], [10, 'Serial rebuilder', 'silver'],
+     [25, 'Always another job', 'gold']].forEach(([n, name, tier]) => {
+      add(A('dyn_runs_' + n, name, 'Start ' + n + ' different dynasties.', tier, 'Dynasty',
+        (c) => c.dynasties.length >= n));
+    });
+    add(A('dyn_seasons_50', 'Fifty winters',
+      'Play 50 dynasty seasons in total, across however many runs it takes.', 'gold', 'Dynasty',
+      (c) => c.count((r) => r.run_mode === 'dynasty') >= 50));
+    add(A('dyn_seasons_150', 'A career in the chair',
+      'Play 150 dynasty seasons in total.', 'legend', 'Dynasty',
+      (c) => c.count((r) => r.run_mode === 'dynasty') >= 150));
+
+    /* ---- ONE FRANCHISE DYNASTY ----
+       A dynasty locked to a club: run_mode is still dynasty and the franchise column carries
+       the club, which is the only thing that tells the two apart.
+
+       COUNTED, NOT TILED. "The 32" above gives every club its own tile because each one costs
+       a single draft. A club dynasty costs a run of years, so 32 tiles would be 32 badges
+       nobody finishes and a shelf that reads as a wall of grey. The same collection as a
+       count says the same thing in four badges. */
+    const clubDyn = (d) => !!d.club;
+    add(A('dyn_club_1', 'Your club, your rules', 'Finish a season of a One Franchise Dynasty.',
+      'silver', 'Dynasty', (c) => c.anyDynasty(clubDyn)));
+    add(A('dyn_club_5', 'Settling in', 'Reach season 5 of a One Franchise Dynasty.',
+      'silver', 'Dynasty', (c) => c.anyDynasty((d) => clubDyn(d) && d.reached >= 5)));
+    add(A('dyn_club_10', 'A decade at one club', 'Reach season 10 of a One Franchise Dynasty.',
+      'gold', 'Dynasty', (c) => c.anyDynasty((d) => clubDyn(d) && d.reached >= 10)));
+    add(A('dyn_club_15', 'They will name something after you',
+      'Reach season 15 of a One Franchise Dynasty.', 'legend', 'Dynasty',
+      (c) => c.anyDynasty((d) => clubDyn(d) && d.reached >= 15)));
+    add(A('dyn_club_ring', 'A banner for your own club',
+      'Win a title in a One Franchise Dynasty.', 'gold', 'Dynasty',
+      (c) => c.anyDynasty((d) => clubDyn(d) && d.titles >= 1)));
+    add(A('dyn_club_ring_3', 'Three banners, one club',
+      'Win 3 titles inside one One Franchise Dynasty.', 'legend', 'Dynasty',
+      (c) => c.anyDynasty((d) => clubDyn(d) && d.titles >= 3)));
+    [[3, 'Three towns', 'bronze'], [8, 'Around the league', 'silver'],
+     [16, 'Half the league', 'gold'], [32, 'Every club, every winter', 'legend']]
+      .forEach(([n, name, tier]) => {
+        add(A('dyn_clubs_' + n, name,
+          'Run a One Franchise Dynasty with ' + n + ' different clubs.', tier, 'Dynasty',
+          (c) => c.clubDynasties.size >= n));
+      });
+  }
+
+  /* ===================== FULL TEAM =====================
+   * Twelve men, both sides of the ball, a coach and a three axis game plan. The coach and the
+   * plan are 94's two columns and they belong to this mode alone, so everything below that
+   * reads them is asking about a season nothing else on this site plays.
+   */
+  if (FULLTEAM_LIVE) {
+    add(A('mode_fullteam', 'Both sides of the ball', 'Finish a Full Team season.',
+      'bronze', 'Full Team', (c) => c.fullRuns.length >= 1));
+    [[5, 'Running the whole roster', 'bronze'], [25, 'Career in the big chair', 'silver'],
+     [100, 'A hundred full squads', 'gold']].forEach(([n, name, tier]) => {
+      add(A('full_' + n, name, 'Finish ' + n + ' Full Team seasons.', tier, 'Full Team',
+        (c) => c.fullRuns.length >= n));
+    });
+    add(A('full_ring', 'Complete team', 'Win a title with a full squad.', 'gold', 'Full Team',
+      (c) => c.fullRuns.some((r) => isTrue(r.title_won))));
+    add(A('full_15', 'Fifteen with a full squad', 'Win 15 games with a full squad.',
+      'silver', 'Full Team',
+      (c) => c.fullRuns.some((r) => has(r.wins) && Number(r.wins) >= 15)));
+    add(A('full_17', 'Twelve men, seventeen wins',
+      'Win all 17 with a full squad.', 'legend', 'Full Team',
+      (c) => c.fullRuns.some((r) => has(r.wins) && Number(r.wins) >= 17)));
+    /* FIFTY, NOT NINETY, and the number is measured rather than borrowed. A Full Team rating
+       is not on the same scale as every other mode's: fullSideRatings averages the two units
+       and CLAMPS the result to 100, where a six man offense is unclamped and a good one is
+       already past 110. Ninety was written by reading the offense's ladder and assuming it
+       carried over. Three hundred and fifty simulated full squads peaked at 54.9, so ninety
+       was a badge nobody could ever have earned and nothing would have said so. */
+    add(A('full_elite', 'Stacked both ways',
+      'Field a full squad rated 50 or better.', 'gold', 'Full Team',
+      (c) => c.fullRuns.some((r) => has(r.team_rating) && Number(r.team_rating) >= 50)));
+    add(A('full_chem', 'One locker room',
+      'Field a full squad with 6% chemistry or better.', 'gold', 'Full Team',
+      (c) => c.fullRuns.some((r) => has(r.chemistry_pct) && Number(r.chemistry_pct) >= 6)));
+
+    /* ---- the coach ---- */
+    [[3, 'Building a staff', 'bronze'], [10, 'Ten hires', 'silver'],
+     [25, 'Hire and fire', 'gold']].forEach(([n, name, tier]) => {
+      add(A('full_coach_' + n, name, 'Hire ' + n + ' different head coaches.', tier, 'Full Team',
+        (c) => c.coaches.size >= n));
+    });
+    add(A('full_coach_ring', 'The right man for it',
+      'Win a title with a coach on the sideline.', 'gold', 'Full Team',
+      (c) => c.coachRings.size >= 1));
+    add(A('full_coach_ring_3', 'It was never the coach',
+      'Win a title with 3 different head coaches.', 'legend', 'Full Team',
+      (c) => c.coachRings.size >= 3));
+
+    /* ---- the game plan: three axes at -1, 0 or 1, so 27 of them ----
+       A collection of exactly the right shape: each one is a single choice on a screen you
+       are already on, and all 27 is a season's worth of deliberately playing differently. */
+    [[5, 'Trying things', 'bronze'], [12, 'Half the playbook', 'silver'],
+     [27, 'The whole playbook', 'legend']].forEach(([n, name, tier]) => {
+      add(A('full_plan_' + n, name, 'Play ' + n + ' different game plans.', tier, 'Full Team',
+        (c) => c.plans.size >= n));
+    });
+    const axis = (k, v) => (c) => c.fullRuns.some((r) => r.plan && typeof r.plan === 'object'
+      && Number(r.plan[k]) === v);
+    add(A('full_hurry', 'No huddle', 'Play a season at the fastest tempo.', 'bronze', 'Full Team',
+      axis('tempo', 1)));
+    add(A('full_grind', 'Bleed the clock', 'Play a season at the slowest tempo.', 'bronze', 'Full Team',
+      axis('tempo', -1)));
+    add(A('full_gambler', 'Leave the punter at home',
+      'Play a season going for it on fourth.', 'bronze', 'Full Team', axis('fourth', 1)));
+    add(A('full_blitz', 'Send everybody', 'Play a season bringing pressure.', 'bronze', 'Full Team',
+      axis('pressure', 1)));
+    add(A('full_maximal', 'Everything turned up',
+      'Play a season fast, aggressive on fourth and blitzing.', 'silver', 'Full Team',
+      (c) => c.fullRuns.some((r) => r.plan && Number(r.plan.tempo) === 1
+        && Number(r.plan.fourth) === 1 && Number(r.plan.pressure) === 1)));
+    add(A('full_conservative', 'By the book',
+      'Play a season slow, punting on fourth and sitting back.', 'silver', 'Full Team',
+      (c) => c.fullRuns.some((r) => r.plan && Number(r.plan.tempo) === -1
+        && Number(r.plan.fourth) === -1 && Number(r.plan.pressure) === -1)));
+    /* JANUARY, NOT THE TROPHY. Written as a title first, which stacked two rare things on
+       each other: a Full Team title is about one season in a hundred on its own, and the
+       plan is only yours at all when you decline a coach, which costs you his boost. The
+       playoffs are the honest version of the same claim. */
+    add(A('full_plan_ring', 'The plan worked',
+      'Reach the playoffs with every axis of the plan turned up, and no coach.',
+      'gold', 'Full Team',
+      (c) => c.fullRuns.some((r) => isTrue(r.made_playoffs) && r.plan
+        && Number(r.plan.tempo) === 1 && Number(r.plan.fourth) === 1
+        && Number(r.plan.pressure) === 1)));
+  }
+
   const TIER_ORDER = { bronze: 0, silver: 1, gold: 2, legend: 3 };
-  const GROUPS = ['Milestones', 'Winning', 'Roster craft', 'Chemistry', 'Shapes', 'History',
-    'The vintages', 'The 32', 'Banners', 'Recruiting', 'Hardware', 'Modes', 'Defense',
-    'Front office', 'Calendar', 'Streaks'];
+  /* Shelf order in the profile. A group with nothing in it draws nothing, so the two hidden
+     modes can sit in this list before their badges exist. Dynasty goes near the front because
+     it is the mode with the most to chase. */
+  const GROUPS = ['Milestones', 'Winning', 'Dynasty', 'Roster craft', 'Chemistry', 'Shapes',
+    'History', 'The vintages', 'The 32', 'Banners', 'Recruiting', 'Hardware', 'Modes',
+    'Defense', 'Full Team', 'Front office', 'Calendar', 'Streaks'];
 
   /*
    * Evaluate the whole catalog. A test that throws is treated as not earned rather than
@@ -1223,6 +1757,9 @@
         banners: ctx.clubBanners.size,
         bestGm: ctx.bestGm,
         trades: ctx.totalTrades,
+        dynasties: ctx.dynasties.length,
+        bestDynasty: ctx.bestDynasty,
+        bestDynastyScore: ctx.bestDynastyScore,
       },
     };
   }
