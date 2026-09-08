@@ -2380,6 +2380,13 @@ window.GA_ID='G-L29P5MRWKE';
     padding:2px 6px;border-radius:4px;background:rgba(34,197,94,.16);color:#4ade80;
     border:1px solid rgba(34,197,94,.45);vertical-align:middle;margin-left:6px}
   .modecard.mc-soon{opacity:.45;pointer-events:none;filter:grayscale(.5)}
+  /* A DAY ALREADY SPENT, and deliberately NOT .mc-soon. That class sets pointer-events:none,
+     which turns the card into something a thumb falls straight through, and a control that
+     ignores you reads as broken rather than as waiting. This one only dims the title, so the
+     card stays pressable and the tap opens the screen that says when the next run lands and
+     what lifts the limit. Same rule the front page's Dynasty door follows. */
+  .modecard.mc-spent .mc-title{color:rgba(244,247,252,.6)}
+  .modecard.mc-spent .mc-icon{opacity:.55}
   /* nowrap so the tag breaks as a unit. Without it "Coming Soon" splits across two lines on
      a narrow phone and the second word sits alone under the mode's name, which reads as a
      layout accident rather than a label. It may still take a line of its own, and that is
@@ -5712,6 +5719,30 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-pill.pro{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
   .pw-was{font-size:13px;color:var(--dim-2);text-decoration:line-through}
   .pw-save{font-size:11.5px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.04em}
+  /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME'S OWN COLOUR. The rail down the
+     side plus the name in the same hue is the whole colour code, and it is what
+     makes Run The Bundle read as buying things in four places rather than as one
+     long list of nouns.
+
+     THIS SHIPPED WITHOUT ITS RULE, which is the failure mode a class rename has.
+     The trim that shortened this sheet replaced .pw-src with .pw-line and took the
+     old block of CSS out along with the markup it was written for, so every line
+     went on setting --gc and nothing read it: four identical grey paragraphs, no
+     rail, no colour, and no error anywhere. The colours below are measured, and
+     the note on PW_GAME says what against. */
+  .pw-line{border-left:2px solid var(--gc);padding-left:10px;margin-top:10px}
+  .pw-line b{display:block;font-family:var(--fn);font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;font-weight:800;color:var(--gc);line-height:1.2}
+  .pw-line span{display:block;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35}
+  /* THE DATE LINE, on the receipt and never in the store. The same block does both jobs, so
+     the third line is simply absent where there is nothing bought yet to date. */
+  .pw-line i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);margin-top:3px;
+    line-height:1.3}
+  /* The header of the Pro page: the pill the profile already uses, with the one sentence
+     that says what being Pro actually gets you, on the same line as it. */
+  .pfpro-h{display:flex;align-items:center;gap:10px;margin-top:12px}
+  .pfpro-h .pw-pill{margin-left:0;vertical-align:0}
+  .pfpro-h span{font-size:12.5px;color:var(--dim-2);line-height:1.35}
   .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}
   /* THE BEST VALUE CARD GETS THE GOLD BUTTON. Both tiers shipped with the same red one,
      which is the house colour for the primary action and cannot be the primary action
@@ -7293,7 +7324,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=3"></script>
-<script defer src="auth.js?v=3"></script>
+<script defer src="auth.js?v=4"></script>
 <script>
 (function(){
 'use strict';
@@ -8858,6 +8889,11 @@ function beginDraft(opts){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking',
       opts.full?'full':opts.defense?'defense':'club');
   }
+  /* THE DAY'S ALLOWANCE, AFTER THE ACCOUNT CHECK AND BEFORE ANY OF THE RUN EXISTS. Play
+     again lands here, which is the path that skips beginTradeMachine entirely. Dynasty is
+     gated in beginDynastyDraft() rather than here because it has a saved run to ask about
+     first, and that question has to come before this one. */
+  if(opts&&opts.tradeMachine&&tradeDoorShut()) return;
   replaceCtx=null;
   newRun(opts);
   /* BOTH POOLS' CHEAP LISTS, BEFORE THE FIRST SPIN CAN GUESS.
@@ -9026,17 +9062,45 @@ function dailySpentSheet(mode){
        honest place in the game to mention that another run is for sale. It is a card rather
        than a wall: Close is still right there, and nothing here blocks tomorrow's free run.
        Left off entirely for an owner, who is not being limited, and before launch for
-       anybody outside the tester list. */
+       anybody outside the tester list.
+       THE HEADLINE NAMES THE MODE THE DOOR BELONGS TO. It said "unlimited dynasty runs" on
+       both, so the Trade Machine's own limit was answered by an offer about a different
+       mode. Pro lifts both, which is what the line under it says. */
     (premiumPitch()
-      ? pwCard('b-daily-prem','Play unlimited dynasty runs',
-          'Premium removes the daily limit and unlocks every premium mode.','Unlimited')
+      ? pwCard('b-daily-prem','Play unlimited '+(mode==='trade'?'Trade Machine':'Dynasty')+' runs',
+          'Pro removes the daily limit on every mode, and unlocks the Pro ones.','Unlimited')
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
   $('sheet-in').dataset.kind='daily';
   openSheet();
   const up=$('b-daily-prem');
-  if(up) up.onclick=()=>openPremium('daily_limit');
+  if(up) up.onclick=()=>openPremium('daily_limit_'+mode);
   $('sh-x').onclick=closeSheet;
+}
+
+/* ── THE TRADE MACHINE'S OWN DOOR ──────────────────────────────────────────────────────
+ *
+ * The Trade Machine is metered exactly the way Dynasty is: startSeason() spends 'trade' at
+ * kickoff, and 99_daily_attempts.sql keeps a separate count for it. Only the READING half
+ * was missing. Nothing asked the server how many trade runs were left, nothing checked
+ * before a launch, and the mode card said the same thing on a spent day as on a fresh one.
+ *
+ * WHAT THAT WOULD HAVE DONE the day DAILY_LIMIT_LIVE flips: a second run starts, plays a
+ * whole season, and the spend behind it is refused by a server nobody is listening to. The
+ * player is never told there is a limit, never told they have hit it, and never offered the
+ * thing that lifts it. That is the one shape of paywall that produces a complaint rather
+ * than a sale: a rule enforced silently and explained nowhere.
+ *
+ * TWO LAUNCH PATHS, SO THE GUARD IS A FUNCTION. The mode card goes through
+ * beginTradeMachine() and Play again goes through beginDraft({tradeMachine:true}), which is
+ * how the mode card ended up being the only one anybody remembered to gate. Both call this.
+ * Answers true when the run may not go ahead, having already said why.
+ */
+function tradeDoorShut(){
+  dailyEnsure('trade');
+  if(dailyLeft('trade')>0) return false;
+  dailySpentSheet('trade');
+  return true;
 }
 
 /* THE PAYWALL. A tester who reaches a premium door without the row behind it gets this,
@@ -10284,6 +10348,14 @@ function modeMenu(){
      second read between them could disagree. */
   const clubSave=cd?dynRead('club'):null;
   const tradeLocked=locked||!ct;
+  /* THE DAY, ASKED THE MOMENT THIS SHEET OPENS rather than when the card is pressed. The
+     answer is a round trip, and a card that has to make one before it can say "used today"
+     says the wrong thing first and corrects itself under the reader's thumb. Asked once per
+     sign-in, so reopening the sheet costs nothing. */
+  if(ct) dailyEnsure('trade');
+  const tradeSpent=ct&&!locked&&dailyLeft('trade')<=0;
+  const tradeAt=tradeSpent?dailyResetsAt('trade'):null;
+  const tradeCd=tradeAt?dailyCountdown(tradeAt):null;
   $('sheet-in').innerHTML=
     '<h2 class="display mtitle" style="font-size:25px;margin:4px 0 8px">More ways to play</h2>'+
     (locked?'<p class="dim" style="font-size:13px;line-height:1.4;margin:0 0 12px">'+esc(lockNote)+'</p>':'')+
@@ -10340,7 +10412,8 @@ function modeMenu(){
           '</svg></div><div class="mc-title">Eras Draft</div>'+arrow+'</div>'+
         '<p>Pick the 2000s, 2010s, or 2020s and build an offense exclusively from that era\'s players and teams.</p>'+
       '</button>'+
-      '<button class="modecard mc-trade'+(ct?'':' mc-soon')+'" id="b-mc-trade"'+(tradeLocked?' disabled':'')+'>'+
+      '<button class="modecard mc-trade'+(ct?'':' mc-soon')+(tradeSpent?' mc-spent':'')+
+        '" id="b-mc-trade"'+(tradeLocked?' disabled':'')+'>'+
         '<div class="mc-head"><div class="mc-icon"><svg viewBox="0 0 24 24">'+
           /* Two solid arrows, the return one dimmed, so the pair reads as an exchange
              with a direction rather than as a symmetrical loop. */
@@ -10352,10 +10425,22 @@ function modeMenu(){
              been playing for weeks makes every other NEW on the screen worth less. Coming
              Soon stays, because that one is not an announcement -- it is the answer to
              "why can I not press this", and it is still true for anybody off the list. */
+          /* THE TAG ANSWERS ONE QUESTION AND THERE IS ONLY EVER ONE TO ANSWER. Coming Soon
+             is "why can I not press this"; Used today is "why did pressing it not start a
+             run". The two cannot both be true, so they share the slot. */
           '</svg></div><div class="mc-title">The Trade Machine'+
-          (ct?'':' <span class="mc-soon-tag">Coming Soon</span>')+
-          '</div>'+(ct?arrow:'')+'</div>'+
-        '<p>You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.</p>'+
+          (ct
+            ? (tradeSpent?' <span class="mc-soon-tag">Used today</span>':'')
+            : ' <span class="mc-soon-tag">Coming Soon</span>')+
+          '</div>'+(ct&&!tradeSpent?arrow:'')+'</div>'+
+        /* THE CARD SAYS WHEN, not just that. A door that has gone quiet with no date on it
+           is the same as a broken one to the person looking at it. Still pressable: the tap
+           opens the explainer, which is where the countdown and the way around it live. */
+        '<p>'+(tradeSpent
+          ? esc(tradeCd?'Your run today is used. The next one unlocks in '+tradeCd+'.'
+                       :'Your run today is used. The next one unlocks at midnight Eastern.')
+          : 'You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.')+
+        '</p>'+
       '</button>'+
     '</div>'+
     /* THE COLLEGE GAME, under its own heading and its own rule. Not gated on an account or a
@@ -10439,7 +10524,14 @@ function modeMenu(){
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
   const trade=$('b-mc-trade');
-  if(trade&&!locked&&canPlayTrade()) trade.onclick=()=>{ closeSheet(); beginTradeMachine(); };
+  /* THE SPENT CARD GOES SOMEWHERE, and it is not the draft. beginTradeMachine() would refuse
+     it a frame later anyway, so routing straight to the explainer saves a flash of the mode
+     starting. Wired rather than disabled, for the reason .mc-spent is written the way it is. */
+  if(trade&&!locked&&canPlayTrade()){
+    trade.onclick=tradeSpent
+      ? ()=>{ dailySpentSheet('trade'); }
+      : ()=>{ closeSheet(); beginTradeMachine(); };
+  }
   /* Leaves this page, so it is tracked before it goes: a cross-promo whose click-through
      nobody can see is a link you cannot tell is working. */
   const cfb=$('b-mc-cfb');
@@ -14003,6 +14095,10 @@ function canPlayTrade(){
 function beginTradeMachine(){
   if(!canPlayTrade()) return;
   if(!oneTeamReady()) return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking');
+  /* AFTER the account wall, for the same reason Dynasty checks in that order: telling
+     somebody their day is spent before they have an account to spend it from is an answer
+     to a question they have not asked yet. */
+  if(tradeDoorShut()) return;
   replaceCtx=null;
   newRun({tradeMachine:true});
   dressTeam();
@@ -19837,13 +19933,17 @@ const PF_ICON={
   career:'M3 17l5.5-6 3.5 3.5L20 7M15 7h5v5',
   badges:'M8.6 13.6 7 21l5-2.7 5 2.7-1.6-7.4',
   look:'M4 8h8M4 16h6M16 8h4M14 16h6',
-  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4'
+  acct:'M4.6 20.4c0-4.1 3.3-6.4 7.4-6.4s7.4 2.3 7.4 6.4',
+  /* A key, for the page that says what this account has been given the run of. Not a
+     padlock: a lock is the thing in the way of a mode, and this row is the opposite. */
+  pro:'M20.4 3.6 12.9 11.1M17.6 6.4l2.1 2.1M15.6 8.4l2.1 2.1'
 };
 /* Two of them need a circle as well as a path, and a circle is not expressible as one. */
 const PF_ICON_EXTRA={
   badges:'<circle cx="12" cy="9" r="5.2"/>',
   look:'<circle cx="14" cy="8" r="2.1"/><circle cx="12" cy="16" r="2.1"/>',
-  acct:'<circle cx="12" cy="8.6" r="4"/>'
+  acct:'<circle cx="12" cy="8.6" r="4"/>',
+  pro:'<circle cx="8.4" cy="15.6" r="4.6"/>'
 };
 /* THE DOT. One shape, used on a hub row and on a tile, because two drawings of "new" is two
    things to notice rather than one thing to recognise. */
@@ -19881,6 +19981,13 @@ function pfHub(msg,ok){
       pfNavRow('pf-go-badges','Badges','What you have earned so far','badges')+
       pfNavRow('pf-go-career','Career','Every number, and your streak','career')+
       pfNavRow('pf-go-drafts','Your drafts','Recent, best rated and best record','drafts')+
+      /* THE CUSTOMER'S OWN ROW, and only a customer has it. The pill beside the name says
+         Pro and stops there, which answers "am I" and not one word of "what did I buy, when,
+         and does it run out". Those are the questions a refund request is made of, and the
+         answer to all three was nowhere on this site. */
+      (acctTier()==='pro'
+        ? pfNavRow('pf-go-pro','Your Pro access','What you own, and your receipts','pro')
+        : '')+
     '</div>'+
     /* A THIRD WAY IN, and the quietest of the three on purpose. Nobody opens their profile
        to be sold something, so this sits under the nav rather than in it: a player who has
@@ -19923,7 +20030,152 @@ function pfHub(msg,ok){
   $('pf-go-badges').onclick=()=>pfBadges();
   $('pf-go-look').onclick=()=>pfLook();
   $('pf-go-acct').onclick=()=>pfAccount();
+  const pro=$('pf-go-pro');
+  if(pro) pro.onclick=()=>pfPro();
+  /* OWNERSHIP CAN STILL BE IN FLIGHT WHEN THIS PAINTS, and both things on this screen that
+     know a customer from a visitor read it: the pill beside the name and the row above.
+     acctTier() answers null while the question is open, which is right, but it means a Pro
+     account that opens its profile in the first moment of a load sees a hub with no pill and
+     no way to its own purchase, and nothing ever puts them there. So the answer is asked for
+     and the hub is painted again when it lands.
+     Guarded on pf-go-career, which only the hub has: a slow answer must not redraw the hub
+     over a page the player has since moved to. `msg` is left alone because a repaint would
+     drop it, and a message is always the more recent thing to have happened. */
+  if(!msg&&authState.signedIn&&premiumSet===null){
+    premiumRefresh().then(()=>{ if($('sheet-in').dataset.kind==='profile'&&$('pf-go-career')) pfHub(); });
+  }
   pfHubStats(st.userId);
+}
+
+/* ── WHAT THIS ACCOUNT OWNS ────────────────────────────────────────────────────────────
+ *
+ * THE GAP THIS CLOSES. Everything about the purchase was write-only. The money went to
+ * Stripe, the webhook wrote four rows, the modes opened, and from that moment the entire
+ * customer-facing account of what had happened was a two letter pill reading Pro. Nothing
+ * named the bundle, nothing gave a date, nothing said whether the Arcade year renews, and
+ * the receipt Stripe had already emailed was the only record anywhere. A customer with a
+ * question had no screen to look at and no button to press, which is how a support email
+ * gets written.
+ *
+ * SAID ONCE, PLAINLY. This is not a second store: an owner is done being sold to. It is
+ * four facts (what, from which game, when, and whether it ends) and one button.
+ *
+ * THE COLOURS ARE THE STORE'S OWN. Somebody reading this bought from a sheet where football
+ * was red and the Tour was teal, and a receipt that recolours the thing you bought is a
+ * receipt for something else.
+ */
+/* `wait` marks the one product this site cannot deliver by itself. Three of the four are
+   honored by the database the moment the row exists: a game page asks premium_products() and
+   the answer IS the unlock. The Run The Tour coins are not, because the wallet that holds
+   them belongs to the golf backend, so the webhook files that row with fulfilled_at null and
+   the golf side stamps it on credit. Written here rather than read off the column alone: a
+   row that arrives without the field at all reads as null, and three permanent unlocks
+   telling their owner they are still on the way is a worse lie than the one this prevents. */
+const PRO_ITEM={
+  ps_premium:{game:'ps',text:'Dynasty Mode and Franchise Mode'},
+  cfb_premium:{game:'cfb',text:'Commissioner Mode'},
+  arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
+  runtour_pack:{game:'tour',text:'102,000 coins and a bonus Tour pack',wait:true}
+};
+/* THE ORDER IS THE STORE'S, not the database's. granted_at is the same instant for every row
+   of one purchase, so sorting by it leaves four items in whatever order Postgres felt like. */
+const PRO_ORDER=['ps_premium','cfb_premium','arcade_card_year','runtour_pack'];
+const proDate=(s)=>{
+  const d=new Date(s);
+  return isNaN(d)?'':d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+};
+function pfPro(){
+  const box=$('sheet-in'); box.dataset.kind='profile';
+  box.innerHTML=pfHead('Your Pro access')+
+    '<div class="pfpro-h"><i class="pw-pill pro">Pro</i>'+
+      '<span>Unlocked on every device you sign in on.</span></div>'+
+    '<div id="pf-pro-list" class="dim" style="font-size:12.5px;margin-top:12px">Loading what you own.</div>'+
+    '<div id="pf-pro-bill" style="margin-top:15px"></div>'+
+    '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  openSheet(); pfWireCommon();
+  pfProLoad();
+}
+async function pfProLoad(){
+  const a=A();
+  let rows=[];
+  try{ rows=(a&&a.premiumUnlocks)?await a.premiumUnlocks():[]; }catch(_){ rows=[]; }
+  /* The sheet is one element that every page rewrites, so a slow read landing after the
+     player has moved on must not paint over wherever they went. */
+  const list=$('pf-pro-list');
+  if(!list||$('sheet-in').dataset.kind!=='profile') return;
+
+  const by={};
+  rows.forEach((r)=>{ if(r&&r.product) by[r.product]=r; });
+  const owned=PRO_ORDER.filter((k)=>by[k]&&PRO_ITEM[k]);
+
+  if(!owned.length){
+    /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
+       premium_products(), which answers through an RPC; this reads the table. A blocked
+       request, an expired token or an account comped by hand outside the table all land
+       here, and none of them is a reason to tell somebody their purchase is gone. */
+    list.innerHTML='<p class="dim" style="font-size:12.5px;line-height:1.45;margin:0">'+
+      'Your Pro modes are unlocked. The list of what is in your bundle could not be loaded '+
+      'just now. Reload the page and it will come back.</p>';
+  }else{
+    let ends=null;
+    list.innerHTML=owned.map((k)=>{
+      const it=PRO_ITEM[k], row=by[k], g=PW_GAME[it.game];
+      const when=proDate(row.granted_at);
+      const till=row.expires_at?proDate(row.expires_at):'';
+      if(till) ends=till;
+      /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. The Run The Tour coins are credited by
+         the golf backend, which stamps fulfilled_at when it does; until then the row is a
+         promise this page has to keep rather than a thing the player has. Reporting it as
+         delivered is the version of this screen that produces "I paid and got no coins",
+         which is the exact complaint a receipt exists to prevent.
+         Both halves are required: the product has to be one that is delivered elsewhere, and
+         it has to be still unstamped. See the note on PRO_ITEM. */
+      const waiting=!!it.wait&&row.fulfilled_at==null;
+      return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
+        '<span>'+esc(it.text)+'</span>'+
+        (when||till
+          ? '<i>'+esc(till?'Bought '+when+'. Ends '+till+'.':'Bought '+when+'. Yours for good.')+
+            (waiting?' '+esc('On its way to your account.'):'')+'</i>'
+          : '')+
+      '</div>';
+    }).join('')+
+      /* THE ONE THING A ONE-OFF PAYMENT HAS TO SAY OUT LOUD. An Arcade Card year sitting on
+         the page with an end date on it looks exactly like a subscription about to bill, and
+         a customer who thinks they are on a recurring charge cancels the whole account to
+         stop it. Nothing here renews, and the sentence says so before they have to ask. */
+      '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
+        'You paid once. Nothing here renews and nothing charges you again.'+
+        (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
+      '</p>';
+  }
+
+  const bill=$('pf-pro-bill');
+  if(!bill) return;
+  bill.innerHTML='<button class="btn ghost" id="pf-bill" style="width:100%">Receipts and billing</button>'+
+    '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Stripe, where your receipts and '+
+      'payment details live.</p>';
+  $('pf-bill').onclick=async()=>{
+    busy('pf-bill','Opening');
+    /* auth.js is a sibling script with its own cache version, so a browser one bump behind
+       has a copy of it with no billingPortal on it. Asked for rather than assumed, because
+       the alternative is a TypeError on the one button a customer with a billing question
+       presses. It falls into the same "could not open" answer as any other failure. */
+    const a=A();
+    const r=(a&&typeof a.billingPortal==='function')
+      ? await a.billingPortal('/football/')
+      : {error:'unavailable'};
+    if(r&&r.url){ location.href=r.url; return; }
+    /* SAY WHICH KIND OF NOTHING IT IS. no_customer is not a failure: an account comped by
+       hand never went through Stripe and has no receipt to show, and telling that person to
+       try again is telling them to keep pressing a button that cannot work. */
+    const b=$('pf-bill'); if(!b) return;
+    b.disabled=true;
+    b.textContent=(r&&r.error==='no_customer')?'No Stripe receipt for this account':'Could not open Stripe';
+    const note=b.nextElementSibling;
+    if(note) note.textContent=(r&&r.error==='no_customer')
+      ? 'This account was unlocked without a card payment, so there is no receipt to show.'
+      : 'Try again in a moment. Your Pro access is not affected.';
+  };
 }
 
 /* The two headline numbers, filled once the history lands. The hub opens immediately and

@@ -44,8 +44,9 @@ back-compat; consumer-facing name is "Arcade Card").
   and archive.js (past days) honor it. active, past_due, canceled all flow
   through `customer.subscription.updated/deleted`. Duplicate deliveries are
   ignored via `stripe_events`.
-- Manage/cancel → POST `/api/stripe/portal` `{ user_id, return_path }` → Stripe
-  Customer Portal.
+- Manage/cancel → POST `/api/stripe/portal` `{ return_path }` plus the Supabase
+  session token → Stripe Customer Portal. (The user is resolved from the token;
+  a body `user_id` is ignored and always was, see `_verify.js`.)
 
 ## Premium bundles (Perfect Season Premium Bundle, Run The Bundle)
 
@@ -137,6 +138,26 @@ The webhook grants on `checkout.session.completed` with `payment_status: paid`
 per product. Game pages ask `premium_products()`; the Arcade asks
 `arcade_card_active()` as it always has. One bundle per account: checkout
 answers 409 `already_owned` to anyone holding any of the bundle's products.
+
+**After the sale, the buyer has a screen.** The football profile carries a Your
+Pro access page listing every `premium_unlocks` row the account holds, when it
+was bought, whether it ends, and a Receipts and billing button into
+`/api/stripe/portal`. Two things had to change for that button to be able to
+work at all, and both are easy to undo by accident:
+
+- **The portal now finds a bundle buyer.** It read `subscriptions` and nothing
+  else, and a one-time bundle writes no subscriptions row, so every bundle
+  buyer got 404 `no_customer`. `findCustomer()` tries that row, then
+  `premium_unlocks.payload.stripe_customer` (written by the webhook since
+  2026-09-08), then the checkout session itself via the Stripe API, which is
+  the path that covers grants written before the webhook recorded it.
+- **`return_path` is an allow-list of four game roots**, not `/arcade/` alone.
+  A football buyer opening their receipts was being returned to the Arcade.
+
+`no_customer` is still a real answer and the page says so plainly rather than
+retrying: an account comped by hand never went through Stripe and has no
+receipt. The **Customer Portal must be enabled in the Stripe Dashboard** (step
+2 of the Arcade setup above) or this button 502s for everybody.
 
 **Testing an end-to-end purchase without charging anybody.** The site's
 `STRIPE_SECRET_KEY` is a live key, so test cards and test price ids are not
