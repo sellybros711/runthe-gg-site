@@ -59,15 +59,23 @@ backend setup that can sit finished and inert.
 - **Perfect Season Premium Bundle**: dynasty mode + one franchise dynasty
   (Perfect Season NFL) and commissioner mode (CFB). Permanent unlock.
 - **Run The Bundle**: everything above, plus 12 months of the Arcade Card and
-  102,000 Run The Tour coins + 1 Tour pack (the Large Bucket, $9.99 on its own).
+  100,000 Run The Tour coins + 1 **Tour Pack** (the `tour` tier: 22,000 coins in
+  the golf shop, one step above the base Pro Shop Pack and one below Champion).
+  Valued at the $9.99 Large Bucket, which is the cheapest way to buy that.
 
 **THE "$80 OF VALUE" CLAIM IS LOAD-BEARING AND HAS TO STAY TRUE.** Run The
 Bundle is marketed as $80 of value for $34.99, and that is not a slogan: it is
 the sum of the parts at prices this site actually charges. $19.99 for the
 Perfect Season bundle, $49.99 for a year of the Arcade Card
-(`STRIPE_PRICE_ARCADE_ANNUAL`), and $9.99 for the Large Bucket in Run The Tour,
-whose 102,000 coins and one Tour pack are exactly what the bundle grants. That
-is $79.97, so 56% off. Move any of those three prices, or change what the
+(`STRIPE_PRICE_ARCADE_ANNUAL`), and $9.99 for the Large Bucket in Run The Tour.
+That is $79.97, so 56% off.
+
+The coin figure was rounded to a flat 100,000 by the owner in 2026-09, from the
+102,000 the Large Bucket holds, and the $9.99 line SURVIVES that. The claim is
+what a player would have to spend to get what the bundle grants, and the buckets
+are fixed sizes: the one below Large is Medium at 45,000 coins with no pack at
+all. So the Large Bucket is still the cheapest way to buy 100,000 coins and a
+Tour Pack, and the arithmetic above does not move. Do not "correct" it down. Move any of those three prices, or change what the
 bundle grants, and the claim moves with it. Re-check it before repeating it in
 any copy, because a stale comparison price is the kind of thing a consumer
 regulator treats as a real problem rather than a typo.

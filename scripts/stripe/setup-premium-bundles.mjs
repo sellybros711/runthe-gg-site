@@ -26,9 +26,12 @@
  * It is the sum of the parts at their own list prices: $19.99 for the
  * Perfect Season bundle below, $49.99 for a year of the Arcade Card
  * (STRIPE_PRICE_ARCADE_ANNUAL) and $9.99 for the Large Bucket in Run The
- * Tour, whose 102,000 coins and one Tour pack are exactly what the bundle
- * grants. That is $79.97. Change any of those three and the claim moves, so
- * re-check it here before repeating it in any copy.
+ * Tour. The bundle grants a flat 100,000 coins and that same Tour Pack, a
+ * shade under the bucket, and the $9.99 still stands: the buckets are fixed
+ * sizes and the one below Large is 45,000 coins with no pack, so the Large
+ * Bucket is still the cheapest way to buy what this grants. That is $79.97.
+ * Change any of those three prices and the claim moves, so re-check it here
+ * before repeating it in any copy.
  */
 
 const CATALOG = [
@@ -48,7 +51,7 @@ const CATALOG = [
     amountCents: 3499,
     product: {
       name: 'Run The Bundle',
-      description: 'The Perfect Season Premium Bundle, 12 months of the Run The Arcade Card, and 102,000 coins plus a Tour pack in Run The Tour.',
+      description: 'The Perfect Season Premium Bundle, 12 months of the Run The Arcade Card, and 100,000 coins plus one Tour Pack in Run The Tour.',
       metadata: { site_bundle: 'run-the-bundle' },
     },
   },

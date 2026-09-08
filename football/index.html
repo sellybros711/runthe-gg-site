@@ -9186,7 +9186,7 @@ const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</
 /*
  * WHICH GAME EACH THING COMES FROM.
  *
- * "102,000 coins and a Tour pack" means nothing to somebody who has only ever played the
+ * "100,000 coins and one Tour Pack" means nothing to somebody who has only ever played the
  * football game: a bundle across four titles has to say what came from where, or it reads as
  * a list of nouns. Every line now sits under the game that gives it, and the game is named.
  *
@@ -9335,7 +9335,7 @@ function premiumSheet(){
          months and then it stops. It is still not a subscription: nothing renews it and
          nothing charges again, which is the half a buyer is actually anxious about. */
       pwGroupText('arcade','1 year of the Arcade Card','12 months. It does not renew.')+
-      pwGroupText('tour','102,000 coins and a bonus Tour pack','Yours to spend')+
+      pwGroupText('tour','100,000 coins and one Tour Pack','Tour is the mid pack tier. Yours to spend.')+
       '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
         (out?'Sign in to get it':'Get Run The Bundle')+'</button>'+
     '</div>'+
@@ -20133,7 +20133,7 @@ const PRO_ITEM={
   ps_premium:{game:'ps',text:'Dynasty Mode and Franchise Mode'},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
-  runtour_pack:{game:'tour',text:'102,000 coins and a bonus Tour pack',wait:true}
+  runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}
 };
 /* THE ORDER IS THE STORE'S, not the database's. granted_at is the same instant for every row
    of one purchase, so sorting by it leaves four items in whatever order Postgres felt like. */
