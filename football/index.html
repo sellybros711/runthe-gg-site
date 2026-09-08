@@ -7518,11 +7518,101 @@ const canPlayClubDynasty=()=>{
 let premiumSet=null;
 const dynastyOwned=()=>!!(premiumSet&&premiumSet.indexOf('ps_premium')>=0);
 function premiumRefresh(){
-  if(!authState.signedIn){ premiumSet=null; return; }
+  if(!authState.signedIn){ premiumSet=null; return Promise.resolve(null); }
   const a=A();
-  if(!a||typeof a.premiumProducts!=='function'){ premiumSet=[]; return; }
-  a.premiumProducts().then((list)=>{ premiumSet=Array.isArray(list)?list:[]; })
-    .catch(()=>{ premiumSet=[]; });
+  if(!a||typeof a.premiumProducts!=='function'){ premiumSet=[]; return Promise.resolve([]); }
+  /* RETURNS THE PROMISE, so the walk back from Stripe can wait for an answer instead of
+     asking and hoping. Every existing caller ignores it, which is what they want.
+
+     AND REPAINTS THE FRONT PAGE WHEN THE ANSWER LANDS. The caller in the auth handler runs
+     paintHomeStart() on the next line, which used to be right: ownership was read at the
+     doors, and this only had to finish before a human reached one. The front page reads it
+     now, so painting it while premiumSet is still null drew the page for somebody whose tier
+     was unknown and never drew it again. The pitch card was never appearing on an ordinary
+     load at all: not gated wrong, just painted a moment too early and left there. */
+  return a.premiumProducts().then((list)=>{ premiumSet=Array.isArray(list)?list:[]; return premiumSet; })
+    .catch(()=>{ premiumSet=[]; return premiumSet; })
+    .then((v)=>{ try{ paintHomeStart(); }catch(_){} return v; });
+}
+
+/*
+ * COMING BACK FROM STRIPE.
+ *
+ * checkout-bundle.js sends the player to Stripe with success_url pointing at this page plus
+ * ?checkout=success, and nothing here read it. So the most important screen in the whole
+ * flow, the one right after somebody has paid, was the front page exactly as they left it:
+ * no acknowledgement, no receipt, and the modes they had just bought still locked until
+ * something happened to refresh the account.
+ *
+ * THE GRANT IS NOT DONE WHEN THE BROWSER GETS BACK. The entitlement is written by the
+ * Stripe WEBHOOK (functions/api/stripe/webhook.js), and the redirect races it. Usually the
+ * webhook wins by a second; sometimes it does not. So this asks, and keeps asking for a
+ * short while, rather than reading one "not owned" and calling the purchase a failure.
+ *
+ * AND IT NEVER SAYS THE PAYMENT FAILED, because this function cannot know that. If the
+ * entitlement has not appeared by the time it stops asking, the honest thing on screen is
+ * that the payment went through and the account is catching up, which is what is actually
+ * happening.
+ */
+function checkoutStrip(){
+  try{
+    const u=new URL(location.href);
+    u.searchParams.delete('checkout');
+    history.replaceState(null,'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():'')+u.hash);
+  }catch(_){}
+}
+async function checkoutReturn(){
+  let what=null;
+  try{ what=new URLSearchParams(location.search).get('checkout'); }catch(_){ return; }
+  if(!what) return;
+  /* Stripped before anything else, so a reload cannot replay the thank you and a shared
+     link cannot carry it to somebody who bought nothing. */
+  checkoutStrip();
+  if(what!=='success'){
+    /* CANCELLED IS NOT A FAILURE AND GETS NO SCREEN. They pressed back on a payment form,
+       which is a thing people do, and being chased about it is how a store gets closed. */
+    ga('checkout_cancelled',{});
+    return;
+  }
+  ga('checkout_returned',{});
+  justPaid=true;
+  /* Roughly ten seconds of asking, leaning on the early tries where the webhook usually
+     lands, and none of it blocks the page: boot has already finished by here. */
+  const waits=[0,600,1200,2000,3000,3500];
+  for(const ms of waits){
+    if(ms) await new Promise((r)=>setTimeout(r,ms));
+    await premiumRefresh();
+    if(dynastyOwned()) break;
+  }
+  paintHomeStart();
+  checkoutThanks(dynastyOwned());
+  ga('checkout_confirmed',{owned:dynastyOwned()});
+}
+function checkoutThanks(owned){
+  const box=$('sheet-in');
+  box.dataset.kind='premium';
+  box.innerHTML='<div class="eyebrow gold">'+(owned?'You are Pro':'Payment received')+'</div>'+
+    '<h2 class="display" style="font-size:27px;margin:4px 0 8px">'+
+      (owned?'Everything is unlocked':'Thanks for that')+'</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0">'+
+      (owned
+        ? 'Dynasty, Franchise and Commissioner are open, with no daily limit, on every '+
+          'device you sign in on.'
+        : 'Your payment went through. The account can take a moment to catch up, so if a '+
+          'mode is still locked, give it a minute and reopen the game.')+
+    '</p>'+
+    '<div style="margin-top:15px">'+
+      (owned
+        ? '<button class="btn" id="ck-go" style="width:100%">Start a Dynasty</button>'+
+          '<div style="margin-top:10px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>'
+        : '<button class="btn ghost" id="sh-x" style="width:100%">Close</button>')+
+    '</div>';
+  openSheet();
+  const go=$('ck-go');
+  /* STRAIGHT INTO THE THING THEY BOUGHT. Landing somebody back on the front page to go and
+     find it is the same as not acknowledging the purchase at all. */
+  if(go) go.onclick=()=>{ closeSheet(); setTimeout(()=>beginDynastyDraft(),260); };
+  $('sh-x').onclick=closeSheet;
 }
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
@@ -8253,6 +8343,9 @@ async function boot(){
     bootStep('Building the league');
     $('h-field').innerHTML=fieldMarkings();
     authBoot(); watchTabs(); wireDealNav(); paintHomeStart();
+    /* AFTER the page is up and deliberately not awaited: the walk back from Stripe polls
+       for a webhook and must never hold the game behind it. */
+    checkoutReturn();
     bootStep('Ready');
     /* LET THE BAR VISIBLY REACH THE END, BUT ONLY WHEN THERE WAS A WAIT TO FINISH. Off a
        warm cache this whole function is over in a tenth of a second and the screen has
@@ -9238,8 +9331,15 @@ const pwPill=()=>{
   return '<i class="pw-pill '+t+'">'+(t==='pro'?'Pro':'Free')+'</i>';
 };
 
+/* SET THE MOMENT A CHECKOUT COMES BACK SUCCESSFUL, and never unset. The entitlement is
+   written by a webhook that can land after the browser does, and for that gap the account
+   still reads as free: without this, the screen thanking somebody for their payment sat
+   directly above a card offering to sell it to them. Session-lived on purpose. It only has
+   to cover the wait, and a reload after the webhook lands reads the real answer. */
+let justPaid=false;
 function premiumPitch(){
   if(!canPlayDynasty()) return false;
+  if(justPaid) return false;
   if(authState.signedIn&&premiumSet===null) return false;
   return !dynastyOwned();
 }
