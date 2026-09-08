@@ -5695,6 +5695,20 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(90deg,#fde047,#f59e0b)}
   .pw-barc{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim-2);
     margin-top:4px;font-family:var(--fn);letter-spacing:.05em}
+  /* ONE GAME, ONE BLOCK. The rail down the left is the colour code doing the work: it runs
+     the height of everything that game gives you, so the grouping is visible before a word
+     is read. The heading takes the same colour, which is what ties the two together without
+     needing a legend anywhere. */
+  .pw-src{border-left:3px solid var(--gc);padding-left:11px;margin-top:12px}
+  .pw-src:first-of-type{margin-top:13px}
+  .pw-srch{font-family:var(--fn);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+    font-weight:800;color:var(--gc)}
+  .pw-src .pw-list{margin:7px 0 0}
+  /* THE TICK TAKES THE GAME'S COLOUR TOO, and it is the reason the ticks are not all green
+     any more: four blocks of green ticks beside four different coloured rails is the colour
+     code arguing with itself. */
+  .pw-src .pw-tick{stroke:var(--gc)}
+  .pw-note{font-size:12px;color:var(--dim-2);margin:13px 0 12px;line-height:1.4}
   .pw-list{list-style:none;margin:11px 0 12px;padding:0;display:grid;gap:7px}
   .pw-list li{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.35;
     color:var(--dim)}
@@ -9005,6 +9019,40 @@ const pwTick=()=>'<svg class="pw-tick" viewBox="0 0 24 24" aria-hidden="true">'+
 const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</b>'+
   '<i>'+esc(line)+'</i></div>';
 const pwItem=(html)=>'<li>'+pwTick()+'<span>'+html+'</span></li>';
+/*
+ * WHICH GAME EACH THING COMES FROM.
+ *
+ * "102,000 coins and a Tour pack" means nothing to somebody who has only ever played the
+ * football game: a bundle across four titles has to say what came from where, or it reads as
+ * a list of nouns. Every line now sits under the game that gives it, and the game is named.
+ *
+ * THE COLOURS ARE EACH GAME'S OWN, and where one had to move it is written down. Football's
+ * red, college's green and the Arcade's orange are lifted straight from those pages. The
+ * Tour's are not: its gold measures deltaE 15 from the gold this sheet is already built out
+ * of, which is well inside the range where two colours are the same colour, and its teal
+ * measures 24 against college green, right on the line where two stop being tellable apart.
+ * So the Tour takes its teal brightened and pushed bluer, which clears every other mark by
+ * 46 or more and holds 7.3:1 on the panel. Measured, not eyeballed: the same trap the five
+ * position colours in this game fell into once already.
+ *
+ * FOOTBALL'S RED IS ONE STEP UP ITS OWN RAMP for the same reason --dim-2 is. The game's
+ * --red is #ef4444, which measures 3.78:1 against the gold washed background of the best
+ * value card: under the 4.5:1 that AA asks of 10px type, on the one label in the sheet that
+ * names the game the player is already standing in. #f87171 is the smallest step that clears
+ * both card grounds with room to spare, at 6.27 and 5.14, and it is still the same red.
+ */
+const PW_GAME={
+  ps:{name:'The Perfect Season',c:'#f87171'},
+  cfb:{name:'College Football',c:'#10b981'},
+  arcade:{name:'Run The Arcade',c:'#FF8A3D'},
+  tour:{name:'Run The Tour',c:'#22b8cf'}
+};
+const pwGroup=(key,items)=>{
+  const g=PW_GAME[key];
+  return '<div class="pw-src" style="--gc:'+g.c+'">'+
+    '<div class="pw-srch">'+esc(g.name)+'</div>'+
+    '<ul class="pw-list">'+items.map(pwItem).join('')+'</ul></div>';
+};
 /* THE PROMPT, IN ONE PLACE. Three screens carry it and three copies of a price is three
    chances for one of them to go stale after a price change. `value` is what the money buys
    and it is never omitted: see the note on .pwc-go. */
@@ -9040,11 +9088,10 @@ function premiumSheet(){
     '<div class="pw-tier">'+
       '<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'+
       '<div class="pw-cost"><b>$19.99</b></div>'+
-      '<ul class="pw-list">'+
-        pwItem('<b>Unlimited dynasty runs.</b> No daily limit.')+
-        pwItem('<b>All 3 premium modes</b>, football and college')+
-        pwItem('<b>Lifetime access.</b> No subscription.')+
-      '</ul>'+
+      pwGroup('ps',['<b>Dynasty Mode.</b> Unlimited runs, no daily limit.',
+        '<b>Franchise Mode.</b> One NFL club, every season.'])+
+      pwGroup('cfb',['<b>Commissioner Mode.</b> Run your own league.'])+
+      '<p class="pw-note">Lifetime access. One payment, no subscription.</p>'+
       '<button class="btn" id="b-buy-ps" style="width:100%">Unlock Premium</button>'+
     '</div>'+
 
@@ -9056,12 +9103,13 @@ function premiumSheet(){
         '<span class="pw-save">Save $'+save+'</span></div>'+
       '<div class="pw-bar"><i style="width:'+Math.round(RTB/WORTH*100)+'%"></i></div>'+
       '<div class="pw-barc"><span>You pay $'+RTB.toFixed(2)+'</span><span>Worth $'+WORTH+'</span></div>'+
-      '<ul class="pw-list">'+
-        pwItem('<b>Everything in Premium</b>')+
-        pwItem('<b>1 year of the Arcade Card</b>, across all games')+
-        pwItem('<b>102,000 coins</b> in Run The Tour')+
-        pwItem('<b>Bonus Tour pack</b>')+
-      '</ul>'+
+      pwGroup('ps',['<b>Dynasty Mode.</b> Unlimited runs, no daily limit.',
+        '<b>Franchise Mode.</b> One NFL club, every season.'])+
+      pwGroup('cfb',['<b>Commissioner Mode.</b> Run your own league.'])+
+      pwGroup('arcade',['<b>1 year of the Arcade Card.</b> Every daily puzzle.'])+
+      pwGroup('tour',['<b>102,000 coins</b> to spend',
+        '<b>Bonus Tour pack</b>'])+
+      '<p class="pw-note">Four games. Lifetime access on the modes, one payment.</p>'+
       '<button class="btn" id="b-buy-rtb" style="width:100%">Get Run The Bundle</button>'+
     '</div>'+
 
