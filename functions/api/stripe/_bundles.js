@@ -59,11 +59,22 @@ export const BUNDLES = {
   /* Run The Bundle: everything above, plus a year of the Arcade Card and a
    * Run The Tour coin + pack drop. One-time purchase.
    *
-   * The tour grant matches the Large Bucket (102,000 coins + 1 Tour pack,
-   * $9.99 on its own), chosen so the bundle line item is a real, priced thing
-   * a player can compare against the golf shop rather than a made-up number.
-   * If the golf economy re-anchors again, re-check this against BUCKETS in
-   * golf/index.html. */
+   * The tour grant is the Large Bucket ($9.99 on its own: 102,000 coins and one
+   * Tour Pack) with the coins ROUNDED DOWN to a flat 100,000, an owner call in
+   * 2026-09. The pack is unchanged and is deliberately the `tour` tier, which
+   * PACK_TYPES in golf/index.html names "Tour Pack" and prices at 22,000 coins,
+   * one step above the base Pro Shop Pack and one below Champion.
+   *
+   * THE $9.99 IT IS VALUED AT IN THE README STILL HOLDS, and the reason is worth
+   * writing down because "we give less, so it is worth less" is the obvious and
+   * wrong reading. That claim is what a player would have to SPEND to get this,
+   * and the buckets are fixed sizes: below Large is Medium at 45,000 coins and no
+   * pack at all. So the cheapest way to buy 100,000 coins and a Tour Pack is
+   * still the $9.99 Large Bucket, exactly as it was at 102,000. Nothing about the
+   * "$80 of value" arithmetic moves.
+   *
+   * If the golf economy re-anchors again, re-check this against BUCKETS and
+   * PACK_TYPES in golf/index.html. */
   'run-the-bundle': {
     name: 'Run The Bundle',
     envPrice: 'STRIPE_PRICE_RUN_THE_BUNDLE',
@@ -71,7 +82,7 @@ export const BUNDLES = {
       { product: 'ps_premium' },
       { product: 'cfb_premium' },
       { product: 'arcade_card_year', months: 12 },
-      { product: 'runtour_pack', payload: { coins: 102000, packs: [{ tier: 'tour', n: 1 }] } },
+      { product: 'runtour_pack', payload: { coins: 100000, packs: [{ tier: 'tour', n: 1 }] } },
     ],
     returnRoots: ['/football/', '/cfb/', '/golf/', '/arcade/'],
     defaultReturn: '/football/',
