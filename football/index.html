@@ -2638,6 +2638,18 @@ window.GA_ID='G-L29P5MRWKE';
   .nbrk::-webkit-scrollbar{height:6px}
   .nbrk::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px}
   .nbrk-col{flex:0 0 152px;scroll-snap-align:start;display:flex;flex-direction:column;gap:7px}
+  /* EACH ROUND CENTRED AGAINST THE ROUNDS THAT FEED IT, which is the shape a bracket has
+     everywhere else it is drawn. Every column was flush to the top, so the Super Bowl sat in
+     the top right corner of a box that is as tall as the Wild Card round: the ink was a
+     triangle and the whole thing read as off centre even though the box itself measures
+     centred to the pixel at every width from 760 to 2200.
+
+     THE HEADINGS STAY WHERE THEY ARE. They are a row of labels across the top and centring
+     them with their column would step them down a staircase. So the auto margins go on the
+     first and last GAME rather than on the column, which centres everything below the
+     heading and leaves the heading alone. */
+  .nbrk-col > :nth-child(2){margin-top:auto}
+  .nbrk-col > :last-child{margin-bottom:auto}
   .nbrk-h{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
     color:var(--dim-2);text-align:center;padding-bottom:2px}
   .nbrk-conf{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
