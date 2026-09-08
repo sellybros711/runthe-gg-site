@@ -8250,8 +8250,13 @@ function gate(){
      does not open. The Buy buttons are real; while nothing is on sale the endpoint
      answers 503 and the button says so, truthfully. */
   if(!ownsCfb()){
+    /* "Yours for good" belongs to the Premium Bundle sentence and is true of it: both its
+       products are permanent. The second button was the problem. It sat directly under that
+       claim with no terms of its own, and one of the things it sells is a TWELVE MONTH
+       Arcade Card. So the sentence that names it also says so. */
     say.textContent='Commish Simulator is part of the Premium Bundle, with the two '
-      +'dynasty modes in Perfect Season. One purchase. Yours for good.';
+      +'dynasty modes in Perfect Season. One purchase. Yours for good. Run The Bundle adds '
+      +'two more games, including a year of the Arcade Card.';
     act.innerHTML=
       '<button class="btn" id="b-buy-ps">Premium Bundle &middot; $19.99</button>'
       +'<button class="btn ghost" id="b-buy-rtb">Run The Bundle &middot; $34.99</button>'
