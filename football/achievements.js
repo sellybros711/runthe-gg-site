@@ -1352,11 +1352,12 @@
    * the season 10 game was played and survived. That is a weaker claim and it is a true one.
    *
    * AND NOTHING NAMES A BOSS OR A MANDATE PAST THE SECOND. Bosses come every ten seasons and
-   * mandates every ten offset by five, out of lists of six and four, and the mode is built to
-   * run 25 seasons (E.DYNASTY_MAX_SEASONS). Inside 25 that is exactly two bosses and three
-   * mandates: seasons 30 and up, where the other four bosses and the fourth mandate live, are
-   * past the end of the design. A badge asking for the third boss would sit dark forever and
-   * nothing would fail, which is the way this class of mistake always arrives.
+   * mandates every ten offset by five, out of lists of six and four. THE MODE HAS NO CEILING,
+   * so the third boss is not unreachable in principle; it is unreachable in practice, and the
+   * practice is what a badge has to be earned against. The bot's deepest measured run is
+   * around 19 seasons, so the third boss at season 30 and the fourth mandate at 35 are past
+   * anything the checker can prove. A badge asking for one would sit dark forever and nothing
+   * would fail, which is the way this class of mistake always arrives.
    */
   if (DYNASTY_LIVE) {
     /* ---- how far you got, which is the number the mode is ranked on ---- */
