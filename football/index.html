@@ -482,40 +482,33 @@ window.GA_ID='G-L29P5MRWKE';
      so it gets a world of its own rather than a second copy of Full Team's, and the gold is
      the first thing to go: two warm buttons in a stack read as one menu of side modes.
 
-     THE ROAD IS THE COPY. The target starts at DYNASTY_BASE_WINS and goes up a win every
-     DYNASTY_STEP_SEASONS seasons, and saying that in words took a three field caption nobody
-     read. Two stretches of the same road at two angles is a hill: the far half is rotated
-     LESS than the near half and sits higher, so the ground rises as it goes away. One
-     stretch at one angle is a plain, which is what the button looked like before the second
-     layer went in, so the .hp-rise block below is the whole idea rather than a highlight.
+     THE ROAD IS GONE. It was two stretches of a perspective grid at two angles, meant to
+     read as ground rising away from you: the target starts at DYNASTY_BASE_WINS and climbs,
+     and the picture was there to say so without a third line of caption.
 
-     The honest limit, written here rather than discovered later: a rising road is atmosphere.
-     Nobody reads a win total out of it. It sets the mood and the caption under it carries the
-     number, which is why that caption is the one line on the button and cannot be cut. */
-  .hp-dyn{overflow:hidden;gap:11px;padding:18px 15px 16px;border-radius:15px;
+     It did not say that. Owner's call, and the reason it failed is worth keeping: a
+     repeating grid in perspective is a WIREFRAME before it is a field, and a wireframe on a
+     dark panel reads as a chart or a debug overlay rather than as turf. It also had to be
+     faint enough to sit under type, which took away the one thing that might have made it
+     legible as ground. The caption was carrying the number anyway.
+
+     WHAT REPLACES IT IS AN OBJECT RATHER THAN A TEXTURE. One ball, drawn properly, says
+     football in a way no amount of background can, and it cannot be mistaken for a grid.
+     The glow behind it is the only atmosphere left: a single warm pool, which is stadium
+     light rather than a pattern, and it dies out well before the button's edges. */
+  .hp-dyn{overflow:hidden;gap:9px;padding:16px 15px 15px;border-radius:15px;
     background:linear-gradient(180deg,#20242c 0%,#12141a 58%,#0b0d11 100%);
     border:1.5px solid rgba(255,255,255,.30);
     box-shadow:0 18px 40px -20px #000,inset 0 1px 0 rgba(255,255,255,.14)}
-  .hp-lanes,.hp-rise{position:absolute;left:-45%;right:-45%;pointer-events:none}
-  /* THE NEAR HALF. Rotated hard and pushed below the button's own floor, so what survives the
-     crop is the far end of it rather than a grid lying flat. */
-  .hp-lanes{bottom:-30px;height:132px;
-    transform:perspective(90px) rotateX(62deg);transform-origin:50% 100%;
-    background:
-      repeating-linear-gradient(180deg,rgba(233,238,247,.60) 0 2px,transparent 2px 17px),
-      repeating-linear-gradient(90deg,rgba(233,238,247,.26) 0 2px,transparent 2px 40px);
-    -webkit-mask-image:linear-gradient(180deg,transparent 2%,#000 60%);
-    mask-image:linear-gradient(180deg,transparent 2%,#000 60%)}
-  /* The far half, and the climb. */
-  .hp-rise{bottom:44px;height:92px;
-    transform:perspective(150px) rotateX(74deg);transform-origin:50% 100%;
-    background:
-      repeating-linear-gradient(180deg,rgba(233,238,247,.34) 0 2px,transparent 2px 21px),
-      repeating-linear-gradient(90deg,rgba(233,238,247,.16) 0 2px,transparent 2px 46px);
-    -webkit-mask-image:linear-gradient(180deg,transparent 4%,#000 72%);
-    mask-image:linear-gradient(180deg,transparent 4%,#000 72%)}
-  /* Above the road. .hp-full lays its lines out in the flow and both road layers are
-     absolute, so without a stacking order of their own the words paint under the lanes. */
+  /* The pool of light the ball sits in. On the button rather than on the mark so it is not
+     clipped by the mark's own box, and behind everything because it is the ground. */
+  .hp-dyn:after{content:'';position:absolute;left:50%;top:-14px;width:190px;height:120px;
+    transform:translateX(-50%);pointer-events:none;
+    background:radial-gradient(50% 50% at 50% 50%,rgba(226,178,90,.16),transparent 70%)}
+  .hp-dyn .hp-mark{position:relative;z-index:1;display:block;width:40px;height:27px;
+    margin-bottom:-1px;filter:drop-shadow(0 3px 7px rgba(0,0,0,.55))}
+  /* Above the light. .hp-full lays its lines out in the flow and the pool is absolute, so
+     without a stacking order of their own the words paint under it. */
   .hp-dyn .hp-full-name,.hp-dyn .hp-full-sub{position:relative;z-index:1}
   .hp-dyn .hp-tag{z-index:1}
   /* Set in the display face, which nothing else on the front page is, and uppercased here
@@ -544,6 +537,10 @@ window.GA_ID='G-L29P5MRWKE';
   .hp-dyn .hp-tag-spent{background:rgba(255,255,255,.06);
     border-color:rgba(255,255,255,.18);color:rgba(238,242,249,.5)}
   .hp-dyn:has(.hp-tag-spent) .hp-full-name{color:rgba(244,247,252,.58)}
+  /* THE BALL WAITS WITH THE REST OF THE CARD. Without this it is the one thing that stays
+     fully lit on a door that has gone quiet, which makes the loudest element on a spent card
+     the one part of it that is pure decoration. */
+  .hp-dyn:has(.hp-tag-spent) .hp-mark{opacity:.45;filter:saturate(.55)}
   .hp-dyn .hp-tag-new{background:linear-gradient(180deg,#f0c674,#e2b25a);
     border-color:rgba(243,221,174,.9);color:#241a08;font-weight:800;letter-spacing:.1em;
     box-shadow:0 0 0 3px rgba(226,178,90,.16)}
@@ -9710,7 +9707,30 @@ function ensureDynastyButton(){
      branches below replace its innerHTML, so drawing them once at creation would put the
      picture on the front page until the first auth change wiped it. First in the string, so
      the words that follow paint over them. */
-  const road='<span class="hp-lanes"></span><span class="hp-rise"></span>';
+  /* THE BALL, and it is drawn here rather than fetched for the reason the store's artwork is:
+     a few hundred bytes of path data inherits the page's theme and cannot 404.
+
+     POINTED, NOT AN ELLIPSE. The whole difference between a football and an egg is that the
+     ends come to a point, so the body is two arcs meeting at (2,16) and (46,16) rather than
+     any kind of oval. The two white bands near the tips and the four cross stitches are the
+     rest of what makes it readable at 40px, which is the size it is actually drawn at.
+
+     NO GRADIENT AND SO NO DEFS. An id inside an svg is a document wide name, and this markup
+     is written into innerHTML on every repaint of the button; a stale def outliving its own
+     node is the bug the store's pwArt() counter exists to avoid. Flat leather with one
+     lighter shape laid over the top does the same job with nothing to collide. */
+  const mark='<svg class="hp-mark" viewBox="0 0 48 32" aria-hidden="true">'+
+    '<path fill="#96612f" d="M2 16C7.5 9 15 5 24 5s16.5 4 22 11c-5.5 7-13 11-22 11S7.5 23 2 16Z"/>'+
+    '<path fill="#ad7440" d="M2 16C7.5 9 15 5 24 5s16.5 4 22 11c-3 0-9-7-22-7S5 16 2 16Z"/>'+
+    /* THE BANDS RUN THE FULL HEIGHT OF THE BALL WHERE THEY SIT, and that is the whole
+       difference between a band and a bracket. Drawn short they float clear of the leather
+       top and bottom, and two short arcs either side of the laces read as parentheses around
+       them. Thinner than the laces as well, because the laces are the thing being read. */
+    '<g fill="none" stroke="#f4efe6" stroke-linecap="round">'+
+      '<path stroke-width="1.4" opacity=".92" '+
+        'd="M12.9 8.6c-1.7 4.8-1.7 9.9 0 14.8M35.1 8.6c1.7 4.8 1.7 9.9 0 14.8"/>'+
+      '<path stroke-width="1.8" d="M19.4 16h9.2M21.4 13.3v5.4M24 13.3v5.4M26.6 13.3v5.4"/>'+
+    '</g></svg>';
   if(save){
     const r=save.run;
     /* The season is the sticker rather than the first field of the caption. It was in both
@@ -9726,7 +9746,7 @@ function ensureDynastyButton(){
     /* A run in progress is never gated, so nothing here reads the allowance, and the
        countdown's timer stops because there is no countdown on this branch to move. */
     dailyClock(false);
-    el.innerHTML=road+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
+    el.innerHTML=mark+'<span class="hp-tag hp-tag-pro">Season '+r.seasonNo+'</span>'+
       '<span class="hp-full-name">Resume Dynasty</span>'+
       /* THE SCORE ONCE THERE IS ONE. A first draft has played nothing, and "0 points" on
          the card offering it back reads like a run that went badly rather than one that has
@@ -9739,8 +9759,8 @@ function ensureDynastyButton(){
     /* THE NUMBER, AND THAT IT MOVES. The old caption ran three fields wide and carried the
        ageing and the endlessness as well, which is the rules sheet on the first tap doing
        its job on a button. What a door has to say is what the game asks of you and that the
-       ask grows: the road behind this line draws the second half, the line names the first.
-       Read from the constant, so a rebalance cannot leave the front page lying. */
+       ask grows, and this line is now the only thing that says either: the road that used to
+       draw the climb behind it has gone, so the caption carries the whole job alone. */
     /* THE DOOR SELLS THE RUN, NOT THE FIRST TARGET. "8 wins, and it goes up" names a number
        and no stake, so it read as a harder version of a season somebody has already played.
        The line the rules sheet opens with is the actual pitch, and it is the one that says
@@ -9753,7 +9773,7 @@ function ensureDynastyButton(){
     if(dailyLeft('dynasty')<=0){
       const at=dailyResetsAt('dynasty'), cd=at?dailyCountdown(at):null;
       dailyClock(true);
-      el.innerHTML=road+'<span class="hp-tag hp-tag-spent">Used today</span>'+
+      el.innerHTML=mark+'<span class="hp-tag hp-tag-spent">Used today</span>'+
         '<span class="hp-full-name">Dynasty</span>'+
         '<span class="hp-full-sub">'+
           (cd?'Next run in '+esc(cd):'Next run at midnight Eastern')+'</span>';
@@ -9768,7 +9788,7 @@ function ensureDynastyButton(){
        a run in progress never sees it either, because that branch carries the season instead. */
     let dynSeen=false;
     try{ dynSeen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ dynSeen=!!window.__dynIntro; }
-    el.innerHTML=road+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
+    el.innerHTML=mark+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
       '<span class="hp-full-name">Start a Dynasty</span>'+
       '<span class="hp-full-sub">One team. One life. How long can you last?</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
