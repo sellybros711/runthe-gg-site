@@ -2431,7 +2431,20 @@ window.GA_ID='G-L29P5MRWKE';
      pages. Borrowed on purpose: somebody who has seen it before should recognize it here. */
   .modecard.mc-cfb{border-color:rgba(16,185,129,.38)}
   .modecard.mc-cfb .mc-icon{background:linear-gradient(135deg,#10b981 0%,#047857 100%)}
-  .modecard.mc-cfb .mc-title{color:#5eead4}
+  .modecard.mc-cfb .mc-title{color:#5eead4;font-size:15px}
+  /* THE BREAK GOES AT THE COLON, AND IT IS THE ONLY GOOD ONE.
+     This is the only card whose title is a full product name rather than a two word mode
+     name, and left to wrap on its own the name came apart in the middle: at 360, 375 and 390,
+     which is most phones, it read "The Perfect / Season: College / Football". A brand split
+     across two lines with the colon stranded mid line is worse than any amount of height.
+     Measured, per width, off the real line boxes rather than guessed:
+       320   4 lines, and no size fixes it. The text column there is 142px and COLLEGE
+             FOOTBALL alone needs more than that. Rare enough to accept.
+       360   3 lines, with COLLEGE FOOTBALL whole on the last one
+       375+  2 lines, the name in its two halves
+     15px rather than the 17px its neighbours use is what buys 375 and 390. It is a different
+     section under its own heading, and a product name is not a mode name. */
+  .modecard.mc-cfb .mc-title>span{display:block}
   /* THE BADGE GETS ITS OWN LINE ABOVE THE NAME. Inline after the title it read as part of the
      sentence; parked at the right of the title row it stole enough width to break "College
      Football: Perfect Season" over three lines. Above it, the title has the full width and the
@@ -2474,8 +2487,8 @@ window.GA_ID='G-L29P5MRWKE';
   /* IT SITS ABOVE THE TITLE'S LINE, WHICH IS WHY IT NEVER MEETS IT.
      The first attempt kept the sticker level with the title row and reserved space by
      padding the title. That works and costs a line: the padding moves the wrap point, and
-     "College Football: Perfect Season" is long enough that one more break at 360 or 390
-     makes the card visibly taller. Every padding that guaranteed clearance cost a line at
+     the college game's name is long enough that one more break at 360 or 390
+     makes the card visibly taller, and it has since got longer still. Every padding that guaranteed clearance cost a line at
      some width, because the wrap point and the sticker's left edge both move with the
      viewport and not together.
      Raising it instead takes the horizontal question off the table completely: with its
@@ -9192,9 +9205,32 @@ const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwArt(k)+'<b>'+esc(name)+'</
  * names the game the player is already standing in. #f87171 is the smallest step that clears
  * both card grounds with room to spare, at 6.27 and 5.14, and it is still the same red.
  */
+/* THE COLLEGE GAME'S NAME, ONCE, BECAUSE THIS PAGE WAS SPELLING IT THREE WAYS.
+ *
+ * The store said "College Football", the modes sheet said "College Football: Perfect Season"
+ * and the cross-promo banner said the same thing again in its own string literal. Three
+ * labels for one product on one page, and the store's was the odd one out twice over: it
+ * dropped the brand entirely, so the line under a red "The Perfect Season" read as though
+ * the bundle contained some unrelated college game rather than this game's college edition.
+ * That is the whole point of naming them: the two are the same thing in two sports.
+ *
+ * DECLARED UP HERE rather than beside CFB_LIVE and CFB_URL, which is where it belongs, for
+ * one uninteresting reason: PW_GAME is built at this line and those constants are hundreds
+ * of lines below it, so a reference to one from here is a temporal dead zone throw and takes
+ * the whole page with it. */
+const CFB_NAME='The Perfect Season: College Football';
+/* The same name in two halves, for the one place that has to wrap it (see the .mc-cfb rules).
+   Split off the colon rather than written out twice, so the halves cannot disagree with the
+   name above them, and a name with no colon in it comes back whole. */
+const cfbNameHtml=()=>{
+  const i=CFB_NAME.indexOf(':');
+  if(i<0) return esc(CFB_NAME);
+  return '<span>'+esc(CFB_NAME.slice(0,i+1))+'</span>'+
+    '<span>'+esc(CFB_NAME.slice(i+1).trim())+'</span>';
+};
 const PW_GAME={
   ps:{name:'The Perfect Season',c:'#f87171'},
-  cfb:{name:'College Football',c:'#10b981'},
+  cfb:{name:CFB_NAME,c:'#10b981'},
   arcade:{name:'Run The Arcade',c:'#FF8A3D'},
   tour:{name:'Run The Tour',c:'#22b8cf'}
 };
@@ -10491,7 +10527,7 @@ function modeMenu(){
            results banner, so this is the fourth place it is the same picture. */
         '<div class="mc-head"><div class="mc-icon mc-icon-img">'+
           '<img src="/cfb/icon-192.png" alt="" width="32" height="32" loading="lazy">'+
-        '</div><div class="mc-title">College Football: Perfect Season</div>'+
+        '</div><div class="mc-title">'+cfbNameHtml()+'</div>'+
         (CFB_LIVE?arrow:'')+'</div>'+
         '<p>Spin for a year and a school, sign six players under an NIL budget, and chase a '+
         'perfect twelve-game season. The college edition of this game.</p>'+
@@ -10619,7 +10655,7 @@ function paintResultsPromo(){
        game, it carries the same account, and opening a second tab of the same site is
        the sort of thing that leaves people with two of everything. */
     a.removeAttribute('target');
-    a.setAttribute('aria-label','Play College Football: Perfect Season');
+    a.setAttribute('aria-label','Play '+CFB_NAME);
     /* NO "NEW" CHIP HERE, and it is the one place that goes without one. The text column
        on this banner is 132px at 320 wide, so the chip cannot share the title's line and
        takes one of its own -- which makes the card a whole line taller than the hub card
@@ -10627,7 +10663,7 @@ function paintResultsPromo(){
        the name and the words "Just out" already say new; the chip's job is done by the
        button on the front page and the badge on the mode card, both of which have room
        for it. */
-    head.textContent='College Football: Perfect Season';
+    head.textContent=CFB_NAME;
     long.textContent='Just out. Spin for a year and a school, sign six under an NIL budget, '+
       'and chase a perfect twelve-game season. Same account.';
     short.textContent='Just out. Six players, an NIL budget, a perfect season.';
@@ -10640,7 +10676,7 @@ function paintResultsPromo(){
        so a missing file is a wordmark rather than a hole. */
     if(img){ img.closest('.ggad-mark').classList.remove('nologo');
       img.setAttribute('src','/cfb/icon-192.png');
-      img.setAttribute('alt','College Football: Perfect Season'); }
+      img.setAttribute('alt',CFB_NAME); }
   }else{
     a.classList.remove('ggad-cfb');
     /* nologo is latched by the img's own onerror and never cleared by it, so a swap that
