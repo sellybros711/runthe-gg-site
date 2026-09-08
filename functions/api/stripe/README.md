@@ -196,10 +196,12 @@ about the modes opening, since nothing reads `premium_products()` yet.
     Season. A tester without the row gets the paywall sheet (the bundle, both
     prices, a real Buy button that truthfully says "Not on sale yet" while
     the endpoint answers 503).
-  - `cfb_premium` is the PRO tier of Commish Simulator, which is the split
-    docket.js was built around: any tester gets through the door, the row
-    decides free dials or the full range. `?tier=free` still forces the free
-    view for a pro tester.
+  - `cfb_premium` IS Commish Simulator. Owner decision (2026-09-08): the mode
+    is fully premium, not free with paid dials. A tester without the row stops
+    at the gate with the pitch and both prices, exactly what a visitor who has
+    not bought sees after launch. The free/pro dial split stays in docket.js
+    unused by the public model; `?tier=free` remains an inspection switch for
+    an owner.
   - Full Team is untouched: tester preview, no premium relationship yet.
 
   Grants come from `supabase/102_premium_comp.sql`: runnyj holds both rows
@@ -221,8 +223,9 @@ about the modes opening, since nothing reads `premium_products()` yet.
      containing both. Those are different products.
   2. **Full Team.** fullteam-access.js calls itself "the first paid mode in
      this game" but was not named in the bundle. In, or sold separately?
-  3. **Commish.** docket.js already splits `free` and `pro` dials per ruling,
-     so the mode may be free with the range paid, rather than paid outright.
+  3. **Commish: ANSWERED (2026-09-08).** Fully premium. The gate pitches
+     anyone without `cfb_premium`; the free/pro dial data stays in docket.js
+     against a future free tier.
 
 - **Gating the modes themselves.** Once the above is settled: the pages gate on
   `premium_products()` and (per the dynasty-access.js header) the submit RPCs

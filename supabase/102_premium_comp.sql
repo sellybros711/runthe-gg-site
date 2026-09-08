@@ -9,16 +9,16 @@
 -- hand-granted so they are easy to find and revoke, exactly the way
 -- 72_comp_passes.sql marks comp Arcade Cards.
 --
--- WHY ONLY runnyj: the tester rehearsal (2026-09) is one premium account and
--- one free-view account. runnyj plays the site as somebody who bought the
--- bundle; csel8 is on the tester lists in code and holds NO row, so he plays
--- the site as somebody who has not bought. DO NOT grant csel8 here, or the
--- free view he exists to judge has nobody looking at it.
---
--- THE OTHER TWO TESTERS ARE A DECISION, NOT AN OVERSIGHT. malikwillislover and
--- slimeyb3 hold no row either, so from this migration on they see the paywall
--- at every dynasty door and the free tier of Commish, same as csel8. If they
--- should be premium instead, add their names to the usernames array and re-run.
+-- WHO GETS WHAT, per the owner (2026-09-08), one account per path so every
+-- path has somebody looking at it:
+--   runnyj            premium: plays the site as somebody who bought the bundle
+--   malikwillislover  premium: access to everything, same as runnyj
+--   csel8             NO ROW, on purpose: plays the site as a signed-in user
+--                     who has not bought, which after launch means the paywall
+--                     at every dynasty door and the pitch at the Commish gate.
+--                     DO NOT grant csel8 here, or the not-bought view he
+--                     exists to judge has nobody looking at it.
+--   slimeyb3          no row either, so sees what csel8 sees until added below.
 --
 -- MATCHING: lower(username), the lesson 72_comp_passes.sql wrote down. The
 -- final SELECT reports who matched, so a name that matched nobody is seen
@@ -27,12 +27,12 @@
 -- TO REVOKE later:
 --   delete from public.premium_unlocks
 --   where source = 'comp' and user_id in (
---     select id from public.profiles where lower(username) in ('runnyj')
+--     select id from public.profiles where lower(username) in ('runnyj','malikwillislover')
 --   );
 -- ---------------------------------------------------------------------------
 
 with grantees as (
-  select array['runnyj']::text[] as usernames   -- add 'malikwillislover','slimeyb3' to make them premium too
+  select array['runnyj','malikwillislover']::text[] as usernames   -- add 'slimeyb3' to make them premium too
 ),
 products as (
   select unnest(array['ps_premium','cfb_premium']) as product
