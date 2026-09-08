@@ -1378,8 +1378,14 @@ const DYN_GOALS = {
   'two total':   (h) => h.filter((x) => x.wins < 9).length < 2,
 };
 
-/* A safety stop, not a length. A dynasty ends when the owner ends it. */
-const DYN_MAX_SEASONS = E.DYNASTY_MAX_SEASONS;
+/* A SAFETY STOP, NOT A LENGTH, and now its own number rather than the game's.
+   A dynasty ends when the owner ends it; this exists so a simulated run that never gets
+   fired cannot loop forever. It used to borrow E.DYNASTY_MAX_SEASONS, which is how a
+   simulator's loop guard came to be read as the mode's design limit everywhere it was
+   mentioned. Set high enough to measure the deep game rather than to truncate it: the old
+   25 meant every distribution reported here was cut off exactly where the interesting tail
+   begins. */
+const DYN_MAX_SEASONS = Number(process.env.PS_DYN_MAX ?? 200);
 
 /*
  * Play one dynasty until the owner has seen enough. Returns the seasons survived and the

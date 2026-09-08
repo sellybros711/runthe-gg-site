@@ -428,8 +428,9 @@ const GRIND = {
   full_coach_25: 'full_coach_10',        // 25 coaches hired, against 10
 };
 const SKILL = {
-  /* The bot's deepest run is around 19 seasons. 25 is the mode's own design ceiling
-     (E.DYNASTY_MAX_SEASONS) and every season past 19 is the same job done better. */
+  /* The bot's deepest run is around 19 seasons, and every season past that is the same job
+     done better rather than a new one. The mode itself has no ceiling: a dynasty ends when
+     the owner ends it. */
   dyn_reach_20: 'dyn_reach_18',
   dyn_reach_21: 'dyn_reach_18',
   dyn_reach_25: 'dyn_reach_18',

@@ -146,12 +146,20 @@ chains resolve to the end, and only the end counts.
 
 Measured, and worth knowing before writing a badge that names any of it:
 
-- A dynasty is built to run **25 seasons** (`E.DYNASTY_MAX_SEASONS`). Nothing enforces that
-  number, but it is what the balance was tuned for.
+- **A dynasty has no length.** It ends when the owner ends it and at no other point. There
+  was a `DYNASTY_MAX_SEASONS = 25` in `engine.js` that nothing in the game read, and this
+  file used to call it the design ceiling; it was the balance simulator's loop guard, and it
+  has been removed. The simulator keeps its own, named for what it is.
+- The win bar is `DYNASTY_BASE_WINS` plus one every `DYNASTY_STEP_SEASONS`, **capped at
+  `DYNASTY_WIN_BAR_MAX`**. The cap is not decoration: a season is 17 games, so the old
+  uncapped line asked for 17 of 17 at season 91 and 18 at season 101, which is a mode that
+  becomes arithmetically impossible rather than hard. Difficulty past the cap comes from the
+  squeeze the mode already runs on, a frozen cap against a roster that ages every winter.
 - Bosses come at seasons 10, 20, 30 and so on out of a list of **six**, and mandates at 5,
-  15, 25 and so on out of a list of **four**. So inside 25 seasons a player meets exactly
-  TWO bosses (SEA-2013 and NE-2007) and THREE mandates. The other four bosses and the `vets`
-  mandate sit past the end of the design, and no badge should name them.
+  15, 25 and so on out of a list of **four**, both cycling. The bot's deepest measured run
+  is around **19 seasons**, so in practice a player meets two bosses and three mandates. A
+  badge naming the third boss is not wrong about the mode, it is unprovable by
+  `check-badges.mjs`, which is the same problem with a different cause.
 - A Full Team squad reaches the Super Bowl in about one season in twenty and wins it in
   about one in a hundred, and never takes the top seed.
 

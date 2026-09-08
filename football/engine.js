@@ -3938,8 +3938,18 @@ const FULL_CAP_MUSD = 280;
  * so there is nothing left for a human to be better at. This rule sits between them, and
  * the bot's best strategy lasts 2.4 times as long as its worst, which is the room a person
  * needs to visibly outplay it.
+ *
+ * AND THERE IS NO LENGTH. A dynasty ends when the owner ends it and at no other point.
+ *
+ * There used to be a DYNASTY_MAX_SEASONS = 25 sitting here, which nothing in the game ever
+ * read: run.js does not, the page does not, and the only code that ever touched it was the
+ * balance simulator using it as a safety stop so a run could not loop forever. It has been
+ * removed rather than corrected, because a constant that governs nothing is worse than no
+ * constant at all. This one was read as a design limit by everything that came near it, up
+ * to and including a note in CLAUDE.md claiming the mode was built to run twenty-five
+ * seasons and a badge catalog that would not name anything past them. The simulator keeps
+ * its own stop, named for what it is.
  */
-const DYNASTY_MAX_SEASONS = 25;
 
 /*
  * ─── THE SCORE ─────────────────────────────────────────────────────────────────────
@@ -4079,11 +4089,30 @@ const DYNASTY_STEP_SEASONS = 10;
  * The bot drafts best-available inside a budget and releases whoever is worth less than half
  * what he is paid. A person who reads the offseason should beat it.
  */
+/*
+ * AND IT STOPS CLIMBING BEFORE IT STOPS BEING POSSIBLE.
+ *
+ * The bar was BASE + one win every ten seasons with nothing above it, and a season is
+ * seventeen games. Left to run, that asks for 17 of 17 at season 91 and 18 of 17 at season
+ * 101: a perfect season to survive, and then an arithmetic wall no roster can climb. This is
+ * an endless mode, so a season it is impossible to pass is a bug rather than a hard ending.
+ *
+ * FOURTEEN, WHICH LEAVES THREE LOSSES. It is where the old formula arrived at season 61
+ * anyway, so nothing inside the range anyone plays moves: the bot's median run is four
+ * seasons and none of a measured three hundred reached twenty-five. This changes the far
+ * tail only, and what it changes there is "cannot be done" into "very hard".
+ *
+ * THE MODE DOES NOT STOP GETTING HARDER WHEN THE NUMBER DOES, and that is the point of
+ * capping it here rather than raising the ceiling. The squeeze this mode runs on is a frozen
+ * cap against a roster that ages every winter, and that keeps tightening on its own for as
+ * long as the run lasts. The bar is the part of the difficulty that had a wall in it.
+ */
+const DYNASTY_WIN_BAR_MAX = 14;
 /* Wins needed in a given season, counting from 1. */
 function dynastyWinBar(season, stepEvery) {
   const step = Math.floor(Math.max(0, Math.max(1, season) - 1)
     / (stepEvery || DYNASTY_STEP_SEASONS));
-  return DYNASTY_BASE_WINS + step;
+  return Math.min(DYNASTY_BASE_WINS + step, DYNASTY_WIN_BAR_MAX);
 }
 
 /**
@@ -5788,8 +5817,9 @@ const publicAPI = {
     ['RB', 'WR', 'TE'], ['DL', 'LB', 'DB'],
   ],
   /* The Three Year Deal. Nothing in the live game reaches these yet. */
-  DYNASTY_MAX_SEASONS, DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
+  DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
   dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
+  DYNASTY_WIN_BAR_MAX,
   DYNASTY_BOSS_EVERY, DYNASTY_MILESTONE_EVERY, DYNASTY_BOSSES, DYNASTY_CHALLENGES,
   BOSS_READ_EDGE, BOSS_SIM,
   dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
