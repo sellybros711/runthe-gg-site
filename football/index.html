@@ -8952,6 +8952,12 @@ function confirmSheet(o){
    The fix is not a reset call at each entry point, which is exactly what would get
    missed again. It is one function that every entry point goes through. */
 function newRun(opts){
+  /* ANY NEW RUN SUPERSEDES A SAVED TRADE SEASON, including another trade season. Cleared
+     here rather than at each launcher because this is the one place every one of them comes
+     through, and a saved run outliving the decision to start something else is a Resume on
+     the mode card that leads somewhere the player already walked away from.
+     Safe on the trade path itself: R.startSeason writes the new run back a moment later. */
+  tradeClear();
   submitted=null;
   myRanks=null;
   myGmRank=null; ranksP=null; gmRankP=null;
@@ -10218,6 +10224,115 @@ function dynNewSheet(){
   $('b-dyn-drop').onclick=()=>{ closeSheet(); dynClear(); ensureDynastyButton(); beginDynastyDraft(); };
 }
 
+/* ── THE TRADE MACHINE'S SAVE ──────────────────────────────────────────────────────────
+ *
+ * A DEBT THE METER CREATED RATHER THAN AN OLD GAP. While nothing actually spent the day,
+ * losing a trade run cost a player some time and no more. Now that kickoff spends it,
+ * closing the tab mid season lost the run AND the day: the card said Used today and offered
+ * nothing back, for a season they never got to finish. That is a refund request rather than
+ * a complaint, and it is the one thing this mode had that Dynasty did not.
+ *
+ * SMALLER THAN THE DYNASTY SAVE BECAUSE THE RUN IS SMALLER. A dynasty carries a winter, a
+ * coach and two slots to keep apart; a trade run is one season in one place. The only thing
+ * in it that is not already plain JSON is the roster, and that was MEASURED rather than
+ * assumed: a walk of a live run found player objects at run.roster and nowhere else, because
+ * tradeHistory records names and departed records ids. It weighs about 17KB.
+ *
+ * IT CANNOT SPEND A SECOND DAY, and nothing had to be written to make that true.
+ * attemptPaid lives on the run, so it travels inside the save, and spendTheDay() reads it
+ * and returns. A resumed run is a run that has already paid.
+ */
+const TRADE_SAVE_KEY='ps_trade_save';
+/* Bumped whenever a change would put a saved run under rules it was not started on. The
+   dynasty key's own list of five is the model, and the rule it follows is the same: a wrong
+   resume is worse than a fresh start, so this refuses rather than migrates. */
+const TRADE_SAVE_VERSION=1;
+
+function tradePack(){
+  return {
+    v:TRADE_SAVE_VERSION,
+    api:NEED_VERSION,
+    user:authState.userId||null,
+    at:Date.now(),
+    /* The row id travels for the reason it does in a dynasty: recordRun refuses to send
+       twice on a non-null submitted, and that is the only thing between a resumed results
+       screen and a duplicate row on the board. */
+    submitted:submitted,
+    run:Object.assign({},run,{
+      roster:run.roster.map(dynKey),
+      /* A trade run has no hire today. Carried the dynasty way regardless, so the day one
+         does the save does not have to be found first. */
+      coach:run.coach?run.coach.name:null,
+    }),
+  };
+}
+/* Quiet, like the dynasty one: storage throws rather than returning null in a browser with
+   it blocked, and a run that cannot be written down is still a run worth playing.
+   NOT PAST THE END. A season that is over has given the player what they paid the day for,
+   and a card offering to resume a finished run is an odd thing to come back to. */
+function tradeSave(){
+  if(!run||!run.tradeMachine||run.phase===R.PHASES.OVER) return;
+  try{ localStorage.setItem(TRADE_SAVE_KEY,JSON.stringify(tradePack())); }catch(_){}
+}
+function tradeClear(){
+  try{ localStorage.removeItem(TRADE_SAVE_KEY); }catch(_){}
+}
+function tradeRead(){
+  let raw=null;
+  try{ raw=localStorage.getItem(TRADE_SAVE_KEY); }catch(_){ return null; }
+  if(!raw) return null;
+  let s=null;
+  try{ s=JSON.parse(raw); }catch(_){ return null; }
+  if(!s||s.v!==TRADE_SAVE_VERSION||!s.run||!s.run.tradeMachine||!Array.isArray(s.run.roster)){
+    return null;
+  }
+  /* Whoever saved it and nobody else, both sides normalised so a signed out run finds its
+     own rather than the last account's. */
+  if((s.user||null)!==(authState.userId||null)) return null;
+  return s;
+}
+/* Puts the run back and then puts the player back on the screen it was at. False rather than
+   a throw on anything visibly wrong, and the caller clears on false: a key the pool does not
+   have means the data underneath moved, and half a roster is worse than none. */
+function tradeRestore(s){
+  const r=s.run;
+  let missing=false;
+  r.roster=r.roster.map((k)=>{ const p=k?BYKEY.get(k)||null:null; if(!p) missing=true; return p; });
+  if(missing) return false;
+  if(r.coach){
+    const name=r.coach;
+    r.coach=coachList().find((c)=>c.name===name)||null;
+    if(!r.coach) return false;
+  }
+  /* Tears down whatever the page was doing, exactly as starting a run does: the sim timer
+     and the draft wheels outlive a run and one function knows all of them. */
+  endRun();
+  run=r;
+  lastChem=1;
+  submitted=(s.submitted===undefined?null:s.submitted);
+  /* The Trade Machine drives itself, so its manual advance stays hidden the way
+     beginTradeMachine leaves it. */
+  $('b-sim').style.display='none';
+  closeSheet();
+  dressTeam();
+  startTradeSeason(true);
+  return true;
+}
+function tradeResume(){
+  const s=tradeRead();
+  if(!s) return false;
+  let ok=false;
+  try{ ok=tradeRestore(s); }catch(err){ console.error(err); ok=false; }
+  if(ok) return true;
+  /* Unopenable, so it goes, and it is said out loud: a silent clear looks exactly like the
+     bug this block exists to fix. */
+  tradeClear();
+  endRun();
+  show('s-intro');
+  toast('That saved run could not be opened. It has been cleared.');
+  return true;
+}
+
 /*
  * EVERY MUTATION SAVES, AND NOT ONE CALL SITE SAYS SO.
  *
@@ -10233,14 +10348,20 @@ function dynNewSheet(){
  *
  * dynSave is the thing that decides whether there is anything to do, so this costs a
  * property read and a comparison in every other mode.
+ *
+ * AND IT SAVES THE TRADE MACHINE THE SAME WAY. Both writers are guarded on the kind of run
+ * they are for, so exactly one of them ever does anything and neither call site has to know
+ * which mode it is in. acceptTrade joined the list for this: it is the one mutation that
+ * only the Trade Machine makes, and without it a deal made in the window was the one thing
+ * a resume would have lost.
  */
 ['spin','respin','sign','startSeason','advanceWeek','startPlayoffs','hireCoach','setPlan',
  'finishHiring','takeTheField','beginOffseason','releaseMan','finishOffseason','ownerVerdict',
- 'applyBossResult','applyChallengeResult']
+ 'applyBossResult','applyChallengeResult','acceptTrade']
   .forEach((fn)=>{
     const orig=R[fn];
     if(typeof orig!=='function') return;
-    R[fn]=function(){ const out=orig.apply(this,arguments); dynSave(); return out; };
+    R[fn]=function(){ const out=orig.apply(this,arguments); dynSave(); tradeSave(); return out; };
   });
 
 function beginFullDraft(){
@@ -10529,7 +10650,13 @@ function modeMenu(){
      says the wrong thing first and corrects itself under the reader's thumb. Asked once per
      sign-in, so reopening the sheet costs nothing. */
   if(ct) dailyEnsure('trade');
-  const tradeSpent=ct&&!locked&&dailyLeft('trade')<=0;
+  /* A RUN IN PROGRESS IS NEVER GATED, which is the rule the front page's Dynasty door
+     already follows, and it is read FIRST so it wins over the day being spent. It has to:
+     the day was spent ON this run, so counting it against the run itself is the exact
+     complaint the save exists to answer. */
+  const tradeSave_=ct&&!locked?tradeRead():null;
+  const tradeWeek=tradeSave_&&tradeSave_.run.season?tradeSave_.run.season.week:0;
+  const tradeSpent=ct&&!locked&&!tradeSave_&&dailyLeft('trade')<=0;
   const tradeAt=tradeSpent?dailyResetsAt('trade'):null;
   const tradeCd=tradeAt?dailyCountdown(tradeAt):null;
   $('sheet-in').innerHTML=
@@ -10606,16 +10733,21 @@ function modeMenu(){
              run". The two cannot both be true, so they share the slot. */
           '</svg></div><div class="mc-title">The Trade Machine'+
           (ct
-            ? (tradeSpent?' <span class="mc-soon-tag">Used today</span>':'')
+            ? (tradeSave_?' <span class="mc-soon-tag">In progress</span>'
+              :(tradeSpent?' <span class="mc-soon-tag">Used today</span>':''))
             : ' <span class="mc-soon-tag">Coming Soon</span>')+
           '</div>'+(ct&&!tradeSpent?arrow:'')+'</div>'+
         /* THE CARD SAYS WHEN, not just that. A door that has gone quiet with no date on it
            is the same as a broken one to the person looking at it. Still pressable: the tap
            opens the explainer, which is where the countdown and the way around it live. */
-        '<p>'+(tradeSpent
-          ? esc(tradeCd?'Your run today is used. The next one unlocks in '+tradeCd+'.'
-                       :'Your run today is used. The next one unlocks at midnight Eastern.')
-          : 'You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.')+
+        '<p>'+(tradeSave_
+          ? esc(tradeWeek>0
+              ? 'You are '+tradeWeek+' week'+(tradeWeek===1?'':'s')+' into a season. Pick it back up.'
+              : 'Your team is dealt and the season has not kicked off. Pick it back up.')
+          : (tradeSpent
+            ? esc(tradeCd?'Your run today is used. The next one unlocks in '+tradeCd+'.'
+                         :'Your run today is used. The next one unlocks at midnight Eastern.')
+            : 'You are thrown into a season as the GM. Win with the team you\'re dealt, or trade your way to the top.'))+
         '</p>'+
       '</button>'+
     '</div>'+
@@ -10704,9 +10836,11 @@ function modeMenu(){
      it a frame later anyway, so routing straight to the explainer saves a flash of the mode
      starting. Wired rather than disabled, for the reason .mc-spent is written the way it is. */
   if(trade&&!locked&&canPlayTrade()){
-    trade.onclick=tradeSpent
-      ? ()=>{ dailySpentSheet('trade'); }
-      : ()=>{ closeSheet(); beginTradeMachine(); };
+    trade.onclick=tradeSave_
+      ? ()=>{ closeSheet(); if(!tradeResume()) beginTradeMachine(); }
+      : (tradeSpent
+        ? ()=>{ dailySpentSheet('trade'); }
+        : ()=>{ closeSheet(); beginTradeMachine(); });
   }
   /* Leaves this page, so it is tracked before it goes: a cross-promo whose click-through
      nobody can see is a link you cannot tell is working. */
@@ -14236,7 +14370,13 @@ function after(){
   if(run.phase===R.PHASES.SEEDING){
     ga('playoffs_reached',{seed:run.playoffSeed&&run.playoffSeed.seed,bye:run.playoffSeed&&!!run.playoffSeed.bye,record:run.playoffSeed&&run.playoffSeed.regularRecord,mode:runMode(),club:run&&run.franchise||null});
     paintSeed();
-  }else if(run.phase===R.PHASES.OVER)paintOver();
+  }else if(run.phase===R.PHASES.OVER){
+    /* THE SEASON IS FINISHED, so the saved copy of it goes. The day bought a run and the run
+       has been played; what is left is the results screen, and a mode card offering to
+       resume something that is over is a door back to a place with nothing behind it. */
+    if(run.tradeMachine) tradeClear();
+    paintOver();
+  }
 }
 
 /* ---------- SALARY CAP SURVIVOR: cap crisis ---------- */
@@ -14472,13 +14612,15 @@ function openTeamReveal(){
    THE TRADE MACHINE'S KICKOFF, and the counterpart to startSeason(). Both spend the day
    through the same function for the reason written on it: they share no code above the
    final two lines, so anything that has to happen at kickoff has to be asked for twice. */
-function startTradeSeason(){
+function startTradeSeason(resumed){
   spendTheDay();
   drawField($('field2'),false);
   paintSquadSidebar();
   const sp=$('season-roster'); if(sp) sp.style.display='';
   paintRosterPanel('season-rp-body','season-rp-cap');
-  ga('season_started',{mode:'trade'});
+  /* A resume is not a start, and counting it as one would quietly inflate the only number
+     that says how many trade seasons are actually begun. */
+  ga(resumed?'season_resumed':'season_started',{mode:'trade'});
   paintNext(); paintUpcomingBug(); paintCalendar();
   $('v-you').textContent='0'; $('v-them').textContent='0';
   $('v-byou').classList.add('lead'); $('v-bthem').classList.add('lead');
