@@ -5725,8 +5725,16 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-card .pwc-t b{display:block;font-size:14px;line-height:1.2}
   .pw-card .pwc-t span{display:block;font-size:11.5px;color:var(--dim-2);margin-top:2px;
     line-height:1.3}
-  .pw-card .pwc-go{flex:0 0 auto;font-family:var(--fn);font-size:11px;letter-spacing:.08em;
-    color:#fbbf24;font-weight:800}
+  /* VALUE ABOVE PRICE, and never a price on its own. A bare "$19.99" on the front page is a
+     cost with nothing attached to it, which is the one thing a card like this must not be:
+     the reader has to be told what the money buys in the same glance that it asks for the
+     money. The line above the price says what you get, and it is a count of real things
+     rather than a dollar figure nobody has justified. */
+  .pw-card .pwc-go{flex:0 0 auto;text-align:right;line-height:1.15}
+  .pw-card .pwc-go b{display:block;font-family:var(--fn);font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:#fbbf24;font-weight:800}
+  .pw-card .pwc-go span{display:block;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--dim-2);margin-top:3px}
   /* A COLLAPSIBLE THAT IS NOT A <details>. 0fr to 1fr on a grid row animates from nothing
      to whatever the content turns out to be, with no height to measure and nothing to go
      stale when the content changes underneath it. */
@@ -8815,7 +8823,18 @@ let dailyState={dynasty:null,trade:null};
 let dailyAsked={dynasty:false,trade:false};
 let dailyTick=0;
 
-const dailyOn=()=>DAILY_LIMIT_LIVE&&!!authState.signedIn;
+/* PREMIUM IS NOT METERED. Without this line the store sells "unlimited runs" and the page
+   goes on counting them, which is the kind of promise that gets a refund rather than a
+   complaint.
+
+   AND NEITHER IS AN ACCOUNT WHOSE OWNERSHIP IS STILL IN FLIGHT. premiumSet is null until
+   premium_products() answers, and reading null as "not an owner" would meter a paying
+   customer for the length of one round trip. That round trip lands at KICKOFF, which is the
+   single worst moment in the game to be wrong about this. Failing open here is the same rule
+   the rest of this block already follows: a limit that cannot be checked must not cost
+   somebody a run. */
+const dailyOn=()=>DAILY_LIMIT_LIVE&&!!authState.signedIn
+  &&premiumSet!==null&&!dynastyOwned();
 /* How many starts are left today, and 1 whenever the page has no answer. */
 function dailyLeft(mode){
   if(!dailyOn()) return 1;
@@ -8902,11 +8921,8 @@ function dailySpentSheet(mode){
        Left off entirely for an owner, who is not being limited, and before launch for
        anybody outside the tester list. */
     (premiumPitch()
-      ? '<button class="pw-card" id="b-daily-prem">'+
-          '<span class="pwc-ic">'+pwSvg('star')+'</span>'+
-          '<span class="pwc-t"><b>Play as much as you like</b>'+
-          '<span>Premium lifts the daily limit and unlocks every mode.</span></span>'+
-          '<span class="pwc-go">$19.99</span></button>'
+      ? pwCard('b-daily-prem','Play unlimited dynasty runs',
+          'Premium removes the daily limit and unlocks every premium mode.','Unlimited')
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x" style="width:100%">Close</button></div>';
   $('sheet-in').dataset.kind='daily';
@@ -8939,6 +8955,16 @@ const pwSvg=(k,cls)=>'<svg viewBox="0 0 24 24" aria-hidden="true"'+(cls?' class=
 const pwTile=(k,name,line)=>'<div class="pw-tile">'+pwSvg(k)+'<b>'+esc(name)+'</b>'+
   '<i>'+esc(line)+'</i></div>';
 const pwItem=(html)=>'<li>'+pwSvg('tick')+'<span>'+html+'</span></li>';
+/* THE PROMPT, IN ONE PLACE. Three screens carry it and three copies of a price is three
+   chances for one of them to go stale after a price change. `value` is what the money buys
+   and it is never omitted: see the note on .pwc-go. */
+const pwCardInner=(title,sub,value)=>'<span class="pwc-ic">'+pwSvg('star')+'</span>'+
+  '<span class="pwc-t"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></span>'+
+  '<span class="pwc-go"><b>'+esc(value)+'</b><span>From $19.99</span></span>';
+/* Two shapes because the front page BUILDS its node (see ensurePremiumCard) and the two
+   sheets write theirs into a string of markup. Same insides either way. */
+const pwCard=(id,title,sub,value)=>'<button class="pw-card" id="'+id+'">'+
+  pwCardInner(title,sub,value)+'</button>';
 
 /* WHERE THE SHEET WAS OPENED FROM, for the one question worth asking of this screen: which
    of the ways in actually sells anything. Set by each caller, read once, cleared. */
@@ -8952,24 +8978,24 @@ function premiumSheet(){
   const WORTH=80, RTB=34.99;
   const save=Math.round(WORTH-RTB);
   $('sheet-in').innerHTML='<div class="eyebrow gold">Premium</div>'+
-    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Dynasty is premium</h2>'+
+    '<h2 class="display" style="font-size:27px;margin:4px 0 0">Unlock Dynasty Mode</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:7px 0 0">'+
-      'Three modes, one purchase, no subscription. Yours for good.</p>'+
+      'Unlimited dynasty runs. No daily limit. One payment, lifetime access.</p>'+
     '<div class="pw-hero">'+
-      pwTile('dyn','Dynasty','25 seasons in one job')+
-      pwTile('shield','One Franchise','Your club, every winter')+
-      pwTile('brk','Commish','Run a college league')+
+      pwTile('dyn','Dynasty Mode','Build a 25 season dynasty')+
+      pwTile('shield','Franchise Mode','Pick one NFL club and stay')+
+      pwTile('brk','Commissioner','Run a college football league')+
     '</div>'+
 
     '<div class="pw-tier">'+
       '<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'+
       '<div class="pw-cost"><b>$19.99</b></div>'+
       '<ul class="pw-list">'+
-        pwItem('<b>All three modes</b>, as much as you like')+
-        pwItem('Every future season of them, included')+
-        pwItem('One payment. Nothing renews.')+
+        pwItem('<b>Unlimited dynasty runs.</b> No daily limit.')+
+        pwItem('<b>All 3 premium modes</b>, football and college')+
+        pwItem('<b>Lifetime access.</b> No subscription.')+
       '</ul>'+
-      '<button class="btn" id="b-buy-ps" style="width:100%">Get Premium</button>'+
+      '<button class="btn" id="b-buy-ps" style="width:100%">Unlock Premium</button>'+
     '</div>'+
 
     '<div class="pw-tier best">'+
@@ -8979,17 +9005,18 @@ function premiumSheet(){
         '<span class="pw-was">$'+WORTH+'</span>'+
         '<span class="pw-save">Save $'+save+'</span></div>'+
       '<div class="pw-bar"><i style="width:'+Math.round(RTB/WORTH*100)+'%"></i></div>'+
-      '<div class="pw-barc"><span>What you pay</span><span>$'+WORTH+' of Run The</span></div>'+
+      '<div class="pw-barc"><span>You pay $'+RTB.toFixed(2)+'</span><span>Worth $'+WORTH+'</span></div>'+
       '<ul class="pw-list">'+
         pwItem('<b>Everything in Premium</b>')+
-        pwItem('A year of the <b>Arcade Card</b>')+
+        pwItem('<b>1 year of the Arcade Card</b>, across all games')+
         pwItem('<b>102,000 coins</b> in Run The Tour')+
-        pwItem('A Tour pack')+
+        pwItem('<b>Bonus Tour pack</b>')+
       '</ul>'+
       '<button class="btn" id="b-buy-rtb" style="width:100%">Get Run The Bundle</button>'+
     '</div>'+
 
-    '<p class="pw-foot">Paid once. Tied to your account, on every device you sign in on.</p>'+
+    '<p class="pw-foot">Instant access on every device you sign in on. '+
+      'Secure checkout by Stripe.</p>'+
     '<div style="margin-top:12px"><button class="btn ghost" id="sh-x" style="width:100%">Not now</button></div>';
   $('sheet-in').dataset.kind='premium';
   openSheet();
@@ -9093,10 +9120,8 @@ function ensurePremiumCard(){
     el=document.createElement('button');
     el.className='pw-card';
     el.id='b-premium';
-    el.innerHTML='<span class="pwc-ic">'+pwSvg('star')+'</span>'+
-      '<span class="pwc-t"><b>Unlock every mode</b>'+
-      '<span>Dynasty, One Franchise and Commish. One payment, yours for good.</span></span>'+
-      '<span class="pwc-go">$19.99</span>';
+    el.innerHTML=pwCardInner('Unlock every mode',
+      'Dynasty, Franchise and Commissioner. Unlimited runs, lifetime access.','3 modes');
     el.onclick=()=>openPremium('home_card');
     host.parentNode.insertBefore(el, host.nextSibling);
   }
@@ -19616,11 +19641,8 @@ function pfHub(msg,ok){
        just looked at their badges and their streak is somebody the modes are worth
        mentioning to, and a player who has not is one scroll away from Close. */
     (premiumPitch()
-      ? '<button class="pw-card" id="pf-prem">'+
-          '<span class="pwc-ic">'+pwSvg('star')+'</span>'+
-          '<span class="pwc-t"><b>Premium</b>'+
-          '<span>Dynasty, One Franchise and Commish. One payment.</span></span>'+
-          '<span class="pwc-go">$19.99</span></button>'
+      ? pwCard('pf-prem','Go Premium',
+          'Unlimited dynasty runs and every premium mode. Lifetime access.','3 modes')
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon();
