@@ -2548,7 +2548,7 @@
 </div>
 
 <script src="/cfb/engine.js?v=34"></script>
-<script src="access.js?v=4"></script>
+<script src="access.js?v=5"></script>
 <script src="ledger.js?v=9"></script>
 <script src="blocs.js?v=10"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
@@ -2591,7 +2591,7 @@
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=3"></script>
-<script src="/cfb/auth.js?v=3"></script>
+<script src="/cfb/auth.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
 (function(){
@@ -2630,10 +2630,16 @@ const VEN=window.PS_CFB_VENUES;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
-/* TESTERS ARE TREATED AS PAYING, on purpose and only while this is closed. The paid tier
-   is most of what there is to test: the dials, writing your own ruling, taking office in
-   an older sport. A tester locked out of it would be testing the half that is easy. */
+/* THE TESTER LIST IS THE DOOR AND THE PREMIUM ROW IS THE TIER. Testers used to be
+   treated as paying outright; now the premium model is real enough to rehearse, so a
+   tester holds whatever premium_unlocks says they hold (fetched below through
+   PS_CFB_AUTH.premiumProducts, granted by supabase/102_premium_comp.sql). A tester
+   with the cfb_premium row is pro. A tester without it plays the same free tier a
+   visitor who has not bought will play at launch, which is the half of the design the
+   free-view tester exists to judge. null means not answered yet, and the gate waits
+   for the answer rather than opening free and flipping pro a beat later. */
 let authState={ready:false,waiting:true,signedIn:false};
+let premiumSet=null;
 const allowed=()=>ACCESS.allowed(authState);
 /* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
    means the half of the design most likely to be got wrong is the half nobody on the list
@@ -2642,7 +2648,7 @@ const allowed=()=>ACCESS.allowed(authState);
    because nobody else can reach this page at all. */
 let forceFree=false;
 try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
-const isPro=()=>allowed()&&!forceFree;
+const isPro=()=>allowed()&&!forceFree&&!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
 
 /* ── the career ───────────────────────────────────────────────────────────────────
    HOW LONG YOU HAVE BEEN DOING THIS JOB, counted in rulings and kept OUTSIDE the term.
@@ -8157,6 +8163,12 @@ $('b-term-share').onclick=async()=>{
 };
 
 /* ── the door ─────────────────────────────────────────────────────────────────── */
+/* The corner tag tells a tester which tier they are looking at, which matters exactly
+   when it is not the one they expected. */
+function paintTag(){
+  const t=$('tag'); if(!t) return;
+  t.textContent=!allowed()?'In testing':isPro()?'Tester':'Tester, free view';
+}
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
   if(authState.waiting&&!authState.ready){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
@@ -8200,6 +8212,11 @@ function gate(){
     };
     return;
   }
+  /* Ownership decides the tier and it comes from the database, so the door holds the
+     extra beat for the answer. Without this a pro tester would take office in the free
+     view and watch it flip a second later. The fetch below always settles premiumSet,
+     to [] on any failure, so this cannot hold the door forever. */
+  if(premiumSet===null){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
   /* THE FIRST LINE IS THE JOB OFFER, not a description of the mode. "You run college
      football" states a premise; being NAMED to the post is a thing that just happened to
      you, and the whole mode is written in that tense. It is also the sentence a player
@@ -8263,8 +8280,22 @@ function gate(){
   load();
   const A=window.PS_CFB_AUTH;
   if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
-  A.onChange((st)=>{ authState=st;
-    $('tag').textContent=!allowed()?'In testing':forceFree?'Tester, free view':'Tester';
+  A.onChange((st)=>{
+    const moved=st.userId!==authState.userId;
+    authState=st;
+    if(moved||!st.signedIn) premiumSet=null;
+    if(st.signedIn&&premiumSet===null){
+      if(typeof A.premiumProducts==='function'){
+        A.premiumProducts().then((l)=>{ premiumSet=Array.isArray(l)?l:[]; paintTag(); gate(); })
+          .catch(()=>{ premiumSet=[]; paintTag(); gate(); });
+      }else{
+        /* An older cached auth.js has no premiumProducts. Owning nothing is the safe
+           reading, and it unsticks the gate rather than waiting on a call that will
+           never come. */
+        premiumSet=[];
+      }
+    }
+    paintTag();
     gate(); });
   A.boot();
   gate();

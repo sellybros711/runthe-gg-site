@@ -185,15 +185,31 @@ about the modes opening, since nothing reads `premium_products()` yet.
   hits the 409. Options when it matters: a personal promotion code for the
   difference, or a dedicated upgrade Price. Decide before launch, not in code
   first.
-- **WHAT `ps_premium` AND `cfb_premium` ACTUALLY UNLOCK IS NOT DECIDED, and
-  that is the owner's call, deliberately deferred (2026-09-06) until the whole
-  thing can be seen working together.** Open Dynasty, One Franchise Dynasty
-  and Full Team all stay tester-gated previews until then. Nothing reads
-  `premium_products()` and nothing should start to.
+- **WHAT `ps_premium` AND `cfb_premium` UNLOCK AT LAUNCH IS STILL THE OWNER'S
+  CALL, but the TESTER REHEARSAL of the premium model is now wired
+  (2026-09-08) and it reads `premium_products()` for real.** Who sees the
+  premium doors at all is still the tester lists, so nothing here reaches the
+  public; whether a door opens or pitches is now the database row. The
+  rehearsal implements the owner's described bundle:
 
-  The product keys are opaque on purpose, so this decision costs nothing to
-  postpone: the bundles, the webhook and the table are all finished and none
-  of them names a mode. Only the gating does, and it has not been written.
+  - `ps_premium` opens Open Dynasty and One Franchise Dynasty in Perfect
+    Season. A tester without the row gets the paywall sheet (the bundle, both
+    prices, a real Buy button that truthfully says "Not on sale yet" while
+    the endpoint answers 503).
+  - `cfb_premium` is the PRO tier of Commish Simulator, which is the split
+    docket.js was built around: any tester gets through the door, the row
+    decides free dials or the full range. `?tier=free` still forces the free
+    view for a pro tester.
+  - Full Team is untouched: tester preview, no premium relationship yet.
+
+  Grants come from `supabase/102_premium_comp.sql`: runnyj holds both rows
+  and plays as a buyer; csel8 is on the tester lists with NO row and plays as
+  somebody who has not bought. malikwillislover and slimeyb3 hold no row
+  either until added to that file.
+
+  The product keys stay opaque in the payment layer on purpose: the bundles,
+  the webhook and the table still name no mode, so re-scoping at launch (the
+  three questions below) means editing the page gates, never the payments.
 
   Three questions have to be answered together, and the code currently
   disagrees with the pricing conversation on two of them:
