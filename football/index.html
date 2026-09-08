@@ -7172,7 +7172,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
      account scripts below are, but it fails safe: canPlayFull() reads it defensively, so a
      blocked or stale copy hides an unannounced mode rather than opening it. -->
 <script src="fullteam-access.js?v=1"></script>
-<script src="dynasty-access.js?v=2"></script>
+<script src="dynasty-access.js?v=3"></script>
 <!-- Accounts. Both are optional: if the CDN is blocked the game runs exactly as it
      did, with runs recorded anonymously. Deferred so neither delays first paint. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -7185,7 +7185,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The Run The Arcade house ad. Shared with the homepage and the college game so the
      panel looks the same everywhere and one "don't show this again" covers the lot. -->
 <script defer src="/assets/arcade-ad.js?v=3"></script>
-<script defer src="auth.js?v=2"></script>
+<script defer src="auth.js?v=3"></script>
 <script>
 (function(){
 'use strict';
@@ -7400,6 +7400,22 @@ const canPlayClubDynasty=()=>{
   if(!authState.signedIn) return false;
   return !!(A.isTester(authState.name)||A.isTesterId(authState.userId));
 };
+/* WHAT THE ACCOUNT OWNS, from the database rather than any list in a page, which is the
+   rule dynasty-access.js sets for itself: a shipped list is a feature flag and never a
+   permission. premium_products() (supabase/101_premium_bundles.sql) answers as the
+   signed-in user. null means not asked yet or the ask failed, and both read as owning
+   nothing: wrong only in the harmless direction, and the paywall it shows says how to buy
+   rather than pretending the mode does not exist. The tester lists still decide who SEES
+   the premium doors at all; this decides whether a door opens or pitches. */
+let premiumSet=null;
+const dynastyOwned=()=>!!(premiumSet&&premiumSet.indexOf('ps_premium')>=0);
+function premiumRefresh(){
+  if(!authState.signedIn){ premiumSet=null; return; }
+  const a=A();
+  if(!a||typeof a.premiumProducts!=='function'){ premiumSet=[]; return; }
+  a.premiumProducts().then((list)=>{ premiumSet=Array.isArray(list)?list:[]; })
+    .catch(()=>{ premiumSet=[]; });
+}
 const canPlayDefense=()=>{
   if(DEFENSE_LIVE) return true;
   if(!authState.signedIn) return false;
@@ -8632,6 +8648,7 @@ function beginDraft(opts){
   /* Checked here as well as at the button, because the DOM is not the authority on what is
      playable. Same belt and braces the Trade Machine and the defense draft use. */
   if(opts&&opts.dynasty&&!canPlayDynasty()) return;
+  if(opts&&opts.dynasty&&!dynastyOwned()) return;
   /* A dynasty sets full, so the Full Team gate would refuse it to a tester who is on one
      list and not the other. Its own gate is above and this one is for Full Team proper. */
   if(opts&&opts.full&&!opts.dynasty&&!canPlayFull()) return;
@@ -8796,6 +8813,49 @@ function dailySpentSheet(mode){
   $('sheet-in').dataset.kind='daily';
   openSheet();
   $('sh-x').onclick=closeSheet;
+}
+
+/* THE PAYWALL. A tester who reaches a premium door without the row behind it gets this,
+   which is exactly what a visitor who has not bought will get at launch: what the bundle
+   is, what it costs, and a real Buy button. While nothing is on sale the endpoint answers
+   503 and the button says so, truthfully, without pretending the sheet is a mock. */
+function premiumSheet(){
+  $('sheet-in').innerHTML='<div class="eyebrow gold">Premium</div>'+
+    '<h2 class="display" style="font-size:25px;margin:4px 0 8px">Dynasty is part of the Premium Bundle</h2>'+
+    '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:0 0 12px">'+
+      'Open Dynasty. One Franchise Dynasty. Commish Simulator in the college game. '+
+      'One purchase. Yours for good.</p>'+
+    '<button class="btn" id="b-buy-ps" style="width:100%">Premium Bundle &middot; $19.99</button>'+
+    '<p class="dim" style="font-size:12.5px;line-height:1.45;margin:12px 0 8px">'+
+      'Or take Run The Bundle: everything above, a year of the Arcade Card, and '+
+      '102,000 coins plus a Tour pack in Run The Tour. $80 of Run The for $34.99.</p>'+
+    '<button class="btn ghost" id="b-buy-rtb" style="width:100%">Run The Bundle &middot; $34.99</button>'+
+    '<div style="margin-top:12px"><button class="btn ghost" id="sh-x">Close</button></div>';
+  $('sheet-in').dataset.kind='premium';
+  openSheet();
+  $('b-buy-ps').onclick=()=>beginBundleCheckout('perfect-season');
+  $('b-buy-rtb').onclick=()=>beginBundleCheckout('run-the-bundle');
+  $('sh-x').onclick=closeSheet;
+}
+
+/* One POST, verdict by the `error` field and never the status, which is the contract
+   functions/api/stripe/checkout-bundle.js keeps on purpose. */
+async function beginBundleCheckout(kind){
+  const a=A();
+  const t=a&&typeof a.token==='function'?a.token():null;
+  if(!t){ toast('Sign in first'); return; }
+  try{
+    const r=await fetch('/api/stripe/checkout-bundle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({bundle:kind,return_path:'/football/'})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(d&&d.url){ location.href=d.url; return; }
+    if(d&&d.error==='already_owned'){ toast('This account already owns it.'); premiumRefresh(); closeSheet(); return; }
+    if(d&&d.error==='stripe_not_configured'){ toast('Not on sale yet.'); return; }
+    toast('Checkout could not start. Try again.');
+  }catch(e){ toast('Checkout could not start. Try again.'); }
 }
 
 function paintHomeStart(){
@@ -9045,6 +9105,10 @@ function beginDynastyDraft(opts){
      the modes sheet, which is already drawn only for somebody entitled to it, but the option
      arrives from a caller and a caller is not the authority on who may use it. */
   if(opts&&opts.franchise&&!canPlayClubDynasty()) return;
+  /* THE PAID DOOR. Visibility above is the tester list; this is ownership, and a tester
+     without the row gets the pitch a paying customer's neighbour would get, which is the
+     view the free-view tester exists to judge. */
+  if(!dynastyOwned()) return premiumSheet();
   if(!oneTeamReady()){
     return oneTeamWall(authState.ready?(authState.signedIn?'noname':'out'):'checking','dynasty');
   }
@@ -9398,6 +9462,7 @@ function dynRestore(s){
 /* Same shape as beginDynastyDraft, and for the same reason: the defensive pool is not in
    the boot bundle, and half the roster is in it. */
 function dynResume(slot){
+  if(!dynastyOwned()) return premiumSheet();
   const want=slot==='club'?'club':'open';
   const s=dynRead(want);
   if(!s) return ensureDynastyButton();
@@ -9878,11 +9943,18 @@ function modeMenu(){
   const clubDyn=$('b-mc-clubdyn');
   if(clubDyn&&!locked&&cd) clubDyn.onclick=()=>{
     closeSheet();
+    /* The pitch comes BEFORE the club picker: choosing a club and then being told to pay
+       is the order that reads as a trick. */
+    if(!dynastyOwned()) return premiumSheet();
     /* Resume goes straight back into the run. Only a fresh one asks which club. */
     if(clubSave) dynResume('club'); else clubPicker(true);
   };
   const clubNew=$('b-mc-clubnew');
-  if(clubNew&&!locked&&cd) clubNew.onclick=()=>{ closeSheet(); clubPicker(true); };
+  if(clubNew&&!locked&&cd) clubNew.onclick=()=>{
+    closeSheet();
+    if(!dynastyOwned()) return premiumSheet();
+    clubPicker(true);
+  };
   const era=$('b-mc-era');
   if(era&&!locked) era.onclick=()=>{ closeSheet(); eraPicker(); };
   const trade=$('b-mc-trade');
@@ -17962,6 +18034,9 @@ function authBoot(){
     if(!st.signedIn||st.userId!==authState.userId) dailyForget();
     authState=st;
     paintAvatar();
+    /* Ownership follows the account. Not awaited: it is read at the doors, so all this
+       has to do is be done by the time a human reaches one. */
+    premiumRefresh();
     /* THE FRONT PAGE FOLLOWS ELIGIBILITY, and it has to be re-asked on every change rather
        than only on the sign-in transition: the username the defense allowlist reads usually
        arrives one auth change AFTER the sign-in, so a tester who signs in on the front page
