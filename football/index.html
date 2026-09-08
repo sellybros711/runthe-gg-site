@@ -9151,10 +9151,13 @@ function dailySpentSheet(mode){
 
 /* ── THE TRADE MACHINE'S OWN DOOR ──────────────────────────────────────────────────────
  *
- * The Trade Machine is metered exactly the way Dynasty is: startSeason() spends 'trade' at
- * kickoff, and 99_daily_attempts.sql keeps a separate count for it. Only the READING half
- * was missing. Nothing asked the server how many trade runs were left, nothing checked
- * before a launch, and the mode card said the same thing on a spent day as on a fresh one.
+ * The Trade Machine is metered the way Dynasty is: 99_daily_attempts.sql keeps a separate
+ * count for it, spendTheDay() spends one at kickoff, and this reads it. BOTH HALVES WERE
+ * MISSING and they were fixed a commit apart. Nothing asked the server how many trade runs
+ * were left, nothing checked before a launch, and the mode card said the same thing on a
+ * spent day as on a fresh one; and separately, the Trade Machine's own kickoff never spent
+ * anything, so for one commit this door read a number that nothing incremented and never
+ * shut. See the note on spendTheDay().
  *
  * WHAT THAT WOULD HAVE DONE the day the meter reaches somebody: a second run starts, plays a
  * whole season, and the spend behind it is refused by a server nobody is listening to. The
@@ -14017,18 +14020,36 @@ function paintCapTracker(inf){
     $('cap-event').textContent='';
   }
 }
+/* KICKOFF IS WHERE THE DAY IS SPENT, and only the FIRST kickoff of a run. Every season after
+   it belongs to a run that is already paid for, which is the whole rule: an attempt is a
+   start, not a sitting. Marked on the run rather than counted here, so a reload in the
+   middle of season one cannot charge somebody twice.
+
+   THERE ARE TWO KICKOFFS AND THAT IS THE ENTIRE REASON THIS IS A FUNCTION.
+
+   This lived inline in startSeason() below, and the Trade Machine never reaches
+   startSeason(). It has its own: the reveal's Work the phones button goes to the preseason
+   trade window and then to startTradeSeason(), a parallel painter that ends in the same
+   show('s-season') and runSim() and shares nothing above them. So the meter read a count
+   that nothing ever incremented, dailyLeft('trade') stayed at the allowance forever, and
+   the door could not shut no matter how many runs were played. The door was right; the
+   thing it was reading was never written.
+
+   Idempotent through run.attemptPaid, so calling it from both is safe even if a path ever
+   passes through both.
+
+   Not awaited. The server is the authority on the count and the launch has already asked it
+   whether there was one to spend; making the player watch a round trip before their season
+   begins would be paying for that authority twice. */
+function spendTheDay(){
+  if(!run||run.attemptPaid) return;
+  if(!(run.dynasty||run.tradeMachine)) return;
+  if(run.seasonNo!=null&&run.seasonNo>1) return;
+  run.attemptPaid=true;
+  dailySpend(run.dynasty?'dynasty':'trade');
+}
 function startSeason(){
-  /* KICKOFF IS WHERE THE DAY IS SPENT, and only the FIRST kickoff of a run. Every season
-     after it belongs to a run that is already paid for, which is the whole rule: an attempt
-     is a start, not a sitting. Marked on the run rather than counted here, so a reload in
-     the middle of season one cannot charge somebody twice.
-     Not awaited. The server is the authority on the count and the draft screen has already
-     asked it whether there was one to spend; making the player watch a round trip before
-     their season begins would be paying for that authority twice. */
-  if(run&&!run.attemptPaid&&(run.dynasty||run.tradeMachine)&&(run.seasonNo==null||run.seasonNo<=1)){
-    run.attemptPaid=true;
-    dailySpend(run.dynasty?'dynasty':'trade');
-  }
+  spendTheDay();
   ga('season_started',{mode:runMode(),club:run&&run.franchise||null});
   const sp=$('season-roster'); if(sp) sp.style.display='none';
   paintNext(); paintUpcomingBug(); paintCalendar();
@@ -14388,8 +14409,12 @@ function openTeamReveal(){
   show('s-reveal');
 }
 
-/* Shared by the reveal's Start button: paint the season screen and begin the sim. */
+/* Shared by the reveal's Start button: paint the season screen and begin the sim.
+   THE TRADE MACHINE'S KICKOFF, and the counterpart to startSeason(). Both spend the day
+   through the same function for the reason written on it: they share no code above the
+   final two lines, so anything that has to happen at kickoff has to be asked for twice. */
 function startTradeSeason(){
+  spendTheDay();
   drawField($('field2'),false);
   paintSquadSidebar();
   const sp=$('season-roster'); if(sp) sp.style.display='';
