@@ -72,6 +72,28 @@ bundle grants, and the claim moves with it. Re-check it before repeating it in
 any copy, because a stale comparison price is the kind of thing a consumer
 regulator treats as a real problem rather than a typo.
 
+**THE ARCADE CARD IN RUN THE BUNDLE IS TWELVE MONTHS, AND NO SCREEN MAY SAY
+OTHERWISE.** Three of the four grants are permanent (`expires_at` null);
+`arcade_card_year` is not, and it is the only one that ever lapses. The football
+store used to lead with "one payment, lifetime access" over BOTH cards, which
+made the strongest claim on the screen false about the more expensive product.
+The term now lives on each line of the breakdown rather than over the sheet, so
+the two bundles can be compared on it:
+
+| line | term shown |
+|---|---|
+| Dynasty + Franchise | Lifetime access |
+| Commissioner | Lifetime access |
+| Arcade Card | 12 months. It does not renew. |
+| Run The Tour coins | Yours to spend |
+
+"Lifetime" is allowed only where the subject named is entirely permanent, which
+is why it still appears on the entry cards (they name the three modes and nothing
+else). "No subscription" is the claim that covers everything and is true of both
+bundles: mode is `payment`, no `subscriptions` row is written, and nothing
+renews. Both halves matter to a buyer, and they are not the same promise: the
+year ENDS, and it also never CHARGES again.
+
 **Pricing: one-time, $19.99 and $34.99. Decided by the owner (2026-09).** The
 reasoning, so the numbers can be argued with rather than rediscovered:
 

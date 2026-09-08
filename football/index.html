@@ -9202,10 +9202,20 @@ const PW_GAME={
    tick list underneath repeating "Dynasty Mode. Unlimited runs" is the same sentence twice
    in one screen. This keeps the thing the tiles cannot say, which is WHICH GAME each one
    comes out of, and says it in one line. */
-const pwGroupText=(key,text)=>{
+/* AND FOR HOW LONG, WHICH IS THE THING THIS SHEET GOT WRONG.
+ *
+ * The lede promised "one payment, lifetime access" over BOTH cards, and one item in Run The
+ * Bundle is not lifetime: the Arcade Card is twelve months. So the strongest claim on the
+ * screen was false about the more expensive product, which is the one direction a pricing
+ * claim must never be wrong in.
+ *
+ * The fix is not to delete the word. Three of the four things really are permanent and that
+ * is worth saying. It is to put the term on the LINE rather than over the sheet, so each row
+ * says what it is and how long it lasts, and the two bundles can be compared on it. */
+const pwGroupText=(key,text,term)=>{
   const g=PW_GAME[key];
   return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
-    '<span>'+esc(text)+'</span></div>';
+    '<span>'+esc(text)+'</span>'+(term?'<i>'+esc(term)+'</i>':'')+'</div>';
 };
 /* THE PROMPT, IN ONE PLACE. Three screens carry it and three copies of a price is three
    chances for one of them to go stale after a price change. `value` is what the money buys
@@ -9257,8 +9267,11 @@ function premiumSheet(){
   box.innerHTML='<div class="eyebrow gold">Pro</div>'+
     '<h2 class="display" style="font-size:27px;margin:4px 0 0">Go Pro</h2>'+
     '<p class="dim" style="font-size:13.5px;line-height:1.45;margin:7px 0 0">'+
+      /* NO BLANKET TERM UP HERE ANY MORE. "One payment" is true of both bundles and is the
+         thing worth leading with. "Lifetime access" was not true of both, and each line
+         below now carries its own term instead. */
       'Unlimited dynasty runs, no daily limit, and every Pro mode. '+
-      'One payment, lifetime access.</p>'+
+      'One payment. No subscription.</p>'+
     '<div class="pw-hero">'+
       pwTile('trophy','Dynasty','25 seasons, one job')+
       pwTile('shield','Franchise','One club, for good')+
@@ -9268,8 +9281,8 @@ function premiumSheet(){
     '<div class="pw-tier">'+
       '<div class="pw-th"><span class="pw-name">Premium Bundle</span>'+
         '<span class="pw-cost"><b>$19.99</b></span></div>'+
-      pwGroupText('ps','Dynasty Mode and Franchise Mode')+
-      pwGroupText('cfb','Commissioner Mode')+
+      pwGroupText('ps','Dynasty Mode and Franchise Mode','Lifetime access')+
+      pwGroupText('cfb','Commissioner Mode','Lifetime access')+
       '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
         (out?'Sign in to go Pro':'Go Pro')+'</button>'+
     '</div>'+
@@ -9281,8 +9294,12 @@ function premiumSheet(){
         '<span class="pw-was">$'+WORTH+'</span>'+
         '<span class="pw-save">Save $'+Math.round(WORTH-RTB)+'</span></div>'+
       '<p class="pw-note" style="margin:9px 0 2px">Everything above, plus two more games.</p>'+
-      pwGroupText('arcade','1 year of the Arcade Card')+
-      pwGroupText('tour','102,000 coins and a bonus Tour pack')+
+      /* "Everything above" carries the two Lifetime access lines with it, so the two lines
+         this card adds have to say plainly that they are not that. The Arcade Card is twelve
+         months and then it stops. It is still not a subscription: nothing renews it and
+         nothing charges again, which is the half a buyer is actually anxious about. */
+      pwGroupText('arcade','1 year of the Arcade Card','12 months. It does not renew.')+
+      pwGroupText('tour','102,000 coins and a bonus Tour pack','Yours to spend')+
       '<button class="btn" id="b-buy-rtb" style="width:100%;margin-top:14px">'+
         (out?'Sign in to get it':'Get Run The Bundle')+'</button>'+
     '</div>'+
@@ -9429,6 +9446,9 @@ function ensurePremiumCard(){
     el=document.createElement('button');
     el.className='pw-card';
     el.id='b-premium';
+    /* THE THREE THINGS THIS CARD NAMES ARE ALL PERMANENT, so lifetime is true here and it
+       stays. The word is only wrong when it is stretched over the Arcade year, which is why
+       the sheet's lede lost it and the lines inside carry their own terms. */
     el.innerHTML=pwCardInner('Unlock every mode',
       'Dynasty, Franchise and Commissioner. Unlimited runs, lifetime access.','3 modes');
     el.onclick=()=>openPremium('home_card');
@@ -19994,8 +20014,10 @@ function pfHub(msg,ok){
        just looked at their badges and their streak is somebody the modes are worth
        mentioning to, and a player who has not is one scroll away from Close. */
     (premiumPitch()
-      ? pwCard('pf-prem','Go Premium',
-          'Unlimited dynasty runs and every premium mode. Lifetime access.','3 modes')
+      /* PRO, not Premium. Pro is the account status the pill says and the sheet is headed
+         with; this was the last screen still calling it something else. */
+      ? pwCard('pf-prem','Go Pro',
+          'Unlimited dynasty runs and every Pro mode. Lifetime access.','3 modes')
       : '')+
     '<div style="margin-top:14px"><button class="btn ghost" id="sh-x">Close</button></div>';
   openSheet(); pfWireCommon();
