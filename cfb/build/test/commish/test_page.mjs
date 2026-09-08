@@ -139,6 +139,7 @@ console.log('\n=== every module the page needs is actually loaded ===');
     docket:!!window.PS_CFB_DOCKET, season:!!window.PS_CFB_SEASON, council:!!window.PS_CFB_COUNCIL,
     feed:!!window.PS_CFB_FEED, calendar:!!window.PS_CFB_CALENDAR,
     situation:!!window.PS_CFB_SITUATION, fallout:!!window.PS_CFB_FALLOUT,
+    recruiting:!!window.PS_CFB_RECRUITING,
     churn:!!window.PS_CFB_CHURN, rivals:!!window.PS_CFB_RIVALS, report:!!window.PS_CFB_REPORT,
   }));
   const dead=Object.keys(mods).filter((k)=>k!=='engine'&&!mods[k]);
@@ -483,6 +484,223 @@ console.log('\n=== a season, and it survives the browser closing ===');
         back.year+', '+back.history.length+' rulings');
     }
   }
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== nine settings you cannot set, and can put on the agenda ===');
+{
+  /* A PLAYER LOOKED AT THE YEAR CARD AND ASKED TO CHANGE THE NINE ROWS ON IT, which is the
+     right instinct and the wrong control. Setting them directly is the one thing this mode
+     must never allow: the whole game is that the sport moves when you rule on a case and
+     live with the room afterwards, and a card of nine dropdowns is a settings screen with a
+     college football theme on it.
+
+     So a row opens a sheet, and in the OFF-SEASON the sheet hands you the case. Nothing is
+     conjured: the only cases it offers are ones already eligible on this beat, so the gate
+     that decides what could come up is untouched and this picks among what could. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+
+  const paths=await p.$$eval('#off-year .yr',(e)=>e.map((x)=>x.dataset.p));
+  ok('every row on the year card opens', paths.length>=8 && paths.every((x)=>!!x),
+    paths.length+' rows');
+  await p.evaluate(()=>document.querySelector('#off-year .yr[data-p="playoff.teams"]').click());
+  await p.waitForTimeout(400);
+  ok('  onto a sheet about that one setting',
+    await p.$eval('#s-fact',(e)=>e.classList.contains('on')));
+  ok('  named in words rather than as a ledger path',
+    /playoff/i.test(await txt(p,'#fact-title')) && !/\./.test(await txt(p,'#fact-title')),
+    await txt(p,'#fact-title'));
+  ok('  saying you do not set it directly',
+    /do not set this directly/i.test(await txt(p,'#fact-body')));
+  const take=await p.$$eval('#fact-body [data-take]',(e)=>e.map((x)=>x.dataset.take));
+  ok('  and offering the case that would move it', take.length>0, take.join(', '));
+  await p.click('#fact-body [data-take]');
+  await p.waitForTimeout(900);
+  ok('taking it opens that case on the desk', await on(p,'s-desk'));
+  ok('  and it is the case you asked for',
+    (await txt(p,'#d-title')).length>8, await txt(p,'#d-title'));
+  /* THE OFFER IS THE OFF-SEASON'S. Choosing your own case in the middle of November would be
+     choosing it instead of whatever the season was about to hand you. */
+  await p.click('#b-desk').catch(()=>{});
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(6,2027));
+  await p.waitForTimeout(2000);
+  await pastScene(p);
+  await p.waitForTimeout(700);
+  await p.evaluate(()=>{
+    const el=document.querySelector('#off-year .yr[data-p="playoff.teams"]');
+    if(el) el.click();
+  });
+  await p.waitForTimeout(400);
+  ok('in November the sheet still opens',
+    await p.$eval('#s-fact',(e)=>e.classList.contains('on')));
+  ok('  and hands you nothing',
+    (await p.$$eval('#fact-body [data-take]',(e)=>e.length))===0);
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the office is a commissioner\'s desk in November ===');
+{
+  /* WHAT A COMMISSIONER WOULD ACTUALLY HAVE IN FRONT OF THEM. The office used to carry the
+     national table, a poll and five scores, and everything else the sport is doing that week
+     happened off screen: the eleven league races that decide who takes the automatic bids
+     this office sets, the award every stadium chants about, and a coaching carousel the
+     engine had been running behind the player's back since the league started churning.
+
+     ALL THREE ARE ASSERTED ON AND OFF, because a card that is right on one beat and wrong on
+     eight is worse than no card. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(6,2028));
+  await p.waitForTimeout(2200);
+  await pastScene(p);
+  await p.waitForTimeout(900);
+
+  ok('November puts every league on the office',
+    await p.$eval('#off-leaguecard',(e)=>e.hidden)===false);
+  const lgs=await p.$$eval('#off-leagues .lg',(e)=>e.length);
+  ok('  one table each', lgs>=8, lgs+' leagues');
+  const rows=await p.$$eval('#off-leagues .lgr',(e)=>e.map((x)=>({
+    rank:x.querySelector('i').textContent.trim(),
+    conf:x.querySelector('u').textContent.trim(),
+    all:x.querySelector('s').textContent.trim()})));
+  ok('  with a conference record and an overall one',
+    rows.length>=20 && rows.every((r)=>/^\d+-\d+$/.test(r.conf) && /^\d+-\d+$/.test(r.all)),
+    (rows[0]||{}).conf+' of '+(rows[0]||{}).all);
+  ok('  and the leader is marked',
+    (await p.$$eval('#off-leagues .lgr.top',(e)=>e.length))===lgs);
+
+  /* THE SATURDAY, AND WHAT IS NOT ON IT. Five of sixty games is a highlights package, and
+     sorting by audience is exactly the sort that hides the one result that changed what the
+     rest of the season is about. */
+  const gms=await p.$$eval('#off-week .gm2',(e)=>e.length);
+  ok('the Saturday is a scoreboard rather than a highlights package', gms>=6, gms+' games');
+  const rest=await txt(p,'#off-week .wkrest');
+  ok('  and it says what is not on it', /more games played/.test(rest), rest.slice(0,70));
+
+  ok('and the trophy race is on it too',
+    await p.$eval('#off-heiscard',(e)=>e.hidden)===false);
+  const heis=await p.$$eval('#off-heis .hsr .hn b',(e)=>e.map((x)=>x.textContent.trim()));
+  ok('  five of them', heis.length===5, heis.length+' in the race');
+  /* NOBODY IN IT IS A PERSON, which is the rule the whole mode is built on and the one place
+     a real board would be a list of twenty year olds. */
+  ok('  and every one of them is a position at a school rather than a name',
+    heis.every((t)=>/^The (quarterback|running back|receiver|edge rusher|cornerback) at /.test(t)),
+    (heis[0]||''));
+  const shares=await p.$$eval('#off-heis .hb u',(e)=>e.map((x)=>parseFloat(x.textContent)));
+  ok('  with a share of the poll each, adding up',
+    Math.abs(shares.reduce((t,x)=>t+x,0)-100)<1, shares.join(' + '));
+
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(0,2028));
+  await p.waitForTimeout(2000);
+  await pastScene(p);
+  await p.waitForTimeout(900);
+  ok('in the winter the leagues card goes down',
+    await p.$eval('#off-leaguecard',(e)=>e.hidden)===true);
+  ok('  and the trophy with it', await p.$eval('#off-heiscard',(e)=>e.hidden)===true);
+  ok('and the carousel comes up instead',
+    await p.$eval('#off-wheelcard',(e)=>e.hidden)===false);
+  const jobs=await p.$$eval('#off-wheel .whc',(e)=>e.length);
+  ok('  with the jobs that changed hands on it', jobs>0, jobs+' chips');
+  ok('  counted in the heading', /\d+ jobs? changed hands/.test(await txt(p,'#off-wheelhead')),
+    await txt(p,'#off-wheelhead'));
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the board, on the beats when there is no football ===');
+{
+  /* FEBRUARY IS THE SPORT'S SECOND SEASON and the office had a map on it and nothing else.
+     Both halves are asserted, because a card that is right on one beat and wrong on eight is
+     worse than no card: in October the office has a poll, a table and a slate to draw and
+     nobody is looking at signing day. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(1));
+  await p.waitForTimeout(1500);
+  await pastScene(p);
+  await p.waitForTimeout(600);
+  ok('signing day puts the board on the office',
+    await p.$eval('#off-recruitcard',(e)=>e.hidden)===false);
+  ok('  headed as the day it is', /signing day/i.test(await txt(p,'#off-recruithead')),
+    await txt(p,'#off-recruithead'));
+  const rows=await p.$$eval('#off-recruit .rcr',(e)=>e.map((x)=>({
+    rank:x.querySelector('i').textContent.trim(),
+    school:x.querySelector('.rn b').textContent.trim(),
+    conf:x.querySelector('.rn s').textContent.trim(),
+    rating:x.querySelector('u').textContent.trim(),
+  })));
+  ok('  with ten classes on it', rows.length===10, rows.length+' rows');
+  ok('  ranked one to ten', rows.every((r,i)=>Number(r.rank)===i+1),
+    rows.map((r)=>r.rank).join(' '));
+  ok('  each a school, a league and a rating',
+    rows.every((r)=>r.school.length>2 && r.conf.length>2 && Number(r.rating)>0),
+    (rows[0]||{}).school+' '+(rows[0]||{}).conf+' '+(rows[0]||{}).rating);
+  ok('  and the ratings fall down the board',
+    rows.every((r,i)=>i===0||Number(r.rating)<=Number(rows[i-1].rating)),
+    rows.map((r)=>r.rating).join(' '));
+  /* NOBODY IN IT IS A PERSON. The rule the docket and the cutscenes hold, on the one screen
+     in the mode where a real board would be a list of seventeen year olds. */
+  ok('  and nobody on it is a child', rows.every((r)=>!/[a-z]+ [A-Z][a-z]+ (Jr|III|II)\b/.test(r.school)));
+
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(5));
+  await p.waitForTimeout(1500);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+  ok('in October the office is about football instead',
+    await p.$eval('#off-recruitcard',(e)=>e.hidden)===true);
+  console.log('  errors:', errs.length?errs:'none');
+  if(errs.length) bad++;
+  await p.close();
+}
+
+console.log('\n=== the bracket, on the week it is the sport ===');
+{
+  /* ONE BEAT A YEAR THE FIELD IS SET AND NOTHING HAS BEEN PLAYED, and the office said nothing
+     about it: you pressed on from a standings table and a champion came out the other end.
+     The card is only correct on that beat, so both halves are asserted. On the playoff it is
+     up with a seeded field on it; before championship weekend has happened there is no field
+     to draw and it must stay down rather than draw an empty box. */
+  const {p,errs}=await open(tester());
+  await p.click('#g-start'); await p.waitForTimeout(700);
+  await pastScene(p);
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(8));
+  await p.waitForTimeout(1800);
+  await pastScene(p);
+  await p.waitForTimeout(600);
+  ok('on the playoff the field is on the office',
+    await p.$eval('#off-fieldcard',(e)=>e.hidden)===false);
+  const seats=await p.$$eval('#off-field .fldt',(e)=>e.map((x)=>x.textContent.trim()));
+  ok('  with every seat on it', seats.length>=12, seats.length+' seats');
+  ok('  seeded, named, and with a record each',
+    seats.every((t)=>/^\d+/.test(t) && /\d+-\d+/.test(t)), (seats[0]||'').slice(0,50));
+  const rounds=await p.$$eval('#off-field .rn',(e)=>e.map((x)=>x.textContent.trim()));
+  ok('  and it says which are byes and which are games',
+    rounds.some((r)=>/bye/i.test(r)) && rounds.some((r)=>/first round/i.test(r)),
+    [...new Set(rounds)].join(', '));
+  /* NOTHING HAS BEEN PLAYED, which is the whole difference between this and the year in
+     review. A score on here would mean the office is showing a week that has not happened. */
+  const anyScore=await p.$$eval('#off-field .fldt s',(e)=>e.map((x)=>x.textContent));
+  ok('  and none of it carries a result',
+    anyScore.every((t)=>/champion|at large/.test(t)), (anyScore[0]||'').slice(0,40));
+  ok('  the first team out is named', /first team out/i.test(await txt(p,'#off-field')),
+    (await txt(p,'#off-field')).slice(-90));
+
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.jump(5));
+  await p.waitForTimeout(1500);
+  await pastScene(p);
+  await p.waitForTimeout(500);
+  ok('in October there is no field yet, so the card is down',
+    await p.$eval('#off-fieldcard',(e)=>e.hidden)===true);
   console.log('  errors:', errs.length?errs:'none');
   if(errs.length) bad++;
   await p.close();

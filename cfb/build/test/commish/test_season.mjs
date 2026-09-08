@@ -562,5 +562,121 @@ console.log('\n=== December is not just the bracket ===');
     eligible(sim) + ' teams free for a bowl at 12, ' + eligible(bigSim) + ' at 24');
 }
 
+/* THE FIELD IS SET A WHOLE BEAT BEFORE THE BRACKET IS PLAYED.
+   Standing in the office on the playoff, championship weekend has happened and the twelve are
+   known; none of the games have been. That gap is the one week a year the bracket IS the
+   sport, and the office had nothing to draw because the field was only computed on the way
+   into the bracket. It is on the sim as soon as the titles are, and the office previews it.
+
+   THE PREVIEW MUST NOT DISAGREE WITH THE GAMES IT PREVIEWS, which is the whole risk of
+   drawing a fixture list next to a simulation that pairs its own. So the pairing rule lives
+   in firstRound() and bracket() opens with it, and this walks every field size the mode can
+   produce to check the two say the same thing. */
+console.log('\n=== the field, before the bracket is played ===');
+{
+  const w = world();
+  const set = S.play(w, teams, rngFor(9), { through: 20, titles: true, bracket: false });
+  ok('the seats are filled without playing a game', !!(set && set.field && set.field.seats),
+    set && set.field ? set.field.seats.length + ' seats' : 'no field');
+  ok('  and no bracket came with them', !!set && !set.bracket);
+  ok('  every seat is seeded in order',
+    set.field.seats.every((x, i) => x.seed === i + 1));
+  ok('  and somebody is the first team out', !!set.field.snub,
+    set.field.snub ? set.field.snub.school : 'nobody');
+
+  /* AND THE FIXTURE LIST IS THE ONE THAT GETS PLAYED, at every size and every bye count. */
+  const shapes = [
+    { teams: 4, byes: 0, autobids: 0 },
+    { teams: 8, byes: 0, autobids: 4 },
+    { teams: 12, byes: 4, autobids: 5 },
+    { teams: 14, byes: 2, autobids: 5 },
+    { teams: 16, byes: 0, autobids: 6 },
+    { teams: 24, byes: 8, autobids: 5 },
+  ];
+  const off = [];
+  for (const shape of shapes) {
+    const ww = world({ playoff: shape });
+    const played = run(ww, 9);
+    if (!played || !played.bracket) { off.push(shape.teams + ': nothing played'); continue; }
+    const pre = S.firstRound(played.field.seats, ww);
+    const real = played.bracket.rounds[0] || [];
+    const asPlayed = real.map((g) => g.top.seed + 'v' + g.bottom.seed).join(' ');
+    const asDrawn = pre.games.map((g) => g[0].seed + 'v' + g[1].seed).join(' ');
+    if (asPlayed !== asDrawn) off.push(shape.teams + ': drew [' + asDrawn + '] played [' + asPlayed + ']');
+    /* And a team with a bye is a team the first round does not contain. */
+    const playing = {};
+    real.forEach((g) => { playing[g.top.seed] = 1; playing[g.bottom.seed] = 1; });
+    const wrong = pre.byes.filter((x) => playing[x.seed]).map((x) => x.seed);
+    if (wrong.length) off.push(shape.teams + ': seed ' + wrong.join(',') + ' had a bye and a game');
+  }
+  ok('the fixture list is the bracket that gets played', !off.length,
+    off.slice(0, 3).join('   |   ') || shapes.length + ' field sizes agree');
+}
+
+/* THE ONE INDIVIDUAL AWARD THIS SPORT FOLLOWS, and the two ways it could go wrong.
+   It could name somebody, which is the rule the whole mode is built on and the one place a
+   real board would be a list of twenty year olds. Or it could be a random number generator
+   with school names on it, which is what any straw poll looks like from the outside: put good
+   teams near the top, shuffle, and nobody would ever ask what it was made of. */
+console.log('\n=== the trophy ===');
+{
+  const w = world();
+  const sim = S.play(w, teams, rngFor(3), { through: 12, titles: false, bracket: false });
+  const race = S.heisman(sim.teams, w, 5);
+  ok('there is a race', race.length === 5, race.length + ' in it');
+  ok('  ranked one to five', race.every((r, i) => r.rank === i + 1));
+  ok('  and it is a share of a poll rather than a score nobody can read',
+    Math.abs(race.reduce((t, r) => t + r.share, 0) - 100) < 0.5,
+    race.map((r) => r.share).join(' + '));
+  ok('  the leader leads', race.every((r, i) => i === 0 || r.share <= race[i - 1].share));
+
+  /* NOBODY IS NAMED. A position and a program, which is how the argument sounds out loud
+     anyway, and the same rule blocs.js holds for everybody who speaks in this mode. */
+  const poses = S.HEISMAN_POS.map((p2) => p2.name);
+  ok('nobody in it is a person', race.every((r) => poses.indexOf(r.pos.name) >= 0),
+    race.map((r) => r.pos.name).join(', '));
+  ok('  and every one of them plays somewhere real',
+    race.every((r) => sim.teams.some((t) => t.school === r.school)));
+
+  /* AND IT IS ABOUT THE FOOTBALL. Winning is most of this award, which is the complaint
+     everybody has about it and is also true of it, so the front of the race has to be teams
+     that are winning. Measured over several seasons rather than one, because one season's
+     leader could be anybody. */
+  let led = 0, seasons = 0;
+  for (let sd = 1; sd <= 8; sd++) {
+    const s2 = S.play(world(), teams, rngFor(sd), { through: 12, titles: false, bracket: false });
+    const r2 = S.heisman(s2.teams, world(), 5)[0];
+    const t2 = s2.teams.find((t) => t.school === r2.school);
+    seasons++;
+    if (t2 && t2.losses <= 1) led++;
+  }
+  ok('the front of the race is a team that is winning', led >= 6,
+    led + ' of ' + seasons + ' leaders had a loss or fewer');
+
+  /* AND IT REPLAYS, because everything else in this mode does. */
+  const again = S.heisman(sim.teams, w, 5);
+  ok('the same season gives the same race',
+    JSON.stringify(race.map((r) => r.school + r.pos.id)) ===
+    JSON.stringify(again.map((r) => r.school + r.pos.id)));
+}
+
+/* EVERY LEAGUE HAS ITS OWN RACE and the office draws three rows of each, which is only worth
+   anything if the sim carries a conference record to sort them by. It does, and nothing had
+   ever read it. */
+console.log('\n=== and every league has a table of its own ===');
+{
+  const sim = S.play(world(), teams, rngFor(2), { through: 12, titles: false, bracket: false });
+  const withConf = sim.teams.filter((t) => (t.confWins + t.confLosses) > 0);
+  ok('teams have played inside their league', withConf.length > 100,
+    withConf.length + ' of ' + sim.teams.length);
+  ok('  and a conference record is never longer than the whole one',
+    sim.teams.every((t) => t.confWins <= t.wins && t.confLosses <= t.losses));
+  const by = {};
+  sim.teams.forEach((t) => { (by[t.conference] = by[t.conference] || []).push(t); });
+  ok('  and every league has somebody in it to lead',
+    Object.keys(by).filter((c) => by[c].length >= 2).length >= 8,
+    Object.keys(by).length + ' leagues');
+}
+
 console.log(bad ? '\n' + bad + ' FAILED' : '\nall clear');
 process.exit(bad ? 1 : 0);

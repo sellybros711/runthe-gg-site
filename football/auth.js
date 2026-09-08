@@ -28,6 +28,12 @@
   let sb = null;
   let session = null;
   let profile = null;          // { username }
+  /* The signed-in account's premium product keys, cached with the user id they
+     belong to. null means never fetched or fetch failed, which callers treat as
+     owning nothing: wrong only in the harmless direction, and the next call
+     re-asks rather than trusting a failure. */
+  let premium = null;
+  let premiumFor = null;
   const listeners = [];
 
   const url = () => window.PS_BOARD_URL || SB_URL;
@@ -42,6 +48,9 @@
     } catch (e) { sb = null; return false; }
     sb.auth.onAuthStateChange((evt, s) => {
       session = s || null;
+      /* A different account holds different unlocks, and none holds none. */
+      const pu = session && session.user && session.user.id;
+      if (pu !== premiumFor) { premium = null; premiumFor = null; }
       if (session) loadProfile().then(fire); else { profile = null; fire(); }
     });
     sb.auth.getSession().then((r) => {
@@ -197,10 +206,33 @@
     } catch (e) { return { error: (e && e.message) || 'that did not work' }; }
   }
 
+
+  /* WHAT THIS ACCOUNT HAS PAID FOR, asked of the database, because the file that
+     gates each mode says so itself: a list shipped in the page is a feature flag
+     and never a permission. premium_products() (supabase/101_premium_bundles.sql)
+     runs as the signed-in user and returns their live product keys, e.g.
+     ['ps_premium','cfb_premium']. Empty array when signed out, on error, or when
+     the account simply owns nothing: all three read the same to a caller, and all
+     three should. */
+  async function premiumProducts() {
+    if (!sb || !session) return [];
+    const uid = session.user && session.user.id;
+    if (premium && premiumFor === uid) return premium;
+    try {
+      const r = await sb.rpc('premium_products');
+      if (r && !r.error && Array.isArray(r.data)) {
+        premium = r.data; premiumFor = uid;
+        return premium;
+      }
+    } catch (e) {}
+    return [];
+  }
+
   window.PS_AUTH = {
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
     available, setName, claim, token, deleteAccount,
+    premiumProducts,
   };
 })();

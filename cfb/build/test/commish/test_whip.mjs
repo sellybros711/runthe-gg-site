@@ -80,6 +80,11 @@ async function strip(moods) {
   return p.evaluate((m) => {
     const T = window.PS_CFB_COMMISH_TEST, LD = window.PS_CFB_LEDGER;
     const w = T.world();
+    /* EVERY CALL STARTS FROM THE SAME ROOM. This used to apply the moods it was given on top
+       of whatever the previous call had left behind, so the assertions read differently
+       depending on the order they were written in, and adding one case silently changed the
+       three after it. Reset first: what each block sets is the whole of what is true. */
+    Object.keys(LD.VOTE_WEIGHT).forEach((k) => { if (w.blocs[k] != null) w.blocs[k] = 50; });
     Object.keys(m || {}).forEach((k) => { w.blocs[k] = m[k]; });
     w.meters.standing = LD.standingFrom(w.blocs);
     T.repaint();
@@ -90,6 +95,7 @@ async function strip(moods) {
       big: s.classList.contains('big'),
       w: s.getBoundingClientRect().width,
     }));
+    const rest = el.querySelector('.rest');
     const cut = el.querySelector('.cut').getBoundingClientRect();
     const track = el.querySelector('.track').getBoundingClientRect();
     return {
@@ -97,6 +103,9 @@ async function strip(moods) {
       state: el.querySelector('.state').textContent.trim(),
       head: el.querySelector('.wh b').textContent.trim(),
       lede: (el.querySelector('.lede') || {}).textContent || '',
+      pair: (el.querySelector('.pair') || {}).textContent || '',
+      rest: rest ? rest.textContent.trim() : '',
+      restW: rest ? rest.getBoundingClientRect().width : 0,
       mark: (el.querySelector('.marks') || {}).textContent || '',
       foot: el.querySelector('.foot').innerText.replace(/\s+/g, ' ').trim(),
       moved: (el.querySelector('.moved') || {}).textContent || null,
@@ -123,9 +132,14 @@ console.log('\n=== and it says what it is ===');
 {
   const s = await strip({});
   ok('the header names what the picture is about', /remove you/i.test(s.head), s.head);
-  ok('the gloss explains the width', /as wide as its vote/i.test(s.lede), s.lede.slice(0, 60));
-  ok('  and the colour', /red is against you/i.test(s.lede));
-  ok('  and both ways a term ends', /gold line/i.test(s.lede) && /dots/i.test(s.lede));
+  ok('the gloss states the rule the picture draws',
+    /more than half/i.test(s.lede) && /term ends/i.test(s.lede), s.lede.slice(0, 70));
+  ok('  and says the vote is weighted', /weighted by size/i.test(s.lede));
+  /* THE SECOND RULE IS A SENTENCE. Drawn, it was a gold dot on a segment and nothing on the
+     screen said what the dot meant. */
+  ok('  and the pair rule is said in words',
+    /SEC/.test(s.pair) && /Big Ten/.test(s.pair) && /together/i.test(s.pair),
+    s.pair.slice(0, 70));
   ok('the line is labelled where it sits', /half/i.test(s.mark), s.mark.trim());
   ok('  with the vote count it stands for',
     s.mark.indexOf((L.totalWeight() / 2).toFixed(1)) >= 0, s.mark.trim());
@@ -137,33 +151,50 @@ console.log('\n=== the strip is the rule, drawn ===');
   const safe = await strip({});
   ok('a room nobody has fallen out with reads as holding',
     /holding/i.test(safe.state) && safe.cls.indexOf('safe') >= 0, safe.state);
-  ok('  nobody is against you', safe.segs.every((s) => !s.against), safe.foot);
-  ok('  and only the blocs that hold a vote are on it',
-    safe.segs.length === Object.keys(L.VOTE_WEIGHT).length,
-    safe.segs.map((s) => s.id).join(' '));
-  ok('  the two that can end you are marked',
-    safe.segs.filter((s) => s.big).map((s) => s.id).sort().join(' ') === 'Big Ten SEC',
-    safe.segs.filter((s) => s.big).map((s) => s.id).join(' '));
+  /* AN EMPTY BAR IS THE POINT. The first version drew all six groups whatever their mood, so
+     a term where the whole room was behind you rendered as six colored boxes with a gold line
+     between two of them: a bar with nothing left to fill, which is why two players in a row
+     read it as a divider in a list rather than as a threshold nothing had reached. */
+  ok('  nothing is drawn on it at all', safe.segs.length === 0,
+    safe.segs.map((s) => s.id).join(' ') || 'empty');
+  ok('  and the empty track says so rather than being a gap',
+    /nobody has turned/i.test(safe.rest), safe.rest);
+  ok('  which is the whole width of it',
+    Math.abs(safe.restW - safe.trackW) < 3, safe.restW.toFixed(0) + ' of ' + safe.trackW.toFixed(0));
+  ok('  and both of the two are named as still with you',
+    /still with you/i.test(safe.pair), safe.pair.slice(0, 70));
   /* THE LINE IS AT HALF AND DOES NOT MOVE. Everything else on the strip is read against it. */
   ok('the line sits at half the weight',
     Math.abs(safe.cutAt - safe.trackW / 2) < 2, safe.cutAt.toFixed(1) + ' of ' + safe.trackW.toFixed(1));
   /* AND THE WIDTHS ARE THE VOTE WEIGHTS. A strip whose segments are equal sized is six
      conferences with one vote each, which is not this sport. */
-  const sec = safe.segs.find((s) => s.id === 'SEC');
-  const g5 = safe.segs.find((s) => s.id === 'Group of Five');
+  /* AND A SEGMENT IS AS WIDE AS ITS VOTE IS WORTH, measured on a room where both of the two
+     being compared have turned, because a group that is with you is no longer drawn. */
+  const two = await strip({ SEC: 14, 'Group of Five': 14 });
+  const sec = two.segs.find((s) => s.id === 'SEC');
+  const g5 = two.segs.find((s) => s.id === 'Group of Five');
   ok('  and a segment is as wide as its vote is worth',
-    Math.abs(sec.w / g5.w - L.VOTE_WEIGHT.SEC / L.VOTE_WEIGHT['Group of Five']) < 0.25,
-    (sec.w / g5.w).toFixed(2) + ' vs ' + (L.VOTE_WEIGHT.SEC / L.VOTE_WEIGHT['Group of Five']));
+    !!sec && !!g5
+    && Math.abs(sec.w / g5.w - L.VOTE_WEIGHT.SEC / L.VOTE_WEIGHT['Group of Five']) < 0.25,
+    sec && g5 ? (sec.w / g5.w).toFixed(2) + ' vs ' + (L.VOTE_WEIGHT.SEC / L.VOTE_WEIGHT['Group of Five'])
+      : two.segs.map((s) => s.id).join(' '));
+  ok('  and the two that can end you carry a mark when they turn',
+    !!sec && sec.big, sec ? String(sec.big) : 'no SEC segment');
 }
 
 console.log('\n=== against you on the left, and it grows toward the line ===');
 {
   const some = await strip({ 'Big 12': 18, 'Group of Five': 12 });
-  const ids = some.segs.map((s) => s.against);
-  /* Sorted by mood: every hostile segment before every friendly one. */
-  ok('the hostile ones are all to the left of the friendly ones',
-    ids.indexOf(false) < 0 || ids.lastIndexOf(true) < ids.indexOf(false),
-    some.segs.map((s) => (s.against ? '-' : '+') + s.id).join(' '));
+  /* Everything drawn has turned, biggest first, so the red is one contiguous mass rather
+     than a set of blocks the eye has to add up. */
+  ok('only the ones that have turned are drawn',
+    some.segs.length === 2 && some.segs.every((s) => s.against),
+    some.segs.map((s) => s.id).join(' '));
+  ok('  biggest first', some.segs[0] && some.segs[1] && some.segs[0].w >= some.segs[1].w,
+    some.segs.map((s) => s.id + ' ' + s.w.toFixed(0)).join(', '));
+  ok('  and the rest of the track counts the vote still with you',
+    some.rest.indexOf((some.truth ? '' : '') + (8 - some.hostile).toFixed(1)) === 0
+    && /with you/i.test(some.rest), some.rest);
   ok('  and the red has not reached the line',
     some.redEnd < some.cutAt, some.redEnd.toFixed(0) + ' vs ' + some.cutAt.toFixed(0));
   ok('  the count matches the ledger',

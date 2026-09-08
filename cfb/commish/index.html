@@ -196,7 +196,7 @@
   .meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
   /* A COLUMN SO THE THREE TRACKS LINE UP WHATEVER THE LABELS DO. "The state of the game"
      is twice the length of "Revenue" and wraps to two lines at most widths, which pushed
-     the middle meter's bar seventeen pixels below its neighbours: three bars meant to be
+     the middle meter's bar seventeen pixels below its neighbors: three bars meant to be
      read as one row, at three different heights. The bar is pushed to the bottom of the
      card instead, so the labels can wrap or not and the row still reads straight. */
   .meter{background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -362,15 +362,12 @@
     text-transform:uppercase;color:var(--dim-2)}
   .dsec span{margin-left:auto;font-size:11px;color:var(--dim-2)}
 
-  /* THE SETUP, WHICH IS BACKGROUND AND SHOULD LOOK LIKE IT. Three lines is enough to know
-     what the item is about; the rest is there for whoever wants it. */
+  /* THE SETUP, WHICH IS THE CASE AND IS SHOWN WHOLE. It was clamped to three lines with a
+     "Read the rest" under it, on the theory that a brief is background. It is not background:
+     every other control on this screen asks you to decide something, and this paragraph is
+     the reason there is a decision. Six lines is not a wall of text. */
   .brief{position:relative}
   .brief p{color:var(--dim);font-size:14px;line-height:1.5;margin:0}
-  .brief.clamp p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;
-    overflow:hidden}
-  .brief button{margin-top:5px;background:none;border:0;padding:0;cursor:pointer;
-    font-family:var(--fn);font-size:10px;font-weight:700;letter-spacing:.13em;
-    text-transform:uppercase;color:var(--green)}
 
   .voices{display:grid;gap:7px;margin:0 0 4px}
   /* THE QUOTE IS TIED TO THE ROOM BY COLOR, so an argument on the desk and the number it
@@ -477,7 +474,11 @@
      scanning down the values, and the ones you moved carry what they were. */
   .yshape{display:grid;gap:5px}
   .yr{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline;
-    padding:7px 9px;border-radius:9px;background:var(--panel);border:1px solid var(--line)}
+    width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;
+    padding:7px 9px;border-radius:9px;background:var(--panel);border:1px solid var(--line);
+    transition:border-color .12s var(--ez)}
+  .yr:hover,.yr:focus-visible{border-color:var(--line-2);outline:none}
+  .yr:focus-visible{box-shadow:0 0 0 2px var(--green)}
   .yr b{font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--dim)}
   .yr u{text-decoration:none;font-family:var(--fn);font-size:12.5px;font-weight:800;
     color:var(--ink);text-align:right}
@@ -485,6 +486,12 @@
   /* MOVED BY YOU, MARKED. The whole point of the card is telling the two apart. */
   .yr.moved{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
   .yr.moved b{color:var(--ink)}
+  /* A CASE YOU CAN ACTUALLY TAKE reads as a control, and the ones you cannot stay a list.
+     See openPath(): the difference is real, so it has to be visible. */
+  .nxt.take{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;
+    border-color:var(--green)}
+  .nxt.take:hover{background:rgba(16,185,129,.08)}
+  .nxt.take span{color:var(--green);font-weight:700}
 
   /* THE REBUTTAL. Three replies, sized as decisions rather than as buttons, because that is
      what they are: every one of them costs something with somebody. */
@@ -1340,7 +1347,7 @@
   .cd.game:not(.past):not(.now) svg{stroke:var(--gold);opacity:.5}
   /* OUTSIDE THE WINDOW, GRAY, whatever it was. A month carries the Saturdays either side of
      the beat it is showing, and in gold those read as games still to come when they were
-     played a fortnight ago. */
+     played a two weeks ago. */
   .cd.out svg{stroke:currentColor;opacity:.4}
   .cd.now{background:var(--gold);color:#2a1a00;z-index:2}
   .cd.now svg{stroke:#2a1a00;opacity:1}
@@ -1407,6 +1414,119 @@
   /* A GAME, AS A SCORE AND AN AUDIENCE. The viewers number is what makes this more than a
      scoreboard: the biggest game of the week is the biggest game BECAUSE of who watched. */
   .gms{display:grid;gap:5px}
+  .wkrest{margin-top:8px;font-size:11.5px;line-height:1.45;color:var(--dim-2)}
+  /* ── the trophy ────────────────────────────────────────────────────────────────
+     A STRAW POLL RATHER THAN A LIST, because the content of a race is how close it is, and a
+     ranked list of five names says nothing about that. The bar is the share and the share is
+     the story: forty-one and pulling away is a different November from four of them inside
+     six points. */
+  .heis{display:grid;gap:5px}
+  .hsr{display:grid;grid-template-columns:20px 1fr auto;gap:9px;align-items:center;
+    padding:6px 9px;border-radius:9px;background:var(--panel);
+    border-left:2px solid var(--hc,var(--line))}
+  .hsr i{font-style:normal;font-family:var(--fd);font-size:15px;line-height:1;
+    color:var(--dim-2);text-align:right}
+  .hsr .hn{min-width:0}
+  .hsr .hn b{display:block;font-family:var(--fn);font-size:12.5px;font-weight:700;
+    color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hsr .hn s{display:block;text-decoration:none;font-size:10.5px;color:var(--dim-2)}
+  .hsr .hb{width:74px;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+  .hsr .hb u{text-decoration:none;font-family:var(--fn);font-size:12px;font-weight:800;
+    color:var(--ink)}
+  .hsr .hb span{display:block;width:100%;height:4px;border-radius:2px;
+    background:rgba(255,255,255,.09);overflow:hidden}
+  .hsr .hb span em{display:block;height:100%;background:var(--hc,var(--gold));
+    transition:width .55s var(--ez)}
+  /* ── every league's own race ───────────────────────────────────────────────────
+     THE NATIONAL TABLE IS ONE OF THE TWO THINGS A COMMISSIONER READS IN NOVEMBER and the
+     office only had that one. The other is who wins each conference, because those are the
+     teams that take the automatic bids this office sets the number of, and a player who has
+     just moved that number from five to eight had no way to see what they had done.
+
+     THE LEADER IS THE ROW THAT MATTERS and the two behind it are why it is still a race, so
+     three rows a league and no more: eleven leagues at full length is a spreadsheet. */
+  .lgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(224px,1fr));gap:9px}
+  .lg{min-width:0}
+  .lg>b{display:flex;align-items:baseline;gap:6px;font-family:var(--fn);font-size:9px;
+    font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);
+    padding-bottom:4px;border-bottom:1px solid var(--line);margin-bottom:4px}
+  .lg>b s{text-decoration:none;margin-left:auto;color:var(--dim-2);letter-spacing:.04em}
+  .lgr{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:baseline;
+    padding:3px 0;font-size:12px;color:var(--dim)}
+  .lgr i{font-style:normal;font-family:var(--fn);font-size:9.5px;font-weight:800;width:9px;
+    color:var(--dim-2)}
+  .lgr b{font-weight:600;color:var(--dim);min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .lgr u{text-decoration:none;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--ink)}
+  .lgr s{text-decoration:none;font-size:11px;color:var(--dim-2);min-width:34px;text-align:right}
+  /* THE ONE ON TOP, in its own color, because the whole card is read for that row. */
+  .lgr.top b{color:var(--ink);font-weight:700}
+  .lgr.top i{color:var(--tc,var(--gold))}
+
+  /* ── the carousel ──────────────────────────────────────────────────────────────
+     Same chips the year in review uses, on the beats where December has just happened and
+     the player is standing in the office wondering what changed. */
+  .whl{display:flex;flex-wrap:wrap;gap:6px}
+  .whc{display:flex;flex-direction:column;gap:1px;padding:6px 9px;border-radius:9px;
+    background:var(--panel);border-left:2px solid var(--tc,var(--line))}
+  .whc b{font-family:var(--fn);font-size:11.5px;font-weight:700;color:var(--ink)}
+  .whc em{font-style:normal;font-size:10.5px;color:var(--dim-2)}
+  /* ── the recruiting board ──────────────────────────────────────────────────────
+     A RANK, A SCHOOL AND A NUMBER, which is every recruiting board anybody has ever read.
+     The one column that is not on a real one is how far the class sits from what the program
+     itself is worth, which is the only thing on here a power ranking does not already say:
+     who is signing above their weight and who is living off a name. */
+  .rcb{display:grid;gap:4px}
+  .rcr{display:grid;grid-template-columns:26px 1fr auto auto;gap:9px;align-items:center;
+    padding:6px 9px;border-radius:9px;background:var(--panel);
+    border-left:2px solid var(--rc,var(--line))}
+  .rcr i{font-style:normal;font-family:var(--fd);font-size:15px;line-height:1;
+    color:var(--dim-2);text-align:right}
+  .rcr .rn{min-width:0;display:flex;flex-direction:column;gap:1px}
+  .rcr .rn b{font-family:var(--fn);font-size:12.5px;font-weight:700;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rcr .rn s{text-decoration:none;font-size:10.5px;color:var(--dim-2);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rcr u{text-decoration:none;font-family:var(--fd);font-size:17px;line-height:1;
+    color:var(--ink)}
+  /* THE MOVE, AND ONLY WHEN IT IS ONE. A class within two places of its own program is
+     nobody's story, and printing +1 beside a hundred and thirty-six of them turns the one
+     column with something to say into noise. */
+  .rcr em{font-style:normal;font-family:var(--fn);font-size:10.5px;font-weight:700;
+    min-width:30px;text-align:right}
+  .rcr em.up{color:var(--green)}
+  .rcr em.dn{color:var(--red)}
+  .rcr em.flat{color:transparent}
+  .rcnote{margin-top:10px;font-size:11.5px;line-height:1.5;color:var(--gold)}
+  /* ── the field, before it is played ────────────────────────────────────────────
+     ONE WEEK A YEAR THE BRACKET IS THE SPORT and the office said nothing about it. By the
+     time you are standing on the playoff, championship weekend has happened and the seats
+     are filled; the games have not been played. So this is a fixture list with seeds on it,
+     not a result: who is in, who is seeded where, who sits out the first round, and the one
+     name every expansion argument is actually about, which is the team that missed.
+
+     PAIRED BY season.firstRound(), never by a rule written again here. */
+  .fld{display:grid;gap:5px}
+  .fldg{display:grid;grid-template-columns:auto 1fr;gap:2px 9px;padding:7px 9px;
+    border-radius:9px;background:var(--panel);border-left:2px solid var(--line)}
+  .fldg .rn{grid-column:1 / -1;font-family:var(--fn);font-size:9px;font-weight:700;
+    letter-spacing:.11em;text-transform:uppercase;color:var(--dim-2);margin-bottom:2px}
+  .fldt{display:flex;align-items:baseline;gap:7px;min-width:0;grid-column:1 / -1;
+    font-size:12.5px;color:var(--ink)}
+  .fldt i{font-style:normal;font-family:var(--fn);font-size:10px;font-weight:800;
+    min-width:19px;height:19px;line-height:19px;text-align:center;border-radius:5px;
+    background:var(--sc,#334155);color:#06121f;flex:0 0 auto}
+  .fldt u{text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;font-weight:600}
+  .fldt s{text-decoration:none;font-family:var(--fn);font-size:11.5px;font-weight:700;
+    color:var(--dim-2);white-space:nowrap}
+  .fldg .vs{grid-column:1 / -1;font-family:var(--fn);font-size:8.5px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--dim-2);padding-left:26px}
+  /* A BYE IS A ROW THAT IS NOT PLAYING, so it is quieter than one that is. */
+  .fldg.bye{background:transparent;border-left-color:var(--gold);opacity:.9}
+  .fldsnub{margin-top:9px;font-size:11.5px;line-height:1.45;color:var(--dim-2)}
+  .fldsnub b{color:var(--ink);font-weight:600}
   .gm2{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:7px 9px;
     border-radius:9px;background:var(--panel);border-left:2px solid var(--gc,var(--line))}
   .gm2 .t{display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--dim);
@@ -1815,19 +1935,26 @@
   .whip.thin .state{color:var(--gold)}
   .whip.gone .state{color:var(--red)}
   /* A DIAGRAM NOBODY EXPLAINED IS A DIAGRAM NOBODY READS. The strip shipped with a header,
-     six coloured segments, a gold line and a count, and the first thing a player asked about
+     six colored segments, a gold line and a count, and the first thing a player asked about
      it was "what does the bar mean". Every part of that is a convention this mode invented:
      that width is vote weight, that red is against, that the line is half, that a dot is the
      second removal rule. None of it is guessable and all of it fits in four short sentences,
      so the sentences are here rather than in a rulebook nobody opens. */
   .whip .lede{margin:-2px 0 10px;font-size:11.5px;line-height:1.5;color:var(--dim)}
   .whip .lede b{color:var(--ink);font-weight:600}
-  /* NO GAP BETWEEN SEGMENTS, which is the difference between six boxes and two blocks. The
-     first version put 2px between them and outlined the hostile ones in red, and the left
-     hand side read as four separate angry conferences rather than as one mass of vote weight
-     approaching a line. A hairline divider keeps them countable. */
-  .whip .track{position:relative;display:flex;height:36px;border-radius:9px;
-    background:var(--line);overflow:visible}
+  /* IT IS A GAUGE THAT FILLS, NOT SIX BOXES IN A ROW.
+     The first version drew all six groups as segments, green when they were with you, and a
+     gold line at half. Nobody could read it, twice. The reason is that a bar which is already
+     full of color has nothing to fill: on a term where the whole room is behind you it was
+     six green boxes in a row with a gold line sitting between two of them, which reads as a
+     divider in a list rather than as a threshold nothing has reached.
+
+     So only the groups that have TURNED get a segment. Everything else is empty track. Safe
+     is an empty bar. Trouble is red creeping in from the left. Removed is red past the line.
+     One thing to look at, and its meaning is the same whether or not you read the sentence
+     above it. */
+  .whip .track{position:relative;display:flex;height:34px;border-radius:9px;
+    background:rgba(255,255,255,.045);box-shadow:inset 0 0 0 1px var(--line);overflow:visible}
   /* PADDING AND BORDER ARE BOTH A FLOOR ON A FLEX ITEM WITH A ZERO BASIS, and this segment
      inherited two pixels of one and one of the other. The Group of Five's half a vote came
      out 26.4px wide against the SEC's 87.5 where the weights say four to one, because every
@@ -1836,35 +1963,30 @@
      test_whip, not eyeballed: at these sizes the error is a pixel and a half. */
   .whip .seg{position:relative;display:flex;align-items:center;justify-content:center;
     min-width:0;padding:0;border:0;overflow:hidden;border-radius:0;
-    box-shadow:inset -1px 0 0 rgba(0,0,0,.45)}
-  .whip .seg:last-child{box-shadow:none}
+    background:rgba(239,68,68,.42);box-shadow:inset -1px 0 0 rgba(0,0,0,.45)}
   .whip .seg:first-child{border-radius:9px 0 0 9px}
-  .whip .seg:last-child{border-radius:0 9px 9px 0}
   .whip .seg b{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.04em;
-    white-space:nowrap;color:rgba(255,255,255,.86)}
-  /* ONE QUESTION, ONE COLOUR CHANNEL. The first version tinted each segment with the bloc's
-     own brand hue and washed the hostile ones red on top of it, and the SEC's brand hue IS
-     red: a supportive SEC came out looking exactly like a conference that had turned, on the
-     strip whose entire job is telling those two apart. The bloc is named on the segment and
-     keeps a hairline of its own colour on top; the fill says with or against and nothing
-     else. */
-  .whip .seg.with{background:rgba(16,185,129,.30);
-    box-shadow:inset -1px 0 0 rgba(0,0,0,.45),inset 0 3px 0 var(--bc)}
-  .whip .seg.against{background:rgba(239,68,68,.34);
-    box-shadow:inset -1px 0 0 rgba(0,0,0,.45),inset 0 3px 0 var(--bc)}
-  .whip .seg.with:last-child,.whip .seg.against:last-child{
-    box-shadow:inset 0 3px 0 var(--bc)}
-  .whip .seg.against b{color:rgba(255,255,255,.72)}
+    white-space:nowrap;color:rgba(255,255,255,.92)}
   /* THE TWO THAT CAN END YOU ON THEIR OWN. A second failure condition needs a second mark,
-     or the strip is telling a player they are safe at 3 of 7.5 while both of them are red. */
+     or the strip is telling a player they are safe at 3 of 7.5 while both of them are red.
+     The dot was unexplained decoration on a full bar; on an empty one it only ever appears
+     on a group that has turned, and the line under the bar says what the pair of them can
+     do. */
   .whip .seg.big:after{content:'';position:absolute;top:4px;right:4px;width:5px;height:5px;
-    border-radius:50%;background:var(--gold);opacity:.9}
+    border-radius:50%;background:var(--gold);opacity:.95}
+  /* THE EMPTY REMAINDER, which is the vote still with you, and it says so rather than being
+     a gap. This is the whole difference between a gauge and a bar chart. */
+  .whip .rest{flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;
+    padding:0 8px;overflow:hidden}
+  .whip .rest span{font-family:var(--fn);font-size:9.5px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--dim-2);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
   /* THE LINE DOES NOT MOVE, which is the point of it. */
   .whip .cut{position:absolute;left:50%;top:-5px;bottom:-5px;width:2px;margin-left:-1px;
     background:var(--gold);border-radius:2px;pointer-events:none}
   /* AND IT SAYS WHAT IT IS, under the track rather than over it: above the bar it would sit
-     on the gloss, and inside the bar it would sit on a segment's name. Its own row, so the
-     label can be centred on the line and nothing has to be moved out of its way. */
+     on the gloss, and inside the bar it would sit on a group's name. Its own row, so the
+     label can be centered on the line and nothing has to be moved out of its way. */
   .whip .marks{position:relative;height:12px;margin-top:6px}
   .whip .marks span{position:absolute;left:50%;transform:translateX(-50%);
     font-family:var(--fn);font-size:8.5px;font-weight:700;letter-spacing:.1em;
@@ -1873,6 +1995,10 @@
     color:var(--dim);line-height:1.4}
   .whip .foot b{color:var(--ink);font-weight:600}
   .whip .foot .r{margin-left:auto;color:var(--dim-2);white-space:nowrap}
+  /* THE SECOND RULE, IN WORDS, because it is not a length and drawing it as one is what put
+     an unexplained gold dot on the bar. */
+  .whip .pair{margin-top:8px;font-size:11.5px;line-height:1.45;color:var(--dim-2)}
+  .whip.gone .pair,.whip.thin .pair{color:var(--gold)}
   .whip .moved{margin-top:8px;font-size:12px;line-height:1.45;color:var(--gold)}
   @media(max-width:400px){ .whip .seg b{font-size:9px} }
 
@@ -2008,6 +2134,15 @@
       <p class="dcsub" style="margin-bottom:9px" id="off-yearsub"></p>
       <div id="off-year"></div>
     </div>
+    <!-- WHERE THE NEXT GENERATION SIGNED, on the beats when there is no football to look at.
+         Every number on it comes off the same three forces season.js is about to apply, so it
+         is a leading indicator rather than a decoration. See recruiting.js and paintBoard(). -->
+    <div class="card flat" id="off-recruitcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px" id="off-recruithead">The board</div>
+      <p class="dcsub" style="margin-bottom:10px" id="off-recruitsub"></p>
+      <div id="off-recruit"></div>
+      <p class="rcnote" id="off-recruitnote" hidden></p>
+    </div>
     <!-- The map. Realignment is the one thing a list cannot show. -->
     <div class="card flat" id="off-mapcard">
       <div class="eyebrow" style="margin-bottom:9px">The sport, by where it is played</div>
@@ -2038,6 +2173,15 @@
       <div class="eyebrow gold" style="margin-bottom:9px">Championship weekend</div>
       <div id="off-titles"></div>
     </div>
+    <!-- THE FIELD, ON THE BEAT IT IS ABOUT TO BE PLAYED. Championship weekend has happened
+         by the time you are standing on the playoff, so the twelve are known and the games
+         are not: this is the one week of the year when the bracket IS the sport, and the
+         office said nothing about it. See paintField(). -->
+    <div class="card flat" id="off-fieldcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px" id="off-fieldhead">The bracket</div>
+      <p class="dcsub" style="margin-bottom:10px" id="off-fieldsub"></p>
+      <div id="off-field"></div>
+    </div>
     <div class="card flat" id="off-tablecard" hidden>
       <div class="eyebrow" style="margin-bottom:4px" id="off-tablehead">The top of the sport</div>
       <!-- WHICH OF THE TWO LISTS THIS IS. The card below is a different ranking of the same
@@ -2048,6 +2192,32 @@
         is a committee: it rates how good teams are, so a one loss team it rates highly can sit
         above an unbeaten one.</p>
       <div id="off-table"></div>
+    </div>
+    <!-- THE ONE INDIVIDUAL AWARD EVERY FAN IN THIS SPORT FOLLOWS, and it names nobody: the
+         race is between the quarterback at Oregon and the running back at Georgia, which is
+         how the argument sounds out loud anyway. See heisman() in season.js. -->
+    <div class="card flat" id="off-heiscard" hidden>
+      <div class="eyebrow" style="margin-bottom:4px">The trophy</div>
+      <p class="dcsub" style="margin-bottom:9px">Where the straw poll is this week. You do not
+        get a vote, which has never stopped anybody asking what you think.</p>
+      <div id="off-heis"></div>
+    </div>
+    <!-- EVERY LEAGUE'S OWN RACE. The table above is the national field as this office would
+         seed it, which is one of the two things a commissioner reads in November. The other is
+         who is going to win each conference, because that is who takes the automatic bids
+         this office decides the number of. See paintLeagues(). -->
+    <div class="card flat" id="off-leaguecard" hidden>
+      <div class="eyebrow" style="margin-bottom:4px">The leagues</div>
+      <p class="dcsub" style="margin-bottom:9px" id="off-leaguesub"></p>
+      <div id="off-leagues"></div>
+    </div>
+    <!-- WHO IS OUT OF A JOB. The engine has worked this out since the league started churning
+         and it only ever appeared on the year in review, which is a screen you see once. A
+         carousel nobody is told about is the same as no carousel. See paintWheel(). -->
+    <div class="card flat" id="off-wheelcard" hidden>
+      <div class="eyebrow gold" style="margin-bottom:4px" id="off-wheelhead">The carousel</div>
+      <p class="dcsub" style="margin-bottom:9px" id="off-wheelsub"></p>
+      <div id="off-wheel"></div>
     </div>
     <!-- THE POLL, WHICH IS NOT THE TABLE ABOVE IT AND THAT IS THE POINT. The table is the
          field as this office's own rules would seed it; this is what the voters think, which
@@ -2246,7 +2416,7 @@
 
     <div class="card flat">
       <div class="eyebrow" style="margin-bottom:4px">The room, nine at once</div>
-      <p class="dcsub">How each bloc feels about you, out of a hundred. Fifty is
+      <p class="dcsub">How each group feels about you, out of a hundred. Fifty is
         indifferent and under thirty they start counting votes. Tap one to open it in the
         chart above.</p>
       <div class="dcroom" id="dc-room"></div>
@@ -2378,15 +2548,15 @@
 </div>
 
 <script src="/cfb/engine.js?v=34"></script>
-<script src="access.js?v=4"></script>
+<script src="access.js?v=5"></script>
 <script src="ledger.js?v=9"></script>
-<script src="blocs.js?v=8"></script>
+<script src="blocs.js?v=10"></script>
 <!-- BEFORE docket.js AND season.js, both of which read window.PS_CFB_VENUES at load time.
      Loaded after them it is undefined at the moment they capture it, every venue item is
      silently ineligible forever, and the title game is worth the same wherever it is played.
      Nothing throws. test_page asserts the modules are actually live in the browser. -->
-<script src="venues.js?v=6"></script>
-<script src="docket.js?v=24"></script>
+<script src="venues.js?v=7"></script>
+<script src="docket.js?v=27"></script>
 <!-- BEFORE season.js, which reads window.PS_CFB_CHURN at load time, and which falls back to
      null rather than throwing when it is missing. Loaded after it, or not loaded at all, every
      team is frozen at the season the term began: the top five in 2025 are the top five in 2029
@@ -2396,30 +2566,32 @@
      Loaded after it, the schedule is filled by conference and then bought at random, Ohio
      State plays Michigan about one year in five, and nothing throws. -->
 <script src="rivals.js?v=2"></script>
-<script src="churn.js?v=2"></script>
-<script src="season.js?v=16"></script>
-<script src="council.js?v=2"></script>
-<script src="feed.js?v=3"></script>
-<script src="calendar.js?v=4"></script>
+<script src="churn.js?v=4"></script>
+<script src="season.js?v=19"></script>
+<!-- The board. Captures churn.js and season.js at load time, so after both of them. -->
+<script src="recruiting.js?v=1"></script>
+<script src="council.js?v=3"></script>
+<script src="feed.js?v=5"></script>
+<script src="calendar.js?v=5"></script>
 <script src="situation.js?v=8"></script>
-<script src="fallout.js?v=5"></script>
+<script src="fallout.js?v=6"></script>
 <!-- The podium. Reads nothing at load time; see media.js. -->
-<script src="media.js?v=2"></script>
+<script src="media.js?v=4"></script>
 <!-- The cutscenes. Reads blocs.js at load time, so after it. -->
-<script src="scene.js?v=7"></script>
+<script src="scene.js?v=8"></script>
 <!-- Reads window.PS_CFB_LEDGER at load time, so after ledger.js. Nothing reads THIS at
      load time, so its own position past that point does not matter. -->
-<script src="report.js?v=2"></script>
+<script src="report.js?v=3"></script>
 <!-- Captures nothing off window at load time: it is handed the world by the page and the
      beat names by the caller, so its position here is free. -->
-<script src="metrics.js?v=2"></script>
+<script src="metrics.js?v=3"></script>
 <!-- Reads nothing off window at load time: it is handed a world and returns a profile, so
      its position here is free. -->
 <script src="doctrine.js?v=3"></script>
 <!-- Reads window.PS_CFB_AUTH at CALL time, not at load time, so it may sit either side of
      auth.js. It is here rather than up with the rest because nothing else reads it. -->
 <script src="splits.js?v=3"></script>
-<script src="/cfb/auth.js?v=3"></script>
+<script src="/cfb/auth.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script>
 (function(){
@@ -2458,10 +2630,20 @@ const VEN=window.PS_CFB_VENUES;
 let TEAMS=[];
 const ACCESS=window.PS_CFB_COMMISH_ACCESS||{allowed:function(){ return false; }};
 
-/* TESTERS ARE TREATED AS PAYING, on purpose and only while this is closed. The paid tier
-   is most of what there is to test: the dials, writing your own ruling, taking office in
-   an older sport. A tester locked out of it would be testing the half that is easy. */
+/* THE TESTER LIST IS THE DOOR'S DOOR AND THE PREMIUM ROW IS THE KEY. Owner decision
+   (2026-09-08): Commish is FULLY premium. A visitor who has not bought does not play a
+   free tier; they reach the gate, see what the mode is part of and what it costs, and
+   stop there. So: the tester list decides who can find this page at all (unchanged,
+   nothing here reaches the public), and the cfb_premium row (fetched below through
+   PS_CFB_AUTH.premiumProducts, granted by supabase/102_premium_comp.sql) decides
+   whether the gate opens or pitches.
+
+   The free/pro dial split in docket.js stays in the data, unused by the public model:
+   ?tier=free remains a switch for a PREMIUM tester to inspect the reduced dials, and
+   the data costs nothing to keep against a future free tier. null premiumSet means not
+   answered yet, and the gate waits for the answer rather than guessing. */
 let authState={ready:false,waiting:true,signedIn:false};
+let premiumSet=null;
 const allowed=()=>ACCESS.allowed(authState);
 /* AND A TESTER HAS TO BE ABLE TO SEE THE OTHER TIER. Testers are treated as paying, which
    means the half of the design most likely to be got wrong is the half nobody on the list
@@ -2470,7 +2652,8 @@ const allowed=()=>ACCESS.allowed(authState);
    because nobody else can reach this page at all. */
 let forceFree=false;
 try{ forceFree=new URLSearchParams(location.search).get('tier')==='free'; }catch(e){}
-const isPro=()=>allowed()&&!forceFree;
+const ownsCfb=()=>!!(premiumSet&&premiumSet.indexOf('cfb_premium')>=0);
+const isPro=()=>allowed()&&!forceFree&&ownsCfb();
 
 /* ── the career ───────────────────────────────────────────────────────────────────
    HOW LONG YOU HAVE BEEN DOING THIS JOB, counted in rulings and kept OUTSIDE the term.
@@ -2831,7 +3014,7 @@ function paintMeters(el,w,before,lock,since){
    television" without saying "this specific man", which is exactly the register the docket
    and the podium already write in.
 
-   EACH ROOM TAKES THE SPEAKER'S COLOUR, so the wire's grey newsroom and the panel's pink
+   EACH ROOM TAKES THE SPEAKER'S COLOR, so the wire's gray newsroom and the panel's pink
    studio are the same drawing logic and never the same picture. `currentColor` does the
    work; the set only has to say where the light is.
 
@@ -2943,13 +3126,13 @@ const SET_ART={
 /* WHERE A SCENE IS, DRAWN. Swapped in rather than replaced, so a change of room between two
    speakers crossfades instead of blinking. */
 let setNow=null;
-function paintSet(el,kind,colour){
+function paintSet(el,kind,color){
   if(!el) return;
   const k=SET_ART[kind]?kind:'office';
-  if(setNow===k+'|'+colour) return;
-  setNow=k+'|'+colour;
+  if(setNow===k+'|'+color) return;
+  setNow=k+'|'+color;
   const svg='<svg viewBox="0 0 300 180" preserveAspectRatio="xMidYMid slice" '
-    +'style="color:'+esc(colour||'#8b98ad')+'" aria-hidden="true" class="'
+    +'style="color:'+esc(color||'#8b98ad')+'" aria-hidden="true" class="'
     +(REDUCED?'here':'gone')+'">'+SET_ART[k]+'</svg>';
   const old=el.querySelector('svg');
   el.insertAdjacentHTML('beforeend',svg);
@@ -3094,33 +3277,52 @@ function paintWhip(el,w,before){
   if(!el) return;
   const st=whipState(w);
   const VW=L.VOTE_WEIGHT;
-  /* Against you first and biggest first inside each half, so the red block is contiguous and
-     the eye only ever has to compare one edge against one line. */
-  const seats=Object.keys(VW)
-    .filter((b)=>w.blocs[b]!=null)
-    .map((b)=>({ id:b, weight:VW[b], v:w.blocs[b], against:w.blocs[b]<L.HOSTILE }))
-    .sort((a,b)=>(a.against===b.against?b.weight-a.weight:(a.against?-1:1)));
-  const totalW=seats.reduce((t,x)=>t+x.weight,0)||1;
+  /* ONLY THE ONES THAT HAVE TURNED GET A SEGMENT. See the CSS: a bar already full of color
+     has nothing left to fill, which is why two players in a row could not read this. Biggest
+     first, so the red is one contiguous mass growing from the left toward a line that never
+     moves. */
+  const turned=Object.keys(VW)
+    .filter((b)=>w.blocs[b]!=null&&w.blocs[b]<L.HOSTILE)
+    .map((b)=>({ id:b, weight:VW[b], v:w.blocs[b] }))
+    .sort((a,b)=>b.weight-a.weight);
   const label=st.gone?'Removed':st.thin?'On the edge':'Holding';
   el.className='whip '+(st.gone?'gone':st.thin?'thin':'safe');
+  /* THE PAIR RULE IS A SENTENCE, NOT A LENGTH. The SEC and the Big Ten together end a term
+     whatever the other four do, which is not a distance along a bar and cannot be drawn as
+     one: drawn, it was a gold dot nobody could explain. */
+  const bigLeft=['SEC','Big Ten'].filter((b)=>w.blocs[b]!=null&&w.blocs[b]<L.HOSTILE);
+  const pair=st.bigTwo
+    ? 'The SEC and the Big Ten have both turned. That alone ends the term.'
+    : bigLeft.length
+      ? 'The SEC and the Big Ten can end the term together whatever the rest do. The '
+        +bigLeft[0]+' has already turned.'
+      : 'The SEC and the Big Ten can end the term together whatever the rest do. Both are '
+        +'still with you.';
   /* SHORT ENOUGH TO SHARE A LINE WITH THE PILL. "The vote that can remove you" wrapped onto
      two lines at 390px and the pill sat on top of the second one. "Your job" fitted and said
      nothing: it named the stake and left the diagram under it unexplained, which is how the
-     strip came back as "what does the bar mean". The header now names what the picture IS and
-     the gloss under it says how to read the picture. */
+     bar came back twice as "what does this mean". The header names what the picture is about
+     and the sentence under it states the rule the picture draws. */
   el.innerHTML='<div class="wh"><b>Who can remove you</b>'
     +'<span class="state">'+esc(label)+'</span></div>'
-    +'<p class="lede">Each bar is a bloc, as wide as its vote. Red is against you. '
-    +'Past the gold line your term ends. So does both dots going red.</p>'
+    +'<p class="lede">Six groups vote on your job, weighted by size. Turn more than half of '
+    +'that vote against you and the term ends.</p>'
     +'<div class="track">'
-    +seats.map((x)=>{
+    +turned.map((x)=>{
       const ui=BLOC_UI[x.id]||{};
       const big=x.id==='SEC'||x.id==='Big Ten';
-      return '<span class="seg '+(x.against?'against':'with')+(big?' big':'')+'" '
-        +'style="flex:'+x.weight+' 0 0;--bc:'+(ui.c||'#8b98ad')+'" '
-        +'title="'+esc(x.id+', '+x.weight+(x.weight===1?' vote':' votes'))+'">'
+      return '<span class="seg against'+(big?' big':'')+'" '
+        +'style="flex:'+x.weight+' 0 0" '
+        +'title="'+esc(x.id+', '+x.weight+(x.weight===1?' vote':' votes')+', against you')+'">'
         +'<b>'+esc(ui.tag||ui.short||x.id)+'</b></span>';
     }).join('')
+    /* THE EMPTY REMAINDER SAYS WHAT IT IS. A gap reads as a bar that failed to render. */
+    /* SHORT, BECAUSE THE REMAINDER SHRINKS AS THE RED GROWS. "1 group still with you" is
+       twenty-two characters in a box that is one eighth of the bar by the time it is true,
+       so it ellipsised at exactly the moment it mattered most. Votes, in the same unit as
+       the count under the bar. */
+    +'<span class="rest" style="flex:'+Math.max(0.0001,st.total-st.hostile)+' 1 0"><span>'
+    +esc(turned.length?st.with.toFixed(1)+' with you':'Nobody has turned')+'</span></span>'
     +'<i class="cut"></i></div>'
     +'<div class="marks"><span>half: '+st.limit.toFixed(1)+' votes</span></div>'
     /* AT EXACTLY HALF YOU SURVIVE, and the first version said "4 against you, you go at 4",
@@ -3131,8 +3333,9 @@ function paintWhip(el,w,before){
     +'<span class="r">'+(st.gone
       ? (st.bigTwo?'both of the two are gone':'over the line')
       : 'out above '+st.limit.toFixed(1))+'</span></div>'
-    /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A bloc going under twenty five is the whole
-       failure condition arriving one step closer and it used to be a number changing colour
+    +'<div class="pair">'+esc(pair)+'</div>'
+    /* WHO CROSSED, AND ONLY WHEN SOMEBODY DID. A group going under twenty-five is the whole
+       failure condition arriving one step closer and it used to be a number changing color
        in a list of nine. */
     +(function(){
       if(!before) return '';
@@ -3144,9 +3347,6 @@ function paintWhip(el,w,before){
       return '<div class="moved">'+esc(names)+(moved.length===1?' has ':' have ')
         +(out?'crossed the line against you.':'come back over the line.')+'</div>';
     })();
-  /* The segments are laid out by flex, so nothing here has to be grown: what would animate
-     is the reorder, and a bar that shuffles while you read it is worse than one that does
-     not. */
 }
 
 
@@ -3184,7 +3384,7 @@ function paintRoom(el,w,rows,blind,mode){
   const brief=mode==='brief'&&!react;
   if(el) el.className='room'+(brief?' brief':'');
   if(brief){
-    el.innerHTML='<div class="rkey"><span>How each bloc feels about you: 0 is at war, 100 is '
+    el.innerHTML='<div class="rkey"><span>How each group feels about you: 0 is at war, 100 is '
       +'an ally. The six that can remove you are on the strip above.</span>'
       +'<b>Standing, 0 to 100</b></div>'
       +B.BLOCS.map((b)=>{
@@ -3217,8 +3417,8 @@ function paintRoom(el,w,rows,blind,mode){
       /* NEUTRAL ON TENSE, because this same branch draws the forecast ("if you ruled that
          way") and the ruling itself, and a caption that says "moved" is a lie on one of
          them. */
-      ? 'How far each bloc moves, and where that leaves them.'
-      : 'How each bloc feels about you: 0 is at war, 100 is an ally.')
+      ? 'How far each group moves, and where that leaves them.'
+      : 'How each group feels about you: 0 is at war, 100 is an ally.')
     +'</span><b>'+(react?'Standing, and the move':'Standing, 0 to 100')+'</b></div>';
   el.innerHTML=key+B.BLOCS.map((b)=>{
     const v=w.blocs[b.id], r=byId[b.id];
@@ -3746,6 +3946,9 @@ function office(){
   $('off-tvcard').hidden=!inSeason;
   $('off-weekcard').hidden=!inSeason;
   $('off-titlecard').hidden=!inSeason||!done.titles;
+  /* THE FIELD IS SET AND THE GAMES ARE NOT PLAYED, which is true on exactly one beat of the
+     year and is the only week the whole sport is talking about one thing. See paintField(). */
+  paintField($('off-field'),$('off-fieldcard'),inSeason?sim:null);
   $('off-tablecard').hidden=!inSeason;
   $('off-pollcard').hidden=!inSeason;
   paintMotion($('off-motion'),$('off-motioncard'),world);
@@ -3753,6 +3956,18 @@ function office(){
   paintSaid($('off-said'),$('off-saidcard'));
   paintYear($('off-year'),$('off-yearcard'));
   $('off-mapcard').hidden=inSeason;
+  /* OUT OF SEASON ONLY, which is when they are the news. In October nobody is looking at
+     February and the office has a poll, a table, eleven league races and a slate to draw
+     instead. */
+  if(inSeason){
+    $('off-recruitcard').hidden=true;
+    $('off-wheelcard').hidden=true;
+  }else{
+    paintBoard($('off-recruit'),$('off-recruitcard'));
+    paintWheel($('off-wheel'),$('off-wheelcard'));
+  }
+  paintLeagues($('off-leagues'),$('off-leaguecard'),inSeason?sim:null);
+  paintHeisman($('off-heis'),$('off-heiscard'),inSeason?sim:null);
   if(inSeason){
     paintTv($('off-tv'),sim);
     paintWeek($('off-week'),sim);
@@ -4047,6 +4262,13 @@ function dcSeg(id,attr,val){
 }
 
 $('b-desk').onclick=()=>{
+  /* WHILE THE MONTH IS WALKING, THIS BUTTON SAYS "Tap to skip" AND HAS TO MEAN IT. It kept
+     its ordinary handler underneath the new label, so pressing it picked a fresh item and
+     started a SECOND walk from the first day of the window on top of the one already
+     running: the calendar visibly jumped backwards to an earlier date, which is exactly
+     what a player reported. The card underneath already skipped correctly, so the bug was
+     only ever on the one control that invites the tap. */
+  if(simRunning){ if(simSkip) simSkip(); return; }
   /* MEDIA DAYS FIRST, and only once. See pressDue(). */
   if(pressDue()){ podium(); return; }
   /* THE WINDOW DECIDES WHICH ITEM, because the item decides the day. See situationOn(). */
@@ -4310,7 +4532,7 @@ function wantsOf(bloc,axes){
 /* AND WHICH OPTION THAT MAKES THEM WANT. Computed the same way the room computes its answer,
    so it cannot disagree with what actually happens: it is B.react on a thrown away world. The
    NUMBER is withheld, the direction is not. */
-function favourOf(bloc){
+function favorOf(bloc){
   let best=null,bestV=-Infinity,worst=null,worstV=Infinity;
   (item.options||[]).forEach((o)=>{
     let e; try{ e=D.resolve(item,o.id,dials,cast); }catch(x){ return; }
@@ -4319,7 +4541,7 @@ function favourOf(bloc){
     if(row.delta>bestV){ bestV=row.delta; best=o; }
     if(row.delta<worstV){ worstV=row.delta; worst=o; }
   });
-  /* A ROOM THAT IS INDIFFERENT SAYS SO. Naming a favourite when every option moves them by a
+  /* A ROOM THAT IS INDIFFERENT SAYS SO. Naming a favorite when every option moves them by a
      tenth of a point is inventing a preference nobody in the fiction has. */
   if(!best||bestV-worstV<0.6) return null;
   return { best:String(D.text(best.label,cast,item,sit)),
@@ -4331,7 +4553,7 @@ function paintLearn(){
   if(!el||!item) return;
   const axes=axesInPlay();
   const rows=B.BLOCS.map((b)=>{
-    const f=favourOf(b);
+    const f=favorOf(b);
     return '<div class="lrow" style="--bc:'+bcOf(b.id)+'">'
       +blocChip(b.id)
       +'<div><b>'+esc((BLOC_UI[b.id]||{}).short||b.name)+'</b>'
@@ -4389,7 +4611,7 @@ function optionSignature(o){
    season the page has already simulated, so the game the ticker reads out on a Saturday is
    the game that was played on that Saturday.
 
-   ONE TIMER, CANCELLED FROM ONE PLACE. A run that is skipped, or interrupted by somebody
+   ONE TIMER, CANCELED FROM ONE PLACE. A run that is skipped, or interrupted by somebody
    pressing back, has to stop dead: two of these alive at once would deal two items. */
 let simTimer=null, simSkip=null, deskDay=null, simRunning=false;
 function stopSim(){
@@ -4610,7 +4832,11 @@ function runSim(stopOn,headline,done){
     const c=$('off-monthcard'); if(c) c.classList.remove('running');
     done();
   };
-  simSkip=finish;
+  /* SKIPPING LANDS ON THE DAY THE WALK WAS HEADING FOR, rather than freezing on whichever
+     square the timer had reached. `upto` ends on the decision day, so this paints the stop
+     square and its headline before handing over: skip means "I have seen enough, get me
+     there", not "stop the clock here". */
+  simSkip=()=>{ if(upto.length) paintAt(upto.length-1); finish(); };
   /* SOMEBODY WHO HAS ASKED THEIR DEVICE TO STOP MOVING THINGS gets the last day and the
      headline, with no month walked in front of them. */
   if(REDUCED||!upto.length){ if(upto.length) paintAt(upto.length-1); setTimeout(finish,upto.length?600:0); return; }
@@ -4727,8 +4953,21 @@ function paintWeek(el,sim){
      shown out of sixty, chosen by audience, and the whole point of The Game is that it is The
      Game on a Saturday when Ohio State are 6-5. Sorting purely by viewers would hide it in
      exactly the year a fan most wants to see it. */
+  /* EIGHT RATHER THAN FIVE. A Saturday in this sport is sixty games and the office showed
+     five of them, which is a highlights package rather than a scoreboard: a commissioner
+     asking what happened on Saturday was being handed the four biggest television windows
+     and nothing else. Eight is about where a phone stops being a list and starts being a
+     wall, and the line under it says how much is not on here. */
   const shown=wk.games.slice().sort((a,b)=>
-    (b.rivalry?1:0)-(a.rivalry?1:0)||b.viewers-a.viewers).slice(0,5);
+    (b.rivalry?1:0)-(a.rivalry?1:0)||b.viewers-a.viewers).slice(0,8);
+  /* AND THE ONE NOBODY SAW COMING. An upset is the only thing on a Saturday that changes
+     what the rest of the season is about, and sorting by audience is precisely the sort that
+     hides one: the game where a nine win team lost to a four win team was on nobody's
+     network. Counted off the same z the simulation played it with. */
+  const upsets=wk.games.filter((g)=>(g.winner.z||0)+0.85<(g.loser.z||0));
+  const big=upsets.slice().sort((a,b)=>((b.loser.z||0)-(b.winner.z||0))
+    -((a.loser.z||0)-(a.winner.z||0)))[0];
+  const missed=big&&!shown.some((g)=>g===big);
   el.innerHTML='<div class="swk"><b>Week '+wk.week+'</b>'
       +'<span>'+wk.games.length+' games &middot; '+MT(wk.viewers)+' watched</span></div>'
     /* `named` COMES OFF THE NAME, not off `riv`. They are two different fields and a game can
@@ -4742,7 +4981,21 @@ function paintWeek(el,sim){
         +(nm?'<em class="rivn">'+nm+'</em>':'')
         +side2(g,0)+side2(g,1)
         +'<span class="v">'+MU(g.viewers)+'</span></div>';
-    }).join('')+'</div>';
+    }).join('')+'</div>'
+    /* WHAT IS NOT ON THE CARD, said rather than left out, plus the upset if the audience
+       sort buried it. Eight of sixty with nothing acknowledging the other fifty-two reads
+       as a Saturday with eight games on it. */
+    +(wk.games.length>shown.length||upsets.length
+      ? '<p class="wkrest">'
+        +(wk.games.length>shown.length
+          ? (wk.games.length-shown.length)+' more games played. ' : '')
+        +(upsets.length
+          ? upsets.length+(upsets.length===1?' upset' : ' upsets')
+            +(missed?', the biggest of them '+esc(big.winner.school)+' over '
+              +esc(big.loser.school)+'.' : '.')
+          : '')
+        +'</p>'
+      : '');
   reveal(el.querySelector('.gms'));
 }
 
@@ -4806,6 +5059,186 @@ function paintTitles(el,sim){
   reveal(el.querySelector('.gms'));
 }
 
+/* ── the trophy ────────────────────────────────────────────────────────────────────
+   NOBODY IN IT IS NAMED. Every player in this sport is real and about twenty years old, so
+   the race is between the quarterback at Oregon and the running back at Georgia, which is
+   the same rule the docket, the cutscenes and the recruiting board hold and is also how the
+   argument actually sounds in October. See heisman() in season.js for what puts somebody in
+   it, which is what puts somebody in it in life: win, score, and be lucky. */
+function paintHeisman(el,card,sim){
+  if(!el||!card) return;
+  if(!sim||!S||!S.heisman||!sim.teams){ card.hidden=true; el.innerHTML=''; return; }
+  let race=[];
+  try{ race=S.heisman(sim.teams,world,5)||[]; }catch(e){ race=[]; }
+  if(!race.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const lead=race[0].share||1;
+  el.innerHTML='<div class="heis">'+race.map((r)=>
+    '<div class="hsr" style="--hc:'+esc(r.color||'#334155')+'">'
+    +'<i>'+r.rank+'</i>'
+    +'<span class="hn"><b>'+esc(r.pos.name+' at '+r.school)+'</b>'
+    +'<s>'+esc(r.conference||'')+' &middot; '+r.wins+'-'+r.losses+'</s></span>'
+    +'<span class="hb"><u>'+r.share.toFixed(1)+'%</u>'
+    +'<span><em data-w="'+Math.round((r.share/lead)*100)+'%" style="width:0"></em></span>'
+    +'</span></div>').join('')+'</div>';
+  grow(el); reveal(el.querySelector('.heis'));
+}
+
+/* ── every league's own race ───────────────────────────────────────────────────────
+   The national table beside this one is the field as this office would seed it. This is the
+   other half of a November: eleven conference races, whose winners take the automatic bids
+   whose NUMBER this office sets. A player who moves that number from five to eight was
+   changing the value of something the office never showed them. */
+function paintLeagues(el,card,sim){
+  if(!el||!card) return;
+  if(!sim||!sim.teams||!sim.teams.length){ card.hidden=true; el.innerHTML=''; return; }
+  const by={};
+  sim.teams.forEach((t)=>{ (by[t.conference]=by[t.conference]||[]).push(t); });
+  const names=Object.keys(by).filter((c)=>by[c].length>=2).sort((a,b)=>
+    /* Biggest league first, which on this map is also the order a fan would put them in. */
+    by[b].length-by[a].length||a.localeCompare(b));
+  if(!names.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  $('off-leaguesub').textContent='Who wins each one, because those are the teams taking the '
+    +(world.playoff.autobids||0)+' automatic bids you set.';
+  el.innerHTML='<div class="lgs">'+names.map((c)=>{
+    /* CONFERENCE RECORD FIRST, which is how a league is actually won, then the overall
+       record, then how good they are. A tie broken on nothing at all would reorder itself
+       every time the office repainted. */
+    const rows=by[c].slice().sort((a,b)=>
+      (b.confWins-b.confLosses)-(a.confWins-a.confLosses)
+      ||(b.wins-b.losses)-(a.wins-a.losses)||b.z-a.z).slice(0,3);
+    return '<div class="lg"><b>'+esc(c)+'<s>'+by[c].length+'</s></b>'
+      +rows.map((t,i)=>'<div class="lgr'+(i?'':' top')+'" style="--tc:'+esc(t.color)+'">'
+        +'<i>'+(i+1)+'</i><b>'+esc(t.school)+'</b>'
+        +'<u>'+t.confWins+'-'+t.confLosses+'</u>'
+        +'<s>'+t.wins+'-'+t.losses+'</s></div>').join('')
+      +'</div>';
+  }).join('')+'</div>';
+  reveal(el.querySelector('.lgs'));
+}
+
+/* ── the carousel, in the month it happens ─────────────────────────────────────────
+   churn.js has fired coaches every December since the league started churning and the only
+   place it appeared was the year in review, which is a screen you see once a year and then
+   press past. So the office carries it through the winter, which is when a commissioner
+   would actually be hearing about it. */
+function paintWheel(el,card){
+  if(!el||!card) return;
+  const CH=window.PS_CFB_CHURN;
+  const years=Math.max(0,world.year-world.startYear);
+  if(!CH||!CH.carouselFor||!S||!TEAMS.length||!years){
+    card.hidden=true; el.innerHTML=''; return;
+  }
+  let wheel=[];
+  try{ wheel=CH.carouselFor(S.league(seasonBase(),TEAMS),TEAMS,world.seed,years)||[]; }
+  catch(e){ wheel=[]; }
+  if(!wheel.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  /* THE NUMBER FIRST, because a carousel is a scale before it is a list: fourteen jobs is a
+     bloodbath and three is a quiet winter, and that is the thing anybody reacts to. */
+  $('off-wheelhead').textContent=wheel.length
+    +(wheel.length===1?' job changed hands':' jobs changed hands');
+  $('off-wheelsub').textContent='Nobody in this office hired any of them. It is still the '
+    +'reason half the sport will look different in September.';
+  el.innerHTML='<div class="whl">'+wheel.slice(0,12).map((c)=>
+    '<span class="whc" style="--tc:'+esc(c.color||'#334155')+'">'
+    +'<b>'+esc(c.school)+'</b><em>'+esc(c.conference||'')+'</em></span>').join('')
+    +(wheel.length>12?'<span class="whc"><b>+'+(wheel.length-12)+'</b><em>more</em></span>':'')
+    +'</div>';
+  reveal(el.querySelector('.whl'));
+}
+
+/* ── the recruiting board ──────────────────────────────────────────────────────────
+   THE SPORT'S SECOND SEASON HAPPENS IN FEBRUARY and the office had nothing to show for it:
+   a beat called "Portal and signing day" with one item on it and a map underneath.
+
+   IT IS NOT A LIST OF NAMES AND IT NEVER WILL BE. Every recruit in this sport is seventeen
+   and real, and the rule that keeps invented people out of the docket keeps them out of
+   here. A class is a school, a rating and a rank.
+
+   AND IT IS NOT DECORATION. See recruiting.js: every number on it is built from the program
+   level churn.js regresses toward, the strength the team is actually carrying, and the money
+   drift season.js is already adding for every year a conference's share has been different
+   from the one it started with. Move the pot in November and the board moves in February and
+   the football moves the September after that. */
+function paintBoard(el,card){
+  if(!el||!card) return;
+  const RC=window.PS_CFB_RECRUITING;
+  if(!RC||!S||!TEAMS.length){ card.hidden=true; el.innerHTML=''; return; }
+  let bd=null;
+  try{ bd=RC.board(world,S.league(seasonBase(),TEAMS),TEAMS); }catch(e){ bd=null; }
+  if(!bd||!bd.rows.length){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const signing=world.beat===1;
+  $('off-recruithead').textContent=signing?'Signing day':'The recruiting board';
+  $('off-recruitsub').textContent=signing
+    ? 'The classes that just signed, ranked. Nobody here has played a down.'
+    : 'Where the next generation is going, and what this office has done to that.';
+  el.innerHTML='<div class="rcb">'+RC.top(bd,10).map((r)=>{
+    const big=Math.abs(r.over)>=3;
+    return '<div class="rcr" style="--rc:'+esc(r.color||'#334155')+'">'
+      +'<i>'+r.rank+'</i>'
+      +'<span class="rn"><b>'+esc(r.school)+'</b><s>'+esc(r.conference||'')+'</s></span>'
+      +'<u>'+r.rating+'</u>'
+      /* WHERE THE PROGRAM ITSELF RANKS, so the column reads as "signing above what they
+         are" rather than as a second copy of the rating beside it. */
+      +'<em class="'+(big?(r.over>0?'up':'dn'):'flat')+'" title="'+esc(r.school
+        +' ranks '+r.was+' on its own history')+'">'
+      +(r.over>0?'+'+r.over:r.over)+'</em>'
+      +'</div>';
+  }).join('')+'</div>';
+  const note=$('off-recruitnote');
+  note.hidden=!bd.note;
+  note.textContent=bd.note||'';
+  reveal(el.querySelector('.rcb'));
+}
+
+/* THE FIELD, ON THE BEAT IT IS ABOUT TO BE PLAYED. Standing in the office on the playoff,
+   the twelve are known and none of the games have happened, so this draws a fixture list
+   rather than a result. The bracket as PLAYED is on the year in review, which is the screen
+   about a season that is over.
+
+   THE PAIRINGS COME FROM season.firstRound() and the seeds from the same field() the bracket
+   itself is built on, so this cannot disagree with the games that follow it. */
+function paintField(el,card,sim){
+  if(!el||!card) return;
+  const f=sim&&sim.field;
+  if(!f||!f.seats||!f.seats.length||!S||!S.firstRound){
+    card.hidden=true; el.innerHTML=''; return;
+  }
+  let r=null;
+  try{ r=S.firstRound(f.seats,world); }catch(e){ r=null; }
+  if(!r){ card.hidden=true; el.innerHTML=''; return; }
+  card.hidden=false;
+  const line=(s)=>'<span class="fldt" style="--sc:'+esc(s.team.color||'#334155')+'">'
+    +'<i>'+s.seed+'</i><u>'+esc(s.team.school)+'</u>'
+    +'<s>'+s.team.wins+'-'+s.team.losses+' &middot; '
+    +esc(s.how==='auto'?'champion':'at large')+'</s></span>';
+  $('off-fieldhead').textContent='The field is set';
+  $('off-fieldsub').textContent=f.seats.length+' teams, seeded off championship weekend. '
+    +'None of it has been played. Press on and this is the week you get.';
+  el.innerHTML='<div class="fld">'
+    +r.byes.map((s)=>'<div class="fldg bye"><span class="rn">Bye to the quarter-final</span>'
+      +line(s)+'</div>').join('')
+    +r.games.map((g)=>'<div class="fldg" style="border-left-color:'
+      +esc(g[0].team.color||'#334155')+'">'
+      +'<span class="rn">First round</span>'+line(g[0])
+      +'<span class="vs">hosts</span>'+line(g[1])+'</div>').join('')
+    +(r.odd?'<div class="fldg bye"><span class="rn">Through without a game</span>'
+      +line(r.odd)+'</div>':'')
+    +'</div>'
+    /* THE BEST TEAM LEFT OUT is what every expansion argument in this sport is really
+       about, and it is one line. */
+    +(f.snub?'<p class="fldsnub">First team out: <b>'+esc(f.snub.school)+'</b> at '
+      +f.snub.wins+'-'+f.snub.losses+'. Every argument about the size of this thing is an '
+      +'argument about that name.</p>':'')
+    +(f.autobidsUnmet?'<p class="fldsnub"><b>'+f.autobidsUnmet
+      +(f.autobidsUnmet===1?' automatic bid':' automatic bids')+'</b> had no champion to go '
+      +'to, so the seats went at large. A guarantee is worth what the map leaves of it.</p>':'');
+  reveal(el.querySelector('.fld'));
+}
+
 /* ── the feed ──────────────────────────────────────────────────────────────────────
    The posts themselves live in cfb/commish/feed.js, including the rule about why every
    account in it is invented. This is only the drawing.
@@ -4865,7 +5298,21 @@ function paintFeed(el,posts,head){
    who won and hardens the loser. Explaining it buys back a little from the people who respond
    to reasons and irritates the people who do not want a lecture. Promising a review buys the
    most and spends it with everybody who thought the argument was over. */
-const REBUT_ANGRY=-1.5;
+/* WHEN SOMEBODY WANTS A WORD, and it has to be seldom or it is nobody wanting anything.
+   The first version offered the rebuttal whenever the angriest group moved by -1.5, on the
+   belief that moves run one to four points. They do not: measured over ten random terms, the
+   MEDIAN ruling's angriest reaction is -8.4, so the door knocked on four rulings out of five
+   (79%) and a moment written as an exception was wallpaper. Tightening the constant does not
+   help, because the distribution is fat: even -3.2 still fires 73%.
+
+   SO THE TRIGGER IS RELATIVE. Somebody wants a word when their reaction is both real (six
+   points or worse) and the OUTLIER of this ruling: at least three and a half times the median
+   move the ruling produced. That is also the honest fiction: the call comes when a ruling
+   singled somebody out, not when it upset everybody equally. Measured at 30% of rulings
+   overall, and stable across a term (29% in year one, 34% in year three and later), where a
+   flat constant drifted with the grudges. */
+const REBUT_FLOOR=-6;
+const REBUT_OUTLIER=3.5;
 const REBUTTALS=[
   { id:'hold', label:'The ruling stands',
     say:'You say it once, in the room, and do not say it again.',
@@ -4900,7 +5347,10 @@ function paintRebuttal(el,card,rows){
   if(!el||!card) return;
   if(!rows||!rows.length){ card.hidden=true; el.innerHTML=''; return; }
   const worst=rows.slice().sort((a,b)=>a.delta-b.delta)[0];
-  if(!worst||worst.delta>REBUT_ANGRY){ card.hidden=true; el.innerHTML=''; return; }
+  const med=rows.map((r)=>Math.abs(r.delta||0)).sort((a,b)=>a-b)[Math.floor(rows.length/2)];
+  const singled=worst&&worst.delta<=REBUT_FLOOR
+    &&(med===0||Math.abs(worst.delta)>=REBUT_OUTLIER*med);
+  if(!singled){ card.hidden=true; el.innerHTML=''; return; }
   rebutDone=false;
   card.hidden=false;
   const who=(BLOC_UI[worst.id]||{}).short||worst.name;
@@ -5017,7 +5467,7 @@ function dcSize() {
   const w = el ? el.clientWidth : 0;
   /* Below this the phone geometry is used unchanged, so nothing about the small screen
      moves. Above it the viewBox grows with the container, capped so a very wide window
-     does not stretch four points across a metre of axis. */
+     does not stretch four points across a meter of axis. */
   const view = w > 470 ? Math.max(348, Math.min(760, Math.round(w * 0.62))) : 348;
   DCVIEW = { w: view, h: 178 };
   DCBOX = { x: 34, y: 12, w: view - 46, h: 132 };
@@ -5672,12 +6122,94 @@ function paintYear(el,card){
       +nmoved+(nmoved===1?' of these has moved':' of these have moved')+' since you took the job.'
     : 'The shape of a season is a thing you rule on, one piece at a time. Nothing here has '
       +'moved yet. What you change will show up as a was line.';
+  /* EVERY ROW OPENS. A player looked at these nine and asked to change them, which is the
+     right instinct and the wrong control: you do not set the shape of a season, you rule on
+     it. So a row is a button onto the sheet that says what this setting is, what you have
+     already done to it, and which cases can move it, and in the off-season it offers to put
+     one of them on your desk. See openPath(). */
   el.innerHTML='<div class="yshape">'+rows.map((r)=>
-    '<div class="yr'+(r.moved?' moved':'')+'">'
+    '<button type="button" class="yr'+(r.moved?' moved':'')+'" data-p="'+esc(r.p)+'">'
     +'<b>'+esc(pathName(r.p))+'</b><u>'+esc(r.now)+'</u>'
     +(r.moved?'<em>was '+esc(r.was)+'</em>':'')
-    +'</div>').join('')+'</div>';
+    +'</button>').join('')+'</div>';
+  el.querySelectorAll('[data-p]').forEach((btn)=>{
+    btn.onclick=()=>openPath(btn.dataset.p);
+  });
   reveal(el.querySelector('.yshape'));
+}
+
+/* ── ONE SETTING, AND HOW TO MOVE IT ───────────────────────────────────────────────
+   THE SAME SHEET THE FOUR HEADLINE TILES OPEN, pointed at any ledger path. A player looking
+   at the nine rows of the year card asked to change them directly, and directly is the one
+   way this mode must never let anybody change anything: the whole game is that the sport
+   moves when you rule on a case and live with the room afterwards. A card of nine dropdowns
+   would be a settings screen with a college football theme on it.
+
+   WHAT IT DOES INSTEAD IS AGENDA SETTING. In the off-season, if a case that writes this
+   setting is ALREADY eligible on this beat, the sheet will take you to it. That is a real
+   power and a real cost: you spend the beat on the thing you chose rather than on whatever
+   the docket would have dealt you, and the room answers exactly the same way. Nothing is
+   conjured. The gate that decides what could come up is untouched, and this only picks
+   among what could. */
+function openPath(path){
+  if(!path) return;
+  const now=L.getPath(world,path);
+  let base=null;
+  try{ base=L.createWorld({year:world.startYear||world.year,membership:world.membership,seed:1}); }
+  catch(e){ base=null; }
+  const was=base?L.getPath(base,path):null;
+  $('fact-eyebrow').textContent='The year, one piece of it';
+  $('fact-title').textContent=pathName(path);
+
+  const ids=pathItems()[path]||[];
+  const items=ids.map((id)=>D.BY_ID[id]).filter(Boolean);
+  const mine=(world.history||[]).filter((h)=>h.id
+    &&ids.indexOf(String(h.id).split(':')[0])>=0);
+  const live=D.eligible(world,L,situationNow()).map((it)=>it.id);
+  /* OFF-SEASON ONLY. Choosing your own case in the middle of November would be choosing it
+     instead of whatever the season was about to hand you, and the three winter beats are
+     the ones a governing body actually sets an agenda in. */
+  const canPut=world.beat<=2&&!pressDue();
+
+  let html='<div class="now"><b>'+esc(pathValue(path,now))+'</b>'
+    +'<u>'+esc(pathName(path))+'</u>'
+    +(was!=null&&String(was)!==String(now)
+      ? '<em>was '+esc(pathValue(path,was))+' when you took the job</em>' : '')
+    +'</div>';
+
+  html+='<div class="sec"><div class="eyebrow">What you have ruled on it</div>';
+  html+=mine.length
+    ? mine.map((h)=>'<div class="rul"><i>'+esc(String(h.year).slice(2))+'</i>'
+      +'<b>'+esc(ruledWhat({label:h.label||'',option:String(h.id).split(':')[1]||''}))+'</b>'
+      +'<span>'+esc(L.BEATS[h.beat]||'')+' '+h.year+'</span></div>').join('')
+    : '<p style="margin-top:0">Nothing yet. This is where you found it.</p>';
+  html+='</div>';
+
+  html+='<div class="sec"><div class="eyebrow">What moves it</div>'
+    +'<p style="margin-top:0;margin-bottom:10px">You do not set this directly. It moves when '
+    +'one of these reaches your desk and you rule on it.'
+    +(canPut?' In the off-season you can decide which one that is.':'')+'</p>';
+  html+=items.length
+    ? items.map((it)=>{
+      const on=live.indexOf(it.id)>=0;
+      const when=(it.beats||[]).map((b)=>L.BEATS[b]).filter(Boolean);
+      const take=on&&canPut;
+      return '<'+(take?'button type="button" data-take="'+esc(it.id)+'"':'div')
+        +' class="nxt'+(on?' live':'')+(take?' take':'')+'">'
+        +'<b>'+esc(D.text(it.title,null,it,sit))+'</b>'
+        +'<span>'+esc(take?'Put it on your desk now'
+          :on?'On the desk this beat':when.slice(0,3).join(' \u00b7 ')||'')+'</span>'
+        +'</'+(take?'button':'div')+'>';
+    }).join('')
+    : '<p style="margin-top:0">Nothing on the docket writes this one.</p>';
+  html+='</div>';
+
+  $('fact-body').innerHTML=html;
+  $('fact-body').querySelectorAll('[data-take]').forEach((btn)=>{
+    btn.onclick=()=>{ closeFact(); openCase(btn.dataset.take); };
+  });
+  const sh=$('s-fact');
+  sh.classList.add('on'); sh.setAttribute('aria-hidden','false');
 }
 
 function paintSettled(el,card){
@@ -5739,7 +6271,7 @@ function paintCouncilNote(el,seats){
     el.className='council full';
     el.innerHTML='<span class="ch">'+LOCK.replace('<svg ','<svg class="ci" ')
       +'<b>Your council: all nine</b></span>'
-      +'<span class="cn">A forecast only reads the blocs who talk to you, and you have earned '
+      +'<span class="cn">A forecast only reads the groups who talk to you, and you have earned '
       +'every seat. All nine numbers above are real ones. Nothing in this room is a surprise '
       +'to you any more.</span>';
     return;
@@ -5751,7 +6283,7 @@ function paintCouncilNote(el,seats){
     /* AND WHAT THE OTHER SIX ARE, on the version that is not finished. "The rest of the room
        you cannot read yet" is only meaningful if you know a forecast is a thing that reads
        people. */
-    +'<span class="cn">A forecast only reads the blocs who talk to you. So far that is '
+    +'<span class="cn">A forecast only reads the groups who talk to you. So far that is '
     +esc(councilNames().join(', '))+'. The rest of the room shows where it stands and not what '
     +'this ruling would do to it.</span>'
     +(next?'<span class="cnx">Your '+C.ORDINAL[next.seat]+' seat is '
@@ -5778,24 +6310,18 @@ function foldWorthIt(el){
   return hidden>=line*1.8;
 }
 
-/* THE SETUP, CLAMPED. Some briefs are two lines and some are six, and a control that says
-   "more" under a paragraph that is already whole is worse than no control: it promises
-   something that is not there. So the clamp goes on, the page is measured, and the button
-   appears only where there is genuinely something folded away. */
+/* THE SETUP, WHOLE. It used to be clamped to three lines under a "Read the rest" button, and
+   that was the wrong thing to fold: the brief IS the case. Every other control on this screen
+   asks you to decide something, and the paragraph they are all about was the one piece of it
+   behind a tap. Six lines is not a wall of text, it is the whole reason there is a decision.
+
+   The clamp stays on an OPTION'S reasoning, which is three paragraphs you are choosing
+   between and where folding the two you are not reading is the point. See `.opt .why` and
+   foldWorthIt(), which that still uses. */
 function paintBrief(text){
   const el=$('d-brief');
-  el.className='brief clamp';
+  el.className='brief';
   el.innerHTML='<p>'+esc(text)+'</p>';
-  /* MEASURED ON THE NEXT FRAME, because at this point the desk is still display:none. Every
-     box inside a hidden subtree reports a height of zero, so a paragraph of any length reads
-     as fitting in three lines and the clamp took itself straight back off. One frame later
-     the screen has been shown and the numbers are real. */
-  requestAnimationFrame(()=>{
-    const p=el.firstChild;
-    if(!foldWorthIt(p)){ el.className='brief'; return; }
-    el.insertAdjacentHTML('beforeend','<button type="button">Read the rest</button>');
-    el.querySelector('button').onclick=(e)=>{ el.className='brief'; e.target.remove(); };
-  });
 }
 
 /* `first` IS THE ARRIVAL AND NOTHING ELSE. This repaints on every tap, because choosing an
@@ -6024,6 +6550,16 @@ const PATH_NAME={
   'brand.playoff':'The playoff sponsor',
   'brand.trophy':'The trophy sponsor',
   'brand.patch':'The jersey patch',
+  /* AND THE SAME CLASS OF MISS AGAIN, a year after the note above was written, on the two
+     fields a title game bid writes. "venues.title / atl / was nobody" on a panel headed What
+     This Changes, which is a database key, a three letter code and a blank, all in one row.
+
+     The reason the guard did not catch it is worth more than the fix: it collected paths off
+     `option.edit.set`, and these two are written by an edit that is a FUNCTION of the cast, so
+     resolving it with no cast returned an empty object and the sweep saw nothing. It resolves
+     against a real cast now, and a second guard walks the rendered rows in a browser. */
+  'venues.title':'Where the title game is played',
+  'venues.lastTitle':'Where it was played last',
 };
 /* WHAT A CODE WORD MEANS. Half of these fields hold a short string that is a key rather than
    a sentence, and printing it raw put "window", "twopoint" and "phone" under a heading that
@@ -6090,6 +6626,12 @@ function pathValue(p,v){
   if(p==='brand.playoff'||p==='brand.trophy'||p==='brand.patch'||p.indexOf('brand.bowls.')===0){
     const s=VEN&&VEN.sponsor?VEN.sponsor(String(v)):null;
     return s?s.name:String(v);
+  }
+  /* A SITE IS A STADIUM WITH A CITY. The ledger holds a three letter id, so a title game bid
+     printed "atl" at somebody under a heading that promises plain English. */
+  if(p==='venues.title'||p==='venues.lastTitle'){
+    const site=VEN&&VEN.venue?VEN.venue(String(v)):null;
+    return site?site.name+', '+site.city:String(v);
   }
   if(PATH_WORD[p]&&PATH_WORD[p][v]) return PATH_WORD[p][v];
   return String(v);
@@ -6434,7 +6976,12 @@ function paintAsk(){
      the archetype's line is what a question with nothing particular to say falls back on.
      The leading "and" goes with the clause it was joined to. */
   const line=desk?desk.replace(/^and /,''):A.tone;
-  $('p-who').innerHTML='<b>'+esc(A.name)+'</b><span>&middot; '+esc(line)+'</span>';
+  /* NO SEPARATOR GLYPH. The name and the line share a row on a wide screen and wrap onto
+     two at 390px, and a middot written into the span led the wrapped line: "A beat writer"
+     over "&middot; has covered one locker room...", which reads as a stray dot. The gap
+     between flex items already separates them on one row, and a wrapped line separates
+     itself. */
+  $('p-who').innerHTML='<b>'+esc(A.name)+'</b><span>'+esc(line)+'</span>';
   $('p-ask').textContent=MED.askText(q,c,s2,world);
   $('p-hint').textContent='No forecast. You are on your feet.';
   paintAnswers();
@@ -6592,7 +7139,7 @@ window.PS_CFB_COMMISH_TEST={
   /* A scene by name, so a guard can walk one to its last line without having to reach the
      beat that fires it. */
   play:(id)=>playScene(id,()=>office()),
-  /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety nine
+  /* PUT A NAMED ITEM ON THE DESK. Walking the docket until a particular one of ninety-nine
      turns up takes several terms and lands on whichever it lands on, and an assertion about
      a specific door has to be made against that door. Same body as b-desk from the pick
      onwards, so the desk this produces is the desk the game produces. */
@@ -7621,6 +8168,35 @@ $('b-term-share').onclick=async()=>{
 };
 
 /* ── the door ─────────────────────────────────────────────────────────────────── */
+/* One POST, verdict by the `error` field and never the status, the contract
+   functions/api/stripe/checkout-bundle.js keeps on purpose. The verdict lands on the
+   button that was pressed, because the gate has no toast to speak through. */
+async function buyBundle(kind,btn){
+  const A=window.PS_CFB_AUTH;
+  const t=A&&typeof A.token==='function'?A.token():null;
+  if(!t){ if(btn) btn.textContent='Sign in on the game first'; return; }
+  try{
+    const r=await fetch('/api/stripe/checkout-bundle',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
+      body:JSON.stringify({bundle:kind,return_path:'/cfb/commish/'})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(d&&d.url){ location.href=d.url; return; }
+    if(btn) btn.textContent=
+      d&&d.error==='stripe_not_configured'?'Not on sale yet'
+      :d&&d.error==='already_owned'?'This account already owns it'
+      :'Checkout could not start. Try again';
+  }catch(e){ if(btn) btn.textContent='Checkout could not start. Try again'; }
+}
+/* The corner tag tells a tester which tier they are looking at, which matters exactly
+   when it is not the one they expected. */
+function paintTag(){
+  const t=$('tag'); if(!t) return;
+  t.textContent=!allowed()?'In testing'
+    :!ownsCfb()?'Premium'
+    :forceFree?'Tester, free view':'Tester';
+}
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
   if(authState.waiting&&!authState.ready){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
@@ -7662,6 +8238,27 @@ function gate(){
       try{ navigator.clipboard.writeText(t).then(()=>done(true),()=>done(false)); }
       catch(e){ done(false); }
     };
+    return;
+  }
+  /* Ownership decides the tier and it comes from the database, so the door holds the
+     extra beat for the answer. Without this a pro tester would take office in the free
+     view and watch it flip a second later. The fetch below always settles premiumSet,
+     to [] on any failure, so this cannot hold the door forever. */
+  if(premiumSet===null){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
+  /* THE PAYWALL. A tester without the row is exactly a visitor who has not bought: they
+     know the mode is here, they see what it is part of and what it costs, and the door
+     does not open. The Buy buttons are real; while nothing is on sale the endpoint
+     answers 503 and the button says so, truthfully. */
+  if(!ownsCfb()){
+    say.textContent='Commish Simulator is part of the Premium Bundle, with the two '
+      +'dynasty modes in Perfect Season. One purchase. Yours for good.';
+    act.innerHTML=
+      '<button class="btn" id="b-buy-ps">Premium Bundle &middot; $19.99</button>'
+      +'<button class="btn ghost" id="b-buy-rtb">Run The Bundle &middot; $34.99</button>'
+      +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center">Back to the game</a>';
+    const ps=$('b-buy-ps'), rtb=$('b-buy-rtb');
+    if(ps) ps.onclick=()=>buyBundle('perfect-season',ps);
+    if(rtb) rtb.onclick=()=>buyBundle('run-the-bundle',rtb);
     return;
   }
   /* THE FIRST LINE IS THE JOB OFFER, not a description of the mode. "You run college
@@ -7727,8 +8324,22 @@ function gate(){
   load();
   const A=window.PS_CFB_AUTH;
   if(!A){ authState={ready:false,waiting:false,signedIn:false}; gate(); return; }
-  A.onChange((st)=>{ authState=st;
-    $('tag').textContent=!allowed()?'In testing':forceFree?'Tester, free view':'Tester';
+  A.onChange((st)=>{
+    const moved=st.userId!==authState.userId;
+    authState=st;
+    if(moved||!st.signedIn) premiumSet=null;
+    if(st.signedIn&&premiumSet===null){
+      if(typeof A.premiumProducts==='function'){
+        A.premiumProducts().then((l)=>{ premiumSet=Array.isArray(l)?l:[]; paintTag(); gate(); })
+          .catch(()=>{ premiumSet=[]; paintTag(); gate(); });
+      }else{
+        /* An older cached auth.js has no premiumProducts. Owning nothing is the safe
+           reading, and it unsticks the gate rather than waiting on a call that will
+           never come. */
+        premiumSet=[];
+      }
+    }
+    paintTag();
     gate(); });
   A.boot();
   gate();

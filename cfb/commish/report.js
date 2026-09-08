@@ -170,8 +170,8 @@
         : per > 0
           ? 'Somebody from outside the four got in occasionally, which is better than the '
             + 'sentence they had before you.'
-          : 'Nobody from outside the power four reached the field in five years. The bloc '
-            + 'with fourteen per cent of the money and half a vote was arguing about a door '
+          : 'Nobody from outside the power four reached the field in five years. The group '
+            + 'with fourteen percent of the money and half a vote was arguing about a door '
             + 'that was painted on.',
     };
   }

@@ -384,7 +384,7 @@
           good: ['More primetime. Our partners will be delighted.',
             'That is a noon window, a late window and a night game. Good work.'],
           bad: ['You just deleted a television window we already sold.',
-            'Fewer games is fewer rights fees. That maths does not move.'],
+            'Fewer games is fewer rights fees. That math does not move.'],
         },
         exposure: {
           good: ['Cleaner than what we had. Our counsel is nodding.',
@@ -708,7 +708,7 @@
       relief: [
         'That helps the number. It does not fix the number.',
         'Sellable. We will still be having a difficult conversation at renewal.',
-        'Good for one Saturday. We buy the whole autumn.',
+        'Good for one Saturday. We buy the whole fall.',
         'That is one Saturday improved. There are thirteen of them.',
       ],
       grudge: [
@@ -1011,14 +1011,14 @@
         labour: {
           good: ['Pay them. They are why we are there.',
             'Good. Anybody who watched a kid play through a torn labrum knew this was coming.'],
-          bad: ['These are twenty year olds and the adults in the room are the problem.',
+          bad: ['These are twenty-year-olds and the adults in the room are the problem.',
             'Nobody is buying a jersey to support a conference office.'],
         },
         inventory: {
           good: ['More football is more football. We are simple people.',
             'Give us the noon game and the night game and we will be there for both.'],
           bad: ['They cut a Saturday and will still ask us to renew the season tickets.',
-            'Fewer games, same price. Somebody do the maths for me.'],
+            'Fewer games, same price. Somebody do the math for me.'],
         },
       },
     },

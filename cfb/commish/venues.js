@@ -39,7 +39,7 @@
         + 'dozen times.' },
     { id: 'dfw', name: 'AT&T Stadium', city: 'Arlington', state: 'TX',
       dome: true, cap: 80000, draw: 1.08, fee: 1.0, heritage: 0.2, risk: 0.02, reach: 0.1,
-      note: 'The biggest check, the biggest screen, and a car park the size of a town.' },
+      note: 'The biggest check, the biggest screen, and a parking lot the size of a town.' },
     { id: 'nola', name: 'Caesars Superdome', city: 'New Orleans', state: 'LA',
       dome: true, cap: 73000, draw: 1.09, fee: 0.8, heritage: 0.85, risk: 0.06, reach: 0.05,
       note: 'The best week anybody has ever had at a football game, and everybody in this '
@@ -131,7 +131,7 @@
      `tier` is roughly what it is worth: 3 is a game that decides something, 1 is a game in
      December with eleven thousand people in it. `slot` is when it is played. */
   /* `pick` IS HOW DEEP INTO THE ELIGIBLE POOL THIS BOWL CHOOSES FROM, as a fraction: 0 takes
-     the best team with nowhere better to be, 0.72 takes whoever is about seventy per cent of
+     the best team with nowhere better to be, 0.72 takes whoever is about seventy percent of
      the way down the list of teams that won six.
 
      IT IS NOT THE VENUES' `reach` ABOVE, which is a different number about a different thing
@@ -155,7 +155,7 @@
      different decisions rather than four different sentences:
 
        club   the name is somebody else's property. You cannot take it with you, and the
-              question is not whether it would be rude, it is whether they will licence it.
+              question is not whether it would be rude, it is whether they will license it.
        city   the name IS the place. Move and the name is a plain lie.
        local  the name is the region's, not the city's: a crop, a parade, a trade. It stretches
               a long way and it does snap.
@@ -243,7 +243,7 @@
       tie: '', pick: 0.42,
       named: { kind: 'club', bind: 0.9,
         of: 'a baseball uniform. The game is played in that club\'s ballpark, the name is '
-          + 'their trademark, and they licence it one December at a time',
+          + 'their trademark, and they license it one December at a time',
         gone: 'The name is not the sport\'s to move. It goes back to the club the day the '
           + 'game leaves their building, and no city can buy it from you because you have '
           + 'never owned it.' } },
@@ -287,7 +287,7 @@
         + 'This is only the part where their name is on the trophy.' },
     { id: 'pickup', name: 'Bruteline Trucks', kind: 'a pickup truck maker',
       pay: 1.2, risk: 0.05, hate: 0.05,
-      pitch: 'They have sponsored something in this sport every autumn since 1974 and nobody '
+      pitch: 'They have sponsored something in this sport every fall since 1974 and nobody '
         + 'has ever once complained about it.' },
     { id: 'wings', name: "Cluckton's", kind: 'a fast food chain',
       pay: 1.0, risk: 0.12, hate: 0.15,

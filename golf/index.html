@@ -5093,6 +5093,162 @@ function maybeS1LaunchPopup(){ try{
   try{ track('s1_launch_popup'); }catch(e){}
   S.overlay='s1launch'; render();
 }catch(e){} }
+/* SEASON 1 IS ENDING: the closing half of the launch popup above, and the same contract. Never for
+   somebody who already owns the pass, and never twice with the same words.
+   The pass-holder test is the reason this checks the wallet is LOADED. dailyPassActive() reads a cache
+   filled by an RPC after sign-in, so it is false for a moment on every cold load, and firing on that
+   would sell the pass to the exact person who already bought it. No wallet, no popup: it waits.
+
+   FIVE BEATS, not one (owner). An introduction, then two weeks out, one week, three days and the last
+   day. Each one is seen once, so somebody who plays every day meets it five times across the whole run
+   of the season rather than five times in a week.
+   'at' is the days-left mark the beat takes over on, and the LAST matching beat wins, so a player whose
+   first visit is on day 55 gets the three-day beat and never the earlier ones. Missed beats are not
+   backfilled: a countdown that has already run out is not news, it is a stale email. */
+const S1_END_BEATS=[
+  { id:'s0', at:null, tag:'🎟️ Season 1 Tour Pass',
+    head:function(d){ return ['Season 1 ends', d]; },
+    lede:'The Season 1 track locks when the season does. Every tier you have not claimed goes with it. Season 2 starts from zero.',
+    boost:'Buy now and jump to', tail:'Claim them, then climb the rest.', cta:'Get the Season 1 Pass ▸' },
+  { id:'s14', at:14, tag:'⏳ The clock is on',
+    head:['Two weeks left', 'in Season 1'],
+    lede:function(d){ return 'The track locks on '+d+'. There is room to climb it. The pass starts you '+PASS_S1_BOOST_TIERS+' tiers up.'; },
+    boost:'Start two weeks ahead, on', tail:'Claim them, then climb the rest with two weeks to do it.', cta:'Get the pass and climb ▸' },
+  { id:'s7', at:7, tag:'⏳ Final week',
+    head:['Seven days of', 'Season 1'],
+    lede:function(d){ return 'Season 1 ends '+d+'. A week is enough to finish a track you are on.'; },
+    boost:'Skip the whole climb. Start on', tail:'Claim them, then spend the week going higher.', cta:'Get the pass ▸' },
+  { id:'s3', at:3, tag:'🔥 Closing soon',
+    head:'Three days left',
+    lede:function(d){ return 'Season 1 ends '+d+'. What the pass is worth now is mostly what it hands over the moment it lands.'; },
+    boost:'Three days left. Take', tail:'Claim them, then take whatever three days will add.', cta:'Claim the track ▸' },
+  { id:'s1', at:1, tag:'🔥 Last call',
+    head:['Last day of', 'Season 1'],
+    lede:'The track locks tonight. Every tier still unclaimed goes with it. None of it carries into Season 2.',
+    boost:'Tonight, or not at all. Take', tail:'Claim them before the track locks.', cta:'Last chance ▸' }
+];
+function s1EndBeat(){ var left=passSeason().daysLeft, pick=S1_END_BEATS[0];
+  for(var i=1;i<S1_END_BEATS.length;i++){ if(left<=S1_END_BEATS[i].at) pick=S1_END_BEATS[i]; }
+  return pick; }
+function s1EndState(){ var v=LS.get(acctKey('bag_pass'),null); return (v&&typeof v==='object')?v:{}; }
+/* Which beats this account has already met. s1end is what the FIRST version of this wrote, before there
+   were beats, and it means the introduction. It is only read when there is no list, because this build
+   goes on writing it (so an older build still running somewhere does not replay the intro) and reading it
+   either way would mark the intro seen for somebody whose first beat was the three-day one. */
+function s1EndSeen(){ var st=s1EndState();
+  if(Array.isArray(st.s1seen)) return st.s1seen.slice();
+  return st.s1end ? ['s0'] : []; }
+function s1EndPending(){ try{
+  if(!passEnabled() || !TOURPASS_ENABLED) return false;
+  if(!sbSignedIn()) return false;                       // "once per unique user" needs an account to be unique
+  if(passSeason().n!==1) return false;                  // a Season 1 promotion, not a standing one
+  if(_walletCache===null) return false;                 // wallet unknown: never guess at ownership
+  if(dailyPassActive()) return false;                   // already bought it
+  if(s1EndSeen().indexOf(s1EndBeat().id)>=0) return false;
+  return true;
+}catch(e){ return false; } }
+function maybeS1EndPopup(){ try{
+  if(!s1EndPending()) return;
+  if(S.overlay || S.screen!=='title' || (typeof tourRunning==='function' && tourRunning())) return;
+  if(typeof welcomePackPending==='function' && welcomePackPending()) return;   // the welcome gift goes first
+  if(typeof s1LaunchPending==='function' && s1LaunchPending()) return;         // so does the launch popup
+  if(S._loginPending) return;                                                  // and a queued login bonus
+  var beat=s1EndBeat(), st=s1EndState(), seen=s1EndSeen();
+  seen.push(beat.id); st.s1seen=seen; st.s1end=1; LS.set(acctKey('bag_pass'), st);
+  try{ cloudPush(); }catch(e){}                          // so it stays seen on their other devices
+  try{ track('s1_end_popup',{beat:beat.id, daysLeft:passSeason().daysLeft}); }catch(e){}
+  S.overlay='s1end'; render();
+}catch(e){} }
+function overlayS1End(screen){
+  const acc='#a24be0', endTxt=passSeasonEndTxt(1);
+  const tier=(function(){ try{ return passTierAt(passState().xp); }catch(e){ return 0; } })();
+  const gain=Math.max(0, PASS_S1_BOOST_TIERS-tier);
+  // which of the five closing beats this is. The overlay can be opened without maybeS1EndPopup() having
+  // chosen one (the pass card links here), so it asks rather than being told.
+  const beat=s1EndBeat(), say=function(v){ return typeof v==='function' ? v(endTxt) : v; };
+  const ov=$(`<div class="ov s1ov s1eov" role="dialog" aria-modal="true" style="text-align:center">
+    <style>
+      .ov.s1eov{display:flex;flex-direction:column;background:
+        radial-gradient(90% 52% at 50% -8%, rgba(162,75,224,.24), rgba(162,75,224,0) 62%),
+        radial-gradient(70% 40% at 50% 108%, rgba(95,208,224,.12), rgba(95,208,224,0) 60%),
+        var(--pagebg)}
+      .ov.s1eov .s1wrap{margin:auto;width:100%}
+      .ov.s1eov .s1head{background:linear-gradient(180deg,#e3c4ff 0%,#c98bf0 55%,#a24be0 100%);
+        -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+      .ov.s1eov .s1cd{font:900 13px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#e3c4ff}
+      .ov.s1eov .s1clock{display:flex;align-items:flex-start;justify-content:center;gap:5px;margin:12px auto 4px}
+      .ov.s1eov .s1u{min-width:60px;background:rgba(162,75,224,.16);border:1.5px solid rgba(162,75,224,.5);
+        border-radius:12px;padding:9px 6px 7px}
+      .ov.s1eov .s1u b{display:block;font:900 27px/1 var(--body);color:#f4eaff;font-variant-numeric:tabular-nums}
+      .ov.s1eov .s1u i{display:block;font-style:normal;font:800 9.5px/1 var(--body);letter-spacing:.13em;
+        text-transform:uppercase;color:#c9a9e6;margin-top:6px}
+      .ov.s1eov .s1sep{font:900 25px/1 var(--body);color:#a24be0;padding-top:10px}
+      .ov.s1eov .s1boost{background:linear-gradient(160deg,rgba(162,75,224,.26),rgba(95,208,224,.07));
+        border:1.5px solid rgba(162,75,224,.6);border-radius:14px;padding:14px 15px;max-width:430px;margin:0 auto 12px}
+      .ov.s1eov .s1bn{font:900 34px/1 var(--body);color:#e3c4ff}
+      .ov.s1eov .s1buy{background:linear-gradient(160deg,#c98bf0,#a24be0 45%,#7d33b5) !important;
+        color:#fff !important;border:0 !important;box-shadow:0 6px 22px rgba(162,75,224,.4),inset 0 1px 0 rgba(255,255,255,.28) !important}
+      @media(min-width:700px){
+        .ov.s1eov .s1tag{font-size:13.5px !important;padding:6px 16px !important}
+        .ov.s1eov .s1head{font-size:44px !important;margin:20px 0 10px !important}
+        .ov.s1eov .s1lede{font-size:19px !important;max-width:600px !important}
+        .ov.s1eov .s1boost{max-width:600px !important;padding:20px 24px !important}
+        .ov.s1eov .s1bn{font-size:46px !important}
+        .ov.s1eov .s1u{min-width:82px !important;padding:12px 9px 9px !important}
+        .ov.s1eov .s1u b{font-size:38px !important}
+        .ov.s1eov .s1u i{font-size:11px !important}
+        .ov.s1eov .s1sep{font-size:34px !important;padding-top:13px !important}
+        .ov.s1eov .s1boost .small{font-size:16px !important;line-height:1.6 !important}
+        .ov.s1eov .s1btn{max-width:460px !important;font-size:20px !important;padding:17px !important}
+      }
+    </style>
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="s1wrap">
+    <div class="tag s1tag" style="color:${acc};border-color:${acc};margin:0 auto">${esc(beat.tag)}</div>
+    <h3 class="s1head" style="margin:14px 0 4px;font-size:30px">${[].concat(say(beat.head)).map(esc).join('<br>')}</h3>
+    <div class="s1cd">Time left in Season 1</div>
+    <div class="s1clock" role="timer">
+      <div class="s1u dayu"><b data-cd="d">--</b><i>days</i></div><div class="s1sep dayu">:</div>
+      <div class="s1u"><b data-cd="h">--</b><i>hrs</i></div><div class="s1sep">:</div>
+      <div class="s1u"><b data-cd="m">--</b><i>min</i></div><div class="s1sep">:</div>
+      <div class="s1u"><b data-cd="s">--</b><i>sec</i></div>
+    </div>
+    <p class="lede s1lede" style="margin:10px auto 12px;max-width:430px;color:#e8dcf7">${esc(say(beat.lede))}</p>
+    ${gain>0?`<div class="s1boost">
+      <div class="small" style="color:#e3c4ff;letter-spacing:.14em;text-transform:uppercase;font-weight:900">${esc(beat.boost)}</div>
+      <div class="s1bn">Tier ${PASS_S1_BOOST_TIERS}</div>
+      <div class="small" style="color:#efe6fb;line-height:1.55;margin-top:6px">You are on tier ${tier}. Buying the pass now carries you straight to tier ${PASS_S1_BOOST_TIERS}, so ${gain} tier${gain===1?'':'s'} of rewards unlock the moment it lands. ${esc(beat.tail)}</div>
+    </div>`:''}
+    <p class="small" style="max-width:430px;margin:0 auto 16px;color:#c9b8dd;line-height:1.6">The pass is $${TOURPASS.usd.toFixed(2)} for the season. It also carries ${coinFmt(TOURPASS.coins)} coins, ${TOURPASS.packs} packs, unlimited daily plays and ${PASS_REWARD_MULT}× rewards.</p>
+    <button class="btn s1btn s1buy buy" style="max-width:360px;margin:0 auto 8px">${esc(beat.cta)}</button>
+    <button class="btn ghost look s1btn" style="max-width:360px;margin:0 auto 8px">See the track first</button>
+    <button class="btn ghost later s1btn" style="max-width:360px;margin:0 auto">Not now</button>
+    </div></div>`);
+  const close=()=>{ S.overlay=null; render(); };
+  ov.querySelector('.x').onclick=close;
+  ov.querySelector('.later').onclick=()=>{ try{ track('s1_end_dismiss'); }catch(e){} close(); };
+  ov.querySelector('.look').onclick=()=>{ try{ track('s1_end_track'); }catch(e){} S.overlay='tourpass'; render(); };
+  ov.querySelector('.buy').onclick=()=>{ try{ track('s1_end_buy'); }catch(e){} try{ beginPassPurchase(); }catch(e){} };
+  screen.appendChild(ov);
+  // The clock. render() throws the whole overlay away rather than closing it, so the timer has no close
+  // hook to hang off: it watches for its own element leaving the document and stops itself there. A
+  // stray one-second interval left running behind a live round is the kind of leak nobody ever finds.
+  (function(){
+    const cell={}; ov.querySelectorAll('[data-cd]').forEach(function(el){ cell[el.getAttribute('data-cd')]=el; });
+    const dayu=ov.querySelectorAll('.dayu');
+    const pad=function(v){ return v<10?'0'+v:String(v); };
+    const tick=function(){
+      if(!ov.isConnected){ clearInterval(iv); return; }
+      const c=passCountdown(1);
+      cell.d.textContent=String(c.d); cell.h.textContent=pad(c.h);
+      cell.m.textContent=pad(c.m); cell.s.textContent=pad(c.s);
+      // on the last day a "0 DAYS" box is a bigger number than the hours beside it and says nothing.
+      // Drop it and let the clock be hours, minutes and seconds.
+      dayu.forEach(function(el){ el.style.display = c.d>0 ? '' : 'none'; });
+    };
+    const iv=setInterval(tick,1000); tick();
+  })();
+}
 // One-time "there's a new Roster Updates tab" hint: a bobbing arrow pointing up at the tab, reusing the
 // guided-tour spotlight machinery (owner). Fires once for anyone who isn't a brand-new player (they get
 // the full guided tour instead). Queues behind the player's own popups (welcome gift, season launch,
@@ -9457,6 +9613,29 @@ function passEnabled(){ return TOURPASS_LIVE; }
 const TOURPASS_LEN=60;                                        // days per season
 const TOURPASS_EPOCH=Math.floor(Date.UTC(2026,7,6)/86400000);// season 1 begins (ET) Aug 6 2026, store launch day — MUST match runtour_pass_season (migration 73)
 const PASS_TIERS=60;
+/* SEASON 1 CLOSING PROMOTION. Season 1 is the store's first, it ends, and its whole track locks when it
+   does: passState() throws the season away and starts fresh, so an unclaimed tier is gone rather than
+   waiting. That is worth telling people once, and it is worth being generous to anyone who buys with
+   only weeks to climb. Buying during Season 1 floors the track at tier 20, so a late buyer is not paying
+   full price for a third of the rewards. Both numbers live here so the popup, the store card and the
+   grant can never disagree about what was promised. */
+const PASS_S1_BOOST_TIERS=20;
+// The last DAY of a season, derived rather than written down: a hardcoded date is a promise the game
+// stops keeping the moment anybody edits the epoch or the length.
+function passSeasonEndUTC(n){ return (TOURPASS_EPOCH + (Math.max(1,n|0))*TOURPASS_LEN - 1) * 86400000; }
+function passSeasonEndTxt(n){ try{
+  return new Date(passSeasonEndUTC(n)).toLocaleDateString('en-US',{month:'long', day:'numeric', timeZone:'UTC'});
+}catch(e){ return ''; } }
+// The INSTANT a season stops, which is the end of that last day rather than its start. A countdown built
+// off passSeasonEndUTC() would run out a full day early and tell somebody the pass was gone while it was
+// still on sale.
+function passSeasonEndMs(n){ return passSeasonEndUTC(n) + 86400000; }
+// A countdown split into the four units a clock shows. Clamped at zero: the season boundary is checked by
+// day elsewhere, and a clock counting backwards past its own deadline is worse than one sitting at 00.
+function passCountdown(n, now){
+  var ms=Math.max(0, passSeasonEndMs(n) - (now||Date.now())), s=Math.floor(ms/1000);
+  return {d:Math.floor(s/86400), h:Math.floor(s/3600)%24, m:Math.floor(s/60)%60, s:s%60, ms:ms};
+}
 const PASS_XP_RATE=0.6;                                      // Pass XP per BASE coin earned — the key climb-speed knob
 const PASS_XP_SEASON=0.4;                                    // a career season feeds the Track at 40% (it's repeatable at will; the daily is capped)
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
@@ -11182,6 +11361,7 @@ function render(){
     if(S.overlay==='wheel') overlayWheel(app);
     if(S.overlay==='login') overlayLogin(app);
     if(S.overlay==='s1launch') overlayS1Launch(app);
+    if(S.overlay==='s1end') overlayS1End(app);
     if(S.overlay==='arcadead') overlayArcadeAd(app);
     if(S.overlay==='purchased') overlayPurchased(app);
     if(S.overlay==='coinlog') overlayCoinLog(app);
@@ -14043,7 +14223,7 @@ function scrTitle(){
   // already oriented on the interface instead of being dropped onto it cold.)
   // Season 1 launch announcement (returning players, once) — fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
   // card (mid-career it's "Resume Year 12", first thing in the morning it's
@@ -34932,7 +35112,19 @@ function maybePassRewards(){ try{
   }
   st.claimed=period; LS.set(acctKey('bag_pass'), st);
   if(n>0 && typeof grantFreePack==='function'){ grantFreePack(n,{tier:tier, silent:true}); }
+  // SEASON 1 CLOSING BOOST: buying with weeks left should not mean paying full price for a third of the
+  // track, so the track is FLOORED at tier 20 rather than topped up. A buyer already past it keeps every
+  // point they earned. Idempotent by the same period flag that gates the packs above, so it runs once.
+  var boost=0;
+  try{
+    if(passSeason().n===1 && passEnabled()){
+      var ps=passState(), t0=passTierAt(ps.xp);
+      if(t0<PASS_S1_BOOST_TIERS){ ps.xp=Math.max(ps.xp, passXpForTier(PASS_S1_BOOST_TIERS));
+        passSave(ps); boost=PASS_S1_BOOST_TIERS-t0; }
+    }
+  }catch(e){}
   try{ cloudPush(); }catch(e){}
+  if(boost>0){ try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ Season 1 boost applied</span><br><span class="small">Jumped to tier '+PASS_S1_BOOST_TIERS+'. '+passClaimable()+' rewards ready to claim.</span>', 6000); }catch(e){} }
   var pkNm=''; try{ pkNm=packType(tier).name; }catch(e){}
   try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' FREE '+esc(pkNm||'pack')+(n>1?'s':'')+' (Pro Shop → Packs)':'')+'.</span>', 6000); }catch(e){}
 }catch(e){} }
@@ -36848,8 +37040,17 @@ function mergePass(local, server){
   var lc=l.claimed||'', sc=s.claimed||'';
   var rank=function(p){ var m=/^S(\d+)$/.exec(p); return m? 1e6+(+m[1]) : (p?1:0); };   // season keys outrank legacy months outrank empty
   var fix=!!(l.tierFix||s.tierFix);   // union the one-time seasonal-credit heal flag so it never re-fires after a sync
-  if(rank(sc)!==rank(lc)) return { claimed: rank(sc)>rank(lc)?sc:lc, tierFix:fix };
-  return { claimed: (sc>lc?sc:lc), tierFix:fix };   // same rank class (two legacy months): keep the later string
+  // ...and the same for the Season 1 closing popups. Each beat is shown once per USER, not once per
+  // device, so the list of beats already met is unioned here rather than kept in a plain localStorage key.
+  var s1e=!!(l.s1end||s.s1end), s1s=[], anyList=Array.isArray(l.s1seen)||Array.isArray(s.s1seen);
+  [l.s1seen, s.s1seen].forEach(function(a){ if(Array.isArray(a)) a.forEach(function(id){
+    if(typeof id==='string' && s1s.indexOf(id)<0) s1s.push(id); }); });
+  // the flag the first version wrote, before beats existed. Only when neither side has a list, for the
+  // same reason s1EndSeen() only reads it then.
+  if(s1e && !anyList) s1s.push('s0');
+  var out={ tierFix:fix, s1end:s1e, s1seen:s1s };
+  if(rank(sc)!==rank(lc)){ out.claimed = rank(sc)>rank(lc)?sc:lc; return out; }
+  out.claimed = (sc>lc?sc:lc); return out;   // same rank class (two legacy months): keep the later string
 }
 // distinct Prime cards rolled: UNION the name→1 maps (grow-only), so a Prime rolled on any device stays counted.
 function mergePrimes(local, server){
