@@ -303,7 +303,13 @@ window.GA_ID='G-L29P5MRWKE';
   /* THE PADLOCK ON MORE GAME MODES. Hidden unless the modes are locked, so a member never sees
      it, and inline-flex on the button so the glyph sits on the text's own line rather than
      under it. */
-  #b-teams{padding-left:10px;padding-right:10px}
+  /* THE PADDING LIVES ON THE ID BECAUSE THE ID IS WHAT WINS. .hp-more sets everything else
+     about this button, but an id selector outranks a class one, so a padding written there
+     was quietly overruled by this line and the button was 10px tight on both sides rather
+     than the 18 it was meant to have. All four sides are stated here, together, so the next
+     person changing them can see what they are.
+     Less on the right than the left: the chevron carries its own optical space. */
+  #b-teams{padding:11px 15px 11px 18px}
   .btn.ghost{background:transparent;box-shadow:none;border:1.5px solid var(--line-2);font-size:14.5px}
   .btn.ghost:before{display:none}
   /* A ghost button whose action carries a cost. Still the quiet option of the two on screen,
@@ -1442,14 +1448,43 @@ window.GA_ID='G-L29P5MRWKE';
      makes this an INLINE-level box, and auto margins do not centre one: the pill came out
      the right width and still sat hard against the left edge. Block-level flex is what lets
      width:fit-content and the auto margins do the centring. */
+  /* A DOOR, NOT A LOZENGE.
+     It was a 999px pill in a flat slate fill with the label in --dim, which gave it three
+     problems at once. Nothing else on this page is a pill: the hero, the start button and
+     every card are rounded rectangles, so the one pill read as a control borrowed from
+     somewhere else. A fill lighter than the ground with dim text on it is the shape of a
+     DISABLED chip, which is the opposite of what it is. And it carried no affordance at
+     all, while every other way into a mode in this game has a chevron on it.
+     So: the page's own 12px corner, a light on the top edge rather than a flat wash, the
+     label brought up to near ink, and the chevron the modes it opens already use.
+     STILL DELIBERATELY SMALL. It sits under the thing the page is for and above three dim
+     utilities, and it has to read as quieter than one and louder than the others. The
+     compact centred shape is kept for that reason; only its execution changed. */
   .hp-more{display:flex;width:fit-content;max-width:100%;margin-left:auto;margin-right:auto;
-    margin-top:10px;padding:9px 16px;font-size:12.5px;letter-spacing:.03em;
-    border-radius:999px;border-color:var(--line);color:var(--dim2,var(--dim))}
+    margin-top:12px;gap:9px;font-size:13px;letter-spacing:.05em;
+    border-radius:12px;border:1px solid var(--line-2);
+    background:linear-gradient(180deg,rgba(255,255,255,.062),rgba(255,255,255,.018));
+    color:rgba(238,242,249,.92);
+    transition:border-color .15s ease,background .15s ease,transform .07s ease}
+  .hp-more:hover{border-color:rgba(255,255,255,.28);
+    background:linear-gradient(180deg,rgba(255,255,255,.095),rgba(255,255,255,.03))}
+  .hp-more:hover .chev{opacity:.85;transform:translateX(2px)}
   .hp-more:active{background:rgba(255,255,255,.05)}
   .hp-secondary:before{display:none}
   .hp-secondary .lk{display:none;width:12px;height:12px;flex:0 0 auto;fill:none;
     stroke:currentColor;stroke-width:2.1;stroke-linecap:round;opacity:.65}
   .hp-secondary.locked .lk{display:block}
+  /* ONE GLYPH OR THE OTHER AND NEVER BOTH: they answer the same question. The padlock says
+     the modes are shut to you; the chevron says they open. */
+  .hp-secondary .chev{display:none;width:16px;height:16px;flex:0 0 auto;fill:none;
+    stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+    opacity:.5;transition:transform .16s ease,opacity .16s ease}
+  .hp-more .chev{display:block}
+  .hp-more.locked .chev{display:none}
+  @media (prefers-reduced-motion:reduce){
+    .hp-more .chev{transition:none}
+    .hp-more:hover .chev{transform:none}
+  }
   /* THREE ACROSS, NOT TWO AND AN ORPHAN. .hrow is a two-column grid, which was right while
      this row held two buttons; adding the tutorial left Leaderboard alone on a second row at
      half width, sitting under a gap. Three equal columns is the same row it always looked
@@ -4579,7 +4614,10 @@ window.GA_ID='G-L29P5MRWKE';
     .hp-side-name{font-size:28px}
     .hp-side-sub{font-size:11px;letter-spacing:.13em}
     .hp-tag{font-size:9px;top:10px;right:10px}
-    #b-teams{padding-top:21px;padding-bottom:21px;font-size:16px}
+    /* 21px of vertical padding on a compact secondary door made it a tall lozenge with a
+       short word in the middle of it. 15 puts it at the same height as the utility row below
+       while its type stays two points bigger, which is the ranking this button wants. */
+    #b-teams{padding:15px 17px 15px 20px;font-size:15px}
     .hrow.hp-util{margin-top:12px;gap:8px}
     .hp-util .hp-util-btn{font-size:13.5px;padding-top:16px;padding-bottom:16px}
   }
@@ -6179,9 +6217,10 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          It is a compact centre pill now: narrower than everything above it, wider and
          brighter than the three dim utility buttons below, and alone on its row so it still
          reads as a door rather than as a footnote. -->
-    <button class="btn hp-secondary hp-more locked" id="b-teams">More ways to play<svg class="lk"
-      viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>
-      <path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+    <button class="btn hp-secondary hp-more locked" id="b-teams"><span>More ways to play</span><svg
+      class="lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/>
+      <path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><svg class="chev" viewBox="0 0 24 24"
+      aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
     <div class="hrow hp-util">
       <button class="btn hp-util-btn" id="b-tut">Tutorial</button>
       <button class="btn hp-util-btn" id="b-how">How to play</button>
