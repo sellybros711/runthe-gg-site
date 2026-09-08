@@ -1,5 +1,19 @@
 -- ============================================================================
--- 103_football_bye_threshold_again.sql : the server seeds a bye at 16, again
+-- 103_football_bye_threshold_again.sql : two submits the server was refusing
+-- ============================================================================
+-- Both are the same shape of bug: the server holds a second copy of a rule and
+-- its copy is wrong, so a run that was really played is thrown away and the
+-- player is told the leaderboard could not be reached.
+--
+--   1. a 15 win season that wins the title            (the bye threshold, below)
+--   2. a roster costing exactly the cap               (float dust, see the cap check)
+--
+-- The second one: every price in the pool has at most one decimal place, and the
+-- page sends the SUM of six of them as a float. 3 + 3 + 11.1 + 47.2 + 47.9 +
+-- 27.8 is exactly $140M in decimal and 140.00000000000002842 in binary, so a
+-- legal roster was refused for going over budget by three hundredths of a
+-- millionth of a cent. Those are real prices out of the shipped pool. The value
+-- STORED was already rounded; only the comparison read the raw sum.
 -- ============================================================================
 -- Safe to re-run: one CREATE OR REPLACE at the signature it already has.
 --
@@ -126,6 +140,7 @@ declare
   v_club    text;
   v_era     text;
   v_cap     numeric;
+  v_spend   numeric;
   v_gm      numeric;
   v_moves   jsonb;
   v_user    uuid := auth.uid();
@@ -260,9 +275,18 @@ begin
              when v_mode = 'fullteam' then PS_FULL_CAP_MUSD
              else PS_CAP_MUSD end;
   v_roster_size := case when v_mode = 'fullteam' then PS_FULL_ROSTER else PS_ROSTER_SIZE end;
-  if p_spend_musd is null or p_spend_musd < 0 or p_spend_musd > v_cap then
+  -- ROUNDED BEFORE IT IS COMPARED, because the number arriving here is a sum of floats.
+  -- Every price in the pool has at most one decimal place, so anything past two is
+  -- representation dust rather than money: 3 + 3 + 11.1 + 47.2 + 47.9 + 27.8 is exactly the
+  -- cap in decimal and 140.00000000000002842 in binary, and that roster was being refused
+  -- for going over budget by three hundredths of a millionth of a cent. Real prices, taken
+  -- from the shipped pool. The stored value was already rounded on the way into the table;
+  -- it was only the comparison reading the raw sum, so the row that survived was fine and
+  -- the row that never got written was the problem.
+  v_spend := round(coalesce(p_spend_musd, -1), 2);
+  if p_spend_musd is null or v_spend < 0 or v_spend > v_cap then
     raise exception 'spend of % is outside the $%M limit for a % run',
-      p_spend_musd, v_cap, v_mode;
+      v_spend, v_cap, v_mode;
   end if;
   if coalesce(p_respins, 0) < 0 or coalesce(p_respins, 0) > 3 then
     raise exception 'respins must be 0..3, got %', p_respins;
@@ -395,7 +419,7 @@ begin
   ) values (
     v_user, v_name, v_reg, v_po, v_wins, v_losses, v_games,
     v_title, v_made, (v_title and v_losses = 0), v_label,
-    round(p_point_diff, 1), round(p_chemistry_pct, 2), round(p_spend_musd, 1),
+    round(p_point_diff, 1), round(p_chemistry_pct, 2), round(v_spend, 1),
     coalesce(p_respins, 0), v_club, v_era, v_mode, v_daily, v_ddate,
     p_picks, p_slots, p_seed, p_rng_calls,
     round(p_squad_fppg, 1), round(p_structure_mult, 3), round(p_team_rating, 2),
