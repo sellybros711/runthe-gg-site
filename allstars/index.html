@@ -524,12 +524,9 @@
     align-items:center;gap:10px;}
   .dugout-rail b{color:var(--gold);letter-spacing:.1em;text-transform:uppercase;
     font-size:12px;white-space:nowrap;}
-  .dugout-rail .go{margin-left:auto;font-size:10px;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--text-dim);white-space:nowrap;}
   @media (max-width:600px){
     .dugout-rail{font-size:11px;padding:7px 10px;min-height:36px;}
     .dugout-rail b{font-size:10px;}
-    .dugout-rail .go{display:none;}
   }
 
   /* Mode cards on the menu: a button and the one line that says what it is. */
@@ -3462,7 +3459,7 @@ function renderMenu() {
     drawDugout(dctx, things, id);
     const t = things.find(x => x.id === id);
     rail.innerHTML = t
-      ? `<b>${t.label}</b><span>${t.note}</span><span class="go">Click or press Enter</span>`
+      ? `<b>${t.label}</b><span>${t.note}</span>`
       : idle;
   };
   for (const t of things) {
