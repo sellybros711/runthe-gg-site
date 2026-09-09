@@ -5848,7 +5848,16 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-tier.best .btn{background:linear-gradient(135deg,#fbbf24 0%,#e08c07 100%);color:#3b2600}
   .pw-tier.best .btn:before{background:linear-gradient(180deg,rgba(255,255,255,.34),transparent)}
   .pw-foot{font-size:12px;color:var(--dim-2);text-align:center;margin:13px 0 0;line-height:1.4}
-  @media (max-width:360px){
+  /* TWO ACROSS ON EVERY PHONE, THREE ONLY WHERE THREE FIT. This was 360px, which put every
+     handset made in the last decade into the three column layout, and the names outgrew it:
+     a viewport sweep at 10px steps found one line names from 450px up, and TRADE MACHINE
+     wrapping to two lines everywhere from 370px to 440px. A wrapped name pushes that tile's
+     description down twelve pixels while its neighbours stay put, so the row reads as a
+     mistake rather than a layout.
+     THE NUMBER IS MEASURED AND NOT A ROUND ONE ON PURPOSE. 449 is the last width where three
+     columns are too narrow. Renaming a tile to something longer moves it, so re-run the
+     sweep rather than assuming this still holds. */
+  @media (max-width:449px){
     .pw-hero{grid-template-columns:1fr 1fr}
     .pw-tile:last-child{grid-column:1 / -1}
   }
@@ -9261,10 +9270,20 @@ const PW_ART={
     '<path fill="{g}" d="M21.8 25.5h4.4V31h-4.4Z"/>'+
     '<path fill="{g}" d="M15.5 31h17a2 2 0 0 1 2 2v3.5h-21V33a2 2 0 0 1 2-2Z"/>'+
     '<path fill="#2a1a02" opacity=".34" d="M24 10.5l1.7 3.5 3.8.5-2.8 2.7.7 3.8-3.4-1.8-3.4 1.8.7-3.8-2.8-2.7 3.8-.5Z"/>',
-  /* FRANCHISE: a club crest, with the chevron the game's own crests use. */
-  shield:'<path fill="{g}" d="M24 5.5l15 5.3v10.9c0 8.7-6.1 15.4-15 17.8-8.9-2.4-15-9.1-15-17.8V10.8Z"/>'+
-    '<path fill="#2a1a02" opacity=".3" d="M24 13.5l8.5 5v6.2L24 30l-8.5-5.3v-6.2Z"/>'+
-    '<path fill="{g}" opacity=".85" d="M24 17.6l4.6 2.7v3.4L24 26.4l-4.6-2.7v-3.4Z"/>',
+  /* THE TRADE MACHINE: two arrows going opposite ways, which is what a trade is.
+     THE SILHOUETTE TEST THE CLIPBOARD BELOW PAID FOR. A pair of CURVED arrows chasing each
+     other round a circle is the reload glyph and nothing else, at any size. Two straight
+     arrows passing has no such twin: it is the exchange mark, and it says swap before it
+     says anything. The shaft of each one is set against the other's head so the pair reads
+     as one movement rather than two signs stacked.
+     A club crest used to live at this key, for a Franchise tile that no longer exists.
+     Franchise is a kind of dynasty, so it sits under the trophy now. */
+  swap:'<rect x="7" y="13" width="24" height="6" rx="3" fill="{g}"/>'+
+    '<path fill="{g}" d="M29 8l13 8-13 8Z"/>'+
+    '<rect x="17" y="29" width="24" height="6" rx="3" fill="{g}"/>'+
+    '<path fill="{g}" d="M19 24L6 32l13 8Z"/>'+
+    '<rect x="11" y="14.6" width="9" height="2.8" rx="1.4" fill="#2a1a02" opacity=".32"/>'+
+    '<rect x="28" y="30.6" width="9" height="2.8" rx="1.4" fill="#2a1a02" opacity=".32"/>',
   /* COMMISSIONER: a clipboard.
      THIS IS THE THIRD ATTEMPT AND THE OTHER TWO ARE WORTH RECORDING. A stroked bracket was
      unreadable at this size, twice. A whistle was drawn next and rendered, at 40px and at
@@ -9424,15 +9443,27 @@ function premiumSheet(){
          simulator that nothing in the mode ever read. It is gone from the engine, and this
          tile was the last place the number survived, on the purchase screen, which is the
          worst place on the site to be wrong about what somebody is buying. */
+      /* FRANCHISE IS NOT ITS OWN TILE. It is a dynasty with the pool locked to one club,
+         bought by the same unlock and ranked on the same ladder, so it sits under the trophy
+         with the open one. That freed the middle tile for the mode a paying customer
+         actually feels the limit on: the Trade Machine is live to every signed in player and
+         Dynasty is invisible to everybody off the tester list, so the row used to promote
+         two doors most readers cannot open and stay quiet about the one they can. Buying
+         ps_premium switches the Trade Machine's daily meter off. See dailyOn(). */
       pwTile('trophy','Dynasty','Endless arcade mode')+
-      pwTile('shield','Franchise','Run your favorite team')+
+      pwTile('swap','Trade Machine','Unlimited runs')+
       pwTile('clipboard','Commissioner','Can you save College Football?')+
     '</div>'+
 
     '<div class="pw-tier">'+
       '<div class="pw-th"><span class="pw-name">Premium Bundle</span>'+
         '<span class="pw-cost"><b>$19.99</b></span></div>'+
-      pwGroupText('ps','Dynasty Mode and Franchise Mode','Lifetime access')+
+      /* THE TRADE MACHINE IS NAMED HERE BECAUSE IT IS PROMOTED ABOVE. The hero row sells
+         unlimited Trade Machine runs and this is the itemised list of what the money buys,
+         so leaving it off would advertise a thing and then not sell it. It is a real part of
+         the product rather than a nice side effect: dailyOn() stops metering the moment
+         ps_premium is owned. */
+      pwGroupText('ps','Dynasty, Franchise and unlimited Trade Machine','Lifetime access')+
       pwGroupText('cfb','Commissioner Mode','Lifetime access')+
       '<button class="btn" id="b-buy-ps" style="width:100%;margin-top:14px">'+
         (out?'Sign in to go Pro':'Go Pro')+'</button>'+
@@ -20450,7 +20481,10 @@ function pfHub(msg,ok){
    row that arrives without the field at all reads as null, and three permanent unlocks
    telling their owner they are still on the way is a worse lie than the one this prevents. */
 const PRO_ITEM={
-  ps_premium:{game:'ps',text:'Dynasty Mode and Franchise Mode'},
+  /* WORDED THE SAME AS THE STORE LINE IT IS THE RECEIPT FOR. A customer reads this after
+     paying, so a shorter description here than on the card they bought from reads as
+     something having been taken away. See pwGroupText('ps', ...) in the paywall. */
+  ps_premium:{game:'ps',text:'Dynasty, Franchise and unlimited Trade Machine'},
   cfb_premium:{game:'cfb',text:'Commissioner Mode'},
   arcade_card_year:{game:'arcade',text:'Arcade Card, one year'},
   runtour_pack:{game:'tour',text:'100,000 coins and one Tour Pack',wait:true}
