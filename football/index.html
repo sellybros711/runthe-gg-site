@@ -20507,22 +20507,13 @@ async function pfProLoad(){
         'You paid once. Nothing here renews and nothing charges you again.'+
         (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
         (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
-      '</p>'+
-      /* THE WAY BACK, AND ONLY ONCE THERE IS SOMETHING TO GO BACK TO.
-         "Nothing renews" is the promise this page is built on, so the moment the year ends
-         the page owes the other half of it: nothing renewed, and here is how to start
-         another one if you want it. Without this the honest sentence above becomes a dead
-         end, and a customer who wants to keep paying us cannot find out how.
-         A plain link to the Arcade rather than a checkout of our own: the Arcade Card is
-         that game's product and it has its own card screen, and a second place to sell it is
-         a second place for the price to go stale. */
-      (endedOn
-        ? '<div style="margin-top:12px"><a class="btn ghost sm" href="/arcade/" '+
-            'style="text-decoration:none;text-align:center;display:block">'+
-            'Start another Arcade year</a>'+
-          '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Run The Arcade, where '+
-            'the card lives. Your Pro modes here are not affected.</p></div>'
-        : '');
+      '</p>';
+      /* AND IT STOPS THERE. A "Start another Arcade year" button stood here for one commit
+         and came out on the owner's call: this page is a receipt for what this account
+         bought, and the football store is not where another game's card gets sold. Stating
+         that the year ended is the receipt doing its job; following it with a way to buy a
+         fresh one is a shop, and a shop for a product that lives in a different game.
+         So the ended line reports and does not offer. The Arcade sells the Arcade. */
   }
 
   const bill=$('pf-pro-bill');
