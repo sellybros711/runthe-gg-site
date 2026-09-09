@@ -22,7 +22,8 @@
      clinch, elimination  in and out are marked only once the games left make it certain
      season awards        a fixed season hands out the same hardware, archived once
      field frames         every biped carries a distinct catch and throw frame
-     bullpen              fatigue counts per arm, a change is one way, the order holds
+     the mound            anyone can pitch, a change is a swap, and rest pays it back
+     every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
      box score pitchers   every arm that took the mound is named on the result screen
      cpu bullpen          the CPU goes to its best rested arm, and only when it helps
@@ -528,9 +529,9 @@ async function main() {
       await pg.close();
     }
 
-    /* ---- the bullpen ---- */
+    /* ---- the mound: anyone can take it, and it is a swap ---- */
     {
-      console.log('bullpen');
+      console.log('the mound');
       const { pg, errors } = await fresh(browser);
       await pg.evaluate(() => {
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
@@ -543,44 +544,93 @@ async function main() {
         endAtBatCleanup(); g.pitch = null;
         g.half = 'top';                    /* you are home, so you field */
         const t = currentFieldingTeam();
-        /* A starter's curve must be exactly what it was before the pen
-           existed: flat through the third, then one level an inning. */
-        const starter = [];
-        for (let i = 1; i <= 9; i++) { g.inning = i; starter.push(pitcherFatigue(t).level); }
-        g.inning = 6;
+        const starterMan = fielderAt(t, 0);
+        /* An arm is free for three innings of WORK, then goes a level an
+           inning. The same curve it has always had, counted per man. */
+        const curve = [];
+        for (let i = 0; i < 9; i++) { curve.push(armState(t, fielderAt(t, 0)).level); bookTheInning(t); }
+        const tired = armState(t, starterMan).worked;
         const orderBefore = t.batters.map(b => b.k);
-        const penBefore = bullpenFor(t).map(x => x.i);
-        const cons = bullpenFor(t).map(x => x.b.con);
-        const changed = goToPen(t, 4);
-        const reliever = [];
-        for (let i = 6; i <= 9; i++) { g.inning = i; reliever.push(pitcherFatigue(t).level); }
-        const backAgain = goToPen(t, 0);   /* a spent arm cannot return */
+        /* Give the mound to the man playing post 5, third base. */
+        const inIdx = t.field[5];
+        const inMan = t.batters[inIdx];
+        const moved = swapToMound(t, inIdx);
         const orderAfter = t.batters.map(b => b.k);
-        /* The offer is gated: fielding, between pitches, arm going. The
-           man out there came in in the SIXTH, so he is still fresh in the
-           eighth and only starts to go in the tenth. */
-        g.inning = 2; g.play = null; refreshStealButton();
+        const nowPitching = fielderAt(t, 0).k;
+        const starterNowAt = postOfBatter(t, t.batters.indexOf(starterMan));
+        /* Rest the starter: eight innings in the field, at half rate. */
+        for (let i = 0; i < 8; i++) bookTheInning(t);
+        const rested = armState(t, starterMan).worked;
+        /* And he can come straight back, because nothing was spent. */
+        const back = swapToMound(t, t.batters.indexOf(starterMan));
+        /* The offer stands whenever you field between pitches. */
+        g.play = null; refreshStealButton();
         const btn = document.getElementById('pen-btn');
-        const shownFresh = btn.style.display !== 'none';
-        g.inning = 10; refreshStealButton();
-        const shownTired = btn.style.display !== 'none';
+        const shownFielding = btn.style.display !== 'none';
         g.half = 'bottom'; refreshStealButton();
         const shownBatting = btn.style.display !== 'none';
-        return { starter, changed, reliever, backAgain, penBefore, cons,
-                 idx: t.pitcherIdx, from: t.pitcherFrom,
+        g.half = 'top'; g.play = { kind: 'single' }; refreshStealButton();
+        const shownMidPlay = btn.style.display !== 'none';
+        g.play = null;
+        const opts = moundOptions(t);
+        return { curve, tired, rested, moved, back, nowPitching, inKey: inMan.k,
+                 starterNowAt, optCount: opts.length,
+                 optPits: opts.map(x => x.b.pit), optPosts: opts.map(x => x.post),
                  orderSame: JSON.stringify(orderBefore) === JSON.stringify(orderAfter),
-                 shownFresh, shownTired, shownBatting };
+                 shownFielding, shownBatting, shownMidPlay };
       });
-      ok(JSON.stringify(r.starter) === JSON.stringify([0,0,0,1,2,3,4,5,6]),
-         'a starter tires exactly as he did before the pen existed', JSON.stringify(r.starter));
-      ok(r.changed && r.idx === 4 && r.from === 6, 'a change takes and records the inning', JSON.stringify(r));
-      ok(JSON.stringify(r.reliever) === JSON.stringify([0,0,0,1]),
-         'a reliever brought in the sixth is fresh until the ninth', JSON.stringify(r.reliever));
-      ok(r.backAgain === false, 'a spent arm cannot come back');
-      ok(r.orderSame, 'the batting order is untouched by a change');
-      ok(r.penBefore.length === 8 && !r.penBefore.includes(0), 'eight arms on the bench, not the man pitching', JSON.stringify(r.penBefore));
-      ok(JSON.stringify(r.cons) === JSON.stringify([...r.cons].sort((a, b) => b - a)), 'the pen ranks by CON', JSON.stringify(r.cons));
-      ok(!r.shownFresh && r.shownTired && !r.shownBatting, 'offered only while fielding a tiring arm', JSON.stringify({ fresh: r.shownFresh, tired: r.shownTired, batting: r.shownBatting }));
+      ok(JSON.stringify(r.curve) === JSON.stringify([0,0,0,1,2,3,4,5,6]),
+         'an arm is free for three innings of work, then tires a level an inning', JSON.stringify(r.curve));
+      ok(r.tired === 9, 'nine innings of work is nine on the arm', 'worked=' + r.tired);
+      ok(r.moved && r.nowPitching === r.inKey, 'anyone in the field can be given the mound', JSON.stringify({ now: r.nowPitching, want: r.inKey }));
+      ok(r.starterNowAt === 5, 'and the man he replaced takes his position', 'post=' + r.starterNowAt);
+      ok(r.orderSame, 'the batting order never moves');
+      ok(r.rested === 5, 'rest pays the arm back at half rate (9 less 8 halves)', 'worked=' + r.rested);
+      ok(r.back === true, 'and a rested man can come straight back: nothing is spent');
+      ok(r.optCount === 8, 'eight men to choose from, never the one pitching', 'n=' + r.optCount);
+      ok(JSON.stringify(r.optPits) === JSON.stringify([...r.optPits].sort((a, b) => b - a)), 'ranked by PIT', JSON.stringify(r.optPits));
+      ok(!r.optPosts.includes(0), 'and none of them is already on the mound', JSON.stringify(r.optPosts));
+      ok(r.shownFielding && !r.shownBatting && !r.shownMidPlay, 'offered whenever you field between pitches', JSON.stringify({ f: r.shownFielding, b: r.shownBatting, p: r.shownMidPlay }));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- every character carries an arm, and it is not their bat ---- */
+    {
+      console.log('every character pitches');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const miss = ROSTER.filter(c => typeof c.pit !== 'number' || c.pit < 1 || c.pit > 100);
+        const pits = ROSTER.map(c => c.pit);
+        const corr = (a, b) => {
+          const ma = a.reduce((x, y) => x + y, 0) / a.length, mb = b.reduce((x, y) => x + y, 0) / b.length;
+          let num = 0, da = 0, db = 0;
+          for (let i = 0; i < a.length; i++) { num += (a[i] - ma) * (b[i] - mb); da += (a[i] - ma) ** 2; db += (b[i] - mb) ** 2; }
+          return num / Math.sqrt(da * db);
+        };
+        const sluggers = ROSTER.filter(c => c.pow >= 88).map(c => c.pit);
+        /* A club is worth less without arms, or drafting one means nothing
+           to the simulation that plays every game you do not. */
+        const mash = ['kong','franky','humpty','golem','liberty','paulbunyan','sasquatch','cyclops','krampus'];
+        const bal = ['robin','medusa','sherlock','ichabod','alice','peter','tom','popeye','dracula'];
+        const clubs = OPPONENTS.map(o => teamRating(o.roster));
+        return { missing: miss.map(c => c.k), vsPow: corr(pits, ROSTER.map(c => c.pow)),
+                 vsCon: corr(pits, ROSTER.map(c => c.con)),
+                 slugAvg: sluggers.reduce((a, b) => a + b, 0) / sluggers.length,
+                 rosterAvg: pits.reduce((a, b) => a + b, 0) / pits.length,
+                 liberty: (ROSTER.find(c => c.k === 'liberty') || {}).pit,
+                 mashRating: teamRating(mash), balRating: teamRating(bal),
+                 clubLo: Math.min(...clubs), clubHi: Math.max(...clubs) };
+      });
+      ok(r.missing.length === 0, 'every character on the roster carries an arm', r.missing.join(','));
+      ok(r.vsPow < 0, 'the arm runs AGAINST power: the big bats cannot pitch', 'r=' + r.vsPow.toFixed(2));
+      ok(r.vsCon < 0.8, 'and it is not CON wearing a different hat', 'r=' + r.vsCon.toFixed(2));
+      ok(r.slugAvg < r.rosterAvg - 10, 'sluggers are materially worse arms than the roster', JSON.stringify({ slug: r.slugAvg.toFixed(1), all: r.rosterAvg.toFixed(1) }));
+      ok(r.liberty <= 10, 'and the statue pitches like a statue', 'liberty=' + r.liberty);
+      ok(r.balRating > r.mashRating + 8, 'a nine with arms rates well above a nine of sluggers',
+         JSON.stringify({ balanced: r.balRating.toFixed(1), sluggers: r.mashRating.toFixed(1) }));
+      ok(r.clubLo > 45 && r.clubHi < 90, 'and the real clubs keep the scale the sim constants expect',
+         JSON.stringify({ lo: r.clubLo.toFixed(1), hi: r.clubHi.toFixed(1) }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -601,6 +651,11 @@ async function main() {
         const g = State.game;
         endAtBatCleanup(); g.pitch = null;
         g.half = 'top';                     /* you are home, so you pitch */
+        /* The Phoenix turns her first strikeout of a game into a walk, and
+           a random opponent may well have her, which would silently eat one
+           of the seven this counts. Spend the rebirth up front so what is
+           under test is the CREDIT, not her quirk. */
+        g.phoenixUsed = true;
         const you = g.home;
         const starter = you.batters[0], relief = you.batters[6];
         /* Three strikeouts from the starter. */
@@ -608,7 +663,7 @@ async function main() {
         for (let i = 0; i < 3; i++) { g.outs = 0; recordOut('swinging strikeout', true); }
         /* Then a change, and four from the reliever. */
         g.inning = 6;
-        goToPen(you, 6);
+        swapToMound(you, 6);
         for (let i = 0; i < 4; i++) { g.outs = 0; recordOut('swinging strikeout', true); }
         const kBy = Object.assign({}, g.kBy);
         g.inning = 9; g.half = 'bottom'; g.home.score = 9; g.away.score = 1;
@@ -640,17 +695,22 @@ async function main() {
         endAtBatCleanup(); g.pitch = null;
         g.inning = 9; g.half = 'bottom'; g.home.score = 5; g.away.score = 2;
         for (const b of g.home.batters.concat(g.away.batters)) { g.stats.ab[b.k] = 4; g.stats.hits[b.k] = 1; }
-        /* Your side went to the pen once; the CPU rode one arm. */
-        g.home.used = [0, 4]; g.home.pitcherIdx = 4;
-        g.away.used = [0];
+        /* Your side goes to the mound once for real, through the same call
+           the button uses, so the starter has to have been recorded at the
+           top of the game rather than assumed by the box score. The CPU
+           rides one arm. */
+        swapToMound(g.home, g.home.field[4]);
         finishGame();
         await new Promise(r => setTimeout(r, 400));
         const lines = [...document.querySelectorAll('#app .card p')].map(p => p.textContent).filter(t => /pitch/.test(t));
-        return { lines, starter: g.home.batters[0].n, relief: g.home.batters[4].n, theirs: g.away.batters[0].n };
+        return { lines, starter: g.home.batters[0].n,
+                 relief: g.home.batters[g.home.field[0]].n, theirs: g.away.batters[0].n,
+                 pitched: g.home.pitched };
       });
       const two = r.lines.find(l => /between them/.test(l)) || '';
       const one = r.lines.find(l => !/between them/.test(l)) || '';
       ok(r.lines.length === 2, 'a pitching line per side', JSON.stringify(r.lines));
+      ok(r.pitched.length === 2, 'a real in-game change records both arms, starter first', JSON.stringify(r.pitched));
       ok(two.includes(r.starter) && two.includes(r.relief) && /pitched:/.test(two),
          'the side that used two arms names both and shares the line', two);
       ok(one.includes(r.theirs) && /pitching:/.test(one) && !/ and /.test(one),
@@ -672,21 +732,25 @@ async function main() {
       const r = await pg.evaluate(() => {
         const g = State.game;
         const cpu = g.away;
-        cpu.batters[0] = Object.assign({}, cpu.batters[0], { con: 40, n: 'Tired Sam' });
-        cpu.batters[5] = Object.assign({}, cpu.batters[5], { con: 90, n: 'The Closer' });
-        g.inning = 2; cpuPenCheck(cpu);
-        const early = cpu.pitcherIdx;
-        g.inning = 5; cpuPenCheck(cpu);
-        const late = cpu.pitcherIdx, lateName = cpu.batters[cpu.pitcherIdx].n;
-        /* Nobody better on the bench: it stays put. */
+        cpu.batters[0] = Object.assign({}, cpu.batters[0], { pit: 40, n: 'Tired Sam' });
+        cpu.batters[5] = Object.assign({}, cpu.batters[5], { pit: 99, n: 'The Closer' });
+        cpu.arm = {};
+        cpuMoundCheck(cpu);
+        const early = fielderAt(cpu, 0).n;
+        /* Five innings of work on the starter; the rest of the field rested. */
+        cpu.arm[cpu.batters[0].k] = 5;
+        cpuMoundCheck(cpu);
+        const lateName = fielderAt(cpu, 0).n;
+        /* Nobody better in the field: it stays put even with a tired arm. */
         const mine = g.home;
-        mine.batters = mine.batters.map((b, i) => Object.assign({}, b, { con: i === 0 ? 95 : 50 }));
-        g.inning = 8; cpuPenCheck(mine);
-        return { early, late, lateName, stayed: mine.pitcherIdx };
+        mine.batters = mine.batters.map((b, i) => Object.assign({}, b, { pit: i === 0 ? 95 : 40 }));
+        mine.arm = {}; mine.arm[mine.batters[0].k] = 5;
+        cpuMoundCheck(mine);
+        return { early, lateName, stayed: fielderAt(mine, 0).n, starter: mine.batters[0].n };
       });
-      ok(r.early === 0, 'the CPU leaves a fresh arm alone', 'idx=' + r.early);
-      ok(r.late === 5 && r.lateName === 'The Closer', 'and goes to its best rested arm once its man tires', JSON.stringify(r));
-      ok(r.stayed === 0, 'and stays put when nobody on the bench is better', 'idx=' + r.stayed);
+      ok(r.early === 'Tired Sam', 'the CPU leaves a fresh arm alone', r.early);
+      ok(r.lateName === 'The Closer', 'and goes to its best rested arm once its man tires', JSON.stringify(r));
+      ok(r.stayed === r.starter, 'and stays put when nobody in the field is better', JSON.stringify(r));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }
@@ -741,7 +805,7 @@ async function main() {
         const g = State.game;
         const fast = { k: 'x', n: 'Fast Light', spd: 90, pow: 50, con: 60 };
         const slug = { k: 'y', n: 'Slugger', spd: 30, pow: 92, con: 50 };
-        const wet = { con: 55 }, ace = { con: 85 };
+        const wet = { pit: 55 }, ace = { pit: 85 };
         /* The plan, pinned by the roll. */
         g.bases = [fast, null, null]; g.outs = 0; g.strikes = 0;
         const bunt = cpuBatPlan(g, fast, 0.1);

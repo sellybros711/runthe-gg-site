@@ -112,7 +112,8 @@
   .charcard .role{font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
   .charcard .pickno{position:absolute;top:5px;right:5px;background:var(--gold);color:#fff;
     font-size:10px;padding:2px 5px;border-radius:0;font-weight:900;border:1px solid var(--line);}
-  .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:10px;color:var(--text-dim);}
+  .statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px;font-size:10px;color:var(--text-dim);}
+  .statgrid span.arm b{color:var(--gold);}
   .statgrid span b{color:var(--text);}
   .quirk{margin-top:6px;padding-top:6px;border-top:2px dashed rgba(27,58,92,.35);font-size:10px;color:var(--purple);line-height:1.4;}
   .charcard.locked{opacity:.55;cursor:not-allowed;}
@@ -551,159 +552,159 @@
 const ROSTER = [
   /* ---------------- POWER HITTERS ---------------- */
 
-  { k:'kong', n:'The Great Ape', role:'Power', pow:99, spd:8, con:45, def:40, quirk:null,
+  { k:'kong', n:'The Great Ape', role:'Power', pow:99, spd:8, con:45, def:40, pit:22, quirk:null,
     note:'Legendary long ball, cannot run to save his life.',
   },
 
-  { k:'franky', n:'Frankenstein', role:'Power', pow:97, spd:20, con:40, def:55, quirk:null,
+  { k:'franky', n:'Frankenstein', role:'Power', pow:97, spd:20, con:40, def:55, pit:28, quirk:null,
     note:'Two run homer or two called strikes. Nothing in between.',
   },
 
-  { k:'popeye', n:'Popeye', role:'Power', pow:88, spd:55, con:60, def:65, quirk:null,
+  { k:'popeye', n:'Popeye', role:'Power', pow:88, spd:55, con:60, def:65, pit:62, quirk:null,
     note:'Skips leg day. Never skips forearm day.',
   },
 
-  { k:'dracula', n:'Dracula', role:'Power', pow:86, spd:58, con:58, def:60, quirk:null,
+  { k:'dracula', n:'Dracula', role:'Power', pow:86, spd:58, con:58, def:60, pit:58, quirk:null,
     note:'Night games only. Wakes up in the third inning.',
   },
 
-  { k:'liberty', n:'Lady Liberty', role:'Power', pow:100, spd:1, con:22, def:30,
+  { k:'liberty', n:'Lady Liberty', role:'Power', pow:100, spd:1, con:22, def:30, pit:5,
     quirk:'monument',
     note:'Immobile. But every hit clears the wall.',
   },
 
   /* ---------------- SPEED DEMONS ---------------- */
 
-  { k:'peter', n:'Peter Pan', role:'Speed', pow:40, spd:96, con:62, def:72, quirk:null,
+  { k:'peter', n:'Peter Pan', role:'Speed', pow:40, spd:96, con:62, def:72, pit:66, quirk:null,
     note:'Fastest kid on the roster. Also technically the oldest.',
   },
 
-  { k:'ichabod', n:'Ichabod Crane', role:'Contact', pow:45, spd:68, con:84, def:62, quirk:null,
+  { k:'ichabod', n:'Ichabod Crane', role:'Contact', pow:45, spd:68, con:84, def:62, pit:74, quirk:null,
     note:'Reads the pitcher like a lesson. Will not look at left field.',
   },
 
-  { k:'jack', n:'Jack', role:'Speed', pow:52, spd:88, con:48, def:60, quirk:null,
+  { k:'jack', n:'Jack', role:'Speed', pow:52, spd:88, con:48, def:60, pit:55, quirk:null,
     note:'Steals bases like he stole from a giant. Uphill.',
   },
 
-  { k:'tom', n:'Tom Sawyer', role:'Speed', pow:50, spd:84, con:68, def:65, quirk:null,
+  { k:'tom', n:'Tom Sawyer', role:'Speed', pow:50, spd:84, con:68, def:65, pit:62, quirk:null,
     note:'Talked the third baseman into painting the fence.',
   },
 
-  { k:'huck', n:'Huck Finn', role:'Speed', pow:44, spd:86, con:58, def:62, quirk:null,
+  { k:'huck', n:'Huck Finn', role:'Speed', pow:44, spd:86, con:58, def:62, pit:58, quirk:null,
     note:'Barefoot on purpose. Sprints on principle.',
   },
 
-  { k:'paulbunyan', n:'Paul Bunyan', role:'Power', pow:98, spd:30, con:50, def:55, quirk:null,
+  { k:'paulbunyan', n:'Paul Bunyan', role:'Power', pow:98, spd:30, con:50, def:55, pit:35, quirk:null,
     note:'Swings an axe handle. Nobody has asked him to stop.',
   },
 
-  { k:'invisible', n:'Invisible Man', role:'Defense', pow:38, spd:82, con:56, def:92, quirk:null,
+  { k:'invisible', n:'Invisible Man', role:'Defense', pow:38, spd:82, con:56, def:92, pit:90, quirk:null,
     note:'Fielders lose him in the dust.',
   },
 
   /* ---------------- CONTACT SPECIALISTS ---------------- */
 
-  { k:'sherlock', n:'Sherlock', role:'Contact', pow:45, spd:55, con:88, def:78, quirk:null,
+  { k:'sherlock', n:'Sherlock', role:'Contact', pow:45, spd:55, con:88, def:78, pit:86, quirk:null,
     note:'Reads pitch tips like a case file. Elementary, my dear count.',
   },
 
-  { k:'golem', n:'The Golem', role:'Power', pow:92, spd:20, con:56, def:88, quirk:null,
+  { k:'golem', n:'The Golem', role:'Power', pow:92, spd:20, con:56, def:88, pit:30, quirk:null,
     note:'Does exactly what the lineup card says. Exactly.',
   },
 
-  { k:'alice', n:'Alice', role:'Contact', pow:45, spd:68, con:82, def:65, quirk:null,
+  { k:'alice', n:'Alice', role:'Contact', pow:45, spd:68, con:82, def:65, pit:68, quirk:null,
     note:'Curiouser and curiouser. Also very hard to strike out.',
   },
 
-  { k:'dorothy', n:'Dorothy', role:'Contact', pow:52, spd:64, con:78, def:70, quirk:null,
+  { k:'dorothy', n:'Dorothy', role:'Contact', pow:52, spd:64, con:78, def:70, pit:64, quirk:null,
     note:'Three taps of the slippers, safe at home.',
   },
 
-  { k:'lupin', n:'Arsène Lupin', role:'Contact', pow:55, spd:78, con:84, def:68, quirk:null,
+  { k:'lupin', n:'Arsène Lupin', role:'Contact', pow:55, spd:78, con:84, def:68, pit:76, quirk:null,
     note:'Steals a base and leaves a calling card in the dugout.',
   },
 
   /* ---------------- WILD CARDS ---------------- */
 
-  { k:'hyde', n:'Mr. Hyde', role:'Wild', pow:55, spd:60, con:52, def:55, quirk:'transform',
+  { k:'hyde', n:'Mr. Hyde', role:'Wild', pow:55, spd:60, con:52, def:55, pit:50, quirk:'transform',
     note:'One in six at bats he transforms. All power, no manners.',
   },
 
-  { k:'scarecrow', n:'Scarecrow', role:'Wild', pow:38, spd:55, con:78, def:60, quirk:'confuse',
+  { k:'scarecrow', n:'Scarecrow', role:'Wild', pow:38, spd:55, con:78, def:60, pit:66, quirk:'confuse',
     note:'Pitchers lose the plate. Meter wobbles harder against him.',
   },
 
-  { k:'lion', n:'Cowardly Lion', role:'Wild', pow:82, spd:50, con:52, def:55, quirk:'skittish',
+  { k:'lion', n:'Cowardly Lion', role:'Wild', pow:82, spd:50, con:52, def:55, pit:40, quirk:'skittish',
     note:'Enormous power. Bails on tough pitches.',
   },
 
-  { k:'pooh', n:'Pooh', role:'Underdog', pow:42, spd:30, con:65, def:50, quirk:null,
+  { k:'pooh', n:'Pooh', role:'Underdog', pow:42, spd:30, con:65, def:50, pit:45, quirk:null,
     note:'Waits for the sweet pitch. Sometimes the pitch is honey.',
   },
 
-  { k:'robin', n:'Robin Hood', role:'Balanced', pow:65, spd:78, con:70, def:78, quirk:null,
+  { k:'robin', n:'Robin Hood', role:'Balanced', pow:65, spd:78, con:70, def:78, pit:94, quirk:null,
     note:'Takes hits from the rich outfielders, gives them to the middle innings.',
   },
 
-  { k:'longjohn', n:'Long John Silver', role:'Balanced', pow:78, spd:40, con:70, def:58, quirk:null,
+  { k:'longjohn', n:'Long John Silver', role:'Balanced', pow:78, spd:40, con:70, def:58, pit:58, quirk:null,
     note:'One leg, one crutch, one parrot. Still beats the throw.',
   },
-  { k:'pinocchio', n:'Pinocchio', role:'Wild', pow:56, spd:78, con:66, def:60, quirk:null,
+  { k:'pinocchio', n:'Pinocchio', role:'Wild', pow:56, spd:78, con:66, def:60, pit:82, quirk:null,
     note:'Made of wood. Does not tire, does not bruise, does not listen.',
   },
 
   /* ---------------- HOLIDAY AND FOLKLORE PACK ---------------- */
 
-  { k:'santa', n:'Santa', role:'Power', pow:82, spd:30, con:65, def:60, quirk:null,
+  { k:'santa', n:'Santa', role:'Power', pow:82, spd:30, con:65, def:60, pit:60, quirk:null,
     note:'Delivers big even in the dead of night. Chimney speed.',
   },
 
-  { k:'mrsclaus', n:'Mrs. Claus', role:'Contact', pow:52, spd:40, con:84, def:70, quirk:null,
+  { k:'mrsclaus', n:'Mrs. Claus', role:'Contact', pow:52, spd:40, con:84, def:70, pit:72, quirk:null,
     note:'Knits between innings. Reads the pitcher like a good book.',
   },
 
-  { k:'bunny', n:'Easter Bunny', role:'Speed', pow:42, spd:96, con:65, def:72, quirk:null,
+  { k:'bunny', n:'Easter Bunny', role:'Speed', pow:42, spd:96, con:65, def:72, pit:48, quirk:null,
     note:'Hops between bases faster than you can spot him.',
   },
 
-  { k:'fairy', n:'Tooth Fairy', role:'Contact', pow:40, spd:88, con:78, def:65, quirk:null,
+  { k:'fairy', n:'Tooth Fairy', role:'Contact', pow:40, spd:88, con:78, def:65, pit:78, quirk:null,
     note:'Sneaks in during your at-bat and swaps a strike for a quarter.',
   },
 
-  { k:'vampire', n:'Vampire', role:'Power', pow:78, spd:68, con:56, def:60, quirk:null,
+  { k:'vampire', n:'Vampire', role:'Power', pow:78, spd:68, con:56, def:60, pit:55, quirk:null,
     note:'Colder than Dracula, cheaper cape, still bites.',
   },
 
-  { k:'pirate', n:'Pirate', role:'Balanced', pow:70, spd:55, con:60, def:60, quirk:null,
+  { k:'pirate', n:'Pirate', role:'Balanced', pow:70, spd:55, con:60, def:60, pit:60, quirk:null,
     note:'Arrr. That will do for a swing.',
   },
 
-  { k:'witch', n:'Witch', role:'Wild', pow:60, spd:78, con:70, def:62, quirk:'hex',
+  { k:'witch', n:'Witch', role:'Wild', pow:60, spd:78, con:70, def:62, pit:88, quirk:'hex',
     note:'Hexes the pitcher. Odds go strange against her.',
   },
 
-  { k:'centaur', n:'Centaur', role:'Speed', pow:76, spd:96, con:60, def:70, quirk:null,
+  { k:'centaur', n:'Centaur', role:'Speed', pow:76, spd:96, con:60, def:70, pit:76, quirk:null,
     note:'Half rider, half horse, entirely uncatchable in the gap.',
   },
 
-  { k:'krampus', n:'Krampus', role:'Power', pow:92, spd:50, con:48, def:55, quirk:'naughty',
+  { k:'krampus', n:'Krampus', role:'Power', pow:92, spd:50, con:48, def:55, pit:72, quirk:'naughty',
     note:'Files a naughty list against the pitcher. He remembers everything.',
   },
 
-  { k:'fathertime', n:'Father Time', role:'Contact', pow:45, spd:20, con:88, def:92, quirk:'stall',
+  { k:'fathertime', n:'Father Time', role:'Contact', pow:45, spd:20, con:88, def:92, pit:90, quirk:'stall',
     note:'Slows the meter down. Every at bat feels like nine.',
   },
 
-  { k:'mothernature', n:'Mother Nature', role:'Balanced', pow:65, spd:70, con:74, def:78, quirk:null,
+  { k:'mothernature', n:'Mother Nature', role:'Balanced', pow:65, spd:70, con:74, def:78, pit:78, quirk:null,
     note:'Grows a rally. Watch the vines climb the outfield fence.',
   },
 
-  { k:'raboddog', n:'Rabid Dog', role:'Wild', pow:72, spd:92, con:38, def:40, quirk:'frenzy',
+  { k:'raboddog', n:'Rabid Dog', role:'Wild', pow:72, spd:92, con:38, def:40, pit:20, quirk:'frenzy',
     note:'Does not care about outs. Never picks up a walk.',
   },
 
-  { k:'chupacabra', n:'Chupacabra', role:'Wild', pow:82, spd:78, con:45, def:55, quirk:'drain',
+  { k:'chupacabra', n:'Chupacabra', role:'Wild', pow:82, spd:78, con:45, def:55, pit:30, quirk:'drain',
     note:'Feeds on pitcher fatigue. Later innings, more damage.',
   },
 
@@ -713,75 +714,75 @@ const ROSTER = [
      coming from the upper left, so forms read with more depth than the
      flat fills of the older roster. */
 
-  { k:'cupid', n:'Cupid', role:'Contact', pow:48, spd:88, con:82, def:65, quirk:null,
+  { k:'cupid', n:'Cupid', role:'Contact', pow:48, spd:88, con:82, def:65, pit:88, quirk:null,
     note:'Aims for the heart of the strike zone. Rarely misses.',
   },
 
-  { k:'medusa', n:'Medusa', role:'Wild', pow:66, spd:70, con:72, def:64, quirk:'petrify',
+  { k:'medusa', n:'Medusa', role:'Wild', pow:66, spd:70, con:72, def:64, pit:92, quirk:'petrify',
     note:'One look and the pitcher forgets where the plate is.',
   },
 
-  { k:'cyclops', n:'Cyclops', role:'Power', pow:90, spd:38, con:46, def:58, quirk:null,
+  { k:'cyclops', n:'Cyclops', role:'Power', pow:90, spd:38, con:46, def:58, pit:24, quirk:null,
     note:'One eye, zero doubt. Sees only the fence.',
   },
 
-  { k:'phoenix', n:'Phoenix', role:'Wild', pow:80, spd:82, con:60, def:60, quirk:'rebirth',
+  { k:'phoenix', n:'Phoenix', role:'Wild', pow:80, spd:82, con:60, def:60, pit:80, quirk:'rebirth',
     note:'Struck out once a game, and rises from the ashes to first.',
   },
 
-  { k:'dragon', n:'Dragon', role:'Power', pow:94, spd:56, con:50, def:66, quirk:null,
+  { k:'dragon', n:'Dragon', role:'Power', pow:94, spd:56, con:50, def:66, pit:88, quirk:null,
     note:'Torches the ball. It lands three towns over.',
   },
 
-  { k:'sasquatch', n:'Sasquatch', role:'Power', pow:92, spd:52, con:44, def:56, quirk:null,
+  { k:'sasquatch', n:'Sasquatch', role:'Power', pow:92, spd:52, con:44, def:56, pit:32, quirk:null,
     note:'Blurry in every photo, crystal clear on the base paths.',
   },
 
-  { k:'yeti', n:'Yeti', role:'Power', pow:88, spd:48, con:50, def:62, quirk:null,
+  { k:'yeti', n:'Yeti', role:'Power', pow:88, spd:48, con:50, def:62, pit:38, quirk:null,
     note:'Ice in his veins. Also everywhere else.',
   },
 
-  { k:'nessie', n:'Nessie', role:'Speed', pow:64, spd:90, con:58, def:64, quirk:null,
+  { k:'nessie', n:'Nessie', role:'Speed', pow:64, spd:90, con:58, def:64, pit:52, quirk:null,
     note:'Surfaces once a century, legs it out for a triple.',
   },
 
-  { k:'horseman', n:'Headless Horseman', role:'Power', pow:84, spd:64, con:52, def:58, quirk:null,
+  { k:'horseman', n:'Headless Horseman', role:'Power', pow:84, spd:64, con:52, def:58, pit:26, quirk:null,
     note:'No head, no strike zone fear. Carries his own lantern.',
   },
 
-  { k:'zombie', n:'Zombie', role:'Wild', pow:70, spd:34, con:44, def:48, quirk:null,
+  { k:'zombie', n:'Zombie', role:'Wild', pow:70, spd:34, con:44, def:48, pit:25, quirk:null,
     note:'Shambles to first no matter what. Braaains, then bases.',
   },
 
-  { k:'werewolf', n:'Werewolf', role:'Wild', pow:86, spd:80, con:50, def:54, quirk:'moonrise',
+  { k:'werewolf', n:'Werewolf', role:'Wild', pow:86, spd:80, con:50, def:54, pit:36, quirk:'moonrise',
     note:'Harmless early. Under the late-inning moon, a monster.',
   },
 
-  { k:'strongman', n:'Strongman', role:'Power', pow:89, spd:44, con:56, def:58, quirk:null,
+  { k:'strongman', n:'Strongman', role:'Power', pow:89, spd:44, con:56, def:58, pit:34, quirk:null,
     note:'Bends the bat around the ball. Handlebar never moves.',
   },
 
-  { k:'beardedlady', n:'Bearded Lady', role:'Contact', pow:56, spd:56, con:84, def:68, quirk:null,
+  { k:'beardedlady', n:'Bearded Lady', role:'Contact', pow:56, spd:56, con:84, def:68, pit:70, quirk:null,
     note:'Reads the pitch through the whiskers. Never fooled.',
   },
 
-  { k:'ringmaster', n:'Ringmaster', role:'Balanced', pow:68, spd:68, con:70, def:70, quirk:null,
+  { k:'ringmaster', n:'Ringmaster', role:'Balanced', pow:68, spd:68, con:70, def:70, pit:72, quirk:null,
     note:'Announces his own home runs. Loudly.',
   },
 
-  { k:'acrobat', n:'Acrobat', role:'Speed', pow:46, spd:94, con:74, def:72, quirk:null,
+  { k:'acrobat', n:'Acrobat', role:'Speed', pow:46, spd:94, con:74, def:72, pit:70, quirk:null,
     note:'Cartwheels into second. Sticks the landing every time.',
   },
 
-  { k:'firebreather', n:'Fire Breather', role:'Power', pow:83, spd:60, con:54, def:56, quirk:null,
+  { k:'firebreather', n:'Fire Breather', role:'Power', pow:83, spd:60, con:54, def:56, pit:86, quirk:null,
     note:'Exhales, and the ball is already gone.',
   },
 
-  { k:'blackcat', n:'Black Cat', role:'Wild', pow:44, spd:90, con:70, def:66, quirk:'unlucky',
+  { k:'blackcat', n:'Black Cat', role:'Wild', pow:44, spd:90, con:70, def:66, pit:66, quirk:'unlucky',
     note:'Crosses the pitcher. Errors follow her around the bases.',
   },
 
-  { k:'humpty', n:'Humpty Dumpty', role:'Power', pow:90, spd:18, con:55, def:35, quirk:'fragile',
+  { k:'humpty', n:'Humpty Dumpty', role:'Power', pow:90, spd:18, con:55, def:35, pit:18, quirk:'fragile',
     note:'Sits on the strike zone like a wall. Cracks a little with every out.',
   },
 ];
@@ -3272,7 +3273,8 @@ function renderMenu() {
     cc.appendChild(el('div','role', c.role));
     const st = el('div','statgrid');
     st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
-                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`;
+                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`
+                 + `<span class="arm">PIT <b>${c.pit}</b></span>`;
     cc.appendChild(st);
     if (c.note) {
       const nt = el('div','quirk', c.note);
@@ -3298,7 +3300,8 @@ const STAT_LEGEND =
     '<b>POW</b> how far the ball goes when you hit it square · '
   + '<b>SPD</b> singles beat the throw, steals and extra bases · '
   + '<b>CON</b> forgives an early or late swing · '
-  + '<b>DEF</b> wider catch and throw windows when you field';
+  + '<b>DEF</b> wider catch and throw windows when you field · '
+  + '<b>PIT</b> how well he throws when it is his turn on the mound';
 
 function renderRoster() {
   const picked = new Set();
@@ -3306,9 +3309,10 @@ function renderRoster() {
   s.appendChild(el('h2', null, State.mode === 'season' ? 'Build your season team' : 'Pick your lineup'));
   s.appendChild(el('p', null,
     'Choose nine. <b>Your first pick starts on the mound</b> and bats first, so '
-    + 'start with someone whose CON you trust. When his arm tires you can go to '
-    + 'the bullpen for any of the other eight, so a second good CON is worth '
-    + 'having. Randomize builds a lineup and moves on.'));
+    + 'lead with an arm you trust: <b>PIT</b> is what a man throws like, and it is '
+    + 'not the same talent as hitting. Anyone can take the mound mid game, and a '
+    + 'rested arm comes back, so <b>two</b> good arms will carry you further than '
+    + 'one. Randomize builds a lineup and moves on.'));
   s.appendChild(el('p', null, STAT_LEGEND));
 
   const card = el('div','card');
@@ -3322,7 +3326,8 @@ function renderRoster() {
     cc.appendChild(el('div','role', `${c.role}`));
     const st = el('div','statgrid');
     st.innerHTML = `<span>POW <b>${c.pow}</b></span><span>SPD <b>${c.spd}</b></span>`
-                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`;
+                 + `<span>CON <b>${c.con}</b></span><span>DEF <b>${c.def}</b></span>`
+                 + `<span class="arm">PIT <b>${c.pit}</b></span>`;
     cc.appendChild(st);
     if (c.note) {
       const nt = el('div','quirk', c.note);
@@ -4081,7 +4086,17 @@ function teamRating(keys) {
   const chars = keys.map(k => ROSTER_BY_KEY[k]);
   const off = chars.reduce((a,c) => a + c.pow*0.4 + c.con*0.4 + c.spd*0.2, 0) / 9;
   const def = chars.reduce((a,c) => a + c.def, 0) / 9;
-  return off * 0.65 + def * 0.35;
+  /* THE ARMS COUNT. This weighed bats and gloves only, which was fair
+     while every club pitched with whatever its first pick happened to be.
+     Now that an arm is drafted on purpose, a nine of sluggers and a nine
+     with an ace in it are not the same club and the simulation has to say
+     so. It is the TOP TWO rather than the mean, because that is who
+     actually pitches: the other seven never take the mound in a game
+     nobody has to manage. The weights still sum to one, so the rating
+     keeps its old scale and the constants that read it keep their meaning. */
+  const arms = chars.map(c => c.pit | 0).sort((a, b) => b - a);
+  const arm = ((arms[0] | 0) + (arms[1] | 0)) / 2;
+  return off * 0.55 + def * 0.30 + arm * 0.15;
 }
 
 function renderSeasonHub() {
@@ -4502,14 +4517,15 @@ function startGame(opts) {
     outs: 0,
     balls: 0, strikes: 0,
     bases: [null,null,null],
-    /* pitcherIdx is who is ON THE MOUND and pitcherFrom the inning he took
-       it, which is all the bullpen needs: fatigue counts from the inning a
-       man came in rather than from the first, so a reliever arrives fresh.
-       Batting order is untouched by a change, because in this game the
-       lineup slot and the mound are separate jobs. `used` is the arms
-       already spent, so nobody comes back for a second spell. */
-    away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : teamKitColor(), pitcherIdx: 0, pitcherFrom: 1, used: [0] },
-    home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? teamKitColor() : State.opponent.color, pitcherIdx: 0, pitcherFrom: 1, used: [0] },
+    /* WHO STANDS WHERE, as its own list. `field[p]` is the batting-order
+       index of the man playing post p, and post 0 is the mound. Splitting
+       the order from the positions is what lets anybody take the mound
+       without the lineup card moving, and it is how the sport actually
+       works: nine names bat in a fixed order and stand wherever you put
+       them. `arm` is innings of work per character, which rest pays back.
+       `pitched` is every man who has thrown, in order, for the box score. */
+    away: { name: youHome ? State.opponent.name : State.teamName, batters: youHome ? battersHome : battersAway, idx:0, score:0, isYou: !youHome, color: youHome ? State.opponent.color : teamKitColor(), field: [0,1,2,3,4,5,6,7,8], arm: {}, pitched: [] },
+    home: { name: youHome ? State.teamName : State.opponent.name, batters: youHome ? battersAway : battersHome, idx:0, score:0, isYou: youHome, color: youHome ? teamKitColor() : State.opponent.color, field: [0,1,2,3,4,5,6,7,8], arm: {}, pitched: [] },
     stats: { hr:{}, so:{}, sb:{}, hits:{}, ab:{} },
     lineScore: { away:[0], home:[] },   /* runs per inning, per side */
     fx: [],           /* live particles: dust, confetti, glove flashes */
@@ -4519,6 +4535,13 @@ function startGame(opts) {
     over: false,
     winner: null,
   };
+  /* Both starters go on the record before a pitch is thrown. `pitched` is
+     only appended to by a change, so without this the box score would name
+     the relievers and quietly drop the man who threw the first five. */
+  for (const t of [State.game.away, State.game.home]) {
+    const starter = fielderAt(t, 0);
+    if (starter) t.pitched = [starter.k];
+  }
   State.screen = 'game';
   render();
   Sound.music.start(Sound);
@@ -4537,9 +4560,24 @@ function currentBatter() {
   const t = currentBattingTeam();
   return t.batters[t.idx % 9];
 }
+/* The nine posts, in the order fielderPosts and the draw loop index them.
+   Post 0 is the mound and post 8 is behind the plate. */
+const POSITIONS = ['Pitcher', 'Right field', 'Shortstop', 'Second base', 'First base',
+                   'Third base', 'Left field', 'Center field', 'Catcher'];
+/* The man playing a post, through the team's own position list. Everything
+   that used to index batters BY POST NUMBER goes through here, or moving a
+   man to the mound would leave his sprite standing in the outfield. */
+function fielderAt(team, post) {
+  if (!team) return null;
+  const f = team.field || [0,1,2,3,4,5,6,7,8];
+  return team.batters[f[post]];
+}
+function postOfBatter(team, idx) {
+  const f = team.field || [0,1,2,3,4,5,6,7,8];
+  return f.indexOf(idx);
+}
 function currentPitcher() {
-  const t = currentFieldingTeam();
-  return t.batters[t.pitcherIdx || 0];   /* first pick starts, the pen can follow */
+  return fielderAt(currentFieldingTeam(), 0);
 }
 function playerIsBatting() {
   return currentBattingTeam().isYou;
@@ -4634,14 +4672,15 @@ const DIFF = {
 function pitcherFatigue(team) {
   const g = State.game;
   const t = team || currentFieldingTeam();
-  /* THE COUNT IS PER ARM, not per game. It used to read g.inning flat, so
-     a starter tired forever and the eight men behind him could not pitch
-     at all: by the ninth the wobble was two and a half times the first
-     pitch of the game and there was no lever to pull. Counting from the
-     inning a man TOOK the mound leaves a starter's numbers exactly as
-     they were (he came in in the first) and brings a reliever on fresh. */
-  const from = (t && t.pitcherFrom) || 1;
-  const past = Math.max(0, g.inning - from - 2);
+  /* THE COUNT IS PER ARM, AND REST PAYS IT BACK. It used to read g.inning
+     flat, so a starter tired forever and nobody else could pitch at all.
+     Then it counted from the inning a man came in, which was better but
+     still one way: an arm you took out was finished for the day.
+     `arm[key]` is innings of work, up one for each inning on the mound and
+     down a half for each inning spent in the field, so a man who throws
+     three and sits four comes back to you fresh. Three innings of work is
+     free, which keeps a starter's curve exactly where it has always been. */
+  const past = armState(t, fielderAt(t, 0)).level;   /* one source for the level */
   return {
     wobbleMult: 1 + past * 0.25,
     strikeDrop: past * 0.03,
@@ -5141,7 +5180,7 @@ function throwPitch(chosenPt, chosenZone) {
   let ideal = clamp(idealBase + wobble, 0.28, 0.78);
   /* Ball is a strike or a ball. The pitcher's control determines it, minus
      any accumulated fatigue for this pitcher over the game. */
-  const strikeProb = 0.55 + (pitcher.con || pitcher.def*0.4) / 300 - fatigue.strikeDrop;
+  const strikeProb = 0.55 + (pitcher.pit != null ? pitcher.pit : 50) / 300 - fatigue.strikeDrop;
   let isStrike = Math.random() < clamp(strikeProb, 0.4, 0.85);
 
   /* Aim: player-chosen 3x3 zone (0..8; 4 = center) shifts the ideal meter
@@ -5162,7 +5201,7 @@ function throwPitch(chosenPt, chosenZone) {
     /* The pitcher's control decides if the pitch lands in the called
        zone. Miss the corner and it's a ball. */
     const landRoll = Math.random();
-    const controlChance = 0.55 + (pitcher.con || 50) / 250 - fatigue.strikeDrop
+    const controlChance = 0.55 + (pitcher.pit != null ? pitcher.pit : 50) / 250 - fatigue.strikeDrop
                        - (isCorner ? 0.20 : isEdge ? 0.08 : 0);
     if (landRoll > clamp(controlChance, 0.30, 0.95)) {
       /* Missed the spot: center pitches still land for strikes, corner
@@ -5252,7 +5291,7 @@ function cpuBatPlan(g, batter, roll) {
 function cpuStealWants(g, runner, pitcher, roll) {
   const r = roll == null ? Math.random() : roll;
   if (!runner || g.bases[1]) return false;
-  if (runner.spd < 80 || (pitcher.con || 50) >= 70) return false;
+  if (runner.spd < 80 || (pitcher.pit != null ? pitcher.pit : 50) >= 70) return false;
   return r < 0.2;
 }
 
@@ -5902,8 +5941,8 @@ function startThrowWindow(kind, batter) {
   if (!g.play) return;
   /* Overall fielding rating for the team's infield (average of DEF for
      four infielders): better fielders = wider safe zone. */
-  const fs = currentFieldingTeam().batters;
-  const infield = [fs[2], fs[3], fs[4], fs[5]].filter(Boolean);
+  const ft = currentFieldingTeam();
+  const infield = [2, 3, 4, 5].map(p => fielderAt(ft, p)).filter(Boolean);
   const avgDef = infield.reduce((a, c) => a + c.def, 0) / (infield.length || 1);
   const window = {
     ideal: 0.55 + (Math.random() - 0.5) * 0.2,   /* wobbly target each throw */
@@ -6016,8 +6055,8 @@ function scheduleFlyCatchMinigame(kind, batter) {
 function startCatchWindow(kind, batter, landingX, landingY) {
   const g = State.game;
   if (!g.play) return;
-  const fs = currentFieldingTeam().batters;
-  const of = [fs[6], fs[7], fs[1]].filter(Boolean);
+  const ft = currentFieldingTeam();
+  const of = [6, 7, 1].map(p => fielderAt(ft, p)).filter(Boolean);
   const avgDef = of.reduce((a, c) => a + c.def, 0) / (of.length || 1);
   /* A catch bar with a shrinking green center. Not held-still-hard: the
      time window is short (900 ms) and the fielder DEF widens the safe
@@ -6281,6 +6320,10 @@ function endHalfInning() {
   addLog(`Three out. End of the ${g.half === 'top' ? 'top' : 'bottom'} of the ${ordinal(g.inning)}.`, true);
   showCallout('3 OUTS · SIDES CHANGE', 'homer');
   Sound.play('inning');
+  /* The side that just finished fielding books the inning: one on the arm
+     that threw it, half off everyone else's. This is the whole economy of
+     the mound, so it happens once, here, on the half inning boundary. */
+  bookTheInning(currentFieldingTeam());
   g.bases = [null,null,null];
   g.outs = 0;
   g.balls = 0; g.strikes = 0;
@@ -6313,7 +6356,7 @@ function endHalfInning() {
   /* The side that is about to field gets a look at its own staff first,
      so a change lands before the board draws and the board tells the
      truth about who is warming. */
-  cpuPenCheck(currentFieldingTeam());
+  cpuMoundCheck(currentFieldingTeam());
   /* The plaque has its moment, then the board sits under it for the rest
      of the beat. startAtBat takes it down. */
   boardTimer = setTimeout(() => { if (State.game === g && !g.over) showInningBoard(); },
@@ -7153,7 +7196,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     if (plateCrowd > 0.02) {
       ctx.save();
       ctx.globalAlpha = plateCrowd;
-      const catcher = currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1];
+      const catcher = fielderAt(currentFieldingTeam(), 8) || fielderAt(currentFieldingTeam(), 1);
       if (catcher) drawRunner(ctx, cx + 18, plateY + 38, catcher, 2.3, 'back');
     /* On-deck circle: the next batter waits in it, bat on shoulder is
        implied by the back view. Gives the bottom corner life and tells
@@ -7187,13 +7230,14 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
     /* Fielder cluster, on the foreshortened diamond. Depth scaling:
        outfielders are FARTHER away, so they draw smaller than the
        infield corners, which is what sells the camera angle. */
-    const fs = currentFieldingTeam().batters;
+    const fteam = currentFieldingTeam();
     /* The man chasing the ball is drawn on his path below, not here, or
        he appears twice: once sprinting and once still at his post. */
     const chasing = (g.play && g.play.ball) ? chaseFor(g.play, G, w, r).i : -1;
     for (const q of fielderPosts(G, w)) {
       if (q.i === chasing) continue;
-      if (fs[q.i]) drawRunner(ctx, q.x, q.y, fs[q.i], q.sc);
+      const man = fielderAt(fteam, q.i);
+      if (man) drawRunner(ctx, q.x, q.y, man, q.sc);
     }
 
     if (g.play) {
@@ -7252,7 +7296,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
          going to land; whether he is there when it arrives is the entire
          readout. On a catch the glove flashes at the moment of arrival. */
       const ch = chaseFor(p, G, w, r);
-      const fielder = fs[ch.i];
+      const fielder = fielderAt(fteam, ch.i);
       if (fielder) {
         const ct = clamp((now - p.startedAt) / (p.ball.duration * ch.arrive), 0, 1);
         const fx = ch.x0 + (ch.x1 - ch.x0) * ct;
@@ -7283,7 +7327,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
          a second and a half after the mutation, long enough for the plaque
          to land. Overrides the wide-shot fade because the camera is close. */
       if (p.plateOut && now - p.plateOut.at < 1500) {
-        const catcher = currentFieldingTeam().batters[8] || currentFieldingTeam().batters[1];
+        const catcher = fielderAt(currentFieldingTeam(), 8) || fielderAt(currentFieldingTeam(), 1);
         if (catcher) drawRunner(ctx, cx + 8, plateY + 6, catcher, 2.3, 'catch');
         drawRunner(ctx, cx - 20, plateY + 10, p.plateOut.runner, 2.55, 'slide');
       }
@@ -7601,13 +7645,12 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
      only ever spoke up once an arm had started to go. */
   if (g && !g.play) {
     const pteam = currentFieldingTeam();
-    const fat = pitcherFatigue(pteam);
-    const justIn = (pteam.pitcherIdx || 0) !== 0 && g.inning === (pteam.pitcherFrom || 1);
-    if (fat.level > 0 || justIn) {
-      const label = fat.level >= 3 ? 'GASSED' : fat.level === 2 ? 'TIRING'
-        : fat.level === 1 ? 'WARM' : 'FRESH';
-      const color = fat.level >= 3 ? '#c94b1a' : fat.level === 2 ? '#e3b04c'
-        : fat.level === 1 ? '#5bb083' : '#8fd0a0';
+    const pman = fielderAt(pteam, 0);
+    const st = pman ? armState(pteam, pman) : null;
+    if (st) {
+      const label = st.label.toUpperCase();
+      const color = st.level >= 3 ? '#c94b1a' : st.level === 2 ? '#e3b04c'
+        : st.level === 1 ? '#5bb083' : '#8fd0a0';
       ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
       ctx.fillStyle = color;
@@ -8051,8 +8094,8 @@ function renderGame() {
   stealBtn.onclick = attemptSteal;
   stealRow.appendChild(stealBtn);
 
-  /* To the bullpen, when you are fielding and the arm is going. */
-  const penBtn = el('button','btn ghost','Bullpen');
+  /* Who pitches, whenever you are the side in the field. */
+  const penBtn = el('button','btn ghost','Mound');
   penBtn.id = 'pen-btn';
   penBtn.style.display = 'none';
   penBtn.onclick = (e) => { e.stopPropagation(); openBullpen(); };
@@ -8142,8 +8185,6 @@ function showInningBoard() {
   const bat = currentBattingTeam();
   const pitcher = currentPitcher();
   const due = [0, 1, 2].map(i => bat.batters[(bat.idx + i) % 9]);
-  const fat = pitcherFatigue();
-  const arm = fat.level >= 3 ? 'gassed' : fat.level === 2 ? 'tiring' : fat.level === 1 ? 'warm' : 'fresh';
   const board = el('div', 'board');
   board.id = 'inning-board';
   board.appendChild(el('div', 'board-head',
@@ -8159,10 +8200,10 @@ function showInningBoard() {
   }
   board.appendChild(row);
   const fieldTeam = currentFieldingTeam();
-  const spell = Math.max(1, g.inning - (fieldTeam.pitcherFrom || 1) + 1);
-  const relief = (fieldTeam.pitcherIdx || 0) !== 0 ? ' (in relief)' : '';
+  const st = armState(fieldTeam, pitcher);
   board.appendChild(el('div', 'board-arm',
-    `On the mound: <b>${pitcher.n}</b>${relief} · arm ${arm} · ${spell} inning${spell === 1 ? '' : 's'}`));
+    `On the mound: <b>${pitcher.n}</b> · PIT ${pitcher.pit} · arm ${st.label}`
+    + `${st.worked ? ` · ${st.worked} inning${st.worked === 1 ? '' : 's'} of work` : ''}`));
   arena.appendChild(board);
 }
 function hideInningBoard() {
@@ -8171,50 +8212,88 @@ function hideInningBoard() {
   if (b) b.remove();
 }
 
-/* THE BULLPEN.
-   A tired arm was a fact with no answer: the fatigue chip counted up to
-   GASSED and the player watched it happen. Now the eight men on the bench
-   are arms, ranked by the stat that decides a pitch (CON, which sets both
-   the strike rate and whether a called corner lands). Going to the pen is
-   one way: a spent arm does not come back, which is what makes it a
-   decision rather than a button you press every inning.
+/* THE MOUND IS A POSITION, NOT A ROSTER SPOT.
+   This was a bullpen once: eight men on a bench, ranked by CON, and taking
+   one meant spending the man who came out. Two things were wrong with it.
+   CON is a BATTING stat, "forgives a late swing", and it was standing in
+   for an arm nobody had; and there is no bench here, because all nine are
+   already on the field.
 
-   The lineup is NOT touched. In this game batting order and the mound are
-   separate jobs, so a change swaps who throws and nobody moves in the
-   order, which is the least surprising thing for a player who drafted a
-   nine and expects it to bat in that order all game. */
-function bullpenFor(team) {
-  const used = team.used || [0];
-  return team.batters
-    .map((b, i) => ({ b, i }))
-    .filter(x => used.indexOf(x.i) === -1)
-    .sort((a, b) => (b.b.con | 0) - (a.b.con | 0) || a.i - b.i);
+   Backyard Baseball answers both. Every character carries a pitching
+   rating alongside batting, so a slugger is a genuinely bad arm rather
+   than an interchangeable one, and a change is a SWAP: the new man walks
+   in from his position and the old one walks out to it. Nobody leaves the
+   game, nobody is spent, and the cost of going to your shortstop is that
+   your shortstop is now whoever just came off the mound.
+
+   Batting order never moves. `field` holds the positions and `batters`
+   holds the order, which is how the sport itself separates them. */
+function armState(team, c) {
+  const worked = (team && team.arm && c && team.arm[c.k]) || 0;
+  const level = Math.max(0, Math.floor(worked) - 2);
+  return {
+    worked,
+    level,
+    label: level >= 3 ? 'gassed' : level === 2 ? 'tiring' : level === 1 ? 'warm' : 'fresh',
+  };
 }
-function goToPen(team, idx) {
+/* One inning on the books: up one for the arm that threw it, half back for
+   the eight who did not. Rest is the whole point of a rotation, so it has
+   to be worth something. */
+function bookTheInning(team) {
+  if (!team || !team.batters) return;
+  team.arm = team.arm || {};
+  const on = fielderAt(team, 0);
+  for (const c of team.batters) {
+    if (!c) continue;
+    if (on && c.k === on.k) team.arm[c.k] = (team.arm[c.k] || 0) + 1;
+    else team.arm[c.k] = Math.max(0, (team.arm[c.k] || 0) - 0.5);
+  }
+}
+/* Everyone who is not currently pitching, best arm first. */
+function moundOptions(team) {
+  return team.batters
+    .map((b, i) => ({ b, i, post: postOfBatter(team, i), arm: armState(team, b) }))
+    .filter(x => x.post !== 0)
+    .sort((a, b) => (b.b.pit | 0) - (a.b.pit | 0) || a.i - b.i);
+}
+/* How good an arm is RIGHT NOW: his rating less what the innings have
+   taken out of it. This is what both the player and the CPU are choosing
+   on, so a tired ace and a fresh middling arm can trade places. */
+function effectiveArm(team, c) {
+  return (c.pit | 0) - armState(team, c).level * 9;
+}
+function swapToMound(team, idx) {
   const g = State.game;
-  if (!g || g.over) return false;
-  if (!team.batters[idx] || (team.used || []).indexOf(idx) !== -1) return false;
-  const out = team.batters[team.pitcherIdx || 0];
-  team.pitcherIdx = idx;
-  team.pitcherFrom = g.inning;
-  team.used = (team.used || [0]).concat([idx]);
+  if (!g || g.over || !team.batters[idx]) return false;
+  const post = postOfBatter(team, idx);
+  if (post === 0 || post < 0) return false;          /* already pitching */
+  const out = fielderAt(team, 0);
   const inn = team.batters[idx];
-  addLog(`Pitching change: ${inn.n} in for ${out.n}.`, true);
-  if (team.isYou) showCallout(`${inn.n.toUpperCase()} WARMING`, 'sub');
+  const f = team.field;
+  f[0] = idx;
+  f[post] = team.batters.indexOf(out);
+  team.pitched = team.pitched || [];
+  if (team.pitched.indexOf(inn.k) === -1) team.pitched.push(inn.k);
+  addLog(`Pitching change: ${inn.n} to the mound, ${out.n} to ${POSITIONS[post].toLowerCase()}.`, true);
+  if (team.isYou) showCallout(`${inn.n.toUpperCase()} TO THE MOUND`, 'sub');
   refreshHud();
   return true;
 }
-/* The CPU manages its own staff: once its arm is TIRING it goes to its
-   best rested man, if that man is a better bet than the one out there. */
-function cpuPenCheck(team) {
+/* The CPU manages its own staff on the same numbers the player sees: once
+   its arm is tiring it looks for a materially better one, and leaves a
+   good arm alone. */
+function cpuMoundCheck(team) {
   if (!team || team.isYou) return;
-  const fat = pitcherFatigue(team);
-  if (fat.level < 2) return;
-  const pen = bullpenFor(team);
-  if (!pen.length) return;
-  const on = team.batters[team.pitcherIdx || 0];
-  if ((pen[0].b.con | 0) <= (on.con | 0) - 12) return;   /* nobody better */
-  goToPen(team, pen[0].i);
+  const on = fielderAt(team, 0);
+  if (!on) return;
+  if (armState(team, on).level < 2) return;
+  const best = moundOptions(team)
+    .map(x => ({ x, e: effectiveArm(team, x.b) }))
+    .sort((a, b) => b.e - a.e)[0];
+  if (!best) return;
+  if (best.e <= effectiveArm(team, on) + 8) return;   /* not worth the walk */
+  swapToMound(team, best.x.i);
 }
 
 let penOpen = false;
@@ -8224,26 +8303,27 @@ function openBullpen() {
   if (!g || g.over || !arena || penOpen) return;
   const team = currentFieldingTeam();
   if (team.isYou !== true) return;
-  const pen = bullpenFor(team);
-  if (!pen.length) return;
+  const opts = moundOptions(team);
+  if (!opts.length) return;
   penOpen = true;
-  const on = team.batters[team.pitcherIdx || 0];
-  const fat = pitcherFatigue(team);
-  const arm = fat.level >= 3 ? 'gassed' : fat.level === 2 ? 'tiring' : fat.level === 1 ? 'warm' : 'fresh';
+  const on = fielderAt(team, 0);
+  const st = armState(team, on);
   const box = el('div', 'pen');
   box.id = 'pen';
-  box.appendChild(el('h4', null, 'The bullpen'));
+  box.appendChild(el('h4', null, 'Who pitches'));
   box.appendChild(el('div', 'note',
-    `<b>${on.n}</b> is ${arm} after ${Math.max(1, g.inning - (team.pitcherFrom || 1) + 1)} inning`
-    + `${g.inning - (team.pitcherFrom || 1) === 0 ? '' : 's'}. A fresh arm starts the count over. `
-    + 'Whoever you take out does not come back, and nobody changes places in the order.'));
+    `<b>${on.n}</b> is <b>${st.label}</b> (PIT ${on.pit}) after ${st.worked} inning`
+    + `${st.worked === 1 ? '' : 's'} of work. Anyone can take the mound: he walks in from `
+    + 'his position and <b>' + on.n + '</b> walks out to it. Nobody leaves the game and '
+    + 'the batting order does not move, so an arm you rest is one you get back.'));
   const grid = el('div', 'pen-grid');
-  for (const x of pen) {
+  for (const x of opts) {
     const b = el('button', 'pen-arm');
     b.appendChild(spriteCanvas(x.b, 34));
     b.appendChild(el('div', 'nm', x.b.n));
-    b.appendChild(el('div', 'con', `CON ${x.b.con}`));
-    b.onclick = (e) => { e.stopPropagation(); closeBullpen(); goToPen(team, x.i); };
+    b.appendChild(el('div', 'con', `PIT ${x.b.pit} · ${x.arm.label}`));
+    b.appendChild(el('div', 'con', POSITIONS[x.post]));
+    b.onclick = (e) => { e.stopPropagation(); closeBullpen(); swapToMound(team, x.i); };
     grid.appendChild(b);
   }
   box.appendChild(grid);
@@ -8412,24 +8492,26 @@ function refreshSendButton() {
   btn.textContent = rule === 'send' ? 'Runner: SEND home' : rule === 'hold' ? 'Runner: HOLD at third' : 'Runner: auto';
   btn.classList.toggle('selected', rule !== 'auto');
 }
-/* The bullpen offer: only while YOU are fielding, only between pitches,
-   and only once the arm out there has started to go. Before TIRING there
-   is nothing to fix and the button would just be noise. */
+/* The mound offer, whenever you are fielding and between pitches. It used
+   to appear only once the arm had started to go, which made sense while a
+   change spent a man: there was nothing to fix before then. A swap costs
+   nothing but the position you take him from, so the choice belongs to the
+   player the whole time. The label carries the state so a tiring arm still
+   asks for attention without the button hiding until it is too late. */
 function refreshPenButton() {
   const btn = document.getElementById('pen-btn');
   if (!btn) return;
   const g = State.game;
   if (!g || g.over || g.play || playerIsBatting()) { btn.style.display = 'none'; return; }
   const team = currentFieldingTeam();
-  const rested = bullpenFor(team);
-  const fat = pitcherFatigue(team);
-  const offer = fat.level >= 1 && rested.length > 0;
-  btn.style.display = offer ? '' : 'none';
-  if (offer) {
-    btn.textContent = fat.level >= 3 ? 'Bullpen · arm GASSED'
-      : fat.level === 2 ? 'Bullpen · arm tiring' : 'Bullpen';
-    btn.classList.toggle('selected', fat.level >= 3);
-  }
+  const on = fielderAt(team, 0);
+  if (!on) { btn.style.display = 'none'; return; }
+  const st = armState(team, on);
+  btn.style.display = '';
+  btn.textContent = st.level >= 3 ? 'Mound · arm GASSED'
+    : st.level === 2 ? 'Mound · arm tiring'
+    : st.level === 1 ? 'Mound · arm warm' : 'Mound';
+  btn.classList.toggle('selected', st.level >= 2);
 }
 function refreshStealButton() {
   refreshSendButton();
@@ -8460,7 +8542,7 @@ function attemptSteal() {
   g.steal = { runner, start: performance.now(), until: performance.now() + 900 };
   addLog(`${runner.n} breaks for 2nd.`);
   showCallout('STEAL ATTEMPT', 'sub');
-  const odds = clamp(0.35 + (runner.spd - 60)/200 - (pitcher.con - 55)/300, 0.15, 0.9);
+  const odds = clamp(0.35 + (runner.spd - 60)/200 - ((pitcher.pit != null ? pitcher.pit : 50) - 55)/300, 0.15, 0.9);
   const success = Math.random() < odds;
   setTimeout(() => {
     if (success) {
@@ -8653,8 +8735,10 @@ function renderResult() {
        and strikeouts are team totals, so with more than one arm they are
        said to be shared rather than pinned on the last man standing. */
     const opp = team === you ? foe : you;
-    const arms = (team.used && team.used.length ? team.used : [0])
-      .map(i => team.batters[i]).filter(Boolean);
+    const byKey = {};
+    for (const b of team.batters) byKey[b.k] = b;
+    const arms = (team.pitched && team.pitched.length ? team.pitched : [team.batters[0].k])
+      .map(k => byKey[k]).filter(Boolean);
     const oppK = opp.batters.reduce((a,b) => a + (g.stats.so[b.k] || 0), 0);
     const oppH = opp.batters.reduce((a,b) => a + (g.stats.hits[b.k] || 0), 0);
     const gold = (x) => `<b style="color:var(--gold)">${x.n}</b>`;
@@ -8804,12 +8888,17 @@ function renderHowTo() {
     + 'batter has one pitch they cannot handle: throw it and their timing falls '
     + 'apart. The plaque reads WEAK PITCH the first time you find it, and the '
     + 'button stays marked for the rest of the at bat.</p>'
-    + '<p>Pitchers tire. Three innings in, the chip above the mound reads WARM, '
-    + 'then TIRING, then GASSED, and a tired arm loses the plate. Once it starts '
-    + 'to go, a <b>Bullpen</b> button offers the eight men on your bench, best '
-    + 'CON first. A fresh arm starts the count over, and whoever you take out is '
-    + 'done for the game, so it is a decision rather than a free swap. Nobody '
-    + 'changes places in the batting order.</p>');
+    + '<p><b>Every character can pitch, and PIT says how well.</b> It is a '
+    + 'separate talent from hitting: the biggest bats on the roster are usually '
+    + 'the worst arms, and the best arms are rarely the men you want up with the '
+    + 'bases loaded. Lady Liberty is a statue and pitches like one.</p>'
+    + '<p>Arms tire. Three innings of work in, the chip above the mound reads WARM, '
+    + 'then TIRING, then GASSED, and a tired arm loses the plate. The <b>Mound</b> '
+    + 'button hands it to anyone you like: he walks in from his position and the '
+    + 'man you took off walks out to it. Nobody leaves the game and the batting '
+    + 'order never moves, so the only cost is that your shortstop is now whoever '
+    + 'was just pitching. An arm recovers while it rests, at half the rate it '
+    + 'tires, so a starter you pull in the fourth can come back later.</p>');
   s.appendChild(pitch);
 
   const field = el('div','card');
