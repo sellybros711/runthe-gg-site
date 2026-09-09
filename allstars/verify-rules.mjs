@@ -22,6 +22,8 @@
      clinch, elimination  in and out are marked only once the games left make it certain
      season awards        a fixed season hands out the same hardware, archived once
      field frames         every biped carries a distinct catch and throw frame
+     franchise years      a club runs year on year, carrying its record book
+     long unlocks         three characters take a franchise rather than an afternoon
      the mound            anyone can pitch, a change is a swap, and rest pays it back
      every character      all 55 carry an arm, and the big bats are the worst of them
      strikeouts per arm   a K is credited to the man who threw it, not to the starter
@@ -525,6 +527,66 @@ async function main() {
       ok(r.plateOut, 'the play carries a plate-out marker for the draw loop', JSON.stringify(r));
       ok(r.runner === 'The Runner', 'and names the runner', r.runner);
       ok(r.outs === 1, 'and the out is recorded', 'outs=' + r.outs);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- a franchise runs year after year ---- */
+    {
+      console.log('franchise years');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Dynasty';
+        State.innings = 5; State.difficulty = 'medium'; State.mode = 'season';
+        State.franchise = randomFranchise();
+        startSeason();
+        const y1 = State.season, club = y1.franchise.nickname;
+        y1.results = y1.schedule.map((o, i) => ({ opponent: o, win: i < 5, you: i < 5 ? 6 : 2, them: i < 5 ? 2 : 6 }));
+        y1.leagueDone = 7; y1.playoffs = seedPlayoffs(y1);
+        const out = { y1Year: y1.year, y1Book: y1.history.length };
+        startSeason(y1);                       /* the way Play Year N does it */
+        const y2 = State.season;
+        out.y2Year = y2.year; out.y2Book = y2.history.length;
+        out.sameClub = y2.franchise.nickname === club && y2.teamName === 'Dynasty';
+        out.freshSched = y2.results.length === 0 && y2.schedule.length === 7;
+        out.book1 = y2.history[0];
+        y2.results = y2.schedule.map(o => ({ opponent: o, win: true, you: 4, them: 3 }));
+        y2.leagueDone = 7;
+        startSeason(y2);
+        out.y3Year = State.season.year; out.y3Book = State.season.history.length;
+        out.reached = PROGRESS.franchiseYears;
+        out.signs = dugoutThings().map(t => t.sign);
+        return out;
+      });
+      ok(JSON.stringify(r.signs) === JSON.stringify(['EXHIBITION','FRANCHISE','PLAYOFFS','HOW TO PLAY']),
+         'the room says EXHIBITION, FRANCHISE and PLAYOFFS', JSON.stringify(r.signs));
+      ok(r.y1Year === 1 && r.y1Book === 0, 'year one starts with an empty book', JSON.stringify(r));
+      ok(r.y2Year === 2 && r.y2Book === 1 && r.sameClub, 'year two is the same club with year one on the books', JSON.stringify(r));
+      ok(r.freshSched, 'and a fresh seven game schedule');
+      ok(r.book1 && r.book1.w === 5 && r.book1.l === 2, 'the book keeps the record it actually was', JSON.stringify(r.book1));
+      ok(r.y3Year === 3 && r.y3Book === 2, 'and it keeps going year on year', JSON.stringify(r));
+      ok(r.reached >= 3, 'the furthest year reached is kept for the long unlocks', 'reached=' + r.reached);
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
+    /* ---- the long unlocks need a franchise, not a good afternoon ---- */
+    {
+      console.log('long unlocks');
+      const { pg, errors } = await fresh(browser);
+      const r = await pg.evaluate(() => {
+        const long = ['robin', 'medusa', 'krampus'];
+        const before = long.map(k => isUnlocked(k));
+        PROGRESS.franchiseYears = 3; const a = refreshUnlocks();
+        PROGRESS.wins = 25; const b = refreshUnlocks();
+        PROGRESS.titles = 2; const c = refreshUnlocks();
+        return { before, a, b, c, after: long.map(k => isUnlocked(k)) };
+      });
+      ok(r.before.every(x => !x), 'the three long ones start locked', JSON.stringify(r.before));
+      ok(r.a.includes('robin'), 'a third franchise year earns the best arm on the roster', JSON.stringify(r.a));
+      ok(r.b.includes('medusa'), 'twenty five wins earns the second', JSON.stringify(r.b));
+      ok(r.c.includes('krampus'), 'two championships earn the third', JSON.stringify(r.c));
+      ok(r.after.every(x => x), 'and they stay unlocked', JSON.stringify(r.after));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

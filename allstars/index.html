@@ -424,12 +424,13 @@
   .table.sched tr.next td{background:rgba(227,176,76,.18);}
   /* Season awards: one plaque per winner. */
   .awards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
-  .award{border:2px solid var(--line);padding:8px;text-align:center;background:var(--panel-2);
+  .award,.earn{border:2px solid var(--line);padding:8px;text-align:center;background:var(--panel-2);
     box-shadow:var(--shadow-sm);}
   .award .ttl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:900;}
-  .award canvas{display:block;margin:6px auto;image-rendering:pixelated;}
-  .award .nm{font-weight:900;font-size:12px;}
-  .award .ln{font-size:10px;color:var(--text-dim);margin-top:2px;}
+  .award canvas,.earn canvas{display:block;margin:6px auto;image-rendering:pixelated;}
+  .award .nm,.earn .nm{font-weight:900;font-size:12px;}
+  .award .ln,.earn .ln{font-size:10px;color:var(--text-dim);margin-top:2px;}
+  .earn{opacity:.9;} .earn .nm{color:var(--text-dim);}
 
   .bracket{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;}
   .bracket .col{display:flex;flex-direction:column;gap:10px;}
@@ -2198,10 +2199,17 @@ const UNLOCKS = {
   phoenix:   { how:'Come back and win after trailing.',    check:(p)=> (p.comebacks|0) >= 1 },
   chupacabra:{ how:'Win a game by 10 or more runs.',       check:(p)=> (p.blowouts|0) >= 1 },
   fathertime:{ how:'Play a full 9 inning game.',           check:(p)=> (p.nineInningGames|0) >= 1 },
+  /* THE LONG ONES. Everything above can be had inside a single season,
+     which left a franchise with nothing to run TOWARD once its first year
+     was in the book. These three take years, and they are the three best
+     arms on the roster, so what a long franchise earns you is a rotation. */
+  robin:     { how:'Reach year three of a franchise.',     check:(p)=> (p.franchiseYears|0) >= 3 },
+  medusa:    { how:'Win 25 games.',                        check:(p)=> (p.wins|0) >= 25 },
+  krampus:   { how:'Win two championships.',               check:(p)=> (p.titles|0) >= 2 },
 };
 const PROGRESS = Object.assign(
   { seasonHR:0, playoffWins:0, titles:0, comebacks:0, blowouts:0, nineInningGames:0,
-    wins:0, games:0, unlocked:[], seasons:[] },
+    wins:0, games:0, franchiseYears:0, unlocked:[], seasons:[] },
   PREFS.progress || {}
 );
 function saveProgress() {
@@ -2240,6 +2248,10 @@ const State = {
   difficulty: ['easy','medium','hard'].includes(PREFS.difficulty) ? PREFS.difficulty : 'medium',
   gameSpeed: ['relaxed','normal','fast'].includes(PREFS.gameSpeed) ? PREFS.gameSpeed : 'normal',
   game: null,
+  /* A finished season waiting on next year's draft. Set by Play Year N on
+     the season end screen and cleared the moment it is carried forward, so
+     nothing can start a fresh club holding an old one. */
+  pendingFranchise: null,
   /* Raw here on purpose. migrateSeason() reaches for the franchise tables
      (CITIES, KITS, PARKS) which are declared further down this file, and a
      const is not hoisted, so migrating at this point throws before the app
@@ -3208,26 +3220,27 @@ function dugoutThings() {
   const seasonOn = !!State.season, cupOn = !!State.cup;
   const rec = seasonOn ? seasonRecord(State.season) : null;
   return [
-    { id: 'exhibition', x: 40, y: 150, w: 150, h: 200, sign: 'ONE GAME',
+    { id: 'exhibition', x: 40, y: 150, w: 150, h: 200, sign: 'EXHIBITION',
       label: 'Exhibition Game',
       note: 'One game against a random club. Five innings, about ten minutes.',
       draw: drawBatRack,
       go: () => { State.mode = 'exhibition'; State.screen = 'roster'; render(); } },
-    { id: 'season', x: 214, y: 86, w: 176, h: 168, sign: 'SEASON',
-      label: seasonOn ? 'Resume Season' : 'Start Season',
+    { id: 'season', x: 214, y: 86, w: 176, h: 168, sign: 'FRANCHISE',
+      label: seasonOn ? 'Resume Franchise' : 'Start Franchise',
       note: seasonOn
-        ? `You are ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
-        : 'Found a club and play seven games, then the bracket. It saves.',
+        ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
+        : 'Found a club and run it year after year. Earns you players. It saves.',
       draw: drawLineupBoard,
       go: () => {
         if (State.season) { State.screen = 'season-hub'; render(); }
-        else { State.mode = 'season'; State.franchise = randomFranchise();
+        else { State.mode = 'season'; State.pendingFranchise = null;
+               State.franchise = randomFranchise();
                State.screen = 'franchise'; render(); }
       } },
-    { id: 'cup', x: 424, y: 86, w: 150, h: 168, sign: 'THE CUP',
-      label: cupOn ? 'Resume Cup' : 'Play The Cup',
+    { id: 'cup', x: 424, y: 86, w: 150, h: 168, sign: 'PLAYOFFS',
+      label: cupOn ? 'Resume Playoffs' : 'Playoff Mode',
       note: cupOn
-        ? 'Your cup run is still going.'
+        ? 'Your playoff run is still going.'
         : 'Eight clubs, knockout. Lose once and you are out.',
       draw: drawCupCase,
       go: () => {
@@ -3314,20 +3327,58 @@ function drawCupCase(ctx, t) {
   /* the shelf under the case */
   dugRect(ctx, t.x - 8, t.y + t.h - 22, t.w + 16, 16, '#8a5f2a');
 }
+/* The coach's board: the diamond on the left, and on the right the kind of
+   thing that would actually be chalked next to it. The notes are the game's
+   own rules in shorthand, so the board is about THIS game rather than being
+   a generic diagram, and a squiggle under each one keeps it handwritten
+   rather than typeset. */
+const CHALK_NOTES = ['SWING ON', 'THE GREEN', '', 'CALL SPOT', 'EVERY PITCH', '', 'REST THE ARM'];
 function drawChalkboard(ctx, t) {
-  /* A board with a diamond chalked on it. */
   dugRect(ctx, t.x, t.y, t.w, t.h, '#7d5628');
   dugRect(ctx, t.x + 8, t.y + 8, t.w - 16, t.h - 16, DUG.slate);
-  const cx = t.x + t.w / 2, cy = t.y + t.h / 2 + 10, r = 40;
+  /* a chalk line down the middle, the way a board gets divided */
+  ctx.strokeStyle = 'rgba(232,240,228,.45)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(t.x + t.w / 2, t.y + 16); ctx.lineTo(t.x + t.w / 2, t.y + t.h - 16);
+  ctx.stroke();
+  /* LEFT: the diamond */
+  const cx = t.x + t.w * 0.27, cy = t.y + t.h / 2 + 6, r = 30;
   ctx.strokeStyle = DUG.chalk; ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx, cy + r); ctx.lineTo(cx + r * 1.5, cy);
-  ctx.lineTo(cx, cy - r); ctx.lineTo(cx - r * 1.5, cy);
+  ctx.moveTo(cx, cy + r); ctx.lineTo(cx + r * 1.4, cy);
+  ctx.lineTo(cx, cy - r); ctx.lineTo(cx - r * 1.4, cy);
   ctx.closePath(); ctx.stroke();
   ctx.fillStyle = DUG.chalk;
-  for (const [bx, by] of [[cx, cy + r], [cx + r * 1.5, cy], [cx, cy - r], [cx - r * 1.5, cy]]) {
+  for (const [bx, by] of [[cx, cy + r], [cx + r * 1.4, cy], [cx, cy - r], [cx - r * 1.4, cy]]) {
     ctx.fillRect(Math.round(bx) - 3, Math.round(by) - 3, 6, 6);
   }
+  /* a dashed line off the bat, because a chalked play has an arrow on it */
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(cx, cy + r); ctx.lineTo(cx + r * 1.15, cy - r * 0.5); ctx.stroke();
+  ctx.restore();
+  /* RIGHT: the notes, in a hand */
+  const nx = t.x + t.w * 0.56;
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  let ny = t.y + 26;
+  for (const note of CHALK_NOTES) {
+    if (note) {
+      ctx.fillStyle = DUG.chalk;
+      ctx.fillText(note, nx, ny);
+      /* the squiggle under it: three short strokes at slightly wrong angles */
+      ctx.strokeStyle = 'rgba(232,240,228,.6)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const sx = nx + i * 22;
+        ctx.moveTo(sx, ny + 7 + (i % 2));
+        ctx.lineTo(sx + 18, ny + 6 + ((i + 1) % 2) * 2);
+      }
+      ctx.stroke();
+    }
+    ny += note ? 17 : 9;
+  }
+  ctx.textAlign = 'center';
 }
 
 /* A painted board hung over each thing, so the room is readable without
@@ -3425,9 +3476,45 @@ function renderMenu() {
     b.textContent = t.label;
     b.onmouseenter = b.onfocus = () => paint(t.id);
     b.onmouseleave = b.onblur = () => paint(null);
-    b.onclick = t.go;
+    b.onclick = () => zoomInto(t, t.go);
     dug.appendChild(b);
   }
+  /* GOING IN. A click used to swap the screen underneath you; the room
+     pushes in on whatever you picked first, so the thing you touched is
+     the thing you arrive at. Nothing about the destination changes, so a
+     reader who has asked for less motion simply skips it. */
+  let going = false;
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const zoomInto = (t, then) => {
+    if (going) return;
+    if (reduced) { then(); return; }
+    going = true;
+    const cx = t.x + t.w / 2, cy = t.y + t.h / 2 - SIGN_H / 2;
+    const start = performance.now(), DUR = 380;
+    const step = () => {
+      const p = Math.min(1, (performance.now() - start) / DUR);
+      const e = p * p * (3 - 2 * p);                 /* smoothstep */
+      dctx.setTransform(1.5, 0, 0, 1.5, 0, 0);
+      dctx.imageSmoothingEnabled = false;
+      /* Clear in untransformed space, or the scaled rect misses the edges. */
+      dctx.fillStyle = '#6b4a24';
+      dctx.fillRect(0, 0, DUGOUT_W, DUGOUT_H);
+      dctx.save();
+      dctx.translate(cx, cy);
+      dctx.scale(1 + e * 2.4, 1 + e * 2.4);
+      dctx.translate(-cx, -cy);
+      drawDugout(dctx, things, t.id);
+      dctx.restore();
+      /* and out to the page colour, so the next screen does not snap in */
+      if (e > 0.5) {
+        dctx.fillStyle = `rgba(241,226,187,${(e - 0.5) / 0.5})`;
+        dctx.fillRect(0, 0, DUGOUT_W, DUGOUT_H);
+      }
+      if (p < 1) requestAnimationFrame(step); else then();
+    };
+    requestAnimationFrame(step);
+  };
+
   paint(null);
   card.appendChild(dug);
   card.appendChild(rail);
@@ -3530,7 +3617,12 @@ const STAT_LEGEND_LONG =
 function renderRoster() {
   const picked = new Set();
   const s = el('div','screen');
-  s.appendChild(el('h2', null, State.mode === 'season' ? 'Build your season team' : 'Pick your lineup'));
+  s.appendChild(el('h2', null,
+    State.mode === 'season'
+      ? (State.pendingFranchise
+          ? `Year ${(State.pendingFranchise.year || 1) + 1} lineup`
+          : 'Build your franchise')
+      : 'Pick your lineup'));
   s.appendChild(el('p', null,
     'Choose nine. <b>Your first pick starts on the mound</b>, so lead with a good '
     + '<b>PIT</b> and keep a second: arms tire, and anyone can take over later.'));
@@ -3590,7 +3682,7 @@ function renderRoster() {
 
   const foot = el('div','card');
   const counter = el('div', null);
-  const founded = State.mode === 'season' && State.franchise;
+  const founded = State.mode === 'season' && (State.franchise || State.pendingFranchise);
   const nameLabel = el('label', null, founded ? '' : 'Team name: ');
   const nameInput = el('input', null);
   nameInput.type='text'; nameInput.maxLength = 32;
@@ -3734,21 +3826,29 @@ function renderSettings() {
     + 'always reasonable. Exhibition games are never interrupted.'));
 
   if (State.mode === 'season') {
-    card.appendChild(el('h3', null, 'Season format'));
-    card.appendChild(el('p', null,
-      'Seven regular season games against random opponents from the league. '
-      + 'The top four records make a single elimination playoff bracket.'
-    ));
+    const ny = State.pendingFranchise;
+    card.appendChild(el('h3', null, ny ? `Year ${(ny.year || 1) + 1}` : 'Season format'));
+    card.appendChild(el('p', null, ny
+      ? `${ny.teamName} play seven more, then the bracket. The record book carries over.`
+      : 'Seven regular season games against random opponents from the league. '
+        + 'The top four records make a single elimination playoff bracket.'));
   }
 
   const row = el('div','btn-row');
   const back = el('button','btn ghost','Back');
   back.onclick = () => { State.screen = 'roster'; render(); };
-  const go = el('button','btn', State.mode === 'season' ? 'Start Season'
-                : State.mode === 'cup' ? 'Enter The Cup' : 'Play Ball');
+  const nextYear = State.pendingFranchise;
+  const go = el('button','btn',
+      State.mode === 'season'
+        ? (nextYear ? `Start Year ${(nextYear.year || 1) + 1}` : 'Start Franchise')
+        : State.mode === 'cup' ? 'Enter Playoffs' : 'Play Ball');
   go.onclick = () => {
     if (State.mode === 'season') {
-      startSeason();
+      /* A franchise rolling into its next year carries its club forward;
+         a new one starts from nothing. */
+      const carry = State.pendingFranchise;
+      State.pendingFranchise = null;
+      startSeason(carry);
     } else if (State.mode === 'cup') {
       startCup();
     } else {
@@ -4014,8 +4114,24 @@ function renderCup() {
   app.appendChild(s);
 }
 
-function startSeason() {
+/* A NEW YEAR FOR THE SAME CLUB. `carry` is the finished season, if there
+   is one: its club, its settings and its record book come forward and only
+   the schedule and the stats start again. Without this a franchise was one
+   season long, which is not a franchise. */
+/* Set while a franchise is between years: the finished season, waiting for
+   the new lineup to be drafted before it rolls forward. */
+function startSeason(carry) {
+  const yr = carry ? (carry.year || 1) + 1 : 1;
+  const book = carry ? (carry.history || []).concat([seasonLine(carry)]) : [];
+  if (carry) {
+    State.franchise = carry.franchise;
+    State.teamName = carry.teamName;
+    State.innings = carry.innings;
+    State.difficulty = carry.difficulty;
+  }
   State.season = {
+    year: yr,
+    history: book,
     team: State.team,
     teamName: State.teamName,
     franchise: State.franchise || randomFranchise(),
@@ -4035,10 +4151,22 @@ function startSeason() {
   State.season.leagueSchedule = buildLeagueSchedule(State.season.schedule);
   saveSeason(State.season);
   State.mode = 'season';
+  /* The furthest year any franchise has reached, which is what the long
+     unlocks are counted against. */
+  if (yr > (PROGRESS.franchiseYears | 0)) { PROGRESS.franchiseYears = yr; saveProgress(); }
   pressPlay('mediaDay', pressCtx({ foe: 'the league' }), () => {
     State.screen = 'season-hub';
     render();
   });
+}
+
+/* One finished year, as the record book keeps it. */
+function seasonLine(S) {
+  const f = seasonFinish(S);
+  const P = S.playoffs;
+  const champ = P && P.final && P.final.result ? P.seeds[P.final.result.winner] : null;
+  return { year: S.year || 1, w: f.w, l: f.l, rank: f.rank, of: f.of,
+           champion: !!(champ && champ.you) };
 }
 
 /* THE LEAGUE PLAYS WHEN YOU DO.
@@ -4286,6 +4414,8 @@ function migrateSeason(S) {
     S.franchise.parkName = PARKS[S.franchise.park].name;
   }
   if (!S.homeAt) S.homeAt = buildHomeDates();
+  if (!S.year) S.year = 1;
+  if (!S.history) S.history = [];
   /* A season drafted before a character left the roster. Repaired here so
      the hub, the box score and the draft all agree before anything reads it. */
   S.team = repairLineup(S.team);
@@ -4328,7 +4458,7 @@ function renderSeasonHub() {
   const P = (F && PARKS[F.park]) || PARKS.sandlot;
   const kit = (F && KITS[F.kit]) || KITS[0];
   const s = el('div','screen');
-  s.appendChild(el('h2', null, S.teamName + ' · Season'));
+  s.appendChild(el('h2', null, `${S.teamName} · Year ${S.year || 1}`));
 
   /* The franchise card: who you are, where you play, and what that park
      does, because the factor was chosen once and is felt every home game. */
@@ -9213,7 +9343,7 @@ function renderSeasonEnd() {
   const youWon = champ && champ.you;
 
   const s = el('div','screen');
-  const h2 = el('h2', null, youWon ? 'Champions.' : 'Season complete.');
+  const h2 = el('h2', null, youWon ? 'Champions.' : `Year ${S.year || 1} complete.`);
   h2.className = youWon ? 'verdict win' : 'verdict';
   s.appendChild(h2);
   if (youWon) {
@@ -9254,16 +9384,72 @@ function renderSeasonEnd() {
   }
   archiveSeason(S);
 
+  /* THE RECORD BOOK. Every year this club has played, so a franchise in
+     its fourth season looks like one. */
+  const book = (S.history || []).concat([seasonLine(S)]);
+  if (book.length > 1) {
+    const hc = el('div','card');
+    hc.appendChild(el('h3', null, `${S.teamName}: ${book.length} seasons`));
+    const t = el('table','table');
+    t.innerHTML = '<thead><tr><th>Year</th><th class="n">W-L</th><th>Finish</th></tr></thead>';
+    const tb = el('tbody');
+    for (const y of book) {
+      const tr = el('tr', y.champion ? 'you' : '');
+      tr.innerHTML = `<td>Year ${y.year}</td><td class="n">${y.w}-${y.l}</td>`
+        + `<td>${ordinal(y.rank)} of ${y.of}${y.champion ? ' <span class="mark x">champions</span>' : ''}</td>`;
+      tb.appendChild(tr);
+    }
+    t.appendChild(tb);
+    hc.appendChild(t);
+    const titles = book.filter(y => y.champion).length;
+    const w = book.reduce((a, y) => a + y.w, 0), l = book.reduce((a, y) => a + y.l, 0);
+    hc.appendChild(el('p', null,
+      `All time <b>${w}-${l}</b>${titles ? ` · <b>${titles}</b> title${titles === 1 ? '' : 's'}` : ''}`));
+    s.appendChild(hc);
+  }
+
+  /* What the next year could earn: the locked characters and how close
+     they are, so a franchise has something to run toward. */
+  const locked = Object.keys(UNLOCKS).filter(k => !isUnlocked(k));
+  if (locked.length) {
+    const lc = el('div','card');
+    lc.appendChild(el('h3', null, 'Still to earn'));
+    const grid = el('div','awards');
+    for (const k of locked) {
+      const c = ROSTER_BY_KEY[k];
+      if (!c) continue;
+      const box = el('div','earn');
+      const cv = spriteCanvas(c, 48);
+      cv.style.opacity = '.45';
+      box.appendChild(cv);
+      box.appendChild(el('div','nm', c.n));
+      box.appendChild(el('div','ln', UNLOCKS[k].how));
+      grid.appendChild(box);
+    }
+    lc.appendChild(grid);
+    s.appendChild(lc);
+  }
+
   const row = el('div','btn-row');
-  const restart = el('button','btn','Play Again');
-  restart.onclick = () => {
-    clearSeason(); State.season = null; State.screen='menu'; render();
+  /* NEXT YEAR keeps the club, the park, the kit and the settings, and
+     sends you back to the draft so anything you have earned since is on
+     the board. Ending a franchise is the ghost button, because the season
+     ending is not the same thing as being finished with the club. */
+  const next = el('button','btn', `Play Year ${(S.year || 1) + 1}`);
+  next.onclick = () => {
+    const carry = S;
+    State.mode = 'season';
+    State.screen = 'roster';
+    State.pendingFranchise = carry;
+    render();
   };
-  const menu = el('button','btn ghost','Main Menu');
-  menu.onclick = () => {
-    clearSeason(); State.season = null; State.screen='menu'; render();
+  const done = el('button','btn ghost','Retire the club');
+  done.onclick = () => {
+    if (confirm('Retire this club? The record book goes to the trophy case and the save is cleared.')) {
+      clearSeason(); State.season = null; State.screen='menu'; render();
+    }
   };
-  row.append(restart, menu);
+  row.append(next, done);
   s.appendChild(row);
 
   app.appendChild(s);
