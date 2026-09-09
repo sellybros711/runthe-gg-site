@@ -9419,14 +9419,14 @@ function premiumSheet(){
       'Unlimited dynasty runs, no daily limit, and every Pro mode. '+
       'One payment. No subscription.</p>'+
     '<div class="pw-hero">'+
-      /* NOT "25 SEASONS". There is no ceiling and there never was one in the game: the 25
-         was DYNASTY_MAX_SEASONS, a loop guard in the balance simulator that nothing in the
-         mode ever read. It has been removed from the engine, and this tile was the last
-         place the number survived. It sat on the purchase screen, which is the worst place
-         to tell somebody a wrong thing about what they are buying. */
-      pwTile('trophy','Dynasty','One job. No ceiling.')+
-      pwTile('shield','Franchise','One club, for good')+
-      pwTile('clipboard','Commissioner','Run a league')+
+      /* NO SEASON COUNT ON THE DYNASTY TILE. This read "25 seasons, one job" until recently,
+         and there is no ceiling: the 25 was DYNASTY_MAX_SEASONS, a loop guard in the balance
+         simulator that nothing in the mode ever read. It is gone from the engine, and this
+         tile was the last place the number survived, on the purchase screen, which is the
+         worst place on the site to be wrong about what somebody is buying. */
+      pwTile('trophy','Dynasty','Endless arcade mode')+
+      pwTile('shield','Franchise','Run your favorite team')+
+      pwTile('clipboard','Commissioner','Can you save College Football?')+
     '</div>'+
 
     '<div class="pw-tier">'+
