@@ -36806,7 +36806,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     bumpBoardEpoch(); crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeBundleRewards(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -37896,6 +37896,36 @@ async function maybeReferralFlow(){
     const n=(typeof data==='number')?data:0;
     if(!error && n>0){ if(typeof grantFreePack==='function') grantFreePack(n,{silent:true});
       if(!justRedeemed) toast('🎁 '+n+' free pack'+(n>1?'s':'')+' - a friend joined with your invite link!', 5200); }
+  }catch(e){}
+}
+// ---- RUN THE BUNDLE delivery (the site-wide premium bundle, sold from the football side). The Stripe
+// webhook records the golf half as a premium_unlocks row and runtour_redeem_bundle() (migration 103)
+// honors it: the coins are credited server-side in the same transaction that stamps the row fulfilled,
+// and the packs come back in the answer and are granted HERE, client-side, the same way the pass packs
+// and the bucket bonus packs are (packs are an inherently client-side store). Called once per sign-in
+// beside the referral claim. Fail-open on purpose: a database still on migration 102 just errors
+// quietly, the row stays unfulfilled, and the grant keeps waiting for a server that can honor it.
+async function maybeBundleRewards(){
+  if(!sb||!sbSignedIn()) return;
+  try{
+    const {data,error}=await sb.rpc('runtour_redeem_bundle');
+    if(error||!data) return;                                   // nothing waiting, or a pre-103 server
+    const coins=Math.max(0,Math.floor(+data.coins||0));
+    const packs=Array.isArray(data.packs)?data.packs:[];
+    let pn=0, pname='pack';
+    packs.forEach(function(pk){ const n=Math.max(0,Math.floor(+(pk&&pk.n)||0)); if(!n) return;
+      const tier=String((pk&&pk.tier)||'base');
+      if(typeof grantFreePack==='function'&&grantFreePack(n,{tier:tier,silent:true})){ pn+=n; try{ pname=packType(tier).name; }catch(e){} }
+    });
+    if(!(coins>0)&&!(pn>0)) return;
+    if(coins>0){ coinLog(coins,'Run The Bundle'); loadWallet(); }
+    try{ cloudPush(); }catch(e){}
+    const bits=[];
+    if(coins>0) bits.push(coinFmt(coins)+' coins are in your wallet');
+    if(pn>0) bits.push(pn>1?pn+' '+pname+'s are waiting in Pro Shop → Packs':'your '+pname+' is waiting in Pro Shop → Packs');
+    try{ toast('<b style="color:#ffd45e">🎁 Run The Bundle delivered!</b><br><span class="small">'+bits.join(', and ')+'. Thanks for supporting RunThe.GG ⛳</span>', 6500); }catch(e){}
+    try{ track('bundle_redeemed',{coins:coins,packs:pn}); }catch(e){}
+    try{ render(); }catch(e){}
   }catch(e){}
 }
 // parse ?h2h=CODE (or #h2h=CODE) on load, stash it, and try to join (prompting sign-in if needed)

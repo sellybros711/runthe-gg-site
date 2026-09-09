@@ -227,11 +227,18 @@ about the modes opening, since nothing reads `premium_products()` yet.
 
 **Open decisions, on purpose, before go-live:**
 
-- **Run The Tour fulfillment is recorded, not delivered.** The webhook writes
-  the `runtour_pack` row with `fulfilled_at` null and the coin/pack payload;
-  the golf backend (which owns `coin_wallet` and the pack grants) must read
-  unfulfilled rows, credit the wallet, and stamp `fulfilled_at`. That
-  redemption does not exist yet and the bundle MUST NOT sell until it does.
+- **Run The Tour fulfillment: BUILT (2026-09-09), one migration left to run.**
+  `supabase/103_runtour_bundle_redeem.sql` mints `runtour_redeem_bundle()`,
+  which credits the caller's `coin_wallet` and stamps the row fulfilled in one
+  transaction (so a failure anywhere rolls the whole thing back and the grant
+  keeps waiting), and golf/index.html calls it once per sign-in beside the
+  referral claim, granting the packs client-side the way the pass and bucket
+  packs are granted. Coins land the next time the buyer opens Run The Tour
+  signed in, with a toast saying what arrived. RUN 103 IN THE SQL EDITOR
+  BEFORE THE BUNDLE SELLS: until then the client's call errors quietly and
+  every buyer's coins sit recorded but undelivered. The file preflights the
+  `coin_wallet` columns it touches and refuses loudly on a schema it does not
+  recognize, since that table belongs to the golf side's own migration 70.
 - **No upgrade path.** A Perfect Season Premium owner who wants Run The Bundle
   hits the 409. Options when it matters: a personal promotion code for the
   difference, or a dedicated upgrade Price. Decide before launch, not in code
