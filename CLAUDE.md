@@ -156,9 +156,14 @@ Measured, and worth knowing before writing a badge that names any of it:
   becomes arithmetically impossible rather than hard. Difficulty past the cap comes from the
   squeeze the mode already runs on, a frozen cap against a roster that ages every winter.
 - Bosses come at seasons 10, 20, 30 and so on out of a list of **six**, and mandates at 5,
-  15, 25 and so on out of a list of **four**, both cycling. The bot's deepest measured run
-  is around **19 seasons**, so in practice a player meets two bosses and three mandates. A
-  badge naming the third boss is not wrong about the mode, it is unprovable by
+  15, 25 and so on out of a list of **four**, both cycling. **Almost nobody reaches them.**
+  `simulator.js --dynasty` can now run the rule the game actually ships (`one life`) and
+  reports how far runs get. On its best winter strategy, 400 runs: median 4 seasons, 46%
+  reach season 5, 32% reach season 10, 3.8% reach season 20, deepest 27. So about half of
+  runs never meet a mandate, two thirds never meet a boss, and it is always the same boss.
+  Bosses three to six live at seasons 30 to 60 and are seen by nobody.
+  The bot is crude and a person does better, but not by the order of magnitude those numbers
+  would need. A badge naming the third boss is not wrong about the mode, it is unprovable by
   `check-badges.mjs`, which is the same problem with a different cause.
 - A Full Team squad reaches the Super Bowl in about one season in twenty and wins it in
   about one in a hundred, and never takes the top seed.
