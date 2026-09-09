@@ -499,6 +499,38 @@
   .park-card .pk-effect{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
     color:var(--gold);font-weight:700;padding:0 10px;}
 
+  /* THE DUGOUT. The menu was four buttons and their captions, which is a
+     form, not a place. This is a room: the bat rack IS the exhibition
+     game, the board on the wall IS the season, and the caption for
+     whichever one you are pointing at appears on the rail underneath
+     rather than all four at once.
+
+     The art is a canvas and the controls are real buttons laid over it,
+     transparent, positioned in percentages so they track the canvas at any
+     width. Drawing the hotspots straight onto the canvas and reading
+     clicks off coordinates would have cost the keyboard and the screen
+     reader, and a menu nobody can tab through is not a menu. */
+  .dugout{position:relative;width:100%;max-width:900px;margin:0 auto;}
+  .dugout canvas{display:block;width:100%;height:auto;image-rendering:pixelated;
+    border:3px solid var(--line);box-shadow:5px 5px 0 var(--navy);background:#6b4a24;}
+  .dugout .hot{position:absolute;background:none;border:0;padding:0;margin:0;
+    cursor:pointer;font:inherit;color:transparent;}
+  .dugout .hot:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  /* The rail: one line about whatever is under the pointer. */
+  .dugout-rail{max-width:900px;margin:8px auto 0;background:var(--panel);
+    border:3px solid var(--line);box-shadow:var(--shadow-sm);padding:9px 14px;
+    font-size:13px;color:var(--text-dim);min-height:42px;display:flex;
+    align-items:center;gap:10px;}
+  .dugout-rail b{color:var(--gold);letter-spacing:.1em;text-transform:uppercase;
+    font-size:12px;white-space:nowrap;}
+  .dugout-rail .go{margin-left:auto;font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--text-dim);white-space:nowrap;}
+  @media (max-width:600px){
+    .dugout-rail{font-size:11px;padding:7px 10px;min-height:36px;}
+    .dugout-rail b{font-size:10px;}
+    .dugout-rail .go{display:none;}
+  }
+
   /* Mode cards on the menu: a button and the one line that says what it is. */
   .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
   .mode{display:flex;flex-direction:column;gap:8px;}
@@ -3168,6 +3200,193 @@ function renderFranchise() {
 /* ============================================================================
    MENU
    ============================================================================ */
+/* WHAT IS IN THE ROOM. Each entry is a thing you can point at: where it
+   sits on the 900x380 wall, what it is called, the one line the rail says
+   about it, how it is drawn, and where it goes. Order is tab order. */
+const DUGOUT_W = 900, DUGOUT_H = 380;
+function dugoutThings() {
+  const seasonOn = !!State.season, cupOn = !!State.cup;
+  const rec = seasonOn ? seasonRecord(State.season) : null;
+  return [
+    { id: 'exhibition', x: 40, y: 150, w: 150, h: 200, sign: 'ONE GAME',
+      label: 'Exhibition Game',
+      note: 'One game against a random club. Five innings, about ten minutes.',
+      draw: drawBatRack,
+      go: () => { State.mode = 'exhibition'; State.screen = 'roster'; render(); } },
+    { id: 'season', x: 214, y: 86, w: 176, h: 168, sign: 'SEASON',
+      label: seasonOn ? 'Resume Season' : 'Start Season',
+      note: seasonOn
+        ? `You are ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
+        : 'Found a club and play seven games, then the bracket. It saves.',
+      draw: drawLineupBoard,
+      go: () => {
+        if (State.season) { State.screen = 'season-hub'; render(); }
+        else { State.mode = 'season'; State.franchise = randomFranchise();
+               State.screen = 'franchise'; render(); }
+      } },
+    { id: 'cup', x: 424, y: 86, w: 150, h: 168, sign: 'THE CUP',
+      label: cupOn ? 'Resume Cup' : 'Play The Cup',
+      note: cupOn
+        ? 'Your cup run is still going.'
+        : 'Eight clubs, knockout. Lose once and you are out.',
+      draw: drawCupCase,
+      go: () => {
+        if (State.cup) { State.screen = 'cup'; render(); }
+        else { State.mode = 'cup'; State.screen = 'roster'; render(); }
+      } },
+    { id: 'howto', x: 610, y: 92, w: 246, h: 146, sign: 'HOW TO PLAY',
+      label: 'How To Play',
+      note: 'The ring, the grid, the throw, and what the five numbers mean.',
+      draw: drawChalkboard,
+      go: () => { State.screen = 'howto'; render(); } },
+  ];
+}
+
+/* Flat colour and hard edges, the same rules as the field: a 2px navy line
+   round everything and no gradient anywhere. */
+const DUG = {
+  beam: '#7d5628', wall: '#b07f42', wallDark: '#96692f', seam: '#7a5522',
+  floor: '#9c6b3a', floorDark: '#82562b', line: '#1b3a5c',
+  cream: '#fffcf2', red: '#cf3229', green: '#1b8a4a', gold: '#e0a52c',
+  chalk: '#e8f0e4', slate: '#26483a', steel: '#8f9aa6',
+};
+function dugRect(ctx, x, y, w, h, fill, line) {
+  ctx.fillStyle = fill;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  if (line !== false) {
+    ctx.strokeStyle = DUG.line; ctx.lineWidth = 2;
+    ctx.strokeRect(Math.round(x) + 1, Math.round(y) + 1, Math.round(w) - 2, Math.round(h) - 2);
+  }
+}
+function drawBatRack(ctx, t) {
+  /* A rack of bats leaning in a corner, and a ball bucket beside it. */
+  dugRect(ctx, t.x, t.y + 128, t.w, 18, '#8a5f2a');
+  dugRect(ctx, t.x + 6, t.y + 24, t.w - 12, 12, '#8a5f2a');
+  for (let i = 0; i < 5; i++) {
+    const bx = t.x + 20 + i * 24, lean = (i - 2) * 3;
+    ctx.save();
+    ctx.translate(bx, t.y + 130);
+    ctx.rotate(lean * 0.012);
+    dugRect(ctx, -7, -112, 14, 74, i % 2 ? '#c9a06a' : '#b98c52');
+    dugRect(ctx, -4, -40, 8, 42, '#7d5628');
+    ctx.restore();
+  }
+  /* A bucket of balls at the foot of the rack. */
+  dugRect(ctx, t.x + 104, t.y + 150, 42, 40, '#cf3229');
+  for (const [bx, by] of [[112, 146], [128, 143], [120, 152]]) {
+    ctx.fillStyle = '#f2efe6';
+    ctx.beginPath(); ctx.arc(t.x + bx, t.y + by, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = DUG.line; ctx.lineWidth = 2; ctx.stroke();
+  }
+}
+function drawLineupBoard(ctx, t) {
+  /* The lineup card on the wall: a grid of nine slots and a header. */
+  dugRect(ctx, t.x, t.y, t.w, t.h, DUG.cream);
+  dugRect(ctx, t.x + 8, t.y + 8, t.w - 16, 24, DUG.red);
+  ctx.fillStyle = DUG.cream;
+  ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('7 GAMES', t.x + t.w / 2, t.y + 21);
+  for (let i = 0; i < 7; i++) {
+    const ly = t.y + 42 + i * 16;
+    dugRect(ctx, t.x + 12, ly, 16, 11, '#e6dcc0', false);
+    ctx.fillStyle = '#c3b79a';
+    ctx.fillRect(t.x + 34, ly + 4, t.w - 50, 3);
+  }
+  /* A pencil on a string, because a board on a wall needs one. */
+  dugRect(ctx, t.x + t.w - 22, t.y + t.h - 40, 8, 34, '#e0a52c');
+  dugRect(ctx, t.x + t.w - 22, t.y + t.h - 12, 8, 8, '#7d5628');
+}
+function drawCupCase(ctx, t) {
+  /* A glass case with the cup in it, on a shelf. */
+  dugRect(ctx, t.x, t.y, t.w, t.h, '#2c4257');
+  dugRect(ctx, t.x + 8, t.y + 8, t.w - 16, t.h - 34, '#cfe3f2');
+  /* The cup. Drawn as a bowl that TAPERS to the stem, with the handles
+     overlapping its sides: square handles floating off a square bowl read
+     as the arms of a chair, which is what the first cut looked like. */
+  const cx = t.x + t.w / 2, base = t.y + t.h - 46;
+  /* handles first, so the bowl's outline closes over where they meet */
+  dugRect(ctx, cx - 36, base - 48, 14, 24, DUG.gold);
+  dugRect(ctx, cx + 22, base - 48, 14, 24, DUG.gold);
+  dugRect(ctx, cx - 26, base - 56, 52, 26, DUG.gold);   /* bowl, wide top */
+  dugRect(ctx, cx - 18, base - 32, 36, 18, DUG.gold);   /* bowl, tapering */
+  dugRect(ctx, cx - 7, base - 16, 14, 16, DUG.gold);    /* stem */
+  dugRect(ctx, cx - 24, base + 0, 48, 12, '#7d5628');   /* plinth */
+  /* the shelf under the case */
+  dugRect(ctx, t.x - 8, t.y + t.h - 22, t.w + 16, 16, '#8a5f2a');
+}
+function drawChalkboard(ctx, t) {
+  /* A board with a diamond chalked on it. */
+  dugRect(ctx, t.x, t.y, t.w, t.h, '#7d5628');
+  dugRect(ctx, t.x + 8, t.y + 8, t.w - 16, t.h - 16, DUG.slate);
+  const cx = t.x + t.w / 2, cy = t.y + t.h / 2 + 10, r = 40;
+  ctx.strokeStyle = DUG.chalk; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + r); ctx.lineTo(cx + r * 1.5, cy);
+  ctx.lineTo(cx, cy - r); ctx.lineTo(cx - r * 1.5, cy);
+  ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = DUG.chalk;
+  for (const [bx, by] of [[cx, cy + r], [cx + r * 1.5, cy], [cx, cy - r], [cx - r * 1.5, cy]]) {
+    ctx.fillRect(Math.round(bx) - 3, Math.round(by) - 3, 6, 6);
+  }
+}
+
+/* A painted board hung over each thing, so the room is readable without
+   pointing at anything. Inverted when it is the one you are on. */
+const SIGN_H = 26;
+function drawSign(ctx, t, hot) {
+  const w = Math.max(96, t.sign.length * 11 + 24);
+  const x = t.x + t.w / 2 - w / 2, y = t.y - SIGN_H - 8;
+  dugRect(ctx, x, y, w, SIGN_H, hot ? DUG.red : DUG.cream);
+  ctx.fillStyle = hot ? DUG.cream : DUG.red;
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(t.sign, t.x + t.w / 2, y + SIGN_H / 2 + 1);
+}
+
+/* The room itself, then everything in it, with the one being pointed at
+   lifted a couple of pixels and outlined. */
+function drawDugout(ctx, things, hotId) {
+  const W = DUGOUT_W, H = DUGOUT_H;
+  ctx.clearRect(0, 0, W, H);
+  /* back wall, vertical planks */
+  ctx.fillStyle = DUG.wall; ctx.fillRect(0, 0, W, 300);
+  for (let x = 0; x < W; x += 46) {
+    ctx.fillStyle = DUG.seam; ctx.fillRect(x, 0, 3, 300);
+    ctx.fillStyle = DUG.wallDark; ctx.fillRect(x + 3, 0, 6, 300);
+  }
+  /* roof beam and floor */
+  ctx.fillStyle = DUG.beam; ctx.fillRect(0, 0, W, 26);
+  ctx.fillStyle = DUG.line; ctx.fillRect(0, 26, W, 3);
+  ctx.fillStyle = DUG.floor; ctx.fillRect(0, 300, W, H - 300);
+  ctx.fillStyle = DUG.line; ctx.fillRect(0, 300, W, 3);
+  ctx.fillStyle = DUG.floorDark;
+  for (let x = 0; x < W; x += 30) ctx.fillRect(x, 316, 18, 4);
+  /* the bench, which is scenery: nothing to click on it */
+  dugRect(ctx, 300, 292, 340, 14, '#8a5f2a');
+  dugRect(ctx, 320, 306, 12, 46, '#7d5628');
+  dugRect(ctx, 608, 306, 12, 46, '#7d5628');
+  /* a glove and a ball left on the floor: the fingers are what stop it
+     reading as a cardboard box */
+  dugRect(ctx, 664, 332, 36, 24, '#a4682e');
+  for (let i = 0; i < 3; i++) dugRect(ctx, 668 + i * 10, 322, 8, 12, '#b8763a');
+  ctx.fillStyle = '#f2efe6';
+  ctx.beginPath(); ctx.arc(722, 344, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = DUG.line; ctx.lineWidth = 2; ctx.stroke();
+
+  for (const t of things) {
+    const hot = t.id === hotId;
+    ctx.save();
+    if (hot) ctx.translate(0, -3);
+    t.draw(ctx, t);
+    drawSign(ctx, t, hot);
+    ctx.restore();
+    if (hot) {
+      ctx.strokeStyle = DUG.red; ctx.lineWidth = 3;
+      ctx.strokeRect(t.x - 6, t.y - SIGN_H - 12, t.w + 12, t.h + SIGN_H + 18);
+    }
+  }
+}
+
 function renderMenu() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, 'Choose a mode'));
@@ -3175,38 +3394,43 @@ function renderMenu() {
     'Pick nine of fifty five. Swing on the ring, call your own pitches.'));
 
   const card = el('div','card');
-  /* Each mode says what it is before the button is pressed: how many games,
-     how long, whether it saves. The old row was four unlabelled buttons and
-     an intro paragraph that never mentioned the third one. */
-  const modes = el('div','modes');
-  const mode = (label, blurb, onclick, ghost) => {
-    const box = el('div','mode');
-    const b = el('button', ghost ? 'btn ghost' : 'btn', label);
-    b.onclick = onclick;
-    box.appendChild(b);
-    box.appendChild(el('p', null, blurb));
-    modes.appendChild(box);
+  /* The dugout: the art is a canvas, the controls are transparent buttons
+     over it, and the rail underneath carries the one line about whichever
+     one has the pointer or the focus. */
+  const things = dugoutThings();
+  const dug = el('div','dugout');
+  const cv = document.createElement('canvas');
+  cv.width = DUGOUT_W * 1.5; cv.height = DUGOUT_H * 1.5;
+  const dctx = cv.getContext('2d');
+  dug.appendChild(cv);
+  const rail = el('div','dugout-rail');
+  const idle = '<b>The dugout</b><span>Point at something to see what it does.</span>';
+  const paint = (id) => {
+    dctx.setTransform(1.5, 0, 0, 1.5, 0, 0);
+    dctx.imageSmoothingEnabled = false;
+    drawDugout(dctx, things, id);
+    const t = things.find(x => x.id === id);
+    rail.innerHTML = t
+      ? `<b>${t.label}</b><span>${t.note}</span><span class="go">Click or press Enter</span>`
+      : idle;
   };
-  mode('Exhibition Game',
-       'Five innings, about ten minutes. No save.',
-       () => { State.mode='exhibition'; State.screen='roster'; render(); });
-  mode(State.season ? 'Resume Season' : 'Start Season',
-       'Seven games, then the bracket. Saves.',
-       () => {
-         if (State.season) { State.screen = 'season-hub'; render(); }
-         else { State.mode='season'; State.franchise = randomFranchise();
-                State.screen='franchise'; render(); }
-       });
-  mode(State.cup ? 'Resume Cup' : 'Play The Cup',
-       'Eight clubs, knockout. Lose once and you are out.',
-       () => {
-         if (State.cup) { State.screen = 'cup'; render(); }
-         else { State.mode='cup'; State.screen='roster'; render(); }
-       });
-  mode('How To Play',
-       'Controls, and what the five numbers mean.',
-       () => { State.screen='howto'; render(); }, true);
-  card.appendChild(modes);
+  for (const t of things) {
+    const b = el('button', 'hot');
+    b.type = 'button';
+    b.style.left = (t.x - 6) / DUGOUT_W * 100 + '%';
+    b.style.top = (t.y - SIGN_H - 12) / DUGOUT_H * 100 + '%';
+    b.style.width = (t.w + 12) / DUGOUT_W * 100 + '%';
+    b.style.height = (t.h + SIGN_H + 18) / DUGOUT_H * 100 + '%';
+    b.setAttribute('aria-label', t.label + '. ' + t.note);
+    b.textContent = t.label;
+    b.onmouseenter = b.onfocus = () => paint(t.id);
+    b.onmouseleave = b.onblur = () => paint(null);
+    b.onclick = t.go;
+    dug.appendChild(b);
+  }
+  paint(null);
+  card.appendChild(dug);
+  card.appendChild(rail);
 
   if (State.season) {
     const rec = seasonRecord(State.season);
