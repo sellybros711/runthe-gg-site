@@ -129,8 +129,10 @@ reasoning, so the numbers can be argued with rather than rediscovered:
 
 1. **Supabase**: run `supabase/101_premium_bundles.sql` (the `premium_unlocks`
    table, `premium_products()`, and the Arcade-honors-the-bundle-year version
-   of `arcade_card_active`). Run it BEFORE setting any price env var: the file
-   header says why.
+   of `arcade_card_active`), then `supabase/104_runtour_bundle_redeem.sql` (the
+   Run The Tour redemption, see below). Run both BEFORE setting any price env
+   var: the 101 header says why, and 104 is what stops a Run The Bundle buyer
+   paying for coins that never arrive.
 2. **Stripe**: `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe/setup-premium-bundles.mjs`
    creates both Products and Prices idempotently (lookup keys
    `ps_premium_bundle_once`, `run_the_bundle_once`) and prints the env lines.
@@ -225,13 +227,63 @@ What this did NOT prove: the ordinary `paid` path with a real card, the
 perfect-season bundle (only run-the-bundle was bought), and anything at all
 about the modes opening, since nothing reads `premium_products()` yet.
 
+### Run The Tour redemption (the `runtour_pack` row)
+
+Built 2026-09-09 in `supabase/104_runtour_bundle_redeem.sql`. The names this
+side asked for:
+
+| | |
+|---|---|
+| queue read | `public.premium_unlocks`, `product = 'runtour_pack'`, `fulfilled_at is null` |
+| wallet credited | `public.coin_wallet` |
+| columns credited | `paid_coins` (the spendable balance) and `lifetime_granted` |
+| RPC | `public.runtour_redeem_unlocks()`, no arguments |
+| returns | one row `(coins bigint, packs jsonb, paid_coins bigint)` |
+| security | `security definer`, `search_path = public`, execute granted to `authenticated` only |
+
+`lifetime_purchased` is deliberately NOT credited. This is a grant that arrived
+with a purchase of something else rather than a coin purchase, and keeping the
+two apart is the reason both columns exist.
+
+**Exactly once.** The claim is the update:
+
+```sql
+update premium_unlocks set fulfilled_at = now()
+ where user_id = auth.uid() and product = 'runtour_pack' and fulfilled_at is null
+returning payload
+```
+
+and only what that statement returned is paid. A second caller blocks on the
+row lock, re-checks its own WHERE against the committed row, matches nothing
+and credits nothing. `supabase/test/bundle_test.sql` and
+`supabase/test/bundle_concurrent.sh` drive that against a real Postgres,
+including eight sessions firing at one grant at once.
+
+**Amounts come out of the payload**, never out of the function, so the 100,000
+in `_bundles.js` can move again without a migration.
+
+**The pack is granted client-side, on purpose.** Packs are a client-side store,
+the way the coin-bucket bonus packs already are. `maybeBundleDrop()` in
+`golf/index.html` reads the `premium_unlocks` row itself (owner-read RLS) and
+grants `payload.packs` into the same grow-only cloud-synced set the bucket packs
+use, keyed `bundle:<granted_at>`. So the coins and the pack settle
+independently: a client that dies between them loses nothing, because the row
+outlives the redemption and the pack can still be re-derived from it. It is
+called on sign-in and on opening the golf store.
+
+**One thing the golf side could not verify from here.** The Run The Tour store
+migrations (`coin_wallet`, `runtour_wallet()`, `runtour_spend_paid()`) are not
+in this repository, so 104's column names come from what `golf/index.html`
+reads back out of `runtour_wallet()`. The migration is one transaction that
+opens with a preflight checking them, so if it is wrong it aborts having
+changed nothing and prints the columns `coin_wallet` actually has. Running it
+is itself the check. `supabase/test/bundle_preflight.sh` drives that.
+
 **Open decisions, on purpose, before go-live:**
 
-- **Run The Tour fulfillment is recorded, not delivered.** The webhook writes
-  the `runtour_pack` row with `fulfilled_at` null and the coin/pack payload;
-  the golf backend (which owns `coin_wallet` and the pack grants) must read
-  unfulfilled rows, credit the wallet, and stamp `fulfilled_at`. That
-  redemption does not exist yet and the bundle MUST NOT sell until it does.
+- ~~**Run The Tour fulfillment is recorded, not delivered.**~~ **BUILT
+  (2026-09-09), and this no longer blocks the sale.** Names and mechanics in
+  the section above.
 - **No upgrade path.** A Perfect Season Premium owner who wants Run The Bundle
   hits the 409. Options when it matters: a personal promotion code for the
   difference, or a dedicated upgrade Price. Decide before launch, not in code

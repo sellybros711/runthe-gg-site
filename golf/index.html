@@ -35155,8 +35155,79 @@ function maybeBucketRewards(){ try{
     if(got.length){ try{ toast('<span style="color:var(--gold);font-weight:800">🎁 Bonus packs added!</span><br><span class="small">'+got.join('<br>')+'<br>Open them in the Pro Shop → Packs.</span>', 6200); render(); }catch(e){} }
   }).catch(function(){ _bucketRewardsBusy=false; });
 }catch(e){ _bucketRewardsBusy=false; } }
+// ---- RUN THE BUNDLE: the Run The Tour quarter of it -------------------------------------------------
+// Run The Bundle is one Stripe purchase covering four games, sold on the football side. Its golf grant is
+// coins plus a bonus pack, and it arrives as a premium_unlocks row (migration 101) with product
+// 'runtour_pack', a payload saying what, and fulfilled_at NULL. That null is the work queue: everything
+// else in the bundle is honoured by the database the moment the row exists, this one is not, because the
+// wallet it pays into is ours.
+//
+// The two halves settle INDEPENDENTLY, and that is the whole design:
+//
+//   coins  runtour_redeem_unlocks() (migration 104) credits the wallet and stamps fulfilled_at in one
+//          statement. Server-side because purchased coins live only on the server, and because RLS gives
+//          the owner select on that row and nothing else, so a client could not stamp it if we wanted.
+//   packs  granted here, from the ROW rather than from the RPC's answer, into the same grow-only
+//          cloud-synced set the coin-bucket bonus packs use. The row survives redemption, so this can
+//          re-derive the pack forever: a client that dies between the credit and the pack loses nothing,
+//          and a client that runs twice grants nothing twice.
+//
+// Called on sign-in and on opening the store. With nothing owed it is one indexed update matching nothing
+// and one indexed select, which is why it can sit on both paths without being thought about.
+var _bundleDropBusy=false;
+function maybeBundleDrop(){ try{
+  if(_bundleDropBusy || !sb || !sbSignedIn()) return;
+  _bundleDropBusy=true;
+  var lines=[], gotCoins=false, gotPacks=false;
+  // 1. the coins. Fails silently on a server without migration 104: the packs below still settle, and the
+  //    next sign-in tries again, because nothing has been stamped.
+  sb.rpc('runtour_redeem_unlocks').then(function(r){
+    try{
+      var d=(r&&!r.error&&r.data&&(r.data[0]||r.data))||null, c=d?(+d.coins||0):0;
+      if(c>0){
+        if(_walletCache) _walletCache.paid=(+d.paid_coins||_walletCache.paid+c);
+        coinLog(c,'Run The Bundle');
+        lines.push(coinFmt(c)+' coins'); gotCoins=true;
+      }
+    }catch(e){}
+  }).catch(function(){}).then(function(){
+    // 2. the packs, keyed on the grant itself. granted_at moves if the grant is ever rewritten, so a
+    //    genuine second grant is a second pack and a replay of the same one is not.
+    return sb.from('premium_unlocks').select('product,payload,granted_at').eq('product','runtour_pack').limit(20)
+      .then(function(res){
+        var rows=(res&&res.data)||[]; if(!rows.length) return;
+        var st=LS.get(acctKey('bag_bucket_packs'),null)||{}; st.granted=st.granted||{};
+        var changed=false;
+        rows.forEach(function(row){
+          var key='bundle:'+(row&&row.granted_at); if(!row||!row.granted_at||st.granted[key]) return;
+          var packs=(row.payload&&Array.isArray(row.payload.packs))?row.payload.packs:[];
+          st.granted[key]=1; changed=true;
+          packs.forEach(function(p){
+            var n=Math.max(0, Math.min(20, (p&&+p.n)||0)), tier=(p&&p.tier)||'base';
+            if(!(n>0) || typeof grantFreePack!=='function') return;
+            grantFreePack(n,{tier:tier, silent:true});
+            var nm=''; try{ nm=packType(tier).name; }catch(e){}
+            lines.push(n+' '+(nm||'Pack')+(n>1?'s':'')); gotPacks=true;
+          });
+        });
+        if(changed){ LS.set(acctKey('bag_bucket_packs'), st); try{ cloudPush(); }catch(e){} }
+      });
+  }).catch(function(){}).then(function(){
+    _bundleDropBusy=false;
+    if(!lines.length) return;
+    // where to find it, naming only what actually landed. The two halves settle separately, so a message
+    // that always mentions both would sometimes point at a pack nobody was given.
+    var where = gotCoins&&gotPacks ? 'Coins are in your balance, packs are in Pro Shop → Packs.'
+              : gotCoins ? 'Added to your coin balance.'
+              : 'Open them in Pro Shop → Packs.';
+    try{ toast('<span style="color:var(--gold);font-weight:800">🎁 Run The Bundle unlocked!</span><br><span class="small">'+lines.join('<br>')+'<br>'+where+'</span>', 6600); }catch(e){}
+    try{ render(); }catch(e){}
+  }).catch(function(){ _bundleDropBusy=false; });
+}catch(e){ _bundleDropBusy=false; } }
 // union merge of the granted-purchase set (grow-only): once a purchase's packs are granted on ANY device,
-// no other device re-grants them.
+// no other device re-grants them. It holds two kinds of key: a coin purchase's Stripe event id, and
+// 'bundle:<granted_at>' for a Run The Bundle drop. Same question in both cases, which server row's packs
+// have already been handed over, so they share one set rather than two that can disagree.
 function mergeBucketPacks(local, server){
   var l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
   var g=Object.assign({}, s.granted||{}, l.granted||{});
@@ -35902,6 +35973,7 @@ function bucketShopNode(focus){
   var showPass=(!focus||focus==='pass'), showTok=(!focus||focus==='tokens'), showCoins=(!focus||focus==='coins');
   packStyleOnce();
   if(_walletCache===null) loadWallet();   // refresh the purchased-coin balance for this view
+  try{ maybeBundleDrop(); }catch(e){}     // a Run The Bundle buyer opening the store is the other place it lands
   var buys=bucketBuys();                  // bucket sizes this account has already bought (paid)
   var anyFirst=BUCKETS.some(function(b){ return !buys.has(b.id); });
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
@@ -36806,7 +36878,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     bumpBoardEpoch(); crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} try{ maybeBundleDrop(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
