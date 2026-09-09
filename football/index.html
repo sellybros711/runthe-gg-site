@@ -5824,6 +5824,13 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase;font-weight:800;color:var(--gc);line-height:1.2}
   .pw-line b,.pw-line span,.pw-line i{grid-column:2}
   .pw-line span{display:block;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.35}
+  /* SOMETHING IN THE BUNDLE THAT HAS RUN OUT. Shown rather than hidden: a line that vanishes
+     on its own expiry date reads as a thing going missing from a receipt, which is the
+     opposite of what a receipt is for. The dot and the name go quiet instead, so "you had
+     this" sits legibly beside "you have this" without either being mistaken for the other. */
+  .pw-line.ended:before{opacity:.3}
+  .pw-line.ended b{opacity:.45}
+  .pw-line.ended span{color:var(--dim)}
   /* THE DATE LINE, on the receipt and never in the store. The same block does both jobs, so
      the third line is simply absent where there is nothing bought yet to date. */
   .pw-line i{display:block;font-style:normal;font-size:11px;color:var(--dim-2);margin-top:3px;
@@ -20459,12 +20466,21 @@ async function pfProLoad(){
       'Your Pro modes are unlocked. The list of what is in your bundle could not be loaded '+
       'just now. Reload the page and it will come back.</p>';
   }else{
-    let ends=null;
+    let ends=null, endedOn=null;
     list.innerHTML=owned.map((k)=>{
       const it=PRO_ITEM[k], row=by[k], g=PW_GAME[it.game];
       const when=proDate(row.granted_at);
       const till=row.expires_at?proDate(row.expires_at):'';
-      if(till) ends=till;
+      /* AN END DATE IN THE PAST IS NOT AN END DATE, and this line did not check.
+         premium_products() filters on expiry, so an Arcade year that has run out drops out of
+         the account's live products and the modes behave correctly. This page does not use
+         that RPC: it reads the table, because a receipt has to show what was bought rather
+         than what is still running. So a lapsed year sat here reading "Ends 27 Aug 2027" in
+         the future tense, months after it had gone. Telling a customer they hold something
+         they do not hold is the one thing a receipt must never do. */
+      const gone=!!row.expires_at&&Date.parse(row.expires_at)<Date.now();
+      if(till&&gone) endedOn=till;
+      else if(till) ends=till;
       /* NOT EVERYTHING IN A BUNDLE ARRIVES AT ONCE. The Run The Tour coins are credited by
          the golf backend, which stamps fulfilled_at when it does; until then the row is a
          promise this page has to keep rather than a thing the player has. Reporting it as
@@ -20472,12 +20488,14 @@ async function pfProLoad(){
          which is the exact complaint a receipt exists to prevent.
          Both halves are required: the product has to be one that is delivered elsewhere, and
          it has to be still unstamped. See the note on PRO_ITEM. */
-      const waiting=!!it.wait&&row.fulfilled_at==null;
-      return '<div class="pw-line" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
+      const waiting=!!it.wait&&row.fulfilled_at==null&&!gone;
+      const dates=till
+        ? 'Bought '+when+'. '+(gone?'Ended ':'Ends ')+till+'.'
+        : 'Bought '+when+'. Yours for good.';
+      return '<div class="pw-line'+(gone?' ended':'')+'" style="--gc:'+g.c+'"><b>'+esc(g.name)+'</b>'+
         '<span>'+esc(it.text)+'</span>'+
         (when||till
-          ? '<i>'+esc(till?'Bought '+when+'. Ends '+till+'.':'Bought '+when+'. Yours for good.')+
-            (waiting?' '+esc('On its way to your account.'):'')+'</i>'
+          ? '<i>'+esc(dates)+(waiting?' '+esc('On its way to your account.'):'')+'</i>'
           : '')+
       '</div>';
     }).join('')+
@@ -20488,7 +20506,23 @@ async function pfProLoad(){
       '<p class="dim" style="font-size:12px;line-height:1.45;margin:13px 0 0">'+
         'You paid once. Nothing here renews and nothing charges you again.'+
         (ends?' Your Arcade Card year simply ends on '+esc(ends)+'.':'')+
-      '</p>';
+        (endedOn?' Your Arcade Card year ended on '+esc(endedOn)+'.':'')+
+      '</p>'+
+      /* THE WAY BACK, AND ONLY ONCE THERE IS SOMETHING TO GO BACK TO.
+         "Nothing renews" is the promise this page is built on, so the moment the year ends
+         the page owes the other half of it: nothing renewed, and here is how to start
+         another one if you want it. Without this the honest sentence above becomes a dead
+         end, and a customer who wants to keep paying us cannot find out how.
+         A plain link to the Arcade rather than a checkout of our own: the Arcade Card is
+         that game's product and it has its own card screen, and a second place to sell it is
+         a second place for the price to go stale. */
+      (endedOn
+        ? '<div style="margin-top:12px"><a class="btn ghost sm" href="/arcade/" '+
+            'style="text-decoration:none;text-align:center;display:block">'+
+            'Start another Arcade year</a>'+
+          '<p class="dim" style="font-size:11.5px;margin:8px 0 0">Opens Run The Arcade, where '+
+            'the card lives. Your Pro modes here are not affected.</p></div>'
+        : '');
   }
 
   const bill=$('pf-pro-bill');
