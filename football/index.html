@@ -475,49 +475,9 @@ window.GA_ID='G-L29P5MRWKE';
      anything in the flow would shift the label off centre. */
   .hp-tag-pro{background:rgba(226,178,90,.16);border-color:rgba(226,178,90,.5);
     color:#F3DDAE}
-  /* ---- THE TWO LONGER MODES, SIDE BY SIDE ----
-     The same two-up shape as Offense and Defense above, which is the whole point: the page
-     now has a rhythm a visitor can follow rather than a column of buttons to rank by size.
-     Heading, pair, heading, pair, then the dynasty door as the anchor under both.
-     ONE ROW OF TWO, OR ONE CARD THE FULL WIDTH. Full Team is an unannounced preview and the
-     Trade Machine is live to everybody, so most visitors have exactly one card in here and
-     the grid has to look deliberate holding it. auto-fit rather than a fixed 1fr 1fr does
-     that on its own: one child fills the row, two share it, and nothing needs to know which
-     case it is in. */
-  .hp-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-  .hp-pair .hp-full{margin-top:0;height:100%;justify-content:flex-start}
-  .hp-pair .hp-full-name{font-size:17px}
-  /* THE TAG JOINS THE FLOW IN HERE, and it has to.
-     Everywhere else on this page a tag is absolutely positioned in the top right corner,
-     which is right on a full width control: the centred name has hundreds of pixels and the
-     sticker sits in empty space beside it. In a 150px half-width card there is no empty
-     space, so PREVIEW landed directly on top of FULL TEAM. Absolute positioning cannot be
-     told to avoid something, so the fix is to stop asking it to: in here the tag is a normal
-     centred child above the name and the two can never collide at any width. */
-  /* AND THE CARD WITHOUT A TAG RESERVES THE SAME SLOT. Once the tag joins the flow it pushes
-     its own name down, so a tagged card and an untagged one side by side put their names at
-     two different heights. That is the same fault the store tiles had and just as visible:
-     two names in a row that do not share a baseline read as a mistake without the reader
-     being able to say why.
-     THE HEIGHT IS PINNED ON BOTH SIDES RATHER THAN GUESSED AT. Working the tag's natural
-     height out from its font size, padding and border got it two pixels wrong, and two
-     pixels is enough to see and not enough to diagnose. The tag gets an explicit box, the
-     spacer gets the same box, and one custom property is where both come from, so a change
-     to the tag's type cannot put the two names back out of step. */
-  .hp-pair{--hp-tag-slot:16px;--hp-tag-gap:5px}
-  .hp-pair .hp-tag{position:static;align-self:center;box-sizing:border-box;
-    height:var(--hp-tag-slot);line-height:calc(var(--hp-tag-slot) - 6px);
-    margin-bottom:var(--hp-tag-gap)}
-  /* ONLY WHEN THERE IS SOMETHING TO ALIGN WITH. Most visitors have no Full Team preview, so
-     the Trade Machine is alone and full width, and a slot held open for a tag that no card
-     in the row is wearing is just a band of empty space above the name. */
-  .hp-pair:has(.hp-full + .hp-full) .hp-full:not(:has(.hp-tag)):before{content:'';
-    display:block;position:static;background:none;border:0;opacity:1;
-    height:calc(var(--hp-tag-slot) + var(--hp-tag-gap))}
   @media (max-width:340px){
     .hp-full-name{font-size:17px}
     .hp-full-sub{font-size:9px;letter-spacing:.03em}
-    .hp-pair{grid-template-columns:1fr}
   }
   /* ---- DYNASTY'S DOOR, and why it is not the gold one ----
 
@@ -614,14 +574,14 @@ window.GA_ID='G-L29P5MRWKE';
      read as unsorted, because a reader cannot tell whether the difference is meaningful.
      It also left Full Team orphaned: it sat above the italic line, so it read as a third
      answer to "quick draft", which is the one thing it is not. */
-  .hp-sect{display:flex;align-items:center;gap:9px;margin:16px 0 8px}
-  .hp-sect:first-child{margin-top:2px}
-  .hp-sect span{font-family:var(--fn);font-size:9.5px;font-weight:800;letter-spacing:.15em;
-    text-transform:uppercase;color:var(--dim-2);white-space:nowrap}
-  .hp-sect:after{content:'';height:1px;background:var(--line);flex:1}
   /* The group owns the spacing between its heading, its pair and the dynasty door under
      them, so no card needs a margin of its own and none of them can disagree. */
-  .hp-longer{display:flex;flex-direction:column;gap:8px}
+  /* THE GROUP OWNS THE SPACING BETWEEN ITS DOORS, and its own margin owns the one above it.
+     Each door used to carry a margin-top of its own; moving them into a flex column with a
+     gap took that away, and the first door then sat flush against the Offense/Defense split
+     with no gap at all. Measured, not eyeballed: the strip read 0px there and 8px everywhere
+     else, which is the sort of thing that looks like a rendering fault rather than a choice. */
+  .hp-longer{display:flex;flex-direction:column;gap:8px;margin-top:8px}
   /* THE WAY OUT OF A SAVED DYNASTY, under the door back into it. Deliberately the quietest
      control on the front page: it throws a run away, and the thing somebody came back for
      is the one above it. */
@@ -1834,8 +1794,7 @@ window.GA_ID='G-L29P5MRWKE';
        a flex container's DIRECT children, so a descendant selector that still matches has no
        effect at all and the group would silently fall to the catch-all order:5, landing
        under the utility row. */
-    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-quick,
-    #s-intro #hp-longer{order:2}
+    #s-intro #b-start,#s-intro #hp-split,#s-intro #hp-longer{order:2}
     #s-intro #b-teams{order:3}
     #s-intro .hp-util{order:4}
     #s-intro .hero{order:6;margin-top:16px;margin-bottom:0}
@@ -4649,7 +4608,7 @@ window.GA_ID='G-L29P5MRWKE';
        above, which is full width: Dynasty would span under the hero rather than sitting
        in the column with every other control. */
     #s-intro>#b-start,#s-intro>#hp-pick,#s-intro>#hp-split,
-    #s-intro>#hp-quick,#s-intro>#hp-longer,
+    #s-intro>#hp-longer,
     #s-intro>#b-teams,#s-intro>.hrow.hp-util{grid-column:2}
     #s-intro>.htitle{margin-bottom:24px}
     /* AND THE CONTROLS STOP BEING PHONE-SIZED. Half of 1040 is 500px, and a 44px-tall button
@@ -4665,9 +4624,7 @@ window.GA_ID='G-L29P5MRWKE';
     /* The right column starts a little below the reels rather than level with them, so the
        two columns read as balanced against each other. The hero is the taller of the two by
        about a hundred pixels and always will be: it is a housing plus a field. */
-    #s-intro>#hp-pick,#s-intro>#b-start,#s-intro>#hp-quick{margin-top:30px}
-    /* Whichever of the two comes first pays the gap, not both. */
-    #s-intro>#hp-quick+#b-start{margin-top:0}
+    #s-intro>#hp-pick,#s-intro>#b-start{margin-top:30px}
     #s-intro>#b-teams{margin-top:14px}
     .hp-pick{font-size:13.5px;margin-bottom:12px}
     .hp-side{padding:36px 14px 26px}
@@ -9633,11 +9590,9 @@ function paintHomeStart(){
   /* FULL TEAM IS ITS OWN QUESTION AND ITS OWN GATE. Not tied to `on`: the defense split
      and the full team preview are two different lists, and somebody could be on one and
      not the other. */
-  /* ORDER MATTERS HERE and it is the order the group is read in, not the order these were
-     written in. Each builder puts its own card in its own place inside #hp-longer, so the
-     only thing this sequence decides is that the group exists before the trim runs. */
+  /* Each builder puts its own card in its own place inside #hp-longer, so the only thing
+     this sequence decides is that the group exists before the trim runs. */
   ensureFullButton();
-  ensureTradeButton();
   ensureDynastyButton();
   trimLongGroup();
   ensurePremiumCard();
@@ -9721,7 +9676,11 @@ function ensurePremiumCard(){
        stays. The word is only wrong when it is stretched over the Arcade year, which is why
        the sheet's lede lost it and the lines inside carry their own terms. */
     el.innerHTML=pwCardInner('Unlock every mode',
-      'Dynasty, Franchise and Commissioner. Unlimited runs, lifetime access.','3 modes');
+      /* ONE LINE. This was two sentences over three lines on the screen that has the least
+         room, and the second of them ("Unlimited runs, lifetime access") is the pitch, which
+         belongs in the sheet this card opens rather than in front of it. What a door needs
+         to say is where it goes. */
+      'Dynasty, Franchise and Commissioner.','3 modes');
     el.onclick=()=>openPremium('home_card');
     host.parentNode.insertBefore(el, host.nextSibling);
   }
@@ -9760,15 +9719,28 @@ function ensurePremiumCard(){
  * sells unlimited runs of it as one of the three things $19.99 buys. It was three taps down
  * inside the modes sheet, under a lock icon, below One Franchise and Eras.
  */
+/*
+ * ─── THE DOORS UNDER THE STARTER, IN ONE CONTAINER ──────────────────────────────────────
+ *
+ * This exists for ordering and nothing else. Each door used to insert itself relative to
+ * whatever node happened to be there, so the order of the front page depended on the order
+ * the builders ran in, and one of them put a caption back that another had just hidden.
+ * One container, appended into, fixes that class of bug. It draws nothing of its own.
+ *
+ * NO SECTION HEADINGS. There were two for a while, "Quick draft" over the pair and
+ * "Go longer" over this, meant to organise a column of buttons. They organised nothing a
+ * reader could not already see and they cost two lines of type plus their margins on the
+ * screen that has the least room, on a page whose actual problem is that there is too much
+ * to read. The controls are large, distinct and named; a label over each group was chrome
+ * explaining chrome.
+ */
 function ensureLongGroup(){
   const intro=$('s-intro');
   if(!intro) return null;
-  let box=$('hp-longer'), hd=$('hp-quick');
+  let box=$('hp-longer');
   if(!box){
     box=document.createElement('div');
     box.className='hp-longer'; box.id='hp-longer';
-    box.innerHTML='<div class="hp-sect"><span>Go longer</span></div>'+
-      '<div class="hp-pair" id="hp-pair"></div>';
   }
   /* AFTER WHICHEVER STARTER IS SHOWING. The split and the lone Start a run are the same
      slot wearing two faces and only one is ever in the layout, so this anchors to the one
@@ -9776,37 +9748,15 @@ function ensureLongGroup(){
   const split=$('hp-split'), one=$('b-start');
   const top=(split&&!split.hidden)?split:one;
   if(!top||!top.parentNode) return box;
-  /* THE QUICK DRAFT HEADING BELONGS TO THIS GROUP, not to Dynasty. "Quick draft" is only
-     true against something slower, so it appears exactly when something slower does, and
-     that used to mean "when the dynasty door does". The Trade Machine is slower and is open
-     to everybody, so now it means everybody. */
-  if(!hd){
-    hd=document.createElement('div');
-    hd.className='hp-sect'; hd.id='hp-quick';
-    hd.innerHTML='<span>Quick draft</span>';
-  }
-  if(hd.nextSibling!==top) top.parentNode.insertBefore(hd,top);
   if(box.previousSibling!==top) top.parentNode.insertBefore(box,top.nextSibling);
-  /* THE OLD CAPTION GOES WHEN THE HEADING ARRIVES. "Which side of the ball will you draft?"
-     was the whole question when the pair was the whole page. With a Quick draft heading
-     directly under it, the page asks the same thing twice in two voices, one sentence and
-     one label, and the label is the one that scans. */
-  const pick=$('hp-pick');
-  if(pick) pick.hidden=true;
   return box;
 }
-/* Takes the group and the Quick draft heading off the page once nothing is left in it, so a
-   tester signing out on the same tab does not leave two headings over nothing. */
+/* Takes the container off the page once nothing is left in it. */
 function trimLongGroup(){
-  const box=$('hp-longer'), pair=$('hp-pair'), hd=$('hp-quick');
+  const box=$('hp-longer');
   if(!box) return;
-  const empty=(!pair||!pair.children.length)&&!$('b-start-dyn');
-  if(!empty) return;
+  if(box.children.length) return;
   if(box.parentNode) box.parentNode.removeChild(box);
-  if(hd&&hd.parentNode) hd.parentNode.removeChild(hd);
-  /* And the caption comes back, because the heading that replaced it has gone. */
-  const pick=$('hp-pick');
-  if(pick) pick.hidden=!canPlayDefense();
 }
 
 function ensureFullButton(){
@@ -9816,7 +9766,6 @@ function ensureFullButton(){
     return;
   }
   const box=ensureLongGroup(); if(!box) return;
-  const pair=$('hp-pair'); if(!pair) return;
   if(!el){
     el=document.createElement('button');
     el.className='btn hp-full';
@@ -9826,38 +9775,11 @@ function ensureFullButton(){
       '<span class="hp-full-sub">Six on offense &middot; six on defense</span>';
     el.onclick=()=>{ beginFullDraft(); };
   }
-  /* FIRST IN THE PAIR, always. Appending would put it after the Trade Machine on the call
-     where Full Team is switched on and before it on a later one, so the two cards would
-     swap places under somebody who did nothing but come back to the front page. */
-  if(pair.firstChild!==el) pair.insertBefore(el,pair.firstChild);
+  /* FIRST IN THE GROUP, above the dynasty door. */
+  if(box.firstChild!==el) box.insertBefore(el,box.firstChild);
   el.hidden=false;
   el.disabled=false;
   el.classList.remove('hp-loading');
-}
-
-/* THE TRADE MACHINE'S DOOR. Same card as Full Team beside it, and the sub line says the one
-   thing that makes this mode different from every other door on the page: you do not draft.
-   You are handed a squad and have to win with it. */
-function ensureTradeButton(){
-  let el=$('b-start-trade');
-  if(!canPlayTrade()){
-    if(el&&el.parentNode) el.parentNode.removeChild(el);
-    return;
-  }
-  const box=ensureLongGroup(); if(!box) return;
-  const pair=$('hp-pair'); if(!pair) return;
-  if(!el){
-    el=document.createElement('button');
-    el.className='btn hp-full';
-    el.id='b-start-trade';
-    el.innerHTML='<span class="hp-full-name">Trade Machine</span>'+
-      '<span class="hp-full-sub">No draft &middot; win with what you are dealt</span>';
-    el.onclick=()=>{ beginTradeMachine(); };
-    pair.appendChild(el);
-  }
-  if(el.parentNode!==pair) pair.appendChild(el);
-  el.hidden=false;
-  el.disabled=false;
 }
 
 /* THE DEFENSE DRAFT HAS TO FETCH ITS PEOPLE FIRST, which is the one thing no other mode
@@ -9884,12 +9806,6 @@ function ensureDynastyButton(){
        trimLongGroup takes the group off once the Trade Machine card is the only thing that
        could still be in it and is not. */
     [el,nb].forEach(n=>{ if(n&&n.parentNode) n.parentNode.removeChild(n); });
-    /* THE CAPTION IS NOT THIS FUNCTION'S BUSINESS ANY MORE, and setting it here was a live
-       bug: this branch runs AFTER ensureTradeButton has built the group and hidden the
-       caption, so on a page with no dynasty it put "Which side of the ball will you draft?"
-       straight back, directly above the Quick draft heading that replaced it. Whether the
-       caption shows follows whether the heading exists, and the group owns the heading, so
-       ensureLongGroup and trimLongGroup are the only two places that touch it. */
     trimLongGroup();
     return;
   }
@@ -10003,7 +9919,9 @@ function ensureDynastyButton(){
     try{ dynSeen=localStorage.getItem('ps_dynintro')==='1'; }catch(_){ dynSeen=!!window.__dynIntro; }
     el.innerHTML=mark+(dynSeen?'':'<span class="hp-tag hp-tag-new">New</span>')+
       '<span class="hp-full-name">Start a Dynasty</span>'+
-      '<span class="hp-full-sub">One team. One life. How long can you last?</span>';
+      /* The question used to be here too ("How long can you last?"). START A DYNASTY above
+         it is already the invitation, so the caption only has to say what the mode is. */
+      '<span class="hp-full-sub">One team &middot; one life</span>';
     el.onclick=()=>{ beginDynastyDraft(); };
     }
   }
