@@ -7098,10 +7098,52 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div id="o-coach"></div>
     </div>
 
-    <!-- 3. EVERYTHING ELSE, IN TABS.
+    <!-- 3. THE RUN, AND THEN THE WAY TO PLAY ANOTHER ONE.
+         BOTH USED TO BE BELOW THE TABS, and that was measured rather than felt: on a fresh
+         result, Draft again sat 2238px down a 2545px screen, which is about two and a half
+         phone screens of scrolling to reach the most common thing anybody does next. The
+         single "How close to perfect" pane above it was 857px of that on its own.
+
+         The order a result is read in is: what happened, who did it, play again. Everything
+         under this is somebody choosing to look further into a run they have already seen
+         the shape of, which is what the tabs are for, so the tabs go after.
+
+         The run card comes up with the buttons rather than staying below them because in a
+         dynasty it IS the headline: the card at the top of this screen scores one season and
+         this one scores the whole job. It is hidden in every other mode and on every season
+         but the last, so it costs nothing to have it here. -->
+    <!-- THE RUN, ONCE IT IS OVER.
+         The card above scores one season. This one is the whole thing: how many years you
+         held the job, what they were worth, and the handful of facts worth telling somebody
+         about. Only ever shown on a firing, because until then the run is not a story yet.
+         See paintRunCard(). -->
+    <div class="runcard" id="o-run" hidden>
+      <div class="rc-top"><span>The run</span><span id="rc-years"></span></div>
+      <div class="rc-hero">
+        <div class="rc-big" id="rc-seasons">0</div>
+        <div class="rc-lab" id="rc-seasonlab">seasons</div>
+      </div>
+      <div class="rc-pts"><b id="rc-score">0</b><span>points</span></div>
+      <div class="rc-hi" id="rc-hi"></div>
+    </div>
+
+    <div class="next-panel">
+      <div class="next-pair">
+        <button class="btn next-secondary" id="b-same"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 10a7 7 0 0 1 12.9-3.7M17 10a7 7 0 0 1-12.9 3.7"/><path d="M3 4v3h3M17 16v-3h-3"/></svg>Draft again</button>
+        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
+      </div>
+      <button class="btn next-share" id="b-share"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><path d="M7 11l6 3M7 9l6-3"/></svg>Share your season</button>
+      <div class="next-footer">
+        <button class="btn-text next-foot" id="b-board2">Leaderboard</button>
+        <span class="next-dot"></span>
+        <button class="btn-text next-foot" id="b-again">Back to start</button>
+      </div>
+    </div>
+
+    <!-- 4. EVERYTHING ELSE, IN TABS.
          Six stacked panels put the buttons that end the run about two and a half screens
-         below the fold, so the most common next action, playing again, was the hardest thing
-         on the page to find. One panel at a time, and the buttons come straight after. -->
+         below the fold. One panel at a time keeps that from growing again; the buttons
+         themselves are above this now rather than after it. -->
     <div class="tabwrap"><div class="tabs" id="o-tabs">
       <button class="tab on" data-ot="perfect">How close</button>
       <button class="tab" data-ot="ranks">Where it ranks</button>
@@ -7136,21 +7178,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
-    <!-- THE RUN, ONCE IT IS OVER.
-         The card above scores one season. This one is the whole thing: how many years you
-         held the job, what they were worth, and the handful of facts worth telling somebody
-         about. Only ever shown on a firing, because until then the run is not a story yet.
-         See paintRunCard(). -->
-    <div class="runcard" id="o-run" hidden>
-      <div class="rc-top"><span>The run</span><span id="rc-years"></span></div>
-      <div class="rc-hero">
-        <div class="rc-big" id="rc-seasons">0</div>
-        <div class="rc-lab" id="rc-seasonlab">seasons</div>
-      </div>
-      <div class="rc-pts"><b id="rc-score">0</b><span>points</span></div>
-      <div class="rc-hi" id="rc-hi"></div>
-    </div>
-
     <div id="o-ledwrap" hidden style="margin-top:12px">
       <div class="rp-head"><span>Every season</span><span class="rp-head-n" id="o-ledn"></span></div>
       <div class="ledger" id="o-ledger"></div>
@@ -7169,18 +7196,6 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       </div>
     </div>
 
-    <div class="next-panel">
-      <div class="next-pair">
-        <button class="btn next-secondary" id="b-same"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 10a7 7 0 0 1 12.9-3.7M17 10a7 7 0 0 1-12.9 3.7"/><path d="M3 4v3h3M17 16v-3h-3"/></svg>Draft again</button>
-        <button class="btn next-primary" id="b-challenge"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3Z"/><path d="M13 8a3 3 0 1 0 0-6M14 10c2.2.3 5 1.4 5 3v1h-3"/></svg>Challenge a friend</button>
-      </div>
-      <button class="btn next-share" id="b-share"><svg class="btn-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><path d="M7 11l6 3M7 9l6-3"/></svg>Share your season</button>
-      <div class="next-footer">
-        <button class="btn-text next-foot" id="b-board2">Leaderboard</button>
-        <span class="next-dot"></span>
-        <button class="btn-text next-foot" id="b-again">Back to start</button>
-      </div>
-    </div>
     <!-- The RunThe.GG house ad, at the very bottom of the results screen under the replay buttons. -->
     <a class="ggad" id="gg-over" href="/" target="_blank" rel="noopener" aria-label="More games at RunThe.GG">
       <span class="ggad-mark"><img class="ggad-logo" src="/assets/runthegames-icon_192.png" alt="RunThe.GG" width="46" height="46" loading="lazy" onerror="this.closest('.ggad-mark').classList.add('nologo')"><span class="ggad-tm"><b>RUN<br>THE</b><i>.GG</i></span></span>
