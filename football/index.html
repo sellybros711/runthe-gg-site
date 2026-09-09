@@ -5550,6 +5550,17 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.05em;text-transform:uppercase;color:var(--dim-2);margin-top:4px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+  /* THE ROSTER STRIP IS TWO BY TWO, not three across. It carries four facts about the six
+     men (the mode's own second number, chemistry, spend and where the season finished) and
+     four cells in a three column grid leaves one stranded on a row of its own. The record
+     card's strip above it stays three across because it holds exactly three board windows. */
+  .splits.sq{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .splits.sq>*:not(:nth-child(3n+1)){border-left:none}
+  .splits.sq>*:nth-child(2n){border-left:1px solid var(--line)}
+  .splits.sq>*:nth-child(n+3){border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+  /* The rank row is hidden outright when the board never answered, rather than drawing three
+     dashes. [hidden] needs saying because .splits sets display:grid. */
+  .splits.ranks[hidden]{display:none}
   .gateline:empty{display:none}
   .gateline{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
     font-size:12.5px;line-height:1.4;color:var(--dim)}
@@ -7068,7 +7079,14 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <div class="ovr" id="o-ovr"></div>
       <!-- Full Team only: the two unit ratings the headline above is the mean of. -->
       <div id="o-sides"></div>
-      <div class="splits" id="o-splits"></div>
+      <!-- WHERE IT PLACED, AND NOTHING ELSE.
+           This used to be a six cell grid: chemistry, spend and playoff seed on the top row
+           and the three board windows underneath. Six numbers under a record is a table, and
+           the first three of them are facts about the ROSTER rather than about the season,
+           so they have gone down to the lineup panel that shows the roster. What is left
+           here answers the second question a result raises after "what happened", which is
+           "was that any good". -->
+      <div class="splits ranks" id="o-splits"></div>
       <!-- One line, guests only. The full sign-in gate lives in the Where it ranks tab,
            which stopped being the tab this page opens on, and a prompt nobody sees is
            not a prompt. The placings above are real; what a guest is missing is the row. -->
@@ -7093,6 +7111,11 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
            of the player who won it, three lines below, so counting them out loud in a
            sentence said the same thing twice and said it worse. -->
       <div class="rost" id="o-rost"></div>
+      <!-- THE FOUR FACTS ABOUT THE ROSTER ABOVE, under the roster rather than under the
+           record. Chemistry and spend are things the six men are, not things the season did,
+           and the ceiling is what this draft could have been. They were in the record card
+           and they were three of the eleven things it was trying to say at once. -->
+      <div class="splits sq" id="o-squad"></div>
       <!-- FULL TEAM ONLY: who coached it and how they played. Both move the score, so a
            results screen that does not say them is describing a season it cannot explain. -->
       <div id="o-coach"></div>
@@ -17607,9 +17630,30 @@ function paintOver(){
     return bigcell('Offense share',share+'%',Math.max(2,Math.min(100,share)),'#60a5fa');
   };
   const secondCell=(fallback)=>run.tradeMachine?impCell():(run.full?splitCell():fallback());
+  /* THE SAME THREE ANSWERS IN THE OTHER SHAPE. The cells above are the big bar-and-number
+     tiles the record card used; the strip under the lineup is a plain value over a label, so
+     the mode's second number needs both. `best` is the best-possible percentage, null while
+     the optimizer is still working and '--' when it cannot answer. */
+  const secondSplit=(best)=>{
+    if(run.tradeMachine){
+      const g=rating-(run.startRating||rating);
+      return split((g>=0?'+':'')+g.toFixed(1),'Improvement');
+    }
+    if(run.full){
+      const off=run.roster.filter((p)=>E.DEFENSE_POSITIONS.indexOf(p.position)<0)
+        .reduce((t,p)=>t+p.price_musd,0);
+      const all=run.roster.reduce((t,p)=>t+p.price_musd,0);
+      return split((all>0?Math.round(100*off/all):0)+'%','Offense share');
+    }
+    return split(best==null?'\u2026':(best===false?'--':best+'%'),'Best possible');
+  };
+  /* ONE CELL, NOT TWO. The record card's job is what happened; the team overall is the one
+     number the board ranks that against, so it stays. Its old neighbour (best possible, or
+     the unit split, or offense share) describes the ROSTER, and it has gone to the strip
+     under the lineup with chemistry and spend. */
+  $('o-ovr').className='ovr solo';
   $('o-ovr').innerHTML=
-    bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-    secondCell(()=>bigcell('Best possible','…',0,'#94a3b8'));
+    bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband);
   $('o-sides').innerHTML=sideLine();
   /* THE SAME NUMBER, ON DYNASTY RECAP. The card above is hidden in this mode, so the
      team overall is drawn once more into the lineup panel, which this mode does show. Same
@@ -17627,10 +17671,19 @@ function paintOver(){
      rather than making you find it. Painted with the ranks unknown, because the board
      is a network call and the page is on screen before it answers; paintRankStrip
      fills them in when it does. */
-  $('o-splits').innerHTML=
+  /* THE ROSTER'S OWN FACTS, under the roster. The fourth is whichever second cell the mode
+     used to put beside the team overall, which is a roster fact in every mode: the ceiling
+     this draft could have hit, the two unit ratings, or how much of the money went to the
+     offense. */
+  $('o-squad').innerHTML=
+    secondSplit(null)+
     split(pc(run.season.chemistry-1),'Chemistry')+
     split(M0(spendUsed),'Spent')+
-    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed')+
+    split(o.seedLabel.replace(/^Missed.*/,'None'),'Playoff seed');
+  /* AND THE THREE BOARD WINDOWS ON THEIR OWN. Painted with the ranks unknown, because the
+     board is a network call and the page is on screen before it answers; paintRankStrip
+     fills them in when it does, and hides the row if it never does. */
+  $('o-splits').innerHTML=
     RANK_WINDOWS.map(([k,label])=>rankCell(k,label,null)).join('');
 
   /* Real team stats off the scores you were shown, not fantasy totals. Points
@@ -17772,11 +17825,20 @@ function paintOver(){
        matched. */
     if(share!==null && kept<6) share=Math.min(share,99);
     lastPerfectShare=share;
+    /* The band the "how close" pane below colours its bar with. It was declared alongside
+       the hero repaint that this replaced, and deleting it with that repaint threw a
+       ReferenceError out of this whole callback: the optimizer answered, nothing caught it,
+       and "How close to perfect" and the sign-in gate both silently stayed empty. */
     const sband=share>=90?'#22c55e':(share>=70?'#fbbf24':'#ef4444');
-    $('o-ovr').innerHTML=
-      bigcell('Team overall',rating.toFixed(1),Math.max(2,Math.min(100,rating)),rband)+
-      secondCell(()=>bigcell('Best possible',share===null?'--':share+'%',
-        share===null?0:Math.max(2,share),share===null?'#94a3b8':sband));
+    /* THE HERO IS NOT REPAINTED HERE ANY MORE. It used to rewrite both of the record
+       card's tiles when the optimizer came back, which meant the team overall was redrawn
+       for a number that is not about it. Only the cell that was waiting changes. */
+    const sq=$('o-squad');
+    if(sq&&sq.firstChild){
+      const tmp=document.createElement('div');
+      tmp.innerHTML=secondSplit(share===null?false:share);
+      sq.firstChild.replaceWith(tmp.firstChild);
+    }
     /* FULL TEAM HAS NO PERFECT TO BE CLOSE TO, and "could not work this one out" reads as a
        failure rather than as the truth. Solving twelve slots across two pools under one cap
        is a budget split as well as a knapsack (see buildFullOptimal in the simulator), and
@@ -21724,11 +21786,18 @@ function paintRankStrip(r){
     }
   }
   const el=$('o-splits'); if(!el) return;
+  /* NOTHING RATHER THAN THREE DASHES. When the board cannot be read this row used to draw
+     "--" three times with "no board" under each, which is ninety pixels spent saying that a
+     number is missing, directly under the number somebody came to look at. The gate line
+     below already says the board could not be read, once, in a sentence. */
+  const any=r&&RANK_WINDOWS.some(([k])=>r[k]);
+  el.hidden=!any;
+  if(!any) return;
   const cells=[...el.children];
-  /* The three rank cells are the second row of a six-cell grid. Replaced in place so
-     the top row, which has nothing to do with the board, never repaints. */
+  /* Replaced in place rather than rebuilt, so a window that already has a number does not
+     flicker when a later read fills in the other two. */
   RANK_WINDOWS.forEach(([k,label],i)=>{
-    const at=cells[3+i]; if(!at) return;
+    const at=cells[i]; if(!at) return;
     const tmp=document.createElement('div');
     tmp.innerHTML=rankCell(k,label,r&&r[k]?r[k]:false);
     at.replaceWith(tmp.firstChild);
