@@ -490,15 +490,22 @@ ok('one miss ends a run of any length',
 /*
  * ─── THE MILESTONES: MANDATES AND BOSSES ─────────────────────────────────────────────
  *
- * A milestone every fifth season, alternating: the odd ones (5, 15, 25) are roster mandates
- * the owner sets and you satisfy in the offseason that follows, the even ones (10, 20, 30) are
- * boss games. This drives a run to each and asserts the lifecycle: that season five is a
+ * A milestone every E.DYNASTY_MILESTONE_EVERY seasons, alternating: the odd ones are roster
+ * mandates the owner sets and you satisfy in the offseason that follows, the even ones are boss
+ * games. This drives a run to each and asserts the lifecycle: that the first milestone is a
  * mandate and not a boss, that meeting a mandate clears the books while missing it raises only
- * the coming season's bar, that season ten is a boss whose freeze takes a man off the clock,
- * and that a lost boss raises the next bar and the firing honours it. The boss GAME's balance
- * is measured separately; this is the lifecycle, the way ideas_test is for the board.
+ * the coming season's bar, that the second milestone is a boss whose freeze takes a man off the
+ * clock, and that a lost boss raises the next bar and the firing honours it. The boss GAME's
+ * balance is measured separately; this is the lifecycle, the way ideas_test is for the board.
+ *
+ * EVERY SEASON NUMBER HERE IS DERIVED FROM THE CADENCE. Hardcoding 5 and 10 would mean that
+ * moving the cadence turns this from a lifecycle check into a check that a non-milestone season
+ * is not a milestone, which passes for the wrong reason and proves nothing.
  */
 {
+  const MEV = E.DYNASTY_MILESTONE_EVERY;
+  const MAND = MEV;          // the first milestone, a roster mandate
+  const BOSS = MEV * 2;      // the second milestone, a boss game
   const bestPick = (men, r) => {
     const share = R.remaining(r) / Math.max(1, r.slots.length - r.roster.length) * 1.5;
     const within = men.filter((p) => p.price_musd <= share);
@@ -519,8 +526,8 @@ ok('one miss ends a run of any length',
   };
 
   let run5 = null;
-  for (let s = 1; s < 200 && !run5; s++) run5 = toSeason(5, 20261000 + s);
-  ok('a drafted run can reach a survived season five', !!run5);
+  for (let s = 1; s < 200 && !run5; s++) run5 = toSeason(MAND, 20261000 + s);
+  ok(`a drafted run can reach a survived season ${MAND}`, !!run5);
 
   /* Mutate one man so a mandate's matcher returns `on`. The specs match on age, salary or a
      rookie season, so this covers all four by id. */
@@ -533,11 +540,11 @@ ok('one miss ends a run of any length',
   };
 
   if (run5) {
-    ok('season five is a mandate, not a boss',
+    ok(`season ${MAND} is a mandate, not a boss`,
       R.challengePending(run5) && !R.bossPending(run5),
       `mandate ${(R.challengeFor(run5) || {}).id}`);
-    ok('no boss waits at season five', !R.bossFor(run5));
-    ok('the season-five mandate pays a dead-cap wipe',
+    ok(`no boss waits at season ${MAND}`, !R.bossFor(run5));
+    ok('the first mandate pays a dead-cap wipe',
       R.challengeFor(run5).reward === 'deadwipe');
 
     /* MET: the books are cleared and the coming bar is unchanged. */
@@ -571,14 +578,14 @@ ok('one miss ends a run of any length',
     }
   }
 
-  /* SEASON TEN IS A BOSS, and beating it freezes a man. */
+  /* THE SECOND MILESTONE IS A BOSS, and beating it freezes a man. */
   let run10 = null;
-  for (let s = 1; s < 400 && !run10; s++) run10 = toSeason(10, 20262000 + s);
-  ok('a drafted run can reach a survived season ten', !!run10);
+  for (let s = 1; s < 400 && !run10; s++) run10 = toSeason(BOSS, 20262000 + s);
+  ok(`a drafted run can reach a survived season ${BOSS}`, !!run10);
   if (run10) {
-    ok('season ten is a boss, not a mandate',
+    ok(`season ${BOSS} is a boss, not a mandate`,
       R.bossPending(run10) && !R.challengePending(run10));
-    ok('the season-ten boss pays a freeze', R.bossFor(run10).reward === 'freeze');
+    ok('the first boss pays a freeze', R.bossFor(run10).reward === 'freeze');
     const r = JSON.parse(JSON.stringify(run10));
     const victim = r.roster[0];
     const vid = victim.player_id, vseason = victim.season, vsal = r.salaries[0];
@@ -594,22 +601,71 @@ ok('one miss ends a run of any length',
     /* LOSE: exactly next season's bar goes up by one. */
     {
       const r2 = JSON.parse(JSON.stringify(run10));
-      const base11 = E.dynastyWinBar(11, r2.stepSeasons);
+      const next = BOSS + 1, after = BOSS + 2;
+      const baseNext = E.dynastyWinBar(next, r2.stepSeasons);
       R.applyBossResult(r2, false);
       ok('a lost boss raises only the next season bar by one',
-        R.effectiveWinBar(r2, 11) === base11 + 1
-        && R.effectiveWinBar(r2, 12) === E.dynastyWinBar(12, r2.stepSeasons),
-        `s11 ${R.effectiveWinBar(r2, 11)} (base ${base11}), s12 ${R.effectiveWinBar(r2, 12)}`);
+        R.effectiveWinBar(r2, next) === baseNext + 1
+        && R.effectiveWinBar(r2, after) === E.dynastyWinBar(after, r2.stepSeasons),
+        `s${next} ${R.effectiveWinBar(r2, next)} (base ${baseNext}), `
+        + `s${after} ${R.effectiveWinBar(r2, after)}`);
     }
   }
 
   /* The schedule, stated plainly: odd milestones are mandates that wipe, even ones are bosses
      that freeze, and no season is both. */
-  ok('odd milestones are wiping mandates, even ones freezing bosses',
-    [5, 15, 25].every((s) => E.dynastyBossReward(s) === 'deadwipe'
+  /*
+   * ARE THE MANDATES MEETABLE OFF A REAL ROSTER. The engine's note on DYNASTY_CHALLENGES has
+   * always pointed at "the achievability sweep in check-dynasty" and there was no such sweep.
+   * The cadence change is what makes it load-bearing: the first mandate used to land at
+   * season five and now lands at season three, off a younger roster with two winters of churn
+   * behind it instead of four, so a threshold that was comfortable then is a fresh question
+   * now.
+   *
+   * WHAT THIS MEASURES AND WHAT IT DOES NOT. It takes the roster a run is actually holding at
+   * the milestone and asks how close it already is, before the player touches the offseason
+   * they are given to comply. So it is a LOWER BOUND: a mandate several men short of a
+   * natural roster may still be easy, because releasing and signing is the whole point of the
+   * offseason. What it can catch is the failure that matters, a mandate that no natural
+   * roster is anywhere near, which is the shape the football and basketball games have both
+   * shipped before.
+   *
+   * The bar is deliberately low and stated as a bar: at least one roster in the sample within
+   * one man of each mandate. A mandate no roster is within one of is not hard, it is a
+   * different mandate than the one that was written.
+   */
+  {
+    const N = 24;
+    const rosters = [];
+    for (let s = 0; rosters.length < N && s < 400; s++) {
+      const r = toSeason(MAND, 20263000 + s);
+      if (r) rosters.push(r);
+    }
+    ok(`the sweep collected ${N} rosters at season ${MAND}`, rosters.length === N,
+      `${rosters.length} of ${N}`);
+    for (const spec of E.DYNASTY_CHALLENGES) {
+      const prog = rosters.map((r) => E.dynastyChallengeProgress(spec, r.roster, r.salaries));
+      const met = prog.filter((x) => x.met).length;
+      const close = prog.filter((x) => x.have >= x.need - 1).length;
+      const best = prog.reduce((m, x) => Math.max(m, x.have), 0);
+      ok(`mandate "${spec.id}" is within reach of a season-${MAND} roster`, close > 0,
+        `${met}/${rosters.length} already met, ${close} within one, best ${best} of ${spec.need}`);
+    }
+  }
+
+  const odds = [1, 3, 5].map((n) => MEV * n);
+  const evens = [2, 4, 6].map((n) => MEV * n);
+  ok(`odd milestones (${odds.join(', ')}) wipe, even ones (${evens.join(', ')}) freeze`,
+    odds.every((s) => E.dynastyBossReward(s) === 'deadwipe'
       && !!E.dynastyChallengeFor(s) && !E.dynastyBossFor(s))
-    && [10, 20, 30].every((s) => E.dynastyBossReward(s) === 'freeze'
+    && evens.every((s) => E.dynastyBossReward(s) === 'freeze'
       && !!E.dynastyBossFor(s) && !E.dynastyChallengeFor(s)));
+  /* AND NOTHING BETWEEN THEM IS ONE. The check above only looks at seasons that are supposed
+     to be milestones, so on its own it would pass a schedule that made every season one. */
+  ok('an ordinary season carries neither',
+    [1, MEV - 1, MEV + 1, MEV * 2 - 1, MEV * 2 + 1].every((s) => s < 1
+      || (!E.dynastyChallengeFor(s) && !E.dynastyBossFor(s)
+        && E.dynastyBossReward(s) === null)));
 }
 
 /* ─── and the modes that already ship are not a dynasty ──────────────────────────── */
