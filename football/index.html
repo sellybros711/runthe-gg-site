@@ -5764,19 +5764,33 @@ window.GA_ID='G-L29P5MRWKE';
     background:var(--panel)}
   .pw-tier.best{border-color:rgba(251,191,36,.5);
     background:linear-gradient(180deg,rgba(251,191,36,.10),var(--panel))}
-  .pw-th{display:flex;align-items:center;gap:8px}
+  /* THE HEADER ROW IS THE SAME HEIGHT ON BOTH CARDS whether or not it carries a tag. The
+     "Best value" pill is 19px against a bare name's 16px, so without this the two price
+     rows below sit three pixels out of step with each other, which is exactly enough to
+     stop them reading as a pair and not enough for anybody to see why. */
+  .pw-th{display:flex;align-items:center;gap:8px;min-height:19px}
   .pw-name{font-family:var(--fn);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
     color:var(--dim)}
   .pw-tier.best .pw-name{color:#fbbf24}
   .pw-tag{margin-left:auto;font-family:var(--fn);font-size:9px;letter-spacing:.1em;
     text-transform:uppercase;font-weight:800;padding:3px 8px;border-radius:999px;
     background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
-  /* THE PRICE SITS IN THE HEADER ROW NOW, beside the product name rather than on a line of
-     its own under it. Two cards each spending a 29px line on a number they had already made
-     the loudest thing on the card was most of why the sheet read as long. */
-  .pw-th .pw-cost{margin-left:auto}
-  .pw-cost{display:flex;align-items:baseline;gap:8px;margin:5px 0 0;flex-wrap:wrap}
-  .pw-cost b{font-family:var(--fd);font-size:24px;line-height:1;font-weight:400;color:var(--ink)}
+  /* BOTH PRICES IN THE SAME PLACE, WHICH THEY WERE NOT.
+     The price used to sit in the header row, pushed to the right edge by margin-left:auto.
+     That works on a card whose header holds nothing else and fails on the one that does:
+     Run The Bundle's "Best value" tag already owned the right slot, so its price dropped to
+     a line of its own. The result was $19.99 hard right on one card and $34.99 hard left on
+     the next, and a reader comparing two numbers had to go and find each one.
+     Now both sit on their own line directly under the name, left aligned, so the eye runs
+     down a single edge: name, price, what you get, button, twice. That costs the Premium
+     card one line back, which is the trade, and it is the right way round. The saving is a
+     shorter sheet or a legible one. */
+  .pw-cost{display:flex;align-items:baseline;gap:9px;margin:8px 0 2px;flex-wrap:wrap}
+  /* TABULAR FIGURES so the two prices are the same shape as well as the same place: in the
+     proportional cut, the 1 in $19.99 is half the width of the 3 in $34.99 and the numbers
+     stop lining up exactly where somebody is trying to compare them. */
+  .pw-cost b{font-family:var(--fd);font-size:28px;line-height:1;font-weight:400;color:var(--ink);
+    font-variant-numeric:tabular-nums}
   /* WHAT THIS ACCOUNT IS, in two letters more than it needs. Drawn only when there is a true
      answer: see acctTier(), which returns nothing at all for a signed out visitor and for one
      whose ownership has not come back yet. */
@@ -5787,8 +5801,14 @@ window.GA_ID='G-L29P5MRWKE';
   .pw-pill.free{background:rgba(255,255,255,.08);color:var(--dim);
     box-shadow:inset 0 0 0 1px var(--line)}
   .pw-pill.pro{background:linear-gradient(135deg,#fde047,#f59e0b);color:#3b2600}
-  .pw-was{font-size:13px;color:var(--dim-2);text-decoration:line-through}
-  .pw-save{font-size:11.5px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.04em}
+  .pw-was{font-size:13.5px;color:var(--dim-2);text-decoration:line-through;
+    font-variant-numeric:tabular-nums}
+  /* THE SAVING IS A CHIP, not loose green text. It is the one thing in the price row that is
+     not a price, and as bare text at the same baseline it read as a third number to work out.
+     A pill says "label" at a glance, and it answers the gold pill in the header above it. */
+  .pw-save{font-size:10px;font-weight:800;color:#4ade80;font-family:var(--fn);letter-spacing:.07em;
+    text-transform:uppercase;padding:3px 8px;border-radius:999px;align-self:center;
+    background:rgba(74,222,128,.13);box-shadow:inset 0 0 0 1px rgba(74,222,128,.34)}
   /* WHICH GAME EACH LINE COMES FROM, IN THAT GAME'S OWN COLOUR. The colour code is
      the dot plus the name in the same hue, and it is what makes Run The Bundle read
      as buying things in four places rather than as one long list of nouns.
@@ -9456,8 +9476,8 @@ function premiumSheet(){
     '</div>'+
 
     '<div class="pw-tier">'+
-      '<div class="pw-th"><span class="pw-name">Premium Bundle</span>'+
-        '<span class="pw-cost"><b>$19.99</b></span></div>'+
+      '<div class="pw-th"><span class="pw-name">Premium Bundle</span></div>'+
+      '<div class="pw-cost"><b>$19.99</b></div>'+
       /* THE TRADE MACHINE IS NAMED HERE BECAUSE IT IS PROMOTED ABOVE. The hero row sells
          unlimited Trade Machine runs and this is the itemised list of what the money buys,
          so leaving it off would advertise a thing and then not sell it. It is a real part of
