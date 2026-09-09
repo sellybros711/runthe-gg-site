@@ -505,7 +505,9 @@ function resolveChemistry(roster) {
     for (let j = i + 1; j < roster.length; j++) {
       const plinks = pairLinks(roster[i], roster[j]);
       for (const l of plinks) {
-        links.push({ ...l, a: roster[i].n, b: roster[j].n });
+        // ai/bi are roster positions. Names alone cannot attribute a link when
+        // a roster holds two players of the same name, which real data does.
+        links.push({ ...l, a: roster[i].n, b: roster[j].n, ai: i, bi: j });
       }
     }
   }
@@ -524,6 +526,76 @@ function resolveChemistry(roster) {
     saturated,
     net,
     links: positives.concat(negatives),
+  };
+}
+
+/* Chemistry as points, for display.
+ *
+ * The VALUES above are already written as hundredths, so reading one as a whole
+ * number of points is not a re-scaling, it is just dropping the percent sign:
+ * family 0.09 is +9, a franchise tie 0.04 is +4, the ambient era link 0.005 is
+ * +0.5. The cap is +15. That gives the player a small integer to compare
+ * against, instead of a single team-wide percentage that never explains itself. */
+function chemPoints(value) {
+  return Math.round(value * 1000) / 10;
+}
+
+/* Chemistry attributed to each player on the roster.
+ *
+ * Every link pays both ends, so a player's total is the sum of every link they
+ * appear in, and the totals deliberately add up to more than the team's raw
+ * figure. That is the honest shape of the mechanic: a bond is a bond between
+ * two players, and both of them are better for it.
+ *
+ * Returns one entry per roster position: total points, the links themselves,
+ * the strongest single link (what the UI colors the badge by), and keyPoints,
+ * which drops the ambient era link. Era is +0.5 against a cap of +15 and it
+ * attaches to nearly everybody, so badging it would put a meaningless mark on
+ * ten of twelve players and drown the bonds that were actually chosen. */
+function chemistryByPlayer(roster, resolved) {
+  const res = resolved || resolveChemistry(roster);
+  const out = roster.map(() => ({ points: 0, keyPoints: 0, links: [], top: null }));
+  for (const l of res.links) {
+    if (l.value <= 0) continue;
+    for (const idx of [l.ai, l.bi]) {
+      if (typeof idx !== 'number' || !out[idx]) continue;
+      const e = out[idx];
+      e.points += chemPoints(l.value);
+      if (l.type !== 'era') e.keyPoints += chemPoints(l.value);
+      e.links.push(l);
+      if (!e.top || l.value > e.top.value) e.top = l;
+    }
+  }
+  for (const e of out) {
+    e.points = Math.round(e.points * 10) / 10;
+    e.keyPoints = Math.round(e.keyPoints * 10) / 10;
+  }
+  return out;
+}
+
+/* What chemistry is actually worth to this roster, in wins.
+ *
+ * The team rating deliberately excludes chemistry, because it is measured
+ * against real clubs that are scored without it (see squadRating). So chemistry
+ * never shows up in the headline number, only in the record, where the player
+ * cannot see how much of the record it bought. This states it outright: play
+ * the same roster with the bonus and without it, and take the difference. */
+function chemistryWorth(roster, slotNames) {
+  const tagged = roster.map((p, i) => ({
+    ...p, _slot: (slotNames && slotNames[i]) || p._slot || SLOTS[i],
+  }));
+  const chem = resolveChemistry(tagged);
+  const structure = rosterStructure(tagged);
+  const winsAt = (mult) => teamWinPct(
+    rosterOffense(tagged, mult, structure.multiplier),
+    rosterRunPrevention(tagged, mult)
+  ) * CONSTANTS.REGULAR_SEASON_GAMES;
+  const withChem = winsAt(chem.multiplier);
+  const without = winsAt(1);
+  return {
+    multiplier: chem.multiplier,
+    wins: Math.round((withChem - without) * 10) / 10,
+    points: chemPoints(chem.net),
   };
 }
 
@@ -1106,6 +1178,7 @@ const publicAPI = {
   playerPositions, canFillSlot, teamSeasonId,
   indexData, buildCheapBy,
   pairLinks, resolveChemistry, setCuratedChemistry,
+  chemPoints, chemistryByPlayer, chemistryWorth,
   teamStrength, teamWinPct, overallRating, squadRating, nationalRank,
   generateSchedule, buildOpponentPool, generatePlayoffs, gameMeans,
   resolveGame, playoffSeries, playRun,

@@ -219,9 +219,12 @@ h1,h2,h3{margin:0}
   font-size:7.5px;letter-spacing:.05em;vertical-align:1px;
   color:var(--tcon,#fff);background:var(--tcbg,#475569);
   border:1px solid rgba(255,255,255,.26);box-shadow:0 1px 3px rgba(0,0,0,.5)}
-.chip .pip{position:absolute;top:-3px;right:-3px;width:15px;height:15px;border-radius:50%;
-  display:none;place-items:center;font-family:var(--fn);font-size:9px;font-weight:600;
-  color:#08101f;border:1.5px solid #0b1220;font-style:normal}
+/* The chemistry badge on a fielder. Auto width so it can carry a value rather
+   than a single digit, and it takes the color of that player's strongest bond. */
+.chip .pip{position:absolute;top:-4px;right:-10px;min-width:17px;height:15px;padding:0 4px;
+  border-radius:99px;display:none;place-items:center;font-family:var(--fn);
+  font-size:9px;font-weight:800;color:#fff;border:1.5px solid rgba(0,0,0,.35);
+  font-style:normal;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.5)}
 
 /* ─── cap bar ─── */
 .capwrap{position:sticky;top:0;z-index:30;padding:9px 0 9px;margin:-4px 0 12px;
@@ -235,6 +238,11 @@ h1,h2,h3{margin:0}
 .capline .amt.low{color:var(--red)}
 .chem{display:flex;align-items:baseline;gap:6px}
 .ck{font-size:11px;color:var(--dim-2);font-family:var(--fn);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.ck-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;
+  cursor:pointer;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+.ck-btn i{display:grid;place-items:center;width:13px;height:13px;border-radius:50%;
+  border:1px solid rgba(0,0,0,.22);font-style:normal;font-size:9px;font-weight:800;line-height:1}
+.ck-btn:hover i,.ck-btn:focus-visible i{border-color:var(--gold);color:var(--gold)}
 .chemval{font-size:18px;color:var(--green)}
 .chemval.zero{color:var(--dim)}
 .chemval.bump{animation:chembump .5s ease}
@@ -302,9 +310,10 @@ h1,h2,h3{margin:0}
 .tile.off:active{transform:none}
 .tile.off .pos{filter:grayscale(1);opacity:.45}
 .tile.off .nm,.tile.off .pr,.tile.off .pts b{color:var(--dim-2)}
-.chemtag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 6px;
-  border-radius:5px;background:rgba(46,125,50,.12);color:#2e7d32;max-width:100%;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chemtag{display:inline-block;font-family:var(--fn);font-size:9.5px;font-weight:800;
+  padding:2px 7px;border-radius:99px;background:var(--cc,#2e7d32);color:#fff;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
 
 /* ─── respin ─── */
 .respin-row{display:flex;gap:8px;margin:12px 0}
@@ -456,6 +465,28 @@ h1,h2,h3{margin:0}
 .ro-chemlink{font-family:var(--fn);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
   background:rgba(46,125,50,.12);color:var(--green);border:1px solid rgba(46,125,50,.22)}
 .ro-chemlink.fam{background:rgba(184,134,11,.14);color:var(--gold);border-color:rgba(184,134,11,.3)}
+/* the per-player chemistry badge, colored by that player's strongest bond */
+.chembadge{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto;
+  padding:2px 7px;border-radius:99px;background:var(--cc);color:#fff;
+  font-family:var(--fn);font-size:10px;font-weight:800;letter-spacing:.01em;
+  line-height:1.35;white-space:nowrap;box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
+.chembadge.sm{font-size:9px;padding:1px 6px}
+/* the legend, shared by the how-to and the draft's chemistry sheet */
+.chemkey{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+.chemkey-row{display:flex;align-items:center;gap:9px}
+.chemkey-row .ck-val{flex:0 0 auto;min-width:34px;text-align:center;padding:3px 8px;
+  border-radius:99px;background:var(--cc);color:#fff;font-family:var(--fn);
+  font-size:11px;font-weight:800;box-shadow:0 1px 3px -1px rgba(0,0,0,.4)}
+.chemkey-row .ck-body{min-width:0;display:block}
+.chemkey-row .ck-name{display:block;font-family:var(--fn);font-size:13px;font-weight:800;color:var(--ink);line-height:1.2}
+.chemkey-row .ck-note{display:block;font-size:11px;color:var(--dim-2);line-height:1.3}
+.chemcap{font-size:12px;color:var(--dim);line-height:1.5;margin-top:10px;
+  padding-top:10px;border-top:1px solid rgba(0,0,0,.10)}
+/* chemistry stated in wins, on the results screen */
+.chemworth{display:flex;align-items:baseline;justify-content:center;gap:7px;
+  margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.10)}
+.chemworth b{font-family:'Righteous',var(--fd);font-size:22px;color:var(--green);line-height:1}
+.chemworth span{font-family:var(--fn);font-size:12px;font-weight:700;color:var(--dim)}
 
 /* ─── new badges panel (results) ─── */
 .newbadges{background:var(--panel);border:1px solid rgba(184,134,11,.35);border-radius:14px;
@@ -662,12 +693,15 @@ h1,h2,h3{margin:0}
   <h2 class="display" style="font-size:27px;margin:0 0 12px">How to play</h2>
   <div style="font-size:14px;line-height:1.6;color:var(--dim)">
     <p><b style="color:var(--ink)">Spin.</b> Each spin draws a random team-season from MLB history (1901-2025). Draft one player from that roster who fits an open spot.</p>
-    <p><b style="color:var(--ink)">Budget.</b> You have $170M for all twelve spots. Prices come from WAR, so you can't afford a star every spin — spend wisely and don't blow it early. Scarce spots like catcher and closer are worth grabbing when a good one appears.</p>
-    <p><b style="color:var(--ink)">Positions.</b> C, 1B, 2B, 3B, SS, LF, CF, RF, DH, two starters, and a closer. Many players fit several spots — you choose where to play them, so your DH slot is a flex.</p>
-    <p><b style="color:var(--ink)">Chemistry &amp; shape.</b> Same-team reunions, batterymates, double-play combos, and real families (Alous, Griffeys) lift your chemistry. A balanced roster with no weak links plays better than a pile of stars — your build earns an archetype.</p>
-    <p><b style="color:var(--ink)">Season.</b> You play 162 games against real all-time opponents — the '27 Yankees, the '19 Astros — with a marquee gauntlet mixed in.</p>
+    <p><b style="color:var(--ink)">Budget.</b> You have $170M for all twelve spots. Prices come from WAR, so you can't afford a star every spin. Spend wisely and don't blow it early. Scarce spots like catcher and closer are worth grabbing when a good one appears.</p>
+    <p><b style="color:var(--ink)">Positions.</b> C, 1B, 2B, 3B, SS, LF, CF, RF, DH, two starters, and a closer. Many players fit several spots, so you choose where to play them and your DH slot is a flex.</p>
+    <p><b style="color:var(--ink)">Chemistry.</b> Teammates who share a real bond play better together. Every bond pays <b>both</b> players, and a player wears the color of their strongest one:</p>
+    <div class="chemkey" id="how-chem-key"></div>
+    <p class="chemcap" id="how-chem-cap" style="border:0;padding-top:0"></p>
+    <p><b style="color:var(--ink)">Roster shape.</b> A balanced roster with no weak links plays better than a pile of stars, and your build earns an archetype.</p>
+    <p><b style="color:var(--ink)">Season.</b> You play 162 games against real all-time opponents (the '27 Yankees, the '19 Astros) with a marquee gauntlet mixed in.</p>
     <p><b style="color:var(--ink)">Playoffs &amp; ranking.</b> Reach October and chase the World Series; the deepest rounds stiffen against weaker teams. Every season earns a 0-100 team rating and a rank among all 2,594 teams in history.</p>
-    <p><b style="color:var(--ink)">The record.</b> 116 wins ties the all-time mark; 117+ makes you the Greatest of All Time — a rare feat that takes a near-perfect draft.</p>
+    <p><b style="color:var(--ink)">The record.</b> 116 wins ties the all-time mark; 117+ makes you the Greatest of All Time, a rare feat that takes a near-perfect draft.</p>
   </div>
   <div style="margin-top:16px"><button class="btn ghost sm" id="b-how-back">Back</button></div>
 </div>
@@ -680,7 +714,7 @@ h1,h2,h3{margin:0}
     </div>
     <div class="capline">
       <div class="amt num" id="c-amt">$170.0M</div>
-      <div class="chem"><span class="ck">Chemistry</span><span class="chemval num zero" id="c-chem">None</span></div>
+      <div class="chem"><button class="ck ck-btn" id="b-chemkey" title="What counts as chemistry?">Chemistry <i>?</i></button><span class="chemval num zero" id="c-chem">None</span></div>
     </div>
     <div class="bar"><i id="c-bar" style="width:100%"></i></div>
     <div class="perslot num" id="c-per"></div>
@@ -765,6 +799,7 @@ h1,h2,h3{margin:0}
     <div class="ro-takes" id="ro-takes"></div>
     <div class="ro-proj" id="ro-proj"></div>
     <div class="ro-chemlinks" id="ro-chemlinks"></div>
+    <div class="chemworth" id="ro-chemworth" style="display:none"></div>
   </div>
 
   <div id="ro-newbadges"></div>
@@ -799,6 +834,21 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
+<div class="sheet" id="sheet-chem" aria-hidden="true">
+  <div class="sheet-scrim" data-close-chem></div>
+  <div class="sheet-inner">
+    <div class="sheet-grab"></div>
+    <div class="sheet-hd">
+      <h3 class="sheet-title">Chemistry</h3>
+      <button class="sheet-x" data-close-chem aria-label="Close">&times;</button>
+    </div>
+    <p class="pos-sub">Teammates who share a real bond play better together. Every bond pays
+      <b>both</b> players, and a player wears the color of their strongest one.</p>
+    <div class="chemkey" id="chem-key"></div>
+    <div class="chemcap" id="chem-cap"></div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet-trophy" aria-hidden="true">
   <div class="sheet-scrim" data-close></div>
   <div class="sheet-inner">
@@ -813,7 +863,7 @@ h1,h2,h3{margin:0}
   </div>
 </div>
 
-<script src="engine.js?v=11"></script>
+<script src="engine.js?v=12"></script>
 <script src="run.js?v=9"></script>
 <script src="achievements.js?v=2"></script>
 <script>
@@ -914,6 +964,35 @@ const lastName=n=>{const p=n.trim().split(/\s+/);return p[p.length-1];};
 
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null;
 const reduceMotion=()=>!!(RM&&RM.matches);
+
+/* ─── chemistry, as one visual language ───
+   Every bond type gets a color and a short name, and they are used identically
+   on the draft board, the diamond, the squad sheet and the results roster, so
+   the player learns the taxonomy once by looking at it. Ordered strongest
+   first, which is also the order the legend prints. */
+const CHEM_TYPES=[
+  {type:'family',   label:'Family',        color:'#b8860b', note:'Brothers, fathers and sons'},
+  {type:'reunion',  label:'Reunion',       color:'#c0392b', note:'Same club, same season'},
+  {type:'battery',  label:'Battery',       color:'#1a5276', note:'A catcher and his pitcher'},
+  {type:'dp_combo', label:'DP combo',      color:'#6a4c93', note:'A second baseman and his shortstop'},
+  {type:'franchise',label:'Franchise',     color:'#2e7d32', note:'Same club, different seasons'},
+  {type:'era',      label:'Same era',      color:'#8a7e6e', note:'Contemporaries, a faint bond'},
+];
+const CHEM_BY_TYPE={};for(const c of CHEM_TYPES)CHEM_BY_TYPE[c.type]=c;
+const chemColor=t=>(CHEM_BY_TYPE[t]||{}).color||'#8a7e6e';
+const chemLabel=t=>(CHEM_BY_TYPE[t]||{}).label||t;
+/* Trailing .0 reads as false precision on a badge, so 4.0 prints as 4. */
+const chemNum=v=>(Math.round(v*10)/10).toFixed(1).replace(/\.0$/,'');
+/* The badge a player wears. Colored by their strongest bond, valued by the sum
+   of the deliberate ones. Returns '' when there is nothing worth showing. */
+function chemBadge(entry,size){
+  if(!entry||entry.keyPoints<=0)return'';
+  const c=chemColor(entry.top&&entry.top.type);
+  const names=entry.links.filter(l=>l.type!=='era').map(l=>l.label).join(' &middot; ');
+  return '<span class="chembadge'+(size?' '+size:'')+'" style="--cc:'+c+'"'+
+    (names?' title="'+esc(names.replace(/&middot;/g,'/'))+'"':'')+
+    '>&#9889;'+chemNum(entry.keyPoints)+'</span>';
+}
 
 /* ─── position colors ─── */
 const POS_COLORS={
@@ -1113,6 +1192,13 @@ function drawField(el,live){
   const bySlot=new Array(E.SLOTS.length).fill(null);
   if(RUN) RUN.roster.forEach((p,i)=>{bySlot[RUN.slotIndex[i]]=p;});
   const openCount=E.SLOTS.length-(RUN?RUN.roster.length:0);
+  // Chemistry once for the whole diamond, keyed by slot. This used to resolve
+  // the entire roster again inside the chip loop, twelve times a redraw.
+  const chemBySlot=new Array(E.SLOTS.length).fill(null);
+  if(RUN&&RUN.roster.length>1){
+    const per=E.chemistryByPlayer(RUN.roster);
+    RUN.roster.forEach((p,i)=>{chemBySlot[RUN.slotIndex[i]]=per[i];});
+  }
   if(el.id==='field') drawPips(bySlot);
 
   const pitchersFilled=PITCHER_SLOTS.filter(i=>bySlot[i]);
@@ -1135,12 +1221,13 @@ function drawField(el,live){
     c.querySelector('.who').textContent=p?lastName(p.n):'';
     c.querySelector('.yr').innerHTML=p?tcPlate(p.t,p.s)+' '+p.s:'';
     const pip=c.querySelector('.pip');
-    if(p&&RUN&&RUN.roster.length>1){
-      const chem=E.resolveChemistry(RUN.roster);
-      const mine=chem.links.filter(l=>l.a===p.n||l.b===p.n);
-      if(mine.length){pip.textContent=mine.length;pip.style.background='#4ade80';pip.style.display='grid';}
-      else{pip.style.display='none';}
-    }else{pip.style.display='none';}
+    const ce=p?chemBySlot[i]:null;
+    if(ce&&ce.keyPoints>0){
+      pip.textContent='⚡'+chemNum(ce.keyPoints);
+      pip.style.background=chemColor(ce.top&&ce.top.type);
+      pip.style.display='grid';
+      pip.title=ce.links.filter(l=>l.type!=='era').map(l=>l.label).join(' / ');
+    }else{pip.style.display='none';pip.title='';}
     c.style.left=DIAMOND_SPOTS[i].x+'%';
     c.style.top=DIAMOND_SPOTS[i].y+'%';
   });
@@ -1340,7 +1427,11 @@ $('b-era').addEventListener('click',()=>{buildEraGrid();show('s-era');});
 $('b-era-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-fran').addEventListener('click',()=>{buildFranGrid();show('s-fran');});
 $('b-fran-back').addEventListener('click',()=>{show('s-intro');heroSync();});
-$('b-how-play').addEventListener('click',()=>show('s-how'));
+$('b-how-play').addEventListener('click',()=>{
+  $('how-chem-key').innerHTML=chemKeyRows();
+  $('how-chem-cap').innerHTML=chemCapNote();
+  show('s-how');
+});
 $('b-how-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-quit').addEventListener('click',()=>{
   if(RUN&&RUN.phase===R.PHASES.DRAFT&&RUN.roster.length>0){
@@ -1354,7 +1445,32 @@ $('b-trophy').addEventListener('click',openTrophy);
 $('b-trophy-2').addEventListener('click',openTrophy);
 document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-trophy')));
 document.querySelectorAll('[data-close-pos]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-pos')));
+document.querySelectorAll('[data-close-chem]').forEach(el=>el.addEventListener('click',()=>closeSheet('sheet-chem')));
+$('b-chemkey').addEventListener('click',openChemKey);
 document.addEventListener('visibilitychange',heroSync);
+
+/* ─── the chemistry legend ───
+   One renderer, so the sheet on the draft board and the block in the how-to
+   can never drift apart from each other or from the engine's own values. */
+function chemKeyRows(){
+  return CHEM_TYPES.map(c=>{
+    const v=E.chemPoints(E.CHEMISTRY.VALUES[c.type]);
+    return '<div class="chemkey-row" style="--cc:'+c.color+'">'+
+      '<span class="ck-val">+'+chemNum(v)+'</span>'+
+      '<span class="ck-body"><span class="ck-name">'+esc(c.label)+'</span>'+
+      '<span class="ck-note">'+esc(c.note)+'</span></span></div>';
+  }).join('');
+}
+function chemCapNote(){
+  return 'Bonuses stack with diminishing returns and the team total tops out at <b>+'+
+    chemNum(E.chemPoints(E.CHEMISTRY.MAX))+'</b>. Chemistry lifts the runs you score, '+
+    'so it shows up in your record rather than in your team rating.';
+}
+function openChemKey(){
+  $('chem-key').innerHTML=chemKeyRows();
+  $('chem-cap').innerHTML=chemCapNote();
+  openSheet('sheet-chem');
+}
 
 /* ─── era mode ─── */
 function buildEraGrid(){
@@ -1566,12 +1682,19 @@ function optTile(r,i){
     }
     if(bases.length) destSlot=bases.length<=3?bases.join(' &middot; '):bases.slice(0,3).join(' &middot; ')+'&hellip;';
   }
+  // What signing this player would actually bond, named and valued, in the same
+  // colors the diamond and the results roster use. A percentage delta alone
+  // never told the player which bond they were buying.
   let chemHtml='';
   if(!block&&RUN.roster.length>0){
     const preview=R.previewSigning(RUN,p);
-    if(preview.delta>0.001){
-      const links=preview.newLinks.slice(0,2).map(l=>l.label).join(', ');
-      chemHtml='<span class="chemtag">+'+(preview.delta*100).toFixed(1)+'%'+(links?' '+links:'')+'</span>';
+    const gained=(preview.newLinks||[]).filter(l=>l.type!=='era'&&l.value>0);
+    if(gained.length){
+      const pts=gained.reduce((s,l)=>s+E.chemPoints(l.value),0);
+      const top=gained.reduce((b,l)=>(!b||l.value>b.value)?l:b,null);
+      chemHtml='<span class="chemtag" style="--cc:'+chemColor(top.type)+'">'+
+        '&#9889;+'+chemNum(pts)+' '+esc(gained.length>1?
+          chemLabel(top.type)+' +'+(gained.length-1):chemLabel(top.type))+'</span>';
     }
   }
   const hot=!block&&chemHtml;
@@ -1847,6 +1970,16 @@ function showResult(){
     '<span class="ro-chemlink">Chemistry +'+chemPct+'%</span>':'')+
     uniq.slice(0,4).map(l=>'<span class="ro-chemlink'+(l.type==='family'?' fam':'')+'">'+esc(l.label)+'</span>').join('');
 
+  // What the chemistry actually bought, in the game's own currency. The team
+  // rating leaves chemistry out by design, so this is the only place it is
+  // stated plainly rather than buried in the record.
+  const worth=E.chemistryWorth(RUN.roster,RUN.slotIndex.map(i=>E.SLOTS[i]));
+  const cw=$('ro-chemworth');
+  if(worth.wins>=0.1){
+    cw.style.display='';
+    cw.innerHTML='<b>+'+chemNum(worth.wins)+'</b><span>wins from chemistry</span>';
+  } else cw.style.display='none';
+
   // Stat row
   $('r-stats').innerHTML=[
     {label:'Runs scored',value:o.totalRS},{label:'Runs allowed',value:o.totalRA},
@@ -1857,11 +1990,13 @@ function showResult(){
   const rosterDiv=$('r-roster');
   rosterDiv.innerHTML='<div class="eyebrow" style="margin-bottom:8px">Your roster</div>';
   const roster=document.createElement('div');roster.className='roster-final';
+  const perChem=E.chemistryByPlayer(RUN.roster,o.chemistry);
   RUN.roster.forEach((p,i)=>{
     const slot=E.SLOTS[RUN.slotIndex[i]];
     const div=document.createElement('div');div.className='rslot';
     div.innerHTML='<span class="rpos" style="'+posPaint(slot)+'">'+slot+'</span>'+
       '<span class="rname">'+esc(p.n)+'</span>'+
+      chemBadge(perChem[i],'sm')+
       '<span class="rteam">'+p.s+' '+esc(p.t)+'</span>'+
       '<span class="rwar">'+p.w.toFixed(1)+'</span>';
     roster.appendChild(div);
