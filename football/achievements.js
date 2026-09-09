@@ -1348,31 +1348,38 @@
    * save file and die with it.
    *
    * So nothing here says "beat the Legion of Boom", which would be a badge that never fires.
-   * The nearest honest question is how far the run got, and reaching season 11 at all means
-   * the season 10 game was played and survived. That is a weaker claim and it is a true one.
+   * The nearest honest question is how far the run got, and reaching season 7 at all means
+   * the season 6 game was played and survived. That is a weaker claim and it is a true one.
    *
-   * AND NOTHING NAMES A BOSS OR A MANDATE PAST THE SECOND. Bosses come every ten seasons and
-   * mandates every ten offset by five, out of lists of six and four. THE MODE HAS NO CEILING,
-   * so the third boss is not unreachable in principle; it is unreachable in practice, and the
-   * practice is what a badge has to be earned against. The bot's deepest measured run is
-   * around 19 seasons, so the third boss at season 30 and the fourth mandate at 35 are past
-   * anything the checker can prove. A badge asking for one would sit dark forever and nothing
-   * would fail, which is the way this class of mistake always arrives.
+   * EVERY SEASON NUMBER IN THE LADDER BELOW IS A CLAIM ABOUT THE SCHEDULE, so it moves when
+   * the schedule moves. Milestones land every E.DYNASTY_MILESTONE_EVERY seasons, alternating
+   * mandate and boss. That cadence was five and is now three, so the first mandate went from
+   * season 5 to season 3, the first boss from 10 to 6, and the second boss from 20 to 12. The
+   * three badges that name a milestone moved with it. They are the whole risk in this block:
+   * a reach badge cannot break, it just asks for a number, so a stale one goes on lighting up
+   * while telling the player something false about their own run.
+   *
+   * AND NOTHING NAMES A BOSS PAST THE SECOND. Six bosses and four mandates are written, and
+   * THE MODE HAS NO CEILING, so the third boss is not unreachable in principle. It is
+   * unreachable in practice, and the practice is what a badge has to be earned against. The
+   * bot's deepest measured run is 27 seasons and its ninetieth percentile is 15, so the third
+   * boss at season 18 is a coin flip for the checker rather than something it can prove. A
+   * badge asking for one would sit dark forever and nothing would fail, which is the way this
+   * class of mistake always arrives.
    */
   if (DYNASTY_LIVE) {
     /* ---- how far you got, which is the number the mode is ranked on ---- */
     [[1, 'Hired', 'Finish your first Dynasty season.', 'bronze'],
      [3, 'Three winters', 'Reach season 3 of a dynasty.', 'bronze'],
+     [4, 'Mandate survivor', 'Reach season 4, the far side of the owner\'s first demand.', 'bronze'],
      [5, 'Still in the building', 'Reach season 5 of a dynasty.', 'bronze'],
-     [6, 'Mandate survivor', 'Reach season 6, the far side of the owner\'s first demand.', 'silver'],
+     [7, 'Past the Legion', 'Reach season 7, the far side of the first marquee game.', 'silver'],
      [8, 'Long haul', 'Reach season 8 of a dynasty.', 'silver'],
      [10, 'A decade in charge', 'Reach season 10 of a dynasty.', 'silver'],
-     [11, 'Past the Legion', 'Reach season 11, the far side of the first marquee game.', 'gold'],
-     [13, 'Thirteen winters', 'Reach season 13 of a dynasty.', 'gold'],
+     [13, 'Past them both', 'Reach season 13, having survived both marquee games.', 'gold'],
      [15, 'Institution', 'Reach season 15 of a dynasty.', 'gold'],
      [18, 'Eighteen deep', 'Reach season 18 of a dynasty.', 'legend'],
      [20, 'Two decades', 'Reach season 20 of a dynasty.', 'legend'],
-     [21, 'Past them both', 'Reach season 21, having survived both marquee games.', 'legend'],
      [25, 'A quarter of a century', 'Reach season 25 of a dynasty.', 'legend']]
       .forEach(([n, name, desc, tier]) => {
         add(A('dyn_reach_' + n, name, desc, tier, 'Dynasty', (c) => c.bestDynasty >= n));

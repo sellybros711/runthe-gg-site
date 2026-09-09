@@ -155,16 +155,30 @@ Measured, and worth knowing before writing a badge that names any of it:
   uncapped line asked for 17 of 17 at season 91 and 18 at season 101, which is a mode that
   becomes arithmetically impossible rather than hard. Difficulty past the cap comes from the
   squeeze the mode already runs on, a frozen cap against a roster that ages every winter.
-- Bosses come at seasons 10, 20, 30 and so on out of a list of **six**, and mandates at 5,
-  15, 25 and so on out of a list of **four**, both cycling. **Almost nobody reaches them.**
-  `simulator.js --dynasty` can now run the rule the game actually ships (`one life`) and
-  reports how far runs get. On its best winter strategy, 400 runs: median 4 seasons, 46%
-  reach season 5, 32% reach season 10, 3.8% reach season 20, deepest 27. So about half of
-  runs never meet a mandate, two thirds never meet a boss, and it is always the same boss.
-  Bosses three to six live at seasons 30 to 60 and are seen by nobody.
-  The bot is crude and a person does better, but not by the order of magnitude those numbers
-  would need. A badge naming the third boss is not wrong about the mode, it is unprovable by
-  `check-badges.mjs`, which is the same problem with a different cause.
+- **A milestone every `DYNASTY_MILESTONE_EVERY` seasons, alternating**: the odd ones are
+  roster mandates out of a list of **four**, the even ones are boss games out of a list of
+  **six**, both cycling. There is no separate boss constant. A boss is every second milestone,
+  so the boss interval is twice the cadence and is derived.
+  **The cadence is 3, and it shipped as 5.** `simulator.js --dynasty` runs the rule the game
+  actually ships (`one life`) and reports both how far runs get and how much of the authored
+  content they meet. On the bot's best winter, 200 runs:
+
+  | | every 5 | every 3 |
+  |---|---|---|
+  | mandates met, mean | 0.58 | **1.04** |
+  | bosses met, mean | 0.34 | **0.70** |
+  | met a boss | 30.5% | **42.0%** |
+  | met a second boss | 3.0% | **22.0%** |
+
+  Nothing was written to get there. Six bosses and four mandates already existed, and at a
+  cadence of five nine of the ten were content for almost nobody: the second boss sat at
+  season 20 against a median run of 3 and a ninetieth percentile of 15. Moving the cadence
+  moved the schedule onto the reach curve. The reach curve itself did not move, because
+  `playDynasty` in the simulator models no milestone and neither reward, which is worth
+  knowing before reading those columns as a balance check.
+  The bot is crude and a person does better. Even so, the third boss now sits at season 18
+  against a p90 of 15, so a badge naming it is unprovable by `check-badges.mjs`, which is the
+  same problem the old cadence had at every rung.
 - A Full Team squad reaches the Super Bowl in about one season in twenty and wins it in
   about one in a hundred, and never takes the top seed.
 

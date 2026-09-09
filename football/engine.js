@@ -5260,7 +5260,7 @@ function prepareData(teamSeasons) {
  * scope in the browser: two top-level `const API_VERSION` declarations collide
  * and the second file fails to parse at all. Which is what happened, and the boot
  * check below reported it correctly. */
-const ENGINE_API_VERSION = 47;
+const ENGINE_API_VERSION = 48;
 
 /*
  * The three-letter code a team actually wore in a given season.
@@ -5292,7 +5292,7 @@ function eraCode(franchise, season) {
 /*
  * ─── DYNASTY'S BOSS SEASONS ─────────────────────────────────────────────────────
  *
- * Every fifth season the schedule ends with a marquee game against a real great team, and
+ * Every second milestone ends with a marquee game against a real great team, and
  * that game is the one place in this mode where the player is not a spectator. Two levers,
  * both genuine reads rather than buttons that always help:
  *
@@ -5313,22 +5313,38 @@ function eraCode(franchise, season) {
  * 2007 Patriots, the 2013 Broncos) simply puts up a number you have to chase. The scout is
  * the read on which of those two problems you are holding.
  *
- * A MILESTONE EVERY FIVE SEASONS, AND THE TWO KINDS ALTERNATE. The odd multiples of five (5,
- * 15, 25) are ROSTER MANDATES: the owner names a way the team must be built, and you have the
- * offseason that follows to satisfy it. The even multiples (10, 20, 30) are BOSS GAMES, the
+ * A MILESTONE EVERY THIRD SEASON, AND THE TWO KINDS ALTERNATE. The odd multiples of three (3,
+ * 9, 15) are ROSTER MANDATES: the owner names a way the team must be built, and you have the
+ * offseason that follows to satisfy it. The even multiples (6, 12, 18) are BOSS GAMES, the
  * marquee opponent above. Each kind pays its own reward, both aimed at the mode's one squeeze,
  * the frozen cap closing on an ageing roster:
  *
- *   mandate met   (5, 15, 25)   every dead-money charge is cleared.
- *   boss beaten   (10, 20, 30)  one man is frozen at his current age and salary for good.
+ *   mandate met   (3, 9, 15)   every dead-money charge is cleared.
+ *   boss beaten   (6, 12, 18)  one man is frozen at his current age and salary for good.
  *
  * Miss either and the owner wants one more win next season, which is the existing win bar
  * doing the punishing rather than a new way to die. See effectiveWinBar in run.js.
+ *
+ * WHY THREE AND NOT FIVE, which is what this shipped as. The mode is one life: a season under
+ * the bar ends the run and there is no second chance. The simulator measured what that costs
+ * in reach, and on the cadence of five the authored content was mostly unreachable. Roughly
+ * half of runs never got to season five, so half never met a MANDATE at all. Two thirds never
+ * got to ten, so two thirds never met a BOSS, and the third that did met the same one, because
+ * the second boss is season twenty and under four percent of runs got there. Six bosses and
+ * four mandates were written and a typical run saw one thing.
+ *
+ * On a cadence of three the same reach curve pays out very differently: a mandate at three, a
+ * boss at six, and the second boss at twelve rather than twenty. The content did not change.
+ * It just moved to where the players are.
+ *
+ * There is no separate boss cadence constant. A boss is every SECOND milestone, so the boss
+ * interval is twice this number and is derived rather than stored. There used to be a
+ * DYNASTY_BOSS_EVERY = 5 here, which nothing read and which had been wrong since the day
+ * mandates were added: bosses were already ten seasons apart, not five.
  */
-const DYNASTY_BOSS_EVERY = 5;
-const DYNASTY_MILESTONE_EVERY = 5;
-/* Which kind of milestone a season is, or null in an ordinary season. Odd multiples of five
-   are mandates, even ones are bosses, which is the parity of (season / 5). */
+const DYNASTY_MILESTONE_EVERY = 3;
+/* Which kind of milestone a season is, or null in an ordinary season. Odd multiples of the
+   cadence are mandates, even ones are bosses, which is the parity of (season / cadence). */
 function dynastyMilestoneKind(seasonNo, every) {
   const step = every || DYNASTY_MILESTONE_EVERY;
   if (!seasonNo || seasonNo < step || seasonNo % step !== 0) return null;
@@ -5528,12 +5544,12 @@ const DYNASTY_BOSSES = [
     note: 'the 2019 49ers front' },
 ];
 
-/* Which boss, if any, a season faces. Only the even milestones (10, 20, 30) are bosses now;
-   the odd ones are mandates, so this is null there and dynastyChallengeFor answers instead. */
+/* Which boss, if any, a season faces. Only the even milestones (6, 12, 18) are bosses; the odd
+   ones are mandates, so this is null there and dynastyChallengeFor answers instead. */
 function dynastyBossFor(seasonNo, every) {
   const step = every || DYNASTY_MILESTONE_EVERY;
   if (dynastyMilestoneKind(seasonNo, every) !== 'boss') return null;
-  /* Boss occurrences are 10, 20, 30 ..., so the nth boss (0-based) is (season/5)/2 - 1. */
+  /* Bosses land on every second milestone, so the nth boss (0-based) is (season/step)/2 - 1. */
   const occ = (seasonNo / step) / 2 - 1;
   return { ...DYNASTY_BOSSES[occ % DYNASTY_BOSSES.length], seasonNo, reward: 'freeze' };
 }
@@ -5576,7 +5592,7 @@ const DYNASTY_CHALLENGES = [
 function dynastyChallengeFor(seasonNo, every) {
   const step = every || DYNASTY_MILESTONE_EVERY;
   if (dynastyMilestoneKind(seasonNo, every) !== 'challenge') return null;
-  /* Mandate occurrences are 5, 15, 25 ..., so the nth (0-based) is ((season/5) - 1) / 2. */
+  /* Mandates land on every other milestone, so the nth (0-based) is ((season/step) - 1) / 2. */
   const occ = ((seasonNo / step) - 1) / 2;
   return { ...DYNASTY_CHALLENGES[occ % DYNASTY_CHALLENGES.length], seasonNo, reward: 'deadwipe' };
 }
@@ -5820,7 +5836,7 @@ const publicAPI = {
   DYNASTY_CAP_GROWTH, DYNASTY_CONTINUITY_PER_YEAR,
   dynastyWinBar, dynastySurvives, DYNASTY_BASE_WINS, DYNASTY_STEP_SEASONS,
   DYNASTY_WIN_BAR_MAX,
-  DYNASTY_BOSS_EVERY, DYNASTY_MILESTONE_EVERY, DYNASTY_BOSSES, DYNASTY_CHALLENGES,
+  DYNASTY_MILESTONE_EVERY, DYNASTY_BOSSES, DYNASTY_CHALLENGES,
   BOSS_READ_EDGE, BOSS_SIM,
   dynastyMilestoneKind, dynastyBossFor, dynastyBossReward,
   dynastyChallengeFor, dynastyChallengeProgress,
