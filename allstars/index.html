@@ -3219,14 +3219,14 @@ function dugoutThings() {
   return [
     { id: 'exhibition', x: 40, y: 150, w: 150, h: 200, sign: 'EXHIBITION',
       label: 'Exhibition Game',
-      note: 'One game against a random club. Five innings, about ten minutes.',
+      note: 'Single game against a random club.',
       draw: drawBatRack,
       go: () => { State.mode = 'exhibition'; State.screen = 'roster'; render(); } },
     { id: 'season', x: 214, y: 86, w: 176, h: 168, sign: 'FRANCHISE',
       label: seasonOn ? 'Resume Franchise' : 'Start Franchise',
       note: seasonOn
         ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
-        : 'Found a club and run it year after year. Earns you players. It saves.',
+        : 'Select your team and run it. Unlock players and either add them to your group, or roll with what you already have.',
       draw: drawLineupBoard,
       go: () => {
         if (State.season) { State.screen = 'season-hub'; render(); }
@@ -3246,7 +3246,9 @@ function dugoutThings() {
       } },
     { id: 'howto', x: 610, y: 92, w: 246, h: 146, sign: 'HOW TO PLAY',
       label: 'How To Play',
-      note: 'The ring, the grid, the throw, and what the five numbers mean.',
+      /* No note. The sign says the whole thing, and a second sentence
+         restating it is the noise this rail was trimmed of. */
+      note: '',
       draw: drawChalkboard,
       go: () => { State.screen = 'howto'; render(); } },
   ];
@@ -3459,7 +3461,7 @@ function renderMenu() {
     drawDugout(dctx, things, id);
     const t = things.find(x => x.id === id);
     rail.innerHTML = t
-      ? `<b>${t.label}</b><span>${t.note}</span>`
+      ? `<b>${t.label}</b>` + (t.note ? `<span>${t.note}</span>` : '')
       : idle;
   };
   for (const t of things) {
@@ -3469,7 +3471,7 @@ function renderMenu() {
     b.style.top = (t.y - SIGN_H - 12) / DUGOUT_H * 100 + '%';
     b.style.width = (t.w + 12) / DUGOUT_W * 100 + '%';
     b.style.height = (t.h + SIGN_H + 18) / DUGOUT_H * 100 + '%';
-    b.setAttribute('aria-label', t.label + '. ' + t.note);
+    b.setAttribute('aria-label', t.note ? t.label + '. ' + t.note : t.label);
     b.textContent = t.label;
     b.onmouseenter = b.onfocus = () => paint(t.id);
     b.onmouseleave = b.onblur = () => paint(null);
