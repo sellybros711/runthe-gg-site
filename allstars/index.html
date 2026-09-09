@@ -3172,10 +3172,7 @@ function renderMenu() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, 'Choose a mode'));
   s.appendChild(el('p', null,
-    'Arcade baseball with fifty four characters everyone knows. Pick nine, '
-    + 'time your swing to a ring at the plate, call your own pitches when the '
-    + 'other side bats.'
-  ));
+    'Pick nine of fifty five. Swing on the ring, call your own pitches.'));
 
   const card = el('div','card');
   /* Each mode says what it is before the button is pressed: how many games,
@@ -3191,24 +3188,23 @@ function renderMenu() {
     modes.appendChild(box);
   };
   mode('Exhibition Game',
-       'One game against a random club. About ten minutes at five innings. Nothing to save.',
+       'Five innings, about ten minutes. No save.',
        () => { State.mode='exhibition'; State.screen='roster'; render(); });
   mode(State.season ? 'Resume Season' : 'Start Season',
-       'Found a club, play seven games, make the top four and win the bracket. '
-       + 'Reporters between games. Saved to this browser.',
+       'Seven games, then the bracket. Saves.',
        () => {
          if (State.season) { State.screen = 'season-hub'; render(); }
          else { State.mode='season'; State.franchise = randomFranchise();
                 State.screen='franchise'; render(); }
        });
   mode(State.cup ? 'Resume Cup' : 'Play The Cup',
-       'Eight clubs, single elimination, three rounds. Lose once and you are out. Its own save.',
+       'Eight clubs, knockout. Lose once and you are out.',
        () => {
          if (State.cup) { State.screen = 'cup'; render(); }
          else { State.mode='cup'; State.screen='roster'; render(); }
        });
   mode('How To Play',
-       'The ring, the grid, the throw, and what the four numbers on a card mean.',
+       'Controls, and what the five numbers mean.',
        () => { State.screen='howto'; render(); }, true);
   card.appendChild(modes);
 
@@ -3292,11 +3288,15 @@ function renderMenu() {
    ROSTER PICK
    User selects nine of twelve for their team.
    ============================================================================ */
-/* What the four numbers on a card do in play. Said once, in one place, and
-   shown wherever the numbers are: on the menu wall, on the draft screen and
-   in How To Play. Before this a first-timer read POW SPD CON DEF as
-   decoration. */
+/* What the five numbers are, in five words, because this sits above a wall
+   of cards on two screens and the long version was reading as a paragraph
+   to get past rather than a key. The sentences are in How To Play, one
+   click away, where somebody who wants them is already looking. */
 const STAT_LEGEND =
+    '<b>POW</b> power · <b>SPD</b> speed · <b>CON</b> timing · '
+  + '<b>DEF</b> fielding · <b>PIT</b> pitching';
+/* The same five, said properly. How To Play only. */
+const STAT_LEGEND_LONG =
     '<b>POW</b> how far the ball goes when you hit it square · '
   + '<b>SPD</b> singles beat the throw, steals and extra bases · '
   + '<b>CON</b> forgives an early or late swing · '
@@ -3308,11 +3308,8 @@ function renderRoster() {
   const s = el('div','screen');
   s.appendChild(el('h2', null, State.mode === 'season' ? 'Build your season team' : 'Pick your lineup'));
   s.appendChild(el('p', null,
-    'Choose nine. <b>Your first pick starts on the mound</b> and bats first, so '
-    + 'lead with an arm you trust: <b>PIT</b> is what a man throws like, and it is '
-    + 'not the same talent as hitting. Anyone can take the mound mid game, and a '
-    + 'rested arm comes back, so <b>two</b> good arms will carry you further than '
-    + 'one. Randomize builds a lineup and moves on.'));
+    'Choose nine. <b>Your first pick starts on the mound</b>, so lead with a good '
+    + '<b>PIT</b> and keep a second: arms tire, and anyone can take over later.'));
   s.appendChild(el('p', null, STAT_LEGEND));
 
   const card = el('div','card');
@@ -8933,8 +8930,8 @@ function renderHowTo() {
 
   const chars = el('div','card');
   add(chars,
-      '<h3>The four numbers</h3>'
-    + '<p>' + STAT_LEGEND + '</p>'
+      '<h3>The five numbers</h3>'
+    + '<p>' + STAT_LEGEND_LONG + '</p>'
     + '<p>Many characters also carry a quirk that genuinely changes how they play. '
     + 'A few: <b>Lady Liberty</b> never runs, so every real swing is a home run or a '
     + 'strikeout. <b>Mr. Hyde</b> transforms in about one at bat in six. '
