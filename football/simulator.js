@@ -1376,6 +1376,12 @@ const DYN_GOALS = {
   '2x losing':   (h) => h.length < 2 || h[h.length - 1].wins >= 9 || h[h.length - 2].wins >= 9,
   /* Two misses EVER rather than two in a row: the owner remembers. */
   'two total':   (h) => h.filter((x) => x.wins < 9).length < 2,
+  /* THE RULE THAT ACTUALLY SHIPS, and until now the one thing this report could not
+     measure. Every other entry above is a candidate that was considered and passed over;
+     the game itself calls E.dynastySurvives, which is one life against a bar that climbs.
+     A harness that cannot run the shipped rule can only ever tell you about roads not
+     taken. */
+  'one life':    (h) => E.dynastySurvives(h),
 };
 
 /* A SAFETY STOP, NOT A LENGTH, and now its own number rather than the game's.
@@ -1476,7 +1482,7 @@ function dynastyReport(n) {
 
   for (const [gname, goal] of Object.entries(DYN_GOALS)) {
     console.log('  ' + gname.toUpperCase());
-    console.log('    winter        median   mean    p75    p90    best   fired in yr 1   hit the stop');
+    console.log('    winter        median   mean    p75    p90    best   reach 5  reach 10  reach 20');
     for (const [cname, cutter] of Object.entries(DYN_CUTS)) {
       const lens = [];
       for (let d = 0; d < n; d++) {
@@ -1489,8 +1495,14 @@ function dynastyReport(n) {
         + String(q(lens, 0.75)).padStart(7)
         + String(q(lens, 0.9)).padStart(7)
         + String(Math.max(...lens)).padStart(7)
-        + fmtPct(lens.filter((x) => x <= 1).length / lens.length).padStart(16)
-        + fmtPct(lens.filter((x) => x >= DYN_MAX_SEASONS).length / lens.length).padStart(15));
+        /* HOW MANY EVER SEE THE AUTHORED CONTENT. Milestones land every fifth season, the
+           odd ones mandates and the even ones bosses, so these three columns are "met a
+           mandate", "met a boss" and "met the second boss". They replaced "fired in year 1"
+           and "hit the stop": the first is the median saying the same thing again, and the
+           second is now always zero because the safety stop is 200. */
+        + fmtPct(lens.filter((x) => x >= 5).length / lens.length).padStart(9)
+        + fmtPct(lens.filter((x) => x >= 10).length / lens.length).padStart(10)
+        + fmtPct(lens.filter((x) => x >= 20).length / lens.length).padStart(10));
     }
     console.log('');
   }
