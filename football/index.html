@@ -14290,7 +14290,9 @@ function runSim(){
   const step=()=>{
     if(run.phase!==R.PHASES.SEASON){after();return;}
     const r=R.advanceWeek(run,dataNow(),LEAGUE,CAL);
-    if(run.tradeMachine) checkHeadline(run.season.results);
+    /* Whether a streak headline took the banner this week, because the trade window wants it
+       too and there is one banner. See the window branch below. */
+    const said=run.tradeMachine?checkHeadline(run.season.results):false;
     paintSeasonBug(r.opponent_id,'Week '+r.week);
     $('v-you').textContent='0'; $('v-them').textContent='0';
     countTo($('v-you'),r.shownYou,380);
@@ -14322,6 +14324,14 @@ function runSim(){
       }
     }
     if(run.tradeMachine&&R.isTradeWindow(run)&&run.phase===R.PHASES.SEASON){
+      /* THE BEAT BEFORE THE PHONES RING, and the string for it has been sitting in HEADLINES
+         since the mode shipped with nothing able to show it. checkHeadline only ever emits
+         the six streak lines, so `trade` was written, styled and dead.
+         It goes in the 700ms this branch already waits before the window opens, so the
+         window is announced rather than simply appearing over the season.
+         NOT OVER A STREAK. There is one banner and a run of five wins is the rarer thing to
+         have earned, so a streak line keeps it and the window arrives unannounced that week. */
+      if(!said) showHeadline('trade');
       simTimer=setTimeout(()=>openTradeWindow(step),700);
       return;
     }
@@ -15704,22 +15714,30 @@ function showHeadline(key){
   el._h=setTimeout(()=>el.classList.remove('on'),2200);
 }
 
+/* ANSWERS WHETHER IT TOOK THE BANNER, because the trade window wants the same one and the
+   caller has to know whether it is free. Exact equality on the streak rather than a
+   threshold is deliberate and was already: a headline fires on the week the streak REACHES
+   the number, so a run of nine wins says something four times rather than nine. */
 function checkHeadline(results){
-  if(!results||!results.length)return;
+  if(!results||!results.length)return false;
   const last=results[results.length-1];
   let streak=0;
   for(let i=results.length-1;i>=0;i--){
     if(results[i].won===last.won) streak++; else break;
   }
+  let key=null;
   if(last.won){
-    if(streak===10) showHeadline('win10');
-    else if(streak===8) showHeadline('win8');
-    else if(streak===5) showHeadline('win5');
-    else if(streak===3) showHeadline('win3');
+    if(streak===10) key='win10';
+    else if(streak===8) key='win8';
+    else if(streak===5) key='win5';
+    else if(streak===3) key='win3';
   }else{
-    if(streak===5) showHeadline('lose5');
-    else if(streak===3) showHeadline('lose3');
+    if(streak===5) key='lose5';
+    else if(streak===3) key='lose3';
   }
+  if(!key) return false;
+  showHeadline(key);
+  return true;
 }
 
 /* ---------- seeding ---------- */
