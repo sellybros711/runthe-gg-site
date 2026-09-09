@@ -5520,6 +5520,18 @@ function overlayPurchased(screen){
       +'<h3 style="margin:14px 0 4px;font-size:26px">+'+p.n+' Daily Token'+(p.n>1?'s':'')+'!</h3>'
       +'<p class="lede" style="max-width:420px;margin:0 auto 14px">Extra runs at today’s course, use one any time you’re out of free attempts. You now have <b style="color:#5bcfe8">'+dailyTokens()+'</b>.</p>'
       +'<button class="btn blue act" style="max-width:360px;margin:0 auto 8px">Play the Daily ▸</button>';
+  } else if(p.kind==='bundle'){
+    /* RUN THE BUNDLE, delivered on arrival rather than at checkout: the buyer paid on the
+       football side, maybe days ago, and this is the moment the golf half lands. Same
+       stage as a bucket (animated coin count, confetti, a pack card, a door to the shop),
+       because a $34.99 purchase deserves the biggest celebration the game owns and this
+       is it. */
+    inner='<div class="tag" style="color:#ffd45e;border-color:#ffd45e;margin:0 auto">🎁 Run The Bundle</div>'
+      +'<h3 style="margin:14px 0 2px;font-size:26px">Your bundle is here!</h3>'
+      +(p.coins>0?'<div style="display:inline-flex;align-items:center;gap:8px;margin:6px auto 2px;font:900 40px var(--body);color:#ffd45e"><span style="width:30px;height:30px;flex:0 0 auto">'+ic('coin',{size:'30px'})+'</span><span class="pcoins">+0</span></div>'
+        +'<p class="lede" style="max-width:420px;margin:10px auto 12px">Straight into your wallet. Spend them on gear, packs and colors in the Pro Shop.</p>':'')
+      +(p.packs>0?'<div class="scout" style="max-width:360px;margin:0 auto 12px;text-align:center;border-color:#a24be0"><b style="color:#a24be0">🎁 +'+p.packs+' '+esc(p.packName||'pack')+(p.packs>1?'s':'')+' included</b><div class="small muted" style="margin-top:2px">Already added · Pro Shop → Packs</div></div>':'')
+      +'<button class="btn goldfill act" style="max-width:360px;margin:0 auto 8px">'+(p.packs>0?'Open your pack'+(p.packs>1?'s':'')+' ▸':'Spend them ▸')+'</button>';
   } else {
     var b=p.bucket;
     inner='<div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🪙 Coins</div>'
@@ -5544,7 +5556,7 @@ function overlayPurchased(screen){
     try{ track('purchase_celebrate_act',{kind:p.kind}); }catch(e){}
     S.purchased=null;
     if(p.kind==='tokens'){ S.overlay=null; render(); try{ startDailyChallenge(); }catch(e){} return; }
-    S.overlay='shop'; S.shopSec=(p.kind==='pass'||(p.bucket&&p.bucket.packTier))?'packs':'apparel'; render(); };
+    S.overlay='shop'; S.shopSec=(p.kind==='pass'||(p.kind==='bundle'&&p.packs>0)||(p.bucket&&p.bucket.packTier))?'packs':'apparel'; render(); };
   var el=ov.querySelector('.pcoins');
   if(el){ var target=p.coins||0;
     if(reduce){ el.textContent='+'+coinFmt(target); }
@@ -37920,10 +37932,14 @@ async function maybeBundleRewards(){
     if(!(coins>0)&&!(pn>0)) return;
     if(coins>0){ coinLog(coins,'Run The Bundle'); loadWallet(); }
     try{ cloudPush(); }catch(e){}
-    const bits=[];
-    if(coins>0) bits.push(coinFmt(coins)+' coins are in your wallet');
-    if(pn>0) bits.push(pn>1?pn+' '+pname+'s are waiting in Pro Shop → Packs':'your '+pname+' is waiting in Pro Shop → Packs');
-    try{ toast('<b style="color:#ffd45e">🎁 Run The Bundle delivered!</b><br><span class="small">'+bits.join(', and ')+'. Thanks for supporting RunThe.GG ⛳</span>', 6500); }catch(e){}
+    /* The full post-purchase stage (confetti, the counting coin number, a door to the
+       packs), not a toast: this is the delivery of a $34.99 purchase and it celebrates
+       like one. Owner call, 2026-09: the first delivery shipped as a toast and read as
+       small news. */
+    S.purchased={kind:'bundle', coins:coins, packs:pn, packName:pname};
+    S.overlay='purchased';
+    try{ sfx('win'); }catch(e){}
+    try{ buzz([12,40,12]); }catch(e){}
     try{ track('bundle_redeemed',{coins:coins,packs:pn}); }catch(e){}
     try{ render(); }catch(e){}
   }catch(e){}
