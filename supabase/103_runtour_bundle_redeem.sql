@@ -8,8 +8,11 @@
 -- {"coins":100000,"packs":[{"tier":"tour","n":1}]}, fulfilled_at null) and
 -- this file gives the golf game the RPC that honors it:
 -- runtour_redeem_bundle() credits the caller's coin wallet, stamps the row
--- fulfilled, and hands back what was delivered so the page can celebrate and
--- grant the pack. golf/index.html calls it once per sign-in, beside the
+-- fulfilled, and hands back what was delivered so the page can celebrate. The
+-- page grants the PACK from the row itself rather than from this answer: the
+-- answer is one-shot (the stamp makes it unrepeatable) and a browser can die
+-- holding it, while the row stays readable for the life of the account. This
+-- function is unchanged by that fix; comments only, no re-run needed. golf/index.html calls it once per sign-in, beside the
 -- referral claim, and swallows errors, so a database still on 102 just means
 -- the coins keep waiting.
 --
