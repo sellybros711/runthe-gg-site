@@ -145,6 +145,7 @@ const up = await runTerm('up');
         q: (r.querySelector('.docq') || {}).textContent,
         style: (r.querySelector('.docfill') || {}).getAttribute('style') || '',
         bold: (r.querySelector('.docends b') || {}).textContent || '',
+        v: Number(r.getAttribute('data-v')),
       })),
       ev: [].slice.call(e.querySelectorAll('.docev span')).map((s) => s.textContent),
     };
@@ -161,9 +162,13 @@ const up = await runTerm('up');
   ok('  every axis drawn from the center out',
     card.rows.every((r) => /(^|;)\s*(left|right):50%/.test(r.style)),
     JSON.stringify(card.rows.map((r) => r.style.split(';')[0])));
+  /* AN AXIS AT EXACTLY ZERO HAS NO SIDE, and drawing neither end in ink is the honest
+     picture of a term that came out dead even on that question. Asserting every axis had a
+     bold end failed on those terms alone, which is a flake rather than a finding. The rule
+     with the exception written into it: ink a side whenever there is a side. */
   ok('  and the end it landed on is the one set in ink',
-    card.rows.every((r) => r.bold.length > 2),
-    card.rows.map((r) => r.bold).join(' | '));
+    card.rows.every((r) => (r.v === 0 ? r.bold === '' : r.bold.length > 2)),
+    card.rows.map((r) => r.v + ':' + (r.bold || 'even')).join(' | '));
   ok('  with what the sport looks like now underneath', card.ev.length === 4,
     JSON.stringify(card.ev));
 

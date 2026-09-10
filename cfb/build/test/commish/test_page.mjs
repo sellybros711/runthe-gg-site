@@ -378,35 +378,32 @@ console.log('\n=== what a free player is shown ===');
   /* NOT EVERY ITEM HAS DIALS, so landing on one and skipping is landing on nothing: the
      first run of this block drew an item with no settings, printed a skip, and asserted
      that an EMPTY list of numbers read correctly. That is a check that can never fail.
-     Rule through beats until an item with settings comes up, and fail if none does. */
-  /* AND A BUDGET WIDE ENOUGH THAT LUCK CANNOT DECIDE IT. A test that fails one run in ten is
-     a test people learn to re-run rather than read.
 
-     THE NUMBER IN THE OLD NOTE WAS STALE AND THAT IS WHY IT KEPT FLAKING. It said roughly a
-     quarter of the docket carries settings; six of ninety-one do, which is seven per cent, and
-     the docket has grown a lot since somebody counted. Drawing without replacement, twenty-five
-     items miss one about fourteen times in a hundred, which is exactly the rate this was
-     failing at. Fifty-five items misses three times in a thousand.
+     SO IT IS ASKED FOR BY NAME RATHER THAN WALKED TO, and the walk it replaces is worth
+     writing down because its own note was confidently wrong. It ruled through beats until
+     an item with settings turned up, on the arithmetic that six of a hundred items carry
+     dials, so fifty-five draws would miss about three times in a thousand. All six live in
+     the OFF-SEASON: winter meetings, spring, the portal, media days. Five of a term's nine
+     beats are football, no dial item can be dealt on any of them, and the six compete on
+     weight with everything else inside the four that are left. The real miss rate is
+     nothing like three in a thousand, which is why this went red on a clean tree after
+     fifty-four desks.
 
-     Each item costs about three turns of this loop, so the budget is sized off ITEMS rather
-     than turns, and off the docket rather than a number typed once. */
-  let steps=[], seen=0, beat=0, stuck='';
-  while(beat++<Math.max(75,DOCKET_ITEMS*2)){
-    if(await on(p,'s-office')){ await tap(p,'#b-desk'); await skipSim(p); await p.waitForTimeout(380); continue; }
-    if(await on(p,'s-room')){ await tap(p,'#b-next'); await p.waitForTimeout(450); continue; }
-    if(await on(p,'s-press')){ await podium(p); continue; }
-    if(await on(p,'s-scene')){ await pastScene(p); continue; }
-    if(await on(p,'s-year')){ await tap(p,'#b-year-next'); await p.waitForTimeout(450); continue; }
-    if(!(await on(p,'s-desk'))){ stuck='no screen the loop knows'; break; }
-    seen++;
-    const opt=await p.$('#d-options .opt'); if(opt){ await opt.click(); await p.waitForTimeout(400); }
-    steps=await p.$$eval('.steps button',(e)=>e.map((x)=>({t:x.textContent.trim(),dead:x.disabled})));
-    if(steps.length) break;
-    if(!(await tap(p,'#b-rule'))){ stuck='Rule would not press on item '+seen; break; }
-    await p.waitForTimeout(450);
-  }
-  ok('an item with settings comes up inside a season',
-    steps.length>0, stuck || (seen+' items on the desk before one had settings'));
+     deskItem() opens a named case on the desk the same way the game does, so the assertion
+     is about what a free player SEES on an item that definitely has settings, which is what
+     it was always trying to say. */
+  await p.evaluate(()=>window.PS_CFB_COMMISH_TEST.deskItem('playoff-format'));
+  await p.waitForTimeout(500);
+  const onDesk=await on(p,'s-desk');
+  ok('an item with settings can be put on the desk', onDesk);
+  /* AND A RULING HAS TO BE PICKED BEFORE THEY DRAW. paintDials returns early on `!choice`,
+     because a dial is a refinement of a decision and there is nothing to refine until one is
+     made. The walk this replaced clicked an option without saying why; dropping that click
+     was the whole of the first rewrite's failure, and it reported "0 steps" on an item that
+     certainly has them. */
+  const opt=await p.$('#d-options .opt'); if(opt){ await opt.click(); await p.waitForTimeout(400); }
+  const steps=await p.$$eval('.steps button',(e)=>e.map((x)=>({t:x.textContent.trim(),dead:x.disabled})));
+  ok('  and it draws its settings', steps.length>0, steps.length+' steps');
   ok('  the settings a free player cannot reach are still drawn',
     steps.some((x)=>x.dead), steps.map((x)=>x.t+(x.dead?'*':'')).join(' '));
   ok('  and dead rather than missing', steps.some((x)=>!x.dead));

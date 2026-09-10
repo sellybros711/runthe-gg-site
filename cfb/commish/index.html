@@ -4403,7 +4403,14 @@ let h='<div class="eyebrow gold">What you turned out to believe</div>'
        "you were exactly even on this one". */
     const w=Math.max(Math.abs(v)/2,2);
     const side=v>=0?'left:50%':'right:50%';
-    return '<div class="docrow">'
+    /* THE VALUE ITSELF, for the guard rather than for the reader. An axis can land on
+       EXACTLY zero, and when it does neither end is set in ink, which is the honest
+       drawing of "you were dead even on this one". The guard asserted every axis had an
+       end in ink and so went red on those terms alone, at whatever rate a seed produces
+       them: a test that fails a few runs in a hundred and passes on a retry is worse than
+       no test, because it teaches everybody to retry. Reading the number lets it assert
+       the real rule, which is that a side is inked whenever there is a side. */
+    return '<div class="docrow" data-v="'+v+'">'
       +'<span class="docq">'+esc(s.axis)+'</span>'
       +'<div class="docbar"><span class="docmid"></span>'
         +'<span class="docfill" style="'+side+';width:'+w.toFixed(1)+'%"></span></div>'
