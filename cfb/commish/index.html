@@ -2547,6 +2547,9 @@
   </div>
 </div>
 
+<!-- THE BUNDLE STORE, shared with The Perfect Season. The door below draws it for anybody
+     who has not bought, so it has to be there before gate() runs. -->
+<script src="/assets/store.js?v=1"></script>
 <script src="/cfb/engine.js?v=34"></script>
 <script src="access.js?v=5"></script>
 <script src="ledger.js?v=9"></script>
@@ -8241,6 +8244,12 @@ function paintTag(){
 }
 function gate(){
   const say=$('gate-say'), act=$('gate-act');
+  /* THE LEDE COMES BACK ON EVERY PASS, because one branch below takes it away. The store
+     branch hides it (the store carries its own heading and lede), and gate() runs again on
+     every auth change: signing out after seeing the paywall would otherwise land on a door
+     whose only line of explanation had been hidden by the pass before. Reset here rather
+     than in each branch, so a branch added later cannot forget. */
+  say.hidden=false;
   if(authState.waiting&&!authState.ready){ say.textContent='Checking your account.'; act.innerHTML=''; return; }
   if(!authState.ready){
     say.textContent='Accounts are offline right now, usually a blocked script. This mode '
@@ -8292,20 +8301,26 @@ function gate(){
      does not open. The Buy buttons are real; while nothing is on sale the endpoint
      answers 503 and the button says so, truthfully. */
   if(!ownsCfb()){
-    /* "Yours for good" belongs to the Premium Bundle sentence and is true of it: both its
-       products are permanent. The second button was the problem. It sat directly under that
-       claim with no terms of its own, and one of the things it sells is a TWELVE MONTH
-       Arcade Card. So the sentence that names it also says so. */
-    say.textContent='Commish Simulator is part of the Premium Bundle, with the two '
-      +'dynasty modes in Perfect Season. One purchase. Yours for good. Run The Bundle adds '
-      +'two more games, including a year of the Arcade Card.';
-    act.innerHTML=
-      '<button class="btn" id="b-buy-ps">Premium Bundle &middot; $19.99</button>'
-      +'<button class="btn ghost" id="b-buy-rtb">Run The Bundle &middot; $34.99</button>'
-      +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center">Back to the game</a>';
-    const ps=$('b-buy-ps'), rtb=$('b-buy-rtb');
-    if(ps) ps.onclick=()=>buyBundle('perfect-season',ps);
-    if(rtb) rtb.onclick=()=>buyBundle('run-the-bundle',rtb);
+    /* THE SAME STORE THE FOOTBALL GAME SHOWS, out of /assets/store.js.
+       This used to be a paragraph and two buttons carrying their prices in their labels. It
+       said the right things and it looked like a different product from the one a player
+       had just been reading about in Perfect Season, which for a shared bundle sold on two
+       pages is the wrong impression to leave. It also meant the terms were written twice:
+       the Arcade Card's twelve months lived in that paragraph here and on a line of its own
+       there, which is exactly the sentence a customer should never find two versions of.
+       The lede goes with it. The store's own heading and lede say what this is, and the
+       screen already carries the mode's name above them. */
+    say.textContent='';
+    say.hidden=true;
+    act.innerHTML=(window.RTG_STORE
+      ? window.RTG_STORE.html({signedOut:false})
+      : '<p class="lede">The store could not be loaded. Reload the page and try again.</p>')
+      +'<a class="btn ghost" href="/cfb/" style="text-decoration:none;text-align:center;'
+      +'margin-top:12px">Back to the game</a>';
+    /* signedOut is false above rather than read off the session because this door is past
+       the sign-in wall already: the branches over it send a signed out visitor and a
+       nameless account somewhere else, so anybody reaching here has an account to buy on. */
+    if(window.RTG_STORE) window.RTG_STORE.wire(act,{buy:(kind,btn)=>buyBundle(kind,btn)});
     return;
   }
   /* THE FIRST LINE IS THE JOB OFFER, not a description of the mode. "You run college

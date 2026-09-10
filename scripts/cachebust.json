@@ -1882,6 +1882,10 @@
     }
   },
   "cfb/commish/index.html": {
+    "/assets/store.js": {
+      "v": "1",
+      "sha": "d65167d9d196dcf3"
+    },
     "/cfb/engine.js": {
       "v": "34",
       "sha": "b0d91d3b9bc45e50"
@@ -2029,6 +2033,10 @@
     "/assets/arcade-ad.js": {
       "v": "3",
       "sha": "44a62b6f74d67404"
+    },
+    "/assets/store.js": {
+      "v": "1",
+      "sha": "d65167d9d196dcf3"
     },
     "auth.js": {
       "v": "5",
